@@ -365,7 +365,7 @@ void lower()
 }
 
 
-void get_property(GDK.Atom atom, int offset, int delete_when_done)
+mapping get_property(GDK.Atom atom, int|void offset, int|void delete_when_done)
 //! Returns the value (as a string) of the specified property.
 //! The arguments are:
 //! <p>
