@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.242 1998/09/29 19:32:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.243 1998/09/29 19:52:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -104,63 +104,8 @@ SMARTLINK="`echo $CC| sed -e 's/smartlink.*/smartlink/'`"
 AC_SUBST(SMARTLINK)
 export REALCC SMARTLINK
 
-
-
 #############################################################################
 
-
-
-AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
-AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
-AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for libraries.])
-AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
-AC_ARG_WITH(gmp,         [  --without-gmp          no Support bignums])
-AC_ARG_WITH(readline,    [  --without-readline     no support for command line editing])
-AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
-AC_ARG_WITH(rtldebug,    [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
-AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[with_cdebug=])
-AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_threads=yes])
-AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
-AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
-AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
-AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
-AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
-AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[AC_DEFINE(HAVE_AND_USE_POLL)],[])
-AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
-AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
-AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
-AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
-
-#
-# Allow --with(out)-debug to toggle both cdebug and rtldebug, but
-# let --with(out)-{c,rtl}debug take precedence.
-#
-if test "x$with_cdebug" = x ; then
-  with_cdebug="$with_debug"
-fi
-
-if test "x$with_rtldebug" = x ; then
-  with_rtldebug="$with_debug"
-fi
-
-
-#
-# Defaults for cdebug and rtldebug here:
-#
-
-if test "x$with_cdebug" = x ; then
-  with_cdebug=yes
-fi
-
-if test "x$with_rtldebug" = x ; then
-  with_rtldebug=yes
-fi
-
-if test "x$with_rtldebug" = xyes ; then
-  AC_DEFINE(DEBUG)
-fi
-
-#############################################################################
 AC_AIX
 AC_MINIX
 
@@ -215,6 +160,72 @@ case "$pike_cv_sys_os" in
 esac
 
 AC_SUBST(LD)
+
+#############################################################################
+
+
+
+AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
+AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
+AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for libraries.])
+AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
+AC_ARG_WITH(gmp,         [  --without-gmp          no Support bignums])
+AC_ARG_WITH(readline,    [  --without-readline     no support for command line editing])
+AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
+AC_ARG_WITH(rtldebug,    [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
+AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[with_cdebug=])
+AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_threads=yes])
+AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
+AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
+AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
+AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
+AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
+  # Neither --with-poll nor --without-poll specified
+  case "x$pike_cv_sys_os" in
+    Solaris|AIX|HP-UX|OSF1|IRIX)
+      AC_MSG_WARN([Defaulting to --with-poll since OS is $pike_cv_sys_os.])
+      with_poll=yes;
+    ;;
+  esac
+])
+AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
+AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
+AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
+AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
+
+if test "x$with_poll" = "xyes"; then
+  AC_DEFINE(HAVE_AND_USE_POLL)
+else :; fi
+
+#
+# Allow --with(out)-debug to toggle both cdebug and rtldebug, but
+# let --with(out)-{c,rtl}debug take precedence.
+#
+if test "x$with_cdebug" = x ; then
+  with_cdebug="$with_debug"
+fi
+
+if test "x$with_rtldebug" = x ; then
+  with_rtldebug="$with_debug"
+fi
+
+
+#
+# Defaults for cdebug and rtldebug here:
+#
+
+if test "x$with_cdebug" = x ; then
+  with_cdebug=yes
+fi
+
+if test "x$with_rtldebug" = x ; then
+  with_rtldebug=yes
+fi
+
+if test "x$with_rtldebug" = xyes ; then
+  AC_DEFINE(DEBUG)
+fi
 
 #############################################################################
 
