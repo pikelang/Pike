@@ -1,12 +1,12 @@
 
 //! module Protocols
 //! submodule HTTP
-//! method string get_url(string url)
+//! method object(Protocols.HTTP.Query) get_url(string url)
 //! 	Sends a HTTP GET request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
 //!	0 is returned upon failure.
 //!
-//! method array get_url_nice(string url)
+//! method array(string) get_url_nice(string url)
 //!	Returns an array of ({content_type,data})
 //!	after calling the requested server for the information.
 //!	0 is returned upon failure.
