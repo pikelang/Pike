@@ -1,0 +1,326 @@
+NAME
+	/precompiled/sql - Generic interface to SQL databases (ALPHA)
+
+DESCRIPTION
+	/precompiled/sql is a precompiled Pike program. It enables access
+	to SQL databases from within Pike.
+
+NOTA BENE
+	To use this module you need at least one specific SQL-module e.g.
+	/precompiled/sql/mysql or /precompiled/sql/msql.
+
+KEYWORDS
+	sql, database
+
+SEE ALSO
+	/precompiled/sql/mysql, /precompiled/sql/msql
+
+
+============================================================================
+NAME
+        create - connect to an SQL database
+ 
+SYNTAX
+	#include <sql.h>
+
+	object(Sql) Sql();
+	or
+	object(Sql) Sql(string|program kind);
+	or
+	object(Sql) Sql(object kind);
+	or
+	object(Sql) Sql(object kind, int zero, string database);
+	or
+	object(Sql) Sql(string|program kind, string hostname);
+	or
+	object(Sql) Sql(string|program kind, string hostname,
+	                string database);
+	or
+	object(Sql) Sql(string|program kind, string hostname,
+	                string database, string user);
+	or
+	object(Sql) Sql(string|program kind, string hostname,
+			string database, string user, string password);
+
+DESCRIPTION
+	To access a database, you must first connect to it. This is
+	done with the function Sql().
+
+	If kind is not specified, or is "" or 0 (zero), all currently
+	available programs named /precompiled/sql/* will be tried in
+	turn to get a successfull connection.
+
+	If kind is an object, that object will be used to access the SQL-
+	database.
+
+	If kind is a string, a program with that name will be searched for.
+	If one was found it will be used to connect to the SQL-database.
+
+	If kind is a program, that program will be used to connect to the
+	SQL-database.
+
+	If hostname is "" or 0 (zero) access to the SQL-database will be
+	done through a UNIX-domain socket. Otherwise communication will
+	be through TCP/IP or similar to the named host.
+
+	If database is not "" or 0 (zero) that database will be selected.
+
+	user and password are used for access-control to the SQL-database.
+
+EXAMPLE
+	/* Connect to the database "test" and dump the table "db" */
+
+	#include <sql.h>
+
+	int main()
+	{
+	  object(Sql) sql = Sql("", "test");
+
+	  write(sprintf("%O\n", sql->query("select * from db")));
+	}
+
+SEE ALSO
+	sql->query()
+
+
+============================================================================
+NAME
+	error - report the last error from the underlying SQL-module
+
+SYNTAX
+	#include <sql.h>
+
+	string sql->error();
+
+DESCRIPTION
+	When a SQL-method fails you may get a decription of why with
+	this function.
+
+
+============================================================================
+NAME
+	select_db - select database
+
+SYNTAX
+	#include <sql.h>
+
+	void select_db(string database);
+
+DESCRIPTION
+	Most SQL-servers can hold several databases. You select which one
+	you want to sccess with this function.
+
+SEE ALSO
+	sql->create, sql->create_db, sql->drop_db
+
+
+============================================================================
+NAME
+	query - make an SQL query
+
+SYNTAX
+	#include <sql.h>
+
+	int|array(mapping(string:mixed)) sql->query(string q);
+
+DESCRIPTION
+	This function sends an SQL query to the underlying SQL-server. The
+	result is returned as an array of mappings indexed on the name of
+	the columns. Returns 0 if the query didn't return any result (e.g.
+	INSERT or similar).
+
+SEE ALSO
+	sql->big_query
+
+
+============================================================================
+NAME
+	big_query - make an SQL query, advanced version
+
+SYNTAX
+	#include <sql.h>
+
+	object(Sql_result) sql->big_query(string q);
+
+DESCRIPTION
+	This function sends an SQL query to the underlying SQL-server. The
+	result is returned as a /precompiled/sql object. This allows for
+	having results larger than the available memory, and returning some
+	more info on the result. Returns 0 if the query didn't return any
+	result (e.g. INSERT or similar).
+
+SEE ALSO
+	sql->query, /precompiled/sql_result
+
+
+============================================================================
+NAME
+	create_db - create a new database
+
+SYNTAX
+	#include <sql.h>
+
+	void sql->create_db(string database)
+
+DESCRIPTION
+	This function attempts to create a new database in the SQL-server.
+
+SEE ALSO
+	sql->select_db, sql->drop_db
+
+
+============================================================================
+NAME
+	drop_db - drop a database
+
+SYNTAX
+	#include <sql.h>
+
+	void sql->drop_db(string database)
+
+DESCRIPTION
+	This function attempts to drop the named database from the
+	SQL-server.
+
+SEE ALSO
+	sql->select_db, sql->create_db
+
+
+============================================================================
+NAME
+	shutdown - shutdown the SQL-server
+
+SYNTAX
+	#include <sql.h>
+
+	void sql->shutdown();
+
+DESCRIPTION
+	This function attempts to shutdown the SQL-server.
+
+SEE ALSO
+	sql->reload
+
+
+============================================================================
+NAME
+	reload - reload the tables
+
+SYNTAX
+	#include <sql.h>
+
+	void sql->reload();
+
+DESCRIPTION
+	If possible the tables will be reloaded by the SQL-server.
+
+SEE ALSO
+	sql->shutdown
+
+
+============================================================================
+NAME
+	server_info - give information about the current SQL-server
+
+SYNTAX
+	#include <sql.h>
+
+	string sql->server_info();
+
+DESCRIPTION
+	This function returns version information about the SQL-server.
+
+SEE ALSO
+	sql->host_info
+
+
+============================================================================
+NAME
+	host_info - give information about the SQL-server connection
+
+SYNTAX
+	#include <sql.h>
+
+	string sql->host_info();
+
+DESCRIPTION
+	This function returns a string describing the connection to the
+	SQL-server.
+
+SEE ALSO
+	sql->server_info
+
+
+============================================================================
+NAME
+	list_dbs - list available databases from this SQL-server
+
+SYNTAX
+	#include <sql.h>
+
+	array(mapping(string:string)) list_dbs();
+	or
+	array(mapping(string:string)) list_dbs(string wild);
+
+DESCRIPTION
+	Returns an array with mappings containing the names of the
+	databases in this SQL-server.
+
+	If wild is specified, only those matching it are returned.
+
+NOTA BENE
+	Might be better to return just an array(string), and skip the
+	mapping part.
+
+SEE ALSO
+	sql->list_tables, sql->list_fields
+
+
+============================================================================
+NAME
+	list_tables - list available tables in this database
+
+SYNTAX
+	#include <sql.h>
+
+	array(mapping(string:string)) list_tables();
+	or
+	array(mapping(string:string)) list_tables();
+
+DESCRIPTION
+	Returns an array with mappings containing the names of the
+	tables in the current database.
+
+	If wild is specified, only those matching it are returned.
+
+NOTA BENE
+	Might be better to return just an array(string), and skip the
+	mapping part.
+
+SEE ALSO
+	sql->list_dbs, sql->list_fields
+
+
+============================================================================
+NAME
+	list_fields - list names of all fields in a table
+
+SYNTAX
+	#include <sql.h>
+
+	array(mapping(string:string)) list_fields(string table);
+	or
+	array(mapping(string:string)) list_fields(string table, string wild);
+
+DESCRIPTION
+	Returns an array with mappings containing the names of the fields
+	in the specified table.
+
+	If wild is specified, only those matching it are returned.
+
+NOTA BENE
+	Might be better to return just an array(string), and skip the
+	mapping part.
+
+SEE ALSO
+	sql->list_dbs, sql->list_tables

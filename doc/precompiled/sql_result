@@ -1,0 +1,157 @@
+NAME
+	/precompiled/sql/sql_result - generic SQL result from a big_query (ALPHA)
+
+DESCRIPTION
+	/precompiled/sql_result is a precompiled Pike program. It usually
+	contains the result from an SQL-query. It acts as a wrapper for
+	e.g. /precompiled/sql/mysql_result and /precompiled/sql_msql_result.
+	
+KEYWORDS
+	sql, database
+
+SEE ALSO
+	/precompiled/sql/mysql_result, /precompiled/sql/msql_result
+
+
+============================================================================
+NAME
+	create - make a new sql_result object
+
+SYNTAX
+	#include <sql.h>
+
+	object(Sql_result) Sql_result(object res);
+	or
+	object(Sql_result) Sql_result(array(mapping(string:mixed)) res);
+	or
+	object(Sql_result) sql->big_query(string q);
+
+DESCRIPTION
+	The first two functions generate a Sql_result object from an
+	existing result. The second makes it from the result of the
+	SQL-query q.
+
+SEE ALSO
+	sql->big_query, /precompiled/sql
+
+
+============================================================================
+NAME
+	num_rows - number of rows in the result
+
+SYNTAX
+	#include <sql.h>
+
+	int sql_result->num_rows();
+
+DESCRIPTION
+	Returns the number of rows in the result.
+
+SEE ALSO
+	sql_result->num_fields
+
+
+============================================================================
+NAME
+	num_fields - number of fields in the result
+
+SYNTAX
+	#include <sql.h>
+
+	int sql_result->num_fields();
+
+DESCRIPTION
+	Returns the number of fields in the result.
+
+SEE ALSO
+	sql_result->num_rows
+
+
+============================================================================
+NAME
+	eof - at end of result table
+
+SYNTAX
+	#include <sql.h>
+
+	int sql_result->eof();
+
+DESCRIPTION
+	Returns non-zero when all rows have been read.
+
+SEE ALSO
+	sql_result->fetch_row, sql_result->seek
+
+
+============================================================================
+NAME
+	fetch_fields - return specification of fields
+
+SYNTAX
+	#include <sql.h>
+
+	array(int|mapping(string:mixed)) sql_result->fetch_field();
+
+DESCRIPTION
+	Returns an array of mappings with information about the fields
+	in the sql_result.
+
+	The mappings may contain these fields:
+
+	 "name":	string	The name of the field.
+	 "table":	string	The name of the table.
+	 "type":	string	The type of the field.
+	 "length":	int	The length of the field.
+	 "max_length":	int	The length of the longest element in this field.
+	 "flags":	int	Some flags (Server specific).
+	 "decimals":	int	The number of decimalplaces.
+
+	The only field guaranteed to exist is "name".
+
+	The type of the field can be any of:
+	"decimal", "char", "short", "long", "float", "double", "null",
+	"time", "longlong", "int24", "tiny blob", "medium blob",
+	"long blob", "var string", "string" or "unknown".
+
+BUGS
+	The "flags" entry should be parsed.
+
+	Maybe too stringent definition of the type-field.
+
+
+============================================================================
+NAME
+	seek - skip ahead a number of rows
+
+SYNTAX
+	#include <sql.h>
+
+	void sql_result->seek(int skip);
+
+DESCRIPTION
+	Skips ahead the specified number of rows.
+
+NOTA BENE
+	Only seeking ahead is supported.
+
+SEE ALSO
+	sql_result->fetch_row
+
+
+============================================================================
+NAME
+	fetch_row - fetch the next row from the result
+
+SYNTAX
+	#include <sql.h>
+
+	int|array(string|int) sql_result->fetch_row();
+
+DESCRIPTION
+	Returns an array with the contents of the next row of the result.
+	Advances the row cursor to the next row. Returns 0 (zero) at the
+	end of the table.
+
+SEE ALSO
+	sql_result->seek
+
