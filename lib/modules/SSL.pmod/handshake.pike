@@ -1,6 +1,7 @@
 #pike __REAL_VERSION__
+// #pragma strict_types
 
-/* $Id: handshake.pike,v 1.39 2004/01/23 20:09:31 bill Exp $
+/* $Id: handshake.pike,v 1.40 2004/01/23 22:29:44 nilsson Exp $
  *
  */
 
@@ -24,11 +25,11 @@ import .Constants;
 #define SSL3_DEBUG_MSG(X ...)
 #endif /* SSL3_DEBUG */
 
-object session;
-object context;
+.session session;
+.context context;
 
-object pending_read_state;
-object pending_write_state;
+.state pending_read_state;
+.state pending_write_state;
 
 /* State variables */
 
@@ -51,10 +52,10 @@ int certificate_state;
 int expect_change_cipher; /* Reset to 0 if a change_cipher message is
 			   * received */
 
-object temp_key; /* Key used for session key exchange (if not the same
-		  * as the server's certified key) */
+Crypto.rsa temp_key; /* Key used for session key exchange (if not the same
+		      * as the server's certified key) */
 
-object dh_state; /* For diffie-hellman key exchange */
+.Cipher.DHKeyExchange dh_state; /* For diffie-hellman key exchange */
 
 int rsa_message_was_bad;
 array(int) version;
@@ -65,7 +66,6 @@ int reuse;
 string client_random;
 string server_random;
 
-constant Struct = ADT.struct;
 constant Session = SSL.session;
 constant Packet = SSL.packet;
 constant Alert = SSL.alert;
@@ -85,14 +85,14 @@ void send_packet(object packet, int|void fatal);
 
 string handshake_messages;
 
-object handshake_packet(int type, string data)
+Packet handshake_packet(int type, string data)
 {
 
 #ifdef SSL3_PROFILING
   addRecord(type,1);
 #endif
   /* Perhaps one need to split large packages? */
-  object packet = Packet();
+  Packet packet = Packet();
   packet->content_type = PACKET_handshake;
   packet->fragment = sprintf("%c%3c%s", type, sizeof(data), data);
   handshake_messages += packet->fragment;
@@ -106,7 +106,7 @@ object hello_request()
 
 object server_hello_packet()
 {
-  object struct = Struct();
+  ADT.struct struct = ADT.struct();
   /* Build server_hello message */
   struct->put_uint(3,1); struct->put_uint(version[1],1); /* version */
 #ifdef SSL3_DEBUG
@@ -124,9 +124,9 @@ object server_hello_packet()
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
 
-SSL.packet client_hello()
+Packet client_hello()
 {
-  object struct = Struct();
+  ADT.struct struct = ADT.struct();
   /* Build client_hello message */
   struct->put_uint(3,1); struct->put_uint(1,1); /* version */
   client_random = sprintf("%4c%s", time(), context->random(28));
@@ -151,9 +151,9 @@ SSL.packet client_hello()
   return handshake_packet(HANDSHAKE_client_hello, data);
 }
 
-object server_key_exchange_packet()
+Packet server_key_exchange_packet()
 {
-  object struct;
+  ADT.struct struct;
   
   switch (session->ke_method)
   {
@@ -174,7 +174,7 @@ object server_key_exchange_packet()
       werror("Sending a server key exchange-message, "
 	     "with a %d-bits key.\n", temp_key->rsa_size());
 #endif
-      struct = Struct();
+      struct = ADT.struct();
       struct->put_bignum(temp_key->get_n());
       struct->put_bignum(temp_key->get_e());
     }
@@ -184,7 +184,7 @@ object server_key_exchange_packet()
   case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
-    struct = Struct();
+    struct = ADT.struct();
 
     /* werror("dh_params = %O\n", context->dh_params); */
     dh_state = .Cipher.DHKeyExchange(context->dh_params);
@@ -205,8 +205,7 @@ object server_key_exchange_packet()
 
 object client_key_exchange_packet()
 {
-  object struct;
-  struct = Struct();
+  ADT.struct struct = ADT.struct();
   string data;
 
   switch (session->ke_method)
@@ -218,7 +217,8 @@ object client_key_exchange_packet()
     string  premaster_secret = struct->pop_data();
     session->master_secret = client_derive_master_secret(premaster_secret);
 
-    array res = session->new_client_states(client_random, server_random,version);
+    array(.state) res = session->new_client_states(client_random,
+						   server_random,version);
     pending_read_state = res[0];
     pending_write_state = res[1];
 
@@ -244,7 +244,8 @@ object client_key_exchange_packet()
   return handshake_packet(HANDSHAKE_client_key_exchange, data);
 }
 
-int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
+int(-1..0) reply_new_session(array(int) cipher_suites,
+			     array(int) compression_methods)
 {
   reuse = 0;
   session = context->new_session();
@@ -282,7 +283,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
    */
   if (context->certificates)
   {
-    object struct = Struct();
+    ADT.struct struct = ADT.struct();
     
     int len = `+( @ Array.map(context->certificates, sizeof));
 #ifdef SSL3_DEBUG
@@ -306,7 +307,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
       error("No certificate authorities provided.\n");
  
     /* Send a CertificateRequest message */
-    object struct = Struct();
+    ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
     int len = `+(@ Array.map(context->authorities, sizeof));
@@ -320,9 +321,10 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   send_packet(handshake_packet(HANDSHAKE_server_hello_done, ""));
   return 0;
 }
-object change_cipher_packet()
+
+Packet change_cipher_packet()
 {
-  object packet = Packet();
+  Packet packet = Packet();
   packet->content_type = PACKET_change_cipher_spec;
   packet->fragment = "\001";
   return packet;
@@ -383,7 +385,7 @@ string server_derive_master_secret(string data)
   case KE_dh_anon:
   {
     /* Explicit encoding */
-    object struct = Struct(data);
+    ADT.struct struct = ADT.struct(data);
 
     if (catch
 	{
@@ -396,7 +398,7 @@ string server_derive_master_secret(string data)
 	return 0;
       }
 
-    premaster_secret = dh_state->get_shared();
+    premaster_secret = (string)dh_state->get_shared();
     dh_state = 0;
     break;
   }
@@ -534,7 +536,7 @@ string describe_type(int i)
 }
 #endif
 
-int verify_certificate_chain(array certs)
+int verify_certificate_chain(array(string) certs)
 {
   werror("verify_certificate_chain()\n");
   int root_trusted = 0;
@@ -571,7 +573,7 @@ int verify_certificate_chain(array certs)
 //! send_packet() function to trasnmit packets.
 int(-1..1) handle_handshake(int type, string data, string raw)
 {
-  object input = Struct(data);
+  ADT.struct input = ADT.struct(data);
 #ifdef SSL3_PROFILING
   addRecord(type,0);
 #endif
@@ -679,7 +681,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	} else {
 	  /* New session, do full handshake. */
 	  
-	  int err = reply_new_session(cipher_suites, compression_methods);
+	  int(-1..0) err = reply_new_session(cipher_suites,
+					     compression_methods);
 	  if (err)
 	    return err;
 	  handshake_state = STATE_server_wait_for_client;
@@ -732,7 +735,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	}
 	client_random = ("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge)[..31];
 	{
-	  int err = reply_new_session(cipher_suites, ({ COMPRESSION_null }) );
+	  int(-1..0) err = reply_new_session(cipher_suites,
+					     ({ COMPRESSION_null }) );
 	  if (err)
 	    return err;
 	}
@@ -869,7 +873,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
        }
        if (catch {
 	 int certs_len = input->get_uint(3);
-	 array certs = ({ });
+	 array(string) certs = ({ });
 	 while(!input->is_empty())
 	   certs += ({ input->get_var_string(3) });
 
@@ -917,7 +921,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	if( catch
 	{
 	  object(Gmp.mpz) signature = input->get_bignum();
-	  Struct handshake_messages_struct = Struct();
+	  ADT.struct handshake_messages_struct = ADT.struct();
 	  handshake_messages_struct->put_fix_string(handshake_messages);
 	  verification_ok = session->cipher_spec->verify(
 	    context, "", handshake_messages_struct, signature);
@@ -1047,7 +1051,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	n = input->get_bignum();
 	e = input->get_bignum();
 	signature = input->get_bignum();
-	Struct temp_struct = Struct();
+	ADT.struct temp_struct = ADT.struct();
 	temp_struct->put_bignum(n);
 	temp_struct->put_bignum(e);
 	int verification_ok;
@@ -1086,7 +1090,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       if (context->certificates)
       {
-	object struct = Struct();
+	ADT.struct struct = ADT.struct();
     
 	int len = `+( @ Array.map(context->certificates, sizeof));
 #ifdef SSL3_DEBUG

@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.7 2004/01/11 00:43:14 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.8 2004/01/23 22:37:33 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -339,7 +339,7 @@ class DHKeyExchange
     return this;
   }
 
-  object get_shared() {
+  Gmp.mpz get_shared() {
     return other->powm(secret, parameters->p);
   }
 }

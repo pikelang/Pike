@@ -148,9 +148,9 @@ class struct {
 
   //! Reads an array of integers as written by @[put_fix_uint_array]
   //! from the buffer.
-  array(mixed) get_fix_uint_array(int item_size, int size)
+  array(int) get_fix_uint_array(int item_size, int size)
   {
-    array(mixed) res = allocate(size);
+    array(int) res = allocate(size);
     for(int i = 0; i<size; i++)
       res[i] = get_uint(item_size);
     return res;
@@ -158,7 +158,7 @@ class struct {
 
   //! Reads an array of integers as written by @[put_var_uint_array]
   //! from the buffer.
-  array(mixed) get_var_uint_array(int item_size, int len)
+  array(int) get_var_uint_array(int item_size, int len)
   {
     return get_fix_uint_array(item_size, get_uint(len));
   }
