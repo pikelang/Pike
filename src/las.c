@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.102 1999/11/11 19:43:11 grubba Exp $");
+RCSID("$Id: las.c,v 1.103 1999/11/12 01:32:04 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -259,22 +259,38 @@ static node *freeze_node(node *orig)
   unsigned INT32 hash = hash_node(orig);
   node *n = node_hash.table[hash % node_hash.size];
 
+  /* free_node() wants a correct hash */
+  orig->hash = hash;
+
+#ifdef PIKE_DEBUG
+  if (orig->refs != 1) {
+    print_tree(orig);
+    fatal("Node to be frozen is already shared!\n");
+  }
+#endif /* PIKE_DEBUG */
+
+  if (orig->node_info & OPT_NOT_SHARED) {
+    /* No need to have this node in the hash-table. */
+    /* add_node(orig); */
+    return dmalloc_touch(node *, orig);
+  }
+
   while (n) {
     if ((n->hash == hash) &&
 	!MEMCMP(&(n->token), &(orig->token),
 		sizeof(node) - OFFSETOF(node_s, token))) {
-#if 0
-      fprintf(stderr, "Found node: ");
-      print_tree(n);
-#endif /* 0 */
-      free_node(orig);
+#ifdef PIKE_DEBUG
+      if (n == orig) {
+	fatal("Node to be frozen was already cold!\n");
+      }
+#endif /* PIKE_DEBUG */
+      free_node(dmalloc_touch(node *, orig));
       n->refs++;
-      return n;
+      return dmalloc_touch(node *, n);
     }
     n = n->next;
   }
-  orig->hash = hash;
-  add_node(orig);
+  add_node(dmalloc_touch(node *, orig));
   return orig;
 }
 
@@ -334,6 +350,8 @@ void free_all_nodes(void)
 		if(cdr_is_node(tmp)) _CDR(tmp)=0;
 #ifdef SHARED_NODES
 		tmp->hash = hash_node(tmp);
+
+		fprintf(stderr, "Freeing node that had %d refs.\n", tmp->refs);
 		/* Force the node to be freed. */
 		tmp->refs = 1;
 #endif /* SHARED_NODES */
@@ -360,7 +378,7 @@ void free_all_nodes(void)
   }
 }
 
-void free_node(node *n)
+void debug_free_node(node *n)
 {
   if(!n) return;
 #ifdef PIKE_DEBUG
@@ -372,20 +390,19 @@ void free_node(node *n)
     unsigned INT32 hash;
     if ((hash = hash_node(n)) != n->hash) {
       fprintf(stderr, "Hash-value is bad 0x%08x != 0x%08x\n", hash, n->hash);
-#if 0
       print_tree(n);
       fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
-	    n->token, CAR(n), CDR(n), n->current_file->str, n->line_number);
-#endif /* 0 */
+	    n->token, _CAR(n), _CDR(n), n->current_file->str, n->line_number);
     }
   }
 #endif /* SHARED_NODES */
 #endif /* PIKE_DEBUG */
 
 #ifdef SHARED_NODES
-  if (--n->refs) {
+  if (dmalloc_touch(node *, n) && --(n->refs)) {
     return;
   }
+  sub_node(dmalloc_touch(node *, n));
 #endif /* SHARED_NODES */
 
   switch(n->token)
@@ -423,7 +440,7 @@ node *debug_check_node_hash(node *n)
 }
 
 /* here starts routines to make nodes */
-static node *mkemptynode(void)
+static node *debug_mkemptynode(void)
 {
   node *res=alloc_node_s();
 
@@ -446,12 +463,14 @@ static node *mkemptynode(void)
   return res;
 }
 
-node *mknode(short token, node *a, node *b)
+#define mkemptynode()	dmalloc_touch(node *, debug_mkemptynode())
+
+node *debug_mknode(short token, node *a, node *b)
 {
   node *res;
 
 #if defined(PIKE_DEBUG) && !defined(SHARED_NODES)
-  if(a && a==b)
+  if(b && a==b)
     fatal("mknode: a and be are the same!\n");
 #endif    
 
@@ -459,21 +478,15 @@ node *mknode(short token, node *a, node *b)
   check_tree(b,0);
 
   res = mkemptynode();
-  _CAR(res) = a;
-  _CDR(res) = b;
+  _CAR(res) = dmalloc_touch(node *, a);
+  _CDR(res) = dmalloc_touch(node *, b);
   res->node_info = 0;
   res->tree_info = 0;
   if(a) {
     a->parent = res;
-#ifdef SHARED_NODES
-    a->refs++;
-#endif /* SHARED_NODES */
   }
   if(b) {
     b->parent = res;
-#ifdef SHARED_NODES
-    b->refs++;
-#endif /* SHARED_NODES */
   }
 
   res->token = token;
@@ -484,7 +497,7 @@ node *mknode(short token, node *a, node *b)
     node *res2 = freeze_node(res);
 
     if (res2 != res) {
-      return res2;
+      return dmalloc_touch(node *, res2);
     }
   }
 #endif /* SHARED_NODES */
@@ -574,7 +587,7 @@ node *mknode(short token, node *a, node *b)
   return res;
 }
 
-node *mkstrnode(struct pike_string *str)
+node *debug_mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
@@ -589,7 +602,7 @@ node *mkstrnode(struct pike_string *str)
   return freeze_node(res);
 }
 
-node *mkintnode(int nr)
+node *debug_mkintnode(int nr)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
@@ -602,12 +615,11 @@ node *mkintnode(int nr)
   return freeze_node(res);
 }
 
-/* FIXME: Should probably have a flag on these nodes so they aren't reused. */
-node *mknewintnode(int nr)
+node *debug_mknewintnode(int nr)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  res->node_info = 0; 
+  res->node_info = OPT_NOT_SHARED; 
   res->u.sval.type = T_INT;
   res->u.sval.subtype = NUMBER_NUMBER;
   res->u.sval.u.integer = nr;
@@ -620,7 +632,7 @@ node *mknewintnode(int nr)
   return res;
 }
 
-node *mkfloatnode(FLOAT_TYPE foo)
+node *debug_mkfloatnode(FLOAT_TYPE foo)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
@@ -635,7 +647,7 @@ node *mkfloatnode(FLOAT_TYPE foo)
 }
 
 
-node *mkprgnode(struct program *p)
+node *debug_mkprgnode(struct program *p)
 {
   struct svalue s;
   s.u.program=p;
@@ -646,12 +658,12 @@ node *mkprgnode(struct program *p)
   return mkconstantsvaluenode(&s);
 }
 
-node *mkapplynode(node *func,node *args)
+node *debug_mkapplynode(node *func,node *args)
 {
   return mknode(F_APPLY, func, args);
 }
 
-node *mkefuncallnode(char *function, node *args)
+node *debug_mkefuncallnode(char *function, node *args)
 {
   struct pike_string *name;
   node *n;
@@ -665,7 +677,7 @@ node *mkefuncallnode(char *function, node *args)
   return n;
 }
 
-node *mkopernode(char *oper_id, node *arg1, node *arg2)
+node *debug_mkopernode(char *oper_id, node *arg1, node *arg2)
 {
   if(arg1 && arg2)
     arg1=mknode(F_ARG_LIST,arg1,arg2);
@@ -673,7 +685,7 @@ node *mkopernode(char *oper_id, node *arg1, node *arg2)
   return mkefuncallnode(oper_id, arg1);
 }
 
-node *mklocalnode(int var, int depth)
+node *debug_mklocalnode(int var, int depth)
 {
   struct compiler_frame *f;
   int e;
@@ -684,8 +696,8 @@ node *mklocalnode(int var, int depth)
   for(e=0;e<depth;e++) f=f->previous;
   copy_shared_string(res->type, f->variable[var].type);
 
-  res->node_info = OPT_NOT_CONST;
-  res->tree_info=res->node_info;
+  res->node_info = OPT_NOT_CONST | OPT_NOT_SHARED;
+  res->tree_info = res->node_info;
 #ifdef __CHECKER__
   _CDR(res) = 0;
 #endif
@@ -693,9 +705,12 @@ node *mklocalnode(int var, int depth)
   res->u.integer.b = depth;
 
 #ifdef SHARED_NODES
-  /* FIXME: Not common-subexpression optimized. */
+  /* FIXME: Not common-subexpression optimized.
+   * Node would need to contain a ref to the current function,
+   * and to the current program.
+   */
+  
   res->hash = hash_node(res);
-  res->refs = 1;
 
   /* return freeze_node(res); */
 #endif /* SHARED_NODES */
@@ -703,7 +718,7 @@ node *mklocalnode(int var, int depth)
   return res;
 }
 
-node *mkidentifiernode(int i)
+node *debug_mkidentifiernode(int i)
 {
   node *res = mkemptynode();
   res->token = F_IDENTIFIER;
@@ -732,7 +747,7 @@ node *mkidentifiernode(int i)
   return res;
 }
 
-node *mkexternalnode(int level,
+node *debug_mkexternalnode(int level,
 		     int i,
 		     struct identifier *id)
 {
@@ -763,15 +778,12 @@ node *mkexternalnode(int level,
   return freeze_node(res);
 }
 
-node *mkcastnode(struct pike_string *type,node *n)
+node *debug_mkcastnode(struct pike_string *type,node *n)
 {
   node *res;
 
   if(!n) return 0;
 
-#ifdef SHARED_NODES
-  n->refs++;
-#endif /* SHARED_NODES */
   if(type==n->type) return n;
 
   res = mkemptynode();
@@ -1086,7 +1098,7 @@ int node_is_eq(node *a,node *b)
   }
 }
 
-node *mkconstantsvaluenode(struct svalue *s)
+node *debug_mkconstantsvaluenode(struct svalue *s)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
@@ -1100,7 +1112,7 @@ node *mkconstantsvaluenode(struct svalue *s)
   return freeze_node(res);
 }
 
-node *mkliteralsvaluenode(struct svalue *s)
+node *debug_mkliteralsvaluenode(struct svalue *s)
 {
   node *res = mkconstantsvaluenode(s);
 
@@ -1113,7 +1125,7 @@ node *mkliteralsvaluenode(struct svalue *s)
   return res;
 }
 
-node *mksvaluenode(struct svalue *s)
+node *debug_mksvaluenode(struct svalue *s)
 {
   switch(s->type)
   {
@@ -1391,9 +1403,13 @@ static void low_print_tree(node *foo,int needlval)
     fprintf(stderr, "(");
     low_print_tree(_CAR(foo),0);
     fprintf(stderr, ")?(");
-    low_print_tree(_CADR(foo),0);
-    fprintf(stderr, "):(");
-    low_print_tree(_CDDR(foo),0);
+    if (_CDR(foo)) {
+      low_print_tree(_CADR(foo),0);
+      fprintf(stderr, "):(");
+      low_print_tree(_CDDR(foo),0);
+    } else {
+      fprintf(stderr, "0:0");
+    }
     fprintf(stderr, ")");
     break;
 
@@ -2159,16 +2175,12 @@ static void optimize(node *n)
 #include "treeopt.h"
     use_car:
       tmp1=CAR(n);
-#ifndef SHARED_NODES
-      _CAR(n) = 0;
-#endif /* !SHARED_NODES */
+      ADD_NODE_REF(CAR(n));
       goto use_tmp1;
 
     use_cdr:
       tmp1=CDR(n);
-#ifndef SHARED_NODES
-      _CDR(n) = 0;
-#endif /* !SHARED_NODES */
+      ADD_NODE_REF(CDR(n));
       goto use_tmp1;
 
     zap_node:
@@ -2181,9 +2193,9 @@ static void optimize(node *n)
 #endif /* SHARED_NODES */
 
       if(CAR(n->parent) == n)
-	CAR(n->parent) = tmp1;
+	_CAR(n->parent) = tmp1;
       else
-	CDR(n->parent) = tmp1;
+	_CDR(n->parent) = tmp1;
 
 #ifdef SHARED_NODES      
       n->parent->hash = hash_node(n->parent);
@@ -2253,7 +2265,7 @@ int eval_low(node *n)
   jump=PC;
 
   store_linenumbers=0;
-  docode(n);
+  docode(dmalloc_touch(node *, n));
   ins_f_byte(F_DUMB_RETURN);
   store_linenumbers=1;
 
@@ -2379,7 +2391,7 @@ static node *eval(node *n)
       pop_stack();
     }
   }
-  return n;
+  return dmalloc_touch(node *, n);
 }
 
 INT32 last_function_opt_info;
