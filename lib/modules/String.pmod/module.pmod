@@ -204,10 +204,10 @@ string int2roman(int m)
   return res;
 }
 
-static constant prefix = ({ "bytes", "kb", "Mb", "Gb", "Tb", "Pb", "Eb", "Zb", "Yb" });
+static constant prefix = ({ "bytes", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" });
 
 //! Returns the size as a memory size string with suffix,
-//! e.g. 43210 is converted into "42.2 kb". To be correct
+//! e.g. 43210 is converted into "42.2 kB". To be correct
 //! to the latest standards it should really read "42.2 KiB",
 //! but we have chosen to keep the old notation for a while.
 //! The function knows about the quantifiers kilo, mega, giga,
