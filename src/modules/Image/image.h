@@ -1,9 +1,9 @@
-/* $Id: image.h,v 1.9 1997/10/12 21:11:33 mirar Exp $ */
+/* $Id: image.h,v 1.10 1997/10/27 22:41:22 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.9 1997/10/12 21:11:33 mirar Exp $<br>
+**!	$Id: image.h,v 1.10 1997/10/27 22:41:22 mirar Exp $
 */
 
 #define MAX_NUMCOL 32768

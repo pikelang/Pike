@@ -1,10 +1,9 @@
-/* $Id: gif.c,v 1.2 1997/10/27 20:49:31 noring Exp $ */
+/* $Id: gif.c,v 1.3 1997/10/27 22:41:36 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.2 1997/10/27 20:49:31 noring Exp $
-**!
+**!	$Id: gif.c,v 1.3 1997/10/27 22:41:36 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -22,7 +21,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.2 1997/10/27 20:49:31 noring Exp $");
+RCSID("$Id: gif.c,v 1.3 1997/10/27 22:41:36 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -220,8 +219,7 @@ void image_gif__gce_block(INT32 args)
 **!     <dt compact>4-7<dd>To be defined.
 **!     </dl>
 **!
-**! see also:
-**!	encode, _encode, header_block, end_block
+**! see also: encode, _encode, header_block, end_block
 **! 
 **! note
 **!	This is in the advanced sector of the GIF support;
@@ -236,13 +234,14 @@ int image_gif_add_line(struct neo_colortable *nct,
 		       rgb_group *s,
 		       rgb_group *m,
 		       int len,
-		       int alphaidx)
+		       int alphaidx,
+		       struct nct_dither *dith)
 {
    unsigned char *buf=alloca(len);
    int n;
    unsigned char *bd;
    
-   image_colortable_get_index_line(nct,s,buf,len);
+   image_colortable_get_index_line(nct,s,buf,len,dith);
 
    if (m)
    {
@@ -278,12 +277,13 @@ void image_gif_render_block(INT32 args)
    int bpp;
    struct pike_string *ps;
 
-   unsigned char *indexbuf;
-   char buf[20];
+   unsigned char buf[20];
 
    int y,xs,ys;
    rgb_group *img_s,*alpha_s=NULL;
+
    struct gif_lzw lzw;
+   struct nct_dither dith;
 
    if (args<2) 
       error("Image.GIF.render_block(): Too few arguments\n");
@@ -455,6 +455,8 @@ void image_gif_render_block(INT32 args)
    push_string(make_shared_binary_string(buf,1));
    numstrings++;
    
+   image_colortable_initiate_dither(nct,&dith,img->xsize);
+
    numstrings+=image_gif_lzw_init(&lzw,bpp<2?2:bpp);
 
    xs=img->xsize;
@@ -472,16 +474,20 @@ void image_gif_render_block(INT32 args)
       
       for (y=0; y<ys; y+=8)
 	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,xs,alphaidx);
+					alpha?alpha_s+xs*y:NULL,
+					xs,alphaidx,&dith);
       for (y=4; y<ys; y+=8)
 	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,xs,alphaidx);
+					alpha?alpha_s+xs*y:NULL,
+					xs,alphaidx,&dith);
       for (y=2; y<ys; y+=4)
 	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,xs,alphaidx);
+					alpha?alpha_s+xs*y:NULL,
+					xs,alphaidx,&dith);
       for (y=1; y<ys; y+=2)
 	 numstrings+=image_gif_add_line(nct,&lzw,img_s+xs*y,
-					alpha?alpha_s+xs*y:NULL,xs,alphaidx);
+					alpha?alpha_s+xs*y:NULL,
+					xs,alphaidx,&dith);
    }
    else
    {
@@ -489,13 +495,16 @@ void image_gif_render_block(INT32 args)
       if (!alpha) alpha_s=NULL;
       while (y--)
       {
-	 numstrings+=image_gif_add_line(nct,&lzw,img_s,alpha_s,xs,alphaidx);
+	 numstrings+=image_gif_add_line(nct,&lzw,img_s,alpha_s,
+					xs,alphaidx,&dith);
 	 if (alpha) alpha_s+=xs;
 	 img_s+=xs;
       }
    }
 
    numstrings+=image_gif_lzw_finish(&lzw);
+
+   image_colortable_free_dither(&dith);
 
 /*** done */
 

@@ -4,14 +4,14 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.20 1997/10/21 22:07:25 mirar Exp $ 
+$Id: togif.c,v 1.21 1997/10/27 22:41:30 mirar Exp $ 
 
 */
 
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.20 1997/10/21 22:07:25 mirar Exp $<br>
+**!	$Id: togif.c,v 1.21 1997/10/27 22:41:30 mirar Exp $
 **! class image
 */
 

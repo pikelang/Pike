@@ -1,11 +1,11 @@
 #include <config.h>
-/* $Id: quant.c,v 1.13 1997/10/06 23:37:51 grubba Exp $ */
+/* $Id: quant.c,v 1.14 1997/10/27 22:41:29 mirar Exp $ */
 /* (optimized) color quantization and following lookup */
 
 /*
 **! module Image
 **! note
-**!	$Id: quant.c,v 1.13 1997/10/06 23:37:51 grubba Exp $<br>
+**!	$Id: quant.c,v 1.14 1997/10/27 22:41:29 mirar Exp $
 */
 
 #ifdef HAVE_UNISTD_H

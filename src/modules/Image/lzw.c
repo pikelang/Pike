@@ -1,4 +1,4 @@
-/* $Id: lzw.c,v 1.4 1997/10/21 22:07:26 mirar Exp $ */
+/* $Id: lzw.c,v 1.5 1997/10/27 22:41:23 mirar Exp $ */
 
 /*
 
@@ -15,7 +15,7 @@ the existanse of #define GIF_LZW is for that purpose. :-)
 /*
 **! module Image
 **! note
-**!	$Id: lzw.c,v 1.4 1997/10/21 22:07:26 mirar Exp $<br>
+**!	$Id: lzw.c,v 1.5 1997/10/27 22:41:23 mirar Exp $
 */
 
 #include "global.h"

@@ -1,3 +1,8 @@
+/*
+**! module Image
+**! note
+**!	$Id: gif_lzw.h,v 1.2 1997/10/27 22:41:37 mirar Exp $
+*/
 
 struct gif_lzw
 {

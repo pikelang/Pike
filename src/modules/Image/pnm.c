@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.5 1997/05/29 19:38:05 mirar Exp $ */
+/* $Id: pnm.c,v 1.6 1997/10/27 22:41:27 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.5 1997/05/29 19:38:05 mirar Exp $<br>
+**!	$Id: pnm.c,v 1.6 1997/10/27 22:41:27 mirar Exp $
 **! class image
 */
 

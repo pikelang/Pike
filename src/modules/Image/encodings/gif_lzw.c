@@ -1,4 +1,8 @@
-/* $Id: gif_lzw.c,v 1.1 1997/10/27 02:50:55 mirar Exp $ */
+/*
+**! module Image
+**! note
+**!	$Id: gif_lzw.c,v 1.2 1997/10/27 22:41:37 mirar Exp $
+*/
 
 #include "gif_lzw.h"
 

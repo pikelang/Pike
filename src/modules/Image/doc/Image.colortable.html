@@ -5,13 +5,17 @@
 <blockquote>
 This object keeps colortable information,
      mostly for image re-coloring (quantization).
+
+<p>     The object has color reduction, quantisation,
+     mapping and dithering capabilities.
 </blockquote>
 
 
 <h4>SEE ALSO</h4>
 <blockquote>     <tt><a href=Image.html>Image</a></tt>,
      <tt><a href=Image.image.html>Image.image</a></tt>,
-     <tt><a href=Image.font.html>Image.font</a></tt>
+     <tt><a href=Image.font.html>Image.font</a></tt>,
+     <tt><a href=Image.GIF.html>Image.GIF</a></tt>
 </blockquote>
 
 <hr>
@@ -31,7 +35,40 @@ object <b>``*</b>(object&nbsp;image)</tt>
 <blockquote>
 Map colors in an image object to the colors in 
      the colortable, and creates a new image with the
-     closest colors.
+     closest colors. 
+
+<p>     <table><tr valign=center>
+     <td></td>
+     <td><img src=illustration_0.gif width=67 height=67></td>
+     <td><img src=illustration_1.gif width=67 height=67></td>
+     <td><img src=illustration_2.gif width=67 height=67></td>
+     <td><img src=illustration_3.gif width=67 height=67></td>
+     <td><img src=illustration_4.gif width=67 height=67></td>
+     <td>no dither</td>
+     </tr><tr valign=center>
+     <td></td>
+     <td><img src=illustration_5.gif width=67 height=67></td>
+     <td><img src=illustration_6.gif width=67 height=67></td>
+     <td><img src=illustration_7.gif width=67 height=67></td>
+     <td><img src=illustration_8.gif width=67 height=67></td>
+     <td><img src=illustration_9.gif width=67 height=67></td>
+     <td>floyd-steinberg dither</td>
+     </tr><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_11.gif width=67 height=67></td>
+     <td><img src=illustration_12.gif width=67 height=67></td>
+     <td><img src=illustration_13.gif width=67 height=67></td>
+     <td><img src=illustration_14.gif width=67 height=67></td>
+     <td><img src=illustration_15.gif width=67 height=67></td>
+     <td>randomcube dither</td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>2</td>
+     <td>4</td>
+     <td>8</td>
+     <td>16</td>
+     <td>32 colors</td>
+     </tr></table>
 </blockquote>
 <h4>RETURNS</h4>
 
@@ -47,13 +84,12 @@ Flat (not cube) colortable and not '<tt><a href=Image.colortable.html#full>full<
      this method does figure out the data needed for
      the lookup method, which may take time the first
      use of the colortable - the second use is quicker.
-
-<p>     cubicle, tree, full
 </blockquote>
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.colortable.html#></a></tt>
+<blockquote>     <tt><a href=Image.colortable.html#cubicles>cubicles</a></tt>,
+     <tt><a href=Image.colortable.html#full>full</a></tt>
 </blockquote>
 
 <hr>
@@ -269,6 +305,16 @@ Set the colortable to use the cubicles algorithm to lookup
      more time then usage.
 
 <p>     In some cases, the <tt><a href=Image.colortable.html#full>full</a></tt> method is faster.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_17.gif width=67 height=67></td>
+     <td><img src=illustration_18.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>default cubicles,<br>16 colors</td>
+     <td>accuracy=200</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -304,6 +350,58 @@ this method doesn't figure out the cubicles, this is
 </blockquote>
 
 <hr>
+<a name=floyd_steinberg> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>floyd_steinberg</b>()<br>
+object <b>floyd_steinberg</b>(int&nbsp;dir, int|float&nbsp;forward, int|float&nbsp;downforward, int|float&nbsp;down, int|float&nbsp;downback, int|float&nbsp;factor)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Set dithering method to floyd_steinberg.
+     
+     The arguments to this method is for fine-tuning of the 
+     algorithm (for computer graphics wizards). 
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_20.gif width=67 height=67></td>
+     <td><img src=illustration_21.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>floyd_steinberg to a 4󫶘 colorcube</td>
+     <td>floyd_steinberg to a 16 chosen colors</td>
+     </tr></table>
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>int bidir</tt>
+  <dd>Set algorithm direction of forward.
+     -1 is backward, 1 is forward, 0 for toggle of direction
+     each line (default).
+<dt><tt>int|float forward</tt>
+<dt><tt>int|float downforward</tt>
+<dt><tt>int|float down</tt>
+<dt><tt>int|float downback</tt>
+  <dd>Set error correction directions. Default is 
+     forward=7, downforward=1, down=5, downback=3.
+<dt><tt>int|float factor</tt>
+  <dd>Error keeping factor. 
+     Error will increase if more than 1.0 and decrease if less than 1.0.
+     A value of 0.0 will cancel any dither effects.
+     Default is 0.95.
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the called object
+</blockquote>
+
+<hr>
 <a name=full> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
@@ -332,6 +430,77 @@ the called object
 <h4>NOTE</h4>
 <blockquote>
 Not applicable to colorcube types of colortable.
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.colortable.html#cubicles>cubicles</a></tt>,
+     <tt><a href=Image.colortable.html#map>map</a></tt>
+</blockquote>
+
+<hr>
+<a name=nodither> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>nodither</b>()</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Set no dithering (default).
+</blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the called object
+</blockquote>
+
+<hr>
+<a name=randomcube> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>randomcube</b>()<br>
+object <b>randomcube</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Set random cube dithering.
+     Color choosen is the closest one to color in picture
+     plus (flat) random error; <tt>color眗andom(error)</tt>.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_23.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>mapped to <tt>Image.colortable(4,4,4)-><wbr>randomcube();</td>
+     </tr></table>
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>The maximum error. Default is 32, or colorcube step.
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the called object
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.colortable.html#nodither>nodither</a></tt>,
+     <tt><a href=Image.colortable.html#floyd_steinberg>floyd_steinberg</a></tt>,
+     <tt><a href=Image.colortable.html#create>create</a></tt>
 </blockquote>
 
 <hr>
@@ -394,38 +563,4 @@ This has no sanity check. Some functions may bug
      sums grey levels in the image, this could exceed maxint
      in the case of high factors. Negative values may 
      also cause strange effects. *grin*
-</blockquote>
-
-<hr>
-<a name=tree> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>tree</b>()</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Set the colortable to use a tree algorithm to find
-     the best color.
-
-<p>     example: <tt>colors=Image.colortable(img)->tree</tt>
-
-<p>     algorithm time: O[ln n], where n is numbers of colors
-</blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the called object
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-This method doesn't figure out the tree, this is 
-     done on the first use of the colortable.
-
-<p>     Not applicable to colorcube types of colortable.
 </blockquote>

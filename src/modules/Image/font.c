@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.18 1997/09/10 13:26:13 grubba Exp $ */
+/* $Id: font.c,v 1.19 1997/10/27 22:41:19 mirar Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.18 1997/09/10 13:26:13 grubba Exp $<br>
+**!	$Id: font.c,v 1.19 1997/10/27 22:41:19 mirar Exp $
 **! class font
 **!
 **! note

@@ -1,3 +1,9 @@
+/*
+**! module Image
+**! note
+**!	$Id: colortable.h,v 1.2 1997/10/27 22:41:18 mirar Exp $
+*/
+
 #define COLORLOOKUPCACHEHASHSIZE 207
 
 typedef unsigned long nct_weight_t;
@@ -31,7 +37,6 @@ struct neo_colortable
    } type;
    enum nct_lookup_mode /* see union "lu" below */
    {
-      NCT_TREE, /* tree lookup */
       NCT_CUBICLES, /* cubicle lookup */
       NCT_FULL /* scan all values */
    } lookup_mode;
@@ -63,7 +68,7 @@ struct neo_colortable
       int index;
    } lookupcachehash[COLORLOOKUPCACHEHASHSIZE];
 
-   union /* of pointers!! */
+   union 
    {
       struct nctlu_cubicles
       {
@@ -75,27 +80,92 @@ struct neo_colortable
 	    int *index; /* NULL if not initiated */
 	 } *cubicles; /* [r*g*b], index as [ri+(gi+bi*g)*r] */
       } cubicles;
-      struct nctlu_tree
-      {
-	 struct nctlu_treenode
-	 {
-	    int splitvalue;
-	    enum { SPLIT_R,SPLIT_G,SPLIT_B,SPLIT_DONE } split_direction;
-	    int less,more;
-	 } *nodes; /* shoule be colors×2 */
-      } tree;
    } lu;
+
+   enum nct_dither_type
+   {
+      NCTD_NONE,
+      NCTD_FLOYD_STEINBERG,
+      NCTD_RANDOMCUBE
+   } dither_type;
+
+   union
+   {
+      struct 
+      {
+	 float downback;
+	 float down;
+         float downforward;
+	 float forward;
+	 int dir;
+      } floyd_steinberg;
+      struct
+      {
+	 int r,g,b;
+      } randomcube;
+   } du;
 };
 
+struct nct_dither;
+
+typedef rgbl_group nct_dither_encode_function(struct nct_dither *dith,
+					      int rowpos,
+					      rgb_group s);
+
+typedef void nct_dither_got_function(struct nct_dither *dith,
+				     int rowpos,
+				     rgb_group s,
+				     rgb_group d);
+
+typedef void nct_dither_line_function(struct nct_dither *dith,
+				      int *rowpos,
+				      rgb_group **s,
+				      rgb_group **d,
+				      int *cd);
+
+struct nct_dither
+{
+   enum nct_dither_type type;
+   nct_dither_encode_function *encode;
+   nct_dither_got_function *got; /* got must be set if encode is set */
+   nct_dither_line_function *newline;
+   nct_dither_line_function *firstline;
+   int rowlen;
+   union
+   {
+      struct nct_dither_floyd_steinberg
+      {
+	 rgbd_group *errors;
+	 rgbd_group *nexterrors;
+	 float downback;
+	 float down;
+         float downforward;
+	 float forward;
+	 int dir;
+	 int currentdir;
+      } floyd_steinberg;
+      struct
+      {
+	 int r,g,b;
+      } randomcube;
+   } u;
+};
 
 /* exported methods */
 
 void image_colortable_get_index_line(struct neo_colortable *nct,
 				     rgb_group *s,
 				     unsigned char *buf,
-				     int len);
+				     int len,
+				     struct nct_dither *dith);
 
 int image_colortable_size(struct neo_colortable *nct);
 
 void image_colortable_write_rgb(struct neo_colortable *nct,
 				unsigned char *dest);
+
+int image_colortable_initiate_dither(struct neo_colortable *nct,
+/* 0 upon out of memory */	     struct nct_dither *dith,
+				     int rowlen);
+
+void image_colortable_free_dither(struct nct_dither *dith);

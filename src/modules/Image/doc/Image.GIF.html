@@ -1,0 +1,153 @@
+<title>Pike documentation: module Image.GIF</title>
+<h2>module Image.GIF</h2>
+
+
+<blockquote>
+This submodule keep the GIF encode/decode capabilities
+     of the <tt><a href=Image.html>Image</a></tt> module.
+
+<p>     GIF is a common image storage format,
+     usable for a limited color palette - a GIF image can 
+     only contain as most 256 colors - and animations.
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.html>Image</a></tt>,
+     <tt><a href=Image.image.html>Image.image</a></tt>,
+     <tt><a href=Image.colortable.html>Image.colortable</a></tt>
+</blockquote>
+
+<hr>
+<a name=_gce_block> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>string <b>_gce_block</b>(int&nbsp;transparency, int&nbsp;transparency_index, int&nbsp;delay, int&nbsp;user_input, int&nbsp;disposal);</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+This function gives back a Graphic Control Extension block,
+     normally placed before an render block.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>int transparency</tt>
+<dt><tt>int transparency_index</tt>
+  <dd>The following image has transparency, marked with this index.
+<dt><tt>int delay</tt>
+  <dd>View the following rendering for this many centiseconds (0..65535).
+<dt><tt>int user_input</tt>
+  <dd>Wait the delay or until user input. If delay is zero,
+     wait indefinitely for user input. May sound the bell
+     upon decoding.
+<dt><tt>int disposal</tt>
+  <dd>Disposal method number;
+     <dl compact>
+     <dt>0<dd>No disposal specified. The decoder is
+              not required to take any action.
+     <dt>1<dd>Do not dispose. The graphic is to be left
+              in place.
+     <dt>2<dd>Restore to background color. The area used by the
+              graphic must be restored to the background color.
+     <dt>3<dd>Restore to previous. The decoder is required to
+              restore the area overwritten by the graphic with
+              what was there prior to rendering the graphic.
+     <dt compact>4-7<dd>To be defined.
+     </dl>
+</dl></blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+This is in the very advanced sector of the GIF support;
+     please read about how GIFs file works.
+
+<p>     Most decoders just ignore some or all of these parameters.
+</blockquote>
+
+<hr>
+<a name=render_block> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>string <b>render_block</b>(object&nbsp;img, object&nbsp;colortable, int&nbsp;x, int&nbsp;y, int&nbsp;localpalette);<br>
+string <b>render_block</b>(object&nbsp;img, object&nbsp;colortable, int&nbsp;x, int&nbsp;y, int&nbsp;localpalette, int&nbsp;transp_index);<br>
+string <b>render_block</b>(object&nbsp;img, object&nbsp;colortable, int&nbsp;x, int&nbsp;y, int&nbsp;localpalette, object&nbsp;alpha);<br>
+string <b>render_block</b>(object&nbsp;img, object&nbsp;colortable, int&nbsp;x, int&nbsp;y, int&nbsp;localpalette, object&nbsp;alpha, int&nbsp;r, int&nbsp;g, int&nbsp;b);<br>
+string <b>render_block</b>(object&nbsp;img, object&nbsp;colortable, int&nbsp;x, int&nbsp;y, int&nbsp;localpalette, int&nbsp;transp_index, int&nbsp;interlace, int&nbsp;delay, int&nbsp;user_input, int&nbsp;disposal);<br>
+string <b>render_block</b>(object&nbsp;img, object&nbsp;colortable, int&nbsp;x, int&nbsp;y, int&nbsp;localpalette, object&nbsp;alpha, int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;interlace, int&nbsp;delay, int&nbsp;user_input, int&nbsp;disposal);</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+This function gives a image block for placement in a GIF file,
+     with or without transparency.
+     The some options actually gives two blocks, 
+     the first with graphic control extensions for such things
+     as delay or transparency.
+
+<p> object img
+     The image.
+ object colortable
+     Colortable with colors to use and to write as palette.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>int x</tt>
+<dt><tt>int y</tt>
+  <dd>Position of this image.
+ int localpalette
+     If set, writes a local palette. 
+ int transp_index
+     Index of the transparent color in the colortable.
+     <tt>-1</tt> indicates no transparency.
+ object alpha
+     Alpha channel image; black is transparent.
+ int r
+ int g
+ int b
+     Color of transparent pixels. Not all decoders understands
+     transparency.
+<dt><tt>int delay</tt>
+  <dd>View this image for this many centiseconds. Default is zero.
+<dt><tt>int user_input</tt>
+  <dd>If set: wait the delay or until user input. If delay is zero,
+     wait indefinitely for user input. May sound the bell
+     upon decoding. Default is non-set.
+<dt><tt>int disposal</tt>
+  <dd>Disposal method number;
+     <dl compact>
+     <dt>0<dd>No disposal specified. The decoder is
+              not required to take any action. (default)
+     <dt>1<dd>Do not dispose. The graphic is to be left
+              in place.
+     <dt>2<dd>Restore to background color. The area used by the
+              graphic must be restored to the background color.
+     <dt>3<dd>Restore to previous. The decoder is required to
+              restore the area overwritten by the graphic with
+              what was there prior to rendering the graphic.
+     <dt compact>4-7<dd>To be defined.
+     </dl>
+</dl></blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+This is in the advanced sector of the GIF support;
+     please read some about how GIFs are packed.
+
+<p>     The user_input and disposal method are unsupported
+     in most decoders.
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.GIF..html#encode>encode</a></tt>,
+     <tt><a href=Image.GIF..html#_encode>_encode</a></tt>,
+     <tt><a href=Image.GIF..html#header_block>header_block</a></tt>,
+     <tt><a href=Image.GIF..html#end_block>end_block</a></tt>
+</blockquote>

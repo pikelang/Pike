@@ -1,14 +1,9 @@
-/* $Id: image.c,v 1.48 1997/10/27 02:50:48 mirar Exp $ */
+/* $Id: image.c,v 1.49 1997/10/27 22:41:20 mirar Exp $ */
 
 /*
 **! module Image
-**!
-**!     This module adds image-drawing and -manipulating
-**!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.48 1997/10/27 02:50:48 mirar Exp $<br>
-**! see also: Image.font, Image.image
-**!
+**!	$Id: image.c,v 1.49 1997/10/27 22:41:20 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -107,7 +102,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.48 1997/10/27 02:50:48 mirar Exp $");
+RCSID("$Id: image.c,v 1.49 1997/10/27 22:41:20 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.9 1997/09/05 16:51:57 grubba Exp $ */
+/* $Id: matrix.c,v 1.10 1997/10/27 22:41:25 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.9 1997/09/05 16:51:57 grubba Exp $<br>
+**!	$Id: matrix.c,v 1.10 1997/10/27 22:41:25 mirar Exp $
 **! class image
 */
 

@@ -16,7 +16,6 @@ all: $(OBJS)
 gif.a : $(GIF_OBJS)
 	rm -f gif.a
 	ar cq gif.a $(GIF_OBJS)
-	# $(RANLIB) gif.a
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)

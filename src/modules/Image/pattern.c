@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.7 1997/10/12 16:45:28 mirar Exp $ */
+/* $Id: pattern.c,v 1.8 1997/10/27 22:41:27 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.7 1997/10/12 16:45:28 mirar Exp $<br>
+**!	$Id: pattern.c,v 1.8 1997/10/27 22:41:27 mirar Exp $
 **! class image
 */
 
