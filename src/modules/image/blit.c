@@ -213,7 +213,6 @@ void image_paste(INT32 args)
       y1=sp[2-args].u.integer;
    }
    else x1=y1=0;
-   pop_n_elems(args-1);
 
    x2=x1+img->xsize-1;
    y2=y1+img->ysize-1;
@@ -227,6 +226,10 @@ void image_paste(INT32 args)
 	    blitheight,
 	    THIS->xsize,
 	    img->xsize);
+
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
 }
 
 void image_paste_alpha(INT32 args)

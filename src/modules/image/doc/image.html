@@ -557,4 +557,10 @@ object image->skewx_expand(int diff,rgb);
 object image->skewy_expand(int diff,rgb);
 object image->rotate(int|float angle,rgb);
 object image->rotate_expand(int|float angle,rgb);
+object image->turbulence(colorrange,int octaves=3,float scale=1,
+			 float xdiff=0,float ydiff=0,float cscale=1);
+object image->noise(colorrange,float scale=0.1,
+	 	    float xdiff=0,float ydiff=0,float cscale=1);
+    where colorrange is ({ float position=0..1, ({r,g,b}),
+       			   float position=0..1, ({r,g,b}), ... })
 </pre>

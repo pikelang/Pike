@@ -24,6 +24,11 @@ void create()
   add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
   add_constant("strlen",sizeof);
 
+  add_constant("clone",lambda(program p,mixed ... a) 
+                   	{ return p(@a); } );
+  add_constant("new",lambda(program p,mixed ... a) 
+                   	{ return p(@a); } );
+
   random_seed(time() + (getpid() * 0x11111111));
 }
 
@@ -103,7 +108,7 @@ object cast_to_object(string oname)
 
   if(ret=objects[oname]) return ret;
 
-  return objects[oname]=clone(cast_to_program(oname));
+  return objects[oname]=cast_to_program(oname)();
 }
 
 mapping (string:string) environment=([]);
@@ -136,7 +141,7 @@ void _main(string *argv, string *env)
   add_constant("getenv",getenv);
   add_constant("putenv",putenv);
 
-  add_constant("write",clone(cast_to_program("/precompiled/file"),"stdout")->write);
+  add_constant("write",cast_to_program("/precompiled/file")("stdout")->write);
 
   a=backtrace()[-1][0];
   q=a/"/";
