@@ -6,6 +6,7 @@
 *.pbm binary
 *.png binary
 *.pnm binary
+*.tiff binary
 /src/post_modules/Nettle/rijndael_ecb_tbl.txt eol=lf
 /src/post_modules/Nettle/rijndael_cbc_d_m.txt eol=lf
 /src/post_modules/Nettle/rijndael_cbc_e_m.txt eol=lf
