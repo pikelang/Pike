@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.266 2001/12/14 04:10:00 mast Exp $");
+RCSID("$Id: language.yacc,v 1.267 2001/12/16 02:49:40 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -370,7 +370,15 @@ optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
   | { $$=0; }
   ;
 
-force_resolve: /* empty */ { $$=force_resolve; force_resolve=1; }
+force_resolve: /* empty */
+  {
+    $$=force_resolve;
+    force_resolve=1;
+#ifdef FORCE_RESOLVE_DEBUG
+    fputs("force_resolve on\n", stderr);
+#endif
+  }
+  ;
 
 /* NOTE: This rule pushes a string "name" on the stack in addition
  * to resolving the program reference.
@@ -412,6 +420,9 @@ inheritance: modifiers TOK_INHERIT force_resolve
   low_program_ref optional_rename_inherit ';'
   {
     force_resolve = $3;
+#ifdef FORCE_RESOLVE_DEBUG
+    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+#endif
     if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared inherit.");
     }
@@ -428,11 +439,17 @@ inheritance: modifiers TOK_INHERIT force_resolve
   | modifiers TOK_INHERIT force_resolve low_program_ref error ';'
   {
     force_resolve = $3;
+#ifdef FORCE_RESOLVE_DEBUG
+    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+#endif
     free_node($4); yyerrok;
   }
   | modifiers TOK_INHERIT force_resolve low_program_ref error TOK_LEX_EOF
   {
     force_resolve = $3;
+#ifdef FORCE_RESOLVE_DEBUG
+    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+#endif
     free_node($4);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
@@ -440,6 +457,9 @@ inheritance: modifiers TOK_INHERIT force_resolve
   | modifiers TOK_INHERIT force_resolve low_program_ref error '}'
   {
     force_resolve = $3;
+#ifdef FORCE_RESOLVE_DEBUG
+    fprintf(stderr, "force_resolve restored to %d\n", force_resolve);
+#endif
     free_node($4); yyerror("Missing ';'.");
   }
   | modifiers TOK_INHERIT error ';' { yyerrok; }
@@ -3897,7 +3917,7 @@ static void safe_inc_enum(void)
 
     push_svalue(&s);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&s);
     pop_stack();
     free_svalue(&s);
   } else {
@@ -3942,7 +3962,7 @@ static int call_handle_import(struct pike_string *s)
     my_yyerror("Error finding module to import");
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
     pop_stack();
     free_svalue(&thrown);
   }

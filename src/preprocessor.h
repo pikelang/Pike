@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.47 2001/11/30 13:04:49 grubba Exp $
+ * $Id: preprocessor.h,v 1.48 2001/12/16 02:49:42 mast Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -678,7 +678,7 @@ static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
     /* DUMPPOS("inside calc3"); */
 
     check_destructed(Pike_sp-1);
-    if(IS_ZERO(Pike_sp-1))
+    if(UNSAFE_IS_ZERO(Pike_sp-1))
     {
       pos=calc4(this,data,len,pos);
       pop_stack();
@@ -705,7 +705,7 @@ static ptrdiff_t calc2(struct cpp *this, WCHAR *data, ptrdiff_t len,
     /* DUMPPOS("inside calc2"); */
 
     check_destructed(Pike_sp-1);
-    if(!IS_ZERO(Pike_sp-1))
+    if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
       pos=calc3(this,data,len,pos);
       pop_stack();
@@ -734,7 +734,7 @@ static ptrdiff_t calc1(struct cpp *this, WCHAR *data, ptrdiff_t len,
     pos=calc1(this,data,len,pos);
 
     check_destructed(Pike_sp-3);
-    assign_svalue(Pike_sp-3,IS_ZERO(Pike_sp-3)?Pike_sp-1:Pike_sp-2);
+    assign_svalue(Pike_sp-3,UNSAFE_IS_ZERO(Pike_sp-3)?Pike_sp-1:Pike_sp-2);
     pop_n_elems(2);
   }
   return pos;
@@ -757,7 +757,7 @@ static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
+    if (SAFE_IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
     pop_stack();
     free_svalue(&thrown);
 
@@ -1476,7 +1476,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  break;
 	}
 	free_string_builder(&tmp);
-	if(IS_ZERO(Pike_sp-1)) nflags|=CPP_NO_OUTPUT;
+	if(SAFE_IS_ZERO(Pike_sp-1)) nflags|=CPP_NO_OUTPUT;
 	pop_stack();
 	pos += lower_cpp(this, data+pos, len-pos, nflags,
 			 auto_convert, charset);
@@ -1605,7 +1605,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    break;
 	  }
 	  free_string_builder(&tmp);
-	  if(!IS_ZERO(Pike_sp-1)) flags&=~CPP_NO_OUTPUT;
+	  if(!SAFE_IS_ZERO(Pike_sp-1)) flags&=~CPP_NO_OUTPUT;
 	  pop_stack();
 	}else{
 	  FIND_EOL();

@@ -1,7 +1,7 @@
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.14 2001/03/28 10:02:44 hubbe Exp $");
+RCSID("$Id: xbm.c,v 1.15 2001/12/16 02:49:46 mast Exp $");
 
 #include "image_machine.h"
 
@@ -271,7 +271,7 @@ static void image_xbm__decode( INT32 args )
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_fg); 
     f_index(2);
-    if(!IS_ZERO(Pike_sp-1))
+    if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
       if(Pike_sp[-1].type != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3)
         Pike_error("Wrong type for foreground. Should be array(int(0..255))"
@@ -289,7 +289,7 @@ static void image_xbm__decode( INT32 args )
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_bg);
     f_index(2);
-    if(!IS_ZERO(Pike_sp-1))
+    if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
       if(Pike_sp[-1].type != PIKE_T_ARRAY || Pike_sp[-1].u.array->size != 3)
         Pike_error("Wrong type for background. Should be array(int(0..255))"
@@ -307,7 +307,7 @@ static void image_xbm__decode( INT32 args )
     push_svalue(Pike_sp+1-args);
     ref_push_string(param_invert);
     f_index(2);
-    invert = !IS_ZERO(Pike_sp-1);
+    invert = !UNSAFE_IS_ZERO(Pike_sp-1);
     Pike_sp--;
   }
 

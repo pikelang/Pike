@@ -581,7 +581,7 @@ void set_compare_func( function(mapping(string:mixed):int) cmpfun )
 //!  -1: Row 1 is lesser than row 2</p>
 //! To remove the comparefunction, use 0 as the argument.
 {
-  if(IS_ZERO(Pike_sp-1))
+  if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
     gtk_object_remove_data( THIS->obj, "pike_clist_sort_fun" );
     gtk_clist_set_compare_func( GTK_CLIST( THIS->obj ), NULL );

@@ -904,7 +904,7 @@ static int gobble(struct xmldata *data, char *s)
       pop_n_elems(2);                                                    \
 									 \
       do {								 \
-	if(IS_ZERO(sp-1))						 \
+	if(UNSAFE_IS_ZERO(sp-1))					 \
 	{								 \
 	  pop_stack();							 \
           if(index_shared_string(name,0)=='%')				 \
@@ -1126,7 +1126,7 @@ static inline void low_sys(struct xmldata *data)
 static void sys(struct xmldata *data)
 {
   low_sys(data);
-  if(IS_ZERO(sp-1)) pop_stack();
+  if(SAFE_IS_ZERO(sp-1)) pop_stack();
 }
 
 #define SYS() sys(data)
@@ -1180,7 +1180,7 @@ static int read_smeg_pereference(struct xmldata *data)
     pop_n_elems(2);
     
     do {
-      if(IS_ZERO(sp-1))
+      if(UNSAFE_IS_ZERO(sp-1))
       {
 	pop_stack();
 	push_constant_text("%");
@@ -1461,7 +1461,7 @@ static void simple_read_attributes(struct xmldata *data,
     if(is_cdata)
     {
       struct svalue *s=low_mapping_lookup(is_cdata,sp-1);
-      if(s && IS_ZERO(s))
+      if(s && SAFE_IS_ZERO(s))
 	iscd=0;
     }
 
@@ -1569,7 +1569,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 #endif
 	    {
 #ifdef PIKE_DEBUG
-	      if(!IS_ZERO(sp-num))
+	      if(!SAFE_IS_ZERO(sp-num))
 		fatal("num not in sync with arguments on stack!\n");
 #endif
 	      if(seq == ',')

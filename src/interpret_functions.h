@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.97 2001/10/05 01:30:13 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.98 2001/12/16 02:49:39 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -992,7 +992,7 @@ OPCODE2_JUMP(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", {
   /* Fall through */
 
   OPCODE0_TAILJUMP(F_BRANCH_WHEN_ZERO, "branch if zero", {
-    if(!IS_ZERO(Pike_sp-1))
+    if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
       SKIPJUMP();
     }else{
@@ -1004,7 +1004,7 @@ OPCODE2_JUMP(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", {
 
       
 OPCODE0_JUMP(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", {
-  if(IS_ZERO(Pike_sp-1))
+  if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
     SKIPJUMP();
   }else{
@@ -1024,7 +1024,7 @@ OPCODE1_JUMP(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", {
 /*      fprintf(stderr,"******OBJECT OVERLOAD IN TYPEP***** %s\n",get_name_of_type(arg1)); */
       push_text(get_name_of_type(arg1));
       apply_low(Pike_sp[-2].u.object, fun, 1);
-      arg1=IS_ZERO(Pike_sp-1) ? T_FLOAT : T_OBJECT ;
+      arg1=UNSAFE_IS_ZERO(Pike_sp-1) ? T_FLOAT : T_OBJECT ;
       pop_stack();
     }
   }
@@ -1038,7 +1038,7 @@ OPCODE1_JUMP(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", {
 });
 
 OPCODE1_JUMP(F_BRANCH_IF_LOCAL, "branch if local", {
-  if(IS_ZERO(Pike_fp->locals + arg1))
+  if(UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
     SKIPJUMP();
   }else{
@@ -1047,7 +1047,7 @@ OPCODE1_JUMP(F_BRANCH_IF_LOCAL, "branch if local", {
 });
 
 OPCODE1_JUMP(F_BRANCH_IF_NOT_LOCAL, "branch if !local", {
-  if(!IS_ZERO(Pike_fp->locals + arg1))
+  if(!UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
     SKIPJUMP();
   }else{
@@ -1073,7 +1073,7 @@ CJUMP(F_BRANCH_WHEN_GT, "branch if >", is_gt);
 CJUMP(F_BRANCH_WHEN_GE, "branch if >=", !is_lt);
 
 OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", {
-  if(!IS_ZERO(Pike_sp-1))
+  if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
     SKIPJUMP();
   }else{
@@ -1083,7 +1083,7 @@ OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", {
 });
 
 OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", {
-  if(IS_ZERO(Pike_sp-1))
+  if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
     SKIPJUMP();
   }else{
@@ -1093,7 +1093,7 @@ OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", {
 });
 
 OPCODE0_JUMP(F_LAND, "&&", {
-  if(!IS_ZERO(Pike_sp-1))
+  if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
     SKIPJUMP();
     pop_stack();
@@ -1103,7 +1103,7 @@ OPCODE0_JUMP(F_LAND, "&&", {
 });
 
 OPCODE0_JUMP(F_LOR, "||", {
-  if(IS_ZERO(Pike_sp-1))
+  if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
     SKIPJUMP();
     pop_stack();
@@ -1323,7 +1323,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local",{
 
 
 OPCODE0_RETURN(F_RETURN_IF_TRUE,"return if true",{
-  if(!IS_ZERO(Pike_sp-1)) DO_RETURN;
+  if(!UNSAFE_IS_ZERO(Pike_sp-1)) DO_RETURN;
   pop_stack();
 });
 
@@ -1379,7 +1379,7 @@ OPCODE0(F_NOT, "!", {
 
   case PIKE_T_FUNCTION:
   case PIKE_T_OBJECT:
-    if(IS_ZERO(Pike_sp-1))
+    if(UNSAFE_IS_ZERO(Pike_sp-1))
     {
       pop_stack();
       push_int(1);

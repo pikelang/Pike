@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.229 2001/12/05 16:22:36 grubba Exp $");
+RCSID("$Id: file.c,v 1.230 2001/12/16 02:49:48 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -497,7 +497,7 @@ static struct pike_string *do_read(int fd,
 
     UNSET_ONERROR(ebuf);
 
-    if(!IS_ZERO(& THIS->read_callback))
+    if(!SAFE_IS_ZERO(& THIS->read_callback))
     {
       set_read_callback(FD, file_read_callback, THIS);
       SET_INTERNAL_REFERENCE(THIS);
@@ -573,7 +573,7 @@ static struct pike_string *do_read(int fd,
 
     UNSET_ONERROR(ebuf);
 
-    if(!IS_ZERO(& THIS->read_callback))
+    if(!SAFE_IS_ZERO(& THIS->read_callback))
     {
       set_read_callback(FD, file_read_callback, THIS);
       SET_INTERNAL_REFERENCE(THIS);
@@ -638,7 +638,7 @@ static struct pike_string *do_read_oob(int fd,
 
     UNSET_ONERROR(ebuf);
 
-    if(!IS_ZERO(& THIS->read_oob_callback))
+    if(!SAFE_IS_ZERO(& THIS->read_oob_callback))
     {
       set_read_oob_callback(FD, file_read_oob_callback, THIS);
       SET_INTERNAL_REFERENCE(THIS);
@@ -713,7 +713,7 @@ static struct pike_string *do_read_oob(int fd,
     }while(r);
 
     UNSET_ONERROR(ebuf);
-    if(!IS_ZERO(& THIS->read_oob_callback))
+    if(!SAFE_IS_ZERO(& THIS->read_oob_callback))
     {
       set_read_oob_callback(FD, file_read_oob_callback, THIS);
       SET_INTERNAL_REFERENCE(THIS);
@@ -766,7 +766,7 @@ static void file_read(INT32 args)
       Pike_error("Cannot read negative number of characters.\n");
   }
 
-  if(args > 1 && !IS_ZERO(Pike_sp+1-args))
+  if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
   {
     all=0;
   }else{
@@ -932,7 +932,7 @@ static void file_read_oob(INT32 args)
       Pike_error("Cannot read negative number of characters.\n");
   }
 
-  if(args > 1 && !IS_ZERO(Pike_sp+1-args))
+  if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp+1-args))
   {
     all=0;
   }else{
@@ -956,7 +956,7 @@ static void PIKE_CONCAT(file_,X) (int fd, void *data)		\
   PIKE_CONCAT(set_,X)(fd, 0, 0);				\
   check_internal_reference(f);                                  \
   check_destructed(& f->X );				        \
-  if(!IS_ZERO(& f->X )) {                                       \
+  if(!UNSAFE_IS_ZERO(& f->X )) {				\
     apply_svalue(& f->X, 0);					\
     pop_stack();						\
   }     							\
@@ -969,7 +969,7 @@ static void PIKE_CONCAT(file_set_,X) (INT32 args)		\
   if(!args)							\
     Pike_error("Too few arguments to file_set_%s\n",#X);		\
   assign_svalue(& THIS->X, Pike_sp-args);				\
-  if(IS_ZERO(Pike_sp-args))						\
+  if(UNSAFE_IS_ZERO(Pike_sp-args))					\
   {								\
     PIKE_CONCAT(set_,X)(FD, 0, 0);				\
     check_internal_reference(THIS);                             \
@@ -998,7 +998,7 @@ static void file__enable_callbacks(INT32 args)
     Pike_error("File is not open.\n");
 
 #define DO_TRIGGER(X) \
-  if(IS_ZERO(& THIS->X )) \
+  if(UNSAFE_IS_ZERO(& THIS->X ))				\
   {								\
     PIKE_CONCAT(set_,X)(FD, 0, 0);				\
   }else{							\
@@ -1200,7 +1200,7 @@ static void file_write(INT32 args)
 
       free(iovbase);
 
-      if(!IS_ZERO(& THIS->write_callback))
+      if(!SAFE_IS_ZERO(& THIS->write_callback))
       {
 	set_write_callback(FD, file_write_callback, THIS);
 	SET_INTERNAL_REFERENCE(THIS);
@@ -1268,7 +1268,7 @@ static void file_write(INT32 args)
     }
   }
 
-  if(!IS_ZERO(& THIS->write_callback))
+  if(!SAFE_IS_ZERO(& THIS->write_callback))
   {
     set_write_callback(FD, file_write_callback, THIS);
     SET_INTERNAL_REFERENCE(THIS);
@@ -1365,7 +1365,7 @@ static void file_write_oob(INT32 args)
     }
   }
 
-  if(!IS_ZERO(& THIS->write_oob_callback))
+  if(!SAFE_IS_ZERO(& THIS->write_oob_callback))
   {
     set_write_oob_callback(FD, file_write_oob_callback, THIS);
     SET_INTERNAL_REFERENCE(THIS);
@@ -1955,7 +1955,7 @@ static void file_set_close_on_exec(INT32 args)
   if(FD <0)
     Pike_error("File not open.\n");
 
-  if(IS_ZERO(Pike_sp-args))
+  if(UNSAFE_IS_ZERO(Pike_sp-args))
   {
     my_set_close_on_exec(FD,0);
   }else{
@@ -2422,14 +2422,14 @@ static void low_dup(struct object *toob,
 		& from->write_oob_callback);
 #endif /* WITH_OOB */
 
-  if(IS_ZERO(& from->read_callback))
+  if(UNSAFE_IS_ZERO(& from->read_callback))
   {
     set_read_callback(to->fd, 0,0);
   }else{
     set_read_callback(to->fd, file_read_callback, to);
   }
 
-  if(IS_ZERO(& from->write_callback))
+  if(UNSAFE_IS_ZERO(& from->write_callback))
   {
     set_write_callback(to->fd, 0,0);
   }else{
@@ -2437,14 +2437,14 @@ static void low_dup(struct object *toob,
   }
 
 #ifdef WITH_OOB
-  if(IS_ZERO(& from->read_oob_callback))
+  if(UNSAFE_IS_ZERO(& from->read_oob_callback))
   {
     set_read_oob_callback(to->fd, 0,0);
   }else{
     set_read_oob_callback(to->fd, file_read_oob_callback, to);
   }
 
-  if(IS_ZERO(& from->write_oob_callback))
+  if(UNSAFE_IS_ZERO(& from->write_oob_callback))
   {
     set_write_oob_callback(to->fd, 0,0);
   }else{
@@ -2677,7 +2677,7 @@ static void file_connect(INT32 args)
       ref_push_string(src_addr);
       file_open_socket(2);
     }
-    if(IS_ZERO(Pike_sp-1) || FD < 0)
+    if(UNSAFE_IS_ZERO(Pike_sp-1) || FD < 0)
       Pike_error("file->connect(): Failed to open socket.\n");
     pop_stack();
   }
@@ -2767,7 +2767,7 @@ static void file_query_address(INT32 args)
     Pike_error("file->query_address(): Connection not open.\n");
 
   len=sizeof(addr);
-  if(args > 0 && !IS_ZERO(Pike_sp-args))
+  if(args > 0 && !UNSAFE_IS_ZERO(Pike_sp-args))
   {
     i=fd_getsockname(FD,(struct sockaddr *)&addr,&len);
   }else{
@@ -2998,7 +2998,7 @@ static void low_file_lock(INT32 args, int flags)
   if(FD==-1)
     Pike_error("File->lock(): File is not open.\n");
 
-  if(!args || IS_ZERO(Pike_sp-args))
+  if(!args || UNSAFE_IS_ZERO(Pike_sp-args))
   {
     if(THIS->key
 #ifdef _REENTRANT

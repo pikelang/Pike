@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.176 2001/11/26 14:58:54 grubba Exp $");
+RCSID("$Id: threads.c,v 1.177 2001/12/16 02:49:44 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1241,7 +1241,7 @@ void f_cond_wait(INT32 args)
 
   c=THIS_COND;
 
-  if((args > 0) && !IS_ZERO(Pike_sp-1))
+  if((args > 0) && !UNSAFE_IS_ZERO(Pike_sp-1))
   {
     struct object *key;
     struct mutex_storage *mut;

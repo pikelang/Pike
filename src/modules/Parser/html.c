@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.147 2001/09/24 11:56:54 grubba Exp $ */
+/* $Id: html.c,v 1.148 2001/12/16 02:49:46 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -949,7 +949,7 @@ static void html_add_tag(INT32 args)
      stack_swap();
    }
 
-   if (IS_ZERO(sp-1))
+   if (UNSAFE_IS_ZERO(sp-1))
      map_delete(THIS->maptag,sp-2);
    else
      mapping_insert(THIS->maptag,sp-2,sp-1);
@@ -989,7 +989,7 @@ static void html_add_container(INT32 args)
      stack_swap();
    }
 
-   if (IS_ZERO(sp-1))
+   if (UNSAFE_IS_ZERO(sp-1))
      map_delete(THIS->mapcont,sp-2);
    else
      mapping_insert(THIS->mapcont,sp-2,sp-1);
@@ -1018,7 +1018,7 @@ static void html_add_entity(INT32 args)
       pop_stack();
    }
 
-   if (IS_ZERO(sp-1))
+   if (UNSAFE_IS_ZERO(sp-1))
      map_delete(THIS->mapentity,sp-2);
    else
      mapping_insert(THIS->mapentity,sp-2,sp-1);
@@ -1047,7 +1047,7 @@ static void html_add_quote_tag(INT32 args)
    else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
      SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
-  remove = IS_ZERO (sp+1-args);
+  remove = UNSAFE_IS_ZERO (sp+1-args);
   if (!remove && args < 3)
     SIMPLE_TOO_FEW_ARGS_ERROR ("add_quote_tag", 3);
 

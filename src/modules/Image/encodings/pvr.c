@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.15 2001/07/11 12:09:23 grubba Exp $");
+RCSID("$Id: pvr.c,v 1.16 2001/12/16 02:49:45 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -237,7 +237,7 @@ void image_pvr_f_encode(INT32 args)
   struct pike_string *res;
   unsigned char *dst;
 
-  get_all_args("Image.PVR.encode", args, (args>1 && !IS_ZERO(&sp[1-args])?
+  get_all_args("Image.PVR.encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])?
 					  "%o%m":"%o"), &imgo, &optm);
 
   if((img=(struct image*)get_storage(imgo, image_program))==NULL)
@@ -245,7 +245,7 @@ void image_pvr_f_encode(INT32 args)
 
   if(optm != NULL) {
     struct svalue *s;
-    if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !IS_ZERO(s))
+    if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(s->type != T_OBJECT ||
 	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.PVR.encode: option (arg 2) \"alpha\" has illegal type\n");

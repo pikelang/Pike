@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.391 2001/12/14 10:03:53 grubba Exp $");
+RCSID("$Id: program.c,v 1.392 2001/12/16 02:49:43 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -751,7 +751,7 @@ static struct node_s *index_modules(struct pike_string *ident,
     struct svalue *tmp=low_mapping_string_lookup(*module_index_cache,ident);
     if(tmp)
     {
-      if(!(IS_ZERO(tmp) && tmp->subtype==1))
+      if(!(SAFE_IS_ZERO(tmp) && tmp->subtype==1))
 	return mksvaluenode(tmp);
       return 0;
     }
@@ -775,7 +775,7 @@ static struct node_s *index_modules(struct pike_string *ident,
 
       push_svalue(&thrown);
       low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-      if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+      if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
       pop_stack();
       free_svalue(&thrown);
     } else {
@@ -867,7 +867,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
     struct svalue *tmp=low_mapping_string_lookup(resolve_cache,ident);
     if(tmp)
     {
-      if(!(IS_ZERO(tmp) && tmp->subtype==1))
+      if(!(SAFE_IS_ZERO(tmp) && tmp->subtype==1))
 	return mkconstantsvaluenode(tmp);
 
       return 0;
@@ -899,7 +899,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	  resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
 	mapping_string_insert(resolve_cache,ident,Pike_sp-1);
 
-	if(!(IS_ZERO(Pike_sp-1) && Pike_sp[-1].subtype==1))
+	if(!(SAFE_IS_ZERO(Pike_sp-1) && Pike_sp[-1].subtype==1))
 	{
 	  ret=mkconstantsvaluenode(Pike_sp-1);
 	}
@@ -923,7 +923,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 
 	    push_svalue(&thrown);
 	    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
 	    pop_stack();
 	    free_svalue(&thrown);
 	  }
@@ -2874,7 +2874,7 @@ int call_handle_inherit(struct pike_string *s)
     my_yyerror("Error finding program");
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
     pop_stack();
     free_svalue(&thrown);
   }
@@ -3914,7 +3914,7 @@ int store_constant(struct svalue *foo,
 
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
     pop_stack();
     free_svalue(&thrown);
 
@@ -4654,7 +4654,8 @@ int report_compiler_dependency(struct program *p)
   int ret=0;
   struct Supporter *c,*cc;
   verify_supporters();
-  if (force_resolve) return 0;
+  if (force_resolve)
+    return 0;
   for(cc=current_supporter;cc;cc=cc->previous)
   {
     if(cc->prog &&
@@ -5024,7 +5025,7 @@ static void run_cleanup(struct compilation *c, int delayed)
 	  throw_value.type = T_INT;
 	  push_svalue(&thrown);
 	  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	  if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	  if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
 	  pop_stack();
 	  free_svalue(&thrown);
 	  zap_placeholder(c);
@@ -5097,7 +5098,7 @@ struct program *compile(struct pike_string *aprog,
   if(c->handler)
   {
     safe_apply(c->handler,"get_default_module",0);
-    if(IS_ZERO(Pike_sp-1))
+    if(SAFE_IS_ZERO(Pike_sp-1))
     {
       pop_stack();
       ref_push_mapping(get_builtin_constants());

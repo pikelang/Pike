@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.16 2001/12/10 20:17:50 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.17 2001/12/16 02:49:40 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -258,7 +258,6 @@ PIKECLASS multiset_iterator
   CVAR struct multiset *l;
   CVAR int lock_index;
   CVAR int prestepped; /* Ugly special flag to work correctly in foreach_iterate. */
-
   CVAR ptrdiff_t nodepos;
 
   PIKEFUN int value()
@@ -1678,7 +1677,7 @@ int foreach_iterate(struct object *o)
 
   /* Generic iteration */
   apply_lfun(o,LFUN_NOT,0);
-  if(IS_ZERO(Pike_sp-1))
+  if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
     if(Pike_sp[-4].type != T_INT)
     {

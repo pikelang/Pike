@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.42 2001/06/13 12:50:07 grubba Exp $");
+RCSID("$Id: png.c,v 1.43 2001/12/16 02:49:45 mast Exp $");
 
 #include "image_machine.h"
 
@@ -1450,7 +1450,7 @@ static void image_png_encode(INT32 args)
       push_svalue(sp+1-args);
       ref_push_string(param_alpha);
       f_index(2);
-      if ( !IS_ZERO( sp - 1 ) )
+      if ( !UNSAFE_IS_ZERO( sp - 1 ) )
 	 if (sp[-1].type!=T_OBJECT ||
 	     !(alpha=(struct image*)
 	       get_storage(sp[-1].u.object,image_program)))

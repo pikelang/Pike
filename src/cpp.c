@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.95 2001/12/12 22:52:00 nilsson Exp $
+ * $Id: cpp.c,v 1.96 2001/12/16 02:49:38 mast Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1147,7 +1147,7 @@ static void check_constant(struct cpp *this,
 
       if (safe_apply_handler("resolv", this->handler,
 			     this->compat_handler, 3, 0))
-	res = !(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+	res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
       else {
 	if (throw_value.type == T_STRING && !throw_value.u.string->size_shift) {
 	  cpp_error(this, throw_value.u.string->str);
@@ -1167,7 +1167,7 @@ static void check_constant(struct cpp *this,
 	  push_svalue(&thrown);
 	  low_safe_apply_handler("compile_exception", this->handler,
 				 this->compat_handler, 1);
-	  if (IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
+	  if (SAFE_IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
 	  pop_stack();
 	  free_svalue(&thrown);
 	  res = 0;
@@ -1190,7 +1190,7 @@ static void check_constant(struct cpp *this,
     if (safe_apply_handler("handle_import", this->handler,
 			   this->compat_handler, 3,
 			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
-      res = !(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+      res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
     else {
       struct svalue thrown = throw_value;
       throw_value.type = T_INT;
@@ -1200,7 +1200,7 @@ static void check_constant(struct cpp *this,
       push_svalue(&thrown);
       low_safe_apply_handler("compile_exception", this->handler,
 			     this->compat_handler, 1);
-      if (IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
+      if (SAFE_IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
       pop_stack();
       free_svalue(&thrown);
       res = 0;
@@ -1320,7 +1320,7 @@ static int do_safe_index_call(struct pike_string *s)
     ref_push_string(s);
     f_index(2);
     
-    res=!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
+    res=!(UNSAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
   }
   UNSETJMP(recovery);
   return res;

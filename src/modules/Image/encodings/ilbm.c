@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.22 2001/06/13 12:57:54 grubba Exp $ */
+/* $Id: ilbm.c,v 1.23 2001/12/16 02:49:44 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.22 2001/06/13 12:57:54 grubba Exp $
+**!	$Id: ilbm.c,v 1.23 2001/12/16 02:49:44 mast Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.22 2001/06/13 12:57:54 grubba Exp $");
+RCSID("$Id: ilbm.c,v 1.23 2001/12/16 02:49:44 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -748,7 +748,7 @@ static void image_ilbm_encode(INT32 args)
 
   extern struct pike_string *make_iff(char *id, struct array *chunks);
 
-  get_all_args("encode", args, (args>1 && !IS_ZERO(&sp[1-args])? "%o%m":"%o"),
+  get_all_args("encode", args, (args>1 && !UNSAFE_IS_ZERO(&sp[1-args])? "%o%m":"%o"),
 	       &imgo, &optm);
 
   if((img=(struct image*)get_storage(imgo, image_program))==NULL)
@@ -756,11 +756,11 @@ static void image_ilbm_encode(INT32 args)
 
   if(optm != NULL) {
     struct svalue *s;
-    if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !IS_ZERO(s))
+    if((s = simple_mapping_string_lookup(optm, "alpha"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(s->type != T_OBJECT ||
 	 (alpha=(struct image*)get_storage(s->u.object, image_program))==NULL)
 	Pike_error("Image.ILBM.encode: option (arg 2) \"alpha\" has illegal type\n");
-    if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !IS_ZERO(s))
+    if((s=simple_mapping_string_lookup(optm, "palette"))!=NULL && !UNSAFE_IS_ZERO(s))
       if(s->type != T_OBJECT ||
 	 (ct=(struct neo_colortable*)
 	  get_storage(s->u.object, image_colortable_program))==NULL)

@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.85 2001/12/14 09:59:37 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.86 2001/12/16 02:49:50 mast Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -979,7 +979,7 @@ INLINE static int do_one(struct format_stack *fs,
                 GET_SVALUE(sv);                                               \
 		break;							      \
 	      }								      \
-              if(!IS_ZERO(sp-1))					      \
+	      if(!SAFE_IS_ZERO(sp-1))					      \
 	      {								      \
 		 sprintf_error(fs,"argument %d (object) returned "	      \
 			       "illegal value from _sprintf()\n",argument+1); \

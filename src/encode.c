@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.134 2001/12/13 11:05:57 mast Exp $");
+RCSID("$Id: encode.c,v 1.135 2001/12/16 02:49:38 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2006,7 +2006,7 @@ static void decode_value2(struct decode_data *data)
 	  break;
 
 	case 1:
-	  if(IS_ZERO(Pike_sp-1))
+	  if(UNSAFE_IS_ZERO(Pike_sp-1))
 	  {
 	    EDB(1,fprintf(stderr, "%*sDecoded a failed object to <%d>: ",
 			data->depth, "", tmp.u.integer);

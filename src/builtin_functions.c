@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.417 2001/12/12 22:51:32 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.418 2001/12/16 02:49:37 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3362,7 +3362,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
      return;
    }
 
-   if(args > 1 && !IS_ZERO(Pike_sp + 1-args))
+   if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp + 1-args))
    {
      do_abort_on_signal=1;
    }else{
@@ -3472,7 +3472,7 @@ PMOD_EXPORT void f_delay(INT32 args)
      return;
    }
 
-   if(args > 1 && !IS_ZERO(Pike_sp + 1-args))
+   if(args > 1 && !UNSAFE_IS_ZERO(Pike_sp + 1-args))
    {
      do_microsleep=0;
      do_abort_on_signal=1;
@@ -6577,7 +6577,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 push_svalue(mysp-3);
 	 push_constant_text("cast");
 	 f_arrow(2);
-	 if (!IS_ZERO(Pike_sp-1))
+	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
 	    pop_stack();
 
@@ -6632,7 +6632,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 push_svalue(mysp-3);
 	 push_constant_text("_sizeof");
 	 f_arrow(2);
-	 if (!IS_ZERO(Pike_sp-2)&&!IS_ZERO(Pike_sp-1))
+	 if (!UNSAFE_IS_ZERO(Pike_sp-2)&&!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
 	    f_call_function(1);
 	    if (Pike_sp[-1].type!=T_INT)
@@ -6758,7 +6758,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	    push_svalue(a->item+i);
 	    push_svalue(mysp-2);
 	    f_arrow(2);
-	    if(IS_ZERO(Pike_sp-1))
+	    if(UNSAFE_IS_ZERO(Pike_sp-1))
 	    {
 	      pop_stack();
 	      continue;
@@ -6865,7 +6865,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 a=Pike_sp[-2].u.array;
 	 n=a->size;
 	 for (k=m=i=0; i<n; i++)
-	    if (!IS_ZERO(f->item+i))
+	    if (!UNSAFE_IS_ZERO(f->item+i))
 	    {
 	       push_svalue(a->item+i);
 	       if (m++>32) 
@@ -6917,12 +6917,12 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 n=a->size;
 
 	 for (m=i=0; i<n; i++)
-	    if (!IS_ZERO(f->item+i)) m++;
+	    if (!UNSAFE_IS_ZERO(f->item+i)) m++;
 
 	 push_mapping(allocate_mapping(MAXIMUM(m,4)));
 
 	 for (i=0; i<n; i++)
-	    if (!IS_ZERO(f->item+i))
+	    if (!UNSAFE_IS_ZERO(f->item+i))
 	       mapping_insert(Pike_sp[-1].u.mapping,y->item+i,a->item+i);
 
 	 stack_pop_n_elems_keep_top(3);
@@ -6969,7 +6969,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 push_svalue(mysp-3);
 	 push_constant_text("cast");
 	 f_arrow(2);
-	 if (!IS_ZERO(Pike_sp-1))
+	 if (!UNSAFE_IS_ZERO(Pike_sp-1))
 	 {
 	    pop_stack();
 

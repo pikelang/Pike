@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.276 2001/12/16 01:17:23 mast Exp $");
+RCSID("$Id: las.c,v 1.277 2001/12/16 02:49:40 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1759,7 +1759,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
     pop_stack();
     free_svalue(&thrown);
   }else{
@@ -1871,7 +1871,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	      *(Pike_sp++) = thrown;
 	      thrown.type = PIKE_T_INT;
 	      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	      if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	      if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
 	      pop_stack();
 	    }
 	  }else if (!force_resolve) {
@@ -2243,7 +2243,7 @@ int node_is_true(node *n)
   if(!n) return 0;
   switch(n->token)
   {
-    case F_CONSTANT: return !IS_ZERO(& n->u.sval);
+    case F_CONSTANT: return !SAFE_IS_ZERO(& n->u.sval);
     default: return 0;
   }
 }
@@ -2254,7 +2254,7 @@ int node_is_false(node *n)
   if(!n) return 0;
   switch(n->token)
   {
-    case F_CONSTANT: return IS_ZERO(& n->u.sval);
+    case F_CONSTANT: return SAFE_IS_ZERO(& n->u.sval);
     default: return 0;
   }
 }
@@ -3757,7 +3757,7 @@ void fix_type_field(node *n)
 	  !(
 	    Pike_compiler->compiler_frame->current_return_type==void_type_string &&
 	    CAR(n)->token == F_CONSTANT &&
-	    IS_ZERO(& CAR(n)->u.sval)
+	    SAFE_IS_ZERO(& CAR(n)->u.sval)
 	    )
 	  ) {
 	if (!match_types(Pike_compiler->compiler_frame->current_return_type,
@@ -5155,7 +5155,7 @@ ptrdiff_t eval_low(node *n)
 	yyerror("Error evaluating constant.\n");
 	push_svalue(&thrown);
 	low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
 	pop_stack();
 	free_svalue(&thrown);
       }
@@ -5224,7 +5224,7 @@ static node *eval(node *n)
     break;
 
   case 1:
-    if(Pike_compiler->catch_level && IS_ZERO(Pike_sp-1))
+    if(Pike_compiler->catch_level && SAFE_IS_ZERO(Pike_sp-1))
     {
       pop_stack();
       return n;

@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.44 2001/12/10 20:16:32 mast Exp $");
+RCSID("$Id: multiset.c,v 1.45 2001/12/16 02:49:41 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -1255,7 +1255,7 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
 	    low_push_multiset_index (RBNODE (node));
 	    if (IS_DESTRUCTED (sp - 1)) {pop_n_elems (2); goto index_destructed;}
 	    EXTERNAL_CMP (&msd->cmp_less);
-	    cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
+	    cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 1 : -1;
 	    pop_stack();
 	  },
 	  {},			/* Got less or equal. */
@@ -1268,7 +1268,7 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key)
 	  if (is_eq (sp - 1, key)) {pop_stack(); break;}
 	  push_svalue (key);
 	  EXTERNAL_CMP (&msd->cmp_less);
-	  if (!IS_ZERO (sp - 1)) {pop_stack(); node = NULL; break;}
+	  if (!UNSAFE_IS_ZERO (sp - 1)) {pop_stack(); node = NULL; break;}
 	  pop_stack();
 	}
       }
@@ -1346,7 +1346,7 @@ static enum find_types low_multiset_find_le_gt (
 	    return FIND_DESTRUCTED;
 	  }
 	  EXTERNAL_CMP (&msd->cmp_less);
-	  cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
+	  cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 1 : -1;
 	  pop_stack();
 	},
 	{*found = RBNODE (node); return FIND_LESS;},
@@ -1400,7 +1400,7 @@ static enum find_types low_multiset_find_lt_ge (
 	  }
 	  push_svalue (key);
 	  EXTERNAL_CMP (&msd->cmp_less);
-	  cmp_res = IS_ZERO (sp - 1) ? -1 : 1;
+	  cmp_res = UNSAFE_IS_ZERO (sp - 1) ? -1 : 1;
 	  pop_stack();
 	},
 	{*found = RBNODE (node); return FIND_LESS;},
@@ -1766,7 +1766,7 @@ static enum find_types low_multiset_track_eq (
 	  return FIND_DESTRUCTED;
 	}
 	EXTERNAL_CMP (&msd->cmp_less);
-	cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
+	cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 1 : -1;
 	pop_stack();
       }, {
 	find_type = FIND_LESS;
@@ -1787,7 +1787,7 @@ static enum find_types low_multiset_track_eq (
       if (is_eq (sp - 1, key)) {pop_stack(); find_type = FIND_EQUAL; break;}
       push_svalue (key);
       EXTERNAL_CMP (&msd->cmp_less);
-      if (!IS_ZERO (sp - 1)) {pop_stack(); *track = rbstack; return find_type;}
+      if (!UNSAFE_IS_ZERO (sp - 1)) {pop_stack(); *track = rbstack; return find_type;}
       pop_stack();
       node = rb_prev (node);
       step_count++;
@@ -1848,7 +1848,7 @@ static enum find_types low_multiset_track_le_gt (
 	  return FIND_DESTRUCTED;
 	}
 	EXTERNAL_CMP (&msd->cmp_less);
-	cmp_res = IS_ZERO (sp - 1) ? 1 : -1;
+	cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 1 : -1;
 	pop_stack();
       },
       {*track = rbstack; return FIND_LESS;},
@@ -2169,7 +2169,7 @@ add:
       push_svalue (A);							\
       push_svalue (B);							\
       EXTERNAL_CMP (&MSD->cmp_less);					\
-      CMP_RES = IS_ZERO (sp - 1) ? 1 : -1;				\
+      CMP_RES = UNSAFE_IS_ZERO (sp - 1) ? 1 : -1;			\
       pop_stack();							\
     }									\
   } while (0)
@@ -3177,13 +3177,13 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 	push_svalue (&a_ind);
 	push_svalue (&b_ind);
 	EXTERNAL_CMP (cmp_less);
-	cmp_res = IS_ZERO (sp - 1) ? 0 : -1;
+	cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 0 : -1;
 	pop_stack();
 	if (!cmp_res) {
 	  push_svalue (&b_ind);
 	  push_svalue (&a_ind);
 	  EXTERNAL_CMP (cmp_less);
-	  cmp_res = IS_ZERO (sp - 1) ? 0 : 1;
+	  cmp_res = UNSAFE_IS_ZERO (sp - 1) ? 0 : 1;
 	  pop_stack();
 	  if (!cmp_res) {
 	    /* The values are orderwise equal. Have to check if there
@@ -4397,7 +4397,7 @@ void check_multiset (struct multiset *l)
 
 	    nextpos = MSNODE2OFF (msd, next);
 	    EXTERNAL_CMP (&msd->cmp_less);
-	    if (!IS_ZERO (sp - 1))
+	    if (!UNSAFE_IS_ZERO (sp - 1))
 	      fatal ("Order failure in multiset data with external order.\n");
 	    pop_stack();
 
@@ -5210,7 +5210,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.44 2001/12/10 20:16:32 mast Exp $");
+RCSID("$Id: multiset.c,v 1.45 2001/12/16 02:49:41 mast Exp $");
 
 struct multiset *first_multiset;
 

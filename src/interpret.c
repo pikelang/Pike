@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.253 2001/12/10 02:08:14 mast Exp $");
+RCSID("$Id: interpret.c,v 1.254 2001/12/16 02:49:39 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -328,7 +328,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
       
     default:
-      if(IS_ZERO(lval))
+      if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
 	index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
@@ -383,14 +383,14 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
 
   case T_MULTISET:
-    if(IS_ZERO(from))
+    if(UNSAFE_IS_ZERO(from))
       multiset_delete(lval->u.multiset, lval+1);
     else
       multiset_insert(lval->u.multiset, lval+1);
     break;
     
   default:
-   if(IS_ZERO(lval))
+   if(SAFE_IS_ZERO(lval))
      index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
    else
      index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");
@@ -430,7 +430,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
     case T_MULTISET: return 0;
       
     default:
-      if(IS_ZERO(lval))
+      if(SAFE_IS_ZERO(lval))
 	index_error(0,0,0,lval,lval+1,"Indexing the NULL value.\n");
       else
 	index_error(0,0,0,lval,lval+1,"Indexing a basic type.\n");

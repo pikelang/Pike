@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.211 2001/11/26 14:58:00 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.212 2001/12/16 02:49:43 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -687,7 +687,7 @@ PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk)
     }
 #endif
 
-    if(IS_ZERO(signal_callbacks + FIFO_DATA(sig, unsigned char)))
+    if(SAFE_IS_ZERO(signal_callbacks + FIFO_DATA(sig, unsigned char)))
     {
       if(default_signals[FIFO_DATA(sig, unsigned char)])
 	default_signals[FIFO_DATA(sig, unsigned char)]
@@ -819,7 +819,7 @@ static void f_signal(int args)
 	break;
     }
   } else {
-    if(IS_ZERO(sp+1-args))
+    if(SAFE_IS_ZERO(sp+1-args))
     {
       /* Fixme: this can disrupt sigchild and other important signal handling
        */
@@ -840,7 +840,7 @@ static void f_signal(int args)
 
 void set_default_signal_handler(int signum, void (*func)(INT32))
 {
-  int is_on=!!IS_ZERO(signal_callbacks+signum);
+  int is_on=!!SAFE_IS_ZERO(signal_callbacks+signum);
   int want_on=!!func;
   default_signals[signum]=func;
   if(is_on!=want_on)
@@ -2575,11 +2575,11 @@ void f_create_process(INT32 args)
 	}
 
       if((tmp=simple_mapping_string_lookup(optional, "noinitgroups")))
-	if(!IS_ZERO(tmp))
+	if(!SAFE_IS_ZERO(tmp))
 	  do_initgroups=0;
 
       if((tmp=simple_mapping_string_lookup(optional, "keep_signals")))
-	keep_signals = !IS_ZERO(tmp);
+	keep_signals = !SAFE_IS_ZERO(tmp);
     }
 
 #ifdef HAVE_SETGROUPS

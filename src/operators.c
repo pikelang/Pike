@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.143 2001/12/10 02:08:16 mast Exp $");
+RCSID("$Id: operators.c,v 1.144 2001/12/16 02:49:42 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2860,7 +2860,7 @@ PMOD_EXPORT void o_not(void)
 
   case T_FUNCTION:
   case T_OBJECT:
-    if(IS_ZERO(sp-1))
+    if(UNSAFE_IS_ZERO(sp-1))
     {
       pop_stack();
       push_int(1);

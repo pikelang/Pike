@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.120 2001/10/15 09:20:58 mast Exp $");
+RCSID("$Id: array.c,v 1.121 2001/12/16 02:49:36 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -462,7 +462,7 @@ PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
    * for destructed objects/functions
    */
   if((v->type_field & (1 << s->type))  ||
-     (IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
+     (UNSAFE_IS_ZERO(s) && (v->type_field & (BIT_FUNCTION|BIT_OBJECT))) ||
      ( (v->type_field | (1<<s->type))  & BIT_OBJECT )) /* for overloading */
   {
     if(start)
@@ -739,7 +739,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(a->u.object->prog,LFUN_LT) != -1) {
       push_svalue(b);
       apply_lfun(a->u.object,LFUN_LT,1);
-      if(!IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(sp-1))
       {
 	pop_stack();
 	return -1;
@@ -749,7 +749,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(a->u.object->prog,LFUN_GT) != -1) {
       push_svalue(b);
       apply_lfun(a->u.object,LFUN_GT,1);
-      if(!IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(sp-1))
       {
 	pop_stack();
 	return 1;
@@ -759,7 +759,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1) {
       push_svalue(b);
       apply_lfun(a->u.object,LFUN_EQ,1);
-      if (!IS_ZERO(sp-1)) {
+      if (!UNSAFE_IS_ZERO(sp-1)) {
 	pop_stack();
 	return 0;
       }
@@ -770,7 +770,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(b->u.object->prog,LFUN_LT) != -1) {
       push_svalue(a);
       apply_lfun(b->u.object,LFUN_LT,1);
-      if(!IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(sp-1))
       {
 	pop_stack();
 	return 1;
@@ -780,7 +780,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(b->u.object->prog,LFUN_GT) != -1) {
       push_svalue(a);
       apply_lfun(b->u.object,LFUN_GT,1);
-      if(!IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(sp-1))
       {
 	pop_stack();
 	return -1;
@@ -790,7 +790,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1) {
       push_svalue(a);
       apply_lfun(b->u.object,LFUN_EQ,1);
-      if (!IS_ZERO(sp-1)) {
+      if (!UNSAFE_IS_ZERO(sp-1)) {
 	pop_stack();
 	return 0;
       }
