@@ -158,6 +158,7 @@ testfont binary
 /refdoc/bin/join.pike foreign_ident
 /refdoc/bin/mirardoc.pike foreign_ident
 /refdoc/presentation/tree-split-autodoc.pike foreign_ident
+/refdoc/structure/modref.xml foreign_ident
 /refdoc/structure/onepage.xml foreign_ident
 /refdoc/structure/traditional.xml foreign_ident
 /src/Makefile.in foreign_ident
