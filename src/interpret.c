@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.283 2002/11/24 22:47:06 mast Exp $
+|| $Id: interpret.c,v 1.284 2003/01/15 19:03:26 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.283 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: interpret.c,v 1.284 2003/01/15 19:03:26 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1293,7 +1293,8 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       }else{
 	type=APPLY_SVALUE;
 	o=s->u.object;
-	if(o->prog == pike_trampoline_program)
+	if(o->prog == pike_trampoline_program &&
+	   s->subtype == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
 	{
 	  fun=((struct pike_trampoline *)(o->storage))->func;
 	  scope=((struct pike_trampoline *)(o->storage))->frame;
@@ -1358,14 +1359,15 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
   case APPLY_LOW:
     o = (struct object *)arg1;
-      if(o->prog == pike_trampoline_program)
-      {
-	fun=((struct pike_trampoline *)(o->storage))->func;
-	scope=((struct pike_trampoline *)(o->storage))->frame;
-	o=scope->current_object;
-	goto apply_low_with_scope;
-      }
     fun = (ptrdiff_t)arg2;
+    if(o->prog == pike_trampoline_program &&
+       fun == QUICK_FIND_LFUN(pike_trampoline_program, LFUN_CALL))
+    {
+      fun=((struct pike_trampoline *)(o->storage))->func;
+      scope=((struct pike_trampoline *)(o->storage))->frame;
+      o=scope->current_object;
+      goto apply_low_with_scope;
+    }
 
   apply_low:
 #undef SCOPE
