@@ -386,7 +386,7 @@ void init_memsearch(struct mem_searcher *s,
     }else{
       INT32 tmp, h;
       unsigned INT32 hsize, e, max;
-      char *q;
+      unsigned char *q;
       struct link *ptr;
 
       hsize=52+(max_haystacklen >> 7)  - (needlelen >> 8);
@@ -409,7 +409,7 @@ void init_memsearch(struct mem_searcher *s,
 
       ptr=& s->links[0];
 
-      q=needle;
+      q=(unsigned char *)needle;
 
 #if BYTEORDER == 4321
       for(tmp=e=0;e<sizeof(INT32)-1;e++)
@@ -425,7 +425,7 @@ void init_memsearch(struct mem_searcher *s,
 	tmp<<=8;
 	tmp|=*(q++);
 #else
-	tmp=EXTRACT_INT((unsigned char *)q);
+	tmp=EXTRACT_INT(q);
 	q++;
 #endif
 	h=tmp;
