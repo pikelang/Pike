@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.11 2001/04/26 16:32:53 grubba Exp $
+# $Id: Makefile.in,v 1.12 2001/07/18 18:54:36 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -21,22 +21,22 @@ extract: xml recurse
 
 .SUFFIXES: .c .pike .pmod .pmod.in .xml
 
-.c.xml: $(ROOT)/../bin/autodoc.pike
+.c.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
 	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
-.pike.xml: $(ROOT)/../bin/autodoc.pike
+.pike.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
 	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
-.pmod.xml: $(ROOT)/../bin/autodoc.pike
+.pmod.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
 	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
 
-.pmod.in.xml: $(ROOT)/../bin/autodoc.pike
+.pmod.in.xml: $(ROOT)/../bin/autodoc.pike $(ROOT)/../bin/mkxml.pike
 	@rm -f "$@.new" 2>/dev/null || /bin/true
 	@$(PIKE) $(ROOT)/../bin/autodoc.pike "$<" >"$@.new" && \
 	  mv -f "$@.new" "$@"
