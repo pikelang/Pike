@@ -1,14 +1,24 @@
 /*
- * $Id: module.pmod.in,v 1.4 1997/06/09 18:54:30 grubba Exp $
+ * $Id: module.pmod.in,v 1.5 1997/06/09 20:26:22 grubba Exp $
  *
  * YP (NIS) Functionality for Pike
  *
  * Per Hedbor & Henrik Grubbström 1996-1997
  */
 
-class Domain {
-  inherit @module@;
-};
+inherit @module@;
+
+// Usual nicknames
+constant nicknames = ([
+  "passwd":"passwd.byname"
+  "group":"group.byname"
+  "networks":"networks.byaddr"
+  "hosts":"hosts.byname"
+  "protocols":"protocols.bynumber"
+  "services":"services.byname"
+  "aliases":"mail.aliases"
+  "ethers":"ethers.byname"
+]);
 
 class Map {
   object(Domain) domain;
@@ -22,8 +32,15 @@ class Map {
       domain = Domain();
     }
     ypmap = map;
-    // Force an error if the map does not exist.
-    domain->match(ypmap, "foo");
+    array err;
+    do {
+      // Force an error if the map does not exist.
+      err = catch{
+	domain->match(ypmap, "foo");
+	return;
+      };
+    } while (ypmap = nicknames[ypmap]);
+    throw(err);
   }
   string match(string key)
   {
@@ -43,7 +60,7 @@ class Map {
   }
   void map(function(string,string:void)|array(function(string,string:void)) fn)
   {
-    return(domain->map(ypmap, fn));
+    domain->map(ypmap, fn);
   }
   string server()
   {
@@ -53,15 +70,15 @@ class Map {
   {
     return(domain->order(ypmap));
   }
-  int sizeof()
+  int _sizeof()
   {
-    return(sizeof(domain->all(ypmap)));
+    return(sizeof(indices(domain->all(ypmap))));
   }
-  array(string) indices()
+  array(string) _indices()
   {
     return(indices(domain->all(ypmap)));
   }
-  array(string) values()
+  array(string) _values()
   {
     return(values(domain->all(ypmap)));
   }
