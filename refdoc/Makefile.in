@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.15 2001/08/14 20:15:36 nilsson Exp $
+# $Id: Makefile.in,v 1.16 2001/08/14 21:20:32 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -12,6 +12,7 @@ VPATH=@SRCDIR@:.
 
 SRCDIR=@SRCDIR@
 ROOT=@ROOT@
+BUILDROOT=@BUILDROOT@
 
 XMLFILES=
 
@@ -47,7 +48,12 @@ extract: xml recurse
 	  mv -f "$@.new" "$@"
 
 xml:
-	@$(MAKE) PIKE="$(PIKE)" `(cd $(SRCDIR) && (ls -d *.c *.pike *.pike.in *.pmod *.pmod.in 2>/dev/null | while read f; do if [ -f "$$f" ]; then echo $$f; fi; done))|sed -e 's/\.c$$/\.xml/' -e 's/\.pike$$/\.xml/' -e 's/\.pike.in$$/\.xml/' -e 's/\.pmod\.in$$/\.xml/' -e 's/\.pmod$$/\.xml/' ` xml_dummy
+	@$(MAKE) PIKE="$(PIKE)" `(cd $(SRCDIR) && \
+	  (ls -d *.c *.pike *.pike.in *.pmod *.pmod.in 2>/dev/null | \
+	  while read f; do if [ -f "$$f" ]; then echo $$f; fi; done))| \
+	  sed -e 's/\.c$$/\.xml/' -e 's/\.pike$$/\.xml/' \
+	      -e 's/\.pike.in$$/\.xml/' -e 's/\.pmod\.in$$/\.xml/' \
+	      -e 's/\.pmod$$/\.xml/' ` xml_dummy
 
 xml_dummy:
 
@@ -99,13 +105,14 @@ subdirectories:
 	    if test -f "$$d/Makefile"; then :; else \
 	      sed -e "s#@""SRCDIR@#../$(SRCDIR)/$$d#" \
 	          -e "s#@""ROOT@#../$(ROOT)#" \
+	          -e "s#@""BUILDROOT@#../$(BUILDROOT)#" \
 	        <$(ROOT)/Makefile.in >"$$d/Makefile" || exit 1; \
 	    fi; \
 	  fi; \
 	done
 
 Makefile: $(ROOT)/Makefile.in
-	@find . -name Makefile -exec rm {} \;
+	cd $(BUILDROOT) && find . -name Makefile -exec rm {} \;
 	@echo Please rerun make.
 	@exit 1
 
