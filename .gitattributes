@@ -84,6 +84,7 @@ testfont binary
 /lib/modules/Calendar.pmod/events/regional foreign_ident
 /lib/modules/Calendar.pmod/mkrules.pike foreign_ident
 /lib/modules/Calendar.pmod/testsuite.in foreign_ident
+/lib/modules/Crypto.pmod/Random.pmod foreign_ident
 /lib/modules/Crypto.pmod/aes.pike foreign_ident
 /lib/modules/Crypto.pmod/des3.pike foreign_ident
 /lib/modules/Crypto.pmod/des3_cbc.pike foreign_ident
