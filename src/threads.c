@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.63 1998/03/25 18:53:09 grubba Exp $");
+RCSID("$Id: threads.c,v 1.64 1998/03/26 05:48:24 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -152,12 +152,14 @@ struct thread_starter
   struct array *args;
 };
 
-int threads_denied;
-
-void f_thread_disallow(INT32 args)
+void exit_threads_disable(struct object *o)
 {
-  threads_denied = sp[-1].u.integer;
-  pop_n_elems(args);
+  if(threads_disabled) threads_disabled--;
+}
+
+void init_threads_disable(struct object *o)
+{
+  threads_disabled++;
 }
 
 /* Thread hashtable */
@@ -279,14 +281,9 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   static int div_;
   if(div_++ & 255) return;
 
-  if(!threads_denied)
-  {
-    THREADS_ALLOW();
-
-    /* Allow other threads to run */
-
-    THREADS_DISALLOW();
-  }
+  THREADS_ALLOW();
+  /* Allow other threads to run */
+  THREADS_DISALLOW();
 }
 
 void *new_thread_func(void * data)
@@ -742,9 +739,6 @@ void th_init(void)
 
 #endif
   
-  add_efun("thread_disallow", f_thread_disallow, "function(int:void)",
-	   OPT_SIDE_EFFECT);
-
   add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
            OPT_SIDE_EFFECT);
 #ifdef UNIX_THREADS
@@ -788,6 +782,16 @@ void th_init(void)
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
   end_class("condition", 0);
+  
+  {
+    struct program *tmp;
+    start_new_program();
+    set_init_callback(init_threads_disable);
+    set_exit_callback(exit_threads_disable);
+    tmp = end_program();
+    tmp->flags|=PROGRAM_DESTRUCT_IMMEDIATE;
+    add_global_program("_disable_threads", tmp);
+  }
 
   start_new_program();
   add_storage(sizeof(struct thread_state));
