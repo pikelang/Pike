@@ -71,3 +71,40 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 
 int image_decode_gif(struct image *dest,struct image *dest_alpha,
 		     unsigned char *src,unsigned long len);
+
+/* blit.c */
+
+void img_clear(rgb_group *dest,rgb_group rgb,INT32 size);
+void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2);
+void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2);
+void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
+	      INT32 lines,INT32 moddest,INT32 modsrc);
+void img_crop(struct image *dest,
+	      struct image *img,
+	      INT32 x1,INT32 y1,
+	      INT32 x2,INT32 y2);
+void img_clone(struct image *newimg,struct image *img);
+void image_paste(INT32 args);
+void image_paste_alpha(INT32 args);
+void image_paste_mask(INT32 args);
+void image_paste_alpha_color(INT32 args);
+
+/* matrix.c */
+
+void image_scale(INT32 args);
+void image_skewx(INT32 args);
+void image_skewy(INT32 args);
+void image_skewx_expand(INT32 args);
+void image_skewy_expand(INT32 args);
+void image_rotate(INT32 args);
+void image_rotate_expand(INT32 args);
+void image_cw(INT32 args);
+void image_ccw(INT32 args);
+void image_ccw(INT32 args);
+void image_mirrorx(INT32 args);
+void image_mirrory(INT32 args);
+
+/* pnm.c */
+
+void image_toppm(INT32 args);
+void image_frompnm(INT32 args);

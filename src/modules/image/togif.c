@@ -377,3 +377,4 @@ int image_decode_gif(struct image *dest,struct image *dest_alpha,
    if (arena) free(arena);
    return 1; /* ok */
 }
+
