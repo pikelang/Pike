@@ -42,8 +42,8 @@ class Event
   //! overloaded.
   //!
   //! @example
-  //!   Event.christmas_eve->scan(Year(2000))
-  //!     => ({ Day(Sun 24 Dec 2000) })
+  //!   Calendar.Event.Easter()->scan(Calendar.Year(2000))
+  //!     => ({ Day(Sun 23 Apr 2000) })
   //!
   //! @note
   //!   @[scan] can return an array of overlapping timeranges.
