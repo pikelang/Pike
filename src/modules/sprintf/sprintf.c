@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.90 2002/05/11 00:27:04 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.91 2002/05/11 00:43:49 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -302,10 +302,6 @@ RCSID("$Id: sprintf.c,v 1.90 2002/05/11 00:27:04 nilsson Exp $");
 #include <ctype.h>
 
 #include "config.h"
-
-#ifdef PC
-#undef PC
-#endif /* PC */
 
 #include <math.h>
 #ifdef HAVE_IEEEFP_H

@@ -17,10 +17,6 @@
 
 #include <math.h>
 
-#ifdef PC
-#undef PC
-#endif /* PC */
-
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
@@ -31,7 +27,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: math.c,v 1.44 2002/05/11 00:27:04 nilsson Exp $");
+RCSID("$Id: math.c,v 1.45 2002/05/11 00:44:12 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
