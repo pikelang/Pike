@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.52 2000/10/17 17:18:50 grubba Exp $
+//! $Id: DNS.pmod,v 1.53 2000/12/07 17:58:47 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -409,66 +409,69 @@ class client
   static private mapping etc_hosts;
 
 #ifdef __NT__
-  string get_tcpip_param(string val, void|string fallbackvalue)
+  array(string) get_tcpip_param(string val, void|string fallbackvalue)
   {
+    array(string) res = ({});
     foreach(({
       "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters",
       "SYSTEM\\CurrentControlSet\\Services\\VxD\\MSTCP"
     }),string key)
     {
       catch {
-	return RegGetValue(HKEY_LOCAL_MACHINE, key, val);
+	res += ({ RegGetValue(HKEY_LOCAL_MACHINE, key, val) });
       };
     }
 
 #if constant(RegGetKeyNames)
-    /* W2K, should be fixed to return results from *all* interfaces
-     * instead of just the first interface. -Hubbe
-     */
     foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
-			   "SYSTEM\\CurrentControlSet\\Tcpip\\Parameters\\Interfaces"), string key)
+			   "SYSTEM\\CurrentControlSet\\Tcpip\\"
+			   "Parameters\\Interfaces"), string key)
       {
 	catch {
-	  return RegGetValue(HKEY_LOCAL_MACHINE,
-			     "SYSTEM\\CurrentControlSet\\Tcpip\\Parameters\\Interfaces\\"+key,val);
+	  res += ({ RegGetValue(HKEY_LOCAL_MACHINE,
+				"SYSTEM\\CurrentControlSet\\Tcpip\\"
+				"Parameters\\Interfaces\\" + key, val) });
 	};
       }
 #endif
-    return fallbackvalue;
+    return sizeof(res) ? res : ({ fallbackvalue });
   }
 #endif
   
   static private string match_etc_hosts(string host)
   {
     if (!etc_hosts) {
-      string raw;
+      array(string) paths;
 #ifdef __NT__
-      raw=get_tcpip_param("DataBasePath")+"\\hosts";
+      paths = get_tcpip_param("DataBasePath");
 #else
-      raw="/etc/hosts";
+      paths = ({ "/etc", "/amitcp/db" });
 #endif
-      raw = Stdio.read_file(raw);
-	
+
       etc_hosts = ([ "localhost":"127.0.0.1" ]);
 	
-      if (raw && sizeof(raw)) {
-	foreach(raw/"\n"-({""}), string line) {
-	  // Handle comments, and split the line on white-space
-	  line = lower_case(replace((line/"#")[0], "\t", " "));
-	  array arr = (line/" ") - ({ "" });
+      foreach(paths, string path) {
+	string raw = Stdio.read_file(path + "/hosts");
+	
+	if (raw && sizeof(raw)) {
+	  foreach(raw/"\n"-({""}), string line) {
+	    // Handle comments, and split the line on white-space
+	    line = lower_case(replace((line/"#")[0], "\t", " "));
+	    array arr = (line/" ") - ({ "" });
 	    
-	  if (sizeof(arr) > 1) {
-	    if (is_ip(arr[0])) {
-	      foreach(arr[1..], string name) {
-		etc_hosts[name] = arr[0];
+	    if (sizeof(arr) > 1) {
+	      if (is_ip(arr[0])) {
+		foreach(arr[1..], string name) {
+		  etc_hosts[name] = arr[0];
+		}
+	      } else {
+		// Bad /etc/hosts entry ignored.
 	      }
-	    } else {
-	      // Bad /etc/hosts entry ignored.
 	    }
 	  }
+	} else {
+	  // Couldn't read /etc/hosts.
 	}
-      } else {
-	// Couldn't read /etc/hosts.
       }
     }
     return(etc_hosts[lower_case(host)]);
@@ -485,19 +488,15 @@ class client
   {
     if(!server)
     {
-      string domain;
-
 #if __NT__
-      domain = get_tcpip_param("Domain");
-      if(!domain || !sizeof(domain))
-        domain = get_tcpip_param("DhcpDomain");
+      domains = get_tcpip_param("Domain", "") +
+	get_tcpip_param("DhcpDomain", "") +
+	map(get_tcpip_param("SearchList", ""), `/, " ") * ({});
 
-      nameservers += get_tcpip_param("NameServer", "") / " ";
-      nameservers += get_tcpip_param("DhcpNameServer", "") / " ";
-      nameservers -= ({ "" });
-
-      domains += (get_tcpip_param("SearchList", "") / " ") - ({ "" });
+      nameservers = map(get_tcpip_param("NameServer", "") +
+			get_tcpip_param("DhcpNameServer", ""), `/, " ") * ({});
 #else
+      string domain;
       string resolv_conf;
       foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}),
 	      string resolv_loc)
@@ -555,13 +554,14 @@ class client
 	    break;
 	}
       }
+      if(domain)
+	domains = ({ domain }) + domains;
 #endif
+      nameservers -= ({ "" });
       if (!sizeof(nameservers)) {
 	/* Try localhost... */
 	nameservers = ({ "127.0.0.1" });
       }
-      if(domain)
-	domains = ({ domain }) + domains;
       domains -= ({ "" });
       domains = Array.map(domains, lambda(string d) {
 				     if (d[-1] == '.') {
