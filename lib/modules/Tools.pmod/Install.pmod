@@ -15,17 +15,17 @@ array(string) features()
 #endif
 
 #if constant(Stdio.__HAVE_OOB__)
-  a += ({ "out-of-band data" });
+  a += ({ "out-of-band_data" });
 #endif
 
 #if constant(__builtin.__DOUBLE_PRECISION_FLOAT__)
-  a += ({ "double precision float" });
+  a += ({ "double_precision_float" });
 #endif
 #if constant(__builtin.__LONG_DOUBLE_PRECISION_FLOAT__)
-  a += ({ "long double precision float" });
+  a += ({ "long_double_precision_float" });
 #endif
 #if constant(__builtin.__SINGLE_PRECISION_FLOAT__)
-  a += ({ "single precision float" });
+  a += ({ "single_precision_float" });
 #endif
 
   foreach(({ "_Crypto", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
