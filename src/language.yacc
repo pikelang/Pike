@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.317 2003/02/12 06:03:49 nilsson Exp $
+|| $Id: language.yacc,v 1.318 2003/02/26 15:10:11 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.317 2003/02/12 06:03:49 nilsson Exp $");
+RCSID("$Id: language.yacc,v 1.318 2003/02/26 15:10:11 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1247,13 +1247,13 @@ identifier_type: idents
 	  push_int(0);
 	  yyerror("Destructed object used as program identifier.");
 	}else{
-	  extern void f_object_program(INT32);
 	  int f=FIND_LFUN(Pike_sp[-1].u.object->prog,LFUN_CALL);
 	  if(f!=-1)
 	  {
 	    Pike_sp[-1].subtype=f;
 	    Pike_sp[-1].type=T_FUNCTION;
 	  }else{
+	    extern void f_object_program(INT32);
 	    if (Pike_compiler->compiler_pass == 2) {
 	      yywarning("Using object as program identifier.");
 	    }
@@ -2059,9 +2059,9 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
       if(Pike_compiler->compiler_frame->lexical_scope & 
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
-	$$ = mktrampolinenode($<number>3,Pike_compiler->compiler_frame);
+	$$ = mktrampolinenode($<number>4,Pike_compiler->compiler_frame);
       }else{
-	$$ = mkidentifiernode($<number>3);
+	$$ = mkidentifiernode($<number>4);
       }
     }
   }
