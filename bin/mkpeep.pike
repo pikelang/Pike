@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.40 2004/06/05 17:23:29 nilsson Exp $
+// $Id: mkpeep.pike,v 1.41 2004/08/25 11:52:17 grubba Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -277,17 +277,22 @@ class Switch(string test) {
 
   void make_fun() {
     made_fun = ++function_serial;
-    functions += "INLINE static void _asm_peep_"+made_fun+"(void)\n{\n";
+    functions += "INLINE static int _asm_peep_"+made_fun+"(void)\n{\n";
     functions += make_switch(2);
-    functions += "}\n\n";
+    functions +=
+      "  return 0;\n"
+      "}\n"
+      "\n";
   }
 
   int made_fun;
   string get_string(int ind) {
     if(made_fun) {
       string ret = "";
-      ret += sprintf("%*n_asm_peep_%d();\n", ind, made_fun);
-      ret += sprintf("%*nreturn;\n", ind);
+      ret += sprintf("%*nif (_asm_peep_%d())\n"
+		     "%*n  return 1;\n",
+		     ind, made_fun,
+		     ind);
       return ret;
     }
     return make_switch(ind);
@@ -302,8 +307,9 @@ class Switch(string test) {
       ret += sprintf("%*ncase %s:\n", ind, c);
       foreach(cases[c], object(Switch)|object(Breakable) b)
 	  ret += b->get_string(ind+2);
-      ret += sprintf("%*n  break;\n", ind);
-      ret += sprintf("\n");
+      ret += sprintf("%*n  break;\n"
+		     "\n",
+		     ind);
     }
 
     ret += sprintf("%*n}\n", ind);
@@ -436,7 +442,7 @@ array(Switch|Breakable) make_switches(array(Rule) data)
       }
       buf->add_line(" "*ind+"do_optimization(", opargs, "0);");
 
-      buf->add_line( sprintf("%*nreturn;", ind) );
+      buf->add_line( sprintf("%*nreturn 1;", ind) );
       ind -= 2;
       buf->add_line( sprintf("%*n}", ind, test) );
     }
@@ -473,10 +479,11 @@ int main(int argc, array(string) argv)
   a[0]->make_child_fun();
   write( functions );
 
-  write("INLINE static void low_asm_opt(void) {\n");
+  write("INLINE static int low_asm_opt(void) {\n");
   write( a[0]->get_string(2) );
 
-  write("}\n");
+  write("  return 0;\n"
+	"}\n");
 
   return 0;
 }
