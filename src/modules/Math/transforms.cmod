@@ -291,7 +291,7 @@ PIKECLASS FFT
 /*! @endmodule
  */
 
-/*! @endmodult
+/*! @endmodule
  */
 
 void init_math_transforms()
