@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.17 2002/11/26 20:47:02 grubba Exp $
+|| $Id: dvb.c,v 1.18 2002/12/12 13:16:50 hop Exp $
 */
 
 /*
@@ -1164,13 +1164,7 @@ static void f__sprintf(INT32 args) {
 
 /*! @class Stream
  *!
- *! Represents an elementary data stream.
- *!
- *! @note
- *!   Because of license policy the current stream code is dumb.
- *!   For reviving of code you must replace psparser.c source
- *!   file with one from http://hop.at.unibase.cz/moje/dvb/
- *!   and recompile Pike.
+ *! Represents an elementary data stream (PES).
  */
 
 /*  @decl int set_buffer(int len)
