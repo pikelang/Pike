@@ -408,12 +408,12 @@ static inline INT64 pike_atomic_get64(INT64 *addr)
 
 /* End emulating functions */
 
+#endif /* PIKE_RUN_UNLOCKED */
+
 #ifdef PIKE_NEED_MEMLOCK
 extern void init_pike_cpulib(void);
 #else
 #define init_pike_cpulib()
 #endif
-
-#endif /* PIKE_RUN_UNLOCKED */
 
 #endif /* PIKE_CPULIB_H */
