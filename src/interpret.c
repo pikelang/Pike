@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.237 2001/07/31 23:10:35 marcus Exp $");
+RCSID("$Id: interpret.c,v 1.238 2001/08/02 22:21:05 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -243,7 +243,7 @@ use_malloc:
   SET_INSTR_ADDRESS(F_MULTIPLY,		o_multiply);
   SET_INSTR_ADDRESS(F_DIVIDE,		o_divide);
   SET_INSTR_ADDRESS(F_MOD,		o_mod);
-  SET_INSTR_ADDRESS(F_CAST,		o_cast);
+  SET_INSTR_ADDRESS(F_CAST,		f_cast);
   SET_INSTR_ADDRESS(F_CAST_TO_INT,	o_cast_to_int);
   SET_INSTR_ADDRESS(F_CAST_TO_STRING,	o_cast_to_string);
   SET_INSTR_ADDRESS(F_RANGE,		o_range);
