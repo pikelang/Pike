@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.133 2001/07/05 22:23:36 hubbe Exp $");
+RCSID("$Id: main.c,v 1.134 2001/07/06 10:31:06 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -822,7 +822,7 @@ void low_exit_main(void)
   free_svalue(& throw_value);
   throw_value.type=T_INT;
   {
-    while(1)
+    while(1) {
       int tmp=num_objects;
       do_gc();
       if(num_objects >= tmp) break;
