@@ -59,6 +59,41 @@ void do_html_parse(struct lpc_string *ss,
 
 extern void f_parse_tree(INT32 argc);
 
+void f_http_decode_string(INT32 args)
+{
+   int proc;
+   char *foo,*bar,*end;
+   struct lpc_string *newstr;
+
+   if (!args || sp[-args].type != T_STRING)
+     error("Invalid argument to http_decode_string(STRING);\n");
+
+   foo=bar=sp[-args].u.string->str;
+   end=foo+sp[-args].u.string->len;
+
+   /* count procents */
+   for (proc=0; foo<end; ) if (*foo=='%') { proc++; foo+=3; } else foo++;
+
+   if (!proc) { pop_n_elems(args-1); return; }
+
+   /* new string len is (foo-bar)-proc*2 */
+   newstr=begin_shared_string((foo-bar)-proc*2);
+   foo=newstr->str;
+   for (proc=0; bar<end; foo++)
+      if (*bar=='%') 
+      { 
+	 if (bar<end-2)
+	    *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
+	       ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
+	 else
+	    *foo=0;
+	 bar+=3;
+      }
+      else { *foo=*(bar++); }
+   pop_n_elems(args);
+   push_string(end_shared_string(newstr)); 
+}
+
 void f_parse_accessed_database(INT32 args)
 {
   int cnum=0, i, num=0;
@@ -99,6 +134,10 @@ void f_parse_accessed_database(INT32 args)
 
 #if defined(__svr4__) && defined(sun)
 #define SOLARIS
+#endif
+
+#ifndef SOLARIS
+extern int errno;
 #endif
 
 #ifdef SOLARIS
@@ -223,6 +262,13 @@ void f_parse_html(INT32 args)
     error("Bad argument(s) to parse_html.\n");
 
   ss=sp[-args].u.string;
+  if(!ss->len)
+  {
+    pop_n_elems(args);
+    push_text("");
+    return;
+  }
+
   sp[-args].type=T_INT;
 
   single=sp[1-args].u.mapping; 
@@ -1502,6 +1548,7 @@ void f_alarm(INT32 args)
 
 void init_spider_efuns(void) 
 {
+#ifndef DEBUG
   /* This _will_ leak some memory. It is supposed to. These
    * make_shared_string's are here to define a few very commonly used
    * strings, to speed spinner up a little.  
@@ -1509,13 +1556,17 @@ void init_spider_efuns(void)
   make_shared_string("HTTP/1.0");
   make_shared_string("GET");
   make_shared_string("POST");
+#endif
 
-#ifdef HAVE_SEMGET
+#ifdef HAVE_SYS_SEM_H
   add_efun("_lock", f_lock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_unlock", f_unlock, "function(int:int)", OPT_SIDE_EFFECT);
   add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);
-  add_efun("_new_lock", f_newlock, "function(:int)", OPT_SIDE_EFFECT);
+  add_efun("_new_lock", f_newlock, "function(int:int)", OPT_SIDE_EFFECT);
 #endif
+
+  add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
+	   OPT_TRY_OPTIMIZE);
 
 #ifdef HAVE_ALARM
   add_efun("alarm", f_alarm, "function(int:int)", OPT_SIDE_EFFECT);
@@ -1685,11 +1736,13 @@ void init_spider_efuns(void)
 
 static struct program *streamed_parser;
 
+extern void init_parse_program();
+
 void init_spider_programs()
 {
-   start_new_program();
-   add_storage( sizeof (struct streamed_parser) );
-   add_function( "init", streamed_parser_set_data,
+  start_new_program();
+  add_storage( sizeof (struct streamed_parser) );
+  add_function( "init", streamed_parser_set_data,
 		"function(mapping(string:function(string,mapping(string:string),mixed:mixed)),mapping(string:function(string,mapping(string:string),string,mixed:mixed)),mapping(string:function(string,mixed:mixed)):void)", 0 );
    add_function( "parse", streamed_parser_parse, "function(string,mixed:string)", 0 );
    add_function( "finish", streamed_parser_finish, "function(void:string)", 0 );
@@ -1698,11 +1751,17 @@ void init_spider_programs()
    
    streamed_parser = end_c_program( "/precompiled/streamed_parser" );
    streamed_parser->refs++;
+
+
+   init_parse_program(); /* HTTP parser */
 }
 
 void exit_spider(void)
 {
   int i;
+#ifdef HAVE_SYS_SEM_H
+  free_all_locks();
+#endif
   for(i=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
     if(fd_marks[i])
       free_string(fd_marks[i]);
