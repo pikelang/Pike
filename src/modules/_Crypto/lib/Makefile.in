@@ -1,32 +1,15 @@
-# $Id: Makefile.in,v 1.33 2002/04/06 23:45:29 mast Exp $
+# $Id: Makefile.in,v 1.34 2002/04/30 21:33:00 mast Exp $
 #
 # Makefile for low-level crypto library
 
-@SET_MAKE@
-PIKE_SRC_DIR=@PIKE_SRC_DIR@
-BUILD_BASE=@BUILD_BASE@
-
-CC=@CC@
-CPP=@CPP@
-RANLIB=@RANLIB@
-AR=ar
-
-# Reset VPATH
-SRCDIR=@srcdir@
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../include
+RANLIB=@RANLIB@
 
 CRYPTO_INCLUDES=$(SRCDIR)/../include
-
-# Additional C preprocessor flags
-PREFLAGS=-I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR) $(EXTRA_CPP_FLAGS) $(DEFINES)
-
-# The flags to generate a shared library
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(EXTRA_CFLAGS)
-LDFLAGS=@LDFLAGS@
+MODULE_CPPFLAGS=-I$(CRYPTO_INCLUDES)
 
 default: algorithms.a
-
-### Magic Makefile for descore
 
 # Interesting defines are sparc, mc68000, vax and i386
 # Rely on gcc defining them appropriately.
@@ -44,12 +27,25 @@ SC=		desKerb.c desUtil.c desQuick.c
 SO=		desKerb.o desUtil.o desQuick.o
 
 # special generated files
-GH=		parity.h rotors.h keymap.h
+GH=		$(SRCDIR)/parity.h $(SRCDIR)/rotors.h $(SRCDIR)/keymap.h
 GC=		desSmallFips.c desSmallCore.c desQuickFips.c desQuickCore.c
 GI=		desSmallFips.i desSmallCore.i desQuickFips.i desQuickCore.i
 GO=		desSmallFips.o desSmallCore.o desQuickFips.o desQuickCore.o
 
 O=		$(SO) $(GO)
+
+SRC_TARGETS=$(GH)
+MODULE_CLEAN_EXTRA=*.i *.x desTest $(GC)
+
+# BEGIN NATIONAL SECURITY
+MASS_DESTRUCTION_OBJS = idea.o arcfour.o cast.o rijndael.o $(O)
+# END NATIONAL SECURITY
+
+OBJS = $(MASS_DESTRUCTION_OBJS) sha.o md2.o md4.o md5.o crypt_md5.o
+
+@dynamic_module_makefile@
+
+### Magic Makefile for descore
 
 # prefer compilation from .i if .i exists
 #.SUFFIXES:
@@ -67,12 +63,6 @@ sure:
 		make clean ; make desTest 'CPPFLAGS=-Dsparc   -Umc68000'
 		make clean ; make desTest
 
-clean:
-	-rm -f *.o *.i *.x *.a ./desTest
-	-rm -f $(GC) $(GH) desdata_yes desdata_no
-
-depend:
-
 desCore.a:	$O
 		$(AR) cru $@ $O
 		$(RANLIB) $@
@@ -83,17 +73,8 @@ $(SO):		$(SRCDIR)/../include/des.h
 $(GI):		desCode.h $(SRCDIR)/../include/des.h Makefile
 desTest.o:	$(SRCDIR)/../include/des.h
 
-$(GH):		desdata_@CROSS@
-		./desdata_@CROSS@ $@ > $@
-
-# Not cross-compiling
-desdata_no:	desdata.o
-		$(LINK.c) -o $@ desdata.o
-
-# Cross-compiling
-desdata_yes:	$(SRCDIR)/desdata.pike
-		test -f ./desdata_yes || ln -s $(SRCDIR)/desdata.pike desdata_yes || cp $(SRCDIR)/desdate.pike desdata_yes
-		-@chmod a+x desdata_yes
+$(GH): $(SRCDIR)/desdata.pike
+		$(BUILD_BASE)/precompile.sh $(SRCDIR)/desdata.pike "$@" > "$@" || { rm "$@"; exit 1; }
 
 # new rules  (note: tr|sed|tr is NOT necessary,  just there so .i is readable)
 .c.i:
@@ -123,15 +104,6 @@ desdata_yes:	$(SRCDIR)/desdata.pike
 		$(CODEGEN.c) $<
 		$(COMPILE.c) $*.s
 
-.c.o:
-	@echo "Compiling $<" ;\
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
-	else \
-	  echo "Compilation command was:" >&2;\
-	  echo "$(CC) $(CFLAGS) -c $< -o $@" >&2;\
-	  false;\
-	fi
-
 # slowest to quickest
 desSmallFips.c:
 		@echo '#include "desCode.h"' > $@
@@ -160,12 +132,6 @@ desQuickCore.c:
 
 ### End of rules for desCore
 
-# BEGIN NATIONAL SECURITY
-MASS_DESTRUCTION_OBJS = idea.o arcfour.o cast.o rijndael.o $(O)
-# END NATIONAL SECURITY
-
-OBJS = $(MASS_DESTRUCTION_OBJS) sha.o md2.o md4.o md5.o crypt_md5.o
-
 rijndael.o: $(SRCDIR)/../include/rijndael.h rijndael-boxes.dat
 
 algorithms.a: $(OBJS)
@@ -173,17 +139,4 @@ algorithms.a: $(OBJS)
 	$(AR) cru algorithms.a $(OBJS)
 	$(RANLIB) algorithms.a
 
-Makefile: $(SRCDIR)/Makefile.in config.status
-	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
-	touch remake
-	@echo "Run make again" >&2
-	@exit 1
-
-$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
-	if [ -f $(SRCDIR)/acconfig.h ]; then \
-	  cd $(SRCDIR) && autoheader; \
-	else :; fi
-
-config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
+@dependencies@

@@ -1,9 +1,10 @@
-# $Id: configure.in,v 1.13 2002/01/27 00:54:01 mast Exp $
+# $Id: configure.in,v 1.14 2002/04/30 21:33:00 mast Exp $
 AC_INIT(sha.c)
+
+AC_SET_MAKE
 
 AC_MODULE_INIT()
 
-AC_PROG_CPP
 AC_PROG_RANLIB
 
 AC_C_CONST
