@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.35 2002/11/19 12:29:14 grubba Exp $
+|| $Id: pike_memory.h,v 1.36 2002/11/20 17:30:06 grubba Exp $
 */
 
 #ifndef MEMORY_H
@@ -14,6 +14,23 @@
 #ifdef HAVE_VALGRIND_H
 #include <valgrind.h>
 #endif /* HAVE_VALGRIND_H */
+
+#ifdef USE_VALGRIND
+/* No Access */
+#define PIKE_MEM_NA(addr, bytes)	VALGRIND_MAKE_NOACCESS(addr, bytes)
+/* Write Only -- Will become RW when hving been written to */
+#define PIKE_MEM_WO(addr, bytes)	VALGRIND_MAKE_WRITABLE(addr, bytes)
+/* Read/Write */
+#define PIKE_MEM_RW(addr, bytes)	VALGRIND_MAKE_READABLE(addr, bytes)
+/* Read Only -- Not currently supported by valgrind */
+#define PIKE_MEM_RO(addr, bytes)	VALGRIND_MAKE_READABLE(addr, bytes)
+#else
+#define PIKE_MEM_NA(addr, bytes)	0
+#define PIKE_MEM_WO(addr, bytes)	0
+#define PIKE_MEM_RW(addr, bytes)	0
+#define PIKE_MEM_RO(addr, bytes)	0
+#endif /* USE_VALGRIND */
+
 
 #define MEMSEARCH_LINKS 512
 
