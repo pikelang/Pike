@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.410 2001/05/17 16:58:39 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.411 2001/05/17 17:48:10 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4844,7 +4844,7 @@ test_any([[
   object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
   array res = ({});
   foreach(it; int i; string part) {
-    res += ({ it });
+    res += ({ part });
   }
   return equal(res, "  foobar gazonk gurka baz  "/" ");
 ]], 1)
@@ -4852,21 +4852,21 @@ test_any([[
   object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
   return sizeof(it);
 ]], [[
-  return sizeof("  foobar gazonk gurka baz  "/" ");
+  sizeof("  foobar gazonk gurka baz  "/" ");
 ]])
 test_any([[
   object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ', 1);
   array res = ({});
   foreach(it; int i; string part) {
-    res += ({ it });
+    res += ({ part });
   }
   return equal(res, "foobar gazonk gurka baz"/" ");
 ]], 1)
 test_any([[
-  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
+  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ', 1);
   return sizeof(it);
 ]], [[
-  return sizeof("foobar gazonk gurka baz"/" ");
+  sizeof("foobar gazonk gurka baz"/" ");
 ]])
 
 
@@ -7211,7 +7211,7 @@ void test_resolv(string file, int base_size)
 			([ "/":".", ".pmod":""]) );
   if(prg[sizeof(prg)-7..]==".module")
     prg = prg[..sizeof(prg)-8];
-  werror("Resolving %O...\n", prg);
+  // werror("Resolving %O...\n", prg);
   if( catch( master()->resolv(prg) ) ) {
     werror("test: failed to peek at %O\n", prg);
     ok=0;
@@ -7220,7 +7220,7 @@ void test_resolv(string file, int base_size)
 
 void test_dir(string dir, int|void base_size)
 {
-  werror("Testing directory %O...\n", dir);
+  // werror("Testing directory %O...\n", dir);
   if(!base_size) base_size=sizeof(dir);
   foreach(get_dir(dir), string s)
   {
