@@ -24,20 +24,24 @@ easy to get used to.</p>
 than 32 bits. Since they are integers, no decimals are allowed. An integer
 constant can be written in several ways:</p>
 
-<example>
-78	// decimal number
-0116	// octal number
-0x4e	// hexadecimal number
-'N'	// Ascii character
-</example>
+<matrix>
+<r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Description</b></c></r>
+<r><c>-?[1-9][0-9]*</c><c>78</c><c>Decimal number</c></r>
+<r><c>-?0[0-9]*</c><c>0116</c><c>Octal number</c></r>
+<r><c>-?0[xX][0-9a-eA-E]+</c><c>0x4e</c><c>Hexadecimal number</c></r>
+<r><c>-?0[bB][01]+</c><c>0b1001110</c><c>Binary number</c></r>
+<r><c>-?'\\?.'</c><c>'N'</c><c>ASCII character</c></r>
+</matrix>
 
 <p>All of the above represent the number 78. Octal notation means that
 each digit is worth 8 times as much as the one after. Hexadecimal notation
 means that each digit is worth 16 times as much as the one after.
 Hexadecimal notation uses the letters a, b, c, d, e and f to represent the
-numbers 10, 11, 12, 13, 14 and 15. The ASCII notation gives the ASCII
-value of the character between the single quotes. In this case the character
-is <tt>N</tt> which just happens to be 78 in ASCII.</p>
+numbers 10, 11, 12, 13, 14 and 15. In binary notation every digit is worth
+twice the value of the succeding digit, but only 1:s and 0:s are used. The
+ASCII notation gives the ASCII value of the character between the single
+quotes. In this case the character is <tt>N</tt> which just happens to be
+78 in ASCII.</p>
 
 <p>Integers are coded in 2-complement and overflows are silently ignored
 by Pike. This means that if your integers are 32-bit and you add 1 to
