@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.679 2004/09/12 22:51:03 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.680 2004/10/25 09:07:28 distmaker Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3020,6 +3020,10 @@ PIKE_CHECK_CONSTANTS(recursive mutex flag,
 # NOTE: The following test is hardcoded to fail when crosscompiling
 # It also clobbers $LIBOBJS.
 
+ifdef([m4_pattern_allow], [
+  # Handle the latest autoconf incompatibility...
+  m4_pattern_allow(LIBOBJS)
+])
 OLD_LIBOBJS="${LIBOBJS}"
 
 AC_FUNC_MEMCMP

@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.61 2004/03/23 10:40:12 grubba Exp $
+dnl $Id: aclocal.m4,v 1.62 2004/10/25 09:07:28 distmaker Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -172,7 +172,7 @@ define([ORIG_CHECK_HEADERS], defn([AC_CHECK_HEADERS]))
 pushdef([AC_CHECK_HEADERS],
 [
   if test "x$enable_binary" != "xno"; then
-    ORIG_CHECK_HEADERS($1,$2,$3)
+    ORIG_CHECK_HEADERS($1,$2,$3,$4)
   else
     for ac_hdr in $1
     do
@@ -299,7 +299,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.61 2004/03/23 10:40:12 grubba Exp $
+# $Id: aclocal.m4,v 1.62 2004/10/25 09:07:28 distmaker Exp $
 
 MY_AC_PROG_CC
 
