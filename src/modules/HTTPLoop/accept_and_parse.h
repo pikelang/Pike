@@ -1,3 +1,4 @@
+/* #define AAP_DEBUG 1 */
 #define CACHE_HTABLE_SIZE 40951
 
 struct res
@@ -66,8 +67,8 @@ struct cache
   MUTEX_T mutex;
   struct cache *next;
   struct cache_entry *htable[CACHE_HTABLE_SIZE];
-  unsigned int size, entries, max_size;
-  unsigned int hits, misses, stale;
+  unsigned long long size, entries, max_size;
+  unsigned long long hits, misses, stale;
   unsigned int num_requests, sent_data, received_data;
   int gone;
 };

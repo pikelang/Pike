@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.2 1999/11/23 07:07:28 hubbe Exp $
+ * $Id: requestobject.c,v 1.3 1999/12/08 12:22:48 per Exp $
  */
 
 #include "global.h"
@@ -667,8 +667,7 @@ struct send_args
 {
   struct args *to;
   int from_fd;
-  char *data;
-  int data_len;
+  struct pike_string *data;
   int len;
   int sent;
   char buffer[BUFFER];
@@ -679,8 +678,14 @@ void actually_send(struct send_args *a)
 {
   int fail, first=0;
   char foo[10];
+  unsigned char *data;
+  unsigned int data_len;
   foo[9]=0; foo[6]=0;
-
+  if( a->data )
+  {
+    data = a->data->str;
+    data_len = a->data->len;
+  }
 #ifdef HAVE_FREEBSD_SENDFILE
   if (a->len)
   {
@@ -694,10 +699,10 @@ void actually_send(struct send_args *a)
     fprintf(stderr, "sendfile... \n");
 #endif
 
-    if (a->data) {
+    if (data) {
       /* Set up the iovec */
-      vec.iov_base = a->data;
-      vec.iov_len = a->data_len;
+      vec.iov_base = data;
+      vec.iov_len = data_len;
       headers.headers = &vec;
       headers.hdr_cnt = 1;
     }
@@ -748,18 +753,18 @@ void actually_send(struct send_args *a)
      */
     a->sent += sent;
 
-    if (a->data) {
-      if (sent < a->data_len) {
-	a->data += sent;
-	a->data_len -= sent;
+    if (data) {
+      if (sent < data_len) {
+	data += sent;
+	data_len -= sent;
 	sent = 0;
 
 	/* Make sure we don't terminate early due to len being 0. */
 	goto send_data;
       } else {
-	sent -= a->data_len;
-	a->data = NULL;
-	a->data_len = 0;
+	sent -= data_len;
+	data = NULL;
+	data_len = 0;
       }
     }
 
@@ -782,9 +787,9 @@ void actually_send(struct send_args *a)
 #ifdef AAP_DEBUG
   fprintf(stderr, "actually_send... \n");
 #endif
-  if(a->data)
+  if(data)
   {
-    MEMCPY(foo, a->data+MY_MIN((a->data_len-4),9), 4);
+    MEMCPY(foo, data+MY_MIN((data_len-4),9), 4);
     first=1;
 #ifdef TCP_CORK
 #ifdef AAP_DEBUG
@@ -795,9 +800,9 @@ void actually_send(struct send_args *a)
       setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, 4 );
     }
 #endif
-    fail = WRITE(a->to->fd, a->data, a->data_len);
+    fail = WRITE(a->to->fd, data, data_len);
     a->sent += fail;
-    if(fail != a->data_len)
+    if(fail != data_len)
       goto end;
   }
   fail = 0;
@@ -857,6 +862,9 @@ void actually_send(struct send_args *a)
   {
     int nread, written=0;
     nread = fd_read(a->from_fd, a->buffer, MY_MIN(BUFFER,a->len));
+#ifdef AAP_DEBUG
+  fprintf(stderr, "writing %d bytes... \n", nread);
+#endif
     if(!first)
     {
       first=1;
@@ -875,11 +883,16 @@ void actually_send(struct send_args *a)
 	break;
       }
     }
-    if(fail || (WRITE(a->to->fd, a->buffer, nread) != nread))
+    if(fail || ((written=WRITE(a->to->fd, a->buffer, nread)) != nread))
       goto end;
+    a->len -= nread;
+    a->sent += written;
   }
 
  end:
+#ifdef AAP_DEBUG
+  fprintf(stderr, "all written.. \n");
+#endif
 #ifdef TCP_CORK
   {
     int false = 0;
@@ -890,19 +903,22 @@ void actually_send(struct send_args *a)
     struct args *arg = a->to;
     LOG(a->sent, a->to, atoi(foo));
     if(a->from_fd) close(a->from_fd);
-    if(a->data) free(a->data);
+    if(a->data) aap_enqueue_string_to_free( a->data );
     free(a);
 
     if(!fail && 
-       ((arg->res.protocol==s_http_11)
-	||aap_get_header(arg, "Connection", H_EXISTS, 0)))
+       ((arg->res.protocol==s_http_11)||
+        aap_get_header(arg, "connection", H_EXISTS, 0)))
     {
       aap_handle_connection(arg);
     }
     else
     {
-      if(arg->res.data) free(arg->res.data);
-      if(arg->fd) close(arg->fd);
+#ifdef AAP_DEBUG
+      fprintf(stderr, "no keep alive, closing fd.. \n");
+#endif
+      close(arg->fd);
+      if( arg->res.data ) free( arg->res.data );
       free(arg);
     }
   }
@@ -926,33 +942,6 @@ void f_aap_reply(INT32 args)
     if(sp[-args+2].type != T_INT)
       error("Bad argument 3 to reply\n");
     reply_object = 1;
-  }
-
-  if(reply_string && !reply_object)
-  {
-    if(sp[-1].u.string->len < 8192)
-    {
-      int amnt = WRITE(THIS->request->fd,sp[-1].u.string->str,
-		       sp[-1].u.string->len);
-      LOG(amnt, THIS->request, 
-	  atoi(sp[-1].u.string->str+MY_MIN(sp[-1].u.string->len,9)));
-      if((sp[-1].u.string->len == amnt) &&
-	 ((THIS->request->res.protocol==s_http_11)
-	  ||aap_get_header(THIS->request, "Connection", H_EXISTS, 0)))
-      {
-	th_farm((void (*)(void *))aap_handle_connection, 
-		(void *)THIS->request);
-	THIS->request = 0;
-	return;
-      } else {
-	if(THIS->request->res.data)
-	  free(THIS->request->res.data);
-	close(THIS->request->fd);
-	free(THIS->request);
-	THIS->request = 0;
-	return;
-      }
-    }
   }
 
   q = malloc(sizeof(struct send_args));
@@ -980,13 +969,10 @@ void f_aap_reply(INT32 args)
 
   if(reply_string)
   {
-    char *s = malloc(sp[-args].u.string->len);
-    MEMCPY(s, sp[-args].u.string->str, sp[-args].u.string->len);
-    q->data = s;
-    q->data_len = sp[-args].u.string->len;
+    q->data = sp[-args].u.string;
+    q->data->refs++;
   } else {
     q->data = 0;
-    q->data_len = 0;
   }
   q->sent = 0;
 
@@ -1008,29 +994,32 @@ void f_aap_reply_with_cache(INT32 args)
 
   if(reply->len < THIS->request->cache->max_size/2)
   {
-    if(THIS->request->cache->gone) /* freed..*/
+    struct cache *rc = THIS->request->cache;
+    struct args *tr = THIS->request;
+    if(rc->gone) /* freed..*/
     {
-      close(THIS->request->fd);
-      if(THIS->request->res.data)
-	free(THIS->request->res.data);
-      free(THIS->request);
+      close(tr->fd);
+      if(tr->res.data)
+	free(tr->res.data);
+      free(tr);
       THIS->request = 0;
       return;
     }
+    THREADS_ALLOW();
     t = aap_get_time();
-    mt_lock(&THIS->request->cache->mutex);
-    if(THIS->request->cache->size > THIS->request->cache->max_size)
+    mt_lock(&rc->mutex);
+    if(rc->size > rc->max_size)
     {
       struct cache_entry *p,*pp=0,*ppp=0;
-      if(THIS->request->cache->unclean) 
-	aap_clean_cache(THIS->request->cache, 1);
-      while(THIS->request->cache->size > THIS->request->cache->max_size)
+      int target = (rc->max_size-
+                    rc->max_size/3);
+      while(rc->size > target)
       {
 	int i;
 	freed=0;
 	for(i = 0; i<CACHE_HTABLE_SIZE; i++)
 	{
-	  p = THIS->request->cache->htable[i];
+	  p = rc->htable[i];
 	  ppp=pp=0;
 	  while(p)
 	  {
@@ -1038,9 +1027,9 @@ void f_aap_reply_with_cache(INT32 args)
 	    pp = p;
 	    p = p->next;
 	  }
-	  if(pp) aap_free_cache_entry(THIS->request->cache,pp,ppp,i);
+	  if(pp) aap_free_cache_entry(rc,pp,ppp,i);
 	  freed++;
-	  if(THIS->request->cache->size < THIS->request->cache->max_size)
+	  if(rc->size < target)
 	    break;
 	}
 	if(!freed)  /* no way.. */
@@ -1050,15 +1039,18 @@ void f_aap_reply_with_cache(INT32 args)
     ce = malloc(sizeof(struct cache_entry));
     MEMSET(ce, 0, sizeof(struct cache_entry));
     ce->stale_at = t+time_to_keep;
+
     ce->data = reply;
-    ce->url = THIS->request->res.url;
-    ce->url_len = THIS->request->res.url_len;
     reply->refs++;
 
-    ce->host = THIS->request->res.host;
-    ce->host_len = THIS->request->res.host_len;
-    aap_cache_insert(ce, THIS->request->cache);
-    mt_unlock(&THIS->request->cache->mutex);
+    ce->url = tr->res.url;
+    ce->url_len = tr->res.url_len;
+
+    ce->host = tr->res.host;
+    ce->host_len = tr->res.host_len;
+    aap_cache_insert(ce, rc);
+    mt_unlock(&rc->mutex);
+    THREADS_DISALLOW();
   }
   pop_stack();
   f_aap_reply(1);

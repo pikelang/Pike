@@ -14,6 +14,7 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c);
 
 void aap_clean_cache();
 
+void aap_enqueue_string_to_free( struct pike_string *s );
 extern struct cache *first_cache;
 
 

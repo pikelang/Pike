@@ -206,6 +206,8 @@ void aap_log_append(int sent, struct args *arg, int reply)
   /* we do not incude the body, only the headers et al.. */
   struct log_entry *le=malloc(sizeof(struct log_entry)+arg->res.body_start-3);
   char *data_to=((char *)le)+sizeof(struct log_entry);
+
+fprintf(stderr, "log_append()\n");
   
   le->t = aap_get_time();
   le->sent_bytes = sent;

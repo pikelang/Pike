@@ -563,16 +563,26 @@ static void f_cache_status(INT32 args)
 {
   struct cache *c = LTHIS->cache;
   pop_n_elems(args);
-  push_text("hits"); push_int(c->hits);
-  push_text("misses"); push_int(c->misses);
-  push_text("stale"); push_int(c->stale);
-  push_text("size"); push_int(c->size);
-  push_text("entries"); push_int(c->entries);
-  push_text("max_size"); push_int(c->max_size);
+  push_constant_text("hits"); 
+  push_int64(c->hits);
+  push_constant_text("misses"); 
+  push_int64(c->misses);
+  push_constant_text("stale"); 
+  push_int64(c->stale);
+  push_constant_text("size"); 
+  push_int64(c->size);
+  push_constant_text("entries"); 
+  push_int64(c->entries);
+  push_constant_text("max_size"); 
+  push_int64(c->max_size);
 
-  push_text("sent_bytes"); push_int(c->sent_data);        c->sent_data=0;
-  push_text("num_request"); push_int(c->num_requests);    c->num_requests=0;
-  push_text("received_bytes"); push_int(c->received_data);c->received_data=0;
+  /* Relative from last call */
+  push_constant_text("sent_bytes"); 
+  push_int(c->sent_data);        c->sent_data=0;
+  push_constant_text("num_request"); 
+  push_int(c->num_requests);    c->num_requests=0;
+  push_constant_text("received_bytes"); 
+  push_int(c->received_data);c->received_data=0;
   f_aggregate_mapping( 18 );
 }
 

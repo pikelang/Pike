@@ -72,7 +72,7 @@ static void free_from_queue()
   mt_unlock( &tofree_mutex );
 }
 
-static void enqueue_string_to_free( struct pike_string *s )
+void aap_enqueue_string_to_free( struct pike_string *s )
 {
   mt_lock( &tofree_mutex );
   if( numtofree > 1020 )
@@ -126,8 +126,8 @@ static void really_free_cache_entry(struct cache  *c, struct cache_entry *e,
     /* Not really a good idea here.. 
        We might be running without the interpreter lock. */
 /*   free_string(e->data);  */
-  enqueue_string_to_free( e->data );
-  free(e->host);
+  aap_enqueue_string_to_free( e->data );
+/*   free(e->host);  Same as URL*/
   free(e->url);
   free(e);
 }
@@ -185,16 +185,16 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
                               &p, &hv)))
   {
     c->size -= head->data->len;
-    enqueue_string_to_free(head->data);
-    if(head->data != ce->data)
-      head->data = ce->data;
+    aap_enqueue_string_to_free(head->data);
+    head->data = ce->data;
     head->stale_at = ce->stale_at;
     aap_free_cache_entry( c, head, p, hv );
     free(ce);
   } else {
     c->entries++;
-    t = malloc(ce->url_len);  MEMCPY(t,ce->url,ce->url_len);   ce->url = t;
-    t = malloc(ce->host_len+1); MEMCPY(t,ce->host,ce->host_len); ce->host = t;
+    t = malloc( ce->url_len + ce->host_len );
+    MEMCPY(t,ce->url,ce->url_len);   ce->url = t;   t+=ce->url_len;
+    MEMCPY(t,ce->host,ce->host_len); ce->host = t;
     ce->next = c->htable[hv];
     ce->refs = 1;
     c->htable[hv] = ce;
@@ -259,27 +259,27 @@ void aap_clean_cache()
 {
   struct cache *c = first_cache;
   if(numtofree) free_from_queue();
-  while( c )
-  {
-    mt_lock( &c->mutex );
-    while( c->size > c->max_size )
-    {
-      int i, mlen=0;
-      struct cache_entry *e;
-      int cv = 0;
-      for( i=0; i<CACHE_HTABLE_SIZE; i++ )
-        if( c->htable[i] &&
-            c->htable[i]->data->len  > mlen )
-        {
-          mlen = c->htable[i]->data->len;
-          e = c->htable[i];
-          cv = i;
-        }
-      aap_free_cache_entry( c, e, 0, cv );
-    }
-    mt_unlock( &c->mutex );
-    c = c->next;
-  }
-  if(numtofree) free_from_queue();
+/*   while( c ) */
+/*   { */
+/*     mt_lock( &c->mutex ); */
+/*     while( c->size > c->max_size ) */
+/*     { */
+/*       int i, mlen=0; */
+/*       struct cache_entry *e; */
+/*       int cv = 0; */
+/*       for( i=0; i<CACHE_HTABLE_SIZE; i++ ) */
+/*         if( c->htable[i] && */
+/*             c->htable[i]->data->len  > mlen ) */
+/*         { */
+/*           mlen = c->htable[i]->data->len; */
+/*           e = c->htable[i]; */
+/*           cv = i; */
+/*         } */
+/*       aap_free_cache_entry( c, e, 0, cv ); */
+/*     } */
+/*     mt_unlock( &c->mutex ); */
+/*     c = c->next; */
+/*   } */
+/*   if(numtofree) free_from_queue(); */
 }
 #endif
