@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.136 2001/05/10 22:35:20 grubba Exp $");
+RCSID("$Id: operators.c,v 1.137 2001/05/19 21:37:32 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3372,6 +3372,77 @@ PMOD_EXPORT void f_sizeof(INT32 args)
   push_int(tmp);
 }
 
+static node *optimize_sizeof(node *n)
+{
+  if (CDR(n) && (CDR(n)->token == F_APPLY) &&
+      (CADR(n)) && (CADR(n)->token == F_CONSTANT) &&
+      (CADR(n)->u.sval.type == T_FUNCTION) &&
+      (CADR(n)->u.sval.subtype == FUNCTION_BUILTIN)) {
+    extern struct program *string_split_iterator_program;
+    /* sizeof(efun(...)) */
+    if ((CADR(n)->u.sval.u.efun->function == f_divide) &&
+	CDDR(n) && (CDDR(n)->token == F_ARG_LIST) &&
+	CADDR(n) && (CADDR(n)->type == string_type_string) &&
+	CDDDR(n) && (CDDDR(n)->token == F_CONSTANT) &&
+	(CDDDR(n)->u.sval.type == T_STRING) &&
+	(CDDDR(n)->u.sval.u.string->len == 1)) {
+      p_wchar2 split = index_shared_string(CDDDR(n)->u.sval.u.string, 0);
+					   
+      /* sizeof(`/(str, "x")) */
+      ADD_NODE_REF2(CADDR(n),
+        return mkefuncallnode("sizeof",
+			      mkapplynode(mkprgnode(string_split_iterator_program),
+					  mknode(F_ARG_LIST, CADDR(n),
+						 mkintnode(split))));
+      );
+    }
+    if ((CADR(n)->u.sval.u.efun->function == f_minus) &&
+	CDDR(n) && (CDDR(n)->token == F_ARG_LIST) &&
+	CADDR(n) && (CADDR(n)->token == F_APPLY) &&
+	CAADDR(n) && (CAADDR(n)->token == F_CONSTANT) &&
+	(CAADDR(n)->u.sval.type == T_FUNCTION) &&
+	(CAADDR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	(CAADDR(n)->u.sval.u.efun->function == f_divide) &&
+	CDADDR(n) && (CDADDR(n)->token == F_ARG_LIST) &&
+	CADADDR(n) && (CADADDR(n)->type == string_type_string) &&
+	CDDADDR(n) && (CDDADDR(n)->token == F_CONSTANT) &&
+	(CDDADDR(n)->u.sval.type == T_STRING) &&
+	(CDDADDR(n)->u.sval.u.string->len == 1) &&
+	CDDDR(n)) {
+      /* sizeof(`-(`/(str, "x"), y)) */
+      if (((CDDDR(n)->token == F_CONSTANT) &&
+	   (CDDDR(n)->u.sval.type == T_ARRAY) &&
+	   (CDDDR(n)->u.sval.u.array->size == 1) &&
+	   (CDDDR(n)->u.sval.u.array->item[0].type == T_STRING) &&
+	   (CDDDR(n)->u.sval.u.array->item[0].u.string->len == 0)) ||
+	  ((CDDDR(n)->token == F_APPLY) &&
+	   CADDDR(n) && (CADDDR(n)->token == F_CONSTANT) &&
+	   (CADDDR(n)->u.sval.type == T_FUNCTION) &&
+	   (CADDDR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	   (CADDDR(n)->u.sval.u.efun->function == f_allocate) &&
+	   CDDDDR(n) && (CDDDDR(n)->token == F_ARG_LIST) &&
+	   CADDDDR(n) && (CADDDDR(n)->token == F_CONSTANT) &&
+	   (CADDDDR(n)->u.sval.type == T_INT) &&
+	   (CADDDDR(n)->u.sval.u.integer == 1) &&
+	   CDDDDDR(n) && (CDDDDDR(n)->token == F_CONSTANT) &&
+	   (CDDDDDR(n)->u.sval.type == T_STRING) &&
+	   (CDDDDDR(n)->u.sval.u.string->len == 0))) {
+	/* sizeof(`-(`/(str, "x"), ({""}))) */
+	p_wchar2 split = index_shared_string(CDDADDR(n)->u.sval.u.string, 0);
+	ADD_NODE_REF2(CADADDR(n),
+          return mkefuncallnode("sizeof",
+				mkapplynode(mkprgnode(string_split_iterator_program),
+					    mknode(F_ARG_LIST, CADADDR(n),
+						   mknode(F_ARG_LIST,
+							  mkintnode(split),
+							  mkintnode(1)))));
+	);
+      }
+    }
+  }
+  return NULL;
+}
+
 static int generate_sizeof(node *n)
 {
   node **arg;
@@ -3682,7 +3753,7 @@ multiset & mapping -> mapping
   /* function(string|multiset|array|mapping|object:int) */
   ADD_EFUN2("sizeof", f_sizeof,
 	    tFunc(tOr5(tStr,tMultiset,tArray,tMapping,tObj),tInt),
-	    OPT_TRY_OPTIMIZE, 0,generate_sizeof);
+	    OPT_TRY_OPTIMIZE, optimize_sizeof, generate_sizeof);
 
   /* function(mixed,mixed ...:mixed) */
   ADD_EFUN2("`()",f_call_function,tFuncV(tMix,tMix,tMix),OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND,0,generate_call_function);
