@@ -21,8 +21,7 @@ string B(int(0..1) ... z) // encode bitfield
 
 array(string) A(array z) // encode array 
 {
-   if (!sizeof(z)) return ({"0","*"});
-   return ({""+sizeof(z),"{ "+encode(@z)+" }"});
+   return ({ ""+sizeof(z), "{ "+encode(@Array.flatten(z))+" }" });
 }
 
 class LysKOMError
