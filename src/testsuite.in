@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.734 2004/06/30 14:24:37 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.735 2004/06/30 18:20:40 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7607,8 +7607,13 @@ test_eq([[compile_string(#"
 #define X(x) x()
 string a() {return X(Y);}
 ")()->a()]], "z")
-test_compile_error([[
+test_compile([[
 #define Y(y) y
+#define X(x) x()
+X(Y)
+]])
+test_compile_error([[
+#define Y(y,z) y
 #define X(x) x()
 X(Y)
 ]])
