@@ -387,20 +387,39 @@ Core runtime support
     Thread support. Provides a generic thread farm too.
 
 Build system
-FIXME: Document these.
 
   Makefile.in
+    The Makefile template. Used by configure to generate a Makefile.
+
+  configure.in
+    The configure template. Used by run_autoconfig to generate
+    configure.  
+
+  dumpmaster.pike
+    Codec made especially for dumping the Pike master.
+
+  export_list
+    A list of the files and directories that should be included in a
+    source dist. Used by bin/export.pike.
+
+  install-welcome
+    GIF image used in the Pike GTK installer.
+
+  patch_cc1.c
+    Small utility that binary patches gcc so that it doesn't use
+    .ua{half,word} directives. May be invoked by configure.
+
+  precompile.sh.in
+    Template to create precompile.sh, a utility script that finds the
+    most apropriate Pike binary and execute the script given in its
+    argument with that binary.
+
+FIXME: Document these.
+
   acconfig.h
   aclocal.m4
-  build_modlist_h
-  configure.in
-  dumpmaster.pike
-  export_list
   install-sh
-  install-welcome
   make_variables.in
-  patch_cc1.c
-  precompile.sh.in
   precompile2.sh
   run_autoconfig
   smartlink.c
