@@ -1,6 +1,9 @@
 #include "config.h"
 
 #if defined(HAVE_RPCSVC_YPCLNT_H) && defined(HAVE_RPCSVC_YP_PROT_H)
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
 #include <rpcsvc/ypclnt.h>
 #include <rpcsvc/yp_prot.h>
 
