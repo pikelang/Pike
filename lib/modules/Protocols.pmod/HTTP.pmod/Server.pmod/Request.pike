@@ -315,7 +315,7 @@ void response_and_finish(mapping m, function|void _log_cb)
       {
 	 if (!m->stat && m->file)
 	    m->stat=m->file->stat();
-	 if (m->stat->mtime<=t)
+	 if (m->stat && m->stat->mtime<=t)
 	 {
 	    m_delete(m,"file");
 	    m->data="";
