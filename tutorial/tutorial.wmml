@@ -7260,26 +7260,56 @@ Yp.
 
 <hr noshade size=1>
 
-<module name=Table>
-<section title="Table">
+<module name=ADT.Table>
+<section title="ADT.Table">
 
-Table is a generic module for manipulating tables. Each table contains one
+ADT.Table is a generic module for manipulating tables. Each table contains one
 or several columns. Each column is associated with a name, the column name.
 Optionally, one can provide a column type. The Table module can do a number
 of operations on a given table, like computing the sum of a column, grouping,
-sorting etc.
+sorting etc.<p>
 
 All column references are case insensitive. A column can be referred to by
-its position (a number).
+its position (starting from zero). All operations are non-destructive. That
+means that a new table object will be returned after, for example, a sort.<p>
 
+An example is available at the end of this section.
 <hr noshade size=1>
 
-<method name=ADT.Table.table-&gt;create title="create table object">
+<method name=ADT.Table.table-&gt;create title="create a table object">
 <man_syntax>
-void create(array(array) <i>table</i>, array(string) <i>column_names</i>, array(mapping)|void <i>field_types</i>);<br>
+void create(array(array) <i>table</i>, array(string) <i>column_names</i>, array(mapping)|void <i>column_types</i>);<br>
 </man_syntax>
 <man_description>
+The table class takes two or three arguments:<p>
+<ol>
+<li></i>table</i> is a two-dimensional array consisting of one array of
+columns per row. All rows must have the same number of columns as specified
+in <i>column_names</i>.<p>
+<li><i>column_names</i> is an array of column names associated with each
+column in the table. References by column name are case insensitive. The
+case used in <i>column_names</i> will be used when the table is displayed.
+A column can also be referred to by its position, starting from zero.<p>
+<li><i>column_types</i> is an optional array of mappings. The column type
+information is only used when displaying the table. Currently, only the
+keyword "type" is recognized. The type can be specified as "text" or
+"num" (numerical). Text columns are left adjusted, whereas numerical
+columns are right adjusted. If a mapping in the array is 0 (zero),
+it will be assumed to be a text column. If <i>column_types</i> is
+omitted, all columns will displayed as text. See
+<link to=ADT.Table.ASCII.encode>ADT.Table.ASCII.encode</link> on how to
+display a table.<p>
+</ol>
 </man_description>
+
+<man_example>
+<example language=pike>
+object t = ADT.Table.table( ({ ({ "Blixt", "Gordon" }),
+({ "Buck", "Rogers" }) }),
+({ "First name", "Last name" }) );
+</example>
+</man_example>
+
 </method>
 
 <hr noshade size=1>
@@ -7289,24 +7319,26 @@ void create(array(array) <i>table</i>, array(string) <i>column_names</i>, array(
 array(string) _indices();<br>
 </man_syntax>
 <man_description>
-This method returns the column names for the table.
+This method returns the column names for the table. The case used when
+the table was created will be returned.
 </man_description>
 </method>
 
 <hr noshade size=1>
 
-<method name=ADT.Table.table-&gt;_values title="gives the contents of a table">
+<method name=ADT.Table.table-&gt;_values title="gives the table contents">
 <man_syntax>
 array(array) _values();<br>
 </man_syntax>
 <man_description>
-This method returns the contents of a table as a two dimensional array.
+This method returns the contents of a table as a two dimensional array. The
+format is an array of rows. Each row is an array of columns.
 </man_description>
 </method>
 
 <hr noshade size=1>
 
-<method name=ADT.Table.table-&gt;_sizeof title="gives the number of rows in the table">
+<method name=ADT.Table.table-&gt;_sizeof title="gives the number of table rows">
 <man_syntax>
 int _sizeof();<br>
 </man_syntax>
@@ -7317,12 +7349,12 @@ This method returns the number of rows in the table.
 
 <hr noshade size=1>
 
-<method name=ADT.Table.table-&gt;reverse title="reverse the table rows">
+<method name=ADT.Table.table-&gt;reverse title="reverses the table rows">
 <man_syntax>
 object reverse();<br>
 </man_syntax>
 <man_description>
-This method reverses the rows in the table and returns a new table object.
+This method reverses the rows of the table and returns a new table object.
 </man_description>
 </method>
 
@@ -7334,7 +7366,8 @@ object rename(string|int <i>from</i>, string <i>to</i>);<br>
 </man_syntax>
 <man_description>
 This method renames the column named <i>from</i> to <i>to</i> and
-returns a new table object.
+returns a new table object. Note that <i>from</i> can be the column
+position.
 </man_description>
 </method>
 
@@ -7342,11 +7375,13 @@ returns a new table object.
 
 <method name=ADT.Table.table-&gt;type title="fetch or set the type for a column">
 <man_syntax>
-mapping type(string|int <i>column</i>, string|void <i>type</i>);<br>
+mapping type(string|int <i>column</i>, mapping|void <i>type</i>);<br>
 </man_syntax>
 <man_description>
-This method gives the type for the given column. If the second argument is
-given, the old type will be replaced with <i>type</i>.
+This method gives the type for the given column. If a second argument is
+given, the old type will be replaced with <i>type</i>. The column type
+is only used when the table is displayed. The format is as specified
+in <link to=ADT.Table.table.create>create</link>.
 </man_description>
 </method>
 
@@ -7357,7 +7392,8 @@ given, the old type will be replaced with <i>type</i>.
 object limit(int <i>n</i>);<br>
 </man_syntax>
 <man_description>
-This method truncates the table to <i>n</i> rows and returns a new object.
+This method truncates the table to the first <i>n</i> rows and returns
+a new object.
 </man_description>
 </method>
 
@@ -7381,19 +7417,20 @@ that the sort is stable.
 object rsort(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
 <man_description>
-Like <link to=Table.table-&gt;sort>sort</link>, but the order is descendent.
+Like <link to=ADT.Table.table.sort>sort</link>, but the order is descendent.
 </man_description>
 </method>
 
 <hr noshade size=1>
 
-<method name=ADT.Table.table-&gt;distinct title="keep unique columns only">
+<method name=ADT.Table.table-&gt;distinct title="keep unique rows only">
 <man_syntax>
 object distinct(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
 <man_description>
 This method groups by the given columns and returns a table with only
-unique rows. When no columns are given, all rows will be unique.
+unique rows. When no columns are given, all rows will be unique. A new
+table object will be returned.
 </man_description>
 </method>
 
@@ -7440,9 +7477,9 @@ table object.
 
 <hr noshade size=1>
 
-<method name=ADT.Table.table-&gt;filter title="filter the table through a function">
+<method name=ADT.Table.table-&gt;where title="filter the table through a function">
 <man_syntax>
-object filter(funcion <i>fu</i>, array(string|int)|string|int <i>column1</i>, mixed ... <i>arg</i>);<br>
+object where(array(string|int)|string|int <i>column1</i>, funcion <i>fu</i>, mixed ... <i>arg</i>);<br>
 </man_syntax>
 <man_description>
 This method calls the function for each row. If the function returns zero,
@@ -7469,18 +7506,20 @@ This method returns a new table object with the selected columns only.
 object remove(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
 <man_description>
-Like select, but the given columns will not be in the resulted table.
+Like <link to=ADT.Table.table.select>select</link>, but the given
+columns will not be in the resulting table.
 </man_description>
 </method>
 
 <hr noshade size=1>
 
-<method name=ADT.Table.table-&gt;encode title="encode the table to a binary string">
+<method name=ADT.Table.table-&gt;encode title="represent the table as a binary string">
 <man_syntax>
 string encode();<br>
 </man_syntax>
 <man_description>
-This method returns a binary string representation of the table.
+This method returns a binary string representation of the table. It is
+useful when one wants to store a table, for example in a file.
 </man_description>
 </method>
 
@@ -7514,7 +7553,7 @@ This method returns the contents of a given column as an array.
 array `[](string|int <i>column</i>);<br>
 </man_syntax>
 <man_description>
-Same as col.
+Same as <link to=ADT.Table.table.col>col</link>.
 </man_description>
 </method>
 
@@ -7537,7 +7576,8 @@ int `==(object <i>table</i>);<br>
 </man_syntax>
 <man_description>
 This method compares two tables. They are equal if the contents
-of the tables and the field names are equal.
+of the tables and the column names are equal. The column name
+comparison is case insensitive.
 </man_description>
 </method>
 
@@ -7549,8 +7589,8 @@ object append_bottom(object <i>table</i>);<br>
 </man_syntax>
 <man_description>
 This method appends two tables. The table given as an argument will be
-added at the bottom of the current table. Note, the field names must
-be equal.
+added at the bottom of the current table. Note, the column names must
+be equal. The column name comparison is case insensitive.
 </man_description>
 </method>
 
@@ -7562,10 +7602,58 @@ object append_right(object <i>table</i>);<br>
 </man_syntax>
 <man_description>
 This method appends two tables. The table given as an argument will be
-added on the right side of the current table. Note, the number of rows
-in both tables must be equal.
+added on the right side of the current table. Note that the number of
+rows in both tables must be equal.
 </man_description>
 </method>
+
+<hr noshade size=1>
+
+<method name=ADT.Table.ASCII-&gt;encode title="produces an ASCII formated table">
+<man_syntax>
+string encode(object <i>table</i>, mapping|void <i>options</i>);<br>
+</man_syntax>
+<man_description>
+This method returns a table represented in ASCII suitable for human eyes.
+<i>options</i> is an optional mapping. If the keyword "indent" is used
+with a number, the table will be indented with that number of space
+characters.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<man_example>
+<example language=pike>
+array(string) fält = ({ "Frukt", "Leverantör", "Antal" });
+array(mapping) typ = ({ 0, 0, ([ "type":"num" ]) });
+array(array) tabell = ({ ({ "Avocado", "Frukt AB",        314 }),
+			 ({ "Banan",   "Banankompaniet", 4276 }),
+  			 ({ "Apelsin", "Frukt AB",         81 }),
+  			 ({ "Banan",   "Frukt AB",       1174 }),
+  			 ({ "Apelsin", "General Food",    523 }) });
+
+object t = .Table.table(tabell, fält, typ);
+
+write("FRUKT & GRÖNT\n\n");
+write(.Table.ASCII.encode(t, ([ "indent":4 ])));
+
+write("\nLEVERANTÖRER\n\n");
+write(.Table.ASCII.encode(t->select("leverantör", "antal")->
+    			  sum("antal")->rename("antal", "Summa antal")->
+    			  rsort("summa antal")));
+
+write("\nLEVERANTÖRER\n\n"+
+      .Table.ASCII.encode(t->select("leverantör", "antal")->
+  			  sum("antal")->rename("antal", "Summa antal")->
+  			  where("summa antal", `>, 1000)->
+  			  rsort("summa antal")));
+
+write("\nLEVERANSER\n\n");
+write(.Table.ASCII.encode(t->select("frukt")->distinct("frukt")->
+  			  sort("frukt"), ([ "indent":4 ])));
+</example>
+</man_example>
 
 </section>
 </module>
