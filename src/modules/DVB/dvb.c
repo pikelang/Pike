@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: dvb.c,v 1.2 2002/09/09 20:47:52 nilsson Exp $
+ * $Id: dvb.c,v 1.3 2002/09/09 21:32:30 hop Exp $
  *
  * Distro: aconfig.h (automake-> config.h.in), configure.in, Makefile.in
  *
@@ -447,12 +447,12 @@ static void f_zap(INT32 args) {
 }
 
 
-/*! @decl mapping|int get_codec_info()
+/*! @decl mapping|int get_pids()
  *!
- *! Returns mapping with info of used codec.
+ *! Returns mapping with info of currently tuned program's pids.
  *!
  *! @seealso
- *!   @[list_codecs()]
+ *!   @[tune()]
  */
 static void f_get_pids(INT32 args) {
 
