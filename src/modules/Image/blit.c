@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.49 2000/12/01 08:09:58 hubbe Exp $ */
+/* $Id: blit.c,v 1.50 2002/04/10 21:27:10 stewa Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.49 2000/12/01 08:09:58 hubbe Exp $
+**!	$Id: blit.c,v 1.50 2002/04/10 21:27:10 stewa Exp $
 **! class Image
 */
 
@@ -209,12 +209,12 @@ void img_crop(struct image *dest,
 	      INT32 x2,INT32 y2)
 {
    rgb_group *new;
-   INT32 xp,yp,xs,ys;
+   INT32 xp,yp,xs,ys,tmp;
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
 
-   if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
-   if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
+   if (x1>x2) tmp=x1, x1=x2, x2=tmp;
+   if (y1>y2) tmp=y1, y1=y2, y2=tmp;
 
    if (x1==0 && y1==0 &&
        img->xsize-1==x2 && img->ysize-1==y2)
@@ -244,18 +244,21 @@ void img_crop(struct image *dest,
    xs=MAXIMUM(0,x1);
    ys=MAXIMUM(0,y1);
 
-   if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
-   if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
-   if (x2<0) x2=0; else if (x2>=img->xsize) x2=img->xsize-1;
-   if (y2<0) y2=0; else if (y2>=img->ysize) y2=img->ysize-1;
-
-   img_blit(new+xp+yp*dest->xsize,
-	    img->img+xs+(img->xsize)*ys,
-	    x2-x1+1,
-	    y2-y1+1,
-	    dest->xsize,
-	    img->xsize);
-
+   if( ! (( x2 < 0) || (y2 < 0) || (x1>=img->xsize) || (y1>=img->ysize))) {
+     
+     if (x1<0) x1=0; else if (x1>=img->xsize) x1=img->xsize-1;
+     if (y1<0) y1=0; else if (y1>=img->ysize) y1=img->ysize-1;
+     if (x2<0) x2=0; else if (x2>=img->xsize) x2=img->xsize-1;
+     if (y2<0) y2=0; else if (y2>=img->ysize) y2=img->ysize-1;
+     
+     img_blit(new+xp+yp*dest->xsize,
+	      img->img+xs+(img->xsize)*ys,
+	      x2-x1+1,
+	      y2-y1+1,
+	      dest->xsize,
+	      img->xsize);
+     
+   }     
    dest->img=new;
 }
 
