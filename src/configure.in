@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.68 1997/04/10 20:37:40 kg Exp $")
+AC_REVISION("$Id: configure.in,v 1.69 1997/04/11 01:08:12 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -516,13 +516,10 @@ int main()
 #endif /* HAVE_PTHREAD_H */
 void foo(pthread_cond_t *bar)
 {
-  pthread_cond_init(bar, pthread_condattr_default)
+  pthread_cond_init(bar, pthread_condattr_default);
 }
-
-int main(int argc, char **argv)
-{
-  exit(0);
-}
+        ],[
+          exit(0);
         ],[
 	  pike_cv_have_pthread_condattr_default=yes
 	],[
