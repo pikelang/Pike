@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.24 1997/11/08 01:34:41 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.25 1998/02/13 00:44:26 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -927,9 +927,6 @@ void check_mapping(struct mapping *m)
 
   if(m->size > (m->hashsize + 3) * AVG_LINK_LENGTH)
     fatal("Pretty mean hashtable there buster!.\n");
-  
-  if(m->size < (m->hashsize - 3) * MIN_LINK_LENGTH)
-    fatal("Hashsize is too small for mapping.\n");
   
   if(m->size > 0 && (!m->ind_types || !m->val_types))
     fatal("Mapping type fields are... wrong.\n");
