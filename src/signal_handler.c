@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.300 2004/06/23 14:30:24 nilsson Exp $
+|| $Id: signal_handler.c,v 1.301 2004/07/02 12:09:55 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.300 2004/06/23 14:30:24 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.301 2004/07/02 12:09:55 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2076,6 +2076,7 @@ extern int pike_make_pipe(int *);
 #define PROCE_SETSID		11
 #define PROCE_SETCTTY		12
 #define PROCE_CHROOT		13
+#define PROCE_CLRCLOEXEC	14
 
 #define PROCERROR(err, id)	do { int _l, _i; \
     buf[0] = err; buf[1] = errno; buf[2] = id; \
@@ -3595,8 +3596,12 @@ void f_create_process(INT32 args)
 		     "File not found?\n", buf[1]);
 	  break;
 	case PROCE_CLOEXEC:
-	  Pike_error("Process.create_process(): set_close_on_exec() failed. errno:%d\n",
-		     buf[1]);
+	  Pike_error("Process.create_process(): set_close_on_exec(%d, 1) failed. errno:%d\n",
+		     buf[2], buf[1]);
+	  break;
+	case PROCE_CLRCLOEXEC:
+	  Pike_error("Process.create_process(): set_close_on_exec(%d, 0) failed. errno:%d\n",
+		     buf[2], buf[1]);
 	  break;
 	case PROCE_CHROOT:
 	  Pike_error("Process.create_process(): chroot() failed. errno:%d\n",
@@ -3629,10 +3634,6 @@ void f_create_process(INT32 args)
 
       /* Close our parent's end of the pipe. */
       while(close(control_pipe[0]) < 0 && errno==EINTR);
-
-      /* Ensure that the pipe will be closed when the child starts. */
-      if(set_close_on_exec(control_pipe[1], 1) < 0)
-          PROCERROR(PROCE_CLOEXEC, 0);
 
 #ifndef HAVE_VFORK
       /* Wait for parent to get ready... */
@@ -3767,22 +3768,48 @@ void f_create_process(INT32 args)
         int fd;
 	/* Note: This is O(n²), but that ought to be ok. */
 	for (fd=0; fd<num_fds; fd++) {
-	  int fd2;
-	  int remapped = -1;
-	  if ((fds[fd] == -1) ||
-	      (fds[fd] == fd)) continue;
-	  for (fd2 = fd+1; fd2 < num_fds; fd2++) {
-	    if (fds[fd2] == fd) {
-	      /* We need to temorarily remap this fd, since it's in the way */
-	      if (remapped == -1) {
-		if ((remapped = dup(fd)) < 0)
-		  PROCERROR(PROCE_DUP, fd);
+	  /*fprintf(stderr, "Remapping fd %d to %d\n", fds[fd], fd);*/
+	  if (fds[fd] == -1) continue;
+	  if (fds[fd] == fd) {
+	    /* Clear close on exec. */
+	    int code = set_close_on_exec(fd, 0);
+	    if (code < 0)
+	      PROCERROR(PROCE_CLRCLOEXEC, fd);
+	    continue;
+	  }
+	  if (fd == control_pipe[1]) {
+	    /* Our control pipe is in the way.
+	     * Move it.
+	     */
+	    int remapped;
+	    if ((remapped = dup(fd)) < 0)
+	      PROCERROR(PROCE_DUP, fd);
+	    /*fprintf(stderr, "Moved control pipe to fd %d\n", remapped);*/
+	    control_pipe[1] = remapped;
+	  } else {
+	    /* Is there any other fd in the way?
+	     */
+	    int fd2;
+	    int remapped = -1;
+	    for (fd2 = fd+1; fd2 < num_fds; fd2++) {
+	      if (fds[fd2] == fd) {
+		/* We need to temorarily remap this fd,
+		 * since it's in the way
+		 */
+		if (remapped == -1) {
+		  if ((remapped = dup(fd)) < 0)
+		    PROCERROR(PROCE_DUP, fd);
+		}
+		/*fprintf(stderr, "Moved fd %d to be mapped to fd %d to fd %d\n",
+		  fds[fd2], fd2, remapped);*/
+		fds[fd2] = remapped;
 	      }
-	      fds[fd2] = remapped;
 	    }
 	  }
 	  if (dup2(fds[fd], fd) < 0)
 	    PROCERROR(PROCE_DUP2, fd);
+	  /*fprintf(stderr, "fd %d successfully remapped to fd %d\n",
+	    fds[fd], fd);*/
 	}
 	/* Close the source fds. */
 	for (fd=0; fd<num_fds; fd++) {
@@ -3791,6 +3818,7 @@ void f_create_process(INT32 args)
 	  if (fds[fd] > 2) {
 	    if ((fds[fd] >= num_fds) ||
 		(fds[fds[fd]] == -1)) {
+	      /*fprintf(stderr, "Closing fd %d\n", fds[fd]);*/
 	      close(fds[fd]);
 	    }
 	  }
@@ -3810,27 +3838,35 @@ void f_create_process(INT32 args)
 	       1;
 #endif
 	       fd++) {
+#ifdef HAVE_BROKEN_F_SETFD
 	    int code = 0;
 	    if (fd != control_pipe[1]) {
-#ifdef HAVE_BROKEN_F_SETFD
 	      /* In this case set_close_on_exec is not fork1(2) safe. */
 	      code = close(fd);
-#else /* !HAVE_BROKEN_F_SETFD */
-	      /* Delay close to actual exec */
-	      code = set_close_on_exec(fd, 1);
-#endif /* HAVE_BROKEN_F_SETFD */
 	    }
+#else /* !HAVE_BROKEN_F_SETFD */
+	    /* Delay close to actual exec */
+	    int code = set_close_on_exec(fd, 1);
+#endif /* HAVE_BROKEN_F_SETFD */
 	    if (code == -1) {
 	      if (++num_fail >= PIKE_BADF_LIMIT) {
 		break;
 	      }
 	    } else {
+	      /*fprintf(stderr, "Set close on exec on fd %d\n", fd);*/
 	      num_fail = 0;
 	    }
 	  }
 	}
 	/* FIXME: Map the fds as not close on exec? */
       }
+
+      /* Ensure that the pipe will be closed when the child starts. */
+      if(set_close_on_exec(control_pipe[1], 1) < 0)
+	PROCERROR(PROCE_CLOEXEC, control_pipe[1]);
+
+      /*fprintf(stderr, "Set close on exec on fd %d (control_pipe)\n",
+	control_pipe[1]);*/
 
       if(priority)
         set_priority( 0, priority );
