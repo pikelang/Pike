@@ -13319,17 +13319,15 @@ indices, values, zero_type
 
 <function name=has_index title="does the index exist?">
 <man_syntax>
-int has_index(string <I>haystack</I>, int <I>index</I>, [ int <I>start</I> ]);<br>
-int has_index(array <I>haystack</I>, int <I>index</I>, [ int <I>start</I> ]);<br>
-int has_index(mapping <I>haystack</I>, mixed <I>index</I>, [ mixed <I>start</I> ]);
+int has_index(string <I>haystack</I>, int <I>index</I>);<br>
+int has_index(array <I>haystack</I>, int <I>index</I>);<br>
+int has_index(mapping <I>haystack</I>, mixed <I>index</I>);
 </man_syntax>
 <man_description>
 <p>Search for <i>index</i> in <i>haystack</i>. Returns 1 if the <i>index</i>
-is in the index domain of the <i>haystack</i> or 0 if not found. If the
-optional argument <i>start</i> is present search is started at this
-position.</p>
-<p>The has_index function is equivalent to
-search(indices(haystack), index, [start]) != -1.</p>
+is in the index domain of the <i>haystack</i> or 0 if not found.</p>
+<p>The has_index function is equivalent (but sometimes faster) to
+search(indices(haystack), index) != -1.</p>
 </man_description>
 <man_see>
 indices, values, zero_type, search, has_value
@@ -13340,16 +13338,16 @@ indices, values, zero_type, search, has_value
 
 <function name=has_value title="does the value exist?">
 <man_syntax>
-int has_value(string <I>haystack</I>, int <I>value</I>, [ int <I>start</I> ]);<br>
-int has_value(array <I>haystack</I>, int <I>value</I>, [ int <I>start</I> ]);<br>
-int has_value(mapping <I>haystack</I>, mixed <I>value</I>, [ mixed <I>start</I> ]);
+int has_value(string <I>haystack</I>, int <I>value</I>);<br>
+int has_value(array <I>haystack</I>, int <I>value</I>);<br>
+int has_value(mapping <I>haystack</I>, mixed <I>value</I>);
 </man_syntax>
 <man_description>
 <p>Search for <i>value</i> in <i>haystack</i>. Returns 1 if the <i>value</i>
-is in value domain of the <i>haystack</i> or 0 if not found. If the optional
-argument <i>start</i> is present search is started at this position.</p>
-<p>The has_value function is equivalent to
-search(values(haystack), value, [start]) != -1.</p>
+is in value domain of the <i>haystack</i> or 0 if not found.</p>
+<p>The has_value function is in all cases except for strings equivalent
+(but sometimes faster) to search(values(haystack), value) != -1.</p>
+For strings, it is equivalent to search(haystack, value) != -1.
 </man_description>
 <man_see>
 indices, values, zero_type, search, has_index
