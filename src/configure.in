@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.311 1999/08/25 05:07:10 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.312 1999/08/25 17:01:42 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1180,7 +1180,7 @@ else
   # Test for POSIX threads
 
   case "x$pike_cv_sys_os" in
-    xOSF1)
+    xOSF1*)
       LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
     ;;
  
@@ -1188,7 +1188,7 @@ else
       LIBS="${OLDLIBS}"
     ;;
 
-    xUnixWare)
+    xUnixWare*)
       if test "$GCC" = yes ; then
         LIBS="${LIBS} -lthread"
       else
@@ -1409,7 +1409,7 @@ int main()
 
     AC_MSG_CHECKING(unix threads)
     case "x$pike_cv_sys_os" in
-      xUnixWare)
+      xUnixWare*)
   	if test "$GCC" = yes ; then
   	  LIBS="${LIBS} -lthread"
   	else
@@ -2975,16 +2975,16 @@ if test -z "$LDSHARED" ; then
     hp*|HP*) LDSHARED="ld -b";;
     OSF*) LDSHARED="ld -expect_unresolved '*' -shared -msym -O3";;
     DYNIX/ptx*) LDSHARED="ld -G";;
-    next) LDSHARED="$CC $CFLAGS -nostdlib -r";;
+    next*) LDSHARED="$CC $CFLAGS -nostdlib -r";;
     Linux*) LDSHARED="$CC -shared";;
     GNU*) LDSHARED="ld -Bshareable";;
     FreeBSD*) LDSHARED="ld -Bshareable";;
-    NetBSD) LDSHARED="ld -Bshareable";;
+    NetBSD*) LDSHARED="ld -Bshareable";;
     OpenBSD*) LDSHARED="ld -Bshareable";;
     BSD/OS*) LDSHARED="shlicc -r";;
     SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
-    UNIX_SV) LDSHARED="ld -G";;
-    UnixWare)
+    UNIX_SV*) LDSHARED="ld -G";;
+    UnixWare*)
       if test "$GCC" = yes ; then
         LDSHARED="ld -G"
       else
@@ -3051,12 +3051,12 @@ then
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
       GNU*) LINKFORSHARED="-rdynamic";;
-      next) LINKFORSHARED="-u libsys_s";;
+      next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare) LINKFORSHARED="-fpic -Wl,-Bexport";;
+      UnixWare*) LINKFORSHARED="-fpic -Wl,-Bexport";;
 
-      FreeBSD)
+      FreeBSD*)
         AC_TRY_RUN([int main(){exit(
 #ifdef __ELF__
     0
@@ -3073,10 +3073,10 @@ then
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
       GNU*) LINKFORSHARED="-rdynamic";;
-      next) LINKFORSHARED="-u libsys_s";;
+      next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+      UnixWare*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
   fi
 fi
