@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.77 2001/03/04 19:27:20 mirar Exp $");
+RCSID("$Id: sprintf.c,v 1.78 2001/03/05 00:41:35 hubbe Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1233,8 +1233,10 @@ static void low_pike_sprintf(struct format_stack *fs,
 	} else if (fs->fsp->precision==0) {
 	  tf = RINT(tf);
         }
-	
+
+	debug_malloc_touch(x);
 	sprintf(x,buffer,1,fs->fsp->precision<0?0:fs->fsp->precision,tf);
+	debug_malloc_touch(x);
 	fs->fsp->len=strlen(x);
 	
 	/* Make sure that the last digits really are zero. */
@@ -1253,6 +1255,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	      break;
 	    }
 	}
+	debug_malloc_touch(x);
 
 	fs->fsp->fi_free_string=x;
 	break;
