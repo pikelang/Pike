@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.42 2003/01/08 09:43:18 grubba Exp $
+|| $Id: lexer.h,v 1.43 2003/02/26 12:34:58 mast Exp $
 */
 
 /*
@@ -759,10 +759,20 @@ static int low_yylex(YYSTYPE *yylval)
 		(char *)lex.pos, f, yylval->fnum);
 #endif /* 0 */
 	lex.pos=p1;
+	if (lex_isidchar (LOOK())) {
+	  my_yyerror ("Invalid char '%c' in constant.",
+		      INDEX_CHARP (lex.pos, l, SHIFT));
+	  do SKIP(); while (lex_isidchar (LOOK()));
+	}
 	return TOK_FLOAT;
       }else{
 	debug_malloc_touch(yylval->n);
 	lex.pos=p2;
+	if (lex_isidchar (LOOK())) {
+	  my_yyerror ("Invalid char '%c' in constant.",
+		      INDEX_CHARP (lex.pos, l, SHIFT));
+	  do SKIP(); while (lex_isidchar (LOOK()));
+	}
 	return TOK_NUMBER;
       }
     }
