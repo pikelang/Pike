@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.94 2004/03/20 17:34:31 grubba Exp $
+|| $Id: backend.cmod,v 1.95 2004/03/20 20:19:30 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.94 2004/03/20 17:34:31 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.95 2004/03/20 20:19:30 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -853,8 +853,9 @@ PIKECLASS Backend
        }
      }
      
-     for(d=0;d<10 && e<me->call_buffer_size;d++,e++)
-       CALL_(e)=(call_out *)(ptrdiff_t)-1;
+     for(d=0;d<10 && e<me->call_buffer_size;d++,e++) {
+       if (CALL(e)) Pike_fatal("Call out left in buffer.\n");
+     }
 
      for(e=0;e<(int)me->hash_size;e++)
      {
@@ -959,6 +960,7 @@ PIKECLASS Backend
 	 me->call_buffer_size=128;
 	 me->call_buffer=(call_out **)xalloc(sizeof(call_out *)*me->call_buffer_size);
 	 if(!me->call_buffer) return 0;
+	 MEMSET(me->call_buffer, 0, sizeof(call_out *)*me->call_buffer_size);
 	 me->num_pending_calls=0;
 	 
 	 me->hash_size=hashprimes[me->hash_order];
@@ -968,16 +970,13 @@ PIKECLASS Backend
 	 struct hash_ent *new_hash;
 	 int e;
 	 
-	 if (me->call_buffer) {
-	   new_buffer = (call_out **)
-	     realloc((char *)me->call_buffer,
-		     sizeof(call_out *)*me->call_buffer_size*2);
-	 } else {
-	   new_buffer = (call_out **)
-	     malloc(sizeof(call_out *)*me->call_buffer_size*2);
-	 }
+	 new_buffer = (call_out **)
+	   realloc((char *)me->call_buffer,
+		   sizeof(call_out *)*me->call_buffer_size*2);
 	 if(!new_buffer)
 	   Pike_error("Not enough memory for another call_out\n");
+	 MEMSET(new_buffer + me->call_buffer_size, 0,
+		sizeof(call_out *)*me->call_buffer_size);
 	 me->call_buffer_size*=2;
 	 me->call_buffer=new_buffer;
 
@@ -1014,6 +1013,12 @@ PIKECLASS Backend
 
      /* time to allocate a new call_out struct */
      args=aggregate_array(num_arg-1);
+
+#ifdef PIKE_DEBUG
+     if (CALL(me->num_pending_calls)) {
+       Pike_fatal("Lost call out in buffer.\n");
+     }
+#endif /* PIKE_DEBUG */
      
      CALL_(me->num_pending_calls) = new = alloc_call_out();
      new->pos=me->num_pending_calls;
@@ -1171,6 +1176,7 @@ PIKECLASS Backend
 	   MOVECALL(0,me->num_pending_calls);
 	   adjust_down(me, 0);
 	 }
+	 CALL_(me->num_pending_calls) = NULL;
 	 UNPROTECT_CALL_OUTS();
 	 c=*cc;
 	 really_free_call_out(cc);
@@ -1350,6 +1356,7 @@ PIKECLASS Backend
 	   MOVECALL(e,me->num_pending_calls);
 	   adjust(me,e);
 	 }
+	 CALL_(me->num_pending_calls) = NULL;
        }else{
 	 pop_n_elems(args);
 	 Pike_sp->type = T_INT;
@@ -2005,9 +2012,11 @@ PIKECLASS Backend
 	call_callback(& me->backend_callbacks, NULL);
 #ifdef PIKE_DEBUG
 	if (my_timercmp (&max_timeout, <, &next_timeout))
-	  Pike_fatal ("Timeout raised from %ld.%ld to %ld.%ld by a backend callback.\n",
-		      max_timeout.tv_sec, max_timeout.tv_usec,
-		      next_timeout.tv_sec, next_timeout.tv_usec);
+	  Pike_fatal ("Timeout raised from %lu.%lu to %lu.%lu by a backend callback.\n",
+		      (unsigned long)max_timeout.tv_sec,
+		      (unsigned long)max_timeout.tv_usec,
+		      (unsigned long)next_timeout.tv_sec,
+		      (unsigned long)next_timeout.tv_usec);
 #endif
 
 	if(my_timercmp(&next_timeout, > , &current_time))
