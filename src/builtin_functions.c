@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.242 2000/03/13 21:43:09 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.243 2000/03/14 00:12:04 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5568,6 +5568,8 @@ void init_builtin_efuns(void)
    * Used to prototype the master object.
    */
   start_new_program();
+  ADD_PROTOTYPE("_main", tFunc(tInt tArr(tStr) tArr(tStr),tVoid), 0);
+
   ADD_PROTOTYPE("cast_to_object", tFunc(tString tString, tObj), 0);
   ADD_PROTOTYPE("cast_to_program", tFunc(tStr tStr tOr(tVoid, tObj), tPrg), 0);
   ADD_PROTOTYPE("compile_error", tFunc(tStr tInt tStr, tVoid), 0);
@@ -5590,6 +5592,12 @@ void init_builtin_efuns(void)
 
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
   ADD_PROTOTYPE("resolv", tFunc(tStr tOr(tStr, tVoid), tMix), 0);
+
+  /* These two aren't called from C-code, but are popular from other code. */
+  ADD_PROTOTYPE("getenv",
+		tOr(tFunc(tStr,tStr), tFunc(tNone, tMap(tStr, tStr))),
+		ID_OPTIONAL);
+  ADD_PROTOTYPE("putenv", tFunc(tStr tStr, tVoid), ID_OPTIONAL);
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
 
