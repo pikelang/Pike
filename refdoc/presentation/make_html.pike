@@ -369,8 +369,8 @@ string parse_text(Node n, void|String.Buffer ret) {
       continue;
     }
 
-    if(c->get_node_type()==XML_COMMENT)
-      continue;
+    //    if(c->get_node_type()==XML_COMMENT)
+    //      continue;
 
 #ifdef DEBUG
     if(c->get_node_type()!=XML_ELEMENT) {
