@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.61 2000/02/04 20:16:16 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.62 2000/02/06 01:49:54 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1614,6 +1614,7 @@ void mapping_search_no_free(struct svalue *to,
 	to->u.integer=0;
 	return;
       }
+      k=k->next;
     }
     
     
