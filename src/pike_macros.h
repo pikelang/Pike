@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.23 2000/12/16 05:45:44 marcus Exp $
+ * $Id: pike_macros.h,v 1.24 2001/05/14 03:29:36 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -77,6 +77,9 @@
  * one above can do. I.e. it frees a ref to the item p points at, and
  * sets p to the same or next item with references, or sets it to
  * zero. */
+/* how can SET_NEXT_AND_FREE leave *next* pointing to a deallocated block?
+ * -Hubbe
+ */
 #define FREE_AND_GET_REFERENCED(p, item_type, free_item) do {		\
   item_type *next;							\
   while (1) {								\
