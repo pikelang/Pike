@@ -1271,7 +1271,7 @@ void init_files_programs()
   add_function("set_buffer",file_set_buffer,"function(int,string|void:void)",0);
   add_function("open_socket",file_open_socket,"function(:int)",0);
   add_function("connect",file_connect,"function(string,int:int)",0);
-  add_function("query_address",file_query_address,"function(int|void:int)",0);
+  add_function("query_address",file_query_address,"function(int|void:string)",0);
   add_function("create",file_create,"function(void|string:void)",0);
   add_function("`<<",file_lsh,"function(mixed:object)",0);
 
