@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.24 2000/03/25 01:11:34 hubbe Exp $
+ * $Id: oracle.c,v 1.25 2000/03/25 22:40:02 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -38,7 +38,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.24 2000/03/25 01:11:34 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.25 2000/03/25 22:40:02 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -440,7 +440,7 @@ static void f_num_fields(INT32 args)
 		  &columns,
 		  0,
 		  OCI_ATTR_PARAM_COUNT,
-		  dbcon->error_handle); // <- FIXME
+		  dbcon->error_handle); /* <- FIXME */
 
 
     THREADS_DISALLOW();
@@ -538,7 +538,6 @@ static sb4 define_callback(void *dbresultinfo,
 }
 
 
-// FIXME: Threading...
 static void f_fetch_fields(INT32 args)
 {
   struct dbresult *dbresult = THIS_RESULT;
