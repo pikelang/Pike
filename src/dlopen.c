@@ -25,6 +25,11 @@
 /* In case we're compiling with NDEBUG */
 _CRTIMP void __cdecl _assert(void*, void*, unsigned);
 
+#ifdef DEBUG_MALLOC
+#define ACCEPT_MEMORY_LEAK(X) dmalloc_accept_leak(X)
+#else
+#define ACCEPT_MEMORY_LEAK(X)
+#endif
 
 static char *dlerr=0;
 
@@ -85,7 +90,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.22 2001/09/18 23:54:57 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.23 2001/09/20 19:00:20 hubbe Exp $");
 
 #endif
 
@@ -116,6 +121,7 @@ static struct Htable *alloc_htable(size_t size)
 #endif
   ret=(struct Htable *)malloc(sizeof(struct Htable) +
 			      sizeof(void *)*(size-1));
+  ACCEPT_MEMORY_LEAK(ret);
   ret->size=size;
   ret->entries=0;
   for(e=0;e<size;e++) ret->symbols[e]=0;
@@ -243,6 +249,7 @@ static void htable_put(struct Htable *h, char *name, size_t l, void *ptr,
     /* out of memory */
     exit(1);
   }
+  ACCEPT_MEMORY_LEAK(tmp);
   memcpy(tmp->name, name, l);
   tmp->name[l]=0;
   tmp->len=l;
@@ -1231,6 +1238,11 @@ static int dl_load_coff_files(struct DLHandle *ret,
     }
   }
 
+  for(e=0;e<num;e++)
+  {
+    free((char *) data->section_addresses);
+  }
+
   return 0; /* Done (I hope) */
 #undef data
 }
@@ -1367,8 +1379,10 @@ struct DLHandle *dlopen(const char *name, int flags)
   if(tmpdata.buflen==-1) return 0;
 
   ret=(struct DLHandle *)calloc(sizeof(struct DLHandle),1);
+  ACCEPT_MEMORY_LEAK(ret);
   ret->refs=1;
   ret->filename=strdup(name);
+  ACCEPT_MEMORY_LEAK(ret->filename);
   ret->flags=flags;
 
   tmpdata.buffer = (unsigned char *)read_file(name, &tmpdata.buflen);
