@@ -125,3 +125,6 @@ INT32 READ_F_JUMP(INT32 offset)
 	READ_F_JUMP is called when the compiler needs to read back the
 	to_offset that was passed to UPDATE_F_JUMP.
 
+void CHECK_RELOC(size_t reloc, size_t program_size)
+	Check if a relocation is valid for the program.
+	Should throw an error on bad relocations.
