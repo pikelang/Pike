@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.339 2004/08/16 16:22:11 mast Exp $
+|| $Id: language.yacc,v 1.340 2004/08/25 14:16:20 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.339 2004/08/16 16:22:11 mast Exp $");
+RCSID("$Id: language.yacc,v 1.340 2004/08/25 14:16:20 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -573,7 +573,7 @@ constant: modifiers TOK_CONSTANT constant_list ';' {}
 block_or_semi: block
   {
     $$ = check_node_hash(mknode(F_COMMA_EXPR,$1,mknode(F_RETURN,mkintnode(0),0)));
-    if ($1) COPY_LINE_NUMBER_INFO ($$, $1);
+    COPY_LINE_NUMBER_INFO($$, $1);
   }
   | ';' { $$ = NULL; }
   | TOK_LEX_EOF { yyerror("Expected ';'."); $$ = NULL; }
@@ -1123,7 +1123,7 @@ cast: open_paren_with_line_info type ')'
       struct pike_type *s = compiler_pop_type();
       $$ = mktypenode(s);
       free_type(s);
-      COPY_LINE_NUMBER_INFO ($$, $1);
+      COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
     }
     ;
@@ -1133,7 +1133,7 @@ soft_cast: open_bracket_with_line_info type ']'
       struct pike_type *s = compiler_pop_type();
       $$ = mktypenode(s);
       free_type(s);
-      COPY_LINE_NUMBER_INFO ($$, $1);
+      COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
     }
     ;
@@ -1677,7 +1677,7 @@ block:'{'
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
-    if ($5) COPY_LINE_NUMBER_INFO ($5, $3);
+    COPY_LINE_NUMBER_INFO($5, $3);
     free_node ($3);
     $$=$5;
   }
@@ -1835,7 +1835,7 @@ labeled_statement: TOK_IDENTIFIER
     /* FIXME: This won't be correct if the node happens to be shared.
      * That's an issue to be solved with shared nodes in general,
      * though. */
-    COPY_LINE_NUMBER_INFO ($$, $1);
+    COPY_LINE_NUMBER_INFO($$, $1);
   }
   ;
 
@@ -2642,7 +2642,7 @@ cond: TOK_IF
 		       mkcastnode(void_type_string, $8),
 		       mkcastnode(void_type_string, $9)));
     $$ = mkcastnode(void_type_string, $$);
-    COPY_LINE_NUMBER_INFO ($$, $3);
+    COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
@@ -2702,7 +2702,7 @@ foreach: TOK_FOREACH
       free_node($6);
       $$=$9;
     }
-    COPY_LINE_NUMBER_INFO ($$, $3);
+    COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
@@ -2714,7 +2714,7 @@ do: TOK_DO line_number_info statement
   TOK_WHILE '(' safe_comma_expr end_cond expected_semicolon
   {
     $$=mknode(F_DO,$3,$6);
-    COPY_LINE_NUMBER_INFO ($$, $2);
+    COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
     Pike_compiler->compiler_frame->opt_flags |= OPT_CUSTOM_LABELS;
   }
@@ -2757,7 +2757,7 @@ for: TOK_FOR
   {
     $$=mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $6),
 	      mknode(F_FOR,$8,mknode(':',$12,$10)));
-    COPY_LINE_NUMBER_INFO ($$, $3);
+    COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
@@ -2779,7 +2779,7 @@ while:  TOK_WHILE
   '(' safe_comma_expr end_cond statement
   {
     $$=mknode(F_FOR,$6,mknode(':',$8,NULL));
-    COPY_LINE_NUMBER_INFO ($$, $3);
+    COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
@@ -2804,7 +2804,7 @@ switch:	TOK_SWITCH
   '(' safe_comma_expr end_cond statement
   {
     $$=mknode(F_SWITCH,$6,$8);
-    COPY_LINE_NUMBER_INFO ($$, $3);
+    COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>4;
@@ -2898,7 +2898,7 @@ expr0: expr01
   | open_bracket_with_line_info low_lvalue_list ']' '=' expr0
   {
     $$=mknode(F_ASSIGN,$5,mknode(F_ARRAY_LVALUE,$2,0));
-    COPY_LINE_NUMBER_INFO ($$, $1);
+    COPY_LINE_NUMBER_INFO($$, $1);
     free_node ($1);
   }
   | expr4 assign expr0  { $$=mknode($2,$1,$3); }
@@ -2907,7 +2907,7 @@ expr0: expr01
   | open_bracket_with_line_info low_lvalue_list ']' assign expr0
   {
     $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5);
-    COPY_LINE_NUMBER_INFO ($$, $1);
+    COPY_LINE_NUMBER_INFO($$, $1);
     free_node ($1);
   }
   | open_bracket_with_line_info low_lvalue_list ']' error
@@ -3145,7 +3145,7 @@ expr4: string
   | expr4 open_paren_with_line_info expr_list  ')'
     {
       $$=mkapplynode($1,$3);
-      COPY_LINE_NUMBER_INFO ($$, $2);
+      COPY_LINE_NUMBER_INFO($$, $2);
       free_node ($2);
     }
   | expr4 open_paren_with_line_info error ')'
@@ -3176,20 +3176,20 @@ expr4: string
   | expr4 open_bracket_with_line_info '*' ']'
   {
     $$=mknode(F_AUTO_MAP_MARKER, $1, 0);
-    COPY_LINE_NUMBER_INFO ($$, $2);
+    COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
   | expr4 open_bracket_with_line_info expr0 ']'
   {
     $$=mknode(F_INDEX,$1,$3);
-    COPY_LINE_NUMBER_INFO ($$, $2);
+    COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
   | expr4 open_bracket_with_line_info
     comma_expr_or_zero expected_dot_dot comma_expr_or_maxint ']'
   {
     $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
-    COPY_LINE_NUMBER_INFO ($$, $2);
+    COPY_LINE_NUMBER_INFO($$, $2);
     free_node ($2);
   }
   | expr4 open_bracket_with_line_info error ']'
@@ -3211,11 +3211,11 @@ expr4: string
   | expr4 open_bracket_with_line_info error ')'
     {$$=$1; yyerror("Missing ']'."); free_node ($2);}
   | open_paren_with_line_info comma_expr2 ')'
-    {$$=$2; COPY_LINE_NUMBER_INFO ($$, $1); free_node ($1);}
+    {$$=$2; COPY_LINE_NUMBER_INFO($$, $1); free_node ($1);}
   | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
     {
       $$=mkefuncallnode("aggregate",$3);
-      COPY_LINE_NUMBER_INFO ($$, $1);
+      COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
     }
   | open_paren_with_line_info
@@ -3223,21 +3223,21 @@ expr4: string
     m_expr_list close_bracket_or_missing ')'
     {
       $$=mkefuncallnode("aggregate_mapping",$3);
-      COPY_LINE_NUMBER_INFO ($$, $1);
+      COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
       free_node ($2);
     }
   | TOK_MULTISET_START line_number_info expr_list TOK_MULTISET_END
     {
       $$=mkefuncallnode("aggregate_multiset",$3);
-      COPY_LINE_NUMBER_INFO ($$, $2);
+      COPY_LINE_NUMBER_INFO($$, $2);
       free_node ($2);
     }
   | TOK_MULTISET_START line_number_info expr_list ')'
     {
       yyerror("Missing '>'.");
       $$=mkefuncallnode("aggregate_multiset",$3);
-      COPY_LINE_NUMBER_INFO ($$, $2);
+      COPY_LINE_NUMBER_INFO($$, $2);
       free_node ($2);
     }
   | open_paren_with_line_info error ')' { $$=$1; yyerrok; }
@@ -3263,7 +3263,7 @@ expr4: string
   | expr4 TOK_ARROW line_number_info magic_identifier
   {
     $$=mknode(F_ARROW,$1,$4);
-    COPY_LINE_NUMBER_INFO ($$, $3);
+    COPY_LINE_NUMBER_INFO($$, $3);
     free_node ($3);
   }
   | expr4 TOK_ARROW line_number_info error {$$=$1; free_node ($3);}
@@ -3748,7 +3748,11 @@ sscanf: TOK_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
 
 lvalue: expr4
   | open_bracket_with_line_info low_lvalue_list ']'
-    { $$=mknode(F_ARRAY_LVALUE, $2,0); COPY_LINE_NUMBER_INFO ($$, $1); free_node ($1); }
+  {
+    $$=mknode(F_ARRAY_LVALUE, $2,0);
+    COPY_LINE_NUMBER_INFO($$, $1);
+    free_node($1);
+  }
   | type6 TOK_IDENTIFIER
   {
     int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
