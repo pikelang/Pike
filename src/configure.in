@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.611 2002/08/21 17:13:15 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.612 2002/08/27 14:42:44 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1719,6 +1719,8 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
     $with_root/usr/gnu/include $with_root/opt/gnu/include \
     $with_root/sw/gnu/include $with_root/sw/include \
     $with_root/usr/freeware/include $with_root/usr/pkg/include \
+    $with_root/opt/sfw/include $with_root/opt/gnome-1.4/include \
+    $with_root/usr/local/include/freetype1 \
     `echo $with_root/usr/X11*/include | sort -r`
   do
     AC_MSG_CHECKING($d)
@@ -1774,6 +1776,7 @@ if test $ldflags_is_set = no ; then
     $with_root/usr/local/lib $with_root/sw/local/lib $with_root/sw/lib \
     $with_root/usr/gnu/lib $with_root/opt/gnu/lib $with_root/sw/gnu/lib \
     $with_root/usr/freeware/lib $with_root/usr/pkg/lib \
+    $with_root/opt/sfw/lib $with_root/opt/gnome-1.4/lib \
     `echo $with_root/usr/X11*/lib | sort -r`
   do
     for suff in '' 32 64 '/64'; do
@@ -1826,6 +1829,7 @@ for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$
     "$with_root" $with_root/usr $with_root/usr/ccs $with_root/usr/vac \
     $with_root/usr/local $with_root/sw/local $with_root/usr/gnu \
     $with_root/opt/gnu $with_root/sw/gnu $with_root/sw \
+    $with_root/opt/sfw $with_root/opt/gnome-1.4 \
     $with_root/usr/freeware $with_root/usr/pkg
 do
   AC_MSG_CHECKING($d/bin)

@@ -1,19 +1,14 @@
 /*
- * $Id: image_ttf.c,v 1.43 2002/08/05 18:32:29 kiwi Exp $
+ * $Id: image_ttf.c,v 1.44 2002/08/27 14:42:45 kiwi Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.43 2002/08/05 18:32:29 kiwi Exp $");
+RCSID("$Id: image_ttf.c,v 1.44 2002/08/27 14:42:45 kiwi Exp $");
 
 #ifdef HAVE_LIBTTF
-#if defined(HAVE_FREETYPE1_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE1_FREETYPE_FTXKERN_H)
-#include <freetype1/freetype/freetype.h>
-#include <freetype1/freetype/ftxkern.h>
-
-#else /* !HAVE_FREETYPE1_FREETYPE_FREETYPE_H || !HAVE_FREETYPE1_FREETYPE_FTXKERN_H */
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
 
 #include <freetype/freetype.h>
@@ -25,7 +20,6 @@ RCSID("$Id: image_ttf.c,v 1.43 2002/08/05 18:32:29 kiwi Exp $");
 #include <ftxkern.h>
 
 #endif /* HAVE_FREETYPE_FREETYPE_H && HAVE_FREETYPE_FTXKERN_H */
-#endif /* HAVE_FREETYPE1_FREETYPE_FREETYPE_H || HAVE_FREETYPE1_FREETYPE_FTXKERN_H */
 #endif /* HAVE_LIBTTF */
 
 #include "pike_macros.h"
