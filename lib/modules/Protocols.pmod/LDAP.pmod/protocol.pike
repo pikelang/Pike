@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.16 2005/03/11 16:49:57 mast Exp $
+// $Id: protocol.pike,v 1.17 2005/03/29 17:59:31 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -47,6 +47,8 @@ import Protocols.LDAP;
   object low_fd = Stdio.File();			// helper fd
   object ldapfd;			// helper fd
 
+static int last_io_time; // Timestamp when I/O on the fd was made last.
+
   int seterr(int errno) {
   // Sets ldap_err* variables and returns errno
 
@@ -71,6 +73,11 @@ import Protocols.LDAP;
 
   array error() { return ({error_number(), error_string()}); }
 
+
+//! Returns when I/O was made last. Useful to find out whether it's
+//! safe to continue using a connection that has been idle for some
+//! time.
+int get_last_io_time() {return last_io_time;}
 
   static void read_answer() {
   // ----------------------
@@ -137,6 +144,8 @@ import Protocols.LDAP;
     DWRITE("protocol.read_answer: ok=1.\n");
     ok = 1;
 
+    last_io_time = time();
+
     if(con_ok)
       con_ok(this, @extra_args);
   }
@@ -178,6 +187,7 @@ import Protocols.LDAP;
   void create(object fd) {
   // -------------------
     ldapfd = fd;
+    last_io_time = time();
   }
 
 
@@ -218,6 +228,8 @@ import Protocols.LDAP;
     msgval = 0; msgid = 0;
     writebuf= "";
     readbuf= ""; // !!! NEni to pozde ?
+
+    last_io_time = time();
 
     //`()();
 
@@ -280,6 +292,7 @@ import Protocols.LDAP;
       return -ldap_errno;
     }
     retv += s;
+    last_io_time = time();
     DWRITE(sprintf("protocol.readmsg: %s\n", .ldap_privates.ldap_der_decode(retv)->debug_string()));
     return retv;
   }
@@ -313,6 +326,7 @@ import Protocols.LDAP;
     }
     DWRITE(sprintf("protocol.writemsg: write OK [%d bytes].\n",rv));
     msgval = 0; msgid = 0;
+    last_io_time = time();
     return msgnum;
   }
 
