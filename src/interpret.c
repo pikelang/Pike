@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.161 2000/08/10 08:35:24 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.162 2000/08/10 08:38:20 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -675,7 +675,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 {
   struct object *o;
   struct pike_frame *scope=0;
-  int fun, tailrecurse=-1;
+  int tailrecurse=-1;
+  ptrdiff_t fun;
   struct svalue *save_sp=Pike_sp-args;
 
 #ifdef PROFILING
@@ -853,8 +854,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
   
 
   case APPLY_LOW:
-    o=(struct object *)arg1;
-    fun=(long)arg2;
+    o = (struct object *)arg1;
+    fun = (ptrdiff_t)arg2;
 
   apply_low:
     scope=0;
@@ -898,8 +899,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)
       {
-	fprintf(stderr, "Function index out of range. %d >= %d\n",
-		fun, (int)p->num_identifier_references);
+	fprintf(stderr, "Function index out of range. %ld >= %d\n",
+		(long)fun, (int)p->num_identifier_references);
 	fprintf(stderr,"########Program is:\n");
 	describe(p);
 	fprintf(stderr,"########Object is:\n");
