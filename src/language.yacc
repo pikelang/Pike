@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.332 2004/03/16 13:42:30 grubba Exp $
+|| $Id: language.yacc,v 1.333 2004/03/17 10:30:37 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.332 2004/03/16 13:42:30 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.333 2004/03/17 10:30:37 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2404,8 +2404,6 @@ failsafe_program: '{' program end_block
 
 class: modifiers TOK_CLASS line_number_info optional_identifier
   {
-    extern int num_parse_error;
-    int num_errors=Pike_compiler->num_parse_error;
     if(!$4)
     {
       struct pike_string *s;
@@ -2480,7 +2478,6 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
       }
       Pike_compiler->compiler_pass=tmp;
     }
-    Pike_compiler->num_parse_error=num_errors; /* Kluge to prevent gazillion error messages */
   }
   optional_create_arguments failsafe_program
   {
@@ -2494,9 +2491,9 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 
     if(p) {
       free_program(p);
-    } else {
+    } else if (!Pike_compiler->num_parse_error) {
       /* Make sure code in this class is aware that something went wrong. */
-      Pike_compiler->num_parse_error++;
+      Pike_compiler->num_parse_error = 1;
     }
 
     $$=mkidentifiernode($<number>5);
@@ -3463,10 +3460,13 @@ low_idents: TOK_IDENTIFIER
 	     !($$ = program_magic_identifier (Pike_compiler, 0, 0,
 					      Pike_compiler->last_identifier, 0))) {
       if((Pike_compiler->flags & COMPILATION_FORCE_RESOLVE) ||
-	 ((!Pike_compiler->num_parse_error) &&
-	  (Pike_compiler->compiler_pass==2))) {
+	 (Pike_compiler->compiler_pass==2)) {
 	my_yyerror("Undefined identifier \"%s\".",
 		   Pike_compiler->last_identifier->str);
+	/* FIXME: Add this identifier as a constant in the current program to
+	 *        avoid multiple reporting of the same identifier.
+	 * NOTE: This should then only be done in the second pass.
+	 */	
 	$$=0;
       }else{
 	$$=mknode(F_UNDEFINED,0,0);
@@ -3891,7 +3891,6 @@ bad_expr_ident:
 
 void yyerror(char *str)
 {
-  extern int num_parse_error;
   extern int cumulative_parse_error;
 
   STACK_LEVEL_START(0);
