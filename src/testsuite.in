@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.367 2001/01/14 20:49:58 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.368 2001/01/15 00:28:34 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4307,6 +4307,14 @@ test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4.
 test_any([[float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q]],0.1+1.1+2.1+3.1+8.1+9.1)
 
 // Breaks and continues with labels
+test_compile_error([[break;]])
+test_compile_error([[continue;]])
+test_compile_error([[foo: break;]])
+test_compile_error([[foo: continue;]])
+test_compile_error([[break foo;]])
+test_compile_error([[continue foo;]])
+test_any([[foo: break foo; return 1;]], 1)
+test_compile_error([[foo: continue foo;]])
 test_compile_error([[int a; foo: if (a++) a++; else foo: a++;]])
 test_compile_error([[int a; foo: foo: if (a++) a++; else a++;]])
 test_compile([[int a; foo: if (a++) a++; foo: a++;]])
@@ -4315,6 +4323,20 @@ test_compile([[int a; do foo: if (a++) break foo; while (0);]])
 test_compile([[int a; foo: do if (a++) break foo; while (0);]])
 test_compile_error([[int a; do foo: if (a++) continue foo; while (0);]])
 test_compile([[int a; foo: do if (a++) continue foo; while (0);]])
+test_any([[
+  int i;
+  for (i = 1; i <= 4; i++)
+    foo: break;
+  return i;
+]], 1);
+test_any([[
+  int i;
+  for (int j = 1; j <= 4; j++) {
+    foo: continue;
+    i = j;
+  }
+  return i;
+]], 0);
 test_any_equal([[
   int a, b;
 foo:
@@ -4389,6 +4411,91 @@ foo:
   }
   return ({a, b});
 ]], ({4, 8}));
+test_any([[
+foo:
+  if (stringp (catch {break foo;}) + 1) return 1;
+  else return 2;
+  return 3;
+]], 3);
+test_any([[
+foo:
+  do {
+    if ((3*time() + 5) + stringp (catch {break foo;})) return 1;
+    else return 2;
+  } while (0);
+  return 3;
+]], 3);
+test_do([[
+  void gnu (mixed... args) {};
+foo:
+  gnu (1,2,3, gauge {break foo;},4,5);
+]]);
+test_do([[
+  void gnu (mixed... args) {};
+foo:
+  gnu (@indices (all_constants()), gauge {break foo;});
+]]);
+test_do([[
+  void gnu (mixed... args) {};
+foo:
+  gnu (1,2,3, catch {break foo;},4,5);
+]]);
+test_do([[
+  void gnu (mixed... args) {};
+foo:
+  gnu (@indices (all_constants()), catch {break foo;});
+]]);
+test_do([[
+  void gnu (mixed... args) {};
+foo:
+  gnu (@({1,2,3,4,5}), catch {break foo;});
+]]);
+test_do([[
+  void gnu (mixed... args) {};
+foo:
+  gnu (@indices (all_constants()), @allocate (511, 1), catch {break foo;});
+]]);
+test_do([[
+  void gnu (mixed... args) {};
+foo:
+  gnu (@allocate (511, 1), @indices (all_constants()), catch {break foo;});
+]]);
+test_compile_error([[
+foo: {
+    @indices (all_constants());
+    break foo;
+  }
+]]);
+test_do([[
+  // Note: This is valid <= 7.0 code.
+  foreach (({1,2,3}), int j)
+    do
+      if (17 + j + gauge {break;}) return 0;
+    while (0);
+]]);
+test_do([[
+  int gnu (mixed... args) {};
+  gnu(@indices (all_constants()), gauge {
+    foreach (({1,2,3}), int j)
+      do
+        if (gnu(@indices (all_constants()),
+		17 + gauge {break;}))
+	  return 0;
+      while (0);
+  });
+]]);
+test_do([[
+  int gnu (mixed... args) {};
+foo:
+  gnu(@indices (all_constants()), gauge {
+    foreach (({1,2,3}), int j)
+      do
+        if (gnu(@indices (all_constants()),
+		17 + gauge {break foo;}))
+	  return 0;
+      while (0);
+  });
+]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
