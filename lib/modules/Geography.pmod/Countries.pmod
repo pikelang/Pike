@@ -1,5 +1,51 @@
 #pike __REAL_VERSION__
 
+mapping _continents=
+([ 
+   "Europe":
+   ({ "AD","AL","AT","BA","BE","BG","BY","CH","CZ",
+      "DE","DK","EE","ES","FI","FO","FR","GB","GE","GI",
+      "GR","HR","HU","IE","IS","IT","JE","LI","LT","LU",
+      "LV","MC","MD","MK","MT","NL","NO","PL","PT","RO",
+      "RU","SE","SI","SJ","SK","SM","TM","UA","VA","YU",}),
+
+   "Africa": 
+   ({ "AC","AO","BF","BI","BJ","BW","CF","CG","CG","CI",
+      "CM","CV","DJ","DZ","EG","EH","ER","ET","GA","GH",
+      "GM","GN","GQ","GW","KE","KM","LR","LS","LY",
+      "MA","MG","ML","MR","MU","MW","MZ","NA","NE",
+      "NG","RW","SC","SD","SH","SL","SN","SO","ST",
+      "SZ","TD","TG","TN","TZ","UG","ZA","ZM","ZR","ZW",
+      "YT"
+   }),
+
+   "Asia":
+   ({ "AC","AE","AF","AM","AZ","BD","BH","BN","BT","BV","CN","CX",
+      "CY","HK","ID","IL","IO","IN","IQ","IR","JO","JP",
+      "KG","KH","KP","KR","KW","KZ","LA","LB","LK",
+      "MM","MN","MO","MV","MY","NP","OM","PH","PK","RE",
+      "QA","SA","SG","SY","TH","TJ","TR","TW","UZ",
+      "VN","YE",}),
+
+   "North America":
+   ({ "AG","AW","BB","BM","BS","BZ","CA","CR",
+      "CU","DM","DO","GD","GL","GT","HN","HT","JM","KN",
+      "KY","LC","MQ","MS","MX","NI","PA","PR","SV","TT",
+      "US","VC","PM"}),
+
+   "South America":
+   ({"AI","AN","AR","BO","BR","CL","CO","EC","FK","GF",
+     "GY","PE","PY","SR","UY","VE","GP","GS","TC","VG","VI"}),
+
+   "Oceania":
+   ({"AS","AU","CC","CK","FJ","FM","KI","MH","MP","NC","NR","NU",
+     "NZ","PF","PG","PN","PW","SB","TO","TV","VU","WS","GU","NF",
+     "TK","TP","WF"}),
+
+   "Antarctica":
+   ({"AQ","TF","HM"}),
+]);
+
 array(Country) countries=
 ({
    Country("AC","Ascension"),
@@ -52,7 +98,8 @@ array(Country) countries=
    Country("CN","China"),
    Country("CO","Colombia"),
    Country("CR","Costa Rica"),
-   Country("CS","Czechoslovakia",(["former":1])),
+   Country("CS","Czechoslovakia",(["former":1,
+				   "_continent":"Europe"])),
    Country("CU","Cuba"),
    Country("CV","Cape Verde"),
    Country("CX","Christmas Island"),
@@ -78,7 +125,6 @@ array(Country) countries=
 				       "Micronesia, Federated States of"})])),
    Country("FO","Faroe Islands"),
    Country("FR","France"),
-   Country("FX","France, Metropolitan"),
    Country("GA","Gabon"),
    Country("GB","United Kingdom",(["aka":({"Great Britain"})])),
    Country("GD","Grenada"),
@@ -171,7 +217,7 @@ array(Country) countries=
    Country("NO","Norway"),
    Country("NP","Nepal"),
    Country("NR","Nauru"),
-   Country("NT","Neutral Zone"),
+   Country("NT","Neutral Zone",(["_continent":"N/A"])),
    Country("NU","Niue"),
    Country("NZ","New Zealand (Aotearoa)",
 	   (["aka":({"Aotearoa","New Zealand","New Zeeland"})])),
@@ -196,7 +242,7 @@ array(Country) countries=
 	   (["aka":({"Russia"})])),
    Country("RW","Rwanda"),
    Country("SA","Saudi Arabia"),
-   Country("Sb","Solomon Islands"),
+   Country("SB","Solomon Islands"),
    Country("SC","Seychelles"),
    Country("SD","Sudan"),
    Country("SE","Sweden"),
@@ -213,7 +259,8 @@ array(Country) countries=
    Country("SO","Somalia"),
    Country("SR","Suriname"),
    Country("ST","Sao Tome and Principe"),
-   Country("SU","USSR",(["former":1])),
+   Country("SU","USSR",(["former":1,
+			 "_continent":"Asia"])),
    Country("SV","El Salvador"),
    Country("SY","Syria"),
    Country("SZ","Swaziland"),
@@ -235,7 +282,6 @@ array(Country) countries=
    Country("TZ","Tanzania"),
    Country("UA","Ukraine"),
    Country("UG","Uganda"),
-   Country("UM","US Minor Outlying Islands"),
    Country("US","United States"),
    Country("UY","Uruguay"),
    Country("UZ","Uzbekistan"),
@@ -282,6 +328,17 @@ class Country
 //!    (Like USSR.)
 
    int former=0;
+
+//! method string continent()
+//!	Returns the continent for the country.
+
+   string _continent=0;
+   string continent()
+   {
+      if (!_continent)
+	 continents(); // load continents
+      return _continent;
+   }
 
    void create(string _iso2,string _name,mapping|void opts)
    {
@@ -334,13 +391,16 @@ class Country
 //!	<dt>NATO  <dd>Nato field
 //!	</dl>
 //!
-//!	And that USA has three domains, Great Britain two:
+//!	And that USA has three domains, Great Britain and france two:
 //!	<dl compact>
 //!	<dt>COM   <dd>US Commercial
 //!	<dt>EDU   <dd>US Educational
 //!	<dt>GOV   <dd>US Government
+//!	<dt>UM	  <dd>US Minor Outlying Islands
 //!	<dt>GB    <dd>Great Britain (UK)
 //!	<dt>UK    <dd>United Kingdom
+//!	<dt>FR	  <dd>France
+//!	<dt>FX	  <dd>France, Metropolitan
 //!	</dl>
 
 
@@ -355,7 +415,9 @@ Country from_domain(string domain)
       (["COM":_from_domain->US,
 	"EDU":_from_domain->US,
 	"MIL":_from_domain->US,
+	"UM":_from_domain->US,
 	"UK":_from_domain->GB,
+	"FX":_from_domain->FR,
       ]);
    }
    return _from_domain[upper_case(domain)];
@@ -390,6 +452,51 @@ Country from_name(string name)
 		  }));
    }
    return _from_name[lower_case(name)];
+}
+
+//! method mapping(string:array(Country)) continents()
+//!	Gives back a mapping from continent name to 
+//!	an array of the countries on that continent.
+//!
+//!	The continents are:
+//!	<pre>
+//!    	  "Europe"
+//!    	  "Africa"
+//!    	  "Asia"
+//!    	  "North America"
+//!    	  "South America"
+//!    	  "Oceania"
+//!	  "Antarctica"
+//!	</pre>
+//! Note:
+//!	Some countries are considered on more then one continent.
+
+static private mapping _cached_continents;
+
+mapping(string:array(Country)) continents()
+{
+   if (_cached_continents) return _cached_continents;
+
+   _cached_continents=([]);
+   from_domain("se"); // initialize _from_domain
+   foreach (_continents;string name;array(string) iso2s)
+      _cached_continents[name]=map(
+	 iso2s,
+	 lambda(string iso2)
+	 {
+	    Country co=_from_domain[iso2];
+	    if (!co) error("%O has unknown country: %O\n",name,iso2);
+	    if (!co->_continent) co->_continent=name;
+	    return co;
+	 });
+
+#if 1
+   foreach (countries,Country co)
+      if (!co->_continent)
+	 werror("no continent: %O %O\n",co->iso2,co);
+#endif
+
+   return _cached_continents;
 }
 
 //! method mixed `[](string what)
