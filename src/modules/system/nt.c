@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.12 1999/05/12 23:07:19 marcus Exp $
+ * $Id: nt.c,v 1.13 1999/05/13 01:22:37 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -127,7 +127,7 @@ void f_LogonUser(INT32 args)
     
   check_all_args("System.LogonUser",args,
 		 BIT_STRING, BIT_INT | BIT_STRING, BIT_STRING,
-		 BIT_INT, BIT_INT | BIT_VOID,0);
+		 BIT_INT | BIT_VOID, BIT_INT | BIT_VOID,0);
 
   username=(LPTSTR)sp[-args].u.string->str;
 
