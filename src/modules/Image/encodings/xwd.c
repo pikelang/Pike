@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.10 1999/04/13 12:32:50 mirar Exp $ */
+/* $Id: xwd.c,v 1.11 1999/05/20 14:08:14 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.10 1999/04/13 12:32:50 mirar Exp $
+**!	$Id: xwd.c,v 1.11 1999/05/20 14:08:14 mirar Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.10 1999/04/13 12:32:50 mirar Exp $");
+RCSID("$Id: xwd.c,v 1.11 1999/05/20 14:08:14 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -49,15 +49,13 @@ void f_index(INT32 args);
 
 /*
 **! method mapping _decode(string data)
+**! method mapping decode_header(string data)
 **!	Decodes XWD data and returns the result.
 **!
 **!	Supported XWD visual classes and encoding formats are
 **!		TrueColor / ZPixmap
-**!		DirectColor / ZPixmap¹
+**!		DirectColor / ZPixmap
 **!		PseudoColor / ZPixmap
-**!
-**!	¹supported, but wierd, since I didn't find any directcolor
-**!	tables in the file - currently decoded as truecolor.
 **!
 **!	If someone sends me files of other formats, these formats
 **!	may be implemented. <tt>:)</tt> /<tt>mirar@idonex.se</tt>
@@ -82,7 +80,7 @@ static INLINE unsigned long int_from_16bit(unsigned char *data)
 
 #define CARD32n(S,N) int_from_32bit((unsigned char*)(S)->str+(N)*4)
 
-void image_xwd__decode(INT32 args)
+void img_xwd__decode(INT32 args,int header_only,int skipcmap)
 {
    struct object *co=NULL;
 
@@ -126,15 +124,11 @@ void image_xwd__decode(INT32 args)
       unsigned long window_bdrwidth;  /* Window border width */
    } header;
 
-   int skipcmap=0;
+   int n=0;
 
    if (args<1 ||
        sp[-args].type!=T_STRING)
       error("Image.PNM._decode(): Illegal arguments\n");
-
-   if ((args==1 && sp[1-args].type!=T_INT) ||
-       sp[1-args].u.integer!=0) 
-      skipcmap=1;
    
    add_ref(s=sp[-args].u.string);
    pop_n_elems(args);
@@ -177,73 +171,82 @@ void image_xwd__decode(INT32 args)
    header.window_y=CARD32n(s,23);         
    header.window_bdrwidth=CARD32n(s,24);  
 
-   push_string(make_shared_string("header_size")); 
+   push_text("header_size"); 
    push_int(header.header_size);
-   push_string(make_shared_string("file_version"));
+   push_text("file_version");
    push_int(header.file_version);
-   push_string(make_shared_string("pixmap_format"));
+   push_text("pixmap_format");
    push_int(header.pixmap_format);
-   push_string(make_shared_string("pixmap_depth"));
+   push_text("pixmap_depth");
    push_int(header.pixmap_depth);
-   push_string(make_shared_string("pixmap_width"));
+   push_text("pixmap_width");
    push_int(header.pixmap_width);
 
-   push_string(make_shared_string("pixmap_height"));
+   push_text("pixmap_height");
    push_int(header.pixmap_height);
-   push_string(make_shared_string("xoffset"));
+   push_text("xoffset");
    push_int(header.xoffset);
-   push_string(make_shared_string("byte_order"));
+   push_text("byte_order");
    push_int(header.byte_order);
-   push_string(make_shared_string("bitmap_unit"));
+   push_text("bitmap_unit");
    push_int(header.bitmap_unit);
-   push_string(make_shared_string("bitmap_bit_order"));
+   push_text("bitmap_bit_order");
    push_int(header.bitmap_bit_order);
 
-   push_string(make_shared_string("bitmap_pad"));
+   push_text("bitmap_pad");
    push_int(header.bitmap_pad);
-   push_string(make_shared_string("bits_per_pixel"));
+   push_text("bits_per_pixel");
    push_int(header.bits_per_pixel);
-   push_string(make_shared_string("bytes_per_line"));
+   push_text("bytes_per_line");
    push_int(header.bytes_per_line);
-   push_string(make_shared_string("visual_class"));
+   push_text("visual_class");
    push_int(header.visual_class);
-   push_string(make_shared_string("red_mask"));
+   push_text("red_mask");
    push_int(header.red_mask);
 
-   push_string(make_shared_string("green_mask"));
+   push_text("green_mask");
    push_int(header.green_mask);
-   push_string(make_shared_string("blue_mask"));
+   push_text("blue_mask");
    push_int(header.blue_mask);
-   push_string(make_shared_string("bits_per_rgb"));
+   push_text("bits_per_rgb");
    push_int(header.bits_per_rgb);
-   push_string(make_shared_string("colormap_entries"));
+   push_text("colormap_entries");
    push_int(header.colormap_entries);
-   push_string(make_shared_string("ncolors"));
+   push_text("ncolors");
    push_int(header.ncolors);
 
-   push_string(make_shared_string("window_width"));
+   push_text("window_width");
    push_int(header.window_width);
-   push_string(make_shared_string("window_height"));
+   push_text("window_height");
    push_int(header.window_height);
-   push_string(make_shared_string("window_x"));
+   push_text("window_x");
    push_int(header.window_x);
-   push_string(make_shared_string("window_y"));
+   push_text("window_y");
    push_int(header.window_y);
-   push_string(make_shared_string("window_bdrwidth"));
+   push_text("window_bdrwidth");
    push_int(header.window_bdrwidth);
 
+   n+=25;
+
+   push_text("type");
+   push_text("image/x-xwd");
+   n++;
+
    /* the size of the header is 100 bytes, name is null-terminated */
-   push_string(make_shared_string("windowname"));
+   push_text("windowname");
    if (header.header_size>100)
       push_string(make_shared_binary_string(s->str+100,header.header_size-100-1));
    else 
       push_int(0);
+   n++;
 
    /* header.ncolors XWDColor structs */
 
-   if (!skipcmap || header.visual_class==3)
+   if (!skipcmap || 
+       header.visual_class==3 || 
+       header.visual_class==5)
    {
-      push_string(make_shared_string("colors"));
+      push_text("colors");
       if (s->len-header.header_size>=12*header.ncolors)
       {
 	 unsigned long i;
@@ -265,7 +268,7 @@ void image_xwd__decode(INT32 args)
 	    f_aggregate(header.ncolors);
 	 }
 
-	 push_string(make_shared_string("colortable"));
+	 push_text("colortable");
 
 	 for (i=0; i<header.ncolors; i++)
 	 {
@@ -281,70 +284,91 @@ void image_xwd__decode(INT32 args)
       else
       {
 	 f_aggregate(0); /* no room for colors */
-	 push_string(make_shared_string("colortable"));
+	 push_text("colortable");
 	 push_int(0);
       }
+      n+=2;
       skipcmap=0;
    }
 
-   push_string(make_shared_string("image"));
-
-   if (s->len-(int)(header.header_size+header.ncolors*12)<0)
-      push_string(make_shared_string(""));
-   else
-      push_string(make_shared_binary_string(
-	 s->str+(header.header_size+header.ncolors*12),
-	 s->len-(header.header_size+header.ncolors*12)));
-
-   switch (header.visual_class*100+header.pixmap_format)
+   if (!header_only)
    {
-      /*
-	#define StaticGray              0
-	#define GrayScale               1
-	#define StaticColor             2
-	#define PseudoColor             3
-	#define TrueColor               4
-	#define DirectColor             5
-      */
-      case 402: /* TrueColor / ZPixmap */
-	 push_int(header.pixmap_width);
-	 push_int(header.pixmap_height);
-	 push_int(header.bits_per_pixel);
-	 push_int(header.bitmap_pad);
-	 push_int(header.byte_order==1);
-	 push_int(header.red_mask);
-	 push_int(header.green_mask);
-	 push_int(header.blue_mask);
-	 image_x_decode_truecolor_masks(9);
-	 break;
-      case 502: /* DirectColor / ZPixmap */
-	 push_int(header.pixmap_width);
-	 push_int(header.pixmap_height);
-	 push_int(header.bits_per_pixel);
-	 push_int(header.bitmap_pad);
-	 push_int(header.byte_order==1);
-	 push_int(header.red_mask);
-	 push_int(header.green_mask);
-	 push_int(header.blue_mask);
-	 image_x_decode_truecolor_masks(9);
-	 break;
-      case 302: /* PseudoColor / ZPixmap */
-	 push_int(header.pixmap_width);
-	 push_int(header.pixmap_height);
-	 push_int(header.bits_per_pixel);
-	 push_int(header.bitmap_pad);
-	 push_int(header.byte_order==1);
-	 ref_push_object(co);
-	 image_x_decode_pseudocolor(7);
-	 break;
-      default:
-	 pop_stack();
-	 push_int(0);
+      n++;
+      push_text("image");
+
+      if (s->len-(int)(header.header_size+header.ncolors*12)<0)
+	 push_text("");
+      else
+	 push_string(make_shared_binary_string(
+	    s->str+(header.header_size+header.ncolors*12),
+	    s->len-(header.header_size+header.ncolors*12)));
+
+      switch (header.visual_class*100+header.pixmap_format)
+      {
+	 /*
+	   #define StaticGray              0
+	   #define GrayScale               1
+	   #define StaticColor             2
+	   #define PseudoColor             3
+	   #define TrueColor               4
+	   #define DirectColor             5
+	 */
+	 case 402: /* TrueColor / ZPixmap */
+	    push_int(header.pixmap_width);
+	    push_int(header.pixmap_height);
+	    push_int(header.bits_per_pixel);
+	    push_int(header.bitmap_pad);
+	    push_int(header.byte_order==1);
+	    push_int(header.red_mask);
+	    push_int(header.green_mask);
+	    push_int(header.blue_mask);
+	    image_x_decode_truecolor_masks(9);
+	    break;
+	 case 502: /* DirectColor / ZPixmap */
+	    push_int(header.pixmap_width);
+	    push_int(header.pixmap_height);
+	    push_int(header.bits_per_pixel);
+	    push_int(header.bitmap_pad);
+	    push_int(header.byte_order==1);
+	    push_int(header.red_mask);
+	    push_int(header.green_mask);
+	    push_int(header.blue_mask);
+	    if (!co)
+	       image_x_decode_truecolor_masks(9);
+	    else
+	    {
+	       ref_push_object(co);
+	       image_x_decode_truecolor_masks(10);
+	    }
+	    break;
+	 case 302: /* PseudoColor / ZPixmap */
+	    push_int(header.pixmap_width);
+	    push_int(header.pixmap_height);
+	    push_int(header.bits_per_pixel);
+	    push_int(header.bitmap_pad);
+	    push_int(header.byte_order==1);
+	    ref_push_object(co);
+	    image_x_decode_pseudocolor(7);
+	    break;
+	 default:
+	    pop_stack();
+	    push_int(0);
+      }
    }
 
-   f_aggregate_mapping(56-4*skipcmap);
+   f_aggregate_mapping(n*2);
 
    free_string(s);
+}
+
+void image_xwd__decode(INT32 args)
+{
+   img_xwd__decode(args,0,0);
+}
+
+void image_xwd_decode_header(INT32 args)
+{
+   img_xwd__decode(args,1,0);
 }
 
 /*
@@ -359,9 +383,9 @@ static void image_xwd_decode(INT32 args)
 
    pop_n_elems(args-1);
    push_int(1);
-   image_xwd__decode(2);
+   img_xwd__decode(2,0,1);
    
-   push_string(make_shared_string("image"));
+   push_text("image");
    f_index(2);
 }
 
@@ -375,6 +399,9 @@ void init_image_xwd(void)
    add_function("_decode",image_xwd__decode,
 		"function(string,void|int:mapping(string:int|array|object))",0);
    add_function("decode",image_xwd_decode,
+		"function(string:object)",0);
+
+   add_function("decode_header",image_xwd_decode_header,
 		"function(string:object)",0);
 
    push_object(clone_object(p=end_program(),0));
