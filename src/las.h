@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.43 2000/09/05 02:18:13 hubbe Exp $
+ * $Id: las.h,v 1.44 2001/01/10 19:53:44 mast Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -103,6 +103,10 @@ extern struct node_hash_table node_hash;
 
 #define OPT_DEFROSTED	    0x4000 /* Node may be a duplicate */
 #define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
+
+#define OPT_CUSTOM_LABELS   0x10000
+/* This is a statement which got custom break/continue label handling.
+ * Set in compiler_frame. */
 
 #define SCOPE_LOCAL 1
 #define SCOPE_SCOPED 2
