@@ -1,7 +1,7 @@
-// Copyright © 2000, Roxen IS.
+// Copyright © 2000-2001, Roxen IS.
 // By Martin Nilsson
 
-// Updated 2000-06-14 from http://lcweb.loc.gov/standards/iso639-2/
+// Updated 2001-06-17 from http://lcweb.loc.gov/standards/iso639-2/
 
 #pike __REAL_VERSION__
 
@@ -443,15 +443,81 @@ static constant languages = ([
   "zun":"Zuni"
 ]);
 
-//! Look up the language name given a ISO 639-2/T code
-//! in lower case.
+// Mapping from ISO 639-2/B to ISO 639-2/T
+static constant b_to_t = ([
+  "alb":"sqi",
+  "arm":"hye",
+  "baq":"eus",
+  "bur":"mya",
+  "chi":"zho",
+  "cze":"ces",
+  "dut":"nld",
+  "fre":"fra",
+  "geo":"kat",
+  "ger":"deu",
+  "gre":"ell",
+  "ice":"isl",
+  "jav":"jaw",
+  "mac":"mkd",
+  "mao":"mri",
+  "may":"msa",
+  "per":"fas",
+  "rum":"ron",
+  "scc":"srp",
+  "scr":"hrv",
+  "slo":"slk",
+  "tib":"bod",
+  "wel":"cym",
+]);
+
+//! Look up the language name given an ISO 639-2 code
+//! in lower case. It will first be looked up in the
+//! ISO 639-2/T table and then in ISO 639-2/B if the
+//! first lookup failed. Returns zero typed zero on
+//! failure.
 string get_language(string code) {
+  return languages[code] || languages[b_to_t[code]];
+}
+
+//! Look up the language name given an ISO 639-2/T code
+//! in lower case. Returns zero typed zero on failure.
+string get_language_t(string code) {
   return languages[code];
 }
 
-//! Return a mapping from ISO 639-2/T code to language name.
+//! Look up the language name given an ISO 639-2/B code
+//! in lower case. Returns zero typed zero on failure.
+string get_language_b(string code) {
+  return languages[b_to_t[code]];
+}
+
+//! Return a mapping from ISO 639-2/T + ISO 639-2/B codes
+//! to language names.
 mapping(string:string) list_languages() {
-  return languages+([]);
+  return languages + map(b_to_t, lambda(string in) {
+				   return languages[in]; } );
+}
+
+//! Return a mapping from ISO 639-2/T codes to language
+//! names.
+mapping(string:string) list_languages_t() {
+  return languages + ([]);
+}
+
+//! Return a mapping from ISO 639-2/B codes to language
+//! names.
+mapping (string:string) list_languages_b() {
+  array symbols = values(b_to_t);
+  return list_languages() - mkmapping( symbols, symbols );
+}
+
+//! Returns 1 if there is an overlap between ISO 639-2/T and
+//! ISO 639-2/B symbols. Only used for debugging when updating
+//! the table.
+int(0..1) verify_overlap() {
+  foreach(indices(b_to_t), string symbol)
+    if(languages[symbol]) return 1;
+  return 0;
 }
 
 // Mapping from ISO 639-1 code to ISO 639-2/T code.
@@ -624,5 +690,5 @@ string map_639_1(string code) {
 
 //! Return a mapping from ISO 639-1 code to ISO 639-2/T code.
 mapping(string:string) list_639_1() {
-  return conversion+([]);
+  return conversion + ([]);
 }
