@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.15 1998/05/22 08:25:53 neotron Exp $
+ * $Id: fdlib.h,v 1.16 1998/05/22 11:29:15 grubba Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -26,6 +26,10 @@
 #ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
 #endif
+
+#ifdef HAVE_SOCKET_H
+#include <socket.h>
+#endif /* HAVE_SOCKET_H */
 
 
 #define fd_INTERPROCESSABLE   1
@@ -157,10 +161,12 @@ void fd_waitor_set_customer(struct fd_waitor *x, FD customer, int flags);
 #define fd_LOCK_UN 4
 #define fd_LOCK_NB 8
 
-typedef struct my_fd_set_s
+struct my_fd_set_s
 {
   char bits[MAX_OPEN_FILEDESCRIPTORS/8];
-} my_fd_set;
+};
+
+typedef struct my_fd_set_s my_fd_set;
 
 #ifdef DEBUG
 #define fd_check_fd(X) do { if(fd_type[X]>=0) fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
@@ -283,10 +289,12 @@ typedef int FD;
 #define fd_shutdown_write 1
 #define fd_shutdown_both 2
 
-typedef struct my_fd_set_s
+struct my_fd_set_s
 {
   fd_set tmp;
-} my_fd_set;
+};
+
+typedef struct my_fd_set_s my_fd_set;
 
 #define my_FD_CLR(FD,S) FD_CLR((FD), & (S)->tmp)
 #define my_FD_SET(FD,S) FD_SET((FD), & (S)->tmp)
