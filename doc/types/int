@@ -4,6 +4,7 @@ NAME
 SYNTAX EXAMPLE
 	9797 /* decimal number */
 	0x20 /* hexadecimal number */
+	020  /* octal number */
 
 DESCRIPTION
 	This type stores an integer, normally it is 32 bits and use 4 bytes

@@ -16,6 +16,8 @@ SYNTAX
 	int port->bind(int port);
 	or
 	int port->bind(int port,function accept_callback);
+	or
+	int port->bind(int port,function accept_callback, string ip);
 
 DESCRIPTION
 	Bind opens a sockets and binds it to port number on the local machine.
@@ -23,6 +25,9 @@ DESCRIPTION
 	and the callback funcition is called whenever something connects to
 	the socket. The callback will receive the id for this port as argument.
 	Bind returns 1 on success, and zero on failiure.
+
+	If the optional argument 'ip' is given, bind will try to bind to
+	this ip name (or number).
 
 SEE ALSO
 	port->accept
@@ -56,9 +61,13 @@ SYNTAX
 	or
 	void port->create("stdin",function accept_callback)
 	or
+	void port->create("stdin",function accept_callback)
+	or
 	void port->create(int port)
 	or
 	void port->create(int port,function accept_callback)
+	or
+	void port->create(int port,function accept_callback, string ip)
 
 DESCRIPTION
 	When create is called with 'stdin' as argument, a socket is created
