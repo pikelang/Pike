@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.217 2002/02/08 15:40:44 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.218 2002/02/14 00:35:10 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1935,7 +1935,7 @@ static void internal_add_limit( struct perishables *storage,
  *!  limit, and the soft limit may never be increased over the hard
  *!  limit. The indices of the mapping indicate what limit to impose,
  *!  and the values dictate what the limit should be. (See also
- *!  @[system.setrlimit])
+ *!  @[System.setrlimit])
  *!
  *! @mapping
  *! @member limit_value "core"
@@ -3654,7 +3654,7 @@ static void f_pid_status_kill(INT32 args)
  *! Returns the process ID of this process.
  *!
  *! @seealso
- *!    @[system.getppid()], @[system.getpgrp()]
+ *!    @[System.getppid()], @[System.getpgrp()]
  */
 static void f_getpid(INT32 args)
 {
