@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.28 2004/09/03 12:04:03 grubba Exp $
+// $Id: module.pmod.in,v 1.29 2004/09/04 19:10:35 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -21,6 +21,11 @@ class TokenList
   {
     tokens += ({ x });
     return this;
+  }
+
+  static int _sizeof()
+  {
+    return sizeof(tokens);
   }
 
   //! Get an iterator.
@@ -57,14 +62,13 @@ class TokenList
     //! position.
     //!
     //! @note
-    //!   The index for the current position will change.
+    //!   The current token will change.
     //!
     //! @seealso
     //!   @[append()]
     void insert(Token|Group val)
     {
       tokens = tokens[..pos-1] + ({ val }) + tokens[pos..];
-      pos++;
     }
 
     //! Insert a new token or group immediately after the current
@@ -440,7 +444,7 @@ class PikeCompiler
 
     for(Iterator tokens_left = get_iterator(tokens); tokens_left;
 	tokens_left->`+=(1)) {
-      ArgList next_arg = ArgList(parse_pair_expression(tokens_left));
+      ArgList next_arg = ArgList(parse_splice_expression(tokens_left));
       if (arg_list) {
 	current_arg->next = next_arg;
       } else {
@@ -454,6 +458,7 @@ class PikeCompiler
 	Token token = tokens_left->value();
 	if (token->symbol != ",") {
 	  SYNTAX_ERROR("Expected , in argument list.");
+	  error("Expected , in argument list.");
 	  return arg_list;
 	}
       }
@@ -495,8 +500,8 @@ class PikeCompiler
     if (!(<".","::">)[(token = tokens_left->value())->symbol]) {
       expr = LiteralExpression(token);
       tokens_left->`+=(1);
-      if (token->parse_meta_program) {
-	token->parse_meta_program(0, tokens_left, 0);
+      if (token->parse_meta_identifier) {
+	token->parse_meta_identifier(tokens_left);
       }
       if (!tokens_left ||
 	  !(<".","..">)[(token = tokens_left->value())->symbol]) {
@@ -543,9 +548,13 @@ class PikeCompiler
 	tokens_left->`+=(1);
 	do {
 	  Token sub_token;
-	  if ((sizeof(token->contents) == 1) &&
-	      (sub_token = token->contents->tokens[0]->group_start)) {
-	    switch (sub_token->symbol) {
+	  if ((sizeof(token->contents->tokens) == 1) &&
+	      ((sub_token = token->contents->tokens[0])->group_start)) {
+	    werror("sub_token: %O\n"
+		   "group_start: %O\n"
+		   "symbol: %O\n", sub_token, sub_token->group_start,
+		   sub_token->group_start->symbol);
+	    switch (sub_token->group_start->symbol) {
 	    case "(":
 	      token = sub_token;
 	      continue;
@@ -557,7 +566,7 @@ class PikeCompiler
 				 parse_mapping_list(sub_token->contents));
 	    default:
 	      // Shouldn't be reached, but...
-	      token = token->group_start;
+	      token = sub_token;
 	      SYNTAX_ERROR("Unrecognized grouping.");
 	      return 0;
 	    }
@@ -578,6 +587,10 @@ class PikeCompiler
 	  // return parse_var_decl(expr, tokens_left);
 	}
 	return expr;
+      } else if (token->group_start->symbol == "[") {
+	// Probable soft cast.
+	tokens_left->`+=(1);
+	return parse_expression(get_iterator(token->contents));	
       }
       token = token->group_start;
       SYNTAX_ERROR("Unexpected grouping.");
@@ -610,6 +623,7 @@ class PikeCompiler
       (<"(", "[">)[tokens_left->value()->group_start->symbol];
     int is_fun_call;
     Expression expr = parse_basic_expression(tokens_left);
+    werror("parse_funcall_expression(%O)\n", tokens_left);
     Token token;
     while (tokens_left && 
 	   (((token = tokens_left->value())->symbol == "->") ||
@@ -693,7 +707,7 @@ class PikeCompiler
 
   Expression parse_cond_expression(Iterator tokens_left)
   {
-    Expression expr = parse_lor_expression(tokens_left);
+    Expression expr = parse_many_expression(tokens_left);
     Token token;
     if (tokens_left &&
 	(token = tokens_left->value())->symbol == "?") {
@@ -720,7 +734,9 @@ class PikeCompiler
   //LEFT_ASSOC(pair, assign, (<":", "..">));
   OPTIONAL_ARGS(pair, assign, (<":", "..">));
 
-  LEFT_ASSOC(comma, pair, (<",">));
+  UNARY_PREFIX(splice, pair, (<"@">));
+
+  LEFT_ASSOC(comma, splice, (<",">));
 
   //! @endignore
 
@@ -786,6 +802,7 @@ class PikeCompiler
 	  tokens_left->`+=(1);
 	} else {
 	  Lambda func = Lambda("lambda", name->pos);
+	  current_scope->add_identifier(current_modifiers, name, func);
 	  func->return_type = type;
 	  func->name = name;
 	  func->parse_meta_program(current_scope, tokens_left,
@@ -858,8 +875,7 @@ class PikeCompiler
   {
     inherit IdentifierToken;
 
-    void parse_meta_program(Scope current_scope, Iterator tokens_left,
-			    Modifiers current_modifiers)
+    void parse_meta_identifier(Iterator tokens_left)
     {
     }
   }
@@ -894,14 +910,15 @@ class PikeCompiler
     // Called at
     //   type_literal · '(' arguments ')'
     //   type_literal ·
-    void parse_meta_program(Scope current_scope, Iterator tokens_left,
-			    Modifiers current_modifiers)
+    void parse_meta_identifier(Iterator tokens_left)
     {
       Token token;
       if (!tokens_left ||
 	  !(token = tokens_left->value())->group_start ||
 	  (token->group_start->symbol != "(")) {
-	tokens_left->append(default_args());
+	tokens_left->insert(default_args());
+	werror("Hooked in default arguments: %O\n"
+	       "%s\n", tokens_left, describe_backtrace(backtrace()));
       }
     }
   }
@@ -935,6 +952,7 @@ class PikeCompiler
 	OperatorToken("|", context),
 	VoidType("void", context),
 	OperatorToken("...", context),
+	OperatorToken(":", context),
 	MixedType("mixed", context),
 	OperatorToken("|", context),
 	VoidType("void", context),
@@ -1124,6 +1142,9 @@ class PikeCompiler
     void add_identifier(Modifiers modifiers, Token name, Token meta)
     {
       string identifier = name->symbol;
+      werror("Defining %O\n"
+	     "modifiers: %O\n"
+	     "meta: %O\n", identifier, modifiers, meta);
       Definition def;
       if (!(def = identifiers[identifier])) {
 	identifiers[identifier] = Definition(modifiers, name, meta);
@@ -1244,6 +1265,12 @@ class PikeCompiler
       tokens_left->`+=(1);
       parse_statement(this_object(), tokens_left, current_modifiers);
     }
+
+    static void create(mixed ... args)
+    {
+      werror("Foreach(%O)\n", args);
+      ::create(@args);
+    }
   }
 
   class If
@@ -1304,6 +1331,38 @@ class PikeCompiler
     }
   }
 
+  class Return
+  {
+    inherit IdentifierToken;
+
+    Expression expr;
+
+    // Called at
+    //   return · ';'
+    //   return · expr ';'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      Token token;
+      if (tokens_left &&
+	  ((token = tokens_left->value())->symbol != ";")) {
+	werror("Parsing return expression: %O\n", tokens_left);
+	expr = parse_expression(tokens_left);
+	token = tokens_left->value();
+	werror("Got return expression: %O\n"
+	       "Termination token: %O\n"
+	       "Tokens left: %O\n", expr, token, tokens_left);
+      }
+      if (!tokens_left ||
+	  token->symbol != ";") {
+	SYNTAX_ERROR("Expected semicolon after return.");
+	return;
+      }
+      tokens_left->`+=(1);
+    }
+  }
+
   class Break
   {
     inherit IdentifierToken;
@@ -1326,7 +1385,7 @@ class PikeCompiler
 	}
       }
       if (!tokens_left ||
-	  token->token != ";") {
+	  token->symbol != ";") {
 	SYNTAX_ERROR("Expected semicolon after break.");
 	return;
       }
@@ -1347,7 +1406,7 @@ class PikeCompiler
       scope->add_meta_object(this);
       Token token;
       if (!tokens_left ||
-	  ((token = tokens_left->value())->token != ";")) {
+	  ((token = tokens_left->value())->symbol != ";")) {
 	SYNTAX_ERROR("Expected semicolon after break.");
 	return;
       }
@@ -1470,7 +1529,8 @@ class PikeCompiler
 	  token->parse_modifier(tokens_left);
 	  current_modifiers += token;
 	  if (!tokens_left) {
-	    report(ERROR, token->context, "parser", "Syntax error");
+	    report(ERROR, token->context, "parser",
+		   "Modifiers without declaration.");
 	    return;
 	  }
 	}
@@ -1479,7 +1539,9 @@ class PikeCompiler
 	    // Modifier scope.
 	    parse_class_body(token->contents, current_modifiers);
 	  } else {
-	    report(ERROR, token->context, "parser", "Syntax error");
+	    report(ERROR, token->context, "parser",
+		   "Unexpected grouped expression in class body %s.",
+		   token);
 	  }
 	  tokens_left->`+=(1);
 	} else {
@@ -1542,7 +1604,8 @@ class PikeCompiler
     {
       current_class->add_meta_object(this);
       if (!tokens_left) {
-	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
+	report(ERROR, tokens_left->last_pos, "parser",
+	       "Lone class keyword.");
 	return;
       }
       Token token = tokens_left->value();
@@ -1552,7 +1615,8 @@ class PikeCompiler
 	token = tokens_left->value();
       }
       if (!token->group_start) {
-	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
+	report(ERROR, tokens_left->last_pos, "parser",
+	       "Expected class definition.");
 	return;
       }
       if (token->group_start->symbol == "(") {
@@ -1566,13 +1630,10 @@ class PikeCompiler
 	parse_create_args(create_fun, token->contents);
 	tokens_left->`+=(1);
 	token = tokens_left->value();
-	if (!token->group_start) {
-	  report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
-	  return;
-	}
       }
       if (!token->group_start || token->group_start->symbol != "{") {
-	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
+	report(ERROR, tokens_left->last_pos, "parser",
+	       "Expected class body.");
 	return;
       }
       parse_class_body(token->contents);
@@ -1690,7 +1751,7 @@ class PikeCompiler
 	"program":ProgramType,
 	"protected":Modifier,
 	"public":Modifier,
-	//"return":Return,
+	"return":Return,
 	//"sscanf":Sscanf,
 	"static":Modifier,
 	"string":StringType,
