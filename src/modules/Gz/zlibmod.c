@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.30 2000/08/08 10:41:46 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.31 2000/08/17 15:41:30 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -119,7 +119,7 @@ static int do_deflate(dynamic_buffer *buf,
 	 THREADS_DISALLOW();
 
 	 /* Absorb any unused space /Hubbe */
-	 low_make_buf_space(-this->gz.avail_out,buf);
+	 low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
 
 	 /* we don't care about Z_BUF_ERROR here; it won't happen. */
       }
@@ -269,7 +269,7 @@ static int do_inflate(dynamic_buffer *buf,
       this->gz.avail_out=BUF;
       ret=inflate(& this->gz, flush);
       THREADS_DISALLOW();
-      low_make_buf_space(-this->gz.avail_out,buf);
+      low_make_buf_space(-((ptrdiff_t)this->gz.avail_out), buf);
       if(ret != Z_OK)
       {
 	fail=ret;
