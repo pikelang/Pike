@@ -15,11 +15,18 @@ class File
 #endif
   mixed ___id;
 
-  int open(string file, string mode,void|int bits)
+  // This function is needed so that create() doesn't call an overloaded
+  // variant by mistake.
+  static private nomask int __open(string file, string mode,void|int bits)
   {
     _fd=Fd();
     if(query_num_arg()<3) bits=0666;
     return ::open(file,mode,bits);
+  }
+
+  int open(string file, string mode, void|int bits)
+  {
+    return __open(file, mode, bits);
   }
 
   int open_socket(int|void port, string|void address)
@@ -75,26 +82,27 @@ class File
 	  break;
 
 	default:
-	  open(@args);
+	  __open(@args);
       }
     }
   }
 
-  static int do_assign(object to, object from)
+  // Don't allow overloading of this function.
+  static private nomask int do_assign(object to, object from)
   {
     if((program)Fd == (program)object_program(from))
     {
-      to->_fd=from->dup();
+      to->_fd = from->dup();
     }else{
-      to->_fd=from->_fd;
-      to->___read_callback=from->___read_callback;
-      to->___write_callback=from->___write_callback;
-      to->___close_callback=from->___close_callback;
+      to->_fd = from->_fd;
+      to->___read_callback = from->___read_callback;
+      to->___write_callback = from->___write_callback;
+      to->___close_callback = from->___close_callback;
 #if constant(__HAVE_OOB__)_
-      to->___read_oob_callback=from->___read_oob_callback;
-      to->___write_oob_callback=from->___write_oob_callback;
+      to->___read_oob_callback = from->___read_oob_callback;
+      to->___write_oob_callback = from->___write_oob_callback;
 #endif
-      to->___id=from->___id;
+      to->___id = from->___id;
     }
     return 0;
   }
@@ -104,20 +112,20 @@ class File
     return do_assign(this_object(), o);
   }
 
-    object dup()
-    {
-      object o;
-      o=File();
-      do_assign(o,this_object());
-      return o;
-    }
+  object dup()
+  {
+    object o;
+    o = File();
+    do_assign(o, this_object());
+    return o;
+  }
 
 
   int close(void|string how)
   {
-      if(::close(how||"rw"))
-	_fd=0;
-      return 1;
+    if(::close(how||"rw"))
+      _fd=0;
+    return 1;
 #if 0
     if(how)
     {
@@ -158,16 +166,21 @@ class File
   static void my_write_oob_callback() { ___write_oob_callback(___id); }
 #endif
 
-#define CBFUNC(X)				\
-  void set_##X (mixed l##X)			\
-  {						\
-    ___##X=l##X;				\
-    ::set_##X(l##X && my_##X);			\
-  }						\
-						\
-  mixed query_##X ()				\
-  {						\
-    return ___##X;				\
+#define CBFUNC(X)					\
+  static private nomask void __set_##X (mixed l##X)	\
+  {							\
+    ___##X=l##X;					\
+    ::set_##X(l##X && my_##X);				\
+  }							\
+							\
+  void set_##X (mixed l##X)				\
+  {							\
+    __set_##X(l##X);					\
+  }							\
+							\
+  mixed query_##X ()					\
+  {							\
+    return ___##X;					\
   }
 
   CBFUNC(read_callback)
@@ -178,7 +191,11 @@ class File
 #endif
 
   mixed query_close_callback()  { return ___close_callback; }
-  mixed set_close_callback(mixed c)  { ___close_callback=c; }
+  static private nomask void __set_close_callback(mixed c)
+  {
+    ___close_callback=c;
+  }
+  mixed set_close_callback(mixed c)  { __set_close_callback(c); }
   void set_id(mixed i) { ___id=i; }
   mixed query_id() { return ___id; }
 
@@ -191,24 +208,30 @@ class File
 #endif
     )
   {
-    set_read_callback(rcb);
-    set_write_callback(wcb);
-    set_close_callback(ccb);
+    // Use the __set_xxxx_callback() functions here, so that we
+    // don't call overloaded versions by mistake.
+    //	/grubba 1998-04-10
+    __set_read_callback(rcb);
+    __set_write_callback(wcb);
+    __set_close_callback(ccb);
 #if constant(__HAVE_OOB__)_
-    set_read_oob_callback(roobcb);
-    set_write_oob_callback(woobcb);
+    __set_read_oob_callback(roobcb);
+    __set_write_oob_callback(woobcb);
 #endif
     ::set_nonblocking();
   }
 
   void set_blocking()
   {
-    set_read_callback(0);
-    set_write_callback(0);
-    set_close_callback(0);
+    // Use the __set_xxxx_callback() functions here, so that we
+    // don't call overloaded versions by mistake.
+    //	/grubba 1998-04-10
+    __set_read_callback(0);
+    __set_write_callback(0);
+    __set_close_callback(0);
 #if constant(__HAVE_OOB__)_
-    set_read_oob_callback(0);
-    set_write_oob_callback(0);
+    __set_read_oob_callback(0);
+    __set_write_oob_callback(0);
 #endif
     ::set_blocking();
   }
