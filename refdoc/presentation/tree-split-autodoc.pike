@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.29 2002/11/26 14:24:18 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.30 2002/11/26 15:27:02 grubba Exp $
  *
  */
 
@@ -266,43 +266,47 @@ class Node
 
   string my_resolve_reference(string _reference, mapping vars)
   {
-    string resolved = vars->resolved;
+    array(string) resolved = vars->resolved && vars->resolved/"\0";
 
     if(vars->param)
       return "<font face='courier'>" + _reference + "</font>";
 
     if (resolved) {
-      Node res_obj;
+      foreach (resolved, string resolution) {
+	Node res_obj;
 
-      if(res_obj = refs[resolved]) {
-	while(res_obj && (<"constant","variable">)[res_obj->type]) {
-	  res_obj = res_obj->parent;
+	if(res_obj = refs[resolution]) {
+	  while(res_obj && (<"constant","variable">)[res_obj->type]) {
+	    res_obj = res_obj->parent;
+	  }
+	  if (!res_obj) {
+	    werror("Found no page to link to for reference %O (%O)\n",
+		   _reference, resolution);
+	    return sprintf("<font face='courier'>" + _reference + "</font>");
+	  }
+	  // FIXME: Assert that the reference is correct?
+	  return create_reference(make_filename(),
+				  replace(res_obj->make_class_path(),
+					  "()->", "."),
+				  _reference);
 	}
-	if (!res_obj) {
-	  werror("Found no page to link to for reference %O (%O)\n",
-		 _reference, resolved);
-	  return sprintf("<font face='courier'>" + _reference + "</font>");
-	}
-	// FIXME: Assert that the reference is correct?
-	return create_reference(make_filename(),
-				replace(res_obj->make_class_path(),
-					"()->", "."),
-				_reference);
-      }
 
-      if (!zero_type(refs[resolved])) {
-	werror("Reference %O (%O) is %O!\n",
-	       _reference, resolved, refs[resolved]);
+	if (!zero_type(refs[resolution])) {
+	  werror("Reference %O (%O) is %O!\n",
+		 _reference, resolution, refs[resolved]);
+	}
       }
     }
-
-    if(!missing[vars->resolved] && !has_prefix(_reference, "lfun::"))
-      werror("Missed reference %O (%O) in %s\n"
+    if(!missing[resolved] && !has_prefix(_reference, "lfun::"))
+      werror("Missed reference %O (%{%O, %}) in %s\n"
 	     "Potential refs:%O\n",
 	     _reference, resolved, make_class_path(),
-	     sort(filter(indices(refs),
-			 glob(resolved[..sizeof(resolved)/2]+"*",
-			      indices(refs)[*]))));
+	     sort(map(resolved,
+		      lambda (string resolution) {
+			return filter(indices(refs),
+				      glob(resolution[..sizeof(resolution)/2]+
+					   "*", indices(refs)[*]));
+		      }) * ({})));
     unresolved++;
     return "<font face='courier'>" + _reference + "</font>";
   }
