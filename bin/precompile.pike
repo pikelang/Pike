@@ -1776,7 +1776,11 @@ class ParseBlock
 	    ret+=rest;
 	    continue;
 	  }
-	  array(FuncData) tmp=name_data[common_name];
+	  array(FuncData) tmp=map(name_data[common_name],
+				  lambda(FuncData fun) {
+				    fun->name = mkname(base, fun->name);
+				    return fun;
+				  });
 	  /* Generate real funcname here */
 	  name=common_name;
 	  funcname=mkname("f",base,common_name);
