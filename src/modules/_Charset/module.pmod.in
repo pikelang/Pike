@@ -4,6 +4,8 @@
 static private inherit @module@;
 //! @endignore
 
+//! @appears Locale.Charset
+
 class ascii {
   static private string s = "";
   object(this_program) feed(string ss)
@@ -53,7 +55,6 @@ private class UTF16LEdec {
   static void create() { le=1; }
 }
 
-//! @belongs Locale.Charset
 //! Returns a charset decoder object.
 //! @param name
 //!   The name of the character set to decode from. Supported charsets
@@ -196,7 +197,6 @@ private class UTF16LEenc {
   }
 }
 
-//! @belongs Locale.Charset
 //! Returns a charset encoder object.
 //! @param name
 //!   The name of the character set to decode from. Supported charsets
