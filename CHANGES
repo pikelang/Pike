@@ -25,11 +25,16 @@ o global::
     top level of the compilation unit using global::foo. (Deactivated
     in 7.2 compatibility mode, of course.)
 
-    It's now possible to use e.g: global::this_program. 
+    It's now possible to use e.g: global::this_program.
 
     Added an optional level argument to this_object(). *FIXME: Do we
     really want this documented?*
-    
+
+o global.
+    All top level modules (and other identifiers in that scope) can now
+    also be accessed with a "global." prefix. This is useful in cases where
+    local identifiers overshadow the top level, for instance in the Image
+    module, where the Image.Image class would occasionally block your view.
 
 o this
     Added a magic identifier "this" that can be used instead of
@@ -49,7 +54,7 @@ o enum and typedef have implicit local binding
 
 o ::_indices ::_values
 
-o Sooo.... This would be what?
+o access mechanism for named scopes
     Include the names of the surrounding classes themselves in the lookup for
     Foo::, to make it possible to adress hidden variables in the scopes of
     surrounding classes, e.g:
@@ -58,7 +63,7 @@ o Sooo.... This would be what?
          int i;
          void create (int i) {X::i = i;}
        }
-    
+
     Since this change is mostly but not completely compatible with the earlier
     lookup rule, it's disabled in 7.2 compatibility mode.
 
@@ -85,7 +90,7 @@ o ADT.History
 
 o ADT.Relation.Binary
     Handles binary relations.
-   
+
 o Audio.Codec and Audio.Codec
     Contains decoders and encoders for audio. Currently WAV and MP3.
 
@@ -98,7 +103,7 @@ o Locale.Language
 o Parser.Python
 
 o Parser.RCS
-    
+    Extracts data from RCS or CVS repositories.
 
 o XML.NSTree
 
@@ -121,10 +126,10 @@ o Stdio.GZipFile
 o Tools.PV
     Convenience tool that sets up a canvas with GTK, presents a
     picture on it and delivers a number of image inspection and
-    manipulation options. 
+    manipulation options.
 
     Also accessable via "pike -x pv"
-    
+
 o Image.Dims
     Can extract the dimensions of an image withóut loading the entire
     image.
@@ -138,7 +143,7 @@ o Image.DWG
 
 o Gmp.mpq and Gmp.mpf
     Multi precision fractions.    
-   
+
 Optimizations:
 --------------
 
