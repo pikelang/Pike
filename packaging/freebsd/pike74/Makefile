@@ -132,12 +132,7 @@ CONFIGURE_ARGS+= --with-relocatable-dumped-modules
 
 .if defined(WITH_EXPIREMENTAL_FEATURES)
 CONFIGURE_ARGS+= --with-computed-goto \
-		 --with-pg \
-		 --with-long-long-int \
-		 --with-long-int \
-		 --with-short-int \
 		 --with-keypair-loop \
-		 --without-lock \
 		 --with-new-multisets
 .endif
 

@@ -58,9 +58,7 @@ Other things :
  WITH_EXPIREMENTAL_FEATURES
   Will enable some experimental features of Pike. Use at your own risk.
   Features enabled :
-    --with-computed-goto, --with-pg, --with-long-long-int, --with-long-int,
-    --with-short-int, --with-keypair-loop, --without-lock,
-    --with-new-multisets
+    --with-computed-goto, --with-keypair-loop, --with-new-multisets
 
  WITHOUT_RELOCATABLE_DUMPED_MODULES
   Will compile pike with : --without-relocatable-dumped-modules
@@ -82,4 +80,4 @@ at the following URL : http://www.freebsd.org/cgi/query-pr.cgi?pr=47433
 
 - Xavier Beaudouin <kiwi@caudium.net>
 
-$Id: README,v 1.2 2003/01/24 13:07:35 kiwi Exp $
+$Id: README,v 1.3 2003/01/24 16:25:51 kiwi Exp $
