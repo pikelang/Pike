@@ -20,8 +20,8 @@ o pike -x
 o unbug
 
 o Unicode 3.2.0
-    All charts has been updated to Unicode 3.2.0. This applies both to
-    the Unicode module as well as Pike-global functionality such as
+    All charts have been updated to Unicode 3.2.0. This applies both to
+    the Unicode module as well as to Pike-global functionality such as
     upper_case/lower_case. unicode_to_string() also has support for
     surrogate and byteorder make handling.
 
@@ -34,8 +34,8 @@ o delay()/sleep()
 
 o search(string, int) / has_value(string, int)
     Both of these methods now handle both looking for strings and
-    integers; search("hi, ho!", ',') or has_value("Nope.", ' '), for
-    instance.
+    integers (ie single characters). eg search("hi, ho!", ',') or
+    has_value("Nope.", ' ').
 
 Language additions:
 -------------------
@@ -66,11 +66,11 @@ o Iterators
     object that fulfills the interface for iterators:
 
     When iterating over an object o, o->_get_iterator() is called to
-    get an iterator object. It should at least have two functions
-    index() and value() to get the index and value at the current
-    position, a function `+=(int steps) to advance the current
-    position the specified number of steps, and a `!() that returns
-    zero if the position hasn't reached the end of the data set.
+    get an iterator object. An iterator object should at least have
+    two functions, index() and value(), to get the index and value
+    at the current position, a function `+=(int steps) to advance the
+    current position the specified number of steps, and a `!() that
+    returns zero if the position hasn't reached the end of the data set.
 
     Also, if the object o lacks a _get_iterator function, it's assumed
     to be an iterator itself. This makes it possible to pass an
@@ -180,6 +180,7 @@ o Standards.ID3
 o Standards.RDF
 
 o System.Time
+
 o System.Timer
 
 o Stdio.FakeFile
@@ -220,10 +221,10 @@ Optimizations:
 o Machine code used on some architectures.
 
 o Overall speed improvements.
-  Function calls
-  sprintf
-  arrays
-  replace
+    Function calls
+    sprintf
+    arrays
+    replace
 
 o Deferred backtraces.
 
@@ -313,11 +314,11 @@ o Identifier lookup
 o Protocols.LDAP.client
     The return code from all methods was changed to follow Pike's
     logic better. 0 is now a failure. The old behaviour is emulated in
-    compatibility layer.
+    a compatibility layer.
 
 o dirname
     Now correctly returns a directory instead of just stripping the
-    part after nearest directory seprator.
+    part after the nearest directory separator.
 
 o LR
     LR has been moved to Parser.LR and the API has been chnged.
@@ -328,12 +329,12 @@ o wmml documentation removed
 
 o .build_lobotomize_crypto removed
     Use the Makefile target lobotomize_crypto to lobotomize Pike.
-    Should preferably be executed in unused tree right from CVS.
+    Should preferably be executed in an unused tree straight from CVS.
 
 C level/development changes:
 ----------------------------
 
-o Some global defines has been renamed to avoid name clashes.
+o Some global symbols have been renamed to avoid name clashes.
     sp -> Pike_sp
     fp -> Pike_fp
     fatal -> Pike_fatal
