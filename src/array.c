@@ -58,6 +58,7 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
 
   /* for now, we don't know what will go in here */
   v->type_field=BIT_MIXED | BIT_UNFINISHED;
+  v->flags=0;
 
   v->malloced_size=size+extra_space;
   v->size=size;
@@ -770,6 +771,12 @@ void array_fix_type_field(struct array *v)
 
   t=0;
 
+  if(v->flags & ARRAY_LVALUE)
+  {
+    v->type_field=BIT_MIXED;
+    return;
+  }
+
   for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
 
 #ifdef DEBUG
@@ -788,7 +795,16 @@ void array_check_type_field(struct array *v)
 
   t=0;
 
-  for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
+  if(v->flags & ARRAY_LVALUE)
+    return;
+
+  for(e=0; e<v->size; e++)
+  {
+    if(ITEM(v)[e].type > MAX_TYPE)
+      fatal("Type is out of range.\n");
+      
+    t |= 1 << ITEM(v)[e].type;
+  }
 
   if(t & ~(v->type_field))
     fatal("Type field out of order!\n");

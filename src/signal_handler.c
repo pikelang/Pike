@@ -272,9 +272,8 @@ static struct sigdesc signal_desc []={
   { -1, "END" } /* Notused */
 };
 
-typedef RETSIGTYPE (*sigfunctype) (int);
 
-static void my_signal(int sig, sigfunctype fun)
+void my_signal(int sig, sigfunctype fun)
 {
 #ifdef HAVE_SIGACTION
   {
@@ -1255,6 +1254,14 @@ static void f_ualarm(INT32 args)
 }
 #endif
 
+#ifdef DEBUG
+static RETSIGTYPE fatal_signal(int signum)
+{
+  my_signal(signum,SIG_DFL);
+  fatal("Fatal signal (%s) recived.\n",signame(signum));
+}
+#endif
+
 void init_signals(void)
 {
   int e;
@@ -1265,6 +1272,15 @@ void init_signals(void)
 
 #ifdef SIGPIPE
   my_signal(SIGPIPE, SIG_IGN);
+#endif
+
+#ifdef DEBUG
+#ifdef SIGSEGV
+  my_signal(SIGSEGV, fatal_signal);
+#endif
+#ifdef SIGBUS
+  my_signal(SIGBUS, fatal_signal);
+#endif
 #endif
 
   for(e=0;e<MAX_SIGNALS;e++)

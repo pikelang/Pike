@@ -153,6 +153,59 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
     DOTYPE(BIT_OBJECT, free_object, object);
     DOTYPE(BIT_PROGRAM, free_program, program);
 
+#define COMBINE9(A) case A:
+
+#define COMBINE8(A,B) \
+  COMBINE9(A|B)
+
+#define COMBINE7(A,B,C) \
+  COMBINE8(A|B,C) \
+  COMBINE9(A|C)
+
+#define COMBINE6(A,B,C,D) \
+  COMBINE7(A|B,C,D) \
+  COMBINE8(A|C,D) \
+  COMBINE9(A|D)
+
+#define COMBINE5(A,B,C,D,E) \
+  COMBINE6(A|B,C,D,E) \
+  COMBINE7(A|C,D,E) \
+  COMBINE8(A|D,E) \
+  COMBINE9(A|E)
+
+#define COMBINE4(A,B,C,D,E,F) \
+  COMBINE5(A|B,C,D,E,F) \
+  COMBINE6(A|C,D,E,F) \
+  COMBINE7(A|D,E,F) \
+  COMBINE8(A|E,F) \
+  COMBINE9(A|F)
+
+#define COMBINE3(A,B,C,D,E,F,G) \
+  COMBINE4(A|B,C,D,E,F,G) \
+  COMBINE5(A|C,D,E,F,G) \
+  COMBINE6(A|D,E,F,G) \
+  COMBINE7(A|E,F,G) \
+  COMBINE8(A|F,G) \
+  COMBINE9(A|G)
+
+#define COMBINE(A,B,C,D,E,F,G) \
+  COMBINE3(A,B,C,D,E,F,G) \
+  COMBINE4(B,C,D,E,F,G) \
+  COMBINE5(C,D,E,F,G) \
+  COMBINE6(D,E,F,G) \
+  COMBINE7(E,F,G) \
+  COMBINE8(F,G)
+
+
+  COMBINE(BIT_STRING, BIT_ARRAY, BIT_MAPPING, BIT_MULTISET, BIT_OBJECT, BIT_PROGRAM, BIT_FUNCTION);
+    while(--num>=0)
+    {
+      if(s->u.refs[0]--<=0)
+	really_free_svalue(s);
+      s++;
+    }
+    break;
+
   case BIT_FUNCTION:
     while(--num>=0)
     {

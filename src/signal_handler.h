@@ -6,9 +6,12 @@
 #ifndef SIGNAL_H
 #define SIGNAL_H
 
+typedef RETSIGTYPE (*sigfunctype) (int);
+
 /* Prototypes begin here */
 struct wait_data;
 struct sigdesc;
+void my_signal(int sig, sigfunctype fun);
 struct pid_status;
 void f_create_process(INT32 args);
 void f_fork(INT32 args);

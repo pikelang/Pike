@@ -8,7 +8,9 @@
 
 #include "callback.h"
 
-extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag;
+extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag, debug_options;
+
+#define DEBUG_SIGNALS 1
 
 /* Prototypes begin here */
 struct callback *add_post_master_callback(callback_func call,

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.66 1998/02/01 04:01:32 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.67 1998/02/03 05:29:25 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -346,10 +346,6 @@ void print_return_value(void)
   if(t_flag>3)
   {
     char *s;
-    int nonblock;
-	
-    if((nonblock=query_nonblocking(2)))
-      set_nonblocking(2,0);
 	
     init_buf();
     describe_svalue(sp-1,0,0);
@@ -363,9 +359,6 @@ void print_return_value(void)
     }
     fprintf(stderr,"-    value: %s\n",s);
     free(s);
-	
-    if(nonblock)
-      set_nonblocking(2,1);
   }
 }
 #else
@@ -560,9 +553,7 @@ static int eval_instruction(unsigned char *pc)
     if(t_flag > 2)
     {
       char *file, *f;
-      INT32 linep, nonblock;
-      if((nonblock=query_nonblocking(2)))
-	set_nonblocking(2,0);
+      INT32 linep;
 
       file=get_line(pc-1,fp->context.prog,&linep);
       while((f=STRCHR(file,'/'))) file=f+1;
@@ -572,8 +563,6 @@ static int eval_instruction(unsigned char *pc)
 	      get_f_name(instr + F_OFFSET),
 	      (long)(sp-evaluator_stack),
 	      (long)(mark_sp-mark_stack));
-      if(nonblock)
-	set_nonblocking(2,1);
     }
 
     if(instr + F_OFFSET < F_MAX_OPCODE) 
@@ -1500,6 +1489,58 @@ static int eval_instruction(unsigned char *pc)
   }
 }
 
+static void trace_return_value(void)
+{
+  char *s;
+  
+  init_buf();
+  my_strcat("Return: ");
+  describe_svalue(sp-1,0,0);
+  s=simple_free_buf();
+  if((long)strlen(s) > (long)TRACE_LEN)
+  {
+    s[TRACE_LEN]=0;
+    s[TRACE_LEN-1]='.';
+    s[TRACE_LEN-2]='.';
+    s[TRACE_LEN-2]='.';
+  }
+  fprintf(stderr,"%-*s%s\n",4,"-",s);
+  free(s);
+}
+
+static void do_trace_call(INT32 args)
+{
+  char *file,*s;
+  INT32 linep,e;
+  my_strcat("(");
+  for(e=0;e<args;e++)
+  {
+    if(e) my_strcat(",");
+    describe_svalue(sp-args+e,0,0);
+  }
+  my_strcat(")"); 
+  s=simple_free_buf();
+  if((long)strlen(s) > (long)TRACE_LEN)
+  {
+    s[TRACE_LEN]=0;
+    s[TRACE_LEN-1]='.';
+    s[TRACE_LEN-2]='.';
+    s[TRACE_LEN-2]='.';
+  }
+  if(fp && fp->pc)
+  {
+    char *f;
+    file=get_line(fp->pc,fp->context.prog,&linep);
+    while((f=STRCHR(file,'/'))) file=f+1;
+  }else{
+    linep=0;
+    file="-";
+  }
+  fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
+  free(s);
+}
+
+
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
@@ -1550,6 +1591,14 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     case T_FUNCTION:
       if(s->subtype == FUNCTION_BUILTIN)
       {
+#ifdef DEBUG
+	if(t_flag>1)
+	{
+	  init_buf();
+	  describe_svalue(s,0,0);
+	  do_trace_call(args);
+	}
+#endif
 	(*(s->u.efun->function))(args);
 	break;
       }else{
@@ -1560,10 +1609,26 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       break;
 
     case T_ARRAY:
+#ifdef DEBUG
+      if(t_flag>1)
+      {
+	init_buf();
+	describe_svalue(s,0,0);
+	do_trace_call(args);
+      }
+#endif
       apply_array(s->u.array,args);
       break;
 
     case T_PROGRAM:
+#ifdef DEBUG
+      if(t_flag>1)
+      {
+	init_buf();
+	describe_svalue(s,0,0);
+	do_trace_call(args);
+      }
+#endif
       push_object(clone_object(s->u.program,args));
       break;
 
@@ -1643,51 +1708,15 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame.context.prog->refs++;
       if(new_frame.context.parent) new_frame.context.parent->refs++;
       
-#ifdef DEBUG
       if(t_flag)
       {
-	char *file, *f;
-	INT32 linep,e,nonblock;
-	char buf[50],*s;
-	
-	if((nonblock=query_nonblocking(2)))
-	  set_nonblocking(2,0);
-	
-	if(fp && fp->pc)
-	{
-	  file=get_line(fp->pc,fp->context.prog,&linep);
-	  while((f=STRCHR(file,'/'))) file=f+1;
-	}else{
-	  linep=0;
-	  file="-";
-	}
-	
+	char buf[50];
 	init_buf();
 	sprintf(buf,"%lx->",(long)o);
 	my_strcat(buf);
 	my_strcat(function->name->str);
-	my_strcat("(");
-	for(e=0;e<args;e++)
-	{
-	  if(e) my_strcat(",");
-	  describe_svalue(sp-args+e,0,0);
-	}
-	my_strcat(")"); 
-	s=simple_free_buf();
-	if((long)strlen(s) > (long)TRACE_LEN)
-	{
-	  s[TRACE_LEN]=0;
-	  s[TRACE_LEN-1]='.';
-	  s[TRACE_LEN-2]='.';
-	  s[TRACE_LEN-2]='.';
-	}
-	fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
-	free(s);
-	
-	if(nonblock)
-	  set_nonblocking(2,1);
+	do_trace_call(args);
       }
-#endif
       
       fp = &new_frame;
       
@@ -1808,33 +1837,6 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	goto apply_stack;
       }
 
-#ifdef DEBUG
-      if(t_flag)
-      {
-	char *s;
-	int nonblock;
-	
-	if((nonblock=query_nonblocking(2)))
-	  set_nonblocking(2,0);
-	
-	init_buf();
-	my_strcat("Return: ");
-	describe_svalue(sp-1,0,0);
-	s=simple_free_buf();
-	if((long)strlen(s) > (long)TRACE_LEN)
-	{
-	  s[TRACE_LEN]=0;
-	  s[TRACE_LEN-1]='.';
-	  s[TRACE_LEN-2]='.';
-	  s[TRACE_LEN-2]='.';
-	}
-	fprintf(stderr,"%-*s%s\n",4,"-",s);
-	free(s);
-	
-	if(nonblock)
-	  set_nonblocking(2,1);
-      }
-#endif
     }
   }
 
@@ -1845,7 +1847,11 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   }
 
   if(save_sp+1 > sp && type != APPLY_SVALUE)
+  {
     push_int(0);
+  }else{
+    if(t_flag) trace_return_value();
+  }
 }
 
 

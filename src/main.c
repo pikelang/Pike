@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.39 1998/02/01 05:46:03 hubbe Exp $");
+RCSID("$Id: main.c,v 1.40 1998/02/03 05:29:26 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -43,6 +43,7 @@ RCSID("$Id: main.c,v 1.39 1998/02/01 05:46:03 hubbe Exp $");
 char *master_file;
 char **ARGV;
 
+int debug_options=0;
 int d_flag=0;
 int c_flag=0;
 int t_flag=0;
@@ -183,10 +184,24 @@ int dbm_main(int argc, char **argv)
 	  break;
 
 	case 'd':
-	  if(p[1]>='0' && p[1]<='9')
-	    d_flag+=STRTOL(p+1,&p,10);
-	  else
-	    d_flag++,p++;
+	more_d_flags:
+	  switch(p[1])
+	  {
+	    case '0': case '1': case '2': case '3': case '4':
+	    case '5': case '6': case '7': case '8': case '9':
+	      d_flag+=STRTOL(p+1,&p,10);
+	      break;
+
+	    case 's':
+	      debug_options|=DEBUG_SIGNALS;
+	      p++;
+	      if(p[1]) goto more_d_flags;
+	      p++;
+	      break;
+
+	    default:
+	      d_flag++,p++;
+	  }
 	  break;
 
 	case 'a':
