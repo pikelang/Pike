@@ -24,12 +24,24 @@ JMP_BUF *init_recovery(JMP_BUF *r)
   r->mark_sp=mark_sp - mark_stack;
   r->previous=recoveries;
   r->onerror=0;
+  r->severity=THROW_ERROR;
   recoveries=r;
   return r;
 }
 
-void pike_throw(void) ATTRIBUTE((noreturn))
+void pike_throw() ATTRIBUTE((noreturn))
 {
+  while(recoveries && throw_severity > recoveries->severity)
+  {
+    while(recoveries->onerror)
+    {
+      (*recoveries->onerror->func)(recoveries->onerror->arg);
+      recoveries->onerror=recoveries->onerror->previous;
+    }
+    
+    recoveries=recoveries->previous;
+  }
+
   if(!recoveries)
     fatal("No error recovery context.\n");
 
@@ -63,6 +75,7 @@ void pike_throw(void) ATTRIBUTE((noreturn))
 }
 
 struct svalue throw_value = { T_INT };
+int throw_severity;
 
 void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
@@ -98,6 +111,7 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
   free_svalue(& throw_value);
   sp--;
   throw_value = *sp;
+  throw_severity=THROW_ERROR;
 
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */

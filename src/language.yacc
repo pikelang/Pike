@@ -129,7 +129,6 @@
 %token F_SUB_EQ
 %token F_TYPEOF
 %token F_VAL_LVAL
-%token F_VARARGS 
 %token F_VOID_ID
 %token F_WHILE
 %token F_XOR_EQ
@@ -162,7 +161,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.53 1998/01/20 02:30:35 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.54 1998/01/25 08:25:08 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -280,7 +279,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> F_STATIC
 %type <number> F_STRING_ID
 %type <number> F_SWITCH
-%type <number> F_VARARGS
 %type <number> F_VOID_ID
 %type <number> F_WHILE
 %type <number> arguments
@@ -345,6 +343,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> unused2
 %type <n> while
 %type <n> optional_comma_expr
+%type <n> low_program_ref
 %%
 
 all: program;
@@ -368,7 +367,7 @@ optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
   | { $$=0; }
   ;
 
-program_ref: string_constant
+low_program_ref: string_constant
   {
     ref_push_string($1);
     push_string($1);
@@ -377,60 +376,39 @@ program_ref: string_constant
 
     if(sp[-1].type != T_PROGRAM)
       my_yyerror("Couldn't cast string \"%s\" to program",$1->str);
+    $$=mksvaluenode(sp-1);
+    pop_stack();
   }
   | idents
   {
     if(last_identifier)
     {
-      push_string(last_identifier);
+      ref_push_string(last_identifier);
       last_identifier->refs++;
     }else{
       push_constant_text("");
     }
-    
-    resolv_constant($1);
-    switch(sp[-1].type)
-    {
-    case T_OBJECT:
-      if(!sp[-1].u.object->prog)
-      {
-	pop_stack();
-	push_int(0);
-      }else{
-	struct program *p=sp[-1].u.object->prog;
-	p->refs++;
-	pop_stack();
-	push_program(p);
-      }
-      break;
-
-    case T_FUNCTION:
-      if(program_from_function(sp-1))
-	break;
-
-    default:
-      yyerror("Illegal program identifier");
-      pop_stack();
-      push_int(0);
-      
-    case T_PROGRAM:
-      break;
-    }
-
-    free_node($1);
+    $$=$1;
   }
   ;
-          
-inheritance: modifiers F_INHERIT program_ref optional_rename_inherit ';'
+
+program_ref: low_program_ref
+  {
+    resolv_program($1);    
+  }
+  ;
+      
+inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
   {
     if(!(new_program->flags & PROGRAM_PASS_1_DONE))
     {
-      struct pike_string *s=sp[-2].u.string;
+      struct pike_string *s=sp[-1].u.string;
       if($4) s=$4;
-      do_inherit(sp-1,$1,s);
+      compiler_do_inherit($3,$1,s);
     }
     if($4) free_string($4);
-    pop_n_elems(2);
+    pop_n_elems(1);
+    free_node($3);
   }
   ;
 
@@ -544,11 +522,6 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     for(; e>=0; e--)
     {
       push_finished_type(compiler_frame->variable[e].type);
-      if($1 & ID_VARARGS)
-      {
-	push_type(T_VOID);
-	push_type(T_OR);
-      }
     }
     push_type(T_FUNCTION);
     
@@ -644,12 +617,11 @@ modifier: F_NO_MASK    { $$ = ID_NOMASK; }
   | F_STATIC     { $$ = ID_STATIC; }
   | F_PRIVATE    { $$ = ID_PRIVATE; }
   | F_PUBLIC     { $$ = ID_PUBLIC; }
-  | F_VARARGS    { $$ = ID_VARARGS; }
   | F_PROTECTED  { $$ = ID_PROTECTED; }
-  | F_INLINE     { $$ = ID_INLINE | ID_NOMASK; }
+  | F_INLINE     { $$ = ID_INLINE; }
   ;
 
-modifiers: modifier_list { $$=current_modifiers=$1; } ;
+modifiers: modifier_list { $$=current_modifiers=$1 | lex.pragmas; } ;
 
 modifier_list: /* empty */ { $$ = 0; }
   | modifier modifier_list { $$ = $1 | $2; }
@@ -892,7 +864,14 @@ lambda: F_LAMBDA
     
     fix_comp_stack($<number>2);
     
-    push_type(T_MIXED);
+
+    $4=mknode(F_ARG_LIST,$4,mknode(F_RETURN,mkintnode(0),0));
+    type=find_return_type($4);
+
+    if(type)
+      push_finished_type(type);
+    else
+      push_type(T_MIXED);
     
     e=$3-1;
     if(varargs)
@@ -919,7 +898,7 @@ lambda: F_LAMBDA
       name=make_shared_string(buf);
       
       f=dooptcode(name,
-		  mknode(F_ARG_LIST,$4,mknode(F_RETURN,mkintnode(0),0)),
+		  $4,
 		  type,
 		  ID_PRIVATE);
     }
@@ -1505,4 +1484,13 @@ int islocal(struct pike_string *str)
     if(compiler_frame->variable[e].name==str)
       return e;
   return -1;
+}
+
+void cleanup_compiler(void)
+{
+  if(last_identifier)
+  {
+    free_string(last_identifier);
+    last_identifier=0;
+  }
 }

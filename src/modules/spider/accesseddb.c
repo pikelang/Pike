@@ -54,6 +54,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "dmalloc.h"
 #include "accesseddb.h"
 
 #define COOKIE 0x11223344

@@ -155,6 +155,7 @@ char *alloca ();
 #endif
 
 #include "port.h"
+#include "dmalloc.h"
 
 
 #ifdef BUFSIZ

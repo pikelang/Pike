@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.53 1998/01/22 00:51:04 grubba Exp $");
+RCSID("$Id: program.c,v 1.54 1998/01/25 08:25:14 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -185,8 +185,7 @@ struct node_s *find_module_identifier(struct pike_string *ident)
     while(--e>=0)
     {
       push_svalue(modules+e);
-      push_string(ident);
-      ident->refs++;
+      ref_push_string(ident);
       f_index(2);
       
       if(!IS_UNDEFINED(sp-1))
@@ -250,7 +249,8 @@ struct program *id_to_program(INT32 id)
   h=id & (ID_TO_PROGRAM_CACHE_SIZE-1);
 
   if((p=id_to_program_cache[h]))
-    if(p->id==id) return p;
+    if(p->id==id)
+      return p;
   
   if(id) 
     {
@@ -258,11 +258,7 @@ struct program *id_to_program(INT32 id)
 	{
 	  if(id==p->id)
 	    {
-	      if(id_to_program_cache[h])
-		free_program(id_to_program_cache[h]);
-	      
 	      id_to_program_cache[h]=p;
-	      p->refs++;
 	      return p;
 	    }
 	}
@@ -434,6 +430,7 @@ void low_start_new_program(struct program *p,
     i.inherit_level=0;
     i.parent=0;
     i.parent_identifier=0;
+    i.parent_offset=1;
     i.name=0;
     add_to_inherits(i);
   }
@@ -728,16 +725,15 @@ struct program *end_first_pass(int finish)
   if(init_node)
   {
     union idptr tmp;
-    struct pike_string *s;
-    s=make_shared_string("__INIT");
     dooptcode(s,
 	      mknode(F_ARG_LIST,
 		     init_node,mknode(F_RETURN,mkintnode(0),0)),
 	      function_type_string,
 	      0);
-    free_string(s);
     init_node=0;
   }
+
+  free_string(s);
 
   pop_compiler_frame(); /* Pop __INIT local variables */
 
@@ -894,15 +890,16 @@ void rename_last_inherit(struct pike_string *n)
 /*
  * make this program inherit another program
  */
-void do_inherit(struct svalue *prog,
-		INT32 flags,
-		struct pike_string *name)
+void low_inherit(struct program *p,
+		 struct object *parent,
+		 int parent_identifier,
+		 int parent_offset,
+		 INT32 flags,
+		 struct pike_string *name)
 {
   int e, inherit_offset, storage_offset;
   struct inherit inherit;
   struct pike_string *s;
-
-  struct program *p=program_from_svalue(prog);
 
   
   if(!p)
@@ -925,10 +922,13 @@ void do_inherit(struct svalue *prog,
     inherit.inherit_level ++;
     if(!e)
     {
-      if(prog->type == T_FUNCTION)
+      if(parent)
       {
-	inherit.parent=prog->u.object;
-	inherit.parent_identifier=prog->subtype;
+	inherit.parent=parent;
+	inherit.parent_identifier=parent_identifier;
+	inherit.parent_offset=0;
+      }else{
+	inherit.parent_offset+=parent_offset;
       }
     }
     if(inherit.parent) inherit.parent->refs++;
@@ -988,6 +988,71 @@ void do_inherit(struct svalue *prog,
     add_to_identifier_references(fun);
   }
 }
+
+void do_inherit(struct svalue *s,
+		INT32 flags,
+		struct pike_string *name)
+{
+  struct program *p=program_from_svalue(s);
+  low_inherit(p,
+	      s->type == T_FUNCTION ? s->u.object : 0,
+	      s->subtype,
+	      0,
+	      flags,
+	      name);
+}
+
+void compiler_do_inherit(node *n,
+			 INT32 flags,
+			 struct pike_string *name)
+{
+  switch(n->token)
+  {
+    case F_EXTERNAL:
+    {
+      struct identifier *i;
+      struct program *p=parent_compilation(n->u.integer.a);
+      INT32 numid=n->u.integer.b;
+      
+      if(!p)
+      {
+	yyerror("Failed to resolv external constant.\n");
+	return;
+      }
+
+      i=ID_FROM_INT(p, numid);
+    
+      if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
+      {
+	struct svalue *s=PROG_FROM_INT(new_program, numid)->constants + i->func.offset;
+	if(s->type != T_PROGRAM)
+	{
+	  yyerror("Inherit identifier is not a program");
+	  return;
+	}else{
+	  p=s->u.program;
+	}
+      }else{
+	yyerror("Inherit identifier is not a constant program");
+	return;
+      }
+
+      low_inherit(p,
+		  0,
+		  0,
+		  n->u.integer.a,
+		  flags,
+		  name);
+      break;
+    }
+
+    default:
+      resolv_program(n);
+      do_inherit(sp-1, flags, name);
+      pop_stack();
+  }
+}
+			 
 
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
@@ -1092,7 +1157,7 @@ int define_variable(struct pike_string *name,
 		    struct pike_string *type,
 		    INT32 flags)
 {
-  int n;
+  int n, run_time_type;
 
 #ifdef DEBUG
   if(name!=debug_findstring(name))
@@ -1126,30 +1191,32 @@ int define_variable(struct pike_string *name,
     if(PROG_FROM_INT(new_program, n) == new_program)
       my_yyerror("Variable '%s' defined twice.",name->str);
 
-    if(ID_FROM_INT(new_program, n)->type != type)
-      my_yyerror("Illegal to redefine inherited variable with different type.");
-
-    if(ID_FROM_INT(new_program, n)->identifier_flags != flags)
-      my_yyerror("Illegal to redefine inherited variable with different type.");
-
-  } else {
-    int run_time_type=compile_type_to_runtime_type(type);
-
-    switch(run_time_type)
+    if(!(IDENTIFIERP(n)->id_flags & ID_INLINE))
     {
+      if(ID_FROM_INT(new_program, n)->type != type)
+	my_yyerror("Illegal to redefine inherited variable with different type.");
+      
+      if(ID_FROM_INT(new_program, n)->identifier_flags != flags)
+	my_yyerror("Illegal to redefine inherited variable with different type.");
+      return n;
+    }
+  }
+
+  run_time_type=compile_type_to_runtime_type(type);
+
+  switch(run_time_type)
+  {
     case T_FUNCTION:
     case T_PROGRAM:
       run_time_type = T_MIXED;
-    }
-
-    n=low_define_variable(name,type,flags,
-			  add_storage(run_time_type == T_MIXED ?
-				      sizeof(struct svalue) :
-				      sizeof(union anything)),
-			  run_time_type);
-				      
-
   }
+  
+  n=low_define_variable(name,type,flags,
+			add_storage(run_time_type == T_MIXED ?
+				    sizeof(struct svalue) :
+				    sizeof(union anything)),
+			run_time_type);
+  
 
   return n;
 }
@@ -1240,11 +1307,16 @@ int add_constant(struct pike_string *name,
     if(PROG_FROM_INT(new_program, n) == new_program)
       my_yyerror("Identifier '%s' defined twice.",name->str);
 
-    new_program->identifier_references[n]=ref;
-  } else {
-    n=new_program->num_identifier_references;
-    add_to_identifier_references(ref);
+    if(!(IDENTIFIERP(n)->id_flags & ID_INLINE))
+    {
+      /* override */
+      new_program->identifier_references[n]=ref;
+
+      return n;
+    }
   }
+  n=new_program->num_identifier_references;
+  add_to_identifier_references(ref);
 
   return n;
 }
@@ -1355,7 +1427,6 @@ INT32 define_function(struct pike_string *name,
 
   i=isidentifier(name);
 
-
   if(i >= 0)
   {
     /* already defined */
@@ -1383,65 +1454,70 @@ INT32 define_function(struct pike_string *name,
       my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
     }
 
-    /* We modify the old definition if it is in this program */
-    if(ref.inherit_offset==0)
+    if(!(ref.id_flags & ID_INLINE))
     {
-      if(func)
-	funp->func = *func;
-      else
-	funp->func.offset = -1;
-
-      funp->identifier_flags=function_flags;
-    }else{
-      /* Otherwise we make a new definition */
-      copy_shared_string(fun.name, name);
-      copy_shared_string(fun.type, type);
-
-      fun.run_time_type=T_FUNCTION;
-
-      fun.identifier_flags=function_flags;
-
-      if(func)
-	fun.func = *func;
-      else
-	fun.func.offset = -1;
-
-      ref.identifier_offset=new_program->num_identifiers;
-      add_to_identifiers(fun);
+      /* We modify the old definition if it is in this program */
+      if(ref.inherit_offset==0)
+      {
+	if(func)
+	  funp->func = *func;
+	else
+	  funp->func.offset = -1;
+	
+	funp->identifier_flags=function_flags;
+      }else{
+	/* Otherwise we make a new definition */
+	copy_shared_string(fun.name, name);
+	copy_shared_string(fun.type, type);
+	
+	fun.run_time_type=T_FUNCTION;
+	
+	fun.identifier_flags=function_flags;
+	
+	if(func)
+	  fun.func = *func;
+	else
+	  fun.func.offset = -1;
+	
+	ref.identifier_offset=new_program->num_identifiers;
+	add_to_identifiers(fun);
+      }
+      
+      ref.inherit_offset = 0;
+      ref.id_flags = flags;
+      new_program->identifier_references[i]=ref;
+      return i;
     }
-
-    ref.inherit_offset = 0;
-    ref.id_flags = flags;
-    new_program->identifier_references[i]=ref;
-  }else{
-    /* define it */
-
-    copy_shared_string(fun.name, name);
-    copy_shared_string(fun.type, type);
-
-    fun.identifier_flags=function_flags;
-
-    fun.run_time_type=T_FUNCTION;
-
-    if(func)
-      fun.func = *func;
-    else
-      fun.func.offset = -1;
-
-    i=new_program->num_identifiers;
-#ifdef PROFILING
-    fun.num_calls = 0;
-#endif /* PROFILING */
-
-    add_to_identifiers(fun);
-
-    ref.id_flags = flags;
-    ref.identifier_offset = i;
-    ref.inherit_offset = 0;
-
-    i=new_program->num_identifier_references;
-    add_to_identifier_references(ref);
   }
+
+  /* define a new function */
+
+  copy_shared_string(fun.name, name);
+  copy_shared_string(fun.type, type);
+  
+  fun.identifier_flags=function_flags;
+  
+  fun.run_time_type=T_FUNCTION;
+  
+  if(func)
+    fun.func = *func;
+  else
+    fun.func.offset = -1;
+  
+  i=new_program->num_identifiers;
+#ifdef PROFILING
+  fun.num_calls = 0;
+#endif /* PROFILING */
+  
+  add_to_identifiers(fun);
+  
+  ref.id_flags = flags;
+  ref.identifier_offset = i;
+  ref.inherit_offset = 0;
+  
+  i=new_program->num_identifier_references;
+  add_to_identifier_references(ref);
+
   return i;
 }
 
@@ -1746,6 +1822,8 @@ struct program *compile(struct pike_string *prog)
   if(p && !num_parse_error)
   {
     low_start_new_program(p,0,0);
+    free_program(p);
+    p=0;
     compiler_pass=2;
     lex.pos=prog->str;
     yyparse();  /* Parse da program again */
@@ -1819,8 +1897,8 @@ void check_all_programs(void)
 
 void cleanup_program(void)
 {
-#ifdef FIND_FUNCTION_HASHSIZE
   int e;
+#ifdef FIND_FUNCTION_HASHSIZE
   for(e=0;e<FIND_FUNCTION_HASHSIZE;e++)
   {
     if(cache[e].name)
@@ -1830,6 +1908,7 @@ void cleanup_program(void)
     }
   }
 #endif
+
 }
 
 #ifdef GC2

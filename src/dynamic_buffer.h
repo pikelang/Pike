@@ -25,12 +25,12 @@ struct dynamic_buffer_s
 typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* Prototypes begin here */
-char *low_make_buf_space(INT32 space,dynamic_buffer *buf);
+char *low_make_buf_space(INT32 space, dynamic_buffer *buf);
 void low_my_putchar(char b,dynamic_buffer *buf);
 void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf);
-void initialize_buf(dynamic_buffer *buf);
+void debug_initialize_buf(dynamic_buffer *buf);
 void low_reinit_buf(dynamic_buffer *buf);
-void low_init_buf_with_string(string s,dynamic_buffer *buf);
+void low_init_buf_with_string(string s, dynamic_buffer *buf);
 string complex_free_buf(void);
 void toss_buffer(dynamic_buffer *buf);
 char *simple_free_buf(void);
@@ -44,5 +44,13 @@ void init_buf(void);
 void init_buf_with_string(string s);
 char *return_buf(void);
 /* Prototypes end here */
+
+#ifdef DEBUG_MALLOC
+#define initialize_buf(X) \
+  do { dynamic_buffer *b_=(X); debug_initialize_buf(b_); \
+   debug_malloc_update_location(b_->s.str,__FILE__,__LINE__); } while(0)
+#else
+#define initialize_buf debug_initialize_buf
+#endif
 
 #endif

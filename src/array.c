@@ -1560,6 +1560,12 @@ void zap_all_arrays(void)
   a=&empty_array;
   do
   {
+
+#if defined(DEBUG) && defined(DEBUG_MALLOC)
+    if(verbose_debug_exit)
+      debug_dump_array(a);
+#endif
+    
     a->refs++;
     free_svalues(ITEM(a), a->size, a->type_field);
     a->size=0;
@@ -1571,6 +1577,7 @@ void zap_all_arrays(void)
     a=next;
   } while (a != & empty_array);
 }
+
 
 void count_memory_in_arrays(INT32 *num_, INT32 *size_)
 {

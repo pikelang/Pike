@@ -36,9 +36,8 @@ void init_modules(void)
 {
   unsigned int e;
   struct mapping *m = allocate_mapping(10);
-  m->refs++;
   push_text("_static_modules");
-  push_mapping(m);
+  ref_push_mapping(m);
   f_add_constant(2);
 
   for(e=0;e<NELEM(module_list);e++)
@@ -54,6 +53,7 @@ void init_modules(void)
     mapping_insert(m, sp-2, sp-1);
     pop_n_elems(2);
   }
+  free_mapping(m);
 }
 
 void exit_modules(void)

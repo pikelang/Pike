@@ -63,8 +63,8 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space);
 void really_free_array(struct array *v);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
-void simple_array_index(struct svalue *s,struct array *a,struct svalue *ind);
-void simple_array_index_no_free(struct svalue *s,struct array *a,struct svalue *ind);
+void simple_array_index_no_free(struct svalue *s,
+				struct array *a,struct svalue *ind);
 void array_free_index(struct array *v,INT32 index);
 void array_set_index(struct array *v,INT32 index, struct svalue *s);
 void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);

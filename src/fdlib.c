@@ -7,7 +7,7 @@ long da_handle[MAX_OPEN_FILEDESCRIPTORS];
 int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
-#define FDDEBUG(X)
+#define FDDEBUG(X) X
 
 char *fd_info(int fd)
 {
@@ -185,6 +185,7 @@ FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
   return new_fd;
 }
 
+
 #define SOCKFUN(NAME,X1,X2) \
 int PIKE_CONCAT(fd_,NAME) X1 { SOCKET ret; \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%d)\n",fd,da_handle[fd])); \
@@ -215,7 +216,28 @@ int PIKE_CONCAT(fd_,NAME) X1 { SOCKET ret; \
 
 
 SOCKFUN2(bind, struct sockaddr *, int)
+#if 1
+int fd_connect (FD fd, struct sockaddr *a, int len)
+{
+  SOCKET ret;
+  FDDEBUG(fprintf(stderr, "connect on %d (%d)\n",fd,da_handle[fd])
+  for(ret=0;ret<len;ret++)
+    fprintf(stderr," %02x",((unsigned char *)a)[ret]);
+  fprintf(stderr,"\n");
+  )
+  if(fd_type[fd] != FD_SOCKET)
+  {
+    errno=ENOTSUPP;
+    return -1; 
+  } 
+  ret=connect((SOCKET)da_handle[fd],a,len); 
+  if(ret == SOCKET_ERROR) errno=WSAGetLastError(); 
+  FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno)); 
+  return (int)ret; 
+}
+#else
 SOCKFUN2(connect, struct sockaddr *, int)
+#endif
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN2(getsockname,struct sockaddr *,int *)
@@ -396,10 +418,12 @@ int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
 int fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
+  FDEBUG(fprintf("ioctl(%d (%d,%d,%p)\n",fd,da_handle[fd],cmd,data))
   switch(fd_type[fd])
   {
     case FD_SOCKET:
       ret=ioctlsocket((SOCKET)da_handle[fd], cmd, data);
+      FDDEBUG(fprintf(stderr,"ioctlsocket returned %ld (%d)\n",ret,errno));
       if(ret==SOCKET_ERROR)
       {
 	errno=WSAGetLastError();

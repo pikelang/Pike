@@ -49,8 +49,6 @@ struct hash_entry;
 struct hash_table;
 #endif
 
-#define PRAGMA_ALL_INLINE 1
-
 struct lex
 {
   char *pos;

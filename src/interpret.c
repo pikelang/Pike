@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.60 1998/01/24 18:36:44 per Exp $");
+RCSID("$Id: interpret.c,v 1.61 1998/01/25 08:25:07 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -532,7 +532,6 @@ static int eval_instruction(unsigned char *pc)
       if((nonblock=query_nonblocking(2)))
 	set_nonblocking(2,0);
 
-
       file=get_line(pc-1,fp->context.prog,&linep);
       while((f=STRCHR(file,'/'))) file=f+1;
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
@@ -624,31 +623,38 @@ static int eval_instruction(unsigned char *pc)
       {
 	struct inherit *inherit;
 	struct program *p;
-	INT32 id=GET_ARG();
-	struct object *o=fp->context.parent;
-	INT32 i=fp->context.parent_identifier;
+	struct object *o;
+	INT32 i,id=GET_ARG();
+
+	inherit=&fp->context;
+	
+	o=fp->current_object;
+
+	if(!o)
+	  error("Current object is destructed\n");
 	
 	while(1)
 	{
-	  if(!o)
-	    error("Parent no longer exists\n");
-
-	  if(!(p=o->prog))
-	    error("Attempting to access variable in destructed object\n");
-
-	  inherit=INHERIT_FROM_INT(p, i);
-
-	  if(!accumulator) break;
-	  --accumulator;
-
-	  if(p->identifier_references[id].inherit_offset==0)
+	  if(inherit->parent_offset)
 	  {
 	    i=o->parent_identifier;
 	    o=o->parent;
+	    accumulator+=inherit->parent_offset-1;
 	  }else{
 	    i=inherit->parent_identifier;
 	    o=inherit->parent;
 	  }
+	  
+	  if(!o)
+	    error("Parent was lost during cloning.\n");
+	  
+	  if(!(p=o->prog))
+	    error("Attempting to access variable in destructed object\n");
+	  
+	  inherit=INHERIT_FROM_INT(p, i);
+	  
+	  if(!accumulator) break;
+	  --accumulator;
 	}
 
 	low_object_index_no_free(sp,
@@ -663,12 +669,27 @@ static int eval_instruction(unsigned char *pc)
       {
 	struct inherit *inherit;
 	struct program *p;
-	INT32 id=GET_ARG();
-	struct object *o=fp->context.parent;
-	INT32 i=fp->context.parent_identifier;
+	struct object *o;
+	INT32 i,id=GET_ARG();
+
+	inherit=&fp->context;
+	o=fp->current_object;
 	
+	if(!o)
+	  error("Current object is destructed\n");
+
 	while(1)
 	{
+	  if(inherit->parent_offset)
+	  {
+	    i=o->parent_identifier;
+	    o=o->parent;
+	    accumulator+=inherit->parent_offset-1;
+	  }else{
+	    i=inherit->parent_identifier;
+	    o=inherit->parent;
+	  }
+
 	  if(!o)
 	    error("Parent no longer exists\n");
 
@@ -679,15 +700,6 @@ static int eval_instruction(unsigned char *pc)
 
 	  if(!accumulator) break;
 	  accumulator--;
-
-	  if(p->identifier_references[id].inherit_offset==0)
-	  {
-	    i=o->parent_identifier;
-	    o=o->parent;
-	  }else{
-	    i=inherit->parent_identifier;
-	    o=inherit->parent;
-	  }
 	}
 
 	ref_push_object(o);
@@ -1563,7 +1575,6 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame.parent_frame = fp;
       new_frame.current_object = o;
       new_frame.context = p->inherits[ ref->inherit_offset ];
-      if(!ref->inherit_offset) new_frame.context.parent=o->parent;
 
       function = new_frame.context.prog->identifiers + ref->identifier_offset;
   

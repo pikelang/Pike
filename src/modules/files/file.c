@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.68 1998/01/21 23:51:41 grubba Exp $");
+RCSID("$Id: file.c,v 1.69 1998/01/25 08:28:00 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -74,6 +74,9 @@ RCSID("$Id: file.c,v 1.68 1998/01/21 23:51:41 grubba Exp $");
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+
+#include "dmalloc.h"
+
 
 #ifndef SEEK_SET
 #define SEEK_SET 0

@@ -66,6 +66,7 @@ void really_free_multiset(struct multiset *l)
 static void order_multiset(struct multiset *l)
 {
   INT32 *order;
+  if(l->ind->size < 2) return;
   order = get_set_order(l->ind);
   l->ind = order_array(l->ind, order);
   free((char *)order);
@@ -316,3 +317,4 @@ void count_memory_in_multisets(INT32 *num_, INT32 *size_)
   *num_=num;
   *size_=size;
 }
+

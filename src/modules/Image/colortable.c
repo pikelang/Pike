@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.35 1998/01/21 23:51:38 grubba Exp $ */
+/* $Id: colortable.c,v 1.36 1998/01/25 08:26:38 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.35 1998/01/21 23:51:38 grubba Exp $
+**!	$Id: colortable.c,v 1.36 1998/01/25 08:26:38 hubbe Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.35 1998/01/21 23:51:38 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.36 1998/01/25 08:26:38 hubbe Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,6 +46,7 @@ RCSID("$Id: colortable.c,v 1.35 1998/01/21 23:51:38 grubba Exp $");
 
 #include "image.h"
 #include "colortable.h"
+#include "dmalloc.h"
 
 struct program *image_colortable_program;
 extern struct program *image_program;

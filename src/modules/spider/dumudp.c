@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.31 1998/01/21 19:57:17 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.32 1998/01/25 08:28:24 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -76,6 +76,8 @@ RCSID("$Id: dumudp.c,v 1.31 1998/01/21 19:57:17 hubbe Exp $");
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+
+#include "dmalloc.h"
 
 struct dumudp {
   int fd;

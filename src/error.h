@@ -25,6 +25,9 @@ typedef void (*error_call)(void *);
 struct frame;
 #endif
 
+#define THROW_ERROR 1
+#define THROW_EXIT 1000
+
 typedef struct ONERROR
 {
   struct ONERROR *previous;
@@ -39,11 +42,13 @@ typedef struct JMP_BUF
   struct frame *fp;
   INT32 sp;
   INT32 mark_sp;
+  INT32 severity;
   ONERROR *onerror;
 } JMP_BUF;
 
 extern JMP_BUF *recoveries;
 extern struct svalue throw_value;
+extern int throw_severity;
 
 #define SETJMP(X) setjmp((init_recovery(&X)->recovery))
 #define UNSETJMP(X) recoveries=X.previous;

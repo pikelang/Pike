@@ -54,7 +54,7 @@ void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
   MEMCPY(low_make_buf_space(l,buf),b,l);
 }
 
-void initialize_buf(dynamic_buffer *buf)
+void debug_initialize_buf(dynamic_buffer *buf)
 {
   buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
   *(buf->s.str)=0;

@@ -12,6 +12,9 @@
 /* Define this if you want run time self tests */
 #undef DEBUG
 
+/* Define this if you want malloc debugging */
+#undef DEBUG_MALLOC
+
 @TOP@
 
 /* Enable profiling */

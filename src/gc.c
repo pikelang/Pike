@@ -317,8 +317,11 @@ void describe_something(void *a, int t)
       fprintf(stderr,"**Program id: %ld\n",(long)(p->id));
       if(!p->num_linenumbers)
       {
+	int e;
 	fprintf(stderr,"**The program was written in C.\n");
-	break;
+	fprintf(stderr,"**identifiers:\n");
+	for(e=0;e<p->num_identifiers;e++)
+	  fprintf(stderr,"*** %s\n",p->identifiers[e].name->str);
       }
 
       for(pos=0;pos<(long)p->num_program && pos<100;pos++)
@@ -336,6 +339,11 @@ void describe_something(void *a, int t)
     case T_ARRAY:
       fprintf(stderr,"**Describing array:\n");
       debug_dump_array((struct array *)a);
+      break;
+
+    case T_MAPPING:
+      fprintf(stderr,"**Describing mapping:\n");
+      debug_dump_mapping((struct mapping *)a);
       break;
 
     case T_STRING:

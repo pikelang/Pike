@@ -60,6 +60,8 @@
 # endif
 #endif
 
+#include "dmalloc.h"
+
 struct array *encode_stat(struct stat *s)
 {
   struct array *a;

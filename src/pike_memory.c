@@ -8,17 +8,6 @@
 #include "error.h"
 #include "pike_macros.h"
 
-char *xalloc(SIZE_T size)
-{
-  char *ret;
-  if(!size) return 0;
-
-  ret=(char *)malloc(size);
-  if(ret) return ret;
-
-  error("Out of memory.\n");
-  return 0;
-}
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -94,6 +83,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 {
   INT32 e;
   char *tmp;
+  if(nitems<2) return;
   tmp=xalloc(size * nitems);
 #undef DOSIZE
 #define DOSIZE(X,Y)				\
@@ -406,3 +396,301 @@ void memfill(char *to,
     }
   }
 }
+
+#ifdef DEBUG_MALLOC
+
+#undef xalloc
+#undef malloc
+#undef free
+#undef realloc
+#undef calloc
+#undef xalloc
+#undef strdup
+#undef main
+
+int verbose_debug_malloc = 0;
+int verbose_debug_exit = 1;
+
+#define BSIZE 16382
+#define HSIZE 65599
+
+struct memloc
+{
+  struct memloc *next;
+  const char *filename;
+  int line;
+  int times;
+};
+
+struct memhdr
+{
+  struct memhdr *next;
+  size_t size;
+  void *data;
+  struct memloc *locations;
+};
+
+static struct memhdr *hash[HSIZE];
+
+struct memhdr_block
+{
+  struct memhdr_block *next;
+  struct memhdr memhdrs[BSIZE];
+};
+
+static struct memhdr_block *memhdr_blocks=0;
+static struct memhdr *free_memhdrs=0;
+
+static struct memhdr *alloc_memhdr(void)
+{
+  struct memhdr *tmp;
+  if(!free_memhdrs)
+  {
+    struct memhdr_block *n;
+    int e;
+    n=(struct memhdr_block *)malloc(sizeof(struct memhdr_block));
+    if(!n)
+    {
+      fprintf(stderr,"Fatal: out of memory.\n");
+      verbose_debug_exit=0;
+      exit(17);
+    }
+    n->next=memhdr_blocks;
+    memhdr_blocks=n;
+
+    for(e=0;e<BSIZE;e++)
+    {
+      n->memhdrs[e].next=free_memhdrs;
+      free_memhdrs=n->memhdrs+e;
+    }
+  }
+
+  tmp=free_memhdrs;
+  free_memhdrs=tmp->next;
+  return tmp;
+}
+
+struct memloc_block
+{
+  struct memloc_block *next;
+  struct memloc memlocs[BSIZE];
+};
+
+static struct memloc_block *memloc_blocks=0;
+static struct memloc *free_memlocs=0;
+
+static struct memloc *alloc_memloc(void)
+{
+  struct memloc *tmp;
+  if(!free_memlocs)
+  {
+    struct memloc_block *n;
+    int e;
+    n=(struct memloc_block *)malloc(sizeof(struct memloc_block));
+    if(!n)
+    {
+      fprintf(stderr,"Fatal: out of memory.\n");
+      verbose_debug_exit=0;
+      exit(17);
+    }
+    n->next=memloc_blocks;
+    memloc_blocks=n;
+
+    for(e=0;e<BSIZE;e++)
+    {
+      n->memlocs[e].next=free_memlocs;
+      free_memlocs=n->memlocs+e;
+    }
+  }
+
+  tmp=free_memlocs;
+  free_memlocs=tmp->next;
+  return tmp;
+}
+
+static struct memhdr *find_memhdr(void *p)
+{
+  struct memhdr *mh;
+  unsigned long h=(long)p;
+  h%=HSIZE;
+  for(mh=hash[h]; mh; mh=mh->next)
+    if(mh->data==p)
+      return mh;
+  return NULL;
+}
+
+static void add_location(struct memhdr *mh, const char *fn, int line)
+{
+  struct memloc *ml;
+  for(ml=mh->locations;ml;ml=ml->next)
+    if(ml->filename==fn && ml->line==line)
+      return;
+
+  ml=alloc_memloc();
+  ml->line=line;
+  ml->filename=fn;
+  ml->next=mh->locations;
+  ml->times++;
+  mh->locations=ml;
+}
+
+static void make_memhdr(void *p, int s, const char *fn, int line)
+{
+  struct memhdr *mh=alloc_memhdr();
+  struct memloc *ml=alloc_memloc();
+  unsigned long h=(long)p;
+  h%=HSIZE;
+  mh->next=hash[h];
+  mh->data=p;
+  mh->size=s;
+  mh->locations=ml;
+  ml->filename=fn;
+  ml->line=line;
+  ml->next=0;
+  ml->times=1;
+  hash[h]=mh;
+}
+
+static int remove_memhdr(void *p)
+{
+  struct memhdr **prev,*mh;
+  unsigned long h=(long)p;
+  h%=HSIZE;
+  for(prev=hash+h;(mh=*prev);prev=&(mh->next))
+  {
+    if(mh->data==p)
+    {
+      struct memloc *ml;
+      while((ml=mh->locations))
+      {
+	mh->locations=ml->next;
+	ml->next=free_memlocs;
+	free_memlocs=ml;
+      }
+      *prev=mh->next;
+      mh->next=free_memhdrs;
+      free_memhdrs=mh;
+      
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void *debug_malloc(size_t s, const char *fn, int line)
+{
+  void *m=malloc(s);
+  if(m) make_memhdr(m, s, fn, line);
+
+  if(verbose_debug_malloc)
+    fprintf(stderr, "malloc(%d) => %p  (%s:%d)\n", s, m, fn, line);
+
+  return m;
+}
+
+char *debug_xalloc(long size, const char *fn, int line)
+{
+  char *ret;
+  if(!size) return 0;
+
+  ret=(char *)debug_malloc(size,fn, line);
+  if(ret) return ret;
+
+  error("Out of memory.\n");
+  return 0;
+}
+
+void *debug_calloc(size_t a, size_t b, const char *fn, int line)
+{
+  void *m=calloc(a, b);
+
+  if(m) make_memhdr(m, a*b, fn, line);
+
+  if(verbose_debug_malloc)
+    fprintf(stderr, "calloc(%d,%d) => %p  (%s:%d)\n", a, b, m, fn, line);
+
+  return m;
+}
+
+void *debug_realloc(void *p, size_t s, const char *fn, int line)
+{
+  void *m;
+  m=realloc(p, s);
+  if(m) {
+    if(p) remove_memhdr(p);
+    make_memhdr(m, s, fn, line);
+  }
+  if(verbose_debug_malloc)
+    fprintf(stderr, "realloc(%p,%d) => %p  (%s:%d)\n", p, s, m, fn,line);
+  return m;
+}
+
+void debug_free(void *p, const char *fn, int line)
+{
+  remove_memhdr(p);
+  free(p);
+  if(verbose_debug_malloc)
+    fprintf(stderr, "free(%p) (%s:%d)\n", p, fn,line);
+}
+
+char *debug_strdup(const char *s, const char *fn, int line)
+{
+  char *m=strdup(s);
+
+  if(m) make_memhdr(m, strlen(s)+1, fn, line);
+
+  if(verbose_debug_malloc)
+    fprintf(stderr, "strdup(\"%s\") => %p  (%s:%d)\n", s, m, fn, line);
+  return m;
+}
+
+static void cleanup_memhdrs()
+{
+  unsigned long h;
+  if(verbose_debug_exit)
+  {
+    for(h=0;h<HSIZE;h++)
+    {
+      struct memhdr *m;
+      for(m=hash[h];m;m=m->next)
+      {
+	struct memloc *l;
+	fprintf(stderr, "LEAK: (%p) %d bytes (%ld refs?)\n",m->data, m->size,(long)*(INT32 *)m->data);
+	for(l=m->locations;l;l=l->next)
+	  fprintf(stderr,"  *** %s:%d (%d times)\n",l->filename, l->line, l->times);
+      }
+    }
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  extern int dbm_main(int, char **);
+  atexit(cleanup_memhdrs);
+  return dbm_main(argc, argv);
+}
+
+void * debug_malloc_update_location(void *p,const char *fn, int line)
+{
+  struct memhdr *mh=find_memhdr(p);
+  if(mh)
+    add_location(mh, fn, line);
+  return p;
+}
+
+
+#else
+
+char *xalloc(long size)
+{
+  char *ret;
+  if(!size) return 0;
+
+  ret=(char *)malloc(size);
+  if(ret) return ret;
+
+  error("Out of memory.\n");
+  return 0;
+}
+
+#endif

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.42 1998/01/19 18:38:46 hubbe Exp $");
+RCSID("$Id: las.c,v 1.43 1998/01/25 08:25:08 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -122,6 +122,30 @@ INT32 count_args(node *n)
     if(n->type == void_type_string) return 0;
     return 1;
   }
+}
+
+struct pike_string *find_return_type(node *n)
+{
+  struct pike_string *a,*b;
+
+  if(!n) return 0;
+  if(!(n->tree_info & OPT_RETURN)) return 0;
+  if(car_is_node(n))
+    a=find_return_type(CAR(n));
+  else
+    a=0;
+
+  if(cdr_is_node(n))
+    b=find_return_type(CDR(n));
+  else
+    b=0;
+
+  if(a)
+  {
+    if(b && a!=b) return mixed_type_string;
+    return a;
+  }
+  return b;
 }
 
 
@@ -534,6 +558,37 @@ void resolv_constant(node *n)
     }
   }
 }
+
+void resolv_program(node *n)
+{
+  resolv_constant(n);
+  switch(sp[-1].type)
+  {
+    case T_OBJECT:
+      if(!sp[-1].u.object->prog)
+      {
+	pop_stack();
+	push_int(0);
+      }else{
+	f_object_program(1);
+      }
+      break;
+      
+    case T_FUNCTION:
+      if(program_from_function(sp-1))
+	break;
+      
+    default:
+      yyerror("Illegal program identifier");
+      pop_stack();
+      push_int(0);
+      
+    case T_PROGRAM:
+      break;
+  }
+}
+
+
 
 node *index_node(node *n, struct pike_string * id)
 {

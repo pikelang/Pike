@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.6 1998/01/13 23:01:25 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.7 1998/01/25 08:28:01 hubbe Exp $ */
 
 import Stdio;
 import String;
@@ -90,7 +90,7 @@ class Socket {
     input_buffer+=foo;
   }
 
-  varargs void create(object o)
+  void create(object|void o)
   {
     daemon->got_callback();
     daemon->start();
@@ -152,6 +152,7 @@ array(object(Socket)) stdtest()
   if(!sock2)
   {
     werror("Accept returned 0\n");
+    sleep(1);
     exit(1);
   }
   sock2=Socket(sock2);
@@ -278,7 +279,7 @@ void accept_callback()
   object o=port1::accept();
   if(!o)
   {
-    perror("Accept failed");
+    werror("Accept failed");
   }
   o=Socket(o);
   o->expected_data=strmult("foobar",4711);
@@ -286,17 +287,20 @@ void accept_callback()
 
 int main()
 {
-  for(portno1=2001;portno1<65536;portno1++)
-    if(port1::bind(portno1, accept_callback))
-      break;
+  if(!port1::bind(0, accept_callback))
+  {
+    werror("Bind failed.\n");
+    exit(1);
+  }
+  sscanf(port1::query_address(),"%*s %d",portno1);
 
-  if(portno1==65536) perror("Bind failed.\n");
+  if(!port2::bind(0))
+  {
+    werror("Bind failed.\n");
+    exit(1);
+  }
 
-  for(portno2=2001;portno2<65536;portno2++)
-    if(port2::bind(portno2))
-      break;
-
-  if(portno2==65536) perror("Bind failed.\n");
+  sscanf(port2::query_address(),"%*s %d",portno2);
 
   werror("Doing simple tests. ");
   stdtest();

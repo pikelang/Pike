@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.26 1998/01/13 01:51:28 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.27 1998/01/25 08:25:10 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -624,17 +624,23 @@ struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 
   ai=mapping_indices(a);
   av=mapping_values(a);
-  zipper=get_set_order(ai);
-  order_array(ai, zipper);
-  order_array(av, zipper);
-  free((char *)zipper);
+  if(ai->size > 1)
+  {
+    zipper=get_set_order(ai);
+    order_array(ai, zipper);
+    order_array(av, zipper);
+    free((char *)zipper);
+  }
 
   bi=mapping_indices(b);
   bv=mapping_values(b);
-  zipper=get_set_order(bi);
-  order_array(bi, zipper);
-  order_array(bv, zipper);
-  free((char *)zipper);
+  if(bi->size > 1)
+  {
+    zipper=get_set_order(bi);
+    order_array(bi, zipper);
+    order_array(bv, zipper);
+    free((char *)zipper);
+  }
 
   zipper=merge(ai,bi,op);
 
@@ -714,7 +720,7 @@ int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
 void describe_mapping(struct mapping *m,struct processing *p,int indent)
 {
   struct processing doing;
-  INT32 e,d;
+  INT32 e,d,q;
   struct keypair *k;
   char buf[40];
 
@@ -739,15 +745,16 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   sprintf(buf,"([ /* %ld elements */\n",(long) m->size);
   my_strcat(buf);
 
-  d=0;
+  q=0;
 
   LOOP(m)
   {
-    if(d)
+    if(q)
     {
-      my_strcat(",\n");
+      my_putchar(',');
+      my_putchar('\n');
     } else {
-      d=1;
+      q=1;
     }
     for(d=0; d<indent; d++) my_putchar(' ');
     describe_svalue(& k->ind, indent+2, p);
@@ -938,9 +945,6 @@ void check_mapping(struct mapping *m)
   if(m->size > (m->hashsize + 3) * AVG_LINK_LENGTH)
     fatal("Pretty mean hashtable there buster!.\n");
   
-  if(m->size < (m->hashsize - 3) * MIN_LINK_LENGTH)
-    fatal("Hashsize is too small for mapping.\n");
-  
   if(m->size > 0 && (!m->ind_types || !m->val_types))
     fatal("Mapping type fields are... wrong.\n");
 
@@ -1065,6 +1069,37 @@ void gc_free_all_unreferenced_mappings(void)
   }
 }
 
+#ifdef DEBUG
+
+void simple_describe_mapping(struct mapping *m)
+{
+  char *s;
+  init_buf();
+  describe_mapping(m,0,2);
+  s=simple_free_buf();
+  fprintf(stderr,"%s\n",s);
+  free(s);
+}
+
+
+void debug_dump_mapping(struct mapping *m)
+{
+  fprintf(stderr,"Refs=%d, next=%p, prev=%p, size=%d, hashsize=%d\n",
+	  m->refs,
+	  m->next,
+	  m->prev,
+	  m->size,
+	  m->hashsize);
+  fprintf(stderr,"Indices type field = ");
+  debug_dump_type_field(m->ind_types);
+  fprintf(stderr,"\n");
+  fprintf(stderr,"Values type field = ");
+  debug_dump_type_field(m->val_types);
+  fprintf(stderr,"\n");
+  simple_describe_mapping(m);
+}
+#endif
+
 void zap_all_mappings(void)
 {
   INT32 e;
@@ -1074,6 +1109,11 @@ void zap_all_mappings(void)
   for(m=first_mapping;m;m=next)
   {
     m->refs++;
+
+#if defined(DEBUG) && defined(DEBUG_MALLOC)
+    if(verbose_debug_exit)
+      debug_dump_mapping(m);
+#endif
 
     for(e=0;e<m->hashsize;e++)
     {

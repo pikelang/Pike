@@ -72,6 +72,8 @@ void gc_mark_mapping_as_referenced(struct mapping *m);
 void gc_check_all_mappings(void);
 void gc_mark_all_mappings(void);
 void gc_free_all_unreferenced_mappings(void);
+void simple_describe_mapping(struct mapping *m);
+void debug_dump_mapping(struct mapping *m);
 void zap_all_mappings(void);
 void count_memory_in_mappings(INT32 *num_, INT32 *size_);
 /* Prototypes end here */

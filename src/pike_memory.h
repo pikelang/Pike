@@ -34,7 +34,6 @@ struct mem_searcher
 };
 
 /* Prototypes begin here */
-char *xalloc(SIZE_T size);
 void swap(char *a, char *b, INT32 size);
 void reverse(char *memory, INT32 nitems, INT32 size);
 void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);

@@ -159,9 +159,9 @@ void assemble(void)
 	max_label = c->arg;
 
 
-  labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
-  jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
-  uses=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
+  labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
+  jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
+  uses=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
 
   for(e=0;e<=max_label;e++)
   {

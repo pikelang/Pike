@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.28 1998/01/16 22:33:07 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.29 1998/01/25 08:25:13 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -212,7 +212,7 @@ void push_finished_type(struct pike_string *type)
   for(e=type->len-1;e>=0;e--) push_type(type->str[e]);
 }
 
-struct pike_string *pop_unfinished_type(void)
+struct pike_string *debug_pop_unfinished_type(void)
 {
   int len,e;
   struct pike_string *s;
@@ -226,7 +226,7 @@ struct pike_string *pop_unfinished_type(void)
   return s;
 }
 
-struct pike_string *pop_type(void)
+struct pike_string *debug_pop_type(void)
 {
   struct pike_string *s;
   s=pop_unfinished_type();

@@ -61,8 +61,9 @@ struct compiler_frame
 int car_is_node(node *n);
 int cdr_is_node(node *n);
 INT32 count_args(node *n);
+struct pike_string *find_return_type(node *n);
 struct node_chunk;
-void free_all_nodes(void);
+void free_all_nodes();
 void free_node(node *n);
 node *mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
@@ -78,6 +79,7 @@ node *mkexternalnode(int level,
 		     struct identifier *id);
 node *mkcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
+void resolv_program(node *n);
 node *index_node(node *n, struct pike_string * id);
 int node_is_eq(node *a,node *b);
 node *mkconstantsvaluenode(struct svalue *s);

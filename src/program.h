@@ -100,8 +100,8 @@ union idptr
 #define IDENTIFIER_PIKE_FUNCTION 1
 #define IDENTIFIER_C_FUNCTION 2
 #define IDENTIFIER_FUNCTION 3
-#define IDENTIFIER_VARARGS 4
-#define IDENTIFIER_CONSTANT 8
+#define IDENTIFIER_CONSTANT 4
+#define IDENTIFIER_VARARGS 8
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
@@ -131,10 +131,9 @@ struct identifier
 #define ID_NOMASK    0x04
 #define ID_PUBLIC    0x08
 #define ID_PROTECTED 0x10
-#define ID_VARARGS   0x20
-#define ID_INLINE    0x40
-#define ID_HIDDEN    0x80 /* needed? */
-#define ID_INHERITED 0x100
+#define ID_INLINE    0x20
+#define ID_HIDDEN    0x40 /* needed? */
+#define ID_INHERITED 0x80
 
 struct reference
 {
@@ -149,6 +148,7 @@ struct inherit
   INT16 inherit_level; /* really needed? */
   INT16 identifier_level;
   INT16 parent_identifier;
+  INT16 parent_offset;
   INT32 storage_offset;
   struct object *parent;
   struct program *prog;
@@ -250,9 +250,18 @@ int low_reference_inherited_identifier(int e,
 int reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
-void do_inherit(struct svalue *prog,
+void low_inherit(struct program *p,
+		 struct object *parent,
+		 int parent_identifier,
+		 int parent_offset,
+		 INT32 flags,
+		 struct pike_string *name);
+void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
+void compiler_do_inherit(node *n,
+			 INT32 flags,
+			 struct pike_string *name);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
 		       struct pike_string *name);

@@ -23,7 +23,6 @@ void f_random(INT32 args);
 void f_random_seed(INT32 args);
 void f_query_num_arg(INT32 args);
 void f_search(INT32 args);
-void f_call_function(INT32 args);
 void f_backtrace(INT32 args);
 void f_add_constant(INT32 args);
 void f_combine_path(INT32 args);
@@ -35,9 +34,6 @@ void f_allocate(INT32 args);
 void f_rusage(INT32 args);
 void f_this_object(INT32 args);
 void f_throw(INT32 args);
-struct callback *add_exit_callback(callback_func call,
-				   void *arg,
-				   callback_func free_func);
 void f_exit(INT32 args);
 void f_time(INT32 args);
 void f_crypt(INT32 args);

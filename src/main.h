@@ -14,7 +14,11 @@ extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag;
 struct callback *add_post_master_callback(callback_func call,
 					  void *arg,
 					  callback_func free_func);
-void main(int argc, char **argv, char **env);
+struct callback *add_exit_callback(callback_func call,
+				   void *arg,
+				   callback_func free_func);
+int main(int argc, char **argv);
+void do_exit(int num);
 void low_init_main(void);
 void exit_main(void);
 void init_main(void);

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.67 1998/01/20 02:30:39 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.68 1998/01/25 08:25:15 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -11,6 +11,9 @@ test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
 test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
 
 test_program([[class foo { program x() { return class {}; }}; class bar { inherit foo; program x() { return class {}; }} int a() { return foo()->x != bar()->x(); }]])
+
+// Testing the 'inline' keyword
+test_program([[class foo { inline int c() { return time(); } int d() { return c(); } }; class bar { inherit foo; int c() { return 0; } } int a() { return !bar()->d(); }]],0)
 
 test_any([[object o=class foo{int c;class bar{void create(){c++;};}}(); o->bar(); return o->c;]],1)
 test_do([[add_constant("GURKA2",class foo { int c; class bar{void create() {c+=17;}}}()); ]])

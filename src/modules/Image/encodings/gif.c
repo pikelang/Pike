@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.29 1998/01/21 23:51:39 grubba Exp $ */
+/* $Id: gif.c,v 1.30 1998/01/25 08:27:14 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.29 1998/01/21 23:51:39 grubba Exp $
+**!	$Id: gif.c,v 1.30 1998/01/25 08:27:14 hubbe Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.29 1998/01/21 23:51:39 grubba Exp $");
+RCSID("$Id: gif.c,v 1.30 1998/01/25 08:27:14 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2135,28 +2135,25 @@ void init_image_gif(void)
 
    /** constants **/
 
-   push_int(GIF_RENDER);
-   add_constant(make_shared_string("RENDER"),sp-1,0);
-   push_int(GIF_EXTENSION);
-   add_constant(make_shared_string("EXTENSION"),sp-1,0);
+   add_integer_constant("RENDERER",GIF_RENDER,0);
+   add_integer_constant("EXTENSION",GIF_EXTENSION,0);
 
-   push_int(GIF_LOOSE_GCE);
-   add_constant(make_shared_string("LOOSE_GCE"),sp-1,0);
-   push_int(GIF_NETSCAPE_LOOP);
-   add_constant(make_shared_string("NETSCAPE_LOOP"),sp-1,0);
+   add_integer_constant("LOOSE_GCE",GIF_LOOSE_GCE,0);
+   add_integer_constant("NETSCAPE_LOOP",GIF_NETSCAPE_LOOP,0);
 
-   push_int(GIF_ERROR_PREMATURE_EOD);
-   add_constant(make_shared_string("ERROR_PREMATURE_EOD"),sp-1,0);
-   push_int(GIF_ERROR_UNKNOWN_DATA);
-   add_constant(make_shared_string("ERROR_UNKNOWN_DATA"),sp-1,0);
-   push_int(GIF_ERROR_TOO_MUCH_DATA);
-   add_constant(make_shared_string("ERROR_TOO_MUCH_DATA"),sp-1,0);
+   add_integer_constant("ERROR_PREMATURE_EOD",GIF_ERROR_PREMATURE_EOD,0);
+   add_integer_constant("ERROR_UNKNOWN_DATA",GIF_ERROR_UNKNOWN_DATA,0);
+   add_integer_constant("ERROR_TOO_MUCH_DATA",GIF_ERROR_TOO_MUCH_DATA,0);
 
    /** done **/
 
    image_gif_module_program=end_program();
    push_object(clone_object(image_gif_module_program,0));
-   add_constant(make_shared_string("GIF"),sp-1,0);
+   {
+     struct pike_string *s=make_shared_string("GIF");
+     add_constant(s,sp-1,0);
+     free_string(s);
+   }
    pop_stack();
 }
 

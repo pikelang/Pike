@@ -127,7 +127,7 @@ static void rehash(void)
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
-struct pike_string *begin_shared_string(int len)
+struct pike_string *debug_begin_shared_string(int len)
 {
   struct pike_string *t;
   t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
@@ -168,7 +168,7 @@ struct pike_string *end_shared_string(struct pike_string *s)
   return s;
 }
 
-struct pike_string * make_shared_binary_string(const char *str,int len)
+struct pike_string * debug_make_shared_binary_string(const char *str,int len)
 {
   struct pike_string *s;
   int h=StrHash(str,len);
@@ -186,7 +186,7 @@ struct pike_string * make_shared_binary_string(const char *str,int len)
   return s;
 }
 
-struct pike_string *make_shared_string(const char *str)
+struct pike_string *debug_make_shared_string(const char *str)
 {
   return make_shared_binary_string(str, strlen(str));
 }
@@ -219,6 +219,12 @@ void really_free_string(struct pike_string *s)
 #endif
   unlink_pike_string(s);
   free((char *)s);
+}
+
+void debug_free_string(struct pike_string *s)
+{
+  if(--s->refs<=0)
+    really_free_string(s);
 }
 
 
@@ -642,10 +648,31 @@ void init_shared_string_table(void)
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 }
 
+#ifdef DEBUG_MALLOC
+struct shared_string_location *all_shared_string_locations;
+#endif
+
+
 void cleanup_shared_string_table(void)
 {
   unsigned INT32 e;
   struct pike_string *s,*next;
+
+#if defined(DEBUG) && defined(DEBUG_MALLOC)
+  while(all_shared_string_locations)
+  {
+    struct shared_string_location *x=all_shared_string_locations;
+    all_shared_string_locations=x->next;
+    free_string(x->s);
+    x->s=0;
+  }
+
+  if(verbose_debug_exit)
+  {
+    fprintf(stderr,"Leaked strings \n");
+    dump_stralloc_strings();
+  }
+#endif
   for(e=0;e<htable_size;e++)
   {
     for(s=base_table[e];s;s=next)
@@ -660,12 +687,18 @@ void cleanup_shared_string_table(void)
     base_table[e]=0;
   }
   free((char *)base_table);
+  base_table=0;
+  num_strings=0;
 }
 
 void count_memory_in_strings(INT32 *num, INT32 *size)
 {
   unsigned INT32 e, num_=0, size_=0;
-  if(!base_table) return;
+  if(!base_table)
+  {
+    *num=*size=0;
+    return;
+  }
   size_+=htable_size * sizeof(struct pike_string *);
   for(e=0;e<htable_size;e++)
   {

@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.4 1998/01/19 23:51:24 grubba Exp $ */
+/* $Id: x.c,v 1.5 1998/01/25 08:27:15 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.4 1998/01/19 23:51:24 grubba Exp $
+**!	$Id: x.c,v 1.5 1998/01/25 08:27:15 hubbe Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.4 1998/01/19 23:51:24 grubba Exp $");
+RCSID("$Id: x.c,v 1.5 1998/01/25 08:27:15 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -668,6 +668,7 @@ struct program *image_x_module_program=NULL;
 
 void init_image_x(void)
 {
+  struct pike_string *s;
    start_new_program();
    
    add_function("encode_truecolor",x_encode_truecolor,
@@ -679,7 +680,8 @@ void init_image_x(void)
 
    image_x_module_program=end_program();
    push_object(clone_object(image_x_module_program,0));
-   add_constant(make_shared_string("X"),sp-1,0);
+   add_constant(s=make_shared_string("X"),sp-1,0);
+   free_string(s);
    pop_stack();
 }
 

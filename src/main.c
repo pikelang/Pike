@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.34 1998/01/16 22:33:06 grubba Exp $");
+RCSID("$Id: main.c,v 1.35 1998/01/25 08:25:10 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -22,6 +22,7 @@ RCSID("$Id: main.c,v 1.34 1998/01/16 22:33:06 grubba Exp $");
 #include "threads.h"
 #include "dynamic_load.h"
 #include "gc.h"
+#include "multiset.h"
 #include "mapping.h"
 #include "cpp.h"
 
@@ -58,10 +59,19 @@ struct callback *add_post_master_callback(callback_func call,
 }
 
 
+static struct callback_list exit_callbacks;
+
+struct callback *add_exit_callback(callback_func call,
+				   void *arg,
+				   callback_func free_func)
+{
+  return add_to_callback(&exit_callbacks, call, arg, free_func);
+}
+
 int main(int argc, char **argv)
 {
   JMP_BUF back;
-  int e, num;
+  int e, num, do_backend;
   char *p;
   struct array *a;
 #ifdef DECLARE_ENVIRON
@@ -268,28 +278,41 @@ int main(int argc, char **argv)
 
   if(SETJMP(back))
   {
-    ONERROR tmp;
-    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(sp, & throw_value);
-    sp++;
-    APPLY_MASTER("handle_error", 1);
+    if(throw_severity == THROW_EXIT)
+    {
+      num=throw_value.u.integer;
+    }else{
+      ONERROR tmp;
+      SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+      assign_svalue_no_free(sp, & throw_value);
+      sp++;
+      APPLY_MASTER("handle_error", 1);
+      pop_stack();
+      UNSET_ONERROR(tmp);
+      num=10;
+    }
+  }else{
+    back.severity=THROW_EXIT;
+    
+    apply(master(),"_main",2);
     pop_stack();
-    UNSET_ONERROR(tmp);
-    exit(10);
+    
+    backend();
+    num=0;
   }
-
-  apply(master(),"_main",2);
-  pop_stack();
-
   UNSETJMP(back);
 
-  backend();
+  do_exit(num);
+}
 
-  push_int(0);
-  f_exit(1);
+void do_exit(int num)
+{
+  call_callback(&exit_callbacks, (void *)0);
+  free_callback(&exit_callbacks);
 
-  /* NOT REACHED */
-  return(-1);	/* To avoid warnings. */
+  exit_modules();
+
+  exit(num);
 }
 
 
@@ -315,6 +338,7 @@ void low_exit_main(void)
   void cleanup_added_efuns(void);
   void cleanup_pike_types(void);
   void cleanup_program(void);
+  void cleanup_compiler(void);
 
   th_cleanup();
   exit_dynamic_load();
@@ -325,13 +349,82 @@ void low_exit_main(void)
   cleanup_added_efuns();
   cleanup_pike_types();
   cleanup_program();
+  cleanup_compiler();
 
   do_gc();
 
   cleanup_callbacks();
+#if defined(DEBUG) && defined(DEBUG_MALLOC)
+  if(verbose_debug_exit)
+  {
+    INT32 num,size,recount=0;
+
+    count_memory_in_arrays(&num, &size);
+    if(num || size)
+    {
+      recount++;
+      fprintf(stderr,"Arrays left: %d (%d bytes) (zapped)\n",num,size);
+    }
+
+    zap_all_arrays();
+
+    count_memory_in_mappings(&num, &size);
+    if(num || size)
+    {
+      recount++;
+      fprintf(stderr,"Mappings left: %d (%d bytes) (zapped)\n",num,size);
+    }
+
+    zap_all_mappings();
+
+    count_memory_in_multisets(&num, &size);
+    if(num || size)
+      fprintf(stderr,"Multisets left: %d (%d bytes)\n",num,size);
+
+
+    if(recount)
+    {
+      fprintf(stderr,"Garbage collecting..\n");
+      do_gc();
+      
+      count_memory_in_arrays(&num, &size);
+      fprintf(stderr,"Arrays left: %d (%d bytes)\n",num,size);
+      count_memory_in_mappings(&num, &size);
+      fprintf(stderr,"Mappings left: %d (%d bytes)\n",num,size);
+      count_memory_in_multisets(&num, &size);
+      fprintf(stderr,"Multisets left: %d (%d bytes)\n",num,size);
+    }
+    
+
+    count_memory_in_programs(&num, &size);
+    if(num || size)
+      fprintf(stderr,"Programs left: %d (%d bytes)\n",num,size);
+
+    {
+      struct program *p;
+      for(p=first_program;p;p=p->next)
+      {
+	describe_something(p, T_PROGRAM);
+      }
+    }
+
+
+    count_memory_in_objects(&num, &size);
+    if(num || size)
+      fprintf(stderr,"Objects left: %d (%d bytes)\n",num,size);
+
+    count_memory_in_strings(&num, &size);
+    if(num || size)
+      fprintf(stderr,"Strings left: %d (%d bytes) (zapped)\n",num,size);
+
+    cleanup_shared_string_table();
+  }
+#else
+
   zap_all_arrays();
   zap_all_mappings();
 
   cleanup_shared_string_table();
+#endif
 }
 

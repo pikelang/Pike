@@ -1989,12 +1989,14 @@ void f_cpp(INT32 args)
   if(this.defines)
     free_hashtable(this.defines, free_one_define);
 
+  free_string(this.current_file);
+
   if(this.compile_errors)
   {
+    toss_buffer(&this.buf);
     error("Cpp() failed\n");
   }else{
     pop_n_elems(args);
-    free_string(this.current_file);
     push_string(low_free_buf(&this.buf));
   }
 }
@@ -2046,4 +2048,9 @@ void exit_cpp()
     pike_predefs=tmp->next;
     free((char *)tmp);
   }
+  free_string(defined_macro->link.s);
+  free((char *)defined_macro);
+
+  free_string(constant_macro->link.s);
+  free((char *)constant_macro);
 }
