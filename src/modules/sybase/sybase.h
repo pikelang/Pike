@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sybase.h,v 1.6 2002/10/11 01:39:55 nilsson Exp $
+|| $Id: sybase.h,v 1.7 2005/03/21 15:31:20 grubba Exp $
 */
 
 /*
@@ -19,7 +19,12 @@
 #ifdef HAVE_SYBASE
 
 #include "threads.h"
+
+#ifdef HAVE_SYBASEOPENCLIENT_SYBASEOPENCLIENT_H
+#include <SybaseOpenClient/SybaseOpenClient.h>
+#elif defined(HAVE_CTPUBLIC_H)
 #include <ctpublic.h>
+#endif /* HAVE_SYBASEOPENCLIENT_H || HAVE_CTPUBLIC_H */
 
 #define SYBASE_DRIVER_VERSION "9"
 
