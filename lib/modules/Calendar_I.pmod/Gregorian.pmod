@@ -1165,12 +1165,12 @@ class Minute
 
    string timeofday()
    {
-      return sprintf("%s:%02s",h->name(),name());
+      return sprintf("%02s:%02s",h->name(),name());
    }
 
    string timeofyear()
    {
-      return sprintf("%s %s:%02s",h->day()->dateofyear(),h->name(),name());
+      return sprintf("%s %02s:%02s",h->day()->dateofyear(),h->name(),name());
    }
 
 //-- less -----------------------------------------------------------
@@ -1366,12 +1366,12 @@ class Second
 
    string timeofday()
    {
-      return sprintf("%s:%02s",m->timeofday(),name());
+      return sprintf("%02s:%02s",m->timeofday(),name());
    }
 
    string timeofyear()
    {
-      return sprintf("%s:%02s",m->timeofyear(),name());
+      return sprintf("%02s:%02s",m->timeofyear(),name());
    }
 
 //-- greater --------------------------------------------------------
