@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.108 1998/08/02 16:18:59 grubba Exp $
+# $Id: Makefile.in,v 1.109 1998/08/02 16:37:22 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -314,7 +314,12 @@ distclean: spotless
 	  -name 'config.cache' ')' -exec rm -f \{\} \;
 
 cvsclean: distclean
-# FIXME: Zap things that are in .cvsignore here.
+	( cd $(SRCDIR); \
+	  for d in `find . -type d -print`; do \
+	    if test -f "$$d/.cvsignore" ; then \
+	      cd $$d && rm -f `cat .cvsignore`; \
+	    else :; fi; \
+	  done)
 
 # create tags
 tags:
