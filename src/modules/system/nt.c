@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.18 2000/08/29 13:24:32 leif Exp $
+ * $Id: nt.c,v 1.19 2001/03/18 20:46:14 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -27,6 +27,103 @@
 #include <accctrl.h>
 #include <lm.h>
 
+static void throw_nt_error(char *funcname, int err)
+/*
+ *  Give string equivalents to some of the more common NT error codes.
+ */ 
+{
+  char *msg;
+
+  switch (err)
+  {
+    case ERROR_ACCESS_DENIED:
+      msg = "Access denied.";
+      break;
+
+    case ERROR_LOGON_FAILURE:
+      msg = "Logon failure (access denied).";
+      break;
+
+    case ERROR_INVALID_PARAMETER:
+      msg = "Invalid parameter.";
+      break;
+
+    case ERROR_NOT_ENOUGH_MEMORY:
+      msg = "Out of memory.";
+      break;
+
+    case ERROR_INVALID_NAME:
+      msg = "Invalid name.";
+      break;
+
+    case ERROR_INVALID_LEVEL:
+      msg = "Invalid level.";
+      break;
+
+    case ERROR_NO_SUCH_ALIAS:
+      msg = "No such alias.";
+      break;
+
+    case ERROR_NO_SUCH_DOMAIN:
+      msg = "No such domain.";
+      break;
+
+    case ERROR_NO_LOGON_SERVERS:
+      msg = "No log-on servers.";
+      break;
+
+    case ERROR_BAD_NETPATH:
+      msg = "Network path not found.";
+      break;
+
+    case ERROR_NO_TRUST_LSA_SECRET:
+      msg = "No trust LSA secret (client not trusted).";
+      break;
+
+    case ERROR_NO_TRUST_SAM_ACCOUNT:
+      msg = "No trust SAM account (server/password not trusted).";
+      break;
+
+    case ERROR_DOMAIN_TRUST_INCONSISTENT:
+      msg = "Domain trust inconsistent.";
+      break;
+
+    case NERR_DCNotFound:
+      msg = "Domain controller not found.";
+      break;
+
+    case NERR_InvalidComputer:
+      msg = "Invalid computer.";
+      break;
+
+    case NERR_UserNotFound:
+      msg = "User not found.";
+      break;
+
+    case NERR_GroupNotFound:
+      msg = "Group not found.";
+      break;
+
+    case NERR_ClientNameNotFound:
+      msg = "Client name not found.";
+      break;
+
+    case RPC_S_SERVER_UNAVAILABLE:
+      msg = "RPC server unavailable.";
+      break;
+
+    case NERR_Success:
+      msg = "Strange error (NERR_Success).";
+      break;
+
+    default:
+      error("%s: Unknown error 0x%04x (%d)\n", funcname, err, err);
+      return;
+  }
+  error("%s: %s\n", funcname, msg);
+}
+
+
 static void f_cp(INT32 args)
 {
   char *from, *to;
@@ -38,19 +135,96 @@ static void f_cp(INT32 args)
   push_int(ret);
 }
 
+static void push_tchar(TCHAR *buf, DWORD len)
+{
+  push_string(make_shared_binary_pcharp(
+    MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
+}
+
+static void push_regvalue(DWORD type, char* buffer, DWORD len)
+{
+  switch(type)
+  {
+    case REG_RESOURCE_LIST:
+    case REG_NONE:
+    case REG_LINK:
+    case REG_BINARY:
+      push_string(make_shared_binary_string(buffer,len));
+      break;
+      
+    case REG_SZ:
+      push_string(make_shared_binary_string(buffer,len-1));
+      break;
+      
+    case REG_EXPAND_SZ:
+      type =
+	ExpandEnvironmentStrings((LPCTSTR)buffer,
+				 buffer+len,
+				 (DWORD)(sizeof(buffer)-len-1));
+      if(type>sizeof(buffer)-len-1 || !type)
+	error("RegGetValue: Failed to expand data.\n");
+      push_string(make_shared_string(buffer+len));
+      break;
+      
+    case REG_MULTI_SZ:
+      push_string(make_shared_binary_string(buffer,len-1));
+      push_string(make_shared_binary_string("\000",1));
+      f_divide(2);
+      break;
+      
+    case REG_DWORD_LITTLE_ENDIAN:
+      push_int(EXTRACT_UCHAR(buffer)+
+	       (EXTRACT_UCHAR(buffer+1)<<1)+
+	       (EXTRACT_UCHAR(buffer+2)<<2)+
+	       (EXTRACT_UCHAR(buffer+3)<<3));
+      break;
+      
+    case REG_DWORD_BIG_ENDIAN:
+      push_int(EXTRACT_UCHAR(buffer+3)+
+	       (EXTRACT_UCHAR(buffer+2)<<1)+
+	       (EXTRACT_UCHAR(buffer+1)<<2)+
+	       (EXTRACT_UCHAR(buffer)<<3));
+      break;
+      
+    default:
+      error("RegGetValue: cannot handle this data type.\n");
+  }
+}
+
+/* Known hkeys.
+ *
+ * This table is used to avoid passing pointers to the pike level.
+ * (On W2k/IA64 HKEY is typedefed to struct HKEY__ *).
+ *
+ * NOTE: Order must match the values specified with
+ * ADD_GLOBAL_INTEGER_CONSTANT() in init_pike_module() below.
+ */
+static const HKEY hkeys[] = {
+  HKEY_CLASSES_ROOT,
+  HKEY_LOCAL_MACHINE,
+  HKEY_CURRENT_USER,
+  HKEY_USERS,
+};
+
 void f_RegGetValue(INT32 args)
 {
   long ret;
-  INT32 hkey;
+  INT_TYPE hkey_num;
   HKEY new_key;
   char *key, *ind;
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args("RegQueryValue",args,"%d%s%s",&hkey,&key,&ind);
-  ret=RegOpenKeyEx((HKEY)hkey, (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  get_all_args("RegQueryValue", args, "%d%s%s",
+	       &hkey_num, &key, &ind);
+
+  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+    error("Unknown hkey: %d\n", hkey_num);
+  }
+
+  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
   if(ret != ERROR_SUCCESS)
-    error("RegOpenKeyEx failed with error %d\n",ret);
+    throw_nt_error("RegOpenKeyEx", ret);
 
   ret=RegQueryValueEx(new_key,ind, 0, &type, buffer, &len);
   RegCloseKey(new_key);
@@ -58,54 +232,119 @@ void f_RegGetValue(INT32 args)
   if(ret==ERROR_SUCCESS)
   {
     pop_n_elems(args);
-    switch(type)
+    push_regvalue(type, buffer, len);
+  }else{
+    throw_nt_error("RegQueryValueEx", ret);
+  }
+}
+
+static void do_regclosekey(HKEY key)
+{
+  RegCloseKey(key);
+}
+
+void f_RegGetKeyNames(INT32 args)
+{
+  INT_TYPE hkey_num;
+  char *key;
+  int i,ret;
+  HKEY new_key;
+  ONERROR tmp;
+  get_all_args("RegGetKeyNames", args, "%d%s",
+	       &hkey_num, &key);
+
+  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+    error("Unknown hkey: %d\n", hkey_num);
+  }
+
+  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  if(ret != ERROR_SUCCESS)
+    throw_nt_error("RegGetKeyNames[RegOpenKeyEx]", ret);
+
+  SET_ONERROR(tmp, do_regclosekey, new_key);
+
+  pop_n_elems(args);
+
+  for(i=0;;i++)
+  {
+    TCHAR buf[1024];
+    DWORD len=sizeof(buf)-1;
+    FILETIME tmp2;
+    THREADS_ALLOW();
+    ret=RegEnumKeyEx(new_key, i, buf, &len, 0,0,0, &tmp2);
+    THREADS_DISALLOW();
+    switch(ret)
     {
-      case REG_RESOURCE_LIST:
-      case REG_NONE:
-      case REG_LINK:
-      case REG_BINARY:
-	push_string(make_shared_binary_string(buffer,len));
-	break;
+      case ERROR_SUCCESS:
+	check_stack(1);
+	push_tchar(buf,len);
+	continue;
 
-      case REG_SZ:
-	push_string(make_shared_binary_string(buffer,len-1));
-	break;
-
-      case REG_EXPAND_SZ:
-	type=ExpandEnvironmentStrings((LPCTSTR)buffer,
-				      buffer+len,
-				      sizeof(buffer)-len-1);
-	if(type>sizeof(buffer)-len-1 || !type)
-	  error("RegGetValue: Failed to expand data.\n");
-	push_string(make_shared_string(buffer+len));
-	break;
-
-      case REG_MULTI_SZ:
-	push_string(make_shared_binary_string(buffer,len-1));
-	push_string(make_shared_binary_string("\000",1));
-	f_divide(2);
-	break;
-
-      case REG_DWORD_LITTLE_ENDIAN:
-	push_int(EXTRACT_UCHAR(buffer)+
-	  (EXTRACT_UCHAR(buffer+1)<<1)+
-	  (EXTRACT_UCHAR(buffer+2)<<2)+
-	  (EXTRACT_UCHAR(buffer+3)<<3));
-	break;
-
-      case REG_DWORD_BIG_ENDIAN:
-	push_int(EXTRACT_UCHAR(buffer+3)+
-	  (EXTRACT_UCHAR(buffer+2)<<1)+
-	  (EXTRACT_UCHAR(buffer+1)<<2)+
-	  (EXTRACT_UCHAR(buffer)<<3));
+      case ERROR_NO_MORE_ITEMS:
 	break;
 
       default:
-	error("RegGetValue: cannot handle this data type.\n");
+	throw_nt_error("RegGetKeyNames[RegEnumKeyEx]", ret);
     }
-  }else{
-    error("RegQueryValueEx failed with error %d\n",ret);
+    break;
   }
+  CALL_AND_UNSET_ONERROR(tmp);
+  f_aggregate(i);
+}
+
+void f_RegGetValues(INT32 args)
+{
+  INT_TYPE hkey_num;
+  char *key;
+  int i,ret;
+  HKEY new_key;
+  ONERROR tmp;
+
+  get_all_args("RegGetValues", args, "%d%s",
+	       &hkey_num, &key);
+
+  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+    error("Unknown hkey: %d\n", hkey_num);
+  }
+
+  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+
+  if(ret != ERROR_SUCCESS)
+    throw_nt_error("RegOpenKeyEx", ret);
+
+  SET_ONERROR(tmp, do_regclosekey, new_key);
+  pop_n_elems(args);
+
+  for(i=0;;i++)
+  {
+    TCHAR buf[1024];
+    char buffer[8192];
+    DWORD len=sizeof(buf)-1;
+    DWORD buflen=sizeof(buffer)-1;
+    DWORD type;
+
+    THREADS_ALLOW();
+    ret=RegEnumValue(new_key, i, buf, &len, 0,&type, buffer, &buflen);
+    THREADS_DISALLOW();
+    switch(ret)
+    {
+      case ERROR_SUCCESS:
+	check_stack(2);
+	push_tchar(buf,len);
+	push_regvalue(type,buffer,buflen);
+	continue;
+      
+      case ERROR_NO_MORE_ITEMS:
+	break;
+      
+      default:
+	RegCloseKey(new_key);
+	throw_nt_error("RegGetValues[RegEnumKeyEx]", ret);
+    }
+    break;
+  }
+  CALL_AND_UNSET_ONERROR(tmp);
+  f_aggregate_mapping(i*2);
 }
 
 static struct program *token_program;
@@ -1540,53 +1779,6 @@ LINKFUNC(NET_API_STATUS,netwkstauserenum,
 	 (LPWSTR, DWORD, LPBYTE *,
 	  DWORD, LPDWORD,LPDWORD,LPDWORD));
 
-static void throw_nt_error(char *funcname, int err)
-{ char *msg;
-
-  switch (err)
-  {
-    case ERROR_ACCESS_DENIED:
-      msg = "Access denied.";
-      break;
-
-    case ERROR_LOGON_FAILURE:
-      msg = "Logon failure (access denied).";
-      break;
-
-    case ERROR_INVALID_PARAMETER:
-      msg = "Invalid parameter.";
-      break;
-
-    case ERROR_NOT_ENOUGH_MEMORY:
-      msg = "Out of memory.";
-      break;
-
-    case ERROR_INVALID_LEVEL:
-      msg = "Invalid level.";
-      break;
-        
-    case NERR_InvalidComputer:
-      msg = "Invalid computer.";
-      break;
-
-    case NERR_UserNotFound:
-      msg = "User not found.";
-      break;
-
-    case NERR_ClientNameNotFound:
-      msg = "Client name not found.";
-      break;
-
-    case NERR_Success:
-      msg = "Strange error (NERR_Success).";
-      break;
-
-    default:
-      error("%s: Unknown error 0x%ux\n", funcname, err);
-  }
-  error("%s: %s\n", funcname, msg);
-}
-
 static void low_encode_session_info_0(SESSION_INFO_0 *tmp)
 {
   SAFE_PUSH_WSTR(tmp->sesi0_cname);
@@ -2246,14 +2438,24 @@ void init_nt_system_calls(void)
   
   ADD_FUNCTION("cp",f_cp,tFunc(tStr tStr,tInt), 0);
 
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE",HKEY_LOCAL_MACHINE);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER",HKEY_CURRENT_USER);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS",HKEY_USERS);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT",HKEY_CLASSES_ROOT);
-  
-/* function(int,string,string:string|int|string*) */
-  ADD_EFUN("RegGetValue",f_RegGetValue,tFunc(tInt tStr tStr,tOr3(tStr,tInt,tArr(tStr))),OPT_EXTERNAL_DEPEND);
+  /* See array hkeys[] above. */
 
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT", 0);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE", 1);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER", 2);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS", 3);
+
+/* function(int,string,string:string|int|string*) */
+  ADD_EFUN("RegGetValue", f_RegGetValue,
+	   tFunc(tInt tStr tStr, tOr3(tStr, tInt, tArr(tStr))),
+	   OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("RegGetValues", f_RegGetValues,
+	   tFunc(tInt tStr, tMap(tStr, tOr3(tStr, tInt, tArr(tStr)))),
+	   OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("RegGetKeyNames", f_RegGetKeyNames, tFunc(tInt tStr, tArr(tStr)),
+	   OPT_EXTERNAL_DEPEND);
 
   /* LogonUser only exists on NT, link it dynamically */
   if(advapilib=LoadLibrary("advapi32"))
