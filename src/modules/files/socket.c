@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.91 2004/09/18 20:50:57 nilsson Exp $
+|| $Id: socket.c,v 1.92 2005/01/19 18:34:57 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -467,6 +467,9 @@ static void port_accept(INT32 args)
 
   if(this->box.fd < 0)
     Pike_error("port->accept(): Port not open.\n");
+
+  /* FIXME: Race. */
+  THIS->box.revents = 0;
 
   THREADS_ALLOW();
   len=sizeof(addr);

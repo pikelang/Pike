@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.337 2004/11/30 18:52:12 grubba Exp $
+|| $Id: file.c,v 1.338 2005/01/19 18:34:57 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -731,6 +731,9 @@ static void file_read(INT32 args)
 
   pop_n_elems(args);
 
+  /* FIMXE: Race. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
+
   if((tmp=do_read(FD, len, all, & ERRNO)))
     push_string(tmp);
   else {
@@ -935,6 +938,9 @@ static void file_read_oob(INT32 args)
   }
 
   pop_n_elems(args);
+
+  /* FIMXE: Race. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 
   if((tmp=do_read_oob(FD, len, all, & ERRNO)))
     push_string(tmp);
@@ -1215,6 +1221,9 @@ static void file_write(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write(): cannot output wide strings.\n");
 
+  /* FIMXE: Race. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
+
   for(written=0;written < str->len;check_signals(0,0,0))
   {
     int fd=FD;
@@ -1321,6 +1330,9 @@ static void file_write_oob(INT32 args)
   str=Pike_sp[-args].u.string;
   if(str->size_shift)
     Pike_error("Stdio.File->write_oob(): cannot output wide strings.\n");
+
+  /* FIMXE: Race. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
   while(written < str->len)
   {
@@ -2855,6 +2867,8 @@ static void file_dup2(INT32 args)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
 
   if(fd->box.fd < 0) {
+    /* FIXME: Use change_fd_for_box here! */
+    fd->box.revents = 0;
     if((fd->box.fd = fd_dup(FD)) < 0)
     {
       ERRNO = errno;
@@ -2867,6 +2881,7 @@ static void file_dup2(INT32 args)
       Pike_error("File has been temporarily locked from closing.\n");
     }
 
+    THIS->box.revents = 0;
     if(fd_dup2(FD, fd->box.fd) < 0)
     {
       ERRNO = errno;
