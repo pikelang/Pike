@@ -16,16 +16,20 @@ This package adds two Pike progams:
 methods in precompiled/image:
 
 Methods resulting in a new object:
-object new( [int xsize,int ysize [,int r,int g,int b] ] );
+object clone( [int xsize,int ysize [,int r,int g,int b] ] );
 
 object copy( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
-object crop( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
 object autocrop( [int border_width [,int left,int right,int top,int bottom]
 [,int r,int g,int b] ] );
 
 object gray();
 object color(int r,int g,int b);
 object invert();
+
+object mirrorx(void);
+object mirrory(void);
+object rotate_cw(void);
+object rotate_ccw(void);
 object threshold([int r,int g,int b]);
 object apply_matrix(array(array(int)) matrix,[int r,int g,int b[,int div]]);
 
@@ -35,19 +39,23 @@ object scale(int newx|0,int newy|0);
 
 Methods operating on current object:
 string toppm(void);
-void fromppm(string s);
+string|object fromppm(string s);
 string togif( [int r,inr g,int b] );
 
-void paste(object img [,int x,int y])
-void paste_alpha(object img, int alpha [,int x, int y]);
-void paste_mask(object img, object alpha_mask [,int x,int y]);
+object paste(object img [,int x,int y])
+object paste_alpha(object img, int alpha [,int x, int y]);
+object paste_mask(object img, object alpha_mask [,int x,int y]);
 
-void setcolor(int r,int g,int b);
-void setpixel(int x,int y [,int r,int g,int b] );
-void line(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
-void box(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
-void circle(int x,int y,int radx,int rady [,int r,int b,int g] );
-void tuned_box(int x1,int y1,int x2,int y2,array(array(int)) corner_rgb);
+object setcolor(int r,int g,int b);
+object setpixel(int x,int y [,int r,int g,int b] );
+object line(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+object box(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+object circle(int x,int y,int radx,int rady [,int r,int b,int g] );
+object tuned_box(int x1,int y1,int x2,int y2,array(array(int)) corner_rgb);
+
+Information giving methods:
+object xsize();
+object ysize();
 ----------------------------------------------------------------------------
 
 METHOD
@@ -104,24 +112,40 @@ BUGS
 ----------------------------------------------------------------------------
 
 METHOD
-     void box(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+     object box(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
 DESCRIPTION
      Draw a box of the default or specified color.
 RETURN VALUE
-     none
+     the image object
 EXAMPLE
 BUGS
 
 ----------------------------------------------------------------------------
 
 METHOD
-     void circle(int x,int y,int radx,int rady [,int r,int b,int g] );
+     object circle(int x,int y,int radx,int rady [,int r,int b,int g] );
 DESCRIPTION
      Draw a circle. The coordinates given are the center of the image and
      the radius in x (horisontal) and y (vertical), this making it possible
      to draw an ellipse too. :-)
 RETURN VALUE
-     none
+     the image object
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object clone( [int xsize,int ysize [,int r,int g,int b] ] );
+DESCRIPTION
+     make a new object and return it
+        o no arguments -> old image is copied
+        o size is given -> old image is copied cropped
+        o color is given -> new default color
+RETURN VALUE
+     the new object
+SEE ALSO
+     copy, clear
 EXAMPLE
 BUGS
 
@@ -144,11 +168,12 @@ BUGS
 
 METHOD
      object copy( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
-     object crop( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
 DESCRIPTION
-     Copy a part (or more) of the image.
+     Make a copy, or a copy of a part of the image. It is possible to copy
+     more then the image, to extend the image, this area is filled with the
+     current (or given) color.
 RETURN VALUE
-     the new object
+     the new image object
 EXAMPLE
 
      copy=image->copy();
@@ -160,11 +185,11 @@ BUGS
 ----------------------------------------------------------------------------
 
 METHOD
-     void fromppm(string s);
+     string|object fromppm(string s);
 DESCRIPTION
      Import a ppm image.
 RETURN VALUE
-     none
+     0 (object) upon success, else the error message (string).
 EXAMPLE
 
      image=clone( (program)"precompiled/image" );
@@ -205,11 +230,11 @@ BUGS
 ----------------------------------------------------------------------------
 
 METHOD
-     void line(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+     object line(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
 DESCRIPTION
      Draw a line from x1,y1 to x2,y2.
 RETURN VALUE
-     none
+     the image object
 EXAMPLE
 
      image->line(17,100,42,1000);
@@ -219,30 +244,61 @@ BUGS
 ----------------------------------------------------------------------------
 
 METHOD
-     object new( [int xsize,int ysize [,int r,int g,int b] ] );
+     object mirrorx(void);
+     object mirrory(void);
 DESCRIPTION
-     make a new object and return it
+     Mirrors the image, horisontally or vertically.
 RETURN VALUE
-     the new object
+     the new image object
 EXAMPLE
+
+     mirrored=image->mirrorx();
+
 BUGS
 
 ----------------------------------------------------------------------------
 
 METHOD
-     void paste(object img [,int x,int y])
-     void paste_alpha(object img, int alpha [,int x, int y]);
-     void paste_mask(object img, object alpha_mask [,int x,int y]);
+     object rotate_cw(void);
+     object rotate_ccw(void);
+DESCRIPTION
+     Rotate the image, clockwise or counterclockwise, 90 degrees.
+     This operation is very fast compared to rotating any angle.
+RETURN VALUE
+     the new image object
+EXAMPLE
+
+     snurr=image->rotate_cw();
+
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object paste(object img [,int x,int y])
+     object paste_alpha(object img, int alpha [,int x, int y]);
+     object paste_mask(object img, object alpha_mask [,int x,int y]);
 DESCRIPTION
      Paste an image on this image. Use the specified alpha channel value or
      the second specified image as an alpha channel.
+     The first argument is the image that will be pasted.
 RETURN VALUE
-     none this function doesn't return anything
+     the image object this function doesn't return anything
 EXAMPLE
 
      image->paste(other_smaller_image,17,42);
 
      image->paste_mask(other_image,alpha_channel_image);
+
+     Paste a dog on a landscape:
+
+     landscape->paste(dog,dog_alpha_channel,xpos,ypos);
+
+     Write some text:
+
+     text=font->write("some text");
+     foreground=text->clear(255,255,255); // white
+     background->paste(foreground,text,xpos,ypos);
 
 BUGS
 
@@ -266,21 +322,21 @@ BUGS
 
 ----------------------------------------------------------------------------
 METHOD
-     void setcolor(int r,int g,int b);
+     object setcolor(int r,int g,int b);
 DESCRIPTION
      set the default color used for drawing lines, etc
 RETURN VALUE
-     none
+     the image object
 EXAMPLE
 BUGS
 
 ----------------------------------------------------------------------------
 METHOD
-     void setpixel(int x,int y [,int r,int g,int b] );
+     object setpixel(int x,int y [,int r,int g,int b] );
 DESCRIPTION
      set the color of the specified pixel
 RETURN VALUE
-     none
+     the image object
 EXAMPLE
 BUGS
 
@@ -310,7 +366,7 @@ BUGS
 ----------------------------------------------------------------------------
 
 METHOD
-     string toppm(void);
+     string toppm(object);
 DESCRIPTION
      export ppm
 RETURN VALUE
@@ -321,19 +377,30 @@ BUGS
 ----------------------------------------------------------------------------
 
 METHOD
-     void tuned_box(int x1,int y1,int x2,int y2,array(array(int))
+     object tuned_box(int x1,int y1,int x2,int y2,array(array(int))
      corner_rgb);
 DESCRIPTION
      draw a box with the specified corner colours, and shade the colors
      between
 RETURN VALUE
-     none
+     the image object
 EXAMPLE
 
      image->tuned_box(0,0,img->xsize()-1,img->ysize()-1,
                      ({({0,0,64}),({16,16,128}),
                        ({16,16,128}),({192,160,128})}));
 
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object xsize();
+     object ysize();
+DESCRIPTION
+RETURN VALUE
+     Gives the x- or the y-size (horisontal or vertical size) of the image.
+EXAMPLE
 BUGS
 
 ----------------------------------------------------------------------------
@@ -366,3 +433,55 @@ EXAMPLE
 BUGS
 
 ----------------------------------------------------------------------------
+
+Example program:
+
+(pike)
+
+int main()
+{
+   object txt,o,shad,font;
+   int i;
+
+   txt =
+      (font=clone((program)"/precompiled/font"))
+      ->load("/usr/local/lib/pike/fonts/64/helvetica_bold_r")
+      ->write("The Image Module")
+      ->autocrop(20,0,0,0);
+
+   shad=txt->mirrory()->scale(1.0,0.3)->color(64,64,64);
+
+   o=clone((program)"/precompiled/image",
+           txt->xsize(),txt->ysize(), 0,0,100)
+        ->tuned_box(0,0,txt->xsize(),txt->ysize(),
+                    ({({0,0,0}),({0,0,0}),
+                      ({0,0,255}),({128,128,0})}));
+
+   o->setcolor(255,255,255,200);
+   for (i=0; i<30; i++)
+      if (random(2))
+         o->line(random(o->xsize()),o->ysize()-10-random(20+i*3),
+                 o->xsize()-1-random(30),o->ysize()-1);
+      else
+         o->line(random(o->xsize()),o->ysize()-10-random(20+i),
+                 random(30),o->ysize()-1);
+
+   for (i=0; i<10; i++)
+      o->box(random(o->xsize()),random(o->ysize()),
+             random(o->xsize()),random(o->ysize()),
+             random(256),random(256),random(256),220);
+
+   o -> paste_mask(txt->clear(0,255,0),
+                   shad,0,(int)(font->baseline()*0.7)+shad->ysize()-10)
+     -> paste_mask(txt->clear(255,255,0),
+                 txt->apply_matrix(({({1,2,1}),({2,4,2}),({1,2,1})}))
+                 ->apply_matrix(({({1,2,1}),({2,4,2}),({1,2,1})}))
+                 ->modify_by_intensity(1,0,0, 0,255,255,255,255,255))
+     -> paste_mask(txt->clone()
+                   ->tuned_box(0,0,txt->xsize()-1,txt->ysize()-1,
+                               ({({128,128,128}),({64,128,0}),
+                                 ({64,128,0}),({255,255,0})})),
+                   txt);
+   write(o->togif_fs());
+   return 0;
+}

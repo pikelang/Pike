@@ -116,7 +116,11 @@ static INLINE void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    end=THIS->img+x2+y2*THIS->xsize;
    rgb=THIS->rgb;
 
-   for (; foo<end; foo+=mod) for (x=x1; x<=x2; x++) *(foo++)=rgb;
+   if (!THIS->alpha)
+      for (; foo<end; foo+=mod) for (x=x1; x<=x2; x++) *(foo++)=rgb;
+   else
+      for (; foo<end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
+	 set_rgb_group_alpha(*foo,rgb,THIS->alpha);
 }
 
 static INLINE void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
@@ -136,7 +140,6 @@ static void img_crop(struct image *dest,
 		     INT32 x2,INT32 y2)
 {
    rgb_group *new;
-   int mirrx,mirry;
    INT32 blitwidth;
    INT32 blitheight;
 
@@ -154,8 +157,8 @@ static void img_crop(struct image *dest,
       return;
    }
 
-   if (x1>x2) mirrx=1,x1^=x2,x2^=x1,x1^=x2; else mirrx=0;
-   if (y1>y2) mirry=1,y1^=y2,y2^=y1,y1^=y2; else mirry=0;
+   if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
+   if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
 
    new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) +1);
    if (!new)
@@ -664,9 +667,9 @@ void image_clone(INT32 args)
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
 
+   img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    if (THIS->img)
    {
-      img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
       if (!img->img)
       {
 	 free_object(o);
@@ -680,6 +683,8 @@ void image_clone(INT32 args)
 		  0,0,img->xsize-1,img->ysize-1);
 	 
    }
+   else
+      img_clear(img->img,img->rgb,img->xsize*img->ysize);
 
    pop_n_elems(args);
    push_object(o);
@@ -1138,8 +1143,8 @@ void image_box(INT32 args)
        sp[1-args].type!=T_INT||
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
-      error("Illegal arguments to image->line()\n");
-   getrgb(THIS,4,args,"image->line()");
+      error("Illegal arguments to image->box()\n");
+   getrgb(THIS,4,args,"image->box()");
    if (!THIS->img) return;
 
    img_box(sp[-args].u.integer,
@@ -1746,6 +1751,143 @@ static void image_quant(INT32 args)
    push_int(0);
 }
 
+static void image_ccw(INT32 args)
+{
+   INT32 i,j;
+   rgb_group *src,*dest;
+   struct object *o;
+   struct image *img;
+
+   pop_n_elems(args);
+
+   if (!THIS->img) error("no image\n");
+
+   o=clone(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+   img->xsize=THIS->ysize;
+   img->ysize=THIS->xsize;
+   i=THIS->xsize;
+   src=THIS->img+THIS->xsize-1;
+   dest=img->img;
+   while (i--)
+   {
+      j=THIS->ysize;
+      while (j--) *(dest++)=*(src),src+=THIS->xsize;
+      src--;
+      src-=THIS->xsize*THIS->ysize;
+   }
+
+   push_object(o);
+}
+
+static void image_cw(INT32 args)
+{
+   INT32 i,j;
+   rgb_group *src,*dest;
+   struct object *o;
+   struct image *img;
+
+   pop_n_elems(args);
+
+   if (!THIS->img) error("no image\n");
+
+   o=clone(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+   img->xsize=THIS->ysize;
+   img->ysize=THIS->xsize;
+   i=THIS->xsize;
+   src=THIS->img+THIS->xsize-1;
+   dest=img->img+THIS->xsize*THIS->ysize;
+   while (i--)
+   {
+      j=THIS->ysize;
+      while (j--) *(--dest)=*(src),src+=THIS->xsize;
+      src--;
+      src-=THIS->xsize*THIS->ysize;
+   }
+
+   push_object(o);
+}
+
+static void image_mirrorx(INT32 args)
+{
+   rgb_group *src,*dest;
+   struct object *o;
+   struct image *img;
+   INT32 i,j;
+
+   pop_n_elems(args);
+
+   if (!THIS->img) error("no image\n");
+
+   o=clone(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+   
+   i=THIS->ysize;
+   src=THIS->img+THIS->xsize-1;
+   dest=img->img;
+   while (i--)
+   {
+      j=THIS->xsize;
+      while (j--) *(dest++)=*(src--);
+      src+=THIS->xsize*2;
+   }
+
+   push_object(o);
+}
+
+static void image_mirrory(INT32 args)
+{
+   rgb_group *src,*dest;
+   struct object *o;
+   struct image *img;
+   INT32 i,j;
+
+   pop_n_elems(args);
+
+   if (!THIS->img) error("no image\n");
+
+   o=clone(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+   
+   i=THIS->ysize;
+   src=THIS->img+THIS->xsize*(THIS->ysize-1);
+   dest=img->img;
+   while (i--)
+   {
+      j=THIS->xsize;
+      while (j--) *(dest++)=*(src++);
+      src-=THIS->xsize*2;
+   }
+
+   push_object(o);
+ 
+}
+
 /***************** global init etc *****************************/
 
 #define RGB_TYPE "int|void,int|void,int|void,int|void"
@@ -1763,61 +1905,72 @@ void init_image_programs()
    add_function("create",image_create,
 		"function(int,int,"RGB_TYPE":void)",0);
    add_function("clone",image_clone,
-		"function(int,int,"RGB_TYPE":void)",0);
+		"function(int,int,"RGB_TYPE":object)",0);
+   add_function("new",image_clone, /* alias */
+		"function(int,int,"RGB_TYPE":object)",0);
    add_function("clear",image_clear,
-		"function("RGB_TYPE":void)",0);
+		"function("RGB_TYPE":object)",0);
    add_function("toppm",image_toppm,
 		"function(:string)",0);
    add_function("frompnm",image_frompnm,
-		"function(string:void)",0);
+		"function(string:object|string)",0);
    add_function("fromppm",image_frompnm,
-		"function(string:void)",0);
+		"function(string:object|string)",0);
    add_function("togif",image_togif,
 		"function(:string)",0);
    add_function("togif_fs",image_togif_fs,
 		"function(:string)",0);
    add_function("copy",image_copy,
-		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":void)",0);
+		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
    add_function("autocrop",image_autocrop,
-		"function(:void)",0);
+		"function(:object)",0);
    add_function("scale",image_scale,
-		"function(int|float,int|float|void:void)",0);
+		"function(int|float,int|float|void:object)",0);
 
    add_function("paste",image_paste,
-		"function(object,int|void,int|void:void)",0);
+		"function(object,int|void,int|void:object)",0);
    add_function("paste_alpha",image_paste_alpha,
-		"function(object,int,int|void,int|void:void)",0);
+		"function(object,int,int|void,int|void:object)",0);
    add_function("paste_mask",image_paste_mask,
-		"function(object,object,int|void,int|void:void)",0);
+		"function(object,object,int|void,int|void:object)",0);
    add_function("paste_alpha_color",image_paste_alpha_color,
-		"function(object,void|int,void|int,void|int,int|void,int|void:void)",0);
+		"function(object,void|int,void|int,void|int,int|void,int|void:object)",0);
 
    add_function("setcolor",image_setcolor,
-		"function(int,int,int:void)",0);
+		"function(int,int,int:object)",0);
    add_function("setpixel",image_setpixel,
-		"function(int,int,"RGB_TYPE":void)",0);
+		"function(int,int,"RGB_TYPE":object)",0);
    add_function("line",image_line,
-		"function(int,int,int,int,"RGB_TYPE":void)",0);
+		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("circle",image_circle,
-		"function(int,int,int,int,"RGB_TYPE":void)",0);
+		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("box",image_box,
-		"function(int,int,int,int,"RGB_TYPE":void)",0);
+		"function(int,int,int,int,"RGB_TYPE":object)",0);
    add_function("tuned_box",image_tuned_box,
-		"function(int,int,int,int,array:void)",0);
+		"function(int,int,int,int,array:object)",0);
 
    add_function("gray",image_gray,
-		"function("RGB_TYPE":void)",0);
+		"function("RGB_TYPE":object)",0);
    add_function("color",image_color,
-		"function("RGB_TYPE":void)",0);
+		"function("RGB_TYPE":object)",0);
    add_function("invert",image_invert,
-		"function("RGB_TYPE":void)",0);
+		"function("RGB_TYPE":object)",0);
    add_function("threshold",image_threshold,
-		"function("RGB_TYPE":void)",0);
+		"function("RGB_TYPE":object)",0);
 
    add_function("apply_matrix",image_apply_matrix,
-                "function(array(array(int|array(int))):void)",0);
+                "function(array(array(int|array(int))):object)",0);
    add_function("modify_by_intensity",image_modify_by_intensity,
-                "function(int,int,int,int,int:void)",0);
+                "function(int,int,int,int,int:object)",0);
+
+   add_function("rotate_ccw",image_ccw,
+		"function(:object)",0);
+   add_function("rotate_cw",image_cw,
+		"function(:object)",0);
+   add_function("mirrorx",image_mirrorx,
+		"function(:object)",0);
+   add_function("mirrory",image_mirrory,
+		"function(:object)",0);
 
    add_function("xsize",image_xsize,
 		"function(:int)",0);
@@ -1825,7 +1978,7 @@ void init_image_programs()
 		"function(:int)",0);
 
    add_function("quant",image_quant,
-                "function(:void)",0);
+                "function(:object)",0);
 		
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);

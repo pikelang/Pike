@@ -27,6 +27,11 @@ Methods resulting in a new object:
 <p><a name=grayr><tt>object <a href=#gray><b>gray</b></a>();</tt></a>
 <br><a name=colorr><tt>object <a href=#color><b>color</b></a>(int <b>r</b>,int <b>g</b>,int <b>b</b>);</tt></a>
 <br><a name=invertr><tt>object <a href=#invert><b>invert</b></a>();</tt></a>
+
+<p><a name=mirrorxr><tt>object <a href=#mirrorx><b>mirrorx</b></a>(void);</tt></a>
+<br><a name=mirroryr><tt>object <a href=#mirrory><b>mirrory</b></a>(void);</tt></a>
+<br><a name=rotate_cwr><tt>object <a href=#rotate_cw><b>rotate_cw</b></a>(void);</tt></a>
+<br><a name=rotate_ccwr><tt>object <a href=#rotate_ccw><b>rotate_ccw</b></a>(void);</tt></a>
 <br><a name=thresholdr><tt>object <a href=#threshold><b>threshold</b></a>(</tt>[<tt>int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt></b>); </tt></a>
 <br><a name=apply_matrixr><tt>object <a href=#apply_matrix><b>apply_matrix</b></a>(array(array(int)) <b>matrix</b>,</tt>[<tt>int <b>r</b>,int <b>g</b>,int <b>b</b></tt>[<tt>,int <b>div</b></tt>]]<tt>);</tt></a>
 <p><a name=scaler><tt>object <a href=#scale><b>scale</b></a>(float <b>factor</b>);</tt></a>
@@ -36,21 +41,21 @@ Methods resulting in a new object:
 <p>Methods operating on current object:
 
 <br><a name=toppmr><tt>string <a href=#toppm><b>toppm</b></a>(void</b>);</tt></a>
-<br><a name=fromppmr><tt>string|void <a href=#fromppm><b>fromppm</b></a>(string <b>s</b>);</tt></a>
+<br><a name=fromppmr><tt>string|object <a href=#fromppm><b>fromppm</b></a>(string <b>s</b>);</tt></a>
 <br><a name=togifr><tt>string <a href=#togif><b>togif</b></a>( </tt>[<tt>int <b>r</b>,inr g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
-<p><a name=paster><tt>void <a href=#paste><b>paste</b></a>(object <b>img</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>)</tt></a>
-<br><a name=paste_alphar><tt>void <a href=#paste_alpha><b>paste_alpha</b></a>(object <b>img</b>, int <b>alpha</b> </tt>[<tt>,int <b>x</b>, int <b>y</b></tt>]<tt></b>);</tt></a>
-<br><a name=paste_maskr><tt>void <a href=#paste_mask><b>paste_mask</b></a>(object <b>img</b>, object <b>alpha_mask</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>);</tt></a>
-<p><a name=setcolorr><tt>void <a href=#setcolor><b>setcolor</b></a>(int <b>r</b>,int <b>g</b>,int <b>b</b>);</tt></a>
-<br><a name=setpixelr><tt>void <a href=#setpixel><b>setpixel</b></a>(int <b>x</b>,int <b>y</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
-<br><a name=liner><tt>void <a href=#line><b>line</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
-<br><a name=boxr><tt>void <a href=#box><b>box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
-<br><a name=circler><tt>void <a href=#circle><b>circle</b></a>(int <b>x</b>,int <b>y</b>,int <b>radx</b>,int <b>rady</b> </tt>[<tt>,int <b>r</b>,int <b>b</b>,int <b>g</b></tt>]<tt> </b>);</tt></a>
-<br><a name=tuned_boxr><tt>void <a href=#tuned_box><b>tuned_box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b>,array(array(int)) corner_rgb</b>);</tt></a>
+<p><a name=paster><tt>object <a href=#paste><b>paste</b></a>(object <b>img</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>)</tt></a>
+<br><a name=paste_alphar><tt>object <a href=#paste_alpha><b>paste_alpha</b></a>(object <b>img</b>, int <b>alpha</b> </tt>[<tt>,int <b>x</b>, int <b>y</b></tt>]<tt></b>);</tt></a>
+<br><a name=paste_maskr><tt>object <a href=#paste_mask><b>paste_mask</b></a>(object <b>img</b>, object <b>alpha_mask</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>);</tt></a>
+<p><a name=setcolorr><tt>object <a href=#setcolor><b>setcolor</b></a>(int <b>r</b>,int <b>g</b>,int <b>b</b>);</tt></a>
+<br><a name=setpixelr><tt>object <a href=#setpixel><b>setpixel</b></a>(int <b>x</b>,int <b>y</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
+<br><a name=liner><tt>object <a href=#line><b>line</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
+<br><a name=boxr><tt>object <a href=#box><b>box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
+<br><a name=circler><tt>object <a href=#circle><b>circle</b></a>(int <b>x</b>,int <b>y</b>,int <b>radx</b>,int <b>rady</b> </tt>[<tt>,int <b>r</b>,int <b>b</b>,int <b>g</b></tt>]<tt> </b>);</tt></a>
+<br><a name=tuned_boxr><tt>object <a href=#tuned_box><b>tuned_box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b>,array(array(int)) corner_rgb</b>);</tt></a>
 
 <p>Information giving methods:
-<br><a name=xsizer><tt>void <a href=#xsize><b>xsize</b></a>();</tt></a>
-<br><a name=ysizer><tt>void <a href=#ysize><b>ysize</b></a>();</tt></a>
+<br><a name=xsizer><tt>object <a href=#xsize><b>xsize</b></a>();</tt></a>
+<br><a name=ysizer><tt>object <a href=#ysize><b>ysize</b></a>();</tt></a>
 
 <hr>
 
@@ -111,13 +116,13 @@ edges should be autocropped.
 
 <dl>
 <dt>METHOD
-<dd><a name=box><tt>void <a href=#boxr><b>box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
+<dd><a name=box><tt>object <a href=#boxr><b>box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
 <dt>DESCRIPTION
 
 <dd>Draw a box of the default or specified color.
 
 <dt>RETURN VALUE
-<dd>none
+<dd>the image object
 <dt>EXAMPLE
 <dd>
 <dt>BUGS
@@ -128,11 +133,33 @@ edges should be autocropped.
 
 <dl>
 <dt>METHOD
-<dd><a name=circle><tt>void <a href=#circler><b>circle</b></a>(int <b>x</b>,int <b>y</b>,int <b>radx</b>,int <b>rady</b> </tt>[<tt>,int <b>r</b>,int <b>b</b>,int <b>g</b></tt>]<tt> </b>);</tt></a>
+<dd><a name=circle><tt>object <a href=#circler><b>circle</b></a>(int <b>x</b>,int <b>y</b>,int <b>radx</b>,int <b>rady</b> </tt>[<tt>,int <b>r</b>,int <b>b</b>,int <b>g</b></tt>]<tt> </b>);</tt></a>
 <dt>DESCRIPTION
 <dd>Draw a circle. The coordinates given are the center of the image and the radius in x (horisontal) and y (vertical), this making it possible to draw an ellipse too. <tt>:-)</tt>
 <dt>RETURN VALUE
-<dd>none
+<dd>the image object
+<dt>EXAMPLE
+<dd>
+<dt>BUGS
+<dd>
+</dl>
+
+<hr>
+
+<dl>
+<dt>METHOD
+<dd><a name=clone><tt>object <a href=#cloner><b>clone</b></a>( </tt>[<tt>int <b>xsize</b>,int <b>ysize</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
+<dt>DESCRIPTION
+<dd>make a new object and return it
+<ul>
+<li>no arguments -> old image is copied
+<li>size is given -> old image is copied cropped
+<li>color is given -> new default color
+</ul>
+<dt>RETURN VALUE
+<dd>the new object
+<dt>SEE ALSO
+<dd><a href=#copy>copy</a>, <a href=#clear>clear</a>
 <dt>EXAMPLE
 <dd>
 <dt>BUGS
@@ -178,11 +205,11 @@ copy=image->copy(-10,-10,image->xsize()+9,image->ysize()+9);</pre>
 
 <dl>
 <dt>METHOD
-<dd><a name=fromppm><tt>string|void <a href=#fromppmr><b>fromppm</b></a>(string <b>s</b>);</tt></a>
+<dd><a name=fromppm><tt>string|object <a href=#fromppmr><b>fromppm</b></a>(string <b>s</b>);</tt></a>
 <dt>DESCRIPTION
 <dd>Import a ppm image.
 <dt>RETURN VALUE
-<dd>0 (void) upon success, else the error message (string).
+<dd>0 (object) upon success, else the error message (string).
 <dt>EXAMPLE
 <dd><pre>image=clone( (program)"precompiled/image" );
 image->fromppm(read_bytes("my_image.ppm",0,10000000));</pre>
@@ -228,11 +255,11 @@ to compute the gray level. Default is 87,127,41.
 
 <dl>
 <dt>METHOD
-<dd><a name=line><tt>void <a href=#liner><b>line</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
+<dd><a name=line><tt>object <a href=#liner><b>line</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
 <dt>DESCRIPTION
 <dd>Draw a line from <b>x1</b>,<b>y1</b> to <b>x2</b>,<b>y2</b>.
 <dt>RETURN VALUE
-<dd>none
+<dd>the image object
 <dt>EXAMPLE
 <dd><pre>image->line(17,100,42,1000);</pre>
 <dt>BUGS
@@ -243,37 +270,46 @@ to compute the gray level. Default is 87,127,41.
 
 <dl>
 <dt>METHOD
-<dd><a name=clone><tt>object <a href=#cloner><b>clone</b></a>( </tt>[<tt>int <b>xsize</b>,int <b>ysize</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b></tt>]<tt> </b>);</tt></a>
+<dd><a name=mirrorx><tt>object <a href=#mirrorxr><b>mirrorx</b></a>(void);</tt></a>
+<dd><a name=mirrory><tt>object <a href=#mirroryr><b>mirrory</b></a>(void);</tt></a>
 <dt>DESCRIPTION
-<dd>make a new object and return it
-<ul>
-<li>no arguments -> old image is copied
-<li>size is given -> old image is copied cropped
-<li>color is given -> new default color
-</ul>
+<dd>Mirrors the image, horisontally or vertically.
 <dt>RETURN VALUE
-<dd>the new object
-<dt>SEE ALSO
-<dd><a href=#copy>copy</a>, <a href=#clear>clear</a>
+<dd>the new image object
 <dt>EXAMPLE
-<dd>
+<dd><pre>mirrored=image->mirrorx();</pre>
 <dt>BUGS
 <dd>
 </dl>
 
 <hr>
+<dl>
+<dt>METHOD
+<dd><a name=rotate_cw><tt>object <a href=#rotate_cwr><b>rotate_cw</b></a>(void);</tt></a>
+<dd><a name=rotate_ccw><tt>object <a href=#rotate_ccwr><b>rotate_ccw</b></a>(void);</tt></a>
+<dt>DESCRIPTION
+<dd>Rotate the image, clockwise or counterclockwise, 90 degrees.
+<br>This operation is very fast compared to rotating any angle.
+<dt>RETURN VALUE
+<dd>the new image object
+<dt>EXAMPLE
+<dd><pre>snurr=image->rotate_cw();</pre>
+<dt>BUGS
+<dd>
+</dl>
+<hr>
 
 <dl>
 <dt>METHOD
-<dd><a name=paste><tt>void <a href=#paster><b>paste</b></a>(object <b>img</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>)</tt></a>
-<dd><a name=paste_alpha><tt>void <a href=#paste_alphar><b>paste_alpha</b></a>(object <b>img</b>, int <b>alpha</b> </tt>[<tt>,int <b>x</b>, int <b>y</b></tt>]<tt></b>);</tt></a>
-<dd><a name=paste_mask><tt>void <a href=#paste_maskr><b>paste_mask</b></a>(object <b>img</b>, object <b>alpha_mask</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>);</tt></a>
+<dd><a name=paste><tt>object <a href=#paster><b>paste</b></a>(object <b>img</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>)</tt></a>
+<dd><a name=paste_alpha><tt>object <a href=#paste_alphar><b>paste_alpha</b></a>(object <b>img</b>, int <b>alpha</b> </tt>[<tt>,int <b>x</b>, int <b>y</b></tt>]<tt></b>);</tt></a>
+<dd><a name=paste_mask><tt>object <a href=#paste_maskr><b>paste_mask</b></a>(object <b>img</b>, object <b>alpha_mask</b> </tt>[<tt>,int <b>x</b>,int <b>y</b></tt>]<tt></b>);</tt></a>
 <dt>DESCRIPTION
 <dd>Paste an image on this image. Use the specified alpha channel
 value or the second specified image as an alpha channel.<br>
 The first argument is the image that will be pasted.
 <dt>RETURN VALUE
-<dd>none
+<dd>the image object
 this function doesn't return anything
 <dt>EXAMPLE
 <dd><pre>image->paste(other_smaller_image,17,42);
@@ -315,11 +351,11 @@ this function doesn't return anything
 <hr>
 
 <dt>METHOD
-<dd><a name=setcolor><tt>void <a href=#setcolorr><b>setcolor</b></a>(int <b>r</b>,int <b>g</b>,int <b>b</b>);</tt></a>
+<dd><a name=setcolor><tt>object <a href=#setcolorr><b>setcolor</b></a>(int <b>r</b>,int <b>g</b>,int <b>b</b>);</tt></a>
 <dt>DESCRIPTION
 <dd>set the default color used for drawing lines, etc
 <dt>RETURN VALUE
-<dd>none
+<dd>the image object
 <dt>EXAMPLE
 <dd>
 <dt>BUGS
@@ -329,11 +365,11 @@ this function doesn't return anything
 <hr>
 
 <dt>METHOD
-<dd><a name=setpixel><tt>void <a href=#setpixelr><b>setpixel</b></a>(int <b>x</b>,int <b>y</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
+<dd><a name=setpixel><tt>object <a href=#setpixelr><b>setpixel</b></a>(int <b>x</b>,int <b>y</b> </tt>[<tt>,int <b>r</b>,int <b>g</b>,int <b>b</b></tt>]<tt> </b>);</tt></a>
 <dt>DESCRIPTION
 <dd>set the color of the specified pixel
 <dt>RETURN VALUE
-<dd>none
+<dd>the image object
 <dt>EXAMPLE
 <dd>
 <dt>BUGS
@@ -375,7 +411,7 @@ this function doesn't return anything
 
 <dl>
 <dt>METHOD
-<dd><a name=toppm><tt>string <a href=#toppmr><b>toppm</b></a>(void</b>);</tt></a>
+<dd><a name=toppm><tt>string <a href=#toppmr><b>toppm</b></a>(object</b>);</tt></a>
 <dt>DESCRIPTION
 <dd>export ppm
 <dt>RETURN VALUE
@@ -390,11 +426,11 @@ this function doesn't return anything
 
 <dl>
 <dt>METHOD
-<dd><a name=tuned_box><tt>void <a href=#tuned_boxr><b>tuned_box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b>,array(array(int)) corner_rgb</b>);</tt></a>
+<dd><a name=tuned_box><tt>object <a href=#tuned_boxr><b>tuned_box</b></a>(int <b>x1</b>,int <b>y1</b>,int <b>x2</b>,int <b>y2</b>,array(array(int)) corner_rgb</b>);</tt></a>
 <dt>DESCRIPTION
 <dd>draw a box with the specified corner colours, and shade the colors between
 <dt>RETURN VALUE
-<dd>none
+<dd>the image object
 <dt>EXAMPLE
 <dd><pre>image->tuned_box(0,0,img->xsize()-1,img->ysize()-1,
 	        ({({0,0,64}),({16,16,128}),
@@ -406,8 +442,8 @@ this function doesn't return anything
 <hr>
 <dl>
 <dt>METHOD
-<dd><a name=xsize><tt>void <a href=#xsizer><b>xsize</b></a>();</tt></a>
-<dd><a name=ysize><tt>void <a href=#ysizer><b>ysize</b></a>();</tt></a>
+<dd><a name=xsize><tt>object <a href=#xsizer><b>xsize</b></a>();</tt></a>
+<dd><a name=ysize><tt>object <a href=#ysizer><b>ysize</b></a>();</tt></a>
 <dt>DESCRIPTION
 <dd>
 <dt>RETURN VALUE
@@ -463,14 +499,16 @@ this function doesn't return anything
 
 int main()
 {
-   object txt,o;
+   object txt,o,shad,font;
    int i;
 
    txt = 
-      clone((program)"/precompiled/font")
-      ->load("fonts/64/helvetica_bold_r")
+      (font=clone((program)"/precompiled/font"))
+      ->load("/usr/local/lib/pike/fonts/64/helvetica_bold_r")
       ->write("The Image Module")
       ->autocrop(20,0,0,0);
+
+   shad=txt->mirrory()->scale(1.0,0.3)->color(64,64,64);
 
    o=clone((program)"/precompiled/image",
 	   txt->xsize(),txt->ysize(), 0,0,100)
@@ -487,10 +525,17 @@ int main()
 	 o->line(random(o->xsize()),o->ysize()-10-random(20+i),
 		 random(30),o->ysize()-1);
 
-   o -> paste_mask(txt->clear(255,255,0),
+   for (i=0; i<10; i++)
+      o->box(random(o->xsize()),random(o->ysize()),
+	     random(o->xsize()),random(o->ysize()),
+	     random(256),random(256),random(256),220);
+
+   o -> paste_mask(txt->clear(0,255,0),
+		   shad,0,(int)(font->baseline()*0.7)+shad->ysize()-10)
+     -> paste_mask(txt->clear(255,255,0),
 		 txt->apply_matrix(({({1,2,1}),({2,4,2}),({1,2,1})}))
 		 ->apply_matrix(({({1,2,1}),({2,4,2}),({1,2,1})}))
-		 ->modify_by_intensity(1,0,0,0,255,255,255,255,255))
+		 ->modify_by_intensity(1,0,0, 0,255,255,255,255,255))
      -> paste_mask(txt->clone()
 		   ->tuned_box(0,0,txt->xsize()-1,txt->ysize()-1,
 			       ({({128,128,128}),({64,128,0}),
