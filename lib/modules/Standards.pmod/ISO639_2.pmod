@@ -1,6 +1,6 @@
 // By Martin Nilsson
 
-// Updated 2002-09-14 from http://lcweb.loc.gov/standards/iso639-2/
+// Updated 2003-03-19 from http://lcweb.loc.gov/standards/iso639-2/
 
 #pike __REAL_VERSION__
 
@@ -23,6 +23,7 @@ static constant languages = ([
   "apa":"Apache languages",
   "ara":"Arabic",
   "arc":"Aramaic",
+  "arg":"Aragonese",
   "arn":"Araucanian",
   "arp":"Arapaho",
   "art":"Artificial (Other)",
@@ -98,6 +99,7 @@ static constant languages = ([
   "cym":"Welsh",
   "dak":"Dakota",
   "dan":"Danish",
+  "dar":"Dargwa",
   "day":"Dayak",
   "del":"Delaware",
   "den":"Slave (Athapascan)",
@@ -175,6 +177,7 @@ static constant languages = ([
   "iba":"Iban",
   "ibo":"Igbo",
   "ido":"Ido",
+  "iii":"Sichuan Yi",
   "ijo":"Ijo",
   "iku":"Inuktitut",
   "ile":"Interlingue",
@@ -183,6 +186,7 @@ static constant languages = ([
   "inc":"Indic (Other)",
   "ind":"Indonesian",
   "ine":"Indo-European (Other)",
+  "inh":"Ingush",
   "ipk":"Inupiaq",
   "ira":"Iranian (Other)",
   "iro":"Iroquoian languages",
@@ -203,6 +207,7 @@ static constant languages = ([
   "kau":"Kanuri",
   "kaw":"Kawi",
   "kaz":"Kazakh",
+  "kbd":"Kabardian",
   "kha":"Khasi",
   "khi":"Khoisan (Other)",
   "khm":"Khmer",
@@ -552,6 +557,7 @@ static constant conversion = ([
   "ae":"ave",
   "af":"afr",
   "am":"amh",
+  "an":"arg",
   "ar":"ara",
   "as":"asm",
   "ay":"aym",
@@ -604,6 +610,7 @@ static constant conversion = ([
   "ia":"ina",
   "id":"ind",
   "ie":"ile",
+  "ii":"iii",
   "ik":"ipk",
   "io":"ido",
   "is":"isl",

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.5 2003/02/18 17:33:07 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.6 2003/03/19 20:34:02 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -6,7 +6,7 @@ test_equal(Standards.ISO639_2.get_language("xxx"),0)
 test_true(sizeof(Standards.ISO639_2.list_languages())>400)
 test_egual(Standards.ISO639_2.map_639_1("sv"),"swe")
 test_egual(Standards.ISO639_2.map_639_1("xx"),0)
-test_true(sizeof(Standards.ISO639_2.list_639_1())==161)
+test_true(sizeof(Standards.ISO639_2.list_639_1())==163)
 test_false(Standards.ISO639_2.verify_overlap())
 
 // - Standards.RDF
