@@ -7227,7 +7227,7 @@ Process.popen, Process.system
 <man_syntax>
 int set_priority(string pri);
 </man_syntax>
-</man_description>
+<man_description>
 This function sets the priority of this process, the string <i>pri</i>
 should be one of:
 <table nicer>
