@@ -29,44 +29,44 @@ InternalCompressionLevel=ultra
 
 [Files]
 Source: X:\win32-pike\dists\Pike-v7.6.13-Win32-Windows-NT-5.1.2600-i86pc.exe; DestDir: {tmp}; Flags: deleteafterinstall ignoreversion
-Source: "X:\win32-pike\icons\pike_black.ico"; DestDir: "{app}/icons"; CopyMode: alwaysoverwrite; Attribs: hidden
-Source: "X:\win32-pike\icons\pike_blue.ico"; DestDir: "{app}/icons"; CopyMode: alwaysoverwrite; Attribs: hidden
-Source: "X:\win32-pike\icons\pike_green.ico"; DestDir: "{app}/icons"; CopyMode: alwaysoverwrite; Attribs: hidden
-Source: "X:\win32-pike\icons\pike_magenta.ico"; DestDir: "{app}/icons"; CopyMode: alwaysoverwrite; Attribs: hidden
-Source: "X:\win32-pike\icons\pike_orange.ico"; DestDir: "{app}/icons"; CopyMode: alwaysoverwrite; Attribs: hidden
-Source: "X:\win32-pike\icons\pike_red.ico"; DestDir: "{app}/icons"; CopyMode: alwaysoverwrite; Attribs: hidden
+Source: "X:\win32-pike\icons\pike_black.ico"; DestDir: "{app}/icons"; Flags: ignoreversion; Attribs: hidden
+Source: "X:\win32-pike\icons\pike_blue.ico"; DestDir: "{app}/icons"; Flags: ignoreversion; Attribs: hidden
+Source: "X:\win32-pike\icons\pike_green.ico"; DestDir: "{app}/icons"; Flags: ignoreversion; Attribs: hidden
+Source: "X:\win32-pike\icons\pike_magenta.ico"; DestDir: "{app}/icons"; Flags: ignoreversion; Attribs: hidden
+Source: "X:\win32-pike\icons\pike_orange.ico"; DestDir: "{app}/icons"; Flags: ignoreversion; Attribs: hidden
+Source: "X:\win32-pike\icons\pike_red.ico"; DestDir: "{app}/icons"; Flags: ignoreversion; Attribs: hidden
 
 
 ;;;Begin SDL files
-Source: "X:\win32-pike\dlls\SDL.dll"; DestDir: "{app}/bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: sdl
+Source: "X:\win32-pike\dlls\SDL.dll"; DestDir: "{app}/bin"; Flags: ignoreversion restartreplace sharedfile; Components: sdl
 ;;;End MySQL files
 
 ;;;Begin GLU files
-Source: "X:\win32-pike\dlls\glu32.dll"; DestDir: "{app}/bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: GLU
+Source: "X:\win32-pike\dlls\glu32.dll"; DestDir: "{app}/bin"; Flags: ignoreversion restartreplace sharedfile; Components: GLU
 ;;;End GLU files
 
 ;;;Begin GTK+ files
-Source: "X:\win32-pike\dlls\gdk-1.3.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\gdk_imlib.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\glib-1.3.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\gmodule-1.3.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\gnu-intl.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\gobject-1.3.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\gthread-1.3.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\gtk-1.3.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\iconv-1.3.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\iconv.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\imlib-jpeg.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\imlib-png.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\imlib-tiff.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\libgdk-0.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\libglib-2.0-0.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\libgmodule-2.0-0.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\libgobject-2.0-0.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\libgthread-2.0-0.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\libgtk-0.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\libintl-1.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
-Source: "X:\win32-pike\dlls\localcharset.dll"; DestDir: "{app}\bin"; CopyMode: alwaysoverwrite; Flags: restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\gdk-1.3.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\gdk_imlib.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\glib-1.3.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\gmodule-1.3.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\gnu-intl.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\gobject-1.3.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\gthread-1.3.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\gtk-1.3.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\iconv-1.3.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\iconv.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\imlib-jpeg.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\imlib-png.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\imlib-tiff.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\libgdk-0.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\libglib-2.0-0.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\libgmodule-2.0-0.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\libgobject-2.0-0.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\libgthread-2.0-0.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\libgtk-0.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\libintl-1.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
+Source: "X:\win32-pike\dlls\localcharset.dll"; DestDir: "{app}\bin"; Flags: ignoreversion restartreplace sharedfile; Components: gtk
 ;;;End GTK+ files
 
 
