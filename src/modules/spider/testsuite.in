@@ -92,3 +92,8 @@ dnl get_all_active_fd
 dnl fd_info
 dnl mark_fd
 dnl /precompiled/streamed_parser
+
+dnl XML
+test_do([[Parser.XML.Simple()->parse("<!DOCTYPE root [\n<!NOTATION JPGformat>\n]>\n", lambda(mixed ...args){} )]])
+test_do([[Parser.XML.Simple()->parse_dtd("%hej;\n", lambda(mixed ...  args){}, 1, 2, 3)]])
+
