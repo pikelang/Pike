@@ -2,13 +2,14 @@
 
 //! A mapping(int:string) that maps SMTP return
 //! codes to english textual messages.
-constant replycodes =
+mapping(int:string) replycodes =
 ([ 211:"System status, or system help reply",
    214:"Help message",
    220:"<host> Service ready",
    221:"<host> Service closing transmission channel",
    250:"Requested mail action okay, completed",
    251:"User not local; will forward to <forward-path>",
+   252:"Cannot VRFY user, but will accept message and attempt delivery",
    354:"Start mail input; end with <CRLF>.<CRLF>",
    421:"<host> Service not available, closing transmission channel "
        "[This may be a reply to any command if the service knows it "
@@ -221,21 +222,52 @@ class Configuration {
   //! yes your cb_data function should take an extra
   //! string argument
   int givedata = 1;
+
+  // the domains for each i relay
+  array(string) domains = ({});
+
+  // the callback functions used to guess if user is ok or not
+  function cb_rcptto;
+  function cb_data;
+  function cb_mailfrom;
+
+  void create(array(string) _domains, void|function _cb_mailfrom,
+	      void|function _cb_rcptto, void|function _cb_data) {
+    foreach(_domains, string domain)
+      domains += ({ lower_case(domain) });
+
+    cb_mailfrom = _cb_mailfrom;
+    cb_rcptto = _cb_rcptto;
+    cb_data = _cb_data;
+  }
+
+  array(string) get_features() {
+    return ({ "PIPELINING", "8BITMIME", "SIZE " + maxsize });
+  }
 };
 
 //! The low-level class for the SMTP server
 class Connection {
 
-  inherit Configuration;
+  static Configuration cfg;
+
   // The commands this module supports
-  array(string) commands = ({ "ehlo", "helo", "mail", "rcpt", "data",
-			      "rset", "vrfy", "quit", "noop" });
+  mapping(string:function) commands = ([
+    "ehlo" : ehlo,
+    "helo" : helo,
+    "mail" : mail,
+    "rcpt" : rcpt,
+    "data" : data,
+    "rset" : rset,
+    "vrfy" : vrfy,
+    "quit" : quit,
+    "noop" : noop,
+  ]);
+
   constant protocol = "ESMTP";
 
   // the fd of the socket
   static Stdio.File fd = Stdio.File();
-  // the domains for each i relay
-  static array(string) mydomains = ({ });
   // the input buffer for read_cb
   static string inputbuffer = "";
   // the size of the old data string in read_cb
@@ -257,16 +289,9 @@ class Connection {
   // the message id of the current mail
   private string|int messageid;
   
-  // the callback functions used to guess if user is ok or not
-  static function cb_rcptto;
-  static function cb_data;
-  static function cb_mailfrom;
-
   // whether you are in data mode or not...
   int datamode = 0;
 
-  array(string) features = ({ "PIPELINING", "8BITMIME", "SIZE " + maxsize });
-    
    static void handle_timeout(string cmd)
    {
      string errmsg = "421 Error: timeout exceeded after command " +
@@ -408,16 +433,16 @@ class Connection {
       if(!sscanf(parts[1], "<%s>", validating_mail))
         sscanf(parts[1], "%s", validating_mail);
       if(validating_mail == "")
-        validating_mail = "MAILER-DAEMON@" + mydomains[0];
+        validating_mail = "MAILER-DAEMON@" + cfg->domains[0];
       array emailparts = validating_mail / "@";
       array(string) temp = lower_case(emailparts[1]) / ".";
       string domain = temp[sizeof(temp)-2..] * ".";
-      if(checkemail && sizeof(emailparts) != 2)
+      if(cfg->checkemail && sizeof(emailparts) != 2)
       {
         log("invalid mail address '%O', command=%O\n", emailparts, what);
         return 553;
       }
-      if(checkdns)
+      if(cfg->checkdns)
       {
         write("checking dns\n");
         if(what == "from" && !Protocols.DNS.client()->get_primary_mx(domain))
@@ -426,11 +451,11 @@ class Connection {
           return 553;
         }
       }
-      if(what == "to" && !has_value(mydomains, domain) &&
-	 !has_value(mydomains, "*") )
+      if(what == "to" && !has_value(cfg->domains, domain) &&
+	 !has_value(cfg->domains, "*") )
       {
-        log("relaying denied, command=%O, mydomains=%O, domain=%O\n",
-	    what, mydomains, domain);
+        log("relaying denied, command=%O, cfg->domains=%O, domain=%O\n",
+	    what, cfg->domains, domain);
         return 553;
       }
       return validating_mail;
@@ -455,7 +480,7 @@ class Connection {
        {
          mixed err;
       	 int|array check;
-         err = catch(check = cb_mailfrom(email));
+         err = catch(check = cfg->cb_mailfrom(email));
          if(err)
          {
            outcode(451, err[0]);
@@ -500,7 +525,7 @@ class Connection {
        outcode(503);
        return;
      }
-     if(sizeof(mailto) >= maxrcpt)
+     if(sizeof(mailto) >= cfg->maxrcpt)
      {
        outcode(552);
        return;
@@ -511,7 +536,7 @@ class Connection {
      else
      {
        int|array check;
-       err = catch(check = cb_rcptto(email));
+       err = catch(check = cfg->cb_rcptto(email));
        if(err)
        {
          outcode(451);
@@ -587,7 +612,7 @@ class Connection {
    }
 
    void message(string content) {
-     if(sizeof(content) > maxsize)
+     if(sizeof(content) > cfg->maxsize)
      {
         outcode(552);
         return;
@@ -599,10 +624,10 @@ class Connection {
      // and the same MIME object
      int check;
      mixed err;
-     if(givedata)
-       err = catch(check = cb_data(message, mailfrom, mailto, content));
+     if(cfg->givedata)
+       err = catch(check = cfg->cb_data(message, mailfrom, mailto, content));
      else
-       err = catch(check = cb_data(message, mailfrom, mailto));
+       err = catch(check = cfg->cb_data(message, mailfrom, mailto));
      if(err)
      {
        outcode(554, err[0]);
@@ -653,7 +678,7 @@ class Connection {
      {
        string _command = lower_case(command[0]);
        mixed err = 0;
-       if(has_value(commands, _command))
+       if(has_index(commands, _command))
        {
          err = catch 
          {
@@ -661,9 +686,9 @@ class Connection {
             log("calling %O\n", _command);
 #endif
 #if constant(this)
-	    function fun = this[_command];
+	    function fun = this[_command]; // XXX: This line probably needs a patch!
 #else
-      function fun = this_object()[_command];
+	    function fun = commands[_command];
 #endif
 	    fun(command[1..] * " ");
          };
@@ -772,14 +797,11 @@ class Connection {
      shutdown_fd();
    }
 
-   void create(object _fd, array(string) _domains, function _cb_mailfrom,
-	       function _cb_rcptto, function _cb_data)
+   void create(object _fd, Configuration _cfg)
    {
-     foreach(_domains, string domain)
-       mydomains += ({ lower_case(domain) });
-     cb_mailfrom = _cb_mailfrom;
-     cb_rcptto = _cb_rcptto;
-     cb_data = _cb_data;
+     cfg = _cfg;
+     features += cfg->get_features();
+
      fd->assign(_fd);
      catch(remoteaddr=((fd->query_address()||"")/" ")[0]);
      catch(localaddr=((fd->query_address(1)||"")/" ")[0]);
@@ -815,19 +837,16 @@ class Connection {
 //!  handle mail storage nor relaying to other domains.
 //! So it is your job to provide mail storage and relay mails to other servers
 class Server {
- 
+
    static object fdport;
-   static array(string) domains;
-   static function cb_mailfrom;
-   static function cb_rcptto;
-   static function cb_data;
-   
+   Configuration config;
+
    static void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)
        error("Can't accept connections from socket\n");
-     Connection(fd, domains, cb_mailfrom, cb_rcptto, cb_data);
+     Connection(fd, config);
      destruct(fd);
    }
 
@@ -902,10 +921,7 @@ class Server {
    void create(array(string) _domains, void|int port, void|string ip, function _cb_mailfrom,
      function _cb_rcptto, function _cb_data)
    {
-     domains = _domains;
-     cb_mailfrom = _cb_mailfrom;
-     cb_rcptto = _cb_rcptto;
-     cb_data = _cb_data;
+     config = Configuration(_domains, _cb_mailfrom, _cb_rcptto, _cb_data);
      random_seed(getpid() + time());
      if(!port)
        port = 25;
