@@ -4,9 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.38 2003/01/20 17:44:00 nilsson Exp $
-
-mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
+// $Id: C.pmod,v 1.39 2003/04/07 18:23:10 jhs Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -251,7 +249,8 @@ array(string) split(string data, void|mapping state)
   }
 }
 
-//!
+//! Represents a C token, along with a selection of associated data and
+//! operations.
 class Token
 {
   //! The line where the token was found.
@@ -343,8 +342,20 @@ array(Token) tokenize(array(string) s, void|string file)
   return ret;
 }
 
-//!
-array(Token) group(array(string|Token) tokens, void|mapping groupings)
+static constant global_groupings = ([ "{":"}", "(":")", "[":"]" ]);
+
+//! Fold sub blocks of an array of tokens into sub arrays,
+//! for grouping purposes.
+//! @param tokens
+//!   The token array to fold.
+//! @param groupings
+//!   Supplies the tokens marking the boundaries of blocks to fold.
+//!   The indices of the mapping mark the start of a block, the
+//!   corresponding values mark where the block ends. The sub arrays
+//!   will start and end in these tokens. If no groupings mapping is
+//!   provided, {}, () and [] are used as block boundaries.
+array(Token|array) group(array(string|Token) tokens,
+			 void|mapping(string:string) groupings)
 {
   ADT.Stack stack=ADT.Stack();
   array(Token) ret=({});
@@ -386,10 +397,10 @@ array(Token) group(array(string|Token) tokens, void|mapping groupings)
  * This actually strips all preprocessing tokens
  */
 
-//!
-array strip_line_statements(array tokens)
+//! Strips off all (preprocessor) line statements from a token array.
+array(Token|array) strip_line_statements(array(Token|array) tokens)
 {
-  array(Token) ret=({});
+  array(Token|array) ret=({});
   foreach(tokens, array|object(Token) t)
     {
       if(arrayp(t))
@@ -401,10 +412,9 @@ array strip_line_statements(array tokens)
       }
     }
   return ret;
-  
 }
 
-//!
+//! Folds all whitespace tokens into the previous token's trailing_whitespaces.
 array hide_whitespaces(array tokens)
 {
   array(Token) ret=({tokens[0]});
@@ -433,7 +443,9 @@ array hide_whitespaces(array tokens)
   return ret;
 }
 
-//!
+//! Reconstitutes the token array into a plain string again; essentially
+//! reversing @[split()] and whichever of the @[tokenize], @[group] and
+//! @[hide_whitespace] methods may have been invoked.
 string simple_reconstitute(array(string|object(Token)|array) tokens)
 {
   string ret="";
@@ -447,7 +459,9 @@ string simple_reconstitute(array(string|object(Token)|array) tokens)
   return ret;
 }
 
-//!
+//! Like @[simple_reconstitute], but adding additional @tt{#line n "file"@}
+//! preprocessor statements in the output whereever a new line or
+//! file starts.
 string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
 {
   int line=1;
