@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.125 2000/06/17 00:25:20 hubbe Exp $");
+RCSID("$Id: object.c,v 1.126 2000/06/23 06:17:58 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -75,6 +75,20 @@ struct object *first_object;
 struct object *gc_internal_object = 0;
 static struct object *gc_mark_object_pos = 0;
 
+#undef COUNT_OTHER
+
+#define COUNT_OTHER() do{			\
+  struct object *o;                             \
+  for(o=first_object;o;o=o->next)		\
+    if(o->prog)					\
+      size+=o->prog->storage_needed;		\
+						\
+  for(o=objects_to_destruct;o;o=o->next)	\
+    if(o->prog)					\
+      size+=o->prog->storage_needed;		\
+}while(0)
+BLOCK_ALLOC(object, 511)
+
 struct object *low_clone(struct program *p)
 {
   int e;
@@ -87,7 +101,8 @@ struct object *low_clone(struct program *p)
   p->num_clones++;
 #endif /* PROFILING */
 
-  o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
+  o=alloc_object();
+  o->storage=p->storage_needed ? (char *)xalloc(p->storage_needed) : (char *)0;
 
   GC_ALLOC(o);
 
@@ -254,6 +269,7 @@ struct object *debug_clone_object(struct program *p, int args)
   debug_malloc_touch(o);
   call_pike_initializers(o,args);
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
   UNSET_ONERROR(tmp);
   return o;
 }
@@ -267,6 +283,7 @@ struct object *fast_clone_object(struct program *p, int args)
   call_c_initializers(o);
   UNSET_ONERROR(tmp);
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
   return o;
 }
 
@@ -425,6 +442,7 @@ struct object *get_master(void)
   }
   master_object=low_clone(master_program);
   debug_malloc_touch(master_object);
+  debug_malloc_touch(master_object->storage);
 
   call_c_initializers(master_object);
   call_pike_initializers(master_object,0);
@@ -524,6 +542,7 @@ void low_destruct(struct object *o,int do_free)
   }
 
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
   o->prog=0;
 
   LOW_PUSH_FRAME(o);
@@ -546,6 +565,7 @@ void low_destruct(struct object *o,int do_free)
     if(!do_free)
     {
       debug_malloc_touch(o);
+      debug_malloc_touch(o->storage);
       continue;
     }
 
@@ -570,6 +590,7 @@ void low_destruct(struct object *o,int do_free)
   }
 
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
   if(o->parent)
   {
     /* fprintf(stderr, "destruct(): Zapping parent.\n"); */
@@ -592,7 +613,7 @@ struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
 
 /* This function destructs the objects that are scheduled to be
- * destructed by really_free_object. It links the object back into the
+ * destructed by schedule_really_free_object. It links the object back into the
  * list of objects first. Adds a reference, destructs it and then frees it.
  */
 void destruct_objects_to_destruct(void)
@@ -634,20 +655,21 @@ void destruct_objects_to_destruct(void)
 }
 
 
-/* really_free_object:
+/* schedule_really_free_object:
  * This function is called when an object runs out of references.
  * It frees the object if it is destructed, otherwise it moves it to
  * a separate list of objects which will be destructed later.
  */
 
-void really_free_object(struct object *o)
+void schedule_really_free_object(struct object *o)
 {
 #ifdef PIKE_DEBUG
   if (o->refs)
-    fatal("Object still got references in really_free_object().\n");
+    fatal("Object still got references in schedule_really_free_object().\n");
 #endif
 
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
 
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE) {
     /* It's easier for the gc if we just leave the object around for
@@ -670,6 +692,7 @@ void really_free_object(struct object *o)
   }
 
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
 
   DOUBLEUNLINK(first_object,o);
 
@@ -695,7 +718,7 @@ void really_free_object(struct object *o)
   } else {
     if(o->parent)
     {
-      /* fprintf(stderr, "really_free_object(): Zapping parent.\n"); */
+      /* fprintf(stderr, "schedule_really_free_object(): Zapping parent.\n"); */
 
       free_object(o->parent);
       o->parent=0;
@@ -708,7 +731,12 @@ void really_free_object(struct object *o)
 
     FREE_PROT(o);
 
-    free((char *)o);
+    if(o->storage)
+    {
+      free(o->storage);
+      o->storage=0;
+    }
+    really_free_object(o);
 
     GC_FREE();
   }
@@ -726,6 +754,7 @@ void low_object_index_no_free(struct svalue *to,
     error("Cannot access global variables in destructed object.\n");
 
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
 
   i=ID_FROM_INT(p, f);
 
@@ -861,6 +890,7 @@ void object_low_set_index(struct object *o,
   }
 
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
   check_destructed(from);
 
   i=ID_FROM_INT(p, f);
@@ -1096,6 +1126,7 @@ void cleanup_objects(void)
     if(o->prog && !(o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT))
     {
       debug_malloc_touch(o);
+      debug_malloc_touch(o->storage);
       call_destroy(o,1);
       low_destruct(o,1);
     }
@@ -1170,6 +1201,7 @@ struct array *object_values(struct object *o)
 void gc_mark_object_as_referenced(struct object *o)
 {
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
 
   if(gc_mark(o))
   {
@@ -1448,34 +1480,6 @@ void gc_free_all_unreferenced_objects(void)
   }
 }
 
-void count_memory_in_objects(INT32 *num_, INT32 *size_)
-{
-  INT32 num=0, size=0;
-  struct object *o;
-  for(o=first_object;o;o=o->next)
-  {
-    num++;
-    if(o->prog)
-    {
-      size+=sizeof(struct object)-1+o->prog->storage_needed;
-    }else{
-      size+=sizeof(struct object);
-    }
-  }
-  for(o=objects_to_destruct;o;o=o->next)
-  {
-    num++;
-    if(o->prog)
-    {
-      size+=sizeof(struct object)-1+o->prog->storage_needed;
-    }else{
-      size+=sizeof(struct object);
-    }
-  }
-  *num_=num;
-  *size_=size;
-}
-
 struct magic_index_struct
 {
   struct inherit *inherit;
@@ -1483,7 +1487,7 @@ struct magic_index_struct
 };
 
 #define MAGIC_THIS ((struct magic_index_struct *)(CURRENT_STORAGE))
-#define MAGIC_O2S(o) ((struct magic_index_struct *)&(o->storage))
+#define MAGIC_O2S(o) ((struct magic_index_struct *)(o->storage))
 
 struct program *magic_index_program=0;
 struct program *magic_set_index_program=0;
@@ -1668,6 +1672,7 @@ void check_object(struct object *o)
   int e;
   struct program *p;
   debug_malloc_touch(o);
+  debug_malloc_touch(o->storage);
 
   if(o == fake_object) return;
 

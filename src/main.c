@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.90 2000/05/20 02:22:20 per Exp $");
+RCSID("$Id: main.c,v 1.91 2000/06/23 06:17:58 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -587,6 +587,7 @@ void low_exit_main(void)
   void cleanup_compiler(void);
   void cleanup_backend(void);
   void free_all_mapping_blocks(void);
+  void free_all_object_blocks(void);
 
 #ifdef AUTO_BIGNUM
   void exit_auto_bignum(void);
@@ -709,6 +710,7 @@ void low_exit_main(void)
   exit_destroy_called_mark_hash();
 
   free_all_mapping_blocks();
+  free_all_object_blocks();
   first_mapping=0;
 #endif
 }

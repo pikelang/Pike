@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.241 2000/06/10 11:52:43 mast Exp $");
+RCSID("$Id: program.c,v 1.242 2000/06/23 06:17:58 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -658,7 +658,7 @@ void fixate_program(void)
 
 	dmalloc_add_mmap_entry(m,
 			       id->name->str,
-			       OFFSETOF(object,storage) + i->storage_offset + id->func.offset,
+			       /* OFFSETOF(object,storage) + */ i->storage_offset + id->func.offset,
 			       sizeof_variable(id->run_time_type),
 			       1, /* count */
 			       0,0);
@@ -675,7 +675,7 @@ void fixate_program(void)
       }
       dmalloc_add_mmap_entry(m,
 			     tmp,
-			     OFFSETOF(object, storage) + i->storage_offset,
+			     /* OFFSETOF(object, storage) + */ i->storage_offset,
 			     i->prog->storage_needed - i->prog->inherits[0].storage_offset,
 			     1, /* count */
 			     0,0);
@@ -781,11 +781,13 @@ void low_start_new_program(struct program *p,
 
   malloc_size_program = ALLOC_STRUCT(program);
 #ifdef PIKE_DEBUG
-  fake_object=(struct object *)xalloc(sizeof(struct object) + 256*sizeof(struct svalue));
+  fake_object=alloc_object();
+  fake_object->storage=(char *)xalloc(256 * sizeof(struct svalue));
   /* Stipple to find illegal accesses */
-  MEMSET(fake_object,0x55,sizeof(struct object) + 256*sizeof(struct svalue));
+  MEMSET(fake_object->storage,0x55,256*sizeof(struct svalue));
 #else
   fake_object=ALLOC_STRUCT(object);
+  fake_object->storage=0;
 #endif
   GC_ALLOC(fake_object);
 
@@ -804,6 +806,9 @@ void low_start_new_program(struct program *p,
 #ifdef PIKE_SECURITY
   fake_object->prot=0;
 #endif
+
+  debug_malloc_touch(fake_object);
+  debug_malloc_touch(fake_object->storage);
 
   if(name)
   {
@@ -826,6 +831,9 @@ void low_start_new_program(struct program *p,
     fprintf (stderr, "%.*sstarting program %d (pass=%d)\n",
 	     compilation_depth, "                ", new_program->id, compiler_pass);
 #endif
+
+  debug_malloc_touch(fake_object);
+  debug_malloc_touch(fake_object->storage);
 
   if(new_program->program)
   {
@@ -885,6 +893,9 @@ void low_start_new_program(struct program *p,
 
   push_compiler_frame(0);
   add_ref(compiler_frame->current_return_type=void_type_string);
+
+  debug_malloc_touch(fake_object);
+  debug_malloc_touch(fake_object->storage);
 }
 
 void debug_start_new_program(PROGRAM_LINE_ARGS)
@@ -1199,7 +1210,7 @@ void check_program(struct program *p)
 
     if(IDENTIFIER_IS_VARIABLE(p->identifiers[e].identifier_flags))
     {
-      if( (p->identifiers[e].func.offset + OFFSETOF(object,storage)) &
+      if( (p->identifiers[e].func.offset /* + OFFSETOF(object,storage)*/ ) &
 	 (alignof_variable(p->identifiers[e].run_time_type)-1))
       {
 	fatal("Variable %s offset is not properly aligned (%d).\n",p->identifiers[e].name->str,p->identifiers[e].func.offset);
@@ -1270,6 +1281,9 @@ struct program *end_first_pass(int finish)
   int e;
   struct program *prog;
   struct pike_string *s;
+
+  debug_malloc_touch(fake_object);
+  debug_malloc_touch(fake_object->storage);
 
   MAKE_CONSTANT_SHARED_STRING(s,"__INIT");
 
@@ -1395,7 +1409,7 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
     fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %d\n",alignment);
 #endif
-  modulo=( modulo_orig+OFFSETOF(object,storage) ) % alignment;
+  modulo=( modulo_orig /* +OFFSETOF(object,storage) */ ) % alignment;
 
   offset=DO_ALIGN(new_program->storage_needed-modulo,alignment)+modulo;
 
@@ -1428,10 +1442,10 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
   if(offset < new_program->storage_needed)
     fatal("add_storage failed horribly!\n");
 
-  if( (offset + OFFSETOF(object,storage) - modulo_orig ) % alignment )
+  if( (offset /* + OFFSETOF(object,storage) */ - modulo_orig ) % alignment )
     fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
 	  (long)offset,
-	  (long)OFFSETOF(object,storage),
+	  (long)0 /* + OFFSETOF(object,storage) */,
 	  (long)modulo_orig,
 	  (long)alignment
 	  );
@@ -3466,12 +3480,16 @@ void init_program(void)
     free_string(key.u.string);
   }
   start_new_program();
+  debug_malloc_touch(fake_object);
+  debug_malloc_touch(fake_object->storage);
   ADD_STORAGE(struct pike_trampoline);
   add_function("`()",apply_trampoline,"function(mixed...:mixed)",0);
   set_init_callback(init_trampoline);
   set_exit_callback(exit_trampoline);
   set_gc_check_callback(gc_check_trampoline);
   set_gc_recurse_callback(gc_recurse_trampoline);
+  debug_malloc_touch(fake_object);
+  debug_malloc_touch(fake_object->storage);
   pike_trampoline_program=end_program();
 }
 

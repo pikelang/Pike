@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.92 2000/06/09 22:46:59 mast Exp $
+ * $Id: threads.h,v 1.93 2000/06/23 06:17:58 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -494,7 +494,7 @@ struct thread_state {
 #define	OBJ2THREAD(X) \
   ((struct thread_state *)((X)->storage+thread_storage_offset))
 
-#define THREADSTATE2OBJ(X) BASEOF((X),object,storage[thread_storage_offset])
+#define THREADSTATE2OBJ(X) ((X)->thread_id)
 
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp=OBJ2THREAD(thread_id); \

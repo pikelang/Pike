@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.76 2000/06/12 19:33:09 mast Exp $");
+RCSID("$Id: svalue.c,v 1.77 2000/06/23 06:17:58 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -51,7 +51,7 @@ void really_free_short_svalue(union anything *s, TYPE_T type)
       break;
       
     case T_OBJECT:
-      really_free_object(tmp.object);
+      schedule_really_free_object(tmp.object);
       break;
       
     case T_PROGRAM:
@@ -105,7 +105,7 @@ void really_free_svalue(struct svalue *s)
     /* fall through */
     
   case T_OBJECT:
-    really_free_object(s->u.object);
+    schedule_really_free_object(s->u.object);
     break;
     
   case T_PROGRAM:
@@ -226,7 +226,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE
 	if(s->subtype == FUNCTION_BUILTIN)
 	  really_free_callable(s->u.efun);
 	else
-	  really_free_object(s->u.object);
+	  schedule_really_free_object(s->u.object);
 	DO_IF_DMALLOC(s->u.refs=0);
       }
       s++;
