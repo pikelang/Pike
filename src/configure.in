@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.125 1997/10/02 22:06:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.126 1997/10/03 10:55:41 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -274,19 +274,32 @@ fi
 if test ! -d modules/. ; then
   mkdir modules
 fi
-if test $cppflags_is_set$ldflags_is_set = nono -a x${C_INCLUDE_PATH-} = x ; then
+
+#############################################################################
+
+## Search for some popular places where libraries may be hidden.
+
+#############################################################################
+
+if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
+  for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /home/GNU /sw /usr/freeware
+  do
+    if test -d "$d/include" ; then
+      echo Adding $d/include to the include-path
+      CPPFLAGS="${CPPFLAGS} -I$d/include"
+    else
+      :
+    fi
+  done
+else
+  :
+fi
+if test $ldflags_is_set = no ; then
   for d in /usr/local /usr/gnu /opt/gnu /sw/gnu /home/GNU /sw /usr/freeware
   do
     if test -d "$d/lib" ; then
       echo Adding $d/lib to the library-path
       LDFLAGS="${LDFLAGS} -R$d/lib -L$d/lib"
-    else
-      :
-    fi
-
-    if test -d "$d/include" ; then
-      echo Adding $d/include to the include-path
-      CPPFLAGS="${CPPFLAGS} -I$d/include"
     else
       :
     fi
