@@ -1,10 +1,10 @@
 /*
- * $Id: bytecode.h,v 1.5 2002/04/07 19:30:11 mast Exp $
+ * $Id: bytecode.h,v 1.6 2002/05/10 15:41:42 grubba Exp $
  */
 
 #define UPDATE_PC()
 
-#define ins_pointer(PTR)	ins_int((PTR), (void (*)(char))add_to_program)
+#define ins_pointer(PTR)	add_relocated_int_to_program((PTR))
 #define read_pointer(OFF)	read_int(OFF)
 #define upd_pointer(OFF, PTR)	upd_int((OFF), (PTR))
 #define ins_align(ALIGN)	do { \
@@ -13,6 +13,36 @@
     } \
   } while(0)
 #define ins_byte(VAL)		add_to_program((VAL))
-#define ins_data(VAL)		ins_int((VAL), (void (*)(char))add_to_program)
+#define ins_data(VAL)		add_relocated_int_to_program((VAL))
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
+
+#define CHECK_RELOC(REL, PROG_SIZE)		\
+  do {						\
+    if ((REL) >= (PROG_SIZE)-4) {		\
+      Pike_error("Bad relocation: %d >= %d\n",	\
+		 (REL), (PROG_SIZE)-4);		\
+    }						\
+  } while(0)
+
+/* FIXME: Uses internal variable 'byteorder'. */
+#define DECODE_PROGRAM(P)						\
+  do {									\
+    struct program *p_ = (P);						\
+    int num_reloc = (int)p_->num_relocations;				\
+    if (byteorder != PIKE_BYTEORDER) {					\
+      int e;								\
+      /* NOTE: Only 1234 <==> 4321 byte-order relocation supported. */	\
+      for (e=0; e<num_reloc; e++) {					\
+	size_t reloc = p_->relocations[e];				\
+	unsigned INT8 tmp1;						\
+	unsigned INT8 tmp2;						\
+	tmp1 = p_->program[reloc];					\
+	tmp2 = p_->program[reloc+1];					\
+	p_->program[reloc] = p_->program[reloc+3];			\
+	p_->program[reloc+1] = p_->program[reloc+2];			\
+	p_->program[reloc+3] = tmp1;					\
+	p_->program[reloc+2] = tmp2;					\
+      }									\
+    }									\
+  } while(0)
