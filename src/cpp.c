@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.60 2000/02/28 04:20:36 hubbe Exp $
+ * $Id: cpp.c,v 1.61 2000/03/09 16:46:03 jhs Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -846,8 +846,8 @@ static void insert_current_date_as_string(struct cpp *this,
   time(&tmp2);
   buf=ctime(&tmp2);
 
-  PUSH_STRING0((p_wchar0 *)buf+19, 5, tmp);
   PUSH_STRING0((p_wchar0 *)buf+4, 6, tmp);
+  PUSH_STRING0((p_wchar0 *)buf+19, 5, tmp);
 }
 
 static void check_defined(struct cpp *this,

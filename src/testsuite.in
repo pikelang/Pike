@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.283 2000/03/09 15:55:32 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.284 2000/03/09 16:46:03 jhs Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2803,7 +2803,15 @@ dnl]],17)
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
 test_true(stringp(__DATE__))
+test_true([[ sscanf(__DATE__, "%3s %d %d", string m, int d, int y) == 3 &&
+	     search(({"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}), m) != -1 &&
+	     intp(d) && d>0 && d<32 && intp(y) ]])
 test_true(stringp(__TIME__))
+test_true([[ sscanf(__TIME__, "%d:%d:%d", int h, int m, int s) == 3 &&
+	     intp(h) && intp(m) && intp(s) &&
+	     h>=0 && m>=0 && s>=0 &&
+	     h<24 && m<60 && s<61 ]])
 test_true(floatp(__VERSION__))
 test_true(intp(__MAJOR__))
 test_true(intp(__MINOR__))
