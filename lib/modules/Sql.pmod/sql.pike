@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.21 1998/06/17 12:48:00 grubba Exp $
+ * $Id: sql.pike,v 1.22 1998/06/17 12:58:34 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.21 1998/06/17 12:48:00 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.22 1998/06/17 12:58:34 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -282,8 +282,6 @@ string|object compile_query(string q)
 array(mapping(string:mixed)) query(object|string q,
 				   mapping(string|int:mixed)|void bindings)
 {
-  object res_obj;
-
   if (functionp(master_sql->query)) {
     if (bindings) {
       return(master_sql->query(q, bindings));
@@ -314,18 +312,21 @@ array(mapping(string:mixed)) query(object|string q,
 //.   is used.  Binary values (BLOBs) may need to be placed in multisets.
 object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
+  object|array(mapping) pre_res;
+
   if (functionp(master_sql->big_query)) {
     if (bindings) {
-      return(Sql.sql_result(master_sql->big_query(q, bindings)));
+      pre_res = master_sql->big_query(q, bindings);
     } else {
-      return(Sql.sql_result(master_sql->big_query(q)));
+      pre_res = master_sql->big_query(q);
     }
   }
   if (bindings) {
-    return(Sql.sql_result(master_sql->query(q, bindings)));
+    pre_res = master_sql->query(q, bindings);
   } else {
-    return(Sql.sql_result(master_sql->query(q)));
+    pre_res = master_sql->query(q);
   }
+  return(pre_res && Sql.sql_result(pre_res));
 }
 
 //. - create_db
