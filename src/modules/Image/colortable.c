@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.53 1999/04/07 22:22:11 mirar Exp $ */
+/* $Id: colortable.c,v 1.54 1999/04/08 22:20:49 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.53 1999/04/07 22:22:11 mirar Exp $
+**!	$Id: colortable.c,v 1.54 1999/04/08 22:20:49 hubbe Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.53 1999/04/07 22:22:11 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.54 1999/04/08 22:20:49 hubbe Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -133,11 +133,11 @@ static void free_colortable_struct(struct neo_colortable *nct)
    switch (nct->type)
    {
       case NCT_NONE:
-         return; /* done */
+         break; /* done */
       case NCT_FLAT:
          free(nct->u.flat.entries);
 	 nct->type=NCT_NONE;
-	 return; /* done */
+	 break; /* done */
       case NCT_CUBE:
          while ((s=nct->u.cube.firstscale))
 	 {
@@ -145,7 +145,7 @@ static void free_colortable_struct(struct neo_colortable *nct)
 	    free(s);
 	 };
 	 nct->type=NCT_NONE;
-         return; /* done */
+         break; /* done */
    }
 
    colortable_free_dither_union(nct);
@@ -3942,6 +3942,7 @@ static int* ordered_calculate_errors(int dxs,int dys)
       printf(" )\n");
    }
 #endif
+   free(dest);
 
    return src;
 }
