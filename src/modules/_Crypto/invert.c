@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.11 2000/12/01 08:10:28 hubbe Exp $
+ * $Id: invert.c,v 1.12 2001/02/13 14:03:17 grubba Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -49,7 +49,18 @@ void exit_pike_crypto_invert(struct object *o)
  * efuns and the like
  */
 
-/* string name(void) */
+/*! @module Crypto
+ */
+
+/*! @class invert
+ *!
+ *! Inversion crypto module.
+ */
+
+/*! @decl string name()
+ *!
+ *! Returns the string @tt{"INVERT"@}.
+ */
 static void f_name(INT32 args)
 {
   if (args) {
@@ -58,7 +69,10 @@ static void f_name(INT32 args)
   push_string(make_shared_string("INVERT"));
 }
 
-/* int query_block_size(void) */
+/*! @decl int query_block_size()
+ *!
+ *! Returns the block size for the invert crypto (currently 8).
+ */
 static void f_query_block_size(INT32 args)
 {
   if (args) {
@@ -67,7 +81,12 @@ static void f_query_block_size(INT32 args)
   push_int(8);
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ *!
+ *! Returns the minimum key length for the invert crypto.
+ *!
+ *! Since this crypto doesn't use a key, this will be 0.
+ */
 static void f_query_key_length(INT32 args)
 {
   if (args) {
@@ -76,7 +95,10 @@ static void f_query_key_length(INT32 args)
   push_int(0);
 }
 
-/* void set_key(string) */
+/*! @decl void set_key(string key)
+ *!
+ *! Set the encryption key (currently a no op).
+ */
 static void f_set_key(INT32 args)
 {
   if (args != 1) {
@@ -89,7 +111,11 @@ static void f_set_key(INT32 args)
   push_object(this_object());
 }
 
-/* string crypt_block(string) */
+/*! @decl string crypt_block(string data)
+ *!
+ *! De/encrypt the string @[data] with the invert crypto
+ *! (ie invert the string).
+ */
 static void f_crypt_block(INT32 args)
 {
   char *buffer;
@@ -121,6 +147,12 @@ static void f_crypt_block(INT32 args)
   MEMSET(buffer, 0, len);
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 /*
  * Module linkage
  */
@@ -148,17 +180,17 @@ void pike_invert_init(void)
   start_new_program();
 
   /* function(void:string) */
-  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
   /* function(string:void) */
-  ADD_FUNCTION("set_encrypt_key", f_set_key,tFunc(tStr,tVoid), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_key, tFunc(tStr, tVoid), 0);
   /* function(string:void) */
-  ADD_FUNCTION("set_decrypt_key", f_set_key,tFunc(tStr,tVoid), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_key, tFunc(tStr, tVoid), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt_block", f_crypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
 
   set_init_callback(init_pike_crypto_invert);
   set_exit_callback(exit_pike_crypto_invert);
