@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.9 1999/04/23 15:50:41 mirar Exp $
+**!	$Id: layers.c,v 1.10 1999/04/23 23:45:27 mirar Exp $
 **! class Layer
 */
 
@@ -10,7 +10,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.9 1999/04/23 15:50:41 mirar Exp $");
+RCSID("$Id: layers.c,v 1.10 1999/04/23 23:45:27 mirar Exp $");
 
 #include "config.h"
 
@@ -190,9 +190,11 @@ subtract        Pd=Ps-Pl
 multiply        Pd=Ps*Pl
 divide          Pd=Ps/Pl
 invmodulo       Pd=Ps%Pl (measured in color values)
-invsubtract     Pd=Pl*Al-Ps
-invdivide       Pd=Pl/Ps
-invmodulo       Pd=Pl%Ps (measured in color values)
+
+invsubtract     Pd=Pl-Ps                             | keeps alpha 
+invdivide       Pd=Pl/Ps                             | from below
+invmodulo       Pd=Pl%Ps (measured in color values)  |
+
 difference      Pd=abs(Ps-Pl)
 min             Pd=min(Ps,Pl)
 max             Pd=max(Ps,Pl)
@@ -1160,14 +1162,6 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
-#define LM_FUNC lm_invsubtract
-#define L_TRUNC(X) MAXIMUM(0,(X))
-#define L_OPER(A,B) ((B)-(int)(A))
-#include "layer_oper.h"
-#undef LM_FUNC
-#undef L_TRUNC
-#undef L_OPER
-
 #define LM_FUNC lm_multiply
 #define L_TRUNC(X) (X)
 #define L_OPER(A,B) CCUT((A)*(int)(B))
@@ -1192,6 +1186,16 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+#define L_USE_SA
+
+#define LM_FUNC lm_invsubtract
+#define L_TRUNC(X) MAXIMUM(0,(X))
+#define L_OPER(A,B) ((B)-(int)(A))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
 #define LM_FUNC lm_invdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((B)/C2F(1+(int)(A)))
@@ -1202,11 +1206,13 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_invmodulo
 #define L_TRUNC(X) ((COLORTYPE)(X))
-#define L_OPER(A,B) ((B)%(A))
+#define L_OPER(A,B) ((B)%((A)?(A):1))
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
 #undef L_OPER
+
+#undef L_USE_SA
 
 #define LM_FUNC lm_difference
 #define L_TRUNC(X) ((COLORTYPE)(X))
