@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.171 2005/02/08 18:46:44 mast Exp $
+ * $Id: backend.cmod,v 1.172 2005/02/26 21:59:56 nilsson Exp $
  *
  * Backend object.
  */
@@ -2514,7 +2514,6 @@ PIKECLASS Backend
 
 #ifdef BACKEND_USES_SELECT
 
-	debug_malloc_touch(me->fds);
 	for(i=0; i <= me->active_set.max_fd; i++)
 	{
 	  box = SAFE_GET_ACTIVE_BOX(me, i);
