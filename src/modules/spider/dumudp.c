@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.22 1997/10/02 18:13:59 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.23 1997/10/14 00:58:38 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -129,6 +129,17 @@ static void udp_bind(INT32 args)
   FD=fd;
   pop_n_elems(args);
   push_int(1);
+}
+
+void udp_enable_broadcast(INT32 args)
+{
+  pop_n_elmas(args);
+#ifdef SO_BROADCAST
+  o = 1;
+  push_int(setsockopt(fd, SOL_SOCKET, SO_BROADCAST, (char *)&o, sizeof(int)));
+#else /* SO_BROADCAST */
+  push_int(0);
+#endif /* SO_BROADCAST */
 }
 
 #define UDP_BUFFSIZE 65536
@@ -367,6 +378,7 @@ void init_udp(void)
 
   add_storage(sizeof(struct dumudp));
   add_function("bind",udp_bind,"function(int,void|function,void|string:int)",0);
+  add_function("enable_broadcast", udp_enable_broadcast, "function(:void)", 0);
   add_function("read",udp_read,"function(int|void:mapping(string:int|string))",0);
   add_function("send",udp_sendto,"function(string,int,string,void|int:int)",0);
   add_function( "set_nonblocking", udp_set_nonblocking,
