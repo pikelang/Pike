@@ -1,3 +1,10 @@
+/*
+ * $Id: werror.pmod,v 1.2 1999/09/26 14:21:22 grubba Exp $
+ *
+ * Some functions to simplify writing debug-messages.
+ * (Aren't we lazy? :-) )
+ */
+
 function(:int(0..0)) `[](string print_what)
 {
    if (print_what=="") print_what="bipp\n";
