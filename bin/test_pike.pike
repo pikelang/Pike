@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.95 2004/04/23 15:17:22 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.96 2004/04/23 15:20:22 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -404,6 +404,7 @@ int main(int argc, array(string) argv)
       if (verbose) args += ({ "--verbose=" + verbose });
       if (prompt) args += ({ "--prompt=" + prompt });
       if (start) args += ({ "--start-test=" + (start+1) });
+      // FIXME: end handling is not quite correct.
       if (end != 0x7fffffff) args += ({ "--end-after=" + end });
       if (fail) args += ({ "--fail" });
       // forked is handled here.
@@ -440,6 +441,9 @@ int main(int argc, array(string) argv)
 	  errors += failed;
 	  successes += total - failed;
 	  skipped += skip;
+	}
+	if (fail && errors) {
+	  exit(1);
 	}
       }
     } else {
@@ -1033,6 +1037,7 @@ Usage: test_pike [args] [testfiles]
                     tests in every testsuite.
 -eX, --end-after=X  How many tests should be run.
 -f, --fail          If set, the test program exits on first failure.
+-F, --forking       If set, each testsuite will run in a separate process.
 -lX, --loop=X       The number of times the testsuite should be run. Default is
                     1.
 -tX, --trace=X      Run tests with trace level X.
