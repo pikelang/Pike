@@ -1,4 +1,4 @@
-// $Id: rsqld.pike,v 1.4 2003/01/19 03:08:26 nilsson Exp $
+// $Id: rsqld.pike,v 1.5 2003/01/19 15:34:47 nilsson Exp $
 
 constant description = "Implements an rsql daemon.";
 
@@ -330,6 +330,10 @@ class Server
     servsock = Stdio.Port();
     if(!servsock->bind(@({port, accept_callback})+(ip? ({ip}):({}))))
       throw(({"Failed to bind port "+port+".\n", backtrace()}));
+    if(ip)
+      write("RSQL available on port %d on %s.\n", port, ip);
+    else
+      write("RSQL available on port %d.\n", port);
   }
 }
 
