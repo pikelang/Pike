@@ -2459,7 +2459,8 @@ class cSuperTimeRange
 //!	%h hour (needs %d, %D or %W)
 //!	%m minute (needs %h)
 //!	%s second (needs %m)
-//!     %f fraction of a second (needs %s)
+//!     %S seconds since the Epoch (only combines with %f)
+//!     %f fraction of a second (needs %s or %S)
 //!	%t short time (205314, 2053)
 //!	%z zone
 //!	%p "am" or "pm"
@@ -2592,9 +2593,9 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 #define ZONE "%[-+0-9A-Za-z/]"
       nfmt=replace(fmt,
 		   ({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s","%p",
-		     "%t","%f","%d","%z","%n"}),
+		     "%t","%f","%d","%z","%n","%S"}),
 		   ({ALNU,ALNU,ALNU,"%d",NUME,"%d",ALNU,"%d","%d","%d",AMPM,
-		     NUME,NUME,NUME,ZONE,"%s"}));
+		     NUME,NUME,NUME,ZONE,"%s","%d"}));
 
 #if 1
       q=array_sscanf(fmt,"%{%*[^%]%%%1s%}")*({})*({})-({"*","%"});
@@ -2772,6 +2773,8 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 low = dwim_zone(low,m->z,g,h,mi,s);
       else if (g)
 	 low = dwim_tod(low,g,h,mi,s);
+      else if (!zero_type(m->S))
+	 low = Second(m->S);
       if (sub_second)
 	 low = low->fraction(sub_second);
       return low;
