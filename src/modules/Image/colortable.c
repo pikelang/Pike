@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.114 2002/10/25 14:21:34 nilsson Exp $
+|| $Id: colortable.c,v 1.115 2002/12/01 13:30:32 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.114 2002/10/25 14:21:34 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.115 2002/12/01 13:30:32 mast Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2228,7 +2228,7 @@ static void image_colortable_add(INT32 args)
 
 		  push_object(o);
 		  image_colortable_add(1);
-		  pop_n_elems(1);
+		  pop_stack();
 		  /* we will keep flat... */
 		  args=2;
 
@@ -2312,7 +2312,9 @@ static void image_colortable_add(INT32 args)
 void image_colortable_create(INT32 args)
 {
    if (args)  /* optimize */
-      image_colortable_add(args); 
+      image_colortable_add(args);
+   else
+      push_undefined();
 }
 
 /*
