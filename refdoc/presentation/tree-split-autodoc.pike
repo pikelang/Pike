@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.44 2002/12/21 18:20:33 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.45 2002/12/23 18:50:27 grubba Exp $
  *
  */
 
@@ -65,6 +65,7 @@ class Node
   string data;
   array(Node) class_children  = ({ });
   array(Node) module_children = ({ });
+  array(Node) enum_children = ({ });
   array(Node) method_children = ({ });
 
   Node parent;
@@ -88,6 +89,7 @@ class Node
 
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
+    sort(enum_children->name, enum_children);
     sort(method_children->name, method_children);
 
     method_children = check_uniq(method_children);
@@ -239,6 +241,7 @@ class Node
     parser->add_container("namespace", parse_node);
     parser->add_container("module", parse_node);
     parser->add_container("class",  parse_node);
+    parser->add_container("enum",  parse_node);
 
     return parser;
   }
@@ -460,7 +463,8 @@ class Node
 	  make_navbar_really_low(root->appendix_children) + "<br />";
     }
     else
-      res += make_navbar_really_low(root->method_children);
+      res += make_navbar_really_low(root->enum_children) +
+	make_navbar_really_low(root->method_children);
 
     return res+"</table>";
   }
@@ -478,6 +482,7 @@ class Node
     return
       parent->class_children+
       parent->module_children+
+      parent->enum_children+
       parent->method_children;
   }
 
@@ -486,6 +491,7 @@ class Node
     return
       class_children+
       module_children+
+      enum_children+
       method_children;
   }
 
@@ -546,6 +552,7 @@ class Node
       contents += parse_children(n, "namespace", parse_namespace, 1);
       contents += parse_children(n, "module", parse_module, 1);
       contents += parse_children(n, "class", parse_class, 1);
+      contents += parse_children(n, "enum", parse_enum, 1);
     }
 
     return contents;
@@ -555,6 +562,7 @@ class Node
   {
     class_children->make_html(template, path);
     module_children->make_html(template, path);
+    enum_children->make_html(template, path);
     method_children->make_html(template, path);
 
     int num_segments = sizeof(make_filename()/"/")-1;

@@ -166,6 +166,10 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       ret += parse_class(c);
       break;
 
+    case "enum":
+      ret += parse_enum(c);
+      break;
+
     default:
       error("Unknown element %O.\n", c->get_any_name());
     }
@@ -263,6 +267,7 @@ string parse_namespace(Node n, void|int noheader)
 #endif
 
   ret += parse_children(n, "docgroup", parse_docgroup, noheader);
+  ret += parse_children(n, "enum", parse_enum, noheader);
   ret += parse_children(n, "class", parse_class, noheader);
   ret += parse_children(n, "module", parse_module, noheader);
 
@@ -294,6 +299,7 @@ string parse_module(Node n, void|int noheader) {
 #endif
 
   ret += parse_children(n, "docgroup", parse_docgroup, noheader);
+  ret += parse_children(n, "enum", parse_enum, noheader);
   ret += parse_children(n, "class", parse_class, noheader);
   ret += parse_children(n, "module", parse_module, noheader);
 
@@ -324,7 +330,35 @@ string parse_class(Node n, void|int noheader) {
 #endif
 
   ret += parse_children(n, "docgroup", parse_docgroup);
+  ret += parse_children(n, "enum", parse_enum);
   ret += parse_children(n, "class", parse_class, noheader);
+
+  if(!noheader)
+    ret += "</dd></dl>";
+  return ret;
+}
+
+string parse_enum(Node n, void|int noheader) {
+  string ret ="";
+  if(!noheader)
+    ret += "<dl><dt>"
+      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; ENUM <b><font color='#005080'>" +
+      render_class_path(n) + n->get_attributes()->name +
+      "</font></b></font></td></tr></table><br />\n"
+      "</dt><dd>";
+
+  Node c = n->get_first_element("doc");
+
+  if(c)
+    ret += "<dl>" + parse_doc(c) + "</dl>";
+
+#ifdef DEBUG
+  if(sizeof(n->get_elements("doc"))>1)
+    error( "More than one doc element in enum node.\n" );
+#endif
+
+  ret += parse_children(n, "docgroup", parse_docgroup);
 
   if(!noheader)
     ret += "</dd></dl>";
@@ -842,6 +876,10 @@ string render_class_path(Node n,int|void class_only)
     a = a[1..];
   if (!sizeof(a)) return "";
   string ret = "";
+  if ((sizeof(a) > 1) && a[-2]->get_any_name() == "enum") {
+    // Enum names don't show up in the path.
+    a = a[..sizeof(a)-3] + a[sizeof(a)-1..];
+  }
   if (a[0]->get_any_name() == "namespace") {
     a = a->get_attributes()->name;
     a[0] += "::";
@@ -855,16 +893,24 @@ string render_class_path(Node n,int|void class_only)
   }
   ret += a * ".";
   if (!sizeof(ret) || ret[-1] == ':') return ret;
-  if(n->get_any_name()=="class" || n->get_any_name()=="module")
+  if((<"class", "module", "enum">)[n->get_any_name()])
     return ret + ".";
-  if(n->get_parent()->get_parent()->get_any_name()=="class")
+
+  // Note we need two calls to get_parent() to skip over the docgroup.
+  Node parent = n->get_parent()->get_parent();
+
+  // Hide the enum part.
+  if (parent->get_any_name()=="enum") parent = parent->get_parent();
+
+  if(parent->get_any_name()=="class")
     if( !class_only )
       return ""; //ret + "()->";
     else
       return ret;
-  if(n->get_parent()->get_parent()->get_any_name()=="module")
+  if(parent->get_any_name()=="module")
     return ret + ".";
-
+  werror("Failure, raw path: %{%O, %}\n",
+	 reverse(n->get_ancestors(0))->get_any_name());
   return " (could not resolve) ";
 #ifdef DEBUG
   error( "Parent module is " + n->get_parent()->get_any_name() + ".\n" );
