@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.5 2003/03/30 13:37:16 grubba Exp $
+// $Id: __default.pmod,v 1.6 2003/03/30 14:55:18 grubba Exp $
 
 #pike 7.5
 
@@ -109,8 +109,6 @@ array(int) rusage() {
 	    m->slptime, m->wtime, m->stoptime, m->brksize,
 	    m->stksize });
 }
-
-static  all_constants_7_4;
 
 mapping(string:mixed) all_constants()
 {
