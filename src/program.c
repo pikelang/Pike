@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.489 2004/05/27 13:20:05 grubba Exp $
+|| $Id: program.c,v 1.490 2004/05/27 16:49:32 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.489 2004/05/27 13:20:05 grubba Exp $");
+RCSID("$Id: program.c,v 1.490 2004/05/27 16:49:32 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1427,10 +1427,6 @@ void fixate_program(void)
     Pike_fatal("Cannot fixate optimized program\n");
 #endif
 
-  /* FIXME: This segment of code should probably be enabled, but it
-   *        breaks the testsuite without further backports from Pike 7.5.
-   *        /grubba 2004-03-18
-   */
   /* Fixup identifier overrides. */
   for (i = 0; i < p->num_identifier_references; i++) {
     struct reference *ref = p->identifier_references + i;
