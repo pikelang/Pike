@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.67 2000/04/27 02:13:28 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.68 2000/04/28 18:22:12 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2039,12 +2039,9 @@ void dmalloc_describe_location(void *p, int offset, int indent)
   if(p)
   {
     struct memhdr *mh;
-    int lock=mt_trylock(&debug_malloc_mutex) != EBUSY;
 
     if((mh=my_find_memhdr(p,0)))
       low_dmalloc_describe_location(mh, offset, indent);
-
-    if(lock) mt_unlock(&debug_malloc_mutex);
   }
 }
 
