@@ -1,6 +1,8 @@
 #pike __REAL_VERSION__
 
 // Incremental Pike Evaluator
+//
+// $Id: Hilfe.pmod,v 1.25 2002/02/20 00:19:00 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -10,8 +12,6 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 - Hilfe can not handle typedefs.
 - Hilfe can not handle generated types, e.g.
   constant boolean = typeof(0)|typeof(1); booleab flag = 1;
-- Some expressions with the \",\" token in it will fail, e.g.
-  string a=\"x\",b=a;
 - Hilfe should possibly handle imports better, e.g. overwrite the
   local variables/constants/functions/programs.
 - Some preprocessor stuff works. Some doesn't. They should be
@@ -30,28 +30,26 @@ constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
   \"set history 5\".
 - Make it possible to easily change result format, e.g.
   \"set resultformat %[1]O (%[0]d)\".
+- Make it possible to quickly undefine variables, e.g. \"reset a\".
 - Add some better multiline edit support.
 - Tab completion of variable and module names.
 ";
 
-private constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
-private constant termblock = (< "catch", "do", "gauge", "lambda" >);
-private constant modifier = (< "extern", "final", "inline", "local", "nomask",
-			       "optional", "private", "protected", "public",
-			       "static", "variant" >);
 
-private void|string command_exit(int|Evaluator e, void|string line) {
+//
+// Built in commands
+//
+
+private void|string command_exit(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(intp(e)) return "Exit Hilfe.";
   write("Exiting.\n");
   destruct(e);
   exit(0);
 }
 
-private void|string command_help(int|Evaluator e, void|string line) {
+private void|string command_help(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(intp(e)) return "Show help text.";
-
-  line = String.trim_all_whites(line);
-  line = sizeof(line/" ")>1 && (line/" ")[1..]*" ";
+  line = tokens[2..sizeof(tokens)-2]*"";
 
   if(line == "me more") {
     write( #"Some commands has extended help available. This can be displayed by
@@ -190,12 +188,12 @@ dump wrapper
       }
     }
 
-    void|string `()(int|Evaluator e, void|string line) {
+    void|string `()(int|Evaluator e, void|string line, void|array(string) tokens) {
       if(!e) return "Dump variables and other info.";
       if(e==1) return help();
 
-      line = String.trim_all_whites(line);
-      switch( sizeof(line/" ")>1 && (line/" ")[1] ) {
+      line = tokens[2..sizeof(tokens)-2]*"";
+      switch( line ) {
       case "wrapper":
 	wrapper(e);
 	return;
@@ -214,7 +212,7 @@ dump wrapper
     }
   }();
 
-private void|string command_new(int|Evaluator e, void|string line) {
+private void|string command_new(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(!e) return "Clears the Hilfe state.";
   if(e==1) return #"
 Clears the current Hilfe state. This includes the parser state,
@@ -224,6 +222,21 @@ Note that code in your .hilferc will not be reevaluated.";
   e->reset_evaluator();
 }
 
+
+//
+// Support stuff..
+//
+
+private constant whitespace = (< ' ', '\n' ,'\r', '\t' >);
+private constant termblock = (< "catch", "do", "gauge", "lambda" >);
+private constant modifier = (< "extern", "final", "inline", "local", "nomask",
+			       "optional", "private", "protected", "public",
+			       "static", "variant" >);
+
+//! In every Hilfe object (@[Evaluator]) there is a ParserState object
+//! that manages the current state of the parser. Essentially tokens are
+//! entered in one end and complete expressions is outputted in the other.
+//! The parser object is accessible as ___Hilfe->state from Hilfe expressions.
 private class ParserState {
   private array(string) pstack = ({ });
   private constant starts = ([ ")":"(", "}":"{", "]":"[",
@@ -233,6 +246,7 @@ private class ParserState {
   private string last;
   private string block;
 
+  //! Feed more tokens into the state.
   void feed(array(string) tokens) {
     foreach(tokens, string token) {
       if(sizeof(token)>1 && (token[0..1]=="//" || token[0..1]=="/*")) continue; // comments
@@ -280,16 +294,22 @@ private class ParserState {
     }
   }
 
+  //! Read out completed expressions. Returns an array where every element
+  //! is an expression represented as an array of tokens.
   array(array(string)) read() {
     array ret = ready;
     ready = ({});
     return ret;
   }
 
+  //! Returns true if there is any waiting expression that can be fetched
+  //! with @[read].
   int datap() {
     return sizeof(ready);
   }
 
+  //! Are we in the middle of an expression. Used e.g. for chaning the
+  //! Hilfe prompt when entering multiline expressions.
   int(0..1) finishedp() {
     if(sizeof(pstack)) return 0;
     if(!sizeof(pipeline)) return 1;
@@ -300,6 +320,7 @@ private class ParserState {
     return 0;
   }
 
+  //! Clear the current state.
   void flush() {
     pstack = ({});
     pipeline = ({});
@@ -308,6 +329,7 @@ private class ParserState {
     block = 0;
   }
 
+  //! Show the current parser state. Used by "dump state".
   void show_state() {
     write("Current parser state\n");
     write("Parenthesis stack: %s\n", pstack*" ");
@@ -321,34 +343,49 @@ private class ParserState {
   }
 }
 
+//! In every Hilfe object (@[Evaluator]) there is a HilfeHistory
+//! object that manages the result history. That history object is
+//! accessible both from __ and ___Hilfe->history in Hilfe expressions.
 private class HilfeHistory {
 
   private int size=10;
   private int last_entry_num;
   private array history = ({});
 
+  //! Returns the absolute sequence number of the last
+  //! result inserted into the history.
   int get_last_entry_num() {
     return last_entry_num;
   }
 
+  //! Returns the absolute sequence number of the
+  //! oldest result still in the history.
   int get_first_entry_num() {
     return last_entry_num - sizeof(history) +1;
   }
 
+  //! Returns the maximum number of entries that can be
+  //! stored in the history simultaneous.
   int get_maxsize() { return size; }
+
+  //! Set the maximume number of entries that can be
+  //! stored in the history simultaneous.
   void set_maxsize(int _size) {
     size = _size;
     if(sizeof(history)>size)
       history = history[sizeof(history)-size..];
   }
 
+  //! Returns true if there is any items in the history.
   int has_content() { return sizeof(history); }
 
+  //! Empty the history.
   void flush() {
     last_entry_num = 0;
     history = ({});
   }
 
+  //! Add a result to the history.
   void add(mixed value) {
     last_entry_num++;
     history += ({ value });
@@ -356,6 +393,8 @@ private class HilfeHistory {
       history = history[1..];
   }
 
+  //! Get a value from the history as if it was an array, e.g.
+  //! both positive and negative numbers may be used.
   mixed `[](int i) {
     if(i<0) {
       if(i<-sizeof(history))
@@ -373,6 +412,7 @@ private class HilfeHistory {
 
   }
 
+  //! Shows the contents of the history.
   void show_history() {
     int abs_num = get_first_entry_num();
     int rel_num = -sizeof(history);
@@ -386,33 +426,68 @@ private class HilfeHistory {
   }
 }
 
+
+//
+// The actual Hilfe
+//
+
+//! This class implements the actual Hilfe interpreter. It is accessible
+//! as ___Hilfe from Hilfe expressions.
 class Evaluator {
 
-  // The available Hilfe commands
-  // A command can be called with
-  // `()(Evaluator e, string command_line) when commands are executed
-  // `()(0) when simple help is wanted
-  // `()(1) when extended help is wanted
-  // command names < 10 chars
-  // simple help < 53 chars
-  // extended help < 67 chars/line
+  //! This mapping contains the available Hilfe commands, including the
+  //! built in ones (dump, exit, help, new, quit), so it is possible to
+  //! replace or remove them.
+  //!
+  //! A command is a function or an object with `() defined. The command
+  //! can be called in three different ways:
+  //! @ul
+  //!   @item
+  //!      (Evaluator e, string command_line, array(string) tokens)
+  //!      when commands are executed
+  //!   @item
+  //!      (0) when simple help is wanted
+  //!   @item
+  //!      (1) when extended help is wanted
+  //! @endul
+  //!
+  //! It is recommended that command names are less then 11 characters
+  //! long, that simple help is less than 54 characters long and that
+  //! the extended help is less than 68 characters per line (to keep
+  //! all presentation things like help etc look nice).
   mapping(string:function|object) commands = ([]);
 
-  // Keeps the state, e.g. multiline input in process etc.
+  //! Keeps the state, e.g. multiline input in process etc.
   ParserState state = ParserState();
 
+  //! The locally defined variables (name:value).
   mapping(string:mixed) variables;
+
+  //! The types of the locally defined variables (name:type).
   mapping(string:string) types;
+
+  //! The locally defined constants (name:value).
   mapping(string:mixed) constants;
+
+  //! The locally defined functions (name:value).
   mapping(string:function) functions;
+
+  //! The locally defined programs (name:value).
   mapping(string:program) programs;
+
+  //! The current imports.
   array(string) imports;
+
+  //! The current inherits.
   array(string) inherits;
 
+  //! The current result history.
   HilfeHistory history = HilfeHistory();
 
+  //! The function to use when writing this to the user.
   function write;
 
+  //!
   void create()
   {
     print_version();
@@ -433,12 +508,17 @@ class Evaluator {
     add_constant("___Hilfe", this_object());
   }
 
+  //! Displays the current version of Hilfe.
   void print_version()
   {
     write(version()+
 	  " running Hilfe v3.0 (Incremental Pike Frontend)\n");
   }
 
+  //! Cleras the current state, history and removes all locally
+  //! defied variables, constants, functions and programs. Removes
+  //! all imports and inherits. It does not reset the command mapping
+  //! nor reevaluate the .hilferc file.
   void reset_evaluator() {
     state->flush();
     history->flush();
@@ -451,6 +531,9 @@ class Evaluator {
     inherits = ({});
   }
 
+  //! Input a line of text into Hilfe. It checks if @[s] is
+  //! ".", in which case it calls state->flush(). Otherwise
+  //! just calls add_buffer.
   void add_input_line(string s)
   {
     if(s==".")
@@ -462,6 +545,10 @@ class Evaluator {
     add_buffer(s);
   }
 
+  //! Add buffer tokanizes the input string and determines if the
+  //! new line is a Hilfe command. If not, it updates the current
+  //! state with the new tokens and sends any and all complete
+  //! expressions to evaluation in @[parse_expression].
   void add_buffer(string s)
   {
     // Tokanize the input
@@ -475,13 +562,13 @@ class Evaluator {
     if(commands[tokens[0]] && zero_type(constants[tokens[0]]) &&
        zero_type(variables[tokens[0]]) && zero_type(functions[tokens[0]]) &&
        (sizeof(tokens)==1 || tokens[1]!=";")) {
-      commands[tokens[0]](this_object(), s);
+      commands[tokens[0]](this_object(), s, tokens);
       return;
     }
 
     // See if the command is executed in overridden mode.
     if(sizeof(tokens)>1 && tokens[0]=="." && commands[tokens[1]]) {
-      commands[tokens[1]](this_object(), s);
+      commands[tokens[1]](this_object(), s, tokens);
       return;
     }
 
@@ -498,8 +585,8 @@ class Evaluator {
     // See if any complete expressions came out on the other side.
     if(state->datap())
       foreach(state->read(), array(string) tokens) {
-	string|int ret = parse_statement(tokens);
-	if(stringp(ret)) write(ret);
+	string|int ret = parse_expression(tokens);
+	if(ret) write(ret);
       }
   }
 
@@ -520,7 +607,7 @@ class Evaluator {
   }
 
   private void add_hilfe_constant(array(string) tokens) {
-    if(object o=eval("constant " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
+    if(object o=hilfe_compile("constant " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
 		     tokens[0] + "; }\n", tokens[0])) {
       constants[tokens[0]] = o->___HilfeWrapper();
     }
@@ -533,8 +620,8 @@ class Evaluator {
       old_value = m_delete(variables, tokens[0]);
       existed = 1;
     }
-    if(object o=eval(type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
-		     tokens[0] + "; }\n", tokens[0])) {
+    if(object o=hilfe_compile(type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
+			      tokens[0] + "; }\n", tokens[0])) {
       variables[tokens[0]] = o->___HilfeWrapper();
       types[tokens[0]] = type;
     }
@@ -550,20 +637,22 @@ class Evaluator {
       existed = 1;
     }
 
-    if(object o=eval(type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
-		     tokens[0] + "; }\n", tokens[0])) {
+    if(object o=hilfe_compile(type + " " + tokens_to_code(tokens) + ";\nmixed ___HilfeWrapper() { return " +
+			      tokens[0] + "; }\n", tokens[0])) {
       vtype[tokens[0]] = o->___HilfeWrapper();
     }
     else if(existed)
       vtype[tokens[0]] = old_value;
   }
 
-  mixed parse_statement(array(string) tokens)
+  //! Parses a Pike expression. Returns 0 if everything went well,
+  //! or a string with an error message otherwise.
+  int(0..0)|string parse_expression(array(string) tokens)
   {
     string code = tokens*"";
     tokens = remove_whitespace_tokens(tokens);
 
-    if(tokens[0]==";") return 1;
+    if(tokens[0]==";") return 0;
 
     // Identify the type of statement so that we can intercept
     // variable declarations and store them locally.
@@ -586,23 +675,23 @@ class Evaluator {
       case "while":
       case "foreach":
 	// Parse loops.
-	do_evaluate("mixed ___HilfeWrapper() { " + code + " ; }\n",0);
-	return 1;
+	evaluate("mixed ___HilfeWrapper() { " + code + " ; }\n",0);
+	return 0;
 
       case "inherit":
       {
 	inherits += ({ tokens_to_code(tokens[1..sizeof(tokens)-2]) });
-	if(!eval(""))
+	if(!hilfe_compile(""))
 	  inherits = inherits[..sizeof(inherits)-2];
-	return 1;
+	return 0;
       }
 
       case "import":
       {
 	imports += ({ tokens_to_code(tokens[1..sizeof(tokens)-2]) });
-	if(!eval(""))
+	if(!hilfe_compile(""))
 	  imports = imports[..sizeof(imports)-2];
-	return 1;
+	return 0;
       }
 
       case "constant":
@@ -623,12 +712,12 @@ class Evaluator {
 	  add_hilfe_constant(def);
 	}
 
-	return 1;
+	return 0;
       }
 
       case "class":
 	add_hilfe_entity(tokens[0], tokens[1..], programs);
-	return 1;
+	return 0;
 
       case "int":
       case "void":
@@ -673,7 +762,7 @@ class Evaluator {
 	  if(constants[tokens[pos]])
 	    return "Hilfe Error: \"" + tokens[pos] + "\" already defined as constant.\n";
 	  add_hilfe_entity(type, tokens[pos..], functions);
-	  return 1;
+	  return 0;
 	}
 
 	while(pos<sizeof(tokens)) {
@@ -690,13 +779,13 @@ class Evaluator {
 	  add_hilfe_variable(type, def);
 	}
 
-	return 1;
+	return 0;
       }
     }
 
     // parse expressions
-    do_evaluate("mixed ___HilfeWrapper() { return " + code + " }\n", 1);
-    return 1;
+    evaluate("mixed ___HilfeWrapper() { return " + code + " }\n", 1);
+    return 0;
   }
 
 
@@ -706,6 +795,7 @@ class Evaluator {
   //
   //
 
+  //! The last created wrapper in which an expression was evaluated.
   string last_compiled_expr;
 
   private object compile_handler = class
@@ -722,7 +812,7 @@ class Evaluator {
     }();
 
   // We need this as long as "( < > )" isn't valid Pike code.
-  string tokens_to_code(array(string) tokens) {
+  private string tokens_to_code(array(string) tokens) {
     string ret = "";
     foreach(tokens, string token) {
       ret += token;
@@ -731,7 +821,11 @@ class Evaluator {
     return ret;
   }
 
-  object eval(string f, void|string new_var)
+  //! Creates a wrapper and compiles the pike code @[f] in it.
+  //! If a new variable is compiled to be tested, it's name
+  //! should be given in @[new_var] so that magically defined
+  //! entities can be undefined and a warning printed.
+  object hilfe_compile(string f, void|string new_var)
   {
     if(new_var && commands[new_var])
       write("Hilfe Warning: Command %O no longer reachable. Use %O instead.\n",
@@ -747,8 +841,8 @@ class Evaluator {
 
     if(new_var=="_")
       write("Hilfe Warning: History variable _ is no longer reachable.\n");
-    else if(zero_type(symbols["_"]) && zero_type(variables["_"]) &&
-	    history->has_content()) {
+    else if(zero_type(symbols["_"]) && zero_type(variables["__"])
+	    && history->has_content()) {
       symbols["_"] = history[-1];
     }
 
@@ -766,7 +860,7 @@ class Evaluator {
 
        map(indices(variables),
 	   lambda(string f) {
-	     return sprintf("%s %s;", types[f], f, f);
+	     return sprintf("%s %s=___hilfe.%s;", types[f], f, f);
 	   }) * "\n" + "\n" +
 
        "\nmapping query_variables() { return ([\n"+
@@ -784,7 +878,7 @@ class Evaluator {
 
     mixed oldwrite=all_constants()->write;
     add_constant("write", write);
-    add_constant("___hilfe", symbols);
+    add_constant("___hilfe", symbols+variables);
     err=catch( p=compile_string(prog, "-", compile_handler) );
     add_constant("___hilfe");
     add_constant("write", oldwrite);
@@ -804,17 +898,17 @@ class Evaluator {
       return 0;
     }
 
-    // Populate variables in object.
-    foreach(indices(variables), string f)
-      o[f]=variables[f];
-
     return o;
   }
 
-  mixed do_evaluate(string a, int(0..1) show_result)
+  //! Compiles the Pike code @[a] and evaluate it by
+  //! calling ___HilfeWrapper in the generated object.
+  //! If @[show_result] is set the result will be displayed
+  //! and the result buffer updated with its value.
+  void evaluate(string a, int(0..1) show_result)
   {
     object o;
-    if(o=eval(a))
+    if( o=hilfe_compile(a) )
     {
       mixed err;
       mixed res;
@@ -852,11 +946,18 @@ class Evaluator {
   }
 }
 
+//! This is a wrapper containing a "GUI" to the Hilfe @[Evaluator]
+//! so that it can actually be used. This wrapper uses the @[Stdio.Readline]
+//! module to interface with the user. All input history is handled by
+//! that module, and as a consequence loading and saving .hilfe_history is
+//! handled in this class. Also .hilferc is handled by this class.
 class StdinHilfe
 {
   inherit Evaluator;
 
+  //! The readline object,
   Stdio.Readline readline;
+
   private int(0..1) unsaved_history;
 
   void destroy() {
@@ -864,6 +965,7 @@ class StdinHilfe
     save_history();
   }
 
+  //! Saves the user input history, if possible, when called.
   void save_history()
   {
     if(!unsaved_history) return;
@@ -892,6 +994,7 @@ class StdinHilfe
     exit(1);
   }
 
+  //!
   void create()
   {
     write=predef::write;
@@ -937,10 +1040,12 @@ class StdinHilfe
   }
 }
 
+//!
 class GenericHilfe
 {
   inherit Evaluator;
 
+  //!
   void create(Stdio.FILE in, Stdio.File out)
   {
     write=out->write;
@@ -959,6 +1064,7 @@ class GenericHilfe
   }
 }
 
+//!
 class GenericAsyncHilfe
 {
   inherit Evaluator;
@@ -997,6 +1103,7 @@ class GenericAsyncHilfe
     if(outfile) destruct(outfile);
   }
 
+  //!
   void create(Stdio.File in, Stdio.File out)
   {
     infile=in;
