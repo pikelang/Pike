@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.37 2000/12/27 19:27:34 per Exp $ */
+/* $Id: operator.c,v 1.38 2002/02/21 05:31:10 per-bash Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.37 2000/12/27 19:27:34 per Exp $
+**!	$Id: operator.c,v 1.38 2002/02/21 05:31:10 per-bash Exp $
 **! class Image
 */
 
@@ -365,26 +365,47 @@ STANDARD_OPERATOR_HEADER("`%%")
 
 void image_operator_divide(INT32 args)
 {
-   double q=1/255.0;
-STANDARD_OPERATOR_HEADER("`/")
-   while (i--)
-   {
-      d->r=testrange(floor(s1->r/(q*(s2->r+1))+0.5));
-      d->g=testrange(floor(s1->g/(q*(s2->g+1))+0.5));
-      d->b=testrange(floor(s1->b/(q*(s2->b+1))+0.5));
-      s1++; s2++; d++; 
-   }
-   else
-   while (i--)
-   {
-      d->r=testrange(floor(s1->r/(q*(rgb.r+1))+0.5));
-      d->g=testrange(floor(s1->g/(q*(rgb.g+1))+0.5));
-      d->b=testrange(floor(s1->b/(q*(rgb.b+1))+0.5));
-      s1++; d++; 
-   }
-   THREADS_DISALLOW();
-   pop_n_elems(args);		   		   		
-   push_object(o);		   		   		
+
+  if( args == 1 &&
+      (Pike_sp[-1].type == T_INT ||
+       Pike_sp[-1].type == T_FLOAT ) )
+  {
+    extern void f_divide( int x );
+    /* Major optimization for this not totally uncommon case. Perhaps
+       not 100% correct (10/3.0 != 10*(1.0/3.0) when operating with 32
+       bit floats), but more than good enough.
+
+       Also, mult has MMX optimizations, while divide does not.
+    */
+    push_float( 1.0 );
+    stack_swap();
+    f_divide( 2 );
+    image_operator_multiply( 1 );
+    return;
+  }
+  else
+  {
+    double q=1/255.0;
+    STANDARD_OPERATOR_HEADER("`/")
+      while (i--)
+      {
+	d->r=testrange(floor(s1->r/(q*(s2->r+1))+0.5));
+	d->g=testrange(floor(s1->g/(q*(s2->g+1))+0.5));
+	d->b=testrange(floor(s1->b/(q*(s2->b+1))+0.5));
+	s1++; s2++; d++; 
+      }
+    else
+      while (i--)
+      {
+	d->r=testrange(floor(s1->r/(q*(rgb.r+1))+0.5));
+	d->g=testrange(floor(s1->g/(q*(rgb.g+1))+0.5));
+	d->b=testrange(floor(s1->b/(q*(rgb.b+1))+0.5));
+	s1++; d++; 
+      }
+    THREADS_DISALLOW();
+    pop_n_elems(args);		   		   		
+    push_object(o);
+  }
 }
 
 
