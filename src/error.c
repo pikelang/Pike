@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.86 2002/08/15 14:49:21 marcus Exp $");
+RCSID("$Id: error.c,v 1.87 2002/08/15 17:43:25 marcus Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -412,8 +412,14 @@ static void f_error_cast(INT32 args)
   if(!strncmp(s,"array",5))
   {
     pop_n_elems(args);
-    ref_push_string(GENERIC_ERROR_THIS->desc);
-    ref_push_array(GENERIC_ERROR_THIS->backtrace);
+    if(GENERIC_ERROR_THIS->desc)
+      ref_push_string(GENERIC_ERROR_THIS->desc);
+    else
+      push_int(0);
+    if(GENERIC_ERROR_THIS->backtrace)
+      ref_push_array(GENERIC_ERROR_THIS->backtrace);
+    else
+      push_int(0);
     f_aggregate(2);
   }else{
     SIMPLE_BAD_ARG_ERROR("error->cast", 1, "the value \"array\"");
@@ -448,11 +454,17 @@ static void f_error_index(INT32 args)
   {
     case 0:
       pop_n_elems(args);
-      ref_push_string(GENERIC_ERROR_THIS->desc);
+      if(GENERIC_ERROR_THIS->desc)
+	ref_push_string(GENERIC_ERROR_THIS->desc);
+      else
+	push_int(0);
       break;
     case 1:
       pop_n_elems(args);
-      ref_push_array(GENERIC_ERROR_THIS->backtrace);
+      if(GENERIC_ERROR_THIS->backtrace)
+	ref_push_array(GENERIC_ERROR_THIS->backtrace);
+      else
+	push_int(0);
       break;
     default:
       index_error("error->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
@@ -485,7 +497,10 @@ static void f_error_describe(INT32 args)
 static void f_error_backtrace(INT32 args)
 {
   pop_n_elems(args);
-  ref_push_array(GENERIC_ERROR_THIS->backtrace);
+  if(GENERIC_ERROR_THIS->backtrace)
+    ref_push_array(GENERIC_ERROR_THIS->backtrace);
+  else
+    push_int(0);
 }
 
 /*! @decl string _sprintf()
@@ -498,9 +513,29 @@ static void f_error__sprintf(INT32 args)
   pop_n_elems(args);
   push_svalue(&PROG_FROM_INT(p, i)->constants[id->func.offset].sval);
   push_constant_text("(%O)");
-  ref_push_string(GENERIC_ERROR_THIS->desc);
+  if(GENERIC_ERROR_THIS->desc)
+    ref_push_string(GENERIC_ERROR_THIS->desc);
+  else
+    push_int(0);
   f_sprintf(2);
   f_add(2);
+}
+
+/*! @decl void create(string message)
+ */
+static void f_error_create(INT32 args)
+{
+  struct pike_string *msg;
+  get_all_args("create", args, "%W", &msg);
+  do_free_string(GENERIC_ERROR_THIS->desc);
+  copy_shared_string(GENERIC_ERROR_THIS->desc, msg);
+  f_backtrace(0);
+  push_int (0);
+  push_int (Pike_sp[-2].u.array->size-2);
+  o_range ();
+  assign_to_short_svalue ((union anything *)&GENERIC_ERROR_THIS->backtrace,
+			  PIKE_T_ARRAY, Pike_sp-1);
+  pop_n_elems(args+1);
 }
 
 /*! @endclass
