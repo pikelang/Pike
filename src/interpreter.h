@@ -1296,25 +1296,42 @@ static int eval_instruction(unsigned char *pc)
       /* Stack: type_string, value */
 #ifdef PIKE_DEBUG
       if (sp[-2].type != T_STRING) {
+	/* FIXME: The type should really be T_TYPE... */
 	fatal("Argument 1 to soft_cast isn't a string!\n");
       }
 #endif /* PIKE_DEBUG */
       if (runtime_options & RUNTIME_CHECK_TYPES) {
 	struct pike_string *sval_type = get_type_of_svalue(sp-1);
-	if (!pike_types_le(sval_type, sp[-2].u.string)) {
-	  struct pike_string *t;
-	  ONERROR tmp;
+	if (!pike_types_le(sval_type, sp[-2].u.string) {
+	  /* get_type_from_svalue() doesn't return a fully specified type
+	   * for array, mapping and multiset, so we perform a more lenient
+	   * check for them.
+	   */
+	  if (!pike_types_le(sval_type, weak_type_type_string) ||
+	      !match_types(sval_type, sp[-2].u.string)) {
+	    struct pike_string *t1;
+	    struct pike_string *t2;
+	    ONERROR tmp1;
+	    ONERROR tmp2;
 
-	  free_string(sval_type);
+	    t1 = describe_type(sp[-2].u.string);
+	    SET_ONERROR(tmp1, do_free_string, t1);
+	  
+	    t2 = describe_type(sval_type);
+	    SET_ONERROR(tmp2, do_free_string, t2);
+	  
+	    free_string(sval_type);
 
-	  t = describe_type(sp[-2].u.string);
-	  SET_ONERROR(tmp, do_free_string, t);
-	  bad_arg_error("soft_cast", sp-1, 1, 1, t->str, sp-1,
-			"Assertion failed in soft_cast(). Expected %s\n",
-			t->str);
-	  /* NOT_REACHED */
-	  UNSET_ONERROR(tmp);
-	  free_string(t);
+	    bad_arg_error("soft_cast", sp-1, 1, 1, t1->str, sp-1,
+			  "Assertion failed in soft_cast(). "
+			  "Expected %s, got %s\n",
+			  t1->str, t2->str);
+	    /* NOT_REACHED */
+	    UNSET_ONERROR(tmp2);
+	    UNSET_ONERROR(tmp1);
+	    free_string(t2);
+	    free_string(t1);
+	  }
 	}
 	free_string(sval_type);
 #ifdef PIKE_DEBUG
