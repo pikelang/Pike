@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.2 1998/07/27 21:57:46 hubbe Exp $
+ * $Id: nt.c,v 1.3 1998/08/06 05:32:20 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -20,6 +20,7 @@
 #include "stralloc.h"
 #include "las.h"
 #include "threads.h"
+#include "module_support.h"
 
 #include <winsock.h>
 #include <windows.h>
@@ -111,6 +112,11 @@ static struct program *token_program;
 
 #define THIS_TOKEN (*(HANDLE *)(fp->current_storage))
 
+typedef BOOL WINAPI (*logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
+
+static logonusertype logonuser;
+HINSTANCE advapilib;
+
 void f_LogonUser(INT32 args)
 {
   LPTSTR username, domain, pw;
@@ -145,7 +151,7 @@ void f_LogonUser(INT32 args)
   }
 
   THREADS_ALLOW();
-  ret=LogonUser(username, domain, pw, logontype, logonprovider, &x);
+  ret=logonuser(username, domain, pw, logontype, logonprovider, &x);
   THREADS_DISALLOW();
   if(ret)
   {
@@ -174,14 +180,6 @@ static void exit_token(struct object *o)
 
 void init_nt_system_calls(void)
 {
-  start_new_program();
-  add_storage(sizeof(HANDLE));
-  set_init_callback(init_token);
-  set_exit_callback(exit_token);
-  token_program=end_program();
-  add_program_constant("UserToken",token_program,0);
-  token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
-
   add_function("cp",f_cp,"function(string,string:int)", 0);
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
@@ -192,15 +190,34 @@ void init_nt_system_calls(void)
   ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT",HKEY_CLASSES_ROOT);
   add_efun("RegGetValue",f_RegGetValue,"function(int,string,string:string|int|string*)",OPT_EXTERNAL_DEPEND);
 
-  add_function("LogonUser",f_LogonUser,"function(string,string,string,int|void,void|int:object)",0);
-#define SIMPCONST(X) \
-  add_integer_constant(#X,X,0);
 
-  SIMPCONST(LOGON32_LOGON_BATCH);
-  SIMPCONST(LOGON32_LOGON_INTERACTIVE);
-  SIMPCONST(LOGON32_LOGON_SERVICE);
-  SIMPCONST(LOGON32_LOGON_NETWORK);
-  SIMPCONST(LOGON32_PROVIDER_DEFAULT);
+  /* LogonUser only exists on NT, link it dynamically */
+  if(advapilib=LoadLibrary("advapi32"))
+  {
+    FARPROC proc;
+    if(proc=GetProcAddress(advapilib, "LogonUserA"))
+    {
+      logonuser=(logonusertype)proc;
+
+      add_function("LogonUser",f_LogonUser,"function(string,string,string,int|void,void|int:object)",0);
+#define SIMPCONST(X) \
+      add_integer_constant(#X,X,0);
+      
+      SIMPCONST(LOGON32_LOGON_BATCH);
+      SIMPCONST(LOGON32_LOGON_INTERACTIVE);
+      SIMPCONST(LOGON32_LOGON_SERVICE);
+      SIMPCONST(LOGON32_LOGON_NETWORK);
+      SIMPCONST(LOGON32_PROVIDER_DEFAULT);
+      
+      start_new_program();
+      add_storage(sizeof(HANDLE));
+      set_init_callback(init_token);
+      set_exit_callback(exit_token);
+      token_program=end_program();
+      add_program_constant("UserToken",token_program,0);
+      token_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+    }
+  }
 }
 
 void exit_nt_system_calls(void)
@@ -209,6 +226,14 @@ void exit_nt_system_calls(void)
   {
     free_program(token_program);
     token_program=0;
+  }
+  if(advapilib)
+  {
+    if(FreeLibrary(advapilib))
+    {
+      advapilib=0;
+      logonuser=0;
+    }
   }
 }
 
