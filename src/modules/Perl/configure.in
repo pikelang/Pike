@@ -1,11 +1,11 @@
-# $Id: configure.in,v 1.8 2000/04/19 17:56:54 grubba Exp $
+# $Id: configure.in,v 1.9 2000/05/20 18:15:10 leif Exp $
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 
 AC_MODULE_INIT()
 
 AC_ARG_WITH(perl, [  --with-perl           enable the Perl module],[],
-	    [with_perl="no"])
+	    [with_perl="yes"])
 
 if test "x$with_perl" = "xno"; then :; else
 
@@ -49,8 +49,14 @@ int main(int argc, char **argv, char **env)
   args[3]=0;
   alarm(10);
   
-  perl_destruct_level=2;
   my_perl = perl_alloc();
+#ifndef DBsub
+  /* perl5.6 */
+  PL_perl_destruct_level=2;
+#else
+  /* perl5.005 */
+  perl_destruct_level=2;
+#endif
   perl_construct(my_perl);
   perl_parse(my_perl, NULL, 2, args, (char **)NULL);
   perl_run(my_perl);
