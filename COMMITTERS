@@ -31,6 +31,7 @@ Commit access for specific areas:
          grendel   Marek Habersack <grendel@caudium.net> (deb packages)
             kiwi   Xavier Beaudouin <kiwi@oav.net>       (*BSD ports)
          finnman   Andreas Finnman <x02andfi@ida.liu.se> (wvware lib)
+            peta   Andreas Pettersson <andpe445@student.liu.se> (ADT)
 
 Since Pike/7.2 still is hosted by Roxen Internet Software, this
 tree has different committers from the rest of Pike. Below, we
