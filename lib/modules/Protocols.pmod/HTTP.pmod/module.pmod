@@ -328,7 +328,7 @@ string http_encode_query(mapping(string:int|string) variables)
 //!	it will protect URL characters like @tt{'/'@} and @tt{'?'@}.
 //! @param in
 //!     The string to encode
-//! @retruns
+//! @returns
 //!     The HTTP encoded string
 string http_encode_string(string in)
 {
