@@ -18,7 +18,7 @@
 
 #define INT_TYPE_DIV_OVERFLOW(a, b)  (INT_TYPE_NEG_OVERFLOW(a) && (b) == -1)
 
-#define INT_TYPE_NEG_OVERFLOW(x)     ((x) == -(x))
+#define INT_TYPE_NEG_OVERFLOW(x)     ((x) && (x) == -(x))
 
 #define INT_TYPE_ADD_OVERFLOW(a, b)                                        \
         (INT_TYPE_SIGN(a) == INT_TYPE_SIGN(b) &&                           \
@@ -59,7 +59,7 @@ int int64_from_bignum(INT64 *i, struct object *bignum);
 
 #else
 
-#define INT_TYPE_DIV_OVERFLOW(a, b) ((a) == -(a) && (b) == -1)
+#define INT_TYPE_DIV_OVERFLOW(a, b) ((a) && (a) == -(a) && (b) == -1)
 
 #define push_int64(i) push_int((INT_TYPE)i)
 

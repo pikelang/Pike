@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.72 1999/10/26 17:52:49 noring Exp $");
+RCSID("$Id: stralloc.c,v 1.73 1999/10/30 16:55:37 noring Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1907,7 +1907,7 @@ int pcharp_to_svalue_inumber(struct svalue *r,
      ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
       (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))))
   {
-    /* Skip over leading "0x" or "0X". */
+    /* Skip over leading "0x", "0X", "0b" or "0B". */
     INC_PCHARP(str,2);
     c=EXTRACT_PCHARP(str);
   }
@@ -1921,17 +1921,31 @@ int pcharp_to_svalue_inumber(struct svalue *r,
     if(INT_TYPE_MUL_OVERFLOW(val, base))
       is_bignum = 1;
 #endif /* AUTO_BIGNUM */
+    val = base * val;
     /* Accumulating a negative value avoids surprises near MIN_TYPE_INT. */
-    val = base * val - xx;
+#ifdef AUTO_BIGNUM
+    if(INT_TYPE_SUB_OVERFLOW(val, xx))
+      is_bignum = 1;
+#endif /* AUTO_BIGNUM */
+    val -= xx;
   }
   
   if(ptr != 0)
     *ptr = str;
 
-  r->u.integer = (neg ? val : -val);
+  if(neg)
+    r->u.integer = val;
+  else
+  {
+#ifdef AUTO_BIGNUM
+    if(INT_TYPE_NEG_OVERFLOW(val))
+      is_bignum = 1;
+#endif /* AUTO_BIGNUM */
+    r->u.integer = -val;
+  }
 
 #ifdef AUTO_BIGNUM
-  if(is_bignum || (!neg && r->u.integer < 0))
+  if(is_bignum)
   {
     push_string(make_shared_binary_pcharp(str_start,
 					  SUBTRACT_PCHARP(str,str_start)));
