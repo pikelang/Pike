@@ -35,6 +35,7 @@ struct xmlinput
   PCHARP datap;
   ptrdiff_t len;
   ptrdiff_t pos;
+  struct mapping *callbackinfo;
   struct pike_string *to_free;
 };
 
@@ -58,6 +59,9 @@ struct xmlobj
   struct mapping *is_cdata;
   int rxml_mode;
 };
+
+
+static struct svalue location_string_svalue;
 
 #undef THIS
 #define THIS ((struct xmlobj *)(fp->current_storage))
@@ -675,27 +679,18 @@ ISWRAP(isHexChar)
 
 #define POKE(X,Y) string_builder_putchar(&X,Y)
 
-#define PUSH(s) do {				\
-  struct xmlinput *i=alloc_xmlinput();		\
-  *i=data->input;				\
-  data->input.next=i;				\
-  data->input.pos=0;				\
-  data->input.datap=MKPCHARP_STR(s);		\
-  data->input.len=(s)->len;			\
-  copy_shared_string(data->input.to_free,s);   	\
-}while(0)
-
 #define XMLEOF() (data->input.len <= 0)
 
-#define POP() do {						\
-  struct xmlinput *i=data->input.next;				\
-  IF_XMLDEBUG(fprintf(stderr,"SMEG POP\n"));\
-  if(data->input.to_free) free_string(data->input.to_free); 	\
-  data->input=*i;						\
-  really_free_xmlinput(i);					\
- IF_XMLDEBUG(fprintf(stderr,"ptr=%p len=%d pos=%d to_free=%p\n", \
-                     data->input.datap.ptr, data->input.len, \
-                     data->input.pos, data->input.to_free)); \
+#define POP() do {							\
+  struct xmlinput *i=data->input.next;					\
+  IF_XMLDEBUG(fprintf(stderr,"SMEG POP\n"));				\
+  if(data->input.to_free) free_string(data->input.to_free);		\
+  if(data->input.callbackinfo) free_mapping(data->input.callbackinfo);	\
+  data->input=*i;							\
+  really_free_xmlinput(i);						\
+ IF_XMLDEBUG(fprintf(stderr,"ptr=%p len=%d pos=%d to_free=%p\n",	\
+                     data->input.datap.ptr, data->input.len,		\
+                     data->input.pos, data->input.to_free));		\
 } while(0)
 
 static inline int xmlread(int z,struct xmldata *data, int line)
@@ -892,14 +887,23 @@ static int gobble(struct xmldata *data, char *s)
     if(THIS->entities)							 \
     {									 \
       struct pike_string *name=0;					 \
-      ONERROR tmp3;							 \
+      struct mapping *callbackinfo;                                      \
+      ONERROR tmp3,tmp4;						 \
+									 \
       map_delete_no_free(THIS->entities, sp-1, sp);			 \
       name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	 \
       sp[-1]=*sp;							 \
       SET_ONERROR(tmp3, do_free_string, name);				 \
 									 \
-      do {								 \
+      UPDATE_LOCATION(data->input.pos, data->input.callbackinfo);        \
+      callbackinfo=copy_mapping(data->input.callbackinfo);               \
+      SET_ONERROR(tmp4, do_free_mapping, callbackinfo);                  \
+      push_constant_text("previous");                                    \
+      push_mapping(data->input.callbackinfo);                            \
+      mapping_insert(callbackinfo, sp-2, sp-1);                          \
+      pop_n_elems(2);                                                    \
 									 \
+      do {								 \
 	if(IS_ZERO(sp-1))						 \
 	{								 \
 	  pop_stack();							 \
@@ -918,7 +922,7 @@ static int gobble(struct xmldata *data, char *s)
 	  push_int(ATTR);						 \
 	  f_aggregate_mapping(2); /* attributes */			 \
 	  push_int(0); /* no data */					 \
-	  low_sys(data);						 \
+	  very_low_sys(data,callbackinfo);				 \
 	  if(sp[-1].type != T_STRING)				 	 \
 	  {								 \
 	    pop_stack();						 \
@@ -931,6 +935,7 @@ static int gobble(struct xmldata *data, char *s)
 	  if(sp[-1].type!=T_STRING)					 \
 	  {								 \
 	    XMLERROR("XML->__entities value is not a string!");		 \
+	    break;                                        		 \
 	  }								 \
 	}								 \
 									 \
@@ -948,6 +953,7 @@ static int gobble(struct xmldata *data, char *s)
 	  my_tmp.input.len=s->len;					 \
 	  my_tmp.input.pos=0;						 \
 	  my_tmp.input.next=0;						 \
+	  add_ref(my_tmp.input.callbackinfo=callbackinfo);		 \
 	  PARSE_RECURSIVELY;						 \
 	  if(THIS->entities)						 \
 	    mapping_string_insert_string(THIS->entities, name, s);	 \
@@ -955,6 +961,7 @@ static int gobble(struct xmldata *data, char *s)
 	  free_string(s);						 \
 	}								 \
       }while(0);							 \
+      CALL_AND_UNSET_ONERROR(tmp4);					 \
       CALL_AND_UNSET_ONERROR(tmp3);					 \
     }									 \
   }while(0)
@@ -1088,20 +1095,32 @@ static int gobble(struct xmldata *data, char *s)
      SYS();					\
     }  } while (0)
 
+#define UPDATE_LOCATION(P,m) do{		\
+  push_int64((P));				\
+  mapping_insert((m),				\
+		 &location_string_svalue,	\
+		 sp-1);				\
+  pop_stack();					\
+}while(0)
 
-static inline void low_sys(struct xmldata *data)
+static inline void very_low_sys(struct xmldata *data,
+				struct mapping *callbackinfo)
 {
   struct xmlinput *i=&data->input;
   check_stack(1+data->num_extra_args);
-  push_constant_text("location");
-  while(i->next) i=i->next;
-  push_int64(i->pos);
-  f_aggregate_mapping(2);
+  ref_push_mapping(i->callbackinfo);
   assign_svalues_no_free(sp, data->extra_args,
 			  data->num_extra_args,
 			  data->extra_arg_types);
   sp+=data->num_extra_args;
   apply_svalue(data->func, 5+data->num_extra_args);
+}
+
+static inline void low_sys(struct xmldata *data)
+{
+  struct xmlinput *i=&data->input;
+  UPDATE_LOCATION(i->pos,i->callbackinfo);
+  very_low_sys(data, i->callbackinfo);
 }
 
 static void sys(struct xmldata *data)
@@ -1131,11 +1150,13 @@ static int read_smeg_pereference(struct xmldata *data)
   {
     XMLERROR("XML->__entities is not a mapping");
   }else{
+    struct mapping *callbackinfo;
     struct pike_string *name=0;
-    ONERROR tmp3;			
+    ONERROR tmp3,tmp4;
 
     push_constant_text("%");
     SIMPLE_READNAME();
+
     add_ref(name=sp[-1].u.string);
     SET_ONERROR(tmp3, do_free_string, name);
 
@@ -1150,6 +1171,14 @@ static int read_smeg_pereference(struct xmldata *data)
     free_svalue(sp-1);
     sp[-1]=*sp;
 
+    UPDATE_LOCATION(data->input.pos, data->input.callbackinfo);
+    callbackinfo=copy_mapping(data->input.callbackinfo);
+    SET_ONERROR(tmp4, do_free_mapping, callbackinfo);
+    push_constant_text("previous");
+    push_mapping(data->input.callbackinfo);
+    mapping_insert(callbackinfo, sp-2, sp-1);
+    pop_n_elems(2);
+    
     do {
       if(IS_ZERO(sp-1))
       {
@@ -1158,7 +1187,7 @@ static int read_smeg_pereference(struct xmldata *data)
 	ref_push_string(name);
 	f_aggregate_mapping(0);
 	push_int(0); /* no data */
-	low_sys(data);
+	very_low_sys(data, callbackinfo);
 	if(sp[-1].type != T_STRING)
 	{
 	  pop_stack();
@@ -1173,10 +1202,20 @@ static int read_smeg_pereference(struct xmldata *data)
 	XMLERROR("XML->__entities value is not a string!");
       }else{
 	struct pike_string *s=sp[-1].u.string;
+	struct xmlinput *i=alloc_xmlinput();
 	IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
 			    data->input.datap.ptr, data->input.len,
 			    data->input.pos, data->input.to_free));
-	PUSH(s);
+
+	*i=data->input;
+	data->input.next=i;
+	data->input.pos=0;
+	data->input.datap=MKPCHARP_STR(s);
+	data->input.len=(s)->len;
+	data->input.callbackinfo=callbackinfo;
+	UNSET_ONERROR(tmp4);
+	copy_shared_string(data->input.to_free,s);
+
 	READ(0); /* autopop empty strings */
 	pop_stack();
 	CALL_AND_UNSET_ONERROR(tmp3);
@@ -1184,6 +1223,7 @@ static int read_smeg_pereference(struct xmldata *data)
       }
 
     }while(0);
+    CALL_AND_UNSET_ONERROR(tmp4);
     CALL_AND_UNSET_ONERROR(tmp3);
   }
   return 0;
@@ -2625,6 +2665,7 @@ static int low_parse_xml(struct xmldata *data,
  */
 static void parse_xml(INT32 args)
 {
+  int d;
   struct svalue tmp;
   struct pike_string *s;
   struct xmldata data;
@@ -2652,11 +2693,16 @@ static void parse_xml(INT32 args)
   data.input.len=s->len;
   data.input.pos=0;
   data.input.to_free=0;
+  data.input.callbackinfo=allocate_mapping(0);
   data.input.next=0;
   data.func=sp+1-args;
   data.extra_args=sp+2-args;
   data.num_extra_args=args-2;
-  data.extra_arg_types = 0xffff; /* FIXME */
+  data.extra_arg_types=0;
+
+  for(d=0;d<data.num_extra_args;d++)
+    data.extra_arg_types |= 1 << data.extra_args[d].type;
+
   data.allow_pesmeg_everywhere=0;
 
   SET_ONERROR(e,free_xmldata, &data);
@@ -2676,6 +2722,12 @@ static void free_xmldata(struct xmldata *data)
     free_string(data->input.to_free);
     data->input.to_free=0;
   }
+  if(data->input.callbackinfo)
+  {
+    free_mapping(data->input.callbackinfo);
+    data->input.callbackinfo=0;
+  }
+    
 }
 
 /*! @class XML
@@ -2702,6 +2754,7 @@ static void define_entity_raw(INT32 args)
  */
 static void define_entity(INT32 args)
 {
+  int d;
   struct svalue tmp;
   struct pike_string *s;
   struct xmldata data;
@@ -2715,10 +2768,13 @@ static void define_entity(INT32 args)
   data.input.len=s->len;
   data.input.pos=0;
   data.input.to_free=0;
+  data.input.callbackinfo=allocate_mapping(0);
   data.func=sp+2-args;
   data.extra_args=sp+3-args;
   data.num_extra_args=args-3;
-  data.extra_arg_types = 0xffff; /* FIXME */
+  for(d=0;d<data.num_extra_args;d++)
+    data.extra_arg_types |= 1 << data.extra_args[d].type;
+
   data.allow_pesmeg_everywhere=0;
     
   SET_ONERROR(e,free_xmldata, &data);
@@ -2758,6 +2814,7 @@ static void parse_dtd(INT32 args)
   data.input.len=s->len;
   data.input.pos=0;
   data.input.to_free=0;
+  data.input.callbackinfo=allocate_mapping(0);
   data.func=sp+1-args;
   data.extra_args=sp+2-args;
   data.num_extra_args=args-2;
@@ -2991,6 +3048,9 @@ void init_xml(void)
 {
   ptrdiff_t off;
   init_xmlinput_blocks();
+  push_text("location");
+  location_string_svalue=sp[-1];
+  sp--;
   start_new_program();
   off = ADD_STORAGE(struct xmlobj);
   map_variable("__entities", "mapping", ID_STATIC|ID_PRIVATE,
@@ -3046,4 +3106,5 @@ void init_xml(void)
 void exit_xml(void)
 {
   free_all_xmlinput_blocks();
+  free_svalue(&location_string_svalue);
 }
