@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.56 2000/03/20 21:50:34 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.57 2000/03/20 22:02:08 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1033,7 +1033,7 @@ static void add_location(struct memhdr *mh, LOCATION location)
       add_location_seek++;
 #endif
       if(ml->location == location)
-	break;
+	goto old_ml;
 
       l2=lhash(mh, ml->location);
 
@@ -1050,9 +1050,6 @@ static void add_location(struct memhdr *mh, LOCATION location)
       }else{
 	prev=&ml->next;
       }
-    }
-    if(ml) {
-      goto old_ml;
     }
     mh->misses=0;
   }
