@@ -85,18 +85,30 @@ static int close_fd(int fd)
   {
     while(1)
     {
-      if(close(fd) >= 0) break;
-      switch(errno)
+      if(close(fd) < 0)
       {
-      default:
-	fatal("Unknown error in close().\n");
-	
-      case EBADF:
-	fatal("Closing a non-active file descriptor.\n");
-       
-      case EINTR:
-	break;
+	switch(errno)
+	{
+	default:
+	  /* What happened? */
+	  files[fd].errno=errno;
+
+	  /* Try waiting it out in blocking mode */
+	  set_nonblocking(fd,0);
+	  if(close(fd) >= 0 || errno==EBADF)
+	    break; /* It was actually closed, good! */
+
+	  /* Failed, give up, crash, burn, die */
+	  error("Failed to close file.\n");
+
+	case EBADF:
+	  fatal("Closing a non-active file descriptor.\n");
+	  
+	case EINTR:
+	  continue;
+	}
       }
+      break;
     }
 
     set_read_callback(fd,0,0);
@@ -360,7 +372,6 @@ static void do_close(int fd, int flags)
     return;
 
   case FILE_READ:
-    files[fd].open_mode &=~ FILE_READ;
     if(files[fd].open_mode & FILE_WRITE)
     {
       set_read_callback(fd,0,0);
@@ -368,10 +379,10 @@ static void do_close(int fd, int flags)
     }else{
       close_fd(fd);
     }
+    files[fd].open_mode &=~ FILE_READ;
     break;
 
   case FILE_WRITE:
-    files[fd].open_mode &=~ FILE_WRITE;
     if(files[fd].open_mode & FILE_READ)
     {
       set_write_callback(fd,0,0);
@@ -379,6 +390,7 @@ static void do_close(int fd, int flags)
     }else{
       close_fd(fd);
     }
+    files[fd].open_mode &=~ FILE_WRITE;
     break;
 
   case FILE_READ | FILE_WRITE:
