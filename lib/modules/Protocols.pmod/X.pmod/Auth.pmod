@@ -1,6 +1,6 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.11 2002/01/15 22:32:42 nilsson Exp $
+ * $Id: Auth.pmod,v 1.12 2002/12/10 15:12:29 marcus Exp $
  */
 
 /*
@@ -69,6 +69,8 @@ class auth_file
   
   mapping lookup_ip(string ip, int display)
   {
+    if(ip == "127.0.0.1")
+      return lookup_local(gethostname(), display);
     return auth[0] && auth[0][make_key(ip2string(ip), display)];
   }
 }
