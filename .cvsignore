@@ -1,4 +1,4 @@
-Pike-v*
+Pike*
 a.out
 alpha
 alpha-gcc
@@ -8,15 +8,9 @@ build
 build2
 egcs-build
 msbuild
-mud
-mud-0.1.tar.gz
-mud-0.2.tar.gz
-mudlib
 ntbuild
 obsolete
 reports
-smap
-smap.tar.gz
 solaris
 test
 test1
