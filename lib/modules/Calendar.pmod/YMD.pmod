@@ -2428,7 +2428,7 @@ TimeRange parse(string fmt,string arg)
 	 else
 	    low=m->day=cal->Day();
 
-	 if (m->day && zero_type(m->Y) && m->e)
+	 if (m->day && zero_type(m->Y) && zero_type(m->y) && m->e)
 	    if (m->month)
 	    {
 	 // scan for closest year that matches
@@ -2572,6 +2572,7 @@ Calendar.dwim_day("next monday");
 
 array dwim_day_strings=
 ({"%y-%M-%D (%*s) -W%W-%e (%e)",
+  "%e%*[, ]%M%*[ ,]%D%*[ ,]%y",
   "%D%*[ /]%M%*[- /,]%y",
   "%M %D%*[- /,]%y",
   "%e%*[, ]%D%*[a-z:]%*[ /]%M%*[-/ ,]%y",
@@ -2633,10 +2634,12 @@ TimeofDay dwim_time(string what)
 		"%h:%*[ :]%m%*[ :]%s",
 		"%h:%*[ :]%m %p",
 		"%h:%*[ :]%m",
+		"%h%*[ ]%p",
 		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s %p",
 		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]%s",
 		"%[a-zA-Z.] %h:%*[ :]%m %p",
-		"%[a-zA-Z.] %h:%*[ :]%m", }),
+		"%[a-zA-Z.] %h:%*[ :]%m", 
+		"%[a-zA-Z.] %h%*[ ]%p", }),
 	     string todformat )
       foreach ( dwim_day_strings +
 		({""}),
