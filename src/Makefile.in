@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.343 2003/01/10 11:11:04 mirar Exp $
+# $Id: Makefile.in,v 1.344 2003/01/19 01:50:02 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -578,7 +578,7 @@ fast_verify_testsuite: testsuite
 	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
 # run hilfe, for interactive testing
-run_hilfe:
+run_hilfe: master.pike
 	$(RUNPIKE) $(ARGS)
 
 feature_list:
