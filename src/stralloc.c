@@ -23,11 +23,16 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.61 1999/08/14 15:09:27 per Exp $");
+RCSID("$Id: stralloc.c,v 1.62 1999/09/02 04:40:49 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
-#define HASH_PREFIX 64
+
+/* Experimental dynamic hash length */
+#ifndef HASH_PREFIX
+static unsigned int HASH_PREFIX=32;
+static int need_more_hash_prefix=0;
+#endif
 
 unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;
@@ -282,6 +287,9 @@ static struct pike_string *internal_findstring(const char *s,
 					       int h)
 {
   struct pike_string *curr,**prev, **base;
+#ifndef HASH_PREFIX
+  unsigned int depth=0;
+#endif
 
   for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
   {
@@ -304,7 +312,21 @@ static struct pike_string *internal_findstring(const char *s,
       *base = curr;
       return curr;		/* pointer to string */
     }
+#ifndef HASH_PREFIX
+    depth++;
+#endif
   }
+#ifndef HASH_PREFIX
+  /* These heuruistics might require tuning! /Hubbe */
+  if(depth > HASH_PREFIX && HASH_PREFIX<len)
+  {
+    need_more_hash_prefix++;
+/*    fprintf(stderr,"depth=%d  num_strings=%d need_more_hash_prefix=%d  HASH_PREFIX=%d\n",depth,num_strings,need_more_hash_prefix,HASH_PREFIX); */
+  }else{
+    if(need_more_hash_prefix)
+      need_more_hash_prefix--;
+  }
+#endif
   return 0; /* not found */
 }
 
@@ -372,7 +394,8 @@ static void rehash(void)
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 
-  for(h=0;h<old;h++) rehash_string_backwards(old_base[h]);
+  for(h=0;h<old;h++)
+    rehash_string_backwards(old_base[h]);
 
   if(old_base)
     free((char *)old_base);
@@ -408,6 +431,40 @@ static void link_pike_string(struct pike_string *s, int h)
   num_strings++;
   if(num_strings > MAX_AVG_LINK_LENGTH * htable_size)
     rehash();
+
+#ifndef HASH_PREFIX
+  /* These heuruistics might require tuning! /Hubbe */
+  if(need_more_hash_prefix > ( htable_size >> 4))
+  {
+    /* This could in theory have a pretty ugly complexity */
+    /* /Hubbe
+     */
+    unsigned INT32 save_full_hash_value=full_hash_value;
+    
+    need_more_hash_prefix=0;
+    HASH_PREFIX=HASH_PREFIX*2;
+/*    fprintf(stderr,"Doubling HASH_PREFIX to %d and rehashing\n",HASH_PREFIX); */
+
+    for(h=0;h<htable_size;h++)
+    {
+      struct pike_string *tmp=base_table[h];
+      base_table[h]=0;
+      while(tmp)
+      {
+	int h2;
+	struct pike_string *tmp2=tmp; /* First unlink */
+	tmp=tmp2->next;
+
+	h2=do_hash(tmp2);	      /* compute new hash value */
+	tmp2->hval=full_hash_value;
+
+	tmp2->next=base_table[h2];    /* and re-hash */
+	base_table[h2]=tmp2;
+      }
+    }
+    full_hash_value=save_full_hash_value;
+  }
+#endif
 }
 
 struct pike_string *debug_begin_wide_shared_string(int len, int shift)
