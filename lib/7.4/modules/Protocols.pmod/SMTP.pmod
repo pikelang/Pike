@@ -1,12 +1,10 @@
 #pike 7.5
 
-inherit Protocols.SMTP;
-
 class protocol {
-  inherit Protocol;
+  inherit Protocols.SMTP.Protocol;
 }
 
 class client {
-  inherit Client;
-  mapping(int:string) reply_codes = replycodes;
+  inherit Protocols.SMTP.Client;
+  mapping(int:string) reply_codes = Protocols.SMTP.replycodes;
 }
