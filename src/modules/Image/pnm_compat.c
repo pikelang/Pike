@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.10 1998/04/20 18:53:32 grubba Exp $ */
+/* $Id: pnm_compat.c,v 1.1 1999/03/11 18:49:30 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.10 1998/04/20 18:53:32 grubba Exp $
+**!	$Id: pnm_compat.c,v 1.1 1999/03/11 18:49:30 grubba Exp $
 **! class image
 */
 
