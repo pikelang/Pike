@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.86 2001/07/02 20:32:54 mast Exp $
+ * $Id: cpp.c,v 1.87 2001/09/13 13:42:10 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1089,7 +1089,6 @@ static void check_constant(struct cpp *this,
       push_svalue(sv);
       res=1;
     }else if(get_master()) {
-      int i;
       ref_push_string(this->current_file);
       if (this->handler) {
 	ref_push_object(this->handler);
@@ -1353,8 +1352,6 @@ void f_cpp(INT32 args)
   }
 
   {
-    char buffer[128];
-
     simple_add_define(&this, "__PIKE__", " 1 ");
 
     simple_add_define(&this, "__REAL_VERSION__",
