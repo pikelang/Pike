@@ -11,4 +11,4 @@ unsigned long mpz_small_factor(mpz_t n, int limit);
 
 void mpz_next_prime(mpz_t p, mpz_t n, int count, int prime_limit);
 
-#endif MY_GMP_H_INCLUDED
+#endif /* MY_GMP_H_INCLUDED */
