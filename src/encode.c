@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.185 2003/06/10 23:27:04 mast Exp $
+|| $Id: encode.c,v 1.186 2003/06/11 19:59:54 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.185 2003/06/10 23:27:04 mast Exp $");
+RCSID("$Id: encode.c,v 1.186 2003/06/11 19:59:54 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -126,9 +126,8 @@ struct encode_data
 #endif
 };
 
-/* Convert to/from forward reference ID. Ugly because of the
- * hysterical historical COUNTER_START value. */
-#define CONVERT_ENTRY_ID(ID) (-((ID) + COUNTER_START) - (COUNTER_START + 1))
+/* Convert to/from forward reference ID. */
+#define CONVERT_ENTRY_ID(ID) (-((ID) - COUNTER_START) - (-COUNTER_START + 1))
 
 static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
