@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.73 1998/02/01 02:08:24 hubbe Exp $");
+RCSID("$Id: file.c,v 1.74 1998/02/05 03:02:49 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -840,9 +840,6 @@ static void file_set_nonblocking(INT32 args)
 
 static void file_set_blocking(INT32 args)
 {
-  if(!(files[FD].open_mode & fd_CAN_NONBLOCK))
-    error("That file does not support nonblocking operation.\n");
-
   free_svalue(& THIS->read_callback);
   THIS->read_callback.type=T_INT;
   THIS->read_callback.u.integer=0;
@@ -1814,7 +1811,7 @@ void pike_module_init(void)
   add_function("dup",file_dup,"function(:object)",0);
   add_function("dup2",file_dup2,"function(object:int)",0);
   add_function("assign",file_assign,"function(object:int)",0);
-  add_function("pipe",file_pipe,"function(:object)",0);
+  add_function("pipe",file_pipe,"function(void|int:object)",0);
 
   add_function("set_buffer",file_set_buffer,"function(int,string|void:void)",0);
   add_function("open_socket",file_open_socket,"function(int|void,string|void:int)",0);
