@@ -5,14 +5,19 @@
 \*/
 
 /*
- * $Id: rusage.h,v 1.5 2002/05/31 22:41:26 nilsson Exp $
+ * $Id: rusage.h,v 1.6 2002/09/13 15:35:14 mast Exp $
  */
 #ifndef RUSAGE_H
 #define RUSAGE_H
 
 /* Prototypes begin here */
-INT32 *low_rusage(void);
+typedef INT32 pike_rusage_t[30];
+int pike_get_rusage(pike_rusage_t rusage_values);
+pike_rusage_t *low_rusage(void);
 INT32 internal_rusage(void);
+#if defined(PIKE_DEBUG) || defined(INTERNAL_PROFILING)
+void debug_print_rusage(FILE *out);
+#endif
 /* Prototypes end here */
 
 #endif

@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.18 2002/05/31 22:41:26 nilsson Exp $");
+RCSID("$Id: rusage.c,v 1.19 2002/09/13 15:35:14 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -31,19 +31,19 @@ RCSID("$Id: rusage.c,v 1.18 2002/05/31 22:41:26 nilsson Exp $");
 
 #include "fd_control.h"
 
-static INT32 rusage_values[30];
 /*
  * Here comes a long blob with stuff to see how to find out about
  * cpu usage.
  */
 
 #ifdef __NT__
-INT32 *low_rusage(void)
+int pike_get_rusage(pike_rusage_t rusage_values)
 {
   union {
     unsigned __int64 ft_scalar;
     FILETIME ft_struct;
   } creationTime, exitTime, kernelTime, userTime;
+  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
   if (GetProcessTimes(GetCurrentProcess(),
                       &creationTime.ft_struct,
                       &exitTime.ft_struct,
@@ -58,8 +58,7 @@ INT32 *low_rusage(void)
       rusage_values[0] = 0;  /* user time */
       rusage_values[1] = 0;  /* system time */
     }
-
-  return & rusage_values[0];
+  return 1;
 }
 
 #else /* __NT__ */
@@ -74,12 +73,13 @@ static INLINE int get_time_int(timestruc_t * val)
 
 int proc_fd = -1;
 
-INT32 *low_rusage(void)
+int pike_get_rusage(pike_rusage_t rusage_values)
 {
   prusage_t  pru;
 #ifdef GETRUSAGE_THROUGH_PROCFS_PRS
   prstatus_t prs;
 #endif
+  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
 
   while(proc_fd < 0)
   {
@@ -126,27 +126,24 @@ INT32 *low_rusage(void)
   rusage_values[12] = pru.pr_mrcv;          /* messages received */
   rusage_values[13] = pru.pr_sigs;          /* signals received */
   rusage_values[14] = pru.pr_vctx;          /* voluntary context switches */
-  rusage_values[15] = pru.pr_ictx;         /* involuntary  "        " */
-  rusage_values[16] = pru.pr_sysc;
-  rusage_values[17] = pru.pr_ioch;
-  rusage_values[18] = get_time_int(&pru.pr_rtime);
-  rusage_values[19] = get_time_int(&pru.pr_ttime);
-  rusage_values[20] = get_time_int(&pru.pr_tftime);
-  rusage_values[21] = get_time_int(&pru.pr_dftime);
-  rusage_values[22] = get_time_int(&pru.pr_kftime);
-  rusage_values[23] = get_time_int(&pru.pr_ltime);
-  rusage_values[24] = get_time_int(&pru.pr_slptime);
-  rusage_values[25] = get_time_int(&pru.pr_wtime);
-  rusage_values[26] = get_time_int(&pru.pr_stoptime);
+  rusage_values[15] = pru.pr_ictx;          /* involuntary  "        " */
+  rusage_values[16] = pru.pr_sysc;          /* system calls */
+  rusage_values[17] = pru.pr_ioch;          /* chars read and written */
+  rusage_values[18] = get_time_int(&pru.pr_rtime); /* total lwp real (elapsed) time */
+  rusage_values[19] = get_time_int(&pru.pr_ttime); /* other system trap CPU time */
+  rusage_values[20] = get_time_int(&pru.pr_tftime); /* text page fault sleep time */
+  rusage_values[21] = get_time_int(&pru.pr_dftime); /* data page fault sleep time */
+  rusage_values[22] = get_time_int(&pru.pr_kftime); /* kernel page fault sleep time */
+  rusage_values[23] = get_time_int(&pru.pr_ltime); /* user lock wait sleep time */
+  rusage_values[24] = get_time_int(&pru.pr_slptime); /* all other sleep time */
+  rusage_values[25] = get_time_int(&pru.pr_wtime); /* wait-cpu (latency) time */
+  rusage_values[26] = get_time_int(&pru.pr_stoptime); /* stopped time */
 #ifdef GETRUSAGE_THROUGH_PROCFS_PRS
   rusage_values[27] = prs.pr_brksize;
   rusage_values[28] = prs.pr_stksize;
-#else
-  rusage_values[27] = 0;
-  rusage_values[28] = 0;
 #endif
 
-  return & rusage_values[0];
+  return 1;
 }
 
 #else /* GETRUSAGE_THROUGH_PROCFS */
@@ -156,11 +153,12 @@ INT32 *low_rusage(void)
 #include <sys/rusage.h>
 #endif
 
-INT32 *low_rusage(void)
+int pike_get_rusage(pike_rusage_t rusage_values)
 {
   struct rusage rus;
   long utime, stime;
   int maxrss;
+  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
 
   if (getrusage(RUSAGE_SELF, &rus) < 0) return 0;
 
@@ -191,7 +189,7 @@ INT32 *low_rusage(void)
   rusage_values[14] = rus.ru_nvcsw;
   rusage_values[15] = rus.ru_nivcsw;
 #endif
-  return rusage_values;
+  return 1;
 }
 #else /* HAVE_GETRUSAGE */
 
@@ -202,35 +200,38 @@ INT32 *low_rusage(void)
 
 #define NEED_CONVERT_TIME
 static long convert_time(long t,long tick);
-INT32 *low_rusage(void)
+int pike_get_rusage(pike_rusage_t rusage_values)
 {
   struct tms tms;
+  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
   rusage_values[18] = convert_time(times(&tms), CLK_TCK);
   rusage_values[0] = convert_time(tms.tms_utime, CLK_TCK);
   rusage_values[1] = convert_time(tms.tms_utime, CLK_TCK);
 
-  return rusage_values;
+  return 1;
 }
 #else /*HAVE_TIMES */
 #if defined(HAVE_CLOCK) && defined(CLOCKS_PER_SECOND)
 
 #define NEED_CONVERT_TIME
 static long convert_time(long t,long tick);
-INT32 *low_rusage(void)
+int pike_get_rusage(pike_rusage_t rusage_values)
 {
+  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
   rusage_values[0]= convert_time(clock(), CLOCKS_PER_SECOND);
-  return rusage_values;
+  return 1;
 }
 
 #else /* HAVE_CLOCK */
 
-INT32 *low_rusage(void)
+int pike_get_rusage(pike_rusage_t rusage_values)
 {
   /* This is totally wrong, but hey, if you can't do it _right_... */
   struct timeval tm;
+  MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
   GETTIMEOFDAY(&tm);
   rusage_values[0]=tm.tv_sec*1000 + tm.tv_usec/1000;
-  return rusage_values;
+  return 1;
 }
 #endif /* HAVE_CLOCK */
 #endif /* HAVE_TIMES */
@@ -250,8 +251,47 @@ static long convert_time(long t,long tick)
 }
 #endif
 
+pike_rusage_t *low_rusage(void)
+{
+  static pike_rusage_t rusage_values;
+  if (pike_get_rusage (rusage_values))
+    return &rusage_values;
+  else
+    return NULL;
+}
+
 INT32 internal_rusage(void)
 {
-  low_rusage();
+  pike_rusage_t rusage_values;
+  pike_get_rusage (rusage_values);
   return rusage_values[0];
 }
+
+#if defined(PIKE_DEBUG) || defined(INTERNAL_PROFILING)
+void debug_print_rusage(FILE *out)
+{
+  pike_rusage_t rusage_values;
+  pike_get_rusage (rusage_values);
+  fprintf (out,
+	   " [utime: %d, stime: %d] [maxrss: %d, ixrss: %d, idrss: %d, isrss: %d]\n"
+	   " [minflt: %d, majflt: %d] [nswap: %d] [inblock: %d, oublock: %d]\n"
+	   " [msgsnd: %d, msgrcv: %d] [nsignals: %d] [nvcsw: %d, nivcsw: %d]\n"
+	   " [sysc: %d] [ioch: %d] [rtime: %d, ttime: %d]\n"
+	   " [tftime: %d, dftime: %d, kftime: %d, ltime: %d, slptime: %d]\n"
+	   " [wtime: %d, stoptime: %d] [brksize: %d, stksize: %d]\n",
+	   rusage_values[0], rusage_values[1],
+	   rusage_values[2], rusage_values[3], rusage_values[4], rusage_values[5],
+	   rusage_values[6], rusage_values[7],
+	   rusage_values[8],
+	   rusage_values[9], rusage_values[10],
+	   rusage_values[11], rusage_values[12],
+	   rusage_values[13],
+	   rusage_values[14], rusage_values[15],
+	   rusage_values[16],
+	   rusage_values[17],
+	   rusage_values[18], rusage_values[19],
+	   rusage_values[20], rusage_values[21], rusage_values[22], rusage_values[23], rusage_values[24],
+	   rusage_values[25], rusage_values[26],
+	   rusage_values[27], rusage_values[28]);
+}
+#endif
