@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.177 2004/03/16 14:09:23 mast Exp $
+|| $Id: mapping.c,v 1.178 2004/03/22 19:35:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.177 2004/03/16 14:09:23 mast Exp $");
+RCSID("$Id: mapping.c,v 1.178 2004/03/22 19:35:44 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1093,7 +1093,7 @@ PMOD_EXPORT void mapping_string_insert_string(struct mapping *m,
 }
 
 PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
-					    char *p)
+							const char *p)
 {
   struct pike_string *tmp;
   if((tmp=findstring(p)))

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.52 2004/02/10 22:20:29 mast Exp $
+|| $Id: mapping.h,v 1.53 2004/03/22 19:35:44 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -132,7 +132,7 @@ PMOD_EXPORT void mapping_string_insert_string(struct mapping *m,
 				  struct pike_string *p,
 				  struct pike_string *val);
 PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
-					    char *p);
+							const char *p);
 PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
 				      struct svalue *key1,
 				      struct svalue *key2,
