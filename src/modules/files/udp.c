@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.21 2001/04/09 15:50:22 grubba Exp $
+ * $Id: udp.c,v 1.22 2001/06/06 10:56:15 mirar Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.21 2001/04/09 15:50:22 grubba Exp $");
+RCSID("$Id: udp.c,v 1.22 2001/06/06 10:56:15 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -25,6 +25,7 @@ RCSID("$Id: udp.c,v 1.21 2001/04/09 15:50:22 grubba Exp $");
 #include "bignum.h"
 
 #include "module_support.h"
+#include "builtin_functions.h"
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -132,6 +133,10 @@ RCSID("$Id: udp.c,v 1.21 2001/04/09 15:50:22 grubba Exp $");
 struct udp_storage {
   int fd;
   int my_errno;
+   
+  int type;
+  int protocol;
+
   struct svalue read_callback;
 };
 
@@ -161,7 +166,7 @@ static void udp_bind(INT32 args)
     FD = -1;
   }
 
-  fd = fd_socket(AF_INET, SOCK_DGRAM, 0);
+  fd = fd_socket(AF_INET, THIS->type, THIS->protocol);
   if(fd < 0)
   {
     pop_n_elems(args);
@@ -177,8 +182,17 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    Pike_error("UDP.bind: setsockopt failed\n");
+    Pike_error("UDP.bind: setsockopt SO_REUSEADDR failed\n");
   }
+
+#ifdef IP_HDRINCL
+  /*  From mtr-0.28:net.c: FreeBSD wants this to avoid sending
+      out packets with protocol type RAW to the network. */
+
+  if (THIS->type==SOCK_RAW && THIS->protocol==255 /* raw */)
+     if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&o, sizeof(int)))
+	Pike_error("UDP.bind: setsockopt IP_HDRINCL failed\n");
+#endif
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -482,6 +496,9 @@ void zero_udp(struct object *ignored)
   MEMSET(THIS, 0, sizeof(struct udp_storage));
   THIS->read_callback.type=PIKE_T_INT;
   FD = -1;
+
+  THIS->type=SOCK_DGRAM;
+  THIS->protocol=0;
 }
 
 void exit_udp(struct object *ignored)
@@ -634,11 +651,40 @@ static void udp_errno(INT32 args)
    push_int(THIS->my_errno);
 }
 
+static void udp_set_type(INT32 args)
+{
+   INT_TYPE type=0;
+   INT_TYPE proto=0;
+   if (args<2)
+      get_all_args("UDP.set_type",args,"%i",&type);
+   else
+      get_all_args("UDP.set_type",args,"%i%i",&type,&proto);
+
+   THIS->type=(int)type;
+   THIS->protocol=(int)proto;
+   
+   pop_n_elems(args);
+   ref_push_object(THISOBJ);
+}
+
+static void udp_get_type(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->type);
+   push_int(THIS->protocol);
+   f_aggregate(2);
+}
+
 void init_udp(void)
 {
   start_new_program();
 
   ADD_STORAGE(struct udp_storage);
+
+  ADD_FUNCTION("set_type",udp_set_type,
+	       tFunc(tInt tOr(tVoid,tInt),tObj),0);
+  ADD_FUNCTION("get_type",udp_get_type,
+	       tFunc(tNone,tArr(tInt)),0);
 
   ADD_FUNCTION("bind",udp_bind,
 	       tFunc(tInt tOr(tVoid,tStr),tObj),0);
@@ -676,5 +722,62 @@ void init_udp(void)
   set_exit_callback(exit_udp);
 
   end_class("UDP",0);
+
+  start_new_program();
+#ifdef SOCK_STREAM
+  add_integer_constant("STREAM",SOCK_STREAM,0);
+#endif
+#ifdef SOCK_DGRAM
+  add_integer_constant("DGRAM",SOCK_DGRAM,0);
+#endif
+#ifdef SOCK_SEQPACKET
+  add_integer_constant("SEQPACKET",SOCK_SEQPACKET,0);
+#endif
+#ifdef SOCK_RAW
+  add_integer_constant("RAW",SOCK_RAW,0);
+#endif
+#ifdef SOCK_RDM
+  add_integer_constant("RDM",SOCK_RDM,0);
+#endif
+#ifdef SOCK_PACKET
+  add_integer_constant("PACKET",SOCK_PACKET,0);
+#endif
+   push_program(end_program());
+   f_call_function(1);
+   simple_add_constant("SOCK",Pike_sp-1,0);
+   pop_stack();
+
+   start_new_program();
+   add_integer_constant("IP",0,0);       /* Dummy protocol for TCP.  */
+   add_integer_constant("HOPOPTS",0,0);  /* IPv6 Hop-by-Hop options.  */
+   add_integer_constant("ICMP",1,0);     /* Internet Control Message Protocol.  */
+   add_integer_constant("IGMP",2,0);     /* Internet Group Management Protocol. */
+   add_integer_constant("IPIP",4,0);     /* IPIP tunnels (older KA9Q tunnels use 94).  */
+   add_integer_constant("TCP",6,0);      /* Transmission Control Protocol.  */
+   add_integer_constant("EGP",8,0);      /* Exterior Gateway Protocol.  */
+   add_integer_constant("PUP",12,0);     /* PUP protocol.  */
+   add_integer_constant("UDP",17,0);     /* User Datagram Protocol.  */
+   add_integer_constant("IDP",22,0);     /* XNS IDP protocol.  */
+   add_integer_constant("TP",29,0);      /* SO Transport Protocol Class 4.  */
+   add_integer_constant("IPV6",41,0);    /* IPv6 header.  */
+   add_integer_constant("ROUTING",43,0); /* IPv6 routing header.  */
+   add_integer_constant("FRAGMENT",44,0);/* IPv6 fragmentation header.  */
+   add_integer_constant("RSVP",46,0);    /* Reservation Protocol.  */
+   add_integer_constant("GRE",47,0);     /* General Routing Encapsulation.  */
+   add_integer_constant("ESP",50,0);     /* encapsulating security payload.  */
+   add_integer_constant("AH",51,0);      /* authentication header.  */
+   add_integer_constant("ICMPV6",58,0);  /* ICMPv6.  */
+   add_integer_constant("NONE",59,0);    /* IPv6 no next header.  */
+   add_integer_constant("DSTOPTS",60,0); /* IPv6 destination options.  */
+   add_integer_constant("MTP",92,0);     /* Multicast Transport Protocol.  */
+   add_integer_constant("ENCAP",98,0);   /* Encapsulation Header.  */
+   add_integer_constant("PIM",103,0);    /* Protocol Independent Multicast.  */
+   add_integer_constant("COMP",108,0);   /* Compression Header Protocol.  */
+   add_integer_constant("RAW",255,0);    /* Raw IP packets.  */
+   push_program(end_program());
+   f_call_function(1);
+   simple_add_constant("IPPROTO",Pike_sp-1,0);
+   pop_stack();
+
 }
 
