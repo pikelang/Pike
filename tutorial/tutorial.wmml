@@ -1824,7 +1824,7 @@ section again.
 <p>
 The following operators and functions are important:
 <dl>
-<dt> cloning ( <tt><i>p</i> ( <i>args<i> )</tt> )
+<dt> cloning ( <tt><i>p</i> ( <i>args</i> )</tt> )
 <dd> Creates an object from a program. Discussed in the next section.
 
 <dt> indexing ( <tt><i>p</i> [ <i>string</i> ]</tt>, or
@@ -2141,13 +2141,13 @@ you remember from math in school. The arithmetic operators are:
 <center>
 <p>
 <table border=1>
-<tr><th>Function</th>	<th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
-<tr><td>Addition</td>	<td>a + b</td>	<td>`+</td>	<td>the sum of a and b</td></tr>
-<tr><td>Subtraction</td><td>a - b</td>	<td>`-</td>	<td>b subtracted from a</td></tr>
-<tr><td>Negation</td>	<td>- a</td>	<td>`-</td>	<td>minus a</td></tr>
-<tr><td>Multiplication</td><td>a * b</td><td>`*</td>	<td>a multiplied by b</td></tr>
-<tr><td>Division</td>	<td>a / b</td>	<td>`/</td>	<td>a divided by b</td></tr>
-<tr><td>Modulo</td>	<td>a % b</td>	<td>`%</td>	<td>the remainder of a division between a and b</td></tr>
+<tr>			<th>Function</th>	<th>Syntax</th>		<th>Identifier</th>	<th>Returns</th></tr>
+<tr><anchor name=`+>	<td>Addition</td>	<td><tt>a + b</tt></td>	<td><tt>`+</tt></td>	<td>the sum of a and b</td></anchor></tr>
+<tr><anchor name=`->	<td>Subtraction</td>	<td><tt>a - b</tt></td>	<td><tt>`-</tt></td>	<td>b subtracted from a</td></anchor></tr>
+<tr>			<td>Negation</td>	<td><tt>- a</tt></td>	<td><tt>`-</tt></td>	<td>minus a</td></tr>
+<tr><anchor name=`*>	<td>Multiplication</td>	<td><tt>a * b</tt></td>	<td><tt>`*</tt></td>	<td>a multiplied by b</td></anchor></tr>
+<tr><anchor name=`/>	<td>Division</td>	<td><tt>a / b</tt></td>	<td><tt>`/</tt></td>	<td>a divided by b</td></anchor></tr>
+<tr><anchor name=`%>	<td>Modulo</td>		<td><tt>a % b</tt></td>	<td><tt>`%</tt></td>	<td>the remainder of a division between a and b</td></anchor></tr>
 </table>
 </center>
 <p>
@@ -2340,13 +2340,13 @@ For this purpose there are six comparison operators:
 <center>
 <p>
 <table border=1>
-<tr><th>Function</th>	<th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
-<tr><td>Same</td>                    <td>a == b</td>   <td>`==</td>   <td>1 if a is the same value as b, 0 otherwise</td></tr>
-<tr><td>Not same</td>                <td>a != b</td>   <td>`!=</td>   <td>0 if a is the same value as b, 1 otherwise</td></tr>
-<tr><td>Greater than</td>            <td>a &gt; b</td> <td>`&gt; </td><td>1 if a is greater than b, 0 otherwise</td></tr>
-<tr><td>Greater than or equal to</td><td>a &gt;= b</td><td>`&gt;=</td><td>1 if a is greater to or equal to b, 0 otherwise</td></tr>
-<tr><td>Lesser than</td>             <td>a &lt; b</td> <td>`&lt; </td><td>1 if a is lesser than b, 0 otherwise</td></tr>
-<tr><td>Lesser than or equal to</td> <td>a &lt;= b</td><td>`&lt;=</td><td>1 if a is lesser than or equal to b, 0 otherwise</td></tr>
+<tr>			<th>Function</th>		 <th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
+<tr><anchor name=`==>	<td>Same</td>                    <td><tt>a == b</tt></td>   <td><tt>`==</tt></td>   <td>1 if a is the same value as b, 0 otherwise</td></anchor></tr>
+<tr><anchor name=`!=>	<td>Not same</td>                <td><tt>a != b</tt></td>   <td><tt>`!=</tt></td>   <td>0 if a is the same value as b, 1 otherwise</td></anchor></tr>
+<tr><anchor name="`>">	<td>Greater than</td>            <td><tt>a &gt; b</tt></td> <td><tt>`&gt; </tt></td><td>1 if a is greater than b, 0 otherwise</td></anchor></tr>
+<tr><anchor name="`>=">	<td>Greater than or equal to</td><td><tt>a &gt;= b</tt></td><td><tt>`&gt;=</tt></td><td>1 if a is greater to or equal to b, 0 otherwise</td></anchor></tr>
+<tr><anchor name="`<">	<td>Lesser than</td>             <td><tt>a &lt; b</tt></td> <td><tt>`&lt; </tt></td><td>1 if a is lesser than b, 0 otherwise</td></anchor></tr>
+<tr><anchor name="`<=">	<td>Lesser than or equal to</td> <td><tt>a &lt;= b</tt></td><td><tt>`&lt;=</tt></td><td>1 if a is lesser than or equal to b, 0 otherwise</td></anchor></tr>
 </table>
 <p>
 </center>
@@ -2375,10 +2375,10 @@ can not be called as normal functions. There are four logical operators:
 <p>
 <table border=1>
 <tr><th>Function</th>	<th>Syntax</th>	<th>Returns</th></tr>
-<tr><td>And</td>	<td>a &amp;&amp; b</td> <td>If a is false, a is returned and b is not evaluated. Otherwise, b is returned.</td></tr>
-<tr><td>Or</td>		<td>a || b</td> 	<td>If a is true, a is returned and b is not evaluated. Otherwise, b is returned.</td></tr>
-<tr><td>Not</td>	<td>! a</td>		<td>Returns 0 if a is true, 1 otherwise.</td></tr>
-<tr><td>If-else</td>	<td>a ? b : c</td>	<td>If a is true, b is returned and c is not evaluated. Otherwise c is returned and b is not evaluated.</td></tr>
+<tr><td>And</td>	<td><tt>a &amp;&amp; b</tt></td> <td>If a is false, a is returned and b is not evaluated. Otherwise, b is returned.</td></tr>
+<tr><td>Or</td>		<td><tt>a || b</tt></td> 	<td>If a is true, a is returned and b is not evaluated. Otherwise, b is returned.</td></tr>
+<tr><td>Not</td>	<td><tt>! a</tt></td>		<td>Returns 0 if a is true, 1 otherwise.</td></tr>
+<tr><td>If-else</td>	<td><tt>a ? b : c</tt></td>	<td>If a is true, b is returned and c is not evaluated. Otherwise c is returned and b is not evaluated.</td></tr>
 </table>
 </center>
 </section>
@@ -2390,13 +2390,13 @@ They can also manipulate arrays, multisets and mappings as sets.
 <center>
 <p>
 <table border=1>
-<tr><th>Function</th>		<th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
-<tr><td>Shift left</td>		<td>a &lt;&lt; b</td>	<td>`&lt;&lt;</td>	<td>Multiplies a by 2 b times.</td></tr>
-<tr><td>Shift right</td>	<td>a &gt;&gt; b</td>	<td>`&gt;&gt;</td>	<td>Divides a by 2 b times.</td></tr>
-<tr><td>Inverse (not)</td>	<td>~ a</td>		<td>`~</td>		<td>Returns -1-a.</td></tr>
-<tr><td>Intersection (and)</td>	<td>a &amp; b</td>	<td>`&amp;</td>		<td>All elements present in both a and b.</td></tr>
-<tr><td>Union (or)</td>		<td>a | b</td>		<td>`|</td>		<td>All elements present in a or b.</td></tr>
-<tr><td>Symmetric difference (xor)</td><td>a ^ b</td>	<td>`^</td>		<td>All elements present in a or b, but not present in both.</td></tr>
+<tr>			<th>Function</th>		<th>Syntax</th>			<th>Identifier</th>		<th>Returns</th></tr>
+<tr><anchor name="`<<">	<td>Shift left</td>		<td><tt>a &lt;&lt; b</tt></td>	<td><tt>`&lt;&lt;</tt></td>	<td>Multiplies a by 2 b times.</td></anchor></tr>
+<tr><anchor name="`>>">	<td>Shift right</td>		<td><tt>a &gt;&gt; b</tt></td>	<td><tt>`&gt;&gt;</tt></td>	<td>Divides a by 2 b times.</td></anchor></tr>
+<tr><anchor name=`~>	<td>Inverse (not)</td>		<td><tt>~ a</tt></td>		<td><tt>`~</tt></td>		<td>Returns -1-a.</td></anchor></tr>
+<tr><anchor name=`&>	<td>Intersection (and)</td>	<td><tt>a &amp; b</tt></td>	<td><tt>`&amp;</tt></td>	<td>All elements present in both a and b.</td></anchor></tr>
+<tr><anchor name=`|>	<td>Union (or)</td>		<td><tt>a | b</tt></td>		<td><tt>`|</tt></td>		<td>All elements present in a or b.</td></anchor></tr>
+<tr><anchor name=`^>	<td>Symmetric difference (xor)</td><td><tt>a ^ b</tt></td>	<td><tt>`^</tt></td>		<td>All elements present in a or b, but not present in both.</td></anchor></tr>
 </table>
 <p>
 </center>
@@ -2430,14 +2430,14 @@ complex data type.
 <center>
 <p>
 <table border=1>
-<tr><th>Function</th>		<th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
-<tr><td>Index</td>		<td>a [ b ]</td><td>`[]</td>	<td>Returns the index b from a.</td></tr>
-<tr><td>Lookup</td>	<td>a -&gt;<i>identifier</i></td>	<td>`-&gt;</td>	<td>Looks up the identifier. Same as a["<i>identifier</i>"].</td></tr>
-<tr><td>Assign index</td>	<td>a [ b ] = c</td><td>`[]=;</td><td>Sets the index b in a to c.</td></tr>
-<tr><td>Assign index</td>	<td>a -&gt;<i>identifier</i> = c</td><td>`-&gt;=</td><td>Sets the index "<i>identifier</i>" in a to c.</td></tr>
-<tr><td>Range</td>	<td>a [ b .. c]</td>		<td>`[..]</td>		<td>Returns a slice of a starting at the index b and ending at c.</td></tr>
-<tr><td>Range</td>	<td>a [ .. c]</td>		<td>`[..]</td>		<td>Returns a slice of a starting at the beginning of a and ending at c.</td></tr>
-<tr><td>Range</td>	<td>a [ b .. ]</td>		<td>`[..]</td>		<td>Returns a slice of a from the index b to the end of a.</td></tr>
+<tr>			<th>Function</th>	<th>Syntax</th>				<th>Identifier</th>	<th>Returns</th></tr>
+<tr><anchor name=`[]>	<td>Index</td>		<td><tt>a [ b ]</tt></td>		<td><tt>`[]</tt></td>	<td>Returns the index b from a.</td></anchor></tr>
+<tr><anchor name="`->">	<td>Lookup</td>		<td><tt>a -&gt;<i>identifier</i></tt></td><td><tt>`-&gt;</tt></td><td>Looks up the identifier. Same as a["<i>identifier</i>"].</td></anchor></tr>
+<tr><anchor name=`[]=>	<td>Assign index</td>	<td><tt>a [ b ] = c</tt></td>		<td><tt>`[]=;</tt></td><td>Sets the index b in a to c.</td></anchor></tr>
+<tr><anchor name="`->="><td>Assign index</td>	<td><tt>a -&gt;<i>identifier</i> = c</tt></td><td><tt>`-&gt;=</tt></td><td>Sets the index "<i>identifier</i>" in a to c.</td></anchor></tr>
+<tr><anchor name=`[..]>	<td>Range</td>		<td><tt>a [ b .. c ]</tt></td>		<td><tt>`[..]</tt></td>	<td>Returns a slice of a starting at the index b and ending at c.</td></anchor></tr>
+<tr>			<td>Range</td>		<td><tt>a [ .. c ]</tt></td>		<td><tt>`[..]</tt></td>	<td>Returns a slice of a starting at the beginning of a and ending at c.</td></tr>
+<tr>			<td>Range</td>		<td><tt>a [ b .. ]</tt></td>		<td><tt>`[..]</tt></td>	<td>Returns a slice of a from the index b to the end of a.</td></tr>
 </table>
 <p>
 </center>
@@ -2618,15 +2618,15 @@ not fit in any particular categories.
 <center>
 <p>
 <table border=1>
-<tr><th>Function</th>		<th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
-<tr><td>Calling</td>	<td>a ( arguments ) </td><td>`()</td>	<td>Calls the function a.</td></tr>
-<tr><td>splice</td>	<td>@ <i>a</i></td><td>none</td>	<td>Sends each element in the array a as an individual argument to a function call.</td></tr>
-<tr><td>Increment</td>	<td>++ a</td>		<td>none</td>	<td>Increments a and returns the new value of a.</td></tr>
-<tr><td>Decrement</td>	<td>-- a</td>		<td>none</td>	<td>Decrements a and returns the new value of a.</td></tr>
-<tr><td>Post increment</td><td>a ++</td>	<td>none</td>	<td>Increments a and returns the old value of a.</td></tr>
-<tr><td>Post decrement</td><td>a --</td>	<td>none</td>	<td>Decrements a and returns the old value of a.</td></tr>
-<tr><td>casting</td>	<td>(<i>type</i>) a</td><td>none</td>	<td>Tries to convert a into a value of the specified type.</td></tr>
-<tr><td>Null</td>	<td>a, b</td>		<td>none</td>	<td>Evaluates a and b, then returns b.</td></tr>
+<tr><th>Function</th>	<th>Syntax</th>			<th>Identifier</th><th>Returns</th></tr>
+<tr><anchor name=`()><td>Calling</td><td><tt>a ( <i>args</i> )</tt></td><td><tt>`()</tt></td><td>Calls the function a.</td></anchor></tr>
+<tr><td>splice</td>	<td><tt>@ <i>a</i></tt></td>	<td>none</td>	<td>Sends each element in the array a as an individual argument to a function call.</td></tr>
+<tr><td>Increment</td>	<td><tt>++ a</tt></td>		<td>none</td>	<td>Increments a and returns the new value of a.</td></tr>
+<tr><td>Decrement</td>	<td><tt>-- a</tt></td>		<td>none</td>	<td>Decrements a and returns the new value of a.</td></tr>
+<tr><td>Post increment</td><td><tt>a ++</tt></td>	<td>none</td>	<td>Increments a and returns the old value of a.</td></tr>
+<tr><td>Post decrement</td><td><tt>a --</tt></td>	<td>none</td>	<td>Decrements a and returns the old value of a.</td></tr>
+<tr><td>casting</td>	<td><tt>(<i>type</i>) a</tt></td><td>none</td>	<td>Tries to convert a into a value of the specified type.</td></tr>
+<tr><td>Null</td>	<td><tt>a, b</tt></td>		<td>none</td>	<td>Evaluates a and b, then returns b.</td></tr>
 </table>
 <p>
 </center>
@@ -7729,7 +7729,7 @@ Yabu uses three types of objects, listed below:<p>
     <link to=Yabu.table.get><tt>get</tt></link> (the <tt>[]</tt> operator),
     <link to=Yabu.table.list_keys><tt>list_keys</tt></link> (<tt>indices</tt>),
     <link to=Yabu.table.delete><tt>delete</tt></link>,
-    <link to=Yabu.table.transaction<tt>transaction</tt></link> and
+    <link to=Yabu.table.transaction><tt>transaction</tt></link> and
     <link to=Yabu.table.purge><tt>purge</tt></link>.
 <li>The <i>transaction</i> object handles transactions. It works
     like the table object. The difference is that a sequence of commands
@@ -10329,7 +10329,7 @@ string containing the current year, month, day and time.
 Result: Wed Jan 14 03:36:08 1970<br>
 </man_example>
 <man_see>
-time
+time, localtime, mktime
 </man_see>
 </function>
 
@@ -10883,7 +10883,7 @@ components:
 The 'timezone' might not be available on all platforms.
 </man_note>
 <man_see>
-time
+time, ctime, mktime
 </man_see>
 </function>
 
@@ -11909,7 +11909,7 @@ The function ctime() converts this integer to a readable string.
 but is only updated in the backed. (when Pike code isn't running)
 </man_description>
 <man_see>
-time
+ctime, localtime, mktime
 </man_see>
 </function>
 
