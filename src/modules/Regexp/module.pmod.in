@@ -3,7 +3,7 @@
 #pike __REAL_VERSION__
 #include <regexp.h>
 
-#if constant(_Regexp_PCRE)
+#if constant(_Regexp_PCRE._pcre)
 constant PCRE=_Regexp_PCRE; // Regexp.PCRE
 #endif
 
@@ -78,7 +78,7 @@ class SimpleRegexp
 SimpleRegexp `()(void|string regexp) { return SimpleRegexp(regexp); }
 
 
-#if constant(_Regexp_PCRE)
+#if constant(_Regexp_PCRE._pcre)
 
 // ****************************************************************
 
