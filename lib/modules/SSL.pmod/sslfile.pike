@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.61 2003/10/29 14:38:23 mast Exp $
+/* $Id: sslfile.pike,v 1.62 2003/10/31 19:28:50 mast Exp $
  */
 
 //! Interface similar to @[Stdio.File].
@@ -785,6 +785,7 @@ void set_blocking()
 }
 
 int errno()
+//!
 {
   // We don't check threads for most other query functions, but
   // looking at errno while doing I/O in another thread can't be done
@@ -808,6 +809,7 @@ void set_alert_callback (function(object,int|object,string:void) alert)
 }
 
 function(object,int|object,string:void) query_alert_callback()
+//!
 {
   return conn && conn->alert_callback;
 }
@@ -831,6 +833,7 @@ void set_accept_callback (function(void|mixed:void) accept)
 }
 
 function(void|mixed:void) query_accept_callback()
+//!
 {
   return accept_callback;
 }
@@ -849,6 +852,7 @@ void set_read_callback (function(mixed,string:void) read)
 }
 
 function(mixed,string:void) query_read_callback()
+//!
 {
   return read_callback;
 }
@@ -867,6 +871,7 @@ void set_write_callback (function(void|mixed:void) write)
 }
 
 function(void|mixed:void) query_write_callback()
+//!
 {
   return write_callback;
 }
@@ -889,11 +894,13 @@ void set_close_callback (function(void|mixed:void) close)
 }
 
 function(void|mixed:void) query_close_callback()
+//!
 {
   return close_callback;
 }
 
 void set_id (mixed id)
+//!
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_id (%O)\n", id);
   CHECK (0, 0);
@@ -901,6 +908,7 @@ void set_id (mixed id)
 }
 
 mixed query_id()
+//!
 {
   return callback_id;
 }
@@ -934,6 +942,7 @@ Pike.Backend query_backend()
 }
 
 string query_address(int|void arg)
+//!
 {
   // Only signal an error after an explicit close() call.
   if (explicitly_closed) error ("Not open.\n");
@@ -962,6 +971,7 @@ SSL.connection query_connection()
 }
 
 SSL.context query_context()
+//! Return the SSL context object.
 {
   return conn && conn->context;
 }
