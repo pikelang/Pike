@@ -161,6 +161,8 @@ static gchar **get_argv( int *argc_ret, int an )
   if( Pike_sp[-an].type != PIKE_T_ARRAY )
     Pike_error("Expected array\n");
   a = Pike_sp[-an].u.array;
+  if (!a->size)
+    Pike_error ("Expected array with at least one element.\n");
   data = g_malloc0(sizeof(char *)*(a->size+1));
   for( argc=0; argc<a->size; argc++ )
     if(!PGTK_ISSTR( a->item+argc ))
