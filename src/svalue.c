@@ -71,73 +71,63 @@ void free_short_svalue(union anything *s,TYPE_T type)
   }
 }
 
-/* Free a normal svalue */
-void free_svalue(struct svalue *s)
+void really_free_svalue(struct svalue *s)
 {
-  check_type(s->type);
-  check_refs(s);
-
-  if(s->type <= MAX_REF_TYPE)
+  int tmp=s->type;
+  s->type=T_INT;
+  switch(tmp)
   {
-    if(--*(s->u.refs) <= 0)
+  case T_ARRAY:
+    really_free_array(s->u.array);
+#ifdef DEBUG
+    s->type = 99;
+#endif
+    break;
+    
+  case T_MAPPING:
+    really_free_mapping(s->u.mapping);
+#ifdef DEBUG
+    s->type = 99;
+#endif
+    break;
+    
+  case T_MULTISET:
+    really_free_multiset(s->u.multiset);
+#ifdef DEBUG
+    s->type = 99;
+#endif
+    break;
+    
+  case T_FUNCTION:
+    if(s->subtype == FUNCTION_BUILTIN)
     {
-      int tmp=s->type;
-      s->type=T_INT;
-      switch(tmp)
-      {
-      case T_ARRAY:
-	really_free_array(s->u.array);
-#ifdef DEBUG
-	s->type = 99;
-#endif
-	break;
-
-      case T_MAPPING:
-	really_free_mapping(s->u.mapping);
-#ifdef DEBUG
-	s->type = 99;
-#endif
-	break;
-
-      case T_MULTISET:
-	really_free_multiset(s->u.multiset);
-#ifdef DEBUG
-	s->type = 99;
-#endif
-	break;
-
-      case T_FUNCTION:
-	if(s->subtype == FUNCTION_BUILTIN)
-	{
-	  really_free_callable(s->u.efun);
-	  break;
-	}
-	/* fall through */
-
-      case T_OBJECT:
-	really_free_object(s->u.object);
-	break;
-
-      case T_PROGRAM:
-	really_free_program(s->u.program);
-#ifdef DEBUG
-	s->type = 99;
-#endif
-	break;
-
-      case T_STRING:
-	really_free_string(s->u.string);
-#ifdef DEBUG
-	s->type = 99;
-#endif
-	break;
-
-#ifdef DEBUG
-      default:
-	fatal("Bad type in free_svalue.\n");
-#endif
-      }
+      really_free_callable(s->u.efun);
+      break;
     }
+    /* fall through */
+    
+  case T_OBJECT:
+    really_free_object(s->u.object);
+    break;
+    
+  case T_PROGRAM:
+    really_free_program(s->u.program);
+#ifdef DEBUG
+    s->type = 99;
+#endif
+    break;
+    
+  case T_STRING:
+    really_free_string(s->u.string);
+#ifdef DEBUG
+    s->type = 99;
+#endif
+    break;
+    
+#ifdef DEBUG
+  default:
+    fatal("Bad type in free_svalue.\n");
+#endif
   }
 }
 
@@ -183,17 +173,6 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
   }
 }
 
-void assign_svalue_no_free(struct svalue *to,
-			   struct svalue *from)
-{
-  struct svalue tmp;
-  check_type(from->type);
-  check_refs(from);
-
-  *to=tmp=*from;
-  if(tmp.type <= MAX_REF_TYPE) tmp.u.refs[0]++;
-}
-
 void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
 			    INT32 num,
@@ -218,12 +197,6 @@ void assign_svalues_no_free(struct svalue *to,
   }
 
   while(--num >= 0) assign_svalue_no_free(to++,from++);
-}
-
-void assign_svalue(struct svalue *to, struct svalue *from)
-{
-  free_svalue(to);
-  assign_svalue_no_free(to,from);
 }
 
 void assign_svalues(struct svalue *to,
