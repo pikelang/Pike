@@ -2,7 +2,7 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.12 2001/01/01 23:31:09 kinkie Exp $
+ * $Id: postgres.pike,v 1.13 2001/09/06 14:43:27 nilsson Exp $
  *
  */
 
@@ -56,6 +56,11 @@ void set_notify_callback(int|function f, int|float|void poll_delay) {
 	mo::_set_notify_callback(f);
 	if(poll_delay>0) 
 		poll(poll_delay);
+}
+
+string quote(string s)
+{
+  return replace(s, ({ "\\", "'", "\0" }), ({ "\\\\", "''", "\\0" }) );
 }
 
 void create_db(string db) {
