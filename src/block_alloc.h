@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.24 2000/08/24 04:04:40 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.25 2000/11/25 16:33:22 grubba Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -43,14 +43,14 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)				\
 									\
     for(e=0;e<BSIZE;e++)						\
     {									\
-      n->x[e].BLOCK_ALLOC_NEXT=PIKE_CONCAT3(free_,DATA,s);		\
+      n->x[e].BLOCK_ALLOC_NEXT=(void *)PIKE_CONCAT3(free_,DATA,s);	\
       PRE_INIT_BLOCK( (n->x+e) );					\
       PIKE_CONCAT3(free_,DATA,s)=n->x+e;				\
     }									\
   }									\
 									\
   tmp=PIKE_CONCAT3(free_,DATA,s);					\
-  PIKE_CONCAT3(free_,DATA,s)=tmp->BLOCK_ALLOC_NEXT;			\
+  PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)tmp->BLOCK_ALLOC_NEXT;	\
   DO_IF_DMALLOC( dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());  )\
   INIT_BLOCK(tmp);							\
   return tmp;								\
@@ -60,7 +60,7 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 {									\
   EXIT_BLOCK(d);							\
   DO_IF_DMALLOC( dmalloc_unregister(d, 1);  )				\
-  d->BLOCK_ALLOC_NEXT=PIKE_CONCAT3(free_,DATA,s);			\
+  d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
   PRE_INIT_BLOCK(d);							\
   PIKE_CONCAT3(free_,DATA,s)=d;						\
 }									\
@@ -99,7 +99,7 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
     COUNT_BLOCK(tmp);                                                   \
   }									\
   for(tmp2=PIKE_CONCAT3(free_,DATA,s);tmp2;				\
-          tmp2=tmp2->BLOCK_ALLOC_NEXT) num--;				\
+          tmp2 = (struct DATA *)tmp2->BLOCK_ALLOC_NEXT) num--;		\
   COUNT_OTHER();                                                        \
   *num_=num;								\
   *size_=size;								\
