@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.82 1999/12/06 23:55:41 grubba Exp $
+ * $Id: master.pike.in,v 1.83 1999/12/09 01:48:08 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -16,8 +16,13 @@
 #undef BT_MAX_STRING_LEN
 #define BT_MAX_STRING_LEN	200
 #endif /* !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0) */
-
 constant bt_max_string_len = BT_MAX_STRING_LEN;
+
+// Enables the out of date warning in low_find_prog().
+#ifndef OUT_OF_DATE_WARNING
+#define OUT_OF_DATE_WARNING 1
+#endif /* OUT_OF_DATE_WARNING */
+constant out_of_date_warning = OUT_OF_DATE_WARNING;
 
 /*
  * Functions begin here.
@@ -289,7 +294,7 @@ static program low_findprog(string pname, string ext, object|void handler)
 			      sprintf("Decode failed:\n"
 				      "\t%s", err[0]));
 	    }
-	  } else {
+	  } else if (out_of_date_warning) {
 	    if (handler) {
 	      handler->compile_warning(oname, 0,
 				       "Compiled file is out of date\n");
