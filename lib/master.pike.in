@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.342 2004/04/17 16:00:41 marcus Exp $
+// $Id: master.pike.in,v 1.343 2004/04/17 16:28:53 marcus Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1338,8 +1338,12 @@ class dirnode
 #if constant(load_module)
 	  if (has_suffix(fname, ".so")) {
 	    // This is compatible with 7.4 behaviour.
-	    if (!ret->_module_value)
-	      ret = ret();
+	    if (!ret->_module_value) {
+	      object o;
+	      // NB: p might be a function in a fake_object...
+	      if(!objectp (o=objects[ret])) o=objects[ret]=ret();
+	      ret = o;
+	    }
 	    if(mixed tmp=ret->_module_value) ret=tmp;
 	  }
 #endif
