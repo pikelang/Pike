@@ -4331,15 +4331,12 @@ static void html_context(INT32 args)
   }
 }
 
-static void html_parse_tag_args(INT32 args)
-{
-   struct piece feed;
-   check_all_args("parse_tag_args",args,BIT_STRING,0);
-   feed.s=sp[-args].u.string;
-   feed.next=NULL;
-   tag_args(THIS,&feed,0,NULL,0,0);
-   stack_pop_n_elems_keep_top(args);
-}
+/*
+**! method string parse_tag_name(string tag)
+**!	Parses the tag name from a string <tt>&lt;tagname some=tag
+**!	args</tt>. The initial '&lt;' is optional.
+**! returns the tag name or an empty string if none
+*/
 
 static void html_parse_tag_name(INT32 args)
 {
@@ -4348,6 +4345,25 @@ static void html_parse_tag_name(INT32 args)
    feed.s=sp[-args].u.string;
    feed.next=NULL;
    tag_name(THIS,&feed,0);
+   stack_pop_n_elems_keep_top(args);
+}
+
+/*
+**! method mapping parse_tag_args(string tag)
+**!	Parses the tag arguments from a string <tt>&lt;tagname
+**!	some=tag args</tt>. The string is always parsed to the end,
+**!	regardless if there's a '&gt;' in it. The initial '&lt;' is
+**!	optional.
+**! returns a mapping containing the tag arguments
+*/
+
+static void html_parse_tag_args(INT32 args)
+{
+   struct piece feed;
+   check_all_args("parse_tag_args",args,BIT_STRING,0);
+   feed.s=sp[-args].u.string;
+   feed.next=NULL;
+   tag_args(THIS,&feed,0,NULL,0,0);
    stack_pop_n_elems_keep_top(args);
 }
 
