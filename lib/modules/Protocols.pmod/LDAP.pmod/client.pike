@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.83 2005/03/23 18:18:37 mast Exp $
+// $Id: client.pike,v 1.84 2005/03/23 18:20:45 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -489,7 +489,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.83 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.84 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -985,59 +985,70 @@ static mapping(string:array(string)) simple_base_query (string object_name,
 
 static mapping(string:array(string)) root_dse;
 
-mapping(string:array(string)) get_root_dse()
-//! Returns the root DSE (DSA-Specific Entry) of the bound server. The
-//! result is cached. A working connection is assumed.
+array(string) get_root_dse_attr (string attr)
+//! Returns the value of an attribute in the root DSE (DSA-Specific
+//! Entry) of the bound server. The result is cached. A working
+//! connection is assumed.
 //!
 //! @returns
-//!   The return value is a mapping where the indices are the
-//!   attribute names in lowercase. The values are arrays of the
-//!   attribute values, which have been UTF-8 decoded where
-//!   appropriate.
+//!   The return value is an array of the attribute values, which have
+//!   been UTF-8 decoded where appropriate.
 //!
-//!   Don't be destructive on the returned mapping.
+//!   Don't be destructive on the returned array.
 {
-  if (!root_dse) {
-    PROFILE("get_root_dse", {
-	root_dse = simple_base_query (
-	  "", "(objectClass=*)",
-	  ({
+  attr = lower_case (attr);
+
+  if (!root_dse || zero_type (root_dse[attr])) {
+    PROFILE("get_root_dse_attr", {
+
+	multiset(string) attrs = root_dse ? (<>) :
+	  // Get a bunch of attributes in one go.
+	  (<
 	    // Request all standard operational attributes (RFC 2252,
 	    // section 5.1). Some of them are probably not applicable
 	    // in the root DSE, but better safe than sorry.
-	    "createTimestamp",
-	    "modifyTimestamp",
-	    "creatorsName",
-	    "modifiersName",
-	    "subschemaSubentry",
-	    "attributeTypes",
-	    "objectClasses",
-	    "matchingRules",
-	    "matchingRuleUse",
+	    "createtimestamp",
+	    "modifytimestamp",
+	    "creatorsname",
+	    "modifiersname",
+	    "subschemasubentry",
+	    "attributetypes",
+	    "objectclasses",
+	    "matchingrules",
+	    "matchingruleuse",
 	    // Request the standard root DSE operational attributes
 	    // (RFC 2252, section 5.2).
-	    "namingContexts",
-	    "altServer",
-	    "supportedExtension",
-	    "supportedControl",
-	    "supportedSASLMechanisms",
-	    "supportedLDAPVersion",
-	    // Also get any user attributes the server wishes to pass.
-	    "*"
-	  }));
+	    "namingcontexts",
+	    "altserver",
+	    "supportedextension",
+	    "supportedcontrol",
+	    "supportedsaslmechanisms",
+	    "supportedldapversion",
+	  >);
+	attrs[attr] = 1;
 
-	foreach (indices (root_dse), string attr)
+	mapping(string:array(string)) res =
+	  simple_base_query ("", "(objectClass=*)", indices (attrs));
+
+	foreach (indices (res), string attr)
 	  // Microsoft AD has several attributes in its root DSE that
 	  // they haven't bothered to include in their schema. Send
 	  // the nowarn flag to get_attr_encoder to avoid complaints
 	  // about that.
 	  if (function(string:string) decoder =
 	      get_attr_decoder (attr, DO_IF_DEBUG (1)))
-	    root_dse[attr] = map (root_dse[attr], decoder);
+	    res[attr] = map (res[attr], decoder);
+
+	if (root_dse)
+	  root_dse[attr] = res[attr];
+	else {
+	  root_dse = res;
+	  if (!root_dse[attr]) root_dse[attr] = 0;
+	}
       });
   }
 
-  return root_dse;
+  return root_dse[attr];
 }
 
 static object make_control (string control_type, void|string value,
@@ -1060,8 +1071,8 @@ multiset(string) get_supported_controls()
 //!   @[search]
 {
   if (!supported_controls)
-    if (mapping(string:array(string)) root_dse = get_root_dse())
-      supported_controls = mkmultiset (root_dse->supportedcontrol || ({}));
+    if (array(string) res = get_root_dse_attr ("supportedControl"))
+      supported_controls = mkmultiset (res);
   return supported_controls;
 }
 
