@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.263 2000/01/24 03:28:29 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.264 2000/01/26 13:45:55 noring Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3738,7 +3738,7 @@ test_true([[ has_index([mixed] ([ "a":"A" ]), "a") ]])
 test_false([[ has_index([mixed] ([ "a":"A" ]), "A") ]])
 test_true([[ has_index([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "b") ]])
 test_false([[ has_index([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "B") ]])
-test_eval_error([[ has_index((class {})(), "foo") ]])
+test_false([[ has_index((class {})(), "foo") ]])
 test_true([[has_index((class{array _indices(){return({"a","b"});}})(),"b")]])
 
 // - has_value
@@ -3753,7 +3753,7 @@ test_true([[ has_value([mixed] ([ "a":"A" ]), "A") ]])
 test_false([[ has_value([mixed] ([ "a":"A" ]), "a") ]])
 test_true([[ has_value([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "B") ]])
 test_false([[ has_value([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "b") ]])
-test_eval_error([[ has_value((class {})(), "foo") ]])
+test_false([[ has_value((class {})(), "foo") ]])
 test_true([[has_value((class{array _values(){return({"a","b"});}})(),"b")]])
 
 // - search
