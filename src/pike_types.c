@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.51 1999/02/12 01:15:50 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.52 1999/02/12 03:29:45 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -106,6 +106,7 @@ void init_types(void)
   string_type_string = CONSTTYPE(tString);
   int_type_string = CONSTTYPE(tInt);
   object_type_string = CONSTTYPE(tObj);
+  program_type_string = CONSTTYPE(tPrg);
   float_type_string = CONSTTYPE(tFloat);
   mixed_type_string=CONSTTYPE(tMix);
   array_type_string=CONSTTYPE(tArray);
