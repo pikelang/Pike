@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.15 2002/12/11 23:10:35 anders Exp $
+// $Id: URI.pike,v 1.16 2003/03/08 22:22:53 nilsson Exp $
 
 #pragma strict_types
 
@@ -56,7 +56,7 @@ static void parse_authority()
     DEBUG("parse_authority(): user=%O, password=%O", user, password);
   }
   if(scheme)
-    port = [int]Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
+    port = Protocols.Ports.tcp[scheme]; // Set a good default á la RFC 1700
   sscanf(authority, "%[^:]%*[:]%d", host, port);
   DEBUG("parse_authority(): host=%O, port=%O", host, port);
 }
