@@ -81,6 +81,31 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     AC_MSG_WARN([If you are unsure, please unset \$THREADS_FLAG and rerun configure.])
   fi
 
+  AC_MSG_CHECKING(for working ls)
+  AC_CACHE_VAL(pike_cv_ls, [
+    pike_cv_ls=no
+    IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+    for ac_dir in $PATH; do
+      if test -x "$ac_dir"/ls && "$ac_dir"/ls . >/dev/null 2>&1; then
+        if "$ac_dir"/ls ./fnord/fnord/fnord/fnurkelfoo 2>/dev/null; then
+	  :
+	else
+	  pike_cv_ls="$ac_dir"/ls
+	fi
+      else
+	:
+      fi
+    done
+    IFS="$ac_save_ifs"
+    if test no = "$pike_cv_ls"; then
+      AC_MSG_ERROR([no working ls found!  Use --without-java])
+      exit 1
+    else
+      :
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_ls)
+  LS="$pike_cv_ls"
 
   AC_MSG_CHECKING(for JAVA_HOME)
 
@@ -97,11 +122,11 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
       java_home_guess="`java -verbose 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e d | sed -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
         if test -d $tmp_java_home/.; then
-          if ls "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
-	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
-	    ls "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
-	    ls "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
-	    ls "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
+          if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
 	  else
 	    :
@@ -131,7 +156,7 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
     for i in "$pike_cv_java_arch/$pike_cv_java_threads_type" \
              "$pike_cv_java_arch/classic" "$pike_cv_java_arch" \
 	     "." "../bin" "../bin/classic"; do
-      if test -d "$tmp_java_lib_dir/$i/." && ls $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
+      if test -d "$tmp_java_lib_dir/$i/." && "$LS" $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
         pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
       else
 	:
@@ -158,11 +183,11 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
   AC_CACHE_VAL(pike_cv_java_include_dir, [
     pike_cv_java_include_dir=no
     for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* "$pike_cv_java_java_home"/../.. "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home" "$pike_java_user_include_directory"; do
-      if test -d $tmp_java_incdir/. && ls "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
+      if test -d $tmp_java_incdir/. && "$LS" "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
 	 pike_cv_java_include_dir="$tmp_java_incdir/include"
       else
         if test -d $tmp_java_incdir/. -a -d $tmp_java_incdir/Headers/. &&\
-        	  ls "$tmp_java_incdir/Headers/jni.h" >/dev/null 2>&1 ; then
+        	  "$LS" "$tmp_java_incdir/Headers/jni.h" >/dev/null 2>&1 ; then
 	  pike_cv_java_include_dir="$tmp_java_incdir/Headers"
 	else
 	  :
