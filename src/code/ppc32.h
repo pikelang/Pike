@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.14 2002/08/15 14:50:24 marcus Exp $
+ * $Id: ppc32.h,v 1.15 2002/09/23 15:57:50 marcus Exp $
  */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -32,8 +32,10 @@
 #define LOW_GET_JUMP()	(PROG_COUNTER[0])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
 #ifdef __linux
+/* SVR4 ABI */
 #define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[1])
 #else
+/* PowerOpen ABI */
 #define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[2])
 #endif
 
