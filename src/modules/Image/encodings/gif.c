@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.35 1998/02/27 23:36:49 mirar Exp $ */
+/* $Id: gif.c,v 1.36 1998/03/13 12:37:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.35 1998/02/27 23:36:49 mirar Exp $
+**!	$Id: gif.c,v 1.36 1998/03/13 12:37:50 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.35 1998/02/27 23:36:49 mirar Exp $");
+RCSID("$Id: gif.c,v 1.36 1998/03/13 12:37:50 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -998,12 +998,13 @@ void _image_gif_encode(INT32 args,int fs)
 
 	    imgobj->refs++;
 	    push_object(imgobj);
-	    if (alpha) push_int(n);
+	    push_int(n);
 	    nctobj=clone_object(image_colortable_program,2);
 	    nct=(struct neo_colortable*)
 	       get_storage(nctobj,image_colortable_program);
 	    if (!nct)
 	       error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+	    arg=2;
 	 }
 	 else arg=1;
       }
