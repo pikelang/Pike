@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.42 2004/04/20 19:53:26 mast Exp $
+ * $Id: Tree.pmod,v 1.43 2004/04/20 20:48:49 mast Exp $
  *
  */
 
@@ -906,6 +906,20 @@ class Node {
 	if (i >= 0) {
 	  string ns = attr_name[..i];
 	  string prefix;
+
+	  // Check if we already have some namespace that is a longer
+	  // prefix of this attribute than ns. This isn't only for
+	  // looks; there are broken XML parsers that require the
+	  // break between the namespace and the attribute name to be
+	  // at a specific spot, e.g. the one used in the WebDAV
+	  // client in MS XP Pro.
+	  foreach (forward_lookup; string long;)
+	    if (sizeof (long) > sizeof (ns) && has_prefix (attr_name, long)) {
+	      ns = long;
+	      i = sizeof (long) - 1;
+	      break;
+	    }
+
 	  if (!(prefix = forward_lookup[ns])) {
 	    // We need to allocate a short namespace symbol.
 	    // FIXME: This is O(n²).
