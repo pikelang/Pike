@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.1 2002/10/17 10:43:18 grubba Exp $
+// $Id: module.pmod.in,v 1.2 2002/10/17 13:32:35 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -675,7 +675,7 @@ class Parser
     "++":29, "--":29,
   ]);
 
-  Group|Token parse_expression(ADT.stack input)
+  Group|Token parse_expression(ADT.Stack input)
   {
     ADT.Stack expr = ADT.Stack();
     int top_pri;
