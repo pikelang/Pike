@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.111 2001/06/08 14:42:44 grubba Exp $");
+RCSID("$Id: array.c,v 1.112 2001/06/11 18:03:23 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -34,19 +34,19 @@ PMOD_EXPORT struct array empty_array=
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
   0,			 /* no flags */
-  &empty_array.real_item,/* Initialize the item pointer. */
+  empty_array.real_item, /* Initialize the item pointer. */
 };
 PMOD_EXPORT struct array weak_empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1),
   &weak_shrink_empty_array, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG,
-  &weak_empty_array.real_item,
+  weak_empty_array.real_item,
 };
 PMOD_EXPORT struct array weak_shrink_empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1),
   &empty_array, &weak_empty_array, 0, 0, 0, ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK,
-  &weak_shrink_empty_array.real_item,
+  weak_shrink_empty_array.real_item,
 };
 
 struct array *gc_internal_array = &empty_array;
