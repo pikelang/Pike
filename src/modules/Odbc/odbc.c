@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.14 1999/03/20 00:19:24 marcus Exp $
+ * $Id: odbc.c,v 1.15 1999/03/24 02:00:08 marcus Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.14 1999/03/20 00:19:24 marcus Exp $");
+RCSID("$Id: odbc.c,v 1.15 1999/03/24 02:00:08 marcus Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -184,7 +184,18 @@ static void f_create(INT32 args)
   struct pike_string *user = NULL;
   struct pike_string *pwd = NULL;
 
-  get_args(sp-args, args, "%S%S%S%S", &server, &database, &user, &pwd);
+  check_all_args("odbc->create", args,
+		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_INT|BIT_VOID,
+		 BIT_STRING|BIT_INT|BIT_VOID, BIT_STRING|BIT_VOID|BIT_INT, 0);
+
+  if(args>3 && sp[3-args].type == T_STRING)
+    pwd = sp[3-args].u.string;
+  if(args>2 && sp[2-args].type == T_STRING)
+    user = sp[2-args].u.string;
+  if(args>1 && sp[1-args].type == T_STRING)
+    database = sp[1-args].u.string;
+  if(args>0 && sp[0-args].type == T_STRING)
+    server = sp[0-args].u.string;
 
   /*
    * NOTE:
