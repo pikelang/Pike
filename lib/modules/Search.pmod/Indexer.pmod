@@ -1,14 +1,13 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Indexer.pmod,v 1.15 2001/08/21 14:21:28 js Exp $
+// $Id: Indexer.pmod,v 1.16 2001/09/25 22:02:37 js Exp $
 
 //!
 void index_document(Search.Database.Base db,
 		    string|Standards.URI uri,
 		    void|string language,
-		    mapping fields,
-		    mapping uri_anchors)
+		    mapping fields)
 {
   db->remove_document( uri, language );
 
@@ -49,7 +48,7 @@ array(Standards.URI) filter_and_extract_links(Search.Database.Base db,
   Search.Filter.Base.Output filteroutput=
     filter->filter(uri, data, content_type,
 		   headers, default_charset);
-  index_document(db, uri, language, filteroutput->fields, filteroutput->uri_anchors);
+  index_document(db, uri, language, filteroutput->fields);
   return filteroutput->links;
 }
 

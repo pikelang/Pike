@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.68 2001/08/31 16:34:27 js Exp $
+// $Id: MySQL.pike,v 1.69 2001/09/25 22:02:38 js Exp $
 
 inherit .Base;
 
@@ -33,14 +33,13 @@ void init_tables()
 #"create table if not exists word_hit (word        varchar(64),
                          first_doc_id   int not null,
             	         hits           mediumblob not null,
-                         index index_word (word(8)),
-                         index index_first_doc_id (first_doc_id))");
+                         index index_word (word(8)))");
 
   db->query(
 #"create table if not exists metadata (doc_id        int not null,
                          name          varchar(32) not null,
             	         value         mediumblob not null,
-                         unique(doc_id,name))");
+                         index index_doc_id(doc_id))");
 
   db->query(
 #"create table if not exists field (id    tinyint unsigned primary key not null,
@@ -194,8 +193,13 @@ void remove_field(string field)
 
 static _WhiteFish.Blobs blobs = _WhiteFish.Blobs();
 
-#define MAXMEM 20*1024*1024
+#define MAXMEM 3*1024*1024
 
+
+int size()
+{
+  return blobs->memsize();
+}
 
 //! Inserts the words of a resource into the database
 void insert_words(Standards.URI|string uri, void|string language,
@@ -208,7 +212,7 @@ void insert_words(Standards.URI|string uri, void|string language,
   int field_id = get_field_id(field);
   
   blobs->add_words( doc_id, words, field_id );
-
+  
   if(blobs->memsize() > MAXMEM)
     sync();
 }
@@ -390,14 +394,40 @@ void sync()
   docs = 0;
 }
 
-string get_blob(string word, int num)
+#ifdef SEARCH_DEBUG
+mapping times = ([ ]);
+#endif
+
+string get_blob(string word, int num, void|mapping(string:mapping(int:string)) blobcache)
 {
+  if(blobcache[word] && blobcache[word][num])
+    return blobcache[word][num];
+
+#ifdef SEARCH_DEBUG
+  int t0 = gethrtime();
+#endif
+  
   array a=db->query("select hits,first_doc_id from word_hit where word=%s "
-		    "limit %d,1",
+		    "order by first_doc_id limit %d,10",
 		    string_to_utf8(word), num);
 
+#ifdef SEARCH_DEBUG
+  int t1 = gethrtime()-t0;
+  times[word] += t1;
+  werror("word: %O  time accum: %.2f ms   delta_t: %.2f\n", word, times[word]/1000.0, t1/1000.0);
+#endif
+  
+  blobcache[word] = ([]);
   if(!sizeof(a))
+  {
+#ifdef SEARCH_DEBUG
+    times[word] = 0;
+#endif
     return 0;
+  }
+
+  foreach(a, mapping m)
+    blobcache[word][num++] = m->hits;
 
   return a[0]->hits;
 }

@@ -1,14 +1,15 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.22 2001/09/01 22:13:08 js Exp $
+// $Id: Query.pmod,v 1.23 2001/09/25 22:02:37 js Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db, array words)
 {
   mapping state = mkmapping(words,allocate(sizeof(words)));
+  mapping(string:mapping(int:string)) blobcache = ([ ]);
   return lambda( string word, int foo )
 	 {
-	   return db->get_blob(word, state[word]++);
+	   return db->get_blob(word, state[word]++, blobcache);
 	 };
 }
 

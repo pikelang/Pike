@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.17 2001/08/31 16:34:27 js Exp $
+// $Id: Base.pmod,v 1.18 2001/09/25 22:02:37 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -113,9 +113,11 @@ void set_sync_callback(function f);
 //! Retrieves a blob from the database.
 //! @param word
 //!   The wanted word. Possibly in wide-string format. (Not UTF-8 encoded.)
+//! @param num
+//! @param blobcache
 //! @returns
 //!   The blob requested, or 0 if there's no more blobs.
-string get_blob(string word, int num);
+string get_blob(string word, int num, void|mapping(string:mapping(int:string)) blobcache);
 
 //! Retrieves a list of deleted document ids
 //! @returns
