@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.134 2003/12/12 17:41:00 nilsson Exp $
+|| $Id: efuns.c,v 1.135 2003/12/15 18:58:12 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.134 2003/12/12 17:41:00 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.135 2003/12/15 18:58:12 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -593,6 +593,7 @@ void f_werror(INT32 args)
     args=1;
   }
 
+  /* FIXME: Wide string handling. */
   if(sp[-args].u.string->size_shift!=0)
     Pike_error("Wide strings can not be written to stderr.\n");
   write_to_stderr(sp[-args].u.string->str, sp[-args].u.string->len);
