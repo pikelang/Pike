@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.370 2000/06/06 19:20:05 peter Exp $")
+AC_REVISION("$Id: configure.in,v 1.371 2000/06/17 13:50:42 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -169,6 +169,13 @@ case "$UNAME" in
     ;;
   Linux\ 2.*)
     AC_DEFINE(USE_Wl)
+    ;;
+  UnixWare\ 7.*)
+    if test "$ac_cv_prog_gcc" = "yes"; then
+      AC_DEFINE(USE_XLINKER_YP_)
+    else
+      AC_DEFINE(USE_YP_)
+    fi
     ;;
   *)
     AC_DEFINE(USE_LD_LIBRARY_PATH)
@@ -3382,7 +3389,7 @@ if test -z "$LINKFORSHARED"
 then
   LINKFORSHARED=""
   if test "$GCC" = yes ; then
-    case $pike_cv_sys_os in
+    case "$pike_cv_sys_os" in
       AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
@@ -3404,7 +3411,7 @@ then
       ;;
     esac
   else
-    case $pike_cv_sys_os in
+    case "$pike_cv_sys_os" in
       AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
@@ -3592,7 +3599,7 @@ pike_cv_prog_CC="${CC}"
 
 if test x$pike_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
 then
-  if test x$pike_cv_sys_os != xWindows_NT ; then
+  if test "x$pike_cv_sys_os" != xWindows_NT ; then
     with_dynamic_modules=no
   fi
 fi
