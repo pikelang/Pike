@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.33 2003/03/28 11:45:10 marcus Exp $
+# $Id: configure.in,v 1.34 2003/03/28 15:20:58 marcus Exp $
 #
 # Configure script for the mysql-module
 #
@@ -86,7 +86,7 @@ else
 
   # Header file
 
-  AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
+  AC_CHECK_HEADERS(winsock.h windows.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
 
   # Mysql libs
 
@@ -356,6 +356,22 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
       fi
     else :; fi
 
+    AC_MSG_CHECKING(for CreateSemaphoreA)
+    AC_CACHE_VAL(ac_cv_func_CreateSemaphoreA,[
+      AC_TRY_LINK([
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#endif
+      ],[
+  CreateSemaphoreA(0, 0, 0, 0);
+      ],[ac_cv_func_CreateSemaphoreA=yes],[ac_cv_func_CreateSemaphoreA=no])
+    ])
+    if test "x$ac_cv_func_CreateSemaphoreA" = xyes; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_CREATESEMAPHOREA)
+    else
+      AC_MSG_RESULT(no)
+    fi
     AC_CHECK_FUNCS(CreateSemaphoreA)
 
   fi
