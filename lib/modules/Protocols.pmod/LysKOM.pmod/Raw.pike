@@ -569,8 +569,12 @@ array active_asyncs()
 void got_async_message(array what)
 {
 #ifdef LYSKOM_DEBUG
-  werror("got_async_message: %O\n", what);
-#endif  
+  werror("got_async_message: :%s %s %O\n",
+	 what[0], mkmapping( values(.ASync.name2no),
+			    indices(.ASync.name2no))[(int)what[1]],
+	 @what[2..]);
+  //werror("got_async_message: %O\n", what);
+#endif
   catch {
    if (async_callbacks[(int)what[1]])
       async_callbacks[(int)what[1]](@.ASync["decode_"+what[1]](what[2..]));
