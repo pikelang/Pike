@@ -2,14 +2,21 @@
  *
  */
 
+#if constant(Crypto.Hash)
+#define HASH Crypto.Hash
+#else
+#define HASH object
+#endif
+
 #pike __REAL_VERSION__
 
+//! @decl string build_digestinfo(string msg, Crypto.Hash hash)
 //! Construct a PKCS-1 digestinfo
 //! @param msg
 //!   message to digest
 //! @param hash
 //!   crypto hash object such as @[Crypto.SHA] or @[Crypto.MD5]
-string build_digestinfo(string msg, Crypto.Hash hash)
+string build_digestinfo(string msg, HASH hash)
 {
   if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
   string d = hash->hash(msg);
