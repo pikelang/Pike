@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.3 2002/10/29 03:25:07 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.4 2002/10/30 01:07:23 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -34,6 +34,39 @@ test_equal_any([[
     "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> _:Resource1 .",
     "_:Resource4 <http://pike.ida.liu.se/terms/ruppar> \"August 16, 1999\" ."
 >))
+
+test_do([[ add_constant("my_rdf", Standards.RDF()); ]])
+test_any([[
+  string nt="<http://www.w3.org/2001/08/rdf-test/>  "
+    "<http://purl.org/dc/elements/1.1/creator>    \"Dave Beckett\" .\n"
+    "<http://www.w3.org/2001/08/rdf-test/>  <http://purl.org/dc/elements/1.1/creator>"
+    "    \"Jan Grant\" .\n"
+    "<http://www.w3.org/2001/08/rdf-test/>  <http://purl.org/dc/elements/1.1/publisher>"
+    "  _:a .\n"
+    "_:a                                    <http://purl.org/dc/elements/1.1/title>"
+    "      \"World Wide Web Consortium\" . \n"
+    "_:a                                    <http://purl.org/dc/elements/1.1/source>"
+    "     <http://www.w3.org/> .\n";
+  return my_rdf->parse_n_triples(nt);
+]], 5)
+test_eq( sizeof(my_rdf), 5)
+test_eq([[ sizeof(my_rdf->find_statements(0,0,0)) ]], 5)
+test_eq([[ sizeof(Array.flatten(my_rdf->find_statements(0,0,0))) ]], 15)
+test_eq([[ sizeof(my_rdf->find_statements( my_rdf->
+  get_resource("http://www.w3.org/2001/08/rdf-test/"),0,0)) ]], 3)
+test_eq( my_rdf->get_resource(""), 0)
+test_eq([[ sizeof(my_rdf->find_statements(0, my_rdf->
+  get_resource("http://purl.org/dc/elements/1.1/creator"),0)) ]], 2)
+test_eq([[ sizeof(my_rdf->find_statements(0,0, my_rdf->
+  get_resource("http://www.w3.org/"))) ]], 1)
+test_any([[
+  Standards.RDF.Resource r;
+  r = my_rdf->find_statements(0, my_rdf->
+    get_resource("http://purl.org/dc/elements/1.1/publisher"), 0)[0][2];
+  return sizeof(my_rdf->find_statements(r,0,0));
+]], 2)
+test_do( add_constant("my_rdf"); )
+
 
 // - Standards.URI
 test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
