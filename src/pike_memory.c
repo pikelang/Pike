@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.137 2002/12/02 09:44:54 grubba Exp $
+|| $Id: pike_memory.c,v 1.138 2002/12/09 22:21:46 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.137 2002/12/02 09:44:54 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.138 2002/12/09 22:21:46 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1661,13 +1661,11 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   struct memloc *ml = alloc_memloc();
   unsigned long l;
 
-#ifdef DMALLOC_VERIFY_INTERNALS
   if (mh->locations) {
     dump_memhdr_locations(mh, NULL, 0);
     Pike_fatal("New block at %p already has locations.\n"
 	       "location: %s\n", p, location);
   }
-#endif
 
   l = lhash(mh,location);
   mh->size=s;
