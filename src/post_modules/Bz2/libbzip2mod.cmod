@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.6 2003/01/24 10:24:26 finnman Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.7 2003/01/24 11:28:52 finnman Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -60,7 +60,16 @@ RCSID("$Id: libbzip2mod.cmod,v 1.6 2003/01/24 10:24:26 finnman Exp $");
 #define bzWriteOpen		BZ2_bzWriteOpen
 #define bzWrite			BZ2_bzWrite
 #define bzWriteClose		BZ2_bzWriteClose
+
+/* use 64 bit counting struct */
+#define TOTAL_OUT (s->total_out_lo_32 + (s->total_out_hi_32 << 32))
 #endif /* HAVE_BZ2_BZCOMPRESSINIT */
+
+#ifndef HAVE_BZ2_BZCOMPRESSINIT
+#define TOTAL_OUT s->total_out
+#endif
+
+
 
 /*! @module Bz2
  *!
@@ -246,11 +255,11 @@ PIKECLASS Deflate
 	Pike_error("Error when compressing in Bz2.feed()");
       }
       
-      if(s->total_out - THIS->total_out_previous_buf > 0){
+      if(TOTAL_OUT - THIS->total_out_previous_buf > 0){
 	/*if something was written to the outbuffer, then buffer it internally*/
-	low_my_binary_strcat(tmp, s->total_out - THIS->total_out_previous_buf,&(THIS->intern_buffer));
+	low_my_binary_strcat(tmp, TOTAL_OUT - THIS->total_out_previous_buf,&(THIS->intern_buffer));
 	THIS->internbuf = &(THIS->intern_buffer);
-	THIS->total_out_previous_buf = s->total_out;
+	THIS->total_out_previous_buf = TOTAL_OUT;
       }
       /*free the outbuffer*/
       free(tmp);
@@ -283,7 +292,7 @@ PIKECLASS Deflate
       retval = bzCompress(s, mode);
     
       if(tmp != NULL){
-	low_my_binary_strcat(tmp,s->total_out-total_out_old,&retbuf);
+	low_my_binary_strcat(tmp,TOTAL_OUT-total_out_old,&retbuf);
       free(tmp);
       }
       if(retval < 0){
@@ -307,7 +316,7 @@ PIKECLASS Deflate
 	}
 	s->next_out = tmp;
 	s->avail_out = i * DEFL_BUF_SIZE;
-	total_out_old = s->total_out;
+	total_out_old = TOTAL_OUT;
       }
     }
     return (&retbuf);
@@ -334,20 +343,20 @@ PIKECLASS Deflate
     low_make_buf_space(DEFL_BUF_SIZE, &retbuf);
     ret = do_deflate(data, retbuf,BZ_FLUSH, args);
     
-    if(s->total_out - THIS->total_out_previous_flush > 0){
+    if(TOTAL_OUT - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
-	low_my_binary_strcat(ret->s.str,s->total_out - THIS->total_out_previous_buf, &(THIS->intern_buffer));
-	retstr = make_shared_binary_string(THIS->intern_buffer.s.str, s->total_out - THIS->total_out_previous_flush);
+	low_my_binary_strcat(ret->s.str,TOTAL_OUT - THIS->total_out_previous_buf, &(THIS->intern_buffer));
+	retstr = make_shared_binary_string(THIS->intern_buffer.s.str, TOTAL_OUT - THIS->total_out_previous_flush);
       }   
       else{
-	retstr = make_shared_binary_string(ret->s.str,s->total_out-THIS->total_out_previous_flush);
+	retstr = make_shared_binary_string(ret->s.str,TOTAL_OUT-THIS->total_out_previous_flush);
       }
       if(THIS->internbuf != NULL){
 	toss_buffer(&THIS->intern_buffer);
 	THIS->internbuf = NULL;
       }     
-      THIS->total_out_previous_flush = s->total_out;
-      THIS->total_out_previous_buf = s->total_out;
+      THIS->total_out_previous_flush = TOTAL_OUT;
+      THIS->total_out_previous_buf = TOTAL_OUT;
     }
     else{
       retstr = make_shared_binary_string("",0);
@@ -383,17 +392,17 @@ PIKECLASS Deflate
     ret = do_deflate(data, retbuf,BZ_FINISH, args);
         
     /*use perhaps a better check?*/
-    if(s->total_out - THIS->total_out_previous_flush > 0){
+    if(TOTAL_OUT - THIS->total_out_previous_flush > 0){
       if(THIS->total_out_previous_buf > THIS->total_out_previous_flush){
-	low_my_binary_strcat(ret->s.str,s->total_out - THIS->total_out_previous_buf, &(THIS->intern_buffer));
-	retstr = make_shared_binary_string(THIS->intern_buffer.s.str, s->total_out - THIS->total_out_previous_flush);
+	low_my_binary_strcat(ret->s.str,TOTAL_OUT - THIS->total_out_previous_buf, &(THIS->intern_buffer));
+	retstr = make_shared_binary_string(THIS->intern_buffer.s.str, TOTAL_OUT - THIS->total_out_previous_flush);
       }   
       else{
-	retstr = make_shared_binary_string(ret->s.str,s->total_out-THIS->total_out_previous_flush);
+	retstr = make_shared_binary_string(ret->s.str,TOTAL_OUT-THIS->total_out_previous_flush);
       }
       
-      THIS->total_out_previous_flush = s->total_out;
-      THIS->total_out_previous_buf = s->total_out;
+      THIS->total_out_previous_flush = TOTAL_OUT;
+      THIS->total_out_previous_buf = TOTAL_OUT;
     }
     else{
       /* something went wrong*/
@@ -651,7 +660,7 @@ PIKECLASS Inflate
       retval = bzDecompress(s); /* updates next_in, avail_in, total_in, next_out, avail_out, total_out*/
       
       if(tmp != NULL){
-	low_my_binary_strcat(tmp,s->total_out-total_out_old,&ret_buffer);
+	low_my_binary_strcat(tmp,TOTAL_OUT-total_out_old,&ret_buffer);
 	free(tmp);
       }
       /* errorcheck*/
@@ -682,20 +691,20 @@ PIKECLASS Inflate
 	}
 	s->next_out = tmp;
 	s->avail_out = i * INFL_BUF_SIZE;
-	total_out_old = s->total_out;
+	total_out_old = TOTAL_OUT;
       }
     }
     
     /*return the bytes decompressed since the last time bytes were returned from this stream, in other
       words, return a block*/
     if((retval == BZ_OK) || (retval==BZ_STREAM_END)){
-      if(s->total_out - THIS->total_out_previous_flush > 0){
-	retstr = make_shared_binary_string(ret_buffer.s.str,s->total_out-THIS->total_out_previous_flush);
+      if(TOTAL_OUT - THIS->total_out_previous_flush > 0){
+	retstr = make_shared_binary_string(ret_buffer.s.str,TOTAL_OUT-THIS->total_out_previous_flush);
       }
       else{
 	retstr = make_shared_binary_string("",0);
       }
-      THIS->total_out_previous_flush = s->total_out;
+      THIS->total_out_previous_flush = TOTAL_OUT;
       if(retval == BZ_STREAM_END){
 	bzDecompressEnd(s);
 	toss_buffer(&(THIS->intern_buffer));/*free the final buffer*/
