@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.19 1999/05/23 17:46:58 mirar Exp $ */
+/* $Id: pnm.c,v 1.20 1999/06/19 11:08:00 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.19 1999/05/23 17:46:58 mirar Exp $
+**!	$Id: pnm.c,v 1.20 1999/06/19 11:08:00 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.19 1999/05/23 17:46:58 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.20 1999/06/19 11:08:00 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -176,9 +176,9 @@ void img_pnm_decode(INT32 args)
 
    nx=x;
 
-   if (type=='6' && maxval==255) type='+';
-
-   while (n--)
+   if (type=='6' && maxval==255 && sizeof(rgb_group)==3)  /* optimize */
+      MEMCPY(d,s->str+pos,MINIMUM(n*3,s->len-pos));
+   else while (n--)
    {
       switch (type)
       {
@@ -214,11 +214,6 @@ void img_pnm_decode(INT32 args)
 	    d->r=(unsigned char)((((INT32)getnext(s,&pos))*255L)/maxval);
 	    d->g=(unsigned char)((((INT32)getnext(s,&pos))*255L)/maxval);
 	    d->b=(unsigned char)((((INT32)getnext(s,&pos))*255L)/maxval);
-	    break;
-	 case '+': /* optimized P6 */
-	    d->r=getnext(s,&pos);
-	    d->g=getnext(s,&pos);
-	    d->b=getnext(s,&pos);
 	    break;
       }
       d++;
