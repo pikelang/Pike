@@ -1,0 +1,15 @@
+--- pike7.3-7.3.51.orig/lib/master.pike.in
++++ pike7.3-7.3.51/lib/master.pike.in
+@@ -830,6 +830,14 @@
+   add_include_path("¤lib_prefix¤/include");
+   add_module_path("¤lib_prefix¤/modules");
+ #endif
++
++  // Debian paths
++  add_include_path("/usr/local/include/pike");
++  add_include_path(sprintf("/usr/local/include/pike%0.1f", __REAL_VERSION__));
++  add_module_path("/usr/local/lib/pike/site_pike");
++  add_module_path(sprintf("/usr/local/lib/pike%0.1f/site_pike", __REAL_VERSION__));
++  add_module_path("/usr/local/share/pike/site_pike");
++  add_module_path(sprintf("/usr/local/share/pike%0.1f/site_pike", __REAL_VERSION__));
+ }

@@ -1,0 +1,55 @@
+--- pike7.3-7.3.51.orig/bin/smartlink
++++ pike7.3-7.3.51/bin/smartlink
+@@ -147,9 +147,8 @@
+      LDOPTS="$LDOPTS -R$RPATH"
+    ;;
+    Linux\ 2.*)
+-     if test x$LINKING != xno -a "x$RPATH" != x ; then
+-      LDOPTS="$LDOPTS -Wl,-rpath,$RPATH"
+-     fi
++     LD_LIBRARY_PATH="$RPATH"
++     export LD_LIBRARY_PATH
+    ;;
+    UnixWare\ 7.*)
+      if test x$LINKING != xno -a "x$RPATH" != x ; then
+--- pike7.3-7.3.51.orig/src/smartlink.c
++++ pike7.3-7.3.51/src/smartlink.c
+@@ -141,7 +141,9 @@
+   full_rpath = rpath;
+ 
+ #ifdef USE_Wl
++#if 0
+   strcat(rpath, "-Wl,-rpath,");
++#endif
+ #elif defined(USE_Wl_R)
+   strcat(rpath, "-Wl,-R");
+ #elif defined(USE_R)
+@@ -252,6 +254,7 @@
+     rpath_in_use |= add_path(rpath, ld_lib_path);
+   }
+ 
++  rpath_in_use = 0;
+   if (rpath_in_use) {
+     /* Delete the terminating ':' */
+     rpath[strlen(rpath) - 1] = 0;
+@@ -278,9 +281,11 @@
+       new_argv[new_argc++] = rpath;
+     }
+ #elif defined(USE_Wl)
++#if 0
+     if (linking) {
+       new_argv[new_argc++] = full_rpath;
+     }
++#endif
+ #elif defined(USE_R) || defined(USE_Wl_R)
+     new_argv[new_argc++] = full_rpath;
+ #elif defined(USE_LD_LIBRARY_PATH)
+@@ -330,7 +335,7 @@
+       }
+     }
+   }
+-
++ 
+   execv(argv[1], new_argv);
+   fprintf(stderr, "%s: exec of %s failed!\n", argv[0], argv[1]);
+   exit(1);
