@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.20 2004/04/28 19:36:16 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.21 2004/04/28 19:54:31 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
@@ -145,7 +145,6 @@ PIKECLASS HashInfo
     optflags OPT_EXTERNAL_DEPEND;
     {
     void *ctx;
-    unsigned block_size;
     int len;
     char *read_buffer;
     PIKE_STAT_T st;
@@ -182,20 +181,20 @@ PIKECLASS HashInfo
     if (!S_ISREG(st.st_mode))
       Pike_error("Non-regular file.\n");
 
-    block_size = meta->block_size;
-    read_buffer=(char *)alloca(block_size);
-    if (!read_buffer)
-      Pike_error("Out of memory.\n");
-
     ctx = (void *)alloca(meta->context_size);
     if (!ctx)
       Pike_error("Out of memory.\n");
 
+    read_buffer=(char *)malloc(8192);
+    if (!read_buffer)
+      Pike_error("Out of memory.\n");
+
     THREADS_ALLOW();
     meta->init(ctx);
-    while((len=fd_read(fd, read_buffer, block_size))>0) {
+    while((len=fd_read(fd, read_buffer, 8192))>0)
       meta->update(ctx, len, read_buffer);
-    }
+
+    free(read_buffer);
 
     out = begin_shared_string(meta->digest_size);
     meta->digest(ctx, meta->digest_size, out->str);
