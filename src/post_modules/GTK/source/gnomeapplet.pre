@@ -1,4 +1,5 @@
-require gnome;
+require not_there_at_all;
+/* require gnome; */
 ADD_INCLUDE(#include <applet-widget.h>);
 class gnome_applet_widget;
 inherit plug;
