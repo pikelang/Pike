@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.58 2003/02/26 12:31:57 mast Exp $
+|| $Id: port.c,v 1.59 2003/02/26 22:42:29 mast Exp $
 */
 
 #define PORT_DO_WARN
@@ -23,7 +23,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.58 2003/02/26 12:31:57 mast Exp $");
+RCSID("$Id: port.c,v 1.59 2003/02/26 22:42:29 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -67,10 +67,6 @@ time_t TIME(time_t *t)
   return tv.tv_sec;
 }
 #endif
-
-#ifndef HUGE
-#define HUGE HUGE_VAL
-#endif /*!HUGE*/
 
 /*
  * This file defines things that may have to be changem when porting
@@ -134,9 +130,11 @@ PMOD_EXPORT unsigned long my_rand(void)
 
 long STRTOL(const char *str,char **ptr,int base)
 {
-  register long val;
-  register int c;
-  int xx, neg = 0;
+  /* Note: Code duplication in STRTOL_PCHARP and pcharp_to_svalue_inumber. */
+
+  unsigned long val, mul_limit;
+  int c;
+  int xx, neg = 0, add_limit, overflow = 0;
 
   if (ptr != (char **)0)
     *ptr = (char *)str;		/* in case no number is formed */
@@ -152,6 +150,7 @@ long STRTOL(const char *str,char **ptr,int base)
       c = *++str;
     }
   }
+
   if (base == 0) {
     if (c != '0')
       base = 10;
@@ -160,6 +159,7 @@ long STRTOL(const char *str,char **ptr,int base)
     else
       base = 8;
   }
+
   /*
    * for any base > 10, the digits incrementally following
    *	9 are assumed to be "abc...z" or "ABC...Z"
@@ -169,12 +169,37 @@ long STRTOL(const char *str,char **ptr,int base)
   if (base == 16 && c == '0' && isxdigit(((const unsigned char *)str)[2]) &&
       (str[1] == 'x' || str[1] == 'X'))
     c = *(str += 2);		/* skip over leading "0x" or "0X" */
-  for (val = -DIGIT(c); isalnum(c = *++str) && (xx = DIGIT(c)) < base; )
-    /* accumulate neg avoids surprises near MAXLONG */
-    val = base * val - xx;
+
+  if (neg) {
+    mul_limit = (unsigned long) LONG_MIN / base;
+    add_limit = (int) ((unsigned long) LONG_MIN % base);
+  }
+  else {
+    mul_limit = LONG_MAX / base;
+    add_limit = (int) (LONG_MAX % base);
+  }
+
+  for (val = DIGIT(c); isalnum(c = *++str) && (xx = DIGIT(c)) < base; ) {
+    if (val > mul_limit || (val == mul_limit && xx > add_limit))
+      overflow = 1;
+    else
+      val = base * val + xx;
+  }
+
   if (ptr != (char **)0)
     *ptr = (char *)str;
-  return (neg ? val : -val);
+  if (overflow) {
+    errno = ERANGE;
+    return neg ? LONG_MIN : LONG_MAX;
+  }
+  else {
+    if (neg)
+      return val > (unsigned long) LONG_MAX ?
+	-(long) (val - (unsigned long) LONG_MAX) - LONG_MAX :
+	-(long) val;
+    else
+      return (long) val;
+  }
 }
 
 #ifndef HAVE_STRCASECMP
@@ -541,7 +566,7 @@ PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
  overflow:
   /* Return an overflow error.  */
   errno = ERANGE;
-  return HUGE * sign;
+  return HUGE_VAL * sign;
 
  underflow:
   /* Return an underflow error.  */
