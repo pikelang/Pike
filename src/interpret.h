@@ -41,6 +41,7 @@ struct frame
 #define push_object(O) sp->u.object=(O),sp++->type=T_OBJECT
 #define push_float(F) sp->u.float_number=(F),sp++->type=T_FLOAT
 #define push_text(T) sp->u.string=make_shared_string(T),sp++->type=T_STRING
+#define push_svalue(S) (assign_svalue_no_free(sp,(S)),sp++)
 
 #define APPLY_MASTER(FUN,ARGS) \
 do{ \
@@ -77,13 +78,13 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value();
 void pop_n_elems(INT32 x);
 void reset_evaluator();
-void f_catch(unsigned char *pc);
 struct backlog;
 void dump_backlog(void);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 void apply_low(struct object *o, int fun, int args);
 void safe_apply_low(struct object *o,int fun,int args);
 void safe_apply(struct object *o, char *fun ,INT32 args);
+void apply_lfun(struct object *o, int fun, int args);
 void apply_shared(struct object *o,
 		  struct lpc_string *fun,
 		  int args);
@@ -96,8 +97,8 @@ void cleanup_interpret();
 
 extern struct svalue *sp;
 extern struct svalue **mark_sp;
-extern struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
-extern struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
+extern struct svalue *evaluator_stack;
+extern struct svalue **mark_stack;
 extern struct frame *fp; /* frame pointer */
 #endif
 

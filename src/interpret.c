@@ -24,29 +24,80 @@
 #include "builtin_efuns.h"
 #include "lpc_signal.h"
 
+#ifdef HAVE_MMAP
+
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef MMAP_NORESERV
+#define USE_MMAP_FOR_STACK
+
+/* Fixme: just multiplying by 32 is not what we want /Hubbe */
+#define EVALUATOR_STACK_SIZE EVALUATOR_STACK_SIZE*32
+#endif
+#endif
+
 #define TRACE_LEN (100 + t_flag * 10)
 
 
 /* sp points to first unused value on stack
  * (much simpler than letting it point at the last used value.)
  */
-struct svalue *sp;
+struct svalue *sp;     /* Current position */
+struct svalue *evaluator_stack; /* Start of stack */
 
 /* mark stack, used to store markers into the normal stack */
-struct svalue **mark_sp;
+struct svalue **mark_sp; /* Current position */
+struct svalue **mark_stack; /* Start of stack */
 
 struct frame *fp; /* frame pointer */
 
-struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
-struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
-
 void init_interpreter()
 {
+#ifdef USE_MMAP_FOR_STACK
+  int fd;
+
+#ifndef MAP_VARIABLE
+#define MAP_VARIABLE 0
+#endif
+
+#ifndef MAP_PRIVATE
+#define MAP_PRIVATE 0
+#endif
+
+#ifdef MAP_ANONYMOUS
+  fd=-1;
+#else
+#define MAP_ANONYMOUS 0
+  fd=open("/dev/zero");
+  if(fd < 0) fatal("Failed to open /dev/zero.\n");
+#endif
+
+#define MMALLOC(X,Y) (Y *)mmap(0,X*sizeof(Y),PROT_READ|PROT_WRITE, MAP_NORESERV | MAP_PRIVATE | MAP_ANONYMOUS, fd, 0)
+
+  evaluator_stack=MMALLOC(EVALUATOR_STACK_SIZE,struct svalue);
+  mark_stack=MMALLOC(EVALUATOR_STACK_SIZE, struct svalue *);
+
+  if(fd != -1) close(fd);
+
+  if(!evaluator_stack || !mark_sp) fatal("Failed to mmap() stack space.\n");
+#else
+  evaluator_stack=(struct svalue *)malloc(EVALUATOR_STACK_SIZE*sizeof(struct svalue));
+  mark_stack=(struct svalue **)malloc(EVALUATOR_STACK_SIZE*sizeof(struct svalue *));
+#endif
   sp=evaluator_stack;
   mark_sp=mark_stack;
 }
 
-void exit_interpreter() {}
+void exit_interpreter()
+{
+}
 
 void check_stack(INT32 size)
 {
@@ -69,6 +120,7 @@ static void eval_instruction(unsigned char *pc);
  * array[index]   : { array, index } 
  * mapping[index] : { mapping, index } 
  * list[index] : { list, index } 
+ * object[index] : { object, index }
  * local variable : { svalue_pointer, nothing } 
  * global variable : { svalue_pointer/short_svalue_pointer, nothing } 
  */
@@ -309,25 +361,6 @@ void reset_evaluator()
   pop_n_elems(sp - evaluator_stack);
 }
 
-/* Put catch outside of eval_instruction, so
- * the setjmp won't affect the optimization of
- * eval_instruction
- */
-void f_catch(unsigned char *pc)
-{
-  JMP_BUF tmp;
-  if(SETJMP(tmp))
-  {
-    *sp=throw_value;
-    throw_value.type=T_INT;
-    sp++;
-  }else{
-    eval_instruction(pc);
-    push_int(0);
-  }
-  UNSETJMP(tmp);
-}
-
 #ifdef DEBUG
 #define BACKLOG 512
 struct backlog
@@ -370,6 +403,8 @@ void dump_backlog(void)
 
 #endif
 
+static int o_catch(unsigned char *pc);
+
 static void eval_instruction(unsigned char *pc)
 {
   unsigned INT32 instr, prefix=0;
@@ -386,14 +421,14 @@ static void eval_instruction(unsigned char *pc)
     sp[3].type=99;
 
     if(sp<evaluator_stack || mark_sp < mark_stack || fp->locals>sp)
-      fatal("Stack error.\n");
+      fatal("Stack error (generic).\n");
 
     if(sp > evaluator_stack+EVALUATOR_STACK_SIZE)
       fatal("Stack error (overflow).\n");
 
     if(fp->fun>=0 && fp->current_object->prog &&
 	fp->locals+fp->num_locals > sp)
-      fatal("Stack error.\n");
+      fatal("Stack error (stupid!).\n");
 
     if(d_flag)
     {
@@ -573,8 +608,8 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_POST_DEC_LOCAL);
       instr=GET_ARG();
       if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
-      assign_svalue_no_free(sp--,fp->locals+instr);
-      fp->locals[instr].u.integer++;
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      fp->locals[instr].u.integer--;
       break;
 
       CASE(F_DEC_LOCAL_AND_POP);
@@ -709,6 +744,7 @@ static void eval_instruction(unsigned char *pc)
       /* Stack machine stuff */
       CASE(F_POP_VALUE); pop_stack(); break;
       CASE(F_POP_N_ELEMS); pop_n_elems(GET_ARG()); break;
+      CASE(F_MARK2); *(mark_sp++)=sp;
       CASE(F_MARK); *(mark_sp++)=sp; break;
 
       /* Jumps */
@@ -769,8 +805,15 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_CATCH);
-      f_catch(pc+sizeof(INT32));
-      pc+=EXTRACT_INT(pc);
+      if(o_catch(pc+sizeof(INT32)))
+	return; /* There was a return inside the evaluated code */
+      else
+	pc+=EXTRACT_INT(pc);
+      break;
+
+      CASE(F_THROW_ZERO);
+      push_int(0);
+      f_throw(1);
       break;
 
       CASE(F_SWITCH)
@@ -928,12 +971,29 @@ static void eval_instruction(unsigned char *pc)
       }
       break;
 
+      CASE(F_SIZEOF);
+      instr=lpc_sizeof(sp-1);
+      pop_stack();
+      push_int(instr);
+      break;
+
+      CASE(F_SIZEOF_LOCAL);
+      push_int(lpc_sizeof(fp->locals+GET_ARG()));
+      break;
+
       CASE(F_SSCANF); f_sscanf(GET_ARG()); break;
 
       CASE(F_CALL_LFUN);
       apply_low(fp->current_object,
 		GET_ARG()+fp->context.identifier_level,
 		sp - *--mark_sp);
+      break;
+
+      CASE(F_CALL_LFUN_AND_POP);
+      apply_low(fp->current_object,
+		GET_ARG()+fp->context.identifier_level,
+		sp - *--mark_sp);
+      pop_stack();
       break;
 
     default:
@@ -949,6 +1009,28 @@ static void eval_instruction(unsigned char *pc)
     }
   }
 }
+
+/* Put catch outside of eval_instruction, so
+ * the setjmp won't affect the optimization of
+ * eval_instruction
+ */
+static int o_catch(unsigned char *pc)
+{
+  JMP_BUF tmp;
+  if(SETJMP(tmp))
+  {
+    *sp=throw_value;
+    throw_value.type=T_INT;
+    sp++;
+    UNSETJMP(tmp);
+    return 0;
+  }else{
+    eval_instruction(pc);
+    UNSETJMP(tmp);
+    return 1;
+  }
+}
+
 
 int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
@@ -976,7 +1058,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     eval_instruction(o->prog->program + offset);
 #ifdef DEBUG
     if(sp<evaluator_stack)
-      fatal("Stack error.\n");
+      fatal("Stack error (simple).\n");
 #endif
     ret=0;
   }
@@ -1135,7 +1217,7 @@ void apply_low(struct object *o, int fun, int args)
     eval_instruction(pc);
 #ifdef DEBUG
     if(sp<evaluator_stack)
-      fatal("Stack error.\n");
+      fatal("Stack error (also simple).\n");
 #endif
   }
 
@@ -1441,4 +1523,13 @@ void cleanup_interpret()
   }
 #endif
   reset_evaluator();
+
+#ifdef USE_MMAP_FOR_STACK
+  munmap((char *)evaluator_stack, EVALUATOR_STACK_SIZE*sizeof(struct svalue));
+  munmap((char *)mark_stack, EVALUATOR_STACK_SIZE*sizeof(struct svalue *));
+#else
+  free((char *)evaluator_stack);
+  free((char *)mark_stack);
+#endif
+
 }
