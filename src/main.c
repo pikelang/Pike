@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.111 2001/02/22 19:18:08 hubbe Exp $");
+RCSID("$Id: main.c,v 1.112 2001/02/22 19:23:42 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -641,6 +641,7 @@ void low_exit_main(void)
   cleanup_pike_types();
   cleanup_program();
   cleanup_compiler();
+  exit_mapping_stuff();
   cleanup_error();
   cleanup_backend();
 
