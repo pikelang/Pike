@@ -1,17 +1,17 @@
 #!/usr/local/bin/pike
 
-// Information about Pike is found at: http://pike.indonex.se 
+// Information about Pike can be found at: http://pike.indonex.se 
 
-// This program is made by hedda@idenex.se to demonstrate the Image-package
+// This program was made by hedda@idonex.se to demonstrate the Image-module
 // in Pike.
 
 // Program cleaned up and made readable by Fredrik Hubinette
 
-// Some understanding of Pike or C is assumed to understand this program.
+// Some understanding of Pike or C is needed to understand this program.
 
 int main()
 {
-  // Create an empy file object for file operations
+  // Create an empty file object for file operations
   object(Stdio.File) file=Stdio.File();
 
   //Check if foo.ppm exists
@@ -27,16 +27,16 @@ int main()
 
   file->close(); // Close the file foo.ppm
   
-  // Make another image called image2, this image has width=80 & high=40
-  // The image will be black
+  // Make another image called image2, this image has width=80 & hight=40
+  // The image will be black.
   object(Image.image) image2=Image.image(52, 65);
 
   // Set the current color to the Pike-green :)
   //The color is coded (red, green, blue)
-  // 0 means nothing of that color and 255 is maximum 
+  // 0 means nothing of that color-component and 255 is maximum 
   image2->setcolor(160, 240, 192);
 
-  // This draws a polygone. It's of cource anti-aliased!
+  // This draws a polygone. It's of course anti-aliased!
   image2->polygone(
     ({
       4.1, 50,   // First x,y corner
