@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.75 2004/01/25 17:20:44 grubba Exp $
+|| $Id: backend.cmod,v 1.76 2004/01/25 19:17:32 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.75 2004/01/25 17:20:44 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.76 2004/01/25 19:17:32 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -47,9 +47,6 @@ RCSID("$Id: backend.cmod,v 1.75 2004/01/25 17:20:44 grubba Exp $");
  *   Sounds very odd to me. /mast
  */
 
-#ifdef HAVE_SYS_DEVPOLL_H
-#include <sys/devpoll.h>
-#endif
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -229,6 +226,14 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #include <sys/poll.h>
 #endif /* HAVE_SYS_POLL_H */
 
+#ifdef HAVE_SYS_DEVPOLL_H
+#include <sys/devpoll.h>
+
+#ifndef POLL_SET_SIZE
+#define POLL_SET_SIZE		32
+#endif
+#endif /* HAVE_SYS_DEVPOLL_H */
+
 /* Some constants... */
 
 /* Notes on POLLRDNORM and POLLIN:
@@ -250,16 +255,6 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #define POLLWRBAND	POLLOUT
 #endif /* !POLLWRBAND */
 
-
-struct selectors
-{
-  struct pollfd *poll_fds;
-  int poll_fd_size;
-  int num_in_poll;
-};
-
-#define active_selectors selectors
-
 #define MY_POLLIN POLLRDNORM|POLLIN
 #define MY_POLLOUT POLLOUT
 
@@ -276,7 +271,127 @@ struct selectors
 #define WRBAND_IS_SPECIAL
 #endif
 
+#ifdef HAVE_SYS_DEVPOLL_H
+
+struct selectors
+{
+  int devpoll_fd;
+};
+
+static void MY_FD_SET(struct selectors *me,
+		      int fd,
+		      short add)
+{
+  struct pollfd poll_state;
+  int e;
+
+  IF_PD(fprintf(stderr, "BACKEND: MY_FD_SET(%d, 0x%04x)\n", fd, add));
+
+  poll_state.fd = fd;
+  poll_state.events = add;
+  poll_state.revents = 0;
+  if (write(me->devpoll_fd, &poll_state, sizeof(poll_state)) !=
+      sizeof(poll_state)) {
+    Pike_fatal("Failed to register fd %d for 0x%04x with /dev/poll (errno:%d).\n",
+	       fd, add, errno);
+  }
+}
+
+static void MY_FD_CLR(struct selectors *me,
+			int fd,
+			short sub)
+{
+  struct pollfd poll_state[2];
+  int e;
+  IF_PD(fprintf(stderr, "BACKEND: POLL_FD_CLR(%d, 0x%04x)\n", fd, sub));
+
+  poll_state[0].fd = fd;
+  poll_state[0].events = POLLREMOVE;
+  poll_state[0].revents = 0;
+  poll_state[1].fd = fd;
+  poll_state[1].events = 0;
+  poll_state[1].revents = 0;
+
+  do {
+    e = ioctl(me->devpoll_fd, DP_ISPOLLED,
+	      poll_state+1, sizeof(poll_state[1]));
+  } while ((e < 0) && (errno == EINTR));
+
+  if (e < 0) {
+    Pike_fatal("Failed to get state for fd %d from /dev/poll (errno:%d).\n",
+	       fd, errno);
+  } else if (!e) {
+    /* fd is not in /dev/poll. */
+    IF_PD(fprintf(stderr, "BACKEND: Fd %d not in /dev/poll.\n", fd));
+    return;
+  }
+
+  if (!(poll_state[1].revents & sub)) {
+    /* None of the sub events are registred. */
+    IF_PD(fprintf(stderr,
+		  "BACKEND: Fd %d events 0x%04x not in /dev/poll (0x%04x).\n",
+		  fd, sub, poll_state[1].revents));
+    return;
+  }
+
+  poll_state[1].events = poll_state[1].revents & ~sub;
+
+  IF_PD(fprintf(stderr, "BACKEND: Fd %d events now 0x%04x\n",
+		fd, poll_state[1].events));
+
+  while (((e = write(me->devpoll_fd, poll_state, sizeof(poll_state))) < 0) &&
+	 (errno == EINTR))
+    ;
+  if (e < 0) {
+    Pike_fatal("Failed to set state for fd %d in /dev/poll (errno:%d).\n",
+	       fd, errno);
+  }
+
+  if (e != sizeof(poll_state)) {
+    Pike_fatal("Failed to set state for fd %d in /dev/poll short write (%d != %d).\n",
+	       fd, e, sizeof(poll_state));
+  }
+#ifdef PIKE_DEBUG
+  {
+    poll_state[1].revents = 0;
+    do {
+      e = ioctl(me->devpoll_fd, DP_ISPOLLED,
+		poll_state + 1, sizeof(poll_state[1]));
+    } while ((e < 0) && (errno == EINTR));
+
+    if (e < 0) {
+      Pike_fatal("Failed to verify state for fd %d from /dev/poll (errno:%d).\n",
+		 fd, errno);
+    } else if (!e) {
+      /* fd is not in /dev/poll. */
+      IF_PD(fprintf(stderr, "BACKEND: Fd %d no longer in /dev/poll.\n", fd));
+      return;
+    }
+
+    if (poll_state[1].revents != (poll_state[1].events & ~POLLREMOVE)) {
+      /* Expected and actual poll state differ. */
+      IF_PD(fprintf(stderr,
+		    "BACKEND: Fd %d unexpected events 0x%04x in /dev/poll (0x%04x).\n",
+		    fd, poll_state[1].revents,
+		    poll_state[1].events & ~POLLREMOVE));
+    }
+  }
+#endif
+}
   
+#define copy_selectors(TO, FROM)
+
+#else /* !HAVE_SYS_DEVPOLL */
+
+struct selectors
+{
+  struct pollfd *poll_fds;
+  int poll_fd_size;
+  int num_in_poll;
+};
+
+#define active_selectors selectors
+
 static void MY_FD_SET(struct selectors *me,
 			int fd,
 			short add)
@@ -372,6 +487,8 @@ static void copy_selectors(struct active_selectors *to,
 	 sizeof(struct pollfd)*from->num_in_poll);
   to->num_in_poll=from->num_in_poll;
 }
+
+#endif /* HAVE_SYS_DEVPOLL_H */
 
 #else  /* !HAVE_POLL */
 
@@ -480,7 +597,9 @@ PIKECLASS Backend
    * POLL/SELECT fd sets
    */
   CVAR struct selectors set;
+#if !(defined(HAVE_POLL) && defined(HAVE_SYS_DEVPOLL_H))
   CVAR struct active_selectors active_set;
+#endif
 
   /*
    * CALL OUT variables
@@ -506,6 +625,25 @@ PIKECLASS Backend
   CVAR struct object *backend_obj;
 
   DECLARE_STORAGE
+
+  static int wakeup_callback(int fd, void *foo)
+    {
+      char buffer[1024];
+      fd_read(fd, buffer, sizeof(buffer)); /* Clear 'flag' */
+      return 0;
+    }
+
+  /* This is used by threaded programs and signals to wake up the
+   * master 'thread'.
+   */
+  void backend_wake_up_backend(struct Backend_struct *me)
+    {
+      char foo=0;
+
+      if(me && me->exec_thread)
+	fd_write(me->wakeup_pipe[1], &foo ,1);
+    }
+
   /*
    * Call out defines
    */
@@ -1200,24 +1338,6 @@ PIKECLASS Backend
       return add_to_callback(& me->backend_callbacks, call, arg, free_func);
     }
   
-  static int wakeup_callback(int fd, void *foo)
-    {
-      char buffer[1024];
-      fd_read(fd, buffer, sizeof(buffer)); /* Clear 'flag' */
-      return 0;
-    }
-
-  /* This is used by threaded programs and signals to wake up the
-   * master 'thread'.
-   */
-  void backend_wake_up_backend(struct Backend_struct *me)
-    {
-      char foo=0;
-
-      if(me && me->exec_thread)
-	fd_write(me->wakeup_pipe[1], &foo ,1);
-    }
-
 
   void backend_set_read_callback(struct Backend_struct *me,
 				 int fd,
@@ -1249,12 +1369,14 @@ PIKECLASS Backend
 #endif
 	if(!was_set)
 	{
-	  MY_FD_SET(&me->set, fd, MY_POLLIN);
+	  MY_FD_SET(&me->set, fd,
+		    MY_POLLIN
 #ifndef HAVE_POLL
-	  /* Got to enable the exception set to get errors (at least according
-	   * to POSIX). */
-	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+		    /* Got to enable the exception set to get errors
+		     * (at least according to POSIX). */
+		    | MY_POLLEXCEPT
 #endif
+		    );
 	  backend_wake_up_backend(me);
 	}
       }else{
@@ -1304,12 +1426,13 @@ PIKECLASS Backend
 #endif
 	if(!was_set)
 	{
-	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
+	  MY_FD_SET(&me->set, fd, MY_POLLOUT
 #ifndef HAVE_POLL
-	  /* Got to enable the exception set to get errors (at least according
-	   * to POSIX). */
-	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+		    /* Got to enable the exception set to get errors
+		     * (at least according to POSIX). */
+		    | MY_POLLEXCEPT
 #endif
+		    );
 	  backend_wake_up_backend(me);
 	}
       } else {
@@ -1569,6 +1692,7 @@ PIKECLASS Backend
 	}
       }
 #else  /* HAVE_POLL */
+#ifndef HAVE_SYS_DEVPOLL_H
       for(e=0;e<me->set.num_in_poll;e++)
       {
 	int ret;
@@ -1596,6 +1720,7 @@ PIKECLASS Backend
 	  }
 	}
       }
+#endif /* !HAVE_SYS_DEVPOLL_H */
 #endif	/* !HAVE_POLL */
     }
 #endif
@@ -1614,7 +1739,16 @@ PIKECLASS Backend
     {
       int i, done_something = 0;
       struct timeval start_time;
-#ifndef HAVE_POLL
+#ifdef HAVE_POLL
+#ifdef HAVE_SYS_DEVPOLL_H
+      struct pollfd poll_fds[POLL_SET_SIZE];
+      struct dvpoll poll_request = {
+	poll_fds,
+	POLL_SET_SIZE,
+	0,
+      };
+#endif
+#else /* !HAVE_POLL */
       struct timeval select_timeout;
 #endif
 
@@ -1707,12 +1841,16 @@ PIKECLASS Backend
 	else
 	  poll_msec= (next_timeout.tv_sec*1000) +
 	    next_timeout.tv_usec/1000;
+#ifdef HAVE_SYS_DEVPOLL_H
+	poll_request.dp_timeout = poll_msec;
+#endif
 #else  /* !HAVE_POLL */
 	select_timeout = next_timeout;
 #endif
 
 #if defined (HAVE_POLL) && defined (POLL_DEBUG)
 	fprintf (stderr, "BACKEND[%d]: Doing poll on fds:\n", me->id);
+#ifndef HAVE_SYS_DEVPOLL_H
 	{
 	  int i;
 	  for (i = 0; i < me->active_set.num_in_poll; i++) {
@@ -1730,14 +1868,20 @@ PIKECLASS Backend
 		me->active_set.poll_fds,
 		me->active_set.num_in_poll,
 		poll_msec);
+#endif
 #endif	/* defined (HAVE_POLL) && defined (POLL_DEBUG) */
 
 	THREADS_ALLOW();
 
 #ifdef HAVE_POLL
+#ifdef HAVE_SYS_DEVPOLL_H
+	i = ioctl(me->set.devpoll_fd, DP_POLL,
+		  poll_request, sizeof(poll_request));
+#else /* !HAVE_SYS_DEVPOLL_H */
 	i = poll(me->active_set.poll_fds,
 		 me->active_set.num_in_poll,
 		 poll_msec);
+#endif /* HAVE_SYS_DEVPOLL_H */
 	IF_PD(fprintf(stderr, " => %d\n", i));
 #else  /* !HAVE_POLL */
 	i = MY_SELECT(me->active_set.max_fd+1,
@@ -1853,14 +1997,22 @@ PIKECLASS Backend
 
 #else  /* HAVE_POLL */
 
+#ifdef HAVE_SYS_DEVPOLL_H
+	while(i--)
+#define ACTIVE_POLLSET poll_fds
+#else
 	for(i=0; i<me->active_set.num_in_poll; i++)
+#define ACTIVE_POLLSET me->active_set.poll_fds
+#endif
 	{
-	  int fd = me->active_set.poll_fds[i].fd;
+	  int fd = ACTIVE_POLLSET[i].fd;
 #ifdef PIKE_DEBUG
 	  int handled = 0;
 #endif /* PIKE_DEBUG */
-	  if(me->active_set.poll_fds[i].revents & POLLNVAL)
+	  if(ACTIVE_POLLSET[i].revents & POLLNVAL)
 	  {
+#ifndef HAVE_SYS_DEVPOLL_H
+	    /* FIXME */
 	    int j;
 	    for(j=0;j<me->set.num_in_poll;j++)
 	    {
@@ -1877,12 +2029,13 @@ PIKECLASS Backend
 		break;
 	      }
 	    }
+#endif
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
 
-	  if (me->active_set.poll_fds[i].revents & POLLRDBAND) {
+	  if (ACTIVE_POLLSET[i].revents & POLLRDBAND) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND on %d\n", me->id, fd));
 	    if (me->fds[fd].read_oob.callback)
 	    {
@@ -1906,7 +2059,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 	  
-	  if(me->active_set.poll_fds[i].revents & (POLLRDNORM|POLLIN))
+	  if(ACTIVE_POLLSET[i].revents & (POLLRDNORM|POLLIN))
 	  {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN on %d\n", me->id, fd));
 	    if (me->fds[fd].read.callback) {
@@ -1923,7 +2076,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 	  
-	  if (me->active_set.poll_fds[i].revents & POLLWRBAND) {
+	  if (ACTIVE_POLLSET[i].revents & POLLWRBAND) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND on %d\n", me->id, fd));
 	    if (me->fds[fd].write_oob.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
@@ -1946,7 +2099,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 	  
-	  if(me->active_set.poll_fds[i].revents & POLLOUT) {
+	  if(ACTIVE_POLLSET[i].revents & POLLOUT) {
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT on %d\n", me->id, fd));
 	    if (me->fds[fd].write.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
@@ -1965,12 +2118,11 @@ PIKECLASS Backend
 	  /* Suspect that these will never be set together with any other
 	   * bits, but if it happens I guess the error isn't so fatal that the
 	   * above can't run first. */
-	  if((me->active_set.poll_fds[i].revents & POLLHUP) ||
-	     (me->active_set.poll_fds[i].revents & POLLERR))
+	  if (ACTIVE_POLLSET[i].revents & (POLLHUP|POLLERR))
 	  {
 	    /* Closed or error */
 	    errno = 0;
-	    if (me->active_set.poll_fds[i].revents & POLLERR) {
+	    if (ACTIVE_POLLSET[i].revents & POLLERR) {
 	      int err;
 	      ACCEPT_SIZE_T len = sizeof (err);
 	      if (!getsockopt (fd, SOL_SOCKET, SO_ERROR, &err, &len)) {
@@ -2007,16 +2159,16 @@ PIKECLASS Backend
 
 #ifdef PIKE_DEBUG
 	  num_active -= handled;
-	  if (!handled && me->active_set.poll_fds[i].revents) {
+	  if (!handled && ACTIVE_POLLSET[i].revents) {
 	    fprintf(stderr, "BACKEND[%d]: fd %ld has revents 0x%08lx, "
 		    "but hasn't been handled.\n", me->id,
-		    (long)me->active_set.poll_fds[i].fd,
-		    (long)me->active_set.poll_fds[i].revents);
+		    (long)ACTIVE_POLLSET[i].fd,
+		    (long)ACTIVE_POLLSET[i].revents);
 	  }
 #endif /* PIKE_DEBUG */
 	}
 
-#ifdef PIKE_DEBUG
+#if defined(PIKE_DEBUG) && !defined(HAVE_SYS_DEVPOLL_H)
 	if (num_active) {
 	  fprintf(stderr, "BACKEND[%d]: %d more active fds than were handled.\n",
 		  me->id, num_active);
@@ -2028,7 +2180,7 @@ PIKECLASS Backend
 		    (long)me->active_set.poll_fds[i].revents);
 	  }
 	}
-#endif /* PIKE_DEBUG */
+#endif /* PIKE_DEBUG && !HAVE_SYS_DEVPOLL_H */
 
 #endif	/* HAVE_POLL */
 
@@ -2335,6 +2487,11 @@ PIKECLASS Backend
       /* FIXME: Should there be something else here? */
       /* me->set.num_fds=0; */
 #else /* HAVE_POLL */
+#ifdef HAVE_SYS_DEVPOLL_H
+      if ((me->set.devpoll_fd = open("/dev/poll", O_RDWR)) < 0) {
+	Pike_error("Failed to open /dev/poll (errno:%d)\n", errno);
+      }
+#else /* !HAVE_SYS_DEVPOLL_H */
       me->set.poll_fds=0;
       me->set.poll_fd_size=0;
       me->set.num_in_poll=0;
@@ -2342,6 +2499,7 @@ PIKECLASS Backend
       me->active_set.poll_fds=0;
       me->active_set.poll_fd_size=0;
       me->active_set.num_in_poll=0;
+#endif /* HAVE_SYS_DEVPOLL_H */
 #endif /* !HAVE_POLL */
 
       if(pike_make_pipe(me->wakeup_pipe) < 0)
@@ -2384,6 +2542,9 @@ PIKECLASS Backend
 	me->fds_size = 0;
       }
 #ifdef HAVE_POLL
+#ifdef HAVE_SYS_DEVPOLL_H
+      fd_close(THIS->set.devpoll_fd);
+#else
       if (me->set.poll_fds) {
 	free(me->set.poll_fds);
 	me->set.poll_fds = NULL;
@@ -2396,6 +2557,7 @@ PIKECLASS Backend
 	me->active_set.poll_fd_size = 0;
 	me->active_set.num_in_poll = 0;
       }
+#endif
 #endif /* HAVE_POLL */
 
       /* CALL OUT */
