@@ -85,10 +85,10 @@ SearchMojt compile_memsearcher(PCHARP needle,
 			       int max_haystacklen,
 			       struct pike_string *hashkey);
 SearchMojt simple_compile_memsearcher(struct pike_string *str);
-char *my_memmem(char *needle,
-		size_t needlelen,
-		char *haystack,
-		size_t haystacklen);
+PMOD_EXPORT char *my_memmem(char *needle,
+			    size_t needlelen,
+			    char *haystack,
+			    size_t haystacklen);
 void init_generic_memsearcher(struct generic_mem_searcher *s,
 			      void *needle,
 			      size_t needlelen,
