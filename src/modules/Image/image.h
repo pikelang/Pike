@@ -1,13 +1,15 @@
-/* $Id: image.h,v 1.12 1997/11/09 15:39:40 grubba Exp $ */
-
-#ifndef PIKE_IMAGE_IMAGE_H
-#define PIKE_IMAGE_IMAGE_H
-
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.12 1997/11/09 15:39:40 grubba Exp $
+**!	$Id: image.h,v 1.13 1997/11/11 22:17:50 mirar Exp $
 */
+
+#ifdef PIKE_IMAGE_IMAGE_H
+#error IMAGE.h included twice
+#endif
+
+#define PIKE_IMAGE_IMAGE_H
+
 
 #define MAX_NUMCOL 32768
 
@@ -137,4 +139,4 @@ void image_tobitmap(INT32 args);
 
 void image_polygone(INT32 args);
 
-#endif /* PIKE_IMAGE_IMAGE_H */
+

@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.26 1997/11/11 03:46:08 grubba Exp $ 
+$Id: togif.c,v 1.27 1997/11/11 22:17:52 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.26 1997/11/11 03:46:08 grubba Exp $
+**!	$Id: togif.c,v 1.27 1997/11/11 22:17:52 mirar Exp $
 **! class image
 */
 
@@ -35,7 +35,6 @@ old GIF API compat stuff
 
 #include "image.h"
 #include "colortable.h"
-#include "encodings/gif.h"
 
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
@@ -91,6 +90,7 @@ extern struct program *image_colortable_program;
 extern void image_gif_header_block(INT32 args);
 extern void image_gif_end_block(INT32 args);
 extern void image_gif_netscape_loop_block(INT32 args);
+extern void image_gif_render_block(INT32 args);
 
 void image_gif_begin(INT32 args)
 {

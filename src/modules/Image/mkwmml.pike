@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.4 1997/11/10 14:19:56 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.5 1997/11/11 22:17:50 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -208,7 +208,7 @@ string fixdesc(string s,string prefix,string where)
 {
    s=stripws(s);
 
-   string t,u,v;
+   string t,u,v,q;
 
    t=s; s="";
    while (sscanf(t,"%s<ref>%s</ref>%s",t,u,v)==3)
@@ -219,11 +219,11 @@ string fixdesc(string s,string prefix,string where)
    s+=t;
 
    t=s; s="";
-   while (sscanf(t,"%s<illustration>%s</illustration>%s",t,u,v)==3)
+   while (sscanf(t,"%s<illustration%s>%s</illustration>%s",t,q,u,v)==4)
    {
       s+=htmlify(replace(t,"\n\n","\n\n<p>"));
 
-      s+="<illustration __from__='"+where+"' src=lena.gif>\n"
+      s+="<illustration __from__='"+where+"' src=lena.gif"+q+">\n"
 	 +replace(u,"lena()","src")+"</illustration>";
 
       t=v;

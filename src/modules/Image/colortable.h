@@ -1,15 +1,21 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.9 1997/11/11 03:31:59 grubba Exp $
+**!	$Id: colortable.h,v 1.10 1997/11/11 22:17:47 mirar Exp $
 */
 
-#ifndef PIKE_IMAGE_COLORTABLE_H
+#ifdef PIKE_IMAGE_COLORTABLE_H
+#error colortable.h included twice
+#endif
+
 #define PIKE_IMAGE_COLORTABLE_H
 
 #ifndef PIKE_IMAGE_IMAGE_H
-#include "image.h"
+#error colortable.h needs image.h
 #endif /* !PIKE_IMAGE_IMAGE_H */
+
+
+
 
 #define COLORLOOKUPCACHEHASHSIZE 207
 
@@ -203,4 +209,4 @@ int image_colortable_map_image(struct neo_colortable *nct,
 
 void image_colortable_cast_to_array(struct neo_colortable *nct);
 
-#endif /* PIKE_IMAGE_COLORTABLE_H */
+

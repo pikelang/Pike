@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.20 1997/11/05 03:41:34 mirar Exp $ */
+/* $Id: font.c,v 1.21 1997/11/11 22:17:48 mirar Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.20 1997/11/05 03:41:34 mirar Exp $
+**!	$Id: font.c,v 1.21 1997/11/11 22:17:48 mirar Exp $
 **! class font
 **!
 **! note
@@ -203,7 +203,7 @@ static INLINE int char_width(struct font *this, unsigned char c)
   return this->charinfo[c].width;
 }  
 
-
+#ifndef HAVE_MMAP
 static INLINE int my_read(int from, char *buf, int towrite)
 {
   int res;
@@ -221,6 +221,7 @@ static INLINE int my_read(int from, char *buf, int towrite)
   }
   return res;
 }
+#endif
 
 static INLINE long file_size(int fd)
 {
@@ -320,8 +321,6 @@ void font_load(INT32 args)
 
 	 if (THIS->mem)
 	 {
-	    int i;
-
 	    struct file_head 
 	    {
 	       unsigned INT32 cookie;
@@ -560,7 +559,7 @@ void font_height(INT32 args)
 
 void font_text_extents(INT32 args)
 {
-  INT32 xsize,i,c,maxwidth2,j;
+  INT32 xsize,i,maxwidth2,j;
 
   if (!THIS) error("font->text_extents: no font loaded\n");
 

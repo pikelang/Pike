@@ -1,5 +1,4 @@
 **! module Image
-**!
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **!
@@ -19,6 +18,10 @@
 **!	<tr>
 **!     <td align=left valign=top><ref>Image.GIF</ref></td>
 **!     <td align=left valign=top>GIF encoding/decoding capabilities</td>
+**!	</tr>
+**!	<tr>
+**!     <td align=left valign=top><ref>Image.PNM</ref></td>
+**!     <td align=left valign=top>PNM (PBM/PGM/PPM) encoding/decoding capabilities</td>
 **!	</tr>
 **!	</table>
 **! note
