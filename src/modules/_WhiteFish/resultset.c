@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.3 2001/05/22 08:17:20 per Exp $");
+RCSID("$Id: resultset.c,v 1.4 2001/05/22 11:50:59 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -10,6 +10,7 @@ RCSID("$Id: resultset.c,v 1.3 2001/05/22 08:17:20 per Exp $");
 #include "operators.h"
 #include "array.h"
 #include "fsort.h"
+#include "module_support.h"
 
 #include "config.h"
 
@@ -35,6 +36,8 @@ struct result_set_p {  int allocated_size; ResultSet *d; };
 */
 #define THIS ((struct result_set_p*)Pike_fp->current_object->storage)
 #define T(o) ((struct result_set_p*)o->storage)
+
+#define RETURN_THIS() pop_n_elems(args); ref_push_object(Pike_fp->current_object)
 
 #ifdef DEBUG
 struct object *wf_not_resultset( struct object *o )
@@ -114,6 +117,16 @@ static void f_resultset_cast( INT32 args )
     push_int( 0 );
 }
 
+static void f_resultset_memsize( INT32 args )
+/*
+*! @decl int memsize()
+*!   Return the size of this resultset, in bytes. 
+*/
+{
+  pop_n_elems( args );
+  push_int( THIS->allocated_size*8 + sizeof(struct object) + 8 );
+}
+
 static void f_resultset_test( INT32 args )
 /*
  *! @decl ResultSet test( int nelems, int start, int incr )
@@ -125,12 +138,19 @@ static void f_resultset_test( INT32 args )
  *! Used for debug and testing.
  */
 {
-  int i, j;
+  int i, j, s, b;
   struct object *o = Pike_fp->current_object;
-  j = Pike_sp[-1].u.integer;
+  if( args != 3 )
+    Pike_error( "Expected 3 arguments\n" );
+
+  j = Pike_sp[-args].u.integer;
+  b = Pike_sp[-args+1].u.integer;
+  s = Pike_sp[-args+2].u.integer;
   wf_resultset_clear( o );
   for( i = 0; i<j; i++ )
-    wf_resultset_add( o, i, rand()&0xffff );
+    wf_resultset_add( o, b+i*s, rand()&0xffff );
+  pop_n_elems(args);
+  f_resultset_memsize(0);
 }
 
 static void f_resultset_slice( INT32 args )
@@ -143,6 +163,13 @@ static void f_resultset_slice( INT32 args )
 {
   int first, nelems, i;
   struct array *res;
+
+  if( !THIS->d )
+  {
+    pop_n_elems( args );
+    push_int( 0 );
+    return;
+  }
 
   nelems = Pike_sp[-1].u.integer;
   first = Pike_sp[-2].u.integer;
@@ -215,15 +242,6 @@ static void f_resultset__sizeof( INT32 args )
   push_int( THIS->d->num_docs );
 }
 
-static void f_resultset_memsize( INT32 args )
-/*
-*! @decl int memsize()
-*!   Return the size of this resultset, in bytes. 
-*/
-{
-  pop_n_elems( args );
-  push_int( THIS->allocated_size*8 + sizeof(struct object) + 8 );
-}
 
 static void f_resultset_overhead( INT32 args )
 /*
@@ -239,6 +257,89 @@ static void f_resultset_overhead( INT32 args )
 	    + sizeof(struct object) + 4 );
 }
 
+static void f_resultset_or( INT32 args )
+{
+  struct object *res = wf_resultset_new();
+  struct object *left = Pike_fp->current_object;
+  struct object *right;
+  int lp=-1, rp=-1;
+
+  int left_used=1, right_used=1;
+  int left_left=1, right_left=1;
+  int right_size, left_size;
+
+  int left_doc=0, left_rank=0, right_doc=0, right_rank=0, last=-1;
+  get_all_args( "or", args, "%o", &right );
+
+  right = WF_RESULTSET( right );
+
+  left_size = T(left)->d->num_docs;
+  right_size = T(right)->d->num_docs;
+  
+  while( left_left || right_left )
+  {
+    if( left_left && left_used ) /* New from left */
+    {
+      if( ++lp == left_size )
+      {
+	left_left = 0;
+	if( !right_left )
+	  continue;
+      }
+      else
+      {
+	left_doc = T(left)->d->hits[lp].doc_id;
+	left_rank = T(left)->d->hits[lp].ranking;
+	left_used = 0;
+      }
+    }
+
+    if( right_left && right_used ) /* New from right */
+    {
+      if( ++rp == right_size )
+      {
+	right_left = 0;
+	if( !left_left )
+	  continue;
+      }
+      else
+      {
+	right_doc = T(right)->d->hits[rp].doc_id;
+	right_rank = T(right)->d->hits[rp].ranking;
+	right_used = 0;
+      }
+    }
+
+
+    if(!right_left || (left_doc <= right_doc))
+    {
+      if(left_doc>last)
+	wf_resultset_add( res, (last = left_doc), left_rank );
+      left_used=1;
+    }
+
+    if(!left_left || (right_doc <= left_doc ) )
+    {
+      if(right_doc>last)
+	wf_resultset_add( res, (last = right_doc), right_rank );
+      right_used=1;
+    }
+  }
+  if( !left_used )
+    if(left_doc!=last)
+      wf_resultset_add( res, (last = left_doc), left_rank );
+  if( !right_used )
+    if(right_doc!=last)
+      wf_resultset_add( res, (last = right_doc), right_rank );
+  pop_n_elems( args );
+  push_object( res );
+}
+
+static void f_resultset_sub( INT32 args )
+{
+  
+}
+
 void exit_resultset_program(void)
 {
   free_program( resultset_program );
@@ -251,12 +352,18 @@ void init_resultset_program(void)
   {  
     ADD_STORAGE( ResultSet );
     add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
-    add_function("test", f_resultset_test, "function(int:int)", 0 );
+    add_function("test", f_resultset_test, "function(int,int,int:int)", 0 );
     add_function("sort",f_resultset_sort,"function(void:object)",0);
     add_function("dup",f_resultset_dup,"function(void:object)",0);
     add_function("slice",f_resultset_slice,
 		 "function(int,int:array(array(int)))",0);
 
+    add_function( "or", f_resultset_or, "function(object:object)", 0 );
+    add_function( "`|", f_resultset_or, "function(object:object)", 0 );
+    add_function( "`+", f_resultset_or, "function(object:object)", 0 );
+
+    add_function( "sub", f_resultset_sub, "function(object:object)", 0 );
+    add_function( "`-", f_resultset_sub, "function(object:object)", 0 );
 
     add_function("_sizeof",f_resultset__sizeof,"function(void:int)", 0 );
     add_function("size",f_resultset__sizeof,"function(void:int)", 0 );
