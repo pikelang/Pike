@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 1997/06/01 19:52:25 marcus Exp $
+# $Id: configure.in,v 1.6 1997/07/02 00:48:48 marcus Exp $
 #
 # Configure script for the oracle module
 #
@@ -21,7 +21,7 @@ if test x$with_oracle = xyes; then
     if test x"$ORACLE_HOME" = x; then
       pike_cv_oracle_oracle_home=no
     else
-      pike_cv_oracle_oracle_home="$ORACLE_HOME"
+      pike_cv_oracle_oracle_home="`echo \"$ORACLE_HOME\" | sed -e 's://*$::'`"
     fi
   ])
 
