@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.52 2000/01/28 22:06:42 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.53 2000/01/29 13:42:13 mirar Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1165,6 +1165,72 @@ struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
   m=mkmapping(ci, cv);
   free_array(ci);
   free_array(cv);
+
+  return m;
+}
+
+struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+					    struct array *b, INT32 op)
+{
+  struct array *ai, *av;
+  struct array *ci, *cv;
+  INT32 *zipper;
+  struct mapping *m;
+
+  ai=mapping_indices(a);
+  av=mapping_values(a);
+  if(ai->size > 1)
+  {
+    zipper=get_set_order(ai);
+    order_array(ai, zipper);
+    order_array(av, zipper);
+    free((char *)zipper);
+  }
+
+  switch (op) /* no elements from »b» may be selected */
+  {
+     case PIKE_ARRAY_OP_AND:
+	zipper=merge(b,ai,op);
+	ci=array_zip(b,ai,zipper); /* b must not be used */
+	cv=array_zip(b,av,zipper); /* b must not be used */
+	break;
+     case PIKE_ARRAY_OP_SUB:
+	zipper=merge(ai,b,op);
+	ci=array_zip(ai,b,zipper); /* b must not be used */
+	cv=array_zip(av,b,zipper); /* b must not be used */
+	break;
+     default:
+	fatal("merge_mapping_array on other then AND or SUB\n");
+  }
+
+  free_array(ai);
+  free_array(av);
+  
+  free((char *)zipper);
+
+  m=mkmapping(ci, cv);
+  free_array(ci);
+  free_array(cv);
+
+  return m;
+}
+
+struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+					      struct array *b, INT32 op)
+{
+  struct array *b_temp;
+  INT32 *zipper;
+  struct mapping *m;
+
+  if (b->size>1)
+  {
+    zipper=get_set_order(b);
+    b_temp=reorder_and_copy_array(b,zipper);
+    m=merge_mapping_array_ordered(a,b_temp,op);
+    free_array(b_temp);
+  }
+  else
+    m=merge_mapping_array_ordered(a,b,op);
 
   return m;
 }

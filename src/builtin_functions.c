@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.232 2000/01/27 23:07:41 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.233 2000/01/29 13:42:14 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2407,9 +2407,11 @@ void f_sleep(INT32 args)
 
    pop_n_elems(args);
 
-   THREADS_ALLOW();
 
    if (delay>POLL_SLEEP_LIMIT)
+   {
+      /* THREADS_ALLOW may take longer time then POLL_SLEEP_LIMIT */
+      THREADS_ALLOW();
       for (;;)
       {
 	 double left = delay - TIME_ELAPSED;
@@ -2429,12 +2431,13 @@ void f_sleep(INT32 args)
 #endif
 	 GET_TIME_ELAPSED;
       }
+      THREADS_DISALLOW();
+      GET_TIME_ELAPSED; /* same goes for DISALLOW */
+   }
 
    if (do_microsleep)
       while (delay>TIME_ELAPSED) 
 	 GET_TIME_ELAPSED;
-
-   THREADS_DISALLOW();
 }
 
 void f_gc(INT32 args)
