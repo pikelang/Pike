@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.232 1999/11/23 04:19:46 mast Exp $"]])
+test_true([["$Id: testsuite.in,v 1.233 1999/11/24 06:43:58 mast Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1665,6 +1665,10 @@ test_compile_error([[} int foo() { return]]);
 test_compile_error([[} void foo() { return 1]]);
 test_compile([[mapping a; int b; a = b = 0;]]);
 test_compile_error([[mapping a; int b; a = b = 1;]]);
+test_compile_any([[void a(){} void b(function(int:void) f){} void c(){b(a);}]]);
+test_compile_error_low([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
+test_compile_any([[void a(){} function(int:void) b = a;]]);
+test_compile_error_low([[void a(int i){} function(:void) b = a;]]);
 
 // Not yet cataloged
 test_any(int i=10; { int i; } return i, 10)
