@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.434 2000/11/26 13:47:42 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.435 2000/11/29 03:12:17 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -491,7 +491,10 @@ case "$pike_cv_sys_os" in
     CFLAGS="$CFLAGS -D__USE_FIXED_PROTOTYPES__"
   ;;
   BSD/OS*)
-    LD="$BINDIR/smartlink shlicc"
+    case "`uname -r`" in
+      4.*) ;;
+      *) LD="$BINDIR/smartlink shlicc";;
+    esac
   ;;
   UnixWare*)
     case "$CFLAGS" in
@@ -1067,8 +1070,13 @@ if test "$cflags_is_set" = "no"; then
       fi
     else :; fi
 
-    EXTRA_MODULE_REQUIREMENTS="${EXTRA_MODULE_REQUIREMENTS} import_functions.h"
-    EXTRA_OBJS="${EXTRA_OBJS} export_functions.o"
+    if test x$with_dynamic_modules != xno ; then
+      AC_MSG_WARN([Enabling dynamic modules for Win32])
+      EXTRA_MODULE_REQUIREMENTS="${EXTRA_MODULE_REQUIREMENTS} import_functions.h"
+      EXTRA_OBJS="${EXTRA_OBJS} export_functions.o"
+      pike_cv_sys_dynamic_loading=yes
+      with_dynamic_modules=yes
+    fi
   ])
 
 dnl
@@ -3940,7 +3948,12 @@ if test -z "$LDSHARED" ; then
     FreeBSD*) LDSHARED="$CC -Wl,-Bshareable";;
     NetBSD*) LDSHARED="ld -Bshareable";;
     OpenBSD*) LDSHARED="ld -Bshareable";;
-    BSD/OS*) LDSHARED="shlicc -r";;
+    BSD/OS*)
+      case "`uname -r`" in
+       4.*) LDSHARED="$CC -shared";;
+        *) LDSHARED="shlicc -r";;
+      esac
+    ;;
     SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
     UNIX_SV*) LDSHARED="ld -G";;
     UnixWare*)
@@ -3964,7 +3977,10 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
     if test "$GCC" = yes ; then
       case "$pike_cv_sys_os" in
 	BSD/OS*)
-	  CCSHARED=""
+         case "`uname -r`" in
+           4.*) CCSHARED="-fPIC";;
+           *) CCSHARED="";;
+         esac
 	;;
 	Solaris*)
 	  # The Image module runs out of symbol reference space unless we
@@ -4013,6 +4029,16 @@ then
       AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
+      BSD/OS*)
+        case "`uname -r`" in
+         4.*) LINKFORSHARED="-rdynamic";;
+       esac
+      ;;
+      BSD/OS*)
+        case "`uname -r`" in
+         4.*) LINKFORSHARED="-rdynamic";;
+       esac
+      ;;
       GNU*) LINKFORSHARED="-rdynamic";;
       next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
@@ -4110,7 +4136,7 @@ if test "x$with_dynamic_modules" = "x" ; then
     with_dynamic_modules=yes
     if test x$pike_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
     then
-#     Dynamic loading is now WORKING
+#     Dynamic loading is now WORKING (maybe)
 #      if test x"$pike_cv_sys_os" != xWindows_NT ; then
         with_dynamic_modules=no
 #      fi
