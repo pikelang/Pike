@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.211 2004/04/06 15:37:55 nilsson Exp $
+|| $Id: encode.c,v 1.212 2004/05/11 19:50:13 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.211 2004/04/06 15:37:55 nilsson Exp $");
+RCSID("$Id: encode.c,v 1.212 2004/05/11 19:50:13 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -4011,6 +4011,7 @@ static void decode_value2(struct decode_data *data)
 	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
 	    /* We've regenerated p->program, so these may be off. */
 	    local_num_program = p->num_program;
+	    local_num_relocations = p->num_relocations;
 	    local_num_linenumbers = p->num_linenumbers;
 	  }
 
