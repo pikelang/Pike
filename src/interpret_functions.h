@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.165 2004/03/13 12:24:10 grubba Exp $
+|| $Id: interpret_functions.h,v 1.166 2004/03/13 15:44:13 grubba Exp $
 */
 
 /*
@@ -1244,7 +1244,7 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
     DO_DUMB_RETURN;
   case 2:
     /* Escape catch, continue after the escape instruction. */
-    DO_JUMP_TO(Pike_fp->pc);
+    DO_JUMP_TO(Pike_fp->return_addr);
     break;
   default:
     DOJUMP();
@@ -1253,13 +1253,13 @@ OPCODE0_PTRJUMP(F_CATCH, "catch", I_UPDATE_ALL, {
 });
 
 OPCODE0_RETURN(F_ESCAPE_CATCH, "escape catch", 0, {
-  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);
+  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
   INTER_ESCAPE_CATCH;
 });
 
 OPCODE0_RETURN(F_EXIT_CATCH, "exit catch", I_UPDATE_SP, {
   push_undefined();
-  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->pc);
+  JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
   INTER_ESCAPE_CATCH;
 });
 
