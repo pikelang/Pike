@@ -2,11 +2,6 @@
 
 . $NTTOOLS
 
-M=no
-N=no
-S=no
-P=no
-
 for a in "$@"
 do
   case "$a" in
@@ -25,6 +20,7 @@ do
     --nodename) N=yes ;;
     --sysname) S=yes ;;
     --processor) P=yes ;;
+    --revision) R=yes ;;
 
     --*)
       echo "Unknown option $a"
@@ -49,34 +45,52 @@ do
       esac
 
       case "$a" in
-        *a*) M=yes ; N=yes ; S=yes ;;
+        *r*) R=yes ;;
+      esac
+
+      case "$a" in
+        *v*) V=yes ;;
+      esac
+
+      case "$a" in
+        *a*) M=yes ; N=yes ; S=yes ; V=yes ;;
       esac
     ;;
       
   esac
 done
 
-if [ $M$N$S$P = nononono ]; then
+if [ X"$M$N$S$P$R$V" = X ]; then
   S=yes
 fi
 
 OUTPUT=
 
-if [ $S = yes ]; then
-  OUTPUT="$OUTPUT Windows_NT"
+if [ X$S = Xyes ]; then
+#  OUTPUT="$OUTPUT Windows_NT"
 #  OUTPUT="$OUTPUT `getntenv OS`"
+  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\[ '{print $1}'`"
 fi
 
-if [ $N = yes ]; then
+if [ X$N = Xyes ]; then
   OUTPUT="$OUTPUT $NTHOST"
 fi
 
-if [ $M = yes ]; then
+if [ X$V = Xyes ]; then
+  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
+fi
+
+if [ X$M = Xyes ]; then
   OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
 fi
 
-if [ $P = yes ]; then
+if [ X$P = Xyes ]; then
   OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
+fi
+
+#Should be release level, so maybe 98, NT, XP and so on would be better.
+if [ X$R = Xyes ]; then
+  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
 fi
 
 echo $OUTPUT
