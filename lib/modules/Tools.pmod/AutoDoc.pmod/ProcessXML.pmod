@@ -1134,7 +1134,7 @@ class NScopeStack
       error("No such symbol: %O in scope %O %O\n", symbol, top, stack);
     }
     if (!objectp(scope)) {
-      error("Symbol %O is not a scope\n", symbol);
+      error("Symbol %O is not a scope.\n", symbol);
     }
     stack += ({ top });
     top = scope;
