@@ -1,7 +1,7 @@
-# $Id: configure.in,v 1.5 1998/03/28 14:04:12 grubba Exp $
+# $Id: configure.in,v 1.6 2000/02/03 12:22:54 grubba Exp $
 AC_INIT(sha.c)
 
-AC_PROG_CC
+MY_AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_RANLIB
 
