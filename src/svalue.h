@@ -108,6 +108,12 @@ do{ \
   } \
 }while(0)
 
+/* var MUST be a variable!!! */
+#define safe_check_destructed(var) do{ \
+  if((var->type == T_OBJECT || var->type==T_FUNCTION) && !var->u.object->prog) \
+    var=&dest_ob_zero; \
+}while(0)
+
 #define check_short_destructed(U,T) \
 do{ \
   union anything *_u=(U); \
@@ -131,6 +137,7 @@ do{ \
 
 #endif
 
+extern struct svalue dest_ob_zero;
 
 /* Prototypes begin here */
 void free_short_svalue(union anything *s,TYPE_T type);

@@ -17,6 +17,10 @@
 #include "dynamic_buffer.h"
 #include "interpret.h"
 
+
+struct svalue dest_ob_zero = { T_INT, 0, 0 };
+
+
 /*
  * This routine frees a short svalue given a pointer to it and
  * its type.
@@ -383,13 +387,10 @@ int svalue_is_true(struct svalue *s)
     return 0;
 
   case T_FUNCTION:
-    check_destructed(s);
-    if(s->type==T_INT) return 0;
+    if(!s->u.object->prog) return 0;
     return 1;
 
   case T_OBJECT:
-    check_destructed(s);
-    if(s->type==T_INT) return 0;
     if(!s->u.object->prog) return 0;
 
     if(s->u.object->prog->lfuns[LFUN_NOT]!=-1)
@@ -410,7 +411,6 @@ int svalue_is_true(struct svalue *s)
     
 }
 
-
 int is_eq(struct svalue *a, struct svalue *b)
 {
   check_type(a->type);
@@ -418,8 +418,8 @@ int is_eq(struct svalue *a, struct svalue *b)
   check_refs(a);
   check_refs(b);
 
-  check_destructed(a);
-  check_destructed(b);
+  safe_check_destructed(a);
+  safe_check_destructed(b);
 
   if (a->type != b->type)
   {
@@ -578,6 +578,9 @@ int is_lt(struct svalue *a,struct svalue *b)
   check_type(b->type);
   check_refs(a);
   check_refs(b);
+
+  safe_check_destructed(a);
+  safe_check_destructed(b);
 
   if (a->type != b->type)
   {
@@ -832,7 +835,6 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
   f=0;
   for(e=0;e<num;e++,s++)
   {
-    f|= 1 << s->type;
     switch(s->type)
     {
     case T_FUNCTION:
@@ -856,6 +858,7 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
       gc_check(s->u.refs);
       break;
     }
+    f|= 1 << s->type;
   }
 
   return f;
