@@ -1,4 +1,4 @@
-#include <config.h>
+#include "config.h"
 
 
 #include "machine.h"
@@ -40,7 +40,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.47 1997/12/06 03:47:13 grubba Exp $");
+RCSID("$Id: spider.c,v 1.48 1997/12/07 21:56:42 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>

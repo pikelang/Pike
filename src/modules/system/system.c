@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.30 1997/10/25 18:10:00 grubba Exp $
+ * $Id: system.c,v 1.31 1997/12/07 22:01:35 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -13,17 +13,17 @@
 #include "system_machine.h"
 #include "system.h"
 
-#include <global.h>
-RCSID("$Id: system.c,v 1.30 1997/10/25 18:10:00 grubba Exp $");
-#include <module_support.h>
-#include <las.h>
-#include <interpret.h>
-#include <stralloc.h>
-#include <threads.h>
-#include <svalue.h>
-#include <mapping.h>
-#include <builtin_functions.h>
-#include <constants.h>
+#include "global.h"
+RCSID("$Id: system.c,v 1.31 1997/12/07 22:01:35 grubba Exp $");
+#include "module_support.h"
+#include "las.h"
+#include "interpret.h"
+#include "stralloc.h"
+#include "threads.h"
+#include "svalue.h"
+#include "mapping.h"
+#include "builtin_functions.h"
+#include "constants.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

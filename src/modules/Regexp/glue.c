@@ -27,7 +27,7 @@ struct regexp_glue
   int num_paren;
 };
 #else
-#include <pike_regexp.h>
+#include "pike_regexp.h"
 
 struct regexp_glue
 {

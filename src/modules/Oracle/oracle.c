@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.5 1997/09/26 21:05:44 marcus Exp $
+ * $Id: oracle.c,v 1.6 1997/12/07 21:50:48 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -14,18 +14,18 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <global.h>
-#include <svalue.h>
-#include <object.h>
-#include <array.h>
-#include <stralloc.h>
-#include <interpret.h>
-#include <pike_types.h>
-#include <pike_memory.h>
-#include <threads.h>
-#include <module_support.h>
-#include <mapping.h>
-#include <builtin_functions.h>
+#include "global.h"
+#include "svalue.h"
+#include "object.h"
+#include "array.h"
+#include "stralloc.h"
+#include "interpret.h"
+#include "pike_types.h"
+#include "pike_memory.h"
+#include "threads.h"
+#include "module_support.h"
+#include "mapping.h"
+#include "builtin_functions.h"
 
 #ifdef HAVE_ORACLE
 
@@ -34,7 +34,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.5 1997/09/26 21:05:44 marcus Exp $");
+RCSID("$Id: oracle.c,v 1.6 1997/12/07 21:50:48 grubba Exp $");
 
 #ifdef HAVE_ORACLE
 
