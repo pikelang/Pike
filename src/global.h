@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.100 2004/09/27 21:47:23 mast Exp $
+|| $Id: global.h,v 1.101 2005/03/18 21:39:08 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -49,13 +49,6 @@
 /* Avoid getting definitions of struct in_addr from <unistd.h>... */
 #define __USE_NETINET_IN_H
 #endif
-
-/*
- * We want to use __builtin functions.
- */
-#ifndef __BUILTIN_VA_ARG_INCR
-#define __BUILTIN_VA_ARG_INCR	1
-#endif /* !__BUILTIN_VA_ARG_INCR */
 
 /*
  * Some structure forward declarations are needed.
