@@ -98,7 +98,7 @@ static void f_hp_feed( INT32 args )
 
   for(i = 0; i < l; i++)
   {
-    if(in[j] > 64 && in[j] < 91) in[j]+=32;
+    if(in[i] > 64 && in[i] < 91) in[i]+=32;
     else if( in[i] == ':' )
     {
       /* in[os..i-1] == the header */
