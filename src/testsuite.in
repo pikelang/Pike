@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.145 1999/02/06 03:03:07 mast Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.146 1999/02/10 01:29:12 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -842,6 +842,8 @@ test_equal([[ `+( ([1:2]), ([1:2]), ([2:3,4:5]), ([6:7,1:2])  )]],[[ ([1:2,2:3,4
 test_equal([[ `+( ([1:2]), ([1:2]), ([2:3,4:5]), ([6:7,1:2]),([8:9])  )]],[[ ([1:2,2:3,4:5,6:7,8:9]) ]] )
 
 test_any([[mapping m=([1:2,3:2]); return search(m,2,search(m,2))!=-1;]],1)
+
+test_any([[mapping m=([]); for(int e=0;e<1000;e++) m[e&3]+=({e}); return sizeof(m)==4 && sizeof(m[0])==250;]],1)
 
 // rows
 test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])

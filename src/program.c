@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.108 1999/02/01 02:41:43 hubbe Exp $");
+RCSID("$Id: program.c,v 1.109 1999/02/10 01:29:08 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -90,6 +90,7 @@ char *lfun_names[] = {
   "``*",
   "``/",
   "``%",
+  "`+=",
 };
 
 struct program *first_program = 0;

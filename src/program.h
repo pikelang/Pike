@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.49 1999/02/01 02:41:45 hubbe Exp $
+ * $Id: program.h,v 1.50 1999/02/10 01:29:10 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -55,8 +55,9 @@
 #define LFUN_RMULTIPLY 35
 #define LFUN_RDIVIDE 36
 #define LFUN_RMOD 37
+#define LFUN_ADD_EQ 38
 
-#define NUM_LFUNS 38
+#define NUM_LFUNS 39
 
 extern char *lfun_names[];
 

@@ -1,7 +1,8 @@
 #include "global.h"
 
 /* To do:
- * controls for file->connect() & file->open_socket()
+ * controls for file->pipe()
+ * controls for kill/create_process/signal
  * controls for all/most functions in the system module
  * controls for all/most functions in files/efun.c
  * controls for all/most functions in spider
