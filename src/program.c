@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.368 2001/09/01 00:27:31 hubbe Exp $");
+RCSID("$Id: program.c,v 1.369 2001/09/02 14:25:19 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4682,6 +4682,17 @@ static void apply_trampoline(INT32 args)
   Pike_error("Internal error: Trampoline magic failed!\n");
 }
 
+static void not_trampoline(INT32 args)
+{
+  pop_n_elems(args);
+  if (!THIS->frame || !THIS->frame->current_object ||
+      !THIS->frame->current_object->prog) {
+    push_int(1);
+  } else {
+    push_int(0);
+  }
+}
+
 static void init_trampoline(struct object *o)
 {
   THIS->frame=0;
@@ -4773,6 +4784,7 @@ void init_program(void)
   debug_malloc_touch(Pike_compiler->fake_object->storage);
   ADD_STORAGE(struct pike_trampoline);
   add_function("`()",apply_trampoline,"function(mixed...:mixed)",0);
+  add_function("`!",not_trampoline,"function(:int)",0);
   set_init_callback(init_trampoline);
   set_exit_callback(exit_trampoline);
   set_gc_check_callback(gc_check_trampoline);
