@@ -1,0 +1,779 @@
+<chapter title="Operators">
+
+<p>To make it easier to write Pike, and to make the code somewhat shorter,
+some functions can be called with just one or two characters in the code.
+These functions are called <b>operators</b> and we have already seen how
+they work in plenty of examples. In this chapter I will describe in detail
+what they do. The operators are divided into categories depending on their
+function, but beware that some operators have meanings that go way beyond
+the scope of the category they are in.</p>
+
+<section title="Arithmetic operators">
+
+<p>The arithmetic operators are the simplest ones, since they work just like
+you remember from math in school. The arithmetic operators are:</p>
+
+<matrix>
+<r><c><b>Function</b></c>
+   <c><b>Syntax</b></c>
+   <c><b>Identifier</b></c>
+   <c><b>Returns</b></c></r>
+<r><c>Addition</c>
+   <c><expr>a + b</expr></c>
+   <c><expr>`+</expr></c>
+   <c>the sum of a and b</c></r>
+<r><c>Subtraction</c>
+   <c><expr>a - b</expr></c>
+   <c><expr>`-</expr></c>
+   <c>b subtracted from a</c></r>
+<r><c>Negation</c>
+   <c><expr>- a</expr></c>
+   <c><expr>`-</expr></c>
+   <c>minus a</c></r>
+<r><c>Multiplication</c>
+   <c><expr>a * b</expr></c>
+   <c><expr>`*</expr></c>
+   <c>a multiplied by b</c></r>
+<r><c>Division</c>
+   <c><expr>a / b</expr></c>
+   <c><expr>`/</expr></c>
+   <c>a divided by b</c></r>
+<r><c>Modulo</c>
+   <c><expr>a % b</expr></c>
+   <c><expr>`%</expr></c>
+   <c>the remainder of a division between a and b</c></r>
+</matrix>
+
+<p>The third column, "Identifier" is the name of the function that actually
+evaluates the operation. For instance, <expr>a + b</expr> can also be written
+as <expr>`+(a, b)</expr>. I will show you how useful this can be at the end
+of this chapter.</p>
+
+<p>When applied to integers or floats these operators do exactly what they
+are supposed to do. The only operator in the list not known from basic
+math is the <b>modulo</b> operator. The modulo operator returns the
+remainder from an integer division. It is the same as calculating
+<expr>a - floor(a / b) * b</expr>. <expr>floor</expr> rounds the value down to
+closest lower integer value. Note that the call to <expr>floor</expr> isn't
+needed when operating on integers, since dividing two integers will return
+the result as an integer and it is always rounded down. For instance,
+<expr>8 / 3</expr> would return <expr>2</expr>.</p>
+
+<p>If all arguments to the operator are integers, the
+result will also be an integer. If one is a float and the other is
+an integer, the result will be a float. If both arguments are float,
+the result will of course be a float.</p>
+
+<p>However, there are more types in Pike than integers and floats. Here is
+the complete list of combinations of types you can use with these operators:</p>
+
+<matrix>
+
+<r><c><b>Operation</b></c>
+   <c><b>Returned type</b></c>
+   <c><b>Returned value</b></c></r>
+
+<r><c><code>int + int</code></c>
+   <c>int</c>
+   <c>the sum of the two values</c></r>
+
+<r><c><code>float + int
+int + float
+float + float</code></c>
+   <c>float</c>
+   <c>the sum of the two values</c></r>
+
+<r><c><code>string + string
+int + string
+float + string
+string + int
+string + float</code></c>
+  <c>string</c>
+  <c>In this case, any int or float is first converted to a string. Then
+  the two strings are concatenated and the resulting string is returned.</c></r>
+
+<r><c><code>array + array</code></c>
+   <c>array</c>
+   <c>The two arrays are concatenated into a new array and that new
+   array is returned.</c></r>
+
+<r><c><code>mapping + mapping</code></c>
+   <c>mapping</c>
+   <c>A mapping with all the index-value pairs from both mappings is
+   returned. If an index is present in both mappings the index-value pair
+   from the right mapping will be used.</c></r>
+
+<r><c><code>multiset + multiset</code></c>
+   <c>multiset</c>
+   <c>A multiset with all the indices from both multisets is returned.</c></r>
+
+<r><c><code>int - int</code></c>
+   <c>int</c>
+   <c>The right value subtracted from the left.</c></r>
+
+<r><c><code>float - int
+int - float
+float - float</code></c>
+   <c>float</c>
+   <c>The right value subtracted from the left.</c></r>
+
+<r><c><code>string - string</code></c>
+   <c>string</c>
+   <c>A copy of the left string with all occurrences of the right string
+   removed.</c></r>
+
+<r><c><code>array - array</code></c>
+   <c>array</c>
+   <c>A copy of the left array with all elements present in the right array
+   removed. Example: <expr>({2,1,4,5,3,6,7}) - ({3,5,1})</expr> will return
+   <expr>({2,4,6,7})</expr>.</c></r>
+
+<r><c><code>mapping - mapping</code></c>
+   <c>mapping</c>
+   <c>A new mapping with all index-value pairs from the left mapping, except
+   those indices that are also present in the right mapping.</c></r>
+
+<r><c><code>multiset - multiset</code></c>
+   <c>multiset</c>
+   <c>A copy of the left multiset without any index present in the left
+   multiset.</c></r>
+
+<r><c><code>- int</code></c>
+   <c>int</c>
+   <c>Same as <expr>0 - int</expr>.</c></r>
+
+<r><c><code>- float</code></c>
+   <c>float</c>
+   <c>Same as <expr>0 - float</expr>.</c></r>
+
+<r><c><code>int * int</code></c>
+   <c>int</c>
+   <c>the product of the two values</c></r>
+
+<r><c><code>float * int
+int * float
+float * float</code></c>
+   <c>float</c>
+   <c>the product of the two values</c></r>
+
+<r><c><code>array(string) * string</code></c>
+   <c>string</c>
+   <c>All the strings in the array are concatenated with the string on the
+   right in between each string. Example: <expr>({"foo","bar"})*"-"</expr>
+   will return <expr>"foo-bar"</expr>.</c></r>
+
+<r><c><code>array(array) * array</code></c>
+   <c>array</c>
+   <c>All the arrays in the left array are concatenated with the array on
+   the right in between each array. Example: <expr>({ ({"foo"}) ,({"bar"})})*({"-"})</expr>
+   will return <expr>({ "foo","-","bar" })</expr>.</c></r>
+
+<r><c><code>string * int</code></c>
+   <c>string</c>
+   <c>This operation will concatenate the string N times. Example:
+   <expr>"foo"*3</expr> will return <expr>"foofoofoo"</expr>.</c></r>
+
+<r><c><code>string * float</code></c>
+   <c>string</c>
+   <c>This operation will concatenate the string X times. Example:
+   <expr>"foo"*2.5</expr> will return <expr>"foofoofo"</expr>.</c></r>
+
+<r><c><code>array * int</code></c>
+   <c>string</c>
+   <c>This operation will concatenate the array N times. Example:
+   <expr>({"foo"})*3</expr> will return <expr>({"foo","foo","foo"})</expr>.</c></r>
+
+<r><c><code>array * float</code></c>
+   <c>string</c>
+   <c>This operation will concatenate the array X times. Example:
+   <expr>({1,2,3})*2.5</expr> will return <expr>({1,2,3,1,2,3,1,2})</expr>.</c>
+</r>
+
+<r><c><code>int / int</code></c>
+   <c>int</c>
+   <c>The right integer divided by the left integer rounded towards
+   minus infinity.</c></r>
+
+<r><c><code>float / int
+int / float
+float / float</code></c>
+   <c>float</c>
+   <c>The right value divided by the left value.</c></r>
+
+<r><c><code>string / string</code></c>
+   <c>array(string)</c>
+   <c>In symmetry with the multiplication operator, the division operator
+   can split a string into pieces. The right string will be split at every
+   occurrence of the right string and an array containing the results will
+   be returned. Example: <expr>"foo-bar"/"-"</expr> will return
+   <expr>({"foo","bar"})</expr></c></r>
+
+<r><c><code>string / int</code></c>
+   <c>array(string)</c>
+   <c>This will split the string into pieces. The size of the pieces is
+   given by the integer. Only complete pieces will be included in the result,
+   the 'reminder' is discarded. Example: <expr>"foo-bar"/2</expr> will
+   return <expr>({"fo","o-","ba"})</expr></c></r>
+
+<r><c><code>string / float</code></c>
+   <c>array(string)</c>
+   <c>This is similar to dividing a string with an integer, but it allows
+   fraction-sized segments and the reminder will always be included.
+   Example: <expr>"foo-bar"/2.5</expr> will return
+   <expr>({"fo","o-b","ar"})</expr></c></r>
+
+<r><c><code>array / int</code></c>
+   <c>array(array)</c>
+   <c>This is similar to dividing a string with an integer, but splits an
+   array. Example: <expr>({1,2,3,4,5,6,7})/2</expr> will return
+   <expr>({({1,2}),({3,4}),({5,6})})</expr></c></r>
+
+<r><c><code>array / float</code></c>
+   <c>array(array)</c>
+   <c>You should be able to predict what this does by now. :) Example:
+   <expr>({1,2,3,4,5,6,7,8})/2.5</expr> will return
+   <expr>({({1,2}),({3,4,5}),({6,7}),({8})})</expr></c></r>
+
+<r><c><code>int % int</code></c>
+   <c>int</c>
+   <c>The remainder of a division. If <expr>a</expr> and <expr>b</expr>
+   are integers, <expr>a%b</expr> is the same as <expr>a-(a/b)*b</expr></c></r>
+
+<r><c><code>float % float
+int % float
+float % int</code></c>
+   <c>float</c>
+   <c>The remainder of a division. If <expr>a</expr> and <expr>b</expr>
+   are floats, <expr>a%b</expr> is the same as <expr>a-floor(a/b)*b</expr></c></r>
+
+<r><c><code>string % int</code></c>
+   <c>string</c>
+   <c>The remainder of a string division. Example: <expr>"foo-bar"%2</expr>
+   will return <expr>"r"</expr></c></r>
+
+<r><c><code>array % int</code></c>
+   <c>string</c>
+   <c>The remainder of an array division. Example: <expr>({1,2,3,4,5,6,7})%2</expr>
+   will return <expr>({7})</expr></c></r>
+
+</matrix>
+
+</section>
+
+<section title="Comparison operators">
+
+<p>The arithmetic operators would be hard to use for anything interesting
+without the ability to compare the results to each other.
+For this purpose there are six comparison operators:</p>
+
+<matrix>
+<r><c><b>Function</b></c>
+   <c><b>Syntax</b></c>
+   <c><b>Identifier</b></c>
+   <c><b>Returns</b></c></r>
+
+<r><c>Same</c>
+   <c><expr>a == b</expr></c>
+   <c><expr>`==</expr></c>
+   <c>1 if a is the same value as b, 0 otherwise</c></r>
+
+<r><c>Not same</c>
+   <c><expr>a != b</expr></c>
+   <c><expr>`!=</expr></c>
+   <c>0 if a is the same value as b, 1 otherwise</c></r>
+
+<r><c>Greater than</c>
+   <c><expr>a &gt; b</expr></c>
+   <c><expr>`&gt; </expr></c>
+   <c>1 if a is greater than b, 0 otherwise</c></r>
+
+<r><c>Greater than or equal to</c>
+   <c><expr>a &gt;= b</expr></c>
+   <c><expr>`&gt;=</expr></c>
+   <c>1 if a is greater to or equal to b, 0 otherwise</c></r>
+
+<r><c>Lesser than</c>
+   <c><expr>a &lt; b</expr></c>
+   <c><expr>`&lt; </expr></c>
+   <c>1 if a is lesser than b, 0 otherwise</c></r>
+
+<r><c>Lesser than or equal to</c>
+   <c><expr>a &lt;= b</expr></c>
+   <c><expr>`&lt;=</expr></c>
+   <c>1 if a is lesser than or equal to b, 0 otherwise</c></r>
+
+</matrix>
+
+<p>The <expr>==</expr> and <expr>!=</expr> operators can be used on any type. For two
+values to be <b>same</b> they must be the same type. Therefore 1 and 1.0 are
+not <b>same</b>. Also, for two values of <b>pointer types</b> to be the same
+the two values must be pointers to the same object. It is not enough that
+the two objects are of the same size and contain the same data.</p>
+
+<p>The other operators in the table above can only be used with integers, floats
+and strings. If you compare an integer with a float, the int will be promoted
+to a float before the comparison. When comparing strings, lexical order is
+used and the values of the environment variables <tt>LC_CTYPE</tt> and
+<tt>LC_LANG</tt> are respected.</p>
+
+</section>
+
+<section title="Logical operators">
+
+<p>Logical operators are operators that operate with truth values. In Pike any value
+except zero is considered <b>true</b>. Logical operators are a very basic part
+of Pike. They can also decide which arguments to evaluate and which not to
+evaluate. Because of this the logical operators do not have any identifiers and
+can not be called as normal functions. There are four logical operators:</p>
+
+<matrix>
+
+<r><c><b>Function</b></c>
+   <c><b>Syntax</b></c>
+   <c><b>Returns</b></c></r>
+
+<r><c>And</c>
+   <c><expr>a &amp;&amp; b</expr></c>
+   <c>If a is false, a is returned and b is not evaluated. Otherwise, b is
+   returned.</c></r>
+
+<r><c>Or</c>
+   <c><expr>a || b</expr></c>
+   <c>If a is true, a is returned and b is not evaluated. Otherwise, b is
+   returned.</c></r>
+
+<r><c>Not</c>
+   <c><expr>! a</expr></c>
+   <c>Returns 0 if a is true, 1 otherwise.</c></r>
+
+<r><c>If-else</c>
+   <c><expr>a ? b : c</expr></c>
+   <c>If a is true, b is returned and c is not evaluated. Otherwise c is
+   returned and b is not evaluated.</c></r>
+
+</matrix>
+
+</section>
+
+<section title="Bitwise/set operators">
+
+<p>These operators are used to manipulate bits as members in sets.
+They can also manipulate arrays, multisets and mappings as sets.</p>
+
+<matrix>
+
+<r><c><b>Function</b></c>
+   <c><b>Syntax</b></c>
+   <c><b>Identifier</b></c>
+   <c><b>Returns</b></c></r>
+
+<r><c>Shift left</c>
+   <c><expr>a &lt;&lt; b</expr></c>
+   <c><expr>`&lt;&lt;</expr></c>
+   <c>Multiplies a by 2 b times.</c></r>
+
+<r><c>Shift right</c>
+   <c><expr>a &gt;&gt; b</expr></c>
+   <c><expr>`&gt;&gt;</expr></c>
+   <c>Divides a by 2 b times.</c></r>
+
+<r><c>Inverse (not)</c>
+   <c><expr>~ a</expr></c>
+   <c><expr>`~</expr></c>
+   <c>Returns -1-a.</c></r>
+
+<r><c>Intersection (and)</c>
+   <c><expr>a &amp; b</expr></c>
+   <c><expr>`&amp;</expr></c>
+   <c>All elements present in both a and b.</c></r>
+
+<r><c>Union (or)</c>
+   <c><expr>a | b</expr></c>
+   <c><expr>`|</expr></c>
+   <c>All elements present in a or b.</c></r>
+
+<r><c>Symmetric difference (xor)</c>
+   <c><expr>a ^ b</expr></c>
+   <c><expr>`^</expr></c>
+   <c>All elements present in a or b, but not present in both.</c></r>
+
+</matrix>
+
+<p>The first three operators can only be used with integers and should be
+pretty obvious.</p>
+
+<p>The other three, intersection, union and symmetric difference, can be used with
+integers, arrays, multisets and mappings. When used with integers, these
+operators considers each bit in the integer a separate element. If you do
+not know about how bits in integers work I suggest you go look it up in some other
+programming book or just don't use these operators on integers.</p>
+
+<p>When intersection, union or symmetric difference is used on an array each element
+in the array is considered by itself. So intersecting two arrays will result
+in an array with all elements that are present in both arrays. Example:
+<expr>({7,6,4,3,2,1}) &amp; ({1, 23, 5, 4, 7})</expr> will return
+<expr>({7,4,1})</expr>. The order of the elements in the returned array will
+always be taken from the left array. Elements in multisets are treated
+the same as elements in arrays. When doing a set operation on a mapping
+however, only the indices are considered. The values are just copied with
+the indices. If a particular index is present in both the right and left
+argument to a set operator, the one from the right side will be used.
+Example: <expr>([1:2]) | ([1:3])</expr> will return <expr>([1:3])</expr>.</p>
+
+</section>
+
+<section title="Indexing">
+
+<p>The index and range operators are used to retrieve information from a
+complex data type.</p>
+
+<matrix>
+
+<r><c><b>Function</b></c>
+   <c><b>Syntax</b></c>
+   <c><b>Identifier</b></c>
+   <c><b>Returns</b></c></r>
+
+<r><c>Index</c>
+   <c><expr>a [ b ]</expr></c>
+   <c><expr>`[]</expr></c>
+   <c>Returns the index b from a.</c></r>
+
+<r><c>Lookup</c>
+   <c><expr>a -&gt;<i>identifier</i></expr></c>
+   <c><expr>`-&gt;</expr></c>
+   <c>Looks up the identifier. Same as a["<i>identifier</i>"].</c></r>
+
+<r><c>Assign index</c>
+   <c><expr>a [ b ] = c</expr></c>
+   <c><expr>`[]=;</expr></c>
+   <c>Sets the index b in a to c.</c></r>
+
+<r><c>Assign index</c>
+   <c><expr>a -&gt;<i>identifier</i> = c</expr></c>
+   <c><expr>`-&gt;=</expr></c>
+   <c>Sets the index "<i>identifier</i>" in a to c.</c></r>
+
+<r><c>Range</c>
+   <c><expr>a [ b .. c ]</expr></c>
+   <c><expr>`[..]</expr></c>
+   <c>Returns a slice of a starting at the index b and ending at c.</c></r>
+
+<r><c>Range</c>
+   <c><expr>a [ .. c ]</expr></c>
+   <c><expr>`[..]</expr></c>
+   <c>Returns a slice of a starting at the beginning of a and ending at c.</c></r>
+
+<r><c>Range</c>
+   <c><expr>a [ b .. ]</expr></c>
+   <c><expr>`[..]</expr></c>
+   <c>Returns a slice of a from the index b to the end of a.</c></r>
+
+</matrix>
+
+<p>The index operator can be written in two different ways. It can be
+written as <expr>ob [ <i>index</i> ]</expr> or
+<expr>ob-&gt;<i>identifier</i></expr>. However, the latter syntax is
+equal to <expr>ob [ "<i>identifier</i>" ]</expr>.</p>
+
+<p>You can only
+index strings, arrays, mapping, multisets and objects, and some of these
+can only be indexed on certain things as shown in this list:</p>
+
+<matrix>
+
+<r><c><b>Operation</b></c>
+   <c><b>Returns</b></c></r>
+
+<r><c><code>string[int]</code></c>
+   <c>Returns the ascii value of the Nth character in the string.</c></r>
+
+<r><c><code>array[int]</code></c>
+   <c>Return the element in the array corresponding to the integer.</c></r>
+
+
+<r><c><code>array[int]=mixed</code></c>
+   <c>Sets the element in the array to the mixed value.</c></r>
+
+<r><c><code>mapping[mixed]
+mapping-&gt;identifier</code></c>
+  <c>Returns the value associated with the index, 0 if it is not found.</c></r>
+
+<r><c><code>mapping[mixed]=mixed
+mapping-&gt;identifier=mixed</code></c>
+   <c>Associate the second mixed value with the first mixed value.</c></r>
+
+<r><c><code>multiset[mixed]
+multiset-&gt;identifier</code></c>
+   <c>Returns 1 if the index (the value between the brackets) is present
+   in the multiset, 0 otherwise.</c></r>
+
+<r><c><code>multiset[mixed]=mixed
+multiset-&gt;identifier=mixed</code></c>
+   <c>If the mixed value is <b>true</b> the index is added to the
+   multiset. Otherwise the index is removed from the multiset.</c></r>
+
+<r><c><code>object[string]
+object-&gt;identifier</code></c>
+   <c>Returns the value of the named identifier in the object.</c></r>
+
+<r><c><code>object[string]=mixed
+object-&gt;identifier=mixed</code></c>
+   <c>Set the given identifier in the object to the mixed value. Only
+   works if the identifier references a variable in the object.</c></r>
+
+<r><c><code>program[string]
+program-&gt;identifier</code></c>
+   <c>Returns the value of the named constant identifier in the program.</c></r>
+
+<r><c><code>string[int..int]</code></c>
+   <c>Returns a piece of the string.</c></r>
+
+<r><c><code>array[int..int]</code></c>
+   <c>Returns a slice of the array.</c></r>
+
+</matrix>
+
+<p>When indexing an <expr>array</expr> or <expr>string</expr> it is sometimes convenient
+to access index from the end instead of from the beginning. This function
+can be performed by using a negative index. Thus <expr> arr[-i] </expr> is the
+same as <expr>arr[sizeof(arr)-i]</expr>. Note however that this behavior does
+not apply to the range operator. Instead the range operator clamps it's
+arguments to a suitable range. This means that
+<expr><i>a</i>[<i>b</i>..<i>c</i>]</expr> will be treated as follows:</p>
+
+<ul>
+<li> If <i>b</i> is less than zero, the range will begin at the start
+     of the array as if <i>b</i> had been zero.</li>
+<li> If <i>b</i> is greater or equal to sizeof(<i>a</i>) an empty array/string
+     will be returned.</li>
+<li> If <i>c</i> is less than <i>b</i>, an empty array/string will be
+     returned.</li>
+<li> If <i>c</i> is greater or equal to sizeof(<i>a</i>) the range will
+     continue to the end of the array/string.</li>
+<li> No errors are generated in any of the above cases.</li>
+</ul>
+
+</section>
+
+<!-- FIXME: tell more about indexing and ranges -->
+
+<section title="The assignment operators">
+
+<p>There is really only one assignment operator, but it can be combined with
+lots of other operators to make the code shorter. An assignment looks
+like this:
+
+<code>
+	variable = expression;
+</code>
+
+The <i>variable</i> can be a local variable, a global variable or an index
+in an array, object, multiset or mapping. This will of course set the
+value stored in <i>variable</i> to <i>expression</i>. Note that the above
+is also an expression which returns the value of the <i>expression</i>.
+This can be used in some interesting ways:
+
+<code>
+	variable1 = variable2 = 1; // Assign 1 to both variables
+	variable1 =(variable2 = 1); // Same as above
+
+	// Write the value of the expression, if any
+	if(variable = expression)
+	  write(variable);
+</code>
+
+Using assignments like this can however be confusing to novice users, or users
+who come from a Pascal or Basic background. Especially the if statement
+can be mistaken for <tt>if(<i>variable</i> == <i>expression</i>)</tt> which
+would mean something completely different. As I mentioned earlier, the
+assignment operator can be combined with another operator to form operators
+that modify the contents of a variable instead of just assigning it.
+Here is a list of all the combinations:</p>
+
+<matrix>
+<r><c><b>Syntax</b></c> <c><b>Same as</b></c> <c><b>Function</b></c></r>
+<r><c><expr><i>variable</i> += <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> + <i>expression</i></c><c>Add <i>expression</i> to <i>variable</i></c></r>
+<r><c><expr><i>variable</i> -= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> - <i>expression</i></c><c>Subtract <i>expression</i> from <i>variable</i></c></r>
+<r><c><expr><i>variable</i> *= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> * <i>expression</i></c><c>Multiply <i>variable</i> with <i>expression</i></c></r>
+<r><c><expr><i>variable</i> /= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> / <i>expression</i></c><c>Divide <i>variable</i> by <i>expression</i></c></r>
+<r><c><expr><i>variable</i> %= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> % <i>expression</i></c><c>Modulo <i>variable</i> by <i>expression</i></c></r>
+<r><c><expr><i>variable</i> &lt;&lt;= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> &lt;&lt; <i>expression</i></c><c>Shift <i>variable</i> <i>expression</i> bits left</c></r>
+<r><c><expr><i>variable</i> &gt;&gt;= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> &gt;&gt; <i>expression</i></c><c>Shift <i>variable</i> <i>expression</i> bits right</c></r>
+<r><c><expr><i>variable</i> |= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> | <i>expression</i></c><c>Or <i>variable</i> with <i>expression</i></c></r>
+<r><c><expr><i>variable</i> &amp;= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> &amp; <i>expression</i></c><c>And <i>variable</i> with <i>expression</i></c></r>
+<r><c><expr><i>variable</i> ^= <i>expression</i></expr></c><c> <i>variable</i> = <i>variable</i> ^ <i>expression</i></c><c>Xor <i>variable</i> with <i>expression</i></c></r>
+</matrix>
+
+<p>In all of the above expressions <i>variable</i> can actually be any of type
+of assignable values. Assignable values are also known as <b>lvalues</b> and
+here is a list of <b>lvalues</b>:</p>
+
+<matrix>
+<r><c><b>Lvalue type</b></c><c><b>Syntax</b></c><c><b>Valid assignment type</b></c></r>
+<r><c> a local or global variable </c><c> <i>identifier</i> </c> <c>same as variable</c></r>
+<r><c> an element in an array </c><c> <i>array</i> [ <i>int</i> ]</c><c>any type</c></r>
+<r><c> elements in elements in an array </c><c> <i>array</i> [ <i>string</i> ]</c><c>any type This is like map(arr, `[]=,string_indexing_element, assignment_element)</c></r>
+<r><c> an element in an string </c><c> <i>string</i> [ <i>int</i> ]</c><c>integer</c></r>
+<r><c> an element in a mapping </c><c> <i>mapping</i>[<i>mixed</i>] or <i>mapping</i>-&gt;<i>identifier</i> </c><c>any type</c></r>
+<r><c> an element in a multiset </c><c> <i>multiset</i>[<i>mixed</i>] or <i>multiset</i>-&gt;<i>identifier</i> </c><c>true / false</c></r>
+<r><c> a variable in an object </c><c> <i>object</i>[<i>string</i>] or <i>object</i>-&gt;<i>identifier</i> </c> <c>same type as named variable</c></r>
+<r><c> a list of lvalues  </c><c> [ <i>lvalue</i>, <i>lvalue</i> ] </c><c> an array, first value in the array will be assigned to the first lvalue in the list, second value in the array to the second value in the list etc. </c></r>
+</matrix>
+
+</section>
+
+<section title="The rest of the operators">
+
+<p>Now there are only a couple of operators left. I have grouped them together
+in this section, not because they are not important, but because they do
+not fit in any particular categories.</p>
+
+<matrix>
+<r><c><b>Function</b></c>	<c><b>Syntax</b></c>			<c><b>Identifier</b></c><c><b>Returns</b></c></r>
+<r><c>Calling</c><c><tt>a ( <i>args</i> )</tt></c><c><tt>`()</tt></c><c>Calls the function a.</c></r>
+<r><c>splice</c>	<c><tt>@ <i>a</i></tt></c>	<c>none</c>	<c>Sends each element in the array a as an individual argument to a function call.</c></r>
+<r><c>Increment</c>	<c><tt>++ a</tt></c>		<c>none</c>	<c>Increments a and returns the new value of a.</c></r>
+<r><c>Decrement</c>	<c><tt>-- a</tt></c>		<c>none</c>	<c>Decrements a and returns the new value of a.</c></r>
+<r><c>Post increment</c><c><tt>a ++</tt></c>	<c>none</c>	<c>Increments a and returns the old value of a.</c></r>
+<r><c>Post decrement</c><c><tt>a --</tt></c>	<c>none</c>	<c>Decrements a and returns the old value of a.</c></r>
+<r><c>casting</c>	<c><tt>(<i>type</i>) a</tt></c><c>none</c>	<c>Tries to convert a into a value of the specified type.</c></r>
+<r><c>Null</c>	<c><tt>a, b</tt></c>		<c>none</c>	<c>Evaluates a and b, then returns b.</c></r>
+</matrix>
+
+<p>The most important of these operators is the calling operator. It is used
+to call functions. The operator itself is just a set of parenthesis placed
+after the expression that returns the function. Any arguments to the function
+should be placed between the parenthesis, separated by commas. We have
+already seen many examples of this operator, although you might not have
+realized it was an operator at the time. The function call operator can
+do more than just calling functions though; if the 'function' is in fact
+an array, the operator will loop over the array and call each element in
+the array and returns an array with the results.</p>
+
+<!-- In fact, <tt>({ foo, bar, gazonk }) (1, 2, 3)</tt> is the same as <tt>map(({ foo, bar, gazonk }), call_function, 1, 2, 3)</tt>. -->
+
+<p>If on the other hand, the 'function' is a program, the operator will
+clone an object from the program and call create() in the new object
+with the arguments given. In fact, the function <tt>clone</tt> is
+implemented like this:
+
+<code>
+object clone(mixed p, mixed ... args) { ( (program)p )(@args); }
+</code>
+
+On the subject of function calls, the splice operator should also be mentioned.
+The splice operator is an at sign in front of an expression. The expression
+should always be an array. The splice operator sends each of the elements
+in the array as a separate argument to the function call. The splice operator
+can only be used in an argument list for a function call.</p>
+
+<p>Then there are the increment and decrement operators. The increment and
+decrement operators are somewhat limited: they can only be used on
+integers. They provide a short and fast way to add or subtract one
+to an integer. If the operator is written before the variable
+(<tt>++<i>a</i></tt>) the returned value will be what the variable
+is after the operator has added/subtracted one to it. If the operator
+is after the variable (<tt><i>a</i>++</tt>) it will instead return the
+value of the variable before it was incremented/decremented.</p>
+
+<p>Casting is used to convert one type to another, not all casts are
+possible. Here is a list of all casts that actually _do_ anything:</p>
+
+<matrix>
+<r><c><b>casting from</b></c><c><b>to</b></c><c><b>operation</b></c></r>
+<r><c>int</c><c>string</c><c>Convert the int to ASCII representation</c></r>
+<r><c>float</c><c>string</c><c>Convert the float to ASCII representation</c></r>
+<r><c>string</c><c>int</c><c>Convert decimal, octal or hexadecimal number to an int. Note that this will only work with decimal numbers in future versions.</c></r>
+<r><c>string</c><c>float</c><c>Convert ASCII number to a float.</c></r>
+<r><c>string</c><c>program</c><c>String is a filename, compile the file and return the program. Results are cached.</c></r>
+<r><c>string</c><c>object</c><c>This first casts the string to a program, (see above) and then clones the result. Results are cached.</c></r>
+<r><c>object</c><c><i>type</i></c><c>This calls the function 'cast' with a string containing the type as an argument.</c></r>
+<r><c>string</c><c>array</c><c>Same as doing <expr>values(<i>string</i>)</expr></c></r>
+<r><c>array(int)</c><c>string</c><c>This does the inverse of the operation above. Ie. it constructs a string from an array of integers.</c></r>
+<r><c>array</c><c>array(<i>type</i>)</c><c>This recursively casts all values in the array to <i>type</i>.</c></r>
+<r><c>mapping</c><c>array</c><c>Same as <expr>Array.transpose(({indices(<i>mapping</i>),values(<i>mapping</i>))</expr>. Example: <expr>(array)([1:2,3:4])</expr> will return <expr>({ ({1,2}), ({3,4}) })</expr> </c></r>
+<r><c>multiset</c><c>array</c><c>Same as doing <expr>indices(<i>multiset</i>)</expr>.</c></r>
+<r><c>int</c><c>float</c><c>Returns a float with the same value as the integer.</c></r>
+<r><c>float</c><c>int</c><c>Returns the integer closest to the float.</c></r>
+<r><c>function</c><c>object</c><c>Same as <expr>function_object(<i>function</i>)</expr>.</c></r>
+</matrix>
+
+<p>You can also use the cast operator to tell the compiler things.
+If <tt>a</tt> is a variable of type mixed  containing an int, then the
+expression <tt>(int)a</tt> can be used instead of <tt>a</tt> and that will
+tell the compiler that the type of that expression is <tt>int</tt>.</p>
+
+<p>Last, and in some respect least, is the comma operator. It doesn't do
+much. In fact, it simply evaluates the two arguments and then returns
+the right hand one. This operator is mostly useful to produce smaller code,
+or to make defines that can be used in expressions.</p>
+
+</section>
+
+<section title="Operator precedence">
+
+<p>When evaluating an expression, you can always use parenthesis to tell
+the compiler in which order to evaluate things. Normally, the compiler
+will evaluate things from left to right, but it will evaluate operators
+with higher priority before those with lower. The following table shows
+the relative priority of all the operators in descending order:</p>
+
+<matrix>
+<r><c><expr>(a) a() a[b] a-&gt;b a[b..c] ({}) ([]) (&lt;&gt;)</expr></c></r>
+<r><c><expr>!a ~a (type)a ++a --a</expr></c></r>
+<r><c><expr>a++ a--</expr></c></r>
+<r><c><expr>a*b a/b a%b</expr></c></r>
+<r><c><expr>a+b a-b</expr></c></r>
+<r><c><expr>a&gt;&gt;b a&lt;&lt;b</expr></c></r>
+<r><c><expr>a&gt;b a&gt;=b a&lt;b a&lt;=b</expr></c></r>
+<r><c><expr>a==b a!=b</expr></c></r>
+<r><c><expr>a&amp;b</expr></c></r>
+<r><c><expr>a^b</expr></c></r>
+<r><c><expr>a|b</expr></c></r>
+<r><c><expr>&amp;&amp;</expr></c></r>
+<r><c><expr>||</expr></c></r>
+<r><c><expr>a?b:c</expr></c></r>
+<r><c><expr>=</expr></c></r>
+<r><c><expr>@a</expr></c></r>
+<r><c><expr>,</expr></c></r>
+</matrix>
+
+<p>Examples:</p>
+
+<matrix>
+<r><c><b>The expression</b></c><c><b>is evaluated in this order:</b></c></r>
+<r><c><expr> 1+2*2 </expr></c><c><expr> 1+(2*2) </expr></c></r>
+<r><c><expr> 1+2*2*4 </expr></c><c><expr> 1+((2*2)*4) </expr></c></r>
+<r><c><expr> (1+2)*2*4 </expr></c><c><expr> ((1+2)*2)*4 </expr></c></r>
+<r><c><expr> 1+4,c=2|3+5 </expr></c><c><expr> (1+4),(c=((2|3)+5)) </expr></c></r>
+<r><c><expr> 1+5 &amp; 4 == 3 </expr></c><c><expr> (1+(5 &amp; 4)) == 3 </expr></c></r>
+<r><c><expr> c=1,99 </expr></c><c><expr> (c=1),99 </expr></c></r>
+<r><c><expr> !a++ + ~--a()</expr></c><c><expr> (!(a++)) + (~((--a)())) </expr></c></r>
+</matrix>
+
+</section>
+
+<section title="Operator functions">
+
+<p>As mentioned earlier <tt>a + b</tt> can just as well be written as
+<tt>`+(a, b)</tt>. Together with the function <tt>map</tt> which
+calls a function for every index in an array and the splice operator
+this can be used to create some very very fast and compact code. Let's
+look at some examples:</p>
+
+<dl>
+<dt> <tt>map(arr, `-)</tt></dt>
+<dd> This will return an array with each element negated.</dd>
+<dt> <tt>map(text/"\n",`/," ")</tt></dt>
+<dd> This will divide a text into lines, each line will then be mapped
+     through <tt>`/</tt> and divided into an array of words.</dd>
+<dt> <tt>`+(0, @arr)</tt></dt>
+<dd> This will add all the integers in the array <tt>arr</tt> together.</dd>
+<dt> <tt>int abs(int a) { return ( a>0 ? `+ : `-)(a); }</tt></dt>
+<dd> This is a rather absurd but working function which will return the
+     absolute value of a.</dd>
+</dl>
+
+</section>
+</chapter>
