@@ -11,7 +11,7 @@ int main(int argc, string *argv)
     if(file_stat(argv[1]+".exe")) argv[1]+=".exe";
     exit(do_cmd( Array.map(argv,fixpath)));
   }else{
-    exece("/usr/bin/install",argv[1..]);
+    exece(find_next_in_path(argv[0],"install"),argv[1..]);
     exit(69);
   }
 }
