@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.101 1998/11/06 03:08:03 hubbe Exp $");
+RCSID("$Id: program.c,v 1.102 1998/11/06 03:46:27 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -177,7 +177,7 @@ void ins_short(INT16 i, void (*func)(char tmp))
 
 void use_module(struct svalue *s)
 {
-  if( (1<<s->type) & (BIT_MAPPING | BIT_OBJECT))
+  if( (1<<s->type) & (BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM))
   {
     num_used_modules++;
     assign_svalue_no_free((struct svalue *)
@@ -204,7 +204,7 @@ void unuse_modules(INT32 howmany)
   low_make_buf_space(-sizeof(struct svalue)*howmany, &used_modules);
   free_svalues((struct svalue *)low_make_buf_space(0, &used_modules),
 	       howmany,
-	       BIT_MAPPING | BIT_OBJECT);
+	       BIT_MAPPING | BIT_OBJECT | BIT_PROGRAM);
   if(module_index_cache)
   {
     free_mapping(module_index_cache);

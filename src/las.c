@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.66 1998/08/29 22:15:17 grubba Exp $");
+RCSID("$Id: las.c,v 1.67 1998/11/06 03:46:29 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -717,7 +717,6 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
       }
       break;
 
-    case T_PROGRAM:
     case T_FLOAT:
     case T_STRING:
     case T_ARRAY:
