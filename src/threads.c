@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.232 2004/04/23 13:43:30 grubba Exp $
+|| $Id: threads.c,v 1.233 2004/04/23 19:35:33 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.232 2004/04/23 13:43:30 grubba Exp $");
+RCSID("$Id: threads.c,v 1.233 2004/04/23 19:35:33 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1123,6 +1123,12 @@ struct key_storage
  *!     to unspecified locking order and therefore a risk for deadlocks.
  *! @endint
  *!
+ *! @note
+ *! If the mutex is destructed while threads are waiting on it, it
+ *! will continue to exist internally until the last thread has
+ *! stopped waiting. The returned @[MutexKey] objects will behave as
+ *! usual, but refer to the internal "zombie" mutex.
+ *!
  *! @seealso
  *!   @[trylock()]
  */
@@ -1472,7 +1478,7 @@ void exit_mutex_key_obj(struct object *o)
  */
 void f_cond_wait(INT32 args)
 {
-  struct object *key;
+  struct object *key, *mutex_obj;
   struct mutex_storage *mut;
   COND_T *c;
 
@@ -1495,9 +1501,10 @@ void f_cond_wait(INT32 args)
   c = THIS_COND;
 
   /* Unlock mutex */
+  mutex_obj = OB2KEY(key)->mutex_obj;
   mut->key=0;
   OB2KEY(key)->mut=0;
-  mut->num_waiting++;
+  OB2KEY(key)->mutex_obj = NULL;
   co_signal(& mut->condition);
     
   /* Wait and allow mutex operations */
@@ -1506,6 +1513,7 @@ void f_cond_wait(INT32 args)
   SWAP_IN_CURRENT_THREAD();
     
   /* Lock mutex */
+  mut->num_waiting++;
   while(mut->key) {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(& mut->condition);
@@ -1514,7 +1522,16 @@ void f_cond_wait(INT32 args)
   }
   mut->key=key;
   OB2KEY(key)->mut=mut;
+  OB2KEY(key)->mutex_obj = mutex_obj;
   mut->num_waiting--;
+
+#ifdef PICKY_MUTEX
+  if (!mutex_obj->prog) {
+    if (!m->num_waiting)
+      co_destroy (&m->condition);
+    Pike_error ("Mutex was destructed while waiting for lock.\n");
+  }
+#endif
       
   pop_stack();
   return;
