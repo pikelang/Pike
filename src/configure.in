@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.600 2002/08/17 18:33:45 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.601 2002/08/19 13:48:25 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5688,19 +5688,21 @@ CFLAGS="$NEW_CFLAGS"
 ##########################################################################
 
 case "x$pike_cv_sys_os" in
-  xSolaris | xAIX | xDarwin)
+  xWindows_NT)
+  ;;
+
+  xLinux)
+    # Linux's stupid thread implementation doesn't survive USE_WAIT_THREAD.
+    AC_DEFINE(USE_SIGCHILD)
+  ;;
+
+  *)
+   # This is valid for at least Solaris, AIX and Darwin.
    if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
      AC_DEFINE(USE_WAIT_THREAD)
    else
      AC_DEFINE(USE_SIGCHILD)
    fi
-  ;;
-
-  xWindows_NT)
-  ;;
-
-  *)
-    AC_DEFINE(USE_SIGCHILD)
   ;;
 esac
 
