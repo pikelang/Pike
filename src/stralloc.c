@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.110 2000/12/01 17:43:28 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.111 2000/12/01 20:36:41 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -48,9 +48,10 @@ unsigned INT32 num_strings=0;
 
 #define StrHash(s,len) low_do_hash(s,len,0)
 
-static size_t low_do_hash(const void *s, ptrdiff_t len, int size_shift)
+static INLINE size_t low_do_hash(const void *s, ptrdiff_t len__,
+				 int size_shift)
 {
-  full_hash_value=hashmem(s,len<<size_shift,HASH_PREFIX<<size_shift);
+  DO_HASHMEM(full_hash_value, s, len__<<size_shift, HASH_PREFIX<<size_shift);
   return full_hash_value % htable_size;
 }
 
@@ -290,10 +291,10 @@ static int improper_zero_termination(struct pike_string *s)
 /* Find a string in the shared string table.
  * This assumes that the string is minimized!!!! 
  */
-static struct pike_string *internal_findstring(const char *s,
-					       ptrdiff_t len,
-					       int size_shift,
-					       ptrdiff_t h)
+static INLINE struct pike_string *internal_findstring(const char *s,
+						      ptrdiff_t len,
+						      int size_shift,
+						      ptrdiff_t h)
 {
   struct pike_string *curr,**prev, **base;
 #ifndef HASH_PREFIX
@@ -412,8 +413,9 @@ static void rehash(void)
     free((char *)old_base);
 }
 
+/* Allocation of strings */
 
-/*** Make new strings ***/
+/* Allocate some fixed string sizes with BLOCK_ALLOC. */
 
 /* Use the BLOCK_ALLOC() stuff for short strings */
 
@@ -1807,15 +1809,15 @@ PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t ch
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 {
   ptrdiff_t i;
-#if 1
-  if ((min_magnitude(ch) > s->s->size_shift) ||
-      (((size_t)s->s->len) >= ((size_t)s->malloced))) {
-    string_build_mkspace(s,1,min_magnitude(ch));
+  int mag = min_magnitude(ch);
+
+  if (mag > s->s->size_shift) {
+    string_build_mkspace(s, 1, mag);
+    s->known_shift = (size_t)mag;
+  } else if (((size_t)s->s->len) >= ((size_t)s->malloced)) {
+    string_build_mkspace(s, 1, mag);
+    s->known_shift = MAXIMUM((size_t)mag, s->known_shift);
   }
-#else
-  string_build_mkspace(s,1,min_magnitude(ch));
-#endif /* 0 */
-  s->known_shift=MAXIMUM((size_t)min_magnitude(ch),s->known_shift);
   i = s->s->len++;
   low_set_index(s->s,i,ch);
 }
