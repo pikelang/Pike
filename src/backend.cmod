@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.114 2004/04/04 13:33:09 grubba Exp $
+|| $Id: backend.cmod,v 1.115 2004/04/04 13:38:32 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.114 2004/04/04 13:33:09 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.115 2004/04/04 13:38:32 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2408,13 +2408,9 @@ PIKECLASS Backend
 		case EBADF:
 		{
 		  int i;
-		  for(i=0;i<me->fds_size;i++)
+		  for(i=0;i<me->num_fd_boxes;i++)
 		  {
-		    if(!my_FD_ISSET(i, &me->set.read) &&
-		       !my_FD_ISSET(i, &me->set.write)
-		       && !my_FD_ISSET(i, &me->set.except)
-		      )
-		      continue;
+		    if(!GET_BOX(me, i)) continue;
 		    
 		    fd_FD_ZERO(& me->active_set.rset);
 		    fd_FD_ZERO(& me->active_set.wset);
