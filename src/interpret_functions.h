@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.86 2001/08/15 09:26:33 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.87 2001/08/16 00:45:43 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1747,6 +1747,11 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),		   \
     DO_DUMB_RETURN;							   \
   }									   \
 });									   \
+
+
+#define MKAPPLY2(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
+									   \
+MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			           \
 									   \
 OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME, {				   \
   if(low_mega_apply(TYPE,0,						   \
@@ -1785,12 +1790,12 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
 })
 
 
-MKAPPLY(OPCODE1,CALL_LFUN,"call lfun",APPLY_LOW,
-	Pike_fp->current_object,
-	(void *)(arg1+Pike_fp->context.identifier_level));
+MKAPPLY2(OPCODE1,CALL_LFUN,"call lfun",APPLY_LOW,
+	 Pike_fp->current_object,
+	 (void *)(arg1+Pike_fp->context.identifier_level));
 
-MKAPPLY(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
-	&((Pike_fp->context.prog->constants + arg1)->sval),0);
+MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
+	 &((Pike_fp->context.prog->constants + arg1)->sval),0);
 
 MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
