@@ -5381,11 +5381,8 @@ array permute(array in,int number);
 </man_syntax>
 <man_description>
 <tt>permute</tt> gives you a selected permutation of an array.
-The numbers of permutations equal sizeof(in)! (the faculty of 
+The numbers of permutations equal sizeof(in)! (the factorial of 
 the size of the given array).
-
-<p>Eventual duplicate permutations due to multiple equal (non-unique)
-elements is not regarded.
 
 </man_description> 
 <man_example>
