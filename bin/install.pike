@@ -498,6 +498,7 @@ void do_export()
     RELAY(TMP_BINDIR)
     RELAY(MANDIR_SRC)
     " TMP_BUILDDIR="+translate("", translator)+
+    (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
     " $" // $ = @argv
     ;
   
@@ -584,6 +585,7 @@ done
 		   "  TMP_BINDIR=\"bin\"\\\n"
 		   "  TMP_BUILDDIR=\"build\"\\\n"
 		   "  MANDIR_SRC=\"man\"\\\n"
+		   "  PIKE_MODULE_RELOC=\""+vars->PIKE_MODULE_RELOC+"\"\\\n"
 		   "  $ARGS\"\n"
 		   ")\n"
 		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
