@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.217 2003/07/16 14:12:45 mast Exp $
+|| $Id: object.c,v 1.218 2003/07/21 23:41:34 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.217 2003/07/16 14:12:45 mast Exp $");
+RCSID("$Id: object.c,v 1.218 2003/07/21 23:41:34 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -553,7 +553,8 @@ PMOD_EXPORT struct object *get_master(void)
       sp--;
       dmalloc_touch_svalue(sp);
     }else{
-      Pike_error("Couldn't load master program. (%s)\n",master_file);
+      throw_error_object (low_clone (master_load_error_program), 0, 0, 0,
+			  "Couldn't load master program from %s.\n", master_file);
     }
   }
 
