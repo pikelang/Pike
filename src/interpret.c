@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.181 2001/01/12 01:58:38 mast Exp $");
+RCSID("$Id: interpret.c,v 1.182 2001/01/12 02:09:28 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1678,7 +1678,7 @@ void slow_check_stack(void)
 }
 #endif
 
-PMOD_EXPORT void custom_check_stack(size_t amount, const char *fmt, ...)
+PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
 {
   if (low_stack_check(amount)) {
     va_list args;

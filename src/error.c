@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.67 2000/12/05 21:08:17 per Exp $");
+RCSID("$Id: error.c,v 1.68 2001/01/12 02:15:56 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -305,7 +305,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   longjmp(Pike_interpreter.recoveries->recovery,1);
 }
 
-PMOD_EXPORT void push_error(char *description)
+PMOD_EXPORT void push_error(const char *description)
 {
   push_text(description);
   f_backtrace(0);

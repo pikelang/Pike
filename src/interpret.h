@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.72 2000/12/28 15:34:08 grubba Exp $
+ * $Id: interpret.h,v 1.73 2001/01/12 02:09:29 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -272,7 +272,7 @@ PMOD_EXPORT void apply_shared(struct object *o,
 PMOD_EXPORT void apply(struct object *o, char *fun, int args);
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
 PMOD_EXPORT void slow_check_stack(void);
-PMOD_EXPORT void custom_check_stack(size_t amount, const char *fmt, ...)
+PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
   ATTRIBUTE((format (printf, 2, 3)));
 PMOD_EXPORT void cleanup_interpret(void);
 void really_clean_up_interpret(void);
