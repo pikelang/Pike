@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.159 2004/03/07 22:35:06 nilsson Exp $
+|| $Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.159 2004/03/07 22:35:06 nilsson Exp $");
+RCSID("$Id: sscanf.c,v 1.160 2004/03/23 18:06:11 nilsson Exp $");
 
 /* 
  * helper functions for sscanf %O
@@ -1360,30 +1360,37 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!
  *! @string
  *!   @value "%b"
- *!     Reads a binary integer ("0101" makes 5)
+ *!     Reads a binary integer (@expr{"0101"@} makes @expr{5@})
  *!   @value "%d"
- *!     Reads a decimal integer ("0101" makes 101).
+ *!     Reads a decimal integer (@expr{"0101"@} makes @expr{101@}).
  *!   @value "%o"
- *!     Reads an octal integer ("0101" makes 65).
+ *!     Reads an octal integer (@expr{"0101"@} makes @expr{65@}).
  *!   @value "%x"
- *!     Reads a hexadecimal integer ("0101" makes 257).
+ *!     Reads a hexadecimal integer (@expr{"0101"@} makes @expr{257@}).
  *!   @value "%D"
  *!     Reads an integer that is either octal (leading zero),
- *!     hexadecimal (leading 0x) or decimal. ("0101" makes 65).
+ *!     hexadecimal (leading 0x) or decimal. (@expr{"0101"@} makes
+ *!     @expr{65@}).
  *!   @value "%c"
  *!     Reads one character and returns it as an integer
- *!     ("0101" makes 48, or '0', leaving "101" for later directives).
- *!     Using the field width and endianness modifiers, you can decode
- *!     integers of any size and endianness.
+ *!     (@expr{"0101"@} makes @expr{48@}, or @expr{'0'@}, leaving
+ *!     @expr{"101"@} for later directives). Using the field width and
+ *!     endianness modifiers, you can decode integers of any size and
+ *!     endianness. For example @expr{"%-2c"@} decodes @expr{"0101"@}
+ *!     into @expr{12592@}, leaving @expr{"01"@} fot later directives.
+ *!     The sign modifiers can be used to modify the signature of the
+ *!     data, making @expr{"%+1c"@} decode @expr{"ä"@} into
+ *!     @expr{-28@}.
  *!   @value "%f"
  *!     Reads a float ("0101" makes 101.0).
  *!   @value "%F"
- *!     Reads a float encoded according to the IEEE single precision binary
- *!     format ("0101" makes 6.45e-10, approximately). Given a field width
- *!     modifier of 8 (4 is the default), the data will be decoded according
- *!     to the IEEE double precision binary format instead. (You will however
- *!     still get a float, unless your pike was compiled with the configure
- *!     argument @tt{--with-double-precision@}.)
+ *!     Reads a float encoded according to the IEEE single precision
+ *!     binary format (@expr{"0101"@} makes @expr{6.45e-10@},
+ *!     approximately). Given a field width modifier of 8 (4 is the
+ *!     default), the data will be decoded according to the IEEE
+ *!     double precision binary format instead. (You will however
+ *!     still get a float, unless your pike was compiled with the
+ *!     configure argument @tt{--with-double-precision@}.)
  *!   @value "%s"
  *!     Reads a string. If followed by %d, %s will only read non-numerical
  *!     characters. If followed by a %[], %s will only read characters not
@@ -1417,18 +1424,20 @@ INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     The operator will only match its argument, without assigning any
  *!     variable.
  *!   @value number
- *!     You may define a field width by supplying a numeric modifier. This
- *!     means that the format should match that number of characters in the
- *!     input data; be it a @i{number@} characters long string, integer or
- *!     otherwise ("0101" using the format %2c would read an unsigned short
- *!     12337, leaving the final "01" for later operators, for instance).
+ *!     You may define a field width by supplying a numeric modifier.
+ *!     This means that the format should match that number of
+ *!     characters in the input data; be it a @i{number@} characters
+ *!     long string, integer or otherwise (@expr{"0101"@} using the
+ *!     format %2c would read an unsigned short @expr{12337@}, leaving
+ *!     the final @expr{"01"@} for later operators, for instance).
  *!   @value "-"
  *!     Supplying a minus sign toggles the decoding to read the data encoded
  *!     in little-endian byte order, rather than the default network
  *!     (big-endian) byte order.
  *!   @value "+"
- *!     Interpret the data as a signed entity. In other words, "%+1c" will
- *!     read "\xFF" as -1 instead of 255, as "%1c" would have.
+ *!     Interpret the data as a signed entity. In other words,
+ *!     @expr{"%+1c"@} will read @expr{"\xFF"@} as @expr{-1@} instead
+ *!     of @expr{255@}, as @expr{"%1c"@} would have.
  *! @endstring
  *!
  *! @note
