@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.302 2003/04/03 14:56:26 grubba Exp $
+|| $Id: interpret.c,v 1.303 2003/04/27 14:16:51 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.302 2003/04/03 14:56:26 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.303 2003/04/27 14:16:51 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2106,6 +2106,7 @@ void slow_check_stack(void)
     }
   }
 }
+#endif
 
 static const char *safe_idname_from_int(struct program *prog, int func)
 {
@@ -2365,8 +2366,6 @@ void gdb_backtraces()
   gdb_backtrace();
 #endif
 }
-
-#endif
 
 PMOD_EXPORT void custom_check_stack(ptrdiff_t amount, const char *fmt, ...)
 {
