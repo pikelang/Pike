@@ -244,8 +244,10 @@ static private class Extractor {
   // Documentation for the file.
   Documentation parseClassBody(Class|Module c,
                                array(string) defModifiers,
-                               void|string filename) {
+                               void|string filename,
+                               void|int inAtModule) {
     Documentation filedoc = 0;
+  mainloop:
     for (;;) {
       Documentation doc = 0;
       array(PikeObject) decls = ({ });
@@ -314,8 +316,35 @@ static private class Extractor {
       if (doc) {
         parse = .DocParser.Parse(doc->text, doc->position);
         MetaData meta = parse->metadata();
-        if (meta->type && meta->type != "decl")
-          extractorError("@%s is not allowed in Pike files", meta->type);
+        if (meta->type && meta->type != "decl") {
+          switch(meta->type) {
+            case "module":
+              if (c->objtype != "module")
+                extractorError("@module not allowed in class files");
+              if (sizeof(decls))
+                extractorError("@module doc comment must stand alone");
+              Module m = Module();
+              m->appears = meta->appears;
+              m->belongs = meta->belongs;
+              m->name = meta->name;
+              doc->xml = parse->doc("_module");
+              m->documentation = doc;
+              parseClassBody(m, 0, 0, 1);
+              c->AddChild(m);
+              continue mainloop;
+            case "endmodule":
+              if (sizeof(decls))
+                extractorError("@endmodule doc comment must stand alone");
+              if (!inAtModule)
+                extractorError("@endmodule has no matching @module");
+              if (meta->name && meta->name != c->name)
+                extractorError("'@endmodule %s' doesn't match '@module %s'",
+                               meta->name, c->name || "");
+              return 0;  // no filedoc possible
+            default:
+              extractorError("@%s is not allowed in Pike files", meta->type);
+          }
+        }
         docDecls = meta->decls;
         appears = meta->appears;
         belongs = meta->belongs;
