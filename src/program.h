@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.203 2004/05/20 20:13:38 grubba Exp $
+|| $Id: program.h,v 1.204 2004/05/23 00:45:11 nilsson Exp $
 */
 
 #ifndef PROGRAM_H
@@ -564,6 +564,11 @@ static inline int CHECK_IDREF_RANGE (int x, const struct program *p)
 
 #define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
+
+#ifdef DO_PIKE_CLEANUP
+extern int gc_external_refs_zapped;
+void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
+#endif
 
 #define free_program(p) do{						\
     struct program *_=(p);						\

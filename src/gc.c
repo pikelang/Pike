@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.253 2004/04/18 02:16:05 mast Exp $
+|| $Id: gc.c,v 1.254 2004/05/23 00:44:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.253 2004/04/18 02:16:05 mast Exp $");
+RCSID("$Id: gc.c,v 1.254 2004/05/23 00:44:34 nilsson Exp $");
 
 int gc_enabled = 1;
 
@@ -257,6 +257,12 @@ int gc_found_in_type = PIKE_T_UNKNOWN;
 const char *gc_found_place = NULL;
 #endif
 
+#ifdef DO_PIKE_CLEANUP
+/* To keep the markers after the gc. Only used for the leak report at exit. */
+int gc_keep_markers = 0;
+int gc_external_refs_zapped = 0;
+#endif
+
 #ifdef PIKE_DEBUG
 
 #undef get_marker
@@ -339,12 +345,6 @@ void *gc_svalue_location=0;
 static size_t found_ref_count;
 
 char *fatal_after_gc=0;
-
-#ifdef DO_PIKE_CLEANUP
-/* To keep the markers after the gc. Only used for the leak report at exit. */
-int gc_keep_markers = 0;
-int gc_external_refs_zapped = 0;
-#endif
 
 #define DESCRIBE_MEM 1
 #define DESCRIBE_SHORT 4
@@ -1592,6 +1592,16 @@ void exit_gc(void)
 #endif
 }
 
+#ifdef DO_PIKE_CLEANUP
+void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
+{
+  struct marker *m = find_marker (a);
+  if (m && (m->flags & GC_CLEANUP_FREED))
+    fprintf (stderr, "Free of leaked %s %p from %s:%d, %d refs remaining\n",
+	     get_name_of_type (type), a, file, line, *(INT32 *)a - 1);
+}
+#endif
+
 #ifdef PIKE_DEBUG
 /* This function marks some known externals. The rest are handled by
  * callbacks added with add_gc_callback. */
@@ -1778,16 +1788,6 @@ int gc_mark_external (void *a, const char *place)
     gc_fatal(a, 1, "Ref counts are wrong.\n");
   return 0;
 }
-
-#ifdef DO_PIKE_CLEANUP
-void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
-{
-  struct marker *m = find_marker (a);
-  if (m && (m->flags & GC_CLEANUP_FREED))
-    fprintf (stderr, "Free of leaked %s %p from %s:%d, %d refs remaining\n",
-	     get_name_of_type (type), a, file, line, *(INT32 *)a - 1);
-}
-#endif
 
 void debug_really_free_gc_frame(struct gc_frame *l)
 {
