@@ -353,6 +353,7 @@ array decode_layers( string|mapping what, mapping|void opts )
     }
   }
 //   werror("%O\n", layers );
+  layers->set_misc_value( "size", ({ what->width, what->height }) );
   return layers;
 }
 
