@@ -1,0 +1,103 @@
+The files in this directory:
+
+export.pike
+  Creates a Pike source distribution.
+
+extract.pike
+  Locale extraction utility for the locate system
+  implemented in the Locale module.
+
+fake_dynamic_load.pike
+  Used by build process. [FIXME: Better documentation]
+
+fixdepends.sh
+  Used by make depend.
+
+hilfe
+  Alias for pike without arguments, which starts Hilfe,
+  the incremental Pike frontend.
+
+httpd.pike
+  A very small httpd capable of fetching files only.
+  [FIXME: Should be removed since there is a better
+   server within Pike]
+
+install_module
+  Installs a Pike module into a pike module directory.
+  [FIXME: Doesn't appear to be fully functional]
+
+install.pike
+  The Pike installation script, which is run when a
+  Pike is installed. It is also run by when a binary
+  export is made, to assemble the package it later will
+  install.
+
+make_ci.pike
+  Creates the file case_info.h during Pike build. The
+  case_info.h file is an optimized version of the case
+  information in the ../src/UnicodeData.txt file.
+
+make_interpret_functions.pike
+  Creates the file interpret_functions_fixed.h during
+  Pike build.
+
+metatest
+  Utility that permutates over a number of configure
+  flags and compiles and verifies all the produced Pikes.
+  [FIXME: Update with more interesting flags?]
+
+mkpackage.pike
+  Utility for creating executable installation scripts
+  based on Pike. [FIXME: Better description.]
+
+mkpeep.pike
+  Creates the file peep_engine.c during Pike build.
+
+mktestsuite
+  Generates testsuite files from testsuite.in files
+  during "make verify".
+
+mktreeopt.pike
+  Creates the file mktreeopt.h during Pike build.
+
+nobinary_dummy
+  A simple script that fakes success for all configure
+  tests when --disable-binary is set.
+
+parse_install_log
+  [FIXME: What does this do? Doesn't appear to be called
+   from any Makefile.]
+
+pike
+  This file is generated from the file pike.in when make
+  all is built from the top level make file. This script
+  is a wrapper for the latest built Pike binary that 
+  adds the posibility to start pike with the optional
+  argument --gdb to run the Pike in gdb. Usage example:
+  bin/pike --gdb program_that_crash.pike --arg arg2
+
+pike.in
+  The file from which the script pike is generated.
+
+precompile.pike
+  Creates .c files from .cmod files during Pike build.
+
+rsif
+  The extremly handy "replace string in file" utility.
+
+rsqld.pike
+  An SQL proxy daemon.
+
+smartlink
+  [FIXME: What does this do?]
+
+tarfilter.pike
+  Filters a tar file applying root/root ownership on
+  its contents.
+
+test_pike.pike
+  The program that performs the test suite when make
+  verify is run.
+
+unbug
+  A GDB frontend for debugging pike code.
