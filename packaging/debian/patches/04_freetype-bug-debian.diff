@@ -1,0 +1,12 @@
+diff -U3 -r 7.4.orig/src/modules/_Image_FreeType/configure.in 7.4/src/modules/_Image_FreeType/configure.in
+--- 7.4.orig/src/modules/_Image_FreeType/configure.in	2002-05-10 23:56:47.000000000 +0200
++++ 7.4/src/modules/_Image_FreeType/configure.in	2002-12-21 21:45:19.000000000 +0100
+@@ -18,7 +18,7 @@
+     OLDCPPFLAGS="$CPPFLAGS"
+     OLDLIBS="$LIBS"
+     CPPFLAGS="`$FT_CONFIG --cflags` $CPPFLAGS"
+-    LIBS="`$FT_CONFIG --libs` $LIBS"
++    LIBS="`$FT_CONFIG --libs | sed -e 's/@LIBZ@/-lz/g'` $LIBS"
+     AC_MSG_CHECKING(if freetype actually works)
+     AC_TRY_LINK([
+ #include <freetype/freetype.h> 
