@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.7 2003/06/12 20:54:56 mast Exp $
+# $Id: Makefile.in,v 1.8 2004/04/17 14:05:40 marcus Exp $
 #
 
 @make_variables@
@@ -8,13 +8,8 @@ OBJS=jvm.o
 MODULE_LDFLAGS=@LDFLAGS@ @JAVA_LIBS@
 LINKER_OPTIONS=@LINKER_OPTIONS@
 
-DUMMY=module.pmod.in
-
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
-
-module.pmod.in: $(SRCDIR)/module.pmod.in.in config.status
-	CONFIG_FILES=module.pmod.in CONFIG_HEADERS="" ./config.status
 
 @dependencies@
