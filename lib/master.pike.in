@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.213 2002/08/09 14:23:07 nilsson Exp $
+// $Id: master.pike.in,v 1.214 2002/08/10 22:41:25 per Exp $
 
 #pike __REAL_VERSION__
 
@@ -1617,13 +1617,13 @@ void _main(array(string) orig_argv, array(string) env)
 #endif
   
   string format_paths() {
-    return  ("master.pike..." + (_master_file_name || __FILE__) + "\n"
-	     "Module path..." + pike_module_path*"\n"
-	     "              " + "\n"
-	     "Include path.." + pike_include_path*"\n"
-	     "              " + "\n"
-	     "Program path.." + pike_program_path*"\n"
-	     "              " + "\n");
+    return  ("master.pike...: " + (_master_file_name || __FILE__) + "\n"
+	     "Module path...: " + pike_module_path*"\n"
+	     "" + "\n"
+	     "Include path..: " + pike_include_path*"\n"
+	     "" + "\n"
+	     "Program path..: " + pike_program_path*"\n"
+	     "" + "\n");
   };
 
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
