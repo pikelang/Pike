@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.258 2004/05/03 12:26:44 grubba Exp $
+// $Id: master.pike.in,v 1.259 2004/12/08 15:02:08 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -2613,6 +2613,8 @@ class Describer
     switch(res)
     {
     case "int":
+      if (!m && zero_type (m) == 1)
+	return "UNDEFINED";
     case "float":
       return (string)m;
     case "string":
