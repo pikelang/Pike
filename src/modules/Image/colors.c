@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.4 1999/01/24 01:14:19 mirar Exp $
+**!	$Id: colors.c,v 1.5 1999/01/24 17:31:02 mirar Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -14,10 +14,12 @@
 **!	<ref>Image.color</ref> can be called to make a color object.
 **!	<ref>Image.color()</ref> takes the following arguments:
 **!	<pre>
-**!	Image.color(string name)
-**!	Image.color(string hex_name)
-**!	Image.color(string prefix_string)
-**!	Image.color(int red, int green, int blue)
+**!	Image.color(string name)          // "red"
+**!	Image.color(string prefix_string) // "lightblue"
+**!	Image.color(string hex_name)      // "#ff00ff"
+**!	Image.color(string cmyk_string)   // "%17,42,0,19.4"
+**!	Image.color(string hsv_string)    // "%@327,90,32"
+**!	Image.color(int red, int green, int blue) 
 **!     </pre>
 **!
 **!	The color names available can be listed by using indices 
@@ -36,12 +38,6 @@
 **!	Giving red, green and blue values is equal to calling
 **!	<ref>Image.color.rgb</ref>().
 **!	
-**!	The <tt>hex_name</tt> form is a simple 
-**!	<tt>#rrggbb</tt> form, as in HTML or X-program argument.
-**!	A shorter form (<tt>#rgb</tt>) is also accepted. This
-**!	is the inverse to the <ref>Image.color.color->hex</ref>()
-**!	method.
-**!
 **!	The prefix_string method is a form for getting modified 
 **!	colors, it understands all modifiers
 **!	(<link to=Image.color.color.light>light</link>,
@@ -51,6 +47,21 @@
 **!	<link to=Image.color.color.neon>neon</link>). Simply  use
 **!	"method"+"color"; (as in <tt>lightgreen</tt>, 
 **!	<tt>dullmagenta</tt>, <tt>lightdullorange</tt>).
+**!
+**!	The <tt>hex_name</tt> form is a simple 
+**!	<tt>#rrggbb</tt> form, as in HTML or X-program argument.
+**!	A shorter form (<tt>#rgb</tt>) is also accepted. This
+**!	is the inverse to the <ref>Image.color.color->hex</ref>()
+**!	method.
+**!
+**!	The <tt>cmyk_string</tt> is a string form of giving
+**!	<i>cmyk</i> (cyan, magenta, yellow, black) color. These
+**!	values are floats representing percent.
+**!
+**!	The <tt>hsv_string</tt> is another hue, saturation, value
+**!	representation, but in floats; hue is in degree range (0..360),
+**!	and saturation and value is given in percent. <i>This is not
+**!	the same as returned or given to the <ref>hsv</ref>() methods!</i>
 **!
 **! see also: Image.color.color->name, Image.color.color->rgb
 **!
@@ -86,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.4 1999/01/24 01:14:19 mirar Exp $");
+RCSID("$Id: colors.c,v 1.5 1999/01/24 17:31:02 mirar Exp $");
 
 #include "config.h"
 
@@ -105,6 +116,7 @@ RCSID("$Id: colors.c,v 1.4 1999/01/24 01:14:19 mirar Exp $");
 #include "dmalloc.h"
 #include "operators.h"
 #include "module_support.h"
+#include "opcodes.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -132,6 +144,7 @@ struct color_struct
 };
 
 void image_make_hsv_color(INT32 args); /* forward */
+void image_make_cmyk_color(INT32 args); /* forward */
 
 struct html_color
 {
@@ -314,14 +327,17 @@ void image_color_create(INT32 args)
 /*
 **! method array(int) rgb()
 **! method array(int) hsv()
+**! method array(int) cmyk()
 **! method int greylevel()
 **! method int greylevel(int r, int g, int b)
 **!	This is methods of getting information from an
 **!	<ref>Image.color.color</ref> object. 
 **!	
-**!	They give an array of red, green and blue (rgb) values,
-**!	hue, saturation and value (hsv) values,
-**!     or the greylevel value. 
+**!	They give an array of 
+**!	red, green and blue (rgb) values (color value),<br>
+**!	hue, saturation and value (hsv) values (range as color value), <br>
+**!	cyan, magenta, yellow, black (cmyk) values (in percent)	<br>
+**!     or the greylevel value (range as color value). 
 **!
 **!	The greylevel is calculated by weighting red, green
 **!	and blue. Default weights are 87, 127 and 41, respective, 
@@ -402,6 +418,24 @@ void image_color_hsv(INT32 args)
    push_int((int)(s*COLORMAX+0.5));
    push_int((int)(v*COLORMAX+0.5));
    f_aggregate(3);
+}
+
+void image_color_cmyk(INT32 args)
+{
+   float c,m,y,k;
+   pop_n_elems(args);
+
+   k=255.0-MAX3(THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
+
+   c=255.0-THIS->rgb.r-k;
+   m=255.0-THIS->rgb.g-k;
+   y=255.0-THIS->rgb.b-k;
+
+   push_float(c*100.0/255.0);
+   push_float(m*100.0/255.0);
+   push_float(y/255.0*100.0);
+   push_float(k/255.0*100.0);
+   f_aggregate(4);
 }
 
 /*
@@ -885,6 +919,50 @@ void image_get_color(INT32 args)
 	       return;
 	    }
 	 }
+	 if (sp[-1].u.string->len>=4 &&
+	     sp[-1].u.string->str[0]=='@')
+	 {
+	    /* @h,s,v; h=0..359, s,v=0..100 */
+	    stack_dup();
+	    push_text("@%f,%f,%f\n");
+	    f_sscanf(2);
+	    if (sp[-1].type==T_ARRAY &&
+		sp[-1].u.array->size==3)
+	    {
+	       float h,s,v;
+	       stack_swap();
+	       pop_stack();
+	       sp--;
+	       push_array_items(sp->u.array);
+	       get_all_args("Image.color()",3,"%f%f%f",&h,&s,&v);
+	       pop_n_elems(3);
+	       push_int((INT32)(h/360.0*256.0));
+	       push_int((INT32)(s/100.0*255.4));
+	       push_int((INT32)(v/100.0*255.4));
+	       image_make_hsv_color(3);
+	       return;
+	    }
+	    pop_stack();
+	 }
+	 if (sp[-1].u.string->len>=4 &&
+	     sp[-1].u.string->str[0]=='%')
+	 {
+	    /* @c,m,y,k; 0..100 */
+	    stack_dup();
+	    push_text("%%%f,%f,%f,%f\n");
+	    f_sscanf(2);
+	    if (sp[-1].type==T_ARRAY &&
+		sp[-1].u.array->size==4)
+	    {
+	       stack_swap();
+	       pop_stack();
+	       sp--;
+	       push_array_items(sp->u.array);
+	       image_make_cmyk_color(4);
+	       return;
+	    }
+	    pop_stack();
+	 }
 	 for (n=0; (size_t)n<sizeof(callables)/sizeof(callables[0]); n++)
 	    if (sp[-1].u.string->len>(INT32)strlen(callables[n]) &&
 	     memcmp(sp[-1].u.string->str,callables[n],strlen(callables[n]))==0)
@@ -970,10 +1048,12 @@ void image_make_color(INT32 args)
 /*
 **! method object rgb(int red, int green, int blue)
 **! method object hsv(int hue, int saturation, int value)
+**! method object cmyk(float c,float m,float y,float k)
 **! method object greylevel(int level)
 **! method object html(string html_color)
 **!	Creates a new color object from given red, green and blue,
-**!	hue, saturation and value, or greylevel.
+**!	hue, saturation and value, or greylevel, in color value range.
+**!	It could also be created from <i>cmyk</i> values in percent.
 **!
 **!	The <ref>html</ref>() method only understands the HTML color names,
 **!	or the <tt>#rrggbb</tt> form. It is case insensitive.
@@ -1000,8 +1080,10 @@ void image_make_hsv_color(INT32 args)
 
    get_all_args("Image.color.hsv()",args,"%i%i%i",
 		&hi,&si,&vi);
+   pop_n_elems(args);
 
-   if (hi<0) hi=0; else if (hi>COLORMAX) hi=COLORMAX;
+   if (hi<0) hi=(hi%COLORMAX)+COLORMAX; 
+   else if (hi>COLORMAX) hi%=COLORMAX; /* repeating */
    if (si<0) si=0; else if (si>COLORMAX) si=COLORMAX;
    if (vi<0) vi=0; else if (vi>COLORMAX) vi=COLORMAX;
    
@@ -1039,7 +1121,24 @@ void image_make_hsv_color(INT32 args)
    push_int(FOO(g));
    push_int(FOO(b));
 
-   push_object(clone_object(image_color_program,args));
+   push_object(clone_object(image_color_program,3));
+}
+
+void image_make_cmyk_color(INT32 args)
+{
+   float c,m,y,k,r,g,b;
+   get_all_args("Image.color.cmyk()",args,"%F%F%F%F",&c,&m,&y,&k);
+   pop_n_elems(args);
+
+   r=100-(c+k);
+   g=100-(m+k);
+   b=100-(y+k);
+
+   push_int((int)(r*255.4/100.0));
+   push_int((int)(g*255.4/100.0));
+   push_int((int)(b*255.4/100.0));
+
+   push_object(clone_object(image_color_program,3));
 }
 
 void image_make_greylevel_color(INT32 args)
@@ -1047,6 +1146,7 @@ void image_make_greylevel_color(INT32 args)
    INT32 i;
 
    get_all_args("Image.color.greylevel()",args,"%i",&i);
+   pop_n_elems(args);
    
    push_int(i);
    push_int(i);
@@ -1159,6 +1259,8 @@ void init_image_colors(void)
 		"function(:array)",OPT_TRY_OPTIMIZE);
    add_function("hsv",image_color_hsv,
 		"function(:array)",OPT_TRY_OPTIMIZE);
+   add_function("cmyk",image_color_cmyk,
+		"function(:array)",OPT_TRY_OPTIMIZE);
    add_function("greylevel",image_color_greylevel,
 		"function(:int)|function(int,int,int:int)",OPT_TRY_OPTIMIZE);
 
@@ -1190,6 +1292,9 @@ void init_image_colors(void)
 		"function(int,int,int:object)",OPT_TRY_OPTIMIZE);
    add_function("hsv",image_make_hsv_color,
 		"function(int,int,int:object)",OPT_TRY_OPTIMIZE);
+   add_function("cmyk",image_make_cmyk_color,
+		"function(int|float,int|float,int|float,int|float:object)",
+		OPT_TRY_OPTIMIZE);
    add_function("html",image_make_html_color,
 		"function(string:object)",OPT_TRY_OPTIMIZE);
    add_function("guess",image_guess_color,
