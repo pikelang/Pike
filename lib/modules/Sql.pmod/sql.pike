@@ -1,18 +1,44 @@
 /*
- * $Id: sql.pike,v 1.3 1997/03/30 14:29:56 grubba Exp $
+ * $Id: sql.pike,v 1.4 1997/03/30 19:07:40 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09
  */
 
+//.
+//. File:	sql.pike
+//. RCSID:	$Id: sql.pike,v 1.4 1997/03/30 19:07:40 grubba Exp $
+//. Author:	Henrik Grubbström (grubba@infovav.se)
+//.
+//. Synopsis:	Implements the generic parts of the SQL-interface.
+//.
+//. +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//.
+//. Implements those functions that need not be present in all SQL-modules.
+//.
+
 #define throw_error(X)	throw(({ (X), backtrace() }))
 
 import Array;
 import Simulate;
 
+//. + master_sql
+//.   Object to use for the actual SQL-queries.
 object master_sql;
 
+//. - create
+//.   Create a new generic SQL object.
+//. > host
+//.   object - Use this object to access the SQL-database.
+//.   string - Use any available database server on this host.
+//.            If "" or 0, access through UNIX-domain socket.
+//. > database
+//.   Select this database.
+//. > user
+//.   User name to access the database as.
+//. > password
+//.   Password to access the database.
 void create(void|string|object host, void|string db,
 	    void|string user, void|string password)
 {
@@ -78,27 +104,44 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
     return(0);
   }
 }
-  
+
+//. - error
+//.   Return last error message.  
 int|string error()
 {
   return(master_sql->error());
 }
 
+//. - select_db
+//.   Select database to access.
 void select_db(string db)
 {
   master_sql->select_db(db);
 }
 
-array(mapping(string:mixed)) query(string s)
+//. - query
+//.   Send an SQL query to the underlying SQL-server. The result is returned
+//.   as an array of mappings indexed on the name of the columns.
+//.   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
+//. > q
+//.   Query to send to the SQL-server.
+array(mapping(string:mixed)) query(string q)
 {
   object res_obj;
 
   if (functionp(master_sql->query)) {
-    return(master_sql->query(s));
+    return(master_sql->query(q));
   }
-  return(res_obj_to_array(master_sql->big_query(s)));
+  return(res_obj_to_array(master_sql->big_query(q)));
 }
 
+//. - big_query
+//.   Send an SQL query to the underlying SQL-server. The result is returned
+//.   as a Sql.sql_result object. This allows for having results larger than
+//.   the available memory, and returning some more info on the result.
+//.   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
+//. > q
+//.   Query to send to the SQL-server.
 object big_query(string q)
 {
   if (functionp(master_sql->big_query)) {
@@ -107,16 +150,26 @@ object big_query(string q)
   return(Sql.sql_result(master_sql->query(q)));
 }
 
+//. - create_db
+//.   Create a new database.
+//. > db
+//.   Name of database to create.
 void create_db(string db)
 {
   master_sql->create_db(db);
 }
 
+//. - drop_db
+//.   Drop database
+//. > db
+//.   Name of database to drop.
 void drop_db(string db)
 {
   master_sql->drop_db(db);
 }
 
+//. - shutdown
+//.   Shutdown a database server.
 void shutdown()
 {
   if (functionp(master_sql->shutdown)) {
@@ -126,6 +179,8 @@ void shutdown()
   }
 }
 
+//. - reload
+//.   Reload the tables.
 void reload()
 {
   if (functionp(master_sql->reload)) {
@@ -135,6 +190,8 @@ void reload()
   }
 }
 
+//. - server_info
+//.   Return info about the current SQL-server.
 string server_info()
 {
   if (functionp(master_sql->server_info)) {
@@ -143,6 +200,8 @@ string server_info()
   return("Unknown SQL-server");
 }
 
+//. - host_info
+//.   Return info about the connection to the SQL-server.
 string host_info()
 {
   if (functionp(master_sql->host_info)) {
@@ -151,6 +210,10 @@ string host_info()
   return("Unknown connection to host");
 }
 
+//. - list_dbs
+//.   List available databases on this SQL-server.
+//. > wild
+//.   Optional wildcard to match against.
 array(string) list_dbs(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
@@ -173,6 +236,10 @@ array(string) list_dbs(string|void wild)
   return(res);
 }
 
+//. - list_tables
+//.   List tables available in the current database.
+//. > wild
+//.   Optional wildcard to match against.
 array(string) list_tables(string|void wild)
 {
   array(string)|array(mapping(string:mixed))|object res;
@@ -195,6 +262,12 @@ array(string) list_tables(string|void wild)
   return(res);
 }
 
+//. - list_fields
+//.   List fields available in the specified table
+//. > table
+//.   Table to list the fields of.
+//. > wild
+//.   Optional wildcard to match against.
 array(mapping(string:mixed)) list_fields(string table, string|void wild)
 {
   array(mapping(string:mixed))|object res;
