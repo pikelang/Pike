@@ -17,10 +17,10 @@ DESCRIPTION
 	the result will include everything from (and including) b to the end.
 
 EXAMPLES
-	"foobar"[0..3]	returns "foo"
-	"foobar"[4..6]	returns "bar"
-	({1,2,3})[..2]	returns ({1,2})
-	({1,2,3})[2..]	returns ({2,3})
+	"foobar"[0..2]	returns "foo"
+	"foobar"[3..5]	returns "bar"
+	({1,2,3})[..1]	returns ({1,2})
+	({1,2,3})[1..]	returns ({2,3})
 	({1,2,3})[..]	returns ({1,2,3})
 
 KEYWORDS
