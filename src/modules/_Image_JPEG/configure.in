@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.19 2003/04/30 18:03:14 grubba Exp $
+# $Id: configure.in,v 1.20 2003/12/16 19:52:17 grendel Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -95,10 +95,10 @@ int main() {
       # typedef 'boolean' is set.
       AC_MSG_CHECKING(if jconfig.h claims HAVE_BOOLEAN)
       AC_CACHE_VAL(pike_cv_jconfig_have_boolean, [
-	AC_EGREP_CPP(yes, [
+	AC_EGREP_CPP(oui, [
 #include <jconfig.h>
 #ifdef HAVE_BOOLEAN
-yes
+oui
 #endif
         ], pike_cv_jconfig_have_boolean=yes, pike_cv_jconfig_have_boolean=no)
       ])

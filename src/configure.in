@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.754 2003/12/10 13:19:21 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.755 2003/12/16 19:52:17 grendel Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -427,7 +427,7 @@ AC_CACHE_VAL(pike_cv_filesystem_syncronization,
 
   AC_EGREP_CPP(true, [ true ], , pike_cv_filesystem_syncronization=broken)
   AC_EGREP_CPP(false, [ false ], , pike_cv_filesystem_syncronization=broken)
-  AC_EGREP_CPP(yes, [ yes ], , pike_cv_filesystem_syncronization=broken)
+  AC_EGREP_CPP(oui, [ oui ], , pike_cv_filesystem_syncronization=broken)
   AC_EGREP_CPP(no, [ no ], , pike_cv_filesystem_syncronization=broken)
   AC_EGREP_CPP(near, [ far ], pike_cv_filesystem_syncronization=broken, )
   AC_EGREP_CPP(up, [ up ], , pike_cv_filesystem_syncronization=broken)
@@ -2631,9 +2631,9 @@ AC_CHECK_LIB(socket, socket)
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   AC_MSG_CHECKING(if we should use the 64 bit API)
   AC_CACHE_VAL(pike_cv_sys_win64, [
-    AC_EGREP_CPP(yes, [
+    AC_EGREP_CPP(oui, [
 #if defined(_WIN64) || defined(__WIN64__)
-  yes
+  oui
 #else
   no
 #endif
@@ -3933,10 +3933,10 @@ AC_MSG_RESULT($pike_cv_struct_tm_has___tm_gmtoff)
 AC_MSG_CHECKING(for USHRT_MAX definition)
 
 AC_CACHE_VAL(pike_cv_ushrt_max_is_defined,[
-AC_EGREP_CPP(yes,[
+AC_EGREP_CPP(oui,[
 #include <limits.h>
 #ifdef USHRT_MAX
-yes
+oui
 #endif
 ],pike_cv_ushrt_max_is_defined=yes,pike_cv_ushrt_max_is_defined=no)
 ])
