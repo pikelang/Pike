@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 
+//! @appears Image.PS
 //! Codec for the Adobe page description language PostScript.
 //! Uses Ghostscript for decoding.
 
