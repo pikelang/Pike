@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.298 2003/10/15 17:10:37 grubba Exp $
+|| $Id: file.c,v 1.299 2003/10/19 15:08:09 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.298 2003/10/15 17:10:37 grubba Exp $");
+RCSID("$Id: file.c,v 1.299 2003/10/19 15:08:09 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -619,12 +619,10 @@ static struct pike_string *do_read_oob(int fd,
 {
   ONERROR ebuf;
   INT32 bytes_read,i;
+  struct pike_string *str;
+
   bytes_read=0;
   *err=0;
-
-  if(r <= 65536)
-  {
-    struct pike_string *str;
 
     str=begin_shared_string(r);
 
@@ -677,77 +675,6 @@ static struct pike_string *do_read_oob(int fd,
     }else{
       return end_and_resize_shared_string(str, bytes_read);
     }
-
-  }else{
-    /* For some reason, 8k seems to work faster than 64k.
-     * (4k seems to be about 2% faster than 8k when using linux though)
-     * /Hubbe (Per pointed it out to me..)
-     */
-#define CHUNK ( 1024 * 8 )
-    INT32 try_read;
-    dynamic_buffer b;
-
-    b.s.str=0;
-    initialize_buf(&b);
-    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
-    do{
-      int e;
-      char *buf;
-      try_read=MINIMUM(CHUNK,r);
-
-      buf = low_make_buf_space(try_read, &b);
-
-      THREADS_ALLOW();
-      i=fd_recv(fd, buf, try_read, MSG_OOB);
-      e=errno;
-      THREADS_DISALLOW();
-
-      check_threads_etc();
-
-      if(i==try_read)
-      {
-	r-=i;
-	bytes_read+=i;
-	if(!all) break;
-      }
-      else if(i>0)
-      {
-	bytes_read+=i;
-	r-=i;
-	low_make_buf_space(i - try_read, &b);
-	if(!all) break;
-      }
-      else if(i==0)
-      {
-	low_make_buf_space(-try_read, &b);
-	break;
-      }
-      else
-      {
-	low_make_buf_space(-try_read, &b);
-	if(e != EINTR)
-	{
-	  *err=e;
-	  if(!bytes_read)
-	  {
-	    free(b.s.str);
-	    UNSET_ONERROR(ebuf);
-	    return 0;
-	  }
-	  break;
-	}
-      }
-    }while(r);
-
-    UNSET_ONERROR(ebuf);
-    if(!SAFE_IS_ZERO(& THIS->read_oob_callback))
-    {
-      set_read_oob_callback(FD, file_read_oob_callback, THIS);
-      SET_INTERNAL_REFERENCE(THIS);
-    }
-    return low_free_buf(&b);
-#undef CHUNK
-  }
 }
 #endif /* WITH_OOB */
 
