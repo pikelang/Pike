@@ -416,6 +416,20 @@ class client
 	return RegGetValue(HKEY_LOCAL_MACHINE, key, val);
       };
     }
+
+#if constant(RegGetKeyNames)
+    /* W2K, should be fixed to return results from *all* interfaces
+     * instead of just the first interface. -Hubbe
+     */
+    foreach(RegGetKeyNames(HKEY_LOCAL_MACHINE,
+			   "SYSTEM\\CurrentControlSet\\Tcpip\\Parameters\\Interfaces"), string key)
+      {
+	catch {
+	  return RegGetValue(HKEY_LOCAL_MACHINE,
+			     "SYSTEM\\CurrentControlSet\\Tcpip\\Parameters\\Interfaces\\"+key,val);
+	};
+      }
+			   
   }
 #endif
   
