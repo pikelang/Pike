@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.47 2004/02/29 02:56:04 nilsson Exp $
+/* $Id: handshake.pike,v 1.48 2004/07/05 17:24:42 grubba Exp $
  *
  */
 
@@ -226,14 +226,16 @@ Packet client_key_exchange_packet()
 
     data = (temp_key || context->rsa)->encrypt(premaster_secret);
 
-    if(version[1]==1) 
+    if(version[1]>0) 
       data=sprintf("%2c",sizeof(data))+data;
       
     break;
   case KE_dhe_dss:
   case KE_dhe_rsa:
   case KE_dh_anon:
+#ifdef SSL3_DEBUG
     werror("FIXME: Not handled yet\n");
+#endif
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
@@ -347,7 +349,7 @@ string hash_messages(string sender)
     return .Cipher.MACmd5(session->master_secret)->hash_master(handshake_messages + sender) +
       .Cipher.MACsha(session->master_secret)->hash_master(handshake_messages + sender);
   }
-  else if(version[1] == 1) {
+  else if(version[1] > 0) {
     return .Cipher.prf(session->master_secret, sender,
 		       .Cipher.MACmd5()->hash_raw(handshake_messages)+
 		       .Cipher.MACsha()->hash_raw(handshake_messages),12);
@@ -419,15 +421,13 @@ string server_derive_master_secret(string data)
 #ifdef SSL3_DEBUG
      werror("encrypted premaster_secret: %O\n", data);
 #endif
-     if(version[1] == 1) {
-       if(sizeof(data)-2 != data[0]*256+data[1]) {
-	 premaster_secret = context->random(48);
-	 rsa_message_was_bad = 1;
+     if(version[1] > 0) {
+       if(sizeof(data)-2 == data[0]*256+data[1]) {
+	 premaster_secret = (temp_key || context->rsa)->decrypt(data[2..]);
        }
-       data=data[2..];
+     } else {
+       premaster_secret = (temp_key || context->rsa)->decrypt(data);
      }
-
-     premaster_secret = (temp_key || context->rsa)->decrypt(data);
 #ifdef SSL3_DEBUG
      werror("premaster_secret: %O\n", premaster_secret);
 #endif
@@ -437,20 +437,24 @@ string server_derive_master_secret(string data)
      {
 
        /* To avoid the chosen ciphertext attack discovered by Daniel
-	* Bleichenbacher, it is essential not to send any error *
-	* messages back to the client until after the client's *
-	* Finished-message (or some other invalid message) has been *
-	* received. */
+	* Bleichenbacher, it is essential not to send any error
+	* messages back to the client until after the client's
+	* Finished-message (or some other invalid message) has been
+	* received.
+	*/
 
+#ifdef SSL3_DEBUG
        werror("SSL.handshake: Invalid premaster_secret! "
 	      "A chosen ciphertext attack?\n");
+#endif
        premaster_secret = context->random(48);
        rsa_message_was_bad = 1;
 
      } else {
        /* FIXME: When versions beyond 3.0 are supported,
 	* the version number here must be checked more carefully
-	* for a version rollback attack. */
+	* for a version rollback attack.
+	*/
 #ifdef SSL3_DEBUG
        if (premaster_secret[1] > 0)
 	 werror("SSL.handshake: Newer version detected in key exchange message.\n");
@@ -470,8 +474,9 @@ string server_derive_master_secret(string data)
 			   + sha->hash_raw(cookie + premaster_secret 
 					   + client_random + server_random));
   }
-  else if(version[1] == 1) {
-    res=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
+  else if(version[1] > 0) {
+    res=.Cipher.prf(premaster_secret,"master secret",
+		    client_random+server_random,48);
   }
   
 #ifdef SSL3_DEBUG
@@ -497,7 +502,7 @@ string client_derive_master_secret(string premaster_secret)
 			   + sha->hash_raw(cookie + premaster_secret 
 					   + client_random + server_random));
   }
-  else if(version[1] == 1) {
+  else if(version[1] > 0) {
     res+=.Cipher.prf(premaster_secret,"master secret",client_random+server_random,48);
   }
   
@@ -672,12 +677,19 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			 id, cipher_suites, compression_methods);
 
 	}
-	  || (version[0] != 3) || (version[1] > 1) || (cipher_len & 1))
+	  || (version[0] != 3) || (cipher_len & 1))
 	{
+	  if (version[1] > 1) version[1] = 1;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
 	  return -1;
+	}
+	if (version[1] > 1) {
+	  SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
+			 "SSL 3.1 (aka TLS 1.0).\n",
+			 version[1]);
+	  version[1] = 1;
 	}
 
 #ifdef SSL3_DEBUG
@@ -685,10 +697,6 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  werror("SSL.connection->handle_handshake: "
 		 "extra data in hello message ignored\n");
       
-	if (version[1] > 1)
-	  werror("SSL.handshake->handle_handshake: "
-		 "Version %d.%d hello detected\n", @version);
-	
 	if (sizeof(id))
 	  werror("SSL.handshake: Looking up session %O\n", id);
 #endif
@@ -717,7 +725,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  send_packet(change_cipher_packet());
 	  if(version[1] == 0)
 	    send_packet(finished_packet("SRVR"));
-	  else if(version[1] == 1)
+	  else if(version[1] > 0)
 	    send_packet(finished_packet("server finished"));
 
 	  expect_change_cipher = 1;
@@ -749,23 +757,25 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  id_len = input->get_uint(2);
 	  ch_len = input->get_uint(2);
 	} || (ci_len % 3) || !ci_len || (id_len) || (ch_len < 16)
-	|| (version[0] != 3))
+	    || (version[0] != 3))
 	{
 #ifdef SSL3_DEBUG
 	  werror("SSL.handshake: Error decoding SSL2 handshake:\n"
-		 "%s\n", describe_backtrace(err));
+		 "%s\n", err?describe_backtrace(err):"");
 #endif /* SSL3_DEBUG */
+	  if (version[1] > 1) version[1] = 1;
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 		      "SSL.session->handle_handshake: unexpected message\n",
 		      backtrace()));
 	  return -1;
 	}
 
-#ifdef SSL3_DEBUG
-	if (version[1] > 1)
-	  werror("SSL.connection->handle_handshake: "
-		 "Version %d.%d hello detected\n", @context->version);
-#endif
+	if (version[1] > 1) {
+	  SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
+			 "SSL 3.1 (aka TLS 1.0).\n",
+			 version[1]);
+	  version[1] = 1;
+	}
 
 	string challenge;
 	if (catch{
@@ -1009,15 +1019,24 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       cipher_suite = input->get_uint(2);
       compression_method = input->get_uint(1);
 
-      if( !has_value(context->preferred_suites, cipher_suite)
-	 || !has_value(context->preferred_compressors, compression_method))
+      if( !has_value(context->preferred_suites, cipher_suite) ||
+	  !has_value(context->preferred_compressors, compression_method) ||
+	  (version[0] != 3))
       {
 	// The server tried to trick us to use some other cipher suite
 	// or compression method than we wanted
+	if (version[1] > 1) version[1] = 1;
 	send_packet(Alert(ALERT_fatal, ALERT_handshake_failure, version[1],
 			  "SSL.session->handle_handshake: handshake failure\n",
 			  backtrace()));
 	return -1;
+      }
+
+      if (version[1] > 1) {
+	SSL3_DEBUG_MSG("Falling back to from SSL 3.%d to "
+		       "SSL 3.1 (aka TLS 1.0).\n",
+		       version[1]);
+	version[1] = 1;
       }
 
       session->set_cipher_suite(cipher_suite,version[1]);
@@ -1081,7 +1100,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  }
 	else
 	  {
-	    werror("Other certificates than rsa not supported!\n");
+#ifdef SSL3_DEBUG
+	    werror("Other certificates than RSA not supported!\n");
+#endif
 	    send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			      "SSL.session->handle_handshake: unexpected message\n",
 			      backtrace()));
@@ -1091,7 +1112,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
       if(error)
 	{
+#ifdef SSL3_DEBUG
 	  werror("Failed to decode certificate!\n");
+#endif
 	  send_packet(Alert(ALERT_fatal, ALERT_unexpected_message, version[1],
 			    "SSL.session->handle_handshake: unexpected message\n",
 			    backtrace()));
@@ -1129,7 +1152,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
     case HANDSHAKE_certificate_request:
       {
+#ifdef SSL3_DEBUG
 	werror("Certificate request not yet implemented.\n");
+#endif
 	array(int) cert_types = input->get_var_uint_array(1, 1);
 //       int num_distinguished_names = input->get_uint(2);
 //       array(string) distinguished_names =
