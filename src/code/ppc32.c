@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.16 2002/08/15 14:50:24 marcus Exp $
+ * $Id: ppc32.c,v 1.17 2002/09/04 15:33:12 grubba Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -551,6 +551,7 @@ void ppc32_flush_instruction_cache(void *addr, size_t len)
 {
   INT32 a;
 
+#ifndef _POWER
 #ifdef _AIX
   __asm__(".machine \"ppc\"");
 #endif
@@ -562,6 +563,7 @@ void ppc32_flush_instruction_cache(void *addr, size_t len)
   }
   __asm__("sync");
   __asm__("isync");
+#endif /* !_POWER */
 }
 
 #if 0
