@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.20 2000/08/10 09:20:49 grubba Exp $
+ * $Id: pike_macros.h,v 1.21 2000/10/10 00:00:28 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -93,6 +93,11 @@
 						\
   if(o->next) o->next->prev=o->prev;		\
 }while(0)
+
+
+#define PIKE_XCONCAT(X,Y)	PIKE_CONCAT(X,Y)
+#define PIKE_XCONCAT3(X,Y,Z)	PIKE_CONCAT(X,Y,Z)
+#define PIKE_XCONCAT4(X,Y,Z,Q)	PIKE_CONCAT(X,Y,Z,Q)
 
 
 /* Needed for fsort_template.h */
