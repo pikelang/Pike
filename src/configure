@@ -2577,7 +2577,7 @@ int main()
 {
   FILE *f;
   long limit;
-#if !defined(RLIMIT_NOLIMIT) && defined(RLIMIT_OFILE)
+#if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
