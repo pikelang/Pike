@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.122 2003/01/06 00:00:39 grubba Exp $
+|| $Id: interpret_functions.h,v 1.123 2003/01/06 14:36:47 grubba Exp $
 */
 
 /*
@@ -1221,7 +1221,8 @@ OPCODE1(F_SWITCH, "switch", 0, {
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
   addr = DO_IF_ELSE_COMPUTED_GOTO(addr, (PIKE_OPCODE_T *)
-				  DO_ALIGN(addr,((ptrdiff_t)sizeof(INT32))));
+				  DO_ALIGN(((char *)addr)-(char *)0,
+					   ((ptrdiff_t)sizeof(INT32))));
   addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + (tmp>=0 ? 1+tmp*2 : 2*~tmp));
   if(*(INT32*)addr < 0) fast_check_threads_etc(7);
   pop_stack();
