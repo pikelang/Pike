@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.101 2004/04/02 19:37:26 grubba Exp $
+|| $Id: backend.cmod,v 1.102 2004/04/03 12:51:36 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.101 2004/04/02 19:37:26 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.102 2004/04/03 12:51:36 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -212,13 +212,14 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
  */
 
 #ifndef HAVE_AND_USE_POLL
+/* Various BSDs have simulated poll(2) APIs. */
 #undef HAVE_POLL
 #endif
 
 #ifdef HAVE_POLL
 
 /*
- * Backend using poll(2)
+ * Backends using poll(2) or similar.
  */
 
 #ifdef HAVE_POLL_H
@@ -229,13 +230,65 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #include <sys/poll.h>
 #endif /* HAVE_SYS_POLL_H */
 
+/* Some constants... */
+
+/* Notes on POLLRDNORM and POLLIN:
+ *
+ * According to the AIX manual, POLLIN and POLLRDNORM are both set
+ * if there's a nonpriority message on the read queue. POLLIN is
+ * also set if the message is of 0 length.
+ */
+
+#ifndef POLLRDNORM
+#define POLLRDNORM	POLLIN
+#endif /* !POLLRDNORM */
+
+#ifndef POLLRDBAND
+#define POLLRDBAND	POLLPRI
+#endif /* !POLLRDBAND */
+
+#ifndef POLLWRNORM
+#define POLLWRNORM	POLLOUT
+#endif /* POLLWRNORM */
+
+#ifndef POLLWRBAND
+#define POLLWRBAND	POLLOUT
+#endif /* !POLLWRBAND */
+
+#define MY_POLLIN POLLRDNORM|POLLIN
+#define MY_POLLOUT POLLWRNORM|POLLOUT
+
+#define MY_POLLEXCEPT POLLRDBAND|POLLRDNORM|POLLIN
+#define MY_POLLRDBAND POLLRDBAND
+#define MY_POLLWREXCEPT POLLWRBAND|POLLWRNORM|POLLOUT
+#define MY_POLLWRBAND POLLWRBAND
+
+#if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
+#define RDBAND_IS_SPECIAL
+#endif
+
+#if (POLLWRBAND != POLLOUT) && (POLLWRBAND != POLLWRNORM)
+#define WRBAND_IS_SPECIAL
+#endif
+
 #if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
+/*
+ * Backend using /dev/poll-style poll device.
+ *
+ * Used on:
+ *   Solaris 7 + patches and above.
+ *   OSF/1 + patches and above.
+ *   IRIX 5.6.15m and above.
+ * Broken on:
+ *   Solaris 7/x86 + patches (process hangs in device wait).
+ */
 #include <sys/devpoll.h>
 
 #define USE_POLL_DEVICE
 #define USE_DEVPOLL
 #define POLL_EVENT	struct pollfd
 #define OPEN_POLL_DEVICE()	open(PIKE_POLL_DEVICE, O_RDWR)
+#define CHILD_NEEDS_TO_REOPEN
 
 int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 {
@@ -274,6 +327,15 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 }
 	
 #elif defined(HAVE_SYS_EPOLL_H) && defined(WITH_EPOLL)
+/*
+ * Backend using /dev/epoll-style poll device.
+ *
+ * Used on:
+ *   Linux 2.6 and above.
+ * Note:
+ *   Some libc's are missing wrappers for the system calls, so
+ *   we include the appropriate wrappers below.
+ */
 #include <sys/epoll.h>
 
 /* The following three are defined by <gnu/stubs.h> which is included
@@ -372,74 +434,14 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
     
   return e;
 }
-	
-#endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
-
-#ifdef USE_POLL_DEVICE
-#ifndef OPEN_POLL_DEVICE
-#define OPEN_POLL_DEVICE()	(errno = ENODEV, -1)	/* Error */
-#endif /* !OPEN_POLL_DEVICE */
-#ifndef POLL_SET_SIZE
-#define POLL_SET_SIZE		32
-#endif /* !POLL_SET_SIZE */
-#endif /* USE_POLL_DEVICE */
-
-#ifndef GET_FD
-#define GET_FD(EVENT)		EVENT.fd
-#endif
-#ifndef GET_EVENTS
-#define GET_EVENTS(EVENT)	EVENT.revents
-#endif
-/* Some constants... */
-
-/* Notes on POLLRDNORM and POLLIN:
- *
- * According to the AIX manual, POLLIN and POLLRDNORM are both set
- * if there's a nonpriority message on the read queue. POLLIN is
- * also set if the message is of 0 length.
- */
-
-#ifndef POLLRDNORM
-#define POLLRDNORM	POLLIN
-#endif /* !POLLRDNORM */
-
-#ifndef POLLRDBAND
-#define POLLRDBAND	POLLPRI
-#endif /* !POLLRDBAND */
-
-#ifndef POLLWRNORM
-#define POLLWRNORM	POLLOUT
-#endif /* POLLWRNORM */
-
-#ifndef POLLWRBAND
-#define POLLWRBAND	POLLOUT
-#endif /* !POLLWRBAND */
-
-#define MY_POLLIN POLLRDNORM|POLLIN
-#define MY_POLLOUT POLLWRNORM|POLLOUT
-
-#define MY_POLLEXCEPT POLLRDBAND|POLLRDNORM|POLLIN
-#define MY_POLLRDBAND POLLRDBAND
-#define MY_POLLWREXCEPT POLLWRBAND|POLLWRNORM|POLLOUT
-#define MY_POLLWRBAND POLLWRBAND
-
-#if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
-#define RDBAND_IS_SPECIAL
-#endif
-
-#if (POLLWRBAND != POLLOUT) && (POLLWRBAND != POLLWRNORM)
-#define WRBAND_IS_SPECIAL
-#endif
-
-#ifdef USE_POLL_DEVICE
-
-/* NOTE: With poll devices the poll set is recalculated each time it's
- *       potentially changed, so MY_FD_{SET,CLR}() are not used.
- */
-
-#define copy_selectors(TO, FROM)
 
 #else /* !USE_POLL_DEVICE */
+
+/*
+ * Backend using poll(2).
+ *
+ * This is used on most older SVR4- or POSIX-style systems.
+ */
 
 struct selectors
 {
@@ -546,12 +548,77 @@ static void copy_selectors(struct active_selectors *to,
   to->num_in_poll=from->num_in_poll;
 }
 
+#endif /* HAVE_SYS_DEVPOLL_H || HAVE_SYS_EPOLL_H */
+
+#ifdef USE_POLL_DEVICE
+#ifndef POLL_SET_SIZE
+#define POLL_SET_SIZE		32
+#endif /* !POLL_SET_SIZE */
 #endif /* USE_POLL_DEVICE */
 
-#else  /* !HAVE_POLL */
+#ifndef GET_FD
+#define GET_FD(EVENT)		EVENT.fd
+#endif
+#ifndef GET_EVENTS
+#define GET_EVENTS(EVENT)	EVENT.revents
+#endif
+
+#ifdef USE_POLL_DEVICE
+
+/* NOTE: With poll devices the poll set is recalculated each time it's
+ *       potentially changed, so MY_FD_{SET,CLR}() are not used.
+ */
+
+#define copy_selectors(TO, FROM)
+
+#endif /* USE_POLL_DEVICE */
+
+#elif defined(HAVE_SYS_EVENT_H) && defined(HAVE_KQUEUE) /* && !HAVE_POLL */
+/*
+ * Backend using kqueue-style poll device.
+ *
+ * FIXME: Not fully implemented yet!
+ *
+ * Used on
+ *   FreeBSD 4.1 and above.
+ *   MacOS X/Darwin 7.x and above.
+ *   Various other BSDs.
+ */
+
+#include <sys/event.h>
+
+#define USE_KQUEUE
+#define POLL_EVENT	struct kevent
+#define OPEN_POLL_DEVICE()	kqueue()
+#define CHILD_NEEDS_TO_REOPEN
+
+#define MY_POLLIN	EVFILT_READ
+#define MY_POLLOUT	EVFILT_WRITE
+
+/* FIXME: The kqueue API has no documented support for out of band data. */
+#define MY_POLLEXCEPT	EVFILT_READ
+#define MY_POLLRDBAND	EVFILT_READ
+#define MY_POLLWREXCEPT	EVFILT_WRITE
+#define MY_POLLWRBAND	EVFILT_WRITE
+
+#define MY_SELECT(fds, R, W, E, T)	kqueue(pfd, NULL, 0, evs, nevs, (T))
+
+int MY_FD_CLR(int pfd, int fd, int filter)
+{
+  struct kevent ev;
+  int e;
+
+  EV_SET(&ev, fd, filter, EV_DISABLE, 0, 0, 0);
+  
+  return kqueue(pfd, &ev, 1, NULL, 0, NULL);
+}
+
+#else  /* !HAVE_POLL && !HAVE_KQUEUE */
 
 /*
  * Backend using select(2)
+ *
+ * This is used on most older BSD-style systems, and WIN32.
  */
 
 struct selectors
@@ -614,7 +681,7 @@ static void copy_selectors(struct active_selectors *to,
   to->max_fd=from->max_fd;
 }
 
-#endif	/* HAVE_POLL */
+#endif	/* HAVE_POLL || USE_KQUEUE */
 
 #ifdef USE_POLL_DEVICE
 #  define DO_IF_USE_POLL_DEVICE_ELSE(POLLDEV_CODE, NO_POLLDEV_CODE) POLLDEV_CODE
@@ -2538,14 +2605,6 @@ PIKECLASS Backend
       me->fds=0;
       me->fds_size=0;
 
-#ifndef HAVE_POLL
-      me->set.max_fd=0;
-      my_FD_ZERO(&me->set.read);
-      my_FD_ZERO(&me->set.write);
-      my_FD_ZERO(&me->set.except);
-      /* FIXME: Should there be something else here? */
-      /* me->set.num_fds=0; */
-#else /* HAVE_POLL */
 #ifdef USE_POLL_DEVICE
       if ((me->set = OPEN_POLL_DEVICE()) < 0) {
 	Pike_error("Failed to open poll device (errno:%d)\n", errno);
@@ -2553,7 +2612,7 @@ PIKECLASS Backend
       set_close_on_exec(me->set, 1);
 
       register_backend(me);
-#else /* !USE_POLL_DEVICE */
+#elif defined(HAVE_POLL)
       me->set.poll_fds=0;
       me->set.poll_fd_size=0;
       me->set.num_in_poll=0;
@@ -2561,8 +2620,14 @@ PIKECLASS Backend
       me->active_set.poll_fds=0;
       me->active_set.poll_fd_size=0;
       me->active_set.num_in_poll=0;
-#endif /* USE_POLL_DEVICE */
-#endif /* !HAVE_POLL */
+#else /* !HAVE_POLL */
+      me->set.max_fd=0;
+      my_FD_ZERO(&me->set.read);
+      my_FD_ZERO(&me->set.write);
+      my_FD_ZERO(&me->set.except);
+      /* FIXME: Should there be something else here? */
+      /* me->set.num_fds=0; */
+#endif /* USE_POLL_DEVICE || HAVE_POLL */
 
       if(pike_make_pipe(me->wakeup_pipe) < 0)
 	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
@@ -2856,10 +2921,8 @@ void init_backend(void)
     add_object_constant("__backend",o,0);
     free_object(o);
   }
-#ifdef USE_DEVPOLL
-  /* /dev/poll fds get invalidated at fork
-   * on Solaris and IRIX.
-   */
+#ifdef CHILD_NEEDS_TO_REOPEN
+  /* /dev/poll and kqueue fds get invalidated at fork. */
   dmalloc_accept_leak(add_to_callback(&fork_child_callback,
 				      reopen_all_backends, NULL, NULL));
 #endif
