@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.2 1999/04/15 12:46:11 mirar Exp $");
+RCSID("$Id: psd.c,v 1.3 1999/04/15 19:11:49 hubbe Exp $");
 
 #include "config.h"
 
@@ -545,6 +545,7 @@ void init_image_psd()
     add_constant(s,sp-1,0);
     free_string(s);
   }
+  pop_stack();
 #define STRING(X) s_##X = make_shared_binary_string(#X,sizeof( #X )-sizeof(""));
 #include "psd_constant_strings.h"
 #undef STRING
