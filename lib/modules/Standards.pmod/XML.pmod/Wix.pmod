@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.3 2004/11/01 18:37:48 grubba Exp $
+// $Id: Wix.pmod,v 1.4 2004/11/02 12:21:06 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -8,6 +8,8 @@
 //!   @[Parser.XML.Tree.SimpleNode]
 
 constant wix_ns = "http://schemas.microsoft.com/wix/2003/01/wi";
+
+// FIXME: Generate deterministic output!
 
 class WixNode
 {
