@@ -50,16 +50,15 @@
   which means that if you want to access this WWW server from a browser you
   need to specify the port like this: http://my.host.my.domain:1905/
 
-  Next we declare a global variable of the type program called output_class,
-  and then we use the class construct to assign a program to it. class {}
-  defines a clonable program. (or class for you C++ freaks)
+  Next we declare a class called output_class. A class is simply a way to
+  write a clonable program into another program.
 
-	program output_class=class
+	class output_class
 	{
-	  inherit "/precompiled/file" : socket;
-	  inherit "/precompiled/file" : file;
+	  inherit File : socket;
+	  inherit File : file;
 
-  Our new class inherits /precompile/file twice. To be able to separate them
+  Our new class inherits File twice. To be able to separate them
   they are then named 'socket' and 'file'.
 
 	  int offset=0;
@@ -267,7 +266,7 @@
 
   If it failed we just return.
 
-	  clone(output_class, tmp_output);
+	  output_class(tmp_output);
 
   Otherwise we clone an instanec of 'output_class' and let it take care of the
   connection. Each clone of output_class will have it's own set of global
