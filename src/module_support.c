@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.12 1998/05/25 10:38:45 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.13 1998/09/25 18:06:34 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -236,7 +236,13 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
     case '*': expected_type = "mixed"; break;
     default: expected_type = "Unknown"; break;
     }
-    error("Bad argument %d to %s(). Expected %s\n", ret+1, fname,
-	  expected_type);
+    if (ret <= args) {
+      error("Bad argument %d to %s(). Expected %s\n",
+	    ret+1, fname, expected_type);
+    } else if (args*2 < strlen(format)) {
+      error("Too few arguments to %s(). Expected %d arguments, got %d.\n"
+	    "The type of the next argument is expected to be %s\n",
+	    fname, strlen(format)/2, args, expected_type);
+    }
   }
 }
