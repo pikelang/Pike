@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.129 1999/07/01 19:01:44 grubba Exp $");
+RCSID("$Id: program.c,v 1.130 1999/07/01 22:09:38 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -542,8 +542,8 @@ void low_start_new_program(struct program *p,
 
   compilation_depth++;
 
-  CDFPRINTF((stderr, "low_start_new_program(): compilation_depth:%d\n",
-	     compilation_depth));
+  CDFPRINTF((stderr, "th(%ld) low_start_new_program() pass=%d: compilation_depth:%d\n",
+	     (long)th_self(),compilation_depth,compiler_pass));
 
   if(!p)
   {
@@ -643,8 +643,8 @@ void low_start_new_program(struct program *p,
 void debug_start_new_program(PROGRAM_LINE_ARGS)
 {
   CDFPRINTF((stderr,
-	     "start_new_program(): threads_disabled:%d, compilation_depth:%d\n",
-	     threads_disabled, compilation_depth));
+	     "th(%ld) start_new_program(): threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(),threads_disabled, compilation_depth));
 
   low_start_new_program(0,0,0);
 #ifdef PIKE_DEBUG
@@ -984,8 +984,8 @@ struct program *end_first_pass(int finish)
 
   exit_threads_disable(NULL);
 
-  CDFPRINTF((stderr, "end_first_pass(): compilation_depth:%d\n",
-	     compilation_depth));
+  CDFPRINTF((stderr, "th(%ld),end_first_pass(): compilation_depth:%d\n",
+	     (long)th_self(),compilation_depth));
 
   free_all_nodes();
   if(!compiler_frame && compiler_pass==2 && resolve_cache)
@@ -1962,8 +1962,8 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   struct identifier *fun;
   int i,t;
 
-  CDFPRINTF((stderr,"Trying to find %s see_static=%d\n",
-	     name->str, see_static));
+  CDFPRINTF((stderr,"th(%ld) Trying to find %s see_static=%d\n",
+	     (long)th_self(),name->str, see_static));
 
 #ifdef PIKE_DEBUG
   if (!prog) {
@@ -2379,10 +2379,16 @@ struct program *compile(struct pike_string *prog)
   struct program *p;
   struct lex save_lex;
   int save_depth=compilation_depth;
-  int saved_threads_disabled = threads_disabled;
+  int saved_threads_disabled;
   dynamic_buffer used_modules_save = used_modules;
   INT32 num_used_modules_save = num_used_modules;
   extern void yyparse(void);
+
+  CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
+	     (long)th_self(),compilation_depth));
+
+  low_init_threads_disable();
+  saved_threads_disabled = threads_disabled;
 
 #ifdef PIKE_DEBUG
   if(SETJMP(tmp))
@@ -2457,16 +2463,16 @@ struct program *compile(struct pike_string *prog)
   }
 
 #ifdef PIKE_DEBUG
-  if (threads_disabled < saved_threads_disabled) {
+  if (threads_disabled != saved_threads_disabled) {
     fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
 	  threads_disabled, saved_threads_disabled);
   }
 #endif /* PIKE_DEBUG */
-  threads_disabled = saved_threads_disabled + 1;
+/*  threads_disabled = saved_threads_disabled + 1;   /Hubbe: UGGA! */
 
   CDFPRINTF((stderr,
-	     "compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
-	     threads_disabled, compilation_depth));
+	     "th(%ld) compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(),threads_disabled, compilation_depth));
 
   exit_threads_disable(NULL);
 
