@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.20 1998/05/24 22:40:53 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.21 1998/05/25 20:47:17 marcus Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -924,7 +924,7 @@ static string low_pike_sprintf(char *format,
         l=4;
         if(fsp->width > 0) l=fsp->width;
 	if(l != 4 && l != 8)
-	  sprintf_error("Invalid IEEE witdh %d.\n", l);
+	  sprintf_error("Invalid IEEE width %d.\n", l);
 	fsp->b=(char *)alloca(l);
 	fsp->len=l;
 	GET_FLOAT(tf);
