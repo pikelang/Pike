@@ -5,8 +5,6 @@ inherit Process;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
-inherit Regexp : regexp;
-
 varargs int member_array(mixed needle,mixed *haystack,int start)
 {
   return search(haystack,needle,start);
@@ -44,9 +42,8 @@ function get_function(object o, string a)
 string *map_regexp(string *s, string reg)
 {
   
-  regexp::create(reg);
-  s=filter(s,regexp::match);
-  regexp::create(); /* Free compiled regexp */
+  object(Regexp) regexp = Regexp(reg);
+  s=filter(s,regexp->match);
   return s;
 }
 
