@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.5 2001/07/21 09:31:23 hubbe Exp $
+ * $Id: ia32.c,v 1.6 2001/07/22 21:09:11 grubba Exp $
  *
  * Machine code generator for IA32.
  *
@@ -123,9 +123,9 @@ void ia32_encode_program(struct program *p, struct dynamic_buffer_s *buf)
 
     /* Relocate to 0 */
     opcode = *(INT32 *) (p->program + off);
-    opcode += (long)p->program;
+    opcode += (INT32)p->program;
     adddata2(&opcode, 1);
-    prev = off+1;
+    prev = off+4;
   }
   adddata2(p->program + prev, p->num_program - prev);
 }
