@@ -1,5 +1,5 @@
 /*
- * $Id: system_machine.h.in,v 1.1 1997/01/21 20:55:04 grubba Exp $
+ * $Id: system_machine.h.in,v 1.2 1997/01/22 02:55:41 grubba Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -76,6 +76,9 @@
 
 /* Define if you have getprgp() */
 #undef HAVE_GETPGRP
+
+/* Define if you have getpgid() */
+#undef HAVE_GETPGID
 
 /* Define if you have getppid() */
 #undef HAVE_GETPPID
