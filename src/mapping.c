@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.94 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.95 2000/08/07 09:45:44 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -465,7 +465,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
       
 /* Assumes md is *NOT* locked */
 #define COPYMAP2() do {				\
-  long off;					\
+  ptrdiff_t off;				\
   m->data=copy_mapping_data(m->data);		\
   debug_malloc_touch(m->data);                  \
   DO_IF_DEBUG( if(d_flag>1)  check_mapping(m); ) \
