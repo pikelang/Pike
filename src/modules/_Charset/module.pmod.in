@@ -49,59 +49,62 @@ object(ascii) decoder(string name)
   throw(({"Unknown character encoding "+name+"\n", backtrace()}));
 }
 
-object encoder(string name, string|void replacement,
-	       function(string:string)|void repcb)
+static class _encoder
+{
+  static private string s = "";
+  static private string|void replacement;
+  static private function(string:string)|void repcb;
+  static private string low_convert(string s, string|void r,
+				    function(string:string)|void rc)
+  {
+    int i = strlen(s);
+    string rr;
+    while(--i>=0)
+      if(s[i]>255)
+	if(rc && (rr = rc(s[i..i])))
+	  s=s[..i-1]+low_convert(rr,r)+s[i+1..];
+	else if(r)
+	  s=s[..i-1]+low_convert(r)+s[i+1..];
+	else
+	  throw(({"Character unsupported by encoding.\n", backtrace()}));
+    return s;
+  }
+  object(this_program) feed(string ss)
+  {
+    s += low_convert(ss, replacement, repcb);
+    return this_object();
+  }
+  string drain()
+  {
+    string ss = s;
+    s = "";
+    return ss;
+  }
+  object(this_program) clear()
+  {
+    s = "";
+    return this_object();
+  }
+  void set_replacement_callback(function(string:string) rc)
+  {
+    repcb = rc;
+  }
+  static void create(string|void r, string|void rc)
+  {
+    replacement = r;
+    repcb = rc;
+  }
+}
+
+object(_encoder) encoder(string name, string|void replacement,
+			 function(string:string)|void repcb)
 {
   if(!name || (<
     "iso_8859-1:1987", "iso-8859-1", "iso_8859-1", "iso-ir-100", "latin1",
     "l1", "ansi_x3.4-1968", "iso_646.irv:1991", "iso646-us", "iso-ir-6",
     "us", "us-ascii", "ascii", "cp367", "ibm367", "cp819", "ibm819"
   >)[name=lower_case(name)])
-    return class {
-      static private string s = "";
-      static private string|void replacement;
-      static private function(string:string)|void repcb;
-      static private string low_convert(string s, string|void r,
-					function(string:string)|void rc)
-      {
-	int i = strlen(s);
-	string rr;
-	while(--i>=0)
-	  if(s[i]>255)
-	    if(rc && (rr = rc(s[i..i])))
-	      s=s[..i-1]+low_convert(rr,r)+s[i+1..];
-	    else if(r)
-	      s=s[..i-1]+low_convert(r)+s[i+1..];
-	    else
-	      throw(({"Character unsupported by encoding.\n", backtrace()}));
-	return s;
-      }
-      object feed(string ss)
-      {
-	s += low_convert(ss, replacement, repcb);
-	return this_object();
-      }
-      string drain()
-      {
-	string ss = s;
-	s = "";
-	return ss;
-      }
-      object clear()
-      {
-	s = "";
-	return this_object();
-      }
-      void set_replacement_callback(function(string:string) rc)
-      {
-	repcb = rc;
-      }
-      void create(string|void r, string|void rc)
-      {
-	replacement = r;
-	repcb = rc;
-      }
-    }(replacement, repcb);
+    return _encoder(replacement, repcb);
 
   if(name[..7]=="iso-2022")
     return ISO2022Enc(replacement, repcb);
