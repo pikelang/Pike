@@ -91,6 +91,7 @@ Layer decode_layer(mapping layer, mapping i)
                  ({0,255,0,}),
                  ({0,0,255,}),
                }) + ({ 255,255,255 }) * 24;
+     l->image = Image.image( l->width, l->height, 255, 255, 255);
      break;
    case Indexed:
      use_cmap = 1;
@@ -198,7 +199,7 @@ array(object) decode_background( mapping data, array bg )
 mapping _decode( string|mapping what, mapping|void opts )
 {
   mapping data;
-mixed e =catch{
+// mixed e =catch{
   if(!opts) opts = ([]);
   if(mappingp(what))
     data = what;
@@ -211,7 +212,7 @@ mixed e =catch{
 
   foreach(reverse(data->layers), object l)
   {
-    if((l->flags & LAYER_FLAG_VISIBLE) || opts->draw_all_layers)
+//     if((l->flags & LAYER_FLAG_VISIBLE) || opts->draw_all_layers)
     {
       Layer h = l->get_opaqued( l->opacity );
 
@@ -256,6 +257,6 @@ mixed e =catch{
     "image":img,
     "alpha":alpha,
   ]);
-};
- werror(describe_backtrace(e));
+// };
+//  werror(describe_backtrace(e));
 }

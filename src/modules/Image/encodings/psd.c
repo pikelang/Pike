@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.5 1999/04/17 01:25:48 per Exp $");
+RCSID("$Id: psd.c,v 1.6 1999/04/22 01:41:40 per Exp $");
 
 #include "config.h"
 
@@ -35,6 +35,7 @@ extern struct program *image_program;
 */
 
 #define MIN(X,Y) ((X)<(Y)?(X):(Y))
+#define MAX(X,Y) ((X)>(Y)?(X):(Y))
 #define STRING(X) static struct pike_string *s_##X;
 #include "psd_constant_strings.h"
 #undef STRING
@@ -430,28 +431,22 @@ static void f_decode_image_data( INT32 args )
     {
      case 4:
        /* cmyk.. */
-       dst->r = dst->g = dst->b = 255;
-       dst->r -= *(source++);
-       dst->g -= *(source2++);
-       dst->b -= *(source3++);
-       if(dst->r > *source4)
-         dst->r -= *source4;
-       else
-         dst->r = 0;
-       if(dst->g > *source4)
-         dst->g -= *source4;
-       else
-         dst->g = 0;
-       if(dst->b > *source4)
-         dst->b -= *source4;
-       else
-         dst->b = 0;
-       source4++;
+       dst->r = MAX(255-(*(source++) + *source4),  0);
+       dst->g = MAX(255-(*(source2++) + *source4), 0);
+       dst->b = MAX(255-(*(source3++) + *source4), 0);
+       dst++; source4++;
        break;
      case 3:
-       dst->r = *(source++);
-       dst->g = *(source2++);
-       (dst++)->b = *(source3++);
+       if( m != CMYK )
+       {
+         dst->r = *(source++);
+         dst->g = *(source2++);
+         (dst++)->b = *(source3++);
+       } else {
+         dst->r = 255-*(source++);
+         dst->g = 255-*(source2++);
+         dst->b = 255-*(source3++);
+       }
        break;
      case 2:
      case 1:
