@@ -10,6 +10,9 @@ tutorial.html: .DUMMY
 tutorial_onepage.html: .DUMMY
 	./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
 
+tut.html: .DUMMY
+	./wmmltohtml2 <tutorial.wmml sitebuilder tut
+
 Image.wmml :
 	(cd ../src/modules/Image; make wmml)
 
