@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.117 1998/09/20 08:30:31 hubbe Exp $
+# $Id: Makefile.in,v 1.118 1998/09/29 13:51:44 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -17,6 +17,7 @@ VPATH=@srcdir@
 
 # These are used while compiling
 LIBDIR_SRC = @LIBDIR@
+MANDIR_SRC = $(SRCDIR)/../man
 TMP_BINDIR = @BINDIR@
 TMP_BUILDDIR = @BUILDDIR@
 TMP_DOCDIR = @DOCDIR@
@@ -27,6 +28,7 @@ exec_prefix = $(prefix)/bin
 lib_prefix = $(prefix)/lib/pike
 data_prefix = @datadir@
 share_prefix = $(data_prefix)/pike
+man_prefix = $(prefix)/man
 
 #
 # use bison please, yacc isn't good enough.
@@ -206,7 +208,8 @@ install: pike hilfe pike-module aclocal
 	@echo Installing Pike...
 	@echo
 	@echo "Creating directories..."; \
-	for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
+	@for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
+		  "$(man_prefix)" "$(man_prefix)/man1" "$(man_prefix)/man3" \
 	          "$(lib_prefix)" "$(data_prefix)" "$(share_prefix)" \
 	          "$(prefix)/include" "$(prefix)/include/pike"; do \
 	  if [ -d "$$d/." ]; then : ; else \
@@ -314,6 +317,22 @@ install: pike hilfe pike-module aclocal
 	    chmod u+w "$(lib_prefix)/$$f"; \
 	  fi ; \
 	done
+	@if [ -d "$(MANDIR_SRC)/." ]; then \
+	  echo ; echo "Installing manual pages..."; \
+	  for f in `cd "$(MANDIR_SRC)/; echo *.1`; do \
+	    dest = "$(man_prefix)/man1/$$f"; \
+	    if cmp "$$dest" "$(MANDIR_SRC)/$$f" >/dev/null 2>&1 ; \
+	    then : ; else \
+	      echo "$$dest"; \
+	      if [ -f "$$dest" ]; then \
+	        mv -f "$$dest" "$$dest.old"; \
+	      else : ; fi; \
+	      cp "$(MANDIR_SRC)/$$f" "$$dest" || exit 1; \
+	      chmod a+r "$$dest"; \
+	      chmod u+w "$$dest"; \
+	    fi ; \
+	  done ; \
+	else : ; fi
 
 # tidy up a bit
 tidy:
