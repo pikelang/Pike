@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.148 2004/03/02 20:45:22 nilsson Exp $
+|| $Id: builtin.cmod,v 1.149 2004/03/07 23:26:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -2332,7 +2332,7 @@ PIKECLASS single_string_replace
       {
 #ifdef PIKE_DEBUG
 	if(tmp + (del->len << str->size_shift) > end)
-	  Pike_fatal("generic_memory_search found a match beyond end of string!\n");
+	  Pike_fatal("SearchMojt found a match beyond end of string!\n");
 #endif
 	generic_memcpy(r,MKPCHARP(s,str->size_shift),(tmp-s)>>str->size_shift);
 	INC_PCHARP(r,(tmp-s)>>str->size_shift);

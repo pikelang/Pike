@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.160 2003/11/09 01:10:14 mast Exp $
+|| $Id: stralloc.c,v 1.161 2004/03/07 23:25:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.160 2003/11/09 01:10:14 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.161 2004/03/07 23:25:45 nilsson Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1786,7 +1786,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   {
 #ifdef PIKE_DEBUG
     if(tmp + (del->len << str->size_shift) > end)
-      Pike_fatal("generic_memory_search found a match beyond end of string!!!\n");
+      Pike_fatal("SearchMojt found a match beyond end of string!!!\n");
 #endif
     generic_memcpy(r,MKPCHARP(s,str->size_shift),(tmp-s)>>str->size_shift);
     INC_PCHARP(r,(tmp-s)>>str->size_shift);
