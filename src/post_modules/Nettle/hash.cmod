@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.19 2004/04/28 18:17:25 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.20 2004/04/28 19:36:16 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
@@ -27,7 +27,7 @@ RCSID("$Id: hash.cmod,v 1.19 2004/04/28 18:17:25 nilsson Exp $");
 #include <assert.h>
 #include <stdio.h>
 #include <stdarg.h>
-
+#include "fdlib.h"
 #if 0
 static void
 werror(const char *format, ...)
@@ -41,6 +41,8 @@ werror(const char *format, ...)
 #else
 #define werror(x)
 #endif
+
+static struct program *Fd_ref_program = NULL;
 
 /*! @module Nettle */
 
@@ -107,22 +109,96 @@ PIKECLASS HashInfo
     void *ctx;
     struct pike_string *out;
     unsigned digest_length;
+    const struct nettle_hash *meta = THIS->meta;
 
-    if (!THIS->meta)
+    if (!meta)
       Pike_error("HashInfo not properly initialized.\n");
     NO_WIDE_STRING(in);
 
-    ctx = (void *)alloca(THIS->meta->context_size);
+    ctx = (void *)alloca(meta->context_size);
     if(!ctx)
       Pike_error("Out of memory or karma.\n");
 
     THREADS_ALLOW();
-    THIS->meta->init(ctx);
-    THIS->meta->update(ctx, in->len, in->str);
+    meta->init(ctx);
+    meta->update(ctx, in->len, in->str);
 
-    digest_length = THIS->meta->digest_size;
+    digest_length = meta->digest_size;
     out = begin_shared_string(digest_length);
-    THIS->meta->digest(ctx, digest_length, out->str);
+    meta->digest(ctx, digest_length, out->str);
+    THREADS_DISALLOW();
+
+    pop_n_elems(args);
+    push_string(end_shared_string(out));
+  }
+
+  /*! @decl string hash(Stdio.File file)
+   *!
+   *!  Works as a (faster) shortcut for
+   *!  @expr{obj->update(Stdio.read_file(file))->digest()@}.
+   *!
+   *! @seealso
+   *!   @[Stdio.File], @[HashState()->update()] and
+   *!   @[HashState()->digest()].
+   */
+  PIKEFUN string hash(object in)
+    optflags OPT_EXTERNAL_DEPEND;
+    {
+    void *ctx;
+    unsigned block_size;
+    int len;
+    char *read_buffer;
+    PIKE_STAT_T st;
+    struct pike_string *out;
+    const struct nettle_hash *meta = THIS->meta;
+
+    if (!meta)
+      Pike_error("HashInfo not properly initialized.\n");
+
+    /* Verify that the input is a Stdio.Fd_ref */
+    if (!Fd_ref_program)
+      {
+	push_text("files.Fd_ref");
+	SAFE_APPLY_MASTER("resolv",1);
+	Fd_ref_program = program_from_svalue(Pike_sp-1);
+	if (!Fd_ref_program) {
+	  pop_stack();
+	  Pike_error("Unable to resolv files.Fd_ref.\n");
+	}
+	add_ref(Fd_ref_program);
+	pop_stack( );
+      }
+
+    if (!get_storage(in, Fd_ref_program ) )
+      Pike_error("Object not Fd_ref or subclass.\n");
+
+    safe_apply(in, "query_fd", 0);
+    int fd = Pike_sp[-1].u.integer;
+    pop_stack();
+
+    if (fd_fstat(fd, &st)<0)
+      Pike_error("File not found!\n");
+
+    if (!S_ISREG(st.st_mode))
+      Pike_error("Non-regular file.\n");
+
+    block_size = meta->block_size;
+    read_buffer=(char *)alloca(block_size);
+    if (!read_buffer)
+      Pike_error("Out of memory.\n");
+
+    ctx = (void *)alloca(meta->context_size);
+    if (!ctx)
+      Pike_error("Out of memory.\n");
+
+    THREADS_ALLOW();
+    meta->init(ctx);
+    while((len=fd_read(fd, read_buffer, block_size))>0) {
+      meta->update(ctx, len, read_buffer);
+    }
+
+    out = begin_shared_string(meta->digest_size);
+    meta->digest(ctx, meta->digest_size, out->str);
     THREADS_DISALLOW();
 
     pop_n_elems(args);
@@ -519,6 +595,9 @@ void
 hash_exit(void)
 {
   werror("Nettle, hash exit\n");
+  if (Fd_ref_program) {
+    free_program( Fd_ref_program );
+  }
   EXIT;
 }
 
