@@ -270,29 +270,29 @@ class cTick
       return sprintf("%.3f",t);
    }
 
-//! string format_long()
-//! string format_short()
-//! string format_vshort()
-//!	Format the stardate tick nicely.
+//! string format_long(void|int precision)
+//! string format_short(void|int precision)
+//! string format_vshort(void|int precision)
+//!	Format the stardate tick nicely. Precision is the number of decimals. Defaults to 3.
 //!	<pre>
 //!	   long    "-322537.312"
 //!	   short   "77463.312"  (w/o >100000-component)
-//!	   short   "7463.312"  (w/o >10000-component)
+//!	   vshort  "7463.312"  (w/o >10000-component)
 //!	</pre>
 
-   string format_long()
+   string format_long(void|int p)
    {
-      return sprintf("%.3f",t);
+      return sprintf("%.*f",p||3,t);
    }
 
-   string format_short()
+   string format_short(void|int p)
    {
-      return sprintf("%.3f",t-((int)t/100000)*100000);
+      return sprintf("%.*f",p||3,t-((int)t/100000)*100000);
    }
 
-   string format_vshort()
+   string format_vshort(void|int p)
    {
-      return sprintf("%.3f",t-((int)t/10000)*10000);
+      return sprintf("%.*f",p||3,t-((int)t/10000)*10000);
    }
 }
 
