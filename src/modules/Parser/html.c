@@ -93,7 +93,7 @@ struct feed_stack
 
    /* current position; if not local feed, use global feed */
    struct piece *local_feed;
-   int c;
+   ptrdiff_t c;
 
    struct location pos;
 };
