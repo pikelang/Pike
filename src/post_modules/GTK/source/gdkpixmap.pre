@@ -46,8 +46,6 @@ void create(int|object image)
   struct object *o;
   pgtk_verify_setup();
   pgtk_verify_not_inited();
-  if(THIS->obj)
-    Pike_error("Pixmap already initialized\n");
 
   if( Pike_sp[-args].type == PIKE_T_OBJECT )
   {
