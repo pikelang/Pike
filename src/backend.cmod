@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.100 2004/04/02 19:06:19 mast Exp $
+|| $Id: backend.cmod,v 1.101 2004/04/02 19:37:26 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.100 2004/04/02 19:06:19 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.101 2004/04/02 19:37:26 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1499,8 +1499,8 @@ PIKECLASS Backend
      */
     while (i--) {
       if (backends[i] == me) {
-	backends[i] = backends[num_backends-1];
-	backends[num_backends-1] = NULL;
+	backends[i] = backends[--num_backends];
+	backends[num_backends] = NULL;
 	return;	/* A backend is only supposed to be registered once. */
       }
     }
