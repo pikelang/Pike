@@ -63,7 +63,7 @@ static private class Extractor {
 
   static void extractorError(string message, mixed ... args) {
     message = sprintf(message, @args);
-    error("PikeExtractor: %s (%s)\n", message, parser->currentPosition);
+    error("PikeExtractor: %s (%s)\n", message, sprintf("%O", parser->currentPosition));
   }
 
   static int isDocComment(string s) {
