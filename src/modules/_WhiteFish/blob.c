@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.35 2004/11/02 16:05:04 grubba Exp $");
+RCSID("$Id: blob.c,v 1.36 2004/11/09 10:47:10 jonasw Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -475,7 +475,7 @@ static void f_blob__cast( INT32 args )
   struct hash *h;
   struct buffer *res;
 
-  zipp = xalloc( THIS->size * sizeof( zipp[0] ) );
+  zipp = xalloc( THIS->size * sizeof( zipp[0] ) + 1);
 
   for( i = 0; i<HSIZE; i++ )
   {
