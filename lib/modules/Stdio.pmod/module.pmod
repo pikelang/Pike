@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.83 2000/08/28 21:07:57 hubbe Exp $
+// $Id: module.pmod,v 1.84 2000/10/11 13:22:44 grubba Exp $
 
 import String;
 
@@ -1181,7 +1181,7 @@ static class nb_sendfile
 #ifdef SENDFILE_DEBUG
       werror("Stdio.sendfile(): NOOP!\n");
 #endif /* SENDFILE_DEBUG */
-      call_out(cb, 0, 0, @args);
+      call_out(cb, 0, 0, @a);
       return;
     }
 
