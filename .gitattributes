@@ -351,6 +351,7 @@ testfont binary
 /src/modules/system/acconfig.h foreign_ident
 /src/modules/system/configure.in foreign_ident
 /src/modules/system/errnos.list foreign_ident
+/src/modules/system/nt.c foreign_ident
 /src/modules/system/passwords.c foreign_ident
 /src/modules/system/syslog.c foreign_ident
 /src/modules/system/system.c foreign_ident
