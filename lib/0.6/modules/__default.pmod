@@ -18,21 +18,9 @@ array(mixed) aggregate(mixed ... args)
   return args;
 }
 
-class Regexp06 {
-  inherit Regexp;
-
-  // Hide replace().
-  private string replace(string in, string|function(string:string) transform)
-  {
-    return ::replace(in, transform);
-  }
-}
-
 mapping(string:mixed) all_constants()
 {
-  mapping(string:mixed) ret=predef::all_constants()+([
-    "Regexp":Regexp06,
-  ]);
+  mapping(string:mixed) ret=predef::all_constants()+([]);
 
   foreach(indices(this_object()), string id) ret[id]=::`->(id);
 

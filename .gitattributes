@@ -39,6 +39,7 @@ testfont binary
 /bin/test_pike.pike foreign_ident
 /bin/unbug foreign_ident
 /bin/xenofarm.sh foreign_ident
+/lib/0.6/modules/Regexp.pike foreign_ident
 /lib/7.0/modules/Calendar.pmod/Stardate.pmod foreign_ident
 /lib/7.0/modules/__default.pmod foreign_ident
 /lib/7.2/modules/Gmp.pmod foreign_ident
@@ -54,6 +55,7 @@ testfont binary
 /lib/7.2/modules/__default.pmod foreign_ident
 /lib/7.2/modules/system.pmod foreign_ident
 /lib/7.4/modules/Crypto.pmod/invert.pike foreign_ident
+/lib/7.4/modules/Regexp.pmod foreign_ident
 /lib/7.4/modules/SSL.pmod/cipher.pike foreign_ident
 /lib/7.4/modules/SSL.pmod/constants.pike foreign_ident
 /lib/7.4/modules/__default.pmod foreign_ident
