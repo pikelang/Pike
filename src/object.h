@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.76 2003/01/11 00:01:20 mast Exp $
+|| $Id: object.h,v 1.77 2003/02/15 15:00:34 grubba Exp $
 */
 
 #ifndef OBJECT_H
@@ -48,7 +48,6 @@ extern struct program *magic_values_program;
 
 #define LOW_GET_GLOBAL(O,I,ID) (PIKE_OBJ_STORAGE((O))+INHERIT_FROM_INT((O)->prog, (I))->storage_offset+(ID)->func.offset)
 #define GET_GLOBAL(O,I) LOW_GET_GLOBAL(O,I,ID_FROM_INT((O)->prog,I))
-#define GLOBAL_FROM_INT(I) GET_GLOBAL(Pike_fp->current_object, I)
 
 #define this_object() (add_ref(Pike_fp->current_object), Pike_fp->current_object)
 
