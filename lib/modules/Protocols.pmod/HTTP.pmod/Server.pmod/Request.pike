@@ -163,6 +163,9 @@ string make_response_header(mapping m)
       case 200: 
 	 res+=({"HTTP/1.0 200 OK"}); // HTTP/1.1 when supported
 	 break;
+      case 302:
+	 res+=({"HTTP/1.0 302 TEMPORARY REDIRECT"}); 
+	 break;
       default:
    // better error names?
 	 res+=({"HTTP/1.0 "+m->error+" ERROR"});
