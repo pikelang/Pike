@@ -27,6 +27,7 @@
 #include "array.h"
 #include "builtin_efuns.h"
 
+#include <pwd.h>
 
 #include "spider.h"
 #include "conf.h"
@@ -575,49 +576,84 @@ void f_localtime(INT32 args)
 
 void f_do_setuid(INT32 args)
 {
+  struct passwd *pw;
+  int id;
   if(!args)
     error("Set uid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set uid to _what_?\n");
 
-  setuid(sp[-1].u.integer);
+  if(sp[-1].u.integer == -1)
+  {
+    pw = getpwnam("nobody");
+    id = pw->pw_uid;
+  } else
+    id = sp[-1].u.integer;
+
+  setuid(id);
   pop_n_elems(args-1);
 }
 
 void f_do_setgid(INT32 args)
 {
+  struct passwd *pw;
+  int id;
   if(!args)
     error("Set gid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set gid to _what_?\n");
 
-  setgid(sp[-1].u.integer);
+  if(sp[-1].u.integer == -1)
+  {
+    pw = getpwnam("nobody");
+    id = pw->pw_gid;
+  } else
+    id = sp[-1].u.integer;
+  
+  setgid(id);
   pop_n_elems(args-1);
 }
 
 void f_do_seteuid(INT32 args)
 {
+  struct passwd *pw;
+  int id;
   if(!args)
     error("Set uid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set uid to _what_?\n");
 
-  seteuid(sp[-1].u.integer);
+  if(sp[-1].u.integer == -1)
+  {
+    pw = getpwnam("nobody");
+    id = pw->pw_uid;
+  } else
+    id = sp[-1].u.integer;
+
+  seteuid(id);
   pop_n_elems(args-1);
 }
 
 void f_do_setegid(INT32 args)
 {
+  struct passwd *pw;
+  int id;
   if(!args)
     error("Set gid to what?\n");
 
   if(sp[-1].type != T_INT)
     error("Set gid to _what_?\n");
+  if(sp[-1].u.integer == -1)
+  {
+    pw = getpwnam("nobody");
+    id = pw->pw_gid;
+  } else
+    id = sp[-1].u.integer;
 
-  setegid(sp[-1].u.integer);
+  setegid(id);
   pop_n_elems(args-1);
 }
 
