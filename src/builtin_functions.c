@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.316 2000/10/26 15:05:30 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.317 2000/10/31 10:05:21 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2375,7 +2375,19 @@ static struct pike_string * replace_many(struct pike_string *str,
 PMOD_EXPORT void f_replace(INT32 args)
 {
   if(args < 3)
-    SIMPLE_TOO_FEW_ARGS_ERROR("replace", 3);
+  {
+     if (args==2 &&
+	 Pike_sp[1-args].type==T_MAPPING)
+     {
+	stack_dup();
+	f_indices(1);
+	stack_swap();
+	f_values(1);
+	args++;
+     }
+     else
+	SIMPLE_TOO_FEW_ARGS_ERROR("replace", 3);
+  }
 
   switch(Pike_sp[-args].type)
   {
@@ -5929,12 +5941,12 @@ void init_builtin_efuns(void)
   ADD_EFUN("random_string",f_random_string,
 	   tFunc(tInt,tString),0);
   
-/* function(string,string,string:string)|function(string,string*,string*:string)|function(0=array,mixed,mixed:0)|function(1=mapping,mixed,mixed:1) */
   ADD_EFUN("replace",f_replace,
-	   tOr4(tFunc(tStr tStr tStr,tStr),
+	   tOr5(tFunc(tStr tStr tStr,tStr),
 		tFunc(tStr tArr(tStr) tArr(tStr),tStr),
+		tFunc(tStr tMap(tStr,tStr),tStr),
 		tFunc(tSetvar(0,tArray) tMix tMix,tVar(0)),
-		tFunc(tSetvar(1,tMapping) tMix tMix,tVar(1))),0);
+		tFunc(tSetvar(1,tMapping) tMix tMix,tVar(1))) , 0);
   
 /* function(int:int)|function(string:string)|function(0=array:0) */
   ADD_EFUN("reverse",f_reverse,
