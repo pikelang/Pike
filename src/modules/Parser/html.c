@@ -2771,7 +2771,7 @@ static void html_clone(INT32 args)
    DEBUG((stderr,"parse_html_clone object %p\n",THISOBJ));
 
    /* clone the current object, same class (!) */
-   push_object(o=clone_object(parser_html_program,args));
+   push_object(o=clone_object(THISOBJ->prog,args));
 
    p=(struct parser_html_storage*)get_storage(o,parser_html_program);
 
@@ -2782,6 +2782,10 @@ static void html_clone(INT32 args)
    if (p->mapentity) free_mapping(p->mapentity);
    add_ref(p->mapentity=THIS->mapentity);
 
+   assign_svalue(&p->callback__tag,&THIS->callback__tag);
+   assign_svalue(&p->callback__data,&THIS->callback__data);
+   assign_svalue(&p->callback__entity,&THIS->callback__entity);
+
    if (p->extra_args) free_array(p->extra_args);
    if (THIS->extra_args)
       add_ref(p->extra_args=THIS->extra_args);
@@ -2790,6 +2794,8 @@ static void html_clone(INT32 args)
 
    p->lazy_end_arg_quote=THIS->lazy_end_arg_quote;
    p->lazy_entity_end=THIS->lazy_entity_end;
+   p->match_tag=THIS->match_tag;
+   p->mixed_mode=THIS->mixed_mode;
    
    p->tag_start=THIS->tag_start;
    p->tag_end=THIS->tag_end;
@@ -2809,7 +2815,7 @@ static void html_clone(INT32 args)
    if (p->ws) free(p->ws); 
    p->ws=newws;
 
-   fprintf(stderr,"done clone\n");
+   DEBUG((stderr,"done clone\n"));
 
    /* all copied, object on stack */
 }
