@@ -540,6 +540,9 @@ int lyskom_sort_func(string a,string b)
 }
 
 //! Flatten a multi-dimensional array to a one-dimensional array.
+//! @note
+//!   There is no safeguard against flattening a cyclic array;
+//!   trying to do so may result in an infinite loop.
 array flatten(array a)
 {
   array ret=({});
