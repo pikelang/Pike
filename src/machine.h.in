@@ -155,12 +155,6 @@
 /* Define if you have fchmod.  */
 #undef HAVE_FCHMOD
 
-/* Define if you have getwd.  */
-#undef HAVE_GETWD
-
-/* Define if you have getcwd.  */
-#undef HAVE_GETCWD
-
 /* Define if you have getenv.  */
 #undef HAVE_GETENV
 
