@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.17 2001/07/26 17:44:58 nilsson Exp $
+# $Id: Makefile,v 1.18 2001/07/27 03:18:54 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -13,9 +13,11 @@ all: split
 tree-split: join _tree-split
 
 _tree-split:
-	rm -f manual-split/*.html
+	@rm -rf manual-tree-split || /bin/true
 	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  manual.xml structure.xml manual-tree-split
+	  manual.xml tree-split-template.html manual-tree-split
+	@mkdir manual-tree-split/images
+	@cp manual/images/* manual-tree-split/images
 
 html: split _html
 
@@ -89,4 +91,4 @@ spotless: clean
 	@rm -f manual.xml || /bin/true
 	@rm -rf manual || /bin/true
 	@rm -rf html_manual || /bin/true
-	@rm -rf manual-split || /bin/true
+	@rm -rf manual-tree-split || /bin/true
