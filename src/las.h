@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.50 2001/05/18 22:41:58 grubba Exp $
+ * $Id: las.h,v 1.51 2001/08/02 22:24:10 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -50,6 +50,7 @@ struct compiler_frame
   struct pike_type *current_return_type;
   int current_number_of_locals;
   int max_number_of_locals;
+  int min_number_of_locals;
   int last_block_level; /* used to detect variables declared in same block */
   int num_args;
   int lexical_scope;

@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.256 2001/07/13 14:40:22 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.257 2001/08/02 22:24:10 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3820,6 +3820,8 @@ static node *lexical_islocal(struct pike_string *str)
 	if(depth)
 	  q->lexical_scope|=SCOPE_SCOPE_USED;
 
+	if(q->min_number_of_locals < e+1)
+	  q->min_number_of_locals = e+1;
 	return mklocalnode(e,depth);
       }
     }

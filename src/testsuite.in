@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.446 2001/07/28 07:12:18 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.447 2001/08/02 22:24:11 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1730,6 +1730,18 @@ test_any([[
 ]], 5)
 
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
+test_any([[
+  function my_lambda;
+
+  {
+    string foo = "foo", bar = "bar";
+    my_lambda = lambda() { return foo; };
+  }
+
+  int really_magic_var;
+  return my_lambda();
+]],"foo")
+
 test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
@@ -2089,10 +2101,20 @@ test_true(_refs(""));
 test_true(_refs(({})));
 test_true(_refs(([])));
 test_true(_refs(this_object()))
-test_true(objectp( _next(this_object()) || _prev(this_object())))
 test_true(arrayp( _next(({})) || _prev(({}))))
 test_do(object o=this_object(); while(o=_next(o)))
 test_do(object o=this_object(); while(o=_prev(o)))
+
+test_any([[
+  object q=class {}();
+  object o=_next(this_object());
+  while(zero_type(o)) o=_next(o);  /* skip destructed */
+  catch { if(objectp(o) || object_program(o)) return 1;  };
+  o=_prev(this_object());
+  while(zero_type(o)) o=_prev(o); /* skip destructed */
+  catch { if(objectp(o) || object_program(o)) return 1;  };
+  return 0;  
+]],1)
 
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
