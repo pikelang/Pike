@@ -46,7 +46,7 @@ void set_nonblocking(int fd,int which)
 #ifdef USE_FCNTL_FNDELAY
   fcntl(fd, F_SETFL, which?FNDELAY:0);
 #else
-INSERT YOUR NONBLOCK METHOD HERE
+#error Don't know how to set your filedescriptors nonblocking.
 #endif
 #endif
 #endif
