@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.73 1999/06/25 20:43:47 per Exp $");
+RCSID("$Id: efuns.c,v 1.74 1999/08/25 23:29:17 per Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -336,7 +336,11 @@ void f_filesystem_stat(INT32 args)
   }else{
     int num_fields = 8;
 #ifdef HAVE_STATVFS
+#if 0
     push_text("id");         push_int(st.f_fsid);
+#else
+    num_fields--;
+#endif
     push_text("blocksize");  push_int(st.f_frsize);
     push_text("blocks");     push_int(st.f_blocks);
     push_text("bfree");      push_int(st.f_bfree);
@@ -356,7 +360,7 @@ void f_filesystem_stat(INT32 args)
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
 #ifdef HAVE_STRUCT_STATFS
-#ifdef HAVE_STATFS_F_FSID
+#ifdef 0 && HAVE_STATFS_F_FSID
     push_text("id");           push_int(st.f_fsid);
 #else
     num_fields--;
