@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.23 2003/07/21 23:41:34 mast Exp $
+|| $Id: errors.h,v 1.24 2003/11/14 04:10:32 mast Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -44,7 +44,7 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 }while(0);
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
-  map_variable("__" #NAME2, #CTYPE, 0, \
+  map_variable(#NAME2, #CTYPE, 0, \
 	       current_offset + (((char *)&(foo.NAME2))-((char *)&foo)), RUNTYPE);
 
 #define EMPTY
@@ -79,11 +79,12 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #endif
 
 DECLARE_ERROR(generic, EMPTY ,
-  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,desc)
-  ERR_VAR(struct array *,array,PIKE_T_ARRAY,backtrace)
+  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,error_message)
+  ERR_VAR(struct array *,array,PIKE_T_ARRAY,error_backtrace)
   ERR_FUNC("cast",f_error_cast,tFunc(tString,tMixed),0)
   ERR_FUNC("`[]",f_error_index,tFunc(tString,tMixed),0)
   ERR_FUNC("describe",f_error_describe,tFunc(tVoid,tString),0)
+  ERR_FUNC("message", f_error_message, tFunc(tVoid,tString), 0)
   ERR_FUNC("backtrace",f_error_backtrace,tFunc(tVoid,tArr(tMixed)),0)
   ERR_FUNC("_sprintf",f_error__sprintf,tFunc(tNone,tString),0)
   ERR_FUNC("create",f_error_create,tFunc(tStr,tVoid),ID_STATIC)
@@ -93,15 +94,15 @@ DECLARE_ERROR(generic, EMPTY ,
 
 DECLARE_ERROR(index,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, val)
-  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, ind)
+  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, value)
+  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, index)
 )
 
 DECLARE_ERROR(bad_arg,
 	      ERR_INHERIT(generic),
-  ERR_VAR(INT_TYPE, int, PIKE_T_INT, which_arg)
+  ERR_VAR(INT_TYPE, int, PIKE_T_INT, which_argument)
   ERR_VAR(struct pike_string *,string,PIKE_T_STRING,expected_type)
-  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, got)
+  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, got_value)
 )
 
 DECLARE_ERROR(math,

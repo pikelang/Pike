@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.118 2003/11/14 00:07:35 mast Exp $
+|| $Id: error.c,v 1.119 2003/11/14 04:10:32 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.118 2003/11/14 00:07:35 mast Exp $");
+RCSID("$Id: error.c,v 1.119 2003/11/14 04:10:32 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -476,12 +476,12 @@ static void f_error_cast(INT32 args)
   if(!strncmp(s,"array",5))
   {
     pop_n_elems(args);
-    if(GENERIC_ERROR_THIS->desc)
-      ref_push_string(GENERIC_ERROR_THIS->desc);
+    if(GENERIC_ERROR_THIS->error_message)
+      ref_push_string(GENERIC_ERROR_THIS->error_message);
     else
       push_int(0);
-    if(GENERIC_ERROR_THIS->backtrace)
-      ref_push_array(GENERIC_ERROR_THIS->backtrace);
+    if(GENERIC_ERROR_THIS->error_backtrace)
+      ref_push_array(GENERIC_ERROR_THIS->error_backtrace);
     else
       push_int(0);
     f_aggregate(2);
@@ -518,15 +518,15 @@ static void f_error_index(INT32 args)
   {
     case 0:
       pop_n_elems(args);
-      if(GENERIC_ERROR_THIS->desc)
-	ref_push_string(GENERIC_ERROR_THIS->desc);
+      if(GENERIC_ERROR_THIS->error_message)
+	ref_push_string(GENERIC_ERROR_THIS->error_message);
       else
 	push_int(0);
       break;
     case 1:
       pop_n_elems(args);
-      if(GENERIC_ERROR_THIS->backtrace)
-	ref_push_array(GENERIC_ERROR_THIS->backtrace);
+      if(GENERIC_ERROR_THIS->error_backtrace)
+	ref_push_array(GENERIC_ERROR_THIS->error_backtrace);
       else
 	push_int(0);
       break;
@@ -539,10 +539,7 @@ static void f_error_index(INT32 args)
 
 /*! @decl string describe()
  *!
- *! Make a readable error-message.
- *!
- *! @note
- *!   Uses @[describe_backtrace()] to generate the message.
+ *! Return a readable error report that includes the backtrace.
  */
 static void f_error_describe(INT32 args)
 {
@@ -551,9 +548,22 @@ static void f_error_describe(INT32 args)
   APPLY_MASTER("describe_backtrace",1);
 }
 
+/*! @decl string message()
+ *!
+ *! Return a readable message describing the error.
+ */
+static void f_error_message(INT32 args)
+{
+  pop_n_elems(args);
+  if (GENERIC_ERROR_THIS->error_message)
+    ref_push_string (GENERIC_ERROR_THIS->error_message);
+  else
+    push_int (0);
+}
+
 /*! @decl array backtrace()
  *!
- *! Get the backtrace from where the error occurred.
+ *! Return the backtrace where the error occurred.
  *!
  *! @seealso
  *!   @[predef::backtrace()]
@@ -561,8 +571,8 @@ static void f_error_describe(INT32 args)
 static void f_error_backtrace(INT32 args)
 {
   pop_n_elems(args);
-  if(GENERIC_ERROR_THIS->backtrace)
-    ref_push_array(GENERIC_ERROR_THIS->backtrace);
+  if(GENERIC_ERROR_THIS->error_backtrace)
+    ref_push_array(GENERIC_ERROR_THIS->error_backtrace);
   else
     push_int(0);
 }
@@ -585,8 +595,8 @@ static void f_error__sprintf(INT32 args)
   }
   push_svalue(&PROG_FROM_INT(p, i)->constants[id->func.offset].sval);
   push_constant_text("(%O)");
-  if(GENERIC_ERROR_THIS->desc)
-    ref_push_string(GENERIC_ERROR_THIS->desc);
+  if(GENERIC_ERROR_THIS->error_message)
+    ref_push_string(GENERIC_ERROR_THIS->error_message);
   else
     push_int(0);
   f_sprintf(2);
@@ -599,13 +609,13 @@ static void f_error_create(INT32 args)
 {
   struct pike_string *msg;
   get_all_args("create", args, "%W", &msg);
-  do_free_string(GENERIC_ERROR_THIS->desc);
-  copy_shared_string(GENERIC_ERROR_THIS->desc, msg);
+  do_free_string(GENERIC_ERROR_THIS->error_message);
+  copy_shared_string(GENERIC_ERROR_THIS->error_message, msg);
   f_backtrace(0);
   push_int (0);
   push_int (Pike_sp[-2].u.array->size-2);
   o_range ();
-  assign_to_short_svalue ((union anything *)&GENERIC_ERROR_THIS->backtrace,
+  assign_to_short_svalue ((union anything *)&GENERIC_ERROR_THIS->error_backtrace,
 			  PIKE_T_ARRAY, Pike_sp-1);
   pop_n_elems(args+1);
 }
@@ -644,7 +654,7 @@ static void f_error_create(INT32 args)
       assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X); \
     } else { \
       ERROR_STRUCT(STRUCT, o)->X.type = PIKE_T_INT; \
-      ERROR_STRUCT(STRUCT, o)->X.subtype = 0; \
+      ERROR_STRUCT(STRUCT, o)->X.subtype = NUMBER_UNDEFINED; \
       ERROR_STRUCT(STRUCT, o)->X.u.integer = 0; \
     } \
   } while (0)
@@ -680,7 +690,7 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   }
 #endif
 
-  ERROR_STRUCT(generic,o)->desc=make_shared_string(buf);
+  ERROR_STRUCT(generic,o)->error_message=make_shared_string(buf);
   f_backtrace(0);
 
   if(func)
@@ -699,7 +709,7 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   if(Pike_sp[-1].type!=PIKE_T_ARRAY)
     Pike_fatal("Error failed to generate a backtrace!\n");
 
-  ERROR_STRUCT(generic,o)->backtrace=Pike_sp[-1].u.array;
+  ERROR_STRUCT(generic,o)->error_backtrace=Pike_sp[-1].u.array;
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
 
@@ -740,38 +750,31 @@ PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func,
   struct svalue *base_sp,  int args,
-  struct svalue *val,
-  struct svalue *ind,
+  struct svalue *value,
+  struct svalue *index,
   const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
 {
   INIT_ERROR(index);
-  ERROR_COPY_SVALUE(index, val);
-  ERROR_COPY_SVALUE(index, ind);
+  ERROR_COPY_SVALUE(index, value);
+  ERROR_COPY_SVALUE(index, index);
   ERROR_DONE(generic);
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func,
   struct svalue *base_sp,  int args,
-  int which_arg,
+  int which_argument,
   const char *expected_type,
-  struct svalue *got,
+  struct svalue *got_value,
   const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)))
 {
   INIT_ERROR(bad_arg);
-  ERROR_COPY(bad_arg, which_arg);
+  ERROR_COPY(bad_arg, which_argument);
   if (expected_type)
     ERROR_STRUCT(bad_arg,o)->expected_type=make_shared_string(expected_type);
   else
     ERROR_STRUCT(bad_arg,o)->expected_type = NULL;
-  if(got)
-  {
-    ERROR_COPY_SVALUE(bad_arg, got);
-  }else{
-    ERROR_STRUCT(bad_arg,o)->got.type=PIKE_T_INT;
-    ERROR_STRUCT(bad_arg,o)->got.subtype=NUMBER_UNDEFINED;
-    ERROR_STRUCT(bad_arg,o)->got.u.integer=0;
-  }
+  ERROR_COPY_SVALUE(bad_arg, got_value);
   DWERROR((stderr, "%s():Bad arg %d (expected %s)\n",
 	   func, which_arg, expected_type));
   ERROR_DONE(generic);
