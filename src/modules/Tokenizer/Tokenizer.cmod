@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.32 2004/12/09 17:30:37 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.33 2004/12/10 15:13:36 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -193,8 +193,6 @@ PIKECLASS compiler
 	add_ref(context->u.mapping = THIS->context);
 	context->type = T_MAPPING;
       }
-      fprintf(stderr, "apply_external(1, %d, %d)...\n",
-	      f_compiler_report_fun_num, args);
       apply_external(1, f_compiler_report_fun_num, args);
     }
 
@@ -1743,11 +1741,11 @@ PIKECLASS BraceGroup
 
   EXTRA
   {
-    /* @decl constant terminator = "]"
+    /* @decl constant terminator = "}"
      *
      * Terminator symbol.
      */
-    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE("]"), 0);
+    add_constant(MK_STRING("terminator"), MK_STRING_SVALUE("}"), 0);
   }
 }
 
