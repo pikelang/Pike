@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.12 1997/03/04 21:48:32 grubba Exp $
+ * $Id: system.c,v 1.13 1997/03/05 14:52:02 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.12 1997/03/04 21:48:32 grubba Exp $");
+RCSID("$Id: system.c,v 1.13 1997/03/05 14:52:02 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -107,7 +107,7 @@ static volatile void report_error(const char *function_name)
     break;
 #ifdef ENOLINK
   case ENOLINK:
-    error_msg = "Link to remote machine nolonger active";
+    error_msg = "Link to remote machine no longer active";
     break;
 #endif /* ENOLINK */
   case ENOSPC:
