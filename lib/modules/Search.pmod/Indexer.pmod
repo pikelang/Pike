@@ -46,3 +46,11 @@ void remove_document(Search.Database.MySQL db,
 {
   db->remove_document(uri, language);
 }
+
+array(Standards.URI) test_index(Search.Database.MySQL db, string uri)
+{
+  object request=Protocols.HTTP.get_url(uri);
+
+  return index_document(db, uri, request->data(),
+			request->headers["content-type"]);
+}
