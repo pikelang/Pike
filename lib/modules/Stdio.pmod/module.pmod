@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.39 1999/03/13 02:13:52 marcus Exp $
+// $Id: module.pmod,v 1.40 1999/03/26 19:59:44 hubbe Exp $
 
 import String;
 
@@ -590,7 +590,7 @@ int write_file(string filename,string what)
   int ret;
   object(File) f = File();
 
-  if(!f->open(filename,"awc"))
+  if(!f->open(filename,"twc"))
     error("Couldn't open file "+filename+".\n");
   
   ret=f->write(what);
