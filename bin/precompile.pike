@@ -1637,7 +1637,7 @@ class ParseBlock
 	       * wide strings
 	       */
 	      ret+=({
-		PC.Token(sprintf("if(sp[%d%s].type != PIKE_T_STRING || sp[%d%s].ustring -> width)",
+		PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_STRING || Pike_sp[%d%s].ustring -> width)",
 				 argnum,check_argbase,
 				 argnum,check_argbase,
 				 upper_case(arg->basetype())),arg->line())
@@ -1656,7 +1656,7 @@ class ParseBlock
 
 		case "program":
 		  ret+=({
-		    PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d%s)))",
+		    PC.Token(sprintf("if(!( %s=program_from_svalue(Pike_sp%+d%s)))",
 				     arg->name(),argnum,check_argbase),
 			     arg->line())
 		      });
@@ -1710,7 +1710,7 @@ class ParseBlock
 
 	      case "mixed":
 		ret+=({
-		  PC.Token(sprintf("%s=sp%+d%s; dmalloc_touch_svalue(sp%+d%s);\n",
+		  PC.Token(sprintf("%s=Pike_sp%+d%s; dmalloc_touch_svalue(Pike_sp%+d%s);\n",
 				   arg->name(),
 				   argnum,argbase,argnum,argbase),arg->line()),
 		    });
@@ -1732,7 +1732,7 @@ class ParseBlock
 	      
 		}else{
 		  ret+=({
-		    PC.Token(sprintf("debug_malloc_pass(%s=sp[%d%s].u.%s);\n",
+		    PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d%s].u.%s);\n",
 				     arg->name(),
 				     argnum,argbase,
 				     arg->basetype()),arg->line())
