@@ -10,10 +10,13 @@ for a in `(cd $srcdir ; echo *)`
 do
   if test "$a" != "CVS" -a "$a" != "RCS" ; then
     if test -d "$srcdir/$a" ; then
-      dirs="$dirs $a"
-      MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
-      MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_headers"
-      module_names="$module_names $a"
+      yesno=`eval echo \\$with_$a`
+      if test "x${yesno-}" != xno ; then
+        dirs="$dirs $a"
+        MODULE_LINKOPTS="$MODULE_LINKOPTS $a/linker_options"
+        MODULE_SEGMENTS="$MODULE_SEGMENTS $a/modlist_headers"
+        module_names="$module_names $a"
+      fi
     fi
   fi
 done
