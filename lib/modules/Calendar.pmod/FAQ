@@ -429,7 +429,7 @@ A:  For some regions, very. For most region, not very.
     research, which is a rather tedious job.
 
     If you want to help, the check your region in the
-    events/regions file and send me <mirar@mirar.org> a patch.
+    events/regions file and send me <mirar+pike@mirar.org> a patch.
 
     Don't send me "the x region is all wrong!" mails without
     telling me how it should look.
@@ -462,7 +462,7 @@ A:  No it isn't.  But:
 Q:  The regional events and nameday files are awesome. May I use
     them for a project separate from Pike?
 
-A:  Yes. But send me <mirar@mirar.org> updates!
+A:  Yes. But send me <mirar+pike@mirar.org> updates!
 
 -------------------------------------------------------------------------  
 

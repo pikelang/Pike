@@ -38,7 +38,7 @@
 //!	to the timezone mailing list, 
 //!	<a href=mailto:tz@elsie.nci.nih.gov>tz@elsie.nci.nih.gov</a>,
 //!	preferable with a <tt>cc</tt> to 
-//!	<a href=mailto:mirar@mirar.org>mirar@mirar.org</a>. /Mirar
+//!	<a href=mailto:mirar+pike@mirar.org>mirar+pike@mirar.org</a>. /Mirar
 //!
 //! see also: TZnames
 

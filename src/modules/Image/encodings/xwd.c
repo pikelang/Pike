@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xwd.c,v 1.24 2002/10/21 17:06:15 marcus Exp $
+|| $Id: xwd.c,v 1.25 2003/09/26 10:37:23 mirar Exp $
 */
 
 /*
@@ -28,7 +28,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.24 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: xwd.c,v 1.25 2003/09/26 10:37:23 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -64,7 +64,7 @@ void image_x_decode_pseudocolor(INT32 args);
 **!		PseudoColor / ZPixmap
 **!
 **!	If someone sends me files of other formats, these formats
-**!	may be implemented. <tt>:)</tt> /<tt>mirar@roxen.com</tt>
+**!	may be implemented. <tt>:)</tt> /<tt>mirar+pike@mirar.org</tt>
 **!
 **! see also: decode
 **!

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bmp.c,v 1.40 2003/03/12 09:23:37 agehall Exp $
+|| $Id: bmp.c,v 1.41 2003/09/26 10:37:23 mirar Exp $
 */
 
 /*
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.40 2003/03/12 09:23:37 agehall Exp $");
+RCSID("$Id: bmp.c,v 1.41 2003/09/26 10:37:23 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -880,12 +880,12 @@ void i_img_bmp__decode(INT32 args,int header_only)
 			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (cursor movement) "
 				 "is unimplemented (please send this "
-				 "image to mirar@roxen.com)\n");
+				 "image to mirar+pike@mirar.org)\n");
 			default: /* literal run */
 			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (literal run) "
 				 "is unimplemented (please send this "
-				 "image to mirar@roxen.com)\n");
+				 "image to mirar+pike@mirar.org)\n");
 		     }
 		     break;
 		  default:
@@ -967,7 +967,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (cursor movement) "
 				 "is unimplemented (please send this "
-				 "image to mirar@roxen.com)\n");
+				 "image to mirar+pike@mirar.org)\n");
 #ifdef RLE_DEBUG
 			   if (j<2) break;
 			   fprintf(stderr,"cursor       "
@@ -980,7 +980,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 			   Pike_error("Image.BMP.decode: advanced RLE "
 				 "decompression (non-rle data) "
 				 "is unimplemented (please send this "
-				 "image to mirar@roxen.com)\n");
+				 "image to mirar+pike@mirar.org)\n");
 #ifdef RLE_DEBUG
 			   fprintf(stderr,"data         %5d %02x %02x [ ",
 				   j,s[0],s[1]);
