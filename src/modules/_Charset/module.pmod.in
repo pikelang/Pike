@@ -25,7 +25,7 @@ static private inherit @module@;
 //!   @item utf75
 //!   @item utf7½
 //!     UTF encodings
-//!   @item shifjis
+//!   @item shiftjis
 //!   @item euc-kr
 //!   @item euc-cn
 //!   @item euc-jp
@@ -95,7 +95,48 @@ static private inherit @module@;
 //!
 //! +359 more.
 
-class ascii {
+//! Virtual base class for charset decoders.
+class Decoder
+{
+  //! Feeds a string to the decoder.
+  //!
+  //! @param s
+  //!   String to be decoded.
+  //!
+  //! @returns
+  //!   Returns the current object, to allow for chaining
+  //!   of calls.
+  this_program feed(string s);
+
+  //! Get the decoded data, and reset buffers.
+  //!
+  //! @returns
+  //!   Returns the decoded string.
+  string drain();
+
+  //! Clear buffers, and reset all state.
+  //!
+  //! @returns
+  //!   Returns the current object to allow for chaining
+  //!   of calls.
+  this_program clear();
+}
+
+//! Virtual base class for charset encoders.
+class Encoder
+{
+  //! An encoder only differs from a decoder in that it has an extra function.
+  inherit Decoder;
+
+  //! Change the replacement callback function.
+  //!
+  //! @param rc
+  //!   Function that is called to encode characters
+  //!   outside the current character encoding.
+  void set_replacement_callback(function(string:string) rc);
+}
+
+private class ascii {
   static private string s = "";
   object(this_program) feed(string ss)
   {
@@ -169,7 +210,7 @@ private string normalize(string in) {
 //!   various encodings as described by RFC1345.
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-object(ascii) decoder(string name)
+object(Decoder) decoder(string name)
 {
   name = normalize(name);
   if(!name || (<
@@ -214,7 +255,7 @@ object(ascii) decoder(string name)
   error("Unknown character encoding "+name+"\n");
 }
 
-class _encoder
+private class _encoder
 {
   static string s = "";
   static string|void replacement;
@@ -309,10 +350,16 @@ private class UTF16LEenc {
 //!   "iso-ir-6", "us", "us-ascii", "ascii", "cp367", "ibm367", "cp819",
 //!   "ibm819", "iso-2022" (of various kinds), "utf-7", "utf-8" and
 //!   various encodings as described by RFC1345.
+//! @param replacement
+//!   Optional string to insert where characters not available in the
+//!   encoding appear.
+//! @param repcb
+//!   Optional function to call when characters not available in the
+//!   encoding appear.
 //! @throws
 //!   If the asked-for @[name] was not supported, an error is thrown.
-object(_encoder) encoder(string name, string|void replacement,
-			 function(string:string)|void repcb)
+object(Encoder) encoder(string name, string|void replacement,
+			function(string:string)|void repcb)
 {
   name = normalize(name);
   if(!name || (<
