@@ -12,7 +12,7 @@ mixed `[](string name)
 	      || ((program) ("Crypto/" + name))
 	      || ((object) ("Crypto/" + name + ".pmod")));
     };
-    return 0;
+    return ([])[0];	// UNDEFINED
 }
 
 void create()
