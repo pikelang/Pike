@@ -315,6 +315,8 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
   if test "$pike_cv_java" = yes; then
     AC_MSG_CHECKING(if the JVM really works)
     AC_CACHE_VAL(pike_cv_java_working, [
+      OLD_CPPFLAGS="$CPPFLAGS"
+      CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
       AC_TRY_RUN([#ifdef HAVE_JNI_H
 #include <jni.h>
 #endif
@@ -324,10 +326,7 @@ if test "x$with_java" = xyes -a "x$enable_binary" != xno; then
 #include <stdio.h>
 #ifdef __NT__
 #include <windows.h>
-#define JNI_CreateJavaVM createjavavm
-typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
-static createjavavmtype JNI_CreateJavaVM = NULL;
-static HINSTANCE jvmdll = NULL;
+#include "ntdl.c"
 #endif
         int main(int argc, char *argv[])
         {
@@ -338,47 +337,16 @@ static HINSTANCE jvmdll = NULL;
 	  jint res;
 	  jmp_buf jbuf;
 #ifdef __NT__
-	  {
-	    char *libname="jvm";
-	    LPCSTR keyname=(LPCSTR)"SOFTWARE\\\\JavaSoft\\\\Java Runtime Environment\\\\1.2";
-	    HKEY key;
-	    char buffer[2*MAX_PATH+32];
-	    DWORD type, len = sizeof(buffer)-1;
-	
-	    if(RegOpenKeyEx(HKEY_CURRENT_USER, keyname, 0,
-			    KEY_READ, &key) == ERROR_SUCCESS ||
-	       RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0,
-			    KEY_READ, &key) == ERROR_SUCCESS) {
-	      if(ERROR_SUCCESS == RegQueryValueEx(key, "RuntimeLib", 0, &type,
-						  buffer, &len))
-		switch(type) {
-		case REG_SZ:
-		  libname = buffer;
-		  break;
-		case REG_EXPAND_SZ:
-		  type = ExpandEnvironmentStrings((LPCTSTR)buffer,
-						  buffer+len,
-						  sizeof(buffer)-len-1);
-		  if(type && type<=sizeof(buffer)-len-1)
-		    libname = buffer+len;
-		  break;
-		}
-	      RegCloseKey(key);
-	    }
-	    if((jvmdll=LoadLibrary(libname))==NULL) {
-              fprintf(stderr, "Can't load library %s\\n", libname);
+	  switch(open_nt_dll()) {
+	    case -1:
+	      fprintf(stderr, "Can't load DLL\\n");
               exit(1);
-	    } else {
-	      FARPROC proc;
-	      if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
-		JNI_CreateJavaVM = (createjavavmtype)proc;
-	      else {
-		if(FreeLibrary(jvmdll))
-		  jvmdll = NULL;
-	        fprintf(stderr, "Can't GetProcAddress %s\\n", "JNI_CreateJavaVM");
-                exit(1);
-	      }
-	    }
+	    case -2:
+              fprintf(stderr, "Can't GetProcAddress %s\\n", "JNI_CreateJavaVM");
+	    default:
+              exit(1);
+	    case 0:
+	      ;
 	  }
 #endif
           vm_args.version = 0x00010002;
@@ -399,6 +367,7 @@ static HINSTANCE jvmdll = NULL;
 	  return 0;
         };
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
+      CPPFLAGS="$OLD_CPPFLAGS"
     ])
     AC_MSG_RESULT($pike_cv_java_working)
     if test "$pike_cv_java_working" = no; then
