@@ -441,7 +441,6 @@ class PikeType
 	case "void":    return "tVoid";
 	case "float":   return "tFloat";
 	case "string":  return "tString";
-	case "object":  return "tObj";
 	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
 	case "mixed":   return "tMix";
@@ -451,6 +450,7 @@ class PikeType
 				   (int)(string)(args[0]->t),
 				   (int)(string)(args[1]->t)));
 
+	case "object":  return "tObj";
 	default:
 	  return "tObjImpl_"+upper_case(ret);
       }
@@ -706,6 +706,11 @@ class PikeType
 		}
 		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});
 		break;
+
+	      case "object":
+		if (arrayp(tok[1]) && sizeof(tok[1]) > 2) {
+		  t = tok[1][1];
+		}
 	    }
 	  }
       }
