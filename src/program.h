@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.131 2001/06/30 02:02:42 mast Exp $
+ * $Id: program.h,v 1.132 2001/07/01 22:29:40 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -484,7 +484,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
 struct ff_hash;
 int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog);
-PMOD_EXPORT int find_identifier(char *name,struct program *prog);
+PMOD_EXPORT int find_identifier(const char *name,struct program *prog);
 int store_prog_string(struct pike_string *str);
 int store_constant(struct svalue *foo,
 		   int equal,

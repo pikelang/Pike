@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.130 2001/06/30 07:05:55 hubbe Exp $");
+RCSID("$Id: main.c,v 1.131 2001/07/01 22:29:41 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -750,6 +750,7 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 void low_init_main(void)
 {
   void init_builtin(void);
+  void init_iterators(void);
 
   init_backend();
   init_iterators();

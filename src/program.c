@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.339 2001/07/01 14:27:07 grubba Exp $");
+RCSID("$Id: program.c,v 1.340 2001/07/01 22:29:40 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3560,7 +3560,7 @@ int find_shared_string_identifier(struct pike_string *name,
   return low_find_shared_string_identifier(name,prog);
 }
 
-PMOD_EXPORT int find_identifier(char *name,struct program *prog)
+PMOD_EXPORT int find_identifier(const char *name,struct program *prog)
 {
   struct pike_string *n;
   if(!prog) {

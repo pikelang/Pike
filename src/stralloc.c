@@ -16,6 +16,7 @@
 #include "bignum.h"
 #include "interpret.h"
 #include "block_alloc.h"
+#include "operators.h"
 
 #include <errno.h>
 #include <float.h>
@@ -26,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.127 2001/06/29 16:49:30 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.128 2001/07/01 22:29:40 mast Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
