@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.10 1996/11/25 21:31:54 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.11 1996/12/07 03:23:46 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -237,14 +237,14 @@ struct pike_string *pop_type()
 
 static void internal_parse_typeA(char **_s)
 {
-  unsigned char buf[80];
+  char buf[80];
   unsigned int len;
   unsigned char **s = (unsigned char **)_s;
   
   while(ISSPACE(**s)) ++*s;
 
   len=0;
-  for(len=0;isidchar(s[0][len]);len++)
+  for(len=0;isidchar(EXTRACT_UCHAR(s[0]+len));len++)
   {
     if(len>=sizeof(buf)) error("Buffer overflow in parse_type\n");
     buf[len] = s[0][len];
