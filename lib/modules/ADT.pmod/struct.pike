@@ -1,4 +1,4 @@
-/* $Id: struct.pike,v 1.3 1998/02/11 01:48:14 mirar Exp $
+/* $Id: struct.pike,v 1.4 1998/02/11 01:53:13 mirar Exp $
  *
  * Read and write structures from strings.
  */
@@ -52,18 +52,21 @@ void put_var_array(array(int) data, int item_size, int len)
   put_fix_array(data, item_size);
 }
 
-#if constant(Gmp.mpz)
 mixed get_int(int len)
 {
   mixed i;
   if ( (strlen(buffer) - index) < len)
     throw( ({ "ADT.struct->get_int: no data\n", backtrace() }) );
+#if constant(Gmp.mpz)
   if (len <= 3)
   {
+#endif
     sscanf(buffer, "%*" + (string) index +"s%" + (string) len + "c", i);
+#if constant(Gmp.mpz)
   }
   else
     i = Gmp.mpz(buffer[index .. index+len-1], 256);
+#endif
   index += len;
   return i;
 }
@@ -96,7 +99,6 @@ array(mixed) get_var_array(int item_size, int len)
 {
   return get_fix_array(item_size, get_int(len));
 }
-#endif
 
 int is_empty()
 {
