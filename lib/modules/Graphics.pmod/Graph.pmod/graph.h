@@ -2,7 +2,7 @@
  * name = "BG: diagram.h";
  * doc = "Business Graphics common things. You must upgrade this component to use newer versions of BG.";
  *
- * string cvs_version="$Id: graph.h,v 1.1 1999/09/30 13:04:11 hedda Exp $";
+ * string cvs_version="$Id: graph.h,v 1.2 2000/10/12 00:42:15 nilsson Exp $";
  */
 
 
@@ -22,8 +22,8 @@ private constant STORT = 1.0e30;
 
 
 //This is used in Roxen. Don't work with only Pike
-//#define GETFONT(WHATFONT) object notext=resolve_font(diagram_data->WHATFONT||diagram_data->font);
-#define GETFONT(WHATFONT) object notext=diagram_data->font;
+//#define GETFONT(WHATFONT) resolve_font(diagram_data->WHATFONT||diagram_data->font);
+#define GETFONT(WHATFONT) diagram_data->font;
 
 //#define BG_DEBUG 1
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )

@@ -12,7 +12,7 @@ inherit "polyline.pike";
 inherit "create_graph.pike";
 inherit "create_bars.pike";
 
-constant cvs_version = "$Id: create_pie.pike,v 1.4 2000/09/28 03:38:43 hubbe Exp $";
+constant cvs_version = "$Id: create_pie.pike,v 1.5 2000/10/12 00:42:15 nilsson Exp $";
 
 /*
  * name = "BG: Create pies";
@@ -107,7 +107,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   if (diagram_data["3Ddepth"]>diagram_data["ysize"]/5)
     diagram_data["3Ddepth"]=diagram_data["ysize"]/5;
   
-  GETFONT(xnamesfont);
+  notext=GETFONT(xnamesfont);
   if (names)
     if (notext)
       for(int i=0; i<sizeof(names); i++)

@@ -10,7 +10,7 @@ import Stdio;
 
 inherit "polyline.pike";
 
-constant cvs_version = "$Id: create_graph.pike,v 1.4 2000/09/28 03:38:43 hubbe Exp $";
+constant cvs_version = "$Id: create_graph.pike,v 1.5 2000/10/12 00:42:15 nilsson Exp $";
 
 /*
  * name = "BG: Create graphs";
@@ -471,8 +471,8 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
     if (r>9)
       throw( ({"Very bad error while trying to resize the textfont!\n",
 	       backtrace()}));
-      
-    GETFONT(xnamesfont);
+
+    object notext=GETFONT(xnamesfont);
     int j;
     diagram_data["xnamesimg"]=allocate(j=sizeof(diagram_data["xnames"]));
     for(int i=0; i<j; i++)
@@ -493,7 +493,7 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
 					   diagram_data["fontsize"]);
     }
       
-    GETFONT(ynamesfont);
+    notext=GETFONT(ynamesfont);
 
     diagram_data["ynamesimg"]=allocate(j=sizeof(diagram_data["ynames"]));
     if ((diagram_data["type"]=="bars")||
@@ -743,7 +743,7 @@ mapping set_legend_size(mapping diagram_data)
 	texts=allocate(sizeof(diagram_data["legend_texts"]));
 	plupps=allocate(sizeof(diagram_data["legend_texts"]));
 	
-	GETFONT(legendfont);
+	object notext=GETFONT(legendfont);
 	
 	j=sizeof(texts);
 	if (!diagram_data["legendcolor"])
@@ -923,7 +923,7 @@ int write_name(mapping diagram_data)
 {
   if (!diagram_data["name"])
     return 0;
-  GETFONT(namefont);
+  object notext=GETFONT(namefont);
 
   object text;
   int y,x;
@@ -1132,7 +1132,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   int labelx=0;
   int labely=0;
 
-  GETFONT(xaxisfont);
+  object notext=GETFONT(xaxisfont);
 
   if (diagram_data["labels"])
   {
@@ -1559,7 +1559,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
     string label;
     int x;
     int y;
-    GETFONT(yaxisfont);
+    object notext=GETFONT(yaxisfont);
     if (diagram_data["labels"][3] && sizeof(diagram_data["labels"][3]))
       label=diagram_data["labels"][1]+" ["+diagram_data["labels"][3]+"]"; //Ystorhet
     else

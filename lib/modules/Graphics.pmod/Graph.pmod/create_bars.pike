@@ -11,7 +11,7 @@ import Stdio;
 inherit "polyline.pike";
 inherit "create_graph.pike";
 
-constant cvs_version = "$Id: create_bars.pike,v 1.3 2000/09/28 03:38:42 hubbe Exp $";
+constant cvs_version = "$Id: create_bars.pike,v 1.4 2000/10/12 00:42:15 nilsson Exp $";
 
 /*
  * name = "BG: Create bars";
@@ -211,7 +211,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
     else
       label=diagram_data["labels"][0];
 
-    GETFONT(xaxisfont);
+    object notext=GETFONT(xaxisfont);
     if ((label!="")&&(label!=0))
       labelimg=notext
 	->write(UNICODE(label,diagram_data["encoding"]))
@@ -782,7 +782,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
       label=diagram_data["labels"][1]+" ["+diagram_data["labels"][3]+"]"; //Yquantity
     else
       label=diagram_data["labels"][1];
-    GETFONT(yaxisfont);
+    object notext=GETFONT(yaxisfont);
     if ((label!="")&&(label!=0))
       labelimg=notext
 	->write(label)->scale(0,diagram_data["labelsize"]);
