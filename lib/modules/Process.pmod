@@ -27,6 +27,45 @@ int exec(string file,string ... foo)
   return 69;
 }
 
+static array(string) search_path_entries=0;
+string search_path(string command)
+{
+   if (command=="" || command[0]=='/') return command;
+
+   if (!search_path_entries) 
+   {
+      array(string) e=(getenv("PATH")||"")/":"-({""});
+
+      multiset(string) filter=(<>);
+      search_path_entries=({});
+      foreach (e,string s)
+      {
+	 string t;
+	 if (s[0]=='~')  // some shells allow ~-expansion in PATH
+	 {
+	    if (s[0..1]=="~/" && (t=getenv("HOME"))) 
+	       s=t+s[1..];
+	    else
+	    {
+	       // expand user?
+	    }
+	 }
+	 if (!filter[s] /* && directory exist */ ) 
+	 {
+	    search_path_entries+=({s}); 
+	    filter[s]=1;
+	 }
+      }
+   }
+   foreach (search_path_entries, string path)
+   {
+      string p=combine_path(path,command);
+      Stdio.Stat s=file_stat(p);
+      if (s && s->mode&0111) return p;
+   }
+   return 0;
+}
+
 string sh_quote(string s)
 {
   return replace(s,
