@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.226 2001/11/01 18:10:40 mast Exp $");
+RCSID("$Id: file.c,v 1.227 2001/11/22 19:58:49 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -120,7 +120,25 @@ struct program *file_ref_program;
 /*! @module Stdio
  */
 
-/*! @class File
+/*! @class Fd_ref
+ *!
+ *! Proxy class that contains stub functions
+ *! that call the corresponding functions in
+ *! @[Fd].
+ *!
+ *! Used by @[File].
+ */
+
+/*! @decl Fd _fd
+ *!  Object to which called functions are relayed.
+ */
+
+/*! @endclass
+ */
+
+/*! @class Fd
+ *!
+ *! Low level I/O operations. Use @[File] instead.
  */
 
 static void file_read_callback(int fd, void *data);
@@ -1457,7 +1475,16 @@ static void file_close(INT32 args)
   push_int(flags);
 }
 
-/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
+/*! @decl int open(string filename, string mode)
+ *! @decl int open(string filename, string mode, int access)
+ *! @decl int open(int fd, string mode)
+ *!
+ *! Open a file or fd.
+ *!
+ *! If @[access] is not specified, it will default to @tt{00666@}.
+ *!
+ *! @seealso
+ *!   @[close()]
  */
 static void file_open(INT32 args)
 {
@@ -1841,7 +1868,9 @@ static void file_stat(INT32 args)
   }
 }
 
-/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
+/*! @decl int errno()
+ *!
+ *! Return the errno for the latest failed file operation.
  */
 static void file_errno(INT32 args)
 {
@@ -1862,7 +1891,12 @@ static void file_mode(INT32 args)
   push_int(THIS->open_mode);
 }
 
-/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
+/*! @decl void set_nonblocking()
+ *!
+ *! Sets this file to nonblocking operation.
+ *!
+ *! @seealso
+ *!   @[set_blocking()]
  */
 static void file_set_nonblocking(INT32 args)
 {
@@ -2474,7 +2508,7 @@ static void file_dup2(INT32 args)
   push_int(1);
 }
 
-/* No autodoc here. Collides with the documentation in Stdio.pmod/module.pmod
+/*! @decl Stdio.File dup()
  */
 static void file_dup(INT32 args)
 {
