@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.8 2003/03/30 16:22:47 marcus Exp $
+dnl $Id: testsuite.in,v 1.9 2003/08/18 14:24:49 mast Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -110,3 +110,5 @@ test_eq([[ Calendar.ISO.Week(2002, 1)->format_ymd() ]], "2001-12-31")
 test_eq([[ Calendar.ISO.Week(2003, 1)->format_ymd() ]], "2002-12-30")
 test_eq([[ Calendar.ISO.Week(2004, 1)->format_ymd() ]], "2003-12-29")
 test_eq([[ Calendar.ISO.Week(2005, 1)->format_ymd() ]], "2005-01-03")
+
+test_eq([[Calendar.Language["swe"]->week_day_name_from_number(1)]], "måndag")
