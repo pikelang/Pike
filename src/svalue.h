@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.31 1999/06/09 20:51:44 mirar Exp $
+ * $Id: svalue.h,v 1.32 1999/06/19 20:18:10 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -113,8 +113,9 @@ extern char *type_name[];
 #define tMultiset tSet(tMix)
 #define tObj "\003\000\000\000\000\000"
 #define tFuncV(ARGS,REST,RET) "\004" ARGS "\021" REST RET
-#define tFunc(ARGS,RET) tFuncV(ARGS,tVoid,RET)
-#define tFunction tFuncV(,tMix,tMix)
+#define tFunc(ARGS,RET) tFuncV(ARGS "", tVoid, RET)
+#define tFunction tFuncV("" ,tMix,tMix)
+#define tNone ""
 #define tPrg "\005"
 #define tProgram "\005"
 #define tStr "\006"

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.41 1999/03/03 05:30:07 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.42 1999/06/19 20:20:47 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -966,7 +966,7 @@ void pike_module_init(void)
   add_function("`|",mpzmod_or,MPZ_BINOP_TYPE,0);
   add_function("``|",mpzmod_or,MPZ_BINOP_TYPE,0);
   /* function(:object) */
-  ADD_FUNCTION("`~",mpzmod_compl,tFunc(,tObj),0);
+  ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj),0);
 
 #define MPZ_SHIFT_TYPE "function(int|float|object:object)"
   add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE,0);
@@ -985,10 +985,10 @@ void pike_module_init(void)
   add_function("`!=",mpzmod_nq,MPZ_CMPOP_TYPE,0);
 
   /* function(:int) */
-  ADD_FUNCTION("`!",mpzmod_not,tFunc(,tInt),0);
+  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt),0);
 
   /* function(:int) */
-  ADD_FUNCTION("__hash",mpzmod_get_int,tFunc(,tInt),0);
+  ADD_FUNCTION("__hash",mpzmod_get_int,tFunc(tNone,tInt),0);
   /* function(string:mixed) */
   ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix),0);
 
@@ -998,14 +998,14 @@ void pike_module_init(void)
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);
 
   /* function(:int) */
-  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(,tInt),0);
+  ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tInt),0);
   /* function(:string) */
-  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(,tStr),0);
+  ADD_FUNCTION("cast_to_string",mpzmod_get_string,tFunc(tNone,tStr),0);
   /* function(:float) */
-  ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(,tFlt),0);
+  ADD_FUNCTION("cast_to_float",mpzmod_get_float,tFunc(tNone,tFlt),0);
 
   /* function(:int) */
-  ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,tFunc(,tInt),0);
+  ADD_FUNCTION("probably_prime_p",mpzmod_probably_prime_p,tFunc(tNone,tInt),0);
   /* function(int|void:int) */
   ADD_FUNCTION("small_factor", mpzmod_small_factor,tFunc(tOr(tInt,tVoid),tInt), 0);
   /* function(int|void,int|void:object) */
@@ -1020,9 +1020,9 @@ void pike_module_init(void)
   "function(" MPZ_ARG_TYPE ":object)", 0);
 
   /* function(:object) */
-  ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(,tObj),0);
+  ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tObj),0);
   /* function(:array(object)) */
-  ADD_FUNCTION("sqrtrem", mpzmod_sqrtrem,tFunc(,tArr(tObj)), 0);
+  ADD_FUNCTION("sqrtrem", mpzmod_sqrtrem,tFunc(tNone,tArr(tObj)), 0);
   add_function("powm",mpzmod_powm,
   "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":object)", 0);
   /* function(int:object) */
@@ -1034,7 +1034,7 @@ void pike_module_init(void)
 #if 0
   /* These are not implemented yet */
   /* function(:int) */
-  ADD_FUNCTION("squarep", mpzmod_squarep,tFunc(,tInt), 0);
+  ADD_FUNCTION("squarep", mpzmod_squarep,tFunc(tNone,tInt), 0);
   add_function("divmod", mpzmod_divmod, "function(" MPZ_ARG_TYPE ":array(object))", 0);
   add_function("divm", mpzmod_divm, "function(" MPZ_ARG_TYPE ","
 	       MPZ_ARG_TYPE ":object)", 0);

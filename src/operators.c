@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.54 1999/05/25 21:21:31 mirar Exp $");
+RCSID("$Id: operators.c,v 1.55 1999/06/19 20:14:51 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2022,9 +2022,9 @@ void init_operators(void)
   ADD_EFUN2("`->",f_arrow,tOr(tFunc(tArr(tOr4(tObj,tMapping,tMultiset,tArray)) tStr,tArr(tMix)),tFunc(tOr4(tObj,tMapping,tMultiset,tPrg) tStr,tMix)),OPT_TRY_OPTIMIZE,0,0);
 
   /* function(mixed...:int) */
-  ADD_EFUN2("`==",f_eq,tFuncV(,tMix,tInt),OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
+  ADD_EFUN2("`==",f_eq,tFuncV(tNone,tMix,tInt),OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   /* function(mixed...:int) */
-  ADD_EFUN2("`!=",f_ne,tFuncV(,tMix,tInt),OPT_TRY_OPTIMIZE,0,generate_comparison);
+  ADD_EFUN2("`!=",f_ne,tFuncV(tNone,tMix,tInt),OPT_TRY_OPTIMIZE,0,generate_comparison);
   /* function(mixed:int) */
   add_efun2("`!",f_not,"function(mixed:int(0..1))",OPT_TRY_OPTIMIZE,optimize_not,generate_not);
 
@@ -2035,7 +2035,7 @@ void init_operators(void)
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
   ADD_EFUN2("`+",f_add,
-	    tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),
+	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),tFunction),
 		 tFuncV(tInt,tInt,tInt),
 		 tIfnot(tFuncV(tInt,tInt,tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
@@ -2051,7 +2051,7 @@ void init_operators(void)
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
   
   ADD_EFUN2("`-",f_minus,
-	    tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),
+	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),tFunction),
 		 tFuncV(tInt,tInt,tInt),
 		 tIfnot(tFuncV(tInt,tInt,tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
@@ -2083,7 +2083,7 @@ void init_operators(void)
 	    "function(array(0=mixed),int:array(0))|"
 	    "function(string,int:string) */
   ADD_EFUN2("`*",f_multiply,
-	    tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),
+	    tOr7(tIfnot(tFuncV(tNone,tNot(tObj),tMix),tFunction),
 		 tFunc(tArr(tArr(tSetvar(1,tMix))) 
 		       tArr(tSetvar(1,tMix)),tArr(tVar(1))),
 		 tFuncV(tInt,tInt,tInt),
@@ -2099,7 +2099,7 @@ void init_operators(void)
 	    "!function(int...:mixed)&function(float|int...:float)|"
 	    "function(array(0=mixed),array|int|float...:array(array(0)))|"
 	    "function(string,string|int|float...:array(string)) */
-  ADD_EFUN2("`/",f_divide,tOr5(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),tFuncV(tInt,tInt,tInt),tIfnot(tFuncV(,tInt,tMix),tFuncV(,tOr(tFlt,tInt),tFlt)),tFuncV(tArr(tSetvar(0,tMix)),tOr3(tArray,tInt,tFlt),tArr(tArr(tVar(0)))),tFuncV(tStr,tOr3(tStr,tInt,tFlt),tArr(tStr))),
+  ADD_EFUN2("`/",f_divide,tOr5(tIfnot(tFuncV(tNone,tNot(tObj),tMix),tFunction),tFuncV(tInt,tInt,tInt),tIfnot(tFuncV(tNone,tInt,tMix),tFuncV(tNone,tOr(tFlt,tInt),tFlt)),tFuncV(tArr(tSetvar(0,tMix)),tOr3(tArray,tInt,tFlt),tArr(tArr(tVar(0)))),tFuncV(tStr,tOr3(tStr,tInt,tFlt),tArr(tStr))),
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   /* function(mixed,object:mixed)|"

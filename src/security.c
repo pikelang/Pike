@@ -222,13 +222,13 @@ void init_pike_security(void)
   /* function(object:void) */
   ADD_FUNCTION("set_default_creds",set_default_creds,tFunc(tObj,tVoid),0);
   /* function(:object) */
-  ADD_FUNCTION("get_default_creds",get_default_creds,tFunc(,tObj),0);
+  ADD_FUNCTION("get_default_creds",get_default_creds,tFunc(tNone,tObj),0);
   /* function(:object) */
-  ADD_FUNCTION("get_user",creds_get_user,tFunc(,tObj),0);
+  ADD_FUNCTION("get_user",creds_get_user,tFunc(tNone,tObj),0);
   /* function(:int) */
-  ADD_FUNCTION("get_allow_bits",creds_get_allow_bits,tFunc(,tInt),0);
+  ADD_FUNCTION("get_allow_bits",creds_get_allow_bits,tFunc(tNone,tInt),0);
   /* function(:int) */
-  ADD_FUNCTION("get_data_bits",creds_get_data_bits,tFunc(,tInt),0);
+  ADD_FUNCTION("get_data_bits",creds_get_data_bits,tFunc(tNone,tInt),0);
   /* function(object,int,int:void) */
   ADD_FUNCTION("create",creds_create,tFunc(tObj tInt tInt,tVoid),0);
   /* function(mixed:void) */
@@ -245,7 +245,7 @@ void init_pike_security(void)
   ADD_EFUN("call_with_creds",f_call_with_creds,tFuncV(tObj,tMix,tMix),OPT_SIDE_EFFECT);
   
 /* function(:object) */
-  ADD_EFUN("get_current_creds",f_get_current_creds,tFunc(,tObj),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("get_current_creds",f_get_current_creds,tFunc(tNone,tObj),OPT_EXTERNAL_DEPEND);
   
 /* function(mixed:object) */
   ADD_EFUN("get_object_creds",f_get_object_creds,tFunc(tMix,tObj),OPT_EXTERNAL_DEPEND);

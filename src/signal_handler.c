@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.139 1999/06/12 13:53:21 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.140 1999/06/19 20:17:43 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3096,11 +3096,11 @@ void init_signals(void)
   /* function(string:int) */
   ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tInt),0);
   /* function(:int) */
-  ADD_FUNCTION("wait",f_pid_status_wait,tFunc(,tInt),0);
+  ADD_FUNCTION("wait",f_pid_status_wait,tFunc(tNone,tInt),0);
   /* function(:int) */
-  ADD_FUNCTION("status",f_pid_status_status,tFunc(,tInt),0);
+  ADD_FUNCTION("status",f_pid_status_status,tFunc(tNone,tInt),0);
   /* function(:int) */
-  ADD_FUNCTION("pid",f_pid_status_pid,tFunc(,tInt),0);
+  ADD_FUNCTION("pid",f_pid_status_pid,tFunc(tNone,tInt),0);
 #ifdef HAVE_KILL
   /* function(int:int) */
   ADD_FUNCTION("kill",f_pid_status_kill,tFunc(tInt,tInt), 0);
@@ -3136,7 +3136,7 @@ void init_signals(void)
   ADD_EFUN("signum",f_signum,tFunc(tStr,tInt),0);
   
 /* function(:int) */
-  ADD_EFUN("getpid",f_getpid,tFunc(,tInt),0);
+  ADD_EFUN("getpid",f_getpid,tFunc(tNone,tInt),0);
 #ifdef HAVE_ALARM
   
 /* function(int:int) */
@@ -3148,7 +3148,7 @@ void init_signals(void)
   ADD_EFUN("ualarm",f_ualarm,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
 #endif
 
-  ADD_EFUN("atexit",f_atexit,tFuncV( ,tMix,tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("atexit",f_atexit,tFuncV(tNone ,tMix,tVoid),OPT_SIDE_EFFECT);
 }
 
 void exit_signals(void)
