@@ -1,4 +1,4 @@
-/* $Id: constants.pike,v 1.6 1999/03/09 14:41:44 nisse Exp $
+/* $Id: constants.pike,v 1.7 1999/05/22 23:08:59 mast Exp $
  *
  */
 
@@ -21,23 +21,28 @@ constant CIPHER_block    = 1;
 constant CIPHER_types = (< CIPHER_stream, CIPHER_block >);
 
 constant CIPHER_null     = 0;
-constant CIPHER_rc4      = 1;
 constant CIPHER_rc4_40   = 2;
 constant CIPHER_rc2      = 3;
+constant CIPHER_des40    = 6;
+#ifndef WEAK_CRYPTO_40BIT
+constant CIPHER_rc4      = 1;
 constant CIPHER_des      = 4;
 constant CIPHER_3des     = 5;
-constant CIPHER_des40    = 6;
 constant CIPHER_fortezza = 7;
 constant CIPHER_idea	 = 8;
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 constant CIPHER_algorithms = (< CIPHER_null, 
-				CIPHER_rc4,
 				CIPHER_rc4_40,
 				CIPHER_rc2,
+				CIPHER_des40,
+#ifndef WEAK_CRYPTO_40BIT
+				CIPHER_rc4,
 				CIPHER_des,
 				CIPHER_3des,
-				CIPHER_des40,
 				CIPHER_fortezza,
-				CIPHER_idea >);
+				CIPHER_idea,
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
+			     >);
 
 constant HASH_md5      = 1;
 constant HASH_sha      = 2;
@@ -94,33 +99,35 @@ constant SSL_null_with_null_null 		= 0x0000;
 constant SSL_rsa_with_null_md5			= 0x0001;
 constant SSL_rsa_with_null_sha			= 0x0002;
 constant SSL_rsa_export_with_rc4_40_md5		= 0x0003;
+constant SSL_rsa_export_with_rc2_cbc_40_md5	= 0x0006;
+constant SSL_rsa_export_with_des40_cbc_sha	= 0x0008;
+constant SSL_dh_dss_export_with_des40_cbc_sha	= 0x000b;
+constant SSL_dh_rsa_export_with_des40_cbc_sha	= 0x000e;
+constant SSL_dhe_dss_export_with_des40_cbc_sha	= 0x0011;
+constant SSL_dhe_rsa_export_with_des40_cbc_sha	= 0x0014;
+constant SSL_dh_anon_export_with_rc4_40_md5	= 0x0017;
+constant SSL_dh_anon_export_with_des40_cbc_sha	= 0x0019;
+#ifndef WEAK_CRYPTO_40BIT
 constant SSL_rsa_with_rc4_128_md5		= 0x0004;
 constant SSL_rsa_with_rc4_128_sha		= 0x0005;
-constant SSL_rsa_export_with_rc2_cbc_40_md5	= 0x0006;
 constant SSL_rsa_with_idea_cbc_sha		= 0x0007;
-constant SSL_rsa_export_with_des40_cbc_sha	= 0x0008;
 constant SSL_rsa_with_des_cbc_sha		= 0x0009;
 constant SSL_rsa_with_3des_ede_cbc_sha		= 0x000a; 
-constant SSL_dh_dss_export_with_des40_cbc_sha	= 0x000b;
 constant SSL_dh_dss_with_des_cbc_sha		= 0x000c;
 constant SSL_dh_dss_with_3des_ede_cbc_sha	= 0x000d;
-constant SSL_dh_rsa_export_with_des40_cbc_sha	= 0x000e;
 constant SSL_dh_rsa_with_des_cbc_sha		= 0x000f;
 constant SSL_dh_rsa_with_3des_ede_cbc_sha	= 0x0010;
-constant SSL_dhe_dss_export_with_des40_cbc_sha	= 0x0011;
 constant SSL_dhe_dss_with_des_cbc_sha		= 0x0012;
 constant SSL_dhe_dss_with_3des_ede_cbc_sha	= 0x0013;
-constant SSL_dhe_rsa_export_with_des40_cbc_sha	= 0x0014;
 constant SSL_dhe_rsa_with_des_cbc_sha		= 0x0015;
 constant SSL_dhe_rsa_with_3des_ede_cbc_sha	= 0x0016; 
-constant SSL_dh_anon_export_with_rc4_40_md5	= 0x0017;
 constant SSL_dh_anon_with_rc4_128_md5		= 0x0018;
-constant SSL_dh_anon_export_with_des40_cbc_sha	= 0x0019;
 constant SSL_dh_anon_with_des_cbc_sha		= 0x001a;
 constant SSL_dh_anon_with_3des_ede_cbc_sha	= 0x001b; 
 constant SSL_fortezza_dms_with_null_sha		= 0x001c;
 constant SSL_fortezza_dms_with_fortezza_cbc_sha	= 0x001d;
 constant SSL_fortezza_dms_with_rc4_128_sha	= 0x001e;
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 
 #if 0
 /* Methods for signing any server_key_exchange message */
@@ -136,15 +143,17 @@ constant CIPHER_SUITES =
    SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 
    SSL_rsa_with_null_sha :      	({ KE_rsa, 0, HASH_sha }),
    SSL_rsa_export_with_rc4_40_md5 :	({ KE_rsa, CIPHER_rc4_40, HASH_md5 }),
-   SSL_rsa_with_rc4_128_sha :   	({ KE_rsa, CIPHER_rc4, HASH_sha }),
-   SSL_rsa_with_rc4_128_md5 :   	({ KE_rsa, CIPHER_rc4, HASH_md5 }),
-   SSL_rsa_with_idea_cbc_sha :  	({ KE_rsa, CIPHER_idea, HASH_sha }),
-   SSL_rsa_with_des_cbc_sha :   	({ KE_rsa, CIPHER_des, HASH_sha }),
-   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }),
    SSL_dhe_dss_export_with_des40_cbc_sha :
       ({ KE_dhe_dss, CIPHER_des40, HASH_sha }),
-   SSL_dhe_dss_with_des_cbc_sha : ({ KE_dhe_dss, CIPHER_des, HASH_sha }),
-   SSL_dhe_dss_with_3des_ede_cbc_sha : ({ KE_dhe_dss, CIPHER_3des, HASH_sha })
+#ifndef WEAK_CRYPTO_40BIT
+   SSL_rsa_with_rc4_128_sha :		({ KE_rsa, CIPHER_rc4, HASH_sha }),
+   SSL_rsa_with_rc4_128_md5 :		({ KE_rsa, CIPHER_rc4, HASH_md5 }),
+   SSL_rsa_with_idea_cbc_sha :		({ KE_rsa, CIPHER_idea, HASH_sha }),
+   SSL_rsa_with_des_cbc_sha :		({ KE_rsa, CIPHER_des, HASH_sha }),
+   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }),
+   SSL_dhe_dss_with_des_cbc_sha :	({ KE_dhe_dss, CIPHER_des, HASH_sha }),
+   SSL_dhe_dss_with_3des_ede_cbc_sha :	({ KE_dhe_dss, CIPHER_3des, HASH_sha }),
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
 ]);
 
 constant HANDSHAKE_hello_v2		= -1; /* Backwards compatibility */

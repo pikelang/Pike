@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.11 1999/03/15 19:44:12 nisse Exp $
+/* $Id: cipher.pike,v 1.12 1999/05/22 23:08:58 mast Exp $
  *
  */
 
@@ -279,17 +279,32 @@ array lookup(int suite)
   
   switch(algorithms[1])
   {
-  case CIPHER_rc4:
-    res->bulk_cipher_algorithm = Crypto.rc4;
-    res->cipher_type = CIPHER_stream;
-    res->is_exportable = 0;
-    res->key_material = 16;
-    res->iv_size = 0;
-    break;
   case CIPHER_rc4_40:
     res->bulk_cipher_algorithm = Crypto.rc4;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
+    res->key_material = 16;
+    res->iv_size = 0;
+    break;
+  case CIPHER_des40:
+    res->bulk_cipher_algorithm = des;
+    res->cipher_type = CIPHER_block;
+    res->is_exportable = 1;
+    res->key_material = 8;
+    res->iv_size = 8;
+    break;    
+  case CIPHER_null:
+    res->bulk_cipher_algorithm = 0;
+    res->cipher_type = CIPHER_stream;
+    res->is_exportable = 1;
+    res->key_material = 0;
+    res->iv_size = 0;
+    break;
+#ifndef WEAK_CRYPTO_40BIT
+  case CIPHER_rc4:
+    res->bulk_cipher_algorithm = Crypto.rc4;
+    res->cipher_type = CIPHER_stream;
+    res->is_exportable = 0;
     res->key_material = 16;
     res->iv_size = 0;
     break;
@@ -307,13 +322,6 @@ array lookup(int suite)
     res->key_material = 24;
     res->iv_size = 8;
     break;
-  case CIPHER_des40:
-    res->bulk_cipher_algorithm = des;
-    res->cipher_type = CIPHER_block;
-    res->is_exportable = 1;
-    res->key_material = 8;
-    res->iv_size = 8;
-    break;    
   case CIPHER_idea:
     res->bulk_cipher_algorithm = Crypto.idea_cbc;
     res->cipher_type = CIPHER_block;
@@ -321,13 +329,7 @@ array lookup(int suite)
     res->key_material = 16;
     res->iv_size = 8;
     break;
-  case CIPHER_null:
-    res->bulk_cipher_algorithm = 0;
-    res->cipher_type = CIPHER_stream;
-    res->is_exportable = 1;
-    res->key_material = 0;
-    res->iv_size = 0;
-    break;
+#endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   default:
     return 0;
   }
