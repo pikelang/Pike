@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.569 2002/03/14 01:10:42 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.570 2002/03/21 14:02:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3177,6 +3177,28 @@ if test "$pike_cv_struct_tm_has_gmtoff" = "yes"; then
 fi
 
 AC_MSG_RESULT($pike_cv_struct_tm_has_gmtoff)
+
+AC_MSG_CHECKING(if struct tm has __tm_gmtoff)
+
+AC_CACHE_VAL(pike_cv_struct_tm_has___tm_gmtoff,[
+AC_TRY_COMPILE([
+#ifdef TM_IN_SYS_TIME
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+],[
+  int _tz;
+  struct tm foo;
+  _tz=foo.__tm_gmtoff;
+],pike_cv_struct_tm_has___tm_gmtoff=yes,pike_cv_struct_tm_has___tm_gmtoff=no)
+])
+
+if test "$pike_cv_struct_tm_has___tm_gmtoff" = "yes"; then
+  AC_DEFINE(STRUCT_TM_HAS___TM_GMTOFF)
+fi
+
+AC_MSG_RESULT($pike_cv_struct_tm_has___tm_gmtoff)
 
 AC_MSG_CHECKING(for USHRT_MAX definition)
 
