@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.107 2001/06/26 13:50:41 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.108 2001/07/01 18:26:42 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1450,7 +1450,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 
 #define ZAP_SVALUE()							\
       do {								\
-	free_svalue(s);							\
+	gc_free_svalue(s);						\
 	s->type = T_INT;						\
 	s->u.integer = 0;						\
 	s->subtype = NUMBER_DESTRUCTED;					\
@@ -1458,7 +1458,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 
 #define ZAP_SHORT_SVALUE()						\
       do {								\
-	free_short_svalue(u, type);					\
+	gc_free_short_svalue(u, type);					\
 	u->refs = 0;							\
       } while (0)
 
