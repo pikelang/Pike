@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.117 2003/06/02 19:01:27 mast Exp $
+# $Id: Makefile,v 1.118 2003/06/17 23:17:26 mast Exp $
 #
 # Meta Makefile
 #
@@ -291,6 +291,8 @@ spotless:
 	  if test -f remake; then $(DO_MAKE) spotless; \
 	  else exit $$res; fi; \
 	} || exit $$?
+
+doc_spotless:
 	if test -f "refdoc/Makefile"; then \
 	  cd refdoc; $(DO_MAKE) spotless; \
 	else :; fi
@@ -309,7 +311,7 @@ srcclean:
 	  else :; fi; \
 	done
 
-cvsclean: srcclean distclean
+cvsclean: srcclean distclean doc_spotless
 	-rm -rf build
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
