@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.173 2003/04/02 21:24:53 mast Exp $
+|| $Id: main.c,v 1.174 2003/04/12 23:32:46 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.173 2003/04/02 21:24:53 mast Exp $");
+RCSID("$Id: main.c,v 1.174 2003/04/12 23:32:46 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -434,10 +434,12 @@ int dbm_main(int argc, char **argv)
 	      p++;
 	      goto more_d_flags;
 
+#ifdef DEBUG_MALLOC
 	    case 'g':
 	      debug_options|=GC_RESET_DMALLOC;
 	      p++;
 	      goto more_d_flags;
+#endif
 
 	    case 'p':
 	      debug_options|=NO_PEEP_OPTIMIZING;
