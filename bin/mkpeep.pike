@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.18 2000/08/14 17:14:34 grubba Exp $ */
+/* $Id: mkpeep.pike,v 1.19 2000/09/05 13:16:53 grubba Exp $ */
 
 #define JUMPBACK 3
 
@@ -97,7 +97,7 @@ array(int|string|array(string)) split(string s)
 {
   array(string) a, b;
   string tmp;
-  int i,e,opcodes;
+  int e,opcodes;
   string line=s;
   opcodes=0;
 
@@ -136,16 +136,20 @@ array(int|string|array(string)) split(string s)
 
       /* argument */
     case '(':
-      i=find_end(s);
-      b+=({ s[0..i] });
-      s=s[i+1..strlen(s)];
+      {
+	int i=find_end(s);
+	b+=({ s[0..i] });
+	s=s[i+1..strlen(s)];
+      }
       break;
 
       /* condition */
     case '[':
-      i=find_end(s);
-      b+=({ s[0..i] });
-      s=s[i+1..strlen(s)];
+      {
+	int i=find_end(s);
+	b+=({ s[0..i] });
+	s=s[i+1..strlen(s)];
+      }
       break;
     }
 
