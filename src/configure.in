@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.618 2002/09/03 09:15:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.619 2002/09/03 10:01:51 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5000,6 +5000,9 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 
 if test "${pike_cv_sys_nonblock}" = "UNKNOWN"; then
   AC_MSG_RESULT(none found)
+  if test "${pike_cv_sys_os}" = "Windows_NT"; then :; else
+    config_fail="No way to set nonblocking I/O"
+  fi
 else
  AC_MSG_RESULT($pike_cv_sys_nonblock$pike_cv_sys_bad_signal_handling)
  AC_DEFINE_UNQUOTED($pike_cv_sys_nonblock)
@@ -6064,5 +6067,10 @@ echo "=========================================================" >>config.info
 
 cat config.info
 
-
-
+if test "x$config_fail" = "x"; then :; else
+  echo 1>&2
+  echo 1>&2
+  echo "Configuration error: $config_fail" 1>&2
+  echo 1>&2
+  exit 1
+fi
