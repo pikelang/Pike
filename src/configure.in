@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.274 1999/04/23 01:13:14 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.275 1999/04/25 18:45:11 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -414,13 +414,24 @@ if test $cflags_is_set = no; then
     ])
    ;;
   esac
+ else if test "x${TCC-}" = xyes ; then
+
+  # Yikes! We're using the TenDRA compiler!
+
+  # Make sure we can use the system headerfiles...
+  AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CFLAGS)
+
+  # Use lenient ANSI compliance...
+  AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
+
  else
 
+  # Assume system compiler "cc".
 
   if test "x${with_static_linking-}" = "xyes" ; then
     DO_IF_OS(AIX,
     [
-      AC_SYS_COMPILER_FLAG(-Wl,-bstatic,wl_link_static,CFLAGS)
+      AC_SYS_COMPILER_FLAG([-Wl,-bstatic],wl_link_static,CFLAGS)
       LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS} -bstatic"
     ])
 
