@@ -1,4 +1,17 @@
-Mon Dec 15 14:33:50 1997  Francesco Chemolli  <kinkie@ai-chan>
+Sat Jan 31 18:50:03 1998  Francesco Chemolli  <kinkie@ai-chan>
+
+	* configure.in, ChangeLog, configure:
+	Added locate-based last ditch for libraries
+
+	* configure.in, configure:
+	Added locate-based last ditch for include files
+	Added arguments to allow the user specify include- and lib-directories.
+
+Mon Dec 15 21:40:36 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* configure.in, configure: Added some extra include-paths (at last).
+
+	* ChangeLog, version.h: Released version 1.0.1
 
 	* postgres.c:
 	Changed error message upon failed connection to be more verbose, since
@@ -13,21 +26,6 @@ Tue Nov 25 16:12:37 1997  Francesco Chemolli  <kinkie@ai-chan>
 	* version.h: Released version 1.0 (hopefully)
 
 	* doc/Attic/raw_postgres, doc/sql_postgres, doc/sql_postgres_result, doc/Attic/postgres, doc/Attic/postgres_result, doc/postgres_postgres, doc/postgres_postgres_result:
-	Made some order, to make the documentation better understandable and
-	complete.
-
-	* doc/Attic/postgres, doc/Attic/postgres_result, doc/Attic/raw_postgres:
-	Fixed and completed the documentation.
-
-	* lib/postgres.pike: Fixed a typo.
-
-Tue Nov 25 13:42:25 1997  Francesco Chemolli  <kinkie@ai-chan>
-
-	* version.h: Released version 1.0 (hopefully)
-
-	* doc/Attic/raw_postgres, doc/sql_postgres, doc/sql_postgres_result, 
-	  doc/Attic/postgres, doc/Attic/postgres_result, doc/postgres_postgres, 
-		doc/postgres_postgres_result:
 	Made some order, to make the documentation better understandable and
 	complete.
 
@@ -53,15 +51,6 @@ Mon Nov 24 14:34:31 1997  Francesco Chemolli  <kinkie@ai-chan>
 
 	* lib/postgres.h: *** empty log message ***
 
-Mon Nov 24 14:32:49 1997  Francesco Chemolli  <kinkie@ai-chan>
-
-	* lib/postgres.pike: Added interface compliancy for list_fields.
-
-	* doc/postgres, doc/postgres_result:
-	Documentation. Lots of it (I hope).
-
-	* lib/Attic/postgres.h: *** empty log message ***
-
 Thu Nov 13 10:53:39 1997  Francesco Chemolli  <kinkie@ai-chan>
 
 	* ChangeLog: *** empty log message ***
@@ -85,32 +74,17 @@ Sun Oct 12 13:11:37 1997  Francesco Chemolli  <kinkie@ai-chan>
 
 	Stronger typechecking for create().
 
-Sun Oct 12 13:10:08 1997  Francesco Chemolli  <kinkie@ai-chan>
-
-	* lib/postgres.pike: Removed some redundant code for create().
-
-	* postgres.c:
-	Better argument handling for create(). Now portnumber 0 is a special
-	case which means "default port" and leaves to the pglib the burden
-	of determining the port to connect to.
-	Now finally 'object o=Sql.postgres()' works (previously it misbehaved
-	if the database argument was missing).
-
-	Stronger typechecking for create().
-
 	* lib/postgres.pike:
 	Changes were made to use better SQL queries instead of
 	filtering the results by hand.
 
-	* Released version 0.7
+Mon Oct  6 18:01:06 1997  Francesco Chemolli  <kinkie@ai-chan>
 
-Mon Oct  6 17:55:15 1997  Francesco Chemolli  <kinkie@ai-chan>
+	* ChangeLog: *** empty log message ***
 
 	* postgres.c: Adopted xalloc in lieu of malloc for increased safety
 	Added a "version" constant to the postgres pike module to identify
-	the vesion with more ease. I'll leave it undocumented elsewhere though.
-
-	* Released version 0.6
+	 the vesion with more ease. I'll leave it undocumented elsewhere though.
 
 Sat Sep  6 11:26:53 1997  Francesco Chemolli  <kinkie@ai-chan>
 
@@ -123,8 +97,6 @@ Tue Jul  8 20:23:06 1997  Francesco Chemolli  <kinkie@ai-chan>
 	* postgres.c:
 	Corrected a small bug which manifested itself when building in a
 	non_threaded environment.
-
-	* Released version 0.5
 
 Mon Jun 30 13:57:08 1997  Francesco Chemolli  <kinkie@ai-chan>
 
@@ -144,7 +116,7 @@ Mon Jun 30 13:57:08 1997  Francesco Chemolli  <kinkie@ai-chan>
 
 Fri Jun 27 09:55:51 1997  Francesco Chemolli  <kinkie@ai-chan>
 
-	* quickmanual.txt: Quickmanual.txt: aggiornata la documentazione
+	* Attic/quickmanual.txt: Quickmanual.txt: aggiornata la documentazione
 
 	* lib/postgres.pike: Postgres.pike:
 	- modificato in modo da gestire l'interfaccia con meno argomenti di
@@ -161,8 +133,6 @@ Fri Jun 27 09:55:51 1997  Francesco Chemolli  <kinkie@ai-chan>
 	proprietaria ma semplice. Ci pensera` poi il modulo di interfaccia a
 	gestire la traduzione e a ottenere la compliancy.
 
-	* Released version 0.4
-
 Thu Jun 19 12:35:12 1997  Francesco Chemolli  <kinkie@ai-chan>
 
 	* lib/postgres.pike: Corretto un baco in lib/postgres.pike
@@ -178,14 +148,12 @@ Thu Jun 19 12:35:12 1997  Francesco Chemolli  <kinkie@ai-chan>
 	Ora la classe in Sql.pmod puo` ereditare. Piu` efficiente, e migliore
 	controllo degli errori.
 
-	* Released version 0.3
-
 Wed Apr  2 11:56:14 1997  Francesco Chemolli  <kinkie@ai-chan>
 
-	* Makefile.in, configure, configure.in, extras/test_notify.pike, extras/test_schema.pike, lib/postgres.h, pg_types.h, pgres_config.h.in, pgresult.c, postgres.c, quickmanual.txt, testsuite.in:
+	* Attic/quickmanual.txt, Makefile.in, configure, configure.in, extras/test_notify.pike, extras/test_schema.pike, lib/postgres.h, pg_types.h, pgres_config.h.in, pgresult.c, postgres.c, testsuite.in:
 	Initial revision
 
-	* Makefile.in, configure, configure.in, extras/test_notify.pike, extras/test_schema.pike, lib/postgres.h, pg_types.h, pgres_config.h.in, pgresult.c, postgres.c, quickmanual.txt, testsuite.in:
+	* Attic/quickmanual.txt, Makefile.in, configure, configure.in, extras/test_notify.pike, extras/test_schema.pike, lib/postgres.h, pg_types.h, pgres_config.h.in, pgresult.c, postgres.c, testsuite.in:
 	Initial version of the Postgres module for Pike.
 	Apparently working.
 

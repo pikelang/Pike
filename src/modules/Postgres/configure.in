@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.4 1998/01/30 17:41:43 grubba Exp $
+dnl $Id: configure.in,v 1.5 1998/02/02 18:30:48 grubba Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@comedia.it>
 
 AC_INIT(postgres.c)
@@ -6,8 +6,15 @@ AC_CONFIG_HEADER(pgres_config.h)
 
 echo "Configuring Postgres module, (C) 1997 Francesco Chemolli <kinkie@comedia.it>"
 
-AC_ARG_WITH(postgres,[  --with(out)-postgres  postgres95 DB server support],
+AC_ARG_WITH(postgres,
+	[  --with(out)-postgres               postgres95 DB server support],
 	[],[with_postgres=yes])
+AC_ARG_WITH(postgres-include-dir, 
+	[  --with-postgres-include-dir=dir    look for header-files in dir],
+	[pike_postgres_user_include_directory=$withval])
+AC_ARG_WITH(libpq-dir, 
+	[  --with-libpq-dir=dir               look for library-files in dir],
+	[pike_postgres_user_lib_directory=$withval])
 
 sinclude(../module_configure.in)
 
@@ -15,8 +22,8 @@ ac_pike_postgres_skip=no
 
 dnl set up "reasonable" search paths
 pike_postgres_reasonable_prefixes="/usr/local /usr /opt /usr/lib"
-pike_postgres_reasonable_directories="postgres95 postgres pgsql /"
-pike_postgres_extra_include_directories="$HOME/include /usr/include/postgres95 /usr/include/postgres /usr/lib/pgsql/include"
+pike_postgres_reasonable_directories="postgres95 postgres pgsql ."
+pike_postgres_extra_include_directories="$HOME/include /usr/include/postgres95 /usr/include/pgsql /usr/include/postgres /usr/lib/pgsql/include"
 pike_postgres_extra_lib_directories="$HOME/lib /usr/lib/pgsql/lib"
 
 for a in $pike_postgres_reasonable_prefixes
@@ -27,8 +34,15 @@ do
 		pike_postgres_reasonable_lib_searchpath="$pike_postgres_reasonable_lib_searchpath $a/$b/lib"
 	done
 done
-pike_postgres_reasonable_include_searchpath="$pike_postgres_reasonable_include_searchpath $pike_postgres_extra_include_directories"
-pike_postgres_reasonable_lib_searchpath="$pike_postgres_reasonable_lib_searchpath $pike_postgres_extra_lib_directories"
+pike_postgres_reasonable_include_searchpath="$pike_postgres_user_include_directory $pike_postgres_reasonable_include_searchpath $pike_postgres_extra_include_directories"
+pike_postgres_reasonable_lib_searchpath="$pike_postgres_user_lib_directory $pike_postgres_reasonable_lib_searchpath $pike_postgres_extra_lib_directories"
+
+dnl check for dirname and locate, we might need them
+AC_CHECK_PROG(dirname,dirname,yes)
+AC_CHECK_PROG(locate,locate,yes)
+if test x$ac_cv_prog_dirname$ac_cv_prog_locate = xyesyes; then
+	pike_cv_can_try_locate=yes
+fi
 
 dnl start actual work
 if test x$with_postgres = xyes; then
@@ -36,11 +50,12 @@ if test x$with_postgres = xyes; then
 	OLD_LIBS=$LIBS
 	OLD_LDFLAGS=$LDFLAGS
 
+dnl see if we can find the include files in any of the standard locations
 	AC_MSG_CHECKING(for location of the Postgres include files)
 	AC_CACHE_VAL(pike_cv_pgres_include_dir, [
 		for pike_cv_pgres_include_dir in $pike_postgres_reasonable_include_searchpath no
 			do
-				if test -f $pike_cv_pgres_include_dir/postgres.h; then
+				if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
 					break
 				fi
 			done
@@ -50,22 +65,47 @@ if test x$with_postgres = xyes; then
 	else
 		AC_MSG_RESULT(not found.)
 	fi
+
+dnl last ditch. The locator could be confused e.g. by pike include files
+dnl unluckily there's no way out of it.
+	if test x$pike_cv_pgres_include_dir$pike_cv_can_try_locate = xnoyes; then
+		AC_MSG_CHECKING(whether we can locate it anyway...)
+		for pike_cv_pgres_locate_include_file in `locate libpq-fe.h`
+			do
+dnl check it not to be a stale entry
+				if test -f $pike_cv_pgres_locate_include_file; then
+					pike_cv_pgres_include_dir=`dirname $pike_cv_pgres_locate_include_file`
+					break
+				fi
+			done
+		if test x$pike_cv_pgres_include_dir != xno; then
+			AC_MSG_RESULT(found in $pike_cv_pgres_include_dir.)
+		else
+			AC_MSG_RESULT(not found.)
+		fi
+	fi
+
 	if test x$pike_cv_pgres_include_dir != xno; then
 		CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
 	fi
+
+dnl final ckeck, just to be sure we didn't mess up
 	AC_CHECK_HEADERS(postgres.h)
 	AC_CHECK_HEADERS(libpq-fe.h)
-	if test x$ac_cv_header_libpq_fe_h = xno ; then
+	if test x$ac_cv_header_libpq_fe_h$ac_cv_header_postgres_h != xyesyes ; then
+		ac_cv_header_libpq_fe_h=no
 		ac_cv_header_postgres_h=no
 		ac_pike_postgres_skip=yes
 	fi
 
+dnl okay, now let's start working on the libraries
 	if test x$ac_pike_postgres_skip = xno; then
 		AC_MSG_CHECKING(for location of the Postgres library)
 		AC_CACHE_VAL(pike_cv_pgres_lib_dir,[
 			for pike_cv_pgres_lib_dir in $pike_postgres_reasonable_lib_searchpath no
 			do
-				if test -f $pike_cv_pgres_lib_dir/libpq.a; then
+				if test -f $pike_cv_pgres_lib_dir/libpq.a -o \
+					-f $pike_cv_pgres_lib_dir/libpq.so; then
 					break
 				fi
 			done
@@ -75,6 +115,22 @@ if test x$with_postgres = xyes; then
 		else
 			AC_MSG_RESULT(not found.)
 		fi
+		if test x$pike_cv_pgres_lib_dir$pike_cv_can_try_locate = xnoyes; then
+			AC_MSG_CHECKING(whether we can locate it anyway)
+			for pike_cv_pgres_locate_lib_file in `locate libpq.so libpq.a`
+				do
+					if test -f $pike_cv_pgres_locate_lib_file; then
+						pike_cv_pgres_lib_dir=`dirname $pike_cv_pgres_locate_lib_file`
+					fi
+				done
+			if test x$pike_cv_pgres_lib_dir != xno; then
+				AC_MSG_RESULT(found in $pike_cv_pgres_lib_dir.)
+			else
+				AC_MSG_RESULT(not found.)
+			fi
+		fi
+
+dnl last check, just to be sure
 		if test x$pike_cv_pgres_lib_dir != xno; then
 			LDFLAGS="$LDFLAGS -L$pike_cv_pgres_lib_dir"
 		fi
