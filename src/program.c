@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.276 2000/10/20 21:27:25 grubba Exp $");
+RCSID("$Id: program.c,v 1.277 2000/10/20 21:35:50 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4438,8 +4438,12 @@ PMOD_EXPORT void *parent_storage(int depth)
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 {
   if(major == Pike_compiler->compat_major &&
-     minor == Pike_compiler->compat_minor)
+     minor == Pike_compiler->compat_minor) {
+    if (compat_handler) {
+      add_ref(compat_handler);
+    }
     return;
+  }
 
   if(major == PIKE_MAJOR_VERSION && minor == PIKE_MINOR_VERSION)
   {
