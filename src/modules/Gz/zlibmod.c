@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.27 1999/08/20 20:04:31 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.28 2000/12/13 23:24:53 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -108,7 +108,9 @@ static int do_deflate(dynamic_buffer *buf,
 	 this->gz.next_out=low_make_buf_space(
 	    /* recommended by the zlib people */
 	    (this->gz.avail_out =
-	     this->gz.avail_in+this->gz.avail_in/1000+42),
+	     this->gz.avail_in ?
+	     this->gz.avail_in+this->gz.avail_in/1000+42 :
+	      4096),
 	    buf);
 
 	 THREADS_ALLOW();
@@ -120,7 +122,7 @@ static int do_deflate(dynamic_buffer *buf,
 
 	 /* we don't care about Z_BUF_ERROR here; it won't happen. */
       }
-      while (ret==Z_OK && flush==Z_FINISH);
+      while (ret==Z_OK && (this->gz.avail_in || !this->gz.avail_out));
 
    mt_unlock(& this->lock);
    return ret;
