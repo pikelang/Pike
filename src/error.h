@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.28 1999/03/16 23:37:24 hubbe Exp $
+ * $Id: error.h,v 1.29 1999/03/17 18:13:13 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -102,7 +102,7 @@ extern int throw_severity;
   do{ \
      check_recovery_context(); \
      OED_FPRINTF((stderr, "SET_ONERROR(%p, %p, %p) %s:%d\n", \
-                  &(X), (Y), (Z), __FILE__, __LINE__)); \
+                  &(X), (Y), (void *)(Z), __FILE__, __LINE__)); \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
      if(!recoveries) break; \
