@@ -1,0 +1,72 @@
+//! The GdkFont data type represents a font for drawing on the
+//! screen. These functions provide support for loading fonts, and also
+//! for determining the dimensions of characters and strings when drawn
+//! with a particular font.
+//! 
+//! Fonts in X are specified by a X Logical Font Description. The
+//! following description is considerably simplified. For definitive
+//! information about XLFD's see the X reference documentation. A X
+//! Logical Font Description (XLFD) consists of a sequence of fields
+//! separated (and surrounded by) '-' characters. For example, Adobe
+//! Helvetica Bold 12 pt, has the full description: 
+//! @i{ "-adobe-helvetica-bold-r-normal--12-120-75-75-p-70-iso8859-1"@}
+//! 
+//!The fields in the XLFD are:
+//! <table>
+//! <tr><td> Foundry</td>
+//! <td>the company or organization where the font originated.</td></tr>
+//! <tr><td> Family</td>
+//! <td>the font family (a group of related font designs).</td></tr>
+//! <tr><td> Weight</td>
+//! <td>A name for the font's typographic weight For example, 'bold' or 'medium').</td></tr>
+//! <tr><td> Slant</td>
+//! <td>The slant of the font. Common values are 'R' for Roman, 'I' for italoc, and 'O' for oblique.</td></tr>
+//! <tr><td> Set Width</td>
+//! <td>A name for the width of the font. For example, 'normal' or 'condensed'.</td></tr>
+//! <tr><td> Add Style</td>
+//! <td>Additional information to distinguish a font from other fonts of the same family.</td></tr>
+//! <tr><td> Pixel Size</td>
+//! <td>The body size of the font in pixels.</td></tr>
+//! <tr><td> Point Size</td>
+//! <td>The body size of the font in 10ths of a point. (A point is 1/72.27 inch) </td></tr>
+//! <tr><td> Resolution X</td>
+//! <td>The horizontal resolution that the font was designed for.</td></tr>
+//! <tr><td> Resolution Y</td>
+//! <td>The vertical resolution that the font was designed for .</td></tr>
+//! <tr><td> Spacing</td>
+//! <td>The type of spacing for the font - can be 'p' for proportional, 'm' for monospaced or 'c' for charcell.</td></tr>
+//! <tr><td> Average Width</td>
+//! <td>The average width of a glyph in the font. For monospaced and charcell fonts, all glyphs in the font have this width</td></tr>
+//! <tr><td>Charset Registry</td>
+//! <td>                          The registration authority that owns the encoding for the font. Together with the Charset Encoding field, this                        defines the character set for the font.</td></tr>
+//! <tr><td>Charset Encoding</td>
+//! <td>An identifier for the particular character set encoding.</td></tr>
+//! </table>
+//! 
+//! When specifying a font via a X logical Font Description, '*' can be
+//! used as a wildcard to match any portion of the XLFD. For instance,
+//! the above example could also be specified as
+//! @i{"-*-helvetica-bold-r-normal--*-120-*-*-*-*-iso8859-1"@}
+//! 
+//! It is generally a good idea to use wildcards for any portion of the
+//! XLFD that your program does not care about specifically, since that
+//! will improve the chances of finding a matching font.
+//! 
+//!
+//!
+int char_width( int character )
+//! Return the width, in pixels, of the specified character, if
+//! rendered with this font. The character can be between 0 and 65535,
+//! the character encoding is font specific.
+//!
+//!
+
+static GdkFont create( string|void font_name )
+//! Create a new font object. The string is the font XLFD.
+//!
+//!
+
+GdkFont destroy( )
+//! Free the font, called automatically by pike when the object is destroyed.
+//!
+//!

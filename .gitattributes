@@ -604,6 +604,7 @@ testfont binary
 /src/post_modules/GTK/acconfig.h foreign_ident
 /src/post_modules/GTK/dummy.c foreign_ident
 /src/post_modules/GTK/module.pmod.in foreign_ident
+/src/post_modules/GTK/refdoc/GTK.pmod/GladeXML.pike foreign_ident
 /src/post_modules/GTK/source/gladexml.pre foreign_ident
 /src/post_modules/Makefile.in foreign_ident
 /src/post_modules/configure.in foreign_ident

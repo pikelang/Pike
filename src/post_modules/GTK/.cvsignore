@@ -7,7 +7,6 @@ pgtk_config.h.in
 config.log
 config.status
 configure
-docs
 files_to_compile
 linker_options
 make_variables

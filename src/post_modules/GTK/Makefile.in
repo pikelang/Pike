@@ -33,11 +33,10 @@ compile0:
 docs:  doc@WITH_GTK@
 
 doc0:
-	@echo "Pike-GTK disabled."
-
 
 doc1:
 	$(RUNPIKE) $(SRCDIR)/new_build_pgtk.pike --source='$(SRCDIR)/source/'\
+                   --destination="$(SRCDIR)/refdoc/" \
                    $(SRCDIR)/output/doc-pikeref.pike
 
 compile1:
@@ -48,18 +47,6 @@ compile1:
                   all
 
 compile2: compile1
-#
-# Many machines have problems compiling this file with full optimization.
-# They should not have that any longer  /Per
-#
-#pgtk.o: pgtk.c Makefile
-#	@echo "Compiling $< with less optimization" ;\
-#	if $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ; then : ;\
-#	else \
-#	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-#	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
-#	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
-#	fi
 
 options: config.status
 	./config.status 

@@ -1,5 +1,5 @@
 function write;
-string source;
+string source, outfile, outdir;
 
 object get_widget_from( string what )
 {
@@ -20,21 +20,20 @@ object get_widget_from( string what )
 
 string tags( string imgdata)
 {
-  return sprintf( "@code{%s@}\n"
-                  "@xml{<image-data>%{&#%03d;%}</image-data>@}\n",
-                  source,(array(int))imgdata );
+  mkdir( outdir+"/images" );
+  Stdio.write_file( outdir+"/"+outfile, imgdata );
 }
 
 void grab(object w, string s)
 {
-  object i = GTK.GdkImage();
+  object i = GDK.Image();
   if(w->xsize() == 40 || w->ysize() == 40 )
   {
     werror("Image dimensions are 0x0!\n");
     exit(1);
   }
   i->grab( w, 20,20, w->xsize()-40, w->ysize()-40);
-  write(tags( Image.PNG.encode(Image.PNM.decode( i->get_pnm() )) ));
+  tags(Image.PNG.encode(Image.PNM.decode(i->get_pnm())));
   exit(0);
 }
 
@@ -75,6 +74,8 @@ int main(int argc, array (string) argv)
     ex = w = get_widget_from( argv[1] );
     w->set_border_width( 20 );
   }
+  outdir = argv[3];
+  outfile = argv[4];
   w->signal_connect( "map_event", got_event, w );
   w->signal_connect( "destroy", _exit, 1 );
   show_recursively( w );
