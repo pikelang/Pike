@@ -978,7 +978,7 @@ SGML wmml_to_html(SGML data)
     ret=({
       Sgml.Tag("body",
 	       ([
-		 "bgcolor":"#CCD9D2",
+		 "bgcolor":"#ffffff",
 		 "text":"#000000",
 		 "link":"blue",
 		 "vlink":"purple",
