@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: monger.pike,v 1.6 2004/09/21 20:20:46 nilsson Exp $
+// $Id: monger.pike,v 1.7 2004/09/21 20:50:25 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.6 $"/" ")[1];
+constant version = ("$Revision: 1.7 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -16,6 +16,7 @@ string my_command;
 string argument;
 string my_version;
 string run_pike;
+array(string) pike_args = ({});
 string original_dir;
 
 mapping created = (["files" : ({}), "dirs": ({})]);
@@ -24,14 +25,14 @@ int main(int argc, array(string) argv)
 {
   run_pike = master()->_pike_file_name;
 #ifdef NOT_INSTALLED
-  run_pike += " -DNOT_INSTALLED";
+  pike_args += ({ "-DNOT_INSTALLED" });
 #endif
 #ifdef PRECOMPILED_SEARCH_MORE
-  run_pike += " -DPRECOMPILED_SEARCH_MORE";
+  pike_args += ({ "-DPRECOMPILED_SEARCH_MORE" });
 #endif
   if(master()->_master_file_name)
-    run_pike += " -m"+master()->_master_file_name;
-  putenv("RUNPIKE", run_pike);
+    pike_args += ({ "-m"+master()->_master_file_name });
+  putenv("RUNPIKE", run_pike+sizeof(pike_args)?" "+pike_args*" ":"");
 
   if(argc==1) return do_help();
 
@@ -334,7 +335,7 @@ void do_install(string name, string|void version)
   foreach(jobs, string j)
   {
     builder = Process.create_process(
-      ({run_pike, "-x", "module"}) + ({ j }));
+      ({run_pike}) + pike_args + ({"-x", "module"}) + ({ j }));
     res = builder->wait();
   
     if(res)
@@ -412,7 +413,7 @@ class xmlrpc_handler
   }
  
 
-  class _caller (string n){
+  static class _caller (string n){
 
     mixed `()(mixed ... args)
     {
