@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.11 2001/08/06 17:24:09 nilsson Exp $
+// $Id: Base.pmod,v 1.12 2001/08/07 15:17:32 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -41,7 +41,8 @@ int get_document_id(string uri, void|string language, void|int do_not_create);
 //!     @member void|string "language"
 //!       The ISO-639-2 language code of the document, or 0 if not set.
 //!   @endmapping
-mapping get_uri_and_language(int doc_id);
+// FIXME
+mapping get_uri_and_language(int|array(int) doc_id);
 
 //! Index words into the database. The data may be buffered until the next @[sync] call.
 //! @param uri

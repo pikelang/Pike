@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.52 2001/08/01 15:53:13 js Exp $
+// $Id: MySQL.pike,v 1.53 2001/08/07 15:17:32 js Exp $
 
 inherit .Base;
 
@@ -270,14 +270,24 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
   return md;
 }
 
-mapping get_uri_and_language(int doc_id)
+mapping get_uri_and_language(int|array(int) doc_id)
 {
-  array a=db->query("select document.language,uri.uri from document,uri "
-		    "where uri.id=document.uri_id and document.id=%d",doc_id);
-  if(!sizeof(a))
-    return 0;
-
-  return (["uri":1,"language":1]) & a[0];
+  if(arrayp(doc_id))
+  {
+    array a=db->query("select document.id,document.language, uri.uri from document, uri "
+		      "where uri.id=document.uri_id and document.id IN ("+
+		      ((array(string))doc_id)*","+")");
+    return mkmapping( (array(int))a->id, a );
+  }
+  else
+  {
+    array a=db->query("select document.language,uri.uri from document,uri "
+		      "where uri.id=document.uri_id and document.id=%d",doc_id);
+    if(!sizeof(a))
+      return 0;
+    
+    return (["uri":1,"language":1]) & a[0];
+  }
 }
 
 static int docs; // DEBUG
