@@ -1,0 +1,98 @@
+                 +--------------------------------------+
+                 | Pike autodoc markup - the XML format |
+                 +--------------------------------------+
+
+======================================================================
+a) Introduction
+----------------------------------------------------------------------
+
+When a piece of documentation is viewed in human-readable format, it 
+has gone through the following states:
+
+  1. Doc written in comments in source code (C or Pike).
+
+  2. A lot of smaller XML files, one for each source code file.
+
+  3. A big chunk of XML, describing the whole hierarchy.
+
+  4. A repository of smaller and more manageable XML files.
+
+  5. A HTML page rendered from one such file. 
+     (Or a PDF file, or whatever).
+
+The transition from state 1 to state 2 is the extraction of 
+documentation from source files. There are several (well, at
+least two) markup formats, and there are occasions where it is
+handy to generate documentation automatically &c. This document 
+describes how a file in state 2 should be structured in order to
+be handled correctly by subsequent passes and presented in a
+consistent manner.
+
+======================================================================
+b) Overall structure
+----------------------------------------------------------------------
+
+Each source file adds some number of entities to the whole hierarchy.
+It can contain a class or a module. It can contain an empty module, 
+that has its methods and members defined in some other source file,
+and so on. Suppose we have a file containing documentation for the
+class Class in the module Module. The XML skeleton of the file 
+would then be:
+
+  <module name="">
+    <module name="Module">
+      <class name="Class">
+          ... perhaps some info on inherits, members &c ...
+        <doc>
+           ... the documentation of the class Module.Class ...
+        </doc>
+      </class>
+    </module>
+  </module>
+
+The <module name=""> refers to the top module. That element, and its 
+child <module name="Module">, exist only to put the <class name="Class"> 
+in its correct position in the hierarchy. So we can divide the elements
+in the XML file into two groups: skeletal elements and content elements. 
+
+Each actual module/class/whatever in the Pike hierarchy maps to at most
+one content element, however it can map to any number of skeletal elements. 
+For example, the top module is mapped to a skeletal element in each XML
+file extracted from a single source file. To get from state 2 to state 3 
+in the list above, all XML files are merged into one big. All the elements
+that a module or class map to are merged into one, and if one of those 
+elements contains documentation (=is a content emlement), then that
+documentation becomes a child of the merger of the elements.
+
+======================================================================
+c) Grouping
+----------------------------------------------------------------------
+
+Classes and modules always appear as <module> and <class> elements. 
+Methods, variables, constants &c, however, can be grouped in the 
+source code:
+
+  //! Two variables:
+  int a;
+  int b;
+  
+Even a single variable is considered as a group with one member. 
+Continuing the example in the previous section, suppose that Module.Class
+has two member variables, a and b, that are documented as a group:
+
+  <module name="">
+    <module name="Module">
+      <class name="Class">
+          ... perhaps some info on inherits, members &c ...
+
+        <docgroup homogen-type="variable">
+          <variable>
+        </docgroup>
+
+        <doc>
+           ... the documentation of the class Module.Class ...
+        </doc>
+      </class>
+    </module>
+  </module>
+
