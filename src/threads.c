@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.170 2003/10/06 13:01:31 mast Exp $");
+RCSID("$Id: threads.c,v 1.171 2003/12/13 20:37:52 jonasw Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -516,6 +516,32 @@ PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
      as you have the interpreter lock, unless tid == th_self() */
 }
 
+struct thread_state *gdb_thread_state_for_id(THREAD_T tid)
+/* Should only be used from a debugger session. */
+{
+  unsigned INT32 h = thread_table_hash(&tid);
+  struct thread_state *s;
+  for (s = thread_table_chains[h]; s != NULL; s = s->hashlink)
+    if(th_equal(s->id, tid))
+      break;
+  return s;
+}
+
+INT32 gdb_next_thread_state(INT32 prev, struct thread_state **ts)
+/* Used by gdb_backtraces. */
+{
+  if (!*ts || !(*ts)->hashlink) {
+    if (!*ts) prev = -1;
+    while (++prev < THREAD_TABLE_SIZE)
+      if ((*ts = thread_table_chains[prev]))
+	return prev;
+    *ts = NULL;
+    return 0;
+  }
+  *ts = (*ts)->hashlink;
+  return prev;
+}
+
 PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
 {
   struct thread_state *s = thread_state_for_id(tid);
@@ -570,6 +596,26 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
     if( now-last_ < 50000000 ) /* 0.05s slice */
       return;
     last_ = now;
+  }
+#elif defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)
+  {
+    static struct timeval         last_check = { 0, 0 };
+    task_thread_times_info_data_t info;
+    mach_msg_type_number_t        info_size = TASK_THREAD_TIMES_INFO_COUNT;
+
+    /* Get user time and test if 50usec has passed since last check. */
+    if (task_info(mach_task_self(), TASK_THREAD_TIMES_INFO,
+                  (task_info_t) &info, &info_size) == 0) {
+      /* Compute difference by converting kernel time_info_t to timeval. */
+      struct timeval now;
+      struct timeval diff;
+      now.tv_sec = info.user_time.seconds;
+      now.tv_usec = info.user_time.microseconds;
+      timersub(&now, &last_check, &diff);
+      if (diff.tv_usec < 50000 && diff.tv_sec == 0)
+        return;
+      last_check = now;
+    }
   }
 #elif defined(USE_CLOCK_FOR_SLICES)
   if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
@@ -756,7 +802,7 @@ void f_thread_create(INT32 args)
   arg->args=aggregate_array(args);
   arg->id=clone_object(thread_id_prog,0);
   OBJ2THREAD(arg->id)->status=THREAD_RUNNING;
-
+  
 #ifdef HAVE_BROKEN_LINUX_THREAD_EUID
   arg->euid = geteuid();
   arg->egid = getegid();
@@ -1208,6 +1254,13 @@ static void thread_was_checked(struct object *o)
     debug_gc_check(tmp->thread_local, T_OBJECT, o);
 
 #ifdef PIKE_DEBUG
+#if 0
+  if (tmp->swapped != 0 && tmp->swapped != 1) {
+    fprintf(stderr,
+	    "tmp->swapped: %d, id: %d, tmp: %x, thread_id_prog: %x\n",
+	    tmp->swapped, tmp->id, tmp, thread_id_prog);
+  }
+#endif
   if(tmp->swapped)
   {
     struct pike_frame *f;

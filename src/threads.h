@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.119 2003/05/07 21:01:03 mast Exp $
+ * $Id: threads.h,v 1.120 2003/12/13 20:37:53 jonasw Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -48,6 +48,16 @@
 #ifdef _MIT_POSIX_THREADS
 #define POSIX_THREADS
 #include <pthread.h>
+
+#ifdef HAVE_MACH_TASK_INFO_H
+#include <mach/task_info.h>
+#endif
+#ifdef HAVE_MACH_TASK_H
+#include <mach/task.h>
+#endif
+#ifdef HAVE_MACH_MACH_INIT_H
+#include <mach/mach_init.h>
+#endif
 
 /* AIX is *STUPID* - Hubbe */
 #undef func_data
@@ -155,6 +165,11 @@ void th_atfork_child(void);
 #define th_setconcurrency(X) 
 #ifdef HAVE_PTHREAD_YIELD
 #define th_yield()	pthread_yield()
+#else
+#ifdef HAVE_PTHREAD_YIELD_NP
+/* Some pthread libs define yield as non-portable function. */
+#define th_yield()	pthread_yield_np()
+#endif /* HAVE_PTHREAD_YIELD_NP */
 #endif /* HAVE_PTHREAD_YIELD */
 extern pthread_attr_t pattr;
 extern pthread_attr_t small_pattr;
@@ -173,7 +188,7 @@ extern pthread_attr_t small_pattr;
 #ifdef HAVE_PTHREAD_KILL
 #define th_kill(ID,sig) pthread_kill((ID),(sig))
 #else /* !HAVE_PTHREAD_KILL */
-/* MacOS X (aka Darwin) doesn't have pthread_kill. */
+/* MacOS X (aka Darwin) prior to 10.2 doesn't have pthread_kill. */
 #define th_kill(ID,sig)
 #endif /* HAVE_PTHREAD_KILL */
 #define th_join(ID,res) pthread_join((ID),(res))
@@ -465,7 +480,10 @@ struct thread_state {
 #define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
 #endif
 
-#if !defined(HAVE_GETHRTIME) && defined(HAVE_CLOCK)
+#if !defined(HAVE_GETHRTIME) && \
+    !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)) && \
+    defined(HAVE_CLOCK) && \
+    !defined(HAVE_NO_YIELD)
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif

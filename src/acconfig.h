@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.80 2003/05/07 21:01:02 mast Exp $
+ * $Id: acconfig.h,v 1.81 2003/12/13 20:37:53 jonasw Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -334,6 +334,9 @@
 
 /* Define if you have the pthread_yield function.  */
 #undef HAVE_PTHREAD_YIELD
+
+/* Define if you have the pthread_yield_np function.  */
+#undef HAVE_PTHREAD_YIELD_NP
 
 /* Hack for stupid glibc linuxthreads */
 #undef HAVE_PTHREAD_INITIAL_THREAD_BOS
