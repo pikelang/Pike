@@ -214,7 +214,7 @@ static void f_make_http_headers( INT32 args )
     if( k->ind.type != PIKE_T_STRING || k->ind.u.string->size_shift )
       Pike_error("Wrong argument type to make_http_headers("
             "mapping(string(8bit):string(8bit)|array(string(8bit))) heads)\n");
-    if( k->val.type == PIKE_T_STRING )
+    if( k->val.type == PIKE_T_STRING  && !k->val.u.string->size_shift )
       total_len +=  k->val.u.string->len + 2 + k->ind.u.string->len + 2;
     else if( k->val.type == PIKE_T_ARRAY )
     {
