@@ -1607,7 +1607,7 @@ Equvivalent to <tt>sizeof(<i>haystack</i>/<i>needle</i>)-1</tt>.
 <dt><tt>int stringp(mixed <i>s</i>)</tt>
 <dd>This function returns 1 if <i>s</i> is a string, 0 otherwise.
 
-<dt><tt>string strlen(string <i>s</i>)</tt>
+<dt><tt>int strlen(string <i>s</i>)</tt>
 <dd>Returns the length of the string <i>s</i>.
 
 <dt><tt>string upper_case(string <i>s</i>)</tt>
