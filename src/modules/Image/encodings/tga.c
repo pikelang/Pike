@@ -1,8 +1,8 @@
 
 /*
- * $Id: tga.c,v 1.1 1999/04/06 00:37:29 per Exp $
+ * $Id: tga.c,v 1.2 1999/04/06 00:39:22 per Exp $
  *
- *  TGA codec for pike. Based on the tga plugin for gimp.
+ *  Targa codec for pike. Based on the tga plugin for gimp.
  *
  *  The information below is from the original TGA module.
  *
@@ -23,8 +23,6 @@
  * Not even the RLE handling. ;)
  *
  */
-
-
 
 
 
@@ -805,15 +803,10 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 
 
 
-
-
-
-
-
-/* Pike wrappers. */
+/* Pike functions. */
 /*
 **! method object _decode(string data)
-**! 	Decodes a TGA image to a mapping.
+**! 	Decodes a Targa image to a mapping.
 **!       The mapping follows this format: 
 **!           ([ "image":img_object, "alpha":alpha_channel ])
 **!
@@ -838,7 +831,7 @@ void image_tga__decode( INT32 args )
 
 /*
 **! method object decode(string data)
-**! 	Decodes a PNG image. 
+**! 	Decodes a Targa image. 
 **!
 **! note
 **!	Throws upon error in data.
@@ -858,7 +851,7 @@ void image_tga_decode( INT32 args )
 /*
 **! method string encode(object image)
 **! method string encode(object image, mapping options)
-**! 	Encodes a PNG image. 
+**! 	Encodes a Targa image. 
 **!
 **!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:
@@ -867,7 +860,7 @@ void image_tga_decode( INT32 args )
 **!	normal options:
 **!	    "alpha":image object
 **!		Use this image as alpha channel 
-**!		(Note: TGA alpha channel is grey.
+**!		(Note: Targa alpha channel is grey.
 **!		 The values are calculated by (r+2g+b)/4.)
 **!
 **!	    "raw":1
@@ -875,8 +868,6 @@ void image_tga_decode( INT32 args )
 **!
 **!	</pre>
 **!
-**! note
-**!	Please read some about PNG files. 
 */
 
 static struct pike_string *param_raw;
