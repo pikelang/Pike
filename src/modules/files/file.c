@@ -3,9 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-
+/**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.139 1999/02/01 09:49:12 hubbe Exp $");
+RCSID("$Id: file.c,v 1.140 1999/03/31 22:01:46 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -29,12 +29,12 @@ RCSID("$Id: file.c,v 1.139 1999/02/01 09:49:12 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
-#endif
+#endif /* HAVE_SYS_TYPE_H */
 
 #include <sys/stat.h>
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
+#endif /* HAVE_SYS_PARAM_H */
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -46,6 +46,10 @@ RCSID("$Id: file.c,v 1.139 1999/02/01 09:49:12 hubbe Exp $");
 #ifdef HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
 #endif
+
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
 
 #ifdef HAVE_WINSOCK_H
 #  include <winsock.h>
@@ -869,8 +873,125 @@ static void file_write(INT32 args)
   INT32 written,i;
   struct pike_string *str;
 
-  if(args<1 || sp[-args].type != T_STRING)
+  if(args<1 || (sp[-args].type != T_STRING) && (sp[-args].type != T_ARRAY))
     error("Bad argument 1 to file->write().\n");
+
+  if(FD < 0)
+    error("File not open for write.\n");
+  
+  if (sp[-args].type == T_ARRAY) {
+    struct array *a = sp[-args].u.array;
+    i = a->size;
+    while(i--) {
+      if ((a->item[i].type != T_STRING) || (a->item[i].u.string->size_shift)) {
+	error("Bad argument 1 to file->write().\n");
+      }
+    }
+
+#ifdef HAVE_WRITEV
+    if (args > 1) {
+#endif /* HAVE_WRITEV */
+      ref_push_array(a);
+      push_constant_text("");
+      o_mult();
+      sp--;
+      assign_svalue(sp-args, sp);
+
+#ifdef PIKE_DEBUG
+      if (sp[-args].type != T_STRING) {
+	error("Bad return value from string multiplication.");
+      }
+#endif /* PIKE_DEBUG */
+#ifdef HAVE_WRITEV
+    } else if (!a->size) {
+      /* Special case for empty array */
+      pop_stack();
+      push_int(0);
+      return;
+    } else {
+      struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
+      struct iovec *iov = iovbase;
+      int iovcnt = a->size;
+
+      i = a->size;
+      while(i--) {
+	iov->iov_base = a->item[i].u.string->str;
+	iov->iov_len = a->item[i].u.string->len;
+      }
+
+      for(written = 0; iovcnt; check_signals(0,0,0)) {
+	int fd = FD;
+	int cnt = iovcnt;
+	THREADS_ALLOW();
+	if (cnt > IOV_MAX) {
+	  cnt = IOV_MAX;
+	}
+	i = writev(fd, iov, cnt);
+	THREADS_DISALLOW();
+
+#ifdef _REENTRANT
+	if (FD<0) {
+	  free(iovbase);
+	  error("File destructed while in file->write.\n");
+	}
+#endif
+	if(i<0)
+	{
+	  switch(errno)
+	  {
+	  default:
+	    free(iovbase);
+	    ERRNO=errno;
+	    pop_n_elems(args);
+	    if (!written) {
+	      push_int(-1);
+	    } else {
+	      push_int(written);
+	    }
+	    return;
+
+	  case EINTR: continue;
+	  case EWOULDBLOCK: break;
+	  }
+	  break;
+	}else{
+	  written += i;
+
+	  /* Avoid extra writev() */
+	  if(THIS->open_mode & FILE_NONBLOCKING)
+	    break;
+
+	  while(i) {
+	    if (iov->iov_len <= i) {
+	      i -= iov->iov_len;
+	      iov++;
+	      iovcnt--;
+	    } else {
+	      /* Use cast since iov_base might be a void pointer */
+	      iov->iov_base = ((char *) iov->iov_base) + i;
+	      iov->iov_len -= i;
+	      i = 0;
+	    }
+	  }
+	}
+      }
+
+      free(iovbase);
+
+      if(!IS_ZERO(& THIS->write_callback))
+      {
+	set_write_callback(FD, file_write_callback, THIS);
+	SET_INTERNAL_REFERENCE(THIS);
+      }
+      ERRNO=0;
+
+      pop_stack();
+      push_int(written);
+    }
+#endif /* HAVE_WRITEV */
+  }
+
+  /* At this point sp[-args].type is T_STRING */
 
   if(args > 1)
   {
@@ -879,9 +1000,6 @@ static void file_write(INT32 args)
     args=1;
   }
 
-  if(FD < 0)
-    error("File not open for write.\n");
-  
   str=sp[-args].u.string;
 
   for(written=0;written < str->len;check_signals(0,0,0))
@@ -902,7 +1020,11 @@ static void file_write(INT32 args)
       default:
 	ERRNO=errno;
 	pop_n_elems(args);
-	push_int(-1);
+	if (!written) {
+	  push_int(-1);
+	} else {
+	  push_int(written);
+	}
 	return;
 
       case EINTR: continue;
@@ -969,7 +1091,11 @@ static void file_write_oob(INT32 args)
       default:
 	ERRNO=errno;
 	pop_n_elems(args);
-	push_int(-1);
+	if (!written) {
+	  push_int(-1);
+	} else {
+	  push_int(written);
+	}
 	return;
 
       case EINTR: continue;
