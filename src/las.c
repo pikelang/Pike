@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.118 1999/11/20 03:41:15 grubba Exp $");
+RCSID("$Id: las.c,v 1.119 1999/11/20 19:09:47 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -478,6 +478,8 @@ node *debug_mknode(short token, node *a, node *b)
 #if defined(PIKE_DEBUG) && !defined(SHARED_NODES)
   if(b && a==b)
     fatal("mknode: a and be are the same!\n");
+  if (token == F_CAST)
+    fatal("Attempt to create a cast-node with mknode()!\n");
 #endif    
 
   check_tree(a,0);
@@ -612,13 +614,13 @@ node *debug_mknode(short token, node *a, node *b)
     break;
     
   default:
-    /* We try to optimize most things, but argument lists are hard... */
-    if(token != F_ARG_LIST && (a || b))
-      res->node_info |= OPT_TRY_OPTIMIZE;
-
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
   }
+
+  /* We try to optimize most things, but argument lists are hard... */
+  if(token != F_ARG_LIST && (a || b))
+    res->node_info |= OPT_TRY_OPTIMIZE;
 
   res->tree_info |= res->node_info;
 
@@ -867,6 +869,10 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
   node *res;
 
   if(!n) return 0;
+
+  if (!type) {
+    fatal("Casting to no type!\n");
+  }
 
   if (type == void_type_string) return mknode(F_POP_VALUE, n, 0);
 
@@ -1964,11 +1970,22 @@ static void low_build_function_type(node *n)
 void fix_type_field(node *n)
 {
   struct pike_string *type_a,*type_b;
+  struct pike_string *old_type;
 
-  if(n->type) return; /* assume it is correct */
+  if (n->type && !(n->node_info & OPT_TYPE_NOT_FIXED))
+    return; /* assume it is correct */
+
+  old_type = n->type;
+  n->type = 0;
+  n->node_info &= ~OPT_TYPE_NOT_FIXED;
 
   switch(n->token)
   {
+  case F_CAST:
+    /* Type-field is correct by definition. */
+    copy_shared_string(n->type, old_type);
+    break;
+
   case F_LAND:
   case F_LOR:
     if (!CAR(n) || CAR(n)->type == void_type_string ||
@@ -1997,11 +2014,14 @@ void fix_type_field(node *n)
       my_yyerror("Assigning a void expression.");
       copy_shared_string(n->type, void_type_string);
       break;
-    } else if(CAR(n) && CDR(n) &&
-       /* a["b"]=c and a->b=c can be valid when a is an array */
-	      CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
-	      !match_types(CDR(n)->type,CAR(n)->type)) {
-      my_yyerror("Bad type in assignment.");
+    } else if(CAR(n) && CDR(n)) {
+      fix_type_field(CAR(n));
+      fix_type_field(CDR(n));
+      /* a["b"]=c and a->b=c can be valid when a is an array */
+      if (CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
+	  !match_types(CDR(n)->type,CAR(n)->type)) {
+	my_yyerror("Bad type in assignment.");
+      }
     }
     copy_shared_string(n->type, CAR(n)->type);
     break;
@@ -2025,34 +2045,29 @@ void fix_type_field(node *n)
   case F_APPLY:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Calling a void expression.");
-      /* The optimizer converts this to an expression returning 0. */
-      if (!n->type) {
-	copy_shared_string(n->type, mixed_type_string);
-      }
     } else {
-    struct pike_string *s;
-    struct pike_string *f;
-    INT32 max_args,args;
-    push_type(T_MIXED); /* match any return type, even void */
-    push_type(T_VOID); /* not varargs */
-    push_type(T_MANY);
-    function_type_max=0;
-    low_build_function_type(CDR(n));
-    push_type(T_FUNCTION);
-    s=pop_type();
-    f=CAR(n)->type?CAR(n)->type:mixed_type_string;
-    n->type=check_call(s,f);
-    args=count_arguments(s);
-    max_args=count_arguments(f);
-    if(max_args<0) max_args=0x7fffffff;
-
-    if(!n->type)
-    {
+      struct pike_string *s;
+      struct pike_string *f;
       char *name;
+      INT32 max_args,args;
+
+      push_type(T_MIXED); /* match any return type, even void */
+      push_type(T_VOID); /* not varargs */
+      push_type(T_MANY);
+      function_type_max=0;
+      low_build_function_type(CDR(n));
+      push_type(T_FUNCTION);
+      s=pop_type();
+      f=CAR(n)->type?CAR(n)->type:mixed_type_string;
+      n->type=check_call(s,f);
+      args=count_arguments(s);
+      max_args=count_arguments(f);
+      if(max_args<0) max_args=0x7fffffff;
+
       switch(CAR(n)->token)
       {
 #if 0 /* FIXME */
-	case F_TRAMPOLINE;
+      case F_TRAMPOLINE:
 #endif
       case F_IDENTIFIER:
 	name=ID_FROM_INT(new_program, CAR(n)->u.id.number)->name->str;
@@ -2061,30 +2076,30 @@ void fix_type_field(node *n)
       case F_CONSTANT:
 	switch(CAR(n)->u.sval.type)
 	{
-	  case T_FUNCTION:
-	    if(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN)
-	    {
-	      name=CAR(n)->u.sval.u.efun->name->str;
-	    }else{
-	      name=ID_FROM_INT(CAR(n)->u.sval.u.object->prog,
-			       CAR(n)->u.sval.subtype)->name->str;
-	    }
-	    break;
+	case T_FUNCTION:
+	  if(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN)
+	  {
+	    name=CAR(n)->u.sval.u.efun->name->str;
+	  }else{
+	    name=ID_FROM_INT(CAR(n)->u.sval.u.object->prog,
+			     CAR(n)->u.sval.subtype)->name->str;
+	  }
+	  break;
 
-	  case T_ARRAY:
-	    name="array call";
-	    break;
+	case T_ARRAY:
+	  name="array call";
+	  break;
 
-	  case T_PROGRAM:
-	    name="clone call";
-	    break;
+	case T_PROGRAM:
+	  name="clone call";
+	  break;
 
-	  default:
-	    name="`() (function call)";
-	    break;
+	default:
+	  name="`() (function call)";
+	  break;
 	}
 	break;
-
+	  
       default:
 	name="unknown function";
       }
@@ -2100,11 +2115,10 @@ void fix_type_field(node *n)
 	my_yyerror("Bad argument %d to %s.",
 		   max_correct_args+1, name);
       }
-      copy_shared_string(n->type, mixed_type_string);
+      free_string(s);
     }
-    free_string(s);
+    copy_shared_string(n->type, mixed_type_string);
     break;
-  }
 
   case '?':
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
@@ -2115,15 +2129,16 @@ void fix_type_field(node *n)
     if(!CDR(n) || !CADR(n) || !CDDR(n))
     {
       copy_shared_string(n->type,void_type_string);
-      return;
+      break;
     }
     
     if(CADR(n)->type == CDDR(n)->type)
     {
       copy_shared_string(n->type,CADR(n)->type);
-      return;
+      break;
     }
 
+    /* FIXME: Should be type_a|type_b */
     copy_shared_string(n->type,mixed_type_string);
     break;
 
@@ -2153,6 +2168,7 @@ void fix_type_field(node *n)
   case F_CONTINUE:
   case F_BREAK:
   case F_DEFAULT:
+  case F_POP_VALUE:
     copy_shared_string(n->type,void_type_string);
     break;
 
@@ -2184,15 +2200,20 @@ void fix_type_field(node *n)
     n->type = get_type_of_svalue(& n->u.sval);
     break;
 
-  case F_COMMA_EXPR:
   case F_ARG_LIST:
+    if (n->parent) {
+      /* Propagate the changed type all the way up to the apply node. */
+      n->parent->node_info |= OPT_TYPE_NOT_FIXED;
+    }
+    /* FALL_THROUGH */
+  case F_COMMA_EXPR:
     if(!CAR(n) || CAR(n)->type==void_type_string)
     {
       if(CDR(n))
 	copy_shared_string(n->type,CDR(n)->type);
       else
 	copy_shared_string(n->type,void_type_string);
-      return;
+      break;
     }
 
     if(!CDR(n) || CDR(n)->type==void_type_string)
@@ -2201,11 +2222,20 @@ void fix_type_field(node *n)
 	copy_shared_string(n->type,CAR(n)->type);
       else
 	copy_shared_string(n->type,void_type_string);
-      return;
+      break;
     }
 
   default:
     copy_shared_string(n->type,mixed_type_string);
+  }
+
+  if (n->type != old_type) {
+    if (n->parent) {
+      n->parent->node_info |= OPT_TYPE_NOT_FIXED;
+    }
+  }
+  if (old_type) {
+    free_string(old_type);
   }
 }
 
@@ -3023,7 +3053,9 @@ static void optimize(node *n)
 	continue;
       }
     }
-    fix_type_field(n);
+    if (!n->type || (n->node_info & OPT_TYPE_NOT_FIXED)) {
+      fix_type_field(n);
+    }
     debug_malloc_touch(n->type);
 
 #ifdef PIKE_DEBUG
@@ -3068,6 +3100,10 @@ static void optimize(node *n)
 	_CAR(n->parent) = tmp1;
       else
 	_CDR(n->parent) = tmp1;
+
+      if (!tmp1 || (tmp1->type != n->type)) {
+	n->parent->node_info |= OPT_TYPE_NOT_FIXED;
+      }
 
 #ifdef SHARED_NODES      
       n->parent->hash = hash_node(n->parent);
