@@ -210,7 +210,7 @@ o Image.DWG
     Decodes AutoCAD thumbnail images.
 
 o Gmp.mpq and Gmp.mpf
-    Multi precision fractions.    
+    Multi precision fractions.
 
 o String.SplitIterator
 
