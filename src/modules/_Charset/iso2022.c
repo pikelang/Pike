@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.34 2004/09/18 21:35:08 nilsson Exp $
+|| $Id: iso2022.c,v 1.35 2005/02/16 20:39:46 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -976,25 +976,50 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    }
 
 	  } else if(c<0x180) {
+	    /* Latin-Extended-A */
+	    /* Bitmap from character to 2 bit index in map2. */
 	    unsigned char map1[] = {
 	      0x02, 0x00, 0x15, 0x00, 0xa0, 0xa0, 0x02, 0xff,
 	      0xff, 0xff, 0xff, 0xf0, 0xff, 0xff, 0x80, 0xc0,
 	      0x00, 0x08, 0xfc, 0x03, 0x30, 0x20, 0x00, 0x15,
 	      0x00, 0xf0, 0xff, 0x03, 0xf0, 0xff, 0x00, 0x00 };
-	    unsigned char map2[] = { 0x12, 0x13, 0x14, 0x20 };
+	    unsigned char map2[] = {
+	      0x12, /* iso-8859-2:1999 */
+	      0x13, /* iso-8859-3:1999 */
+	      0x14, /* iso-8859-4:1999 */
+	      0x20, /* iso-8859-sup */
+	    };
 	    mode = MODE_96;
 	    index = map2[(map1[(c-0x100)>>2]>>((c&3)<<1))&3];
-	  } else if((c>=0x391 && c<=0x3c9) ||
-		    (c>=0x401 && c<=0x451)) {
-	    /* Greek and Cyrillic */
+	  } else if (c >= 0x401 && c <= 0x045f) {
+	    /* Cyrillic */
+	    if ((c >= 0x0402 && c <= 0x040f) ||
+		(c >= 0x0452 && c <= 0x045f)) {
+	      /* JIS_X0212_1990
+	       *   0x0402 - 0x040f
+	       *   0x0452 - 0x045f
+	       */
+	      mode = MODE_9494;
+	      index = 0x14;	/* JIS_X0212_1990 */
+	    } else {
+	      /* JIS_C6226_1983
+	       *   0x0401
+	       *   0x0410 - 0x044f
+	       *   0x0451
+	       */
+	      mode = MODE_9494;
+	      index = 0x12;	/* JIS_C6226_1983 */
+	    }
+	  } else if (c>=0x391 && c<=0x3c9) {
+	    /* Greek */
 	    mode = MODE_9494;
-	    index = 0x12;
+	    index = 0x12;	/* JIS_C6226_1983 */
 	  } else if((c>=0x2010 && c<=0x22a5) ||
 		    c==0x2312 ||
 		    (c>=0x2500 && c<=0x266f)) {
 	    /* FIXME:  Some of these chars might need a different set */
 	    mode = MODE_9494;
-	    index = 0x12;
+	    index = 0x12;	/* JIS_C6226_1983 */
           } else {
 	    /* Pike_error("Not implemented.\n"); */
 	  }
