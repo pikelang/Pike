@@ -34,8 +34,10 @@ float alt;
 //! it will perform a dwim scan on the strings. If they
 //! fails to be understood, there will be an exception.
 //!
-void create(int|float|string _lat,void|int|float|string _long, void|float _alt)
+void create(void|int|float|string _lat,
+	    void|int|float|string _long, void|float _alt)
 {
+   if(zero_type(_lat)) return;
    if (stringp(_lat))
    {
       if (zero_type(_long))
@@ -283,6 +285,9 @@ int(0..1) set_ellipsoid(string|float er, float|void pr) {
   return 1;
 }
 
+
+// --- UTM code
+
 // The following code for UTM conversion is base on code by
 // Chuck Gantz and equations from USGS Bulletin 1532.
 
@@ -406,6 +411,9 @@ void set_from_UTM(int zone_number, string zone_designator, float UTME, float UTM
   long = LongOrigin + long * 180/Math.pi;
 }
 
+
+// --- GEOREF code
+
 //! Gives the full GEOREF position for the current position, e.g. "LDJA0511".
 string GEOREF() {
   int x_square = (int)((180+long)/15);
@@ -422,6 +430,77 @@ string GEOREF() {
 		 (int)floor(60*(long-floor(long))),
 		 (int)floor(60*(lat-floor(lat))));
 }
+
+// FIXME: set_from_GEOREF
+
+
+// --- RT 38 code
+
+#define DEG2RAD(DEG) ((Math.pi/180.0)*(DEG))
+#define RAD2DEG(RAD) ((RAD)*(180.0/Math.pi))
+
+static constant rt38_y0 = 1500000;
+static constant rt38_lng0 = DEG2RAD(15.80827778);
+static constant rt38_k0a = 6366742.5194;
+static constant rt38_beta1 = 0.00083522527;
+static constant rt38_beta2 = 0.000000756302;
+static constant rt38_beta3 = 0.000000001193;
+static constant rt38_delta1 = 0.000835225613;
+static constant rt38_delta2 = 0.000000058706;
+static constant rt38_delta3 = 0.000000000166;
+
+//!
+array(float) RT38()
+{
+   float rlat=DEG2RAD(lat);
+   float rlong=DEG2RAD(long);
+
+   float rlat2 = rlat - sin(rlat) * cos(rlat)
+      * DEG2RAD(1376.68809
+		+ 7.64689 * pow(sin(rlat),2)
+		+ 0.053 * pow(sin(rlat),4)
+		+ 0.0004 * pow(sin(rlat),6)) /3600;
+   float ksi = atan2(tan(rlat2) , cos(rlong - rt38_lng0));
+   float eta = atanh(cos(rlat2) * sin(rlong - rt38_lng0));
+   float x = rt38_k0a * (ksi + rt38_beta1 * sin(2 * ksi)
+			 * cosh(2 * eta) + rt38_beta2
+			 * sin(4 * ksi) * cosh(4 * eta)
+			 + rt38_beta3 * sin(6 * ksi) * cosh(6 * eta));
+   float y = rt38_y0 + rt38_k0a * (eta + rt38_beta1 * cos(2 * ksi)
+				   * sinh(2 * eta) + rt38_beta2 * cos(4 * ksi)
+				   * sinh(4 * eta) + rt38_beta3 * cos(6 * ksi)
+				   * sinh(6 * eta));
+   return ({x, y});
+}
+
+//! Sets the longitude and lattitude from the given
+//! RT38 coordinates.
+void set_from_RT38(int|float|string x_n,int|float|string y_e)
+{
+   if (stringp(x_n)) x_n=(float)((x_n+"0000000000")[..6]);
+   if (stringp(y_e)) y_e=(float)((y_e+"0000000000")[..6]);
+
+   float ksi = x_n / rt38_k0a;
+   float eta = (y_e - rt38_y0) / rt38_k0a;
+   float ksi2 = ksi - rt38_delta1 * sin(2 * ksi) * cosh(2 * eta)
+      - rt38_delta2 * sin(4 * ksi) * cosh(4 * eta)
+      - rt38_delta3 * sin(6 * ksi) * cosh(6 * eta);
+   float eta2 = eta - rt38_delta1 * cos(2 * ksi) * sinh(2 * eta)
+      - rt38_delta2 * cos(4 * ksi) * sinh(4 * eta)
+      - rt38_delta3 * cos(6 * ksi) * sinh(6 * eta);
+   float rlat2 = asin(sin(ksi2) / cosh(eta2));
+   float rlong = atan2(sinh(eta2) , cos(ksi2)) + rt38_lng0;
+   float rlat = rlat2 + sin(rlat2) * cos(rlat2)
+      * DEG2RAD(1385.93836 - 10.89576 * pow(sin(rlat2),2)
+		+ 0.11751 * pow(sin(rlat2),4)
+		- 0.00139 * pow(sin(rlat2),6)) / 3600;
+
+   lat = RAD2DEG(rlat);
+   long = RAD2DEG(rlong);
+}
+
+
+// --- Height releated code
 
 // Ten by Ten Degree WGS-84 Geoid Heights from -180 to +170 Degrees of Longitude.
 // Defense Mapping Agency. 12 Jan 1987. GPS UE Relevant WGS-84 Data Base Package.
@@ -530,12 +609,12 @@ int `>(object pos)
 //!
 string _sprintf(int|void t)
 {
-  return t=='O' && sprintf("%O(%s, %s)", object_program(this_object()), latitude(), longitude());
+  return t=='O' && sprintf("%O(%s, %s)", this_program,
+			   latitude(), longitude());
 }
 
 //! Calculate the euclidian distance between two Geography.Position.
 //! Result is in meter. This uses the ECEF function.
-
 float euclidian_distance(this_program p)
 {
    return sqrt(`+(@map(Array.sum_arrays(
