@@ -31,19 +31,17 @@ constant replycodes =
       "[E.g., mailbox syntax incorrect or relaying denied]",
    554:"Transaction failed" ]);
 
-class protocol
+
+class Protocol
 {
   // Maybe this should be the other way around?
   inherit .NNTP.protocol;
 }
 
 //!
-class client
+class Client
 {
-  inherit protocol;
-
-  // keep here for compatibility only
-  mapping(int:string) reply_codes = replycodes;
+  inherit Protocol;
 
   static private int cmd(string c, string|void comment)
   {
@@ -131,11 +129,11 @@ class client
     // RFC 2821 4.1.1.4:
     //   An extra <CRLF> MUST NOT be added, as that would cause an empty
     //   line to be added to the message.
-    if (has_suffix(body, "\r\n")) {
+    if (has_suffix(body, "\r\n"))
       body += ".";
-    } else {
+    else
       body += "\r\n.";
-    }
+
     cmd(body);
     cmd("QUIT");
   }
@@ -205,7 +203,7 @@ class client
 }
 
 //! Class to store configuration variable for the SMTP server
-class configuration {
+class Configuration {
 
   //! Message max size
   int maxsize = 100240000;
@@ -226,65 +224,67 @@ class configuration {
 };
 
 //! The low-level class for the SMTP server
-class connection {
+class Connection {
 
-  inherit configuration;
+  inherit Configuration;
   // The commands this module supports
-  array(string) commands = ({ "ehlo", "helo", "mail", "rcpt", "data", "rset", "vrfy", "quit", "noop" });
+  array(string) commands = ({ "ehlo", "helo", "mail", "rcpt", "data",
+			      "rset", "vrfy", "quit", "noop" });
+
   // the fd of the socket
-  private object fd = Stdio.File();
+  static object fd = Stdio.File();
   // the domains for each i relay
-  private array(string) mydomains = ({ });
+  static array(string) mydomains = ({ });
   // the input buffer for read_cb
-  private string inputbuffer = "";
+  static string inputbuffer = "";
   // the size of the old data string in read_cb
-  private int sizeofpreviousdata = 0;
+  static int sizeofpreviousdata = 0;
   // the from address
-  private string mailfrom = "";
+  static string mailfrom = "";
   // to the address(es)
-  private array(string) mailto = ({ });
+  static array(string) mailto = ({ });
   // the ident we get from ehlo/helo
-  private string ident = "";
+  static string ident = "";
   // these are obvious
-  private string remoteaddr, localaddr;
-  private int localport;
+  static string remoteaddr, localaddr;
+  static int localport;
   // my name
-  private string localhost = gethostname();
+  static string localhost = gethostname();
 
   // the sequence of commands the client send
-  private array(string) sequence = ({ });
+  static array(string) sequence = ({ });
   
   // the callback functions used to guess if user is ok or not
-  private function cb_rcptto;
-  private function cb_data;
-  private function cb_mailfrom;
+  static function cb_rcptto;
+  static function cb_data;
+  static function cb_mailfrom;
 
   // whether you are in data mode or not...
   int datamode = 0;
 
   array(string) features = ({ "PIPELINING", "8BITMIME", "SIZE " + maxsize });
     
-   private void handle_timeout()
+   static void handle_timeout()
    {
      catch(fd->write("421 Error: timeout exceeded\r\n"));
      close_cb();
    }
    
-   private void outcode(int code)
+   static void outcode(int code)
    {
-     fd->write(sprintf("%d %s\r\n", code, replycodes[code]));
+     fd->write("%d %s\r\n", code, replycodes[code]);
 #ifdef SMTP_DEBUG
-     log(sprintf("%d %s\r\n", code, replycodes[code]));
+     log("%d %s\r\n", code, replycodes[code]);
 #endif
    }
   
-   private void log(string what)
+   static void log(string fmt, mixed ... args)
    {
-     werror("Pike SMTP server : " + what + "\n");
+     werror("Pike SMTP server : " + fmt + "\n", args);
    }
   
    // make the received header
-   private string received(int messageid)
+   static string received(int messageid)
    {
      string remotehost =
         Protocols.DNS.client()->gethostbyaddr(remoteaddr)[0]
@@ -304,10 +304,10 @@ class connection {
      call_out(handle_timeout, 310);
      if(sizeof(argument) > 0)
      {
-       fd->write(sprintf("250 %s\r\n", localhost));
+       fd->write("250 %s\r\n", localhost);
        ident = argument;
 #ifdef SMTP_DEBUG
-       log(sprintf("helo from %s", ident));
+       log("helo from %s", ident);
 #endif
        sequence += ({ "helo" });
      }
@@ -332,7 +332,7 @@ class connection {
        sequence += ({ "ehlo" });
        ident = argument;
 #ifdef SMTP_DEBUG
-       log(sprintf("helo from %s", ident));
+       log("helo from %s", ident);
 #endif
      }
      else
@@ -363,7 +363,7 @@ class connection {
       string domain = temp[sizeof(temp)-2..] * ".";
       if(checkemail && sizeof(emailparts) != 2)
       {
-        log(sprintf("invalid mail address '%O', command=%O\n", emailparts, what)); 
+        log("invalid mail address '%O', command=%O\n", emailparts, what);
         return 553;
       }
       if(checkdns)
@@ -371,13 +371,15 @@ class connection {
         write("checking dns\n");
         if(what == "from" && !Protocols.DNS.client()->get_primary_mx(domain))
         {
-          log(sprintf("check dns failed, command=%O, domain=%O\n", what, domain));
+          log("check dns failed, command=%O, domain=%O\n", what, domain);
           return 553;
         }
       }
-      if(what == "to" && search(mydomains, domain) == -1 && search(mydomains, "*") == -1)
+      if(what == "to" && !has_value(mydomains, domain) &&
+	 !has_value(mydomains, "*") )
       {
-        log(sprintf("relaying denied, command=%O, mydomains=%O, domain=%O\n", what, mydomains, domain));
+        log("relaying denied, command=%O, mydomains=%O, domain=%O\n",
+	    what, mydomains, domain);
         return 553;
       }
       return validating_mail;
@@ -390,7 +392,7 @@ class connection {
      int sequence_ok = 0;
      foreach(({ "ehlo", "helo", "lhlo" }), string needle)
      {  
-       if(search(sequence, needle) != -1)
+       if(has_value(sequence, needle))
          sequence_ok = 1;
      }
      if(sequence_ok)
@@ -422,7 +424,8 @@ class connection {
 	   mail from: vida@caudium.net
  	   250 Requested mail action okay, completed
 	   rcpt to: tux@iteam.org
-	   553 Requested action not taken: mailbox name not allowed [E.g., mailbox syntax incorrect or relaying denied]
+	   553 Requested action not taken: mailbox name not allowed
+               [E.g., mailbox syntax incorrect or relaying denied]
 	   data
 	   354 Start mail input; end with <CRLF>.<CRLF>
            */
@@ -441,7 +444,7 @@ class connection {
      mixed err;
      remove_call_out(handle_timeout);
      call_out(handle_timeout, 310);
-     if(search(sequence, "mail from") == -1)
+     if(!has_value(sequence, "mail from"))
      {
        outcode(503);
        return;
@@ -477,7 +480,7 @@ class connection {
    {
      remove_call_out(handle_timeout);
      call_out(handle_timeout, 610);
-     if(search(sequence, "rcpt to") == -1)
+     if(!has_value(sequence, "rcpt to"))
      {
        outcode(503);
        return;
@@ -503,7 +506,8 @@ class connection {
          + "\0"+message->headers->received;
      if(!message->headers["message-id"])
      {
-       message->headers["message-id"]=sprintf("<%d@%s>",messageid, gethostname());
+       message->headers["message-id"] = sprintf("<%d@%s>", messageid,
+						gethostname());
      }
      return message;
    }
@@ -522,7 +526,7 @@ class connection {
      {
        outcode(554);
        log(describe_backtrace(err));
-       log(sprintf("content is %O\n", content));
+       log("content is %O\n", content);
        return;
      }
      err = catch {
@@ -575,11 +579,12 @@ class connection {
    
    void quit()
    {
-     fd->write("221 " + replace(replycodes[221], "<host>", localhost) + "\r\n");
+     fd->write("221 " + replace(replycodes[221], "<host>", localhost)
+	       + "\r\n");
      close_cb();
    }
    
-   private int launch_functions(string line)
+   static int launch_functions(string line)
    {
      array(string) command = line / " ";
      // success
@@ -587,12 +592,12 @@ class connection {
      {
        string _command = lower_case(command[0]);
        mixed err = 0;
-       if(search(commands, _command) != -1)
+       if(has_value(commands, _command))
        {
          err = catch 
          {
 #ifdef SMTP_DEBUG
-            log(sprintf("calling %O\n", _command));
+            log("calling %O\n", _command);
 #endif
 	    function fun = this_object()[_command];
 	    fun(command[1..] * " ");
@@ -600,18 +605,18 @@ class connection {
        }
        else
        {
-         log(sprintf("command %O not recognized", _command));
+         log("command %O not recognized", _command);
          outcode(500);
        }
        if(err)
        {
-         log(sprintf("error while executing command %O", _command));
+         log("error while executing command %O", _command);
 	 outcode(554);
        }
      }
    }
   
-   private void read_cb(mixed id, string data)
+   static void read_cb(mixed id, string data)
    {
      string pattern;
      int bufferposition;
@@ -627,7 +632,7 @@ class connection {
      while(bufferposition != -1)
      {
 #ifdef SMTP_DEBUG
-       write(sprintf("buffposition=%d, inputbuffer=%O\n", bufferposition, inputbuffer));
+       write("buffposition=%d, inputbuffer=%O\n", bufferposition, inputbuffer);
 #endif
        bufferposition += sizeof(pattern);
        int end = bufferposition-(1+sizeof(pattern));
@@ -661,19 +666,21 @@ class connection {
      }
    }
    
-   private void write_cb()
+   static void write_cb()
    {
-     fd->write("220 " + replace(replycodes[220], "<host>", localhost) + "\r\n");
+     fd->write("220 " + replace(replycodes[220], "<host>", localhost)
+	       + "\r\n");
      fd->set_write_callback(0);
    }
-  
-   private void close_cb()
+
+   static void close_cb()
    {
      catch (fd->close());
      remove_call_out(handle_timeout);
    }
-   
-   void create(object _fd, array(string) _domains, function _cb_mailfrom, function _cb_rcptto, function _cb_data)
+
+   void create(object _fd, array(string) _domains, function _cb_mailfrom,
+	       function _cb_rcptto, function _cb_data)
    {
      foreach(_domains, string domain)
        mydomains += ({ lower_case(domain) });
@@ -686,17 +693,19 @@ class connection {
      catch(localport=(int)((fd->query_address(1)||"")/" ")[1]);
      if(!remoteaddr)
      {
-       fd->write("421 " + replace(replycodes[421], "<host>", localhost) + "\r\n");
+       fd->write("421 " + replace(replycodes[421], "<host>", localhost)
+		 + "\r\n");
        close_cb();
        return;
      }
      if(!localaddr)
      {
-       fd->write("421 " + replace(replycodes[421], "<host>", localhost) + "\r\n");
+       fd->write("421 " + replace(replycodes[421], "<host>", localhost)
+		 + "\r\n");
        close_cb();
        return;
      }
-     //log(sprintf("connection from %s to %s:%d", remoteaddr, localaddr, localport));
+     //log("connection from %s to %s:%d", remoteaddr, localaddr, localport);
      fd->set_nonblocking(read_cb, write_cb, close_cb);
      call_out(handle_timeout, 300);
    }
@@ -707,20 +716,20 @@ class connection {
 //!  to design custom functions to process mail. This module does not
 //!  handle mail storage nor relaying to other domains.
 //! So it is your job to provide mail storage and relay mails to other servers
-class server {
+class Server {
  
-   private object fdport;
-   private array(string) domains;
-   private function cb_mailfrom;
-   private function cb_rcptto;
-   private function cb_data;
+   static object fdport;
+   static array(string) domains;
+   static function cb_mailfrom;
+   static function cb_rcptto;
+   static function cb_data;
    
-   private void accept_callback()
+   static void accept_callback()
    {
      object fd = fdport->accept();
      if(!fd)
        error("Can't accept connections from socket\n");
-     connection(fd, domains, cb_mailfrom, cb_rcptto, cb_data);
+     Connection(fd, domains, cb_mailfrom, cb_rcptto, cb_data);
      destruct(fd);
    }
 
@@ -777,14 +786,14 @@ class server {
    //!   if(mime->body_parts)
    //!   {
    //!     foreach(mime->body_parts, object mpart)
-   //!       write(sprintf("smtpd: mpart data = %O\n", mpart->getdata()));
+   //!       write("smtpd: mpart data = %O\n", mpart->getdata());
    //!   }
    //!   return 250;
    //! }
    //! 
    //! int main(int argc, array(string) argv)
    //! {
-   //!   Protocols.SMTP.server(({ "ece.fr" }), 2500, "127.0.0.1", @
+   //!   Protocols.SMTP.Server(({ "ece.fr" }), 2500, "127.0.0.1", @
    //!      cb_mailfrom, cb_rcptto, cb_data);
    //!   return -1;
    //! }
