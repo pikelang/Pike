@@ -56,7 +56,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.14 1999/04/29 15:09:26 mirar Exp $");
+RCSID("$Id: postgres.c,v 1.15 1999/05/28 13:30:52 mast Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -149,6 +149,7 @@ static void f_create (INT32 args)
 			if(sp[-args].type==T_STRING && sp[-args].u.string->len)
 				host=sp[-args].u.string->str;
 		case 0:
+			;
 	}
 #if 0
 	/* Old arguments-checking code */
