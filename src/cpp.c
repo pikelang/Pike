@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.118 2003/07/08 13:17:38 grubba Exp $
+|| $Id: cpp.c,v 1.119 2003/07/08 15:28:04 grubba Exp $
 */
 
 #include "global.h"
@@ -567,6 +567,7 @@ static void simple_add_define(struct cpp *this,
       break;							\
     }								\
     pos+=2;							\
+    PUTNL();							\
     this->current_line++;					\
   } while (1)
 
