@@ -810,6 +810,7 @@ testfont binary
 /src/post_modules/Nettle/Makefile.in foreign_ident
 /src/post_modules/Nettle/cipher.cmod foreign_ident
 /src/post_modules/Nettle/configure.in foreign_ident
+/src/post_modules/Nettle/crypt_md5.c foreign_ident
 /src/post_modules/Nettle/hash.cmod foreign_ident
 /src/post_modules/Nettle/nettle.cmod foreign_ident
 /src/post_modules/SDL/Makefile.in foreign_ident
