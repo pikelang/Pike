@@ -71,7 +71,7 @@ class Package
     string setup = ("#!/bin/sh\n"
 		    "TARFILE=\"$1\"; shift; ARGS=''\n"
 		    "CONTENTS=`tar tf \"$TARFILE\" | sed -ne '/^"+
-		    replace(install_filename, ".", "\\.")+"/,$p'`\n"
+		    (replace(install_filename, ".", "\\.")/"/")[-1]+"/,$p'`\n"
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
