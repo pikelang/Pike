@@ -86,5 +86,5 @@ test_true($1>=$1) ]])
 EOF
 
 cat $1
-) | m4
+) | (shift ; m4 "$@")
 
