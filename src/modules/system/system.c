@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.159 2003/09/30 22:57:03 nilsson Exp $
+|| $Id: system.c,v 1.160 2003/09/30 23:41:56 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.159 2003/09/30 22:57:03 nilsson Exp $");
+RCSID("$Id: system.c,v 1.160 2003/09/30 23:41:56 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -2162,18 +2162,31 @@ static void make_rlimit_strings(void)
 
 #ifdef HAVE_GETRLIMIT
 /*! @decl array(int) getrlimit(string resource)
+ *! Returns the current process limitation for the selected @[resource].
  *!
  *! @param resource
  *! @string
  *!   @value cpu
+ *!     The CPU time limit in seconds.
  *!   @value fsize
+ *!     The maximum size of files the process may create.
  *!   @value data
+ *!     The maximum size of the process's data segment.
  *!   @value stack
+ *!     The maximum size of process stack, in bytes.
  *!   @value core
+ *!
  *!   @value rss
+ *!     Specifies the limit of pages the process's resident set.
  *!   @value nproc
+ *!     The maximum number of processes that can be created for
+ *!     the real user ID of the calling process.
  *!   @value nofile
+ *!     The maximum number of file descriptors the process can
+ *!     open, +1.
  *!   @value memlock
+ *!     The maximum number of bytes of virtual memory that
+ *!     may be locked into RAM.
  *!   @value as
  *!   @value vmem
  *! @endstring
@@ -2181,13 +2194,18 @@ static void make_rlimit_strings(void)
  *! @returns
  *! @array
  *!   @elem int 0
- *!     rl_cur
+ *!     The soft limit for the resource.
+ *!     @expr{-1@} means no limit.
  *!   @elem int 1
- *!     rl_max
+ *!     The hard limit for the resource.
+ *!     @expr{-1@} means no limit.
  *! @endarray
  *!
- *! @fixme
- *!   Document this function.
+ *! @note
+ *!   This function nor all the resources are available on all systems.
+ *!
+ *! @seealso
+ *!   @[getrlimits], @[setrlimit]
  */
 static void f_getrlimit(INT32 args)
 {
@@ -2293,9 +2311,10 @@ static void f_getrlimit(INT32 args)
 }
 
 /*! @decl mapping(string:array(int)) getrlimits()
+ *! Returns all process limits in a mapping.
  *!
- *! @fixme
- *!   Document this function.
+ *! @seealso
+ *!   @[getrlimit], @[setrlimit]
  */
 static void f_getrlimits(INT32 args)
 {
@@ -2397,10 +2416,10 @@ static void f_getrlimits(INT32 args)
 #endif
 
 #ifdef HAVE_SETRLIMIT
-/*! @decl int(0..1) setrlimit(string resource, int cur, int max)
- *!
- *! @fixme
- *!   Document this function.
+/*! @decl int(0..1) setrlimit(string resource, int soft, int hard)
+ *! Sets the @[soft] and the @[hard] process limit on a @[resource].
+ *! @seealso
+ *!   @[getrlimit], @[getrlimits]
  */
 static void f_setrlimit(INT32 args)
 {
@@ -2506,12 +2525,33 @@ static void f_setrlimit(INT32 args)
 }
 #endif
 
+/*! @decl constant ITIMER_REAL
+ *!  Identifier for a timer that decrements in real time.
+ *! @seealso
+ *!   @[setitimer], @[getitimer]
+ */
+
+/*! @decl constant ITIMER_VIRTUAL
+ *!  Identifier for a timer that decrements only when the
+ *!  process is executing.
+ *! @seealso
+ *!   @[setitimer], @[getitimer]
+ */
+
+/*! @decl constant ITIMER_PROF
+ *!  Identifier for a timer that decrements both when the process
+ *!  is executing and when the system is executing on behalf of the
+ *!  process.
+ *! @seealso
+ *!   @[setitimer], @[getitimer]
+ */
 
 #ifdef HAVE_SETITIMER
-/*! @decl float setitimer(int|float arg)
- *!
- *! @fixme
- *!   Document this function.
+/*! @decl float setitimer(int timer, int|float value)
+ *! Sets the @[timer] to the supplied @[value]. Returns the
+ *! current timer interval.
+ *! @param timer
+ *!   One of @[ITIMER_REAL], @[ITIMER_VIRTUAL] and @[ITIMER_PROF].
  */
 void f_system_setitimer(INT32 args)
 {
@@ -2557,10 +2597,19 @@ void f_system_setitimer(INT32 args)
 #endif
 
 #ifdef HAVE_GETITIMER
-/*! @decl array(float) getitimer()
+/*! @decl array(float) getitimer(int timer)
+ *! Shows the state of the selected @[timer].
  *!
- *! @fixme
- *!   Document this function.
+ *! @returns
+ *! @array
+ *!   @elem float 0
+ *!     The interval of the timer.
+ *!   @elem float 1
+ *!     The value of the timer.
+ *! @endarray
+ *!
+ *! @param timer
+ *!   One of @[ITIMER_REAL], @[ITIMER_VIRTUAL] and @[ITIMER_PROF].
  */
 void f_system_getitimer(INT32 args)
 {
@@ -2572,17 +2621,17 @@ void f_system_getitimer(INT32 args)
    otimer.it_interval.tv_usec=0;
    otimer.it_interval.tv_sec=0;
 
-   get_all_args("setitimer",args,"%+",&what);
+   get_all_args("getitimer",args,"%+",&what);
 
    if (getitimer((int)what,&otimer)==-1)
    {
       switch (errno)
       {
 	 case EINVAL:
-	    Pike_error("setitimer: invalid timer %"PRINTPIKEINT"d\n",what);
+	    Pike_error("getitimer: invalid timer %"PRINTPIKEINT"d\n",what);
 	    break;
 	 default:
-	    Pike_error("setitimer: unknown error (errno=%d)\n",errno);
+	    Pike_error("getitimer: unknown error (errno=%d)\n",errno);
 	    break;
       }
    }
