@@ -7,8 +7,10 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 #ifndef L_LOGIC
    if (alpha==0.0)
    {
+#ifdef LAYER_DUAL
       MEMCPY(d,s,sizeof(rgb_group)*len);
       MEMCPY(da,sa,sizeof(rgb_group)*len);
+#endif
       return; 
    }
    else if (alpha==1.0)
