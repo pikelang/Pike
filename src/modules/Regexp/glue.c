@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: glue.c,v 1.35 2003/08/08 12:48:52 nilsson Exp $
+|| $Id: glue.c,v 1.36 2004/04/14 11:52:12 grubba Exp $
 */
 
 #include "global.h"
@@ -22,7 +22,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.35 2003/08/08 12:48:52 nilsson Exp $");
+RCSID("$Id: glue.c,v 1.36 2004/04/14 11:52:12 grubba Exp $");
 
 #include "pike_regexp.h"
 
@@ -131,7 +131,7 @@ static void regexp_match(INT32 args)
       SIMPLE_BAD_ARG_ERROR("Regexp.SimpleRegexp->match", 1,
 			   "Expected string (8bit)");
     
-    i = pike_regexec(regexp, STR0(Pike_sp[-args].u.string));
+    i = pike_regexec(regexp, (char *)STR0(Pike_sp[-args].u.string));
     pop_n_elems(args);
     push_int(i);
     return;
@@ -151,7 +151,7 @@ static void regexp_match(INT32 args)
 	SIMPLE_BAD_ARG_ERROR("Regexp.SimpleRegexp->match", 1,
 			     "Expected string (8bit)");
 
-      if(pike_regexec(regexp, STR0(sv->u.string)))
+      if(pike_regexec(regexp, (char *)STR0(sv->u.string)))
       {
 	ref_push_string(sv->u.string);
 	n++;
