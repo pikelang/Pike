@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program_id.h,v 1.15 2003/01/26 19:41:38 nilsson Exp $
+|| $Id: program_id.h,v 1.16 2003/01/31 02:01:46 mast Exp $
 */
 
 #ifndef PROGRAM_ID_H
@@ -88,7 +88,9 @@
 #define PROG_IMAGE_SUBMAGIC_START       160
 
 /* 200 - 300: Submodule programs */
-#define PROG_IMAGE_COLOR_COLOR_ID       200
+#define     PROG_IMAGE_COLOR_COLOR_ID                      0310 /* 200 */
+#define tObjImpl_IMAGE_COLOR_COLOR_ID "\003\000\000\000\000\310"
+#define   tObjIs_IMAGE_COLOR_COLOR_ID "\003\001\000\000\000\310"
 
 /* 1000 - 2000 reserved for GTK. */
 
