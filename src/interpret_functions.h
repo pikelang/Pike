@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.64 2001/06/29 02:15:12 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.65 2001/06/29 19:48:49 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -133,6 +133,9 @@ OPCODE1(F_GLOBAL,"global")
   print_return_value();
 BREAK;
 
+OPCODE2_TAIL(F_MARK_AND_EXTERNAL,"mark & external")
+  *(Pike_mark_sp++)=Pike_sp;
+
 OPCODE2(F_EXTERNAL,"external")
 {
   struct external_variable_context loc;
@@ -159,6 +162,7 @@ OPCODE2(F_EXTERNAL,"external")
   print_return_value();
 }
 BREAK;
+
 
 OPCODE2(F_EXTERNAL_LVALUE,"& external")
 {
