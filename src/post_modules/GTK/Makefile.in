@@ -64,7 +64,7 @@ depend:
 
 # Some hand-made dependencies:
 
-$(OBJS) : pgtk.h \
+$(OBJS) : $(SRCDIR)/pgtk.h pgtk_config.h \
  $(SRCDIR)/../../global.h \
  $(SRCDIR)/../../svalue.h \
  $(SRCDIR)/../../program.h \
