@@ -6,8 +6,9 @@ class Fifo {
   inherit Condition: w_cond;
   inherit Mutex: lock;
   
-  mixed *buffer;
+  array buffer;
   int ptr, num;
+  int read_tres, write_tres;
   
   int size() {  return num; }
   
@@ -19,22 +20,44 @@ class Fifo {
       tmp=buffer[ptr];
       buffer[ptr++] = 0;	// Throw away any references.
       ptr%=sizeof(buffer);
-      num--;
-      w_cond::signal();
+      if(num-- == read_tres)
+	w_cond::signal();
       return tmp;
     }
+
+  array read_array()
+  {
+    array ret;
+    object key=lock::lock();
+    while(!num) r_cond::wait(key);
+    if(num==1)
+    {
+      ret=buffer[ptr..ptr];
+      buffer[ptr++] = 0;	// Throw away any references.
+      ptr%=sizeof(buffer);
+      num--;
+    }else{
+      ret=buffer[ptr..]+buffer[..num-sizeof(ret)-1];
+      ptr=num=0;
+      buffer=allocate(sizeof(buffer)); // Throw away any references.
+    }
+    w_cond::signal();
+    return ret;
+  }
   
   void write(mixed v)
     {
       object key=lock::lock();
       while(num == sizeof(buffer)) w_cond::wait(key);
-      buffer[(ptr + num++) % sizeof(buffer)]=v;
-      r_cond::signal();
+      buffer[(ptr + num) % sizeof(buffer)]=v;
+      if(num++ == write_tres)
+	r_cond::signal();
     }
-  
+
   void create(int|void size)
     {
-      buffer=allocate(size || 128);
+      write_tres=0;
+      buffer=allocate(read_tres=size || 128);
     }
 };
 
