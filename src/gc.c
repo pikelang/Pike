@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.190 2002/11/25 00:57:43 nilsson Exp $
+|| $Id: gc.c,v 1.191 2003/01/12 17:25:39 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.190 2002/11/25 00:57:43 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.191 2003/01/12 17:25:39 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2395,7 +2395,7 @@ static void warn_bad_cycles()
 int do_gc(void)
 {
   double tmp;
-  ptrdiff_t objs, pre_kill_objs;
+  ptrdiff_t start_num_objs, objs, pre_kill_objs;
   double multiplier;
 #ifdef PIKE_DEBUG
 #ifdef HAVE_GETHRTIME
@@ -2447,9 +2447,11 @@ int do_gc(void)
 
   multiplier=pow(MULTIPLIER, (double) num_allocs / (double) alloc_threshold);
   objects_alloced*=multiplier;
-  objects_alloced += (double) num_allocs;
+  objects_alloced += (double) num_allocs * (1.0 - multiplier);
   
   objects_freed*=multiplier;
+
+  start_num_objs = num_objects;
 
   /* Thread switches, object alloc/free and any reference changes are
    * disallowed now. */
@@ -2790,9 +2792,9 @@ int do_gc(void)
   if (pre_kill_objs < num_objects) objs -= pre_kill_objs;
   else objs -= num_objects;
 
-  objects_freed += (double) objs;
+  objects_freed += (double) objs * (1.0 - multiplier);
 
-  tmp=(double)num_objects;
+  tmp=(double)start_num_objs;
   tmp=tmp * GC_CONST/100.0 * (objects_alloced+1.0) / (objects_freed+1.0);
 
   if(alloc_threshold + num_allocs <= tmp)
@@ -2814,11 +2816,11 @@ int do_gc(void)
 #ifdef HAVE_GETHRTIME
     fprintf(stderr,
 	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things), %ld ms.\n",
-	    objs, objs + num_objects, (long)((gethrtime() - gcstarttime)/1000000));
+	    objs, start_num_objs, (long)((gethrtime() - gcstarttime)/1000000));
 #else
     fprintf(stderr,
 	    "done (freed %"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d things)\n",
-	    objs, objs + num_objects);
+	    objs, start_num_objs);
 #endif
   }
   if (max_gc_frames > max_tot_gc_frames) max_tot_gc_frames = max_gc_frames;
