@@ -44,6 +44,36 @@ class MD5_Algorithm
 
 MD5_Algorithm MD5 = MD5_Algorithm();
 
+#if constant(Nettle.MD4_Info)
+
+class MD4_Algorithm
+{
+  // NOTE: Depends on the order of INIT invocations.
+  inherit MD4_Info;
+  inherit HashAlgorithm;
+
+  MD4_State `()() { return MD4_State(); }
+}
+
+MD4_Algorithm MD4 = MD4_Algorithm();
+
+#endif
+
+#if constant(Nettle.MD2_Info)
+
+class MD2_Algorithm
+{
+  // NOTE: Depends on the order of INIT invocations.
+  inherit MD2_Info;
+  inherit HashAlgorithm;
+
+  MD2_State `()() { return MD2_State(); }
+}
+
+MD2_Algorithm MD2 = MD2_Algorithm();
+
+#endif
+
 class SHA1_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
