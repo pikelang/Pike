@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.1 2002/11/24 21:06:09 agehall Exp $
+// $Id: module.pmod.in,v 1.2 2002/11/24 21:58:24 agehall Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -35,7 +35,7 @@ class File {
 
   string _sprintf()
   {
-    return sprintf("GZipFile(/*%s open */)", is_open ? "" : " not"); 
+    return sprintf("Gz.File(/*%s open */)", is_open ? "" : " not");
   }
 
   int close()
