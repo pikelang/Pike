@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.139 2004/03/14 02:55:01 nilsson Exp $
+|| $Id: efuns.c,v 1.140 2004/03/17 15:48:08 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.139 2004/03/14 02:55:01 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.140 2004/03/17 15:48:08 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -824,7 +824,6 @@ void f_mkdir(INT32 args)
 void f_get_dir(INT32 args)
 {
   DIR *dir;
-  struct dirent *d;
   struct pike_string *str;
 
   VALID_FILE_IO("get_dir","read");
@@ -839,36 +838,39 @@ void f_get_dir(INT32 args)
     return;
   }
 
-#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
   THREADS_ALLOW_UID();
   dir = opendir(str->str);
   THREADS_DISALLOW_UID();
   if(dir)
   {
+    struct dirent *d;
+    struct dirent *tmp = NULL;
+#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
 #define FPR 1024
     char buffer[MAXPATHLEN * 4];
     char *ptrs[FPR];
     ptrdiff_t lens[FPR];
-    struct dirent *tmp;
 
     if (!(tmp =
-#if defined(HAVE_SOLARIS_READDIR_R) || defined(_PC_NAME_MAX)
+#ifdef _PC_NAME_MAX
 	  malloc(sizeof(struct dirent) + 
 		 ((pathconf(str->str, _PC_NAME_MAX) < 1024)?1024:
 		  pathconf(str->str, _PC_NAME_MAX)) + 1)
-#else
+#else /* !_PC_NAME_MAX */
 #ifndef NAME_MAX
 #define NAME_MAX 1024
 #endif
 	  malloc(sizeof(struct dirent) + NAME_MAX+ 1024 + 1)
-#endif /* HAVE_SOLARIS_READDIR_R */
+#endif /* _PC_NAME_MAX */
       )) {
       closedir(dir);
       Pike_error("get_dir(): Out of memory\n");
     }
+#endif /* _REENTRANT && HAVE_READDIR_R */
 
     BEGIN_AGGREGATE_ARRAY(10);
 
+#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
     while(1)
     {
       int e;
@@ -977,22 +979,9 @@ void f_get_dir(INT32 args)
 	break;
       DO_AGGREGATE_ARRAY(120);
     }
-    THREADS_ALLOW();
+
     free(tmp);
-    closedir(dir);
-    THREADS_DISALLOW();
-
-    END_AGGREGATE_ARRAY;
-    Pike_sp[-1].u.array->type_field = BIT_STRING;
-
-    stack_pop_n_elems_keep_top(args);
-  }
 #else
-  dir = opendir(str->str);
-  if(dir)
-  {
-    BEGIN_AGGREGATE_ARRAY(10);
-
     for(d=readdir(dir); d; d=readdir(dir))
     {
       /* Filter "." and ".." from the list. */
@@ -1005,14 +994,12 @@ void f_get_dir(INT32 args)
 
       DO_AGGREGATE_ARRAY(120);
     }
-    closedir(dir);
-    END_AGGREGATE_ARRAY;
-    Pike_sp[-1].u.array->type_field = BIT_STRING;
-
-    stack_pop_n_elems_keep_top(args);
-  }
 #endif
-  else {
+    closedir(dir);
+
+    END_AGGREGATE_ARRAY;
+    stack_pop_n_elems_keep_top(args);
+  } else {
     pop_n_elems(args);
     push_int(0);
   }
