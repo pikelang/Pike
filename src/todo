@@ -222,7 +222,13 @@ remove some simulated functions or make the optional.
 
 change object/program naming strategy
 
-make a better module interface.
+make a better module interface. (a struct maybe...)
 make a C++ interface.
 
 allocate stack with MAP_NORESERV
+
+fix sprintf.html
+
+dynamic module loading
+
+make autoconf test for mpz_get_d
