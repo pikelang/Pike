@@ -1,8 +1,15 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.7 1997/11/07 06:06:07 mirar Exp $
+**!	$Id: colortable.h,v 1.8 1997/11/09 15:39:39 grubba Exp $
 */
+
+#ifndef PIKE_IMAGE_COLORTABLE_H
+#define PIKE_IMAGE_COLORTABLE_H
+
+#ifndef PIKE_IMAGE_IMAGE_H
+#include "image.h"
+#endif /* !PIKE_IMAGE_IMAGE_H */
 
 #define COLORLOOKUPCACHEHASHSIZE 207
 
@@ -193,3 +200,5 @@ int image_colortable_map_image(struct neo_colortable *nct,
 			       rgb_group *d,
 			       int len,
 			       int rowlen);
+
+#endif /* PIKE_IMAGE_COLORTABLE_H */
