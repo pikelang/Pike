@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.403 2002/02/14 15:20:48 grubba Exp $");
+RCSID("$Id: program.c,v 1.404 2002/02/27 09:59:30 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4100,13 +4100,18 @@ int store_constant(struct svalue *foo,
   }else{
     for(e=0;e<Pike_compiler->new_program->num_constants;e++)
     {
-      struct program_constant *c= Pike_compiler->new_program->constants+e;
-      if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
-	 c->name == constant_name)
-      {
-	UNSETJMP(tmp2);
-	return e;
+      JMP_BUF tmp1;
+      if (!SETJMP(tmp1)) {
+	struct program_constant *c= Pike_compiler->new_program->constants+e;
+	if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)) &&
+	   c->name == constant_name)
+	{
+	  UNSETJMP(tmp1);
+	  UNSETJMP(tmp2);
+	  return e;
+	}
       }
+      UNSETJMP(tmp1);
     }
     assign_svalue_no_free(&tmp.sval,foo);
     if((tmp.name=constant_name)) add_ref(constant_name);
