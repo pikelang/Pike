@@ -1,5 +1,5 @@
 /*
- * $Id: combine_path.h,v 1.6 2001/06/10 17:07:33 grubba Exp $
+ * $Id: combine_path.h,v 1.7 2001/06/11 11:49:47 grubba Exp $
  *
  * Combine path template.
  *
@@ -92,6 +92,8 @@ static void APPEND_PATH(struct string_builder *s,
   /* Ensure s ends with a separator. */
   if(s->s->len && !IS_SEP(LAST_PUSHED()))
     PUSH('/');
+
+  if (!len) return;
 
   /* Remove initial "./" if any. */
   if(s->s->len==2)
