@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.12 1998/07/08 19:02:36 grubba Exp $
+ * $Id: module.pmod.in,v 1.13 1999/03/04 01:04:56 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -93,10 +93,60 @@ class support {
       break;
     default:
       throw (({ "invalid rfc1522 encoding "+encoding+"\n", backtrace() }));
-    }  
-    return "=?"+word[1]+"?"+encoding[0..0]+"?"+
-      replace( encode( word[0], encoding, 0, 1 ),
-	       ({ "?", "_" }), ({ "=3F", "=5F" }))+"?=";
+    }
+    string enc = encode( word[0], encoding, 0, 1 );
+    if (encoding == "quoted-printable")
+      enc = replace( enc, ({ "?", "_", "(", ")", "\\", "\"" }),
+		     ({ "=3F", "=5F", "=28", "=29", "=5C", "=22" }) );
+    return "=?"+word[1]+"?"+encoding[0..0]+"?"+ enc +"?=";
+  }
+
+  static string remap(array(string) item)
+  {
+    if (sizeof(item)>1 && item[1])
+      return master()->resolv("Locale")["Charset"]
+	->decoder(item[1])->feed(item[0])->drain();
+    else
+      return item[0];
+  }
+
+  /* Convenience functions for decode/encode_word */
+  array(array(string)) decode_words_text( string txt )
+  {
+    object r = Regexp("^((.*)[ \t\n\r]|)(=\\?[^\1- ?]*\\?[^\1- ?]*\\?"
+		      "[^\1- ?]*\\?=)[ \t\n\r]*(.*)");
+    array a, res = ({});
+    while ((a = r->split(txt)))
+    {
+      txt = a[1]||"";
+      array w = decode_word(a[2]);
+      if (sizeof(a[3]))
+	res = ({ w, ({ a[3], 0 }) }) + res;
+      else
+	res = ({ w }) + res;
+    }
+    return (sizeof(txt)? ({ ({ txt, 0 }) }) : ({ })) + res;
+  }
+
+  string decode_words_text_remapped( string txt )
+  {
+    return Array.map(decode_words_text(txt), remap)*"";
+  }
+
+  array(array(string)|int) decode_words_tokenized( string phrase )
+  {
+    return Array.map(tokenize(phrase),
+		     lambda(string|int item) {
+		       return intp(item)? item : decode_word(item);
+		     });
+  }
+
+  array(string|int) decode_words_tokenized_remapped( string phrase )
+  {
+    return Array.map(decode_words_tokenized(phrase),
+		     lambda(array(string)|int item) {
+		       return intp(item)? item : remap(item);
+		     });
   }
 
   string guess_subtype( string typ )

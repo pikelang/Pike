@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.13 1998/10/11 18:17:39 marcus Exp $
+ * $Id: mime.c,v 1.14 1999/03/04 01:04:54 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.13 1998/10/11 18:17:39 marcus Exp $");
+RCSID("$Id: mime.c,v 1.14 1999/03/04 01:04:54 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -50,11 +50,12 @@ static SIGNED char qprtab[0x80-'0'];
 #define CT_WHITE   1
 #define CT_ATOM    2
 #define CT_SPECIAL 3
-#define CT_LPAR    4
-#define CT_RPAR    5
-#define CT_LBRACK  6
-#define CT_RBRACK  7
-#define CT_QUOTE   8
+#define CT_EQUAL   4
+#define CT_LPAR    5
+#define CT_RPAR    6
+#define CT_LBRACK  7
+#define CT_RBRACK  8
+#define CT_QUOTE   9
 unsigned char rfc822ctype[256];
 
 
@@ -91,8 +92,9 @@ void pike_module_init( void )
   rfc822ctype['['] = CT_LBRACK;
   rfc822ctype[']'] = CT_LBRACK;
   rfc822ctype['"'] = CT_QUOTE;
+  rfc822ctype['='] = CT_EQUAL;
   for(i=0; i<10; i++)
-    rfc822ctype[(int)"<>@,;:\\/?="[i]] = CT_SPECIAL;
+    rfc822ctype[(int)"<>@,;:\\/?"[i]] = CT_SPECIAL;
 
   /* Add global functions */
   add_function_constant( "decode_base64", f_decode_base64,
@@ -624,6 +626,29 @@ static void f_tokenize( INT32 args )
 
     while (cnt>0)
       switch (rfc822ctype[*src]) {
+      case CT_EQUAL:
+	/* Might be an encoded word.  Check it out. */
+	l = 0;
+	if (cnt>5 && src[1] == '?') {
+	  int nq = 0;
+	  for (l=2; l<cnt && nq<3; l++)
+	    if (src[l]=='?')
+	      nq ++;
+	    else if(rfc822ctype[src[l]]<=CT_WHITE)
+	      break;
+	  if (nq == 3 && l<cnt && src[l] == '=')
+	    l ++;
+	  else
+	    l = 0;
+	}
+	if (l>0) {
+	  /* Yup.  It's an encoded word, so it must be an atom.  */
+	  push_string( make_shared_binary_string( (char *)src, l ) );
+	  n++;
+	  src += l;
+	  cnt -= l;
+	  break;
+	}
       case CT_SPECIAL:
       case CT_RBRACK:
       case CT_RPAR:
