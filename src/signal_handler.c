@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.181 2000/09/16 08:48:36 mirar Exp $");
+RCSID("$Id: signal_handler.c,v 1.182 2000/10/08 19:06:47 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1347,15 +1347,15 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
       }
       
       
-      if(!DuplicateHandle(GetCurrentProcess(),
-			    (HANDLE)da_handle[fd],
-			    GetCurrentProcess(),
-			    &ret,
-			    NULL,
-			    1,
-			    DUPLICATE_SAME_ACCESS))
+      if(!DuplicateHandle(GetCurrentProcess(),	/* Source process */
+			  da_handle[fd],
+			  GetCurrentProcess(),	/* Target process */
+			  &ret,
+			  0,			/* Access */
+			  1,
+			  DUPLICATE_SAME_ACCESS))
 	  /* This could cause handle-leaks */
-	  error("Failed to duplicate handle %d.\n",GetLastError());
+	  error("Failed to duplicate handle %d.\n", GetLastError());
     }
   }
   pop_n_elems(sp-save_stack);
@@ -2512,7 +2512,7 @@ void f_create_process(INT32 args)
       } else {
         /* Wait for exec or error */
         while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
-	;
+	  ;
         /* Paranoia in case close() sets errno. */
         olderrno = errno;
 
