@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.87 2001/06/12 18:50:27 grubba Exp $
+ * $Id: acconfig.h,v 1.88 2001/07/01 21:34:49 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -421,6 +421,9 @@
 
 /* set this to the modifier type string to print FLOAT_TYPE, like "L" or "" */
 #undef PRINTPIKEFLOAT
+
+/* Define if the compiler understand union initializations. */
+#undef HAVE_UNION_INIT
 
 @BOTTOM@
 

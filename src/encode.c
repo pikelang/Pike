@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.101 2001/07/01 16:59:45 grubba Exp $");
+RCSID("$Id: encode.c,v 1.102 2001/07/01 21:34:50 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -525,7 +525,12 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 #endif
 
 {
-  static struct svalue dested = { T_INT, NUMBER_DESTRUCTED };
+  static struct svalue dested = {
+    T_INT, NUMBER_DESTRUCTED,
+#ifdef HAVE_UNION_INIT
+  {0}, /* Only to avoid warnings. */
+#endif
+  };
   INT32 i;
   struct svalue *tmp;
 

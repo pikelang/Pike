@@ -8,7 +8,12 @@
 #include "svalue.h"
 #include "pike_error.h"
 
-struct svalue auto_bignum_program = { T_INT };
+struct svalue auto_bignum_program = {
+  T_INT, 0,
+#ifdef HAVE_UNION_INIT
+  {0}, /* Only to avoid warnings. */
+#endif
+};
 
 PMOD_EXPORT int gmp_library_loaded=0;
 int gmp_library_resolving=0;
