@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.149 1999/06/22 18:36:17 grubba Exp $ */
+/* $Id: image.c,v 1.150 1999/07/02 21:19:51 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.149 1999/06/22 18:36:17 grubba Exp $
+**!	$Id: image.c,v 1.150 1999/07/02 21:19:51 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.149 1999/06/22 18:36:17 grubba Exp $");
+RCSID("$Id: image.c,v 1.150 1999/07/02 21:19:51 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1758,6 +1758,8 @@ static void image_gradients(INT32 args)
 **! returns the new image
 **! note
 **!    May be subject to change or cease without prior warning.
+**!
+**! see also: gradients, tuned_box
 */
 
 void image_test(INT32 args)
@@ -2012,6 +2014,7 @@ void image_invert(INT32 args)
 
 /*
 **! method object threshold()
+**! method object threshold(int level)
 **! method object threshold(int r,int g,int b)
 **! method object threshold(Color color)
 **! 	Makes a black-white image. 
@@ -2027,17 +2030,19 @@ void image_invert(INT32 args)
 **!
 **!	<table><tr valign=center>
 **!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->threshold(100); </illustration></td>
 **!	<td><illustration> return lena()->threshold(90,100,110); </illustration></td>
 **!	</tr><tr valign=center>
 **!	<td>original</td>
-**!	<td>->threshold(90,100,110);</td>
+**!	<td>->threshold(100);</td>
+**!	<td>->threshold(0,100,0);</td>
 **!	</tr></table>
 **!
 **! returns the new image object
 **!
 **! see also: grey
 **!
-**! note: 
+**! note
 **!	The above statement "any ..." was changed from "all ..."
 **!	in Pike 0.7 (9906). It also uses 0,0,0 as default input,
 **!	instead of current color. This is more useful.
@@ -2050,10 +2055,13 @@ void image_threshold(INT32 args)
    rgb_group *s,*d,rgb;
    struct object *o;
    struct image *img;
+   int level=-1;
 
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
-   if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
+   if (args==1)
+      get_all_args("threshold","%i",&level),level*=3;
+   else if (!getrgb(THIS,0,args,args,"Image.Image->threshold()"))
       rgb.r=rgb.g=rgb.b=0;
    else
       rgb=THIS->rgb;
@@ -2072,18 +2080,31 @@ void image_threshold(INT32 args)
 
    x=THIS->xsize*THIS->ysize;
    THREADS_ALLOW();
-   while (x--)
-   {
-      if (s->r>rgb.r ||
-	  s->g>rgb.g ||
-	  s->b>rgb.b)
-	 d->r=d->g=d->b=255;
-      else
-	 d->r=d->g=d->b=0;
+   if (level==-1)
+      while (x--)
+      {
+	 if (s->r>rgb.r ||
+	     s->g>rgb.g ||
+	     s->b>rgb.b)
+	    d->r=d->g=d->b=255;
+	 else
+	    d->r=d->g=d->b=0;
 
-      d++;
-      s++;
-   }
+	 d++;
+	 s++;
+      }
+   else
+      while (x--)
+      {
+	 if (s->r+s->g+s->b>level)
+	    d->r=d->g=d->b=255;
+	 else
+	    d->r=d->g=d->b=0;
+
+	 d++;
+	 s++;
+      }
+      
    THREADS_DISALLOW();
 
    pop_n_elems(args);

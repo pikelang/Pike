@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.16 1999/05/23 17:46:45 mirar Exp $ */
+/* $Id: pattern.c,v 1.17 1999/07/02 21:19:55 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.16 1999/05/23 17:46:45 mirar Exp $
+**!	$Id: pattern.c,v 1.17 1999/07/02 21:19:55 mirar Exp $
 **! class Image
 */
 
@@ -511,9 +511,12 @@ void image_turbulence(INT32 args)
 **!	<td>...red channel<br></td>
 **!	</tr></table>
 **!
-**!	Use with ->grey() or ->color() for one-color-results.
+**!	Use with -><ref>grey</ref>() or -><ref>color</ref>() 
+**!	for one-color-results.
 **!
 **! returns a new image
+**!
+**! see also test, noise
 */
 
 void image_random(INT32 args)

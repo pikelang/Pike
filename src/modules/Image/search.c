@@ -73,7 +73,7 @@ static void chrono(char *x)
 **!     phase.
 **!
 **!	<tt>phaseh</tt> gives an image
-**!	were
+**!	where
 **!     <pre>
 **!            max  falling   min  rising
 **!     value=  0     64      128   192 
@@ -87,13 +87,30 @@ static void chrono(char *x)
 **!     Phase images can be used to create ugly
 **!     effects or to find meta-information
 **!     in the orginal image.
+**!
+**!	<table border=0>
+**!	<tr>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->phaseh(); </illustration></td>
+**!	<td><illustration> return lena()->phasev(); </illustration></td>
+**!	<td><illustration> return lena()->phasevh(); </illustration></td>
+**!	<td><illustration> return lena()->phasehv(); </illustration></td>
+**!	</tr>
+**!	<tr>
+**!	<td>original </td>
+**!	<td>phaseh() </td>
+**!	<td>phasev() </td>
+**!	<td>phasevh()</td>
+**!	<td>phasehv()</td>
+**!	</tr>
+**!	</table>
 **! 
 **! returns the new image object
 **  see also: match_phase
 **! bugs
 **!	0 should not be set as explained above.
 **! note
-**!	experimental status; may not be exact the same
+**!	<b>experimental status</b>; may not be exact the same
 **!	output in later versions
 */
 static INLINE int sq(int a) { return a*a; }
@@ -173,7 +190,8 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 **! returns the new image object
 **! see also: phasev,phaseh
 **! note
-**!    Experimental.
+**!	<b>experimental status</b>; may not be exact the same
+**!	output in later versions
 */
 
 
@@ -229,7 +247,8 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 **! returns some nice acsii-art.
 **! see also: orient, orient4
 **! note
-**!    Experimental.
+**!	<b>experimental status</b>; may not be exact the same
+**!	output in later versions
 */
 
 
@@ -419,6 +438,9 @@ void image_make_ascii(INT32 args)
 **!	base level of result, default is zero
 **! arg int|float div
 **!	division factor, default is 1.0.
+**! note
+**!	<b>experimental status</b>; may not be exact the same
+**!	output in later versions
 */
 
 

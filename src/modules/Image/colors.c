@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.24 1999/06/22 19:25:57 mirar Exp $
+**!	$Id: colors.c,v 1.25 1999/07/02 21:19:49 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.24 1999/06/22 19:25:57 mirar Exp $");
+RCSID("$Id: colors.c,v 1.25 1999/07/02 21:19:49 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -933,10 +933,10 @@ static void image_color_neon(INT32 args)
    if (sp[-1].u.float_number==0.0 ||
        sp[-2].u.float_number==0.0)
    {
-      if (sp[-2].u.float_number<0.5)
-	 sp[-2].u.float_number=0.0;
+      if (sp[-1].u.float_number<0.5)
+	 sp[-1].u.float_number=0.0;
       else
-	 sp[-2].u.float_number=1.0;
+	 sp[-1].u.float_number=1.0;
    }
    else
    {
@@ -954,15 +954,15 @@ static void image_color_dull(INT32 args)
    sp--;
    push_array_items(sp->u.array); /* frees */
 
-   if (sp[-1].u.float_number==0.0)
+   if (sp[-2].u.float_number==0.0)
    {
-      pop_n_elems(3);
-      ref_push_object(THISOBJ);
-      return;
+      sp[-1].u.float_number-=0.2;
    }
-
-   sp[-2].u.float_number-=0.2;
-   sp[-1].u.float_number-=0.2;
+   else
+   {
+      sp[-2].u.float_number-=0.2;
+      sp[-1].u.float_number-=0.2;
+   }
    image_make_hsv_color(3);
 }
 
@@ -973,15 +973,15 @@ static void image_color_bright(INT32 args)
    sp--;
    push_array_items(sp->u.array); /* frees */
 
-   if (sp[-1].u.float_number==0.0)
+   if (sp[-2].u.float_number==0.0)
    {
-      pop_n_elems(3);
-      ref_push_object(THISOBJ);
-      return;
+      sp[-1].u.float_number+=0.2;
    }
-
-   sp[-2].u.float_number+=0.2;
-   sp[-1].u.float_number+=0.2;
+   else
+   {
+      sp[-2].u.float_number+=0.2;
+      sp[-1].u.float_number+=0.2;
+   }
    image_make_hsv_color(3);
 }
 
