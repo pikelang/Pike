@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.209 2004/11/28 18:51:49 grubba Exp $
+|| $Id: svalue.c,v 1.210 2004/11/29 19:17:16 grubba Exp $
 */
 
 #include "global.h"
@@ -1084,20 +1084,58 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     /* fall through */
 
     case T_TYPE:
-      return !pike_types_le(b->u.type, a->u.type);
+      return pike_types_le(a->u.type, b->u.type) &&
+	!pike_types_le(b->u.type, a->u.type);
   }
 }
 
 PMOD_EXPORT int is_le(const struct svalue *a, const struct svalue *b)
 {
   /* Can't optimize this to !is_gt (a, b) since that'd assume total order. */
-  if (a->type == T_TYPE &&
-      b->type == T_TYPE) {
-    /* NOTE: Special case, since is_eq() below only does a pointer comparison.
+  if (((1 << a->type) & (BIT_FUNCTION|BIT_PROGRAM|BIT_TYPE)) &&
+      ((1 << b->type) & (BIT_FUNCTION|BIT_PROGRAM|BIT_TYPE))) {
+    /* NOTE: Special case for types, since is_eq() below only does
+     * a pointer comparison.
      */
-    return pike_types_le(a->u.type, b->u.type);
+    struct pike_type *a_type = NULL;
+    struct pike_type *b_type = NULL;
+    int res;
+    if ((a->type == b->type) && (a->u.ptr = b->u.ptr)) return 1;  /* eq */
+    if (a->type == T_TYPE) {
+      add_ref(a_type = a->u.type);
+    } else {
+      struct program *p = program_from_svalue(a);
+      if (p) {
+	int id = p->id;
+	free_program(p);
+	type_stack_mark();
+	push_object_type(0, id);
+	a_type = pop_unfinished_type();
+      } else {
+	Pike_error("Bad argument to comparison.\n");
+      }
+    }
+    if (b->type == T_TYPE) {
+      add_ref(b_type = b->u.type);
+    } else {
+      struct program *p = program_from_svalue(b);
+      if (p) {
+	int id = p->id;
+	free_program(p);
+	type_stack_mark();
+	push_object_type(0, id);
+	b_type = pop_unfinished_type();
+      } else {
+	free_pike_type(a_type);
+	Pike_error("Bad argument to comparison.\n");
+      }
+    }
+    
+    res = pike_types_le(a_type, b_type);
+    free_pike_type(a_type);
+    free_pike_type(b_type);
+    return res;
   }
-  /* FIXME: Consider using is_equal()? */
   return is_lt (a, b) || is_eq (a, b);
 }
 
