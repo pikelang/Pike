@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.29 1999/02/09 21:39:09 grubba Exp $
+ * $Id: requests.pmod,v 1.30 1999/02/09 21:44:26 grubba Exp $
  */
 
 import .types;
@@ -266,7 +266,8 @@ class fetch
 	switch(lower_case(request->atom))
 	{
 #define ATTR(x) ([ "wanted" : (x) ])
-#define ATTR_SECTION(x,y) ([ "wanted" : (x), "section" : (y) ])
+#define ATTR_SECTION(x,y) ([ "wanted" : (x), "section" : (y), \
+                             "raw_wanted" : ({ (x), @(y) })*"." ])
 	case "all":
 	  fetch_attrs = ({ ATTR("flags"), ATTR("internaldate"),
 			   ATTR_SECTION("rfc822", ({ "size" })),
