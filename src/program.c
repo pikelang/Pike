@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.400 2002/01/16 02:54:18 nilsson Exp $");
+RCSID("$Id: program.c,v 1.401 2002/01/31 17:52:15 marcus Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2221,6 +2221,7 @@ struct program *end_first_pass(int finish)
  */
 PMOD_EXPORT struct program *debug_end_program(void)
 {
+  Pike_compiler->compiler_pass = 2;
   return end_first_pass(1);
 }
 

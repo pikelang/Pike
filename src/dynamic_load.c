@@ -14,8 +14,10 @@
 #  include "pike_macros.h"
 #  include "main.h"
 #  include "constants.h"
+#  include "language.h"
+#  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.58 2002/01/30 22:06:04 marcus Exp $");
+RCSID("$Id: dynamic_load.c,v 1.59 2002/01/31 17:52:14 marcus Exp $");
 
 #else /* TESTING */
 
@@ -332,10 +334,18 @@ static modfun CAST_TO_FUN(void *ptr)
 #define CAST_TO_FUN(X)	((modfun)X)
 #endif /* NO_CAST_TO_FUN */
 
-static void cleanup_compilation_depth(int *save_depth_p)
+struct compilation_save
+{
+  struct lex lex;
+  int compilation_depth;
+};
+
+static void cleanup_compilation(struct compilation_save *save)
 {
   free_program(end_program());
-  compilation_depth=*save_depth_p;
+  free_string(lex.current_file);
+  compilation_depth = save->compilation_depth;
+  lex = save->lex;
 }
 
 /*! @decl int load_module(string module_name)
@@ -367,7 +377,7 @@ void f_load_module(INT32 args)
 
   ONERROR err;
 
-  int save_depth=compilation_depth;
+  struct compilation_save save;
 
   if(sp[-args].type != T_STRING)
     Pike_error("Bad argument 1 to load_module()\n");
@@ -420,6 +430,10 @@ void f_load_module(INT32 args)
   new_module->init=init;
   new_module->exit=exit;
 
+  save.lex = lex;
+  lex.current_line=1;
+  lex.current_file=make_shared_string("-");
+  save.compilation_depth=compilation_depth;
   compilation_depth=-1;
   start_new_program();
 
@@ -428,7 +442,7 @@ void f_load_module(INT32 args)
 #ifdef PIKE_DEBUG
   { struct svalue *save_sp=sp;
 #endif
-  SET_ONERROR(err, cleanup_compilation_depth, &save_depth);
+  SET_ONERROR(err, cleanup_compilation, &save);
   (*(modfun)init)();
   UNSET_ONERROR(err);
 #ifdef PIKE_DEBUG
@@ -441,7 +455,9 @@ void f_load_module(INT32 args)
 
   pop_n_elems(args);
   push_program(end_program());
-  compilation_depth=save_depth;
+  free_string(lex.current_file);
+  compilation_depth = save.compilation_depth;
+  lex = save.lex;
 }
 
 #endif /* USE_DYNAMIC_MODULES */
