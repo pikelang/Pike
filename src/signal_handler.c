@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.96 1999/01/08 00:18:27 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.97 1999/01/08 00:51:53 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -525,6 +525,8 @@ static void report_child(int pid,
 	}
       }
       map_delete(pid_mapping, &key);
+    }else{
+      fprintf(stderr,"report_child on unknown child: %d,%d\n",pid,status);
     }
   }
 }
