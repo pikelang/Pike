@@ -289,10 +289,10 @@ char *memory_search(struct mem_searcher *s,
       char *q, *end;
       register struct link *ptr;
       
-      end=haystack+haystacklen+1;
+      end=haystack+haystacklen;
       q=haystack + s->max - sizeof(INT32);
       q=(char *)( ((long)q) & -sizeof(INT32));
-      for(;q<end-sizeof(INT32)+1;q+=s->max)
+      for(;q<=end-sizeof(INT32);q+=s->max)
       {
 	h=tmp=*(INT32 *)q;
 	
