@@ -116,7 +116,7 @@ class protocol
   mixed *decode_entries(string s,int num, int *next)
   {
     string *ret=({});
-    for(int e=0;e<num;e++)
+    for(int e=0;e<num && next[0]<strlen(s);e++)
     {
       mapping m=([]);
       m->name=decode_domain(s,next);
