@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.101 2001/08/31 06:57:03 hubbe Exp $
+ * $Id: interpret.h,v 1.102 2001/09/01 00:27:31 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -239,6 +239,9 @@ extern const char *Pike_check_c_stack_errmsg;
 #define stack_unlink(X) do { if(X) { free_svalue(Pike_sp-(X)-1); Pike_sp[-(X)-1]=Pike_sp[-1]; Pike_sp--; pop_n_elems(X-1); } }while(0)
 
 #define free_pike_frame(F) do{ struct pike_frame *f_=(F); debug_malloc_touch(f_); if(!--f_->refs) really_free_pike_frame(f_); }while(0)
+
+/* A scope is any frame which may have malloced locals */
+#define free_pike_scope(F) do{ struct pike_frame *f_=(F); debug_malloc_touch(f_); if(!--f_->refs) really_free_pike_scope(f_); }while(0)
 
 #define POP_PIKE_FRAME() do {						\
   struct pike_frame *tmp_=Pike_fp->next;					\

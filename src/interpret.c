@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.246 2001/08/30 22:36:12 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.247 2001/09/01 00:27:30 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1024,33 +1024,46 @@ static void do_trace_call(INT32 args)
 }while(0)
 
 #undef EXIT_BLOCK
-#define EXIT_BLOCK(X) do {				\
-  free_object(X->current_object);			\
-  if(X->context.prog) free_program(X->context.prog);	\
-  if(X->context.parent) free_object(X->context.parent);	\
-  if(X->scope) free_pike_frame(X->scope);		\
-  DO_IF_SECURITY( if(X->current_creds) {		\
-    free_object(X->current_creds);			\
-  })							\
-  if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)		\
-  {							\
-    free_mixed_svalues(X->locals,X->num_locals);	\
-    free((char *)(X->locals));				\
-  }							\
-  DO_IF_DMALLOC(					\
-    X->context.prog=0;					\
-    X->context.parent=0;				\
-    X->context.name=0;					\
-    X->scope=0;						\
-    X->current_object=0;				\
-    X->flags=0;						\
-    X->expendible=0;					\
-    X->locals=0;					\
-    DO_IF_SECURITY( X->current_creds=0; )		\
- )							\
+#define EXIT_BLOCK(X) do {						\
+  free_object(X->current_object);					\
+  if(X->context.prog) free_program(X->context.prog);			\
+  if(X->context.parent) free_object(X->context.parent);			\
+  if(X->scope) free_pike_scope(X->scope);				\
+  DO_IF_SECURITY( if(X->current_creds) {				\
+    free_object(X->current_creds);					\
+  })									\
+  DO_IF_DEBUG(								\
+  if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)				\
+  fatal("Pike frame is not supposed to have malloced locals here!\n"));	\
+ 									\
+  DO_IF_DMALLOC(							\
+    X->context.prog=0;							\
+    X->context.parent=0;						\
+    X->context.name=0;							\
+    X->scope=0;								\
+    X->current_object=0;						\
+    X->flags=0;								\
+    X->expendible=0;							\
+    X->locals=0;							\
+    DO_IF_SECURITY( X->current_creds=0; )				\
+ )									\
 }while(0)
 
-BLOCK_ALLOC(pike_frame,128)
+BLOCK_ALLOC(pike_frame,128);
+
+
+void really_free_pike_scope(struct pike_frame *scope)
+{
+  if(scope->flags & PIKE_FRAME_MALLOCED_LOCALS)
+  {
+    free_mixed_svalues(scope->locals,scope->num_locals);
+    free((char *)(scope->locals));
+#ifdef PIKE_DEBUG
+    scope->flags&=~PIKE_FRAME_MALLOCED_LOCALS;
+#endif
+  }
+  really_free_pike_frame(scope);
+}
 
 int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {

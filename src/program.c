@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.367 2001/08/20 18:09:18 mast Exp $");
+RCSID("$Id: program.c,v 1.368 2001/09/01 00:27:31 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4691,7 +4691,7 @@ static void exit_trampoline(struct object *o)
 {
   if(THIS->frame)
   {
-    free_pike_frame(THIS->frame);
+    free_pike_scope(THIS->frame);
     THIS->frame=0;
   }
 }
