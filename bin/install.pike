@@ -1058,11 +1058,58 @@ void do_export()
     // Clean up dumped files and modules on uninstall.
     recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
 
+    // Make sure the kludge directory exists (forward compat).
+    root->extra_ids["KLUDGE_PIKE_TARGETDIR"] = 1;
+
     // Generate the XML directory tree.
     WixNode xml_root =
       Standards.XML.Wix.get_module_xml(root, "Pike", version_str,
 				       "IDA", "Pike dist", version_guid,
 				       "Merge with this");
+
+    WixNode module_node = xml_root->
+      get_first_element("Wix")->
+      get_first_element("Module");
+
+    module_node->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"FinalizePike",
+			  // Note: Need to use the kludge directory here
+			  //       rather than the root directory due to
+			  //       bugs in light.
+			  //	/grubba 2004-11-08
+			  "Directory":"KLUDGE_PIKE_TARGETDIR",
+			  "Execute":"commit",
+			  "ExeCommand":"cmd /d /c bin\\pike "
+			  "-mlib\\master.pike bin\\install.pike "
+			  "--finalize BASEDIR=. TMP_BUILDDIR=bin",
+			])))->
+      add_child(Standards.XML.Wix.line_feed)->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"InstallMaster",
+			  // Note: Need to use the kludge directory here
+			  //       rather than the root directory due to
+			  //       bugs in light.
+			  //	/grubba 2004-11-08
+			  "Directory":"KLUDGE_PIKE_TARGETDIR",
+			  "Execute":"commit",
+			  "ExeCommand":"cmd /d /c bin\\pike "
+			  "-mlib\\master.pike bin\\install.pike "
+			  "--install-master BASEDIR=.",
+			])))->
+      add_child(Standards.XML.Wix.line_feed)->
+      add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
+		add_child(WixNode("Custom", ([
+				    "Action":"FinalizePike",
+				    "After":"InstallFiles",
+				  ]), "REMOVE=\"\""))->
+		add_child(Standards.XML.Wix.line_feed)->
+		add_child(WixNode("Custom", ([
+				    "Action":"InstallMaster",
+				    "After":"FinalizePike",
+				  ]), "REMOVE=\"\""))->
+		add_child(Standards.XML.Wix.line_feed))->
+      add_child(Standards.XML.Wix.line_feed);
 
     create_file("Pike_module.wxs", xml_root->render_xml());
 
