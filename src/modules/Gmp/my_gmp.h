@@ -1,4 +1,4 @@
-/* $Id: my_gmp.h,v 1.4 1999/08/06 22:13:47 hubbe Exp $
+/* $Id: my_gmp.h,v 1.5 1999/08/08 13:06:58 grubba Exp $
  *
  * These functions or something similar will hopefully be included
  * with Gmp-2.1 .
@@ -8,11 +8,7 @@
 #define MY_GMP_H_INCLUDED
 
 #ifndef __MPN
-#ifdef HAVE_ANSI_CONCAT
-#define __MPN(x) __mpn_##x
-#else
-#define __MPN(x) __mpn_/**/x
-#endif
+#define __MPN(x) PIKE_CONCAT(__mpn_,x)
 #endif
 
 #undef _PROTO
