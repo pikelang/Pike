@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.8 1997/11/09 15:39:39 grubba Exp $
+**!	$Id: colortable.h,v 1.9 1997/11/11 03:31:59 grubba Exp $
 */
 
 #ifndef PIKE_IMAGE_COLORTABLE_H
@@ -200,5 +200,7 @@ int image_colortable_map_image(struct neo_colortable *nct,
 			       rgb_group *d,
 			       int len,
 			       int rowlen);
+
+void image_colortable_cast_to_array(struct neo_colortable *nct);
 
 #endif /* PIKE_IMAGE_COLORTABLE_H */
