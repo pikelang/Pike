@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.85 2004/10/12 17:01:04 mast Exp $
+|| $Id: oracle.c,v 1.86 2005/01/20 10:47:35 nilsson Exp $
 */
 
 /*
@@ -141,42 +141,9 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #define UNLOCK(X) mt_unlock( & (X) );
 #endif
 
-#ifndef ADD_FUNCTION
-
-#define ADD_FUNCTION add_function
-#define ADD_STORAGE(X) add_storage(sizeof(X))
-#define tNone ""
-#define tInt "int"
-#define tStr "string"
-#define tFlt "float"
-#define tObj "object"
-#define tVoid "void"
-#define tMix "mixed"
-
-#define tMap(X,Y) "mapping(" X ":" Y ")"
-#define tOr(X,Y) X "|" Y
-#define tArr(X) "array(" X ")"
-#define tFunc(X,Y) "function(" X ":" Y ")"
-#define tFuncV(X,Z,Y) "function(" X Z "...:" Y ")"
-#define tComma ","
-
-#define string_builder dynamic_buffer_s
-#define init_string_builder(X,Y) initialize_buf(X)
-#define string_builder_allocate(X,Y,Z) low_make_buf_space(Y,X);
-#define finish_string_builder(X) low_free_buf(X)
-#define free_string_builder(X) toss_buffer(X)
-
-#define STRING_BUILDER_STR(X) ((X).s.str)
-#define STRING_BUILDER_LEN(X) ((X).s.len)
-#include "dynamic_buffer.h"
-
-#else
 #define STRING_BUILDER_STR(X) ((X).s)
 #define STRING_BUILDER_LEN(X) ((X).s->len)
-#define tComma ""
 #include "bignum.h"
-
-#endif
 
 #ifndef Pike_thread_id
 #define Pike_thread_id thread_id
@@ -2219,7 +2186,7 @@ PIKE_MODULE_INIT
   MY_START_CLASS(dbcon); {
 
     MY_START_CLASS(dbquery); {
-      add_function("create",f_compile_query_create,"function(string:void)",0);
+      ADD_FUNCTION("create",f_compile_query_create,tFunc(tStr,tVoid),0);
       map_variable("_type","int",0,offset+OFFSETOF(dbquery,query_type),T_INT);
       map_variable("_cols","int",0,offset+OFFSETOF(dbquery, cols), T_INT);
       map_variable("_field_info","array(object)",0,
@@ -2230,21 +2197,25 @@ PIKE_MODULE_INIT
 		   T_MAPPING);
       
       
-/*      add_function("query_type",f_query_type,"function(:int)",0); */
+/*      ADD_FUNCTION("query_type",f_query_type,tFunc(tNone,tInt),0); */
 
       MY_START_CLASS(dbresult); {
 	ADD_FUNCTION("create", f_big_typed_query_create,
-		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tComma tOr(tVoid,tInt)
-			   tComma tOr(tVoid,tObj),tVoid), ID_PUBLIC);
+		     tFunc(tOr(tVoid,tMap(tStr,tMix)) tOr(tVoid,tInt)
+			   tOr(tVoid,tObj),tVoid), ID_PUBLIC);
 	
 	/* function(:int) */
 	ADD_FUNCTION("num_fields", f_num_fields,tFunc(tNone,tInt), ID_PUBLIC);
 	
 	/* function(:array(mapping(string:mixed))) */
-	ADD_FUNCTION("fetch_fields", f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))), ID_PUBLIC);
+	ADD_FUNCTION("fetch_fields",
+		     f_fetch_fields,tFunc(tNone,tArr(tMap(tStr,tMix))),
+		     ID_PUBLIC);
 	
 	/* function(:int|array(string|int)) */
-	ADD_FUNCTION("fetch_row", f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))), ID_PUBLIC);
+	ADD_FUNCTION("fetch_row",
+		     f_fetch_row,tFunc(tNone,tOr(tInt,tArr(tOr(tStr,tInt)))),
+		     ID_PUBLIC);
 	
 #ifdef PROGRAM_USES_PARENT
 	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT;
@@ -2261,8 +2232,10 @@ PIKE_MODULE_INIT
 	map_variable("length","int",0,offset+OFFSETOF(dbresultinfo, length), T_INT);
 	map_variable("decimals","int",0,offset+OFFSETOF(dbresultinfo, decimals), T_INT);
 	
-	ADD_FUNCTION("`->=",protect_dbresultinfo,tFunc(tStr tComma tMix,tVoid),0);
-	ADD_FUNCTION("`[]=",protect_dbresultinfo,tFunc(tStr tComma tMix,tVoid),0);
+	ADD_FUNCTION("`->=",protect_dbresultinfo,
+		     tFunc(tStr tMix,tVoid),0);
+	ADD_FUNCTION("`[]=",protect_dbresultinfo,
+		     tFunc(tStr tMix,tVoid),0);
 #ifdef ORACLE_DEBUG
 	set_gc_check_callback(gc_dbresultinfo_struct);
 #endif
@@ -2281,7 +2254,9 @@ PIKE_MODULE_INIT
     ADD_FUNCTION("timeout_limit", f_dbcon_timeout_limit,
 		 tFunc(tOr(tInt,tVoid), tInt), ID_PUBLIC);
 
-    ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+    ADD_FUNCTION("create", f_oracle_create,
+		 tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid)
+		       tOr(tStr,tVoid),tVoid), ID_PUBLIC);
     
     MY_END_CLASS(oracle);
   }

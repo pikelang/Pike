@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.33 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: result.c,v 1.34 2005/01/20 10:48:34 nilsson Exp $
 */
 
 /*
@@ -596,23 +596,6 @@ static void f_fetch_row(INT32 args)
 
 void init_mysql_res_programs(void)
 {
-  /*
-   * start_new_program();
-   *
-   * add_storage();
-   *
-   * add_function();
-   * add_function();
-   * ...
-   *
-   * set_init_callback();
-   * set_exit_callback();
-   *
-   * program = end_c_program();
-   * program->refs++;
-   *
-   */
- 
   start_new_program();
   ADD_STORAGE(struct precompiled_mysql_result);
 

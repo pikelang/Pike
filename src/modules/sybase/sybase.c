@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sybase.c,v 1.14 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: sybase.c,v 1.15 2005/01/20 10:46:09 nilsson Exp $
 */
 
 /*
@@ -1194,8 +1194,7 @@ PIKE_MODULE_INIT {
   ADD_STORAGE(pike_sybase_connection);
   set_init_callback(sybase_create);
   set_exit_callback(sybase_destroy);
-  
-#ifdef ADD_FUNCTION /* pike_0.7 */
+
   /* function(void|string,void|string,void|string,void|string,int|void:void) */
   ADD_FUNCTION("create",f_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) 
                                        tOr(tVoid,tStr) tOr(tVoid,tStr)
@@ -1222,24 +1221,6 @@ PIKE_MODULE_INIT {
 
   ADD_FUNCTION("fetch_fields", f_fetch_fields,
                tFunc(tVoid,tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
-#else
-  add_function("create",f_create,
-               "function(void|string,void|string,void|string,void|string,int|void:void)",
-               0);
-  add_function("connect",f_connect,
-               "function(void|string,void|string,void|string,void|string,int|void:void)",
-               0);
-  add_function("error",f_error,"function(void:void|string)",OPT_RETURN);
-  add_function("big_query",f_big_query,"function(string:void|object)",
-               OPT_RETURN);
-  add_function("fetch_row", f_fetch_row,"function(void:void|array(mixed))",
-               OPT_RETURN);
-  add_function("num_fields", f_num_fields, "function(void:int)",0);
-  add_function("affected_rows",f_affected_rows,"function(void:int)",0);
-  add_function("fetch_fields",f_fetch_fields,
-               "function(void:array(int|mapping(string:mixed)))",
-               0);
-#endif
 
   /* TODO */
   /* int num_rows() */ /* looks like sybase doesn't support this one.. */

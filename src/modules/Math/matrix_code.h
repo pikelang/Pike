@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.9 2004/11/09 15:44:25 mirar Exp $
+|| $Id: matrix_code.h,v 1.10 2005/01/20 10:50:31 nilsson Exp $
 */
 
 /*
@@ -16,7 +16,7 @@
  *
  *   FTYPE:     The type of the element
  *   PUSH_ELEM: Push a element on the stack
- *   PTYPE:     the pike type as a string
+ *   PTYPE:     the pike type
  */
 
 
@@ -921,73 +921,52 @@ void Xmatrix(init_math_)(void)
    set_init_callback(Xmatrix(init_));
    set_exit_callback(Xmatrix(exit_));
 
-   add_function("create",matrixX(_create),
-		"function(array(array(int|float)):object)|"
-		"function(array(int|float):object)|"
-		"function(string,mixed...:object)|"
-		"function(int(1..),int(1..),int|float|string|void:object)",
-		0);
+   ADD_FUNCTION("create",matrixX(_create),
+		tOr4( tFunc(tArr(tArr(tOr(tInt,tFloat))), tVoid),
+		      tFunc(tArr(tOr(tInt,tFloat)), tVoid),
+		      tFuncV(tStr, tMix, tVoid),
+		      tFunc(tInt1Plus tInt1Plus tOr4(tInt,tFloat,tString,tVoid), Void)), 0);
+
+   ADD_FUNCTION("cast",matrixX(_cast),
+		tFunc(tStr, tArr(tArr(tFloat))), 0);
+   ADD_FUNCTION("vect",matrixX(_vect), tFunc(tNone,tArr(PTYPE)), 0);
+   ADD_FUNCTION("_sprintf",matrixX(__sprintf), tFunc(tInt tMapping, tStr), 0);
+
+   ADD_FUNCTION("transpose",matrixX(_transpose), tFunc(tNone, tObj), 0);
+   ADD_FUNCTION("t",matrixX(_transpose), tFunc(tNone, tObj), 0);
+
+   ADD_FUNCTION("norm",matrixX(_norm), tFunc(tNone, tFloat), 0);
+   ADD_FUNCTION("norm2",matrixX(_norm2), tFunc(tNone, tFloat), 0);
+   ADD_FUNCTION("normv",matrixX(_normv), tFunc(tNone, tObj), 0);
+
+   ADD_FUNCTION("sum",matrixX(_sum), tFunc(tNone,PTYPE), 0);
+   ADD_FUNCTION("max",matrixX(_max), tFunc(tNone,PTYPE), 0);
+   ADD_FUNCTION("min",matrixX(_min), tFunc(tNone,PTYPE), 0);
+
+   ADD_FUNCTION("add",matrixX(_add), tFunc(tObj, tObj), 0);
+   ADD_FUNCTION("`+",matrixX(_add), tFunc(tObj, tObj), 0);
+   ADD_FUNCTION("sub",matrixX(_sub), tFunc(tObj, tObj), 0);
+   ADD_FUNCTION("`-",matrixX(_sub), tFunc(tObj, tObj), 0);
+
+   ADD_FUNCTION("mult",matrixX(_mult),
+		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
+   ADD_FUNCTION("`*",matrixX(_mult),
+		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
+   ADD_FUNCTION("``*",matrixX(_mult),
+		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
+
+   ADD_FUNCTION("`·",matrixX(_dot),
+		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
+   ADD_FUNCTION("``·",matrixX(_dot),
+		tFunc(tOr3(tObj,tFloat,tInt), tObj), 0);
+
+   ADD_FUNCTION("dot_product",matrixX(_dot), tFunc(tObj, tObj), 0);
+
+   ADD_FUNCTION("convolve",matrixX(_convolve), tFunc(tObj, tObj), 0);
    
-   add_function("cast",matrixX(_cast),
-		"function(string:array(array(float)))",0);
-   add_function("vect",matrixX(_vect),
-		"function(:array(" PTYPE "))",0);
-   add_function("_sprintf",matrixX(__sprintf),
-		"function(int,mapping:string)",0);
-
-   add_function("transpose",matrixX(_transpose),
-		"function(:object)",0);
-   add_function("t",matrixX(_transpose),
-		"function(:object)",0);
-
-   add_function("norm",matrixX(_norm),
-		"function(:float)",0);
-   add_function("norm2",matrixX(_norm2),
-		"function(:float)",0);
-   add_function("normv",matrixX(_normv),
-		"function(:object)",0);
-
-   add_function("sum",matrixX(_sum),
-		"function(:" PTYPE ")",0);
-   add_function("max",matrixX(_max),
-		"function(:" PTYPE ")",0);
-   add_function("min",matrixX(_min),
-		"function(:" PTYPE ")",0);
-
-   add_function("add",matrixX(_add),
-		"function(object:object)",0);
-   add_function("`+",matrixX(_add),
-		"function(object:object)",0);
-   add_function("sub",matrixX(_sub),
-		"function(object:object)",0);
-   add_function("`-",matrixX(_sub),
-		"function(object:object)",0);
-
-   add_function("mult",matrixX(_mult),
-		"function(object|float|int:object)",0);
-   add_function("`*",matrixX(_mult),
-		"function(object|float|int:object)",0);
-   add_function("``*",matrixX(_mult),
-		"function(object|float|int:object)",0);
-
-   add_function("`·",matrixX(_dot),
-		"function(object|float|int:object)",0);
-   add_function("``·",matrixX(_dot),
-		"function(object|float|int:object)",0);
-
-   add_function("dot_product",matrixX(_dot),
-		"function(object:object)",0);
-
-   add_function("convolve",matrixX(_convolve),
-		"function(object:object)",0);
-   
-   add_function("cross",matrixX(_cross),
-		"function(object:object)",0);
-   add_function("`×",matrixX(_cross),
-		"function(object:object)",0);
-   add_function("``×",matrixX(_cross),
-		"function(object:object)",0);
-
+   ADD_FUNCTION("cross",matrixX(_cross), tFunc(tObj, tObj), 0);
+   ADD_FUNCTION("`×",matrixX(_cross), tFunc(tObj, tObj), 0);
+   ADD_FUNCTION("``×",matrixX(_cross), tFunc(tObj, tObj), 0);
 
    Pike_compiler->new_program->flags |= 
      PROGRAM_CONSTANT |

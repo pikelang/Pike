@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.73 2004/10/17 06:52:05 agehall Exp $
+|| $Id: jvm.c,v 1.74 2005/01/20 10:48:52 nilsson Exp $
 */
 
 /*
@@ -3545,12 +3545,12 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
-  pike_add_function("cast", f_jobj_cast, "function(string:mixed)", 0);
-  pike_add_function("`==", f_jobj_eq, "function(mixed:int)", 0);
-  pike_add_function("__hash", f_jobj_hash, "function(:int)", 0);
-  pike_add_function("is_instance_of", f_jobj_instance, "function(object:int)", 0);
-  pike_add_function("monitor_enter", f_monitor_enter, "function(:object)", 0);
-  pike_add_function("get_object_class", f_jobj_get_class, "function(:object)", 0);
+  ADD_FUNCTION("cast", f_jobj_cast, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("`==", f_jobj_eq, tFunc(tMix,tInt01), 0);
+  ADD_FUNCTION("__hash", f_jobj_hash, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("is_instance_of", f_jobj_instance, tFunc(tObj,tInt01), 0);
+  ADD_FUNCTION("monitor_enter", f_monitor_enter, tFunc(tNone,tObj), 0);
+  ADD_FUNCTION("get_object_class", f_jobj_get_class, tFunc(tNone,tObj), 0);
   set_init_callback(init_jobj_struct);
   set_exit_callback(exit_jobj_struct);
   set_gc_check_callback(jobj_gc_check);
@@ -3561,44 +3561,47 @@ PIKE_MODULE_INIT
   start_new_program();
   prog.u.program = jobj_program;
   do_inherit(&prog, 0, NULL);
-  pike_add_function("super_class", f_super_class, "function(:object)", 0);
-  pike_add_function("is_assignable_from", f_is_assignable_from,
-		    "function(object:int)", 0);
-  pike_add_function("throw_new", f_throw_new, "function(string:void)", 0);
-  pike_add_function("alloc", f_alloc, "function(:object)", 0);
-  pike_add_function("new_array", f_new_array, "function(int,object|void:object)", 0);
-  pike_add_function("get_method", f_get_method, "function(string,string:object)", 0);
-  pike_add_function("get_static_method", f_get_static_method, "function(string,string:object)", 0);
-  pike_add_function("get_field", f_get_field, "function(string,string:object)", 0);
-  pike_add_function("get_static_field", f_get_static_field, "function(string,string:object)", 0);
+  ADD_FUNCTION("super_class", f_super_class, tFunc(tNone,tObj), 0);
+  ADD_FUNCTION("is_assignable_from", f_is_assignable_from,
+	       tFunc(tObj,tInt), 0);
+  ADD_FUNCTION("throw_new", f_throw_new, tFunc(tStr,tVoid), 0);
+  ADD_FUNCTION("alloc", f_alloc, tFunc(tNone,tObj), 0);
+  ADD_FUNCTION("new_array", f_new_array, tFunc(tInt tOr(tObj,tVoid),tObj), 0);
+  ADD_FUNCTION("get_method", f_get_method, tFunc(tStr tStr,tObj), 0);
+  ADD_FUNCTION("get_static_method", f_get_static_method,
+	       tFunc(tStr tStr,tObj), 0);
+  ADD_FUNCTION("get_field", f_get_field, tFunc(tStr tStr,tObj), 0);
+  ADD_FUNCTION("get_static_field", f_get_static_field,
+	       tFunc(tStr tStr,tObj), 0);
 #ifdef SUPPORT_NATIVE_METHODS
-  pike_add_function("register_natives", f_register_natives, "function(array(array(string|function)):object)", 0);
+  ADD_FUNCTION("register_natives", f_register_natives,
+	       tFunc(tArr(tArr(tOr(tStr,tFunction))),tObj), 0);
 #endif /* SUPPORT_NATIVE_METHODS */
   jclass_program = end_program();
   jclass_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  pike_add_function("throw", f_javathrow, "function(:void)", 0);
+  ADD_FUNCTION("throw", f_javathrow, tFunc(tNone,tVoid), 0);
   jthrowable_program = end_program();
   jthrowable_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   jarray_stor_offs = ADD_STORAGE(struct jarray_storage);
-  pike_add_function("_sizeof", f_javaarray_sizeof, "function(:int)", 0);
-  pike_add_function("`[]", f_javaarray_getelt, "function(int,int|void:mixed)", 0);
-  pike_add_function("`[]=", f_javaarray_setelt, "function(int,mixed:mixed)", 0);
-  pike_add_function("_indices", f_javaarray_indices, "function(:array(int))", 0);
-  pike_add_function("_values", f_javaarray_values, "function(:array(mixed))", 0);
+  ADD_FUNCTION("_sizeof", f_javaarray_sizeof, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("`[]", f_javaarray_getelt,
+	       tFunc(tInt tOr(tInt,tVoid), tMix), 0);
+  ADD_FUNCTION("`[]=", f_javaarray_setelt, tFunc(tInt tMix,tMix), 0);
+  ADD_FUNCTION("_indices", f_javaarray_indices, tFunc(tNone,tArr(tInt)), 0);
+  ADD_FUNCTION("_values", f_javaarray_values, tFunc(tNone,tArray), 0);
   jarray_program = end_program();
   jarray_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  pike_add_function("create", f_method_create,
-		    "function(string,string,object:void)", 0);
-  pike_add_function("`()", f_call_static, "function(mixed...:mixed)", 0);
+  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("`()", f_call_static, tFuncV(tNone,tMix,tMix), 0);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
@@ -3608,11 +3611,9 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  pike_add_function("create", f_method_create,
-		    "function(string,string,object:void)", 0);
-  pike_add_function("`()", f_call_virtual, "function(object,mixed...:mixed)", 0);
-  pike_add_function("call_nonvirtual", f_call_nonvirtual,
-		    "function(object,mixed...:mixed)", 0);
+  ADD_FUNCTION("create", f_method_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("`()", f_call_virtual, tFuncV(tObj,tMix,tMix), 0);
+  ADD_FUNCTION("call_nonvirtual", f_call_nonvirtual, tFuncV(tObj,tMix,tMix),0);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
@@ -3622,10 +3623,9 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  pike_add_function("create", f_field_create,
-		    "function(string,string,object:void)", 0);
-  pike_add_function("set", f_field_set, "function(object,mixed:mixed)", 0);
-  pike_add_function("get", f_field_get, "function(object:mixed)", 0);
+  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("set", f_field_set, tFunc(tObj tMix,tMix), 0);
+  ADD_FUNCTION("get", f_field_get, tFunc(tObj,tMix), 0);
   set_init_callback(init_field_struct);
   set_exit_callback(exit_field_struct);
   set_gc_check_callback(field_gc_check);
@@ -3635,10 +3635,9 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  pike_add_function("create", f_field_create,
-		    "function(string,string,object:void)", 0);
-  pike_add_function("set", f_static_field_set, "function(mixed:mixed)", 0);
-  pike_add_function("get", f_static_field_get, "function(:mixed)", 0);
+  ADD_FUNCTION("create", f_field_create, tFunc(tStr tStr tObj,tVoid), 0);
+  ADD_FUNCTION("set", f_static_field_set, tFunc(tMix,tMix), 0);
+  ADD_FUNCTION("get", f_static_field_get, tFunc(tNone,tMix), 0);
   set_init_callback(init_field_struct);
   set_exit_callback(exit_field_struct);
   set_gc_check_callback(field_gc_check);
@@ -3648,7 +3647,7 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct monitor_storage);
-  pike_add_function("create", f_monitor_create, "function(object:void)", 0);
+  ADD_FUNCTION("create", f_monitor_create, tFunc(tObj,tVoid), 0);
   set_init_callback(init_monitor_struct);
   set_exit_callback(exit_monitor_struct);
   set_gc_check_callback(monitor_gc_check);
@@ -3659,8 +3658,8 @@ PIKE_MODULE_INIT
 #ifdef SUPPORT_NATIVE_METHODS
   start_new_program();
   ADD_STORAGE(struct natives_storage);
-  pike_add_function("create", f_natives_create,
-		    "function(array(array(string|function)),object:void)", 0);
+  ADD_FUNCTION("create", f_natives_create,
+	       tFunc(tArr(tArr(tOr(tStr,tFunction))) tObj,tVoid), 0);
   set_init_callback(init_natives_struct);
   set_exit_callback(exit_natives_struct);
   set_gc_check_callback(natives_gc_check);
@@ -3672,7 +3671,7 @@ PIKE_MODULE_INIT
 #ifdef _REENTRANT
   start_new_program();
   ADD_STORAGE(struct att_storage);
-  pike_add_function("create", f_att_create, "function(object:void)", 0);
+  ADD_FUNCTION("create", f_att_create, tFunc(tObj,tVoid), 0);
   set_init_callback(init_att_struct);
   set_exit_callback(exit_att_struct);
   set_gc_check_callback(att_gc_check);
@@ -3683,30 +3682,25 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE(struct jvm_storage);
-  pike_add_function("create", f_create, "function(string|void:void)", 0);
-  pike_add_function("get_version", f_get_version, "function(:int)", 0);
-  pike_add_function("find_class", f_find_class, "function(string:object)", 0);
-  pike_add_function("define_class", f_define_class,
-		    "function(string,object,string:object)", 0);
-  pike_add_function("exception_check", f_exception_check, "function(:int)", 0);
-  pike_add_function("exception_occurred", f_exception_occurred,
-		    "function(:object)", 0);
-  pike_add_function("exception_describe", f_exception_describe,
-		    "function(:void)", 0);
-  pike_add_function("exception_clear", f_exception_clear, "function(:void)", 0);
-  pike_add_function("fatal", f_javafatal, "function(string:void)", 0);
-  pike_add_function("new_boolean_array", f_new_boolean_array,
-		    "function(int:object)", 0);
-  pike_add_function("new_byte_array", f_new_byte_array, "function(int:object)", 0);
-  pike_add_function("new_char_array", f_new_char_array, "function(int:object)", 0);
-  pike_add_function("new_short_array", f_new_short_array,
-		    "function(int:object)", 0);
-  pike_add_function("new_int_array", f_new_int_array, "function(int:object)", 0);
-  pike_add_function("new_long_array", f_new_long_array, "function(int:object)", 0);
-  pike_add_function("new_float_array", f_new_float_array,
-		    "function(int:object)", 0);
-  pike_add_function("new_double_array", f_new_double_array,
-		    "function(int:object)", 0);
+  ADD_FUNCTION("create", f_create, tFunc(tOr(tStr,tVoid),tVoid), 0);
+  ADD_FUNCTION("get_version", f_get_version, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("find_class", f_find_class, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("define_class", f_define_class, tFunc(tStr tObj tStr,tObj), 0);
+  ADD_FUNCTION("exception_check", f_exception_check, tFunc(tNone,tInt), 0);
+  ADD_FUNCTION("exception_occurred", f_exception_occurred,
+	       tFunc(tNone,tObj), 0);
+  ADD_FUNCTION("exception_describe", f_exception_describe,
+	       tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION("exception_clear", f_exception_clear, tFunc(tNone,tVoid), 0);
+  ADD_FUNCTION("fatal", f_javafatal, tFunc(tStr,tVoid), 0);
+  ADD_FUNCTION("new_boolean_array", f_new_boolean_array, tFunc(tInt,tObj), 0);
+  ADD_FUNCTION("new_byte_array", f_new_byte_array, tFunc(tInt,tObj), 0);
+  ADD_FUNCTION("new_char_array", f_new_char_array, tFunc(tInt,tObj), 0);
+  ADD_FUNCTION("new_short_array", f_new_short_array, tFunc(tInt,tObj), 0);
+  ADD_FUNCTION("new_int_array", f_new_int_array, tFunc(tInt,tObj), 0);
+  ADD_FUNCTION("new_long_array", f_new_long_array, tFunc(tInt,tObj), 0);
+  ADD_FUNCTION("new_float_array", f_new_float_array, tFunc(tInt,tObj), 0);
+  ADD_FUNCTION("new_double_array", f_new_double_array, tFunc(tInt,tObj), 0);
   set_init_callback(init_jvm_struct);
   set_exit_callback(exit_jvm_struct);
 #ifdef _REENTRANT

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.87 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: mysql.c,v 1.88 2005/01/20 10:48:28 nilsson Exp $
 */
 
 /*
@@ -1709,23 +1709,6 @@ static void f_binary_data(INT32 args)
 PIKE_MODULE_INIT
 {
 #ifdef HAVE_MYSQL
-  /*
-   * start_new_program();
-   *
-   * add_storage();
-   *
-   * add_function();
-   * add_function();
-   * ...
-   *
-   * set_init_callback();
-   * set_exit_callback();
-   *
-   * program = end_c_program();
-   * program->refs++;
-   *
-   */
- 
   start_new_program();
   ADD_STORAGE(struct precompiled_mysql);
 

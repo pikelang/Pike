@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.40 2004/01/27 15:01:05 grubba Exp $
+|| $Id: roxen.c,v 1.41 2005/01/20 10:46:34 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -542,21 +542,21 @@ static void f_html_encode_string( INT32 args )
 
 PIKE_MODULE_INIT
 {
-  pike_add_function("make_http_headers", f_make_http_headers,
-               "function(mapping(string:string|array(string)):string)", 0 );
+  ADD_FUNCTION("make_http_headers", f_make_http_headers,
+	       tFunc(tMap(tStr,tOr(tStr,tArr(tStr))),tStr), 0 );
 
-  pike_add_function("http_decode_string", f_http_decode_string,
-               "function(string:string)", 0 );
+  ADD_FUNCTION("http_decode_string", f_http_decode_string,
+	       tFunc(tStr,tStr), 0 );
 
-  pike_add_function("html_encode_string", f_html_encode_string,
-		    "function(mixed:string)", 0 );
+  ADD_FUNCTION("html_encode_string", f_html_encode_string,
+	       tFunc(tMix,tStr), 0 );
 
   start_new_program();
   ADD_STORAGE( struct header_buf  );
   set_init_callback( f_hp_init );
   set_exit_callback( f_hp_exit );
-  pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
-  pike_add_function( "create", f_hp_create, "function(:void)", ID_STATIC );
+  ADD_FUNCTION( "feed", f_hp_feed, tFunc(tStr,tArr(tOr(tStr,tMapping))), 0 );
+  ADD_FUNCTION( "create", f_hp_create, tFunc(tNone,tVoid), ID_STATIC );
   end_class( "HeaderParser", 0 );
 }
 

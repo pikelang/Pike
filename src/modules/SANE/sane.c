@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.20 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: sane.c,v 1.21 2005/01/20 10:46:54 nilsson Exp $
 */
 
 #include "config.h"
@@ -778,8 +778,8 @@ static void exit_scanner_struct( struct object *p )
 PIKE_MODULE_INIT
 {
   struct program *p;
-  add_function( "list_scanners", f_list_scanners,
-                "function(void:array(mapping))", 0 );
+  ADD_FUNCTION( "list_scanners", f_list_scanners,
+                tFunc(tNone,tArr(tMapping)), 0 );
 
   add_integer_constant( "FrameGray", SANE_FRAME_GRAY,0  );
   add_integer_constant( "FrameRGB",  SANE_FRAME_RGB,0   );
@@ -790,33 +790,29 @@ PIKE_MODULE_INIT
 
   start_new_program();
   ADD_STORAGE( struct scanner );
-  add_function( "get_option", f_scanner_get_option,
-                "function(string:mixed)", 0 );
-  add_function( "set_option", f_scanner_set_option,
-                "function(string,void|mixed:void)", 0 );
-  add_function( "list_options", f_scanner_list_options,
-                    "function(void:array(mapping(string:mixed)))", 0 );
+  ADD_FUNCTION( "get_option", f_scanner_get_option, tFunc(tStr, tMix), 0 );
+  ADD_FUNCTION( "set_option", f_scanner_set_option,
+		tFunc(tStr  tOr(tVoid, tMix), tVoid), 0 );
+  ADD_FUNCTION( "list_options", f_scanner_list_options,
+		tFunc(tNone, tArr(tMap(tStr, tMix))), 0 );
 
-  add_function( "simple_scan", f_scanner_simple_scan,
-                "function(void:object)", 0 );
+  ADD_FUNCTION( "simple_scan", f_scanner_simple_scan, tFunc(tNone, tObj), 0 );
 
-  add_function( "row_scan", f_scanner_row_scan,
-                "function(function(object,int,object:void):void)", 0 );
+  ADD_FUNCTION( "row_scan", f_scanner_row_scan,
+		tFunc(tFunc(tObj tInt tObj,tVoid),tVoid), 0 );
 
-  add_function( "nonblocking_row_scan", f_scanner_nonblocking_row_scan,
-                "function(function(object,int,object,int:void):void)", 0 );
+  ADD_FUNCTION( "nonblocking_row_scan", f_scanner_nonblocking_row_scan,
+		tFunc(tFunc(tObj tInt tObj tInt,tVoid),tVoid), 0 );
 
-  add_function( "cancel_scan", f_scanner_cancel_scan,
-                "function(void:object)", 0 );
+  ADD_FUNCTION( "cancel_scan", f_scanner_cancel_scan, tFunc(tNone, tObj), 0 );
 
-  add_function( "get_parameters", f_scanner_get_parameters,
-                "function(void:mapping)", 0 );
+  ADD_FUNCTION( "get_parameters", f_scanner_get_parameters,
+		tFunc(tNone, tMapping), 0 );
 
-  add_function( "create", f_scanner_create,
-                "function(string:void)", ID_STATIC );
+  ADD_FUNCTION( "create", f_scanner_create, tFunc(tStr, tVoid), ID_STATIC );
 
-   set_init_callback(init_scanner_struct);
-   set_exit_callback(exit_scanner_struct);
+  set_init_callback(init_scanner_struct);
+  set_exit_callback(exit_scanner_struct);
 
   add_program_constant( "Scanner", (p=end_program( ) ), 0 );
   free_program( p );

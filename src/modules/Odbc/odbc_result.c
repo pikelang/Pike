@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc_result.c,v 1.38 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: odbc_result.c,v 1.39 2005/01/20 10:47:55 nilsson Exp $
 */
 
 /*
- * Pike  interface to ODBC compliant databases
+ * Pike interface to ODBC compliant databases
  *
  * Henrik Grubbström
  */
@@ -492,23 +492,6 @@ static void f_seek(INT32 args)
  
 void init_odbc_res_programs(void)
 {
-  /*
-   * start_new_program();
-   *
-   * add_storage();
-   *
-   * add_function();
-   * add_function();
-   * ...
-   *
-   * set_init_callback();
-   * set_exit_callback();
-   *
-   * program = end_c_program();
-   * program->refs++;
-   *
-   */
- 
   start_new_program();
   ADD_STORAGE(struct precompiled_odbc_result);
 
