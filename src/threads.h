@@ -225,7 +225,10 @@ struct thread_state {
 #define HIDE_GLOBAL_VARIABLES() do { \
    int sp = 0, evaluator_stack = 0, mark_sp = 0, mark_stack = 0, fp = 0; \
    void *evaluator_stack_malloced = NULL, *mark_stack_malloced = NULL; \
-   int recoveries = 0, thread_id = 0
+   int recoveries = 0, thread_id = 0; \
+   int error = 0, xalloc = 0, low_my_putchar = 0, low_my_binary_strcat = 0; \
+   int low_make_buf_space = 0, pop_n_elems = 0; \
+   int push_sp_mark = 0, pop_sp_mark = 0
 
 #define REVEAL_GLOBAL_VARIABLES() } while(0)
 #else /* DEBUG */
