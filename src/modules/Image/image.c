@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.105 1998/04/29 22:04:19 mirar Exp $ */
+/* $Id: image.c,v 1.106 1998/07/04 16:00:11 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.105 1998/04/29 22:04:19 mirar Exp $
+**!	$Id: image.c,v 1.106 1998/07/04 16:00:11 mast Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -33,7 +33,7 @@
 **!	<ref>`-</ref>,
 **!	<ref>`==</ref>,
 **!	<ref>`></ref>,
-**!	<ref>`&gt;</ref>,
+**!	<ref>`&lt;</ref>,
 **!	<ref>`|</ref>
 **!
 **!	pasting images, layers: <br>
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.105 1998/04/29 22:04:19 mirar Exp $");
+RCSID("$Id: image.c,v 1.106 1998/07/04 16:00:11 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
