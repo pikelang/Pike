@@ -1,5 +1,5 @@
 /*
- * $Id: make_wxs.pike,v 1.1 2004/11/08 18:13:42 grubba Exp $
+ * $Id: make_wxs.pike,v 1.2 2004/11/09 17:07:58 grubba Exp $
  *
  * Make a Wix modules source XML file from an existing set of
  * directories or files.
@@ -11,7 +11,6 @@ int main(int argc, array(string) argv)
 {
   string base_guid = Standards.UUID.new_string();
   string version_str = "1.0";
-  string property = "TARGETDIR";
   string id;
   string descr;
   string manufacturer;
@@ -20,7 +19,6 @@ int main(int argc, array(string) argv)
   foreach(Getopt.find_all_options(argv, ({
     ({"--guid", Getopt.HAS_ARG, ({"-g", "--guid"})}),
     ({"--version", Getopt.MAY_HAVE_ARG, ({"-v", "--version"})}),
-    ({"--property", Getopt.HAS_ARG, ({"-p", "--prop", "--property"})}),
     ({"--id", Getopt.HAS_ARG, ({"-i", "--id", "--identifier"})}),
     ({"--description", Getopt.HAS_ARG, ({"-d", "--descr", "--description"})}),
     ({"--manufacturer", Getopt.HAS_ARG, ({"-m", "--manufacturer"})}),
@@ -34,12 +32,9 @@ int main(int argc, array(string) argv)
       if (stringp(opt[1])) {
 	version_str = opt[1];
       } else {
-	write("$Revision: 1.1 $\n");
+	write("$Revision: 1.2 $\n");
 	exit(0);
       }
-      break;
-    case "--property":
-      property = opt[1];
       break;
     case "--id":
       id = opt[1];
@@ -68,7 +63,7 @@ int main(int argc, array(string) argv)
   Standards.XML.Wix.Directory root =
     Standards.XML.Wix.Directory("SourceDir",
 				Standards.UUID.UUID(version_guid)->encode(),
-				property);
+				"TARGETDIR");
 
   foreach(argv[1..], string src) {
     src = replace(src, "\\", "/");

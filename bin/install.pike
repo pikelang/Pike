@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.131 2004/11/09 12:36:26 grubba Exp $
+// $Id: install.pike,v 1.132 2004/11/09 17:04:24 grubba Exp $
 
 #define USE_GTK
 
@@ -30,7 +30,7 @@ array(string) to_dump=({});
 array(string) to_export=({});
 Directory root = Directory("SourceDir",
 			   Standards.UUID.UUID(version_guid)->encode(),
-			   "PIKE_TARGETDIR");
+			   "TARGETDIR");
 
 
 int export;
@@ -522,7 +522,7 @@ void do_export()
     recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
 
     // Make sure the kludge directory exists (forward compat).
-    root->extra_ids["KLUDGE_PIKE_TARGETDIR"] = 1;
+    root->extra_ids["KLUDGE_TARGETDIR"] = 1;
 
     // Generate the XML directory tree.
     WixNode xml_root =
@@ -541,7 +541,7 @@ void do_export()
 			  //       rather than the root directory due to
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
-			  "Directory":"KLUDGE_PIKE_TARGETDIR",
+			  "Directory":"KLUDGE_TARGETDIR",
 			  "Execute":"commit",
 			  "ExeCommand":"cmd /d /c bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
@@ -554,7 +554,7 @@ void do_export()
 			  //       rather than the root directory due to
 			  //       bugs in light.
 			  //	/grubba 2004-11-08
-			  "Directory":"KLUDGE_PIKE_TARGETDIR",
+			  "Directory":"KLUDGE_TARGETDIR",
 			  "Execute":"commit",
 			  "ExeCommand":"cmd /d /c bin\\pike "
 			  "-mlib\\master.pike bin\\install.pike "
@@ -1219,7 +1219,7 @@ void make_wix()
   Directory root = Directory("SourceDir",
 			     Standards.UUID.UUID(version_guid)->encode(),
 			     "TARGETDIR");
-  root->merge_module(".", "Pike_module.msm", "Pike", "PIKE_TARGETDIR");
+  root->merge_module(".", "Pike_module.msm", "Pike", "TARGETDIR");
 
   string title = 
 #if 1
