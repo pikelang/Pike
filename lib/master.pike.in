@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.35 1998/10/22 09:11:43 hubbe Exp $
+/* $Id: master.pike.in,v 1.36 1998/10/31 22:47:11 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -871,8 +871,20 @@ void _main(string *orig_argv, string *env)
   }
 
   argv[0]=combine_path_with_cwd(argv[0]);
-  program tmp=(program)argv[0];
 
+  program tmp;
+
+  mixed err = catch {
+    tmp=(program)argv[0];
+  };
+
+  if (err) {
+    werror(sprintf("Pike: Failed to compile script:\n"
+		   "%s\n", stringp(err[0])?err[0]:describe_backtrace(err)));
+    exit(1);
+  }
+
+  // FIXME: Isn't the following code dead?
   if(!tmp)
   {
     werror("Pike: Couldn't find script to execute.\n");
