@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.139 2004/11/11 16:03:54 grubba Exp $
+|| $Id: error.c,v 1.140 2004/11/11 16:10:44 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -820,10 +820,8 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
 					 va_list foo)
      ATTRIBUTE((noreturn))
 {
-  char buf[8192];
+  struct string_builder s;
   int i;
-
-  VSNPRINTF(buf, sizeof(buf), fmt, foo);
 
   if(in_error)
   {
@@ -831,15 +829,18 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
     in_error=0;
     Pike_fatal("Recursive error() calls, original error: %s",tmp);
   }
-  in_error=buf;
+
+  in_error = fmt;
+  init_string_builder(&s, 0);  
+  string_builder_vsprintf(&s, fmt, foo);
 
 #if 0
   if (!master_program) {
-    fprintf(stderr, "ERROR: %s\n", buf);
+    fprintf(stderr, "ERROR: %s\n", s.s->str);
   }
 #endif
 
-  ERROR_STRUCT(generic,o)->error_message=make_shared_string(buf);
+  ERROR_STRUCT(generic,o)->error_message = finish_string_builder(&s);
   f_backtrace(0);
 
   if(func)
