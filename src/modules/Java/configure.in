@@ -432,6 +432,7 @@ if test "x$with_java" = xyes; then
     case $pike_cv_java_arch  in
       sparc) pike_cv_java_cpu=sparc;;
       i386|x86) pike_cv_java_cpu=x86;;
+      x86_64) pike_cv_java_cpy=x86_64;;
       powerpc|ppc) pike_cv_java_cpu=ppc;;
       alpha) pike_cv_java_cpu=alpha;;
       *) pike_cv_java_cpu=no;;
@@ -442,6 +443,7 @@ if test "x$with_java" = xyes; then
   case $pike_cv_java_cpu in
     sparc) AC_DEFINE(HAVE_SPARC_CPU);;
     x86) AC_DEFINE(HAVE_X86_CPU);;
+    x86_64) AC_DEFINE(HAVE_X86_64_CPU);;
     ppc) AC_DEFINE(HAVE_PPC_CPU);;
     alpha) AC_DEFINE(HAVE_ALPHA_CPU);;
   esac
