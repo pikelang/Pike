@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.106 2001/07/03 08:04:59 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.107 2001/07/03 15:04:51 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -769,7 +769,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    return;
 	  }
 	}
-	Pike_error("Failed to encode function.\n");
+	Pike_error("Encoding of efuns is not supported yet.\n");
       }
 
       code_entry(type_to_tag(val->type), 0,data);
@@ -850,7 +850,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	pop_stack();
 
 #define FOO(X,Y,Z) \
-	code_number( p->num_##Z, data);
+	code_number( p->PIKE_CONCAT(num_,Z), data);
 #include "program_areas.h"
 
 	adddata2(p->program, p->num_program);
@@ -894,6 +894,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  }else if(p->inherits[d].prog){
 	    ref_push_program(p->inherits[d].prog);
 	  }else{
+	    Pike_error("Failed to encode inherit #%d\n", d);
 	    push_int(0);
 	  }
 	  encode_value2(Pike_sp-1,data);
@@ -914,7 +915,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
-	  code_number(p->identifiers[d].func.offset,data);
+	  if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION)) {
+	    code_number(p->identifiers[d].func.offset,data);
+	  } else {
+	    Pike_error("Cannot encode functions implemented in C "
+		       "(identifier='%s').\n",
+		       p->identifiers[d].name->str);
+	  }
 	}
 
 	for(d=0;d<p->num_constants;d++)
@@ -1068,6 +1075,8 @@ struct decode_data
   struct svalue counter;
   struct object *codec;
   int pickyness;
+  struct pike_string *raw;
+  struct decode_data *next;
 };
 
 static void decode_value2(struct decode_data *data);
@@ -1829,7 +1838,10 @@ static void decode_value2(struct decode_data *data)
 	    default:
 	      Pike_error("Program decode failed!\n");
 	  }
-	  if(p->parent) add_ref(p->parent);
+	  if(p->parent) {
+	    add_ref(p->parent);
+	    p->parent_program_id = p->parent->id;
+	  }
 	  pop_stack();
 
 	  debug_malloc_touch(p);
@@ -2004,7 +2016,14 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifiers[d].identifier_flags,data);
 	    decode_number(p->identifiers[d].run_time_type,data);
 	    decode_number(p->identifiers[d].opt_flags,data);
-	    decode_number(p->identifiers[d].func.offset,data);
+	    if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION))
+	    {
+	      decode_number(p->identifiers[d].func.offset,data);
+	    } else {
+	      Pike_error("Cannot decode functions implemented in C "
+			 "(identifier='%s').\n",
+			 p->identifiers[d].name->str);
+	    }
 	  }
 
 
@@ -2151,6 +2170,8 @@ static void decode_value2(struct decode_data *data)
 }
 
 
+static struct decode_data *current_decode = NULL;
+
 static void free_decode_data(struct decode_data *data)
 {
   free_mapping(data->decoded);
@@ -2160,6 +2181,22 @@ static void free_decode_data(struct decode_data *data)
     data->unfinished_programs=tmp->next;
     free((char *)tmp);
   }
+  if (current_decode == data) {
+    current_decode = data->next;
+  } else {
+    struct decode_data *d;
+    for (d = current_decode; d; d=d->next) {
+      if (d->next == data) {
+	d->next = d->next->next;
+	break;
+      }
+    }
+#ifdef PIKE_DEBUG
+    if (!d) {
+      fatal("Decode data fell off the stack!\n");
+    }
+#endif /* PIKE_DEBUG */
+  }
 }
 
 static INT32 my_decode(struct pike_string *tmp,
@@ -2167,6 +2204,27 @@ static INT32 my_decode(struct pike_string *tmp,
 {
   ONERROR err;
   struct decode_data d, *data;
+
+  /* Attempt to avoid infinite recursion on circular structures. */
+  for (data = current_decode; data; data=data->next) {
+    if (data->raw == tmp) {
+      struct svalue *res;
+      struct svalue val = {
+	T_INT, NUMBER_NUMBER,
+#ifdef HAVE_UNION_INIT
+	{0},	/* Only to avoid warnings. */
+#endif /* HAVE_UNION_INIT */
+      };
+      val.u.integer = 0;
+      if ((res = low_mapping_lookup(data->decoded, &val))) {
+	push_svalue(res);
+	return 1;
+      }
+      /* Possible recursion detected. */
+      /* return 0; */
+    }
+  }
+
   data=&d;
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
@@ -2176,6 +2234,8 @@ static INT32 my_decode(struct pike_string *tmp,
   data->codec=codec;
   data->pickyness=0;
   data->unfinished_programs=0;
+  data->raw = tmp;
+  data->next = current_decode;
 
   if (tmp->size_shift) return 0;
   if(data->len < 5) return 0;
@@ -2187,14 +2247,16 @@ static INT32 my_decode(struct pike_string *tmp,
 
   data->decoded=allocate_mapping(128);
 
+  current_decode = data;
+
   SET_ONERROR(err, free_decode_data, data);
   decode_value2(data);
-  UNSET_ONERROR(err);
+
 #ifdef PIKE_DEBUG
   if(data->unfinished_programs)
     fatal("We have unfinished programs left in decode()! We may need a double loop!\n");
 #endif
-  free_mapping(data->decoded);
+  CALL_AND_UNSET_ONERROR(err);
   return 1;
 }
 
