@@ -110,12 +110,16 @@ void add_torrent(string id) {
   torrents[id] = TorrentInfo();
 }
 
-string report_failure(string why) {
-  return .Bencoding.encode( ([ "failure reason" : why ]) );
+mapping report_failure(string why) {
+  return ([ "failure reason" : why ]);
 }
 
 //! Handles HTTP announce queries to the tracker.
 string announce(mapping args, string ip) {
+  return .Bencoding.encode( low_announce(args, ip) );
+}
+
+mapping(string:mixed) low_announce(mapping args, string ip) {
 
   if( !args->info_hash )
     return report_failure( "No info_hash query variable." );
@@ -165,7 +169,7 @@ string announce(mapping args, string ip) {
 	return report_failure( "Unregsiter your own clients!!" );
       torrent->remove_client(peer_id);
     }
-    return "de"; // Don't bother compiling a proper directory.
+    return ([]); // Don't bother compiling a proper directory.
   }
   else if( args->event == "complete" ) {
     torrent->completed++;
@@ -205,7 +209,11 @@ string announce(mapping args, string ip) {
   else
     m->peers = torrent->peerlist(peers);
 
-  return .Bencoding.encode(m);
+  return m;
+}
+
+string be_report_failure( string err ) {
+  return .Bencoding.encode( report_failure(err) );
 }
 
 //! Returns the result of a scrape query.
@@ -215,9 +223,9 @@ string scrape(mapping args) {
   array ts;
   if(args->info_hash) {
     if( sizeof(args->info_hash)!=20 )
-      return report_failure( "Wrong size of info_hash data." );
+      return be_report_failure( "Wrong size of info_hash data." );
     if( !torrents[ args->info_hash ] )
-      return report_failure( "No such torrent tracked by this tracker." );
+      return be_report_failure( "No such torrent tracked by this tracker." );
     ts = ({ args->info_hash });
   }
   else
@@ -233,6 +241,162 @@ string scrape(mapping args) {
 
   return .Bencoding.encode(res);
 }
+
+// --- UDP Code
+
+class Msg {
+  inherit ADT.Struct;
+}
+
+class MsgConnectReq {
+  inherit Msg;
+  Item connection_id = uint64();
+  Item action = uint32();
+  Item transaction_id = uint32();
+}
+
+class MsgConnectAns {
+  inherit Msg;
+  Item action = uint32(0);
+  Item transaction_id = uint32();
+  Item connection_id = uint64();
+}
+
+string make_udp_header(int action, int id) {
+  return sprintf("%4c%4c", action, id);
+}
+
+string udp_error(int id, string msg) {
+  return make_udp_header(3, id) + msg;
+}
+
+class MsgReqHeader {
+  inherit Msg;
+  Item connection_id = uint64();
+  Item action = uint32();
+}
+
+class MsgAnnounceReq {
+  inherit Msg;
+  Item connection_id = uint64();
+  Item action = uint32();
+  Item transaction_id = uint32();
+  Item info_hash = Chars(20);
+  Item peer_id = Chars(20);
+  Item downloaded = uint64();
+  Item left = uint64();
+  Item uploaded = uint64();
+  Item event = uint32();
+  Item ip = uint32();
+  Item key = uint32();
+  Item num_want = int32();
+  Item port = uint16();
+  Item extensions = uint16();
+}
+
+class MsgAnnounceAns {
+  inherit Msg;
+  Item action = uint32(1);
+  Item transaction_id = uint32();
+  Item interval = uint32();
+  Item leechers = uint32();
+  Item seeders = uint32();
+}
+
+class MsgScrapeReq {
+  inherit Msg;
+  Item connection_id = uint64();
+  Item action = uint32();
+  Item transaction_id = uint32();
+  Item num_info_hashes = uint16();
+  Item extensions = uint16();
+}
+
+int udp_id = random( pow(2,64) );
+
+string udp(string msg, string ip) {
+
+  if(msg[..8] == String.hex2string("0000041727101980")) {
+    // action 0: connect
+    Msg m = MsgConnectReq(msg);
+    if(m->action) return udp_error(0, "Wrong handshake action.");
+
+    udp_id++;
+    if(udp_id==0x41727101980)
+      udp_id++;
+    udp_id %= pow(2,64);
+
+    Msg r = MsgConnectAns();
+    r->transaction_id = m->transaction_id;
+    r->connection_id = udp_id;
+    return (string)r;
+  }
+
+  Msg header = MsgReqHeader(msg);
+
+  switch(header->action) {
+  case 1: { // announce
+    Msg m = MsgAnnounceReq(msg);
+    mapping args = ([ "info_hash" : m->info_hash,
+		      "peer_id" : m->peer_id,
+		      "port" : m->port,
+		      "uploaded" : m->uploaded,
+		      "downloaded" : m->downloaded,
+		      "left" : m->left,
+		      "compact" : 1,
+		      "key" : m->key ]);
+    if(m->num_want != -1) args->numwant = m->num_want;
+    if(m->event) {
+      args->event = ([ 1 : "completed",
+		       2 : "started",
+		       3 : "stopped" ])[ m->event ];
+      if(!args->event)
+	return udp_error(header->transaction_id, "Unknown event.");
+    }
+    if(m->ip) args->ip = sprintf("%d.%d.%d.%d", @(array)sprintf("%4c",m->ip) );
+
+    mapping res = low_announce(args, ip);
+    if(res["failure reason"])
+      return udp_error(header->transaction_id, res["Failure reason"]);
+
+    Msg ret = MsgAnnounceAns();
+    ret->transaction_id = m->transaction_id;
+    ret->interval = res->interval;
+
+    TorrentInfo t = torrents[m->info_hash];
+    ret->leechers = t->num_leechers();
+    ret->seeders = t->num_seeds();
+
+    return (string)ret + res->peers;
+    break;
+  }
+
+  case 2: { // scrape
+    Msg m = MsgScrapeReq(msg);
+    msg = msg[..sizeof(m)-1];
+    array ts = msg/20;
+    ts = ts[..m->num_info_hashes-1];
+    if(sizeof(ts)<m->num_info_hashes)
+      return udp_error(header->transaction_id, "Too few info hashes.");
+    string ret = "";
+    foreach(ts, string hash) {
+      TorrentInfo t = torrents[hash];
+      if( !t )
+	ret += "\0\0\0\0""\0\0\0\0""\0\0\0\0";
+      else
+	ret += sprintf("%4c%4c%4c", t->num_completed(),
+		       t->num_seeds(), t->num_leechers);
+    }
+    return make_udp_header(2, header->transaction_id) + ret;
+    break;
+  }
+
+  default:
+    return udp_error(0, "Unkown action.");
+  }
+
+}
+
 
 void clean_torrents() {
   values(torrents)->gc();
