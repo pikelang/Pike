@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.594 2002/08/01 14:50:42 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.595 2002/08/12 20:28:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -162,7 +162,17 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
     ac_link="[$]old_ac_link"
     if grep 'unrecognized option' <conftezt.out.2 >/dev/null; then
       pike_cv_option_$2=no
-    else :; fi
+    else
+      # gcc/FreeBSD-4.6/alpha says the following regarding -O2:
+      #
+      # cc1: warning: 
+      # ***
+      # ***     The -O2 flag TRIGGERS KNOWN OPTIMIZER BUGS ON THIS PLATFORM
+      # ***
+      if grep -i 'optimizer bugs' <conftezt.out.2 >/dev/null; then
+        pike_cv_option_$2=no
+      else :; fi
+    fi
     rm conftezt.out.2
   ])
   
