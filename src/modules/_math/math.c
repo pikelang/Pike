@@ -29,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.35 2000/12/05 21:08:35 per Exp $");
+RCSID("$Id: math.c,v 1.36 2001/01/30 15:46:15 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -68,6 +68,14 @@ int matherr(struct exception *exc)
 #endif /* HAVE_STRUCT_EXCEPTION */
 #endif /* !NO_MATHERR */
 
+/*! @decl float sin(float f)
+ *!
+ *! Returns the sine value for @[f].
+ *! @[f] should be specified in radians.
+ *!
+ *! @seealso
+ *!   @[asin()], @[cos()], @[tan()]
+ */
 void f_sin(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to sin()\n");
@@ -75,6 +83,14 @@ void f_sin(INT32 args)
   sp[-args].u.float_number=sin(sp[-args].u.float_number);
 }
 
+/*! @decl float asin(float f)
+ *!
+ *! Return the arcus sine value for @[f].
+ *! The result will be in radians.
+ *!
+ *! @seealso
+ *!   @[sin()], @[acos()]
+ */
 void f_asin(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to asin()\n");
@@ -82,6 +98,14 @@ void f_asin(INT32 args)
   sp[-args].u.float_number=asin(sp[-args].u.float_number);
 }
 
+/*! @decl float cos(float f)
+ *!
+ *! Return the cosine value for @[f].
+ *! @[f] should be specified in radians.
+ *!
+ *! @seealso
+ *!   @[acos()], @[sin()], @[tan()]
+ */
 void f_cos(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to cos()\n");
@@ -89,6 +113,14 @@ void f_cos(INT32 args)
   sp[-args].u.float_number=cos(sp[-args].u.float_number);
 }
 
+/*! @decl float acos(float f)
+ *!
+ *! Return the arcus cosine value for @[f].
+ *! The result will be in radians.
+ *!
+ *! @seealso
+ *!   @[cos()], @[asin()]
+ */
 void f_acos(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to acos()\n");
@@ -96,6 +128,14 @@ void f_acos(INT32 args)
   sp[-args].u.float_number=acos(sp[-args].u.float_number);
 }
 
+/*! @decl float tan(float f)
+ *!
+ *! Returns the tangent value for @[f].
+ *! @[f] should be specified in radians.
+ *!
+ *! @seealso
+ *!   @[atan()], @[sin()], @[cos()]
+ */
 void f_tan(INT32 args)
 {
   double f;
@@ -111,6 +151,14 @@ void f_tan(INT32 args)
   sp[-args].u.float_number=tan(sp[-args].u.float_number);
 }
 
+/*! @decl float atan(float f)
+ *!
+ *! Returns the arcus tangent value for @[f].
+ *! The result will be in radians.
+ *!
+ *! @seealso
+ *!   @[tan()], @[asin()], @[acos()], @[atan2()]
+ */ 
 void f_atan(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to atan()\n");
@@ -118,6 +166,15 @@ void f_atan(INT32 args)
   sp[-args].u.float_number=atan(sp[-args].u.float_number);
 }
 
+/*! @decl float atan2(float f1, float f2)
+ *!
+ *! Returns the arcus tangent value for @[f1]/@[f2], and uses
+ *! the signs of @[f1] and @[f2] to determine the quadrant.
+ *! The result will be in radians.
+ *!
+ *! @seealso
+ *!   @[tan()], @[asin()], @[acos()], @[atan()]
+ */ 
 void f_atan2(INT32 args)
 {
   if(args<2) Pike_error("Too few arguments to atan2()\n");
@@ -128,6 +185,15 @@ void f_atan2(INT32 args)
   pop_stack();
 }
 
+/*! @decl float sqrt(float f)
+ *! @decl int sqrt(int i)
+ *!
+ *! Returns the square root of @[f], or in the integer case, the square root
+ *! truncated to the closest lower integer.
+ *!
+ *! @seealso
+ *!   @[pow()], @[log()], @[exp()], @[floor()]
+ */
 void f_sqrt(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to sqrt()\n");
@@ -136,6 +202,8 @@ void f_sqrt(INT32 args)
   {
     unsigned INT32 n, b, s, y=0;
     unsigned INT16 x=0;
+
+    /* FIXME: Note: Regards i as an unsigned value. */
     
     n=sp[-args].u.integer;
     for(b=1<<(sizeof(INT32)*8-2); b; b>>=2)
@@ -178,6 +246,13 @@ void f_sqrt(INT32 args)
   }
 }
 
+/*! @decl float log(float f)
+ *!
+ *! Return the natural logarithm of @[f].
+ *!
+ *! @seealso
+ *!   @[pow()], @[exp()]
+ */
 void f_log(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to log()\n");
@@ -188,6 +263,13 @@ void f_log(INT32 args)
   sp[-args].u.float_number=log(sp[-args].u.float_number);
 }
 
+/*! @decl float exp(float f)
+ *!
+ *! Return the natural exponential of @[f].
+ *!
+ *! @seealso
+ *!   @[pow()], @[log()]
+ */
 void f_exp(INT32 args)
 {
   FLOAT_TYPE f;
@@ -197,6 +279,13 @@ void f_exp(INT32 args)
   push_float(f);
 }
 
+/*! @decl float pow(float|int n, float|int x)
+ *!
+ *! Return @[n] raised to the power of @[x].
+ *!
+ *! @seealso
+ *!   @[exp()], @[log()]
+ */
 void f_pow(INT32 args)
 {
   FLOAT_TYPE x,y;
@@ -205,6 +294,17 @@ void f_pow(INT32 args)
   push_float(pow((double)x, (double)y));
 }
 
+/*! @decl float floor(float f)
+ *!
+ *! Return the closest integer value less or equal to @[f].
+ *!
+ *! @note
+ *!   @[floor()] does @b{not@} return an @tt{int@}, merely an integer value
+ *!   stored in a @tt{float@}.
+ *!
+ *! @seealso
+ *!   @[ceil()], @[round()]
+ */
 void f_floor(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to floor()\n");
@@ -212,6 +312,17 @@ void f_floor(INT32 args)
   sp[-args].u.float_number=floor(sp[-args].u.float_number);
 }
 
+/*! @decl float ceil(float f)
+ *!
+ *! Return the closest integer value greater or equal to @[f].
+ *!
+ *! @note
+ *!   @[ceil()] does @b{not@} return an @tt{int@}, merely an integer value
+ *!   stored in a @tt{float@}.
+ *!
+ *! @seealso
+ *!   @[floor()], @[round()]
+ */
 void f_ceil(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to ceil()\n");
@@ -219,6 +330,17 @@ void f_ceil(INT32 args)
   sp[-args].u.float_number=ceil(sp[-args].u.float_number);
 }
 
+/*! @decl float round(float f)
+ *!
+ *! Return the closest integer value to @[f].
+ *!
+ *! @note
+ *!   @[round()] does @b{not@} return an @tt{int@}, merely an integer value
+ *!   stored in a @tt{float@}.
+ *!
+ *! @seealso
+ *!   @[floor()], @[ceil()]
+ */
 void f_round(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to round()\n");
@@ -226,6 +348,13 @@ void f_round(INT32 args)
   sp[-args].u.float_number=RINT(sp[-args].u.float_number);
 }
 
+/*! @decl mixed min(mixed ...args)
+ *!
+ *! Returns the smallest value among @[args].
+ *!
+ *! @seealso
+ *!   @[max()]
+ */
 void f_min(INT32 args)
 {
   INT32 i;
@@ -236,6 +365,13 @@ void f_min(INT32 args)
   pop_n_elems(args-1);
 }
 
+/*! @decl mixed max(mixed ...args)
+ *!
+ *! Returns the largest value among @[args].
+ *!
+ *! @seealso
+ *!   @[min()]
+ */
 void f_max(INT32 args)
 {
   INT32 i;
@@ -246,6 +382,12 @@ void f_max(INT32 args)
   pop_n_elems(args-1);
 }
 
+/*! @decl float abs(float f)
+ *! @decl int abs(int f)
+ *! @decl object abs(object f)
+ *!
+ *! Return the absolute value for @[f].
+ */
 void f_abs(INT32 args)
 {
   struct svalue zero;
@@ -257,6 +399,18 @@ void f_abs(INT32 args)
   if(is_lt(sp-1,&zero)) o_negate();
 }
 
+/*! @decl int sgn(mixed value)
+ *! @decl int sgn(mixed value, mixed zero)
+ *!
+ *! Check the sign of a value.
+ *!
+ *! @returns
+ *!   Returns @tt{-1@} if @[value] is less than @[zero],
+ *!   @tt{1@} if @[value] is greater than @[zero] and @tt{0@} (zero) otherwise.
+ *!
+ *! @seealso
+ *!   @[abs()]
+ */
 void f_sgn(INT32 args)
 {
   struct svalue zero;
