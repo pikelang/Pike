@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.8 2004/01/30 11:46:54 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.9 2004/04/05 23:19:04 nilsson Exp $"]]);
 
 
 // - Web.RDF
@@ -671,6 +671,25 @@ test_xmlparse2([[
   "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/banana> .",
   "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/pear> .",
   "RESOURCE <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/apple> ."
+>) ]])
+
+test_xmlparse2([[
+<?xml version='1.0'?>
+<rdf:RDF
+ xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+ xmlns:go='http://description.org/gene/'>
+
+     <go:term rdf:about='http://www.geneontology.org/go#GO:0003673'
+            n_associations='0'>
+  <go:accession>GO:0003673</go:accession>
+  <go:name>Gene_Ontology</go:name>
+  </go:term>
+</rdf:RDF>
+]], [[ (<
+  "<http://www.geneontology.org/go#GO:0003673> <http://description.org/gene/n_associations> \"0\" .",
+  "<http://www.geneontology.org/go#GO:0003673> <http://description.org/gene/name> \"Gene_Ontology\" .",
+  "<http://www.geneontology.org/go#GO:0003673> <http://description.org/gene/accession> \"GO:0003673\" .",
+  "<http://www.geneontology.org/go#GO:0003673> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://description.org/gene/term> .",
 >) ]])
 
 test_any_equal([[
