@@ -404,7 +404,7 @@ modifier: F_NO_MASK    { $$ = ID_NOMASK; }
 	| F_PUBLIC     { $$ = ID_PUBLIC; }
 	| F_VARARGS    { $$ = ID_VARARGS; }
 	| F_PROTECTED  { $$ = ID_PROTECTED; }
-	| F_INLINE     { $$ = ID_INLINE; }
+	| F_INLINE     { $$ = ID_INLINE | ID_NOMASK; }
         ;
 
 modifiers: modifier_list { $$=current_modifiers=$1; }
