@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.7 1997/06/09 21:25:28 grubba Exp $
+ * $Id: module.pmod.in,v 1.8 1997/06/10 20:31:04 grubba Exp $
  *
  * YP (NIS) Functionality for Pike
  *
@@ -7,8 +7,6 @@
  */
 
 inherit @module@;
-
-constant __Domain = Domain;	// Work-around for scope bug.
 
 // Usual nicknames
 constant nicknames = ([
@@ -23,15 +21,15 @@ constant nicknames = ([
 ]);
 
 class Map {
-  object(__Domain) domain;
+  object(Domain) domain;
   string ypmap;
 
   void create(string map,string|void d)
   {
     if (d) {
-      domain = __Domain(d);
+      domain = Domain(d);
     } else {
-      domain = __Domain();
+      domain = Domain();
     }
     ypmap = map;
     array err;
