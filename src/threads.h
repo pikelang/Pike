@@ -182,13 +182,17 @@ struct thread_state {
        _tmp.evaluator_stack_malloced=evaluator_stack_malloced; \
        _tmp.mark_stack_malloced=mark_stack_malloced; \
        _tmp.thread_id = thread_id; \
+/*     fprintf(stderr, "THREADS_ALLOW() %s:%d", __FILE__, __LINE__);*/\
        mt_unlock(& interpreter_lock); \
        /*th_yield();*/\
+/*     fprintf(stderr, "\n");*/\
      }
 
 #define THREADS_DISALLOW() \
      if(_tmp.swapped) { \
+/*     fprintf(stderr, "THREADS_DISALLOW() %s:%d ... ", __FILE__, __LINE__);*/\
        mt_lock(& interpreter_lock); \
+/*     fprintf(stderr, "\n");*/\
        sp=_tmp.sp; \
        evaluator_stack=_tmp.evaluator_stack; \
        mark_sp=_tmp.mark_sp; \
