@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.126 2003/04/07 17:21:13 nilsson Exp $
+|| $Id: efuns.c,v 1.127 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.126 2003/04/07 17:21:13 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.127 2003/04/28 00:32:43 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -110,12 +110,14 @@ struct array *encode_stat(PIKE_STAT_T *s)
 {
   struct array *a;
   a=allocate_array(7);
+  a->type_field = BIT_INT;
   ITEM(a)[0].u.integer=s->st_mode;
   switch(S_IFMT & s->st_mode)
   {
   case S_IFREG:
     push_int64((INT64)s->st_size);
-    ITEM(a)[1] = *(--sp);
+    stack_pop_to_no_free (ITEM(a) + 1);
+    if (ITEM(a)[1].type == T_OBJECT) a->type_field |= BIT_OBJECT;
     break;
     
   case S_IFDIR: ITEM(a)[1].u.integer=-2; break;

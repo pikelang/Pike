@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.6 2002/10/21 17:06:55 marcus Exp $
+|| $Id: unicode_module.cmod,v 1.7 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.6 2002/10/21 17:06:55 marcus Exp $");
+RCSID("$Id: unicode_module.cmod,v 1.7 2003/04/28 00:32:43 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -38,6 +38,7 @@ static void push_words( int *d, struct words *w )
       make_shared_binary_string2( d+w->words[i].start,
 				  w->words[i].size );
   }
+  r->type_field = BIT_STRING;
   push_array( r );
   uc_words_free( w );
 }

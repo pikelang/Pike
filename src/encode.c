@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.171 2003/04/02 19:22:43 mast Exp $
+|| $Id: encode.c,v 1.172 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.171 2003/04/02 19:22:43 mast Exp $");
+RCSID("$Id: encode.c,v 1.172 2003/04/28 00:32:43 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2161,6 +2161,7 @@ static void decode_value2(struct decode_data *data)
     case TAG_ARRAY:
     {
       struct array *a;
+      TYPE_FIELD types;
       if(num < 0)
 	Pike_error("Failed to decode array. (array size is negative)\n");
 
@@ -2174,13 +2175,14 @@ static void decode_value2(struct decode_data *data)
       SETUP_DECODE_MEMOBJ(T_ARRAY, array, a, allocate_array(num),
 			  free_svalues(ITEM(a), a->size, a->type_field));
 
+      types = 0;
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
-	ITEM(a)[e]=Pike_sp[-1];
-	Pike_sp--;
-	dmalloc_touch_svalue(Pike_sp);
+	stack_pop_to_no_free (ITEM(a) + e);
+	types |= 1 << ITEM(a)[e].type;
       }
+      a->type_field = types;
       ref_push_array(a);
 #ifdef ENCODE_DEBUG
       data->depth -= 2;
@@ -2221,6 +2223,7 @@ static void decode_value2(struct decode_data *data)
     {
       struct multiset *m;
       struct array *a;
+      TYPE_FIELD types;
       if(num<0)
 	Pike_error("Failed to decode multiset. (multiset size is negative)\n");
 
@@ -2243,14 +2246,14 @@ static void decode_value2(struct decode_data *data)
       a=m->ind;
 #endif
 
+      types = 0;
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
-	assign_svalue(a->item+e , Pike_sp-1);
-	pop_stack();
-	dmalloc_touch_svalue(Pike_sp);
+	stack_pop_to_no_free (ITEM(a) + e);
+	types |= 1 << ITEM(a)[e].type;
       }
-      array_fix_type_field(a);
+      a->type_field = types;
 #ifdef PIKE_NEW_MULTISETS
       {
 	struct multiset *l = mkmultiset (a);
@@ -2469,7 +2472,7 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  /* Remove the extra entry from the stack. */
 	  ref_push_program(p);
-	  stack_pop_n_elems_keep_top(2);
+	  stack_pop_2_elems_keep_top();
 	  break;
 	}
 

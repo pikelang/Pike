@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.165 2003/04/01 18:10:21 nilsson Exp $
+|| $Id: mapping.c,v 1.166 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.165 2003/04/01 18:10:21 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.166 2003/04/28 00:32:43 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1247,6 +1247,7 @@ PMOD_EXPORT struct array *mapping_to_array(struct mapping *m)
       struct array *b=allocate_array(2);
       assign_svalue(b->item+0, & k->ind);
       assign_svalue(b->item+1, & k->val);
+      b->type_field = (1 << k->ind.type) | (1 << k->val.type);
       s->u.array=b;
       s->type=T_ARRAY;
       s++;

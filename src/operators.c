@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.176 2003/04/27 17:52:42 mast Exp $
+|| $Id: operators.c,v 1.177 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.176 2003/04/27 17:52:42 mast Exp $");
+RCSID("$Id: operators.c,v 1.177 2003/04/28 00:32:43 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2135,11 +2135,11 @@ PMOD_EXPORT void o_multiply(void)
 	    assign_svalues_no_free(pos, ret->item, asize, ret->type_field);
 	  }
 	} else if (asize) {
-	  assign_svalues_no_free(pos,
-				 src->item,
-				 asize,
-				 src->type_field);
-	  array_fix_type_field(ret);
+	  ret->type_field =
+	    assign_svalues_no_free(pos,
+				   src->item,
+				   asize,
+				   src->type_field);
 	}
 	pop_n_elems(2);
 	push_array(ret);

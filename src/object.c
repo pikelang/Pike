@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.235 2003/03/30 20:26:49 mast Exp $
+|| $Id: object.c,v 1.236 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.235 2003/03/30 20:26:49 mast Exp $");
+RCSID("$Id: object.c,v 1.236 2003/04/28 00:32:43 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1590,6 +1590,7 @@ PMOD_EXPORT struct array *object_indices(struct object *o)
 			 ID_FROM_INT(p,p->identifier_index[e])->name);
       ITEM(a)[e].type=T_STRING;
     }
+    a->type_field = BIT_STRING;
   }else{
     apply_lfun(o, LFUN__INDICES, 0);
     if(sp[-1].type != T_ARRAY)
@@ -1613,11 +1614,14 @@ PMOD_EXPORT struct array *object_values(struct object *o)
 
   if(FIND_LFUN(p,LFUN__VALUES)==-1)
   {
+    TYPE_FIELD types = 0;
     a=allocate_array_no_init(p->num_identifier_index,0);
     for(e=0;e<(int)p->num_identifier_index;e++)
     {
       low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
+      types |= 1 << ITEM(a)[e].type;
     }
+    a->type_field = types;
   }else{
     apply_lfun(o, LFUN__VALUES, 0);
     if(sp[-1].type != T_ARRAY)
@@ -2196,6 +2200,7 @@ static void f_magic_indices (INT32 args)
 	copy_shared_string (ITEM(res)[i].u.string, ID_FROM_PTR (prog, ref)->name);
 	ITEM(res)[i++].type = T_STRING;
       }
+      res->type_field = BIT_STRING;
       sp[-1].u.array = resize_array (res, i);
       return;
     case 2:
@@ -2212,6 +2217,7 @@ static void f_magic_indices (INT32 args)
 			ID_FROM_INT (prog, prog->identifier_index[e])->name);
     ITEM(res)[e].type = T_STRING;
   }
+  res->type_field = BIT_STRING;
 }
 
 /*! @decl mixed ::_values()
@@ -2228,6 +2234,7 @@ static void f_magic_values (INT32 args)
   struct program *prog;
   struct inherit *inherit;
   struct array *res;
+  TYPE_FIELD types;
   int type = 0, e, i;
 
   if (args >= 1) {
@@ -2259,15 +2266,18 @@ static void f_magic_values (INT32 args)
       }
       pop_n_elems (args);
       push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
-      for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
+      types = 0;
+      for (e = i = 0; e < (int) prog->num_identifier_references; e++, i++) {
 	struct reference *ref = prog->identifier_references + e;
 	struct identifier *id = ID_FROM_PTR (prog, ref);
 	if (ref->id_flags & ID_HIDDEN) continue;
 	if ((ref->id_flags & (ID_INHERITED|ID_PRIVATE)) ==
 	    (ID_INHERITED|ID_PRIVATE)) continue;
-	low_object_index_no_free (ITEM(res) + i++, obj,
+	low_object_index_no_free (ITEM(res) + i, obj,
 				  e + inherit->identifier_level);
+	types |= 1 << ITEM(res)[i].type;
       }
+      res->type_field = types;
       sp[-1].u.array = resize_array (res, i);
       return;
     case 2:
@@ -2280,9 +2290,13 @@ static void f_magic_values (INT32 args)
 
   pop_n_elems (args);
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
-  for (e = 0; e < (int) prog->num_identifier_index; e++)
+  types = 0;
+  for (e = 0; e < (int) prog->num_identifier_index; e++) {
     low_object_index_no_free (ITEM(res) + e, obj,
 			      prog->identifier_index[e] + inherit->identifier_level);
+    types |= 1 << ITEM(res)[e].type;
+  }
+  res->type_field = types;
 }
 
 /*! @endnamespace

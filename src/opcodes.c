@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.144 2003/04/27 17:52:42 mast Exp $
+|| $Id: opcodes.c,v 1.145 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.144 2003/04/27 17:52:42 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.145 2003/04/28 00:32:43 mast Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -679,6 +679,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	  ref_push_array(a);
 	}else{
 	  INT32 e;
+	  TYPE_FIELD types = 0;
 #ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
 #endif
@@ -689,9 +690,10 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	  {
 	    push_svalue(tmp->item+e);
 	    o_cast(itype, run_time_itype);
-	    array_set_index(a,e,sp-1);
-	    pop_stack();
+	    stack_pop_to_no_free (ITEM(a) + e);
+	    types |= 1 << ITEM(a)[e].type;
 	  }
+	  a->type_field = types;
 #ifdef PIKE_DEBUG
 	  if(save_sp!=sp)
 	    Pike_fatal("o_cast left stack droppings.\n");
@@ -756,6 +758,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 #else  /* PIKE_NEW_MULTISETS */
 	  INT32 e;
 	  struct array *a;
+	  TYPE_FIELD types = 0;
 	  push_multiset(m=allocate_multiset(a=allocate_array(tmp->size)));
 	  
 	  SET_CYCLIC_RET(m);
@@ -764,9 +767,10 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	  {
 	    push_svalue(tmp->item+e);
 	    o_cast(itype, run_time_itype);
-	    array_set_index(a,e,sp-1);
-	    pop_stack();
+	    stack_pop_to_no_free (ITEM(a) + e);
+	    types |= 1 << ITEM(a)[e].type;
 	  }
+	  a->type_field = types;
 	  order_multiset(m);
 #endif
 

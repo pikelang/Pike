@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.489 2003/04/27 20:12:11 mast Exp $
+|| $Id: builtin_functions.c,v 1.490 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.489 2003/04/27 20:12:11 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.490 2003/04/28 00:32:43 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1787,9 +1787,11 @@ PMOD_EXPORT void f_all_constants(INT32 args)
 }
 
 /*! @decl array allocate(int size)
- *! @decl array allocate(int size, mixed zero)
+ *! @decl array allocate(int size, mixed init)
  *!
- *!   Allocate an array of @[size] elements and initialize them to @[zero].
+ *!   Allocate an array of @[size] elements. If @[init] is specified
+ *!   then each element is initialized by copying that value
+ *!   recursively.
  *!
  *! @seealso
  *!   @[sizeof()], @[aggregate()], @[arrayp()]
@@ -1812,11 +1814,18 @@ PMOD_EXPORT void f_allocate(INT32 args)
   if(args>1)
   {
     INT32 e;
+    struct svalue *init = Pike_sp - args + 1;
+    push_array (a);
     for(e=0;e<a->size;e++)
-      copy_svalues_recursively_no_free(a->item+e, Pike_sp-args+1, 1, 0);
+      copy_svalues_recursively_no_free(a->item+e, init, 1, 0);
+    a->type_field = 1 << init->type;
+    stack_pop_n_elems_keep_top (args);
   }
-  pop_n_elems(args);
-  push_array(a);
+  else {
+    a->type_field = BIT_INT;
+    pop_n_elems(args);
+    push_array(a);
+  }
 }
 
 /*! @decl object this_object(void|int level);
@@ -2206,10 +2215,10 @@ PMOD_EXPORT void f_indices(INT32 args)
     a=allocate_array_no_init(size,0);
     while(--size>=0)
     {
-      ITEM(a)[size].type=T_INT;
-      ITEM(a)[size].subtype=NUMBER_NUMBER;
+      /* Elements are already integers. */
       ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
     }
+    a->type_field = BIT_INT;
     break;
 
   case T_MAPPING:
@@ -2501,10 +2510,10 @@ PMOD_EXPORT void f_values(INT32 args)
     a = allocate_array_no_init(size,0);
     while(--size >= 0)
     {
-      ITEM(a)[size].type = T_INT;
-      ITEM(a)[size].subtype = NUMBER_NUMBER;
+      /* Elements are already integers. */
       ITEM(a)[size].u.integer = index_shared_string(Pike_sp[-args].u.string, size);
     }
+    a->type_field = BIT_INT;
     break;
 
   case T_ARRAY:
@@ -2523,10 +2532,10 @@ PMOD_EXPORT void f_values(INT32 args)
     a=allocate_array_no_init(size,0);
     while(--size>=0)
     {
-      ITEM(a)[size].type=T_INT;
-      ITEM(a)[size].subtype=NUMBER_NUMBER;
+      /* Elements are already integers. */
       ITEM(a)[size].u.integer=1;
     }
+    a->type_field = BIT_INT;
 #endif
     break;
 
@@ -3848,6 +3857,7 @@ PMOD_EXPORT void f_rows(INT32 args)
   INT32 e;
   struct array *a,*tmp;
   struct svalue *val;
+  TYPE_FIELD types;
 
   get_all_args("rows", args, "%*%a", &val, &tmp);
 
@@ -3856,21 +3866,27 @@ PMOD_EXPORT void f_rows(INT32 args)
   {
     struct svalue sval;
     tmp->type_field = BIT_MIXED | BIT_UNFINISHED;
+    types = 0;
     for(e=0;e<tmp->size;e++)
     {
       index_no_free(&sval, val, ITEM(tmp)+e);
+      types |= 1 << sval.type;
       free_svalue(ITEM(tmp)+e);
-      ITEM(tmp)[e]=sval;
+      move_svalue (ITEM(tmp) + e, &sval);
     }
+    tmp->type_field = types;
     stack_swap();
     pop_stack();
     return;
   }
 
   push_array(a=allocate_array(tmp->size));
-  
-  for(e=0;e<a->size;e++)
+  types = 0;
+  for(e=0;e<a->size;e++) {
     index_no_free(ITEM(a)+e, val, ITEM(tmp)+e);
+    types |= 1 << ITEM(a)[e].type;
+  }
+  a->type_field = types;
   
   Pike_sp--;
   dmalloc_touch_svalue(Pike_sp);
@@ -4624,10 +4640,10 @@ static void f_interleave_array(INT32 args)
       }
       nelems++;
     }
-    /* FIXME: Is this needed? Isn't T_INT default? */
     ITEM(min)[i].u.integer = low;
   }
 
+  min->type_field = T_INT;
   ref_push_array(order);
   f_sort(2);	/* Sort the order array on the minimum index */
 
@@ -4795,9 +4811,10 @@ static struct array *longest_ordered_sequence(struct array *a)
   res = low_allocate_array(top, 0); 
   while (ltop != -1)
   {
-    res->item[--top].u.integer = ltop;
+    ITEM(res)[--top].u.integer = ltop;
     ltop = links[ltop];
   }
+  res->type_field = T_INT;
 
   UNSET_ONERROR(tmp2);
   UNSET_ONERROR(tmp);
@@ -4846,6 +4863,7 @@ static struct array* diff_compare_table(struct array *a,struct array *b,int *u)
    struct mapping *map;
    struct svalue *pval;
    int i;
+   TYPE_FIELD types;
 
    if (u) {
      *u = 0;	/* Unique rows in array b */
@@ -4862,10 +4880,9 @@ static struct array* diff_compare_table(struct array *a,struct array *b,int *u)
 	 struct svalue val;
 	 val.type=T_ARRAY;
 	 val.u.array=low_allocate_array(1,1);
-	 val.u.array->item[0].type=T_INT;
-	 val.u.array->item[0].subtype=NUMBER_NUMBER;
-	 val.u.array->item[0].u.integer=i;
-	 mapping_insert(map,b->item+i,&val);
+	 ITEM(val.u.array)[0].u.integer=i;
+	 val.u.array->type_field = BIT_INT;
+	 mapping_insert(map,ITEM(b)+i,&val);
 	 free_svalue(&val);
 	 if (u) {
 	   (*u)++;
@@ -4881,21 +4898,25 @@ static struct array* diff_compare_table(struct array *a,struct array *b,int *u)
    }
 
    res=low_allocate_array(a->size,0);
+   types = 0;
 
    for (i=0; i<a->size; i++)
    {
       pval=low_mapping_lookup(map,a->item+i);
       if (!pval)
       {
-	 res->item[i].type=T_ARRAY;
-	 add_ref(res->item[i].u.array=&empty_array);
+	 ITEM(res)[i].type=T_ARRAY;
+	 add_ref(ITEM(res)[i].u.array=&empty_array);
+	 types |= BIT_ARRAY;
       }
       else
       {
-	 assign_svalue(res->item+i,pval);
+	 assign_svalue(ITEM(res)+i,pval);
+	 types |= 1 << ITEM(res)[i].type;
       }
    }
 
+   res->type_field = types;
    pop_stack();
    return res;
 }
@@ -5256,9 +5277,10 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
        dml=stack[top-1];
        while (dml)
        {
-	  a->item[--top].u.integer=dml->x;
+	  ITEM(a)[--top].u.integer=dml->x;
 	  dml=dml->prev;
        }
+       a->type_field = BIT_INT;
    }
 
    free(stack);
@@ -5410,6 +5432,9 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 
   res = allocate_array(sz);
   if (!res) {
+    /* FIXME: This is never called, so there should probably be
+     * SET_ONERROR stuff somewhere. I can't find where dml_pool is
+     * initialized, though. /mast */
     int args = 0;
     if (dml_pool) {
       dml_free_pools(dml_pool);
@@ -5429,12 +5454,11 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 #ifdef DIFF_DEBUG
     fprintf(stderr, "  %02d: %d\n", i, dml->x);
 #endif /* DIFF_DEBUG */
-    res->item[i].type = T_INT;
-    res->item[i].subtype = 0;
     res->item[i].u.integer = dml->x;
     dml = dml->prev;
     i++;
   }
+  res->type_field = BIT_INT;
 #ifdef PIKE_DEBUG
   if (i != sz) {
     Pike_fatal("Consistency error in diff_dyn_longest_sequence()\n");
@@ -6284,8 +6308,14 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
  *!   Remove elements that are duplicates.
  *!
  *! @returns
- *!   This function returns an copy of the array @[a] with all duplicate
- *!   values removed. The order of the values is kept in the result.
+ *!   This function returns an copy of the array @[a] with all
+ *!   duplicate values removed. The order of the values is kept in the
+ *!   result; it's always the first of several equal elements that is
+ *!   kept.
+ *!
+ *! @note
+ *!   Elements are compared with @[`==]. They are also hashed (see
+ *!   @[lfun::__hash] for further details if @[a] contains objects).
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
@@ -6311,7 +6341,10 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   }
   dmalloc_touch_svalue(Pike_sp-1);
   Pike_sp--; /* keep the ref to 'b' */
-  b=resize_array(b,  j);
+  ACCEPT_UNFINISHED_TYPE_FIELDS {
+    b=resize_array(b,  j);
+  } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
+  b->type_field = a->type_field;
   pop_n_elems(args-1); /* pop args and the mapping */
   push_array(b);
 }
@@ -6321,9 +6354,9 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
  *!
  *!   Splice two or more arrays.
  *!
- *!   This means that the the array becomes an array of the first element
- *!   in the first given array, the first argument in next array and so on
- *!   for all arrays. Then the second elements are added, etc.
+ *!   This means that the returned array has the first element in the
+ *!   first given array, then the first argument in next array and so
+ *!   on for all arrays. Then the second elements are added, etc.
  *!
  *! @seealso
  *!   @[`/()], @[`*()], @[`+()], @[`-()], @[everynth()]
@@ -6333,10 +6366,6 @@ PMOD_EXPORT void f_splice(INT32 args)
   struct array *out;
   INT32 size=0x7fffffff;
   INT32 i,j,k;
-
-#ifdef PIKE_DEBUG
-  if(args < 0) Pike_fatal("Negative args to f_splice()\n");
-#endif
 
   for(i=0;i<args;i++)
     if (Pike_sp[i-args].type!=T_ARRAY) 
@@ -6380,6 +6409,7 @@ void f_everynth(INT32 args)
   INT32 start=0;
   struct array *a;
   struct array *ina;
+  TYPE_FIELD types;
   INT32 size=0;
 #ifdef PIKE_DEBUG
   if(args < 0) Pike_fatal("Negative args to f_everynth()\n");
@@ -6406,10 +6436,13 @@ void f_everynth(INT32 args)
   }
 
   a=allocate_array(((size=ina->size)-start+n-1)/n);
-  for(k=0; start<size; start+=n)
-    assign_svalue_no_free(a->item+(k++), ina->item+start);
+  types = 0;
+  for(k=0; start<size; k++, start+=n) {
+    assign_svalue_no_free(ITEM(a) + k, ina->item+start);
+    types |= 1 << ITEM(a)[k].type;
+  }
+  a->type_field=types;
 
-  a->type_field=ina->type_field;
   pop_n_elems(args);
   push_array(a);
   return;
@@ -6651,6 +6684,7 @@ PMOD_EXPORT void f_map_array(INT32 args)
   INT32 e;
   struct svalue *fun;
   struct array *ret,*foo;
+  TYPE_FIELD types;
 
   if (args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("map_array", 2);
@@ -6662,16 +6696,18 @@ PMOD_EXPORT void f_map_array(INT32 args)
   fun=Pike_sp-args+1;
 
   ret=allocate_array(foo->size);
+  types = 0;
   SET_ONERROR(tmp, do_free_array, ret);
   for(e=0;e<foo->size;e++)
   {
-    push_svalue(foo->item+e);
+    push_svalue(ITEM(foo)+e);
     assign_svalues_no_free(Pike_sp,fun+1,args-2,-1);
     Pike_sp+=args-2;
     apply_svalue(fun,args-1);
-    ret->item[e]=*(--Pike_sp);
-    dmalloc_touch_svalue(Pike_sp);
+    stack_pop_to_no_free (ITEM(ret) + e);
+    types |= 1 << ITEM(ret)[e].type;
   }
+  ret->type_field = types;
   pop_n_elems(args);
   UNSET_ONERROR(tmp);
   push_array(ret);
@@ -6750,6 +6786,7 @@ PMOD_EXPORT void f_map(INT32 args)
    struct svalue *mysp;
    struct array *a,*d;
    int splice,i,n;
+   TYPE_FIELD types;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("map", 1);
@@ -6901,15 +6938,17 @@ PMOD_EXPORT void f_map(INT32 args)
 	    n=Pike_sp[-1].u.integer;
 	    pop_stack();
 	    push_array(d=allocate_array(n));
+	    types = 0;
 	    stack_swap();
 	    for (i=0; i<n; i++)
 	    {
 	       stack_dup(); /* `[] */
 	       push_int(i);
 	       f_call_function(2);
-	       d->item[i]=*(--Pike_sp);
-	       dmalloc_touch_svalue(Pike_sp);
+	       stack_pop_to_no_free (ITEM(d) + i);
+	       types |= 1 << ITEM(d)->type;
 	    }
+	    d->type_field = types;
 	    pop_stack();
 	    free_svalue(mysp-3);
 	    mysp[-3]=*(--Pike_sp);
@@ -6945,6 +6984,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 /* ret[i]=fun(arr[i],@extra); */
          push_array(d=allocate_array(n));
 	 d=Pike_sp[-1].u.array;
+	 types = 0;
 
 	 if(mysp[-2].type == T_FUNCTION &&
 	    mysp[-2].subtype == FUNCTION_BUILTIN)
@@ -6962,20 +7002,20 @@ PMOD_EXPORT void f_map(INT32 args)
 	       (* fun)(1+splice);
 	       if(Pike_sp>spbase)
 	       {
-		 dmalloc_touch_svalue(Pike_sp-1);
-		 d->item[i]=*--Pike_sp;
+		 stack_pop_to_no_free (ITEM(d) + i);
+		 types |= 1 << ITEM(d)[i].type;
 		 pop_n_elems(Pike_sp-spbase);
 	       }
 	     }
 	   }else{
 	     for (i=0; i<n; i++)
 	     {
-	       push_svalue(a->item+i);
+	       push_svalue(ITEM(a)+i);
 	       (* fun)(1);
 	       if(Pike_sp>spbase)
 	       {
-		 dmalloc_touch_svalue(Pike_sp-1);
-		 d->item[i]=*--Pike_sp;
+		 stack_pop_to_no_free (ITEM(d) + i);
+		 types |= 1 << ITEM(d)[i].type;
 		 pop_n_elems(Pike_sp-spbase);
 	       }
 	     }
@@ -6983,7 +7023,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 }else{
 	   for (i=0; i<n; i++)
 	   {
-	     push_svalue(a->item+i);
+	     push_svalue(ITEM(a)+i);
 	     if (splice) 
 	     {
 	       add_ref_svalue(mysp-1);
@@ -6994,10 +7034,11 @@ PMOD_EXPORT void f_map(INT32 args)
 	     {
 	       apply_svalue(mysp-2,1);
 	     }
-	     dmalloc_touch_svalue(Pike_sp-1);
-	     d->item[i]=*--Pike_sp;
+	     stack_pop_to_no_free (ITEM(d) + i);
+	     types |= 1 << ITEM(d)[i].type;
 	   }
 	 }
+	 d->type_field = types;
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
 
@@ -7012,10 +7053,10 @@ PMOD_EXPORT void f_map(INT32 args)
       case T_STRING:
 	 /* ret[i]=arr[i][fun](@extra); */
          push_array(d=allocate_array(n));
-	 d=Pike_sp[-1].u.array;
+	 types = 0;
 	 for (i=0; i<n; i++)
 	 {
-	    push_svalue(a->item+i);
+	    push_svalue(ITEM(a)+i);
 	    push_svalue(mysp-2);
 	    f_arrow(2);
 	    if(UNSAFE_IS_ZERO(Pike_sp-1))
@@ -7026,9 +7067,10 @@ PMOD_EXPORT void f_map(INT32 args)
 	    add_ref_svalue(mysp-1);
 	    push_array_items(mysp[-1].u.array);
 	    f_call_function(splice+1);
-	    d->item[i]=*--Pike_sp;
-	    dmalloc_touch_svalue(Pike_sp);
+	    stack_pop_to_no_free (ITEM(d) + i);
+	    types |= 1 << ITEM(d)[i].type;
 	 }
+	 d->type_field = types;
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
 
@@ -7416,9 +7458,7 @@ void f_enumerate(INT32 args)
       push_array(d=allocate_array(n));
       for (i=0; i<n; i++)
       {
-	 d->item[i].u.integer=start;
-	 d->item[i].type=T_INT;
-	 d->item[i].subtype=NUMBER_NUMBER;
+	 ITEM(d)[i].u.integer=start;
 #ifdef AUTO_BIGNUM
 	 if ((step>0 && start+step<start) ||
 	     (step<0 && start+step>start)) /* overflow */
@@ -7435,6 +7475,7 @@ void f_enumerate(INT32 args)
 #endif
 	 start+=step;
       }
+      d->type_field = BIT_INT;
    }
    else if (args<=3 &&
 	    ((Pike_sp[1-args].type==T_INT ||
@@ -7457,19 +7498,22 @@ void f_enumerate(INT32 args)
 	 d->item[i].type=T_FLOAT;
 	 start+=step;
       }
+      d->type_field = BIT_FLOAT;
    }
    else
    {
+      TYPE_FIELD types = 0;
       get_all_args("enumerate", args, "%i", &n);
       if (n<0) SIMPLE_BAD_ARG_ERROR("enumerate",1,"int(0..)");
       if (args>4) pop_n_elems(args-4);
+      push_array(d=allocate_array(n));
       if (args<4)
       {
-	 push_array(d=allocate_array(n));
 	 push_svalue(Pike_sp-2); /* start */
 	 for (i=0; i<n; i++)
 	 {
-	    assign_svalue_no_free(d->item+i,Pike_sp-1);
+	    assign_svalue_no_free(ITEM(d)+i,Pike_sp-1);
+	    types |= 1 << ITEM(d)[i].type;
 	    if (i<n-1)
 	    {
 	       push_svalue(Pike_sp-4); /* step */
@@ -7479,11 +7523,11 @@ void f_enumerate(INT32 args)
       }
       else
       {
-	 push_array(d=allocate_array(n));
 	 push_svalue(Pike_sp-3); /* start */
 	 for (i=0; i<n; i++)
 	 {
-	    assign_svalue_no_free(d->item+i,Pike_sp-1);
+	    assign_svalue_no_free(ITEM(d)+i,Pike_sp-1);
+	    types |= 1 << ITEM(d)[i].type;
 	    if (i<n-1)
 	    {
 	       push_svalue(Pike_sp-3); /* function */
@@ -7493,6 +7537,7 @@ void f_enumerate(INT32 args)
 	    }
 	 }
       }
+      d->type_field = types;
       pop_stack();
       stack_pop_n_elems_keep_top(args);
    }

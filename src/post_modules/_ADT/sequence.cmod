@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.7 2003/04/08 12:41:29 jhs Exp $
+|| $Id: sequence.cmod,v 1.8 2003/04/28 00:32:44 mast Exp $
 */
 
 #include "global.h"
@@ -276,10 +276,9 @@ PIKECLASS Sequence
     a=allocate_array_no_init(size,0);
     while(--size>=0)
     {
-      ITEM(a)[size].type=T_INT;
-      ITEM(a)[size].subtype=NUMBER_NUMBER;
       ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
     }
+    a->type_field = BIT_INT;
     RETURN a;
   }
 

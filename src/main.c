@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.174 2003/04/12 23:32:46 nilsson Exp $
+|| $Id: main.c,v 1.175 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.174 2003/04/12 23:32:46 nilsson Exp $");
+RCSID("$Id: main.c,v 1.175 2003/04/28 00:32:43 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -744,6 +744,7 @@ int dbm_main(int argc, char **argv)
       ITEM(a)[num].u.string=make_shared_string(argv[num]);
       ITEM(a)[num].type=T_STRING;
     }
+    a->type_field = BIT_STRING;
     push_array(a);
     
     for(num=0;environ[num];num++);
@@ -753,6 +754,7 @@ int dbm_main(int argc, char **argv)
       ITEM(a)[num].u.string=make_shared_string(environ[num]);
       ITEM(a)[num].type=T_STRING;
     }
+    a->type_field = BIT_STRING;
     push_array(a);
   
     apply(master(),"_main",2);

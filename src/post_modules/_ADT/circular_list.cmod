@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.7 2003/04/08 15:53:57 jhs Exp $
+|| $Id: circular_list.cmod,v 1.8 2003/04/28 00:32:44 mast Exp $
 */
 
 #include "global.h"
@@ -305,10 +305,9 @@ PIKECLASS CircularList
     a=allocate_array_no_init(size,0);
     while(--size>=0)
     {
-      ITEM(a)[size].type=T_INT;
-      ITEM(a)[size].subtype=NUMBER_NUMBER;
       ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
     }
+    a->type_field = BIT_INT;
     RETURN a;
   }
 
@@ -704,14 +703,13 @@ PIKECLASS CircularList
  PIKEFUN mixed peekBack()
   {
     struct svalue ind;
-    struct svalue retval;
     if (THIS->size <= 0)
     {
       Pike_error("Can not peek an empty list.\n");
     }
     ind.u.integer=circ2array(THIS->size-1);
     ind.type =T_INT;
-    simple_array_index_no_free(&retval, THIS->a, &ind);
+    simple_array_index_no_free(Pike_sp, THIS->a, &ind);
     Pike_sp++;
   }
 
@@ -883,6 +881,7 @@ PIKECLASS CircularList
     if (arg->type == T_INT)
     {
       THIS->a =allocate_array_no_init(arg->u.integer, 0);
+      THIS->a->type_field = BIT_INT;
     }
     else if (arg->type == T_ARRAY)
     {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.142 2003/04/27 17:46:47 mast Exp $
+|| $Id: array.c,v 1.143 2003/04/28 00:32:42 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.142 2003/04/27 17:46:47 mast Exp $");
+RCSID("$Id: array.c,v 1.143 2003/04/28 00:32:42 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -64,6 +64,14 @@ PMOD_EXPORT struct array weak_shrink_empty_array=
 struct array *gc_internal_array = &empty_array;
 static struct array *gc_mark_array_pos = 0;
 
+#ifdef TRACE_UNFINISHED_TYPE_FIELDS
+PMOD_EXPORT int accept_unfinished_type_fields = 0;
+PMOD_EXPORT void dont_accept_unfinished_type_fields (void *orig)
+{
+  accept_unfinished_type_fields = (int) orig;
+}
+#endif
+
 
 /* Allocate an array, this might be changed in the future to
  * allocate linked lists or something
@@ -89,8 +97,11 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
   GC_ALLOC(v);
 
 
-  /* for now, we don't know what will go in here */
-  v->type_field=BIT_MIXED | BIT_UNFINISHED;
+  if (size)
+    /* for now, we don't know what will go in here */
+    v->type_field = BIT_MIXED | BIT_UNFINISHED;
+  else
+    v->type_field = 0;
   v->flags=0;
 
   v->malloced_size = DO_NOT_WARN((INT32)(size + extra_space));
@@ -1171,11 +1182,14 @@ PMOD_EXPORT void array_fix_type_field(struct array *v)
 
   if(v->flags & ARRAY_LVALUE)
   {
-    v->type_field=BIT_MIXED;
+    v->type_field=BIT_MIXED|BIT_UNFINISHED;
     return;
   }
 
-  for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
+  for(e=0; e<v->size; e++) {
+    check_svalue (ITEM(v) + e);
+    t |= 1 << ITEM(v)[e].type;
+  }
 
 #ifdef PIKE_DEBUG
   if(t & ~(v->type_field))
@@ -1198,6 +1212,13 @@ void array_check_type_field(struct array *v)
 
   if(v->flags & ARRAY_LVALUE)
     return;
+
+#ifdef TRACE_UNFINISHED_TYPE_FIELDS
+  if (v->type_field & BIT_UNFINISHED && !accept_unfinished_type_fields) {
+    fputs ("Array got an unfinished type field.\n", stderr);
+    describe_something (v, T_ARRAY, 2, 2, 0, NULL);
+  }
+#endif
 
   for(e=0; e<v->size; e++)
   {
@@ -1973,7 +1994,9 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
       if(ret->size == ret->malloced_size)
       {
 	e=ret->size;
-	ret=resize_array(ret, e * 2);
+	ACCEPT_UNFINISHED_TYPE_FIELDS {
+	  ret=resize_array(ret, e * 2);
+	} END_ACCEPT_UNFINISHED_TYPE_FIELDS;
 	ret->size=e;
       }
 
@@ -1989,7 +2012,9 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
     if(ret->size == ret->malloced_size)
     {
       e=ret->size;
-      ret=resize_array(ret, e * 2);
+      ACCEPT_UNFINISHED_TYPE_FIELDS {
+	ret=resize_array(ret, e * 2);
+      } END_ACCEPT_UNFINISHED_TYPE_FIELDS;
       ret->size=e;
     }
 
@@ -2142,6 +2167,7 @@ PMOD_EXPORT struct array *reverse_array(struct array *a)
   ret=allocate_array_no_init(a->size,0);
   for(e=0;e<a->size;e++)
     assign_svalue_no_free(ITEM(ret)+e,ITEM(a)+a->size+~e);
+  ret->type_field = a->type_field;
   return ret;
 }
 

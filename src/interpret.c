@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.303 2003/04/27 14:16:51 mast Exp $
+|| $Id: interpret.c,v 1.304 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.303 2003/04/27 14:16:51 mast Exp $");
+RCSID("$Id: interpret.c,v 1.304 2003/04/28 00:32:43 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -301,11 +301,15 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
     {
       INT32 e;
       struct array *a;
+      TYPE_FIELD types = 0;
       ONERROR err;
       a=allocate_array(lval[1].u.array->size>>1);
       SET_ONERROR(err, do_free_array, a);
-      for(e=0;e<a->size;e++)
-	lvalue_to_svalue_no_free(a->item+e, lval[1].u.array->item+(e<<1));
+      for(e=0;e<a->size;e++) {
+	lvalue_to_svalue_no_free(ITEM(a)+e, ITEM(lval[1].u.array)+(e<<1));
+	types |= 1 << ITEM(a)[e].type;
+      }
+      a->type_field = types;
       to->type = T_ARRAY;
       to->u.array=a;
       UNSET_ONERROR(err);

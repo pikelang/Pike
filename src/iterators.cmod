@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.40 2003/04/27 17:52:42 mast Exp $
+|| $Id: iterators.cmod,v 1.41 2003/04/28 00:32:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.40 2003/04/27 17:52:42 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.41 2003/04/28 00:32:43 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1613,14 +1613,13 @@ PIKECLASS string_split_iterator
 		    }
 		  }
 		  split = allocate_array(num+1);
-		  split->item[0].type = T_INT;
 		  split->item[0].u.integer = split_val;
 		  for (i=0; i < num; i++) {
-		    split->item[i+1].type = T_INT;
 		    split->item[i+1].u.integer =
 		      index_shared_string((*from)->u.sval.u.array->
 					  item[i].u.string, 0);
-		  }		  
+		  }
+		  split->type_field = BIT_INT;
 		}
 		break;
 	      case F_APPLY:
@@ -1647,17 +1646,16 @@ PIKECLASS string_split_iterator
 		      return NULL;
 		    }
 		    split = allocate_array(num+1);
-		    split->item[0].type = T_INT;
 		    split->item[0].u.integer = split_val;
 		    tmp = CDR(*from);
 		    for (i = 1; tmp && (tmp->token == F_ARG_LIST);
 			 tmp = CDR(tmp)) {
 		      if (!CAR(tmp)) continue;
-		      split->item[i].type = T_INT;
 		      split->item[i].u.integer =
 			index_shared_string(CAR(tmp)->u.sval.u.string, 0);
 		      i++;
-		    }		    
+		    }
+		    split->type_field = BIT_INT;
 		  }
 		} else {
 		  return NULL;

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.41 2003/03/30 20:44:19 mast Exp $
+|| $Id: backend.cmod,v 1.42 2003/04/28 00:32:42 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.41 2003/03/30 20:44:19 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.42 2003/04/28 00:32:42 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1885,27 +1885,26 @@ PIKECLASS Backend
        {
 	 struct array *v;
 	 v=allocate_array_no_init(CALL(e)->args->size+2, 0);
-	 ITEM(v)[0].type=T_INT;
-	 ITEM(v)[0].subtype=NUMBER_NUMBER;
 	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - current_time.tv_sec;
 	 
 	 if(CALL(e)->caller)
 	 {
 	   ITEM(v)[1].type=T_OBJECT;
 	   add_ref(ITEM(v)[1].u.object=CALL(e)->caller);
+	   v->type_field = BIT_INT|BIT_OBJECT;
 	 }else{
-	   ITEM(v)[1].type=T_INT;
-	   ITEM(v)[1].subtype=NUMBER_NUMBER;
-	   ITEM(v)[1].u.integer=0;
+	   v->type_field = BIT_INT;
 	 }
-	 
-	 assign_svalues_no_free(ITEM(v)+2,
-				ITEM(CALL(e)->args),
-				CALL(e)->args->size,BIT_MIXED);
+
+	 v->type_field |=
+	   assign_svalues_no_free(ITEM(v)+2,
+				  ITEM(CALL(e)->args),
+				  CALL(e)->args->size,BIT_MIXED);
 	 
 	 ITEM(ret)[e].type=T_ARRAY;
 	 ITEM(ret)[e].u.array=v;
        }
+       ret->type_field = BIT_ARRAY;
        UNPROTECT_CALL_OUTS();
        return ret;
      }

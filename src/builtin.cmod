@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.133 2003/04/27 16:17:33 mast Exp $
+|| $Id: builtin.cmod,v 1.134 2003/04/28 00:32:42 mast Exp $
 */
 
 #include "global.h"
@@ -857,7 +857,7 @@ PIKEFUN string function_name(program|function func)
 #ifdef PIKE_DEBUG
 	if (d_flag>5) {
 	  fprintf(stderr,
-		  "Failed to find symbol for program 0x%08p\n"
+		  "Failed to find symbol for program %p\n"
 		  "Parent program info:\n",
 		  func->u.program);
 	  dump_program_tables(func->u.program->parent, 0);
@@ -1492,15 +1492,18 @@ void low_backtrace(struct Pike_interpreter *i)
 
       if (numargs + varargs) {
 	bf->args = allocate_array_no_init(numargs + varargs, 0);
-	assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
+	bf->args->type_field =
+	  assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
 	if (varargs) {
-	  assign_svalues_no_free(bf->args->item + numargs,
-				 f->locals[numargs].u.array->item,
-				 varargs, BIT_MIXED);
+	  bf->args->type_field |=
+	    assign_svalues_no_free(bf->args->item + numargs,
+				   f->locals[numargs].u.array->item,
+				   varargs, BIT_MIXED);
 	}
       }
     }
   }
+  res->type_field = BIT_OBJECT;
   /* NOTE: res has already been pushed on the stack. */
 }
 
@@ -2750,6 +2753,7 @@ static void low_automap(int d,
   INT32 x,e,tmp,size=0x7fffffff;
   struct svalue *tmpargs=Pike_sp - args;
   struct array *ret;
+  TYPE_FIELD types;
 
   for(e=0;e<args;e++)
   {
@@ -2776,6 +2780,7 @@ static void low_automap(int d,
 #endif
 
   push_array(ret=allocate_array(size));
+  types = 0;
 
   for(x=0;x<size;x++)
   {
@@ -2799,9 +2804,10 @@ static void low_automap(int d,
       apply_svalue(fun,args);
     else
       low_automap(d+1,depth,fun,real_args,args);
-    dmalloc_touch_svalue(Pike_sp-1);
-    ITEM(ret)[x]=*--Pike_sp;
+    stack_pop_to_no_free (ITEM(ret) + x);
+    types |= 1 << ITEM(ret)[x].type;
   }
+  ret->type_field = types;
   stack_unlink(args);
 }
 

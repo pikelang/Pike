@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.23 2003/03/29 11:25:40 marcus Exp $
+|| $Id: memory.c,v 1.24 2003/04/28 00:32:43 mast Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.23 2003/03/29 11:25:40 marcus Exp $");
+RCSID("$Id: memory.c,v 1.24 2003/04/28 00:32:43 mast Exp $");
 
 #include "system_machine.h"
 
@@ -510,11 +510,10 @@ static void memory_cast(INT32 args)
       sv=ITEM(a);
       for (i=0; i<sz; i++)
       {
-	 sv->type=T_INT;
-	 sv->subtype=0;
 	 sv->u.integer=(((unsigned char*)(THIS->p)))[i];
 	 sv++;
       }
+      a->type_field = BIT_INT;
 
       push_array(a);
 
