@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.493 2003/03/30 00:31:06 mast Exp $
+|| $Id: program.c,v 1.494 2003/03/30 16:16:51 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.493 2003/03/30 00:31:06 mast Exp $");
+RCSID("$Id: program.c,v 1.494 2003/03/30 16:16:51 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2895,6 +2895,12 @@ PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 /*
  * set a callback used to de-initialize clones of this program
  * the exit function is called at destruct
+ *
+ * Note: If DO_PIKE_CLEANUP is defined (typically when compiling with
+ * --with-dmalloc) this callback can be called after the module has
+ * exited. In that case all it should do is free references in the
+ * object.
+ *
  * This function is obsolete, use pike_set_prog_event_callback instead.
  */
 PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
