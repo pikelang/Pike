@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.63 2003/11/14 11:59:36 mast Exp $
+|| $Id: jvm.c,v 1.64 2003/12/19 22:08:16 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.63 2003/11/14 11:59:36 mast Exp $");
+RCSID("$Id: jvm.c,v 1.64 2003/12/19 22:08:16 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1673,12 +1673,26 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   *p++ = 0x9421ffc8;  /* stwu r1,-56(r1) */
   if(!statc)
     *p++ = 0x90810054;  /* stw r4,84(r1)   */
+#ifdef __APPLE__
+  {
+    int i, fp=1;
+    for(i=0; i<6; i++)
+      if(flt_args&(1<<i))
+	*p++ = 0xd0010000|((fp++)<<21)|(4*i+88);  /* stfs fN,X(r1)   */	
+      else if(i<5 && dbl_args&(1<<i)) {
+	*p++ = 0xd8010000|((fp++)<<21)|(4*i+88);  /* stfd fN,X(r1)   */	
+	i++;
+      } else
+	*p++ = 0x90010000|((i+5)<<21)|(4*i+88);  /* stw rN,X(r1)   */
+  }
+#else
   *p++ = 0x90a10058;  /* stw r5,88(r1)   */
   *p++ = 0x90c1005c;  /* stw r6,92(r1)   */
   *p++ = 0x90e10060;  /* stw r7,96(r1)   */
   *p++ = 0x91010064;  /* stw r8,100(r1)  */
   *p++ = 0x91210068;  /* stw r9,104(r1)  */
   *p++ = 0x9141006c;  /* stw r10,108(r1) */
+#endif
 
   if(statc) {
     *p++ = 0x7c852378;  /* mr r5,r4        */
