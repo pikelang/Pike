@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.132 2001/11/10 17:22:40 mast Exp $");
+RCSID("$Id: encode.c,v 1.133 2001/12/10 02:08:14 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -775,31 +775,57 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       pop_n_elems(2);
       break;
 
-    case T_MULTISET:
-      code_entry(TAG_MULTISET, val->u.multiset->ind->size,data);
-      if (data->canonic) {
-	INT32 *order;
-	if (val->u.multiset->ind->type_field & ~(BIT_BASIC & ~BIT_TYPE)) {
-	  array_fix_type_field(val->u.multiset->ind);
-	  if (val->u.multiset->ind->type_field & ~(BIT_BASIC & ~BIT_TYPE))
-	    /* This doesn't let bignums through. That's necessary as
-	     * long as they aren't handled deterministically by the
-	     * sort function. */
-	    Pike_error("Canonical encoding requires basic types in indices.\n");
+    case T_MULTISET: {
+      struct multiset *l = val->u.multiset;
+
+#ifdef PIKE_NEW_MULTISETS
+      if (multiset_indval (l) || multiset_get_cmp_less (l)->type != T_INT)
+	Pike_error ("FIXME: Encoding of multisets with values and/or "
+		    "custom sort function not yet implemented.\n");
+      else {
+	/* Encode valueless multisets without compare functions in a
+	 * compatible way. */
+#endif
+	code_entry(TAG_MULTISET, multiset_sizeof (l), data);
+	if (data->canonic) {
+	  INT32 *order;
+	  if (multiset_ind_types(l) & ~(BIT_BASIC & ~BIT_TYPE)) {
+	    multiset_fix_type_field(l);
+	    if (multiset_ind_types(l) & ~(BIT_BASIC & ~BIT_TYPE))
+	      /* This doesn't let bignums through. That's necessary as
+	       * long as they aren't handled deterministically by the
+	       * sort function. */
+	      Pike_error("Canonical encoding requires basic types in indices.\n");
+	  }
+	  check_stack(1);
+#ifdef PIKE_NEW_MULTISETS
+	  push_array(multiset_indices(l));
+#else
+	  push_array(copy_array(l->ind));
+#endif
+	  order = get_switch_order(Pike_sp[-1].u.array);
+	  order_array(Pike_sp[-1].u.array, order);
+	  free((char *) order);
+	  for (i = 0; i < Pike_sp[-1].u.array->size; i++)
+	    encode_value2(ITEM(Pike_sp[-1].u.array)+i, data);
+	  pop_stack();
 	}
-	check_stack(1);
-	ref_push_array(val->u.multiset->ind);
-	order = get_switch_order(Pike_sp[-1].u.array);
-	order_array(Pike_sp[-1].u.array, order);
-	free((char *) order);
-	for (i = 0; i < Pike_sp[-1].u.array->size; i++)
-	  encode_value2(ITEM(Pike_sp[-1].u.array)+i, data);
-	pop_stack();
+	else {
+#ifdef PIKE_NEW_MULTISETS
+	  struct svalue ind;
+	  union msnode *node = low_multiset_first (l->msd);
+	  for (; node; node = low_multiset_next (node))
+	    encode_value2 (low_use_multiset_index (node, ind), data);
+#else
+	  for(i=0; i<l->ind->size; i++)
+	    encode_value2(ITEM(l->ind)+i, data);
+#endif
+	}
+#ifdef PIKE_NEW_MULTISETS
       }
-      else
-	for(i=0; i<val->u.multiset->ind->size; i++)
-	  encode_value2(ITEM(val->u.multiset->ind)+i, data);
+#endif
       break;
+    }
 
     case T_OBJECT:
       check_stack(1);
@@ -1924,9 +1950,16 @@ static void decode_value2(struct decode_data *data)
 
       EDB(2,fprintf(stderr, "%*sDecoding multiset of size %d to <%d>\n",
 		  data->depth, "", num, data->counter.u.integer));
+#ifdef PIKE_NEW_MULTISETS
+      SETUP_DECODE_MEMOBJ (T_MULTISET, multiset, m,
+			   allocate_multiset (0, 0, NULL), ;);
+      /* FIXME: This array could be avoided by building the multiset directly. */
+      a = low_allocate_array (num, 0);
+#else
       SETUP_DECODE_MEMOBJ(T_MULTISET, multiset, m,
 			  allocate_multiset(low_allocate_array(num, 0)), ;);
       a=m->ind;
+#endif
 
       for(e=0;e<num;e++)
       {
@@ -1936,7 +1969,17 @@ static void decode_value2(struct decode_data *data)
 	dmalloc_touch_svalue(sp);
       }
       array_fix_type_field(a);
+#ifdef PIKE_NEW_MULTISETS
+      {
+	struct multiset *l = mkmultiset (a);
+	free_array (a);
+	/* This special case is handled efficiently by merge_multisets. */
+	merge_multisets (m, l, PIKE_MERGE_DESTR_A | PIKE_ARRAY_OP_ADD);
+	free_multiset (l);
+      }
+#else
       order_multiset(m);
+#endif
       ref_push_multiset(m);
 #ifdef ENCODE_DEBUG
       data->depth -= 2;

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.93 2001/08/15 14:42:10 marcus Exp $
+ * $Id: acconfig.h,v 1.94 2001/12/10 02:08:11 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -44,6 +44,9 @@
 
 /* Define this to use the new keypair loop. */
 #undef PIKE_MAPPING_KEYPAIR_LOOP
+
+/* Define this to use the new multiset implementation. */
+#undef PIKE_NEW_MULTISETS
 
 /* The following USE_* are used by smartlink */
 /* Define this if your ld sets the run path with -rpath */

@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.177 2001/09/24 14:36:51 grubba Exp $");
+RCSID("$Id: gc.c,v 1.178 2001/12/10 02:08:14 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -302,6 +302,10 @@ int attempt_to_identify(void *something, void **inblock)
   for(mu=first_multiset;mu;mu=mu->next)
     if(mu==(struct multiset *)something)
       return T_MULTISET;
+#ifdef PIKE_NEW_MULTISETS
+    else if (mu->msd == (struct multiset_data *) something)
+      return T_MULTISET_DATA;
+#endif
 
   if(safe_debug_findstring((struct pike_string *)something))
     return T_STRING;
@@ -502,9 +506,39 @@ void describe_location(void *real_memblock,
       fprintf(stderr, "%*s  **In storage of object\n", indent, "");
       break;
 
+#ifdef PIKE_NEW_MULTISETS
+    case T_MULTISET:
+      descblock = ((struct multiset *) memblock)->msd;
+      /* FALL THROUGH */
+
+    case T_MULTISET_DATA: {
+      struct multiset_data *msd = (struct multiset_data *) descblock;
+      union msnode *node = low_multiset_first (msd);
+      struct svalue ind;
+      int indval = msd->flags & MULTISET_INDVAL;
+      for (; node; node = low_multiset_next (node)) {
+	if (&node->i.ind == (struct svalue *) location) {
+	  fprintf (stderr, "%*s  **In index ", indent, "");
+	  print_svalue (stderr, low_use_multiset_index (node, ind));
+	  fputc ('\n', stderr);
+	  break;
+	}
+	else if (indval && &node->iv.val == (struct svalue *) location) {
+	  fprintf(stderr, "%*s  **In value with index ", indent, "");
+	  print_svalue(stderr, low_use_multiset_index (node, ind));
+	  fputc('\n', stderr);
+	  break;
+	}
+      }
+      break;
+    }
+
+#else  /* PIKE_NEW_MULTISETS */
     case T_MULTISET:
       descblock = ((struct multiset *) memblock)->ind;
       /* FALL THROUGH */
+#endif
+
     case T_ARRAY:
     {
       struct array *a=(struct array *)descblock;
@@ -874,10 +908,32 @@ again:
       break;
     }
 
+#ifdef PIKE_NEW_MULTISETS
+    case T_MULTISET_DATA: {
+      struct multiset *l;
+      for (l = first_multiset; l; l = l->next) {
+	if (l->msd == (struct multiset_data *) a) {
+	  fprintf(stderr, "%*s**Describing multiset for this data block:\n", indent, "");
+	  debug_dump_multiset(l);
+	}
+      }
+      break;
+    }
+
+    case T_MULTISET:
+      fprintf(stderr, "%*s**Describing multiset:\n", indent, "");
+      debug_dump_multiset((struct multiset *) a);
+      fprintf(stderr, "%*s**Describing multiset data block:\n", indent, "");
+      describe_something(((struct multiset *) a)->msd, T_MULTISET_DATA,
+			 indent + 2, -1, flags, 0);
+      break;
+
+#else  /* PIKE_NEW_MULTISETS */
     case T_MULTISET:
       fprintf(stderr,"%*s**Describing array of multiset:\n",indent,"");
       debug_dump_array(((struct multiset *)a)->ind);
       break;
+#endif
 
     case T_ARRAY:
       fprintf(stderr,"%*s**Describing array:\n",indent,"");
@@ -2529,7 +2585,11 @@ int do_gc(void)
      * things. */
     gc_zap_ext_weak_refs_in_mappings();
     gc_zap_ext_weak_refs_in_arrays();
+#ifdef PIKE_NEW_MULTISETS
+    gc_zap_ext_weak_refs_in_multisets();
+#else
     /* Multisets handled as arrays. */
+#endif
     gc_zap_ext_weak_refs_in_objects();
     gc_zap_ext_weak_refs_in_programs();
     GC_VERBOSE_DO(

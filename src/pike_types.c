@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.182 2001/10/05 01:30:13 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.183 2001/12/10 02:08:16 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3945,17 +3945,10 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
     }
     return ret;
        
-  case T_MULTISET:
   case T_ARRAY:
     {
       struct pike_type *arg_type;
-      struct array *a;
-
-      if (s->type == T_MULTISET) {
-	a = s->u.multiset->ind;
-      } else {
-	a = s->u.array;
-      }
+      struct array *a = s->u.array;
 #if 0
       int i;
 
@@ -3981,6 +3974,16 @@ struct pike_type *get_type_of_svalue(struct svalue *s)
       return pop_unfinished_type();
     }
 
+  case T_MULTISET:
+    type_stack_mark();
+    if (multiset_sizeof(s->u.multiset)) {
+      push_type(T_MIXED);
+    }
+    else {
+      push_type(T_ZERO);
+    }
+    push_type(T_MULTISET);
+    return pop_unfinished_type();
 
   case T_MAPPING:
     type_stack_mark();

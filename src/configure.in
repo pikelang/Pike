@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.561 2001/12/07 12:01:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.562 2001/12/10 02:08:13 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1086,6 +1086,11 @@ MY_AC_ARG_WITH(lock,
 	       MY_DESCR([--without-lock],
 	  [enable experimental code for multicpu machines (EXPERIMENTAL).]),
 		[],[AC_DEFINE(PIKE_RUN_UNLOCKED)])
+
+MY_AC_ARG_WITH(new-multisets,
+	       MY_DESCR([--with-new-multisets],
+			[enable new multiset implementation (EXPERIMENTAL).]),
+	       [AC_DEFINE(PIKE_NEW_MULTISETS)],[])
 
 # This makes configure default to --without-Perl
 # Remove this when the Perl module stops crashing and hanging. -Hubbe

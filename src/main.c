@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.137 2001/09/24 14:41:37 grubba Exp $");
+RCSID("$Id: main.c,v 1.138 2001/12/10 02:08:15 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -235,7 +235,9 @@ int dbm_main(int argc, char **argv)
     init_node_s_blocks();
     init_object_blocks();
     init_callback_blocks();
-    init_rbtree();
+#ifdef PIKE_NEW_MULTISETS
+    init_multiset();
+#endif
   }
 
 #ifdef SHARED_NODES
@@ -668,6 +670,11 @@ int dbm_main(int argc, char **argv)
   call_callback(& post_master_callbacks, 0);
   free_callback_list(& post_master_callbacks);
 
+#ifdef TEST_MULTISET
+  /* A C-level testsuite for the low level stuff in multisets. */
+  test_multiset();
+#endif
+
   TRACE((stderr, "Call master->_main()...\n"));
   
   if(SETJMP(back))
@@ -943,7 +950,9 @@ void low_exit_main(void)
   free_all_object_blocks();
   first_program=0;
   free_all_program_blocks();
-  exit_rbtree();
+#ifdef PIKE_NEW_MULTISETS
+  exit_multiset();
+#endif
 #endif
 }
 

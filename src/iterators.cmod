@@ -1,11 +1,11 @@
-/*\
+/*\ -*- c -*-
 ||| This file a part of Pike, and is copyright by Fredrik Hubinette
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.14 2001/09/24 16:47:27 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.15 2001/12/10 02:08:15 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -251,6 +251,197 @@ PIKECLASS array_iterator
     
 };
 
+#ifdef PIKE_NEW_MULTISETS
+
+PIKECLASS multiset_iterator
+{
+  CVAR struct multiset *l;
+  CVAR int lock_index;
+
+#define MSNODE_BEFORE_BEG -2
+#define MSNODE_AFTER_END -1
+  CVAR ptrdiff_t nodepos;
+
+  PIKEFUN int value()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
+	push_undefined();
+      else
+	push_multiset_value (THIS->l, THIS->nodepos);
+    }
+
+  PIKEFUN mixed index()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos))
+	push_undefined();
+      else
+	push_multiset_index (THIS->l, THIS->nodepos);
+    }
+
+  static void li_step (struct multiset_iterator_struct *li, int steps)
+    {
+      ptrdiff_t newpos = li->nodepos;
+
+      switch (li->nodepos) {
+	case MSNODE_BEFORE_BEG:
+	  if (steps <= 0) return;
+	  newpos = multiset_first (li->l);
+	  steps--;
+	  break;
+	case MSNODE_AFTER_END:
+	  if (steps >= 0) return;
+	  newpos = multiset_last (li->l);
+	  steps++;
+	  break;
+	default:;
+      }
+
+      if (steps > 0)
+	do {
+	  newpos = multiset_next (li->l, newpos);
+	  if (newpos < 0) {
+	    sub_msnode_ref (li->l);
+	    li->nodepos = MSNODE_AFTER_END;
+	    return;
+	  }
+	} while (--steps);
+      else if (steps < 0)
+	do {
+	  newpos = multiset_prev (li->l, newpos);
+	  if (newpos < 0) {
+	    sub_msnode_ref (li->l);
+	    li->nodepos = MSNODE_BEFORE_BEG;
+	    return;
+	  }
+	} while (++steps);
+
+      li->nodepos = newpos;
+    }
+
+  PIKEFUN object `+ (int steps)
+    {
+      struct object *o;
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      o = low_clone (multiset_iterator_program);
+      add_ref (OBJ2_MULTISET_ITERATOR (o)->l = THIS->l);
+      if ((OBJ2_MULTISET_ITERATOR (o)->nodepos = THIS->nodepos) >= 0)
+	add_msnode_ref (OBJ2_MULTISET_ITERATOR (o)->l);
+      li_step (OBJ2_MULTISET_ITERATOR (o), steps);
+      RETURN o;
+    }
+
+  PIKEFUN object `+= (int steps)
+  {
+    if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+    li_step (THIS, steps);
+    REF_RETURN Pike_fp->current_object;
+  }
+
+  PIKEFUN int first()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) sub_msnode_ref (THIS->l);
+      THIS->nodepos = multiset_first (THIS->l);
+      if (THIS->nodepos >= 0) RETURN 1;
+      THIS->nodepos = MSNODE_AFTER_END;
+      RETURN 0;
+    }
+
+  /* Hubbe: Should this really be destructive ??
+   * I let this question stand; I'm only adapting multiset_iterator. /mast */
+  PIKEFUN object _random()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) {
+	sub_msnode_ref (THIS->l);
+	THIS->nodepos = MSNODE_BEFORE_BEG;
+      }
+      if (!multiset_is_empty (THIS->l))
+	THIS->nodepos =
+	  multiset_get_nth (THIS->l, my_rand() % multiset_sizeof (THIS->l));
+      REF_RETURN Pike_fp->current_object;
+    }
+
+  PIKEFUN int next()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->nodepos >= 0) {
+	THIS->nodepos = multiset_next (THIS->l, THIS->nodepos);
+	if (THIS->nodepos >= 0) RETURN 1;
+	THIS->nodepos = MSNODE_AFTER_END;
+	sub_msnode_ref (THIS->l);
+      }
+      RETURN 0;
+    }
+
+  PIKEFUN int `!()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      RETURN THIS->nodepos < 0 || msnode_is_deleted (THIS->l, THIS->nodepos);
+    }
+
+  PIKEFUN void lock_index()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (!THIS->lock_index) {
+	add_ref (THIS->l->msd);
+	THIS->l->msd->noval_refs++;
+	THIS->lock_index = 1;
+      }
+    }
+
+  PIKEFUN void unlock_index()
+    {
+      if (!THIS->l) Pike_error ("Iterator not initialized.\n");
+      if (THIS->lock_index) {
+	THIS->l->msd->noval_refs--;
+	sub_ref (THIS->l->msd);
+#ifdef PIKE_DEBUG
+	if (!THIS->l->msd->refs) fatal ("msd ran out of refs unexpectedly.\n");
+#endif
+	THIS->lock_index = 0;
+      }
+    }
+
+  /* FIXME: Add more functions, e.g. insert, delete, add. */
+
+  /* FIXME: Maybe the index should be locked when the iterator is used
+   * in foreach, to behave more like the mapping iterator. */
+
+  PIKEFUN void create (multiset l)
+    {
+      if (THIS->l) Pike_error ("Multiset iterators cannot be reused.\n");
+      add_ref (THIS->l = l);
+      THIS->nodepos = MSNODE_BEFORE_BEG;
+      THIS->lock_index = 0;
+    }
+
+  INIT 
+    {
+      THIS->l = NULL;
+    }
+
+  EXIT
+    {
+      if (THIS->l) {
+	if (THIS->nodepos >= 0) sub_msnode_ref (THIS->l);
+	if (THIS->lock_index) {
+	  THIS->l->msd->noval_refs--;
+	  sub_ref (THIS->l->msd);
+#ifdef PIKE_DEBUG
+	  if (!THIS->l->msd->refs) fatal ("msd ran out of refs unexpectedly.\n");
+#endif
+	}
+	free_multiset (THIS->l);
+	THIS->l = NULL;
+      }
+    }
+};
+
+#else  /* PIKE_NEW_MULTISETS */
+
 PIKECLASS multiset_iterator
 {
   CVAR int pos;
@@ -280,7 +471,7 @@ PIKECLASS multiset_iterator
 
   PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(array_iterator_program);
+      struct object *o=low_clone(multiset_iterator_program);
       OBJ2_MULTISET_ITERATOR(o)[0]=*THIS;
       add_ref(THIS->a);
       OBJ2_MULTISET_ITERATOR(o)->pos+=steps;
@@ -323,7 +514,7 @@ PIKECLASS multiset_iterator
   PIKEFUN void create(multiset m)
     {
       if(THIS->a)
-	Pike_error("Array iterators cannot be reused.\n");
+	Pike_error("Multiset iterators cannot be reused.\n");
       
       add_ref(THIS->a=m->ind);
     }
@@ -340,6 +531,8 @@ PIKECLASS multiset_iterator
     }
     
 };
+
+#endif	/* PIKE_NEW_MULTISETS */
 
 PIKECLASS string_iterator
 {
@@ -1029,7 +1222,12 @@ PIKECLASS string_split_iterator
 	if (split_set->type == T_ARRAY) {
 	  a = split_set->u.array;
 	} else if (split_set->type == T_MULTISET) {
+#ifdef PIKE_NEW_MULTISETS
+	  a = multiset_indices (split_set->u.multiset);
+	  push_array (a);
+#else
 	  a = split_set->u.multiset->ind;
+#endif
 	} else {
 	  SIMPLE_BAD_ARG_ERROR("String.split", 2,
 			       "int|array(int)|multiset(int)");
@@ -1049,6 +1247,9 @@ PIKECLASS string_split_iterator
 	  THIS->split_set[i] = a->item[i].u.integer;
 	}
 	THIS->split_set_size = a->size;
+#ifdef PIKE_NEW_MULTISETS
+	if (split_set->type == T_MULTISET) pop_stack();
+#endif
       }
       add_ref(THIS->buffer = buffer);
       if (args > 2) {
@@ -1400,6 +1601,38 @@ int foreach_iterate(struct object *o)
     } else if(o->prog == multiset_iterator_program)
     {
       struct multiset_iterator_struct *i=OBJ2_MULTISET_ITERATOR(o);
+
+#ifdef PIKE_NEW_MULTISETS
+      struct svalue ind;
+
+      switch (i->nodepos) {
+	case MSNODE_BEFORE_BEG:
+	  i->nodepos = multiset_first (i->l);
+	  if (i->nodepos < 0) {
+	    i->nodepos = MSNODE_AFTER_END;
+	    return 0;
+	  }
+	  break;
+
+	default:
+	  i->nodepos = multiset_next (i->l, i->nodepos);
+	  if (i->nodepos >= 0) break;
+	  sub_msnode_ref (i->l);
+	  i->nodepos = MSNODE_AFTER_END;
+	  /* FALL THROUGH */
+
+	case MSNODE_AFTER_END:
+	  return 0;
+      }
+
+      if (Pike_sp[-4].type != T_INT)
+	assign_lvalue (Pike_sp - 4, use_multiset_index (i->l, i->nodepos, ind));
+      if (Pike_sp[-2].type != T_INT)
+	assign_lvalue (Pike_sp - 2, get_multiset_value (i->l, i->nodepos));
+
+      return 1;
+
+#else  /* PIKE_NEW_MULTISETS */
       if(i->pos < i->a->size)
       {
 	if(Pike_sp[-4].type != T_INT)
@@ -1417,6 +1650,8 @@ int foreach_iterate(struct object *o)
       }else{
 	return 0;
       }
+#endif	/* PIKE_NEW_MULTISETS */
+
     } else if(o->prog == string_iterator_program)
     {
       struct string_iterator_struct *i=OBJ2_STRING_ITERATOR(o);

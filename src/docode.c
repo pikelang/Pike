@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.136 2001/10/05 22:55:32 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.137 2001/12/10 02:08:13 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2073,8 +2073,8 @@ static int do_docode2(node *n, INT16 flags)
 	      break;
 
 	    case T_MULTISET:
-	      array_fix_type_field(n->u.sval.u.multiset->ind);
-	      if(n->u.sval.u.multiset->ind-> type_field & BIT_COMPLEX)
+	      multiset_fix_type_field(n->u.sval.u.multiset);
+	      if(multiset_ind_types(n->u.sval.u.multiset) & BIT_COMPLEX)
 		emit0(F_COPY_VALUE);
 	      break;
 	  }

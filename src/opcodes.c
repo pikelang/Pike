@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.116 2001/09/24 14:58:05 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.117 2001/12/10 02:08:15 mast Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -660,18 +660,46 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
       if(run_time_itype != T_MIXED)
       {
 	struct multiset *m;
+#ifdef PIKE_NEW_MULTISETS
+	struct multiset *tmp=sp[-2].u.multiset;
+#else
 	struct array *tmp=sp[-2].u.multiset->ind;
+#endif
 	DECLARE_CYCLIC();
 	
 	if((m=(struct multiset *)BEGIN_CYCLIC(tmp,0)))
 	{
 	  ref_push_multiset(m);
 	}else{
-	  INT32 e;
-	  struct array *a;
 #ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
 #endif
+
+#ifdef PIKE_NEW_MULTISETS
+	  ptrdiff_t nodepos;
+	  if (multiset_indval (tmp))
+	    Pike_error ("FIXME: Casting not implemented for multisets with values.\n");
+	  push_multiset (m = allocate_multiset (multiset_sizeof (tmp),
+						multiset_get_flags (tmp),
+						multiset_get_cmp_less (tmp)));
+
+	  SET_CYCLIC_RET(m);
+
+	  if ((nodepos = multiset_first (tmp)) >= 0) {
+	    ONERROR uwp;
+	    SET_ONERROR (uwp, do_sub_msnode_ref, tmp);
+	    do {
+	      push_multiset_index (tmp, nodepos);
+	      o_cast(itype, run_time_itype);
+	      multiset_insert_2 (m, sp - 1, NULL, 0);
+	      pop_stack();
+	    } while ((nodepos = multiset_next (tmp, nodepos)) >= 0);
+	    UNSET_ONERROR (uwp);
+	  }
+
+#else  /* PIKE_NEW_MULTISETS */
+	  INT32 e;
+	  struct array *a;
 	  push_multiset(m=allocate_multiset(a=allocate_array(tmp->size)));
 	  
 	  SET_CYCLIC_RET(m);
@@ -683,11 +711,13 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	    array_set_index(a,e,sp-1);
 	    pop_stack();
 	  }
+	  order_multiset(m);
+#endif
+
 #ifdef PIKE_DEBUG
 	  if(save_sp!=sp)
 	    fatal("o_cast left stack droppings.\n");
 #endif
-	  order_multiset(m);
 	}
 	END_CYCLIC();
 	assign_svalue(sp-3,sp-1);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.252 2001/11/10 19:43:51 mast Exp $");
+RCSID("$Id: interpret.c,v 1.253 2001/12/10 02:08:14 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1990,7 +1990,7 @@ void gdb_backtrace (
 	    break;
 
 	  case T_MULTISET:
-	    fprintf (stderr, "multiset[%ld]", (long) arg->u.multiset->ind->size);
+	    fprintf (stderr, "multiset[%ld]", (long) multiset_sizeof (arg->u.multiset));
 	    break;
 
 	  case T_MAPPING:

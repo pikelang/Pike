@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.142 2001/10/28 18:02:27 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.143 2001/12/10 02:08:16 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -934,9 +934,25 @@ PMOD_EXPORT void o_subtract(void)
 	  {
 	     struct mapping *m;
 
+#ifdef PIKE_NEW_MULTISETS
+	     int got_cmp_less = !!multiset_get_cmp_less (sp[-1].u.multiset);
+	     struct array *ind = multiset_indices (sp[-1].u.multiset);
+	     pop_stack();
+	     push_array (ind);
+	     if (got_cmp_less)
+	       m=merge_mapping_array_unordered(sp[-2].u.mapping,
+					       sp[-1].u.array,
+					       PIKE_ARRAY_OP_SUB);
+	     else
+	       m=merge_mapping_array_ordered(sp[-2].u.mapping,
+					     sp[-1].u.array,
+					     PIKE_ARRAY_OP_SUB);
+#else
 	     m=merge_mapping_array_ordered(sp[-2].u.mapping,
 					   sp[-1].u.multiset->ind,
 					   PIKE_ARRAY_OP_SUB);
+#endif
+
 	     pop_n_elems(2);
 	     push_mapping(m);
 	     return;
@@ -1180,9 +1196,25 @@ PMOD_EXPORT void o_and(void)
 	   {
 	      struct mapping *m;
 
+#ifdef PIKE_NEW_MULTISETS
+	     int got_cmp_less = !!multiset_get_cmp_less (sp[-1].u.multiset);
+	     struct array *ind = multiset_indices (sp[-1].u.multiset);
+	     pop_stack();
+	     push_array (ind);
+	     if (got_cmp_less)
+	       m=merge_mapping_array_unordered(sp[-2].u.mapping,
+					       sp[-1].u.array,
+					       PIKE_ARRAY_OP_AND);
+	     else
+	       m=merge_mapping_array_ordered(sp[-2].u.mapping,
+					     sp[-1].u.array,
+					     PIKE_ARRAY_OP_AND);
+#else
 	      m=merge_mapping_array_ordered(sp[-2].u.mapping,
 					    sp[-1].u.multiset->ind,
 					    PIKE_ARRAY_OP_AND);
+#endif
+
 	      pop_n_elems(2);
 	      push_mapping(m);
 	      return;

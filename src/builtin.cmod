@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.70 2001/11/08 23:34:27 nilsson Exp $
+ * $Id: builtin.cmod,v 1.71 2001/12/10 02:08:12 mast Exp $
  */
 
 #include "global.h"
@@ -595,8 +595,12 @@ PIKEFUN int get_weak_flag(mapping m)
 
 PIKEFUN int get_weak_flag(multiset m)
 {
+#ifdef PIKE_NEW_MULTISETS
+  RETURN multiset_get_flags(m) & MULTISET_WEAK;
+#else
   RETURN (m->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK)) ?
 	PIKE_WEAK_INDICES : 0;
+#endif
 }
 
 PIKEFUN program __empty_program()
@@ -773,14 +777,28 @@ PIKEFUN mixed random(array a)
 
 PIKEFUN mixed random(multiset m)
 {
-  if(!m->ind->size)
+  if(multiset_is_empty (m))
     SIMPLE_BAD_ARG_ERROR("random", 1, "multiset with elements in it");
+#ifdef PIKE_NEW_MULTISETS
+  if (multiset_indval (m)) {
+    ptrdiff_t nodepos = multiset_get_nth (m, my_rand() % multiset_sizeof (m));
+    push_multiset_index (m, nodepos);
+    push_multiset_value (m, nodepos);
+    sub_msnode_ref (m);
+    f_aggregate (2);
+  }
+  else {
+    push_multiset_index (m, multiset_get_nth (m, my_rand() % multiset_sizeof (m)));
+    sub_msnode_ref (m);
+  }
+#else
   push_svalue(m->ind->item + (my_rand() % m->ind->size));
+#endif
   stack_swap();
   pop_stack();
 }
 
-PIKEFUN mapping random(mapping m)
+PIKEFUN array random(mapping m)
 {
   struct mapping_data *md=m->data;
   size_t bucket, count;
