@@ -61,7 +61,7 @@ if test "x$with_java" = xyes; then
 
     dnl Linux kluge
 
-    if test x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xunknown:linux -o
+    if test x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xunknown:linux -o \
 	    x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xno:linux; then
       [pike_cv_java_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
     fi
