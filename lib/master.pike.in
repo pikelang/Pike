@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.149 2001/08/28 21:50:42 marcus Exp $
+ * $Id: master.pike.in,v 1.150 2001/08/29 21:16:44 marcus Exp $
  * 
  * Master-file for Pike.
  *
@@ -427,7 +427,7 @@ static program low_findprog(string pname, string ext, object|void handler)
       
 //      werror("2.5: %O\n",fname);
       
-      if ( mixed e=catch { ret=compile_file(fname); } )
+      if ( mixed e=catch { ret=compile_file(fname, handler); } )
       {
 //	werror("-3: %O\n",fname);
 	programs[fname]=0;
