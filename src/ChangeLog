@@ -1,3 +1,7 @@
+Thu May 22 16:29:10 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* return on a void expression now gives an error
+
 Mon May 19 03:00:49 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* Many bugfixes added
