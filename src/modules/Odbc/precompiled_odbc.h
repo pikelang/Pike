@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.9 1999/03/24 19:12:04 marcus Exp $
+ * $Id: precompiled_odbc.h,v 1.10 1999/04/08 23:34:09 marcus Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -17,6 +17,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifdef HAVE_ODBC
 #ifdef HAVE_ISQL_H
 #include <isql.h>
 #else /* !HAVE_ISQL_H */
@@ -26,12 +27,11 @@
 #ifdef HAVE_QEODBC_H
 #include <qeodbc.h>
 #else
-#ifdef HAVE_ODBC
 #undef HAVE_ODBC
-#endif /* HAVE_ODBC */
 #endif /* HAVE_QEODBC_H */
 #endif /* HAVE_WINDOWS_H */
 #endif /* HAVE_ISQL_H */
+#endif /* HAVE_ODBC */
 
 #ifdef HAVE_ODBC
 
