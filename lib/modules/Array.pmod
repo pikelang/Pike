@@ -194,145 +194,63 @@ array(array(array(mixed))) diff3(array mid,array left,array right)
    array lmid,ldst;
    array rmid,rdst;
 
-   [lmid,ldst]=diff(mid,left);
-   [rmid,rdst]=diff(mid,right);
+   [lmid,ldst]=Array.diff(mid,left);
+   [rmid,rdst]=Array.diff(mid,right);
 
    array res=({});
-   int pos;
    int lpos=0,rpos=0;
-   int l=0,r=0;
+   int l=0,r=0,n;
    array eq=({});
+   int x;
 
-   for (l=0; l<sizeof(lmid); l++)
+   for (n=0; n<sizeof(mid);)
    {
-      lpos=-1;
-      // find next equal l--m
-      while (l<sizeof(lmid) && lmid[l]!=ldst[l])
+      while (lpos>=sizeof(lmid[l]))
       {
-	 res+=({({lmid[l],ldst[l],({})})});
-	 
-	 // skip these
-
-	 for (lpos=0; r<sizeof(rmid) && lpos<sizeof(lmid[l]); lpos++)
-	 {
-	    mixed x=lmid[l][lpos];
-	    for(;;)
-	    {
-	       if (rpos>=sizeof(rmid[r]))
-	       {
-		  if (rpos<sizeof(rdst[r]))
-		     res+=({({({}),({}),rdst[r][rpos..]})});
-		  rpos=0;
-		  r++;
-		  if (r==sizeof(rmid)) break;
-	       }
-	       else if (rmid[r][rpos]==x) 
-	       {
-		  if (rpos<sizeof(rdst[r]))
-		     res+=({({({}),({}),({rdst[r][rpos]})})});
-		  rpos++;
-		  break;
-	       }
-	       else
-	       {
-		  if (rpos<sizeof(rdst[r]))
-		     res+=({({({}),({}),({rdst[r][rpos]})})});
-		  rpos++;
-	       }
-	    }
-	 }
+	 if (sizeof(ldst[l])>lpos)
+	    res+=({({({}),ldst[l][lpos..],({})})});
 	 l++;
+	 lpos=0;
       }
-      if (l==sizeof(lmid)) break;
-      
-      // loop over this, find this in r
-      for (lpos=0; r<sizeof(rmid) && lpos<sizeof(lmid[l]); lpos++)
+      while (rpos>=sizeof(rmid[r])) 
       {
-	 mixed x=lmid[l][lpos];
-         for(;;)
-	 {
-	    if (rpos>=sizeof(rmid[r]))
-	    {
-	       if (rpos<sizeof(rdst[r]))
-		  res+=({({({}),({}),rdst[r][rpos..]})});
-	       rpos=0;
-	       r++;
-	       if (r==sizeof(rmid)) break;
-	    }
-	    else if (rmid[r][rpos]==x) 
-	    {
-	       if (rmid[r]!=rdst[r]) // unequal
-		  if (r<sizeof(rdst[r]))
-		     res+=({({({x}),({x}),({rdst[r][rpos]})})});
-		  else
-		     res+=({({({x}),({x}),({})})});
-	       else  // equal!
-	       {
-		  array ax=({x});
-		  res+=({({ax,ax,ax})});
-	       }
-	       rpos++;
-	       break;
-	    }
-	    else
-	    {
-	       if (rpos<sizeof(rdst[r]))
-		  res+=({({({}),({}),({rdst[r][rpos]})})});
-	       rpos++;
-	    }
-	 }
-      }
-   }
-
-   // flush what's left
-
-   if (r<sizeof(rmid))
-   {
-      if (rmid[r]!=rdst[r])
-      {
-	 if (rpos<sizeof(rmid[r]))
-	    res+=({({rmid[r][rpos..],({}),({})})});
-	 if (rpos<sizeof(rdst[r]))
+	 if (sizeof(rdst[r])>rpos)
 	    res+=({({({}),({}),rdst[r][rpos..]})});
+	 r++;
+	 rpos=0;
       }
-      else
-	 res+=({({rmid[r][rpos..],({}),rdst[r][rpos..]})});
-      r++;
-   }
 
-   if (l<sizeof(lmid) && lpos!=-1)
-   {
-      if (lpos<sizeof(lmid[l]))
-	 res+=({({lmid[l][lpos..],({}),({})})});
-      if (lpos<sizeof(ldst[l]))
-	 res+=({({({}),({}),ldst[l][lpos..]})});
-   }
-   
-   res+=transpose( ({ldst[l..],lmid[l..],
-			   map(allocate(sizeof(lmid)-l),
-				     lambda(int x) { return ({}); })}) );
+      x=min(sizeof(lmid[l])-lpos,sizeof(rmid[r])-rpos);
 
-   res+=transpose( ({rmid[r..],
-			   map(allocate(sizeof(rmid)-r),
-				     lambda(int x) { return ({}); }),
-			   rdst[r..]}) );
+      if (lmid[l]==ldst[l] && rmid[r]==rdst[r])
+      {
+	 eq=lmid[l][lpos..lpos+x-1];
+	 res+=({({eq,eq,eq})});
+      }
+      else if (lmid[l]==ldst[l])
+      {
+	 eq=lmid[l][lpos..lpos+x-1];
+	 res+=({({eq,eq,rdst[r][rpos..rpos+x-1]})});
+      }
+      else if (rmid[r]==rdst[r])
+      {
+	 eq=rmid[r][rpos..rpos+x-1];
+	 res+=({({eq,ldst[l][lpos..lpos+x-1],eq})});
+      }
+      else 
+      {
+	 res+=({({lmid[l][lpos..lpos+x-1],
+		  ldst[l][lpos..lpos+x-1],
+		  rdst[r][rpos..rpos+x-1]})});
+      }
 
-   array res2=({});
-
-   for (l=0; l<sizeof(res); )
-   {
-      int ol;
-      for (ol=l; 
-	   l<sizeof(res) && res[l][0]==res[l][1] && res[l][1]==res[l][2]; 
-	   l++);
-      if (ol!=l) // got some equal
-	 res2+=({sum_arrays(`+,@res[ol..l-1])});
-      for (ol=l; 
-	   l<sizeof(res) && !(res[l][0]==res[l][1] && res[l][1]==res[l][2]); 
-	   l++);
-      if (ol!=l) // got some unequal
-	 res2+=({sum_arrays(`+,@res[ol..l-1])});
+//       werror(sprintf("-> %-5{%O%} %-5{%O%} %-5{%O%}"
+// 		     " x=%d l=%d:%d r=%d:%d \n",@res[-1],x,l,lpos,r,rpos));
+	 
+      rpos+=x;
+      lpos+=x;
+      n+=x;
    }
    
-   return transpose(res2);
+   return Array.transpose(res);
 }
