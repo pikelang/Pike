@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.41 2003/07/08 06:17:22 per Exp $
+|| $Id: auto.c.in,v 1.42 2003/07/08 06:58:50 per Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.41 2003/07/08 06:17:22 per Exp $");
+RCSID("$Id: auto.c.in,v 1.42 2003/07/08 06:58:50 per Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -424,6 +424,7 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 static void my_glFrustum(INT32 args);
 
 static void my_glDeleteTextures( INT32 args );
+static void my_glGenTextures( INT32 args );
 static void my_glCallLists( INT32 args );
 
 static void pre_init()
@@ -434,9 +435,10 @@ static void pre_init()
   add_function_constant("glDeleteTextures", my_glDeleteTextures,
 			"function(int...:void)",
 			OPT_SIDE_EFFECT);
-  add_function_constant("glCallLists", my_glCallLists,
-			"function(int...:void)",
+  add_function_constant("glCallLists", my_glCallLists,"function(int...:void)",
 			OPT_SIDE_EFFECT);
+  add_function_constant("glGenTextures", my_glGenTextures,
+			"function(int:array(int))", OPT_EXTERNAL_DEPEND);
 }
 
 static void post_init()
@@ -444,6 +446,27 @@ static void post_init()
 }
 
 @@
+static void my_glGenTextures( INT32 args )
+{
+  GLint *res;
+  struct array *a;
+  struct svalue tmp;
+  int ntexts;
+  int i;
+  if( args != 1 || Pike_sp[-1].type != PIKE_T_INT )
+    Pike_error("Illegal argument to glGenTextures. Expected integer\n");
+  ntexts = Pike_sp[-1].u.integer;
+  pop_stack();
+
+  res = xalloc( sizeof( GLint ) * ntexts );
+  memset( res, 0, sizeof(GLint)*ntexts );
+  glGenTextures( ntexts, res );
+  a = allocate_array( ntexts );
+  for( i = 0; i<ntexts; i++ )
+    a->item[i].u.integer =  res[i];
+  push_array( a );
+  free( res );
+}
 
 static void my_glDeleteTextures( INT32 args )
 {
