@@ -1,28 +1,35 @@
 #pike __REAL_VERSION__
 
-// edit commands supported:
-// <firstline>,<lastline><edit command>
-//    ^^ numeral (17) ^^
-//       or relative (+17, -17)
-//       or a search regexp (/regexp/)
-//       or multiple (17/regexp//regexp/+2)
-//
-// D                  - delete first line in space
-// G                  - insert hold space
-// H                  - append current space to hold space
-// P                  - print current data
-// a<string>          - insert 
-// c<string>          - change current space
-// d                  - delete current space
-// h                  - copy current space to hold space 
-// i<string>          - print string
-// l                  - print current space
-// p                  - print first line in data
-// q                  - quit evaluating
-// s/regexp/with/x    - replace
-// y/chars/chars/     - replace chars
-// 
-// where line is numeral, first 'line'==0
+//! edit commands supported:
+//! @pre{
+//! <firstline>,<lastline><edit command>
+//!    ^^ numeral (17) ^^
+//!       or relative (+17, -17)
+//!       or a search regexp (/regexp/)
+//!       or multiple (17/regexp//regexp/+2)
+//! @}
+//!
+//! @xml{
+//! <matrix>
+//! <r><c><b>Command</b></c><c><b>Action</b></c></r>
+//! <r><c>D</c><c>Delete first line in space</c></r>
+//! <r><c>G</c><c>Insert hold space</c></r>
+//! <r><c>H</c><c>Append current space to hold space</c></r>
+//! <r><c>P</c><c>Print current data</c></r>
+//! <r><c>a&lt;string&gt;</c><c>Insert</c></r>
+//! <r><c>c&lt;string&gt;</c><c>Change current space</c></r>
+//! <r><c>d</c><c>Delete current space</c></r>
+//! <r><c>h</c><c>Copy current space to hold space</c></r>
+//! <r><c>i&lt;string&gt;</c><c>Print string</c></r>
+//! <r><c>l</c><c>Print current space</c></r>
+//! <r><c>p</c><c>Print first line in data</c></r>
+//! <r><c>q</c><c>Quit evaluating</c></r>
+//! <r><c>s/regexp/with/x</c><c>Replace</c></r>
+//! <r><c>y/chars/chars/</c><c>Replace chars</c></r>
+//! </matrix>
+//! @}
+//!
+//! where line is numeral, first 'line'==0
 
 static array sedreplace(string s,object re,string with,
 			array whatin,int first,int lastmod,
@@ -117,6 +124,7 @@ static array scan_for_linenumber(string cmd,
    return ({n,cmd});
 }
 
+//!
 string|array `()(string|array(string) commands,
 		 string|array(string) data,
 		 void|int suppress)
@@ -279,6 +287,3 @@ string|array `()(string|array(string) commands,
       return (arrayp(data)?(print+in):(print+in)*"\n");
    return (arrayp(data)?(print):(print*"\n"));
 }
-
-
-
