@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.418 2001/05/30 14:04:38 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.419 2001/05/31 22:16:37 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6407,6 +6407,18 @@ test_eq(replace("test\ntest\n\ntest\ntest",({"\n\n","\n"}),({"<p>"," "})),"test 
 
 test_eq("123\000456""890"-"\0", "123\456""890")
 test_eq("123\456000""890"-"\0", "123\456000""890")
+
+test_any([[
+  array a=({ 1 });
+  replace(a,1,2);
+  return a[0];
+]], 2)
+
+test_any([[
+  mapping a=([ 1:1 ]);
+  replace(a,1,2);
+  return a[1];
+]], 2)
 
 test_any([[
 function reference=lambda(string x, array(string) a, array(string) b)
