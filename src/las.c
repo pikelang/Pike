@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.106 1999/11/12 19:03:32 grubba Exp $");
+RCSID("$Id: las.c,v 1.107 1999/11/14 19:20:31 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -508,6 +508,9 @@ node *debug_mknode(short token, node *a, node *b)
   {
   case F_CATCH:
     res->node_info |= OPT_SIDE_EFFECT;
+    if (a) {
+      res->tree_info |= a->tree_info & ~OPT_BREAK;
+    }
     break;
 
   case F_APPLY:
@@ -521,9 +524,11 @@ node *debug_mknode(short token, node *a, node *b)
     }
     break;
 
-  case F_MAGIC_INDEX:
   case F_MAGIC_SET_INDEX:
-    res->node_info |= OPT_EXTERNAL_DEPEND;
+    res->node_info |= OPT_ASSIGNMENT;
+    /* FALL_THROUGH */
+  case F_MAGIC_INDEX:
+    res->node_info |= OPT_EXTERNAL_DEPEND;    
     break;
 
   case F_UNDEFINED:
@@ -547,16 +552,52 @@ node *debug_mknode(short token, node *a, node *b)
     res->node_info |= OPT_CASE;
     break;
 
+  case F_INC_LOOP:
+  case F_INC_NEQ_LOOP:
+  case F_DEC_LOOP:
+  case F_DEC_NEQ_LOOP:
+    res->node_info |= OPT_ASSIGNMENT;
+    if (a) {
+      res->tree_info |= a->tree_info;
+    }
+    if (b) {
+      res->tree_info |= (b->tree_info & ~(OPT_BREAK|OPT_CONTINUE));
+    }
+    break;
+
   case F_SSCANF:
     if(!b || count_args(b) == 0) break;
-    /* fall through */
+    res->node_info |= OPT_ASSIGNMENT;
+    break;
 
   case F_ASSIGN:
+  case F_MOD_EQ:
+  case F_AND_EQ:
+  case F_MULT_EQ:
+  case F_ADD_EQ:
+  case F_SUB_EQ:
+  case F_DIV_EQ:
+  case F_LSH_EQ:
+  case F_RSH_EQ:
+  case F_XOR_EQ:
+  case F_OR_EQ:
+    res->node_info |= OPT_ASSIGNMENT;
+    if (a) {
+      res->tree_info |= a->tree_info;
+    }
+    if (b) {
+      res->tree_info |= b->tree_info;
+    }
+    break;
+
   case F_INC:
   case F_DEC:
   case F_POST_INC:
   case F_POST_DEC:
     res->node_info |= OPT_ASSIGNMENT;
+    if (a) {
+      res->tree_info |= a->tree_info;
+    }
     break;
     
   default:
@@ -564,10 +605,11 @@ node *debug_mknode(short token, node *a, node *b)
     if(token != F_ARG_LIST && (a || b))
       res->node_info |= OPT_TRY_OPTIMIZE;
 
-    res->tree_info = res->node_info;
     if(a) res->tree_info |= a->tree_info;
     if(b) res->tree_info |= b->tree_info;
   }
+
+  res->tree_info |= res->node_info;
 
 #ifdef PIKE_DEBUG
   if(d_flag > 3)
@@ -2227,7 +2269,7 @@ static void optimize(node *n)
 #ifdef PIKE_DEBUG
     if(l_flag > 3 && n)
     {
-      fprintf(stderr,"Optimizing (tree info=%x):",n->tree_info);
+      fprintf(stderr,"Optimizing (tree info=%04x):",n->tree_info);
       print_tree(n);
     }
 #endif    
