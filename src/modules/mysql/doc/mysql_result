@@ -88,13 +88,10 @@ SYNTAX
 	void mysql_result->field_seek(int field_no);
 
 DESCRIPTION
-	Places the field cursor at the specified position.
+	Places the field cursor at the specified position. This affects
+	which field mysql_result->fetch_field() will return next.
 
 	Fields are numbered starting with 0.
-
-BUGS
-	This function is at the moment not especially usefull. It only
-	affects which field fetch_field() starts with.
 
 SEE ALSO
 	mysql_result->fetch_field, mysql_result->fetch_fields
@@ -132,15 +129,14 @@ DESCRIPTION
 
 	The mapping contains the following entries:
 
-	"name":string		The name of the field.
-	"table":string		The name of the table.
-	"default":string	The default value for the field (DISABLED).
-	"type":string		The type of the field.
-	"length":int		The length of the field.
-	"max_length":int	The width of the widest element in this
-				field.
-	"flags":int		Some flags.
-	"decimals":int		The number of decimalplaces.
+	 "name":	string	The name of the field.
+	 "table":	string	The name of the table.
+	 "default":	string	The default value for the field (DISABLED).
+	 "type":	string	The type of the field.
+	 "length":	int	The length of the field.
+	 "max_length":	int	The length of the longest element in this field.
+	 "flags":	int	Some flags.
+	 "decimals":	int	The number of decimalplaces.
 
 	The type of the field can be any of:
 	"decimal", "char", "short", "long", "float", "double", "null",
