@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.271 2001/10/05 01:30:13 hubbe Exp $");
+RCSID("$Id: las.c,v 1.272 2001/11/08 23:34:29 nilsson Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1863,16 +1863,18 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    }
 	    
 	    if (thrown.type != PIKE_T_UNKNOWN) {
-	      push_svalue(&thrown);
+	      *Pike_sp = thrown;
+	      thrown.type = PIKE_T_INT;
 	      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
 	      if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
 	      pop_stack();
-	      free_svalue(&thrown);
 	    }
 	  }else{
 	    /* Hope it's there in pass 2 */
 	    pop_stack();
 	    ref_push_object(placeholder_object);
+	    if (thrown.type != PIKE_T_UNKNOWN)
+	      free_svalue(&thrown);
 	  }
 	}
       }

@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.77 2001/09/28 00:02:50 hubbe Exp $");
+RCSID("$Id: error.c,v 1.78 2001/11/08 23:34:28 nilsson Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -48,9 +48,8 @@ PMOD_EXPORT void check_recovery_context(void)
     fprintf(stderr, "Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	    Pike_interpreter.recoveries, &foo,
 	    DO_NOT_WARN((long)TESTILITEST));
-    fprintf(stderr, "Last recovery was added at %s:%d\n",
-	    Pike_interpreter.recoveries->file,
-	    Pike_interpreter.recoveries->line);
+    fprintf(stderr, "Last recovery was added at %s\n",
+	    Pike_interpreter.recoveries->file);
     fatal("Recoveries is out biking (Pike_interpreter.recoveries=%p, Pike_sp=%p, %ld)!\n",
 	  Pike_interpreter.recoveries, &foo,
 	  DO_NOT_WARN((long)TESTILITEST));
@@ -68,9 +67,8 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
 {
   check_recovery_context();
 #ifdef PIKE_DEBUG
-  r->line=line;
-  r->file=file;
-  OED_FPRINTF((stderr, "init_recovery(%p) %s:%d\n", r, file, line));
+  r->file=location;
+  OED_FPRINTF((stderr, "init_recovery(%p) %s\n", r, location));
 #endif
   r->frame_pointer=Pike_fp;
   r->stack_pointer=Pike_sp-Pike_interpreter.evaluator_stack;
@@ -121,6 +119,16 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
     (*Pike_interpreter.recoveries->onerror->func)(Pike_interpreter.recoveries->onerror->arg);
     Pike_interpreter.recoveries->onerror=Pike_interpreter.recoveries->onerror->previous;
   }
+
+#if defined(DEBUG_MALLOC) && defined(PIKE_DEBUG)
+  /* This will tell us where the value was caught (I hope) */
+  if(throw_value.type <= MAX_REF_TYPE)
+  {
+    debug_malloc_update_location(throw_value.u.refs,
+				 Pike_interpreter.recoveries->file);
+    debug_malloc_touch(throw_value.u.refs);
+  }
+#endif
 
   longjmp(Pike_interpreter.recoveries->recovery,1);
 }
@@ -569,6 +577,9 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   throw_value.u.object=o;
   throw_severity = THROW_ERROR;
   in_error=0;
+
+  dmalloc_touch_svalue(& throw_value);
+
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
