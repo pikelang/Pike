@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.175 2004/12/21 20:46:09 grubba Exp $
+|| $Id: builtin.cmod,v 1.176 2005/01/07 20:06:45 grubba Exp $
 */
 
 #include "global.h"
@@ -1948,6 +1948,14 @@ PIKECLASS multi_string_replace
     }
     if (from->size != to->size) {
       Pike_error("Replace must have equal-sized from and to arrays.\n");
+    }
+
+    if (!from->size) {
+      /* Enter no-op mode. */
+      THIS->sz = 0;
+      pop_n_elems(args);
+      push_int(0);
+      return;
     }
 
     if( (from->type_field & ~BIT_STRING) &&
