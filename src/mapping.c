@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.108 2000/09/30 15:58:30 mast Exp $");
+RCSID("$Id: mapping.c,v 1.109 2000/10/09 23:58:49 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1464,7 +1464,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
 
     if(md->size == 0) continue;
 
-    if(!(md->flags  && MAPPING_FLAG_WEAK))
+    if(!(md->flags  & MAPPING_FLAG_WEAK))
     {
 #if 1 /* major optimization */
       if(e==md->size)
