@@ -4,25 +4,41 @@
 ## We attempt to locate a working m4
 ##
 M4=m4
-IFS="${IFS= 	}"; save_ifs="$IFS"; IFS="${IFS}:"
-for d in $PATH; do
-  test -z "$d" && ac_dir=.
-  # GNU m4 is named gm4 on FreeBSD
-  if test -f $d/gm4; then
-    M4=$d/gm4
-    if echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/gm4 >/dev/null; then
-      break
-    fi
-  fi
-  if test -f $d/m4; then
-    M4=$d/m4
-    if echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/m4 >/dev/null; then
-      break
-    fi
-  fi
-done
-IFS="$save_ifs"
 
+IFS="${IFS= 	}"; save_ifs="$IFS"; IFS="${IFS}:"
+HAVEGNU=no
+HAVEWORKS=no
+
+# GNU m4 is named gm4 on FreeBSD
+for m4 in gm4 m4
+do
+  for d in $PATH; do
+    test -z "$d" && ac_dir=.
+
+    if test -f $d/$m4; then
+      if echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/$m4 >/dev/null; then
+        works=yes
+      else
+        works=no
+      fi
+
+      case `echo __gnu__ | $d/$m4` in
+        __gnu__) isgnu=no ;;
+        *) isgnu=yes ;;
+      esac
+
+      case "$HAVEGNU-$isgnu:$HAVEWORKS-$works" in
+        *:no-yes|no-yes:*)
+          M4=$d/$m4
+          HAVEGNU=$isgnu
+          HAVEWORKS=$works
+        ;;
+      esac
+    fi
+  done
+done
+
+IFS="$save_ifs"
 (
 cat <<\EOF
 divert(-1)
