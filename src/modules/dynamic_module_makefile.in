@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.107 2003/10/29 19:46:11 bill Exp $
+# $Id: dynamic_module_makefile.in,v 1.108 2003/10/30 06:11:22 bill Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -64,6 +64,5 @@ install: $(MODULE_INSTALL)
 	@if test "x$(OBJS)" = "x" ; then \
 	 exit 0; \
 	fi; \
-	echo "Installing C component"; \
 	$(TMP_BINDIR)/install_module module.so @prefix@/lib/pike/modules/$(MODNAME).so
 
