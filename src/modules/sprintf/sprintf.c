@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.14 1997/09/11 21:01:32 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.15 2003/10/16 16:23:56 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -588,8 +588,10 @@ static string low_pike_sprintf(char *format,
       {
 	struct pike_string *s;
 	GET_STRING(s);
-	fsp->pad_string=s->str;
-	fsp->pad_length=s->len;
+	if (s->len) {
+	  fsp->pad_string=s->str;
+	  fsp->pad_length=s->len;
+	}
 	continue;
       }
 
