@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.156 1999/03/19 11:40:14 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.157 1999/03/19 16:41:45 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -156,13 +156,14 @@ void f_ctime(INT32 args)
 void f_lower_case(INT32 args)
 {
   INT32 i;
+  struct pike_string *orig;
   struct pike_string *ret;
-  get_all_args("lower_case",args,"%s",&ret);
+  get_all_args("lower_case",args,"%s",&orig);
 
-  ret=begin_shared_string(sp[-args].u.string->len);
-  MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
+  ret = begin_shared_string(orig->len);
+  MEMCPY(ret->str, orig->str, orig->len);
 
-  for (i = sp[-args].u.string->len-1; i>=0; i--)
+  for (i = orig->len-1; i>=0; i--)
     if (isupper(EXTRACT_UCHAR( ret->str + i)))
       ret->str[i] = tolower(EXTRACT_UCHAR(ret->str+i));
 
@@ -174,13 +175,14 @@ void f_lower_case(INT32 args)
 void f_upper_case(INT32 args)
 {
   INT32 i;
+  struct pike_string *orig;
   struct pike_string *ret;
-  get_all_args("upper_case",args,"%s",&ret);
+  get_all_args("upper_case",args,"%s",&orig);
 
-  ret=begin_shared_string(sp[-args].u.string->len);
-  MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
+  ret=begin_shared_string(orig->len);
+  MEMCPY(ret->str, orig->str, orig->len);
 
-  for (i = sp[-args].u.string->len-1; i>=0; i--)
+  for (i = orig->len-1; i>=0; i--)
     if (islower(EXTRACT_UCHAR(ret->str+i)))
       ret->str[i] = toupper(EXTRACT_UCHAR(ret->str+i));
 
@@ -195,11 +197,12 @@ void f_random(INT32 args)
 
   if(i <= 0)
   {
-    sp[-args].u.integer = 0;
+    i = 0;
   }else{
-    sp[-args].u.integer = my_rand() % i;
+    i = my_rand() % i;
   }
-  pop_n_elems(args-1);
+  pop_n_elems(args);
+  push_int(i);
 }
 
 void f_random_seed(INT32 args)
