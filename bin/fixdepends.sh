@@ -15,7 +15,7 @@
 # Remaining absolute paths are removed.
 # Lines with only white-space are removed.
 
-if grep .protos $1/Makefile.in </dev/null 2>&1; then
+if grep .protos $1/Makefile.in >/dev/null 2>&1; then
   sed -e "s@\([ 	]\)$1/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
       -e "s@\([ 	]\)$1/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
       -e "s@\([ 	]\)$3/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
