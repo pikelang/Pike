@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: syslog.c,v 1.21 2003/09/07 00:02:44 nilsson Exp $
+|| $Id: syslog.c,v 1.22 2003/09/07 00:04:29 nilsson Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.21 2003/09/07 00:02:44 nilsson Exp $");
+RCSID("$Id: syslog.c,v 1.22 2003/09/07 00:04:29 nilsson Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -240,8 +240,10 @@ void f_syslog(INT32 args)
   struct pike_string *s;
   INT_TYPE pri=0, i;
 
+#ifdef PIKE_SECURITY
   int errno;
 #define EPERM 0
+#endif
   VALID_FILE_IO("System.syslog","write");
 
   get_all_args("syslog", args, "%i%S", &i, &s);
