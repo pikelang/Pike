@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.96 2000/01/27 23:07:27 hubbe Exp $
+ * $Id: master.pike.in,v 1.97 2000/02/04 11:27:21 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -650,7 +650,7 @@ class joinnode
     joined_modules = _joined_modules;
   }
 
-  static object|mapping ind(string index)
+  static object|mapping|program ind(string index)
   {
     array(mixed) res = ({});
     foreach(joined_modules, object|mapping o) 
@@ -678,9 +678,9 @@ class joinnode
     return UNDEFINED;
   }
 
-  object|mapping `[](string index)
+  object|mapping|program `[](string index)
   {
-    object|mapping ret;
+    object|mapping|program ret;
     if (!zero_type(ret = cache[index])) {
       if (ret != ZERO_TYPE) {
 	return ret;
@@ -705,7 +705,7 @@ class joinnode
     if (_cache_full) {
       return;
     }
-    foreach(joined_modules, object|mapping o) {
+    foreach(joined_modules, object|mapping|program o) {
       foreach(indices(o), string index) {
 	if (zero_type(cache[index])) {
 	  `[](index);
@@ -1101,7 +1101,7 @@ string trim_file_name(string s)
 }
 
 /*
- * This function is called whenever a compiling error occurs,
+ * This function is called whenever a compiling error occurs.
  * Nothing strange about it.
  * Note that previous_object cannot be trusted in ths function, because
  * the compiler calls this function.
@@ -1131,7 +1131,7 @@ void compile_error(string file,int line,string err)
 }
 
 /*
- * This function is called whenever a compiling error occurs,
+ * This function is called whenever a compiling warning occurs.
  * Nothing strange about it.
  * Note that previous_object cannot be trusted in ths function, because
  * the compiler calls this function.
