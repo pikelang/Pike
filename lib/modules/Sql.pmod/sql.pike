@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.34 1999/11/29 16:36:57 grubba Exp $
+ * $Id: sql.pike,v 1.35 2000/03/06 10:17:08 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.34 1999/11/29 16:36:57 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.35 2000/03/06 10:17:08 mast Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -297,7 +297,9 @@ static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 //.   Return last error message.  
 int|string error()
 {
-  return(master_sql->error());
+  if (functionp (master_sql->error))
+    return master_sql->error();
+  return "Unknown error";
 }
 
 //. - select_db
