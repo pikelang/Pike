@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.20 2001/07/08 19:35:38 grubba Exp $
+ * $Id: opcodes.h,v 1.21 2001/07/15 23:14:37 hubbe Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -47,19 +47,10 @@ enum Pike_opcodes
   F_PREFIX2_WORDX256,
   F_PREFIX2_24BITX256,
 
-  F_INDEX,
-  F_POS_INT_INDEX,
-  F_NEG_INT_INDEX,
-
 /*
  * These are the predefined functions that can be accessed from Pike.
  */
-  F_RETURN,
-  F_DUMB_RETURN,
-  F_RETURN_0,
-  F_RETURN_1,
-  F_RETURN_LOCAL,
-  F_RETURN_IF_TRUE,
+
 
 #include "interpret_protos.h"
 /*

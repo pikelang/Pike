@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.96 2001/07/09 14:19:16 grubba Exp $");
+RCSID("$Id: lex.c,v 1.97 2001/07/15 23:14:37 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -199,24 +199,14 @@ struct keyword instr_names[]=
 { "continue",		F_CONTINUE,0 },	
 { "default",		F_DEFAULT,0 },	
 { "do-while",		F_DO,0 },	
-{ "dumb return",	F_DUMB_RETURN,0 },	
 { "for",		F_FOR,0 },
-{ "index",              F_INDEX,0 },
 
 { "pointer",		F_POINTER, I_ISPOINTER },
 { "data",		F_DATA, I_DATA },
 { "byte",		F_BYTE, I_DATA },
-
 { "lvalue_list",	F_LVALUE_LIST,0 },	
-{ "return",		F_RETURN,0 },
-{ "return 0",		F_RETURN_0,0 },
-{ "return 1",		F_RETURN_1,0 },
-{ "return local",	F_RETURN_LOCAL, I_HASARG },
-{ "return if true",	F_RETURN_IF_TRUE, 0 },
 { "label",		F_LABEL,I_HASARG },
 { "align",		F_ALIGN, I_HASARG },
-{ "int index",          F_POS_INT_INDEX, I_HASARG },
-{ "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "nop",                F_NOP,0 },
 { "function start",     F_START_FUNCTION,0 },
 { "notreached!",        F_NOTREACHED, 0 },
