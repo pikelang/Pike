@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.93 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.94 2000/08/03 17:20:28 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2303,7 +2303,7 @@ PMOD_EXPORT void o_negate(void)
 
 PMOD_EXPORT void o_range(void)
 {
-  INT32 from,to;
+  ptrdiff_t from,to;
 
   if(sp[-3].type==T_OBJECT)
   {
@@ -2317,10 +2317,10 @@ PMOD_EXPORT void o_range(void)
   if(sp[-1].type != T_INT)
     PIKE_ERROR("`[]", "Bad argument 3 to [ .. ]\n", sp, 3);
 
-  from=sp[-2].u.integer;
-  if(from<0) from=0;
-  to=sp[-1].u.integer;
-  if(to<from-1) to=from-1;
+  from = sp[-2].u.integer;
+  if(from<0) from = 0;
+  to = sp[-1].u.integer;
+  if(to<from-1) to = from-1;
   sp-=2;
 
   switch(sp[-1].type)
@@ -2328,10 +2328,10 @@ PMOD_EXPORT void o_range(void)
   case T_STRING:
   {
     struct pike_string *s;
-    if(to>=sp[-1].u.string->len-1)
+    if(to+1>=sp[-1].u.string->len)
     {
       if(from==0) return;
-      to=sp[-1].u.string->len-1;
+      to = sp[-1].u.string->len-1;
 
       if(from>to+1) from=to+1;
     }
@@ -2349,9 +2349,9 @@ PMOD_EXPORT void o_range(void)
   case T_ARRAY:
   {
     struct array *a;
-    if(to>=sp[-1].u.array->size-1)
+    if(to+1 >= sp[-1].u.array->size)
     {
-      to=sp[-1].u.array->size-1;
+      to = sp[-1].u.array->size-1;
 
       if(from>to+1) from=to+1;
     }
