@@ -8,7 +8,7 @@ fix()
 {
   if [ -f $1/acconfig.h ]; then
     echo "Running autoheader in $1"
-    ( cd $1 ; autoheader )
+    ( cd $1 ; autoheader && echo foo >$1/stamp-h.in )
   fi
 
   if [ -f $1/configure.in ]; then
