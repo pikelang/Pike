@@ -1,6 +1,6 @@
 Package: pike7.4
 Version: 7.4.10
-Revision: 1
+Revision: 1 
 Description: <<
 Object-oriented language with a C-like syntax.
 <<
@@ -17,9 +17,9 @@ Roxen: ftp://ftp.roxen.com/pub/pike/all/
 <<
 Source: mirror:custom:%v/Pike-v%v.tar.gz
 Source-MD5: c0e8b64cf0dfe1f68390290bcc14decb
-BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,mysql-dev,pdflib,fftw,libpoll,librsvg2
-Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,mysql-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,libpoll-shlibs,librsvg2-shlibs
-SourceDirectory: pike-%v/src/
+BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,mysql-dev,pdflib,fftw,libpoll,librsvg2,libpng
+Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,mysql-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,libpoll-shlibs,librsvg2-shlibs,libpng-shlibs
+SourceDirectory: Pike-v%v/src/
 <<
 CompileScript: <<
   ./configure --without-GL --without-postgres --with-freetype --without-GTK --with-mysql=/sw --with-libpdf --without-dumped-modules --without-debug --with-double-precision --disable-rpath --without-rtldebug --without-cdebug --without-copt --without-security --without-shared-nodes --with-oob --with-max-fd=60000 --without-relocatable-dumped-modules --without-libpanda --without-perl --with-threads --with-readline --with-tiff --without-ssleay --with-ttflib --without-pgsql --without-msql --without-sane --without-GLUT --without-gnome --without-glade
