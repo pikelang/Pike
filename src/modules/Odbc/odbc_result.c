@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.8 1998/05/31 17:17:13 grubba Exp $
+ * $Id: odbc_result.c,v 1.9 1998/05/31 18:15:21 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.8 1998/05/31 17:17:13 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.9 1998/05/31 18:15:21 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -29,6 +29,7 @@ RCSID("$Id: odbc_result.c,v 1.8 1998/05/31 17:17:13 grubba Exp $");
 #include "multiset.h"
 #include "program.h"
 #include "array.h"
+#include "operators.h"
 #include "builtin_functions.h"
 #include "pike_memory.h"
 #include "pike_macros.h"
@@ -37,6 +38,18 @@ RCSID("$Id: odbc_result.c,v 1.8 1998/05/31 17:17:13 grubba Exp $");
 #include "precompiled_odbc.h"
 
 /* #define ODBC_DEBUG */
+
+/*
+ * Contants
+ */
+
+/* Buffer size used when retrieving BLOBs
+ *
+ * Allow it to be specified from the command line.
+ */
+#ifndef BLOB_BUFSIZ
+#define BLOB_BUFSIZ	1024
+#endif /* !BLOB_BUFSIZ */
 
 /*
  * Globals
@@ -179,17 +192,23 @@ static void odbc_fix_fields(void)
       break;
     case SQL_LONGVARBINARY:
       push_text("long blob");
+      odbc_field_sizes[i] = 0;
+#if 0
       if (odbc_field_sizes[i] > 0x100000) {
 	/* Don't allocate more than 1M */
 	odbc_field_sizes[i] = 0x100000;
       }
+#endif /* 0 */
       break;
     case SQL_LONGVARCHAR:
       push_text("var string");
+      odbc_field_sizes[i] = 0;
+#if 0
       if (odbc_field_sizes[i] > 0x100000) {
 	/* Don't allocate more than 1M */
 	odbc_field_sizes[i] = 0x100000;
       }
+#endif /* 0 */
       break;
     case SQL_REAL:
       push_text("float");
@@ -203,13 +222,17 @@ static void odbc_fix_fields(void)
       break;
     case SQL_VARCHAR:
       push_text("var string");
+      odbc_field_sizes[i] = 0;
+#if 0
       if (odbc_field_sizes[i] > 0x100000) {
 	/* Don't allocate more than 1M */
 	odbc_field_sizes[i] = 0x100000;
       }
+#endif /* 0 */
       break;
     default:
       push_text("unknown");
+      odbc_field_sizes[i] = 0;
       break;
     }
     push_text("length"); push_int(precision);
@@ -229,9 +252,11 @@ static void odbc_fix_fields(void)
 
     f_aggregate_mapping(5*2);
 
-    /* Align to longlong-word size */
-    odbc_field_sizes[i] += 7;
-    odbc_field_sizes[i] &= ~7;
+    if (odbc_field_sizes[i]) {
+      /* Align to longlong-word size */
+      odbc_field_sizes[i] += 7;
+      odbc_field_sizes[i] &= ~7;
+    }
 
     membuf_size += odbc_field_sizes[i];
   }
@@ -250,14 +275,21 @@ static void odbc_fix_fields(void)
    * Now it's time to bind the columns
    */
   for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-    PIKE_ODBC_RES->field_info[i].buf = membuf;
-    PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i];
+    if ((PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i])) {
+      PIKE_ODBC_RES->field_info[i].buf = membuf;
     
-    odbc_check_error("odbc_fix_fields", "Couldn't bind string field",
-		     SQLBindCol(PIKE_ODBC_RES->hstmt, i+1,
-				SQL_C_CHAR, membuf, odbc_field_sizes[i],
-				&PIKE_ODBC_RES->field_info[i].len), NULL);
-    membuf += odbc_field_sizes[i];
+      odbc_check_error("odbc_fix_fields", "Couldn't bind field",
+		       SQLBindCol(PIKE_ODBC_RES->hstmt, i+1,
+				  SQL_C_CHAR, membuf, odbc_field_sizes[i],
+				  &PIKE_ODBC_RES->field_info[i].len), NULL);
+      membuf += odbc_field_sizes[i];
+    } else {
+      PIKE_ODBC_RES->field_info[i].buf = NULL;
+#ifdef ODBC_DEBUG
+      fprintf(stderr, "ODBC:odbc_fix_fields(): Column field %d is a BLOB\n",
+	      i+1);
+#endif /* ODBC_DEBUG */
+    }
   }
 }
 
@@ -356,7 +388,57 @@ static void f_fetch_row(INT32 args)
 		     code, NULL);
  
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-      if (PIKE_ODBC_RES->field_info[i].len != SQL_NULL_DATA) {
+      if (!PIKE_ODBC_RES->field_info[i].size) {
+	/* BLOB */
+	int num_strings = 0;
+	char buf[BLOB_BUFSIZ+1];
+	SDWORD len = 0;
+
+	while(1) {
+	  code = SQLGetData(PIKE_ODBC_RES->hstmt, i+1, SQL_C_BINARY,
+			    buf, BLOB_BUFSIZ, &len);
+	  if (code == SQL_NO_DATA_FOUND) {
+#ifdef ODBC_DEBUG
+	    fprintf(stderr, "ODBC:fetch_row(): NO DATA\n");
+#endif /* ODBC_DEBUG */
+	    if (!num_strings) {
+	      num_strings++;
+	      push_constant_text("");
+	    }
+	    break;
+	  }
+	  odbc_check_error("odbc->fetch_row", "SQLGetData() failed",
+			   code, NULL);
+	  if (len == SQL_NULL_DATA) {
+#ifdef ODBC_DEBUG
+	    fprintf(stderr, "ODBC:fetch_row(): NULL\n");
+#endif /* ODBC_DEBUG */
+	    if (!num_strings) {
+	      /* NULL */
+	      push_int(0);
+	    }
+	    break;
+	  } else {
+	    num_strings++;
+#ifdef ODBC_DEBUG
+	    fprintf(stderr, "[%d] ", num_strings);
+#endif /* ODBC_DEBUG */
+	    if (len < BLOB_BUFSIZ) {
+	      push_string(make_shared_binary_string(buf, len));
+	      break;
+	    } else {
+	      push_string(make_shared_binary_string(buf, BLOB_BUFSIZ));
+	    }
+	  }
+	}
+	if (num_strings > 1) {
+#ifdef ODBC_DEBUG
+	  fprintf(stderr, "ODBC:fetch_row(): Joining %d strings\n",
+		  num_strings);
+#endif /* ODBC_DEBUG */
+	  f_add(num_strings);
+	}
+      } else if (PIKE_ODBC_RES->field_info[i].len != SQL_NULL_DATA) {
 	push_string(make_shared_binary_string(PIKE_ODBC_RES->field_info[i].buf,
 					      PIKE_ODBC_RES->field_info[i].len));
       } else {
