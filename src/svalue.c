@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.188 2004/04/03 17:02:16 mast Exp $
+|| $Id: svalue.c,v 1.189 2004/04/03 17:34:34 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.188 2004/04/03 17:02:16 mast Exp $");
+RCSID("$Id: svalue.c,v 1.189 2004/04/03 17:34:34 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1600,10 +1600,14 @@ PMOD_EXPORT void print_svalue (FILE *out, const struct svalue *s)
 
 PMOD_EXPORT void print_short_svalue (FILE *out, const union anything *a, TYPE_T type)
 {
-  struct svalue sval;
-  sval.type = type;
-  sval.u = *a;
-  print_svalue (out, &sval);
+  if (type <= MAX_REF_TYPE && !a->dummy)
+    fputs ("0", out);
+  else {
+    struct svalue sval;
+    sval.type = type;
+    sval.u = *a;
+    print_svalue (out, &sval);
+  }
 }
 
 PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
@@ -1635,10 +1639,14 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
 
 PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a, TYPE_T type)
 {
-  struct svalue sval;
-  sval.type = type;
-  sval.u = *a;
-  print_svalue_compact (out, &sval);
+  if (type <= MAX_REF_TYPE && !a->dummy)
+    fputs ("0", out);
+  else {
+    struct svalue sval;
+    sval.type = type;
+    sval.u = *a;
+    print_svalue_compact (out, &sval);
+  }
 }
 
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
