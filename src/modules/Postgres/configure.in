@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.21 2003/04/29 08:08:31 grubba Exp $
+dnl $Id: configure.in,v 1.22 2003/12/18 14:16:45 grubba Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -53,19 +53,26 @@ dnl see if we can find the include files in any of the standard locations
   AC_MSG_CHECKING(for location of the Postgres include files)
   AC_CACHE_VAL(pike_cv_pgres_include_dir, [
     for pike_cv_pgres_include_dir in $include_searchpath no; do
-      if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
+      if test -f $pike_cv_pgres_include_dir/server/catalog/pg_type.h; then
 	break
       fi
     done
+    if test x$pike_cv_pgres_include_dir = xno; then
+      for pike_cv_pgres_include_dir in $include_searchpath no; do
+        if test -f $pike_cv_pgres_include_dir/libpq-fe.h; then
+	  break
+        fi
+      done
+    fi
   ])
   if test x$pike_cv_pgres_include_dir != xno; then
-    AC_MSG_RESULT(found.)
+    AC_MSG_RESULT([$pike_cv_pgres_include_dir])
   else
     AC_MSG_RESULT(not found.)
   fi
 
 dnl last ditch. The locator could be confused e.g. by pike include files
-dnl unluckily there's no way out of it.
+dnl unluckily there is no way out of it.
   if test x$pike_cv_pgres_include_dir$pike_try_locate = xnoyes; then
     AC_MSG_CHECKING(whether we can locate it anyway...)
     for pike_cv_pgres_locate_include_file in `locate libpq-fe.h`; do
@@ -86,19 +93,39 @@ dnl check it not to be a stale entry
     CPPFLAGS="$CPPFLAGS -I$pike_cv_pgres_include_dir"
   fi
 
-dnl final ckeck, just to be sure we didn't mess up
+dnl final ckeck, just to be sure we did not mess up
   AC_CHECK_HEADERS(postgres.h postgres_fe.h \
 		   server/postgres.h server/postgres_fe.h \
-		   libpq-fe.h)
+		   server/catalog/pg_type.h catalog/pg_type.h \
+		   server/pg_config.h pg_config.h libpq-fe.h)
   
-dnl check whether we have Postgres 7.2 or newer
+dnl check whether we have Postgres 7.2 or newer.
+dnl FIXME: This test ought to use EGREP_CPP.
   HAVE_PG72=no
-  if test -f $pike_cv_pgres_include_dir/pg_config.h; then
-    case `grep 'PG_VERSION \"' $pike_cv_pgres_include_dir/pg_config.h | cut -d '"' -f 2` in
-       7.[[2-9]]*|[[8-9]].*) HAVE_PG72=yes
-             AC_DEFINE(HAVE_PG72) ;;
-    esac
-  fi
+  AC_EGREP_CPP([\"7\.[2-9].*], [
+#ifdef HAVE_PG_SERVER_CONFIG_H
+#include <server/pg_config.h>
+#elif defined(HAVE_PG_CONFIG_H)
+#include <pg_config.h>
+#endif
+PG_VERSION
+  ], [
+    HAVE_PG72=yes
+    AC_DEFINE(HAVE_PG72)
+  ], [
+    AC_EGREP_CPP([\"[8-9]\..*], [
+#ifdef HAVE_PG_SERVER_CONFIG_H
+#include <server/pg_config.h>
+#elif defined(HAVE_PG_CONFIG_H)
+#include <pg_config.h>
+#endif
+PG_VERSION
+    ], [
+      HAVE_PG72=yes
+      AC_DEFINE(HAVE_PG72)
+    ], [
+    ])
+  ])
   
   echo "Have Postgres 7.2? $HAVE_PG72"
   if test "x$ac_cv_header_libpq_fe_h" = xno -o \
@@ -106,7 +133,7 @@ dnl check whether we have Postgres 7.2 or newer
     ac_pike_postgres_skip=yes
   fi
 
-dnl okay, now let's start working on the libraries
+dnl okay, now let us start working on the libraries
   if test x$ac_pike_postgres_skip = xno; then
     AC_MSG_CHECKING(for location of the Postgres library)
     AC_CACHE_VAL(pike_cv_pgres_lib_dir,[
@@ -145,11 +172,10 @@ dnl last check, just to be sure
     AC_CHECK_LIB(crypt, crypt)
     AC_CHECK_LIB(pq,PQclear)
   fi
-  AC_CHECK_FUNCS(PQsetdbLogin)
+  AC_CHECK_FUNCS(PQsetdbLogin PQsetnonblocking)
   if test x$ac_cv_func_PQsetdbLogin = xno; then
     AC_MSG_WARN(No Login-related functions, username and password will be silently ignored)
   fi
-  AC_CHECK_FUNCS(PQsetnonblocking)
 fi
 
 if test  x$ac_cv_lib_pq_PQclear != xyes; then

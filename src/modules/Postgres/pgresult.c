@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.23 2003/12/16 17:50:22 grubba Exp $
+|| $Id: pgresult.c,v 1.24 2003/12/18 14:16:45 grubba Exp $
 */
 
 /*
@@ -57,12 +57,6 @@
 #define CUT_TRAILING_SPACES
 
 #include <stdio.h>
-#include <libpq-fe.h>
-#ifdef HAVE_SERVER_POSTGRES_H
-/* FIXME: Clients should probably not touch these files... */
-#include <server/postgres.h>
-#include <server/catalog/pg_type.h>
-#endif /* HAVE_SERVER_POSTGRES_H
 
 /* Pike includes */
 #include "stralloc.h"
@@ -73,7 +67,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.23 2003/12/16 17:50:22 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.24 2003/12/18 14:16:45 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
@@ -347,18 +341,14 @@ badresult:
 		   *        to Postgres frontends.
 		   */
 #ifdef CUT_TRAILING_SPACES
-#ifdef BPCHAROID
 		case BPCHAROID:
 		  for(;k>0 && value[k]==' ';k--);
 		  break;
 #endif
-#endif
-#ifdef BYTEAOID
 		case BYTEAOID:
 		  if(binbuf=PQunescapeBytea(value,&binlen))
 		    value=binbuf,k=binlen;
 		  break;
-#endif
 		}
 		push_string(make_shared_binary_string(value,k));
 		if(binbuf)
