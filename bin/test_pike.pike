@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.74 2002/10/09 02:16:19 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.75 2002/11/14 15:28:58 marcus Exp $ */
 
 import Stdio;
 
@@ -225,7 +225,7 @@ void run_watchdog(int pid) {
 
 int main(int argc, array(string) argv)
 {
-  int e, verbose, prompt, successes, errors, t, check;
+  int e, verbose, prompt, successes, errors, t, check, asmdebug;
   int skipped;
   array(string) tests;
   program testprogram;
@@ -273,6 +273,9 @@ int main(int argc, array(string) argv)
     ({"loop",Getopt.HAS_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.HAS_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
+#if constant(_assembler_debug)
+    ({"asm",Getopt.MAY_HAVE_ARG,({"--assembler-debug"})}),
+#endif
     ({"mem",Getopt.NO_ARG,({"-m","--mem","--memory"})}),
     ({"auto",Getopt.NO_ARG,({"-a","--auto"})}),
     ({"notty",Getopt.NO_ARG,({"-T","--notty"})}),
@@ -308,6 +311,7 @@ int main(int argc, array(string) argv)
 	case "loop": loop=foo(opt[1]); break;
 	case "trace": t+=foo(opt[1]); break;
 	case "check": check+=foo(opt[1]); break;
+        case "asm": asmdebug+=foo(opt[1]); break;
 	case "mem": mem=1; break;
 
 	case "auto":
@@ -375,6 +379,11 @@ int main(int argc, array(string) argv)
     werror("No tests found. Use --help for more information.\n");
     exit(1);
   }
+
+#if constant(_assembler_debug)
+  if(asmdebug)
+    _assembler_debug(asmdebug);
+#endif
 
   while(loop--)
   {
