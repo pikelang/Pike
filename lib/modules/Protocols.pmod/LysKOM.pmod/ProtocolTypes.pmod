@@ -3,10 +3,13 @@
 import .Helper;
 
 
+//! Data types as defined by the LysKOM protocol specification.
+
 //
 // automatically generated datatypes
 //
 
+//!
 class LysKOMTime
 {
    int              seconds;                       // INT32
@@ -62,6 +65,7 @@ class LysKOMTime
    }
 }
 
+//!
 class TextStatOld
 {
    LysKOMTime       creation_time;                 // Time
@@ -96,6 +100,7 @@ class TextStatOld
    }
 }
 
+//!
 class TextNumberPair
 {
    int              local_number;                  // Local-Text-No
@@ -123,6 +128,7 @@ class TextNumberPair
   }
 }
 
+//!
 class LocalToGlobalBlock
 {
   int densep;
@@ -140,6 +146,7 @@ class LocalToGlobalBlock
   }
 }
 
+//!
 class TextMapping
 {
    int              range_begin;                   // Local-Text-No
@@ -181,6 +188,7 @@ multiset(string) SessionFlags(string bits)
    return res;
 }
 
+//!
 class DynamicSessionInfo
 {
    int              session;                       // Session-No
@@ -214,6 +222,7 @@ class DynamicSessionInfo
    }
 }
 
+//!
 class SessionInfo
 {
    int(0..65535)    person;                        // Pers-No
@@ -250,6 +259,7 @@ class SessionInfo
    }
 }
 
+//!
 class WhoInfo
 {
    int(0..65535)    person;                        // Pers-No
@@ -306,6 +316,7 @@ multiset(string) AuxItemFlags(string bits)
    return res;
 }
 
+//!
 class AuxItem
 {
    int              aux_no;                        // Aux-No
@@ -346,6 +357,7 @@ class AuxItem
   }
 }
 
+//!
 class TextStat
 {
    LysKOMTime       creation_time;                 // Time
@@ -388,6 +400,7 @@ class TextStat
    }
 }
 
+//!
 class InfoOld
 {
    int              version;                       // INT32
@@ -434,6 +447,7 @@ multiset(string) MembershipType(string bits)
    return res;
 }
 
+//!
 class Membership
 {
    int              position;                      // INT32
@@ -477,6 +491,7 @@ class Membership
    }
 }
 
+//!
 class Member
 {
    int(0..65535)    member;                        // Pers-No
@@ -504,6 +519,7 @@ class Member
    }
 }
 
+//!
 class MembershipOld
 {
    LysKOMTime       last_time_read;                // Time
@@ -535,6 +551,7 @@ class MembershipOld
    }
 }
 
+//!
 class Info
 {
    int              version;                       // INT32
@@ -576,6 +593,7 @@ class Info
    }
 }
 
+//!
 class StaticSessionInfo
 {
    string           username;                      // HOLLERITH
@@ -617,6 +635,7 @@ multiset(string) ExtendedConfType(string bits)
    return res;
 }
 
+//!
 class TextList
 {
    int              first_local_no;                // Local-Text-No
@@ -639,6 +658,7 @@ class TextList
    }
 }
 
+//!
 class AuxItemInput
 {
    int              tag;                           // INT32
@@ -666,6 +686,7 @@ class AuxItemInput
    }
 }
 
+//!
 class WhoInfoIdent
 {
    int(0..65535)    person;                        // Pers-No
@@ -714,6 +735,7 @@ multiset(string) ConfType(string bits)
    return res;
 }
 
+//!
 class ConfZInfo
 {
    string           name;                          // HOLLERITH
@@ -738,6 +760,7 @@ class ConfZInfo
    }
 }
 
+//!
 class WhoInfoOld
 {
    int(0..65535)    person;                        // Pers-No
@@ -762,6 +785,7 @@ class WhoInfoOld
    }
 }
 
+//!
 class Mark
 {
    int              text_no;                       // Text-No
@@ -787,6 +811,7 @@ class Mark
   }
 }
 
+//!
 class Conference
 {
    string           name;                          // HOLLERITH
@@ -862,6 +887,7 @@ class Conference
   }
 }
 
+//!
 class ConferenceOld
 {
    string           name;                          // HOLLERITH
@@ -923,6 +949,7 @@ class ConferenceOld
   }
 }
 
+//!
 class SessionInfoIdent
 {
    int(0..65535)    person;                        // Pers-No
@@ -965,6 +992,7 @@ class SessionInfoIdent
    }
 }
 
+//!
 class VersionInfo
 {
    int              protocol_version;              // INT32
@@ -997,6 +1025,7 @@ class VersionInfo
   }
 }
 
+//!
 class ConfListArchaic
 {
    array(int(0..65535)) conf_nos;                  // ARRAY Conf-No
@@ -1039,6 +1068,7 @@ multiset(string) PrivBits(string bits)
    return res;
 }
 
+//!
 class UConference
 {
    string           name;                          // HOLLERITH
@@ -1066,6 +1096,7 @@ class UConference
    }
 }
 
+//!
 class Person
 {
    string           username;                      // HOLLERITH
