@@ -1,5 +1,5 @@
 //
-// $Id: Events.pmod,v 1.2 2004/01/24 21:42:25 nilsson Exp $
+// $Id: Events.pmod,v 1.3 2004/04/08 21:52:24 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -125,6 +125,7 @@ constant MOUSE_UP = -10;
 constant MOUSE_DOWN = -11;
 constant MOUSE_LEFT = -12;
 constant MOUSE_RIGHT = -13;
+constant MOUSE_ABS = -14;
 
 //! Numeric constant representing a modifier key.
 constant LSHIFT    = 100000000;
