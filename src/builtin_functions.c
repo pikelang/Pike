@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.527 2004/02/02 19:11:13 grubba Exp $
+|| $Id: builtin_functions.c,v 1.528 2004/02/02 20:45:19 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.527 2004/02/02 19:11:13 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.528 2004/02/02 20:45:19 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4385,22 +4385,22 @@ static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
   if (t1->tm_mon == t2->tm_mon) return base;
 
   base += (t1->tm_mon - t2->tm_mon) * 30 * 86400;
-  if (t1->tm_mon < 8) {
-    base += (t1->tm_mon/2)*86400;
-  } else {
+  if (t1->tm_mon < 7) {
     base += ((t1->tm_mon+1)/2)*86400;
+  } else {
+    base += ((t1->tm_mon+2)/2)*86400;
   }
-  if (t1->tm_mon > 2) {
+  if (t1->tm_mon > 1) {
     /* Adjust for February. */
     base -= 2*86400;
     base += !(t1->tm_year&3)*86400;	/* Not year 2400 or 1600 safe. */
   }
-  if (t2->tm_mon < 8) {
-    base -= (t2->tm_mon/2)*86400;
-  } else {
+  if (t2->tm_mon < 7) {
     base -= ((t2->tm_mon+1)/2)*86400;
+  } else {
+    base -= ((t2->tm_mon+2)/2)*86400;
   }
-  if (t2->tm_mon > 2) {
+  if (t2->tm_mon > 1) {
     /* Adjust for February. */
     base += 2*86400;
     base -= !(t2->tm_year&3)*86400;	/* Not year 2400 or 1600 safe. */
@@ -4426,6 +4426,7 @@ static time_t my_timegm(struct tm *target_tm)
   while((diff_ts = my_tm_diff(target_tm, current_tm = gmtime(&current_ts)))) {
     current_ts += diff_ts;
     loop_cnt++;
+    fprintf(stderr, "Loop [%d]: %d, %d\n", loop_cnt, current_ts, diff_ts);
     if (loop_cnt > 20) {
       /* Infinite loop? */
       return -1;
