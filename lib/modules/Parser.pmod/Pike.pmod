@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.18 2002/03/20 16:59:01 nilsson Exp $
+// $Id: Pike.pmod,v 1.19 2002/04/02 16:29:46 nilsson Exp $
 
 inherit "C.pmod";
 
@@ -45,7 +45,7 @@ array(string) split(string data, void|mapping state)
       if(pos==-1) {
 	state->in_token = 1;
 	state->remains += data[..sizeof(data)-2];
-	return ({});
+	return ret;
       }
       ret += ({ state->remains + data[..pos] });
       m_delete(state, "remains");
@@ -63,7 +63,7 @@ array(string) split(string data, void|mapping state)
 	    (s==sizeof(data)-2 && s<q) ) {
 	  state->in_token = 1;
 	  state->remains += data[..sizeof(data)-2];
-	  return ({});
+	  return ret;
 	}
 
 	if(s==-1 || s>q) {
@@ -106,7 +106,7 @@ array(string) split(string data, void|mapping state)
 	      if(state) {
 		state->in_token = 1;
 		state->remains = data[pos-1..sizeof(data)-2];
-		return ({});
+		return ret;
 	      }
 	      error("Failed to find end of multiline string.\n");
 	    }
