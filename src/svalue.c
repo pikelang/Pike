@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.79 2000/07/02 14:54:07 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.80 2000/07/03 20:14:07 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1225,9 +1225,10 @@ void debug_check_svalue(struct svalue *s)
 #endif
 
 #ifdef PIKE_DEBUG
-void real_gc_xmark_svalues(struct svalue *s, size_t num)
+/* NOTE: Must handle num being negative. */
+void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
 {
-  size_t e;
+  ptrdiff_t e;
 
   if (!s) {
     return;

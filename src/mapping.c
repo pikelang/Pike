@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.88 2000/07/03 16:50:09 mast Exp $");
+RCSID("$Id: mapping.c,v 1.89 2000/07/03 20:14:07 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1814,7 +1814,7 @@ void check_all_mappings(void)
 
 
 static void gc_recurse_weak_mapping(struct mapping *m,
-				    TYPE_FIELD (*recurse_fn)(struct svalue *, int))
+				    TYPE_FIELD (*recurse_fn)(struct svalue *, size_t))
 {
   INT32 e;
   struct keypair *k,**prev;
