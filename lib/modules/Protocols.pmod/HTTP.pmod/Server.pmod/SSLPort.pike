@@ -154,8 +154,7 @@ void set_certificate(string|array certificate)
   void create()
   {
     sslport::create();
-    random = Crypto.randomness.arcfour_random(
-       sprintf("%s%4c", "Foo!", time()))->read;
+    random = Crypto.Random.random_string;
   }
 
 }

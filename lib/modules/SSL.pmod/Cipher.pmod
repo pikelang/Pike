@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.10 2004/01/24 23:52:18 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.11 2004/02/02 22:58:06 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -14,7 +14,7 @@ class CipherAlgorithm {
   //! Set the key used for encryption/decryption, and
   //! enter encryption mode.
 
-  int(0..) query_block_size();
+  int(0..) block_size();
   //! Return the block size for this crypto.
 
   optional string crypt(string);
@@ -58,7 +58,7 @@ class MACsha
   static constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
 			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
 
-  static constant algorithm = Crypto.sha;
+  static Crypto.Hash algorithm = Crypto.SHA;
   static string secret;
 
   //!
@@ -67,9 +67,8 @@ class MACsha
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.cipher: hash_raw(%O)\n", data);
 #endif
-    
-    object h = algorithm();
-    string res = h->update(data)->digest();
+
+    string res = algorithm->hash(data);
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.cipher: hash_raw->%O\n",res);
 #endif
@@ -114,14 +113,14 @@ class MACmd5 {
   static constant pad_2 = ("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"
 			   "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\");
   
-  static constant algorithm = Crypto.md5;
+  static Crypto.Hash algorithm = Crypto.MD5;
 }
 
 //!
 class MAChmac_sha {
 
   static string secret;
-  static Crypto.hmac hmac;
+  static Crypto.HMAC hmac;
 
   //!
   string hash(object packet, Gmp.mpz seq_num) {
@@ -133,13 +132,13 @@ class MAChmac_sha {
 		       sizeof(packet->fragment),
 		       packet->fragment);
 
-    return  hmac(secret)(s);
+    return hmac(secret)(s);
   }
 
   //!
   static void create(string|void s) {
     secret = s || "";
-    hmac=Crypto.hmac(Crypto.sha);
+    hmac=Crypto.HMAC(Crypto.SHA);
   }
 }
 
@@ -150,15 +149,15 @@ class MAChmac_md5 {
   //!
   static void create(string|void s) {
     secret = s || "";
-    hmac=Crypto.hmac(Crypto.md5);
+    hmac=Crypto.HMAC(Crypto.MD5);
   }
 }
 
-// Hashfn is either a Crypto.md5 or Crypto.sha 
-static string P_hash(object hashfn, int hlen, string secret,
+// Hashfn is either a Crypto.MD5 or Crypto.SHA
+static string P_hash(Crypto.Hash hashfn, int hlen, string secret,
 		     string seed, int len) {
    
-  Crypto.hmac hmac=Crypto.hmac(hashfn);
+  Crypto.HMAC hmac=Crypto.HMAC(hashfn);
   string temp=seed;
   string res="";
   
@@ -177,8 +176,8 @@ string prf(string secret,string label,string seed,int len) {
   string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
   string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
 
-  string a=P_hash(Crypto.md5,16,s1,label+seed,len);
-  string b=P_hash(Crypto.sha,20,s2,label+seed,len);
+  string a=P_hash(Crypto.MD5,16,s1,label+seed,len);
+  string b=P_hash(Crypto.SHA,20,s2,label+seed,len);
 
   return a ^ b;
 }
@@ -186,17 +185,19 @@ string prf(string secret,string label,string seed,int len) {
 //!
 class DES
 {
-  inherit Crypto.des_cbc : c;
+  inherit Crypto.CBC;
+
+  void create() { ::create(Crypto.DES()); }
 
   this_program set_encrypt_key(string k)
   {
-    c::set_encrypt_key(Crypto.des_parity(k));
+    set_encrypt_key(Crypto.DES->fix_parity(k));
     return this;
   }
 
   this_program set_decrypt_key(string k)
   {
-    c::set_decrypt_key(Crypto.des_parity(k));
+    set_decrypt_key(Crypto.DES->fix_parity(k));
     return this;
   }
 }
@@ -204,19 +205,27 @@ class DES
 //!
 class DES3
 {
-  inherit Crypto.des3_cbc : c;
+  inherit Crypto.CBC;
+
+  void create() { ::create(Crypto.DES3()); }
 
   this_program set_encrypt_key(string k)
   {
-    c::set_encrypt_key(Crypto.des_parity(k));
+    set_encrypt_key(Crypto.DES3->fix_parity(k));
     return this;
   }
 
   this_program set_decrypt_key(string k)
   {
-    c::set_decrypt_key(Crypto.des_parity(k));
+    set_decrypt_key(Crypto.DES3->fix_parity(k));
     return this;
   }
+}
+
+class IDEA
+{
+  inherit Crypto.CBC;
+  void create() { ::create(Crypto.IDEA()); }
 }
 
 //!
@@ -225,8 +234,7 @@ ADT.struct rsa_sign(object context, string cookie, ADT.struct struct)
   /* Exactly how is the signature process defined? */
   
   string params = cookie + struct->contents();
-  string digest = Crypto.md5()->update(params)->digest()
-    + Crypto.sha()->update(params)->digest();    
+  string digest = Crypto.MD5->hash(params) + Crypto.SHA->hash(params);
       
   object s = context->rsa->raw_sign(digest);
 #ifdef SSL3_DEBUG_CRYPT
@@ -246,8 +254,7 @@ int(0..1) rsa_verify(object context, string cookie, ADT.struct struct,
   /* Exactly how is the signature process defined? */
 
   string params = cookie + struct->contents();
-  string digest = Crypto.md5()->update(params)->digest()
-    + Crypto.sha()->update(params)->digest();
+  string digest = Crypto.MD5->hash(params) + Crypto.SHA->hash(params);
 
   return context->rsa->raw_verify(digest, signature);
 }
@@ -378,7 +385,7 @@ array lookup(int suite,int version)
   switch(algorithms[1])
   {
   case CIPHER_rc4_40:
-    res->bulk_cipher_algorithm = Crypto.arcfour;
+    res->bulk_cipher_algorithm = Nettle.ARCFOUR_State;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
     res->key_material = 16;
@@ -403,7 +410,7 @@ array lookup(int suite,int version)
     break;
 #ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
-    res->bulk_cipher_algorithm = Crypto.arcfour;
+    res->bulk_cipher_algorithm = Nettle.ARCFOUR_State;
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 0;
     res->key_material = 16;
@@ -427,7 +434,7 @@ array lookup(int suite,int version)
     res->key_bits = 168;
     break;
   case CIPHER_idea:
-    res->bulk_cipher_algorithm = Crypto.idea_cbc;
+    res->bulk_cipher_algorithm = IDEA;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
     res->key_material = 16;

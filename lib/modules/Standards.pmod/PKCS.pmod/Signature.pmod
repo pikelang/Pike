@@ -8,11 +8,12 @@
 //! @param msg
 //!   message to digest
 //! @param hash
-//!   crypto hash object such as @[Crypto.sha] or @[Crypto md5]
-string build_digestinfo(string msg, object hash)
+//!   crypto hash object such as @[Crypto.SHA] or @[Crypto.MD5]
+string build_digestinfo(string msg, Crypto.Hash hash)
 {
-  string d = hash->update(msg)->digest();
-  string id = hash->identifier();
+  if(!hash->asn1_id) error("Unknown ASN.1 id for hash.\n");
+  string d = hash->hash(msg);
+  string id = hash->asn1_id();
 
   return sprintf("%c%c%c%c%c%c%s%c%c%c%c%s",
 		 0x30, sizeof(id) + sizeof(d) + 8, 0x30, sizeof(id) + 4,

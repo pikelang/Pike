@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.21 2004/01/29 21:40:24 nilsson Exp $
+// $Id: state.pike,v 1.22 2004/02/02 22:58:55 nilsson Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -155,7 +155,7 @@ Alert|.packet encrypt_packet(.packet packet, int version)
 	  packet->fragment += crypt->pad();
 	} else {
 	  packet->fragment = tls_pad(packet->fragment+digest,
-				     crypt->query_block_size());
+				     crypt->block_size());
 	  packet->fragment = crypt->crypt(packet->fragment);
 	}
       } else {

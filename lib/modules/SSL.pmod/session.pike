@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.31 2004/01/30 01:01:15 bill Exp $
+// $Id: session.pike,v 1.32 2004/02/02 22:58:41 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -274,9 +274,9 @@ array(.state) new_server_states(string client_random, string server_random,
       write_state->crypt->set_iv(keys[5]);
     }
     if (cipher_spec->cipher_type == CIPHER_block)
-    { /* Crypto.crypto takes care of splitting input into blocks */
-      read_state->crypt = Crypto.crypto(read_state->crypt);
-      write_state->crypt = Crypto.crypto(write_state->crypt);
+    { // Crypto.Proxy takes care of splitting input into blocks
+      read_state->crypt = Crypto.Proxy(read_state->crypt);
+      write_state->crypt = Crypto.Proxy(write_state->crypt);
     }
   }
   return ({ read_state, write_state });
@@ -316,9 +316,9 @@ array(.state) new_client_states(string client_random, string server_random,
       write_state->crypt->set_iv(keys[4]);
     }
     if (cipher_spec->cipher_type == CIPHER_block)
-    { /* Crypto.crypto takes care of splitting input into blocks */
-      read_state->crypt = Crypto.crypto(read_state->crypt);
-      write_state->crypt = Crypto.crypto(write_state->crypt);
+    { // Crypto.Proxy takes care of splitting input into blocks
+      read_state->crypt = Crypto.Proxy(read_state->crypt);
+      write_state->crypt = Crypto.Proxy(write_state->crypt);
     }
   }
   return ({ read_state, write_state });

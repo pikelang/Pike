@@ -1,5 +1,5 @@
 //
-// $Id: PFX.pmod,v 1.9 2004/01/11 00:42:16 nilsson Exp $
+// $Id: PFX.pmod,v 1.10 2004/02/02 23:01:20 nilsson Exp $
 //
 
 #if 0 // This code is broken. (Missing mac identifier for sha)
@@ -347,7 +347,7 @@ class PFX
       elements[1] = safes;
       if (passwd)
       {	/* Password-integrity mode */
-	salt = Crypto.randomness.reasonably_random()->read(SALT_SIZE);
+	salt = Crypto.Random.random_string(SALT_SIZE);
 
 	elements[2] = Sequence(
 	  ({ Sequence(

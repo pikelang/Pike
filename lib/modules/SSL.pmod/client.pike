@@ -30,7 +30,7 @@ int main(int argc, array(string) argv)
     SSL_rsa_with_3des_ede_cbc_sha,
   });
 
-  context->random = Crypto.randomness.reasonably_random()->read;
+  context->random = Crypto.Random.random_string;
   Stdio.File socket = Stdio.File();
   if(!socket->connect("pike.ida.liu.se", 443))
   {

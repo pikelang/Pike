@@ -3,7 +3,7 @@
 import ".";
 
 Raw raw;
-string pass=MIME.encode_base64(Crypto.randomness.reasonably_random()->read(6));
+string pass=MIME.encode_base64(Crypto.Random.random_string(6));
 
 mapping options;
 
