@@ -46,11 +46,11 @@ class request_program
   inherit HTTPLoop.prog;
 }
 
-void handle(object o)
+mixed handle(object o)
 {
   string url = o->not_query;
   string f = combine_path(BASE, url[1..]);
-  array s;
+  array|object s;
   if(f[-1] == '/' && (s = file_stat(f+"index.html"))) {
     url += "index.html";
     f += "index.html";
