@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pattern.c,v 1.30 2004/05/19 00:10:11 nilsson Exp $
+|| $Id: pattern.c,v 1.31 2004/09/18 21:25:08 nilsson Exp $
 */
 
 /*
@@ -46,7 +46,7 @@ extern struct program *image_program;
 #define NOISE_PZ 337
 #define NOISE_PHI 0.6180339
 
-static double noise_p1[NOISE_PTS]=
+static const double noise_p1[NOISE_PTS]=
 {0.7687, 0.7048, 0.2400, 0.8877, 0.3604, 0.3365, 0.4929, 0.6689, 
  0.5958, 0.1747, 0.8518, 0.1367, 0.8194, 0.2953, 0.7487, 0.8822, 
  0.8200, 0.4410, 0.5080, 0.2866, 0.4414, 0.1916, 0.0896, 0.1759, 
@@ -180,7 +180,7 @@ static double noise_p1[NOISE_PTS]=
 
 #define FRAC(X) ((X)-floor(X))
 
-static double noise(double Vx,double Vy,double *noise_p)
+static double noise(double Vx,double Vy,const double *noise_p)
 {
    int Ax[3],Ay[3];
    int n,i,j;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.72 2004/03/05 23:04:02 nilsson Exp $
+|| $Id: colors.c,v 1.73 2004/09/18 21:24:53 nilsson Exp $
 */
 
 /*
@@ -190,8 +190,6 @@
 */
 
 #include "global.h"
-
-RCSID("$Id: colors.c,v 1.72 2004/03/05 23:04:02 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1243,7 +1241,7 @@ static void image_get_color(INT32 args)
 {
    struct svalue s;
    int n;
-   static char *callables[]={"light","dark","neon","dull","bright"};
+   static const char *callables[]={"light","dark","neon","dull","bright"};
 
    if (args!=1) 
       Pike_error("Image.Color[]: illegal number of args.\n");
