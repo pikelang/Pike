@@ -40,7 +40,7 @@ struct array *allocate_array_no_init(INT32 size,INT32 extra_space)
 {
   struct array *v;
 
-  if(size == 0 && type == T_MIXED)
+  if(size == 0)
   {
     empty_array.refs++;
     return &empty_array;
@@ -309,7 +309,7 @@ struct array *array_shrink(struct array *v,INT32 size)
     free_array(v);
     return a;
   }else{
-    free_svalues(ITEM(v) + size, v->size - size);
+    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
     v->size=size;
     return v;
   }
@@ -486,16 +486,6 @@ INT32 array_find_destructed_object(struct array *v)
   return -1;
 }
 
-
-static short_cmpfun current_short_cmpfun;
-static union anything *current_short_array_p;
-
-static int internal_short_cmpfun(INT32 *a,INT32 *b)
-{
-  return current_short_cmpfun(current_short_array_p + *a,
-			      current_short_array_p + *b);
-}
-
 static struct svalue *current_array_p;
 static cmpfun current_cmpfun;
 
@@ -617,12 +607,12 @@ static INT32 low_lookup(struct array *v,
 INT32 set_lookup(struct array *a, struct svalue *s)
 {
   /* face it, it's not there */
-  if( (((2 << s->type) -1) & s->type_field) == 0)
+  if( (((2 << s->type) -1) & a->type_field) == 0)
     return -1;
 
   /* face it, it's not there */
-  if( ((BIT_MIXED << s->type) & BIT_MIXED & s->type_field) == 0)
-    return ~v->size;
+  if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+    return ~a->size;
 
   return low_lookup(a,s,set_svalue_cmpfun);
 }
@@ -630,12 +620,12 @@ INT32 set_lookup(struct array *a, struct svalue *s)
 INT32 switch_lookup(struct array *a, struct svalue *s)
 {
   /* face it, it's not there */
-  if( (((2 << s->type) -1) & s->type_field) == 0)
+  if( (((2 << s->type) -1) & a->type_field) == 0)
     return -1;
 
   /* face it, it's not there */
-  if( ((BIT_MIXED << s->type) & BIT_MIXED & s->type_field) == 0)
-    return ~v->size;
+  if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+    return ~a->size;
 
   return low_lookup(a,s,switch_svalue_cmpfun);
 }
@@ -785,7 +775,7 @@ struct array *array_zip(struct array *a, struct array *b,INT32 *zipper)
   size=zipper[0];
   zipper++;
 
-  ret=allocate_array_no_init(size,0, T_MIXED);
+  ret=allocate_array_no_init(size,0);
   for(e=0; e<size; e++)
   {
     if(*zipper >= 0)
@@ -802,6 +792,9 @@ struct array *add_arrays(struct svalue *argp, INT32 args)
 {
   INT32 e, size;
   struct array *v;
+
+  for(size=e=0;e<args;e++)
+    size+=argp[e].u.array->size;
 
   if(args && argp[0].u.array->refs==1)
   {
@@ -971,7 +964,7 @@ struct array *and_arrays(struct array *a, struct array *b)
   {
     return merge_array_without_order(a, b, OP_AND);
   }else{
-    return allocate_array_no_init(0,0,T_MIXED);
+    return allocate_array_no_init(0,0);
   }
 }
 
@@ -986,7 +979,6 @@ int check_that_array_is_constant(struct array *a)
 node *make_node_from_array(struct array *a)
 {
   struct svalue s;
-  char *str;
   INT32 e;
 
   array_fix_type_field(a);
@@ -1031,7 +1023,7 @@ void push_array_items(struct array *a)
     free_array(a);
     return;
   }else{
-    assign_svalues_no_free(sp, ITEM(a), a->size);
+    assign_svalues_no_free(sp, ITEM(a), a->size, a->type_field);
   }
   sp += a->size;
   free_array(a);
@@ -1120,10 +1112,13 @@ struct array *explode(struct lpc_string *str,
 
   if(!del->len)
   {
-    ret=allocate_array_no_init(str->len,0,T_STRING);
+    ret=allocate_array_no_init(str->len,0);
     ret->type_field |= 1<<T_STRING;
     for(e=0;e<str->len;e++)
-      SHORT_ITEM(ret)[e].string=make_shared_binary_string(str->str+e,1);
+    {
+      ITEM(ret)[e].type=T_STRING;
+      ITEM(ret)[e].u.string=make_shared_binary_string(str->str+e,1);
+    }
   }else{
 
     s=str->str;
@@ -1136,17 +1131,19 @@ struct array *explode(struct lpc_string *str,
       e++;
     }
 
-    ret=allocate_array_no_init(e+1,0,T_STRING);
+    ret=allocate_array_no_init(e+1,0);
     ret->type_field |= 1<<T_STRING;
 
     s=str->str;
     for(d=0;d<e;d++)
     {
       tmp=MEMMEM((char *)(del->str), del->len, (char *)s, end-s);
-      SHORT_ITEM(ret)[d].string=make_shared_binary_string(s,tmp-s);
+      ITEM(ret)[d].type=T_STRING;
+      ITEM(ret)[d].u.string=make_shared_binary_string(s,tmp-s);
       s=tmp+del->len;
     }
-    SHORT_ITEM(ret)[d].string=make_shared_binary_string(s,end-s);
+    ITEM(ret)[d].type=T_STRING;
+    ITEM(ret)[d].u.string=make_shared_binary_string(s,end-s);
   }
   return ret;
 }
@@ -1218,11 +1215,11 @@ void apply_array(struct array *a, INT32 args)
   argp=sp-args;
   for(e=0;e<a->size;e++)
   {
-    assign_svalues_no_free(sp,argp,args);
+    assign_svalues_no_free(sp,argp,args,BIT_MIXED);
     sp+=args;
     apply_svalue(ITEM(a)+e,args);
   }
-  ret=aggregate_array(a->size,T_MIXED);
+  ret=aggregate_array(a->size);
   pop_n_elems(args);
   push_array(ret);
 }
@@ -1267,7 +1264,7 @@ void array_gc_clear_mark()
   } while (a != & empty_array);
 }
 
-void array_gc_mark(array *a)
+void array_gc_mark(struct array *a)
 {
   INT e;
   if(a->flags & ARRAY_FLAG_MARK) return;

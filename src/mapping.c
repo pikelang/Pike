@@ -219,8 +219,8 @@ struct mapping *add_mappings(struct svalue *argp,INT32 args)
   switch(args)
   {
   case 0:
-    ret=allocate_mapping(allocate_array_no_init(0,0,T_MIXED),
-			 allocate_array_no_init(0,0,T_MIXED));
+    ret=allocate_mapping(allocate_array_no_init(0,0),
+			 allocate_array_no_init(0,0));
     break;
 
   case 1:
@@ -334,8 +334,8 @@ void f_aggregate_mapping(INT32 args)
   if(args & 1)
     error("Uneven number of arguments to aggregage_mapping.\n");
 
-  ind=allocate_array_no_init(args/2,0,T_MIXED);
-  val=allocate_array_no_init(args/2,0,T_MIXED);
+  ind=allocate_array_no_init(args/2,0);
+  val=allocate_array_no_init(args/2,0);
 
   s=sp-args;
   for(e=0;e<args/2;e++)

@@ -136,7 +136,7 @@ struct list *add_lists(struct svalue *argp,INT32 args)
   switch(args)
   {
   case 0:
-    ret=allocate_list(allocate_array_no_init(0,0,T_MIXED));
+    ret=allocate_list(allocate_array_no_init(0,0));
     break;
 
   case 1:

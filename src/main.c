@@ -158,15 +158,22 @@ void main(int argc, char **argv, char **env)
   call_and_free_callback_list(& post_master_callbacks);
   init_modules_programs();
 
-  a=allocate_array_no_init(argc-e,0,T_STRING);
+  a=allocate_array_no_init(argc-e,0);
   for(num=0;e<argc;e++)
-    SHORT_ITEM(a)[num++].string=make_shared_string(argv[e]);
+  {
+    ITEM(a)[num].u.string=make_shared_string(argv[e]);
+    ITEM(a)[num].type=T_STRING;
+    num++;
+  }
   push_array(a);
 
   for(num=0;env[num];num++);
-  a=allocate_array_no_init(num,0,T_STRING);
+  a=allocate_array_no_init(num,0);
   for(num=0;env[num];num++)
-    SHORT_ITEM(a)[num].string=make_shared_string(env[num]);
+  {
+    ITEM(a)[num].u.string=make_shared_string(env[num]);
+    ITEM(a)[num].type=T_STRING;
+  }
   push_array(a);
 
   if(SETJMP(back))

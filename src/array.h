@@ -54,8 +54,8 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
 
 /* Prototypes begin here */
-struct array *allocate_array_no_init(INT32 size,INT32 extra_space,TYPE_T type);
-struct array *allocate_array(INT32 size,TYPE_T type);
+struct array *allocate_array_no_init(INT32 size,INT32 extra_space);
+struct array *allocate_array(INT32 size);
 void really_free_array(struct array *v);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
@@ -72,7 +72,7 @@ struct array *slice_array(struct array *v,INT32 start,INT32 end);
 struct array *copy_array(struct array *v);
 void check_array_for_destruct(struct array *v);
 INT32 array_find_destructed_object(struct array *v);
-INT32 *get_order(struct array *v, cmpfun fun,cmpfun_getter backfun);
+INT32 *get_order(struct array *v, cmpfun fun);
 INT32 *get_set_order(struct array *a);
 INT32 *get_switch_order(struct array *a);
 INT32 set_lookup(struct array *a, struct svalue *s);
@@ -107,7 +107,7 @@ void describe_index(struct array *a,
 		    struct processing *p,
 		    int indent);
 void describe_array(struct array *a,struct processing *p,int indent);
-struct array *aggregate_array(INT32 args, TYPE_T type);
+struct array *aggregate_array(INT32 args);
 struct array *explode(struct lpc_string *str,
 		       struct lpc_string *del);
 struct lpc_string *implode(struct array *a,struct lpc_string *del);
@@ -117,7 +117,12 @@ struct array *reverse_array(struct array *a);
 void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to);
-void check_all_arrays();
+void array_gc_clear_mark();
+void array_gc_mark(struct array *a);
+void array_gc_sweep();
+void array_gc_sweep2();
+void check_array(struct array *a, int pass);
+void check_all_arrays(int pass);
 /* Prototypes end here */
 
 

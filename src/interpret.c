@@ -196,7 +196,7 @@ void pop_n_elems(INT32 x)
 
   if(x < 0) fatal("Popping negative number of args....\n");
 #endif
-  free_svalues(sp-x,x);
+  free_svalues(sp-x,x,BIT_MIXED);
   sp-=x;
 }
 

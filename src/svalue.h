@@ -132,7 +132,10 @@ void assign_svalues_no_free(struct svalue *to,
 			    INT32 num,
 			    INT32 type_hint);
 void assign_svalue(struct svalue *to, struct svalue *from);
-void assign_svalues(struct svalue *to, struct svalue *from, INT32 num);
+void assign_svalues(struct svalue *to,
+		    struct svalue *from,
+		    INT32 num,
+		    TYPE_FIELD types);
 void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    struct svalue *s);

@@ -246,11 +246,11 @@ struct array *get_all_call_outs()
   struct array *ret;
 
   verify_call_outs();
-  ret=allocate_array_no_init(num_pending_calls,0,T_ARRAY);
+  ret=allocate_array_no_init(num_pending_calls,0);
   for(e=0;e<num_pending_calls;e++)
   {
     struct array *v;
-    v=allocate_array_no_init(pending_calls[e]->args->size+2, 0, T_MIXED);
+    v=allocate_array_no_init(pending_calls[e]->args->size+2, 0);
     ITEM(v)[0].type=T_INT;
     ITEM(v)[0].subtype=NUMBER_NUMBER;
     ITEM(v)[0].u.integer=pending_calls[e]->time-current_time;
@@ -265,9 +265,10 @@ struct array *get_all_call_outs()
       ITEM(v)[1].u.integer=0;
     }
 
-    assign_svalues_no_free(ITEM(v)+2,ITEM(pending_calls[e]->args),pending_calls[e]->args->size);
+    assign_svalues_no_free(ITEM(v)+2,ITEM(pending_calls[e]->args),pending_calls[e]->args->size,BIT_MIXED);
 
-    SHORT_ITEM(ret)[e].array=v;
+    ITEM(ret)[e].type=T_ARRAY;
+    ITEM(ret)[e].u.array=v;
   }
   return ret;
 }

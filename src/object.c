@@ -655,11 +655,12 @@ struct array *object_indices(struct object *o)
   if(!p)
     error("indices() on destructed object.\n");
 
-  a=allocate_array_no_init(p->num_identifier_indexes,0, T_STRING);
+  a=allocate_array_no_init(p->num_identifier_indexes,0);
   for(e=0;e<(int)p->num_identifier_indexes;e++)
   {
-    copy_shared_string(SHORT_ITEM(a)[e].string,
+    copy_shared_string(ITEM(a)[e].u.string,
 		       ID_FROM_INT(p,p->identifier_index[e])->name);
+    ITEM(a)[e].type=T_STRING;
   }
   return a;
 }
@@ -674,7 +675,7 @@ struct array *object_values(struct object *o)
   if(!p)
     error("values() on destructed object.\n");
 
-  a=allocate_array_no_init(p->num_identifier_indexes,0, T_MIXED);
+  a=allocate_array_no_init(p->num_identifier_indexes,0);
   for(e=0;e<(int)p->num_identifier_indexes;e++)
   {
     low_object_index(ITEM(a)+e, o, p->identifier_index[e]);

@@ -744,34 +744,7 @@ struct lpc_string *check_call(struct lpc_string *args,
 
 void check_array_type(struct array *a)
 {
-  int t;
-  t=my_log2(a->array_type);
-  if( ( 1 << t ) == a->array_type )
-  {
-    switch(t)
-    {
-    case T_ARRAY:
-      push_type(T_MIXED);
-      push_type(T_ARRAY);
-      break;
-
-    case T_LIST:
-      push_type(T_MIXED);
-      push_type(T_LIST);
-      break;
-
-    case T_MAPPING:
-      push_type(T_MIXED);
-      push_type(T_MIXED);
-      push_type(T_MAPPING);
-      break;
-
-    default:
-      push_type(t);
-    }
-  }else{
-    push_type(T_MIXED);
-  }
+  push_type(T_MIXED);
 }
 
 struct lpc_string *get_type_of_svalue(struct svalue *s)

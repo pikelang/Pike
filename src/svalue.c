@@ -168,7 +168,7 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
 	  really_free_object(s->u.object);
       }
     }
-    return
+    return;
 
 #undef DOTYPE
   default:
@@ -194,7 +194,7 @@ void assign_svalues_no_free(struct svalue *to,
 {
   if((type_hint & ~(BIT_INT | BIT_FLOAT))==0)
   {
-    MEMCPY((char *)to, (char *)from, sizeof(svalue) * num);
+    MEMCPY((char *)to, (char *)from, sizeof(struct svalue) * num);
     return;
   }
 
@@ -219,10 +219,13 @@ void assign_svalue(struct svalue *to, struct svalue *from)
   assign_svalue_no_free(to,from);
 }
 
-void assign_svalues(struct svalue *to, struct svalue *from, INT32 num)
+void assign_svalues(struct svalue *to,
+		    struct svalue *from,
+		    INT32 num,
+		    TYPE_FIELD types)
 {
-  free_svalues(to,num);
-  assign_svalues_no_free(to,from,num);
+  free_svalues(to,num,BIT_MIXED);
+  assign_svalues_no_free(to,from,num,types);
 }
 
 void assign_to_short_svalue(union anything *u,

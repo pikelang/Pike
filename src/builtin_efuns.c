@@ -47,7 +47,7 @@ void f_aggregate(INT32 args)
   if(args < 0) fatal("Negative args to f_aggregate()\n");
 #endif
 
-  a=aggregate_array(args,T_MIXED);
+  a=aggregate_array(args);
   push_array(a); /* beware, macro */
 }
 
@@ -290,7 +290,7 @@ void f_backtrace(INT32 args)
   for(f=fp;f;f=f->parent_frame) frames++;
 
   sp->type=T_ARRAY;
-  sp->u.array=a=allocate_array_no_init(frames,0,T_ARRAY);
+  sp->u.array=a=allocate_array_no_init(frames,0);
   sp++;
 
   for(f=fp;f;f=f->parent_frame)
@@ -301,7 +301,8 @@ void f_backtrace(INT32 args)
 
     if(f->current_object && f->current_object->prog)
     {
-      SHORT_ITEM(a)[frames].array=i=allocate_array_no_init(3,0,T_MIXED);
+      ITEM(a)[frames].u.array=i=allocate_array_no_init(3,0);
+      ITEM(a)[frames].type=T_ARRAY;
       ITEM(i)[2].type=T_FUNCTION;
       ITEM(i)[2].subtype=f->fun;
       ITEM(i)[2].u.object=f->current_object;
@@ -328,7 +329,8 @@ void f_backtrace(INT32 args)
 	ITEM(i)[0].type=T_INT;
       }
     }else{
-      SHORT_ITEM(a)[frames].refs=0;
+      ITEM(a)[frames].type=T_INT;
+      ITEM(a)[frames].u.integer=0;
     }
   }
 }
@@ -562,7 +564,6 @@ void f_all_efuns(INT32 args)
 
 void f_allocate(INT32 args)
 {
-  TYPE_T t;
   INT32 size;
 
   if(args < 1)
@@ -571,25 +572,12 @@ void f_allocate(INT32 args)
   if(sp[-args].type!=T_INT)
     error("Bad argument 1 to allocate.\n");
 
-  if(args > 1)
-  {
-    struct lpc_string *s;
-    if(sp[1-args].type != T_STRING)
-      error("Bad argument 2 to allocate.\n");
-
-    s=sp[1-args].u.string;
-    s=parse_type(s->str);
-    t=compile_type_to_runtime_type(s);
-    free_string(s);
-  }else{
-    t=T_MIXED;
-  }
 
   size=sp[-args].u.integer;
   if(size < 0)
     error("Allocate on negative number.\n");
   pop_n_elems(args);
-  push_array( allocate_array(size, t) );
+  push_array( allocate_array(size) );
 }
 
 void f_sizeof(INT32 args)
@@ -632,14 +620,21 @@ void f_sizeof(INT32 args)
 
 void f_rusage(INT32 args)
 {
-  INT32 *rus;
+  INT32 *rus,e;
   struct array *v;
   pop_n_elems(args);
   rus=low_rusage();
   if(!rus)
     error("System rusage information not available.\n");
-  v=allocate_array_no_init(29,0,T_INT);
-  MEMCPY((char *)SHORT_ITEM(v),(char *)rus,sizeof(INT32)*29);
+  v=allocate_array_no_init(29,0);
+
+  for(e=0;e<29;e++)
+  {
+    ITEM(v)[e].type=T_INT;
+    ITEM(v)[e].subtype=NUMBER_NUMBER;
+    ITEM(v)[e].u.integer=rus[e];
+  }
+
   sp->u.array=v;
   sp->type=T_ARRAY;
   sp++;
@@ -798,9 +793,13 @@ void f_indices(INT32 args)
     size=sp[-args].u.array->size;
 
   qjump:
-    a=allocate_array_no_init(size,0,T_INT);
+    a=allocate_array_no_init(size,0);
     while(--size>=0)
-      SHORT_ITEM(a)[size].integer=size;
+    {
+      ITEM(a)[size].type=T_INT;
+      ITEM(a)[size].subtype=NUMBER_NUMBER;
+      ITEM(a)[size].u.integer=size;
+    }
     break;
 
   case T_MAPPING:
@@ -834,9 +833,13 @@ void f_values(INT32 args)
   {
   case T_STRING:
     size=sp[-args].u.string->len;
-    a=allocate_array_no_init(size,0,T_INT);
+    a=allocate_array_no_init(size,0);
     while(--size>=0)
-      SHORT_ITEM(a)[size].integer=EXTRACT_UCHAR(sp[-args].u.string->str+size);
+    {
+      ITEM(a)[size].type=T_INT;
+      ITEM(a)[size].subtype=NUMBER_NUMBER;
+      ITEM(a)[size].u.integer=EXTRACT_UCHAR(sp[-args].u.string->str+size);
+    }
     break;
 
   case T_ARRAY:
@@ -849,9 +852,13 @@ void f_values(INT32 args)
 
   case T_LIST:
     size=sp[-args].u.list->ind->size;
-    a=allocate_array_no_init(size,0,T_INT);
-    while(size>0)
-      SHORT_ITEM(a)[--size].integer=1;
+    a=allocate_array_no_init(size,0);
+    while(--size>=0)
+    {
+      ITEM(a)[size].type=T_INT;
+      ITEM(a)[size].subtype=NUMBER_NUMBER;
+      ITEM(a)[size].u.integer=1;
+    }
     break;
 
   case T_OBJECT:
@@ -990,50 +997,18 @@ struct lpc_string * replace_many(struct lpc_string *str,
 
   v=(struct tupel *)xalloc(sizeof(struct tupel)*from->size);
 
-  if(from->array_type == T_MIXED)
+  for(e=0;e<from->size;e++)
   {
-    for(e=0;e<from->size;e++)
-    {
-      if(ITEM(from)[e].type != T_STRING)
-	error("Replace: from array not string *\n");
-      v[e].ind=ITEM(from)[e].u.string;
-    }
-  }
-  else if(from->array_type == T_STRING)
-  {
-    for(e=0;e<from->size;e++)
-    {
-      if(!SHORT_ITEM(from)[e].string)
-	error("Replace: from array not string *\n");
-      v[e].ind=SHORT_ITEM(from)[e].string;
-    }
-  }
-  else
-  {
-    error("Replace: from array is not string *\n");
+    if(ITEM(from)[e].type != T_STRING)
+      error("Replace: from array not string *\n");
+    v[e].ind=ITEM(from)[e].u.string;
   }
 
-  if(to->array_type == T_MIXED)
+  for(e=0;e<to->size;e++)
   {
-    for(e=0;e<to->size;e++)
-    {
-      if(ITEM(to)[e].type != T_STRING)
-	error("Replace: to array not string *\n");
-      v[e].val=ITEM(to)[e].u.string;
-    }
-  }
-  else if(to->array_type == T_STRING)
-  {
-    for(e=0;e<to->size;e++)
-    {
-      if(!SHORT_ITEM(to)[e].string)
-	error("Replace: to array not string *\n");
-      v[e].val=SHORT_ITEM(to)[e].string;
-    }
-  }
-  else
-  {
-    error("Replace: to array is not string *\n");
+    if(ITEM(to)[e].type != T_STRING)
+      error("Replace: to array not string *\n");
+    v[e].val=ITEM(to)[e].u.string;
   }
 
   fsort((char *)v,from->size,sizeof(struct tupel),(fsortfun)replace_sortfun);

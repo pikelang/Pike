@@ -41,20 +41,20 @@
 struct array *encode_stat(struct stat *s)
 {
   struct array *a;
-  a=allocate_array_no_init(7,0,T_INT);
-  SHORT_ITEM(a)[0].integer=s->st_mode;
+  a=allocate_array(7);
+  ITEM(a)[0].u.integer=s->st_mode;
   switch(S_IFMT & s->st_mode)
   {
-  case S_IFREG: SHORT_ITEM(a)[1].integer=s->st_size; break;
-  case S_IFDIR: SHORT_ITEM(a)[1].integer=-2; break;
-  case S_IFLNK: SHORT_ITEM(a)[1].integer=-3; break;
-  default: SHORT_ITEM(a)[1].integer=-4; break;
+  case S_IFREG: ITEM(a)[1].u.integer=s->st_size; break;
+  case S_IFDIR: ITEM(a)[1].u.integer=-2; break;
+  case S_IFLNK: ITEM(a)[1].u.integer=-3; break;
+  default: ITEM(a)[1].u.integer=-4; break;
   }
-  SHORT_ITEM(a)[2].integer=s->st_atime;
-  SHORT_ITEM(a)[3].integer=s->st_mtime;
-  SHORT_ITEM(a)[4].integer=s->st_ctime;
-  SHORT_ITEM(a)[5].integer=s->st_uid;
-  SHORT_ITEM(a)[6].integer=s->st_gid;
+  ITEM(a)[2].u.integer=s->st_atime;
+  ITEM(a)[3].u.integer=s->st_mtime;
+  ITEM(a)[4].u.integer=s->st_ctime;
+  ITEM(a)[5].u.integer=s->st_uid;
+  ITEM(a)[6].u.integer=s->st_gid;
   return a;
 }
 
@@ -170,7 +170,7 @@ void f_get_dir(INT32 args)
       push_string(make_shared_binary_string(d->d_name,NAMLEN(d)));
     }
     closedir(dir);
-    a=aggregate_array(sp-save_sp, T_STRING);
+    a=aggregate_array(sp-save_sp);
   }
 
   pop_n_elems(args);

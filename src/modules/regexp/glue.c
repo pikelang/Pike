@@ -84,7 +84,7 @@ static void regexp_split(INT32 args)
       }
     }
     if(j<i-1) pop_n_elems(i-j-1);
-    push_array(aggregate_array(j,T_STRING));
+    push_array(aggregate_array(j));
     free_string(s);
   }else{
     pop_n_elems(args);
