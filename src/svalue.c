@@ -661,6 +661,40 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
         {
           switch(s->u.string->str[i])
           {
+	  case '\n':
+	    my_putchar('\\');
+	    my_putchar('n');
+	    break;
+
+	  case '\t':
+	    my_putchar('\\');
+	    my_putchar('t');
+	    break;
+
+	  case '\b':
+	    my_putchar('\\');
+	    my_putchar('b');
+	    break;
+
+	  case '\r':
+	    my_putchar('\\');
+	    my_putchar('r');
+	    break;
+	    
+	  case 0:
+	  case 1:
+	  case 2:
+	  case 3:
+	  case 4:
+	  case 5:
+	  case 6:
+	  case 7:
+	    my_putchar('\\');
+	    my_putchar('0');
+	    my_putchar('0');
+	    my_putchar('0' + s->u.string->str[i]);
+	    break;
+
             case '"':
             case '\\':
               my_putchar('\\');
