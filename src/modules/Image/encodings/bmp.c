@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.9 1999/05/02 18:26:42 mirar Exp $ */
+/* $Id: bmp.c,v 1.10 1999/05/02 20:15:37 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.9 1999/05/02 18:26:42 mirar Exp $
+**!	$Id: bmp.c,v 1.10 1999/05/02 20:15:37 mirar Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.9 1999/05/02 18:26:42 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.10 1999/05/02 20:15:37 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -244,13 +244,13 @@ void img_bmp_encode(INT32 args)
 }
 
 /*
+**! method object decode(string data)
 **! method mapping _decode(string data)
 **! method mapping decode_header(string data)
-**! method object decode(string data)
+**! method object decode(string data,mapping options)
 **! method mapping _decode(string data,mapping options)
 **! method mapping decode_header(string data,mapping options)
-**! method object decode(string data,mapping options)
-**!	Decode a BMP. Not all modes are supported.
+**!	Decode a BMP. 
 **!
 **!	<ref>decode</ref> gives an image object,
 **!	<ref>_decode</ref> gives a mapping in the format
