@@ -13,15 +13,16 @@ array(string) features()
   a += ({ "threads" });
 #endif
 
-  foreach(({ "_Crypto", "CommonLog", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
-	     "_Image_JPEG", "_Image_TIFF", "_Image_TTF", "MIME",
+  foreach(({ "_Crypto", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
+	     "_Image_JPEG", "_Image_TIFF", "_Image_TTF", "Java",
 	     "Msql", "Mysql", "Odbc", "Oracle", "Perl", "Postgres", "Ssleay",
-	     "sybase", "X", "Yp" }),
+	     "sybase", "X" }),
 	  string modname)
   {
     catch
     {
-      if(sizeof(indices(master()->resolv(modname) || ({}))))
+      if(([ "Java":2 ])[modname] <
+	 sizeof(indices(master()->resolv(modname) || ({}))))
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
