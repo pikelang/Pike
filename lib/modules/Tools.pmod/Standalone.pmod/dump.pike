@@ -6,12 +6,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.3 2003/08/24 21:00:35 nilsson Exp $
+|| $Id: dump.pike,v 1.4 2004/09/25 20:49:11 nilsson Exp $
 */
 
-constant description = "Dumps pike files into object files.";
+constant description = "Dumps Pike files into object files.";
 
-int quiet = 1, report_failed = 0, recursive = 0, update = 0;
+int quiet=1, report_failed=0, recursive=0, update=0, nt_install=0;
+string target_dir = 0;
+string update_stamp = 0;
 
 program p; /* program being dumped */
 
@@ -24,7 +26,38 @@ string fakeroot(string s)
 #define fakeroot(X) X
 #endif
 
-Tools.Install.ProgressBar progress_bar;
+object progress_bar;
+
+class GTKProgress {
+#if constant(GTK.Window)
+  GTK.ProgressBar bar;
+#endif
+  float progress;
+  float scale;
+
+  void update(int num) {
+    progress += scale*num;
+    progress = min(progress, 1.0);
+#if constant(GTK.Window)
+    bar->update(progress);
+#endif
+  }
+
+#if constant(GTK.Window)
+  GTK.Window win;
+  GTK.Frame frame;
+
+  void create() {
+    GTK.setup_gtk();
+    win = GTK.Window(GTK.WINDOW_TOPLEVEL)
+      ->set_title(version() + " Module Dumping")
+      ->add(frame = GTK.Frame("Dumping Pike modules...")->
+	    set_border_width(16)->
+	    add(bar = GTK.ProgressBar()->set_usize(150,20)));
+    win->show_all();
+  }
+#endif
+}
 
 Stdio.File logfile = Stdio.stderr;
 
@@ -261,11 +294,45 @@ Arguments:
   Only redump files that are newer than the dumped file.
 ";
 
+void setup_logging(void|string file) {
+  logfile = Stdio.File(stringp(file) && file || "dumpmodule.log",
+		       "caw");
+  /* Redirect all debug and error messages to the logfile. */
+  logfile->dup2(Stdio.stderr);
+}
+
+int pos;
+array files;
+
+void dump_files() {
+
+  if(pos>=sizeof(files)) {
+    if (update_stamp)
+      Stdio.write_file (update_stamp, version());
+    exit(0);
+  }
+
+  string file = files[pos++];
+
+  if(progress_bar)
+    progress_bar->update(1);
+
+  string outfile = file;
+  if (target_dir) {
+#ifdef __NT__
+    outfile = replace (outfile, "\\", "/");
+#endif
+    outfile = combine_path (target_dir, ((outfile / "/") - ({""}))[-1]);
+  }
+
+  if (!dumpit(file, outfile) && !nt_install)
+    pos = sizeof(files); // exit
+
+  call_out(dump_files, 0);
+}
+
 int main(int argc, array(string) argv)
 {
-  string target_dir = 0;
-  string update_stamp = 0;
-
   replace_master (MyMaster());
 
   foreach (Getopt.find_all_options (argv, ({
@@ -279,6 +346,7 @@ int main(int argc, array(string) argv)
     ({"recursive", Getopt.NO_ARG, ({"-r", "--recursive"})}),
     ({"target-dir", Getopt.HAS_ARG, ({"-t", "--target-dir"})}),
     ({"update-only", Getopt.MAY_HAVE_ARG, ({"-u", "--update-only"})}),
+    ({"nt-install", Getopt.NO_ARG, ({"--nt-install"})}),
   })), array opt)
     switch (opt[0]) {
 
@@ -286,11 +354,14 @@ int main(int argc, array(string) argv)
 	write(help);
 	return 0;
 
+      case "nt-install":
+	quiet = 1;
+	nt_install = 1;
+	setup_logging();
+	break;
+
       case "log-file":
-	logfile = Stdio.File(stringp (opt[1]) && opt[1] || "dumpmodule.log",
-			     "caw");
-	/* Redirect all debug and error messages to the logfile. */
-	logfile->dup2(Stdio.stderr);
+	setup_logging(opt[1]);
 	break;
 
       case "verbose":
@@ -339,24 +410,23 @@ int main(int argc, array(string) argv)
   // Remove the name of the program.
   argv = argv[1..];
 
-  argv=Getopt.get_args(argv);
-
-  foreach(argv, string file)
-  {
-    if(progress_bar)
-      progress_bar->update(1);
-
-    string outfile = file;
-    if (target_dir) {
-#ifdef __NT__
-      outfile = replace (outfile, "\\", "/");
-#endif
-      outfile = combine_path (target_dir, ((outfile / "/") - ({""}))[-1]);
+  if(nt_install) {
+    progress_bar = GTKProgress();
+    files = ({});
+    foreach(master()->pike_module_path, string path) {
+      object fs = Filesystem.Traversion(path);
+      foreach(fs;  string d; string f) {
+	if(fs->stat()->isdir) continue;
+	if(f=="master.pike") continue;
+	if( has_suffix(f, ".pike") || has_suffix(f, ".pmod") )
+	  files += ({ d+f });
+      }
     }
-
-    if (!dumpit(file, outfile)) break;
+    progress_bar->scale = 1.0/sizeof(files);
   }
+  else
+    files = Getopt.get_args(argv);
 
-  if (update_stamp)
-    Stdio.write_file (update_stamp, version());
+  call_out(dump_files, 0);
+  return -1;
 }
