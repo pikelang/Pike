@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.53 2003/10/09 17:08:34 grubba Exp $
+// $Id: Readline.pike,v 1.54 2003/10/09 19:26:14 grubba Exp $
 #pike __REAL_VERSION__
 
 //!
@@ -319,7 +319,7 @@ class OutputController
     if(active_attributes && !term->tgetflag("ms"))
       low_disable_attributes();
     if(xpos-n>=0) {
-      outfd->write(term->put("LE", n) || (term->put("le")||term-put("kb")||"\10")*n);
+      outfd->write(term->put("LE", n) || (term->put("le")||term->put("kb")||"\10")*n);
       xpos -= n;
     } else {
       int l = 1+(n-xpos-1)/columns;
