@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.532 2001/07/08 20:14:58 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.533 2001/07/08 21:35:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4365,7 +4365,8 @@ if test "x$with_computed_goto" = "xyes"; then
     label:
       return 0;
     ], [ pike_cv_gcc_computed_goto=yes ], [ pike_cv_gcc_computed_goto=no ])
-  ])
+  ]
+  AC_MSG_RESULT($pike_cv_gcc_computed_goto)
   if test "x$pike_cv_gcc_computed_goto" = "xyes"; then
     AC_MSG_WARN([Enabling computed goto (EXPERIMENTAL).])
     AC_DEFINE(HAVE_COMPUTED_GOTO)
