@@ -34,7 +34,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	else if( data[pos+1]=='b' || data[pos+1]=='B' )
 	{
 	  pos+=2;
-	  while( pos<len && (data[pos]==0 || data[pos]==1) )
+	  while( pos<len && (data[pos]=='0' || data[pos]=='1') )
 	    pos++;
 	  if( pos != len )
 	    pos--;
@@ -61,6 +61,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	if(data[pos]=='e' || data[pos]=='E')
 	{
 	  pos++;
+	  if(data[pos]=='-' || data[pos]=='+') pos++;
 	  while(data[pos]>='0' && data[pos]<='9') pos++;
 	}
 	if( pos != len )
@@ -227,7 +228,22 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    goto failed_to_find_end;
 	  break;
 	}
-	/* FIXME: #string. */
+	if( data[pos] == 's' &&
+	    data[pos+1] == 't' &&
+	    data[pos+2] == 'r' &&
+	    data[pos+3] == 'i' &&
+	    data[pos+4] == 'n' &&
+	    data[pos+5] == 'g' &&
+	    data[pos+6] == '\"' ) {
+	  pos += 6;
+	  for (pos++; pos < len; pos++) {
+	    if (data[pos] == '\"') break;
+	    if (data[pos] == '\\') pos++;
+	  }
+	  if (pos >= len)
+	    goto failed_to_find_end;
+	  break;
+	}
 	NEWLINE();
 	while( data[pos-1]=='\\' ||
 	       (pos>2 && data[pos-1]=='\r' && data[pos-2]=='\\') )
