@@ -808,18 +808,17 @@ class Fifo
     return ret;
   }
 
-  int write(mixed value)
-  {
-    if (num == sizeof(buffer)) error ("Deadlock detected - fifo full.\n");
-    write_unlocked (value);
-    return num;
-  }
-
   int try_write(mixed value)
   {
     if (num == sizeof (buffer)) return 0;
     buffer[(ptr + num) % sizeof(buffer)] = value;
     return ++num;
+  }
+
+  int write(mixed value)
+  {
+    if (!try_write(value)) error("Deadlock detected - fifo full.\n");
+    return num;
   }
 
   static void create(int|void size)
