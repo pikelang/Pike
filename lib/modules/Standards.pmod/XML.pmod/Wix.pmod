@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.4 2004/11/02 12:21:06 grubba Exp $
+// $Id: Wix.pmod,v 1.5 2004/11/02 13:24:31 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -24,36 +24,6 @@ class WixNode
     if (text) {
       add_child(Parser.XML.Tree.SimpleTextNode(text));
     }
-  }
-}
-
-class File
-{
-  string name;
-  string source;
-  string id;
-
-  static void create(string name, string source, string id)
-  {
-    File::name = name;
-    File::source = source;
-    File::id = id;
-  }
-
-  WixNode gen_xml()
-  {
-    mapping(string:string) attrs = ([
-      "Id":id,
-      "Name":id[1..8]+"."+id[9..11],
-      "LongName":name,
-      "Vital":"yes",
-      //      "KeyPath":"yes",
-      //      "DiskId":"1",
-    ]);
-    if (source) {
-      attrs->src = replace(source, "/", "\\");
-    }
-    return WixNode("File", attrs);
   }
 }
 
@@ -116,20 +86,93 @@ class RegistryEntry
 class Directory
 {
   string name;
+  string short_name;
   string id;
   Standards.UUID.UUID guid;
   string source;
+  multiset(string) short_names = (<>);
   mapping(string:int) sub_sources = ([]);
   mapping(string:File) files = ([]);
   mapping(string:RegistryEntry) other_entries = ([]);
   mapping(string:Directory) sub_dirs = ([]);
 
-  static void create(string name, string parent_guid, string|void id)
+  static void create(string name, string parent_guid,
+		     string|void id, string|void short_name)
   {
     guid = Standards.UUID.make_version3(name, parent_guid);
     if (!id) id = "_"+guid->str()-"-";
     Directory::name = name;
+    Directory::short_name = short_name;
     Directory::id = id;
+  }
+
+  string gen_8dot3(string long_name)
+  {
+    array(string) segs = long_name/".";
+    string extension;
+    string base = segs[0];
+    int truncated;
+    if (sizeof(segs) > 1) {
+      extension = segs[-1];
+      if (sizeof(segs) > 2) {
+	base = segs[..sizeof(segs)-2] * "_";
+	truncated = 1;
+      } else {
+	base = segs[0];
+      }
+      if (sizeof(extension) > 3) {
+	extension = extension[..2];
+	truncated = 1;
+      }
+    }
+    if ((sizeof(base) > 8) || truncated) {
+      int cnt;
+      for (cnt = 0; cnt < 100; cnt++) {
+	if (cnt < 10) {
+	  if (!short_names[base = sprintf("%.6s~%.1d", base, cnt)]) {
+	    short_names[base] = 1;
+	    break;
+	  }
+	} else if (!short_names[base = sprintf("%.5s~%.2d", base, cnt)]) {
+	  short_names[base] = 1;
+	  break;
+	}
+      }
+      if (cnt > 99) error("Too many like-named files: %O\n", long_name);
+      //werror("gen_8dot3: %O ==> %O.%O\n", long_name, base, extension);
+    }
+    if (extension) return sprintf("%s.%s", base, extension);
+    return base;
+  }
+
+  class File
+  {
+    string name;
+    string source;
+    string id;
+
+    static void create(string name, string source, string id)
+    {
+      File::name = name;
+      File::source = source;
+      File::id = id;
+    }
+
+    WixNode gen_xml()
+    {
+      mapping(string:string) attrs = ([
+	"Id":id,
+	"Name":gen_8dot3(name),
+	"LongName":name,
+	"Vital":"yes",
+	//      "KeyPath":"yes",
+	//      "DiskId":"1",
+      ]);
+      if (source) {
+	attrs->src = replace(source, "/", "\\");
+      }
+      return WixNode("File", attrs);
+    }
   }
 
   Directory low_add_path(array(string) path)
@@ -138,7 +181,8 @@ class Directory
     foreach(path, string dir) {
       if (dir == ".") continue;
       d = (d->sub_dirs[dir] ||
-	   (d = d->sub_dirs[dir] = Directory(dir, d->guid->encode())));
+	   (d = d->sub_dirs[dir] =
+	    Directory(dir, d->guid->encode(), 0, d->gen_8dot3(dir))));
     }
     return d;
   }
@@ -246,17 +290,11 @@ class Directory
     
     mapping(string:string) attrs = ([
       "Id":id,
+      "Name":short_name||name,
     ]);
-    // Win32 stupidity...
-    if ((sizeof(name) > 11 ||
-	 sizeof(name/".") > 2 ||
-	 sizeof((name/".")[0]) > 8 ||
-	 (sizeof(name/".") == 2 && sizeof((name/".")[1]) > 3)) &&
-	(name != "SourceDir")) {
+    if (short_name && (short_name != name)) {
+      // Win32 stupidity...
       attrs->LongName = name;
-      attrs->Name = guid->str()[..7];
-    } else {
-      attrs->Name = name;
     }
     if (source) {
       attrs->src = replace(source+"/", "/", "\\");
