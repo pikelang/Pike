@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.3 2003/12/18 14:16:45 grubba Exp $
+|| $Id: acconfig.h,v 1.4 2003/12/18 14:58:46 grubba Exp $
 */
 
 #undef STDC_HEADERS
@@ -46,11 +46,6 @@
 #include <postgres.h>
 #endif /* HAVE_POSTGRES_FE_H */
 #include <libpq-fe.h>
-#ifdef HAVE_SERVER_CATALOG_PG_TYPE_H
-#include <server/catalog/pg_type.h>
-#elif defined(HAVE_CATALOG_PG_TYPE_H)
-#include <catalog/pg_type.h>
-#endif
 
 #endif
 

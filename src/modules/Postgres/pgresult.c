@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.24 2003/12/18 14:16:45 grubba Exp $
+|| $Id: pgresult.c,v 1.25 2003/12/18 14:58:46 grubba Exp $
 */
 
 /*
@@ -67,7 +67,21 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.24 2003/12/18 14:16:45 grubba Exp $");
+/* <server/postgres_fe.h> doesn't suffice to be able to include
+ * <server/catalog/pg_type.h>.
+ */
+#ifdef HAVE_SERVER_POSTGRES_H
+#include <server/postgres.h>
+#elif defined(HAVE_POSTGRES_H)
+#include <postgres.h>
+#endif
+#ifdef HAVE_SERVER_CATALOG_PG_TYPE_H
+#include <server/catalog/pg_type.h>
+#elif defined(HAVE_CATALOG_PG_TYPE_H)
+#include <catalog/pg_type.h>
+#endif
+
+RCSID("$Id: pgresult.c,v 1.25 2003/12/18 14:58:46 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
