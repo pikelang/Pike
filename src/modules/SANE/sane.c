@@ -34,7 +34,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: sane.c,v 1.11 2002/05/19 15:25:24 per Exp $");
 
 /*
 **! module SANE
@@ -43,7 +43,7 @@ RCSID("$Id: sane.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $");
 **!     library from pike
 **!
 **! note
-**!	$Id: sane.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $
+**!	$Id: sane.c,v 1.11 2002/05/19 15:25:24 per Exp $
 */
 
 static int sane_is_inited;
@@ -71,7 +71,7 @@ static void push_device( SANE_Device *d )
 
 
 /*
-**! method array(mapping) list-scanners()
+**! method array(mapping) list_scanners()
 **!
 **!  Returns an array with all available scanners.
 **!
