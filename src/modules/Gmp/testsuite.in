@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.14 1998/07/19 21:57:47 nisse Exp $
+// $Id: testsuite.in,v 1.15 2000/04/25 15:07:18 marcus Exp $
 
 // mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
@@ -116,6 +116,6 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(Gmp.mpz(17)->popcount(), 2)
   test_eq(Gmp.mpz(4711)->popcount(), 7)
   test_eq(Gmp.mpz(17)->pow(17)->popcount(), 31)
-  test_true(catch(Gmp.mpz(-1)->popcount()))
+  test_eq(Gmp.mpz(-1)->popcount(), -1)
 ]]);
 

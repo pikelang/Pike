@@ -1,4 +1,4 @@
-/* $Id: gmp_machine.h.in,v 1.3 1998/07/11 15:58:21 grubba Exp $ */
+/* $Id: gmp_machine.h.in,v 1.4 2000/04/25 15:07:18 marcus Exp $ */
 #ifndef GMP_MACHINE_H
 #define GMP_MACHINE_H
 
@@ -13,5 +13,8 @@
 
 /* Define this if you have -lgmp */
 #undef HAVE_LIBGMP
+
+/* Define this if you have mpz_popcount */
+#undef HAVE_MPZ_POPCOUNT
 
 #endif

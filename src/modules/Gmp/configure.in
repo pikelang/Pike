@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 1999/11/23 07:07:14 hubbe Exp $
+# $Id: configure.in,v 1.11 2000/04/25 15:07:18 marcus Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -103,6 +103,7 @@ the option --without-bignums.
       fi
     ])
   ])
+  AC_CHECK_FUNC(__gmpz_popcount, AC_DEFINE_UNQUOTED(HAVE_MPZ_POPCOUNT))
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
