@@ -133,26 +133,26 @@ class CAST128_Algorithm
 
 CAST128_Algorithm CAST128 = CAST128_Algorithm();
 
-class SERPENT_Algorithm
+class Serpent_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
-  inherit SERPENT_Info;
+  inherit Serpent_Info;
   inherit CipherAlgorithm;
 
-  SERPENT_State `()() { return SERPENT_State(); }
+  Serpent_State `()() { return Serpent_State(); }
 }
 
-SERPENT_Algorithm SERPENT = SERPENT_Algorithm();
+Serpent_Algorithm Serpent = Serpent_Algorithm();
 
-class TWOFISH_Algorithm
+class Twofish_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
-  inherit TWOFISH_Info;
+  inherit Twofish_Info;
   inherit CipherAlgorithm;
 
-  TWOFISH_State `()() { return TWOFISH_State(); }
+  Twofish_State `()() { return Twofish_State(); }
 }
 
-TWOFISH_Algorithm TWOFISH = TWOFISH_Algorithm();
+Twofish_Algorithm Twofish = Twofish_Algorithm();
 
 #endif /* constant(Nettle.HashInfo) */

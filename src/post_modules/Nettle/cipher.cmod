@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.8 2003/07/29 21:00:06 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.9 2003/08/04 18:59:14 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -327,17 +327,17 @@ PIKECLASS CAST128_State
 /*! @endclass CAST128_State */
 
 static int
-SERPENT_check_key(ptrdiff_t len, const char *key)
+serpent_check_key(ptrdiff_t len, const char *key)
 {
   return (len>=SERPENT_MIN_KEY_SIZE && len<=SERPENT_MAX_KEY_SIZE);
 }
 
-/*! @class SERPENT_Info
+/*! @class Serpent_Info
  *!
  *! Internal mixin class, intended to be multiply inherited
  *! together with CipherInfo. */
 
-PIKECLASS SERPENT_Info
+PIKECLASS Serpent_Info
 {
   INIT
     {
@@ -346,20 +346,20 @@ PIKECLASS SERPENT_Info
       if (CipherInfo && !CipherInfo->meta)
       {
 	CipherInfo->meta = &nettle_serpent256;
-	CipherInfo->check_key = &SERPENT_check_key;
+	CipherInfo->check_key = &serpent_check_key;
       }
     }
 }
 
-/*! @endclass SERPENT_Info */
+/*! @endclass Serpent_Info */
 
-/*! @class SERPENT_State
+/*! @class Serpent_State
  *!
- *! State for SERPENT encyption
+ *! State for Serpent encyption
  */
-PIKECLASS SERPENT_State
+PIKECLASS Serpent_State
 {
-  INHERIT SERPENT_Info;
+  INHERIT Serpent_Info;
   INHERIT CipherState;
   CVAR struct serpent_ctx serpent;
 
@@ -373,20 +373,20 @@ PIKECLASS SERPENT_State
       state->ctx = &THIS->serpent;
     }
 }
-/*! @endclass SERPENT_State */
+/*! @endclass Serpent_State */
 
 static int
-TWOFISH_check_key(ptrdiff_t len, const char *key)
+twofish_check_key(ptrdiff_t len, const char *key)
 {
   return (len>=TWOFISH_MIN_KEY_SIZE && len<=TWOFISH_MAX_KEY_SIZE);
 }
 
-/*! @class TWOFISH_Info
+/*! @class Twofish_Info
  *!
  *! Internal mixin class, intended to be multiply inherited
  *! together with CipherInfo. */
 
-PIKECLASS TWOFISH_Info
+PIKECLASS Twofish_Info
 {
   INIT
     {
@@ -395,20 +395,20 @@ PIKECLASS TWOFISH_Info
       if (CipherInfo && !CipherInfo->meta)
       {
 	CipherInfo->meta = &nettle_twofish256;
-	CipherInfo->check_key = &TWOFISH_check_key;
+	CipherInfo->check_key = &twofish_check_key;
       }
     }
 }
 
-/*! @endclass TWOFISH_Info */
+/*! @endclass Twofish_Info */
 
-/*! @class TWOFISH_State
+/*! @class Twofish_State
  *!
- *! State for TWOFISH encyption
+ *! State for Twofish encyption
  */
-PIKECLASS TWOFISH_State
+PIKECLASS Twofish_State
 {
-  INHERIT TWOFISH_Info;
+  INHERIT Twofish_Info;
   INHERIT CipherState;
   CVAR struct twofish_ctx twofish;
 
@@ -422,7 +422,7 @@ PIKECLASS TWOFISH_State
       state->ctx = &THIS->twofish;
     }
 }
-/*! @endclass TWOFISH_State */
+/*! @endclass Twofish_State */
 
 /*! @endmodule Nettle */
 
