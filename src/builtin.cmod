@@ -182,6 +182,17 @@ PIKEFUN int string_width(string s)
   RETURN 8 * (1 << s->size_shift);
 }
 
+PIKEFUN 1 m_delete(mapping(mixed:1=mixed) m, mixed val)
+  efun;
+  optflags OPT_SIDE_EFFECT;
+{
+  struct svalue s;
+  map_delete_no_free(m, val, &s);
+  pop_n_elems(args);
+  *sp=s;
+  sp++;
+}
+
 void init_builtin(void)
 {
 INIT
