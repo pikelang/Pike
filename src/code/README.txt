@@ -129,7 +129,7 @@ int ALIGN_PIKE_FUNCTION_BEGINNINGS
 	Similar to ALIGN_PIKE_JUMPS, but only for the beginning
 	of a function.
 
-int INS_F_JUMP(unsigned int op)
+int INS_F_JUMP(unsigned int op, int backward_jump)
 	Similar to ins_f_byte, but is only called for jump and branch
 	instructions that take a constant target address. The return
 	value should be the offset in the program to the empty address
@@ -137,13 +137,19 @@ int INS_F_JUMP(unsigned int op)
 	UPDATE_F_JUMP. You can also return -1 to make the code use the
 	same behaviour as if INS_F_JUMP was not defined.
 
-int INS_F_JUMP_WITH_ARG(unsigned int op, unsigned INT32 arg)
+	backward_jump is only relevant for branch opcodes if
+	OPCODE_INLINE_BRANCH is defined. If it's set, a call to
+	branch_check_threads_etc should be compiled in whenever the
+	branch is taken.
+
+int INS_F_JUMP_WITH_ARG(unsigned int op, unsigned INT32 arg, int backward_jump)
 	Similar to INS_F_JUMP(), but called for instructions that take
-	a parameter.
+	one parameter.
 
 int INS_F_JUMP_WITH_TWO_ARGS(unsigned int op,
 			     unsigned INT32 arg1,
-			     unsigned INT32 arg2)
+			     unsigned INT32 arg2,
+			     int backward_jump)
 	Similar to INS_F_JUMP(), but called for instructions that take
 	two parameters.
 

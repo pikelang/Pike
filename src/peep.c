@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.95 2003/11/24 17:28:45 grubba Exp $
+|| $Id: peep.c,v 1.96 2003/11/25 22:13:58 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.95 2003/11/24 17:28:45 grubba Exp $");
+RCSID("$Id: peep.c,v 1.96 2003/11/25 22:13:58 mast Exp $");
 
 static void asm_opt(void);
 
@@ -507,7 +507,7 @@ INT32 assemble(int store_linenumbers)
       {
       case I_ISPTRJUMP:
 #ifdef INS_F_JUMP
-	tmp=INS_F_JUMP(c->opcode);
+	tmp=INS_F_JUMP(c->opcode, (labels[c->arg] != -1));
 	if(tmp != -1)
 	{
 	  UPDATE_F_JUMP(tmp, jumps[c->arg]);
@@ -529,7 +529,8 @@ INT32 assemble(int store_linenumbers)
 
       case I_ISPTRJUMPARGS:
 #ifdef INS_F_JUMP_WITH_TWO_ARGS
-	tmp = INS_F_JUMP_WITH_TWO_ARGS(c->opcode, c->arg, c->arg2);
+	tmp = INS_F_JUMP_WITH_TWO_ARGS(c->opcode, c->arg, c->arg2,
+				       (labels[c->arg] != -1));
 	if(tmp != -1)
 	{
 #ifdef ADJUST_PIKE_PC
@@ -565,7 +566,7 @@ INT32 assemble(int store_linenumbers)
 
       case I_ISPTRJUMPARG:
 #ifdef INS_F_JUMP_WITH_ARG
-	tmp = INS_F_JUMP_WITH_ARG(c->opcode, c->arg);
+	tmp = INS_F_JUMP_WITH_ARG(c->opcode, c->arg, (labels[c->arg] != -1));
 	if(tmp != -1)
 	{
 #ifdef ADJUST_PIKE_PC

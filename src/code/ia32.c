@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.36 2003/11/19 17:19:29 grubba Exp $
+|| $Id: ia32.c,v 1.37 2003/11/25 22:13:58 mast Exp $
 */
 
 /*
@@ -886,7 +886,7 @@ void ins_f_byte_with_2_args(unsigned int a,
   ins_f_byte(a);
 }
 
-static INT32 do_ins_jump (unsigned int op)
+static INT32 do_ins_jump (unsigned int op, int backward_jump)
 {
   INT32 ret = -1;
 
@@ -902,43 +902,56 @@ static INT32 do_ins_jump (unsigned int op)
     ia32_call_c_function (instrs[op - F_OFFSET].address);
     add_to_program (0x85);	/* test %eax, %eax */
     add_to_program (0xc0);
+    if (backward_jump) {
+      add_to_program (0x74);	/* jz rel8 */
+      add_to_program (5 + 1 + 4);
+      ia32_call_c_function (branch_check_threads_etc); /* 5 bytes */
+      add_to_program (0xe9);	/* jmp rel32 */
+      ret = DO_NOT_WARN ((INT32) PIKE_PC);
+      PUSH_INT (0);		/* 4 bytes */
+    }
+    else {
 #if 0
-    /* Slows down Intel PIII by 7%, speeds up Athlon XP by 22%. :P */
-    if (op == F_LOOP || op == F_FOREACH)
-      add_to_program (0x3e);	/* Branch taken hint. */
+      /* Slows down Intel PIII by 7%, speeds up Athlon XP by 22%. :P */
+      if (op == F_LOOP || op == F_FOREACH)
+	add_to_program (0x3e);	/* Branch taken hint. */
 #endif
-    add_to_program (0x0f);	/* jnz rel32 */
-    add_to_program (0x85);
-    ret = DO_NOT_WARN ((INT32) PIKE_PC);
-    PUSH_INT (0);
+      add_to_program (0x0f);	/* jnz rel32 */
+      add_to_program (0x85);
+      ret = DO_NOT_WARN ((INT32) PIKE_PC);
+      PUSH_INT (0);
+    }
   }
 #endif
 
   return ret;
 }
 
-INT32 ia32_ins_f_jump (unsigned int op)
+INT32 ia32_ins_f_jump (unsigned int op, int backward_jump)
 {
   if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
   maybe_update_pc();
-  return do_ins_jump (op);
+  return do_ins_jump (op, backward_jump);
 }
 
-INT32 ia32_ins_f_jump_with_arg (unsigned int op, unsigned INT32 a)
+INT32 ia32_ins_f_jump_with_arg (unsigned int op, unsigned INT32 a,
+				int backward_jump)
 {
   if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
   maybe_update_pc();
   update_arg1 (a);
-  return do_ins_jump (op);
+  return do_ins_jump (op, backward_jump);
 }
 
-INT32 ia32_ins_f_jump_with_two_args (unsigned int op, unsigned INT32 a, unsigned INT32 b)
+INT32 ia32_ins_f_jump_with_two_args (unsigned int op,
+				     unsigned INT32 a, unsigned INT32 b,
+				     int backward_jump)
 {
   if (!(instrs[op - F_OFFSET].flags & I_BRANCH)) return -1;
   maybe_update_pc();
   update_arg1 (a);
   update_arg2 (b);
-  return do_ins_jump (op);
+  return do_ins_jump (op, backward_jump);
 }
 
 void ia32_update_f_jump(INT32 offset, INT32 to_offset)
