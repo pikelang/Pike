@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.99 2002/05/07 09:13:47 jonasw Exp $");
+RCSID("$Id: encode.c,v 1.100 2003/06/02 11:27:53 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1524,7 +1524,7 @@ one_more_type:
   switch(tmp)
   {
     default:
-      fatal("error in type string.\n");
+      Pike_error("error in type string.\n");
       /*NOTREACHED*/
       break;
 
