@@ -1,5 +1,5 @@
 #include <config.h>
-/* $Id: quant.c,v 1.8 1997/05/19 22:50:27 hubbe Exp $ */
+/* $Id: quant.c,v 1.9 1997/05/19 23:32:02 hubbe Exp $ */
 
 /*
 
@@ -21,6 +21,7 @@ David Kågedal, kg@infovav.se
 
 #include "error.h"
 #include "global.h"
+#include "pike_memory.h"
 #include "array.h"
 
 #include "threads.h"

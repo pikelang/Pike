@@ -9,7 +9,7 @@
 #include "program.h"
 #include "pike_types.h"
 #include "stralloc.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "interpret.h"
 #include "mapping.h"
 #include "error.h"

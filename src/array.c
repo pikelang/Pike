@@ -15,7 +15,7 @@
 #include "pike_types.h"
 #include "fsort.h"
 #include "builtin_functions.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "gc.h"
 #include "main.h"
 

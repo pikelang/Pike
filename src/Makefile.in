@@ -88,7 +88,7 @@ OBJ= \
  pike_types.o \
  main.o \
  mapping.o \
- memory.o \
+ pike_memory.o \
  module.o \
  module_support.o \
  object.o \

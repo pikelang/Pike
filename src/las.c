@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.32 1997/04/18 01:17:40 hubbe Exp $");
+RCSID("$Id: las.c,v 1.33 1997/05/19 23:31:01 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -21,7 +21,7 @@ RCSID("$Id: las.c,v 1.32 1997/04/18 01:17:40 hubbe Exp $");
 #include "error.h"
 #include "docode.h"
 #include "main.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "operators.h"
 #include "callback.h"
 #include "pike_macros.h"

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.17 1997/04/16 03:09:14 hubbe Exp $");
+RCSID("$Id: object.c,v 1.18 1997/05/19 23:31:04 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -12,7 +12,7 @@ RCSID("$Id: object.c,v 1.17 1997/04/16 03:09:14 hubbe Exp $");
 #include "stralloc.h"
 #include "svalue.h"
 #include "pike_macros.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "error.h"
 #include "main.h"
 #include "array.h"

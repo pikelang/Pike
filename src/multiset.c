@@ -8,7 +8,7 @@
 #include "multiset.h"
 #include "svalue.h"
 #include "pike_macros.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "error.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"

@@ -84,35 +84,23 @@ char *alloca ();
 #undef HAVE_STRING_H
 #endif
 
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#undef HAVE_LIMITS_H
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#undef HAVE_SYS_TYPES_H
+#endif
+
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #undef HAVE_MEMORY_H
 #endif
 
-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
-#define RCSID(X) \
- static char *rcsid __attribute__ ((unused)) =X
-#elif __GNUC__ == 2
-#define RCSID(X) \
- static char *rcsid = X; \
- static void *use_rcsid=(&use_rcsid, (void *)&rcsid)
-#else
-#define RCSID(X) \
- static char *rcsid = X
-#endif
-
-#if defined(__GNUC__) && !defined(DEBUG) && !defined(lint)
-#define INLINE inline
-#else
-#define INLINE
-#endif
 
 /* we here define a few types with more defined values */
-
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#undef HAVE_LIMITS_H
-#endif
 
 #define INT64 long long
 
@@ -137,11 +125,25 @@ char *alloca ();
 #define FLOAT_TYPE float
 
 
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#undef HAVE_SYS_TYPES_H
+
+
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+#define RCSID(X) \
+ static char *rcsid __attribute__ ((unused)) =X
+#elif __GNUC__ == 2
+#define RCSID(X) \
+ static char *rcsid = X; \
+ static void *use_rcsid=(&use_rcsid, (void *)&rcsid)
+#else
+#define RCSID(X) \
+ static char *rcsid = X
 #endif
 
+#if defined(__GNUC__) && !defined(DEBUG) && !defined(lint)
+#define INLINE inline
+#else
+#define INLINE
+#endif
 
 #include "port.h"
 

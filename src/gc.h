@@ -4,6 +4,7 @@
 #ifdef GC2
 
 #include "global.h"
+#include "callback.h"
 
 extern INT32 num_objects;
 extern INT32 num_allocs;

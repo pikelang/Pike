@@ -4,14 +4,14 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.11 1997/05/18 22:23:29 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.12 1997/05/19 23:32:56 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
 #include "interpret.h"
 #include "error.h"
 #include "builtin_functions.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "main.h"
 #include "backend.h"
 #include "time_stuff.h"

@@ -8,6 +8,7 @@
 #include "main.h"
 #include "error.h"
 #include "lex.h"
+#include "pike_memory.h"
 #include "peep.h"
 
 struct p_instr_s

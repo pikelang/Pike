@@ -61,7 +61,7 @@
 #include "global.h"
 #include <ctype.h>
 #include "pike_regexp.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "error.h"
 
 /*

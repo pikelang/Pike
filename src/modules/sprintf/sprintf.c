@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.10 1997/04/16 03:13:41 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.11 1997/05/19 23:33:22 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -105,7 +105,7 @@ RCSID("$Id: sprintf.c,v 1.10 1997/04/16 03:13:41 hubbe Exp $");
 #include "pike_types.h"
 #include "constants.h"
 #include "interpret.h"
-#include "memory.h"
+#include "pike_memory.h"
 
 #define FORMAT_INFO_STACK_SIZE 200
 #define RETURN_SHARED_STRING

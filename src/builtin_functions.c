@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.36 1997/05/07 06:27:32 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.37 1997/05/19 23:31:00 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -25,7 +25,7 @@ RCSID("$Id: builtin_functions.c,v 1.36 1997/05/07 06:27:32 per Exp $");
 #include "gc.h"
 #include "backend.h"
 #include "main.h"
-#include "memory.h"
+#include "pike_memory.h"
 #include "threads.h"
 #include "time_stuff.h"
 #include "version.h"
