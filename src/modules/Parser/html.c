@@ -279,6 +279,7 @@ found_start:
    for (k=0; k<this->nargq; k++)
    {
       n=0;
+      this->look_for_end[k][n++]=this->argq_stop[k];
       for (i=0; i<this->nargq; i++)
 	 if (this->argq_start[k]==this->argq_start[i])
 	 {
