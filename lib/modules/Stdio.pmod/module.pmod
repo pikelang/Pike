@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.205 2004/09/01 17:21:50 mast Exp $
+// $Id: module.pmod,v 1.206 2004/09/03 11:55:14 vida Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2123,6 +2123,64 @@ int exist(string path)
   >)[errno()];
 }
 
+//! Convert the mode_string string as returned by Stdio.Stat object
+//! to int suitable for chmod
+//!  
+//! @param mode_string
+//!   The string as return from Stdio.Stat()->mode_string
+//! @returns
+//!   An int matching the permission of the mode_string string suitable for 
+//!   chmod
+int convert_modestring2int(string mode_string)
+{
+  constant user_permissions_letters2value =
+    ([ 
+      "r": 0400,
+      "w": 0200,
+      "x": 0100,
+      "s": 4000,
+      "S": 2000,
+      "t": 1000
+    ]);
+  constant group_permissions_letters2value =
+    ([
+      "r": 0040,
+      "w": 0020,
+      "x": 0010,
+      "s": 4000,
+      "S": 2000,
+      "t": 1000
+    ]);
+   constant other_permissions_letters2value =
+    ([
+      "r": 0004,
+      "w": 0002,
+      "x": 0001,
+      "s": 4000,
+      "S": 2000,
+      "t": 1000
+    ]);
+  int result = 0;
+  array arr_mode = mode_string / "";
+  if(sizeof(mode_string) != 10)
+  {
+    throw(({ "Invalid mode_string", backtrace() }));
+  }
+  for(int i = 1; i < 4; i++)
+  {
+    result += user_permissions_letters2value[arr_mode[i]];
+  }
+  for(int i = 4; i < 7; i++)
+  {
+    result += group_permissions_letters2value[arr_mode[i]];
+  }
+  for(int i = 7; i < 10; i++)
+  {
+    result += other_permissions_letters2value[arr_mode[i]];
+  }
+  return result;
+}
+
 #define BLOCK 65536
 
 #if constant(System.cp)
@@ -2132,27 +2190,52 @@ int cp(string from, string to)
 //! Copies the file @[from] to the new position @[to]. If there is
 //! no system function for cp, a new file will be created and the
 //! old one copied manually in chunks of 65536 bytes.
+//! This function can also copy directories recursively.
+//! @returns
+//!  0 on error, 1 on success
+//! @note
+//! This function keeps file and directory permissions unlike in Pike 7.6 and
+//! earlier
 {
   string data;
-  File f=File(), t;
-  if(!f->open(from,"r")) return 0;
-  function(int,int|void:string) r=f->read;
-  t=File();
-  if(!t->open(to,"wct")) {
-    f->close();
-    return 0;
-  }
-  function(string:int) w=t->write;
-  do
+  Stat stat = file_stat(from, 1);
+  if(stat->isdir)
   {
-    data=r(BLOCK);
-    if(!data) return 0;
-    if(w(data)!=sizeof(data)) return 0;
-  }while(sizeof(data) == BLOCK);
-
-  f->close();
-  t->close();
-  return 1;
+    // recursive copying of directories
+    if(!mkdir(to))
+      return 0;
+    chmod(to, convert_modestring2int(stat->mode_string));
+    array sub_files = get_dir(from);
+    foreach(sub_files, string sub_file)
+    {
+      if(!cp(combine_path(from, sub_file), combine_path(to, sub_file)))
+        return 0;
+    }
+    return 1;
+  }
+  else
+  {
+    File f=File(), t;
+    if(!f->open(from,"r")) return 0;
+    function(int,int|void:string) r=f->read;
+    t=File();
+    if(!t->open(to,"wct")) {
+      f->close();
+      return 0;
+    }
+    function(string:int) w=t->write;
+    do
+    {
+      data=r(BLOCK);
+      if(!data) return 0;
+      if(w(data)!=sizeof(data)) return 0;
+    }while(sizeof(data) == BLOCK);
+  
+    f->close();
+    t->close();
+    chmod(to, convert_modestring2int(stat->mode_string));
+    return 1;
+  }
 }
 #endif
 
@@ -2279,7 +2362,7 @@ int mkdirhier (string pathname, void|int mode)
   return is_dir (path);
 }
 
-//! Remove a file or directory a directory tree.
+//! Remove a file or a directory tree.
 //!
 //! @returns
 //! Returns 0 on failure, nonzero otherwise.
@@ -2295,8 +2378,26 @@ int recursive_rm (string path)
   if(a->isdir)
     if (array(string) sub = get_dir (path))
       foreach( sub, string name )
-	recursive_rm (path + "/" + name);
+	recursive_rm (combine_path(path, name));
   return rm (path);
+}
+
+//! Copy a file or a directory tree by copying and then 
+//! removing.
+//! It's not the fastest but works on every OS and
+//! works well across different file systems.
+//!
+//! @returns
+//! Returns 0 on failure, nonzero otherwise.
+//!
+//! @seealso
+//! @[recursive_rm] @[cp]
+//!
+int recursive_mv(string from, string to)
+{
+  if(!cp(from, to))
+    return 0;
+  return recursive_rm(from);
 }
 
 /*
