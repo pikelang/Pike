@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.51 2000/08/03 17:55:50 grubba Exp $
+ * $Id: object.h,v 1.52 2000/08/09 12:49:28 grubba Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -20,7 +20,7 @@
 #endif
 struct object
 {
-  ptrdiff_t refs;                    /* Reference count, must be first. */
+  INT32 refs;                    /* Reference count, must be first. */
 #ifdef PIKE_SECURITY
   struct object *prot;
 #endif

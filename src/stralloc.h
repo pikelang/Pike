@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.47 2000/08/08 19:21:55 grubba Exp $
+ * $Id: stralloc.h,v 1.48 2000/08/09 12:49:28 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -19,7 +19,7 @@
 #endif
 struct pike_string
 {
-  ptrdiff_t refs;
+  INT32 refs;
   INT32 size_shift; /* 30 bit waste, but good for alignment... */
   ptrdiff_t len;
   size_t hval;

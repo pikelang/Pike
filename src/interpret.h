@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.62 2000/08/09 10:27:41 grubba Exp $
+ * $Id: interpret.h,v 1.63 2000/08/09 12:49:27 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -47,7 +47,7 @@ struct Pike_interpreter {
 #endif
 struct pike_frame
 {
-  ptrdiff_t refs; /* must be first */
+  INT32 refs; /* must be first */
   INT32 args;
   unsigned INT16 fun;
   INT16 num_locals;
