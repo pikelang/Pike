@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.27 2000/11/03 14:10:32 grubba Exp $
+# $Id: configure.in,v 1.28 2000/11/03 14:23:04 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -16,7 +16,7 @@ AC_ARG_WITH(oracle,  [  --without-oracle       no support for the Oracle databas
 if test x$with_oracle = xyes; then
 
   AC_MSG_CHECKING(if this is HP-UX)
-  if test "x$piks_cv_sys_os" = "xHP-UX"; then
+  if test "x$pike_cv_sys_os" = "xHP-UX"; then
     AC_MSG_RESULT(yes - disabling dynamic loading for this module)
     dynamic_module_makefile="$static_module_makefile"
   else
