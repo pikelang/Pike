@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.105 2002/04/07 19:35:46 marcus Exp $");
+RCSID("$Id: docode.c,v 1.106 2002/11/18 16:40:54 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1592,13 +1592,13 @@ static int do_docode2(node *n, INT16 flags)
 	}
       }
       
+    default:
 #ifdef PIKE_DEBUG
-      case T_OBJECT:
-	if(n->u.sval.u.object->next == n->u.sval.u.object)
-	  fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
+      if((n->type == T_OBJECT) &&
+	 (n->u.sval.u.object->next == n->u.sval.u.object))
+	fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
 #endif
 
-    default:
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
