@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.158 1999/07/15 17:36:34 mirar Exp $");
+RCSID("$Id: file.c,v 1.159 1999/08/09 22:52:52 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1620,13 +1620,13 @@ static void file_set_buffer(INT32 args)
 #ifndef errno
 extern int errno;
 #endif /* !errno */
+static int socketpair_fd = -1;
 int my_socketpair(int family, int type, int protocol, int sv[2])
 {
-  static int fd=-1;
   static struct sockaddr_in my_addr;
   struct sockaddr_in addr,addr2;
   int retries=0;
-  /* Solaris and AIX think this variable should a size_t, everybody else
+  /* Solaris and AIX think this variable should be a size_t, everybody else
    * thinks it should be an int.
    *
    * FIXME: Configure-test?
@@ -1642,9 +1642,10 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     return -1; 
   }
 
-  if(fd==-1)
+  if(socketpair_fd==-1)
   {
-    if((fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0) return -1;
+    if((socketpair_fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0)
+      return -1;
     
     /* I wonder what is most common a loopback on ip# 127.0.0.1 or
      * a loopback with the name "localhost"?
@@ -1658,31 +1659,33 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
 
     /* Bind our sockets on any port */
-    if(fd_bind(fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
+    if(fd_bind(socketpair_fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
     {
-      fd_close(fd);
-      fd=-1;
+      fd_close(socketpair_fd);
+      socketpair_fd=-1;
       return -1;
     }
 
     /* Check what ports we got.. */
     len = sizeof(my_addr);
-    if(fd_getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
+    if(fd_getsockname(socketpair_fd,(struct sockaddr *)&my_addr,&len) < 0)
     {
-      fd_close(fd);
-      fd=-1;
+      fd_close(socketpair_fd);
+      socketpair_fd=-1;
       return -1;
     }
 
     /* Listen to connections on our new socket */
-    if(fd_listen(fd, 5) < 0)
+    if(fd_listen(socketpair_fd, 5) < 0)
     {
-      fd_close(fd);
-      fd=-1;
+      fd_close(socketpair_fd);
+      socketpair_fd=-1;
       return -1;
     }
 
-    set_nonblocking(fd,1);
+    set_close_on_exec(socketpair_fd, 1);
+
+    set_nonblocking(socketpair_fd, 1);
 
     my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
   }
@@ -1706,7 +1709,7 @@ retry_connect:
 	ACCEPT_SIZE_T len2;
 
 	len2=sizeof(addr);
-	tmp=fd_accept(fd,(struct sockaddr *)&addr,&len2);
+	tmp=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len2);
 	
 	if(tmp!=-1)
 	  fd_close(tmp);
@@ -1732,7 +1735,7 @@ retry_connect:
 
     len3=sizeof(addr);
   retry_accept:
-    sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len3);
+    sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
       if(errno==EINTR) goto retry_accept;
@@ -2547,6 +2550,10 @@ void pike_module_exit(void)
     file_ref_program=0;
   }
   exit_file_locking();
+  if (socketpair_fd >= 0) {
+    fd_close(socketpair_fd);
+    socketpair_fd = -1;
+  }
 }
 
 void init_files_efuns(void);
