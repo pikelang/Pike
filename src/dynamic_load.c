@@ -32,6 +32,9 @@ void f_load_module(INT32 args)
 
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to load_module()\n");
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
   module=dlopen(sp[-args].u.string->str, RTLD_NOW);
   pop_stack();
 
