@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.34 2003/07/25 12:15:14 grubba Exp $
+|| $Id: image_tiff.c,v 1.35 2003/07/25 16:14:29 grubba Exp $
 */
 
 #include "global.h"
@@ -15,7 +15,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.34 2003/07/25 12:15:14 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.35 2003/07/25 16:14:29 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -239,35 +239,45 @@ struct options
   float ydpy;
 };
 
+static int default_tiff_compression = 0;	/* Undefined value */
+static int default_tiff_compressions[] = {
+#ifdef COMPRESSION_LZW
+  COMPRESSION_LZW,
+#endif
+#ifdef COMPRESSION_DEFLATE
+  COMPRESSION_DEFLATE,
+#endif
+#ifdef COMPRESSION_ADOBE_DEFLATE
+  COMPRESSION_ADOBE_DEFLATE,
+#endif
+#ifdef COMPRESSION_PACKBITS
+  COMPRESSION_PACKBITS,
+#endif
+#ifdef COMPRESSION_NEXT
+  COMPRESSION_NEXT,
+#endif
+#ifdef COMPRESSION_NEXT
+  COMPRESSION_CCITTRLE,
+#endif
+  COMPRESSION_NONE,
+};
 
 void low_image_tiff_encode( struct buffer *buf, 
                             struct imagealpha *img,
                             struct options *opts)
 {
-  TIFF *tif;
   struct image *i, *a;
   int spp = 3;
-  int x, y;
   char *buffer;
-  rgb_group *is, *as = NULL;
-  tif = TIFFClientOpen( "memoryfile", "w", buf,
-                        read_buffer, write_buffer,
-                        seek_buffer, close_buffer,
-                        size_buffer, map_buffer,
-                        unmap_buffer );
-  if(!tif)
-    Pike_error("\"open\" of TIF file failed: %s\n", last_tiff_error);
-  
- i = ((struct image *)get_storage(img->img,image_program));
+  int n;
+
+  i = ((struct image *)get_storage(img->img,image_program));
 
   if(!i)
     Pike_error("Image is not an image object.\n");
 
-  is = i->img;
-
   if(img->alpha)
   {
-    as = i->img;
     spp++;
     a = ((struct image *)get_storage(img->alpha,image_program));
     if(!a)
@@ -277,60 +287,122 @@ void low_image_tiff_encode( struct buffer *buf,
       Pike_error("Image and alpha objects are not equally sized!\n");
   }
 
-
-
-  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32)i->xsize);
-  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32)i->ysize);
-  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16)8);
-  TIFFSetField(tif, TIFFTAG_ORIENTATION, (uint16)ORIENTATION_TOPLEFT);
-  TIFFSetField(tif, TIFFTAG_COMPRESSION, (uint16)opts->compression);
-  if(opts->compression == COMPRESSION_LZW)
-    TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
-  if(as)
-  {
-    uint16 val[1];
-    val[0] = EXTRASAMPLE_ASSOCALPHA;
-    TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, (uint16)1, val);
-  }
-  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, (uint16)PHOTOMETRIC_RGB);
-  TIFFSetField(tif, TIFFTAG_FILLORDER, (uint16)FILLORDER_MSB2LSB);
-  if(opts->name)
-    TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, (char *)opts->name);
-  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, (uint16)spp);
-  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP,
-	       (uint32)MAXIMUM(8192/i->xsize/spp,1));
-  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
-  TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, (uint16)RESUNIT_INCH);
-  TIFFSetField(tif, TIFFTAG_XRESOLUTION, (float)opts->xdpy);
-  TIFFSetField(tif, TIFFTAG_YRESOLUTION, (float)opts->ydpy);
-  if(opts->comment)
-    TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, (char *)opts->comment);
-
   buffer = xalloc( spp * i->xsize  );
-  for (y = 0; y < i->ysize; y++)
-  {
-    char *b = buffer;
-    for(x=0; x<i->xsize; x++)
+
+  /* Workaround for the patently stupid way the crippling of
+   * the LZW has been done.
+   */
+  for (n = 0; n < NELEM(default_tiff_compressions); n++) {
+    ONERROR tmp;
+    TIFF *tif;
+    rgb_group *is, *as = NULL;
+    int x, y;
+    char *b;
+
+    tif = TIFFClientOpen( "memoryfile", "w", buf,
+			  read_buffer, write_buffer,
+			  seek_buffer, close_buffer,
+			  size_buffer, map_buffer,
+			  unmap_buffer );
+    if(!tif) {
+      free(buffer);
+      Pike_error("\"open\" of TIF file failed: %s\n", last_tiff_error);
+    }
+
+    SET_ONERROR(tmp, TIFFClose, tif);
+  
+    TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32)i->xsize);
+    TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32)i->ysize);
+    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16)8);
+    TIFFSetField(tif, TIFFTAG_ORIENTATION, (uint16)ORIENTATION_TOPLEFT);
+    if(img->alpha)
     {
-      *(b++)=is->r;
-      *(b++)=is->g;
-      *(b++)=(is++)->b;
-      if(as)
+      uint16 val[1];
+      val[0] = EXTRASAMPLE_ASSOCALPHA;
+      TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, (uint16)1, val);
+      as = a->img;
+    }
+    TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, (uint16)PHOTOMETRIC_RGB);
+    TIFFSetField(tif, TIFFTAG_FILLORDER, (uint16)FILLORDER_MSB2LSB);
+    if(opts->name)
+      TIFFSetField(tif, TIFFTAG_DOCUMENTNAME, (char *)opts->name);
+    TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, (uint16)spp);
+    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP,
+		 (uint32)MAXIMUM(8192/i->xsize/spp,1));
+    TIFFSetField(tif, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
+    TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, (uint16)RESUNIT_INCH);
+    TIFFSetField(tif, TIFFTAG_XRESOLUTION, (float)opts->xdpy);
+    TIFFSetField(tif, TIFFTAG_YRESOLUTION, (float)opts->ydpy);
+    if(opts->comment)
+      TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, (char *)opts->comment);
+
+    /* Not a defined value.
+     * i.e. the caller hasn't specified what compression to use.
+     *
+     * And we haven't checked what the library supports yet.
+     */
+    if (!opts->compression &&
+	!(opts->compression = default_tiff_compression)) {
+      TIFFSetField(tif, TIFFTAG_COMPRESSION, default_tiff_compressions[n]);
+#ifdef COMPRESSION_LZW
+      if(default_tiff_compressions[n] == COMPRESSION_LZW)
+	TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
+#endif
+    } else {
+      TIFFSetField(tif, TIFFTAG_COMPRESSION, opts->compression);
+#ifdef COMPRESSION_LZW
+      if(opts->compression == COMPRESSION_LZW)
+	TIFFSetField (tif, TIFFTAG_PREDICTOR, (uint16)2);
+#endif
+    }
+      
+    b = buffer;
+    is = i->img;
+
+    for (y = 0; y < i->ysize; y++)
+    {
+      char *b = buffer;
+      for(x=0; x<i->xsize; x++)
       {
-        *(b++)=(as->r + as->g*2 + as->b)/4;
-	as++;
+	*(b++)=is->r;
+	*(b++)=is->g;
+	*(b++)=(is++)->b;
+	if(as)
+	{
+	  *(b++)=(as->r + as->g*2 + as->b)/4;
+	  as++;
+	}
+      }
+      if(TIFFWriteScanline(tif, buffer, y, 0) < 0)
+      {
+	TIFFFlushData (tif);
+	if (!y && (!opts->compression) &&
+	    (n != NELEM(default_tiff_compressions))) {
+	  /* Probably a crippled libtiff.
+	   *
+	   * Try again with the next codec.
+	   */
+	  CALL_AND_UNSET_ONERROR(tmp);
+
+	  seek_buffer(buf, 0, SEEK_SET);
+	  continue;
+	}
+	free(buffer);
+	Pike_error("TIFFWriteScanline returned error on line %d: %s(0x%04x)\n",
+		   y, last_tiff_error,
+		   opts->compression?default_tiff_compressions[n]:
+		   opts->compression);
       }
     }
-    if(TIFFWriteScanline(tif, buffer, y, 0) < 0)
-    {
-      free(buffer);
-      Pike_error("TIFFWriteScanline returned error on line %d: %s\n",
-		 y, last_tiff_error);
-    }
+
+    TIFFFlushData (tif);
+    CALL_AND_UNSET_ONERROR(tmp);
+    break;
   }
   free(buffer);
-  TIFFFlushData (tif);
-  TIFFClose (tif);
+  if (!opts->compression) {
+    default_tiff_compression = default_tiff_compressions[n];
+  }
 }
 
 static const char *photoNames[] = {
@@ -774,15 +846,7 @@ static void image_tiff_encode( INT32 args )
   MEMSET(&c, 0, sizeof(c));
   c.xdpy = 150.0;
   c.ydpy = 150.0;
-#ifdef COMPRESSION_LZW
-  c.compression = COMPRESSION_LZW;
-#else
-#ifdef COMPRESSION_PACKBITS
-  c.compression = COMPRESSION_PACKBITS;
-#else
-  c.compression = COMPRESSION_NONE;
-#endif
-#endif
+  c.compression = 0;	/* Not a defined value. */
 
   if(args > 1)
   {
@@ -799,7 +863,7 @@ static void image_tiff_encode( INT32 args )
     parameter_object( sp-args+1, opt_alpha, &a.alpha );
   }
 
-  b.str = malloc( INITIAL_WRITE_BUFFER_SIZE );
+  b.str = xalloc( INITIAL_WRITE_BUFFER_SIZE );
   b.len = b.real_len = 0;
   b.offset = 0;
   b.extendable = 1;
