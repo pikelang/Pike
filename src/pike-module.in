@@ -22,6 +22,7 @@ mapping(string:int) run=
   "autoheader":AUTO,
   "autoconf":AUTO,
   "configure":AUTO,
+  "depend":AUTO,
   "make":AUTO,
   ]);
 
@@ -82,6 +83,37 @@ void run_or_fail(mapping options,string ... cmd)
 }
 
 
+void do_make(string *cmd)
+{
+  int tmp1;
+  string *makecmd=(
+    ({make})+
+    Process.split_quoted_string(make_flags)-({""})+
+    ({"PIKE_INCLUDES=-I"+include_path,
+      "PIKE_SRC_DIR="+include_path,
+      "BUILD_BASE="+include_path,
+      "MODULE_BASE="+include_path,
+    })+
+    cmd);
+
+  if(tmp1=max_time_of_files("Makefile"))
+  {
+    rm("remake");
+    tmp1=just_run(([]),@makecmd);
+    if(tmp1)
+    {
+      if(max_time_of_files("remake"))
+      {
+	run_or_fail(([]),@makecmd);
+      }else{
+	exit(tmp1);
+      }
+    }
+  }else{
+    werror("No Makefile.\n");
+  }
+}
+
 int main(int argc, string *argv)
 {
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -92,6 +124,7 @@ int main(int argc, string *argv)
     ({"configure",Getopt.NO_ARG,({"--configure"}) }),
     ({"autoheader",Getopt.NO_ARG,({"--autoheader"}) }),
     ({"automake",Getopt.NO_ARG,({"--automake"}) }),
+    ({"depend",Getopt.HAS_ARG,({"--depend"}) }),
     ({"all",Getopt.NO_ARG,({"--all"}) }),
     ({"make",Getopt.NO_ARG,({"--make"}) }),
     ({"auto",Getopt.NO_ARG,({"--auto"}) }),
@@ -127,13 +160,14 @@ int main(int argc, string *argv)
 	case "autoconf": run->autoconf=ALWAYS; do_zero(); break;
 	case "configure": run->configure=ALWAYS; do_zero(); break;
 	case "make": run->make=ALWAYS; do_zero(); break;
+	case "depend": run->depend=ALWAYS; do_zero(); break;
 	  
 	case "all": 
-	  run->autoheader=run->autoconf=run->configure=run->make-ALWAYS;
+	  run->depend=run->autoheader=run->autoconf=run->configure=run->make=ALWAYS;
 	  break;
 	  
 	case "auto":
-	  run->autoheader=run->autoconf=run->configure=run->make=1;
+	  run->depend=run->autoheader=run->autoconf=run->configure=run->make=1;
 	  break;
       }
     }
@@ -199,29 +233,18 @@ int main(int argc, string *argv)
     }
   }
 
+  if(run->depend)
+  {
+    if(run->depend == ALWAYS || !max_time_of_files("dependencies"))
+    {
+      // Create an empty file first..
+      Stdio.write_file("dependencies","");
+      do_make( ({"depend"}) );
+    }
+  }
+
   if(run->make)
   {
-    string *makecmd=({make})+
-      Process.split_quoted_string(make_flags)-({""})+
-	({"PIKE_INCLUDES=-I"+include_path,
-	    "PIKE_SRC_DIR="+include_path,
-	    "BUILD_BASE="+include_path,
-	    "MODULE_BASE="+include_path,
-	    })+
-	argv[1..];
-    if(tmp1=max_time_of_files("Makefile"))
-    {
-      rm("remake");
-      tmp1=just_run(([]),@makecmd);
-      if(tmp1)
-      {
-	if(max_time_of_files("remake"))
-	{
-	  run_or_fail(([]),@makecmd);
-	}else{
-	  exit(tmp1);
-	}
-      }
-    }
+    do_make(argv[1..]);
   }
 }
