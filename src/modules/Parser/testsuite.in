@@ -57,13 +57,20 @@ test_any([[
   object p = Parser.HTML();
   p->add_entity ("e", lambda (object p) {return "<t>";});
   p->add_tag ("t", "a");
-  return p->finish("&e;")->read();
-]], "a");
+  return p->finish("&e;<x x =  &e;'&e;' &e;>&e;")->read();
+]], "a<x x =  <t>'<t>' &e;>a");
+test_any([[
+  object p = Parser.HTML();
+  p->splice_arg ("::");
+  p->add_entity ("e", lambda (object p) {return "<t>";});
+  p->add_tag ("t", "a");
+  return p->finish("&e;<x x =  &e;'&e;' &e;>&e;")->read();
+]], "a<x x =  <t>'<t>' &e;>a");
 test_any([[
   object p = Parser.HTML();
   p->add_entity ("e", lambda (object p) {return ({"&e;"});});
-  return p->finish("&e;")->read();
-]], "&e;");
+  return p->finish("&e;<x x=&e;>")->read();
+]], "&e;<x x=&e;>");
 test_any([[
   object p = Parser.HTML();
   p->add_entity ("e", lambda (object p) {return "&e;";});
@@ -73,17 +80,24 @@ test_any([[
 ]], 1);
 test_any([[
   object p = Parser.HTML();
+  p->add_entity ("e", lambda (object p) {return "&e;";});
+  if (catch {
+    return p->finish("<x x=&e;>")->read();
+  }) return 1;
+]], 1);
+test_any([[
+  object p = Parser.HTML();
   p->add_entity ("e", "e");
-  return p->finish("&e;")->read();
-]], "e");
+  return p->finish("&e;<x x=&e;>")->read();
+]], "e<x x=e>");
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", "&e;");
   p->add_entity ("e", "<t>");
   if (catch {
-    return p->finish("<t>&e;")->read();
+    return p->finish("<t>&e;<x x  = &e;>")->read();
   }) return 1;
-]], "&e;<t>");
+]], "&e;<t><x x  = <t>>");
 test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
@@ -91,10 +105,10 @@ test_any_equal([[
   p->add_container ("c", ({lambda (object p, mixed... e) {return e;}, ({}), 0, 0}));
   p->add_entity ("e", ({lambda (object p, mixed... e) {return e;}, "f"}));
   p->set_extra (4711);
-  return p->finish("<t a><c>x</c>&e;")->read();
+  return p->finish("<t a><c>x</c>&e;<x x=&e;>")->read();
 ]], ({(["a": "a"]), 17, (<>), 4711,
       ([]), "x", ({}), 0, 0, 4711,
-      "f", 4711}));
+      "f", 4711, "<x x=", "f", 4711, ">"}));
 test_any([[
   object p = Parser.HTML();
   p->_set_tag_callback (
@@ -122,6 +136,21 @@ test_any([[
 		    "\'");
   return p->finish ("<t> <!-- <t a='> -- --> <!-<t a='> -->")->read();
 ]], "x [ <t a='> -- ] {<t a=} -->");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {p->write_out ("[" + a->x + "]"); return 0;});
+  return p->finish ("&e; <t x='&e;' &e;=&e;>")->read();
+}]], "x [&e;]<t x='x' &e;=x>");
+test_any([[{
+  object p = Parser.HTML();
+  p->splice_arg ("&e;");
+  p->add_entity ("e", "x");
+  p->add_tag ("t", lambda (object p, mapping a)
+		     {p->write_out ("[" + a["&e;"] + "]"); return 0;});
+  return p->finish ("&e; <t x='&e;' &e;=&e;>")->read();
+}]], "x [&e;]<t x='x' x>");
 test_any_equal([[
   object p = Parser.HTML();
   array a = ({ });
@@ -138,30 +167,33 @@ test_any_equal([[
 test_any([[{
   object p = Parser.HTML();
   p->lazy_entity_end (1);
+  p->splice_arg ("::");
   p->add_tag (
     "t", lambda (object p, mapping a) {
 	   return ({"T(", p->current(), "|", p->tag_name(), "|",
-		    (string) p->tag_content(), ")"});
+		    (string) p->tag_content(), "|", p->context(), ")"});
 	 });
   p->add_container (
     "c", lambda (object p, mapping a, string c) {
 	   return ({"C(", p->current(), "|", p->tag_name(), "|",
-		    (string) p->tag_content(), ")"});
+		    (string) p->tag_content(), "|", p->context(), ")"});
 	 });
   p->add_entity (
     "e", lambda (object p) {
 	   return ({"E(", p->current(), "|", p->tag_name(), "|",
-		    (string) p->tag_content(), ")"});
+		    (string) p->tag_content(), "|", p->context(), ")"});
 	 });
   p->add_quote_tag (
     "q", lambda (object p, string c) {
 	   return ({"Q(", p->current(), "|", p->tag_name(), "|",
-		    (string) p->tag_content(), ")"});
+		    (string) p->tag_content(), "|", p->context(), ")"});
 	 }, "p");
   return p->finish ("<t a=&e; <t>> <q <\"' &e; p> "
-		    "&e<c x=y -- >x</c> &e; <x &e; q=&e;>")->read();
-}]], ("T(<t a=&e; <t>>|t|0) Q(<q <\"' &e; p>|q| <\"' &e; ) "
-      "&eC(<c x=y -- >x</c>|c|x) E(&e;|e|0) <x &e; q=E(&e;|e|0)>"));
+		    "&e<c x=y -- >x</c> &e; "
+		    "<x &e; q=&e;> <x q='&e;'> <x ::='&e;'>")->read();
+}]], ("T(<t a=&e; <t>>|t|0|data) Q(<q <\"' &e; p>|q| <\"' &e; |data) "
+      "&eC(<c x=y -- >x</c>|c|x|data) E(&e;|e|0|data) "
+      "<x &e; q=E(&e;|e|0|arg)> <x q='E(&e;|e|0|')'> <x E(&e;|e|0|splice_arg)>"));
 
 // Argument quoting
 test_any([[
@@ -305,6 +337,13 @@ test_any([[
   p->add_entity ("e", lambda (object p) {return "e";});
   return p->feed("&e")->read() + " " + p->feed(";")->read();
 ]], " e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_entity ("e", lambda (object p) {return "e";});
+  return (p->feed("<x x=&e")->read() + " " +
+	  p->feed(";")->read() + " " +
+	  p->feed(">")->read());
+}]], "<x x= e >");
 test_any([[
   object p = Parser.HTML();
   p->add_quote_tag ("!--", lambda (object p, string s) {return ({s});}, "--");
@@ -343,6 +382,7 @@ test_any([[{
 test_any([[{
   object p = Parser.HTML();
   int t, c, e, q;
+  p->splice_arg ("::");
   p->add_tag ("t", lambda (object p, mapping a) {
 		     if (t++ < 3) {p->write_out ((string) t); throw (t);}
 		     return ({"|", (string) t});
@@ -362,11 +402,13 @@ test_any([[{
 			   return ({"|", (string) q});
 			 },
 		    "q");
-  if (catch (p->finish ("<t> <c> <t> &e; </c> &e; <q &e; q> <x a=&e; &e;>")))
-    for (int i; i < 20; i++)
+  if (catch (p->finish ("<t> <c> <t> &e; </c> &e; <q &e; q> "
+			"<x a=&e; &e; b='<t>&e;' ::='abc&e;def'>")))
+    for (int i; i < 50; i++)
       if (!catch (p->finish())) break;
   return p->read();
-}]], "123|4 123|4 123|4 123|4 123<x a=|4 &e;>")
+}]], ("123|4 123|4 123|4 123|4 "
+      "<x a=123|4 &e; b='<t>123|4' abc123|4def>"))
 
 // Mixed mode
 test_any([[
@@ -475,10 +517,32 @@ test_any([[
 ]], "x &e<t> &e <t> a='x&e' &e=f; b=\"&e\" &e>");
 test_any([[
   object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;&e' \"&e;'&e; >\" &e; >")->read();
+]], "<t a='x&e' \"&e;'x >\" x >");
+test_any([[
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;&e' \"&e;'&e; >\" &e; >")->read();
+]], "<t a='x&e' \"&e;'&e; >\" &e; >");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;&e' \"&e;'&e; >\" &e; ")->read();
+]], "<t a='x&e' \"&e;'x >\" x ");
+test_any([[
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;&e' \"&e;'&e; >\" &e; ")->read();
+]], "<t a='x&e' \"&e;'&e; >\" &e; ");
+test_any([[
+  object p = Parser.HTML();
   p->lazy_entity_end (1);
   p->_set_entity_callback (lambda (object p, string s) {return ({"[",s,"]"});});
-  return p->finish ("&abc|&abc<>&abc;")->read();
-]], "&abc|&abc<>[&abc;]");
+  return p->finish ("&abc|&abc<>&abc;<x x='&abc|&abc<>&abc;'>")->read();
+]], "&abc|&abc<>[&abc;]<x x='&abc|&abc<>[&abc;]'>");
 test_any([[
   object p = Parser.HTML();
   p->lazy_entity_end (1);
@@ -497,6 +561,109 @@ test_any([[{
   p->add_entity ("e", "x");
   return p->finish("&e")->read();
 }]], "&e");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<x x=&e")->read();
+}]], "<x x=&e");
+test_any([[{
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->add_entity ("e", "x");
+  return p->finish("<x x=&e")->read();
+}]], "<x x=&e");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t &e; a=\"&f&e;'&e&e;o\">")->read();
+]], "<t &e; a=\"&f&e;'&e&e;o\">");
+test_any([[
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->add_entity ("e", "x");
+  return p->finish("<t &e; a=\"&f&e;'&e&e;o\">")->read();
+]], "<t &e; a=\"&fx'&exo\">");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a=&e;'f\"o' &e>")->read();
+]], "<t a=x'f\"o' &e>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='f\"o'&e/>")->read();
+]], "<t a='f\"o'&e/>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='f\"o'&e;>")->read();
+]], "<t a='f\"o'x>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='f\"o'&e;/>")->read();
+]], "<t a='f\"o'x/>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a=&e;'f\"o' &e>")->read();
+]], "<t a=x'f\"o' &e>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;'\"&e;\"&e;>")->read();
+]], "<t a='x'\"x\"x>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;'\" &e;\"&e;>")->read();
+]], "<t a='x'\" x\"x>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;'\"&e;\" &e;>")->read();
+]], "<t a='x'\"x\" &e;>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("<t a='&e;'\"&e ;\"&e;>")->read();
+]], "<t a='x'\"&e ;\"x>");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", "T");
+  p->add_entity ("e", lambda (object p, string c) {return "'> &f; <t y='";});
+  p->add_entity ("f", "foo");
+  return p->finish("<x a='&e;'>")->read();
+]], "<x a=''> foo <t y=''>");
+
+// Splice argument
+test_any([[{
+  object p = Parser.HTML();
+  p->splice_arg ("::");
+  p->add_entity ("e", "x");
+  return p->finish ("<x ::  = \"foo bar='gnu' &e;\"&e; a='&e;' &e;:: "
+		    "::=&e; :::=\"&e;y\" ::  ::  =  ''&e;\"\" :/: ::/>")->read();
+}]], "<x foo bar='gnu' xx a='x' &e;:: x :::=\"xy\"   x :/: />");
+test_any([[{
+  object p = Parser.HTML();
+  p->xml_tag_syntax (0);
+  p->splice_arg ("::");
+  p->add_entity ("e", "x");
+  return p->finish ("<x ::  = \"foo bar='gnu' &e;\"&e; a='&e;' &e;:: "
+		    "::=&e; :::=\"&e;y\" ::  ::  =  ''&e;\"\" :/: ::/>")->read();
+}]], "<x foo bar='gnu' xx a='x' &e;:: x :::=\"xy\"   x :/: ::/>");
+test_any([[{
+  object p = Parser.HTML();
+  p->splice_arg (":/:");
+  p->add_entity ("e", "x");
+  return p->finish ("<x/x /::  = &e; :/: =&e; ::/= &e;>")->read();
+}]], "<x/x /::  = x x ::/= x>");
+test_any([[{
+  object p = Parser.HTML();
+  p->splice_arg ("::");
+  p->add_entity ("e", "x");
+  return p->finish ("<x/x /::  = &e; :/: =&e; ::/= &e;>")->read();
+}]], "<x/x /::  = x :/: =x ::/= x>");
 
 // Recursive parsing in tags
 test_any([[
