@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.24 2003/01/26 18:51:42 nilsson Exp $
+// $Id: Types.pmod,v 1.25 2003/01/27 02:12:02 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -89,7 +89,10 @@ class Object
   object decode_constructed_element(int i, object e);
   object end_decode_constructed(int length);
 
-  mapping element_types(int i, mapping types) { return types; }
+  mapping(int:program(Object)) element_types(int i,
+      mapping(int:program(Object)) types) {
+    return types;
+  }
   this_program init(mixed ... args) { return this_object(); }
 
   string to_base_128(int n) {
@@ -1110,7 +1113,7 @@ class MetaExplicit
   int real_tag;
   int real_cls;
 
-  mapping valid_types;
+  mapping(int:program(Object)) valid_types;
 
   class `() {
     inherit Compound;
@@ -1146,7 +1149,8 @@ class MetaExplicit
       return this_object();
     }
 
-    mapping element_types(int i, mapping types) {
+    mapping(int:program(Object)) element_types(int i,
+        mapping(int:program(Object)) types) {
       if (i)
 	error("Unexpected index!\n");
       return valid_types || types;
@@ -1165,7 +1169,7 @@ class MetaExplicit
 #endif
   }
 
-  void create(int cls, int tag, mapping|void types) {
+  void create(int cls, int tag, mapping(int:program(Object))|void types) {
     real_cls = cls;
     real_tag = tag;
     valid_types = types;
