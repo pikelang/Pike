@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.131 2001/12/16 18:49:20 mast Exp $");
+RCSID("$Id: svalue.c,v 1.132 2001/12/17 04:50:07 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1205,7 +1205,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       break;
 
     case T_OBJECT:
-      if(s->u.object->prog)
+      if(s->u.object->prog && (s->u.object->prog->flags & PROGRAM_FINISHED))
       {
 	int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
 	debug_malloc_touch(s->u.object->prog);
