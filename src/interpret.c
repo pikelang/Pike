@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.112 1999/05/12 05:26:55 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.113 1999/05/13 07:32:25 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -299,6 +299,9 @@ void assign_lvalue(struct svalue *lval,struct svalue *from)
 
       if(from->u.array->size < (lval[1].u.array->size>>1))
 	error("Not enough values for multiple assign.\n");
+
+      if(from->u.array->size > (lval[1].u.array->size>>1))
+	error("Too many values for multiple assign.\n");
 
       for(e=0;e<from->u.array->size;e++)
 	assign_lvalue(lval[1].u.array->item+(e<<1),from->u.array->item+e);
