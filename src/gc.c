@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.169 2001/07/13 11:26:38 grubba Exp $");
+RCSID("$Id: gc.c,v 1.170 2001/08/20 18:08:13 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -117,7 +117,7 @@ struct gc_frame
       gc_cycle_check_cb *checkfn;
       int weak;
     } link;
-    TYPE_T free_extra_type;	/* Used on free_extra_list. The type of the thing. */
+    int free_extra_type;	/* Used on free_extra_list. The type of the thing. */
   } u;
   unsigned INT16 frameflags;
 };
@@ -261,13 +261,15 @@ void dump_gc_info(void)
   fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
 }
 
-TYPE_T attempt_to_identify(void *something)
+int attempt_to_identify(void *something, void **inblock)
 {
   struct array *a;
   struct object *o;
   struct program *p;
   struct mapping *m;
   struct multiset *mu;
+
+  if (inblock) *inblock = 0;
 
   a=&empty_array;
   do
@@ -276,9 +278,16 @@ TYPE_T attempt_to_identify(void *something)
     a=a->next;
   }while(a!=&empty_array);
 
-  for(o=first_object;o;o=o->next)
+  for(o=first_object;o;o=o->next) {
     if(o==(struct object *)something)
       return T_OBJECT;
+    if (o->storage && o->prog &&
+	(char *) something >= o->storage &&
+	(char *) something < o->storage + o->prog->storage_needed) {
+      if (inblock) *inblock = (void *) o;
+      return T_STORAGE;
+    }
+  }
 
   for(p=first_program;p;p=p->next)
     if(p==(struct program *)something)
@@ -317,19 +326,18 @@ int gc_debug = 0;
  * really be printed..
  */
 void describe_location(void *real_memblock,
-		       int real_type,
+		       int type,
 		       void *location,
 		       int indent,
 		       int depth,
 		       int flags)
 {
   struct program *p;
-  void *memblock=0, *descblock;
-  int type=real_type;
+  void *memblock=0, *descblock, *inblock;
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
-  if(real_type!=-1 && real_memblock != (void *) -1) memblock=real_memblock;
+  if(type!=-1 && real_memblock != (void *) -1) memblock=real_memblock;
 
 #ifdef DEBUG_MALLOC
   if(memblock == 0 || type == -1)
@@ -340,7 +348,7 @@ void describe_location(void *real_memblock,
 #endif
 
   if(type==PIKE_T_UNKNOWN)
-    type=attempt_to_identify(memblock);
+    type=attempt_to_identify(memblock, &inblock);
 
   if(memblock)
     fprintf(stderr,"%*s-> from %s %p offset %"PRINTPTRDIFFT"d\n",
@@ -433,7 +441,7 @@ void describe_location(void *real_memblock,
       
       break;
     }
-    
+
     case T_OBJECT:
     {
       struct object *o=(struct object *)memblock;
@@ -490,6 +498,10 @@ void describe_location(void *real_memblock,
       break;
     }
 
+    case T_STORAGE:
+      fprintf(stderr, "%*s  **In storage of object\n", indent, "");
+      break;
+
     case T_MULTISET:
       descblock = ((struct multiset *) memblock)->ind;
       /* FALL THROUGH */
@@ -526,7 +538,7 @@ void describe_location(void *real_memblock,
   }
 
   if(memblock && depth>0)
-    describe_something(memblock,type,indent+2,depth-1,flags | DESCRIBE_MEM);
+    describe_something(memblock,type,indent+2,depth-1,flags | DESCRIBE_MEM,inblock);
 
 #ifdef DEBUG_MALLOC
   /* FIXME: Is the following call correct?
@@ -604,7 +616,7 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
 static void gdb_gc_stop_here(void *a, int weak)
 {
-#if 1
+#if 0
   if (!found_where) fatal("found_where is zero.\n");
 #endif
   fprintf(stderr,"***One %sref found%s. ",
@@ -615,7 +627,7 @@ static void gdb_gc_stop_here(void *a, int weak)
       describe_location(found_in , found_in_type, gc_svalue_location,0,1,0);
     else {
       fputc('\n', stderr);
-      describe_something(found_in, found_in_type, 2, 0, DESCRIBE_MEM);
+      describe_something(found_in, found_in_type, 2, 0, DESCRIBE_MEM, 0);
     }
   }
   fprintf(stderr,"----------end------------\n");
@@ -634,7 +646,7 @@ void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere)
 }
 
 void debug_gc_check_svalues2(struct svalue *s, ptrdiff_t num,
-			     TYPE_T data_type, void *data, char *fromwhere)
+			     int data_type, void *data, char *fromwhere)
 {
   char *old_found_where = found_where;
   if (fromwhere) found_where = fromwhere;
@@ -647,7 +659,7 @@ void debug_gc_check_svalues2(struct svalue *s, ptrdiff_t num,
 }
 
 void debug_gc_check_weak_svalues2(struct svalue *s, ptrdiff_t num,
-				  TYPE_T data_type, void *data, char *fromwhere)
+				  int data_type, void *data, char *fromwhere)
 {
   char *old_found_where = found_where;
   if (fromwhere) found_where = fromwhere;
@@ -659,8 +671,8 @@ void debug_gc_check_weak_svalues2(struct svalue *s, ptrdiff_t num,
   found_in=0;
 }
 
-void debug_gc_check_short_svalue2(union anything *u, TYPE_T type,
-				  TYPE_T data_type, void *data, char *fromwhere)
+void debug_gc_check_short_svalue2(union anything *u, int type,
+				  int data_type, void *data, char *fromwhere)
 {
   char *old_found_where = found_where;
   if (fromwhere) found_where = fromwhere;
@@ -672,8 +684,8 @@ void debug_gc_check_short_svalue2(union anything *u, TYPE_T type,
   found_in=0;
 }
 
-void debug_gc_check_weak_short_svalue2(union anything *u, TYPE_T type,
-				       TYPE_T data_type, void *data, char *fromwhere)
+void debug_gc_check_weak_short_svalue2(union anything *u, int type,
+				       int data_type, void *data, char *fromwhere)
 {
   char *old_found_where = found_where;
   if (fromwhere) found_where = fromwhere;
@@ -685,7 +697,7 @@ void debug_gc_check_weak_short_svalue2(union anything *u, TYPE_T type,
   found_in=0;
 }
 
-int debug_low_gc_check(void *x, TYPE_T data_type, void *data, char *fromwhere)
+int debug_low_gc_check(void *x, int data_type, void *data, char *fromwhere)
 {
   int ret;
   char *old_found_where = found_where;
@@ -713,7 +725,8 @@ void low_describe_something(void *a,
 			    int t,
 			    int indent,
 			    int depth,
-			    int flags)
+			    int flags,
+			    void *inblock)
 {
   struct program *p=(struct program *)a;
   struct marker *m;
@@ -725,15 +738,23 @@ void low_describe_something(void *a,
     describe_marker(m);
   }
 
+again:
   switch(t)
   {
+    case T_STORAGE:
+      if (!inblock) attempt_to_identify (a, &a);
+      t = T_OBJECT;
+      goto again;
+
     case T_FUNCTION:
-      if(attempt_to_identify(a) != T_OBJECT)
+      if(attempt_to_identify(a, 0) != T_OBJECT)
       {
 	fprintf(stderr,"%*s**Builtin function!\n",indent,"");
 	break;
       }
+      /* FALL THROUGH */
 
+    describe_object:
     case T_OBJECT:
       p=((struct object *)a)->prog;
       if(p && (p->flags & PROGRAM_USES_PARENT))
@@ -767,7 +788,7 @@ void low_describe_something(void *a,
 	  fprintf(stderr, "%*s**Zapped program pointer.\n", indent, "");
 	else
 #endif
-	  low_describe_something(p, T_PROGRAM, indent, depth, flags);
+	  low_describe_something(p, T_PROGRAM, indent, depth, flags, 0);
       }
 
       if(p && 
@@ -775,9 +796,11 @@ void low_describe_something(void *a,
 	 LOW_PARENT_INFO(((struct object *)a),p)->parent)
       {
 	fprintf(stderr,"%*s**Describing object's parent:\n",indent,"");
-	describe_something( PARENT_INFO((struct object *)a)->parent, t, indent+2,depth-1,
+	describe_something( PARENT_INFO((struct object *)a)->parent, T_OBJECT,
+			    indent+2, depth-1,
 			    (flags | DESCRIBE_SHORT | DESCRIBE_NO_REFS )
-			    & ~ (DESCRIBE_MEM));
+			    & ~ (DESCRIBE_MEM),
+			    0);
       }else{
 	fprintf(stderr,"%*s**There is no parent (any longer?)\n",indent,"");
       }
@@ -866,7 +889,7 @@ void low_describe_something(void *a,
       debug_dump_mapping((struct mapping *)a);
       fprintf(stderr,"%*s**Describing mapping data block:\n",indent,"");
       describe_something( ((struct mapping *)a)->data, T_MAPPING_DATA,
-			  indent+2,-1,flags);
+			  indent+2,-1,flags, 0);
       break;
 
     case T_STRING:
@@ -882,10 +905,28 @@ void low_describe_something(void *a,
       }
       break;
     }
+
+    case T_PIKE_FRAME: {
+      struct pike_frame *f = (struct pike_frame *) a;
+      do {
+	if (f->current_object) {
+	  fprintf(stderr, "%*s**Describing the current object:\n", indent, "");
+	  describe_something(f->current_object, T_OBJECT, indent+2, depth, flags, 0);
+	}
+	if ((f = f->scope))
+	  fprintf(stderr, "%*s**Moving on to outer scope frame %p:\n", indent, "", f);
+      } while (f);
+      break;
+    }
+
+    default:
+      fprintf(stderr, "%*s**Cannot describe block of unknown type %d\n",
+	      indent, "", t);
   }
 }
 
-void describe_something(void *a, int t, int indent, int depth, int flags)
+void describe_something(void *a, int t, int indent, int depth, int flags,
+			void *inblock)
 {
   int tmp;
   struct program *p=(struct program *)a;
@@ -920,7 +961,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
 	debug_malloc_dump_references(a,indent+2,depth-1,flags);
 #endif
 
-      low_describe_something(a,t,indent,depth,flags);
+      low_describe_something(a,t,indent,depth,flags,inblock);
     }
 
   fprintf(stderr,"%*s*******************\n",indent,"");
@@ -929,7 +970,9 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
 
 PMOD_EXPORT void describe(void *x)
 {
-  describe_something(x, attempt_to_identify(x), 0, 2, 0);
+  void *inblock;
+  int type = attempt_to_identify(x, &inblock);
+  describe_something(x, type, 0, 2, 0, inblock);
 }
 
 void debug_describe_svalue(struct svalue *s)
@@ -964,7 +1007,7 @@ void debug_describe_svalue(struct svalue *s)
 	}
       }
   }
-  describe_something(s->u.refs,s->type,0,2,0);
+  describe_something(s->u.refs,s->type,0,2,0,0);
 }
 
 void gc_watch(void *a)
@@ -1470,7 +1513,7 @@ should_free:
   return 1;
 }
 
-void gc_delayed_free(void *a, TYPE_T type)
+void gc_delayed_free(void *a, int type)
 {
   struct marker *m;
 
@@ -2167,7 +2210,7 @@ void do_gc_recurse_svalues(struct svalue *s, int num)
   gc_recurse_svalues(s, num);
 }
 
-void do_gc_recurse_short_svalue(union anything *u, TYPE_T type)
+void do_gc_recurse_short_svalue(union anything *u, int type)
 {
   gc_recurse_short_svalue(u, type);
 }

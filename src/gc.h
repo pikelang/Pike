@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.84 2001/07/11 14:13:18 grubba Exp $
+ * $Id: gc.h,v 1.85 2001/08/20 18:08:13 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -195,7 +195,7 @@ struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
 void dump_gc_info(void);
-TYPE_T attempt_to_identify(void *something);
+int attempt_to_identify(void *something, void **inblock);
 void describe_location(void *real_memblock,
 		       int real_type,
 		       void *location,
@@ -205,20 +205,21 @@ void describe_location(void *real_memblock,
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere);
 void debug_gc_check_svalues2(struct svalue *s, ptrdiff_t num,
-			     TYPE_T data_type, void *data, char *fromwhere);
+			     int data_type, void *data, char *fromwhere);
 void debug_gc_check_weak_svalues2(struct svalue *s, ptrdiff_t num,
-				  TYPE_T data_type, void *data, char *fromwhere);
-void debug_gc_check_short_svalue2(union anything *u, TYPE_T type,
-				  TYPE_T data_type, void *data, char *fromwhere);
-void debug_gc_check_weak_short_svalue2(union anything *u, TYPE_T type,
-				       TYPE_T data_type, void *data, char *fromwhere);
-int debug_low_gc_check(void *x, TYPE_T data_type, void *data, char *fromwhere);
+				  int data_type, void *data, char *fromwhere);
+void debug_gc_check_short_svalue2(union anything *u, int type,
+				  int data_type, void *data, char *fromwhere);
+void debug_gc_check_weak_short_svalue2(union anything *u, int type,
+				       int data_type, void *data, char *fromwhere);
+int debug_low_gc_check(void *x, int data_type, void *data, char *fromwhere);
 void low_describe_something(void *a,
 			    int t,
 			    int indent,
 			    int depth,
-			    int flags);
-void describe_something(void *a, int t, int indent, int depth, int flags);
+			    int flags,
+			    void *inblock);
+void describe_something(void *a, int t, int indent, int depth, int flags, void *inblock);
 PMOD_EXPORT void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 void gc_watch(void *a);
@@ -232,14 +233,14 @@ int debug_gc_is_referenced(void *a);
 int gc_external_mark3(void *a, void *in, char *where);
 void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
-void gc_delayed_free(void *a, TYPE_T type);
+void gc_delayed_free(void *a, int type);
 void debug_gc_mark_enqueue(queue_call call, void *data);
 int gc_mark(void *a);
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue(void);
 int gc_cycle_push(void *x, struct marker *m, int weak);
 void do_gc_recurse_svalues(struct svalue *s, int num);
-void do_gc_recurse_short_svalue(union anything *u, TYPE_T type);
+void do_gc_recurse_short_svalue(union anything *u, int type);
 int gc_do_free(void *a);
 int do_gc(void);
 void f__gc_status(INT32 args);
