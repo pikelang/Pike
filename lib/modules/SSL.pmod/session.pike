@@ -1,8 +1,8 @@
-#pike __REAL_VERSION__
+//
+// $Id: session.pike,v 1.24 2003/01/27 15:29:56 nilsson Exp $
 
-/* $Id: session.pike,v 1.23 2003/01/27 15:03:00 nilsson Exp $
- *
- */
+#pike __REAL_VERSION__
+// #pragma strict_types
 
 //! The most important information in a session object is a
 //! choice of encryption algorithms and a "master secret" created by
@@ -29,7 +29,7 @@ int cipher_suite;
 
 //! Information about the encryption method derived from the
 //! cipher_suite.
-object cipher_spec;
+.Cipher.CipherSpec cipher_spec;
 
 //! Key exchange method, also derived from the cipher_suite.
 int ke_method;
@@ -49,8 +49,8 @@ void set_cipher_suite(int suite,int version)
 {
   array res = .Cipher.lookup(suite,version);
   cipher_suite = suite;
-  ke_method = res[0];
-  cipher_spec = res[1];
+  ke_method = [int]res[0];
+  cipher_spec = [object(.Cipher.CipherSpec)]res[1];
 #ifdef SSL3_DEBUG
   werror("SSL.session: cipher_spec %O\n",
 	 mkmapping(indices(cipher_spec), values(cipher_spec)));
@@ -65,7 +65,8 @@ void set_compression_method(int compr)
   compression_algorithm = compr;
 }
 
-string generate_key_block(string client_random, string server_random,array(int) version)
+//!
+string generate_key_block(string client_random, string server_random, array(int) version)
 {
   int required = 2 * (
 #ifndef WEAK_CRYPTO_40BIT
@@ -119,9 +120,10 @@ void printKey(string name , string key) {
 }
 #endif
 
-array generate_keys(string client_random, string server_random,array(int) version)
+//!
+array generate_keys(string client_random, string server_random, array(int) version)
 {
-  object key_data = Struct(generate_key_block(client_random, server_random,version));
+  Struct key_data = Struct(generate_key_block(client_random, server_random,version));
   array keys = allocate(6);
 
 #ifdef SSL3_DEBUG
@@ -166,7 +168,10 @@ array generate_keys(string client_random, string server_random,array(int) versio
 				      2*cipher_spec->iv_size);
 	keys[4]=iv_block[..cipher_spec->iv_size-1];
 	keys[5]=iv_block[cipher_spec->iv_size..];
-	werror("sizeof(keys[4]):"+sizeof(keys[4])+"   sizeof(keys[5]):"+sizeof(keys[4])+"\n");
+#ifdef SSL3_DEBUG
+	werror("sizeof(keys[4]):%d  sizeof(keys[5]):%d\n",
+	       sizeof([string]keys[4]), sizeof([string]keys[4]));
+#endif
       }
       
     }
@@ -208,12 +213,12 @@ array generate_keys(string client_random, string server_random,array(int) versio
 //!
 //! @returns
 //!   @array
-//!     @elem State read_state
+//!     @elem SSL.state read_state
 //!       Read state
-//!     @elem State write_state
+//!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array new_server_states(string client_random, string server_random,array(int) version)
+array(State) new_server_states(string client_random, string server_random, array(int) version)
 {
   State write_state = State(this_object());
   State read_state = State(this_object());
@@ -249,12 +254,12 @@ array new_server_states(string client_random, string server_random,array(int) ve
 //!
 //! @returns
 //!   @array
-//!     @elem State read_state
+//!     @elem SSL.state read_state
 //!       Read state
-//!     @elem State write_state
+//!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array new_client_states(string client_random, string server_random,array(int) version)
+array(State) new_client_states(string client_random, string server_random,array(int) version)
 {
   State write_state = State(this_object());
   State read_state = State(this_object());
