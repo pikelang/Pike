@@ -2,6 +2,7 @@
 #define FDLIB_H
 
 #include "global.h"
+#include "pike_macros.h"
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
@@ -38,6 +39,7 @@ typedef int FD;
 #define SOCKFUN5(NAME,T1,T2,T3,T4,T5) int PIKE_CONCAT(fd_,NAME) (FD,T1,T2,T3,T4,T5);
 
 /* Prototypes begin here */
+char *fd_info(int fd);
 void fd_init();
 void fd_exit();
 FD fd_open(char *file, int open_mode, int create_mode);
@@ -99,10 +101,54 @@ FD fd_dup2(FD from, FD to);
 #define fd_shutdown_write SD_SEND
 #define fd_shutdown_both SD_BOTH
 
+#define FD_SOCKET -4
+#define FD_CONSOLE -3
+#define FD_FILE -2
+#define FD_NO_MORE_FREE -1
+
+
+typedef struct my_fd_set_s
+{
+  char bits[MAX_OPEN_FILEDESCRIPTORS/8];
+} my_fd_set;
+
+#ifdef DEBUG
+#define fd_check_fd(X) do { if(fd_type[X]>=0) fatal("FD_SET on closed fd %d (%d) %s:%d.\n",X,da_handle[X],__FILE__,__LINE__); }while(0)
+#else
+#define fd_check_fd(X)
+#endif
+#define my_FD_CLR(FD,S) ((S)->bits[(FD)>>3]&=~ (1<<(FD&7)))
+#define my_FD_SET(FD,S) do{ fd_check_fd(FD); ((S)->bits[(FD)>>3]|= (1<<(FD&7))); }while(0)
+#define my_FD_ISSET(FD,S) ((S)->bits[(FD)>>3]&(1<<(FD&7)))
+#define my_FD_ZERO(S) MEMSET(& (S)->bits, 0, sizeof(my_fd_set))
+
+#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) do {			\
+   int e_,d_,max_=MINIMUM(MAX_OPEN_FILEDESCRIPTORS>>3,(max+7)>>3);	\
+   (TO)->fd_count=0;							\
+   for(e_=0;e_<max_;e_++)						\
+   {									\
+     int b_=(FROM)->bits[e_];						\
+     if(b_)								\
+     {									\
+       for(d_=0;d_<8;d_++)						\
+       {								\
+         if(b_ & (1<<d_))						\
+         {								\
+           int fd_=(e_<<3)+d_;						\
+           fd_check_fd(fd_);						\
+           (TO)->fd_array[(TO)->fd_count++]=(SOCKET)da_handle[fd_];	\
+         }								\
+       }								\
+     }									\
+   }									\
+}while(0)
+
 extern long da_handle[MAX_OPEN_FILEDESCRIPTORS];
+extern int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 
 #define fd_FD_CLR(X,Y) FD_CLR((SOCKET)da_handle[X],Y)
-#define fd_FD_SET(X,Y) FD_SET((SOCKET)da_handle[X],Y)
+#define fd_FD_SET(X,Y) \
+ do { fd_check_fd(X); FD_SET((SOCKET)da_handle[X],Y); }while(0)
 #define fd_FD_ISSET(X,Y) FD_ISSET((SOCKET)da_handle[X],Y)
 #define fd_FD_ZERO(X) FD_ZERO(X)
 
@@ -115,6 +161,7 @@ extern long da_handle[MAX_OPEN_FILEDESCRIPTORS];
 
 typedef int FD;
 
+#define fd_info(X) ""
 #define fd_init()
 #define fd_exit()
 
@@ -151,6 +198,8 @@ typedef int FD;
 #define fd_listen listen
 
 #define fd_select select
+
+#define fd_fd_set fd_set
 #define fd_FD_CLR FD_CLR
 #define fd_FD_SET FD_SET
 #define fd_FD_ISSET FD_ISSET
@@ -159,6 +208,19 @@ typedef int FD;
 #define fd_shutdown_read 0
 #define fd_shutdown_write 1
 #define fd_shutdown_both 2
+
+typedef struct my_fd_set_s
+{
+  fd_set tmp;
+} my_fd_set;
+
+#define my_FD_CLR(FD,S) FD_CLR((FD), & (S)->tmp)
+#define my_FD_SET(FD,S) FD_SET((FD), & (S)->tmp)
+#define my_FD_ISSET(FD,S) FD_ISSET((FD), & (S)->tmp)
+#define my_FD_ZERO(S) FD_ZERO(& (S)->tmp)
+
+#define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
+   MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
 
 #endif
 

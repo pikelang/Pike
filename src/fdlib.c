@@ -3,16 +3,28 @@
 
 #ifdef HAVE_WINSOCK2_H
 
-#define FD_SOCKET -4
-#define FD_CONSOLE -3
-#define FD_FILE -2
-#define FD_NO_MORE_FREE -1
-
 long da_handle[MAX_OPEN_FILEDESCRIPTORS];
-static int fd_type[MAX_OPEN_FILEDESCRIPTORS];
+int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
 #define FDDEBUG(X)
+
+char *fd_info(int fd)
+{
+  if(fd<0)
+    return "BAD";
+
+  if(fd > MAX_OPEN_FILEDESCRIPTORS)
+    return "OUT OF RANGE";
+
+  switch(fd_type[fd])
+  {
+    case FD_SOCKET: return "IS SOCKET";
+    case FD_CONSOLE: return "IS CONSOLE";
+    case FD_FILE: return "IS FILE";
+    default: return "NOT OPEN";
+  }
+}
 
 void fd_init()
 {
@@ -174,7 +186,7 @@ FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
 }
 
 #define SOCKFUN(NAME,X1,X2) \
-int PIKE_CONCAT(fd_,NAME) X1 { int ret; \
+int PIKE_CONCAT(fd_,NAME) X1 { SOCKET ret; \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%d)\n",fd,da_handle[fd])); \
   if(fd_type[fd] != FD_SOCKET) { \
      errno=ENOTSUPP; \
@@ -183,7 +195,7 @@ int PIKE_CONCAT(fd_,NAME) X1 { int ret; \
    ret=NAME X2; \
    if(ret == SOCKET_ERROR) errno=WSAGetLastError(); \
    FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n",ret,errno)); \
-   return ret; \
+   return (int)ret; \
 }
 
 #define SOCKFUN1(NAME,T1) \

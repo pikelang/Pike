@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.20 1998/01/02 01:05:41 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.21 1998/01/21 20:05:32 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -35,8 +35,8 @@ RCSID("$Id: backend.c,v 1.20 1998/01/02 01:05:41 hubbe Exp $");
 
 struct selectors
 {
-  fd_set read;
-  fd_set write;
+  my_fd_set read;
+  my_fd_set write;
 };
 
 static struct selectors selectors;
@@ -81,8 +81,8 @@ extern int pike_make_pipe(int *);
 
 void init_backend(void)
 {
-  fd_FD_ZERO(&selectors.read);
-  fd_FD_ZERO(&selectors.write);
+  my_FD_ZERO(&selectors.read);
+  my_FD_ZERO(&selectors.write);
   if(pike_make_pipe(wakeup_pipe) < 0)
     fatal("Couldn't create backend wakup pipe! errno=%d.\n",errno);
   set_nonblocking(wakeup_pipe[0],1);
@@ -105,18 +105,18 @@ void set_read_callback(int fd,file_callback cb,void *data)
 
   if(cb)
   {
-    fd_FD_SET(fd, &selectors.read);
+    my_FD_SET(fd, &selectors.read);
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
     if(fd <= max_fd)
     {
-      fd_FD_CLR(fd, &selectors.read);
+      my_FD_CLR(fd, &selectors.read);
       if(fd == max_fd)
       {
 	while(max_fd >=0 &&
-	      !fd_FD_ISSET(max_fd, &selectors.read) &&
-	      !fd_FD_ISSET(max_fd, &selectors.write))
+	      !my_FD_ISSET(max_fd, &selectors.read) &&
+	      !my_FD_ISSET(max_fd, &selectors.write))
 	  max_fd--;
       }
     }
@@ -135,18 +135,18 @@ void set_write_callback(int fd,file_callback cb,void *data)
 
   if(cb)
   {
-    fd_FD_SET(fd, &selectors.write);
+    my_FD_SET(fd, &selectors.write);
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
     if(fd <= max_fd)
     {
-      fd_FD_CLR(fd, &selectors.write);
+      my_FD_CLR(fd, &selectors.write);
       if(fd == max_fd)
       {
 	while(max_fd >=0 &&
-	      !fd_FD_ISSET(max_fd, &selectors.read) &&
-	      !fd_FD_ISSET(max_fd, &selectors.write))
+	      !my_FD_ISSET(max_fd, &selectors.read) &&
+	      !my_FD_ISSET(max_fd, &selectors.write))
 	  max_fd--;
       }
     }
@@ -219,7 +219,7 @@ void do_debug(void)
 
   for(e=0;e<=max_fd;e++)
   {
-    if(fd_FD_ISSET(e,&selectors.read) || fd_FD_ISSET(e,&selectors.write))
+    if(my_FD_ISSET(e,&selectors.read) || my_FD_ISSET(e,&selectors.write))
     {
       int ret;
       do {
@@ -247,7 +247,8 @@ void backend(void)
 {
   JMP_BUF back;
   int i, delay;
-  struct selectors sets;
+  fd_set rset;
+  fd_set wset;
 
   if(SETJMP(back))
   {
@@ -270,7 +271,8 @@ void backend(void)
 
     check_threads_etc();
 
-    sets=selectors;
+    fd_copy_my_fd_set_to_fd_set(&rset, &selectors.read, max_fd+1);
+    fd_copy_my_fd_set_to_fd_set(&wset, &selectors.write, max_fd+1);
 
     alloca(0);			/* Do garbage collect */
 #ifdef DEBUG
@@ -288,7 +290,7 @@ void backend(void)
     }
 
     THREADS_ALLOW();
-    i=fd_select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
+    i=fd_select(max_fd+1, &rset, &wset, 0, &next_timeout);
     GETTIMEOFDAY(&current_time);
     THREADS_DISALLOW();
     may_need_wakeup=0;
@@ -297,45 +299,92 @@ void backend(void)
     {
       for(i=0; i<max_fd+1; i++)
       {
-	if(fd_FD_ISSET(i, &sets.read) && read_callback[i])
+	if(fd_FD_ISSET(i, &rset) && read_callback[i])
 	  (*(read_callback[i]))(i,read_callback_data[i]);
 
-	if(fd_FD_ISSET(i, &sets.write) && write_callback[i])
+	if(fd_FD_ISSET(i, &wset) && write_callback[i])
 	  (*(write_callback[i]))(i,write_callback_data[i]);
       }
     }else{
       switch(errno)
       {
+#ifdef __NT__
+	default:
+	  fatal("Error in backend %d\n",errno);
+	  break;
+#endif
+	  
       case EINVAL:
 	fatal("Invalid timeout to select().\n");
 	break;
 
+#ifdef WSAEINTR
+      case WSAEINTR:
+#endif
       case EINTR:		/* ignore */
 	break;
 
+#ifdef WSAEBADF
+      case WSAEBADF:
+#endif
+#ifdef WSAENOTSOCK
+      case WSAENOTSOCK:
+#endif
       case EBADF:
-	sets=selectors;
+
+	fd_copy_my_fd_set_to_fd_set(&rset, &selectors.read, max_fd+1);
+	fd_copy_my_fd_set_to_fd_set(&wset, &selectors.write, max_fd+1);
 	next_timeout.tv_usec=0;
 	next_timeout.tv_sec=0;
-	if(fd_select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout) < 0 && errno == EBADF)
+	if(fd_select(max_fd+1, &rset, &wset, 0, &next_timeout) < 0)
 	{
-	  int i;
-	  for(i=0;i<MAX_OPEN_FILEDESCRIPTORS;i++)
+	  switch(errno)
 	  {
-	    if(!fd_FD_ISSET(i, &selectors.read) && !FD_ISSET(i,&selectors.write))
-	      continue;
-	    
-	    fd_FD_ZERO(& sets.read);
-	    fd_FD_ZERO(& sets.write);
-
-	    if(fd_FD_ISSET(i, &selectors.read))  fd_FD_SET(i, &sets.read);
-	    if(fd_FD_ISSET(i, &selectors.write)) fd_FD_SET(i, &sets.write);
-
-	    next_timeout.tv_usec=0;
-	    next_timeout.tv_sec=0;
-
-	    if(select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout) < 0 && errno == EBADF)
-	      fatal("Filedescriptor %d caused EBADF.\n",i);
+#ifdef WSAEBADF
+	    case WSAEBADF:
+#endif
+#ifdef WSAENOTSOCK
+	    case WSAENOTSOCK:
+#endif
+	    case EBADF:
+	    {
+	      int i;
+	      for(i=0;i<MAX_OPEN_FILEDESCRIPTORS;i++)
+	      {
+		if(!my_FD_ISSET(i, &selectors.read) && !my_FD_ISSET(i,&selectors.write))
+		  continue;
+		
+		fd_FD_ZERO(& rset);
+		fd_FD_ZERO(& wset);
+		
+		if(my_FD_ISSET(i, &selectors.read))  fd_FD_SET(i, &rset);
+		if(my_FD_ISSET(i, &selectors.write)) fd_FD_SET(i, &wset);
+		
+		next_timeout.tv_usec=0;
+		next_timeout.tv_sec=0;
+		
+		if(fd_select(max_fd+1, &rset, &wset, 0, &next_timeout) < 0)
+		{
+		  switch(errno)
+		  {
+#ifdef __NT__
+		    default:
+#endif
+		    case EBADF:
+#ifdef WSAEBADF
+		    case WSAEBADF:
+#endif
+#ifdef WSAENOTSOCK
+		    case WSAENOTSOCK:
+#endif
+		      fatal("Filedescriptor %d (%s) caused fatal error %d in backend.\n",i,fd_info(i),errno);
+		      
+		    case EINTR:
+		      break;
+		  }
+		}
+	      }
+	    }
 	  }
 #ifdef _REENTRANT
 	  write_to_stderr("Bad filedescriptor to select().\n"
@@ -356,6 +405,11 @@ void backend(void)
 
 int write_to_stderr(char *a, INT32 len)
 {
+#ifdef __NT__
+  int e;
+  for(e=0;e<len;e++)
+    putc(a[e],stderr);
+#else
   int nonblock=0;
   INT32 pos, tmp;
 
@@ -386,6 +440,7 @@ int write_to_stderr(char *a, INT32 len)
   if(nonblock)
     set_nonblocking(2,1);
 
+#endif
   return 1;
 }
 
