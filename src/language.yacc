@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.342 2004/09/18 20:50:51 nilsson Exp $
+|| $Id: language.yacc,v 1.343 2004/10/22 14:42:16 grubba Exp $
 */
 
 %pure_parser
@@ -2480,6 +2480,11 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
       Pike_compiler->compiler_pass=tmp;
     }
   }
+  {
+    /* Clear scoped modifiers. */
+    $<number>$ = lex.pragmas;
+    lex.pragmas &= ~ID_MODIFIER_MASK;
+  }
   optional_create_arguments failsafe_program
   {
     struct program *p;
@@ -2499,9 +2504,10 @@ class: modifiers TOK_CLASS line_number_info optional_identifier
 
     $$=mkidentifiernode($<number>5);
 
-    free_node ($3);
+    free_node($3);
     free_node($4);
     check_tree($$,0);
+    lex.pragmas = $<number>6;
   }
   ;
 
