@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.1 1997/02/11 08:36:34 hubbe Exp $
+# $Id: configure.in,v 1.2 1997/04/03 18:07:16 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -75,7 +75,7 @@ if test x$with_mysql = xyes; then
 
   # Mysql libs
 
-  pike_cv_mysql="no"
+  pike_cv_mysql="unknown"
 
   AC_CHECK_LIB(mystrings, bchange, [
     LIBS="-lmystrings $LIBS"
@@ -93,6 +93,74 @@ if test x$with_mysql = xyes; then
 
   AC_MSG_RESULT($pike_cv_mysql)
 
+  # System libs which might be needed
+
+  if echo $LIBS|grep -- -lsocket >&5 2>&5; then
+    :
+  else
+    AC_CHECK_LIB(socket, socket, [
+      LIBS="-lsocket $LIBS"
+      MYSQL_LIBS="-lsocket ${MYSQL_LIBS}"
+    ], [])
+  fi
+  if echo $LIBS|grep -- -lnsl >&5 2>&5; then
+    :
+  else
+    AC_CHECK_LIB(nsl, gethostbyname, [
+      LIBS="-lnsl $LIBS"
+      MYSQL_LIBS="-lnsl ${MYSQL_LIBS}"
+    ], [])
+  fi
+  if echo $LIBS|grep -- -lm >&5 2>&5; then
+    :
+  else
+    AC_CHECK_LIB(m, floor, [
+      LIBS="-lm $LIBS"
+      MYSQL_LIBS="-lm ${MYSQL_LIBS}"
+    ], [])
+  fi
+
+  # Pthreads is still needed in 3.20.0.
+  AC_CHECK_FUNC(pthread_self, [], [
+    AC_CHECK_LIB(pthread, pthread_self, [
+      LIBS="-lpthread $LIBS"
+      echo Warning added -lpthread to \$LIBS\!
+    ], [
+      AC_CHECK_LIB(pthreads, pthread_self, [
+        LIBS="-lpthreads $LIBS"
+	echo Warning added -lpthreads to \$LIBS\!
+      ], [])
+    ])
+  ])
+
+  AC_CHECK_LIB(dbug, _db_doprnt_, [
+    LIBS="-ldbug $LIBS"
+    MYSQL_LIBS="-ldbug ${MYSQL_LIBS}"
+  ], [])
+
+  AC_CHECK_LIB(mysys, my_init, [
+    LIBS="-lmysys $LIBS"
+    MYSQL_LIBS="-lmysys ${MYSQL_LIBS}"
+  ], [])
+
+  # Try a couple of mysqlclient libs
+  # in order of age, newest first.
+
+  AC_CHECK_LIB(mysqlclient, mysql_connect, [
+    LIBS="-lmysqlclient $LIBS"
+    MYSQL_LIBS="-lmysqlclient ${MYSQL_LIBS}"
+  ], [ 
+    AC_CHECK_LIB(mysqllib, mysql_connect, [
+      LIBS="-lmysqllib $LIBS"
+      MYSQL_LIBS="-lmysqllib ${MYSQL_LIBS}"
+    ], [
+      AC_CHECK_LIB(mysql, mysql_connect, [
+	LIBS="-lmysql $LIBS"
+	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
+      ], [ pike_cv_mysql="no" ])
+    ])
+  ])
+
   if test x$pike_cv_mysql = xno; then
     # Restore variables, so we don't link with unnessesary libs
 
@@ -101,87 +169,9 @@ if test x$with_mysql = xyes; then
     LDFLAGS=$OLD_LDFLAGS
     MYSQL_LIBS=""
   else
+    AC_DEFINE(HAVE_MYSQL)
 
-    # System libs which might be needed
-
-    if echo $LIBS|grep -- -lsocket >&5 2>&5; then
-      :
-    else
-      AC_CHECK_LIB(socket, socket, [
-        LIBS="-lsocket $LIBS"
-        MYSQL_LIBS="-lsocket ${MYSQL_LIBS}"
-      ], [])
-    fi
-    if echo $LIBS|grep -- -lnsl >&5 2>&5; then
-      :
-    else
-      AC_CHECK_LIB(nsl, gethostbyname, [
-        LIBS="-lnsl $LIBS"
-        MYSQL_LIBS="-lnsl ${MYSQL_LIBS}"
-      ], [])
-    fi
-    if echo $LIBS|grep -- -lm >&5 2>&5; then
-      :
-    else
-      AC_CHECK_LIB(m, floor, [
-        LIBS="-lm $LIBS"
-        MYSQL_LIBS="-lm ${MYSQL_LIBS}"
-      ], [])
-    fi
-
-    # Pthreads is still needed in 3.20.0.
-    AC_CHECK_FUNC(pthread_self, [], [
-      AC_CHECK_LIB(pthread, pthread_self, [
-        LIBS="-lpthread $LIBS"
-	echo Warning added -lpthread to \$LIBS\!
-      ], [
-        AC_CHECK_LIB(pthreads, pthread_self, [
-	  LIBS="-lpthreads $LIBS"
-	  echo Warning added -lpthreads to \$LIBS\!
-	], [])
-      ])
-    ])
-
-    AC_CHECK_LIB(dbug, _db_doprnt_, [
-      LIBS="-ldbug $LIBS"
-      MYSQL_LIBS="-ldbug ${MYSQL_LIBS}"
-    ], [])
-
-    AC_CHECK_LIB(mysys, my_init, [
-      LIBS="-lmysys $LIBS"
-      MYSQL_LIBS="-lmysys ${MYSQL_LIBS}"
-    ], [])
-
-    # Try a couple of mysqlclient libs
-    # in order of age, newest first.
-
-    AC_CHECK_LIB(mysqlclient, mysql_connect, [
-      LIBS="-lmysqlclient $LIBS"
-      MYSQL_LIBS="-lmysqlclient ${MYSQL_LIBS}"
-    ], [ 
-      AC_CHECK_LIB(mysqllib, mysql_connect, [
-	LIBS="-lmysqllib $LIBS"
-	MYSQL_LIBS="-lmysqllib ${MYSQL_LIBS}"
-      ], [
-	AC_CHECK_LIB(mysql, mysql_connect, [
-	  LIBS="-lmysql $LIBS"
-	  MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
-	], [ pike_cv_mysql="no" ])
-      ])
-    ])
-
-    if test x$pike_cv_mysql = xno; then
-      # Restore variables, so we don't link with unnessesary libs
-
-      LIBS=$OLD_LIBS
-      CPPFLAGS=$OLD_CPPFLAGS
-      LDFLAGS=$OLD_LDFLAGS
-      MYSQL_LIBS=""
-    else
-      AC_DEFINE(HAVE_MYSQL)
-
-      AC_CHECK_FUNCS(mysql_real_query mysql_fetch_lengths)
-    fi
+    AC_CHECK_FUNCS(mysql_real_query mysql_fetch_lengths)
   fi
 else
   :
