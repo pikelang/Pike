@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.612 2002/08/27 14:42:44 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.613 2002/08/27 15:39:18 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1720,7 +1720,6 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
     $with_root/sw/gnu/include $with_root/sw/include \
     $with_root/usr/freeware/include $with_root/usr/pkg/include \
     $with_root/opt/sfw/include $with_root/opt/gnome-1.4/include \
-    $with_root/usr/local/include/freetype1 \
     `echo $with_root/usr/X11*/include | sort -r`
   do
     AC_MSG_CHECKING($d)
