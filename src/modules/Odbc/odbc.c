@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.27 2001/10/03 11:46:58 grubba Exp $
+ * $Id: odbc.c,v 1.28 2001/10/03 15:35:20 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.27 2001/10/03 11:46:58 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.28 2001/10/03 15:35:20 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -452,6 +452,8 @@ void pike_module_init(void)
   ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tOr(tInt,tObj)), ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("affected_rows", f_affected_rows,tFunc(tVoid,tInt), ID_PUBLIC);
+  /* function(void|string:object) */
+  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
   /* NOOP's: */
   /* function(string:void) */
   ADD_FUNCTION("create_db", f_create_db,tFunc(tStr,tVoid), ID_PUBLIC);
@@ -461,8 +463,6 @@ void pike_module_init(void)
   ADD_FUNCTION("shutdown", f_shutdown,tFunc(tVoid,tVoid), ID_PUBLIC);
   /* function(void:void) */
   ADD_FUNCTION("reload", f_reload,tFunc(tVoid,tVoid), ID_PUBLIC);
-  /* function(void|string:object) */
-  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
 #if 0
   /* function(void:int) */
   ADD_FUNCTION("insert_id", f_insert_id,tFunc(tVoid,tInt), ID_PUBLIC);
