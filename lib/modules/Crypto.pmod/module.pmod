@@ -159,7 +159,7 @@ class BLOWFISH_Algorithm
 
 BLOWFISH_Algorithm Blowfish = BLOWFISH_Algorithm();
 
-class CAST128_Algorithm
+class CAST_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
   inherit CAST128_Info;
@@ -168,7 +168,7 @@ class CAST128_Algorithm
   CAST128_State `()() { return CAST128_State(); }
 }
 
-CAST128_Algorithm CAST128 = CAST128_Algorithm();
+CAST_Algorithm CAST = CAST_Algorithm();
 
 class Serpent_Algorithm
 {
