@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.31 2004/02/07 19:41:14 nilsson Exp $
+// $Id: testsuite.in,v 1.32 2004/02/13 06:36:12 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -64,7 +64,7 @@ cond_resolv( Nettle.Yarrow, [[
   test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
   test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
   test_eq( sizeof( Crypto.Random.random_string(128) ), 128)
-  test_eq( sizeof( Crypto.Random.blocking_random_string(3) ), 3)
+dnl  test_eq( sizeof( Crypto.Random.blocking_random_string(3) ), 3)
   test_do( Crypto.Random.add_entropy("xy", 16) )
 ]])
 
@@ -553,50 +553,34 @@ cond([[ Nettle["crypt_md5"] ]],[[
 
 // pipe
 test_eq(
-#pike 7.4
- Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
-  Crypto.cast(), Crypto.arcfour() )->name(),
-  "PIPE(DES, AES, IDEA, CAST, ARCFOUR)")
+ Crypto.Pipe( Crypto.DES, Crypto.AES, Crypto.IDEA,
+  Crypto.CAST, Crypto.Arcfour )->name(),
+  "Pipe(des, aes, idea, cast128, arcfour)")
 test_equal(
-#pike 7.4
- Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
-   Crypto.cast(), Crypto.arcfour() )->query_key_length(),
+ Crypto.Pipe( Crypto.DES, Crypto.AES, Crypto.IDEA,
+   Crypto.CAST, Crypto.Arcfour )->key_size(),
    ({ 0, 0, 0, 0, 0 }) )
 test_eq(
-#pike 7.4
- Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
-   Crypto.cast(), Crypto.arcfour() )->query_block_size(), 16)
+ Crypto.Pipe( Crypto.DES, Crypto.AES, Crypto.IDEA,
+   Crypto.CAST, Crypto.Arcfour )->block_size(), 16)
 test_eq(
-#pike 7.4
- Crypto.pipe( Crypto.des(), Crypto.idea(), Crypto.cast(),
-   Crypto.arcfour() )->query_block_size(), 8)
+ Crypto.Pipe( Crypto.DES, Crypto.IDEA, Crypto.CAST,
+   Crypto.Arcfour )->block_size(), 8)
 test_eq(
-#pike 7.4
- Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
-   Crypto.cast() )->
-     set_encrypt_key( Crypto.des_parity("A"*8), "B"*32, "C"*16,
-       "D"*16 )->crypt_block("F"*16),
-       String.hex2string("fc222f3584addf1a5f974e104a3e2231") )
+ S(Crypto.Pipe( Crypto.DES, Crypto.AES, Crypto.IDEA,
+     Crypto.CAST )->
+       set_encrypt_key( Crypto.DES.fix_parity("A"*8), "B"*32, "C"*16,
+         "D"*16 )->crypt("F"*16)),
+       "fc222f3584addf1a5f974e104a3e2231" )
 test_eq(
-#pike 7.4
- Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
-   Crypto.cast() )->
-     set_decrypt_key( Crypto.des_parity("A"*8), "B"*32, "C"*16,
+ Crypto.Pipe( Crypto.DES, Crypto.AES, Crypto.IDEA,
+   Crypto.CAST )->
+     set_decrypt_key( Crypto.DES.fix_parity("A"*8), "B"*32, "C"*16,
        "D"*16 )->
-       crypt_block(String.hex2string("fc222f3584addf1a5f974e104a3e2231")),
+       crypt(H("fc222f3584addf1a5f974e104a3e2231")),
    "F"*16 )
+
 // Rijndael CBC decrypt
-test_any([[
-#pike 7.4
-  object aes_cbc = Crypto.cbc(Crypto.aes());
-  aes_cbc->set_decrypt_key(String.hex2string("0"*32));
-  aes_cbc->set_iv(String.hex2string("0"*32));
-  string ct = String.hex2string("0"*32);
-  for(int i = 0; i < 10000; i++) {
-    ct = aes_cbc->crypt_block(ct);
-  }
-  return ct;
-]], [[ String.hex2string("FACA37E0B0C85373DF706E73F7C9AF86") ]])
 test_any([[
   object aes_cbc = Crypto.CBC(Crypto.AES);
   aes_cbc->set_decrypt_key(String.hex2string("0"*32));
