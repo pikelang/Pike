@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.2 2004/11/01 16:32:55 grubba Exp $
+// $Id: Wix.pmod,v 1.3 2004/11/01 18:37:48 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -134,7 +134,7 @@ class Directory
   {
     Directory d = this_object();
     foreach(path, string dir) {
-      Directory n;
+      if (dir == ".") continue;
       d = (d->sub_dirs[dir] ||
 	   (d = d->sub_dirs[dir] = Directory(dir, d->guid->encode())));
     }
@@ -154,6 +154,21 @@ class Directory
     }
   }
 
+  void recurse_install_directory(string dest, string src)
+  {
+    Directory d = low_add_path(dest/"/");
+
+    foreach(get_dir(src), string fname) {
+      string fullname = combine_path(src, fname);
+      Stdio.Stat stat = file_stat(fullname);
+      if (stat->isdir) {
+	d->recurse_install_dir(fname, fullname);
+      } else {
+	d->low_install_file(fname, fullname);
+      }
+    }
+  }
+
   void install_file(string dest, string src, string|void id)
   {
     array(string) path = dest/"/";
@@ -162,7 +177,7 @@ class Directory
   }
 
   void install_regkey(string path, string root, string key,
-		  string name, string value, string id)
+		      string name, string value, string id)
   {
     Directory d = low_add_path(path/"/");
     d->other_entries[root+"\\"+key+"\\:"+name] =
