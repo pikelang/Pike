@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.17 2003/10/14 01:52:27 nilsson Exp $
+// $Id: RDF.pike,v 1.18 2003/10/14 01:57:16 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -758,6 +758,8 @@ string get_xml() {
     if(sizeof(rel)>1) buf->add("\n");
     buf->add("</Description>\n");
   }
+
+  if(sizeof(delayed)) error("Meesa think somoethink wrong.\n");
 
   String.Buffer ret = String.Buffer();
   ret->add("<?xml version=\"1.0\"?>\n"
