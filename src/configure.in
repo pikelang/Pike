@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.207 1998/06/17 14:01:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.208 1998/06/28 16:02:45 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1662,7 +1662,8 @@ int main(int argc, char **argv)
   if(x == 2.0) exit(1);
   exit(0);
 }
-],pike_cv_sys_idiot_sigfpe=no,pike_cv_sys_idiot_sigfpe=yes)
+],pike_cv_sys_idiot_sigfpe=no,pike_cv_sys_idiot_sigfpe=yes,
+  pike_cv_sys_idiot_sigfpe=yes)
 ])
 
 if test $pike_cv_sys_idiot_sigfpe = yes ; then
@@ -1698,7 +1699,8 @@ int main(int argc, char **argv)
   if(x == 2.0) exit(1);
   exit(0);
 }
-],pike_cv_sys_idiot_sigfpe_with_ieee=no,pike_cv_sys_idiot_sigfpe_with_ieee=yes)
+],pike_cv_sys_idiot_sigfpe_with_ieee=no,pike_cv_sys_idiot_sigfpe_with_ieee=yes,
+  pike_cv_sys_idiot_sigfpe_with_ieee=yes)
   CFLAGS="$OLD_CFLAGS"
 ])
    
@@ -1740,7 +1742,8 @@ int main(int argc, char **argv)
   if(x == 2.0) exit(1);
   exit(0);
 }
-],pike_cv_sys_ignore_sigfpe=yes,pike_cv_sys_ignore_sigfpe=no)
+],pike_cv_sys_ignore_sigfpe=yes,pike_cv_sys_ignore_sigfpe=no,
+  pike_cv_sys_ignore_sigfpe=yes)
   CFLAGS="$OLD_CFLAGS"
 ])
 
