@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.14 1997/01/27 01:19:01 hubbe Exp $");
+RCSID("$Id: las.c,v 1.15 1997/01/28 03:04:31 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -496,6 +496,7 @@ node *index_node(node *n, struct pike_string * id)
   }else{
     resolv_constant(n);
     push_string(id);
+    reference_shared_string(id);
     f_index(2);
   }
   UNSETJMP(tmp);
