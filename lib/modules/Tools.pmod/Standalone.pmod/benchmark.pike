@@ -1,4 +1,4 @@
-// $Id: benchmark.pike,v 1.7 2004/07/08 15:36:42 grubba Exp $
+// $Id: benchmark.pike,v 1.8 2004/07/15 08:55:10 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -72,11 +72,18 @@ int(0..) main(int num, array(string) args)
 
    foreach (test_globs, string test_glob)
      foreach (to_run; int idx; string id)
-       if (id && glob (test_glob, to_run_names[idx])) {
-	 ecode += Tools.Shoot.ExecTest(id,tests[id])
-	   ->run(seconds_per_test,maximum_runs);
-	 // Don't run test more than once if it matches several globs.
-	 to_run[idx] = 0;
+       if (id) {
+	 if (!to_run_names[idx]) {
+	   write("No name on test %O!\n", id);
+	   ecode++;
+	   // Don't report the error multiple times.
+	   to_run[idx] = 0;
+	 } else if (glob (test_glob, to_run_names[idx])) {
+	   ecode += Tools.Shoot.ExecTest(id,tests[id])
+	     ->run(seconds_per_test,maximum_runs);
+	   // Don't run test more than once if it matches several globs.
+	   to_run[idx] = 0;
+	 }
        }
    return ecode;
 }
