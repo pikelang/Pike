@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.292 1999/05/29 14:44:36 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.293 1999/05/29 15:20:51 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -189,24 +189,6 @@ AC_MINIX
 
 #############################################################################
 
-# Some sanity checks.
-
-if test "$GCC" = "yes" -a "`uname -sp`" = "SunOS sparc"; then
-  # Solaris/sparc:
-  #   Check that gnu ld isn't used.
-  #   It's usually hidden in $prefix/sparc-sun-solaris2.?/bin/.
-  gcc_ld_path="`$CC -v 2>&1 | sed -e '1,1s/[^\/]*\(\/.*\/\)[^\/]*$/\1/p;d' | sed -e '/lib\/gcc-lib\//s/lib\/gcc-lib\///;s/\/[0-9]*\.[0-9]*\.[0-9]*\/$/\/bin/'`"
-  if test "x$gcc_ld_path" = "x"; then :; else
-    if "$gcc_ld_path/ld" -v 2>&1 | grep -i GNU >/dev/null; then
-      AC_MSG_WARN([GNU ld found on Solaris sparc system ($gcc_ld_path/ld).])
-      AC_MSG_WARN([This may cause the dynamic module support to fail.])
-    else :; fi
-  fi
-  unset gcc_ld_path
-else :; fi
-
-#############################################################################
-
 # We need some special hacks when running slowaris
 AC_PATH_PROG(uname_prog,uname,no)
 AC_MSG_CHECKING(operating system)
@@ -264,6 +246,26 @@ case "$pike_cv_sys_os" in
 esac
 
 AC_SUBST(LD)
+
+#############################################################################
+
+# Some sanity checks.
+
+if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" -a "`uname -p`" = "sparc"; then
+  # Solaris/sparc:
+  #   Check that gnu ld isn't used.
+  #   It's usually hidden in $prefix/sparc-sun-solaris2.?/bin/.
+  # NOTE: M4 uses [] as quotes.
+  gcc_ld_path="`$CC -v 2>&1 | sed -e '1,1s/[[^\/]]*\(\/.*\/\)[[^\/]]*$/\1/p;d' | sed -e '/lib\/gcc-lib\//s/lib\/gcc-lib\///;s/\/[[0-9]]*\.[[0-9]]*\.[[0-9]]*\/$/\/bin/'`"
+  if test "x$gcc_ld_path" = "x"; then :; else
+    if "$gcc_ld_path/ld" -v 2>&1 | grep -i GNU >/dev/null; then
+      AC_MSG_WARN([GNU ld found on Solaris sparc system ($gcc_ld_path/ld).])
+      AC_MSG_WARN([This may cause the dynamic module support to fail.])
+    else :; fi
+  fi
+  unset gcc_ld_path
+
+else :; fi
 
 #############################################################################
 
