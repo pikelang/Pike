@@ -921,9 +921,20 @@ string parse_docgroup(Node n) {
       if(m["homogen-name"])
 	ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
 	  "</b></font>\n";
-      else
+      else if (m["homogen-type"] == "method") {
 	foreach(Array.uniq(n->get_elements("method")->get_attributes()->name), string name)
 	  ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+      } else if (m["homogen-type"] == "inherit") {
+	foreach(n->get_elements("inherit"), Node child) {
+	  string name = child->get_attributes()->name ||
+	    child->value_of_node();
+	  if (name) {
+	    ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+	  }
+	}
+      } else {
+	// FIXME: Error?
+      }
     }
     else
       ret += "syntax";
