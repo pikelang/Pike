@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.235 1998/09/01 18:09:42 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.236 1998/09/01 20:26:09 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -453,12 +453,14 @@ fi
 if test x$pike_cv_sys_os != xWindows_NT ; then
 
 echo Searching for include-file directories...
+
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
+  real_include_dirs=''
   for d in `echo ${with_include_path} | sed 's/:/ /g'` \
     `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"`/include \
     /usr/local/include /sw/local/include /usr/gnu/include /opt/gnu/include \
     /sw/gnu/include /sw/include /usr/freeware/include \
-    `echo /usr/X11*/include | sort -r`
+    `echo /usr/X11*/include | sort -r` $srcdir `pwd`
   do
     AC_MSG_CHECKING($d)
     case x$d in
@@ -466,8 +468,27 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
       ;;
       *)
         if test -d "$d/." ; then
-          AC_MSG_RESULT(added)
-          CPPFLAGS="${CPPFLAGS} -I$d"
+          REALDIR="`cd $d/. ; /bin/pwd`"
+          if test "x$REALDIR" = x ; then
+            REALDIR=UNKNOWN
+          else
+            :
+          fi
+
+          case " $CPPFLAGS $real_include_dirs " in
+            *\ -I$d\ * | *\ -I$REALDIR\ *)
+               AC_MSG_RESULT(already added)
+            ;;
+            *)
+              AC_MSG_RESULT(added)
+              CPPFLAGS="${CPPFLAGS} -I$d"
+              if test "x$REALDIR" != xUNKNOWN; then
+                real_include_dirs="${real_include_dirs} -I$REALDIR"
+              else
+                :
+              fi
+            ;;
+          esac
         else
           AC_MSG_RESULT(no)
         fi
@@ -478,7 +499,7 @@ else
   :
 fi
 
-CPPFLAGS="${CPPFLAGS} -I$srcdir -I`pwd`"
+#CPPFLAGS="${CPPFLAGS} -I$srcdir -I`pwd`"
 
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
@@ -490,8 +511,15 @@ if test $ldflags_is_set = no ; then
   do
     AC_MSG_CHECKING($d)
     if test -d "$d/." ; then
-      AC_MSG_RESULT(added)
-      LDFLAGS="${LDFLAGS} -R$d -L$d"
+      case " $LDFLAGS " in
+        *\ -L$d\ -R$d\ * | *\ -R$d\ -L$d\ *)
+          AC_MSG_RESULT(already added)
+        ;;
+        *)
+          AC_MSG_RESULT(added)
+          LDFLAGS="${LDFLAGS} -R$d -L$d"
+        ;;
+      esac
     else
       AC_MSG_RESULT(no)
     fi
