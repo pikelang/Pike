@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.20 2000/08/25 16:35:54 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.21 2000/09/07 11:25:38 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -91,7 +91,9 @@ static void increase_buffer_size( struct buffer * buffer )
    * in which case realloc() is wrong.
    */
   new_d = realloc( buffer->str, buffer->len*2 );
-  if(!new_d) error("Realloc (%d->%d) failed!\n", buffer->len,buffer->len*2);
+  if(!new_d) error("Realloc (%ld->%ld) failed!\n",
+		   DO_NOT_WARN((long)buffer->len),
+		   DO_NOT_WARN((long)buffer->len*2));
   MEMSET(new_d+buffer->len, 0, buffer->len);
   buffer->str = new_d;
   buffer->len *= 2;
@@ -146,14 +148,14 @@ static toff_t seek_buffer(thandle_t bh, toff_t seek, int seek_type )
   switch(seek_type)
   {
    case SEEK_CUR:
-     while(buffer_handle->len < seek+buffer_handle->offset)
+     while(buffer_handle->len < (ptrdiff_t)(seek+buffer_handle->offset))
        increase_buffer_size( buffer_handle );
      buffer_handle->offset += seek;
      if(buffer_handle->offset > buffer_handle->real_len)
        buffer_handle->real_len = buffer_handle->offset;
      break;
    case SEEK_SET:
-     while(buffer_handle->len < seek)
+     while(buffer_handle->len < (ptrdiff_t)seek)
        increase_buffer_size( buffer_handle );
      buffer_handle->offset = seek;
      if(buffer_handle->offset > buffer_handle->real_len)
@@ -339,7 +341,8 @@ void low_image_tiff_decode( struct buffer *buf,
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
   s = raster = (uint32 *)_TIFFmalloc(w*h*sizeof(uint32));
   if (raster == NULL)
-    error("Malloc failed to allocate buffer for %dx%d image\n",w,h);
+    error("Malloc failed to allocate buffer for %ldx%ld image\n",
+	  (long)w, (long)h);
 
   if(!TIFFReadRGBAImage(tif, w, h, raster, 0))
     error("Failed to read TIFF data\n");

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.310 2000/09/03 23:21:13 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.311 2000/09/07 11:35:17 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1069,7 +1069,9 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       if (d_flag) {
 	for(i = len; i--;) {
 	  if (out->str[i]) {
-	    fatal("MEMSET didn't clear byte %d of %d\n", i+1, len);
+	    fatal("MEMSET didn't clear byte %ld of %ld\n",
+		  PTRDIFF_T_TO_LONG(i+1),
+		  PTRDIFF_T_TO_LONG(len));
 	  }
 	}
       }
@@ -1252,8 +1254,8 @@ void f_string_to_utf8(INT32 args)
 		/* 32bit or more. */
 		if (!extended) {
 		  error("string_to_utf8(): "
-			"Value 0x%08x (index %d) is larger than 31 bits.\n",
-			c, i);
+			"Value 0x%08x (index %ld) is larger than 31 bits.\n",
+			c, PTRDIFF_T_TO_LONG(i));
 		}
 		len++;
 		/* FIXME: Needs fixing when we get 64bit chars... */

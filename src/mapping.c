@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.99 2000/09/03 23:18:46 mast Exp $");
+RCSID("$Id: mapping.c,v 1.100 2000/09/07 11:31:05 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1552,11 +1552,13 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
       return;
     }
   }
-  
-  sprintf(buf, m->data->size == 1 ? "([ /* %ld element */\n" :
-	                            "([ /* %ld elements */\n",
-	  (long)m->data->size);
-  my_strcat(buf);
+
+  if (m->data->size == 1) {
+    my_strcat("([ /* 1 element */\n");
+  } else {
+    sprintf(buf, "([ /* %ld elements */\n", (long)m->data->size);
+    my_strcat(buf);
+  }
 
   a = mapping_indices(m);
   SET_ONERROR(err, do_free_array, a);

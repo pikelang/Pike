@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.168 2000/08/24 13:55:23 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.169 2000/09/07 11:28:37 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -439,7 +439,8 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 {
   struct program *p;
   INT32 e,off;
-  TRACE((4,"-find_external_context(%d, inherit=%d)\n",arg2,loc->inherit - loc->o->prog->inherits));
+  TRACE((4, "-find_external_context(%d, inherit=%ld)\n", arg2,
+	 DO_NOT_WARN((long)(loc->inherit - loc->o->prog->inherits))));
 
   if(!loc->o)
     error("Current object is destructed\n");
@@ -531,10 +532,10 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
       my_describe_inherit_structure(p);
 #endif
 
-    TRACE((5,"-   Parent identifier = %d (%s), inherit # = %d\n",
+    TRACE((5,"-   Parent identifier = %d (%s), inherit # = %ld\n",
 	   loc->parent_identifier,
 	   ID_FROM_INT(p, loc->parent_identifier)->name->str,
-	   loc->inherit - p->inherits));
+	   DO_NOT_WARN((long)(loc->inherit - p->inherits))));
     
 #ifdef DEBUG_MALLOC
     if (loc->inherit->storage_offset == 0x55555555) {
