@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.10 1997/11/05 20:06:01 hedda Exp $
+ * $Id: mysql.c,v 1.11 1998/02/08 15:28:58 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,9 +73,39 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.10 1997/11/05 20:06:01 hedda Exp $");
+RCSID("$Id: mysql.c,v 1.11 1998/02/08 15:28:58 grubba Exp $");
 
 struct program *mysql_program = NULL;
+
+#ifdef HAVE_MYSQL_PORT
+extern unsigned int mysql_port;
+#ifdef _REENTRANT
+static MUTEX_T stupid_port_lock;
+#define STUPID_PORT_INIT()	mt_init(&stupid_port_lock)
+#define STUPID_PORT_LOCK()	mt_lock(&stupid_port_lock)
+#define STUPID_PORT_UNLOCK()	mt_unlock(&stupid_port_lock)
+#define STUPID_PORT_DESTROY()	mt_destroy(&stupid_port_lock)
+#else /* !_REENTRANT */
+#define STUPID_PORT_INIT()
+#define STUPID_PORT_LOCK()
+#define STUPID_PORT_UNLOCK()
+#define STUPID_PORT_DESTROY()
+#endif /* _REENTRANT */
+#endif /* HAVE_MYSQL_PORT */
+
+#ifdef _REENTRANT
+#define MYSQL_LOCK		(&(PIKE_MYSQL->lock))
+#define INIT_MYSQL_LOCK()	mt_init(MYSQL_LOCK)
+#define DESTROY_MYSQL_LOCK()	mt_destroy(MYSQL_LOCK)
+#define MYSQL_ALLOW()		do { MUTEX_T *__l = MYSQL_LOCK; THREADS_ALLOW(); mt_lock(__l);
+#define MYSQL_DISALLOW()	mt_unlock(__l); THREADS_DISALLOW(); } while(0)
+#else /* !_REENTRANT */
+#define INIT_MYSQL_LOCK()
+#define DESTROY_MYSQL_LOCK()
+#define MYSQL_ALLOW()
+#define MYSQL_DISALLOW()
+#endif /* _REENTRANT */
+
 
 /*
  * Functions
@@ -88,6 +118,7 @@ struct program *mysql_program = NULL;
 static void init_mysql_struct(struct object *o)
 {
   MEMSET(PIKE_MYSQL, 0, sizeof(struct precompiled_mysql));
+  INIT_MYSQL_LOCK();
 }
 
 static void exit_mysql_struct(struct object *o)
@@ -115,7 +146,7 @@ static void exit_mysql_struct(struct object *o)
     PIKE_MYSQL->host = NULL;
   }
 
-  THREADS_ALLOW();
+  MYSQL_ALLOW();
 
   if (last_result) {
     mysql_free_result(last_result);
@@ -124,7 +155,9 @@ static void exit_mysql_struct(struct object *o)
     mysql_close(socket);
   }
 
-  THREADS_DISALLOW();
+  MYSQL_DISALLOW();
+
+  DESTROY_MYSQL_LOCK();
 }
 
 
@@ -136,9 +169,20 @@ static void pike_mysql_reconnect(void)
   char *database = NULL;
   char *user = NULL;
   char *password = NULL;
+  char *portptr = NULL;
+  unsigned int port = 0;
+  unsigned int saved_port = 0;
 
   if (PIKE_MYSQL->host) {
-    host = PIKE_MYSQL->host->str;
+    host = strdup(PIKE_MYSQL->host->str);
+    if (!host) {
+      error("Mysql.mysql(): Out of memory!\n");
+    }
+    if ((portptr = strchr(host, ':')) && (*portptr == ':')) {
+      *portptr = 0;
+      portptr++;
+      port = (unsigned int) atoi(portptr);
+    }
   }
   if (PIKE_MYSQL->database) {
     database = PIKE_MYSQL->database->str;
@@ -153,32 +197,58 @@ static void pike_mysql_reconnect(void)
   socket = PIKE_MYSQL->socket;
   PIKE_MYSQL->socket = NULL;
 
-  THREADS_ALLOW();
+  MYSQL_ALLOW();
+
+#ifdef HAVE_MYSQL_PORT
+  STUPID_PORT_LOCK();
+#endif /* HAVE_MYSQL_PORT */
 
   if (socket) {
     /* Disconnect the old connection */
     mysql_close(socket);
   }
 
+#ifdef HAVE_MYSQL_PORT
+  if (port) {
+    saved_port = mysql_port;
+    mysql_port = port;
+  }
+#endif /* HAVE_MYSQL_PORT */
+
   socket = mysql_connect(mysql, host, user, password);
 
-  THREADS_DISALLOW();
+#ifdef HAVE_MYSQL_PORT
+  mysql_port = saved_port;
 
+  STUPID_PORT_UNLOCK();
+#endif /* HAVE_MYSQL_PORT */
+
+  MYSQL_DISALLOW();
+
+  if (host) {
+    /* No longer needed */
+    free(host);
+  }
+  
   if (!(PIKE_MYSQL->socket = socket)) {
     error("Mysql.mysql(): Couldn't reconnect to SQL-server\n");
   }
   if (database) {
     int tmp;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_select_db(socket, database);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
 
     if (tmp < 0) {
-      mysql_close(PIKE_MYSQL->socket);
       PIKE_MYSQL->socket = NULL;
+      MYSQL_ALLOW();
+
+      mysql_close(socket);
+
+      MYSQL_DISALLOW();
       error("Mysql.mysql(): Couldn't select database \"%s\"\n", database);
     }
   }
@@ -241,33 +311,59 @@ static void f_create(INT32 args)
 /* int affected_rows() */
 static void f_affected_rows(INT32 args)
 {
+  MYSQL *socket;
+  int count;
+
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
   }
   pop_n_elems(args);
-  push_int(mysql_affected_rows(PIKE_MYSQL->socket));
+  socket = PIKE_MYSQL->socket;
+
+  MYSQL_ALLOW();
+  count = mysql_affected_rows(socket);
+  MYSQL_DISALLOW();
+
+  push_int(count);
 }
 
 /* int insert_id() */
 static void f_insert_id(INT32 args)
 {
+  MYSQL *socket;
+  int id;
+
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
   }
   pop_n_elems(args);
-  push_int(mysql_insert_id(PIKE_MYSQL->socket));
+
+  socket = PIKE_MYSQL->socket;
+
+  MYSQL_ALLOW();
+  id = mysql_insert_id(socket);
+  MYSQL_DISALLOW();
+
+  push_int(id);
 }
 
 /* int|string error() */
 static void f_error(INT32 args)
 {
+  MYSQL *socket;
   char *error_msg;
 
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
   }
 
-  error_msg = mysql_error(PIKE_MYSQL->socket);
+  socket = PIKE_MYSQL->socket;
+
+  MYSQL_ALLOW();
+
+  error_msg = mysql_error(socket);
+
+  MYSQL_DISALLOW();
 
   pop_n_elems(args);
 
@@ -295,11 +391,11 @@ static void f_select_db(INT32 args)
   database = sp[-args].u.string->str;
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_select_db(socket, database);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || (tmp < 0)) {
     /* The connection might have been closed. */
@@ -307,16 +403,22 @@ static void f_select_db(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_select_db(socket, database);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (tmp < 0) {
+    char *err;
+
+    MYSQL_ALLOW();
+    err = mysql_error(socket);
+    MYSQL_DISALLOW();
+
     error("mysql->select_db(): Couldn't select database \"%s\" (%s)\n",
-	  sp[-args].u.string->str, mysql_error(PIKE_MYSQL->socket));
+	  sp[-args].u.string->str, err);
   }
   if (PIKE_MYSQL->database) {
     free_string(PIKE_MYSQL->database);
@@ -347,7 +449,7 @@ static void f_big_query(INT32 args)
   qlen = sp[-args].u.string->len;
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
 #ifdef HAVE_MYSQL_REAL_QUERY
     tmp = mysql_real_query(socket, query, qlen);
@@ -355,7 +457,7 @@ static void f_big_query(INT32 args)
     tmp = mysql_query(socket, query);
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || (tmp < 0)) {
     /* The connection might have been closed. */
@@ -363,7 +465,7 @@ static void f_big_query(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
 #ifdef HAVE_MYSQL_REAL_QUERY
     tmp = mysql_real_query(socket, query, qlen);
@@ -371,26 +473,38 @@ static void f_big_query(INT32 args)
     tmp = mysql_query(socket, query);
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (tmp < 0) {
+    char *err;
+
+    MYSQL_ALLOW();
+    err = mysql_error(socket);
+    MYSQL_DISALLOW();
+
     error("mysql->big_query(): Query \"%s\" failed (%s)\n",
-	  sp[-args].u.string->str, mysql_error(PIKE_MYSQL->socket));
+	  sp[-args].u.string->str, err);
   }
 
-  THREADS_ALLOW();
+  MYSQL_ALLOW();
 
   /* The same thing applies here */
 
   result = mysql_store_result(socket);
 
-  THREADS_DISALLOW();
+  MYSQL_DISALLOW();
 
   pop_n_elems(args);
 
   if (!(PIKE_MYSQL->last_result = result)) {
-    if (mysql_num_fields(socket) && mysql_error(socket)[0]) {
+    int err;
+
+    MYSQL_ALLOW();
+    err = (mysql_num_fields(socket) && mysql_error(socket)[0]);
+    MYSQL_DISALLOW();
+
+    if (err) {
       error("mysql->big_query(): Couldn't create result for query\n");
     }
     /* query was INSERT or similar - return 0 */
@@ -426,11 +540,11 @@ static void f_create_db(INT32 args)
   database = sp[-args].u.string->str;
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_create_db(socket, database);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
@@ -438,11 +552,11 @@ static void f_create_db(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_create_db(socket, database);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (tmp < 0) {
@@ -473,11 +587,11 @@ static void f_drop_db(INT32 args)
   database = sp[-args].u.string->str;
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_drop_db(socket, database);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
@@ -485,11 +599,11 @@ static void f_drop_db(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_drop_db(socket, database);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }    
 
   if (tmp < 0) {
@@ -507,11 +621,11 @@ static void f_shutdown(INT32 args)
   int tmp = -1;
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
   
     tmp = mysql_shutdown(socket);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
@@ -519,11 +633,11 @@ static void f_shutdown(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
   
     tmp = mysql_shutdown(socket);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (tmp < 0) {
@@ -540,11 +654,11 @@ static void f_reload(INT32 args)
   int tmp = -1;
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_reload(socket);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || (tmp < 0)) {
     /* The connection might have been closed */
@@ -552,11 +666,11 @@ static void f_reload(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     tmp = mysql_reload(socket);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (tmp < 0) {
@@ -579,11 +693,11 @@ static void f_statistics(INT32 args)
 
   pop_n_elems(args);
 
-  THREADS_ALLOW();
+  MYSQL_ALLOW();
 
   stats = mysql_stat(socket);
 
-  THREADS_DISALLOW();
+  MYSQL_DISALLOW();
 
   push_text(stats);
 }
@@ -603,11 +717,11 @@ static void f_server_info(INT32 args)
 
   push_text("mysql/");
 
-  THREADS_ALLOW();
+  MYSQL_ALLOW();
 
   info = mysql_get_server_info(socket);
 
-  THREADS_DISALLOW();
+  MYSQL_DISALLOW();
 
   push_text(info);
   f_add(2);
@@ -616,25 +730,45 @@ static void f_server_info(INT32 args)
 /* string host_info() */
 static void f_host_info(INT32 args)
 {
+  MYSQL *socket;
+  char *info;
+
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
   }
 
+  socket = PIKE_MYSQL->socket;
+
   pop_n_elems(args);
 
-  push_text(mysql_get_host_info(PIKE_MYSQL->socket));
+  MYSQL_ALLOW();
+
+  info = mysql_get_host_info(socket);
+
+  MYSQL_DISALLOW();
+
+  push_text(info);
 }
 
 /* int protocol_info() */
 static void f_protocol_info(INT32 args)
 {
+  MYSQL *socket;
+  int prot;
+
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
   }
 
   pop_n_elems(args);
 
-  push_int(mysql_get_proto_info(PIKE_MYSQL->socket));
+  socket = PIKE_MYSQL->socket;
+
+  MYSQL_ALLOW();
+  prot = mysql_get_proto_info(socket);
+  MYSQL_DISALLOW();
+
+  push_int(prot);
 }
 
 /* object(mysql_res) list_dbs(void|string wild) */
@@ -656,11 +790,11 @@ static void f_list_dbs(INT32 args)
   }
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_dbs(socket, wild);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || !result) {
     /* The connection might have been closed */
@@ -668,16 +802,23 @@ static void f_list_dbs(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_dbs(socket, wild);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (!(PIKE_MYSQL->last_result = result)) {
-    error("mysql->list_dbs(): Cannot list databases: %s\n",
-	  mysql_error(socket));
+    char *err;
+
+    MYSQL_ALLOW();
+
+    err = mysql_error(socket);
+
+    MYSQL_DISALLOW();
+
+    error("mysql->list_dbs(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -707,11 +848,11 @@ static void f_list_tables(INT32 args)
   }
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_tables(socket, wild);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || !result) {
     /* The connection might have been closed */
@@ -719,16 +860,23 @@ static void f_list_tables(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_tables(socket, wild);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (!(PIKE_MYSQL->last_result = result)) {
-    error("mysql->list_tables(): Cannot list databases: %s\n",
-	  mysql_error(PIKE_MYSQL->socket));
+    char *err;
+
+    MYSQL_ALLOW();
+
+    err =  mysql_error(socket);
+
+    MYSQL_DISALLOW();
+
+    error("mysql->list_tables(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -774,11 +922,11 @@ static void f_list_fields(INT32 args)
   }
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_fields(socket, table, wild);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || !result) {
     /* The connection might have been closed */
@@ -786,19 +934,28 @@ static void f_list_fields(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_fields(socket, table, wild);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (!result) {
-    error("mysql->list_fields(): Cannot list databases: %s\n",
-	  mysql_error(PIKE_MYSQL->socket));
+    char *err;
+
+    MYSQL_ALLOW();
+
+    err = mysql_error(socket);
+
+    MYSQL_DISALLOW();
+
+    error("mysql->list_fields(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
+
+  /* FIXME: Should have MYSQL_{DIS,}ALLOW() here */
 
   while ((field = mysql_fetch_field(result))) {
     mysqlmod_parse_field(field, 1);
@@ -816,11 +973,11 @@ static void f_list_processes(INT32 args)
   pop_n_elems(args);
 
   if (socket) {
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_processes(socket);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
   if (!socket || !result) {
     /* The connection might have been closed */
@@ -828,16 +985,23 @@ static void f_list_processes(INT32 args)
 
     socket = PIKE_MYSQL->socket;
 
-    THREADS_ALLOW();
+    MYSQL_ALLOW();
 
     result = mysql_list_processes(socket);
 
-    THREADS_DISALLOW();
+    MYSQL_DISALLOW();
   }
 
   if (!(PIKE_MYSQL->last_result = result)) {
-    error("mysql->list_processes(): Cannot list databases: %s\n",
-	  mysql_error(PIKE_MYSQL->socket));
+    char *err;
+
+    MYSQL_ALLOW();
+
+    err = mysql_error(socket);
+
+    MYSQL_DISALLOW();
+
+    error("mysql->list_processes(): Cannot list databases: %s\n", err);
   }
 
   push_object(fp->current_object);
@@ -916,6 +1080,10 @@ void pike_module_init(void)
   mysql_program = end_program();
   add_program_constant("mysql", mysql_program, 0);
 
+#ifdef HAVE_MYSQL_PORT
+  STUPID_PORT_INIT();
+#endif /* HAVE_MYSQL_PORT */
+
   init_mysql_res_programs();
 #endif /* HAVE_MYSQL */
 }
@@ -924,6 +1092,10 @@ void pike_module_exit(void)
 {
 #ifdef HAVE_MYSQL
   exit_mysql_res();
+
+#ifdef HAVE_MYSQL_PORT
+  STUPID_PORT_DESTROY();
+#endif /* HAVE_MYSQL_PORT */
 
   if (mysql_program) {
     free_program(mysql_program);
