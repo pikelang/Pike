@@ -19,6 +19,7 @@ struct callback *gc_evaluator_callback=0;
 #include "stuff.h"
 #include "error.h"
 #include "pike_memory.h"
+#include "pike_macros.h"
 
 #include "gc.h"
 #include "main.h"
@@ -251,7 +252,7 @@ void do_gc(void)
 {
   static int in_gc = 0;
   double tmp;
-  INT32 tmp2;
+  INT32 tmp2,tmp3;
   struct marker_chunk *m;
 
   if(in_gc) return;
@@ -282,12 +283,13 @@ void do_gc(void)
   /* init hash , hashsize will be a prime between num_objects/8 and
    * num_objects/4, this will assure that no re-hashing is needed.
    */
-  hashsize=my_log2(num_objects);
+  tmp3=my_log2(num_objects);
 
-  if(!d_flag) hashsize-=2;
+  if(!d_flag) tmp3-=2;
+  if(tmp3<0) tmp3=0;
+  if(tmp3>=(long)NELEM(hashprimes)) tmp3=NELEM(hashprimes)-1;
+  hashsize=hashprimes[tmp3];
 
-  if(hashsize<0) hashsize=0;
-  hashsize=hashprimes[hashsize];
   hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
   MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
   markers_left_in_chunk=0;
