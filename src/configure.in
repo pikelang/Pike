@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.705 2003/03/02 17:41:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.706 2003/03/05 16:18:30 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2388,7 +2388,8 @@ thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
 socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sys/sched.h \
-windows.h float.h errno.h stddef.h mmx.h sys/termio.h sys/termios.h valgrind.h)
+windows.h float.h errno.h stddef.h mmx.h sys/termio.h sys/termios.h valgrind.h \
+sys/prctl.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])
@@ -3179,6 +3180,7 @@ AC_CHECK_FUNCS( \
  usleep \
  nanosleep \
  thr_yield \
+ prctl \
 )
 
 # SunOS 4 realloc() returns NULL when reallocing NULL.
