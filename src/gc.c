@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.59 2000/04/13 23:52:29 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.60 2000/04/14 15:23:45 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -45,7 +45,7 @@ RCSID("$Id: gc.c,v 1.59 2000/04/13 23:52:29 hubbe Exp $");
 INT32 num_objects =0;
 INT32 num_allocs =0;
 INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
-static int in_gc = 0;
+int Pike_in_gc = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
 
@@ -83,7 +83,7 @@ void dump_gc_info(void)
   fprintf(stderr,"Average frees per gc()   : %f\n",objects_freed);
   fprintf(stderr,"Second since last gc()   : %ld\n", (long)TIME(0) - (long)last_gc);
   fprintf(stderr,"Projected garbage        : %f\n", objects_freed * (double) num_allocs / (double) alloc_threshold);
-  fprintf(stderr,"in_gc                    : %d\n", in_gc);
+  fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
 }
 
 TYPE_T attempt_to_identify(void *something)
@@ -615,7 +615,7 @@ static void exit_gc(void)
 #ifdef PIKE_DEBUG
 void locate_references(void *a)
 {
-  if(!in_gc)
+  if(!Pike_in_gc)
     init_gc();
   
   fprintf(stderr,"**Looking for references:\n");
@@ -663,7 +663,7 @@ void locate_references(void *a)
 #endif
 
   
-  if(!in_gc)
+  if(!Pike_in_gc)
     exit_gc();
 }
 #endif
@@ -726,7 +726,7 @@ int gc_external_mark3(void *a, void *in, char *where)
       int t=attempt_to_identify(a);
       if(t != T_STRING && t != T_UNKNOWN)
       {
-	fprintf(stderr,"EXTERNAL Reference to object to free%s!\n",in?in:"");
+	fprintf(stderr,"EXTERNAL Reference to object to free%s!\n",in?(char *)in:"");
 	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
 	if(where) describe_location(0,T_UNKNOWN,where);
 	describe(a);
@@ -799,9 +799,10 @@ void do_gc(void)
   double tmp;
   INT32 tmp2;
   double multiplier;
+  hrtime_t gcstarttime;
 
-  if(in_gc) return;
-  in_gc=1;
+  if(Pike_in_gc) return;
+  Pike_in_gc=1;
 
   if(gc_evaluator_callback)
   {
@@ -812,8 +813,10 @@ void do_gc(void)
   tmp2=num_objects;
 
 #ifdef PIKE_DEBUG
-  if(t_flag)
+  if(t_flag) {
     fprintf(stderr,"Garbage collecting ... ");
+    gcstarttime = gethrtime();
+  }
   if(num_objects < 0)
     fatal("Panic, less than zero objects!\n");
 #endif
@@ -873,6 +876,7 @@ void do_gc(void)
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();
   gc_free_all_unreferenced_programs();
+  Pike_in_gc=2;
   gc_free_all_unreferenced_objects();
 
 #ifdef PIKE_DEBUG
@@ -905,8 +909,9 @@ void do_gc(void)
 
 #ifdef PIKE_DEBUG
   if(t_flag)
-    fprintf(stderr,"done (freed %ld of %ld objects).\n",
-	    (long)(tmp2-num_objects),(long)tmp2);
+    fprintf(stderr,"done (freed %ld of %ld objects), %ld ms.\n",
+	    (long)(tmp2-num_objects),(long)tmp2,
+	    (long)((gethrtime() - gcstarttime)/1000000));
 #endif
 
 #ifdef ALWAYS_GC
@@ -914,7 +919,7 @@ void do_gc(void)
 #else
   if(d_flag > 3) ADD_GC_CALLBACK();
 #endif
-  in_gc=0;
+  Pike_in_gc=0;
 }
 
 

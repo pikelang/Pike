@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.26 2000/04/13 23:52:29 hubbe Exp $
+ * $Id: gc.h,v 1.27 2000/04/14 15:23:45 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -12,6 +12,7 @@ extern struct pike_queue gc_mark_queue;
 extern INT32 num_objects;
 extern INT32 num_allocs;
 extern INT32 alloc_threshold;
+extern int Pike_in_gc;
 
 extern struct callback *gc_evaluator_callback;
 extern struct callback_list evaluator_callbacks;

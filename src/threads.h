@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.78 2000/03/30 04:39:17 hubbe Exp $
+ * $Id: threads.h,v 1.79 2000/04/14 15:23:45 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -56,6 +56,9 @@ extern int live_threads;
 struct object;
 extern size_t thread_stack_size;
 extern struct object *thread_id;
+
+/* Used by debug code. Avoid pulling in gc.h only for this. */
+extern int Pike_in_gc;
 
 #define DEFINE_MUTEX(X) PIKE_MUTEX_T X
 
@@ -463,8 +466,12 @@ struct thread_state {
 
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp=OBJ2THREAD(thread_id); \
-     DO_IF_DEBUG( if(thread_for_id(th_self()) != thread_id) \
-        fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id) ; ) \
+     DO_IF_DEBUG({ \
+       if(thread_for_id(th_self()) != thread_id) \
+	 fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id); \
+       if (Pike_in_gc == 1) \
+	 fatal("Threads allowed during garbage collection.\n"); \
+     }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
@@ -494,6 +501,12 @@ struct thread_state {
 
 #define THREADS_ALLOW_UID() do { \
      struct thread_state *_tmp_uid=OBJ2THREAD(thread_id); \
+     DO_IF_DEBUG({ \
+       if(thread_for_id(th_self()) != thread_id) \
+	 fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id); \
+       if (Pike_in_gc == 1) \
+	 fatal("Threads allowed during garbage collection.\n"); \
+     }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
        live_threads++; \
