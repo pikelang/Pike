@@ -189,11 +189,13 @@ void f_get_dir(INT32 args)
       struct dirent *tmp;
       int num_files=0;
       char *bufptr=buffer;
-      THREADS_ALLOW();
 
-      if (!(tmp = alloca(pathconf(path, _PC_NAME_MAX) + 1))) {
+      if (!(tmp = alloca(sizeof(struct dirent) + 
+			 pathconf(path, _PC_NAME_MAX) + 1))) {
 	error("get_dir(): Out of memory!\n");
       }
+
+      THREADS_ALLOW();
 
       while(1)
       {
@@ -202,7 +204,7 @@ void f_get_dir(INT32 args)
 	  d=readdir_r(dir, tmp);
 	} while ((!d) && ((errno == EAGAIN)||(errno == EINTR)));
 	if (!d) {
-	  error("get_dir(): readdir_r() failed: %d\n", errno);
+	  break;
 	}
 	if(d->d_name[0]=='.')
 	{
@@ -218,6 +220,9 @@ void f_get_dir(INT32 args)
 	num_files++;
       }
       THREADS_DISALLOW();
+      if (!d) {
+	error("get_dir(): readdir_r() failed: %d\n", errno);
+      }
       for(e=0;e<num_files;e++)
       {
 	push_string(make_shared_binary_string(ptrs[e],lens[e]));
