@@ -1,3 +1,5 @@
+COND_WIDGET(gtk_120);
+
 PROGRAM(handle_box);
 // The contents of a handle box can be 'dragged' out of the box by the user.
 // The contents will then be placed in a separate window.
@@ -35,3 +37,5 @@ CLASSMEMBER(float_window_mapped, int);
 // Is the floating window mapped?
 CLASSMEMBER(handle_position, int);
 // The position of the handle. One of CONST(GTK_POS_)
+
+END_COND_WIDGET(gtk_120);

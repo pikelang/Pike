@@ -199,7 +199,12 @@ main ()
 ])
 
 
-AM_PATH_GTK(1.2.0,[WITH_GTK=1],W[ITH_GTK=0])
+dnl Must be before..
+AC_SUBST(have_gtk_120)
+AM_PATH_GTK(1.2.0,[have_gtk_120=gtk_120],[have_gtk_120=no_gtk_120])
+
+dnl Must be after..
+AM_PATH_GTK(1.1.13,[WITH_GTK=1],W[ITH_GTK=0])
 
 if test "x$WITH_GTK" = x1 ; then
 AC_SUBST(WITH_GTK)
@@ -321,7 +326,7 @@ if test "x$have_GL" = "xyes" ; then
     echo " Warning: Failed to find the GTK GL widget.  "
     echo " GL-support will be disabled.                "
     echo " The widget is available from                "
-    echo " "
+    echo " http://www.student.oulu.fi/~jlof/gtkglarea/ "
     echo "*********************************************"
   fi
 fi

@@ -1,2 +1,3 @@
 @pgtk_has_sheet@
 @pgtk_has_glarea@
+@have_gtk_120@
