@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.20 1998/08/09 13:45:16 grubba Exp $");
+RCSID("$Id: png.c,v 1.21 1998/08/26 16:14:24 per Exp $");
 
 #include "config.h"
 
@@ -1690,14 +1690,16 @@ struct object *init_image_png(void)
      push_text("inflate");
      f_index(2);
      gz_inflate=program_from_svalue(sp-1);
-     add_ref(gz_inflate);
+     if(gz_inflate) 
+       add_ref(gz_inflate);
      pop_stack();
 
      stack_dup();
      push_text("deflate");
      f_index(2);
      gz_deflate=program_from_svalue(sp-1);
-     add_ref(gz_deflate);
+     if(gz_deflate) 
+       add_ref(gz_deflate);
      pop_stack();
 
      stack_dup();
