@@ -1,10 +1,10 @@
-# $Id: configure.in,v 1.59 1998/09/20 08:33:25 hubbe Exp $
+# $Id: configure.in,v 1.60 1998/09/20 17:54:20 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
 AC_MODULE_INIT()
 
-AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h \
+AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h poll.h sys/poll.h \
  sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h sys/param.h \
  sys/socket.h sys/stream.h sys/protosw.h netdb.h sys/sysproto.h winsock.h \
  direct.h sys/wait.h process.h sys/file.h net/netdb.h limits.h unistd.h)
