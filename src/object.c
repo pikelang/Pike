@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.160 2001/01/22 15:06:09 mast Exp $");
+RCSID("$Id: object.c,v 1.161 2001/02/03 01:24:38 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -533,18 +533,20 @@ static void call_destroy(struct object *o, int foo)
 }
 
 
-void low_destruct(struct object *o,int do_free)
+void destruct(struct object *o)
 {
   int e;
   struct program *p;
 
 #ifdef PIKE_DEBUG
+  ONERROR uwp;
+  SET_ONERROR(uwp, fatal_on_error,
+	      "Shouldn't get an exception in destruct().\n");
   if(d_flag > 20) do_debug();
 #endif
 #ifdef GC_VERBOSE
   if (Pike_in_gc > GC_PASS_PREPARE)
-    fprintf(stderr, "|   Destructing %p with %d refs. do_free=%d\n",
-	    o, o->refs, do_free);
+    fprintf(stderr, "|   Destructing %p with %d refs.\n", o, o->refs);
 #endif
 
   add_ref(o);
@@ -555,6 +557,9 @@ void low_destruct(struct object *o,int do_free)
   if(!(p=o->prog))
   {
     free_object(o);
+#ifdef PIKE_DEBUG
+    UNSET_ONERROR(uwp);
+#endif
     return;
   }
   get_destroy_called_mark(o)->p=p;
@@ -580,12 +585,14 @@ void low_destruct(struct object *o,int do_free)
     if(pike_frame->context.prog->exit)
       pike_frame->context.prog->exit(o);
 
+#if 0
     if(!do_free)
     {
       debug_malloc_touch(o);
       debug_malloc_touch(o->storage);
       continue;
     }
+#endif
 
     for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
     {
@@ -625,11 +632,10 @@ void low_destruct(struct object *o,int do_free)
   free_program(p);
 
   remove_destroy_called_mark(o);
-}
 
-PMOD_EXPORT void destruct(struct object *o)
-{
-  low_destruct(o,1);
+#ifdef PIKE_DEBUG
+  UNSET_ONERROR(uwp);
+#endif
 }
 
 
@@ -645,11 +651,8 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
   struct object *o, *next;
 
 #ifdef PIKE_DEBUG
-  ONERROR uwp;
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
-  SET_ONERROR(uwp, fatal_on_error,
-	      "Shouldn't get an exception in destruct_objects_to_destruct.\n");
 #endif
 
   /* We unlink the list from objects_to_destruct before processing it,
@@ -672,8 +675,6 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
 
       /* call destroy, keep one ref */
       add_ref(o);
-      call_destroy(o,0);
-
       destruct(o);
       free_object(o);
     } while ((o = next));
@@ -684,10 +685,6 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback=0;
   }
-
-#ifdef PIKE_DEBUG
-  UNSET_ONERROR(uwp);
-#endif
 }
 
 
@@ -1169,7 +1166,7 @@ void cleanup_objects(void)
       debug_malloc_touch(o);
       debug_malloc_touch(o->storage);
       call_destroy(o,1);
-      low_destruct(o,1);
+      destruct(o);
     } else {
       debug_malloc_touch(o);
     }
@@ -1510,7 +1507,7 @@ void gc_free_all_unreferenced_objects(void)
 	  !find_destroy_called_mark(o))
 	gc_fatal(o,0,"Can't free a live object in gc_free_all_unreferenced_objects().\n");
 #endif
-      low_destruct(o,1);
+      destruct(o);
 
       gc_free_extra_ref(o);
       SET_NEXT_AND_FREE(o,free_object);
