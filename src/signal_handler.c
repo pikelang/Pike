@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.241 2003/02/28 19:32:31 grubba Exp $
+|| $Id: signal_handler.c,v 1.242 2003/03/01 13:51:43 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.241 2003/02/28 19:32:31 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.242 2003/03/01 13:51:43 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -142,6 +142,27 @@ RCSID("$Id: signal_handler.c,v 1.241 2003/02/28 19:32:31 grubba Exp $");
 #ifndef WUNTRACED
 #define WUNTRACED	0
 #endif /* !WUNTRACED */
+
+#ifdef HAVE_PTRACE
+/* BSDs have different names for these constants...
+ */
+#ifndef PTRACE_CONT
+#ifdef PT_CONTINUE
+#define PTRACE_CONT	PT_CONTINUE
+#else
+#define PTRACE_CONT	7
+#endif
+#endif
+
+#ifndef PTRACE_TRACEME
+#ifdef PT_TRACE_ME
+#define PTRACE_TRACEME	PT_TRACE_ME
+#else
+#define PTRACE_TRACEME	0
+#endif
+#endif
+
+#endif /* HAVE_PTRACE */
 
 /* Number of EBADF's before the set_close_on_exec() loop terminates. */
 #ifndef PIKE_BADF_LIMIT
