@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.126 1998/10/21 22:01:01 grubba Exp $");
+RCSID("$Id: file.c,v 1.127 1998/10/22 00:10:13 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -551,7 +551,7 @@ static struct pike_string *do_read_oob(int fd,
     
     if(!IS_ZERO(& THIS->read_oob_callback))
     {
-      set_read_callback(FD, file_read_oob_callback, THIS);
+      set_read_oob_callback(FD, file_read_oob_callback, THIS);
       SET_INTERNAL_REFERENCE(THIS);
     }
 
@@ -560,8 +560,8 @@ static struct pike_string *do_read_oob(int fd,
       return end_shared_string(str);
     }else{
       struct pike_string *foo; /* Per */
-      foo = make_shared_binary_string(str->str,bytes_read);
-      free((char *)str);
+      foo = make_shared_binary_string(str->str, bytes_read);
+      free_string(end_shared_string(str));
       return foo;
     }
     
@@ -623,7 +623,7 @@ static struct pike_string *do_read_oob(int fd,
     UNSET_ONERROR(ebuf);
     if(!IS_ZERO(& THIS->read_oob_callback))
     {
-      set_read_callback(FD, file_read_oob_callback, THIS);
+      set_read_oob_callback(FD, file_read_oob_callback, THIS);
       SET_INTERNAL_REFERENCE(THIS);
     }
     return low_free_buf(&b);
