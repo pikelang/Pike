@@ -270,7 +270,7 @@ peep.o: $(SRCDIR)/peep_engine.c
 depend: $(SRCDIR)/language.c
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
-	$(SRCDIR)/configure
+	$(SRCDIR)/configure @ac_configure_args@
 
 docs:
 	mkdir docs
