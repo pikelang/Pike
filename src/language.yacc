@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.242 2001/04/01 15:40:23 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.243 2001/04/03 11:48:16 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -148,7 +148,7 @@ int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *, struct pike_type *, node *);
 static node *lexical_islocal(struct pike_string *);
- static void safe_inc_enum(void);
+static void safe_inc_enum(void);
 
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -2438,7 +2438,7 @@ enum_def: /* EMPTY */
   {
     if ($1) {
       add_constant($1->u.sval.u.string, Pike_sp-1,
-		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_LOCAL);
     }
     free_node($1);
     /* Update the type. */
@@ -2476,7 +2476,7 @@ enum: modifiers TOK_ENUM
     if ($4) {
       ref_push_type_value(t);
       add_constant($4->u.sval.u.string, Pike_sp-1,
-		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_LOCAL);
       pop_stack();
       free_node($4);
     }
@@ -2497,7 +2497,7 @@ typedef: modifiers TOK_TYPEDEF full_type simple_identifier ';'
     if ($4) {
       ref_push_type_value(t);
       add_constant($4->u.sval.u.string, Pike_sp-1,
-		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+		   (Pike_compiler->current_modifiers & ~ID_EXTERN) | ID_LOCAL);
       pop_stack();
       free_node($4);
     }
