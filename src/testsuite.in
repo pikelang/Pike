@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.290 2000/03/30 09:54:18 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.291 2000/03/30 19:43:01 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -129,6 +129,18 @@ test_compile_any([[
   constant FOO = 0;
   mapping(int:string) foo = ([FOO: "foo"]);
 ]])
+
+test_compile_any([[
+  function(...:int) foo;
+]]);
+
+test_compile_any([[
+  function(,...:int) foo;
+]]);
+
+test_compile_any([[
+  function(string,...:int) foo;
+]]);
 
 test_any([[return class Z {
 string bonk() { return "oiff"; }
