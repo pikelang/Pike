@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.51 1999/10/24 14:35:50 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.52 1999/10/25 21:43:00 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -894,7 +894,9 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	  
 
 	  push_int('O');
-	  f_aggregate_mapping(0);					      
+	  push_constant_text("indent");
+	  push_int(indent);
+	  f_aggregate_mapping(2);					      
 	  safe_apply_low(s->u.object, fun ,2);
 
 	  if(!IS_ZERO(sp-1))
