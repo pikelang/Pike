@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Gdbm.pike,v 1.6 2001/01/01 22:49:43 kinkie Exp $
+ * $Id: Gdbm.pike,v 1.7 2001/01/02 17:53:09 grubba Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -127,7 +127,7 @@ int(0..0)|Cache.Data get(string key,void|int notouch) {
   string metadata=metadb[key];
   Data rv;
   if (!metadata) return 0;      // no such key in cache.
-  rv=(Data(key,db,metadb,metadata);
+  rv = Data(key,db,metadb,metadata);
   if (!notouch) {
     rv->touch();
   }
