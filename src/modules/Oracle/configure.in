@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.2 1997/05/17 21:49:08 marcus Exp $
+# $Id: configure.in,v 1.3 1997/05/19 13:27:21 marcus Exp $
 #
 # Configure script for the oracle module
 #
@@ -127,13 +127,49 @@ if test x$with_oracle = xyes; then
 
   AC_MSG_RESULT($oracle_include_dir)
 
+  AC_MSG_CHECKING(for sysliblist)
+
+  AC_CACHE_VAL(pike_cv_oracle_sysliblist, [
+
+    echo no > conftest
+
+    if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist"; then
+
+      echo "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist" > conftest
+
+    else
+      if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
+      
+        sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
+          if test -d "$dir/." -a -f "$dir/rdbms/lib/sysliblist"; then
+  	    echo "$dir/rdbms/lib/sysliblist" > conftest
+	    break
+          else
+	    :
+          fi
+        done
+      fi
+    fi
+
+    IFS="" read oracle_sysliblist < conftest
+
+    if test x"$oracle_sysliblist" = xno; then
+      pike_cv_oracle_sysliblist=""
+    else
+      IFS="" read pike_cv_oracle_sysliblist < "$oracle_sysliblist"
+    fi
+  ])
+
+  AC_MSG_RESULT($pike_cv_oracle_sysliblist)
+
+  rm -f conftest
+  AC_CHECK_LIB(aio, aioread, [oracle_aio=-laio], [oracle_aio=""])
+
   if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
 
     CPPFLAGS="-I\"$oracle_include_dir\" ${CPPFLAGS}"
 
-    dnl ORACLE_LIBS="-L\"$oracle_lib_dir\" -lclient -lnlsrtl3 -lcommon -lsqlnet -lnlsrtl3 -lcore3 -lcommon -lnlsrtl3 -lgeneric -lcv6 -lnlsrtl3 -lncr -lcore3 -lsqlnet -lepc"
-
-    ORACLE_LIBS="-L\"$oracle_lib_dir\" -lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 -lsocket -lnsl -lm -ldl -laio -lm -lcore3"
+    ORACLE_LIBS="-L\"$oracle_lib_dir\" -lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
 
     AC_DEFINE(HAVE_ORACLE)
 
