@@ -1,5 +1,5 @@
 ;;; pike.el -- Major mode for editing Pike and other LPC files.
-;;; $Id: pike.el,v 1.4 1999/08/13 15:31:17 mast Exp $
+;;; $Id: pike.el,v 1.5 1999/08/14 03:57:27 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -218,27 +218,47 @@ The name is assumed to begin with a capital letter.")
 	    ;; if they also are followed by an expression.
 	    ;; Expressions beginning with a unary numerical operator,
 	    ;; e.g. +, can't be cast to an object type.
-	    (list (concat pike-font-lock-class-name-regexp
-			  ;;"\\s *\\(\\[\\s *\\]\\s *\\)*"
-			  (concat "\\("
-				  (concat (concat "\\("
-						  "\)*\\s *\\.\\.\\."
-						  "\\|"
-						  "[,:|]"
-						  "\\)?")
-					  "\\s *"
-					  "\\(`\\|\\<\\|$\\)")
-				  "\\|"
-				  (concat "\)\\s *"
-					  "\\([\(\"]\\|\\<\\)")
-				  "\\|"
-				  "\\s *$"
-				  "\\)"))
-		  '(1 font-lock-type-face)
+	    (list (concat
+		   (concat "\\("
+			   pike-font-lock-class-name-regexp
+			   "\\|"
+			   (concat
+			    "object("
+			    "\\(\\sw+\\.\\)*"
+			    pike-font-lock-identifier-regexp
+			    ")")
+			   "\\)")
+		   ;;"\\s *\\(\\[\\s *\\]\\s *\\)*"
+		   (concat "\\("
+			   (concat
+			    (concat "\\("
+				    "\)*\\s *\\.\\.\\."
+				    "\\|"
+				    (concat
+				     "[,:|]"
+				     (concat "\\("
+					     "[" capital-letter "]"
+					     "\\|"
+					     pike-font-lock-type-regexp
+					     "\\)")
+				     "\\([,:|\(]\\|\\sw\\)*\)")
+				    "\\)?")
+			    "\\s *"
+			    "\\(`\\|\\<\\|$\\)")
+			   "\\|"
+			   (concat
+			    "\)\\s *"
+			    "\\([\(\"]\\|\\<\\)")
+			   "\\|"
+			   "\\s *$"
+			   "\\)"))
+		  '(2 font-lock-type-face nil t)
+		  '(4 font-lock-type-face nil t)
 		  (list (concat "\\=" pike-font-lock-identifier-regexp
 				"\\.")
 			'(progn
-			   (goto-char (match-beginning 0))
+			   (goto-char (or (match-beginning 2)
+					  (match-beginning 4)))
 			   (while (or (= (preceding-char) ?.)
 				      (= (char-syntax (preceding-char)) ?w))
 			     (backward-char)))
@@ -298,19 +318,25 @@ The name is assumed to begin with a capital letter.")
        (goto-char (match-beginning 1))
        (not (looking-at
 	     (concat pike-font-lock-class-name-regexp
-		     "\\s *\\(\\[\\s *\\]\\s *\\)*\\<")))))
+		     ;;"\\s *\\(\\[\\s *\\]\\s *\\)*\\<")))))
+		     "\\s *\\<")))))
    (save-match-data
-     (condition-case nil
-	 (save-restriction
-	   (narrow-to-region (point-min) limit)
-	   (goto-char (match-end 0))
-	   ;; Note: Both `scan-sexps' and the second goto-char can
-	   ;; generate an error which is caught by the
-	   ;; `condition-case' expression.
-	   (while (not (looking-at "\\s *\\(\\(,\\)\\|;\\|$\\)"))
-	     (goto-char (or (scan-sexps (point) 1) (point-max))))
-	   (goto-char (match-end 2)))   ; non-nil
-       (error (goto-char limit))))))
+     (let ((start (match-end 0)))
+       (condition-case nil
+	   (save-restriction
+	     (narrow-to-region (point-min) limit)
+	     (goto-char start)
+	     ;; Note: Both `scan-sexps' and the second goto-char can
+	     ;; generate an error which is caught by the
+	     ;; `condition-case' expression.
+	     (while (not (looking-at "\\s *\\(\\(,\\)\\|;\\|$\\)"))
+	       (goto-char (or (scan-sexps (point) 1) (point-max))))
+	     (goto-char (match-end 2))) ; non-nil
+	 (error
+	  (goto-char start)
+	  (if (not (looking-at "\\s *("))
+	      (goto-char limit)
+	    t)))))))
 
 ;; XEmacs way.
 (put 'pike-mode 'font-lock-defaults 
