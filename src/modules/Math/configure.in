@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 2003/03/04 16:05:04 grubba Exp $
+# $Id: configure.in,v 1.8 2003/12/25 13:53:10 mirar Exp $
 AC_INIT(math_module.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(fftw,     [  --with(out)-fftw       Support for fftw],[],[with_fftw=yes])
@@ -25,12 +25,9 @@ if test x$with_fftw = xyes ; then
     AC_CHECK_LIB(fftw, fftw,,,-lm)
     AC_CHECK_LIB(rfftw, rfftw,,,-lm)
 
-    dnl Checks for typedefs, structures, and compiler characteristics.
-
-    dnl Checks for library functions.
-    AC_HEADER_STDC
-    if test "$ac_cv_lib_fftw_rfftw" = "yes"; then
-      PIKE_FEATURE_OK(Math.Transforms.FFT)
+    if test "$ac_cv_lib_rfftw_rfftw" = "yes" -a \
+            "$ac_cv_lib_fftw_fftw" = "yes"; then
+        PIKE_FEATURE(Math.Transforms.FFT,[yes])
     fi
   fi
 fi
