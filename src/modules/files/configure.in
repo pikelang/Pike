@@ -137,6 +137,8 @@ AC_TRY_RUN([
 #include <signal.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <unistd.h>
+#include <sys/time.h>
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -153,7 +155,7 @@ int main()
   FD_ZERO(&tmp);
   FD_SET(fds[1], &tmp);
   alarm(5);
-  if(select(fds[1]+1,&tmp, 0,0,0)>0 && FD_ISSET(fds[1]))
+  if(select(fds[1]+1,&tmp, 0,0,0)>0 && FD_ISSET(fds[1], &tmp))
     exit(0);
   exit(1);
 }
