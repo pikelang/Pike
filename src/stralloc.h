@@ -14,7 +14,7 @@
 #endif
 struct pike_string
 {
-  SIZE_T refs;
+  INT32 refs;
   INT32 len;
   unsigned INT32 hval;
   struct pike_string *next; 
@@ -25,7 +25,7 @@ struct pike_string
 struct pike_string *debug_findstring(const struct pike_string *foo);
 #endif
 
-#define free_string(s) do{ struct pike_string *_=(s); if(!--_->refs) really_free_string(_); }while(0)
+#define free_string(s) do{ struct pike_string *_=(s); if(--_->refs<=0) really_free_string(_); }while(0)
 
 #define my_hash_string(X) ((unsigned long)(X))
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))
@@ -60,6 +60,7 @@ struct pike_string *string_replace(struct pike_string *str,
 void init_shared_string_table();
 void cleanup_shared_string_table();
 void count_memory_in_strings(INT32 *num, INT32 *size);
+void gc_mark_all_strings();
 /* Prototypes end here */
 
 #endif /* STRALLOC_H */

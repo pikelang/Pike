@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.23 1997/01/26 22:49:40 per Exp $");
+RCSID("$Id: file.c,v 1.24 1997/01/28 03:28:45 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1336,12 +1336,29 @@ void exit_files()
   free_program(file_program);
 }
 
+void mark_ids(struct callback *foo, void *bar, void *gazonk)
+{
+  int e;
+  for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
+  {
+    gc_check_svalues( & files[e].id, 1);
+    gc_check_svalues( & files[e].close_callback, 1);
+  }
+}
 
 void init_files_programs()
 {
+  int e;
+  for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
+  {
+    init_fd(e, 0);
+    files[e].refs=0;
+  }
+
   init_fd(0, FILE_READ);
   init_fd(1, FILE_WRITE);
   init_fd(2, FILE_WRITE);
+
 
   start_new_program();
   add_storage(sizeof(struct file_struct));
@@ -1391,5 +1408,7 @@ void init_files_programs()
   file_program->refs++;
 
   port_setup_program();
+
+  add_gc_callback(mark_ids, 0, 0);
 }
 

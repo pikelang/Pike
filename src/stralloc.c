@@ -201,6 +201,18 @@ void unlink_pike_string(struct pike_string *s)
 
 void really_free_string(struct pike_string *s)
 {
+#ifdef DEBUG
+  extern int d_flag;
+  if(d_flag > 2)
+  {
+    if(s->next == (struct pike_string *)-1)
+      fatal("Freeing shared string again!\n");
+      
+    unlink_pike_string(s);
+    s->next=(struct pike_string *)-1;
+    return;
+  }
+#endif
   unlink_pike_string(s);
   free((char *)s);
 }
@@ -548,3 +560,17 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
   num[0]=num_;
   size[0]=size_;
 }
+
+#ifdef GC2
+
+void gc_mark_all_strings()
+{
+  unsigned INT32 e;
+  if(!base_table) return;
+  for(e=0;e<htable_size;e++)
+  {
+    struct pike_string *p;
+    for(p=base_table[e];p;p=p->next) gc_is_referenced(p);
+  }
+}
+#endif

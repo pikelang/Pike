@@ -166,7 +166,7 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
   case BIT_FUNCTION:
     while(--num>=0)
     {
-      if(s->u.refs[0]--==0)
+      if(s->u.refs[0]-- <= 0)
       {
 	if(s->subtype == FUNCTION_BUILTIN)
 	  really_free_callable(s->u.efun);
@@ -833,12 +833,27 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
   INT32 e;
   TYPE_FIELD f;
   f=0;
+
   for(e=0;e<num;e++,s++)
   {
+    check_type(s->type);
+    check_refs(s);
+    
     switch(s->type)
     {
     case T_FUNCTION:
-      if(s->subtype == FUNCTION_BUILTIN) break;
+      if(s->subtype == FUNCTION_BUILTIN)
+      {
+	if(d_flag)
+	{
+	  if(!gc_check(s->u.efun))
+	  {
+	    gc_check(s->u.efun->name);
+	    gc_check(s->u.efun->type);
+	  }
+	}
+	break;
+      }
 
     case T_OBJECT:
       if(s->u.object->prog)
@@ -851,12 +866,15 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
       }
       break;
 
+    case T_STRING:
+      if(!d_flag) break;
     case T_PROGRAM:
     case T_ARRAY:
     case T_MULTISET:
     case T_MAPPING:
       gc_check(s->u.refs);
       break;
+
     }
     f|= 1 << s->type;
   }
@@ -882,6 +900,8 @@ void gc_check_short_svalue(union anything *u, TYPE_T type)
     }
     break;
 
+  case T_STRING:
+    if(!d_flag) break;
   case T_ARRAY:
   case T_MULTISET:
   case T_MAPPING:
