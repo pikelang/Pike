@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.7 2002/10/11 01:39:53 nilsson Exp $
+|| $Id: acconfig.h,v 1.8 2003/04/30 18:03:14 grubba Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -20,5 +20,8 @@
 
 /* Define this if you don't have image transformation capabilities in jpeglib*/
 #undef TRANSFORMS_NOT_SUPPORTED
+
+/* Define this if your <jconfig.h> sets HAVE_BOOLEAN */
+#undef HAVE_JCONFIG_H_HAVE_BOOLEAN
 
 #endif

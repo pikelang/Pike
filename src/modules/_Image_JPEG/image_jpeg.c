@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.61 2003/04/30 17:36:05 grubba Exp $
+|| $Id: image_jpeg.c,v 1.62 2003/04/30 18:03:14 grubba Exp $
 */
 
 #include "global.h"
@@ -34,6 +34,7 @@
 #undef FAR
 #endif
 
+#ifdef HAVE_JCONFIG_H_HAVE_BOOLEAN
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #ifdef HAVE_WTYPES_H
@@ -41,6 +42,7 @@
  * So we need this one to get the boolean typedef.
  */
 #include <wtypes.h>
+#endif
 #endif
 #endif
 
@@ -57,7 +59,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.61 2003/04/30 17:36:05 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.62 2003/04/30 18:03:14 grubba Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.

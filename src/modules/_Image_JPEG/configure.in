@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.18 2003/04/30 17:36:05 grubba Exp $
+# $Id: configure.in,v 1.19 2003/04/30 18:03:14 grubba Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -11,7 +11,7 @@ PIKE_FEATURE_WITHOUT(Image.JPEG)
 
 if test x$with_jpeglib = xyes ; then
   PIKE_FEATURE_NODEP(Image.JPEG)
-  AC_CHECK_HEADERS(windows.h wtypes.h jpeglib.h)
+  AC_CHECK_HEADERS(windows.h wtypes.h jpeglib.h jconfig.h)
   if test $ac_cv_header_jpeglib_h = yes ; then
     AC_CHECK_LIB(jpeg, jpeg_CreateCompress, [
       AC_DEFINE(HAVE_LIBJPEG) 
@@ -88,6 +88,26 @@ int main() {
     AC_MSG_RESULT($pike_cv_marker_list)
     if test "x$pike_cv_marker_list" = "xno"; then
       AC_DEFINE(TRANSFORMS_NOT_SUPPORTED)
+    else :; fi
+    if test "x$ac_cv_header_jconfig_h$ac_cv_header_windows_h" = "xyesyes"; then
+      # <jconfig.h> is likely to have been generated without
+      # WIN32_LEAN_AND_MEAN, and will thus believe that the
+      # typedef 'boolean' is set.
+      AC_MSG_CHECKING(if jconfig.h claims HAVE_BOOLEAN)
+      AC_CACHE_VAL(pike_cv_jconfig_have_boolean, [
+	AC_EGREP_CPP(yes, [
+#include <jconfig.h>
+#ifdef HAVE_BOOLEAN
+yes
+#endif
+        ], pike_cv_jconfig_have_boolean=yes, pike_cv_jconfig_have_boolean=no)
+      ])
+      if test "x$pike_cv_jconfig_have_boolean" = "xyes"; then
+        AC_DEFINE(HAVE_JCONFIG_H_HAVE_BOOLEAN)
+	AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+      fi
     else :; fi
   fi
 fi
