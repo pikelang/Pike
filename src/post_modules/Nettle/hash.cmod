@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.12 2003/08/05 18:15:41 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.13 2003/08/26 11:14:48 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -16,8 +16,9 @@ RCSID("$Id: hash.cmod,v 1.12 2003/08/05 18:15:41 nilsson Exp $");
 #include "nettle.h"
 
 #include <nettle/md5.h>
-#ifdef HAVE_MD4_INIT
+#ifdef HAVE_NETTLE_MD4_INIT
 #include <nettle/md4.h>
+#include <nettle/md2.h>
 #endif
 #include <nettle/sha.h>
 #include <nettle/nettle-meta.h>
@@ -245,7 +246,7 @@ PIKECLASS MD5_State
 }
 /*! @endclass MD5_State */
 
-#ifdef HAVE_MD4_INIT
+#ifdef HAVE_NETTLE_MD4_INIT
 
 /*! @class MD4_Info
  *!
@@ -293,13 +294,65 @@ PIKECLASS MD4_State
 
       assert(instance);
 
-      md5_init(&THIS->md4);
+      md4_init(&THIS->md4);
       instance->ctx = &THIS->md4;
     }
 }
 /*! @endclass MD4_State */
 
-#endif /* HAVE_MD4_INIT */
+/*! @class MD2_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with HashInfo. */
+
+PIKECLASS MD2_Info
+{
+  INIT
+    {
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
+
+      werror("MD2_Info->INIT\n");
+      
+      if (HashInfo && !HashInfo->meta)
+	HashInfo->meta = &nettle_md2;
+      else {
+	/* Can't call Pike_error here. 
+	 * Pike_error("Can't initialize this object.\n"); */
+	werror("MD2_Info->INIT failed\n");
+      }
+    }
+}
+
+/*! @endclass MD2_Info */
+
+/*! @class MD2_State
+ *!
+ *! State for MD2 hashing.
+ */
+PIKECLASS MD2_State
+{
+  INHERIT MD2_Info;
+  INHERIT HashState;
+  CVAR struct md2_ctx md2;
+
+  INIT
+    {
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
+      werror("MD2_State->INIT\n");
+
+      assert(instance);
+
+      md2_init(&THIS->md2);
+      instance->ctx = &THIS->md2;
+    }
+}
+/*! @endclass MD2_State */
+
+#endif /* HAVE_NETTLE_MD4_INIT */
 
 /*! @class SHA1_Info
  *!
