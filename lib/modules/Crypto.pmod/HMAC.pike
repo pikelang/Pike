@@ -3,6 +3,8 @@
 
 #pike __REAL_VERSION__
 
+#if constant(Crypto.Hash)
+
 static .Hash H;  // hash object
 
 // B is the size of one compression block, in octets.
@@ -76,3 +78,4 @@ class `()
     }
 }
 
+#endif
