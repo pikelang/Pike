@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.52 2004/08/09 18:14:18 mast Exp $
+/* $Id: handshake.pike,v 1.53 2004/08/09 19:08:29 grubba Exp $
  *
  */
 
@@ -735,9 +735,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 #ifdef SSL3_DEBUG
 	werror("SSL.handshake: SSL2 hello message received\n");
 #endif
-	int ci_len;
-	int id_len;
-	int ch_len;
+	int ci_len;	// Cipher specs length
+	int id_len;	// Session id length
+	int ch_len;	// Challenge length
 	mixed err;
 	if (err = catch{
 	  version = (remote_version = input->get_fix_uint_array(1, 2)) + ({});
@@ -767,7 +767,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
 	string challenge;
 	if (catch{
+	    // FIXME: Support for restarting sessions?
 	  cipher_suites = input->get_fix_uint_array(3, ci_len/3);
+	  string session = input->get_fix_string(id_len);
 	  challenge = input->get_fix_string(ch_len);
 	} || !input->is_empty()) 
 	{
