@@ -37,7 +37,7 @@ else
 
 <p>This is actually more or less how the interpreter executes the if statement.
 In short, <i>statement1</i> is executed if <i>expression</i> is <b>true</b>
-otherwise <i>statement2</i> is executed. If you are interested in
+otherwise <i>statement2</i> is executed. If you are not interested in
 having something executed if the expression is false you can drop the
 whole else part like this:</p>
 
