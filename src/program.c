@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.375 2001/09/26 23:03:11 hubbe Exp $");
+RCSID("$Id: program.c,v 1.376 2001/09/27 04:59:10 per Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1156,6 +1156,7 @@ void fixate_program(void)
 
   p->flags |= PROGRAM_FIXED;
 
+#ifdef PIKE_DEBUG
   if(Pike_compiler->check_final)
   {
     for(i=0;i<(int)p->num_identifier_references;i++)
@@ -1176,7 +1177,7 @@ void fixate_program(void)
       }
     }
   }
-
+#endif
 #ifdef DEBUG_MALLOC
   {
 #define DBSTR(X) ((X)?(X)->str:"")
@@ -2722,11 +2723,13 @@ void low_inherit(struct program *p,
     name=ID_FROM_PTR(p,&fun)->name;
     fun.inherit_offset += inherit_offset;
 
+#ifdef PIKE_DEBUG
     if (fun.id_flags & ID_NOMASK)
     {
       Pike_compiler->check_final++;
     }
-
+#endif
+    
     if(fun.id_flags & ID_PRIVATE) fun.id_flags|=ID_HIDDEN;
 
     if (fun.id_flags & ID_PUBLIC)
