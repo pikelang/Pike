@@ -2,6 +2,8 @@
 
 #define FUNC_OVERLOAD
 
+// #define PRECOMPILE_OVERLOAD_DEBUG
+
 /*
  * This script is used to process *.cmod files into *.c files, it 
  * reads Pike style prototypes and converts them into C code.
@@ -39,9 +41,25 @@
  *     // Object cleanup code.
  *   }
  *
+ *   GC_RECURSE
+ *   {
+ *     // Code to run under the gc recurse pass.
+ *   }
+ *
+ *   GC_CHECK
+ *   {
+ *     // Code to run under the gc check pass.
+ *   }
+ *
  *   EXTRA
  *   {
  *     // Code for adding extra constants etc.
+ *   }
+ *
+ *   OPTIMIZE
+ *   {
+ *     // Code for optimizing calls that clone the class.
+ *     // The node for the call is available in the variable n.
  *   }
  * }
  *
@@ -54,6 +72,7 @@
  *   efun;          makes this function a global constant (no value)
  *   flags;         ID_STATIC | ID_NOMASK etc.
  *   optflags;      OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
+ *   optfunc;       Optimization function.
  *   type;          Override the pike type in the prototype with this type.
  *                  FIXME: this doesn't quite work
  *   rawtype;       Override the pike type in the prototype with this C-code
@@ -70,8 +89,9 @@
  *
  * AUTOMATIC ALLOCATION AND DEALLOCATION OF CONSTANT STRINGS
  *   You can use the syntax MK_STRING("my string") to refer to
- *   a struct pike_string with the content "my string". Note
- *   that this syntax can not be used in macros.
+ *   a struct pike_string with the content "my string", or the
+ *   syntax MK_STRING_SVALUE("my string") for the same, but a
+ *   full svalue. Note that this syntax can not be used in macros.
  *
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
@@ -140,10 +160,13 @@ mapping(string:string) strings = ([
   "_equal":"lfun_strings[LFUN__EQUAL]",
   "_m_delete":"lfun_strings[LFUN__M_DELETE]",
   "_get_iterator":"lfun_strings[LFUN__GET_ITERATOR]",
+  "`[..]":"lfun_strings[LFUN_RANGE]",
   "_search":"lfun_strings[LFUN__SEARCH]",
 ]);
 int last_str_id = 0;
 array(string) stradd = ({});
+int last_svalue_id = 0;
+mapping(string:string) svalues = ([]);
 
 string parse_string(string str)
 {
@@ -160,7 +183,7 @@ string allocate_string(string orig_str)
   if (str_sym) return str_sym;
 
   if (String.width(str)>8) {
-    error("Automatic allocation of wide strings with MK_STRING() not supported yet.\n");
+    error("Automatic allocation of wide strings with MK_STRING() or MK_STRING_SVALUE() not supported yet.\n");
   }
   int str_id = last_str_id++;
   stradd += ({
@@ -172,6 +195,22 @@ string allocate_string(string orig_str)
   });
   str_sym = strings[str] = sprintf("module_strings[%d]", str_id);
   return str_sym;
+}
+
+string allocate_string_svalue(string orig_str)
+{
+  string str_sym = allocate_string(orig_str);
+  string svalue_sym = svalues[str_sym];
+  if (svalue_sym) return svalue_sym;
+  int svalue_id = last_svalue_id++;
+  stradd += ({
+    sprintf("module_svalues[%d].type = PIKE_T_STRING;\n"
+	    "module_svalues[%d].subtype = 0;\n"
+	    "copy_shared_string(module_svalues[%d].u.string, %s);\n",
+	    svalue_id, svalue_id, svalue_id, str_sym),
+  });
+  svalue_sym = svalues[str_sym] = sprintf("(module_svalues+%d)", svalue_id);
+  return svalue_sym;
 }
 
 /*
@@ -366,9 +405,10 @@ class PikeType
       case "type":
       case "program":
       case "mixed":
+      case "void":
 	return ret;
 
-	default:  return "object";
+	default: return "object";
       }
     }
 
@@ -431,6 +471,7 @@ class PikeType
       case "mapping":
       case "multiset":
       case "type":
+      case "void":
 	return ({ ret });
 
 	default:  return ({ "object" });
@@ -473,12 +514,14 @@ class PikeType
 
   string c_storage_type(int|void is_struct_entry)
     {
-      string btype = may_be_void() ? "mixed" : basetype();
+      string btype = /*may_be_void() ? "mixed" : */basetype();
       switch (btype)
       {
 	case "void": return "void";
-	case "int": return "INT_TYPE";
-	case "float": return "FLOAT_TYPE";
+	case "int":
+	  return may_be_void()?"struct svalue *":"INT_TYPE";
+	case "float":
+	  return may_be_void()?"struct svalue *":"FLOAT_TYPE";
 	case "string": return "struct pike_string *";
 	  
 	case "array":
@@ -584,7 +627,7 @@ class PikeType
 	case "object":  return "tObj";
 	default:
 	  return sprintf("tName(%O, tObjImpl_%s)",
-			 ret, upper_case(ret));
+			 ret, replace(upper_case(ret), ".", "_"));
       }
     }
 
@@ -716,6 +759,7 @@ class PikeType
 
 	  array(array(PC.Token|array(PC.Token|array))) tmp;
 	  tmp=tok/({"|"});
+
 	  if(sizeof(tmp) >1)
 	  {
 	    t=PC.Token("|");
@@ -1016,6 +1060,7 @@ constant valid_attributes = (<
   "efun",
   "flags",
   "optflags",
+  "optfunc",
   "type",
   "rawtype",
   "errname",
@@ -1073,6 +1118,12 @@ mapping parse_attributes(array attr, void|string location)
 	exit(1);
       }
     }
+
+  if(attributes->optfunc && !attributes->efun) {
+    werror("Only efuns may have an optfunc.\n");
+    exit(1);
+  }
+
   return attributes;
 }
 
@@ -1151,12 +1202,14 @@ class FuncData
     }
 };
 
-
+// Returns the number of non-empty equvivalence classes in q.
 int evaluate_method(mixed q)
 {
   int val=0;
   q=values(q) - ({ ({}) });
-//  werror("evaluate: %O\n",q);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("evaluate: %O\n",q);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
   for(int e=0;e<sizeof(q);e++)
   {
     if(q[e] && sizeof(q[e]))
@@ -1166,7 +1219,9 @@ int evaluate_method(mixed q)
       {
 	if(!sizeof(q[e] ^ q[d])) /* equal is broken in some Pikes */
 	{
-//	  werror("EQ, %d %d\n",e,d);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+	  werror("EQ, %d %d\n",e,d);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	  q[d]=0;
 	}
       }
@@ -1191,6 +1246,11 @@ array generate_overload_func_for(array(FuncData) d,
       ({ PC.Token(sprintf("%*nbreak;\n",indent)) });
   }
 
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("generate_overload_func_for(%O, %d, %d, %d, %O, %O)...\n",
+	 d, indent, min_possible_arg, max_possible_arg, name, attributes);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
+
   array out=({});
 
   /* This part should be recursive */
@@ -1199,9 +1259,13 @@ array generate_overload_func_for(array(FuncData) d,
   int max_args=0;
   foreach(d, FuncData q)
     {
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+      werror("LOOP: q:%O, min_args:%O, max_args:%O\n",
+	     q, q->min_args, q->max_args);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
       int low = max(min_possible_arg, q->min_args);
       int high = min(max_possible_arg, q->max_args);
-      for(int a=low;a <= min(high, 255);a++)
+      for(int a = low; a <= min(high, 255); a++)
 	x[a]+=({q});
       min_args=min(min_args, low);
       max_args=max(max_args, high);
@@ -1210,8 +1274,10 @@ array generate_overload_func_for(array(FuncData) d,
   min_args=max(min_args, min_possible_arg);
   max_args=min(max_args, max_possible_arg);
 
-//  werror("MIN: %O\n",min_args);
-//  werror("MAX: %O\n",max_args);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("MIN: %O\n",min_args);
+  werror("MAX: %O\n",max_args);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 
   string argbase="-args";
 
@@ -1226,7 +1292,9 @@ array generate_overload_func_for(array(FuncData) d,
     {
       foreach(d, FuncData q)
 	{
-//	  werror("BT: %s\n",q->args[a]->type()->basetypes()*"|");
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+	  werror("BT: %s\n",q->args[a]->type()->basetypes()*"|");
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	  foreach(q->args[a]->type()->basetypes(), string t)
 	    {
 	      if(!y[a][t]) y[a][t]=({});
@@ -1237,12 +1305,16 @@ array generate_overload_func_for(array(FuncData) d,
 
     best_method=-1;
     best_method_value=evaluate_method(x);
-//    werror("Value X: %d\n",best_method_value);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+    werror("Value X: %d\n",best_method_value);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
     
     for(int a=0;a<sizeof(y);a++)
     {
       int v=evaluate_method(y[a]);
-//      werror("Value %d: %d\n",a,v);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+      werror("Value %d: %d\n",a,v);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
       if(v>best_method_value)
       {
 	best_method=a;
@@ -1251,7 +1323,9 @@ array generate_overload_func_for(array(FuncData) d,
     }
   }
 
-//  werror("Best method=%d\n",best_method);
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+  werror("Best method=%d\n",best_method);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 
   if(best_method == -1)
   {
@@ -1273,6 +1347,9 @@ array generate_overload_func_for(array(FuncData) d,
 	    break;
 	  }
 	}
+#ifdef PRECOMPILE_OVERLOAD_DEBUG
+	werror("Generating code for %d..%d arguments.\n", a, d-1);
+#endif /* PRECOMPILE_OVERLOAD_DEBUG */
 	out+=generate_overload_func_for(tmp,
 					indent+2,
 					a,
@@ -1365,169 +1442,188 @@ class ParseBlock
 
   void create(array(array|PC.Token) x, string base)
     {
-      array(array|PC.Token) ret=x;
-
-      x=ret/({"PIKECLASS"});
-      ret=x[0];
-
-      for(int f=1;f<sizeof(x);f++)
-      {
-	array func=x[f];
-	int p;
-	for(p=0;p<sizeof(func);p++)
-	  if(arrayp(func[p]) && func[p][0]=="{")
-	    break;
-	array proto=func[..p-1];
-	array body=func[p];
-	array rest=func[p+1..];
-	string name=(string)proto[0];
-	string lname = mkname(base, name);
-	mapping attributes=parse_attributes(proto[1..]);
-
-	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
-					 mkname(base, name));
-	string program_var = mkname(base, name, "program");
-
-	string define = make_unique_name("class", base, name, "defined");
-
-	ret+=DEFINE(define);
-	ret+=({sprintf("struct program *%s=0;\n"
-		       "int %s_fun_num=-1;\n",
-		       program_var, program_var)});
-	ret+=subclass->declarations;
-	ret+=subclass->code;
-
-	addfuncs+=
-	  IFDEF(define,
-		({
-		  IFDEF("PROG_"+upper_case(lname)+"_ID",
-			({
-			  sprintf("  START_NEW_PROGRAM_ID(%s);\n",
-				  upper_case(lname)),
-			  "#else\n",
-			  "  start_new_program();\n"
-			})),
-		  IFDEF("tObjImpl_"+upper_case(lname),
-			0,
-			DEFINE("tObjImpl_"+upper_case(lname), "tObj")),
-		})+
-		IFDEF("THIS_"+upper_case(lname),
-		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",lname,lname) }) )+
-		subclass->addfuncs+
-		({
-		  attributes->program_flags?
-		  sprintf("  Pike_compiler->new_program->flags |= %s;\n",
-			  attributes->program_flags):"",
-		  sprintf("  %s=end_program();\n",program_var),
-		  sprintf("  %s_fun_num=add_program_constant(%O,%s,%s);\n",
-			  program_var,
-			  name,
-			  program_var,
-			  attributes->flags || "0"),
-		    })
-	    );
-	exitfuncs+=
-	  IFDEF(define,
-		subclass->exitfuncs+
-	    ({
-	      sprintf("  if(%s) {\n    free_program(%s);\n    %s=0;\n  }\n",
-		      program_var,program_var,program_var),
-	      }));
-
-	ret+=rest;
-      }
-
-      x=ret/({"INHERIT"});
-      ret = x[0];
-      for (int f = 1; f < sizeof(x); f++)
-      {
-	array inh=x[f];
-	int pos=search(inh,PC.Token(";",0),);
-	mixed name=inh[0];
-	array rest=inh[pos+1..];
-	string define=make_unique_name("inherit",name,base,"defined");
-	mapping attributes = parse_attributes(inh[1..pos]);
-	addfuncs +=
-	  IFDEF(define,
-		({
-		  sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
-			  mkname((string)name, "program"),
-			  attributes->flags || "0")
-		}));
-	ret+=DEFINE(define);
-	ret+=rest;
-      }
-
+      array(array|PC.Token) ret=({});
       array thestruct=({});
-      x=ret/({"PIKEVAR"});
-      ret=x[0];
-      for(int f=1;f<sizeof(x);f++)
-      {
-	array var=x[f];
-	int pos=search(var,PC.Token(";",0),);
-	int pos2=parse_type(var,0);
-	mixed name=var[pos2];
-	PikeType type=PikeType(var[..pos2-1]);
-	array rest=var[pos+1..];
-	string define=make_unique_name("var",name,base,"defined");
-	mapping attributes = parse_attributes(var[pos2+1..pos]);
+
+      // FIXME: Consider generating code in the order it appears in
+      //        the source file.
+      //	/grubba 2004-12-10
+
+      int e;
+      for(e = 0; e < sizeof(x); e++) {
+	array|PC.Token t;
+	if (arrayp(t = x[e])) {
+	  ret += ({ t });
+	  continue;
+	}
+	switch((string)t) {
+	default:
+	  ret += ({ t });
+	  break;
+	case "INHERIT":
+	  {
+	    int pos=search(x,PC.Token(";",0),e);
+	    mixed name=x[e+1];
+	    string define=make_unique_name("inherit",name,base,"defined");
+	    mapping attributes = parse_attributes(x[e+2..pos]);
+	    addfuncs +=
+	      IFDEF(define,
+		    ({
+		      PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
+				       mkname((string)name, "program"),
+				       attributes->flags || "0"),
+			       x[e]->line),
+		    }));
+	    ret += DEFINE(define);
+	    e = pos;
+	    break;
+	  }
+	case "EXTRA":
+	  {
+	    string define = make_unique_name("extra",base,"defined");
+	    addfuncs += IFDEF(define, x[e+1]);
+	    ret += DEFINE(define);
+	    e++;
+	    break;
+	  }
+	case "PIKECLASS":
+	  {
+	    int p;
+	    for(p=e+1;p<sizeof(x);p++)
+	      if(arrayp(x[p]) && x[p][0]=="{")
+		break;
+
+	    array proto = x[e+1..p-1];
+	    array body = x[p];
+
+	    string name=(string)proto[0];
+	    string lname = mkname(base, name);
+	    mapping attributes=parse_attributes(proto[1..]);
+
+	    ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
+					     mkname(base, name));
+	    string program_var = mkname(base, name, "program");
+
+	    string define = make_unique_name("class", base, name, "defined");
+
+	    ret+=DEFINE(define);
+	    // FIXME: The struct program variable should probably default
+	    //        to being static.
+	    //	/grubba 2004-10-23
+	    ret+=({sprintf("struct program *%s=NULL;\n"
+			   "static int %s_fun_num=-1;\n",
+			   program_var, program_var)});
+	    ret+=subclass->declarations;
+	    ret+=subclass->code;
+
+	    addfuncs+=
+	      IFDEF(define,
+		    ({
+		      IFDEF("PROG_"+upper_case(lname)+"_ID",
+			    ({
+			      PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
+					       upper_case(lname)),
+				       proto[0]->line),
+			      "#else\n",
+			      PC.Token("  start_new_program();\n",
+				       proto[0]->line),
+			    })),
+		      IFDEF("tObjImpl_"+upper_case(lname),
+			    0,
+			    DEFINE("tObjImpl_"+upper_case(lname), "tObj")),
+		    })+
+		    IFDEF("THIS_"+upper_case(lname),
+			  ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",lname,lname) }) )+
+		    subclass->addfuncs+
+		    ({
+		      attributes->program_flags?
+		      PC.Token(sprintf("  Pike_compiler->new_program->flags |= %s;\n",
+				     attributes->program_flags),
+			       proto[1]->line):"",
+		      PC.Token(sprintf("  %s=end_program();\n",program_var),
+			       proto[0]->line),
+		      PC.Token(sprintf("  %s_fun_num=add_program_constant(%O,%s,%s);\n",
+				       program_var,
+				       name,
+				       program_var,
+				       attributes->flags || "0"),
+			       proto[0]->line),
+		    })
+		    );
+	    exitfuncs+=
+	      IFDEF(define,
+		    subclass->exitfuncs+
+		    ({
+		      sprintf("  if(%s) {\n", program_var),
+		      PC.Token(sprintf("    free_program(%s);\n", program_var),
+			       proto[0]->line),
+		      sprintf("    %s=0;\n"
+			      "  }\n",
+			      program_var),
+		    }));
+	    e = p;
+	    break;
+	  }
+
+	case "PIKEVAR":
+	  {
+	    int pos = search(x, PC.Token(";",0), e);
+	    int pos2 = parse_type(x, e+1);
+	    mixed name = x[pos2];
+	    PikeType type = PikeType(x[e+1..pos2-1]);
+	    string define = make_unique_name("var",name,base,"defined");
+	    mapping attributes = parse_attributes(x[pos2+1..pos]);
 
 //    werror("type: %O\n",type);
 
-	thestruct+=
-	  IFDEF(define,
-		({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
-	addfuncs+=
-	  IFDEF(define,
-		({
-		  sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
-			  "                    %s, %s, %s);",
-			  (string)name, base, base, name,
-			  type->output_c_type(), type->type_number(),
-			  attributes->flags || "0"),
+	    thestruct+=
+	      IFDEF(define,
+		    ({ sprintf("  %s %s;\n",type->c_storage_type(1),name) }));
+	    addfuncs+=
+	      IFDEF(define,
+		    ({
+		      sprintf("  PIKE_MAP_VARIABLE(%O, %s_storage_offset + OFFSETOF(%s_struct, %s),\n"
+			      "                    %s, %s, %s);",
+			      (string)name, base, base, name,
+			      type->output_c_type(), type->type_number(),
+			      attributes->flags || "0"),
 		    }));
-	ret+=DEFINE(define);
-	ret+=({ PC.Token("DECLARE_STORAGE") });
-	ret+=rest;
-      }
+	    ret+=DEFINE(define);
+	    ret+=({ PC.Token("DECLARE_STORAGE") });
+	    e = pos;
+	    break;
+	  }
 
-      x=ret/({"CVAR"});
-      ret=x[0];
-      for(int f=1;f<sizeof(x);f++)
-      {
-	array var=x[f];
-	int pos=search(var,PC.Token(";",0),);
-	int npos=pos-1;
-	while(arrayp(var[npos])) npos--;
-	mixed name=(string)var[npos];
+	case "CVAR":
+	  {
+	    int pos = search(x,PC.Token(";",0),e);
+	    int npos=pos-1;
+	    while(arrayp(x[npos])) npos--;
+	    mixed name=(string)x[npos];
 
-	string define=make_unique_name("var",name,base,"defined");
+	    string define=make_unique_name("var",name,base,"defined");
     
-	thestruct+=IFDEF(define,var[..pos-1]+({";"}));
-	ret+=DEFINE(define);
-	ret+=({ PC.Token("DECLARE_STORAGE") });
-	ret+=var[pos+1..];
-      }
+	    thestruct+=IFDEF(define,x[e+1..pos-1]+({";"}));
+	    ret+=DEFINE(define);
+	    ret+=({ PC.Token("DECLARE_STORAGE") });
+	    e = pos;
+	    break;
+	  }
 
-      x=ret/({"EXTRA"});
-      ret = x[0];
-      for (int f = 1; f < sizeof(x); f++)
-      {
-	array extra=x[f];
-	array rest = extra[1..];
-	string define=make_unique_name("extra",base,"defined");
-	addfuncs += IFDEF(define, extra[0]);
-	ret+=DEFINE(define);
-	ret+=rest;
-      }
-
-
-      
-      ret=(ret/({"INIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("init")});
-      ret=(ret/({"EXIT"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("exit")});
-      ret=(ret/({"GC_RECURSE"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("gc_recurse")});
-      ret=(ret/({"GC_CHECK"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("gc_check")});
-      ret=(ret/({"OPTIMIZE"}))*({PC.Token("PIKE_INTERNAL"),PC.Token("optimize")});
+	case "INIT":
+	case "EXIT":
+	case "GC_RECURSE":
+	case "GC_CHECK":
+	case "OPTIMIZE":
+	  {
+	    ret += ({
+	      PC.Token("PIKE_INTERNAL"),
+	      PC.Token(lower_case((string)t)),
+	    });
+	    break;
+	  }
+	}
+      }      
 
       x=ret/({"PIKE_INTERNAL"});
       ret=x[0];
@@ -1706,7 +1802,7 @@ class ParseBlock
 
 	string funcname=mkname("f",base,name);
 	string define=make_unique_name("f",base,name,"defined");
-	string func_num=mkname("f",base,name,"fun_num");
+	string func_num=mkname("f", base,name,"fun_num");
 
 //    werror("FIX RETURN: %O\n",body);
     
@@ -2061,6 +2157,7 @@ class ParseBlock
 						 common_name,
 						 attributes);
 	  
+
 	    /* FIXME: This definition should be added
 	     * somewhere outside of all #ifdefs really!
 	     * -Hubbe
@@ -2081,19 +2178,29 @@ class ParseBlock
 	
 
 	if (attributes->efun) {
-	  addfuncs+=IFDEF(define,({
-	    PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
-			     attributes->name || name,
-			     funcname,
-			     type->output_c_type(),
-			     (attributes->optflags)|| "0" ,
-			     ),proto[0]->line),
-	  }));
+	  if(attributes->optfunc)
+	    addfuncs+=IFDEF(define,({
+	      PC.Token(sprintf("  ADD_EFUN2(%O, %s, %s, %s, %s, 0);\n",
+			       attributes->name || name,
+			       funcname,
+			       type->output_c_type(),
+			       (attributes->optflags)|| "0",
+			       attributes->optfunc
+			       ), proto[0]->line),
+	    }));
+	  else
+	    addfuncs+=IFDEF(define,({
+	      PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
+			       attributes->name || name,
+			       funcname,
+			       type->output_c_type(),
+			       (attributes->optflags)|| "0"
+			       ), proto[0]->line),
+	    }));
 	} else {
 	  addfuncs+=IFDEF(define, ({
-	    PC.Token(sprintf("  %s =\n"
-			     "    ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
-			     func_num,
+	    PC.Token(sprintf("  %s =\n", func_num)),
+	    PC.Token(sprintf("    ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
 			     attributes->name || name,
 			     funcname,
 			     type->output_c_type(),
@@ -2148,6 +2255,13 @@ array(PC.Token) allocate_strings(array(PC.Token) tokens)
       tokens = tokens[..i] + tokens[i+2..];
     }
   }
+  while ((i = search(tokens, PC.Token("MK_STRING_SVALUE"), i+1)) != -1) {
+    // werror("MK_STRING_SVALUE found: %O\n", tokens[i..i+10]);
+    if (arrayp(tokens[i+1]) && (sizeof(tokens[i+1]) == 3)) {
+      tokens[i] = PC.Token(allocate_string_svalue((string)tokens[i+1][1]));
+      tokens = tokens[..i] + tokens[i+2..];
+    }
+  }
   return tokens;
 }
 
@@ -2187,6 +2301,20 @@ int main(int argc, array(string) argv)
 	      "%s};\n",
 	      last_str_id, "  NULL,\n"*last_str_id),
     });
+
+    // Same for svalues.
+    // NOTE: This code needs changing in several aspects if
+    //       support for other svalues than strings is added.
+    if (last_svalue_id) {
+      tmp->exitfuncs += ({
+	sprintf("free_svalues(module_svalues, %d, BIT_STRING);\n",
+		last_svalue_id),
+      });
+      tmp->declarations += ({
+	sprintf("static struct svalue module_svalues[%d];\n",
+		last_svalue_id),
+      });
+    }
   }
 
   x=tmp->code;
