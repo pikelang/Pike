@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.122 2004/10/07 22:49:56 nilsson Exp $
+|| $Id: colortable.c,v 1.123 2005/03/15 21:03:41 per Exp $
 */
 
 #include "global.h"
@@ -2685,6 +2685,17 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
    push_string(end_shared_string(str));
 }
 
+static void image_colortable__encode( INT32 args )
+{
+    image_colortable_cast_to_string( THIS );
+}
+
+static void image_colortable__decode( INT32 args )
+{
+    image_colortable_create( args );
+}
+
+
 /*
 **! method object cast(string to)
 **!	cast the colortable to an array or mapping,
@@ -4537,6 +4548,9 @@ void init_image_colortable(void)
 		"function(int,int,int,void|int ...:void) */
    ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tOr(tArr(tColor),tStr),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
+
+   ADD_FUNCTION("_encode", image_colortable__encode,tFunc(tNone,tStr),0);
+   ADD_FUNCTION("_decode", image_colortable__decode,tFunc(tStr,tVoid),0);
    ADD_FUNCTION("_sprintf", image_colortable__sprintf, 
                 tFunc(tInt tMapping, tString ), 0 );
    /* function(void:void)|"
