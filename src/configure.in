@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.284 1999/05/11 23:08:35 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.285 1999/05/15 15:57:35 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -441,6 +441,25 @@ if test $cflags_is_set = no; then
 
   # Use lenient ANSI compliance...
   AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
+
+  # Find out where libtdf.a is hidden.
+  AC_MSG_CHECKING(for machine dependant library directory)
+  AC_CACHE_VAL(pike_cv_tcc_lib_path,
+  [
+    pike_cv_tcc_lib_path="`${REALCC-cc} -dry conftest.c -i 2>&1 | sed -e '/tdfc/s/bin\/tdfc.*/lib\/sys/'| head -1`"
+    if test -d "$pike_cv_tcc_lib_path/." ; then :; else
+      # Failed.
+      pike_cv_tcc_lib_path="no"
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_tcc_lib_path)
+
+  if test "$pike_cv_tcc_lib_path" = "no" ; then :; else
+    LDFLAGS="$LDFLAGS -L$pike_cv_tcc_lib_path"
+
+    # This library is needed for 64bit support on 32bit machines/OS's.
+    AC_CHECK_LIB(tdf, __TDFUnot)
+  fi
 
  else
 
@@ -2351,7 +2370,11 @@ AC_TRY_RUN([
 #include <stddef.h>
 #endif
 VOLATILE sig_atomic_t sigrun=0;
-RETSIGTYPE func(int sig) { sigrun=1; }
+RETSIGTYPE func(int sig)
+{
+  write(2, "func called\n", sizeof("func called\n") - sizeof(""));
+  sigrun=1;
+}
 
 int main()
 {
