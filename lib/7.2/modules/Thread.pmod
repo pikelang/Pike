@@ -1,12 +1,14 @@
 #pike 7.3
 
 //
-// $Id: Thread.pmod,v 1.2 2002/12/03 21:16:35 nilsson Exp $
+// $Id: Thread.pmod,v 1.3 2002/12/15 00:16:35 marcus Exp $
 //
 // Pike 7.2 backward compatibility layer.
 //
 
 inherit Thread;
+
+#if constant(thread_create)
 
 class Condition
 {
@@ -22,3 +24,5 @@ class Condition
     ::wait(m);
   }
 }
+
+#endif /* !constant(thread_create) */
