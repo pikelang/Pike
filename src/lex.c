@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.11 1997/01/18 04:43:50 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.12 1997/01/19 09:08:01 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -101,11 +101,10 @@ struct keyword reserved_words[] =
 { "case",	F_CASE, },
 { "catch",	F_CATCH, },
 { "class",	F_CLASS, },
-{ "continue",	F_CONTINUE, },
 { "constant",	F_CONSTANT, },
+{ "continue",	F_CONTINUE, },
 { "default",	F_DEFAULT, },
 { "do",		F_DO, },
-{ "predef",	F_PREDEF, },
 { "else",	F_ELSE, },
 { "float",	F_FLOAT_ID, },
 { "for",	F_FOR, },
@@ -113,15 +112,17 @@ struct keyword reserved_words[] =
 { "function",	F_FUNCTION_ID, },
 { "gauge",	F_GAUGE, },
 { "if",		F_IF, },
+{ "import",	F_IMPORT, },
 { "inherit",	F_INHERIT, },
 { "inline",	F_INLINE, },
 { "int",	F_INT_ID, },
 { "lambda",	F_LAMBDA, },
-{ "multiset",	F_MULTISET_ID, },
 { "mapping",	F_MAPPING_ID, },
 { "mixed",	F_MIXED_ID, },
+{ "multiset",	F_MULTISET_ID, },
 { "nomask",	F_NO_MASK, },
 { "object",	F_OBJECT_ID, },
+{ "predef",	F_PREDEF, },
 { "private",	F_PRIVATE, },
 { "program",	F_PROGRAM_ID, },
 { "protected",	F_PROTECTED, },

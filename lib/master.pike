@@ -1,3 +1,4 @@
+#define UNDEFINED (([])[0])
 string describe_backtrace(mixed *trace);
 
 string pike_library_path;
@@ -15,7 +16,7 @@ void putenv(string var, string val)
   environment[var]=val;
 }
 
-mapping (string:program) programs=([]);
+mapping (string:program) programs=(["/master":object_program(this_object())]);
 
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 
@@ -36,6 +37,36 @@ void add_precompiled_program(string name, program p)
   }
 }
 
+static program findprog(string pname)
+{
+  program ret;
+  
+  if(ret=programs[pname]) return ret;
+  
+  if(file_stat(pname))
+  {
+    ret=compile_file(pname);
+  }
+  else if(file_stat(pname+".pike"))
+  {
+    ret=compile_file(pname+".pike");
+  }
+#if efun(load_module)
+  else if(file_stat(pname+".so"))
+  {
+    load_module(pname+".so");
+    ret=programs[pname];
+  }
+#endif
+  if(ret)
+  {
+    programs[pname]=ret;
+    return ret;
+  }else{
+    return UNDEFINED;
+  }
+}
+
 /* This function is called when the driver wants to cast a string
  * to a program, this might be because of an explicit cast, an inherit
  * or a implict cast. In the future it might receive more arguments,
@@ -45,31 +76,6 @@ program cast_to_program(string pname)
 {
   if(pname[sizeof(pname)-3..sizeof(pname)]==".pike")
     pname=pname[0..sizeof(pname)-4];
-
-  function findprog=lambda(string pname)
-  {
-    program ret;
-
-    if(ret=programs[pname]) return ret;
-  
-    if(file_stat(pname))
-    {
-      ret=compile_file(pname);
-    }
-    else if(file_stat(pname+".pike"))
-    {
-      ret=compile_file(pname+".pike");
-    }
-#if efun(load_module)
-    else if(file_stat(pname+".so"))
-    {
-      load_module(pname+".so");
-      ret=programs[pname];
-    }
-#endif
-    if(ret) programs[pname]=ret;
-    return ret;
-  };
 
   if(pname[0]=='/')
   {
@@ -163,11 +169,52 @@ object cast_to_object(string oname)
   return objects[oname]=cast_to_program(oname)();
 }
 
-
-mixed resolv(string identifier, string file)
+class dirnode
 {
-  /* Module system goes here */
-  throw(sprintf("'%s' is undefined.",identifier));
+  string dirname;
+  void create(string name) { dirname=name; }
+  object|program `[](string index)
+  {
+    index=dirname+"/"+index;
+    return
+      ((object)"/master")->findmodule(index) || (program) index;
+  }
+};
+
+object findmodule(string fullname)
+{
+  mixed *stat;
+  if(mixed *stat=file_stat(fullname))
+  {
+    if(stat[1]==-2) return dirnode(fullname);
+  }
+  program p;
+  if(p=(program)(fullname+".pmod"))
+    return (object)(fullname+".pmod");
+  return UNDEFINED;
+}
+
+mixed resolv(string identifier, string current_file)
+{
+  mixed ret;
+  string *tmp,path;
+
+  tmp=current_file/"/";
+  tmp[-1]=identifier;
+  path=combine_path(getcwd(), tmp*"/");
+  if(ret=findmodule(path)) return tmp;
+
+  if(path=getenv("PIKE_MODULE_PATH"))
+  {
+    foreach(path/":", path)
+      {
+	path=combine_path(path,identifier);
+	if(ret=findmodule(path)) return ret;
+      }
+  }
+
+  path=combine_path(pike_library_path+"/modules",identifier);
+  return findmodule(path);
 }
 
 /* This function is called when all the driver is done with all setup

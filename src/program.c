@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.12 1997/01/16 05:00:48 hubbe Exp $");
+RCSID("$Id: program.c,v 1.13 1997/01/19 09:08:03 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -77,16 +77,47 @@ static INT32 last_line = 0;
 static INT32 last_pc = 0;
 static struct pike_string *last_file = 0;
 dynamic_buffer inherit_names;
+dynamic_buffer used_modules;
 
-#define HASH_ID_IS_LOCAL 1
-#define HASH_ID_IS_GLOBAL 2
-#define HASH_ID_IS_FUNCTION 4
-struct id_hash_entry
+void use_module(struct svalue *s)
 {
-  struct hash_entry link;
-  INT16 id;
-  INT16 flags;
-};
+  low_my_binary_strcat((char *)s,sizeof(struct svalue *),&used_modules);
+}
+
+
+int find_module_identifier(struct pike_string *ident)
+{
+  JMP_BUF tmp;
+  
+  if(SETJMP(tmp))
+  {
+    ONERROR tmp;
+    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+    assign_svalue_no_free(sp++, & throw_value);
+    APPLY_MASTER("handle_error", 1);
+    pop_stack();
+    UNSET_ONERROR(tmp);
+    yyerror("Couldn't index module.");
+  }else{
+    struct svalue *modules=(struct svalue *)used_modules.s.str;
+    int e=used_modules.s.len / sizeof(struct svalue *);
+
+    while(--e>=0)
+    {
+      push_svalue(modules+e);
+      push_string(ident);
+      f_index(2);
+      
+      if(!IS_ZERO(sp-1) || sp[-1].subtype != 1)
+      {
+	UNSETJMP(tmp);
+	return 1;
+      }
+    }
+  }
+  UNSETJMP(tmp);
+  return 0;
+}
 
 #define SETUP(X,Y,TYPE,AREA) \
    fake_program.X=(TYPE *)areas[AREA].s.str; \
@@ -138,6 +169,7 @@ void start_new_program()
 
   for(e=0; e<NUM_AREAS; e++) low_reinit_buf(areas + e);
   low_reinit_buf(& inherit_names);
+  low_reinit_buf(& used_modules);
   fake_program.id = ++current_program_id;
 
   inherit.prog=&fake_program;
@@ -146,7 +178,7 @@ void start_new_program()
   inherit.storage_offset=0;
   add_to_mem_block(A_INHERITS,(char *)&inherit,sizeof inherit);
   name=make_shared_string("this");
-  low_my_binary_strcat((char *)&name,sizeof(name),&inherit_names);
+  low_my_binary_strcat((char *)&name,sizeof(name), &inherit_names);
   num_parse_error=0;
 
   local_variables=ALLOC_STRUCT(locals);
@@ -227,25 +259,61 @@ void dump_program_desc(struct program *p)
 }
 #endif
 
+static void toss_compilation_resources()
+{
+  struct pike_string **names;
+  struct svalue *modules;
+  int e;
+
+  for (e=0; e<NUM_AREAS; e++) toss_buffer(areas+e);
+
+  names=(struct pike_string **)inherit_names.s.str;
+  e=inherit_names.s.len / sizeof(struct pike_string *);
+  while(--e>=0) if(names[e]) free_string(names[e]);
+  toss_buffer(& inherit_names);
+
+  modules=(struct svalue *)used_modules.s.str;
+  e=used_modules.s.len / sizeof(struct svalue *);
+  while(--e>=0) free_svalue(modules+e);
+  toss_buffer(& used_modules);
+
+  /* Clean up */
+  while(local_variables)
+  {
+    struct locals *l;
+    for(e=0;e<local_variables->current_number_of_locals;e++)
+    {
+      free_string(local_variables->variable[e].name);
+      free_string(local_variables->variable[e].type);
+    }
+  
+    if(local_variables->current_type)
+      free_string(local_variables->current_type);
+
+    if(local_variables->current_return_type)
+      free_string(local_variables->current_return_type);
+
+    l=local_variables->next;
+    free((char *)local_variables);
+    local_variables=l;
+  }
+
+  if(last_file)
+  {
+    free_string(last_file);
+    last_file=0;
+  }
+}
+
 /*
  * Something went wrong.
  * toss resources of program we were building
  */
 void toss_current_program()
 {
-  struct pike_string **names;
-  int e;
   setup_fake_program();
-
   low_free_program(&fake_program);
- 
-  for (e=0; e<NUM_AREAS; e++)
-    toss_buffer(areas+e);
-
-  names=(struct pike_string **)inherit_names.s.str;
-  e=inherit_names.s.len / sizeof(struct pike_string *);
-  for(e--;e>=0;e--) if(names[e]) free_string(names[e]);
-  toss_buffer(& inherit_names);
+  toss_compilation_resources();
 }
 
 #ifdef DEBUG
@@ -476,15 +544,9 @@ struct program *end_program()
 
     p+=MY_ALIGN(prog->num_identifier_indexes*sizeof(unsigned short));
 
-    for (i=0; i<NUM_AREAS; i++) toss_buffer(areas+i);
+    toss_compilation_resources();
 
     prog->inherits[0].prog=prog;
-
-    names=(struct pike_string **)inherit_names.s.str;
-    e=inherit_names.s.len / sizeof(struct pike_string *);
-    for(e--;e>=0;e--) if(names[e]) free_string(names[e]);
-    toss_buffer(& inherit_names);
-
     prog->prev=0;
     if(prog->next=first_program)
       first_program->prev=prog;
@@ -500,34 +562,6 @@ struct program *end_program()
 #endif
 
     GC_ALLOC();
-  }
-
-  /* Clean up */
-  while(local_variables)
-  {
-    int e;
-    struct locals *l;
-    for(e=0;e<local_variables->current_number_of_locals;e++)
-    {
-      free_string(local_variables->variable[e].name);
-      free_string(local_variables->variable[e].type);
-    }
-  
-    if(local_variables->current_type)
-      free_string(local_variables->current_type);
-
-    if(local_variables->current_return_type)
-      free_string(local_variables->current_return_type);
-
-    l=local_variables->next;
-    free((char *)local_variables);
-    local_variables=l;
-  }
-  
-  if(last_file)
-  {
-    free_string(last_file);
-    last_file=0;
   }
 
 #define PROGRAM_STATE

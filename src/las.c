@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.11 1997/01/16 05:00:45 hubbe Exp $");
+RCSID("$Id: las.c,v 1.12 1997/01/19 09:08:00 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -444,6 +444,71 @@ node *mkcastnode(struct pike_string *type,node *n)
   n->parent=res;
   return res;
 }
+
+void resolv_constant(node *n)
+{
+  struct identifier *i;
+  if(!n)
+  {
+    push_int(0);
+  }else{
+    switch(n->token)
+    {
+    case F_CONSTANT:
+      push_svalue(& n->u.sval);
+      break;
+
+    case F_IDENTIFIER:
+      setup_fake_program();
+      i=ID_FROM_INT(& fake_program, n->u.number);
+	
+      if(IDENTIFIER_IS_CONSTANT(i->flags))
+      {
+	push_svalue(PROG_FROM_INT(&fake_program, n->u.number)->constants +
+		    i->func.offset);
+      }else{
+	yyerror("Identifier is not a constant");
+	push_int(0);
+      }
+      break;
+
+    case F_LOCAL:
+	yyerror("Expected constant, got local variable");
+	push_int(0);
+
+    case F_GLOBAL:
+	yyerror("Expected constant, got global variable");
+	push_int(0);
+    }
+  }
+}
+
+node *index_node(node *n, struct pike_string * id)
+{
+  node *ret;
+  JMP_BUF tmp;
+  if(SETJMP(tmp))
+  {
+    ONERROR tmp;
+    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+    assign_svalue_no_free(sp++, & throw_value);
+    APPLY_MASTER("handle_error", 1);
+    pop_stack();
+    UNSET_ONERROR(tmp);
+    
+    yyerror("Couldn't index module.");
+    push_svalue(0);
+  }else{
+    resolv_constant(n);
+    push_string(id);
+    f_index(2);
+  }
+  UNSETJMP(tmp);
+  ret=mkconstantsvaluenode(sp-1);
+  pop_stack();
+  return ret;
+}
+
 
 int node_is_eq(node *a,node *b)
 {

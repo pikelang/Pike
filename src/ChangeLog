@@ -1,3 +1,7 @@
+Sun Jan 19 01:03:49 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* new module system implemented. '.' operator utilized
+
 Sat Jan 18 13:54:23 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* f___version moved from main.c to version.c and renamed to f_version.

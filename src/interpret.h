@@ -40,7 +40,7 @@ struct frame
 #define push_mapping(M) do{ struct mapping *_=(M); sp->u.mapping=_; sp++->type=T_MAPPING; }while(0)
 #define push_array(A) do{ struct array *_=(A); sp->u.array=_ ;sp++->type=T_ARRAY; }while(0)
 #define push_multiset(L) do{ struct multiset *_=(L); sp->u.multiset=_; sp++->type=T_MULTISET; }while(0)
-#define push_string(S) do{ struct pike_string *_=(S); sp->u.string=_; sp++->type=T_STRING; }while(0)
+#define push_string(S) do{ struct pike_string *_=(S); sp->subtype=0; sp->u.string=_; sp++->type=T_STRING; }while(0)
 #define push_object(O) do{ struct object  *_=(O); sp->u.object=_; sp++->type=T_OBJECT; }while(0)
 #define push_float(F) do{ float _=(F); sp->u.float_number=_; sp++->type=T_FLOAT; }while(0)
 #define push_text(T) push_string(make_shared_string((T)))

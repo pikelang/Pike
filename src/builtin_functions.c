@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.20 1997/01/18 21:34:32 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.21 1997/01/19 09:07:59 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -1606,7 +1606,7 @@ void init_builtin_efuns()
 {
   init_operators();
   
-  add_efun("_refs",f__refs,"function(string|array|mapping|multiset|object|program:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("_refs",f__refs,"function(function|string|array|mapping|multiset|object|program:int)",OPT_EXTERNAL_DEPEND);
   add_efun("replace_master",f_replace_master,"function(object:void)",OPT_SIDE_EFFECT);
   add_efun("add_constant",f_add_constant,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
   add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);

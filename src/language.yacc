@@ -95,6 +95,7 @@
 %token F_GAUGE
 %token F_IDENTIFIER
 %token F_IF
+%token F_IMPORT
 %token F_INHERIT
 %token F_INLINE
 %token F_INT_ID
@@ -155,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.17 1997/01/16 05:00:44 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.18 1997/01/19 09:08:00 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -303,6 +304,7 @@ void fix_comp_stack(int sp)
 %type <n> idents
 %type <n> lambda
 %type <n> local_name_list
+%type <n> low_idents
 %type <n> lvalue
 %type <n> lvalue_list
 %type <n> m_expr_list
@@ -359,41 +361,14 @@ program_ref: string_constant
   | idents
   {
     push_string(make_shared_string(""));
-    if(!$1)
+    resolv_constant($1);
+    if(sp[-1].type != T_PROGRAM)
     {
+      yyerror("Illegal program identifier");
+      pop_stack();
       push_int(0);
-    }else{
-      switch($1->token)
-      {
-      case F_CONSTANT:
-        if($1->u.sval.type == T_PROGRAM)
-        {
-	  push_svalue(& $1->u.sval);
-	}else{
-	  yyerror("Illegal program identifier");
-	  push_int(0);
-	}
-	break;
-	
-      case F_IDENTIFIER:
-      {
-	struct identifier *i;
-	setup_fake_program();
-	i=ID_FROM_INT(& fake_program, $1->u.number);
-	
-	if(IDENTIFIER_IS_CONSTANT(i->flags))
-	{
-	  push_svalue(PROG_FROM_INT(&fake_program, $1->u.number)->constants +
-		      i->func.offset);
-	}else{
-	  yyerror("Illegal program identifier");
-	  push_int(0);
-	}
-	break;
-      }
-      }
-      free_node($1);
     }
+    free_node($1);
   }
   ;
           
@@ -408,6 +383,15 @@ inheritance: modifiers F_INHERIT program_ref optional_rename_inherit ';'
       if($4) free_string($4);
     }
     pop_n_elems(2);
+  }
+  ;
+
+import: modifiers F_IMPORT idents ';'
+  {
+    resolv_constant($3);
+    free_node($3);
+    use_module(sp-1);
+    sp--;
   }
   ;
 
@@ -555,6 +539,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
   }
   | modifiers type_or_error name_list ';' {}
   | inheritance {}
+  | import {}
   | constant {}
   | class { free_node($1); }
   | error 
@@ -1147,7 +1132,16 @@ expr4: string
   }
   ;
 
-idents: F_IDENTIFIER
+idents: low_idents
+  | idents '.' F_IDENTIFIER
+  {
+    $$=index_node($1, $3);
+    free_node($1);
+    free_string($3);
+  }
+  ;
+
+low_idents: F_IDENTIFIER
   {
     int i;
     struct efun *f;
@@ -1156,10 +1150,13 @@ idents: F_IDENTIFIER
       $$=mklocalnode(i);
     }else if((i=isidentifier($1))>=0){
       $$=mkidentifiernode(i);
+    }else if(find_module_identifier($1)){
+      $$=mkconstantsvaluenode(sp-1);
+      pop_stack();
     }else if((f=lookup_efun($1))){
       $$=mkconstantsvaluenode(&f->function);
     }else{
-	$$=0;
+      $$=0;
       if( get_master() )
       {
 	reference_shared_string($1);
@@ -1171,10 +1168,14 @@ idents: F_IDENTIFIER
 	if(throw_value.type == T_STRING)
 	{
 	  my_yyerror("%s",throw_value.u.string->str);
+	}
+	else if(IS_ZERO(sp-1) && sp[-1].subtype==1)
+	{
+	  my_yyerror("'%s' undefined.", $1->str);
 	}else{
 	  $$=mkconstantsvaluenode(sp-1);
-	  pop_stack();
 	}
+	pop_stack();
       }else{
 	my_yyerror("'%s' undefined.", $1->str);
       }
