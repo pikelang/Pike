@@ -161,7 +161,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.57 1998/01/29 06:02:29 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.58 1998/01/29 17:43:21 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -549,6 +549,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     int e;
     if($10)
     {
+      int f;
       for(e=0; e<$7; e++)
       {
 	if(!compiler_frame->variable[e].name ||
@@ -558,7 +559,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 	  }
       }
 
-      dooptcode($4->u.sval.u.string, $10, $<n>9->u.sval.u.string, $1);
+      f=dooptcode($4->u.sval.u.string, $10, $<n>9->u.sval.u.string, $1);
 #ifdef DEBUG
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
@@ -918,13 +919,16 @@ lambda: F_LAMBDA
     
     type=pop_type();
 
-    sprintf(buf,"__lambda_%ld",local_class_counter++);
+    sprintf(buf,"__lambda_%ld_%ld",
+	    (long)new_program->id,
+	    local_class_counter++);
     name=make_shared_string(buf);
     
     f=dooptcode(name,
 		$4,
 		type,
-		ID_PRIVATE);
+		ID_PRIVATE | ID_INLINE);
+
     $$=mkidentifiernode(f);
     free_string(name);
     free_string(type);
@@ -943,11 +947,12 @@ class: modifiers F_CLASS optional_identifier
     {
       struct pike_string *s;
       char buffer[42];
-      sprintf(buffer,"__class_%ld",local_class_counter++);
+      sprintf(buffer,"__class_%ld_%ld",(long)new_program->id,
+	      local_class_counter++);
       s=make_shared_string(buffer);
       $3=mkstrnode(s);
       free_string(s);
-      $1|=ID_PRIVATE;
+      $1|=ID_PRIVATE | ID_INLINE;
     }
     if(compiler_pass==1)
     {

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.59 1998/01/29 00:30:36 hubbe Exp $");
+RCSID("$Id: program.c,v 1.60 1998/01/29 17:43:22 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1163,6 +1163,9 @@ int low_define_variable(struct pike_string *name,
 #ifdef DEBUG
   if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add variable to fixed program\n");
+
+  if(compiler_pass==2)
+    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   copy_shared_string(dummy.name, name);
@@ -1243,7 +1246,7 @@ int define_variable(struct pike_string *name,
     if(PROG_FROM_INT(new_program, n) == new_program)
       my_yyerror("Variable '%s' defined twice.",name->str);
 
-    if(!(IDENTIFIERP(n)->id_flags & ID_INLINE))
+    if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || compiler_pass!=1)
     {
       if(ID_FROM_INT(new_program, n)->type != type)
 	my_yyerror("Illegal to redefine inherited variable with different type.");
@@ -1331,6 +1334,9 @@ int add_constant(struct pike_string *name,
 #ifdef DEBUG
   if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
     fatal("Attempting to add constant to fixed program\n");
+
+  if(compiler_pass==2)
+    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   copy_shared_string(dummy.name, name);
@@ -1506,7 +1512,7 @@ INT32 define_function(struct pike_string *name,
       my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
     }
 
-    if(!(ref.id_flags & ID_INLINE))
+    if(!(ref.id_flags & ID_INLINE) || compiler_pass!=1)
     {
       /* We modify the old definition if it is in this program */
       if(ref.inherit_offset==0)
@@ -1541,6 +1547,11 @@ INT32 define_function(struct pike_string *name,
       return i;
     }
   }
+
+#ifdef DEBUG
+  if(compiler_pass==2)
+    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+#endif
 
   /* define a new function */
 
