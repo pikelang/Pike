@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $
+|| $Id: system.c,v 1.130 2002/12/06 14:25:58 mirar Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $");
+RCSID("$Id: system.c,v 1.130 2002/12/06 14:25:58 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -41,6 +41,7 @@ RCSID("$Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $");
 #include "pike_memory.h"
 #include "security.h"
 #include "bignum.h"
+#include "rusage.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -2474,6 +2475,88 @@ static void f_gettimeofday(INT32 args)
 
 #endif
 
+/*! @decl mapping(string:int) getrusage()
+ *! Calls getrusage or equivalent function and fills in 
+ *! one or more of the rusage fields.
+ *!
+ *  fixme: tag up as table or pre?
+ *! utime    user time (ms)
+ *! stime    system time (ms)
+ *! maxrss   maximum resident set size [1]
+ *! ixrss    integral shared memory size [1]
+ *! idrss    integral unshared data size [1] 
+ *! isrss    integral unshared stack size [1]
+ *! minflt   page reclaims
+ *! majflt   page faults
+ *! nswap    swaps
+ *! inblock  block input operations
+ *! oublock  block output operations
+ *! msgsnd   messages sent
+ *! msgrcv   messages received
+ *! nsignals signals received
+ *! nvcsw    voluntary context switches
+ *! nivcsw   involuntary context switches
+ *! sysc     system calls [2]
+ *! ioch     chars read and written [2]
+ *! rtime    total lwp real (elapsed) time (ms) [2]
+ *! ttime    other system trap CPU time (ms) [2]
+ *! tftime   text page fault sleep time (ms) [2]
+ *! dftime   data page fault sleep time (ms) [2]
+ *! kftime   kernel page fault sleep time (ms) [2]
+ *! ltime    user lock wait sleep time (ms) [2]
+ *! slptime  all other sleep time (ms) [2]
+ *! wtime    wait-cpu (latency) time (ms) [2]
+ *! stoptime stopped time [2]
+ *! brksize  ? [3]
+ *! stksize  ? [3]
+ *!
+ *! [1] not if /proc rusage is used
+ *! [2] only from (solaris?) /proc rusage
+ *! [3] only from /proc PRS usage
+ *! on some systems, only utime will be filled in.
+ */
+
+static void f_getrusage(INT32 args)
+{
+   pop_n_elems(args);
+   pike_rusage_t rusage_values;
+   int n=0;
+   
+   if (!pike_get_rusage(rusage_values))
+      error("error in getrusage call\n");
+
+   push_text("utime");      push_int(rusage_values[n++]);
+   push_text("stime");      push_int(rusage_values[n++]);
+   push_text("maxrss");     push_int(rusage_values[n++]);
+   push_text("ixrss");      push_int(rusage_values[n++]);
+   push_text("idrss");      push_int(rusage_values[n++]);
+   push_text("isrss");      push_int(rusage_values[n++]);
+   push_text("minflt");     push_int(rusage_values[n++]);
+   push_text("majflt");     push_int(rusage_values[n++]);
+   push_text("nswap");      push_int(rusage_values[n++]);
+   push_text("inblock");    push_int(rusage_values[n++]);
+   push_text("oublock");    push_int(rusage_values[n++]);
+   push_text("msgsnd");     push_int(rusage_values[n++]);
+   push_text("msgrcv");     push_int(rusage_values[n++]);
+   push_text("nsignals");   push_int(rusage_values[n++]);
+   push_text("nvcsw");      push_int(rusage_values[n++]);
+   push_text("nivcsw");     push_int(rusage_values[n++]);
+   push_text("sysc");       push_int(rusage_values[n++]);
+   push_text("ioch");       push_int(rusage_values[n++]);
+   push_text("rtime");      push_int(rusage_values[n++]);
+   push_text("ttime");      push_int(rusage_values[n++]);
+   push_text("tftime");     push_int(rusage_values[n++]);
+   push_text("dftime");     push_int(rusage_values[n++]);
+   push_text("kftime");     push_int(rusage_values[n++]);
+   push_text("ltime");      push_int(rusage_values[n++]);
+   push_text("slptime");    push_int(rusage_values[n++]);
+   push_text("wtime");      push_int(rusage_values[n++]);
+   push_text("stoptime");   push_int(rusage_values[n++]);
+   push_text("brksize");    push_int(rusage_values[n++]);
+   push_text("stksize");    push_int(rusage_values[n++]);
+
+   f_aggregate_mapping(n*2);
+}
 
 /*! @endmodule
  */
@@ -2743,6 +2826,10 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("nanosleep",f_system_nanosleep,
 	       tFunc(tOr(tInt,tFloat),tFloat), 0);
 #endif /* HAVE_SLEEP */
+
+/* there is always a pike_get_rusage */
+  ADD_FUNCTION("getrusage", f_getrusage,
+	       tFunc(, tMap(tStr,tInt)), 0);
 
 #ifdef ITIMER_TYPE_IS_02
 #define tITimer tInt02
