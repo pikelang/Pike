@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.314 2004/04/05 01:36:05 mast Exp $
+|| $Id: file.c,v 1.315 2004/04/05 21:54:50 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.314 2004/04/05 01:36:05 mast Exp $");
+RCSID("$Id: file.c,v 1.315 2004/04/05 21:54:50 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1752,6 +1752,9 @@ static void file_open(INT32 args)
  *!
  *! Open the master end of a pseudo-terminal pair.
  *!
+ *! @returns
+ *! This function returns @expr{1@} for success, @expr{0@} otherwise.
+ *!
  *! @seealso
  *!   @[grantpt()]
  */
@@ -2245,6 +2248,21 @@ static void file_set_close_on_exec(INT32 args)
     my_set_close_on_exec(FD,1);
   }
   pop_n_elems(args);
+}
+
+/*! @decl int is_open()
+ *!
+ *! Returns true if the file is open.
+ *!
+ *! @note
+ *! Most methods can't be called for a file descriptor that isn't
+ *! open. Notable exceptions @[errno], @[mode], and the set and query
+ *! functions for callbacks and backend.
+ */
+static void file_is_open (INT32 args)
+{
+  pop_n_elems (args);
+  push_int (FD >= 0);
 }
 
 /*! @decl int query_fd()
@@ -2788,7 +2806,7 @@ static void file_dup2(INT32 args)
   push_int(1);
 }
 
-/*! @decl Stdio.File dup()
+/*! @decl Stdio.Fd dup()
  */
 static void file_dup(INT32 args)
 {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.32 2004/03/10 19:19:53 nilsson Exp $
+|| $Id: file_functions.h,v 1.33 2004/04/05 21:54:50 mast Exp $
 */
 
 #define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
@@ -72,6 +72,7 @@ FILE_FUNC("_disable_callbacks",file__disable_callbacks, tFunc(tNone,tVoid));
 /* function(:void) */
 FILE_FUNC("set_blocking",file_set_blocking, tFunc(tNone,tVoid));
 
+FILE_FUNC ("is_open", file_is_open, tFunc(tNone,tInt));
 /* function(:int) */
 FILE_FUNC("query_fd",file_query_fd, tFunc(tNone,tInt));
 
