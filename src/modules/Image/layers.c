@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.50 2000/08/06 17:13:33 grubba Exp $
+**!	$Id: layers.c,v 1.51 2000/08/06 20:11:08 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.50 2000/08/06 17:13:33 grubba Exp $");
+RCSID("$Id: layers.c,v 1.51 2000/08/06 20:11:08 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1419,7 +1419,7 @@ WARN_TRACE(3);
 
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) ((A)/C2F(1+DOUBLE_TO_INT(B)))
+#define L_OPER(A,B) (CCUT((A)/C2F(1+DOUBLE_TO_INT(B))))
 WARN_TRACE(4);
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1448,7 +1448,7 @@ WARN_TRACE(6);
 
 #define LM_FUNC lm_invdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) ((B)/C2F(1+DOUBLE_TO_INT(A)))
+#define L_OPER(A,B) (CCUT((B)/C2F(1+DOUBLE_TO_INT(A))))
 WARN_TRACE(7);
 #include "layer_oper.h"
 #undef LM_FUNC
