@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.53 1999/05/22 12:45:15 grubba Exp $
+// $Id: module.pmod,v 1.54 1999/05/26 14:17:37 grubba Exp $
 
 import String;
 
@@ -609,12 +609,16 @@ string read_bytes(string filename,void|int start,void|int len)
   return ret;
 }
 
-int write_file(string filename,string what)
+int write_file(string filename, string what, int|void access)
 {
   int ret;
   object(File) f = File();
 
-  if(!f->open(filename,"twc"))
+  if (query_num_arg() < 3) {
+    access = 0666;
+  }
+
+  if(!f->open(filename, "twc", access))
     error("Couldn't open file "+filename+".\n");
   
   ret=f->write(what);
@@ -622,12 +626,16 @@ int write_file(string filename,string what)
   return ret;
 }
 
-int append_file(string filename,string what)
+int append_file(string filename, string what, int|void access)
 {
   int ret;
   object(File) f = File();
 
-  if(!f->open(filename,"awc"))
+  if (query_num_arg() < 3) {
+    access = 0666;
+  }
+
+  if(!f->open(filename, "awc", access))
     error("Couldn't open file "+filename+".\n");
   
   ret=f->write(what);
