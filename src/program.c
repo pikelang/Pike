@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.110 2004/08/13 13:05:31 grubba Exp $");
+RCSID("$Id: program.c,v 1.111 2004/09/27 15:11:51 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -953,13 +953,13 @@ struct program *end_first_pass(int finish)
 
   exit_type_stack();
 
+  free_all_nodes();
+
   compilation_depth--;
 
   exit_threads_disable(NULL);
 
   /* fprintf(stderr, "end_first_pass(): compilation_depth:%d\n", compilation_depth); */
-
-  free_all_nodes();
   if(!compiler_frame && compiler_pass==2 && resolve_cache)
   {
     free_mapping(resolve_cache);
