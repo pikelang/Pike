@@ -34,23 +34,10 @@ string sizetostring( int size )
 
 string http_date(int t)
 {
-  mapping l = localtime(t);
-
-#if 1
-
-  t += l->timezone - 3600*l->isdst;
-  l = localtime(t);
-
+  mapping l = gmtime(t);
   return(sprintf("%s, %02d %s %04d %02d:%02d:%02d GMT",
 		 days[l->wday], l->mday, months[l->mon], 1900+l->year,
 		 l->hour, l->min, l->sec));
-
-#else
-  string s=ctime(t + l->timezone - 3600*l->isdst);
-  return (s[0..2] + sprintf(", %02d ", (int)s[8..9])
-	  + s[4..6]+" "+(1900+l->year)
-	  + s[10..18]+" GMT"); 
-#endif /* 1 */
 }
 
 
@@ -77,7 +64,6 @@ void handle(object o)
 			"Content-type: text/html\r\n"
 			"Content-Length: "+strlen(nofile)+"\r\n"
 			"MIME-Version: 1.0\r\n"
-			"Date: "+http_date(time(1))+"\r\n"
 			"Server: Neo-FastSpeed\r\n"
 			"Connection: Keep-Alive\r\n"
 			"\r\n"
@@ -89,7 +75,6 @@ void handle(object o)
     {
       string head = ("HTTP/1.1 200 Ok\r\n"
 		     "Content-type: text/html\r\n"
-		     "Date: "+http_date(time(1))+"\r\n"
 		     "Last-Modified: "+http_date(s[4])+"\r\n"
 		     "MIME-Version: 1.0\r\n"
 		     "Server: Neo-FastSpeed\r\n"
@@ -125,7 +110,6 @@ void handle(object o)
     } else {
       o->reply_with_cache("HTTP/1.0 302  Redirect\r\n"
 			  "Content-type: text/plain\r\n"
-			  "Date: "+http_date(time(1))+"\r\n"
 			  "MIME-Version: 1.0\r\n"
 			  "Server: Neo-FastSpeed\r\n"
 			  "Connection: Keep-Alive\r\n"
@@ -141,7 +125,6 @@ void handle(object o)
     o->reply_with_cache("HTTP/1.1 200 Ok\r\n"
 			"Content-type: "+ctype+"\r\n"
 			"Content-Length: "+s[1]+"\r\n"
-			"Date: "+http_date(time(1))+"\r\n"
 			"Last-Modified: "+http_date(s[4])+"\r\n"
 			"MIME-Version: 1.0\r\n"
 			"Server: Neo-FastSpeed\r\n"
@@ -152,7 +135,6 @@ void handle(object o)
     o->reply("HTTP/1.1 200 Ok\r\n"
              "Content-type: "+ctype+"\r\n"
              "Content-Length: "+s[1]+"\r\n"
-             "Date: "+http_date(time(1))+"\r\n"
              "Last-Modified: "+http_date(s[4])+"\r\n"
              "MIME-Version: 1.0\r\n"
              "Server: Neo-FastSpeed\r\n"
