@@ -60,6 +60,18 @@ int test_install_year() {
   return 1;
 }
 
+int test_unbug_year() {
+  int y;
+  sscanf(Stdio.read_file("bin/unbug"),
+	 "%*s 2002-%d, Department", y);
+  if(gmtime(time())->year+1900 != y) {
+    write("The year in the copyright message in unbug\n"
+	  "needs an update.\n");
+    return 0;
+  }
+  return 1;
+}
+
 int test_charset_table(string t) {
   array names = ({});
   foreach( Stdio.read_file("src/modules/_Charset/"+t)/"\n", string line )
@@ -178,6 +190,7 @@ void main(int args) {
   test_copying();
   test_master_year();
   test_install_year();
+  test_unbug_year();
   test_charset_table("tables.c");
   test_charset_table("misc.c");
   test_unicode();
