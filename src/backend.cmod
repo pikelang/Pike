@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.80 2004/02/04 14:10:20 grubba Exp $
+|| $Id: backend.cmod,v 1.81 2004/02/05 12:12:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.80 2004/02/04 14:10:20 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.81 2004/02/05 12:12:03 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2601,14 +2601,15 @@ PIKECLASS Backend
       if ((me->set =
 #ifdef USE_DEVPOLL
 	   open("/dev/poll", O_RDWR)
-#elif defined(USE_EPOLL)
+#elif defined(USE_DEVEPOLL)
 	   epoll_create(POLL_SET_SIZE)	/* FIXME: Might want another value. */
 #else /* !USE_DEVPOLL && !USE_EPOLL */
-	   -1				/* Error */
+	   (errno = ENODEV, -1)		/* Error */
 #endif /* USE_DEVPOLL || USE_EPOLL */
 	   ) < 0) {
 	Pike_error("Failed to open /dev/poll (errno:%d)\n", errno);
       }
+      set_close_on_exec(me->set, 1);
 #else /* !USE_POLL_DEVICE */
       me->set.poll_fds=0;
       me->set.poll_fd_size=0;
