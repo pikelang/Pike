@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.163 2004/03/19 16:11:02 grubba Exp $
+|| $Id: stralloc.c,v 1.164 2004/03/24 20:19:23 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.163 2004/03/19 16:11:02 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.164 2004/03/24 20:19:23 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1642,9 +1642,9 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
 			   haystack->len,
 			   needle);
 
-  r=mojt.vtab->funcN(mojt.data,
-		     ADD_PCHARP(MKPCHARP_STR(haystack), start),
-		     haystack->len - start).ptr;
+  r = (char *)mojt.vtab->funcN(mojt.data,
+			       ADD_PCHARP(MKPCHARP_STR(haystack), start),
+			       haystack->len - start).ptr;
 
   mojt.vtab->freeme(mojt.data);
 
