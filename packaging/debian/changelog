@@ -1,6 +1,8 @@
-pike7.4 (7.4.35-1) unstable; urgency=low
+pike7.4 (7.4.35-1) unstable; urgency=medium
 
   * Latest CVS snapshot.
+  * Disabled using the machine code in the pike bytecode. It poses a
+    security risk and breaks under kernels with exec-shield or PAX.
 
  -- Marek Habersack <grendel@debian.org>  Thu,  4 Dec 2003 00:06:47 +0100
 
