@@ -13,8 +13,7 @@ DESCRIPTION
 	will be moved to position 0 in all the other arrays as well.
 
 	Sort can sort strings, integers and floats in ascending order.
-	Arrays will be sorted first on size and then on the first element
-	of each array.
+	Arrays will be sorted first on the first element of each array.
 
 	Sort returns it's first argument.
 
