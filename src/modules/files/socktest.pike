@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.11 1998/04/16 21:41:49 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.12 1998/10/21 22:46:32 grubba Exp $ */
 
 
 import Stdio;
@@ -128,9 +128,9 @@ int counter;
 
 void got_callback()
 {
-  counter ++;
+  counter++;
   if(!(counter & 0xf))
-    predef::write(sprintf("%c\b","|/-\\" [ (counter++>>4) & 3 ]));
+    predef::write(sprintf("%c\b","|/-\\" [ (counter>>4) & 3 ]));
   remove_call_out(die);
   call_out(die,20);
 }
@@ -141,6 +141,62 @@ int _tests;
 void start()
 {
   num_running++;
+}
+
+
+object oob_loopback;
+object oob_originator;
+string expected;
+int oob_sent;
+
+void send_oob0()
+{
+  got_callback();
+  expected = sprintf("%c", random(256));
+  oob_originator->write_oob(expected);
+  oob_originator->set_write_oob_callback(0);
+  oob_loopback->set_read_oob_callback(got_oob1);
+}
+
+void got_oob1(mixed ignored, string got)
+{
+  got_callback();
+  if (got != expected) {
+    werror(sprintf("loopback: Received unexpected oob data "
+		   "(0x%02x != 0x%02x)\n",
+		   got[0], expected[0]));
+    exit(1);
+  }
+  oob_loopback->set_write_oob_callback(send_oob1);
+}
+
+void send_oob1()
+{
+  got_callback();
+  oob_loopback->write_oob(expected);
+  oob_loopback->set_write_oob_callback(0);
+  oob_originator->set_read_oob_callback(got_oob0);
+}
+
+void got_oob0(mixed ignored, string got)
+{
+  got_callback();
+  if (got != expected) {
+    werror(sprintf("loopback: Received unexpected oob data "
+		   "(0x%02x != 0x%02x)\n",
+		   got[0], expected[0]));
+    exit(1);
+  }
+  oob_sent++;
+  if (oob_sent > 511) {
+    oob_loopback->set_blocking();
+    oob_loopback->close();
+    oob_originator->set_blocking();
+    oob_originator->close();
+    finish();
+  } else {
+    oob_originator->set_write_oob_callback(send_oob0);
+  }
 }
 
 
@@ -278,8 +334,21 @@ void finish()
 	}
 	break;
 
+#if constant(Stdio.__HAVE_OOB__)
     case 49:
+      werror("Testing out-of-band data. ");
+      start();
+      socks = spair(0);
+      oob_originator = socks[0];
+      oob_loopback = socks[1];
+      
+      socks[0]->set_nonblocking(0,0,0,got_oob0,send_oob0);
+      socks[1]->set_nonblocking(0,0,0,got_oob1,0);
+      break;
+#endif /* __HAVE_OOB__ */
+    default:
       exit(0);
+      break;
     }
   }
 //  werror("FINISHED with FINISH %d\n",_tests);
