@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.572 2004/10/16 07:28:28 agehall Exp $
+|| $Id: builtin_functions.c,v 1.573 2004/11/03 01:26:30 nilsson Exp $
 */
 
 #include "global.h"
@@ -7625,7 +7625,7 @@ void f_enumerate(INT32 args)
    INT_TYPE n;
 
    if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("enumarate", 1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("enumerate", 1);
    if (args<2) 
    {
       push_int(1);
