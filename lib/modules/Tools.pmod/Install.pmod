@@ -18,6 +18,16 @@ array(string) features()
   a += ({ "out-of-band data" });
 #endif
 
+#if constant(__builtin.__DOUBLE_PRECISION_FLOAT__)
+  a += ({ "double precision float" });
+#endif
+#if constant(__builtin.__LONG_DOUBLE_PRECISION_FLOAT__)
+  a += ({ "long double precision float" });
+#endif
+#if constant(__builtin.__SINGLE_PRECISION_FLOAT__)
+  a += ({ "single precision float" });
+#endif
+
   foreach(({ "_Crypto", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
 	     "_Image_JPEG", "_Image_GIF", "_Image_TIFF", "_Image_TTF", 
 	     "Image.PNG", "Java", "Mird",
