@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $ */
+/* $Id: colortable.c,v 1.107 2002/01/11 17:56:25 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $
+**!	$Id: colortable.c,v 1.107 2002/01/11 17:56:25 mast Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.107 2002/01/11 17:56:25 mast Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2348,7 +2348,7 @@ void image_colortable_reduce(INT32 args)
    else
       numcolors=1293791; /* a lot */
    
-   o=clone_object(THISOBJ->prog,0);
+   o=clone_object_from_object(THISOBJ,0);
    nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
    
    switch (nct->type = THIS->type)
@@ -2430,7 +2430,7 @@ void image_colortable_operator_plus(INT32 args)
    int i;
 
    ref_push_object(THISOBJ);
-   o=clone_object(THISOBJ->prog,1);
+   o=clone_object_from_object(THISOBJ,1);
    dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
 
    for (i=0; i<args; i++)
@@ -2483,7 +2483,7 @@ void image_colortable_operator_minus(INT32 args)
    int i;
 
    ref_push_object(THISOBJ);
-   o=clone_object(THISOBJ->prog,1);
+   o=clone_object_from_object(THISOBJ,1);
    dest=(struct neo_colortable*)get_storage(o,image_colortable_program);
 
    for (i=0; i<args; i++)
