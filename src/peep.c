@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.90 2003/10/10 01:18:25 mast Exp $
+|| $Id: peep.c,v 1.91 2003/10/10 01:39:01 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.90 2003/10/10 01:18:25 mast Exp $");
+RCSID("$Id: peep.c,v 1.91 2003/10/10 01:39:01 mast Exp $");
 
 static void asm_opt(void);
 
@@ -219,9 +219,9 @@ void assemble(void)
   }
 #endif /* PIKE_DEBUG */
 
-  labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
-  jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
-  uses=(INT32 *)xalloc(sizeof(INT32) * (max_label+2));
+  labels=(INT32 *)xalloc(sizeof(INT32) * 3 * (max_label+2));
+  jumps = labels + max_label + 2;
+  uses = jumps + max_label + 2;
 
   while(reoptimize)
   {
@@ -600,8 +600,6 @@ void assemble(void)
   }
 
   free((char *)labels);
-  free((char *)jumps);
-  free((char *)uses);
 
 #ifdef PIKE_DEBUG
   if (a_flag > 6) {
