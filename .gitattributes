@@ -8,6 +8,7 @@ testfont binary
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
+/src/modules/_Crypto/cbc.c foreign_ident
 /src/modules/_Crypto/crypto.c foreign_ident
 /src/modules/_Crypto/crypto.h foreign_ident
 /src/modules/_Crypto/des.c foreign_ident
