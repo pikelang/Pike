@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.43 2001/12/10 02:45:12 mast Exp $");
+RCSID("$Id: multiset.c,v 1.44 2001/12/10 20:16:32 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -54,6 +54,11 @@ static inline struct msnode_indval *msnode_indval_check (struct msnode_indval *x
 #define sub_extra_ref(X) do {						\
     if (!sub_ref (X)) fatal ("Got zero refs to " #X " unexpectedly.\n"); \
   } while (0)
+
+PMOD_EXPORT const char msg_no_multiset_flag_marker[] =
+  "Multiset index lacks MULTISET_FLAG_MARKER. It might be externally clobbered.\n";
+PMOD_EXPORT const char msg_multiset_no_node_refs[] =
+  "Multiset got no node refs.\n";
 
 #else
 
@@ -404,13 +409,21 @@ static void fix_free_list (struct multiset_data *msd, int first_free)
   }
 }
 
+static void clear_deleted_on_free_list (struct multiset_data *msd)
+{
+  union msnode *node = msd->free_list;
+  assert (node && node->i.ind.type == T_DELETED);
+  do {
+    node->i.prev = NULL;
+    node->i.ind.type = PIKE_T_UNKNOWN;
+    msd->size--;
+  } while ((node = NEXT_FREE (node)) && node->i.ind.type == T_DELETED);
+}
+
 #define CLEAR_DELETED_ON_FREE_LIST(MSD) do {				\
-    union msnode *node = (MSD)->free_list;				\
-    for (; node && node->i.ind.type == T_DELETED; node = NEXT_FREE (node)) { \
-      node->i.prev = NULL;						\
-      node->i.ind.type = PIKE_T_UNKNOWN;				\
-      (MSD)->size--;							\
-    }									\
+    assert ((MSD)->refs == 1);						\
+    if ((MSD)->free_list && (MSD)->free_list->i.ind.type == T_DELETED)	\
+      clear_deleted_on_free_list (MSD);					\
   } while (0)
 
 /* The copy has no refs. The copy is verbatim, i.e. the relative node
@@ -649,17 +662,21 @@ int prepare_for_add (struct multiset *l, int verbatim)
   }
 
   if (msd->size == msd->allocsize) {
-    /* Can't call check_multiset here, since it might not even be a
-     * proper tree in verbatim mode. */
-    l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), verbatim);
-    msd_changed = 1;
+    if (!l->node_refs) CLEAR_DELETED_ON_FREE_LIST (msd);
+    if (msd->size == msd->allocsize) {
+      /* Can't call check_multiset here, since it might not even be a
+       * proper tree in verbatim mode. */
+      l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), verbatim);
+      return 1;
+    }
   }
-  else if (!verbatim && DO_SHRINK (msd, 1)) {
+
+  if (!verbatim && DO_SHRINK (msd, 1)) {
 #ifdef PIKE_DEBUG
     if (d_flag > 1) check_multiset (l);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size + 1), 0);
-    msd_changed = 1;
+    return 1;
   }
 
   return msd_changed;
@@ -726,7 +743,7 @@ static union msnode *alloc_msnode_verbatim (struct multiset_data *msd)
       (NODE) = (MSD)->free_list;					\
       DO_IF_DEBUG (if (!(NODE)) fatal ("Multiset data block unexpectedly full.\n")); \
       (MSD)->free_list = NEXT_FREE (NODE);				\
-      (MSD)->size++;							\
+      if ((NODE)->i.ind.type == PIKE_T_UNKNOWN) (MSD)->size++;		\
     }									\
   } while (0)
 
@@ -767,6 +784,7 @@ static void unlink_msnode (struct multiset *l, struct rbstack_ptr *track,
 		PHDR (&msd->root), &rbstack, keep_rbstack,
 		msd->flags & MULTISET_INDVAL ?
 		sizeof (struct msnode_indval) : sizeof (struct msnode_ind)));
+    CLEAR_DELETED_ON_FREE_LIST (msd);
     ADD_TO_FREE_LIST (msd, unlinked_node);
     unlinked_node->i.ind.type = PIKE_T_UNKNOWN;
     unlinked_node->i.prev = NULL;
@@ -789,7 +807,6 @@ PMOD_EXPORT void multiset_clear_node_refs (struct multiset *l)
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
   assert (!l->node_refs);
-  assert (msd->refs == 1);
 
   CLEAR_DELETED_ON_FREE_LIST (msd);
   if (DO_SHRINK (msd, 0)) {
@@ -843,8 +860,6 @@ PMOD_EXPORT void do_free_multiset (struct multiset *l)
     free_multiset (l);
   }
 }
-
-PMOD_EXPORT const char msg_multiset_no_node_refs[] = "Multiset got no node refs.\n";
 
 PMOD_EXPORT void do_sub_msnode_ref (struct multiset *l)
 {
@@ -917,21 +932,22 @@ static void midflight_remove_node_fast (struct multiset *l,
  * changes of the multiset or resizing of the msd. There must not be
  * any node refs to it. */
 static void midflight_remove_node_faster (struct multiset_data *msd,
-					  struct rbstack_ptr *track)
+					  struct rbstack_ptr rbstack)
 {
   struct svalue ind;
-  union msnode *node = RBNODE (RBSTACK_PEEK (*track));
+  union msnode *node = RBNODE (RBSTACK_PEEK (rbstack));
 
   free_svalue (low_use_multiset_index (node, ind));
   if (msd->flags & MULTISET_INDVAL) free_svalue (&node->iv.val);
 
   node = RBNODE (low_rb_unlink_with_move (
-		   PHDR (&msd->root), track, 0,
+		   PHDR (&msd->root), &rbstack, 0,
 		   msd->flags & MULTISET_INDVAL ?
 		   sizeof (struct msnode_indval) : sizeof (struct msnode_ind)));
+  CLEAR_DELETED_ON_FREE_LIST (msd);
   ADD_TO_FREE_LIST (msd, node);
-  msd->size--;
   node->i.ind.type = PIKE_T_UNKNOWN;
+  msd->size--;
 }
 
 PMOD_EXPORT void multiset_set_flags (struct multiset *l, int flags)
@@ -1066,8 +1082,8 @@ again:
 	    low_rb_link_at_prev (PHDR (&new.msd->root), rbstack, HDR (new.list));
 	    goto node_added;
 	  case FIND_DESTRUCTED:
-	    midflight_remove_node_faster (new.msd, &rbstack);
-	    continue;
+	    midflight_remove_node_faster (new.msd, rbstack);
+	    break;
 	  default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
 	}
       }
@@ -1158,8 +1174,8 @@ PMOD_EXPORT struct multiset *mkmultiset_2 (struct array *indices,
 	    low_rb_link_at_prev (PHDR (&new.msd->root), rbstack, HDR (new.node));
 	    goto node_added;
 	  case FIND_DESTRUCTED:
-	    midflight_remove_node_faster (new.msd, &rbstack);
-	    continue;
+	    midflight_remove_node_faster (new.msd, rbstack);
+	    break;
 	  default: DO_IF_DEBUG (fatal ("Invalid find_type.\n"));
 	}
       }
@@ -1866,9 +1882,9 @@ void multiset_fix_type_field (struct multiset *l)
 
 #ifdef PIKE_DEBUG
   if (ind_types & ~msd->ind_types)
-    fatal ("Multiset indices type field lacked 0x%x.\n", ind_types & ~msd->ind_types);
+    fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
   if (val_types & ~msd->val_types)
-    fatal ("Multiset values type field lacked 0x%x.\n", val_types & ~msd->val_types);
+    fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
 #endif
 
   msd->ind_types = ind_types;
@@ -1898,9 +1914,9 @@ static void check_multiset_type_fields (struct multiset *l)
     if (!(msd->flags & MULTISET_INDVAL)) val_types = BIT_INT;
 
   if (ind_types & ~msd->ind_types)
-    fatal ("Multiset indices type field lacked 0x%x.\n", ind_types & ~msd->ind_types);
+    fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
   if (val_types & ~msd->val_types)
-    fatal ("Multiset values type field lacked 0x%x.\n", val_types & ~msd->val_types);
+    fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
 }
 #endif
 
@@ -2755,9 +2771,9 @@ PMOD_EXPORT void check_multiset_for_destruct (struct multiset *l)
 
 #ifdef PIKE_DEBUG
     if (ind_types & ~msd->ind_types)
-      fatal ("Multiset indices type field lacked 0x%x.\n", ind_types & ~msd->ind_types);
+      fatal ("Multiset indices type field lacks 0x%x.\n", ind_types & ~msd->ind_types);
     if (val_types & ~msd->val_types)
-      fatal ("Multiset values type field lacked 0x%x.\n", val_types & ~msd->val_types);
+      fatal ("Multiset values type field lacks 0x%x.\n", val_types & ~msd->val_types);
 #endif
 
     msd->ind_types = ind_types;
@@ -3034,8 +3050,8 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 
 #define UNLINK_RES_NODE(RES_MSD, RES_LIST, GOT_NODE_REFS, NODE)		\
   do {									\
-    ADD_TO_FREE_LIST (RES_MSD, RBNODE (NODE));				\
     if (GOT_NODE_REFS) {						\
+      ADD_TO_FREE_LIST (RES_MSD, RBNODE (NODE));			\
       RBNODE (NODE)->i.ind.type = T_DELETED;				\
       /* Knowledge that LOW_RB_MERGE traverses the trees backwards */	\
       /* is used here. */						\
@@ -3044,6 +3060,8 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
 	(struct msnode_ind *) low_multiset_prev (RBNODE (NODE));	\
     }									\
     else {								\
+      CLEAR_DELETED_ON_FREE_LIST (RES_MSD);				\
+      ADD_TO_FREE_LIST (RES_MSD, RBNODE (NODE));			\
       RBNODE (NODE)->i.ind.type = PIKE_T_UNKNOWN;			\
       RBNODE (NODE)->i.prev = NULL;					\
       RES_MSD->size--;							\
@@ -3778,6 +3796,7 @@ static void gc_unlink_msnode_shared (struct multiset_data *msd,
 		PHDR (&msd->root), &rbstack, 1,
 		msd->flags & MULTISET_INDVAL ?
 		sizeof (struct msnode_indval) : sizeof (struct msnode_ind)));
+    CLEAR_DELETED_ON_FREE_LIST (msd);
     ADD_TO_FREE_LIST (msd, unlinked_node);
     unlinked_node->i.ind.type = PIKE_T_UNKNOWN;
     unlinked_node->i.prev = NULL;
@@ -4124,24 +4143,40 @@ union msnode *debug_check_msnode (struct multiset *l, ptrdiff_t nodepos,
 {
   struct multiset_data *msd = l->msd;
   union msnode *node;
+
   if (l->node_refs <= 0)
-    fatal ("%s:%d: Got a node reference to a multiset without any.\n", file, line);
+    fatal ("%s:%d: Got a node reference to a multiset without any.\n",
+	   file, line);
   if (nodepos < 0 || nodepos >= msd->allocsize)
     fatal ("%s:%d: Node offset %"PRINTPTRDIFFT"d "
 	   "outside storage for multiset (size %d).\n",
 	   file, line, nodepos, msd->allocsize);
+
   node = OFF2MSNODE (msd, nodepos);
-  if (node->i.ind.type == PIKE_T_UNKNOWN)
-    fatal ("%s:%d: Invalid node offset %"PRINTPTRDIFFT"d.\n", file, line, nodepos);
-  if (!allow_deleted && node->i.ind.type == T_DELETED)
-    fatal ("%s:%d: Node at offset %"PRINTPTRDIFFT"d is deleted.\n", file, line, nodepos);
+  switch (node->i.ind.type) {
+    case T_DELETED:
+      if (!allow_deleted)
+	fatal ("%s:%d: Node at offset %"PRINTPTRDIFFT"d is deleted.\n",
+	       file, line, nodepos);
+      break;
+    case PIKE_T_UNKNOWN:
+      fatal ("%s:%d: Invalid node offset %"PRINTPTRDIFFT"d.\n",
+	     file, line, nodepos);
+    default:
+      if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
+	fatal ("%s:%d: %s", file, line, msg_no_multiset_flag_marker);
+  }
+
   return node;
 }
 
-void check_low_msnode (struct multiset_data *msd, union msnode *node,
-		       int allow_free)
+#define EXP_NODE_ALLOC 1
+#define EXP_NODE_DEL 2
+#define EXP_NODE_FREE 4
+
+static void check_low_msnode (struct multiset_data *msd,
+			      union msnode *node, int exp_type)
 {
-  union msnode *n;
   if (node < msd->nodes ||
       node >= (msd->flags & MULTISET_INDVAL ?
 	       IVNODE (NODE_AT (msd, msnode_indval, msd->allocsize)) :
@@ -4152,14 +4187,24 @@ void check_low_msnode (struct multiset_data *msd, union msnode *node,
        (&node->iv - &msd->nodes->iv) * (ptrdiff_t) ((struct msnode_indval *) NULL + 1) :
        (&node->i - &msd->nodes->i) * (ptrdiff_t) ((struct msnode_ind *) NULL + 1)))
     fatal ("Unaligned node in storage for multiset.\n");
-  if (!allow_free && node->i.ind.type == PIKE_T_UNKNOWN)
-    fatal ("Node is free.\n");
+
+  switch (node->i.ind.type) {
+    default:
+      if (!(exp_type & EXP_NODE_ALLOC)) fatal ("Node is in use.\n");
+      break;
+    case T_DELETED:
+      if (!(exp_type & EXP_NODE_DEL)) fatal ("Node is deleted.\n");
+      break;
+    case PIKE_T_UNKNOWN:
+      if (!(exp_type & EXP_NODE_FREE)) fatal ("Node is free.\n");
+      break;
+  }
 }
 
 void check_multiset (struct multiset *l)
 {
   struct multiset_data *msd = l->msd;
-  int size = 0, indval = msd->flags & MULTISET_INDVAL;
+  int alloc = 0, indval = msd->flags & MULTISET_INDVAL;
 
   /* Check refs and multiset link list. */
 
@@ -4190,47 +4235,56 @@ void check_multiset (struct multiset *l)
   /* Check all node pointers, the tree structure and the type hints. */
 
   {
+    union msnode *node;
     TYPE_FIELD ind_types = 0, val_types = indval ? 0 : BIT_INT;
 
     if (msd->root) {
       int pos;
-      struct svalue ind;
 
-      check_low_msnode (msd, msd->root, 0);
+      check_low_msnode (msd, msd->root, EXP_NODE_ALLOC);
+      if (msd->free_list)
+	check_low_msnode (msd, msd->free_list, EXP_NODE_DEL | EXP_NODE_FREE);
 
-#define WITH_NODES_BLOCK(TYPE, OTHERTYPE, IND, INDVAL)			\
-      struct TYPE *node;						\
-      for (pos = msd->allocsize; pos-- > 0;) {				\
-	node = NODE_AT (msd, TYPE, pos);				\
-									\
-	switch (node->ind.type) {					\
-	  case T_DELETED:						\
-	    if (node->next) check_low_msnode (msd, (union msnode *) node->next, 1); \
-	    if (DELETED_PREV ((union msnode *) node))			\
-	      check_low_msnode (					\
-		msd, (union msnode *) DELETED_PREV ((union msnode *) node), 0); \
-	    if (DELETED_NEXT ((union msnode *) node))			\
-	      check_low_msnode (					\
-		msd, (union msnode *) DELETED_NEXT ((union msnode *) node), 0); \
-	    break;							\
-									\
-	  case PIKE_T_UNKNOWN:						\
-	    if (node->prev) fatal ("Free node got garbage in prev pointer.\n"); \
-	    if (node->next) check_low_msnode (msd, (union msnode *) node->next, 1); \
-	    break;							\
-									\
-	  default:							\
-	    size++;							\
-	    ind_types |= 1 << low_use_multiset_index ((union msnode *) node, ind)->type; \
-	    INDVAL (val_types |= 1 << node->val.type);			\
-	    if (node->prev) check_low_msnode (msd, (union msnode *) node->prev, 0); \
-	    if (node->next) check_low_msnode (msd, (union msnode *) node->next, 0); \
-	}								\
+      for (pos = msd->allocsize; pos-- > 0;) {
+	node = indval ?
+	  IVNODE (NODE_AT (msd, msnode_indval, pos)) :
+	  INODE (NODE_AT (msd, msnode_ind, pos));
+
+	switch (node->i.ind.type) {
+	  case T_DELETED:
+	    if (node->i.next)
+	      /* Don't check the type of the pointed to node; the free
+	       * list check below gives a better error for that. */
+	      check_low_msnode (msd, INODE (node->i.next),
+				EXP_NODE_ALLOC | EXP_NODE_DEL | EXP_NODE_FREE);
+	    if (DELETED_PREV (node))
+	      check_low_msnode (msd, DELETED_PREV (node), EXP_NODE_ALLOC | EXP_NODE_DEL);
+	    if (DELETED_NEXT (node))
+	      check_low_msnode (msd, DELETED_NEXT (node), EXP_NODE_ALLOC | EXP_NODE_DEL);
+	    break;
+
+	  case PIKE_T_UNKNOWN:
+	    if (node->i.next)
+	      /* Don't check the type of the pointed to node; the free
+	       * list check below gives a better error for that. */
+	      check_low_msnode (msd, INODE (node->i.next),
+				EXP_NODE_ALLOC | EXP_NODE_DEL | EXP_NODE_FREE);
+	    if (node->i.prev)
+	      fatal ("Free node got garbage in prev pointer.\n");
+	    break;
+
+	  default:
+	    alloc++;
+	    if (!(node->i.ind.type & MULTISET_FLAG_MARKER))
+	      fatal (msg_no_multiset_flag_marker);
+	    ind_types |= 1 << (node->i.ind.type & ~MULTISET_FLAG_MASK);
+	    if (indval) val_types |= 1 << node->iv.val.type;
+	    if (node->i.prev)
+	      check_low_msnode (msd, INODE (node->i.prev), EXP_NODE_ALLOC);
+	    if (node->i.next)
+	      check_low_msnode (msd, INODE (node->i.next), EXP_NODE_ALLOC);
+	}
       }
-
-      DO_WITH_NODES (msd);
-
-#undef WITH_NODES_BLOCK
 
 #ifdef PIKE_DEBUG
       debug_check_rb_tree (HDR (msd->root),
@@ -4250,21 +4304,20 @@ void check_multiset (struct multiset *l)
   /* Check the free list. */
 
   {
-    int deletedsize = 0, freesize = 0;
+    int deleted = 0, free = 0;
     union msnode *node;
+
     for (node = msd->free_list; node; node = NEXT_FREE (node)) {
-      check_low_msnode (msd, node, 1);
       if (node->i.ind.type == PIKE_T_UNKNOWN) break;
       if (node->i.ind.type != T_DELETED)
 	fatal ("Multiset node in free list got invalid type %d.\n", node->i.ind.type);
-      deletedsize++;
+      deleted++;
     }
 
     if (node) {
-      freesize++;
+      free++;
       for (node = NEXT_FREE (node); node; node = NEXT_FREE (node)) {
-	freesize++;
-	check_low_msnode (msd, node, 1);
+	free++;
 	if (node->i.ind.type == T_DELETED)
 	  fatal ("Multiset data got deleted node after free node on free list.\n");
 	if (node->i.ind.type != PIKE_T_UNKNOWN)
@@ -4272,16 +4325,13 @@ void check_multiset (struct multiset *l)
       }
     }
 
-    if (msd->size != size + deletedsize)
-      fatal ("Multiset data got size %d but tree is %d nodes and %d are deleted.\n",
-	     msd->size, size, deletedsize);
+    if (msd->size != alloc + deleted)
+      fatal ("Multiset data got size %d but tree has %d nodes and %d are deleted.\n",
+	     msd->size, alloc, deleted);
 
-    if (freesize != msd->allocsize - msd->size)
+    if (free != msd->allocsize - msd->size)
       fatal ("Multiset data should have %d free nodes but got %d on free list.\n",
-	     msd->allocsize - msd->size, freesize);
-
-    if (!l->node_refs && deletedsize)
-      fatal ("Multiset data got deleted nodes but no node refs.\n");
+	     msd->allocsize - msd->size, free);
   }
 
   /* Check the order. This can call pike code, so we need to be extra careful. */
@@ -4400,8 +4450,6 @@ static void debug_dump_indval_data (struct msnode_indval *node,
 void debug_dump_multiset (struct multiset *l)
 {
   struct multiset_data *msd = l->msd;
-  union msnode *node;
-  struct svalue tmp;
 
   fprintf (stderr, "Refs=%d, node_refs=%d, next=%p, prev=%p\nmsd=%p",
 	   l->refs, l->node_refs, l->next, l->prev, msd);
@@ -5162,7 +5210,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.43 2001/12/10 02:45:12 mast Exp $");
+RCSID("$Id: multiset.c,v 1.44 2001/12/10 20:16:32 mast Exp $");
 
 struct multiset *first_multiset;
 

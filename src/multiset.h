@@ -7,7 +7,7 @@
  *
  * Created by Martin Stjernholm 2001-05-07
  *
- * $Id: multiset.h,v 1.21 2001/12/10 02:30:40 mast Exp $
+ * $Id: multiset.h,v 1.22 2001/12/10 20:16:32 mast Exp $
  */
 
 /* #define TEST_MULTISET */
@@ -51,7 +51,7 @@ struct multiset_data
 #endif
   union msnode *root, *free_list;
   struct svalue cmp_less;
-  INT32 size, allocsize;	/* size includes any T_DELETED nodes (see below). */
+  INT32 size, allocsize;
   TYPE_FIELD ind_types;
   TYPE_FIELD val_types;		/* Always BIT_INT in valueless multisets. */
   INT16 flags;
@@ -69,12 +69,14 @@ struct multiset
 /* Data structure notes:
  *
  * o  The node free list through multiset_data.free_list is singly
- *    linked by the next pointers. Nodes on the free list must have
- *    ind.type set to either PIKE_T_UNKNOWN or T_DELETED (see below).
+ *    linked by the next pointers. Nodes on the free list are either
+ *    free or deleted (see below). Free nodes have ind.type set to
+ *    PIKE_T_UNKNOWN, and deleted nodes are flagged with T_DELETED.
  *
- *    Note that the free nodes might have T_DELETED set even when
- *    there are no node refs left to the multiset_data block and
- *    there's only one reference to it.
+ *    Deleted nodes are always before free nodes on the free list.
+ *    multiset_data.size counts both the allocated and the deleted
+ *    nodes. Note that deleted nodes might still be on the free list
+ *    even when there are no node references.
  *
  * o  multiset_data.cmp_less.type is T_INT when the internal set order
  *    is used.
@@ -98,15 +100,15 @@ struct multiset
  *    references that don't lock the value part of the data block.
  *    Thus, values may be changed without copy if (refs - noval_refs)
  *    is 1 (if youself have a value lock) or 0 (if you don't). The
- *    functions below that change values only assume that the caller
+ *    functions below that change only values assume that the caller
  *    has a value lock.
  *
  *    Note that you should not do any operation that might cause a
  *    copy of the data block (which includes insert and delete) when
  *    you've increased noval_refs, since it then won't be possible for
- *    the copying function to know whether one noval_ref should be
- *    moved to the copy or not. All copy operations let the noval_refs
- *    stay with the original.
+ *    the copying function to know whether one ref in noval_refs
+ *    should be moved to the copy or not. All copy operations let
+ *    noval_refs stay with the original.
  *
  * o  multiset.node_refs counts the number of references to nodes in
  *    the multiset. The references are array offsets in
@@ -115,14 +117,16 @@ struct multiset
  *    indices may be changed, nodes may be added and removed, and the
  *    order may be changed.
  *
- *    Nodes that are removed during nonzero node_refs are linked in
+ *    Nodes that are deleted during nonzero node_refs are linked in
  *    first on the free list as usual, but ind.type is set to
- *    T_DELETED. They are thereby flagged to not be used again. When
- *    node_refs reaches zero and there's only one reference to the
- *    multiset_data block, the type is changed to PIKE_T_UNKNOWN for
- *    all these nodes.
+ *    T_DELETED. They are thereby flagged to not be used again.
+ *    Deleted nodes on the free list are flagged as free as soon as
+ *    possible after all node references are gone. There are however
+ *    some combinations of node references and shared data blocks that
+ *    results in deleted nodes on the free list even after all node
+ *    references are gone.
  *
- *    The prev and ind.u.ptr pointers in T_DELETED nodes point to the
+ *    The prev and ind.u.ptr pointers in deleted nodes point to the
  *    previous and next neighbor, respectively, of the node at the
  *    time it was deleted. Thus the relative position of the node is
  *    remembered even after it has been deleted.
@@ -146,6 +150,7 @@ PMOD_EXPORT void multiset_clear_node_refs (struct multiset *l);
 /* To get good type checking. */
 static inline union msnode *msnode_check (union msnode *x)
   {return x;}
+PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #else
 #define msnode_check(X) ((union msnode *) (X))
 #endif
@@ -163,6 +168,10 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
 #define low_assign_multiset_index_no_free(TO, NODE) do {		\
     struct svalue *_ms_index_to_ = (TO);				\
     *_ms_index_to_ = msnode_check (NODE)->i.ind;			\
+    DO_IF_DEBUG (							\
+      if (!(_ms_index_to_->type & MULTISET_FLAG_MARKER))		\
+	fatal (msg_no_multiset_flag_marker);				\
+    );									\
     _ms_index_to_->type &= ~MULTISET_FLAG_MASK;				\
     add_ref_svalue (_ms_index_to_);					\
   } while (0)
@@ -175,6 +184,8 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
   low_assign_multiset_index_no_free (Pike_sp++, (NODE))
 #define low_use_multiset_index(NODE, VAR)				\
   ((VAR) = msnode_check (NODE)->i.ind,					\
+   DO_IF_DEBUG ((VAR).type & MULTISET_FLAG_MARKER ? 0 :			\
+		fatal (msg_no_multiset_flag_marker) COMMA)		\
    (VAR).type &= ~MULTISET_FLAG_MASK,					\
    &(VAR))
 
@@ -215,7 +226,6 @@ PMOD_PROTO void really_free_multiset (struct multiset *l);
 
 #ifdef PIKE_DEBUG
 
-void check_low_msnode (struct multiset_data *msd, union msnode *node, int allow_free);
 union msnode *debug_check_msnode (
   struct multiset *l, ptrdiff_t nodepos, int allow_deleted,
   char *file, int line);
@@ -288,7 +298,9 @@ PMOD_EXPORT ptrdiff_t multiset_last (struct multiset *l);
 PMOD_EXPORT ptrdiff_t multiset_prev (struct multiset *l, ptrdiff_t nodepos);
 PMOD_EXPORT ptrdiff_t multiset_next (struct multiset *l, ptrdiff_t nodepos);
 
+#ifdef PIKE_DEBUG
 PMOD_EXPORT extern const char msg_multiset_no_node_refs[];
+#endif
 
 #define add_msnode_ref(L) do {(L)->node_refs++;} while (0)
 #define sub_msnode_ref(L) do {						\
@@ -427,7 +439,7 @@ void test_multiset (void);
 \*/
 
 /*
- * $Id: multiset.h,v 1.21 2001/12/10 02:30:40 mast Exp $
+ * $Id: multiset.h,v 1.22 2001/12/10 20:16:32 mast Exp $
  */
 
 #include "las.h"
