@@ -525,14 +525,21 @@ class async_client
 
   static private void rec_data()
   {
-    mapping m=udp::read();
-    if(m->port != 53 || search(nameservers, m->ip) == -1) return;
-    sscanf(m->data,"%2c",int id);
-    object r=requests[id];
-    if(!r) return;
-    m_delete(requests,id);
-    r->callback(r->domain,decode_res(m->data),@r->args);
-    destruct(r);
+    mixed err;
+    if (err = catch {
+      mapping m=udp::read();
+      if(m->port != 53 || search(nameservers, m->ip) == -1) return;
+      sscanf(m->data,"%2c",int id);
+      object r=requests[id];
+      if(!r) return;
+      m_delete(requests,id);
+      r->callback(r->domain,decode_res(m->data),@r->args);
+      destruct(r);
+    }) {
+      werror(sprintf("DNS: Failed to read UDP packet. Connection refused?\n"
+		     "%s\n",
+		     describe_backtrace(err)));
+    }
   }
 
   static private void generic_get(string d,
