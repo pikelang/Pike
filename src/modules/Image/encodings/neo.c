@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: neo.c,v 1.5 2003/10/24 23:36:12 nilsson Exp $
+|| $Id: neo.c,v 1.6 2003/12/13 23:01:33 nilsson Exp $
 */
 
 #include "global.h"
 #include "image_machine.h"
 
 #include "stralloc.h"
-RCSID("$Id: neo.c,v 1.5 2003/10/24 23:36:12 nilsson Exp $");
+RCSID("$Id: neo.c,v 1.6 2003/12/13 23:01:33 nilsson Exp $");
 #include "atari.h"
 
 /* MUST BE INCLUDED LAST */
@@ -61,6 +61,7 @@ void image_neo_f__decode(INT32 args)
     Pike_error("This is not a NEO file (invalid resolution).\n");
 
   /* Checks done... */
+  add_ref(s);
   pop_n_elems(args);
 
   if(res==0)
@@ -81,7 +82,7 @@ void image_neo_f__decode(INT32 args)
   push_object(img);
   size += 2;
 
-  fn = make_shared_binary_string(q+36, 12);
+  fn = make_shared_binary_string((const char *)q+36, 12);
 
   push_constant_text("filename");
   push_string(fn);
@@ -102,6 +103,7 @@ void image_neo_f__decode(INT32 args)
     size += 8;
   }
 
+  free_string(s);
   f_aggregate_mapping(size);
 }
 
