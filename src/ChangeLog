@@ -1,3 +1,10 @@
+Mon Nov 18 03:39:38 1996  Niels Möller  <nisse@cuckoo.infovav.se>
+
+	* modules/gmpmod/mpz_glue.c (mpzmod_digits): Made base 10 default
+	if no argument is given.
+	(mpzmod_invert): new function.
+	(mpzmod_size): new function.
+
 Sun Nov 17 02:59:55 1996  Niels Möller  <nisse@cuckoo.infovav.se>
 
 	* modules/gmpmod/mpz_glue.c (mpzmod_digits): new function
