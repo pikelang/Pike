@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.38 2001/09/27 16:45:45 marcus Exp $ */
+/* $Id: matrix.c,v 1.39 2002/04/06 16:28:42 bash-peter Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.38 2001/09/27 16:45:45 marcus Exp $
+**!	$Id: matrix.c,v 1.39 2002/04/06 16:28:42 bash-peter Exp $
 **! class Image
 */
 
@@ -744,16 +744,16 @@ static void img_skewy(struct image *src,
 		      double diff,
 		      int xpn) /* expand pixel for use with alpha instead */
 {
-   double y0,ymod,ym;
-   INT32 x,len,xsz;
+   double y0,ymod,ym,y0f;
+   INT32 x,len,xsz,y0i;
    rgb_group *s,*d;
    rgb_group rgb;
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->ysize = DOUBLE_TO_INT(ceil(-diff) + src->ysize), y0 =- diff;
+      dest->ysize = DOUBLE_TO_INT(ceil(-diff)) + src->ysize, y0 =- diff;
    else
-      dest->ysize = DOUBLE_TO_INT(ceil(diff) + src->ysize), y0 = 0;
+      dest->ysize = DOUBLE_TO_INT(ceil(diff)) + src->ysize, y0 = 0;
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
 
@@ -776,12 +776,13 @@ CHRONO("skewy begin\n");
    while (x--)
    {
       int j;
+
       if (xpn) rgb=*s;
-      for (j = DOUBLE_TO_INT(y0); j--;) *d=rgb,d+=xsz;
-      if (!(ym=(y0-floor(y0))))
+      for (j = y0i = DOUBLE_TO_INT((y0f = floor(y0))); j--;) *d=rgb,d+=xsz;
+      if (!(ym=(y0-y0f)))
       {
 	 for (j=len; j--;) *d=*s,d+=xsz,s+=xsz;
-	 j = DOUBLE_TO_INT(dest->ysize - y0 - len);
+	 j = dest->ysize - y0i - len;
       }
       else
       {
@@ -809,10 +810,13 @@ CHRONO("skewy begin\n");
 	    d->b=ROUND(rgb.b*yn+s->b*ym);
 	 d+=xsz;
 	 s+=xsz;
-	 j = DOUBLE_TO_INT(dest->ysize - y0 - len);
+	 j = dest->ysize - y0i - len - 1;
       }
       if (xpn) rgb=s[-xsz];
-      while (j--) *d=rgb,d+=xsz;
+      if(j>0)
+	while (j--) *d=rgb,d+=xsz;
+      else
+	d += j;
       s-=len*xsz-1;
       d-=dest->ysize*xsz-1;
       y0+=ymod;
