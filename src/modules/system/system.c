@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.103 2003/03/04 12:42:38 grubba Exp $
+ * $Id: system.c,v 1.104 2003/05/12 09:05:58 tomas Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.103 2003/03/04 12:42:38 grubba Exp $");
+RCSID("$Id: system.c,v 1.104 2003/05/12 09:05:58 tomas Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1916,6 +1916,10 @@ static void f_get_netinfo_property(INT32 args)
 
 void pike_module_init(void)
 {
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+  mt_init(&gethostbyname_mutex);
+#endif
+
   /*
    * From this file:
    */
@@ -2206,5 +2210,9 @@ void pike_module_exit(void)
     extern void exit_nt_system_calls(void);
     exit_nt_system_calls();
   }
+#endif
+
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+  mt_destroy(&gethostbyname_mutex);
 #endif
 }
