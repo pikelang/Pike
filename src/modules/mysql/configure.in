@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 1997/01/10 00:29:07 grubba Exp $
+# $Id: configure.in,v 1.7 1997/01/11 20:55:12 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -36,6 +36,8 @@ if test x$with_mysql = xyes; then
     for pike_cv_mysql_lib_dir in /usr/local/lib/mysql /usr/local/mysql/lib/mysql /usr/gnu/lib/mysql /usr/lib/mysql /lib/mysql /usr/local/mysql/lib /usr/local/mysql/mach-lib-thread no; do
       if test -d $pike_cv_mysql_lib_dir/.; then
         break
+      else
+        :
       fi
     done
   ])
