@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.36 2001/01/23 18:05:08 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.37 2001/01/24 19:03:25 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -236,16 +236,16 @@ static void gz_deflate(INT32 args)
   SET_ONERROR(err,toss_buffer,&buf);
   fail=do_deflate(&buf,this,flush);
   UNSET_ONERROR(err);
-  pop_n_elems(args);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
-    free(buf.s.str);
+    toss_buffer(&buf);
     if(THIS->gz.msg)
       Pike_error("Error in gz_deflate->deflate(): %s\n",THIS->gz.msg);
     else
       Pike_error("Error in gz_deflate->deflate(): %d\n",fail);
   }
+  pop_n_elems(args);
 
   push_string(low_free_buf(&buf));
 }
@@ -380,19 +380,21 @@ static void gz_inflate(INT32 args)
   this->gz.avail_in = DO_NOT_WARN(data->len);
 
   initialize_buf(&buf);
+
   SET_ONERROR(err,toss_buffer,&buf);
   fail=do_inflate(&buf,this,Z_PARTIAL_FLUSH);
-  pop_n_elems(args);
   UNSET_ONERROR(err);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
   {
-    free(buf.s.str);
+    toss_buffer(&buf);
     if(THIS->gz.msg)
       Pike_error("Error in gz_inflate->inflate(): %s\n",THIS->gz.msg);
     else
       Pike_error("Error in gz_inflate->inflate(): %d\n",fail);
   }
+  pop_n_elems(args);
+
   push_string(low_free_buf(&buf));
   if(fail != Z_STREAM_END && fail!=Z_OK && !sp[-1].u.string->len)
   {
