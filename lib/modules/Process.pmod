@@ -4,6 +4,10 @@ import Stdio;
 
 // static private inherit File : file;
 
+#if !constant(strerror)
+#define strerror(X) ("errno="+X)
+#endif
+
 varargs int exec(string file,string ... foo)
 {
   if (sizeof(file)) {
