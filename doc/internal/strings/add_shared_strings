@@ -1,0 +1,19 @@
+NAME
+	add_shared_strings - add two pike strings
+
+SYNTAX
+	#include "stralloc.h"
+
+	struct pike_string *add_shared_strings(struct pike_string *a,
+	                                       struct pike_string *b);
+
+DESCRIPTION
+	This function builds the string a+b, that is the string a with the
+	string b appended to it. Note that the string returned will have
+	an extra reference.
+
+KEYWORDS
+	pike_string
+
+SEE ALSO
+	begin_shared_string, make_shared_string

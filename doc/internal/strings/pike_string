@@ -1,0 +1,18 @@
+NAME
+	pike_string - internal pike shared strings
+
+DESCRIPTION
+	This is the internal type for representing pike strings. They have
+	ref counts and they are shared though a global hash table. The C
+	type is a struct pike_string that has two public members: str and
+	len. str is an array of char which contain the actual string. It
+	is guaranteed that the string is null terminated, but the string
+	can also contain zeroes before the end. len is of course the
+	length of the string. Since strings are shared you may _never_
+	modify the contents of a string, except for adding/subtracting
+	references when approperiate. The only exception to this is when
+	creating a new shared string with begin_shared_string which has
+	not yet been linked to the hash table with end_shared_string.
+
+KEYWORD
+	internals

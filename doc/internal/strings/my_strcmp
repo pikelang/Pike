@@ -1,0 +1,19 @@
+NAME
+	my_strcmp - my own strcmp function
+
+SYNTAX
+	#include "stralloc.h"
+
+	int my_strcmp(struct pike_string *a, struct pike_string *b)
+
+DESCRIPTION
+	This function compares two pike strings and takes locales into
+	account if the system supports locales. It returns zero if the
+	strings are the same, a number greater than zero zero if 'a'
+	is greater than 'b', and a number below zero otherwise.
+
+KEYWORDS
+	pike_string
+
+SEE ALSO
+	make_shared_string

@@ -1,0 +1,18 @@
+NAME
+	begin_shared_string - allocate space for a shared string
+
+SYNTAX
+	#include "stralloc.h"
+
+	struct pike_string *begin_shared_string(INT32 len);
+
+DESCRIPTION
+	This function allocates space for a shared string of length 'len'.
+	You should then MEMCPY 'len' bytes into the s->str. (s being the
+	returned value) And then call end_shared_string.
+
+KEYWORDS
+	pike_string
+
+SEE ALSO
+	end_shared_string, make_shared_string
