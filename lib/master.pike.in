@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.125 2000/08/22 02:15:46 mast Exp $
+ * $Id: master.pike.in,v 1.126 2000/08/27 18:29:26 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -182,7 +182,8 @@ string combine_path_with_cwd(string path)
 int invalidate_time;
 mapping(string:multiset(string)) dir_cache = ([]);
 
-array master_file_stat(string x)
+#define Stat _static_modules.files.Stat
+Stat master_file_stat(string x)
 {
   string file, dir=combine_path_with_cwd(x);
 
@@ -322,7 +323,7 @@ object compilation_mutex = _static_modules.Builtin()->mutex();
 static program low_findprog(string pname, string ext, object|void handler)
 {
   program ret;
-  array s;
+  Stat s;
   string fname=pname+ext;
 
 #ifdef THREADED
@@ -375,7 +376,7 @@ static program low_findprog(string pname, string ext, object|void handler)
     case "":
     case ".pike":
       foreach(query_precompiled_names(fname), string oname) {
-	if(array s2=master_file_stat(fakeroot(oname)))
+	if(Stat s2=master_file_stat(fakeroot(oname)))
 	{	
 	  if(s2[1]>=0 && s2[3]>=s[3])
 	  {
@@ -873,7 +874,7 @@ object findmodule(string fullname)
     return o;
   }
 
-  if(array stat=master_file_stat(fakeroot(fullname+".pmod")))
+  if(Stat stat=master_file_stat(fakeroot(fullname+".pmod")))
   {
     if(stat[1]==-2)
       return fc[fullname]=dirnode(fullname+".pmod");

@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.82 2000/08/06 14:54:16 js Exp $
+// $Id: module.pmod,v 1.83 2000/08/27 18:29:27 mirar Exp $
 
 import String;
 
@@ -620,8 +620,8 @@ string read_file(string filename,void|int start,void|int len)
   if(!f->open(filename,"r")) return 0;
 
   // Disallow devices and directories.
-  array st;
-  if (f->stat && (st = f->stat()) && (st[1] < 0)) {
+  Stat st;
+  if (f->stat && (st = f->stat()) && !st->isreg) {
     throw(({ sprintf("Stdio.read_file(): File %O is not a regular file!\n",
 		     filename),
 	     backtrace()
@@ -661,8 +661,8 @@ string read_bytes(string filename,void|int start,void|int len)
     return 0;
   
   // Disallow devices and directories.
-  array st;
-  if (f->stat && (st = f->stat()) && (st[1] < 0)) {
+  Stat st;
+  if (f->stat && (st = f->stat()) && !st->isreg) {
     throw(({sprintf("Stdio.read_bytes(): File \"%s\" is not a regular file!\n",
 		    filename),
 	    backtrace()
@@ -719,7 +719,7 @@ int append_file(string filename, string what, int|void access)
 
 int file_size(string s)
 {
-  array(int) stat;
+  Stat stat;
   stat=file_stat(s);
   if(!stat) return -1;
   return stat[1]; 
@@ -749,26 +749,26 @@ void perror(string s)
  * The macro is used instead of file_size since
  * is_link requires a special stat mode.
  */
-#define FILE_STAT_SIZE(path) ((file_stat path)||({0,-1}))[1]
+#define FILE_STAT_SIZE(path) ((file_stat path)||([]))
 
 int is_file(string path)
 {
-  return FILE_STAT_SIZE((path)) >= 0;
+  return FILE_STAT_SIZE((path))->isreg;
 }
 
 int is_dir(string path)
 {
-  return FILE_STAT_SIZE((path)) == -2;
+  return FILE_STAT_SIZE((path))->isdir;
 }
 
 int is_link(string path)
 {
-  return FILE_STAT_SIZE((path, 1)) == -3;
+  return FILE_STAT_SIZE((path, 1))->islnk;
 }
 
 int exist(string path)
 {
-   return FILE_STAT_SIZE((path)) != -1;
+   return !!file_stat(path);
 }
 
 mixed `[](string index)
@@ -850,7 +850,7 @@ int mkdirhier (string dir, void|int mode)
 int recursive_rm (string path)
 {
   int res = 1;
-  array a = file_stat(path, 1);
+  Stat a = file_stat(path, 1);
   if(!a)
     return 0;
   if(a[1] == -2)

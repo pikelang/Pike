@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.85 2000/08/23 12:16:22 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.86 2000/08/27 18:29:27 mirar Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -147,7 +147,7 @@ void f_file_stat(INT32 args)
   {
     push_int(0);
   }else{
-    push_array(encode_stat(&st));
+    push_stat(&st);
   }
 }
 
@@ -1046,7 +1046,7 @@ void init_files_efuns(void)
 
   
 /* function(string,int|void:int *) */
-  ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tArr(tInt)), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tObj), OPT_EXTERNAL_DEPEND);
 
   ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),0);
 

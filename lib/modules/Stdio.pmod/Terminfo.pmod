@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.8 2000/03/30 21:21:10 grubba Exp $
+// $Id: Terminfo.pmod,v 1.9 2000/08/27 18:29:27 mirar Exp $
 
 
 #if constant(thread_create)
@@ -650,8 +650,8 @@ class TerminfoDB {
       foreach (({"/usr/share/lib/terminfo", "/usr/share/termcap",
 		 "/usr/lib/terminfo", "/usr/share/misc/terminfo"}), string dn)
       {
-	array(int) s = file_stat(dn);
-	if (arrayp(s) && sizeof(s)>1 && s[1]==-2)
+	.Stat s = file_stat(dn);
+	if (s && s->type=="dir")
 	{
 	  dirname = dn;
 	  break;

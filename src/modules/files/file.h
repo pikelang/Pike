@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.18 2000/08/22 14:10:40 mast Exp $
+ * $Id: file.h,v 1.19 2000/08/27 18:29:27 mirar Exp $
  */
 
 #ifndef FILE_H
@@ -132,6 +132,7 @@ void pike_module_init(void);
 int pike_make_pipe(int *fds);
 int fd_from_object(struct object *o);
 void f_strerror(INT32 args);
+void push_stat(struct stat *s);
 /* Prototypes end here */
 
 #define FILE_READ               0x1000
