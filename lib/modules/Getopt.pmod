@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//! @[Getopt] is a group of function which can be used to find command
+//! @[Getopt] is a group of functions which can be used to find command
 //! line options.
 //!
 //! Command line options come in two flavors: long and short. The short ones
@@ -67,7 +67,7 @@
 //!   If the option is present, but has not been set to anything @tt{1@}
 //!   will be returned.
 //!
-//!   Otherwise if any of the environment variables specified in @[env] has
+//!   Otherwise if any of the environment variables specified in @[envvars] has
 //!   been set, that value will be return.
 //!
 //!   If all else fails, @[def] will be returned.
@@ -197,8 +197,13 @@ string|int find_option(array(string) argv,
  * ({ "name", type, ({aliases}), env_var, default })
  */
 
+//!
 constant HAS_ARG=1;
+
+//!
 constant NO_ARG=2;
+
+//!
 constant MAY_HAVE_ARG=3;
 
 #define NAME 0
