@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.17 2001/09/06 18:17:15 mast Exp $ */
+/* $Id: socktest.pike,v 1.18 2001/09/06 18:21:55 mast Exp $ */
 
 
 import Stdio;
@@ -368,6 +368,7 @@ void finish()
 	break;
 
       case 49: {
+	werror ("Testing leak in write(). ");
 	string data1="foobar" * 20;
 	string data2="fubar" * 20;
 	socks=spair(1);
