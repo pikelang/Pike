@@ -1,7 +1,9 @@
-/* $Id: matrix.c,v 1.5 1997/05/19 22:50:26 hubbe Exp $ */
+/* $Id: matrix.c,v 1.6 1997/05/29 19:37:52 mirar Exp $ */
 
 /*
 **! module Image
+**! note
+**!	$Id: matrix.c,v 1.6 1997/05/29 19:37:52 mirar Exp $<br>
 **! class image
 */
 

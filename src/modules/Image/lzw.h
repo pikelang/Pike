@@ -1,4 +1,10 @@
-/* $Id: lzw.h,v 1.2 1997/05/14 00:40:58 per Exp $ */
+/* $Id: lzw.h,v 1.3 1997/05/29 19:37:47 mirar Exp $ */
+
+/*
+**! module Image
+**! note
+**!	$Id: lzw.h,v 1.3 1997/05/29 19:37:47 mirar Exp $<br>
+*/
 
 #define GIF_LZW
 

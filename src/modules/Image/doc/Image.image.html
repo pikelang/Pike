@@ -59,6 +59,8 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#map_fast>map_fast</a></tt>, 
      <tt><a href=Image.image.html#modify_by_intensity>modify_by_intensity</a></tt>,
      <tt><a href=Image.image.html#select_from>select_from</a></tt> 
+     <tt><a href=Image.image.html#rgb_to_hsv>rgb_to_hsv</a></tt> 
+     <tt><a href=Image.image.html#hsv_to_rgb>hsv_to_rgb</a></tt> 
 
 <p>     converting to other datatypes: <tt><a href=Image.image.html#cast>cast</a></tt>,
      <tt><a href=Image.image.html#fromgif>fromgif</a></tt>, 
@@ -70,6 +72,7 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
      <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
      <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>,
+     <tt><a href=Image.image.html#gif_transparency>gif_transparency</a></tt>,
      <tt><a href=Image.image.html#to8bit>to8bit</a></tt>,
      <tt><a href=Image.image.html#to8bit_closest>to8bit_closest</a></tt>, 
      <tt><a href=Image.image.html#to8bit_fs>to8bit_fs</a></tt>,
@@ -80,6 +83,10 @@ The main object of the <tt><a href=Image.html>Image</a></tt> module, this object
      <tt><a href=Image.image.html#togif_fs>togif_fs</a></tt>, 
      <tt><a href=Image.image.html#toppm>toppm</a></tt>,
      <tt><a href=Image.image.html#tozbgr>tozbgr</a></tt>
+
+<p>     special pattern drawing:
+     <tt><a href=Image.image.html#noise>noise</a></tt>,
+     <tt><a href=Image.image.html#turbulence>turbulence</a></tt>
 </blockquote>
 
 
@@ -1289,6 +1296,39 @@ a gif chunk that defines that the GIF animation should loop
 </blockquote>
 
 <hr>
+<a name=gif_transparency> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>string <b>gif_transparency</b>(int&nbsp;color)</tt>
+</blockquote>
+
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>int color</tt>
+  <dd>index of color in the palette
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+a gif chunk that transparent a color in the next image chunk
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+Yes - i know this function is too hard to use. :/
+     The palette _is_ unknown mostly...
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
+     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
+     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>
+</blockquote>
+
+<hr>
 <a name=grey> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
@@ -1322,6 +1362,56 @@ the new image object
 <blockquote>     <tt><a href=Image.image.html#color>color</a></tt>,
      <tt><a href=Image.image.html#%60*>`*</a></tt>,
      <tt><a href=Image.image.html#modify_by_intensity>modify_by_intensity</a></tt>
+</blockquote>
+
+<hr>
+<a name=hsv_to_rgb> </a>
+<a name=rgb_to_hsv> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>rgb_to_hsv</b>()<br>
+object <b>hsv_to_rgb</b>()</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Converts RGB data to HSV data, or the other way around.
+    When converting to HSV, the resulting data is stored like this:
+     pixel.r = h; pixel.g = s; pixel.b = v;
+
+<p>    When converting to RGB, the input data is asumed to be placed in
+    the pixels as above.
+
+<p>    HSV to RGB calculation:
+    <pre>
+    in = input pixel
+    out = destination pixel
+    h=-pos*c_angle*3.1415/(float)NUM_SQUARES;
+    out.r=(in.b+in.g*cos(in.r));
+    out.g=(in.b+in.g*cos(in.r + pi*2/3));
+    out.b=(in.b+in.g*cos(in.r + pi*4/3));
+    </pre>
+
+<p>    RGB to HSV calculation: Hmm.
+    <pre>
+    </pre>
+
+<p>     Example: Nice rainbow.
+    <pre>
+     object i = Image.image(200,200);
+     i = i->tuned_box(0,0, 200,200,
+                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
+                         ({ 255,255,255 }), ({ 0,255,255 })}))
+          ->hsv_to_rgb();
+     </pre>
+</blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the new image object
 </blockquote>
 
 <hr>
@@ -1615,6 +1705,39 @@ the new image object
 </blockquote>
 
 <hr>
+<a name=noise> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>void <b>noise</b>(array(float|int|array(int))&nbsp;colorrange)<br>
+void <b>noise</b>(array(float|int|array(int))&nbsp;colorrange, float&nbsp;scale, float&nbsp;xdiff, float&nbsp;ydiff, float&nbsp;cscale)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+gives a new image with the old image's size,
+     filled width a 'noise' pattern
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>array(float|int|array(int)) colorrange</tt>
+  <dd>colorrange table
+<dt><tt>float scale</tt>
+  <dd>default value is 0.1
+<dt><tt>float xdiff</tt>
+<dt><tt>float ydiff</tt>
+  <dd>default value is 0,0
+<dt><tt>float cscale</tt>
+  <dd>default value is 1
+</dl></blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.image.html#turbulence>turbulence</a></tt>
+</blockquote>
+
+<hr>
 <a name=paste> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
@@ -1807,15 +1930,18 @@ fills an area with the current color
 
 <p>     If any given curve is inside another, it
      will make a hole.
-
-<p> NOTE
-     This function is new (april-97) and rather untested.
 </dl></blockquote>
 <h4>RETURNS</h4>
 
 
 <blockquote>
 the current object
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+This function is new (april-97) and rather untested.
 </blockquote>
 
 
@@ -2262,9 +2388,9 @@ the GIF data
 
 
 <h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#togif_begin>togif_begin</a></tt>,
-     <tt><a href=Image.image.html#togif_add>togif_add</a></tt>,
-     <tt><a href=Image.image.html#togif_end>togif_end</a></tt>,
+<blockquote>     <tt><a href=Image.image.html#gif_begin>gif_begin</a></tt>,
+     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
+     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
      <tt><a href=Image.image.html#toppm>toppm</a></tt>,
      <tt><a href=Image.image.html#fromgif>fromgif</a></tt>
 </blockquote>
@@ -2379,6 +2505,41 @@ Draws a filled rectangle with colors (and alpha values) tuned
 
 <blockquote>
 the object called
+</blockquote>
+
+<hr>
+<a name=turbulence> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>void <b>turbulence</b>(array(float|int|array(int))&nbsp;colorrange)<br>
+void <b>turbulence</b>(array(float|int|array(int))&nbsp;colorrange, int&nbsp;octaves, float&nbsp;scale, float&nbsp;xdiff, float&nbsp;ydiff, float&nbsp;cscale)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+gives a new image with the old image's size,
+     filled width a 'turbulence' pattern
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>array(float|int|array(int)) colorrange</tt>
+  <dd>colorrange table
+<dt><tt>int octaves</tt>
+  <dd>default value is 3
+<dt><tt>float scale</tt>
+  <dd>default value is 0.1
+<dt><tt>float xdiff</tt>
+<dt><tt>float ydiff</tt>
+  <dd>default value is 0,0
+<dt><tt>float cscale</tt>
+  <dd>default value is 1
+</dl></blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.image.html#noise>noise</a></tt>
 </blockquote>
 
 <hr>

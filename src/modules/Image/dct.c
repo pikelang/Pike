@@ -1,7 +1,9 @@
-/* $Id: dct.c,v 1.7 1997/05/19 22:50:24 hubbe Exp $ */
+/* $Id: dct.c,v 1.8 1997/05/29 19:37:25 mirar Exp $ */
 
 /*
 **! module Image
+**! note
+**!	$Id: dct.c,v 1.8 1997/05/29 19:37:25 mirar Exp $<br>
 **! class image
 */
 

@@ -1,11 +1,12 @@
-/* $Id: image.c,v 1.30 1997/05/28 16:04:14 mirar Exp $ */
+/* $Id: image.c,v 1.31 1997/05/29 19:37:34 mirar Exp $ */
 
 /*
 **! module Image
 **!
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
-**!
+**! note
+**!	$Id: image.c,v 1.31 1997/05/29 19:37:34 mirar Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -79,6 +80,7 @@
 **!	<ref>gif_begin</ref>,
 **!	<ref>gif_end</ref>,
 **!	<ref>gif_netscape_loop</ref>,
+**!	<ref>gif_transparency</ref>,
 **!	<ref>to8bit</ref>,
 **!	<ref>to8bit_closest</ref>, 
 **!	<ref>to8bit_fs</ref>,
@@ -90,6 +92,10 @@
 **!	<ref>toppm</ref>,
 **!	<ref>tozbgr</ref>
 **!
+**!	special pattern drawing:
+**!	<ref>noise</ref>,
+**!	<ref>turbulence</ref>
+**!
 **! see also: Image, Image.font
 */
 
@@ -100,7 +106,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.30 1997/05/28 16:04:14 mirar Exp $");
+RCSID("$Id: image.c,v 1.31 1997/05/29 19:37:34 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

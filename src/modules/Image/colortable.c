@@ -1,9 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.2 1997/05/19 22:50:24 hubbe Exp $ */
+/* $Id: colortable.c,v 1.3 1997/05/29 19:37:21 mirar Exp $ */
 
 /*
 **! module Image
+**! note
+**!	$Id: colortable.c,v 1.3 1997/05/29 19:37:21 mirar Exp $<br>
 **! class colortable
 **!
 **!	This object keeps colortable information,

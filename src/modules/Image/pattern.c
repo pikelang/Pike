@@ -1,4 +1,11 @@
-/* $Id: pattern.c,v 1.4 1997/05/19 22:50:26 hubbe Exp $ */
+/* $Id: pattern.c,v 1.5 1997/05/29 19:38:01 mirar Exp $ */
+
+/*
+**! module Image
+**! note
+**!	$Id: pattern.c,v 1.5 1997/05/29 19:38:01 mirar Exp $<br>
+**! class image
+*/
 
 #include "global.h"
 
@@ -181,14 +188,25 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 	      : ( error("illegal argument(s) to "where"\n"), 0.0 ) ) ) \
       : def )
 
+/*
+**! method void noise(array(float|int|array(int)) colorrange)
+**! method void noise(array(float|int|array(int)) colorrange,float scale,float xdiff,float ydiff,float cscale)
+**! 	gives a new image with the old image's size,
+**!	filled width a 'noise' pattern
+**! arg array(float|int|array(int)) colorrange
+**! 	colorrange table
+**! arg float scale
+**!	default value is 0.1
+**! arg float xdiff
+**! arg float ydiff
+**!	default value is 0,0
+**! arg float cscale
+**!	default value is 1
+**! see also: turbulence
+*/
+
 void image_noise(INT32 args)
 {
-/* parametrar: 	array(float|int|array(int)) colorrange,
-                float scale=0.1,
-		float xdiff=0,
-		float ydiff=0,
-   		float cscale=1
-*/
    int x,y;
    rgb_group cr[COLORRANGE_LEVELS];
    double scale,xdiff,ydiff,cscale,xp,yp;
@@ -233,6 +251,25 @@ void image_noise(INT32 args)
    pop_n_elems(args);
    push_object(o);
 }
+
+/*
+**! method void turbulence(array(float|int|array(int)) colorrange)
+**! method void turbulence(array(float|int|array(int)) colorrange,int octaves,float scale,float xdiff,float ydiff,float cscale)
+**! 	gives a new image with the old image's size,
+**!	filled width a 'turbulence' pattern
+**! arg array(float|int|array(int)) colorrange
+**! 	colorrange table
+**! arg int octaves
+**!	default value is 3
+**! arg float scale
+**!	default value is 0.1
+**! arg float xdiff
+**! arg float ydiff
+**!	default value is 0,0
+**! arg float cscale
+**!	default value is 1
+**! see also: noise
+*/
 
 void image_turbulence(INT32 args)
 {

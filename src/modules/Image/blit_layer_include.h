@@ -1,5 +1,12 @@
-/* $Id: blit_layer_include.h,v 1.2 1997/03/25 06:59:10 mirar Exp $ */
+/* $Id: blit_layer_include.h,v 1.3 1997/05/29 19:37:16 mirar Exp $ */
 /* included w/ defines in blit.c, image_add_layer() */
+
+/*
+**! module Image
+**! note
+**!	$Id: blit_layer_include.h,v 1.3 1997/05/29 19:37:16 mirar Exp $<br>
+**! class image
+*/
 
 
    i=(y2-y1+1);

@@ -24,6 +24,8 @@
 
 /*
 **! module Image
+**! note
+**!	$Id: polyfill.c,v 1.4 1997/05/29 19:38:09 mirar Exp $<br>
 **! class image
 */
 
@@ -39,7 +41,7 @@
 **!	If any given curve is inside another, it
 **!	will make a hole.
 **!
-**! NOTE
+**! note
 **!	This function is new (april-97) and rather untested.
 **! see also: box, setcolor
 */

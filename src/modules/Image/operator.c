@@ -1,7 +1,9 @@
-/* $Id: operator.c,v 1.7 1997/05/19 22:50:26 hubbe Exp $ */
+/* $Id: operator.c,v 1.8 1997/05/29 19:37:56 mirar Exp $ */
 
 /*
 **! module Image
+**! note
+**!	$Id: operator.c,v 1.8 1997/05/29 19:37:56 mirar Exp $<br>
 **! class image
 */
 

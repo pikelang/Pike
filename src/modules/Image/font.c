@@ -1,9 +1,14 @@
+/* $Id: font.c,v 1.13 1997/05/29 19:37:29 mirar Exp $ */
 #include <config.h>
 
 /*
 **! module Image
+**! note
+**!	$Id: font.c,v 1.13 1997/05/29 19:37:29 mirar Exp $<br>
 **! class font
 **!
+**! note
+**! 	Short technical documentation on a font file:
 **!	This object adds the text-drawing and -creation
 **!	capabilities of the <ref>Image</ref> module.
 **!
@@ -16,8 +21,6 @@
 **!	<ref>set_yspacing_scale</ref>,
 **!	<ref>text_extents</ref>
 **!	
-**! note
-**! 	Short technical documentation on a font file:
 **!	<pre>
 **!	       struct file_head 
 **!	       {

@@ -1,4 +1,4 @@
-/* $Id: lzw.c,v 1.1 1997/02/11 08:35:44 hubbe Exp $ */
+/* $Id: lzw.c,v 1.2 1997/05/29 19:37:43 mirar Exp $ */
 
 /*
 
@@ -10,6 +10,12 @@ this file can be used generally for lzw algoritms,
 the existanse of #define GIF_LZW is for that purpose. :-)
 /Pontus
 
+*/
+
+/*
+**! module Image
+**! note
+**!	$Id: lzw.c,v 1.2 1997/05/29 19:37:43 mirar Exp $<br>
 */
 
 #include "global.h"

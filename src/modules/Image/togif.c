@@ -4,12 +4,14 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.14 1997/05/29 17:03:27 mirar Exp $ 
+$Id: togif.c,v 1.15 1997/05/29 19:38:18 mirar Exp $ 
 
 */
 
 /*
 **! module Image
+**! note
+**!	$Id: togif.c,v 1.15 1997/05/29 19:38:18 mirar Exp $<br>
 **! class image
 */
 
@@ -784,7 +786,7 @@ void image_gif_add_fs_nomap(INT32 args)
 **! arg int trans_g
 **! arg int trans_b
 **!	one color, that is to be transparent.
-**! see also: togif_begin, togif_add, togif_end, toppm, fromgif
+**! see also: gif_begin, gif_add, gif_end, toppm, fromgif
 */
 
 
