@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.18 2000/06/09 22:48:33 mast Exp $
+ * $Id: jvm.c,v 1.19 2000/06/10 11:52:46 mast Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.18 2000/06/09 22:48:33 mast Exp $");
+RCSID("$Id: jvm.c,v 1.19 2000/06/10 11:52:46 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -329,7 +329,7 @@ static void jobj_gc_check(struct object *o)
     gc_check(j->jvm);
 }
 
-static void jobj_gc_mark(struct object *o)
+static void jobj_gc_recurse(struct object *o)
 {
   struct jobj_storage *j = THIS_JOBJ;
 
@@ -507,7 +507,7 @@ static void method_gc_check(struct object *o)
     gc_check(m->class);
 }
 
-static void method_gc_mark(struct object *o)
+static void method_gc_recurse(struct object *o)
 {
   struct method_storage *m = THIS_METHOD;
 
@@ -1099,7 +1099,7 @@ static void field_gc_check(struct object *o)
     gc_check(f->class);
 }
 
-static void field_gc_mark(struct object *o)
+static void field_gc_recurse(struct object *o)
 {
   struct field_storage *f = THIS_FIELD;
 
@@ -1900,7 +1900,7 @@ static void natives_gc_check(struct object *o)
   }
 }
 
-static void natives_gc_mark(struct object *o)
+static void natives_gc_recurse(struct object *o)
 {
   struct natives_storage *n = THIS_NATIVES;
 
@@ -2601,7 +2601,7 @@ static void att_gc_check(struct object *o)
   gc_check_svalues(&att->thr, 1);
 }
 
-static void att_gc_mark(struct object *o)
+static void att_gc_recurse(struct object *o)
 {
   struct att_storage *att = THIS_ATT;
 
@@ -2678,7 +2678,7 @@ static void monitor_gc_check(struct object *o)
     gc_check(m->obj);
 }
 
-static void monitor_gc_mark(struct object *o)
+static void monitor_gc_recurse(struct object *o)
 {
   struct monitor_storage *m = THIS_MONITOR;
 
@@ -2899,7 +2899,7 @@ static void jvm_gc_check(struct object *o)
     gc_check(j->tl_env);
 }
 
-static void jvm_gc_mark(struct object *o)
+static void jvm_gc_recurse(struct object *o)
 {
   struct jvm_storage *j = THIS_JVM;
 
@@ -3215,7 +3215,7 @@ void pike_module_init(void)
   set_init_callback(init_jobj_struct);
   set_exit_callback(exit_jobj_struct);
   set_gc_check_callback(jobj_gc_check);
-  set_gc_mark_callback(jobj_gc_mark);
+  set_gc_recurse_callback(jobj_gc_recurse);
   jobj_program = end_program();
   jobj_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
@@ -3263,7 +3263,7 @@ void pike_module_init(void)
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
-  set_gc_mark_callback(method_gc_mark);
+  set_gc_recurse_callback(method_gc_recurse);
   static_method_program = end_program();
   static_method_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
@@ -3277,7 +3277,7 @@ void pike_module_init(void)
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
-  set_gc_mark_callback(method_gc_mark);
+  set_gc_recurse_callback(method_gc_recurse);
   method_program = end_program();
   method_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
@@ -3290,7 +3290,7 @@ void pike_module_init(void)
   set_init_callback(init_field_struct);
   set_exit_callback(exit_field_struct);
   set_gc_check_callback(field_gc_check);
-  set_gc_mark_callback(field_gc_mark);
+  set_gc_recurse_callback(field_gc_recurse);
   field_program = end_program();
   field_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
@@ -3303,7 +3303,7 @@ void pike_module_init(void)
   set_init_callback(init_field_struct);
   set_exit_callback(exit_field_struct);
   set_gc_check_callback(field_gc_check);
-  set_gc_mark_callback(field_gc_mark);
+  set_gc_recurse_callback(field_gc_recurse);
   static_field_program = end_program();
   static_field_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
@@ -3313,7 +3313,7 @@ void pike_module_init(void)
   set_init_callback(init_monitor_struct);
   set_exit_callback(exit_monitor_struct);
   set_gc_check_callback(monitor_gc_check);
-  set_gc_mark_callback(monitor_gc_mark);
+  set_gc_recurse_callback(monitor_gc_recurse);
   monitor_program = end_program();
   monitor_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
@@ -3325,7 +3325,7 @@ void pike_module_init(void)
   set_init_callback(init_natives_struct);
   set_exit_callback(exit_natives_struct);
   set_gc_check_callback(natives_gc_check);
-  set_gc_mark_callback(natives_gc_mark);
+  set_gc_recurse_callback(natives_gc_recurse);
   natives_program = end_program();
   natives_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 #endif /* SUPPORT_NATIVE_METHODS */
@@ -3337,7 +3337,7 @@ void pike_module_init(void)
   set_init_callback(init_att_struct);
   set_exit_callback(exit_att_struct);
   set_gc_check_callback(att_gc_check);
-  set_gc_mark_callback(att_gc_mark);
+  set_gc_recurse_callback(att_gc_recurse);
   attachment_program = end_program();
   attachment_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 #endif /* _REENTRANT */
@@ -3372,7 +3372,7 @@ void pike_module_init(void)
   set_exit_callback(exit_jvm_struct);
 #ifdef _REENTRANT
   set_gc_check_callback(jvm_gc_check);
-  set_gc_mark_callback(jvm_gc_mark);
+  set_gc_recurse_callback(jvm_gc_recurse);
 #endif /* _REENTRANT */
   add_program_constant("jvm", jvm_program = end_program(), 0);
   jvm_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.240 2000/06/09 22:43:05 mast Exp $");
+RCSID("$Id: program.c,v 1.241 2000/06/10 11:52:43 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1474,9 +1474,9 @@ void set_exit_callback(void (*exit)(struct object *))
  * during a gc pass. The gc assumes that the references are enumerated
  * in the same order in that case.
  */
-void set_gc_mark_callback(void (*m)(struct object *))
+void set_gc_recurse_callback(void (*m)(struct object *))
 {
-  new_program->gc_marked=m;
+  new_program->gc_recurse_func=m;
 }
 
 /*
@@ -3431,19 +3431,19 @@ static void gc_check_trampoline(struct object *o)
   gc_check_frame(THIS->frame);
 }
 
-static void gc_mark_frame(struct pike_frame *f)
+static void gc_recurse_frame(struct pike_frame *f)
 {
   if(!f) return;
   if(f->current_object) gc_recurse_object(f->current_object);
   if(f->context.prog)   gc_recurse_program(f->context.prog);
   if(f->context.parent) gc_recurse_object(f->context.parent);
   if(f->malloced_locals)gc_recurse_svalues(f->locals,f->num_locals);
-  if(f->scope)          gc_mark_frame(f->scope);
+  if(f->scope)          gc_recurse_frame(f->scope);
 }
 
-static void gc_mark_trampoline(struct object *o)
+static void gc_recurse_trampoline(struct object *o)
 {
-  gc_mark_frame(THIS->frame);
+  gc_recurse_frame(THIS->frame);
 }
 
 
@@ -3471,7 +3471,7 @@ void init_program(void)
   set_init_callback(init_trampoline);
   set_exit_callback(exit_trampoline);
   set_gc_check_callback(gc_check_trampoline);
-  set_gc_mark_callback(gc_mark_trampoline);
+  set_gc_recurse_callback(gc_recurse_trampoline);
   pike_trampoline_program=end_program();
 }
 

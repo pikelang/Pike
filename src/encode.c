@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.58 2000/04/08 02:01:08 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.59 2000/06/10 11:52:43 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -573,7 +573,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       {
 	INT32 e;
 	struct program *p=val->u.program;
-	if(p->init || p->exit || p->gc_marked || p->gc_check_func ||
+	if(p->init || p->exit || p->gc_recurse_func || p->gc_check_func ||
 	   (p->flags & PROGRAM_HAS_C_METHODS))
 	  error("Cannot encode C programs.\n");
 	code_entry(type_to_tag(val->type), 1,data);

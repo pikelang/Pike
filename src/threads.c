@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.128 2000/06/09 22:48:31 mast Exp $");
+RCSID("$Id: threads.c,v 1.129 2000/06/10 11:52:44 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1091,7 +1091,7 @@ void exit_thread_obj(struct object *o)
   th_destroy(& THIS_THREAD->id);
 }
 
-static void thread_was_marked(struct object *o)
+static void thread_was_recursed(struct object *o)
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
@@ -1304,7 +1304,7 @@ void th_init(void)
   /* function(:int) */
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
   ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tNone,tStr),0);
-  set_gc_mark_callback(thread_was_marked);
+  set_gc_recurse_callback(thread_was_recursed);
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);

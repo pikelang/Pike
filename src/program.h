@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.90 2000/06/09 22:43:05 mast Exp $
+ * $Id: program.h,v 1.91 2000/06/10 11:52:44 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -262,7 +262,7 @@ struct program
 
   void (*init)(struct object *);
   void (*exit)(struct object *);
-  void (*gc_marked)(struct object *);
+  void (*gc_recurse_func)(struct object *);
   void (*gc_check_func)(struct object *);
 #ifdef PIKE_DEBUG
   unsigned INT32 checksum;
@@ -345,7 +345,7 @@ struct program *debug_end_program(void);
 SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
-void set_gc_mark_callback(void (*m)(struct object *));
+void set_gc_recurse_callback(void (*m)(struct object *));
 void set_gc_check_callback(void (*m)(struct object *));
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
