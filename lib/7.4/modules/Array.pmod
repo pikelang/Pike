@@ -4,6 +4,8 @@ inherit Array;
 
 // diff3, complement to diff (alpha stage)
 
+//! This diff3 implementation is obsoleted by @[Array.diff3].
+//! @deprecated diff3
 array(array(array)) diff3_old(array mid,array left,array right)
 {
    array(array) lmid,ldst;
