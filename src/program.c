@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.449 2002/10/11 01:39:36 nilsson Exp $
+|| $Id: program.c,v 1.450 2002/10/12 11:57:09 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.449 2002/10/11 01:39:36 nilsson Exp $");
+RCSID("$Id: program.c,v 1.450 2002/10/12 11:57:09 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5018,7 +5018,7 @@ extern void yyparse(void);
   yyparse();  /* Parse da program */			\
   if(save_sp != Pike_sp)				\
     Pike_fatal("yyparse() left %"PRINTPTRDIFFT"d droppings on the stack!\n",	\
-	  Pike_sp - save_sp);						\
+	  Pike_sp - save_sp);				\
 }while(0)
 #else
 #define do_yyparse() yyparse()
@@ -5698,13 +5698,16 @@ struct program *compile(struct pike_string *aprog,
   if((c->placeholder=aplaceholder)) add_ref(aplaceholder);
   c->default_module.type=T_INT;
 
-  if(c->handler)
+  if (c->handler)
   {
-    safe_apply_handler ("get_default_module", c->handler, NULL,
-			0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO);
-    if(SAFE_IS_ZERO(Pike_sp-1))
-    {
-      pop_stack();
+    if (safe_apply_handler ("get_default_module", c->handler, NULL,
+			    0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO)) {
+      if(SAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	ref_push_mapping(get_builtin_constants());
+      }
+    } else {
       ref_push_mapping(get_builtin_constants());
     }
   }else{
@@ -6873,6 +6876,8 @@ PMOD_EXPORT void *parent_storage(int depth)
 
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 {
+  STACK_LEVEL_START(0);
+
   if(major == PIKE_MAJOR_VERSION && minor == PIKE_MINOR_VERSION)
   {
     push_int(0); /* optimization */
@@ -6892,34 +6897,34 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
     }
   }
 
+  STACK_LEVEL_CHECK(1);
+
   if(compat_handler)
   {
     free_object(compat_handler);
-    compat_handler=0;
+    compat_handler = NULL;
   }
   
-  if(sp[-1].type == T_OBJECT)
+  if((Pike_sp[-1].type == T_OBJECT) && (Pike_sp[-1].u.object->prog))
   {
-    compat_handler = dmalloc_touch(struct object *, sp[-1].u.object);
-    sp--;
+    compat_handler = dmalloc_touch(struct object *, Pike_sp[-1].u.object);
+    Pike_sp--;
+  } else {
+    pop_stack();
+  }
 
-    safe_apply_handler ("get_default_module", error_handler, compat_handler,
-			0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO);
+  if (safe_apply_handler ("get_default_module", error_handler, compat_handler,
+			  0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO)) {
     if(Pike_sp[-1].type == T_INT)
     {
       pop_stack();
       ref_push_mapping(get_builtin_constants());
     }
-  }else{
-    pop_stack();
-    safe_apply_handler ("get_default_module", error_handler, NULL,
-			0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO);
-    if (Pike_sp[-1].type == T_INT) {
-      pop_stack();
-      ref_push_mapping(get_builtin_constants());
-    }
+  } else {
+    ref_push_mapping(get_builtin_constants());
   }
 
+  STACK_LEVEL_CHECK(1);
 
   if(Pike_compiler->num_used_modules)
   {
@@ -6939,6 +6944,8 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 
   Pike_compiler->compat_major=major;
   Pike_compiler->compat_minor=minor;
+
+  STACK_LEVEL_DONE(0);
 }
 
 #ifdef PIKE_USE_MACHINE_CODE
