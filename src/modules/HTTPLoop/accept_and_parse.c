@@ -335,7 +335,7 @@ void aap_handle_connection(struct args *arg)
   while(1)
 #endif /* HAVE_TIMEOUTS */
   {
-    int data_read = fd_read(arg->fd, p, buffer_len-pos);
+    ptrdiff_t data_read = fd_read(arg->fd, p, buffer_len-pos);
     if(data_read <= 0)
     {
 #ifdef AAP_DEBUG

@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.96 2000/08/18 21:35:55 grubba Exp $ */
+/* $Id: colortable.c,v 1.97 2000/08/20 14:46:58 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.96 2000/08/18 21:35:55 grubba Exp $
+**!	$Id: colortable.c,v 1.97 2000/08/20 14:46:58 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.96 2000/08/18 21:35:55 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.97 2000/08/20 14:46:58 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -995,7 +995,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 				   int *dist,int *no,
 				   rgbl_group sf)
 {
-   int mindist;
+   ptrdiff_t mindist;
    struct nct_scale *s;
    int nc;
 
@@ -1003,9 +1003,9 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 
    if (cube.r&&cube.g&&cube.b)
    {
-      mindist=sf.r*sq((((INT32)(rgb.r*(int)cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
-	      sf.g*sq((((INT32)(rgb.g*(int)cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
-	      sf.b*sq((((INT32)(rgb.b*(int)cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
+      mindist = sf.r*sq((((rgb.r*cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
+	        sf.g*sq((((rgb.g*cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
+	        sf.b*sq((((rgb.b*cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
 
       *no=((INT32)(rgb.r*cube.r+cube.r/2)>>8)+
 	  ((INT32)(rgb.g*cube.g+cube.g/2)>>8)*cube.r+
@@ -1013,7 +1013,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 
       if (mindist<cube.disttrig)
       {
-	 *dist=mindist;
+	 *dist = DO_NOT_WARN((int)mindist);
 	 return;
       }
    }
@@ -1042,14 +1042,15 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       if (s->no[n]>=nc) 
       {
 	 int steps=s->steps;
-	 int ldist=sf.r*sq(rgb.r-((int)(s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
-	           sf.g*sq(rgb.g-((int)(s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
-	           sf.b*sq(rgb.b-((int)(s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
+	 ptrdiff_t ldist =
+	   sf.r*sq(rgb.r-((int)(s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
+	   sf.g*sq(rgb.g-((int)(s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
+	   sf.b*sq(rgb.b-((int)(s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
 
 	 if (ldist<mindist)
 	 {
 	    *no=s->no[n];
-	    mindist=ldist;
+	    mindist = ldist;
 	 }
       }
 
@@ -1057,7 +1058,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       s=s->next;
    }
   
-   *dist=mindist;
+   *dist = DO_NOT_WARN((int)mindist);
 }
 
 static struct nct_cube _img_get_cube_from_args(INT32 args)
@@ -3018,7 +3019,7 @@ static INLINE ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
    while (n--)
       if (*p==c) return c; else p++;
 
-   *p=c;
+   *p = DO_NOT_WARN((int)c);
    (*i)++;
    (*pp)++;
 
