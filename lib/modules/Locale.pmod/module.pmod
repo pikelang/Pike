@@ -315,6 +315,7 @@ object get_object(string project, string lang) {
 		       "translate" : t_tag,
 		       "pike"      : pike_tag, ]) );
   xml_parser->feed(data)->finish();
+  str_tag = t_tag = pike_tag = 0; // To avoid garbage.
 
 #ifdef LOCALE_DEBUG
   };   
