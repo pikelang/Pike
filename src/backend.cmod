@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.15 2001/06/08 12:12:42 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.16 2001/07/18 20:46:56 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1230,6 +1230,10 @@ PIKECLASS Backend
 #endif
 #ifdef WSAENOTSOCK
 			case WSAENOTSOCK:
+#endif
+
+#ifdef DEBUG_MALLOC
+			  debug_malloc_dump_fd(i);
 #endif
 			  fatal("Filedescriptor %d (%s) caused fatal error %d in backend.\n",i,fd_info(i),errno);
 			  

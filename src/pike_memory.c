@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.106 2001/06/28 10:24:22 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.107 2001/07/18 20:46:58 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1013,6 +1013,7 @@ struct memloc
 #define MEM_WARN_ON_FREE 2
 #define MEM_REFERENCED 4
 #define MEM_IGNORE_LEAK 8
+#define MEM_FREE 16
 
 BLOCK_ALLOC(memloc, 16382)
 
@@ -1513,6 +1514,32 @@ int dmalloc_unregister(void *p, int already_gone)
   return ret;
 }
 
+static int low_dmalloc_mark_as_free(void *p, int already_gone)
+{
+  struct memhdr *mh=find_memhdr(p);
+  if(mh)
+  {
+    if(!(mh->flags & MEM_FREE))
+    {
+      mh->size=~mh->size;
+      mh->flags |= MEM_FREE | MEM_IGNORE_LEAK;
+      low_add_marks_to_memhdr(&no_leak_memlocs, mh);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int dmalloc_mark_as_free(void *p, int already_gone)
+{
+  int ret;
+  mt_lock(&debug_malloc_mutex);
+  ret=low_dmalloc_mark_as_free(p,already_gone);
+  mt_unlock(&debug_malloc_mutex);
+  return ret;
+}
+
+
 void *debug_malloc(size_t s, LOCATION location)
 {
   char *m;
@@ -1606,6 +1633,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
     {
       add_location(mh, location);
       mh->size = ~mh->size;
+      mh->flags|=MEM_FREE | MEM_IGNORE_LEAK;
       blocks_to_free_ptr++;
       blocks_to_free_ptr%=FREE_DELAY;
       p2=blocks_to_free[blocks_to_free_ptr];
@@ -1887,6 +1915,7 @@ void list_open_fds(void)
       struct memhdr *tmp;
       struct memloc *l;
       void *p=m->data;
+      if(m->flags & MEM_FREE) continue;
       
       if( 1 & (long) p )
       {
@@ -2271,6 +2300,7 @@ int debug_malloc_touch_fd(int fd, LOCATION location)
 int debug_malloc_register_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
+  dmalloc_unregister( FD2PTR(fd), 1);
   dmalloc_register( FD2PTR(fd), 0, location);
   return fd;
 }
@@ -2278,7 +2308,16 @@ int debug_malloc_register_fd(int fd, LOCATION location)
 int debug_malloc_close_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
-  dmalloc_unregister( FD2PTR(fd), 1);
+  dmalloc_mark_as_free( FD2PTR(fd), 1 );
+  return fd;
+}
+
+void debug_malloc_dump_fd(int fd)
+{
+  fprintf(stderr,"DMALLOC dumping locations for fd %d\n",fd);
+  if(fd==-1) return fd;
+  debug_malloc_dump_references(FD2PTR(fd),2,0,0);
+
   return fd;
 }
 
