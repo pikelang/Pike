@@ -448,3 +448,6 @@
    COLOR("yellow4"             ,139,139,0)
    COLOR("yellowgreen"         ,154,205,50)
 #endif
+
+   COLOR("pikegreen"           ,170,238,204) /* hehe */
+
