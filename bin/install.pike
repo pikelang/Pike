@@ -831,6 +831,7 @@ string install_type="--interactive";
 
 int pre_install(array(string) argv)
 {
+  werror("pre_install(({%{%O, %}}))\r\n", argv);
   
   prefix=vars->prefix || "/usr/local";
   
@@ -841,6 +842,7 @@ int pre_install(array(string) argv)
 
   while(1)
   {
+    werror("install_type: %O...\r\n", install_type);
   switch(install_type)
   {
     case "--traditional":
@@ -989,8 +991,8 @@ int pre_install(array(string) argv)
 	lnk=combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),"pike");
 	old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
       }
-      prefix=combine_path("/",getcwd(),prefix,"pike",
-			  replace(version()-"Pike v"," release ","."));
+      prefix = combine_path("/", getcwd(), prefix, "pike",
+			    replace(version()-"Pike v"," release ","."));
       exec_prefix=combine_path(prefix,"bin");
       lib_prefix=combine_path(prefix,"lib");
       include_prefix=combine_path(prefix,"include","pike");
@@ -1041,7 +1043,8 @@ void dump_modules()
 				  master}), options);
      int retcode=p->wait();
      if (retcode)
-       werror("Dumping of master.pike failed (not fatal) (%d)\n",retcode);
+       werror("Dumping of master.pike failed (not fatal) (0x%08x)\n",
+	      retcode);
   }
 
   if(sizeof(to_dump))
@@ -1051,7 +1054,7 @@ void dump_modules()
     foreach(to_dump, string mod)
       rm(mod+".o");
       
-    /* Dump 50 modules at a time */
+    /* Dump 25 modules at a time */
 
     array cmd=({fakeroot(pike) });
 
@@ -1081,26 +1084,32 @@ void dump_modules()
 //      werror("%O\n",cmd);
 
     int offset = 1;
-    foreach(to_dump/50.0, array delta_dump)
-      {
-	 object p=
-	    Process.create_process(cmd +
-				   ( istty() ? 
-				     ({
-					"--progress-bar",
-					sprintf("%d,%d", 
-						offset, sizeof(to_dump))
-				     }) : ({"--quiet"}) ) +
-				   delta_dump, options);
-	 int retcode=p->wait();
-	 if (retcode)
-	 {
-	    werror("Dumping of some modules failed (not fatal) (%d)\n",
-		   retcode);
-	 }
-
-	 offset += sizeof(delta_dump);
+    foreach(to_dump/25.0, array delta_dump)
+    {
+      mixed err = catch {
+	object p=
+	  Process.create_process(cmd +
+				 ( istty() ? 
+				   ({
+				     "--progress-bar",
+				     sprintf("%d,%d", 
+					     offset, sizeof(to_dump))
+				   }) : ({"--quiet"}) ) +
+				 delta_dump, options);
+	int retcode=p->wait();
+	if (retcode)
+	{
+	  werror("Dumping of some modules failed (not fatal) (0x%08x)\n",
+		 retcode);
+	}
+      };
+      if (err) {
+	werror("Failed to spawn module dumper (not fatal):\n"
+	       "%s\n", describe_backtrace(err));
       }
+
+      offset += sizeof(delta_dump);
+    }
       
     if(progress_bar)
       /* The last files copied does not really count (should
@@ -1113,6 +1122,7 @@ void dump_modules()
 
 void do_install()
 {
+  werror("do_install()\r\n");
   pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
@@ -1262,6 +1272,7 @@ void do_install()
 
 int main(int argc, array(string) argv)
 {
+  werror("main(%O, ({%{%O, %}}))...\r\n", argc, argv);
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
