@@ -1188,9 +1188,9 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
     MEMSET((char *)&data,0,sizeof(data));
     if(gethostbyname_r(name, &result, &data) < 0)
     {
-      ret=&result;
-    }else{
       ret=0;
+    }else{
+      ret=&result;
     }
     THREADS_DISALLOW();
 #else
