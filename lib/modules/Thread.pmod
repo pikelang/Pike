@@ -27,7 +27,7 @@ class Fifo {
       object key=lock::lock();
       while(size() == sizeof(buffer)) w_cond::wait(key);
       buffer[w_ptr]=v;
-      if(++w_ptr >= sizeof(buffer)) r_ptr=0;
+      if(++w_ptr >= sizeof(buffer)) w_ptr=0;
       r_cond::signal();
     }
   
