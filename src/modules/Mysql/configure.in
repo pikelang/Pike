@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 1998/09/20 08:31:46 hubbe Exp $
+# $Id: configure.in,v 1.7 1998/09/25 21:07:35 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -47,7 +47,7 @@ if test x$with_mysql = xyes; then
 
   if test x$pike_cv_mysql_lib_dir = xno; then :; else
     echo Adding $pike_cv_mysql_lib_dir to the library search path.
-    LDFLAGS="-L$pike_cv_mysql_lib_dir ${LDFLAGS}"
+    LDFLAGS="-R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir ${LDFLAGS}"
   fi
 
   AC_MSG_CHECKING(Checking for Mysql include-directory)
