@@ -20,9 +20,9 @@ int|float convert_angle(int|float angle, string from, string to) {
   float from_v = (float)this_object()[from+"_turn"];
   float to_v = (float)this_object()[to+"_turn"];
   if( from_v==0.0 )
-    error("Unknown angel from type %s.\n", from);
+    error("Unknown angle from type %s.\n", from);
   if( to_v==0.0 )
-    error("Unknown angel to type %s.\n", from);
+    error("Unknown angle to type %s.\n", from);
   if(from==to)
     return angle;
   return angle * to_v/from_v;
