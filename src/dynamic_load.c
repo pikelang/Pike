@@ -8,13 +8,72 @@
 #  include "pike_macros.h"
 #endif
 
-#if !defined(HAVE_DLOPEN) && defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
+#if !defined(HAVE_DLOPEN)
+
+#if defined(HAVE_DLD_LINK) && defined(HAVE_DLD_GET_FUNC)
 #define USE_DLD
+#define HAVE_SOME_DLOPEN
+#define EMULATE_DLOPEN
+#else
+#if defined(HAVE_LOADLIBRARY) && defined(HAVE_FREELIBRARY) && \
+    defined(HAVE_GETPROCADDRESS) && defined(HAVE_WINBASE_H)
+#define USE_LOADLIBRARY
+#define HAVE_SOME_DLOPEN
+#define EMULATE_DLOPEN
+#endif
+#endif
+#else
+#define HAVE_SOME_DLOPEN
 #endif
 
-#if defined(HAVE_DLOPEN) || defined(USE_DLD)
+
+#ifdef HAVE_SOME_DLOPEN
 
 typedef void (*modfun)(void);
+
+#ifdef USE_LOADLIBRARY
+#include <windows.h>
+
+static TCHAR *convert_string(char *str, int len)
+{
+  int e;
+  TCHAR *ret=(TCHAR *)xalloc((len+1) * sizeof(TCHAR));
+  for(e=0;e<len;e++) ret[e]=EXTRACT_UCHAR(str+e);
+  ret[e]=0;
+  return ret;
+}
+
+static void *dlopen(char *foo, int how)
+{
+  TCHAR *tmp;
+  HINSTANCE ret;
+  tmp=convert_string(foo, strlen(foo));
+  ret=LoadLibrary(tmp);
+  free((char *)tmp);
+  return (void *)ret;
+}
+
+static char * dlerror(void)
+{
+  static char buffer[200];
+  sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
+  return buffer;
+}
+
+static void *dlsym(void *module, char * function)
+{
+  return (void *)GetProcAddress((HMODULE)module,
+				function);
+}
+
+static void dlclose(void *module)
+{
+  FreeLibrary((HMODULE)module);
+}
+
+#define dlinit()
+
+#endif
 
 #ifdef USE_DLD
 #include <dld.h>
@@ -57,7 +116,10 @@ static void dlinit(void)
 }
 
 
-#else
+#endif
+
+#ifndef EMULATE_DLOPEN
+
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif

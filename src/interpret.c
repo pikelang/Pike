@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.68 1998/02/03 23:12:26 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.69 1998/02/27 08:39:17 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -365,21 +365,6 @@ void print_return_value(void)
 #define print_return_value()
 #endif
 
-
-void pop_n_elems(INT32 x)
-{
-  if(!x) return;
-#ifdef DEBUG
-  if(sp - evaluator_stack < x)
-    fatal("Popping out of stack.\n");
-
-  if(x < 0) fatal("Popping negative number of args....\n");
-#endif
-  sp-=x;
-  free_svalues(sp,x,BIT_MIXED);
-}
-
-
 struct callback_list evaluator_callbacks;
 
 #ifdef DEBUG
@@ -513,7 +498,7 @@ static int eval_instruction(unsigned char *pc)
 #ifdef DEBUG
     if(d_flag)
     {
-#ifdef _REENTRANT
+#if defined(_REENTRANT) && !defined(__NT__)
       if(!mt_trylock(& interpreter_lock))
 	fatal("Interpreter running unlocked!\n");
 #endif

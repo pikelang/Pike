@@ -221,6 +221,9 @@ extern struct program *new_program;
 extern struct program *first_program;
 extern int compiler_pass;
 extern long local_class_counter;
+extern int catch_level;
+
+#define COMPILER_IN_CATCH 1
 
 #define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
 #include "program_areas.h"

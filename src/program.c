@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.63 1998/02/24 23:01:32 hubbe Exp $");
+RCSID("$Id: program.c,v 1.64 1998/02/27 08:39:21 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -98,6 +98,7 @@ struct program *malloc_size_program=0;
 int compiler_pass;
 int compilation_depth;
 long local_class_counter;
+int catch_level;
 struct compiler_frame *compiler_frame=0;
 static INT32 last_line = 0;
 static INT32 last_pc = 0;

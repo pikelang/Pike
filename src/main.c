@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.41 1998/02/11 00:05:01 hubbe Exp $");
+RCSID("$Id: main.c,v 1.42 1998/02/27 08:39:20 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -109,23 +109,27 @@ int dbm_main(int argc, char **argv)
 #if __NT__
   if(!master_file)
   {
+    HKEY k;
     char buffer[4096];
     DWORD len=sizeof(buffer)-1,type=REG_SZ;
-    
-    if(RegQueryValueEx(HKEY_CURRENT_USER,
-		       "SOFTWARE\\Idonex\\Pike\\0.6\\PIKE_MASTER",
-		       0,
-		       &type,
-		       buffer,
-		       &len)==ERROR_SUCCESS ||
-       RegQueryValueEx(HKEY_LOCAL_MACHINE,
-		       "SOFTWARE\\Idonex\\Pike\\0.6\\PIKE_MASTER",
-		       0,
-		       &type,
-		       buffer,
-		       &len)==ERROR_SUCCESS)
+    long ret;
+    if(RegOpenKeyEx(HKEY_CURRENT_USER,
+		     (LPCTSTR)"SOFTWARE\\Idonex\\Pike\\0.6",
+		     0,KEY_READ,&k)==ERROR_SUCCESS ||
+       RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+		    (LPCTSTR)"SOFTWARE\\Idonex\\Pike\\0.6",
+		    0,KEY_READ,&k)==ERROR_SUCCESS)
     {
-      master_file=strdup(buffer);
+      if(RegQueryValueEx(k,
+			 "PIKE_MASTER",
+			 0,
+			 &type,
+			 buffer,
+			 &len)==ERROR_SUCCESS)
+      {
+	master_file=strdup(buffer);
+      }
+      RegCloseKey(k);
     }
   }
 #endif

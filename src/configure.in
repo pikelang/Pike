@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.159 1998/02/20 01:05:34 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.160 1998/02/27 08:39:15 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -99,6 +99,8 @@ AC_ARG_WITH(ssleay,    [  --without-ssleay       no support for the secure socke
 AC_ARG_WITH(mysql,     [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
 AC_ARG_WITH(dmalloc,   [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC)],[])
 AC_ARG_WITH(profiling, [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
+AC_ARG_WITH(poll,      [  --with-poll            use poll instead of select],[AC_DEFINE(HAVE_AND_USE_POLL)],[])
+AC_ARG_WITH(max-fd,    [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
 
 #
 # Allow --with(out)-debug to toggle both cdebug and rtldebug, but
@@ -950,7 +952,6 @@ AC_CHECK_FUNCS( \
  strtok \
  strtol \
  time \
- GetSystemTimeAsFileTime \
  times \
  vfprintf \
  vsprintf \
@@ -973,6 +974,15 @@ AC_CHECK_FUNCS( \
  initgroups setgroups
 )
 
+if test x$pike_cv_sys_os = xWindows_NT ; then
+ AC_DEFINE(HAVE_LOADLIBRARY)
+ AC_DEFINE(HAVE_FREELIBRARY)
+ AC_DEFINE(HAVE_GETPROCADDRESS)
+ AC_DEFINE(DL_EXPORT, _dlspec(export))
+else
+ AC_DEFINE(DL_EXPORT, [])
+fi
+
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
   AC_CHECK_LIB(crypt,crypt,[LIBS="${LIBS} -lcrypt" ; AC_DEFINE(HAVE_CRYPT)],
 [
@@ -990,31 +1000,6 @@ fi
 
 AC_STRUCT_TM
 
-#############################################################################
-AC_MSG_CHECKING(working strcoll)
-AC_CACHE_VAL(pike_cv_func_strcoll,
-[
-AC_TRY_RUN([
-#include <string.h>
-#include <locale.h>
-int main()
-{
-  setlocale(LC_CTYPE, "ISO-8859-1");
-  exit(strcoll("abc", "def") >= 0 ||
-       strcoll("ABC", "DEF") >= 0 ||
-       strcoll("ABC", "ABCD") >= 0 ||
-       strcoll("ABCD", "ABC") <= 0 ||
-       strcoll("*^#", "*^#") != 0 ||
-       strcoll("123", "456") >= 0);
-}
-],pike_cv_func_strcoll=yes,pike_cv_func_strcoll=no,pike_cv_func_strcoll=no)
-])
-
-if test $pike_cv_func_strcoll = yes; then
-  AC_DEFINE(HAVE_STRCOLL)
-fi
-
-AC_MSG_RESULT($pike_cv_func_strcoll)
 #############################################################################
 
 AC_MSG_CHECKING(extern int timezone)
@@ -1311,6 +1296,53 @@ int main()
   }
   exit(0);
 }])
+
+#############################################################################
+MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
+[
+#include <windows.h>
+#include <winbase.h>
+
+int main()
+{
+  FILETIME f;
+  GetSystemTimeAsFileTime(&f);
+  exit(0);
+}
+])
+#############################################################################
+MY_CHECK_FUNCTION(gethostname,
+[
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+int main(int argc, char **argv)
+{
+  char buffer[10000];
+  char *x=gethostname(buffer,sizeof(buffer));
+  exit(0);
+}
+])
+#############################################################################
+MY_CHECK_FUNCTION(strcoll,
+[
+#include <string.h>
+#include <locale.h>
+int main()
+{
+  setlocale(LC_CTYPE, "ISO-8859-1");
+  exit(strcoll("abc", "def") >= 0 ||
+       strcoll("ABC", "DEF") >= 0 ||
+       strcoll("ABC", "ABCD") >= 0 ||
+       strcoll("ABCD", "ABC") <= 0 ||
+       strcoll("*^#", "*^#") != 0 ||
+       strcoll("123", "456") >= 0);
+}
+])
 
 ########################################################################
 
@@ -1810,6 +1842,7 @@ then
 	OpenBSD*) LDSHARED="ld -Bshareable";;
 	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
 	UNIX_SV) LDSHARED="ld -G";;
+        Windows_NT*) LDSHARED="$CC -shared";;
 	*) LDSHARED="ld";;
 	esac
 fi
@@ -1827,6 +1860,7 @@ if test -z "$CCSHARED" ; then
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
 	Solaris*) CCSHARED="-KPIC -Bdynamic";;
+        Windows_NT*) CCSHARED="-shared" ;;
     esac
   fi
 fi
@@ -1839,6 +1873,7 @@ AC_CACHE_VAL(pike_cv_sys_linkforshared,[
 # the pike executable -- this is only needed for a few systems
 if test -z "$LINKFORSHARED"
 then
+  LINKFORSHARED=""
   if test "$GCC" = yes ; then
     case $pike_cv_sys_os in
 	AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
@@ -1939,7 +1974,9 @@ AC_SUBST(DEBUGDEF)
 AC_SUBST(ac_configure_args)
 
 if test x$ac_cv_func_dlopen$ac_cv_func_dld_link = xnono ; then
-  with_dynamic_modules=no
+  if test x$pike_cv_sys_os != xWindows_NT ; then
+    with_dynamic_modules=no
+  fi
 fi
 
 if test x$with_dynamic_modules = xyes ; then

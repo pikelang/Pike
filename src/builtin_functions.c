@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.73 1998/02/24 14:51:16 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.74 1998/02/27 08:39:13 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1986,9 +1986,6 @@ static struct array* diff_build(struct array *a,
    struct array *ad,*bd;
    int bi,ai,lbi,lai,i,eqstart;
 
-   b->refs++;
-   a->refs++;  /* protect from getting optimized... */
-
    /* FIXME(?) memory unfreed upon error here (and later) */
    ad=low_allocate_array(0,32);
    bd=low_allocate_array(0,32);
@@ -2004,27 +2001,22 @@ static struct array* diff_build(struct array *a,
 	 /* insert the equality */
 	 if (lbi>=eqstart)
 	 {
-	    struct array *eq;
-	    eq=slice_array(b,eqstart,lbi+1);
-	    push_array(eq); sp--;
-	    ad=resize_array(ad,ad->size+1);
-	    bd=resize_array(bd,bd->size+1);
-
-	    sp->u.refs[0]++;
-	    ad->item[ad->size-1] = bd->item[bd->size-1] = *sp;
+	    push_array(friendly_slice_array(b,eqstart,lbi+1));
+	    ad=append_array(ad,sp-1);
+	    bd=append_array(bd,sp-1);
+	    pop_stack();
 	 }
 	 /* insert the difference */
 	 lai=ai;
 	 ai=array_search(a,b->item+bi,ai+1)-1;
 
-	 bd=resize_array(bd,bd->size+1);
-	 ad=resize_array(ad,ad->size+1);
+	 push_array(friendly_slice_array(b,lbi+1,bi));
+	 bd=append_array(bd, sp-1);
+	 pop_stack();
 
-	 push_array(slice_array(b,lbi+1,bi));
-	 bd->item[bd->size-1]=*--sp;
-
-	 push_array(slice_array(a,lai+1,ai+1));
-	 ad->item[ad->size-1]=*--sp;
+	 push_array(friendly_slice_array(a,lai+1,ai+1));
+	 ad=append_array(ad,sp-1);
+	 pop_stack();
 
 	 eqstart=bi;
       }
@@ -2034,36 +2026,26 @@ static struct array* diff_build(struct array *a,
 
    if (lbi>=eqstart)
    {
-      struct array *eq;
-      eq=slice_array(b,eqstart,lbi+1);
-      push_array(eq); sp--;
-      ad=resize_array(ad,ad->size+1);
-      bd=resize_array(bd,bd->size+1);
-      
-      sp->u.refs[0]++;
-      ad->item[ad->size-1] = bd->item[bd->size-1] = *sp;
+      push_array(friendly_slice_array(b,eqstart,lbi+1));
+      ad=append_array(ad,sp-1);
+      bd=append_array(bd,sp-1);
+      pop_stack();
    }
 
    if (b->size>bi+1 || a->size>ai+1)
    {
-      ad=resize_array(ad,ad->size+1);
-      bd=resize_array(bd,bd->size+1);
-
-      push_array(slice_array(b,lbi+1,b->size));
-      bd->item[bd->size-1]=*--sp;
+      push_array(friendly_slice_array(b,lbi+1,b->size));
+      bd=append_array(bd, sp-1);
+      pop_stack();
       
-      push_array(slice_array(a,ai+1,a->size));
-      ad->item[ad->size-1]=*--sp;
+      push_array(friendly_slice_array(a,ai+1,a->size));
+      ad=append_array(ad,sp-1);
+      pop_stack();
    }
-
-   b->refs--;
-   a->refs--; /* i know what i'm doing... */
 
    push_array(ad);
    push_array(bd);
-   f_aggregate(2);
-   sp--;
-   return sp->u.array;
+   return aggregate_array(2);
 }
 
 void f_diff(INT32 args)

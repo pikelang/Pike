@@ -28,11 +28,21 @@ struct frame
 
 #ifdef DEBUG
 #define debug_check_stack() do{if(sp<evaluator_stack)fatal("Stack error.\n");}while(0)
+#define check__positive(X,Y) if((X)<0) fatal(Y)
+#include "error.h"
 #else
+#define check__positive(X,Y)
 #define debug_check_stack() 
 #endif
 
 #define pop_stack() do{ free_svalue(--sp); debug_check_stack(); }while(0)
+
+#define pop_n_elems(X)						\
+ do { int x_=(X); if(x_) { 					\
+   check__positive(x_,"Popping negative number of args....\n");	\
+   sp-=x_; debug_check_stack();					\
+  free_svalues(sp,x_,BIT_MIXED);				\
+ } } while (0)
 
 #define push_program(P) do{ struct program *_=(P); debug_malloc_touch(_); sp->u.program=_; sp++->type=T_PROGRAM; }while(0)
 #define push_int(I) do{ INT32 _=(I); sp->u.integer=_;sp->type=T_INT;sp++->subtype=NUMBER_NUMBER; }while(0)
@@ -117,7 +127,6 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
 void assign_lvalue(struct svalue *lval,struct svalue *from);
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);
-void pop_n_elems(INT32 x);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);

@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.30 1998/02/20 00:43:16 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.31 1998/02/27 08:40:57 hubbe Exp $
 #
 
 
@@ -54,6 +54,8 @@ depend:
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in
 	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR) 
+
+extra_tests: $(MODULE_TESTS)
 
 verify: module_testsuite  $(MODULE_TESTS)
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite

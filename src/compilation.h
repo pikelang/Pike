@@ -88,6 +88,7 @@
   IMEMBER(int,comp_stackp)
   IMEMBER(int,compiler_pass)
   ZMEMBER(int,local_class_counter)
+  ZMEMBER(int,catch_level)
   SEND
 
 #undef PCODE

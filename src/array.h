@@ -63,7 +63,6 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 struct array *low_allocate_array(INT32 size,INT32 extra_space);
 void really_free_array(struct array *v);
 void do_free_array(struct array *a);
-struct array *resize_array(struct array *a, INT32 size);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
 void simple_array_index_no_free(struct svalue *s,
@@ -72,6 +71,7 @@ void array_free_index(struct array *v,INT32 index);
 void array_set_index(struct array *v,INT32 index, struct svalue *s);
 void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
 struct array *array_insert(struct array *v,struct svalue *s,INT32 index);
+struct array *resize_array(struct array *a, INT32 size);
 struct array *array_shrink(struct array *v,INT32 size);
 struct array *array_remove(struct array *v,INT32 index);
 INT32 array_search(struct array *v, struct svalue *s,INT32 start);
@@ -119,6 +119,7 @@ void describe_index(struct array *a,
 		    int indent);
 void describe_array(struct array *a,struct processing *p,int indent);
 struct array *aggregate_array(INT32 args);
+struct array *append_array(struct array *a, struct svalue *s);
 struct array *explode(struct pike_string *str,
 		       struct pike_string *del);
 struct pike_string *implode(struct array *a,struct pike_string *del);

@@ -270,6 +270,10 @@ struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
  */
 struct array *resize_array(struct array *a, INT32 size)
 {
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(a);
+#endif
+
   if(a->size == size) return a;
   if(size > a->size)
   {
@@ -425,6 +429,8 @@ struct array *slice_array(struct array *v,INT32 start,INT32 end)
 #ifdef DEBUG
   if(start > end || end>v->size || start<0)
     fatal("Illegal arguments to slice_array()\n");
+
+  if(d_flag > 1)  array_check_type_field(v);
 #endif
 
   if(start==0 && v->refs==1)	/* Can we use the same array? */
@@ -452,6 +458,8 @@ struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end)
 #ifdef DEBUG
   if(start > end || end>v->size || start<0)
     fatal("Illegal arguments to slice_array()\n");
+
+  if(d_flag > 1)  array_check_type_field(v);
 #endif
 
   a=allocate_array_no_init(end-start,0);
@@ -1288,6 +1296,13 @@ struct array *aggregate_array(INT32 args)
   return a;
 }
 
+struct array *append_array(struct array *a, struct svalue *s)
+{
+  a=resize_array(a,a->size+1);
+  array_set_index(a, a->size-1, s);
+  return a;
+}
+
 struct array *explode(struct pike_string *str,
 		       struct pike_string *del)
 {
@@ -1385,6 +1400,10 @@ struct array *copy_array_recursively(struct array *a,struct processing *p)
   struct processing doing;
   struct array *ret;
 
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(a);
+#endif
+
   doing.next=p;
   doing.pointer_a=(void *)a;
   for(;p;p=p->next)
@@ -1401,6 +1420,8 @@ struct array *copy_array_recursively(struct array *a,struct processing *p)
   doing.pointer_b=(void *)ret;
 
   copy_svalues_recursively_no_free(ITEM(ret),ITEM(a),a->size,&doing);
+
+  ret->type_field=a->type_field;
   return ret;
 }
 

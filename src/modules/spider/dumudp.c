@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.33 1998/02/11 01:10:57 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.34 1998/02/27 08:41:20 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -105,7 +105,7 @@ static void udp_bind(INT32 args)
   if(FD != -1)
   {
     set_read_callback( FD, 0, 0 );
-    fd_close(FD);	/* Shouldn't this be some other taste of close()? */
+    fd_close(FD);	/* Shouldn't this be some other taste of close()? No - Hubbe */
     FD = -1;
   }
 
@@ -120,7 +120,7 @@ static void udp_bind(INT32 args)
   o=1;
   if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
-    close(fd);
+    fd_close(fd);
     error("setsockopt failed\n");
     return;
   }
@@ -140,7 +140,7 @@ static void udp_bind(INT32 args)
 
   if(tmp)
   {
-    close(fd);
+    fd_close(fd);
     pop_n_elems(args);
     push_int(0);
     return;

@@ -162,7 +162,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.60 1998/02/24 23:01:28 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.61 1998/02/27 08:39:19 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1421,7 +1421,15 @@ catch_arg: '(' comma_expr ')'  { $$=$2; }
   | block
   ; 
 
-catch: F_CATCH catch_arg { $$=mknode(F_CATCH,$2,NULL); } ;
+catch: F_CATCH
+     {
+       catch_level++;
+     }
+     catch_arg
+     {
+       $$=mknode(F_CATCH,$3,NULL);
+       catch_level--;
+      } ;
 
 sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   {

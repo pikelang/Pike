@@ -65,6 +65,9 @@
 /* Define if you have a working, 8-bit-clean memcmp */
 #undef HAVE_MEMCMP
 
+/* Define if you have gethostname */
+#undef HAVE_GETHOSTNAME
+
 /* Define if you have memmove.  */
 #ifndef __CHECKER__
 #undef HAVE_MEMMOVE
@@ -174,7 +177,17 @@
 /* Define if your cpp supports K&R-style concatenation */
 #undef HAVE_KR_CONCAT
 
+/* Use poll() instead of select() ? */
+#undef HAVE_AND_USE_POLL
+
 @BOTTOM@
+
+/* NT stuff */
+#undef HAVE_GETSYSTEMTIMEASFILETIME
+#undef HAVE_LOADLIBRARY
+#undef HAVE_FREELIBRARY
+#undef HAVE_GETPROCADDRESS
+#undef DL_EXPORT
 
 /* How to set a socket non-blocking */
 #undef USE_IOCTL_FIONBIO
