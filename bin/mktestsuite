@@ -116,6 +116,9 @@ void a() { add_constant("[[$1]]",class c {
 define(test_program, [[DOTEST(TRUE,dnl
 [[$1]])]])
 
+define(test_tests, [[DOTEST(RUNCT,dnl
+[[$1]])]])
+
 define(cond,[[
 define([[CONDITION]],[[COND $1
 ]])
