@@ -7,7 +7,7 @@
 # configure.in for Pike environment
 #
 
-# $Id: configure.in,v 1.7 2001/03/26 15:27:31 mirar Exp $
+# $Id: configure.in,v 1.8 2001/07/01 15:28:31 grubba Exp $
 AC_INIT(internal.h)
 AC_CONFIG_HEADER(config.h)
 
@@ -301,7 +301,8 @@ fi
 INT32=$mird_cv_int32
 
 AC_CHECK_HEADERS(arpa/inet.h netinet/in.h sys/file.h string.h sys/param.h \
-		 errno.h sys/types.h sys/stat.h fcntl.h strings.h string.h)
+		 errno.h sys/types.h sys/stat.h fcntl.h strings.h string.h \
+		 alloca.h)
 
 AC_HAVE_FUNCS(fdatasync ftruncate pread pwrite memset memcmp \
 	      memmove memcpy llseek lseek64)

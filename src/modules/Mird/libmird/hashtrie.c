@@ -6,7 +6,7 @@
 **
 ** for licence, read the LICENCE file
 **
-** $Id: hashtrie.c,v 1.2 2001/03/26 16:11:22 mirar Exp $
+** $Id: hashtrie.c,v 1.3 2001/07/01 15:28:31 grubba Exp $
 **
 */ 
 /* handles hashtrie nodes
@@ -16,8 +16,34 @@
 
 #include <stdlib.h>
 
+/* AIX requires this to be the first thing in the file.  */
+#if HAVE_ALLOCA_H
+# include <alloca.h>
+# ifdef __GNUC__
+#  ifdef alloca
+#   undef alloca
+#  endif
+#  define alloca __builtin_alloca
+# endif 
+#else
+# ifdef __GNUC__
+#  ifdef alloca
+#   undef alloca
+#  endif
+#  define alloca __builtin_alloca
+# else
+#  ifdef _AIX
+ #pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+void *alloca();
+#   endif
+#  endif
+# endif
+#endif
+
 static const char RCSID[]=
-   "$Id: hashtrie.c,v 1.2 2001/03/26 16:11:22 mirar Exp $";
+   "$Id: hashtrie.c,v 1.3 2001/07/01 15:28:31 grubba Exp $";
 
 #define TOO_DEEP_RECURSION 31 /* we can only shift down that */
 
