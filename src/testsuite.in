@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.505 2002/05/01 20:06:21 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.506 2002/05/02 00:30:30 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1777,7 +1777,7 @@ test_any([[
  return sizeof( Program.all_inherits(D) - ({A,B,C}) );
 ]],0)
 
-test_program([[
+test_tests([[
 
 int errors;
 int tests;
@@ -1881,7 +1881,7 @@ void low_generate(int depth,
   }
 }
 
-int a()
+array(int) a()
 {
   werror("\nTesting vtables and scope access.\n");
 
@@ -1917,8 +1917,7 @@ int a()
   }
   
   werror("\n");
-  if(errors) werror("%d/%d tests failed.\n",errors,total_tests);
-  return !errors;
+  return ({ total_tests-errors, errors });
 }
 
 ]])
@@ -4179,14 +4178,14 @@ ifefun(gc,
 ifefun(gc,
 [[
 
-  test_do([[{
+  test_tests([[ array(int) a() {
     int got_error = 0;
     array(string) destruct_order;
     add_constant ("destructing", lambda (string id) {destruct_order += ({id});});
     add_constant ("my_error", lambda (string s, mixed... args) {
 				if (!got_error) werror ("\n");
 				werror (s, @args);
-				got_error = 1;
+				got_error++;
 			      });
     program Dead = compile_string (#"
       string id;
@@ -4773,7 +4772,8 @@ ifefun(gc,
         quiet=1;
     }
 
-    int test_failed = 0;
+    int tests_failed = 0;
+    int tests = 0;
     for (int test = 0; test < sizeof (destruct_order_tests); test++) {
       [int nlive, int ndead, int nlnested, int ndnested, function(void:void) setup] =
 	destruct_order_tests[test];
@@ -4783,6 +4783,7 @@ ifefun(gc,
       for (int f = nlive + ndead; f > 1; f--) n *= f;
       if(!quiet)
         werror ("GC destruct order test %d, %d permutations      \r", test, n);
+      tests += n;
       while (n--) {
 	array(int) alloc_order = Array.permute (idx, n);
 	array(int) create_order = ({});
@@ -4826,14 +4827,14 @@ ifefun(gc,
 				       else return "live[" + i + "]";
 				     }) * ", " + "\n"
 		  "Destruct order was: " + destruct_order * ", " + "\n");
-	  test_failed = 1;
+	  tests_failed += got_error;
 	  got_error = 0;
 	  break;
 	}
       }
     }
-    if (test_failed) error ("GC destruct order test failed.\n");
     werror ("%60s\r", "");
+    return ({ tests-tests_failed, tests_failed });
   }]])
 
 ]])
