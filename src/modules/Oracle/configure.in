@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 1997/07/02 00:48:48 marcus Exp $
+# $Id: configure.in,v 1.7 1997/10/05 02:32:10 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -171,8 +171,14 @@ if test x$with_oracle = xyes; then
 
     ORACLE_LIBS="-L\"$oracle_lib_dir\" -lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
 
-    AC_DEFINE(HAVE_ORACLE)
-
+    OLDLIBS=LIBS
+    LIBS="$LIBS $ORACLE_LIBS"
+    AC_CHECK_LIB(client, oopen, [
+      AC_DEFINE(HAVE_ORACLE)
+    ], [
+      ORACLE_LIBS=""
+    ])
+    LIBS="$OLDLIBS"
   fi
 
 else
