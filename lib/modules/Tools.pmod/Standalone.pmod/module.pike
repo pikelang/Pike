@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.23 2003/11/07 22:47:25 bill Exp $
+// $Id: module.pike,v 1.24 2004/04/21 14:51:42 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.23 $"/" ")[1];
+constant version = ("$Revision: 1.24 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -140,14 +140,15 @@ void do_make(array(string) cmd)
   else full_srcdir=getcwd() + "/";
 
   // we should try to find the core autodoc file
-  if(file_stat(combine_path(system_module_path, "../../doc/src/core_autodoc.xml")))
-  {
+  if(file_stat(combine_path(system_module_path,
+			    "../../doc/src/core_autodoc.xml")))
     system_doc_path=combine_path(system_module_path, "../../doc");
-  }
-  else if(file_stat(combine_path(system_module_path, "../../../doc/pike/src/core_autodoc.xml")))
-  {
+  else if(file_stat(combine_path(system_module_path,
+				 "../../../doc/pike/src/core_autodoc.xml")))
     system_doc_path=combine_path(system_module_path, "../../../doc/pike");
-  }
+  else
+    system_doc_path = combine_path(system_module_path, "../../doc");
+    // No autodoc file, but we set this path as doc path anyway.
 
   array(string) makecmd=(
     ({make})+
