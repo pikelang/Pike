@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.6 1999/03/17 21:38:22 marcus Exp $
+ * $Id: precompiled_odbc.h,v 1.7 1999/03/23 02:31:54 marcus Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -18,15 +18,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #ifdef HAVE_ISQL_H
-#ifndef FAR
-#define FAR
-#endif /* FAR */
-#ifndef EXPORT
-#define EXPORT
-#endif /* EXPORT */
-#ifndef CALLBACK
-#define CALLBACK
-#endif /* CALLBACK */
 #include <isql.h>
 #else /* !HAVE_ISQL_H */
 #ifdef HAVE_WINDOWS_H
