@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.24 2002/11/08 11:31:39 grubba Exp $
+|| $Id: sparc.c,v 1.25 2002/11/08 12:22:52 grubba Exp $
 */
 
 /*
@@ -424,11 +424,32 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
       addr = (void *)f_Iterator;
     }
     break;
+
+#define F_ALIAS(F_FUN, O_FUN)	\
+  case F_FUN - F_OFFSET:	\
+    addr = (void *)O_FUN;	\
+    break
+
+    F_ALIAS(F_COMPL, o_compl);
+    F_ALIAS(F_LSH, o_lsh);
+    F_ALIAS(F_RSH, o_rsh);
   case F_ADD - F_OFFSET:
     SET_REG(SPARC_REG_O0, 2);
     delay_ok = 1;
     addr = (void *)f_add;
     break;
+    F_ALIAS(F_SUBTRACT, o_subtract);
+    F_ALIAS(F_AND, o_and);
+    F_ALIAS(F_OR, o_or);
+    F_ALIAS(F_XOR, o_xor);
+    F_ALIAS(F_MULTIPLY, o_multiply);
+    F_ALIAS(F_DIVIDE, o_divide);
+    F_ALIAS(F_MOD, o_mod);
+    F_ALIAS(F_CAST, f_cast);
+    F_ALIAS(F_CAST_TO_INT, o_cast_to_int);
+    F_ALIAS(F_CAST_TO_STRING, o_cast_to_string);
+    F_ALIAS(F_RANGE, o_range);
+    /* F_ZERO_TYPE? */
   }
 
   SPARC_FLUSH_UNSTORED();
