@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.4 2003/01/18 15:07:52 grubba Exp $
+// $Id: module.pmod.in,v 1.5 2003/04/12 13:03:11 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -12,7 +12,100 @@ inherit @module@;
 
 typedef function(string, Position, CompilerContext: Token) TokenHandler;
 
-class Compiler
+//! Filename-linenumber pair
+class Position(string filename, int line)
+{
+  static string _sprintf() {
+    return sprintf("%s:%d", filename||"-", line);
+  }
+};
+
+class CompilerContext
+{
+  mapping(string:mixed) pragmas = ([]);
+}
+
+//! List of Tokens and Groups
+class TokenList
+{
+  array(Token|Group) tokens = ({});
+
+  TokenList `+=(mixed x)
+  {
+    tokens += ({ x });
+    return this;
+  }
+
+  static class _get_iterator()
+  {
+    static int pos = 0;
+
+    static int(0..1) `!()
+    {
+      return pos >= sizeof(tokens);
+    }
+
+    this_program `+=(int i)
+    {
+      pos += i;
+      if (pos < 0) pos = 0;
+      else if (pos > sizeof(tokens)) pos = sizeof(tokens);
+      return this;
+    }
+
+    Token|Group value()
+    {
+      return (pos < sizeof(tokens))?tokens[pos]:UNDEFINED;
+    }
+
+    int(0..) index()
+    {
+      return pos;
+    }
+
+    string _sprintf()
+    {
+      return sprintf("%{%s %}·%{ %s%}",
+		     tokens[..pos-1], tokens[pos..]);
+    }
+  }
+
+  static string _sprintf()
+  {
+    return sprintf("%{%O, %}", tokens);
+  }
+}
+
+class Group
+{
+  TokenList contents = TokenList();
+  Token group_start;
+  Token group_end;
+  string group_terminator;
+
+  static void create(Token|void token)
+  {
+    if (token) {
+      string sym = token->symbol;
+      if (!(group_terminator =
+	    ([ "(":")", "{":"}", "[":"]" ])[sym])) {
+	error("Unsupported grouping symbol: %O\n", sym);
+      }
+      group_start = token;
+    }
+  }
+
+  static string _sprintf(int c)
+  {
+    if (!group_start) {
+      return sprintf("%O", contents);
+    } else {
+      return sprintf("%O%O%O", group_start, contents, group_end);
+    }
+  }
+}
+
+class TokenizingCompiler
 {
   //! @ignore
   inherit compiler;
@@ -27,9 +120,12 @@ class Compiler
     werror("%O:%O:%O:%O\n", severity, pos, subsystem, msg);
   }
 
-// NOTE: Assumes the variables symbol and pos contain the current
-//       symbol and position.
-#define MKTOKEN(TOKEN, VALUE)	Token(symbol, TOKEN, VALUE, pos)
+  // Placeholder token classes.
+  // These are likely to be overloaded.
+  class StringToken { inherit Token; }
+  class IntegerToken { inherit Token; }
+  class FloatToken { inherit Token; }
+  class IdentifierToken { inherit Token; }
 
   //! Pike tokenizer.
   class pike_tokenizer
@@ -41,7 +137,7 @@ class Compiler
 
     CompilerContext context;
 
-    TokenHandler token_handler = Pike73TokenParser->handle;
+    mapping(string:program(Token)) token_lookup;
 
     static Position pos;
 
@@ -166,6 +262,9 @@ class Compiler
 	return s;
       }
 
+      // Overload this.
+      void handle_pike_compat(int major, int minor);
+
       void preprocess(string cmd, string args)
       {
 	string rest = "";
@@ -191,7 +290,6 @@ class Compiler
 	  break;
 
 	case "pike":
-	  // FIXME: Change compat.
 	  string version="";
 	  sscanf(args, "%[^ \t]%*[ \t]%s", version, rest);	
 	  int major;
@@ -202,7 +300,7 @@ class Compiler
 	    yyerror("Bad #pike version specification.");
 	    return;
 	  }
-	  // FIXME: Do something here.
+	  handle_pike_compat(major, minor);
 	  return;
 	}
 	int no;
@@ -220,29 +318,32 @@ class Compiler
       {
 	pos = Position(current_file, line_no);
 
-	Token res = token_handler && token_handler(symbol, pos, context);
-	if (res) return res;
+	if (token_lookup &&
+	    token_lookup[symbol]) {
+	  return token_lookup[symbol](symbol, symbol, symbol, pos);
+	}
 
 	string rest="";
 
 	switch (symbol[0]) {
 	case '\"':
-	  return MKTOKEN("string_constant", parse_string(symbol));
+	  return StringToken(symbol, "string_constant",
+			     parse_string(symbol), pos);
 
 	case '\'':
 	  string s = parse_string(symbol);
 	  if (!sizeof(s)) {
 	    yyerror("Zero-length character constant.");
-	    return MKTOKEN("int_constant", 0);
+	    return IntegerToken(symbol, "int_constant", 0, pos);
 	  }
 	  if (sizeof(s) > 1) {
 	    yyerror("Unterminated character constant.");
 	  }
-	  return MKTOKEN("int_constant", s[0]);
+	  return IntegerToken(symbol, "int_constant", s[0], pos);
 
 	case '0':
 	  if (symbol == "0") {
-	    return MKTOKEN("int_constant", 0);
+	    return IntegerToken(symbol, "int_constant", 0, pos);
 	  }
 	  if ((symbol[1] == 'x') || (symbol[1] == 'X')) {
 	    // Hexadecimal constant.
@@ -251,7 +352,7 @@ class Compiler
 	    if (sizeof(rest)) {
 	      yyerror("Strange hexadecimal constant: %s", symbol);
 	    }
-	    return MKTOKEN("int_constant", val);
+	    return IntegerToken(symbol, "int_constant", val, pos);
 	  }
 	  if ((symbol[1] == 'b') || (symbol[1] == 'B')) {
 	    // Binary constant.
@@ -260,7 +361,7 @@ class Compiler
 	    if (sizeof(rest)) {
 	      yyerror("Strange binary constant: %s", symbol);
 	    }
-	    return MKTOKEN("int_constant", val);
+	    return IntegerToken(symbol, "int_constant", val, pos);
 	  }
 	  // FALL_THROUGH
 	case '1'..'9':
@@ -274,7 +375,7 @@ class Compiler
 	      sscanf(symbol, "%*d%s", rest2);
 	      if (!sizeof(rest2)) {
 		yyerror("Bad octal number: %s", symbol);
-		return MKTOKEN("int_constant", int_val);
+		return IntegerToken(symbol, "int_constant", int_val, pos);
 	      }
 	    }
 	  } else {
@@ -282,7 +383,7 @@ class Compiler
 	    sscanf(symbol, "%d%s", int_val, rest);
 	  }
 	  if (!sizeof(rest)) {
-	    return MKTOKEN("int_constant", int_val);
+	    return IntegerToken(symbol, "int_constant", int_val, pos);
 	  }
 	  float float_val;
 	  string rest2="";
@@ -290,10 +391,10 @@ class Compiler
 	  if (sizeof(rest2)) {
 	    yyerror("Strange numeric constant: %s", symbol);
 	    if (rest == rest2) {
-	      return MKTOKEN("int_constant", int_val);
+	      return IntegerToken(symbol, "int_constant", int_val, pos);
 	    }
 	  }
-	  return MKTOKEN("float_constant", float_val);
+	  return FloatToken(symbol, "float_constant", float_val, pos);
 
 	case '/':
 	  if ((sizeof(symbol) > 1) &&
@@ -309,7 +410,7 @@ class Compiler
 	  preprocess(cmd, rest);
 	  return 0;
 	}
-	return MKTOKEN("identifier", symbol);
+	return IdentifierToken(symbol, "identifier", symbol, pos);
       }
 
       void scan()
@@ -334,8 +435,13 @@ class Compiler
       return current_token;
     }
   }
+}
 
-  Group group(pike_tokenizer tokenizer)
+class GroupingCompiler
+{
+  inherit TokenizingCompiler;
+
+  TokenList group(pike_tokenizer tokenizer)
   {
     ADT.Stack group_stack = ADT.Stack();
 
@@ -351,7 +457,7 @@ class Compiler
 	g->group_end = token;
 	Group old_g = g;
 	g = group_stack->pop();
-	g->tokens += ({ old_g });
+	g->contents->`+=(old_g);
       } else if ((< "(", "{" , "[" >)[sym]) {
 	group_stack->push(g);
 	g = Group(token);
@@ -366,7 +472,7 @@ class Compiler
 	}
 	return 0;
       } else {
-	g->tokens += ({ token });
+	g->contents->`+=(token);
       }
     }
     if (g->terminator) {
@@ -378,10 +484,211 @@ class Compiler
       }
       return 0;
     }
-    return g;
+    return g->contents;
   }
 }
 
+class PikeCompiler
+{
+  inherit GroupingCompiler;
+
+  class Modifiers
+  {
+    array(Modifier) modifiers;
+
+    Modifiers `+(mixed ... modifier_list) {
+      return Modifiers(modifiers + [array(Modifier)]modifier_list);
+    }
+
+    Modifiers `+=(mixed ... modifier_list) {
+      modifiers += [array(Modifier)]modifier_list;
+      return this;
+    }
+
+    static void create(array(Modifier)|void modifiers)
+    {
+      Modifiers::modifiers = modifiers || ({});
+    }
+
+    static string _sprintf()
+    {
+      return sprintf("Modifiers(%{%s %})", modifiers);
+    }
+  }
+
+  class Modifier
+  {
+    inherit Token;
+
+    // Called at
+    //   modifier ·
+    void parse_modifier(object tokens_left) {}
+  }
+
+  class NameSpace
+  {
+    inherit Token;
+
+    // Called at
+    //   namespace · { string | symbol } [ ':' name ] ';'
+    void parse_meta_program(Class current_class, object tokens_left,
+			    Modifiers current_modifiers)
+    {
+      // FIXME:
+      foreach(tokens_left; ;Token token) {
+	if (token->symbol == ";") return;
+      }
+      report(ERROR, pos, "parser", "Syntax error");      
+    }
+  }
+
+  class Class
+  {
+    inherit Token;
+
+    // Called at
+    //   class name '{' · class_body '}'
+    void parse_class_body(TokenList tokens, Modifiers|void default_modifiers)
+    {
+      if (!tokens) return;
+
+      default_modifiers = default_modifiers || Modifiers();
+
+      object tokens_left = __builtin.Iterator(tokens);
+
+      while(tokens_left) {
+	Modifiers current_modifiers = default_modifiers;
+	object(Token)|Group token;
+	while((token = tokens_left->value()) && token->parse_modifier) {
+	  tokens_left->`+=(1);
+	  token->parse_modifier(tokens_left);
+	  current_modifiers += token;
+	  if (!tokens_left) {
+	    report(ERROR, token->pos, "parser", "Syntax error");
+	  }
+	}
+	if (token->group_start) {
+	  if (token->group_start->symbol == "{") {
+	    // Modifier scope.
+	    parse_class_body(token->contents, current_modifiers);
+	  } else {
+	    report(ERROR, token->pos, "parser", "Syntax error");
+	  }
+	  tokens_left->`+=(1);
+	} else {
+	  if (token->symbol == ";") {
+	    tokens_left->`+=(1);
+	  } else if (token->parse_meta_program) {
+	    // inherit, class, constant, typedef, enum, etc.
+	    tokens_left->`+=(1);
+	    token->parse_meta_program(this, tokens_left, current_modifiers);
+	  } else {
+	    // FIXME: variable, function, etc.
+	  }
+	}
+      }
+    }
+
+    // Called at
+    //   class · [name] [ '(' create_args ')' ] '{' class_body '}'
+    void parse_meta_program(Class current_class, object tokens_left,
+			    Modifiers current_modifiers)
+    {
+      if (!tokens_left) {
+	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
+	return;
+      }
+      string name;
+      Token token = tokens_left->value();
+      if (!token->group_start) {
+	name = token->symbol;
+	tokens_left->`+=(1);
+	token = tokens_left->value();
+      }
+      if (!token->group_start) {
+	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
+	return;
+      }
+      if (token->group_start->symbol == "(") {
+	// FIXME: create_args.
+	tokens_left->`+=(1);
+	token = tokens_left->value();
+	if (!token->group_start) {
+	  report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
+	  return;
+	}
+      }
+      if (!token->group_start || token->group_start->symbol != "{") {
+	report(ERROR, tokens_left->last_pos, "parser", "Syntax error");
+	return;
+      }
+      parse_class_body(token->contents);
+      tokens_left->`+=(1);
+      current_class->add_constant(current_modifiers, name, this);
+    }
+
+    void add_constant(Modifiers modifiers, string name, Token value)
+    {
+      werror("Defining constant %O with modifiers %O and value %O\n",
+	     name, modifiers, value);
+    }
+  }
+
+  Class parse_class(TokenList tokens)
+  {
+    Class prog = Class("class","class","class", 0);
+    prog->parse_class_body(tokens);
+    return prog;
+  }
+
+  class pike_tokenizer
+  {
+    inherit GroupingCompiler::pike_tokenizer;
+
+    // Symbol ==> TokenClass
+    mapping(string:program(Token)) Pike_7_2_Tokens = ([
+      "class":Class,
+      "final":Modifier,
+      "import":NameSpace,
+      "inherit":NameSpace,
+      "inline":Modifier,
+      "local":Modifier,
+      "nomask":Modifier,
+      "optional":Modifier,
+      "predef":Modifier,
+      "private":Modifier,
+      "protected":Modifier,
+      "public":Modifier,
+      "static":Modifier,
+      "variant":Modifier,
+    ]);
+
+    mapping(string:program(Token)) Pike_7_4_Tokens = Pike_7_2_Tokens + ([
+      "global":Modifier,
+    ]);
+
+    void handle_pike_compat(int major, int minor)
+    {
+      // FIXME: Should affect the current resolver too.
+      if ((major < 7) || ((major == 7) && (minor <= 2))) {
+	token_lookup = Pike_7_2_Tokens;
+      } else {
+	token_lookup = Pike_7_4_Tokens;
+      }
+    }
+
+    static void create(string data, CompilerContext|void context)
+    {
+      // Default token_lookup.
+      token_lookup = Pike_7_4_Tokens;
+
+      ::create(data, context);
+    }
+  }
+
+}
+
+#if 0
 
 //  //! Token-value pair.
 //  class TokenPair(string token, mixed value)
@@ -390,19 +697,6 @@ class Compiler
 //  	return sprintf("%s:%O", token||"", value);
 //    }
 //  };
-
-//! Filename-linenumber pair
-class Position(string filename, int line)
-{
-  static string _sprintf() {
-    return sprintf("%s:%d", filename||"-", line);
-  }
-};
-
-class CompilerContext
-{
-  mapping(string:mixed) pragmas = ([]);
-}
 
 class TokenParser
 {
@@ -521,8 +815,8 @@ class Pike72TokenParser_
 
 TokenParser Pike72TokenParser = Pike72TokenParser_();
 
-//! Pike 7.3 token parser.
-class Pike73TokenParser_
+//! Pike 7.4 token parser.
+class Pike74TokenParser_
 {
   Token handle(string symbol, Position pos, CompilerContext context)
   {
@@ -552,39 +846,6 @@ class Pike75TokenParser_
 
 TokenParser Pike75TokenParser = Pike75TokenParser_();
 
-class Group
-{
-  array(Token|Group) tokens = ({});
-  Token group_start;
-  Token group_end;
-  string group_terminator;
-
-  static void create(Token|void token)
-  {
-    if (token) {
-      string sym = token->symbol;
-      if (!(group_terminator =
-	    ([ "(":")", "{":"}", "[":"]", ";":";" ])[sym])) {
-	error("Unsupported grouping symbol: %O\n", sym);
-      }
-      group_start = token;
-    }
-  }
-
-  static string _sprintf(int c)
-  {
-    if (!group_start) {
-      return sprintf("%{%O\n%}", tokens);
-    } else if (group_start->symbol == "{") {
-      return sprintf("%O\n%{  %O\n%}%O\n", group_start, tokens, group_end);
-    } else if (group_start->symbol == ";") {
-      return sprintf("STATEMENT:%{  %O%}%O\n", tokens, group_end);
-    } else {
-      return sprintf("%O%{ %O%} %O\n", group_start, tokens, group_end);
-    }
-  }
-}
-
 class Identifier(array(Token) tokens)
 {
   string _sprintf(int c)
@@ -592,6 +853,10 @@ class Identifier(array(Token) tokens)
     return sprintf("IDENTIFIER(%d)", sizeof(tokens));
   }
 }
+
+#endif /* 0 */
+
+#if 0
 
 class MetaProgram(Group group)
 {
@@ -620,7 +885,7 @@ class ClassMetaProgram
 	// ; always terminates a statement.
 	// {} terminates a statement if it isn't in an expression.
 	Group g = Group();
-	g->tokens = group->tokens[g_start..i];
+	g->token_list = group->token_list[g_start..i];
 	statements += ({ g });
 	g_start = i+1;
 	is_expr = 0;
@@ -637,7 +902,7 @@ class ClassMetaProgram
 	// ; always terminates a statement.
 	// {} terminates a statement if it isn't in an expression.
 	Group g = Group();
-	g->tokens = group->tokens[g_start..i];
+	g->token_list = group->token_list[g_start..i];
 	statements += ({ g });
       }
     }
@@ -846,3 +1111,4 @@ class MODIFIER_BLOCK
   constant nodename="Tokenizer.MODIFIER_BLOCK";
 }
 
+#endif /* 0 */
