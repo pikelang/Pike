@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.213 2000/10/14 01:55:38 hubbe Exp $
+# $Id: Makefile.in,v 1.214 2000/10/17 14:48:38 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -639,6 +639,7 @@ modules/static_module_makefile: $(SRCDIR)/modules/static_module_makefile.in conf
 	-@(while :; do \
 	  echo foo > cfl.static_module_makefile; test "`echo cfl.*`" = cfl.static_module_makefile && break; \
 	  rm cfl.static_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	  arb=17; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=modules/static_module_makefile CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.static_module_makefile; exit $$EXITCODE)
@@ -648,6 +649,7 @@ modules/dynamic_module_makefile: $(SRCDIR)/@dmmsrc@ config.status
 	-@(while :; do \
 	  echo foo > cfl.dynamic_module_makefile; test "`echo cfl.*`" = cfl.dynamic_module_makefile && break; \
 	  rm cfl.dynamic_module_makefile; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	  arb=19; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=modules/dynamic_module_makefile:@dmmsrc@ CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.dynamic_module_makefile; exit $$EXITCODE)
@@ -657,6 +659,7 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
 	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	  arb=23; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
@@ -669,6 +672,7 @@ precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
 	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	  arb=29; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES=precompile.sh CONFIG_HEADERS="" ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
@@ -692,6 +696,7 @@ stamp-h: $(SRCDIR)/stamp-h.in $(SRCDIR)/machine.h.in config.status
 	-@(while :; do \
 	  echo foo > cfl.$@; test "`echo cfl.*`" = cfl.$@ && break; \
 	  rm cfl.$@; echo "Waiting to run config.status serially:" cfl.*; sleep 1; \
+	  arb=31; while test $$arb != 0; do arb=`expr $$arb - 1`; done; \
 	done;)
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status || \
 	  (EXITCODE=$$?; rm cfl.$@; exit $$EXITCODE)
