@@ -217,16 +217,32 @@ string int2size( int size )
   if(size<0)
     return "-" + int2size(-size);
   if(size==1) return "1 byte";
-  float s = (float)size;
-  size=0;
-
-  if(s<1024.0) return (int)s+" bytes";
-  while( s >= 1024.0 && size<sizeof(prefix)-1)
-  {
-    s /= 1024.0;
-    size ++;
+  int oldmask = -1;
+  int mask = -1024;
+  int no;
+  int val = size;
+  while (size & mask) {
+    oldmask = mask;
+    mask <<= 10;
+    val >>= 10;
+    if (++no == sizeof(prefix))
+      return sprintf("%d %s", val, prefix[-1]);
   }
-  return sprintf("%.1f %s", s, prefix[ size ]);
+
+  int decimal;
+  if (!(decimal = (size & ~oldmask))) return sprintf("%d %s", val, prefix[no]);
+
+  // Convert the decimal to base 10.
+  decimal += 1<<(no*10 - 4);	// Rounding.
+  decimal *= 5;
+  decimal >>= no*10 - 1;
+
+  if (decimal == 10) {
+    val++;
+    decimal = 0;
+  }
+
+  return sprintf("%d.%d %s", val, decimal, prefix[no]);
 }
 
 //! Expands tabs in a string to ordinary spaces, according to common
