@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.224 2003/08/20 12:00:03 grubba Exp $
+|| $Id: gc.c,v 1.225 2003/08/20 16:43:57 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.224 2003/08/20 12:00:03 grubba Exp $");
+RCSID("$Id: gc.c,v 1.225 2003/08/20 16:43:57 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -262,13 +262,16 @@ static unsigned tot_cycle_checked = 0, tot_live_rec = 0, tot_frame_rot = 0;
 
 static int gc_is_watching = 0;
 
-int attempt_to_identify(void *something, void **inblock)
+TYPE_T attempt_to_identify(void *something, void **inblock)
 {
+  size_t i;
   struct array *a;
   struct object *o;
   struct program *p;
   struct mapping *m;
   struct multiset *mu;
+  struct pike_type *t;
+  struct callable *c;
 
   if (inblock) *inblock = 0;
 
@@ -310,6 +313,15 @@ int attempt_to_identify(void *something, void **inblock)
 
   if(safe_debug_findstring((struct pike_string *)something))
     return T_STRING;
+
+  for (i = 0; i < pike_type_hash_size; i++)
+    for (t = pike_type_hash[i]; t; t = t->next)
+      if (t == (struct pike_type *) something)
+	return T_TYPE;
+
+  for (c = first_callable; c; c = c->next)
+    if (c == (struct callable *) something)
+      return T_STRUCT_CALLABLE;
 
   return PIKE_T_UNKNOWN;
 }
@@ -851,7 +863,7 @@ again:
 	p=id_to_program(((struct object *)a)->program_id);
       }
       if (p) {
-	fprintf(stderr,"%*s**Describing program of object:\n",indent,"");
+	fprintf(stderr,"%*s**Describing program %p of object:\n",indent,"", p);
 #ifdef DEBUG_MALLOC
 	if ((int) p == 0x55555555)
 	  fprintf(stderr, "%*s**Zapped program pointer.\n", indent, "");
@@ -2895,8 +2907,24 @@ size_t do_gc(void *ignored, int explicit_call)
     GC_VERBOSE_DO(fprintf(stderr, "| posttouch: %u things\n", n));
   }
 #ifdef PIKE_DEBUG
-  if (gc_extra_refs)
+  if (gc_extra_refs) {
+    size_t e;
+    struct marker *m;
+    fprintf (stderr, "Lost track of %d extra refs to things in gc.\n"
+	     "Searching for marker(s) with extra refs:\n", gc_extra_refs);
+    for (e = 0; e < marker_hash_table_size; e++)
+      while ((m = marker_hash_table[e]))
+	if (m->flags & GC_GOT_EXTRA_REF) {
+	  fprintf (stderr, "========================================\n"
+		   "Found marker with extra ref: ");
+	  describe_marker (m);
+	  fprintf (stderr, "Describing the thing pointed to:\n");
+	  describe (m->data);
+	}
+    fprintf (stderr, "========================================\n"
+	     "Done searching for marker(s) with extra refs.\n");
     Pike_fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
+  }
   if(fatal_after_gc) Pike_fatal("%s", fatal_after_gc);
 #endif
 

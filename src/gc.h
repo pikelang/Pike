@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.102 2003/04/15 17:01:02 mast Exp $
+|| $Id: gc.h,v 1.103 2003/08/20 16:43:57 mast Exp $
 */
 
 #ifndef GC_H
@@ -245,7 +245,7 @@ struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
 void dump_gc_info(void);
-int attempt_to_identify(void *something, void **inblock);
+TYPE_T attempt_to_identify(void *something, void **inblock);
 void describe_location(void *real_memblock,
 		       int real_type,
 		       void *location,
