@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.70 2001/07/06 22:56:56 grubba Exp $
+ * $Id: interpret_functions.h,v 1.71 2001/07/08 19:35:37 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1111,56 +1111,40 @@ OPCODE0_JUMP(F_LOOP, "loop", { /* loopcnt */
   }
 });
 
-      CASE(F_FOREACH) /* array, lvalue, X, i */
-      {
-	if(Pike_sp[-4].type != PIKE_T_ARRAY)
-	  PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
-	if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
-	{
-	  fast_check_threads_etc(10);
-#if 0
-	  index_no_free(Pike_sp,Pike_sp-4,Pike_sp-1);
-	  Pike_sp++;
-	  assign_lvalue(Pike_sp-4, Pike_sp-1);
-	  free_svalue(Pike_sp-1);
-	  Pike_sp--;
-#else
-	  if(Pike_sp[-1].u.integer < 0)
-	    Pike_error("Foreach loop variable is negative!\n");
-	  assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
-#endif
-	  pc+=GET_JUMP();
-	  Pike_sp[-1].u.integer++;
-	}else{
-#if 0
-	  pop_n_elems(4);
-#endif
-	  SKIPJUMP();
-	}
-	break;
-      }
+OPCODE0_JUMP(F_FOREACH, "foreach", { /* array, lvalue, X, i */
+  if(Pike_sp[-4].type != PIKE_T_ARRAY)
+    PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
+  if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
+  {
+    fast_check_threads_etc(10);
+    if(Pike_sp[-1].u.integer < 0)
+      Pike_error("Foreach loop variable is negative!\n");
+    assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
+    pc += GET_JUMP();
+    Pike_sp[-1].u.integer++;
+  }else{
+    SKIPJUMP();
+  }
+});
 
 OPCODE0(F_MAKE_ITERATOR, "Iterator", {
   extern void f_Iterator(INT32);
   f_Iterator(1);
 });
 
+OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", { /* iterator, lvalue, lvalue */
+  extern int foreach_iterate(struct object *o);
 
-      CASE(F_NEW_FOREACH) /* iterator, lvalue, lvalue */
-      {
-        extern int foreach_iterate(struct object *o);
-
-	if(Pike_sp[-5].type != PIKE_T_OBJECT)
-	  PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
-        if(foreach_iterate(Pike_sp[-5].u.object))
-        {
-	  fast_check_threads_etc(10);
-	  pc+=GET_JUMP();
-        }else{
-	  SKIPJUMP();
-	}
-	break;
-      }
+  if(Pike_sp[-5].type != PIKE_T_OBJECT)
+    PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
+  if(foreach_iterate(Pike_sp[-5].u.object))
+  {
+    fast_check_threads_etc(10);
+    pc+=GET_JUMP();
+  }else{
+    SKIPJUMP();
+  }
+});
 
 
       CASE(F_RETURN_LOCAL);
@@ -1215,7 +1199,7 @@ OPCODE0(F_MAKE_ITERATOR, "Iterator", {
         if(f & PIKE_FRAME_RETURN_POP)
           pop_stack();
 	pc=Pike_fp->pc;
-	break;
+	DONE;
       }
       return -1;
 
@@ -1485,7 +1469,7 @@ OPCODE1(F_STRING_INDEX, "string index", {
 	Pike_sp++;
       }
       print_return_value();
-      break;
+      DONE;
 
 OPCODE2(F_MAGIC_INDEX, "::`[]", {
   push_magic_index(magic_index_program, arg2, arg1);

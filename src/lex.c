@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.93 2001/07/06 22:56:57 grubba Exp $");
+RCSID("$Id: lex.c,v 1.94 2001/07/08 19:35:38 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -201,8 +201,6 @@ struct keyword instr_names[]=
 { "for",		F_FOR,0 },
 { "index",              F_INDEX,0 },
 
-{ "foreach",		F_FOREACH, I_ISJUMP },
-{ "foreach++",		F_NEW_FOREACH, I_ISJUMP },
 { "pointer",		F_POINTER, I_ISPOINTER },
 { "data",		F_DATA, I_DATA },
 { "byte",		F_BYTE, I_DATA },

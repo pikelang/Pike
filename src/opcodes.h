@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.19 2001/07/06 22:56:57 grubba Exp $
+ * $Id: opcodes.h,v 1.20 2001/07/08 19:35:38 grubba Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -60,9 +60,6 @@ enum Pike_opcodes
   F_RETURN_1,
   F_RETURN_LOCAL,
   F_RETURN_IF_TRUE,
-
-  F_FOREACH,
-  F_NEW_FOREACH,
 
 #include "interpret_protos.h"
 /*
