@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.152 1999/09/19 22:59:45 hubbe Exp $");
+RCSID("$Id: program.c,v 1.153 1999/09/22 19:05:53 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -834,8 +834,8 @@ static int alignof_variable(int run_time_type)
 
 void check_program(struct program *p)
 {
-  INT32 size,e;
-  unsigned INT32 checksum;
+  INT32 size;
+  unsigned INT32 checksum, e;
   int variable_positions[1024];
 
   for(e=0;e<NELEM(variable_positions);e++)
@@ -868,16 +868,16 @@ void check_program(struct program *p)
   if(p->num_identifier_index > p->num_identifier_references)
     fatal("Too many identifier index entries in program!\n");
 
-  for(e=0;e<(int)p->num_constants;e++)
+  for(e=0;e<p->num_constants;e++)
   {
     check_svalue(& p->constants[e].sval);
     if(p->constants[e].name) check_string(p->constants[e].name);
   }
 
-  for(e=0;e<(int)p->num_strings;e++)
+  for(e=0;e<p->num_strings;e++)
     check_string(p->strings[e]);
 
-  for(e=0;e<(int)p->num_inherits;e++)
+  for(e=0;e<p->num_inherits;e++)
   {
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
@@ -899,7 +899,7 @@ void check_program(struct program *p)
   }
 
   if(p->flags & PROGRAM_FINISHED)
-  for(e=0;e<(int)p->num_identifiers;e++)
+  for(e=0;e<p->num_identifiers;e++)
   {
     check_string(p->identifiers[e].name);
     check_string(p->identifiers[e].type);
@@ -920,7 +920,7 @@ void check_program(struct program *p)
     }
   }
 
-  for(e=0;e<(int)p->num_identifier_references;e++)
+  for(e=0;e<p->num_identifier_references;e++)
   {
     struct identifier *i;
     if(p->identifier_references[e].inherit_offset > p->num_inherits)
@@ -942,12 +942,12 @@ void check_program(struct program *p)
 
     if( !(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
     {
-      int q, size;
+      unsigned int q, size;
       /* Variable */
       int offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
       size=sizeof_variable(i->run_time_type);
 
-      if(offset+size > p->storage_needed || offset<0)
+      if((offset+size > (unsigned int)p->storage_needed) || offset<0)
 	fatal("Variable outside storage! (%s)\n",i->name->str);
 
       for(q=0;q<size;q++)
@@ -969,7 +969,7 @@ void check_program(struct program *p)
     }
   }
 
-  for(e=0;e<(int)p->num_identifier_index;e++)
+  for(e=0;e<p->num_identifier_index;e++)
   {
     if(p->identifier_index[e] > p->num_identifier_references)
       fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
