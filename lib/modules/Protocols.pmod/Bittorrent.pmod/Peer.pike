@@ -46,16 +46,16 @@ constant MSG_PIECE = 7;
 constant MSG_CANCEL = 8;
 typedef int(0..8) message_id;
 
-mapping msg_to_string=([
-   0:"choke",
-   1:"unchoke",
-   2:"interested",
-   3:"not_interested",
-   4:"have",
-   5:"bitfield",
-   6:"request",
-   7:"piece",
-   8:"cancel",
+constant msg_to_string=([
+   MSG_CHOKE:"choke",
+   MSG_UNCHOKE:"unchoke",
+   MSG_INTERESTED:"interested",
+   MSG_NOT_INTERESTED:"not_interested",
+   MSG_HAVE:"have",
+   MSG_BITFIELD:"bitfield",
+   MSG_REQUEST:"request",
+   MSG_PIECE:"piece",
+   MSG_CANCEL:"cancel",
 ]);
 
 function(string,mixed...:void|mixed) warning=werror;
