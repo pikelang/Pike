@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.16 1997/01/30 03:51:34 hubbe Exp $");
+RCSID("$Id: las.c,v 1.17 1997/01/31 23:07:16 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1312,6 +1312,7 @@ void fix_type_field(node *n)
 
 static void zapp_try_optimize(node *n)
 {
+  if(!n) return;
   n->node_info &=~ OPT_TRY_OPTIMIZE;
   n->tree_info &=~ OPT_TRY_OPTIMIZE;
   if(car_is_node(n)) zapp_try_optimize(CAR(n));
