@@ -464,7 +464,7 @@ struct my_pixel pgtk_pixel_from_xpixel( unsigned int pix, GdkImage *i )
   struct my_pixel res;
   int l;
   if(!col) col = gdk_colormap_get_system();
-  res.r = res.g= res.b = 0;
+  *((int  *)&res) = 0;
   switch(i->visual->type)
   {
    case GDK_VISUAL_GRAYSCALE:
