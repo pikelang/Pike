@@ -198,21 +198,26 @@ void _main(string *argv, string *env)
   pike_library_path = q[0..sizeof(q)-2] * "/";
 
   tmp=new(pike_library_path+"/include/getopt.pre.pike");
-  if(tmp->find_option(argv,"v","version"))
-  {
-    werror(VERSION " Copyright (C) 1994-1997 Fredrik Hübinette\n");
-    werror("Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n");
-    werror("welcome to redistribute it under certain conditions; Read the files\n");
-    werror("COPYING and DISCLAIMER in the Pike distribution for more details.\n");
-    exit(0);
-  }
-  destruct(tmp);
-  
-  for(i=1;i<sizeof(argv);i++)
-    if(sizeof(argv[i]) && argv[i][0]!='-')
-      break;
 
-  argv=argv[i..];
+  foreach(tmp->find_all_options(argv,({
+    ({"version",({"-v","--version"})}),
+      ({"ignore","-Dmsdatp",0,0})}),1),mixed *opts)
+    {
+      switch(opts[0])
+      {
+      case "version":
+	werror(VERSION " Copyright (C) 1994-1997 Fredrik Hübinette\n");
+	werror("Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n");
+	werror("welcome to redistribute it under certain conditions; Read the files\n");
+	werror("COPYING and DISCLAIMER in the Pike distribution for more details.\n");
+	exit(0);
+      case "ignore":
+	break;
+      }
+    }
+
+  argv=tmp->get_args(argv,1)[1..];
+  destruct(tmp);
 
   if(!sizeof(argv))
   {
@@ -373,3 +378,4 @@ string describe_backtrace(mixed *trace)
 
   return ret;
 }
+
