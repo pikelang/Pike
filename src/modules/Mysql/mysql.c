@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.26 1999/02/10 21:49:24 hubbe Exp $
+ * $Id: mysql.c,v 1.27 1999/09/25 23:51:36 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -79,7 +79,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.26 1999/02/10 21:49:24 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.27 1999/09/25 23:51:36 grubba Exp $");
 
 /*
 **! module Mysql
@@ -91,7 +91,8 @@ RCSID("$Id: mysql.c,v 1.26 1999/02/10 21:49:24 hubbe Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.26 1999/02/10 21:49:24 hubbe Exp $
+**!	$Id: mysql.c,v 1.27 1999/09/25 23:51:36 grubba Exp $
+**!
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables
@@ -1134,11 +1135,7 @@ static void f_list_tables(INT32 args)
 /*
 **! method array(int|mapping(string:mixed)) list_fields(string table)
 **! method array(int|mapping(string:mixed)) list_fields(string table, string wild)
-**!	List all fields
-**! arg string table
-**!	Name of table to list the fields of
-**! arg string wild
-**!	Wildcard to filter the result with
+**!	List all fields.
 **!
 **!	Returns an array of mappings with information about the fields in the
 **!	specified table.
@@ -1165,9 +1162,16 @@ static void f_list_tables(INT32 args)
 **!	 "not_null":	This field may not be NULL.
 **!	 "blob":	This field is a blob field.
 **!
+**! arg string table
+**!	Name of table to list the fields of
+**! arg string wild
+**!	Wildcard to filter the result with
+**!
 **! note
 **!	Michael Widenius recomends usage of the following query instead:
+**!	<pre>
 **!	 show fields in 'table' like "wild"
+**!	</pre>
 **!
 **! see also: list_dbs, list_tables, list_processes, fetch_fields
 **!
