@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.74 1998/04/13 14:15:25 grubba Exp $
+# $Id: Makefile.in,v 1.75 1998/04/16 01:25:30 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -150,9 +150,15 @@ quant: $(OBJ) compile_interpret module_objects
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 atom: pike
-	atom pike -tool third -env threads -g -v `find lib/modues -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
+	atom pike -tool atom -env threads -g -v `find lib/modues -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
 	mv pike pike.pre-atom
 	mv pike.third.threads pike
+	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
+
+pixie: pike
+	atom pike -tool pixie -env threads -g -v `find lib/modues -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
+	mv pike pike.pre-pixie
+	mv pike.pixie.threads pixie
 	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
 
 hilfe: $(TMP_BINDIR)/hilfe Makefile
@@ -162,7 +168,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	  ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
 	    >./hilfe && chmod 755 ./hilfe) || exit 1 ; \
 	else \
-	  $(INSTALL) $(TMP_BINDIR)/hilfe . || exit 1; \
+	  $(INSTALL) $(TMP_BINDIR)/hilfe `pwd` || exit 1; \
 	fi
 	@echo "Done."
 
