@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.102 1998/04/30 03:44:11 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.103 1998/05/06 00:32:33 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2215,6 +2215,8 @@ test_eq(sizeof((<8,7,6,5,4,7>)),6)
 // - sleep
 test_do(sleep(1))
 test_do(sleep(0.5))
+test_any([[int x=time(); sleep(2); return x!=time()]],1)
+test_any([[int x=time(); sleep(2); return x!=time()]],1)
 
 // - sum
 test_eq(`+(1,1),2)
@@ -2308,10 +2310,18 @@ test_true(Process.system)
 test_true(Process.create_process)
 test_false([[Process.system(RUNPIKE +" -e 'exit(0)'")]])
 test_true([[Process.system(RUNPIKE+" -e 'exit(1)'")]])
+test_any([[object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(2)"})); sleep(10); return p->wait()]],2)
 test_eq([[Process.popen(RUNPIKE+" -e 'write(\"test\");'")]],"test")
-test_any([[object o=Stdio.Fd(); object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
-test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(5)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); o2=0; return p->wait()]],1)
+
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(5)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.Fd();   object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_BIDIRECTIONAL); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o2])); o->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 
