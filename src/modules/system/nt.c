@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.32 2001/03/09 15:12:53 grubba Exp $
+ * $Id: nt.c,v 1.33 2001/03/09 15:16:33 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -2316,12 +2316,14 @@ static void f_nt_uname(INT32 args)
     case PROCESSOR_ARCHITECTURE_SHX:
       switch (sysinfo.dwProcessorType) {
       case PROCESSOR_HITACHI_SH3:
+      case PROCESSOR_SHx_SH3:
         push_text("SH3");
 	break;
       case PROCESSOR_HITACHI_SH3E:
         push_text("SH3e");
 	break;
       case PROCESSOR_HITACHI_SH4:
+      case PROCESSOR_SHx_SH4:
         push_text("SH4");
 	break;
       default:
