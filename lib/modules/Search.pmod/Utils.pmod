@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.38 2003/08/14 14:22:54 mattias Exp $
+// $Id: Utils.pmod,v 1.39 2003/08/15 13:58:48 mattias Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -532,7 +532,7 @@ class Scheduler {
       object dbp = db_profiles[id];
       if(dbp && dbp->ready_to_crawl()) {
 	WERR("Scheduler starts crawling "+id);
-	dbp->action_reindex();
+	dbp->recrawl();
 	entry_queue = ([]);
       }
     }
@@ -572,6 +572,17 @@ class Scheduler {
     WERR("Running scheduler event.");
 
     int t = time();
+
+    WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
+    foreach(indices(crawl_queue), int id) {
+      if(crawl_queue[id]>t || !db_profiles[id]) continue;
+      object dbp = db_profiles[id];
+      if(dbp && dbp->ready_to_crawl()) {
+	WERR("Scheduler starts crawling "+id);
+	dbp->recrawl();
+	entry_queue = ([]);
+      }
+    }
 
     WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
     foreach(indices(crawl_queue), int id) {
