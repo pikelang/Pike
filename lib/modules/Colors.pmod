@@ -455,12 +455,6 @@ COLOR(yellow4,139,139,0);
 COLOR(yellowgreen,154,205,50);
 
 
-#ifdef ROXEN
-mapping (string:string) html_32_colors =
-  ([ "green":"#008000", "maroon":"#800000", "purple":"#800080" ]);
-#endif
-
-
 array(int) rgb_to_hsv(array(int)|int ri, int|void gi, int|void bi)
 {
   if(arrayp(ri)) return Image.Color(@ri)->hsv();
@@ -473,24 +467,27 @@ array(int) hsv_to_rgb(array(int)|int hv, int|void sv, int|void vv)
   return Image.Color(sprintf("@%d,%d,%d", hv,sv,vv))->rgb();
 }
 
+array(int) rgb_to_cmyk(array(int)|int ri, int|void gi, int|void bi)
+{
+  if(arrayp(ri)) return Image.Color(@ri)->cmyk();
+  return Image.Color(ri,gi,bi)->cmyk();
+}
+
+array(int) cmyk_to_rgb(array(int)|int c, int|void m, int|void y, int|void k)
+{
+  if(arrayp(c)) return Image.Color(sprintf("%%%d,%d,%d,%d", @c))->rgb();
+  return Image.Color(sprintf("%%%d,%d,%d,%d", c,m,y,k))->rgb();
+}
+
 array(int) parse_color(string from)
 {
   object color;
   if(!from || !strlen(from)) return ({ 0,0,0 }); // Odd color...
 
-  from = lower_case(from-" ");
+  if(color=Image.Color.guess(from)) return color->rgb();
 
-#ifdef ROXEN  
-  if(html_32_colors[from])  from = html_32_colors[from];
-#endif
-
-  if(color=Image.Color(from)) return color->rgb();
-
-  from = replace(from, "gray", "grey");
-  if(color=Image.Color(from)) return color->rgb();
-
-  from = "#" + from;
-  if(color=Image.Color(from)) return color->rgb();
+  from = replace(lower_case(from), "gray", "grey");
+  if(color=Image.Color.guess(from)) return color->rgb();
 
   // Lets call it black and be happy..... :-)
   return ({ 0,0,0 });
