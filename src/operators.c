@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.79 1999/12/15 07:50:00 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.80 1999/12/18 17:49:05 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2501,18 +2501,45 @@ void init_operators(void)
 		 tFuncV(tStr,tStr,tStr)),
 	    OPT_TRY_OPTIMIZE,0,generate_minus);
 
-#define LOG_TYPE "function(mixed,object...:mixed)|function(object,mixed...:mixed)|function(int...:int)|function(mapping(0=mixed:1=mixed)...:mapping(0:1))|function(multiset(2=mixed)...:multiset(2))|function(array(3=mixed)...:array(3))|function(string...:string)|function(type|program,type|program...:type)"
+  ADD_EFUN2("`&",f_and,
+	    tOr8(tFunc(tSetvar(0,tMix),tVar(0)),
+		 tOr(tFuncV(tMix tObj,tMix,tMix),
+		     tFuncV(tObj tMix,tMix,tMix)),
+		 tFuncV(tInt tInt,tInt,tInt),
+		 tOr(tFunc(tMapping tSetvar(1,tMapping),tVar(1)),
+		     tFuncV(tMapping tMapping tSetvar(2,tMapping),
+			    tSetvar(3,tMapping),tOr(tVar(2),tVar(3)))),
+		 tOr(tFunc(tMultiset tSetvar(4,tMultiset),tVar(4)),
+		     tFuncV(tMultiset tMultiset tSetvar(5,tMultiset),
+			    tSetvar(6,tMultiset),tOr(tVar(5),tVar(6)))),
+		 tOr(tFunc(tArray tSetvar(7,tArray),tVar(7)),
+		     tFuncV(tArray tArray tSetvar(8,tArray),
+			    tSetvar(9,tArray),tOr(tVar(8),tVar(9)))),
+		 tFuncV(tString tString,tString,tString),
+		 tFuncV(tOr(tType,tPrg) tOr(tType,tPrg),tOr(tType,tPrg),tType)),
+	    OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
-  add_efun2("`&",f_and,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
+#define LOG_TYPE								\
+  tOr7(tOr(tFuncV(tMix tObj,tMix,tMix),						\
+	   tFuncV(tObj,tMix,tMix)),						\
+       tFuncV(tInt,tInt,tInt),							\
+       tFuncV(tSetvar(1,tMapping),tSetvar(2,tMapping),tOr(tVar(1),tVar(2))),	\
+       tFuncV(tSetvar(3,tMultiset),tSetvar(4,tMultiset),tOr(tVar(3),tVar(4))),	\
+       tFuncV(tSetvar(5,tArray),tSetvar(6,tArray),tOr(tVar(5),tVar(6))),	\
+       tFuncV(tString,tString,tString),						\
+       tFuncV(tOr(tType,tPrg),tOr(tType,tPrg),tType))
 
-  add_efun2("`|",f_or,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_or);
+  ADD_EFUN2("`|",f_or,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_or);
 
-  add_efun2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
+  ADD_EFUN2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
-#define SHIFT_TYPE "function(object,mixed:mixed)|function(mixed,object:mixed)|function(int,int:int)"
+#define SHIFT_TYPE							\
+  tOr(tOr(tFuncV(tMix tObj,tMix,tMix),					\
+	  tFuncV(tObj tMix,tMix,tMix)),					\
+      tFuncV(tInt,tInt,tInt))
 
-  add_efun2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
-  add_efun2("`>>",f_rsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_rsh);
+  ADD_EFUN2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
+  ADD_EFUN2("`>>",f_rsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_rsh);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
 	    "function(array(array(1=mixed)),array(1=mixed):array(1))|"
