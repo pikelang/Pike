@@ -444,11 +444,7 @@ object sync_request(string server,int port,string query,
 
       if (data!="") headers->content_length=strlen(data);
 
-      werror("headers is %O\n",headers);
-
       headers=headers_encode(headers);
-
-      werror("headers is:\n%s\n",headers);
    }
    
    request=query+"\r\n"+headers+"\r\n"+data;
