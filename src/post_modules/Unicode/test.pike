@@ -1,5 +1,7 @@
 #! /usr/bin/env pike
 
+// $Id: test.pike,v 1.4 2002/04/23 08:58:26 grubba Exp $
+
 #define c1 c[0]
 #define c2 c[1]
 #define c3 c[2]
@@ -21,7 +23,7 @@ void main(int argc, array argv)
 
   foreach( Stdio.File( argv[1]+"/NormalizationTest.txt","r" )->read()/"\n", string l )
   {
-    if( !strlen( l ) || l[0] == '#' )
+    if( !strlen( l ) || has_prefix(l, "#"))
       continue;
 
     if( l[0] == '@' )

@@ -673,6 +673,7 @@ testfont binary
 /src/post_modules/Unicode/configure.in foreign_ident
 /src/post_modules/Unicode/normalize.c foreign_ident
 /src/post_modules/Unicode/split.c foreign_ident
+/src/post_modules/Unicode/test.pike foreign_ident
 /src/post_modules/Unicode/unicode_module.cmod foreign_ident
 /src/post_modules/configure.in foreign_ident
 /src/preprocessor.h foreign_ident
