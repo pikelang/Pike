@@ -311,7 +311,7 @@ string|void parseIdents() {
   string result = "";
   if (peekToken() == "." || peekToken() == "::")
     result = readToken();
-  else if (scopeModules[peekToken()]) {
+  else if (isIdent(peekToken())) {
     result = readToken();
     if (peekToken() != "::" && peekToken() != ".") // might be "top.ident" ...
       return result;

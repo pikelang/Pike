@@ -392,6 +392,12 @@ class Module {
   static void create() { ::create("module"); }
 }
 
+// A modifier range, e.g.:
+// static private {
+//   ...
+//   <<declarations>>
+//   ...
+// }
 class Modifier {
   inherit _Class_or_Module;
   static void create() { ::create("modifier"); }
