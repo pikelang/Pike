@@ -1,14 +1,14 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.4 1999/04/19 18:34:37 mirar Exp $
+**!	$Id: layers.c,v 1.5 1999/04/19 18:45:09 mirar Exp $
 **! class Layer
 */
 
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: layers.c,v 1.4 1999/04/19 18:34:37 mirar Exp $");
+RCSID("$Id: layers.c,v 1.5 1999/04/19 18:45:09 mirar Exp $");
 
 #include "config.h"
 
@@ -384,6 +384,7 @@ static void image_layer_alpha_value(INT32 args)
 /*
 **! method object set_mode(string mode)
 **! method string mode()
+**! method array(string) available_modes()
 **!	Set/get layer mode. Mode is one of these:
 **!
 **!	<tr><td valign=top align=left>
@@ -512,6 +513,9 @@ static void image_layer_alpha_value(INT32 args)
 **!	<illustration> return lena(); </illustration>
 **!	<td></tr>
 **!	
+**!	<ref>available_modes</ref>() simply gives an array 
+**!	containing the names of these modes.
+**!
 **! note:
 **!	image and alpha channel must be of the same size,
 **!	or canceled.
@@ -551,6 +555,17 @@ static void image_layer_mode(INT32 args)
       }
 
    fatal("illegal mode: %p\n",layer_mode[i].func);
+}
+
+static void image_layer_available_modes(INT32 args)
+{
+   int i;
+   pop_n_elems(args);
+      
+   for (i=0; i<LAYER_MODES; i++)
+      ref_push_string(layer_mode[i].ps);
+
+   f_aggregate(LAYER_MODES);
 }
 
 /*
@@ -1498,7 +1513,7 @@ void img_lay(struct layer **layer,
    /* loop over lines */
    for (y=0; y<dest->ysize; y++)
    {
-      if (layers>1)
+      if (layers>1 || layer[0]->row_func!=lm_normal)
       {
 	 /* add the bottom layer first */
 	 if (layer[0]->row_func==lm_normal) /* cheat */
@@ -1696,6 +1711,9 @@ void init_image_layers(void)
    ADD_FUNCTION("image",image_layer_image,tFunc(,tObj),0);
    ADD_FUNCTION("alpha",image_layer_alpha,tFunc(,tObj),0);
    ADD_FUNCTION("mode",image_layer_mode,tFunc(,tStr),0);
+
+   ADD_FUNCTION("available_modes",image_layer_available_modes,
+		tFunc(,tArr(tStr)),0);
 
    ADD_FUNCTION("xoffset",image_layer_xoffset,tFunc(,tInt),0);
    ADD_FUNCTION("yoffset",image_layer_yoffset,tFunc(,tInt),0);
