@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.49 1999/02/18 17:34:14 grubba Exp $
+ * $Id: requests.pmod,v 1.50 1999/02/18 17:36:01 grubba Exp $
  */
 
 import .types;
@@ -386,7 +386,12 @@ class store
       message_set = server->uid_to_local(session, message_set);
     }
 
-    if (server->store(session, message_set, list, mode, silent_mode, state)) {
+    array(array(string|object)) res;
+
+    if (res = server->store(session, message_set, list, mode, silent_mode, state)) {
+      if (sizeof(res)) {
+	send("*", @res);
+      }
       send(tag, "OK");
     } else {
       send(tag, "NO");
