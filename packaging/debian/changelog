@@ -1,3 +1,43 @@
+pike7.4 (7.4.47-1) unstable; urgency=low
+
+  * The latest upstream version. The most important changes:
+	* Bugfix to prevent races if Image.Font.load() is called in several
+          threads.
+	* Fixed previously broken UTF7.5 encoding.
+	* Decoding of mask flag and mask default color in PSD images now
+          works.
+	* Better checks for wide and binary strings in the Mysql module.
+	* Fixed bug in Stdio.Port.accept that could case it to fail if a
+          signal arrived at the wrong time.
+	* Fixed bug in System.get_netinfo_property that could cause it to
+          fail.
+	* Robustness fixes in the backend.
+	* Bugfix to prevent errors during backtraces due to destructed
+          objects.
+	* SSL.sslfile bugfixed so that it doesn't do anything after calling a
+          callback, since the file might be used in non-callback mode in another
+          thread by then. This still doesn't fix the case when the read callback 
+          is called after the accept callback (this is however fixed in the 
+          development version of Pike). Also nothing is done after the file has 
+          been set to nonblocking mode, since the backend might already be using 
+          it by then, if it's in another thread.
+	* SSL.sslfile bugfixed to not call the write callback while still in
+          handshake.
+	* Fixed a race in SSL.sslfile that could occur in set_nonblocking when
+          it was called from another thread than the backend thread.
+	* Fixed several bugs in SSL.sslfile where I/O errors or close calls
+          from within callbacks caused it to try to use a closed socket.
+	* Web.Crawler no longer tries to fetch /robots.txt over protocols it
+          doesn't recognize.
+	* `| on arrays now preserves the order of the left argument for common
+          elements.
+	* Image.lay now ignores zero sized layers.
+	* Bugfixed Image.PNG grey scale decoding.
+	* _Roxen.http_decode_string now handles %u encoded characters.
+	* Fixed crash in GL.glGetString.
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 28 Apr 2004 13:17:46 +0200
+
 pike7.4 (7.4.37-1) unstable; urgency=low
 
   * The latest upstream update
