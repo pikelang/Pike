@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.266 1999/05/26 02:51:27 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.267 1999/05/26 03:08:22 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2235,7 +2235,7 @@ else
 fi
 
 if test "$ac_cv_func___priocntl" = yes; then
-  AC_TYPE_CHECK(pri_t, short)
+  AC_CHECK_TYPE(pri_t, short)
 fi
 
 ########################################################################

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.37 1999/05/12 05:24:41 hubbe Exp $
+ * $Id: acconfig.h,v 1.38 1999/05/26 03:08:21 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -104,6 +104,9 @@
 
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
+
+/* Define if you don't have the pri_t typedef. */
+#undef pri_t
 
 /* You have gcc stype function attributes? */
 #undef HAVE_FUNCTION_ATTRIBUTES
