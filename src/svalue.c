@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.102 2001/05/28 12:55:42 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.103 2001/06/04 23:59:09 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1462,7 +1462,7 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 	      (queue_call) PIKE_CONCAT3(gc_mark_, TN, _as_referenced),	\
 	      U.TN)
 
-#define GC_DO_NO_WEAK_MARK(U, TN) do {} while (0)
+#define GC_DONT_MARK(U, TN) do {} while (0)
 
 #define DO_MARK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
       if (s->subtype == FUNCTION_BUILTIN) {				\
@@ -1476,6 +1476,11 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       }									\
       /* Fall through to T_OBJECT. */
 
+#define DONT_MARK_FUNC_SVALUE(U, T, ZAP, GC_DO)				\
+      if (s->subtype == FUNCTION_BUILTIN)				\
+	break;								\
+      /* Fall through to T_OBJECT. */
+
 #define DO_MARK_OBJ_WEAK(U, TN)						\
       if (U.object->prog &&						\
 	  (U.object->prog->flags & PROGRAM_NO_WEAK_FREE))		\
@@ -1483,6 +1488,8 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
 
 #define DO_MARK_STRING(U)						\
       DO_IF_DEBUG(if (U.refs && d_flag) gc_mark(U.string))
+
+#define DONT_MARK_STRING(U)
 
 PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
 {
@@ -1510,7 +1517,7 @@ TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
   {
     dmalloc_touch_svalue(s);
     GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
-		      GC_DO_NO_WEAK_MARK, {},
+		      GC_DONT_MARK, {},
 		      DO_MARK_FUNC_SVALUE, DO_MARK_OBJ_WEAK,
 		      DO_MARK_STRING);
     t |= 1 << s->type;
@@ -1534,9 +1541,31 @@ int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
   int freed = 0;
   debug_malloc_touch(u);
   GC_RECURSE_SWITCH((*u), type, ZAP_SHORT_SVALUE, FREE_WEAK,
-		    GC_DO_NO_WEAK_MARK, {if (!u->refs) return 0;},
+		    GC_DONT_MARK, {if (!u->refs) return 0;},
 		    DO_FUNC_SHORT_SVALUE, DO_MARK_OBJ_WEAK,
 		    DO_MARK_STRING);
+  return freed;
+}
+
+int gc_mark_without_recurse(struct svalue *s)
+{
+  int freed = 0;
+  dmalloc_touch_svalue(s);
+  GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, DONT_FREE_WEAK,
+		    GC_DONT_MARK, {},
+		    DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
+		    DONT_MARK_STRING);
+  return freed;
+}
+
+int gc_mark_weak_without_recurse(struct svalue *s)
+{
+  int freed = 0;
+  dmalloc_touch_svalue(s);
+  GC_RECURSE_SWITCH((s->u), (s->type), ZAP_SVALUE, FREE_WEAK,
+		    GC_DONT_MARK, {},
+		    DONT_MARK_FUNC_SVALUE, GC_DONT_MARK,
+		    DONT_MARK_STRING);
   return freed;
 }
 
@@ -1612,8 +1641,8 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
  * rest.
  *
  * Note that the gc will bug out if these are used on references that
- * have been accounted for by the gc mark or cycle check functions
- * above. */
+ * have been accounted for by the recursing gc mark or cycle check
+ * functions above. */
 
 void real_gc_free_svalue(struct svalue *s)
 {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.91 2001/04/30 17:38:26 mast Exp $
+ * $Id: svalue.h,v 1.92 2001/06/04 23:59:10 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -496,10 +496,14 @@ PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num);
 TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num);
 int real_gc_mark_short_svalue(union anything *u, TYPE_T type);
 int gc_mark_weak_short_svalue(union anything *u, TYPE_T type);
+int gc_mark_without_recurse(struct svalue *s);
+int gc_mark_weak_without_recurse(struct svalue *s);
 PMOD_EXPORT TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num);
 TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num);
 PMOD_EXPORT int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type);
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
+#define gc_cycle_check_without_recurse gc_mark_without_recurse
+#define gc_cycle_check_weak_without_recurse gc_mark_without_recurse
 void real_gc_free_svalue(struct svalue *s);
 void real_gc_free_short_svalue(union anything *u, TYPE_T type);
 PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s);
