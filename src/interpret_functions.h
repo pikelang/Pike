@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.180 2004/12/18 21:52:50 grubba Exp $
+|| $Id: interpret_functions.h,v 1.181 2004/12/18 22:20:04 grubba Exp $
 */
 
 /*
@@ -319,6 +319,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
     if ((id != -1) &&
 	(!(p->identifier_references[id].id_flags &
 	   (ID_STATIC|ID_PRIVATE|ID_HIDDEN)))) {
+      id += o->prog->inherits[Pike_sp[-1].subtype].identifier_level;
       low_object_index_no_free(&tmp, o, id);
     } else {
       /* Not found. */
@@ -772,7 +773,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
        (i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
 		      LFUN_ADD_EQ)) != -1)
     {
-      apply_low(o, i, 1);
+      apply_low(o, i + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -834,7 +835,7 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
        (i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
 		      LFUN_ADD_EQ)) != -1)
     {
-      apply_low(o, i, 1);
+      apply_low(o, i + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -1144,7 +1145,7 @@ OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
     {
 /*      fprintf(stderr,"******OBJECT OVERLOAD IN TYPEP***** %s\n",get_name_of_type(arg1)); */
       push_text(get_name_of_type(arg1));
-      apply_low(o, fun, 1);
+      apply_low(o, fun + p->inherits[Pike_sp[-2].subtype].identifier_level, 1);
       arg1=UNSAFE_IS_ZERO(Pike_sp-1) ? T_FLOAT : T_OBJECT ;
       pop_stack();
     }
@@ -1658,6 +1659,7 @@ OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
 
 OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
   int i;
+  LOCAL_VAR(struct object *o);
   LOCAL_VAR(struct program *p);
 
   switch(Pike_sp[-1].type)
@@ -1666,12 +1668,12 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
     PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
     
   case PIKE_T_OBJECT:
-    if(!(p = Pike_sp[-1].u.object->prog) ||
+    if(!(p = (o = Pike_sp[-1].u.object)->prog) ||
        (i = FIND_LFUN(p->inherits[Pike_sp[-1].subtype].prog,
 		      LFUN__VALUES)) == -1)
       PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
 
-    apply_low(Pike_sp[-1].u.object, i, 0);
+    apply_low(o, i + p->inherits[Pike_sp[-1].subtype].identifier_level, 0);
     if(Pike_sp[-1].type != PIKE_T_ARRAY)
       Pike_error("Bad return type from o->_values() in @\n");
     free_svalue(Pike_sp-2);
@@ -2017,6 +2019,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 					  p);
 	if(fun >= 0)
 	{
+	  fun += o->prog->inherits[s->subtype].identifier_level;
 	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
@@ -2074,6 +2077,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 					  p);
 	if(fun >= 0)
 	{
+	  fun += o->prog->inherits[s->subtype].identifier_level;
 	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
@@ -2133,6 +2137,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 					  p);
 	if(fun >= 0)
 	{
+	  fun += o->prog->inherits[s->subtype].identifier_level;
 	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    PIKE_OPCODE_T *addr = Pike_fp->pc;
