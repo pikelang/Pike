@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.30 2001/06/07 17:29:05 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.31 2001/06/08 15:05:23 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -30,6 +30,7 @@ static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *utf7e_program = NULL, *utf8e_program = NULL;
 static struct program *utf7_5_program = NULL, *utf7_5e_program = NULL;
 static struct program *euc_program = NULL, *sjis_program = NULL;
+static struct program *euce_program = NULL, *sjise_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_big5_program = NULL;
@@ -437,9 +438,11 @@ static ptrdiff_t feed_sjis(const p_wchar0 *p, ptrdiff_t l,
 	l -= 2;
 	if(ch > 0xa0)
 	  ch -= 0x40;
-	if(lo >= 0x40 && lo <= 0x9e)
+	if(lo >= 0x40 && lo <= 0x9e && lo != 0x7f) {
+	  if(lo > 0x7f)
+	    --lo;
 	  ch = map_JIS_C6226_1983[(ch-0x81)*188+(lo-0x40)];
-	else if(lo >= 0x9f && lo <= 0xfc)
+	} else if(lo >= 0x9f && lo <= 0xfc)
 	  ch = map_JIS_C6226_1983[(ch-0x81)*188+94+(lo-0x9f)];
 	else
 	  ch = 0xfffd;
@@ -525,6 +528,98 @@ static void f_create_euc(INT32 args)
     Pike_error("Unknown charset in EUCDec\n");
 
   pop_n_elems(args);
+  push_int(0);
+}
+
+static void f_create_sjise(INT32 args)
+{
+  struct std16e_stor *s = (struct std16e_stor *)(fp->current_storage + std16e_stor_offs);
+  int i, j, z;
+  extern UNICHAR map_JIS_C6226_1983[];
+
+  s->lowtrans = 0x5c;
+  s->lo = 0x5c;
+  s->hi = 0xfffd;
+
+  memset((s->revtab = (p_wchar1 *)xalloc((s->hi-s->lo)*sizeof(p_wchar1))), 0,
+	 (s->hi-s->lo)*sizeof(p_wchar1));
+
+  for(z=0, i=33; i<=126; i++, z+=94)
+    for(j=33; j<=126; j++) {
+      UNICHAR c;
+      if((c=map_JIS_C6226_1983[z+j-33])!=0xfffd && c>=s->lo) {
+	if(i&1)
+	  s->revtab[c-s->lo]=(((i>>1)+(i<95? 113:177))<<8)|(j+(j<96? 31:32));
+	else
+	  s->revtab[c-s->lo]=(((i>>1)+(i<95? 112:176))<<8)|(j+126);
+      }
+    }
+
+  for(i=0x5d; i<0x7e; i++)
+    s->revtab[i-s->lo] = i;
+
+  for(i=1; i<64; i++)
+    s->revtab[i+0xff60-s->lo] = 0xa0+i;
+
+  s->revtab[0xa5 - s->lo] = 0x5c;
+  s->revtab[0x203e - s->lo] = 0x7e;
+
+  f_create(args);
+  push_int(0);
+}
+
+static void f_create_euce(INT32 args)
+{
+  struct std16e_stor *s = (struct std16e_stor *)(fp->current_storage + std16e_stor_offs);
+  extern struct charset_def charset_map[];
+  extern int num_charset_def;
+  struct pike_string *str;
+  int i, j, z, lo=0, hi=num_charset_def-1;
+  UNICHAR const *table=NULL;
+
+  check_all_args("create()", args, BIT_STRING, BIT_STRING|BIT_VOID|BIT_INT,
+		 BIT_FUNCTION|BIT_VOID|BIT_INT, 0);
+
+  str = sp[-args].u.string;
+
+  if(str->size_shift>0)
+    hi = -1;
+
+  while(lo<=hi) {
+    int c, mid = (lo+hi)>>1;
+    if((c = strcmp((char *)STR0(str), charset_map[mid].name))==0) {
+      if(charset_map[mid].mode == MODE_9494)
+	table = charset_map[mid].table;
+      break;
+    }
+    if(c<0)
+      hi=mid-1;
+    else
+      lo=mid+1;
+  }
+
+  if(table == NULL)
+    Pike_error("Unknown charset in EUCDec\n");
+
+  s->lowtrans = 128;
+  s->lo = 128;
+  s->hi = 128;
+
+  memset((s->revtab = (p_wchar1 *)xalloc((65536-s->lo)*sizeof(p_wchar1))), 0,
+	 (65536-s->lo)*sizeof(p_wchar1));
+
+  for(z=0, i=33; i<=126; i++, z+=94)
+    for(j=33; j<=126; j++) {
+      UNICHAR c;
+      if((c=table[z+j-33])!=0xfffd && c>=s->lo) {
+	s->revtab[c-s->lo]=(i<<8)|j|0x8080;
+	if(c>=s->hi)
+	  s->hi = c+1;
+      }
+    }
+
+  f_create(args-1);
+  pop_stack();
   push_int(0);
 }
 
@@ -1293,7 +1388,8 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	if((c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
-	  string_builder_putchar(sb, (ch>>8)&0xff);
+	  if(ch > 0xff)
+	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
 	  REPLACE_CHAR(c, feed_std16e, s16);
@@ -1306,7 +1402,8 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	if((c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
-	  string_builder_putchar(sb, (ch>>8)&0xff);
+	  if(ch > 0xff)
+	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
 	  REPLACE_CHAR(c, feed_std16e, s16);
@@ -1319,7 +1416,8 @@ static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
 	if((c=*p++)<lowtrans)
 	  string_builder_putchar(sb, c);
 	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
-	  string_builder_putchar(sb, (ch>>8)&0xff);
+	  if(ch > 0xff)
+	    string_builder_putchar(sb, (ch>>8)&0xff);
 	  string_builder_putchar(sb, ch&0xff);
 	} else
 	  REPLACE_CHAR(c, feed_std16e, s16);
@@ -1460,6 +1558,20 @@ void pike_module_init(void)
   std_rfc_stor_offs = ADD_STORAGE(struct std_rfc_stor);
   std_rfc_program = end_program();
 
+  prog.u.program = std_16bite_program;
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  /* function(string,string|void,function(string:string)|void:void) */
+  ADD_FUNCTION("create", f_create_euce,tFunc(tStr tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
+  add_program_constant("EUCEnc", euce_program = end_program(), ID_STATIC|ID_NOMASK);
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  /* function(string|void,function(string:string)|void:void) */
+  ADD_FUNCTION("create", f_create_sjise,tFunc(tOr(tStr,tVoid) tOr(tFunc(tStr,tStr),tVoid),tVoid), 0);
+  add_program_constant("ShiftJisEnc", sjise_program = end_program(), ID_STATIC|ID_NOMASK);
+
   prog.u.program = std_rfc_program;
 
   start_new_program();
@@ -1531,6 +1643,12 @@ void pike_module_exit(void)
 
   if(sjis_program != NULL)
     free_program(sjis_program);
+
+  if(euce_program != NULL)
+    free_program(euce_program);
+
+  if(sjise_program != NULL)
+    free_program(sjise_program);
 
   if(std_94_program != NULL)
     free_program(std_94_program);
