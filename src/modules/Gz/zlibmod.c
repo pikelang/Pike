@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.59 2002/11/25 11:39:37 grubba Exp $
+|| $Id: zlibmod.c,v 1.60 2003/06/18 15:28:52 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.59 2002/11/25 11:39:37 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.60 2003/06/18 15:28:52 marcus Exp $");
 
 #include "zlib_machine.h"
 #include "module.h"
@@ -859,8 +859,8 @@ PIKE_MODULE_INIT
   start_new_program();
   ADD_STORAGE(struct zipper);
   
-  /* function(int|void:void) */
-  ADD_FUNCTION("create",gz_inflate_create,tFunc(tOr(tInt,tVoid),tVoid),0);
+  /* function(:void) */
+  ADD_FUNCTION("create",gz_inflate_create,tFunc(tNone,tVoid),0);
   /* function(string:string) */
   ADD_FUNCTION("inflate",gz_inflate,tFunc(tStr,tStr),0);
 
