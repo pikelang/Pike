@@ -654,9 +654,10 @@ class ReadInteractive
     signal(signum("SIGINT"));
   }
 
-  static private string low_edit(mixed ... args)
+  static private string low_edit(string data, string|void local_prompt,
+				 array(string)|void attrs)
   {
-    string r = ::edit(@args);
+    string r = ::edit(data, local_prompt, (attrs || ({})) | ({ "bold" }));
     if(!r)
     {
       // ^D?
@@ -950,30 +951,22 @@ int pre_install(array(string) argv)
 
       status1("");
   
-	// FIXME: 
-	// The following introduction is not quite true on NT
-	// and other platforms where Readline falls back on 
-	// 'dummy' mode.
+      interactive=ReadInteractive();
 
       write("   Welcome to the interactive "+version()+
 	    " installation script.\n"
-	    "\n"
-#ifndef __NT__
-	    "   The script will guide you through the installation process by asking\n"
-	    "   a few questions. Whenever you input a path or a filename, you may use\n"
-	    "   the <tab> key to perform filename completion. You will be able to\n"
-	    "   confirm your settings before the installation begin.\n"
-
-#else
-
-	    "   The script will guide you through the installation process by asking\n"
-	    "   a few questions. You will be able to confirm your settings before\n"
-	    "   the installation begin.\n"
-#endif
+	    "\n" +
+	    (interactive->get_input_controller()->dumb ?
+	     "   The script will guide you through the installation process by asking\n"
+	     "   a few questions. You will be able to confirm your settings before\n"
+	     "   the installation begin.\n"
+	     :
+	     "   The script will guide you through the installation process by asking\n"
+	     "   a few questions. Whenever you input a path or a filename, you may use\n"
+	     "   the <tab> key to perform filename completion. You will be able to\n"
+	     "   confirm your settings before the installation begin.\n")
 	    );
       
-      interactive=ReadInteractive();
-
       string confirm, bin_path = vars->pike_name;
       do {
 	write("\n");
