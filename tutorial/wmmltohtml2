@@ -19,6 +19,7 @@ int main(int argc, string *argv)
 
   mixed *ER=catch {
     program output=(program)argv[2];
+    Wmml->output_format=argv[2];
     if (!output) error("can't cast %O to program\n",argv[2]);
     object out=output();
     if (!out->output) error("%O doesn't have an output method",argv[2]);
@@ -42,7 +43,7 @@ int main(int argc, string *argv)
     werror("Undocumented functions: \n%-#75s\n",(indices(all_constants()) - indices(wmml->index_data))*"\n");
 #endif
     werror("\nWriting output\n");
-    output()->output(argv[3],wmml);
+    out->output(argv[3],wmml);
     write("Ok\n");
     exit(0);
   };
