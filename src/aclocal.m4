@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.79 2003/09/14 14:23:35 nilsson Exp $
+dnl $Id: aclocal.m4,v 1.80 2003/10/14 16:47:27 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -35,6 +35,28 @@ pushdef([AC_PROG_CC],
   popdef([AC_PROG_CC])
 
   AC_PROG_CC
+
+  if test "$ac_cv_prog_cc_g" = no; then
+    # The -g test is broken for some compilers (eg ecc), since
+    # they always have output (they echo the name of the source file).
+    AC_MSG_CHECKING(if -g might not be ok after all)
+    AC_CACHE_VAL(pike_cv_prog_cc_g, [
+      echo 'void f(){}' > conftest.c
+      if test "`${CC-cc} -g -c conftest.c 2>&1`" = \
+	      "`${CC-cc} -c conftest.c 2>&1`"; then
+	pike_cv_prog_cc_g=yes
+      else
+	pike_cv_prog_cc_g=no
+      fi
+      rm -f conftest*
+    ])
+    if test "$pike_cv_prog_cc_g" = "yes"; then
+      AC_MSG_RESULT(yes)
+      ac_cv_prog_cc_g=yes
+    else
+      AC_MSG_RESULT(no)
+    fi
+  fi
 
   if test "$ac_test_CFLAGS" = set; then :; else
     if test "$GCC" = yes; then
@@ -192,7 +214,7 @@ EOF
     ])    
     AC_MSG_RESULT($AC_CV_NAME)
   elif test "x$enable_binary" = "xno"; then
-    AC_CV_NAME=$2
+    AC_CV_NAME=ifelse([$2], , 0, [$2])
   fi
   undefine([AC_CV_NAME])dnl
   ORIG_AC_CHECK_SIZEOF($1,$2)
@@ -329,7 +351,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.79 2003/09/14 14:23:35 nilsson Exp $
+  # $Id: aclocal.m4,v 1.80 2003/10/14 16:47:27 grubba Exp $
 
   MY_AC_PROG_CC
 
