@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.79 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: array.c,v 1.80 2000/08/10 17:41:09 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -48,10 +48,10 @@ static struct array *gc_mark_array_pos = 0;
  * NOTE: the new array have zero references
  */
 
-PMOD_EXPORT struct array *low_allocate_array(INT32 size,INT32 extra_space)
+PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_space)
 {
   struct array *v;
-  INT32 e;
+  ptrdiff_t e;
 
   if(size == 0)
   {

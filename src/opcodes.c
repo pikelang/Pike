@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.82 2000/08/10 09:51:51 per Exp $");
+RCSID("$Id: opcodes.c,v 1.83 2000/08/10 17:39:22 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1564,7 +1564,7 @@ void o_sscanf(INT32 args)
 #endif
   INT32 e,i;
   int x;
-  long matched_chars;
+  ptrdiff_t matched_chars;
   struct svalue *save_sp=sp;
 
   if(sp[-args].type != T_STRING)
@@ -1691,7 +1691,7 @@ PMOD_EXPORT void f_sscanf(INT32 args)
 #endif
   INT32 e,i;
   int x;
-  long matched_chars;
+  ptrdiff_t matched_chars;
   struct svalue *save_sp=sp;
   struct array *a;
 

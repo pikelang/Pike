@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.24 2000/08/09 12:49:27 grubba Exp $
+ * $Id: array.h,v 1.25 2000/08/10 17:41:48 grubba Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -89,7 +89,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 
 
 /* Prototypes begin here */
-PMOD_EXPORT struct array *low_allocate_array(INT32 size,INT32 extra_space);
+PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_space);
 void really_free_array(struct array *v);
 PMOD_EXPORT void do_free_array(struct array *a);
 PMOD_EXPORT void array_index_no_free(struct svalue *s,struct array *v,INT32 index);

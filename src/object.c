@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.141 2000/08/10 14:57:41 grubba Exp $");
+RCSID("$Id: object.c,v 1.142 2000/08/10 17:37:38 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1346,7 +1346,8 @@ static inline void gc_check_object(struct object *o)
 #ifdef PIKE_DEBUG
     if(debug_gc_check(debug_malloc_pass(o->parent),T_OBJECT,
 		      debug_malloc_pass(o))==-2)
-      fprintf(stderr,"(in object at %lx -> parent)\n",(long)o);
+      fprintf(stderr,"(in object at %lx -> parent)\n",
+	      DO_NOT_WARN((long)o));
 #else
     gc_check(o->parent);
 #endif
@@ -1613,7 +1614,7 @@ static void f_magic_set_index(INT32 args)
 
 void init_object(void)
 {
-  int offset;
+  ptrdiff_t offset;
 
   init_destroy_called_mark_hash();
   start_new_program();

@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.97 2000/08/10 09:51:51 per Exp $");
+RCSID("$Id: operators.c,v 1.98 2000/08/10 17:44:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1779,7 +1779,7 @@ PMOD_EXPORT void o_divide(void)
 	  
 	  for(last=sp[-2].u.string->len,e=0;e<size-1;e++)
 	  {
-	    pos=sp[-2].u.string->len - (INT32)((e+1)*len);
+	    pos=sp[-2].u.string->len - (ptrdiff_t)((e+1)*len);
 	    a->item[size-1-e].u.string=string_slice(sp[-2].u.string,
 						    pos,
 						    last-pos);
@@ -1792,7 +1792,7 @@ PMOD_EXPORT void o_divide(void)
 					   last-pos);
 	  a->item[0].type=T_STRING;
 	}else{
-	  size=(INT32)ceil( ((double)sp[-2].u.string->len) / len);
+	  size=(ptrdiff_t)ceil( ((double)sp[-2].u.string->len) / len);
 	  a=allocate_array(size);
 	  
 	  for(last=0,e=0;e<size-1;e++)
@@ -1868,7 +1868,7 @@ PMOD_EXPORT void o_divide(void)
 	  
 	  for(last=sp[-2].u.array->size,e=0;e<size-1;e++)
 	  {
-	    pos=sp[-2].u.array->size - (INT32)((e+1)*len);
+	    pos=sp[-2].u.array->size - (ptrdiff_t)((e+1)*len);
 	    a->item[size-1-e].u.array=friendly_slice_array(sp[-2].u.array,
 						    pos,
 						    last);
@@ -1880,12 +1880,12 @@ PMOD_EXPORT void o_divide(void)
 					 last);
 	  a->item[0].type=T_ARRAY;
 	}else{
-	  size=(INT32)ceil( ((double)sp[-2].u.array->size) / len);
+	  size = (ptrdiff_t)ceil( ((double)sp[-2].u.array->size) / len);
 	  a=allocate_array(size);
 	  
 	  for(last=0,e=0;e<size-1;e++)
 	  {
-	    pos=(INT32)((e+1)*len);
+	    pos = (ptrdiff_t)((e+1)*len);
 	    a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
 						    last,
 						    pos);
@@ -2234,7 +2234,7 @@ PMOD_EXPORT void o_compl(void)
   case T_STRING:
   {
     struct pike_string *s;
-    INT32 len, i;
+    ptrdiff_t len, i;
 
     if(sp[-1].u.string->size_shift) {
       bad_arg_error("`~", sp-1, 1, 1, "string(0)", sp-1,

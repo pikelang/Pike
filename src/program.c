@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.256 2000/08/10 14:51:50 grubba Exp $");
+RCSID("$Id: program.c,v 1.257 2000/08/10 17:46:34 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -484,7 +484,7 @@ struct program *id_to_program(INT32 id)
  */
 void optimize_program(struct program *p)
 {
-  SIZE_T size=0;
+  size_t size=0;
   char *data;
 
   /* Already done (shouldn't happen, but who knows?) */
