@@ -59,23 +59,23 @@
 //!	which is a MAXINT on most systems - 13 Dec 1901 20:45:52
 //!	to 19 Jan 2038 3:14:07, UTC.
 
-//! module Calendar
-//! submodule TZnames
-//!	This module is a mapping of the names of 
-//!	all the geographical (political) 
-//!	based timezones. It looks mainly like
-//!	<pre>
-//!	(["Europe":({"Stockholm","Paris",...}),
-//!       "America":({"Chicago","Panama",...}),
-//!	  ...
-//!     ])
-//!     </pre>
-//!
-//!	It is mainly there for easy and reliable ways
-//!	of making user interfaces to select timezone.
-//!
-//!	The Posix and standard timezones (like CET, PST8PDT, etc)
-//!	are not listed.
+// module Calendar
+// submodule TZnames
+//	This module is a mapping of the names of 
+//	all the geographical (political) 
+//	based timezones. It looks mainly like
+//	<pre>
+//	(["Europe":({"Stockholm","Paris",...}),
+//       "America":({"Chicago","Panama",...}),
+//	  ...
+//     ])
+//     </pre>
+//
+//	It is mainly there for easy and reliable ways
+//	of making user interfaces to select timezone.
+//
+//	The Posix and standard timezones (like CET, PST8PDT, etc)
+//	are not listed.
 
 
 #pike __REAL_VERSION__
