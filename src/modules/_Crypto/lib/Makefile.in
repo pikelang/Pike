@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.18 1998/03/28 14:01:44 grubba Exp $
+# $Id: Makefile.in,v 1.19 1998/08/02 15:16:31 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -65,6 +65,7 @@ sure:
 
 clean:
 	-rm -f *.o *.i *.x *.a ./desTest
+	-rm -f $(GC) $(GH) desdata
 
 depend:
 
