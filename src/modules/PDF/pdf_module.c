@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.4 2001/01/17 19:35:27 grubba Exp $");
+RCSID("$Id: pdf_module.c,v 1.5 2001/01/17 19:36:41 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -47,7 +47,7 @@ static struct
 #define PDF_CLASS(name,init,exit,prog) { name,init,exit,&prog },
 #define PDF_SUBMODULE(a,b,c)
 #include "initstuff.h"
-  PDF_CLASS(NULL,NULL,NULL,pdf_sentinel),
+  PDF_CLASS(NULL,NULL,NULL,pdf_sentinel)
 };
 
 static struct 
@@ -62,7 +62,7 @@ static struct
 #define PDF_CLASS(name,init,exit,prog) 
 #define PDF_SUBMODULE(name,init,exit) { name,init,exit },
 #include "initstuff.h"
-  PDF_SUBMODULE(NULL,NULL,NULL),
+  PDF_SUBMODULE(NULL,NULL,NULL)
 };
 
 static struct 
@@ -79,7 +79,7 @@ static struct
 #define PDF_SUBMODULE(a,b,c)
 #define PDF_SUBMODMAG(name,init,exit) { name,init,exit,NULL,NULL },
 #include "initstuff.h"
-  PDF_SUBMODMAG(NULL,NULL,NULL),
+  PDF_SUBMODMAG(NULL,NULL,NULL)
 };
 
 /* Avoid loss of precision warnings. */
