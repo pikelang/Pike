@@ -160,13 +160,15 @@ class collect_list
 
   int max_depth;
   int eol;
-
+  int accept_options;
+  
   function c;
 
-  void create(int _max_depth, int _eol, function _c)
+  void create(int _max_depth, int _eol, int _options, function _c)
     {
       max_depth = _max_depth;
       eol = _eol;
+      accept_options = _options;
       c = _c;
     }
     
@@ -181,7 +183,7 @@ class collect_list
     
   mapping collect()
     {
-      return get_any(max_depth, eol, append);
+      return get_any(max_depth, eol, accept_options, append);
     }
 }
 
@@ -206,11 +208,11 @@ class handle_options
     }
 }
 
-mapping get_any(int max_depth, int eol, function c)
+mapping get_any(int max_depth, int eol, int accept_options, function c)
 {
   if (!line)
     return ([ "action" : "expect_line",
-	      "handler" : line_handler(get_any, max_depth, eol, c) ]);
+	      "handler" : line_handler(get_any, max_depth, eol, accept_options, c) ]);
 
   mapping t = line->get_token(eol);
 
@@ -229,16 +231,50 @@ mapping get_any(int max_depth, int eol, function c)
 	      "handler": handle_literal(c) ]);
   case "atom_options":
     if (max_depth > 0)
-      return collect_list(max_depth - 1, ']', handle_options(t, c))->collect();
+      return collect_list(max_depth - 1, ']', accept_options,
+			  handle_options(t, c))->collect();
     else return 0;
   case "list":
-    return collect_list(max_depth - 1, ')', handle_list(c))->collect();
+    return collect_list(max_depth - 1, ')', accept_options, handle_list(c))->collect();
   default:
     throw( ({ "IMAP: Internal error!\n", backtrace() }) );
   }
 }
 
-mapping get_varargs(int max_depth, function c)
+#if 0
+class collect_varargs
 {
+  array l = ({ });
+
+  int max_depth;
+  int accept_options;
   
+  function c;
+
+  void create(int _max_depth, int _options, function _c)
+    {
+      max_depth = _max_depth;
+      accept_options = _options;
+      c = _c;
+    }
+    
+  mapping append(mapping value)
+    {
+      if (value->eol)
+	return c(l);
+      l += ({ value });
+
+      return collect();
+    }
+    
+  mapping collect()
+    {
+      return get_any(max_depth, 0, accept_options, append);
+    }
+}
+#endif
+
+mapping get_varargs(int max_depth, int accept_options, function c)
+{
+  return collect_list(max_depth, -1, 0, c)->collect();
 }
