@@ -1,5 +1,6 @@
 This document describes the keywords recognized by the AutoDoc parser, and their
-intended use. JHS is working on a more elaborate manual and style guide.
+intended use. JHS is working on a more elaborate manual and style guide, which
+will most likely appear in pike/autodoc/tags.txt when this file is discarded.
 
 ================================================================================
 
@@ -11,11 +12,18 @@ Keyword:      @appears
 Description:  Tell where the documentation for an item should be shown.
               Gives the full new name of the item. Must be placed first in
               the block, or immediately after any @module, @class, or @decl's.
-Arguments:    <name>
+Arguments:    <name> [, type]
               Where:
                 <name> is an "absolute" name with identifiers separated by dots.
                   It can also be prefixed by 'scope::' where scope is one of
                   the valid scope modules.
+                [type] is either "class" or "module" depending on whether the
+                  target item should appear as a class or a module. When not
+                  present, the choice will be governed by the item's type, as
+                  detected by the extractor. Overriding this is only needed for
+                  odd special cases such as a module.pmod containing e g:
+                    static class _Foo {...};
+                    _Foo Foo = _Foo();
 Children:     -
 Groups with:  -
 Examples:     //! @appears predef::stat
