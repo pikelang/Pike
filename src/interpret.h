@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.31 1999/05/02 08:11:44 hubbe Exp $
+ * $Id: interpret.h,v 1.32 1999/06/01 10:21:10 mirar Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -69,6 +69,10 @@ struct pike_frame
    sp-=x_; debug_check_stack();					\
   free_svalues(sp,x_,BIT_MIXED);				\
  } } while (0)
+
+#define stack_pop_n_elems_keep_top(X) \
+ do { struct svalue s=sp[-1]; sp[-1]=sp[-1-(X)]; sp[-1-(X)]=s; \
+      pop_n_elems(X); } while (0)
 
 #define push_program(P) do{ struct program *_=(P); debug_malloc_touch(_); sp->u.program=_; sp++->type=T_PROGRAM; }while(0)
 #define push_int(I) do{ INT32 _=(I); sp->u.integer=_;sp->type=T_INT;sp++->subtype=NUMBER_NUMBER; }while(0)
