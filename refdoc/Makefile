@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.61 2003/12/17 15:50:09 bill Exp $
+# $Id: Makefile,v 1.62 2004/05/19 18:37:26 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -27,7 +27,7 @@ module_modref: $(BUILDDIR)/module_modref.xml structure/modref.css structure/modu
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_module_modref
 
 low_module_modref:
-	rm -rf $(DESTDIR)modref || /bin/true
+	-rm -rf $(DESTDIR)modref
 	@mkdir $(DESTDIR)modref
 	@cp structure/modref.css $(DESTDIR)modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
@@ -39,7 +39,7 @@ low_module_modref:
 	  cp src_images/$$file $(DESTDIR)modref/images/ ; done
 
 low_modref:
-	rm -rf $(DESTDIR)modref || /bin/true
+	-rm -rf $(DESTDIR)modref
 	@test -d $(DESTDIR)modref || mkdir modref
 	@cp structure/modref.css modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
@@ -55,7 +55,7 @@ pelix_modref: $(BUILDDIR)/modref.xml structure/pelix_modref.html \
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_pelix_modref
 
 low_pelix_modref:
-	rm -rf pelix_modref || /bin/true
+	-rm -rf pelix_modref
 	@mkdir pelix_modref
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/modref.xml structure/pelix_modref.html pelix_modref predef
@@ -67,7 +67,7 @@ caudium_modref: $(BUILDDIR)/modref.xml structure/caudium_modref.html \
 	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_caudium_modref
 
 low_caudium_modref:
-	rm -rf caudium_modref || /bin/true
+	-rm -rf caudium_modref
 	@mkdir caudium_modref
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  $(BUILDDIR)/modref.xml structure/caudium_modref.html caudium_modref predef
