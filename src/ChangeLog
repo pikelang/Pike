@@ -3,6 +3,8 @@ Sat Dec 28 15:19:28 1996  Henrik Grubbström  <grubba@skuld.infovav.se>
 	* dynamic_load.c (f_load_module): now throws the result of dlerror()
 	when dlopen() fails instead of returning 0.
 
+	* modules/mysql/: Added module.
+
 Sun Dec 15 07:50:35 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* file.c (file_close): fixed a file descriptor leak
