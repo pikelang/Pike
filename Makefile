@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.66 2002/05/01 14:15:13 nilsson Exp $
+# $Id: Makefile,v 1.67 2002/05/01 18:45:30 mast Exp $
 #
 # Meta Makefile
 #
@@ -192,6 +192,9 @@ dump_modules:
 
 force_dump_modules:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=force_dump_modules"
+
+undump_modules:
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=undump_modules"
 
 run_hilfe:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"

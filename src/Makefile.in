@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.306 2002/05/01 00:02:14 nilsson Exp $
+# $Id: Makefile.in,v 1.307 2002/05/01 18:45:30 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -315,6 +315,10 @@ force_dump_modules:
 	-rm dumpversion 2>/dev/null
 	$(MAKE) $(MAKE_FLAGS) dump_modules
 
+undump_modules:
+	-find lib -type f -name \*.o | xargs rm -f
+	-rm dumpversion 2>/dev/null
+
 .SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src
 
 .c.pp:
@@ -407,6 +411,7 @@ install_interactive: pike tools pike-module aclocal
 tidy:
 	-rm -f *.fail *.o *.obj *.pp *.protos core y.output y.tab.c y.tab.h
 	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ testsuite dynloadtest*
+	-find lib -type f -name \*.o | xargs rm -f
 
 # make clean
 clean: tidy
