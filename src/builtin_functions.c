@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.446 2002/10/15 13:29:13 grubba Exp $
+|| $Id: builtin_functions.c,v 1.447 2002/10/15 13:45:34 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.446 2002/10/15 13:29:13 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.447 2002/10/15 13:45:34 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4191,6 +4191,18 @@ PMOD_EXPORT void f_mktime (INT32 args)
   date.tm_mday=mday;
   date.tm_mon=mon;
   date.tm_year=year;
+
+  if (args > 6) {
+    if (Pike_sp[6-args].type != T_INT) {
+      PIKE_ERROR("mktime", "Bad argument 6 (expected int).\n", Pike_sp, args);
+    }
+    if (args > 7) {
+      if (Pike_sp[7-args].type != T_INT) {
+	PIKE_ERROR("mktime", "Bad argument 7 (expected int).\n",
+		   Pike_sp, args);
+      }
+    }
+  }
 
   if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER))
   {
