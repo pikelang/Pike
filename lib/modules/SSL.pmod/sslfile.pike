@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.26 2000/10/12 13:55:15 sigge Exp $
+/* $Id: sslfile.pike,v 1.27 2000/11/27 09:28:56 per Exp $
  *
  */
 
@@ -40,7 +40,9 @@ void die(int status)
   }
   is_closed = 1;
   if (socket) {
-    socket->close();
+    catch( socket->close() );
+    if(close_callback)
+      close_callback(socket->query_id());
   }
 }
 
