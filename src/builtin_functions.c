@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.98 1998/04/16 01:14:16 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.99 1998/04/16 21:30:08 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -311,7 +311,7 @@ void f_backtrace(INT32 args)
 	ITEM(i)[2].type=T_FUNCTION;
 	ITEM(i)[2].subtype=f->fun;
 	ITEM(i)[2].u.object=f->current_object;
-	f->current_object->refs++;
+	add_ref(f->current_object);
       }else{
 	ITEM(i)[2].type=T_INT;
 	ITEM(i)[2].subtype=NUMBER_DESTRUCTED;
@@ -593,8 +593,7 @@ void f_zero_type(INT32 args)
 void f_all_constants(INT32 args)
 {
   pop_n_elems(args);
-  push_mapping(get_builtin_constants());
-  sp[-1].u.mapping->refs++;
+  ref_push_mapping(get_builtin_constants());
 }
 
 void f_allocate(INT32 args)
@@ -652,7 +651,7 @@ void f_this_object(INT32 args)
   {
     sp->u.object=fp->current_object;
     sp->type=T_OBJECT;
-    fp->current_object->refs++;
+    add_ref(fp->current_object);
     sp++;
   }else{
     push_int(0);
@@ -887,8 +886,7 @@ void f_next_object(INT32 args)
   {
     push_int(0);
   }else{
-    o->refs++;
-    push_object(o);
+    ref_push_object(o);
   }
 }
 
@@ -907,14 +905,14 @@ void f_object_program(INT32 args)
       {
 	INT32 id=o->parent_identifier;
 	o=o->parent;
-	o->refs++;
+	add_ref(o);
 	pop_n_elems(args);
 	push_object(o);
 	sp[-1].subtype=id;
 	sp[-1].type=T_FUNCTION;
 	return;
       }else{
-	p->refs++;
+	add_ref(p);
 	pop_n_elems(args);
 	push_program(p);
 	return;
@@ -1368,7 +1366,7 @@ void f_rows(INT32 args)
   for(e=0;e<a->size;e++)
     index_no_free(ITEM(a)+e, sp-args-1, ITEM(tmp)+e);
 
-  a->refs++;
+  add_ref(a);
   pop_n_elems(args+1);
   push_array(a);
 }
@@ -1388,7 +1386,7 @@ void f_column(INT32 args)
   tmp=sp[-args].u.array;
   if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
   {
-    a->refs++;
+    add_ref(a);
     pop_n_elems(args);
     push_array(a);
   }else{
@@ -1399,7 +1397,7 @@ void f_column(INT32 args)
       index_no_free(ITEM(a)+e, ITEM(tmp)+e, sp-args);
 
     END_CYCLIC();
-    a->refs++;
+    add_ref(a);
     pop_n_elems(args+1);
     push_array(a);
   }
@@ -1631,7 +1629,7 @@ void f_glob(INT32 args)
 		    glob->str,
 		    glob->len))
       {
-	ITEM(a)[i].u.string->refs++;
+	add_ref(ITEM(a)[i].u.string);
 	push_string(ITEM(a)[i].u.string);
 	matches++;
       }
@@ -1791,7 +1789,7 @@ static struct array* diff_compare_table(struct array *a,struct array *b)
       if (!pval)
       {
 	 res->item[i].type=T_ARRAY;
-	 (res->item[i].u.array=&empty_array)->refs++;
+	 add_ref(res->item[i].u.array=&empty_array);
       }
       else
       {
@@ -2061,7 +2059,7 @@ static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
 	     dml->refs = 1;
 
 	     if (pos)
-	       (dml->prev = stack[pos-1])->refs++;
+	       add_ref(dml->prev = stack[pos-1]);
 	     else
 	       dml->prev = NULL;
 
@@ -2094,7 +2092,7 @@ static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
 	     dml->refs = 1;
 
 	     if (pos)
-	       (dml->prev = stack[pos-1])->refs++;
+	       add_ref(dml->prev = stack[pos-1]);
 	     else
 	       dml->prev = NULL;
 
@@ -2419,11 +2417,11 @@ void f_replace_master(INT32 args)
     
   free_object(master_object);
   master_object=sp[-args].u.object;
-  master_object->refs++;
+  add_ref(master_object);
 
   free_program(master_program);
   master_program=master_object->prog;
-  master_program->refs++;
+  add_ref(master_program);
 
   pop_n_elems(args);
 }
@@ -2431,8 +2429,7 @@ void f_replace_master(INT32 args)
 void f_master(INT32 args)
 {
   pop_n_elems(args);
-  master_object->refs++;
-  push_object(master_object);
+  ref_push_object(master_object);
 }
 
 #ifdef HAVE_GETHRVTIME
@@ -2478,7 +2475,7 @@ static void f_get_prof_info(INT32 args)
   prog = program_from_svalue(sp-args);
   if(!prog) ERROR("get_profiling_info", "Bad argument 1.\n", sp, args);
 
-  prog->refs++;
+  add_ref(prog);
 
   pop_n_elems(args);
 
@@ -2490,7 +2487,7 @@ static void f_get_prof_info(INT32 args)
     if (prog->identifiers[i].num_calls)
     {
       num_functions++;
-      prog->identifiers[i].name->refs++;
+      add_ref(prog->identifiers[i].name);
       push_string(prog->identifiers[i].name);
 
       push_int(prog->identifiers[i].num_calls);
@@ -2671,6 +2668,14 @@ void f_transpose(INT32 args)
   return;
 }
 
+#ifdef DEBUG_MALLOC
+void f__reset_dmalloc(INT32 args)
+{
+  pop_n_elems(args);
+  reset_debug_malloc();
+}
+#endif
+
 void init_builtin_efuns(void)
 {
   init_operators();
@@ -2779,5 +2784,8 @@ void init_builtin_efuns(void)
   add_function("diff_compare_table",f_diff_compare_table,"function(array,array:array(array))",OPT_TRY_OPTIMIZE);
   add_function("longest_ordered_sequence",f_longest_ordered_sequence,"function(array:array(int))",0);
   add_function("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
+#ifdef DEBUG_MALLOC
+  add_efun("_reset_dmalloc",f__reset_dmalloc,"function(void:void)",OPT_SIDE_EFFECT);
+#endif
 }
 

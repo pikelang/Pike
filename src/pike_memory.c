@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.21 1998/04/16 01:17:45 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.22 1998/04/16 21:30:09 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -971,5 +971,21 @@ void * debug_malloc_update_location(void *p,const char *fn, int line)
   return p;
 }
 
+void reset_debug_malloc(void)
+{
+  INT32 h;
+  for(h=0;h<HSIZE;h++)
+  {
+    struct memhdr *m;
+    for(m=hash[h];m;m=m->next)
+    {
+      struct memloc *l;
+      for(l=m->locations;l;l=l->next)
+      {
+	l->times=0;
+      }
+    }
+  }
+}
 
 #endif
