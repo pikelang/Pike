@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.38 2004/05/10 08:30:53 grubba Exp $
+|| $Id: backend.cmod,v 1.39 2004/10/18 15:10:16 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.38 2004/05/10 08:30:53 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.39 2004/10/18 15:10:16 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -179,7 +179,7 @@ static struct Backend_struct **fd_map=0;
 static int fd_map_size=0;
 static struct Backend_struct *default_backend = NULL;
 
-static void backend_do_call_outs(struct Backend_struct *me);
+static int backend_do_call_outs(struct Backend_struct *me);
 static void backend_verify_call_outs(struct Backend_struct *me);
 
 struct Backend_struct *get_backend_for_fd(int fd)
@@ -449,16 +449,26 @@ static void copy_selectors(struct active_selectors *to,
  */
 PIKECLASS Backend
 {
+  /* Provide a unique count to be able to tell backends apart with _sprintf. */
+  static int unused_id = 0;
+  CVAR int id;
+
   /*
    * Backend callbacks
    */
   CVAR struct callback_list backend_callbacks;
 
+  /* Thread currently executing in the backend. */
+#ifdef PIKE_THREADS
+  CVAR struct thread_state *exec_thread;
+#else
+  CVAR int exec_thread;		/* 1 if inside the backend. */
+#endif
+
   /*
    * PIPE for waking up
    */
   CVAR int wakeup_pipe[2];
-  CVAR int may_need_wakeup;
 
   /*
    * FD callback data
@@ -573,7 +583,7 @@ PIKECLASS Backend
     {
       char foo=0;
 
-      if(me && me->may_need_wakeup)
+      if(me && me->exec_thread)
 	fd_write(me->wakeup_pipe[1], &foo ,1);
     }
 
@@ -584,8 +594,8 @@ PIKECLASS Backend
 				 void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_read_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_read_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
 
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -627,8 +637,8 @@ PIKECLASS Backend
 				  void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_write_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_write_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
       
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -669,8 +679,8 @@ PIKECLASS Backend
 				     void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_read_oob_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_read_oob_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
       
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -709,8 +719,8 @@ PIKECLASS Backend
 				      void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_write_oob_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_write_oob_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
       
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -750,7 +760,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -763,7 +773,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -777,7 +787,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_oob_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -790,7 +800,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_oob_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -804,7 +814,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -818,7 +828,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -833,7 +843,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_oob_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd );
       debug_malloc_touch(me->fds);
@@ -847,7 +857,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_oob_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -939,30 +949,24 @@ PIKECLASS Backend
     }
 #endif
 
+  static void low_backend_cleanup (struct Backend_struct *me)
+  {
+    me->exec_thread = 0;
+  }
+
+  /* A negative tv_sec in timeout turns it off. If it ran until the
+   * timeout without calling any callbacks or call outs (except those
+   * on backend_callbacks) then tv_sec will be set to -1. Otherwise it
+   * will be set to the time spent. */
   void low_backend_once(struct Backend_struct *me,
-			float sleep_time)
+			struct timeval *timeout)
     {
-      int i;
-      struct timeval timeout;
-      if(me->may_need_wakeup)
-	Pike_error("Backend is not thread safe yet.\n");
+      int i, done_something = 0;
+      struct timeval start_time;
+#ifndef HAVE_POLL
+      struct timeval select_timeout;
+#endif
 
-      next_timeout.tv_sec = (int)floor(sleep_time);
-      next_timeout.tv_usec = (int)((sleep_time - next_timeout.tv_sec)*1000000);
-
-      my_add_timeval(&next_timeout, &current_time);
-      
-      me->may_need_wakeup=1;
-
-      /* Call outs */
-      if(me->num_pending_calls)
-	if(my_timercmp(& CALL(0)->tv, < , &next_timeout))
-	  next_timeout = CALL(0)->tv;
-
-      call_callback(& me->backend_callbacks, NULL);
-
-      copy_selectors(& me->active_set, &me->set);
-      
       alloca(0);			/* Do garbage collect */
 #ifdef PIKE_DEBUG
       if(d_flag > 1) do_debug();
@@ -975,54 +979,147 @@ PIKECLASS Backend
 	 since we have to run gettimeofday anyway /Mirar */
       own_gethrtime_update(&current_time);
 #endif
-      
-      if(my_timercmp(&next_timeout, > , &current_time))
-      {
-	my_subtract_timeval(&next_timeout, &current_time);
-      }else{
-	next_timeout.tv_usec = 0;
-	next_timeout.tv_sec = 0;
-      }
+      start_time.tv_sec = current_time.tv_sec;
+      start_time.tv_usec = current_time.tv_usec;
 
-      timeout=next_timeout;
-      THREADS_ALLOW();
+      {
+	ONERROR uwp;
 #ifdef HAVE_POLL
-      {
-	int msec;
-	if(timeout.tv_sec < 0)
-	  msec=0;
-	else if(timeout.tv_sec > (0x7fffffff/1002))
-	  msec=0x7fffffff;
-	else
-	  msec= (timeout.tv_sec*1000) +
-	    timeout.tv_usec/1000;
+	int poll_msec;
+#endif
+#ifdef PIKE_DEBUG
+	struct timeval max_timeout;
+#endif
 
-	IF_PD(fprintf(stderr, "BACKEND: poll(%p, %d, %ld)...",
-		      me->active_set.poll_fds,
-		      me->active_set.num_in_poll,
-		      msec));
+	if(me->exec_thread) {
+#ifdef PIKE_THREADS
+	  if (me->exec_thread != OBJ2THREAD (Pike_interpreter.thread_id))
+	    Pike_error ("Backend already in use by another thread.\n");
+	  else
+#endif
+	    /* It's actually not a problem to support reentrancy, but I
+	     * can't think of any sane way to use it. Otoh, this error
+	     * can help discover otherwise tricky bugs. /mast */
+	    Pike_error ("Backend already running - cannot reenter.\n");
+	}
+#ifdef PIKE_THREADS
+	me->exec_thread = OBJ2THREAD (Pike_interpreter.thread_id);
+#else
+	me->exec_thread = 1;
+#endif
+	SET_ONERROR (uwp, low_backend_cleanup, me);
+
+	if (timeout->tv_sec < 0) {
+	  next_timeout.tv_sec = 100000000;
+	  next_timeout.tv_usec = 999999;
+	}
+	else {
+	  next_timeout.tv_sec = timeout->tv_sec;
+	  next_timeout.tv_usec = timeout->tv_usec;
+	  my_add_timeval(&next_timeout, &current_time);
+	}
+
+	/* Call outs */
+	if(me->num_pending_calls)
+	  if(my_timercmp(& CALL(0)->tv, < , &next_timeout))
+	    next_timeout = CALL(0)->tv;
+
+#ifdef PIKE_DEBUG
+	max_timeout = next_timeout;
+#endif
+	call_callback(& me->backend_callbacks, NULL);
+#ifdef PIKE_DEBUG
+	if (my_timercmp (&max_timeout, <, &next_timeout))
+	  Pike_fatal ("Timeout raised from %ld.%ld to %ld.%ld by a backend callback.\n",
+		      max_timeout.tv_sec, max_timeout.tv_usec,
+		      next_timeout.tv_sec, next_timeout.tv_usec);
+#endif
+
+	if(my_timercmp(&next_timeout, > , &current_time))
+	{
+	  my_subtract_timeval(&next_timeout, &current_time);
+	}else{
+	  next_timeout.tv_usec = 0;
+	  next_timeout.tv_sec = 0;
+	}
+
+#ifdef HAVE_POLL
+	if (next_timeout.tv_sec >= 100000000)
+	  /* Take this as waiting forever. */
+	  poll_msec = -1;
+	else if(next_timeout.tv_sec < 0)
+	  poll_msec=0;
+	else if(next_timeout.tv_sec > (INT_MAX/1002))
+	  poll_msec=INT_MAX;
+	else
+	  poll_msec= (next_timeout.tv_sec*1000) +
+	    next_timeout.tv_usec/1000;
+#else  /* !HAVE_POLL */
+	select_timeout = next_timeout;
+#endif
+
+	copy_selectors(& me->active_set, &me->set);
+
+#if defined (HAVE_POLL) && defined (POLL_DEBUG)
+	fprintf (stderr, "BACKEND[%d]: Doing poll on fds:\n", me->id);
+	{
+	  int i;
+	  for (i = 0; i < me->active_set.num_in_poll; i++) {
+	    fprintf (stderr,
+		     "BACKEND[%d]:   fd %4d: %-4s %-5s"
+#ifdef WITH_OOB
+		     " %-8s %-9s"
+#endif
+		     "\n",
+		     me->id,
+		     me->active_set.poll_fds[i].fd,
+		     me->active_set.poll_fds[i].events & (POLLRDNORM|POLLIN) ? "read" : "",
+		     me->active_set.poll_fds[i].events & POLLOUT ? "write" : ""
+#ifdef WITH_OOB
+		     , me->active_set.poll_fds[i].events & POLLRDBAND ? "read_oob" : ""
+		     , me->active_set.poll_fds[i].events & POLLWRBAND ? "write_oob" : ""
+#endif
+		    );
+	  }
+	}
+	fprintf(stderr, "BACKEND[%d]: poll(%p, %d, %d)...", me->id,
+		me->active_set.poll_fds,
+		me->active_set.num_in_poll,
+		poll_msec);
+#endif	/* defined (HAVE_POLL) && defined (POLL_DEBUG) */
+
+	THREADS_ALLOW();
+
+#ifdef HAVE_POLL
 	i = poll(me->active_set.poll_fds,
 		 me->active_set.num_in_poll,
-		 msec);
+		 poll_msec);
 	IF_PD(fprintf(stderr, " => %d\n", i));
+#else  /* !HAVE_POLL */
+	i = MY_SELECT(me->active_set.max_fd+1,
+		      &me->active_set.rset,
+		      &me->active_set.wset, 
+		      &me->active_set.eset,
+		      select_timeout.tv_sec >= 100000000 ?
+		      NULL : &select_timeout);
+#endif	/* HAVE_POLL */
+
+	THREADS_DISALLOW();
+
+	me->exec_thread = 0;
+	UNSET_ONERROR (uwp);
+
+	GETTIMEOFDAY(&current_time);
       }
-#else
-      i = MY_SELECT(me->active_set.max_fd+1,
-		    &me->active_set.rset,
-		    &me->active_set.wset, 
-		    &me->active_set.eset,
-		    &timeout);
-#endif
-      THREADS_DISALLOW();
-      me->may_need_wakeup=0;
-      GETTIMEOFDAY(&current_time);
-      
+
       if (!i) {
 	/* Timeout */
       } else if (i>0) {
 #ifdef PIKE_DEBUG
 	int num_active = i;
 #endif /* PIKE_DEBUG */
+	done_something = 1;
+
 #ifndef HAVE_POLL
 	/* FIXME: OOB? */
 	debug_malloc_touch(me->fds);
@@ -1082,9 +1179,9 @@ PIKECLASS Backend
 	  if ((me->active_set.poll_fds[i].revents & POLLRDBAND) &&
 	      me->fds[fd].read_oob.callback)
 	  {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLRDBAND\n"));
-	    IF_PD(fprintf(stderr, "BACKEND: read_oob_callback(%d, %p)\n",
-			  fd, me->fds[fd].read_oob.data));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			  me->id, fd, me->fds[fd].read_oob.data));
 	    (*(me->fds[fd].read_oob.callback))(fd, me->fds[fd].read_oob.data);
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -1101,16 +1198,16 @@ PIKECLASS Backend
 	      fprintf(stderr, "Got POLLERR on fd %d\n", i);
 	    }
 #endif /* PIKE_DEBUG */
-	    IF_PD(fprintf(stderr, "BACKEND: POLLHUP | POLLERR\n"));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP | POLLERR\n", me->id));
 	    /* We don't want to keep this fd anymore. */
 	    MY_FD_CLR(&me->set, fd, ~0);
 	    if (me->fds[fd].read.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
-			    fd, me->fds[fd].read.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read.data));
 	      (*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data);
 	    } else if (me->fds[fd].write.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: write_callback(%d, %p)\n",
-			    fd, me->fds[fd].write.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write.data));
 	      (*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data);
 	    }
 #ifdef PIKE_DEBUG
@@ -1120,10 +1217,10 @@ PIKECLASS Backend
 	  
 	  if(me->active_set.poll_fds[i].revents & (POLLRDNORM|POLLIN))
 	  {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLRDNORM|POLLIN\n"));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN\n", me->id));
 	    if (me->fds[fd].read.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
-			    fd, me->fds[fd].read.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read.data));
 	      (*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data);
 	    } else {
 	      MY_FD_CLR(&me->set, fd, POLLRDNORM|POLLIN);
@@ -1136,9 +1233,9 @@ PIKECLASS Backend
 #ifdef WITH_OOB
 	  if ((me->active_set.poll_fds[i].revents & POLLWRBAND) &&
 	      me->fds[fd].write_oob.callback) {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLWRBAND\n"));
-	    IF_PD(fprintf(stderr, "BACKEND: write_oob_callback(%d, %p)\n",
-			  fd, me->fds[fd].write_oob.data));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			  me->id, fd, me->fds[fd].write_oob.data));
 	    (*(me->fds[fd].write_oob.callback))(fd, me->fds[fd].write_oob.data);
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -1147,10 +1244,10 @@ PIKECLASS Backend
 #endif /* WITH_OOB */
 	  
 	  if(me->active_set.poll_fds[i].revents & POLLOUT) {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLOUT\n"));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT\n", me->id));
 	    if (me->fds[fd].write.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: write_callback(%d, %p)\n",
-			    fd, me->fds[fd].write.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write.data));
 	      (*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data);
 	    } else {
 	      MY_FD_CLR(&me->set, fd, POLLOUT);
@@ -1162,8 +1259,8 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
 	  num_active -= handled;
 	  if (!handled && me->active_set.poll_fds[i].revents) {
-	    fprintf(stderr, "BACKEND: fd %ld has revents 0x%08lx, "
-		    "but hasn't been handled.\n",
+	    fprintf(stderr, "BACKEND[%d]: fd %ld has revents 0x%08lx, "
+		    "but hasn't been handled.\n", me->id,
 		    (long)me->active_set.poll_fds[i].fd,
 		    (long)me->active_set.poll_fds[i].revents);
 	  }
@@ -1171,10 +1268,11 @@ PIKECLASS Backend
 	}
 #ifdef PIKE_DEBUG
 	if (num_active) {
-	  fprintf(stderr, "BACKEND: %d more active fds than were handled.\n",
-		  num_active);
+	  fprintf(stderr, "BACKEND[%d]: %d more active fds than were handled.\n",
+		  me->id, num_active);
 	  for(i=0; i<me->active_set.num_in_poll; i++) {
-	    fprintf(stderr, "BACKEND: fd %ld, events 0x%08lx, revents 0x%08lx\n",
+	    fprintf(stderr, "BACKEND[%d]: fd %ld, events 0x%08lx, revents 0x%08lx\n",
+		    me->id,
 		    (long)me->active_set.poll_fds[i].fd,
 		    (long)me->active_set.poll_fds[i].events,
 		    (long)me->active_set.poll_fds[i].revents);
@@ -1182,6 +1280,9 @@ PIKECLASS Backend
 	}
 #endif /* PIKE_DEBUG */
 #endif
+
+	/* Must be up-to-date for backend_do_call_outs. */
+	GETTIMEOFDAY(&current_time);
       }else{
 	switch(errno)
 	{
@@ -1212,13 +1313,13 @@ PIKECLASS Backend
 #ifndef HAVE_POLL
 	    copy_selectors(& me->active_set, &me->set);
 
-	    timeout.tv_usec=0;
-	    timeout.tv_sec=0;
+	    select_timeout.tv_usec=0;
+	    select_timeout.tv_sec=0;
 	    if(MY_SELECT(me->active_set.max_fd+1,
 			 &me->active_set.rset,
 			 &me->active_set.wset, 
 			 &me->active_set.eset,
-			 &timeout) < 0)
+			 &select_timeout) < 0)
 	    {
 	      switch(errno)
 	      {
@@ -1256,14 +1357,14 @@ PIKECLASS Backend
 		      fd_FD_SET(i, & me->active_set.eset);
 #endif /* WITH_OOB */
 		    
-		    timeout.tv_usec=0;
-		    timeout.tv_sec=0;
+		    select_timeout.tv_usec=0;
+		    select_timeout.tv_sec=0;
 		    
 		    if(MY_SELECT(me->active_set.max_fd+1,
 				 &me->active_set.rset,
 				 &me->active_set.wset, 
 				 &me->active_set.eset,
-				 &timeout) < 0)
+				 &select_timeout) < 0)
 		    {
 		      switch(errno)
 		      {
@@ -1303,21 +1404,78 @@ PIKECLASS Backend
 	    
 	}
       }
-      backend_do_call_outs(me);
+
+      done_something +=
+	backend_do_call_outs(me); /* Will update current_time after calls. */
+
       call_callback(& me->backend_callbacks, (void *)(ptrdiff_t)1);
+
+      if (!done_something)
+	timeout->tv_sec = -1;
+      else {
+	timeout->tv_sec = current_time.tv_sec;
+	timeout->tv_usec = current_time.tv_usec;
+	my_subtract_timeval (timeout, &start_time);
+      }
     }
 
-  /*! @decl void `()(float sleep_time)
+  /*! @decl float|int(0..0) `()(void|float|int(0..0) sleep_time)
    *!   Perform one pass through the backend.
    *!
    *! @param sleep_time
-   *!   Wait at most @[sleep_time] seconds.
+   *!   Wait at most @[sleep_time] seconds. The default when
+   *!   unspecified or the integer @expr{0@} is no time limit.
+   *!
+   *! @returns
+   *!   If the backend did call any callbacks or call outs then the
+   *!   time spent in the backend is returned. Otherwise the integer
+   *!   @expr{0@} is returned.
    */
-  PIKEFUN void `()(float sleep_time)
-    {
-      /* FIXME: Add a mutex !!!! */
-      low_backend_once(THIS, sleep_time);
+  PIKEFUN float|int(0..0) `()(void|float|int(0..0) sleep_time)
+  {
+    struct timeval timeout;
+
+    if (sleep_time && sleep_time->type == PIKE_T_FLOAT) {
+      timeout.tv_sec = (long) floor (sleep_time->u.float_number);
+      timeout.tv_usec =
+	(long) ((sleep_time->u.float_number - timeout.tv_sec) * 1e6);
     }
+    else
+      timeout.tv_sec = -1;
+    pop_n_elems (args);
+
+    low_backend_once(THIS, &timeout);
+
+    if (timeout.tv_sec < 0)
+      push_int (0);
+    else
+      push_float ((float) timeout.tv_sec + (float) timeout.tv_usec / 1e6);
+  }
+
+  /*! @decl Thread.Thread executing_thread()
+   *! @decl int executing_thread()
+   *!
+   *! Return the thread currently executing in the backend. I.e. the
+   *! thread that has called @[`()] and haven't exited from that call.
+   *! Zero is returned if there's no thread in the backend.
+   *!
+   *! If Pike is compiled without thread support then @expr{1@} is
+   *! returned if we're inside the backend, @expr{0@} otherwise.
+   */
+  PIKEFUN object(Thread.Thread)|int(0..1) executing_thread()
+    /* FIXME: The type is too weak, but precompile.pike doesn't
+     * understand different function variants in cpp branches. */
+  {
+    pop_n_elems (args);
+#ifdef PIKE_THREADS
+    if (THIS->exec_thread)
+      ref_push_object (thread_for_id (THIS->exec_thread->id));
+    else
+      push_int (0);
+#else
+    push_int (THIS->exec_thread);
+#endif
+  }
 
   /*! @decl void add_file(Stdio.File|Stdio.FILE f)
    *!   Add @[f] to this backend.
@@ -1692,13 +1850,16 @@ PIKECLASS Backend
        ref_push_array(v);
      }
 
-   void backend_do_call_outs(struct Backend_struct *me)
+   /* Assumes current_time is correct on entry. */
+   int backend_do_call_outs(struct Backend_struct *me)
      {
+       int call_count = 0;
        int args;
-       struct timeval tmp,tmp2;
+       struct timeval tmp;
        backend_verify_call_outs(me);
-       
-       GETTIMEOFDAY(&tmp);
+
+       tmp.tv_sec = current_time.tv_sec;
+       tmp.tv_usec = current_time.tv_usec;
        tmp.tv_sec++;
        while(me->num_pending_calls &&
 	     my_timercmp(&CALL(0)->tv, <= ,&current_time))
@@ -1724,6 +1885,7 @@ PIKECLASS Backend
 	 check_destructed(Pike_sp - args);
 	 if(Pike_sp[-args].type!=T_INT)
 	 {
+	   call_count++;
 	   f_call_function(args);
 	   pop_stack();
 	 }else{
@@ -1731,9 +1893,10 @@ PIKECLASS Backend
 	 }
 	 backend_verify_call_outs(me);
 	 
-	 GETTIMEOFDAY(&tmp2);
-	 if(my_timercmp(&tmp2, > , &tmp)) break;
+	 GETTIMEOFDAY(&current_time);
+	 if(my_timercmp(&current_time, > , &tmp)) break;
        }
+       return call_count;
      }
 
 
@@ -1960,6 +2123,30 @@ PIKECLASS Backend
        RETURN backend_get_all_call_outs(THIS);
      }
 
+   /*! @decl int id()
+    *!
+    *! Return an integer that uniquely identifies this backend. For
+    *! the default backend that integer is @expr{0@}.
+    */
+   PIKEFUN int id()
+   {
+     RETURN (THIS->id);
+   }
+
+   PIKEFUN string _sprintf(int type, mapping flags)
+   {
+     if (type == 'O') {
+       push_constant_text ("Pike.Backend(%d)");
+       push_int (THIS->id);
+       f_sprintf (2);
+       stack_pop_n_elems_keep_top (args);
+     }
+     else {
+       pop_n_elems (args);
+       push_int (0);
+     }
+   }
+
   extern int pike_make_pipe(int *);
 
 #ifdef PIKE_DEBUG
@@ -1983,8 +2170,11 @@ PIKECLASS Backend
 
   INIT
     {
-      THIS->may_need_wakeup=0;
+      THIS->id = unused_id++;
 
+      IF_PD (fprintf (stderr, "BACKEND[%d]: init\n", me->id));
+
+      THIS->exec_thread = 0;
 
       THIS->backend_callbacks.callbacks=0;
       THIS->backend_callbacks.num_calls=0;
@@ -2046,6 +2236,8 @@ PIKECLASS Backend
     {
       struct Backend_struct *me=THIS;
       int e;
+
+      IF_PD (fprintf (stderr, "BACKEND[%d]: exit\n", me->id));
 
       /* Make sure we aren't referenced any more. */
       for (e = 0; e < fd_map_size; e++) {
@@ -2218,8 +2410,10 @@ void wake_up_backend(void)
 
 void do_call_outs(void)
 {
-  if(default_backend)
+  if(default_backend) {
+    GETTIMEOFDAY (&current_time);
     backend_do_call_outs(default_backend);
+  }
 }
 
 #ifdef PIKE_DEBUG
