@@ -2208,7 +2208,7 @@ void do_install()
 	string from = combine_path(vars->BASEDIR,x);
 	if(!Stdio.cp(from, x))
 	  werror("Could not copy %s to %s.\n", from ,x);
-	low_install_file(x, combine_path(prefix, "build", x));
+	low_install_file(x, combine_path(prefix, x));
       };
 
       basefile("ANNOUNCE");
