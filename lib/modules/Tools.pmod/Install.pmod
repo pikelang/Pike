@@ -2,7 +2,7 @@
 // Common routines which are useful for various install scripts based on Pike.
 //
 
-string make_absolute_path(string path)
+string make_absolute_path(string path, string|void cwd)
 {
 #if constant(getpwnam)
   if(sizeof(path) && path[0] == '~')
@@ -22,7 +22,7 @@ string make_absolute_path(string path)
 #endif
   
   if(!sizeof(path) || path[0] != '/')
-    return combine_path(getcwd(), "../", path);
+    return combine_path(cwd || getcwd(), "./", path);
 
   return path;
 }
@@ -92,7 +92,8 @@ class Readline
 {
   inherit Stdio.Readline;
 
-  int match_directories_only;
+  private int match_directories_only;
+  private string cwd;
 
   void trap_signal(int n)
   {
@@ -153,7 +154,7 @@ class Readline
     string text = gettext();
     int pos = getcursorpos();
     
-    array(string) path = make_absolute_path(text[..pos-1])/"/";
+    array(string) path = make_absolute_path(text[..pos-1], cwd)/"/";
     array(string) files =
       glob(path[-1]+"*",
 	   get_dir(sizeof(path)>1? path[..sizeof(path)-2]*"/"+"/":".")||({}));
@@ -186,6 +187,11 @@ class Readline
       }
       break;
     }
+  }
+
+  void set_cwd(string _cwd)
+  {
+    cwd = _cwd;
   }
   
   void create(mixed ... args)

@@ -870,6 +870,7 @@ int pre_install(array(string) argv)
       status1("");
   
       interactive=Tools.Install.Readline();
+      interactive->set_cwd("../");
 
       write("   Welcome to the interactive "+version()+
 	    " installation script.\n"
