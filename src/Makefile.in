@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.380 2004/03/14 21:20:56 nilsson Exp $
+# $Id: Makefile.in,v 1.381 2004/04/23 17:18:34 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -49,7 +49,7 @@ share_prefix = $(data_prefix)/pike
 man_prefix = $(prefix)/man
 
 # Arguments for test_pike.pike used by the verify targets.
-# TESTARGS = -a
+# TESTARGS = -F -a
 
 # Arguments for install.pike used by the install targets.
 INSTALLARGS = --new-style
@@ -547,12 +547,12 @@ testsuites:
 	   --destdir=extra_tests --bindir=$(TMP_BINDIR) ) ; fi;
 
 just_verify: testsuites testsuite master-stamp
-	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
+	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
 valgrind_verify: testsuites testsuite master-stamp
-	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
+	if test "x$(TESTARGS)" = x ; then args="-F -a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
 
@@ -593,7 +593,7 @@ just-tinstall: master-stamp
 
 verify: testsuites testsuite tinstall
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then \
 	  $(VALGRIND) $(VALGRINDARGS) ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
@@ -609,7 +609,7 @@ bench: tinstall
 	fi
 
 verify_installed: testsuites testsuite master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-a -v" ; else \
+	if test "$(TESTARGS)" = "" ; then args="-F -a -v" ; else \
 	  args="$(TESTARGS)" ; fi; \
 	$(exec_prefix)/pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args
 
@@ -619,7 +619,7 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: testsuites testsuite master-stamp
-	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	if test "$(TESTARGS)" = "" ; then args="-F -a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike -v -v $$args
 
 # verify & debug VERBOSE
@@ -633,7 +633,7 @@ gdb_verify: testsuites testsuite master-stamp
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
 	@echo >>.gdbinit break pike_gdb_breakpoint
-	@if test "$(TESTARGS)" = "" ; then args="-a -v -v" ; else \
+	@if test "$(TESTARGS)" = "" ; then args="-F -a -v -v" ; else \
 	  args="$(TESTARGS)" ; fi;  \
 	echo >>.gdbinit set args -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike --no-watchdog $$args
 	gdb $(TMP_BUILDDIR)/pike
@@ -656,7 +656,7 @@ gdb_hilfe: master.pike
 # fast test
 fast_verify_testsuite: testsuite
 	PIKE_MODULE_PATH=""; PIKE_INCLUDE_PATH=""; \
-	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	if test "$(TESTARGS)" = "" ; then args="-F -a" ; else args="$(TESTARGS)" ; fi; \
 	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
 # run hilfe, for interactive testing
@@ -833,7 +833,7 @@ $(SRCDIR)/treeopt.h: $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 las.o: $(SRCDIR)/treeopt.h
 
 # This dependency is here to make sure that lexer[012].h are generated.
-# The reason for the split is that some compilers (read lc) generate
+# The reason for the split is that some compilers (read cl) generate
 # better code then. Strange, but true.
 lex.o: lexer0.h lexer1.h lexer2.h
 
