@@ -2,18 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.115 2003/08/20 16:45:02 mast Exp $
+|| $Id: lex.c,v 1.116 2003/11/13 00:24:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.115 2003/08/20 16:45:02 mast Exp $");
+RCSID("$Id: lex.c,v 1.116 2003/11/13 00:24:08 mast Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
 #include "constants.h"
-#include "hashtable.h"
 #include "stuff.h"
 #include "pike_memory.h"
 #include "interpret.h"
