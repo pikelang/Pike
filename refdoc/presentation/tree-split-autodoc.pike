@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.6 2001/07/28 04:41:05 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.7 2001/07/28 07:47:36 nilsson Exp $
  *
  */
 
@@ -13,6 +13,9 @@ string image_prefix()
   return extra_prefix + ::image_prefix();
 }
 
+mapping profiling = ([]);
+#define PROFILE int profilet=gethrtime
+#define ENDPROFILE(X) profiling[(X)] += gethrtime()-profilet;
 
 class Node
 {
@@ -31,7 +34,7 @@ class Node
     type = _type;
     name = _name;
     parent = _parent;
-    data = parse( _data );
+    data = get_parser()->finish( _data )->read();
 
     refs[make_class_path()] = this_object();
     refs[replace(make_class_path(), "()->", "->")] = this_object();
@@ -41,15 +44,11 @@ class Node
     sort(method_children->name, method_children);
   }
 
-  static function parse_node(string type)
-  {
-    return lambda(Parser.HTML p, mapping m, string c)
-	   {
-	     if(m->name)
-	       this_object()[type+"_children"] +=
-	     ({ Node( type, m->name, c, this_object() ) });
-	     return "";
-	   };
+  static string parse_node(Parser.HTML p, mapping m, string c) {
+    if(m->name)
+      this_object()[p->tag_name()+"_children"] +=
+	({ Node( p->tag_name(), m->name, c, this_object() ) });
+    return "";
   }
 
   string my_parse_docgroup(Parser.HTML p, mapping m, string c)
@@ -72,18 +71,10 @@ class Node
     parser->xml_tag_syntax(3);
 
     parser->add_container("docgroup", my_parse_docgroup);
-    parser->add_container("module", parse_node("module"));
-    parser->add_container("class",  parse_node("class"));
+    parser->add_container("module", parse_node);
+    parser->add_container("class",  parse_node);
 
     return parser;
-  }
-
-  static string parse(string in)
-  {
-    Parser.HTML parser = get_parser();
-
-    parser->finish(in);
-    return parser->read();
   }
 
   string make_faked_wrapper(string s)
@@ -120,9 +111,14 @@ class Node
     return ret;
   }
 
+  string _make_filename_low;
   string make_filename_low()
   {
-    return parent->make_filename_low()+"/"+cquote(name);
+    if(_make_filename_low) return _make_filename_low;
+    PROFILE();
+    _make_filename_low = parent->make_filename_low()+"/"+cquote(name);
+    ENDPROFILE("make_filename_low");
+    return _make_filename_low;
   }
 
   string make_filename()
@@ -139,7 +135,10 @@ class Node
 
   array(Node) get_ancestors()
   {
-    return ({ this_object() }) + parent->get_ancestors();
+    PROFILE();
+    array tmp = ({ this_object() }) + parent->get_ancestors();
+    ENDPROFILE("get_ancestors");
+    return tmp;
   }
 
   string my_resolve_reference(string _reference, mapping vars)
@@ -169,25 +168,29 @@ class Node
     return "<font face='courier'>" + _reference + "</font>";
   }
 
+  string _make_class_path;
   string make_class_path()
   {
+    if(_make_class_path) return _make_class_path;
+    PROFILE();
     array a = reverse(parent->get_ancestors());
 
-    string res = "";
+    _make_class_path = "";
     foreach(a[1..], Node n)
     {
-      res += n->name;
+      _make_class_path += n->name;
       if(n->type=="class")
-	res += "()->";
+	_make_class_path += "()->";
       else if(n->type=="module")
-	res += ".";
+	_make_class_path += ".";
     }
-    res += name;
+    _make_class_path += name;
 
     if(type=="method")
-      res +="()";
+      _make_class_path +="()";
 
-    return res;
+    ENDPROFILE("make_class_path");
+    return _make_class_path;
   }
 
   string make_navbar_really_low(array(Node) children, void|int notables)
@@ -283,9 +286,7 @@ class Node
 
   Node find_prev_node()
   {
-    if(!parent)
-      return 0;
-
+    PROFILE();
     array(Node) siblings = find_siblings();
     int index = search( siblings, this_object() );
 
@@ -299,24 +300,26 @@ class Node
     while(sizeof(tmp->find_children()))
       tmp = tmp->find_children()[-1];
 
+    ENDPROFILE("find_prev_node");
     return tmp;
   }
 
   Node find_next_node(void|int dont_descend)
   {
-    if(!parent)
-      return 0;
-
+    PROFILE();
     if(!dont_descend && sizeof(find_children()))
       return find_children()[0];
 
     array(Node) siblings = find_siblings();
     int index = search( siblings, this_object() );
 
+    Node tmp;
     if(index==sizeof(siblings)-1)
-      return parent->find_next_node(1);
+      tmp = parent->find_next_node(1);
     else
-      return siblings[index+1];
+      tmp = siblings[index+1];
+    ENDPROFILE("find_next_node");
+    return tmp;
   }
 
   static string make_content() {
@@ -372,6 +375,7 @@ class Node
 	"$prev_title$": prev_title,
 	"$next_url$": next_url,
 	"$next_title$": next_title,
+	"$type$": String.capitalize(type),
 	"$title$": make_class_path(),
 	"$style$": style,
       ]));
@@ -399,33 +403,28 @@ class TopNode {
 
   Parser.HTML get_parser() {
     Parser.HTML parser = ::get_parser();
-    parser->add_container("appendix", parse_node("appendix"));
+    parser->add_container("appendix", parse_node);
     return parser;
   }
 
-  string make_filename_low() {
-    return "__index";
-  }
-
-  string make_filename() {
-    return "index.html";
-  }
-
-  array(Node) get_ancestors() {
-    return ({ });
-  }
-
-  string make_class_path() {
-    return "";
-  }
+  string make_filename_low() { return "__index"; }
+  string make_filename() { return "index.html"; }
+  array(Node) get_ancestors() { return ({ }); }
+  int(0..0) find_prev_node() { return 0; }
+  int(0..0) find_next_node() { return 0; }
+  string make_class_path() { return ""; }
 
   string make_content() {
+    resolve_reference = my_resolve_reference;
     string contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children) {
       contents += "<td>";
       contents += make_navbar_really_low(children, 1);
+      //      contents += parse_children(Parser.XML.Tree.parse_input(data),
+      //				 "docgroup", parse_docgroup, 1);
       contents += "</td>";
+      //      werror("%O\n", Parser.XML.Tree.parse_input(data));
     }
     contents += "</tr></table>";
     return contents;
@@ -439,6 +438,7 @@ class TopNode {
 
 int main(int argc, array(string) argv)
 {
+  PROFILE();
   if(argc!=4) {
     werror("Too few arguments. (in-file, template, out-dir)\n");
     return 1;
@@ -465,5 +465,10 @@ int main(int argc, array(string) argv)
   werror("Splitting to destination directory %s...\n", argv[3]);
   TopNode top = TopNode(doc);
   top->make_html(template, argv[3]);
+  ENDPROFILE("main");
+
+  foreach(sort(indices(profiling)), string f)
+    werror("%s: %.1f\n", f, profiling[f]/1000000.0);
+
   return 0;
 }
