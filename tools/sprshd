@@ -1,7 +1,5 @@
-#!/usr/local/bin/pike
+#!/usr/bin/env pike
 /* -*- Pike -*- */
-
-inherit Stdio.Port;
 
 #if !constant(Stdio.PROP_IPC)
 #define NO_IPC
@@ -337,7 +335,7 @@ void handle_connections(array(string) hosts)
 {
   while(1)
   {
-    if(object io=accept())
+    if(object io=connection->accept())
     {
       int ok=0;
       sscanf(io->query_address(),"%s ",string ip);
@@ -355,18 +353,20 @@ void handle_connections(array(string) hosts)
   }
 }
 
+object connection = Stdio.Port();
+
 int main(int argc, array(string) argv)
 {
 #ifdef WINE
   werror("Running in WINE mode.\n");
 #endif
-  if(argc<2)
+  if(argc != 3)
   {
     werror("Usage: sprshd <port> <hosts to accept connections from>\n");
     sleep(10); //Make sure the terminal isn't closed at once.
     exit(1);
   }
-  if(!bind((int)argv[1]))
+  if(!connection->bind((int)argv[1]))
   {
     werror("Failed to bind port.\n");
     sleep(10);
