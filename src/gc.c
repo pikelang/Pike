@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.101 2000/07/04 00:43:57 mast Exp $");
+RCSID("$Id: gc.c,v 1.102 2000/07/04 21:44:19 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1562,11 +1562,13 @@ int gc_do_free(void *a)
 static void warn_bad_cycles()
 {
   JMP_BUF uwp;
-  struct array *obj_arr = 0;
   if (!SETJMP(uwp)) {
     struct marker *p;
     unsigned cycle = 0;
-    obj_arr = allocate_array(0);
+    ONERROR err;
+    struct array *obj_arr = allocate_array(0);
+
+    SET_ONERROR(err, do_free_array, obj_arr);
     for (p = kill_list; p;) {
       if ((cycle = p->cycle)) {
 	push_object((struct object *) p->data);
@@ -1586,9 +1588,9 @@ static void warn_bad_cycles()
       }
       if (!p) break;
     }
+    CALL_AND_UNSET_ONERROR(err);
   }
   UNSETJMP(uwp);
-  if (obj_arr) free_array(obj_arr);
 }
 
 int do_gc(void)
@@ -1603,7 +1605,7 @@ int do_gc(void)
   struct object *o;
 #ifdef PIKE_DEBUG
 #ifdef HAVE_GETHRTIME
-  hrtime_t gcstarttime;
+  hrtime_t gcstarttime = 0;
 #endif
   unsigned destroy_count, obj_count;
 #endif
@@ -1674,7 +1676,9 @@ int do_gc(void)
   gc_check_all_objects();
 
 #ifdef PIKE_DEBUG
-  if(master_object) gc_external_mark2(master_object,0," &master_object");
+  if(master_object)
+    gc_external_mark2(master_object,0," &master_object");
+
   {
     extern struct mapping *builtin_constants;
     if(builtin_constants)
