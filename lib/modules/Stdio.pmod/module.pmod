@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.204 2004/09/01 17:21:50 mast Exp $
+// $Id: module.pmod,v 1.205 2005/01/26 21:39:53 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -756,7 +756,7 @@ class File
   }
 
   // FIXME: No way to specify the maximum to read.
-  static void __stdio_read_callback()
+  static int __stdio_read_callback()
   {
 
 /*
@@ -797,7 +797,7 @@ class File
 	if (!::peek()) 
 	{
 	  ::read(0,1);
-	  return; // nothing to read
+	  return 0; // nothing to read
 	}
 #endif
 
@@ -812,8 +812,7 @@ class File
 
 	if(sizeof(s))
 	{
-	  ___read_callback(___id, s);
-	  return;
+	  return ___read_callback(___id, s);
 	}
       }else{
 #if constant(System.EWOULDBLOCK)
@@ -821,7 +820,7 @@ class File
 	  // Necessary to reregister since the callback is disabled
 	  // until a successful read() has been done.
 	  ::set_read_callback(__stdio_read_callback);
-	  return;
+	  return 0;
 	}
 #endif
       }
@@ -831,11 +830,13 @@ class File
     if (___close_callback) {
       BE_WERR("  calling close callback.");
 
-      ___close_callback(___id);
+      return ___close_callback(___id);
     }
+
+    return 0;
   }
 
-  static void __stdio_close_callback()
+  static int __stdio_close_callback()
   {
 #if 0
     if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
@@ -853,44 +854,48 @@ class File
     else {
       ::set_read_callback(0);
       if (___close_callback) {
-	___close_callback(___id);
+	return ___close_callback(___id);
       }
     }
+
+    return 0;
   }
 
-  static void __stdio_write_callback()
+  static int __stdio_write_callback()
   {
     BE_WERR("__stdio_write_callback()");
     if (!errno())
-      ___write_callback(___id);
+      return ___write_callback(___id);
+    return 0;
   }
 
-  static void __stdio_read_oob_callback()
+  static int __stdio_read_oob_callback()
   {
     string s=::read_oob(8192,1);
     if(s)
     {
       if (sizeof(s))
-	___read_oob_callback(___id, s);
+	return ___read_oob_callback(___id, s);
     }else{
 #if constant(System.EWOULDBLOCK)
       if (errno() == System.EWOULDBLOCK) {
 	// Necessary to reregister since the callback is disabled
 	// until a successful read() has been done.
 	::set_read_oob_callback(__stdio_read_oob_callback);
-	return;
+	return 0;
       }
 #endif
       ::set_read_oob_callback(0);
       if (___close_callback) {
 	// Why this? The oob callbacks doesn't get called at eof or
 	// errors, do they? /mast
-	___close_callback(___id);
+	return ___close_callback(___id);
       }
     }
+    return 0;
   }
 
-  static void __stdio_write_oob_callback() { ___write_oob_callback(___id); }
+  static int __stdio_write_oob_callback() { return ___write_oob_callback(___id); }
 
 #define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
 #define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
