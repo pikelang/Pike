@@ -52,6 +52,8 @@ void set_content(string c)
   int parse_atomic;
   while (counter<sizeof(c))
   {
+//     werror("counter: %O\n",counter);
+//     werror("sizeof(c): %O\n",sizeof(c));
     next=search(c, "<", counter);
     if(next==-1 && p_con!=-1)
     {
