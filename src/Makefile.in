@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.230 2001/01/13 01:14:08 mast Exp $
+# $Id: Makefile.in,v 1.231 2001/01/13 01:19:05 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -652,7 +652,7 @@ $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	 mv y.tab.c language.c &&\
 	 mv y.tab.h language.h_src )
 
-$(SRCDIR)/language.c: $(SRCDIR)/language.yacc
+$(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 	touch $(SRCDIR)/language.c
 
 #
