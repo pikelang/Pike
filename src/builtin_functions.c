@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.47 1997/10/07 11:53:01 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.48 1997/10/14 10:00:01 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1335,6 +1335,14 @@ void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
+void f__debug(INT32 args)
+{
+  INT32 i=d_flag;
+  get_all_args("_debug",args,"%i",&d_flag);
+  pop_n_elems(args);
+  push_int(i);
+}
+
 #endif
 
 #ifdef HAVE_LOCALTIME
@@ -1872,6 +1880,7 @@ void init_builtin_efuns(void)
 
 #ifdef DEBUG
   add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+  add_efun("_debug",f__debug,"function(int:int)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 #endif
   add_efun("_memory_usage",f__memory_usage,"function(:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 
