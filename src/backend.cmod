@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.115 2004/04/04 13:38:32 grubba Exp $
+|| $Id: backend.cmod,v 1.116 2004/04/04 15:22:44 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.115 2004/04/04 13:38:32 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.116 2004/04/04 15:22:44 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -600,6 +600,8 @@ static void copy_selectors(struct active_selectors *to,
 #define POLL_EVENT	struct kevent
 #define OPEN_POLL_DEVICE()	kqueue()
 #define CHILD_NEEDS_TO_REOPEN
+
+#define PIKE_POLL_DEVICE	"kqueue"
 
 #define TIMEOUT_IS_TIMESPEC
 
@@ -1565,6 +1567,25 @@ PIKECLASS Backend
 		  me->set, fd, events));
     POLL_DEVICE_SET_EVENTS(me->set, fd, events);
   }
+#elif defined(USE_KQUEUE)
+  /* Note: Only used by REOPEN_POLL_DEVICE on a freshly opened kqueue. */
+  void UPDATE_BLACK_BOX(struct Backend_struct *me, int fd)
+  {
+    struct kevent ev[2];
+    struct fd_callback_box *box = GET_BOX (me, fd);
+    int nev = 0;
+    if (WANT_EVENT(box, READ) || WANT_EVENT(box, READ_OOB)) {
+      EV_SET(ev, fd, MY_POLLIN, EV_ADD, 0, 0, 0);
+      nev++;
+    }
+    if (WANT_EVENT(box, WRITE) || WANT_EVENT(box, WRITE_OOB)) {
+      EV_SET(ev, fd, MY_POLLOUT, EV_ADD, 0, 0, 0);
+      nev++;
+    }
+    if (nev)
+      kevent(me->set, ev, nev, NULL, 0, NULL);
+  }
+#endif /* USE_POLL_DEVICE */
 
 #ifdef CHILD_NEEDS_TO_REOPEN
   /* This is called in the child process to restore
@@ -1599,10 +1620,7 @@ PIKECLASS Backend
     for (fd = 0; fd < me->num_fd_boxes; fd++)
       if (GET_BOX(me, fd)) UPDATE_BLACK_BOX(me, fd);
   }
-#endif /* CHILD_NEEDS_TO_REOPEN */
-#endif /* USE_POLL_DEVICE */
 
-#ifdef CHILD_NEEDS_TO_REOPEN
   static struct Backend_struct **backends = NULL;
   static int num_backends = 0;
   static int backends_size = 0;
