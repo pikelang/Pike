@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.18 2004/02/21 05:38:13 nilsson Exp $
+//  $Id: ID3.pmod,v 1.19 2004/04/03 00:37:32 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -366,14 +366,29 @@ class Frame {
   }
 
   program get_frame_data(string id) {
-    if( (< "TIT1", "TIT2", "TIT3", "TALB", "TOAL", "TSSE", "TSRC",
+    if( (< "TIT1", "TIT2", "TIT3", "TALB", "TOAL", "TSSE", "TSST",
+	   "TSRC",
 	   "TPE1", "TPE2", "TPE3", "TPE4", "TOPE", "TEXT", "TOLY",
-	   "TCOM", "TENC", "TYER" >)[id] )
+	   "TCOM", "TENC", "TLAN", "TMOO", "TOWN", "TRSN", "TRSO",
+	   "TOFN", "TSOA", "TSOP", "TSOT" >)[id] )
       return Frame_TextPlain;
+
     if( (< "TMCL", "TIPL" >)[id] )
       return Frame_TextMapping;
-    if( (< "TRCK" >)[id] )
-      return Frame_TRCK;
+
+    if( (< "TBPM", "TLEN", "TDLY",
+	   /* 2.3.0 */
+	   "TYER" >)[id] )
+      return Frame_TextInteger;
+
+    if( (< "TDEN", "TDOR", "TDRC", "TDRL", "TDTG" >)[id] )
+      return Frame_TextTimestamp;
+
+    if( (< "WCOM", "WCOP", "WOAF", "WOAR", "WOAS", "WPAY", "WPUB" >)[id] )
+      return Frame_Link;
+
+    if(global::this["Frame_"+id]) return global::this["Frame_"+id];
+
     // FIXME: Look for program in this module.
     return Frame_Dummy;
   }
@@ -501,33 +516,72 @@ class Tagv2 {
   array(Frame) frames = ({});
   int padding;
 
+  int(0..1) best_effort;
+  array(string) errors = ({});
+
+  // convenience
+  mapping(string:array(Frame)) frame_map = ([]);
+
   //!
-  void create(void|Buffer|Stdio.File buffer) {
+  void create(void|Buffer|Stdio.File buffer, void|int(0..1) _best_effort) {
+    best_effort = _best_effort;
     if(buffer) {
       if(!buffer->set_limit)
 	buffer = Buffer(buffer);
       decode(buffer);
       return;
     }
-    header = TagHeader();
-    extended_header = ExtendedHeader();
+    else {
+      header = TagHeader();
+      extended_header = ExtendedHeader();
+    }
+  }
+
+  void handle_error(array error) {
+    if(!error) return;
+    if(best_effort)
+      errors += ({ sprintf("%O: %s", error[1][-1], error[0]) });
+    else
+      throw(error);
   }
 
   void decode(Buffer buffer) {
     buffer->set_limit(10);
     header = TagHeader(buffer);
     buffer->set_limit(header->tag_size);
-    if(header->flag_extended_header)
-      extended_header = ExtendedHeader(buffer);
-    while(buffer->bytes_left() && buffer->peek()!= "\0")
-      frames += ({ Frame(buffer, header) });
+
+    mixed err = catch {
+      if(header->flag_extended_header)
+	extended_header = ExtendedHeader(buffer);
+    };
+    handle_error(err);
+
+    while(buffer->bytes_left() && buffer->peek()!= "\0") {
+      err = catch {
+	frames += ({ Frame(buffer, header) });
+      };
+      handle_error(err);
+    }
+
     padding = buffer->bytes_left();
 
     // Verify that padding is all zero.
-    if(padding && `+(@(array(int))buffer->read(padding)))
+    if(!best_effort && padding && `+(@(array(int))buffer->read(padding)))
       error( "Non-zero value in padding.\n" );
 
     // FIXME: footer
+
+    build_frame_map();
+  }
+
+  void build_frame_map() {
+    frame_map = ([]);
+    foreach(frames, Frame f) {
+      if(!frame_map[f->id])
+	frame_map[f->id] = ({ f });
+      else
+	frame_map[f->id] += ({ f });
+    }
   }
 
   string encode() {
@@ -546,6 +600,39 @@ class Tagv2 {
     foreach(frames, Frame f)
       if(f->id==id) return f;
     return 0;
+  }
+
+  void clean() {
+    foreach(frames; int pos; Frame f) {
+      FrameData d = f->data;
+      switch(f->id) {
+      case "TCON":
+	string s = d->get_string();
+	if(s=="" || s=="misc" || s=="genre")
+	  frames[pos] = 0;
+	break;
+      case "TCOP":
+	if(d->get_string()=="")
+	  frames[pos] = 0;
+	break;
+      case "COMM":
+	if(d->short=="" && d->text=="")
+	  frames[pos] = 0;
+	break;
+      case "TALB":
+      case "TCOM":
+      case "TENC":
+      case "TOPE":
+	if(d->get_string()=="")
+	  frames[pos] = 0;
+	break;
+      case "WXXX":
+	if(d->url=="") frames[pos] = 0;
+	break;
+      }
+    }
+    frames -= ({ 0 });
+    build_frame_map();
   }
 
   string _sprintf(int t, mapping args) {
@@ -580,12 +667,16 @@ class Frame_UFID {
     if(!id) error( "Can not encode UFID frame. Missing identifier.\n" );
     return system + "\0" + id;
   }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O/%O)", this_program, system, id);
+  }
 }
 
 class Frame_TextPlain {
   inherit FrameData;
 
-  private array(string) texts;
+  static array(string) texts;
 
   void decode(string data) {
     int encoding;
@@ -594,9 +685,14 @@ class Frame_TextPlain {
 
     sscanf(data, "%c%s", encoding, data);
     texts = map(data / terminator[encoding], decode_string, encoding);
+
+    if(sizeof(texts)>1) {
+      texts -= ({ "" });
+      if(!sizeof(texts)) texts = ({ "" });
+    }
   }
 
-  void encode() {
+  string encode() {
     array ret = encode_strings(texts);
     return sprintf("%c", ret[0]) + ret[1..]*terminator[ret[0]];
   }
@@ -623,6 +719,72 @@ class Frame_TextPlain {
   int get_size() {
     return sizeof(texts*"");
   }
+
+  static string _sprintf(int t) {
+    if( t!='O' || !sizeof(texts)) return UNDEFINED;
+    if(sizeof(texts)==1) return sprintf("%O(%O)", this_program, texts[0]);
+    return sprintf("%O(%O)", this_program, texts);
+  }
+}
+
+class Frame_TKEY {
+  inherit Frame_TextPlain;
+
+  int(0..1) verify_key(string key) {
+    if(key=="o") return 1;
+    if( !(< 'A','B','C','D','E','F','G' >)[key[0]] ) return 0;
+    key = key[1..];
+    if(!sizeof(key)) return 1;
+    if( (< '#', 'b' >) ) key = key[1..];
+    if(!sizeof(key)) return 1;
+    if( key=="m" ) return 1;
+    return 0;
+  }
+
+  static void verify_keys() {
+    foreach(texts, string key)
+      if(!verify_key(key))
+	error("Malformed key %O\n", key);
+  }
+
+  void decode(string data) {
+    ::decode(data);
+    verify_keys();
+  }
+
+  string encode() {
+    verify_keys();
+    return ::encode();
+  }
+}
+
+class Frame_TCON {
+  inherit Frame_TextPlain;
+}
+
+class Frame_TFLT {
+  inherit Frame_TextPlain;
+}
+
+class Frame_TMED {
+  inherit Frame_TextPlain;
+
+  void decode(string data) {
+    ::decode(data);
+
+    // Some client adds paranthesis here...
+    foreach(texts; int pos; string t)
+      if(sizeof(t) && t[0]=='(' && t[-1]==')')
+	texts[pos] = t[1..sizeof(t)-2];
+  }
+}
+
+class Frame_TCOP {
+  inherit Frame_TextPlain;
+}
+
+class Frame_TPRO {
+  inherit Frame_TextPlain;
 }
 
 class Frame_TextAofB {
@@ -638,14 +800,14 @@ class Frame_TextAofB {
       error( "Frame data doesn't contain integer.\n" );
 
     // Not against the spec, really...
-    if(a > b) error( "(A/B) A bigger than B.\n" );
+    if(b && a > b) error( "(A/B) A bigger than B (%d/%d).\n", 1, b );
     if(!a) error( "Element is zero.\n" );
 
     return ({ a, b });
   }
 
   string low_encode(int a, int b) {
-    if(a) return "\0"+a+"/"+b;
+    if(b) return "\0"+a+"/"+b;
     return "\0"+a;
   }
 
@@ -673,6 +835,11 @@ class Frame_TRCK {
     return (track ? (string)track : "") + (tracks ? "/"+tracks : "");
   }
 
+  static string _sprintf(int t) {
+    if( t!='O' ) return UNDEFINED;
+    if(tracks) return sprintf("%O(%O/%O)", this_program, track,tracks);
+    return sprintf("%O(%O)", this_program, track);
+  }
 }
 
 class Frame_TPOS {
@@ -687,6 +854,12 @@ class Frame_TPOS {
 
   string encode() {
     return low_encode(part, parts);
+  }
+
+  static string _sprintf(int t) {
+    if( t!='O' ) return UNDEFINED;
+    if(parts) return sprintf("%O(%O/%O)", this_program, part,parts);
+    return sprintf("%O(%O)", this_program, part);
   }
 }
 
@@ -719,6 +892,112 @@ class Frame_TextMapping {
   }
 }
 
+class Frame_TextInteger {
+  inherit FrameData;
+
+  int value;
+
+  void decode(string data) {
+    if(!sizeof(data))
+      error( "Malformed text frame. Missing encoding byte.\n" );
+    data = decode_string(data[1..], data[0]);
+    int a;
+    sscanf(data, "%s\0", data);
+    if(!sizeof(data)) return;
+    if( !sscanf(data, "%d", a) )
+      error( "Frame data doesn't contain integer.\n" );
+
+    value = a;
+  }
+
+  string encode() {
+    return "\0"+value;
+  }
+
+  // Needed by tag restrictions (extended header)
+  int get_size() {
+    return sizeof(encode());
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O)", this_program, value);
+  }
+}
+
+class Frame_TextTimestamp {
+  inherit Frame_TextPlain;
+}
+
+class Frame_TXXX {
+  inherit FrameData;
+
+  string descr;
+  string value;
+
+  void decode(string data) {
+    if(!sizeof(data))
+      error( "Malformed text frame. Missing encoding byte.\n" );
+    data = decode_string(data[1..], data[0]);
+    sscanf(data, "%s\0%s", descr, value);
+  }
+
+  string encode() {
+    array ret = encode_strings( ({ descr, value }) );
+    return sprintf("%c", ret[0]) + ret[1..]*terminator[ret[0]];
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O:%O)", this_program,descr,value);
+  }
+}
+
+class Frame_Link {
+  inherit FrameData;
+
+  string url;
+
+  void decode(string data) {
+    url = data;
+  }
+
+  string encode() {
+    return url;
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O)", this_program,url);
+  }
+}
+
+// "XXX", "CDDB Disc ID":id
+class Frame_WXXX {
+  inherit FrameData;
+
+  string descr;
+  string url;
+
+  void decode(string data) {
+    if(!sizeof(data))
+      error( "Malformed text frame. Missing encoding byte.\n" );
+    int enc = data[0];
+    if(enc==1 || enc==2)
+      sscanf(data, "%s\0\0%s", descr, url);
+    else
+      sscanf(data, "%s\0%s", descr, url);
+    descr = decode_string(descr, enc);
+    sscanf(url, "%s\0", url); // Strip trailing data
+  }
+
+  string encode() {
+    array ret = encode_string(descr+"\0");
+    return sprintf("%c%s%s", ret[0], ret[1], url);
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O:%O)", this_program,descr,url);
+  }
+}
+
 // For unknown frames...
 class Frame_Dummy {
   inherit FrameData;
@@ -743,8 +1022,138 @@ class Frame_Dummy {
   string get_string() {
     return "";
   }
-#endif
 
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O)", this_program,data);
+  }
+#endif
+}
+
+class Frame_MCDI {
+  inherit Frame_Dummy;
+}
+
+// ETCO, MLLT, SYTC, USLT, SYLT
+
+class Frame_COMM {
+  inherit FrameData;
+
+  string lang;
+  string short;
+  string text;
+
+  void decode(string data) {
+    if(sizeof(data)<5)
+      error( "Malformed text frame. Missing encoding byte.\n" );
+    lang = data[1..3];
+    data = decode_string(data[4..], data[0]);
+    sscanf(data, "%s\0%s", short,text);
+    sscanf(text, "%s\0", text);
+  }
+
+  string encode() {
+    if(sizeof(lang)!=3) error("Malformed langauge data.\n");
+    array ret = encode_strings( ({ short, text }) );
+    return sprintf("%c", ret[0]) + lang + ret[1..]*terminator[ret[0]];
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O,%O:%O)", this_program,lang,short,text);
+  }
+}
+
+class Frame_APIC {
+  inherit FrameData;
+
+  string mime;
+  int type;
+  string descr;
+
+  string img;
+
+  void decode(string data) {
+    if(sizeof(data)<4)
+      error( "Malformed text frame. Missing encoding byte.\n" );
+    int enc = data[0];
+    sscanf(data, "%*c%s\0%c%s"+terminator[enc]+"%s", mime,type,descr,img);
+    descr = decode_string(descr,enc);
+  }
+
+  string encode() {
+    array ret = encode_string(descr+"\0");
+    return sprintf("%c%s\0%c%s%s", ret[0],mime,type,ret[1],img);
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O,%O,%O)", this_program,mime,descr,type);
+  }
+}
+
+class Frame_POPM {
+  inherit FrameData;
+
+  string email;
+  int rating;
+  int count;
+
+  void decode(string data) {
+    sscanf(data, "%s\0%c%s", email, rating, data);
+    count = (int)Gmp.mpz(data, 256);
+  }
+
+  string encode() {
+    return sprintf("%s\0%c%s", email, rating, Gmp.mpz(count)->digits(256));
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O,%O,%O)", this_program,email,rating,count);
+  }
+}
+
+class Frame_GEOB {
+  inherit FrameData;
+
+  string mime;
+  string filename;
+  string descr;
+  string file;
+
+  void decode(string data) {
+    if(sizeof(data)<4)
+      error( "Malformed text frame. Missing encoding byte.\n" );
+    int enc = data[0];
+    sscanf(data, "%*c%s\0%s"+terminator[enc]+"%s"+terminator[enc]+"%s",
+	   mime,filename,descr,file);
+    filename = decode_string(filename,enc);
+    descr = decode_string(descr,enc);
+  }
+
+  string encode() {
+    // FIXME
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O,%O,%O)", this_program,mime,filename,descr);
+  }
+}
+
+class Frame_PRIV {
+  inherit FrameData;
+
+  string owner;
+  string data;
+
+  void decode(string d) {
+    sscanf(d, "%s\0%s", owner, data);
+  }
+
+  string encode() {
+    return owner + "\0" + data;
+  }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%O,%O)", this_program,owner,data);
+  }
 }
 
 
