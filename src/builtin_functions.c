@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.515 2003/10/31 15:09:24 mast Exp $
+|| $Id: builtin_functions.c,v 1.516 2003/11/07 18:06:30 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.515 2003/10/31 15:09:24 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.516 2003/11/07 18:06:30 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6462,8 +6462,6 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
  *!   Elements are compared with @[`==]. They are also hashed (see
  *!   @[lfun::__hash] for further details if the array contains
  *!   objects).
- *! @seealso
- *!   @[group_by]
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
 {
