@@ -1046,11 +1046,9 @@ class Runtime_timezone_compiler
 	   })*"\n";
    }
 
-   class Dummymodule
+   class Dummymodule (function(string:mixed) f)
    {
-      function(string:mixed) f;
       mixed `[](string s) { return f(s); }
-      void create(function(string:mixed) _f) { f=_f; }
    }
 
    mapping mkzonemod=
@@ -1133,9 +1131,9 @@ class Runtime_timezone_compiler
 #endif
       
       add_constant("__Calendar_mkzone",mkzonemod);
-
       program p;
       mixed err=catch { p=compile_string(c); };
+      add_constant("__Calendar_mkzone");
       if (err) 
       {
 	 int i=0; 
