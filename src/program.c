@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.374 2001/09/25 07:36:40 hubbe Exp $");
+RCSID("$Id: program.c,v 1.375 2001/09/26 23:03:11 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1088,52 +1088,94 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
 void fixate_program(void)
 {
   INT32 i,e,t;
-  if(Pike_compiler->new_program->flags & PROGRAM_FIXED) return;
+  struct program *p=Pike_compiler->new_program;
+
+  if(p->flags & PROGRAM_FIXED) return;
 #ifdef PIKE_DEBUG
-  if(Pike_compiler->new_program->flags & PROGRAM_OPTIMIZED)
+  if(p->flags & PROGRAM_OPTIMIZED)
     fatal("Cannot fixate optimized program\n");
 #endif
 
   /* Ok, sort for binsearch */
-  for(e=i=0;i<(int)Pike_compiler->new_program->num_identifier_references;i++)
+  for(e=i=0;i<(int)p->num_identifier_references;i++)
   {
     struct reference *funp;
     struct identifier *fun;
-    funp=Pike_compiler->new_program->identifier_references+i;
+    funp=p->identifier_references+i;
     if(funp->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
     if(funp->id_flags & ID_INHERITED)
     {
+      int found_better=-1;
+      int funa_is_prototype;
+
       if(funp->id_flags & ID_PRIVATE) continue;
-      fun=ID_FROM_PTR(Pike_compiler->new_program, funp);
-/*	  if(fun->func.offset == -1) continue; * prototype */
+      fun=ID_FROM_PTR(p, funp);
+      funa_is_prototype = fun->func.offset == -1;
+/*    if(fun->func.offset == -1) continue; * prototype */
 
       /* check for multiple definitions */
-      for(t=i+1;t>=0 && t<(int)Pike_compiler->new_program->num_identifier_references;t++)
+      for(t=i+1;t<(int)p->num_identifier_references;t++)
       {
 	struct reference *funpb;
 	struct identifier *funb;
 
-	funpb=Pike_compiler->new_program->identifier_references+t;
+	funpb=p->identifier_references+t;
 	if(funpb->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
-	funb=ID_FROM_PTR(Pike_compiler->new_program,funpb);
+	funb=ID_FROM_PTR(p,funpb);
 	/* if(funb->func.offset == -1) continue; * prototype */
-	if(fun->name==funb->name) t=-10;
+
+	if(fun->name==funb->name)
+	{
+	  found_better=t;
+	  if(funa_is_prototype && funb->func.offset != -1)
+	  {
+	    funp->inherit_offset = funpb->inherit_offset;
+	    funp->identifier_offset = funpb->identifier_offset;
+	  }
+	  if(!funa_is_prototype && funb->func.offset == -1)
+	  {
+	    funpb->inherit_offset = funp->inherit_offset;
+	    funpb->identifier_offset = funp->identifier_offset;
+	  }
+	}
       }
-      if(t<0) continue;
+      if(found_better!=-1)
+	continue;
     }
     add_to_identifier_index(i);
   }
-  fsort((void *)Pike_compiler->new_program->identifier_index,
-	Pike_compiler->new_program->num_identifier_index,
+  fsort((void *)p->identifier_index,
+	p->num_identifier_index,
 	sizeof(unsigned short),(fsortfun)program_function_index_compare);
 
 
   /* Yes, it is supposed to start at 1  /Hubbe */
   for(i=1;i<NUM_LFUNS;i++) {
-    Pike_compiler->new_program->lfuns[i] = low_find_lfun(Pike_compiler->new_program, i);
+    p->lfuns[i] = low_find_lfun(p, i);
   }
 
-  Pike_compiler->new_program->flags |= PROGRAM_FIXED;
+  p->flags |= PROGRAM_FIXED;
+
+  if(Pike_compiler->check_final)
+  {
+    for(i=0;i<(int)p->num_identifier_references;i++)
+    {
+      struct identifier *id;
+      if(p->identifier_references[i].id_flags & ID_NOMASK)
+      {
+	struct pike_string *name=ID_FROM_INT(p, i)->name;
+
+	e=find_shared_string_identifier(name,p);
+	if(e != i)
+	{
+	  if(name->len < 1024 && !name->size_shift)
+	    my_yyerror("Illegal to redefine final identifier %s\n",name->str);
+	  else
+	    my_yyerror("Illegal to redefine final identifier (unable to output name of identifier).\n");
+	}
+      }
+    }
+  }
 
 #ifdef DEBUG_MALLOC
   {
@@ -1972,8 +2014,14 @@ struct program *end_first_pass(int finish)
       }
 
       fixate_program();
-      optimize_program(Pike_compiler->new_program);
-      Pike_compiler->new_program->flags |= PROGRAM_FINISHED;
+      if(Pike_compiler->num_parse_error)
+      {
+	free_program(prog);
+	prog=0;
+      }else{
+	optimize_program(Pike_compiler->new_program);
+	Pike_compiler->new_program->flags |= PROGRAM_FINISHED;
+      }
     }
 
   }
@@ -2676,10 +2724,7 @@ void low_inherit(struct program *p,
 
     if (fun.id_flags & ID_NOMASK)
     {
-      int n;
-      n = isidentifier(name);
-      if (n != -1 && ID_FROM_INT(Pike_compiler->new_program,n)->func.offset != -1)
-	my_yyerror("Illegal to redefine 'nomask' function/variable \"%s\"",name->str);
+      Pike_compiler->check_final++;
     }
 
     if(fun.id_flags & ID_PRIVATE) fun.id_flags|=ID_HIDDEN;
@@ -3158,7 +3203,8 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
        c->u.object->prog)
     {
       struct identifier *id=ID_FROM_INT(c->u.object->prog, c->subtype);
-      if(c->u.object->prog == Pike_compiler->new_program)
+      if(c->u.object->prog == Pike_compiler->new_program &&
+	 !c->u.object->prog->identifier_references[c->subtype].inherit_offset)
       {
 	if(id->identifier_flags & IDENTIFIER_FUNCTION)
 	{
@@ -3176,8 +3222,14 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	  c=& Pike_compiler->new_program->constants[id->func.offset].sval;
 	}
       }
+#if 0
       else
       {
+	/* Actually, we do not allow fake objects to enter
+	 * the mainstream, but it would be possible to do so.
+	 * I will leave this code here just in case someone wants
+	 * to use it in the future
+	 */
 	if(id->identifier_flags & IDENTIFIER_CONSTANT)
 	{
 	  /* In this one case we allow fake objects to enter the
@@ -3186,6 +3238,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	  break;
 	}
       }
+#endif
     }
     
     if(c && !svalues_are_constant(c,1,BIT_MIXED,0))
