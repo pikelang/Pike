@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.356 2004/12/19 16:12:28 grubba Exp $
+|| $Id: las.c,v 1.357 2005/02/15 18:17:35 grubba Exp $
 */
 
 #include "global.h"
@@ -3614,10 +3614,13 @@ void fix_type_field(node *n)
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
       if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
-	/* a["b"]=c and a->b=c can be valid when a is an array */
-	if (((CDR(n)->token != F_INDEX &&
-	      CDR(n)->token != F_ARROW) ||
-	     !match_types(array_type_string, CDR(n)->type)) &&
+	/* a["b"]=c and a->b=c can be valid when a is an array.
+	 *
+	 * FIXME: Exactly what case is the problem?
+	 *	/grubba 2005-02-15
+	 */
+	if (((CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW) ||
+	     !match_types(array_type_string, CADR(n)->type)) &&
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
 	  yytype_error("Bad type in assignment.",
 		       CDR(n)->type, CAR(n)->type, 0);
