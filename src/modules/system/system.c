@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.62 1999/02/10 21:55:29 hubbe Exp $
+ * $Id: system.c,v 1.63 1999/03/12 17:49:51 mast Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.62 1999/02/10 21:55:29 hubbe Exp $");
+RCSID("$Id: system.c,v 1.63 1999/03/12 17:49:51 mast Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -310,6 +310,25 @@ void f_resolvepath(INT32 args)
   push_string(make_shared_binary_string(buf, err));
 }
 #endif /* HAVE_RESOLVEPATH */
+
+/* int umask(void|int mask) */
+void f_umask(INT32 args)
+{
+  int oldmask;
+
+  if (args) {
+    int setmask;
+    get_all_args("umask", args, "%d", &setmask);
+    oldmask = umask(setmask);
+  }
+  else {
+    oldmask = umask(0);
+    umask(oldmask);
+  }
+
+  pop_n_elems(args);
+  push_int(oldmask);
+}
 
 /* void chmod(string path, int mode) */
 void f_chmod(INT32 args)
@@ -969,7 +988,10 @@ void pike_module_init(void)
 /* function(string:string) */
   ADD_EFUN("resolvepath", f_resolvepath,tFunc(tStr,tStr), OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_RESOLVEPATH */
-  
+
+  /* function(int|void:int) */
+  ADD_EFUN("umask", f_umask, tFunc(tOr(tInt,tVoid),tInt), OPT_SIDE_EFFECT);
+
 /* function(string, int:void) */
   ADD_EFUN("chmod", f_chmod,tFunc(tStr tInt,tVoid), OPT_SIDE_EFFECT);
 #ifdef HAVE_CHOWN
