@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.143 2000/10/01 08:55:03 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.144 2001/01/18 22:22:17 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1304,6 +1304,8 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
   {
     assign_svalue(save_sp,sp-1);
     pop_n_elems(sp-save_sp-1);
+
+    destruct_objects_to_destruct();
   }
 
   if(save_sp+1 > sp)
