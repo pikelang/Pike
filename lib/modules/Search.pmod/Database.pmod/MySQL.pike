@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.34 2001/06/22 01:28:35 nilsson Exp $
+// $Id: MySQL.pike,v 1.35 2001/06/22 23:05:24 js Exp $
 
 inherit .Base;
 
@@ -367,11 +367,12 @@ class Queue
 #"
     create table "+table+#" (
         uri        blob not null,
+        uri_md5    char(32) not null,
 	template   varchar(255) not null default '',
 	md5        char(32) not null default '',
 	recurse    tinyint not null,
 	stage      tinyint not null,
-	INDEX uri_ind (uri(64)),
+	INDEX uri_ind (ur_md5),
 	INDEX stage   (stage)
 	)
     "
@@ -386,7 +387,8 @@ class Queue
     if( sizeof(hascache) > 100000 )  hascache = ([]);
     return hascache[uri]||
       (hascache[uri]=
-       sizeof(db->query("select stage from "+table+" where uri=%s",uri)));
+       sizeof(db->query("select stage from "+table+" where uri_md5=%s",
+			to_md5(uri))));
   }
 
   void add_uri( Standards.URI uri, int recurse, string template )
@@ -408,14 +410,14 @@ class Queue
     
     if( check_link(uri, allow, deny) && !has_uri( r ) )
       db->query( "insert into "+table+
-		 " (uri,recurse,template) values (%s,%d,%s)",
-		 (string)r, recurse, (template||"") );
+		 " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
+		 (string)r, to_md5((string)r), recurse, (template||"") );
   }
 
   void set_md5( Standards.URI uri, string md5 )
   {
     db->query( "update "+table+
-	       " set md5=%s WHERE uri=%s", md5, (string)uri );
+	       " set md5=%s WHERE uri_md5=%s", md5, to_md5((string)uri) );
   }
 
   mapping(string:mapping(string:string)) extra_data = ([]);
@@ -424,7 +426,7 @@ class Queue
     if( extra_data[(string)uri] )
       return extra_data[(string)uri];
     array r = db->query( "SELECT md5,recurse,stage,template "
-			 "FROM "+table+" WHERE uri=%s", (string)uri );
+			 "FROM "+table+" WHERE uri_md5=%s", to_md5((string)uri) );
     if( sizeof( r ) )
       return r[0];
   }
@@ -530,6 +532,7 @@ class Queue
   void set_stage( Standards.URI uri,
 		  int stage )
   {
-    db->query( "update "+table+" set stage=%d where uri=%s",stage,(string)uri);
+    db->query( "update "+table+" set stage=%d where uri_md5=%s",stage,
+	       to_md5((string)uri));
   }
 }
