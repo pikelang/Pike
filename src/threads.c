@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.185 2002/09/29 13:52:08 nilsson Exp $");
+RCSID("$Id: threads.c,v 1.186 2002/09/30 18:45:22 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1247,8 +1247,7 @@ void exit_mutex_key_obj(struct object *o)
  *!   @[Mutex]
  */
 
-/*! @decl void wait()
- *! @decl void wait(Thread.MutexKey mutex_key)
+/*! @decl void wait(Thread.MutexKey mutex_key)
  *!
  *! Wait for contition.
  *!
@@ -1258,72 +1257,60 @@ void exit_mutex_key_obj(struct object *o)
  *! waiting for the condition in one atomic operation. After waiting
  *! for the condition the mutex referenced by mutex_key will be re-locked.
  *!
+ *! @note
+ *!   In Pike 7.2 and earlier it was possible to call @[wait()]
+ *!   without arguments. This possibility was removed in Pike 7.3,
+ *!   since it lead to programs with deadlocks.
+ *!
  *! @seealso
  *!   @[Mutex->lock()]
  */
 void f_cond_wait(INT32 args)
 {
+  struct object *key;
+  struct mutex_storage *mut;
   COND_T *c;
 
   if(threads_disabled)
     Pike_error("Cannot wait for conditions when threads are disabled!\n");
+
+  get_all_args("condition->wait", args, "%o", &key);
       
+  if ((key->prog != mutex_key) ||
+      (!(OB2KEY(key)->initialized)) ||
+      (!(mut = OB2KEY(key)->mut))) {
+    Pike_error("Bad argument 1 to condition->wait()\n");
+  }
+
   if(args > 1) {
     pop_n_elems(args - 1);
     args = 1;
   }
 
-  c=THIS_COND;
+  c = THIS_COND;
 
-  if((args > 0) && !UNSAFE_IS_ZERO(Pike_sp-1))
-  {
-    struct object *key;
-    struct mutex_storage *mut;
-
-    if(Pike_sp[-1].type != T_OBJECT)
-      Pike_error("Bad argument 1 to condition->wait()\n");
+  /* Unlock mutex */
+  mut->key=0;
+  OB2KEY(key)->mut=0;
+  co_signal(& mut->condition);
     
-    key=Pike_sp[-1].u.object;
-    
-    if(key->prog != mutex_key)
-      Pike_error("Bad argument 1 to condition->wait()\n");
-
-    if (OB2KEY(key)->initialized) {
-
-      mut = OB2KEY(key)->mut;
-      if(!mut)
-	Pike_error("Bad argument 1 to condition->wait()\n");
-
-      /* Unlock mutex */
-      mut->key=0;
-      OB2KEY(key)->mut=0;
-      co_signal(& mut->condition);
-    
-      /* Wait and allow mutex operations */
-      SWAP_OUT_CURRENT_THREAD();
-      co_wait_interpreter(c);
-      SWAP_IN_CURRENT_THREAD();
-    
-      /* Lock mutex */
-      while(mut->key) {
-	SWAP_OUT_CURRENT_THREAD();
-	co_wait_interpreter(& mut->condition);
-	SWAP_IN_CURRENT_THREAD();
-	check_threads_etc();
-      }
-      mut->key=key;
-      OB2KEY(key)->mut=mut;
-      
-      pop_n_elems(args);
-      return;
-    }
-  }
-
+  /* Wait and allow mutex operations */
   SWAP_OUT_CURRENT_THREAD();
   co_wait_interpreter(c);
   SWAP_IN_CURRENT_THREAD();
-
-  pop_n_elems(args);
+    
+  /* Lock mutex */
+  while(mut->key) {
+    SWAP_OUT_CURRENT_THREAD();
+    co_wait_interpreter(& mut->condition);
+    SWAP_IN_CURRENT_THREAD();
+    check_threads_etc();
+  }
+  mut->key=key;
+  OB2KEY(key)->mut=mut;
+      
+  pop_stack();
+  return;
 }
 
 /*! @decl void signal()
@@ -1850,9 +1837,9 @@ void th_init(void)
 
   START_NEW_PROGRAM_ID(THREAD_CONDITION);
   ADD_STORAGE(COND_T);
-  /* function(void|object(mutex_key):void) */
+  /* function(object(mutex_key):void) */
   ADD_FUNCTION("wait",f_cond_wait,
-	       tFunc(tOr(tVoid,tObjIs_THREAD_MUTEX_KEY),tVoid),0);
+	       tFunc(tObjIs_THREAD_MUTEX_KEY,tVoid),0);
   /* function(:void) */
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
   /* function(:void) */
