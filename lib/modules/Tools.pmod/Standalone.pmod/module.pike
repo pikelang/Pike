@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.5 2002/09/13 23:12:42 marcus Exp $
+// $Id: module.pike,v 1.6 2003/02/14 13:58:45 marcus Exp $
 
 // Source directory
 string srcdir;
@@ -96,13 +96,13 @@ int max_time_of_files(string ... a)
 int just_run(mapping options, string ... cmd)
 {
   werror(" %s\n",cmd*" ");
-  return Process.create_process(cmd,options|(["env":getenv()]))->wait();
+  return Process.create_process(cmd,(["env":getenv()])|options)->wait();
 }
 
 void run_or_fail(mapping options,string ... cmd)
 {
   werror(" %s\n",cmd*" ");
-  int ret=Process.create_process(cmd,options|(["env":getenv()]))->wait();
+  int ret=Process.create_process(cmd,(["env":getenv()])|options)->wait();
   if(ret)
     exit(ret);
 }
@@ -250,22 +250,27 @@ int main(int argc, array(string) argv)
     {
       if(max_time_of_files("$src/configure"))
       {
-	if(!max_time_of_files("config.cache") &&
-	   max_time_of_files(include_path+"/config.cache"))
-	{
-	  Stdio.cp(include_path+"/config.cache","config.cache");
-	}
-	run_or_fail(([]),srcdir+"/"+configure_command,
-		    "--cache-file=config.cache",
-		    @do_split_quoted_string(specs->configure_args||""),
-		    "CC="+(specs->CC||""),
-		    "CFLAGS="+(specs->CFLAGS||""),
-		    "CPPFLAGS="+(specs->CPPFLAGS||""),
-		    "CPP="+(specs->CPP||""),
-		    "LDFLAGS="+(specs->LDFLAGS||""),
-		    "LDSHARED="+(specs->LDSHARED||""),
-		    "PIKE_SRC_DIR="+src_path,
-		    "BUILD_BASE="+include_path);
+	if(!max_time_of_files("config.cache"))
+	  if(max_time_of_files(include_path+"/config.cache"))
+	  {
+	    Stdio.cp(include_path+"/config.cache","config.cache");
+	  }
+	  else
+	  {
+	    Stdio.append_file("config.cache", "");
+	  }
+	run_or_fail((["env":getenv()|
+		     (["CC":specs->CC||"",
+		       "CFLAGS":specs->CFLAGS||"",
+		       "CPPFLAGS":specs->CPPFLAGS||"",
+		       "CPP":specs->CPP||"",
+		       "LDFLAGS":specs->LDFLAGS||"",
+		       "LDSHARED":specs->LDSHARED||"",
+		       "PIKE_SRC_DIR":src_path,
+		       "BUILD_BASE":include_path])]),
+		    srcdir+"/"+configure_command,
+		    "--cache-file=./config.cache",
+		    @do_split_quoted_string(specs->configure_args||""));
       }
     }
   }
