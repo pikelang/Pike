@@ -1,4 +1,4 @@
-/* $Id: mkdoc.pike,v 1.12 1997/10/29 02:57:06 mirar Exp $ */
+/* $Id: mkdoc.pike,v 1.13 1997/11/02 03:43:32 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -167,10 +167,15 @@ string make_nice_reference(string refto,string my_prefix)
       case 3: link=refto; break;
    }
 
-   if (search(link,"::")!=-1)
-      link=replace(link,"::",".html#");
-   else 
-      link+=".html";
+   s=0; t=0;
+   sscanf(link,"%s.%s.%s",link,s,t);
+   if (s) link+="."+s;
+   if (t) link=link+".html#"+t;
+   else
+      if (search(link,"::")!=-1)
+	 link=replace(link,"::",".html#");
+      else 
+	 link+=".html";
    return "<tt><a href="+urlify(link)+">"+refto+"</a></tt>";
 }
 
