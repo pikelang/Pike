@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.156 2001/08/21 09:38:00 per Exp $");
+RCSID("$Id: threads.c,v 1.157 2001/09/07 21:20:18 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1029,25 +1029,23 @@ void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); 
 void init_cond_obj(struct object *o) { co_init(THIS_COND); }
 void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 
-/* FIXME:  -Hubbe */
 void f_thread_backtrace(INT32 args)
 {
+  void low_backtrace(struct Pike_interpreter *);
   struct thread_state *foo = THIS_THREAD;
-  struct thread_state *bar = OBJ2THREAD( Pike_interpreter.thread_id );
-  struct svalue *osp = Pike_sp;
+
   pop_n_elems(args);
-  if(foo->state.stack_pointer)
+
+  if(foo->state.thread_id == Pike_interpreter.thread_id)
   {
-    SWAP_OUT_THREAD(bar);
-    SWAP_IN_THREAD(foo);
-    Pike_sp=osp;
     f_backtrace(0);
-    osp=Pike_sp;
-    Pike_sp=foo->state.stack_pointer;
-    SWAP_OUT_THREAD(foo);
-    SWAP_IN_THREAD(bar);
-    Pike_sp=osp;
-  } else {
+  }
+  else if(foo->state.stack_pointer)
+  {
+    low_backtrace(& foo->state);
+  }
+  else
+  {
     push_int(0);
     f_allocate(1);
   }

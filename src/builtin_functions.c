@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.346 2001/06/27 17:40:47 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.347 2001/09/07 21:20:17 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -908,50 +908,15 @@ PMOD_EXPORT void f_has_value(INT32 args)
   }
 }
 
-/* Old backtrace */
 
-/*! @decl array(array) backtrace()
- *!
- *! Get a description of the current call stack.
- *!
- *! The description is returned as an array with one entry for each call
- *! frame on the stack.
- *!
- *! Each entry has this format:
- *! @array
- *!   @elem string file
- *!     A string with the filename if known, else zero.
- *!   @elem int line
- *!     An integer containing the linenumber if known, else zero.
- *!   @elem function fun
- *!     The function that was called at this level.
- *!   @elem mixed|void ... args
- *!     The arguments that the function was called with.
- *! @endarray
- *!
- *! The current call frame will be last in the array.
- *!
- *! @note
- *! Please note that the frame order may be reversed in a later version
- *! (than 7.1) of Pike to accomodate for deferred backtraces.
- *!
- *! Note that the arguments reported in the backtrace are the current
- *! values of the variables, and not the ones that were at call-time.
- *! This can be used to hide sensitive information from backtraces
- *! (eg passwords).
- *!
- *! @seealso
- *! @[catch()], @[throw()]
- */
-PMOD_EXPORT void f_backtrace(INT32 args)
+void low_backtrace(struct Pike_interpreter *inter)
 {
   INT32 frames;
   struct pike_frame *f,*of;
   struct array *a,*i;
 
   frames=0;
-  if(args) pop_n_elems(args);
-  for(f=Pike_fp;f;f=f->next) frames++;
+  for(f=inter->frame_pointer;f;f=f->next) frames++;
 
   Pike_sp->type=T_ARRAY;
   Pike_sp->u.array=a=allocate_array_no_init(frames,0);
@@ -959,7 +924,7 @@ PMOD_EXPORT void f_backtrace(INT32 args)
 
   /* NOTE: The first pike_frame is ignored, since it is the call to backtrace(). */
   of=0;
-  for(f=Pike_fp;f;f=(of=f)->next)
+  for(f=inter->frame_pointer;f;f=(of=f)->next)
   {
     char *program_name;
 
@@ -974,7 +939,7 @@ PMOD_EXPORT void f_backtrace(INT32 args)
 	args=0;
       }else{
 	args=f->num_args;
-	args = DO_NOT_WARN((INT32) MINIMUM(f->num_args, Pike_sp - f->locals));
+	args = DO_NOT_WARN((INT32) MINIMUM(f->num_args, inter->stack_pointer - f->locals));
 	if(of)
 	  args = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
 	args=MAXIMUM(args,0);
@@ -1022,6 +987,45 @@ PMOD_EXPORT void f_backtrace(INT32 args)
     }
   }
   a->type_field = BIT_ARRAY | BIT_INT;
+}
+
+/*! @decl array(array) backtrace()
+ *!
+ *! Get a description of the current call stack.
+ *!
+ *! The description is returned as an array with one entry for each call
+ *! frame on the stack.
+ *!
+ *! Each entry has this format:
+ *! @array
+ *!   @elem string file
+ *!     A string with the filename if known, else zero.
+ *!   @elem int line
+ *!     An integer containing the linenumber if known, else zero.
+ *!   @elem function fun
+ *!     The function that was called at this level.
+ *!   @elem mixed|void ... args
+ *!     The arguments that the function was called with.
+ *! @endarray
+ *!
+ *! The current call frame will be last in the array.
+ *!
+ *! @note
+ *! Please note that the frame order may be reversed in a later version
+ *! (than 7.1) of Pike to accomodate for deferred backtraces.
+ *!
+ *! Note that the arguments reported in the backtrace are the current
+ *! values of the variables, and not the ones that were at call-time.
+ *! This can be used to hide sensitive information from backtraces
+ *! (eg passwords).
+ *!
+ *! @seealso
+ *! @[catch()], @[throw()]
+ */
+PMOD_EXPORT void f_backtrace(INT32 args)
+{
+  if(args) pop_n_elems(args);
+  low_backtrace(& Pike_interpreter);
 }
 
 /*! @decl void add_constant(string name, mixed value)
