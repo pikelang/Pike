@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.76 2000/02/29 03:18:42 hubbe Exp $
+// $Id: module.pmod,v 1.77 2000/03/27 04:24:26 per Exp $
 
 import String;
 
@@ -846,8 +846,10 @@ int recursive_rm (string path)
 {
   int res = 1;
   if (array(string) sub = get_dir (path))
-    foreach (sub, string name)
-      if (!recursive_rm (path + "/" + name)) res = 0;
+    foreach( sub, string name )
+      if( file_stat( path+"/"+name, 1 )[1] == -2 )
+        if (!recursive_rm (path + "/" + name)) 
+          res = 0;
   return res && rm (path);
 }
 
