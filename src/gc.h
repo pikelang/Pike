@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.16 1998/03/28 15:15:32 grubba Exp $
+ * $Id: gc.h,v 1.17 1998/04/06 04:25:27 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -38,8 +38,10 @@ void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
 TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 int debug_gc_check(void *x, TYPE_T t, void *data);
-void describe_something(void *a, int t);
+void describe_something(void *a, int t, int dm);
+void describe(void *x);
 INT32 gc_check(void *a);
+void locate_references(void *a);
 int gc_is_referenced(void *a);
 int gc_external_mark(void *a);
 int gc_mark(void *a);

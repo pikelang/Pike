@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.30 1998/03/28 15:31:05 grubba Exp $");
+RCSID("$Id: gc.c,v 1.31 1998/04/06 04:25:26 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -241,7 +241,7 @@ void describe_location(void *memblock, TYPE_T type, void *location)
 static void gdb_gc_stop_here(void *a)
 {
   fprintf(stderr,"***One ref found%s.\n",found_where);
-  describe_something(found_in, found_in_type);
+  describe_something(found_in, found_in_type, 0);
   describe_location(found_in, found_in_type, gc_svalue_location);
 }
 
@@ -286,10 +286,12 @@ int debug_gc_check(void *x, TYPE_T t, void *data)
   return ret;
 }
 
-void describe_something(void *a, int t)
+void describe_something(void *a, int t, int dm)
 {
   struct program *p=(struct program *)a;
   if(!a) return;
+  if(dm)
+    debug_malloc_dump_references(a);
   if(t==-1)
   {
     fprintf(stderr,"**Location description: %s\n",(char *)a);
@@ -304,6 +306,14 @@ void describe_something(void *a, int t)
   {
     case T_OBJECT:
       p=((struct object *)a)->prog;
+      fprintf(stderr,"**Parent identifier: %d\n",((struct object *)a)->parent_identifier);
+      if( ((struct object *)a)->parent)
+      {
+	fprintf(stderr,"**Describing object's parent:\n");
+	describe_something( ((struct object *)a)->parent, t, 1);
+      }else{
+	fprintf(stderr,"**There is no parent (any longer?)\n");
+      }
       if(!p)
       {
 	fprintf(stderr,"**The object is destructed.\n");
@@ -323,7 +333,7 @@ void describe_something(void *a, int t)
 	fprintf(stderr,"**The program was written in C.\n");
 	fprintf(stderr,"**identifiers:\n");
 	for(e=0;e<p->num_identifiers;e++)
-	  fprintf(stderr,"*** %s\n",p->identifiers[e].name->str);
+	  fprintf(stderr,"**** %s\n",p->identifiers[e].name->str);
       }
 
       for(pos=0;pos<(long)p->num_program && pos<100;pos++)
@@ -361,6 +371,12 @@ void describe_something(void *a, int t)
       break;
     }
   }
+  fprintf(stderr,"*******************\n");
+}
+
+void describe(void *x)
+{
+  describe_something(x, attempt_to_identify(x),1);
 }
 
 #endif
@@ -451,14 +467,15 @@ int gc_is_referenced(void *a)
   struct marker *m;
   m=getmark(a);
 #ifdef DEBUG
-  if(m->refs + m->xrefs > *(INT32 *)a)
+  if(m->refs + m->xrefs > *(INT32 *)a ||
+     (!(m->refs < *(INT32 *)a) && m->xrefs) )
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
     TYPE_T t=attempt_to_identify(a);
 
     fprintf(stderr,"**Something has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
-    describe_something(a, t);
+    describe_something(a, t, 1);
 
     locate_references(a);
 
@@ -514,6 +531,24 @@ int gc_do_free(void *a)
 {
   struct marker *m;
   m=getmark(a);
+#ifdef DEBUG
+  if( !(m->flags & GC_REFERENCED)  && m->flags & GC_XREFERENCED )
+  {
+    INT32 refs=m->refs;
+    INT32 xrefs=m->xrefs;
+    TYPE_T t=attempt_to_identify(a);
+
+    fprintf(stderr,"**gc_is_referenced failed, object has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
+    describe_something(a, t, 1);
+
+    locate_references(a);
+
+    fatal("GC failed object (has %d, found %d + %d external)\n",
+	  *(INT32 *)a,
+	  refs,
+	  xrefs);
+  }
+#endif
   return !(m->flags & GC_REFERENCED);
 }
 

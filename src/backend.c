@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.25 1998/03/25 23:15:35 grubba Exp $");
+RCSID("$Id: backend.c,v 1.26 1998/04/06 04:15:12 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -462,6 +462,7 @@ void do_debug(void)
   extern void check_all_objects(void);
   extern void verify_shared_strings_tables(void);
   extern void slow_check_stack(void);
+  extern void do_gc(void);
 
   slow_check_stack();
   check_all_arrays();
@@ -519,6 +520,8 @@ void do_debug(void)
     }
   }
 #endif
+
+  if(d_flag>3) do_gc();
 }
 #endif
 

@@ -7,8 +7,9 @@
 #include "pike_memory.h"
 #include "error.h"
 #include "pike_macros.h"
+#include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.18 1998/03/28 15:05:23 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.19 1998/04/06 04:29:27 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -852,6 +853,11 @@ void dump_memhdr_locations(struct memhdr *from,
   }
 }
 
+void debug_malloc_dump_references(void *x)
+{
+  dump_memhdr_locations(find_memhdr(x),0);
+}
+
 void cleanup_memhdrs()
 {
   unsigned long h;
@@ -873,6 +879,9 @@ void cleanup_memhdrs()
 
 	
 	fprintf(stderr, "LEAK: (%p) %d bytes\n",m->data, m->size);
+#ifdef DEBUG
+	describe_something(m->data, attempt_to_identify(m->data),0);
+#endif
 	for(l=m->locations;l;l=l->next)
 	{
 	  struct fileloc *f=find_file_location(l->locnum);
