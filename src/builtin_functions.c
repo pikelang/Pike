@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.531 2004/02/29 03:41:37 mast Exp $
+|| $Id: builtin_functions.c,v 1.532 2004/03/02 20:45:47 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.531 2004/02/29 03:41:37 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.532 2004/03/02 20:45:47 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2124,7 +2124,7 @@ PMOD_EXPORT void f_throw(INT32 args)
   pike_throw();
 }
 
-/*! @decl void exit(int returncode, void|stirng fmt, mixed ... extra)
+/*! @decl void exit(int returncode, void|string fmt, mixed ... extra)
  *!
  *!   Exit the whole Pike program with the given @[returncode].
  *!
