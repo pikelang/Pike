@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.1 1997/10/27 02:50:54 mirar Exp $ */
+/* $Id: gif.c,v 1.2 1997/10/27 20:49:31 noring Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.1 1997/10/27 02:50:54 mirar Exp $
+**!	$Id: gif.c,v 1.2 1997/10/27 20:49:31 noring Exp $
 **!
 **! submodule GIF
 **!
@@ -22,7 +22,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.1 1997/10/27 02:50:54 mirar Exp $");
+RCSID("$Id: gif.c,v 1.2 1997/10/27 20:49:31 noring Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -279,7 +279,7 @@ void image_gif_render_block(INT32 args)
    struct pike_string *ps;
 
    unsigned char *indexbuf;
-   unsigned char buf[20];
+   char buf[20];
 
    int y,xs,ys;
    rgb_group *img_s,*alpha_s=NULL;
