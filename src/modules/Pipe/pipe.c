@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.28 1998/10/23 01:03:18 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.29 1999/07/29 16:48:03 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -703,7 +703,7 @@ static void pipe_input(INT32 args)
 	 i->type=I_MMAP;
 	 i->len=s.st_size;
 	 i->u.mmap=m;
-#ifdef HAVE_MADVISE
+#if defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
 	 /* Mark the pages as sequential read only access... */
 
 	 /* NOTE:
