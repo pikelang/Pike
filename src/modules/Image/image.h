@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.40 2000/08/07 09:56:29 grubba Exp $
+**!	$Id: image.h,v 1.41 2000/08/07 13:40:47 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -38,8 +38,8 @@ extern int image_cpuid;
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
 
 /* Some marcos to avoid loss of precision warnings. */
-#ifdef __ECL
 #define DO_NOT_WARN(X)	(X)
+#ifdef __ECL
 static inline int DOUBLE_TO_INT(double d)
 {
   return DO_NOT_WARN((int)d);
