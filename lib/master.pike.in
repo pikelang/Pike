@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.63 1999/10/16 04:03:16 hubbe Exp $
+/* $Id: master.pike.in,v 1.64 1999/10/21 21:34:14 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -369,7 +369,11 @@ void handle_error(mixed *trace)
   })
   {
     werror("Error in handle_error in master object:\n");
-    werror("%O\nOriginal error:\n%O\n",x,trace);
+    if(catch {	
+      werror("%O\nOriginal error:\n%O\n",x,trace);
+    }) {
+      werror("sprintf() failed to write error.\n");
+    }
   }
   
 }

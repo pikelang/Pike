@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.189 1999/10/21 11:16:42 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.190 1999/10/21 21:34:31 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2053,34 +2053,30 @@ void f_gc(INT32 args)
 #endif
 
 #ifdef AUTO_BIGNUM
-#define TYPEP(ID,NAME,TYPE,TYPE_NAME)                                      \
-void ID(INT32 args)                                                        \
-{                                                                          \
-  int t;                                                                   \
-  if(args<1)                                                               \
-    SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);                                    \
-  if(sp[-args].type == T_OBJECT)                                           \
-  {                                                                        \
-    pop_n_elems(args-1);                                                   \
-    args = 1;                                                              \
-    stack_dup();                                                           \
-    push_constant_text("_is_type");                                        \
-    f_index(2);                                                            \
-    if(sp[-1].type == T_FUNCTION || sp[-1].type == T_OBJECT)               \
-    {                                                                      \
-      struct svalue val;                                                   \
-      push_constant_text(TYPE_NAME);                                       \
-      apply_svalue(&sp[-2], 1);                                            \
-      val = *--sp;                                                         \
-      pop_n_elems(2);                                                      \
-      *sp++ = val;                                                         \
-      return;                                                              \
-    }                                                                      \
-    pop_stack();                                                           \
-  }                                                                        \
-  t=sp[-args].type == TYPE;                                                \
-  pop_n_elems(args);                                                       \
-  push_int(t);                                                             \
+/* This should probably be here weather AUTO_BIGNUM is defined or not,
+ * but it can wait a little. /Hubbe
+ */
+
+#define TYPEP(ID,NAME,TYPE,TYPE_NAME)				\
+void ID(INT32 args)						\
+{								\
+  int t;							\
+  if(args<1)							\
+    SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1);				\
+  if(sp[-args].type == T_OBJECT && sp[-args].u.object->prog)	\
+  {								\
+    int fun=FIND_LFUN(sp[-args].u.object->prog,LFUN__IS_TYPE);	\
+    if(fun != -1)						\
+    {								\
+      push_constant_text(TYPE_NAME);				\
+      apply_low(sp[-args-1].u.object,fun,1);			\
+      stack_unlink(args);					\
+      return;							\
+    }								\
+  }								\
+  t=sp[-args].type == TYPE;					\
+  pop_n_elems(args);						\
+  push_int(t);							\
 }
 #else
 #define TYPEP(ID,NAME,TYPE) \

@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.48 1999/10/21 14:55:17 mirar Exp $");
+RCSID("$Id: svalue.c,v 1.49 1999/10/21 21:34:36 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -840,38 +840,88 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
       break;
 
     case T_OBJECT:
-      /* FIXME: Check that the stack and reference operations are correct. */
-      ref_push_object(s->u.object);
-      push_constant_text("_sprintf");
-      f_index(2);
-      if(sp[-1].type == T_FUNCTION || sp[-1].type == T_OBJECT)
+      if(s->u.object->prog)
       {
-	push_int('O');
-	f_aggregate_mapping(0);					      
-	apply_svalue(sp-3, 2);   /* FIXME: lfun optimisation? */
-
-	if(!IS_ZERO(sp-1))
+	int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
+	if(fun != -1)
 	{
-	   struct pike_string *str;
-	   int i;
-	   if(sp[-1].type != T_STRING)
-	   {
+	  /* We require some tricky coding to make this work
+	   * with tracing...
+	   */
+	  int save_t_flag=t_flag;
+	  string save_buffer=complex_free_buf();
+
+	  t_flag=0;
+	  
+
+	  push_int('O');
+	  f_aggregate_mapping(0);					      
+	  safe_apply_low(s->u.object, fun ,2);
+
+	  if(!IS_ZERO(sp-1))
+	  {
+	    struct pike_string *str;
+	    int i;
+	    if(sp[-1].type != T_STRING)
+	    {
 	      pop_stack();
 	      push_text("(object returned illegal value from _sprintf)");
-	   }
-	   str=sp[-1].u.string;
+	    }
 
-	   /* FIXME: Is this the way to copy a string? /Noring */
-	   for(i = 0; i < str->len; i++)
-	      my_putchar(INDEX_CHARP(str->str, i, str->size_shift));
+	    init_buf_with_string(save_buffer);
+	    t_flag=save_t_flag;
 
-	   pop_n_elems(2); 
-	   break;
+	    str=sp[-1].u.string;
+	    
+	    switch(str->size_shift)
+	    {
+	      case 0:
+		my_binary_strcat(STR0(str), str->len);
+		break;
+
+	      case 1:
+	      {
+		p_wchar1 *cp=STR1(str);
+		for(i=0;i<str->len;i++)
+		{
+		  int c=cp[i];
+		  if(c<256) 
+		    my_putchar(c);
+		  else
+		  {
+		    sprintf(buf,"<%d>",c);
+		    my_strcat(buf);
+		  }
+		}
+		  break;
+	      }
+
+	      case 2:
+	      {
+		p_wchar2 *cp=STR2(str);
+		for(i=0;i<str->len;i++)
+		{
+		  int c=cp[i];
+		  if(c<256) 
+		    my_putchar(c);
+		  else
+		  {
+		    sprintf(buf,"<%d>",c);
+		    my_strcat(buf);
+		  }
+		}
+		break;
+	      }
+	    }
+	    pop_stack();
+	    break;
+	  }
+
+	  init_buf_with_string(save_buffer);
+	  t_flag=save_t_flag;
+	  pop_stack();
 	}
-
-	pop_stack();
       }
-      pop_stack();
       
       my_strcat("object");
       break;

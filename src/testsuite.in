@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.201 1999/10/10 00:49:13 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.202 1999/10/21 21:34:37 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -55,6 +55,8 @@ test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return a]],1)
 test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return b]],2)
 test_any([[ int a; catch { [a]=({1,2}); }; return 1]],1)
 test_any([[ int a,b; catch { [a,b]=({1}); }; return 1]],1)
+test_any([[ mapping m=([]); m[m]=m; return stringp(sprintf("%O",m)); ]],1)
+
 test_compile_error([[ 
   array a;
   a = path_info[..(sizeof(path_info)-2]*"/";
