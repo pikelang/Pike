@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.237 2001/01/23 00:41:19 mast Exp $
+# $Id: Makefile.in,v 1.238 2001/01/23 02:16:43 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -307,20 +307,8 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 .c.o:
 	@echo "Compiling $<" ;\
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
-	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
-	  NO_ULIMIT=yes; \
-	  export NO_ULIMIT; \
-	  if $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
-	    err=$$?; \
-	    if test "x$(FALLBACK_CC)" = "x"; then \
-	      exit $$err; \
-	    else \
-	      echo "WARNING: Compiler failure! Trying fallback compiler!" >&2;\
-	      echo "echo $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
-	      $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
-	    fi; \
-	  fi; \
+	  echo "Compilation command was:" >&2;\
+	  echo "$(CC) $(CFLAGS) -c $< -o $@" >&2 ;\
 	fi
 
 #
@@ -332,20 +320,23 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	./precompile.sh precompile.pike "$@" "$<"
 
 # This rule is used for some header files that are generated from the
-# source, to avoid excessive rebuilding when the source changes in
-# ways that doesn't affect the header.
+# source, to avoid excessive rebuilding when the source change in ways
+# that doesn't affect the header.
 #
 # It can cause a .h target to be out-of-date repeatedly, but since it
 # runs fast that's not an issue. This technique only works well in
 # make's that stat the target again after the rule has run and
-# recalculate the dependencies then. GNU make works like that.
+# recalculate the dependencies from that. Most make's seems to behave
+# like that.
 .h_src.h:
-	@if if test -f $@; then cmp -s "$<" "$@"; else false; fi; then \
-	  echo "No changes in $@ - leaving old"; \
+	@if test -f "$@"; then \
+	  cmp -s "$<" "$@"; \
 	else \
+	  false; \
+	fi || ( \
 	  echo "cp $< $@"; \
 	  cp "$<" "$@"; \
-	fi
+	)
 
 force :
 	@:
@@ -378,7 +369,7 @@ clean: tidy
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
-	-rm -f tpike stamp-tpike-predep import-stamp
+	-rm -f tpike stamp-tpike-predep import-stamp modules-stamp
 	-rm -rf lib/modules/*
 #	-rm -f lib/master.pike
 
@@ -628,13 +619,27 @@ lobotomize_crypto:
 # Pike internal targets
 #
 
-# touch modlist.h here to avoid doing this work again if the
-# modules/modlist.h target is checked later.
+# touch modules-stamp here to avoid doing this work again if that
+# target is checked later.
 module_objects: $(MODULE_REQUIREMENTS)
 	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
-	touch modules/modlist.h
+	@touch modules-stamp
+
+modules-stamp: $(MODULE_REQUIREMENTS)
+	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
+	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
+	@touch modules-stamp
+
+modules/modlist.h: modules-stamp
+
+modules/modlist_headers.h: modules-stamp
+
+modules/linker_options: modules-stamp
+
+module.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h
 	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >$(SRCDIR)/interpret_protos.h_src
@@ -667,20 +672,6 @@ builtin.o: $(SRCDIR)/builtin.c
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
-
-modules/modlist.h: $(MODULE_REQUIREMENTS)
-	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
-	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
-	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
-	touch modules/modlist.h
-
-modules/modlist_headers.h: modules/modlist.h
-	touch modules/modlist_headers.h
-
-modules/linker_options: modules/modlist.h
-	touch modules/linker_options
-
-module.o:  modules/modlist_headers.h modules/modlist.h
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in
 	cd $(SRCDIR) && autoconf
