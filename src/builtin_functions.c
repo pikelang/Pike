@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.324 2000/12/18 16:43:06 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.325 2000/12/18 21:38:00 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -598,7 +598,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
   }
 
   if (a->size_shift == b->size_shift) {
-    int res = !MEMCMP(a->str + (a->len - b->len)<<b->size_shift, b->str,
+    int res = !MEMCMP(a->str + ((a->len - b->len)<<b->size_shift), b->str,
 		      b->len << b->size_shift);
     pop_n_elems(args);
     push_int(res);
