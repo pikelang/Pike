@@ -103,6 +103,9 @@ testfont binary
 /lib/modules/Filesystem.pmod/Tar.pmod foreign_ident
 /lib/modules/Float.pmod foreign_ident
 /lib/modules/GLU.pmod foreign_ident
+/lib/modules/GLUE.pmod/Driver.pmod/Interface.pike foreign_ident
+/lib/modules/GLUE.pmod/Events.pmod foreign_ident
+/lib/modules/GLUE.pmod/module.pmod foreign_ident
 /lib/modules/Graphics.pmod/Graph.pmod/create_pie.pike foreign_ident
 /lib/modules/Graphics.pmod/Graph.pmod/graph.h foreign_ident
 /lib/modules/Graphics.pmod/Graph.pmod/polyline.pike foreign_ident
