@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.221 2000/12/01 16:50:28 grubba Exp $
+# $Id: Makefile.in,v 1.222 2000/12/01 19:54:40 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -501,7 +501,7 @@ bin_export: aclocal
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
 	man_prefix="$(man_prefix)" pike_name=$(pike_name)
 	@case " $(CC)" in \
-	  *\ rntc*) \
+	  *\ rnt*) \
 	    $(MAKE) $(MAKE_FLAGS) uncompress_header ;\
 	    filename=`echo *.burk | sed 's@\.burk$$@@g'`.exe ;\
 	    ( cat uncompress_header.exe ; gzip -9 -c *.burk ) > $$filename ;\
