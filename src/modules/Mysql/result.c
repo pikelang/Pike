@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.7 1997/06/28 19:00:05 marcus Exp $
+ * $Id: result.c,v 1.8 1997/08/14 20:56:11 grubba Exp $
  *
  * mysql query result
  *
@@ -68,6 +68,9 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 /* Define this to get support for field->default. NOT SUPPORTED */
 #undef SUPPORT_DEFAULT
 
+/* Define this to get the old fetch_fields() behaviour */
+#undef OLD_SQL_COMPAT
+
 /* Define this to get field_seek() and fetch_field() */
 /* #define SUPPORT_FIELD_SEEK */
 
@@ -75,7 +78,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.7 1997/06/28 19:00:05 marcus Exp $");
+RCSID("$Id: result.c,v 1.8 1997/08/14 20:56:11 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -354,6 +357,7 @@ static void f_fetch_row(INT32 args)
 
 	if ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
 	  switch (field->type) {
+#ifndef OLD_SQL_COMPAT
 	    /* Integer types */
 	  case FIELD_TYPE_SHORT:
 	  case FIELD_TYPE_LONG:
@@ -370,6 +374,7 @@ static void f_fetch_row(INT32 args)
 	  case FIELD_TYPE_DOUBLE:
 	    push_float(atof(row[i]));
 	    break;
+#endif /* !OLD_SQL_COMPAT */
 	  default:
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
 	    push_string(make_shared_binary_string(row[i], row_lengths[i]));
