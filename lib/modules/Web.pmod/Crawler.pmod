@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.14 2003/01/20 17:44:02 nilsson Exp $
+// $Id: Crawler.pmod,v 1.15 2003/08/30 23:15:35 bill Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -210,9 +210,14 @@ class Rule
   int check(string|Standards.URI uri);
 }
 
+//! A rule that uses glob expressions
+//! @param pattern
+//!  a glob pattern that the rule will match against.
+//! @example
+//! GlobRule("http://pike.ida.liu.se/*.xml");
 class GlobRule(string pattern)
 {
-  inherit Rule;
+  inherit Rule;  
 
   int check(string|Standards.URI uri)
   {
@@ -220,12 +225,16 @@ class GlobRule(string pattern)
   }
 }
 
+//! A rule that uses @[Regexp] expressions
 class RegexpRule
 {
   inherit Rule;
 
   static private Regexp regexp;
-  
+
+//!  
+//! @param re
+//!   a string describing the @[Regexp] expression
   void create(string re)
   {
     regexp=Regexp(re);
@@ -237,15 +246,18 @@ class RegexpRule
   }
 }
 
+//! A set of rules
 class RuleSet
 {
   multiset rules = (<>);
-  
+
+//!  add a rule to the ruleset
   void add_rule(Rule rule)
   {
     rules[rule]=1;
   }
-  
+
+//! remove a rule from the ruleset  
   void remove_rule(Rule rule)
   {
     rules[rule]=0;
@@ -260,6 +272,7 @@ class RuleSet
   }
 }
 
+//!
 class MySQLQueue
 {
   Stats stats;
@@ -273,6 +286,7 @@ class MySQLQueue
   
   inherit Queue;
 
+//!
   void create( Stats _stats, Policy _policy, string _host, string _table,
 	       void|RuleSet _allow, void|RuleSet _deny)
   {
@@ -382,18 +396,35 @@ class MemoryQueue
 {
   Stats stats;
   Policy policy;
-    
+  RuleSet allow;
+  RuleSet deny;
 
-  void create(Stats _stats, Policy _policy)
+//!
+  void create(Stats _stats, Policy _policy, RuleSet _allow, RuleSet _deny)
   {
     stats=_stats;
     policy=_policy;
+    deny=_deny;
+    allow=_allow;
   }
   
   inherit Queue;
 
   private mapping ready_uris=([]);
   private mapping done_uris=([]);
+
+  mapping stage=([]);
+
+  void set_stage(Standards.URI real_uri, int s)
+  { 
+    ready_uris[(string)real_uri]=s;
+  }
+
+  int get_stage(Standards.URI real_uri)
+  { 
+    if(ready_uris[(string)real_uri])
+      return ready_uris[(string)real_uri];
+  }
 
   void debug()
   {
@@ -409,7 +440,6 @@ class MemoryQueue
   {
     if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
       return -1;
-    
     if(sizeof(ready_uris))
     {
       foreach(indices(ready_uris), string ready_uri)
@@ -422,7 +452,6 @@ class MemoryQueue
 
     if(stats->concurrent_fetchers())
       return -1;
-
     return 0;
   }
 
@@ -437,10 +466,18 @@ class MemoryQueue
         put(_uri);
       return;
     }
+    
+    Standards.URI ouri;
+
+    if(objectp(uri))
+      ouri=uri;
+    else
+      ouri=Standards.URI(uri);
+
     if(!stringp(uri))
       uri=(string)uri;
 
-    if(!ready_uris[uri] && !done_uris[uri])
+    if(!ready_uris[uri] && !done_uris[uri] && check_link(ouri, allow, deny))
       ready_uris[uri]=1;
   }
 
@@ -451,7 +488,7 @@ class MemoryQueue
   }
 }
 
-
+//!
 class ComplexQueue(Stats stats, Policy policy)
 {
   inherit Queue;
@@ -585,7 +622,7 @@ class RobotExcluder
 	      void|mixed _user_agent, void|mixed ... _args)
   {
     base_uri=_base_uri; done_cb=_done_cb;
-    user_agent = _user_agent || "RoxenCrawler";
+    user_agent = _user_agent || "PikeCrawler";
     args = _args;
     set_callbacks(request_ok, request_fail);
     async_request(base_uri->host, base_uri->port,
@@ -680,6 +717,7 @@ class RobotExcluder
   }
 }
 
+//!
 class Crawler
 {
   Queue queue;
@@ -791,6 +829,12 @@ class Crawler
 	return;
       }
 
+     if(!headers)
+       headers=([
+	"host": uri->host+":"+uri->port,
+	"user-agent": "Mozilla 4.0 (PikeCrawler)" ]);
+
+
       queue->stats->start_fetch(uri->host);
 
       real_uri = uri;
@@ -834,12 +878,36 @@ class Crawler
     else
     {
       queue->stats->close_callback(real_uri);
-      queue->set_stage(real_uri, 5);
+//      queue->set_stage(real_uri, 5);
     }
   
     call_out(get_next_uri,0);
   }
-  
+
+//!  
+//!  @param _page_cb
+//!    function called when a page is retreived. Arguments are: 
+//!    Standards.URI uri, mixed data, mapping headers, mixed ... args. 
+//!    should return an array containing additional links found within data
+//!    that will be analyzed for insertion into the crawler queue (assuming
+//!    they are allowed by the allow/deny rulesets.
+//!  @param _error_cb
+//!    function called when an error is received from a server. Arguments are:
+//!    Standards.URI real_uri, int status_code, mapping headers,
+//!    mixed ... args. Returns void. 
+//!  @param _done_cb
+//!    function called when crawl is complete. Accepts mixed ... args and 
+//!    returns void.
+//!  @param _prepare_cb
+//!    argument called before a uri is retrieved. may be used to alter
+//!    the request. Argument is Standards.URI uri. Returns array with
+//!    element 0 of Standards.URI uri, element 1 is a header mapping for the
+//!    outgoing request.
+//!  @param start_uri
+//!    location to start the crawl from.
+//!  @param _args
+//!    optional arguments sent as the last argument to the callback 
+//!    functions.
   void create(Queue _queue,
 	      function _page_cb, function _error_cb,
 	      function _done_cb, function _prepare_cb, 
