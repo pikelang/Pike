@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.h,v 1.86 2003/04/02 19:22:43 mast Exp $
+|| $Id: pike_types.h,v 1.87 2003/06/12 18:57:16 nilsson Exp $
 */
 
 #ifndef PIKE_TYPES_H
@@ -266,7 +266,6 @@ int minimum_arguments(struct pike_type *s);
 struct pike_type *check_call(struct pike_type *args,
 			     struct pike_type *type,
 			     int strict);
-INT32 get_max_args(struct pike_type *type);
 struct pike_type *zzap_function_return(struct pike_type *t, INT32 id);
 struct pike_type *get_type_of_svalue(struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);

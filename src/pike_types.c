@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.216 2003/06/11 23:02:55 nilsson Exp $
+|| $Id: pike_types.c,v 1.217 2003/06/12 18:57:16 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.216 2003/06/11 23:02:55 nilsson Exp $");
+RCSID("$Id: pike_types.c,v 1.217 2003/06/12 18:57:16 nilsson Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -4094,18 +4094,6 @@ struct pike_type *check_call(struct pike_type *args,
     pop_stack_mark();
     return 0;
   }
-}
-
-INT32 get_max_args(struct pike_type *type)
-{
-  INT32 ret,tmp=max_correct_args;
-  check_type(type->type);
-  clear_markers();
-  type = check_call(function_type_string, type, 0);
-  if(type) free_type(type);
-  ret=max_correct_args;
-  max_correct_args=tmp;
-  return tmp;
 }
 
 /* NOTE: type loses a reference. */
