@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.112 2001/04/11 11:54:01 grubba Exp $");
+RCSID("$Id: main.c,v 1.113 2001/05/16 23:34:38 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -90,6 +90,36 @@ static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
     f_exit(1);
   }
 }
+
+#ifdef PROFILING
+static unsigned int samples[8200];
+long record;
+
+static void sample_stack(struct callback *cb,void *tmp,void *ignored)
+{
+  long stack_size=( ((char *)&cb) - Pike_interpreter.stack_bottom) * STACK_DIRECTION;
+  stack_size>>=10;
+  stack_size++;
+  if(stack_size<0) stack_size=0;
+  if(stack_size >= (long)NELEM(samples)) stack_size=NELEM(samples)-1;
+  samples[stack_size]++;
+#ifdef PIKE_DEBUG
+  if(stack_size > record)
+  {
+    extern void gdb_break_on_stack_record(long);
+    gdb_break_on_stack_record(stack_size);
+    record=stack_size;
+  }
+#endif
+}
+
+#ifdef PIKE_DEBUG
+void gdb_break_on_stack_record(long stack_size)
+{
+  ;
+}
+#endif
+#endif
 
 static struct callback_list post_master_callbacks;
 
@@ -371,10 +401,20 @@ int dbm_main(int argc, char **argv)
 	  break;
 
 	case 'p':
-	  if(p[1]>='0' && p[1]<='9')
-	    p_flag+=STRTOL(p+1,&p,10);
-	  else
-	    p_flag++,p++;
+	  if(p[1]=='s')
+	  {
+#ifdef PROFILING
+	    add_to_callback(&evaluator_callbacks,
+			    sample_stack,
+			    0,0);
+	    p+=strlen(p);
+#endif	    
+	  }else{
+	    if(p[1]>='0' && p[1]<='9')
+	      p_flag+=STRTOL(p+1,&p,10);
+	    else
+	      p_flag++,p++;
+	  }
 	  break;
 
 	case 'l':
@@ -414,6 +454,10 @@ int dbm_main(int argc, char **argv)
   /* Equvivalent with &= ~0xffff */
   Pike_interpreter.stack_top -= ( ((size_t)Pike_interpreter.stack_top)) & 0xffff;
 #endif /* STACK_DIRECTION < 0 */
+
+#ifdef PROFILING
+  Pike_interpreter.stack_bottom=Pike_interpreter.stack_top;
+#endif
 
 #if defined(HAVE_GETRLIMIT) && defined(RLIMIT_STACK)
   {
@@ -596,6 +640,15 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
   {
     extern void cleanup_memhdrs(void);
     cleanup_memhdrs();
+  }
+#endif
+
+#ifdef PROFILING
+  {
+    int q;
+    for(q=0;q<(long)NELEM(samples);q++)
+      if(samples[q])
+	fprintf(stderr,"STACK WAS %4d Kb %12u times\n",q-1,samples[q]);
   }
 #endif
 
