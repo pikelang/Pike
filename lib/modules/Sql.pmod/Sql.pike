@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.53 2001/11/08 15:30:16 anders Exp $
+ * $Id: Sql.pike,v 1.54 2002/03/18 13:09:24 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -75,6 +75,18 @@ function(int:string) encode_datetime;
 
 function(string:int) decode_datetime;
 
+//! @decl void create()
+//! @decl void create(string host)
+//! @decl void create(string host, string db)
+//! @decl void create(string host, mapping(string:int|string) options)
+//! @decl void create(string host, string db, string user)
+//! @decl void create(string host, string db, string user, @
+//!                   string password)
+//! @decl void create(string host, string db, string user, @
+//!                   string password, mapping(string:int|string) options)
+//! @decl void create(object host)
+//! @decl void create(object host, string db)
+//!
 //! Create a new generic SQL object.
 //!
 //! @param host
@@ -102,16 +114,26 @@ function(string:int) decode_datetime;
 //! @param password
 //!   Password to access the database.
 //!
+//! @param options
+//!   Optional mapping of options.
+//!   See the SQL-database documentation for the supported options.
+//!   (eg @[Mysql.mysql()->create()]).
+//!
 //! @note
 //!   In versions of Pike prior to 7.2 it was possible to leave out the
 //!   dbtype, but that has been deprecated, since it never worked well.
 //!
-void create(void|string|object host, void|string db,
-	    void|string user, void|string password)
+//! @note
+//!   Support for @[options] was added in Pike 7.3.
+//!
+void create(void|string|object host, void|string|mapping(string:int|string) db,
+	    void|string user, void|string password,
+	    mapping(string:int|string) options)
 {
   if (objectp(host)) {
     master_sql = host;
-    if ((user && user != "") || (password && password != "")) {
+    if ((user && user != "") || (password && password != "") ||
+	(options && sizeof(options))) {
       throw_error("Sql.sql(): Only the database argument is supported when "
 		  "first argument is an object\n");
     }
@@ -120,6 +142,10 @@ void create(void|string|object host, void|string db,
     }
   }
   else {
+    if (mappingp(db)) {
+      options = db;
+      db = 0;
+    }
     if (db == "") {
       db = 0;
     }
@@ -191,7 +217,9 @@ void create(void|string|object host, void|string db,
     p = Sql[program_name];
 
     if (p) {
-      if (password) {
+      if (options) {
+	master_sql = p(host||"", db||"", user||"", password||"", options);
+      } else if (password) {
 	master_sql = p(host||"", db||"", user||"", password);
       } else if (user) {
 	master_sql = p(host||"", db||"", user);
