@@ -1,3 +1,11 @@
+Mon Jan 27 18:44:25 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* simulate.pre.pike: query_host_name is now same as gethostname
+	* builtin_functions.c: query_host_name removed, mktime added
+	* gc.c: more debug added, added a callback to make it possible
+	  to count external references.
+        * operators.c: fixed a bug in range overloading
+
 Mon Jan 27 09:03:40 1997  Per Hedbor  <per@infovav.se>
 
 	* configure.in: Added support for a number of optimization options
