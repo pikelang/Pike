@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.342 2001/06/09 15:35:45 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.343 2001/06/20 23:13:51 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7118,7 +7118,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 /*! @module String
  */
 
-#define THB ((struct buffer_str *)Pike_fp->current_object->storage)
+#define THB ((struct buffer_str *)Pike_fp->current_storage)
 
 struct  buffer_str
 {
