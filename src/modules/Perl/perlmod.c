@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: perlmod.c,v 1.29 2002/10/21 17:06:22 marcus Exp $
+|| $Id: perlmod.c,v 1.30 2002/11/26 11:39:11 stensson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -94,6 +94,18 @@ struct perlmod_storage
 #define MT_FORBID ;
 
 #endif
+
+/*! @module Perl
+ *!
+ *! This module allows access to an embedded Perl interpreter, if
+ *! a libperl.so (or equivalent) was found during the installation
+ *! of Pike.
+ */
+
+/*! @class Perl
+ *!
+ *! An object of this class is a Perl interpreter.
+ */
 
 /* utility function: push a zero_type zero */
 static void _push_zerotype()
@@ -272,7 +284,8 @@ static void init_perl_glue(struct object *o)
 }
 
 static void _free_arg_and_env()
-{ struct perlmod_storage *ps = _THIS;
+{
+  struct perlmod_storage *ps = _THIS;
 
   if (ps->argv)
   { free((char *)ps->argv);
@@ -296,7 +309,9 @@ static void _free_arg_and_env()
 }
 
 static void exit_perl_glue(struct object *o)
-{ struct perlmod_storage *ps = _THIS;
+{
+  struct perlmod_storage *ps = _THIS;
+
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[exit_perl_glue]\n");
 #endif
@@ -322,8 +337,18 @@ static void exit_perl_glue(struct object *o)
   _free_arg_and_env();
 }
 
+/*! @decl void create()
+ *!
+ *! Create a Perl interpreter object. There can only be one Perl
+ *! interpreter object at the same time, unless Perl was compiled
+ *! with the MULTIPLICITY option, and Pike managed to figure this
+ *! out during installation. An error will be thrown if no Perl
+ *! interpreter is available.
+ */
+
 static void perlmod_create(INT32 args)
-{ struct perlmod_storage *ps = _THIS;
+{
+  struct perlmod_storage *ps = _THIS;
 
 #ifdef PIKE_PERLDEBUG
   fprintf(stderr, "[perlmod_create, %d args]\n", args);
@@ -333,6 +358,7 @@ static void perlmod_create(INT32 args)
 #endif
     
   if (args != 0) Pike_error("Perl->create takes no arguments.");
+
   if (!ps || !ps->perl) Pike_error("No perl interpreter available.\n");
 
   MT_PERMIT;
@@ -349,6 +375,19 @@ static void perlmod_create(INT32 args)
   push_int(0);
 }
 
+/*! @decl int parse(array(string) args)
+ *! @decl int parse(array(string) args, mapping(string:string) env)
+ *!
+ *! Parse a Perl script file and set up argument and environment for it.
+ *! Returns zero on success, and non-zero if the parsing failed.
+ *!
+ *! @param args
+ *!   Arguments in the style of argv, i.e. with the name of the script first.
+ *! 
+ *! @param env
+ *!   Environment mapping, mapping environment variable names to
+ *!   to their values.
+ */
 static void perlmod_parse(INT32 args)
 {
   int e;
@@ -434,6 +473,11 @@ static void perlmod_parse(INT32 args)
   push_int(e);
 }
 
+/*! @decl int run()
+ *!
+ *! Run a previously parsed Perl script file. Returns a status code.
+ */
+
 static void perlmod_run(INT32 args)
 {
   INT32 i;
@@ -453,10 +497,11 @@ static void perlmod_run(INT32 args)
 }
 
 static void _perlmod_eval(INT32 args, int perlflags)
-{ struct pike_string *firstarg;
+{
+  struct pike_string *firstarg;
   struct perlmod_storage *ps = _THIS;
   int i, n;
-  /* #define sp _perlsp */
+
   dSP;
 
   if (!ps->perl) Pike_error("Perl interpreter not available.\n");
@@ -469,7 +514,6 @@ static void _perlmod_eval(INT32 args, int perlflags)
   PUSHMARK(sp);
 
   PUTBACK;
-  /* #undef sp */
 
   if (!ps->parsed)
   {
@@ -495,11 +539,12 @@ static void _perlmod_eval(INT32 args, int perlflags)
 
   pop_n_elems(args);
 
-  /* #define sp _perlsp */
   SPAGAIN;
 
   if (SvTRUE(GvSV(PL_errgv)))
-  { char errtmp[256];
+  {
+    char errtmp[256];
+
     memset(errtmp, 0, sizeof(errtmp));
     strcpy(errtmp, "Error from Perl: ");
     strncpy(errtmp+strlen(errtmp),
@@ -511,31 +556,48 @@ static void _perlmod_eval(INT32 args, int perlflags)
   }
 
   if (perlflags & G_ARRAY)
-  { struct array *a = allocate_array(n);
+  {
+    struct array *a = allocate_array(n);
     for(i = 0; i < n; ++i)
          _sv_to_svalue(POPs, &(a->item[(n-1)-i]));
     push_array(a);
   }
   else if (n > 0)
-  { for(; n > 1; --n) POPs;
+  {
+    for(; n > 1; --n) POPs;
     _pikepush_sv(POPs);
   }
   else _push_zerotype();
 
   PUTBACK; FREETMPS; LEAVE;
-  /* #undef sp */
 }
+
+/*! @decl mixed eval(string expression)
+ *!
+ *! Evalute a Perl expression in a scalar context, and return the
+ *! result if it is a simple value type. Unsupported value types
+ *! are rendered as 0. 
+ */
 
 static void perlmod_eval(INT32 args)
   { _perlmod_eval(args, G_SCALAR); }
+
+/*! @decl mixed eval_list(string expression)
+ *!
+ *! Evalute a Perl expression in a list context, and return the
+ *! result if it is a simple value type, or an array of simple value
+ *! types. Unsupported value types are rendered as 0.
+ */
 
 static void perlmod_eval_list(INT32 args)
   { _perlmod_eval(args, G_ARRAY); }
 
 static void _perlmod_call(INT32 args, int perlflags)
-{ struct perlmod_storage *ps = _THIS;
-  int i, n; char *pv;
-  /* #define sp _perlsp */
+{
+  struct perlmod_storage *ps = _THIS;
+  int i, n;
+  char *pv;
+
   dSP;
 
 #ifdef PIKE_PERLDEBUG
@@ -556,8 +618,10 @@ static void _perlmod_call(INT32 args, int perlflags)
   PUSHMARK(sp);
 
   for(n = 1; n < args; ++n)
-  { struct svalue *s = &(Pike_sp[n-args]);
+  {
+    struct svalue *s = &(Pike_sp[n-args]);
     char *msg;
+
     switch (s->type)
     { case PIKE_T_INT:
         XPUSHs(sv_2mortal(newSViv(s->u.integer)));
@@ -591,20 +655,21 @@ static void _perlmod_call(INT32 args, int perlflags)
   PUTBACK;
 
   pv = Pike_sp[-args].u.string->str;  
-  /* #undef sp */
+
   MT_PERMIT;
 
   n = perl_call_pv(pv, perlflags);
 
   MT_FORBID;
-  /* #define sp _perlsp */
 
   pop_n_elems(args);
 
   SPAGAIN;
 
   if (SvTRUE(GvSV(PL_errgv)))
-  { char errtmp[256];
+  {
+    char errtmp[256];
+
     memset(errtmp, 0, sizeof(errtmp));
     strcpy(errtmp, "Error from Perl: ");
     strncpy(errtmp+strlen(errtmp),
@@ -616,7 +681,8 @@ static void _perlmod_call(INT32 args, int perlflags)
   }
 
   if (n < 0)
-  { PUTBACK; FREETMPS; LEAVE;
+  {
+    PUTBACK; FREETMPS; LEAVE;
     Pike_error("Internal error: perl_call_pv returned a negative number.\n");
   }
 
@@ -624,12 +690,14 @@ static void _perlmod_call(INT32 args, int perlflags)
        while (n > 1) --n, POPs;
 
   if (n > ps->array_size_limit)
-  { PUTBACK; FREETMPS; LEAVE;
+  {
+    PUTBACK; FREETMPS; LEAVE;
     Pike_error("Perl function returned too many values.\n");
   }
 
   if (perlflags & G_ARRAY)
-  { struct array *a = allocate_array(n);
+  {
+    struct array *a = allocate_array(n);
     for(i = 0; i < n; ++i)
          _sv_to_svalue(POPs, &(a->item[(n-1)-i]));
     push_array(a);
@@ -643,18 +711,51 @@ static void _perlmod_call(INT32 args, int perlflags)
   /* #undef sp */
 }
 
-static void perlmod_call_list(INT32 args)
-{ _perlmod_call(args, G_ARRAY | G_EVAL);
-}
+/*! @decl mixed call(string name, mixed ... arguments)
+ *!
+ *! Call a Perl subroutine in a scalar context, and return the
+ *! result if it is a simple value type. Unsupported value types are
+ *! rendered as 0.
+ *!
+ *! @param name
+ *!   The name of the subroutine to call, as an 8-bit string.
+ *!
+ *! @param arguments
+ *!   Zero or more arguments to the function. Only simple value
+ *!   types are supported. Unsupported value types will cause an
+ *!   error to be thrown.
+ */
 
 static void perlmod_call(INT32 args)
-{ _perlmod_call(args, G_SCALAR | G_EVAL);
-}
+  { _perlmod_call(args, G_SCALAR | G_EVAL);}
+
+/*! @decl mixed call_list(string name, mixed ... arguments)
+ *!
+ *! Call a Perl subroutine in a list context, and return the
+ *! result if it is a simple value type, or an array of simple
+ *! value types. Unsupported value types are rendered as 0.
+ *!
+ *! @param name
+ *!   The name of the subroutine to call, as an 8-bit string.
+ *!
+ *! @param arguments
+ *!   Zero or more arguments to the function. Only simple value
+ *!   types are supported. Unsupported value types will cause an
+ *!   error to be thrown.
+ */
+
+static void perlmod_call_list(INT32 args)
+  { _perlmod_call(args, G_ARRAY | G_EVAL);}
 
 static void _perlmod_varop(INT32 args, int op, int type)
-{ int i, wanted_args;
+/* To avoid excessive code duplication, this function does most of the
+ * actual work of getting and setting values of scalars, arrays and
+ * hashes. There are wrapper functions below that use this function.
+ */
+{
+  int i;
+  int wanted_args = (type == 'S' ? 1 : 2);
 
-  wanted_args = type == 'S' ? 1 : 2;
   if (op == 'W') ++wanted_args;
 
   if (!(_THIS->perl)) Pike_error("No Perl interpreter available.\n");
@@ -665,39 +766,55 @@ static void _perlmod_varop(INT32 args, int op, int type)
        Pike_error("Variable name must be an 8-bit string.\n");
 
   if (type == 'S') /* scalar */
-  { SV *sv = perl_get_sv(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
+  {
+    SV *sv = perl_get_sv(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
+
     if (op == 'W')
       { sv_setsv(sv, sv_2mortal(_pikev2sv(Pike_sp-1)));}
+
     pop_n_elems(args);
+
     if (op == 'R') _pikepush_sv(sv);
   }
   else if (type == 'A') /* array */
-  { AV *av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
+  {
+    AV *av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
     SV **svp;
-    if (Pike_sp[1-args].type != PIKE_T_INT || (i = Pike_sp[1-args].u.integer) < 0)
+
+    if (Pike_sp[1-args].type != PIKE_T_INT  ||
+         (i = Pike_sp[1-args].u.integer) < 0 )
           Pike_error("Array subscript must be a non-negative integer.\n");
     if (op == 'W')
          av_store(av, i, _sv_2mortal(_pikev2sv(Pike_sp+2-args)));
+
     pop_n_elems(args);
+
     if (op == 'R')
-    { if ((svp = av_fetch(av, i, 0))) _pikepush_sv(*svp);
+    {
+      if ((svp = av_fetch(av, i, 0))) _pikepush_sv(*svp);
                                  else _push_zerotype();
     }
   }
   else if (type == 'H') /* hash */
-  { HV *hv = perl_get_hv(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
+  {
+    HV *hv = perl_get_hv(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
     SV *key = sv_2mortal(_pikev2sv(Pike_sp+1-args));
     HE *he;
+
     if (op == 'W')
-    { if ((he = hv_store_ent
+    {
+      if ((he = hv_store_ent
                    (hv, key, _sv_2mortal(_pikev2sv(Pike_sp+2-args)), 0)))
          sv_setsv(HeVAL(he), _sv_2mortal(_pikev2sv(Pike_sp+2-args)));
       else
          Pike_error("Internal error: hv_store_ent returned NULL.\n");
     }
+
     pop_n_elems(args);
+
     if (op == 'R')
-    { if ((he = hv_fetch_ent(hv, key, 0, 0)))
+    {
+      if ((he = hv_fetch_ent(hv, key, 0, 0)))
          _pikepush_sv(HeVAL(he));
       else
          _push_zerotype();
@@ -708,37 +825,149 @@ static void _perlmod_varop(INT32 args, int op, int type)
   if (op != 'R') push_int(0);
 }
 
+/*! @decl mixed get_scalar(string name)
+ *!
+ *! Get the value of a Perl scalar variable. Returns the value, or a
+ *! plain 0 if the value type was not supported.
+ *!
+ *! @param name
+ *!   Name of the scalar variable, as an 8-bit string.
+ */
 static void perlmod_get_scalar(INT32 args)
    { _perlmod_varop(args, 'R', 'S');}
+
+/*! @decl void set_scalar(string name, mixed value)
+ *!
+ *! Set the value of a Perl scalar variable.
+ *!
+ *! @param name
+ *!   Name of the scalar variable, as an 8-bit string.
+ *!
+ *! @param value
+ *!   The new value. Only simple value types are supported. Throws
+ *!   an error for unsupported value types. 
+ */
 static void perlmod_set_scalar(INT32 args)
    { _perlmod_varop(args, 'W', 'S');}
+
+/*! @decl mixed get_array_item(string name, int index)
+ *!
+ *! Get the value of an entry in a Perl array variable. Returns the
+ *! value, or a zero-type value if indexing outside the array, or a
+ *! plain zero if the value type was not supported.
+ *!
+ *! @param name
+ *!   Name of the array variable, as an 8-bit string.
+ *!
+ *! @param index
+ *!   Array index. An error is thrown if the index is negative,
+ *!   non-integer or a bignum.
+ */
 static void perlmod_get_array_item(INT32 args)
    { _perlmod_varop(args, 'R', 'A');}
+
+/*! @decl void set_array_item(string name, int index, mixed value)
+ *!
+ *! Set the value of an entry in a Perl array variable. Only simple
+ *! value types are supported. Throws an error for unsupported
+ *! value types.
+ *!
+ *! @param name
+ *!   Name of the array variable, as an 8-bit string.
+ *!
+ *! @param index
+ *!   Array index. An error is thrown if the index is negative,
+ *!   non-integer or a bignum.
+ *!
+ *! @param value
+ *!   New value. Only simple value types are supported. An error is
+ *!   thrown for unsupported value types.
+ */
 static void perlmod_set_array_item(INT32 args)
    { _perlmod_varop(args, 'W', 'A');}
+
+/*! @decl mixed get_hash_item(string name, mixed key)
+ *!
+ *! Get the value of an entry in a Perl hash variable. Returns the value,
+ *! or a zero-type value if the hash had no entry for the given key, or
+ *! a plain 0 if the returned value type was not supported.
+ *!
+ *! @param name
+ *!   Name of the array variable, as an 8-bit string.
+ *!
+ *! @param key
+ *!   Hash key. Only simple value types are supported. An error is
+ *!   thrown for unsupported value types.
+ */
 static void perlmod_get_hash_item(INT32 args)
    { _perlmod_varop(args, 'R', 'H');}
+
+/*! @decl void set_hash_item(string name, mixed key, mixed value)
+ *!
+ *! Set the value of an entry in a Perl hash variable.
+ *!
+ *! @param name
+ *!   Name of the hash variable, as an 8-bit string.
+ *!
+ *! @param key
+ *!   Hash key. Only simple value types are supported. An error is
+ *!   thrown for unsupported value types.
+ *!
+ *! @param value
+ *!   New value. Only simple value types are supported. An error is
+ *!   thrown for unsupported value types.
+ */
 static void perlmod_set_hash_item(INT32 args)
    { _perlmod_varop(args, 'W', 'H');}
 
+/*! @decl int array_size(string name)
+ *!
+ *! Get the size of the Perl array variable with the given name.
+ *!
+ *! @param name
+ *!   Name of the array variable, as an 8-bit string.
+ */
 static void perlmod_array_size(INT32 args)
-{ AV *av;
-  if (args != 1) Pike_error("Wrong number of arguments.\n");
+{
+  AV *av;
+
+  if (args != 1)
+      Pike_error("Wrong number of arguments.\n");
+
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
       Pike_error("Array name must be given as an 8-bit string.\n");
 
   av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
   if (!av) Pike_error("Interal error: perl_get_av() return NULL.\n");
+
   pop_n_elems(args);
+
   /* Return av_len()+1, since av_len() returns the value of the highest
    * index, which is 1 less than the size. */
   push_int(av_len(av)+1);
 }
 
+/*! @decl array get_array(string name)
+ *!
+ *! Get the contents of a Perl array variable as a Pike array. If the
+ *! size of the array is larger than the specified array size limit,
+ *! the returned Pike array will be truncated according to the limit.
+ *!
+ *! @param name
+ *!   Name of the array variable, as an 8-bit string.
+ *!
+ *! @seealso @[array_size_limit()]
+ */
 static void perlmod_get_whole_array(INT32 args)
-{ AV *av; int i, n; struct array *arr;
-  if (args != 1) Pike_error("Wrong number of arguments.\n");
+{
+  AV *av;
+  int i, n;
+  struct array *arr;
+
+  if (args != 1)
+      Pike_error("Wrong number of arguments.\n");
+
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
       Pike_error("Array name must be given as an 8-bit string.\n");
@@ -751,17 +980,38 @@ static void perlmod_get_whole_array(INT32 args)
      Pike_error("The array is larger than array_size_limit.\n");
 
   arr = allocate_array(n);
+
   for(i = 0; i < n; ++i)
-  { SV **svp = av_fetch(av, i, 0);
+  {
+    SV **svp = av_fetch(av, i, 0);
     _sv_to_svalue(svp ? *svp : NULL, &(arr->item[i]));
   }
+
   pop_n_elems(args);
   push_array(arr);
 }
 
+/*! @decl array get_hash_keys(string name)
+ *!
+ *! Get the keys (indices) of a Perl hash variable as a Pike array. If
+ *! the size of the resulting array is larger than the specified array
+ *! size limit, an error will be thrown.
+ *!
+ *! @param name
+ *!   Name of the hash variable, as an 8-bit string.
+ *!
+ *! @seealso @[array_size_limit()]
+ */
 static void perlmod_get_hash_keys(INT32 args)
-{ HV *hv; HE *he; SV *sv; int i, n; I32 len; struct array *arr;
-  if (args != 1) Pike_error("Wrong number of arguments.\n");
+{
+  HV *hv; HE *he; SV *sv;
+  int i, n;
+  I32 len;
+  struct array *arr;
+
+  if (args != 1)
+      Pike_error("Wrong number of arguments.\n");
+
   if (Pike_sp[-args].type != PIKE_T_STRING ||
       Pike_sp[-args].u.string->size_shift != 0)
       Pike_error("Hash name must be given as an 8-bit string.\n");
@@ -773,7 +1023,7 @@ static void perlmod_get_hash_keys(INT32 args)
   for(n = 0, hv_iterinit(hv); (he = hv_iternext(hv)); ++n);
 
   if (n > _THIS->array_size_limit)
-     Pike_error("The array is larger than array_size_limit.\n");
+      Pike_error("The array is larger than array_size_limit.\n");
 
   arr = allocate_array(n);
   for(i = 0, hv_iterinit(hv); (he = hv_iternext(hv)); ++i)
@@ -783,19 +1033,49 @@ static void perlmod_get_hash_keys(INT32 args)
   push_array(arr);
 }
 
+/*! @decl int array_size_limit()
+ *! @decl int array_size_limit(int limit)
+ *!
+ *! Get (and optionally set) the array size limit for this interpreter
+ *! instance. Without arguments, the current limit is returned. With
+ *! an integer argument, the limit is set to that value, and the same
+ *! value is returned.
+ *!
+ *! The array size limit is mainly a way of ensuring that there isn't
+ *! a sudden explosion in memory usage and data conversion time in this
+ *! embedding interface. There is no particular limit other than available
+ *! memory in Perl itself.
+ *!
+ *! @note
+ *!   The default array size limit is 500 elements, but this may change
+ *!   in future releases of Pike.
+ *!
+ *!   The maximum array size limit is the highest number representable
+ *!   as a non-bignum integer (which is typically 2147483647 on a
+ *!   traditional 32-bit architecture).
+ *!
+ *! @param limit
+ *!   The new array size limit.
+ */
 static void perlmod_array_size_limit(INT32 args)
-{ int i;
+{
+  int i;
+
   switch (args)
-  { case 0:
+  {
+    case 0:
       break;
+
     case 1:
       if (Pike_sp[-args].type != PIKE_T_INT || Pike_sp[-args].u.integer < 1)
            Pike_error("Argument must be a integer in range 1 to 2147483647.");
       _THIS->array_size_limit = Pike_sp[-args].u.integer;
       break;
+
     default:
       Pike_error("Wrong number of arguments.\n");
   }
+
   pop_n_elems(args);
   push_int(_THIS->array_size_limit);
 }
