@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.100 2001/01/03 16:36:45 grubba Exp $");
+RCSID("$Id: array.c,v 1.101 2001/01/03 21:35:13 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -680,9 +680,25 @@ static INLINE int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
 
       case T_OBJECT:
 	if(a->u.object == b->u.object) return 0;
-	if(a->u.refs < b->u.refs) { def=-1; break; }
-	if(a->u.refs > b->u.refs) { def=1; break; }
-	def = (a<b)?-1:1;
+	if(a->u.object->prog == b->u.object->prog) {
+	  if (a->u.object->prog) {
+	    if(a->u.object < b->u.object) {
+	      def = -1;
+	    } else {
+	      def = 1;
+	    }
+	  } else {
+	    /* Destructed objects are considered equal. */
+	    return 0;
+	  }
+	} else {
+	  /* Attempt to group objects cloned from the same program */
+	  if (a->u.object->prog < b->u.object->prog) {
+	    def = -1;
+	  } else {
+	    def = 1;
+	  }
+	}
 	break;
     }
   }else{
