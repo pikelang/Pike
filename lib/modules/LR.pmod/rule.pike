@@ -1,5 +1,5 @@
 /*
- * $Id: rule.pike,v 1.4 1998/11/12 19:45:45 grubba Exp $
+ * $Id: rule.pike,v 1.5 1998/11/13 02:36:18 grubba Exp $
  *
  * A BNF-rule.
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	rule.pike
-//. RCSID:	$Id: rule.pike,v 1.4 1998/11/12 19:45:45 grubba Exp $
+//. RCSID:	$Id: rule.pike,v 1.5 1998/11/13 02:36:18 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements a BNF rule.
@@ -59,6 +59,10 @@ multiset(string) prefix_tokens = (<>);
 //.   Sequence number of this rule (used for conflict resolving)
 //.   Also used to identify the rule.
 int number = 0;
+
+//. + pri
+//.   Priority and associativity of this rule.
+object /* (priority) */ pri;
 
 /*
  * Functions
