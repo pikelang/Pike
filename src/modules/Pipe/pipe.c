@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.34 1999/07/29 16:47:34 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.35 2000/07/02 16:52:19 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -37,6 +37,7 @@ RCSID("$Id: pipe.c,v 1.34 1999/07/29 16:47:34 grubba Exp $");
 #include "svalue.h"
 #include "error.h"
 #include "builtin_functions.h"
+#include "fdlib.h"
 
 #ifndef S_ISREG
 #ifdef S_IFREG
@@ -292,8 +293,8 @@ static INLINE int append_buffer(struct pike_string *s)
 
    if(THIS->fd!= -1)
    {
-     lseek(THIS->fd, THIS->pos, SEEK_SET);
-     write(THIS->fd, s->str, s->len);
+     fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
+     fd_write(THIS->fd, s->str, s->len);
      THIS->pos+=s->len;
      return 0;
    }
@@ -448,11 +449,11 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
       len=this->pos-pos;
       if (len>READ_BUFFER_SIZE) len=READ_BUFFER_SIZE;
       THREADS_ALLOW();
-      lseek(this->fd, pos, SEEK_SET);
+      fd_lseek(this->fd, pos, SEEK_SET);
       THREADS_DISALLOW();
       do {
 	THREADS_ALLOW();
-	len = read(this->fd, buffer, len);
+	len = fd_read(this->fd, buffer, len);
 	THREADS_DISALLOW();
 	if (len < 0) {
 	  if (errno != EINTR) {
@@ -699,7 +700,7 @@ static void pipe_input(INT32 args)
 
      if (fd != -1 && fstat(fd,&s)==0)
      {
-       int filep=lseek(fd, 0L, SEEK_CUR); /* keep the file pointer */
+       int filep=fd_lseek(fd, 0L, SEEK_CUR); /* keep the file pointer */
        if(S_ISREG(s.st_mode)	/* regular file */
 	  && ((long)(m=(char *)mmap(0,s.st_size - filep,PROT_READ,
 				    MAP_FILE|MAP_SHARED,fd,filep))!=-1))
@@ -858,10 +859,10 @@ static void pipe_output(INT32 args)
 	&& (fd=sp[-1].u.integer)>=0
 	&& (fstat(fd,&s)==0)
 	&& S_ISREG(s.st_mode)
-	&& (THIS->fd=dup(fd))!=-1 )
+	&& (THIS->fd=fd_dup(fd))!=-1 )
     {
       /* keep the file pointer of the duped fd */
-      THIS->pos=lseek(fd, 0L, SEEK_CUR);
+      THIS->pos=fd_lseek(fd, 0L, SEEK_CUR);
       
 #if 0
       /* This won't work if the spider-module is dynamically linked. */
@@ -877,8 +878,8 @@ static void pipe_output(INT32 args)
       {
 	b=THIS->firstbuffer;
 	THIS->firstbuffer=b->next;
-	lseek(THIS->fd, THIS->pos, SEEK_SET);
-	write(THIS->fd,b->s->str,b->s->len);
+	fd_lseek(THIS->fd, THIS->pos, SEEK_SET);
+	fd_write(THIS->fd,b->s->str,b->s->len);
 	sbuffers-=b->s->len;
 	nbuffers--;
 	free_string(b->s);
@@ -1163,7 +1164,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    }
    if (p->fd!=-1)
    {
-     close(p->fd);
+     fd_close(p->fd);
      p->fd=-1;
    }
 
