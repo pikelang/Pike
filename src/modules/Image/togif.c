@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.27 1997/11/11 22:17:52 mirar Exp $ 
+$Id: togif.c,v 1.28 1997/11/26 15:41:35 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.27 1997/11/11 22:17:52 mirar Exp $
+**!	$Id: togif.c,v 1.28 1997/11/26 15:41:35 mirar Exp $
 **! class image
 */
 
@@ -143,6 +143,8 @@ static void img_gif_add(INT32 args,int fs,int lm,
    int delay=0;
    struct object *ncto=NULL;
 
+   struct svalue *msp=sp;
+
    if (args==0) x=y=0;
    else if (args<2
             || sp[-args].type!=T_INT
@@ -158,7 +160,7 @@ static void img_gif_add(INT32 args,int fs,int lm,
    {
       struct svalue *sv=sp+2-args;
       push_svalue(sv);
-      ncto=clone_object(image_colortable_program,2);
+      ncto=clone_object(image_colortable_program,1);
    }
    else if (args>3 && sp[2-args].type==T_INT)
    {
