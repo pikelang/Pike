@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.40 2003/09/26 13:30:40 anders Exp $
+// $Id: Utils.pmod,v 1.41 2003/09/30 12:14:31 anders Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -509,6 +509,8 @@ class Scheduler {
     if( schedule_process )
       schedule_process->stop();
     WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
+    // We use BackgroundProcess since there is no support for unscheduling
+    // tasks created with background_run.
     schedule_process = 
       roxen.BackgroundProcess(next_run-time(), do_scheduled_stuff);
   }
