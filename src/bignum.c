@@ -39,7 +39,9 @@ struct program *get_auto_bignum_program(void)
 
 struct program *get_auto_bignum_program_or_zero(void)
 {
-  if(!gmp_library_loaded || gmp_library_resolving) return 0;
+  if(!gmp_library_loaded ||
+     gmp_library_resolving  ||
+     !get_master()) return 0;
   resolve_auto_bignum_program();
   return program_from_function(&auto_bignum_program);
 }
@@ -76,7 +78,9 @@ int is_bignum_object(struct object *o)
    * /Hubbe
    */
 
-  if(!gmp_library_loaded || gmp_library_resolving)
+  if(!gmp_library_loaded ||
+     gmp_library_resolving ||
+    !get_master())
     return 0; /* not possible */
  
   resolve_auto_bignum_program();
