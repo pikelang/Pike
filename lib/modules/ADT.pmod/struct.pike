@@ -4,11 +4,6 @@
  */
 
 #pike __REAL_VERSION__
-#if 0
-#include "error.h"
-#else
-#define error(x) throw( ({ (x), backtrace() }) )
-#endif
 
 string buffer;
 int index;
