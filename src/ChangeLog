@@ -1,3 +1,9 @@
+Sat Jan 25 17:34:16 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* module_support.c (check_all_args): Renamed check_args to
+	check_all_args. Added non-error-generating variants
+	va_check_args and check_args.
+
 Thu Jan 23 20:12:35 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/files/efuns.c (f_get_dir): Added more variants of
