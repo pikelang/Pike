@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.11 2002/02/24 23:25:01 nilsson Exp $
+ * $Id: extract.pike,v 1.12 2002/02/26 02:12:32 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -141,5 +141,5 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
   if(result && sizeof(result))
     return Tools.AutoDoc.ProcessXML.moveImages(result, builddir, imgdest);
 
-  return "";
+  return "\n";
 }
