@@ -666,7 +666,7 @@ void f_exit(INT32 args)
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to exit.\n");
 
-  call_callback(&exit_callbacks);
+  call_callback(&exit_callbacks, (void *)0);
   free_callback(&exit_callbacks);
 
   i=sp[-args].u.integer;
@@ -1205,13 +1205,13 @@ void f_sleep(INT32 args)
     error("Bad argument 1 to sleep.\n");
   }
 
-  my_add_timeval(&t1, &t1);
+  my_add_timeval(&t1, &t2);
   
   pop_n_elems(args);
   while(1)
   {
     GETTIMEOFDAY(&t2);
-    if(my_timercmp(&t1, > , &t2))
+    if(my_timercmp(&t1, <= , &t2))
       break;
 
     t3=t1;
