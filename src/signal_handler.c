@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.237 2002/12/18 22:40:55 mast Exp $
+|| $Id: signal_handler.c,v 1.238 2003/01/04 15:23:17 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.237 2002/12/18 22:40:55 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.238 2003/01/04 15:23:17 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -781,12 +781,10 @@ static void f_signal(int args)
   check_signals(0,0,0);
 
   if(args < 1)
-    Pike_error("Too few arguments to signal()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("signal", 1);
 
   if(Pike_sp[-args].type != T_INT)
-  {
-    Pike_error("Bad argument 1 to signal()\n");
-  }
+    SIMPLE_BAD_ARG_ERROR("signal", 1, "int");
 
   signum=Pike_sp[-args].u.integer;
   if(signum <0 ||
@@ -876,10 +874,10 @@ static void f_signum(int args)
 {
   int i;
   if(args < 1)
-    Pike_error("Too few arguments to signum()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("signum", 1);
 
   if(Pike_sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to signum()\n");
+    SIMPLE_BAD_ARG_ERROR("signum", 1, "string");
 
   i=signum(Pike_sp[-args].u.string->str);
   pop_n_elems(args);
@@ -897,10 +895,10 @@ static void f_signame(int args)
 {
   char *n;
   if(args < 1)
-    Pike_error("Too few arguments to signame()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("signame", 1);
 
   if(Pike_sp[-args].type != T_INT)
-    Pike_error("Bad argument 1 to signame()\n");
+    SIMPLE_BAD_ARG_ERROR("signame", 1, "int");
 
   n=signame(Pike_sp[-args].u.integer);
   pop_n_elems(args);
@@ -3625,7 +3623,7 @@ static void f_kill(INT32 args)
 #endif
 
   if(args < 2)
-    Pike_error("Too few arguments to kill().\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
 
   switch(Pike_sp[-args].type)
   {
@@ -3636,11 +3634,11 @@ static void f_kill(INT32 args)
     /* FIXME: What about if it's an object? */
 
   default:
-    Pike_error("Bad argument 1 to kill().\n");
+    SIMPLE_BAD_ARG_ERROR("kill", 1, "int");
   }
     
   if(Pike_sp[1-args].type != T_INT)
-    Pike_error("Bad argument 2 to kill().\n");
+    SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
   signum = Pike_sp[1-args].u.integer;
 
@@ -3723,7 +3721,7 @@ static void f_kill(INT32 args)
 #endif
 
   if(args < 2)
-    Pike_error("Too few arguments to kill().\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("kill", 2);
 
   switch(Pike_sp[-args].type)
   {
@@ -3753,11 +3751,11 @@ static void f_kill(INT32 args)
   }
 
   default:
-    Pike_error("Bad argument 1 to kill().\n");
+    SIMPLE_BAD_ARG_ERROR("kill", 1, "int|object");
   }
     
   if(Pike_sp[1-args].type != T_INT)
-    Pike_error("Bad argument 1 to kill().\n");
+    SIMPLE_BAD_ARG_ERROR("kill", 2, "int");
 
   switch(Pike_sp[1-args].u.integer)
   {
@@ -3855,10 +3853,10 @@ static void f_alarm(INT32 args)
 #endif
 
   if(args < 1)
-    Pike_error("Too few arguments to signame()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("alarm", 1);
 
   if(Pike_sp[-args].type != T_INT)
-    Pike_error("Bad argument 1 to signame()\n");
+    SIMPLE_BAD_ARG_ERROR("alarm", 1, "int");
 
   seconds=Pike_sp[-args].u.integer;
 
@@ -3904,10 +3902,10 @@ static void f_ualarm(INT32 args)
 #endif
 
   if(args < 1)
-    Pike_error("Too few arguments to ualarm()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("ualarm", 1);
 
   if(Pike_sp[-args].type != T_INT)
-    Pike_error("Bad argument 1 to ualarm()\n");
+    SIMPLE_BAD_ARG_ERROR("ualarm", 1, "int");
 
   useconds=Pike_sp[-args].u.integer;
 
@@ -3981,6 +3979,9 @@ static void do_signal_exit(INT32 sig)
  */
 void f_atexit(INT32 args)
 {
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("atexit", 1);
+
   if(!atexit_functions)
   {
 #ifdef SIGHUP
