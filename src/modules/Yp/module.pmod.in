@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.12 2001/01/05 14:07:01 grubba Exp $
+ * $Id: module.pmod.in,v 1.13 2001/01/05 21:38:10 nilsson Exp $
  *
  * YP (NIS) Functionality for Pike
  *
@@ -94,7 +94,7 @@ class Map {
   //!
   void map(function(string,string:void) fun)
   {
-    domain->map(ypmap, fn);
+    domain->map(ypmap, fun);
   }
 
   //! Return the server that provides this map.
