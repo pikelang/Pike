@@ -17,7 +17,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.32 2001/08/02 22:24:53 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.33 2001/08/30 23:32:29 mast Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -178,14 +178,14 @@ PMOD_EXPORT struct callable *quick_add_efun(char *name, ptrdiff_t name_length,
 void present_constant_profiling(void)
 {
   struct callable_block *b;
-  int e;
+  size_t e;
   for(b=callable_blocks;b;b=b->next)
   {
     for(e=0;e<NELEM(b->x);e++)
     {
       if(b->x[e].name)
       {
-	fprintf(stderr,"%010d @E@: %s\n",b->x[e].runs, b->x[e].name->str);
+	fprintf(stderr,"%010ld @E@: %s\n",b->x[e].runs, b->x[e].name->str);
       }
     }
   }
