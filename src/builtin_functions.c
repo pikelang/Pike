@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.319 2000/12/05 21:08:16 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.320 2000/12/10 02:30:13 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -84,34 +84,17 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 void f_hash(INT32 args)
 {
   size_t i = 0;
+  struct pike_string *s = Pike_sp[-args].u.string;
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
+
   if(Pike_sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("hash", 1, "string");
 
-  switch(Pike_sp[-args].u.string->size_shift)
-  {
-    case 0:
-      i=hashstr((unsigned char *)Pike_sp[-args].u.string->str,100);
-      break;
+  i = simple_hashmem((unsigned char *)s->str, s->len<<s->size_shift,
+		     100<<s->size_shift);
 
-    case 1:
-      i=simple_hashmem((unsigned char *)Pike_sp[-args].u.string->str,
-		       Pike_sp[-args].u.string->len << 1,
-		       200);
-      break;
-
-    case 2:
-      i=simple_hashmem((unsigned char *)Pike_sp[-args].u.string->str,
-		       Pike_sp[-args].u.string->len << 2,
-		       400);
-      break;
-
-    default:
-      fatal("hash(): Bad string shift:%d\n", Pike_sp[-args].u.string->size_shift);
-  }
-  
   if(args > 1)
   {
     if(Pike_sp[1-args].type != T_INT)
