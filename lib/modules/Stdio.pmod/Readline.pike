@@ -1,4 +1,4 @@
-// $Id: Readline.pmod,v 1.3 1999/03/14 01:42:24 marcus Exp $
+// $Id: Readline.pike,v 1.1 1999/03/15 17:15:53 marcus Exp $
 
 class OutputController
 {
@@ -706,281 +706,237 @@ class History
 
 }
 
-class Readline
+
+static private object(OutputController) output_controller;
+static private object(InputController) input_controller;
+static private string prompt="";
+static private string text="", readtext;
+static private function(string:void) newline_func;
+static private int cursorpos = 0;
+static private object(History) historyobj = 0;
+
+object(OutputController) get_output_controller()
 {
-  static private object(OutputController) output_controller;
-  static private object(InputController) input_controller;
-  static private string prompt="";
-  static private string text="", readtext;
-  static private function(string:void) newline_func;
-  static private int cursorpos = 0;
-  static private object(History) historyobj = 0;
+  return output_controller;
+}
 
-  object(OutputController) get_output_controller()
+object(InputController) get_input_controller()
+{
+  return input_controller;
+}
+
+string get_prompt()
+{
+  return prompt;
+}
+
+string set_prompt(string newp)
+{
+  string oldp = prompt;
+  prompt = newp;
+  return oldp;
+}
+
+string gettext()
+{
+  return text;
+}
+
+int getcursorpos()
+{
+  return cursorpos;
+}
+
+int setcursorpos(int p)
+{
+  if (p<0)
+    p = 0;
+  if (p>strlen(text))
+    p = strlen(text);
+  if (p<cursorpos)
   {
-    return output_controller;
+    output_controller->move_backward(text[p..cursorpos-1]);
+    cursorpos = p;
   }
-
-  object(InputController) get_input_controller()
+  else if (p>cursorpos)
   {
-    return input_controller;
+    output_controller->move_forward(text[cursorpos..p-1]);
+    cursorpos = p;
   }
+  return cursorpos;
+}
 
-  string get_prompt()
+void insert(string s, int p)
+{
+  if (p<0)
+    p = 0;
+  if (p>strlen(text))
+    p = strlen(text);
+  setcursorpos(p);
+  output_controller->write(s);
+  cursorpos += strlen(s);
+  string rest = text[p..];
+  if (strlen(rest))
   {
-    return prompt;
+    output_controller->write(rest);
+    output_controller->move_backward(rest);
   }
+  text = text[..p-1]+s+rest;
+}
 
-  string set_prompt(string newp)
-  {
-    string oldp = prompt;
-    prompt = newp;
-    return oldp;
+void delete(int p1, int p2)
+{
+  if (p1<0)
+    p1 = 0;
+  if (p2>strlen(text))
+    p2 = strlen(text);
+  setcursorpos(p1);
+  if (p1>=p2)
+    return;
+  output_controller->write(text[p2..]);
+  output_controller->erase(text[p1..p2-1]);
+  text = text[..p1-1]+text[p2..];
+  cursorpos = strlen(text);
+  setcursorpos(p1);
+}
+
+void history(int n)
+{
+  if(historyobj) {
+    string h = historyobj->history(n, text);
+    delete(0, sizeof(text));
+    insert(h, 0);
   }
+}
 
-  string gettext()
-  {
-    return text;
+void delta_history(int d)
+{
+  if(historyobj)
+    history(historyobj->get_history_num()+d);
+}
+
+void redisplay(int clear, int|void nobackup)
+{
+  int p = cursorpos;
+  if(clear)
+    output_controller->clear();
+  else if(!nobackup) {
+    setcursorpos(0);
+    output_controller->bol();
+    output_controller->clear(1);
   }
-
-  int getcursorpos()
-  {
-    return cursorpos;
-  }
-
-  int setcursorpos(int p)
-  {
-    if (p<0)
-      p = 0;
-    if (p>strlen(text))
-      p = strlen(text);
-    if (p<cursorpos)
-    {
-      output_controller->move_backward(text[p..cursorpos-1]);
-      cursorpos = p;
-    }
-    else if (p>cursorpos)
-    {
-      output_controller->move_forward(text[cursorpos..p-1]);
-      cursorpos = p;
-    }
-    return cursorpos;
-  }
-
-  void insert(string s, int p)
-  {
-    if (p<0)
-      p = 0;
-    if (p>strlen(text))
-      p = strlen(text);
-    setcursorpos(p);
-    output_controller->write(s);
-    cursorpos += strlen(s);
-    string rest = text[p..];
-    if (strlen(rest))
-    {
-      output_controller->write(rest);
-      output_controller->move_backward(rest);
-    }
-    text = text[..p-1]+s+rest;
-  }
-
-  void delete(int p1, int p2)
-  {
-    if (p1<0)
-      p1 = 0;
-    if (p2>strlen(text))
-      p2 = strlen(text);
-    setcursorpos(p1);
-    if (p1>=p2)
-      return;
-    output_controller->write(text[p2..]);
-    output_controller->erase(text[p1..p2-1]);
-    text = text[..p1-1]+text[p2..];
-    cursorpos = strlen(text);
-    setcursorpos(p1);
-  }
-
-  void history(int n)
-  {
-    if(historyobj) {
-      string h = historyobj->history(n, text);
-      delete(0, sizeof(text));
-      insert(h, 0);
-    }
-  }
-
-  void delta_history(int d)
-  {
-    if(historyobj)
-      history(historyobj->get_history_num()+d);
-  }
-
-  void redisplay(int clear, int|void nobackup)
-  {
-    int p = cursorpos;
-    if(clear)
-      output_controller->clear();
-    else if(!nobackup) {
-      setcursorpos(0);
-      output_controller->bol();
-      output_controller->clear(1);
-    }
-    output_controller->check_columns();
-    if(newline_func == read_newline)
-      output_controller->write(prompt);
-    output_controller->write(text);
-    cursorpos = sizeof(text);
-    setcursorpos(p);
-  }
-
-  static private void initline()
-  {
-    text = "";
-    cursorpos = 0;
-    if (historyobj)
-      historyobj->initline();
-  }
-
-  string newline()
-  {
-    setcursorpos(sizeof(text));
-    output_controller->newline();
-    string data = text;
-    if (historyobj)
-      historyobj->finishline(text);
-    initline();
-    if(newline_func)
-      newline_func(data);
-  }
-
-  void eof()
-  {
-    if (historyobj)
-      historyobj->finishline(text);
-    initline();
-    if(newline_func)
-      newline_func(0);    
-  }
-
-  void message(string msg)
-  {
-    int p = cursorpos;
-    setcursorpos(strlen(text));
-    output_controller->newline();
-    foreach(msg/"\n", string l) {
-      output_controller->write(l);
-      output_controller->newline();
-    }
-    redisplay(0, 1);
-    setcursorpos(p);
-  }
-
-  void list_completions(array(string) c)
-  {
-    message(sprintf("%-"+output_controller->get_number_of_columns()+"#s",
-		    c*"\n"));
-  }
-
-  static private void read_newline(string s)
-  {
-    input_controller->disable();
-    readtext = s;
-  }
-
-  void set_nonblocking(function f)
-  {
-    if (newline_func = f)
-      input_controller->enable();
-    else
-      input_controller->disable();
-  }
-
-  void set_blocking()
-  {
-    set_nonblocking(0);
-  }
-
-  string read()
-  {
-    if(newline_func == read_newline)
-      return 0;
-    function oldnl = newline_func;
+  output_controller->check_columns();
+  if(newline_func == read_newline)
     output_controller->write(prompt);
-    initline();
-    newline_func = read_newline;
-    readtext = "";
-    input_controller->run_blocking();
-    set_nonblocking(oldnl);
-    return readtext;
-  }
-
-  void enable_history(object(History)|int hist)
-  {
-    if (objectp(hist))
-      historyobj = hist;
-    else if(!hist)
-      historyobj = 0;
-    else if(historyobj)
-      historyobj->set_max_history(hist);
-    else
-      historyobj = History(hist);
-  }
-
-  void destroy()
-  {
-    destruct(input_controller);
-    destruct(output_controller);
-  }
-
-  void create(object|void infd, object|string|void interm,
-	      object|void outfd, object|string|void outterm)
-  {
-    output_controller = OutputController(outfd || infd, outterm || interm);
-    input_controller = InputController(infd, interm);
-    DefaultEditKeys(this_object());
-  }
+  output_controller->write(text);
+  cursorpos = sizeof(text);
+  setcursorpos(p);
 }
 
-
-
-/* Emulation of old readline() function.  Don't use in new code. */
-
-static private object(History) readline_history = History(512);
-
-string readline(string prompt, function|void complete_callback)
+static private void initline()
 {
-  object rl = Readline();
-  rl->enable_history(readline_history);
-  rl->set_prompt(prompt);
-  if(complete_callback)
-    rl->get_input_controller()->
-      bind("^I", lambda() {
-		   array(string) compl = ({ });
-		   string c, buf = rl->gettext();
-		   int st = 0, point = rl->getcursorpos();
-		   int wordstart = search(replace(reverse(buf),
-						  ({"\t","\r","\n"}),
-						  ({" "," "," "})),
-					  " ", sizeof(buf)-point);
-		   string word = buf[(wordstart>=0 && sizeof(buf)-wordstart)..
-				    point-1];
-		   while((c = complete_callback(word, st++, buf, point)))
-		     compl += ({ c });
-		   switch(sizeof(compl)) {
-		   case 0:
-		     break;
-		   case 1:
-		     rl->delete(point-sizeof(word), point);
-		     rl->insert(compl[0], point-sizeof(word));
-		     rl->setcursorpos(point-sizeof(word)+sizeof(compl[0]));
-		     break;
-		   default:
-		     rl->list_completions(compl);
-		     break;
-		   }
-		 });
-  string res = rl->read();
-  destruct(rl);
-  return res;
+  text = "";
+  cursorpos = 0;
+  if (historyobj)
+    historyobj->initline();
 }
+
+string newline()
+{
+  setcursorpos(sizeof(text));
+  output_controller->newline();
+  string data = text;
+  if (historyobj)
+    historyobj->finishline(text);
+  initline();
+  if(newline_func)
+    newline_func(data);
+}
+
+void eof()
+{
+  if (historyobj)
+    historyobj->finishline(text);
+  initline();
+  if(newline_func)
+    newline_func(0);    
+}
+
+void message(string msg)
+{
+  int p = cursorpos;
+  setcursorpos(strlen(text));
+  output_controller->newline();
+  foreach(msg/"\n", string l) {
+    output_controller->write(l);
+    output_controller->newline();
+  }
+  redisplay(0, 1);
+  setcursorpos(p);
+}
+
+void list_completions(array(string) c)
+{
+  message(sprintf("%-"+output_controller->get_number_of_columns()+"#s",
+		  c*"\n"));
+}
+
+static private void read_newline(string s)
+{
+  input_controller->disable();
+  readtext = s;
+}
+
+void set_nonblocking(function f)
+{
+  if (newline_func = f)
+    input_controller->enable();
+  else
+    input_controller->disable();
+}
+
+void set_blocking()
+{
+  set_nonblocking(0);
+}
+
+string read()
+{
+  if(newline_func == read_newline)
+    return 0;
+  function oldnl = newline_func;
+  output_controller->write(prompt);
+  initline();
+  newline_func = read_newline;
+  readtext = "";
+  input_controller->run_blocking();
+  set_nonblocking(oldnl);
+  return readtext;
+}
+
+void enable_history(object(History)|int hist)
+{
+  if (objectp(hist))
+    historyobj = hist;
+  else if(!hist)
+    historyobj = 0;
+  else if(historyobj)
+    historyobj->set_max_history(hist);
+  else
+    historyobj = History(hist);
+}
+
+void destroy()
+{
+  destruct(input_controller);
+  destruct(output_controller);
+}
+
+void create(object|void infd, object|string|void interm,
+	    object|void outfd, object|string|void outterm)
+{
+  output_controller = OutputController(outfd || infd, outterm || interm);
+  input_controller = InputController(infd, interm);
+  DefaultEditKeys(this_object());
+}
+
