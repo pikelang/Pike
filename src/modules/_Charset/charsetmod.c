@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.45 2004/08/17 20:45:26 nilsson Exp $
+|| $Id: charsetmod.c,v 1.46 2004/09/18 21:34:44 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.45 2004/08/17 20:45:26 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -248,14 +247,14 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
 static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
 			   struct std_cs_stor *s)
 {
-  static int utf8len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   1, 1, 1, 1, 1, 1, 1, 1,
-			   2, 2, 2, 2, 3, 3, 4, 5 };
+  static const int utf8len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0,
+				 0, 0, 0, 0, 0, 0, 0, 0,
+				 1, 1, 1, 1, 1, 1, 1, 1,
+				 2, 2, 2, 2, 3, 3, 4, 5 };
   static const unsigned INT32 utf8of[] = { 0ul, 0x3080ul, 0xe2080ul,
 					   0x3c82080ul, 0xfa082080ul,
 					   0x82082080ul };

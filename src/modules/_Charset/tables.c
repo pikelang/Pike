@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.20 2004/08/17 20:15:08 nilsson Exp $
+|| $Id: tables.c,v 1.21 2004/09/18 21:35:23 nilsson Exp $
 */
 
 #include "iso2022.h"
@@ -16938,4 +16938,4 @@ const struct charset_def charset_map[] = {
   { "x0212", map_JIS_X0212_1990, MODE_9494 },                         /* :: x0212 */
   { "yu", map_JUS_I_B1_002, MODE_94 },                                /* :: yu */
 };
-int num_charset_def = sizeof(charset_map)/sizeof(charset_map[0]);
+const int num_charset_def = sizeof(charset_map)/sizeof(charset_map[0]);
