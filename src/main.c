@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.175 2003/04/28 00:32:43 mast Exp $
+|| $Id: main.c,v 1.176 2003/06/05 21:50:16 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.175 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: main.c,v 1.176 2003/06/05 21:50:16 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -936,7 +936,7 @@ void low_exit_main(void)
 	fprintf (stderr, NAME "s left: %"PRINTSIZET"d\n", num);		\
     } while (0)
 
-    REPORT_LINKED_LIST_LEAKS (array, &empty_array, &empty_array, T_ARRAY, "Array");
+    REPORT_LINKED_LIST_LEAKS (array, empty_array.next, &weak_empty_array, T_ARRAY, "Array");
     REPORT_LINKED_LIST_LEAKS (multiset, first_multiset, NULL, T_MULTISET, "Multiset");
     REPORT_LINKED_LIST_LEAKS (mapping, first_mapping, NULL, T_MAPPING, "Mapping");
     REPORT_LINKED_LIST_LEAKS (program, first_program, NULL, T_PROGRAM, "Program");
@@ -958,7 +958,7 @@ void low_exit_main(void)
       }									\
     } while (0)
 
-    ZAP_LINKED_LIST_LEAKS (array, weak_shrink_empty_array.next, &empty_array);
+    ZAP_LINKED_LIST_LEAKS (array, empty_array.next, &weak_empty_array);
     ZAP_LINKED_LIST_LEAKS (multiset, first_multiset, NULL);
     ZAP_LINKED_LIST_LEAKS (mapping, first_mapping, NULL);
     ZAP_LINKED_LIST_LEAKS (program, first_program, NULL);
