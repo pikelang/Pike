@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.14 1998/10/14 05:47:06 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.15 1999/01/21 09:11:42 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -16,6 +16,10 @@ int foo(string opt)
 
 mapping(string:int) cond_cache=([]);
 
+#if constant(thread_create)
+#define HAVE_DEBUG
+#endif
+
 int main(int argc, string *argv)
 {
   int e, verbose, successes, errors, t, check;
@@ -24,6 +28,18 @@ int main(int argc, string *argv)
   int start, fail, mem;
   int loop=1;
   int end=0x7fffffff;
+  string extra_info="";
+
+
+#if constant(signal) && constant(signum)
+  if(signum("SIGQUIT")>=0)
+  {
+    signal(signum("SIGQUIT"),lambda()
+	   {
+	     master()->handle_error( ({"\nSIGQUIT recived, printing backtrace and continuing.\n",backtrace() }) );
+	   });
+  }
+#endif
 
   string *args=backtrace()[0][3];
   args=args[..sizeof(args)-1-argc];
@@ -39,6 +55,9 @@ int main(int argc, string *argv)
     ({"trace",Getopt.MAY_HAVE_ARG,({"-t","--trace"})}),
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
     ({"mem",Getopt.MAY_HAVE_ARG,({"-m","--mem","--memory"})}),
+#ifdef HAVE_DEBUG
+    ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
+#endif
     )),array opt)
     {
       switch(opt[0])
@@ -55,6 +74,29 @@ int main(int argc, string *argv)
 	case "trace": t+=foo(opt[1]); break;
 	case "check": check+=foo(opt[1]); break;
 	case "mem": mem+=foo(opt[1]); break;
+
+#ifdef HAVE_DEBUG
+	case "debug":
+	{
+	  object p=Stdio.Port();
+	  p->bind(0);
+	  werror("Debug port is: %s\n",p->query_address());
+	  sscanf(p->query_address(),"%*s %d",int portno);
+	  extra_info+=sprintf(" dport:%d",portno);
+	  thread_create(lambda(object p){
+	    while(p)
+	    {
+	      if(object o=p->accept())
+	      {
+		object q=Stdio.FILE();
+		q->assign(o);
+		destruct(o);
+		Tools.Hilfe.GenericHilfe(q,q);
+	      }
+	    }
+	  },p);
+	}
+#endif
       }
     }
 
@@ -121,7 +163,7 @@ int main(int argc, string *argv)
 	
 	if(verbose)
 	{
-	  werror("Doing test %d (%d total)\n",e+1,successes+errors+1);
+	  werror("Doing test %d (%d total)%s\n",e+1,successes+errors+1,extra_info);
 	  if(verbose>1)
 	    werror(test+"\n");
 	}
