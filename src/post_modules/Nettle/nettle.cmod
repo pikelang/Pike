@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.35 2004/03/20 12:51:13 grubba Exp $");
+RCSID("$Id: nettle.cmod,v 1.36 2004/03/24 00:08:30 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -300,6 +300,7 @@ static struct object *make_cipher_object(INT32 args) {
 
 
 /*! @class CBC
+ *! @belongs Crypto
  *! Implementation of the cipher block chaining mode (CBC). Works as
  *! a wrapper for the cipher algorithm put in create.
  */
@@ -523,6 +524,7 @@ PIKECLASS CBC
  */
 
 /*! @class Buffer
+ *! @belongs Crypto
  *! Acts as a buffer so that data can be fed to a cipher in blocks
  *! that doesn't correspond to cipher block sizes.
  */
