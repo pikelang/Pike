@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.38 1999/10/06 15:25:46 grubba Exp $");
+RCSID("$Id: error.c,v 1.39 1999/10/06 15:30:05 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -110,7 +110,7 @@ struct svalue throw_value = { T_INT };
 int throw_severity;
 static const char *in_error;
 
-void low_error(char *buf)
+void low_error(char *buf) ATTRIBUTE((noreturn))
 {
   push_error(buf);
   free_svalue(& throw_value);

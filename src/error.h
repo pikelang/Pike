@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.37 1999/08/06 14:31:16 grubba Exp $
+ * $Id: error.h,v 1.38 1999/10/06 15:29:49 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -173,7 +173,7 @@ void check_recovery_context(void);
 JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
 void pike_throw(void) ATTRIBUTE((noreturn));
 void push_error(char *description);
-void low_error(char *buf);
+void low_error(char *buf) ATTRIBUTE((noreturn));
 void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
