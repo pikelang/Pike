@@ -905,8 +905,6 @@ mapping parse_attributes(array attr, void|string location)
   return attributes;
 }
 
-string file;
-
 /*
  * Generate an #ifdef/#else/#endif
  */
@@ -1183,9 +1181,8 @@ array generate_overload_func_for(array(FuncData) d,
 
 #endif
 
-/*
- * Parse a block of code
- */
+// Parses a block of cmod code, separating it into declarations,
+// functions to add, exit functions and other code.
 class ParseBlock
 {
   array code=({});
@@ -1193,9 +1190,9 @@ class ParseBlock
   array exitfuncs=({});
   array declarations=({});
 
-  void create(array x, string base)
+  void create(array(array|PC.Token) x, string base)
     {
-      array ret=x;
+      array(array|PC.Token) ret=x;
 
       x=ret/({"PIKECLASS"});
       ret=x[0];
@@ -1915,7 +1912,7 @@ int main(int argc, array(string) argv)
 {
   mixed x;
 
-  file=argv[1];
+  string file = argv[1];
   x=Stdio.read_file(file);
   x=PC.split(x);
   x=PC.tokenize(x,file);
@@ -1958,7 +1955,10 @@ int main(int argc, array(string) argv)
     werror("Warning: EXIT without INIT. Added PIKE_MODULE_INIT.\n");
   }
   tmp->code = x;
+
+  // FIXME: This line is fishy; there is no optfuncs in ParseBlock.
   x=recursive(replace,x,PC.Token("OPTIMIZE",0),tmp->optfuncs);
+
   x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp->declarations);
 
   if(equal(x,tmp->code))
