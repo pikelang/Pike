@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.44 1998/04/09 02:42:31 hubbe Exp $");
+RCSID("$Id: object.c,v 1.45 1998/04/14 20:04:39 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -21,6 +21,7 @@ RCSID("$Id: object.c,v 1.44 1998/04/09 02:42:31 hubbe Exp $");
 #include "callback.h"
 #include "cpp.h"
 #include "builtin_functions.h"
+#include "cyclic.h"
 
 #include "dmalloc.h"
 
@@ -247,8 +248,15 @@ void destruct(struct object *o)
   e=FIND_LFUN(o->prog,LFUN_DESTROY);
   if(e != -1)
   {
-    safe_apply_low(o, e, 0);
-    pop_stack();
+    /* We do not want to call destroy() if it already being called */
+    DECLARE_CYCLIC();
+    if(!BEGIN_CYCLIC(o,0))
+    {
+      SET_CYCLIC_RET(1);
+      safe_apply_low(o, e, 0);
+      pop_stack();
+      END_CYCLIC();
+    }
   }
 
   /* destructed in destroy() */
