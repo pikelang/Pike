@@ -48,28 +48,68 @@ Package: pike7.4-mysql
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Mysql module for Pike
- This Pike module provides access to Mysql databases.
+ This module extends Pike with the ability to access and manipulate
+ MySQL databases.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-pg
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Postgres module for Pike
- This Pike module provides access to Postgres databases.
+ This module extends Pike with the ability to access and manipulate
+ PostgreSQL databases.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-odbc
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Odbc module for Pike
- This Pike module provides glue to the iOdbc interface.
+ This module extends Pike with the ability to connect to any databases
+ which have ODBC drivers available. The functionality is implemented
+ as an iterface to the iODBC library.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-svg
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Suggests: pike7.4-image (=${Source-Version})
 Description: SVG format support for Pike
- This module provides an SVG graphics format module. It has
+ This module provides an SVG graphics format support. It has
  been separated from the pike7.4-image module because of its
- quite extensive dependencies.
+ extensive dependencies.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-image
 Architecture: any
@@ -77,44 +117,115 @@ Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Suggests: pike7.4-svg (=${Source-Version})
 Description: Image module for Pike
  This module provides many powerful image processing functions to
- Pike programs.
+ Pike programs. The image formats supported are, among others, PNG,
+ JPEG, GIF, XCF, PPM, BMP and others.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-sdl
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: SDL module for Pike
- This module provides the Pike interface to the SDL library.
+ This module extends Pike with the ability to write programs that
+ take advantage of the SDL graphics library.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-gdbm
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Gdbm module for Pike
- This Pike module provides access to gdbm databases.
+ This module extends Pike with the ability to access and manipulate
+ databases created with the GDBM library.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-gtk
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: GTK module for Pike
- This Pike module provides access to the GTK+ library.
+ This module extends Pike with the ability to write programs that take
+ advantage of the GTK+ GUI toolkit.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-gl
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Mesa module for Pike
- This Pike module provides access to the Mesa 3D graphics library.
+ This module extends Pike with the ability to create programs that
+ take advantage of the OpenGL API as implemented in the Mesa 3D
+ library.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-sane
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: SANE module for Pike
- This Pike module provides access to SANE.
+ This module extends Pike with the ability to access image scanners
+ using the SANE library.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-perl
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Perl module for Pike
- This Pike module enables one to embed perl in the pike
- programs.
+ This module embeds the Perl interpreter within Pike. It allows one to
+ interpret Perl scripts without the need of forking a separate Perl
+ interpreter process.
+ .
+ Pike is an interpreted, object-oriented, dynamic programming language
+ with a syntax similar to C. It includes many powerful data types and
+ a module system that, for instance, provides image manipulation together,
+ with support for graphics formats like SVG, JPG, PNG, GIF, XCF and many
+ others,  database connectivity, advanced cryptography, XML/HTML parsers
+ and others. To learn more about pike, please visit http://pike.ida.liu.se/
+ Note that some of the  Pike features are found in other pike7.4-* packages 
+ (image processing, mysql, postgresql, sane and more).
 
 Package: pike7.4-dev
 Architecture: all
@@ -135,7 +246,8 @@ Package: pike7.4-manual
 Architecture: all
 Section: doc
 Description: Pike 7.4 manual
- The Pike manual auto-generated from the sources.
+ The Pike manual auto-generated from the sources. Documentation is
+ provided in the HTML format.
  .
  Pike is an interpreted, object-oriented, dynamic programming language
  with a syntax similar to C. It includes many powerful data types and
@@ -148,7 +260,8 @@ Package: pike7.4-reference
 Architecture: all
 Section: doc
 Description: Pike 7.4 reference
- The Pike reference auto-generated from the sources.
+ The Pike reference auto-generated from the sources. Documentation is
+ provided in the HTML format.
  .
  Pike is an interpreted, object-oriented, dynamic programming language
  with a syntax similar to C. It includes many powerful data types and

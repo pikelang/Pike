@@ -1,3 +1,28 @@
+pike7.4 (7.4.27-1) unstable; urgency=high
+
+  * Latest upstream version. The most important changes:
+        * src/multiset.c: Added more tracking in the gc to help 
+	  track down bugs when the gc follows munged pointers in 
+	  the mark pass. Activated with GC_MARK_DEBUG.
+	* src/: array.c, gc.c, gc.h, mapping.c, object.c, program.c,
+	  svalue.c: Added more tracking in the gc to help track 
+	  down bugs when the gc follows munged pointers in the 
+	  mark pass. Activated with GC_MARK_DEBUG.
+	* src/modules/Parser/: html.c, testsuite.in: Fixed a bug 
+	  that could cause the parser to hang when a tag callback 
+	  returned the empty string and there's a data callback 
+	  registered.
+  * Description fixes for the following packages:
+     - pike7.4-gdbm (closes: Bug#209751)
+     - pike7.4-gtk (closes: Bug#209632)
+     - pike7.4-mysql (closes: Bug#209653)
+     - pike7.4-gl (closes: Bug#209927)
+     - pike7.4-odbc (closes: Bug#209916)
+     - pike7.4-pg (closes: Bug#209744)
+     - pike7.4-sane (closes: Bug#209771)
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 10 Sep 2003 00:05:46 +0200
+
 pike7.4 (7.4.25-1) unstable; urgency=low
 
   * Latest upstream version. The most important changes:
