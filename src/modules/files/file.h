@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.15 2000/02/03 19:05:37 grubba Exp $
+ * $Id: file.h,v 1.16 2000/08/04 18:33:02 grubba Exp $
  */
 
 #ifndef FILE_H
@@ -52,7 +52,7 @@ struct my_file
 #ifndef HAVE_STRUCT_IOVEC
 struct iovec {
   void *iov_base;
-  int iov_len;
+  size_t iov_len;
 };
 #endif /* !HAVE_STRUCT_IOVEC */
 
