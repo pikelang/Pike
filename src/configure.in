@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.653 2002/12/07 16:34:10 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.654 2002/12/07 17:14:28 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -52,7 +52,7 @@ AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
              [], [enable_make_conf=yes])
 
-if test "x$enable_make_conf" == x"yes" -a -f /etc/make.conf; then
+if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
   set >conftest.tmp
   echo Using settings from /etc/make.conf...
   source /etc/make.conf
