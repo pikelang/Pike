@@ -61,6 +61,9 @@
 /* Define if you have the <setjmp.h> header file.  */
 #undef HAVE_SETJMP_H
 
+/* Define if you have the <limits.h> header file.  */
+#undef HAVE_LIMITS_H
+
 /* more header files */
 #undef HAVE_FCNTL_H
 #undef HAVE_SYS_FILIO_H
@@ -145,6 +148,9 @@
 
 /* Define if you have strcasecmp */
 #undef HAVE_STRCASECMP
+
+/* Define if you have isspace */
+#undef HAVE_ISSPACE
 
 /* Define if you have strtod */
 #undef HAVE_STRTOD

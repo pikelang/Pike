@@ -79,7 +79,7 @@ long STRTOL(char *str,char **ptr,int base)
   if (base < 0 || base > MBASE)
     return (0);			/* base is invalid -- should be a fatal error */
   if (!isalnum(c = *str)) {
-    while (isspace(c))
+    while (ISSPACE(c))
       c = *++str;
     switch (c) {
     case '-':
@@ -125,7 +125,7 @@ int STRCASECMP(const char *a,const char *b)
 
     if(ac && isupper(ac)) ac=tolower(ac);
     if(bc && isupper(bc)) bc=tolower(bc);
-    if(ac != bc) return 1;
+    if(ac - bc) return ac-bc;
     if(!ac) return 0;
   }
 }
@@ -265,7 +265,7 @@ double STRTOD(char * nptr, char **endptr)
   s = nptr;
 
   /* Eat whitespace.  */
-  while (isspace(*s)) ++s;
+  while (ISSPACE(*s)) ++s;
 
   /* Get the sign.  */
   sign = *s == '-' ? -1 : 1;

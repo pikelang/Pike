@@ -107,7 +107,7 @@ void free_svalue(struct svalue *s)
 	break;
 
       case T_FUNCTION:
-	if(s->subtype == -1)
+	if(s->subtype == FUNCTION_BUILTIN)
 	{
 	  really_free_callable(s->u.efun);
 	  break;
@@ -168,7 +168,7 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
     {
       if(s->u.refs[0]--==0)
       {
-	if(s->subtype == -1)
+	if(s->subtype == FUNCTION_BUILTIN)
 	  really_free_callable(s->u.efun);
 	else
 	  really_free_object(s->u.object);
@@ -691,7 +691,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 
 
     case T_FUNCTION:
-      if(s->subtype == -1)
+      if(s->subtype == FUNCTION_BUILTIN)
       {
 	my_binary_strcat(s->u.efun->name->str,s->u.efun->name->len);
       }else{
@@ -838,7 +838,7 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
     switch(s->type)
     {
     case T_FUNCTION:
-      if(s->subtype == -1) break;
+      if(s->subtype == FUNCTION_BUILTIN) break;
 
     case T_OBJECT:
       if(s->u.object->prog)
@@ -901,7 +901,7 @@ void gc_mark_svalues(struct svalue *s, int num)
     case T_PROGRAM: gc_mark_program_as_referenced(s->u.program); break;
 
     case T_FUNCTION:
-      if(s->subtype == -1) break;
+      if(s->subtype == FUNCTION_BUILTIN) break;
 
     case T_OBJECT:
       if(s->u.object->prog)

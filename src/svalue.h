@@ -41,7 +41,7 @@ union anything
 struct svalue
 {
   unsigned INT16 type;
-  INT16 subtype;
+  unsigned INT16 subtype;
   union anything u;
 };
 
@@ -93,6 +93,8 @@ struct svalue
 #define NUMBER_NUMBER 0
 #define NUMBER_UNDEFINED 1
 #define NUMBER_DESTRUCTED 2
+
+#define FUNCTION_BUILTIN USHRT_MAX
 
 #define is_gt(a,b) is_lt(b,a)
 #define IS_ZERO(X) ((X)->type==T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)

@@ -319,7 +319,7 @@ char *low_get_f_name(int n,struct program *p)
     if(p &&
        (int)p->num_constants > (int)(n-F_MAX_OPCODE) &&
        p->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
-       (p->constants[n-F_MAX_OPCODE].subtype == -1) &&
+       (p->constants[n-F_MAX_OPCODE].subtype == FUNCTION_BUILTIN) &&
        p->constants[n-F_MAX_OPCODE].u.efun)
     {
       return p->constants[n-F_MAX_OPCODE].u.efun->name->str;
@@ -343,7 +343,7 @@ char *get_f_name(int n)
     if(fp && fp->context.prog &&
        (int)fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
        fp->context.prog->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
-       (short)fp->context.prog->constants[n-F_MAX_OPCODE].subtype == -1 &&
+       fp->context.prog->constants[n-F_MAX_OPCODE].subtype == FUNCTION_BUILTIN &&
        fp->context.prog->constants[n-F_MAX_OPCODE].u.efun)
     {
       return fp->context.prog->constants[n-F_MAX_OPCODE].u.efun->name->str;
@@ -677,7 +677,7 @@ static int GOBBLE(char c)
 }
 
 #define LOOK() (istate->look())
-#define SKIPWHITE() { int c; while(isspace(c=GETC())); UNGETC(c); }
+#define SKIPWHITE() { int c; while(ISSPACE(c=GETC())); UNGETC(c); }
 #define SKIPTO(X) { int c; while((c=GETC())!=(X) && (c!=MY_EOF)); }
 #define SKIPUPTO(X) { int c; while((c=GETC())!=(X) && (c!=MY_EOF)); UNGETC(c); }
 #define READBUF(X) { \
@@ -903,7 +903,7 @@ static int expand_define(struct pike_string *s, int save_newline)
     {
       SKIPWHITE();
     }else{
-      do { e=GETC(); }while(isspace(e) && e!='\n');
+      do { e=GETC(); }while(ISSPACE(e) && e!='\n');
       UNGETC(e);
     }
 
@@ -1113,7 +1113,7 @@ static void do_skip(int to)
 	  READBUF(C!='\n');
 	  if(buf[0]=='"' &&
 	     buf[strlen(buf)-1]=='2' &&
-	     isspace(buf[strlen(buf)-2]))
+	     ISSPACE(buf[strlen(buf)-2]))
 	  {
 	    if(lvl)
 	    {

@@ -484,7 +484,7 @@ void f_function_object(INT32 args)
   if(sp[-args].type != T_FUNCTION)
     error("Bad argument 1 to function_object.\n");
 
-  if(sp[-args].subtype == -1)
+  if(sp[-args].subtype == FUNCTION_BUILTIN)
   {
     pop_n_elems(args);
     push_int(0);
@@ -502,7 +502,7 @@ void f_function_name(INT32 args)
   if(sp[-args].type != T_FUNCTION)
     error("Bad argument 1 to function_object.\n");
 
-  if(sp[-args].subtype == -1)
+  if(sp[-args].subtype == FUNCTION_BUILTIN)
   {
     pop_n_elems(args);
     push_int(0);
@@ -1124,7 +1124,7 @@ void f_functionp(INT32 args)
 {
   if(args<1) error("Too few arguments to functionp.\n");
   if(sp[-args].type != T_FUNCTION ||
-     (sp[-args].subtype != -1 && !sp[-args].u.object->prog))
+     (sp[-args].subtype != FUNCTION_BUILTIN && !sp[-args].u.object->prog))
   {
     pop_n_elems(args);
     push_int(0);

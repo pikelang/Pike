@@ -166,7 +166,7 @@ node *mknode(short token,node *a,node *b)
   case F_APPLY:
     if(a && a->token == F_CONSTANT &&
        a->u.sval.type == T_FUNCTION &&
-       (short)a->u.sval.subtype == -1)
+       a->u.sval.subtype == FUNCTION_BUILTIN)
     {
       res->node_info |= a->u.sval.u.efun->flags;
     }else{
@@ -414,7 +414,7 @@ node *mksvaluenode(struct svalue *s)
 
   case T_FUNCTION:
   {
-    if((short)s->subtype != -1)
+    if(s->subtype != FUNCTION_BUILTIN)
     {
       if(s->u.object == &fake_object)
 	return mkidentifiernode(s->subtype);
@@ -1167,7 +1167,7 @@ static void optimize(node *n)
     case F_APPLY:
       if(CAR(n)->token == F_CONSTANT &&
 	 CAR(n)->u.sval.type == T_FUNCTION &&
-	 (short)CAR(n)->u.sval.subtype == -1 && /* driver fun? */
+	 CAR(n)->u.sval.subtype == FUNCTION_BUILTIN && /* driver fun? */
 	 CAR(n)->u.sval.u.efun->optimize)
       {
 	if(tmp1=CAR(n)->u.sval.u.efun->optimize(n))
@@ -1372,7 +1372,7 @@ static void optimize(node *n)
 	   CAR(opnode) &&
 	   CAR(opnode)->token == F_CONSTANT &&
 	   CAR(opnode)->u.sval.type == T_FUNCTION &&
-	   (short)CAR(opnode)->u.sval.subtype == -1)
+	   CAR(opnode)->u.sval.subtype == FUNCTION_BUILTIN)
 	{
 	  if(CAR(opnode)->u.sval.u.efun->function == f_gt)
 	    oper=F_GT;

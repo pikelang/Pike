@@ -875,7 +875,6 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_RETURN_0);
       pop_n_elems(sp-fp->locals);
-      check_threads_etc();
       return;
 
       CASE(F_RETURN);
@@ -887,7 +886,6 @@ static void eval_instruction(unsigned char *pc)
       /* fall through */
 
       CASE(F_DUMB_RETURN);
-      check_threads_etc();
       return;
 
       CASE(F_NEGATE); 
@@ -1428,7 +1426,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
   switch(s->type)
   {
   case T_FUNCTION:
-    if(s->subtype == -1)
+    if(s->subtype == FUNCTION_BUILTIN)
     {
       (*(s->u.efun->function))(args);
     }else{

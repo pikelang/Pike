@@ -644,7 +644,7 @@ static int do_docode2(node *n,int flags)
     {
       if(CAR(n)->u.sval.type == T_FUNCTION)
       {
-	if(CAR(n)->u.sval.subtype == -1) /* driver fun? */
+	if(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN) /* driver fun? */
 	{
 	  if(!CAR(n)->u.sval.u.efun->docode || 
 	     !CAR(n)->u.sval.u.efun->docode(n))
@@ -954,7 +954,7 @@ static int do_docode2(node *n,int flags)
       return 1;
 
     case T_FUNCTION:
-      if(n->u.sval.subtype!=-1)
+      if(n->u.sval.subtype!=FUNCTION_BUILTIN)
       {
 	if(n->u.sval.u.object == &fake_object)
 	{

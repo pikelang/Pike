@@ -281,8 +281,8 @@ static int signum(char *name)
   int e;
   for(e=0;e<(int)NELEM(signal_desc)-1;e++)
   {
-    if(!strcasecmp(name,signal_desc[e].signame) ||
-       !strcasecmp(name,signal_desc[e].signame+3) )
+    if(!STRCASECMP(name,signal_desc[e].signame) ||
+       !STRCASECMP(name,signal_desc[e].signame+3) )
       return signal_desc[e].signum;
   }
   return -1;

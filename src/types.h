@@ -9,6 +9,15 @@
 #include "machine.h"
 /* we here define a few types with more defined values */
 
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#undef HAVE_LIMITS_H
+#endif
+
+#ifndef USHRT_MAX
+#define USHRT_MAX 65535
+#endif
+
 #define INT64 long long
 
 #if SIZEOF_SHORT >= 4

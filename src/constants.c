@@ -91,7 +91,7 @@ void add_efun2(char *name,
 
   n=make_shared_string(name);
   s.type=T_FUNCTION;
-  s.subtype=-1;
+  s.subtype=FUNCTION_BUILTIN;
   s.u.efun=make_callable(fun, name, type, flags, optimize, docode);
   low_add_efun(n, &s);
   free_svalue(&s);

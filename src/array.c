@@ -457,7 +457,8 @@ void check_array_for_destruct(struct array *v)
     for(e=0; e<v->size; e++)
     {
       if((ITEM(v)[e].type == T_OBJECT ||
-	  (ITEM(v)[e].type == T_FUNCTION && ITEM(v)[e].subtype!=-1)) &&
+	  (ITEM(v)[e].type == T_FUNCTION &&
+	   ITEM(v)[e].subtype!=FUNCTION_BUILTIN)) &&
 	 (!ITEM(v)[e].u.object->prog))
       {
 	free_svalue(ITEM(v)+e);
@@ -492,7 +493,8 @@ INT32 array_find_destructed_object(struct array *v)
     for(e=0; e<v->size; e++)
     {
       if((ITEM(v)[e].type == T_OBJECT ||
-	  (ITEM(v)[e].type == T_FUNCTION && ITEM(v)[e].subtype!=-1)) &&
+	  (ITEM(v)[e].type == T_FUNCTION &&
+	   ITEM(v)[e].subtype!=FUNCTION_BUILTIN)) &&
 	 (!ITEM(v)[e].u.object->prog))
 	return e;
       types |= 1<<ITEM(v)[e].type;

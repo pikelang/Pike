@@ -245,7 +245,7 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-sys/resource.h sys/select.h sys/mman.h setjmp.h)
+sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -858,6 +858,29 @@ if test "$pike_cv_getrusage_procfs" = yes; then
 else
   AC_MSG_RESULT(no)
 fi
+
+
+AC_MSG_CHECKING(for isspace)
+AC_CACHE_VAL(pike_cv_have_func_isspace,
+[
+AC_TRY_LINK([
+#include <ctype.h>
+],[
+  if(isspace(' ')) exit(0);
+],
+  pike_cv_have_func_isspace=yes
+,
+  pike_cv_have_func_isspace=no
+)])
+
+if test "$pike_cv_have_func_isspace" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_FUNC_ISSPACE)
+else
+  AC_MSG_RESULT(no)
+fi
+
+
 
 AC_MSG_CHECKING(checking for volatile)
 AC_CACHE_VAL(pike_cv_volatile,

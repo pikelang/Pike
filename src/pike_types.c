@@ -203,7 +203,7 @@ static void internal_parse_typeA(char **s)
   char buf[80];
   unsigned int len;
 
-  while(isspace(**s)) ++*s;
+  while(ISSPACE(**s)) ++*s;
 
   len=0;
   for(len=0;isidchar(s[0][len]);len++)
@@ -224,11 +224,11 @@ static void internal_parse_typeA(char **s)
   else if(!strcmp(buf,"unknown")) push_type(T_UNKNOWN);
   else if(!strcmp(buf,"function"))
   {
-    while(isspace(**s)) ++*s;
+    while(ISSPACE(**s)) ++*s;
     if(**s == '(')
     {
       ++*s;
-      while(isspace(**s)) ++*s;
+      while(ISSPACE(**s)) ++*s;
       type_stack_mark();
       while(1)
       {
@@ -247,7 +247,7 @@ static void internal_parse_typeA(char **s)
 	if(**s==',')
 	{
 	  ++*s;
-	  while(isspace(**s)) ++*s;
+	  while(ISSPACE(**s)) ++*s;
 	}
 	else if(s[0][0]=='.' && s[0][1]=='.' && s[0][2]=='.')
 	{
@@ -255,7 +255,7 @@ static void internal_parse_typeA(char **s)
 	  push_type(T_MANY);
 	  type_stack_reverse();
 	  *s+=3;
-	  while(isspace(**s)) ++*s;
+	  while(ISSPACE(**s)) ++*s;
 	  if(**s != ':') error("Missing ':' after ... in function type.\n");
 	  break;
 	}
@@ -278,7 +278,7 @@ static void internal_parse_typeA(char **s)
   }
   else if(!strcmp(buf,"mapping"))
   {
-    while(isspace(**s)) ++*s;
+    while(ISSPACE(**s)) ++*s;
     if(**s == '(')
     {
       type_stack_mark();
@@ -302,7 +302,7 @@ static void internal_parse_typeA(char **s)
   }
   else if(!strcmp(buf,"array"))
   {
-    while(isspace(**s)) ++*s;
+    while(ISSPACE(**s)) ++*s;
     if(**s == '(')
     {
       ++*s;
@@ -316,7 +316,7 @@ static void internal_parse_typeA(char **s)
   }
   else if(!strcmp(buf,"multiset"))
   {
-    while(isspace(**s)) ++*s;
+    while(ISSPACE(**s)) ++*s;
     if(**s == '(')
     {
       ++*s;
@@ -331,13 +331,13 @@ static void internal_parse_typeA(char **s)
   else
     error("Couldn't parse type. (%s)\n",buf);
 
-  while(isspace(**s)) ++*s;
+  while(ISSPACE(**s)) ++*s;
 }
 
 
 static void internal_parse_typeB(char **s)
 {
-  while(isspace(**s)) ++*s;
+  while(ISSPACE(**s)) ++*s;
   switch(**s)
   {
   case '!':
@@ -349,7 +349,7 @@ static void internal_parse_typeB(char **s)
   case '(':
     ++*s;
     internal_parse_typeB(s);
-    while(isspace(**s)) ++*s;
+    while(ISSPACE(**s)) ++*s;
     if(**s != ')') error("Expecting ')'.\n");
     break;
     
@@ -363,12 +363,12 @@ static void internal_parse_typeCC(char **s)
 {
   internal_parse_typeB(s);
 
-  while(isspace(**s)) ++*s;
+  while(ISSPACE(**s)) ++*s;
   
   while(**s == '*')
   {
     ++*s;
-    while(isspace(**s)) ++*s;
+    while(ISSPACE(**s)) ++*s;
     push_type(T_ARRAY);
   }
 }
@@ -381,7 +381,7 @@ static void internal_parse_typeC(char **s)
   internal_parse_typeCC(s);
   type_stack_reverse();
 
-  while(isspace(**s)) ++*s;
+  while(ISSPACE(**s)) ++*s;
   
   if(**s == '&')
   {
@@ -400,7 +400,7 @@ static void internal_parse_type(char **s)
 {
   internal_parse_typeC(s);
 
-  while(isspace(**s)) ++*s;
+  while(ISSPACE(**s)) ++*s;
   
   while(**s == '|')
   {
@@ -950,7 +950,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   switch(s->type)
   {
   case T_FUNCTION:
-    if(s->subtype == -1)
+    if(s->subtype == FUNCTION_BUILTIN)
     {
       ret=s->u.efun->type;
     }else{
