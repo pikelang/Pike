@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.443 2002/09/12 13:15:49 marcus Exp $");
+RCSID("$Id: program.c,v 1.444 2002/09/21 18:22:14 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4874,6 +4874,14 @@ char *debug_get_program_line(struct program *prog,
     return "-";
   }
 }
+
+/* Variant for convenient use from a debugger. */
+void gdb_program_line (struct program *prog)
+{
+  INT32 line;
+  char *file = debug_get_program_line (prog, &line);
+  fprintf (stderr, "%s:%d\n", file, line);
+}
 #endif
 
 /*
@@ -5694,7 +5702,8 @@ struct program *compile(struct pike_string *aprog,
 
   if(c->handler)
   {
-    safe_apply(c->handler,"get_default_module",0);
+    safe_apply_handler ("get_default_module", c->handler, NULL,
+			0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO);
     if(SAFE_IS_ZERO(Pike_sp-1))
     {
       pop_stack();
@@ -6864,7 +6873,6 @@ PMOD_EXPORT void *parent_storage(int depth)
   return loc.o->storage + loc.inherit->storage_offset;
 }
 
-
 PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 {
   if(major == PIKE_MAJOR_VERSION && minor == PIKE_MINOR_VERSION)
@@ -6897,28 +6905,17 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
     compat_handler = dmalloc_touch(struct object *, sp[-1].u.object);
     sp--;
 
-    if (error_handler) {
-      safe_apply(error_handler, "get_default_module", 0);
-    } else {
-      push_int(0);
-    }
-    if (Pike_sp[-1].type == T_INT) {
+    safe_apply_handler ("get_default_module", error_handler, compat_handler,
+			0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO);
+    if(Pike_sp[-1].type == T_INT)
+    {
       pop_stack();
-      safe_apply(compat_handler, "get_default_module", 0);
-    
-      if(Pike_sp[-1].type == T_INT)
-      {
-	pop_stack();
-	ref_push_mapping(get_builtin_constants());
-      }
+      ref_push_mapping(get_builtin_constants());
     }
   }else{
     pop_stack();
-    if (error_handler) {
-      safe_apply(error_handler, "get_default_module", 0);
-    } else {
-      push_int(0);
-    }
+    safe_apply_handler ("get_default_module", error_handler, NULL,
+			0, BIT_MAPPING|BIT_OBJECT|BIT_ZERO);
     if (Pike_sp[-1].type == T_INT) {
       pop_stack();
       ref_push_mapping(get_builtin_constants());
