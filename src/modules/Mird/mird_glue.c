@@ -261,7 +261,7 @@ static void pmird_create(INT32 args)
       LOOKUP(sp[1-args],"flags");
       if (!IS_UNDEFINED(sp-1))
       {
-	 int i;
+	 ptrdiff_t i;
 	 if (sp[-1].type!=T_STRING ||
 	     sp[-1].u.string->size_shift)
 	    SIMPLE_BAD_ARG_ERROR("Mird",2,"\"flags\":8-bit string");
@@ -426,7 +426,7 @@ UNLOCK(this);
 LOCK(this);
       TRY(mird_s_key_lookup(db,(mird_key_t)table_id,
 			    (unsigned char*)(stringkey->str),
-			    (mird_size_t)(stringkey->len),
+			    DO_NOT_WARN((mird_size_t)(stringkey->len)),
 			    &data,
 			    &len));
 UNLOCK(this);
@@ -789,7 +789,7 @@ LOCK(this->parent);
       TRY(mird_key_store(mtr,(mird_key_t)table_id,
 			 (mird_key_t)hashkey,
 			 (unsigned char*)(data->str),
-			 (mird_size_t)(data->len)));
+			 DO_NOT_WARN((mird_size_t)(data->len))));
 UNLOCK(this->parent);
    }
    else if (sp[1-args].type==T_STRING)
@@ -798,9 +798,9 @@ UNLOCK(this->parent);
 LOCK(this->parent);
       TRY(mird_s_key_store(mtr,(mird_key_t)table_id,
 			   (unsigned char*)(stringkey->str),
-			   (mird_size_t)(stringkey->len),
+			   DO_NOT_WARN((mird_size_t)(stringkey->len)),
 			   (unsigned char*)(data->str),
-			   (mird_size_t)(data->len)));
+			   DO_NOT_WARN((mird_size_t)(data->len))));
 UNLOCK(this->parent);
    }
    else
@@ -849,7 +849,7 @@ UNLOCK(this->parent);
 LOCK(this->parent);
       TRY(mird_s_key_store(mtr,(mird_key_t)table_id,
 			   (unsigned char*)(stringkey->str),
-			   (mird_size_t)(stringkey->len),
+			   DO_NOT_WARN((mird_size_t)(stringkey->len)),
 			   NULL,0));
 UNLOCK(this->parent);
    }
@@ -903,7 +903,7 @@ UNLOCK(this->parent);
 LOCK(this->parent);
       TRY(mird_transaction_s_key_lookup(mtr,(mird_key_t)table_id,
 					(unsigned char*)(stringkey->str),
-					(mird_size_t)(stringkey->len),
+					DO_NOT_WARN((mird_size_t)(stringkey->len)),
 					&data,
 					&len));
 UNLOCK(this->parent);
@@ -1194,7 +1194,7 @@ UNLOCK(this->pmird);
 	 error("Scanner: Unknown table %08lx\n",(unsigned long)type);
    }
 
-   if (args>2)
+   if (args>2) {
       if (sp[2-args].type!=T_INT)
 	 SIMPLE_BAD_ARG_ERROR("Scanner",3,"int");
       else
@@ -1211,6 +1211,7 @@ UNLOCK(this->pmird);
 	    case PMTS_UNKNOWN: error("illegal scanner type\n"); break;
 	 }
       }
+   }
 
    pop_n_elems(args);
    push_int(0);
