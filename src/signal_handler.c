@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.293 2004/04/01 14:09:03 grubba Exp $
+|| $Id: signal_handler.c,v 1.294 2004/04/01 14:50:44 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.293 2004/04/01 14:09:03 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.294 2004/04/01 14:50:44 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1540,7 +1540,7 @@ static void f_pid_status_wait(INT32 args)
 	  THREADS_DISALLOW();
 
 	  /* We can get here if several threads are waiting on the
-	   * same process, or if the second sleep below wasn't enough
+	   * same process, or if the second sleep above wasn't enough
 	   * for receive_sigchild to put the entry into the wait_data
 	   * fifo. In either case we just loop and try again. */
 	  PROC_FPRINTF((stderr,
