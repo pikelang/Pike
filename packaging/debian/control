@@ -140,7 +140,7 @@ Description: Pike 7.3 documentation meta package
 
 Package: pike7.3-meta
 Architecture: all
-Depends: pike7.3 (=${Source-Version}), pike7.3-mysql (=${Source-Version}), pike7.3-pg (=${Source-Version}), pike7.3-sybase (=${Source-Version}), pike7.3-odbc (=${Source-Version}), pike7.3-image (=${Source-Version}), pike7.3-sdl (=${Source-Version}), pike7.3-gdbm (=${Source-Version}), pike7.3-gtk (=${Source-Version}), pike7.3-gl (=${Source-Version}), pike7.3-sane (=${Source-Version}), pike7.3-doc (=${Source-Version}), pike7.3-dev (=${Source-Version})
+Depends: pike7.3 (=${Source-Version}), pike7.3-mysql (=${Source-Version}), pike7.3-pg (=${Source-Version}), pike7.3-odbc (=${Source-Version}), pike7.3-image (=${Source-Version}), pike7.3-sdl (=${Source-Version}), pike7.3-gdbm (=${Source-Version}), pike7.3-gtk (=${Source-Version}), pike7.3-gl (=${Source-Version}), pike7.3-sane (=${Source-Version}), pike7.3-doc (=${Source-Version}), pike7.3-dev (=${Source-Version})
 Description: Meta package for Pike 7.3
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
