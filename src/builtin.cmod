@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.153 2004/04/15 17:34:40 mast Exp $
+|| $Id: builtin.cmod,v 1.154 2004/04/18 02:17:44 mast Exp $
 */
 
 #include "global.h"
@@ -1181,7 +1181,7 @@ PIKECLASS backtrace_frame
 
   /* These are cleared when filename and lineno has been initialized
    * from them. */
-  CVAR struct program *prog;	/* FIXME: Ought to be a private pikevar... */
+  PIKEVAR program prog flags ID_STATIC|ID_PRIVATE;
   CVAR PIKE_OPCODE_T *pc;
 
   /* These two are considered to be uninitialized from prog, pc and
@@ -1191,34 +1191,19 @@ PIKECLASS backtrace_frame
 
   INIT
   {
-    THIS->fun.type = T_INT;
-    THIS->fun.u.integer = 0;
-    THIS->prog = NULL;
     THIS->pc = NULL;
     THIS->lineno = -1;
-    THIS->args = NULL;
     THIS->filename = NULL;
   }
 
   EXIT
   {
-    if (THIS->prog) {
-      free_program(THIS->prog);
-      THIS->prog = NULL;
-    }
-    if (THIS->args) {
-      free_array(THIS->args);
-      THIS->args = NULL;
-    }
     if (THIS->filename) {
       free_string(THIS->filename);
       THIS->filename = NULL;
     }
     THIS->pc = NULL;
     THIS->lineno = -1;
-    free_svalue(&THIS->fun);
-    THIS->fun.type = T_INT;
-    THIS->fun.u.integer = 0;
   }
 
   /*! @decl int(0..1) _is_type(string t)
