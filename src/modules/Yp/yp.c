@@ -42,9 +42,12 @@ static void f_default_yp_domain(INT32 args)
 {
   int err;
   char *ret;
-  pop_n_elems( args );
+
   err = yp_get_default_domain(&ret);
-  YPERROR( "dafult_yp_domain", err );
+
+  YPERROR( "defult_yp_domain", err );
+
+  pop_n_elems( args );
   push_text( ret );
 }
 
@@ -52,9 +55,12 @@ static void f_server(INT32 args)
 {
   int err;
   char *ret;
+
   err = yp_master(this->domain, sp[-1].u.string->str, &ret);
-  pop_n_elems( args );
+
   YPERROR( "server", err );
+
+  pop_n_elems( args );
   push_text( ret );
 }
 
@@ -75,7 +81,10 @@ static void f_create(INT32 args)
   }
   this->domain = strdup( sp[-args].u.string->str );
   err = yp_bind( this->domain );
+
   YPERROR("create", err);
+
+  pop_n_elems(args);
 }
 
 static void f_all(INT32 args)
@@ -85,6 +94,7 @@ static void f_all(INT32 args)
   int retlen, retkeylen;
   char *map;
   struct mapping *res_map;
+
   check_all_args("yp->all", args, BIT_STRING, 0);
 
   map = sp[-1].u.string->str;
@@ -102,13 +112,13 @@ static void f_all(INT32 args)
       num++;
     } while(!err);
 
-  pop_n_elems(args);
   if(err != YPERR_NOMORE)
   {
     free_mapping( res_map );
     YPERROR( "all", err );
   }
   this->last_size = num;
+  pop_n_elems(args);
   push_mapping( res_map );
 }
 
@@ -135,9 +145,9 @@ void f_map(INT32 args)
 		    &retkey, &retkeylen, &retval, &retlen);
     } while(!err);
 
-  pop_n_elems(args);
   if(err != YPERR_NOMORE)
-    YPERROR( "all", err );
+    YPERROR( "map", err );
+  pop_n_elems(args);
 }
 
 static void f_order(INT32 args)
@@ -147,7 +157,9 @@ static void f_order(INT32 args)
   check_all_args("yp->order", args, BIT_STRING, 0);
   
   err = yp_order( this->domain, sp[-args].u.string->str, &ret);
+
   YPERROR("order", err );
+
   pop_n_elems( args );
   push_int( (INT32) ret );
 }
@@ -164,15 +176,17 @@ static void f_match(INT32 args)
 		  sp[-args+1].u.string->str, sp[-args+1].u.string->len,
 		  &retval, &retlen );
 
-  pop_n_elems( args );
   if(err == YPERR_KEY)
   {
+    pop_n_elems( args );
     push_int(0);
     sp[-1].subtype = NUMBER_UNDEFINED;
     return;
   }
 
   YPERROR( "match", err );
+
+  pop_n_elems( args );
   push_string(make_shared_binary_string( retval, retlen ));
 }
 
