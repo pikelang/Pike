@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.3 2005/01/01 14:35:45 grubba Exp $
+ * $Id: pike_embed.c,v 1.4 2005/01/01 17:35:54 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -414,6 +414,53 @@ void init_pike_runtime(void (*exit_cb)(int))
 #endif
     UNSETJMP(back);
   }
+}
+
+/*
+ * Support for limited number of instructions.
+ */
+
+/* FIXME: Thread specific limit? */
+static unsigned long instructions_left = 0;
+
+static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
+{
+  if(!(instructions_left--))
+  {
+    /* FIXME: Special THROW_* type? */
+    push_int(0);
+    f_exit(1);
+  }
+}
+
+void set_pike_evaluator_limit(unsigned long num_instrs)
+{
+  if (!num_instrs) return;
+  if (!instructions_left) {
+    add_to_callback(&evaluator_callbacks, time_to_exit, 0, 0);
+  }
+  instructions_left += num_instrs;
+}
+
+static struct callback_list post_master_callbacks;
+
+PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
+						      void *arg,
+						      callback_func free_func)
+{
+  return add_to_callback(&post_master_callbacks, call, arg, free_func);
+}
+
+struct object *load_pike_master(void)
+{
+  struct object *m;
+  TRACE((stderr, "Init master...\n"));
+
+  if ((m = master())) {
+    call_callback(& post_master_callbacks, 0);
+    free_callback_list(& post_master_callbacks);
+  }
+  return m;
 }
 
 #ifdef PROFILING

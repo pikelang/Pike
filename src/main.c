@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.221 2005/01/01 14:35:45 grubba Exp $
+|| $Id: main.c,v 1.222 2005/01/01 17:35:54 grubba Exp $
 */
 
 #include "global.h"
@@ -238,31 +238,6 @@ static void find_lib_dir(int argc, char **argv)
 #endif /* LIBPIKE */
 }
 
-
-
-static long instructions_left;
-
-static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
-{
-  if(instructions_left-- < 0)
-  {
-    push_int(0);
-    f_exit(1);
-  }
-}
-
-static struct callback_list post_master_callbacks;
-
-PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
-					  void *arg,
-					  callback_func free_func)
-{
-  return add_to_callback(&post_master_callbacks, call, arg, free_func);
-}
-
-
-
-
 int main(int argc, char **argv)
 {
   JMP_BUF back;
@@ -393,12 +368,8 @@ int main(int argc, char **argv)
 	  }else{
 	    p++;
 	  }
-	  instructions_left=STRTOL(p,&p,0);
+	  set_pike_evaluator_limit(STRTOL(p, &p, 0));
 	  p+=strlen(p);
-	  add_to_callback(&evaluator_callbacks,
-			  time_to_exit,
-			  0,0);
-	  
 	  break;
 
 	case 'd':
@@ -580,23 +551,23 @@ int main(int argc, char **argv)
       num=10;
     }
   }else{
+    struct object *m;
+
     back.severity=THROW_EXIT;
 
-    TRACE((stderr, "Init master...\n"));
+    if ((m = load_pike_master())) {
+      TRACE((stderr, "Call master->_main()...\n"));
 
-    master();
-    call_callback(& post_master_callbacks, 0);
-    free_callback_list(& post_master_callbacks);
+      pike_push_argv(argc, argv);
 
-    TRACE((stderr, "Call master->_main()...\n"));
-
-    pike_push_argv(argc, argv);
-
-    pike_push_env();
+      pike_push_env();
   
-    apply(master(),"_main",2);
-    pop_stack();
-    num=0;
+      apply(m, "_main", 2);
+      pop_stack();
+      num=0;
+    } else {
+      num = -1;
+    }
   }
   UNSETJMP(back);
 

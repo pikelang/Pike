@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.h,v 1.3 2005/01/01 14:35:45 grubba Exp $
+ * $Id: pike_embed.h,v 1.4 2005/01/01 17:35:54 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -45,6 +45,11 @@ void init_pike(char **argv, const char *file);
 void pike_set_default_master(void);
 void pike_set_master_file(const char *file);
 void init_pike_runtime(void (*exit_cb)(int));
+void set_pike_evaluator_limit(unsigned long num_instrs);
+PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
+						      void *arg,
+						      callback_func free_func);
+struct object *load_pike_master(void);
 #ifdef PROFILING
 #ifdef PIKE_DEBUG
 void gdb_break_on_pike_stack_record(long stack_size);
