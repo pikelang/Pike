@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.46 2003/07/30 20:30:33 mast Exp $
+|| $Id: lexer.h,v 1.47 2004/03/24 20:25:09 grubba Exp $
 */
 
 /*
@@ -599,8 +599,9 @@ static int low_yylex(YYSTYPE *yylval)
 	  }
 	  break;
 	}
-	
-      badhash:
+	/* FALL_THROUGH */
+
+      default:
 	/* FIXME: This doesn't look all that safe...
 	 * buf isn't NUL-terminated, and it won't work on wide strings.
 	 * /grubba 1999-02-20
