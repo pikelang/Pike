@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.27 2001/01/15 18:24:10 grubba Exp $
+ * $Id: lexer.h,v 1.28 2001/01/29 20:18:08 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -159,10 +159,13 @@ static int char_const(void)
 	c=c*8+(GETC()-'0');
       return c;
       
-    case 'r': return '\r';
-    case 'n': return '\n';
-    case 't': return '\t';
-    case 'b': return '\b';
+    case 'a': return 7;		/* BEL */
+    case 'b': return 8;		/* BS */
+    case 't': return 9;		/* HT */
+    case 'n': return 10;	/* LF */
+    case 'v': return 11;	/* VT */
+    case 'f': return 12;	/* FF */
+    case 'r': return 13;	/* CR */
       
     case '\n':
       lex.current_line++;
