@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.15 1997/09/01 19:24:40 per Exp $ */
+/* $Id: font.c,v 1.16 1997/09/03 04:59:12 per Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.15 1997/09/01 19:24:40 per Exp $<br>
+**!	$Id: font.c,v 1.16 1997/09/03 04:59:12 per Exp $<br>
 **! class font
 **!
 **! note
@@ -233,18 +233,12 @@ static inline void write_char(struct _char *ci,
       nl=pos+xsize;
       for (x=(INT32)ci->width; x>0; x--)
       {
-	 register char c;
-	 c=255-*p;
-	 if (pos->r==0)
-	    pos->r=pos->g=pos->b=c;
-	 else if (pos->r+c>255)
-	    pos->r=pos->g=pos->b=255;
-	 else
-	 {
-	    pos->r+=c;
-	    pos->g+=c;
-	    pos->b+=c;
-	 }
+	 int r,c;
+	 if((c=255-*p))
+	   if ((r=pos->r+c)>255)
+	     pos->r=pos->g=pos->b=255;
+	   else
+	     pos->r=pos->g=pos->b=r;
 	 pos++;
 	 p++;
       }
@@ -439,14 +433,31 @@ void font_load(INT32 args)
 **!	One or more lines of text.
 **! see also: text_extents, load, image::paste_mask, image::paste_alpha_color
 */
+static INLINE int char_space(struct font *this, unsigned char c)
+{
+  if(c==0x20)
+    return this->charinfo[SPACE_CHAR].spacing*this->xspacing_scale;
+  else if(c==0x20+128)
+    return (this->charinfo['m'].spacing/16)*this->xspacing_scale;
+  return this->charinfo[c].spacing*this->xspacing_scale;
+}  
+
+static INLINE int char_width(struct font *this, unsigned char c)
+{
+  if(c==0x20)          return 0;
+  else if(c==0x20+128) return 0;
+  return this->charinfo[c].width;
+}  
+
 
 void font_write(INT32 args)
 {
    struct object *o;
    struct image *img;
-   INT32 xsize=0,i,maxwidth,c,maxwidth2,j;
+   INT32 xsize=0,i,c,maxwidth2,j;
    int *width_of;
-   char *to_write;
+   unsigned char *to_write;
+   int to_write_len;
    struct font *this = (*(struct font **)(fp->current_storage));
    if (!this)
       error("font->write: no font loaded\n");
@@ -454,32 +465,21 @@ void font_write(INT32 args)
    maxwidth2=0;
 
    width_of=(int *)malloc((args+1)*sizeof(int));
-   if(!width_of)
-     error("Out of memory\n");
+   if(!width_of) error("Out of memory\n");
+
    for (j=0; j<args; j++)
    {
      if (sp[j-args].type!=T_STRING)
        error("font->write: illegal argument(s)\n");
      
      xsize = 0;
-     maxwidth = 0;
-     
-     for (i = 0; i < sp[j-args].u.string->len; i++)
-     {
-       c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
-       if (c < (INT32)this->chars)
-       {
-	 if (xsize + (signed int)this->charinfo[c].width > maxwidth)
-	   maxwidth = xsize + this->charinfo[c].width;
-	 if(c==0x20)
-	   xsize += (signed int)((float)this->charinfo[SPACE_CHAR].spacing*(float)this->xspacing_scale);
-	 else
-	   xsize += (signed int)((float)this->charinfo[c].spacing*(float)this->xspacing_scale);
-       }
-     }
-     if (xsize>maxwidth) maxwidth=xsize;
-     width_of[j]=maxwidth;
-     if (maxwidth>maxwidth2) maxwidth2=maxwidth;
+     to_write = (unsigned char*)sp[j-args].u.string->str;
+     to_write_len = sp[j-args].u.string->len;
+     for (i = 0; i < to_write_len; i++)
+       xsize += char_space(this,to_write[i]);
+     xsize += char_width(this,to_write[to_write_len-1])-char_space(this,to_write[to_write_len-1]);
+     width_of[j]=xsize;
+     if (xsize>maxwidth2) maxwidth2=xsize;
    }
    
    o = clone_object(image_program,0);
@@ -499,28 +499,27 @@ void font_write(INT32 args)
    for (j=0; j<args; j++)
    {
      to_write = sp[j-args].u.string->str;
-     THREADS_ALLOW();
+     to_write_len = sp[j-args].u.string->len;
      switch(this->justification)
      {
-      case J_LEFT: xsize = 0; break;
-      case J_RIGHT: xsize = img->xsize-width_of[j]-1; break;
+      case J_LEFT:   xsize = 0; break;
+      case J_RIGHT:  xsize = img->xsize-width_of[j]-1; break;
       case J_CENTER: xsize = img->xsize/2-width_of[j]/2-1; break;
      }
      if(xsize<0) xsize=0;
-     for (i = 0; i < (int)sp[j-args].u.string->len; i++)
+
+     THREADS_ALLOW();
+     for (i = 0; i < to_write_len; i++)
      {
-       c=to_write[i];
-       if ( c < (INT32)this->chars)
+       c=(unsigned char)*(to_write++);
+       if (c < (INT32)this->chars)
        {
  	 write_char(this->charinfo+c,
-		    (img->img+xsize)+(img->xsize*(int)(j*this->height
-						 *this->yspacing_scale)),
+		    (img->img+xsize)+
+		    (img->xsize*(int)(j*this->height*this->yspacing_scale)),
 		    img->xsize,
 		    this->height);
-	 if(c==0x20)
-	   xsize += this->charinfo[SPACE_CHAR].spacing*this->xspacing_scale;
-	 else
-	   xsize += this->charinfo[c].spacing*this->xspacing_scale;
+	 xsize += char_space(this, c);
        }
      }
      THREADS_DISALLOW();
@@ -559,37 +558,21 @@ void font_height(INT32 args)
 
 void font_text_extents(INT32 args)
 {
-  INT32 xsize,i,maxwidth,c,maxwidth2,j;
+  INT32 xsize,i,c,maxwidth2,j;
 
-  if (!THIS)
-    error("font->text_extents: no font loaded\n");
+  if (!THIS) error("font->text_extents: no font loaded\n");
 
   maxwidth2=0;
 
-  for (j=0; j<args; j++)
-  {
-    if (sp[j-args].type!=T_STRING)
-      error("font->text_extents: illegal argument(s)\n");
-    
+  for (j=0; j<args; j++) 
+ {
+    if (sp[j-args].type!=T_STRING) error("font->text_extents: illegal argument(s)\n");
     xsize = 0;
-    maxwidth = 0;
-     
     for (i = 0; i < sp[j-args].u.string->len; i++)
-    {
-      c=EXTRACT_UCHAR(sp[j-args].u.string->str+i);
-      if (c < (INT32)THIS->chars)
-      {
-	if (xsize + (signed long)THIS->charinfo[c].width > maxwidth)
-	  maxwidth = xsize + THIS->charinfo[c].width;
-	 if(c==0x20)
-	   xsize += THIS->charinfo[SPACE_CHAR].spacing*THIS->xspacing_scale;
-	 else
-	   xsize += THIS->charinfo[c].spacing*THIS->xspacing_scale;
-      }
-    }
-    
-    if (xsize>maxwidth) maxwidth=xsize;
-    if (maxwidth>maxwidth2) maxwidth2=maxwidth;
+      xsize += char_space(THIS, (unsigned char)sp[j-args].u.string->str[i]);
+    xsize +=char_width(THIS,(unsigned char)sp[j-args].u.string->str[i-1])
+            -char_space(THIS,(unsigned char)sp[j-args].u.string->str[i-1]);
+    if (xsize>maxwidth2) maxwidth2=xsize;
   }
   pop_n_elems(args);
   push_int(maxwidth2);
@@ -701,6 +684,9 @@ void init_font_programs(void)
                 "function(:int)",0);
 		
    add_function("extents",font_text_extents,
+                "function(string ...:array(int))",0);
+		
+   add_function("text_extents",font_text_extents,
                 "function(string ...:array(int))",0);
 		
    add_function("set_x_spacing",font_set_xspacing_scale,
