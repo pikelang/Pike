@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.196 2000/07/07 22:37:31 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.197 2000/07/09 17:54:08 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -146,7 +146,6 @@ int low_add_local_name(struct compiler_frame *,
 static node *lexical_islocal(struct pike_string *);
 
 static int varargs;
-static INT32  current_modifiers;
 static struct pike_string *last_identifier=0;
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -483,7 +482,8 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
     $3=mknode(F_COMMA_EXPR,$3,0);
     Pike_compiler->compiler_pass=tmp;
 
-    if ((current_modifiers & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
+    if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
+	(Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared constant.");
     }
 
@@ -492,7 +492,8 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
       if(Pike_compiler->compiler_pass==2)
 	yyerror("Constant definition is not constant.");
       else
-	add_constant($1->u.sval.u.string, 0, current_modifiers & ~ID_EXTERN);
+	add_constant($1->u.sval.u.string, 0,
+		     Pike_compiler->current_modifiers & ~ID_EXTERN);
     } else {
       if(!Pike_compiler->num_parse_error)
       {
@@ -503,7 +504,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 	}else{
 	  pop_n_elems(tmp-1);
 	  add_constant($1->u.sval.u.string, Pike_sp-1,
-		       current_modifiers & ~ID_EXTERN);
+		       Pike_compiler->current_modifiers & ~ID_EXTERN);
 	  pop_stack();
 	}
       }
@@ -908,7 +909,7 @@ magic_identifier: TOK_IDENTIFIER
 
 modifiers: modifier_list
  {
-   $$=current_modifiers=$1 | (lex.pragmas & ID_MODIFIER_MASK);
+   $$=Pike_compiler->current_modifiers=$1 | (lex.pragmas & ID_MODIFIER_MASK);
  }
  ;
 
@@ -1269,7 +1270,8 @@ new_name: optional_stars TOK_IDENTIFIER
     }
     while($1--) push_type(T_ARRAY);
     type=compiler_pop_type();
-    define_variable($2->u.sval.u.string, type, current_modifiers);
+    define_variable($2->u.sval.u.string, type,
+		    Pike_compiler->current_modifiers);
     free_string(type);
     free_node($2);
   }
@@ -1283,11 +1285,12 @@ new_name: optional_stars TOK_IDENTIFIER
     }
     while($1--) push_type(T_ARRAY);
     type=compiler_pop_type();
-    if ((current_modifiers & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
+    if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
+	(Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared variable has initializer.");
     }
     $<number>$=define_variable($2->u.sval.u.string, type,
-			       current_modifiers & (~ID_EXTERN));
+			       Pike_compiler->current_modifiers & (~ID_EXTERN));
     free_string(type);
   }
   expr0
@@ -1786,7 +1789,8 @@ create_arg: modifiers type_or_error optional_stars TOK_IDENTIFIER
 		 $4->u.sval.u.string->str);
 
     /* Add the identifier both globally and locally. */
-    define_variable($4->u.sval.u.string, type, current_modifiers);
+    define_variable($4->u.sval.u.string, type,
+		    Pike_compiler->current_modifiers);
     add_local_name($4->u.sval.u.string, type, 0);
 
     /* free_string(type); */
