@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.15 1996/11/17 01:57:16 hubbe Exp $
+# $Id: configure.in,v 1.16 1996/11/17 02:01:38 hubbe Exp $
 
 AC_INIT(interpret.c)
 
@@ -140,11 +140,14 @@ fi
 #
 # If no cppflags or ldflags where given we try to guess some..
 #
-if test $cppflags_is_set$ldflags_is_set = nono ; then
+if test $cppflags_is_set$ldflags_is_set = nono -a \
+   x${C_INCLUDE_PATH-} = x -a \
+   x${LD_LIBRARY_PATH} = x -a ; then
+
   for d in /usr/gnu /opt/gnu /usr/local
   do
     if test -d $d/lib ; then
-      LDFLAGS="${LDFLAGS} -L$d/lib"
+      LDFLAGS="${LDFLAGS} -L$d/lib -R$d/lib"
     fi
 
     if test -d $d/include ; then
