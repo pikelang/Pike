@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.171 2000/03/30 08:43:07 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.172 2000/03/30 18:59:32 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -308,7 +308,10 @@ int yylex(YYSTYPE *yylval);
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
+%type <number> function_type_list
+%type <number> function_type_list2
 %type <number> optional_dot_dot_dot
+%type <number> optional_comma
 %type <number> optional_stars
 
 %type <str> magic_identifiers
@@ -1236,6 +1239,10 @@ opt_function_type: '('
   {
     if ($4)
     {
+      if (!$3) {
+	/* FIXME: Should this be a syntax error or not? */
+	push_type(T_MIXED);
+      }
       push_type(T_MANY);
       type_stack_reverse();
     }else{
@@ -1264,11 +1271,11 @@ opt_function_type: '('
   }
   ;
 
-function_type_list: /* Empty */ optional_comma
-  | function_type_list2 optional_comma
+function_type_list: /* Empty */ optional_comma { $$=0; }
+  | function_type_list2 optional_comma { $$=!$2; }
   ;
 
-function_type_list2: type7 
+function_type_list2: type7 { $$=1; }
   | function_type_list2 ','
   {
     type_stack_reverse();
@@ -2146,7 +2153,7 @@ assign: F_AND_EQ { $$=F_AND_EQ; }
   | F_DIV_EQ { $$=F_DIV_EQ; }
   ;
 
-optional_comma: | ',' ;
+optional_comma: { $$=0; } | ',' { $$=1; };
 
 expr_list: { $$=0; }
   | expr_list2 optional_comma
