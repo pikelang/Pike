@@ -7,7 +7,10 @@ exec 5>&1 1>&2
 SCRIPT="$1"
 shift 1
 
-INPUT="`eval echo \"\\$$#\"`"
+for arg
+do
+  INPUT="$arg"
+done
 TMPOUTPUT="${INPUT}.compiled"
 
 if [ -f "$TMPOUTPUT" ]; then
