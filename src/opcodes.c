@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.41 1999/07/04 12:35:54 mirar Exp $");
+RCSID("$Id: opcodes.c,v 1.42 1999/07/27 16:41:37 mirar Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -371,6 +371,8 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
   if(run_time_type != sp[-1].type)
     fatal("Internal error: Cast failed (run_time_type = %d, sp[-1].type = %d.)\n",run_time_type,sp[-1].type);
 #endif
+
+  if (!type) return;
 
   switch(run_time_type)
   {
