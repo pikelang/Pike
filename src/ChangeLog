@@ -1,3 +1,10 @@
+Sat Dec  7 18:10:34 1996  David Hedbor  <neotron@mouser.hedbor.org.>
+
+	* port.h: Fixed declaraion for MEMCMP.
+
+	* port.c (MEMMOVE): char * was missing before a=(char *)aa;
+	(MEMCMP): fixed declaration (void -> int) and added a return 0.
+
 Fri Dec  6 08:51:30 1996  Per Hedbor  <cardeci@cluracan>
 
 	* modules/files/efuns.c: Threaded file_stat and rm. More efuns

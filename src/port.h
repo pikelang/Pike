@@ -83,7 +83,7 @@ void MEMMOVE(void *b,const void *a,int s);
 #endif
 
 #ifndef HAVE_MEMCMP
-void MEMCMP(const void *b,const void *a,int s);
+int MEMCMP(const void *b,const void *a,int s);
 #else
 #  define MEMCMP(X,Y,Z) memcmp((char*)(X),(char*)(Y),(Z))
 #endif

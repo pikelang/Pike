@@ -153,7 +153,7 @@ void MEMCPY(void *bb,const void *aa,int s)
 void MEMMOVE(void *b,const void *aa,int s)
 {
   char *t=(char *)b;
-  a=(char *)aa;
+  char *a=(char *)aa;
   if(a>b) for(;s;s--) *(t++)=*(a++);
   if(a<b) for(t+=s,a+=s;s;s--) *(--t)=*(--a);
 }
@@ -161,7 +161,7 @@ void MEMMOVE(void *b,const void *aa,int s)
 
 
 #ifndef HAVE_MEMCMP
-void MEMCMP(const void *bb,const void *aa,int s)
+int MEMCMP(const void *bb,const void *aa,int s)
 {
   char *a=(char *)aa;
   char *b=(char *)bb;
@@ -173,6 +173,7 @@ void MEMCMP(const void *bb,const void *aa,int s)
       if(*b>*a) return 1;
     }
   }
+  return 0;
 }
 
 #endif
