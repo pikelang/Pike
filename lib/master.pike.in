@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.25 1998/04/30 15:29:49 grubba Exp $
+/* $Id: master.pike.in,v 1.26 1998/05/11 21:04:47 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -577,6 +577,12 @@ void _main(string *orig_argv, string *env)
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
     tmp=resolv("Getopt");
+
+    if (!tmp) {
+      werror("master.pike: Couldn't resolv Getopt module.\n"
+	     "Is your PIKE_MODULE_PATH environment variable set correctly?\n");
+      exit(1);
+    }
     
     q=tmp->find_all_options(argv,({
       ({"version",tmp->NO_ARG,({"-v","--version"})}),
