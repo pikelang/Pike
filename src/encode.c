@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.96 2001/04/09 10:01:49 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.97 2001/04/10 09:51:42 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -790,6 +790,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    Pike_error("Cannot encode programs with event handlers.\n");
 	  Pike_error("Cannot encode C programs.\n");
 	}
+	/*FIXME: save p->parent!! */
 	code_entry(type_to_tag(val->type), 1,data);
 	f_version(0);
 	encode_value2(Pike_sp-1,data);

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.401 2001/04/08 10:11:40 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.402 2001/04/10 09:51:42 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1898,6 +1898,17 @@ test_any([[
   class Foo {  };
   return  function_name(object_program(Foo()));
 ]], "Foo")
+
+test_any([[
+  int q;
+  return stringp(function_name( lambda() { return q; }));
+]],1)
+
+test_any([[
+  int q;
+  return function_object( lambda() { return q; });
+]],[[this_object()]])
+  
 
 test_compile_error(class c { object(Stdio.File) foo=class {} ();})
 test_compile_error(class c { object(Stdio.File) foo=class {} ();})

@@ -422,6 +422,14 @@ PIKEFUN string function_name(program|function func)
 	bad_arg_error("function_name", Pike_sp-args, args, 1,
 		      "function", Pike_sp-args,
 		      "Destructed object.\n");
+      if(func->u.object->prog == pike_trampoline_program)
+      {
+	struct pike_trampoline *t;
+	t=((struct pike_trampoline *)func->u.object->storage);
+	if(t->frame->current_object->prog)
+	  REF_RETURN ID_FROM_INT(t->frame->current_object->prog,
+				 t->func)->name;
+      }
       
       REF_RETURN ID_FROM_INT(func->u.object->prog, func->subtype)->name;
   }
@@ -439,16 +447,13 @@ PIKEFUN string function_name(program|function func)
  *! @seealso
  *! @[function_name()]
  */
-PIKEFUN object|program function_object(program|function func)
+PIKEFUN object|program function_object(object|program|function func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
-  type function(object:object)|function(program:program);
+  type function(function|object:object)|function(program:program);
 {
   switch(func->type)
   {
-    default:
-      SIMPLE_BAD_ARG_ERROR("function_object",1,"function");
-
     case PIKE_T_PROGRAM:
     {
       struct program *p;
@@ -461,8 +466,21 @@ PIKEFUN object|program function_object(program|function func)
       
     case PIKE_T_FUNCTION:
       if(func->subtype == FUNCTION_BUILTIN) break;
+      if(func->u.object->prog == pike_trampoline_program)
+      {
+	struct object *o;
+	o=((struct pike_trampoline *)func->u.object->storage)->frame->current_object;
+	add_ref(o);
+	pop_n_elems(args);
+	push_object(o);
+	return;
+      }
       func->type=T_OBJECT;
       return;
+
+
+    default:
+      SIMPLE_BAD_ARG_ERROR("function_object",1,"function");
   }
   pop_n_elems(args);
   push_int(0);
