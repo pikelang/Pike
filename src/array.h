@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.12 1998/03/28 15:40:00 grubba Exp $
+ * $Id: array.h,v 1.13 1998/04/17 05:08:00 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -33,7 +33,11 @@ struct array
 
 extern struct array empty_array;
 
+#if defined(DEBUG_MALLOC) && defined(DEBUG)
+#define ITEM(X) (((struct array *)(debug_malloc_pass((X))))->item)
+#else
 #define ITEM(X) ((X)->item)
+#endif
 
 /* These are arguments for the function 'merge' which merges two sorted
  * set stored in arrays in the way you specify

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.99 1998/04/16 21:30:08 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.100 1998/04/17 05:08:01 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -52,7 +52,7 @@ void f_equal(INT32 args)
 {
   int i;
   if(args != 2)
-    ERROR("equal", "Bad number of arguments.\n", sp, args);
+    PIKE_ERROR("equal", "Bad number of arguments.\n", sp, args);
 
   i=is_equal(sp-2,sp-1);
   pop_n_elems(args);
@@ -83,18 +83,18 @@ void f_hash(INT32 args)
 {
   INT32 i;
   if(!args)
-    ERROR("hash", "Too few arguments.\n", sp, 0);
+    PIKE_ERROR("hash", "Too few arguments.\n", sp, 0);
   if(sp[-args].type != T_STRING)
-    ERROR("hash", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("hash", "Bad argument 1.\n", sp, args);
   i=hashstr((unsigned char *)sp[-args].u.string->str,100);
   
   if(args > 1)
   {
     if(sp[1-args].type != T_INT)
-      ERROR("hash", "Bad argument 2.\n", sp, args);
+      PIKE_ERROR("hash", "Bad argument 2.\n", sp, args);
     
     if(!sp[1-args].u.integer)
-      ERROR("hash", "Modulo by zero.\n", sp, args);
+      PIKE_ERROR("hash", "Modulo by zero.\n", sp, args);
 
     i%=(unsigned INT32)sp[1-args].u.integer;
   }
@@ -105,7 +105,7 @@ void f_hash(INT32 args)
 void f_copy_value(INT32 args)
 {
   if(!args)
-    ERROR("copy_value", "Too few arguments.\n", sp, 0);
+    PIKE_ERROR("copy_value", "Too few arguments.\n", sp, 0);
 
   pop_n_elems(args-1);
   copy_svalues_recursively_no_free(sp,sp-1,1,0);
@@ -117,9 +117,9 @@ void f_ctime(INT32 args)
 {
   time_t i;
   if(!args)
-    ERROR("ctime", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("ctime", "Too few arguments.\n", sp, args);
   if(sp[-args].type != T_INT)
-    ERROR("ctime", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("ctime", "Bad argument 1.\n", sp, args);
   i=(time_t)sp[-args].u.integer;
   pop_n_elems(args);
   push_string(make_shared_string(ctime(&i)));
@@ -130,9 +130,9 @@ void f_lower_case(INT32 args)
   INT32 i;
   struct pike_string *ret;
   if(!args)
-    ERROR("lower_case", "Too few arguments.\n", sp, 0);
+    PIKE_ERROR("lower_case", "Too few arguments.\n", sp, 0);
   if(sp[-args].type != T_STRING) 
-    ERROR("lower_case", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("lower_case", "Bad argument 1.\n", sp, args);
 
   ret=begin_shared_string(sp[-args].u.string->len);
   MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
@@ -150,9 +150,9 @@ void f_upper_case(INT32 args)
   INT32 i;
   struct pike_string *ret;
   if(!args)
-    ERROR("upper_case", "Too few arguments.\n", sp, 0);
+    PIKE_ERROR("upper_case", "Too few arguments.\n", sp, 0);
   if(sp[-args].type != T_STRING) 
-    ERROR("upper_case", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("upper_case", "Bad argument 1.\n", sp, args);
 
   ret=begin_shared_string(sp[-args].u.string->len);
   MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
@@ -168,9 +168,9 @@ void f_upper_case(INT32 args)
 void f_random(INT32 args)
 {
   if(!args)
-    ERROR("random", "Too few arguments.\n", sp, 0);
+    PIKE_ERROR("random", "Too few arguments.\n", sp, 0);
   if(sp[-args].type != T_INT) 
-    ERROR("random", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("random", "Bad argument 1.\n", sp, args);
 
   if(sp[-args].u.integer <= 0)
   {
@@ -184,9 +184,9 @@ void f_random(INT32 args)
 void f_random_seed(INT32 args)
 {
   if(!args)
-    ERROR("random_seed", "Too few arguments.\n", sp, 0);
+    PIKE_ERROR("random_seed", "Too few arguments.\n", sp, 0);
   if(sp[-args].type != T_INT) 
-    ERROR("random_seed", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("random_seed", "Bad argument 1.\n", sp, args);
 
   my_srand(sp[-args].u.integer);
   pop_n_elems(args);
@@ -203,7 +203,7 @@ void f_search(INT32 args)
   INT32 start;
 
   if(args < 2)
-    ERROR("search", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("search", "Too few arguments.\n", sp, args);
 
   switch(sp[-args].type)
   {
@@ -212,22 +212,22 @@ void f_search(INT32 args)
     char *ptr;
     INT32 len;
     if(sp[1-args].type != T_STRING)
-      ERROR("search", "Bad argument 2.\n", sp, args);
+      PIKE_ERROR("search", "Bad argument 2.\n", sp, args);
     
     start=0;
     if(args > 2)
     {
       if(sp[2-args].type!=T_INT)
-	ERROR("search", "Bad argument 3.\n", sp, args);
+	PIKE_ERROR("search", "Bad argument 3.\n", sp, args);
 
       start=sp[2-args].u.integer;
       if(start<0)
-	ERROR("search", "Start must be greater or equal to zero.\n", sp, args);
+	PIKE_ERROR("search", "Start must be greater or equal to zero.\n", sp, args);
     }
     len=sp[-args].u.string->len - start;
 
     if(len<0)
-      ERROR("search", "Start must not be greater than the length of the string.\n", sp, args);
+      PIKE_ERROR("search", "Start must not be greater than the length of the string.\n", sp, args);
 
     if(len>0 && (ptr=my_memmem(sp[1-args].u.string->str,
 			       sp[1-args].u.string->len,
@@ -248,7 +248,7 @@ void f_search(INT32 args)
     if(args > 2)
     {
       if(sp[2-args].type!=T_INT)
-	ERROR("search", "Bad argument 3.\n", sp, args);
+	PIKE_ERROR("search", "Bad argument 3.\n", sp, args);
 
       start=sp[2-args].u.integer;
     }
@@ -268,7 +268,7 @@ void f_search(INT32 args)
     return;
 
   default:
-    ERROR("search", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("search", "Bad argument 1.\n", sp, args);
   }
 }
 
@@ -349,10 +349,10 @@ void f_backtrace(INT32 args)
 void f_add_constant(INT32 args)
 {
   if(args<1)
-    ERROR("add_constant", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("add_constant", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type!=T_STRING)
-    ERROR("add_constant", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("add_constant", "Bad argument 1.\n", sp, args);
 
   if(args>1)
   {
@@ -497,10 +497,10 @@ void f_combine_path(INT32 args)
   struct pike_string *ret;
 
   if(args<1)
-    ERROR("combine_path", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("combine_path", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type != T_STRING)
-    ERROR("combine_path", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("combine_path", "Bad argument 1.\n", sp, args);
 
   path=sp[-args].u.string->str;
 
@@ -528,9 +528,9 @@ void f_combine_path(INT32 args)
 void f_function_object(INT32 args)
 {
   if(args < 1)
-    ERROR("function_object", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("function_object", "Too few arguments.\n", sp, args);
   if(sp[-args].type != T_FUNCTION)
-    ERROR("function_object", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("function_object", "Bad argument 1.\n", sp, args);
 
   if(sp[-args].subtype == FUNCTION_BUILTIN)
   {
@@ -546,9 +546,9 @@ void f_function_name(INT32 args)
 {
   struct pike_string *s;
   if(args < 1)
-    ERROR("function_name", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("function_name", "Too few arguments.\n", sp, args);
   if(sp[-args].type != T_FUNCTION)
-    ERROR("function_name", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("function_name", "Bad argument 1.\n", sp, args);
 
   if(sp[-args].subtype == FUNCTION_BUILTIN)
   {
@@ -556,7 +556,7 @@ void f_function_name(INT32 args)
     push_int(0);
   }else{
     if(!sp[-args].u.object->prog)
-      ERROR("function_name", "Destructed object.\n", sp, args);
+      PIKE_ERROR("function_name", "Destructed object.\n", sp, args);
 
     copy_shared_string(s,ID_FROM_INT(sp[-args].u.object->prog,
 				     sp[-args].subtype)->name);
@@ -571,7 +571,7 @@ void f_function_name(INT32 args)
 void f_zero_type(INT32 args)
 {
   if(args < 1)
-    ERROR("zero_type", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("zero_type", "Too few arguments.\n", sp, args);
   if(sp[-args].type != T_INT)
   {
     pop_n_elems(args);
@@ -602,15 +602,15 @@ void f_allocate(INT32 args)
   struct array *a;
 
   if(args < 1)
-    ERROR("allocate", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("allocate", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type!=T_INT)
-    ERROR("allocate", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("allocate", "Bad argument 1.\n", sp, args);
 
 
   size=sp[-args].u.integer;
   if(size < 0)
-    ERROR("allocate", "Can't allocate array of negative size.\n", sp, args);
+    PIKE_ERROR("allocate", "Can't allocate array of negative size.\n", sp, args);
   a=allocate_array(size);
   if(args>1)
   {
@@ -629,7 +629,7 @@ void f_rusage(INT32 args)
   pop_n_elems(args);
   rus=low_rusage();
   if(!rus)
-    ERROR("rusage", "System rusage information not available.\n", sp, args);
+    PIKE_ERROR("rusage", "System rusage information not available.\n", sp, args);
   v=allocate_array_no_init(29,0);
 
   for(e=0;e<29;e++)
@@ -661,7 +661,7 @@ void f_this_object(INT32 args)
 void f_throw(INT32 args)
 {
   if(args < 1)
-    ERROR("throw", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("throw", "Too few arguments.\n", sp, args);
   assign_svalue(&throw_value,sp-args);
   pop_n_elems(args);
   throw_severity=0;
@@ -671,10 +671,10 @@ void f_throw(INT32 args)
 void f_exit(INT32 args)
 {
   if(args < 1)
-    ERROR("exit", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("exit", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type != T_INT)
-    ERROR("exit", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("exit", "Bad argument 1.\n", sp, args);
 
   assign_svalue(&throw_value, sp-args);
   throw_severity=THROW_EXIT;
@@ -684,10 +684,10 @@ void f_exit(INT32 args)
 void f__exit(INT32 args)
 {
   if(args < 1)
-    ERROR("_exit", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("_exit", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type != T_INT)
-    ERROR("_exit", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("_exit", "Bad argument 1.\n", sp, args);
 
   exit(sp[-1].u.integer);
 }
@@ -708,10 +708,10 @@ void f_crypt(INT32 args)
     "cbhisjKlm4k65p7qrJfLMNQOPxwzyAaBDFgnoWXYCZ0123tvdHueEGISRTUV89./";
 
   if(args < 1)
-    ERROR("crypt", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("crypt", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type != T_STRING)
-    ERROR("crypt", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("crypt", "Bad argument 1.\n", sp, args);
 
   
   if(args>1)
@@ -760,12 +760,12 @@ void f_destruct(INT32 args)
   if(args)
   {
     if(sp[-args].type != T_OBJECT)
-      ERROR("destruct", "Bad arguments 1.\n", sp, args);
+      PIKE_ERROR("destruct", "Bad arguments 1.\n", sp, args);
     
     o=sp[-args].u.object;
   }else{
     if(!fp)
-      ERROR("destruct", "Destruct called without argument from callback function.\n", sp, args);
+      PIKE_ERROR("destruct", "Destruct called without argument from callback function.\n", sp, args);
 	   
     o=fp->current_object;
   }
@@ -778,7 +778,7 @@ void f_indices(INT32 args)
   INT32 size;
   struct array *a;
   if(args < 1)
-    ERROR("indices", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("indices", "Too few arguments.\n", sp, args);
 
   switch(sp[-args].type)
   {
@@ -812,7 +812,7 @@ void f_indices(INT32 args)
     break;
 
   default:
-    ERROR("indices", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("indices", "Bad argument 1.\n", sp, args);
     return; /* make apcc happy */
   }
   pop_n_elems(args);
@@ -824,7 +824,7 @@ void f_values(INT32 args)
   INT32 size;
   struct array *a;
   if(args < 1)
-    ERROR("values", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("values", "Too few arguments.\n", sp, args);
 
   switch(sp[-args].type)
   {
@@ -863,7 +863,7 @@ void f_values(INT32 args)
     break;
 
   default:
-    ERROR("values", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("values", "Bad argument 1.\n", sp, args);
     return;  /* make apcc happy */
   }
   pop_n_elems(args);
@@ -878,7 +878,7 @@ void f_next_object(INT32 args)
     o=first_object;
   }else{
     if(sp[-args].type != T_OBJECT)
-      ERROR("next_object", "Bad argument 1.\n", sp, args);
+      PIKE_ERROR("next_object", "Bad argument 1.\n", sp, args);
     o=sp[-args].u.object->next;
   }
   pop_n_elems(args);
@@ -893,7 +893,7 @@ void f_next_object(INT32 args)
 void f_object_program(INT32 args)
 {
   if(args < 1)
-    ERROR("object_program", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("object_program", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type == T_OBJECT)
   {
@@ -927,7 +927,7 @@ void f_object_program(INT32 args)
 void f_reverse(INT32 args)
 {
   if(args < 1)
-    ERROR("reverse", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("reverse", "Too few arguments.\n", sp, args);
 
   switch(sp[-args].type)
   {
@@ -968,7 +968,7 @@ void f_reverse(INT32 args)
   }
 
   default:
-    ERROR("reverse", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("reverse", "Bad argument 1.\n", sp, args);
     
   }
 }
@@ -1079,7 +1079,7 @@ static struct pike_string * replace_many(struct pike_string *str,
 void f_replace(INT32 args)
 {
   if(args < 3)
-    ERROR("replace", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("replace", "Too few arguments.\n", sp, args);
 
   switch(sp[-args].type)
   {
@@ -1103,11 +1103,11 @@ void f_replace(INT32 args)
     switch(sp[1-args].type)
     {
     default:
-      ERROR("replace", "Bad argument 2.\n", sp, args);
+      PIKE_ERROR("replace", "Bad argument 2.\n", sp, args);
       
     case T_STRING:
       if(sp[2-args].type != T_STRING)
-	ERROR("replace", "Bad argument 3.\n", sp, args);
+	PIKE_ERROR("replace", "Bad argument 3.\n", sp, args);
 
       s=string_replace(sp[-args].u.string,
 		       sp[1-args].u.string,
@@ -1116,7 +1116,7 @@ void f_replace(INT32 args)
       
     case T_ARRAY:
       if(sp[2-args].type != T_ARRAY)
-	ERROR("replace", "Bad argument 3.\n", sp, args);
+	PIKE_ERROR("replace", "Bad argument 3.\n", sp, args);
 
       s=replace_many(sp[-args].u.string,
 		     sp[1-args].u.array,
@@ -1129,7 +1129,7 @@ void f_replace(INT32 args)
   }
 
   default:
-    ERROR("replace", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("replace", "Bad argument 1.\n", sp, args);
   }
 }
 
@@ -1138,10 +1138,10 @@ void f_compile(INT32 args)
   
   struct program *p;
   if(args < 1)
-    ERROR("compile", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("compile", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type != T_STRING)
-    ERROR("compile", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("compile", "Bad argument 1.\n", sp, args);
 
   p=compile(sp[-args].u.string);
   pop_n_elems(args);
@@ -1154,7 +1154,7 @@ void f_mkmapping(INT32 args)
   struct array *a,*b;
   get_all_args("mkmapping",args,"%a%a",&a,&b);
   if(a->size != b->size)
-    ERROR("mkmapping", "mkmapping called on arrays of different sizes\n",
+    PIKE_ERROR("mkmapping", "mkmapping called on arrays of different sizes\n",
 	  sp, args);
 
   m=mkmapping(sp[-args].u.array, sp[1-args].u.array);
@@ -1164,7 +1164,7 @@ void f_mkmapping(INT32 args)
 
 void f_objectp(INT32 args)
 {
-  if(args<1) ERROR("objectp", "Too few arguments.\n", sp, args);
+  if(args<1) PIKE_ERROR("objectp", "Too few arguments.\n", sp, args);
   if(sp[-args].type != T_OBJECT || !sp[-args].u.object->prog)
   {
     pop_n_elems(args);
@@ -1177,7 +1177,7 @@ void f_objectp(INT32 args)
 
 void f_functionp(INT32 args)
 {
-  if(args<1) ERROR("functionp", "Too few arguments.\n", sp, args);
+  if(args<1) PIKE_ERROR("functionp", "Too few arguments.\n", sp, args);
   if(sp[-args].type != T_FUNCTION ||
      (sp[-args].subtype != FUNCTION_BUILTIN && !sp[-args].u.object->prog))
   {
@@ -1195,7 +1195,7 @@ void f_sleep(INT32 args)
   int ms;
 
   if(!args)
-    ERROR("sleep", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("sleep", "Too few arguments.\n", sp, args);
 
   switch(sp[-args].type) {
   case T_INT:
@@ -1205,7 +1205,7 @@ void f_sleep(INT32 args)
     ms = (int)(sp[-args].u.float_number * 1000.0);
     break;
   default:
-    ERROR("sleep", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("sleep", "Bad argument 1.\n", sp, args);
     break;
   }
 
@@ -1218,7 +1218,7 @@ void f_sleep(INT32 args)
   INT32 a,b;
 
   if(!args)
-    ERROR("sleep", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("sleep", "Too few arguments.\n", sp, args);
 
   GETTIMEOFDAY(&t1);
 
@@ -1239,7 +1239,7 @@ void f_sleep(INT32 args)
   }
 
   default:
-    ERROR("sleep", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("sleep", "Bad argument 1.\n", sp, args);
   }
 
   my_add_timeval(&t1, &t2);
@@ -1283,7 +1283,7 @@ void f_gc(INT32 args)
 void ID(INT32 args) \
 { \
   int t; \
-  if(args<1) ERROR(NAME, "Too few arguments.\n", sp, args); \
+  if(args<1) PIKE_ERROR(NAME, "Too few arguments.\n", sp, args); \
   t=sp[-args].type == TYPE; \
   pop_n_elems(args); \
   push_int(t); \
@@ -1293,7 +1293,7 @@ void ID(INT32 args) \
 void f_programp(INT32 args)
 {
   if(args<1)
-    ERROR("programp", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("programp", "Too few arguments.\n", sp, args);
   switch(sp[-args].type)
   {
   case T_PROGRAM:
@@ -1355,10 +1355,10 @@ void f_rows(INT32 args)
   struct array *a,*tmp;
 
   if(args < 2)
-    ERROR("rows", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("rows", "Too few arguments.\n", sp, args);
 
   if(sp[1-args].type!=T_ARRAY)
-    ERROR("rows", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("rows", "Bad argument 1.\n", sp, args);
 
   tmp=sp[1-args].u.array;
   push_array(a=allocate_array(tmp->size));
@@ -1378,10 +1378,10 @@ void f_column(INT32 args)
   DECLARE_CYCLIC();
 
   if(args < 2)
-    ERROR("column", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("column", "Too few arguments.\n", sp, args);
 
   if(sp[-args].type!=T_ARRAY)
-    ERROR("column", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("column", "Bad argument 1.\n", sp, args);
 
   tmp=sp[-args].u.array;
   if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
@@ -1443,7 +1443,7 @@ void f_localtime(INT32 args)
   struct tm *tm;
   time_t t;
   if (args<1 || sp[-1].type!=T_INT)
-    ERROR("localtime", "Bad argument to localtime", sp, args);
+    PIKE_ERROR("localtime", "Bad argument to localtime", sp, args);
 
   t=sp[-1].u.integer;
   tm=localtime(&t);
@@ -1495,7 +1495,7 @@ static void f_mktime (INT32 args)
   struct svalue * r;
   int retval;
   if (args<1)
-    ERROR("mktime", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("mktime", "Too few arguments.\n", sp, args);
 
   if(args == 1)
   {
@@ -1549,7 +1549,7 @@ static void f_mktime (INT32 args)
 #endif
 
   if (retval == -1)
-    ERROR("mktime", "Cannot convert.\n", sp, args);
+    PIKE_ERROR("mktime", "Cannot convert.\n", sp, args);
    pop_n_elems(args);
    push_int(retval);
 }
@@ -1595,13 +1595,13 @@ void f_glob(INT32 args)
   struct pike_string *glob;
 
   if(args < 2)
-    ERROR("glob", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("glob", "Too few arguments.\n", sp, args);
 
   if(args > 2) pop_n_elems(args-2);
   args=2;
 
   if (sp[-args].type!=T_STRING)
-    ERROR("glob", "Bad argument 2.\n", sp, args);
+    PIKE_ERROR("glob", "Bad argument 2.\n", sp, args);
 
   glob=sp[-args].u.string;
 
@@ -1622,7 +1622,7 @@ void f_glob(INT32 args)
     for(i=0;i<a->size;i++)
     {
       if(ITEM(a)[i].type != T_STRING)
-	ERROR("glob", "Bad argument 2.\n", sp, args);
+	PIKE_ERROR("glob", "Bad argument 2.\n", sp, args);
 
       if(does_match(ITEM(a)[i].u.string->str,
 		    ITEM(a)[i].u.string->len,
@@ -1643,7 +1643,7 @@ void f_glob(INT32 args)
     break;
 
   default:
-    ERROR("glob", "Bad argument 2.\n", sp, args);
+    PIKE_ERROR("glob", "Bad argument 2.\n", sp, args);
   }
 }
 
@@ -1739,7 +1739,7 @@ static void f_longest_ordered_sequence(INT32 args)
   /* THREADS_DISALLOW(); */
 
   if (!a) {
-    ERROR("Array.longest_ordered_sequence", "Out of memory", sp, args);
+    PIKE_ERROR("Array.longest_ordered_sequence", "Out of memory", sp, args);
   }
 
   pop_n_elems(args);
@@ -2212,11 +2212,11 @@ void f_diff(INT32 args)
    struct array *diff;
 
    if (args<2)
-      ERROR("diff", "Too few arguments.\n", sp, args);
+      PIKE_ERROR("diff", "Too few arguments.\n", sp, args);
 
    if (sp[-args].type!=T_ARRAY ||
        sp[1-args].type!=T_ARRAY)
-      ERROR("diff", "Bad arguments.\n", sp, args);
+      PIKE_ERROR("diff", "Bad arguments.\n", sp, args);
 
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
    push_array(cmptbl);
@@ -2234,11 +2234,11 @@ void f_diff_compare_table(INT32 args)
    struct array *cmptbl;
 
    if (args<2)
-      ERROR("diff_compare_table", "Too few arguments.\n", sp, args);
+      PIKE_ERROR("diff_compare_table", "Too few arguments.\n", sp, args);
 
    if (sp[-args].type!=T_ARRAY ||
        sp[1-args].type!=T_ARRAY)
-      ERROR("diff_compare_table", "Bad arguments.\n", sp, args);
+      PIKE_ERROR("diff_compare_table", "Bad arguments.\n", sp, args);
 
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
 
@@ -2253,11 +2253,11 @@ void f_diff_longest_sequence(INT32 args)
    struct array *diff;
 
    if (args<2)
-      ERROR("diff_longest_sequence", "Too few arguments.\n", sp, args);
+      PIKE_ERROR("diff_longest_sequence", "Too few arguments.\n", sp, args);
 
    if (sp[-args].type!=T_ARRAY ||
        sp[1-args].type!=T_ARRAY)
-      ERROR("diff_longest_sequence", "Bad arguments.\n", sp, args);
+      PIKE_ERROR("diff_longest_sequence", "Bad arguments.\n", sp, args);
 
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
    push_array(cmptbl);
@@ -2343,7 +2343,7 @@ void f__next(INT32 args)
 {
   struct svalue tmp;
   if(!args)
-    ERROR("_next", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("_next", "Too few arguments.\n", sp, args);
   
   pop_n_elems(args-1);
   tmp=sp[-1];
@@ -2356,7 +2356,7 @@ void f__next(INT32 args)
   case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
   case T_STRING:  tmp.u.string=tmp.u.string->next; break;
   default:
-    ERROR("_next", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("_next", "Bad argument 1.\n", sp, args);
   }
   if(tmp.u.refs)
   {
@@ -2371,7 +2371,7 @@ void f__prev(INT32 args)
 {
   struct svalue tmp;
   if(!args)
-    ERROR("_prev", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("_prev", "Too few arguments.\n", sp, args);
   
   pop_n_elems(args-1);
   tmp=sp[-1];
@@ -2383,7 +2383,7 @@ void f__prev(INT32 args)
   case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
   case T_PROGRAM: tmp.u.program=tmp.u.program->prev; break;
   default:
-    ERROR("_prev", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("_prev", "Bad argument 1.\n", sp, args);
   }
   if(tmp.u.refs)
   {
@@ -2397,9 +2397,9 @@ void f__prev(INT32 args)
 void f__refs(INT32 args)
 {
   INT32 i;
-  if(!args) ERROR("_refs", "Too few arguments.\n", sp, args);
+  if(!args) PIKE_ERROR("_refs", "Too few arguments.\n", sp, args);
   if(sp[-args].type > MAX_REF_TYPE)
-    ERROR("refs", "Bad argument 1.\n", sp, args);
+    PIKE_ERROR("refs", "Bad argument 1.\n", sp, args);
 
   i=sp[-args].u.refs[0];
   pop_n_elems(args);
@@ -2409,11 +2409,11 @@ void f__refs(INT32 args)
 void f_replace_master(INT32 args)
 {
   if(!args)
-    ERROR("replace_master", "Too few arguments.\n", sp, 0);
+    PIKE_ERROR("replace_master", "Too few arguments.\n", sp, 0);
   if(sp[-args].type != T_OBJECT)
-    ERROR("replace_master", "Bad argument 1.\n", sp, args); 
+    PIKE_ERROR("replace_master", "Bad argument 1.\n", sp, args); 
  if(!sp[-args].u.object->prog)
-    ERROR("replace_master", "Called with destructed object.\n", sp, args);
+    PIKE_ERROR("replace_master", "Called with destructed object.\n", sp, args);
     
   free_object(master_object);
   master_object=sp[-args].u.object;
@@ -2470,10 +2470,10 @@ static void f_get_prof_info(INT32 args)
   int i;
 
   if (!args) {
-    ERROR("get_profiling_info", "Too few arguments.\n", sp, args);
+    PIKE_ERROR("get_profiling_info", "Too few arguments.\n", sp, args);
   }
   prog = program_from_svalue(sp-args);
-  if(!prog) ERROR("get_profiling_info", "Bad argument 1.\n", sp, args);
+  if(!prog) PIKE_ERROR("get_profiling_info", "Bad argument 1.\n", sp, args);
 
   add_ref(prog);
 
@@ -2509,7 +2509,7 @@ void f_object_variablep(INT32 args)
   get_all_args("variablep",args,"%o%S",&o, &s);
 
   if(!o->prog)
-    ERROR("variablep", "Called on destructed object.\n", sp, args);
+    PIKE_ERROR("variablep", "Called on destructed object.\n", sp, args);
 
   ret=find_shared_string_identifier(s,o->prog);
   if(ret!=-1)

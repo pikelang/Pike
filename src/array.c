@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.31 1998/03/28 15:40:19 grubba Exp $");
+RCSID("$Id: array.c,v 1.32 1998/04/17 05:08:00 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -46,7 +46,7 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
 
   if(size == 0)
   {
-    empty_array.refs++;
+    add_ref(&empty_array);
     return &empty_array;
   }
 
@@ -113,7 +113,7 @@ void really_free_array(struct array *v)
   if(d_flag > 1)  array_check_type_field(v);
 #endif
 
-  v->refs++;
+  add_ref(v);
   free_svalues(ITEM(v), v->size, v->type_field);
   v->refs--;
   array_free_no_free(v);
@@ -147,7 +147,7 @@ void array_index(struct svalue *s,struct array *v,INT32 index)
     fatal("Illegal index in low level index routine.\n");
 #endif
 
-  v->refs++;
+  add_ref(v);
   assign_svalue(s, ITEM(v) + index);
   free_array(v);
 }
@@ -202,7 +202,7 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s)
     fatal("Illegal index in low level array set routine.\n");
 #endif
 
-  v->refs++;
+  add_ref(v);
   check_destructed(s);
 
   v->type_field = (v->type_field & ~BIT_UNFINISHED) | 1 << s->type;
@@ -437,7 +437,7 @@ struct array *slice_array(struct array *v,INT32 start,INT32 end)
 
   if(start==0 && v->refs==1)	/* Can we use the same array? */
   {
-    v->refs++;
+    add_ref(v);
     return array_shrink(v,end);
   }
 
@@ -1143,7 +1143,7 @@ struct array *subtract_arrays(struct array *a, struct array *b)
   }else{
     if(a->refs == 1)
     {
-      a->refs++;
+      add_ref(a);
       return a;
     }
     return slice_array(a,0,a->size);
@@ -1413,7 +1413,7 @@ struct array *copy_array_recursively(struct array *a,struct processing *p)
     if(p->pointer_a == (void *)a)
     {
       ret=(struct array *)p->pointer_b;
-      ret->refs++;
+      add_ref(ret);
       return ret;
     }
   }
@@ -1568,7 +1568,7 @@ void gc_free_all_unreferenced_arrays(void)
   {
     if(gc_do_free(a))
     {
-      a->refs++;
+      add_ref(a);
       free_svalues(ITEM(a), a->size, a->type_field);
       a->size=0;
 
@@ -1625,10 +1625,10 @@ void zap_all_arrays(void)
 
 #if defined(DEBUG) && defined(DEBUG_MALLOC)
     if(verbose_debug_exit && a!=&empty_array)
-      debug_dump_array(a);
+      describe(a);
 #endif
     
-    a->refs++;
+    add_ref(a);
     free_svalues(ITEM(a), a->size, a->type_field);
     a->size=0;
     
@@ -1662,7 +1662,7 @@ struct array *explode_array(struct array *a, struct array *b)
 
   q=start=0;
   push_array(a); /* Save us from destructive slice_arrays */
-  a->refs++;
+  add_ref(a);
   if(b->size)
   {
     for(e=0;e<=a->size - b->size;e++)

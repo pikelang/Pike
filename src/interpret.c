@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.78 1998/04/16 21:32:01 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.79 1998/04/17 05:08:02 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1283,7 +1283,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_FOREACH) /* array, lvalue , i */
       {
 	if(sp[-4].type != T_ARRAY)
-	  ERROR("foreach", "Bad argument 1.\n", sp-3, 1);
+	  PIKE_ERROR("foreach", "Bad argument 1.\n", sp-3, 1);
 	if(sp[-1].u.integer < sp[-4].u.array->size)
 	{
 	  fast_check_threads_etc(10);
@@ -1424,7 +1424,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_PUSH_ARRAY);
       if(sp[-1].type!=T_ARRAY)
-	ERROR("@", "Bad argument.\n", sp, 1);
+	PIKE_ERROR("@", "Bad argument.\n", sp, 1);
       sp--;
       push_array_items(sp->u.array);
       break;
@@ -1543,7 +1543,7 @@ static int eval_instruction(unsigned char *pc)
     {
       INT32 args=sp - *--mark_sp;
       if(!args)
-	ERROR("`()", "Too few arguments.\n", sp, 0);
+	PIKE_ERROR("`()", "Too few arguments.\n", sp, 0);
       switch(sp[-args].type)
       {
 	case T_INT:
@@ -1551,7 +1551,7 @@ static int eval_instruction(unsigned char *pc)
 	case T_FLOAT:
 	case T_MAPPING:
 	case T_MULTISET:
-	  ERROR("`()", "Attempt to call a non-function value.\n", sp, args);
+	  PIKE_ERROR("`()", "Attempt to call a non-function value.\n", sp, args);
       }
       return args;
     }
@@ -1631,7 +1631,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   case APPLY_STACK:
   apply_stack:
     if(!args)
-      ERROR("`()", "Too few arguments.\n", sp, 0);
+      PIKE_ERROR("`()", "Too few arguments.\n", sp, 0);
     args--;
     if(sp-save_sp-args > (args<<2) + 32)
     {
@@ -1651,7 +1651,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     {
     case T_INT:
       if (!s->u.integer) {
-	ERROR("0", "Attempt to call the NULL-value\n", sp, args);
+	PIKE_ERROR("0", "Attempt to call the NULL-value\n", sp, args);
       } else {
 	error("Attempt to call the value %d\n", s->u.integer);
       }
@@ -1726,7 +1726,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       fatal("Apply lfun on illegal value!\n");
 #endif
     if(!o->prog)
-      ERROR("destructed object", "Apply on destructed object.\n", sp, args);
+      PIKE_ERROR("destructed object", "Apply on destructed object.\n", sp, args);
     fun=FIND_LFUN(o->prog,fun);
     goto apply_low;
   
@@ -1759,7 +1759,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
       p=o->prog;
       if(!p)
-	ERROR("destructed object->function",
+	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", sp, args);
 #ifdef DEBUG
       if(fun>=(int)p->num_identifier_references)
@@ -1806,7 +1806,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       fp = &new_frame;
       
       if(function->func.offset == -1)
-	ERROR(function->name->str, "Calling undefined function.\n", sp, args);
+	PIKE_ERROR(function->name->str, "Calling undefined function.\n", sp, args);
       
       tailrecurse=-1;
       switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
@@ -2073,7 +2073,7 @@ void apply_lfun(struct object *o, int fun, int args)
     fatal("Apply lfun on illegal value!\n");
 #endif
   if(!o->prog)
-    ERROR("destructed object", "Apply on destructed object.\n", sp, args);
+    PIKE_ERROR("destructed object", "Apply on destructed object.\n", sp, args);
 
   apply_low(o, (int)FIND_LFUN(o->prog,fun), args);
 }
