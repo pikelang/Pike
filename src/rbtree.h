@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.h,v 1.8 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: rbtree.h,v 1.9 2002/12/22 17:18:55 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -92,7 +92,7 @@ PMOD_EXPORT struct rb_node_hdr *rb_link_next (struct rb_node_hdr *node);
 
 #ifdef PIKE_DEBUG
 /* To get good type checking. */
-static inline struct rb_node_hdr *rb_node_check (struct rb_node_hdr *node)
+static INLINE struct rb_node_hdr *rb_node_check (struct rb_node_hdr *node)
   {return node;}
 #else
 #define rb_node_check(node) ((struct rb_node_hdr *) (node))

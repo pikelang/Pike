@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.21 2002/12/19 02:40:29 mast Exp $
+|| $Id: rbtree.c,v 1.22 2002/12/22 17:18:55 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -12,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.21 2002/12/19 02:40:29 mast Exp $");
+RCSID("$Id: rbtree.c,v 1.22 2002/12/22 17:18:55 mast Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"
@@ -281,7 +281,7 @@ PMOD_EXPORT struct rb_node_hdr *rb_link_next (struct rb_node_hdr *node)
  *            /   \                    /    \
  *           a     b                  b      c
  */
-static inline struct rb_node_hdr *rot_right (struct rb_node_hdr *node)
+static INLINE struct rb_node_hdr *rot_right (struct rb_node_hdr *node)
 {
   /* Note that we don't need to do anything special to keep the
    * pointers in a, b and c intact, even if they're thread
@@ -309,7 +309,7 @@ static inline struct rb_node_hdr *rot_right (struct rb_node_hdr *node)
  *                /   \             /    \
  *               b     c           a      b
  */
-static inline struct rb_node_hdr *rot_left (struct rb_node_hdr *node)
+static INLINE struct rb_node_hdr *rot_left (struct rb_node_hdr *node)
 {
   struct rb_node_hdr *ret = node->next;
   if (ret->flags & RB_THREAD_PREV) {

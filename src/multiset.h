@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.29 2002/11/24 22:47:06 mast Exp $
+|| $Id: multiset.h,v 1.30 2002/12/22 17:18:55 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -153,7 +153,7 @@ PMOD_EXPORT void multiset_clear_node_refs (struct multiset *l);
 
 #ifdef PIKE_DEBUG
 /* To get good type checking. */
-static inline union msnode *msnode_check (union msnode *x)
+static INLINE union msnode *msnode_check (union msnode *x)
   {return x;}
 PMOD_EXPORT extern const char msg_no_multiset_flag_marker[];
 #else
@@ -190,7 +190,7 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
 #define low_use_multiset_index(NODE, VAR)				\
   ((VAR) = msnode_check (NODE)->i.ind,					\
    DO_IF_DEBUG ((VAR).type & MULTISET_FLAG_MARKER ? 0 :			\
-		Pike_fatal (msg_no_multiset_flag_marker) COMMA)		\
+		(Pike_fatal (msg_no_multiset_flag_marker), 0) COMMA)	\
    (VAR).type &= ~MULTISET_FLAG_MASK,					\
    &(VAR))
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.22 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_threadlib.h,v 1.23 2002/12/22 17:18:55 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -416,7 +416,7 @@ extern THREAD_T debug_locking_thread;
 
 #endif
 
-static inline int threads_disabled_wait(void)
+static INLINE int threads_disabled_wait(void)
 {
   do {
     THREADS_FPRINTF(1, (stderr, "Thread %d: Wait on threads_disabled\n",
