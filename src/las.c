@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.117 1999/11/19 21:08:05 grubba Exp $");
+RCSID("$Id: las.c,v 1.118 1999/11/20 03:41:15 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1975,6 +1975,7 @@ void fix_type_field(node *n)
 	!CDR(n) || CDR(n)->type == void_type_string) {
       yyerror("Conditional contains void expression.");
       copy_shared_string(n->type, mixed_type_string);
+      break;
     }
     if(!match_types(CAR(n)->type,mixed_type_string))
       yyerror("Bad conditional expression.");
