@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.6 2002/08/28 13:40:24 mikael Exp $
+// $Id: Local.pmod,v 1.7 2003/04/27 02:25:33 nilsson Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -26,7 +26,7 @@ mixed `[](string name) {
     return remove_path;
   }
 
-  // FIXME: Should .pike och .pmod files have priority?
+  // FIXME: Should .pike or .pmod files have priority?
   //        currently .pike files has it here, but .pmod in the
   //        resolver. // mikael
   
@@ -73,12 +73,12 @@ static void create() {
   add_path("/opt/share/pike_modules");
   add_path("/usr/local/share/pike_modules");
 
-  if( (tmp=getenv("HOME")) || (tmp=getenv("USERPROFILE")) ) {
+  if( (tmp=[string]getenv("HOME")) || (tmp=[string]getenv("USERPROFILE")) ) {
     tmp = (tmp[-1]=='/'?tmp:tmp+"/")+"pike_modules/";
     add_path(tmp);
   }
 
-  if(tmp = getenv("PIKE_LOCAL_PATH") ) {
+  if(tmp = [string]getenv("PIKE_LOCAL_PATH") ) {
     array to_add=reverse(tmp/":"); // preserve order
     add_path( to_add[*] ); 
   }

@@ -20,14 +20,14 @@ class Process
   //!   calling @[split_quoted_string].
   //! @seealso
   //!   @[create_process], @[split_quoted_string]
-  void create( string|array(string) args, void|mapping m )
+  void create( string|array(string) args, void|mapping(string:mixed) m )
   {
     if( stringp( args ) )
-      args = split_quoted_string( args );
+      args = split_quoted_string( [string]args );
     if( m )
-      ::create( args, m );
+      ::create( [array(string)]args, m );
     else
-      ::create( args );
+      ::create( [array(string)]args );
   }
 }
 
@@ -38,13 +38,14 @@ int exec(string file,string ... foo)
     string path;
 
     if(has_value(file,"/"))
-      return exece(combine_path(getcwd(),file),foo,getenv());
+      return exece(combine_path(getcwd(),file),foo,
+		   [mapping(string:string)]getenv());
 
-    path=getenv("PATH");
+    path=[string]getenv("PATH");
 
     foreach(path ? path/":" : ({}) , path)
       if(file_stat(path=combine_path(path,file)))
-	return exece(path, foo,getenv());
+	return exece(path, foo, [mapping(string:string)]getenv());
   }
   return 69;
 }
@@ -67,7 +68,7 @@ string search_path(string command)
 	 string t;
 	 if (s[0]=='~')  // some shells allow ~-expansion in PATH
 	 {
-	    if (s[0..1]=="~/" && (t=getenv("HOME"))) 
+	    if (s[0..1]=="~/" && (t=[string]getenv("HOME")))
 	       s=t+s[1..];
 	    else
 	    {
@@ -167,7 +168,7 @@ array(string) split_quoted_string(string s)
 Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 	      function|void cleanup, mixed ... args)
 {
-  mapping data=(["env":getenv()]);
+  mapping(string:mixed) data=(["env":getenv()]);
   if(stdin) data->stdin=stdin;
   if(stdout) data->stdout=stdout;
   if(stderr) data->stderr=stderr;
@@ -188,19 +189,17 @@ Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 //!
 string popen(string s)
 {
-  object p;
-  string t;
-  object f = Stdio.File();
+  Stdio.File f = Stdio.File();
 
   if (!f) error("Popen failed. (couldn't create pipe)\n");
 
-  p=f->pipe(Stdio.PROP_IPC);
+  Stdio.File p=f->pipe(Stdio.PROP_IPC);
   if(!p) error("Popen failed. (couldn't create pipe)\n");
   spawn(s,0,p,0, destruct, f);
   p->close();
   destruct(p);
 
-  t=f->read(0x7fffffff);
+  string t=f->read(0x7fffffff);
   if(!t)
   {
     int e;
@@ -242,13 +241,13 @@ class Spawn
 
    object pid;
 
-   private object low_spawn(array(void|object(Stdio.File)) fdp,
-			    array(void|object(Stdio.File)) fd_to_close,
+   private object low_spawn(array(Stdio.File) fdp,
+			    array(Stdio.File) fd_to_close,
 			    string cmd, void|array(string) args, 
 			    void|mapping(string:string) env, 
 			    string|void cwd)
    {
-      object(Stdio.File) pie,pied; /* interprocess communication */
+      Stdio.File pie, pied; // interprocess communication
       object pid;
 
       pie=Stdio.File();
@@ -268,7 +267,7 @@ class Spawn
 	    if (sizeof(fdp)>1 && fdp[1]) fdp[1]->dup2(Stdio.File("stdout"));
 	    if (sizeof(fdp)>2 && fdp[2]) fdp[2]->dup2(Stdio.File("stderr"));
 	    /* dup2 fdd[3..] here FIXME FIXME */
-	    foreach (fd_to_close,object f) 
+	    foreach (fd_to_close, Stdio.File f)
 	       if (objectp(f)) { f->close(); destruct(f); }
 	    pie->close();
 	    destruct(pie);
