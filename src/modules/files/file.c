@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.54 1997/09/16 07:32:42 hubbe Exp $");
+RCSID("$Id: file.c,v 1.55 1997/09/22 21:03:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -997,7 +997,7 @@ int socketpair(int family, int type, int protocol, int sv[2])
     
     /* I wonder what is most common a loopback on ip# 127.0.0.1 or
      * a loopback with the name "localhost"?
-     * Let's hope those few people who doesn't have socketpair has
+     * Let's hope those few people who don't have socketpair have
      * a loopback on 127.0.0.1
      */
     my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
