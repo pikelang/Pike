@@ -1,3 +1,8 @@
+Sun May 25 18:17:36 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* backend.c: set_{read,write}_callback now wakes up backend
+	  properly.
+
 Sun May 25 20:30:14 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/{files,spider,system}/configure.in: Added check for libbind.
