@@ -26,20 +26,16 @@ testfont binary
 # Remove the corresponding line before committing
 # changes to these files.
 /Makefile foreign_ident
-/bin/autodoc.pike foreign_ident
 /bin/export.pike foreign_ident
 /bin/extract.pike foreign_ident
 /bin/feature_list foreign_ident
 /bin/httpd.pike foreign_ident
-/bin/join-autodoc.pike foreign_ident
 /bin/make_ci.pike foreign_ident
 /bin/mkpeep.pike foreign_ident
 /bin/mktreeopt.pike foreign_ident
 /bin/mkwmml.pike foreign_ident
-/bin/mkxml.pike foreign_ident
 /bin/pikedoc.pike foreign_ident
 /bin/pikedoc2.pike foreign_ident
-/bin/split-autodoc.pike foreign_ident
 /bin/test_pike.pike foreign_ident
 /bin/unbug foreign_ident
 /lib/master.pike.in foreign_ident
