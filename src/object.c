@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.251 2004/03/15 22:47:15 mast Exp $
+|| $Id: object.c,v 1.252 2004/03/16 14:18:52 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.251 2004/03/15 22:47:15 mast Exp $");
+RCSID("$Id: object.c,v 1.252 2004/03/16 14:18:52 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -31,6 +31,7 @@ RCSID("$Id: object.c,v 1.251 2004/03/15 22:47:15 mast Exp $");
 #include "constants.h"
 #include "encode.h"
 #include "pike_types.h"
+#include "operators.h"
 
 #include "block_alloc.h"
 
@@ -697,14 +698,47 @@ static void call_destroy(struct object *o, int foo)
 #endif
     if(check_destroy_called_mark_semafore(o))
     {
+      JMP_BUF jmp;
+
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)
 	fprintf(stderr, "|   Calling destroy() in %p with %d refs.\n",
 		o, o->refs);
 #endif
-      if(foo) push_int(1);
-      safe_apply_low2(o, e, foo?1:0, 1);
-      pop_stack();
+
+      free_svalue (&throw_value);
+      throw_value.type = T_INT;
+
+      if (SETJMP (jmp)) {
+	UNSETJMP (jmp);
+	if (gc_destruct_everything) {
+	  struct svalue err;
+	  move_svalue (&err, &throw_value);
+	  throw_value.type = T_INT;
+	  if (!SETJMP (jmp)) {
+	    push_svalue (&err);
+	    push_int (0);
+	    push_text ("Got error during final cleanup:\n");
+	    push_svalue (&err);
+	    push_int (0);
+	    o_index();
+	    f_add (2);
+	    f_index_assign (3);
+	    pop_stack();
+	  }
+	  UNSETJMP (jmp);
+	  move_svalue (&throw_value, &err);
+	}
+	call_handle_error();
+      }
+
+      else {
+	if(foo) push_int(1);
+	apply_low(o, e, foo?1:0);
+	pop_stack();
+	UNSETJMP (jmp);
+      }
+
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)
 	fprintf(stderr, "|   Called destroy() in %p with %d refs.\n",
