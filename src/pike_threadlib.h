@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.39 2003/04/01 19:41:13 mast Exp $
+|| $Id: pike_threadlib.h,v 1.40 2003/04/01 22:34:31 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -349,7 +349,7 @@ typedef struct cond_t_s
 
 #define COND_T struct cond_t_s
 
-#define co_init(X) do { mt_init(& (X)->lock), (X)->head=(X)->tail=0; }while(0)
+#define co_init(X) do { mt_init(& (X)->lock); (X)->head=(X)->tail=0; }while(0)
 
 PMOD_EXPORT int co_wait(COND_T *c, PIKE_MUTEX_T *m);
 PMOD_EXPORT int co_signal(COND_T *c);
