@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.194 1999/12/31 01:53:58 mast Exp $");
+RCSID("$Id: program.c,v 1.195 1999/12/31 14:51:42 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1911,25 +1911,37 @@ int define_variable(struct pike_string *name,
     /* not inherited */
     if(new_program->identifier_references[n].inherit_offset == 0) 
     {
-      my_yyerror("Identifier '%s' defined twice.",name->str);
-      return n;
+      if (!((IDENTIFIERP(n)->id_flags | flags) & ID_EXTERN)) {
+	my_yyerror("Identifier '%s' defined twice.",name->str);
+	return n;
+      }
+      if (flags & ID_EXTERN) {
+	/* FIXME: Check type */
+	return n;
+      }
     }
 
-    if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
-      my_yyerror("Illegal to redefine 'nomask/final' variable/functions \"%s\"", name->str);
+    if (!(IDENTIFIERP(n)->id_flags & ID_EXTERN)) {
+      if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
+	my_yyerror("Illegal to redefine 'nomask/final' "
+		   "variable/functions \"%s\"", name->str);
 
-    if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || compiler_pass!=1)
-    {
-      if(ID_FROM_INT(new_program, n)->type != type)
-	my_yyerror("Illegal to redefine inherited variable with different type.");
-
-      if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(new_program, n)->identifier_flags))
+      if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || compiler_pass!=1)
       {
-	my_yyerror("Illegal to redefine inherited variable with different type.");
-      }
+	if(ID_FROM_INT(new_program, n)->type != type)
+	  my_yyerror("Illegal to redefine inherited variable "
+		     "with different type.");
 
-      IDENTIFIERP(n)->id_flags = flags;
-      return n;
+	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(new_program, n)->
+				   identifier_flags))
+	{
+	  my_yyerror("Illegal to redefine inherited variable "
+		     "with different type.");
+	}
+
+	IDENTIFIERP(n)->id_flags = flags & ~ID_EXTERN;
+	return n;
+      }
     }
   }
 
@@ -3684,6 +3696,104 @@ int implements(struct program *a, struct program *b)
   return implements_cache[hval].ret;
 }
 
+/* Returns 1 if a is compatible with b */
+static int low_is_compatible(struct program *a, struct program *b)
+{
+  int e;
+  struct pike_string *s=findstring("__INIT");
+
+  /* Optimize the loop somewhat */
+  if (a->num_identifier_references < b->num_identifier_references) {
+    struct program *tmp = a;
+    a = b;
+    b = tmp;
+  }
+
+  for(e=0;e<b->num_identifier_references;e++)
+  {
+    struct identifier *bid;
+    int i;
+    if (b->identifier_references[e].id_flags & (ID_STATIC|ID_HIDDEN))
+      continue;		/* Skip static & hidden */
+
+    /* FIXME: What if they aren't static & hidden in a? */
+
+    bid = ID_FROM_INT(b,e);
+    if(s == bid->name) continue;	/* Skip __INIT */
+    i = find_shared_string_identifier(bid->name,a);
+    if (i == -1) {
+      continue;		/* It's ok... */
+    }
+
+    if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
+#if 0
+      fprintf(stderr, "Identifier \"%s\" is incompatible.\n",
+	      bid->name->str);
+#endif /* 0 */
+      return 0;
+    }
+  }
+  return 1;
+}
+
+static struct implements_cache_s is_compatible_cache[IMPLEMENTS_CACHE_SIZE];
+/* Returns 1 if a is compatible with b
+ * ie it's possible to write a hypothetical c that implements both.
+ */
+int is_compatible(struct program *a, struct program b)
+{
+  unsigned long hval;
+  unsigned long rhval;
+  int aid, bid;
+  if(!a || !b) return -1;
+  if(a==b) return 1;
+
+  /* Order the id's so we don't need double entries in the cache. */
+  aid = a->id;
+  bid = b->id;
+  if (aid > bid) {
+    int tmp = aid;
+    aid = bid;
+    bid = tmp;
+  }
+
+  hval = aid*9248339 + bid;
+  hval %= IMPLEMENTS_CACHE_SIZE;
+#ifdef PIKE_DEBUG
+  if(hval >= IMPLEMENTS_CACHE_SIZE)
+    fatal("Implements_cache failed!\n");
+#endif
+  if(is_compatible_cache[hval].aid==aid &&
+     is_compatible_cache[hval].bid==bid)
+  {
+    return is_compatible_cache[hval].ret;
+  }
+  if(implements_cache[hval].aid==aid &&
+     implements_cache[hval].bid==bid &&
+     implements_cache[hval].ret)
+  {
+    /* a implements b */
+    return 1;
+  }
+  rhval = bid*9248339 + aid;
+  rhval %= IMPLEMENTS_CACHE_SIZE;
+#ifdef PIKE_DEBUG
+  if(rhval >= IMPLEMENTS_CACHE_SIZE)
+    fatal("Implements_cache failed!\n");
+#endif
+  if(implements_cache[rhval].aid==bid &&
+     implements_cache[rhval].bid==aid &&
+     implements_cache[rhval].ret)
+  {
+    /* b implements a */
+    return 1;
+  }
+  /* Do it the tedious way */
+  is_compatible_cache[hval].aid=aid;
+  is_compatible_cache[hval].bid=bid;
+  is_compatible_cache[hval].ret=low_is_compatible(a,b);
+  return is_compatible_cache[hval].ret;
+}
 
 /* returns 1 if a implements b */
 int yyexplain_not_implements(struct program *a, struct program *b)
