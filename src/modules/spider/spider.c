@@ -1262,20 +1262,21 @@ void pike_module_init(void)
   add_efun("discdate", f_discdate, "function(int:array)", 0);
   add_efun("stardate", f_stardate, "function(int,void|int:int)", 0);
 
-  add_efun("timezone",f_timezone,"function(:int)",0);
-  add_efun("get_all_active_fd",f_get_all_active_fd,"function(:array(int))",0);
+  add_efun("timezone", f_timezone, "function(:int)", 0);
+  add_efun("get_all_active_fd", f_get_all_active_fd, "function(:array(int))",
+	   OPT_EXTERNAL_DEPEND);
 #if 0
-  add_efun("name_process",f_name_process,"function(string:void)",0);
+  add_efun("name_process", f_name_process, "function(string:void)", 0);
 #endif
-  add_efun("fd_info",f_fd_info,"function(int:string)",0);
-  add_efun("mark_fd",f_mark_fd,"function(int,void|mixed:mixed)",0);
+  add_efun("fd_info", f_fd_info, "function(int:string)", 0);
+  add_efun("mark_fd", f_mark_fd, "function(int,void|mixed:mixed)", 0);
 
   /* timezone() needs */
   { 
     time_t foo = (time_t)0;
     struct tm *g;
 
-    g=localtime(&foo);
+    g = localtime(&foo);
 #ifndef HAVE_INT_TIMEZONE
     _tz = g->tm_gmtoff;
 #endif
