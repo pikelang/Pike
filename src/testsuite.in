@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.650 2003/05/30 23:19:26 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.651 2003/06/02 16:36:14 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4457,6 +4457,11 @@ test_any([[
 
 test_equal([[lambda(mapping x){return ({x[17]++,x[17]++,x[17]++});}(([]))]],
 		[[({0,1,2})]])
+
+test_equal([[([1:2, 3:4]) - (<0, 1, 2>)]], ([3:4]))
+test_equal([[([1:2, 3:4]) - ({0, 1, 2})]], ([3:4]))
+test_equal([[([1:2, 3:4]) & (<0, 1, 2>)]], ([1:2]))
+test_equal([[([1:2, 3:4]) & ({0, 1, 2})]], ([1:2]))
 
 // destructed indices
 test_any([[{
