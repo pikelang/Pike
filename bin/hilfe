@@ -7,9 +7,6 @@
 #include <array.h>
 #include <string.h>
 #include <getopt.h>
-#if efun(thread_create)
-#include <fifo.h>
-#endif
 
 /* todo:
  *  return (void)1; will give me problems.
