@@ -299,7 +299,6 @@ testfont binary
 /src/docode.c foreign_ident
 /src/docode.h foreign_ident
 /src/dumpmaster.pike foreign_ident
-/src/dumpmodule.pike foreign_ident
 /src/dynamic_buffer.c foreign_ident
 /src/dynamic_buffer.h foreign_ident
 /src/dynamic_load.c foreign_ident
