@@ -153,7 +153,7 @@ class asn1_compound
   string debug_string()
     {
       WERROR(sprintf("asn1_compound[%s]->debug_string(), elements = %O\n",
-		     type_name, values(elements)));
+		     type_name, elements));
       return type_name + "[" + elements->debug_string() * ",\n" + "]";
     }
 }
@@ -180,9 +180,12 @@ class asn1_string
       value = contents;
       return this_object();
     }
+  
   string debug_string()
     {
-      return sprintf("%s%O", type_name, value);
+      WERROR(sprintf("asn1_string[%s]->debug_string(), value = %O\n",
+		     type_name, value));
+      return sprintf("%s %O", type_name, value);
     }
 }
 
@@ -254,7 +257,7 @@ class asn1_integer
   
   string debug_string()
     {
-      return value->digits();
+      return sprintf("INTEGER (%d) %s", value->size(), value->digits());
     }
 
 }
@@ -303,7 +306,9 @@ class asn1_bit_string
   
   string debug_string()
     {
-      return "BIT STRING " + (Gmp.mpz(value, 256) >> unused)->digits(2);
+      return sprintf("BIT STRING (%d) %s",
+		     sizeof(value) * 8 - unused,
+		     (Gmp.mpz(value, 256) >> unused)->digits(2));
     }
 }
 
