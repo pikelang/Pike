@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.18 2001/08/20 16:08:10 nilsson Exp $
+ * $Id: autodoc.pike,v 1.19 2001/08/23 19:08:24 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -13,6 +13,12 @@ class MirarDoc
 
 int main(int argc, array(string) argv)
 {
+  int rootless;
+  if(has_value(argv, "--rootless")) {
+    rootless = 1;
+    argv -= ({ "--rootless" });
+  }
+
   foreach(argv[1..], string path) {
     object st = file_stat(path);
 
@@ -51,6 +57,7 @@ int main(int argc, array(string) argv)
 	  if (has_suffix(path, ".c") || has_suffix(path, ".h")) {
 	    info = Tools.AutoDoc.CExtractor.extract(raw, path);
 	    module_path_fixed = 1;
+
 	  } else if (has_suffix(path, ".pmod")) {
 	    if (segments[-1] == "module.pmod") {
 	      // Handling of Foo.pmod/module.pmod.
@@ -63,6 +70,7 @@ int main(int argc, array(string) argv)
 	      name = segments[-1];
 	    }
 	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
+
 	  } else if (has_suffix(path, ".pike")) {
 	    if (segments[-1] == "module.pike") {
 	      // Handling of Foo.pmod/module.pike.
@@ -70,7 +78,15 @@ int main(int argc, array(string) argv)
 	    }
 	    // Note: The below works for both .pike and .pmod.
 	    name = segments[-1][..sizeof(segments[-1])-6];
+
 	    info = Tools.AutoDoc.PikeExtractor.extractClass(raw, path, name);
+	    if(rootless) {
+	      Tools.AutoDoc.PikeObjects.Module m =
+		Tools.AutoDoc.PikeObjects.Module();
+	      m->children = ({ info });
+	      m->name = "";
+	      info = m;
+	    }
 	  } else if (has_suffix(path, ".pmod.in")) {
 	    if (segments[-1] == "module.pmod.in") {
 	      // Handling of Foo.pmod/module.pmod.
@@ -84,6 +100,7 @@ int main(int argc, array(string) argv)
 	    }
 	    raw = replace(raw, "@module@", sprintf("%O", "___"+name));
 	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
+
 	  } else if (segments[-1] == "master.pike.in") {
 	    module_path_fixed = 1;
 	    info = Tools.AutoDoc.PikeExtractor.extractClass(raw, path, "/master");
@@ -92,6 +109,7 @@ int main(int argc, array(string) argv)
 	    m->children = ({ info });
 	    m->name = "";
 	    info = m;
+
 	  } else {
 	    werror("Unknown filetype %O\n", path);
 	    exit(1);
