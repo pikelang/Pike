@@ -103,6 +103,7 @@ mapping(string : multiset(string)) allowedChildren =
 
 mapping(string : multiset(string)) allowGrouping =
 (["param" : (< "param" >),
+  "member" : (< "member" >),
 ]);
 
 // argHandlers:
