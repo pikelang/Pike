@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.25 2001/07/20 19:18:09 mast Exp $
+ * $Id: pike_macros.h,v 1.26 2001/07/22 21:36:14 mast Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -126,6 +126,8 @@
 #define PIKE_XCONCAT3(X,Y,Z)	PIKE_CONCAT(X,Y,Z)
 #define PIKE_XCONCAT4(X,Y,Z,Q)	PIKE_CONCAT(X,Y,Z,Q)
 
+/* Useful to get a literal comma in an argument to a macro. */
+#define COMMA ,
 
 /* Needed for fsort_template.h */
 PMOD_EXPORT int my_log2(size_t x);
