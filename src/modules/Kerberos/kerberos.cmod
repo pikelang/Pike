@@ -1,0 +1,134 @@
+/*
+ * $Id: kerberos.cmod,v 1.1 2004/05/13 08:57:08 grubba Exp $
+ *
+ * Kerberos support for Pike.
+ *
+ * 2004-05-12 Henrik Grubbström
+ *
+ * FIXME: Currently only minimal support, and only for Kerberos 5 (not 4).
+ */
+
+#include "global.h"
+#include "config.h"
+
+#include "svalue.h"
+#include "module.h"
+#include "interpret.h"
+
+#if defined(HAVE_KRB5_H) && defined(HAVE_LIBKRB5)
+#define HAVE_KRB5
+#endif
+
+DECLARATIONS
+
+/* #define KRB_DEBUG */
+
+#ifdef KRB_DEBUG
+#define KRB_FPRINTF(X)	fprintf X
+#else /* !KRB_DEBUG */
+#define KRB_FPRINTF(X)
+#endif /* KRB_DEBUG */
+
+#ifdef HAVE_KRB5
+
+#ifdef HAVE_KRB5_H
+#include <krb5.h>
+#endif
+
+PIKECLASS Context
+{
+  CVAR krb5_context ctx;
+
+  INIT
+  {
+    krb5_error_code err_code;
+    if ((err_code = krb5_init_context(&THIS->ctx))) {
+      Pike_error("Failed to initialize context: %d\n", err_code);
+    }
+  }
+
+  EXIT
+  {
+    if (THIS->ctx) {
+      krb5_free_context(THIS->ctx);
+    }
+  }
+
+  PIKEFUN int(0..1) authenticate(string user, string password)
+    optflags OPT_EXTERNAL_DEPEND;
+  {
+    krb5_error_code err_code;
+    krb5_principal principal;
+    krb5_get_init_creds_opt get_creds_opt;
+    krb5_verify_init_creds_opt verify_creds_opt;
+    krb5_creds creds;
+    ONERROR err;
+
+    /* Hide the password from backtraces. */
+    Pike_sp[0] = Pike_sp[1-args];
+    Pike_sp[1-args].type = PIKE_T_INT;
+    Pike_sp[1-args].subtype = NUMBER_UNDEFINED;
+    Pike_sp[1-args].u.integer = 0;
+    Pike_sp++;
+    args++;
+
+    if (user->size_shift || password->size_shift) {
+      KRB_FPRINTF((stderr, "Wide password or user name.\n"));
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+
+    if ((err_code = krb5_parse_name(THIS->ctx, STR0(user), &principal))) {
+      KRB_FPRINTF((stderr, "Failed to parse user name: %d\n", err_code));
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+
+    krb5_get_init_creds_opt_init(&get_creds_opt);
+    krb5_verify_init_creds_opt_init(&verify_creds_opt);
+
+    if ((err_code = krb5_get_init_creds_password(THIS->ctx, &creds,
+						 principal, STR0(password),
+						 krb5_prompter_posix,
+						 NULL, 0, NULL,
+						 &get_creds_opt))) {
+      KRB_FPRINTF((stderr, "Failed to get password credentials: %d.\n",
+		   err_code));
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+
+    if ((err_code = krb5_verify_init_creds(THIS->ctx, &creds,
+					   NULL, NULL, NULL,
+					   &verify_creds_opt))) {
+      krb5_free_cred_contents(THIS->ctx, &creds);
+      KRB_FPRINTF((stderr, "Failed to verify credentials: %d.\n", err_code));
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+
+    krb5_free_cred_contents(THIS->ctx, &creds);
+    KRB_FPRINTF((stderr, "Credentials ok."));
+
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
+}
+
+
+#endif /* HAVE_KRB5 */
+
+PIKE_MODULE_INIT
+{
+  INIT;
+}
+
+PIKE_MODULE_EXIT
+{
+  EXIT;
+}

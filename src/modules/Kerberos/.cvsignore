@@ -1,0 +1,17 @@
+Makefile
+config.h
+config.h.in
+config.log
+config.status
+configure
+dependencies
+linker_options
+make_variables
+modlist_headers
+modlist_segment
+testsuite
+remake
+stamp-h
+stamp-h.in
+kerberos.c
+kerberos.cmod.compiled
