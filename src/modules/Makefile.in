@@ -12,7 +12,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 all: modules
 
 modules:
-	for a in $(MODULES) ; do echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a ) ; done
+	for a in $(MODULES) ; do echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a ) || exit $$? ; done
 	$(MAKE) linker_options modlist.h modlist_headers.h
 
 modlist.h: $(MODULE_SEGMENTS)
@@ -34,9 +34,9 @@ clean:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; done
 
 verify:
-	for a in $(MODULES) ; do ( cd $$a ; echo verifying $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; echo verifying $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify ) || exit $$? ; done
 
 verbose_verify:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify ) || exit $$? ; done
 
 @dependencies@
