@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.41 1999/02/26 01:14:07 grubba Exp $
+/* $Id: master.pike.in,v 1.42 1999/03/17 21:44:52 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -216,7 +216,7 @@ static program low_findprog(string pname, string ext)
 	if(s2[1]>=0 && s2[3]>=s[3])
 	{
 	  mixed err=catch {
-	    return decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
+	    return programs[fname]=decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
 	  };
 	  if(want_warnings)
 	    werror("Failed to decode %s.o\n",fname);
