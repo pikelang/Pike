@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.56 2001/03/14 15:43:04 grubba Exp $
+//! $Id: DNS.pmod,v 1.57 2001/04/09 16:51:09 jonasw Exp $
 
 #pike __REAL_VERSION__
 
@@ -513,54 +513,73 @@ class client
 	  break;
 
       if (!resolv_conf) {
-	/* FIXME: Is this a good idea?
-	 * Why not just try the fallback?
-	 * /grubba 1999-04-14
-	 *
-	 * Now uses 127.0.0.1 as fallback.
-	 * /grubba 2000-10-17
-	 */
-	resolv_conf = "nameserver 127.0.0.1";
+	if (system->get_netinfo_property) {
+	  //  Mac OS X / Darwin (and possibly other systems) that use
+	  //  NetInfo may have these values in the database.
+	  if (nameservers =
+	      system->get_netinfo_property(".",
+					   "/locations/resolver",
+					   "nameserver")) {
+	    nameservers = sizeof(nameservers) && map(nameservers, `-, "\n");
+	  }
+	  
+	  if (domains = system->get_netinfo_property(".",
+						    "/locations/resolver",
+						    "domain")) {
+	    domains = sizeof(domains) && map(domains, `-, "\n");
+	  }
+	} else {
+	  /* FIXME: Is this a good idea?
+	   * Why not just try the fallback?
+	   * /grubba 1999-04-14
+	   *
+	   * Now uses 127.0.0.1 as fallback.
+	   * /grubba 2000-10-17
+	   */
+	  resolv_conf = "nameserver 127.0.0.1";
+	}
 #if 0
 	throw(({ "Protocols.DNS.client(): No /etc/resolv.conf!\n",
 		 backtrace() }));
 #endif /* 0 */
       }
 
-      foreach(resolv_conf/"\n", string line)
-      {
-	string rest;
-	sscanf(line,"%s#",line);
-	sscanf(line,"%*[\r \t]%s",line);
-	line=reverse(line);
-	sscanf(line,"%*[\r \t]%s",line);
-	line=reverse(line);
-	sscanf(line,"%s%*[ \t]%s",line,rest);
-	switch(line)
+      if (resolv_conf)
+	foreach(resolv_conf/"\n", string line)
 	{
-	  case "domain":
-	    // Save domain for later.
-	    domain = sizeof(rest) && rest;
-	    break;
-	  case "search":
-	    rest = replace(rest, "\t", " ");
-	    domains += ((rest/" ") - ({""}));
-	    break;
+	  string rest;
+	  sscanf(line,"%s#",line);
+	  sscanf(line,"%*[\r \t]%s",line);
+	  line=reverse(line);
+	  sscanf(line,"%*[\r \t]%s",line);
+	  line=reverse(line);
+	  sscanf(line,"%s%*[ \t]%s",line,rest);
+	  switch(line)
+	  {
+	    case "domain":
+	      // Save domain for later.
+	      domain = sizeof(rest) && rest;
+	      break;
+	    case "search":
+	      rest = replace(rest, "\t", " ");
+	      domains += ((rest/" ") - ({""}));
+	      break;
 	      
-	  case "nameserver":
-	    if (!is_ip(rest)) {
-	      // Not an IP-number!
-	      string host = rest;
-	      if (!(rest = match_etc_hosts(host))) {
-		werror(sprintf("Protocols.DNS.client(): "
-			       "Can't resolv nameserver \"%s\"\n", host));
-		break;
+	    case "nameserver":
+	      if (!is_ip(rest)) {
+		// Not an IP-number!
+		string host = rest;
+		if (!(rest = match_etc_hosts(host))) {
+		  werror(sprintf("Protocols.DNS.client(): "
+				 "Can't resolv nameserver \"%s\"\n", host));
+		  break;
+		}
 	      }
-	    }
-	    if (sizeof(rest)) {
-	      nameservers += ({ rest });
-	    }
-	    break;
+	      if (sizeof(rest)) {
+		nameservers += ({ rest });
+	      }
+	      break;
+	  }
 	}
       }
       if(domain)
