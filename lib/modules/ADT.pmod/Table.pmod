@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.7 1998/06/18 13:21:34 noring Exp $
+// $Id: Table.pmod,v 1.8 1998/06/24 17:02:42 noring Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -312,6 +312,7 @@ object Separated = class {
   
   mixed encode(object t, void|mapping options)
   {
+    options = options || ([]);
     string rowsep = options->rowsep||"\n";
     string colsep = options->colsep||"\t";
     return Array.map(({ indices(t) }) + values(t),
