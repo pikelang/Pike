@@ -392,6 +392,18 @@ class ReadInteractive
     signal(signum("SIGINT"));
   }
 
+  string edit(mixed ... args)
+  {
+    string r = ::edit(@args);
+    if(!r)
+    {
+      // ^D?
+      destruct(this_object());
+      exit(0);
+    }
+    return r;
+  }
+  
   static private string file_completion(string tab)
   {
     string text = gettext();
@@ -466,7 +478,13 @@ int main(int argc, string *argv)
     case "--interactive":
       write("\n"
 	    "   Welcome to the interactive "+version()+
-	    " installation script.\n");
+	    " installation script.\n"
+	    "\n"
+	    "   The script will guide you through the installation process by asking\n"
+	    "   a few questions. Whenever you input a path or a filename, you may use\n"
+	    "   the <tab> key to perform filename completion. You will be able to\n"
+	    "   confirm your settings before the installation begin.\n"
+	    );
       
       interactive=ReadInteractive();
 
@@ -487,8 +505,8 @@ int main(int argc, string *argv)
 	
 	write("\n");
 	confirm =
-	  lower_case(interactive->edit("",
-			 "Are the settings above correct [Y/n/quit]? "));
+	  lower_case(interactive->
+		     edit("", "Are the settings above correct [Y/n/quit]? "));
 	if(confirm == "quit")
 	{
 	  // Maybe clean up?
