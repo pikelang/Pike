@@ -1,4 +1,7 @@
 Makefile
+Pike.wxs
+Pike_banner.bmp
+Pike_module.wxs
 autodoc.xml
 autodoc-stamp
 backend.c
@@ -65,3 +68,6 @@ y.output
 y.tab.c
 y.tab.h
 *.compiled
+*.wixobj
+*.msm
+*.msi
