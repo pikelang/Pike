@@ -1,1 +1,40 @@
-
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a=\"f'o\">")->read();
+]], "f'o")
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a='f\"o'>")->read();
+]], "f\"o")
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a=\"\\\">")->read();
+]], "\\")
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a=\"f\"'\"'\"o\">")->read();
+]], "f\"o")
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a='f")->feed("oo'>")->read();
+]], "foo")
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a='f")->read() + p->feed("oo'>")->read();
+]], "foo")
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a='f>")->read();
+]], "")
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({a->a});});
+  return p->feed("<t a='f>")->finish()->read();
+]], "f>")
