@@ -350,13 +350,6 @@ int main()
 lpc_cv_hardware_unalignedRW=yes,
 lpc_cv_hardware_unalignedRW=no)])
 
-if test "$lpc_cv_hardware_unalignedRW" = "yes"; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HANDLES_UNALIGNED_MEMORY_ACCESS) 
-else
-  AC_MSG_RESULT(no)
-fi
-
 AC_MSG_CHECKING(for working memmem)
 AC_CACHE_VAL(lpc_cv_func_memmem,
 [
