@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.239 2003/01/11 19:45:24 per Exp $
+|| $Id: signal_handler.c,v 1.240 2003/02/28 18:48:29 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.239 2003/01/11 19:45:24 per Exp $");
+RCSID("$Id: signal_handler.c,v 1.240 2003/02/28 18:48:29 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -97,6 +97,10 @@ RCSID("$Id: signal_handler.c,v 1.239 2003/01/11 19:45:24 per Exp $");
 # include <sys/termios.h>
 #endif
 
+#ifdef HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif
+
 #ifdef __amigaos__
 #define timeval amigaos_timeval
 #include <exec/types.h>
@@ -135,12 +139,16 @@ RCSID("$Id: signal_handler.c,v 1.239 2003/01/11 19:45:24 per Exp $");
 #endif /* HAVE_UNION_WAIT */
 #endif /* !WEXITSTATUS */
 
+#ifndef WUNTRACED
+#define WUNTRACED	0
+#endif /* !WUNTRACED */
+
 /* Number of EBADF's before the set_close_on_exec() loop terminates. */
 #ifndef PIKE_BADF_LIMIT
 #define PIKE_BADF_LIMIT	1024
 #endif /* !PIKE_BADF_LIMIT */
 
-/* #define PROC_DEBUG */
+#define PROC_DEBUG
 
 #ifndef __NT__
 #define USE_PID_MAPPING
@@ -260,7 +268,8 @@ DECLARE_FIFO(sig, unsigned char);
 
 #ifdef USE_PID_MAPPING
 static void report_child(int pid,
-			 WAITSTATUSTYPE status);
+			 WAITSTATUSTYPE status,
+			 const char *called_from);
 #endif
 
 
@@ -555,7 +564,7 @@ void process_started(pid_t pid)
   }
 }
 
-void process_done(pid_t pid, char *from)
+void process_done(pid_t pid, const char *from)
 {
   if(pid < 1)
     Pike_fatal("Pid out of range in %s: %ld\n",from,(long)pid);
@@ -695,9 +704,9 @@ PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk)
 #endif
 		"defined.\n");
 	
-      process_done(FIFO_DATA(wait,wait_data).pid,"check_signals");
       report_child(FIFO_DATA(wait,wait_data).pid,
-		   FIFO_DATA(wait,wait_data).status);
+		   FIFO_DATA(wait,wait_data).status,
+		   "check_signals");
       
       END_FIFO_LOOP(wait,wait_data);
     }
@@ -949,7 +958,7 @@ static RETSIGTYPE receive_sigchild(int signum)
 
  try_reap_again:
   /* We carefully reap what we saw */
-  pid=MY_WAIT_ANY(&status, WNOHANG);
+  pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
   
   if(pid>0)
   {
@@ -974,9 +983,12 @@ static RETSIGTYPE receive_sigchild(int signum)
 #endif
 
 
-#define PROCESS_UNKNOWN -1
-#define PROCESS_RUNNING 0
-#define PROCESS_EXITED 1
+#define PROCESS_UNKNOWN		-1
+#define PROCESS_RUNNING		0
+#define PROCESS_STOPPED		1
+#define PROCESS_EXITED		2
+
+#define PROCESS_FLAG_TRACED	0x01
 
 #undef THIS
 #define THIS ((struct pid_status *)CURRENT_STORAGE)
@@ -991,6 +1003,8 @@ struct pid_status
 #ifdef __NT__
   HANDLE handle;
 #else
+  int sig;
+  int flags;
   int state;
   int result;
 #endif
@@ -1004,6 +1018,8 @@ static void init_pid_status(struct object *o)
 #ifdef __NT__
   THIS->handle = DO_NOT_WARN(INVALID_HANDLE_VALUE);
 #else
+  THIS->sig=0;
+  THIS->flags=0;
   THIS->state=PROCESS_UNKNOWN;
   THIS->result=-1;
 #endif
@@ -1028,12 +1044,17 @@ static void exit_pid_status(struct object *o)
 
 #ifdef USE_PID_MAPPING
 static void report_child(int pid,
-			 WAITSTATUSTYPE status)
+			 WAITSTATUSTYPE status,
+			 const char *from)
 {
 #ifdef PROC_DEBUG
   /* FIXME: This won't work if WAITSTATUSTYPE == union wait. */
-  fprintf(stderr, "report_child(%d, %d)\n", (int)pid, *(int *) &status);
+  fprintf(stderr, "report_child(%d, %d, \"%s\")\n",
+	  (int)pid, *(int *) &status, from);
 #endif /* PROC_DEBUG */
+  if (!WIFSTOPPED(status)) {
+    process_done(pid, from);
+  }
   if(pid_mapping)
   {
     struct svalue *s, key;
@@ -1047,12 +1068,23 @@ static void report_child(int pid,
 	if((p=(struct pid_status *)get_storage(s->u.object,
 					       pid_status_program)))
 	{
-	  if(WIFEXITED(status)) {
-	    p->result = WEXITSTATUS(status);
+	  if(WIFSTOPPED(status)) {
+	    p->sig = WSTOPSIG(status);
+	    p->state = PROCESS_STOPPED;
+
+	    /* Make sure we don't remove the entry from the mapping... */
+	    return;
 	  } else {
-	    p->result=-1;
+	    if(WIFEXITED(status)) {
+	      p->result = WEXITSTATUS(status);
+	    } else {
+	      if (WIFSIGNALED(status)) {
+		p->sig = WTERMSIG(status);
+	      }
+	      p->result=-1;
+	    }
+	    p->state = PROCESS_EXITED;
 	  }
-	  p->state = PROCESS_EXITED;
 	}
       }
       /* FIXME: Is this a good idea?
@@ -1062,6 +1094,11 @@ static void report_child(int pid,
        * But that will only happen if there isn't a proper pid status
        * object in the value, i.e. either a destructed object or
        * garbage that shouldn't be in the mapping to begin with. /mast
+       *
+       * Now when we wait(2) with WUNTRACED, there are cases
+       * when we want to keep the entry. This is currently
+       * achieved with the return above.
+       *	/grubba 2003-02-28
        */
       map_delete(pid_mapping, &key);
 #ifdef PROC_DEBUG
@@ -1119,7 +1156,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 #endif
 
     mt_lock(&wait_thread_mutex);
-    pid=MY_WAIT_ANY(&status, WNOHANG);
+    pid=MY_WAIT_ANY(&status, WNOHANG|WUNTRACED);
     
     if(pid < 0 && errno==ECHILD)
     {
@@ -1139,7 +1176,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 
     mt_unlock(&wait_thread_mutex);
 
-    if(pid <= 0) pid=MY_WAIT_ANY(&status, 0);
+    if(pid <= 0) pid=MY_WAIT_ANY(&status, 0|WUNTRACED);
 
 #ifdef PROC_DEBUG
     fprintf(stderr, "wait thread: pid=%d errno=%d\n",pid,errno);
@@ -1156,8 +1193,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 #ifdef PROC_DEBUG
       fprintf(stderr, "wait thread: reporting the event!\n");
 #endif
-      process_done(pid,"wait_thread");
-      report_child(pid, status);
+      report_child(pid, status, "wait_thread");
       co_broadcast(& process_status_change);
 
       mt_unlock_interpreter();
@@ -1189,16 +1225,32 @@ static TH_RETURN_TYPE wait_thread(void *data)
  *! system process, with methods for various process housekeeping.
  */
 
-/*! @decl int wait()
- *! Waits for the process to end.
+/*! @decl int wait(int(0..1)|void wait_for_stopped)
+ *!   Waits for the process to end.
+ *!
+ *! @param wait_for_stopped
+ *!   If non-zero, wait for the process to stop running.
+ *!
  *! @returns
- *!   The exit code of the process.
+ *!   @int
+ *!     @value 0..
+ *!       The exit code of the process.
+ *!     @value -1
+ *!       The process was killed by a signal.
+ *!     @value -2
+ *!       The process was stopped by a non-lethal signal.
+ *!   @endint
  */
 static void f_pid_status_wait(INT32 args)
 {
-  pop_n_elems(args);
+  int wait_for_stopped;
   if(THIS->pid == -1)
     Pike_error("This process object has no process associated with it.\n");
+
+  wait_for_stopped = args && !UNSAFE_IS_ZERO(Pike_sp-args);
+
+  pop_n_elems(args);
+
 #ifdef __NT__
   {
     int err=0;
@@ -1229,7 +1281,8 @@ static void f_pid_status_wait(INT32 args)
 
 #ifdef USE_WAIT_THREAD
 
-  while(THIS->state == PROCESS_RUNNING)
+  while(THIS->state == PROCESS_RUNNING ||
+	!wait_for_stopped && THIS->state == PROCESS_STOPPED)
   {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter( & process_status_change);
@@ -1240,7 +1293,8 @@ static void f_pid_status_wait(INT32 args)
 
   {
     int err=0;
-    while(THIS->state == PROCESS_RUNNING)
+    while((THIS->state == PROCESS_RUNNING) ||
+	  (!wait_for_stopped && (THIS->state == PROCESS_STOPPED)))
     {
       int pid;
       WAITSTATUSTYPE status;
@@ -1266,14 +1320,13 @@ static void f_pid_status_wait(INT32 args)
       }
       else {
 	THREADS_ALLOW();
-	pid=WAITPID(pid,& status,0);
+	pid = WAITPID(pid, &status, 0|WUNTRACED);
 	THREADS_DISALLOW();
       }
 
       if(pid > 0)
       {
-	process_done(pid,"->wait");
-	report_child(pid, status);
+	report_child(pid, status, "->wait");
       }
       else
       {
@@ -1297,9 +1350,12 @@ static void f_pid_status_wait(INT32 args)
 	       * unless we can poll the wait data pipe. /mast
 	       */
 	      pid = THIS->pid;
-	      if (THIS->state == PROCESS_RUNNING) {
+	      if ((THIS->state == PROCESS_RUNNING) ||
+		  (!wait_for_stopped && (THIS->state == PROCESS_STOPPED))) {
+		struct pid_status *this = THIS;
 		THREADS_ALLOW();
-		while (!kill(pid, 0)) {
+		while (!kill(pid, 0) &&
+		       !wait_for_stopped && (this->state == PROCESS_STOPPED)) {
 #ifdef PROC_DEBUG
 		  fprintf(stderr, "wait(%d): Sleeping...\n", pid);
 #endif /* PROC_DEBUG */
@@ -1326,7 +1382,8 @@ static void f_pid_status_wait(INT32 args)
 #ifdef PROC_DEBUG
 	      fprintf(stderr, "wait(%d): Process dead.\n", pid);
 #endif /* PROC_DEBUG */
-	      if (THIS->state == PROCESS_RUNNING) {
+	      if (THIS->state == PROCESS_RUNNING &&
+		  !wait_for_stopped && THIS->state == PROCESS_STOPPED) {
 		/* The child hasn't been reaped yet.
 		 * Try waiting some more, and if that
 		 * doesn't work, let the main loop complain.
@@ -1364,20 +1421,29 @@ static void f_pid_status_wait(INT32 args)
     }
   }
 #endif
-  push_int(THIS->result);
+  if (THIS->state == PROCESS_STOPPED) {
+    push_int(-2);
+  } else {
+    push_int(THIS->result);
+  }
 #endif /* __NT__ */
 }
 
-/*! @decl int(-1..1) status()
- *! Returns the status of the process:
+/*! @decl int(-1..2) status()
+ *!   Returns the status of the process:
  *! @int
  *!   @value -1
  *!     Unknown
  *!   @value 0
  *!     Running
  *!   @value 1
+ *!     Stopped
+ *!   @value 2
  *!     Exited
  *! @endint
+ *!
+ *! @note
+ *!   Prior to Pike 7.5 the value 1 was returned for exited processes.
  */
 static void f_pid_status_status(INT32 args)
 {
@@ -1394,6 +1460,19 @@ static void f_pid_status_status(INT32 args)
   }
 #else
   push_int(THIS->state);
+#endif
+}
+
+/*! @decl int(0..) last_signal()
+ *!   Returns the last signal that was sent to the process.
+ */
+static void f_pid_status_last_signal(INT32 args)
+{
+  pop_n_elems(args);
+#ifdef __NT__
+  push_int(0);
+#else
+  push_int(THIS->sig);
 #endif
 }
 
@@ -1430,6 +1509,58 @@ static void f_pid_status_set_priority(INT32 args)
   pop_n_elems(args);
   push_int(r);
 }
+
+
+#ifdef HAVE_PTRACE
+/*! @decl void continue(int|void signal)
+ *!   Allow a traced process to continue.
+ *!
+ *! @param signal
+ *!   Deliver this signal to the process.
+ *!
+ *! @note
+ *!   This function is only useful for traced processes.
+ *!
+ *!   This function currently only exists on systems that
+ *!   implement @tt{ptrace()@}.
+ */
+static void f_pid_status_continue(INT32 args)
+{
+  int cont_signal = 0;
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    Pike_error("pid_status_wait: permission denied.\n");
+#endif
+  if(THIS->pid == -1)
+    Pike_error("This process object has no process associated with it.\n");
+
+  if (!(THIS->flags & PROCESS_FLAG_TRACED)) {
+    Pike_error("This process is not being traced.\n");
+  }
+
+  if (THIS->state != PROCESS_STOPPED) {
+    if (THIS->state == PROCESS_RUNNING) {
+      Pike_error("Process already running.\n");
+    }
+    Pike_error("Process not stopped\n");
+  }
+
+  if (args && Pike_sp[-args].type == T_INT) {
+    cont_signal = Pike_sp[-args].u.integer;
+  }
+
+  THIS->state = PROCESS_RUNNING;
+
+  if (ptrace(PTRACE_CONT, THIS->pid, NULL, cont_signal) == -1) {
+    int err = errno;
+    THIS->state = PROCESS_STOPPED;
+    /* FIXME: Better diagnostics. */
+    Pike_error("Failed to release process. errno:%d\n", err);
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+#endif /* HAVE_PTRACE */
 
 /*! @endclass
  */
@@ -1640,6 +1771,7 @@ extern int pike_make_pipe(int *);
 #define PROCE_DUP		10
 #define PROCE_SETSID		11
 #define PROCE_SETCTTY		12
+#define PROCE_PTRACE		13
 
 #define PROCERROR(err, id)	do { int _l, _i; \
     buf[0] = err; buf[1] = errno; buf[2] = id; \
@@ -2012,6 +2144,10 @@ static void internal_add_limit( struct perishables *storage,
  *!  will be inherited from the current process rather than changed to
  *!  the approperiate values for that uid.
  *!
+ *! @member int(0..1) "trace"
+ *!  This parameter starts the child process in trace mode.
+ *!  See @[trace()].
+ *!
  *! @member string "priority"
  *!  This sets the priority of the new process, see
  *!  @[set_priority] for more info.
@@ -2096,6 +2232,9 @@ static void internal_add_limit( struct perishables *storage,
  *!   The modifiers @tt{"fds"@}, @tt{"uid"@}, @tt{"gid"@}, @tt{"nice"@},
  *!   @tt{"noinitgroups"@}, @tt{"setgroups"@}, @tt{"keep_signals"@}
  *!   and @tt{"rlimit"@} only exist on unix.
+ *!
+ *!   The modifier @tt{"trace"@} currently only exists on OS's that
+ *!   implement @tt{ptrace()@}.
  */
 
 /*! @endclass */
@@ -2452,6 +2591,7 @@ void f_create_process(INT32 args)
     struct passwd *pw=0;
     struct perishables storage;
     int do_initgroups=1;
+    int do_trace=0;
     uid_t wanted_uid;
     gid_t wanted_gid;
     int gid_request=0;
@@ -2751,6 +2891,10 @@ void f_create_process(INT32 args)
 	if(!SAFE_IS_ZERO(tmp))
 	  do_initgroups=0;
 
+      if((tmp=simple_mapping_string_lookup(optional, "trace")))
+	if(!SAFE_IS_ZERO(tmp))
+	  do_trace=1;
+
       if((tmp=simple_mapping_string_lookup(optional, "keep_signals")))
 	keep_signals = !SAFE_IS_ZERO(tmp);
     }
@@ -2982,6 +3126,7 @@ void f_create_process(INT32 args)
 
       THIS->pid = pid;
       THIS->state = PROCESS_RUNNING;
+      THIS->flags = do_trace?PROCESS_FLAG_TRACED:0;
       ref_push_object(Pike_fp->current_object);
       push_int(pid);
       mapping_insert(pid_mapping, Pike_sp-1, Pike_sp-2);
@@ -3102,6 +3247,9 @@ void f_create_process(INT32 args)
 	  break;
 	case PROCE_SETCTTY:
           Pike_error("Process.create_process(): failed to set controlling TTY. errno:%d\n", buf[1]);
+	  break;
+	case PROCE_PTRACE:
+          Pike_error("Process.create_process(): failed to enter trace mode. errno:%d\n", buf[1]);
 	  break;
 	case PROCE_EXEC:
 	  switch(buf[1]) {
@@ -3426,6 +3574,15 @@ void f_create_process(INT32 args)
       setresuid(wanted_uid, wanted_uid, -1);
 #endif /* HAVE_SETRESUID */
 #endif /* HAVE_SETEUID */
+
+#ifdef HAVE_PTRACE
+      if (do_trace) {
+	long code = ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+	if (code == -1) {
+	  PROCERROR(PROCE_PTRACE, 0);
+	}
+      }
+#endif /* HAVE_PTRACE */
 	
       do_set_close_on_exec();
       set_close_on_exec(0,0);
@@ -4115,10 +4272,17 @@ void init_signals(void)
   set_exit_callback(exit_pid_status);
   /* function(string:int) */
   ADD_FUNCTION("set_priority",f_pid_status_set_priority,tFunc(tStr,tInt),0);
-  /* function(:int) */
-  ADD_FUNCTION("wait",f_pid_status_wait,tFunc(tNone,tInt),0);
+  /* function(int(0..1)|void:int) */
+  ADD_FUNCTION("wait",f_pid_status_wait,tFunc(tOr(tInt01,tVoid),tInt),0);
   /* function(:int) */
   ADD_FUNCTION("status",f_pid_status_status,tFunc(tNone,tInt),0);
+#ifdef HAVE_PTRACE
+  /* function(int|void:void) */
+  ADD_FUNCTION("continue",f_pid_status_continue,
+	       tFunc(tOr(tVoid,tInt),tVoid),0);
+#endif /* HAVE_PTRACE */
+  /* function(:int) */
+  ADD_FUNCTION("last_signal", f_pid_status_last_signal,tFunc(tNone,tInt),0);
   /* function(:int) */
   ADD_FUNCTION("pid",f_pid_status_pid,tFunc(tNone,tInt),0);
 #ifdef HAVE_KILL

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.h,v 1.15 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: signal_handler.h,v 1.16 2003/02/28 18:48:29 grubba Exp $
 */
 
 #ifndef SIGNAL_H
@@ -16,7 +16,7 @@ void my_signal(int sig, sigfunctype fun);
 PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk);
 void set_default_signal_handler(int signum, void (*func)(INT32));
 void process_started(pid_t pid);
-void process_done(pid_t pid, char *from);
+void process_done(pid_t pid, const char *from);
 struct wait_data;
 struct pid_status;
 struct perishables;
