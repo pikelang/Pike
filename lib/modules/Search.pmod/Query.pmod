@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.20 2001/08/08 14:42:02 norlin Exp $
+// $Id: Query.pmod,v 1.21 2001/08/09 14:49:01 norlin Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db, array words)
 {
@@ -192,9 +192,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
               break;
             }
             ranking->field_ranking = allocate(65);
-
-            ranking->field_ranking[fieldID] = defaultRanking->field_ranking[fieldID];
-            // ranking->field_ranking[fieldID] = 1;
+            ranking->field_ranking[fieldID] = 1;
           }
 
           int hasPlus = sizeof(q->plusWords) || sizeof(q->plusPhrases);
