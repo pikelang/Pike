@@ -88,7 +88,8 @@ class rc4_random {
 
   string read(int len)
   {
-    return rc4::crypt(replace(allocate(len), 0, "\47") * "");
+    if (len > 16384) return read(len/2)+read(len-len/2);
+    return rc4::crypt("\47" * len);
   }
 }
 
