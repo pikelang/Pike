@@ -70,7 +70,7 @@ class imap_atom_options
       name = s;
       options = (sec && ({ sec })) +
 	(o && ({ imap_list(imap_check_array(Array.map(o[0]->list->atom,
-						      imap_string))));
+						      imap_string))) }));
       range = r;
     }
 
