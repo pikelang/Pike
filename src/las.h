@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.58 2002/10/11 01:39:32 nilsson Exp $
+|| $Id: las.h,v 1.59 2002/10/25 13:13:57 marcus Exp $
 */
 
 #ifndef LAS_H
@@ -165,7 +165,7 @@ void print_tree(node *n);
 struct used_vars;
 void fix_type_field(node *n);
 struct timer_oflo;
-ptrdiff_t eval_low(node *n);
+ptrdiff_t eval_low(node *n,int print_error);
 int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_type *type,

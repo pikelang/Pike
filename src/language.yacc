@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.302 2002/10/12 11:54:30 grubba Exp $
+|| $Id: language.yacc,v 1.303 2002/10/25 13:13:57 marcus Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.302 2002/10/12 11:54:30 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.303 2002/10/25 13:13:57 marcus Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -546,7 +546,7 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
     } else {
       if(!Pike_compiler->num_parse_error)
       {
-	ptrdiff_t tmp=eval_low($3);
+	ptrdiff_t tmp=eval_low($3,1);
 	if(tmp < 1)
 	{
 	  yyerror("Error in constant definition.");
@@ -1725,7 +1725,7 @@ local_constant_name: TOK_IDENTIFIER '=' safe_expr0
       if(Pike_compiler->compiler_pass==2)
 	yyerror("Constant definition is not constant.");
     }else{
-      ptrdiff_t tmp=eval_low($3);
+      ptrdiff_t tmp=eval_low($3,1);
       if(tmp < 1)
       {
 	yyerror("Error in constant definition.");
@@ -2526,7 +2526,7 @@ enum_value: /* EMPTY */
     } else {
       if(!Pike_compiler->num_parse_error)
       {
-	ptrdiff_t tmp=eval_low($2);
+	ptrdiff_t tmp=eval_low($2,1);
 	if(tmp < 1)
 	{
 	  yyerror("Error in enum definition.");

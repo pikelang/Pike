@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.150 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: docode.c,v 1.151 2002/10/25 13:13:57 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.150 2002/10/11 01:39:30 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.151 2002/10/25 13:13:57 marcus Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1715,7 +1715,7 @@ static int do_docode2(node *n, INT16 flags)
 	  }
 
 	  if (!Pike_compiler->num_parse_error) {
-	    tmp1=eval_low(case_val);
+	    tmp1=eval_low(case_val,1);
 	    if(tmp1<1)
 	    {
 	      yyerror("Error in case label.");

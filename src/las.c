@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.305 2002/10/21 09:13:17 grubba Exp $
+|| $Id: las.c,v 1.306 2002/10/25 13:13:57 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.305 2002/10/21 09:13:17 grubba Exp $");
+RCSID("$Id: las.c,v 1.306 2002/10/25 13:13:57 marcus Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1607,7 +1607,7 @@ void resolv_constant(node *n)
       char fnord[1000];
       if(is_const(n))
       {
-	ptrdiff_t args=eval_low(n);
+	ptrdiff_t args=eval_low(n,1);
 	if(args==1) return;
 
 	if(args!=-1)
@@ -5282,7 +5282,7 @@ static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
   }
 }
 
-ptrdiff_t eval_low(node *n)
+ptrdiff_t eval_low(node *n,int print_error)
 {
   unsigned INT16 num_strings, num_constants;
   INT32 jump;
@@ -5337,31 +5337,31 @@ ptrdiff_t eval_low(node *n)
 				 
     if(apply_low_safe_and_stupid(Pike_compiler->fake_object, jump))
     {
-#if 0
-      /* Generate error message */
-      if(!Pike_compiler->catch_level)
-      {
-	struct svalue thrown = throw_value;
-	throw_value.type = T_INT;
-	yyerror("Error evaluating constant.\n");
-	push_svalue(&thrown);
-	low_safe_apply_handler("compile_exception",
-			       error_handler, compat_handler, 1);
-	if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
-	pop_stack();
-	free_svalue(&thrown);
-      }
+      if(print_error)
+	/* Generate error message */
+	if(!Pike_compiler->catch_level)
+	  {
+	    struct svalue thrown = throw_value;
+	    throw_value.type = T_INT;
+	    yyerror("Error evaluating constant.\n");
+	    push_svalue(&thrown);
+	    low_safe_apply_handler("compile_exception",
+				   error_handler, compat_handler, 1);
+	    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
+	    pop_stack();
+	    free_svalue(&thrown);
+	  }
+	else {
+	  free_svalue(&throw_value);
+	  throw_value.type = T_INT;
+	}
       else {
 	free_svalue(&throw_value);
 	throw_value.type = T_INT;
+	/* Assume the node will throw errors at runtime too. */
+	n->tree_info |= OPT_SIDE_EFFECT;
+	n->node_info |= OPT_SIDE_EFFECT;
       }
-#else /* !0 */
-      free_svalue(&throw_value);
-      throw_value.type = T_INT;
-      /* Assume the node will throw errors at runtime too. */
-      n->tree_info |= OPT_SIDE_EFFECT;
-      n->node_info |= OPT_SIDE_EFFECT;
-#endif /* 0 */
     }else{
       if(foo.yes)
 	pop_n_elems(Pike_sp-save_sp);
@@ -5408,7 +5408,7 @@ static node *eval(node *n)
   if(!is_const(n) || n->token==':')
     return n;
   
-  args=eval_low(n);
+  args=eval_low(n,0);
 
   switch(args)
   {

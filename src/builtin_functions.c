@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.448 2002/10/15 14:57:29 grubba Exp $
+|| $Id: builtin_functions.c,v 1.449 2002/10/25 13:13:57 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.448 2002/10/15 14:57:29 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.449 2002/10/25 13:13:57 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3115,8 +3115,8 @@ node *optimize_replace(node *n)
 	  INT16 lfun;
 	  struct object *replace_obj;
 	  node *ret = NULL;
-	  INT32 args = eval_low(*arg1);	/* NOTE: Addition splitted to ensure */
-	  args += eval_low(*arg2);	/*       correct evaluation order.   */
+	  INT32 args = eval_low(*arg1,1);	/* NOTE: Addition splitted to ensure */
+	  args += eval_low(*arg2,1);		/*       correct evaluation order.   */
 
 	  replace_obj = clone_object(multi_string_replace_program, args);
 
