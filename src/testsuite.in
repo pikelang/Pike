@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.556 2002/10/28 22:01:33 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.557 2002/11/01 13:29:23 jhs Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7074,6 +7074,8 @@ test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"# 1 \"-\"\n\n( (A) 
 test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
 test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
 test_eq([[cpp("foo\xfeff""bar \xfeff gazonk")]],[[cpp("foobar  gazonk")]])
+test_eq([[cpp("#define A(X) #X\n#define B(Y) A(Y)\nB(foo)")]],
+	"# 1 \"-\"\n\n\n \"foo \" ")
 
 test_eq([[compile_string(#"
 #define Y(y) #y
