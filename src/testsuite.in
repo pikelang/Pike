@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.673 2003/09/05 15:19:20 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.674 2003/09/06 10:30:19 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -613,7 +613,8 @@ cond( [[ master()->resolv("Pike")->Security ]],[[
 
   object luser_creds = Pike.Security.Creds(luser, 0, 0);
   return !catch {
-    return !!call_with_creds(luser_creds, Stdio.File, "/dev/null");
+    return !!Pike.Security.call_with_creds(luser_creds, Stdio.File,
+        "/dev/null");
   };
 
   return 0;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.c,v 1.43 2003/09/05 18:04:56 nilsson Exp $
+|| $Id: security.c,v 1.44 2003/09/06 10:30:08 nilsson Exp $
 */
 
 #include "global.h"
@@ -443,16 +443,16 @@ void init_pike_security(void)
 
   
   /* function(object,mixed...:mixed) */
-  ADD_EFUN("call_with_creds", f_call_with_creds,
-	   tFuncV(tObj,tMix,tMix), OPT_SIDE_EFFECT);
+  ADD_FUNCTION("call_with_creds", f_call_with_creds,
+	       tFuncV(tObj,tMix,tMix), OPT_SIDE_EFFECT);
   
   /* function(:object) */
-  ADD_EFUN("get_current_creds", f_get_current_creds,
-	   tFunc(tNone,tObj), OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION("get_current_creds", f_get_current_creds,
+	       tFunc(tNone,tObj), OPT_EXTERNAL_DEPEND);
   
   /* function(mixed:object) */
-  ADD_EFUN("get_object_creds", f_get_object_creds,
-	   tFunc(tMix,tObj), OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION("get_object_creds", f_get_object_creds,
+	       tFunc(tMix,tObj), OPT_EXTERNAL_DEPEND);
 
 #define CONST(X) add_integer_constant("BIT_" #X,PIKE_CONCAT(SECURITY_BIT_,X),0)
   CONST(INDEX);
