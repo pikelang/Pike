@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.56 2002/11/23 18:57:02 mast Exp $
+|| $Id: multiset.c,v 1.57 2002/11/23 20:36:12 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.56 2002/11/23 18:57:02 mast Exp $");
+RCSID("$Id: multiset.c,v 1.57 2002/11/23 20:36:12 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -135,7 +135,8 @@ PMOD_EXPORT const char msg_multiset_no_node_refs[] =
 #define SAME_CMP_LESS(MSD_A, MSD_B)					\
   ((MSD_A)->cmp_less.type == T_INT ?					\
    (MSD_B)->cmp_less.type == T_INT :					\
-   is_identical (&(MSD_A)->cmp_less, &(MSD_B)->cmp_less))
+   ((MSD_B)->cmp_less.type != T_INT &&					\
+    is_identical (&(MSD_A)->cmp_less, &(MSD_B)->cmp_less)))
 
 #define HDR(NODE) ((struct rb_node_hdr *) msnode_check (NODE))
 #define PHDR(NODEPTR) ((struct rb_node_hdr **) msnode_ptr_check (NODEPTR))
@@ -1043,7 +1044,8 @@ PMOD_EXPORT void multiset_set_cmp_less (struct multiset *l,
 
 again:
   if (cmp_less ?
-      is_identical (cmp_less, &old->cmp_less) : old->cmp_less.type == T_INT)
+      old->cmp_less.type != T_INT && is_identical (cmp_less, &old->cmp_less) :
+      old->cmp_less.type == T_INT)
     {}
 
   else if (!old->root) {
@@ -3323,7 +3325,8 @@ PMOD_EXPORT struct multiset *add_multisets (struct svalue *vect, int count)
   }
 
   if (indval == !!(l->msd->flags & MULTISET_INDVAL) &&
-      (cmp_less ? is_identical (cmp_less, &l->msd->cmp_less) :
+      (cmp_less ?
+       l->msd->cmp_less.type != T_INT && is_identical (cmp_less, &l->msd->cmp_less) :
        l->msd->cmp_less.type == T_INT)) {
     res = copy_multiset (l);
     multiset_set_flags (res, indval && MULTISET_INDVAL);
@@ -5252,7 +5255,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.56 2002/11/23 18:57:02 mast Exp $");
+RCSID("$Id: multiset.c,v 1.57 2002/11/23 20:36:12 mast Exp $");
 
 struct multiset *first_multiset;
 
