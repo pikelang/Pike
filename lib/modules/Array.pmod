@@ -74,6 +74,23 @@ array shuffle(array arr)
   return(arr);
 }
 
+array permute(array a,int n)
+{
+   int q=sizeof(a);
+   int i;
+   a=a[..]; // copy
+   
+   while (n && q)
+   {
+      int x=n%q; 
+      n/=q; 
+      q--; 
+      if (x) [a[i],a[i+x]]=({ a[i+x],a[i] });
+      i++;
+   }  
+   
+   return a;
+}
 
 int search_array(mixed *arr, mixed fun, mixed ... args)
 {

@@ -1,4 +1,4 @@
-inherit Calendar.ISO;
+inherit Calendar.ISO:ISO;
 
 void create()
 {
@@ -11,13 +11,9 @@ void create()
 	"fredag","lördag","söndag"});
 }
 
-constant ISO_Week=::Week;
-constant ISO_Year=::Year;
-constant ISO_Day=::Day;
-
 class Week
 {
-   inherit ISO_Week;
+   inherit ISO::Week;
 
    string name()
    {
@@ -27,7 +23,7 @@ class Week
 
 class Year
 {
-   inherit ISO_Year;
+   inherit ISO::Year;
 
    array(array(string)) _namedays;
    mapping(string:int) _nameday_lookup;
@@ -88,7 +84,7 @@ class Year
 
 class Day
 {
-   inherit ISO_Day;
+   inherit ISO::Day;
 
    array(string) names()
    {
