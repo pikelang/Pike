@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.25 2003/06/02 11:14:12 nilsson Exp $
+|| $Id: memory.c,v 1.26 2003/06/02 20:26:07 nilsson Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.25 2003/06/02 11:14:12 nilsson Exp $");
+RCSID("$Id: memory.c,v 1.26 2003/06/02 20:26:07 nilsson Exp $");
 
 #include "system_machine.h"
 
@@ -797,11 +797,11 @@ static void memory_index(INT32 args)
 	 if ((size_t)pos2>=THIS->size) rpos2=THIS->size-1; 
 	 else rpos2=(size_t)pos2;
 
-	 if (pos2<pos1)
+	 if (rpos2<rpos1)
 	    push_text("");
 	 else
-	    push_string(make_shared_binary_string((char *)THIS->p+pos1,
-						  pos2-pos1+1));
+	    push_string(make_shared_binary_string((char *)THIS->p+rpos1,
+						  rpos2-rpos1+1));
       }
    }
    stack_pop_n_elems_keep_top(args);
