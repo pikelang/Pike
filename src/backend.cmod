@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.24 2002/05/11 00:29:57 nilsson Exp $");
+RCSID("$Id: backend.cmod,v 1.25 2002/05/24 14:18:41 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -87,8 +87,6 @@ struct fd_datum
 #ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif /* HAVE_SYS_POLL_H */
-
-#define sp Pike_sp
 
 /* Some constants... */
 
@@ -1558,7 +1556,7 @@ PIKECLASS Backend
      }
      
      new->args=args;
-     sp--;
+     Pike_sp--;
      
      
      me->num_pending_calls++;
@@ -1629,11 +1627,11 @@ PIKECLASS Backend
 	 Pike_error("Bad argument 2 to call_out.\n");
 
        /* Swap, for compatibility */
-       tmp=sp[-args];
-       sp[-args]=sp[1-args];
-       sp[1-args]=tmp;
+       tmp = Pike_sp[-args];
+       Pike_sp[-args] = Pike_sp[1-args];
+       Pike_sp[1-args] = tmp;
        
-       v=new_call_out(THIS, args,sp-args);
+       v = new_call_out(THIS, args, Pike_sp-args);
        ref_push_array(v);
      }
 
@@ -1666,8 +1664,8 @@ PIKECLASS Backend
 	 
 	 args=c.args->size;
 	 push_array_items(c.args);
-	 check_destructed(sp-args);
-	 if(sp[-args].type!=T_INT)
+	 check_destructed(Pike_sp - args);
+	 if(Pike_sp[-args].type!=T_INT)
 	 {
 	   f_call_function(args);
 	   pop_stack();
@@ -1775,10 +1773,10 @@ PIKECLASS Backend
        pop_n_elems(args);
        if(e==-1)
        {
-	 sp->type=T_INT;
-	 sp->subtype=NUMBER_UNDEFINED;
-	 sp->u.integer=-1;
-	 sp++;
+	 Pike_sp->type = T_INT;
+	 Pike_sp->subtype = NUMBER_UNDEFINED;
+	 Pike_sp->u.integer=-1;
+	 Pike_sp++;
        }else{
 	 push_int(CALL(e)->tv.tv_sec - current_time.tv_sec);
        }
@@ -1827,10 +1825,10 @@ PIKECLASS Backend
 	 }
        }else{
 	 pop_n_elems(args);
-	 sp->type=T_INT;
-	 sp->subtype=NUMBER_UNDEFINED;
-	 sp->u.integer=-1;
-	 sp++;
+	 Pike_sp->type = T_INT;
+	 Pike_sp->subtype = NUMBER_UNDEFINED;
+	 Pike_sp->u.integer = -1;
+	 Pike_sp++;
        }
        backend_verify_call_outs(me);
        UNPROTECT_CALL_OUTS();

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.88 2002/05/11 00:29:57 nilsson Exp $
+ * $Id: builtin.cmod,v 1.89 2002/05/24 14:12:24 grubba Exp $
  */
 
 #include "global.h"
@@ -29,8 +29,6 @@
 #include "fsort.h"
 #include "port.h"
 
-#define sp Pike_sp
-
 /*! @decl array(array(int|string)) _describe_program(program p)
  *!
  *! Debug function for showing the symbol table of a program.
@@ -42,7 +40,7 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
   struct array *res;
   int i;
 
-  if (!(p = program_from_svalue(sp - args))) {
+  if (!(p = program_from_svalue(Pike_sp - args))) {
     Pike_error("_describe_program(): Bad argument 1 (expected program).\n");
   }
 
@@ -63,8 +61,8 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
     f_aggregate(6);
   }
   f_aggregate(p->num_identifier_references);
-  res = sp[-1].u.array;
-  sp--;
+  res = Pike_sp[-1].u.array;
+  Pike_sp--;
   pop_n_elems(args);
   push_array(res);
 }
@@ -294,7 +292,7 @@ PIKEFUN array column(array data, mixed index)
     for(e=0;e<a->size;e++)
       index_no_free(ITEM(a)+e, ITEM(data)+e, index);
 
-    sp--;
+    Pike_sp--;
   }
   END_CYCLIC();
   RETURN a;
@@ -371,7 +369,7 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   optflags OPT_TRY_OPTIMIZE|OPT_EXTERNAL_DEPEND;
 {
   if(ind->size != val->size)
-    bad_arg_error("mkmapping", sp-args, args, 2, "array", sp+1-args,
+    bad_arg_error("mkmapping", Pike_sp-args, args, 2, "array", Pike_sp+1-args,
 		  "mkmapping called on arrays of different sizes (%d != %d)\n",
 		  ind->size, val->size);
 
@@ -600,8 +598,8 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
     struct svalue s;
     map_delete_no_free(map->u.mapping, index, &s);
     pop_n_elems(args);
-    *sp=s;
-    sp++;
+    *Pike_sp=s;
+    Pike_sp++;
   }
   else if (map->type == T_OBJECT && map->u.object->prog)
   {
