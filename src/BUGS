@@ -327,3 +327,5 @@ Still to do:
 * 'array' does not match 'string *' ? (in function calls)
 
 * compile errors generate memory leaks
+
+* file->write bugs when given a zero as argument?
