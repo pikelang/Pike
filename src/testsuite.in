@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.705 2004/03/08 10:49:06 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.706 2004/03/08 15:26:44 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10640,7 +10640,7 @@ test_do(add_constant("call_out_cb"))
 test_do(_do_call_outs())
 test_any([[
   object pid = Process.create_process(RUNPIKE_ARRAY +
-				      ({ "SRCDIR/test_co.pike" }));
+				      ({ "]]SRCDIR[[/test_co.pike" }));
   int i;
   for (i=0; i < 60; i++) {
     if (pid->status()>0) break;
