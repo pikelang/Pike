@@ -4984,6 +4984,29 @@ Append the string <i>str</i> onto the file <i>file</i>. Returns number of bytes 
 
 </section>
 
+<section title="Simple example">
+
+Here is a simple example of how to use the Stdio-functions.
+<p>
+<example language=pike>
+string grep(string indata, string needle)
+{
+  object out=Stdio.File(),in=Stdio.File();
+  object process=
+   Process.create_process(({"/bin/grep",needle}),
+    (["stdin":out->pipe(),
+    "stdout":in->pipe()]) );
+  out->write(indata);
+  out->close();
+  process->wait();
+  return in->read();
+}
+</example>
+This function filters the indata through the UNIX-command /bin/grep
+and return the result.
+
+</section>
+
 <section title="A more complex example - a simple WWW server">
 
 As most of you know, WWW  WWW (World Wide Web), works by using a
