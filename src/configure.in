@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.264 1999/02/06 19:04:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.265 1999/03/06 01:55:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -50,7 +50,9 @@ fi
 
 pike_cv_prog_CC_save="$CC"
 
-MY_AC_PROG_CC
+# MY_AC_PROG_CC
+# The above has problems if the smartlink binary is removed. /grubba
+AC_PROG_CC
 AC_ISC_POSIX
 AC_MINIX
 
@@ -89,19 +91,71 @@ AC_SUBST(LIBDIR)
 AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
 
-case $CC in
- *smartlink*) ;;
- *)
-   CC="$BINDIR/smartlink $CC"
-   pike_cv_prog_CC="$CC"
- ;;
+#############################################################################
+
+## Build smartlink
+
+AC_CHECK_HEADERS(stdlib.h string.h unistd.h sys/stat.h sys/types.h)
+
+if test -x /usr/bin/uname 2>/dev/null; then
+  UNAME=`/usr/bin/uname -sr`
+elif test -x /bin/uname 2>/dev/null; then
+  UNAME=`/bin/uname -sr`
+else
+  UNAME=unknown
+fi
+
+case "$UNAME" in
+  OSF1\ V4.*)
+    AC_DEFINE(USE_RPATH)
+    ;;
+  IRIX\ 6.*)
+    AC_DEFINE(USE_RPATH)
+    ;;
+  IRIX\ 5.*)
+    AC_DEFINE(USE_RPATH)
+    ;;
+  SunOS\ 5.*)
+    AC_DEFINE(USE_R)
+    ;;
+  Linux\ 2.*)
+    AC_DEFINE(USE_Wl)
+    ;;
+  *)
+    AC_DEFINE(USE_LD_LIBRARY_PATH)
+    ;;
 esac
 
-REALCC="`echo $CC| sed -e 's/.*smartlink //'`"
-AC_SUBST(REALCC)
+# Strip smartlink from $CC
+REALCC="`echo $CC|sed -e 's/.*smartlink //'`"
 
-SMARTLINK="`echo $CC| sed -e 's/smartlink.*/smartlink/'`"
-AC_SUBST(SMARTLINK)
+# Fix a smartlink
+SMARTLINK="$BUILDDIR/smartlink"
+
+AC_MSG_CHECKING(if $SMARTLINK exists and works)
+if "$SMARTLINK" -v >/dev/null 2>&5; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+
+  rm -f "$SMARTLINK"
+
+  AC_MSG_CHECKING(whether smartlink compiles)
+
+  link_cmd='${REALCC-cc} -o smartlink${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/smartlink.$ac_ext $LIBS 2>&5'
+  if { (eval echo Compiling smartlink: \"$link_cmd\") 1>&5; (eval $link_cmd) 2>&5; } && "$BUILDDIR/smartlink" -v >/dev/null 2>&5; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no - use the sh script)
+
+    SMARTLINK="$BINDIR/smartlink"
+  fi
+fi
+
+CC="$SMARTLINK $REALCC"
+pike_cv_prog_CC="$CC"
+
+AC_SUBST(SMARTLINK REALCC)
 export REALCC SMARTLINK
 
 #############################################################################
