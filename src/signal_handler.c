@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.62 1998/05/17 20:40:59 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.63 1998/05/17 21:39:48 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -67,6 +67,14 @@ RCSID("$Id: signal_handler.c,v 1.62 1998/05/17 20:40:59 grubba Exp $");
 
 #define SIGNAL_BUFFER 16384
 #define WAIT_BUFFER 4096
+
+#ifndef WEXITSTATUS
+#ifdef HAVE_UNION_WAIT
+#define WEXITSTATUS(x) ((x).w_retcode)
+#else /* !HAVE_UNION_WAIT */
+#define WEXITSTATUS(x)	(((x)>>8)&0xff)
+#endif /* HAVE_UNION_WAIT */
+#endif /* !WEXITSTATUS */
 
 /* #define PROC_DEBUG */
 
@@ -483,10 +491,11 @@ static void report_child(int pid,
 					       pid_status_program)))
 	{
 	  p->state = PROCESS_EXITED;
-	  if(WIFEXITED(status))
+	  if(WIFEXITED(status)) {
 	    p->result = WEXITSTATUS(status);
-	  else
+	  } else {
 	    p->result=-1;
+	  }
 	}
       }
       map_delete(pid_mapping, &key);
