@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.22 1998/03/10 03:14:51 per Exp $");
+RCSID("$Id: backend.c,v 1.23 1998/03/10 03:16:34 per Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -37,6 +37,10 @@ file_callback read_callback[MAX_OPEN_FILEDESCRIPTORS];
 void *read_callback_data[MAX_OPEN_FILEDESCRIPTORS];
 file_callback write_callback[MAX_OPEN_FILEDESCRIPTORS];
 void *write_callback_data[MAX_OPEN_FILEDESCRIPTORS];
+
+#ifndef HAVE_AND_USE_POLL
+#undef HAVE_POLL
+#endif
 
 #ifndef HAVE_POLL
 struct selectors
