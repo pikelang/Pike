@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.42 2002/10/25 12:23:19 marcus Exp $
+|| $Id: dlopen.c,v 1.43 2002/10/25 18:51:31 marcus Exp $
 */
 
 #include <global.h>
@@ -189,7 +189,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.42 2002/10/25 12:23:19 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.43 2002/10/25 18:51:31 marcus Exp $");
 
 #endif
 
@@ -1814,6 +1814,71 @@ FILE *__cdecl dlopen_fopen_wrapper(const char *fname, const char *mode)
 }
 #endif
 
+#ifdef _WIN64
+
+static void *read_pdb_blocks(unsigned char *buf, size_t len,
+			     INT32 *blocklist, size_t nbytes, INT32 blocksize)
+{
+  unsigned char *ret, *p;
+  if(len<1 || !(ret = p = malloc(nbytes))) return NULL;
+  while(len>0) {
+    size_t chunk = (len>blocksize? blocksize : len);
+    size_t offs = blocksize**blocklist++;
+    if(offs + chunk > len) { free(ret); return NULL; }
+    memcpy(p, buf+offs, chunk);
+    p += chunk;
+  }
+  return ret;
+}
+
+static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
+{
+  struct {
+    INT32 blocksize, freelist, total_alloc, toc_size, unknown, toc_loc;
+  } *header;
+  size_t len = *plen;
+  int toc_blocks, idlen=0;
+  INT32 *toc, *fsz, *blocklist;
+  unsigned char *ret;
+  while(idlen<256 && idlen<len && buf[idlen]!=0x1a) idlen++;
+  if(idlen>=256 || idlen>=len) return NULL;
+#ifdef DLDEBUG
+  buf[idlen]='\0';
+  fprintf(stderr, "Found PDB header, ident=\"%s\", sig=<%x,%x,%x,%x>\n"
+	  buf,  buf[idlen],  buf[idlen+1], buf[idlen+2],  buf[idlen+3]);
+#endif
+  if(len<idlen+2 || buf[idlen]!=0x44 || buf[idlen+1]!=0x53) return NULL;
+  idlen += 5;
+  if(idlen&3) idlen+=4-(idlen&3);
+  header = (void*)(buf+idlen);
+  if(idlen+sizeof(*header)>len || header->blocksize==0 ||
+     header->toc_size < 20) return NULL;
+  toc = read_pdb_blocks(buf, len,
+			(INT32*)(buf+header->toc_loc*header->blocksize),
+			header->toc_size, header->blocksize);
+  if(!toc) return NULL;
+  if(*toc < 4 || header->toc_size < 4+4**toc) { free(toc); return NULL; }
+  fsz = toc+1;
+  blocklist = fsz+*toc;
+  for(i=0; i<3; i++) {
+    int f_blocks = (*fsz+++header->blocksize-1)/header->blocksize;
+    blocklist += f_blocks;
+  }
+  if(4+4*((blocklist-toc)+(*fsz+header->blocksize-1)/header->blocksize) >
+     header->toc_size) {
+    free(toc);
+    return NULL;
+  }
+#ifdef DLDEBUG
+  fprintf(stderr, "Found PDB file 3 (global symtab) at block %d len %d\n",
+	  *blocklist, *fsz);
+#endif
+  ret = read_pdb_blocks(buf, len, blocklist, *plen = *fsz, header->blocksize);
+  free(toc);
+  return ret;
+}
+#endif
+
 static void init_dlopen(void)
 {
   int tmp;
@@ -1967,6 +2032,60 @@ static void init_dlopen(void)
       
     }
     free(buf);
+#ifdef _WIN64
+    if(strlen(argv[0]>4)) {
+      char *pdbname = alloca(strlen(argv[0])+1);
+      strcpy(pdbname, argv[0]);
+      strcpy(pdbname+strlen(pdbname)-4, ".PDB");
+      buf= (unsigned char *)read_file(pdb_name, &len);
+    } else buf = NULL;
+    if(buf) {
+      unsigned char *symtab = find_pdb_symtab(buf, &len);
+      if(symtab) {
+	size_t i;
+#ifdef DLDEBUG
+	fprintf(stderr,"Loading PDB symbols (%d bytes)\n", len);
+#endif
+	for(i=0; i<len; i+=2+*(unsigned INT16 *)&symtab[i])
+	  if(*(unsigned INT16 *)&symtab[i+2] == 0x110e) {
+	    struct {
+	      unsigned INT16 len, id;
+	      unsigned INT32 type, value;
+	      unsigned INT16 secnum;
+	      char name[1];
+	    } *sym = (void *)&symtab[i];
+	    int namelen=STRNLEN(sym->name,sym->len-12);
+	  
+#ifdef DLDEBUG
+	    if(!sym->name[namelen])
+	      fprintf(stderr,"Sym[%04d] %s : ",s,sym->name);
+	    else
+	      fprintf(stderr,"Sym[%04d] %c%c%c%c%c%c%c%c = ",s,
+		      sym->name[0],
+		      sym->name[1],
+		      sym->name[2],
+		      sym->name[3],
+		      sym->name[4],
+		      sym->name[5],
+		      sym->name[6],
+		      sym->name[7]);
+	    fprintf(stderr,"sect=%d value=%d type=%d",
+		    sym->secnum,
+		    sym->value,
+		    sym->type);
+#endif
+	    htable_put(global_dlhandle.htable, sym->name, namelen,
+		       data->buffer +
+		       data->sections[sym->secnum-1].virtual_addr -
+		       data->sections[sym->secnum-1].ptr2_raw_data +
+		       sym->value,
+		       1 /* Fixme? Weak symbols... */);
+	  }
+	free(symtab);
+      }
+      free(buf);
+    }
+#endif
   }else{
 #ifdef DLDEBUG
     fprintf(stderr,"Couldn't find PE header.\n");
@@ -2005,6 +2124,9 @@ static void init_dlopen(void)
     EXPORT(fread);
     EXPORT(strtol);
   }
+#ifdef _WIN64
+  EXPORT(_gp);
+#endif
 
 #define EXPORT_AS(X,Y) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s = %s\n",#X,#Y); ) \
@@ -2207,6 +2329,61 @@ int main(int argc, char ** argv)
 
       }
       free(buf);
+
+#ifdef _WIN64
+      if(strlen(argv[0]>4)) {
+	char *pdbname = alloca(strlen(argv[0])+1);
+	strcpy(pdbname, argv[0]);
+	strcpy(pdbname+strlen(pdbname)-4, ".PDB");
+	buf= (unsigned char *)read_file(pdb_name, &len);
+      } else buf = NULL;
+      if(buf) {
+	unsigned char *symtab = find_pdb_symtab(buf, &len);
+	if(symtab) {
+	  size_t i;
+#ifdef DLDEBUG
+	  fprintf(stderr,"Loading PDB symbols (%d bytes)\n", len);
+#endif
+	  for(i=0; i<len; i+=2+*(unsigned INT16 *)&symtab[i])
+	    if(*(unsigned INT16 *)&symtab[i+2] == 0x110e) {
+	      struct {
+		unsigned INT16 len, id;
+		unsigned INT32 type, value;
+		unsigned INT16 secnum;
+	      char name[1];
+	      } *sym = (void *)&symtab[i];
+	      int namelen=STRNLEN(sym->name,sym->len-12);
+	      
+#ifdef DLDEBUG
+	      if(!sym->name[namelen])
+		fprintf(stderr,"Sym[%04d] %s : ",s,sym->name);
+	      else
+		fprintf(stderr,"Sym[%04d] %c%c%c%c%c%c%c%c = ",s,
+			sym->name[0],
+			sym->name[1],
+			sym->name[2],
+			sym->name[3],
+			sym->name[4],
+			sym->name[5],
+			sym->name[6],
+			sym->name[7]);
+	      fprintf(stderr,"sect=%d value=%d type=%d",
+		      sym->secnum,
+		      sym->value,
+		      sym->type);
+#endif
+	      htable_put(global_dlhandle.htable, sym->name, namelen,
+			 data->buffer +
+			 data->sections[sym->secnum-1].virtual_addr -
+			 data->sections[sym->secnum-1].ptr2_raw_data +
+			 sym->value,
+			 1 /* Fixme? Weak symbols... */);
+	    }
+	  free(symtab);
+	}
+	free(buf);
+      }
+#endif
     }else{
 #ifdef DLDEBUG
       fprintf(stderr,"Couldn't find PE header.\n");
@@ -2225,6 +2402,9 @@ int main(int argc, char ** argv)
       EXPORT(rand);
       EXPORT(srand);
     }
+#ifdef _WIN64
+    EXPORT(_gp);
+#endif
   }
   
   /* FIXME: open argv[0] and check what dlls is it is linked
