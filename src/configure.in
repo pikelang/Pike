@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.309 1999/08/12 18:22:31 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.310 1999/08/15 18:23:48 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -189,6 +189,63 @@ AC_MINIX
 
 #############################################################################
 
+# option, cache_name, variable
+AC_DEFUN(AC_SYS_COMPILER_FLAG,
+[
+  AC_MSG_CHECKING($1)
+  OLD_CFLAGS="[$]CFLAGS"
+  AC_CACHE_VAL(pike_cv_option_$2,
+  [
+    CFLAGS="[$]OLD_CFLAGS $1"
+    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no,pike_cv_option_$2=no)
+  ])
+  
+  CFLAGS="[$]OLD_CFLAGS"
+  
+  if test x"[$]pike_cv_option_$2" = "xyes" ; then
+    $3="[$]$3 $1"
+    AC_MSG_RESULT(yes)
+    $5
+  else
+    AC_MSG_RESULT(no)
+    $4
+  fi
+])
+
+# arch, option, cache_name, variable
+AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
+[
+ if test "`uname -m 2>/dev/null`" = "$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
+    $7
+ fi
+])
+
+# os, option, cache_name, variable
+AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
+[
+ if test "x$pike_cv_sys_os" = "x$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
+    $7
+ fi
+])
+
+define([DO_IF_OS],
+[
+ if test "x$pike_cv_sys_os" = "x$1" ; then
+$2
+fi
+])
+
+define([DO_IF_CPU],
+[
+if test "`uname -m 2>/dev/null`" = "$1" ; then
+$2
+fi
+])
+
+#############################################################################
+
 # We need some special hacks when running slowaris
 AC_PATH_PROG(uname_prog,uname,no)
 AC_MSG_CHECKING(operating system)
@@ -217,15 +274,13 @@ case "$pike_cv_sys_os" in
      case "$CFLAGS" in
        *-belf*) ;;
        *)
-	  echo "Adding -belf option."
-          CFLAGS="$CFLAGS -belf"
+	  AC_SYS_COMPILER_FLAG(-belf,belf,CFLAGS)
        ;;
      esac
      case "$LDFLAGS" in
        *-belf*) ;;
        *)
-	  echo "Adding -belf option."
-          LDFLAGS="$LDFLAGS -belf"
+	  AC_SYS_COMPILER_FLAG(-belf,belf,LDFLAGS)
        ;;
      esac
   ;;
@@ -421,61 +476,6 @@ fi
 
 #############################################################################
 
-
-# option, cache_name, variable
-AC_DEFUN(AC_SYS_COMPILER_FLAG,
-[
-  AC_MSG_CHECKING($1)
-  OLD_CFLAGS="[$]CFLAGS"
-  AC_CACHE_VAL(pike_cv_option_$2,
-  [
-    CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no,pike_cv_option_$2=no)
-  ])
-  
-  CFLAGS="[$]OLD_CFLAGS"
-  
-  if test x"[$]pike_cv_option_$2" = "xyes" ; then
-    $3="[$]$3 $1"
-    AC_MSG_RESULT(yes)
-    $5
-  else
-    AC_MSG_RESULT(no)
-    $4
-  fi
-])
-
-# arch, option, cache_name, variable
-AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
-[
- if test "`uname -m 2>/dev/null`" = "$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
-    $7
- fi
-])
-
-# os, option, cache_name, variable
-AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
-[
- if test "x$pike_cv_sys_os" = "x$1" ; then
-    AC_SYS_COMPILER_FLAG($2,$3,$4,$5,$6)
-    $7
- fi
-])
-
-define([DO_IF_OS],
-[
- if test "x$pike_cv_sys_os" = "x$1" ; then
-$2
-fi
-])
-
-define([DO_IF_CPU],
-[
-if test "`uname -m 2>/dev/null`" = "$1" ; then
-$2
-fi
-])
 
 WARN=""
 OPTIMIZE=""
