@@ -550,12 +550,13 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     c->modifiers = modifiers;
     readToken();
     c->name = eatIdentifier();
-    eat("=");
-    // TODO: parse the expression ???
-    //   added parsing only of types...
-    //   a constant value will just be ignored.
-    c->typedefType = parseOrType();
-
+    if (peekToken() == "=") {
+      eat("=");
+      // TODO: parse the expression ???
+      //   added parsing only of types...
+      //   a constant value will just be ignored.
+      c->typedefType = parseOrType();
+    }
     skipUntil( (< ";", EOF >) );
     return c;
   }
