@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.150 2002/01/24 16:41:25 grubba Exp $");
+RCSID("$Id: gc.c,v 1.151 2003/01/12 17:25:31 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1967,7 +1967,7 @@ static void warn_bad_cycles()
 int do_gc(void)
 {
   double tmp;
-  int objs, pre_kill_objs;
+  int start_num_objs, objs, pre_kill_objs;
   double multiplier;
   struct array *a;
   struct multiset *l;
@@ -2017,9 +2017,11 @@ int do_gc(void)
 
   multiplier=pow(MULTIPLIER, (double) num_allocs / (double) alloc_threshold);
   objects_alloced*=multiplier;
-  objects_alloced += (double) num_allocs;
+  objects_alloced += (double) num_allocs * (1.0 - multiplier);
   
   objects_freed*=multiplier;
+
+  start_num_objs = num_objects;
 
   /* Thread switches, object alloc/free and any reference changes are
    * disallowed now. */
@@ -2338,9 +2340,9 @@ int do_gc(void)
   if (pre_kill_objs < num_objects) objs -= pre_kill_objs;
   else objs -= num_objects;
 
-  objects_freed += (double) objs;
+  objects_freed += (double) objs * (1.0 - multiplier);
 
-  tmp=(double)num_objects;
+  tmp=(double)start_num_objs;
   tmp=tmp * GC_CONST/100.0 * (objects_alloced+1.0) / (objects_freed+1.0);
 
   if(alloc_threshold + num_allocs <= tmp)
@@ -2360,12 +2362,12 @@ int do_gc(void)
   if(GC_VERBOSE_DO(1 ||) t_flag)
   {
 #ifdef HAVE_GETHRTIME
-    fprintf(stderr,"done (freed %ld of %ld objects), %ld ms.\n",
-	    (long)objs,(long)objs + num_objects,
+    fprintf(stderr,"done (freed %d of %d objects), %ld ms.\n",
+	    (int)objs,start_num_objs,
 	    (long)((gethrtime() - gcstarttime)/1000000));
 #else
-    fprintf(stderr,"done (freed %ld of %ld objects)\n",
-	    (long)objs,(long)objs + num_objects);
+    fprintf(stderr,"done (freed %d of %d objects)\n",
+	    (int)objs,start_num_objs);
 #endif
   }
 #endif
