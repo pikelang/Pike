@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.7 2000/02/16 17:52:03 grubba Exp $
+ * $Id: requestobject.c,v 1.8 2000/03/26 14:58:50 grubba Exp $
  */
 
 #include "global.h"
@@ -51,6 +51,24 @@
 /* Used when fatal() can't be. */
 #define DWERROR(X)	write(2, X, sizeof(X) - sizeof(""))
 
+#ifdef HAVE_BROKEN_SENDFILE
+#ifdef HAVE_SENDFILE
+#undef HAVE_SENDFILE
+#endif /* HAVE_SENDFILE */
+#ifdef HAVE_FREEBSD_SENDFILE
+#undef HAVE_FREEBSD_SENDFILE
+#endif /* HAVE_FREEBSD_SENDFILE */
+#ifdef CAN_HAVE_SENDFILE
+#undef CAN_HAVE_SENDFILE
+#endif /* CAN_HAVE_SENDFILE */
+#ifdef CAN_HAVE_LINUX_SYSCALL4
+#undef CAN_HAVE_LINUX_SYSCALL4
+#endif /* CAN_HAVE_LINUX_SYSCALL4 */
+#ifdef CAN_HAVE_NONSHARED_LINUX_SYSCALL4
+#undef CAN_HAVE_NONSHARED_LINUX_SYSCALL4
+#endif /* CAN_HAVE_NONSHARED_LINUX_SYSCALL4 */
+#endif /* HAVE_BROKEN_SENDFILE */
+
 #if defined(CAN_HAVE_LINUX_SYSCALL4) || \
     !defined(DYNAMIC_MODULE) && defined(CAN_HAVE_NONSHARED_LINUX_SYSCALL4)
 
@@ -59,6 +77,7 @@
 #define __NR_sendfile 187
 #endif
 _syscall4(ssize_t,sendfile,int,out,int,in,off_t*,off,size_t,size);
+#define HAVE_SENDFILE
 
 #elif defined(CAN_HAVE_SENDFILE)
 
