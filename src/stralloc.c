@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.107 2000/11/25 17:00:17 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.108 2000/11/29 21:23:18 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -642,6 +642,25 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
   return low_end_shared_string(s);
 }
 
+PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string *str, ptrdiff_t len)
+{
+  struct pike_string *tmp;
+#ifdef PIKE_DEBUG
+  if(len > str->len)
+    fatal("Cannot extend string here!\n");
+#endif
+  if( str->len <= SHORT_STRING_THRESHOLD ?
+      (len <= SHORT_STRING_THRESHOLD) :
+      (len >  SHORT_STRING_THRESHOLD) && str->len  > len/2 )
+  {
+    str->len=len;
+    return end_shared_string(str);
+  }
+  tmp = make_shared_binary_pcharp(MKPCHARP_STR(str),len);
+  really_free_pike_string(str);
+  return tmp;
+}
+
 
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,size_t len)
 {
@@ -792,6 +811,18 @@ PMOD_EXPORT void do_free_string(struct pike_string *s)
 {
   if (s)
     free_string(s);
+}
+
+PMOD_EXPORT void do_really_free_string(struct pike_string *s)
+{
+  if (s)
+    really_free_string(s);
+}
+
+PMOD_EXPORT void do_really_free_pike_string(struct pike_string *s)
+{
+  if (s)
+    really_free_pike_string(s);
 }
 
 PMOD_EXPORT void really_free_string(struct pike_string *s)

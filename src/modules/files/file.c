@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.202 2000/11/29 11:43:25 mirar Exp $");
+RCSID("$Id: file.c,v 1.203 2000/11/29 21:23:20 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -377,16 +377,9 @@ static struct pike_string *do_read(int fd,
     struct pike_string *str;
 
 
-/* WORKAROUND! FIXME! FIXME!
-   short string threshold is 16 
-   /Mirar */
+    str=begin_shared_string(r);
 
-    if (r>16)
-       str=begin_shared_string(r);
-    else
-       str=begin_shared_string(17);
-
-    SET_ONERROR(ebuf, call_free, str);
+    SET_ONERROR(ebuf, do_really_free_pike_string, str);
 
     do{
       int fd=FD;
@@ -413,7 +406,7 @@ static struct pike_string *do_read(int fd,
 	*err=e;
 	if(!bytes_read)
 	{
-	  free((char *)str);
+	  do_really_free_pike_string(str);
 	  UNSET_ONERROR(ebuf);
 	  return 0;
 	}
@@ -433,10 +426,7 @@ static struct pike_string *do_read(int fd,
     {
       return end_shared_string(str);
     }else{
-      struct pike_string *foo; /* Per */
-      foo = make_shared_binary_string(str->str,bytes_read);
-      free((char *)str);
-      return foo;
+      return end_and_resize_shared_string(str, bytes_read);
     }
 
   }else{
@@ -530,7 +520,7 @@ static struct pike_string *do_read_oob(int fd,
 
     str=begin_shared_string(r);
 
-    SET_ONERROR(ebuf, call_free, str);
+    SET_ONERROR(ebuf, do_really_free_pike_string, str);
 
     do{
       int e;
@@ -557,7 +547,7 @@ static struct pike_string *do_read_oob(int fd,
 	*err=e;
 	if(!bytes_read)
 	{
-	  free((char *)str);
+	  do_really_free_pike_string(str);
 	  UNSET_ONERROR(ebuf);
 	  return 0;
 	}
@@ -577,10 +567,7 @@ static struct pike_string *do_read_oob(int fd,
     {
       return end_shared_string(str);
     }else{
-      struct pike_string *foo; /* Per */
-      foo = make_shared_binary_string(str->str, bytes_read);
-      free_string(end_shared_string(str));
-      return foo;
+      return end_and_resize_shared_string(str, bytes_read);
     }
 
   }else{
@@ -1040,7 +1027,6 @@ static void file_write(INT32 args)
 
   if(args > 1)
   {
-    extern void f_sprintf(INT32);
     f_sprintf(args);
     args=1;
   }
@@ -1111,7 +1097,6 @@ static void file_write_oob(INT32 args)
 
   if(args > 1)
   {
-    extern void f_sprintf(INT32);
     f_sprintf(args);
     args=1;
   }

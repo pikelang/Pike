@@ -5,12 +5,13 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.56 2000/09/03 23:20:12 mast Exp $
+ * $Id: stralloc.h,v 1.57 2000/11/29 21:23:19 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
 #include "global.h"
 #include "pike_macros.h"
+#include "block_alloc_h.h"
 
 #define STRINGS_ARE_SHARED
 
@@ -147,7 +148,8 @@ INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *
 
 
 /* Prototypes begin here */
-PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, ptrdiff_t pos);
+PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s,
+						      ptrdiff_t pos);
 PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, ptrdiff_t pos,
 				      int value);
 PMOD_EXPORT INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
@@ -163,14 +165,24 @@ PMOD_EXPORT void generic_memcpy(PCHARP to,
 				PCHARP from,
 				ptrdiff_t len);
 PMOD_EXPORT INLINE void pike_string_cpy(PCHARP to,
-					struct pike_string *from);
-PMOD_EXPORT struct pike_string *binary_findstring(const char *foo,
-						  ptrdiff_t l);
+			    struct pike_string *from);
+PMOD_EXPORT struct pike_string *binary_findstring(const char *foo, ptrdiff_t l);
 PMOD_EXPORT struct pike_string *findstring(const char *foo);
+struct short_pike_string0;
+struct short_pike_string1;
+struct short_pike_string2;
+BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
+BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
+BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
+
+
+
+
 PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len);
 PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift);
 PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s);
 PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s);
+PMOD_EXPORT struct pike_string *end_and_resize_shared_string(struct pike_string *str, ptrdiff_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str);
@@ -183,6 +195,8 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str);
 PMOD_EXPORT void unlink_pike_string(struct pike_string *s);
 PMOD_EXPORT void do_free_string(struct pike_string *s);
+PMOD_EXPORT void do_really_free_string(struct pike_string *s);
+PMOD_EXPORT void do_really_free_pike_string(struct pike_string *s);
 PMOD_EXPORT void really_free_string(struct pike_string *s);
 PMOD_EXPORT void debug_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
@@ -199,8 +213,6 @@ PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
 						  const char *b,
 						  ptrdiff_t blen, int bsize);
 PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len);
-PMOD_EXPORT static int low_binary_strcmp(char *a, ptrdiff_t alen,
-					 char *b, ptrdiff_t blen);
 PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
 				      struct pike_string *b);
 PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b);
@@ -231,8 +243,7 @@ void count_memory_in_strings(INT32 *num, INT32 *size);
 unsigned gc_touch_all_strings(void);
 void gc_mark_all_strings(void);
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
-PMOD_EXPORT void *string_builder_allocate(struct string_builder *s,
-					  ptrdiff_t chars, int mag);
+PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
 PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, ptrdiff_t len);
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
@@ -331,5 +342,7 @@ PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
 #endif
 
 #undef CONVERT
+
+PMOD_PROTO extern void f_sprintf(INT32 num_arg);
 
 #endif /* STRALLOC_H */
