@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.375 2001/01/18 22:08:57 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.376 2001/01/19 15:19:51 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -279,6 +279,66 @@ test_any([[
   }
   return 1;
 ]], 1);
+
+// This test checks for excessive recursion in
+// destruct_objects_to_destruct, and also that it keeps the destruct
+// order sane.
+test_do([[
+  class Top
+  {
+    int count = 0;
+
+    class Foo
+    {
+      int c;
+      object foo;
+      static void create(object o)
+      {
+	foo = o;
+	c = count++;
+      }
+
+      void destroy()
+      {
+	count--;
+	if (count != c)
+	  error ("Destruct out of sequence, "
+		 "%d destructed when %d should be.\n", c, count);
+	object x = foo && Foo(0);
+	x = 0;
+	// Cause call to destruct_objects_to_destruct.
+	for (int j = 0; j < 10; j++) werror ("");
+      }
+    }
+
+    mixed eat_stack()
+    {
+      mixed err = 1;
+      if (catch (err = eat_stack()) || err != 10)
+	return intp (err) && err > 0 ? err + 1 : err;
+      if (err = catch {
+
+	Foo foo;
+	for(int i=0; i < 10000; i++)
+	  foo = Foo(foo);
+	foo = 0;
+	// Cause call to destruct_objects_to_destruct.
+	for (int j = 0; j < 10; j++) werror ("");
+
+      }) return err;
+    }
+
+    static void create()
+    {
+      if (mixed err = eat_stack()) {
+	catch (err[1] = err[1][sizeof (err[1]) - 50..]);
+	throw (err);
+      }
+    }
+  };
+
+  Top();
+]]);
 
 test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"foo")]])
 test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"z")]])
