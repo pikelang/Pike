@@ -254,7 +254,13 @@ o Geography RT38
 o Int
 o Pike.Security
 o Protocols.HTTP.Session
+
+    Handles an HTTP connection as a session, with cookies and stuff.
+
 o Bz2
+
+    Support for the compression format used by the bzip2 program.
+
 o Process.Process
 o Error
 o Float
