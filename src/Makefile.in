@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.196 2000/07/12 08:46:31 lange Exp $
+# $Id: Makefile.in,v 1.197 2000/07/26 16:59:11 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -39,7 +39,7 @@ share_prefix = $(data_prefix)/pike
 man_prefix = $(prefix)/man
 
 # Arguments for test_pike.pike used by the verify targets.
-TESTARGS = -a
+# TESTARGS = -a
 
 # Arguments for install.pike used by the install targets.
 INSTALLARGS = --new-style
