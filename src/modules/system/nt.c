@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.24 2000/08/24 12:29:57 leif Exp $
+ * $Id: nt.c,v 1.25 2000/08/24 16:37:15 leif Exp $
  *
  * NT system calls for Pike
  *
@@ -21,9 +21,6 @@
 #include "mapping.h"
 #include "constants.h"
 #include "builtin_functions.h"
-#include "interpret.h"
-#include "operators.h"
-#include "stuff.h"
 
 #include <winsock.h>
 #include <windows.h>
@@ -41,94 +38,17 @@ static void f_cp(INT32 args)
   push_int(ret);
 }
 
-static void push_tchar(TCHAR *buf, DWORD len)
-{
-  push_string(make_shared_binary_pcharp(
-    MKPCHARP(buf,my_log2(sizeof(TCHAR))),len));
-}
-
-static void push_regvalue(DWORD type, char* buffer, DWORD len)
-{
-  switch(type)
-  {
-    case REG_RESOURCE_LIST:
-    case REG_NONE:
-    case REG_LINK:
-    case REG_BINARY:
-      push_string(make_shared_binary_string(buffer,len));
-      break;
-      
-    case REG_SZ:
-      push_string(make_shared_binary_string(buffer,len-1));
-      break;
-      
-    case REG_EXPAND_SZ:
-      type =
-	ExpandEnvironmentStrings((LPCTSTR)buffer,
-				 buffer+len,
-				 DO_NOT_WARN((DWORD)(sizeof(buffer)-len-1)));
-      if(type>sizeof(buffer)-len-1 || !type)
-	error("RegGetValue: Failed to expand data.\n");
-      push_string(make_shared_string(buffer+len));
-      break;
-      
-    case REG_MULTI_SZ:
-      push_string(make_shared_binary_string(buffer,len-1));
-      push_string(make_shared_binary_string("\000",1));
-      f_divide(2);
-      break;
-      
-    case REG_DWORD_LITTLE_ENDIAN:
-      push_int(EXTRACT_UCHAR(buffer)+
-	       (EXTRACT_UCHAR(buffer+1)<<1)+
-	       (EXTRACT_UCHAR(buffer+2)<<2)+
-	       (EXTRACT_UCHAR(buffer+3)<<3));
-      break;
-      
-    case REG_DWORD_BIG_ENDIAN:
-      push_int(EXTRACT_UCHAR(buffer+3)+
-	       (EXTRACT_UCHAR(buffer+2)<<1)+
-	       (EXTRACT_UCHAR(buffer+1)<<2)+
-	       (EXTRACT_UCHAR(buffer)<<3));
-      break;
-      
-    default:
-      error("RegGetValue: cannot handle this data type.\n");
-  }
-}
-
-/* Known hkeys.
- *
- * This table is used to avoid passing pointers to the pike level.
- * (On W2k/IA64 HKEY is typedefed to struct HKEY__ *).
- *
- * NOTE: Order must match the values specified with
- * ADD_GLOBAL_INTEGER_CONSTANT() in init_pike_module() below.
- */
-static const HKEY hkeys[] = {
-  HKEY_CLASSES_ROOT,
-  HKEY_LOCAL_MACHINE,
-  HKEY_CURRENT_USER,
-  HKEY_USERS,
-};
-
 void f_RegGetValue(INT32 args)
 {
   long ret;
-  INT_TYPE hkey_num;
+  INT32 hkey;
   HKEY new_key;
   char *key, *ind;
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args("RegQueryValue", args, "%d%s%s",
-	       &hkey_num, &key, &ind);
-
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
-    error("Unknown hkey: %d\n", hkey_num);
-  }
-
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  get_all_args("RegQueryValue",args,"%d%s%s",&hkey,&key,&ind);
+  ret=RegOpenKeyEx((HKEY)hkey, (LPCTSTR)key, 0, KEY_READ,  &new_key);
   if(ret != ERROR_SUCCESS)
     error("RegOpenKeyEx failed with error %d\n",ret);
 
@@ -138,119 +58,54 @@ void f_RegGetValue(INT32 args)
   if(ret==ERROR_SUCCESS)
   {
     pop_n_elems(args);
-    push_regvalue(type, buffer, len);
+    switch(type)
+    {
+      case REG_RESOURCE_LIST:
+      case REG_NONE:
+      case REG_LINK:
+      case REG_BINARY:
+	push_string(make_shared_binary_string(buffer,len));
+	break;
+
+      case REG_SZ:
+	push_string(make_shared_binary_string(buffer,len-1));
+	break;
+
+      case REG_EXPAND_SZ:
+	type=ExpandEnvironmentStrings((LPCTSTR)buffer,
+				      buffer+len,
+				      sizeof(buffer)-len-1);
+	if(type>sizeof(buffer)-len-1 || !type)
+	  error("RegGetValue: Failed to expand data.\n");
+	push_string(make_shared_string(buffer+len));
+	break;
+
+      case REG_MULTI_SZ:
+	push_string(make_shared_binary_string(buffer,len-1));
+	push_string(make_shared_binary_string("\000",1));
+	f_divide(2);
+	break;
+
+      case REG_DWORD_LITTLE_ENDIAN:
+	push_int(EXTRACT_UCHAR(buffer)+
+	  (EXTRACT_UCHAR(buffer+1)<<1)+
+	  (EXTRACT_UCHAR(buffer+2)<<2)+
+	  (EXTRACT_UCHAR(buffer+3)<<3));
+	break;
+
+      case REG_DWORD_BIG_ENDIAN:
+	push_int(EXTRACT_UCHAR(buffer+3)+
+	  (EXTRACT_UCHAR(buffer+2)<<1)+
+	  (EXTRACT_UCHAR(buffer+1)<<2)+
+	  (EXTRACT_UCHAR(buffer)<<3));
+	break;
+
+      default:
+	error("RegGetValue: cannot handle this data type.\n");
+    }
   }else{
     error("RegQueryValueEx failed with error %d\n",ret);
   }
-}
-
-static void do_regclosekey(HKEY key)
-{
-  RegCloseKey(key);
-}
-
-void f_RegGetKeyNames(INT32 args)
-{
-  INT_TYPE hkey_num;
-  char *key;
-  int i,ret;
-  HKEY new_key;
-  ONERROR tmp;
-  get_all_args("RegGetKeyNames", args, "%d%s",
-	       &hkey_num, &key);
-
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
-    error("Unknown hkey: %d\n", hkey_num);
-  }
-
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
-  if(ret != ERROR_SUCCESS)
-    error("RegOpenKeyEx failed with error %d\n",ret);
-
-  SET_ONERROR(tmp, do_regclosekey, new_key);
-
-  pop_n_elems(args);
-
-  for(i=0;;i++)
-  {
-    TCHAR buf[1024];
-    DWORD len=sizeof(buf)-1;
-    FILETIME tmp2;
-    THREADS_ALLOW();
-    ret=RegEnumKeyEx(new_key, i, buf, &len, 0,0,0, &tmp2);
-    THREADS_DISALLOW();
-    switch(ret)
-    {
-      case ERROR_SUCCESS:
-	check_stack(1);
-	push_tchar(buf,len);
-	continue;
-	
-      case ERROR_NO_MORE_ITEMS:
-	break;
-	
-      default:
-	error("RegEnumKeyEx failed with error %d\n",ret);
-    }
-    break;
-  }
-  CALL_AND_UNSET_ONERROR(tmp);
-  f_aggregate(i);
-}
-
-void f_RegGetValues(INT32 args)
-{
-  INT_TYPE hkey_num;
-  char *key;
-  int i,ret;
-  HKEY new_key;
-  ONERROR tmp;
-
-  get_all_args("RegGetValues", args, "%d%s",
-	       &hkey_num, &key);
-
-  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
-    error("Unknown hkey: %d\n", hkey_num);
-  }
-
-  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
-
-  if(ret != ERROR_SUCCESS)
-    error("RegOpenKeyEx failed with error %d\n",ret);
-
-  SET_ONERROR(tmp, do_regclosekey, new_key);
-  pop_n_elems(args);
-
-  for(i=0;;i++)
-  {
-    TCHAR buf[1024];
-    char buffer[8192];
-    DWORD len=sizeof(buf)-1;
-    DWORD buflen=sizeof(buffer)-1;
-    DWORD type;
-
-    THREADS_ALLOW();
-    ret=RegEnumValue(new_key, i, buf, &len, 0,&type, buffer, &buflen);
-    THREADS_DISALLOW();
-    switch(ret)
-    {
-      case ERROR_SUCCESS:
-	check_stack(2);
-	push_tchar(buf,len);
-	push_regvalue(type,buffer,buflen);
-	continue;
-	
-      case ERROR_NO_MORE_ITEMS:
-	break;
-	
-      default:
-	RegCloseKey(new_key);
-	error("RegEnumKeyEx failed with error %d\n",ret);
-    }
-    break;
-  }
-  CALL_AND_UNSET_ONERROR(tmp);
-  f_aggregate_mapping(i*2);
 }
 
 static struct program *token_program;
@@ -423,13 +278,13 @@ void f_LogonUser(INT32 args)
 
 static void init_token(struct object *o)
 {
-  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  THIS_TOKEN=INVALID_HANDLE_VALUE;
 }
 
 static void exit_token(struct object *o)
 {
   CloseHandle(THIS_TOKEN);
-  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
+  THIS_TOKEN=INVALID_HANDLE_VALUE;
 }
 
 static void low_encode_user_info_0(USER_INFO_0 *tmp)
@@ -967,7 +822,6 @@ void f_NetUserEnum(INT32 args)
 	  encode_user_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
-	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_user_info(level);
@@ -1051,7 +905,6 @@ void f_NetGroupEnum(INT32 args)
 	  encode_group_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
-	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_group_info(level);
@@ -1134,7 +987,6 @@ void f_NetLocalGroupEnum(INT32 args)
 	  encode_localgroup_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
-	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_localgroup_info(level);
@@ -1219,7 +1071,6 @@ void f_NetUserGetGroups(INT32 args)
       encode_group_users_info(ptr,level);
       a->item[pos]=sp[-1];
       sp--;
-      dmalloc_touch_svalue(sp);
       pos++;
       if(pos>=a->size) break;
       ptr+=sizeof_group_users_info(level);
@@ -1307,7 +1158,6 @@ void f_NetUserGetLocalGroups(INT32 args)
       encode_localgroup_users_info(ptr,level);
       a->item[pos]=sp[-1];
       sp--;
-      dmalloc_touch_svalue(sp);
       pos++;
       if(pos>=a->size) break;
       ptr+=sizeof_localgroup_users_info(level);
@@ -1401,7 +1251,6 @@ void f_NetGroupGetUsers(INT32 args)
 	  encode_group_users_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
-	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_group_users_info(level);
@@ -1504,7 +1353,6 @@ void f_NetLocalGroupGetMembers(INT32 args)
 	  encode_localgroup_members_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
-	  dmalloc_touch_svalue(sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_localgroup_members_info(level);
@@ -1682,17 +1530,15 @@ static LPWSTR get_wstring(struct svalue *s)
 }
 
 
-/* Stuff for NetSessionEnum and NetWkstaUserEnum */
-
 LINKFUNC(NET_API_STATUS,netsessionenum,
 	 (LPWSTR, LPWSTR, LPWSTR, DWORD, LPBYTE *,
 	  DWORD, LPDWORD,LPDWORD,LPDWORD));
 
 LINKFUNC(NET_API_STATUS,netwkstauserenum,
-	 (LPWSTR, LPWSTR, LPWSTR, DWORD, LPBYTE *,
+	 (LPWSTR, DWORD, LPBYTE *,
 	  DWORD, LPDWORD,LPDWORD,LPDWORD));
 
-static void throw_nt_error(char *funcname, NET_API_STATUS err)
+static void throw_nt_error(char *funcname, int err)
 { char *msg;
 
   switch (err)
@@ -1729,8 +1575,12 @@ static void throw_nt_error(char *funcname, NET_API_STATUS err)
       msg = "Client name not found.";
       break;
 
+    case NERR_Success:
+      msg = "Strange error (NERR_Success).";
+      break;
+
     default:
-      error("%s: Unknown error %d\n", funcname, err);
+      error("%s: Unknown error 0x%ux\n", funcname, err);
   }
   error("%s: %s\n", funcname, msg);
 }
@@ -1823,7 +1673,14 @@ static int sizeof_session_info(int level)
 }
 
 static void encode_wkstauser_info(BYTE *p, int level)
-{ if (level == 0)
+{ if (p == 0)
+  { /* This probably shouldn't happen, but the example on the
+     * MSDN NetWkstaUserEnum manual page checks for this, so
+     * we'll do that, too.
+     */
+    f_aggregate(0);
+  }
+  else if (level == 0)
   { WKSTA_USER_INFO_0 *wp = (WKSTA_USER_INFO_0 *) p;
 
     SAFE_PUSH_WSTR(wp->wkui0_username);
@@ -1894,7 +1751,7 @@ static void f_NetSessionEnum(INT32 args)
 		       user,
 		       level,
 		       &buf,
-		       0x10000,
+		       0x2000,
 		       &read,
 		       &total,
 		       &resume);
@@ -1928,7 +1785,6 @@ static void f_NetSessionEnum(INT32 args)
     break;
   }
 }
-
 
 static void f_NetWkstaUserEnum(INT32 args)
 {
@@ -1994,8 +1850,6 @@ static void f_NetWkstaUserEnum(INT32 args)
   }
 }
 
-/* End NetWkstaUserEnum */
-
 static void f_GetFileAttributes(INT32 args)
 {
   char *file;
@@ -2010,7 +1864,7 @@ static void f_GetFileAttributes(INT32 args)
 static void f_SetFileAttributes(INT32 args)
 {
   char *file;
-  INT_TYPE attr,ret;
+  INT32 attr,ret;
   DWORD tmp;
   get_all_args("SetFileAttributes",args,"%s%d",&file,&attr);
   tmp=attr;
@@ -2388,19 +2242,13 @@ void init_nt_system_calls(void)
   
   ADD_FUNCTION("cp",f_cp,tFunc(tStr tStr,tInt), 0);
 
-  /* See array hkeys[] above. */
-
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT", 0);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE", 1);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER", 2);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS", 3);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE",HKEY_LOCAL_MACHINE);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER",HKEY_CURRENT_USER);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS",HKEY_USERS);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT",HKEY_CLASSES_ROOT);
   
 /* function(int,string,string:string|int|string*) */
   ADD_EFUN("RegGetValue",f_RegGetValue,tFunc(tInt tStr tStr,tOr3(tStr,tInt,tArr(tStr))),OPT_EXTERNAL_DEPEND);
-
-  ADD_EFUN("RegGetValues",f_RegGetValues,tFunc(tInt tStr,tMap(tStr,tOr3(tStr,tInt,tArr(tStr)))),OPT_EXTERNAL_DEPEND);
-
-  ADD_EFUN("RegGetKeyNames",f_RegGetKeyNames,tFunc(tInt tStr,tArr(tStr)),OPT_EXTERNAL_DEPEND);
 
 
   /* LogonUser only exists on NT, link it dynamically */
@@ -2619,6 +2467,13 @@ void init_nt_system_calls(void)
         SIMPCONST(SESS_GUEST);
         SIMPCONST(SESS_NOENCRYPTION);
       }
+
+      if(proc=GetProcAddress(netapilib, "NetWkstaUserEnum"))
+      {
+	netwkstauserenum=(netwkstauserenumtype)proc;
+	
+ 	add_function("NetWkstaUserEnum",f_NetWkstaUserEnum,"function(string,int:array(mixed))",0);
+      }
     }
   }
 }
@@ -2654,6 +2509,7 @@ void exit_nt_system_calls(void)
       netapilib=0;
       netusergetinfo=0;
       netuserenum=0;
+      netwkstauserenum=0;
       netusergetgroups=0;
       netusergetlocalgroups=0;
       netgroupenum=0;
