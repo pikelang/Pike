@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.46 2003/04/30 10:37:36 grubba Exp $
+|| $Id: fdlib.h,v 1.47 2003/04/30 15:10:09 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -10,6 +10,8 @@
 
 #include "global.h"
 #include "pike_macros.h"
+
+#include "pike_netlib.h"
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
@@ -55,11 +57,6 @@
 #define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
-#else
-#include <winsock.h>
-#endif
 #include <winbase.h>
 
 typedef int FD;
