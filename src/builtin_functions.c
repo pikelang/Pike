@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.86 1998/03/20 03:40:50 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.87 1998/03/20 22:31:04 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -660,6 +660,17 @@ void f_exit(INT32 args)
   assign_svalue(&throw_value, sp-args);
   throw_severity=THROW_EXIT;
   pike_throw();
+}
+
+void f__exit(INT32 args)
+{
+  if(args < 1)
+    error("Too few arguments to _exit.\n");
+
+  if(sp[-args].type != T_INT)
+    error("Bad argument 1 to _exit.\n");
+
+  exit(sp[-1].u.integer);
 }
 
 void f_time(INT32 args)
@@ -2489,6 +2500,7 @@ void init_builtin_efuns(void)
   add_efun("destruct",f_destruct,"function(object|void:void)",OPT_SIDE_EFFECT);
   add_efun("equal",f_equal,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("exit",f_exit,"function(int:void)",OPT_SIDE_EFFECT);
+  add_efun("_exit",f__exit,"function(int:void)",OPT_SIDE_EFFECT);
   add_efun("floatp",  f_floatp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("function_name",f_function_name,"function(function:string)",OPT_TRY_OPTIMIZE);
   add_efun("function_object",f_function_object,"function(function:object)",OPT_TRY_OPTIMIZE);
