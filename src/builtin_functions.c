@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.449 2002/10/25 13:13:57 marcus Exp $
+|| $Id: builtin_functions.c,v 1.450 2002/11/24 14:57:05 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.449 2002/10/25 13:13:57 marcus Exp $");
+RCSID("$Id: builtin_functions.c,v 1.450 2002/11/24 14:57:05 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4480,6 +4480,7 @@ PMOD_EXPORT void f_glob(INT32 args)
   case T_ARRAY:
     a=Pike_sp[1-args].u.array;
     matches=0;
+    check_stack(a->size);
     for(i=0;i<a->size;i++)
     {
       if(ITEM(a)[i].type != T_STRING)
