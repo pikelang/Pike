@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.15 2001/09/12 21:52:16 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.16 2001/09/13 15:57:21 hubbe Exp $");
 
 #endif
 
@@ -1421,7 +1421,11 @@ static void init_dlopen(void)
     data->stringtable=(unsigned char *)( ((char *)data->symbols) + 
 					 18 * data->coff->num_symbols);
     
-    
+
+#ifdef PIKE_DEBUG
+    if(!data->coff->num_symbols)
+      fatal("No COFF symbols found in pike binary.\n");
+#endif      
     global_dlhandle.htable=alloc_htable(data->coff->num_symbols);
     
 #ifdef DLDEBUG
