@@ -436,11 +436,18 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_INC_LOCAL);
       instr=GET_ARG();
+#ifdef AUTO_BIGNUM
+      if(fp->locals[instr].type == T_INT &&
+         !INT_TYPE_ADD_OVERFLOW(fp->locals[instr].u.integer, 1))
+#else
       if(fp->locals[instr].type == T_INT)
+#endif /* AUTO_BIGNUM */
       {
-        fp->locals[instr].u.integer++;
-	assign_svalue_no_free(sp++,fp->locals+instr);
-      }else{
+	  fp->locals[instr].u.integer++;
+	  assign_svalue_no_free(sp++,fp->locals+instr);
+      }
+      else
+      {
 	assign_svalue_no_free(sp++,fp->locals+instr);
 	push_int(1);
 	f_add(2);
@@ -456,7 +463,12 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_INC_LOCAL_AND_POP);
       instr=GET_ARG();
     inc_local_and_pop:
+#ifdef AUTO_BIGNUM
+      if(fp->locals[instr].type == T_INT &&
+         !INT_TYPE_ADD_OVERFLOW(fp->locals[instr].u.integer, 1))
+#else
       if(fp->locals[instr].type == T_INT)
+#endif /* AUTO_BIGNUM */
       {
 	fp->locals[instr].u.integer++;
       }else{
@@ -470,7 +482,12 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_DEC_LOCAL);
       instr=GET_ARG();
+#ifdef AUTO_BIGNUM
+      if(fp->locals[instr].type == T_INT &&
+         !INT_TYPE_SUB_OVERFLOW(fp->locals[instr].u.integer, 1))
+#else
       if(fp->locals[instr].type == T_INT)
+#endif /* AUTO_BIGNUM */
       {
 	fp->locals[instr].u.integer--;
 	assign_svalue_no_free(sp++,fp->locals+instr);
@@ -492,7 +509,12 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_DEC_LOCAL_AND_POP);
       instr=GET_ARG();
     dec_local_and_pop:
+#ifdef AUTO_BIGNUM
+      if(fp->locals[instr].type == T_INT &&
+         !INT_TYPE_SUB_OVERFLOW(fp->locals[instr].u.integer, 1))
+#else
       if(fp->locals[instr].type == T_INT)
+#endif /* AUTO_BIGNUM */
       {
 	fp->locals[instr].u.integer--;
       }else{
@@ -589,6 +611,7 @@ static int eval_instruction(unsigned char *pc)
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
 	if(u)
 	{
+	  /* FIXME: Bignum. */
 	  instr=++ u->integer;
 	  pop_n_elems(2);
 	  push_int(u->integer);
@@ -608,6 +631,7 @@ static int eval_instruction(unsigned char *pc)
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
 	if(u)
 	{
+	  /* FIXME: Bignum. */
 	  instr=-- u->integer;
 	  pop_n_elems(2);
 	  push_int(u->integer);
@@ -627,6 +651,7 @@ static int eval_instruction(unsigned char *pc)
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
 	if(u)
 	{
+	  /* FIXME: Bignum. */
 	  instr=-- u->integer;
 	  pop_n_elems(2);
 	}else{
@@ -644,6 +669,7 @@ static int eval_instruction(unsigned char *pc)
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
 	if(u)
 	{
+	  /* FIXME: Bignum. */
 	  instr=++ u->integer;
 	  pop_n_elems(2);
 	}else{
@@ -661,6 +687,7 @@ static int eval_instruction(unsigned char *pc)
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
 	if(u)
 	{
+	  /* FIXME: Bignum. */
 	  instr=u->integer ++;
 	  pop_n_elems(2);
 	  push_int(instr);
@@ -681,6 +708,7 @@ static int eval_instruction(unsigned char *pc)
 	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
 	if(u)
 	{
+	  /* FIXME: Bignum. */
 	  instr=u->integer --;
 	  pop_n_elems(2);
 	  push_int(instr);
@@ -1042,8 +1070,17 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_NEGATE); 
       if(sp[-1].type == T_INT)
       {
-	sp[-1].u.integer =- sp[-1].u.integer;
-      }else if(sp[-1].type == T_FLOAT)
+#ifdef AUTO_BIGNUM
+	if(INT_TYPE_NEG_OVERFLOW(sp[-1].u.integer))
+	{
+	  convert_stack_top_to_bignum();
+	  o_negate();
+	}
+	else
+#endif /* AUTO_BIGNUM */
+	  sp[-1].u.integer =- sp[-1].u.integer;
+      }
+      else if(sp[-1].type == T_FLOAT)
       {
 	sp[-1].u.float_number =- sp[-1].u.float_number;
       }else{
