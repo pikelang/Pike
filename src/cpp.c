@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.45 1999/02/26 23:29:46 grubba Exp $
+ * $Id: cpp.c,v 1.46 1999/02/27 21:52:37 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -43,23 +43,6 @@
 #define PUTC(C) do { \
  int c_=(C); if(OUTP() || c_=='\n') string_builder_putchar(&this->buf, c_); }while(0)
 
-#define STRCAT(STR,LEN) do {				\
-  INT32 x_,len_=(LEN);					\
-  char *str_=(STR);					\
-  if(OUTP())						\
-    string_builder_binary_strcat(&this->buf, str_,len_);	\
-  else							\
-    for(x_=0;x_<len_;x_++)				\
-      if(str_[x_]=='\n')				\
-        string_builder_putchar(&this->buf, '\n');		\
-}while(0)
-
-#define CHECKWORD(X) \
- (!strncmp(X,data+pos,strlen(X)) && !isidchar(data[pos+strlen(X)]))
-#define WGOBBLE(X) (CHECKWORD(X) ? (pos+=strlen(X)),1 : 0)
-#define GOBBLEOP(X) \
- ((!strncmp(X,data+pos,strlen(X))) ? (pos+=strlen(X)),1 : 0)
-
 #define MAX_ARGS            255
 #define DEF_ARG_STRINGIFY   0x100000
 #define DEF_ARG_NOPRESPACE  0x200000
@@ -82,7 +65,7 @@ struct define_part
 };
 
 struct define_argument {
-  char *arg;
+  PCHARP arg;
   INT32 len;
 };
 
@@ -120,9 +103,6 @@ struct cpp
 
 struct define *defined_macro =0;
 struct define *constant_macro =0;
-
-static INT32 calc(struct cpp *,char*,INT32,INT32);
-static INT32 calc1(struct cpp *,char*,INT32,INT32);
 
 void cpp_error(struct cpp *this,char *err)
 {
@@ -263,13 +243,13 @@ static void simple_add_define(struct cpp *this,
   } while(0)
 
 #define SKIPWHITE() do {					\
-    if(!isspace(((unsigned char *)data)[pos])) break;		\
+    if(!WC_ISSPACE(data[pos])) break;				\
     if(data[pos]=='\n') { PUTNL(); this->current_line++; }	\
     pos++;							\
   } while(1)
 
 #define SKIPSPACE() \
-  do { while(isspace(((unsigned char *)data)[pos]) && data[pos]!='\n') pos++; \
+  do { while(WC_ISSPACE(data[pos]) && data[pos]!='\n') pos++; \
   } while (0)
 
 #define SKIPCOMMENT()	do{				\
@@ -323,7 +303,7 @@ static void simple_add_define(struct cpp *this,
     break;					\
     						\
   default:					\
-    C=((unsigned char *)data)[pos];		\
+    C = data[pos];				\
   }						\
 }while (0)
 
@@ -361,7 +341,7 @@ while(1)					\
   }						\
 						\
   default:					\
-    string_builder_putchar(&nf, ((unsigned char *)data)[pos]);	\
+    string_builder_putchar(&nf, data[pos]);	\
     continue;					\
   }						\
   pos++;					\
@@ -401,7 +381,7 @@ while(1)						\
     pos++;                                              \
 							\
   default:						\
-    if(outp) string_builder_putchar(&nf, ((unsigned char *)data)[pos-1]);	\
+    if(outp) string_builder_putchar(&nf, data[pos-1]);	\
     continue;						\
   }							\
   break;						\
@@ -440,71 +420,11 @@ while(1)					\
     PUTNL();					\
     this->current_line++;			\
   default:					\
-    string_builder_putchar(&nf, ((unsigned char *)data)[pos]);	\
+    string_builder_putchar(&nf, data[pos]);	\
     continue;					\
   }						\
   pos++;					\
   break;					\
-}
-
-void PUSH_STRING(char *str,
-		 INT32 len,
-		 struct string_builder *buf)
-{
-  INT32 p2;
-  string_builder_putchar(buf, '"');
-  for(p2=0;p2<len;p2++)
-  {
-    switch(str[p2])
-    {
-    case '\n':
-      string_builder_putchar(buf, '\\');
-      string_builder_putchar(buf, 'n');
-      break;
-      
-    case '\t':
-      string_builder_putchar(buf, '\\');
-      string_builder_putchar(buf, 't');
-      break;
-      
-    case '\r':
-      string_builder_putchar(buf, '\\');
-      string_builder_putchar(buf, 'r');
-      break;
-      
-    case '\b':
-      string_builder_putchar(buf, '\\');
-      string_builder_putchar(buf, 'b');
-      break;
-      
-    case '\\':
-    case '"':
-      string_builder_putchar(buf, '\\');
-      string_builder_putchar(buf, ((unsigned char *)str)[p2]);
-      break;
-      
-    default:
-      if(isprint(EXTRACT_UCHAR(str+p2)))
-      {
-	string_builder_putchar(buf, ((unsigned char *)str)[p2]);
-      }
-      else
-      {
-	int c=EXTRACT_UCHAR(str+p2);
-	string_builder_putchar(buf, '\\');
-	string_builder_putchar(buf, ((c>>6)&7)+'0');
-	string_builder_putchar(buf, ((c>>3)&7)+'0');
-	string_builder_putchar(buf, (c&7)+'0');
-	if(EXTRACT_UCHAR(str+p2+1)>='0' && EXTRACT_UCHAR(str+p2+1)<='7')
-	{
-	  string_builder_putchar(buf, '"');
-	  string_builder_putchar(buf, '"');
-	}
-      }
-      break;
-    }
-  }
-  string_builder_putchar(buf, '"');
 }
 
 #define FINDTOK() 				\
@@ -542,1381 +462,34 @@ void PUSH_STRING(char *str,
   break;					\
   }while(1)
 
-static INLINE int find_end_parenthesis(struct cpp *this,
-				       char *data,
-				       INT32 len,
-				       INT32 pos) /* position of first " */
+static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
+		     int flags);
+
+#define SHIFT 0
+#include "preprocessor.h"
+#undef SHIFT
+
+#define SHIFT 1
+#include "preprocessor.h"
+#undef SHIFT
+
+#define SHIFT 2
+#include "preprocessor.h"
+#undef SHIFT
+
+static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
+		     int flags)
 {
-  while(1)
-  {
-    if(pos+1>=len)
-    {
-      cpp_error(this,"End of file while looking for end parenthesis.");
-      return pos;
-    }
-
-    switch(data[pos++])
-    {
-    case '\n': PUTNL(); this->current_line++; break;
-    case '\'': FIND_END_OF_CHAR();  break;
-    case '"':  FIND_END_OF_STRING();  break;
-    case '(':  pos=find_end_parenthesis(this, data, len, pos); break;
-    case ')':  return pos;
-    }
-  }
-}
-
-static INT32 low_cpp(struct cpp *this,
-		    char *data,
-		    INT32 len,
-		    int flags)
-{
-  INT32 pos, tmp, e, tmp2;
-  
-  for(pos=0;pos<len;)
-  {
-/*    fprintf(stderr,"%c",data[pos]);
-    fflush(stderr); */
-
-    switch(data[pos++])
-    {
-    case '\n':
-      if(flags & CPP_END_AT_NEWLINE) return pos-1;
-
-/*      fprintf(stderr,"CURRENT LINE: %d\n",this->current_line); */
-      this->current_line++;
-      PUTNL();
-      goto do_skipwhite;
-
-    case '\t':
-    case ' ':
-    case '\r':
-      PUTC(' ');
-      
-    do_skipwhite:
-      while(data[pos]==' ' || data[pos]=='\r' || data[pos]=='\t')
-	pos++;
-      break;
-
-      /* Minor optimization */
-      case '<':
-	if(data[pos]=='<'  &&
-	   data[pos+1]=='<'  &&
-	   data[pos+2]=='<'  &&
-	   data[pos+3]=='<'  &&
-	   data[pos+4]=='<'  &&
-	   data[pos+5]=='<')
-	  cpp_error(this,"CVS conflict detected");
-	
-      case '!': case '@': case '$': case '%': case '^': case '&':
-      case '*': case '(': case ')': case '-': case '=': case '+':
-      case '{': case '}': case ':': case '?': case '`': case ';':
-      case '>': case ',': case '.': case '~': case '[':
-      case ']': case '|':
-	PUTC(((unsigned char *)data)[pos-1]);
-      break;
-      
-    default:
-      if(OUTP() && isidchar(data[pos-1]))
-      {
-	struct pike_string *s=0;
-	struct define *d=0;
-	tmp=pos-1;
-	while(isidchar(data[pos])) pos++;
-
-	if(flags & CPP_DO_IF)
-	{
-	  if(pos-tmp == 7 && !strncmp("defined",data+tmp, 7))
-	  {
-	    d=defined_macro;
-	  }
-	  else if((pos-tmp == 4 && !strncmp("efun",data+tmp, 4)) ||
-		  (pos-tmp == 8 && !strncmp("constant",data+tmp,8)))
-	  {
-	    d=constant_macro;
-	  }
-	  else
-	  {
-	    goto do_find_define;
-	  }
-	}else{
-	do_find_define:
-	  if((s=binary_findstring(data+tmp, pos-tmp)))
-	  {
-	    d=find_define(s);
-	  }
-	}
-	  
-	if(d && !d->inside)
-	{
-	  int arg=0;
-	  struct string_builder tmp;
-	  struct define_argument arguments [MAX_ARGS];
-	  
-	  if(s) add_ref(s);
-	  
-	  if(d->args>=0)
-	  {
-	    SKIPWHITE();
-	    
-	    if(!GOBBLE('('))
-	    {
-	      cpp_error(this,"Missing '(' in macro call.");
-	      break;
-	    }
-	    
-	    for(arg=0;arg<d->args;arg++)
-	    {
-	      if(arg && data[pos]==',')
-	      {
-		pos++;
-		SKIPWHITE();
-	      }else{
-		SKIPWHITE();
-		if(data[pos]==')')
-		{
-		  char buffer[1024];
-		  sprintf(buffer,"Too few arguments to macro %s, expected %d.",d->link.s->str,d->args);
-		  cpp_error(this,buffer);
-		  break;
-		}
-	      }
-	      arguments[arg].arg=data + pos;
-
-	      
-	      while(1)
-	      {
-		if(pos+1>len)
-		{
-		  cpp_error(this,"End of file in macro call.");
-		  break;
-		}
-		
-		switch(data[pos++])
-		{
-		case '\n':
-		  this->current_line++;
-		  PUTNL();
-		default: continue;
-		  
-		case '"':
-		  FIND_END_OF_STRING();
-		  continue;
-		  
-		case '\'':
-		  FIND_END_OF_CHAR();
-		  continue;
-		  
-		case '(':
-		  pos=find_end_parenthesis(this, data, len, pos);
-		  continue;
-		  
-		case ')': 
-		case ',': pos--;
-		  break;
-		}
-		break;
-	      }
-	      arguments[arg].len=data+pos-arguments[arg].arg;
-	    }
-	    SKIPWHITE();
-	    if(!GOBBLE(')'))
-	      cpp_error(this,"Missing ) in macro call.");
-	  }
-	  
-	  if(d->args >= 0 && arg != d->args)
-	    cpp_error(this,"Wrong number of arguments to macro.");
-	  
-	  init_string_builder(&tmp, 0);
-	  if(d->magic)
-	  {
-	    d->magic(this, d, arguments, &tmp);
-	  }else{
-	    string_builder_binary_strcat(&tmp, d->first->str, d->first->len);
-	    for(e=0;e<d->num_parts;e++)
-	    {
-	      char *a;
-	      INT32 l;
-	      
-	      if((d->parts[e].argument & DEF_ARG_MASK) < 0 || 
-		 (d->parts[e].argument & DEF_ARG_MASK) >= arg)
-	      {
-		cpp_error(this,"Macro not expanded correctly.");
-		continue;
-	      }
-	      
-	      a=arguments[d->parts[e].argument&DEF_ARG_MASK].arg;
-	      l=arguments[d->parts[e].argument&DEF_ARG_MASK].len;
-	      
-	      if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
-		string_builder_putchar(&tmp, ' ');
-	      
-	      if(d->parts[e].argument & DEF_ARG_STRINGIFY)
-	      {
-		PUSH_STRING(a,l,&tmp);
-	      }else{
-		if(DEF_ARG_NOPRESPACE)
-		  while(l && isspace(*(unsigned char *)a))
-		    a++,l--;
-		
-		if(DEF_ARG_NOPOSTSPACE)
-		  while(l && isspace(*(unsigned char *)(a+l-1)))
-		    l--;
-
-		if(d->parts[e].argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
-		{
-		  
-		  string_builder_binary_strcat(&tmp, a, l);
-		}else{
-		  struct string_builder save;
-		  INT32 line=this->current_line;
-		  save=this->buf;
-		  this->buf=tmp;
-		  low_cpp(this, a, l,
-			  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
-		  tmp=this->buf;
-		  this->buf=save;
-		  this->current_line=line;
-		}
-	      }
-	      
-	      if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
-		string_builder_putchar(&tmp, ' ');
-	      
-	      string_builder_binary_strcat(&tmp, d->parts[e].postfix->str,
-					   d->parts[e].postfix->len);
-	    }
-	  }
-	  
-	  /* FIXME */
-	  for(e=0;e<(long)tmp.s->len;e++)
-	    if(tmp.s->str[e]=='\n')
-	      tmp.s->str[e]=' ';
-
-	  if(s) d->inside=1;
-	  
-	  string_builder_putchar(&tmp, 0);
-	  tmp.s->len--;
-	  
-	  low_cpp(this, tmp.s->str, tmp.s->len, 
-		  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
-	  
-	  if(s)
-	  {
-	    if((d=find_define(s)))
-	      d->inside=0;
-	    
-	    free_string(s);
-	  }
-
-	  free_string_builder(&tmp);
-	  break;
-	}else{
-	  if(flags & CPP_DO_IF)
-	  {
-	    STRCAT(" 0 ", 3);
-	  }else{
-	    STRCAT(data+tmp, pos-tmp);
-	  }
-	}
-      }else{
-	PUTC(((unsigned char *)data)[pos-1]);
-      }
-      break;
-      
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      PUTC(((unsigned char *)data)[pos-1]);
-      while(data[pos]>='0' && data[pos]<='9') PUTC(data[pos++]);
-      break;
-
-    case '"':
-      FIXSTRING(this->buf,OUTP());
-      break;
-
-    case '\'':
-      tmp=pos-1;
-      FIND_END_OF_CHAR();
-      STRCAT(data+tmp, pos-tmp);
-      break;
-
-    case '/':
-      if(data[pos]=='/')
-      {
-	FIND_EOL();
-	break;
-      }
-
-      if(data[pos]=='*')
-      {
-	PUTC(' ');
-	SKIPCOMMENT();
-	break;
-      }
-
-      PUTC(((unsigned char *)data)[pos-1]);
-      break;
-
-  case '#':
-    if(GOBBLE('!'))
-    {
-      FIND_EOL();
-      break;
-    }
-    SKIPSPACE();
-
-    switch(data[pos])
-    {
-    case 'l':
-      if(WGOBBLE("line"))
-	{
-	  /* FIXME: Why not use SKIPSPACE()? */
-	  while(data[pos]==' ' || data[pos]=='\t') pos++;
-	}else{
-	  goto unknown_preprocessor_directive;
-	}
-      /* Fall through */
-      
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-    {
-      char *foo=data+pos;
-      this->current_line=STRTOL(foo, &foo, 10)-1;
-      string_builder_putchar(&this->buf, '#');
-      string_builder_binary_strcat(&this->buf, data+pos, foo-(data+pos));
-      pos=foo-data;
-      SKIPSPACE();
-      
-      if(data[pos]=='"')
-      {
-	struct string_builder nf;
-	init_string_builder(&nf, 0);
-	
-	READSTRING(nf);
-
-	free_string(this->current_file);
-	this->current_file = finish_string_builder(&nf);
-
-	string_builder_putchar(&this->buf, ' ');
-	PUSH_STRING(this->current_file->str,this->current_file->len,&this->buf);
-      }
-      
-      FIND_EOL();
-      break;
-    }
-
-      case '"':
-      {
-	struct string_builder nf;
-	init_string_builder(&nf, 0);
-	
-	READSTRING2(nf);
-	if(OUTP())
-	{
-	  PUSH_STRING(nf.s->str,
-		      nf.s->len,
-		      &this->buf);
-	}
-	free_string_builder(&nf);
-	break;
-      }
-
-      case 's':
-	if(WGOBBLE("string"))
-	{
-	  tmp2=1;
-	  goto do_include;
-	}
-	
-      goto unknown_preprocessor_directive;
-
-    case 'i': /* include, if, ifdef */
-      if(WGOBBLE("include"))
-      {
-	tmp2=0;
-      do_include:
-	{
-	  struct svalue *save_sp=sp;
-	  SKIPSPACE();
-	  
-	  check_stack(3);
-	  
-	  switch(data[pos++])
-	  {
-	    case '"':
-	      {
-		struct string_builder nf;
-		init_string_builder(&nf, 0);
-		pos--;
-		READSTRING(nf);
-		push_string(finish_string_builder(&nf));
-		ref_push_string(this->current_file);
-		push_int(1);
-		break;
-	      }
-
-	    case '<':
-	      {
-		INT32 tmp=pos;
-		while(data[pos]!='>')
-		{
-		  if(data[pos]=='\n')
-		  {
-		    cpp_error(this,"Expecting '>' in include.");
-		    break;
-		  }
-		      
-		  pos++;
-		}
-		push_string(make_shared_binary_string(data+tmp, pos-tmp));
-		ref_push_string(this->current_file);
-		pos++;
-		push_int(0);
-		break;
-	      }
-
-	    default:
-	      cpp_error(this,"Expected file to include.");
-	      break;
-	    }
-
-	  if(sp==save_sp) break;
-
-	  if(OUTP())
-	  {
-	    struct pike_string *new_file;
-
-	    SAFE_APPLY_MASTER("handle_include",3);
-	  
-	    if(sp[-1].type != T_STRING)
-	    {
-	      cpp_error(this,"Couldn't include file.");
-	      pop_n_elems(sp-save_sp);
-	      break;
-	    }
-	    
-	    new_file=sp[-1].u.string;
-	    
-	    assign_svalue_no_free(sp,sp-1);
-	    sp++;
-	    
-	    SAFE_APPLY_MASTER("read_include",1);
-	    
-	    if(sp[-1].type != T_STRING)
-	    {
-	      cpp_error(this,"Couldn't read include file.");
-	      pop_n_elems(sp-save_sp);
-	      break;
-	    }
-	    
-	    {
-	      char buffer[47];
-	      struct pike_string *save_current_file;
-	      INT32 save_current_line;
-
-	      save_current_file=this->current_file;
-	      save_current_line=this->current_line;
-	      copy_shared_string(this->current_file,new_file);
-	      this->current_line=1;
-	      
-	      string_builder_binary_strcat(&this->buf, "# 1 ", 4);
-	      PUSH_STRING(new_file->str,new_file->len, & this->buf);
-	      string_builder_putchar(&this->buf, '\n');
-	      if(tmp2)
-	      {
-		PUSH_STRING(sp[-1].u.string->str,
-			    sp[-1].u.string->len,
-			    &this->buf);
-	      }else{
-		low_cpp(this,
-			sp[-1].u.string->str,
-			sp[-1].u.string->len,
-			flags&~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
-	      }
-	      
-	      free_string(this->current_file);
-	      this->current_file=save_current_file;
-	      this->current_line=save_current_line;
-	      
-	      sprintf(buffer,"# %d ",this->current_line);
-	      string_builder_binary_strcat(&this->buf, buffer, strlen(buffer));
-	      PUSH_STRING(this->current_file->str,this->current_file->len,& this->buf);
-	      string_builder_putchar(&this->buf, '\n');
-	    }
-	  }
-
-	  pop_n_elems(sp-save_sp);
-	  
-	  break;
-	}
-      }
-
-      if(WGOBBLE("if"))
-      {
-	struct string_builder save,tmp;
-	INT32 nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
-	
-	if(!OUTP())
-	  nflags|=CPP_REALLY_NO_OUTPUT;
-	
-	save=this->buf;
-	init_string_builder(&this->buf, 0);
-	pos+=low_cpp(this,data+pos,len-pos,CPP_END_AT_NEWLINE|CPP_DO_IF);
-	tmp=this->buf;
-	this->buf=save;
-	
-	string_builder_putchar(&tmp, 0);
-	tmp.s->len--;
-	
-	calc(this,tmp.s->str,tmp.s->len,0);
-	free_string_builder(&tmp);
-	if(IS_ZERO(sp-1)) nflags|=CPP_NO_OUTPUT;
-	pop_stack();
-	pos+=low_cpp(this,data+pos,len-pos,nflags);
-	break;
-      }
-
-      if(WGOBBLE("ifdef"))
-	{
-	  INT32 namestart,nflags;
-	  struct pike_string *s;
-	  SKIPSPACE();
-
-	  if(!isidchar(data[pos]))
-	    cpp_error(this,"#ifdef what?\n");
-
-	  namestart=pos;
-	  while(isidchar(data[pos])) pos++;
-	  nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF | CPP_NO_OUTPUT;
-
-	  if(!OUTP())
-	    nflags|=CPP_REALLY_NO_OUTPUT;
-
-	  if((s=binary_findstring(data+namestart,pos-namestart)))
-	    if(find_define(s))
-	      nflags&=~CPP_NO_OUTPUT;
-
-	  pos+=low_cpp(this,data+pos,len-pos,nflags);
-	  break;
-	}
-
-      if(WGOBBLE("ifndef"))
-	{
-	  INT32 namestart,nflags;
-	  struct pike_string *s;
-	  SKIPSPACE();
-
-	  if(!isidchar(data[pos]))
-	    cpp_error(this,"#ifndef what?");
-
-	  namestart=pos;
-	  while(isidchar(data[pos])) pos++;
-	  nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
-
-	  if(!OUTP())
-	    nflags|=CPP_REALLY_NO_OUTPUT;
-
-	  if((s=binary_findstring(data+namestart,pos-namestart)))
-	    if(find_define(s))
-	      nflags|=CPP_NO_OUTPUT;
-
-	  pos+=low_cpp(this,data+pos,len-pos,nflags);
-	  break;
-	}
-
-      goto unknown_preprocessor_directive;
-
-    case 'e': /* endif, else, elif, error */
-      if(WGOBBLE("endif"))
-      {
-	if(!(flags & CPP_EXPECT_ENDIF))
-	  cpp_error(this,"Unmatched #endif");
-
-	return pos;
-      }
-
-      if(WGOBBLE("else"))
-	{
-	  if(!(flags & CPP_EXPECT_ELSE))
-	    cpp_error(this,"Unmatched #else");
-
-	  flags&=~CPP_EXPECT_ELSE;
-	  flags|=CPP_EXPECT_ENDIF;
-
-	  if(flags & CPP_NO_OUTPUT)
-	    flags&=~CPP_NO_OUTPUT;
-	  else
-	    flags|=CPP_NO_OUTPUT;
-
-	  break;
-	}
-
-      if(WGOBBLE("elif") || WGOBBLE("elseif"))
-      {
-	if(!(flags & CPP_EXPECT_ELSE))
-	  cpp_error(this,"Unmatched #elif");
-	
-	flags|=CPP_EXPECT_ENDIF;
-	
-	if(flags & CPP_NO_OUTPUT)
-	{
-	  struct string_builder save,tmp;
-	  save=this->buf;
-	  init_string_builder(&this->buf, 0);
-	  pos+=low_cpp(this,data+pos,len-pos,CPP_END_AT_NEWLINE|CPP_DO_IF);
-	  tmp=this->buf;
-	  this->buf=save;
-	  
-	  string_builder_putchar(&tmp, 0);
-	  tmp.s->len--;
-	  
-	  calc(this,tmp.s->str,tmp.s->len,0);
-	  free_string_builder(&tmp);
-	  if(!IS_ZERO(sp-1)) flags&=~CPP_NO_OUTPUT;
-	  pop_stack();
-	}else{
-	  FIND_EOL();
-	  flags|= CPP_NO_OUTPUT | CPP_REALLY_NO_OUTPUT;
-	}
-	break;
-      }
-
-      if(WGOBBLE("error"))
-	{
-          INT32 foo;
-          SKIPSPACE();
-          foo=pos;
-          FIND_EOL();
-	  pos++;
-	  if(OUTP())
-	  {
-	    push_string(make_shared_binary_string(data+foo,pos-foo));
-	    cpp_error(this,sp[-1].u.string->str);
-	  }
-	  break;
-	}
-      
-      goto unknown_preprocessor_directive;
-
-    case 'd': /* define */
-      if(WGOBBLE("define"))
-	{
-	  struct string_builder str;
-	  INT32 namestart, tmp3, nameend, argno=-1;
-	  struct define *def;
-	  struct svalue *partbase,*argbase=sp;
-
-	  SKIPSPACE();
-
-	  namestart=pos;
-	  if(!isidchar(data[pos]))
-	    cpp_error(this,"Define what?");
-
-	  while(isidchar(data[pos])) pos++;
-	  nameend=pos;
-
-	  if(GOBBLE('('))
-	    {
-	      argno=0;
-	      SKIPWHITE();
-
-	      while(data[pos]!=')')
-		{
-		  INT32 tmp2;
-		  if(argno)
-		    {
-		      if(!GOBBLE(','))
-			cpp_error(this,"Expecting comma in macro definition.");
-		      SKIPWHITE();
-		    }
-		  tmp2=pos;
-
-		  if(!isidchar(data[pos]))
-		  {
-		    cpp_error(this,"Expected argument for macro.");
-		    break;
-		  }
-
-		  while(isidchar(data[pos])) pos++;
-		  check_stack(1);
-		  push_string(make_shared_binary_string(data+tmp2, pos-tmp2));
-
-		  SKIPWHITE();
-		  argno++;
-		  if(argno>=MAX_ARGS)
-		  {
-		    cpp_error(this,"Too many arguments in macro definition.");
-		    pop_stack();
-		    argno--;
-		  }
-		}
-
-	      if(!GOBBLE(')'))
-		cpp_error(this,"Missing ) in macro definition.");
-	    }
-
-	  SKIPSPACE();
-
-	  partbase=sp;
-	  init_string_builder(&str, 0);
-	  
-	  while(1)
-	  {
-	    INT32 extra=0;
-
-/*	    fprintf(stderr,"%c",data[pos]);
-	    fflush(stderr); */
-
-	    switch(data[pos++])
-	    {
-	    case '/':
-	      if(data[pos]=='/')
-	      {
-		string_builder_putchar(&str, ' ');
-		FIND_EOL();
-		continue;
-	      }
-	      
-	      if(data[pos]=='*')
-	      {
-		PUTC(' ');
-		SKIPCOMMENT();
-		continue;
-	      }
-	      
-	      string_builder_putchar(&str, '/');
-	      continue;
-	      
-	    case '0': case '1': case '2': case '3':	case '4':
-	    case '5': case '6': case '7': case '8':	case '9':
-	      string_builder_putchar(&str, ((unsigned char *)data)[pos-1]);
-	      while(data[pos]>='0' && data[pos]<='9')
-		string_builder_putchar(&str, ((unsigned char *)data)[pos++]);
-	      continue;
-	      
-	    case '#':
-	      if(GOBBLE('#'))
-	      {
-		extra=DEF_ARG_NOPRESPACE;
-		while(str.s->len && isspace(((unsigned char *)str.s->str)[str.s->len-1]))
-		  str.s->len--;
-		if(!str.s->len && sp-partbase>1)
-		{
-#ifdef PIKE_DEBUG
-		  if(sp[-1].type != T_INT)
-		    fatal("Internal error in CPP\n");
-#endif
-		  sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
-		}
-	      }else{
-		extra=DEF_ARG_STRINGIFY;
-	      }
-	      SKIPSPACE();
-	      pos++;
-	      /* fall through */
-	      
-	    default:
-	      if(isidchar(data[pos-1]))
-	      {
-		struct pike_string *s;
-		tmp3=pos-1;
-		while(isidchar(data[pos])) pos++;
-		if(argno>0)
-		{
-		  if((s=binary_findstring(data+tmp3,pos-tmp3)))
-		  {
-		    for(e=0;e<argno;e++)
-		    {
-		      if(argbase[e].u.string == s)
-		      {
-			check_stack(2);
-			push_string(finish_string_builder(&str));
-			init_string_builder(&str, 0);
-			push_int(e | extra);
-			extra=0;
-			break;
-		      }
-		    }
-		    if(e!=argno) continue;
-		  }
-		}
-		string_builder_binary_strcat(&str, data+tmp3, pos-tmp3);
-	      }else{
-		string_builder_putchar(&str, ((unsigned char *)data)[pos-1]);
-	      }
-	      extra=0;
-	      continue;
-	      
-	    case '"':
-	      FIXSTRING(str, 1);
-	      continue;
-	      
-	    case '\'':
-	      tmp3=pos-1;
-	      FIND_END_OF_CHAR();
-	      string_builder_binary_strcat(&str, data+tmp3, pos-tmp3);
-	      continue;
-	      
-	    case '\\':
-	      if(GOBBLE('\n'))
-	      { 
-		this->current_line++;
-		PUTNL();
-	      }
-	      continue;
-	      
-	    case '\n':
-		PUTNL();
-		this->current_line++;
-	    case 0:
-		break;
-	    }
-	    push_string(finish_string_builder(&str));
-	    break;
-	  }
-
-	  if(OUTP())
-	  {
-	    def=alloc_empty_define(make_shared_binary_string(data+namestart,
-						  nameend-namestart),
-				   (sp-partbase)/2);
-	    copy_shared_string(def->first, partbase->u.string);
-	    def->args=argno;
-	    
-	    for(e=0;e<def->num_parts;e++)
-	    {
-#if 1
-	      if(partbase[e*2+1].type != T_INT)
-		fatal("Cpp internal error, expected integer!\n");
-	      
-	      if(partbase[e*2+2].type != T_STRING)
-		fatal("Cpp internal error, expected string!\n");
-#endif
-	      def->parts[e].argument=partbase[e*2+1].u.integer;
-	      copy_shared_string(def->parts[e].postfix,
-				 partbase[e*2+2].u.string);
-	    }
-	    
-#ifdef PIKE_DEBUG
-	    if(def->num_parts==1 &&
-	       (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
-	      fatal("Internal error in define\n");
-#endif	  
-	    
-	    this->defines=hash_insert(this->defines, & def->link);
-	    
-	  }
-	  pop_n_elems(sp-argbase);
-	  break;
-	}
-      
-      goto unknown_preprocessor_directive;
-      
-    case 'u': /* undefine */
-      if(WGOBBLE("undefine") || WGOBBLE("undef"))
-	{
-	  INT32 tmp;
-	  struct pike_string *s;
-
-	  SKIPSPACE();
-
-	  tmp=pos;
-	  if(!isidchar(data[pos]))
-	    cpp_error(this,"Undefine what?");
-
-	  while(isidchar(data[pos])) pos++;
-
-	  /* #undef some_long_identifier
-	   *        ^                   ^
-	   *        tmp               pos
-	   */
-
-	  if(OUTP())
-	  {
-	    if((s=binary_findstring(data+tmp, pos-tmp)))
-	      undefine(this,s);
-	  }
-
-	  break;
-	}
-
-      goto unknown_preprocessor_directive;
-
-    case 'c': /* charset */
-      if (WGOBBLE("charset")) {
-	/* FIXME: Should probably only be allowed in 8bit strings.
-	 *
-	 * FIXME: Should probably only be allowed at top-level (flags == 0).
-	 */
-
-	INT32 p;
-	struct pike_string *s;
-
-	SKIPSPACE();
-
-	p = pos;
-	while(data[pos] && !isspace(((unsigned char *)data)[pos])) {
-	  pos++;
-	}
-
-	if (pos != p) {
-	  /* The rest of the string. */
-	  s = begin_shared_string(len - pos);
-	  MEMCPY(s->str, data + pos, len - pos);
-	  push_string(end_shared_string(s));
-
-	  /* The charset name */
-	  s = begin_shared_string(pos - p);
-	  MEMCPY(s->str, data + p, pos - p);
-	  push_string(end_shared_string(s));
-
-	  SAFE_APPLY_MASTER("decode_charset", 2);
-
-	  if (sp[-1].type != T_STRING) {
-	    pop_stack();
-	    cpp_error(this, "Unknown charset.");
-	  }
-
-	  low_cpp(this, sp[-1].u.string->str, sp[-1].u.string->len, flags);
-	  pop_stack();
-
-	  /* FIXME: Is this the correct thing to return? */
-	  return len;
-	} else {
-	  cpp_error(this, "What charset?");
-	}
-	
-	break;
-      }
-      goto unknown_preprocessor_directive;
-
-    case 'p': /* pragma */
-      if(WGOBBLE("pragma"))
-	{
-	  if(OUTP())
-	    STRCAT("#pragma", 7);
-	  else
-	    FIND_EOL();
-	  break;
-	}
-
-    default:
-    unknown_preprocessor_directive:
-      {
-      char buffer[180];
-      int i;
-      for(i=0;i<(long)sizeof(buffer)-1;i++)
-      {
-	if(!isidchar(data[pos])) break;
-	buffer[i]=data[pos++];
-      }
-      buffer[i]=0;
-	
-      cpp_error(this,"Unknown preprocessor directive.");
-      }
-    }
-    }
-  }
-
-  if(flags & CPP_EXPECT_ENDIF)
-    error("End of file while searching for #endif\n");
-
-  return pos;
-}
-
-static INT32 calcC(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  FINDTOK();
-
-/*  DUMPPOS("calcC"); */
-
-  switch(data[pos])
-  {
-  case '(':
-    pos=calc1(this,data,len,pos+1);
-    FINDTOK();
-    if(!GOBBLE(')'))
-      error("Missing ')'\n");
-    break;
-    
-  case '0':
-    if(data[pos+1]=='x' || data[pos+1]=='X')
-    {
-      char *p;
-      push_int(STRTOL(data+pos+2, &p, 16));
-      pos=p-data;
-      break;
-    }
-    
-  case '1': case '2': case '3': case '4':
-  case '5': case '6': case '7': case '8': case '9':
-  {
-    char *p1,*p2;
-    double f;
-    long l;
-    
-    f=my_strtod(data+pos, &p1);
-    l=STRTOL(data+pos, &p2, 0);
-    if(p1 > p2)
-    {
-      push_float(f);
-      pos=p1-data;
-    }else{
-      push_int(l);
-      pos=p2-data;
-    }
-    break;
-  }
-
-  case '\'':
-  {
-    int tmp;
-    READCHAR(tmp);
-    pos++;
-    if(!GOBBLE('\''))
-      error("Missing end quote in character constant.\n");
-    push_int(tmp);
-    break;
-  }
-
-  case '"':
-  {
-    struct string_builder s;
-    init_string_builder(&s, 0);
-    READSTRING(s);
-    push_string(finish_string_builder(&s));
-    break;
-  }
-  
+  switch(shift) {
+  case 0:
+    return lower_cpp0(this, (p_wchar0 *)data, len, flags);
+  case 1:
+    return lower_cpp1(this, (p_wchar1 *)data, len, flags);
+  case 2:
+    return lower_cpp2(this, (p_wchar2 *)data, len, flags);
   default:
-#ifdef PIKE_DEBUG
-    if(isidchar(data[pos]))
-      error("Syntax error in #if (should not happen)\n");
-#endif
-
-    error("Syntax error in #if.\n");
+    fatal("low_cpp(): Bad shift: %d\n", shift);
   }
-  
-
-  FINDTOK();
-
-  while(GOBBLE('['))
-  {
-    pos=calc1(this,data,len,pos);
-    f_index(2);
-
-    FINDTOK();
-    if(!GOBBLE(']'))
-      error("Missing ']'");
-  }
-/*   DUMPPOS("after calcC"); */
-  return pos;
-}
-
-static INT32 calcB(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  FINDTOK();
-  switch(data[pos])
-  {
-    case '-': pos++; pos=calcB(this,data,len,pos); o_negate(); break;
-    case '!': pos++; pos=calcB(this,data,len,pos); o_not(); break;
-    case '~': pos++; pos=calcB(this,data,len,pos); o_compl(); break;
-    default: pos=calcC(this,data,len,pos);
-  }
-/*   DUMPPOS("after calcB"); */
-  return pos;
-}
-
-static INT32 calcA(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calcB(this,data,len,pos);
-  while(1)
-  {
-/*     DUMPPOS("inside calcA"); */
-    FINDTOK();
-    switch(data[pos])
-    {
-      case '/':
-	if(data[1]=='/' || data[1]=='*') return pos;
-	pos++;
-	pos=calcB(this,data,len,pos);
-	o_divide();
-	continue;
-
-      case '*':
-	pos++;
-	pos=calcB(this,data,len,pos);
-	o_multiply();
-	continue;
-
-      case '%':
-	pos++;
-	pos=calcB(this,data,len,pos);
-	o_mod();
-	continue;
-    }
-    break;
-  }
-/*   DUMPPOS("after calcA"); */
-  return pos;
-}
-
-static INT32 calc9(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calcA(this,data,len,pos);
-
-  while(1)
-  {
-    FINDTOK();
-    switch(data[pos])
-    {
-      case '+':
-	pos++;
-	pos=calcA(this,data,len,pos);
-	f_add(2);
-	continue;
-
-      case '-':
-	pos++;
-	pos=calcA(this,data,len,pos);
-	o_subtract();
-	continue;
-    }
-    break;
-  }
-
-/*   DUMPPOS("after calc9"); */
-  return pos;
-}
-
-static INT32 calc8(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc9(this,data,len,pos);
-
-  while(1)
-  {
-    FINDTOK();
-    if(GOBBLEOP("<<"))
-    {
-      pos=calc9(this,data,len,pos);
-      o_lsh();
-      break;
-    }
-
-    if(GOBBLEOP(">>"))
-    {
-      pos=calc9(this,data,len,pos);
-      o_rsh();
-      break;
-    }
-
-    break;
-  }
-  return pos;
-}
-
-static INT32 calc7b(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc8(this,data,len,pos);
-
-  while(1)
-  {
-    FINDTOK();
-    
-    switch(data[pos])
-    {
-      case '<':
-	if(data[pos]+1 == '<') break;
-	pos++;
-	if(GOBBLE('='))
-	{
-	   pos=calc8(this,data,len,pos);
-	   f_le(2);
-	}else{
-	   pos=calc8(this,data,len,pos);
-	   f_lt(2);
-	}
-	continue;
-
-      case '>':
-	if(data[pos]+1 == '>') break;
-	pos++;
-	if(GOBBLE('='))
-	{
-	   pos=calc8(this,data,len,pos);
-	   f_ge(2);
-	}else{
-	   pos=calc8(this,data,len,pos);
-	   f_gt(2);
-	}
-	continue;
-    }
-    break;
-  }
-  return pos;
-}
-
-static INT32 calc7(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc7b(this,data,len,pos);
-
-  while(1)
-  {
-    FINDTOK();
-    if(GOBBLEOP("=="))
-    {
-      pos=calc7b(this,data,len,pos);
-      f_eq(2);
-      continue;
-    }
-
-    if(GOBBLEOP("!="))
-    {
-      pos=calc7b(this,data,len,pos);
-      f_ne(2);
-      continue;
-    }
-
-    break;
-  }
-  return pos;
-}
-
-static INT32 calc6(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc7(this,data,len,pos);
-
-  FINDTOK();
-  while(data[pos] == '&' && data[pos+1]!='&')
-  {
-    pos++;
-    pos=calc7(this,data,len,pos);
-    o_and();
-  }
-  return pos;
-}
-
-static INT32 calc5(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc6(this,data,len,pos);
-
-  FINDTOK();
-  while(GOBBLE('^'))
-  {
-    pos=calc6(this,data,len,pos);
-    o_xor();
-  }
-  return pos;
-}
-
-static INT32 calc4(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc5(this,data,len,pos);
-
-  FINDTOK();
-  while(data[pos] == '|' && data[pos+1]!='|')
-  {
-    pos++;
-    pos=calc5(this,data,len,pos);
-    o_or();
-  }
-  return pos;
-}
-
-static INT32 calc3(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc4(this,data,len,pos);
-
-  FINDTOK();
-  while(GOBBLEOP("&&"))
-  {
-    check_destructed(sp-1);
-    if(IS_ZERO(sp-1))
-    {
-      pos=calc4(this,data,len,pos);
-      pop_stack();
-    }else{
-      pop_stack();
-      pos=calc4(this,data,len,pos);
-    }
-  }
-  return pos;
-}
-
-static INT32 calc2(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc3(this,data,len,pos);
-
-  FINDTOK();
-  while(GOBBLEOP("||"))
-  {
-    check_destructed(sp-1);
-    if(!IS_ZERO(sp-1))
-    {
-      pos=calc3(this,data,len,pos);
-      pop_stack();
-    }else{
-      pop_stack();
-      pos=calc3(this,data,len,pos);
-    }
-  }
-  return pos;
-}
-
-static INT32 calc1(struct cpp *this,char *data,INT32 len,INT32 pos)
-{
-  pos=calc2(this,data,len,pos);
-
-  FINDTOK();
-
-  if(GOBBLE('?'))
-  {
-    pos=calc1(this,data,len,pos);
-    if(!GOBBLE(':'))
-      error("Colon expected");
-    pos=calc1(this,data,len,pos);
-
-    check_destructed(sp-3);
-    assign_svalue(sp-3,IS_ZERO(sp-3)?sp-1:sp-2);
-    pop_n_elems(2);
-  }
-  return pos;
-}
-
-static int calc(struct cpp *this,char *data,INT32 len,INT32 tmp)
-{
-  JMP_BUF recovery;
-  INT32 pos;
-
-/*  fprintf(stderr,"Calculating\n"); */
-
-  if (SETJMP(recovery))
-  {
-    pos=tmp;
-    if(throw_value.type == T_ARRAY && throw_value.u.array->size)
-    {
-      union anything *a;
-      a=low_array_get_item_ptr(throw_value.u.array, 0, T_STRING);
-      if(a)
-      {
-	cpp_error(this,a->string->str);
-      }else{
-	cpp_error(this,"Nonstandard error format.");
-      }
-    }else{
-      cpp_error(this,"Nonstandard error format.");
-    }
-    FIND_EOL();
-    push_int(0);
-  }else{
-    pos=calc1(this,data,len,tmp);
-    check_destructed(sp-1);
-  }
-  UNSETJMP(recovery);
-
-/*  fprintf(stderr,"Done\n"); */
-
-  return pos;
 }
 
 void free_one_define(struct hash_entry *h)
@@ -1947,7 +520,8 @@ static void insert_current_file_as_string(struct cpp *this,
 					  struct define_argument *args,
 					  struct string_builder *tmp)
 {
-  PUSH_STRING(this->current_file->str, this->current_file->len, tmp);
+  PUSH_STRING_SHIFT(this->current_file->str, this->current_file->len,
+		    this->current_file->size_shift, tmp);
 }
 
 static void insert_current_time_as_string(struct cpp *this,
@@ -1955,12 +529,13 @@ static void insert_current_time_as_string(struct cpp *this,
 					  struct define_argument *args,
 					  struct string_builder *tmp)
 {
+  /* FIXME: Is this code safe? */
   time_t tmp2;
   char *buf;
   time(&tmp2);
   buf=ctime(&tmp2);
 
-  PUSH_STRING(buf+11, 8, tmp);
+  PUSH_STRING0(buf+11, 8, tmp);
 }
 
 static void insert_current_date_as_string(struct cpp *this,
@@ -1968,13 +543,14 @@ static void insert_current_date_as_string(struct cpp *this,
 					  struct define_argument *args,
 					  struct string_builder *tmp)
 {
+  /* FIXME: Is this code safe? */
   time_t tmp2;
   char *buf;
   time(&tmp2);
   buf=ctime(&tmp2);
 
-  PUSH_STRING(buf+19, 5, tmp);
-  PUSH_STRING(buf+4, 6, tmp);
+  PUSH_STRING0(buf+19, 5, tmp);
+  PUSH_STRING0(buf+4, 6, tmp);
 }
 
 static void check_defined(struct cpp *this,
@@ -1983,7 +559,20 @@ static void check_defined(struct cpp *this,
 			  struct string_builder *tmp)
 {
   struct pike_string *s;
-  s=binary_findstring(args[0].arg, args[0].len);
+  switch(args[0].arg.shift) {
+  case 0:
+    s=binary_findstring((p_wchar0 *)args[0].arg.ptr, args[0].len);
+    break;
+  case 1:
+    s=binary_findstring1((p_wchar1 *)args[0].arg.ptr, args[0].len);
+    break;
+  case 2:
+    s=binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
+    break;
+  default:
+    fatal("cpp(): Symbol has unsupported shift: %d\n", args[0].arg.shift);
+    break;
+  }
   if(s && find_define(s))
   {
     string_builder_binary_strcat(tmp, " 1 ", 3);
@@ -1999,12 +588,27 @@ static void dumpdef(struct cpp *this,
 {
   struct pike_string *s;
   struct define *d;
-  s=binary_findstring(args[0].arg, args[0].len);
+
+  switch(args[0].arg.shift) {
+  case 0:
+    s=binary_findstring((p_wchar0 *)args[0].arg.ptr, args[0].len);
+    break;
+  case 1:
+    s=binary_findstring1((p_wchar1 *)args[0].arg.ptr, args[0].len);
+    break;
+  case 2:
+    s=binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
+    break;
+  default:
+    fatal("cpp(): Bad shift in macroname: %d\n", args[0].arg.shift);
+    break;
+  }
   if(s && (d=find_define(s)))
   {
     int e;
     char buffer[42];
-    PUSH_STRING(d->link.s->str,d->link.s->len, tmp);
+    PUSH_STRING_SHIFT(d->link.s->str, d->link.s->len,
+		      d->link.s->size_shift, tmp);
     if(d->magic)
     {
       string_builder_binary_strcat(tmp, " defined magically ", 19);
@@ -2012,7 +616,8 @@ static void dumpdef(struct cpp *this,
       string_builder_binary_strcat(tmp, " defined as ", 12);
       
       if(d->first)
-	PUSH_STRING(d->first->str, d->first->len, tmp);
+	PUSH_STRING_SHIFT(d->first->str, d->first->len,
+			  d->first->size_shift, tmp);
       for(e=0;e<d->num_parts;e++)
       {
 	if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
@@ -2027,7 +632,8 @@ static void dumpdef(struct cpp *this,
 	if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
 	  string_builder_putchar(tmp, ' ');
 	
-	PUSH_STRING(d->parts[e].postfix->str, d->parts[e].postfix->len, tmp);
+	PUSH_STRING_SHIFT(d->parts[e].postfix->str, d->parts[e].postfix->len,
+			  d->parts[e].postfix->size_shift, tmp);
       } 
     }
   }else{
@@ -2044,19 +650,29 @@ static void check_constant(struct cpp *this,
 {
   struct svalue *save_stack=sp;
   struct svalue *sv;
-  char *data=args[0].arg;
+  PCHARP data=args[0].arg;
   int res,dlen,len=args[0].len;
+  struct pike_string *s;
+  int c;
 
-  while(len && isspace(((unsigned char *)data)[0])) { data++; len--; }
+  while(len && ((c = EXTRACT_PCHARP(data))< 256) && isspace(c)) {
+    INC_PCHARP(data, 1);
+    len--;
+  }
 
   if(!len)
     cpp_error(this,"#if constant() with empty argument.\n");
 
   for(dlen=0;dlen<len;dlen++)
-    if(!isidchar(data[dlen]))
+    if(!isidchar(INDEX_PCHARP(data, dlen)))
       break;
 
-  push_string(make_shared_binary_string(data, dlen));
+  s = begin_wide_shared_string(dlen, data.shift);
+  MEMCPY(s->str, data.ptr, dlen<<data.shift);
+  push_string(end_shared_string(s));
+#ifdef PIKE_DEBUG
+  s = NULL;
+#endif /* PIKE_DEBUG */
   if((sv=low_mapping_string_lookup(get_builtin_constants(),
 				   sp[-1].u.string)))
   {
@@ -2075,27 +691,35 @@ static void check_constant(struct cpp *this,
 
   while(1)
   {
-    data+=dlen;
+    INC_PCHARP(data, dlen);
     len-=dlen;
   
-    while(len && isspace(((unsigned char *)data)[0])) { data++; len--; }
+    while(len && ((c = EXTRACT_PCHARP(data)) < 256) && isspace(c)) {
+      INC_PCHARP(data, 1);
+      len--;
+    }
 
     if(!len) break;
 
-    if(data[0]=='.')
+    if(EXTRACT_PCHARP(data) == '.')
     {
-      data++;
+      INC_PCHARP(data, 1);
       len--;
       
-      while(len && isspace(((unsigned char *)data)[0])) { data++; len--; }
+      while(len && ((c = EXTRACT_PCHARP(data)) < 256) && isspace(c)) {
+	INC_PCHARP(data, 1);
+	len--;
+      }
 
-      for(dlen=0;dlen<len;dlen++)
-	if(!isidchar(data[dlen]))
+      for(dlen=0; dlen<len; dlen++)
+	if(!isidchar(INDEX_PCHARP(data, dlen)))
 	  break;
 
       if(res)
       {
-        struct pike_string *s=make_shared_binary_string(data, dlen);
+        struct pike_string *s = begin_wide_shared_string(dlen, data.shift);
+	MEMCPY(s->str, data.ptr, dlen<<data.shift);
+	s = end_shared_string(s);
 	res=do_safe_index_call(s);
         free_string(s);
       }
@@ -2495,10 +1119,11 @@ void f_cpp(INT32 args)
     simple_add_define(&this, tmpf->name, tmpf->value);
 
   string_builder_binary_strcat(&this.buf, "# 1 ", 4);
-  PUSH_STRING(this.current_file->str, this.current_file->len, &this.buf);
+  PUSH_STRING_SHIFT(this.current_file->str, this.current_file->len,
+		    this.current_file->size_shift, &this.buf);
   string_builder_putchar(&this.buf, '\n');
 
-  low_cpp(&this, data->str, data->len, 0);
+  low_cpp(&this, data->str, data->len, data->size_shift, 0);
   if(this.defines)
     free_hashtable(this.defines, free_one_define);
 
