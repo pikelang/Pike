@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.291 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: las.c,v 1.292 2002/06/03 12:25:18 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3464,6 +3464,47 @@ void fix_type_field(node *n)
       }
     }
     n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
+    break;
+
+  case F_ARRAY_LVALUE:
+    {
+      node *lval_list;
+      if (!(lval_list = CAR(n))) {
+	copy_pike_type(n->type, mixed_type_string);
+      } else {
+	struct pike_type *t;
+	node *n2;
+
+	if (lval_list->token == F_LVALUE_LIST) {
+	  n2 = CAR(lval_list);
+	} else {
+	  n2 = lval_list;
+	}
+
+	if (n2) {
+	  copy_pike_type(t, n2->type);
+	} else {
+	  copy_pike_type(t, zero_type_string);
+	}
+	while ((n2 != lval_list) && (lval_list = CDR(lval_list))) {
+	  if (lval_list->token == F_LVALUE_LIST) {
+	    n2 = CAR(lval_list);
+	  } else {
+	    n2 = lval_list;
+	  }
+	  if (n2) {
+	    struct pike_type *tmp = or_pike_types(t, n2->type, 1);
+	    free_type(t);
+	    t = tmp;
+	  }
+	}
+	type_stack_mark();
+	push_finished_type(t);
+	push_type(T_ARRAY);
+	free_type(t);
+	n->type = pop_unfinished_type();
+      }
+    }
     break;
 
   case F_INDEX:
