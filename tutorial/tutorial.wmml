@@ -2218,7 +2218,7 @@ the complete list of combinations of types you can use with these operators:
 </tr>
 
 <tr>
-<td><tt><i>int</i>&nbsp;/&nbsp;<i>int</i></tt></td><td>int</td><td>The right integer divided by the left integer rounded towards zero.</td>
+<td><tt><i>int</i>&nbsp;/&nbsp;<i>int</i></tt></td><td>int</td><td>The right integer divided by the left integer rounded towards minus infinity.</td>
 </tr>
 
 <tr>

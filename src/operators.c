@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.20 1997/10/11 06:48:24 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.21 1997/12/03 22:46:17 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1071,10 +1071,12 @@ void o_divide(void)
       error("Division by zero\n");
     sp--;
 
-    tmp=sp[-1].u.integer / sp[0].u.integer;
-    if(tmp<0)
-      if(tmp * sp[0].u.integer > sp[-1].u.integer)
+    tmp=sp[-1].u.integer/sp[0].u.integer;
+
+    if((sp[-1].u.integer<0) != (sp[0].u.integer<0))
+      if(tmp*sp[0].u.integer!=sp[-1].u.integer)
 	tmp--;
+
     sp[-1].u.integer=tmp;
     return;
   }
