@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.73 2001/01/12 02:09:29 mast Exp $
+ * $Id: interpret.h,v 1.74 2001/01/20 21:35:05 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -120,7 +120,7 @@ PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
       ((char *)&x_) + STACK_DIRECTION * (X) - Pike_interpreter.stack_top ; \
     x_*=STACK_DIRECTION;						\
     if(x_>0) {								\
-      fatal(Pike_check_c_stack_errmsg);					\
+      ((void (*)(const char*, ...))fatal)(Pike_check_c_stack_errmsg);	\
     }									\
   }while(0)
 

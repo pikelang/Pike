@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.8 2001/01/12 02:15:57 mast Exp $
+ * $Id: pike_error.h,v 1.9 2001/01/20 21:35:05 mast Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -231,11 +231,11 @@ void cleanup_error(void);
 
 #if 1
 #define fatal \
- fprintf(stderr,"%s:%d: Fatal error:\n",__FILE__,__LINE__),debug_fatal
+ (fprintf(stderr,"%s:%d: Fatal error:\n",__FILE__,__LINE__),debug_fatal)
 #else
 /* This is useful when debugging assembler code sometimes... -Hubbe */
 #define fatal \
- fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal
+ (fprintf(stderr,"%s: Fatal error:\n",__FILE__ ":" DEFINETOSTR(__LINE__) ),debug_fatal)
 #endif
 
 /* Some useful error macros. */
