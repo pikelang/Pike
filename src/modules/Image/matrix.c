@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.8 1997/09/01 14:17:11 per Exp $ */
+/* $Id: matrix.c,v 1.9 1997/09/05 16:51:57 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.8 1997/09/01 14:17:11 per Exp $<br>
+**!	$Id: matrix.c,v 1.9 1997/09/05 16:51:57 grubba Exp $<br>
 **! class image
 */
 
@@ -162,6 +162,7 @@ void img_scale(struct image *dest,
    rgb_group *d;
    INT32 y,yd;
    double yn,dx,dy;
+   char *err = NULL;
 
 CHRONO("scale begin");
 
@@ -200,27 +201,30 @@ CHRONO("scale begin");
    }
 
    dest->img=d=malloc(newx*newy*sizeof(rgb_group) +1);
-   if (!d) { free(new); error("Out of memory!\n"); }
+   if (d) {
 
 CHRONO("transfer begin");
 
-   s=new;
-   y=newx*newy;
-   while (y--)
-   {
-      d->r=min((int)(s->r+0.5),255);
-      d->g=min((int)(s->g+0.5),255);
-      d->b=min((int)(s->b+0.5),255);
-      d++; s++;
+     s=new;
+     y=newx*newy;
+     while (y--) {
+       d->r=min((int)(s->r+0.5),255);
+       d->g=min((int)(s->g+0.5),255);
+       d->b=min((int)(s->b+0.5),255);
+       d++; s++;
+     }
+
+     dest->xsize=newx;
+     dest->ysize=newy;
    }
-
-   dest->xsize=newx;
-   dest->ysize=newy;
-
    free(new);
 
 CHRONO("scale end");
+
    THREADS_DISALLOW();
+   if (!d) {
+     error("Out of memory!\n");
+   }
 }
 
 /* Special, faster, case for scale=1/2 */

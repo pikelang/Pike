@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.37 1997/09/01 14:16:12 per Exp $ */
+/* $Id: image.c,v 1.38 1997/09/05 16:51:56 grubba Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.37 1997/09/01 14:16:12 per Exp $<br>
+**!	$Id: image.c,v 1.38 1997/09/05 16:51:56 grubba Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.37 1997/09/01 14:16:12 per Exp $");
+RCSID("$Id: image.c,v 1.38 1997/09/05 16:51:56 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1650,6 +1650,7 @@ void image_hsv_to_rgb(INT32 args)
    rgb_group *s,*d;
    struct object *o;
    struct image *img;
+   char *err = NULL;
    if (!THIS->img) error("no image\n");
 
    o=clone_object(image_program,0);
@@ -1694,7 +1695,8 @@ void image_hsv_to_rgb(INT32 args)
 	case 4:	 r = t;	 g = p;	 b = v;	 break;
 	case 5:	 r = v;	 g = p;	 b = q;	 break;
 	default:
-	 error("Nope. Not possible");
+	  err = "Nope. Not possible";
+	  goto exit_loop;
        }
      }
 #undef i
@@ -1708,7 +1710,12 @@ void image_hsv_to_rgb(INT32 args)
      d->b = FIX(b);
      s++; d++;
    }
+exit_loop:
    THREADS_DISALLOW();
+
+   if (err) {
+     error(err);
+   }
 
    pop_n_elems(args);
    push_object(o);
