@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.201 2000/10/08 19:11:03 grubba Exp $");
+RCSID("$Id: file.c,v 1.202 2000/11/29 11:43:25 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -376,7 +376,15 @@ static struct pike_string *do_read(int fd,
   {
     struct pike_string *str;
 
-    str=begin_shared_string(r);
+
+/* WORKAROUND! FIXME! FIXME!
+   short string threshold is 16 
+   /Mirar */
+
+    if (r>16)
+       str=begin_shared_string(r);
+    else
+       str=begin_shared_string(17);
 
     SET_ONERROR(ebuf, call_free, str);
 
