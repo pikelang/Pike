@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.55 1998/01/26 19:59:59 hubbe Exp $");
+RCSID("$Id: program.c,v 1.56 1998/01/27 18:11:35 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -211,14 +211,15 @@ struct node_s *find_module_identifier(struct pike_string *ident)
       {
 	struct identifier *id;
 	id=ID_FROM_INT(p->new_program, i);
+#if 0
 	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
 	{
 	  ret=mksvaluenode(PROG_FROM_INT(p->new_program, i)->constants+
 			   id->func.offset);
 	  return ret;
-	}else{
-	  return mkexternalnode(n, i, id);
 	}
+#endif
+	  return mkexternalnode(n, i, id);
       }
     }
   }
