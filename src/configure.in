@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.855 2004/12/16 14:09:06 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.856 2004/12/16 14:16:01 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -256,12 +256,12 @@ AC_PROG_CC
 AC_PROG_CPP
 
 AC_MSG_CHECKING([whether we are using Intel C])
-AC_CACHE_VAL(pike_cv_prog_icc, [
-  AC_EGREP_CPP([
+AC_CACHE_VAL(pike_cv_prog_icc,
+  AC_EGREP_CPP([ yes ], [
 #if defined(__ECC) || defined(__ICC) || defined(__INTEL_COMPILER)
   yes;
 #endif
-  ], [ yes ], pike_cv_prog_icc=yes, pike_cv_prog_icc=no)
+  ], pike_cv_prog_icc=yes, pike_cv_prog_icc=no)
 ])
 AC_MSG_RESULT($pike_cv_prog_icc)
 if test "$pike_cv_prog_icc" = "yes"; then
