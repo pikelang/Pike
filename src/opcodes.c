@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.133 2003/01/15 19:07:50 grubba Exp $
+|| $Id: opcodes.c,v 1.134 2003/01/26 16:15:05 mirar Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.133 2003/01/15 19:07:50 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.134 2003/01/26 16:15:05 mirar Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -406,7 +406,7 @@ void o_cast_to_string(void)
     return;
 	    
   case T_INT:
-    sprintf(buf, "%ld", (long)sp[-1].u.integer);
+    sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
     break;
 	    
   case T_FLOAT:
