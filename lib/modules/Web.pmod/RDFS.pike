@@ -1,4 +1,4 @@
-// $Id: RDFS.pike,v 1.1 2003/10/14 23:53:45 nilsson Exp $
+// $Id: RDFS.pike,v 1.2 2003/12/18 00:42:39 stensson Exp $
 
 #pike __REAL_VERSION__
 
@@ -18,8 +18,12 @@ class RDFSResource {
   }
 }
 
-RDFSResource rdfs_Class      = RDFSResource("Class");
-RDFSResource rdfs_subClassOf = RDFSResource("subClassOf");
+RDFSResource rdfs_Class         = RDFSResource("Class");
+RDFSResource rdfs_subClassOf    = RDFSResource("subClassOf");
+RDFSResource rdfs_Literal       = RDFSResource("Literal");
+RDFSResource rdfs_subPropertyOf = RDFSResource("subPropertyOf");
+RDFSResource rdfs_domain        = RDFSResource("domain");
+RDFSResource rdfs_range         = RDFSResource("range");
 
 
 void add_Class(Resource c) {
@@ -30,3 +34,6 @@ void add_subClassOf(Resource a, Resource b) {
   add_statement(a, rdfs_subClassOf, b);
 }
 
+void add_subPropertyOf(Resource a, Resource b) {
+  add_statement(a, rdfs_subPropertyOf, b);
+}
