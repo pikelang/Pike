@@ -921,6 +921,13 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
     {
       LOOP(m)
       {
+	/* We do not want to count this key:index pair if
+	 * the index is a destructed object or function
+	 */
+	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
+	   !(k->ind.u.object->prog))
+	  continue;
+	  
 	gc_mark_svalues(&k->ind, 1);
 	gc_mark_svalues(&k->val, 1);
       }
@@ -938,11 +945,17 @@ void gc_check_all_mappings()
   {
     if((m->ind_types | m->val_types) & BIT_COMPLEX)
     {
-      check_mapping_for_destruct(m);
       LOOP(m)
       {
+	/* We do not want to count this key:index pair if
+	 * the index is a destructed object or function
+	 */
+	if(((1 << k->ind.type) & (BIT_OBJECT | BIT_FUNCTION)) &&
+	   !(k->ind.u.object->prog))
+	  continue;
+	  
 	gc_check_svalues(&k->ind, 1);
-	gc_check_svalues(&k->val, 1);
+	m->val_types |= gc_check_svalues(&k->val, 1);
       }
 
 #ifdef DEBUG
@@ -969,6 +982,7 @@ void gc_free_all_unreferenced_mappings()
 
   for(m=first_mapping;m;m=next)
   {
+    check_mapping_for_destruct(m);
     if(gc_do_free(m))
     {
       m->refs++;
