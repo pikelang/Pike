@@ -5915,6 +5915,17 @@ lower_case, upper_case
 
 <hr noshade size=1>
 
+<function name=String.sillycaps title="Sillycaps A String">
+<man_syntax>
+string sillycaps(string str);
+</man_syntax>
+<man_description>
+Convert the first character in each word (separated by spaces) in str to upper case, and return the new string.
+</man_description>
+</function>
+
+<hr noshade size=1>
+
 <function name=String.strmult title="multiply strings">
 <man_syntax>
 string strmult(string <I>s</I>, int <I>num</I>);
