@@ -1,2 +1,2 @@
-void init_math_matrix();
+extern void init_math_matrix();
 
