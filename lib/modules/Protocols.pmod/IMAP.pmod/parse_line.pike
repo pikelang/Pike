@@ -280,9 +280,10 @@ array do_parse_simple_list(int max_depth, int terminator)
 
   werror(sprintf("do_parse_simple_list(%d, '%c')\n", max_depth, terminator));
       
+  buffer = buffer[1..];
+
   while(1)
   {
-    buffer = buffer[1..];
     skip_whitespace();
 	
     if (!strlen(buffer))
@@ -293,12 +294,15 @@ array do_parse_simple_list(int max_depth, int terminator)
       buffer = buffer[1..];
       return a;
     }
+
+    a += ({ get_atom(max_depth-1) });
+
     mapping m = get_simple_list(max_depth);
     if (!m) {
-      werror("get_simple_list(%d) failed\n");
-      return 0;
+      werror(sprintf("get_simple_list(%d) failed\n", max_depth));
+    } else {
+      a->list = m;
     }
-    /* FIXME: m is thrown away?! */
   }
 }
 
