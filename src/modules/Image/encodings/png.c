@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.62 2004/04/18 20:07:30 jhs Exp $
+|| $Id: png.c,v 1.63 2004/04/20 08:19:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.62 2004/04/18 20:07:30 jhs Exp $");
+RCSID("$Id: png.c,v 1.63 2004/04/20 08:19:03 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1452,7 +1452,7 @@ header_stuff:
  *!       Use this as palette for pseudocolor encoding
  *!       (Note: encoding with alpha channel and pseudocolor
  *!       at the same time are not supported)
- *!   @mapping
+ *!   @endmapping
  *!
  *! @seealso
  *!   @[__decode]
