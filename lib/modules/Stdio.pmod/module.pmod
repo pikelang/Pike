@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.138 2002/03/05 15:09:15 per-bash Exp $
+// $Id: module.pmod,v 1.139 2002/03/12 13:54:10 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -296,7 +296,7 @@ class File
   //! or close callback before you know if the connection failed or not.
   //!
   //! @seealso
-  //! @[query_address()]
+  //! @[query_address()], @[async_connect()]
   //!
   int connect(string host, int port, void|string client, void|int client_port)
   {
@@ -321,7 +321,7 @@ class File
     array(mixed) args = _async_args;
     _async_cb = 0;
     _async_args = 0;
-    set_nonblocking(0,0,0);
+    set_nonblocking(0,0,0,0,0);
     if (cb) {
       if (_fd && query_address()) {
 	// Connection OK.
@@ -356,18 +356,60 @@ class File
   }
 
 
-  //! @fixme
-  //!   Document this function.
+  //! Open a TCP/IP connection asynchronously.
+  //!
+  //! This function is similar to @[connect()], but works asynchronously.
+  //!
+  //! @param host
+  //!   Hostname or IP to connect to.
+  //!
+  //! @param port
+  //!   Port number to connect to.
+  //!
+  //! @param callback
+  //!   Function to be called on completion.
+  //!   The first argument will be @tt{1@} if a connection was
+  //!   successfully estabished, and @tt{0@} (zero) on failure.
+  //!   The rest of the arguments to @[callback] are passed
+  //!   verbatim from @[args].
+  //!
+  //! @param args
+  //!   Extra arguments to pass to @[callback].
+  //!
+  //! @returns
+  //!   Returns @tt{0@} on failure, and @tt{1@} if @[callback]
+  //!   will be used.
   //!
   //! @note
-  //! Zaps nonblocking-state.
+  //!   The socket may be opened with @[open_socket()] ahead of
+  //!   the call to this function, but it is not required.
+  //!
+  //!   For @[callback] to be called, the backend must be active (ie
+  //!   @[main()] must have returned @tt{-1@}).
+  //!
+  //!   The socket will be in non-blocking state if @tt{1@} has been
+  //!   returned, and any callbacks will be cleared.
+  //!
+  //! @seealso
+  //!   @[connect()], @[open_socket()], @[set_nonblocking()]
   int async_connect(string host, int port,
 		    function(int, mixed ...:void) callback,
 		    mixed ... args)
   {
-    if (!(_fd || !catch(query_address())) && !open_socket()) {
-      // Out of sockets?
-      return 0;
+    if (!_fd ||
+	!_fd->stat()->issock ||
+	catch { throw(query_address()); }) {
+      // Open a new socket if:
+      //   o We don't have an fd.
+      //   o The fd isn't a socket.
+      //   o query_address() returns non zero (ie connected).
+      //   o query_address() throws an error (eg delayed UDP error) [bug 2691].
+      // This code is here to support the socket being opened (and locally
+      // bound) by the calling code, to support eg FTP.
+      if (!open_socket()) {
+	// Out of sockets?
+	return 0;
+      }
     }
 
     _async_cb = callback;
@@ -377,9 +419,11 @@ class File
     int res;
     if (err = catch(res = connect(host, port))) {
       // Illegal format. -- Bad hostname?
+      set_nonblocking(0, 0, 0, 0, 0);
       call_out(_async_check_cb, 0);
     } else if (!res) {
       // Connect failed.
+      set_nonblocking(0, 0, 0, 0, 0);
       call_out(_async_check_cb, 0);
     }
     return(1);	// OK so far. (Or rather the callback will be used).
