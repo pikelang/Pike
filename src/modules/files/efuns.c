@@ -509,12 +509,20 @@ void f_getcwd(INT32 args)
 
 void f_fork(INT32 args)
 {
+  int res;
   do_set_close_on_exec();
   pop_n_elems(args);
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
-  push_int(fork1());
+  push_int(res=fork1());
 #else
-  push_int(fork());
+  push_int(res=fork());
+#endif
+#if defined(_REENTRANT)
+  if(!res)
+  {
+    /* forked copy. there is now only one thread running, this one. */
+    num_threads=1;
+  }
 #endif
 }
 
@@ -604,7 +612,6 @@ void f_exece(INT32 args)
   my_set_close_on_exec(2,0);
 
   do_set_close_on_exec();
-
   execve(argv[0],argv,env);
 
   free((char *)argv);
