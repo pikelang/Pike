@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.256 2002/01/16 02:54:13 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.257 2002/04/09 10:33:56 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1059,7 +1059,7 @@ static void do_trace_call(INT32 args)
  )									\
 }while(0)
 
-BLOCK_ALLOC(pike_frame,128);
+BLOCK_ALLOC(pike_frame,128)
 
 
 void really_free_pike_scope(struct pike_frame *scope)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.410 2002/04/08 01:00:09 mast Exp $");
+RCSID("$Id: program.c,v 1.411 2002/04/09 10:33:56 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -60,7 +60,7 @@ static size_t add_xstorage(size_t size,
   }						\
 }while(0)
 
-BLOCK_ALLOC(program, 104); 
+BLOCK_ALLOC(program, 104)
 
 
 /* #define COMPILER_DEBUG */
