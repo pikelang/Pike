@@ -1,8 +1,10 @@
 #pike __REAL_VERSION__
+
 //
-// Common routines which are useful for various install scripts based on Pike.
+//! Common routines which are useful for various install scripts based on Pike.
 //
 
+//!
 array(string) features()
 {
   array a = ({});
@@ -54,6 +56,7 @@ array(string) features()
   return a;
 }
 
+//!
 string make_absolute_path(string path, string|void cwd)
 {
 #if constant(getpwnam)
@@ -79,6 +82,7 @@ string make_absolute_path(string path, string|void cwd)
   return path;
 }
 
+//!
 class ProgressBar
 {
   private int width = 45;
@@ -87,22 +91,26 @@ class ProgressBar
   private int max, cur;
   private string name;
 
+  //!
   void set_current(int _cur)
   {
     cur = _cur;
   }
 
+  //!
   void set_name(string _name)
   {
     name = _name;
   }
-  
+
+  //!
   void set_phase(float _phase_base, float _phase_size)
   {
     phase_base = _phase_base;
     phase_size = _phase_size;
   }
-  
+
+  //!
   void update(int increment)
   {
     cur += increment;
@@ -127,6 +135,8 @@ class ProgressBar
 	  100.0 * ratio);
   }
 
+  //! @decl void create(string name, int cur, int max, float|void phase_base,@
+  //!                   float|void phase_size)
   void create(string _name, int _cur, int _max,
 	      float|void _phase_base, float|void _phase_size)
     /* NOTE: max must be greater than zero. */
@@ -140,6 +150,7 @@ class ProgressBar
   }
 }
 
+//!
 class Readline
 {
   inherit Stdio.Readline;
@@ -147,6 +158,7 @@ class Readline
   private int match_directories_only;
   private string cwd;
 
+  //!
   void trap_signal(int n)
   {
     werror("\r\nInterrupted, exit.\r\n");
@@ -173,12 +185,14 @@ class Readline
     }
     return r;
   }
-  
+
+  //!
   string edit(mixed ... args)
   {
     return low_edit(@args);
   }
-  
+
+  //!
   string edit_filename(mixed ... args)
   {
     match_directories_only = 0;
@@ -189,7 +203,8 @@ class Readline
     
     return s;
   }
-  
+
+  //!
   string edit_directory(mixed ... args)
   {
     match_directories_only = 1;
@@ -241,16 +256,18 @@ class Readline
     }
   }
 
+  //!
   string absolute_path(string path)
   {
     return make_absolute_path(path, cwd && combine_path(getcwd(), cwd));
   }
-   
+
+  //!
   void set_cwd(string _cwd)
   {
     cwd = _cwd;
   }
-  
+
   void create(mixed ... args)
   {
     signal(signum("SIGINT"), trap_signal);
