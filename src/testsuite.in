@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.72 1998/02/11 00:56:20 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.73 1998/02/24 17:30:54 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1574,8 +1574,30 @@ test_any([[mapping o=(["foo":clone(PROG)]); destruct(o["foo"]); return o["foo"];
 dnl test_any([[object t; mapping o=([t=clone(PROG):"foo"]); destruct(t); return sizeof(o)]],0);
 test_do([[object t,*o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
 
+// - Array.diff
+test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
+                      ({ 6, 7, 8, 9, 3, 4, 5, 1, 2, 0 })),
+           ({ ({ ({ 0, 1, 2, 3, 4, 5 }),
+                 ({ 6, 7, 8, 9 }), ({}) }),
+              ({ ({}), ({ 6, 7, 8, 9 }),
+                 ({ 3, 4, 5, 1, 2, 0 }) }) }))
+test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
+                      ({ 9, 7, 8, 4, 5, 6, 0, 1, 2, 3 })),
+           ({ ({ ({}), ({ 0, 1, 2, 3 }),
+                 ({ 4, 5, 6, 7, 8, 9 }) }),
+              ({ ({ 9, 7, 8, 4, 5, 6 }),
+                 ({ 0, 1, 2, 3 }), ({}) }) }))
+test_equal(Array.diff("qadfgoksdfäojerjgöohjgdgkm"/"",
+                      "xadfgokälojeorjgöoyjgdgkmzzz"/""),
+           ({ ({ ({ "q" }), "adfgok"/"", "sdf"/"", ({ "ä" }), ({}),
+                 "oje"/"", ({}), "rjgöo"/"", ({ "h" }), "jgdgkm"/"", ({}) }),
+              ({ ({ "x" }), "adfgok"/"", ({}), ({ "ä" }), ({ "l" }),
+                 "oje"/"", ({ "o" }), "rjgöo"/"", ({ "y" }), "jgdgkm"/"",
+                 "zzz"/"" }) }))
+
+
 // - equal
-// equl is already tested by this script
+// equal is already tested by this script
 
 // - exit
 // FIXME put test for exit here
@@ -1622,6 +1644,10 @@ test_equal(indices(({'f','o','o'})),({0,1,2}))
 test_equal(Array.sort_array(indices(([7:3,8:9,99:12]))),({7,8,99}))
 test_equal(Array.sort_array(indices((<7,8,99>))),({7,8,99}))
 test_equal(mkmultiset(indices(this_object())),(<"a","b">))
+
+// - Array.longest_ordered_sequence
+test_equal(Array.longest_ordered_sequence("dfgaokäpojghadjjioijrgxcvb"/""),
+	   ({ 0, 1, 2, 10, 11, 16, 18, 19, 20, 22 }));
 
 // - lower_case
 test_equal(lower_case("foo"),"foo")
