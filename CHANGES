@@ -2,12 +2,16 @@ Changes since Pike 7.4.10:
 ----------------------------------------------------------------------
 
 o Bugfix in Parser.C. "!=" is now considered one token instead of two.
+o depend_p() bugfix in las.
+  http://pike.ida.liu.se/development/cvs/pike.xml?between=2002-12-25&and=2002-12-28
 o Bugfixed loop over-optimization.
+  http://pike.ida.liu.se/development/cvs/pike.xml?between=2002-12-20%2015:00:00&and=2002-12-20%2018:00:00
 o Postgres 7.3+ correctly detected.
 
 o "Backported funcion_object fixes from Pike 7.5"/"function_object()
   now behaves as in Pike 7.2. The other cases have been moved to
   function_program()."
+  http://pike.ida.liu.se/development/cvs/pike.xml?between=2003-02-19&and=2003-02-19%2005:00:00
 
 o Added System.dumpable() which can be used on Linux to enable
   coredumping even for seteuid/setegid processes.
