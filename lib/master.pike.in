@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.229 2002/11/26 12:56:01 grubba Exp $
+// $Id: master.pike.in,v 1.230 2002/11/28 02:12:25 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -867,7 +867,7 @@ object low_cast_to_object(string oname, string current_file,
 
   p = low_cast_to_program(oname, current_file, current_handler, 1);
   if(!p) return 0;
-  if(!(o=objects[p])) o=objects[p]=p();
+  if(zero_type (o=objects[p])) o=objects[p]=p();
   return o;
 }
 
@@ -2408,13 +2408,13 @@ string describe_module(object|program mod, array(object)|void ret_obj)
     if (ret_obj) ret_obj[0] = mod;
   } else {
     parent_fun = mod;
-    if ((mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
+    if (!zero_type (mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
   }
   if (mod) {
     catch {
       string res = sprintf("%O", mod);
       if (res != "object" && res != "")
-	return (objects[parent_fun] && programs["/master"] != parent_fun?
+	return (!zero_type (objects[parent_fun]) && programs["/master"] != parent_fun?
 		res+".":res+"->");
     };
   }
@@ -2481,7 +2481,7 @@ string describe_object(object|program o)
     if (parent_obj) {
       /* Check if we have a constant object. */
       object tmp = objects[parent_obj];
-      if (tmp) parent_obj = tmp;
+      if (!zero_type (tmp)) parent_obj = tmp;
 
       /* Try finding ourselves in parent_obj. */
       int i;
@@ -2500,7 +2500,7 @@ string describe_object(object|program o)
       }
     }
   };
-  if(objects[parent_fun])
+  if(!zero_type (objects[parent_fun]))
     if(s=get_clean_program_path(parent_fun, "", "", "()"))
       return s;
   /* Try identifying the program. */
@@ -2781,7 +2781,7 @@ class Codec (void|string fname, void|int mkobj)
 	programs[fname]=prog_to_mkobj=p;
 	fname=0;
 	if (mkobj)
-	  return objects[p] || (objects[p]=__null_program());
+	  return zero_type (objects[p]) ? (objects[p]=__null_program()) : objects[p];
       }
       return 0;
     }
