@@ -3,14 +3,14 @@
 
 [Setup]
 AppName=Pike 7.4 (Beta)
-AppVerName=(Beta) Pike 7.4.11, SDL, OpenGL, MySQL, Freetype, Gz and GTK+ support
+AppVerName=(Beta) Pike 7.4.35, SDL, OpenGL, MySQL, Freetype, Gz and GTK+ support
 AppPublisherURL=http://pike.ida.liu.se/
 AppSupportURL=http://pike.ida.liu.se/
 AppUpdatesURL=http://pike.ida.liu.se/
 DefaultDirName={pf}\Pike
 DefaultGroupName=Pike
 AllowNoIcons=yes
-LicenseFile=Y:\win32-pike\pikeinstaller\Copying.txt
+LicenseFile=X:\win32-pike\pikeinstaller\Copying.txt
 ; uncomment the following line if you want your installation to run on NT 3.51 too.
 ; MinVersion=4,3.51
 
@@ -20,8 +20,8 @@ LicenseFile=Y:\win32-pike\pikeinstaller\Copying.txt
 ;automatisk radering. Late note: Seems to fail on XP too. Gäller det 7.4 också tro?
 
 [Files]
-Source: "Y:\win32-pike\dists\Pike-v7.4.11-Win32-tsubasa-beta.exe"; DestDir: "{tmp}"; CopyMode: alwaysoverwrite; Flags: deleteafterinstall
-Source: "Y:\win32-pike\extras\pike.ico"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Attribs: hidden
+Source: "X:\win32-pike\dists\Pike-v7.4.35-Win32-Windows-NT-5.1.2600-i86pc.exe"; DestDir: "{tmp}"; CopyMode: alwaysoverwrite; Flags: deleteafterinstall
+Source: "X:\win32-pike\extras\pike.ico"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Attribs: hidden
 
 ; Begin GTK+ files
 ;Source: "Y:\win32-pike\dlls\gdk-1.3.dll"; DestDir: "{sys}"; CopyMode: alwaysoverwrite; Flags: restartreplace  sharedfile; Components: gtk
@@ -46,7 +46,7 @@ Source: "Y:\win32-pike\extras\pike.ico"; DestDir: "{app}"; CopyMode: alwaysoverw
 
 
 [Run]
-Filename: "{tmp}\Pike-v7.4.11-Win32-tsubasa-beta.exe"; Parameters: "--no-gui --traditional ""prefix={app}"""
+Filename: "{tmp}\Pike-v7.4.35-Win32-Windows-NT-5.1.2600-i86pc.exe"; Parameters: "--no-gui --traditional ""prefix={app}"""
 
 [Types]
 Name: "full"; Description: "Full installation"
@@ -71,7 +71,7 @@ Root: HKCR; Subkey: ".pmod"; ValueType: string; ValueData: "pike_module"; Tasks:
 Root: HKCR; Subkey: ".pmod"; ValueType: string; ValueName: "ContentType"; ValueData: "text/x-pike-code"; Tasks: associate
 Root: HKCR; Subkey: "pike_file"; ValueType: string; ValueData: "Pike program file"; Tasks: associate
 Root: HKCR; Subkey: "pike_file\DefaultIcon"; ValueType: string; ValueData: "{app}\pike.ico,0"; Tasks: associate
-Root: HKCR; Subkey: "pike_file\Shell\Open\Command"; ValueType: string; ValueData: """{app}\bin\pike.exe"" ""%1"""; Flags: uninsdeletevalue; Tasks: associate
+Root: HKCR; Subkey: "pike_file\Shell\Open\Command"; ValueType: string; ValueData: """{app}\bin\pike.exe"" ""%1"" ""%2"" ""%3"" ""%4"" ""%5"" ""%6"" ""%7"" ""%8"" ""%9"" ""%10"""; Flags: uninsdeletevalue; Tasks: associate
 Root: HKCR; Subkey: "pike_file\Shell\Edit\Command"; ValueType: string; ValueData: """notepad.exe"" ""%1"""; Flags: createvalueifdoesntexist; Tasks: associate
 Root: HKCR; Subkey: "pike_module"; ValueType: string; ValueData: "Pike module file"; Tasks: associate
 Root: HKCR; Subkey: "pike_module\DefaultIcon"; ValueType: string; ValueData: "{app}\pike.ico,0"; Tasks: associate
