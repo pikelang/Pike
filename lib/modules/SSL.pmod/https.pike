@@ -1,4 +1,4 @@
-/* $Id: https.pike,v 1.7 1997/05/31 22:03:58 grubba Exp $
+/* $Id: https.pike,v 1.8 1999/03/17 02:53:34 grubba Exp $
  *
  * dummy https server
  */
@@ -87,55 +87,6 @@ class no_random {
   }
 }
 
-#if 0
-/* ad-hoc asn.1-decoder */
-
-class ber_decode {
-  inherit ADT.struct;
-
-  array get_asn1()
-  {
-    int tag = get_int(1);
-    int len;
-    string contents;
-    
-#ifdef SSL3_DEBUG
-    werror(sprintf("decoding tag %x\n", tag));
-#endif
-    if ( (tag & 0x1f) == 0x1f)
-      throw( ({ "high tag numbers is not supported\n", backtrace() }) );
-    int len = get_int(1);
-    if (len & 0x80)
-      len = get_int(len & 0x7f);
-    
-#ifdef SSL3_DEBUG
-    werror(sprintf("len : %d\n", len));
-#endif
-
-    contents = get_fix_string(len);
-#ifdef SSL3_DEBUG
-    werror(sprintf("contents: %O\n", contents));
-#endif
-    if (tag & 0x20)
-    {
-      object seq = object_program(this_object())(contents);
-      array res = ({ });
-      while(! seq->is_empty())
-      {
-	array elem = seq->get_asn1();
-#ifdef SSL3_DEBUG
-	// werror(sprintf("elem: %O\n", elem));
-#endif
-	res += ({ elem });
-      }
-      return ({ tag, res });
-    }
-    else
-      return ({ tag, contents });
-  }
-}
-#endif
-
 /* PKCS#1 Private key structure:
 
 RSAPrivateKey ::= SEQUENCE {
@@ -166,6 +117,7 @@ int main()
   werror(sprintf("Key:  '%s'\n", Crypto.string_to_hex(my_key)));
 //  werror(sprintf("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1()));
 #endif
+#if 0
   array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
 #ifdef SSL3_DEBUG
   werror(sprintf("Decoded key: %O\n", key));
@@ -182,6 +134,10 @@ int main()
   rsa = Crypto.rsa();
   rsa->set_public_key(n, e);
   rsa->set_private_key(d);
+#else /* !0 */
+  // FIXME: Is this correct?
+  rsa = Standards.PKCS.RSA.parse_private_key(my_key);
+#endif /* 0 */
   certificates = ({ my_certificate });
   random = no_random()->read;
   werror("Starting\n");
