@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.78 2003/12/16 13:40:17 jhs Exp $
+|| $Id: mysql.c,v 1.79 2003/12/22 16:52:04 grubba Exp $
 */
 
 /*
@@ -96,7 +96,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.78 2003/12/16 13:40:17 jhs Exp $");
+RCSID("$Id: mysql.c,v 1.79 2003/12/22 16:52:04 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -470,7 +470,7 @@ static void pike_mysql_reconnect(void)
 
     MYSQL_DISALLOW();
 
-    if (tmp < 0) {
+    if (tmp) {
       PIKE_MYSQL->socket = NULL;
       MYSQL_ALLOW();
 
@@ -643,7 +643,7 @@ static void mysql__sprintf(INT32 args)
     {
       struct pike_string *res;
       MYSQL *socket;
-      char *info;
+      const char *info;
 
       if(!PIKE_MYSQL->socket)
 	pike_mysql_reconnect();
@@ -791,7 +791,7 @@ static void f_select_db(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!socket || (tmp < 0)) {
+  if (!socket || tmp) {
     /* The connection might have been closed. */
     pike_mysql_reconnect();
 
@@ -804,7 +804,7 @@ static void f_select_db(INT32 args)
     MYSQL_DISALLOW();
   }
 
-  if (tmp < 0) {
+  if (tmp) {
     char *err;
 
     MYSQL_ALLOW();
@@ -864,13 +864,13 @@ static void f_big_query(INT32 args)
     tmp = mysql_query(socket, query);
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
-    if (tmp >= 0) {
+    if (!tmp) {
       result = mysql_store_result(socket);
     }
 
     MYSQL_DISALLOW();
   }
-  if (socket && (tmp < 0)) {
+  if (socket && tmp) {
     /* Check if we need to reconnect. */
 #if defined(CR_SERVER_GONE_ERROR) && defined(CR_UNKNOWN_ERROR)
     int eno = mysql_errno(socket);
@@ -896,15 +896,15 @@ static void f_big_query(INT32 args)
     tmp = mysql_query(socket, query);
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
-    if (tmp >= 0) {
+    if (!tmp) {
       result = mysql_store_result(socket);
     }
 
     MYSQL_DISALLOW();
   }
 
-  if (tmp < 0) {
-    char *err;
+  if (tmp) {
+    const char *err;
 
     MYSQL_ALLOW();
     err = mysql_error(socket);
@@ -938,7 +938,8 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (err) {
-      Pike_error("Mysql.mysql->big_query(): Couldn't create result for query\n");
+      Pike_error("Mysql.mysql->big_query(): Couldn't create result for query (%s)\n",
+		 mysql_error(socket));
     }
     /* query was INSERT or similar - return 0 */
 
@@ -999,7 +1000,7 @@ static void f_create_db(INT32 args)
     tmp = mysql_create_db(socket, database);
     MYSQL_DISALLOW();
   }
-  if (!socket || (tmp < 0)) {
+  if (!socket || tmp) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -1012,7 +1013,7 @@ static void f_create_db(INT32 args)
     MYSQL_DISALLOW();
   }
 
-  if (tmp < 0) {
+  if (tmp) {
     Pike_error("Mysql.mysql->create_db(): Creation of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
@@ -1057,7 +1058,7 @@ static void f_drop_db(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!socket || (tmp < 0)) {
+  if (!socket || tmp) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -1070,7 +1071,7 @@ static void f_drop_db(INT32 args)
     MYSQL_DISALLOW();
   }    
 
-  if (tmp < 0) {
+  if (tmp) {
     Pike_error("Mysql.mysql->drop_db(): Drop of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
@@ -1100,7 +1101,7 @@ static void f_shutdown(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!socket || (tmp < 0)) {
+  if (!socket || tmp) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -1113,7 +1114,7 @@ static void f_shutdown(INT32 args)
     MYSQL_DISALLOW();
   }
 
-  if (tmp < 0) {
+  if (tmp) {
     Pike_error("Mysql.mysql->shutdown(): Shutdown failed\n");
   }
 
@@ -1141,7 +1142,7 @@ static void f_reload(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!socket || (tmp < 0)) {
+  if (!socket || tmp) {
     /* The connection might have been closed */
     pike_mysql_reconnect();
 
@@ -1154,7 +1155,7 @@ static void f_reload(INT32 args)
     MYSQL_DISALLOW();
   }
 
-  if (tmp < 0) {
+  if (tmp) {
     Pike_error("Mysql.mysql->reload(): Reload failed\n");
   }
 
@@ -1201,7 +1202,7 @@ static void f_statistics(INT32 args)
 static void f_server_info(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  char *info;
+  const char *info;
 
   if (!socket) {
     pike_mysql_reconnect();
@@ -1232,7 +1233,7 @@ static void f_server_info(INT32 args)
 static void f_host_info(INT32 args)
 {
   MYSQL *socket;
-  char *info;
+  const char *info;
 
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
@@ -1335,7 +1336,7 @@ static void f_list_dbs(INT32 args)
   }
 
   if (!result) {
-    char *err;
+    const char *err;
 
     MYSQL_ALLOW();
 
@@ -1421,7 +1422,7 @@ static void f_list_tables(INT32 args)
   }
 
   if (!result) {
-    char *err;
+    const char *err;
 
     MYSQL_ALLOW();
 
@@ -1572,7 +1573,7 @@ static void f_list_fields(INT32 args)
   }
 
   if (!result) {
-    char *err;
+    const char *err;
 
     MYSQL_ALLOW();
 
@@ -1632,7 +1633,7 @@ static void f_list_processes(INT32 args)
   }
 
   if (!result) {
-    char *err;
+    const char *err;
 
     MYSQL_ALLOW();
 
