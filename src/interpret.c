@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.199 2001/05/14 17:51:20 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.200 2001/05/24 22:39:00 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -939,6 +939,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     arg1=(void *)(Pike_sp-args-1);
 
   case APPLY_SVALUE:
+  case APPLY_SVALUE_STRICT:
   apply_svalue:
   {
     struct svalue *s=(struct svalue *)arg1;
@@ -1362,7 +1363,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
   if(save_sp+1 > Pike_sp)
   {
-    if(type != APPLY_SVALUE)
+    if(type != APPLY_SVALUE_STRICT)
       push_int(0);
   }else{
     if(t_flag>1) trace_return_value();

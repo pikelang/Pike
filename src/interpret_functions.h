@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.54 2001/05/14 03:26:21 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.55 2001/05/24 22:39:00 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -645,16 +645,16 @@ OPCODE0(F_ASSIGN, "assign")
 BREAK;
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,"apply, assign local and pop")
-  strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
-		      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+  apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
+	       DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
   free_svalue(Pike_fp->locals+arg2);
   Pike_fp->locals[arg2]=Pike_sp[-1];
   Pike_sp--;
 BREAK;
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL,"apply, assign local")
-  strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
-		      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+  apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
+	       DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
   assign_svalue(Pike_fp->locals+arg2, Pike_sp-1);
 BREAK;
 
@@ -1536,7 +1536,7 @@ OPCODE1(F_CALL_LFUN_AND_POP,"call lfun & pop")
 BREAK;
 
 OPCODE1(F_MARK_APPLY,"mark apply")
-  if(low_mega_apply(APPLY_SVALUE,
+  if(low_mega_apply(APPLY_SVALUE_STRICT,
 		    0,
 		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
   {
@@ -1560,7 +1560,7 @@ OPCODE1(F_MARK_APPLY_POP,"mark, apply & pop")
 BREAK;
 
 OPCODE1(F_APPLY,"apply")
-  if(low_mega_apply(APPLY_SVALUE,
+  if(low_mega_apply(APPLY_SVALUE_STRICT,
 		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
 		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
   {
@@ -1572,7 +1572,7 @@ BREAK;
 
 
 OPCODE1(F_APPLY_AND_POP,"apply")
-  if(low_mega_apply(APPLY_SVALUE,
+  if(low_mega_apply(APPLY_SVALUE_STRICT,
 		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
 		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
   {

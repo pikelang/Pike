@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.84 2001/05/16 23:35:52 hubbe Exp $
+ * $Id: interpret.h,v 1.85 2001/05/24 22:39:00 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -235,6 +235,7 @@ enum apply_type
 {
   APPLY_STACK, /* The function is the first argument */
   APPLY_SVALUE, /* arg1 points to an svalue containing the function */
+  APPLY_SVALUE_STRICT, /* Like APPLY_SVALUE, but does not return values for void functions */
    APPLY_LOW    /* arg1 is the object pointer,(int)arg2 the function */
 };
 
@@ -323,7 +324,7 @@ static inline void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
 
 static inline void strict_apply_svalue(struct svalue *sval, INT32 args)
 {
-  mega_apply(APPLY_SVALUE, args, (void*)sval, 0);
+  mega_apply(APPLY_SVALUE_STRICT, args, (void*)sval, 0);
 }
 #else /* !__ECL */
 #define apply_low(O,FUN,ARGS) \
@@ -370,6 +371,35 @@ PMOD_EXPORT extern struct Pike_interpreter Pike_interpreter;
 #endif /* !NO_PIKE_SHORTHAND */
 
 #define CURRENT_STORAGE (dmalloc_touch(struct pike_frame *,Pike_fp)->current_storage)
+
+
+#define PIKE_STACK_MMAPPED
+
+struct Pike_stack
+{
+  struct svalue *top;
+  int flags;
+  struct Pike_stack *previous;
+  struct svalue *save_ptr;
+  struct svalue stack[1];
+};
+
+
+#define PIKE_STACK_REQUIRE_BEGIN(num, base) do {			\
+  struct Pike_stack *old;						\
+  if(Pike_interpreter.current_stack->top - Pike_sp < num)		\
+  {									\
+    old=Pike_interpreter.current_stack;					\
+    old->save_ptr=Pike_sp;						\
+    Pike_interpreter.current_stack=allocate_array(MAXIMUM(num, 8192));	\
+    while(old_sp > base) *(Pike_sp++) = *--old->save_ptr;		\
+  }
+
+#define PIKE_STACK_REQUIRE_END()					   \
+  while(Pike_sp > Pike_interpreter.current_stack->stack)		   \
+    *(old->save_ptr++) = *--Pike_sp;					   \
+  Pike_interpreter.current_stack=Pike_interpreter.current_stack->previous; \
+}while(0)  
 
 #endif
 

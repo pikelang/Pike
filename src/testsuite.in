@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.415 2001/05/24 18:17:03 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.416 2001/05/24 22:39:01 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -7829,4 +7829,5 @@ test_do(remove_call_out(call_out_info()[-1][2]))
 test_do(add_constant("call_out_cb"))
 test_do(_do_call_outs())
 test_false(Process.system(RUNPIKE+" SRCDIR/test_co.pike"))
+test_do_([[ catch { _do_call_outs(); }]])
 
