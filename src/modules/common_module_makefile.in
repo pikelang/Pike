@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.21 2003/11/13 00:38:43 mast Exp $
+# $Id: common_module_makefile.in,v 1.22 2003/11/30 21:12:19 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -108,7 +108,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.21 2003/11/13 00:38:43 mast Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.22 2003/11/30 21:12:19 bill Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
@@ -132,7 +132,8 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 
 
 clean_here:
-	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA) module.pmod plib refdoc doc
+	-rm -f *.o *.fail *.obj *.a *.so stamp-h linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA) doc
+	-rm -rf plib refdoc module.pmod doc
 
 clean: clean_here
 	@for a in '' $(MODULE_SUBDIRS) ; do \
