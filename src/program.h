@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.105 2000/08/24 04:04:42 hubbe Exp $
+ * $Id: program.h,v 1.106 2000/08/28 21:27:10 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -23,6 +23,8 @@
 
 #define EXTERN
 #include "compilation.h"
+
+struct program_state;
 
 /* Needed to support dynamic loading on NT */
 PMOD_PROTO extern struct program_state * Pike_compiler;
@@ -97,8 +99,6 @@ struct node_s;
 #define STRUCT_OBJECT_DECLARED
 struct object;
 #endif
-
-struct program_state;
 
 /* I need:
  * a) one type that can point to a callable function.
