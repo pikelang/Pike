@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.102 1998/08/29 22:15:15 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.103 1998/08/29 22:22:49 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1916,6 +1916,7 @@ string: F_STRING
  * Some error-handling
  */
 
+/* FIXME: Should probably set last_identifier. */
 bad_identifier: bad_lvalue
   | F_CLASS
   { yyerror("class is a reserved word."); }
