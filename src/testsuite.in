@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.345 2000/11/05 12:45:49 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.346 2000/11/05 22:50:07 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1118,8 +1118,6 @@ teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
 test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
-test_true(time())
-test_true(time(1))
 test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
 test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 0: return 1; } else { case 1: return 2; } } }]])
 
@@ -5414,7 +5412,7 @@ test_equal(reverse(0x12345678),0x1e6a2c48)
 
 // - rusage
 test_true(arrayp(rusage()))
-test_true(sizeof(rusage())>0)
+test_true(sizeof(rusage())>28)
 
 // - has_index
 test_false([[ has_index([mixed] ({}), 0) ]])
@@ -5673,6 +5671,8 @@ test_any([[ master()->set_inhibit_compile_errors(lambda(){});mixed res = catch{c
 test_false([[class X { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 
 // - time
+test_true(time())
+test_true(time(1))
 test_true(intp(time()))
 test_true(intp(time(1)))
 test_true(floatp(time(2)))
@@ -5800,12 +5800,7 @@ test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i
 // Pike modules
 
 // Calendar
-// load checks
-test_true(Calendar)
-test_true(Calendar.II)
-test_true(Calendar.Day)
 test_true(Calendar.Day())
-test_true(Calendar.Events)
 
 // the more elaborate tests
 test_eq([[
@@ -5830,21 +5825,12 @@ test_eq([[
 (int)(Calendar.Stardate.Tick("julian",2500000)->tic())]],-190335)
 
 // LR
-test_true(LR.parser)
-test_true(LR.Grammar_parser)
 test_program([[ object(LR.parser) p=LR.Grammar_parser.make_parser("foo : bar;foo : foo bar;bar : \"a\";"); int pos; array(string) data="aaaaaaaaa"/""; string scan() { if (pos < sizeof(data)) return(data[pos++]); else return ""; } int a() { return(p->parse(scan) == "a"); }]])
 
-// - Table.pmod
-test_true(ADT.Table.table)
-test_true(ADT.Table.ASCII)
+// - ADT
 test_true(ADT.Table.table( ({ ({ "a", "b", 42 }), ({ "c", "b", 41 }), ({ "a", "a", 76 }) }), ({ "X", "Y", "z" }))->select("x", 2)->sum("Z")->distinct(0)->rsort("X")->rename(0, "fOo")->sort("foO")->cast("array"), ({ ({ "a", 118 }), ({ "c", 41 }) }))
 
 // - Process
-test_true(Process)
-test_true(Process.popen)
-test_true(Process.spawn)
-test_true(Process.system)
-test_true(Process.create_process)
 test_equal([[Process.split_quoted_string("test ")]],[[({"test"})]])
 test_equal([[Process.split_quoted_string("'test'")]],[[({"test"})]])
 test_equal([[Process.split_quoted_string("foo 'test' bar")]],[[({"foo","test","bar"})]])
@@ -5999,9 +5985,10 @@ cond([[all_constants()->_verify_internals]],
 test_program([[
 int ok=1;
 
-void test_dir(string dir)
+void test_dir(string dir, int|void base_size)
 {
-  // werror("Testing directory %O...\n", dir);
+  //  werror("Testing directory %O...\n", dir);
+  if(!base_size) base_size=sizeof(dir);
   foreach(get_dir(dir), string s)
   {
     switch(s)
@@ -6018,7 +6005,7 @@ void test_dir(string dir)
     if(!stat) continue;
     if(stat[1]==-2)
     {
-      test_dir(file);
+      test_dir(file, base_size);
     }else if(stat[1]>=0){
       // werror("Testing file %O\n", file);
       if(!glob("*/my_struct.pmod",file))
@@ -6031,6 +6018,11 @@ void test_dir(string dir)
 	      werror("test: failed to compile %O\n",file);
               ok=0;
            }
+           string prg = replace( file[base_size+1..sizeof(file)-6], ([ "/":".", ".pmod":""]) );
+           if(prg[sizeof(prg)-7..]==".module")
+             prg = prg[..sizeof(prg)-8];
+           if( catch( master()->resolv(prg) ) )
+             werror("test: failed to compile and peek at %O\n", prg);
         }
       }
     }
