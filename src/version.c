@@ -2,8 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: version.c,v 1.137 2002/10/08 20:22:27 nilsson Exp $
+||| $Id: version.c,v 1.138 2002/10/08 23:31:26 nilsson Exp $
 \*/
+/**/
 
 #include "global.h"
 #include "svalue.h"
@@ -11,7 +12,7 @@
 #include "stralloc.h"
 #include "version.h"
 
-RCSID("$Id: version.c,v 1.137 2002/10/08 20:22:27 nilsson Exp $");
+RCSID("$Id: version.c,v 1.138 2002/10/08 23:31:26 nilsson Exp $");
 
 /*! @decl string version()
  *!

@@ -2,10 +2,12 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: mapping.c,v 1.150 2002/10/08 20:22:22 nilsson Exp $
+||| $Id: mapping.c,v 1.151 2002/10/08 23:31:24 nilsson Exp $
 \*/
+/**/
+
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.150 2002/10/08 20:22:22 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.151 2002/10/08 23:31:24 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"

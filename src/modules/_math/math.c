@@ -2,8 +2,10 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: math.c,v 1.48 2002/10/08 20:22:40 nilsson Exp $
+||| $Id: math.c,v 1.49 2002/10/08 23:31:26 nilsson Exp $
 \*/
+/**/
+
 #include "global.h"
 #include "config.h"
 #include "interpret.h"
@@ -30,7 +32,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: math.c,v 1.48 2002/10/08 20:22:40 nilsson Exp $");
+RCSID("$Id: math.c,v 1.49 2002/10/08 23:31:26 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080

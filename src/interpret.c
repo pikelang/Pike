@@ -2,10 +2,12 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: interpret.c,v 1.268 2002/10/08 20:22:20 nilsson Exp $
+||| $Id: interpret.c,v 1.269 2002/10/08 23:31:23 nilsson Exp $
 \*/
+/**/
+
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.268 2002/10/08 20:22:20 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.269 2002/10/08 23:31:23 nilsson Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"

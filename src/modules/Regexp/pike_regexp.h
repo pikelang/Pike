@@ -2,8 +2,9 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: pike_regexp.h,v 1.7 2002/10/08 20:22:36 nilsson Exp $
+||| $Id: pike_regexp.h,v 1.8 2002/10/08 23:31:26 nilsson Exp $
 \*/
+/**/
 
 #ifndef REGEXP_H
 #define REGEXP_H

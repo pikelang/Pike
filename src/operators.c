@@ -2,11 +2,13 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: operators.c,v 1.160 2002/10/08 20:22:24 nilsson Exp $
+||| $Id: operators.c,v 1.161 2002/10/08 23:31:24 nilsson Exp $
 \*/
+/**/
+
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.160 2002/10/08 20:22:24 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.161 2002/10/08 23:31:24 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"

@@ -2,8 +2,10 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: array.c,v 1.130 2002/10/08 20:22:18 nilsson Exp $
+||| $Id: array.c,v 1.131 2002/10/08 23:31:23 nilsson Exp $
 \*/
+/**/
+
 #include "global.h"
 #include "svalue.h"
 #include "array.h"
@@ -24,7 +26,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.130 2002/10/08 20:22:18 nilsson Exp $");
+RCSID("$Id: array.c,v 1.131 2002/10/08 23:31:23 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {

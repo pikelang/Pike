@@ -2,8 +2,10 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: error.c,v 1.90 2002/10/08 20:22:20 nilsson Exp $
+||| $Id: error.c,v 1.91 2002/10/08 23:31:23 nilsson Exp $
 \*/
+/**/
+
 #define NO_PIKE_SHORTHAND
 #include "global.h"
 #include "svalue.h"
@@ -22,7 +24,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.90 2002/10/08 20:22:20 nilsson Exp $");
+RCSID("$Id: error.c,v 1.91 2002/10/08 23:31:23 nilsson Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)

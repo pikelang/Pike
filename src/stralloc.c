@@ -2,8 +2,10 @@
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: stralloc.c,v 1.146 2002/10/08 20:22:27 nilsson Exp $
+||| $Id: stralloc.c,v 1.147 2002/10/08 23:31:25 nilsson Exp $
 \*/
+/**/
+
 #include "global.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -27,7 +29,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.146 2002/10/08 20:22:27 nilsson Exp $");
+RCSID("$Id: stralloc.c,v 1.147 2002/10/08 23:31:25 nilsson Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
