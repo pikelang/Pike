@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.17 2002/11/06 16:19:19 grubba Exp $
+|| $Id: sparc.c,v 1.18 2002/11/06 16:36:02 grubba Exp $
 */
 
 /*
@@ -109,7 +109,6 @@
   } while(0)
 
 #define ADD_CALL(X, DELAY_OK) do {					\
-    extern void opcode_F_CALL_OTHER(int);				\
     INT32 delta_;							\
     struct program *p_ = Pike_compiler->new_program;			\
     INT32 off_ = p_->num_program;					\
@@ -127,9 +126,6 @@
     p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
     add_to_relocations(off_);						\
     add_to_program(delay_);						\
-    if (X == (void *)opcode_F_CALL_OTHER) {				\
-      fprintf(stderr, "CALL_OTHER, delay opcode 0x%08x\n", delay_);	\
-    }									\
   } while(0)
 
 /*
