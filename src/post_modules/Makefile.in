@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.14 2004/05/01 12:53:44 mast Exp $
+# $Id: Makefile.in,v 1.15 2005/03/13 23:44:02 nilsson Exp $
 
 @make_variables@
 
@@ -123,7 +123,7 @@ fdtestsuites:
 	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    echo $$a ; \
-	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
+	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR="`echo $(SRCDIR)/$$a|$(BUILD_BASE)/posix_to_native.sh`" || exit $$? ; \
 	  fi; \
 	done	
 

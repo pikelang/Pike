@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.49 2004/05/01 12:53:44 mast Exp $
+# $Id: Makefile.in,v 1.50 2005/03/13 23:44:15 nilsson Exp $
 
 @make_variables@
 
@@ -100,7 +100,7 @@ verbose_verify:
 fdtestsuites:
 	@for a in $(MODULES) ; do \
 	  echo Making testsuite in $$a ; \
-	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
+	  $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/testsuite -DSRCDIR="`echo $(SRCDIR)/$$a|$(BUILD_BASE)/posix_to_native.sh`" || exit $$? ; \
 	done	
 
 testsuites:
