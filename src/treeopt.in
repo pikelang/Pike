@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.28 1999/11/19 01:22:00 grubba Exp $
+// $Id: treeopt.in,v 1.29 1999/11/19 17:06:36 grubba Exp $
 //
 // The tree optimizer
 //
@@ -96,8 +96,8 @@ F_POP_VALUE(0 = F_DEC_NEQ_LOOP, *):
 F_POP_VALUE(0 = F_SWITCH, *):
   $0;
 
-F_POP_VALUE(0 = '?'[$$->type == void_type_string], *):
-  $0;
+F_POP_VALUE('?'(0, ':'(1, 2)), *):
+  '?'($0, ':'(F_POP_VALUE($1, -), F_POP_VALUE($2, -)));
 
 
 
