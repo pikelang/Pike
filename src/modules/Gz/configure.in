@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.17 2000/07/05 17:35:26 grubba Exp $
+# $Id: configure.in,v 1.18 2000/07/06 09:01:50 grubba Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
@@ -10,15 +10,16 @@ define([AC_CHECK_GZ],
   done=no
   AC_MSG_CHECKING(working lib$1)
   AC_CACHE_VAL(pike_cv_working_$1,[
-  OLDLIBS="${LIBS-}"
-  LIBS="${LIBS-} -l$1"
-  AC_TRY_RUN([
+    OLDLIBS="${LIBS-}"
+    LIBS="${LIBS-} -l$1"
+    AC_TRY_RUN([
 `cat $srcdir/gz_test.c`
-  ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
-    AC_TRY_LINK([
+    ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
+      AC_TRY_LINK([
 `cat $srcdir/gz_test.c`
 #define main notmain
-    ],[],pike_cv_working_$1=yes,pike_cv_working_$1=no)
+      ],[],pike_cv_working_$1=yes,pike_cv_working_$1=no)
+    )
   ])
   LIBS="$OLDLIBS"
 
