@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.33 1999/02/12 22:43:53 grubba Exp $
+ * $Id: requests.pmod,v 1.34 1999/02/13 15:57:59 grubba Exp $
  */
 
 import .types;
@@ -98,6 +98,16 @@ class request
 			  arg_info[argc]), backtrace() }) );
       }
     }
+}
+
+class unimplemented
+{
+  inherit request;
+
+  mapping easy_process()
+  {
+    return(bad("Not implemented"));
+  }
 }
 
 class noop
@@ -746,3 +756,13 @@ class uid {
     }
   }
 }
+
+constant authenticate = unimplemented;
+constant examine = unimplemented;
+constant create_mailbox = unimplemented;
+constant delete = unimplemented;
+constant rename = unimplemented;
+constant subscribe = unimplemented;
+constant unsubscribe = unimplemented;
+constant status = unimplemented;
+constant append = unimplemented;
