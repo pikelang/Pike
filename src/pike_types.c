@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.232 2004/03/11 12:55:47 grubba Exp $
+|| $Id: pike_types.c,v 1.233 2004/03/12 21:18:54 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.232 2004/03/11 12:55:47 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.233 2004/03/12 21:18:54 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -125,14 +125,21 @@ struct pike_type *debug_compiler_pop_type(void)
   TYPE_STACK_DEBUG("compiler_pop_type");
   if(Pike_compiler->num_parse_error)
   {
-    /* This could be fixed to check if the type
-     * is correct and then return it, I just didn't feel
-     * like writing the checking code today. / Hubbe
-     */
-    type_stack_pop_to_mark();
+    ptrdiff_t len = pop_stack_mark();
+    struct pike_type *res;
+
+    TYPE_STACK_DEBUG("paranoid_pop_type");
+    if (len > 0) {
+      for (;len > 1; len--) {
+	/* Get rid of excess junk. */
+	free_type(*(Pike_compiler->type_stackp--));
+      }
+      res = *(Pike_compiler->type_stackp--);
+    } else {
+      add_ref(res = mixed_type_string);
+    }
     type_stack_mark();
-    add_ref(mixed_type_string);
-    return mixed_type_string;
+    return res;
   }else{
     return debug_pop_type();
   }
