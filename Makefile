@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.11 1999/05/31 06:20:01 peter Exp $
+# $Id: Makefile,v 1.12 1999/06/06 16:01:43 mast Exp $
 #
 # Meta Makefile
 #
@@ -24,11 +24,11 @@ force:
 
 src/configure: src/configure.in
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
-	-@(cd "$(BUILDDIR)" 2>/dev/null && rm -f Makefile .configureargs || :)
+	-rm -f "$(BUILDDIR)/Makefile"
 
 force_configure:
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
-	-@(cd "$(BUILDDIR)" 2>/dev/null && rm -f Makefile .configureargs || :)
+	-rm -f "$(BUILDDIR)/Makefile"
 
 builddir:
 	@builddir="$(BUILDDIR)"; \
@@ -50,6 +50,9 @@ configure: src/configure builddir
 	  else \
 	    configureargs="$(CONFIGUREARGS)"; \
 	  fi; \
+	  echo; \
+	  echo Configure arguments: $$configureargs; \
+	  echo; \
 	  if test -f Makefile -a -f config.cache -a -f .configureargs && \
 	     test "`cat .configureargs`" = "$$configureargs"; then :; \
 	  else \
