@@ -238,3 +238,73 @@ function `()(void|string path)
   return get_filesystem("System")(".")->cd(path||".") ||
 	 error("Can't create filesystem on given path\n"),0;
 }
+
+//! Iterator object that traverses a directory tree and returns
+//! files as values and paths as indices.
+class Traversion {
+  string path;
+  array(string) files;
+  object current;
+  int(0..) pos;
+  constant is_traversion = 1;
+
+  //! @decl void create(string path)
+  void create(string _path) {
+    path = _path;
+    if(path[-1]!='/') path+="/";
+    files = get_dir(path);
+    if(sizeof(files)) set_current();
+  }
+
+  static void set_current() {
+    current = file_stat(path + files[pos]);
+    if(!current->isdir) return;
+
+    current = Traversion(path + files[pos]);
+    if(Traversion) return;
+    current = 0;
+    pos++;
+    if(pos < sizeof(files))
+      set_current();
+  }
+
+  int `!() {
+    if( pos >= sizeof(files) ) return 1;
+    return 0;
+  }
+
+  //! Returns the stat for the current index-value-pair.
+  Stdio.Stat stat() {
+    if(!current) return 0;
+    if(current->is_traversion)
+      return current->stat();
+    return current;
+  }
+
+  int add(int steps) {
+    if(current && current->is_traversion)
+      steps = current->add(steps);
+    if(!steps) return 0;
+    pos += steps;
+    if( pos >= sizeof(files) )
+      return pos - sizeof(files) + 1;
+    set_current();
+    return 0;
+  }
+
+  void `+=(int steps) {
+    add(steps);
+  }
+
+  string index() {
+    if(current && current->is_traversion)
+      return current->index();
+    return path;
+  }
+
+  string value() {
+    if(current && current->is_traversion)
+      return current->value();
+    return files[pos];
+  }
+}
