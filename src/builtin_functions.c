@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.50 1997/10/27 09:59:19 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.51 1997/11/02 19:21:32 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1731,14 +1731,18 @@ void f_master(INT32 args)
 
 void f_gethrvtime(INT32 args)
 {
+  hrtime_t t;
   pop_n_elems(args);
-  push_int((INT32)((gethrvtime())/1000));
+  t = gethrvtime();
+  push_int((INT32)((*((long long *)&t))/1000));
 }
 
 void f_gethrtime(INT32 args)
 {
+  hrtime_t t;
   pop_n_elems(args);
-  push_int((INT32)((gethrtime())/1000)); 
+  t = gethrtime();
+  push_int((INT32)((*((long long *)&t))/1000)); 
 }
 #endif
 
