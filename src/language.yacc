@@ -75,6 +75,7 @@
 
 %token F_SWITCH F_SSCANF F_CATCH
 %token F_CAST
+%token F_SOFT_CAST
 %token F_FOREACH
 
 %token F_SIZEOF F_SIZEOF_LOCAL
@@ -183,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.135 1999/11/21 18:52:12 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.136 1999/11/23 03:06:35 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -307,6 +308,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> number_or_minint
 %type <n> number_or_maxint
 %type <n> cast
+%type <n> soft_cast
 %type <n> simple_type
 %type <n> simple_type2
 %type <n> simple_identifier_type
@@ -776,7 +778,11 @@ modifier: F_NO_MASK    { $$ = ID_NOMASK; }
   | F_INLINE     { $$ = ID_INLINE; }
   ;
 
-modifiers: modifier_list { $$=current_modifiers=$1 | lex.pragmas; } ;
+modifiers: modifier_list
+ {
+   $$=current_modifiers=$1 | (lex.pragmas & ID_MODIFIER_MASK);
+ }
+ ;
 
 modifier_list: /* empty */ { $$ = 0; }
   | modifier modifier_list { $$ = $1 | $2; }
@@ -787,6 +793,14 @@ optional_stars: optional_stars '*' { $$=$1 + 1; }
   ;
 
 cast: '(' type ')'
+    {
+      struct pike_string *s=compiler_pop_type();
+      $$=mkstrnode(s);
+      free_string(s);
+    }
+    ;
+
+soft_cast: '[' type ']'
     {
       struct pike_string *s=compiler_pop_type();
       $$=mkstrnode(s);
@@ -1666,6 +1680,11 @@ expr2: expr3
     $$=mkcastnode($1->u.sval.u.string,$2);
     free_node($1);
   }
+  | soft_cast expr2
+  {
+    $$=mksoftcastnode($1->u.sval.u.string,$2);
+    free_node($1);
+  }
   | F_INC expr4       { $$=mknode(F_INC,$2,0); }
   | F_DEC expr4       { $$=mknode(F_DEC,$2,0); }
   | F_NOT expr2        { $$=mkopernode("`!",$2,0); }
@@ -2040,7 +2059,7 @@ lvalue: expr4
     $$=mklocalnode(islocal($2->u.sval.u.string),0);
     free_node($2);
   }
-  | bad_lvalue
+  | bad_expr_ident
   { $$=mknewintnode(0); }
   ;
 low_lvalue_list: lvalue lvalue_list { $$=mknode(F_LVALUE_LIST,$1,$2); }
@@ -2069,12 +2088,9 @@ string: F_STRING
  */
 
 /* FIXME: Should probably set last_identifier. */
-bad_identifier: bad_lvalue
+bad_identifier: bad_expr_ident
   | F_CLASS
   { yyerror("class is a reserved word."); }
-  ;
-
-bad_lvalue: bad_expr_ident
   | F_ARRAY_ID
   { yyerror("array is a reserved word."); }
   | F_FLOAT_ID
