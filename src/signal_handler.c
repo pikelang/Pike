@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.205 2001/10/08 08:43:29 jhs Exp $");
+RCSID("$Id: signal_handler.c,v 1.206 2001/10/10 09:48:38 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2888,14 +2888,23 @@ void f_create_process(INT32 args)
           Pike_error("Process.create_process(): setsid() failed.\n");
 	  break;
 	case PROCE_EXEC:
-	  if (buf[1] == ENOENT) {
-	    Pike_error("Process.create_process(): Executable file not found.\n");
-	  }
-	  if (buf[1] == EACCES) {
+	  switch(buf[1]) {
+	  case ENOENT:
+	    Pike_error("Process.create_process(): "
+		       "Executable file not found.\n");
+	    break;
+	  case EACCES:
 	    Pike_error("Process.create_process(): Access denied.\n");
+	    break;
+#ifdef E2BIG
+	  case E2BIG:
+	    Pike_error("Process.create_process(): Arglist too long.\n");
+	    break;
+#endif /* E2BIG */
 	  }
+	  
 	  Pike_error("Process.create_process(): exec() failed. errno:%d\n"
-		"File not found?\n", buf[1]);
+		     "File not found?\n", buf[1]);
 	  break;
 	case PROCE_CLOEXEC:
 	  Pike_error("Process.create_process(): set_close_on_exec() failed. errno:%d\n",
