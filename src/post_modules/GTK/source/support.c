@@ -848,9 +848,9 @@ LONGEST pgtk_get_int( struct svalue *s )
 int pgtk_is_int( struct svalue *s )
 {
   return ((s->type ==PIKE_T_INT) ||
-          (s->type ==PIKE_T_FLOAT) ||
+          (s->type ==PIKE_T_FLOAT)
 #ifdef AUTO_BIGNUM
-          is_bignum_object_in_svalue( s )
+          || is_bignum_object_in_svalue( s )
 #endif
          );
 }
