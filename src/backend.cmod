@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.135 2004/04/08 13:59:14 grubba Exp $
+|| $Id: backend.cmod,v 1.136 2004/04/09 16:46:39 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.135 2004/04/08 13:59:14 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.136 2004/04/09 16:46:39 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2462,9 +2462,17 @@ PIKECLASS Backend
 	  int handled = 0;
 #endif /* PIKE_DEBUG */
 
+
+#ifdef USE_KQUEUE
+	  IF_PD(fprintf(stderr, "fd:%d filter:%d flags:0x%08x\n",
+			GET_FD(ACTIVE_POLLSET[i]),
+			GET_EVENTS(ACTIVE_POLLSET[i]),
+			ACTIVE_POLLSET[i].flags));
+#else /* !USE_KQUEUE */
 	  IF_PD(fprintf(stderr, "fd:%d events:0x%04x\n",
 			GET_FD(ACTIVE_POLLSET[i]),
-			(unsigned)GET_EVENTS(ACTIVE_POLLSET[i])));
+			GET_EVENTS(ACTIVE_POLLSET[i])));
+#endif /* USE_KQUEUE */
 
 	  /* FIMXE: kqueue wants to look at
 	   *	    ACTIVE_POLLSET[i].flags & EV_ERROR
@@ -3456,12 +3464,10 @@ void init_backend(void)
 		"MY_POLLEXCEPT:   0x%04x\n"
 		"MY_POLLRDBAND:   0x%04x\n"
 		"MY_POLLWREXCEPT: 0x%04x\n"
-		"MY_POLLWRBAND:   0x%04x\n"
-		"MY_POLLNVAL:     0x%04x\n",
+		"MY_POLLWRBAND:   0x%04x\n",
 		MY_POLLIN, MY_POLLOUT,
 		MY_POLLEXCEPT, MY_POLLRDBAND,
-		MY_POLLWREXCEPT, MY_POLLWRBAND,
-		MY_POLLNVAL));
+		MY_POLLWREXCEPT, MY_POLLWRBAND));
 #endif /* !USE_SELECT */
 #ifdef CHILD_NEEDS_TO_REOPEN
   /* /dev/poll and kqueue fds get invalidated at fork. */
