@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.1 2002/08/02 23:25:22 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.2 2002/09/14 13:11:34 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -6,33 +6,33 @@ test_equal(Standards.ISO639_2.get_language("xxx"),0)
 test_true(sizeof(Standards.ISO639_2.list_languages())>400)
 test_egual(Standards.ISO639_2.map_639_1("sv"),"swe")
 test_egual(Standards.ISO639_2.map_639_1("xx"),0)
-test_true(sizeof(Standards.ISO639_2.list_639_1())==158)
+test_true(sizeof(Standards.ISO639_2.list_639_1())==161)
 test_false(Standards.ISO639_2.verify_overlap())
 
 // - Standards.RDF
 test_equal_any([[
   object r = Standards.RDF();
-  object x = r->Node();
-  r->add_relation( r->Node("http://www.example.org/index.html", 1),
-		   r->Node("http://purl.org/dc/elements/1.1/creator", 1),
+  object x = r->Resource();
+  r->add_statement( r->Resource("http://www.example.org/index.html", 1),
+		   r->Resource("http://purl.org/dc/elements/1.1/creator", 1),
 		   x );
-  object y = r->Node();
-  r->add_relation( x,
-		   r->Node("http://www.example.org/terms/creation-date", 1),
+  object y = r->Resource();
+  r->add_statement( x,
+		   r->Resource("http://www.example.org/terms/creation-date", 1),
 		   y );
-  r->add_relation( y,
-		   r->Node("http://pike.ida.liu.se/terms/ruppar", 1),
-		   r->Node("August 16, 1999", 0) );
-  r->add_relation( x,
-		   r->Node("http://www.example.org/terms/language", 1),
-		   r->Node("English") );
+  r->add_statement( y,
+		   r->Resource("http://pike.ida.liu.se/terms/ruppar", 1),
+		   r->Resource("August 16, 1999", 0) );
+  r->add_statement( x,
+		   r->Resource("http://www.example.org/terms/language", 1),
+		   r->Resource("English") );
   return (multiset)(r->get_n_triples()/"\n");
 ]], (< /* 5 elements */
     "",
-    "_:Node1 <http://www.example.org/terms/language> \"English\" .",
-    "_:Node1 <http://www.example.org/terms/creation-date> _:Node4 .",
-    "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> _:Node1 .",
-    "_:Node4 <http://pike.ida.liu.se/terms/ruppar> \"August 16, 1999\" ."
+    "_:Resource1 <http://www.example.org/terms/language> \"English\" .",
+    "_:Resource1 <http://www.example.org/terms/creation-date> _:Resource4 .",
+    "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> _:Resource1 .",
+    "_:Resource4 <http://pike.ida.liu.se/terms/ruppar> \"August 16, 1999\" ."
 >))
 
 // - Standards.URI
