@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.134 1999/01/29 12:34:05 hubbe Exp $");
+RCSID("$Id: file.c,v 1.135 1999/01/31 20:32:40 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1081,7 +1081,8 @@ static void file_open(INT32 args)
 {
   int flags,fd;
   int access;
-  struct pike_string *str,*flag_str;
+  struct pike_string *str;
+  char *flag_str;
   close_fd();
   
   if(args < 2)
@@ -1103,7 +1104,7 @@ static void file_open(INT32 args)
 
   str=sp[-args].u.string;
   
-  flags=parse(flag_str=sp[1-args].u.string->str);
+  flags = parse(flag_str = sp[1-args].u.string->str);
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
