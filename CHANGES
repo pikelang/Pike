@@ -68,12 +68,18 @@ o sort() is stable
     of elements that are equal. At first, we considered keeping the old
     sort function in parallel with the new one, as a "faster but
     unstable" alternative, but it turned out that there was no noticable
-    different in speed between the new and the old function.
+    difference in speed between the new and the old function.
 
 o trace() can trace all threads
     The configure option --without-thread-trace has been removed, but
     instead the trace() function has been extended to make it possible
     to set the trace level in all threads simultaneously.
+
+o the debug trace system is more configurable
+    In addition to the trace levels set by the trace function or by
+    the command line argument -t, trace can now be turned on and off
+    for the individual subsystems. All trace levels have also been
+    increased by one to make room for gc only messages at level 1.
 
 o unbug
     The Pike debugger unbug has been significtly optimized.
