@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.552 2004/05/13 00:06:31 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.553 2004/05/13 16:31:06 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.552 2004/05/13 00:06:31 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.553 2004/05/13 16:31:06 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2184,13 +2184,10 @@ PMOD_EXPORT void f_exit(INT32 args)
  */
 void f__exit(INT32 args)
 {
+  int code;
   ASSERT_SECURITY_ROOT("_exit");
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("_exit", 1);
-
-  if(Pike_sp[-args].type != T_INT)
-    SIMPLE_BAD_ARG_ERROR("_exit", 1, "int");
+  get_all_args("_exit", args, "%i", &code);
 
 #ifdef PIKE_DEBUG
   {
@@ -2199,7 +2196,7 @@ void f__exit(INT32 args)
   }
 #endif
 
-  exit(Pike_sp[-args].u.integer);
+  exit(code);
 }
 
 /*! @decl int time();
@@ -2257,32 +2254,28 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   The second syntax is used to verify @[typed_password] against
  *!   @[crypted_password], and returns @expr{1@} if they match, and
  *!   @expr{0@} (zero) otherwise.
+ *!
+ *! @note
+ *!   Note that strings containing null characters will only be
+ *!   processed up until the null character.
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {
   char salt[2];
-  char *ret, *saltp;
+  char *ret, *pwd, *saltp;
   char *choise =
     "cbhisjKlm4k65p7qrJfLMNQOPxwzyAaBDFgnoWXYCZ0123tvdHueEGISRTUV89./";
 
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("crypt", 1);
+  get_all_args("crypt", args, "%s.%s", &pwd, &saltp);
 
-  if(Pike_sp[-args].type != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("crypt", 1, "string");
-
-  
   if(args>1)
   {
-    if(Pike_sp[1-args].type != T_STRING ||
-       Pike_sp[1-args].u.string->len < 2)
+    if( Pike_sp[1-args].u.string->len < 2 )
     {
       pop_n_elems(args);
       push_int(0);
       return;
     }
-      
-    saltp=Pike_sp[1-args].u.string->str;
   } else {
     unsigned int foo; /* Sun CC want's this :( */
     foo=my_rand();
@@ -2292,12 +2285,12 @@ PMOD_EXPORT void f_crypt(INT32 args)
     saltp=salt;
   }
 #ifdef HAVE_CRYPT
-  ret = (char *)crypt(Pike_sp[-args].u.string->str, saltp);
+  ret = (char *)crypt(pwd, saltp);
 #else
 #ifdef HAVE__CRYPT
-  ret = (char *)_crypt(Pike_sp[-args].u.string->str, saltp);
+  ret = (char *)_crypt(pwd, saltp);
 #else
-  ret = Pike_sp[-args].u.string->str;
+  ret = pwd;
 #endif
 #endif
   if(args < 2)
@@ -2306,7 +2299,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
     push_text(ret);
   }else{
     int i;
-    i=!strcmp(ret,Pike_sp[1-args].u.string->str);
+    i=!strcmp(ret,saltp);
     pop_n_elems(args);
     push_int(i);
   }
@@ -2362,13 +2355,16 @@ PMOD_EXPORT void f_destruct(INT32 args)
  *!
  *!   Return an array of all valid indices for the value @[x].
  *!
- *!   For strings and arrays this is simply an array of ascending numbers.
+ *!   For strings and arrays this is simply an array of ascending
+ *!   numbers.
  *!
  *!   For mappings and multisets, the array may contain any value.
  *!
- *!   For objects which define @[lfun::_indices()] that return value will be used.
+ *!   For objects which define @[lfun::_indices()] that return value
+ *!   will be used.
  *!
- *!   For other objects an array with all non-static symbols will be returned.
+ *!   For other objects an array with all non-static symbols will be
+ *!   returned.
  *!
  *! @seealso
  *!   @[values()]
@@ -2652,21 +2648,24 @@ static node *fix_aggregate_mapping_type(node *n)
 
 /*! @decl array values(string|array|mapping|multiset|object x)
  *!
- *!   Return an array of all possible values from indexing the value @[x].
+ *!   Return an array of all possible values from indexing the value
+ *!   @[x].
  *!
- *!   For strings an array of int with the ISO10646 codes of the characters in
- *!   the string is returned.
+ *!   For strings an array of int with the ISO10646 codes of the
+ *!   characters in the string is returned.
  *!
- *!   For a multiset an array filled with ones (@expr{1@}) is returned.
+ *!   For a multiset an array filled with ones (@expr{1@}) is
+ *!   returned.
  *!
  *!   For arrays a single-level copy of @[x] is returned.
  *!
  *!   For mappings the array may contain any value.
  *!
- *!   For objects which define @[lfun::_values()] that return value will be used.
+ *!   For objects which define @[lfun::_values()] that return value
+ *!   will be used.
  *!
- *!   For other objects an array with the values of all non-static symbols
- *!   will be returned.
+ *!   For other objects an array with the values of all non-static
+ *!   symbols will be returned.
  *!
  *! @seealso
  *!   @[indices()]
