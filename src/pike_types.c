@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.50 1999/02/10 21:46:48 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.51 1999/02/12 01:15:50 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -102,18 +102,18 @@ void check_type_string(struct pike_string *s)
 
 void init_types(void)
 {
-  string_type_string=parse_type("string");
-  int_type_string=parse_type("int");
-  object_type_string=parse_type("object");
-  program_type_string=parse_type("program");
-  float_type_string=parse_type("float");
-  mixed_type_string=parse_type("mixed");
-  array_type_string=parse_type("array");
-  multiset_type_string=parse_type("multiset");
-  mapping_type_string=parse_type("mapping");
-  function_type_string=parse_type("function");
-  void_type_string=parse_type("void");
-  any_type_string=parse_type("void|mixed");
+#define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
+  string_type_string = CONSTTYPE(tString);
+  int_type_string = CONSTTYPE(tInt);
+  object_type_string = CONSTTYPE(tObj);
+  float_type_string = CONSTTYPE(tFloat);
+  mixed_type_string=CONSTTYPE(tMix);
+  array_type_string=CONSTTYPE(tArray);
+  multiset_type_string=CONSTTYPE(tMultiset);
+  mapping_type_string=CONSTTYPE(tMapping);
+  function_type_string=CONSTTYPE(tFunction);
+  void_type_string=CONSTTYPE(tVoid);
+  any_type_string=CONSTTYPE(tOr(tVoid,tMix));
 }
 
 static int type_length(char *t)
