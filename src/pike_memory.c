@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.49 1999/10/23 06:51:30 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.50 1999/10/24 14:15:41 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1278,7 +1278,7 @@ void cleanup_memhdrs(void)
       struct memhdr *m;
       for(m=memhdr_hash_table[h];m;m=m->next)
       {
-	int e;
+	unsigned int e;
 	struct memhdr *tmp;
 	void **p=m->data;
 
