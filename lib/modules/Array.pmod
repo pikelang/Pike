@@ -5,11 +5,11 @@ mixed map(mixed arr, mixed fun, mixed ... args)
   int e;
   mixed *ret;
 
-  switch(sprintf("%t",fun))
-  {
-  case "mapping":
+  if(mappingp(arr))
     return mkmapping(indices(arr),map(values(arr),fun,@args));
 
+  switch(sprintf("%t",fun))
+  {
   case "int":
     return arr(@args);
 
