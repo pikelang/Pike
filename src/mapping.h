@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.12 1998/05/14 21:45:22 hubbe Exp $
+ * $Id: mapping.h,v 1.13 2001/07/03 02:41:50 david%hedbor.org Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -39,6 +39,7 @@ extern struct mapping *first_mapping;
 /* Prototypes begin here */
 struct mapping *allocate_mapping(int size);
 void really_free_mapping(struct mapping *m);
+void do_free_mapping(struct mapping *m);
 void mapping_fix_type_field(struct mapping *m);
 void mapping_insert(struct mapping *m,
 		    struct svalue *key,
