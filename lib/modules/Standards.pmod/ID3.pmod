@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.8 2003/01/20 17:44:01 nilsson Exp $
+//  $Id: ID3.pmod,v 1.9 2003/04/23 16:36:07 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -20,6 +20,8 @@
 //  - v1 support
 //  - v2.3 and v2.2 basic support
 //
+
+
 
 // ID3v2
 
@@ -100,11 +102,13 @@ class TagHeader {
   void decode(Buffer buffer) {
     string data = buffer->read(10);
     if(!has_prefix(data, "ID3"))
-      error( "Header has wrong identifier. Expected \"ID3\", got %O.\n", data[..2] );
+      error( "Header has wrong identifier. Expected \"ID3\", got %O.\n",
+	     data[..2] );
 
     array bytes = (array(int))data[3..];
     if( ! (< 2, 3, 4 >)[bytes[0]] )
-      error( "Can only handle ID3v2.{2,3,4}.x. Got ID3v2."+bytes[0]+"."+bytes[1]+"\n" );
+      error( "Can only handle ID3v2.{2,3,4}.x. Got ID3v2.%d.%d\n",
+	     bytes[0], bytes[1] );
 
     minor_version = bytes[0];
     sub_version = bytes[1];
@@ -409,13 +413,14 @@ class Frame {
     if(flag_grouping)
       group_id = hd_data[0..0];
 
+    //    werror("%s: %O\n", id, _data);
     data = get_frame_data(id)( _data );
   }
 
   mapping get() {
     switch(id) {
     default:
-      throw( ({ "No frame identifier available.\n", backtrace() }) );
+      error( "No frame identifier available.\n" );
     }
   }
 
@@ -448,6 +453,10 @@ class Frame {
       sprintf("%c%c", @encode_flags()) +
       block;
   }
+
+  static string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%s)", this_program, id);
+  }
 }
 
 //! ID3 version 2 (2.2, 2.3, 2.4) Tags
@@ -473,8 +482,8 @@ class Tagv2 {
     buffer->set_limit(header->tag_size);
     if(header->flag_extended_header)
       extended_header = ExtendedHeader(buffer, header);
-    while(buffer->bytes_left() && buffer->peek()!= "\0")
-      frames += ({ Frame(buffer, header) });
+      while(buffer->bytes_left() && buffer->peek()!= "\0")
+	  frames += ({ Frame(buffer, header) });
     padding = buffer->bytes_left();
 
     // Verify that padding is all zero.
@@ -494,6 +503,12 @@ class Tagv2 {
   Tag update(Tag t) {
     if(!t->extended_header->flag_is_update) return t;
     // FIXME: Incorporate tags.
+  }
+
+  Frame get_frame(string id) {
+    foreach(frames, Frame f)
+      if(f->id==id) return f;
+    return 0;
   }
 }
 
@@ -569,7 +584,8 @@ class Frame_TextAofB {
     data = decode_string(data[1..], data[0]);
     int a,b;
     sscanf(data, "%s\0", data);
-    sscanf(data, "%d/%d", a, b);
+    if( sscanf(data, "%d/%d", a, b)!=2 )
+      error( "A/B frame data not in A/B form.\n" );
 
     // Not against the spec, really...
     if(a > b) error( "(A/B) A bigger than B.\n" );
@@ -759,20 +775,25 @@ class FrameDatav1 {
 
 }
 
-//! ID3 tag object
-//!
-//! Tries to find version 2 tags in file and then version 1 tag.
+//! This is a ID3 tag super object, which encapsulates all versions
+//! ID3 tags. This is useful if you are only interested in the metadata
+//! of a file, and care not about how it is stored or have no interest
+//! in changing the data.
 //!
 //! @note
-//!  Version 1 tag is searched only if version 2 isn't there.
+//!  Version 1 tag is searched only if version 2 isn't found.
 //!
 //! @seealso
 //!  @[Tagv2], @[Tagv1]
 class Tag {
 
-  object tag;
+  static Tagv2|Tagv1 tag;
 
-  void create(Stdio.File fd) {
+  //! The file object @[fd] is searched for version 2 tags, and if
+  //! not found, version 1 tags.
+  //! @throws
+  //!   If no tag was found in the file an error is thrown.
+  static void create(Stdio.File fd) {
 
     catch(tag = Tagv2(Buffer(fd)));
     if(tag)
@@ -783,7 +804,10 @@ class Tag {
     error("No ID3 tag was found in file.\n");
   }
 
-  mixed `->(string index) {
+  //! The index operators are overloaded to index the encapsulated
+  //! Tagv1 or Tagv2 object.
+  static mixed `[](string index) { return `->(index); }
+  static mixed `->(string index) {
 
     if(index == "version")
       return ""+tag->header->major_version+"."+tag->header->minor_version+
@@ -795,46 +819,75 @@ class Tag {
     return tag[index];
   }
 
-  mixed _indices() {
+  //! @decl constant version
+  //! The version of the encapsulated tag in the form @expr{"%d.%d.%d"@}.
+
+  //! Indices will return the indices of the tag object.
+  static array _indices() {
     return indices(tag);
   }
 
-  //! Returns tag values in friendly manner
-  //!
-  //! @note
-  //!  Only version 1 equivalent of version 2 tags
-  //!  are returned.
-  mapping friendly_values() {
-    if(tag->header->major_version == 1)
-      return mkmapping(tag->frames->id,
-		       tag->frames->data->get_string());
+  //! Indices will return the values of the tag object.
+  static array _values() {
+    return values(tag);
+  }
 
-    mapping rv = ([]);
-    foreach(tag->frames, object fr1)
-      switch(upper_case(fr1->id)) {
+  //! Returns tag values in a mapping. Only tag values that exists
+  //! in ID3v1.1 is used. Nonexisting or undefined values will not
+  //! appear in the mapping.
+  //!
+  //! @mapping
+  //!    @member string "artist"
+  //!      Takes its value from TPE1 or TP1 frames.
+  //!    @member string "album"
+  //!      Takes its value from TALB or TAL frames.
+  //!    @member string "title"
+  //!      Takes its value from TIT2 or TT2 frames.
+  //!    @member string "genre"
+  //!      Takes its value from TCON or TCM frames.
+  //!    @member string "year"
+  //!      Takes its value from TYER or TYE frames.
+  //!    @member string "track"
+  //!      Takes its value from TRCK or TRK frames.
+  //!      The string may be either in the @expr{"%d"@} form or in
+  //!      the @expr{"%d/%d"@} form.
+  //! @endmapping
+  mapping(string:string) friendly_values() {
+    mapping(string:string) rv = ([]);
+
+    if(tag->header->major_version == 1) {
+      rv = mkmapping(tag->frames->id,
+		     tag->frames->data->get_string());
+      foreach(rv; string i; string v)
+	if(v=="") m_delete(rv, i);
+      return rv;
+    }
+
+    foreach(tag->frames, Frame fr)
+      switch(fr->id) {
 	case "TPE1":
         case "TP1":
-	  catch(rv->artist = fr1->data->get_string());
+	  catch(rv->artist = fr->data->get_string());
 	  break;
         case "TALB":
         case "TAL":
-	  catch(rv->album = fr1->data->get_string());
+	  catch(rv->album = fr->data->get_string());
 	  break;
         case "TIT2":
         case "TT2":
-	  catch(rv->title = fr1->data->get_string());
+	  catch(rv->title = fr->data->get_string());
           break;
 	case "TCON":
         case "TCM":
-	  catch(rv->genre = fr1->data->get_string());
+	  catch(rv->genre = fr->data->get_string());
           break;
         case "TYER":
         case "TYE":
-          catch(rv->year = fr1->data->get_string());
+          catch(rv->year = fr->data->get_string());
           break;
         case "TRCK":
         case "TRK":
-          catch(rv->track = fr1->data->get_string());
+          catch(rv->track = fr->data->get_string());
           break;
       }
      return rv;
