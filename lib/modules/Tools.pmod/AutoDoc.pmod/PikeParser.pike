@@ -342,20 +342,53 @@ Type parseType() {
   }
 }
 
-array parseArgList() {
+// If allowLiterals != 0 then you can write a literal or Pike idents
+// as an argument, like:
+//    void convert("jpeg", Image image, float quality)
+//
+// For a literal arg, the argname[] string contains the literal and
+// the corresponding argtypes element is 0
+// NOTE: expects that the arglist is followed by a ")".
+array parseArgList(int|void allowLiterals) {
   array(string) argnames = ({ });
   array(Type) argtypes = ({ });
+  if (peekToken() == ")")
+    return ({ argnames, argtypes });
   for (;;) {
-    Type t = parseOrType();
-    if (!t)
+    Type typ = parseOrType();
+    if (typ && typ->name == "void" && peekToken() == ")")
       return ({ argnames, argtypes });
-    if (peekToken() == "...") {
-      t = VarargsType(t);
+    string literal = 0;
+    if (!typ)
+      literal = parseLiteral();
+    else if (peekToken() == "...") {
+      typ = VarargsType(typ);
       eat("...");
     }
-    argnames += ({ eatIdentifier() });
-    argtypes += ({ t });
-    if (peekToken() != ",")
+    string identifier = 0;
+    if (isIdent(peekToken()))
+      identifier = readToken();
+
+    if (typ && identifier) {
+      argnames += ({ identifier });
+      argtypes += ({ typ });
+    }
+    else {
+      if (typ) {
+        // it's an identifier 'Foo.Bar.gazonk' designating a constant that
+        // has been mistaken for an object type ...
+        if (typ->name != "object")
+          parseError("Expected type, idents or literal constant");
+        literal = typ->classname;
+      }
+      if (literal && !identifier) {
+        argnames += ({ literal });
+        argtypes += ({ 0 });
+      }
+      else
+        parseError("Expected type, idents or literal constant");
+    }
+    if (peekToken() == ")")
       return ({ argnames, argtypes });
     eat(",");
   }
@@ -407,7 +440,8 @@ void|string parseLiteral() {
 
 // parseDecl() reads ONLY THE HEAD, NOT the ";" or "{" .. "}" !!!
 
-PikeObject|array(PikeObject) parseDecl() {
+PikeObject|array(PikeObject) parseDecl(mapping|void args) {
+  args = args || ([]);
   skip("\n");
   int firstline = currentline;
   array(string) modifiers = parseModifiers();
@@ -437,6 +471,7 @@ PikeObject|array(PikeObject) parseDecl() {
     eat("=");
     // TODO: parse the expression ???
     //   added parsing only of types...
+    //   a constant value will just be ignored.
     c->typedefType = parseOrType();
 
     skipUntil( (< ";", EOF >) );
@@ -462,7 +497,7 @@ PikeObject|array(PikeObject) parseDecl() {
       m->name = name;
       m->returntype = t;
       eat("(");
-      [m->argnames, m->argtypes] = parseArgList();
+      [m->argnames, m->argtypes] = parseArgList(args["allowArgListLiterals"]);
       eat(")");
       return m;
     } else {

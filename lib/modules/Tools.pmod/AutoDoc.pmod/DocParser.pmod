@@ -537,7 +537,9 @@ static class DocParserClass {
           meta->type = "decl";
 
           .PikeParser declparser = .PikeParser(arg);
-          PikeObject p = declparser->parseDecl();
+          PikeObject p = declparser->parseDecl(
+            ([ "allowArgListLiterals" : 1 ])
+          ); // with constants/literals
           string s = declparser->peekToken();
           if (s != ";" && s != EOF)
             parseError("expected end of line, got %O", s);

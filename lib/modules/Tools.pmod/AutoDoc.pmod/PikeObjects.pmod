@@ -364,9 +364,13 @@ class Method {
     string s = standardTags();
     string args = "";
     for(int i = 0; i < sizeof(argnames); ++i) {
-      args += xmltag("argument",
-                     (["name" : argnames[i] ]),
-                     xmltag("type", argtypes[i]->xml()));
+      if (argtypes[i])
+        args += xmltag("argument",
+                       (["name" : argnames[i] ]),
+                       xmltag("type", argtypes[i]->xml()));
+      else
+        args += xmltag("argument",
+                       xmltag("value", argnames[i]));
     }
     s += xmltag("arguments", args);
     s += xmltag("returntype", returntype->xml());
