@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.17 1997/05/18 22:25:09 grubba Exp $
+ * $Id: system.c,v 1.18 1997/06/03 14:26:08 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.17 1997/05/18 22:25:09 grubba Exp $");
+RCSID("$Id: system.c,v 1.18 1997/06/03 14:26:08 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -62,7 +62,7 @@ RCSID("$Id: system.c,v 1.17 1997/05/18 22:25:09 grubba Exp $");
 
 /* Helper functions */
 
-static volatile void report_error(const char *function_name)
+static void report_error(const char *function_name)
 {
   char *error_msg = "Unknown reason";
 
