@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.104 2004/08/31 13:55:45 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.105 2004/08/31 15:54:22 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -397,13 +397,11 @@ int main(int argc, array(string) argv)
   // Move stdout to a higher fd, so that close on exec works.
   // This makes sure the original stdout gets closed even if
   // some subprocess hangs.
-  Stdio.File stdout = Stdio.stdout->dup();
+  Stdio.File stdout = Stdio.File();
+  Stdio.stdout->dup2(stdout);
+  //stdout->assign(Stdio.stdout->_fd->dup());
   Stdio.stderr->dup2(Stdio.stdout);
   stdout->set_close_on_exec(1);
-
-  add_constant("_verbose", verbose);
-  if(verbose)
-    stdout->write("Begin tests at "+ctime(time()));
 
 #ifdef WATCHDOG
   int watchdog_time=time();
@@ -428,6 +426,10 @@ int main(int argc, array(string) argv)
 #else
   add_constant("__signal_watchdog",lambda(){});
 #endif // else WATCHDOG_PIPE
+
+  add_constant("_verbose", verbose);
+  if(verbose)
+    stdout->write("Begin tests at "+ctime(time()));
 
   testsuites += Getopt.get_args(argv, 1)[1..];
   foreach(testsuites; int pos; string ts) {
@@ -473,7 +475,7 @@ int main(int argc, array(string) argv)
 	     (sscanf(results, "%*s(%d tests skipped)", skip) != 2)) == 3) {
 	  // Failed to parse the result totally.
 	  werror("Failed to parse subresult for testsuite %O (exitcode:%d):\n"
-		 "%s", testsuite, err, raw_results);
+		 "%O", testsuite, err, raw_results);
 	  errors++;
 	} else {
 	  werror("Subresult: %d tests, %d failed, %d skipped\n",
