@@ -123,7 +123,23 @@ int main() {
   write("\nGmp\n");
   M(Gmp.mpz);
 
-  // GTK
+#if 0
+  write("\nGnome\n");
+  // FIXME: Gnome.pmod looks buggy.
+  // require gnome
+  // require docklets
+  // require HAVE_SAVE_SESSION_SIGNAL
+  // require HAVE_PANEL_PIZEL_SIZE
+  // require HAVE_PANEL_DRAW_SIGNAL
+  // require HAVE_APPLET_QUEUE_RESIZE
+#endif
+
+  write("\nGTK\n");
+  M(GTK.gtk_init);
+  F(GTK.Databox);
+  F(GTK.GladeXML);
+  F(GTK.GLArea);
+  F(GTK.HandleBox);
 
   write("\nGz\n");
   M(Gz.crc32);
