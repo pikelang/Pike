@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.h,v 1.3 2000/01/26 19:50:11 grubba Exp $
+ * $Id: crypto.h,v 1.4 2000/03/28 12:20:01 grubba Exp $
  *
  * Prototypes for some functions.
  *
@@ -17,8 +17,8 @@ extern void pike_des_init(void);
 extern void pike_des_exit(void);
 extern void pike_cast_init(void);
 extern void pike_cast_exit(void);
-extern void pike_rc4_init(void);
-extern void pike_rc4_exit(void);
+extern void pike_arcfour_init(void);
+extern void pike_arcfour_exit(void);
 extern void pike_invert_init(void);
 extern void pike_invert_exit(void);
 extern void pike_sha_init(void);

@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.14 1999/12/01 22:37:22 marcus Exp $
+/* $Id: randomness.pmod,v 1.15 2000/03/28 12:24:32 grubba Exp $
  */
 
 //! module Crypto
@@ -35,7 +35,7 @@ static constant SYSTEM_COMMANDS = ({
 			
 #define PRIVATE
 			
-PRIVATE object global_rc4;
+PRIVATE object global_arcfour;
 
 // method string some_entropy()
 //	Executes several programs to generate some entropy from their output.
@@ -110,33 +110,33 @@ class pike_random {
   }
 }
 
-#if constant(Crypto.rc4)
-//! class rc4_random
-//!	A pseudo random generator based on the rc4 crypto.
-class rc4_random {
-  inherit Crypto.rc4 : rc4;
+#if constant(Crypto.arcfour)
+//! class arcfour_random
+//!	A pseudo random generator based on the arcfour crypto.
+class arcfour_random {
+  inherit Crypto.arcfour : arcfour;
 
   //! method void create(string secret)
-  //!	Initialize and seed the rc4 random generator.
+  //!	Initialize and seed the arcfour random generator.
   void create(string secret)
   {
     object hash = Crypto.sha();
     hash->update(secret);
     
-    rc4::set_encrypt_key(hash->digest());
+    arcfour::set_encrypt_key(hash->digest());
   }
 
   //! method string read(int len)
   //!	Return a string of the next len random characters from the
-  //!	rc4 random generator.
+  //!	arcfour random generator.
   string read(int len)
   {
     if (len > 16384) return read(len/2)+read(len-len/2);
-    return rc4::crypt("\47" * len);
+    return arcfour::crypt("\47" * len);
   }
 }
 
-#endif /* constant(Crypto.rc4) */
+#endif /* constant(Crypto.arcfour) */
 
 object reasonably_random()
 {
@@ -147,17 +147,17 @@ object reasonably_random()
       return res;
   }
 
-  if (global_rc4)
-    return global_rc4;
+  if (global_arcfour)
+    return global_arcfour;
 
-#if constant(Crypto.rc4)  
+#if constant(Crypto.arcfour)  
   string seed = some_entropy();
   if (strlen(seed) > 2000)
-    return (global_rc4 = rc4_random(sprintf("%4c%O%s", time(), _memory_usage(), seed)));
-#else /* !constant(Crypto.rc4) */
+    return (global_arcfour = arcfour_random(sprintf("%4c%O%s", time(), _memory_usage(), seed)));
+#else /* !constant(Crypto.arcfour) */
   /* Not very random, but at least a fallback... */
-  return global_rc4 = pike_random();
-#endif /* constant(Crypto.rc4) */
+  return global_arcfour = pike_random();
+#endif /* constant(Crypto.arcfour) */
   throw( ({ "Crypto.randomness.reasonably_random: No source found\n", backtrace() }) );
 }
 

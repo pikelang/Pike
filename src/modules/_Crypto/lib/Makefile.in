@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.20 1999/11/08 23:20:53 mast Exp $
+# $Id: Makefile.in,v 1.21 2000/03/28 12:22:01 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -146,7 +146,7 @@ desQuickCore.c:
 ### End of rules for desCore
 
 # BEGIN NATIONAL SECURITY
-MASS_DESTRUCTION_OBJS = idea.o rc4.o cast.o $(O)
+MASS_DESTRUCTION_OBJS = idea.o arcfour.o cast.o $(O)
 # END NATIONAL SECURITY
 
 OBJS = $(MASS_DESTRUCTION_OBJS) sha.o md5.o

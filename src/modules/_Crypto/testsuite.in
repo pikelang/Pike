@@ -23,7 +23,7 @@ test_true([[programp(xCrypto.sha)]])
 test_true([[programp(Crypto.des)]])
 test_true([[programp(Crypto.idea)]])
 test_true([[programp(Crypto.cast)]])
-test_true([[programp(Crypto.rc4)]])
+test_true([[programp(Crypto.arcfour)]])
 // END NATIONAL SECURITY
 
 // Functions
@@ -45,7 +45,7 @@ dnl test_true([[programp(Crypto.rsa)]])
 // Randomness submodule
 test_true([[objectp(Crypto.randomness)]])
 test_true([[programp(Crypto.randomness.pike_random)]])
-test_true([[programp(Crypto.randomness.rc4_random)]])
+test_true([[programp(Crypto.randomness.arcfour_random)]])
 test_true([[functionp(Crypto.randomness.reasonably_random)]])
 test_true([[functionp(Crypto.randomness.really_random)]])
 
@@ -117,18 +117,18 @@ test_eq([[Crypto.cast()
 	  ->crypt_block(xCrypto.hex_to_string("7AC816D16E9B302E"))]],
 	[[xCrypto.hex_to_string("0123456789ABCDEF")]])
 
-// RC4
-test_true([[objectp(Crypto.rc4())]])
-test_eq([[Crypto.rc4()->set_encrypt_key(xCrypto.hex_to_string("0123456789abcdef"))
+// ARCFOUR
+test_true([[objectp(Crypto.arcfour())]])
+test_eq([[Crypto.arcfour()->set_encrypt_key(xCrypto.hex_to_string("0123456789abcdef"))
 		->crypt(xCrypto.hex_to_string("0123456789abcdef"))]],
 	[[xCrypto.hex_to_string("75b7878099e0c596")]])
-test_eq([[Crypto.rc4()->set_encrypt_key(xCrypto.hex_to_string("0123456789abcdef"))
+test_eq([[Crypto.arcfour()->set_encrypt_key(xCrypto.hex_to_string("0123456789abcdef"))
 		->crypt(xCrypto.hex_to_string("0000000000000000"))]],
 	[[xCrypto.hex_to_string("7494c2e7104b0879")]])
-test_eq([[Crypto.rc4()->set_encrypt_key(xCrypto.hex_to_string("0000000000000000"))
+test_eq([[Crypto.arcfour()->set_encrypt_key(xCrypto.hex_to_string("0000000000000000"))
 		->crypt(xCrypto.hex_to_string("0000000000000000"))]],
 	[[xCrypto.hex_to_string("de188941a3375d3a")]])
-test_eq([[Crypto.rc4()->set_encrypt_key(xCrypto.hex_to_string("ef012345"))
+test_eq([[Crypto.arcfour()->set_encrypt_key(xCrypto.hex_to_string("ef012345"))
 		->crypt(xCrypto.hex_to_string("00000000000000000000"))]],
 	[[xCrypto.hex_to_string("d6a141a7ec3c38dfbd61")]])
 
@@ -136,7 +136,7 @@ test_eq([[Crypto.rc4()->set_encrypt_key(xCrypto.hex_to_string("ef012345"))
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
 
-test_eq([[Crypto.rc4()->set_encrypt_key(xCrypto.hex_to_string("0123456789abcdef"))
+test_eq([[Crypto.arcfour()->set_encrypt_key(xCrypto.hex_to_string("0123456789abcdef"))
 		->crypt(xCrypto.hex_to_string(
 		  "0101010101010101010101010101010101010101010101010101010101010101"
 		  "0101010101010101010101010101010101010101010101010101010101010101"

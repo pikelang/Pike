@@ -367,6 +367,7 @@ testfont binary
 /src/modules/_Crypto/idea.pike foreign_ident
 /src/modules/_Crypto/include/.exportable_files foreign_ident
 /src/modules/_Crypto/include/RCSID.h foreign_ident
+/src/modules/_Crypto/include/arcfour.h foreign_ident
 /src/modules/_Crypto/include/cast.h foreign_ident
 /src/modules/_Crypto/include/crypto_types.h foreign_ident
 /src/modules/_Crypto/include/des.h foreign_ident
@@ -377,6 +378,7 @@ testfont binary
 /src/modules/_Crypto/invert.c foreign_ident
 /src/modules/_Crypto/lib/.exportable_files foreign_ident
 /src/modules/_Crypto/lib/Makefile.in foreign_ident
+/src/modules/_Crypto/lib/arcfour.c foreign_ident
 /src/modules/_Crypto/lib/cast.c foreign_ident
 /src/modules/_Crypto/lib/cast_sboxes.h foreign_ident
 /src/modules/_Crypto/lib/configure.in foreign_ident
