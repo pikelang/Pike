@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.8 1998/01/28 00:33:17 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.9 1998/04/06 04:34:05 hubbe Exp $ */
 
 import Stdio;
 import String;
@@ -9,11 +9,16 @@ import String;
 #define strerror(X) ("ERRNO = "+(string)(X))
 #endif
 
+//int idnum;
+//mapping in_cleanup=([]);
+
 class Socket {
   import Stdio;
   import String;
 
   inherit File;
+
+//  int id=idnum++;
 
   object daemon=function_object(backtrace()[-2][2]);
   int num=daemon->num_running;
@@ -26,14 +31,28 @@ class Socket {
   int input_finished;
   int output_finished;
 
+//  void destroy()
+//  {
+//    werror("GONE FISHING %d\n",id);
+//    werror(master()->describe_backtrace( ({"backtrace:",backtrace() }) ) +"\n");
+//    if(in_cleanup[id])  trace(0);
+//  }
+
   void cleanup()
   {
+//    int i=id;
+//    werror(">>>>>>>>>ENTER CLEANUP %d\n",i);
     if(input_finished && output_finished)
     {
+//      in_cleanup[i]++;
       daemon->finish();
+//      if(!this_object())
+//	werror("GURKA %d\n",i);
       close();
+//      in_cleanup[i]--;
       destruct(this_object());
     }
+//    werror("<<<<<<<<<<EXIT CLEANUP\n",i);
   }
 
   void close_callback()
@@ -274,6 +293,7 @@ void finish()
       exit(0);
     }
   }
+//  werror("FINISHED with FINISH %d\n",_tests);
 }
 
 void accept_callback()

@@ -1,12 +1,11 @@
-/* \
+/*\
 ||| This file a part of Pike, and is copyright by Fredrik Hubinette
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
-\ */
-#define READ_BUFFER 8192
+\*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.83 1998/03/26 14:31:01 grubba Exp $");
+RCSID("$Id: file.c,v 1.84 1998/04/06 04:34:05 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -77,142 +76,184 @@ RCSID("$Id: file.c,v 1.83 1998/03/26 14:31:01 grubba Exp $");
 
 #include "dmalloc.h"
 
-
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#endif
-
-#ifndef SEEK_CUR
-#define SEEK_CUR 1
-#endif
-
-#ifndef SEEK_END
-#define SEEK_END 2
-#endif
-
-struct file_struct
-{
-  short fd;
-  short my_errno;
-};
-
-#define FD (((struct file_struct *)(fp->current_storage))->fd)
-#define ERRNO (((struct file_struct *)(fp->current_storage))->my_errno)
 #undef THIS
-#define THIS (files + FD)
+#define THIS ((struct my_file *)(fp->current_storage))
+#define FD (THIS->fd)
+#define ERRNO (THIS->my_errno)
 
-static struct my_file files[MAX_OPEN_FILEDESCRIPTORS];
+#define READ_BUFFER 8192
+
 static struct program *file_program;
+static struct program *file_ref_program;
 
 static void file_read_callback(int fd, void *data);
 static void file_write_callback(int fd, void *data);
 
-static void init_fd(int fd, int open_mode)
+static struct my_file *get_file_storage(struct object *o)
 {
-  files[fd].refs=1;
-  files[fd].open_mode=open_mode;
-  files[fd].id.type=T_INT;
-  files[fd].id.u.integer=0;
-  files[fd].read_callback.type=T_INT;
-  files[fd].read_callback.u.integer=0;
-  files[fd].write_callback.type=T_INT;
-  files[fd].write_callback.u.integer=0;
-#ifdef WITH_OOB
-  files[fd].read_oob_callback.type=T_INT;
-  files[fd].read_oob_callback.u.integer=0;
-  files[fd].write_oob_callback.type=T_INT;
-  files[fd].write_oob_callback.u.integer=0;
-#endif /* WITH_OOB */
-  files[fd].close_callback.type=T_INT;
-  files[fd].close_callback.u.integer=0;
+  struct my_file *f;
+  struct object **ob;
+  if(o->prog == file_program)
+    return ((struct my_file *)(o->storage));
+
+  if((f=(struct my_file *)get_storage(o,file_program)))
+    return f;
+
+  if((ob=(struct object **)get_storage(o,file_ref_program)))
+     if(*ob && (f=(struct my_file *)get_storage(*ob, file_program)))
+	return f;
+  
+  return 0;
 }
 
-static int close_fd(int fd)
-{
 #ifdef DEBUG
-  if(fd < 0 || fd >= MAX_OPEN_FILEDESCRIPTORS)
-    fatal("Bad argument to close_fd()\n");
-
-  if(files[fd].refs<1)
-    fatal("Wrong ref count in file struct\n");
+#ifdef WITH_OOB
+#define OOBOP(X) (X)
+#else
+#define OOBOP(X)
 #endif
+#define CHECK_FILEP(o) \
+do { if(o->prog && !get_storage(o,file_program)) fatal("%p is not a file object.\n",o); } while (0)
+#define DEBUG_CHECK_INTERNAL_REFERENCE(X) do {				\
+  if( ((X)->fd!=-1 && (							\
+     query_read_callback((X)->fd)==file_read_callback ||		\
+     query_write_callback((X)->fd)==file_write_callback			\
+OOBOP( || query_read_oob_callback((X)->fd)==file_read_oob_callback ||	\
+     query_write_oob_callback((X)->fd)==file_write_oob_callback )))  !=	\
+  !!( (X)->flags & FILE_HAS_INTERNAL_REF ))				\
+         fatal("Internal reference is wrong. %d\n",(X)->flags & FILE_HAS_INTERNAL_REF);		\
+   } while (0)
+#else
+#define CHECK_FILEP(o) 
+#define DEBUG_CHECK_INTERNAL_REFERENCE(X)
+#endif
+#define SET_INTERNAL_REFERENCE(f) \
+  do { CHECK_FILEP(f->myself); if(!(f->flags & FILE_HAS_INTERNAL_REF)) { f->myself->refs++; f->flags|=FILE_HAS_INTERNAL_REF; } }while (0)
 
-  files[fd].refs--;
-  if(!files[fd].refs)
+#define REMOVE_INTERNAL_REFERENCE(f) \
+  do { CHECK_FILEP(f->myself); if(f->flags & FILE_HAS_INTERNAL_REF) {  f->flags&=~FILE_HAS_INTERNAL_REF; free_object(f->myself); } }while (0)
+
+static void check_internal_reference(struct my_file *f)
+{
+  if(f->fd!=-1)
   {
-    set_read_callback(fd,0,0);
-    set_write_callback(fd,0,0);
+    if(query_read_callback(f->fd) == file_read_callback ||
+       query_write_callback(f->fd) == file_write_callback
 #ifdef WITH_OOB
-    set_read_oob_callback(fd,0,0);
-    set_write_oob_callback(fd,0,0);
-#endif /* WITH_OOB */
-
-    free_svalue(& files[fd].id);
-    free_svalue(& files[fd].read_callback);
-    free_svalue(& files[fd].write_callback);
-#ifdef WITH_OOB
-    free_svalue(& files[fd].read_oob_callback);
-    free_svalue(& files[fd].write_oob_callback);
-#endif /* WITH_OOB */
-    free_svalue(& files[fd].close_callback);
-    files[fd].id.type=T_INT;
-    files[fd].read_callback.type=T_INT;
-    files[fd].write_callback.type=T_INT;
-#ifdef WITH_OOB
-    files[fd].read_oob_callback.type=T_INT;
-    files[fd].write_oob_callback.type=T_INT;
-#endif /* WITH_OOB */
-    files[fd].close_callback.type=T_INT;
-    files[fd].open_mode = 0;
-
-#ifdef HAVE_FD_FLOCK
-    if(files[fd].key)
-    {
-      destruct(files[fd].key);
-      files[fd].key=0;
-    }
+       || query_read_oob_callback(f->fd) == file_read_oob_callback ||
+       query_write_oob_callback(f->fd) == file_write_oob_callback
 #endif
+       )
+       {
+	 SET_INTERNAL_REFERENCE(f);
+	 return;
+       }
+  }
 
-    while(1)
+  REMOVE_INTERNAL_REFERENCE(f);
+}
+
+static void init_fd(int fd, int open_mode)
+{
+  FD=fd;
+  ERRNO=0;
+  REMOVE_INTERNAL_REFERENCE(THIS);
+  THIS->flags=0;
+  THIS->open_mode=open_mode;
+  THIS->read_callback.type=T_INT;
+  THIS->read_callback.u.integer=0;
+  THIS->write_callback.type=T_INT;
+  THIS->write_callback.u.integer=0;
+#ifdef WITH_OOB
+  THIS->read_oob_callback.type=T_INT;
+  THIS->read_oob_callback.u.integer=0;
+  THIS->write_oob_callback.type=T_INT;
+  THIS->write_oob_callback.u.integer=0;
+#endif /* WITH_OOB */
+#ifdef HAVE_FD_FLOCK
+  THIS->key=0;
+#endif
+}
+
+
+void reset_variables(void)
+{
+  free_svalue(& THIS->read_callback);
+  THIS->read_callback.type=T_INT;
+  free_svalue(& THIS->write_callback);
+  THIS->write_callback.type=T_INT;
+#ifdef WITH_OOB
+  free_svalue(& THIS->read_oob_callback);
+  THIS->read_oob_callback.type=T_INT;
+  free_svalue(& THIS->write_oob_callback);
+  THIS->write_oob_callback.type=T_INT;
+#endif /* WITH_OOB */
+}
+
+static void free_fd_stuff(void)
+{
+#ifdef HAVE_FD_FLOCK
+  if(THIS->key)
+  {
+    destruct(THIS->key);
+    THIS->key=0;
+  }
+#endif
+  check_internal_reference(THIS);
+}
+
+static void just_close_fd()
+{
+  int fd=FD;
+  if(fd<0) return;
+
+  set_read_callback(FD,0,0);
+  set_write_callback(FD,0,0);
+#ifdef WITH_OOB
+  set_read_oob_callback(FD,0,0);
+  set_write_oob_callback(FD,0,0);
+#endif /* WITH_OOB */
+  check_internal_reference(THIS);
+
+  while(1)
+  {
+    int i;
+    THREADS_ALLOW();
+    i=fd_close(fd);
+    THREADS_DISALLOW();
+    
+    if(i < 0)
     {
-      int i;
-      THREADS_ALLOW();
-      i=fd_close(fd);
-      THREADS_DISALLOW();
-      
-      if(i < 0)
+      switch(errno)
       {
-	switch(errno)
-	{
 	default:
-	  /* What happened? */
-	  /* files[fd].errno=errno; */
-
-	  /* Try waiting it out in blocking mode */
-	  set_nonblocking(fd,0);
-	  THREADS_ALLOW();
-	  i=fd_close(fd);
-	  THREADS_DISALLOW();
-	  if(i>= 0 || errno==EBADF)  break; /* It was actually closed, good! */
-	  
-	  /* Failed, give up, crash, burn, die */
+	  ERRNO=errno;
 	  error("Failed to close file.\n");
-
+	  
 	case EBADF:
 	  error("Internal error: Closing a non-active file descriptor %d.\n",fd);
 	  
 	case EINTR:
 	  continue;
-	}
       }
-      break;
     }
+    break;
   }
-  return 0;
+  FD=-1;
+}
+
+static void close_fd(void)
+{
+  free_fd_stuff();
+  reset_variables();
+  just_close_fd();
 }
 
 void my_set_close_on_exec(int fd, int to)
 {
+#if 1
+      set_close_on_exec(fd, 0);
+#else
   if(to)
   {
     files[fd].open_mode |= FILE_SET_CLOSE_ON_EXEC;
@@ -222,10 +263,12 @@ void my_set_close_on_exec(int fd, int to)
     else
       set_close_on_exec(fd, 0);
   }
+#endif
 }
 
 void do_set_close_on_exec(void)
 {
+#if 0
   int e;
   for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
   {
@@ -235,6 +278,7 @@ void do_set_close_on_exec(void)
       files[e].open_mode &=~ FILE_SET_CLOSE_ON_EXEC;
     }
   }
+#endif
 }
 
 /* Parse "rw" to internal flags */
@@ -305,7 +349,7 @@ static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
 static struct pike_string *do_read(int fd,
 				   INT32 r,
 				   int all,
-				   short *err)
+				   int *err)
 {
   ONERROR ebuf;
   INT32 bytes_read,i;
@@ -353,6 +397,12 @@ static struct pike_string *do_read(int fd,
 
     UNSET_ONERROR(ebuf);
     
+    if(!IS_ZERO(& THIS->read_callback))
+    {
+      set_read_callback(FD, file_read_callback, THIS);
+      SET_INTERNAL_REFERENCE(THIS);
+    }
+
     if(bytes_read == str->len)
     {
       return end_shared_string(str);
@@ -419,6 +469,14 @@ static struct pike_string *do_read(int fd,
     }while(r);
 
     UNSET_ONERROR(ebuf);
+
+    if(!IS_ZERO(& THIS->read_callback))
+    {
+      set_read_callback(FD, file_read_callback, THIS);
+      SET_INTERNAL_REFERENCE(THIS);
+    }
+
+
     return low_free_buf(&b);
   }
 }
@@ -427,7 +485,7 @@ static struct pike_string *do_read(int fd,
 static struct pike_string *do_read_oob(int fd,
 				       INT32 r,
 				       int all,
-				       short *err)
+				       int *err)
 {
   ONERROR ebuf;
   INT32 bytes_read,i;
@@ -475,6 +533,12 @@ static struct pike_string *do_read_oob(int fd,
 
     UNSET_ONERROR(ebuf);
     
+    if(!IS_ZERO(& THIS->read_oob_callback))
+    {
+      set_read_callback(FD, file_read_oob_callback, THIS);
+      SET_INTERNAL_REFERENCE(THIS);
+    }
+
     if(bytes_read == str->len)
     {
       return end_shared_string(str);
@@ -541,6 +605,11 @@ static struct pike_string *do_read_oob(int fd,
     }while(r);
 
     UNSET_ONERROR(ebuf);
+    if(!IS_ZERO(& THIS->read_oob_callback))
+    {
+      set_read_callback(FD, file_read_oob_callback, THIS);
+      SET_INTERNAL_REFERENCE(THIS);
+    }
     return low_free_buf(&b);
   }
 }
@@ -620,25 +689,48 @@ static void file_read_oob(INT32 args)
 }
 #endif /* WITH_OOB */
 
-static void file_write_callback(int fd, void *data)
-{
-  set_write_callback(fd, 0, 0);
-
-  assign_svalue_no_free(sp++, & files[fd].id);
-  apply_svalue(& files[fd].write_callback, 1);
-  pop_stack();
+#undef CBFUNCS
+#define CBFUNCS(X)						\
+static void PIKE_CONCAT(file_,X) (int fd, void *data)		\
+{								\
+  struct my_file *f=(struct my_file *)data;			\
+  PIKE_CONCAT(set_,X)(fd, 0, 0);				\
+  check_internal_reference(f);                                  \
+  check_destructed(& f->X );				        \
+  if(!IS_ZERO(& f->X )) {                                       \
+    apply_svalue(& f->X, 0);					\
+    pop_stack();						\
+  }     							\
+}								\
+								\
+static void PIKE_CONCAT(file_set_,X) (INT32 args)		\
+{								\
+  if(!args)							\
+    error("Too few arguments to %s\n",#X);			\
+  assign_svalue(& THIS->X, sp-args);				\
+  if(IS_ZERO(sp-args))						\
+  {								\
+    PIKE_CONCAT(set_,X)(FD, 0, 0);				\
+    check_internal_reference(THIS);                             \
+  }else{							\
+    PIKE_CONCAT(set_,X)(FD, PIKE_CONCAT(file_,X), THIS);	\
+    SET_INTERNAL_REFERENCE(THIS);                               \
+  }								\
+}								\
+								\
+static void PIKE_CONCAT(file_query_,X) (INT32 args)		\
+{								\
+  pop_n_elems(args);						\
+  push_svalue(& THIS->X);					\
 }
 
+CBFUNCS(read_callback)
+CBFUNCS(write_callback)
 #ifdef WITH_OOB
-static void file_write_oob_callback(int fd, void *data)
-{
-  set_write_oob_callback(fd, 0, 0);
+CBFUNCS(read_oob_callback)
+CBFUNCS(write_oob_callback)
+#endif
 
-  assign_svalue_no_free(sp++, & files[fd].id);
-  apply_svalue(& files[fd].write_oob_callback, 1);
-  pop_stack();
-}
-#endif /* WITH_OOB */
 
 static void file_write(INT32 args)
 {
@@ -696,7 +788,10 @@ static void file_write(INT32 args)
   }
 
   if(!IS_ZERO(& THIS->write_callback))
-    set_write_callback(FD, file_write_callback, 0);
+  {
+    set_write_callback(FD, file_write_callback, THIS);
+    SET_INTERNAL_REFERENCE(THIS);
+  }
   ERRNO=0;
 
   pop_n_elems(args);
@@ -760,7 +855,11 @@ static void file_write_oob(INT32 args)
   }
 
   if(!IS_ZERO(& THIS->write_oob_callback))
-    set_write_oob_callback(FD, file_write_oob_callback, 0);
+  {
+    set_write_oob_callback(FD, file_write_oob_callback, THIS);
+    SET_INTERNAL_REFERENCE(THIS);
+  }
+
   ERRNO=0;
 
   pop_n_elems(args);
@@ -768,16 +867,12 @@ static void file_write_oob(INT32 args)
 }
 #endif /* WITH_OOB */
 
-static int do_close(int fd, int flags)
+static int do_close(int flags)
 {
-  if(fd == -1) return 1; /* already closed */
+  if(FD == -1) return 1; /* already closed */
+  ERRNO=0;
 
-  /* files[fd].errno=0; */
-
-  if(!(files[fd].open_mode & (FILE_READ | FILE_WRITE)))
-    return 1;
-
-  flags &= files[fd].open_mode;
+  flags &= THIS->open_mode;
 
   switch(flags & (FILE_READ | FILE_WRITE))
   {
@@ -785,37 +880,39 @@ static int do_close(int fd, int flags)
     return 0;
 
   case FILE_READ:
-    if(files[fd].open_mode & FILE_WRITE)
+    if(THIS->open_mode & FILE_WRITE)
     {
-      set_read_callback(fd,0,0);
+      set_read_callback(FD,0,0);
 #ifdef WITH_OOB
-      set_read_oob_callback(fd,0,0);
+      set_read_oob_callback(FD,0,0);
 #endif /* WITH_OOB */
-      fd_shutdown(fd, 0);
-      files[fd].open_mode &=~ FILE_READ;
+      fd_shutdown(FD, 0);
+      THIS->open_mode &=~ FILE_READ;
+      check_internal_reference(THIS);
       return 0;
     }else{
-      close_fd(fd);
+      close_fd();
       return 1;
     }
 
   case FILE_WRITE:
-    if(files[fd].open_mode & FILE_READ)
+    if(THIS->open_mode & FILE_READ)
     {
-      set_write_callback(fd,0,0);
+      set_write_callback(FD,0,0);
 #ifdef WITH_OOB
-      set_write_oob_callback(fd,0,0);
+      set_write_oob_callback(FD,0,0);
 #endif /* WITH_OOB */
-      fd_shutdown(fd, 1);
-      files[fd].open_mode &=~ FILE_WRITE;
+      fd_shutdown(FD, 1);
+      THIS->open_mode &=~ FILE_WRITE;
+      check_internal_reference(THIS);
       return 0;
     }else{
-      close_fd(fd);
+      close_fd();
       return 1;
     }
 
   case FILE_READ | FILE_WRITE:
-    close_fd(fd);
+    close_fd();
     return 1;
 
   default:
@@ -836,18 +933,17 @@ static void file_close(INT32 args)
     flags=FILE_READ | FILE_WRITE;
   }
 
-  if((files[FD].open_mode & ~flags & (FILE_READ|FILE_WRITE)) && flags)
+  if((THIS->open_mode & ~flags & (FILE_READ|FILE_WRITE)) && flags)
   {
-    if(!(files[FD].open_mode & fd_CAN_SHUTDOWN))
+    if(!(THIS->open_mode & fd_CAN_SHUTDOWN))
     {
       error("Cannot close one direction on this file.\n");
     }
   }
 
-  if(do_close(FD,flags))
-    FD=-1;
+  flags=do_close(flags);
   pop_n_elems(args);
-  push_int(1);
+  push_int(flags);
 }
 
 static void file_open(INT32 args)
@@ -855,8 +951,7 @@ static void file_open(INT32 args)
   int flags,fd;
   int access;
   struct pike_string *str;
-  do_close(FD, FILE_READ | FILE_WRITE);
-  FD=-1;
+  close_fd();
   
   if(args < 2)
     error("Too few arguments to file->open()\n");
@@ -904,8 +999,6 @@ static void file_open(INT32 args)
   else
   {
     init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
-    FD=fd;
-    ERRNO = 0;
     set_close_on_exec(fd,1);
   }
 
@@ -1007,205 +1100,11 @@ static void file_errno(INT32 args)
   push_int(ERRNO);
 }
 
-/* Trick compiler to keep 'buffer' in memory for
- * as short a time as possible.
- * shouldn't be any need to allow threading here, this
- * call should never block..
- */
-static struct pike_string *simple_do_read(INT32 *amount,int fd)
-{
-  char buffer[READ_BUFFER];
-  *amount = fd_read(fd, buffer, READ_BUFFER);
-  if(*amount>0) return make_shared_binary_string(buffer,*amount);
-  return 0;
-}
-
-#ifdef WITH_OOB
-static struct pike_string *simple_do_read_oob(INT32 *amount,int fd)
-{
-  char buffer[READ_BUFFER];
-  *amount = fd_recv(fd, buffer, READ_BUFFER, MSG_OOB);
-  /* Note: OOB packets may have zero size */
-  if(*amount>=0) return make_shared_binary_string(buffer,*amount);
-  return 0;
-}
-#endif /* WITH_OOB */
-
-static void file_read_callback(int fd, void *data)
-{
-  struct pike_string *s;
-  INT32 i;
-
-#ifdef DEBUG
-  if(fd == -1 || fd >= MAX_OPEN_FILEDESCRIPTORS)
-    fatal("Error in file::read_callback()\n");
-#endif
-
-  /* files[fd].errno=0; */
-
-  s=simple_do_read(&i, fd);
-
-  if(i>0)
-  {
-    assign_svalue_no_free(sp++, &files[fd].id);
-    push_string(s);
-    apply_svalue(& files[fd].read_callback, 2);
-    pop_stack();
-    return;
-  }
-  
-  if(i < 0)
-  {
-    /* files[fd].errno=errno; */
-    switch(errno)
-    {
-    case EINTR:
-    case EWOULDBLOCK:
-      return;
-    }
-  }
-
-  set_read_callback(fd, 0, 0);
-
-  /* We _used_ to close the file here, not possible anymore though... */
-  /* Hmm, I wonder why... :P */
-  assign_svalue_no_free(sp++, &files[fd].id);
-  apply_svalue(& files[fd].close_callback, 1);
-}
-
-#ifdef WITH_OOB
-static void file_read_oob_callback(int fd, void *data)
-{
-  struct pike_string *s;
-  INT32 i;
-
-#ifdef DEBUG
-  if(fd == -1 || fd >= MAX_OPEN_FILEDESCRIPTORS)
-    fatal("Error in file::read_oob_callback()\n");
-#endif
-
-  /* files[fd].errno=0; */
-
-  s=simple_do_read_oob(&i, fd);
-
-  /* Note: OOB ackets may have zero size */
-  if(i>=0)
-  {
-    assign_svalue_no_free(sp++, &files[fd].id);
-    push_string(s);
-    apply_svalue(& files[fd].read_oob_callback, 2);
-    pop_stack();
-    return;
-  }
-  
-  if(i < 0)
-  {
-    /* files[fd].errno=errno; */
-    switch(errno)
-    {
-    case EINTR:
-    case EWOULDBLOCK:
-      return;
-    }
-  }
-}
-#endif /* WITH_OOB */
-
-static void file_set_read_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File is not open.\n");
-
-  if(args < 1)
-    error("Too few arguments to file->set_read_callback().\n");
-
-  assign_svalue(& THIS->read_callback, sp-args);
-
-  if(IS_ZERO(& THIS->read_callback))
-  {
-    set_read_callback(FD, 0, 0);
-  }else{
-    set_read_callback(FD, file_read_callback, 0);
-  }
-  pop_n_elems(args);
-}
-
-static void file_set_write_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File is not open.\n");
-
-  if(args < 1)
-    error("Too few arguments to file->set_write_callback().\n");
-
-  assign_svalue(& THIS->write_callback, sp-args);
-
-  if(IS_ZERO(& THIS->write_callback))
-  {
-    set_write_callback(FD, 0, 0);
-  }else{
-    set_write_callback(FD, file_write_callback, 0);
-  }
-  pop_n_elems(args);
-}
-
-#ifdef WITH_OOB
-static void file_set_read_oob_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File is not open.\n");
-
-  if(args < 1)
-    error("Too few arguments to file->set_read_oob_callback().\n");
-
-  assign_svalue(& THIS->read_oob_callback, sp-args);
-
-  if(IS_ZERO(& THIS->read_oob_callback))
-  {
-    set_read_oob_callback(FD, 0, 0);
-  }else{
-    set_read_oob_callback(FD, file_read_oob_callback, 0);
-  }
-  pop_n_elems(args);
-}
-
-static void file_set_write_oob_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File is not open.\n");
-
-  if(args < 1)
-    error("Too few arguments to file->set_write_oob_callback().\n");
-
-  assign_svalue(& THIS->write_oob_callback, sp-args);
-
-  if(IS_ZERO(& THIS->write_oob_callback))
-  {
-    set_write_oob_callback(FD, 0, 0);
-  }else{
-    set_write_oob_callback(FD, file_write_oob_callback, 0);
-  }
-  pop_n_elems(args);
-}
-#endif /* WITH_OOB */
-
-static void file_set_close_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File is not open.\n");
-
-  if(args < 1)
-    error("Too few arguments to file->set_close_callback().\n");
-
-  assign_svalue(& THIS->close_callback, sp-args);
-  pop_n_elems(args);
-}
-
 static void file_set_nonblocking(INT32 args)
 {
   if(FD < 0) error("File not open.\n");
 
-  if(!(files[FD].open_mode & fd_CAN_NONBLOCK))
+  if(!(THIS->open_mode & fd_CAN_NONBLOCK))
     error("That file does not support nonblocking operation.\n");
 
   if(set_nonblocking(FD,1))
@@ -1214,54 +1113,14 @@ static void file_set_nonblocking(INT32 args)
     error("Stdio.File->set_nonbloblocking() failed.\n");
   }
 
-  switch(args)
-  {
-#ifdef WITH_OOB
-  default: pop_n_elems(args-5);
-  case 5: file_set_write_oob_callback(1);
-  case 4: file_set_read_oob_callback(1);
-#else /* !WITH_OOB */
-  default: pop_n_elems(args-3);
-#endif /* WITH_OOB */
-  case 3: file_set_close_callback(1);
-  case 2: file_set_write_callback(1);
-  case 1: file_set_read_callback(1);
-  case 0: break;
-  }
   THIS->open_mode |= FILE_NONBLOCKING;
 }
 
 
 static void file_set_blocking(INT32 args)
 {
-  free_svalue(& THIS->read_callback);
-  THIS->read_callback.type=T_INT;
-  THIS->read_callback.u.integer=0;
-  free_svalue(& THIS->write_callback);
-  THIS->write_callback.type=T_INT;
-  THIS->write_callback.u.integer=0;
-
-#ifdef WITH_OOB
-  free_svalue(& THIS->read_oob_callback);
-  THIS->read_oob_callback.type=T_INT;
-  THIS->read_oob_callback.u.integer=0;
-  free_svalue(& THIS->write_oob_callback);
-  THIS->write_oob_callback.type=T_INT;
-  THIS->write_oob_callback.u.integer=0;
-#endif /* WITH_OOB */
-
-  free_svalue(& THIS->close_callback);
-  THIS->close_callback.type=T_INT;
-  THIS->close_callback.u.integer=0;
-
   if(FD >= 0)
   {
-    set_read_callback(FD, 0, 0);
-    set_write_callback(FD, 0, 0);
-#ifdef WITH_OOB
-    set_read_oob_callback(FD, 0, 0);
-    set_write_oob_callback(FD, 0, 0);
-#endif /* WITH_OOB */
     set_nonblocking(FD,0);
     THIS->open_mode &=~ FILE_NONBLOCKING;
   }
@@ -1284,27 +1143,6 @@ static void file_set_close_on_exec(INT32 args)
   pop_n_elems(args-1);
 }
 
-static void file_set_id(INT32 args)
-{
-  if(args < 1)
-    error("Too few arguments to file->set_id()\n");
-
-  if(FD < 0)
-    error("File not open.\n");
-
-  assign_svalue(& THIS->id, sp-args);
-  pop_n_elems(args-1);
-}
-
-static void file_query_id(INT32 args)
-{
-  if(FD < 0)
-    error("File not open.\n");
-
-  pop_n_elems(args);
-  assign_svalue_no_free(sp++,& THIS->id);
-}
-
 static void file_query_fd(INT32 args)
 {
   if(FD < 0)
@@ -1314,61 +1152,11 @@ static void file_query_fd(INT32 args)
   push_int(FD);
 }
 
-static void file_query_read_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File not open.\n");
-
-  pop_n_elems(args);
-  assign_svalue_no_free(sp++,& THIS->read_callback);
-}
-
-static void file_query_write_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File not open.\n");
-
-  pop_n_elems(args);
-  assign_svalue_no_free(sp++,& THIS->write_callback);
-}
-
-#ifdef WITH_OOB
-static void file_query_read_oob_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File not open.\n");
-
-  pop_n_elems(args);
-  assign_svalue_no_free(sp++,& THIS->read_oob_callback);
-}
-
-static void file_query_write_oob_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File not open.\n");
-
-  pop_n_elems(args);
-  assign_svalue_no_free(sp++,& THIS->write_oob_callback);
-}
-#endif /* WITH_OOB */
-
-static void file_query_close_callback(INT32 args)
-{
-  if(FD < 0)
-    error("File not open.\n");
-
-  pop_n_elems(args);
-  assign_svalue_no_free(sp++,& THIS->close_callback);
-}
-
 struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
-  struct object *o;
-
-  init_fd(fd, mode | fd_query_properties(fd, guess));
-  o=clone_object(file_program,0);
-  ((struct file_struct *)(o->storage))->fd=fd;
-  ((struct file_struct *)(o->storage))->my_errno=0;
+  struct object *o=clone_object(file_program,0);
+  ((struct my_file *)(o->storage))->fd=fd;
+  ((struct my_file *)(o->storage))->open_mode=mode | fd_query_properties(fd, guess);
   return o;
 }
 
@@ -1401,7 +1189,7 @@ static void file_set_buffer(INT32 args)
 #if SOCKET_BUFFER_MAX
   if(bufsize>SOCKET_BUFFER_MAX) bufsize=SOCKET_BUFFER_MAX;
 #endif
-  flags &= files[FD].open_mode;
+  flags &= THIS->open_mode;
   if(flags & FILE_READ)
   {
     int tmp=bufsize;
@@ -1599,8 +1387,7 @@ static void file_pipe(INT32 args)
   check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
   if(args) type = sp[-args].u.integer;
 
-  do_close(FD,FILE_READ | FILE_WRITE);
-  FD=-1;
+  close_fd();
   pop_n_elems(args);
   ERRNO=0;
 
@@ -1669,78 +1456,85 @@ static void file_pipe(INT32 args)
 static void init_file_struct(struct object *o)
 {
   FD=-1;
-  ERRNO=-1;
+  ERRNO=0;
+  THIS->open_mode=0;
+  THIS->flags=0;
+  THIS->key=0;
+  THIS->myself=o;
+  /* map_variable will take care of the rest */
 }
 
 static void exit_file_struct(struct object *o)
 {
-  do_close(FD,FILE_READ | FILE_WRITE);
-  ERRNO=-1;
+  if(!(THIS->flags & FILE_NO_CLOSE_ON_DESTRUCT))
+    just_close_fd();
+  free_fd_stuff();
+
+  REMOVE_INTERNAL_REFERENCE(THIS);
+  /* map_variable will free callbacks */
 }
 
+#ifdef DEBUG
 static void gc_mark_file_struct(struct object *o)
 {
-  if(FD>-1)
-  {
-    gc_mark_svalues(& THIS->read_callback,1);
-    gc_mark_svalues(& THIS->write_callback,1);
+  DEBUG_CHECK_INTERNAL_REFERENCE(THIS);
+}
+#endif
+
+static void low_dup(struct object *toob,
+		    struct my_file *to,
+		    struct my_file *from)
+{
+  my_set_close_on_exec(to->fd, to->fd > 2);
+  REMOVE_INTERNAL_REFERENCE(to);
+  to->open_mode=from->open_mode;
+  to->flags=from->flags & ~FILE_HAS_INTERNAL_REF;
+
+  assign_svalue(& to->read_callback, & from->read_callback);
+  assign_svalue(& to->write_callback, & from->write_callback);
 #ifdef WITH_OOB
-    gc_mark_svalues(& THIS->read_oob_callback,1);
-    gc_mark_svalues(& THIS->write_oob_callback,1);
+  assign_svalue(& to->read_oob_callback,
+		& from->read_oob_callback);
+  assign_svalue(& to->write_oob_callback,
+		& from->write_oob_callback);
 #endif /* WITH_OOB */
-    gc_mark_svalues(& THIS->close_callback,1);
-    gc_mark_svalues(& THIS->id,1);
+
+  if(IS_ZERO(& from->read_callback))
+  {
+    set_read_callback(to->fd, 0,0);
+  }else{
+    set_read_callback(to->fd, file_read_callback, to);
   }
-}
+  
+  if(IS_ZERO(& from->write_callback))
+  {
+    set_write_callback(to->fd, 0,0);
+  }else{
+    set_write_callback(to->fd, file_write_callback, to);
+  }
 
-static void file_dup(INT32 args)
-{
-  struct object *o;
-
-  if(FD < 0)
-    error("File not open.\n");
-
-  pop_n_elems(args);
-
-  o=clone_object(file_program,0);
-  ((struct file_struct *)o->storage)->fd=FD;
-  ((struct file_struct *)o->storage)->my_errno=0;
-  ERRNO=0;
-  files[FD].refs++;
-  push_object(o);
-}
-
-static void file_assign(INT32 args)
-{
-  struct object *o;
-
-  if(args < 1)
-    error("Too few arguments to file->assign()\n");
-
-  if(sp[-args].type != T_OBJECT)
-    error("Bad argument 1 to file->assign()\n");
-
-  o=sp[-args].u.object;
-
-  /* Actually, we allow any object which first inherit is 
-   * /precompiled/file
-   */
-  if(!o->prog || o->prog->inherits[0].prog != file_program)
-    error("Argument 1 to file->assign() must be a clone of Stdio.File\n");
-  do_close(FD, FILE_READ | FILE_WRITE);
-
-  FD=((struct file_struct *)(o->storage))->fd;
-  ERRNO=0;
-  if(FD >=0) files[FD].refs++;
-
-  pop_n_elems(args);
-  push_int(1);
+#ifdef WITH_OOB  
+  if(IS_ZERO(& from->read_oob_callback))
+  {
+    set_read_oob_callback(to->fd, 0,0);
+  }else{
+    set_read_oob_callback(to->fd, file_read_oob_callback, to);
+  }
+  
+  if(IS_ZERO(& from->write_oob_callback))
+  {
+    set_write_oob_callback(to->fd, 0,0);
+  }else{
+    set_write_oob_callback(to->fd, file_write_oob_callback, to);
+  }
+#endif /* WITH_OOB */
+  check_internal_reference(to);
 }
 
 static void file_dup2(INT32 args)
 {
-  int fd;
   struct object *o;
+  struct my_file *fd;
 
   if(args < 1)
     error("Too few arguments to file->dup2()\n");
@@ -1753,18 +1547,16 @@ static void file_dup2(INT32 args)
 
   o=sp[-args].u.object;
 
-  /* Actually, we allow any object which first inherit is 
-   * /precompiled/file
-   */
-  if(!o->prog || o->prog->inherits[0].prog != file_program)
+  fd=get_file_storage(o);
+
+  if(!fd)
     error("Argument 1 to file->dup2() must be a clone of Stdio.File\n");
 
-  fd=((struct file_struct *)(o->storage))->fd;
 
-  if(fd < 0)
+  if(fd->fd < 0)
     error("File given to dup2 not open.\n");
 
-  if(fd_dup2(FD,fd) < 0)
+  if(fd_dup2(FD,fd->fd) < 0)
   {
     ERRNO=errno;
     pop_n_elems(args);
@@ -1772,52 +1564,36 @@ static void file_dup2(INT32 args)
     return;
   }
   ERRNO=0;
-  my_set_close_on_exec(fd, fd > 2);
-  files[fd].open_mode=files[FD].open_mode;
-
-  assign_svalue_no_free(& files[fd].read_callback, & THIS->read_callback);
-  assign_svalue_no_free(& files[fd].write_callback, & THIS->write_callback);
-#ifdef WITH_OOB
-  assign_svalue_no_free(& files[fd].read_oob_callback,
-			& THIS->read_oob_callback);
-  assign_svalue_no_free(& files[fd].write_oob_callback,
-			& THIS->write_oob_callback);
-#endif /* WITH_OOB */
-  assign_svalue_no_free(& files[fd].close_callback, & THIS->close_callback);
-  assign_svalue_no_free(& files[fd].id, & THIS->id);
-
-  if(IS_ZERO(& THIS->read_callback))
-  {
-    set_read_callback(fd, 0,0);
-  }else{
-    set_read_callback(fd, file_read_callback, 0);
-  }
-  
-  if(IS_ZERO(& THIS->write_callback))
-  {
-    set_write_callback(fd, 0,0);
-  }else{
-    set_write_callback(fd, file_write_callback, 0);
-  }
-
-#ifdef WITH_OOB  
-  if(IS_ZERO(& THIS->read_oob_callback))
-  {
-    set_read_oob_callback(fd, 0,0);
-  }else{
-    set_read_oob_callback(fd, file_read_oob_callback, 0);
-  }
-  
-  if(IS_ZERO(& THIS->write_oob_callback))
-  {
-    set_write_oob_callback(fd, 0,0);
-  }else{
-    set_write_oob_callback(fd, file_write_oob_callback, 0);
-  }
-#endif /* WITH_OOB */
+  low_dup(o, fd, THIS);
   
   pop_n_elems(args);
   push_int(1);
+}
+
+static void file_dup(INT32 args)
+{
+  int f;
+  struct object *o;
+  struct my_file *fd;
+
+  pop_n_elems(args);
+
+  if(FD < 0)
+    error("File not open.\n");
+
+
+  if((f=fd_dup(FD)) < 0)
+  {
+    ERRNO=errno;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+  o=file_make_object_from_fd(f, THIS->open_mode, THIS->open_mode);
+  fd=((struct my_file *)(o->storage));
+  ERRNO=0;
+  low_dup(o, fd, THIS);
+  push_object(o);
 }
 
 /* file->open_socket(int|void port, string|void addr) */
@@ -1825,7 +1601,7 @@ static void file_open_socket(INT32 args)
 {
   int fd;
 
-  do_close(FD, FILE_READ | FILE_WRITE);
+  close_fd();
   FD=-1;
   fd=fd_socket(AF_INET, SOCK_STREAM, 0);
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
@@ -2026,33 +1802,12 @@ static void file_lsh(INT32 args)
 
 static void file_create(INT32 args)
 {
-  char *s;
   if(!args || sp[-args].type == T_INT) return;
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to file->create()\n");
 
-  do_close(FD, FILE_READ | FILE_WRITE);
-  FD=-1;
-  s=sp[-args].u.string->str;
-  if(!strcmp(s,"stdin"))
-  {
-    FD=0;
-    files[0].refs++;
-  }
-  else if(!strcmp(s,"stdout"))
-  {
-    FD=1;
-    files[1].refs++;
-  }
-  else if(!strcmp(s,"stderr"))
-  {
-    FD=2;
-    files[2].refs++;
-  }
-  else
-  {
-    file_open(args); /* Try opening the file instead. */
-  }
+  close_fd();
+  file_open(args);
 }
 
 #ifdef _REENTRANT
@@ -2091,9 +1846,9 @@ static void *proxy_thread(void * data)
     }
   }
 
+  fd_close(p->to);
+  fd_close(p->from);
   mt_lock(&interpreter_lock);
-  do_close(p->to, FILE_READ | FILE_WRITE);
-  do_close(p->from, FILE_READ | FILE_WRITE);
   num_threads--;
   mt_unlock(&interpreter_lock);
   free((char *)p);
@@ -2102,23 +1857,40 @@ static void *proxy_thread(void * data)
 
 void file_proxy(INT32 args)
 {
-  struct file_struct *f;
+  struct my_file *f;
   struct new_thread_data *p;
   THREAD_T id;
   check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
-  f=(struct file_struct *)get_storage(sp[-args].u.object, file_program);
+  f=get_file_storage(sp[-args].u.object);
   if(!f)
     error("Bad argument 1 to Stdio.File->proxy, not a Stdio.File object.\n");
 
   p=ALLOC_STRUCT(new_thread_data);
-  files[p->from=f->fd].refs++;
-  files[p->to=FD].refs++;
+  p->from=f->fd;
+  p->to=FD;
+
   num_threads++;
   if(th_create_small(&id,proxy_thread,p))
   {
     free((char *)p);
     error("Failed to create thread.\n");
   }
+
+  /* Protect ourself from harm */
+  REMOVE_INTERNAL_REFERENCE(f);
+  f->open_mode=0;
+  REMOVE_INTERNAL_REFERENCE(THIS);
+  THIS->open_mode=0;
+  f->fd=-1;
+  FD=-1;
+  set_read_callback(THIS->fd,0,0);
+  set_write_callback(THIS->fd,0,0);
+#ifdef WITH_OOB
+  set_read_oob_callback(THIS->fd,0,0);
+  set_write_oob_callback(THIS->fd,0,0);
+#endif
+  check_internal_reference(THIS);
+
   th_destroy(& id);
   pop_n_elems(args);
   push_int(0);
@@ -2154,7 +1926,7 @@ static struct program * file_lock_key_program;
 
 struct file_lock_key_storage
 {
-  int fd;
+  struct my_file *f;
 #ifdef _REENTRANT
   struct object *owner;
 #endif
@@ -2184,6 +1956,7 @@ static void low_file_lock(INT32 args, int flags)
   }
 
   o=clone_object(file_lock_key_program,0);
+
   THREADS_ALLOW();
   ret=fd_flock(fd, flags);
   THREADS_DISALLOW();
@@ -2196,7 +1969,7 @@ static void low_file_lock(INT32 args, int flags)
     push_int(0);
   }else{
     THIS->key=o;
-    OB2KEY(o)->fd=fd;
+    OB2KEY(o)->f=THIS;
     pop_n_elems(args);
     push_object(o);
   }
@@ -2215,7 +1988,7 @@ static void file_trylock(INT32 args)
 #define THIS_KEY ((struct file_lock_key_storage *)(fp->current_storage))
 static void init_file_lock_key(struct object *o)
 {
-  THIS_KEY->fd=-1;
+  THIS_KEY->f=0;
 #ifdef _REENTRANT
   THIS_KEY->owner=thread_id;
   thread_id->refs++;
@@ -2224,12 +1997,12 @@ static void init_file_lock_key(struct object *o)
 
 static void exit_file_lock_key(struct object *o)
 {
-  if(THIS_KEY->fd != -1)
+  if(THIS_KEY->f)
   {
-    int fd=THIS_KEY->fd;
+    int fd=THIS_KEY->f->fd;
     int err;
 #ifdef DEBUG
-    if(files[fd].key != o)
+    if(THIS_KEY->f->key != o)
       fatal("File lock key is wrong!\n");
 #endif
 
@@ -2247,8 +2020,8 @@ static void exit_file_lock_key(struct object *o)
       THIS_KEY->owner=0;
     }
 #endif
-    files[fd].key=0;
-    THIS_KEY->fd=-1;
+    THIS_KEY->f->key=0;
+    THIS_KEY->f=0;
   }
 }
 
@@ -2290,163 +2063,87 @@ void pike_module_exit(void)
     free_program(file_program);
     file_program=0;
   }
-  exit_file_locking();
-}
-
-void mark_ids(struct callback *foo, void *bar, void *gazonk)
-{
-  int e;
-  for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
+  if(file_ref_program)
   {
-    int tmp=1;
-    if(query_read_callback(e)!=file_read_callback)
-    {
-      gc_check_svalues( & files[e].read_callback, 1);
-      gc_check_svalues( & files[e].close_callback, 1);
-    }else{
-#ifdef DEBUG
-      debug_gc_xmark_svalues( & files[e].read_callback, 1, "File->read_callback");
-      debug_gc_xmark_svalues( & files[e].close_callback, 1, "File->close_callback");
-#endif
-      tmp=0;
-    }
-
-    if(query_write_callback(e)!=file_write_callback)
-    {
-      gc_check_svalues( & files[e].write_callback, 1);
-    }else{
-#ifdef DEBUG
-      debug_gc_xmark_svalues( & files[e].write_callback, 1, "File->write_callback");
-#endif
-      tmp=0;
-    }
-
-#ifdef WITH_OOB
-    if(query_read_oob_callback(e)!=file_read_oob_callback)
-    {
-      gc_check_svalues( & files[e].read_oob_callback, 1);
-    }else{
-#ifdef DEBUG
-      debug_gc_xmark_svalues( & files[e].read_oob_callback, 1, "File->read_oob_callback");
-#endif
-      tmp=0;
-    }
-
-    if(query_write_oob_callback(e)!=file_write_oob_callback)
-    {
-      gc_check_svalues( & files[e].write_oob_callback, 1);
-    }else{
-#ifdef DEBUG
-      debug_gc_xmark_svalues( & files[e].write_oob_callback, 1, "File->write_callback");
-#endif
-      tmp=0;
-    }
-#endif /* WITH_OOB */
-
-    if(tmp)
-    {
-      gc_check_svalues( & files[e].id, 1);
-    }
-#ifdef DEBUG
-    else
-    {
-      debug_gc_xmark_svalues( & files[e].id, 1, "File->id");
-    }
-#endif
+    free_program(file_ref_program);
+    file_ref_program=0;
   }
+  exit_file_locking();
 }
 
 void init_files_efuns(void);
 
+#define REF (*((struct object **)(fp->current_storage)))
+
+#define FILE_FUNC(X,Y,Z) \
+void PIKE_CONCAT(Y,_ref) (INT32 args) {\
+  struct object *o=REF; \
+  if(!o) error("Stdio.File(): not open.\n"); \
+  fp->current_storage=get_storage(o, file_program); \
+  if(!fp->current_storage) error("Wrong type of object in Stdio.File->_fd\n"); \
+  free_object(fp->current_object); \
+  fp->current_object=o; \
+  o->refs++; \
+  Y(args); \
+}
+
+#include "file_functions.h"
+
 void pike_module_init(void)
 {
+  struct object *o;
   extern void port_setup_program(void);
   int e;
 
-
-  for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
-  {
-    init_fd(e, 0);
-    files[e].refs=0;
-  }
-
-  init_fd(0, FILE_READ | fd_query_properties(0,fd_CAN_NONBLOCK));
-  init_fd(1, FILE_WRITE | fd_query_properties(1,fd_CAN_NONBLOCK));
-  init_fd(2, FILE_WRITE | fd_query_properties(2,fd_CAN_NONBLOCK));
-
   init_files_efuns();
-#if 0
+
   start_new_program();
   add_storage(sizeof(struct my_file));
-  low_file_program=end_program();
+
+#define FILE_FUNC(X,Y,Z) add_function(X,Y,Z,0);
+#include "file_functions.h"
+  map_variable("_read_callback","mixed",0,OFFSETOF(my_file, read_callback),T_MIXED);
+  map_variable("_write_callback","mixed",0,OFFSETOF(my_file, write_callback),T_MIXED);
+#ifdef WITH_OOB
+  map_variable("_read_oob_callback","mixed",0,OFFSETOF(my_file, read_oob_callback),T_MIXED);
+  map_variable("_write_oob_callback","mixed",0,OFFSETOF(my_file, write_oob_callback),T_MIXED);
 #endif
 
-  start_new_program();
-  add_storage(sizeof(struct file_struct));
 
-  add_function("open",file_open,"function(string,string:int)",0);
-  add_function("close",file_close,"function(string|void:int)",0);
-  add_function("read",file_read,"function(int|void,int|void:int|string)",0);
-  add_function("write",file_write,"function(string,void|mixed...:int)",0);
-#ifdef WITH_OOB
-  add_function("read_oob",file_read_oob,"function(int|void,int|void:int|string)",0);
-  add_function("write_oob",file_write_oob,"function(string,void|mixed...:int)",0);
-#endif /* WITH_OOB */
-
-  add_function("seek",file_seek,"function(int,int|void,int|void:int)",0);
-  add_function("tell",file_tell,"function(:int)",0);
-  add_function("stat",file_stat,"function(:int *)",0);
-  add_function("errno",file_errno,"function(:int)",0);
-
-  add_function("set_close_on_exec",file_set_close_on_exec,"function(int:void)",0);
-#ifdef WITH_OOB
-  add_function("set_nonblocking",file_set_nonblocking,"function(mixed|void,mixed|void,mixed|void,mixed|void,mixed|void:void)",0);
-#else /* !WITH_OOB */
-  add_function("set_nonblocking",file_set_nonblocking,"function(mixed|void,mixed|void,mixed|void:void)",0);
-#endif /* WITH_OOB */
-  add_function("set_read_callback",file_set_read_callback,"function(mixed:void)",0);
-  add_function("set_write_callback",file_set_write_callback,"function(mixed:void)",0);
-#ifdef WITH_OOB
-  add_function("set_read_oob_callback",file_set_read_oob_callback,"function(mixed:void)",0);
-  add_function("set_write_oob_callback",file_set_write_oob_callback,"function(mixed:void)",0);
-#endif /* WITH_OOB */
-  add_function("set_close_callback",file_set_close_callback,"function(mixed:void)",0);
-
-  add_function("set_blocking",file_set_blocking,"function(:void)",0);
-  add_function("set_id",file_set_id,"function(mixed:void)",0);
-
-  add_function("query_fd",file_query_fd,"function(:int)",0);
-  add_function("query_id",file_query_id,"function(:mixed)",0);
-  add_function("query_read_callback",file_query_read_callback,"function(:mixed)",0);
-  add_function("query_write_callback",file_query_write_callback,"function(:mixed)",0);
-#ifdef WITH_OOB
-  add_function("query_read_oob_callback",file_query_read_oob_callback,"function(:mixed)",0);
-  add_function("query_write_oob_callback",file_query_write_oob_callback,"function(:mixed)",0);
-#endif /* WITH_OOB */
-  add_function("query_close_callback",file_query_close_callback,"function(:mixed)",0);
-
-  add_function("dup",file_dup,"function(:object)",0);
-  add_function("dup2",file_dup2,"function(object:int)",0);
-  add_function("assign",file_assign,"function(object:int)",0);
-  add_function("pipe",file_pipe,"function(void|int:object)",0);
-
-  add_function("set_buffer",file_set_buffer,"function(int,string|void:void)",0);
-  add_function("open_socket",file_open_socket,"function(int|void,string|void:int)",0);
-  add_function("connect",file_connect,"function(string,int:int)",0);
-  add_function("query_address",file_query_address,"function(int|void:string)",0);
-  add_function("create",file_create,"function(void|string,void|string:void)",0);
-  add_function("`<<",file_lsh,"function(mixed:object)",0);
-
-#ifdef _REENTRANT
-  add_function("proxy",file_proxy,"function(object:void)",0);
-#endif
   init_file_locking();
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);
-  set_gc_mark_callback(gc_mark_file_struct);
+#ifdef DEBUG
+  set_gc_check_callback(gc_mark_file_struct);
+#endif
 
   file_program=end_program();
-  add_program_constant("file",file_program,0);
+  add_program_constant("Fd",file_program,0);
+
+  o=file_make_object_from_fd(0, FILE_READ , fd_CAN_NONBLOCK);
+  ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  add_object_constant("_stdin",o,0);
+  free_object(o);
+
+  o=file_make_object_from_fd(1, FILE_WRITE, fd_CAN_NONBLOCK);
+  ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  add_object_constant("_stdout",o,0);
+  free_object(o);
+
+  o=file_make_object_from_fd(2, FILE_WRITE, fd_CAN_NONBLOCK);
+  ((struct my_file *)(o->storage))->flags |= FILE_NO_CLOSE_ON_DESTRUCT;
+  add_object_constant("_stderr",o,0);
+  free_object(o);
+  
+  start_new_program();
+  add_storage(sizeof(struct object *));
+  map_variable("_fd","object",0,0,T_OBJECT);
+
+#define FILE_FUNC(X,Y,Z) add_function(X,PIKE_CONCAT(Y,_ref),Z,0);
+#include "file_functions.h"
+
+  file_ref_program=end_program();
+  add_program_constant("Fd_ref",file_ref_program,0);
 
   port_setup_program();
 
@@ -2455,12 +2152,20 @@ void pike_module_init(void)
   add_integer_constant("PROP_SHUTDOWN",fd_CAN_SHUTDOWN,0);
   add_integer_constant("PROP_BUFFERED",fd_BUFFERED,0);
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
-  
-  add_gc_callback(mark_ids, 0, 0);
+#ifdef HAVE_OOB
+  add_integer_constant("__HAVE_OOB__",1,0);
+#endif
 }
 
 /* Used from backend */
 int pike_make_pipe(int *fds)
 {
   return socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+}
+
+int fd_from_object(struct object *o)
+{
+  struct my_file *f=get_file_storage(o);
+  if(!f) return -1;
+  return f->fd;
 }
