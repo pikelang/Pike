@@ -59,6 +59,21 @@ mixed filter(mixed arr, mixed fun, mixed ... args)
   }
 }
 
+array shuffle(array arr)
+{
+  int i = sizeof(arr);
+
+  while(i) {
+    int j = random(i--);
+    if (j != i) {
+      mixed tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+  }
+  return(arr);
+}
+
 
 int search_array(mixed *arr, mixed fun, mixed ... args)
 {
