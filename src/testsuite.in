@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.344 2000/11/04 01:34:11 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.345 2000/11/05 12:45:49 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3311,6 +3311,42 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_true([[ floatp((1<<99)+3.14) ]]);
 ]])
 
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
+  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+            return ([a:1])[b]]],1);
+  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+            return (<a>)[b]]],1);
+  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+            return sizeof( ({a})-({b}) )]],0);
+  test_any([[int a=10->pow(30); int b=1000000000000000000000000000000; 
+            return sizeof( ({a})&({b}) )]],1);
+  test_any([[int k=10->pow(30); 
+	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+            return sort(a)[0]==k && sort(a)[-1]==k+17]],1)
+
+// test the corresponding integer operations first
+  test_any([[int k=100; int j=k+1;
+	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	    array b=({j+16,j+15,j+12,j+13,j+11,j-1,j+8});
+            return sizeof( a&b )]],7);
+  test_any([[int k=100; int j=k+1;
+	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	    array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
+            return sizeof( a-b )]],0);
+
+// now the bignum ones
+  test_any([[int k=10->pow(30); int j=k+1;
+	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	    array b=({j+16,j+15,j+12,j+13,j+11,j-1,j+8});
+            return sizeof( a&b )]],7);
+  test_any([[int k=10->pow(30); int j=k+1;
+	    array a=({k+17,k+16,k+13,k+14,k+12,k,k+9});
+	    array b=({j+13,j+11,j-1,j+8,j+16,j+15,j+12});
+            return sizeof( a-b )]],0);
+
+]])
+
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -5764,13 +5800,34 @@ test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i
 // Pike modules
 
 // Calendar
-// just check if it compiles for now
+// load checks
 test_true(Calendar)
 test_true(Calendar.II)
 test_true(Calendar.Day)
 test_true(Calendar.Day())
 test_true(Calendar.Events)
-test_true(Calendar.Stardate)
+
+// the more elaborate tests
+test_eq([[
+// note: *every* time the Calendar tests have failed, it's not the 
+//       Calendar module that had any errors. Please don't commit 
+//       your Pike until you've got Calendar to compile again. /Mirar
+Calendar.Gregorian.Day(2500000)->month_day()]],31)
+test_eq([[
+// note: *every* time the Calendar tests have failed, it's not the 
+//       Calendar module that had any errors. Please don't commit 
+//       your Pike until you've got Calendar to compile again. /Mirar
+Calendar.ISO.Day(2500000)->month_day()]],31)
+test_eq([[
+// note: *every* time the Calendar tests have failed, it's not the 
+//       Calendar module that had any errors. Please don't commit 
+//       your Pike until you've got Calendar to compile again. /Mirar
+Calendar.Julian.Day(2500000)->month_day()]],17)
+test_eq([[
+// note: *every* time the Calendar tests have failed, it's not the 
+//       Calendar module that had any errors. Please don't commit 
+//       your Pike until you've got Calendar to compile again. /Mirar
+(int)(Calendar.Stardate.Tick("julian",2500000)->tic())]],-190335)
 
 // LR
 test_true(LR.parser)
