@@ -1,9 +1,27 @@
 
 //! module Calendar_I
 //!    
+//!   This module exist only for backwards compatible issues with
+//!   earlier Pike releases. Use the Calendar module instead.
+//!
+//!   This code can be used to simulate the old calendar
+//!   for now (it might be removed in later Pike's):
+//!
+//    This module is totally rewritten in Pike 7.1+. 
+//    To be forward compatible the lazy way, you can do
+//    something like this, though:
+//!
+//!   <pre>
+//!   #if constant(Calendar.II)
+//!   #define Calendar Calendar_I
+//!   #endif
+//!   <i>...</i> import Calendar <i>or whatever ...</i>
+//!   </pre>
+//!
 //!   This module implements calendar calculations, and base classes
 //!   for time units. 
 //!
+//!	
 //! class time_unit
 //!
 //! method array(string) lesser()
