@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.29 2002/10/19 00:37:59 grendel Exp $
+# $Id: rules,v 1.30 2002/10/19 15:58:32 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -62,7 +62,7 @@ ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif
 
-export CFLAGS CC
+export CFLAGS CC PIKE VERSION
 
 configure: configure-stamp
 configure-stamp:
@@ -181,8 +181,9 @@ install: build
 
 	# Some cleaning
 	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/ -name ".autodoc" -type f -print`
-	-for f in `cat $(CURDIR)/debian/toremove.txt`; do \
-	    rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/$$f ; \
+	-for f in `cat $(CURDIR)/debian/toremove.txt | sed -e 's/@PIKE@/$(PIKE)/g;s/@VERSION@/$(VERSION)/g'`; do \
+	    echo Removing $(CURDIR)/debian/$(PIKE)-core/$$f ; \
+	    rm -f $(CURDIR)/debian/$(PIKE)-core/$$f ; \
 	done
 
 	# an eye-candy
