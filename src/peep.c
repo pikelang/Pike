@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.66 2001/08/13 23:15:58 mast Exp $");
+RCSID("$Id: peep.c,v 1.67 2001/08/15 09:11:46 marcus Exp $");
 
 static void asm_opt(void);
 
@@ -312,8 +312,8 @@ void assemble(void)
 	fatal("Duplicate label!\n");
 #endif
       labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
-      UPDATE_PC();
       FLUSH_CODE_GENERATOR_STATE();
+      UPDATE_PC();
       break;
 
     case F_VOLATILE_RETURN:
