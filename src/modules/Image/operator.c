@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.17 1998/04/18 17:16:23 mirar Exp $ */
+/* $Id: operator.c,v 1.18 1998/05/07 18:42:15 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.17 1998/04/18 17:16:23 mirar Exp $
+**!	$Id: operator.c,v 1.18 1998/05/07 18:42:15 mirar Exp $
 **! class image
 */
 
@@ -53,7 +53,7 @@ extern struct program *image_program;
       rgb.b=sp[-args].u.integer;				\
       oper=NULL;						\
    }								\
-   if (args && sp[-args].type==T_FLOAT)				\
+   else if (args && sp[-args].type==T_FLOAT)			\
    {								\
       rgb.r=(long)(255*sp[-args].u.float_number);		\
       rgb.g=(long)(255*sp[-args].u.float_number);		\
