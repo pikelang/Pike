@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.445 2002/10/11 01:39:29 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.446 2002/10/15 13:29:13 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.445 2002/10/11 01:39:29 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.446 2002/10/15 13:29:13 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4155,7 +4155,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year;
   struct tm date;
-  int retval, raw;
+  int retval;
 
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
@@ -4224,8 +4224,11 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
 
-  raw = retval = mktime(&date);
+  retval = mktime(&date);
   
+  if (retval == -1)
+    PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+
 #if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
   if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
@@ -4244,8 +4247,13 @@ PMOD_EXPORT void f_mktime (INT32 args)
   }
 #endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 
-  if (raw == -1)
-    PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
+  if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
+      (Pike_sp[6-args].u.integer != -1) &&
+      (Pike_sp[6-args].u.integer != date.tm_isdst)) {
+    /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
+    retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
+  }
+
   pop_n_elems(args);
   push_int(retval);
 }
