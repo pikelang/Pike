@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.5 2004/11/02 13:24:31 grubba Exp $
+// $Id: Wix.pmod,v 1.6 2004/11/02 15:00:11 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -208,7 +208,7 @@ class Directory
       string fullname = combine_path(src, fname);
       Stdio.Stat stat = file_stat(fullname);
       if (stat->isdir) {
-	d->recurse_install_dir(fname, fullname);
+	d->recurse_install_directory(fname, fullname);
       } else {
 	d->low_install_file(fname, fullname);
       }
@@ -327,16 +327,18 @@ class Directory
 }
 
 WixNode get_module_xml(Directory dir, string id, string version,
-		       string manufacturer, string|void description,
+		       string|void manufacturer, string|void description,
 		       string|void guid, string|void comments)
 {
   guid = guid || Standards.UUID.new_string();
   mapping(string:string) package_attrs = ([
     "Id":guid,
-    "Manufacturer":manufacturer,
     "InstallerVersion":"200",
     "Compressed":"yes",
   ]);
+  if (manufacturer) {
+    package_attrs->Manufacturer = manufacturer;
+  }
   if (description) {
     package_attrs->Description = description;
   }
