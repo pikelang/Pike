@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.66 2002/11/15 12:29:24 jonasw Exp $");
+RCSID("$Id: backend.c,v 1.67 2003/08/04 14:56:34 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -875,6 +875,8 @@ void backend(void)
 	  }
 #endif /* PIKE_DEBUG */
 	  IF_PD(fprintf(stderr, "BACKEND: POLLHUP | POLLERR\n"));
+	  /* We don't want to keep this fd anymore. */
+	  POLL_FD_CLR(fd, ~0);
 	  if (fds[fd].read.callback) {
 	    IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
 			  fd, fds[fd].read.data));
@@ -884,8 +886,6 @@ void backend(void)
 			  fd, fds[fd].write.data));
 	    (*(fds[fd].write.callback))(fd, fds[fd].write.data);
 	  }
-	  /* We don't want to keep this fd anymore. */
-	  POLL_FD_CLR(fd, ~0);
 #ifdef PIKE_DEBUG
 	  handled = 1;
 #endif /* PIKE_DEBUG */
