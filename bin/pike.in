@@ -53,6 +53,7 @@ EOF`
     args="$args '$arg'"
   done
   echo "set args $args" >> .gdbinit.$$
+  echo break debug_fatal >> .gdbinit.$$
   echo break pike_gdb_breakpoint >> .gdbinit.$$
   if test -f .gdbinit; then
     cat .gdbinit >> .gdbinit.$$
