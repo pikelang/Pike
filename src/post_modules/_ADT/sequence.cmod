@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.8 2003/04/28 00:32:44 mast Exp $
+|| $Id: sequence.cmod,v 1.9 2003/05/23 12:41:40 peta Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@ DECLARATIONS
 
 /*! @class Sequence
  *! The sequence work similar to an array but has the possibilities to 
- *! insert and remove elements. It also have a more powerful iterator.
+ *! insert and remove elements. It also has a more powerful iterator.
  */
 
 PIKECLASS Sequence
@@ -52,13 +52,13 @@ PIKECLASS Sequence
 
 
 /*! @decl mixed `[](int index)
- *! Index operator
+ *! Index operator.
  *! 
  *! @param index
  *!   The index to get the value for, could be negative to index from the end.
  *!
  *! @returns
- *!   The value at the index @[index]
+ *!   The value at the index @[index].
  *!
  *! @throws 
  *!   An error if the index is out of range.
@@ -71,22 +71,22 @@ PIKECLASS Sequence
   }
   
 
-/*! @decl int `[]=(int index, mixed value)
- *! Index assign operator
- *! Set the value at the index @[index] to be @[value]
+/*! @decl mixed `[]=(int index, mixed value)
+ *! Index assign operator.
+ *! Set the value at the index @[index] to be @[value].
  *! 
  *! @param index 
- *!   The index to set
+ *!   The index to set.
  *!
  *! @param value
- *!   The new value
+ *!   The new value.
  *!
  *! @returns
- *!   The new value at the index @[index]
+ *!   The new value at the index @[index].
  *!
  */
   
-  PIKEFUN int `[]=(mixed index, mixed value) {
+  PIKEFUN mixed `[]=(mixed index, mixed value) {
     should_copy();  	
     simple_set_index(THIS->a, index, value);
   } 
@@ -94,11 +94,11 @@ PIKECLASS Sequence
 
 /*! @decl Sequence `+(Sequence coll)
  *! Addition operator
- *! Append the content of this Sequence and @[coll] and return the results 
+ *! Append the content of @[coll] to thies sequence and return the results 
  *! as a new @[Sequence].
  *! 
  *! @param coll 
- *!   The adapter to apend to his adapter
+ *!   The sequence to append to his sequence.
  *!
  *! @returns
  *!   The result of the append as a new @[Sequence]. 
@@ -128,7 +128,7 @@ PIKECLASS Sequence
  *! and return the results as a new @[Sequence].
  *! 
  *! @param coll 
- *!   The adapter to subtract from this adapter
+ *!   The sequence to subtract from this sequence.
  *!
  *! @returns
  *!   The result of the subtraction as a new @[Sequence]. 
@@ -152,13 +152,13 @@ PIKECLASS Sequence
   
 /*! @decl Sequence `&(Sequence coll)
  *! And operator
- *! Perform an and on this sequence and the @[coll] adapter by only returning 
- *! those values that is present in both adapters as a new @[Sequence].
- *! The remaning values is in the same order as they are in this adapter and
+ *! Perform an and on this sequence and the @[coll] sequence by only returning 
+ *! those values that is present in both sequences as a new @[Sequence].
+ *! The remaining values is in the same order as they are in this sequence and
  *! the values are compared using `==.
  *!
  *! @param coll 
- *!   The adapter to and to his adapter
+ *!   The sequence to and to this sequence.
  *!
  *! @returns
  *!   The result of the and as a new @[Sequence]. 
@@ -183,12 +183,12 @@ PIKECLASS Sequence
   
 /*! @decl Sequence `|(Sequence coll)
  *! Or operator
- *! Perform an or on this sequence and the @[coll] adapter by returning 
- *! those values that is present in both adapters as a new @[Sequence].
+ *! Perform an or on this sequence and the @[coll] sequence by returning 
+ *! those values that is present in both sequences as a new @[Sequence].
  *! The values are compared using `==.
  *!
  *! @param coll 
- *!   The adapter to or with his adapter
+ *!   The sequence to or with this sequence.
  *!
  *! @returns
  *!   The result of the or as a new @[Sequence]. 
@@ -214,13 +214,13 @@ PIKECLASS Sequence
 
 /*! @decl Sequence `^(Sequence coll)
  *! Xor operator
- *! Perform a xor on this sequence and the @[coll] adapter by returning 
- *! those values that is present in one of the adpaters but not in both 
+ *! Perform a xor on this sequence and the @[coll] sequence by returning 
+ *! those values that is present in one of the sequences but not in both 
  *! adapters as a new @[Sequence].
  *! The values are compared using `==.
  *!
  *! @param coll 
- *!   The adapter to xor with his adapter
+ *!   The sequence to xor with this sequence.
  *!
  *! @returns
  *!   The result of the xor as a new @[Sequence]. 
@@ -244,14 +244,14 @@ PIKECLASS Sequence
   }
 
 
-  /*! @decl array _equal(mixed coll)
+  /*! @decl int(0..1) _equal(mixed coll)
    *!
    *! @returns
-   *!   Returns @tt{true@} if the object @[coll] is and @[Sequence]
+   *!   Returns @tt{true@} if the object @[coll] is a @[Sequence]
    *!   and contains the same values in the same order.
    */
 
-  PIKEFUN int _equal(mixed coll)
+  PIKEFUN int(0..1) _equal(mixed coll)
   {
     if (coll->type == T_OBJECT && 
 	coll->u.object->prog == Sequence_program)
@@ -283,15 +283,15 @@ PIKECLASS Sequence
   }
 
 /*! @decl void _insert_element(int index, mixed value)
- *! Insert an element in the sequence at the postion @[index], the value
- *! at the position @[index] and all above will have thier index increased 
+ *! Insert an element in the sequence at the position @[index], the value
+ *! at the position @[index] and all above will have their index increased 
  *! with one.
  *! 
  *! @param index 
- *!   The index to insert the value at
+ *!   The index to insert the value at.
  *!
  *! @param value
- *!   The new value
+ *!   The new value.
  *!
  */
 
@@ -313,11 +313,11 @@ PIKECLASS Sequence
    
   }
 
-/*! @decl void _remove_element(int index)
+/*! @decl mixed _remove_element(int index)
  *!  Remove the values at index @[index] from the sequence.
  *! 
  *! @param index 
- *!   The index to remove
+ *!   The index to remove.
  *!
  *! @returns
  *!   The removed value.
@@ -345,13 +345,13 @@ PIKECLASS Sequence
   }
 
 
-/*! @decl void _search(mixed value, void|int start)
+/*! @decl int _search(mixed value, void|int start)
  *!   Search the sequence for a specific value. Return the index of the first 
  *!   value that is equal to @[value]. If no value was found @expr{UNDEFINED@} 
- *!   is returned insted
+ *!   is returned instead.
  *! 
  *! @param value
- *!   The value to find
+ *!   The value to find.
  *!
  *! @param start
  *!   If a start value is supplied it will start searching at the index 
@@ -403,10 +403,10 @@ PIKECLASS Sequence
 
   
 /*! @decl void add(mixed value)
- *!   Add a value at the end of the sequence
+ *!   Add a value at the end of the sequence.
  *!
  *! @param value
- *!   The value to add
+ *!   The value to add.
  */
 
   PIKEFUN void add(mixed value)
@@ -416,7 +416,7 @@ PIKECLASS Sequence
   }
 
 
-/*! @decl void cast(string type)
+/*! @decl mixed cast(string type)
  *! Cast operator.
  *!
  *! @param type
@@ -467,7 +467,7 @@ PIKECLASS Sequence
    *!
    *! @returns
    *!   The index of the removed element or -1 if there was no value to 
-   *!   remove
+   *!   remove.
    */
   
   PIKEFUN int delete_value(mixed value)
@@ -487,7 +487,7 @@ PIKECLASS Sequence
    *!   Returns @expr{1@} if the sequence is empty otherwise @expr{0@}. 
    */
 
-  PIKEFUN int is_empty()
+  PIKEFUN int(0..1) is_empty()
   {
     RETURN !(THIS->a->size);
   }
@@ -559,7 +559,7 @@ PIKECLASS Sequence
 
   /*! @class SequenceIterator
    *!    This is the iterator for the Sequence. It implements the 
-   *!    IndexedIterator and the OutputIterator
+   *!    IndexIterator and the OutputIterator
    */  
   
   PIKECLASS SequenceIterator
@@ -571,7 +571,7 @@ PIKECLASS Sequence
     
   /*! @decl void create(object sequence, void|int start)
    *!   Creates a new iterator for the sequence @[sequence]. If start is
-   *!   supplied it will try to position the iterater at @[start].
+   *!   supplied it will try to position the iterator at @[start].
    *! 
    */
 
@@ -704,7 +704,7 @@ PIKECLASS Sequence
 
     /*! @decl SequenceIterator `-(int steps)
      *!   Move the iterator @[steps] steps backwards (negative value on 
-     *!   @[steps] will cause the iterator to move forwars) and return 
+     *!   @[steps] will cause the iterator to move forwards) and return 
      *!   the result as a new iterator.
      *! @returns
      *!    A new iterator positioned @[steps] steps backwards.
@@ -733,7 +733,7 @@ PIKECLASS Sequence
     /*! @decl int(0..1) has_next(void|int steps)
      *! @returns
      *!    Returns @tt{true@} if it is possible to move @[steps] steps
-     *!    forwards, if @[steps] wasn't supplied it check if it is
+     *!    forwards, if @[steps] weren't supplied it check if it is
      *!    possible to move one step forward.
      */    
 
@@ -756,7 +756,7 @@ PIKECLASS Sequence
     /*! @decl int(0..1) has_previous(void|int steps)
      *! @returns
      *!    Returns @tt{true@} if it is possible to move @[steps] steps
-     *!    backwards, if @[steps] wasn't supplied it check if it is
+     *!    backwards, if @[steps] weren't supplied it check if it is
      *!    possible to move one step backward.
      */  
 
@@ -792,7 +792,7 @@ PIKECLASS Sequence
      *!    Compare this iterator with another iterator.
      *! 
      *! @param iter
-     *!    The iterator to compare with
+     *!    The iterator to compare with.
      *! @returns
      *!    Returns @tt{true@} if both iterators iterates over the same
      *!    objects and are positioned at the same spot.
@@ -816,7 +816,7 @@ PIKECLASS Sequence
 	
     
     /*! @decl int(0..1) `<(mixed iter)
-     *!    Less then operator
+     *!    Less then operator.
      *!
      *! @returns
      *!    Returns @tt{true@} if this iterator has a lower index
@@ -841,7 +841,7 @@ PIKECLASS Sequence
 
 
     /*! @decl int(0..1) `>(mixed iter)
-     *!    Greater then operator
+     *!    Greater then operator.
      *!
      *! @returns
      *!    Returns @tt{true@} if this iterator has a higher index
@@ -879,13 +879,13 @@ PIKECLASS Sequence
     }
 
     
-    /*! @decl int set_value(mixed val)
+    /*! @decl mixed set_value(mixed val)
      *!    Set the value at the current position.
      *!
      *! @param val
-     *!    The new value
+     *!    The new value.
      *! @returns
-     *!    Returns the old value
+     *!    Returns the old value.
      */  
 
 
