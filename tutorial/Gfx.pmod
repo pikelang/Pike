@@ -56,7 +56,7 @@ string mkjpg(mixed o,void|mapping options)
 {
   if(!options) options=(["quality":100]);
    string g=Image.JPEG.encode(o,options);
-   return cached_write(g,"jpeg");
+   return cached_write(g,"jpg"); /* this has to be jpg, or pdftex won't work! -Hubbe */
 }
 
 #define PAPER_COLOUR 255,255,255

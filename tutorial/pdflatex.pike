@@ -29,7 +29,8 @@ string convert_gfx(TAG tag)
   string file;
   float dpi;
   [file,dpi]=Gfx.convert( tag->params,
-			  "png|jpg|pdf",
+//			  "png|jpg|pdf",
+			  "jpg|pdf",
 			  300.0,
 			  tag->data && Sgml.get_text(tag->data));
   
