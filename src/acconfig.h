@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.116 2004/05/11 15:48:22 grubba Exp $
+|| $Id: acconfig.h,v 1.117 2004/05/14 08:51:04 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -164,6 +164,9 @@
 
 /* define this if igonoring SIGFPE helps with core dumps */
 #undef IGNORE_SIGFPE
+
+/* define this to disable use of setlocale(3). */
+#undef DONT_USE_SYSTEM_LOCALE
 
 /* define if you want to use double precision floats instead of single */
 #undef WITH_DOUBLE_PRECISION_SVALUE
