@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.60 2004/09/22 12:13:22 mast Exp $
+|| $Id: array.h,v 1.61 2004/09/26 22:06:31 mast Exp $
 */
 
 #ifndef ARRAY_H
 #define ARRAY_H
 
 #include "svalue.h"
+#include "dmalloc.h"
 
 /* This debug tool writes out messages whenever arrays with unfinished
  * type fields are encountered. */
