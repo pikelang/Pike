@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: font.c,v 1.75 2002/10/21 17:06:13 marcus Exp $
+|| $Id: font.c,v 1.76 2002/11/08 22:31:46 anders Exp $
 */
 
 #include "global.h"
@@ -746,8 +746,8 @@ void font_text_extents(INT32 args)
      p_wchar2 *to_write2;
      ptrdiff_t to_write_len;
      if (sp[j-args].type!=T_STRING)
-	bad_arg_error("font->write",sp-args,args,0,"",sp-args,
-		"Bad arguments to font->write()\n");
+	bad_arg_error("font->text_extents",sp-args,args,0,"",sp-args,
+		"Bad arguments to font->text_extents()\n");
      
      xsize = max = 1;
      to_write_len = sp[j-args].u.string->len;
