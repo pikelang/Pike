@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.28 2002/11/08 18:09:29 marcus Exp $
+|| $Id: ppc32.c,v 1.29 2002/11/24 20:09:29 marcus Exp $
 */
 
 /*
@@ -727,6 +727,16 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
     16, 0, 33, 193, 50, 257, 417, 0,
     150, 225, 129,
   };
+  static const char *opname_31_010[] = {
+    "Oaddze", NULL, NULL, "Osubfc", "Odivwu", "Oaddc", "Omulhwu", "Osubfme",
+    "Oadd", "Oaddme", "Omullw", "Omulhw", "Osubf", "Odivw", NULL, NULL,
+    "Osubfe", "Oneg", "Oadde", NULL, NULL, "Osubfze", NULL,
+  };
+  static short opxo_31_010[] = {
+    202, 0, 0, 8, 459, 10, 11, 232,
+    266, 234, 235, 75, 40, 491, 0, 0,
+    136, 104, 138, 0, 0, 200, 0,
+  };
   static const char *opname_31_100[] = {
     NULL, NULL, NULL, "Xtlbie", "Xtlbia", "Fmftb", "Fmtcrf", NULL,
     "Xmtmsr", "Xmtsr", NULL, "Xmfcr", "Xmfmsr", NULL, "Fmtspr", NULL,
@@ -737,12 +747,63 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
     146, 210, 0, 19, 83, 0, 467, 0,
     339, 659, 0, 242, 595,
   };
-
+  static const char *opname_31_101[] = {
+    "Xicbi", "Xstfiwx", NULL, "Xstbx", "Xtlbsync", "Xlfsux", "Xsthbrx", NULL,
+    "Xstwcx.", "Xstwx", NULL, NULL, "Xeieio", NULL, "Xdcbf", "Xlbzx",
+    "Xecowx", "Xsthux", "Xlhbrx", NULL, NULL, "Xlwzx", "Xlwarx", "Xlhaux",
+    NULL, "Xstfdx", NULL, "Xstswi", "Xeciwx", "Xlhzux", "Xstwbrx", "Xstfsx",
+    "Xdcbz", "Xstswx", "Xdcbtst", "Xstbux", "Xsync", "Xlfdx", NULL, "Xlswi",
+    NULL, "Xstwux", "Xlwbrx", "Xlfsx", NULL, "Xlswx", NULL, "Xlbzux",
+    "Xdcbi", NULL, NULL, NULL, "Xdcbst", "Xlwzux", NULL, "Xsthx",
+    "Xdcba", "Xstfdux", NULL, NULL, NULL, "Xlhax", NULL, "Xstfsux",
+    NULL, NULL, "Xdcbt", "Xlhzx", NULL, "Xlfdux",
+  };
+  static short opxo_31_101[] = {
+    982, 983, 0, 215, 566, 567, 918, 0,
+    150, 151, 0, 0, 854, 0, 86, 87,
+    438, 439, 790, 0, 0, 23, 20, 375,
+    0, 727, 0, 725, 310, 311, 662, 663,
+    1014, 661, 246, 247, 598, 599, 0, 597,
+    0, 183, 534, 535, 0, 533, 0, 119,
+    470, 0, 0, 0, 54, 55, 0, 407,
+    758, 759, 0, 0, 0, 343, 0, 695,
+    0, 0, 278, 279, 0, 631,
+  };
+  static const char *opname_31_110[] = {
+    "Xsrawi", "Xslw", NULL, "Xcntlzw", NULL, NULL, NULL, "Xsrw",
+    "Xextsh", "Xextsb", "Xsraw",
+  };
+  static short opxo_31_110[] = {
+    824, 24, 0, 26, 0, 0, 0, 536,
+    922, 954, 792,
+  };
+  static const char *opname_31_111[] = {
+    "Xand", "Xandc", NULL, "Xnor", NULL, NULL, NULL, NULL,
+    "Xeqv", "Xxor", NULL, NULL, "Xorc", "Xor", "Xnand", NULL,
+  };
+  static const char *opname_59[] = {
+    NULL, NULL, "Afdivs", NULL, "Afsubs", "Afadds", "Afsqrts", NULL,
+    "Afres", "Afmuls", NULL, NULL, "Afmsubs", "Afmadds", "Afnmsubs", "Afnmadds"
+  };
+  static const char *opname_63_0[] = {
+    "Xmtfsb1", "Gmtfsf", "Xfneg", NULL, "Xfcmpu", "Xmcrfs", NULL, NULL,
+    "Xfabs", NULL, NULL, "Xmtfsb0", "Xmtfsfi", "Xfmr", "Xfnabs", "Xfcmpo",
+    "Xfrsp", NULL, "Xfctiw", "Xfctiwz", "Xmffs",
+  };
+  static short opxo_63_0[] = {
+    38, 711, 40, 0, 0, 64, 0, 0,
+    264, 0, 0, 70, 134, 72, 136, 32,
+    12, 0, 14, 15, 583
+  };
+  static const char *opname_63_1[] = {
+    NULL, NULL, "Afdiv", NULL, "Afsub", "Afadd", "Afsqrt", "Afsel",
+    NULL, "Afmul", "Afrsqrte", NULL, "Afmsub", "Afmadd", "Afnmsub", "Afnmadd"
+  };
   unsigned INT32 *code = addr;
   size_t len = (bytes+3)>>2;
 
   while(len--) {
-    int opcd, xo, form;
+    int opcd, xo=0, form;
     const char *instr_name;
     unsigned INT32 instr = *code;
 
@@ -767,20 +828,55 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
       xo = (instr>>1)&1023;
       switch((xo>>2)&7) {
 	int h;
-	/* FIXME: other cases than 4 */
+      case 0:
+	switch(xo) {
+	case 0: instr_name = "Xcmp"; break;
+	case 32: instr_name = "Xcmpl"; break;
+	case 512: instr_name = "Xmcrxr"; break;
+	default: instr_name = NULL; break;
+	}
+	break;
+      case 1:
+	instr_name = (xo == 4? "Xtw" : NULL);
+	break;
+      case 2:
+	h = ((xo&0x1ff)^64)%23;
+	instr_name = ((xo&0x1ff) == opxo_31_010[h]? opname_31_010[h]:NULL);
+	break;
       case 4:
 	h = (xo^160)%21;
 	instr_name = (xo == opxo_31_100[h]? opname_31_100[h]:NULL);
+	break;
+      case 5:
+	h = (xo^2)%70;
+	instr_name = (xo == opxo_31_101[h]? opname_31_101[h]:NULL);
+	break;
+      case 6:
+	h = (xo^32)%11;
+	instr_name = (xo == opxo_31_110[h]? opname_31_110[h]:NULL);
+	break;
+      case 7:
+	instr_name = ((xo & 0x21f)==0x1c? opname_31_111[(xo>>5)&15]:NULL);
 	break;
       default:
 	instr_name = NULL;
 	break;
       }
       break;
-    case 59:
-    case 63:
-      /* FIXME: OPCD 59 and 63 */
-      instr_name = NULL;
+    case 59: /* single precision math, A-Form */
+      xo = (instr>>1)&0x1f;
+      instr_name = ((xo&0x10)? opname_59[xo&15] : NULL);
+      break;
+    case 63: /* double precision math */
+      if(instr&0x20) {
+	xo = (instr>>1)&0x1f;
+	instr_name = opname_63_1[xo&15];
+      } else {
+	int h;
+	xo = (instr>>1)&0x3ff;
+	h = (xo^256)%21;
+	instr_name = (xo == opxo_63_0[h]? opname_63_0[h]:NULL);
+      }
       break;
     default:
       instr_name = (opcd < 56? opname[opcd] : NULL);
@@ -828,6 +924,79 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 		  (instr>>21)&31, (instr>>16)&31, immtext);
       }
       break;
+    case 'X':
+      if(opcd == 63) {
+	if(xo & 8)
+	  fprintf(stderr, "%s%s fr%d,fr%d\n", instr_name, ((instr&1)? ".":""),
+		  (instr>>21)&31, (instr>>11)&31);
+	else if(xo & 512)
+	  fprintf(stderr, "%s%s fr%d\n", instr_name, ((instr&1)? ".":""),
+		  (instr>>21)&31);
+	else if(xo & 128)
+	  fprintf(stderr, "%s%s crf%d,%d\n", instr_name, ((instr&1)? ".":""),
+		  (instr>>23)&7, (instr>>12)&15);
+	else if(xo & 2)
+	  fprintf(stderr, "%s%s crb%d\n", instr_name, ((instr&1)? ".":""),
+		  (instr>>21)&31);
+	else if(xo & 64)
+	  fprintf(stderr, "%s crf%d,crf%d\n", instr_name,
+		  (instr>>23)&7, (instr>>18)&7);
+	else
+	  fprintf(stderr, "%s crf%d,fr%d,fr%d\n", instr_name,
+		  (instr>>23)&7, (instr>>16)&31, (instr>>11)&31);
+      } else if((xo & 135)==135) {
+	fprintf(stderr, "%s fr%d,r%d,r%d\n", instr_name,
+		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
+      } else {
+	if (xo == 824)
+	  fprintf(stderr, "%s%s r%d,r%d,%d\n", instr_name, ((instr&1)? ".":""),
+		  (instr>>16)&31, (instr>>21)&31, (instr>>11)&31);
+	else if(!(xo & 991))
+	  fprintf(stderr, "%s crf%d,%d,r%d,r%d\n", instr_name, (instr>>23)&7,
+		  (instr>>21)&1, (instr>>16)&31, (instr>>11)&31);
+	else if((xo & 27)==24)
+	  fprintf(stderr, "%s%s r%d,r%d,r%d\n", instr_name,
+		  ((instr&1)? ".":""), (instr>>16)&31, (instr>>21)&31,
+		  (instr>>11)&31);
+	else if(!(xo & 24)) {
+	  if(xo&4)
+	    fprintf(stderr, "%s %d,r%d,r%d\n", instr_name,
+		    (instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
+	  else
+	    fprintf(stderr, "%s crf%d\n", instr_name, (instr>>23)&7);
+	} else if(xo & 8)
+	  fprintf(stderr, "%s%s r%d,r%d\n", instr_name, ((instr&1)? ".":""),
+		  (instr>>16)&31, (instr>>21)&31);
+	else if(!(xo & 772)) {
+	  if(xo & 32)
+	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
+		    (instr>>21)&31, (instr>>11)&31);
+	  else if((xo & 192)==192)
+	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>21)&31);
+	  else
+	    fprintf(stderr, "%s %d,r%d\n", instr_name,
+		    (instr>>16)&15, (instr>>21)&31);
+	} else if((xo & 127)==85)
+	  fprintf(stderr, "%s r%d,r%d,%d\n", instr_name,
+		  (instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
+	else if(xo == 370 || xo == 566 || xo == 598 || xo == 854)
+	  fprintf(stderr, "%s\n", instr_name);
+	else if(!(xo & 8)) {
+	  if(xo & 128)
+	    fprintf(stderr, "%s r%d,r%d\n", instr_name,
+		    (instr>>21)%31, (instr>>11)&31);
+	  else if(xo & 512)
+	    fprintf(stderr, "%s r%d,%d\n", instr_name,
+		    (instr>>21)%31, (instr>>16)&15);
+	    fprintf(stderr, "%s r%d\n", instr_name, (instr>>11)&31);
+	} else if(instr_name[0]=='d' || instr_name[0]=='i')
+	  fprintf(stderr, "%s r%d,r%d\n", instr_name,
+		  (instr>>16)&31, (instr>>11)&31);
+	else
+	  fprintf(stderr, "%s r%d,r%d,r%d\n", instr_name,
+		  (instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
+      }
+      break;
     case 'L': /* really 'XL' */
       if(!xo)
 	fprintf(stderr, "%s cr%d,cr%d\n", instr_name,
@@ -851,6 +1020,37 @@ void ppc32_disassemble_code(void *addr, size_t bytes)
 	else
 	  fprintf(stderr, "%s r%d,%d\n", instr_name, (instr>>21)&31, arg);
       }
+      break;
+    case 'G': /* really 'XFL' */
+      fprintf(stderr, "%s%s 0x%x,fr%d\n", instr_name, ((instr&1)? ".":""),
+	      (instr>>17)&255, (instr>>11)&31);
+      break;
+    case 'O': /* really 'XO' */
+      if((xo&0x41)==0x40)
+	fprintf(stderr, "%s%s%s r%d,r%d\n", instr_name,
+		((instr&(1<<10))? "o":""), ((instr&1)? ".":""),
+		(instr>>21)&31, (instr>>16)&31);
+      else
+	fprintf(stderr, "%s%s%s r%d,r%d,r%d\n", instr_name,
+		((instr&(1<<10))? "o":""), ((instr&1)? ".":""),
+		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
+      break;
+    case 'A':
+      if(xo<22)
+	fprintf(stderr, "%s%s fr%d,fr%d,fr%d\n", instr_name,
+		((instr&1)? ".":""),
+		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
+      else if(xo >= 28 || xo == 23)
+	fprintf(stderr, "%s%s fr%d,fr%d,fr%d,fr%d\n", instr_name,
+		((instr&1)? ".":""),
+		(instr>>21)&31, (instr>>16)&31, (instr>>6)&31, (instr>>11)&31);
+      else if(xo & 1)
+	fprintf(stderr, "%s%s fr%d,fr%d,fr%d\n", instr_name,
+		((instr&1)? ".":""),
+		(instr>>21)&31, (instr>>16)&31, (instr>>6)&31);
+      else
+	fprintf(stderr, "%s%s fr%d,fr%d\n", instr_name, ((instr&1)? ".":""),
+		(instr>>21)&31, (instr>>11)&31);
       break;
     case 'M':
       fprintf(stderr, (opcd==23? "%s%s r%d,r%d,r%d,%d,%d" :
