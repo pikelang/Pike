@@ -1,0 +1,79 @@
+test_true([["$Id: testsuite.in,v 1.1 2002/08/02 23:25:22 nilsson Exp $"]]);
+
+// - Standards.ISO639_2
+test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
+test_equal(Standards.ISO639_2.get_language("xxx"),0)
+test_true(sizeof(Standards.ISO639_2.list_languages())>400)
+test_egual(Standards.ISO639_2.map_639_1("sv"),"swe")
+test_egual(Standards.ISO639_2.map_639_1("xx"),0)
+test_true(sizeof(Standards.ISO639_2.list_639_1())==158)
+test_false(Standards.ISO639_2.verify_overlap())
+
+// - Standards.RDF
+test_equal_any([[
+  object r = Standards.RDF();
+  object x = r->Node();
+  r->add_relation( r->Node("http://www.example.org/index.html", 1),
+		   r->Node("http://purl.org/dc/elements/1.1/creator", 1),
+		   x );
+  object y = r->Node();
+  r->add_relation( x,
+		   r->Node("http://www.example.org/terms/creation-date", 1),
+		   y );
+  r->add_relation( y,
+		   r->Node("http://pike.ida.liu.se/terms/ruppar", 1),
+		   r->Node("August 16, 1999", 0) );
+  r->add_relation( x,
+		   r->Node("http://www.example.org/terms/language", 1),
+		   r->Node("English") );
+  return (multiset)(r->get_n_triples()/"\n");
+]], (< /* 5 elements */
+    "",
+    "_:Node1 <http://www.example.org/terms/language> \"English\" .",
+    "_:Node1 <http://www.example.org/terms/creation-date> _:Node4 .",
+    "<http://www.example.org/index.html> <http://purl.org/dc/elements/1.1/creator> _:Node1 .",
+    "_:Node4 <http://pike.ida.liu.se/terms/ruppar> \"August 16, 1999\" ."
+>))
+
+// - Standards.URI
+test_equal((string)Standards.URI("g:h",           "http://a/b/c/d;p?q"), "g:h")
+test_equal((string)Standards.URI("g",             "http://a/b/c/d;p?q"), "http://a/b/c/g")
+test_equal((string)Standards.URI("./g",           "http://a/b/c/d;p?q"), "http://a/b/c/g")
+test_equal((string)Standards.URI("g/",            "http://a/b/c/d;p?q"), "http://a/b/c/g/")
+test_equal((string)Standards.URI("/g",            "http://a/b/c/d;p?q"), "http://a/g")
+test_equal((string)Standards.URI("//g",           "http://a/b/c/d;p?q"), "http://g")
+test_equal((string)Standards.URI("?y",            "http://a/b/c/d;p?q"), "http://a/b/c/?y")
+test_equal((string)Standards.URI("g?y",           "http://a/b/c/d;p?q"), "http://a/b/c/g?y")
+test_equal((string)Standards.URI("#s",            "http://a/b/c/d;p?q"), "http://a/b/c/d;p?q#s")
+test_equal((string)Standards.URI("g#s",           "http://a/b/c/d;p?q"), "http://a/b/c/g#s")
+test_equal((string)Standards.URI("g?y#s",         "http://a/b/c/d;p?q"), "http://a/b/c/g?y#s")
+test_equal((string)Standards.URI(";x",            "http://a/b/c/d;p?q"), "http://a/b/c/;x")
+test_equal((string)Standards.URI("g;x",           "http://a/b/c/d;p?q"), "http://a/b/c/g;x")
+test_equal((string)Standards.URI("g;x?y#s",       "http://a/b/c/d;p?q"), "http://a/b/c/g;x?y#s")
+test_equal((string)Standards.URI(".",             "http://a/b/c/d;p?q"), "http://a/b/c/")
+test_equal((string)Standards.URI("./",            "http://a/b/c/d;p?q"), "http://a/b/c/")
+test_equal((string)Standards.URI("..",            "http://a/b/c/d;p?q"), "http://a/b/")
+test_equal((string)Standards.URI("../",           "http://a/b/c/d;p?q"), "http://a/b/")
+test_equal((string)Standards.URI("../g",          "http://a/b/c/d;p?q"), "http://a/b/g")
+test_equal((string)Standards.URI("../..",         "http://a/b/c/d;p?q"), "http://a/")
+test_equal((string)Standards.URI("../../",        "http://a/b/c/d;p?q"), "http://a/")
+test_equal((string)Standards.URI("../../g",       "http://a/b/c/d;p?q"), "http://a/g")
+test_equal((string)Standards.URI("../../../g",    "http://a/b/c/d;p?q"), "http://a/../g")
+test_equal((string)Standards.URI("../../../../g", "http://a/b/c/d;p?q"), "http://a/../../g")
+test_equal((string)Standards.URI("/./g",          "http://a/b/c/d;p?q"), "http://a/./g")
+test_equal((string)Standards.URI("/../g",         "http://a/b/c/d;p?q"), "http://a/../g")
+test_equal((string)Standards.URI("g.",            "http://a/b/c/d;p?q"), "http://a/b/c/g.")
+test_equal((string)Standards.URI(".g",            "http://a/b/c/d;p?q"), "http://a/b/c/.g")
+test_equal((string)Standards.URI("g..",           "http://a/b/c/d;p?q"), "http://a/b/c/g..")
+test_equal((string)Standards.URI("..g",           "http://a/b/c/d;p?q"), "http://a/b/c/..g")
+test_equal((string)Standards.URI("./../g",        "http://a/b/c/d;p?q"), "http://a/b/g")
+test_equal((string)Standards.URI("./g/.",         "http://a/b/c/d;p?q"), "http://a/b/c/g/")
+test_equal((string)Standards.URI("g/./h",         "http://a/b/c/d;p?q"), "http://a/b/c/g/h")
+test_equal((string)Standards.URI("g/../h",        "http://a/b/c/d;p?q"), "http://a/b/c/h")
+test_equal((string)Standards.URI("g;x=1/./y",     "http://a/b/c/d;p?q"), "http://a/b/c/g;x=1/y")
+test_equal((string)Standards.URI("g;x=1/../y",    "http://a/b/c/d;p?q"), "http://a/b/c/y")
+test_equal((string)Standards.URI("g?y/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g?y/./x")
+test_equal((string)Standards.URI("g?y/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g?y/../x")
+test_equal((string)Standards.URI("g#s/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g#s/./x")
+test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g#s/../x")
+test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
