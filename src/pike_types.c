@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.16 1997/03/05 05:29:42 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.17 1997/03/07 05:21:46 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -133,10 +133,12 @@ static unsigned char *type_stackp=type_stack;
 static unsigned char *mark_stack[STACK_SIZE/4];
 static unsigned char **mark_stackp=mark_stack;
 
-void reset_type_stack()
+void push_type(unsigned char tmp)
 {
-  type_stackp=type_stack;
-  mark_stackp=mark_stack;
+  *type_stackp=tmp;
+  type_stackp++;
+  if(type_stackp > type_stack + sizeof(type_stack))
+    yyerror("Type stack overflow.");
 }
 
 void type_stack_mark()
@@ -147,13 +149,13 @@ void type_stack_mark()
     yyerror("Type mark stack overflow.");
 }
 
-unsigned char *pop_stack_mark()
+INT32 pop_stack_mark()
 { 
   mark_stackp--;
   if(mark_stackp<mark_stack)
     fatal("Type mark stack underflow\n");
 
-  return *mark_stackp;
+  return type_stackp - *mark_stackp;
 }
 
 void pop_type_stack()
@@ -165,34 +167,31 @@ void pop_type_stack()
 
 void type_stack_pop_to_mark()
 {
-  type_stackp=pop_stack_mark();
+  type_stackp-=pop_stack_mark();
+#ifdef DEBUG
+  if(type_stackp<type_stack)
+    fatal("Type stack underflow\n");
+#endif
+}
+
+void reset_type_stack()
+{
+  type_stack_pop_to_mark();
+  type_stack_mark();
 }
 
 void type_stack_reverse()
 {
-  unsigned char *a,*b,tmp;
+  INT32 a;
   a=pop_stack_mark();
-  b=type_stackp-1;
-  while(b>a) { tmp=*a; *a=*b; *b=tmp; b--; a++; }
-}
-
-void push_type(unsigned char tmp)
-{
-  *type_stackp=tmp;
-  type_stackp++;
-  if(type_stackp > type_stack + sizeof(type_stack))
-    yyerror("Type stack overflow.");
+  reverse(type_stackp-a,a,1);
 }
 
 void push_type_int(unsigned INT32 i)
 {
-  if(type_stackp + sizeof(i)> type_stack + sizeof(type_stack))
-    yyerror("Type stack overflow.");
-
-  type_stack_mark();
-  MEMCPY(type_stackp, &i, sizeof(i));
-  type_stackp+=sizeof(i);
-  type_stack_reverse();
+  int e;
+  for(e=sizeof(i)-1;e>=0;e--)
+    push_type(((unsigned char *)&i)[e]);
 }
 
 void push_unfinished_type(char *s)
@@ -213,9 +212,11 @@ struct pike_string *pop_unfinished_type()
 {
   int len,e;
   struct pike_string *s;
-  len=type_stackp - pop_stack_mark();
+  len=pop_stack_mark();
   s=begin_shared_string(len);
-  for(e=0;e<len;e++) s->str[e] = *--type_stackp;
+  type_stackp-=len;
+  MEMCPY(s->str, type_stackp, len);
+  reverse(s->str, len, 1);
   s=end_shared_string(s);
   CHECK_TYPE(s);
   return s;
@@ -223,18 +224,11 @@ struct pike_string *pop_unfinished_type()
 
 struct pike_string *pop_type()
 {
-  int len,e;
   struct pike_string *s;
-  len=type_stackp - type_stack;
-  s=begin_shared_string(len);
-  for(e=0;e<len;e++) s->str[e] = *--type_stackp;
-  s=end_shared_string(s);
-  reset_type_stack();
-  CHECK_TYPE(s);
+  s=pop_unfinished_type();
+  type_stack_mark();
   return s;
 }
-
-
 
 static void internal_parse_typeA(char **_s)
 {
@@ -460,12 +454,13 @@ static void internal_parse_type(char **s)
  */
 struct pike_string *parse_type(char *s)
 {
+  type_stack_mark();
   internal_parse_type(&s);
 
   if( *s )
     fatal("Extra junk at end of type definition.\n");
 
-  return pop_type();
+  return pop_unfinished_type();
 }
 
 #ifdef DEBUG
@@ -953,6 +948,7 @@ static struct pike_string *low_index_type(char *t, node *n)
   case T_OR:
   {
     struct pike_string *a,*b;
+    type_stack_mark();
     a=low_index_type(t,n);
     t+=type_length(t);
     b=low_index_type(t,n);
@@ -961,7 +957,7 @@ static struct pike_string *low_index_type(char *t, node *n)
     push_finished_type(b);
     push_finished_type(a);
     push_type(T_OR);
-    return pop_type();
+    return pop_unfinished_type();
   }
 
   case T_AND:
@@ -1078,12 +1074,14 @@ struct pike_string *check_call(struct pike_string *args,
 {
   CHECK_TYPE(args);
   CHECK_TYPE(type);
-  reset_type_stack();
+  type_stack_mark();
   max_correct_args=0;
+  
   if(low_get_return_type(type->str,args->str))
   {
-    return pop_type();
+    return pop_unfinished_type();
   }else{
+    pop_stack_mark();
     return 0;
   }
 }

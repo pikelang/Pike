@@ -69,6 +69,8 @@ do{ \
 }while(0)
 
 /* Prototypes begin here */
+void push_sp_mark();
+int pop_sp_mark();
 void init_interpreter();
 void check_stack(INT32 size);
 void check_mark_stack(INT32 size);

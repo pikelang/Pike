@@ -22,15 +22,18 @@ extern struct pike_string *mixed_type_string;
 extern struct pike_string *void_type_string;
 extern struct pike_string *any_type_string;
 
+#define init_type_stack type_stack_mark
+#define exit_type_stack pop_stack_mark
+
 /* Prototypes begin here */
 void init_types();
-void reset_type_stack();
+void push_type(unsigned char tmp);
 void type_stack_mark();
-unsigned char *pop_stack_mark();
+INT32 pop_stack_mark();
 void pop_type_stack();
 void type_stack_pop_to_mark();
+void reset_type_stack();
 void type_stack_reverse();
-void push_type(unsigned char tmp);
 void push_type_int(unsigned INT32 i);
 void push_unfinished_type(char *s);
 void push_finished_type(struct pike_string *type);
@@ -50,7 +53,6 @@ int check_indexing(struct pike_string *type,
 int count_arguments(struct pike_string *s);
 struct pike_string *check_call(struct pike_string *args,
 			       struct pike_string *type);
-void check_array_type(struct array *a);
 struct pike_string *get_type_of_svalue(struct svalue *s);
 char *get_name_of_type(int t);
 void cleanup_pike_types();

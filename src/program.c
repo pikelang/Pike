@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.24 1997/03/01 17:56:29 grubba Exp $");
+RCSID("$Id: program.c,v 1.25 1997/03/07 05:21:47 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -235,6 +235,8 @@ void start_new_program()
   if(previous_program_state->fake_program.num_inherits)
     previous_program_state->fake_program.inherits[0].prog=
       &previous_program_state->fake_program;
+
+  init_type_stack();
 
   for(e=0; e<NUM_AREAS; e++) low_reinit_buf(areas + e);
   low_reinit_buf(& inherit_names);
@@ -563,6 +565,8 @@ struct program *end_program()
     free_string(s);
     init_node=0;
   }
+
+  exit_type_stack();
 
   if (num_parse_error > 0)
   {

@@ -20,6 +20,54 @@ char *xalloc(SIZE_T size)
   return 0;
 }
 
+void swap(char *a, char *b, INT32 size)
+{
+  int tmp;
+  char tmpbuf[1024];
+  while(size)
+  {
+    tmp=MINIMUM((long)sizeof(tmpbuf), size);
+    MEMCPY(tmpbuf,a,tmp);
+    MEMCPY(b,a,tmp);
+    MEMCPY(b,tmpbuf,tmp);
+    size-=tmp;
+    a+=tmp;
+    b+=tmp;
+  }
+}
+
+void reverse(char *memory, INT32 nitems, INT32 size)
+{
+#define DOSIZE(X,Y)				\
+ case X:					\
+ {						\
+  struct Y { char tt[X]; };			\
+  struct Y tmp;					\
+  struct Y *start=(struct Y *) memory;		\
+  struct Y *end=start+nitems-1;			\
+  while(start<end){tmp=*start;*(start++)=*end;*(end--)=tmp;} \
+  break;					\
+ }
+
+  switch(size)
+  {
+    DOSIZE(1,TMP1)
+    DOSIZE(2,TMP2)
+    DOSIZE(4,TMP4)
+    DOSIZE(8,TMP8)
+  default:
+  {
+    char *start = (char *) memory;
+    char *end=start+(nitems-1)*size;
+    while(start<end)
+    {
+      swap(start,end,size);
+      start+=size;
+      end-=size;
+    }
+  }
+  }
+}
 
 /*
  * This function may NOT change 'order'
@@ -30,7 +78,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   INT32 e;
   char *tmp;
   tmp=xalloc(size * nitems);
-
+#undef DOSIZE
 #define DOSIZE(X,Y)				\
  case X:					\
  {						\
