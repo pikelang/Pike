@@ -642,31 +642,6 @@ done
   exit(0);
 }
 
-string make_absolute_path(string path)
-{
-#if constant(getpwnam)
-  if(sizeof(path) && path[0] == '~')
-  {
-    string user, newpath;
-    sscanf(path, "~%s/%s", user, newpath);
-    
-    if(user && sizeof(user))
-    {
-      array a = getpwnam(user);
-      if(a && sizeof(a) >= 7)
-	return combine_path(a[5], newpath);
-    }
-    
-    return combine_path(getenv("HOME"), path[2..]);
-  }
-#endif
-  
-  if(!sizeof(path) || path[0] != '/')
-    return combine_path(getcwd(), "../", path);
-
-  return path;
-}
-
 #ifdef USE_GTK
 object window1;
 object vbox1;
@@ -904,7 +879,7 @@ int pre_install(array(string) argv)
 //	werror("PREFIX: %O\n",prefix);
 //	if(!vars->prefix)
 	prefix=interactive->edit_directory(prefix,"Install prefix: ");
-	prefix = make_absolute_path(prefix);
+	prefix = interactive->absolute_path(prefix);
 
 	if(!vars->pike_name)
 	{
@@ -920,7 +895,7 @@ int pre_install(array(string) argv)
 #endif
 	}
 
-	bin_path = make_absolute_path(bin_path);
+	bin_path = interactive->absolute_path(bin_path);
 	
 	write("\n");
 	confirm =
