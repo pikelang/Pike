@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.107 1998/05/19 17:25:11 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.108 1998/05/19 18:30:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2169,104 +2169,70 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
  * This makes it faster than the G-M algorithm on binary data,
  * but slower on ascii data.
  */
-static struct array *diff_dyn_longest_sequence(struct array *a,
-					       struct array *b)
+static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
 {
   struct array *res = NULL;
   struct diff_magic_link_head *table = NULL;
   struct diff_magic_link_pool *dml_pool = NULL;
   struct diff_magic_link *dml;
-  unsigned int sa = (unsigned int)a->size;
-  unsigned int sb = (unsigned int)b->size;
-  unsigned int ia;
-  unsigned int ib;
+  unsigned int sz = (unsigned int)cmptbl->size;
+  unsigned int i;
   unsigned int off1 = 0;
-  unsigned int off2;
-  unsigned int tmp;
+  unsigned int off2 = blen + 1;
 
-  if (sa <= sb) {
-    off2 = sa+1;
-    table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
-    if (!table) {
-      error("diff_dyn_longest_sequence(): Out of memory");
-    }
+  table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
+  if (!table) {
+    error("diff_dyn_longest_sequence(): Out of memory");
+  }
 
-    /* FIXME: Assumes NULL is represented with all zeroes */
-    /* NOTE: Scan strings backwards to get the same result as the G-M
-     * algorithm.
-     */
-    for (ib = sb; ib--;) {
-      tmp = off1;
+  /* FIXME: Assumes NULL is represented with all zeroes */
+  /* NOTE: Scan strings backwards to get the same result as the G-M
+   * algorithm.
+   */
+  for (i = sz; i--;) {
+    struct array *boff = cmptbl->item[i].u.array;
+
+#ifdef DIFF_DEBUG
+    fprintf(stderr, "  i:%d\n", i);
+#endif /* DIFF_DEBUG */
+
+    if (boff->size) {
+      unsigned int bi;
+      unsigned int base = blen;
+      unsigned int tmp = off1;
       off1 = off2;
       off2 = tmp;
 
-      for (ia = sa; ia--;) {
-	int res = is_eq(b->item + ib, a->item + ia);
-	if (table[off1 + ia].link) {
-	  if (!--(table[off1 + ia].link->refs)) {
-	    dml_delete(dml_pool, table[off1 + ia].link);
-	  }
-	}
-	if (res) {
-	  /* Equal */
+      for (bi = boff->size; bi--;) {
+	unsigned int ib = boff->item[bi].u.integer;
 
-	  table[off1 + ia].depth = table[off2 + ia + 1].depth + 1;
-	  dml = (table[off1 + ia].link = dml_new(&dml_pool));
-	  if (!dml) {
-	    dml_free_pools(dml_pool);
-	    free(table);
-	    error("diff_dyn_longest_sequence(): Out of memory");
-	  }
-	  dml->refs = 1;
-	  dml->prev = table[off2 + ia + 1].link;
-	  if (dml->prev) {
-	    dml->prev->refs++;
-	  }
-	  dml->x = ib;
-	} else {
+#ifdef DIFF_DEBUG
+	fprintf(stderr, "    Range [%d - %d] differ\n", base - 1, ib + 1);
+#endif /* DIFF_DEBUG */
+	while ((--base) > ib) {
 	  /* Differ */
+	  if (table[off1 + base].link) {
+	    if (!--(table[off1 + base].link->refs)) {
+	      dml_delete(dml_pool, table[off1 + base].link);
+	    }
+	  }
 	  /* FIXME: Should it be > or >= here to get the same result
 	   * as with the G-M algorithm?
 	   */
-	  if (table[off2 + ia].depth > table[off1 + ia + 1].depth) {
-	    table[off1 + ia].depth = table[off2 + ia].depth;
-	    dml = (table[off1 + ia].link = table[off2 + ia].link);
+	  if (table[off2 + base].depth > table[off1 + base + 1].depth) {
+	    table[off1 + base].depth = table[off2 + base].depth;
+	    dml = (table[off1 + base].link = table[off2 + base].link);
 	  } else {
-	    table[off1 + ia].depth = table[off1 + ia + 1].depth;
-	    dml = (table[off1 + ia].link = table[off1 + ia + 1].link);
+	    table[off1 + base].depth = table[off1 + base + 1].depth;
+	    dml = (table[off1 + base].link = table[off1 + base + 1].link);
 	  }
 	  if (dml) {
 	    dml->refs++;
 	  }
 	}
-      }
-    }
-  } else {
-    /* Do the mirror version */
-    off2 = sb+1;
-    table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
-    if (!table) {
-      error("diff_dyn_longest_sequence(): Out of memory");
-    }
-
-    /* FIXME: Assumes NULL is represented with all zeroes */
-    /* NOTE: Scan strings backwards to get the same result as the G-M
-     * algorithm.
-     */
-    for (ia = sa; ia--;) {
-      tmp = off1;
-      off1 = off2;
-      off2 = tmp;
-
+	/* Equal */
 #ifdef DIFF_DEBUG
-      fprintf(stderr, "  ia:%d\n", ia);
-#endif /* DIFF_DEBUG */
-
-      for (ib = sb; ib--;) {
-	int res = is_eq(b->item + ib, a->item + ia);
-
-#ifdef DIFF_DEBUG
-	fprintf(stderr, "    ib:%d  ", ib);
+	fprintf(stderr, "    Equal\n");
 #endif /* DIFF_DEBUG */
 
 	if (table[off1 + ib].link) {
@@ -2274,57 +2240,56 @@ static struct array *diff_dyn_longest_sequence(struct array *a,
 	    dml_delete(dml_pool, table[off1 + ib].link);
 	  }
 	}
-	if (res) {
-	  /* Equal */
+	table[off1 + ib].depth = table[off2 + ib + 1].depth + 1;
+	dml = (table[off1 + ib].link = dml_new(&dml_pool));
+	if (!dml) {
+	  dml_free_pools(dml_pool);
+	  free(table);
+	  error("diff_dyn_longest_sequence(): Out of memory");
+	}
+	dml->refs = 1;
+	dml->prev = table[off2 + ib + 1].link;
+	if (dml->prev) {
+	  dml->prev->refs++;
+	}
+	dml->x = ib;
+      }
 #ifdef DIFF_DEBUG
-	  fprintf(stderr, "Equal\n");
+      fprintf(stderr, "    Range [0 - %d] differ\n", base-1);
 #endif /* DIFF_DEBUG */
-
-	  table[off1 + ib].depth = table[off2 + ib + 1].depth + 1;
-	  dml = (table[off1 + ib].link = dml_new(&dml_pool));
-	  if (!dml) {
-	    dml_free_pools(dml_pool);
-	    free(table);
-	    error("diff_dyn_longest_sequence(): Out of memory");
+      while (base--) {
+	/* Differ */
+	if (table[off1 + base].link) {
+	  if (!--(table[off1 + base].link->refs)) {
+	    dml_delete(dml_pool, table[off1 + base].link);
 	  }
-	  dml->refs = 1;
-	  dml->prev = table[off2 + ib + 1].link;
-	  if (dml->prev) {
-	    dml->prev->refs++;
-	  }
-	  dml->x = ib;
+	}
+	/* FIXME: Should it be > or >= here to get the same result
+	 * as with the G-M algorithm?
+	 */
+	if (table[off2 + base].depth > table[off1 + base + 1].depth) {
+	  table[off1 + base].depth = table[off2 + base].depth;
+	  dml = (table[off1 + base].link = table[off2 + base].link);
 	} else {
-	  /* Differ */
-#ifdef DIFF_DEBUG
-	  fprintf(stderr, "Differ\n");
-#endif /* DIFF_DEBUG */
-	  /* FIXME: Should it be > or >= here to get the same result
-	   * as with the G-M algorithm?
-	   */
-	  if (table[off2 + ib].depth > table[off1 + ib + 1].depth) {
-	    table[off1 + ib].depth = table[off2 + ib].depth;
-	    dml = (table[off1 + ib].link = table[off2 + ib].link);
-	  } else {
-	    table[off1 + ib].depth = table[off1 + ib + 1].depth;
-	    dml = (table[off1 + ib].link = table[off1 + ib + 1].link);
-	  }
-	  if (dml) {
-	    dml->refs++;
-	  }
+	  table[off1 + base].depth = table[off1 + base + 1].depth;
+	  dml = (table[off1 + base].link = table[off1 + base + 1].link);
+	}
+	if (dml) {
+	  dml->refs++;
 	}
       }
     }
   }
 
   /* Convert table into res */
-  sa = table[off1].depth;
+  sz = table[off1].depth;
   dml = table[off1].link;
   free(table);
 #ifdef DIFF_DEBUG
-  fprintf(stderr, "Result array size:%d\n", sa);
+  fprintf(stderr, "Result array size:%d\n", sz);
 #endif /* DIFF_DEBUG */
 
-  res = allocate_array(sa);
+  res = allocate_array(sz);
   if (!res) {
     if (dml_pool) {
       dml_free_pools(dml_pool);
@@ -2332,24 +2297,24 @@ static struct array *diff_dyn_longest_sequence(struct array *a,
     error("diff_dyn_longest_sequence(): Out of memory");
   }
 
-  ia = 0;
+  i = 0;
   while(dml) {
 #ifdef DEBUG
-    if (ia >= sa) {
+    if (i >= sz) {
       fatal("Consistency error in diff_dyn_longest_sequence()\n");
     }
 #endif /* DEBUG */
 #ifdef DIFF_DEBUG
-    fprintf(stderr, "  %02d: %d\n", ia, dml->x);
+    fprintf(stderr, "  %02d: %d\n", i, dml->x);
 #endif /* DIFF_DEBUG */
-    res->item[ia].type = T_INT;
-    res->item[ia].subtype = 0;
-    res->item[ia].u.integer = dml->x;
+    res->item[i].type = T_INT;
+    res->item[i].subtype = 0;
+    res->item[i].u.integer = dml->x;
     dml = dml->prev;
-    ia++;
+    i++;
   }
 #ifdef DEBUG
-  if (ia != sa) {
+  if (i != sz) {
     fatal("Consistency error in diff_dyn_longest_sequence()\n");
   }
 #endif /* DEBUG */
@@ -2443,27 +2408,27 @@ void f_diff(INT32 args)
 
    cmptbl = diff_compare_table(sp[-args].u.array, sp[1-args].u.array, &uniq);
 
+   push_array(cmptbl);
+#ifdef ENABLE_DYN_DIFF
    if (uniq * 100 > sp[1-args].u.array->size) {
+#endif /* ENABLE_DYN_DIFF */
 #ifdef DIFF_DEBUG
      fprintf(stderr, "diff: Using G-M algorithm, u:%d, s:%d\n",
 	     uniq, sp[1-args].u.array->size);
 #endif /* DIFF_DEBUG */
-     push_array(cmptbl);
-     seq=diff_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
-     push_array(seq);
-   
-     diff=diff_build(sp[-2-args].u.array,sp[1-2-args].u.array,seq);
+     seq = diff_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
+#ifdef ENABLE_DYN_DIFF
    } else {
 #ifdef DIFF_DEBUG
      fprintf(stderr, "diff: Using dyn algorithm, u:%d, s:%d\n",
 	     uniq, sp[1-args].u.array->size);
 #endif /* DIFF_DEBUG */
-     free_array(cmptbl);
-     seq = diff_dyn_longest_sequence(sp[-args].u.array, sp[1-args].u.array);
-     push_array(seq);
-
-     diff = diff_build(sp[-1-args].u.array, sp[1-1-args].u.array, seq);
-   }
+     seq = diff_dyn_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
+   }     
+#endif /* ENABLE_DYN_DIFF */
+   push_array(seq);
+   
+   diff=diff_build(sp[-2-args].u.array,sp[1-2-args].u.array,seq);
 
    pop_n_elems(2+args);
    push_array(diff);
@@ -2498,10 +2463,11 @@ void f_diff_longest_sequence(INT32 args)
        sp[1-args].type!=T_ARRAY)
       PIKE_ERROR("diff_longest_sequence", "Bad arguments.\n", sp, args);
 
-   cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array, NULL);
+   cmptbl = diff_compare_table(sp[-args].u.array,sp[1-args].u.array, NULL);
    push_array(cmptbl);
    /* Note that the stack is one element off here. */
-   seq=diff_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
+   seq = diff_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
+
    pop_n_elems(args+1);
    push_array(seq); 
 }
@@ -2509,6 +2475,7 @@ void f_diff_longest_sequence(INT32 args)
 void f_diff_dyn_longest_sequence(INT32 args)
 {
    struct array *seq;
+   struct array *cmptbl;
 
    if (args<2)
       PIKE_ERROR("diff_dyn_longest_sequence", "Too few arguments.\n",
@@ -2518,7 +2485,10 @@ void f_diff_dyn_longest_sequence(INT32 args)
        sp[1-args].type!=T_ARRAY)
       PIKE_ERROR("diff_dyn_longest_sequence", "Bad arguments.\n", sp, args);
 
-   seq = diff_dyn_longest_sequence(sp[-args].u.array, sp[1-args].u.array);
+   cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array, NULL);
+   push_array(cmptbl);
+   /* Note that the stack is one element off here. */
+   seq = diff_dyn_longest_sequence(cmptbl, sp[1-1-args].u.array->size);
 
    pop_n_elems(args);
    push_array(seq); 
