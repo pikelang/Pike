@@ -39,7 +39,7 @@
 #include <arpa/inet.h>
 #endif
 
-#define MAX_PARSE_RECURSE 128
+#define MAX_PARSE_RECURSE 1024
 
 void do_html_parse(struct lpc_string *ss,
 		   struct mapping *cont,struct mapping *single,
@@ -241,58 +241,147 @@ void f_parse_html(INT32 args)
   f_implode(1);
 }
 
+char start_quote_character = '\000';
+char end_quote_character = '\000';
+
+void f_set_end_quote(INT32 args)
+{
+  if(args < 1 || sp[-1].type != T_INT)
+    error("Wrong argument to set_end_quote(int CHAR)\n");
+  end_quote_character = sp[-1].u.integer;
+}
+
+void f_set_start_quote(INT32 args)
+{
+  if(args < 1 || sp[-1].type != T_INT)
+    error("Wrong argument to set_start_quote(int CHAR)\n");
+  start_quote_character = sp[-1].u.integer;
+}
+
+
+#define PUSH() do{if(i>j){push_string(make_shared_binary_string(s+j,i-j));strs++;j=i;}}while(0)
+#define SKIP_SPACE()  while (i<len && s[i]!='>' && isspace(s[i])) i++
+
+int extract_word(char *s, int i, int len)
+{
+  int inquote = 0;
+  char endquote = 0;
+  int j;      /* Start character for this word.. */
+  int strs = 0;
+
+  SKIP_SPACE();
+  j=i;
+
+  /* Should we allow "foo"bar'gazonk' ? We do now. */
+  
+  for(;i<len; i++)
+  {
+    switch(s[i])
+    {
+    case '>':
+    case ' ':
+    case '\t':
+    case '\n':
+    case '\r':
+    case '=':
+      if(!inquote)
+	goto done;
+      break;
+
+    case '"':
+      if(inquote)
+      {
+	if(endquote=='"')
+	{
+	  PUSH();
+	  inquote = 0;
+	}
+      }
+      else
+      {
+	PUSH();
+	j=i+1;
+	inquote = 1;
+	endquote = '"';
+      }
+      break;
+
+    case '\'':
+      if(inquote)
+      {
+	if(endquote == '\'')
+	{
+	  PUSH();
+	  inquote = 0;
+	}
+      }
+      else
+      {
+	PUSH();
+	j=i+1;
+	inquote = 1;
+	endquote = '\'';
+      }
+      break;
+
+    default:
+      if(!inquote)
+      {
+	if(s[i] == start_quote_character)
+	{
+	  PUSH();
+	  j=i+1;
+	  inquote = 1;
+	  endquote = end_quote_character;
+	}
+      } else if(endquote == end_quote_character) {
+	if(s[i] == endquote)
+	{
+	  if(!--inquote)
+	    PUSH();
+	} else if(s[i] == start_quote_character) {
+	  inquote++;
+	}
+      }
+      break;
+    }
+  }
+done:
+  if(!strs || i-j > 2)
+    PUSH();
+  f_aggregate(strs);
+  f_implode(1);
+  SKIP_SPACE();
+  return i;
+}
+#undef PUSH
+#undef SKIP_SPACE
+
+
 int push_parsed_tag(char *s,int len)
 {
-  int i,j,elems=0;
-  int haskey;
+  int i=0;
+  struct svalue *oldsp;
+  /* Find X=Y pairs. */
+  oldsp = sp;
 
-  for (i=haskey=0; i<len && s[i]!='>';)
+  while (i<len && s[i]!='>')
   {
-    for (; i<len&&s[i]!='>' && isspace(s[i]); i++); /* skip space */
-    if (!(i<len && s[i]!='>')) break;
-
-    /* check wordlen */
-    for (j=i; i<len && s[i] != '>' && !isspace(s[i]) && s[i]!='='; i++); 
-
-    if (j<i) 
+    i = extract_word(s, i, len);
+    f_lower_case(1);            /* Since SGML want's us to... */
+    if (i+1 >= len || (s[i] != '=') || (s[i]=='>') || (s[i+1]=='>'))
     {
-      push_string(make_shared_binary_string(s+j,i-j));
-      f_lower_case(1);
+      /* No 'Y' part here. Assign to 'X' */
+      assign_svalue_no_free(sp,sp-1);
+      sp++;
+    } else {
+      i = extract_word(s, i+1, len);
     }
-    else
-      push_string(make_shared_string(""));
-
-    while(i<len && s[i] != '>' && isspace(s[i])) 
-      i++; /* skip space */
-
-    if (i>=len || s[i]!='=') 
-    {
-      assign_svalue_no_free(sp,sp-1); sp++;
-      elems++;
-      continue;
-    }
-    i++;
-    if (i>=len || s[i]=='>' || (s[i]=='"' && i+1 >= len))
-    {
-      assign_svalue_no_free(sp,sp-1); sp++;
-      elems++;
-      continue;
-    }
-    if (s[i]=='"')
-    {
-      j=++i;
-      for (;i<len && s[i]!='"' ;i++); /* end quote */
-      push_string(make_shared_binary_string(s+j,i-j));
-      elems++;
-      if (i<len) i++;
-      continue;
-    }
-    for (j=i;i<len&&s[i]!='>'&&!isspace(s[i]);i++); /* check wordlen */
-    push_string(make_shared_binary_string(s+j,i-j));
-    elems++;
   }
-  f_aggregate_mapping(elems*2);
-  return i+(i<len);
+  f_aggregate_mapping(sp-oldsp);
+  if(i<len) i++;
+
+  return i;
 }
 
 INLINE int tagsequal(char *s, char *t, int len, char *end)
@@ -307,7 +396,6 @@ INLINE int tagsequal(char *s, char *t, int len, char *end)
 
   return 1;
 }
-
 
 int find_endtag(struct lpc_string *tag, char *s, int len, int *aftertag)
 {
@@ -350,7 +438,6 @@ void do_html_parse(struct lpc_string *ss,
   unsigned char *s;
   struct svalue sval1,sval2;
   struct lpc_string *ss2;
-
   if (!ss->len)
   {
     free_string(ss);
@@ -385,16 +472,19 @@ void do_html_parse(struct lpc_string *ss,
       sval2.type=T_STRING;
       pop_stack();
 
+      /* Is this a non-container? */
       mapping_index_no_free(&sval1,single,&sval2);
 
       if (sval1.type==T_STRING)
       {
+	/* A simple string ... */
 	assign_svalue_no_free(sp++,&sval1);
 	free_svalue(&sval1);
 	(*strings)++;
 	find_endtag(sval2.u.string ,s+j, len-j, &l);
 	free_svalue(&sval2);
-	i=last=j+=l;
+	j+=l;
+	i=last=j;
 	continue;
       }
       else if (sval1.type!=T_INT)
@@ -422,10 +512,28 @@ void do_html_parse(struct lpc_string *ss,
 	  i=last=j+k;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
+	} else if (sp[-1].type==T_ARRAY) {
+	  free_svalue(&sval2);
+	  free_svalue(&sval1);
+
+	  f_implode(1);
+
+	  if (last != i-1)
+	  { 
+	    push_string(make_shared_binary_string(s+last,i-last-1)); 
+	    (*strings)++; 
+	  }
+	  i=last=j+k;
+	  push_string(sp[-1].u.string);
+	  (*strings)++;
+	  pop_stack();
+	  free_svalue(&sval1);
+	  continue;
 	}
 	pop_stack();
       }
 
+      /* Is it a container then? */
       free_svalue(&sval1);
       mapping_index_no_free(&sval1,cont,&sval2);
       if (sval1.type==T_STRING)
@@ -435,16 +543,19 @@ void do_html_parse(struct lpc_string *ss,
 	(*strings)++;
 	find_endtag(sval2.u.string,s+j,len-j,&l);
 	free_svalue(&sval2);
-	i=last=j+=l;
+	j+=l;
+	i=last=j;
 	continue;
       }
-      else if (sval1.type!=T_INT)
+      else if (sval1.type != T_STRING)
       {
 	assign_svalue_no_free(sp++,&sval2);
-	m=j+(k=push_parsed_tag(s+j,len-j)); 
-	k=find_endtag(sval2.u.string,s+m,len-m,&l);
+	m=push_parsed_tag(s+j,len-j) + j;
+	k=find_endtag(sval2.u.string,s+m,len-m,&l); 
 	push_string(make_shared_binary_string(s+m,k));
-	m+=l;
+	m+=l; 
+        /* M == just after end tag, from s       */
+
 	if (extra_args)
 	{
 	  extra_args->refs++;
@@ -452,12 +563,16 @@ void do_html_parse(struct lpc_string *ss,
 	}
 
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+
 	if (sp[-1].type==T_STRING)
 	{
 	  free_svalue(&sval1);
 	  free_svalue(&sval2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
+
+	  /* i == first '<' ? */
+	  /* last == end of last tag */
 	  if (last!=i-1)
 	  { 
 	    push_string(make_shared_binary_string(s+last,i-last-1)); 
@@ -465,6 +580,35 @@ void do_html_parse(struct lpc_string *ss,
 	  }
 	  i=last=j=m;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
+	  continue;
+
+	} else if (sp[-1].type==T_ARRAY) {
+	  free_svalue(&sval1);
+	  free_svalue(&sval2);
+
+	  if(sp[-1].u.array->size < 1)
+	  {
+	    pop_stack();
+	    continue;
+	  }
+	  array_index(&sval1, sp[-1].u.array, 0);
+	  if(sval1.type != T_STRING)
+	  {
+	    free_svalue(&sval1);
+	    pop_stack();
+	    continue;
+	  }
+	  copy_shared_string(ss2,sval1.u.string);
+	  free_svalue(&sval1);
+	  pop_stack();
+	  if (last!=i-1)
+	  { 
+	    push_string(make_shared_binary_string(s+last,i-last-1)); 
+	    (*strings)++; 
+	  }
+	  i=last=j+k;
+ /* No recursive parsing in this case.. */
+/*	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);*/
 	  continue;
 	}
 	pop_stack();
@@ -1058,6 +1202,11 @@ void f_chroot(INT32 args)
 
 void init_spider_efuns(void) 
 {
+  add_efun("set_start_quote", f_set_start_quote, "function(int:int)", 
+	   OPT_EXTERNAL_DEPEND);
+  add_efun("set_end_quote", f_set_end_quote, "function(int:int)", 
+	   OPT_EXTERNAL_DEPEND);
+
 #ifdef SOLARIS
   add_efun("send_fd", f_send_fd, "function(int,int:int)", OPT_EXTERNAL_DEPEND);
 #endif
