@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.130 2003/03/28 22:13:54 mast Exp $
+|| $Id: mpz_glue.c,v 1.131 2003/03/28 22:15:47 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.130 2003/03/28 22:13:54 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.131 2003/03/28 22:15:47 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -302,11 +302,11 @@ int get_new_mpz(MP_INT *tmp, struct svalue *s,
 	((SIZEOF_INT_TYPE + SIZEOF_LONG - 1) / SIZEOF_LONG - 1)
 	/* The above is the position of the top unsigned long in the INT64. */
 	* ULONG_BITS;
-      mpz_set_ui (mpz, (s->u.integer >> n) & ULONG_MAX);
+      mpz_set_ui (tmp, (s->u.integer >> n) & ULONG_MAX);
       while (n) {
 	n -= ULONG_BITS;
-	mpz_mul_2exp (mpz, mpz, ULONG_BITS);
-	mpz_add_ui (mpz, mpz, (s->u.integer >> n) & ULONG_MAX);
+	mpz_mul_2exp (tmp, tmp, ULONG_BITS);
+	mpz_add_ui (tmp, tmp, (s->u.integer >> n) & ULONG_MAX);
       }
     }
 #endif
