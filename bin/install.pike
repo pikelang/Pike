@@ -1196,6 +1196,14 @@ void do_install()
     else {
       status("Finalizing",pike_bin_file);
       string pike_bin=Stdio.read_file(pike_bin_file);
+
+      if (!pike_bin) {
+	// Failed to read bin file, most likely Cygwin.
+
+	status("Finalizing",pike_bin_file,"FAILED");
+	exit(1);
+      }
+
       int pos=search(pike_bin, MASTER_COOKIE);
 
       if(pos>=0)
