@@ -19,8 +19,8 @@
 
 extern struct program *parser_html_program;
 
-#define DEBUG
 /*
+#define DEBUG
 #define SCAN_DEBUG
 */
 
@@ -33,7 +33,7 @@ extern struct program *parser_html_program;
 #define DEBUG_MARK_SPOT(TEXT,FEED,C) do; while(0)
 #endif
 
-#if 1
+#if 0
 #define free(X) fprintf(stderr,"free line %d: %p\n",__LINE__,X); free(X)
 #endif
 
@@ -465,13 +465,14 @@ static void html__set_entity_callback(INT32 args)
 **!	(Ie, do destructive editing of the args mapping if you 
 **!	want the next callback to read it - don't just return a new tag.)
 **!	</ul>
+**!
+**! see also: tags, containers, entities
 **!	
 */
 
 static void html_add_tag(INT32 args)
 {
-   check_all_args("add_tag",args,
-		  BIT_STRING,BIT_MIXED,0);
+   check_all_args("add_tag",args,BIT_STRING,BIT_MIXED,0);
    if (THIS->maptag->refs>1)
    {
       push_mapping(THIS->maptag);
@@ -486,8 +487,7 @@ static void html_add_tag(INT32 args)
 
 static void html_add_container(INT32 args)
 {
-   check_all_args("add_container",args,
-		  BIT_STRING,BIT_MIXED,0);
+   check_all_args("add_container",args,BIT_STRING,BIT_MIXED,0);
    if (THIS->mapcont->refs>1)
    {
       push_mapping(THIS->mapcont);
@@ -500,8 +500,7 @@ static void html_add_container(INT32 args)
 
 static void html_add_entity(INT32 args)
 {
-   check_all_args("parse_tag_args",args,
-		  BIT_STRING,BIT_MIXED,0);
+   check_all_args("add_entity",args,BIT_STRING,BIT_MIXED,0);
    if (THIS->mapentity->refs>1)
    {
       push_mapping(THIS->mapentity);
@@ -510,6 +509,81 @@ static void html_add_entity(INT32 args)
    }
    mapping_insert(THIS->mapentity,sp-2,sp-1);
    pop_n_elems(args);
+}
+
+static void html_add_tags(INT32 args)
+{
+   int sz;
+   INT32 e;
+   struct keypair *k;
+   check_all_args("add_tags",args,BIT_MAPPING,0);
+
+   sz=sp[-1].u.mapping->size;
+
+   MAPPING_LOOP(sp[-1].u.mapping)
+      {
+	 push_svalue(&k->ind);
+	 push_svalue(&k->val);
+	 html_add_tag(2);
+      }
+   
+   pop_n_elems(args);
+}
+
+static void html_add_containers(INT32 args)
+{
+   int sz;
+   INT32 e;
+   struct keypair *k;
+   check_all_args("add_containers",args,BIT_MAPPING,0);
+
+   sz=sp[-1].u.mapping->size;
+
+   MAPPING_LOOP(sp[-1].u.mapping)
+      {
+	 push_svalue(&k->ind);
+	 push_svalue(&k->val);
+	 html_add_container(2);
+      }
+   
+   pop_n_elems(args);
+}
+
+static void html_add_entities(INT32 args)
+{
+   int sz;
+   INT32 e;
+   struct keypair *k;
+   check_all_args("add_entities",args,BIT_MAPPING,0);
+
+   sz=sp[-1].u.mapping->size;
+
+   MAPPING_LOOP(sp[-1].u.mapping)
+      {
+	 push_svalue(&k->ind);
+	 push_svalue(&k->val);
+	 html_add_entity(2);
+      }
+   
+   pop_n_elems(args);
+}
+
+static void html_tags(INT32 args)
+{
+   pop_n_elems(args);
+   ref_push_mapping(THIS->maptag);
+}
+
+static void html_containers(INT32 args)
+{
+   pop_n_elems(args);
+   ref_push_mapping(THIS->mapcont);
+}
+
+static void html_entities(INT32 args)
+{
+   pop_n_elems(args);
+   ref_push_mapping(THIS->mapentity);
 }
 
 /****** try_feed - internal main ********************/
@@ -1922,6 +1996,43 @@ void html_write_out(INT32 args)
 
 /** query *******************************************/
 
+/* 
+**! method array(int) at();
+**! method int at_line();
+**! method int at_char();
+**! method int at_column();
+**!	Get the current position.
+**!	<ref>at</ref>() gives an array consisting of
+**!	({<i>line</i>,<i>char</i>,<i>column</i>}), in that order.
+*/
+
+static void html_at_line(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->stack->pos.lineno);
+}
+
+static void html_at_char(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->stack->pos.byteno);
+}
+
+static void html_at_column(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->stack->pos.byteno-THIS->stack->pos.linestart);
+}
+
+static void html_at(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->stack->pos.lineno);
+   push_int(THIS->stack->pos.byteno);
+   push_int(THIS->stack->pos.byteno-THIS->stack->pos.linestart);
+   f_aggregate(3);
+}
+
 /*
 **! method string current()
 **!	Gives the current range of data, ie the contents
@@ -2182,6 +2293,8 @@ void html__inspect(INT32 args)
    f_aggregate_mapping(n*2);
 }
 
+/** create, clone ***********************************/
+
 void html_create(INT32 args)
 {
    pop_n_elems(args);
@@ -2292,6 +2405,12 @@ void init_parser_html(void)
    /* query */
 
    ADD_FUNCTION("current",html_current,tFunc(,tStr),0);
+
+   ADD_FUNCTION("at",html_at,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("at_line",html_at_line,tFunc(,tInt),0);
+   ADD_FUNCTION("at_char",html_at_char,tFunc(,tInt),0);
+   ADD_FUNCTION("at_column",html_at_column,tFunc(,tInt),0);
+
    ADD_FUNCTION("tag_name",html_tag_name,tFunc(,tStr),0);
    ADD_FUNCTION("tag_args",html_tag_args,tFunc(,tMapping),0);
 
@@ -2303,6 +2422,21 @@ void init_parser_html(void)
 		tFunc(tStr tTodo(tTagargs tStr),tVoid),0);
    ADD_FUNCTION("add_entity",html_add_entity,
 		tFunc(tStr tTodo(""),tVoid),0);
+
+   ADD_FUNCTION("add_tags",html_add_tags,
+		tFunc(tMap(tStr,tTodo( tTagargs )),tVoid),0);
+   ADD_FUNCTION("add_containers",html_add_containers,
+		tFunc(tMap(tStr,tTodo( tTagargs tStr )),tVoid),0);
+   ADD_FUNCTION("add_entities",html_add_entities,
+		tFunc(tMap(tStr,tTodo( "" )),tVoid),0);
+
+   ADD_FUNCTION("tags",html_tags,
+		tFunc(,tMap(tStr,tTodo( tTagargs ))),0);
+   ADD_FUNCTION("containers",html_containers,
+		tFunc(,tMap(tStr,tTodo( tTagargs tStr ))),0);
+   ADD_FUNCTION("entities",html_entities,
+		tFunc(,tMap(tStr,tTodo( "" ))),0);
+
 
    /* special callbacks */
 
