@@ -11529,7 +11529,7 @@ backtrace, Simulate.get_function
 
 <function name=call_out title="make a delayed call to a function">
 <man_syntax>
-mixed call_out(function <I>f</I>, int <I>delay</I>, mixed ... <I>args</I>);
+mixed call_out(function <I>f</I>, float|int <I>delay</I>, mixed ... <I>args</I>);
 </man_syntax>
 <man_description>
 Call_out places a call to the function <i>f</i> with the argument <i>args</i>
@@ -13531,7 +13531,7 @@ size.
 
 <function name=sleep title="let interpreter doze off for a while">
 <man_syntax>
-void sleep(int <I>s</I>);
+void sleep(float|int <I>s</I>, int|void <I>foo</I>);
 </man_syntax>
 <man_description>
 This function makes the program stop for s seconds. Only signal
