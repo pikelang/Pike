@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.411 2000/08/29 01:10:25 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.412 2000/08/29 13:40:13 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2160,6 +2160,83 @@ if test $pike_cv_func_gettimeofday_has_two_args = yes; then
 fi
 
 AC_MSG_RESULT($pike_cv_func_gettimeofday_has_two_args)
+
+if test "x$ac_cv_func_gethrtime" != "xyes"; then
+  AC_MSG_CHECKING(if we can make gethrtime by the RDTSC instruction)
+  AC_CACHE_VAL(pike_cv_own_gethrtime_rdtsc, [
+     AC_TRY_RUN([
+#include <unistd.h>
+#include <sys/time.h>
+
+static long long hrtime_rtsc_zero;
+static struct timeval hrtime_timeval_zero;
+static long double hrtime_conv=0.0;
+
+#define RTSC(x)   							\
+   __asm__ __volatile__ (  "rdtsc"                			\
+			   :"=a" (((unsigned long*)&x)[0]), 		\
+			   "=d" (((unsigned long*)&x)[1]))
+
+void own_gethrtime_init()
+{
+   RTSC(hrtime_rtsc_zero);
+   gettimeofday(&hrtime_timeval_zero,NULL);
+}
+
+void own_gethrtime_update(struct timeval *ptr)
+{
+   long long td,t,now;
+   RTSC(now);
+   gettimeofday(ptr,NULL);
+   td=((long long)ptr->tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
+      ((long long)ptr->tv_usec-hrtime_timeval_zero.tv_usec)*1000;
+   t=now-hrtime_rtsc_zero;
+   if (t) hrtime_conv=((long double)td)/t;
+}
+
+long long gethrtime()
+{
+   long long now;
+   struct timeval dummy;
+
+   if (hrtime_conv==0.0) own_gethrtime_update(&dummy);
+
+   RTSC(now);
+   return (long long) ( (long double)now * hrtime_conv );
+}
+
+int main()
+{
+   struct timeval tv1,tv2;
+   long long td,t2;
+   own_gethrtime_init();
+
+   gettimeofday(&tv1,NULL);
+   for (;;) /* busy loop */
+   {
+      gettimeofday(&tv2,NULL);
+      td=((long long)tv2.tv_sec-tv1.tv_sec)*1000000000+
+	 ((long long)tv2.tv_usec-tv1.tv_usec)*1000;
+      if (td>1000000) break;
+   }
+   t2=gethrtime();
+
+   if (t2!=hrtime_rtsc_zero) return 0;
+
+   return 1;
+}
+	],pike_cv_own_gethrtime_rdtsc=yes,
+	pike_cv_own_gethrtime_rdtsc=no)
+	])
+  if test "x$pike_cv_own_gethrtime_rdtsc" = "xyes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(OWN_GETHRTIME)
+    AC_DEFINE(OWN_GETHRTIME_RDTSC)
+    AC_DEFINE(HAVE_GETHRTIME)
+  else 
+    AC_MSG_RESULT([no])
+  fi
+fi
 
 AC_MSG_CHECKING(if struct tm has tm_gmtoff)
 

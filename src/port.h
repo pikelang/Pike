@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.29 2000/06/30 09:46:14 grubba Exp $
+ * $Id: port.h,v 1.30 2000/08/29 13:40:14 mirar Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -220,5 +220,13 @@ static INLINE INT32 EXTRACT_INT_(unsigned char *p)
 
 unsigned long my_rand(void);
 void my_srand(long seed);
+
+#ifdef OWN_GETHRTIME
+void own_gethrtime_init();
+void own_gethrtime_update(struct timeval *ptr);
+long long gethrtime();
+
+#define hrtime_t long long
+#endif
 
 #endif

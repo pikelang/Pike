@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.100 2000/08/24 04:04:41 hubbe Exp $");
+RCSID("$Id: main.c,v 1.101 2000/08/29 13:40:14 mirar Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -151,6 +151,10 @@ int dbm_main(int argc, char **argv)
 
 #ifdef TRY_USE_MMX
   try_use_mmx=mmx_ok();
+#endif
+#ifdef OWN_GETHRTIME
+/* initialize our own gethrtime conversion /Mirar */
+  own_gethrtime_init();
 #endif
 
   ARGV=argv;

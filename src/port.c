@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.30 2000/08/29 12:34:02 grubba Exp $");
+RCSID("$Id: port.c,v 1.31 2000/08/29 13:40:14 mirar Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -637,4 +637,69 @@ PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p)
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
+#endif
+
+#ifdef OWN_GETHRTIME
+
+#ifdef OWN_GETHRTIME_RDTSC
+
+static long long hrtime_rtsc_zero;
+static long long hrtime_rtsc_last;
+static struct timeval hrtime_timeval_zero;
+static long double hrtime_conv=0.0;
+
+#define RTSC(x)   							\
+   __asm__ __volatile__ (  "rdtsc"                			\
+			   :"=a" (((unsigned long*)&x)[0]), 		\
+			   "=d" (((unsigned long*)&x)[1]))
+
+void own_gethrtime_init()
+{
+   RTSC(hrtime_rtsc_zero);
+   hrtime_rtsc_last=hrtime_rtsc_zero;
+   GETTIMEOFDAY(&hrtime_timeval_zero);
+}
+
+void own_gethrtime_update(struct timeval *ptr)
+{
+   long long td,t,now;
+   RTSC(now);
+   GETTIMEOFDAY(ptr);
+   td=((long long)ptr->tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
+      ((long long)ptr->tv_usec-hrtime_timeval_zero.tv_usec)*1000;
+   hrtime_rtsc_last=now;
+   t=now-hrtime_rtsc_zero;
+   if (t) hrtime_conv=((long double)td)/t;
+
+/* fixme: add time deviation detection;
+   when time is adjusted, this calculation isn't linear anymore,
+   so it might be best to reset it */
+
+#if 0
+   fprintf(stderr,"conv=%.8llg MHz=%.8llg\n",hrtime_conv,1000.0/hrtime_conv);
+#endif
+}
+
+long long gethrtime()
+{
+   long long now;
+   struct timeval dummy;
+
+   if (hrtime_conv==0.0) own_gethrtime_update(&dummy);
+
+   RTSC(now);
+
+/* 2 seconds between updates */
+   if (now-hrtime_rtsc_last > 2000000000) 
+   {
+      fprintf(stderr,"update: %.8llg\n",1e-9*(now-hrtime_rtsc_last));
+      own_gethrtime_update(&dummy);
+      return gethrtime();
+   }
+
+   return (long long) ( (long double)now * hrtime_conv );
+}
+
+#endif
+
 #endif

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.57 2000/08/28 16:23:59 grubba Exp $");
+RCSID("$Id: backend.c,v 1.58 2000/08/29 13:40:13 mirar Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -723,7 +723,13 @@ void backend(void)
     if(d_flag > 1) do_debug();
 #endif
 
+#ifndef OWN_GETHRTIME
     GETTIMEOFDAY(&current_time);
+#else
+    /* good place to run the gethrtime-conversion update
+       since we have to run gettimeofday anyway /Mirar */
+    own_gethrtime_update(&current_time);
+#endif
 
     if(my_timercmp(&next_timeout, > , &current_time))
     {
