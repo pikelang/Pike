@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.42 2002/10/29 20:09:33 bill Exp $
+// $Id: Readline.pike,v 1.43 2002/11/26 15:06:46 jhs Exp $
 #pike __REAL_VERSION__
 
 class OutputController
@@ -1307,8 +1307,11 @@ void history(int n)
   }
 }
 
-//! @fixme
-//!   Document this function
+//! Changes the line to a line from the history @[d] steps from the
+//! current entry (0 being the current line, negative values older,
+//! and positive values newer).
+//! @note
+//!   Only effective if you have a history object.
 void delta_history(int d)
 {
   if(historyobj)
