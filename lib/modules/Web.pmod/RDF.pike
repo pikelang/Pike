@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.21 2003/11/07 18:55:04 nilsson Exp $
+// $Id: RDF.pike,v 1.22 2003/11/12 16:47:22 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -39,7 +39,7 @@ class Resource {
   static int(1..) number;
   constant is_resource = 1;
 
-  void create() {
+  static void create() {
     number = node_counter++;
   }
 
@@ -67,7 +67,7 @@ class RDFResource {
   static string id;
 
   //! The resource will be identified by the identifier @[rdf_id]
-  void create(string rdf_id) {
+  static void create(string rdf_id) {
     id = rdf_id;
   }
 
@@ -98,7 +98,7 @@ class LiteralResource {
   static string id;
 
   //! The resource will be identified by @[literal].
-  void create(string literal) {
+  static void create(string literal) {
     id = literal;
     ::create();
   }
@@ -128,7 +128,7 @@ class URIResource {
   //! @throws
   //!   Throws an error if another resource with the
   //!   same URI already exists in the RDF domain.
-  void create(string uri) {
+  static void create(string uri) {
     if(uris[uri])
       error("A resource with URI %s already exists in the RDF domain.\n", uri);
     uris[uri] = this_object();
