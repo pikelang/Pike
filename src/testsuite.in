@@ -4,7 +4,7 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.13 1996/12/05 21:38:23 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.14 1996/12/07 23:32:41 hubbe Exp $"]])
 test_any([[object(File) o=File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
@@ -79,14 +79,17 @@ cond([[all_efuns()->thread_create]],
   test_do(thread_create(lambda() { }))
 
 // /precompiled/mutex
-  test_true(clone(Mutex))
-  test_true(clone(Mutex)->lock())
-  test_true(clone(Mutex)->trylock())
+  test_true(Mutex())
+  test_do(add_constat("_tmp_mutex",Mutex()))
+  test_true(_tmp_mutex->lock())
+  test_true(_tmp_mutex->lock())
+  test_true(_tmp_mutex->trylock())
+  test_true(_tmp_mutex->trylock())
 
 // /precompiled/condition
-  test_true(clone(Condition))
-  test_do(clone(Condition)->signal())
-  test_do(clone(Condition)->broadcast())
+  test_true(Condition())
+  test_do(Condition()->signal())
+  test_do(Condition()->broadcast())
 
 // /precompiled/fifo
 test_any([[
