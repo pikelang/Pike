@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.29 2004/08/19 14:46:43 noring Exp $
+// $Id: Query.pmod,v 1.30 2004/12/29 13:27:22 anders Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -198,7 +198,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 
           int t_low, t_high;
 	  catch {
-	    t_low = t_high = Calendar.ISO.dwim_day(q->date)->unix_time();
+	    t_low = t_high = Calendar.ISO.dwim_day(String.trim_whites(q->date))->unix_time();
 	    t_high += 24*60*60-1;   // Add 24 h to end of the day.
 	  };
 
