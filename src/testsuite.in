@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.154 1999/03/04 21:40:17 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.155 1999/03/06 03:14:09 grubba Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -67,11 +67,11 @@ int main()
 }
 ]])
 
-test_compile_eror(0())
-test_compile_eror(1())
-test_compile_eror(""())
-test_compile_eror(([])())
-test_compile_eror(([])())
+dnl test_compile_error(0())
+test_compile_error(1())
+test_compile_error(""())
+test_compile_error(([])())
+test_compile_error(([])())
 test_any([[ class X { int y; class Z { void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
 test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
 
@@ -155,6 +155,59 @@ test_any([[class G { mapping t=([]);
 }; object x=G(); x->W(); return objectp(x->t->foo)]],1)
 
 test_program([[class foo { program x() { return class {}; }}; class bar { inherit foo; program x() { return class {}; }} int a() { return foo()->x != bar()->x(); }]])
+
+test_any([[
+  class A {
+    constant gurka = 2;
+    int foo = gurka;
+  };
+  class B {
+    static inherit A;
+    constant gurka = 1;
+    int bar;
+
+    void create() { bar = foo; }
+  };
+  return B()->bar;
+]], 1)
+
+test_any([[
+  class A {
+    constant gurka = 2;
+    int foo = gurka;
+  };
+  class B {
+    static inherit A;
+    constant gurka = 1;
+    int bar;
+    int baz = 3;
+
+    void create() { bar = baz + foo; }
+  };
+  return B()->bar;
+]], 4)
+
+test_any([[
+  class A {
+    constant gurka = 2;
+    int foo = gurka;
+  };
+  class B {
+    constant banan = 4;
+    int foo = banan;
+  };
+  class C {
+    static inherit A;
+    static inherit B;
+    constant gurka = 1;
+    constant banan = 5;
+    int bar;
+    int baz = 3;
+
+    void create() { bar = baz + A::foo + B::foo; }
+  };
+  return B()->bar;
+]], 8)
 
 test_eq([[object_program(master())]],[[(program)"/master"]])
 test_compile([[object("master") m = master();]])
