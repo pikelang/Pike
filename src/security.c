@@ -51,7 +51,7 @@ static void get_default_creds(INT32 args)
     push_int(0);
 }
 
-static void set_default_creds(INT32 args)
+static void init_creds(INT32 args)
 {
   struct object *o;
   INT_TYPE may,data;
