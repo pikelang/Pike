@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.318 2004/04/14 11:34:02 grubba Exp $
+|| $Id: file.c,v 1.319 2004/08/26 21:26:26 vida Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.318 2004/04/14 11:34:02 grubba Exp $");
+RCSID("$Id: file.c,v 1.319 2004/08/26 21:26:26 vida Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2285,6 +2285,43 @@ static void file_query_fd(INT32 args)
   push_int(FD);
 }
 
+/*! @decl int release_fd()
+ *!
+ *! Returns the file descriptor number associated with this object, in
+ *! addition to releasing it so that this object behaves as if closed.
+ *! Other settings like callbacks and backend remain intact.
+ *! @[take_fd] can later be used to reinstate the file descriptor so
+ *! that the state is restored.
+ *!
+ *! @seealso
+ *!   @[query_fd()], @[take_fd()]
+ */
+static void file_release_fd(INT32 args)
+{
+  file_query_fd(args);
+  change_fd_for_box(&THIS->box, -1);
+}
+
+/*! @decl void take_fd(int fd)
+ *!
+ *! Rehooks the given file descriptor number to be associated with
+ *! this object. As opposed to using @[open] with a file descriptor
+ *! number, it will be closed by this object upon destruct or when
+ *! @[close] is called.
+ *!
+ *! @seealso
+ *!   @[release_fd()]
+ */
+static void file_take_fd(INT32 args)
+{
+  if (args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Stdio.File->take_fd", 1);
+  if (Pike_sp[-args].type != PIKE_T_INT)
+    SIMPLE_BAD_ARG_ERROR ("Stdio.File->take_fd", 0, "int");
+  change_fd_for_box(&THIS->box, Pike_sp[-args].u.integer);
+  pop_n_elems(args);
+}
+
 struct object *file_make_object_from_fd(int fd, int mode, int guess)
 {
   struct object *o=low_clone(file_program);
@@ -2343,6 +2380,7 @@ static void file_set_buffer(INT32 args)
   }else{
     flags=FILE_READ | FILE_WRITE;
   }
+  pop_n_elems(args);
 
 #ifdef SOCKET_BUFFER_MAX
 #if SOCKET_BUFFER_MAX
