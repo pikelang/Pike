@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.236 2001/02/21 20:21:42 grubba Exp $");
+RCSID("$Id: las.c,v 1.237 2001/02/23 14:46:21 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -252,6 +252,7 @@ INT32 count_args(node *n)
   case F_CASE:
   case F_FOR:
   case F_DO:
+  case F_LOOP:
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
@@ -354,7 +355,7 @@ int check_tailrecursion(void)
   for(e=0;e<Pike_compiler->compiler_frame->max_number_of_locals;e++)
   {
     if(!pike_type_allow_premature_toss(
-      Pike_compiler->compiler_frame->variable[e].type->str))
+      Pike_compiler->compiler_frame->variable[e].type))
       return 0;
   }
   return 1;
@@ -1950,7 +1951,7 @@ int node_may_overload(node *n, int lfun)
 {
   if(!n) return 0;
   if(!n->type) return 1;
-  return type_may_overload(n->type->str, lfun);
+  return type_may_overload(n->type, lfun);
 }
 
 /* FIXME: Ought to use parent pointer to avoid recursion. */
@@ -2530,6 +2531,7 @@ static int find_used_variables(node *n,
   case F_DEC_NEQ_LOOP:
   case F_INC_LOOP:
   case F_DEC_LOOP:
+  case F_LOOP:
   case F_FOREACH:
   case F_FOR:
     find_used_variables(CAR(n),p,noblock,0);
@@ -2846,6 +2848,7 @@ static int cntargs(node *n)
 
   case F_POP_VALUE:
   case F_FOREACH:
+  case F_LOOP:
   case F_INC_NEQ_LOOP:
   case F_DEC_NEQ_LOOP:
   case F_INC_LOOP:
@@ -2937,7 +2940,7 @@ void yytype_error(char *msg, struct pike_type *expected_t,
 
 void fix_type_field(node *n)
 {
-  struct pike_type *type_a,*type_b;
+  struct pike_type *type_a, *type_b;
   struct pike_type *old_type;
 
   if (n->type && !(n->node_info & OPT_TYPE_NOT_FIXED))
@@ -2977,14 +2980,14 @@ void fix_type_field(node *n)
       copy_type(n->type, mixed_type_string);
       break;
     }
-    if(!match_types(CAR(n)->type,mixed_type_string))
+    if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression.");
 
     if (!CDR(n) || CDR(n)->type == void_type_string)
-      copy_type(n->type,void_type_string);
+      copy_type(n->type, void_type_string);
     else if(n->token == F_LAND || CAR(n)->type == CDR(n)->type)
     {
-      copy_type(n->type,CDR(n)->type);
+      copy_type(n->type, CDR(n)->type);
     }else{
       n->type = or_pike_types(CAR(n)->type, CDR(n)->type, 0);
     }
@@ -3192,7 +3195,7 @@ void fix_type_field(node *n)
   case '?':
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("Conditional expression is void.");
-    } else if(!match_types(CAR(n)->type,mixed_type_string))
+    } else if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression.");
 
     if(!CDR(n) || !CADR(n) || !CDDR(n) ||
@@ -3354,7 +3357,7 @@ void fix_type_field(node *n)
 	{
 	  yyerror("Wrong return type.");
 	  yyexplain_nonmatching_types(Pike_compiler->compiler_frame->current_return_type,
-				      CAR(n)->type,0);
+				      CAR(n)->type, 0);
 	}
 	else if (lex.pragmas & ID_STRICT_TYPES)
 	{
@@ -3401,6 +3404,7 @@ void fix_type_field(node *n)
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
   case F_INC_NEQ_LOOP:
+  case F_LOOP:
   case F_CONTINUE:
   case F_BREAK:
   case F_DEFAULT:
@@ -3411,7 +3415,7 @@ void fix_type_field(node *n)
   case F_DO:
     if (!CDR(n) || (CDR(n)->type == void_type_string)) {
       yyerror("do - while(): Conditional expression is void.");
-    } else if(!match_types(CDR(n)->type,mixed_type_string))
+    } else if(!match_types(CDR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression do - while().");
     copy_type(n->type, void_type_string);
     break;
@@ -3419,7 +3423,7 @@ void fix_type_field(node *n)
   case F_FOR:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("for(): Conditional expression is void.");
-    } else if(!match_types(CAR(n)->type,mixed_type_string))
+    } else if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad conditional expression for().");
     copy_type(n->type, void_type_string);
     break;
@@ -3427,7 +3431,7 @@ void fix_type_field(node *n)
   case F_SWITCH:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       yyerror("switch(): Conditional expression is void.");
-    } else if(!match_types(CAR(n)->type,mixed_type_string))
+    } else if(!match_types(CAR(n)->type, mixed_type_string))
       yyerror("Bad switch expression.");
     copy_type(n->type, void_type_string);
     break;
@@ -3504,6 +3508,7 @@ void fix_type_field(node *n)
 	}
       }
     }
+    /* FIXME: */
     MAKE_CONSTANT_SHARED_STRING(n->type, tIntPos);
     break;
 
@@ -3527,7 +3532,7 @@ void fix_type_field(node *n)
       break;
     }
 
-    if(!CDR(n) || CDR(n)->type==void_type_string)
+    if(!CDR(n) || CDR(n)->type == void_type_string)
     {
       if(CAR(n))
 	copy_type(n->type, CAR(n)->type);
@@ -3544,10 +3549,12 @@ void fix_type_field(node *n)
 
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
+    /* FIXME: */
     MAKE_CONSTANT_SHARED_STRING(n->type, tFunc(tMix,tMix));
     break;
   case F_MAGIC_SET_INDEX:
     /* FIXME: Could have a stricter type for ::`->=(). */
+    /* FIXME: */
     MAKE_CONSTANT_SHARED_STRING(n->type, tFunc(tMix tSetvar(0,tMix), tVar(0)));
     break;
 
@@ -3893,6 +3900,7 @@ static node *low_localopt(node *n,
     return NULL;
   
   switch(n->token) {
+    /* FIXME: Does not support F_LOOP yet. */
   case F_ASSIGN:
     if ((CDR(n)->token == F_LOCAL) && (!CDR(n)->u.integer.b)) {
       /* Assignment of local variable */
@@ -4774,7 +4782,7 @@ static int is_null_branch(node *n)
 
   fatal_check_c_stack(16384);
 
-  if((n->token==F_CAST && n->type==void_type_string) ||
+  if((n->token==F_CAST && n->type == void_type_string) ||
      n->token == F_POP_VALUE)
     return is_null_branch(CAR(n));
   if(n->token==F_ARG_LIST)
@@ -4802,7 +4810,7 @@ static struct svalue *is_stupid_func(node *n,
       continue;
     }
 
-    if((n->token == F_CAST && n->type==void_type_string) ||
+    if((n->token == F_CAST && n->type == void_type_string) ||
        n->token == F_POP_VALUE)
     {
       n=CAR(n);
