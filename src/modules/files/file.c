@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.174 2000/04/19 16:14:37 mast Exp $");
+RCSID("$Id: file.c,v 1.175 2000/05/20 02:22:53 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -281,34 +281,11 @@ static void close_fd(void)
 
 void my_set_close_on_exec(int fd, int to)
 {
-#if 1
   set_close_on_exec(fd, to);
-#else
-  if(to)
-  {
-    files[fd].open_mode |= FILE_SET_CLOSE_ON_EXEC;
-  }else{
-    if(files[fd].open_mode & FILE_SET_CLOSE_ON_EXEC)
-      files[fd].open_mode &=~ FILE_SET_CLOSE_ON_EXEC;
-    else
-      set_close_on_exec(fd, 0);
-  }
-#endif
 }
 
 void do_set_close_on_exec(void)
 {
-#if 0
-  int e;
-  for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
-  {
-    if(files[e].open_mode & FILE_SET_CLOSE_ON_EXEC)
-    {
-      set_close_on_exec(e, 1);
-      files[e].open_mode &=~ FILE_SET_CLOSE_ON_EXEC;
-    }
-  }
-#endif
 }
 
 /* Parse "rw" to internal flags */
@@ -1371,13 +1348,7 @@ static void file_open(INT32 args)
        error("Object destructed in file->open()\n");
      }
 
-     if(fd >= MAX_OPEN_FILEDESCRIPTORS)
-     {
-	ERRNO=EBADF;
-	fd_close(fd);
-	fd=-1;
-     }
-     else if(fd < 0)
+     if(fd < 0)
      {
 	ERRNO=errno;
      }
@@ -1399,7 +1370,7 @@ static void file_open(INT32 args)
      }
 #endif
      fd=sp[-args].u.integer;
-     if (fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+     if (fd<0)
 	error("Not a valid FD.\n");
 
      init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
@@ -1926,14 +1897,6 @@ static void file_pipe(INT32 args)
     ERRNO=errno;
     push_int(0);
   }
-  else if((inout[0] >= MAX_OPEN_FILEDESCRIPTORS) ||
-	  (inout[1] >= MAX_OPEN_FILEDESCRIPTORS))
-  {
-    ERRNO=EBADF;
-    fd_close(inout[0]);
-    fd_close(inout[1]);
-    push_int(0);
-  }
   else
   {
     init_fd(inout[0],FILE_READ | (type&fd_BIDIRECTIONAL?FILE_WRITE:0) |
@@ -2107,13 +2070,6 @@ static void file_open_socket(INT32 args)
   close_fd();
   FD=-1;
   fd=fd_socket(AF_INET, SOCK_STREAM, 0);
-  if(fd >= MAX_OPEN_FILEDESCRIPTORS)
-  {
-    ERRNO=EBADF;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
   if(fd < 0)
   {
     ERRNO=errno;
@@ -2786,30 +2742,7 @@ void pike_module_init(void)
 /* Used from backend */
 int pike_make_pipe(int *fds)
 {
-  int res = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
-  if (res < 0) return res;
-  if ((fds[0] >= MAX_OPEN_FILEDESCRIPTORS) ||
-      (fds[1] >= MAX_OPEN_FILEDESCRIPTORS)) {
-#ifdef PIKE_DEBUG
-    /* FIXME: This function is currently only used to create the backend pipe,
-     * so this debug shouldn't hurt much...
-     */
-    fprintf(stderr,
-	    "pike_make_pipe() failed: fd's out of range [0,%d): %d, %d\n",
-	    MAX_OPEN_FILEDESCRIPTORS, fds[0], fds[1]);
-#endif /* PIKE_DEBUG */
-    close(fds[0]);
-    close(fds[1]);
-#ifdef EMFILE
-    errno = EMFILE;
-#else /* !EMFILE */
-#ifdef EBADF
-    errno = EBADF;
-#endif /* EBADF */
-#endif /* EMFILE */
-    return -1;
-  }
-  return res;
+  return socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
 }
 
 int fd_from_object(struct object *o)

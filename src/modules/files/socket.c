@@ -19,7 +19,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.47 2000/02/03 19:05:37 grubba Exp $");
+RCSID("$Id: socket.c,v 1.48 2000/05/20 02:22:58 per Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -142,7 +142,7 @@ static void port_listen_fd(INT32 args)
 
   fd=sp[-args].u.integer;
 
-  if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
   {
     THIS->my_errno=EBADF;
     pop_n_elems(args);
@@ -194,14 +194,6 @@ static void port_bind(INT32 args)
   if(fd < 0)
   {
     THIS->my_errno=errno;
-    pop_n_elems(args);
-    push_int(0);
-    return;
-  }
-  if(fd >= MAX_OPEN_FILEDESCRIPTORS)
-  {
-    THIS->my_errno=EBADF;
-    fd_close(fd);
     pop_n_elems(args);
     push_int(0);
     return;
@@ -324,14 +316,6 @@ static void port_accept(INT32 args)
     THIS->my_errno=errno;
     pop_n_elems(args);
     push_int(0);
-    return;
-  }
-  if(fd >= MAX_OPEN_FILEDESCRIPTORS)
-  {
-    THIS->my_errno=EBADF;
-    pop_n_elems(args);
-    push_int(0);
-    fd_close(fd);
     return;
   }
 
