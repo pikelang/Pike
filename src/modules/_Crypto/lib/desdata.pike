@@ -13,7 +13,7 @@
  *		desinfo.h,v 1.3 1997/04/18 20:09:24 nisse
  *		desCode.h,v 1.2 1997/03/15 04:51:31 nisse
  *
- *	$Id: desdata.pike,v 1.2 2002/04/30 21:30:57 mast Exp $
+ *	$Id: desdata.pike,v 1.3 2002/05/01 01:15:05 nilsson Exp $
  */
 
 /*
@@ -151,6 +151,12 @@ array(int) korder = ({
 array(int) sorder = ({
 	7, 5, 3, 1, 6, 4, 2, 0,
 });
+
+#if !constant(has_suffix)
+int has_suffix(string a, string b) {
+  return a[sizeof(a)-sizeof(b)..]==b;
+}
+#endif
 
 int main(int argc, array(string) argv)
 {
