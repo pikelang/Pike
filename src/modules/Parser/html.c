@@ -27,7 +27,7 @@
 #define DEBUG_MARK_SPOT(TEXT,FEED,C) do; while(0)
 #endif
 
-#if 0
+#if 1
 #define free(X) fprintf(stderr,"free line %d: %p\n",__LINE__,X); free(X)
 #endif
 
@@ -92,13 +92,24 @@ struct parser_html_storage
 
 /*--- user configurable -------------------------------------------*/
 
+   /* extra arguments */
+   struct array *extra_args;
+
+   /* named stuff */
+   struct mapping *maptag;
+   struct mapping *mapcont;
+   struct mapping *mapentity;
+
    /* callback functions */
    struct svalue callback__tag;
    struct svalue callback__data;
    struct svalue callback__entity;
 
-   /* arg quote may have tag_end to end quote and tag */
+   /* flag: arg quote may have tag_end to end quote and tag */
    int lazy_end_arg_quote; 
+
+   /* flag: nonalphanum ends entity */
+   int lazy_entity_end; 
 
    p_wchar2 tag_start,tag_end;
    p_wchar2 entity_start,entity_end;
@@ -136,6 +147,11 @@ struct parser_html_storage
 #define THISOBJ (fp->current_object)
 
 static struct pike_string *empty_string;
+
+static void tag_name(struct parser_html_storage *this,
+		     struct piece *feed,int c);
+static void tag_args(struct parser_html_storage *this,
+		     struct piece *feed,int c);
 
 /****** debug helper ********************************/
 
@@ -197,7 +213,6 @@ void reset_feed(struct parser_html_storage *this)
    }
    this->out_end=NULL;
 
-
    /* free stack */
 
    while (this->stack)
@@ -209,9 +224,8 @@ void reset_feed(struct parser_html_storage *this)
 
    /* new stack head */
 
-   this->stack=malloc(sizeof(struct feed_stack));
-   if (!this->stack)
-      error("out of memory\n");
+   this->stack=xalloc(sizeof(struct feed_stack));
+
    this->stack->prev=NULL;
    this->stack->local_feed=NULL;
    this->stack->ignore_data=0;
@@ -314,7 +328,14 @@ static void init_html_struct(struct object *o)
    THIS->ws_or_endarg=NULL;
    THIS->ws_or_endarg_or_quote=NULL;
 
+   THIS->maptag=NULL;
+   THIS->mapcont=NULL;
+   THIS->mapentity=NULL;
+
    THIS->lazy_end_arg_quote=0;
+   THIS->lazy_entity_end=0;
+
+   THIS->extra_args=NULL;
 
    /* initialize feed */
    THIS->feed=NULL;
@@ -335,6 +356,10 @@ static void init_html_struct(struct object *o)
    MEMCPY(THIS->ws,whitespace,sizeof(whitespace));
    THIS->n_ws=NELEM(whitespace);
 
+   THIS->maptag=allocate_mapping(32);
+   THIS->mapcont=allocate_mapping(32);
+   THIS->mapentity=allocate_mapping(32);
+
    recalculate_argq(THIS);
 }
 
@@ -344,6 +369,10 @@ static void exit_html_struct(struct object *o)
 
    reset_feed(THIS); /* frees feed & out */
 
+   if (THIS->maptag) free_mapping(THIS->maptag);
+   if (THIS->mapcont) free_mapping(THIS->mapcont);
+   if (THIS->mapentity) free_mapping(THIS->mapentity);
+
    free_svalue(&(THIS->callback__tag));
    free_svalue(&(THIS->callback__data));
    free_svalue(&(THIS->callback__entity));
@@ -352,9 +381,29 @@ static void exit_html_struct(struct object *o)
    if (THIS->ws) free(THIS->ws);
    if (THIS->ws_or_endarg) free(THIS->ws_or_endarg);
    if (THIS->ws_or_endarg_or_quote) free(THIS->ws_or_endarg_or_quote);
+
+   if (THIS->extra_args) free_array(THIS->extra_args);
 }
 
 /****** setup callbacks *****************************/
+
+/*
+**! method _set_tag_callback(function to_call)
+**! method _set_entity_callback(function to_call)
+**! method _set_data_callback(function to_call)
+**!	This functions set up the parser object to
+**!	call the given callbacks upon tags, entities
+**!	and/or data. 
+**!
+**!	The function will be called with the parser
+**!	object as first argument, and the active string
+**!	as second. 
+**!
+**!	Note that no parsing of the contents has been done.
+**!	Both endtags and normal tags are called, there is
+**!	no container parsing.
+**!
+*/
 
 static void html__set_tag_callback(INT32 args)
 {
@@ -378,6 +427,61 @@ static void html__set_entity_callback(INT32 args)
    assign_svalue(&(THIS->callback__entity),sp-args);
    pop_n_elems(args);
    push_int(0);
+}
+
+/*
+**! method void add_tag(string name,mixed to_do)
+**! method void add_container(string name,mixed to_do)
+**! method void add_entity(string entity,mixed to_do)
+**! method void add_tags(mapping(string:mixed))
+**! method void add_containers(mapping(string:mixed))
+**! method void add_entities(mapping(string:mixed))
+**!	Upon 
+**!
+**!	<tt>to_do</tt> can be:
+**!	<ul>
+**!	<li>a function to be called. The function is on the form
+**!	<pre>
+**!     mixed tag_callback(object parser,mapping args,mixed ...extra)
+**!	mixed container_callback(object parser,mapping args,string cont,mixed ...extra)
+**!	mixed entity_callback(object parser,mixed ...extra)
+**!	</pre>
+**!	depending on what realm the function is called by.
+**!	<li>a string. This tag/container/entity is then replaced
+**!	by the string.
+**!	<li>an array of functions (as above).
+**!	The functions are called with each others result from element
+**!	0 to the last element. Note that the _data_ will change,
+**!	but the argument mapping will still be the same.
+**!	(Ie, do destructive editing of the args mapping if you 
+**!	want the next callback to read it - don't just return a new tag.)
+**!	</ul>
+**!	
+*/
+
+static void html_add_tag(INT32 args)
+{
+   check_all_args("add_tag",args,
+		  BIT_STRING,BIT_MIXED,0);
+   mapping_insert(THIS->maptag,sp-2,sp-1);
+   
+   pop_n_elems(args);
+}
+
+static void html_add_container(INT32 args)
+{
+   check_all_args("add_container",args,
+		  BIT_STRING,BIT_MIXED,0);
+   mapping_insert(THIS->mapcont,sp-2,sp-1);
+   pop_n_elems(args);
+}
+
+static void html_add_entity(INT32 args)
+{
+   check_all_args("parse_tag_args",args,
+		  BIT_STRING,BIT_MIXED,0);
+   mapping_insert(THIS->mapentity,sp-2,sp-1);
+   pop_n_elems(args);
 }
 
 /****** try_feed - internal main ********************/
@@ -1018,6 +1122,58 @@ void do_callback(struct parser_html_storage *this,
    apply_svalue(callback_function,2);
 }
 
+int tag_callback(struct parser_html_storage *this,
+		 struct object *thisobj,
+		 struct svalue *v,
+		 struct piece *start, int cstart,
+		 struct piece *end, int cend,
+		 struct feed_stack *st,
+		 struct piece **cutstart, int *ccutstart,
+		 struct piece *cutend, int ccutend)
+{
+   switch (v->type)
+   {
+      case T_STRING:
+	 push_svalue(v);
+	 return 0; /* done */
+      case T_ARRAY:
+	 error("unimplemented");
+	 
+      case T_FUNCTION:
+      case T_OBJECT:
+	 break;
+      default:
+	 error("Parser.HTML: illegal type found when trying to call callback\n");
+   }
+
+   push_svalue(v);
+
+   this->start=start;
+   this->cstart=cstart;
+   this->end=end;
+   this->cend=cend;
+
+   ref_push_object(thisobj);
+   tag_args(this,this->start,this->cstart);
+
+   if (this->extra_args)
+   {
+      this->extra_args->refs++;
+      push_array_items(this->extra_args);
+
+      DEBUG((stderr,"tag_callback args=%d\n",3+this->extra_args->size));
+
+      f_call_function(3+this->extra_args->size);
+   }
+   else
+   {
+      DEBUG((stderr,"tag_callback args=%d\n",3));
+      f_call_function(3);
+   }
+
+   return handle_result(this,st,cutstart,ccutstart,cutend,ccutend);
+}
+
 
 /* ---------------------------------------------------------------- */
 
@@ -1111,7 +1267,105 @@ static int do_try_feed(struct parser_html_storage *this,
       }
 
       ch=index_shared_string(feed[0]->s,st->c);
-      if (scan_entity && ch==this->entity_start) /* entity */
+      if (scan_tag && ch==this->tag_start) /* tag */
+      {
+	 struct svalue *v;
+
+	 DEBUG((stderr,"%*d do_try_feed scan tag %p:%d\n",
+		this->stack_count,this->stack_count,
+		*feed,st->c));
+	 
+	 if (this->maptag->size ||
+	     this->mapcont->size)
+	 {
+	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
+				    finished);
+	    if (!res) 
+	    {
+	       st->ignore_data=1;
+	       return 1; /* come again */
+	    }
+
+	    tag_name(this,*feed,st->c+1);
+	    v=low_mapping_lookup(this->maptag,sp-1);
+	    if (v) /* tag */
+	    {
+	       pop_stack();
+
+	       /* low-level tag call */
+	       if ((res=tag_callback(this,thisobj,v,
+				     *feed,st->c+1,dst,cdst,
+				     st,feed,&(st->c),dst,cdst+1)))
+	       {
+		  DEBUG((stderr,"%*d tag callback return %d %p:%d\n",
+			 this->stack_count,this->stack_count,
+			 res,*feed,st->c));
+		  st->ignore_data=(res==1);
+		  return res;
+	       }
+
+	       DEBUG((stderr,"%*d tag callback done %p:%d\n",
+		      this->stack_count,this->stack_count,
+		      *feed,st->c));
+
+	       goto done;
+	    }
+	    v=low_mapping_lookup(this->mapcont,sp-1);
+	    if (v) /* container */
+	    {
+	       /* this is the hardest part : find the corresponding end tag */
+
+	       error("unimplemented\n");
+
+	       pop_stack();
+
+
+	       goto done;
+	    }
+	    pop_stack();
+	 }
+	   
+	 if (this->callback__tag.type!=T_INT)
+	 {
+	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
+				    finished);
+	    if (!res) 
+	    {
+	       st->ignore_data=1;
+	       return 1; /* come again */
+	    }
+
+	    DEBUG((stderr,"%*d calling _tag callback %p:%d..%p:%d\n",
+		   this->stack_count,this->stack_count,
+		   *feed,st->c+1,dst,cdst));
+
+	    /* low-level tag call */
+	    do_callback(this,thisobj,
+			&(this->callback__tag),
+			*feed,st->c+1,dst,cdst);
+
+	    if ((res=handle_result(this,st,
+				   feed,&(st->c),dst,cdst+1)))
+	    {
+	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
+		      this->stack_count,this->stack_count,
+		      res,*feed,st->c));
+	       st->ignore_data=(res==1);
+	       return res;
+	    }
+	    recheck_scan(this,&scan_entity,&scan_tag);
+	 }
+	 else
+	 {
+	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
+				    finished);
+	    if (!res) return 1; /* come again */
+
+	    put_out_feed_range(this,*feed,st->c,dst,cdst+1);
+	    skip_feed_range(st,feed,&(st->c),dst,cdst+1);
+	 }
+      }
+      else if (scan_entity && ch==this->entity_start) /* entity */
       {
 	 DEBUG((stderr,"%*d do_try_feed scan entity %p:%d\n",
 		this->stack_count,this->stack_count,
@@ -1158,54 +1412,8 @@ static int do_try_feed(struct parser_html_storage *this,
 		this->stack_count,this->stack_count,
 		*feed,st->c));
       }
-      else if (scan_tag && ch==this->tag_start) /* tag */
-      {
-	 DEBUG((stderr,"%*d do_try_feed scan tag %p:%d\n",
-		this->stack_count,this->stack_count,
-		*feed,st->c));
+done:
 
-	 if (this->callback__tag.type!=T_INT)
-	 {
-	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
-				    finished);
-	    if (!res) 
-	    {
-	       st->ignore_data=1;
-	       return 1; /* come again */
-	    }
-
-	    DEBUG((stderr,"%*d calling _tag callback %p:%d..%p:%d\n",
-		   this->stack_count,this->stack_count,
-		   *feed,st->c+1,dst,cdst));
-
-	    /* low-level tag call */
-	    do_callback(this,thisobj,
-			&(this->callback__tag),
-			*feed,st->c+1,dst,cdst);
-
-	    st->ignore_data=1;
-
-	    if ((res=handle_result(this,st,
-				   feed,&(st->c),dst,cdst+1)))
-	    {
-	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
-		      this->stack_count,this->stack_count,
-		      res,*feed,st->c));
-	       st->ignore_data=(res==1);
-	       return res;
-	    }
-	    recheck_scan(this,&scan_entity,&scan_tag);
-	 }
-	 else
-	 {
-	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
-				    finished);
-	    if (!res) return 1; /* come again */
-
-	    put_out_feed_range(this,*feed,st->c,dst,cdst+1);
-	    skip_feed_range(st,feed,&(st->c),dst,cdst+1);
-	 }
-      }
       st->ignore_data=0;
    }
 }
@@ -1672,7 +1880,17 @@ void html__inspect(INT32 args)
    f_aggregate_mapping(n*2);
 }
 
+void html_create(INT32 args)
+{
+   pop_n_elems(args);
+}
+
 /****** module init *********************************/
+
+#define tCbret tOr3(tInt0,tStr,tArr(tStr))
+#define tCbfunc(X) tOr(tFunc(,tCbret),tFunc(tObj X,tCbret))
+#define tTodo(X) tOr3(tStr,tCbfunc(X),tArr(tCbfunc(X)))
+#define tTagargs tMap(tStr,tOr(tStr,tInt1))
 
 void init_parser_html(void)
 {
@@ -1684,6 +1902,8 @@ void init_parser_html(void)
    set_exit_callback(exit_html_struct);
 
 #define CBRET "string|array(string)" /* 0|string|({string}) */
+
+   ADD_FUNCTION("create",html_create,tFunc(,tVoid),0);
 
    /* feed control */
 
@@ -1704,12 +1924,19 @@ void init_parser_html(void)
 
    add_function("current",html_current,
 		"function(:string)",0);
-
    add_function("tag_name",html_tag_name,
 		"function(:string)",0);
-
    add_function("tag_args",html_tag_args,
 		"function(:mapping)",0);
+
+   /* callback setup */
+
+   ADD_FUNCTION("add_tag",html_add_tag,
+		tFunc(tStr tTodo(tTagargs),tVoid),0);
+   ADD_FUNCTION("add_container",html_add_container,
+		tFunc(tStr tTodo(tTagargs tStr),tVoid),0);
+   ADD_FUNCTION("add_entity",html_add_entity,
+		tFunc(tStr tTodo(""),tVoid),0);
 
    /* special callbacks */
 
