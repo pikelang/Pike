@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.474 2003/02/10 16:57:55 mast Exp $
+|| $Id: builtin_functions.c,v 1.475 2003/02/10 17:10:39 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.474 2003/02/10 16:57:55 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.475 2003/02/10 17:10:39 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5996,9 +5996,9 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
   /* Don't subtract the gc time at all if we don't know whether it's
    * thread local or not, since if we do it wrong we might end up
    * returning a negative number. */
-#if CPU_TIME_IS_THREAD_LOCAL == YES
+#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
   time -= OBJ2THREAD(Pike_interpreter.thread_id)->auto_gc_time;
-#elif CPU_TIME_IS_THREAD_LOCAL == NO
+#elif CPU_TIME_IS_THREAD_LOCAL == PIKE_NO
   time -= auto_gc_time;
 #endif
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.114 2003/02/10 16:45:22 mast Exp $
+|| $Id: acconfig.h,v 1.115 2003/02/10 17:10:39 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -509,8 +509,9 @@
 /* Define to the page size (handled efficiently by malloc). */
 #undef PIKE_MALLOC_PAGE_SIZE
 
-/* YES if the number reported by get_cpu_time (rusage.c) is thread
- * local, NO if it isn't, UNKNOWN if it couldn't be established. */
+/* PIKE_YES if the number reported by get_cpu_time (rusage.c) is
+ * thread local, PIKE_NO if it isn't, PIKE_UNKNOWN if it couldn't be
+ * established. */
 #undef CPU_TIME_IS_THREAD_LOCAL
 
 @BOTTOM@
@@ -605,8 +606,8 @@
 #define DEFINETOSTR(X)	TOSTR(X)
 
 /* Some identifiers used as flags in the defines above. */
-#define YES	1
-#define NO	2
-#define UNKNOWN	3
+#define PIKE_YES	1
+#define PIKE_NO		2
+#define PIKE_UNKNOWN	3
 
 #endif /* MACHINE_H */

@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.200 2003/02/08 17:12:27 mast Exp $
+|| $Id: threads.c,v 1.201 2003/02/10 17:10:40 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.200 2003/02/08 17:12:27 mast Exp $");
+RCSID("$Id: threads.c,v 1.201 2003/02/10 17:10:40 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1500,7 +1500,7 @@ void init_thread_obj(struct object *o)
   THIS_THREAD->status=THREAD_NOT_STARTED;
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
-#if CPU_TIME_IS_THREAD_LOCAL == YES
+#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
   THIS_THREAD->auto_gc_time = 0;
 #endif
 }

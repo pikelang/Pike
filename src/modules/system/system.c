@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.139 2003/02/08 17:00:14 mast Exp $
+|| $Id: system.c,v 1.140 2003/02/10 17:10:40 mast Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.139 2003/02/08 17:00:14 mast Exp $");
+RCSID("$Id: system.c,v 1.140 2003/02/10 17:10:40 mast Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2927,9 +2927,9 @@ PIKE_MODULE_INIT
 	       tFunc(tNone,tArr(tInt)),0);
 #endif
 
-#if CPU_TIME_IS_THREAD_LOCAL == YES
+#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
   add_string_constant ("CPU_TIME_IS_THREAD_LOCAL", "yes", 0);
-#elif CPU_TIME_IS_THREAD_LOCAL == NO
+#elif CPU_TIME_IS_THREAD_LOCAL == PIKE_NO
   add_string_constant ("CPU_TIME_IS_THREAD_LOCAL", "no", 0);
 #endif
 

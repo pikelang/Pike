@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.205 2003/02/10 16:57:55 mast Exp $
+|| $Id: gc.c,v 1.206 2003/02/10 17:10:40 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.205 2003/02/10 16:57:55 mast Exp $");
+RCSID("$Id: gc.c,v 1.206 2003/02/10 17:10:40 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -197,7 +197,7 @@ static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
 static double gc_time = 0.0, non_gc_time = 0.0;
 static cpu_time_t last_gc_end_time = 0;
-#if !defined(PIKE_THREADS) || (CPU_TIME_IS_THREAD_LOCAL == NO)
+#if CPU_TIME_IS_THREAD_LOCAL == PIKE_NO
 cpu_time_t auto_gc_time = 0;
 #endif
 
@@ -2910,9 +2910,9 @@ size_t do_gc(void *ignored, int explicit_call)
     alloc_threshold = (ptrdiff_t)new_threshold;
 
     if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
-#if CPU_TIME_IS_THREAD_LOCAL == YES
+#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
       OBJ2THREAD(Pike_interpreter.thread_id)->auto_gc_time += last_gc_time;
-#elif CPU_TIME_IS_THREAD_LOCAL == NO
+#elif CPU_TIME_IS_THREAD_LOCAL == PIKE_NO
       auto_gc_time += last_gc_time;
 #endif
     }

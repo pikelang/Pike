@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.h,v 1.122 2003/02/08 17:12:27 mast Exp $
+|| $Id: threads.h,v 1.123 2003/02/10 17:10:40 mast Exp $
 */
 
 #ifndef THREADS_H
@@ -42,7 +42,7 @@ struct thread_state {
   long time_base;
 #endif
 #endif /* PROFILING */
-#if CPU_TIME_IS_THREAD_LOCAL == YES
+#if CPU_TIME_IS_THREAD_LOCAL == PIKE_YES
   cpu_time_t auto_gc_time;
 #endif
 };
