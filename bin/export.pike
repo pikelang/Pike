@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.50 2002/04/21 01:41:07 nilsson Exp $ */
+/* $Id: export.pike,v 1.51 2002/04/28 13:28:54 mikael%brandstrom.org Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -115,7 +115,8 @@ array(string) build_file_list(string vpath, string list_file)
 	continue;
       werror("%O\n",line);
       string name=vpath+line;
-      if(file_stat(name)->isdir)
+      Stdio.Stat fs;
+      if((fs = file_stat(name)) && fs->isdir)
 	ret += get_files(name);
       else
 	ret += ({ name });

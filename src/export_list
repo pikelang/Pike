@@ -1,4 +1,4 @@
-# $Id: export_list,v 1.2 2002/04/21 01:41:23 nilsson Exp $
+# $Id: export_list,v 1.3 2002/04/28 13:28:54 mikael%brandstrom.org Exp $
 # This file lists the files and directories that should be
 # added to source dists. Used by bin/export.pike.
 
@@ -13,7 +13,7 @@
 /bin
 /man
 /refdoc/bin
-/refdoc/not_extracted
+/refdoc/chapters
 /refdoc/presentation
 /refdoc/src_images
 /refdoc/structure
@@ -24,4 +24,3 @@
 /refdoc/tags.txt
 /refdoc/template.xsl
 /refdoc/xml.txt
-/refdoc/.cvsignore
