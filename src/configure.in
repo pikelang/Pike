@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.457 2001/01/20 01:15:43 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.458 2001/01/20 19:31:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1464,7 +1464,7 @@ AC_MSG_CHECKING(for the type of the last argument to __yy_memcpy)
 AC_CACHE_VAL(pike_cv___yy_memcpy_count_type, [
   pike_cv___yy_memcpy_count_type=unknown
   for count_type in "unsigned int" "size_t" "int"; do
-    cat >conftest.y<<\EOF
+    cat >conftest.y <<EOF
 %pure_parser
 %{
 #include <stdio.h>
@@ -1477,11 +1477,11 @@ static void __yy_memcpy(char *to, char *from, $count_type count);
 %}
 %%
 all: foo bar
-foo: 'f' 'o' 'o' { fprintf(stderr, "foo\n"); } ;
+foo: 'f' 'o' 'o' { fprintf(stderr, "foo\\n"); } ;
 bar: 'b' 'a' 'r' ;
 %%
 int yylex(YYSTYPE *yylval) { return 'f'; }
-void yyerror(char *err) { fprintf(stderr, "ERR: %s\n", err); }
+void yyerror(char *err) { fprintf(stderr, "ERR: %s\\n", err); }
 EOF
     if $YACC -d conftest.y 1>&5 2>&5; then
       AC_TRY_LINK([
