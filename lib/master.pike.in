@@ -6,9 +6,10 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.334 2004/02/27 13:08:23 nilsson Exp $
+// $Id: master.pike.in,v 1.335 2004/03/05 13:42:56 nilsson Exp $
 
 #pike __REAL_VERSION__
+//#pragma strict_types
 
 // Some programs destroys character pairs beginning with the currency
 // symbol when running in chinese locale.
@@ -3460,7 +3461,8 @@ string describe_backtrace(array|object trace, void|int linewidth)
 //! @appears describe_error
 //!
 //! Return the error message from an error object or array (typically
-//! caught by a @[catch]).
+//! caught by a @[catch]). The type of the error is checked, hence
+//! @[err] is declared as @expr{mixed@} and not @expr{object|array@}.
 //!
 //! If an error message couldn't be obtained, a fallback message
 //! describing the failure is returned. No errors due to incorrectness
@@ -3469,7 +3471,7 @@ string describe_backtrace(array|object trace, void|int linewidth)
 //! @seealso
 //! @[describe_backtrace()], @[get_backtrace]
 //!
-string describe_error (object|array err)
+string describe_error (mixed /* object|array */ err)
 {
   mixed msg;
 
@@ -3886,7 +3888,7 @@ class Encoder
 	    ENC_RETURN (parent_name);
 	  }
 	  else {
-	    string|array id = function_name (what);
+	    string|array id = function_name ([program]what);
 	    if (stringp (id) && parent[id] == what) {
 	      ENC_MSG ("  found function name in parent: %O\n", id);
 	      id = ({id});
@@ -3975,7 +3977,7 @@ class Decoder (void|string fname, void|int mkobj)
   {
     mixed res;
     array sublist;
-    if (arrayp (what)) sublist = what, what = sublist[0];
+    if (arrayp (what)) sublist = [array]what, what = [array|string]sublist[0];
 
     switch (what[0]) {
       case 'c':
@@ -3987,19 +3989,19 @@ class Decoder (void|string fname, void|int mkobj)
 	  error ("Cannot find %O in _static_modules.\n", what[1..]);
 	break;
       case 'r':
-	if (zero_type (res = resolv (what[1..])))
+	if (zero_type (res = resolv ([string]what[1..])))
 	  error ("Cannot resolve %O.\n", what[1..]);
 	break;
       case 'p':
-	if (!(res = low_cast_to_program (what[1..], fname, this)))
+	if (!(res = low_cast_to_program ([string]what[1..], fname, this)))
 	  error ("Cannot find program for %O.\n", what[1..]);
 	break;
       case 'o':
-	if (!objectp (res = low_cast_to_object (what[1..], fname, this)))
+	if (!objectp(res = low_cast_to_object([string]what[1..], fname, this)))
 	  error ("Cannot find object for %O.\n", what[1..]);
 	break;
       case 'f':
-	if (!objectp (res = findmodule (what[1..], this)))
+	if (!objectp (res = findmodule ([string]what[1..], this)))
 	  error ("Cannot find module for %O.\n", what[1..]);
 	break;
     }
@@ -4014,29 +4016,30 @@ class Decoder (void|string fname, void|int mkobj)
 	  if (!programp (subres) && !objectp (subres) && !mappingp (subres))
 	    error ("Cannot subindex %O%{[%O]%} since it's a %t.\n",
 		   res, sublist[1..i-1], subres);
-	  if (zero_type (subres = subres[op]))
+	  if (zero_type (subres = ([mapping]subres)[op]))
 	    error ("Cannot find %O in %O%{[%O]%}.\n",
 		   op, res, sublist[1..i-1]);
 	  DEC_MSG ("  indexed with %O: %O\n", op, subres);
 	}
 	else switch (op) {
 	  case 'm':
-	    if (objectp (subres) && subres->is_resolv_joinnode) {
+	    if (objectp (subres) && ([object]subres)->is_resolv_joinnode) {
 	      dirnode found;
-	      foreach (subres->joined_modules, object|mapping part)
+	      foreach (([object(joinnode)]subres)->joined_modules,
+		       object|mapping part)
 		if (objectp (part) && part->is_resolv_dirnode && part->module) {
 		  if (found)
 		    error ("There are ambiguous module objects in %O.\n",
 			   subres);
 		  else
-		    found = part;
+		    found = [object(dirnode)]part;
 		}
 	      if (found) subres = found;
 	    }
 
-	    if (objectp (subres) && subres->is_resolv_dirnode) {
-	      if (subres->module) {
-		subres = subres->module;
+	    if (objectp (subres) && ([object]subres)->is_resolv_dirnode) {
+	      if (([object]subres)->module) {
+		subres = ([object]subres)->module;
 		DEC_MSG ("  got dirnode module %O\n", subres);
 	      }
 	      else
@@ -4104,8 +4107,8 @@ class Decoder (void|string fname, void|int mkobj)
   }
 }
 
-mapping(string:Codec) codecs = set_weak_flag(([]),1);
-Codec get_codec(string|void fname, int|void mkobj)
+mapping(string:Decoder) codecs = set_weak_flag(([]),1);
+Decoder get_codec(string|void fname, int|void mkobj)
 {
   string key = fname + "\0" + mkobj;
   if (codecs[key]) return codecs[key];
