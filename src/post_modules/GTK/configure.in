@@ -457,6 +457,49 @@ if test "x$WITH_GTK" = x1 ; then
  CFLAGS="$GNOME_CFLAGS"
 
  if test "x$pgtk_has_gnome" = xgnome ; then
+    # Try adding gnome-1.0 to the include path (FreeBSD uses that for gnome-1.0
+    # storage path)
+    real_include_dirs=''
+    for flag in $CPPFLAGS; do
+      case "$flag" in
+        -I*)
+          d="`echo Q$flag|sed -e 's/^Q-I//'`/gnome-1.0"
+          AC_MSG_CHECKING($d)
+          if test -d "$d/."; then
+            REALDIR="`cd $d/. ; /bin/pwd`"
+            if test "x$REALDIR" = x ; then
+              REALDIR=UNKNOWN
+            else
+              :
+            fi
+
+            case " $CPPFLAGS $real_include_dirs " in
+              *\ -I$d\ * | *\ -I$REALDIR\ *)
+                 AC_MSG_RESULT(already added)
+              ;;
+              *)
+	        OLD_CPPFLAGS="${CPPFLAGS}"
+                CPPFLAGS="${CPPFLAGS} -I$d"
+	        AC_TRY_CPP([include <stdio.h>], [
+                  AC_MSG_RESULT(added)
+                  if test "x$REALDIR" != xUNKNOWN; then
+                    real_include_dirs="${real_include_dirs} -I$REALDIR"
+                  else
+                    :
+                  fi
+	        ], [
+	          AC_MSG_RESULT(fails)
+		  CPPFLAGS="${OLD_CPPFLAGS}"
+	        ])
+              ;;
+	    esac
+	  else
+	    AC_MSG_RESULT(no)
+	  fi
+        ;;
+      esac
+   done
+
    # Do some extra effort to check for the header files, since some
    # Gnome packagings doesn't include them all (e.g. applet-widget.h on
    # Debian systems). Can't use AC_CHECK_HEADERS here since it doesn't
