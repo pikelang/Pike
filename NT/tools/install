@@ -8,6 +8,7 @@ int main(int argc, string *argv)
   {
     argv[0]="copy";
     if(argv[1]=="-c") argv=argv[..0]+argv[2..];
+    if(argv[1]=="-m") argv=argv[..0]+argv[3..];
     if(file_stat(argv[1]+".exe")) argv[1]+=".exe";
     exit(do_cmd( Array.map(argv,fixpath)));
   }else{
