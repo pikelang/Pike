@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.34 2003/03/12 09:23:37 agehall Exp $
+// $Id: module.pmod,v 1.35 2003/04/07 17:29:25 nilsson Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -157,7 +157,7 @@ array(Image.Layer) decode_layers( string data, mapping|void opt )
 //! @belongs Image
 //! Reads the file @[file] and, if the file is compressed
 //! with gzip or bzip, attempts to decompress it by calling
-//! @tt{gzip@} and @tt{bzip2@} in a @tt{Process.create_process@}
+//! @tt{gzip@} and @tt{bzip2@} in a @[Process.create_process]
 //! call.
 string read_file(string file)
 {
