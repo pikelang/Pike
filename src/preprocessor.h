@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.5 1999/03/01 20:51:35 grubba Exp $
+ * $Id: preprocessor.h,v 1.6 1999/03/01 20:59:46 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -309,7 +309,7 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
   FINDTOK();
 
-  DUMPPOS("calcC");
+  /* DUMPPOS("calcC"); */
 
   switch(data[pos])
   {
@@ -386,7 +386,7 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
   while(GOBBLE('['))
   {
-    DUMPPOS("inside calcC");
+    /* DUMPPOS("inside calcC"); */
     pos=calc1(this,data,len,pos);
     f_index(2);
 
@@ -394,13 +394,13 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     if(!GOBBLE(']'))
       error("Missing ']'");
   }
-  DUMPPOS("after calcC");
+  D/* UMPPOS("after calcC"); */
   return pos;
 }
 
 static INT32 calcB(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calcB");
+  /* DUMPPOS("before calcB"); */
 
   FINDTOK();
   switch(data[pos])
@@ -410,18 +410,18 @@ static INT32 calcB(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     case '~': pos++; pos=calcB(this,data,len,pos); o_compl(); break;
     default: pos=calcC(this,data,len,pos);
   }
-  DUMPPOS("after calcB");
+  /* DUMPPOS("after calcB"); */
   return pos;
 }
 
 static INT32 calcA(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calcA");
+  /* DUMPPOS("before calcA"); */
 
   pos=calcB(this,data,len,pos);
   while(1)
   {
-    DUMPPOS("inside calcA");
+    /* DUMPPOS("inside calcA"); */
     FINDTOK();
     switch(data[pos])
     {
@@ -446,19 +446,19 @@ static INT32 calcA(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     }
     break;
   }
-  DUMPPOS("after calcA");
+  /* DUMPPOS("after calcA"); */
   return pos;
 }
 
 static INT32 calc9(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calc9");
+  /* DUMPPOS("before calc9"); */
 
   pos=calcA(this,data,len,pos);
 
   while(1)
   {
-    DUMPPOS("inside calc9");
+    /* DUMPPOS("inside calc9"); */
     FINDTOK();
     switch(data[pos])
     {
@@ -477,13 +477,13 @@ static INT32 calc9(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     break;
   }
 
-  DUMPPOS("after calc9");
+  /* DUMPPOS("after calc9"); */
   return pos;
 }
 
 static INT32 calc8(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calc8");
+  /* DUMPPOS("before calc8"); */
 
   pos=calc9(this,data,len,pos);
 
@@ -492,11 +492,11 @@ static INT32 calc8(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     static WCHAR lsh_[] = { '<', '<' };
     static WCHAR rsh_[] = { '>', '>' };
 
-    DUMPPOS("inside calc8");
+    /* DUMPPOS("inside calc8"); */
     FINDTOK();
     if(GOBBLEOP2(lsh_))
     {
-      DUMPPOS("Found <<");
+      /* DUMPPOS("Found <<"); */
       pos=calc9(this,data,len,pos);
       o_lsh();
       break;
@@ -504,7 +504,7 @@ static INT32 calc8(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
     if(GOBBLEOP2(rsh_))
     {
-      DUMPPOS("Found >>");
+      /* DUMPPOS("Found >>"); */
       pos=calc9(this,data,len,pos);
       o_rsh();
       break;
@@ -517,13 +517,13 @@ static INT32 calc8(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
 static INT32 calc7b(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calc7b");
+  /* DUMPPOS("before calc7b"); */
 
   pos=calc8(this,data,len,pos);
 
   while(1)
   {
-    DUMPPOS("inside calc7b");
+    /* DUMPPOS("inside calc7b"); */
 
     FINDTOK();
     
@@ -562,7 +562,7 @@ static INT32 calc7b(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
 static INT32 calc7(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calc7");
+  /* DUMPPOS("before calc7"); */
 
   pos=calc7b(this,data,len,pos);
 
@@ -571,7 +571,7 @@ static INT32 calc7(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     static WCHAR eq_[] = { '=', '=' };
     static WCHAR ne_[] = { '!', '=' };
 
-    DUMPPOS("inside calc7");
+    /* DUMPPOS("inside calc7"); */
 
     FINDTOK();
     if(GOBBLEOP2(eq_))
@@ -595,14 +595,14 @@ static INT32 calc7(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
 static INT32 calc6(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calc6");
+  /* DUMPPOS("before calc6"); */
 
   pos=calc7(this,data,len,pos);
 
   FINDTOK();
   while(data[pos] == '&' && data[pos+1]!='&')
   {
-    DUMPPOS("inside calc6");
+    /* DUMPPOS("inside calc6"); */
 
     pos++;
     pos=calc7(this,data,len,pos);
@@ -613,14 +613,14 @@ static INT32 calc6(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
 static INT32 calc5(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calc5");
+  /* DUMPPOS("before calc5"); */
 
   pos=calc6(this,data,len,pos);
 
   FINDTOK();
   while(GOBBLE('^'))
   {
-    DUMPPOS("inside calc5");
+    /* DUMPPOS("inside calc5"); */
 
     pos=calc6(this,data,len,pos);
     o_xor();
@@ -630,14 +630,14 @@ static INT32 calc5(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
 static INT32 calc4(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
-  DUMPPOS("before calc4");
+  /* DUMPPOS("before calc4"); */
 
   pos=calc5(this,data,len,pos);
 
   FINDTOK();
   while(data[pos] == '|' && data[pos+1]!='|')
   {
-    DUMPPOS("inside calc4");
+    /* DUMPPOS("inside calc4"); */
     pos++;
     pos=calc5(this,data,len,pos);
     o_or();
@@ -649,14 +649,14 @@ static INT32 calc3(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
   static WCHAR land_[] = { '&', '&' };
 
-  DUMPPOS("before calc3");
+  /* DUMPPOS("before calc3"); */
 
   pos=calc4(this,data,len,pos);
 
   FINDTOK();
   while(GOBBLEOP2(land_))
   {
-    DUMPPOS("inside calc3");
+    /* DUMPPOS("inside calc3"); */
 
     check_destructed(sp-1);
     if(IS_ZERO(sp-1))
@@ -675,14 +675,14 @@ static INT32 calc2(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 {
   static WCHAR lor_[] = { '|', '|' };
 
-  DUMPPOS("before calc2");
+  /* DUMPPOS("before calc2"); */
 
   pos=calc3(this,data,len,pos);
 
   FINDTOK();
   while(GOBBLEOP2(lor_))
   {
-    DUMPPOS("inside calc2");
+    /* DUMPPOS("inside calc2"); */
 
     check_destructed(sp-1);
     if(!IS_ZERO(sp-1))
@@ -699,7 +699,7 @@ static INT32 calc2(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
 
 static INT32 calc1(struct cpp *this, WCHAR *data, INT32 len, INT32 pos)
 {
-  DUMPPOS("before calc1");
+  /* DUMPPOS("before calc1"); */
 
   pos=calc2(this,data,len,pos);
 
@@ -724,7 +724,7 @@ static int calc(struct cpp *this, WCHAR *data, INT32 len, INT32 tmp)
   JMP_BUF recovery;
   INT32 pos;
 
-  DUMPPOS("Calculating");
+  /* DUMPPOS("Calculating"); */
 
   if (SETJMP(recovery))
   {
@@ -750,7 +750,7 @@ static int calc(struct cpp *this, WCHAR *data, INT32 len, INT32 tmp)
   }
   UNSETJMP(recovery);
 
-  DUMPPOS("Done");
+  /* DUMPPOS("Done"); */
 
   return pos;
 }
@@ -1311,20 +1311,20 @@ static INT32 lower_cpp(struct cpp *this,
 	save=this->buf;
 	init_string_builder(&this->buf, SHIFT);
 #ifdef PIKE_DEBUG
-	DUMPPOS("#if before lower_cpp()");
+	/* DUMPPOS("#if before lower_cpp()"); */
 	skip = lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF);
-	fprintf(stderr, "shift:%d, pos:%d, len:%d, skip:%d\n",
-		SHIFT, pos, len, skip);
+	/* fprintf(stderr, "shift:%d, pos:%d, len:%d, skip:%d\n",
+	   SHIFT, pos, len, skip); */
 
 	pos += skip;
-	DUMPPOS("#if after lower_cpp()");
-	fprintf(stderr, "tmp (%d:%d): \"",
-		this->buf.s->len, this->buf.s->size_shift);
-	fflush(stderr);
-	write(2, this->buf.s->str,
-	      this->buf.s->len << this->buf.s->size_shift);
-	fprintf(stderr, "\"\n");
-	fflush(stderr);
+	/* DUMPPOS("#if after lower_cpp()"); */
+	/* fprintf(stderr, "tmp (%d:%d): \"",
+	   this->buf.s->len, this->buf.s->size_shift); */
+	/* fflush(stderr); */
+	/* write(2, this->buf.s->str,
+	   this->buf.s->len << this->buf.s->size_shift); */
+	/* fprintf(stderr, "\"\n"); */
+	/* fflush(stderr); */
 #else /* !PIKE_DEBUG */
 	pos+=lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF);
 #endif /* PIKE_DEBUG */
