@@ -194,13 +194,13 @@ static private class Extractor {
       }
       if (objectp(p) && p->objtype == "class" && parser->peekToken() == "{") {
         parser->eat("{");
-        parseClassBody([object(Class)] p);
+        parseClassBody([object(Class)] p, 0);
         parser->eat("}");
       }
       else if (objectp(p) && p->objtype == "modifier" &&
 	       parser->peekToken() == "{") {
 	parser->eat("{");
-	parseClassBody(c);
+        parseClassBody(c, p->modifiers);
 	parser->eat("}");
       }
       else if (objectp(p) && p->objtype == "enum") {
@@ -239,7 +239,9 @@ static private class Extractor {
   // If 'filename' is supplied, it will look for standalone doc comments
   // at the beginning of the file, and then the return value is that
   // Documentation for the file.
-  Documentation parseClassBody(Class|Module c, void|string filename) {
+  Documentation parseClassBody(Class|Module c,
+                               array(string) defModifiers,
+                               void|string filename) {
     Documentation filedoc = 0;
     for (;;) {
       Documentation doc = 0;
@@ -360,6 +362,10 @@ static private class Extractor {
           doc = 0;
         }
 
+      if (defModifiers && sizeof(defModifiers))
+        foreach(decls, PikeObject obj)
+          obj->modifiers |= defModifiers;
+
       mapping(string:int) contexts = ([]);
 
       // Make sure that all inherits are added:
@@ -406,7 +412,7 @@ Module extractModule(string s, void|string filename, void|string moduleName) {
   Extractor e = Extractor(s, filename);
   Module m = Module();
   m->name = moduleName || filename;
-  Documentation doc = e->parseClassBody(m, filename);
+  Documentation doc = e->parseClassBody(m, 0, filename);
   m->documentation = doc;
   // if there was no documentation in the file whatsoever
   if (!doc && !sizeof(m->docGroups) && !sizeof(m->children))
@@ -418,7 +424,7 @@ Class extractClass(string s, void|string filename, void|string className) {
   Extractor e = Extractor(s, filename);
   Class c = Class();
   c->name = className || filename;
-  Documentation doc = e->parseClassBody(c, filename);
+  Documentation doc = e->parseClassBody(c, 0, filename);
   c->documentation = doc;
   // if there was no documentation in the file...
   if (!doc && !sizeof(c->docGroups) && !sizeof(c->children))
