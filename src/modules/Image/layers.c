@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.22 1999/06/28 00:43:06 per Exp $
+**!	$Id: layers.c,v 1.23 1999/06/30 11:02:56 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -152,7 +152,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.22 1999/06/28 00:43:06 per Exp $");
+RCSID("$Id: layers.c,v 1.23 1999/06/30 11:02:56 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1072,7 +1072,8 @@ static void image_layer_create(INT32 args)
       pop_stack();
       return;
    }
-   else if (sp[-args].type==T_INT)
+   else if (sp[-args].type==T_INT && args>1 
+	    && sp[1-args].type==T_INT)
    {
       rgb_group col=black,alpha=white;
 
@@ -1103,7 +1104,7 @@ static void image_layer_create(INT32 args)
 
       pop_n_elems(args);
    }
-   else if (sp[-args].type==T_OBJECT)
+   else if (sp[-args].type==T_OBJECT || args>1)
    {
       if (args>2)
       {
@@ -2103,10 +2104,12 @@ void img_lay(struct layer **layer,
    /* loop over lines */
    for (y=0; y<dest->ysize; y++)
    {
-      if (layers>1 || layer[0]->row_func!=lm_normal)
+      if (layers>1 || layer[0]->row_func!=lm_normal ||
+	  layer[0]->tiled)
       {
 	 /* add the bottom layer first */
-	 if (layer[0]->row_func==lm_normal) /* cheat */
+	 if (layer[0]->row_func==lm_normal &&
+	     !layer[0]->tiled)                 /* cheat */
 	 {
 	    img_lay_first_line(layer[0],xoffs,xsize,
 			       y+dest->yoffs-layer[0]->yoffs,
@@ -2225,18 +2228,32 @@ void image_lay(INT32 args)
       yoffset=l[0]->yoffs;
       xsize=l[0]->xsize;
       ysize=l[0]->ysize;
-      for (i=1; i<layers; i++)
+      if (l[0]->tiled) /* set size from the first non-tiled */
       {
-	 int t;
-	 if (l[i]->xoffs<xoffset) 
-	    t=xoffset-l[i]->xoffs,xoffset-=t,xsize+=t;
-	 if (l[i]->yoffs<yoffset) 
-	    t=yoffset-l[i]->yoffs,yoffset-=t,ysize+=t;
-	 if (l[i]->xsize+l[i]->xoffs-xoffset>xsize)
-	    xsize=l[i]->xsize+l[i]->xoffs-xoffset;
-	 if (l[i]->ysize+l[i]->yoffs-yoffset>ysize)
-	    ysize=l[i]->ysize+l[i]->yoffs-yoffset;
+	 for (i=1; i<layers; i++)
+	    if (!l[i]->tiled)
+	    {
+	       xoffset=l[i]->xoffs;
+	       yoffset=l[i]->yoffs;
+	       xsize=l[i]->xsize;
+	       ysize=l[i]->ysize;
+	       break;
+	    }
       }
+      else i=1;
+      for (; i<layers; i++)
+	 if (!l[i]->tiled)
+	 {
+	    int t;
+	    if (l[i]->xoffs<xoffset) 
+	       t=xoffset-l[i]->xoffs,xoffset-=t,xsize+=t;
+	    if (l[i]->yoffs<yoffset) 
+	       t=yoffset-l[i]->yoffs,yoffset-=t,ysize+=t;
+	    if (l[i]->xsize+l[i]->xoffs-xoffset>xsize)
+	       xsize=l[i]->xsize+l[i]->xoffs-xoffset;
+	    if (l[i]->ysize+l[i]->yoffs-yoffset>ysize)
+	       ysize=l[i]->ysize+l[i]->yoffs-yoffset;
+	 }
    }
 
    /* get destination layer */
