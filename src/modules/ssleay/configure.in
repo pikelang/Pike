@@ -7,6 +7,10 @@ AC_SUBST(RANLIB)
 AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 
 if test x$with_ssleay = xyes; then
+  OLD_LDFLAGS=$LDFLAGS
+  OLD_CPPFLAGS=$CPPFLAGS
+  OLD_LIBS=$LIBS
+
   AC_MSG_CHECKING(Checking for existance of SSLeay)
   
   AC_CACHE_VAL(pike_cv_ssleay_exists,
@@ -25,6 +29,9 @@ if test x$with_ssleay = xyes; then
     if test -d /usr/local/ssl/lib ; then
       echo Added /usr/local/ssl/lib to the library search path.
       LDFLAGS="-L/usr/local/ssl/lib ${LDFLAGS}"
+      # link with libc first, so we get the right definition
+      # of crypt()
+      LDFLAGS="-lc ${LDFLAGS}"
     fi
 
     if test -d /usr/local/ssl/include ; then
@@ -43,6 +50,12 @@ if test x$with_ssleay = xyes; then
 
     if test x$pike_cv_ssleay = xyes; then
       AC_DEFINE(HAVE_SSLEAY)
+    else
+      # Restore variables, so we don't link with unnessesary libs
+
+      LIBS=$OLD_LIBS
+      CPPFLAGS=$OLD_CPPFLAGS
+      LDFLAGS=$OLD_LDFLAGS
     fi
   fi
 fi
