@@ -69,8 +69,9 @@ class imap_atom_options
     {
       name = s;
       options = ({ sec,
-		   o && imap_list(Array.map(imap_check_array(o[0]->list->atom),
-					    imap_string)) }) - ({ 0 });
+		   o && sizeof(o) &&
+		   imap_list(Array.map(imap_check_array(o[0]->list->atom),
+				       imap_string)) }) - ({ 0 });
       range = r;
     }
 
