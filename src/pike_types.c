@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.34 1998/03/01 11:40:47 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.35 1998/03/02 16:06:59 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -61,12 +61,24 @@ struct pike_string *mixed_type_string;
 struct pike_string *void_type_string;
 struct pike_string *any_type_string;
 
-static char *a_markers[10],*b_markers[10];
+static struct pike_string *a_markers[10],*b_markers[10];
 
 static void clear_markers()
 {
   unsigned int e;
-  for(e=0;e<NELEM(a_markers);e++) a_markers[e]=b_markers[e]=0;
+  for(e=0;e<NELEM(a_markers);e++)
+  {
+    if(a_markers[e])
+    {
+      free_string(a_markers[e]);
+      a_markers[e]=0;
+    }
+    if(b_markers[e])
+    {
+      free_string(b_markers[e]);
+      b_markers[e]=0;
+    }
+  }
 }
 
 #ifdef DEBUG
@@ -233,7 +245,7 @@ void push_unfinished_type(char *s)
   for(e--;e>=0;e--) push_type(s[e]);
 }
 
-static void push_unfinished_type_with_markers(char *s, char **am)
+static void push_unfinished_type_with_markers(char *s, struct pike_string **am)
 {
   int e;
   e=type_length(s);
@@ -243,7 +255,7 @@ static void push_unfinished_type_with_markers(char *s, char **am)
     {
       if(am[s[e]-'0'])
       {
-	push_unfinished_type(am[s[e]-'0']);
+	push_finished_type(am[s[e]-'0']);
       }else{
 	push_type(T_MIXED);
       }
@@ -450,7 +462,7 @@ static void internal_parse_typeB(char **s)
 
   case '(':
     ++*s;
-    internal_parse_typeB(s);
+    internal_parse_type(s);
     while(ISSPACE(**((unsigned char **)s))) ++*s;
     if(**s != ')') error("Expecting ')'.\n");
     break;
@@ -736,6 +748,73 @@ TYPE_T compile_type_to_runtime_type(struct pike_string *s)
   return low_compile_type_to_runtime_type(s->str);
 }
 
+
+static int low_find_exact_type_match(char *needle, char *haystack)
+{
+  while(EXTRACT_UCHAR(haystack)==T_OR)
+  {
+    haystack++;
+    if(low_find_exact_type_match(needle, haystack))
+      return 1;
+    haystack+=type_length(haystack);
+  }
+  return low_is_same_type(needle, haystack);
+}
+
+static void very_low_or_pike_types(char *to_push, char *not_push)
+{
+  while(EXTRACT_UCHAR(to_push)==T_OR)
+  {
+    to_push++;
+    very_low_or_pike_types(to_push, not_push);
+    to_push+=type_length(to_push);
+  }
+  if(!low_find_exact_type_match(to_push, not_push))
+  {
+    push_unfinished_type(to_push);
+    push_type(T_OR);
+  }
+}
+
+static void low_or_pike_types(char *t1, char *t2)
+{
+  if(!t1)
+  {
+    if(!t2)
+      push_type(T_VOID);
+    else
+      push_unfinished_type(t2);
+  }
+  else if(!t2)
+  {
+    push_unfinished_type(t1);
+  }
+  else if(EXTRACT_UCHAR(t1)==T_MIXED || EXTRACT_UCHAR(t2)==T_MIXED)
+  {
+    push_type(T_MIXED);
+  }
+  else
+  {
+    push_unfinished_type(t1);
+    very_low_or_pike_types(t2,t1);
+  }
+}
+
+static void medium_or_pike_types(struct pike_string *a,
+				 struct pike_string *b)
+{
+  low_or_pike_types( a ? a->str : 0 , b ? b->str : 0 );
+}
+
+static struct pike_string *or_pike_types(struct pike_string *a,
+					 struct pike_string *b)
+{
+  type_stack_mark();
+  medium_or_pike_types(a,b);
+  return pop_unfinished_type();
+}
+
+
 #define A_EXACT 1
 #define B_EXACT 2
 #define NO_MAX_ARGS 4
@@ -773,13 +852,13 @@ static char *low_match_types(char *a,char *b, int flags)
 
     case T_ASSIGN:
       ret=low_match_types(a+2,b,flags);
-      if(ret)
+      if(ret && EXTRACT_UCHAR(b)!=T_VOID)
       {
 	int m=EXTRACT_UCHAR(a+1)-'0';
-	if(!a_markers[m])
-	  a_markers[m]=b;
-	else if(!low_is_same_type(a_markers[m], b))
-	  a_markers[m]=mixed_type_string->str;
+	type_stack_mark();
+	low_or_pike_types(a_markers[m] ? a_markers[m]->str : 0,b);
+	if(a_markers[m]) free_string(a_markers[m]);
+	a_markers[m]=pop_unfinished_type();
       }
       return ret;
 
@@ -788,7 +867,7 @@ static char *low_match_types(char *a,char *b, int flags)
     {
       int m=EXTRACT_UCHAR(a)-'0';
       if(a_markers[m])
-	return low_match_types(a_markers[m], b, flags);
+	return low_match_types(a_markers[m]->str, b, flags);
       else
 	return low_match_types(mixed_type_string->str, b, flags);
     }
@@ -817,13 +896,13 @@ static char *low_match_types(char *a,char *b, int flags)
 
     case T_ASSIGN:
       ret=low_match_types(a,b+2,flags);
-      if(ret)
+      if(ret && EXTRACT_UCHAR(a)!=T_VOID)
       {
 	int m=EXTRACT_UCHAR(b+1)-'0';
-	if(!b_markers[m])
-	  b_markers[m]=a;
-	else if(!low_is_same_type(b_markers[m], a))
-	  b_markers[m]=mixed_type_string->str;
+	type_stack_mark();
+	low_or_pike_types(b_markers[m] ? b_markers[m]->str : 0,a);
+	if(b_markers[m]) free_string(b_markers[m]);
+	b_markers[m]=pop_unfinished_type();
       }
       return ret;
 
@@ -832,7 +911,7 @@ static char *low_match_types(char *a,char *b, int flags)
     {
       int m=EXTRACT_UCHAR(b)-'0';
       if(b_markers[m])
-	return low_match_types(a, b_markers[m], flags);
+	return low_match_types(a, b_markers[m]->str, flags);
       else
 	return low_match_types(a, mixed_type_string->str, flags);
     }
@@ -978,25 +1057,9 @@ static int low_get_return_type(char *a,char *b)
       else
 	pop_stack_mark();
 
-      if(o1 == o2)
-      {
-	if(!o1)
-	{
-	  return 0;
-	}else{
-	  push_finished_type(o1);
-	}
-      }
-      else if(o1 == mixed_type_string || o2 == mixed_type_string)
-      {
-	push_type(T_MIXED);
-      }
-      else
-      {
-	if(o1) push_finished_type(o1);
-	if(o2) push_finished_type(o2);
-	if(o1 && o2) push_type(T_OR);
-      }
+      if(!o1 && !o2) return 0;
+
+      medium_or_pike_types(o1,o2);
 
       if(o1) free_string(o1);
       if(o2) free_string(o2);
@@ -1114,11 +1177,10 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
     b=low_index_type(t,n);
     if(!b) return a;
     if(!a) return b;
-    push_finished_type(b);
-    push_finished_type(a);
+    type_stack_mark();
+    medium_or_pike_types(a,b);
     free_string(a);
     free_string(b);
-    push_type(T_OR);
     return pop_unfinished_type();
   }
 
@@ -1148,7 +1210,7 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
       if(low_match_types(int_type_string->str,CDR(n)->type->str,0))
       {
 	push_unfinished_type(t);
-	  push_type(T_OR);
+	push_type(T_OR);
       }
       return pop_unfinished_type();
     }else{
