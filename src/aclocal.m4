@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.85 2003/12/07 15:56:21 marcus Exp $
+dnl $Id: aclocal.m4,v 1.86 2003/12/07 20:24:57 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -356,7 +356,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.85 2003/12/07 15:56:21 marcus Exp $
+  # $Id: aclocal.m4,v 1.86 2003/12/07 20:24:57 marcus Exp $
 
   MY_AC_PROG_CC
 
@@ -663,7 +663,7 @@ int main() {
       return !!strcmp("4711,17", buf);
     }
   }
-}], [pike_cv_printf_$1="${mod}"; found=yes])
+}], [pike_cv_printf_$1="${mod}"; found=yes], [:], [:])
 	test ${found} = yes && break
       done
       test ${found} = no && pike_cv_printf_$1=unknown
@@ -705,7 +705,7 @@ int main() {
   char buf[50];
   sprintf(buf, "%${mod}4.1f,%d",($1)17.0,17);
   return !!strcmp("17.0,17",buf);
-}], [pike_cv_printf_$1="${mod}"; found=yes])
+}], [pike_cv_printf_$1="${mod}"; found=yes], [:], [:])
 	test ${found} = yes && break
       done
       test ${found} = no && pike_cv_printf_$1=unknown
