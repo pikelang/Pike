@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.29 2003/01/18 17:55:55 nilsson Exp $
+// $Id: Pike.pmod,v 1.30 2003/01/18 18:38:12 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -63,7 +63,7 @@ array(string) split(string data, void|mapping state)
 	state->remains += data[..sizeof(data)-2];
 	return ret;
       }
-      ret += ({ state->remains + data[..pos] });
+      ret += ({ state->remains + data[..pos+1] });
       m_delete(state, "remains");
       pos+=2;
       break;
