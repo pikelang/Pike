@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 // -*- Pike -*-
-// $Id: cgrep.pike,v 1.7 2003/01/18 17:54:01 nilsson Exp $
+// $Id: cgrep.pike,v 1.8 2003/01/20 02:37:21 nilsson Exp $
 
 constant description = "Context aware grep.";
 
@@ -20,7 +20,7 @@ constant description = "Context aware grep.";
 
 // Search parameters
 int(0..2) in_token; // 1=is_token, 2=in_token
-int(0..1) in_string;
+int(0..2) in_string; // 1=is_string, 2=in_string
 int(0..1) in_comment;
 int(0..1) case_insensitive;
 string target;
@@ -28,7 +28,7 @@ string target;
 // Presentation
 int(0..1) show_lineno;
 int(0..1) show_fn;
-int(0..1) quiet;
+int(0..1) verbose;
 int(0..1) supress_match;
 int(0..3) fn_only; // 1=with, 2=without, 3=count
 
@@ -115,7 +115,9 @@ class PikeFile {
 	continue;
       }
       if(token[0]=='"') {
-	if(in_string && has_value(token[1..sizeof(token)-2], target))
+	if(in_string==1 && token[1..sizeof(token)-2]==target)
+	  found();
+	else if(in_string==2 && has_value(token[1..sizeof(token)-2], target))
 	  found();
 	line += String.count(token, "\n");
 	continue;
@@ -163,8 +165,8 @@ class CFile {
 }
 
 void msg(string x, mixed ... y) {
-  if(quiet) return;
-  werror(x, @y);
+  if(verbose)
+    werror(x, @y);
 }
 
 int handle_file(string path, string fn) {
@@ -218,16 +220,17 @@ int main(int num, array(string) args) {
     ({ "is_token",   Getopt.NO_ARG, "-T,--is-token"/","   }),
     ({ "in_token",   Getopt.NO_ARG, "-t,--in-token"/","   }),
     ({ "in_string",  Getopt.NO_ARG, "-s,--in-string"/","  }),
+    ({ "is_string",  Getopt.NO_ARG, "-S,--is-string"/","  }),
     ({ "in_comment", Getopt.NO_ARG, "-c,--in-comment"/"," }),
     ({ "summarize",  Getopt.NO_ARG, "--summarize"         }),
     ({ "help",       Getopt.NO_ARG, "--help"              }),
     ({ "version",    Getopt.NO_ARG, "--version"           }),
+    ({ "verbose",    Getopt.NO_ARG, "--verbose"           }),
 
     ({ "-n", Getopt.NO_ARG, "-n,--line-number"/","    }),
     ({ "-i", Getopt.NO_ARG, "-i,--ignore-case"/","    }),
     ({ "-H", Getopt.NO_ARG, "-H,--with-filename"/","  }),
     ({ "-r", Getopt.NO_ARG, "-r,--recursive"/","      }),
-    ({ "-q", Getopt.NO_ARG, "-q,--quiet"/","          }),
     ({ "-l", Getopt.NO_ARG, "-l,--files-without-match"/"," }),
     ({ "-L", Getopt.NO_ARG, "-L,--files-with-matches"/","  }),
     ({ "-c", Getopt.NO_ARG, "--count"                 }),
@@ -235,14 +238,15 @@ int main(int num, array(string) args) {
     switch(opt[0]) {
     case "is_token": in_token=1; break;
     case "in_token": in_token=2; break;
-    case "in_string": in_string=1; break;
+    case "is_string": in_string=1; break;
+    case "in_string": in_string=2; break;
     case "in_comment": in_comment=1; break;
     case "summarize": summarize=1; break;
+    case "verbose": verbose=1; break;
     case "-n": show_lineno=1; break;
     case "-i": case_insensitive=1; break;
     case "-H": show_fn=1; break;
     case "-r": recurse=1; break;
-    case "-q": quiet=1; break;
     case "-l": supress_match=1; fn_only=1; break;
     case "-L": supress_match=1; fn_only=2; break;
     case "-c": supress_match=1; fn_only=3; break;
@@ -287,7 +291,8 @@ Example: grep -i -s hello menu.h main.c prog.pike
 Text matching:
   -T, --is-token            TEXT is a complete token
   -t, --in-token            TEXT is part of a token
-  -s, --in-string           TEXT is part of a string
+  -S, --is-string           TEXT is a complete string literal
+  -s, --in-string           TEXT is part of a string literal
   -c, --in-comment          TEXT is part of a comment
   -i, --ignore-case         ignore case distinctions
 			    
@@ -298,7 +303,7 @@ Miscellaneous:
 Output control:		    
   -n, --line-number         print line number with output lines
   -H, --with-filename       print the filename for each match
-  -q, --quiet               supress error messages
+      --verbose             output error messages
   -r, --recursive           recurse into directories
   -L, --files-without-match only print FILE names containing no match
   -l, --files-with-matches  only print FILE names containing matches
@@ -306,7 +311,7 @@ Output control:
       --summarize           print a summary of the number of matches
 ";
 
-constant version = #"cgrep $Revision: 1.7 $
+constant version = #"cgrep $Revision: 1.8 $
 A token based grep with UI stolen from GNU grep.
 By Martin Nilsson 2003.
 ";
