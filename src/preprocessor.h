@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.25 2001/05/18 00:02:10 hubbe Exp $
+ * $Id: preprocessor.h,v 1.26 2001/05/29 18:10:55 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -862,11 +862,12 @@ static INT32 lower_cpp(struct cpp *this,
 	  }
 	}
 	  
-	if(d && !d->inside)
+	if(d && !(d->inside & 1))
 	{
 	  int arg=0;
 	  struct string_builder tmp;
 	  struct define_argument arguments [MAX_ARGS];
+	  short inside = d->inside;
 	  
 	  if(s) add_ref(s);
 	  
@@ -1001,9 +1002,11 @@ static INT32 lower_cpp(struct cpp *this,
 		  INT32 line=this->current_line;
 		  save=this->buf;
 		  this->buf=tmp;
+		  d->inside = 2;
 		  lower_cpp(this, a, l,
 			    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
 			    auto_convert, charset);
+		  d->inside = inside;
 		  tmp=this->buf;
 		  this->buf=save;
 		  this->current_line=line;
@@ -1040,7 +1043,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  if(s)
 	  {
 	    if((d=find_define(s)))
-	      d->inside=0;
+	      d->inside = inside;
 	    
 	    free_string(s);
 	  }
@@ -1822,9 +1825,16 @@ static INT32 lower_cpp(struct cpp *this,
 	       (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
 	      fatal("Internal error in define\n");
 #endif	  
-	    
-	    this->defines=hash_insert(this->defines, & def->link);
-	    
+	    {
+	      struct define *d;
+	      if ((d = find_define(def->link.s)) && (d->inside)) {
+		cpp_error(this,
+			  "Illegal to redefine a macro during its expansion.");
+		free_one_define(&(def->link));
+	      } else {
+		this->defines=hash_insert(this->defines, & def->link);
+	      }
+	    }
 	  }
 	  pop_n_elems(Pike_sp-argbase);
 	  break;
