@@ -32,27 +32,29 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 #define copy_shared_string(to,s) ((to)=(s))->refs++
 
 /* Prototypes begin here */
-void check_string(struct pike_string *s);
-void verify_shared_strings_tables();
-struct pike_string *binary_findstring(const char *foo, INT32 len);
+struct pike_string *binary_findstring(const char *foo, INT32 l);
 struct pike_string *findstring(const char *foo);
-struct pike_string *debug_findstring(const struct pike_string *foo);
 struct pike_string *begin_shared_string(int len);
 struct pike_string *end_shared_string(struct pike_string *s);
 struct pike_string * make_shared_binary_string(const char *str,int len);
 struct pike_string *make_shared_string(const char *str);
+void unlink_pike_string(struct pike_string *s);
+void really_free_string(struct pike_string *s);
+struct pike_string *add_string_status(int verbose);
+void check_string(struct pike_string *s);
+void verify_shared_strings_tables();
+struct pike_string *debug_findstring(const struct pike_string *foo);
+void dump_stralloc_strings();
 int low_quick_binary_strcmp(char *a,INT32 alen,
 			    char *b,INT32 blen);
 int my_quick_strcmp(struct pike_string *a,struct pike_string *b);
 int my_strcmp(struct pike_string *a,struct pike_string *b);
-void really_free_string(struct pike_string *s);
-struct pike_string *add_string_status(int verbose);
-void dump_stralloc_strings();
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);
 struct pike_string *string_replace(struct pike_string *str,
 				     struct pike_string *del,
 				     struct pike_string *to);
+void init_shared_string_table();
 void cleanup_shared_string_table();
 /* Prototypes end here */
 

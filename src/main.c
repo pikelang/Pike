@@ -249,6 +249,7 @@ void main(int argc, char **argv, char **env)
 
 void init_main_efuns()
 {
+  init_shared_string_table();
   init_interpreter();
   init_lex();
   init_types();

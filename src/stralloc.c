@@ -11,73 +11,23 @@
 #include "memory.h"
 #include "error.h"
 
-static struct pike_string *base_table[HTABLE_SIZE];
-static unsigned INT32 full_hash_value;
+#define BEGIN_HASH_SIZE 997
+#define MAX_AVG_LINK_LENGTH 3
 
-/*
- */
+unsigned INT32 htable_size=0;
+static struct pike_string **base_table=0;
+static unsigned INT32 full_hash_value;
+unsigned INT32 num_strings=0;
+
+/*** Main string hash function ***/
 static unsigned int StrHash(const char *s,int len)
 {
   full_hash_value=hashmem((unsigned char *)s, len, 20);
-  return full_hash_value % HTABLE_SIZE;
+  return full_hash_value % htable_size;
 }
 
-#ifdef DEBUG
-void check_string(struct pike_string *s)
-{
-  StrHash(s->str, s->len);
-  if(full_hash_value != s->hval)
-    fatal("Hash value changed?\n");
 
-  if(debug_findstring(s) !=s)
-    fatal("Shared string not shared.\n");
-
-  if(s->str[s->len])
-    fatal("Shared string is not zero terminated properly.\n");
-}
-
-void verify_shared_strings_tables()
-{
-  unsigned int e, h;
-  struct pike_string *s;
-
-  for(e=0;e<HTABLE_SIZE;e++)
-  {
-    h=0;
-    for(s=base_table[e];s;s=s->next)
-    {
-      h++;
-      if(s->len < 0)
-	fatal("Shared string shorter than zero bytes.\n");
-
-      if(s->refs <= 0)
-	fatal("Shared string had too few references.\n");
-
-      if(s->str[s->len])
-	fatal("Shared string didn't end with a zero.\n");
-
-      if(StrHash(s->str, s->len) != e)
-	fatal("Shared string hashed to wrong place.\n");
-
-      if(s->hval != full_hash_value)
-	fatal("Shared string hashed to other number.\n");
-	
-      if(h>10000)
-      {
-	struct pike_string *s2;
-	for(s2=s;s2;s2=s2->next)
-	  if(s2 == s)
-	    fatal("Shared string table is cyclic.\n");
-	h=0;
-      }
-    }
-  }
-}
-#endif
-
-/*
- * find a string in the shared string table.
- */
+/*** find a string in the shared string table. ***/
 static struct pike_string *internal_findstring(const char *s,int len,int h)
 {
   struct pike_string *curr,**prev, **base;
@@ -137,50 +87,38 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,i
   return 0; /* not found */
 }
 
-#ifdef DEBUG
-struct pike_string *debug_findstring(const struct pike_string *foo)
+/*** rehash ***/
+
+static void rehash_string_backwards(struct pike_string *s)
 {
-  struct pike_string *tmp;
-  tmp=propagate_shared_string(foo, foo->hval % HTABLE_SIZE);
-
-#if 0
-  if(!tmp)
-  {
-    int e;
-    struct pike_string *tmp2;
-    fprintf(stderr,"String %p %ld %ld %s\n",
-	    foo,
-	    (long)foo->hval,
-	    (long)foo->len,
-	    foo->str);
-    StrHash(foo->str,foo->len);
-    fprintf(stderr,"------ %p %ld\n",
-	    base_table[foo->hval %HTABLE_SIZE],
-	    (long)full_hash_value);
-    for(tmp2=base_table[foo->hval % HTABLE_SIZE];tmp2;tmp2=tmp2->next)
-    {
-      if(tmp2 == tmp)
-	fprintf(stderr,"!!%p!!->",tmp2);
-      else
-	fprintf(stderr,"%p->",tmp2);
-    }
-    fprintf(stderr,"0\n");
-
-    for(e=0;e<HTABLE_SIZE;e++)
-    {
-      for(tmp2=base_table[e];tmp2;tmp2=tmp2->next)
-      {
-	if(tmp2 == tmp)
-	  fprintf(stderr,"String found in hashbin %ld (not %ld)\n",
-		  (long)e,
-		  (long)(foo->hval % HTABLE_SIZE));
-      }
-    }
-  }
-#endif
-  return tmp;
+  int h;
+  if(!s) return;
+  rehash_string_backwards(s->next);
+  h=s->hval % htable_size;
+  s->next=base_table[h];
+  base_table[h]=s;
 }
-#endif
+
+static void rehash()
+{
+  int h,old;
+  struct pike_string **old_base;
+
+  old=htable_size;
+  old_base=base_table;
+
+  htable_size=htable_size*2 +1;
+  base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
+  MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
+
+  for(h=0;h<old;h++) rehash_string_backwards(old_base[h]);
+
+  if(old_base)
+    free((char *)old_base);
+}
+
+
+/*** Make new strings ***/
 
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
@@ -192,6 +130,17 @@ struct pike_string *begin_shared_string(int len)
   t->str[len]=0;
   t->len=len;
   return t;
+}
+
+static void link_pike_string(struct pike_string *s, int h)
+{
+  s->refs = 0;
+  s->next = base_table[h];
+  base_table[h] = s;
+  s->hval=full_hash_value;
+  num_strings++;
+  if(num_strings > MAX_AVG_LINK_LENGTH * htable_size)
+    rehash();
 }
 
 struct pike_string *end_shared_string(struct pike_string *s)
@@ -208,10 +157,7 @@ struct pike_string *end_shared_string(struct pike_string *s)
     free((char *)s);
     s=s2;
   }else{
-    s->refs = 0;
-    s->next = base_table[h];
-    base_table[h] = s;
-    s->hval=full_hash_value;
+    link_pike_string(s, h);
   }
   s->refs++;
 
@@ -228,11 +174,7 @@ struct pike_string * make_shared_binary_string(const char *str,int len)
   {
     s=begin_shared_string(len);
     MEMCPY(s->str, str, len);
-    s->str[len] = 0;
-    s->refs = 0;
-    s->next = base_table[h];
-    base_table[h] = s;
-    s->hval=full_hash_value;
+    link_pike_string(s, h);
   }
 
   s->refs++;
@@ -244,6 +186,188 @@ struct pike_string *make_shared_string(const char *str)
 {
   return make_shared_binary_string(str, strlen(str));
 }
+
+/*** Free strings ***/
+
+void unlink_pike_string(struct pike_string *s)
+{
+  int h;
+
+  h=StrHash(s->str,s->len);
+  propagate_shared_string(s,h);
+  base_table[h]=s->next;
+}
+
+void really_free_string(struct pike_string *s)
+{
+  unlink_pike_string(s);
+  free((char *)s);
+}
+
+
+/*
+ * String table status
+ */
+struct pike_string *add_string_status(int verbose)
+{
+  char b[200];
+
+  init_buf();
+
+  if (verbose)
+  {
+    int allocd_strings=0;
+    int allocd_bytes=0;
+    int num_distinct_strings=0;
+    int bytes_distinct_strings=0;
+    int overhead_bytes=0;
+    unsigned INT32 e;
+    struct pike_string *p;
+    for(e=0;e<htable_size;e++)
+    {
+      for(p=base_table[e];p;p=p->next)
+      {
+	num_distinct_strings++;
+	bytes_distinct_strings+=MY_ALIGN(p->len);
+	allocd_strings+=p->refs;
+	allocd_bytes+=p->refs*MY_ALIGN(p->len+3);
+      }
+
+    }
+    overhead_bytes=(sizeof(struct pike_string)-1)*num_distinct_strings;
+    my_strcat("\nShared string hash table:\n");
+    my_strcat("-------------------------\t Strings    Bytes\n");
+
+    sprintf(b,"Total asked for\t\t\t%8ld %8ld\n",
+	    (long)allocd_strings, (long)allocd_bytes);
+    my_strcat(b);
+    sprintf(b,"Strings malloced\t\t%8ld %8ld + %ld overhead\n",
+	    (long)num_distinct_strings,
+	    (long)bytes_distinct_strings,
+	    (long)overhead_bytes);
+    my_strcat(b);
+    sprintf(b,"Space actually required/total string bytes %d%%\n",
+	    (bytes_distinct_strings + overhead_bytes)*100 / allocd_bytes);
+    my_strcat(b);
+  }
+/*
+  sprintf(b,"Searches: %ld    Average search length: %6.3f\n",
+      (long)num_str_searches, (double)search_len / num_str_searches);
+  my_strcat(b);
+*/
+  return free_buf();
+}
+
+/*** DEBUG ***/
+#ifdef DEBUG
+
+void check_string(struct pike_string *s)
+{
+  StrHash(s->str, s->len);
+  if(full_hash_value != s->hval)
+    fatal("Hash value changed?\n");
+
+  if(debug_findstring(s) !=s)
+    fatal("Shared string not shared.\n");
+
+  if(s->str[s->len])
+    fatal("Shared string is not zero terminated properly.\n");
+}
+
+void verify_shared_strings_tables()
+{
+  unsigned INT32 e, h;
+  struct pike_string *s;
+
+  for(e=0;e<htable_size;e++)
+  {
+    h=0;
+    for(s=base_table[e];s;s=s->next)
+    {
+      h++;
+      if(s->len < 0)
+	fatal("Shared string shorter than zero bytes.\n");
+
+      if(s->refs <= 0)
+	fatal("Shared string had too few references.\n");
+
+      if(s->str[s->len])
+	fatal("Shared string didn't end with a zero.\n");
+
+      if(StrHash(s->str, s->len) != e)
+	fatal("Shared string hashed to wrong place.\n");
+
+      if(s->hval != full_hash_value)
+	fatal("Shared string hashed to other number.\n");
+	
+      if(h>10000)
+      {
+	struct pike_string *s2;
+	for(s2=s;s2;s2=s2->next)
+	  if(s2 == s)
+	    fatal("Shared string table is cyclic.\n");
+	h=0;
+      }
+    }
+  }
+}
+
+struct pike_string *debug_findstring(const struct pike_string *foo)
+{
+  struct pike_string *tmp;
+  tmp=propagate_shared_string(foo, foo->hval % htable_size);
+
+#if 0
+  if(!tmp)
+  {
+    unsigned INT32 e;
+    struct pike_string *tmp2;
+    fprintf(stderr,"String %p %ld %ld %s\n",
+	    foo,
+	    (long)foo->hval,
+	    (long)foo->len,
+	    foo->str);
+    StrHash(foo->str,foo->len);
+    fprintf(stderr,"------ %p %ld\n",
+	    base_table[foo->hval %htable_size],
+	    (long)full_hash_value);
+    for(tmp2=base_table[foo->hval % htable_size];tmp2;tmp2=tmp2->next)
+    {
+      if(tmp2 == tmp)
+	fprintf(stderr,"!!%p!!->",tmp2);
+      else
+	fprintf(stderr,"%p->",tmp2);
+    }
+    fprintf(stderr,"0\n");
+
+    for(e=0;e<htable_size;e++)
+    {
+      for(tmp2=base_table[e];tmp2;tmp2=tmp2->next)
+      {
+	if(tmp2 == tmp)
+	  fprintf(stderr,"String found in hashbin %ld (not %ld)\n",
+		  (long)e,
+		  (long)(foo->hval % htable_size));
+      }
+    }
+  }
+#endif
+  return tmp;
+}
+
+void dump_stralloc_strings()
+{
+  unsigned INT32 e;
+  struct pike_string *p;
+  for(e=0;e<htable_size;e++)
+    for(p=base_table[e];p;p=p->next)
+      printf("%ld refs \"%s\"\n",(long)p->refs,p->str);
+}
+
+#endif
+
+
+/*** String compare functions ***/
 
 /* does not take locale into account */
 int low_quick_binary_strcmp(char *a,INT32 alen,
@@ -310,83 +434,7 @@ int my_strcmp(struct pike_string *a,struct pike_string *b)
   return low_binary_strcmp(a->str,a->len,b->str,b->len);
 }
 
-void unlink_pike_string(struct pike_string *s)
-{
-  int h;
-
-  h=StrHash(s->str,s->len);
-  propagate_shared_string(s,h);
-  base_table[h]=s->next;
-}
-
-void really_free_string(struct pike_string *s)
-{
-  unlink_pike_string(s);
-  free((char *)s);
-}
-
-/*
- *
- */
-struct pike_string *add_string_status(int verbose)
-{
-  char b[200];
-
-  init_buf();
-
-  if (verbose)
-  {
-    int allocd_strings=0;
-    int allocd_bytes=0;
-    int num_distinct_strings=0;
-    int bytes_distinct_strings=0;
-    int overhead_bytes=0;
-    int e;
-    struct pike_string *p;
-    for(e=0;e<HTABLE_SIZE;e++)
-    {
-      for(p=base_table[e];p;p=p->next)
-      {
-	num_distinct_strings++;
-	bytes_distinct_strings+=MY_ALIGN(p->len);
-	allocd_strings+=p->refs;
-	allocd_bytes+=p->refs*MY_ALIGN(p->len+3);
-      }
-
-    }
-    overhead_bytes=(sizeof(struct pike_string)-1)*num_distinct_strings;
-    my_strcat("\nShared string hash table:\n");
-    my_strcat("-------------------------\t Strings    Bytes\n");
-
-    sprintf(b,"Total asked for\t\t\t%8ld %8ld\n",
-	    (long)allocd_strings, (long)allocd_bytes);
-    my_strcat(b);
-    sprintf(b,"Strings malloced\t\t%8ld %8ld + %ld overhead\n",
-	    (long)num_distinct_strings,
-	    (long)bytes_distinct_strings,
-	    (long)overhead_bytes);
-    my_strcat(b);
-    sprintf(b,"Space actually required/total string bytes %d%%\n",
-	    (bytes_distinct_strings + overhead_bytes)*100 / allocd_bytes);
-    my_strcat(b);
-  }
-/*
-  sprintf(b,"Searches: %ld    Average search length: %6.3f\n",
-      (long)num_str_searches, (double)search_len / num_str_searches);
-  my_strcat(b);
-*/
-  return free_buf();
-}
-
-void dump_stralloc_strings()
-{
-  int e;
-  struct pike_string *p;
-  for(e=0;e<HTABLE_SIZE;e++)
-    for(p=base_table[e];p;p=p->next)
-      printf("%ld refs \"%s\"\n",(long)p->refs,p->str);
-}
-
+/*** Add strings ***/
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b)
 {
@@ -405,6 +453,7 @@ struct pike_string *add_shared_strings(struct pike_string *a,
   return ret;
 }
 
+/*** replace function ***/
 struct pike_string *string_replace(struct pike_string *str,
 				     struct pike_string *del,
 				     struct pike_string *to)
@@ -449,11 +498,19 @@ struct pike_string *string_replace(struct pike_string *str,
   return end_shared_string(ret);
 }
 
+/*** init/exit memory ***/
+void init_shared_string_table()
+{
+  htable_size=BEGIN_HASH_SIZE;
+  base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
+  MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
+}
+
 void cleanup_shared_string_table()
 {
-  int e;
+  unsigned INT32 e;
   struct pike_string *s,*next;
-  for(e=0;e<HTABLE_SIZE;e++)
+  for(e=0;e<htable_size;e++)
   {
     for(s=base_table[e];s;s=next)
     {
