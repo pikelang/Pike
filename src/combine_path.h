@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: combine_path.h,v 1.14 2004/01/12 22:56:48 marcus Exp $
+|| $Id: combine_path.h,v 1.15 2004/05/01 15:25:04 mast Exp $
 */
 
 /*
@@ -14,7 +14,7 @@
 #undef IS_ANY_SEP
 #undef IS_ABS
 #undef IS_ROOT
-#undef F_COMBINE_PATH
+#undef COMBINE_PATH
 #undef APPEND_PATH
 #undef CHAR_CURRENT
 #undef CHAR_ROOT
@@ -25,7 +25,7 @@
 #define IS_SEP(X) ( (X)=='/' )
 #define IS_ABS(X) (IS_SEP( INDEX_PCHARP((X),0))?1:0)
 #define APPEND_PATH append_path_unix
-#define F_COMBINE_PATH f_combine_path_unix
+#define COMBINE_PATH combine_path_unix
 #define CHAR_CURRENT '.'
 #define CHAR_ROOT '/'
 #endif /* UNIX_COMBINE_PATH */
@@ -55,7 +55,7 @@ static int find_absolute(PCHARP s)
 #define IS_ROOT(X) ( IS_SEP( INDEX_PCHARP((X),0) )?1:0)
 
 #define APPEND_PATH append_path_nt
-#define F_COMBINE_PATH f_combine_path_nt
+#define COMBINE_PATH combine_path_nt
 
 #define CHAR_CURRENT '.'
 #define CHAR_ROOT '/'
@@ -69,7 +69,7 @@ static int find_absolute(PCHARP s)
 #define IS_ABS(X) find_absolute2((X))
 #define IS_ROOT(X) ( ( INDEX_PCHARP((X),0) == CHAR_ROOT)?1:0)
 #define APPEND_PATH append_path_amigaos
-#define F_COMBINE_PATH f_combine_path_amigaos
+#define COMBINE_PATH combine_path_amigaos
 #define CHAR_ROOT ':'
 
 static int find_absolute2(PCHARP s)
@@ -262,15 +262,17 @@ static void APPEND_PATH(struct string_builder *s,
   }
 }
 
-void F_COMBINE_PATH(INT32 args)
+#define F_FUNC(X) PIKE_CONCAT(f_,X)
+
+void F_FUNC(COMBINE_PATH)(INT32 args)
 {
   int e;
   int root=0;
   struct string_builder ret;
   ONERROR tmp;
 
-  check_all_args("combine_path",args,BIT_STRING, BIT_STRING | BIT_MANY | BIT_VOID, 0);
-  
+  check_all_args(DEFINETOSTR(COMBINE_PATH),args,
+		 BIT_STRING, BIT_STRING | BIT_MANY | BIT_VOID, 0);
 
   init_string_builder(&ret, 0);
   SET_ONERROR(tmp, free_string_builder, &ret);
