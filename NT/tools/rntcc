@@ -96,7 +96,7 @@ int main(int argc, string *argv)
       switch(option[0])
       {
 	case "verbose":
-	  verbose=1;
+	  verbose++;
 	  break;
 
 	case "export":
@@ -108,23 +108,34 @@ int main(int argc, string *argv)
 	  ldopts=({"SYSTEM","nt_dll","initinstance","terminstance"})+ldopts;
 	  cflags+=({"-bd"});
 	  break;
-
+	  
 	case "oper_pre": operation="preprocess"; break;
 	case "oper_comp": operation="compile"; break;
 	case "debug":
-	cflags+=({"-d2"});
-//	ldopts+=({"DEBUG","CODEVIEW","ALL"});
-	ldopts+=({"DEBUG","CODEVIEW","OPTION","CVPACK"});
-	debug=1;
-	break;
-	
+//	  cflags+=({"-d2"});
+//	  ldopts+=({"DEBUG","WATCOM","ALL"});
+
+	  cflags+=({"-d2","-hd"});
+	  ldopts+=({"DEBUG","DWARF"});
+
+//	  cflags+=({"-d2","-hc"});
+//	  ldopts+=({"DEBUG","CODEVIEW","OPTION","CVPACK"});
+	  debug=1;
+	  break;
+	  
 	case "optimize":
 	  if(!option[1]) option[1]=1;
 	  switch(optimize=(int)option[1])
 	  {
 	    case 0: optimize=0; break;
 	    case 1: cflags+=({"-ox"}); break;
-	    case 2..: cflags+=({"-otexan"}); break;
+	    case 2: cflags+=({"-otexan"}); break;
+	    case 3..:
+	      cflags+=({"-s",
+			  "-oe="+(optimize*30),
+			  "-ol+",
+			  "-oabhikmnrt"});
+	      break;
 	  }
 	  break;
 	  
@@ -215,7 +226,7 @@ int main(int argc, string *argv)
   rm(errorfile);
 
   // Flags required to make the compiler behave well
-  cflags+=({"-bm","-zq","-hc","-sg"});
+  cflags+=({"-bm","-zq","-sg","-5","-fpi87","-fp3"});
 
   switch(operation)
   {
