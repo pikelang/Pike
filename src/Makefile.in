@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.198 2000/07/28 17:16:54 hubbe Exp $
+# $Id: Makefile.in,v 1.199 2000/08/01 22:37:22 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -696,6 +696,8 @@ HFILES=						\
   opcodes.protos					\
   version.protos                                    \
   builtin.protos
+
+$(HFILES): precompile.sh
 
 import-stamp: $(HFILES) precompile.sh
 	@./precompile.sh fake_dynamic_load.pike import_functions.tmp $(HFILES)
