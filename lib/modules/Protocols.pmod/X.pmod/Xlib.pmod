@@ -946,4 +946,16 @@ class Display
     send_request(req);
     return Types.Cursor(this_object(), req->cid);
   }
+  
+  object Bell_req(int volume)
+  {
+    object req=Requests.Bell();
+    req->volume=volume;
+    return req;
+  }
+  
+  void Bell(int volume)
+  {
+    send_request(Bell_req(volume));
+  }
 }

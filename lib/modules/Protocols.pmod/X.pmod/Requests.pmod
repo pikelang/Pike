@@ -741,6 +741,15 @@ class CreateColormap
   }
 }
 
+class Bell {
+  inherit request;
+  constant reqType = 104;
+  
+  int volume;
+
+  string to_string() { return build_request("", volume); }
+}
+
 class AllocColor
 {
   inherit request;
