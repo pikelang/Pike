@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.559 2001/12/03 13:29:13 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.560 2001/12/06 10:40:42 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -676,6 +676,10 @@ AC_ARG_WITH(patch_gcc, MY_DESCR([--with-patch-gcc],
 				[attempt to patch the UA32 relocation bug.]),
 	    [], [with_patch_gcc=no])
 
+AC_ARG_WITH(force_ua32, MY_DESCR([--with-force-ua32],
+				 [ignore the UA32 relocation bug.]),
+	    [], [with_force_ua32=no])
+
 # Some sanity checks.
 
 if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" && test "`uname -p`" = "sparc"; then
@@ -753,7 +757,7 @@ string:
       AC_MSG_WARN([R_SPARC_UA32 relocations are unsupported in Solaris >= 2.3,])
       AC_MSG_WARN([and have broken support in Solaris 7.])
 
-      if test "x$with_patch_gcc" = "xno"; then
+      if test "x$with_patch_gcc$with_force_ua32" = "xnono"; then
   	if test -d "/var/sadm/patch/107058-01/."; then
   	  AC_MSG_WARN([Back out patch 107058-01, or])
   	  AC_MSG_WARN([recompile gcc with a modified config/sparc/sol2.h.])
@@ -766,118 +770,125 @@ string:
 	AC_MSG_WARN([In that case rerun configure with --with-patch-gcc.])
 	AC_MSG_WARN([NOTE: Binary patching is highly experimental and risky,])
 	AC_MSG_WARN([      and may break your existing gcc even more.])
+	AC_MSG_WARN([])
+	AC_MSG_WARN([R_SPARC_UA32 relocations are supported on some versions])
+	AC_MSG_WARN([of Solaris. If you want to try a binary with R_SPARC_UA32])
+	AC_MSG_WARN([relocations, rerun configure with --with-force-ua32.])
+	AC_MSG_WARN([])
         exit 1
       fi
 
-      AC_MSG_WARN([Will attempt to patch gcc.])
+      if test "x$with_path_gcc" = "xno"; then :; else
+        AC_MSG_WARN([Will attempt to patch gcc.])
 
-      AC_MSG_CHECKING([for cc1])
-      if test "x$with_patch_gcc" = "xyes"; then
-        cc1="`$CC -v 2>&1|sed -e '/\//s!^[[^/]]*\(/.*\)/specs$!\1/cc1!p' -ed`"
-      else
-	cc1="$with_patch_gcc";
-      fi
-      if test -f "$cc1"; then
-	AC_MSG_RESULT($cc1)
-      else
-	AC_MSG_RESULT(not found. Tried $cc1)
-	exit 1
-      fi
+        AC_MSG_CHECKING([for cc1])
+        if test "x$with_patch_gcc" = "xyes"; then
+          cc1="`$CC -v 2>&1|sed -e '/\//s!^[[^/]]*\(/.*\)/specs$!\1/cc1!p' -ed`"
+        else
+	  cc1="$with_patch_gcc";
+        fi
+        if test -f "$cc1"; then
+	  AC_MSG_RESULT($cc1)
+        else
+	  AC_MSG_RESULT(not found. Tried $cc1)
+	  exit 1
+        fi
        
-      AC_MSG_CHECKING(if $cc1 looks unpatched)
-      if /usr/bin/strings "$cc1" | grep uaword >/dev/null 2>&1; then
-        AC_MSG_RESULT(yes)
-      else
-        AC_MSG_RESULT(no -- strange)
-        exit 1
-      fi
-      
-      AC_MSG_CHECKING(if patch_cc1 compiles)
-      link_cmd='${CC-cc} -o patch_cc1${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/patch_cc1.$ac_ext $LIBS 2>&5'
-      if { (eval echo Compiling patch_cc1: \"$link_cmd\") 1>&5; (eval $link_cmd) 2>&5; } && "$BUILDDIR/patch_cc1" -v >/dev/null 2>&5; then
-        AC_MSG_RESULT(yes)
-      
-        if test -f "$cc1.patched"; then
-          AC_MSG_ERROR([$cc1.patched already exists.
-Please move it out of the way.])
-          exit 1;
+        AC_MSG_CHECKING(if $cc1 looks unpatched)
+        if /usr/bin/strings "$cc1" | grep uaword >/dev/null 2>&1; then
+          AC_MSG_RESULT(yes)
+        else
+          AC_MSG_RESULT(no -- strange)
+          exit 1
         fi
-
-        if test -f "$cc1.orig"; then
-          AC_MSG_ERROR([$cc1.orig already exists.
+      
+        AC_MSG_CHECKING(if patch_cc1 compiles)
+        link_cmd='${CC-cc} -o patch_cc1${ac_exeext} $CFLAGS -I. $CPPFLAGS $LDFLAGS $srcdir/patch_cc1.$ac_ext $LIBS 2>&5'
+        if { (eval echo Compiling patch_cc1: \"$link_cmd\") 1>&5; (eval $link_cmd) 2>&5; } && "$BUILDDIR/patch_cc1" -v >/dev/null 2>&5; then
+          AC_MSG_RESULT(yes)
+      
+          if test -f "$cc1.patched"; then
+            AC_MSG_ERROR([$cc1.patched already exists.
 Please move it out of the way.])
-          exit 1;
-        fi
+            exit 1;
+          fi
 
-	AC_MSG_CHECKING(if patch_cc1 works)
-	if ./patch_cc1 "$cc1" 2>&5 >"$cc1.patched"; then
-	  if test -f "$cc1.patched"; then :; else
-	    AC_MSG_RESULT(no - failed to create $cc1.patched)
-	    exit 1
-	  fi
-	  if chmod 755 "$cc1.patched"; then :; else
-	    AC_MSG_RESULT(no - failed to set permission to 755 on $cc1.patched)
-	    exit 1
-	  fi
+          if test -f "$cc1.orig"; then
+            AC_MSG_ERROR([$cc1.orig already exists.
+Please move it out of the way.])
+            exit 1;
+          fi
 
-	  if test "`/bin/ls -l \"$cc1\"|awk '{print $5}'`" = "`/bin/ls -l \"$cc1.patched\"|awk '{print $5}'`"; then
-            if /usr/bin/strings "$cc1.patched" | grep uaword >/dev/null 2>&1; then
-	      rm -f "$cc1.patched"
-              AC_MSG_RESULT(no -- patching failed)
-              exit 1
+	  AC_MSG_CHECKING(if patch_cc1 works)
+	  if ./patch_cc1 "$cc1" 2>&5 >"$cc1.patched"; then
+	    if test -f "$cc1.patched"; then :; else
+	      AC_MSG_RESULT(no - failed to create $cc1.patched)
+	      exit 1
 	    fi
-
-	    if "$cc1.patched" --help >/dev/null 2>&1; then :; else
-	      AC_MSG_RESULT(no -- the patched binary does not seem to work)
+	    if chmod 755 "$cc1.patched"; then :; else
+	      AC_MSG_RESULT(no - failed to set permission to 755 on $cc1.patched)
 	      exit 1
 	    fi
 
-            AC_MSG_RESULT(yes)
-
-	    AC_MSG_WARN(Activating the patched cc1.)
-	    AC_MSG_WARN(NOTE: Entering critical section.)
-	    AC_MSG_WARN(If configure fails at this point a broken gcc my result.)
-	    if /usr/bin/mv -f "$cc1" "$cc1.orig"; then
-
-	      AC_MSG_WARN(Moved $cc1 to $cc1.orig.)
-
-	      if /usr/bin/mv -f "$cc1.patched" "$cc1"; then
-	        AC_MSG_WARN(Patching seems to have succeeded.)
-		AC_MSG_WARN(Please rerun configure.)
-		exit 1
+	    if test "`/bin/ls -l \"$cc1\"|awk '{print $5}'`" = "`/bin/ls -l \"$cc1.patched\"|awk '{print $5}'`"; then
+              if /usr/bin/strings "$cc1.patched" | grep uaword >/dev/null 2>&1; then
+	        rm -f "$cc1.patched"
+                AC_MSG_RESULT(no -- patching failed)
+                exit 1
 	      fi
 
-	      AC_MSG_WARN(Moving the patched cc1 into place failed.)
-	      AC_MSG_WARN(Will try to restore the old cc1.)
-
-	      if /usr/bin/mv -f "$cc1.orig" "$cc1"; then
-	        AC_MSG_WARN(The old cc1 has been restored.)
+	      if "$cc1.patched" --help >/dev/null 2>&1; then :; else
+	        AC_MSG_RESULT(no -- the patched binary does not seem to work)
 	        exit 1
 	      fi
 
-	      AC_MSG_ERROR([Restoring the old cc1 failed.
+              AC_MSG_RESULT(yes)
+
+	      AC_MSG_WARN(Activating the patched cc1.)
+	      AC_MSG_WARN(NOTE: Entering critical section.)
+	      AC_MSG_WARN(If configure fails at this point a broken gcc my result.)
+	      if /usr/bin/mv -f "$cc1" "$cc1.orig"; then
+
+	        AC_MSG_WARN(Moved $cc1 to $cc1.orig.)
+
+	        if /usr/bin/mv -f "$cc1.patched" "$cc1"; then
+	          AC_MSG_WARN(Patching seems to have succeeded.)
+		  AC_MSG_WARN(Please rerun configure.)
+		  exit 1
+	        fi
+
+	        AC_MSG_WARN(Moving the patched cc1 into place failed.)
+	        AC_MSG_WARN(Will try to restore the old cc1.)
+
+	        if /usr/bin/mv -f "$cc1.orig" "$cc1"; then
+	          AC_MSG_WARN(The old cc1 has been restored.)
+	          exit 1
+	        fi
+
+	        AC_MSG_ERROR([Restoring the old cc1 failed.
 Your installation of gcc is most likely broken now.
 Sorry, you will have to restore it yourself.
 Please move $cc1.orig to $cc1.])
-	      exit 1
-	    else
-	      AC_MSG_ERROR([Failed to move the old cc1 to safety.
+	        exit 1
+	      else
+	        AC_MSG_ERROR([Failed to move the old cc1 to safety.
 Please replace $cc1 with $cc1.patched by hand.])
+	        exit 1
+	      fi
+	    else
+	      rm -f "$cc1.patched"
+	      AC_MSG_ERROR([The size has changed.
+You need to patch cc1 by hand.])
 	      exit 1
 	    fi
 	  else
-	    rm -f "$cc1.patched"
-	    AC_MSG_ERROR([The size has changed.
-You need to patch cc1 by hand.])
+	    AC_MSG_RESULT(no -- you need to patch cc1 by hand)
 	    exit 1
 	  fi
-	else
-	  AC_MSG_RESULT(no -- you need to patch cc1 by hand)
-	  exit 1
-	fi
-      else
-        AC_MSG_RESULT(no -- you need to patch cc1 by hand)
-        exit 1
+        else
+          AC_MSG_RESULT(no -- you need to patch cc1 by hand)
+          exit 1
+        fi
       fi
     else :; fi
   else :; fi
