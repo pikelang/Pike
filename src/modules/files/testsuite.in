@@ -1,0 +1,93 @@
+// tests for file module
+test_true(programp((program)"/precompiled/file"))
+test_do(add_efun("FILE",(program)"/precompiled/file"))
+test_true(programp(FILE))
+test_true(programp((program)"/precompiled/port"))
+test_any(object o; o=clone(FILE); destruct(o); return 1,1)
+
+// - file->open
+// - file->close
+test_any(object o=clone(FILE); return o->open("conftest","wct") && o->close(),1)
+
+// - file_stat
+test_eq(file_stat("conftest")[1],0)
+
+// - rm
+test_true(rm("conftest"))
+test_eq(file_stat("conftest"),0)
+
+// - file->write
+test_any(int e; object o=clone(FILE); if(!o->open("conftest","wct")) return -1; e=o->write("sune"); if(!o->close()) return -1; return e,4)
+
+// - file->read
+test_any(string s; object o=clone(FILE); if(!o->open("conftest","r")) return -1; s=o->read(4); if(!o->close()) return -1; return s,"sune")
+
+test_any(string s; object o=clone(FILE); if(!o->open("conftest","r")) return -1; s=o->read(999999); if(!o->close()) return -1; return s,"sune")
+
+test_any(int e; object o=clone(FILE); if(!o->open("conftest","wct")) return -1; e=o->write(sprintf("%'+-*'100000s","")); if(!o->close()) return -1; return e,100000)
+
+test_any(string s; object o=clone(FILE); if(!o->open("conftest","r")) return -1; s=o->read(9999999); if(!o->close()) return -1; return s,sprintf("%'+-*'100000s",""))
+
+// - file->seek
+// - file->tell
+test_any(object o=clone(FILE); return o->open("conftest","r") && o->read(4711) && o->tell() == 4711 && o->close(),1)
+
+// - file->stat
+test_any(object o=clone(FILE); return equal(o->open("conftest","r") && o->stat(), file_stat("conftest")),1)
+
+// - file->errno
+test_do(clone(FILE,"stdin")->errno())
+
+// - file->set_nonblocking
+// - file->set_blocking
+// - file->set_id
+// - file->query_id
+test_false(clone(FILE,"stdin")->query_id())
+
+// - file->query_read_callback
+test_do(clone(FILE,"stdin")->query_read_callback())
+
+// - file->query_write_callback
+test_do(clone(FILE,"stdin")->query_write_callback())
+
+// - file->query_close_callback
+test_do(clone(FILE,"stdin")->query_close_callback())
+
+// - file->open_socket
+// - file->connect
+// - file->query_address
+// - file->pipe
+test_any([[object o=clone(FILE),o2=o->pipe();o->write("1"); return o2->read(1)]],"1")
+test_any([[object o=clone(FILE),o2=o->pipe();o2->write("1"); return o->read(1)]],"1")
+
+// - file->dup
+test_any([[object o=clone(FILE); o->open("conftest","r"); o=o->dup(); return o->read(100)]] ,sprintf("%'+-*'100s",""))
+
+// - file->assign
+est_any([[object o=clone(FILE),o2=clone(FILE); o->open("conftest","r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+
+// - file->dup2
+test_any([[object o=clone(FILE),o2=clone(FILE); o2->pipe(); o->open("conftest","r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+
+test_eq(popen("echo foo"),"foo\n")
+
+// - socket->bind
+// - socket->set_id
+// - socket->query_id
+// - socket->errno
+// - socket->accept
+
+test_true(rm("conftest"))
+test_eq(file_stat("conftest"),0)
+
+// - file_stat
+// - perror
+// - rm
+// - mkdir
+// - get_dir
+test_true(arrayp(get_dir(".")))
+
+// - cd
+// - getcwd
+test_true(stringp(getcwd()))
+test_eq('/',getcwd()[0])

@@ -61,9 +61,8 @@ LD=$(CC)
 LDFLAGS=$(CFLAGS)
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
-FIXDEP=$(TMP_BINDIR)/fixdepends.sh
 
-MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "FIXDEP=$(FIXDEP)" "DEBUGDEF=$(DEBUGDEF)"
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEBUGDEF=$(DEBUGDEF)" "TMP_LIBDIR=$(TMP_LIBDIR)"
 
 # Add alloca.o if you don't have alloca() on your machine.
 # Add ualarm.o if you don't have ualarm() on your machine.
@@ -157,6 +156,7 @@ spotless: clean
 	-rm -f lexical.c mon.out *.ln config.status
 	-rm -f $(TMP_BINDIR)/driver $(TMP_BINDIR)/*~ $(TMP_BINDIR)/#*#
 	-rm -f .pure driver* l.outa*
+	-rm -f modules/*/testsuite
 
 # create tags
 tags:
@@ -167,16 +167,18 @@ TAGS:
 
 # verify / debug
 verify: testsuite
-	$(RUNPIKE) $(SRCDIR)/test/test_pike.pike testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
+	( cd modules ; $(MAKE) $(MAKE_FLAGS) verify )
 
 # verify / debug verbose
 verbose_verify: testsuite
-	$(RUNPIKE) $(SRCDIR)/test/test_pike.pike testsuite --verbose
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
+	( cd modules ; $(MAKE) $(MAKE_FLAGS) verbose_verify )
 
 # verify & debug VERBOSE
 gdb_verify: testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(SRCDIR)/test/test_pike.pike testsuite -v -v -f
+	@echo >>.gdbinit run -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f
 	gdb ./pike
 	@rm .gdbinit
 
@@ -203,7 +205,7 @@ peep.o: peep_engine.c
 
 # make dependencies (requires compiled Pike)
 depend: language.c
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
 
 docs:
@@ -237,7 +239,7 @@ config.status: $(SRCDIR)/configure
 	./config.status --recheck
 
 $(SRCDIR)/Makefile.in: $(SRCDIR)/Makefile.src
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 
 Makefile: $(SRCDIR)/Makefile.in config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
@@ -248,7 +250,7 @@ machine.h: stamp-h
 stamp-h: machine.h.in config.status
 	CONFIG_FILES= CONFIG_HEADERS=machine.h ./config.status
 
-testsuite: $(SRCDIR)/test/create_testsuite
-	m4 <$(SRCDIR)/test/create_testsuite >testsuite
+testsuite: $(SRCDIR)/testsuite.in
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >testsuite
 
 

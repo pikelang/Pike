@@ -3,7 +3,7 @@
 MODULES=@subdirs@
 MODULE_OBJS=@MODULE_OBJS@
 
-MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "FIXDEP=$(FIXDEP)" "DEBUGDEF=$(DEBUGDEF)"
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "TMP_LIBDIR=$(TMP_LIBDIR)"
 
 all: modules
 
@@ -17,8 +17,14 @@ linker_options: $(MODULE_OBJS)
 	done ; ) >linker_options
 
 depend:
-	gcc -MM $(PREFLAGS) @srcdir@/*.c | $(FIXDEP) $(SRCDIR)
+	gcc -MM $(PREFLAGS) @srcdir@/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
 
 clean:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
+
+verify:
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) verify ) ; done
+
+verbose_verify:
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) verbose_verify ) ; done
