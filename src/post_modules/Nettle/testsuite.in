@@ -1,0 +1,44 @@
+// Nettle
+test_true([[objectp(Nettle)]])
+
+// MD5
+test_true([[objectp(Nettle.md5())]])
+test_eq([[Nettle.md5()->update("")->digest()]],
+	[[String.hex2string("d41d8cd98f00b204e9800998ecf8427e")]])
+test_eq([[Nettle.md5()->update("a")->digest()]],
+	[[String.hex2string("0cc175b9c0f1b6a831c399e269772661")]])
+test_eq([[Nettle.md5()->update("abc")->digest()]],
+	[[String.hex2string("900150983cd24fb0d6963f7d28e17f72")]])
+test_eq([[Nettle.md5()->update("message digest")->digest()]],
+	[[String.hex2string("f96b697d7cb7938d525a2f31aaf161d0")]])
+test_eq([[Nettle.md5()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+	[[String.hex2string("c3fcd3d76192e4007dfb496cca67e13b")]])
+test_eq([[Nettle.md5()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			       "abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
+	[[String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f")]])
+test_eq([[Nettle.md5()->update("1234567890123456789012345678901234567890"
+			       "1234567890123456789012345678901234567890")->digest()]],
+	[[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
+
+// SHA1
+dnl test_true([[objectp(Nettle.sha1())]])
+dnl test_eq([[Nettle.sha1()->update("abc")->digest()]],
+dnl 	[[String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
+
+
+// AES
+test_true([[objectp(Nettle.aes())]])
+test_eq([[Nettle.aes()
+	  ->set_encrypt_key(String.hex2string(
+		"00010203050607080A0B0C0D0F101112"))
+	  ->crypt(String.hex2string("506812A45F08C889B97F5980038B8359"))]],
+	[[String.hex2string("D8F532538289EF7D06B506A4FD5BE9C9")]])
+
+test_eq([[Nettle.aes()
+	  ->set_decrypt_key(String.hex2string(
+		"14151617191A1B1C1E1F202123242526"))
+	  ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
+	[[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
+
+	  
+dnl test_false(Process.system(RUNPIKE+" SRCDIR/rijndaeltest.pike --quick"))

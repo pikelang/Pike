@@ -1,0 +1,15 @@
+# $Id: configure.in,v 1.1 2003/03/12 17:07:10 nisse Exp $
+AC_INIT(nettle.cmod)
+AC_CONFIG_HEADER(config.h)
+
+AC_SET_MAKE
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_OK(Nettle)
+
+AC_CHECK_LIB(nettle, cbc_encrypt,,
+	     AC_MSG_WARN([The nettle library not found.
+No crypto functions will be available.]) )
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

@@ -1,0 +1,14 @@
+# $Id: Makefile.in,v 1.1 2003/03/12 17:07:10 nisse Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+
+OBJS = nettle.o
+
+MODULE_LDFLAGS = @LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+# What does this mean?
+depend: 
+	@:
