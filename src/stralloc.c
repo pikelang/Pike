@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.123 2001/03/30 15:34:53 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.124 2001/03/30 16:45:42 grubba Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -307,7 +307,7 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
 
 static int bad_pointer(struct pike_string *s)
 {
-  return (((ptrdiff_t)s)&(sizeof(pike_string *)-1));
+  return (((ptrdiff_t)s)&(sizeof(struct pike_string *)-1));
 }
 
 static int has_zero_refs(struct pike_string *s)
