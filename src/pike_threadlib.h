@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.35 2003/03/30 20:44:19 mast Exp $
+|| $Id: pike_threadlib.h,v 1.36 2003/03/31 16:10:38 marcus Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -65,6 +65,12 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 
 /* AIX is *STUPID* - Hubbe */
 #undef func_data
+
+/* So is OSF/1 - Marcus */
+#undef try
+#undef except
+#undef finally
+#undef leave
 
 #undef HAVE_PTHREAD_H
 #endif /* _MIT_POSIX_THREADS */
