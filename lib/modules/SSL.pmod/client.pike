@@ -1,6 +1,5 @@
-#pike __REAL_VERSION__
-
 #! /usr/bin/env pike
+#pike __REAL_VERSION__
 
 // SSL Client example
 
@@ -33,7 +32,7 @@ int main(int argc, array(string) argv)
 
   context->random = Crypto.randomness.reasonably_random()->read;
   Stdio.File socket = Stdio.File();
-  if(!socket->connect("pike.roxen.com", 443))
+  if(!socket->connect("pike.ida.liu.se", 443))
   {
     werror("couldn't connect\n");
     exit(-1);
