@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.138 2004/09/18 21:02:22 marcus Exp $
+|| $Id: cpp.c,v 1.139 2004/09/21 17:55:35 nilsson Exp $
 */
 
 #include "global.h"
@@ -535,7 +535,7 @@ void cpp_func_constant(struct cpp *this, INT32 args)
 	    if(this->warn_if_constant_throws)
 	      cpp_warning (this, "Got placeholder %s (resolver problem) "
 			   "when resolving '%s'.",
-			   get_name_of_type (Pike_sp[-1].type), str);
+			   get_name_of_type (Pike_sp[-1].type), str->str);
 	  }
 	  else if(this->warn_if_constant_throws)
 	    cpp_warning (this, "Got placeholder %s (resolver problem).",
