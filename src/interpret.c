@@ -24,7 +24,7 @@
 #include "builtin_efuns.h"
 #include "lpc_signal.h"
 
-#define TRACE_LEN 256
+#define TRACE_LEN (100 + t_flag * 10)
 struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
 struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
 struct frame *fp; /* frame pointer */
@@ -264,6 +264,18 @@ CASE(ID) \
   break; \
 }
 
+#define CJUMP(X,Y) \
+CASE(X); \
+if(Y(sp-2,sp-1)) { \
+  check_signals(); \
+  pc+=EXTRACT_INT(pc);\
+}else{ \
+  pc+=sizeof(INT32); \
+} \
+pop_n_elems(2); \
+break
+
+
 /*
  * reset the stack machine.
  */
@@ -418,6 +430,7 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_CONST0); sp->type=T_INT; sp->u.integer=0;  sp++; break;
       CASE(F_CONST1); sp->type=T_INT; sp->u.integer=1;  sp++; break;
       CASE(F_CONST_1);sp->type=T_INT; sp->u.integer=-1; sp++; break;
+      CASE(F_BIGNUM); sp->type=T_INT; sp->u.integer=0x7fffffff; sp++; break;
       CASE(F_NUMBER); sp->type=T_INT; sp->u.integer=GET_ARG(); sp++; break;
       CASE(F_NEG_NUMBER);
       sp->type=T_INT;
@@ -492,6 +505,57 @@ static void eval_instruction(unsigned char *pc)
       sp[1].type=T_VOID;
       sp+=2;
       break;
+
+      CASE(F_CLEAR_LOCAL);
+      instr=GET_ARG();
+      free_svalue(fp->locals + instr);
+      fp->locals[instr].type=T_INT;
+      fp->locals[instr].subtype=0;
+      fp->locals[instr].u.integer=0;
+      break;
+
+
+      CASE(F_INC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
+      fp->locals[instr].u.integer++;
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      break;
+
+      CASE(F_POST_INC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      fp->locals[instr].u.integer++;
+      break;
+
+      CASE(F_INC_LOCAL_AND_POP);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
+      fp->locals[instr].u.integer++;
+      break;
+
+
+      CASE(F_DEC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
+      fp->locals[instr].u.integer--;
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      break;
+
+      CASE(F_POST_DEC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
+      assign_svalue_no_free(sp--,fp->locals+instr);
+      fp->locals[instr].u.integer++;
+      break;
+
+      CASE(F_DEC_LOCAL_AND_POP);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
+      fp->locals[instr].u.integer--;
+      break;
+
 
       CASE(F_LTOSVAL);
       lvalue_to_svalue_no_free(sp,sp-2);
@@ -650,6 +714,13 @@ static void eval_instruction(unsigned char *pc)
       pop_stack();
       break;
 
+      CJUMP(F_BRANCH_WHEN_EQ, is_eq);
+      CJUMP(F_BRANCH_WHEN_NE,!is_eq);
+      CJUMP(F_BRANCH_WHEN_LT, is_lt);
+      CJUMP(F_BRANCH_WHEN_LE,!is_gt);
+      CJUMP(F_BRANCH_WHEN_GT, is_gt);
+      CJUMP(F_BRANCH_WHEN_GE,!is_lt);
+
       CASE(F_LAND);
       check_destructed(sp-1);
       if(!IS_ZERO(sp-1))
@@ -683,13 +754,10 @@ static void eval_instruction(unsigned char *pc)
       {
 	INT32 tmp;
 	tmp=switch_lookup(fp->context.prog->
-			  constants[EXTRACT_UWORD(pc)].u.array,sp-1);
-	pc+=sizeof(INT16);
+			  constants[GET_ARG()].u.array,sp-1);
 	pc=(unsigned char *)MY_ALIGN(pc);
-	if(tmp >= 0)
-	  pc+=((INT32 *)pc)[1+tmp*2];
-	else
-	  pc+=((INT32 *)pc)[2*~tmp];
+	pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+	pc+=*(INT32*)pc;
 	pop_stack();
 	break;
       }
@@ -841,7 +909,7 @@ static void eval_instruction(unsigned char *pc)
 #ifdef DEBUG
       if(instr >= fp->context.prog->num_constants)
       {
-	instr += F_MAX_OPCODE;
+	instr += F_MAX_OPCODE - F_OFFSET;
 	fatal("Strange instruction %ld\n",(long)instr);
       }
 #endif      
