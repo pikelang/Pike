@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.208 1999/10/25 10:26:25 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.209 1999/10/26 17:52:50 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -25,6 +25,11 @@ test_eq([[#"foo
 bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
 test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
+
+test_eq(8, 0b1000)
+test_eq(-8, -0b1000)
+test_eq(16, 0b10000)
+test_eq(-16, -0b10000)
 
 test_eval_error([[mixed x; return mkmapping(x,x)]])
 
@@ -1314,6 +1319,9 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-335812727629498640265", [[ (string)-0x123456789123456789 ]])
   test_eq("718046312823", [[ (string)012345671234567 ]])
   test_eq("-718046312823", [[ (string)-012345671234567 ]])
+  test_eq("", [[ (string)012345671234567 ]])
+  test_eq("1125899906842624", [[ (string)0b100000000000000000000000000000000000000000000000000 ]])
+  test_eq("-1125899906842624", [[ (string)-0b100000000000000000000000000000000000000000000000000 ]])
     
   // These numbers should be ordinary integers.
   test_false([[ objectp(-0x80000000) ]])
@@ -1410,6 +1418,10 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 	   [[ (string)array_sscanf("1234567012345670", "%o")[0] ]])
   test_eq("45954944846776",
 	   [[ (string)array_sscanf("01234567012345670", "%i")[0] ]])
+  test_eq("11", [[ (string)array_sscanf("1011", "%b")[0] ]])
+  test_eq("1125968643114208", [[ (string)array_sscanf("100000000000001000000000001000000000100010011100000", "%b")[0] ]])
+  test_eq("11", [[ (string)array_sscanf("0b1011", "%i")[0] ]])
+  test_eq("1125968643114208", [[ (string)array_sscanf("0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
   
   test_eq("-12345678901234567890",
 	   [[ (string)array_sscanf("-12345678901234567890", "%d")[0] ]])
@@ -1421,10 +1433,17 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 	   [[ (string)array_sscanf("-1234567012345670", "%o")[0] ]])
   test_eq("-45954944846776",
 	   [[ (string)array_sscanf("-01234567012345670", "%i")[0] ]])
+  test_eq("-11", [[ (string)array_sscanf("-1011", "%b")[0] ]])
+  test_eq("-1125968643114208", [[ (string)array_sscanf("-100000000000001000000000001000000000100010011100000", "%b")[0] ]])
+  test_eq("-11", [[ (string)array_sscanf("-0b1011", "%i")[0] ]])
+  test_eq("-1125968643114208", [[ (string)array_sscanf("-0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
 
   test_equal([[ ({ 0, 118 }) ]], [[ array_sscanf("0x76", "%xx%x") ]])
   test_equal([[ ({ 0, 557239244978618154304871 }) ]],
              [[ array_sscanf("0x76000000000001234567", "%xx%x") ]])
+
+  test_equal(471100000000000000000000000000000000000000000000042,
+             (int)(mixed)471100000000000000000000000000000000000000000000042)
 ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],

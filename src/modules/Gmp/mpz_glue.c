@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.57 1999/10/26 06:30:49 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.58 1999/10/26 17:52:52 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -64,8 +64,32 @@ static void get_mpz_from_digits(MP_INT *tmp,
 {
   if(!base || ((base >= 2) && (base <= 36)))
   {
-    if (mpz_set_str(tmp, digits->str, base))
+    int offset = 0;
+    
+    /* We need to fix the case with binary 0b101... and -0b101... numbers. */
+    if(base == 0 && digits->len > 2)
+    {
+      if(INDEX_CHARP(digits->str, 0, digits->size_shift) == '-')
+	offset += 1;
+      if((INDEX_CHARP(digits->str, offset, digits->size_shift) == '0') &&
+	 ((INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'b') ||
+	  (INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'B')))
+      {
+	offset += 2;
+	base = 2;
+      }
+      else
+	offset = 0;
+    }
+
+    if (mpz_set_str(tmp, digits->str + offset, base))
       error("invalid digits, cannot convert to mpz");
+
+    if(offset == 3)
+    {
+      /* This means a negative binary number. */
+      mpz_neg(tmp, tmp);
+    }
   }
   else if(base == 256)
   {
@@ -310,8 +334,12 @@ static void mpzmod__sprintf(INT32 args)
     mask_shift += 1;
     /* Fall-through. */
   case 'o':
-    base += 8;
-    mask_shift += 3;
+    base += 6;
+    mask_shift += 2;
+    /* Fall-through. */
+  case 'b':
+    base += 2;
+    mask_shift += 1;
 
     if(precision > 0)
     {
@@ -392,8 +420,18 @@ static void mpzmod_cast(INT32 args)
   case 'i':
     if(!strncmp(s->str, "int", 3))
     {
+#ifdef AUTO_BIGNUM_XXXX
+      /* FIXME 1: Do we need to free the string?  Looking
+	 at the case with 'o' makes this confusing...
+
+	 FIXME 2: The run-time cast checking does not work
+	 properly with bignums. Take a look at row 209 and
+	 226 in opcodes.c for more examples on this. */
+      push_object(this_object());
+#else
       free_string(s);
       mpzmod_get_int(0);
+#endif /* AUTO_BIGNUM */
       return;
     }
     break;

@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.51 1999/10/25 10:18:46 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.52 1999/10/26 17:52:48 noring Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -903,6 +903,7 @@ static INT32 really_low_sscanf(char *input,
 	     }
 	  break;
 
+        case 'b':
         case 'o':
         case 'd':
         case 'x':
@@ -920,6 +921,7 @@ static INT32 really_low_sscanf(char *input,
 
 	  switch(match[cnt])
 	  {
+	  case 'b': base =  2; break;
 	  case 'o': base =  8; break;
 	  case 'd': base = 10; break;
 	  case 'x': base = 16; break;

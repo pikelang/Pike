@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.8 1999/10/23 06:51:28 hubbe Exp $
+ * $Id: lexer.h,v 1.9 1999/10/26 17:52:47 noring Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -413,19 +413,30 @@ static int low_yylex(YYSTYPE *yylval)
       return c;
   
     case '0':
-      if(GOBBLE('x') || GOBBLE('X'))
+    {
+      int base = 0;
+      
+      if(GOBBLE('b') || GOBBLE('B'))
       {
+	base = 2;
+	goto read_based_number;
+      }
+      else if(GOBBLE('x') || GOBBLE('X'))
+      {
+	base = 16;
+      read_based_number:
 	debug_malloc_pass( yylval->n=mkintnode(0) );
 	wide_string_to_svalue_inumber(&yylval->n->u.sval,
 				      lex.pos,
 				      (void **)&lex.pos,
-				      16,
+				      base,
 				      0,
 				      SHIFT);
 	free_string(yylval->n->type);
 	yylval->n->type=get_type_of_svalue(&yylval->n->u.sval);
 	return F_NUMBER;
       }
+    }
   
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':

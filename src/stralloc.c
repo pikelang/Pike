@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.71 1999/10/24 01:08:39 noring Exp $");
+RCSID("$Id: stralloc.c,v 1.72 1999/10/26 17:52:49 noring Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1888,6 +1888,8 @@ int pcharp_to_svalue_inumber(struct svalue *r,
       base = 10;
     else if(INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X')
       base = 16;
+    else if(INDEX_PCHARP(str,1) == 'b' || INDEX_PCHARP(str,1) == 'B')
+      base = 2;
     else
       base = 8;
   }
@@ -1899,10 +1901,11 @@ int pcharp_to_svalue_inumber(struct svalue *r,
   if(!isalnum(c) || (xx = DIGIT(c)) >= base)
     return 0;   /* No number formed. */
   
-  if(implicit_base && base == 16 && c == '0' &&
+  if(implicit_base && c == '0' &&
      INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
      isxdigit(INDEX_PCHARP(str,2)) &&
-      (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
+     ((base==16 && (INDEX_PCHARP(str,1)=='x' || INDEX_PCHARP(str,1)=='X')) ||
+      (base==2 && (INDEX_PCHARP(str,1)=='b' || INDEX_PCHARP(str,1)=='B'))))
   {
     /* Skip over leading "0x" or "0X". */
     INC_PCHARP(str,2);
