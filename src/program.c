@@ -1079,11 +1079,11 @@ static void insert_small_number(int a,int area)
     ins_short(a,area);
   }else{
     ins_signed_byte(-128,area);
-    ins_long(a,area);
+    ins_int(a,area);
   }	
 }
 
-void store_linenumber(void)
+void store_linenumber(INT32 current_line, struct lpc_string *current_string)
 {
   if(last_line!=current_line || last_file != current_file)
   {
