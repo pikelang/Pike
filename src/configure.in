@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.519 2001/05/08 12:38:39 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.520 2001/05/27 16:58:58 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -900,6 +900,12 @@ AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compi
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --without-shared-nodes disable the SHARED_NODES mode of the optimizer],[],[with_shared_nodes=yes])
+
+AC_ARG_WITH(keypair-loop,[  --with-keypair-loop    Enable use of the keypair mapping loop method (EXPERIMENTAL).],[
+  if test "$with_keypair_loop" = "yes"; then
+    AC_DEFINE(PIKE_MAPPING_KEYPAIR_LOOP)
+  else :; fi
+],[])
 
 AC_ARG_WITH(lock,        [  --without-lock         Enable experimental code for multicpu machines (EXPERIMENTAL).],[
   if test "$with_lock" = "no"; then

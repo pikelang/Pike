@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.84 2001/03/23 16:08:23 grubba Exp $
+ * $Id: acconfig.h,v 1.85 2001/05/27 16:58:57 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -41,6 +41,9 @@
 
 /* Define this if you want to enable the shared nodes mode of the optimizer. */
 #undef SHARED_NODES
+
+/* Define this to use the new keypair loop. */
+#undef PIKE_MAPPING_KEYPAIR_LOOP
 
 /* The following USE_* are used by smartlink */
 /* Define this if your ld sets the run path with -rpath */
