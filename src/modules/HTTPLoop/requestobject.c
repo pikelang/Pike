@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.5 1999/12/11 20:37:28 per Exp $
+ * $Id: requestobject.c,v 1.6 1999/12/12 21:55:00 per Exp $
  */
 
 #include "global.h"
@@ -692,8 +692,8 @@ void actually_send(struct send_args *a)
 {
   int fail, first=0;
   char foo[10];
-  unsigned char *data;
-  unsigned int data_len;
+  unsigned char *data = NULL;
+  int data_len = 0;
   foo[9]=0; foo[6]=0;
   if( a->data )
   {
@@ -1002,7 +1002,7 @@ void f_aap_reply_with_cache(INT32 args)
 
   get_all_args("reply_with_cache", args, "%S%d", &reply, &time_to_keep);
 
-  if(reply->len < THIS->request->cache->max_size/2)
+  if((unsigned)reply->len < (unsigned)THIS->request->cache->max_size/2)
   {
     struct cache *rc = THIS->request->cache;
     struct args *tr = THIS->request;
@@ -1020,7 +1020,7 @@ void f_aap_reply_with_cache(INT32 args)
       struct cache_entry *p,*pp=0,*ppp=0;
       int target = (rc->max_size-
                     rc->max_size/3);
-      while(rc->size > target)
+      while((unsigned)rc->size > (unsigned)target)
       {
 	int i;
 	freed=0;
@@ -1036,7 +1036,7 @@ void f_aap_reply_with_cache(INT32 args)
 	  }
 	  if(pp) aap_free_cache_entry(rc,pp,ppp,i);
 	  freed++;
-	  if(rc->size < target)
+	  if((unsigned)rc->size < (unsigned)target)
 	    break;
 	}
 	if(!freed)  /* no way.. */
