@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.10 1997/04/23 02:00:34 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.11 1997/05/18 22:23:29 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -22,6 +22,10 @@ RCSID("$Id: call_out.c,v 1.10 1997/04/23 02:00:34 hubbe Exp $");
 #include "callback.h"
 
 #include <math.h>
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif /* HAVE_SYS_TIME_H */
 
 struct call_out_s
 {

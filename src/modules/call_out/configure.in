@@ -2,6 +2,8 @@ AC_INIT(call_out.c)
 
 sinclude(../module_configure.in)
 
+AC_HAVE_HEADERS(sys/time.h)
+
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
 
