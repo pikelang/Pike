@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.27 2002/11/04 17:05:31 marcus Exp $
+|| $Id: ppc32.c,v 1.28 2002/11/08 18:09:29 marcus Exp $
 */
 
 /*
@@ -687,4 +687,182 @@ void ppc32_decode_program(struct program *p)
     *o = 0x48000000 | (disp & 0x03ffffff);
   }
 }
+#endif
+
+#ifdef PIKE_DEBUG
+
+void ppc32_disassemble_code(void *addr, size_t bytes)
+{
+  /*
+    Short forms of multicharacter opcode forms:
+    
+    F = XFX
+    G = XFL
+    L = XL
+    O = XO
+    S = SC
+  */
+  static const char *opname[] = {
+    NULL, NULL, NULL, "Dtwi", NULL, NULL, NULL, "Dmulli", 
+    "Dsubfic", NULL, "Dcmpli", "Dcmpi", "Daddic", "Daddic.", "Daddi", "Daddis",
+    NULL, "Ssc", NULL, NULL, "Mrlwimi", "Mrlwinm", NULL, "Mrlwnm",
+    "Dori", "Doris", "Dxori", "Dxoris", "Dandi.", "Dandis.", NULL, NULL,
+    "Dlwz", "Dlwzu", "Dlbz", "Dlbzu", "Dstw", "Dstwu", "Dstb", "Dstbu",
+    "Dlhz", "Dlhzu", "Dlha", "Dlhau", "Dsth", "Dsthu", "Dlmw", "Dstmw",
+    "Dlfs", "Dlfsu", "Dlfd", "Dlfdu", "Dstfs", "Dstfsu", "Dstfd", "Dstfdu",
+  };
+  static const char *opname_bcx[] = {
+    "Bbc", "Bbcl", "Bbca", "Bbcla",
+  };
+  static const char *opname_bx[] = {
+    "Ib", "Ibl", "Iba", "Ibla",
+  };
+  static const char *opname_19[] = {
+    "Lcreqv", "Lcror", NULL, NULL, NULL, "Lmcrf", "Lrfid", "Lbcctr",
+    "Lbclr", NULL, "Lcrnor", "Lcrxor", "Lrfi", "Lcrand", "Lcrorc", NULL,
+    "Lisync", "Lcrnand", "Lcrandc",
+  };
+  static short opxo_19[] = {
+    289, 449, 0, 0, 0, 0, 18, 528,
+    16, 0, 33, 193, 50, 257, 417, 0,
+    150, 225, 129,
+  };
+  static const char *opname_31_100[] = {
+    NULL, NULL, NULL, "Xtlbie", "Xtlbia", "Fmftb", "Fmtcrf", NULL,
+    "Xmtmsr", "Xmtsr", NULL, "Xmfcr", "Xmfmsr", NULL, "Fmtspr", NULL,
+    "Fmfspr", "Xmfsrin", NULL, "Xmtsrin", "Xmfsr",
+  };
+  static short opxo_31_100[] = {
+    0, 0, 0, 306, 370, 371, 144, 0,
+    146, 210, 0, 19, 83, 0, 467, 0,
+    339, 659, 0, 242, 595,
+  };
+
+  unsigned INT32 *code = addr;
+  size_t len = (bytes+3)>>2;
+
+  while(len--) {
+    int opcd, xo, form;
+    const char *instr_name;
+    unsigned INT32 instr = *code;
+
+    fprintf(stderr, "%p  %08x      ", code++, instr);
+
+    switch(opcd = ((instr>>26)&63)) {
+    case 16: /* bcx, B-Form */
+      instr_name = opname_bcx[instr&3];
+      break;
+    case 18: /* bx, I-Form */
+      instr_name = opname_bx[instr&3];
+      break;
+    case 19:
+      {
+	int h;
+	xo = (instr>>1)&1023;
+	h = (xo^119)%19;
+	instr_name = (xo == opxo_19[h]? opname_19[h]:NULL);	
+      }
+      break;
+    case 31:
+      xo = (instr>>1)&1023;
+      switch((xo>>2)&7) {
+	int h;
+	/* FIXME: other cases than 4 */
+      case 4:
+	h = (xo^160)%21;
+	instr_name = (xo == opxo_31_100[h]? opname_31_100[h]:NULL);
+	break;
+      default:
+	instr_name = NULL;
+	break;
+      }
+      break;
+    case 59:
+    case 63:
+      /* FIXME: OPCD 59 and 63 */
+      instr_name = NULL;
+      break;
+    default:
+      instr_name = (opcd < 56? opname[opcd] : NULL);
+      break;
+    }
+    form = (instr_name? *instr_name++ : '?');
+    switch(form) {
+    case 'I':
+      fprintf(stderr, "%s 0x%x\n", instr_name,
+	      (instr&0x03fffffc)+((instr&2)? 0:(INT32)(code-1)));
+      break;
+    case 'B':
+      /* Maybe pretty-print BO/BI here? */
+      fprintf(stderr, "%s %d,%d,0x%x\n", instr_name,
+	      (instr>>21)&31, (instr>>16)&31,
+	      (instr&0x0000fffc)+((instr&2)? 0:(INT32)(code-1)));
+      break;
+    case 'S': /* really 'SC' */
+      fprintf(stderr, "%s\n", instr_name);
+      break;
+    case 'D':
+      {
+	INT32 imm = instr & 0xffff;
+	char immtext[8];
+	if((imm & 0x8000) && opcd != 10 && (opcd < 24 || opcd > 29))
+	  imm -= 0x10000;
+	if(imm<0)
+	  sprintf(immtext, "-0x%x", -imm);
+	else
+	  sprintf(immtext, "0x%x", imm);
+	if(opcd == 3)
+	  fprintf(stderr, "%s %d,r%d,%s\n", instr_name,
+		  (instr>>21)&31, (instr>>16)&31, immtext);
+	else if(opcd == 10 || opcd == 11)
+	  fprintf(stderr, "%s cr%d,%d,r%d,%s\n", instr_name,
+		  (instr>>23)&7, (instr>>21)&1, (instr>>16)&31, immtext);
+	else if(opcd >= 32)
+	  fprintf(stderr, "%s r%d,%s(r%d)\n", instr_name,
+		  (instr>>21)&31, immtext, (instr>>16)&31);
+	else if(opcd >= 24 && opcd <= 29)
+	  fprintf(stderr, "%s r%d,r%d,%s\n", instr_name,
+		  (instr>>16)&31, (instr>>21)&31, immtext);
+	else
+	  fprintf(stderr, "%s r%d,r%d,%s\n", instr_name,
+		  (instr>>21)&31, (instr>>16)&31, immtext);
+      }
+      break;
+    case 'L': /* really 'XL' */
+      if(!xo)
+	fprintf(stderr, "%s cr%d,cr%d\n", instr_name,
+		(instr>>23)&7, (instr>>18)&7);
+      else if((xo & 511) == 16)
+	/* Maybe pretty-print BO/BI here? */
+	fprintf(stderr, "%s%s %d,%d\n", instr_name, ((instr&1)? "l":""),
+		(instr>>21)&31, (instr>>16)&31);
+      else if(xo&1) 
+	fprintf(stderr, "%s crb%d,crb%d,crb%d\n", instr_name,
+		(instr>>21)&31, (instr>>16)&31, (instr>>11)&31);
+      else
+	fprintf(stderr, "%s\n", instr_name);
+      break;
+    case 'F': /* really 'XFX' */
+      {
+	int arg = (xo == 144? (instr>>12)&255 :
+		   ((instr>>6)&0x3e0)|((instr>>16)&31));
+	if(xo&128)
+	  fprintf(stderr, "%s %d,r%d\n", instr_name, arg, (instr>>21)&31);
+	else
+	  fprintf(stderr, "%s r%d,%d\n", instr_name, (instr>>21)&31, arg);
+      }
+      break;
+    case 'M':
+      fprintf(stderr, (opcd==23? "%s%s r%d,r%d,r%d,%d,%d" :
+		       "%s%s r%d,r%d,%d,%d,%d"),
+	      instr_name, ((instr&1)? ".":""), (instr>>16)&31, (instr>>21)&31,
+	      (instr>>11)&31, (instr>>6)&31, (instr>>1)&31);
+      break;
+    default:
+      fprintf(stderr, ".long 0x%x\n", instr);
+      break;
+    }
+  }
+}
+
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.19 2002/11/04 17:05:31 marcus Exp $
+|| $Id: ppc32.h,v 1.20 2002/11/08 18:09:29 marcus Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -250,3 +250,7 @@ void ppc32_decode_program(struct program *p);
 
 #define OPCODE_INLINE_BRANCH
 
+#ifdef PIKE_DEBUG
+void ppc32_disassemble_code(void *addr, size_t bytes);
+#define DISASSEMBLE_CODE(ADDR, BYTES)	ppc32_disassemble_code(ADDR, BYTES)
+#endif
