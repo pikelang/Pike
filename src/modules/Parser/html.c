@@ -3460,6 +3460,13 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	int quote = ctx - CTX_TAG_QUOTED_ARG;
 	p_wchar2 end_found;
 
+	if (!*feed) {
+	  DEBUG((stderr,"%*d do_try_feed end in tag arg\n",
+		 this->stack_count,this->stack_count));
+	  this->out_ctx = ctx;
+	  return STATE_DONE;
+	}
+
 	DEBUG((stderr,"%*d do_try_feed scan in tag arg\n",
 	       this->stack_count,this->stack_count));
 
