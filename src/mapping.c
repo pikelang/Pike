@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.21 1997/08/30 18:35:42 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.22 1997/09/08 21:51:04 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -788,7 +788,7 @@ void f_m_delete(INT32 args)
   if(args < 2)
     error("Too few arguments to m_delete.\n");
   if(sp[-args].type != T_MAPPING)
-    error("Bad argument to to m_delete.\n");
+    error("Bad argument 1 to m_delete.\n");
 
   map_delete(sp[-args].u.mapping,sp+1-args);
   pop_n_elems(args-1);
