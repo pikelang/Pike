@@ -5,15 +5,15 @@ REMOTE_METHOD=sprsh
 
 # Choose 'rntcc' for Watcom or 'rntcl' for Microsoft VC++
 # (Make sure VC++ is before Watcom in your path!)
-CC=rntcl
+CC=${CC-rntcl}
 
 # Edit
-#NTHOST=10.0.5.13
-#NTDRIVE='k:'
-
-# Edit
-NTHOST=10.0.5.10
+NTHOST=${NTHOST-10.0.5.13}
 NTDRIVE='k:'
+
+# Edit
+#NTHOST=10.0.5.10
+#NTDRIVE='k:'
 
 #NTHOST=localhost
 #NTDRIVE='d:'
@@ -31,6 +31,31 @@ NTPORT=4711
 #These are only used if you use wine
 watcom=D:\\CDROM
 INCLUDE="$watcom\\H;$watcom\\H\\NT"
+
+case "/$CC" in
+  */rntcl)
+    MSVC='j:\winshare\vc98'
+    local='j:\winshare\local'
+    REMOTE_VARIABLES="
+path=$MSVC\\bin;
+include=$MSVC\\Include;$local\\include
+lib=$MSVC\\Lib;$local\\lib
+"
+    export REMOTE_VARIABLES
+  ;;
+
+  */rntcc)
+    watcom='j:\winshare\WATCOM'
+    local='j:\winshare\WATCOM\local'
+    REMOTE_VARIABLES="
+path=$watcom\\binnt;$watcom\\binw;
+include=$watcom\\h;$local\\h
+lib=$watcom\\lib386;$local\\lib
+"
+    export REMOTE_VARIABLES
+  ;;
+esac
+
 
 # Don't edit
 
