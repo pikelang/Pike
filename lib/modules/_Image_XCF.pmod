@@ -24,7 +24,7 @@ class Guide
   int vertical;
   void create(string data)
   {
-    sscanf(data, "%4c%c", pos,vertical);
+    sscanf(data, "%4c%c", pos,vertical);vertical--;
   }
 }
 
@@ -77,7 +77,8 @@ class Hierarchy
     height = y;
     bpp = bp;
     img = Image.image( x, y, 0,0,0 );
-    alpha = Image.image( x, y, 255,255,255 );
+    if(!(bp & 1 ))
+      alpha = Image.image( x, y, 255,255,255 );
     switch(compression)
     {
      case COMPRESS_NONE:
@@ -102,17 +103,22 @@ class Hierarchy
 
   Hierarchy copy()
   {
-    return Hierarchy()->qsi( img->copy(),alpha->copy(),width,height,bpp );
+    return Hierarchy()->qsi( img,alpha,width,height,bpp );
   }
 
   Hierarchy get_opaqued( int opaque_value )
   {
     Hierarchy res = copy();
     if(opaque_value != 255)
-      res->alpha *= opaque_value/255.0;
+    {
+      if(res->alpha)
+        res->alpha *= opaque_value/255.0;
+      else
+        res->alpha = Image.image(width,height,
+                                 opaque_value,opaque_value,opaque_value);
+    }
     return res;
   }
-
 }
 
 int iid;
@@ -121,14 +127,6 @@ Hierarchy decode_image_data( mapping what, object i )
   Hierarchy h = 
     Hierarchy( )->set_image(what->width, what->height, what->bpp,
                             what->tiles, i->compression, i->colormap );
-
-
-#if 0
-  object bg = Image.image( what->width, what->height )->test();
-  bg = bg->paste_mask( h->img, h->alpha );
-  rm("/tmp/xcftest_"+iid);
-  Stdio.write_file( "/tmp/xcftest_"+iid++, Image.PNM.encode( bg ));
-#endif
   return h;
 }
 
@@ -255,8 +253,6 @@ class Layer
   }
 }
 
-
-
 class GimpImage
 {
   int width;
@@ -269,8 +265,8 @@ class GimpImage
   int res_unit;
   Image.colortable colormap;
   Image.colortable meta_colormap;
-  array(Layer) layers = ({});
-  array(Channel) channels = ({});
+  array(Layer) layers = ({});            // bottom-to-top
+  array(Channel) channels = ({});       // unspecified order, really
   array(Guide) guides = ({});
   array(Parasite) parasites = ({});
   array(Path) paths = ({});
@@ -356,7 +352,9 @@ class GimpImage
          else
            meta_colormap = Image.colortable( p->data );
          break;
-       case PROP_COMPRESSION: compression = p->data[0];             break;
+       case PROP_COMPRESSION:
+         compression = p->data[0];
+         break;
        case PROP_GUIDES:
          guides = Array.map(p->data/5,Guide);
          break;
@@ -401,65 +399,175 @@ class GimpImage
 
 GimpImage __decode( string|mapping what )
 {
-  if(stringp(what))
-    what = ___decode( what );
+  if(stringp(what)) what = ___decode( what );
   return GimpImage(what);
 }
 
 
+#define PASTE_ALPHA(X,Y)                                                \
+        if(Y)                                                           \
+          img->paste_mask( X, Y, l->xoffset, l->yoffset );              \
+        else                                                            \
+          img->paste( X, l->xoffset, l->yoffset );                      \
+        if(Y&&alpha&&++alpha_used)                                      \
+          alpha->paste_alpha_color(Y,255,255,255,l->xoffset, l->yoffset ); \
+        else if(alpha)                                                 \
+         alpha->box(l->xoffset,l->yoffset,l->xoffset+l->width-1,l->yoffset+l->height-1,255,255,255)
+
+#define IMG_SLICE(l,h) img->copy(l->xoffset,l->yoffset,l->xoffset+h->width-1,l->yoffset+h->height-1)
+
 mapping _decode( string|mapping what, mapping|void opts )
 {
   if(!opts) opts = ([]);
-  mixed e=
-    catch {
+// array e=
+//   catch {
+  int alpha_used;
   GimpImage data = __decode( what );
   object img = Image.image(data->width, data->height, 
-                           @(opts->background||({255,255,255})));
-  object alpha = Image.image(data->width, data->height,
-                             @(opts->background?({255,255,255}):({0,0,0})));
+                           @((opts->background&&(array)opts->background)
+                             ||({255,255,255})));
+  object alpha;
 
-  foreach(reverse(data->layers), object l)
+  if( !opts->background )
+    alpha = Image.image(data->width, data->height);
+
+  foreach(data->layers, object l)
   {
-    if(l->flags->visible)
+    if(l->flags->visible || opts->draw_all_layers)
     {
       Hierarchy h = l->image->get_opaqued( l->opacity );
+      if(l->mask && l->flags->apply_mask)
+      {
+        if(l->image->alpha)
+          l->image->alpha *= l->mask->image;
+        else
+          l->image->alpha = l->mask->image;
+      }
+
+
       switch( l->mode )
       {
       case NORMAL_MODE:
-        img->paste_mask( h->img, h->alpha, l->xoffset, l->yoffset );
-        alpha->paste_alpha_color( h->alpha, 255,255,255, 
-                                  l->xoffset, l->yoffset );
+        PASTE_ALPHA(h->img,h->alpha);
         break;
-      case DISSOLVE_MODE:
-      case BEHIND_MODE:
+
+
       case MULTIPLY_MODE:
+        object oi = IMG_SLICE(l,h);
+        oi *= h->img;
+        PASTE_ALPHA(oi,h->alpha);
+        break;
+
+      case ADDITION_MODE:
+        object oi = IMG_SLICE(l,h);
+        oi += h->img;
+        PASTE_ALPHA(oi,h->alpha);
+        break;
+
+      case SUBTRACT_MODE:
+        object oi = IMG_SLICE(l,h);
+        oi -= h->img;
+        PASTE_ALPHA(oi,h->alpha);
+        break;
+
+      case DIVIDE_MODE:
+      case DISSOLVE_MODE:
       case SCREEN_MODE:
       case OVERLAY_MODE:
       case DIFFERENCE_MODE:
-      case ADDITION_MODE:
-      case SUBTRACT_MODE:
       case DARKEN_ONLY_MODE:
       case LIGHTEN_ONLY_MODE:
       case HUE_MODE:
       case SATURATION_MODE:
       case COLOR_MODE:
       case VALUE_MODE:
-      case DIVIDE_MODE:
-      case ERASE_MODE:
-      case REPLACE_MODE:
-        werror("More "+l->mode+" not yet implemented.\n");
+       default:
+        if(!opts->ignore_unknown_layer_modes)
+        {
+          werror("Layer mode "+l->mode+" not yet implemented,  "
+               " asuming 'normal'\n");
+          PASTE_ALPHA(h->img,h->alpha);
+        }
         break;
       }
     }
   }
 
+  if(opts->draw_guides)
+    foreach( data->guides, Guide g )
+      if(g->vertical)
+        img->line( g->pos, 0, g->pos, img->ysize(), 0,155,0 );
+      else
+        img->line( 0,g->pos,  img->xsize(),g->pos, 0,155,0 );
+
+  if(opts->draw_selection)
+  {
+    if(data->selection)
+      img->paste_alpha_color( data->selection->image_data->img*0.25,
+                              data->selection->r,
+                              data->selection->g,
+                              data->selection->b );
+  }
+
+  if(opts->mark_layers)
+  {
+    foreach(data->layers, Layer l)
+    {
+      if(l->flags->visible || opts->draw_all_layers)
+      {
+        int x1 = l->xoffset;
+        int x2 = l->xoffset+l->width;
+        int y1 = l->yoffset;
+        int y2 = l->yoffset+l->height;
+        img->setcolor(0,0,255,100);
+        img->line( x1,y1,x2,y1 );
+        img->line( x2,y1,x2,y2 );
+        img->line( x2,y2,x1,y2 );
+        img->line( x1,y2,x1,y1 );
+      }
+    }
+  }
+  
+  if(opts->mark_layer_names)
+  {
+    foreach(data->layers, Layer l)
+    {
+      if(l->flags->visible || opts->draw_all_layers)
+      {
+        int x1 = l->xoffset;
+        int y1 = l->yoffset+3;
+        object a = opts->mark_layer_names->write( l->name )->scale(0.5);
+        object i = Image.image( a->xsize(),a->ysize(), 100,0,0 );
+        img->paste_mask( a, i, x1, y1 );
+        if(alpha && ++alpha_used)                                      
+          alpha->paste_alpha_color(a,255,255,255, x1,y1 );
+      }
+    }
+  }
+
+  if(opts->mark_active_layer)
+  {
+    if(data->active_layer)
+    {
+      int x1 = data->active_layer->xoffset;
+      int x2 = data->active_layer->xoffset+data->active_layer->width;
+      int y1 = data->active_layer->yoffset;
+      int y2 = data->active_layer->yoffset+data->active_layer->height;
+      img->setcolor(255,0,0);
+      img->line( x1,y1,x2,y1 );
+      img->line( x2,y1,x2,y2 );
+      img->line( x2,y2,x1,y2 );
+      img->line( x1,y2,x1,y1 );
+    }
+  }
+  if(alpha && !alpha_used)
+    alpha=0;
   return ([
     "image":img,
     "alpha":alpha,
-    "gimpimage":data,
   ]);
-  };
-  werror(describe_backtrace(e));
+//   };
+//  werror(describe_backtrace(e)); 
 }
 
 
