@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.5 2002/12/23 17:10:07 grubba Exp $
+// $Id: __default.pmod,v 1.6 2002/12/30 15:05:38 grubba Exp $
 
 #pike 7.1
 
@@ -10,6 +10,8 @@
 //!
 //! @seealso
 //!   @[7.2::]
+
+//! @decl inherit 7.2::
 
 //! @decl array(int) file_stat(string path, void|int symlink)
 //!   Stat a file (Pike 7.0 compatibility).

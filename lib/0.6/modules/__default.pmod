@@ -2,6 +2,8 @@
 
 #pike 7.0
 
+//! @decl inherit 7.0::
+
 /* compatibility: this destroys too strict type checking */
 array(mixed) aggregate(mixed ... args)
 {

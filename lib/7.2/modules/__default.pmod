@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.14 2002/12/21 17:50:44 grubba Exp $
+// $Id: __default.pmod,v 1.15 2002/12/30 15:05:38 grubba Exp $
 
 #pike 7.3
 
@@ -7,6 +7,8 @@
 //!
 //! The symbols in this namespace will appear in
 //! programs that use @tt{#pike 7.2@} or lower.
+
+//! @decl inherit 7.4::
 
 //! Remove the last segment from @[path].
 //!
