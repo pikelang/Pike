@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.74 2002/03/06 01:01:26 mast Exp $
+# $Id: static_module_makefile.in,v 1.75 2002/03/06 01:19:49 mast Exp $
 #
 
 
@@ -125,8 +125,8 @@ clean:
 depend: $(SRC_TARGETS) $(PMOD_TARGETS)
 	-@echo Fixing dependencies for $(SRCDIR)/\*.c
 	@gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
-	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
 	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
+	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
 	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
 	|sed -e "s@$(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@\1@g" \
 	>$(SRCDIR)/dependencies
