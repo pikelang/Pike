@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.109 2002/08/15 14:50:25 marcus Exp $ */
+/* $Id: colortable.c,v 1.110 2002/10/04 12:33:47 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.109 2002/08/15 14:50:25 marcus Exp $
+**!	$Id: colortable.c,v 1.110 2002/10/04 12:33:47 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.109 2002/08/15 14:50:25 marcus Exp $");
+RCSID("$Id: colortable.c,v 1.110 2002/10/04 12:33:47 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -83,6 +83,7 @@ RCSID("$Id: colortable.c,v 1.109 2002/08/15 14:50:25 marcus Exp $");
 
 #define SQ(x) ((x)*(x))
 static INLINE ptrdiff_t sq(ptrdiff_t x) { return x*x; }
+static INLINE int sq_int(int x) { return x*x; }
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -305,11 +306,11 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 				rgbd_group position,rgbd_group space,
 				enum nct_reduce_method type)
 {
-   ptrdiff_t n, i, m, g;
+   ptrdiff_t n, i, m;
    rgbl_group sum={0,0,0},diff={0,0,0};
    rgbl_group min={256,256,256},max={0,0,0};
-   size_t mmul,tot=0;
-   ptrdiff_t gdiff=0;
+   nct_weight_t mmul,tot=0;
+   INT32 g, gdiff=0;
    ptrdiff_t left, right;
    enum { SORT_R,SORT_G,SORT_B,SORT_GREY } st;
    rgbd_group newpos1,newpos2;
@@ -350,21 +351,25 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	 case NCT_REDUCE_MEAN:
 	    /* get the mean color */
 
-	    if ((mmul=src_size)>10240) mmul=10240;
+ 	    if (src_size > 10240) {
+	       mmul = 10240;
+	    } else {
+	       mmul = DO_NOT_WARN((nct_weight_t)src_size);
+	    }
 	    
 	    for (i=0; i<src_size; i++)
 	    {
-	       nct_weight_t mul=src[i].weight;
+	       nct_weight_t mul = src[i].weight;
 	       
-	       sum.r += DO_NOT_WARN((INT32)(src[i].color.r*mul));
-	       sum.g += DO_NOT_WARN((INT32)(src[i].color.g*mul));
-	       sum.b += DO_NOT_WARN((INT32)(src[i].color.b*mul));
+	       sum.r += src[i].color.r*mul;
+	       sum.g += src[i].color.g*mul;
+	       sum.b += src[i].color.b*mul;
 	       tot += mul;
 	    }
 	    
-	    dest->color.r = DO_NOT_WARN((INT32)(sum.r/tot));
-	    dest->color.g = DO_NOT_WARN((INT32)(sum.g/tot));
-	    dest->color.b = DO_NOT_WARN((INT32)(sum.b/tot));
+	    dest->color.r = sum.r/tot;
+	    dest->color.g = sum.g/tot;
+	    dest->color.b = sum.b/tot;
 	    dest->weight = tot;
 	    dest->no = -1;
 
@@ -431,12 +436,12 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    tot=0;
    for (i=0; i<src_size; i++)
    {
-      size_t mul;
+      nct_weight_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
-      sum.r += DO_NOT_WARN((INT32)(src[i].color.r*mul));
-      sum.g += DO_NOT_WARN((INT32)(src[i].color.g*mul));
-      sum.b += DO_NOT_WARN((INT32)(src[i].color.b*mul));
+      sum.r += src[i].color.r*mul;
+      sum.g += src[i].color.g*mul;
+      sum.b += src[i].color.b*mul;
       tot += mul;
    }
 
@@ -445,10 +450,10 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	   level, "", sum.r, sum.g, sum.b);
 #endif
 
-   g=(sum.r*sf.r+sum.g*sf.g+sum.b*sf.b)/tot;
-   sum.r = DO_NOT_WARN((INT32)(sum.r/tot));
-   sum.g = DO_NOT_WARN((INT32)(sum.g/tot));
-   sum.b = DO_NOT_WARN((INT32)(sum.b/tot));
+   g = (sum.r*sf.r+sum.g*sf.g+sum.b*sf.b)/tot;
+   sum.r = sum.r/tot;
+   sum.g = sum.g/tot;
+   sum.b = sum.b/tot;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
    fprintf(stderr, "COLORTABLE%*s mean=%d,%d,%d,%ld tot=%ld\n",
@@ -457,26 +462,26 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 
    for (i=0; i<src_size; i++)
    {
-      size_t mul;
+      nct_weight_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
-      diff.r += DO_NOT_WARN((INT32)((sq(src[i].color.r-(INT32)sum.r)/8)*mul));
-      diff.g += DO_NOT_WARN((INT32)((sq(src[i].color.g-(INT32)sum.g)/8)*mul));
-      diff.b += DO_NOT_WARN((INT32)((sq(src[i].color.b-(INT32)sum.b)/8)*mul));
-      gdiff+=(sq(src[i].color.r*sf.r+src[i].color.g*sf.g+
-		 src[i].color.b*sf.b-g)/8)*mul;
+      diff.r += (sq(src[i].color.r-(INT32)sum.r)/8)*mul;
+      diff.g += (sq(src[i].color.g-(INT32)sum.g)/8)*mul;
+      diff.b += (sq(src[i].color.b-(INT32)sum.b)/8)*mul;
+      gdiff  += (sq(src[i].color.r*sf.r+src[i].color.g*sf.g+
+		    src[i].color.b*sf.b-g)/8)*mul;
       tot+=mul;
    }
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr, "COLORTABLE%*s pure diff=%d,%d,%d,%ld sort=?\n",
+   fprintf(stderr, "COLORTABLE%*s pure diff=%d,%d,%d,%d sort=?\n",
 	   level, "", diff.r, diff.g, diff.b, gdiff);
 #endif
 
    diff.r*=DIFF_R_MULT;
    diff.g*=DIFF_G_MULT;
    diff.b*=DIFF_B_MULT;
-   gdiff=(gdiff*DIFF_GREY_MULT)/(sq(sf.r+sf.g+sf.b));
+   gdiff = (gdiff*DIFF_GREY_MULT)/(sq(sf.r+sf.g+sf.b));
 
    if (diff.r > diff.g) 
       if (diff.r > diff.b) 
@@ -489,7 +494,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       else 
 	 if (diff.b > gdiff) st=SORT_B; else st=SORT_GREY;
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr, "COLORTABLE%*s diff=%d,%d,%d,%ld sort=%d\n",
+   fprintf(stderr, "COLORTABLE%*s diff=%d,%d,%d,%d sort=%d\n",
 	   level, "", diff.r, diff.g, diff.b, gdiff, st);
 #endif
 
@@ -501,9 +506,11 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 #define HALFSORT(C) \
       while (left<right) \
       { \
-         struct nct_flat_entry tmp; \
-         if ((ptrdiff_t)src[left].color.C>sum.C)  \
-	    tmp=src[left],src[left]=src[right],src[right--]=tmp; \
+         if (src[left].color.C > sum.C) { \
+	    struct nct_flat_entry tmp = src[left]; \
+            src[left] = src[right]; \
+            src[right--] = tmp; \
+         } \
          else left++; \
       } \
       space.C/=2.0; \
@@ -519,10 +526,12 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       case SORT_GREY:
          while (left<right) 
 	 { 
-	    struct nct_flat_entry tmp; 
-	    if ((ptrdiff_t)(src[left].color.r*sf.r+src[left].color.g*sf.g+
-			    src[left].color.b*sf.b)>(ptrdiff_t)g)  
-	       tmp=src[left],src[left]=src[right],src[right--]=tmp; 
+	    if ((src[left].color.r*sf.r + src[left].color.g*sf.g +
+		 src[left].color.b*sf.b) > g) {
+	       struct nct_flat_entry tmp = src[left];
+	       src[left] = src[right];
+	       src[right--] = tmp;
+	    }
 	    else left++; 
 	 } 
 	 space.r/=2.0;
@@ -1021,7 +1030,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 				   int *dist,int *no,
 				   rgbl_group sf)
 {
-   ptrdiff_t mindist;
+   int mindist;
    struct nct_scale *s;
    int nc;
 
@@ -1029,9 +1038,10 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 
    if (cube.r&&cube.g&&cube.b)
    {
-      mindist = sf.r*sq((((rgb.r*cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
-	        sf.g*sq((((rgb.g*cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
-	        sf.b*sq((((rgb.b*cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
+      mindist =
+	sf.r*sq_int((((rgb.r*cube.r+cube.r/2)>>8)*255)/(cube.r-1)-rgb.r)+
+	sf.g*sq_int((((rgb.g*cube.g+cube.g/2)>>8)*255)/(cube.g-1)-rgb.g)+
+	sf.b*sq_int((((rgb.b*cube.b+cube.b/2)>>8)*255)/(cube.b-1)-rgb.b);
 
       *no=((INT32)(rgb.r*cube.r+cube.r/2)>>8)+
 	  ((INT32)(rgb.g*cube.g+cube.g/2)>>8)*cube.r+
@@ -1039,7 +1049,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 
       if (mindist<cube.disttrig)
       {
-	 *dist = DO_NOT_WARN((int)mindist);
+	 *dist = mindist;
 	 return;
       }
    }
@@ -1068,10 +1078,10 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       if (s->no[n]>=nc) 
       {
 	 int steps=s->steps;
-	 ptrdiff_t ldist =
-	   sf.r*sq(rgb.r-((int)(s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
-	   sf.g*sq(rgb.g-((int)(s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
-	   sf.b*sq(rgb.b-((int)(s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
+	 int ldist =
+	   sf.r*sq_int(rgb.r-((s->high.r*n+s->low.r*(steps-n-1))/(steps-1)))+
+	   sf.g*sq_int(rgb.g-((s->high.g*n+s->low.g*(steps-n-1))/(steps-1)))+
+	   sf.b*sq_int(rgb.b-((s->high.b*n+s->low.b*(steps-n-1))/(steps-1)));
 
 	 if (ldist<mindist)
 	 {
@@ -1084,7 +1094,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       s=s->next;
    }
   
-   *dist = DO_NOT_WARN((int)mindist);
+   *dist = mindist;
 }
 
 static struct nct_cube _img_get_cube_from_args(INT32 args)
@@ -2988,8 +2998,8 @@ static void _cub_add_cs_2cub_recur(int *i,int *p,
 				   int rp,int gp,int bp,
 				   int rd1,int gd1,int bd1,
 				   int rd2,int gd2,int bd2,
-				   ptrdiff_t *a, ptrdiff_t *b,
-				   ptrdiff_t *c, ptrdiff_t *d,
+				   INT32 *a, INT32 *b,
+				   INT32 *c, INT32 *d,
 				   rgbl_group sf,
 				   int accur)
 {
@@ -3000,7 +3010,7 @@ static void _cub_add_cs_2cub_recur(int *i,int *p,
  1 |   |
    c-j-d */
 
-   ptrdiff_t e=-1,f=-1,g=-1,h=-1,j=-1;
+   INT32 e=-1,f=-1,g=-1,h=-1,j=-1;
    int rm1,gm1,bm1;
    int rm2,gm2,bm2;
 
@@ -3044,7 +3054,7 @@ static INLINE ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
 					   rgbl_group sf)
 {
    int mindist=256*256*100; /* max dist is 256²*3 */
-   ptrdiff_t c = 0;
+   int c = 0;
 
    while (n--)
       if (fe->no==-1) fe++;
@@ -3069,7 +3079,7 @@ static INLINE ptrdiff_t _cub_find_full_add(int **pp, int *i, int *p,
    while (n--)
       if (*p==c) return c; else p++;
 
-   *p = DO_NOT_WARN((int)c);
+   *p = c;
    (*i)++;
    (*pp)++;
 
@@ -3081,8 +3091,8 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
 				   int rp,int gp,int bp,
 				   int rd1,int gd1,int bd1,
 				   int rd2,int gd2,int bd2,
-				   ptrdiff_t *a, ptrdiff_t *b,
-				   ptrdiff_t *c, ptrdiff_t *d,
+				   INT32 *a, INT32 *b,
+				   INT32 *c, INT32 *d,
 				   rgbl_group sf,
 				   int accur)
 {
@@ -3095,7 +3105,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
    c-i-d
  */
 
-   ptrdiff_t e,f,g,h,j;
+   INT32 e,f,g,h,j;
    int rm1,gm1,bm1;
    int rm2,gm2,bm2;
 
@@ -3149,7 +3159,7 @@ static INLINE void _cub_add_cs(struct neo_colortable *nct,
 			       int rd1,int gd1,int bd1,
 			       int rd2,int gd2,int bd2)
 {
-   ptrdiff_t a=-1,b=-1,c=-1,d=-1;
+   INT32 a=-1,b=-1,c=-1,d=-1;
 #ifdef CUBICLE_DEBUG
    fprintf(stderr,
 	   " _cub_add_cs %d,%d,%d %d,%d,%d, %d,%d,%d, %d,%d,%d, %d,%d,%d\n",
@@ -3191,7 +3201,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    int bmin,bmax;
 
    struct nct_flat_entry *fe=nct->u.flat.entries;
-   ptrdiff_t n=nct->u.flat.numentries;
+   INT32 n = nct->u.flat.numentries;
 
    int i=0;
    int *p=malloc(n*sizeof(struct nctlu_cubicle));
