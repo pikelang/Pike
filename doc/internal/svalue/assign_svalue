@@ -1,0 +1,18 @@
+NAME
+	assign_svalue - copy svalues from one place to another
+
+SYNTAX
+	#include <svalue.h>
+
+	void assign_svalue(struct svale *to, struct svalue *from);
+
+DESCRIPTION
+	This function copies an svalue from one struct svalue to another.
+	It frees the contents of 'to' first and updates the involved
+	refcounts.
+
+KEYWORDS
+	svalue
+
+SEE ALSO
+	free_svalue

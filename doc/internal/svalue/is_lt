@@ -1,0 +1,22 @@
+NAME
+	is_lt - compare two svalues
+
+SYNTAX
+	#include <svalue.h>
+
+	int is_lt(struct svalue *a, struct svalue *b);
+
+DESCRIPTION
+	This is the equivialent of the Pike operator `<. It compares the
+	contents of two svalues and returns true if the 'a' is lesser than
+	'b'. It will give an error if the types are not comparable.
+
+NOTA BENE
+	is_gt, is_ge and is_le are also available. They are all macros that
+	call this function.
+
+KEYWORDS
+	svalue
+
+SEE ALSO
+	is_eq, is_equal

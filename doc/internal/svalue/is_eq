@@ -1,0 +1,17 @@
+NAME
+	is_eq - compare two svalues
+
+SYNTAX
+	#include <svalue.h>
+
+	int is_eq(struct svalue *a, struct svalue *b);
+
+DESCRIPTION
+	This is the equivialent of the Pike operator `==. It compares two
+	svalues and returns one if they are the same. Otherwise zero.
+
+KEYWORDS
+	svalue
+
+SEE ALSO
+	is_equal, is_lt, IS_ZERO
