@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: cache.pike,v 1.1 2000/07/02 20:14:27 kinkie Exp $
+ * $Id: cache.pike,v 1.2 2000/07/05 21:32:58 kinkie Exp $
  *
  * This module serves as a front-end to different kinds of caching system
  * It uses two helper objects to actually store data, and to determine
@@ -95,13 +95,11 @@ void store(string key, mixed value, void|int max_life,
                preciousness);
 }
 
-//. Forcibly removes some key. If data was actually present under that key,
-//. it is returned. Otherwise 0 is returned.
+//. Forcibly removes some key.
 //. If the 'hard' parameter is supplied and true, deleted objects will also
-//. be destruct()-ed upon removal.
-mixed delete(string key, void|int(0..1)hard) {
-  object(Cache.Data) tmp=storage->delete(key,hard);
-  return (tmp?tmp->data():0);
+//. be destruct()-ed upon removal by some backends (i.e. memory)
+void delete(string key, void|int(0..1)hard) {
+  storage->delete(key,hard);
 }
 
 
