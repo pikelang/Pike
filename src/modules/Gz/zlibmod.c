@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.28 2000/12/13 23:24:53 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.29 2001/02/08 19:07:53 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -269,6 +269,10 @@ static int do_inflate(dynamic_buffer *buf,
       ret=inflate(& this->gz, flush);
       THREADS_DISALLOW();
       low_make_buf_space(-this->gz.avail_out,buf);
+
+      /* BUG WORKAROUND -Hubbe */
+      if(ret == Z_BUF_ERROR) ret=Z_OK;
+
       if(ret != Z_OK)
       {
 	fail=ret;
@@ -303,7 +307,7 @@ static void gz_inflate(INT32 args)
 
   initialize_buf(&buf);
 
-  fail=do_inflate(&buf,this,Z_PARTIAL_FLUSH);
+  fail=do_inflate(&buf,this,Z_SYNC_FLUSH);
   pop_n_elems(args);
 
   if(fail != Z_OK && fail != Z_STREAM_END)
