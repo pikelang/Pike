@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.140 2004/05/07 21:08:39 grubba Exp $
+|| $Id: backend.cmod,v 1.141 2004/08/23 12:36:35 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.140 2004/05/07 21:08:39 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.141 2004/08/23 12:36:35 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2213,8 +2213,6 @@ PIKECLASS Backend
       start_time.tv_sec = current_time.tv_sec;
       start_time.tv_usec = current_time.tv_usec;
 
-      copy_selectors(& me->active_set, &me->set);
-
       {
 	ONERROR uwp;
 #ifdef TIMEOUT_IS_MILLISECONDS
@@ -2306,6 +2304,8 @@ PIKECLASS Backend
 #else
 #error Unknown timeout method.
 #endif /* TIMEOUT_IS_* */
+
+	copy_selectors(& me->active_set, &me->set);
 
 	IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: Doing poll on fds:\n",
 		       getpid(), me->id));
