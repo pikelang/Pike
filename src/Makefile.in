@@ -57,6 +57,8 @@ OTHERFLAGS=@CFLAGS@ @CPPFLAGS@ $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
 NOOPTFLAGS=@CFLAGS@ @CPPFLAGS@ $(OSFLAGS) $(WARN) $(PROFIL)
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
+SMARTLINK=@SMARTLINK@
+REALCC=@REALCC@
 CC=@CC@
 CPP=@CPP@
 
@@ -130,17 +132,17 @@ pike: $(OBJ) compile_interpret modules/linker_options
 # purify
 pure: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 gcc $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	quantify gcc $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
