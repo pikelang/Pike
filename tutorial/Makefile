@@ -7,8 +7,6 @@ all:
 
 low_all: tutorial.html tutorial_onepage.html
 
-# lenna.gif lenna-mirrorx.gif lenna-mirrory.gif lenna-rotate.gif lenna-skewx.gif lenna-skewy.gif
-
 MADEFILES=Image.wmml Mysql.wmml ProtocolsLysKOM.wmml \
 	ProtocolsHTTP.wmml Parser.wmml Calendar.wmml
 SRCFILES=tutorial.wmml $(MADEFILES)
@@ -59,11 +57,11 @@ wmml.html: .DUMMY wmml.wmml
 manpages: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml manpages man/man
 
-the_image_module_onepage.html: .DUMMY Image.wmml the_image_module.wmml
-	$(pike) ./wmmltohtml2 the_image_module.wmml html_onepage the_image_module_onepage
+mirar_tutorial.html: .DUMMY $(SRCFILES)
+	$(pike) ./wmmltohtml2 tutorial.wmml mirar_html mirar_tutorial
 
 the_image_module.html: Image.wmml the_image_module.wmml
-	$(pike) ./wmmltohtml2 the_image_module.wmml html_section_pages the_image_module
+	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
 
 clean:
 	-rm -f *.html *.md illustration_cache illustration*.gif $(MADEFILES)
@@ -80,7 +78,8 @@ export:
 	tar czvTf tutorial_onepage.files tutorial_onepage.tar.gz 
 
 mirar_www: Image.wmml the_image_module.html
-	ln -f illustration*.gif illustration*.jpeg the_image_module*.html /home/mirar/www/image
+	ln -f `cat the_image_module.files` /home/mirar/www/image
 
-mirar_www_tutorial: tutorial.html
-	ln -f illustration*.gif illustration*.jpeg tutorial*html /home/mirar/www/pike_tutorial
+mirar_www_tutorial: mirar_tutorial.html
+	ln -f `cat mirar_tutorial.files` /home/mirar/www/pike_tutorial
+
