@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.46 1998/04/12 21:25:04 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.47 1998/04/18 06:30:21 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1147,6 +1147,7 @@ void f_create_process(INT32 args)
 	for(fd=0;fd<3;fd++)
 	{
 	  struct pike_string *fdname;
+	  toclose[fd]=-1;
 	  switch(fd)
 	  {
 	    case 0: fdname=storage.stdin_s; break;
@@ -1160,7 +1161,12 @@ void f_create_process(INT32 args)
 	    {
 	      INT32 f=fd_from_object(tmp->u.object);
 	      if(f != -1 && fd!=f)
-		dup2(toclose[fd]=f, fd);
+	      {
+		if(dup2(toclose[fd]=f, fd) < 0)
+		{
+		  exit(67);
+		}
+	      }
 	    }
 	  }
 	}
@@ -1175,7 +1181,9 @@ void f_create_process(INT32 args)
 	      break;
 
 	  if(f2 == fd)
+	  {
 	    close(toclose[fd]);
+	  }
 	}
 
 	/* Left to do: cleanup? */
