@@ -78,6 +78,11 @@ string low_strip_other_files(string data, string s)
 	    on = (dir == current_dir[sizeof(current_dir) - sizeof(dir)..]) ||
 	      (dir == source_dir[sizeof(source_dir) - sizeof(dir)..]) ||
 	      (dir == target_dir[sizeof(target_dir) - sizeof(dir)..]);
+	    if (!on) {
+	      // Special case for bison.
+	      on = (search(lower_case(file), "bison") != -1) ||
+		(search(lower_case(file), "yacc") != -1);
+	    }
 	  }
 	}
 
