@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.37 2003/07/04 12:42:15 grubba Exp $
+|| $Id: auto.c.in,v 1.38 2003/07/04 19:33:49 grubba Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.37 2003/07/04 12:42:15 grubba Exp $");
+RCSID("$Id: auto.c.in,v 1.38 2003/07/04 19:33:49 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -438,10 +438,10 @@ static void post_init()
 
 static void my_glFrustum(INT32 args)
 {
-  float right,left,bottom,top,near,far;
+  float right,left,bottom,top,near,away;
 
   get_all_args("glFrustum", args, "%F%F%F%F%F%F",
-	       &right, &left, &bottom, &top, &near, &far);
+	       &right, &left, &bottom, &top, &near, &away);
   pop_n_elems(args);
 
   /* row 1 */
@@ -459,13 +459,13 @@ static void my_glFrustum(INT32 args)
   /* row 3 */
   push_float( (right+left)/(right-left) );
   push_float( (top+bottom)/(top-bottom) );
-  push_float( (far+near)/(far-near) );
+  push_float( (away+near)/(away-near) );
   push_int( -1 );
 
   /* row 4 */
   push_int( 0 );
   push_int( 0 );
-  push_int( 2*far*near/(far-near) );
+  push_int( 2*away*near/(away-near) );
   push_int( 0 );
 
   aggregate_array(16);
