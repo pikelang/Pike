@@ -1,9 +1,8 @@
 /*
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
  *
- * $Id: cache.pike,v 1.5 2001/01/01 22:49:25 kinkie Exp $
+ * $Id: cache.pike,v 1.6 2002/01/15 22:31:23 nilsson Exp $
  *
  * This module serves as a front-end to different kinds of caching system
  * It uses two helper objects to actually store data, and to determine

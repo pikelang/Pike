@@ -1,9 +1,8 @@
 /*
  * An access-time-based expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
  *
- * $Id: Timed.pike,v 1.4 2001/01/01 22:49:35 kinkie Exp $
+ * $Id: Timed.pike,v 1.5 2002/01/15 22:31:24 nilsson Exp $
  */
 
 #pike __REAL_VERSION__

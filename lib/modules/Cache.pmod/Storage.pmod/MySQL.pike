@@ -1,9 +1,8 @@
 /*
  * An SQL-based storage manager
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
  *
- * $Id: MySQL.pike,v 1.4 2001/01/20 15:34:08 kinkie Exp $
+ * $Id: MySQL.pike,v 1.5 2002/01/15 22:31:24 nilsson Exp $
  *
  * This storage manager provides the means to save data to an SQL-based 
  * backend.

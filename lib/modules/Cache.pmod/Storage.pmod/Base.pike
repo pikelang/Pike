@@ -1,9 +1,8 @@
 /*
  * Storage Manager prototype.
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
  *
- * $Id: Base.pike,v 1.5 2001/01/01 22:49:43 kinkie Exp $
+ * $Id: Base.pike,v 1.6 2002/01/15 22:31:24 nilsson Exp $
  *
  * All storage managers must provide these methods.
  */

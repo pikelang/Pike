@@ -1,7 +1,6 @@
 /*
  * Base storage-object for the cache system
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
  */
 
 #pike __REAL_VERSION__

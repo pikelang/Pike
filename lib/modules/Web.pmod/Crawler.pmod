@@ -33,8 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.11 2001/07/16 15:49:06 grubba Exp $
+// $Id: Crawler.pmod,v 1.12 2002/01/15 22:35:21 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG

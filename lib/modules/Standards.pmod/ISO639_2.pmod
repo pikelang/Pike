@@ -1,4 +1,3 @@
-// Copyright © 2000-2001, Roxen IS.
 // By Martin Nilsson
 
 // Updated 2001-06-17 from http://lcweb.loc.gov/standards/iso639-2/

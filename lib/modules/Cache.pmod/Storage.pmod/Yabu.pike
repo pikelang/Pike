@@ -1,9 +1,8 @@
 /*
  * A Yabu-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
  *
- * $Id: Yabu.pike,v 1.7 2001/01/01 22:49:44 kinkie Exp $
+ * $Id: Yabu.pike,v 1.8 2002/01/15 22:31:24 nilsson Exp $
  *
  * Settings will be added later.
  * 

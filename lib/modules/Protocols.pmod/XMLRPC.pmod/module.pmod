@@ -1,4 +1,4 @@
-// XML-RPC by Fredrik Noring. Copyright © 2001 Roxen Internet Software AB.
+// XML-RPC by Fredrik Noring.
 // The implementation is based on specifications from http://xml-rpc.org/.
 
 //! This module implements most features of the XML-RPC standard (see

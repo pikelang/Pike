@@ -1,8 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
- * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.15 2001/09/15 22:03:36 grubba Exp $
+ * $Id: postgres.pike,v 1.16 2002/01/15 22:34:12 nilsson Exp $
  *
  */
 

@@ -1,9 +1,8 @@
 /*
  * A RAM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
- * (C) 2000 Roxen IS
  *
- * $Id: Memory.pike,v 1.5 2001/01/01 22:49:43 kinkie Exp $
+ * $Id: Memory.pike,v 1.6 2002/01/15 22:31:24 nilsson Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
