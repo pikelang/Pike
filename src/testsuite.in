@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.467 2001/11/02 11:45:59 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.468 2001/11/02 15:48:47 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2629,7 +2629,8 @@ void test()
 
   Process.Process writer = Process.create_process (
     ({master()->_pike_file_name,
-      "-m" + master()->_master_file_name,
+      @(master()->_master_file_name ?
+	({"-m" + master()->_master_file_name}) : ({})),
       "-e",
       sprintf ("sleep (0.5); "
 	       "Stdio.File f = Stdio.File (%O, \"w\"); "
