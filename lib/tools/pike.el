@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.8 1999/11/27 19:48:01 mast Exp $
+;;; $Id: pike.el,v 1.9 1999/12/01 06:38:02 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -334,7 +334,8 @@ The name is assumed to begin with a capital letter.")
      (save-excursion
        (goto-char (match-beginning 1))
        (not (looking-at
-	     (concat pike-font-lock-class-name-regexp
+	     (concat "\\(\\sw+\\.\\)*"
+		     pike-font-lock-class-name-regexp
 		     "\\s *\\(\\<\\||\\)")))))
    (save-match-data
      (let ((start (match-end 0)))
