@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.12 2004/04/14 20:21:16 nilsson Exp $
+// $Id: protocol.pike,v 1.13 2004/05/25 12:06:11 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -180,7 +180,7 @@
   }
 
 
-  string|int do_op(object msgop) {
+  string|int do_op(object msgop, object|void controls) {
   // ---------------------------
   // Make LDAP PDU envelope for 'msgop', send it and read answer ...
 
@@ -193,7 +193,11 @@
     msgnum = next_id++;
     //THREAD_UNLOCK
     msgid = Standards.ASN1.Types.asn1_integer(msgnum);
-    msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+    if (controls) {
+      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop, controls}));
+    } else {
+      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+    }
 
     if (objectp(msgval)) {
       DWRITE(sprintf("protocol.do_op: msg = [%d]\n",sizeof(msgval->get_der())));
