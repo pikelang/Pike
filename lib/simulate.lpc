@@ -42,21 +42,19 @@ mixed *map_array(mixed *arr, mixed fun, mixed ... args)
 
   if(intp(fun))
     return arr(@args);
-
-  ret=allocate(sizeof(arr));
+  
   if(stringp(fun))
+    return column(arr, fun)(@args);
+
+  if(functionp(fun))
   {
-    for(e=0;e<sizeof(arr);e++)
-      ret[e]=arr[e][fun](@args);
-  }
-  else if(functionp(fun))
-  {
+    ret=allocate(sizeof(arr));
     for(e=0;e<sizeof(arr);e++)
       ret[e]=fun(arr[e],@args);
-  }else{
-    error("Bad argument 2 to map_array().\n");
+    return ret;
   }
-  return ret;
+
+  error("Bad argument 2 to map_array().\n");
 }
 
 mixed *filter_array(mixed *arr, mixed fun, mixed ... args)
@@ -64,29 +62,10 @@ mixed *filter_array(mixed *arr, mixed fun, mixed ... args)
   int e,d;
   mixed *ret;
 
-  ret=allocate(sizeof(arr));
-  if(stringp(fun))
-  {
-    for(e=0;e<sizeof(arr);e++)
-      if(arr[e][fun](@args))
-	ret[d++]=arr[e];
-  }
-  else if(functionp(fun))
-  {
-    for(e=0;e<sizeof(arr);e++)
-      if(fun(arr[e],@args))
-	ret[d++]=arr[e];
-  }
-  else if(intp(fun))
-  {
-    for(e=0;e<sizeof(arr);e++)
-      if(arr[e](@args))
-	ret[d++]=arr[e];
-  }
-  else
-  {
-    error("Bad argument 2 to filter_array().\n");
-  }
+  ret=map_array(arr,fun,@args);
+  for(e=0;e<sizeof(arr);e++)
+    if(ret[e])
+      ret[d++]=arr[e];
 
   return ret[0..d-1];
 }
@@ -126,13 +105,13 @@ varargs int exec(string file,string ... foo)
 {
   string path;
   if(search(file,"/"))
-    return exece(combine_path(getcwd(),file),foo);
+    return exece(combine_path(getcwd(),file),foo,getenv());
 
   path=getenv("PATH");
 
   foreach(path/":",path)
     if(file_stat(path=combine_path(path,file)))
-      return exece(path, foo);
+      return exece(path, foo,getenv());
 
   return 69;
 }
@@ -197,8 +176,8 @@ void system(string s)
   current_file=current_mode=0;
 
   p=file::pipe();
+  if(!p) error("System() failed.\n");
   p->set_close_on_exec(0);
-  if(!p) error("System failed.\n");
   if(pid=fork())
   {
     destruct(p);
@@ -229,15 +208,11 @@ varargs string code_value(mixed s,int a)
 
 mixed *sum_arrays(function foo, mixed * ... args)
 {
-  mixed *tmp,*ret;
+  mixed *ret;
   int e,d;
-  tmp=allocate(sizeof(args));
   ret=allocate(sizeof(args[0]));
   for(e=0;e<sizeof(args[0]);e++)
-  {
-    for(d=0;d<sizeof(args);d++) tmp[d]=args[d][e];
-    ret[e]=foo(@tmp);
-  }
+    ret[e]=foo(@ column(args, e));
   return ret;
 }
 
@@ -273,7 +248,7 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
   int len,start;
   int length;
   int foop, fooend, barp, barend;
-  
+
   if(!cmp || cmp==`>)
   {
     foo+=({});
@@ -281,10 +256,17 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
     return foo;
   }
 
+  if(cmp == `<)
+  {
+    foo+=({});
+    sort(foo);
+    reverse(foo);
+    return foo;
+  }
+
   length=sizeof(foo);
 
   foo+=({});
-//  perror(sprintf("DEBUG: %O\n",foo));
   bar=allocate(length);
 
   for(len=1;len<length;len*=2)
@@ -297,8 +279,6 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
       fooend=barp;
       barend=barp+len;
       if(barend > length) barend=length;
-      if(barend <= barp) 
-	error("OOPS");
       
       while(1)
       {
