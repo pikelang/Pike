@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.17 1996/12/06 04:26:56 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.18 1996/12/06 08:30:16 per Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -470,7 +470,6 @@ static void eval_instruction(unsigned char *pc)
     if(!mt_trylock(& interpreter_lock))
       fatal("Interpreter running unlocked!\n");
 #endif
-
     sp[0].type=99; /* an invalid type */
     sp[1].type=99;
     sp[2].type=99;

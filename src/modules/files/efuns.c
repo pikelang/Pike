@@ -65,18 +65,24 @@ struct array *encode_stat(struct stat *s)
 void f_file_stat(INT32 args)
 {
   struct stat st;
-  int i;
-
+  int i, l;
+  char *s;
+  
   if(args<1)
     error("Too few arguments to file_stat()\n");
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to file_stat()\n");
-  if(args>1 && !IS_ZERO(sp-1-args))
+
+  s = sp[-args].u.string->str;
+  l = (args>1 && !IS_ZERO(sp-1-args))?1:0;
+  THREADS_ALLOW();
+  if(l)
   {
-    i=lstat(sp[-args].u.string->str, &st);
+    i=lstat(s, &st);
   }else{
-    i=stat(sp[-args].u.string->str, &st);
+    i=stat(s, &st);
   }
+  THREADS_DISALLOW();
   pop_n_elems(args);
   if(i==-1)
   {
@@ -101,6 +107,7 @@ void f_rm(INT32 args)
 {
   struct stat st;
   INT32 i;
+  char *s;
 
   if(!args)
     error("Too few arguments to rm()\n");
@@ -108,17 +115,20 @@ void f_rm(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to rm().\n");
 
-  i=lstat(sp[-args].u.string->str, &st) != -1;
-
+  s = sp[-args].u.string->str;
+  
+  i=lstat(s, &st) != -1;
+  THREADS_ALLOW();
   if(i)
   {
     if(S_IFDIR == (S_IFMT & st.st_mode))
     {
-      i=rmdir(sp[-args].u.string->str) != -1;
+      i=rmdir(s) != -1;
     }else{
-      i=unlink(sp[-args].u.string->str) != -1;
+      i=unlink(s) != -1;
     }
   }
+  THREADS_DISALLOW();
       
   pop_n_elems(args);
   push_int(i);
@@ -142,7 +152,9 @@ void f_mkdir(INT32 args)
 
     i=sp[1-args].u.integer;
   }
-  i=mkdir(sp[-args].u.string->str, i) != -1;
+  THREADS_ALLOW();
+  i=mkdir(_tmp.sp[-args].u.string->str, i) != -1;
+  THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(i);
 }
@@ -217,7 +229,9 @@ void f_getcwd(INT32 args)
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 32768
 #endif
+  THREADS_ALLOW();
   e=(char *)getwd((char *)malloc(MAXPATHLEN+1));
+  THREADS_DISALLOW();
 #endif
   if(!e)
     error("Failed to fetch current path.\n");

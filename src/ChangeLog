@@ -1,3 +1,11 @@
+Fri Dec  6 08:51:30 1996  Per Hedbor  <cardeci@cluracan>
+
+	* modules/files/efuns.c: Threaded file_stat and rm. More efuns
+  	  should be threaded, especially get_dir.
+
+	* threads.c (th_init): Fixed types for thread_create (should
+	  return object, not int.)
+
 Thu Dec  5 13:34:40 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* callback.c, gc.c: fixed garbage collection calls

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.12 1996/11/19 10:04:29 neotron Exp $");
+RCSID("$Id: threads.c,v 1.13 1996/12/06 08:30:17 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -129,8 +129,10 @@ void th_init()
 #endif
   pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
 
-  add_efun("thread_create",f_thread_create,"function(mixed ...:int)",OPT_SIDE_EFFECT);
-  add_efun("this_thread",f_this_thread,"function(:object)",OPT_EXTERNAL_DEPEND);
+  add_efun("thread_create",f_thread_create,"function(mixed ...:object)",
+           OPT_SIDE_EFFECT);
+  add_efun("this_thread",f_this_thread,"function(:object)",
+           OPT_EXTERNAL_DEPEND);
 }
 
 
