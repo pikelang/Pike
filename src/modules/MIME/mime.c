@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: mime.c,v 1.1 1997/03/08 21:09:51 marcus Exp $");
+RCSID("$Id: mime.c,v 1.2 1997/03/12 11:57:05 marcus Exp $");
 #include "stralloc.h"
 #include "types.h"
 #include "macros.h"
@@ -92,15 +92,14 @@ static void f_decode_base64(INT32 args)
     initialize_buf(&buf);
 
     for(src = sp[-1].u.string->str, cnt = sp[-1].u.string->len; cnt--; src++)
-      if(*src>=' ' && base64rtab[*src-' ']>=0)
+      if(*src>=' ' && base64rtab[*src-' ']>=0) {
 	if((d=(d<<6)|base64rtab[*src-' '])>=0x1000000) {
 	  low_my_putchar( d>>16, &buf );
 	  low_my_putchar( d>>8, &buf );
 	  low_my_putchar( d, &buf );
 	  d=1;
 	}
-	else ;
-      else if(*src=='=') { pads++; d>>=2; }
+      } else if(*src=='=') { pads++; d>>=2; }
 
     switch(pads) {
     case 1:
@@ -188,7 +187,7 @@ static void f_decode_qp(INT32 args)
     initialize_buf(&buf);
 
     for(src = sp[-1].u.string->str, cnt = sp[-1].u.string->len; cnt--; src++)
-      if(*src == '=')
+      if(*src == '=') {
 	if(cnt>0 && (src[1]==10 || src[1]==13)) {
 	  if(src[1]==13) { --cnt; src++; }
 	  if(cnt>0 && src[1]==10) { --cnt; src++; }
@@ -197,8 +196,8 @@ static void f_decode_qp(INT32 args)
 	  low_my_putchar( (qprtab[src[1]-'0']<<4)|qprtab[src[2]-'0'], &buf );
 	  cnt -= 2;
 	  src += 2;
-	} else ;
-      else
+	}
+      } else
 	low_my_putchar( *src, &buf );
 
     pop_n_elems(1);
@@ -411,7 +410,7 @@ static void f_tokenize(INT32 args)
 	for(l=1; l<cnt; l++)
 	  if(rfc822ctype[src[l]] != CT_ATOM)
 	    break;
-	push_string(make_shared_binary_string(src, l));
+	push_string(make_shared_binary_string((char *)src, l));
 	n++;
 	src += l;
 	cnt -= l;
@@ -449,11 +448,10 @@ static void f_tokenize(INT32 args)
 	for(e=1, l=1; l<cnt; l++)
 	  if(src[l] == '(')
 	    e++;
-	  else if(src[l] == ')')
+	  else if(src[l] == ')') {
 	    if(!--e)
 	      break;
-	    else ;
-	  else if(src[l] == '\\') l++;
+	  } else if(src[l] == '\\') l++;
 	src += l+1;
 	cnt -= l+1;
 	break;
