@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.781 2004/02/27 15:04:16 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.782 2004/02/27 15:28:20 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6918,6 +6918,8 @@ $bundle_info])
 	    # Note
 	    #  * Configure for installation in $pike_bundle_prefix.
 	    #  * Make sure that only static libraries are built.
+	    #  * Make sure it uses a cache file, and that it doesn't
+	    #    conflict with ours.
 
 	    if test -f "$bundle_source_dir/configure"; then :; else
 	      echo "Bundle configure script $bundle_source_dir/configure not found."
@@ -6926,8 +6928,12 @@ $bundle_info])
 
 	    echo "Configuring bundle $bundle_source_dir in `pwd`..."
 
+	    # INSTALL seems to be thrashed here, since we're in a
+	    # subshell unsetting it shouldn't be a problem.
+	    unset INSTALL
+
 	    ${CONFIG_SHELL-/bin/sh} "$bundle_source_dir/configure" --prefix="$pike_bundle_prefix" \
-	      --disable-shared || exit 1
+	      --disable-shared --cache-file=config.cache || exit 1
 	    if test -f "Makefile"; then :; else
 	      echo "Makefile not found in `pwd`."
 	      exit 1
