@@ -2,36 +2,6 @@ string describe_backtrace(mixed *trace);
 
 string pike_library_path;
 
-/* This function is called when an error occurs that is not caught
- * with catch(). It's argument consists of:
- * ({ error_string, backtrace }) where backtrace is the output from the
- * backtrace() efun.
- */
-void handle_error(mixed *trace)
-{
-  predef::trace(0);
-  werror(describe_backtrace(trace));
-}
-
-/* Note that create is called before add_precompiled_program
- */
-void create()
-{
-  /* make ourselves known */
-  add_constant("master",lambda() { return this_object(); });
-  add_constant("describe_backtrace",describe_backtrace);
-  add_constant("version",lambda() { return "Pike v0.2"; });
-  add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
-  add_constant("strlen",sizeof);
-
-  add_constant("clone",lambda(program p,mixed ... a) 
-                   	{ return p(@a); } );
-  add_constant("new",lambda(program p,mixed ... a) 
-                   	{ return p(@a); } );
-
-  random_seed(time() + (getpid() * 0x11111111));
-}
-
 mapping (string:program) programs=([]);
 
 /* This function is called whenever a module has built a clonable program
@@ -67,6 +37,40 @@ program cast_to_program(string pname)
   else
     ret=compile_file(pname+".pike");
   return programs[pname]=ret;
+}
+
+/* This function is called when an error occurs that is not caught
+ * with catch(). It's argument consists of:
+ * ({ error_string, backtrace }) where backtrace is the output from the
+ * backtrace() efun.
+ */
+void handle_error(mixed *trace)
+{
+  predef::trace(0);
+  werror(describe_backtrace(trace));
+}
+
+
+
+object new(mixed prog, mixed ... args)
+{
+  return ((program)prog)(@args);
+}
+
+/* Note that create is called before add_precompiled_program
+ */
+void create()
+{
+  /* make ourselves known */
+  add_constant("master",lambda() { return this_object(); });
+  add_constant("describe_backtrace",describe_backtrace);
+  add_constant("version",lambda() { return "Pike v0.2"; });
+  add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
+  add_constant("strlen",sizeof);
+  add_constant("new",new);
+  add_constant("clone",new);
+
+  random_seed(time() + (getpid() * 0x11111111));
 }
 
 /*
