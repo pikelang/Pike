@@ -48,11 +48,6 @@ extern char *lfun_names[];
 struct svalue;
 #endif
 
-#ifndef STRUCT_MODULE_DECLARED
-#define STRUCT_MODULE_DECLARED
-struct module;
-#endif
-
 #ifndef STRUCT_OBJECT_DECLARED
 #define STRUCT_OBJECT_DECLARED
 struct object;
@@ -153,7 +148,6 @@ struct program
   unsigned INT16 *identifier_index;
   struct svalue *constants;
   char *linenumbers;
-  struct module *from_module;
   void (*init)(struct object *);
   void (*exit)(struct object *);
 #ifdef DEBUG
@@ -211,8 +205,20 @@ int define_variable(struct pike_string *name,
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags);
+int simple_add_constant(char *name, 
+			struct svalue *c,
+			INT32 flags);
 int add_integer_constant(char *name,
 			 INT32 i,
+			 INT32 flags);
+int add_float_constant(char *name,
+			 double f,
+			 INT32 flags);
+int add_string_constant(char *name,
+			char *str,
+			INT32 flags);
+int add_program_constant(char *name,
+			 struct program *p,
 			 INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
@@ -233,7 +239,6 @@ void compile();
 struct program *compile_file(struct pike_string *file_name);
 struct program *compile_string(struct pike_string *prog,
 			       struct pike_string *name);
-struct program *end_c_program(char *name);
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
 void check_all_programs();
 void cleanup_program();

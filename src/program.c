@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.18 1997/01/31 23:09:03 hubbe Exp $");
+RCSID("$Id: program.c,v 1.19 1997/02/07 01:34:19 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -92,9 +92,14 @@ dynamic_buffer used_modules;
 
 void use_module(struct svalue *s)
 {
-  assign_svalue_no_free((struct svalue *)
-			low_make_buf_space(sizeof(struct svalue),
-					   &used_modules), s);
+  if( (1<<s->type) & (BIT_MAPPING | BIT_OBJECT))
+  {
+    assign_svalue_no_free((struct svalue *)
+			  low_make_buf_space(sizeof(struct svalue),
+					     &used_modules), s);
+  }else{
+    yyerror("Module is neither mapping nor object");
+  }
 }
 
 
@@ -104,7 +109,7 @@ static int low_find_shared_string_identifier(struct pike_string *name,
 int find_module_identifier(struct pike_string *ident)
 {
   JMP_BUF tmp;
-  
+
   if(SETJMP(tmp))
   {
     ONERROR tmp;
@@ -125,11 +130,13 @@ int find_module_identifier(struct pike_string *ident)
       ident->refs++;
       f_index(2);
       
-      if(!IS_ZERO(sp-1) || sp[-1].subtype != 1)
+      if(!IS_UNDEFINED(sp-1))
       {
+/*	fprintf(stderr,"MOD: %s, %d %d\n",ident->str, current_line, sp[-1].type); */
 	UNSETJMP(tmp);
 	return 1;
       }
+      pop_stack();
     }
   }
   UNSETJMP(tmp);
@@ -1046,6 +1053,31 @@ int add_string_constant(char *name,
   return ret;
 }
 
+int add_program_constant(char *name,
+			 struct program *p,
+			 INT32 flags)
+{
+  INT32 ret;
+  struct svalue tmp;
+  tmp.type=T_PROGRAM;
+  tmp.subtype=0;
+  tmp.u.program=p;
+  ret=simple_add_constant(name, &tmp, flags);
+  return ret;
+}
+
+int end_class(char *name, INT32 flags)
+{
+  INT32 ret;
+  struct svalue tmp;
+  tmp.type=T_PROGRAM;
+  tmp.subtype=0;
+  tmp.u.program=end_program();
+  ret=simple_add_constant(name, &tmp, flags);
+  free_svalue(&tmp);
+  return ret;
+}
+
 /*
  * define a new function
  * if func isn't given, it is supposed to be a prototype.
@@ -1493,18 +1525,6 @@ struct program *compile_string(struct pike_string *prog,
 
   if(!p) error("Compilation failed.\n");
   return p;
-}
-
-struct program *end_c_program(char *name)
-{
-  struct program *q;
-  q=end_program();
-
-  push_string(make_shared_string(name));
-  push_program(q);
-  APPLY_MASTER("add_precompiled_program",2);
-  pop_stack();
-  return q;
 }
 
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
