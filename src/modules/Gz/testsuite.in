@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.9 1999/07/15 16:58:43 hubbe Exp $
+// $Id: testsuite.in,v 1.10 1999/09/11 08:16:30 hubbe Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -8,10 +8,11 @@ cond([[ master()->resolv("Gz")->deflate ]],
   test_true(Gz.inflate()->inflate)
 
 define(dotest,[[
-  test_true([[Gz.deflate(1)->deflate($1)]])
-  test_true([[string s=($1); Gz.inflate()->inflate(Gz.deflate(1)->deflate(s))==s]])
-  test_true([[string s=($1); Gz.inflate()->inflate(Gz.deflate(9)->deflate(s))==s]])
-  test_true([[string s=($1); object o=Gz.deflate(); Gz.inflate()->inflate(o->deflate(s,o->PARTIAL_FLUSH) + o->deflate(s,o->FINISH)) == (s)+(s)]])
+  test_do([[add_constant("____gz_tmp_constant",$1);]])
+  test_true([[Gz.deflate(1)->deflate(____gz_tmp_constant)]])
+  test_true([[Gz.inflate()->inflate(Gz.deflate(1)->deflate(____gz_tmp_constant))==____gz_tmp_constant]])
+  test_true([[Gz.inflate()->inflate(Gz.deflate(9)->deflate(____gz_tmp_constant))==____gz_tmp_constant]])
+  test_true([[object o=Gz.deflate(); Gz.inflate()->inflate(o->deflate(____gz_tmp_constant,o->PARTIAL_FLUSH) + o->deflate(____gz_tmp_constant,o->FINISH)) == (____gz_tmp_constant)+(____gz_tmp_constant)]])
 ]])
 
   dotest("")
