@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.46 2000/04/13 20:14:35 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.47 2000/05/20 02:20:00 per Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -50,7 +50,23 @@ struct fd_datum
 #endif
 };
 
-struct fd_datum fds[MAX_OPEN_FILEDESCRIPTORS];
+struct fd_datum *fds;
+int fds_size = 0;
+
+#define ASSURE_FDS_SIZE(X) do{while(fds_size-1 < X) grow_fds();}while(0)
+
+void grow_fds( )
+{
+  if( !fds_size )
+    fds_size = 16;
+  fds_size *= 2;
+  fds = realloc( fds, sizeof(struct fd_datum) * fds_size );
+  if( !fds )
+    fatal("Out of memory in backend::grow_fds()\n"
+          "Tried to allocate %d fd_datum structs\n", fds_size);
+  MEMSET( fds+(fds_size/2), 0, fds_size*sizeof(struct fd_datum)/2 );
+}
+
 
 #ifndef HAVE_AND_USE_POLL
 #undef HAVE_POLL
@@ -250,10 +266,14 @@ void cleanup_backend(void)
 void set_read_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (fds[fd].read.callback!=0);
+  int was_set;
+#endif
+  ASSURE_FDS_SIZE( fd );
+#ifdef HAVE_POLL
+  was_set = (fds[fd].read.callback!=0);
 #endif
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
   fds[fd].read.callback=cb;
@@ -297,10 +317,14 @@ void set_read_callback(int fd,file_callback cb,void *data)
 void set_write_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (fds[fd].write.callback!=0);
+  int was_set;
+#endif
+  ASSURE_FDS_SIZE( fd );
+#ifdef HAVE_POLL
+  was_set = (fds[fd].write.callback!=0);
 #endif
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
@@ -356,10 +380,14 @@ void set_write_callback(int fd,file_callback cb,void *data)
 void set_read_oob_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (fds[fd].read_oob.callback!=0);
+  int was_set;
+#endif
+  ASSURE_FDS_SIZE( fd );
+#ifdef HAVE_POLL
+  was_set = (fds[fd].read_oob.callback!=0);
 #endif
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
   fds[fd].read_oob.callback=cb;
@@ -399,10 +427,14 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
 void set_write_oob_callback(int fd,file_callback cb,void *data)
 {
 #ifdef HAVE_POLL
-  int was_set = (fds[fd].write_oob.callback!=0);
+  int was_set;
+#endif
+  ASSURE_FDS_SIZE( fd );
+#ifdef HAVE_POLL
+  was_set = (fds[fd].write_oob.callback!=0);
 #endif
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
@@ -451,20 +483,20 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
 file_callback query_read_callback(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].read.callback;
 }
 
 file_callback query_write_callback(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].write.callback;
 }
 
@@ -472,20 +504,21 @@ file_callback query_write_callback(int fd)
 file_callback query_read_oob_callback(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
-
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].read_oob.callback;
 }
 
 file_callback query_write_oob_callback(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].write_oob.callback;
 }
 #endif /* WITH_OOB */
@@ -493,20 +526,22 @@ file_callback query_write_oob_callback(int fd)
 void *query_read_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].read.data;
 }
 
 void *query_write_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].write.data;
 }
 
@@ -514,20 +549,22 @@ void *query_write_callback_data(int fd)
 void *query_read_oob_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].read_oob.data;
 }
 
 void *query_write_oob_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
-  if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd<0)
     fatal("File descriptor out of range.\n %d",fd);
 #endif
 
+  ASSURE_FDS_SIZE( fd );
   return fds[fd].write_oob.data;
 }
 #endif /* WITH_OOB */
@@ -890,7 +927,7 @@ void backend(void)
 	    case EBADF:
 	    {
 	      int i;
-	      for(i=0;i<MAX_OPEN_FILEDESCRIPTORS;i++)
+	      for(i=0;i<fds_size;i++)
 	      {
 		if(!my_FD_ISSET(i, &selectors.read) &&
 		   !my_FD_ISSET(i, &selectors.write)
