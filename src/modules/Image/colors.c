@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.59 2002/05/11 00:27:03 nilsson Exp $
+**!	$Id: colors.c,v 1.60 2002/06/05 07:33:03 jhs Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -187,7 +187,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.59 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.60 2002/06/05 07:33:03 jhs Exp $");
 
 #include "image_machine.h"
 
@@ -573,7 +573,11 @@ static void image_color_grey(INT32 args)
 
 /*
 **! method int bits( int rbits, int gbits, int bbits, int rshift, int gshift, int bshift )
-**!   Returns the color as an integer
+**!   Returns the color as an integer. The first three parameters state how
+**!   many bits to use for red, green and blue respectively. The last three
+**!   state how many bits each colour should be shifted. For instance,
+**!   <tt>Image.Color("#AABBCC")-&gt;bits(8, 8, 8, 16, 8, 0)</tt> returns
+**!   the integer 11189196, that is, 0xAABBCC.
 */
 static void image_color_bits( INT32 args )
 {
