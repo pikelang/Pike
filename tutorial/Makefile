@@ -89,7 +89,7 @@ the_image_module.html: Image.wmml the_image_module.wmml
 clean:
 	-rm -f *.html *.md illustration_cache illustration*.gif $(MADEFILES) 
 	-rm -f tutorial.dvi tutorial.tex tutorial.aux illustration*.eps
-	-rm -f tutorial.log
+	-rm -f tutorial.log tutorial.toc
 
 rebuild:
 	-rm -f $(MADEFILES)

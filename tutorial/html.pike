@@ -12,6 +12,8 @@ mapping(string:TAG) link_to_data=([]);
 string basename;
 object files;
 
+WMML global_data;
+
 multiset exported=(<>);
 
 void add_file_to_export_list(string f)
@@ -305,6 +307,68 @@ SGML index_to_wmml_onecol(INDEX data)
   return ({ Sgml.Tag("dl",([]),0,ret) });
 }
 
+string quote_string(string s)
+{
+  return replace(s, ({ "\\","\"" }),({"\\\\","\\\""}) );
+}
+
+string index_to_javascript(INDEX foo)
+{
+  string str="";
+  str+="function gnapp() { }\n";
+  str+="f=new gnapp();\n";
+  foreach(sort(indices(foo)), string i)
+    {
+      if(string page=link_to_href(foo[i][0]))
+      {
+	str+=sprintf("f[\"%s\"]=\"%s\";\n",quote_string(i),quote_string(page));
+      }
+    }
+
+  str+=#"
+
+function do_search()
+{
+  text=document.forms.search.search.value;
+  top.display.document.open(\"text/html\",\"replace\");
+  top.display.document.write('<body ');
+  top.display.document.write('bgcolor='+document.bgColor+' ');
+  top.display.document.write('text='+document.fgColor+' ');
+  top.display.document.write('link='+document.linkColor+' ');
+  top.display.document.write('alink='+document.alinkColor+' ');
+  top.display.document.write('vlink='+document.vlinkColor+' ');
+  top.display.document.write('>\\n');
+
+  top.display.document.write('<h2>Searching for '+text+'</h2>\\n');
+  matches=0;
+  
+  for(a in f) {
+    i=a.indexOf(text);
+    if(i != -1 && (i==0 || a.charAt(i-1)=='.') && (i+text.length == a.length || a.charAt(i+text.length) == '.')) {
+       found=f[a];
+       top.display.document.write(\"<a href=\\\"\"+f[a]+\"\\\">\"+a+\"</a><br>\\n\");
+       matches++;
+    }
+  }
+  if(matches == 0)
+    top.display.document.write('No matches found.');
+  else
+    top.display.document.write('Found '+matches+' matche(s).');
+
+  top.display.document.write('</body>\\n');
+  top.display.document.close();
+
+  if(matches == 1)  top.display.location=found;
+  return false;
+}
+
+document.write(\"<form method=PUT name=search onSubmit=\\\"return do_search()\\\">Index search: <input type=entry name=search><\form>\");
+
+";
+
+  return str;
+}
+
 SGML index_to_wmml(INDEX data)
 {
   SGML ret=index_to_wmml_low(data);
@@ -467,6 +531,20 @@ SGML data_description(mapping arg,int pos,array(object) data,
    return ({});
 }
 
+string link_to_href(string to)
+{
+  if(!link_to_page[to])
+  {
+    string s=(to/".")[-1];
+    if (link_to_page[s]) 
+      to=s;
+    else
+      return 0;
+  }
+  return mklinkname(link_to_page[to])+"#"+
+    replace(to,({"`",">","<","?"}),({"BQ-","GT","LT","QM"}));
+}
+
 /* Partially destructive! */
 SGML convert(SGML data)
 {
@@ -505,21 +583,14 @@ SGML convert(SGML data)
 	    data->tag="a";
 	    string to=data->params->to;
 	    m_delete(data->params,"to");
-	    if(!link_to_page[to])
+	    if(!(to=link_to_href(to)))
 	    {
-	       string s=(to/".")[-1];
-	       if (link_to_page[s]) 
-		  to=s;
-	       else
-	       {
-		  werror("Warning: Cannot find link "+to
-			 +" (near "+data->location()+")\n");
-		  data->tag="anchor";
-		  break;
-	       }
+	      werror("Warning: Cannot find link "+to
+		     +" (near "+data->location()+")\n");
+	      data->tag="anchor";
+	      break;
 	    }
-	    data->params->href=mklinkname(link_to_page[to])+"#"+
-	       replace(to,({"`",">","<","?"}),({"BQ-","GT","LT","QM"}));
+	    data->params->href=to;
 	    break;
 	 }
 	
@@ -620,9 +691,22 @@ SGML convert(SGML data)
 	       Sgml.Tag("h1",([]),data->pos,
 			({
 			   data->title || "Table of contents",
-			}))
-	    
-	    })+convert(tmp);
+			   
+			})),
+	       "\n"
+	    });
+
+	    if(data->params->target)
+	    {
+	      ret+=({
+	       Sgml.Tag("script",(["language":"javascript"]),0,
+			({
+			  index_to_javascript(global_data->index_data),
+			}) ),
+	       "\n",
+	      });
+	    }
+	    ret+=convert(tmp);
 	    continue;
 	 }
 
@@ -881,7 +965,7 @@ SGML low_split(SGML data)
 		       "\n",
 		       Sgml.Tag("frame",(["src":mklinkname("toc_frame"),"name":"toc"])),
 		       "\n",
-
+		       
 		       Sgml.Tag("frame",(["src":mklinkname("firstpage"),"name":"display"])),
 		       "\n",
 
@@ -963,6 +1047,7 @@ string prevify(string num)
 
 void output(string base, WMML data)
 {
+  global_data=data;
   files=Stdio.File(base+".files","wct");
 
   basename=base;
@@ -1079,14 +1164,21 @@ void output(string base, WMML data)
     }
 
 
-  werror("Converting TOC to WMML\n");
-  html_toc=toc_to_wmml(data->toc);
-
   werror("Converting index to WMML\n");
   INDEX index=Wmml.group_index(data->index_data);
   index=Wmml.group_index_by_character(index);
   html_index=index_to_wmml(index);
   index=0;
+
+  werror("Converting TOC to WMML\n");
+  html_toc=toc_to_wmml(data->toc);
+
+
+  if(sections->search_frame)
+  {
+    sections->search=({
+    });
+  }
 
   foreach(sort(indices(sections)),string file)
     {

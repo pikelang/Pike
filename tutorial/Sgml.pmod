@@ -213,7 +213,15 @@ string generate(SGML data, void|function mkt)
 	ret+=mkt(foo->tag,foo->params);
 	if(foo->data)
 	{
-	  ret+=generate(foo->data,mkt);
+	  if(foo->tag=="script")
+	  {
+	    // Magic for javascript!
+	    ret+="\n<!--\n"+
+	      foo->data*""+
+	      "// -->\n";
+	  }else{
+	    ret+=generate(foo->data,mkt);
+	  }
 	  ret+=mkt("/"+foo->tag,([]));
 	}
       }
