@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.55 1999/04/09 14:16:08 per Exp $ */
+/* $Id: colortable.c,v 1.56 1999/04/09 14:16:46 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.55 1999/04/09 14:16:08 per Exp $
+**!	$Id: colortable.c,v 1.56 1999/04/09 14:16:46 per Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.55 1999/04/09 14:16:08 per Exp $");
+RCSID("$Id: colortable.c,v 1.56 1999/04/09 14:16:46 per Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -185,7 +185,7 @@ static void exit_colortable_struct(struct object *obj)
 
 /***************** internal stuff ******************************/
 
-#if 1
+#if 0
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X);
 
