@@ -180,9 +180,12 @@ cond_resolv( Nettle.Proxy, [[
 cond_resolv( Nettle.CBC, [[
 test_tests(
   array(int) a() {
-    string r = Process.Process( RUNPIKE_ARRAY + ({ "SRCDIR/rijndaeltest.pike",
-	                        "--quick" }) )->read();
-    return (array(int))(r/" ");
+    Stdio.FILE f = Stdio.FILE();
+    Stdio.File p = f->pipe();
+    Process.Process( RUNPIKE_ARRAY + ({ "SRCDIR/rijndaeltest.pike",
+	             "--quick" }), ([ "stdout":p]) );
+    p->close();
+    return (array(int))(f->read()/" ");
   }
 )
 ]])
@@ -190,9 +193,12 @@ test_tests(
 cond_resolv( Nettle.SHA1_State, [[
 test_tests(
   array(int) a() {
-    string r = Process.Process( RUNPIKE_ARRAY +
-	                        ({ "SRCDIR/sha1test.pike" }) )->read();
-    return (array(int))(r/" ");
+    Stdio.FILE f = Stdio.FILE();
+    Stdio.File p = f->pipe();
+    Process.Process( RUNPIKE_ARRAY + ({ "SRCDIR/sha1test.pike" }),
+                     ([ "stdout":p ]) );
+    p->close();
+    return (array(int))(f->read()/" ");
   }
 )
 ]])
