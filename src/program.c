@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.412 2002/04/12 22:53:00 mast Exp $");
+RCSID("$Id: program.c,v 1.413 2002/04/12 23:18:47 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1507,10 +1507,10 @@ void low_start_new_program(struct program *p,
   if(idp) *idp=id;
 
   CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() %s "
-	     "pass=%d: threads_disabled:%d, compilation_depth:%d %d\n",
+	     "pass=%d: threads_disabled:%d, compilation_depth:%d\n",
 	     (long)th_self(), p, name ? name->str : "-",
 	     Pike_compiler->compiler_pass,
-	     threads_disabled, compilation_depth, id));
+	     threads_disabled, compilation_depth));
 
   init_type_stack();
 
