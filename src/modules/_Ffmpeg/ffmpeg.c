@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: ffmpeg.c,v 1.5 2002/08/06 17:07:57 kiwi Exp $
+ * $Id: ffmpeg.c,v 1.6 2002/09/09 16:13:21 hop Exp $
  *
  */
 
@@ -69,6 +69,11 @@ int encoder_flg(AVCodec *codec) {
     flg = 0;
   return(flg);
 }
+
+/*!
+ *! @module _Ffmpeg
+ */
+
 /*! @class ffmpeg
  *!
  *! Implements support of all codecs from a nice project Ffmpeg.
@@ -400,6 +405,9 @@ static void f_list_codecs(INT32 args) {
 /*! @endclass
  */
 
+/*! @endmodule
+ */
+
 static void init_ffmpeg_data(struct object *obj) {
 
 
@@ -508,6 +516,9 @@ void pike_module_init() {
 #endif
 #ifdef CODEC_ID_ADPCM_IMA_QT
   add_integer_constant("CODEC_ID_ADPCM_IMA_QT", CODEC_ID_ADPCM_IMA_QT, 0);
+#endif
+#ifdef CODEC_ID_VORBIS
+  add_integer_constant("CODEC_ID_VORBIS", CODEC_ID_VORBIS, 0);
 #endif
 
 
