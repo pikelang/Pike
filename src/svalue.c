@@ -954,7 +954,16 @@ INT32 pike_sizeof(struct svalue *s)
   case T_OBJECT:
     if(!s->u.object->prog)
       error("sizeof() on destructed object.\n");
-    return s->u.object->prog->num_identifier_indexes;
+    if(s->u.object->prog->lfuns[LFUN__SIZEOF] == -1)
+    {
+      return s->u.object->prog->num_identifier_indexes;
+    }else{
+      apply_lfun(s->u.object, LFUN__SIZEOF, 0);
+      if(sp[-1].type != T_INT)
+	error("Bad return type from o->_sizeof() (not int)\n");
+      sp--;
+      return sp->u.integer;
+    }
   default:
     error("Bad argument 1 to sizeof().\n");
     return 0; /* make apcc happy */
