@@ -1,6 +1,6 @@
 // -*- c-mode -*-
 //
-// $Id: treeopt.in,v 1.8 1999/11/09 17:36:52 grubba Exp $
+// $Id: treeopt.in,v 1.9 1999/11/09 19:43:04 grubba Exp $
 //
 // The tree optimizer
 //
@@ -87,22 +87,22 @@ F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
   F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
 // Is really the OPT_CASE needded for the following three?
-F_COMMA_EXPR(0 = F_RETURN, *[!($$->tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_CONTINUE, *[!($$->tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONTINUE), *[!($$->tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
+F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 
@@ -113,22 +113,22 @@ F_ARG_LIST(0, -):
   $0;
 
 // Is really the OPT_CASE needded for the following three?
-F_ARG_LIST(0 = F_RETURN, *[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_CONTINUE, *[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), *[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 
@@ -139,22 +139,22 @@ F_LVALUE_LIST(0, -):
   $0;
 
 // Is really the OPT_CASE needded for the following three?
-F_LVALUE_LIST(0 = F_RETURN, *[!($$->tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_CONTINUE, *[!($$->tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_CONTINUE, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_BREAK, +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_RETURN), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), *[!($$->tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
 
@@ -170,22 +170,22 @@ F_LOR(F_NOT(0, *), F_NOT(1, *)):
 F_LOR(0, F_LOR(1, 2)):
   F_LOR(F_LOR(0, 1), 2);
 
-F_LOR(0 = F_ASSIGN(*, *[node_is_false($$)]), 2):
+F_LOR(0 = F_ASSIGN(*, +[node_is_false($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
 F_LOR(F_COMMA_EXPR(0, 1), 2):
   F_COMMA_EXPR(0, F_LOR(1, 2));
 
-F_LOR(0 = F_ASSIGN(*, *[node_is_true($$)]), *):
+F_LOR(0 = F_ASSIGN(*, +[node_is_true($$)]), *):
   $0;
 
 F_LOR(0, F_CONSTANT[node_is_false($$)]):
   $0;
 
-F_LOR(*[node_is_false($$)], 0):
+F_LOR(+[node_is_false($$)], 0):
   $0;
 
-F_LOR(0 = *[node_is_true($$)], *):
+F_LOR(0 = +[node_is_true($$)], *):
   $0;
 
 
@@ -201,22 +201,22 @@ F_LAND(F_NOT(0, *), F_NOT(1, *)):
 F_LAND(0, F_LAND(1, 2)):
   F_LAND(F_LAND(0, 1), 2);
 
-F_LAND(0 = F_ASSIGN(*, *[node_is_true($$)]), 2):
+F_LAND(0 = F_ASSIGN(*, +[node_is_true($$)]), 2):
   F_COMMA_EXPR($0, $2);
 
-F_LAND(0 = F_ASSIGN(*, *[node_is_false($$)]), *):
+F_LAND(0 = F_ASSIGN(*, +[node_is_false($$)]), *):
   $0;
 
 F_LAND(F_COMMA_EXPR(0, 1), 2):
   F_COMMA_EXPR(0, F_LAND(1, 2));
 
-F_LAND(*[node_is_true($$)], 0):
+F_LAND(+[node_is_true($$)], 0):
   $0;
 
-F_LAND(0 = *[node_is_false($$)], *):
+F_LAND(0 = +[node_is_false($$)], *):
   $0;
 
-// F_LAND(0, 1 = *[node_is_false($$)]):
+// F_LAND(0, 1 = +[node_is_false($$)]):
 //   F_COMMA_EXPR($0, $1);
 
 
@@ -232,10 +232,10 @@ F_LAND(0 = *[node_is_false($$)], *):
 '?'(F_NOT(0, *), ':'(1, 2)):
   '?'($0, ':'($2, $1));
 
-'?'(*[node_is_true($$)], ':'(0, *)):
+'?'(+[node_is_true($$)], ':'(0, *)):
   $0;
 
-'?'(*[node_is_false($$)], ':'(*, 0)):
+'?'(+[node_is_false($$)], ':'(*, 0)):
   $0;
 
 
@@ -331,7 +331,7 @@ F_FOR(-, *):
 F_FOR(0, ':'(-, -)):
   F_FOR($0, -);
 
-F_FOR(0 = *[node_is_true($$)], -):
+F_FOR(0 = +[node_is_true($$)], -):
 {
   /* Infinite loop */
   $$ = mknode(F_FOR, $0, mknode(':',
@@ -340,7 +340,7 @@ F_FOR(0 = *[node_is_true($$)], -):
 }
 ;
 
-F_FOR(*[node_is_false($$)], *):
+F_FOR(+[node_is_false($$)], *):
   -;
 
 
