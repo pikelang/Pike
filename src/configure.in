@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.792 2004/02/29 20:18:34 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.793 2004/02/29 20:24:48 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1197,8 +1197,9 @@ if test "$with_bundles" = "no"; then :; else
     # We have a bundle directory; enable them if needed.
     pike_bundle_dir=`cd "$srcdir/../bundles" && pwd`
   fi
+  test -d bundles/. || mkdir bundles;
 fi
-if test -d bundles || mkdir bundles; then
+if test -d bundles/.; then
   touch bundles/no_testsuites
   pike_bundle_prefix="`pwd`/bundles"
   LDFLAGS="$LDFLAGS -L$pike_bundle_prefix/lib"
