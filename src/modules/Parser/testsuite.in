@@ -595,6 +595,27 @@ test_parser([[{
     p->finish ("gnu");
     return p->read();
   }]], "foo" WIDENER "bargnu");
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 31 + WIDENER)->read();
+  ]], ({"x"}) * 31 + ({WIDENER}));
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 32 + WIDENER)->read();
+  ]], ({"x"}) * 32 + ({WIDENER}));
+test_parser(
+  [[
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
+    return p->finish("<c>x</c>" * 33 + WIDENER)->read();
+  ]], ({"x"}) * 33 + ({WIDENER}));
 
 // Matching tags and quotes
 test_parser([[
@@ -1271,48 +1292,3 @@ test_any(
     p2->add_quote_tag ("?", lambda () {return ({"p2"});}, "?");
     return p1->finish("<??>")->read();
   ]], "p1")
-
-test_any_equal(
-[[
-  // Bug 3624.
-  object p = Parser.HTML();
-  p->mixed_mode(1);
-  p->add_container("land",
-		   lambda (object p, mapping args, string content)
-		   {
-		     return ({ p->tag_content() });
-		   });
-  return p->feed("  <land>1</land>\n"
-		 "  <land>2</land>\n"
-		 "  <land>3</land>\n"
-		 "  <land>4</land>\n"
-		 "  <land>5</land>\n"
-		 "  <land>6</land>\n"
-		 "  <land>7</land>\n"
-		 "  <land>8</land>\n"
-		 "  <land>9</land>\n"
-		 "  <land>10</land>\n"
-		 "  <land>11</land>\n"
-		 "  <land>12</land>\n"
-		 "  <land>13</land>\n"
-		 "  <land>14</land>\n"
-		 "  <land>15</land>\n"
-		 "  <land>16</land>")->read();
-]], [[ ({
-  "  ", "1",
-  "\n  ", "2",
-  "\n  ", "3",
-  "\n  ", "4",
-  "\n  ", "5",
-  "\n  ", "6",
-  "\n  ", "7",
-  "\n  ", "8",
-  "\n  ", "9",
-  "\n  ", "10",
-  "\n  ", "11",
-  "\n  ", "12",
-  "\n  ", "13",
-  "\n  ", "14",
-  "\n  ", "15",
-  "\n  ", "16"
-}) ]])
