@@ -1559,7 +1559,7 @@ struct array *explode_array(struct array *a, struct array *b)
   a->refs++;
   if(b->size)
   {
-    for(e=0;e<a->size - b->size;e++)
+    for(e=0;e<=a->size - b->size;e++)
     {
       for(d=0;d<b->size;d++)
       {
