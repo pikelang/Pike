@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.77 2005/03/11 13:22:10 mast Exp $
+// $Id: client.pike,v 1.78 2005/03/11 15:33:38 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -113,7 +113,7 @@ import SSL.Constants;
     object last_rv = 0; // last returned value
   }
 
-constant supported_extensions = (<"bindname">);
+static constant supported_extensions = (<"bindname">);
 
 static function(string:string) get_attr_decoder (string attr,
 						 DO_IF_DEBUG (void|int nowarn))
@@ -168,41 +168,63 @@ static function(string:string) get_attr_encoder (string attr)
     private string resultstring;
     private int actnum = 0;
     private array(mapping(string:array(string))) entry = ({});
+    private int flags;
     array(string) referrals;
 
     static array decode_entries (array(string) rawres)
     {
       array(mapping(string:array(string))) res = ({});
 
-      foreach (rawres, string rawent) {
-	object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1];
+#define DECODE_ENTRIES(SET_ATTR) do {					\
+	foreach (rawres, string rawent) {				\
+	  object derent = .ldap_privates.ldap_der_decode (rawent)->elements[1]; \
+	  if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) { \
+	    mapping(string:array) attrs = (["dn": ({ASN1_DECODE_DN (derent)})]); \
+	    foreach (derattribs, object derattr)			\
+	      {SET_ATTR;}						\
+	    res += ({attrs});						\
+	  }								\
+	}								\
+      } while (0)
 
-	if (array(object) derattribs = ASN1_GET_ATTR_ARRAY (derent)) {
-	  mapping(string:array) attrs = (["dn": ({ASN1_DECODE_DN (derent)})]);
-
-	  if (ldap_version < 3) {
-	    // Use the values raw.
-	    foreach (derattribs, object derattr)
-	      attrs[ASN1_GET_ATTR_NAME (derattr)] = ASN1_GET_ATTR_VALUES (derattr);
-	  }
-
-	  else {
-	    // Decode values as appropriate according to the schema.
-	    // Note that attributes with the ";binary" option won't be
-	    // matched by get_attr_type_descr and are therefore left
-	    // untouched.
-	    foreach (derattribs, object derattr) {
-	      string attr = ASN1_GET_ATTR_NAME (derattr);
-	      if (function(string:string) decoder = get_attr_decoder (attr))
-		attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
-	      else
-		attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
-	    }
-	  }
-
-	  res += ({attrs});
-	}
+      if (ldap_version < 3) {
+	// Use the values raw.
+	if (flags & Protocols.LDAP.SEARCH_LOWER_ATTRS)
+	  DECODE_ENTRIES ({
+	    attrs[lower_case (ASN1_GET_ATTR_NAME (derattr))] =
+	      ASN1_GET_ATTR_VALUES (derattr);
+	  });
+	else
+	  DECODE_ENTRIES ({
+	    attrs[ASN1_GET_ATTR_NAME (derattr)] =
+	      ASN1_GET_ATTR_VALUES (derattr);
+	  });
       }
+
+      else {
+	// LDAPv3: Decode values as appropriate according to the
+	// schema. Note that attributes with the ";binary" option
+	// won't be matched by get_attr_type_descr and are therefore
+	// left untouched.
+	if (flags & Protocols.LDAP.SEARCH_LOWER_ATTRS)
+	  DECODE_ENTRIES ({
+	    string attr = lower_case (ASN1_GET_ATTR_NAME (derattr));
+	    if (function(string:string) decoder = get_attr_decoder (attr))
+	      attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
+	    else
+	      attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
+	  });
+	else
+	  DECODE_ENTRIES ({
+	    string attr = ASN1_GET_ATTR_NAME (derattr);
+	    if (function(string:string) decoder = get_attr_decoder (attr))
+	      attrs[attr] = map (ASN1_GET_ATTR_VALUES (derattr), decoder);
+	    else
+	      attrs[attr] = ASN1_GET_ATTR_VALUES (derattr);
+	  });
+      }
+
+#undef DECODE_ENTRIES
 
       return res;
     }
@@ -210,9 +232,11 @@ static function(string:string) get_attr_encoder (string attr)
     //!
     //! You can't create instances of this object yourself.
     //! The only way to create it is via a search of a LDAP server.
-    object|int create(array rawres, int|void stuff) {
+    object|int create(array rawres, void|int stuff, void|int flags) {
     // rawres: array of result in raw format, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
+
+      this_program::flags = flags;
 
       // Note: Might do additional schema queries to the server while
       // decoding the result. That means possible interleaving problem
@@ -456,7 +480,7 @@ static function(string:string) get_attr_encoder (string attr)
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.77 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.78 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1311,6 +1335,11 @@ multiset(string) get_supported_controls()
   //!     @endarray
   //!   @endmapping
   //!
+  //! @param flags
+  //!   Bitfield with flags to control various behavior at the client
+  //!   side of the search operation. See the
+  //!   @expr{Protocol.LDAP.SEARCH_*@} constants for details.
+  //!
   //! @returns
   //!   Returns object @[LDAP.client.result] on success, @expr{0@}
   //!	otherwise.
@@ -1324,7 +1353,8 @@ multiset(string) get_supported_controls()
   //!  @[Protocols.LDAP.quote_filter_value]
   object|int search (string|void filter, array(string)|void attrs,
 		     int|void attrsonly,
-		     void|mapping(string:array(int|string)) controls) {
+		     void|mapping(string:array(int|string)) controls,
+		     void|int flags) {
 
     int id,nv;
     mixed raw;
@@ -1469,7 +1499,7 @@ multiset(string) get_supported_controls()
 	},);
     } while (cookie);
 
-    PROFILE("result", last_rv = result(rawarr));
+    PROFILE("result", last_rv = result (rawarr, 0, flags));
     if(objectp(last_rv))
       seterr (last_rv->error_number());
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
@@ -1481,6 +1511,9 @@ multiset(string) get_supported_controls()
 
   } // search
 
+
+//! Return the LDAP protocol version in use.
+int get_protocol_version() {return ldap_version;}
 
   //! @param base_dn
   //!   base DN for search

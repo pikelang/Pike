@@ -1,6 +1,17 @@
-// $Id: module.pmod,v 1.4 2005/03/11 13:19:49 mast Exp $
+// $Id: module.pmod,v 1.5 2005/03/11 15:33:38 mast Exp $
 
 #include "ldap_globals.h"
+
+constant SEARCH_LOWER_ATTRS = 1;
+//! Bitfield flags given to @[Protocols.LDAP.client.search]:
+//!
+//! @dl
+//! @item SEARCH_LOWER_ATTRS
+//!   Lowercase all attribute values. This makes it easier to match
+//!   specific attributes in the mappings returned by
+//!   @[Protocols.LDAP.client.result.fetch] since they are case
+//!   insensitive.
+//! @enddl
 
 constant MODIFY_ADD = 0;
 constant MODIFY_DELETE = 1;
