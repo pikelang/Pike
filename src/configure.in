@@ -527,14 +527,13 @@ case "$LIBOBJS" in
       int main() { ualarm(0,0); }
       ],pike_cv_ualarm_takes_two_args=yes,pike_cv_ualarm_takes_two_args=no)
 
-      if test "$pike_cv_ualarm_takes_two_args" = yes; then
-         AC_MSG_RESULT(2)
-         AC_DEFINE(UALARM_TAKES_TWO_ARGS)
-      else
-         AC_MSG_RESULT(1)
-      fi
-      
     ])
+    if test "$pike_cv_ualarm_takes_two_args" = yes; then
+       AC_MSG_RESULT(2)
+       AC_DEFINE(UALARM_TAKES_TWO_ARGS)
+    else
+       AC_MSG_RESULT(1)
+    fi
   ;;
 esac
 
