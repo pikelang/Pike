@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.90 2000/09/17 17:05:28 grubba Exp $
+ * $Id: system.c,v 1.91 2000/09/17 19:13:54 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.90 2000/09/17 17:05:28 grubba Exp $");
+RCSID("$Id: system.c,v 1.91 2000/09/17 19:13:54 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -761,6 +761,7 @@ void f_setpgrp(INT32 args)
 #else /* !HAVE_SETPGRP_BSD */
   pid = setpgrp();
 #endif /* HAVE_SETPGRP_BSD */
+#endif /* HAVE_SETPGID */
   if (pid < 0)
     report_error("setpgrp");
 
