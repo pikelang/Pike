@@ -17,7 +17,7 @@
 
 #include "modules/modlist_headers.h"
 
-RCSID("$Id: module.c,v 1.8 1998/03/28 15:10:50 grubba Exp $");
+RCSID("$Id: module.c,v 1.9 1998/04/24 00:30:44 hubbe Exp $");
 
 typedef void (*modfun)(void);
 
@@ -36,26 +36,21 @@ static struct static_module module_list[] = {
 
 void init_modules(void)
 {
+  struct program *p;
   unsigned int e;
-  struct mapping *m = allocate_mapping(10);
-  push_text("_static_modules");
-  ref_push_mapping(m);
-  f_add_constant(2);
+
+  start_new_program();
 
   for(e=0;e<NELEM(module_list);e++)
   {
-    struct program *p;
-    struct pike_string *s;
     start_new_program();
     module_list[e].init();
-    p=end_program();
-
-    push_text(module_list[e].name); 
-    push_program(p);
-    mapping_insert(m, sp-2, sp-1);
-    pop_n_elems(2);
+    end_class(module_list[e].name,0);
   }
-  free_mapping(m);
+  push_text("_static_modules");
+  push_object(low_clone(p=end_program()));
+  f_add_constant(2);
+  free_program(p);
 }
 
 void exit_modules(void)
