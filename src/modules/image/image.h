@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.11 1996/11/30 13:14:37 law Exp $ */
+/* $Id: image.h,v 1.12 1996/12/01 00:01:14 law Exp $ */
 
 #define MAX_NUMCOL 32768
 #define QUANT_MAP_BITS 4
@@ -25,6 +25,11 @@ typedef struct
 {
    signed long r,g,b;
 } rgbl_group;
+
+typedef struct
+{
+   float r,g,b;
+} rgbd_group; /* use float, it gets so big otherwise... */
 
 struct image
 {
@@ -128,3 +133,7 @@ void image_frompnm(INT32 args);
 void image_noise(INT32 args);
 void image_turbulence(INT32 args);
 void image_noise_init(void);
+
+/* dct.c */
+
+void image_dct(INT32 args);

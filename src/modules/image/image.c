@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.28 1996/11/30 13:14:35 law Exp $ */
+/* $Id: image.c,v 1.29 1996/12/01 00:01:13 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.28 1996/11/30 13:14:35 law Exp $");
+RCSID("$Id: image.c,v 1.29 1996/12/01 00:01:13 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -121,7 +121,7 @@ static INLINE void img_line(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    {
       if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
       if (x1<0||x1>=THIS->xsize||
-	  y2<0||y2>=THIS->ysize) return;
+	  y2<0||y1>=THIS->ysize) return;
       if (y1<0) y1=0;
       if (y2>=THIS->ysize) y2=THIS->ysize-1;
       for (;y1<=y2;y1++) setpixel_test(x1,y1);
@@ -1629,6 +1629,9 @@ void init_image_programs()
                 "function(array(float|int|array(int)),float|void,float|void,float|void,float|void:object)",0);
    add_function("turbulence",image_turbulence,
                 "function(array(float|int|array(int)),int|void,float|void,float|void,float|void,float|void:object)",0);
+
+   add_function("dct",image_dct,
+		"function(:object)",0);
 		
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);

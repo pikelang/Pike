@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.5 1996/11/30 13:14:39 law Exp $ */
+/* $Id: matrix.c,v 1.6 1996/12/01 00:01:15 law Exp $ */
 
 #include "global.h"
 
@@ -115,11 +115,6 @@ static INLINE int getrgbl(rgbl_group *rgb,INT32 args_start,INT32 args,char *name
     (dest)->b+=(src)->b*(factor)) 
 #define scale_add_pixel(dest,dx,src,sx,factor) \
    _scale_add_rgb(dest,src,factor)
-
-typedef struct
-{
-   double r,g,b;
-} rgbd_group;
 
 static INLINE void scale_add_line(rgbd_group *new,INT32 yn,INT32 newx,
 				  rgb_group *img,INT32 y,INT32 xsize,
