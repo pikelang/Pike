@@ -3,15 +3,13 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.52 2002/08/15 14:49:21 marcus Exp $");
+RCSID("$Id: fdlib.c,v 1.53 2002/08/17 18:28:04 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
-#ifdef _REENTRANT
 #include "threads.h"
 
 static MUTEX_T fd_mutex;
-#endif
 
 HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
 int fd_type[MAX_OPEN_FILEDESCRIPTORS];
