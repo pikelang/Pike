@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.251 2001/10/12 12:03:50 tomas Exp $
+# $Id: Makefile.in,v 1.252 2002/04/07 13:02:10 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -189,6 +189,15 @@ post_modules: pike
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
 
+post_modules/modlist_headers.h:
+	@test -f post_modules/modlist_headers.h || touch post_modules/modlist_headers.h
+
+post_modules/modlist.h:
+	@test -f post_modules/modlist.h || touch post_modules/modlist.h
+
+post_modules/linker_options:
+	@test -f post_modules/linker_options || touch post_modules/linker_options
+
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
 	@echo
@@ -229,12 +238,12 @@ $(TMP_BUILDDIR)/tpike: precompile.sh-stamp
 # the recursive make of tpike-real above, that one will never start to
 # make the $(OBJ)s concurrently with this one. stamp-tpike-predep
 # records the $(POBJ) dependencies without tpike.
-pike: $(OBJ) master.pike modules/linker_options stamp-tpike-predep
+pike: $(OBJ) master.pike modules/linker_options stamp-tpike-predep post_modules/linker_options
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options 2>/dev/null` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options` $(LIBS) -o pike
 	-@if [ -f "post_module.o" -a "$(MODULEOBJ)" = "module.o" ]; then \
 	  touch $(SRCDIR)/post_module.c; \
 	else :; fi
