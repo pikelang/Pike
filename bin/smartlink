@@ -152,6 +152,8 @@ fi
 #  ;;
 #esac
 
+#echo $LINKER $LDOPTS
+
 # exec $LINKER $LDOPTS
 # Used to be exec, but Digital-Unix's stupid sh has buggy variable-expansion.
 # /grubba
