@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.170 2001/10/05 01:30:11 hubbe Exp $
+ * $Id: master.pike.in,v 1.171 2001/10/14 19:25:41 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -2322,7 +2322,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 
 	      string exact_pos = tmp[0] + ":" + tmp[1];
 	      int dup_frame;
-	      if (!zero_type (dup_frame = prev_pos[exact_pos])) {
+	      if (tmp[1] && !zero_type (dup_frame = prev_pos[exact_pos])) {
 		dup_frame -= sizeof (frames);
 		if (!loop_start) {
 		  loop_start = dup_frame;
