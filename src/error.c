@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.98 2003/07/16 11:48:35 mast Exp $
+|| $Id: error.c,v 1.99 2003/07/21 23:35:27 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.98 2003/07/16 11:48:35 mast Exp $");
+RCSID("$Id: error.c,v 1.99 2003/07/21 23:35:27 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -638,9 +638,11 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
   }
   in_error=buf;
 
+#if 0
   if (!master_program) {
     fprintf(stderr, "ERROR: %s\n", buf);
   }
+#endif
 
   ERROR_STRUCT(generic,o)->desc=make_shared_string(buf);
   f_backtrace(0);
