@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.15 2002/10/01 21:26:10 nilsson Exp $");
+RCSID("$Id: termios.c,v 1.16 2002/10/03 14:15:18 jhs Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -36,7 +36,7 @@ RCSID("$Id: termios.c,v 1.15 2002/10/01 21:26:10 nilsson Exp $");
 /*! @class Fd
  */
 
-/* @decl mapping tcgetattr()
+/*! @decl mapping tcgetattr()
  *! @decl int tcsetattr(mapping attr)
  *! @decl int tcsetattr(mapping attr, string when)
  *!
