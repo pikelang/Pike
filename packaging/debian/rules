@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.33 2002/10/23 00:18:37 grendel Exp $
+# $Id: rules,v 1.34 2002/11/25 18:15:21 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -22,6 +22,21 @@ CC=gcc
 endif
 
 EXTRA_ARGS=--with-security
+
+DO_MACHINE_CODE=no
+ifeq ($(DEB_BUILD_ARCH),i386)
+DO_MACHINE_CODE=yes
+endif
+ifeq ($(DEB_BUILD_ARCH),powerpc)
+DO_MACHINE_CODE=yes
+endif
+ifeq ($(DEB_BUILD_ARCH),sparc)
+DO_MACHINE_CODE=yes
+endif
+
+ifeq ($(DO_MACHINE_CODE),yes)
+MACHINE_OPTS=--with-machine-code
+endif
 
 VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
@@ -45,7 +60,7 @@ CFARGS=--without-rtldebug \
        --with-libpq-dir=/usr/lib \
        --without-ffmpeg \
        --without-libpdf \
-       --without-libpanda
+       --without-libpanda $(MACHINE_OPTS)
 
 RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
 RUNPIKE2=$(CURDIR)/debian/$(PIKE)-core/usr/bin/pike -m$(CURDIR)/$(BUILDDIR)/lib/master.pike

@@ -1,3 +1,54 @@
+pike7.3 (7.3.62-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * lib/modules/Tools.pmod/AutoDoc.pmod/DocParser.pmod: Fixed broken
+          support for typedef.
+        * src/modules/Gz/module.pmod.in: Now supports zlib's which lack the
+          eof() function.
+        * src/modules/Gz/module.pmod.in: Now behaves if zlib isn't
+          available.
+        * src/builtin_functions.c: Moved some debug functions to Debug.
+          Updated sleep doc. Fixed describe_backtrace type.
+        * src/builtin.cmod: Move _describe_program to
+          Debug.describe_program.
+        * src/modules/Gz/testsuite.in: Added test for Gz.File().
+        * lib/modules/MIME.pmod/module.pmod: When doing guessy style MIME
+          decoding, inherit the guess attribute for multipart message parts.
+        * src/modules/Gz/zlibmod.c: Fixed nasty null-termination bug.
+        * src/post_modules/Shuffler/Shuffler.cmod: Patched Shuffler module
+          some more. This patch should fix some of the problems with the
+          shuffler accessing references that have been destructed.
+        * lib/modules/Filesystem.pmod/Tar.pmod: Bugfix: Since lookups are
+          done with normalized paths, we need to normalize the paths in
+          filename{s,_to_entry} as well to get proper matches.
+        * src/pike_memory.h: Added a macro to detect whether a memory
+          checker is in use, so that conflicting debug checks can be avoided.
+        * lib/master.pike.in, src/svalue.c,
+          lib/modules/Tools.pmod/testsuite.in: Make %O default output for
+          objects and programs better.
+        * lib/modules/Stdio.pmod/module.pmod, src/modules/files/file.c,
+          src/modules/files/termios.c: Document the low level I/O functions
+          in Stdio.File and not Fd.
+          .
+          Designwise motivation: Fd and Fd_ref ought to be considered
+          internal; Stdio.File is the lowest "official" API level.
+          .
+          Practical motivation: It's _much_ easier to find the functions in
+          the generated docs, despite the small pointer to Fd in Stdio.File.
+        * lib/modules/Protocols.pmod/HTTP.pmod/Server.pmod/SSLPort.pike:
+          added SSL support to the simple webserver. Based on SSL.https, but
+          behaves exactly like Protocols.HTTP.Server.Port, except for SSL.
+        * lib/master.pike.in: - Changed some search(x,y)!=-1 into
+          has_value(x,y) - Optimized Getopt call by using local variables for
+          NO_ARG,   MAY_HAVE_ARG and HAS_ARG.  - Optimized Getopt call by
+          always having five elements per argument,   so that Getopt need not
+          rewrite the array.  - Always accept the --autoreload option so that
+          we are silenty  ignoring it if Pike has not autoreload (instead of
+          bailing out with strange error messages (that changes depending
+          on the number and   order of options)).
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 25 Nov 2002 18:43:54 +0100
+
 pike7.3 (7.3.60-2) unstable; urgency=low
 
   * Latest cvs snapshot. The most important changes:
