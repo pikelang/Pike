@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.94 2001/09/13 13:43:04 grubba Exp $
+ * $Id: cpp.c,v 1.95 2001/12/12 22:52:00 nilsson Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1663,7 +1663,7 @@ void init_cpp()
   constant_macro->args=1;
 
   
-/* function(string, string|void, int|string|void, object|void:string) */
+/* function(string, string|void, int|string|void, object|void, int|void, int|void:string) */
   ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tStr,tVoid)
 			       tOr(tInt,tOr(tStr,tVoid))
 			       tOr(tObj,tVoid)
