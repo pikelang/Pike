@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.629 2003/03/30 20:24:30 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.630 2003/04/02 12:02:08 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2673,6 +2673,28 @@ test_compile_any([[
         inherit top_the_class;
      }
   }
+]])
+
+// Identity of nested programs.
+test_program([[
+  class A {int i; class X {int j;};}
+  class B {inherit A;}
+  int a() {return A()->X == B()->X;}
+]])
+test_program([[
+  class A {int i; class X {int j;};}
+  class B {inherit A;}
+  int a() {return A.X == B.X;}
+]])
+test_program([[
+  class A {int i; class X {int j = i;};}
+  class B {inherit A;}
+  int a() {return A()->X != B()->X;}
+]])
+test_program([[
+  class A {int i; class X {int j = i;};}
+  class B {inherit A;}
+  int a() {return A.X == B.X;}
 ]])
 
 // Testing __INIT
