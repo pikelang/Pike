@@ -1886,6 +1886,8 @@ static void try_feed(int finished)
 
 static void low_feed(struct pike_string *ps)
 {
+   struct piece *f;
+
    f=malloc(sizeof(struct piece));
    if (!f)
       error("feed: out of memory\n");
@@ -1928,8 +1930,6 @@ static void low_feed(struct pike_string *ps)
 
 static void html_feed(INT32 args)
 {
-   struct piece *f;
-
    DEBUG((stderr,"feed %d chars\n",
 	  (args&&sp[-args].type==T_STRING)?
 	  sp[-args].u.string->len:-1));
