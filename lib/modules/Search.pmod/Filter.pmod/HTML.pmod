@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.31 2003/01/17 16:04:59 jonasw Exp $
+// $Id: HTML.pmod,v 1.32 2003/02/06 12:14:48 jonasw Exp $
 
 // Filter for text/html
 
@@ -258,9 +258,14 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
 
   dadd = databuf->add;
-  parser->_set_data_callback(lambda(object p, string data) {
+  parser->_set_data_callback(lambda(Parser.HTML p, string data) {
 			       dadd(" " + data + " ");
 			     });
+  parser->_set_tag_callback(lambda(Parser.HTML p, string data) {
+			      //  Do nothing! Callback still needed so that
+			      //  unknown tags aren't sent to
+			      //  _set_data_callback.
+			    });
 
   res->fields->title="";
   res->fields->description="";
