@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.301 2004/07/02 12:09:55 grubba Exp $
+|| $Id: signal_handler.c,v 1.302 2004/09/06 13:03:17 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.301 2004/07/02 12:09:55 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.302 2004/09/06 13:03:17 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2781,9 +2781,10 @@ void f_create_process(INT32 args)
 		      &info,
 		      &proc);
     err=GetLastError();
-    THREADS_DISALLOW_UID();
     
     UNLOCK_IMUTEX(&handle_protection_mutex);
+
+    THREADS_DISALLOW_UID();
 
     if(env) pop_stack();
     if(command_line) free(command_line);
