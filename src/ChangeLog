@@ -1,5 +1,7 @@
 Sun Jan  5 20:21:29 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
 
+	* modules/mysql/configure.in: Added support for Mysql 3.20.0.
+
 	* master.pike (add_precompiled_program): Added support for
 	hierarchial /precompiled/ constant names.
 
