@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Gdbm.pike,v 1.1 2000/07/02 20:15:42 kinkie Exp $
+ * $Id: Gdbm.pike,v 1.2 2000/07/05 21:36:03 kinkie Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -21,12 +21,10 @@ int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 
 class Data {
   inherit Cache.Data;
-  //metadata is kept around, data loaded on demand.
 
   int _size=0;
   string _key=0;
   mixed _data=0;
-  private Gdbm.gdbm db, metadb;
   
   int size() {
     if (_size) return _size;
@@ -36,7 +34,7 @@ class Data {
   
   mixed data() {
     if (!_data) 
-      _data=decode_value(db->fetch(_key));
+      _data=decode_value(db[_key]);
     return _data;
   }
   
@@ -47,47 +45,25 @@ class Data {
   
   //dumps the metadata if necessary.
   void sync() {
-    metadb->store(_key,metadata_dump());
+    metadb[_key]=metadata_dump();
   }
-  //restores a dumped object
-  //basically a kind of second-stage constructor for objects retrieved
-  //from the db.
-  //the dumped value is passed for efficiency reasons, otherwise we
-  //might have to perform two lookups to successfully retrieve an object
-  Data undump( string dumped_value) {
-    mapping m=decode_value(dumped_value);
-    if (!m) throw ( ({"Can't decode dumped value",backtrace()}) );
-    _size=m->size;
-    atime=m->atime;
-    ctime=m->ctime;
-    etime=m->etime;
-    cost=m->cost;
-    return this_object();
-  }
-  
+
   inline void touch() {
     atime=time(1);
     sync();
   }
   
-  //initializes a new object with a fresh value. It's used only
-  //for the first instantiation, after that undump is to be used.
-  //The data is not immediately dumped to the DB, as the destructor
-  //will take care of that.
-  Data init(mixed value, void|int expires, void|float 
-            preciousness) {
-    atime=ctime=time(1);
-    if (expires) etime=expires;
-    if (preciousness) cost=preciousness;
-    sync();
-    db->store(_key,encode_value(value));
-    return this_object();
-  }
-  
-  void create(string key, Gdbm.gdbm data_db, Gdbm.gdbm metadata_db) {
+  void create(string key, Gdbm.gdbm data_db, 
+              Gdbm.gdbm metadata_db, string dumped_metadata) {
+    mapping m=decode_value(dumped_metadata);
     _key=key;
     db=data_db;
     metadb=metadata_db;
+    _size=m->size;
+    atime=m->atime;
+    ctime=m->ctime;
+    etime=m->etime;
+    cost=m->cost;    
   }
   
 }
@@ -121,25 +97,44 @@ int(0..0)|string next() {
   return keys->get();
 }
 
+// we set the data in the database directly here, since we have
+// no need to create a Data object.
 void set(string key, mixed value,
          void|int expire_time, void|float preciousness) {
+  string tmp;
+  int tm=time(1);
+  mapping meta;
   //should I refuse storing objects too?
   if (programp(value)||functionp(value)) {
     werror("can't store value\n"); //TODO: use crumbs
     return 0;
   }
-  Data(key,db,metadb)->init(value,expire_time,preciousness);
+  tmp=encode_value(value);
+  db[key]=tmp;
+  meta=(["size":sizeof(tmp),"atime":tm,"ctime":tm]);
+  if (expire_time) meta->etime=expire_time;
+  if (preciousness||!zero_type(preciousness))
+    meta->cost=preciousness;
+  else
+    meta->cost=1.0;
+  
+  metadb[key]=encode_value(meta);
 }
 
+// we fetch at least the metadata here. If we delegated that to the
+// Data class, we would waste quite a lot of resources while doing
+// the undump operation.
 int(0..0)|Cache.Data get(string key,void|int notouch) {
-  mixed tmp=metadb->fetch(key);
-  if (tmp) {
-    tmp=(Data(key,db,metadb)->undump(tmp));
-    if (!notouch) {
-      tmp->touch();
-    }
+  string metadata=metadb[key];
+  mixed err;
+  Data rv;
+  if (!metadata) return 0;      // no such key in cache.
+  err = catch (rv=(Data(key,db,metadb,metadata)));
+  if (err) return 0;            // could not undump the metadata
+  if (!notouch) {
+    rv->touch();
   }
-  return tmp;
+  return rv;
 }
 
 //fetches some data from the cache asynchronously.
@@ -150,8 +145,7 @@ void aget(string key,
   callback(key,get(key));
 }
 
-Cache.Data|int(0..0) delete(string key, void|int(0..1) hard) {
-  Data rv=(hard?0:get(key,1));
+void delete(string key, void|int(0..1) hard) {
   db->delete(key);
   metadb->delete(key);
   deletion_ops++;
@@ -161,7 +155,6 @@ Cache.Data|int(0..0) delete(string key, void|int(0..1) hard) {
     metadb->reorganize();
     deletion_ops=0;
   }
-  return rv;
 }
 
 //A GDBM storage-manager must be hooked to a GDBM Database.
