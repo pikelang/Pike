@@ -6,6 +6,9 @@ constant diff_compare_table = __builtin.diff_compare_table;
 constant longest_ordered_sequence = __builtin.longest_ordered_sequence;
 
 constant sort = __builtin.sort;
+constant everynth = __builtin.everynth;
+constant splice = __builtin.splice;
+constant transpose = __builtin.transpose;
 
 mixed map(mixed arr, mixed fun, mixed ... args)
 {
@@ -221,7 +224,7 @@ array columns(array x, array ind)
   return ret;
 }
 
-array transpose(array x)
+array transpose_old(array x)
 {
    if (!sizeof(x)) return x;
    array ret=allocate(sizeof(x[0]));
