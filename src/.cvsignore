@@ -13,6 +13,7 @@ dependencies
 dumpmodule.log
 hilfe
 hsort_template.h
+interpret_functions_fixed.h
 interpret_protos.h
 interpret_protos.h_src
 isort_template.h
