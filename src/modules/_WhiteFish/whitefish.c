@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.5 2001/05/22 13:52:49 per Exp $");
+RCSID("$Id: whitefish.c,v 1.6 2001/05/22 14:03:31 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -40,8 +40,7 @@ void free_stuff( void *_t )
 static struct object *low_do_query_merge( Blob **blobs,
 					  int nblobs,
 					  int field_c[68],
-					  int prox_c[8],
-					  int field )
+					  int prox_c[8])
 {
   struct object *res = wf_resultset_new();
   struct tofree *__f = malloc( sizeof( struct tofree ) );
@@ -111,17 +110,6 @@ static void f_do_query_merge( INT32 args )
  *!     
  *!      This function returns a Pike string containing the word hits
  *!	 for a certain word_id. Call repeatedly until it returns 0.
- *!
- *!     @[field]
- *!
- *!         Selects what fields to match words in. Should be -1 to
- *!         match any field. 
- *!       
- *!	  Index        Field
- *!	  -----        ---------------------
- *!	  -1           Any field
- *!	  0..63        Special field 0..63
- *!	  64           Body text
  */
 {
   int proximity_coefficients[8];
@@ -131,11 +119,10 @@ static void f_do_query_merge( INT32 args )
 
   struct svalue *cb;
   struct array *_words, *_field, *_prox;
-  int field;
 
   /* 1: Get all arguments. */
-  get_all_args( "do_query_merge", args, "%a%a%a%O%d",
-		&_words, &_field, &_prox, &cb, &field );
+  get_all_args( "do_query_merge", args, "%a%a%a%O",
+		&_words, &_field, &_prox, &cb);
 
   if( _field->size != 68 )
     Pike_error("Illegal size of field_coefficients array (expected 68)\n" );
@@ -164,7 +151,7 @@ static void f_do_query_merge( INT32 args )
 
   push_object(low_do_query_merge(blobs,numblobs,
 				 field_coefficients,
-				 proximity_coefficients,field ));
+			 proximity_coefficients ));
 }
 
 void pike_module_init(void)
@@ -173,7 +160,7 @@ void pike_module_init(void)
 
   add_function( "do_query_merge", f_do_query_merge,
 		"function(array(int),array(int),array(int)"
-		",function(int:string),int",
+		",function(int:string):object)",
 		0 );
 }
 
