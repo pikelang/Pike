@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.16 2003/07/03 14:57:47 grubba Exp $
+// $Id: module.pmod.in,v 1.17 2003/07/23 16:00:42 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -994,6 +994,8 @@ class PikeCompiler
     return expr;
   }
 
+  //! @ignore
+
   UNARY_SUFFIX(postfix, funcall, (<"++", "--">));
   UNARY_PREFIX(prefix, postfix, (<"!", "~", "-", "++", "--">));
   LEFT_ASSOC_FUNCALL(product, prefix, (<"*", "%", "/">));
@@ -1008,6 +1010,8 @@ class PikeCompiler
   LEFT_ASSOC(lor, land, (<"||">));
 
   UNARY_SUFFIX(many, lor, (<"...">));
+
+  //! @endignore
 
   Expression parse_cond_expression(Iterator tokens_left)
   {
@@ -1031,12 +1035,16 @@ class PikeCompiler
     return expr;
   }
 
+  //! @ignore
+
   RIGHT_ASSOC(assign, cond, (<"=", "+=", "-=", "*=", "/=">));
 
   //LEFT_ASSOC(pair, assign, (<":", "..">));
   OPTIONAL_ARGS(pair, assign, (<":", "..">));
 
   LEFT_ASSOC(comma, pair, (<",">));
+
+  //! @endignore
 
   Expression parse_expression(Iterator tokens_left)
   {
