@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.7 1998/03/20 22:29:39 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.8 1998/04/06 03:19:37 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -20,11 +20,13 @@ int main(int argc, string *argv)
   program testprogram;
   int start, fail, mem;
   int loop=1;
+  int end=0x7fffffff;
 
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"verbose",Getopt.NO_ARG,({"-v","--verbose"})}),
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
+    ({"end",Getopt.HAS_ARG,({"--end-after"})}),
     ({"fail",Getopt.MAY_HAVE_ARG,({"-f","--fail"})}),
     ({"loop",Getopt.MAY_HAVE_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.MAY_HAVE_ARG,({"-t","--trace"})}),
@@ -40,6 +42,7 @@ int main(int argc, string *argv)
 
 	case "verbose": verbose+=foo(opt[1]); break;
 	case "start": start=foo(opt[1]); start--; break;
+	case "end": end=foo(opt[1]); break;
 	case "fail": fail+=foo(opt[1]); break;
 	case "loop": loop+=foo(opt[1]); break;
 	case "trace": t+=foo(opt[1]); break;
@@ -207,6 +210,8 @@ int main(int argc, string *argv)
 	
 	if(fail && errors)
 	  exit(1);
+
+	if(!--end) exit(0);
 	
 	a=b=0;
       }
@@ -241,10 +246,7 @@ int main(int argc, string *argv)
     werror("Failed tests: "+errors+".\n");
   }
       
-  if(verbose)
-  {
-    werror("Total tests: %d\n",successes+errors);
-  }
+  werror("Total tests: %d\n",successes+errors);
 
   return errors;
 }
