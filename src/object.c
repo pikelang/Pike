@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.218 2003/07/21 23:41:34 mast Exp $
+|| $Id: object.c,v 1.219 2003/08/06 13:21:13 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.218 2003/07/21 23:41:34 mast Exp $");
+RCSID("$Id: object.c,v 1.219 2003/08/06 13:21:13 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -433,6 +433,14 @@ static struct pike_string *low_read_file(char *file)
   return 0;
 }
 
+static void get_master_cleanup (void *dummy)
+{
+  if (master_object) {
+    free_object (master_object);
+    master_object = 0;
+  }
+}
+
 PMOD_EXPORT struct object *get_master(void)
 {
   extern char *master_file;
@@ -558,18 +566,27 @@ PMOD_EXPORT struct object *get_master(void)
     }
   }
 
-  /* fprintf(stderr, "Cloning master...\n"); */
+  {
+    ONERROR uwp;
 
-  master_object=low_clone(master_program);
-  debug_malloc_touch(master_object);
-  debug_malloc_touch(master_object->storage);
+    /* fprintf(stderr, "Cloning master...\n"); */
 
-  /* fprintf(stderr, "Initializing master...\n"); */
+    master_object=low_clone(master_program);
+    debug_malloc_touch(master_object);
+    debug_malloc_touch(master_object->storage);
 
-  call_c_initializers(master_object);
-  call_pike_initializers(master_object,0);
+    /* Make sure master_object doesn't point to a broken master. */
+    SET_ONERROR (uwp, get_master_cleanup, NULL);
+
+    /* fprintf(stderr, "Initializing master...\n"); */
+
+    call_c_initializers(master_object);
+    call_pike_initializers(master_object,0);
   
-  /* fprintf(stderr, "Master loaded.\n"); */
+    /* fprintf(stderr, "Master loaded.\n"); */
+
+    UNSET_ONERROR (uwp);
+  }
 
   inside = 0;
   return master_object;
