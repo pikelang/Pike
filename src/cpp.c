@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.37 1999/02/22 21:35:28 grubba Exp $
+ * $Id: cpp.c,v 1.38 1999/02/22 22:36:58 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -2103,8 +2103,12 @@ void f_cpp(INT32 args)
   if ((!sp[-args].u.string->size_shift) && (sp[-args].u.string->len > 1)) {
     /* Try to determine if we need to recode the string */
 
-    /* At least a prefix of two bytes need to be 7bit in a valid
-     * Pike program.
+    /* Observations:
+     *
+     * * At least a prefix of two bytes need to be 7bit in a valid
+     *   Pike program.
+     *
+     * * NUL isn't valid in a Pike program.
      */
     /* Heuristic:
      *
@@ -2117,8 +2121,23 @@ void f_cpp(INT32 args)
      *    0xfe |    0xff | 16bit Unicode string reverse byte order.
      *    0x7b |    0x83 | EBCDIC-US ("#c").
      *    0x7b |    0x40 | EBCDIC-US ("# ").
+     *    0x7b |    0x09 | EBCDIC-US ("#\t").
      * --------+---------+------------------------------------------
      *   Other |   Other | 8bit standard string.
+     */
+    /* NOTE:
+     *
+     * * EBCDIC conversion needs to first convert the first line
+     *   according to EBCDIC-US, and then the rest of the string
+     *   according to the encoding specified by the first line.
+     *
+     * * It's an error for a program written in EBCDIC not to
+     *   start with a #charset directive.
+     *
+     * Obfuscation note:
+     *
+     * * This still allows the rest of the file to be written in
+     *   another encoding than EBCDIC.
      */
   }
   
