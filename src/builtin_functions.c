@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.399 2001/07/27 20:39:56 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.400 2001/07/27 21:03:07 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1052,7 +1052,7 @@ PMOD_EXPORT void f_add_constant(INT32 args)
  *!   In all other cases @[zero_type()] will return @tt{0@} (zero).
  *!
  *! @seealso
- *!   @[fund_call_out()]
+ *!   @[find_call_out()]
  */
 PMOD_EXPORT void f_zero_type(INT32 args)
 {
