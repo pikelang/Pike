@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.33 1999/06/17 12:20:44 mirar Exp $");
+RCSID("$Id: sprintf.c,v 1.34 1999/06/17 18:01:54 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -802,6 +802,7 @@ static void low_pike_sprintf(struct string_builder *r,
 	case 1: fsp->width=tmp;
 	case 2: fsp->precision=tmp; break;
 	case 3: fsp->column_width=tmp; break;
+	case 4: fsp->precision=-tmp; break;
 	}
 	if(fsp->width!=SPRINTF_UNDECIDED && fsp->width<1)
 	  sprintf_error("Illegal width.\n");
@@ -816,7 +817,12 @@ static void low_pike_sprintf(struct string_builder *r,
       case '#': fsp->flags|=COLUMN_MODE; continue;
       case '$': fsp->flags|=INVERSE_COLUMN_MODE; continue;
 
-      case '-': fsp->flags|=FIELD_LEFT; continue;
+      case '-':
+	if(setwhat==2)
+	  setwhat=4;
+	else
+	  fsp->flags|=FIELD_LEFT;
+	continue;
       case '|': fsp->flags|=FIELD_CENTER; continue;
       case ' ': fsp->pos_pad=' '; continue;
       case '+': fsp->pos_pad='+'; continue;
@@ -1003,14 +1009,29 @@ static void low_pike_sprintf(struct string_builder *r,
 	if (fsp->precision==SPRINTF_UNDECIDED) fsp->precision=3;
 
 	x=(char *)xalloc(100+MAXIMUM(fsp->width,8)+
-			      MAXIMUM(fsp->precision,3));
+			 MAXIMUM(abs(fsp->precision),3));
 	fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
+	
+	if(fsp->precision<0)
+	  tf = rint(tf*pow(10.0, (double)fsp->precision));
+	
 	sprintf(x,buffer,
 		fsp->width,
-		fsp->precision,tf);
+		fsp->precision<0?0:fsp->precision,tf);
 	fsp->len=strlen(x);
+	
+	/* Pad with ending zeroes, if necessary. */
+	if(fsp->precision<0 &&
+	   fsp->len>0 && '0'<=x[0] && x[0]<='9' && fabs(tf)!=0.0)
+	{
+	  INT32 i;
+	  for(i = 0; i<-fsp->precision; i++)
+	    x[fsp->len++] = '0';
+	  x[fsp->len] = 0;
+	}
+	
 	fsp->fi_free_string=x;
 	break;
       }
