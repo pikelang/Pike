@@ -104,7 +104,7 @@ void grab(GTK.Widget widget, int xoffset, int yoffset, int width, int height )
   RETURN_THIS();
 }
 
-void set(int|Image.Image i,void|int ysize)
+void set(Image.Image|int image_or_xsize,int|void ysize)
 //! Call this to set this image to either the contents of a pike image
 //! or a blank image of a specified size.
 {

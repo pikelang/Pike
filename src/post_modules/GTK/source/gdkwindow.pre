@@ -286,7 +286,7 @@ void set_events(int events )
   RETURN_THIS();
 }
 
-void set_icon(GDK.Pixmap pixmap,GDK.Bitmap mask, void|GDK.Window window)
+void set_icon(GDK.Pixmap pixmap,GDK.Bitmap mask, GDK.Window|void window)
 //! Set the icon to the specified image (with mask) or the specified
 //! GDK.Window.  It is up to the window manager to display the icon.
 //! Most window manager handles window and pixmap icons, but only a few
