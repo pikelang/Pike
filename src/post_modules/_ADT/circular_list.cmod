@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.10 2003/05/27 11:51:56 peta Exp $
+|| $Id: circular_list.cmod,v 1.11 2003/05/27 15:24:52 grubba Exp $
 */
 
 #include "global.h"
@@ -640,8 +640,9 @@ PIKECLASS CircularList
 
   PIKEFUN void clear()
   {
+    int oldsize;
     should_copy();
-    int oldsize = THIS->a->size;
+    oldsize = THIS->a->size;
     THIS->a = resize_array(THIS->a, 0);
     THIS->a = resize_array(THIS->a, oldsize);
     THIS->size =0;
