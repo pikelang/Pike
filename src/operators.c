@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.168 2002/12/30 12:46:50 grubba Exp $
+|| $Id: operators.c,v 1.169 2003/01/15 13:08:11 jhs Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.168 2002/12/30 12:46:50 grubba Exp $");
+RCSID("$Id: operators.c,v 1.169 2003/01/15 13:08:11 jhs Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2663,6 +2663,14 @@ PMOD_EXPORT void o_divide(void)
  *!   	  are int, the result will be truncated to an int. Otherwise the
  *!   	  result will be a float.
  *!   @endmixed
+ *! @note
+ *!   Unlike in some languages, the function f(x) = x/n behaves in a
+ *!   well-defined, sane way. When you increase x, f(x) will jump one step
+ *!   for each n:th increment. For all x, (x + n) / n = x/n + 1; crossing
+ *!   zero is not special. This also means that / and % are compatible, so
+ *!   that a = b*(a/b) + a%b for all a and b.
+ *! @seealso
+ *!   @[`%]
  */
 PMOD_EXPORT void f_divide(INT32 args)
 {
@@ -2834,6 +2842,26 @@ PMOD_EXPORT void o_mod(void)
  *!   	  The result will be a float if either @[arg1] or @[arg2] is
  *!   	  a float, and an int otherwise.
  *!   @endmixed
+ *!
+ *!   For numbers, this means that
+ *!   @ol
+ *!     @item
+ *!       a % b always has the same sign as b (typically b is positive;
+ *!       array size, rsa modulo, etc, and a varies a lot more than b).
+ *!     @item
+ *!       The function f(x) = x % n behaves in a sane way; as x increases,
+ *!       f(x) cycles through the values 0,1, ..., n-1, 0, .... Nothing
+ *!       strange happens when you cross zero.
+ *!     @item
+ *!       The % operator implements the binary "mod" operation, as defined
+ *!       by Donald Knuth (see the Art of Computer Programming, 1.2.4). It
+ *!       should be noted that Pike treats %-by-0 as an error rather than
+ *!       returning 0, though.
+ *!     @item
+ *!       / and % are compatible, so that a = b*(a/b) + a%b for all a and b.
+ *!   @endol
+ *! @seealso
+ *!   @[`/]
  */
 PMOD_EXPORT void f_mod(INT32 args)
 {
