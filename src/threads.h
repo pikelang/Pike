@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.112 2001/08/29 17:13:21 mast Exp $
+ * $Id: threads.h,v 1.113 2001/10/22 23:52:54 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -672,6 +672,7 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here);
 #define th_cleanup()
 #define th_init_programs()
 #define th_self() ((void*)0)
+#define co_wait(X,Y)
 #define co_signal(X)
 #define co_broadcast(X)
 

@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.35 2001/08/29 21:30:10 marcus Exp $
+ * $Id: jvm.c,v 1.36 2001/10/22 23:52:56 mast Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.35 2001/08/29 21:30:10 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.36 2001/10/22 23:52:56 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1726,6 +1726,11 @@ static void native_dispatch(struct native_method_context *ctx,
     } else {
       /* Nope, let's get it... */
       mt_lock_interpreter();
+      while (threads_disabled) {
+	THREADS_FPRINTF(1, (stderr,
+			    "jvm/native_dispatch(): Threads disabled\n"));
+	co_wait_interpreter(&threads_disabled_change);
+      }
       SWAP_IN_THREAD(state);
 
       do_native_dispatch(ctx, env, cls, args, rc);
@@ -1737,6 +1742,11 @@ static void native_dispatch(struct native_method_context *ctx,
   } else {
     /* Not a pike thread.  Create a temporary thread_id... */
     mt_lock_interpreter();
+    while (threads_disabled) {
+      THREADS_FPRINTF(1, (stderr,
+			  "jvm/native_dispatch(): Threads disabled\n"));
+      co_wait_interpreter(&threads_disabled_change);
+    }
     init_interpreter();
     Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
     Pike_interpreter.recoveries = NULL;
