@@ -1,0 +1,50 @@
+require gnome;
+class gnome_message_box;
+inherit gnome_dialog;
+constant string GNOME_MESSAGE_BOX_INFO;
+constant string GNOME_MESSAGE_BOX_WARNING;
+constant string GNOME_MESSAGE_BOX_ERROR;
+constant string GNOME_MESSAGE_BOX_QUESTION;
+constant string GNOME_MESSAGE_BOX_GENERIC;
+// The GnomeMessageBox widget creates dialog boxes (of type
+// GnomeDialog) that contain a severity level (indicated by an icon
+// and a title), a message to be displayed and a list of buttons that
+// will be in the dialog.
+// <p>
+// The programmer will use strings desired for each button. If the
+// strings are any of the GNOME_STOCK macros, then instead of creating
+// a button with the text, the button will be a GNOME stock button
+// with a stock icon.
+// The list of known types for message boxes are:
+// CONST(GNOME_MESSAGE_BOX).
+// TIMG: Gnome.MessageBox( "This is a nice message", Gnome.MessageBoxInfo, Gnome.StockButtonOk,  Gnome.StockButtonCancel );
+// TIMG: Gnome.MessageBox( "This is another not so nice message", Gnome.MessageBoxError, Gnome.StockButtonClose,  Gnome.StockButtonCancel );
+
+FUNCTION(create, "function(string, string, string ...:object)");
+NAME_ARGS(message, messagebox_type, buttons);
+// Creates a dialog box of type message_box_type with message. A
+// number of buttons are inserted on it. You can use the
+// GNOME stock identifiers to create gnome stock buttons.
+{
+  char *message, *type;
+  char **buttons;
+  int i;
+  get_all_args( "create", args, "%s%s", &message, &type );
+  buttons = malloc( (args-1)*sizeof( char *) );
+  buttons[args-2] = NULL;
+  for( i = 2; i<args; i++ )
+    if( sp[-args+i].type != T_STRING )
+    {
+      free( buttons );
+      error( "Bad argument %d, should be string\n", i );
+    }
+    else
+      buttons[i-2] = sp[-args+i].u.string->str;
+
+  THIS->obj = GTK_OBJECT( gnome_message_box_newv( (const gchar *)message,
+                                                  (const gchar *)type,
+                                                  (const gchar **)buttons ) );
+  free( buttons );
+  pop_n_elems( args );
+  push_int( 0 );
+}

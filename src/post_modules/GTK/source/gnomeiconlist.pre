@@ -1,0 +1,175 @@
+require gnome;
+class gnome_icon_list;
+inherit gnome_canvas;
+// The GNOME icon list widget can hold a number of icons with
+// captions. The icons on the list can be selected (various selection
+// methods are supported). The programmer can enable caption-editing
+// for the icons. This parameters is configured when you create the
+// icon list widget.
+// <p> You can control the type of selection mode you desire by using
+// the set_selection_mode() function.
+
+signal select_icon;
+signal unselect_icon;
+signal text_changed;
+
+constant int GNOME_ICON_LIST_IS_EDITABLE;
+constant int GNOME_ICON_LIST_STATIC_TEXT;
+
+constant int GNOME_ICON_LIST_ICONS;
+constant int GNOME_ICON_LIST_TEXT_BELOW;
+constant int GNOME_ICON_LIST_TEXT_RIGHT;
+
+FUNCTION(create, "function(int,object,int:object)");
+RETURNS(Gnome.IconList);
+NAME_ARGS(icon_width,flags);
+// Creates a new icon list widget. The icon columns are allocated a
+// width of icon_width pixels. Icon captions will be word-wrapped to
+// this width as well.
+// <p>
+// If flags has the Gnome.IconListIsEditable flag set, then the
+// user will be able to edit the text in the icon captions, and the
+// "text_changed" signal will be emitted when an icon's text is
+// changed.
+{
+  int a, b;
+  get_all_args( "create", args, "%d%d", &a, &b );
+  pop_n_elems( args );
+  THIS->obj = (GtkObject *)gnome_icon_list_new_flags( a,0,b );
+}
+
+void set_hadjustment( adjustment hadj );
+//  Sets the adjustment to be used for horizontal scrolling.  This is
+//  normally not required, as the icon list can be simply inserted in
+//  a W(ScrolledWindow) and scrolling will be handled automatically.
+void set_vadjustment( adjustment hadj );
+//  Sets the adjustment to be used for vertical scrolling.  This is
+//  normally not required, as the icon list can be simply inserted in
+//  a W(ScrolledWindow) and scrolling will be handled automatically.
+void freeze();
+// Freezes an icon list so that any changes made to it will not be
+// reflected on the screen until it is thawed with thaw(). It is
+// recommended to freeze the icon list before inserting or deleting
+// many icons, for example, so that the layout process will only be
+// executed once, when the icon list is finally thawed.
+// <p>
+// You can call this function multiple times, but it must be balanced
+// with the same number of calls to thaw() before the changes will
+// take effect.
+void thaw();
+// Unfreeze the icon list
+void insert( int pos, string icon_filename, string text );
+//  Inserts an icon in the specified icon list. The icon's image is
+//  loaded from the specified file, and it is inserted at the pos
+//  index.
+/* insert_imlib sort of requires imlib... */
+void append( string icon_filename, string text );
+// Appends an icon to the specified icon list. The icon's image is
+// loaded from the specified file, and it is inserted at the pos
+// index.
+void clear();
+// Clears the contents for the icon list by removing all the icons. If
+// destroy handlers were specified for any of the icons, they will be
+// called with the appropriate data.
+void remove( int pos );
+// Removes the icon at index position pos. If a destroy handler was
+// specified for that icon, it will be called with the appropriate
+// data.
+void set_selection_mode( int mode );
+// One of CONST(GTK_SELECTION).
+void select_icon( int idx );
+// Selects the specified icon.
+void unselect_icon( int idx );
+// Unselects the specified icon.
+void unselect_all( null, null );
+// Unselect all icons.
+void set_icon_width( int w );
+// Sets the amount of horizontal space allocated to the icons,
+// i.e. the column width of the icon list
+void set_row_spacing( int pixels );
+// Sets the spacing to be used between rows of icons.
+void set_col_spacing( int pixels );
+// Sets the spacing to be used between columns of icons.
+void set_text_spacing( int pixels );
+// Sets the spacing to be used between the icon and its caption
+void set_icon_border( int pixels );
+// Set the width of the border to be displayed around an icon's image.
+// This is currently not implemented.
+void set_separators( string sep );
+// Set the characters that can be used as word separators when doing
+// word-wrapping of the text captions.
+int get_icon_at( int x, int y );
+// Returns the index of the icon that is under the specified
+// coordinates, which are relative to the icon list's window. If there
+// is no icon in that position, -1 is returned.
+void moveto( int pos, float yalign );
+// Makes the icon whose index is pos be visible on the screen. The
+// icon list gets scrolled so that the icon is visible. An alignment
+// of 0.0 represents the top of the visible part of the icon list, and
+// 1.0 represents the bottom. An icon can be centered on the icon
+// list using 0.5 as the yalign.
+int icon_is_visible( int pos );
+// returns 1 if the icon whose index is pos is visible.
+
+%{
+static void freeit(struct object *o)
+{
+  free_object( o );
+}
+%}
+FUNCTION(set_icon_data, "function(int,object:void)");
+NAME_ARGS(icon,data);
+// Set the user data associated with the specified icon.
+// This data can be used to find icons, and when an icon is selected it
+// can be easily retrieved using get_icon_data.
+// <p>
+// <b>You can only use objects as icon data right now</b>
+{
+  int row;
+  struct object *obj;
+  get_all_args( "set_icon_data", args, "%d%o", &row, &obj );
+  add_ref(obj);
+  gnome_icon_list_set_icon_data_full( GNOME_ICON_LIST( THIS->obj ),
+                                      row, obj, (void *)freeit );
+  RETURN_THIS();
+}
+
+FUNCTION(get_icon_data, "function(int:object)");
+NAME_ARGS(icon);
+// Return the data associated with a icon, or 0.
+{
+  int row;
+  struct object *o;
+  get_all_args( "get_row_data", args, "%d", &row );
+
+  o = gnome_icon_list_get_icon_data( GNOME_ICON_LIST( THIS->obj ), row );
+  my_pop_n_elems( args );
+  if(o)    ref_push_object( o );
+  else     push_int( 0 );
+}
+
+FUNCTION(find_icon_from_data, "function(object:int)");
+NAME_ARGS(data);
+// Find a icon in the list that has the given user data.  If no icon is
+// found, -1 is returned.
+{
+  int row;
+  struct object *o;
+  get_all_args( "find_icon_from_data", args, "%o", &o );
+  row = gnome_icon_list_find_icon_from_data( GNOME_ICON_LIST( THIS->obj ), o );
+  my_pop_n_elems(args);
+  push_int( row );
+}
+
+
+FUNCTION(get_selected_icons, "function(void:array(int))");
+// Return an array with the currently selected icons
+{
+  GList *l;
+  struct svalue *osp = sp;
+  my_pop_n_elems( args );
+  osp -= args;
+  for (l = ((GnomeIconList *)THIS->obj)->selection; l; l = l->next)
+    push_int( GPOINTER_TO_INT (l->data) );
+  f_aggregate( sp - osp );
+}

@@ -1,0 +1,15 @@
+require gnome;
+class gnome_canvas_line;
+inherit gnome_canvas_item;
+
+FUNCTION(create, "function(object:void)");
+NAME_ARGS(parent);
+{
+  struct object *o;
+  get_all_args( "create", args, "%O", &o );
+  THIS->obj =(void *)
+      gnome_canvas_item_new((void *)get_pgtkobject(o,pgtk_gnome_canvas_item_program),
+                            gnome_canvas_line_get_type(), "smooth", 1);
+  pop_n_elems(args);
+  push_int( 0 );
+}

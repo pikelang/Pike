@@ -1,4 +1,7 @@
 #include <gdk/gdkx.h>
+require gnome;
+#include <applet-widget.h>
+endrequire;
 /* The main stuff.. */
 static void socket_ready_callback(int fd, void *f)
 {
@@ -68,20 +71,29 @@ static void do_error( void *dom, int level, char *err, void *data )
 int pigtk_is_setup = 0;
 
 require gnome;
-FUNCTION(gnome_init, "function(string,string,array(string):void)" );
-NAME_ARGS(app_id, app_version, argv);
+
+CORBA_Environment gnorba_environment;
+
+FUNCTION(gnome_init, "function(string,string,array(string),int|void:void)" );
+NAME_ARGS(app_id, app_version, argv, corba_init_flags);
 // Initializes the application. This sets up all of the GNOME
 // internals and prepares them (imlib, gdk/gtk, session-management,
-// triggers, sound, user preferences)
+// triggers, sound, user preferences). If corba init flags are specified,
+// corba initialization is done as well as gnome initialization.
+// corba_init_flags is 0 or more of GNORBA_INIT_SERVER_FUNC (1),
+// GNORBA_INIT_DISABLE_COOKIES (2) and GNORBA_INIT_CORBA_PRIO_HIGH (4)
 {
   char **data;
   char *id, *vers;
-  int argc;
+  int argc, flags=0;
   struct array *a;
   if( pigtk_is_setup )
     error("Do not call the init funciton more than once!\n");
   pigtk_is_setup = 1;
-  get_all_args("setup_gtk", args, "%s%s%a", &id, &vers, &a);
+  if( args == 4 )
+    get_all_args("setup_gtk", args, "%s%s%a%d", &id, &vers, &a, &flags);
+  else
+    get_all_args("setup_gtk", args, "%s%s%a", &id, &vers, &a);
   data = malloc(sizeof(char *)*(a->size+1));
   for(argc=0; argc<a->size; argc++)
   {
@@ -104,8 +116,12 @@ NAME_ARGS(app_id, app_version, argv);
   g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
   g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
-  gtk_set_locale();
-  gnome_init( id, vers, argc, data );
+
+  if( args == 4 )
+    applet_widget_init( id, vers, argc, data, NULL, flags, NULL );
+  else
+    gnome_init( id, vers, argc, data );
+
   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
   g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
   g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
@@ -125,6 +141,18 @@ NAME_ARGS(app_id, app_version, argv);
   my_pop_n_elems(args);
   free(data);
   push_int( 0 );
+}
+
+FUNCTION(applet_widget_gtk_main_quit, "function(void:void)");
+// Exit from the applet_widget_gtk_main function on the next iteration.
+{
+  gtk_main_quit();
+}
+
+FUNCTION(applet_widget_gtk_main, "function(void:void)");
+// Special corba main loop for gnome panel applets
+{
+  applet_widget_gtk_main();
 }
 endrequire;
 

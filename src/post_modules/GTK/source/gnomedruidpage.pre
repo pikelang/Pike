@@ -1,0 +1,11 @@
+require gnome;
+class gnome_druid_page;
+// This widget is a virtual widget to define the interface to a druid
+// page. It's descendants are placed in a W(GnomeDruid) widget.
+
+inherit bin;
+signal next;
+signal prepare;
+signal back;
+signal cancel;
+signal finish;
