@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.155 2003/01/10 19:27:43 grubba Exp $
+|| $Id: svalue.c,v 1.156 2003/01/14 05:23:59 nilsson Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.155 2003/01/10 19:27:43 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.156 2003/01/14 05:23:59 nilsson Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1036,7 +1036,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       return a->u.integer < b->u.integer;
       
     case T_STRING:
-      return my_strcmp(a->u.string, b->u.string) < 0;
+      return my_quick_strcmp(a->u.string, b->u.string) < 0;
       
     case T_FLOAT:
 #ifdef HAVE_ISLESS
