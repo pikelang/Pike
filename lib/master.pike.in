@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.114 2000/04/10 21:20:08 grubba Exp $
+ * $Id: master.pike.in,v 1.115 2000/04/12 18:39:38 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -862,12 +862,13 @@ mapping resolv_cache = set_weak_flag( ([]), 1 );
 mixed resolv(string identifier, string|void current_file)
 {
   mixed ret;
-  if( !zero_type (ret = resolv_cache[identifier+current_file]) )
-    return ret == ZERO_TYPE ? UNDEFINED : resolv_cache[identifier+current_file];
+  string id=identifier+":"+(current_file ? dirname(current_file) : "-");
+  if( !zero_type (ret = resolv_cache[id]) )
+    return ret == ZERO_TYPE ? UNDEFINED : resolv_cache[id];
   array(string) tmp=identifier/".";
   ret=resolv_base(tmp[0]);
   foreach(tmp[1..],string index) ret=ret[index];
-  resolv_cache[identifier+current_file] = zero_type (ret) ? ZERO_TYPE : ret;
+  resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
   return ret;
 }
 
