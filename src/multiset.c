@@ -271,14 +271,14 @@ void gc_mark_multiset_as_referenced(struct multiset *l)
     gc_mark_array_as_referenced(l->ind);
 }
 
-void gc_check_all_multisets()
+void gc_check_all_multisets(void)
 {
   struct multiset *l;
   for(l=first_multiset;l;l=l->next)
     gc_check(l->ind);
 }
 
-void gc_mark_all_multisets()
+void gc_mark_all_multisets(void)
 {
   struct multiset *l;
   for(l=first_multiset;l;l=l->next)
@@ -286,7 +286,7 @@ void gc_mark_all_multisets()
       gc_mark_multiset_as_referenced(l);
 }
 
-void gc_free_all_unreferenced_multisets()
+void gc_free_all_unreferenced_multisets(void)
 {
   struct multiset *l,*next;
 

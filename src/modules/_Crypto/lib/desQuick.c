@@ -9,7 +9,7 @@
 #include "des.h"
 
 #include "RCSID.h"
-RCSID2(desQuick_cRcs, "$Id: desQuick.c,v 1.2 1997/03/15 04:51:51 nisse Exp $");
+RCSID2(desQuick_cRcs, "$Id: desQuick.c,v 1.3 1997/08/30 18:36:18 grubba Exp $");
 
 extern unsigned INT32 des_keymap[];
 
@@ -22,7 +22,7 @@ unsigned INT32 des_bigmap[0x4000];	/* big lookup table */
 /* fill in the 64k table used by the `quick' option */
 
 void
-DesQuickInit()
+DesQuickInit(void)
 {
 	int s1, s3, x;
 	unsigned INT32 * t0, * t1, * t2, * t3;
@@ -49,6 +49,6 @@ DesQuickInit()
 /* free the 64k table, if necessary */
 
 void
-DesQuickDone()
+DesQuickDone(void)
 {
 }

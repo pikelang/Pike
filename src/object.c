@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.20 1997/07/18 01:44:19 hubbe Exp $");
+RCSID("$Id: object.c,v 1.21 1997/08/30 18:35:45 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -26,7 +26,7 @@ struct object *first_object;
 
 struct object fake_object = { 1 }; /* start with one reference */
 
-void setup_fake_object()
+void setup_fake_object(void)
 {
   fake_object.prog=&fake_program;
   fake_object.next=0;
@@ -38,6 +38,10 @@ struct object *low_clone(struct program *p)
   int e;
   struct object *o;
   struct frame frame;
+
+#ifdef PROFILING
+  p->num_clones++;
+#endif /* PROFILING */
 
   GC_ALLOC();
 
@@ -118,7 +122,7 @@ struct object *clone_object(struct program *p, int args)
   return o;
 }
 
-struct object *get_master()
+struct object *get_master(void)
 {
   extern char *master_file;
   struct pike_string *master_name;
@@ -155,7 +159,7 @@ struct object *get_master()
   return master_object;
 }
 
-struct object *master()
+struct object *master(void)
 {
   struct object *o;
   o=get_master();
@@ -246,7 +250,7 @@ static struct callback *destruct_object_evaluator_callback =0;
  * destructed by really_free_object. It links the object back into the
  * list of objects first. Adds a reference, destructs it and then frees it.
  */
-void destruct_objects_to_destruct()
+void destruct_objects_to_destruct(void)
 {
   struct object *o, *next;
 
@@ -566,7 +570,7 @@ union anything *object_get_item_ptr(struct object *o,
 }
 
 #ifdef DEBUG
-void verify_all_objects()
+void verify_all_objects(void)
 {
   struct object *o;
   struct frame frame;
@@ -685,7 +689,7 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
   return 1;
 }
 
-void cleanup_objects()
+void cleanup_objects(void)
 {
   struct object *o, *next;
   for(o=first_object;o;o=next)
@@ -818,7 +822,7 @@ void gc_mark_object_as_referenced(struct object *o)
   }
 }
 
-void gc_check_all_objects()
+void gc_check_all_objects(void)
 {
   struct object *o;
   for(o=first_object;o;o=o->next)
@@ -847,7 +851,7 @@ void gc_check_all_objects()
   }
 }
 
-void gc_mark_all_objects()
+void gc_mark_all_objects(void)
 {
   struct object *o;
   for(o=first_object;o;o=o->next)
@@ -855,7 +859,7 @@ void gc_mark_all_objects()
       gc_mark_object_as_referenced(o);
 }
 
-void gc_free_all_unreferenced_objects()
+void gc_free_all_unreferenced_objects(void)
 {
   struct object *o,*next;
 

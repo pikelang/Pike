@@ -20,15 +20,15 @@ struct callback *add_backend_callback(callback_func call,
 				      void *arg,
 				      callback_func free_func);
 void wake_up_backend(void);
-void init_backend();
+void init_backend(void);
 void set_read_callback(int fd,file_callback cb,void *data);
 void set_write_callback(int fd,file_callback cb,void *data);
 file_callback query_read_callback(int fd);
 file_callback query_write_callback(int fd);
 void *query_read_callback_data(int fd);
 void *query_write_callback_data(int fd);
-void do_debug();
-void backend();
+void do_debug(void);
+void backend(void);
 int write_to_stderr(char *a, INT32 len);
 /* Prototypes end here */
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.19 1997/06/04 16:02:02 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.20 1997/08/30 18:36:06 grubba Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -335,7 +335,7 @@ static MP_INT *get_mpz(struct svalue *s, int throw_error)
  * case of errors..
  */
 static struct object *temporary;
-MP_INT *get_tmp()
+MP_INT *get_tmp(void)
 {
   if(!temporary)
     temporary=clone_object(mpzmod_program,0);

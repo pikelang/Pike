@@ -367,7 +367,7 @@ static void exit_port_struct(struct object *o)
   THIS->accept_callback.type=T_INT;
 }
 
-void port_setup_program()
+void port_setup_program(void)
 {
   INT32 offset;
   start_new_program();

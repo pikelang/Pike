@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.19 1997/08/03 09:54:43 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.20 1997/08/30 18:35:27 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -83,7 +83,7 @@ int store_linenumbers=1;
 int comp_stackp;
 INT32 comp_stack[COMPILER_STACK_SIZE];
 
-void push_address()
+void push_address(void)
 {
  if (comp_stackp >= COMPILER_STACK_SIZE)
  {
@@ -105,7 +105,7 @@ void push_explicit(INT32 address)
   comp_stack[comp_stackp++] = address;
 }
 
-INT32 pop_address()
+INT32 pop_address(void)
 {
   if (comp_stackp == 0)
      fatal("Compiler stack underflow.\n");
@@ -120,7 +120,7 @@ INT32 pop_address()
 
 static int label_no=0;
 
-int alloc_label() { return ++label_no; }
+int alloc_label(void) { return ++label_no; }
 
 int do_jump(int token,INT32 lbl)
 {

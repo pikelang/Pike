@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.45 1997/08/03 12:46:15 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.46 1997/08/30 18:35:36 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -182,7 +182,7 @@ RCSID("$Id: language.yacc,v 1.45 1997/08/03 12:46:15 hubbe Exp $");
 #define YYDEBUG 1
 #endif
 
-void free_all_local_names();
+void free_all_local_names(void);
 void add_local_name(struct pike_string *,struct pike_string *);
 
 /*
@@ -1424,7 +1424,7 @@ int islocal(struct pike_string *str)
   return -1;
 }
 
-void free_all_local_names()
+void free_all_local_names(void)
 {
   int e;
 

@@ -6,8 +6,8 @@ extern dynamic_buffer instrbuf;
 
 /* Prototypes begin here */
 struct p_instr_s;
-void init_bytecode();
-void exit_bytecode();
+void init_bytecode(void);
+void exit_bytecode(void);
 int insert_opcode(unsigned int f,
 		  INT32 b,
 		  INT32 current_line,

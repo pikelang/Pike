@@ -660,7 +660,7 @@ void f_errno(INT32 args)
   push_int(errno);
 }
 
-void init_files_efuns()
+void init_files_efuns(void)
 {
   set_close_on_exec(0,1);
   set_close_on_exec(1,1);

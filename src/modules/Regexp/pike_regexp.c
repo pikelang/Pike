@@ -216,16 +216,16 @@ static long     regsize;	/* Code size. */
 #ifndef STATIC
 #define	STATIC	static
 #endif
-STATIC char    *reg();
-STATIC char    *regbranch();
-STATIC char    *regpiece();
-STATIC char    *regatom();
-STATIC char    *regnode();
-STATIC char    *regnext();
-STATIC void     regc();
-STATIC void     reginsert();
-STATIC void     regtail();
-STATIC void     regoptail();
+STATIC char    *reg(int, int *);
+STATIC char    *regbranch(int *);
+STATIC char    *regpiece(int *);
+STATIC char    *regatom(int *);
+STATIC char    *regnode(char);
+STATIC char    *regnext(register char *);
+STATIC void     regc(char b);
+STATIC void     reginsert(char, char *);
+STATIC void     regtail(char *, char *);
+STATIC void     regoptail(char *, char *);
 
 /*
  - regcomp - compile a regular expression into internal code
@@ -769,14 +769,14 @@ static char   **regendp;	/* Ditto for endp. */
 /*
  * Forwards.
  */
-STATIC int      regtry();
-STATIC int      regmatch();
-STATIC int      regrepeat();
+STATIC int      regtry(regexp *, char *);
+STATIC int      regmatch(char *);
+STATIC int      regrepeat(char *);
 
 #ifdef DEBUG
 int             regnarrate = 0;
-void            regdump();
-STATIC char    *regprop();
+void            regdump(regexp *);
+STATIC char    *regprop(char *op);
 #endif
 
 /*
@@ -1170,7 +1170,7 @@ register char  *p;
 
 #ifdef DEBUG
 
-STATIC char    *regprop();
+STATIC char    *regprop(char *);
 
 /*
  - regdump - dump a regexp onto stdout in vaguely comprehensible form

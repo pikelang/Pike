@@ -123,14 +123,14 @@ void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to);
 void check_array(struct array *a);
-void check_all_arrays();
+void check_all_arrays(void);
 void gc_mark_array_as_referenced(struct array *a);
-void gc_check_all_arrays();
-void gc_mark_all_arrays();
-void gc_free_all_unreferenced_arrays();
+void gc_check_all_arrays(void);
+void gc_mark_all_arrays(void);
+void gc_free_all_unreferenced_arrays(void);
 void debug_dump_type_field(TYPE_FIELD t);
 void debug_dump_array(struct array *a);
-void zap_all_arrays();
+void zap_all_arrays(void);
 void count_memory_in_arrays(INT32 *num_, INT32 *size_);
 struct array *explode_array(struct array *a, struct array *b);
 struct array *implode_array(struct array *a, struct array *b);

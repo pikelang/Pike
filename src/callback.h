@@ -28,7 +28,7 @@ struct callback *add_to_callback(struct callback_list *lst,
 				 callback_func free_func);
 void *remove_callback(struct callback *l);
 void free_callback(struct callback_list *lst);
-void cleanup_callbacks();
+void cleanup_callbacks(void);
 void count_memory_in_callbacks(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 

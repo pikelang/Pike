@@ -45,9 +45,9 @@ void unlink_pike_string(struct pike_string *s);
 void really_free_string(struct pike_string *s);
 struct pike_string *add_string_status(int verbose);
 void check_string(struct pike_string *s);
-void verify_shared_strings_tables();
+void verify_shared_strings_tables(void);
 struct pike_string *debug_findstring(const struct pike_string *foo);
-void dump_stralloc_strings();
+void dump_stralloc_strings(void);
 int low_quick_binary_strcmp(char *a,INT32 alen,
 			    char *b,INT32 blen);
 int my_quick_strcmp(struct pike_string *a,struct pike_string *b);
@@ -59,10 +59,10 @@ struct pike_string *add_shared_strings(struct pike_string *a,
 struct pike_string *string_replace(struct pike_string *str,
 				     struct pike_string *del,
 				     struct pike_string *to);
-void init_shared_string_table();
-void cleanup_shared_string_table();
+void init_shared_string_table(void);
+void cleanup_shared_string_table(void);
 void count_memory_in_strings(INT32 *num, INT32 *size);
-void gc_mark_all_strings();
+void gc_mark_all_strings(void);
 /* Prototypes end here */
 
 #endif /* STRALLOC_H */

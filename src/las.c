@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.35 1997/08/03 09:55:09 hubbe Exp $");
+RCSID("$Id: las.c,v 1.36 1997/08/30 18:35:37 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -135,7 +135,7 @@ struct node_chunk
 static struct node_chunk *node_chunks=0;
 static node *free_nodes=0;
 
-void free_all_nodes()
+void free_all_nodes(void)
 {
   if(!local_variables)
   {
@@ -222,7 +222,7 @@ void free_node(node *n)
 
 
 /* here starts routines to make nodes */
-static node *mkemptynode()
+static node *mkemptynode(void)
 {
   node *res;
   if(!free_nodes)
@@ -2104,6 +2104,6 @@ int dooptcode(struct pike_string *name,
   return ret;
 }
 
-INT32 get_opt_info() { return last_function_opt_info; }
+INT32 get_opt_info(void) { return last_function_opt_info; }
 
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.3 1997/05/19 22:48:34 hubbe Exp $");
+RCSID("$Id: gdbmmod.c,v 1.4 1997/08/30 18:36:04 grubba Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -32,7 +32,7 @@ struct gdbm_glue
 
 #define THIS ((struct gdbm_glue *)(fp->current_storage))
 
-static void do_free()
+static void do_free(void)
 {
   if(THIS->dbf)
   {

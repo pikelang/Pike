@@ -143,7 +143,7 @@ void f_map(INT32 args)
 static void f_order(INT32 args)
 {
   int err;
-  unsigned long ret;
+  unsigned int ret;
   check_all_args("yp->order", args, BIT_STRING, 0);
   
   err = yp_order( this->domain, sp[-args].u.string->str, &ret);

@@ -68,23 +68,23 @@ extern struct pike_predef_s * pike_predefs;
 
 /* Prototypes begin here */
 struct pike_predef_s;
-void exit_lex();
+void exit_lex(void);
 struct reserved;
-void init_lex();
-void free_reswords();
+void init_lex(void);
+void free_reswords(void);
 char *low_get_f_name(int n,struct program *p);
 char *get_f_name(int n);
 char *get_token_name(int n);
 struct inputstate;
 struct define;
 void free_one_define(struct hash_entry *h);
-void insert_current_line();
-void insert_current_file_as_string();
-void insert_current_time_as_string();
-void insert_current_date_as_string();
+void insert_current_line(void);
+void insert_current_file_as_string(void);
+void insert_current_time_as_string(void);
+void insert_current_date_as_string(void);
 void start_new_file(int fd,struct pike_string *filename);
 void start_new_string(char *s,INT32 len,struct pike_string *name);
-void end_new_file();
+void end_new_file(void);
 void add_predefine(char *s);
 /* Prototypes end here */
 

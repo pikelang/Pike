@@ -66,7 +66,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
   }
 }
 
-void o_index()
+void o_index(void)
 {
   index_no_free(sp,sp-2,sp-1);
   sp++;
@@ -214,7 +214,7 @@ void cast(struct pike_string *s)
   }
 }
 
-void f_cast()
+void f_cast(void)
 {
   INT32 i;
   

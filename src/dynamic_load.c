@@ -148,7 +148,7 @@ void init_dynamic_load(void)
 #endif
 }
 
-void exit_dynamic_load()
+void exit_dynamic_load(void)
 {
 #if defined(HAVE_DLOPEN) || defined(USE_DLD)
   while(dynamic_module_list)

@@ -26,7 +26,7 @@ struct callable
 };
 
 /* Prototypes begin here */
-struct mapping *get_builtin_constants();
+struct mapping *get_builtin_constants(void);
 void low_add_efun(struct pike_string *name, struct svalue *fun);
 void low_add_constant(char *name, struct svalue *fun);
 void add_global_program(char *name, struct program *p);
@@ -44,7 +44,7 @@ void add_efun2(char *name,
 	       optimize_fun optimize,
 	       docode_fun docode);
 void add_efun(char *name, c_fun fun, char *type, INT16 flags);
-void cleanup_added_efuns();
+void cleanup_added_efuns(void);
 void count_memory_in_callables(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 

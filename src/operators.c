@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.15 1997/05/19 23:31:04 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.16 1997/08/30 18:35:48 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -333,7 +333,7 @@ static int generate_comparison(node *n)
   return 0;
 }
 
-static int float_promote()
+static int float_promote(void)
 {
   if(sp[-2].type==T_INT)
   {
@@ -350,7 +350,7 @@ static int float_promote()
   return sp[-2].type == sp[-1].type;
 }
 
-void o_subtract()
+void o_subtract(void)
 {
   if (sp[-2].type != sp[-1].type &&
       !float_promote() &&
@@ -449,7 +449,7 @@ static int generate_minus(node *n)
   return 0;
 }
 
-void o_and()
+void o_and(void)
 {
   if(sp[-1].type != sp[-2].type &&
      sp[-2].type != T_OBJECT)
@@ -585,7 +585,7 @@ static int generate_and(node *n)
   }
 }
 
-void o_or()
+void o_or(void)
 {
   if(sp[-1].type != sp[-2].type &&
      sp[-2].type != T_OBJECT)
@@ -686,7 +686,7 @@ static int generate_or(node *n)
 }
 
 
-void o_xor()
+void o_xor(void)
 {
   if(sp[-1].type != sp[-2].type &&
      sp[-2].type != T_OBJECT)
@@ -786,7 +786,7 @@ static int generate_xor(node *n)
   }
 }
 
-void o_lsh()
+void o_lsh(void)
 {
   if(sp[-2].type != T_INT)
   {
@@ -821,7 +821,7 @@ static int generate_lsh(node *n)
   return 0;
 }
 
-void o_rsh()
+void o_rsh(void)
 {
   if(sp[-2].type != T_INT)
   {
@@ -857,7 +857,7 @@ static int generate_rsh(node *n)
 
 
 #define TWO_TYPES(X,Y) (((X)<<8)|(Y))
-void o_multiply()
+void o_multiply(void)
 {
   switch(TWO_TYPES(sp[-2].type,sp[-1].type))
   {
@@ -950,7 +950,7 @@ static int generate_multiply(node *n)
   }
 }
 
-void o_divide()
+void o_divide(void)
 {
   if(sp[-2].type!=sp[-1].type &&
      !float_promote() &&
@@ -1028,7 +1028,7 @@ static int generate_divide(node *n)
   return 0;
 }
 
-void o_mod()
+void o_mod(void)
 {
   if(sp[-2].type != sp[-1].type &&
      !float_promote() &&
@@ -1096,7 +1096,7 @@ static int generate_mod(node *n)
   return 0;
 }
 
-void o_not()
+void o_not(void)
 {
   switch(sp[-1].type)
   {
@@ -1140,7 +1140,7 @@ static int generate_not(node *n)
   return 0;
 }
 
-void o_compl()
+void o_compl(void)
 {
   switch(sp[-1].type)
   {
@@ -1192,7 +1192,7 @@ static int generate_compl(node *n)
   return 0;
 }
 
-void o_negate()
+void o_negate(void)
 {
   switch(sp[-1].type)
   {
@@ -1213,7 +1213,7 @@ void o_negate()
   }
 }
 
-void o_range()
+void o_range(void)
 {
   INT32 from,to;
 
@@ -1339,7 +1339,7 @@ static int generate_sizeof(node *n)
   return 1;
 }
 
-void init_operators()
+void init_operators(void)
 {
   add_efun2("`[]",f_index,
 	    "function(string,int:int)|function(object,string:mixed)|function(array,int:mixed)|function(mapping,mixed:mixed)|function(multiset,mixed:int)|function(string,int,int:string)|function(array,int,int:array)",OPT_TRY_OPTIMIZE,0,0);

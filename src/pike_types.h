@@ -26,19 +26,19 @@ extern struct pike_string *any_type_string;
 #define exit_type_stack pop_stack_mark
 
 /* Prototypes begin here */
-void init_types();
+void init_types(void);
 void push_type(unsigned char tmp);
-void type_stack_mark();
-INT32 pop_stack_mark();
-void pop_type_stack();
-void type_stack_pop_to_mark();
-void reset_type_stack();
-void type_stack_reverse();
+void type_stack_mark(void);
+INT32 pop_stack_mark(void);
+void pop_type_stack(void);
+void type_stack_pop_to_mark(void);
+void reset_type_stack(void);
+void type_stack_reverse(void);
 void push_type_int(unsigned INT32 i);
 void push_unfinished_type(char *s);
 void push_finished_type(struct pike_string *type);
-struct pike_string *pop_unfinished_type();
-struct pike_string *pop_type();
+struct pike_string *pop_unfinished_type(void);
+struct pike_string *pop_type(void);
 struct pike_string *parse_type(char *s);
 void stupid_describe_type(char *a,INT32 len);
 void simple_describe_type(struct pike_string *s);
@@ -55,7 +55,7 @@ struct pike_string *check_call(struct pike_string *args,
 			       struct pike_string *type);
 struct pike_string *get_type_of_svalue(struct svalue *s);
 char *get_name_of_type(int t);
-void cleanup_pike_types();
+void cleanup_pike_types(void);
 /* Prototypes end here */
 
 #endif

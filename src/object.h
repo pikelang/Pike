@@ -37,13 +37,13 @@ extern struct program *master_program;
 #define this_object() (fp->current_object->refs++,fp->current_object)
 
 /* Prototypes begin here */
-void setup_fake_object();
+void setup_fake_object(void);
 struct object *low_clone(struct program *p);
 struct object *clone_object(struct program *p, int args);
-struct object *get_master();
-struct object *master();
+struct object *get_master(void);
+struct object *master(void);
 void destruct(struct object *o);
-void destruct_objects_to_destruct();
+void destruct_objects_to_destruct(void);
 void really_free_object(struct object *o);
 void low_object_index_no_free(struct svalue *to,
 			      struct object *o,
@@ -63,15 +63,15 @@ void object_set_index(struct object *o,
 union anything *object_get_item_ptr(struct object *o,
 				    struct svalue *index,
 				    TYPE_T type);
-void verify_all_objects();
+void verify_all_objects(void);
 int object_equal_p(struct object *a, struct object *b, struct processing *p);
-void cleanup_objects();
+void cleanup_objects(void);
 struct array *object_indices(struct object *o);
 struct array *object_values(struct object *o);
 void gc_mark_object_as_referenced(struct object *o);
-void gc_check_all_objects();
-void gc_mark_all_objects();
-void gc_free_all_unreferenced_objects();
+void gc_check_all_objects(void);
+void gc_mark_all_objects(void);
+void gc_free_all_unreferenced_objects(void);
 void count_memory_in_objects(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 

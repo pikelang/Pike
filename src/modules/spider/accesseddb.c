@@ -301,7 +301,8 @@ static struct string *make_string(struct svalue *s)
   res = malloc(sizeof(struct string) + s->u.string->len-1);
   res->len = s->u.string->len;
   MEMCPY(res->s, s->u.string->str, res->len);
-  res->hval = hashmem(res->s, (INT32)res->len, (INT32)res->len);
+  res->hval = hashmem((unsigned char *)res->s, (INT32)res->len,
+		      (INT32)res->len);
   return res;
 }
 
@@ -517,6 +518,6 @@ void init_accessdb_program(void)
    end_class("accessdb",0);
 }
 
-void exit_accessdb_program()
+void exit_accessdb_program(void)
 {
 }

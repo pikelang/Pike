@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.25 1997/07/24 02:46:51 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.26 1997/08/30 18:35:39 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -52,10 +52,10 @@ struct pike_predef_s
 
 struct pike_predef_s *pike_predefs=0;
 
-static int calc();
-static void calc1();
+static int calc(void);
+static void calc1(void);
 
-void exit_lex()
+void exit_lex(void)
 {
 #ifdef DEBUG
   if(p_flag)
@@ -295,7 +295,7 @@ struct reserved
 
 struct hash_table *reswords;
 
-void init_lex()
+void init_lex(void)
 {
   unsigned int i;
   for(i=0; i<NELEM(instr_names);i++)
@@ -324,7 +324,7 @@ void init_lex()
   reswords = hash_rehash(reswords, 2<<my_log2(NELEM(reserved_words)));
 }
 
-void free_reswords()
+void free_reswords(void)
 {
   free_hashtable(reswords,0);
 }
@@ -411,9 +411,9 @@ struct inputstate
   INT32 pos;
   int dont_free_data;
 
-  int (*my_getc)();
+  int (*my_getc)(void);
   int (*gobble)(int);
-  int (*look)();
+  int (*look)(void);
   void (*my_ungetc)(int);
   void (*ungetstr)(char *,INT32);
 };
@@ -443,7 +443,7 @@ static void free_inputstate(struct inputstate *i)
   free((char *)i);
 }
 
-static struct inputstate *new_inputstate();
+static struct inputstate *new_inputstate(void);
 static struct inputstate *memory_inputstate(INT32 size);
 
 static int default_gobble(int c)
@@ -469,7 +469,7 @@ static void default_ungetc(int s)
   istate->ungetstr(&c,1);
 }
 
-static int default_look()
+static int default_look(void)
 {
   int c;
   c=istate->my_getc();
@@ -477,7 +477,7 @@ static int default_look()
   return c;
 }
 
-static struct inputstate *new_inputstate()
+static struct inputstate *new_inputstate(void)
 {
   struct inputstate *i;
   i=(struct inputstate *)xalloc(sizeof(struct inputstate));
@@ -493,7 +493,7 @@ static struct inputstate *new_inputstate()
 }
 
 /*** end of file input ***/
-static int end_getc() { return MY_EOF; }
+static int end_getc(void) { return MY_EOF; }
 static int end_gobble(int c) { return c==MY_EOF; }
 static void end_ungetc(int c)
 {
@@ -501,7 +501,7 @@ static void end_ungetc(int c)
   default_ungetc(c);
 }
 
-static struct inputstate *end_inputstate()
+static struct inputstate *end_inputstate(void)
 {
   struct inputstate *i;
   i=new_inputstate();
@@ -537,7 +537,7 @@ static void memory_ungetc(int s)
   }
 }
 
-static int memory_getc()
+static int memory_getc(void)
 {
   if(istate->pos<istate->buflen)
   {
@@ -555,7 +555,7 @@ static int memory_getc()
   }
 }
 
-static int memory_look()
+static int memory_look(void)
 {
   if(istate->pos<istate->buflen)
   {
@@ -630,7 +630,7 @@ static struct inputstate *prot_memory_inputstate(char *data,INT32 len)
 /*** FILE input ***/
 
 #define READAHEAD 8192
-static int file_getc()
+static int file_getc(void)
 {
   unsigned char buf[READAHEAD];
   int got;
@@ -665,7 +665,7 @@ static struct inputstate *file_inputstate(int fd)
   return i;
 }
 
-static int GETC()
+static int GETC(void)
 {
   int c;
   c=istate->my_getc();
@@ -720,7 +720,7 @@ static char buf[1024];
 struct define
 {
   struct hash_entry link; /* must be first */
-  void (*magic)();
+  void (*magic)(void);
   int args;
   struct array *parts;
 };
@@ -748,7 +748,7 @@ static void undefine(struct pike_string *name)
 static void add_define(struct pike_string *name,
 		       int args,
 		       int parts_on_stack,
-		       void (*magic)())
+		       void (*magic)(void))
 {
   struct define *d;
 
@@ -783,7 +783,7 @@ static void add_define(struct pike_string *name,
   defines=hash_insert(defines, & d->link);
 }
 
-static void simple_add_define(char *name,char *as,void (*magic)())
+static void simple_add_define(char *name,char *as,void (*magic)(void))
 {
   if(magic)
   {
@@ -802,14 +802,14 @@ void free_one_define(struct hash_entry *h)
   free((void *)d);
 }
 
-static void free_all_defines()
+static void free_all_defines(void)
 {
   if(defines)
     free_hashtable(defines, free_one_define);
   defines=0;
 }
 
-static void do_define()
+static void do_define(void)
 {
   int c,e,t,argc;
   struct svalue *save_sp=sp;
@@ -1067,7 +1067,7 @@ static void handle_include(char *name, int local_include)
 
 /*** Lexical analyzing ***/
 
-static int char_const()
+static int char_const(void)
 {
   int c;
   switch(c=GETC())
@@ -1771,7 +1771,7 @@ int yylex(YYSTYPE *yylval)
 static YYSTYPE my_yylval;
 static int lookahead;
 
-static void low_lex()
+static void low_lex(void)
 {
   while(1)
   {
@@ -1838,7 +1838,7 @@ static void low_lex()
   }
 }
 
-static void calcC()
+static void calcC(void)
 {
   switch(lookahead)
   {
@@ -1881,7 +1881,7 @@ static void calcC()
   }
 }
 
-static void calcB()
+static void calcB(void)
 {
   switch(lookahead)
   {
@@ -1892,7 +1892,7 @@ static void calcB()
   }
 }
 
-static void calcA()
+static void calcA(void)
 {
   calcB();
   while(1)
@@ -1907,7 +1907,7 @@ static void calcA()
   }
 }
 
-static void calc9()
+static void calc9(void)
 {
   calcA();
 
@@ -1922,7 +1922,7 @@ static void calc9()
   }
 }
 
-static void calc8()
+static void calc8(void)
 {
   calc9();
 
@@ -1937,7 +1937,7 @@ static void calc8()
   }
 }
 
-static void calc7b()
+static void calc7b(void)
 {
   calc8();
 
@@ -1954,7 +1954,7 @@ static void calc7b()
   }
 }
 
-static void calc7()
+static void calc7(void)
 {
   calc7b();
 
@@ -1969,7 +1969,7 @@ static void calc7()
   }
 }
 
-static void calc6()
+static void calc6(void)
 {
   calc7();
 
@@ -1981,7 +1981,7 @@ static void calc6()
   }
 }
 
-static void calc5()
+static void calc5(void)
 {
   calc6();
 
@@ -1993,7 +1993,7 @@ static void calc5()
   }
 }
 
-static void calc4()
+static void calc4(void)
 {
   calc5();
 
@@ -2005,7 +2005,7 @@ static void calc4()
   }
 }
 
-static void calc3()
+static void calc3(void)
 {
   calc4();
 
@@ -2024,7 +2024,7 @@ static void calc3()
   }
 }
 
-static void calc2()
+static void calc2(void)
 {
   calc3();
 
@@ -2043,7 +2043,7 @@ static void calc2()
   }
 }
 
-static void calc1()
+static void calc1(void)
 {
   calc2();
 
@@ -2063,7 +2063,7 @@ static void calc1()
 
 }
 
-static int calc()
+static int calc(void)
 {
   JMP_BUF recovery;
   int ret;
@@ -2105,21 +2105,21 @@ static int calc()
 }
 
 /*** Magic defines ***/
-void insert_current_line()
+void insert_current_line(void)
 {
   char buf[20];
   sprintf(buf," %ld ",(long)current_line);
   UNGETSTR(buf,strlen(buf));
 }
 
-void insert_current_file_as_string()
+void insert_current_file_as_string(void)
 {
   UNGETSTR("\"",1);
   UNGETSTR(current_file->str, current_file->len);
   UNGETSTR("\"",1);
 }
 
-void insert_current_time_as_string()
+void insert_current_time_as_string(void)
 {
   time_t tmp;
   char *buf;
@@ -2131,7 +2131,7 @@ void insert_current_time_as_string()
   UNGETSTR("\"",1);
 }
 
-void insert_current_date_as_string()
+void insert_current_date_as_string(void)
 {
   time_t tmp;
   char *buf;
@@ -2146,7 +2146,7 @@ void insert_current_date_as_string()
 
 /*** ***/
 
-static void start_new()
+static void start_new(void)
 {
   struct pike_predef_s *tmpf;
 
@@ -2189,7 +2189,7 @@ void start_new_string(char *s,INT32 len,struct pike_string *name)
   UNGETSTR("\n",1);
 }
 
-void end_new_file()
+void end_new_file(void)
 {
   if(current_file)
   {

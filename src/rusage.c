@@ -38,7 +38,7 @@ static INLINE int get_time_int(timestruc_t * val)
 
 int proc_fd = -1;
 
-INT32 *low_rusage()
+INT32 *low_rusage(void)
 {
   prusage_t  pru;
   prstatus_t prs;
@@ -109,7 +109,7 @@ INT32 *low_rusage()
 #include <sys/rusage.h>
 #endif
 
-INT32 *low_rusage()
+INT32 *low_rusage(void)
 {
   struct rusage rus;
   long utime, stime;
@@ -153,7 +153,7 @@ INT32 *low_rusage()
 
 #define NEED_CONVERT_TIME
 static long convert_time(long t,long tick);
-INT32 *low_rusage()
+INT32 *low_rusage(void)
 {
   struct tms tms;
   rusage_values[18] = convert_time(times(&tms), CLK_TCK);
@@ -167,7 +167,7 @@ INT32 *low_rusage()
 
 #define NEED_CONVERT_TIME
 static long convert_time(long t,long tick);
-INT32 *low_rusage()
+INT32 *low_rusage(void)
 {
   rusage_values[0]= convert_time(clock(), CLOCKS_PER_SECOND);
   return rusage_values;
@@ -175,7 +175,7 @@ INT32 *low_rusage()
 
 #else /* HAVE_CLOCK */
 
-INT32 *low_rusage()
+INT32 *low_rusage(void)
 {
   /* This is totally wrong, but hey, if you can't do it _right_... */
   struct timeval tm;
@@ -200,7 +200,7 @@ static long convert_time(long t,long tick)
 }
 #endif
 
-INT32 internal_rusage()
+INT32 internal_rusage(void)
 {
   low_rusage();
   return rusage_values[0];

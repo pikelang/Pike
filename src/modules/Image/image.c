@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.35 1997/05/30 00:21:12 mirar Exp $ */
+/* $Id: image.c,v 1.36 1997/08/30 18:36:07 grubba Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.35 1997/05/30 00:21:12 mirar Exp $<br>
+**!	$Id: image.c,v 1.36 1997/08/30 18:36:07 grubba Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.35 1997/05/30 00:21:12 mirar Exp $");
+RCSID("$Id: image.c,v 1.36 1997/08/30 18:36:07 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2662,7 +2662,7 @@ void image_select_colors(INT32 args)
 void init_font_programs(void);
 void exit_font(void);
 
-void pike_module_init()
+void pike_module_init(void)
 {
    int i;
 

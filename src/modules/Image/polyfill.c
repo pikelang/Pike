@@ -1,5 +1,8 @@
 #include "global.h"
 
+/* Prototypes are needed for these */
+extern double floor(double);
+
 #include <unistd.h>
 #include <math.h>
 
@@ -25,7 +28,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.4 1997/05/29 19:38:09 mirar Exp $<br>
+**!	$Id: polyfill.c,v 1.5 1997/08/30 18:36:09 grubba Exp $<br>
 **! class image
 */
 
@@ -578,7 +581,7 @@ static INLINE void polygone_free(struct vertex *top)
    }
 }
 
-static INLINE struct vertex *polygone_begin()
+static INLINE struct vertex *polygone_begin(void)
 {
    return NULL;
 }

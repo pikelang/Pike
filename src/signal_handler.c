@@ -254,7 +254,7 @@ void check_signals(struct callback *foo, void *bar, void *gazonk)
   ONERROR ebuf;
 #ifdef DEBUG
   extern int d_flag;
-  if(d_flag>5) do_debug(0);
+  if(d_flag>5) do_debug();
 #endif
 
   if(firstsig != lastsig && !signalling)
@@ -457,7 +457,7 @@ static void f_ualarm(INT32 args)
 }
 #endif
 
-void init_signals()
+void init_signals(void)
 {
   int e;
 
@@ -480,7 +480,7 @@ void init_signals()
 #endif
 }
 
-void exit_signals()
+void exit_signals(void)
 {
   int e;
   for(e=0;e<MAX_SIGNALS;e++)

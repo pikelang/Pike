@@ -78,18 +78,18 @@ do{ \
 }while(0)
 
 /* Prototypes begin here */
-void push_sp_mark();
-int pop_sp_mark();
-void init_interpreter();
+void push_sp_mark(void);
+int pop_sp_mark(void);
+void init_interpreter(void);
 void check_stack(INT32 size);
 void check_mark_stack(INT32 size);
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
 void assign_lvalue(struct svalue *lval,struct svalue *from);
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
-void print_return_value();
+void print_return_value(void);
 void pop_n_elems(INT32 x);
-void check_threads_etc();
-void reset_evaluator();
+void check_threads_etc(void);
+void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
@@ -103,8 +103,8 @@ void apply_shared(struct object *o,
 void apply(struct object *o, char *fun, int args);
 void strict_apply_svalue(struct svalue *s, INT32 args);
 void apply_svalue(struct svalue *s, INT32 args);
-void slow_check_stack();
-void cleanup_interpret();
+void slow_check_stack(void);
+void cleanup_interpret(void);
 /* Prototypes end here */
 
 extern struct svalue *sp;

@@ -4,7 +4,10 @@
 #include "machine.h"
 #include "interpret.h"
 #include "error.h"
-
+#ifdef HAVE_SYS_TYPES_H
+/* Needed for pthread_t on OSF/1 */
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
 #ifdef _REENTRANT
 
 /*
@@ -203,7 +206,7 @@ struct thread_starter;
 void *new_thread_func(void * data);
 void f_thread_create(INT32 args);
 void f_this_thread(INT32 args);
-void th_init();
+void th_init(void);
 struct mutex_storage;
 struct key_storage;
 void f_mutex_lock(INT32 args);
@@ -217,7 +220,7 @@ void f_cond_signal(INT32 args);
 void f_cond_broadcast(INT32 args);
 void init_cond_obj(struct object *o);
 void exit_cond_obj(struct object *o);
-void th_cleanup();
+void th_cleanup(void);
 /* Prototypes end here */
 
 #else

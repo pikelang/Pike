@@ -7,8 +7,8 @@
 #define RUSAGE_H
 
 /* Prototypes begin here */
-INT32 *low_rusage();
-INT32 internal_rusage();
+INT32 *low_rusage(void);
+INT32 internal_rusage(void);
 /* Prototypes end here */
 
 #endif

@@ -8,9 +8,9 @@
 
 /* Prototypes begin here */
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind);
-void o_index();
+void o_index(void);
 void cast(struct pike_string *s);
-void f_cast();
+void f_cast(void);
 void f_sscanf(INT32 args);
 /* Prototypes end here */
 

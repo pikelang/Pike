@@ -100,7 +100,7 @@ static void rehash_string_backwards(struct pike_string *s)
   base_table[h]=s;
 }
 
-static void rehash()
+static void rehash(void)
 {
   int h,old;
   struct pike_string **old_base;
@@ -288,7 +288,7 @@ void check_string(struct pike_string *s)
     fatal("Shared string is not zero terminated properly.\n");
 }
 
-void verify_shared_strings_tables()
+void verify_shared_strings_tables(void)
 {
   unsigned INT32 e, h;
   struct pike_string *s;
@@ -369,7 +369,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
   return tmp;
 }
 
-void dump_stralloc_strings()
+void dump_stralloc_strings(void)
 {
   unsigned INT32 e;
   struct pike_string *p;
@@ -572,14 +572,14 @@ struct pike_string *string_replace(struct pike_string *str,
 }
 
 /*** init/exit memory ***/
-void init_shared_string_table()
+void init_shared_string_table(void)
 {
   htable_size=BEGIN_HASH_SIZE;
   base_table=(struct pike_string **)xalloc(sizeof(struct pike_string *)*htable_size);
   MEMSET((char *)base_table,0,sizeof(struct pike_string *)*htable_size);
 }
 
-void cleanup_shared_string_table()
+void cleanup_shared_string_table(void)
 {
   unsigned INT32 e;
   struct pike_string *s,*next;
@@ -623,7 +623,7 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
 
 #ifdef GC2
 
-void gc_mark_all_strings()
+void gc_mark_all_strings(void)
 {
   unsigned INT32 e;
   if(!base_table) return;

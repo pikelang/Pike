@@ -29,12 +29,12 @@ static int hasarg(int opcode)
   return instrs[opcode-F_OFFSET].flags & I_HASARG;
 }
 
-void init_bytecode()
+void init_bytecode(void)
 {
   low_reinit_buf(&instrbuf);
 }
 
-void exit_bytecode()
+void exit_bytecode(void)
 {
   INT32 e,length;
   p_instr *c;
@@ -368,7 +368,7 @@ int insopt2(int f, int cl, struct pike_string *cf)
 }
 
 
-static void debug()
+static void debug(void)
 {
   if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr))
     fifo_len=(long)instrbuf.s.len / (long)sizeof(p_instr);
@@ -424,7 +424,7 @@ static int argument(int offset)
   return -1;
 }
 
-static void advance()
+static void advance(void)
 {
   if(fifo_len)
   {

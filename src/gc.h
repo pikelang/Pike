@@ -38,7 +38,7 @@ int gc_is_referenced(void *a);
 int gc_external_mark(void *a);
 int gc_mark(void *a);
 int gc_do_free(void *a);
-void do_gc();
+void do_gc(void);
 /* Prototypes end here */
 
 #else

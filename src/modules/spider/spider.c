@@ -1245,7 +1245,7 @@ void f_name_process(INT32 args)
 
 static struct program *streamed_parser;
 
-extern void init_udp();
+extern void init_udp(void);
 
 void pike_module_init(void) 
 {

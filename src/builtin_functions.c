@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.40 1997/08/27 02:39:17 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.41 1997/08/30 18:35:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1744,7 +1744,7 @@ static void f_get_prof_info(INT32 args)
 }
 #endif /* PROFILING */
 
-void init_builtin_efuns()
+void init_builtin_efuns(void)
 {
   init_operators();
 

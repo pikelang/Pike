@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.10 1997/08/29 17:54:05 marcus Exp $");
+RCSID("$Id: pipe.c,v 1.11 1997/08/30 18:36:11 grubba Exp $");
 
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -290,7 +290,7 @@ static INLINE int append_buffer(struct pike_string *s)
 }
 
 /* Wake up the sleepers */
-static void low_start()
+static void low_start(void)
 {
   struct object *obj, *next;
   struct output *o;
@@ -1106,7 +1106,7 @@ void f__pipe_debug(INT32 args)
   f_aggregate(7);
 }
 
-void pike_module_init()
+void pike_module_init(void)
 {
    start_new_program();
    add_storage(sizeof(struct pipe));

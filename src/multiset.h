@@ -40,9 +40,9 @@ void f_aggregate_multiset(INT32 args);
 struct multiset *copy_multiset_recursively(struct multiset *l,
 				   struct processing *p);
 void gc_mark_multiset_as_referenced(struct multiset *l);
-void gc_check_all_multisets();
-void gc_mark_all_multisets();
-void gc_free_all_unreferenced_multisets();
+void gc_check_all_multisets(void);
+void gc_mark_all_multisets(void);
+void gc_free_all_unreferenced_multisets(void);
 void count_memory_in_multisets(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 

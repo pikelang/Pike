@@ -62,7 +62,7 @@ static void rehash_list_backwards(struct hash_table *h,
 /*
  * create a new, empty hashable
 */
-struct hash_table *create_hash_table()
+struct hash_table *create_hash_table(void)
 {
   struct hash_table *new;
   new=(struct hash_table *)calloc(1,sizeof(struct hash_table)+

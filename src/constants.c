@@ -17,7 +17,7 @@
 static INT32 num_callable=0;
 static struct mapping *builtin_constants = 0;
 
-struct mapping *get_builtin_constants()
+struct mapping *get_builtin_constants(void)
 {
   if(!builtin_constants)
     builtin_constants=allocate_mapping(20);
@@ -113,7 +113,7 @@ void add_efun(char *name, c_fun fun, char *type, INT16 flags)
   add_efun2(name,fun,type,flags,0,0);
 }
 
-void cleanup_added_efuns()
+void cleanup_added_efuns(void)
 {
   if(builtin_constants)
   {

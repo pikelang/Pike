@@ -39,7 +39,7 @@ struct regexp_glue
 
 #define THIS ((struct regexp_glue *)(fp->current_storage))
 
-static void do_free()
+static void do_free(void)
 {
   if(THIS->regexp)
   {

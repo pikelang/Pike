@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.13 1997/08/26 23:09:54 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.14 1997/08/30 18:36:25 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -244,12 +244,12 @@ void udp_sendto(INT32 args)
 }
 
 
-void zero_udp()
+void zero_udp(struct object *ignored)
 {
   MEMSET(THIS, 0, sizeof(struct dumudp));
 }
 
-void exit_udp()
+void exit_udp(struct object *ignored)
 {
   if(THIS->fd)
   {
@@ -303,7 +303,7 @@ static void udp_set_nonblocking(INT32 args)
   set_nonblocking(FD,1);
 }
 
-void init_udp()
+void init_udp(void)
 {
   start_new_program();
 
@@ -321,3 +321,4 @@ void init_udp()
   /* otherwise... */
   end_class("dumUDP",0);
 }
+

@@ -9,8 +9,8 @@
 /* Prototypes begin here */
 struct sigdesc;
 void check_signals(struct callback *foo, void *bar, void *gazonk);
-void init_signals();
-void exit_signals();
+void init_signals(void);
+void exit_signals(void);
 /* Prototypes end here */
 
 #endif

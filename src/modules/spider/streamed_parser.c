@@ -139,7 +139,7 @@ content_skip_fnutt		'	content_skip
 
 #define DATA ((struct streamed_parser *)(fp->current_storage))
 
-void streamed_parser_init()
+void streamed_parser_init(void)
 {
   DATA->last_buffer = 0;
   DATA->last_buffer_size = 0;
@@ -148,7 +148,7 @@ void streamed_parser_init()
   DATA->end_tags = 0;
 }
 
-void streamed_parser_destruct()
+void streamed_parser_destruct(void)
 {
   if (DATA->last_buffer)
     free( DATA->last_buffer );
@@ -237,7 +237,7 @@ static int handle_end_tag( struct svalue *data_arg )
   return 0;
 }
 
-static void add_arg()
+static void add_arg(void)
 {
   mapping_insert( sp[-3].u.mapping, sp-2, sp-1 );
   pop_stack();

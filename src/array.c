@@ -1395,7 +1395,7 @@ void check_array(struct array *a)
   }
 }
 
-void check_all_arrays()
+void check_all_arrays(void)
 {
   struct array *a;
 
@@ -1420,7 +1420,7 @@ void gc_mark_array_as_referenced(struct array *a)
       gc_mark_svalues(ITEM(a), a->size);
 }
 
-void gc_check_all_arrays()
+void gc_check_all_arrays(void)
 {
   struct array *a;
   a=&empty_array;
@@ -1449,7 +1449,7 @@ void gc_check_all_arrays()
 }
 
 
-void gc_mark_all_arrays()
+void gc_mark_all_arrays(void)
 {
   struct array *a;
 
@@ -1463,7 +1463,7 @@ void gc_mark_all_arrays()
   } while (a != & empty_array);
 }
 
-void gc_free_all_unreferenced_arrays()
+void gc_free_all_unreferenced_arrays(void)
 {
   struct array *a,*next;
 
@@ -1520,7 +1520,7 @@ void debug_dump_array(struct array *a)
 #endif
 
 
-void zap_all_arrays()
+void zap_all_arrays(void)
 {
   struct array *a,*next;
 

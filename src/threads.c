@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.23 1997/04/20 03:53:35 grubba Exp $");
+RCSID("$Id: threads.c,v 1.24 1997/08/30 18:36:01 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -12,6 +12,7 @@ int threads_disabled = 0;
 #include "callback.h"
 #include "builtin_functions.h"
 #include "constants.h"
+#include "program.h"
 
 
 struct object *thread_id;
@@ -312,7 +313,7 @@ void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); 
 void init_cond_obj(struct object *o) { co_init(THIS_COND); }
 void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 
-void th_init()
+void th_init(void)
 {
   struct program *tmp;
 
@@ -372,7 +373,7 @@ void th_init()
   thread_id=clone_object(thread_id_prog,0);
 }
 
-void th_cleanup()
+void th_cleanup(void)
 {
   if(mutex_key)
   {

@@ -63,12 +63,12 @@ void mapping_search_no_free(struct svalue *to,
 			    struct svalue *look_for,
 			    struct svalue *start);
 void check_mapping(struct mapping *m);
-void check_all_mappings();
+void check_all_mappings(void);
 void gc_mark_mapping_as_referenced(struct mapping *m);
-void gc_check_all_mappings();
-void gc_mark_all_mappings();
-void gc_free_all_unreferenced_mappings();
-void zap_all_mappings();
+void gc_check_all_mappings(void);
+void gc_mark_all_mappings(void);
+void gc_free_all_unreferenced_mappings(void);
+void zap_all_mappings(void);
 void count_memory_in_mappings(INT32 *num_, INT32 *size_);
 /* Prototypes end here */
 #endif

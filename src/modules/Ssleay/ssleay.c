@@ -7,7 +7,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.6 1997/05/30 01:12:30 grubba Exp $");
+RCSID("$Id: ssleay.c,v 1.7 1997/08/30 18:36:14 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -226,7 +226,7 @@ static unsigned long ssleay_thread_id(void)
   return (unsigned long)th_self();
 }
       
-static void ssleay_init_threads()
+static void ssleay_init_threads(void)
 {
   int i;
   for (i = 0; i<CRYPTO_NUM_LOCKS; i++)
@@ -261,7 +261,7 @@ void exit_connection(struct object *o)
 
 #endif /* HAVE_SSLEAY */
 
-void pike_module_exit()
+void pike_module_exit(void)
 {
 #ifdef HAVE_SSLEAY
   free_program(ssleay_connection_program);

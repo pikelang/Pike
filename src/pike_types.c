@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.24 1997/08/21 00:47:42 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.25 1997/08/30 18:35:51 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -74,7 +74,7 @@ static void CHECK_TYPE(struct pike_string *s)
 #define CHECK_TYPE(X)
 #endif
 
-void init_types()
+void init_types(void)
 {
   string_type_string=parse_type("string");
   int_type_string=parse_type("int");
@@ -145,7 +145,7 @@ void push_type(unsigned char tmp)
     yyerror("Type stack overflow.");
 }
 
-void type_stack_mark()
+void type_stack_mark(void)
 {
   *mark_stackp=type_stackp;
   mark_stackp++;
@@ -153,7 +153,7 @@ void type_stack_mark()
     yyerror("Type mark stack overflow.");
 }
 
-INT32 pop_stack_mark()
+INT32 pop_stack_mark(void)
 { 
   mark_stackp--;
   if(mark_stackp<mark_stack)
@@ -162,14 +162,14 @@ INT32 pop_stack_mark()
   return type_stackp - *mark_stackp;
 }
 
-void pop_type_stack()
+void pop_type_stack(void)
 { 
   type_stackp--;
   if(type_stackp<type_stack)
     fatal("Type stack underflow\n");
 }
 
-void type_stack_pop_to_mark()
+void type_stack_pop_to_mark(void)
 {
   type_stackp-=pop_stack_mark();
 #ifdef DEBUG
@@ -178,13 +178,13 @@ void type_stack_pop_to_mark()
 #endif
 }
 
-void reset_type_stack()
+void reset_type_stack(void)
 {
   type_stack_pop_to_mark();
   type_stack_mark();
 }
 
-void type_stack_reverse()
+void type_stack_reverse(void)
 {
   INT32 a;
   a=pop_stack_mark();
@@ -212,7 +212,7 @@ void push_finished_type(struct pike_string *type)
   for(e=type->len-1;e>=0;e--) push_type(type->str[e]);
 }
 
-struct pike_string *pop_unfinished_type()
+struct pike_string *pop_unfinished_type(void)
 {
   int len,e;
   struct pike_string *s;
@@ -226,7 +226,7 @@ struct pike_string *pop_unfinished_type()
   return s;
 }
 
-struct pike_string *pop_type()
+struct pike_string *pop_type(void)
 {
   struct pike_string *s;
   s=pop_unfinished_type();
@@ -1225,7 +1225,7 @@ char *get_name_of_type(int t)
   }
 }
 
-void cleanup_pike_types()
+void cleanup_pike_types(void)
 {
   free_string(string_type_string);
   free_string(int_type_string);

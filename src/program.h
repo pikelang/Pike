@@ -96,6 +96,9 @@ struct identifier
   struct pike_string *type;
   unsigned INT16 flags; /* IDENTIFIER_??? */
   unsigned INT16 run_time_type;
+#ifdef PROFILING
+  unsigned INT32 num_calls;
+#endif /* PROFILING */
   union idptr func;
 };
 
@@ -153,6 +156,9 @@ struct program
 #ifdef DEBUG
   unsigned INT32 checksum;
 #endif
+#ifdef PROFILING
+  unsigned INT32 num_clones;
+#endif /* PROFILING */
 
   SIZE_T total_size;
   SIZE_T num_linenumbers;
@@ -182,13 +188,13 @@ extern struct program fake_program;
 void use_module(struct svalue *s);
 int find_module_identifier(struct pike_string *ident);
 struct program *id_to_program(INT32 id);
-void setup_fake_program();
-void start_new_program();
+void setup_fake_program(void);
+void start_new_program(void);
 void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
-void toss_current_program();
+void toss_current_program(void);
 void check_program(struct program *p);
-struct program *end_program();
+struct program *end_program(void);
 SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
@@ -248,20 +254,20 @@ void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...);
-void compile();
+void compile(void);
 struct program *compile_file(struct pike_string *file_name);
 struct program *compile_string(struct pike_string *prog,
 			       struct pike_string *name);
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
-void check_all_programs();
-void cleanup_program();
+void check_all_programs(void);
+void cleanup_program(void);
 void gc_mark_program_as_referenced(struct program *p);
-void gc_check_all_programs();
-void gc_mark_all_programs();
-void gc_free_all_unreferenced_programs();
+void gc_check_all_programs(void);
+void gc_mark_all_programs(void);
+void gc_free_all_unreferenced_programs(void);
 void count_memory_in_programs(INT32 *num_, INT32 *size_);
-void push_locals();
-void pop_locals();
+void push_locals(void);
+void pop_locals(void);
 char *get_storage(struct object *o, struct program *p);
 /* Prototypes end here */
 

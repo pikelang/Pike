@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.44 1997/08/03 09:55:06 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.45 1997/08/30 18:35:34 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -67,13 +67,13 @@ struct svalue **mark_sp; /* Current position */
 struct svalue **mark_stack; /* Start of stack */
 int mark_stack_malloced = 0;
 
-void push_sp_mark()
+void push_sp_mark(void)
 {
   if(mark_sp == mark_stack + stack_size)
     error("No more mark stack!\n");
   *mark_sp++=sp;
 }
-int pop_sp_mark()
+int pop_sp_mark(void)
 {
 #ifdef DEBUG
   if(mark_sp < mark_stack)
@@ -91,7 +91,7 @@ static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazon
 }
 #endif
 
-void init_interpreter()
+void init_interpreter(void)
 {
 #ifdef USE_MMAP_FOR_STACK
   static int fd = -1;
@@ -307,7 +307,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 }
 
 #ifdef DEBUG
-void print_return_value()
+void print_return_value(void)
 {
   if(t_flag>3)
   {
@@ -357,7 +357,7 @@ struct callback_list evaluator_callbacks;
 /* This function is called 'every now and then'. (1-10000 / sec or so)
  * It should do anything that needs to be done fairly often.
  */
-void check_threads_etc()
+void check_threads_etc(void)
 {
   call_callback(& evaluator_callbacks, (void *)0);
 }
@@ -442,7 +442,7 @@ break
 /*
  * reset the stack machine.
  */
-void reset_evaluator()
+void reset_evaluator(void)
 {
   fp=0;
   pop_n_elems(sp - evaluator_stack);
@@ -1355,6 +1355,10 @@ void apply_low(struct object *o, int fun, int args)
 
   fp = &new_frame;
 
+#ifdef PROFILING
+  function->num_calls++;
+#endif /* PROFILING */
+
   if(function->func.offset == -1)
     error("Calling undefined function '%s'.\n",function->name->str);
 
@@ -1599,7 +1603,6 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     break;
 
   case T_OBJECT:
-  {
     if(!s->u.object->prog)
       error("Calling a destructed object.\n");
     
@@ -1608,7 +1611,6 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
 
     apply_lfun(s->u.object, LFUN_CALL, args);
     break;
-  }
 
   case T_INT:
     if (!s->u.integer) {
@@ -1624,6 +1626,8 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     }
   case T_MAPPING:
     error("Attempt to call a mapping\n");
+  case T_MULTISET:
+    error("Attempt to call a multiset\n");
   default:
     error("Call to non-function value type:%d.\n", s->type);
   }
@@ -1682,7 +1686,7 @@ void apply_svalue(struct svalue *s, INT32 args)
 }
 
 #ifdef DEBUG
-void slow_check_stack()
+void slow_check_stack(void)
 {
   struct svalue *s,**m;
   struct frame *f;
@@ -1727,7 +1731,7 @@ void slow_check_stack()
 }
 #endif
 
-void cleanup_interpret()
+void cleanup_interpret(void)
 {
 #ifdef DEBUG
   int e;

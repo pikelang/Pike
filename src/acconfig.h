@@ -2,7 +2,9 @@
 #define MACHINE_H
 
 /* We must define this *always* */
+#ifndef POSIX_SOURCE
 #define POSIX_SOURCE
+#endif
 
 /* Where's the master.pike file installed? */
 #define DEFAULT_MASTER "@prefix@/lib/pike/master.pike"

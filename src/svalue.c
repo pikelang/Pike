@@ -904,6 +904,10 @@ void gc_xmark_svalues(struct svalue *s, int num)
 {
   INT32 e;
 
+  if (!s) {
+    return;
+  }
+
   for(e=0;e<num;e++,s++)
   {
     check_type(s->type);

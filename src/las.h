@@ -79,7 +79,7 @@ int car_is_node(node *n);
 int cdr_is_node(node *n);
 INT32 count_args(node *n);
 struct node_chunk;
-void free_all_nodes();
+void free_all_nodes(void);
 void free_node(node *n);
 node *mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
@@ -113,7 +113,7 @@ int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_string *type,
 	      int modifiers);
-INT32 get_opt_info();
+INT32 get_opt_info(void);
 /* Prototypes end here */
 
 #define CAR(n) ((n)->u.node.a)

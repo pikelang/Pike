@@ -73,7 +73,7 @@ struct marker_chunk
 static struct marker_chunk *chunk=0;
 static int markers_left_in_chunk=0;
 
-static struct marker *new_marker()
+static struct marker *new_marker(void)
 {
   if(!markers_left_in_chunk)
   {
@@ -247,7 +247,7 @@ static INT32 hashprimes[] =
   2147483647,/* ~ 2^31 = 2147483648 */
 };
 
-void do_gc()
+void do_gc(void)
 {
   static int in_gc = 0;
   double tmp;

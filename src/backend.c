@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.14 1997/06/14 17:56:17 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.15 1997/08/30 18:35:21 grubba Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -73,7 +73,7 @@ void wake_up_backend(void)
 
 extern int pike_make_pipe(int *);
 
-void init_backend()
+void init_backend(void)
 {
   FD_ZERO(&selectors.read);
   FD_ZERO(&selectors.write);
@@ -185,14 +185,14 @@ void *query_write_callback_data(int fd)
 }
 
 #ifdef DEBUG
-void do_debug()
+void do_debug(void)
 {
-  extern void check_all_arrays();
-  extern void check_all_mappings();
-  extern void check_all_programs();
-  extern void check_all_objects();
-  extern void verify_shared_strings_tables();
-  extern void slow_check_stack();
+  extern void check_all_arrays(void);
+  extern void check_all_mappings(void);
+  extern void check_all_programs(void);
+  extern void check_all_objects(void);
+  extern void verify_shared_strings_tables(void);
+  extern void slow_check_stack(void);
 
   slow_check_stack();
   check_all_arrays();
@@ -203,7 +203,7 @@ void do_debug()
 }
 #endif
 
-void backend()
+void backend(void)
 {
   JMP_BUF back;
   int i, delay;
@@ -297,7 +297,12 @@ void backend()
 	    if(select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout) < 0 && errno == EBADF)
 	      fatal("Filedescriptor %d caused EBADF.\n",i);
 	  }
+#ifdef _REENTRANT
+	  write_to_stderr("Bad filedescriptor to select().\n"
+			  "fd closed in another thread?\n", 62);
+#else /* !_REENTRANT */
 	  fatal("Bad filedescriptor to select().\n");
+#endif /* _REENTRANT */
 	}
 	break;
 

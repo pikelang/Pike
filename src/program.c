@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.36 1997/08/03 09:55:11 hubbe Exp $");
+RCSID("$Id: program.c,v 1.37 1997/08/30 18:35:53 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -199,7 +199,7 @@ struct program *id_to_program(INT32 id)
  * normal program, but all pointers points to the program we are currently
  * compiling
  */
-void setup_fake_program()
+void setup_fake_program(void)
 {
   fake_program.refs=0xffffff;
   SETUP(program, program_size, unsigned char, A_PROGRAM);
@@ -217,6 +217,9 @@ void setup_fake_program()
   fake_program.lfuns=0;
   fake_prog.num_lfuns=0;
 */
+#ifdef PROFILING
+  fake_program.num_clones = 0;
+#endif /* PROFILING */
   fake_object.prog=&fake_program;
 }
 
@@ -225,7 +228,7 @@ void setup_fake_program()
 /*
  * Start building a new program
  */
-void start_new_program()
+void start_new_program(void)
 {
   int e;
 
@@ -352,7 +355,7 @@ void dump_program_desc(struct program *p)
 }
 #endif
 
-static void toss_compilation_resources()
+static void toss_compilation_resources(void)
 {
   struct pike_string **names;
   struct svalue *modules;
@@ -402,7 +405,7 @@ static void toss_compilation_resources()
  * Something went wrong.
  * toss resources of program we were building
  */
-void toss_current_program()
+void toss_current_program(void)
 {
   setup_fake_program();
   low_free_program(&fake_program);
@@ -545,7 +548,7 @@ if((prog->PTRS = areas[AREA].s.len/sizeof(TYPE))) \
   p+=MY_ALIGN(areas[AREA].s.len); \
 }
 
-struct program *end_program()
+struct program *end_program(void)
 {
   struct pike_string **names;
   int size, i,e,t;
@@ -598,6 +601,13 @@ struct program *end_program()
     INS_BLOCK(strings,num_strings,struct pike_string *,A_STRINGS);
     INS_BLOCK(inherits,num_inherits,struct inherit,A_INHERITS);
     INS_BLOCK(constants,num_constants,struct svalue,A_CONSTANTS);
+
+#ifdef PROFILING
+    /* There is probably a better place for this, but... */
+    for (i=0; i < prog->num_identifiers; i++) {
+      prog->identifiers[i].num_calls = 0;
+    }
+#endif /* PROFILING */
 
     /* Ok, sort for binsearch */
     prog->identifier_index=(unsigned short *)p;
@@ -926,6 +936,10 @@ int low_define_variable(struct pike_string *name,
   dummy.run_time_type=run_time_type;
   dummy.func.offset=offset;
   
+#ifdef PROFILING
+  dummy.num_calls = 0;
+#endif /* PROFILING */
+
   ref.flags=flags;
   ref.identifier_offset=areas[A_IDENTIFIERS].s.len / sizeof dummy;
   ref.inherit_offset=0;
@@ -1028,6 +1042,11 @@ int add_constant(struct pike_string *name,
   dummy.run_time_type=c->type;
   
   dummy.func.offset=store_constant(c, 0);
+
+#ifdef PROFILING
+  /* Not strictly necessary, but... */
+  dummy.num_calls = 0;
+#endif /* PROFILING */
 
   ref.flags=flags;
   ref.identifier_offset=fake_program.num_identifiers;
@@ -1215,6 +1234,10 @@ INT32 define_function(struct pike_string *name,
 	fun.func = *func;
       else
 	fun.func.offset = -1;
+
+#ifdef PROFILING
+      fun.num_calls = 0;
+#endif /* PROFILING */
 
       ref.identifier_offset=fake_program.num_identifiers;
       add_to_mem_block(A_IDENTIFIERS, (char *)&fun, sizeof(fun));
@@ -1513,9 +1536,9 @@ void my_yyerror(char *fmt,...)
 /*
  * Compile an PIKE file. Input is supposed to be initalized already.
  */
-void compile()
+void compile(void)
 {
-  int yyparse();
+  int yyparse(void);
 
   start_line_numbering();
 
@@ -1622,7 +1645,7 @@ void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 }
 
 #ifdef DEBUG
-void check_all_programs()
+void check_all_programs(void)
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
@@ -1649,7 +1672,7 @@ void check_all_programs()
 }
 #endif
 
-void cleanup_program()
+void cleanup_program(void)
 {
 #ifdef FIND_FUNCTION_HASHSIZE
   int e;
@@ -1672,7 +1695,7 @@ void gc_mark_program_as_referenced(struct program *p)
     gc_mark_svalues(p->constants, p->num_constants);
 }
 
-void gc_check_all_programs()
+void gc_check_all_programs(void)
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
@@ -1694,7 +1717,7 @@ void gc_check_all_programs()
   }
 }
 
-void gc_mark_all_programs()
+void gc_mark_all_programs(void)
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
@@ -1702,7 +1725,7 @@ void gc_mark_all_programs()
       gc_mark_program_as_referenced(p);
 }
 
-void gc_free_all_unreferenced_programs()
+void gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
 
@@ -1735,7 +1758,7 @@ void count_memory_in_programs(INT32 *num_, INT32 *size_)
   *num_=num;
   *size_=size;
 }
-void push_locals()
+void push_locals(void)
 {
   struct locals *l;
   l=ALLOC_STRUCT(locals);
@@ -1747,7 +1770,7 @@ void push_locals()
   local_variables=l;
 }
 
-void pop_locals()
+void pop_locals(void)
 {
   struct locals *l;
   free_all_local_names();

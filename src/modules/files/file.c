@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.50 1997/08/15 20:20:53 grubba Exp $");
+RCSID("$Id: file.c,v 1.51 1997/08/30 18:36:21 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -179,7 +179,7 @@ void my_set_close_on_exec(int fd, int to)
   }
 }
 
-void do_set_close_on_exec()
+void do_set_close_on_exec(void)
 {
   int e;
   for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
@@ -1447,7 +1447,7 @@ static void file_create(INT32 args)
   }
 }
 
-void pike_module_exit()
+void pike_module_exit(void)
 {
   if(file_program)
   {
@@ -1499,7 +1499,7 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
 
 void init_files_efuns(void);
 
-void pike_module_init()
+void pike_module_init(void)
 {
   extern void port_setup_program(void);
   int e;

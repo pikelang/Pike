@@ -117,7 +117,7 @@ static void check_callback_chain(struct callback_list *lst)
 #endif
 
 /* Return the first free callback struct, allocate more if needed */
-static struct callback *get_free_callback()
+static struct callback *get_free_callback(void)
 {
   struct callback *tmp;
   if(!free_callbacks)
@@ -239,7 +239,7 @@ void free_callback(struct callback_list *lst)
   }
 }
 
-void cleanup_callbacks()
+void cleanup_callbacks(void)
 {
   while(callback_chunks)
   {

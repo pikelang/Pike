@@ -28,7 +28,7 @@ JMP_BUF *init_recovery(JMP_BUF *r)
   return r;
 }
 
-void throw() ATTRIBUTE((noreturn))
+void throw(void) ATTRIBUTE((noreturn))
 {
   if(!recoveries)
     fatal("No error recovery context.\n");
