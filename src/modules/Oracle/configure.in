@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.17 2000/03/30 08:41:06 hubbe Exp $
+# $Id: configure.in,v 1.18 2000/04/05 22:10:27 hubbe Exp $
 #
 # Configure script for the oracle module
 #
@@ -255,13 +255,22 @@ EOF
 
     OLDLIBS=LIBS
     LIBS="$LIBS $ORACLE_LIBS"
-    AC_CHECK_LIB(client, oopen, [
-      LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
-      AC_DEFINE(HAVE_ORACLE)
-    ], [
-      ORACLE_LIBS=""
+
+    AC_MSG_CHECKING(for working Oracle libs)
+    AC_CACHE_VAL(pike_cv_working_oracle,[
+      AC_TRY_COMPILE([
+#include <oci.h>
+],[
+  OCIInitialize(OCI_DEFAULT,0,0,0,0);
+],pike_cv_working_oracle=yes,pike_cv_working_oracle=no)
     ])
-    LIBS="$OLDLIBS"
+    AC_MSG_RESULT($pike_cv_working_oracle)
+    if test x$pike_cv_working_oracle = xyes ; then
+      AC_DEFINE(HAVE_ORACLE)
+      LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
+    else
+      ORACLE_LIBS=""
+    fi
   fi
 
 else
