@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.155 2003/11/14 09:06:06 mast Exp $
+|| $Id: sscanf.c,v 1.156 2003/12/12 13:22:40 grubba Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.155 2003/11/14 09:06:06 mast Exp $");
+RCSID("$Id: sscanf.c,v 1.156 2003/12/12 13:22:40 grubba Exp $");
 
 /* 
  * helper functions for sscanf %O
@@ -1265,7 +1265,7 @@ MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,2)
 
 /* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
-static INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
+INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
 {
   ptrdiff_t matched_chars;
   int x;
