@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.58 2002/10/15 15:17:17 nilsson Exp $ */
+/* $Id: export.pike,v 1.59 2004/05/07 12:01:21 grubba Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -89,7 +89,7 @@ array(int) getversion()
   return ({ maj, min, build });
 }
 
-void bump_version()
+void bump_version(int|void is_release)
 {
   werror("Bumping release number.\n");
   Process.create_process( ({ "cvs", "update", "version.h" }),
@@ -104,11 +104,42 @@ void bump_version()
 			     "release number bumped to "+rel+" by export.pike",
 			     "version.h" }),
 			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
+
+  s = Stdio.read_file(pike_base_name+"/packaging/debian/changelog");
+  if (s) {
+    werror("Bumping Debian changelog.\n");
+    array(int) version = getversion();
+    s = sprintf("pike%d.%d (%d.%d.%d-1) experimental; urgency=low\n"
+		"\n" +
+		"  * %s\n"
+		"\n"
+		" -- Marek Habersack <grendel@debian.org>  %s\n"
+		"\n"
+		"%s",
+		version[0], version[1],
+		version[0], version[1], version[2],
+		is_release?
+		"Release number bumped by export.pike.":
+		"The latest cvs snapshot",
+		Calendar.Second()->format_smtp(),
+		s);
+    Stdio.write_file(pike_base_name+"/packaging/debian/changelog", s);
+    Process.create_process( ({ "cvs", "commit", "-m",
+			       "release number bumped to "+rel+" by export.pike",
+			       "changelog" }),
+			     ([ "cwd":pike_base_name+"/packaging/debian" ])
+			     )->wait();
+
+  }
 }
 
 array(string) build_file_list(string vpath, string list_file)
 {
   array(string) ret=({ }), missing=({ });
+  if(!file_stat(list_file)) {
+    werror("Could not find %s\n", list_file);
+    exit(1);
+  }
   foreach(Stdio.read_file(list_file) / "\n", string line)
     {
       if( !sizeof(line) || line[0]=='#' )
@@ -165,6 +196,7 @@ int main(int argc, array(string) argv)
     ({ "filename",  Getopt.HAS_ARG, "--name"       }),
     ({ "force",     Getopt.NO_ARG,  "--force"      }),
     ({ "timestamp", Getopt.HAS_ARG, "--timestamp"  }),
+    ({ "snapshot",  Getopt.NO_ARG,  "--snapshot"   }),
   }) ),array opt)
     {
       switch(opt[0])
@@ -205,6 +237,10 @@ int main(int argc, array(string) argv)
         case "timestamp":
 	  t=(int)opt[1];
 	  break;
+
+	case "snapshot":
+	  snapshot=1;
+	  break;
       }
     }
 
@@ -230,7 +266,7 @@ int main(int argc, array(string) argv)
 
   if(tag && file_stat(pike_base_name+"/CVS"))
   {
-    bump_version();
+    bump_version(1);
 
     array(int) version = getversion();
     vpath = sprintf("Pike-v%d.%d.%d", @version);
@@ -256,7 +292,13 @@ int main(int argc, array(string) argv)
     "%t":(string)t,
   ]);
 
-  vpath=replace(filename,symbols);
+  filename = replace(filename,symbols);
+
+  if (snapshot) {
+    vpath = sprintf("Pike-v%d.%d-snapshot", @version);
+  } else {
+    vpath = filename;
+  }
 
   fix_configure(pike_base_name+"/src");
 
@@ -264,6 +306,7 @@ int main(int argc, array(string) argv)
     if(Stdio.file_size(pike_base_name+"/src/modules/"+fn) == -2)
       fix_configure("modules/"+fn);
 
+  rm(vpath);
   symlink(".", vpath);
 
   files = build_file_list(vpath,export_list);
@@ -273,7 +316,7 @@ int main(int argc, array(string) argv)
   Stdio.write_file("buildid.txt", replace(stamp, symbols));
   files += ({ vpath+"/buildid.txt" });
 
-  werror("Creating "+vpath+".tar.gz:\n");
+  werror("Creating "+filename+".tar.gz:\n");
 
   int first = 1;
   foreach(files/25.0, files)
@@ -281,7 +324,7 @@ int main(int argc, array(string) argv)
       if(Process.create_process
 	 ( ({"tar",
 	     first?"cvf":"rvf",
-	     pike_base_name+"/"+vpath+".tar" }) +
+	     pike_base_name+"/"+filename+".tar" }) +
 	   files)->wait())
       {
 	werror("Tar file creation failed!\n");
@@ -292,23 +335,44 @@ int main(int argc, array(string) argv)
       first = 0;
     }
 
+  rm(vpath);
+  string build = sprintf("%s-%s-%s", uname()->sysname, uname()->release,
+			 uname()->machine);
+  build = "build/"+replace(lower_case(build), ({ " ", "/", "(", ")" }),
+			   ({ "-", "_", "_", "_" }));
+  if(file_stat(build+"/autodoc.xml") && file_stat(build+"/doc_build/images")) {
+    mkdir(vpath);
+    mkdir(vpath+"/refdoc");
+    Stdio.cp(build+"/autodoc.xml", vpath+"/refdoc/autodoc.xml");
+    Process.create_process( ({ "cp", "-R", build+"/doc_build/images",
+			       vpath+"/refdoc/images" }) )->wait();
+    if(Process.create_process
+       ( ({"tar", "rvf", pike_base_name+"/"+filename+".tar",
+	   vpath+"/refdoc/autodoc.xml", vpath+"/refdoc/images" }) )->wait())
+      {
+	werror("Tar file creation failed!\n");
+	if(cvs) cvs->wait();
+	Stdio.recursive_rm(vpath);
+	exit(1);
+      }
+    Stdio.recursive_rm(vpath);
+  }
+
   if(Process.create_process
      ( ({"gzip",
 	 "-9",
-	 pike_base_name+"/"+vpath+".tar"
+	 pike_base_name+"/"+filename+".tar"
      }) )->wait())
     {
       werror("Gzip failed!\n");
       if(cvs) cvs->wait();
-      rm(vpath);
       exit(1);
     }
 
-  rm(vpath);
   rm("buildid.txt");
   werror("Done.\n");
 
-  if(cvs && tag)
+  if(cvs)
   {
     cvs->wait();
     bump_version();
@@ -326,8 +390,6 @@ Mandatory arguments:
 --name=<name>
 	Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
 	are replaced with apropiate values).
---timestamp=<int>
-        The timestamp of the build, if other than the real one.
 --exportlist=<listfile>
 	A file which lists all the files and directories to be exported.
 --srcdir=<dir>
@@ -335,10 +397,16 @@ Mandatory arguments:
 
 Optional arguments:
 
+--timestamp=<int>
+        The timestamp of the build, if other than the real one.
 --rebuild
 	Not implemented.
 --tag	Bump the Pike build version and tag the CVS tree.
 --force
 	Force export, ignore missing files.
+--snapshot
+	Use the generic name \"Pike-%maj.%min-snapshot\" for the
+	base directory, instead of the same as the one specified
+	with --name.
 --help  Show this text.
 ";
