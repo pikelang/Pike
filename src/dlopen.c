@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.63 2002/10/30 14:14:55 grubba Exp $
+|| $Id: dlopen.c,v 1.64 2002/10/30 14:45:29 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.63 2002/10/30 14:14:55 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.64 2002/10/30 14:45:29 grubba Exp $");
 
 #endif
 
@@ -813,6 +813,8 @@ static void *low_dlsym(struct DLHandle *handle,
   if(!ptr)
   {
     fprintf(stderr,"Failed to find identifier %s\n",tmp);
+  } else {
+    fprintf(stderr, "Found identifier %s at 0x%p\n", tmp, ptr);
   }
 #endif
   return ptr;
