@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.31 1998/08/31 12:45:51 grubba Exp $
+ * $Id: acconfig.h,v 1.32 1998/09/05 15:52:26 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -42,11 +42,13 @@
 #undef IGNORE_SIGFPE
 
 /* If using the C implementation of alloca, define if you know the
-   direction of stack growth for your system; otherwise it will be
-   automatically deduced at run-time.
-	STACK_DIRECTION > 0 => grows toward higher addresses
-	STACK_DIRECTION < 0 => grows toward lower addresses
-	STACK_DIRECTION = 0 => direction of growth unknown
+ * direction of stack growth for your system; otherwise it will be
+ * automatically deduced at run-time.
+ *	STACK_DIRECTION > 0 => grows toward higher addresses
+ *	STACK_DIRECTION < 0 => grows toward lower addresses
+ *	STACK_DIRECTION = 0 => direction of growth unknown
+ *
+ * Also used by Pike's runtime C-stack checker.
  */
 #undef STACK_DIRECTION
 
@@ -65,7 +67,7 @@
 /* Define if you have crypt.  */
 #undef HAVE_CRYPT
 
-/* Define if you have ualarm (else put ualarm.o in the makefile).  */
+/* Define if you have ualarm. */
 #undef HAVE_UALARM
 
 /* Define if your ualarm takes two args.. */
