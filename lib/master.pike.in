@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.44 1999/03/26 19:58:39 hubbe Exp $
+/* $Id: master.pike.in,v 1.45 1999/04/08 22:18:21 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -328,7 +328,12 @@ void handle_error(mixed *trace)
 object new(mixed prog, mixed ... args)
 {
   if(stringp(prog))
-    prog=cast_to_program(prog,backtrace()[-2][0]);
+  {
+    if(program p=cast_to_program(prog,backtrace()[-2][0]))
+      return p(@args);
+    else
+      error(sprintf("new: failed to find program %s.\n",prog));
+  }
   return prog(@args);
 }
 
