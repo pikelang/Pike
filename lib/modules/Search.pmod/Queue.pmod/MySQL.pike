@@ -81,15 +81,17 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   {
     if(has_uri(r))
     {
+      werror("FOO\n");
       int stage = get_stage(r);
-      if(stage!=5 && stage!=6)
+      werror("stage: %O\n", stage);
+      if(stage!=1 && stage!=2 && stage!=3 && stage!=4)
 	set_stage(r, 0);
     }
     else
       db->query( "insert into "+table+
 		 " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
 		 string_to_utf8((string)r),
-		 to_md5((string)r), recurse, (template||"") ) );
+		 to_md5((string)r), recurse, (template||"") );
   }
 }
 
@@ -229,11 +231,11 @@ void set_stage( Standards.URI uri,
 	     to_md5((string)uri));
 }
 
-int get_state( Standards.URI uri )
+int get_stage( Standards.URI uri )
 {
-  array a = db->query( "select state from "+table+" where uri_md5=%s", to_md5((string)uri));
+  array a = db->query( "select stage from "+table+" where uri_md5=%s", to_md5((string)uri));
   if(sizeof(a))
-    return (int)a[0]->state;
+    return (int)a[0]->stage;
   else
     return -1;
 }
