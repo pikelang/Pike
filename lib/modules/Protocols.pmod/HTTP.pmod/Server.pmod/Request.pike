@@ -48,6 +48,10 @@ mapping(string:string) cookies=([]);
 //! external use only
 mapping misc=([]);
 
+//! send timeout (no activity for this period with data in send buffer)
+//! in seconds, default is 180
+int send_timeout_delay=180;
+
 function(this_program:void) request_callback;
 
 void attach_fd(Stdio.File _fd,Port server,
@@ -364,7 +368,7 @@ void response_and_finish(mapping m, function|void _log_cb)
    }
 
    send_pos=0;
-   my_fd->set_nonblocking(0,send_write,send_close);
+   my_fd->set_nonblocking(send_read,send_write,send_close);
    send_stop=strlen(header)+m->size;
 
    if (m->file)
@@ -377,6 +381,8 @@ void response_and_finish(mapping m, function|void _log_cb)
 
    if (strlen(send_buf)>=send_stop)
       send_buf=send_buf[..send_stop-1];
+
+   call_out(send_timeout,send_timeout_delay);
 }
 
 void finish()
@@ -384,6 +390,8 @@ void finish()
    if( log_cb )
      log_cb(this);
    if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
+   if (send_fd) { send_fd->close(); destruct(send_fd); send_fd=0; }
+   remove_call_out(send_timeout);
 }
 
 int sent;
@@ -394,11 +402,14 @@ int send_stop;
 
 void send_write()
 {
+   remove_call_out(send_timeout);
+   call_out(send_timeout,send_timeout_delay);
+
    if (sizeof(send_buf)-send_pos<8192 &&
        send_fd)
    {
       string q;
-      send_fd->read(131072);
+      q=send_fd->read(131072);
       if (!q || q=="")
       {
 	 send_fd->close();
@@ -410,7 +421,11 @@ void send_write()
 	 send_pos=0;
 
 	 if (strlen(send_buf)+sent>=send_stop)
+	 {
 	    send_buf=send_buf[..send_stop-1-sent];
+	    send_fd->close();
+	    send_fd=0;
+	 }
       }
    }
    else if (send_pos==sizeof(send_buf) && !send_fd)
@@ -424,8 +439,18 @@ void send_write()
    send_pos+=n;
 }
 
+void send_timeout()
+{
+   finish();
+}
+
 void send_close()
 {
 /* socket closed by peer */
    finish();
+}
+
+void send_read()
+{
+// ignore
 }
