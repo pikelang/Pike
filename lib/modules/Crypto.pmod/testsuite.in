@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.12 2003/10/05 16:40:33 grubba Exp $
+dnl $Id: testsuite.in,v 1.13 2003/10/10 19:56:57 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -161,7 +161,7 @@ cond([[ Crypto["SHA256"] ]], [[
 
 
 dnl Crypto.DES
-cond([[ Crypto->DES ]], [[
+cond([[ Crypto["DES"] ]], [[
   test_eq( Crypto.DES.fix_parity("\xff"*8), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("12345678"), "12244778" )
   test_eq( Crypto.DES.fix_parity("\xff"*7), "\xfe"*8 )
@@ -183,6 +183,20 @@ test_eq([[
 #pike 7.4
   Crypto.des_parity("\1"*7);
 ]], "\1"*7)
+
+
+dnl Crypto.DES3
+cond([[ Crypto["DES3"] ]], [[
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("1234567qwertyu") )->crypt("AAAAAAAA"), String.hex2string("5c9a0edce113b184") )
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("1234567", "qwertyu") )->crypt("AAAAAAAA"), String.hex2string("5c9a0edce113b184") )
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("12345678qwertyui") )->crypt("AAAAAAAA"), String.hex2string("fc516e07b34afe5a") )
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("12345678", "qwertyui") )->crypt("AAAAAAAA"), String.hex2string("fc516e07b34afe5a") )
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("1234567qwertyuASDFGHJ") )->crypt("AAAAAAAA"), String.hex2string("b3341af18e541949") )
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("1234567", "qwertyu", "ASDFGHJ") )->crypt("AAAAAAAA"), String.hex2string("b3341af18e541949") )
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("12345678qwertyuiASDFGHJK") )->crypt("AAAAAAAA"), String.hex2string("1890fdeffda200b4") )
+  test_eq( Crypto.DES3()->set_encrypt_key( Crypto.DES3.fix_key("12345678", "qwertyui", "ASDFGHJK") )->crypt("AAAAAAAA"), String.hex2string("1890fdeffda200b4") )
+]])
+
 
 dnl Crypto.rsa
 
