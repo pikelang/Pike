@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.76 1998/07/15 23:26:25 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.77 1998/07/16 20:47:42 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1227,17 +1227,15 @@ void f_create_process(INT32 args)
 #else
     pid=fork();
 #endif
+
+    UNSET_ONERROR(err);
+
     if(pid==-1) {
+      free_perishables(&storage);
+
       error("Failed to start process.\n"
 	    "errno:%d\n", errno);
-    }
-    if(pid)
-    {
-      exit_threads_disable(NULL);
-      storage.disabled = 0;
-
-      UNSET_ONERROR(err);
-
+    } else if(pid) {
       free_perishables(&storage);
 
       pop_n_elems(sp - stack_save);
