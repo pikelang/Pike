@@ -8,7 +8,8 @@ all:
 
 low_all: tutorial.html tutorial_onepage.html
 
-MADEFILES=Image.wmml Mysql.wmml Parser.wmml Calendar.wmml Protocols.wmml
+MADEFILES=Image.wmml Math.wmml Mysql.wmml Parser.wmml Calendar.wmml \
+	  Protocols.wmml
 
 SRCFILES=tutorial.wmml $(MADEFILES)
 
@@ -23,8 +24,14 @@ PROTOCOLS_MKWMML_DIRS=HTTP LysKOM IRC DNS
 
 MKWMML=$(pike) ../bin/mkwmml.pike
 
+Calendar.wmml :
+	$(MKWMML) `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$$'` >Calendar.wmml
+
 Image.wmml : 
 	(cd ../src/modules/Image; make wmml pike="$(pike)")
+
+Math.wmml : 
+	$(MKWMML) ../src/modules/Math/*.c >Math.wmml
 
 Mysql.wmml : 
 	$(MKWMML) ../src/modules/Mysql/mysql.c >Mysql.wmml
@@ -40,9 +47,6 @@ Protocols.wmml :
 			$(MKWMML) ../lib/modules/Protocols.pmod/$$a.pmod; \
 		fi		\
 	done > Protocols.wmml
-
-Calendar.wmml :
-	$(MKWMML) `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$$'` >Calendar.wmml
 
 
 # ----------------------------------------------------------------------
