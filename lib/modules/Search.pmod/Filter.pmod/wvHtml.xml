@@ -9,25 +9,11 @@
 &lt;head&gt; 
 &lt;META HTTP-EQUIV=&quot;Content-Type&quot; CONTENT=&quot;text/html; charset=<charset/>&quot;&gt;
 &lt;META NAME=&quot;GENERATOR&quot; CONTENT=&quot;wvWare/<version/>&quot;&gt;
-&lt;title&gt; 
-<title/>
-&lt;/title&gt; 
+&lt;title&gt;<title/>&lt;/title&gt; 
 &lt;/head&gt; 
 &lt;body bgcolor=&quot;#FFFFFF&quot; text=&quot;#000000&quot; link=&quot;#0000ee&quot; vlink=&quot;#551a8b&quot;&gt;
 </begin>
 <end>
-&lt;!--
-&lt;hr&gt;
-&lt;address&gt;
-&lt;a href=&quot;http://wvware.sourceforge.net/&quot;&gt;&lt;img
-src=&quot;wvSmall.gif&quot; height=31 width=47
-align=left border=0 alt=&quot;wvWare&quot;&gt;&lt;/a&gt;
-&lt;a href=&quot;http://validator.w3.org/check/referer&quot;&gt;&lt;img
-src=&quot;vh40.gif&quot; height=31 width=88
-align=right border=0 alt=&quot;Valid HTML 4.0!&quot;&gt;&lt;/a&gt;
-Document created with &lt;a href=&quot;http://wvware.sourceforge.net/&quot;&gt;wvWare/<version/>&lt;/a&gt;&lt;br&gt;
-&lt;/address&gt;
---&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 </end>
