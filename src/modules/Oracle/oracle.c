@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.12 1998/05/14 22:34:21 marcus Exp $
+ * $Id: oracle.c,v 1.13 1998/05/18 15:15:02 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -35,7 +35,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.12 1998/05/14 22:34:21 marcus Exp $");
+RCSID("$Id: oracle.c,v 1.13 1998/05/18 15:15:02 marcus Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -556,6 +556,14 @@ static void f_big_query(INT32 args)
   }
 
   pop_n_elems(args);
+
+  if(curs->cda.ft != 4) {
+    ocan(&curs->cda);
+    curs->next = THIS->cdas;
+    THIS->cdas = curs;
+    push_int(0);
+    return;
+  }
 
   push_object(this_object());
 
