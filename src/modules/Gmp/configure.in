@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.37 2003/03/28 17:59:33 mast Exp $
+# $Id: configure.in,v 1.38 2003/03/30 14:21:37 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -234,6 +234,7 @@ with the option --without-bignums instead.
   CHECK_GMP_FUNC(mpz_xor, [mpz_t a, b, c; mpz_xor(a, b, c)])
   CHECK_GMP_FUNC(mpz_getlimbn, [mpz_t a; mp_size_t b; mpz_getlimbn(a, b)])
   CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
+  CHECK_GMP_FUNC(mpz_fits_ulong_p, [mpz_t a; mpz_fits_ulong_p (a)])
 
   AC_MSG_CHECKING([size of mp_limb_t])
   AC_CACHE_VAL([pike_cv_sizeof_mp_limb_t], [

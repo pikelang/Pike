@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.3 2003/03/28 15:49:01 mast Exp $
+|| $Id: acconfig.h,v 1.4 2003/03/30 14:21:37 mast Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -37,6 +37,9 @@
 
 /* Define this if you have mpz_import */
 #undef HAVE_MPZ_IMPORT
+
+/* Define this if you have mpz_fits_ulong_p */
+#undef HAVE_MPZ_FITS_ULONG_P
 
 /* Define if your cpp supports the ANSI concatenation operator ## */
 #undef HAVE_ANSI_CONCAT
