@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.55 2001/07/30 13:19:35 nilsson Exp $
+**!	$Id: colors.c,v 1.56 2001/09/17 19:06:21 nilsson Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -147,7 +147,7 @@
 **!    }
 **! 
 **!    write(illustration(i,(["alpha":a])));
-**!    write(mktag("br"));
+**!    write(mktag("br")+"\n");
 **! }
 **! 
 **! void main()
@@ -188,7 +188,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.55 2001/07/30 13:19:35 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.56 2001/09/17 19:06:21 nilsson Exp $");
 
 #include "image_machine.h"
 
