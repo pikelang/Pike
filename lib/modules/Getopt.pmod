@@ -212,10 +212,10 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
   foreach(options, string *option)
     {
       if(done[ret]) continue;
-      if(sizeof(option) > 2)
+      if(sizeof(option) > ENV)
       {
-	mixed foo=option[2];
-	string name=option[0];
+	mixed foo=option[ENV];
+	string name=option[NAME];
 	if(!foo) continue;
 	if(stringp(foo)) foo=({foo});
 	foreach(foo, foo)
