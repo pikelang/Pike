@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.51 2003/10/27 23:25:35 mast Exp $
+|| $Id: udp.c,v 1.52 2003/10/29 13:23:32 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.51 2003/10/27 23:25:35 mast Exp $");
+RCSID("$Id: udp.c,v 1.52 2003/10/29 13:23:32 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -152,6 +152,22 @@ struct udp_storage {
 /*! @class UDP
  */
 
+/*! @decl int(0..1) close()
+ *!
+ *! Closes an open UDP port.
+ *!
+ *! @note
+ *!   This method was introduced in Pike 7.5.
+ */
+static void udp_close(INT32 args)
+{
+  exit_udp(NULL);
+  zero_udp(NULL);
+  pop_n_elems(args);
+  /* FIXME: Should look at the returnvalue from close(). */
+  push_int(1);
+}
+
 /*! @decl object bind(int|string port)
  *! @decl object bind(int|string port, string address)
  *!
@@ -178,6 +194,7 @@ static void udp_bind(INT32 args)
   if(FD != -1)
   {
     set_read_callback( FD, 0, 0 );
+    set_backend_for_fd(FD, NULL);
     fd_close(FD);
     FD = -1;
   }
@@ -591,6 +608,7 @@ void exit_udp(struct object *ignored)
   if(fd != -1)
   {
     set_read_callback( fd, 0, 0 );
+    set_backend_for_fd(fd, NULL);
 
     THREADS_ALLOW();
     fd_close(fd);
@@ -840,6 +858,8 @@ void init_udp(void)
 	       tFunc(tInt tOr(tVoid,tInt),tObj),0);
   ADD_FUNCTION("get_type",udp_get_type,
 	       tFunc(tNone,tArr(tInt)),0);
+
+  ADD_FUNCTION("close", udp_close, tFunc(tNone, tInt01), 0);
 
   ADD_FUNCTION("bind",udp_bind,
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tStr),tObj),0);
