@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.57 2002/11/23 20:36:12 mast Exp $
+|| $Id: multiset.c,v 1.58 2002/11/23 20:48:09 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.57 2002/11/23 20:36:12 mast Exp $");
+RCSID("$Id: multiset.c,v 1.58 2002/11/23 20:48:09 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -515,9 +515,7 @@ static struct multiset_data *resize_multiset_data (struct multiset_data *old,
    * multiset_set_flags. */
 
   new = low_alloc_multiset_data (newsize, old->flags);
-  dmalloc_touch_svalue (&old->cmp_less);
-  new->cmp_less = old->cmp_less;
-  dmalloc_touch_svalue (&new->cmp_less);
+  move_svalue (&new->cmp_less, &old->cmp_less);
   new->ind_types = old->ind_types;
   new->val_types = old->val_types;
 
@@ -2451,11 +2449,8 @@ PMOD_EXPORT int multiset_delete_2 (struct multiset *l,
 
 	  free_svalue (&ind);
 	  if (removed_val)
-	    if (indval) {
-	      dmalloc_touch_svalue (&val);
-	      *removed_val = val;
-	      dmalloc_touch_svalue (removed_val);
-	    }
+	    if (indval)
+	      move_svalue (removed_val, &val);
 	    else {
 	      removed_val->type = T_INT;
 	      removed_val->u.integer = 1;
@@ -5255,7 +5250,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.57 2002/11/23 20:36:12 mast Exp $");
+RCSID("$Id: multiset.c,v 1.58 2002/11/23 20:48:09 mast Exp $");
 
 struct multiset *first_multiset;
 

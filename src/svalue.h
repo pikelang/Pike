@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.111 2002/11/23 20:05:14 mast Exp $
+|| $Id: svalue.h,v 1.112 2002/11/23 20:48:09 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -450,6 +450,16 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
      assign_svalue_no_free(_to2, _from2);	\
   }						\
 }while(0)
+
+#define move_svalue(TO, FROM) do {					\
+    struct svalue *_to = (TO);						\
+    struct svalue *_from = (FROM);					\
+    dmalloc_touch_svalue(_from);					\
+    *_to = *_from;							\
+    dmalloc_touch_svalue(_to);						\
+    DO_IF_DMALLOC(_from->type = PIKE_T_UNKNOWN; _from->u.refs = (void *) -1); \
+    PIKE_MEM_WO(*_from);						\
+  } while (0)
 
 extern struct svalue dest_ob_zero;
 
