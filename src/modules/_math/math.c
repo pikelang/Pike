@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.54 2002/10/21 17:28:24 grubba Exp $
+|| $Id: math.c,v 1.55 2003/01/05 01:18:38 nilsson Exp $
 */
 
 #include "global.h"
@@ -28,8 +28,13 @@
 
 
 #define sp Pike_sp
+#define TRIM_STACK(X) if(args>(X)) pop_n_elems(args-(X))
+#define ARG_CHECK(X) if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(X, 1); \
+  TRIM_STACK(1); \
+  if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
-RCSID("$Id: math.c,v 1.54 2002/10/21 17:28:24 grubba Exp $");
+
+RCSID("$Id: math.c,v 1.55 2003/01/05 01:18:38 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -78,8 +83,7 @@ int matherr(struct exception *exc)
  */
 void f_sin(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to sin()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to sin()\n");
+  ARG_CHECK("sin");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)sin(sp[-args].u.float_number));
 }
@@ -94,8 +98,7 @@ void f_sin(INT32 args)
  */
 void f_asin(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to asin()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to asin()\n");
+  ARG_CHECK("asin");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)asin(sp[-args].u.float_number));
 }
@@ -110,8 +113,7 @@ void f_asin(INT32 args)
  */
 void f_cos(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to cos()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to cos()\n");
+  ARG_CHECK("cos");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)cos(sp[-args].u.float_number));
 }
@@ -126,8 +128,7 @@ void f_cos(INT32 args)
  */
 void f_acos(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to acos()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to acos()\n");
+  ARG_CHECK("acos");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)acos(sp[-args].u.float_number));
 }
@@ -143,8 +144,7 @@ void f_acos(INT32 args)
 void f_tan(INT32 args)
 {
   double f;
-  if(args<1) Pike_error("Too few arguments to tan()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to tan()\n");
+  ARG_CHECK("tan");
 
   f = (sp[-args].u.float_number-M_PI/2) / M_PI;
   if(f==floor(f+0.5))
@@ -166,8 +166,7 @@ void f_tan(INT32 args)
  */ 
 void f_atan(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to atan()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to atan()\n");
+  ARG_CHECK("atan");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)atan(sp[-args].u.float_number));
 }
@@ -183,9 +182,13 @@ void f_atan(INT32 args)
  */ 
 void f_atan2(INT32 args)
 {
-  if(args<2) Pike_error("Too few arguments to atan2()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to atan2()\n");
-  if(sp[-args+1].type!=T_FLOAT) Pike_error("Bad argument 2 to atan2()\n");
+  if(args<2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("atan2", 1);
+  TRIM_STACK(2);
+  if(sp[-args].type!=T_FLOAT)
+    SIMPLE_BAD_ARG_ERROR("atan2", 1, "float");
+  if(sp[-args+1].type!=T_FLOAT)
+    SIMPLE_BAD_ARG_ERROR("atan2", 2, "float");
   sp[-args].u.float_number=
     DO_NOT_WARN((FLOAT_TYPE)atan2(sp[-args].u.float_number,
 				  sp[-args+1].u.float_number));
@@ -203,7 +206,9 @@ void f_atan2(INT32 args)
  */
 void f_sqrt(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to sqrt()\n");
+  if(args<1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("sqrt", 1);
+  TRIM_STACK(1);
 
   if(sp[-args].type==T_INT)
   {
@@ -253,7 +258,7 @@ void f_sqrt(INT32 args)
 #endif /* AUTO_BIGNUM */
   else
   {
-    Pike_error("Bad argument 1 to sqrt().\n");
+    SIMPLE_BAD_ARG_ERROR("sqrt", 1, "int|float|object");
   }
 }
 
@@ -267,8 +272,7 @@ void f_sqrt(INT32 args)
  */
 void f_log(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to log()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to log()\n");
+  ARG_CHECK("log");
   if(sp[-args].u.float_number <=0.0)
     Pike_error("Log on number less or equal to zero.\n");
 
@@ -306,7 +310,10 @@ void f_exp(INT32 args)
  */
 void f_pow(INT32 args)
 {
-  if(args != 2) wrong_number_of_args_error("pow",args,2);
+  if(args < 2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("pow", 2);
+  TRIM_STACK(2);
+
   switch(Pike_sp[-2].type * 16 + Pike_sp[-1].type)
   {
     case T_OBJECT * 17:
@@ -350,8 +357,7 @@ void f_pow(INT32 args)
  */
 void f_floor(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to floor()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to floor()\n");
+  ARG_CHECK("floor");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)floor(sp[-args].u.float_number));
 }
@@ -369,8 +375,7 @@ void f_floor(INT32 args)
  */
 void f_ceil(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to ceil()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to ceil()\n");
+  ARG_CHECK("ceil");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)ceil(sp[-args].u.float_number));
 }
@@ -388,14 +393,14 @@ void f_ceil(INT32 args)
  */
 void f_round(INT32 args)
 {
-  if(args<1) Pike_error("Too few arguments to round()\n");
-  if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to round()\n");
+  ARG_CHECK("round");
   sp[-args].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)RINT(sp[-args].u.float_number));
 }
 
 /*! @decl int|float|object min(int|float|object ... args)
  *! @decl string min(string ... args)
+ *! @decl int(0..0) min()
  *!
  *! Returns the smallest value among @[args]. Compared objects
  *! must implement the @[lfun::`<] method.
@@ -407,7 +412,13 @@ void f_min(INT32 args)
 {
   INT32 i;
   INT32 minpos = 0;
-  if(!args) Pike_error("Too few arguments to min()\n");
+
+  if(!args) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
   for (i=args-1; i>0; i--) {
     if (is_gt(sp+minpos-args, sp+i-args)) {
       minpos = i;
@@ -421,6 +432,7 @@ void f_min(INT32 args)
 
 /*! @decl int|float|object max(int|float|object ... args)
  *! @decl string max(string ... args)
+ *! @decl int(0..0) max()
  *!
  *! Returns the largest value among @[args]. Compared objects
  *! must implement the @[lfun::`<] method.
@@ -432,7 +444,13 @@ void f_max(INT32 args)
 {
   INT32 i;
   INT32 maxpos = 0;
-  if(!args) Pike_error("Too few arguments to max()\n");
+
+  if(!args) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
   for (i=args-1; i>0; i--) {
     if (is_lt(sp+maxpos-args, sp+i-args)) {
       maxpos = i;
@@ -568,7 +586,8 @@ PIKE_MODULE_INIT
   ADD_EFUN("round",f_round,tFunc(tFlt,tFlt),0);
 
 #define CMP_TYPE \
-  tOr3(tFuncV(tNone,tString,tString), \
+  tOr4(tFuncV(tNone,tString,tString), \
+       tFunc(tVoid,tInt0), \
        tFuncV(tNone,tSetvar(0,tOr(tInt,tFloat)),tVar(0)), \
        tIfnot(tFuncV(tNone,tString,tMix), \
               tIfnot(tFuncV(tNone,tOr(tInt,tFloat),tMix), \
@@ -579,6 +598,7 @@ PIKE_MODULE_INIT
      * "function(int|zero...:int)|" \
      * "function(float...:float)|" \
      * "function(string...:string)|"  \
+     * "function(:int(0..0)|" \
      * "!function(int...:mixed)&!function(float...:mixed)&function(int|float...:int|float)"
      */
 
