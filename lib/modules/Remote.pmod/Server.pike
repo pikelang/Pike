@@ -56,6 +56,8 @@ int create(string host, int p)
   }
   else if(!port->bind(p, got_connection, host))
     return 0;
+  if(!portno)
+    sscanf(port->query_address(), "%*s %d", portno);
 
   sctx = Minicontext();
   return 1;
