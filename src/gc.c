@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.32 1998/04/08 00:58:46 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.33 1998/04/10 04:37:38 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -98,7 +98,7 @@ static unsigned long hashsize=0;
 
 static struct marker *getmark(void *a)
 {
-  int hashval;
+  unsigned long hashval;
   struct marker *m;
 
   hashval=((unsigned long)a)%hashsize;
