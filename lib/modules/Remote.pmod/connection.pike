@@ -189,7 +189,7 @@ void closed_connection(int|void ignore)
   foreach(close_callbacks, function|array f)
     if(functionp(f))
        f();
-    else
+    else if (functionp(f[0]))
       f[0](@f[1..]);
 }
 
