@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.166 2003/03/05 16:18:24 mast Exp $");
+RCSID("$Id: threads.c,v 1.167 2003/03/31 18:43:05 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -649,6 +649,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   Pike_interpreter.stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
   Pike_interpreter.recoveries = NULL;
   SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
+  Pike_interpreter.thread_id=arg.id;
   OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
 
 #if defined(PIKE_DEBUG)
@@ -1569,8 +1570,12 @@ void th_init(void)
   if(!mutex_key)
     fatal("Failed to initialize thread program!\n");
 
-  Pike_interpreter.thread_id=clone_object(thread_id_prog,0);
-  SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
+  {
+    struct object *o = Pike_interpreter.thread_id =
+      clone_object(thread_id_prog,0);
+    SWAP_OUT_THREAD(OBJ2THREAD(Pike_interpreter.thread_id)); /* Init struct */
+    Pike_interpreter.thread_id = o;
+  }
   OBJ2THREAD(Pike_interpreter.thread_id)->id=th_self();
   OBJ2THREAD(Pike_interpreter.thread_id)->swapped=0;
   thread_table_insert(Pike_interpreter.thread_id);
