@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.642 2002/11/19 12:26:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.643 2002/11/19 12:32:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1211,12 +1211,7 @@ AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
     AC_PATH_PROG(with_valgrind, valgrind, no)
     if test "x$with_valgrind" = "xno"; then
       AC_MSG_WARN(valgrind not found, disabled.)
-    else
-      if test "x$with_machine_code" = "xno"; then :; else
-        AC_MSG_WARN(valgrind in use. Disabling machine-code.)
-	with_machine_code=no
-      fi
-    fi
+    else :; fi
   else :; fi
 ], [with_valgrind=no])
 AC_ARG_WITH(checker, MY_DESCR([--with-checker],
