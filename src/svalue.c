@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.104 2001/09/28 23:18:55 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.105 2001/10/05 13:13:24 tomas Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1795,6 +1795,7 @@ int svalues_are_constant(struct svalue *s,
 		return 0;
 	      break;
 	  }
+          break;
 	}
 	  
 	case T_FUNCTION:
