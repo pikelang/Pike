@@ -2,11 +2,18 @@
 
 . $NTTOOLS
 
+S=
+R=
+M=
+N=
+V=
+P=
+
 for a in "$@"
 do
   case "$a" in
     --version)
-      echo "Fake NT uname version 1.0 by Fredrik Hubinette"
+      echo "Fake NT uname version 1.1 by Fredrik Hubinette"
       exit 0
     ;;
 
@@ -15,7 +22,7 @@ do
       exit 0
     ;;
 
-    --all)  M=yes ; N=yes ; S=yes ; P=yes ;;
+    --all)  S=yes ; R=yes ; M=yes ; N=yes ; V=yes ; P=yes ;;
     --machine) M=yes ;;
     --nodename) N=yes ;;
     --sysname) S=yes ;;
@@ -67,13 +74,15 @@ fi
 OUTPUT=
 
 if [ X$S = Xyes ]; then
-#  OUTPUT="$OUTPUT Windows_NT"
-#  OUTPUT="$OUTPUT `getntenv OS`"
   OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\[ '{print $1}'`"
 fi
 
 if [ X$N = Xyes ]; then
   OUTPUT="$OUTPUT $NTHOST"
+fi
+
+if [ X$R = Xyes ]; then
+  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
 fi
 
 if [ X$V = Xyes ]; then
@@ -86,11 +95,6 @@ fi
 
 if [ X$P = Xyes ]; then
   OUTPUT="$OUTPUT `getntenv PROCESSOR_ARCHITECTURE`"
-fi
-
-#Should be release level, so maybe 98, NT, XP and so on would be better.
-if [ X$R = Xyes ]; then
-  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
 fi
 
 echo $OUTPUT
