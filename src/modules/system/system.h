@@ -1,5 +1,5 @@
 /*
- * $Id: system.h,v 1.3 1998/03/03 07:56:47 mast Exp $
+ * $Id: system.h,v 1.4 1998/03/04 22:29:40 hubbe Exp $
  *
  * Prototypes for the Pike system-module
  *
@@ -13,8 +13,8 @@
  * Includes
  */
 
-#include <global.h>
-#include <pike_types.h>
+#include "global.h"
+#include "pike_types.h"
 
 /*
  * Prototypes
