@@ -4,12 +4,14 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
+#include <errno.h>
+
 #ifndef TESTING
 #include "global.h"
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.23 1999/05/18 08:04:51 hubbe Exp $");
+RCSID("$Id: fd_control.c,v 1.24 1999/05/18 13:25:16 kinkie Exp $");
 
 #else /* TESTING */
 #ifndef _LARGEFILE_SOURCE
