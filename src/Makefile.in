@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.305 2002/04/30 20:02:02 mast Exp $
+# $Id: Makefile.in,v 1.306 2002/05/01 00:02:14 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -580,20 +580,16 @@ source: depend
 # Beware that export archive this includes bison/yacc/byacc source
 # and thus has to follow the rules stated in that code.
 
-small_export: source
-	chmod +x $(SRCDIR)/install-sh
-	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)" \
-	--exportlist=src/export_list --name=%Y%M%D_%h%m%s
-
 full_export: source
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)"  \
 	--exportlist=src/export_list --name=Pike-v%maj.%min.%bld --tag
 
+EXPORT_NAME=Pike-v%maj.%min-%Y%M%D
 snapshot_export: source
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike --srcdir="$(SRCDIR)"  \
-	--exportlist=src/export_list --name=Pike-v%maj.%min-snapshot-%Y%M%D
+	--exportlist=src/export_list --name=$(EXPORT_NAME)
 
 export: full_export
 

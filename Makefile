@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.64 2002/04/30 21:43:10 nilsson Exp $
+# $Id: Makefile,v 1.65 2002/05/01 00:02:13 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -206,13 +206,15 @@ export:
 
 snapshot_export:
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" compile
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
+	  "EXPORT_NAME=Pike-v%maj.%min-snapshot-%Y%M%D" compile
 
 snapshot: snapshot_export
 
 autobuild_export:
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=small_export" compile
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
+	  "EXPORT_NAME=Pike-snapshot-%Y%M%D-%h%m%s" compile
 
 bin_export:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
