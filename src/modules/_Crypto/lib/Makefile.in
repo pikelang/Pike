@@ -147,3 +147,9 @@ algorithms.a: $(OBJS)
 	rm -f algorithms.a
 	$(AR) cru algorithms.a $(OBJS)
 	$(RANLIB) algorithms.a
+
+Makefile: $(SRCDIR)/Makefile.in config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	@echo "Run make again"
+	@exit 1
+
