@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.27 1998/01/26 20:01:58 hubbe Exp $ */
+/* $Id: font.c,v 1.28 1998/02/07 22:28:38 mirar Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.27 1998/01/26 20:01:58 hubbe Exp $
+**!	$Id: font.c,v 1.28 1998/02/07 22:28:38 mirar Exp $
 **! class font
 **!
 **! note
@@ -501,9 +501,9 @@ void font_write(INT32 args)
    if(args>1)
      img->ysize = this->height+((double)this->height*(double)(args-1)*(double)this->yspacing_scale)+1;
    else
-     img->ysize = this->height+1;
+     img->ysize = this->height;
    img->rgb.r=img->rgb.g=img->rgb.b=255;
-   img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group));
+   img->img=malloc(img->xsize*img->ysize*sizeof(rgb_group)+1);
 
    if (!img) { free_object(o); free(width_of); error("Out of memory\n"); }
 
