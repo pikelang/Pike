@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.21 1997/08/30 18:35:45 grubba Exp $");
+RCSID("$Id: object.c,v 1.22 1997/09/09 03:36:12 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -76,7 +76,7 @@ struct object *low_clone(struct program *p)
 
     for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
     {
-      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].flags))
+      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags))
 	continue;
       
       if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
@@ -217,7 +217,7 @@ void destruct(struct object *o)
 
     for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
     {
-      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].flags)) 
+      if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags)) 
 	continue;
       
       if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
@@ -327,7 +327,7 @@ void low_object_index_no_free(struct svalue *to,
 
   i=ID_FROM_INT(p, f);
 
-  switch(i->flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
+  switch(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
   {
   case IDENTIFIER_FUNCTION:
   case IDENTIFIER_C_FUNCTION:
@@ -437,7 +437,7 @@ static void object_low_set_index(struct object *o,
 
   i=ID_FROM_INT(p, f);
 
-  if(!IDENTIFIER_IS_VARIABLE(i->flags))
+  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
   {
     error("Cannot assign functions or constants.\n");
   }
@@ -520,7 +520,7 @@ static union anything *object_low_get_item_ptr(struct object *o,
 
   i=ID_FROM_INT(p, f);
 
-  if(!IDENTIFIER_IS_VARIABLE(i->flags))
+  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
   {
     error("Cannot assign functions or constants.\n");
   }
@@ -609,7 +609,7 @@ void verify_all_objects(void)
       {
 	struct identifier *i;
 	i=ID_FROM_INT(o->prog, e);
-	if(!IDENTIFIER_IS_VARIABLE(i->flags))
+	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
 	  continue;
 
 	if(i->run_time_type == T_MIXED)
@@ -667,7 +667,7 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
     {
       struct identifier *i;
       i=ID_FROM_INT(a->prog, e);
-      if(!IDENTIFIER_IS_VARIABLE(i->flags))
+      if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
 	continue;
 
       if(i->run_time_type == T_MIXED)
@@ -798,7 +798,7 @@ void gc_mark_object_as_referenced(struct object *o)
 
       for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
       {
-	if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].flags)) 
+	if(!IDENTIFIER_IS_VARIABLE(frame.context.prog->identifiers[d].identifier_flags)) 
 	  continue;
 	
 	if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
@@ -837,7 +837,7 @@ void gc_check_all_objects(void)
 	
 	i=ID_FROM_INT(o->prog, e);
 	
-	if(!IDENTIFIER_IS_VARIABLE(i->flags)) continue;
+	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags)) continue;
 	
 	if(i->run_time_type == T_MIXED)
 	{

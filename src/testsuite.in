@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.50 1997/09/08 19:08:57 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.51 1997/09/09 03:36:13 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -6,11 +6,19 @@ test_eq(1.1e1,11.0)
 test_eq(1e-1,0.1)
 test_eq('\x20',32)
 test_eq("\x20","\040")
+
 test_any([[
 class p1 { int foo() { return 1; }};
-class p2 { int foo() { return 2; }};
+class p2 { int foo() { return 3; }};
 class c1 { inherit p1; inherit p2; int foo() { return p1::foo()+p2::foo(); }};
- class c2 { inherit c1; }; return c2()->foo();]],3)
+class c2 { inherit c1; }; return c2()->foo();]],4)
+
+test_any([[
+class p1 { int foo() { return 1; } };
+class p2 { int foo() { return 2; } };
+class c1 { inherit p1; inherit p2; };
+return c1()->foo();]],2);
+
 test_any([[class foo { int x=random(100); int `<(object o) { return x < o->x; } }; object *o=Array.map(allocate(100),foo); sort(o); for(int e=1;e<100;e++) if(o[e-1]->x > o[e]->x) return e; return -1;]],-1)
 test_compile_error([[void foo() { return destruct(this_object()); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)

@@ -94,7 +94,7 @@ struct identifier
 {
   struct pike_string *name;
   struct pike_string *type;
-  unsigned INT16 flags; /* IDENTIFIER_??? */
+  unsigned INT16 identifier_flags; /* IDENTIFIER_??? */
   unsigned INT16 run_time_type;
 #ifdef PROFILING
   unsigned INT32 num_calls;
@@ -123,7 +123,7 @@ struct reference
 {
   unsigned INT16 inherit_offset;
   unsigned INT16 identifier_offset;
-  INT16 flags; /* static, private etc.. */
+  INT16 id_flags; /* ID_* static, private etc.. */
 };
 
 struct inherit

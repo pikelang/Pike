@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.42 1997/09/06 13:50:08 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.43 1997/09/09 03:36:10 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1737,7 +1737,7 @@ static void f_get_prof_info(INT32 args)
   push_int(prog->num_clones);
 
   for(num_functions=i=0; i<prog->num_identifiers; i++) {
-    if (IDENTIFIER_IS_FUNCTION(prog->identifiers[i].flags)) {
+    if (IDENTIFIER_IS_FUNCTION(prog->identifiers[i].identifier_flags)) {
       num_functions++;
       prog->identifiers[i].name->refs++;
       push_string(prog->identifiers[i].name);
