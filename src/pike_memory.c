@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.29 1999/03/22 22:07:35 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.30 1999/04/01 21:01:03 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -30,14 +30,12 @@ char *strdup(const char *str)
 
 INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e)
 {
-  e++;
   while(--e >= 0) if(*(p++)==c) return p-1;
   return (p_wchar1 *)0;
 }
 
 INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e)
 {
-  e++;
   while(--e >= 0) if(*(p++)==c) return p-1;
   return (p_wchar2 *)0;
 }
