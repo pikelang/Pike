@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.92 1998/04/10 16:36:01 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.93 1998/04/13 14:16:09 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1425,6 +1425,18 @@ void f__debug(INT32 args)
   push_int(i);
 }
 
+#ifdef YYDEBUG
+
+void f__compiler_trace(INT32 args)
+{
+  extern int yydebug;
+  INT32 i = yydebug;
+  get_all_args("_compiler_trace", args, "%i", &yydebug);
+  pop_n_elems(args);
+  push_int(i);
+}
+
+#endif /* YYDEBUG */
 #endif
 
 #ifdef HAVE_LOCALTIME
@@ -2599,6 +2611,9 @@ void init_builtin_efuns(void)
 #ifdef DEBUG
   add_efun("_verify_internals",f__verify_internals,"function(:void)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
   add_efun("_debug",f__debug,"function(int:int)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+#ifdef YYDEBUG
+  add_efun("_compiler_trace",f__compiler_trace,"function(int:int)",OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+#endif /* YYDEBUG */
 #endif
   add_efun("_memory_usage",f__memory_usage,"function(:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 
