@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.216 1998/07/15 20:18:26 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.217 1998/07/16 19:24:35 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -308,7 +308,11 @@ if test $cflags_is_set = no; then
     AC_SYS_OS_COMPILER_FLAG(OSF1,-trapuv,trapuv,WARN)
   fi
   AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-std1,std1,WARN)
+
+  # Flags that cause errors or change compiler behaviour
+  # must go in CFLAGS, they can not go in WARN
+  # /Hubbe
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-std1,std1,CFLAGS)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos,WARN)
 
   # IRIX
@@ -382,6 +386,7 @@ else
         CC="$OLD_CC"
 	CFLAGS="$OLD_CFLAGS"
       ])
+      ac_cv_prog_CC="${CC}"
     ])
   fi
 fi
@@ -2446,7 +2451,9 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
     CFLAGS="$CFLAGS $LINKFORSHARED"
     OLD_CC="$CC"
     case "$LD" in
-      *shlicc) CC="$BINDIR/smartlink shlicc";;
+      *shlicc)
+        CC="$BINDIR/smartlink shlicc"
+      ;;
     esac
     AC_TRY_RUN([
 #define TESTING
@@ -2455,7 +2462,7 @@ void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
     CC="$OLD_CC"
-  else
+  else    
     pike_cv_sys_dynamic_loading=no
   fi
   rm -f myconftest.so >/dev/null 2>/dev/null
@@ -2510,6 +2517,7 @@ AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(ac_configure_args)
+pike_cv_prog_CC="$CC"
 
 if test x$ac_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
 then
