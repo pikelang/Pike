@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.104 2000/09/26 02:44:30 hedda Exp $");
+RCSID("$Id: operators.c,v 1.105 2000/09/26 02:49:11 hedda Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1703,7 +1703,7 @@ PMOD_EXPORT void o_multiply(void)
 	len=sp[-2].u.string->len << sp[-2].u.string->size_shift;
 	for(e=0;e<((int)sp[-1].u.float_number);e++,pos+=len)
 	  MEMCPY(pos,sp[-2].u.string->str,len);
-	/* copy the last part of the array */
+	/* copy the last part of the string */
 	if (extra)
 	  MEMCPY(pos,sp[-2].u.string->str,extra);
 	pop_n_elems(2);
