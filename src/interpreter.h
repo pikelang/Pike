@@ -3,8 +3,27 @@
 #undef GET_ARG2
 #undef GET_JUMP
 #undef SKIPJUMP
-#undef CASE
 #undef DOJUMP
+#undef CASE
+#undef BREAK
+#undef DONE
+
+#ifdef HAVE_COMPUTED_GOTO
+
+#define CASE(OP)	PIKE_CONCAT(LABEL_,OP):
+#ifdef PIKE_DEBUG
+#define DONE		continue
+#else /* !PIKE_DEBUG */
+#define DONE		goto **(pc++)
+#endif /* PIKE_DEBUG */
+#define GET_ARG()	((INT32)*(pc++))
+#define GET_ARG2()	((INT32)*(pc++))
+#define GET_JUMP()	((INT32)*(pc++))
+#define SKIPJUMP()	(pc++)
+#else /* !HAVE_COMPUTED_GOTO */
+
+#define CASE(X) case (X)-F_OFFSET:
+#define DONE break
 
 #ifdef PIKE_DEBUG
 
@@ -37,10 +56,15 @@
 
 #endif
 
-#define CASE(X) case (X)-F_OFFSET:
+#endif /* HAVE_COMPUTED_GOTO */
 
-#define DOJUMP() \
- do { int tmp; tmp=GET_JUMP(); pc+=tmp; if(tmp < 0) fast_check_threads_etc(6); }while(0)
+#define DOJUMP() do { \
+    INT32 tmp; \
+    tmp = GET_JUMP(); \
+    pc += tmp; \
+    if(tmp < 0) \
+      fast_check_threads_etc(6); \
+  } while(0)
 
 #ifndef STEP_BREAK_LINE
 #define STEP_BREAK_LINE
@@ -48,7 +72,13 @@
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
-  unsigned INT32 prefix2=0,instr, prefix=0;
+  unsigned INT32 prefix2=0,prefix=0;
+#ifdef HAVE_COMPUTED_GOTO
+  void *instr;
+#else /* !HAVE_COMPUTED_GOTO */
+  unsigned INT32 instr;
+#endif /* HAVE_COMPUTED_GOTO */
+
   debug_malloc_touch(Pike_fp);
   while(1)
   {
@@ -69,7 +99,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
 	      file,(long)linep,
 	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
+#ifdef HAVE_COMPUTED_GOTO
+	      get_f_name(instr),
+#else /* !HAVE_COMPUTED_GOTO */
 	      get_f_name(instr + F_OFFSET),
+#endif /* HAVE_COMPUTED_GOTO */
 	      DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),
 	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
     }
@@ -97,7 +131,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 
 #ifdef _REENTRANT
       CHECK_INTERPRETER_LOCK();
-      if(OBJ2THREAD(Pike_interpreter.thread_id)->state.thread_id != Pike_interpreter.thread_id)
+      if(OBJ2THREAD(Pike_interpreter.thread_id)->state.thread_id !=
+	 Pike_interpreter.thread_id)
 	fatal("Arglebargle glop glyf, thread swap problem!\n");
 
       if(d_flag>1 && thread_for_id(th_self()) != Pike_interpreter.thread_id)
@@ -109,7 +144,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
       Pike_sp[2].type=99;
       Pike_sp[3].type=99;
       
-      if(Pike_sp<Pike_interpreter.evaluator_stack || Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
+      if(Pike_sp<Pike_interpreter.evaluator_stack ||
+	 Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
 	fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
 	      Pike_sp,
 	      Pike_interpreter.evaluator_stack,
@@ -131,10 +167,13 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 	 Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
 	fatal("Stack error (stupid!).\n");
 
-      if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
+      if(Pike_interpreter.recoveries &&
+	 (Pike_sp-Pike_interpreter.evaluator_stack <
+	  Pike_interpreter.recoveries->stack_pointer))
 	fatal("Stack error (underflow).\n");
 
-      if(Pike_mark_sp > Pike_interpreter.mark_stack && Pike_mark_sp[-1] > Pike_sp)
+      if(Pike_mark_sp > Pike_interpreter.mark_stack &&
+	 Pike_mark_sp[-1] > Pike_sp)
 	fatal("Stack error (underflow?)\n");
       
       if(d_flag > 9) do_debug();
@@ -158,54 +197,58 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     }
 #endif
 
+#ifdef HAVE_COMPUTED_GOTO
+    goto *instr;
+#else /* !HAVE_COMPUTED_GOTO */
     switch(instr)
     {
+#endif /* HAVE_COMPUTED_GOTO */
       /* Support to allow large arguments */
-      CASE(F_PREFIX_256); prefix+=256; break;
-      CASE(F_PREFIX_512); prefix+=512; break;
-      CASE(F_PREFIX_768); prefix+=768; break;
-      CASE(F_PREFIX_1024); prefix+=1024; break;
+      CASE(F_PREFIX_256); prefix+=256; DONE;
+      CASE(F_PREFIX_512); prefix+=512; DONE;
+      CASE(F_PREFIX_768); prefix+=768; DONE;
+      CASE(F_PREFIX_1024); prefix+=1024; DONE;
       CASE(F_PREFIX_24BITX256);
-      prefix += (pc++)[0]<<24;
+        prefix += (pc++)[0]<<24;
       CASE(F_PREFIX_WORDX256);
-      prefix += (pc++)[0]<<16;
+        prefix += (pc++)[0]<<16;
       CASE(F_PREFIX_CHARX256);
-      prefix += (pc++)[0]<<8;
-      break;
+        prefix += (pc++)[0]<<8;
+      DONE;
 
       /* Support to allow large arguments */
-      CASE(F_PREFIX2_256); prefix2+=256; break;
-      CASE(F_PREFIX2_512); prefix2+=512; break;
-      CASE(F_PREFIX2_768); prefix2+=768; break;
-      CASE(F_PREFIX2_1024); prefix2+=1024; break;
+      CASE(F_PREFIX2_256); prefix2+=256; DONE;
+      CASE(F_PREFIX2_512); prefix2+=512; DONE;
+      CASE(F_PREFIX2_768); prefix2+=768; DONE;
+      CASE(F_PREFIX2_1024); prefix2+=1024; DONE;
       CASE(F_PREFIX2_24BITX256);
-      prefix2 += (pc++)[0]<<24;
+        prefix2 += (pc++)[0]<<24;
       CASE(F_PREFIX2_WORDX256);
-      prefix2 += (pc++)[0]<<16;
+        prefix2 += (pc++)[0]<<16;
       CASE(F_PREFIX2_CHARX256);
-      prefix2 += (pc++)[0]<<8;
-      break;
+        prefix2 += (pc++)[0]<<8;
+      DONE;
 
 
 #define INTERPRETER
 
-#define OPCODE0(OP, DESC, CODE) CASE(OP); CODE; break
+#define OPCODE0(OP, DESC, CODE) CASE(OP); CODE; DONE
 #define OPCODE1(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
     CODE; \
-  } break
+  } DONE
 
 #define OPCODE2(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
     INT32 arg2=GET_ARG2(); \
     CODE; \
-  } break
+  } DONE
 
 #define OPCODE0_TAIL(OP, DESC, CODE) CASE(OP); CODE
 #define OPCODE1_TAIL(OP, DESC, CODE) CASE(OP); CODE
 #define OPCODE2_TAIL(OP, DESC, CODE) CASE(OP); CODE
 
-#define OPCODE0_JUMP(OP, DESC, CODE) CASE(OP); CODE; break
+#define OPCODE0_JUMP(OP, DESC, CODE) CASE(OP); CODE; DONE
 #define OPCODE0_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
 
 /* These are something of a special case as they
@@ -215,27 +258,26 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #define OPCODE1_JUMP(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
     CODE; \
-  } break
+  } DONE
 
 #define OPCODE2_JUMP(OP, DESC, CODE) CASE(OP); { \
     INT32 arg1=GET_ARG(); \
     INT32 arg2=GET_ARG2(); \
     CODE; \
-  } break
+  } DONE
 
 #define OPCODE1_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
 #define OPCODE2_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
 
-
-#define BREAK break; }
-#define DONE break
+#define BREAK		DONE; }
 
 #include "interpret_functions.h"
-      
+
+#ifndef HAVE_COMPUTED_GOTO      
     default:
       fatal("Strange instruction %ld\n",(long)instr);
     }
-
+#endif /* !HAVE_COMPUTED_GOTO */
   }
 }
 
