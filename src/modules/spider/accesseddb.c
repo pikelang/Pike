@@ -1,3 +1,5 @@
+#include <config.h>
+
 #include "stralloc.h"
 #include "global.h"
 #include "types.h"
