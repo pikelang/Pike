@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.35 2004/05/28 16:08:24 grubba Exp $
+|| $Id: multiset.h,v 1.36 2004/09/26 22:07:02 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -15,6 +15,8 @@
 
 /* #define TEST_MULTISET */
 
+#include "svalue.h"
+#include "dmalloc.h"
 #include "rbtree.h"
 #include "block_alloc_h.h"
 

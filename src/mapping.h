@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.56 2004/05/28 16:08:24 grubba Exp $
+|| $Id: mapping.h,v 1.57 2004/09/26 22:07:00 mast Exp $
 */
 
 #ifndef MAPPING_H
 #define MAPPING_H
 
 #include "svalue.h"
+#include "dmalloc.h"
 #include "block_alloc_h.h"
 
 /* Compatible with PIKE_WEAK_INDICES and PIKE_WEAK_VALUES. */

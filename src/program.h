@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.208 2004/09/18 20:16:27 per Exp $
+|| $Id: program.h,v 1.209 2004/09/26 22:07:03 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -13,6 +13,7 @@
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "svalue.h"
+#include "dmalloc.h"
 #include "time_stuff.h"
 #include "program_id.h"
 #include "pike_rusage.h"

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.85 2004/05/23 00:45:11 nilsson Exp $
+|| $Id: object.h,v 1.86 2004/09/26 22:07:02 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -10,6 +10,7 @@
 
 #include "global.h"
 #include "svalue.h"
+#include "dmalloc.h"
 
 /* a destructed object has no program */
 
