@@ -990,7 +990,7 @@ class Runtime_timezone_compiler
 
 	 multiset tzname=(<>);
 	 foreach (rules,array a)
-	    if (search(a[2],"%s")==-1)
+	    if (!has_value(a[2], "%s"))
 	       tzname[a[2]]=1;
 	    else
 	    {
@@ -1288,7 +1288,7 @@ class Runtime_timezone_compiler
       { 
 	 offset_to_utc=offset; 
 	 name=_name;
-	 if (search(name,"/")!=-1)
+	 if (has_value(name, "/"))
 	 {
 	    names=name/"/";
 	    tzformat=lambda(string s)

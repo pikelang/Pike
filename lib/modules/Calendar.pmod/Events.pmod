@@ -28,7 +28,7 @@ Event.Event make_event(string source)
 	     "\"%s\"%*[ \t]%[^\n]",
 	     id,flags,s,rule)!=9)
       error("Events: rule error; unknown format:\n%O\n",source);
-   if (search(rule,"\"")!=-1) 
+   if (has_value(rule, "\""))
    {
       if (sscanf(source, "%*[ \t]Event%*[ \t]"
 		 "\"%[^\"]\"%*[ \t]%[-a-z]%*[ \t]"

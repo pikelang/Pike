@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.8 2003/03/12 19:44:37 nilsson Exp $
+// $Id: mkrules.pike,v 1.9 2003/08/07 14:20:19 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -847,7 +847,7 @@ class TZRules
    { 
       offset_to_utc=offset; 
       name=_name;
-      if (search(name,\"/\")!=-1)
+      if (has_value(name, \"/\"))
       {
 	 names=name/\"/\";
 	 tzformat=lambda(string s)
