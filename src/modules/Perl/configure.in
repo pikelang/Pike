@@ -1,8 +1,12 @@
-# $Id: configure.in,v 1.2 1998/11/22 13:02:06 hubbe Exp $
+# $Id: configure.in,v 1.3 1998/12/21 23:18:04 hubbe Exp $
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 
 AC_MODULE_INIT()
+
+AC_CACHE_VAL(pike_cv_perlmod_have_perl,
+[
+pike_cv_perlmod_have_perl=no
 
 AC_CHECK_PROGS(perl, perl perl5, x)
 
@@ -10,17 +14,56 @@ objs=
 
 if test x$perl != xx ; then
   # We have perl, but do we have perlembed?
-#  PERL_LDFLAGS=`perl -V:lddlflags | sed "s/^lddlflags='\(.*\);$/\1/"`
-#  PERL_CCFLAGS=`perl -V:ccflags | sed "s/^ccflags='\(.*\);$/\1/"`
-
+  AC_MSG_CHECKING(if perl is embeddable)
   PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
   PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
 
   if test "x$PERL_LDFLAGS$PERL_CCFLAGS" != x; then
-    extra_objs='perlxsi.o'
-    AC_DEFINE(HAVE_PERL)
+     OLD_LIBS="${LDFLAGS-}"
+     OLD_CFLAGS="${CFLAGS-}"
+     CFLAGS="$CFLAGS $PERL_CCFLAGS"
+     LIBS="$LIBS $PERL_LDFLAGS"
+
+     AC_TRY_RUN([
+#include <EXTERN.h>
+#include <perl.h>
+#include <unistd.h>
+
+static PerlInterpreter *my_perl;
+
+int main(int argc, char **argv, char **env)
+{
+  char *args[4];
+  args[0]="perl";
+  args[1]="-e";
+  args[2]="1";
+  args[3]=0;
+  alarm(10);
+  
+  perl_destruct_level=2;
+  my_perl = perl_alloc();
+  perl_construct(my_perl);
+  perl_parse(my_perl, NULL, 2, args, (char **)NULL);
+  perl_run(my_perl);
+  perl_destruct(my_perl);
+  perl_free(my_perl);
+}
+],pike_cv_perlmod_have_perl=yes)
+
+     LIBS="${OLD_LIBS-}"
+     CFLAGS="${OLD_CFLAGS-}"
   fi
 fi
+])
+
+if test "x$pike_cv_perlmod_have_perl" = xyes ; then
+  extra_objs='perlxsi.o'
+  AC_DEFINE(HAVE_PERL)
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
 
 AC_SUBST(perl)
 AC_SUBST(extra_objs)
