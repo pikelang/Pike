@@ -74,6 +74,9 @@ tutorial.tex: .DUMMY $(SRCFILES)
 tutorial.xml: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml xml tutorial
 
+palmdoc: tutorial.xml
+	$(pike) ./xml2prc.pike tutorial.xml
+
 # latex has to be run twice to work with labels and stuff
 # but there are no labels yet...
 tutorial.dvi: tutorial.tex
