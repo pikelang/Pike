@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.333 2004/02/08 16:03:13 grubba Exp $
+// $Id: master.pike.in,v 1.334 2004/02/27 13:08:23 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2205,12 +2205,6 @@ void _main(array(string) orig_argv, array(string) env)
     else
       werror("Broken environment var %s\n",a);
 
-  void _error(string a, mixed ... b) {
-    werror(a, @b);
-    exit(1);
-  };
-
-
 #ifndef NOT_INSTALLED
   {
     array parts = (getenv("PIKE_INCLUDE_PATH")||"")/PATH_SEPARATOR-({""});
@@ -2238,13 +2232,11 @@ void _main(array(string) orig_argv, array(string) env)
 	     "                " + "\n");
   };
 
-  mixed main_resolv(string ... syms) {
-    mixed v = resolv(syms[0]);
-    foreach(syms[1..], string sym)
-      if(v) v = v[sym];
+  mixed main_resolv(string sym) {
+    mixed v = resolv(sym);
     if(!v)
-      _error("Could not resolv %s. (Perhaps the installed pike tree has been moved.)\n",
-	     syms*".");
+      error("Could not resolv %s. "
+	    "(Perhaps the installed pike tree has been moved.)\n", sym);
     return v;
   };
 
@@ -2400,7 +2392,7 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(0);
 
       case "help":
-	werror( main_resolv("Tools","MasterHelp")->do_help(opts[1]) );
+	werror( main_resolv("Tools.MasterHelp")->do_help(opts[1]) );
 	exit(0);
 
       case "features":
@@ -2417,7 +2409,7 @@ void _main(array(string) orig_argv, array(string) env)
 
       case "execute":
 #ifdef __AUTO_BIGNUM__
-	main_resolv( "Gmp", "bignum" );
+	main_resolv( "Gmp.bignum" );
 #endif /* __AUTO_BIGNUM__ */
 
 	random_seed((time() ^ (getpid()<<8)));
@@ -2465,7 +2457,7 @@ void _main(array(string) orig_argv, array(string) env)
 
       case "preprocess":
 #ifdef __AUTO_BIGNUM__
-	main_resolv( "Gmp", "bignum" );
+	main_resolv( "Gmp.bignum" );
 #endif /* __AUTO_BIGNUM__ */
 	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
@@ -2478,7 +2470,7 @@ void _main(array(string) orig_argv, array(string) env)
   switch (postparseaction)
   {
      case "features":
-       write( main_resolv( "Tools", "Install", "features" )()*"\n"+"\n" );
+       write( main_resolv( "Tools.Install.features" )()*"\n"+"\n" );
        exit(0);
 
      case "info":
@@ -2489,13 +2481,13 @@ void _main(array(string) orig_argv, array(string) env)
 	     "pike binary..."+_pike_file_name+"\n"+
 	      format_paths() + "\n"
 	     "Features......"+
-	     main_resolv( "Tools","Install","features" )()*"\n              "+
+	     main_resolv( "Tools.Install.features" )()*"\n              "+
 	     "\n");
 	exit(0);
   }
 
 #ifdef __AUTO_BIGNUM__
-  main_resolv( "Gmp", "bignum" );
+  main_resolv( "Gmp.bignum" );
 #endif /* __AUTO_BIGNUM__ */
 
   random_seed(time() ^ (getpid()<<8));
@@ -2507,7 +2499,7 @@ void _main(array(string) orig_argv, array(string) env)
 	     "Available tools:\n");
       mapping t = ([]);
       int i;
-      object ts = main_resolv( "Tools", "Standalone" );
+      object ts = main_resolv( "Tools.Standalone" );
       foreach (indices(ts), string s) {
 	mixed val = ts[s];
 	if (programp (val)) {
@@ -2521,7 +2513,7 @@ void _main(array(string) orig_argv, array(string) env)
 	werror(" %-"+i+"s %s\n", s, t[s]);
       exit(1);
     }
-    main_resolv( "Tools", "Hilfe" )->StdinHilfe();
+    main_resolv( "Tools.Hilfe" )->StdinHilfe();
     exit(0);
   }
   else
@@ -2531,13 +2523,13 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(run_tool) {
     mixed err = catch {
-      prog=main_resolv( "Tools", "Standalone", argv[0] );
+      prog=main_resolv( "Tools.Standalone." + argv[0] );
     };
 
     if (err)
-      _error( "Pike: Failed to load tool %s:\n"
-	      "%s\n", argv[0],
-	      stringp(err[0])?err[0]:describe_backtrace(err) );
+      error( "Pike: Failed to load tool %s:\n"
+	     "%s\n", argv[0],
+	     stringp(err[0])?err[0]:describe_backtrace(err) );
 
     argv[0] = search(programs, prog) || argv[0];
   } else {
@@ -2548,12 +2540,12 @@ void _main(array(string) orig_argv, array(string) env)
     };
 
     if (err)
-      _error( "Pike: Failed to compile script:\n"
-	      "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
+      error( "Pike: Failed to compile script:\n"
+	     "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
   }
 
   if(!prog)
-    _error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
+    error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
 
 #if constant(_debug)
   if(debug) _debug(debug);
@@ -2572,7 +2564,7 @@ void _main(array(string) orig_argv, array(string) env)
 	script=prog(argv);
       }
       if(!script->main)
-	_error("Error: %s has no main().\n", argv[0]);
+	error("Error: %s has no main().\n", argv[0]);
       ret=script->main(sizeof(argv),argv,env);
     };
   // Disable traceing.
