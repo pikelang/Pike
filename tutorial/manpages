@@ -11,6 +11,28 @@ object whatis;
 // "\\"		"\\e"
 // "()"		"(\\|)"
 // " - "	" \\- "
+// "..."	"\&.\|.\|."
+
+string quote_text(string s)
+{
+  return(replace(s, ({ "*", "\\", "()", " - ", "..." }),
+		 ({ "\\(**", "\\e", "(\\|)", " \\- ", "\&.\|.\|." })));
+}
+
+// Some versions of nroff don't like 8-bit chars at all.
+string strip_eightbit(string s)
+{
+  return(s & String.strmult("\177", sizeof(s)));
+}
+
+string strip_empty_lines(string s)
+{
+  return(Array.filter(s/"\n", lambda(string line) {
+				return(replace(line,
+					       ({ "\t", " " }),
+					       ({ "", "" })) != "");
+			      })*"\n");
+}
 
 void make_page(string base, TAG tag, string ind, string fbase);
 
@@ -31,7 +53,8 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 
   if (stringp(data)) {
     sscanf(data,"%*[ \t\n\r]%s",data);
-    res+=data;
+    mixed d = data;	// Fool Pikes type-checker.
+    res+=quote_text(d);
   } else if(arrayp(data)) {
     foreach (data, TAG tag) {
       if (objectp(tag)) {
@@ -46,7 +69,7 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	  continue;
 
 	case "man_title":
-	  res+="\n.SH "+tag->params->title+"\n";
+	  res+="\n.SH "+quote_text(tag->params->title)+"\n";
 	  stripws=1;
 	  break;
 
@@ -76,21 +99,16 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	  stripws=0;
 	  continue;
 	}
+	res+=make_manpage(base,tag->data,ind,fbase);
+      } else if (stringp(tag)) {
+	if (stripws) sscanf(tag,"%*[ \t\n\r]%s",tag);
+	res+=quote_text(tag);
+	stripws=0;
       }
-      res+=make_manpage(base,tag->data,ind,fbase);
     }
-  } else if (stringp(tag)) {
-    if (stripws) sscanf(tag,"%*[ \t\n\r]%s",tag);
-    res+=tag;
-    stripws=0;
   }
-
+  
   return res;
-}
-
-string strip_eightbit(string s)
-{
-  return(s & String.strmult("\177", sizeof(s)));
 }
 
 int pages=0;
@@ -132,7 +150,7 @@ void make_page(string base, TAG tag, string ind, string fbase)
        mkdirhier(globalbase+base);
      }
 
-     string page=make_manpage(base,tag->data,ind+" ",fbase);
+     string page=strip_empty_lines(make_manpage(base,tag->data,ind+" ",fbase));
 
 //   werror("creating "+outfiles[0]+"...\n"); 
 
@@ -165,9 +183,10 @@ void make_page(string base, TAG tag, string ind, string fbase)
      }
    
    };
-   if (err)
-	 werror("Error while making manpage for "+tag->name+" ("+base+"):\n"
-		+master()->describe_backtrace(err));
+   if (err) {
+     werror("Error while making manpage for "+tag->name+" ("+base+"):\n"
+	    +master()->describe_backtrace(err));
+   }
 }
 
 void make_pages(string base, SGML data, string ind, string fbase)
