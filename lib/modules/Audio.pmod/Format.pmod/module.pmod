@@ -4,7 +4,7 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id: module.pmod,v 1.3 2002/09/15 00:24:45 manual Exp $
+// $Id: module.pmod,v 1.4 2002/09/17 12:40:18 hop Exp $
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
@@ -14,6 +14,9 @@
 #endif
 
 //! Audio data format handling
+//!
+//! @note
+//!    API remains marked "unstable".
 
 //!
 class ANY {

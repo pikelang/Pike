@@ -93,10 +93,14 @@ o ADT.Relation.Binary
 
 o Audio.Codec and Audio.Codec
     Contains decoders and encoders for audio. Currently WAV and MP3.
+    Note: The API remains marked "unstable".
 
 o Calendar.verify
 
 o Debug.Tracer
+
+o Dvb.dvb
+    Digital sattelite handler (linux only).
 
 o Locale.Language
 
