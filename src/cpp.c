@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.41 1999/02/24 01:50:20 grubba Exp $
+ * $Id: cpp.c,v 1.42 1999/02/24 23:27:11 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -2123,12 +2123,20 @@ static struct pike_string *recode_string(struct pike_string *data)
 	(!((unsigned char *)data->str)[1])) {
       /* 32bit Unicode (UCS4) */
     } else {
-      /* 16bit Unicode */
+      /* 16bit Unicode (UCS2) */
       if ((!((unsigned char *)data->str)[1]) ||
 	  (((unsigned char *)data->str)[1] == 0xfe)) {
 	/* Reverse Byte-order */
+	struct pike_string new_str = begin_shared_string(data->len);
+	int i;
+	for(i=0; i<data->len; i++) {
+	  new_str->str[i^1] = data->str[i];
+	}
+	new_str = end_shared_string(new_str);
+	free_string(data);
+	data = new_str;
       }
-      // Note: We lose the extra reference to data here.
+      /* Note: We lose the extra reference to data here. */
       push_string(data);
       f_unicode_to_string(1);
       add_ref(data = sp[-1].u.string);
