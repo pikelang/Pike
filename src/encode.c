@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.113 2001/07/16 21:55:33 mast Exp $");
+RCSID("$Id: encode.c,v 1.114 2001/07/19 19:05:37 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -186,7 +186,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data);
   }						\
 }while(0)
 
-#define adddata2(s,l) addstr((char *)(s),(l) * sizeof(s[0]));
+#define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
 
 /* NOTE: Fix when type encodings change. */
 static int type_to_tag(int type)
@@ -914,7 +914,45 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	code_number( p->PIKE_CONCAT(num_,Z), data);
 #include "program_areas.h"
 
+#ifdef PIKE_USE_MACHINE_CODE
+#ifdef sparc
+	/* De-relocate the program... */
+	{
+	  size_t prev = 0, rel;
+	  for (rel = 0; rel < p->num_relocations; rel++) {
+	    size_t off = p->relocations[rel];
+	    INT32 opcode;
+#ifdef PIKE_DEBUG
+	    if (off < prev) {
+	      fatal("Relocations in bad order!\n");
+	    }
+#endif /* PIKE_DEBUG */
+	    adddata2(p->program + prev, off - prev);
+
+#ifdef PIKE_DEBUG
+	    if ((p->program[off] & 0xc0000000) != 0x40000000) {
+	      fatal("Bad relocation!\n");
+	    }
+#endif /* PIKE_DEBUG */
+	    /* Relocate to being relative to NULL */
+	    opcode = 0x40000000 |
+	      ((p->program[off] + (((INT32)(p->program)>>2))) & 0x3fffffff);
+	    adddata2(&opcode, 1);
+	    prev = off+1;
+	  }
+	  adddata2(p->program + prev, p->num_program - prev);
+	}
+#else
 	adddata2(p->program, p->num_program);
+#endif /* sparc */
+
+	adddata2(p->relocations, p->num_relocations);
+#else /* !PIKE_USE_MACHINE_CODE */
+
+	adddata2(p->program, p->num_program);
+
+#endif /* PIKE_USE_MACHINE_CODE */
+
 	adddata2(p->linenumbers, p->num_linenumbers);
 	
 	for(d=0;d<p->num_identifier_index;d++)
@@ -2049,6 +2087,30 @@ static void decode_value2(struct decode_data *data)
 	  p->flags |= PROGRAM_OPTIMIZED;
 
 	  getdata2(p->program, p->num_program);
+#ifdef PIKE_USE_MACHINE_CODE
+	  getdata2(p->relocations, p->num_relocations);
+
+#ifdef sparc
+	  /* Relocate the program... */
+	  {
+	    PIKE_OPCODE_T *prog = p->program;
+	    INT32 delta = ((INT32)p->program)>>2;
+	    size_t rel = p->num_relocations;
+	    while (rel--) {
+#ifdef PIKE_DEBUG
+	      if ((prog[p->relocations[rel]] & 0xc0000000) != 0x40000000) {
+		fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",
+		      rel, p->relocations[rel],
+		      prog[p->relocations[rel]]);
+	      }
+#endif /* PIKE_DEBUG */
+	      prog[p->relocations[rel]] = 0x40000000 |
+		(((prog[p->relocations[rel]] & 0x3fffffff) - delta) &
+		 0x3fffffff);
+	    }
+	  }
+#endif /* sparc */
+#endif /* PIKE_USE_MACHINE_CODE */
 	  getdata2(p->linenumbers, p->num_linenumbers);
 
 #ifdef DEBUG_MALLOC
