@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.199 2004/03/10 18:08:12 grubba Exp $
+|| $Id: program.h,v 1.200 2004/03/13 14:45:06 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -19,6 +19,12 @@
 
 /* Needed to support dynamic loading on NT */
 PMOD_PROTO extern struct program_state * Pike_compiler;
+
+/* Compilation flags */
+#define COMPILATION_CHECK_FINAL         0x01
+        /* This flag is set when resolve functions should force the lookup so
+         * that we don't get a placeholder back. Used for inherits. */
+#define COMPILATION_FORCE_RESOLVE       0x02
 
 extern struct pike_string *this_program_string;
 
@@ -564,10 +570,6 @@ extern int compilation_depth;
 
 #define FOO(NUMTYPE,TYPE,ARGTYPE,NAME) void PIKE_CONCAT(add_to_,NAME(ARGTYPE ARG));
 #include "program_areas.h"
-
-/* This flag is set when resolve functions should force the lookup so
- * that we don't get a placeholder back. Used for inherits. */
-extern int force_resolve;
 
 typedef int supporter_callback (void *, int);
 struct Supporter

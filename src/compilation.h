@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: compilation.h,v 1.30 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: compilation.h,v 1.31 2004/03/13 14:45:05 grubba Exp $
 */
 
 /*
@@ -148,7 +148,7 @@
   ZMEMBER(INT32,parent_identifier,0)
   IMEMBER(int, compat_major, PIKE_MAJOR_VERSION)
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)
-  ZMEMBER(int, check_final, 0)
+  ZMEMBER(int, flags, 0)
   ZMEMBER(struct compilation *,compiler,0)
   SEND
 
