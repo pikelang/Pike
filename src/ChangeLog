@@ -82,6 +82,26 @@ Tue Jan 14 17:59:06 1997  Niels Möller  <nisse@beldandy.infovav.se>
  	destruct objects whose corresponding program have been freed and
  	unloaded.
 
+Sun Jan 12 00:30:39 1997  Per Hedbor  <per@puck.infovav.se>
+
+	* configure.in,threads.h: Added support for Unix threads, and also
+ 	the macro th_setconcurrency. This macro is more or less needed to
+ 	make truly multithreaded programs on Solaris.
+
+	* threads.c: Added the new efun thread_set_concurrency, sets the
+ 	concurrencylevel to a new value. Default on Solaris is the number
+ 	of CPUs + 1, and since one thread is already used by the signal
+ 	handler, no Solaris program is truly multithreaded without this
+ 	function. Note that any number of user-level threads can do
+ 	certain system calls, since they are implemented in a non-blocking
+ 	way in the user level threading library, but functions like the
+ 	image module is not non-blocking, and needs this new efun to
+ 	thread nicely.
+
+	This function is not available when using posix threads, but it is
+	possible to create 'bound' threads, this should perhaps be done in
+	pike.
+	
 Sun Jan 12 02:08:01 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
 
 	* configure.in: Enabled the setting of LDFLAGS and CPPFLAGS.
