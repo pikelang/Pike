@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.70 1999/12/14 17:40:00 hubbe Exp $
+ * $Id: program.h,v 1.71 1999/12/14 19:51:19 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -490,7 +490,7 @@ int implements(struct program *a, struct program *b);
 
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_pass(debug_end_program()))
-#define end_class(NAME, FLAGS) do { debug_malloc_touch(new_program); debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS); }while(0)
+#define end_class(NAME, FLAGS) (debug_malloc_touch(new_program), debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS))
 #else
 #define end_class(NAME,FLAGS) debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS)
 #define end_program debug_end_program
