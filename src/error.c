@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.108 2003/05/15 15:33:30 mast Exp $
+|| $Id: error.c,v 1.109 2003/07/16 11:48:35 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.108 2003/05/15 15:33:30 mast Exp $");
+RCSID("$Id: error.c,v 1.109 2003/07/16 11:48:35 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -322,9 +322,13 @@ PMOD_EXPORT void exit_on_error(const void *msg)
 #ifdef PIKE_DEBUG
   {
     char *s;
+    struct svalue thrown;
     fprintf(stderr,"Attempting to dump raw error: (may fail)\n");
     init_buf();
-    describe_svalue(&throw_value,0,0);
+    move_svalue (&thrown, &throw_value);
+    throw_value.type = PIKE_T_INT;
+    describe_svalue(&thrown,0,0);
+    free_svalue (&thrown);
     s=simple_free_buf();
     fprintf(stderr,"%s\n",s);
     free(s);
