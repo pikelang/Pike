@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.4 2000/08/27 22:36:00 grubba Exp $
+ * $Id: stat.c,v 1.5 2000/08/28 11:05:38 grubba Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.4 2000/08/27 22:36:00 grubba Exp $");
+RCSID("$Id: stat.c,v 1.5 2000/08/28 11:05:38 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -36,18 +36,57 @@ enum stat_query
 /* special */
  STAT_TYPE, STAT_MODE_STRING};
 
-#define THIS ((struct stat_storage*)(fp->current_storage))
+#define THIS_STAT ((struct stat_storage*)(fp->current_storage))
+
+#ifndef S_IFMT
+#define S_IFMT	0xf000
+#endif /* !S_IFMT */
+#ifndef S_IFREG
+#define S_IFREG	0x8000
+#endif /* !S_IFREG */
+
+#ifndef S_IRUSR
+#define S_IRUSR 0400
+#endif /* !S_IRUSR */
+#ifndef S_IWUSR
+#define S_IWUSR 0200
+#endif /* !S_IWUSR */
+#ifndef S_IXUSR
+#define S_IXUSR 0100
+#endif /* !S_IXUSR */
+#ifndef S_IRGRP
+#define S_IRGRP 040
+#endif /* !S_IRGRP */
+#ifndef S_IWGRP
+#define S_IWGRP 020
+#endif /* !S_IWGRP */
+#ifndef S_IXOTH
+#define S_IXOTH 010
+#endif /* !S_IXOTH */
+#ifndef S_IROTH
+#define S_IROTH 04
+#endif /* !S_IROTH */
+#ifndef S_IWOTH
+#define S_IWOTH 02
+#endif /* !S_IWOTH */
+#ifndef S_IXOTH
+#define S_IXOTH 01
+#endif /* !S_IXOTH */
+
+#ifndef S_ISREG
+#define S_ISREG(mode)	(((mode) & S_IFMT) == S_IFREG)
+#endif /* !S_ISREG */
 
 static void stat_push_compat(INT_TYPE n)
 {
    switch (n)
    {
-      case 0: push_int(THIS->s.st_mode); break;
+      case 0: push_int(THIS_STAT->s.st_mode); break;
       case 1: 
-	 switch(S_IFMT & THIS->s.st_mode)
+	 switch(S_IFMT & THIS_STAT->s.st_mode)
 	 {
 	    case S_IFREG:
-	       push_int64((INT64)THIS->s.st_size);
+	       push_int64(THIS_STAT->s.st_size);
 	       break;
     
 	    case S_IFDIR: push_int(-2); break;
@@ -57,17 +96,17 @@ static void stat_push_compat(INT_TYPE n)
 	    default:
 #ifdef DEBUG_FILE
 	       fprintf(stderr, "encode_stat(): mode:%ld\n", 
-		       (long)S_IFMT & THIS->s.st_mode);
+		       (long)S_IFMT & THIS_STAT->s.st_mode);
 #endif /* DEBUG_FILE */
 	       push_int(-4);
 	       break;
 	 }
 	 break;
-      case 2: push_int(THIS->s.st_atime); break;
-      case 3: push_int(THIS->s.st_mtime); break;
-      case 4: push_int(THIS->s.st_ctime); break;
-      case 5: push_int(THIS->s.st_uid); break;
-      case 6: push_int(THIS->s.st_gid); break;
+      case 2: push_int64(THIS_STAT->s.st_atime); break;
+      case 3: push_int64(THIS_STAT->s.st_mtime); break;
+      case 4: push_int64(THIS_STAT->s.st_ctime); break;
+      case 5: push_int64(THIS_STAT->s.st_uid); break;
+      case 6: push_int64(THIS_STAT->s.st_gid); break;
       default:
       {
 	 INT32 args=1;
@@ -104,72 +143,72 @@ static void stat_index(INT32 args)
 	 
 	 switch (code)
 	 {
-	    case STAT_DEV: push_int(THIS->s.st_dev); break;
-	    case STAT_INO: push_int(THIS->s.st_ino); break;
-	    case STAT_MODE: push_int(THIS->s.st_mode); break;
-	    case STAT_NLINK: push_int(THIS->s.st_nlink); break;
-	    case STAT_UID: push_int(THIS->s.st_uid); break;
-	    case STAT_GID: push_int(THIS->s.st_gid); break;
-	    case STAT_RDEV: push_int(THIS->s.st_rdev); break;
-	    case STAT_SIZE: push_int(THIS->s.st_size); break;
+	    case STAT_DEV: push_int(THIS_STAT->s.st_dev); break;
+	    case STAT_INO: push_int(THIS_STAT->s.st_ino); break;
+	    case STAT_MODE: push_int(THIS_STAT->s.st_mode); break;
+	    case STAT_NLINK: push_int(THIS_STAT->s.st_nlink); break;
+	    case STAT_UID: push_int(THIS_STAT->s.st_uid); break;
+	    case STAT_GID: push_int(THIS_STAT->s.st_gid); break;
+	    case STAT_RDEV: push_int(THIS_STAT->s.st_rdev); break;
+	    case STAT_SIZE: push_int(THIS_STAT->s.st_size); break;
 #ifdef STAT_BLKSIZE
-	    case STAT_BLKSIZE: push_int(THIS->s.st_blksize); break;
+	    case STAT_BLKSIZE: push_int(THIS_STAT->s.st_blksize); break;
 #endif
 #ifdef STAT_BLOCKS
-	    case STAT_BLOCKS: push_int(THIS->s.st_blocks); break;
+	    case STAT_BLOCKS: push_int(THIS_STAT->s.st_blocks); break;
 #endif
-	    case STAT_ATIME: push_int(THIS->s.st_atime); break;
-	    case STAT_MTIME: push_int(THIS->s.st_mtime); break;
-	    case STAT_CTIME: push_int(THIS->s.st_ctime); break;
+	    case STAT_ATIME: push_int64(THIS_STAT->s.st_atime); break;
+	    case STAT_MTIME: push_int64(THIS_STAT->s.st_mtime); break;
+	    case STAT_CTIME: push_int64(THIS_STAT->s.st_ctime); break;
 
 	    case STAT_ISREG: 
-	       push_int(S_ISREG(THIS->s.st_mode));
+	       push_int(S_ISREG(THIS_STAT->s.st_mode));
 	       break;
 	    case STAT_ISLNK:
 #ifdef S_ISLNK
-	       push_int(S_ISLNK(THIS->s.st_mode));
+	       push_int(S_ISLNK(THIS_STAT->s.st_mode));
 #else
 	       push_int(0);
 #endif
 	       break;
 	    case STAT_ISDIR: 
 #ifdef S_ISDIR
-	       push_int(S_ISDIR(THIS->s.st_mode));
+	       push_int(S_ISDIR(THIS_STAT->s.st_mode));
 #else
 	       push_int(0);
 #endif
 	       break;
 	    case STAT_ISCHR: 
 #ifdef S_ISCHR
-	       push_int(S_ISCHR(THIS->s.st_mode));
+	       push_int(S_ISCHR(THIS_STAT->s.st_mode));
 #else
 	       push_int(0);
 #endif
 	       break;
 	    case STAT_ISBLK: 
 #ifdef S_ISBLK
-	       push_int(S_ISBLK(THIS->s.st_mode));
+	       push_int(S_ISBLK(THIS_STAT->s.st_mode));
 #else
 	       push_int(0);
 #endif
 	       break;
 	    case STAT_ISFIFO: 
 #ifdef S_ISFIFO
-	       push_int(S_ISFIFO(THIS->s.st_mode));
+	       push_int(S_ISFIFO(THIS_STAT->s.st_mode));
 #else
 	       push_int(0);
 #endif
 	       break;
 	    case STAT_ISSOCK: 
 #ifdef S_ISSOCK
-	       push_int(S_ISSOCK(THIS->s.st_mode));
+	       push_int(S_ISSOCK(THIS_STAT->s.st_mode));
 #else
 	       push_int(0);
 #endif
 	       break;
 
 	    case STAT_TYPE:
-	       switch (THIS->s.st_mode & S_IFMT)
+	       switch (THIS_STAT->s.st_mode & S_IFMT)
 	       {
 		  case S_IFREG:
 		     push_constant_text("reg");
@@ -211,7 +250,7 @@ static void stat_index(INT32 args)
 	       break;
 	       
 	    case STAT_MODE_STRING:
-	       switch (THIS->s.st_mode & S_IFMT)
+	       switch (THIS_STAT->s.st_mode & S_IFMT)
 	       {
 		  case S_IFREG:
 		     push_constant_text("-");
@@ -251,62 +290,62 @@ static void stat_index(INT32 args)
 		     break;
 	       }
 
-	       if ( (THIS->s.st_mode & S_IRUSR) )
+	       if ( (THIS_STAT->s.st_mode & S_IRUSR) )
 		  push_constant_text("r");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS->s.st_mode & S_IWUSR) )
+	       if ( (THIS_STAT->s.st_mode & S_IWUSR) )
 		  push_constant_text("w");
 	       else
 		  push_constant_text("-");
 		  
 #ifdef S_ISVTX
-	       if ( (THIS->s.st_mode & S_ISVTX) )
+	       if ( (THIS_STAT->s.st_mode & S_ISVTX) )
 		  push_constant_text("S");
 	       else 
 #endif
 #ifdef S_ISUID
-		  if ( (THIS->s.st_mode & S_ISUID) )
+		  if ( (THIS_STAT->s.st_mode & S_ISUID) )
 		     push_constant_text("s");
 		  else 
 #endif
-		     if ( (THIS->s.st_mode & S_IXUSR) )
+		     if ( (THIS_STAT->s.st_mode & S_IXUSR) )
 			push_constant_text("x");
 		     else
 			push_constant_text("-");
 		  
-	       if ( (THIS->s.st_mode & S_IRGRP) )
+	       if ( (THIS_STAT->s.st_mode & S_IRGRP) )
 		  push_constant_text("r");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS->s.st_mode & S_IWGRP) )
+	       if ( (THIS_STAT->s.st_mode & S_IWGRP) )
 		  push_constant_text("w");
 	       else
 		  push_constant_text("-");
 		  
 #ifdef S_ISUID
-	       if ( (THIS->s.st_mode & S_ISGID) )
+	       if ( (THIS_STAT->s.st_mode & S_ISGID) )
 		  push_constant_text("s");
 	       else 
 #endif
-		  if ( (THIS->s.st_mode & S_IXGRP) )
+		  if ( (THIS_STAT->s.st_mode & S_IXGRP) )
 		     push_constant_text("x");
 		  else
 		     push_constant_text("-");
 
-	       if ( (THIS->s.st_mode & S_IROTH) )
+	       if ( (THIS_STAT->s.st_mode & S_IROTH) )
 		  push_constant_text("r");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS->s.st_mode & S_IWOTH) )
+	       if ( (THIS_STAT->s.st_mode & S_IWOTH) )
 		  push_constant_text("w");
 	       else
 		  push_constant_text("-");
 		  
-	       if ( (THIS->s.st_mode & S_IXOTH) )
+	       if ( (THIS_STAT->s.st_mode & S_IXOTH) )
 		  push_constant_text("x");
 	       else
 		  push_constant_text("-");
@@ -435,7 +474,7 @@ static void stat_values(INT32 args)
    stack_pop_n_elems_keep_top(1);
 }
 
-#undef THIS
+#undef THIS_STAT
 
 void push_stat(struct stat *s)
 {
