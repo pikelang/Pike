@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.109 2002/12/08 15:25:50 grubba Exp $
+|| $Id: cpp.c,v 1.110 2002/12/08 15:32:37 grubba Exp $
 */
 
 #include "global.h"
@@ -301,7 +301,7 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
  *!   File that was requested for inclusion.
  *!
  *! @param current_file
- *!   File where the dicerctiva was found.
+ *!   File where the directive was found.
  *!
  *! @param is_local_ref
  *!   Specifies reference method.
