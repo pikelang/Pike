@@ -133,6 +133,7 @@ void set_image( PVImage i )
   int xs = i->xsize(), ys = i->ysize();
   if( (xs != oxs) || (ys != oys) )
   {
+    set_app_paintable( 1 );
     set_background( pixmap = GDK.Pixmap( i ) );
     set_usize( xs, ys );
     oxs = xs;
