@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.19 2002/04/17 22:16:38 jhs Exp $
+// $Id: RCS.pike,v 1.20 2002/04/19 23:18:15 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -297,12 +297,12 @@ string parse_delta_sections(string raw)
   {
     if(ptr = R->rcs_next)
     {
-      if(R->branch)
+      if(String.count(R->revision, ".") > 1)
       {
 	R->next = ptr; // on a branch, the next pointer means the successor
 	revisions[ptr]->ancestor = R->revision;
       }
-      else // this revision is a branch
+      else // this revision is on the trunk:
       {
 	R->ancestor = ptr; // on the trunk, the next pointer is the ancestor
 	revisions[ptr]->next = R->revision;
@@ -380,7 +380,7 @@ void parse_deltatext_sections(string raw,
 	row += count;
       }
 
-      if(!this->branch)
+      if(String.count(this_rev, ".") == 1)
       {
 	DEBUG("this: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
 	      this->lines, this->ancestor, this->next);
@@ -390,7 +390,7 @@ void parse_deltatext_sections(string raw,
 	next->removed = added; // remember, the math is all
 	next->added = removed; // backwards on the trunk
       }
-      else
+      else // this revision was on a branch:
       {
 	this->lines = revisions[this->ancestor]->lines + added - removed;
 	this->removed = removed;
