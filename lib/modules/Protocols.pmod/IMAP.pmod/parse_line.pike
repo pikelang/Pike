@@ -59,8 +59,8 @@ string get_atom(int|void with_options)
 
   sscanf(buffer,
 	 (with_options
-	  ? "%*[ \t]%[^][(){ \0-\037\177%*\"\\]%s"
-	  : "%*[ \t]%[^(){ \0-\037\177%*\"\\]%s"),
+	  ? "%*[ \t]%[^][(){ \0-\037\177%\"\\]%s"
+	  : "%*[ \t]%[^(){ \0-\037\177%\"\\]%s"),
 	 atom, buffer);
 
 #if 0	/* FIXME: This code is broken */
