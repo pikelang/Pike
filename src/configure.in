@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.859 2004/12/16 19:06:43 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.860 2004/12/16 19:19:55 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -327,6 +327,16 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       # gcc/AIX says the following regarding -fpic:
       #
       # cc1: warning: -fpic ignored (all code is position independent)
+      pike_cv_option_$2=no
+    elif grep -i 'ignoring option'  <conftezt.out.2 >/dev/null; then
+      # icc/Linux says the following regarding -Wcomment:
+      #
+      # icc: Command line warning: ignoring option '-W'; no argument required
+      pike_cv_option_$2=no
+    elif grep -i 'not supported' <conftezt.out.2 >/dev/null; then
+      # icc/Linux says the following regarding -W:
+      #
+      # icc: Command line remark: option '-W' not supported
       pike_cv_option_$2=no
     else :; fi
     ifelse([$6], , ,[
