@@ -409,8 +409,8 @@ void mergeTrees(Node dest, Node source) {
         if (n) {
           if (node->get_any_name() != n->get_any_name())
             processError("entity '" + name +
-                         "' used both as a " + node->get_anu_name() +
-			 " and a " + n->get_anu_name());
+                         "' used both as a " + node->get_any_name() +
+			 " and a " + n->get_any_name());
           mergeTrees(n, node);
         }
         else
