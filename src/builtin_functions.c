@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.420 2002/02/05 19:08:52 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.421 2002/02/13 13:36:02 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7798,15 +7798,15 @@ void init_builtin_efuns(void)
   
 /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value", f_encode_value,
-	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj) tOr(tVoid,tInt),tStr), OPT_TRY_OPTIMIZE);
 
   /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value_canonic", f_encode_value_canonic,
-	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj) tOr(tVoid,tInt),tStr), OPT_TRY_OPTIMIZE);
 
 /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
-	   tFunc(tStr tOr(tVoid,tObj),tMix), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr tOr(tVoid,tObj) tOr(tVoid,tInt),tMix), OPT_TRY_OPTIMIZE);
   
 /* function(object,string:int) */
   ADD_EFUN("object_variablep", f_object_variablep,
