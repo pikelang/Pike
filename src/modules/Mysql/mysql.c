@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.14 1998/03/08 13:16:53 grubba Exp $
+ * $Id: mysql.c,v 1.15 1998/03/16 14:55:03 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.14 1998/03/08 13:16:53 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.15 1998/03/16 14:55:03 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -487,8 +487,12 @@ static void f_big_query(INT32 args)
     err = mysql_error(socket);
     MYSQL_DISALLOW();
 
-    error("mysql->big_query(): Query \"%s\" failed (%s)\n",
-	  sp[-args].u.string->str, err);
+    if (sp[-args].u.string->len <= 512) {
+      error("mysql->big_query(): Query \"%s\" failed (%s)\n",
+	    sp[-args].u.string->str, err);
+    } else {
+      error("mysql->big_query(): Query failed (%s)\n", err);
+    }
   }
 
   MYSQL_ALLOW();
