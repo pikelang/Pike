@@ -14,8 +14,10 @@
 #include "stuff.h"
 #include "bignum.h"
 #include "opcodes.h"
+#include "builtin_functions.h"
+#include "constants.h"
 
-RCSID("$Id: peep.c,v 1.48 2001/06/30 07:05:55 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.49 2001/07/02 04:09:49 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -454,7 +456,7 @@ static INLINE ptrdiff_t insopt2(int f, INT32 a, INT32 b,
 
 #ifdef PIKE_DEBUG
   if(!hasarg2(f) && b)
-    fatal("hasarg(%d) is wrong!\n",f);
+    fatal("hasarg2(%d /*%s */) is wrong!\n",f,get_f_name(f));
 #endif
 
   p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
@@ -483,7 +485,7 @@ static INLINE ptrdiff_t insopt1(int f, INT32 a, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && a)
-    fatal("hasarg(%d) is wrong!\n",f);
+    fatal("hasarg(%d /* %s */) is wrong!\n",f,get_f_name(f));
 #endif
 
   return insopt2(f,a,0,cl, cf);
@@ -493,7 +495,7 @@ static INLINE ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
-    fatal("hasarg(%d) is wrong!\n",f);
+    fatal("hasarg(%d /* %s */) is wrong!\n",f,get_f_name(f));
 #endif
   return insopt2(f,0,0,cl, cf);
 }

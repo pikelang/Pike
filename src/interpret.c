@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.210 2001/07/01 22:29:41 mast Exp $");
+RCSID("$Id: interpret.c,v 1.211 2001/07/02 04:09:48 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -982,6 +982,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	(*(s->u.efun->function))(args);
 
 #ifdef PIKE_DEBUG
+	s->u.efun->runs++;
 	if(Pike_sp != expected_stack + !s->u.efun->may_return_void)
 	{
 	  if(Pike_sp < expected_stack)

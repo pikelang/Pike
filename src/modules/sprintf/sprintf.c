@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.78 2001/03/05 00:41:35 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.79 2001/07/02 04:09:50 hubbe Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1474,6 +1474,7 @@ void f_sprintf(INT32 num_arg)
       Pike_error("Bad argument 1 to sprintf.\n");
     }
   }
+/*  fprintf(stderr,"SPRINTF: %s\n",argp->u.string->str); */
 
   init_string_builder(&r,0);
   SET_ONERROR(err_format_stack, free_sprintf_strings, &fs);
@@ -1493,11 +1494,48 @@ void f_sprintf(INT32 num_arg)
   push_string(ret);
 }
 
+static node *optimize_sprintf(node *n)
+{
+  node **arg0 = my_get_arg(&_CDR(n), 0);
+  node **arg1 = my_get_arg(&_CDR(n), 1);
+  node *ret;
+  int num_args=count_args(CDR(n));
+  if(arg0 && arg1 && num_args == 2 &&
+     (*arg0)->token == F_CONSTANT &&
+     (*arg0)->u.sval.type == T_STRING &&
+     (*arg0)->u.sval.u.string->size_shift == 0 &&
+     (*arg0)->u.sval.u.string->len == 2 &&
+     STR0((*arg0)->u.sval.u.string)[0]=='%')
+  {
+    switch(STR0((*arg0)->u.sval.u.string)[1])
+    {
+      case 'c':
+	ADD_NODE_REF2(*arg1,
+		      ret = mkefuncallnode("int2char",*arg1);
+	  );
+	return ret;
+
+      case 't':
+	ADD_NODE_REF2(*arg1,
+		      ret = mkefuncallnode("basetype",*arg1);
+	  );
+	return ret;
+
+      default: break;
+    }
+  }
+  return 0;
+}
+
 void pike_module_init(void)
 {
   /* function(string|object, mixed ... : string) */
-  ADD_EFUN("sprintf", f_sprintf, tFuncV(tOr(tStr, tObj), tMix, tStr),
-	   OPT_TRY_OPTIMIZE);
+  ADD_EFUN2("sprintf", 
+	    f_sprintf,
+	    tFuncV(tOr(tStr, tObj), tMix, tStr),
+	    OPT_TRY_OPTIMIZE,
+	    optimize_sprintf,
+	    0);
 }
 
 void pike_module_exit(void)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.90 2001/06/29 18:19:30 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.91 2001/07/02 04:09:49 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -120,7 +120,10 @@ void exit_lex(void)
 #ifdef PIKE_DEBUG
   if(p_flag)
   {
+    extern void present_constant_profiling(void);
     int e;
+    present_constant_profiling();
+
     fprintf(stderr,"Opcode compiles: (opcode, compiled)\n");
     for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
     {

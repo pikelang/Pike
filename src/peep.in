@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.55 2001/06/29 19:48:49 hubbe Exp $
+// $Id: peep.in,v 1.56 2001/07/02 04:09:49 hubbe Exp $
 //
 
 NOP :
@@ -388,4 +388,18 @@ MKCALLOPTS(APPLY)
 MKCALLOPTS(CALL_FUNCTION)
 MKCALLOPTS(CALL_LFUN)
 MKCALLOPTS(CALL_BUILTIN)
+
+CALL_BUILTIN1 POP_VALUE : CALL_BUILTIN1_AND_POP ($1a)
+
+#define OPT_TYPEP(X,Y) \
+ CALL_BUILTIN1 [ Pike_compiler->new_program->constants[$1a].sval.u.efun->function == X ] BRANCH_WHEN_ZERO : BRANCH_IF_TYPE_IS_NOT(Y) POINTER($2a);
+
+#if 1
+OPT_TYPEP(f_intp, T_INT)
+OPT_TYPEP(f_stringp, T_STRING)
+OPT_TYPEP(f_arrayp, T_ARRAY)
+OPT_TYPEP(f_floatp, T_FLOAT)
+OPT_TYPEP(f_mappingp, T_MAPPING)
+OPT_TYPEP(f_multisetp, T_MULTISET)
+#endif
 

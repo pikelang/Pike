@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.123 2001/06/29 19:48:22 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.124 2001/07/02 04:09:48 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1159,14 +1159,23 @@ static int do_docode2(node *n, INT16 flags)
 	  if(!CAR(n)->u.sval.u.efun->docode || 
 	     !CAR(n)->u.sval.u.efun->docode(n))
 	  {
-	    emit0(F_MARK);
-	    PUSH_CLEANUP_FRAME(do_pop_mark, 0);
-	    do_docode(CDR(n),0);
-	    tmp1=store_constant(& CAR(n)->u.sval,
-				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
-				CAR(n)->name);
-	    emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
-	    POP_AND_DONT_CLEANUP;
+	    if(count_args(CDR(n))==1)
+	    {
+	      do_docode(CDR(n),0);
+	      tmp1=store_constant(& CAR(n)->u.sval,
+				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+				  CAR(n)->name);
+	      emit1(F_CALL_BUILTIN1, DO_NOT_WARN((INT32)tmp1));
+	    }else{
+	      emit0(F_MARK);
+	      PUSH_CLEANUP_FRAME(do_pop_mark, 0);
+	      do_docode(CDR(n),0);
+	      tmp1=store_constant(& CAR(n)->u.sval,
+				  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
+				  CAR(n)->name);
+	      emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
+	      POP_AND_DONT_CLEANUP;
+	    }
 	  }
 	  if(n->type == void_type_string)
 	    return 0;

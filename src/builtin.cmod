@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.52 2001/07/01 15:39:16 grubba Exp $
+ * $Id: builtin.cmod,v 1.53 2001/07/02 04:09:46 hubbe Exp $
  */
 
 #include "global.h"
@@ -27,6 +27,106 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "fsort.h"
+
+
+/*! @decl string basetype(mixed x)
+ *!
+ *! Same as sprintf("%t",x);
+ *!
+ *! @seealso
+ *! @[sprintf()]
+ */
+PIKEFUN string basetype(mixed x)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  int t=x->type;
+  if(x->type == T_OBJECT && x->u.object->prog)
+  {
+    ptrdiff_t fun=FIND_LFUN(x->u.object->prog, LFUN__SPRINTF);
+    if(fun != -1)
+    {
+      push_int('t');
+      f_aggregate_mapping(0);
+      apply_low(x->u.object, fun, 2);
+      if(Pike_sp[-1].type == T_STRING)
+      {
+	stack_swap();
+	pop_stack();
+	return;
+      }
+      error("Non-string returned from _sprintf()\n");
+    }
+  }
+  pop_stack();
+  switch(t)
+  {
+    case T_ARRAY: push_constant_text("array"); break;
+    case T_FLOAT: push_constant_text("float"); break;
+    case T_FUNCTION: push_constant_text("function"); break;
+    case T_INT: push_constant_text("int"); break;
+    case T_LVALUE: push_constant_text("lvalue"); break;
+    case T_MAPPING: push_constant_text("mapping"); break;
+    case T_MULTISET: push_constant_text("multiset"); break;
+    case T_OBJECT: push_constant_text("object"); break;
+    case T_PROGRAM: push_constant_text("program"); break;
+    case T_STRING: push_constant_text("string"); break;
+    case T_TYPE: push_constant_text("type"); break;
+    case T_ZERO: push_constant_text("zero"); break;
+    case T_VOID: push_constant_text("void"); break;
+    case T_MAPPING_DATA: push_constant_text("mapping_data"); break;
+    default: push_constant_text("unknown"); break;
+  }
+}
+
+
+/*! @decl string int2char(int x)
+ *!
+ *! Same as sprintf("%c",x);
+ *!
+ *! @seealso
+ *! @[sprintf()]
+ */
+PIKEFUN string int2char(int|object x)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  int c;
+  if(x->type == T_OBJECT && x->u.object->prog)
+  {
+    ptrdiff_t fun=FIND_LFUN(x->u.object->prog, LFUN__SPRINTF);
+    if(fun != -1)
+    {
+      push_int('c');
+      f_aggregate_mapping(0);
+      apply_low(x->u.object, fun, 2);
+      if(Pike_sp[-1].type == T_STRING)
+      {
+	stack_swap();
+	pop_stack();
+	return;
+      }
+      error("Non-string returned from _sprintf()\n");
+    }
+  }
+  if(x->type != T_INT)
+    error("Bad argument 1 to int2char.\n");
+
+  c=x->u.integer;
+
+  if(c>=0 && c<256)
+  {
+    struct pike_string *s;
+    s=begin_shared_string(1);
+    s->str[0]=c;
+    RETURN end_shared_string(s);
+  }else{
+    struct string_builder tmp;
+    init_string_builder(&tmp,0);
+    string_builder_putchar(&tmp, c);
+    RETURN finish_string_builder(&tmp);
+  }
+}
 
 /*! @decl array column(array data, mixed index)
  *!

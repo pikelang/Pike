@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.17 2001/04/07 07:38:24 hubbe Exp $
+ * $Id: constants.h,v 1.18 2001/07/02 04:09:47 hubbe Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -27,6 +27,8 @@ struct callable
   INT16 flags;
 #ifdef PIKE_DEBUG
   INT8 may_return_void;
+  long compiles;
+  long runs;
 #endif
   optimize_fun optimize;
   docode_fun docode;

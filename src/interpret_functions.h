@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.65 2001/06/29 19:48:49 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.66 2001/07/02 04:09:48 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -862,6 +862,30 @@ OPCODE0_JUMP(F_BRANCH_WHEN_NON_ZERO,"branch if not zero")
   pop_stack();
 BREAK
 
+OPCODE1_JUMP(F_BRANCH_IF_TYPE_IS_NOT,"branch if type is !=")
+/*  fprintf(stderr,"******BRANCH IF TYPE IS NOT***** %s\n",get_name_of_type(arg1)); */
+  if(Pike_sp[-1].type == T_OBJECT &&
+     Pike_sp[-1].u.object->prog)
+  {
+    int fun=FIND_LFUN(Pike_sp[-1].u.object->prog, LFUN__IS_TYPE);
+    if(fun != -1)
+    {
+/*      fprintf(stderr,"******OBJECT OVERLOAD IN TYPEP***** %s\n",get_name_of_type(arg1)); */
+      push_text(get_name_of_type(arg1));
+      apply_low(Pike_sp[-2].u.object, fun, 1);
+      arg1=IS_ZERO(Pike_sp-1) ? T_FLOAT : T_OBJECT ;
+      pop_stack();
+    }
+  }
+  if(Pike_sp[-1].type == arg1)
+  {
+    SKIPJUMP();
+  }else{
+    DOJUMP();
+  }
+  pop_stack();
+BREAK
+
 OPCODE1_JUMP(F_BRANCH_IF_LOCAL,"branch if local")
   if(IS_ZERO(Pike_fp->locals + arg1))
   {
@@ -1659,6 +1683,7 @@ MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
     do_trace_call(args);						 \
   }									 \
   (*(s->u.efun->function))(args);					 \
+  s->u.efun->runs++;                                                     \
   if(Pike_sp != expected_stack + !s->u.efun->may_return_void)		 \
   {									 \
     if(Pike_sp < expected_stack)					 \
@@ -1725,6 +1750,18 @@ OPCODE1(F_MARK_CALL_BUILTIN_AND_RETURN,"mark, call builtin & return")
 BREAK;
 
 
+OPCODE1(F_CALL_BUILTIN1,"call builtin 1")
+{
+  DO_CALL_BUILTIN(1);
+}
+BREAK;
+
+OPCODE1(F_CALL_BUILTIN1_AND_POP,"call builtin1 & pop")
+{
+  DO_CALL_BUILTIN(1);
+  pop_stack();
+}
+BREAK;
 
 /* Assume that the number of arguments is correct */
 OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")

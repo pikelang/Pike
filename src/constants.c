@@ -17,7 +17,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.30 2001/04/13 19:56:49 grubba Exp $");
+RCSID("$Id: constants.c,v 1.31 2001/07/02 04:09:47 hubbe Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -69,6 +69,7 @@ PMOD_EXPORT void add_global_program(char *name, struct program *p)
 #define EXIT_BLOCK(X) do {		\
   free_type(X->type);			\
   free_string(X->name);			\
+  X->name=0;				\
   EXIT_PIKE_MEMOBJ(X);                  \
 }while(0)
 BLOCK_ALLOC(callable,128)
@@ -96,6 +97,8 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
     if(!z) fatal("Gnapp!\n");
     free_type(z);
   }
+  f->runs=0;
+  f->compiles=0;
 #endif
   return f;
 }
@@ -167,6 +170,24 @@ PMOD_EXPORT struct callable *quick_add_efun(char *name, ptrdiff_t name_length,
   free_string(n);
   return ret;
 }
+
+#ifdef PIKE_DEBUG
+void present_constant_profiling(void)
+{
+  struct callable_block *b;
+  int e;
+  for(b=callable_blocks;b;b=b->next)
+  {
+    for(e=0;e<NELEM(b->x);e++)
+    {
+      if(b->x[e].name)
+      {
+	fprintf(stderr,"%010d @E@: %s\n",b->x[e].runs, b->x[e].name->str);
+      }
+    }
+  }
+}
+#endif
 
 void cleanup_added_efuns(void)
 {

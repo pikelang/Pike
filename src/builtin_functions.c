@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.387 2001/06/29 10:47:37 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.388 2001/07/02 04:09:47 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2050,6 +2050,14 @@ void f__exit(INT32 args)
   if(Pike_sp[-args].type != T_INT)
     SIMPLE_BAD_ARG_ERROR("_exit", 1, "int");
 
+#ifdef PIKE_DEBUG
+  {
+    /* This will allow -p to work with _exit -Hubbe */
+    extern void exit_lex(void);
+    exit_lex();
+  }
+#endif
+
   exit(Pike_sp[-args].u.integer);
 }
 
@@ -3506,10 +3514,6 @@ void f_gc(INT32 args)
 #undef TYPEP
 #endif
 
-#ifdef AUTO_BIGNUM
-/* This should probably be here whether AUTO_BIGNUM is defined or not,
- * but it can wait a little. /Hubbe
- */
 
 #define TYPEP(ID,NAME,TYPE,TYPE_NAME)				\
 PMOD_EXPORT void ID(INT32 args)						\
@@ -3532,17 +3536,6 @@ PMOD_EXPORT void ID(INT32 args)						\
   pop_n_elems(args);						\
   push_int(t);							\
 }
-#else
-#define TYPEP(ID,NAME,TYPE) \
-void ID(INT32 args) \
-{ \
-  int t; \
-  if(args<1) SIMPLE_TOO_FEW_ARGS_ERROR(NAME, 1); \
-  t=Pike_sp[-args].type == TYPE; \
-  pop_n_elems(args); \
-  push_int(t); \
-}
-#endif /* AUTO_BIGNUM */
 
 
 /*! @decl int programp(mixed arg)
@@ -3632,21 +3625,13 @@ PMOD_EXPORT void f_programp(INT32 args)
  *!   @[mappingp()], @[stringp()], @[functionp()]
  */
 
-#ifdef AUTO_BIGNUM
+
 TYPEP(f_intp, "intp", T_INT, "int")
 TYPEP(f_mappingp, "mappingp", T_MAPPING, "mapping")
 TYPEP(f_arrayp, "arrayp", T_ARRAY, "array")
 TYPEP(f_multisetp, "multisetp", T_MULTISET, "multiset")
 TYPEP(f_stringp, "stringp", T_STRING, "string")
 TYPEP(f_floatp, "floatp", T_FLOAT, "float")
-#else
-TYPEP(f_intp, "intp", T_INT)
-TYPEP(f_mappingp, "mappingp", T_MAPPING)
-TYPEP(f_arrayp, "arrayp", T_ARRAY)
-TYPEP(f_multisetp, "multisetp", T_MULTISET)
-TYPEP(f_stringp, "stringp", T_STRING)
-TYPEP(f_floatp, "floatp", T_FLOAT)
-#endif /* AUTO_BIGNUM */
 
 /*! @decl array sort(array(mixed) index, array(mixed) ... data)
  *!
