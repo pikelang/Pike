@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.172 2000/03/31 01:54:12 hubbe Exp $");
+RCSID("$Id: las.c,v 1.173 2000/04/01 14:47:16 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3893,7 +3893,7 @@ int dooptcode(struct pike_string *name,
     }
 #endif
   }else{
-#if defined(SHARED_NODES) && !defined(IN_TPIKE)
+#if defined(SHARED_NODES) && !defined(IN_TPIKE) && 0
     /* Try the local variable usage analyser. */
     n = localopt(check_node_hash(n));
     /* Try optimizing some more. */
