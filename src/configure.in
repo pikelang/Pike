@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.69 1997/04/11 01:08:12 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.70 1997/04/11 01:23:51 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -506,6 +506,11 @@ int main()
       AC_DEFINE(_REENTRANT)
       AC_DEFINE(_THREAD_SAFE)
       AC_DEFINE(_MIT_POSIX_THREADS,1)
+
+      # We have to include this file!
+      echo >>confdefs.h "#include <pthread.h>"
+
+
       AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_yield \
 		     pthread_cond_init)
       AC_MSG_CHECKING(if pthread_condattr_default is defined)
