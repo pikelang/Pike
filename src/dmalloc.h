@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.14 1999/07/04 15:47:02 grubba Exp $
+ * $Id: dmalloc.h,v 1.15 1999/08/16 23:54:54 grubba Exp $
  */
 
 extern char *debug_xalloc(long);
@@ -11,8 +11,6 @@ void dump_memhdr_locations(struct memhdr *from,
 struct memhdr *alloc_memhdr(void);
 void really_free_memhdr(struct memhdr *mh);
 void add_marks_to_memhdr(struct memhdr *to,void *ptr);
-void low_add_marks_to_memhdr(struct memhdr *to,
-			     struct memhdr *from);
 
 extern int verbose_debug_malloc;
 extern int verbose_debug_exit;
