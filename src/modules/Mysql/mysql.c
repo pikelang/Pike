@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.3 1997/03/12 12:20:02 hubbe Exp $
+ * $Id: mysql.c,v 1.4 1997/04/20 04:07:02 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -44,15 +44,17 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #endif /* HAVE_MYSQL */
 
 /* From the Pike-dist */
-#include <global.h>
-#include <svalue.h>
-#include <object.h>
-#include <stralloc.h>
-#include <interpret.h>
-#include <port.h>
-#include <error.h>
-#include <threads.h>
-#include <program.h>
+#include "global.h"
+#include "svalue.h"
+#include "object.h"
+#include "stralloc.h"
+#include "interpret.h"
+#include "port.h"
+#include "error.h"
+#include "threads.h"
+#include "program.h"
+#include "operators.h"
+#include "builtin_functions.h"
 
 /* System includes */
 #ifdef HAVE_STRING_H
@@ -71,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.3 1997/03/12 12:20:02 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.4 1997/04/20 04:07:02 grubba Exp $");
 
 struct program *mysql_program = NULL;
 

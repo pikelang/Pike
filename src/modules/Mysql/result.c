@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.5 1997/04/20 03:55:46 grubba Exp $
+ * $Id: result.c,v 1.6 1997/04/20 04:07:06 grubba Exp $
  *
  * mysql query result
  *
@@ -41,17 +41,18 @@
 typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* From the Pike-dist */
-#include <global.h>
-#include <svalue.h>
-#include <mapping.h>
-#include <object.h>
-#include <program.h>
-#include <stralloc.h>
-#include <interpret.h>
-#include <error.h>
-#include <builtin_functions.h>
-#include <las.h>
-#include <threads.h>
+#include "global.h"
+#include "svalue.h"
+#include "mapping.h"
+#include "object.h"
+#include "program.h"
+#include "stralloc.h"
+#include "interpret.h"
+#include "error.h"
+#include "builtin_functions.h"
+#include "las.h"
+#include "threads.h"
+#include "multiset.h"
 
 /* Local includes */
 #include "precompiled_mysql.h"
@@ -74,7 +75,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.5 1997/04/20 03:55:46 grubba Exp $");
+RCSID("$Id: result.c,v 1.6 1997/04/20 04:07:06 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -351,7 +352,7 @@ static void f_fetch_row(INT32 args)
       if (row[i]) {
 	MYSQL_FIELD *field;
 
-	if (field = mysql_fetch_field(PIKE_MYSQL_RES->result)) {
+	if ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
 	  switch (field->type) {
 	    /* Integer types */
 	  case FIELD_TYPE_SHORT:

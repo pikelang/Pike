@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.2 1997/04/20 03:55:48 grubba Exp $
+ * $Id: precompiled_mysql.h,v 1.3 1997/04/20 04:06:59 grubba Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -75,5 +75,6 @@ extern struct program *mysql_result_program;
 void init_mysql_res_efuns(void);
 void init_mysql_res_programs(void);
 void exit_mysql_res(void);
+void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default);
 
 #endif /* PRECOMPILED_MYSQL_H */
