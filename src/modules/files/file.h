@@ -25,12 +25,14 @@
 
 struct file
 {
+  INT32 refs;
   int fd;
+  short open_mode;
+  int errno;
   struct svalue id;
   struct svalue read_callback;
   struct svalue write_callback;
   struct svalue close_callback;
-  int errno;
 };
 
 /* Prototypes begin here */
