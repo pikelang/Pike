@@ -4167,7 +4167,7 @@ of just <tt>write</tt> because they are the same function.
 <section title="Stdio.Terminfo">
 <function name=Stdio.Terminfo.getFallbackTerm title="get fallback terminal">
 <man_syntax>
-object(Stdio.Terminfo.Terminfo) getFallbackTerm(string <I>term</I>);
+object(Stdio.Terminfo.Terminfo)|object(Stdio.Terminfo.Termcap) getFallbackTerm(string <I>term</I>);
 </man_syntax>
 <man_description>
 Returns an object describing the fallback terminal for the
@@ -4230,6 +4230,38 @@ terminfo database. Returns 0 if not found.
 Stdio.Terminfo.getTerm, Stdio.Terminfo.getTermcap
 </man_see>
 </function>
+
+<hr noshade size=1>
+
+<class name="Termcap">
+<section title="Stdio.Terminfo.Termcap">
+Termcap terminal decription object.
+
+<method name=create title="initialize termcap object">
+<man_syntax>
+object(Stdio.Terminfo.Termcap) Termcap(string <I>cap</I>);<br>
+or<br>
+object(Stdio.Terminfo.Termcap) Termcap(string <I>cap</I>, object <I>tcdb</I>);<br>
+or<br>
+object(Stdio.Terminfo.Termcap) Termcap(string <I>cap</I>, object <I>tcdb</I>, int <I>maxrecurse</I>);
+</man_syntax>
+</method>
+
+<method name=tputs title="put termcap string">
+</method>
+
+
+</section>
+</class>
+
+<hr noshade size=1>
+
+<class name="Terminfo">
+<section title="Stdio.Terminfo.Terminfo">
+Terminfo terminal description object.
+
+</section>
+</class>
 
 <hr noshade size=1>
 
