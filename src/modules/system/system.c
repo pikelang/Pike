@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.47 1998/03/26 14:31:03 grubba Exp $
+ * $Id: system.c,v 1.48 1998/04/07 00:20:28 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.47 1998/03/26 14:31:03 grubba Exp $");
+RCSID("$Id: system.c,v 1.48 1998/04/07 00:20:28 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -943,6 +943,8 @@ void f_RegGetValue(INT32 args)
 }
 #endif
 
+extern init_passwd(void);
+
 /*
  * Module linkage
  */
@@ -1040,43 +1042,7 @@ void pike_module_init(void)
   add_efun("closelog", f_closelog, "function(:void)", 0);
 #endif /* HAVE_SYSLOG */
 
-  /*
-   * From passwords.c
-   */
-#ifdef HAVE_GETPWNAM
-  add_efun("getpwnam", f_getpwnam, "function(string:array)", 
-	   OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GETPWUID
-  add_efun("getpwuid", f_getpwuid, "function(int:array)", OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GETGRNAM
-  add_efun("getgrnam", f_getgrnam, "function(string:array)",
-	   OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GETGRGID
-  add_efun("getgrgid", f_getgrgid, "function(int:array)", OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GETPWENT
-  add_efun("getpwent", f_getpwent, "function(void:int|array)",
-           OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_ENDPWENT
-  add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_SETPWENT
-  add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GETGRENT
-  add_efun("getgrent", f_getgrent, "function(void:int|array)",
-           OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_ENDGRENT
-  add_efun("endgrent", f_endgrent, "function(void:int)", OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_SETGRENT
-  add_efun("setgrent", f_setgrent, "function(void:int)", OPT_EXTERNAL_DEPEND);
-#endif
+  init_passwd();
 
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS
   add_to_callback(& fork_child_callback, cleanup_after_fork, 0, 0);

@@ -1,21 +1,25 @@
 /*
- * $Id: passwords.c,v 1.7 1998/03/26 14:31:02 grubba Exp $
+ * $Id: passwords.c,v 1.8 1998/04/07 00:20:28 hubbe Exp $
  *
  * Password handling for Pike.
  *
  * Henrik Grubbström 1997-01-28
+ * Fixed to be semi-thread-safe by Hubbe. 1998-04-06
+ * Notice: the *pw* and *gr* functions are NEVER really thread
+ *         safe. If some other function executes a *pw* function
+ *         without locking the password_protection_mutex, we are
+ *         pretty much screwed.
  */
 
 /*
  * Includes
  */
-
 #include "system_machine.h"
 #include "system.h"
 
 #include "global.h"
 
-RCSID("$Id: passwords.c,v 1.7 1998/03/26 14:31:02 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.8 1998/04/07 00:20:28 hubbe Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -23,6 +27,7 @@ RCSID("$Id: passwords.c,v 1.7 1998/03/26 14:31:02 grubba Exp $");
 #include "threads.h"
 #include "svalue.h"
 #include "builtin_functions.h"
+#include "constants.h"
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -40,13 +45,66 @@ RCSID("$Id: passwords.c,v 1.7 1998/03/26 14:31:02 grubba Exp $");
 #ifdef HAVE_SHADOW_H
 # include <shadow.h>
 #endif /* HAVE_SHADOW_H */
+
+/*
+ * Emulation
+ */
+
+DEFINE_MUTEX(password_protection_mutex);
+
+#ifdef HAVE_GETPWENT
+#ifndef HAVE_GETPWNAM
+struct passwd *getpwnam(char *name)
+{
+  struct passwd *pw;
+  setpwent();
+  while(pw=getpwent())
+    if(strcmp(pw->pw_name,name))
+      break;
+  endpwent();
+  return pw;
+}
+#define HAVE_GETPWNAM
+#endif
+
+#ifndef HAVE_GETPWUID
+struct passwd *getpwuid(int uid)
+{
+  struct passwd *pw;
+  setpwent();
+  while(pw=getpwent())
+    if(pw->pw_uid == uid)
+      break;
+  endpwent();
+  return 0;
+}
+#define HAVE_GETPWUID
+#endif
+#endif
+
+#ifdef HAVE_GETGRENT
+#ifndef HAVE_GETGRNAM
+struct group *getgrnam(char *name)
+{
+  struct group *gr;
+  setgrent();
+  while(pw=getgrent())
+    if(strcmp(gr->gr_name,name))
+      break;
+  endgrent();
+  return gr;
+}
+#define HAVE_GETGRNAM
+#endif
+#endif
+
  
 /*
  * Functions
  */
 
 #if defined(HAVE_GETPWNAM) || defined(HAVE_GETPWUID) || defined(HAVE_GETPWENT)
-static void push_pwent(struct passwd *ent)
+void push_pwent(struct passwd *ent)
 {
   if(!ent)
   {
@@ -60,7 +118,9 @@ static void push_pwent(struct passwd *ent)
   {
     struct spwd *foo;
     THREADS_ALLOW_UID();
+    mt_lock(&password_protection_mutex);
     foo = getspnam(ent->pw_name);
+    mt_unlock(&password_protection_mutex);
     THREADS_DISALLOW_UID();
     if(foo)
       push_text(foo->sp_pwdp);
@@ -79,7 +139,7 @@ static void push_pwent(struct passwd *ent)
 #endif
 
 #if defined(HAVE_GETGRNAM) || defined(HAVE_GETGRUID) || defined(HAVE_GETGRENT)
-static void push_grent(struct group *ent)
+void push_grent(struct group *ent)
 {
   if(!ent)
   {
@@ -107,10 +167,12 @@ void f_getgrgid(INT32 args)
   struct group *foo;
   get_all_args("getgrgid", args, "%d", &gid);
   THREADS_ALLOW_UID();
+  mt_lock(&password_protection_mutex);
   foo = getgrgid( gid );
   THREADS_DISALLOW_UID();
   pop_n_elems( args );
   push_grent( foo );
+  mt_unlock(&password_protection_mutex);
 }
 #endif /* HAVE_GETGRGID */
 
@@ -122,10 +184,12 @@ void f_getgrnam(INT32 args)
   struct group *foo;
   get_all_args("getgrnam", args, "%s", &str);
   THREADS_ALLOW_UID();
+  mt_lock(&password_protection_mutex);
   foo = getgrnam( str );
   THREADS_DISALLOW_UID();
   pop_n_elems( args );
   push_grent( foo );
+  mt_unlock(&password_protection_mutex);
 }
 #endif /* HAVE_GETGRNAM */
 
@@ -139,11 +203,13 @@ void f_getpwnam(INT32 args)
   get_all_args("getpwnam", args, "%s", &str);
 
   THREADS_ALLOW_UID();
+  mt_lock(&password_protection_mutex);
   foo = getpwnam(str);
   THREADS_DISALLOW_UID();
 
   pop_n_elems(args);
   push_pwent(foo);
+  mt_unlock(&password_protection_mutex);
 }
 #endif /* HAVE_GETPWNAM */
 
@@ -157,11 +223,13 @@ void f_getpwuid(INT32 args)
   get_all_args("getpwuid", args, "%i", &uid);
 
   THREADS_ALLOW_UID();
+  mt_lock(&password_protection_mutex);
   foo = getpwuid(uid);
   THREADS_DISALLOW_UID();
 
   pop_n_elems(args);
   push_pwent(foo);
+  mt_unlock(&password_protection_mutex);
 }
 #endif /* HAVE_GETPWUID */
 
@@ -170,7 +238,9 @@ void f_getpwuid(INT32 args)
 void f_setpwent(INT32 args)
 {
   THREADS_ALLOW();
+  mt_lock(&password_protection_mutex);
   setpwent();
+  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
@@ -182,7 +252,9 @@ void f_setpwent(INT32 args)
 void f_endpwent(INT32 args)
 {
   THREADS_ALLOW();
+  mt_lock(&password_protection_mutex);
   endpwent();
+  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
@@ -196,6 +268,7 @@ void f_getpwent(INT32 args)
   struct passwd *foo;
   pop_n_elems(args);
   THREADS_ALLOW_UID();
+  mt_lock(&password_protection_mutex);
   foo = getpwent();
   THREADS_DISALLOW_UID();
   if(!foo)
@@ -204,7 +277,33 @@ void f_getpwent(INT32 args)
     return;
   }
   push_pwent(foo);
+  mt_unlock(&password_protection_mutex);
 }
+
+
+void f_get_all_users(INT32 args)
+{
+  struct passwd *pw;
+  struct array *a;
+  pop_n_elems(args);
+  a=low_allocate_array(0,10);
+  mt_lock(&password_protection_mutex);
+  setpwent();
+  while(1)
+  {
+    THREADS_ALLOW();
+    pw=getpwent();
+    THREADS_DISALLOW();
+    if(!pw) break;
+    push_pwent(pw);
+    a=append_array(a,sp-1);
+    pop_stack();
+  }
+  endpwent();
+  mt_unlock(&password_protection_mutex);
+  push_array(a);
+}
+
 #endif /* HAVE_GETPWENT */
 
 #ifdef HAVE_SETGRENT
@@ -212,7 +311,9 @@ void f_getpwent(INT32 args)
 void f_setgrent(INT32 args)
 {
   THREADS_ALLOW();
+  mt_lock(&password_protection_mutex);
   setgrent();
+  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
@@ -224,7 +325,9 @@ void f_setgrent(INT32 args)
 void f_endgrent(INT32 args)
 {
   THREADS_ALLOW();
+  mt_lock(&password_protection_mutex);
   endgrent();
+  mt_unlock(&password_protection_mutex);
   THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(0);
@@ -238,6 +341,7 @@ void f_getgrent(INT32 args)
   struct group *foo;
   pop_n_elems(args);
   THREADS_ALLOW_UID();
+  mt_lock(&password_protection_mutex);
   foo = getgrent();
   THREADS_DISALLOW_UID();
   if(!foo)
@@ -246,5 +350,150 @@ void f_getgrent(INT32 args)
     return;
   }
   push_grent(foo);
+  mt_unlock(&password_protection_mutex);
 }
+
+void f_get_all_groups(INT32 args)
+{
+  struct group *gr;
+  struct array *a;
+  pop_n_elems(args);
+  a=low_allocate_array(0,10);
+  mt_lock(&password_protection_mutex);
+  setgrent();
+  while(1)
+  {
+    THREADS_ALLOW();
+    gr=getgrent();
+    THREADS_DISALLOW();
+    if(!gr) break;
+    push_grent(gr);
+    a=append_array(a,sp-1);
+    pop_stack();
+  }
+  endgrent();
+  mt_unlock(&password_protection_mutex);
+  push_array(a);
+}
+
+#ifdef HAVE_GETPWNAM
+void f_get_groups_for_user(INT32 arg)
+{
+  struct group *gr;
+  struct passwd *pw;
+  struct array *a;
+  char *user;
+  ONERROR err;
+  int base_gid;
+
+  check_all_args("get_groups_for_user",arg,BIT_INT | BIT_STRING, 0);
+  pop_n_elems(arg-1);
+  a=low_allocate_array(0,10);
+  mt_lock(&password_protection_mutex);
+  if(sp[-1].type == T_INT)
+  {
+    int uid=sp[-1].u.integer;
+    THREADS_ALLOW();
+    pw=getpwuid(uid);
+    THREADS_DISALLOW();
+    sp[-1].u.string=make_shared_string(pw->pw_name);
+    sp[-1].type=T_STRING;
+    user=sp[-1].u.string->str;
+  }else{
+    user=sp[-1].u.string->str;
+    THREADS_ALLOW();
+    pw=getpwnam(user);
+    THREADS_DISALLOW();
+  }
+  if(!pw)
+  {
+    mt_unlock(&password_protection_mutex);
+    pop_stack();
+    push_int(0);
+    return;
+  }
+  push_int(base_gid=pw->pw_gid);
+  a=append_array(a,sp-1);
+  pop_stack();
+
+  setgrent();
+  while(1)
+  {
+    int e;
+    THREADS_ALLOW();
+
+    while(1)
+    {
+      gr=getgrent();
+      if(!gr) break;
+      if(gr->gr_gid == base_gid) continue;
+      for(e=0;gr->gr_mem[e];e++)
+	if(!strcmp(gr->gr_mem[e],user))
+	  break;
+      if(gr->gr_mem[e]) break;
+    }
+
+    THREADS_DISALLOW();
+    if(!gr) break;
+
+    push_int(gr->gr_gid);
+    a=append_array(a,sp-1);
+    pop_stack();
+  }
+  endgrent();
+  mt_unlock(&password_protection_mutex);
+  pop_stack();
+  push_array(a);
+}
+#endif /* HAVE_GETPWENT */
 #endif /* HAVE_GETGRENT */
+
+void init_passwd(void)
+{
+  /*
+   * From passwords.c
+   */
+#ifdef HAVE_GETPWNAM
+  add_efun("getpwnam", f_getpwnam, "function(string:array(int|string))", 
+	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETPWUID
+  add_efun("getpwuid", f_getpwuid, "function(int:array(int|string))", OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETGRNAM
+  add_efun("getgrnam", f_getgrnam, "function(string:array(int|string|array(string)))",
+	   OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETGRGID
+  add_efun("getgrgid", f_getgrgid, "function(int:array(int|string|array(string)))", OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETPWENT
+  add_efun("getpwent", f_getpwent, "function(void:array(int|string))",
+           OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+  add_efun("get_all_users", f_get_all_users, "function(void:array(array(int|string)))",
+           OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_ENDPWENT
+  add_efun("endpwent", f_endpwent, "function(void:int)", OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_SETPWENT
+  add_efun("setpwent", f_setpwent, "function(void:int)", OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETGRENT
+  add_efun("getgrent", f_getgrent, "function(void:array(int|string|array(string)))",
+           OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+  add_efun("get_all_groups", f_get_all_groups, "function(void:array(array(int|string|array(string))))",
+           OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+
+#ifdef HAVE_GETPWENT
+  add_efun("get_groups_for_user", f_get_groups_for_user, "function(int|string:array(int))",
+           OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_GETPWENT */
+#endif
+#ifdef HAVE_ENDGRENT
+  add_efun("endgrent", f_endgrent, "function(void:int)", OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_SETGRENT
+  add_efun("setgrent", f_setgrent, "function(void:int)", OPT_SIDE_EFFECT |OPT_EXTERNAL_DEPEND);
+#endif
+}
