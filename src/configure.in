@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.236 1998/09/01 20:26:09 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.237 1998/09/05 15:20:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1446,30 +1446,27 @@ AC_ALLOCA
 AC_C_CONST
 AC_C_INLINE
 
-AC_REPLACE_FUNCS(ualarm)
+AC_CHECK_FUNCS(ualarm setitimer)
 
-case "$LIBOBJS" in
-   *ualarm.o*) ;;
-  *)
-    AC_DEFINE(HAVE_UALARM)
-    AC_MSG_CHECKING(no of arguments to ualarm)
-    AC_CACHE_VAL(pike_cv_ualarm_takes_two_args,
-    [
-      AC_TRY_COMPILE([
-      #include <unistd.h>
-      ],[
+if test "x$ac_cv_func_ualarm" = "xyes"; then
+  AC_MSG_CHECKING(no of arguments to ualarm)
+  AC_CACHE_VAL(pike_cv_ualarm_takes_two_args,
+  [
+    AC_TRY_COMPILE([
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+    ],[
       ualarm(0,0);
-      ],pike_cv_ualarm_takes_two_args=yes,pike_cv_ualarm_takes_two_args=no)
-
-    ])
-    if test "$pike_cv_ualarm_takes_two_args" = yes; then
-       AC_MSG_RESULT(2)
-       AC_DEFINE(UALARM_TAKES_TWO_ARGS)
-    else
-       AC_MSG_RESULT(1)
-    fi
-  ;;
-esac
+    ],pike_cv_ualarm_takes_two_args=yes,pike_cv_ualarm_takes_two_args=no)
+  ])
+  if test "$pike_cv_ualarm_takes_two_args" = yes; then
+    AC_MSG_RESULT(2)
+    AC_DEFINE(UALARM_TAKES_TWO_ARGS)
+  else
+    AC_MSG_RESULT(1)
+  fi
+fi
 
 OLD_LIBOBJS="${LIBOBJS}"
 
