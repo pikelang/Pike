@@ -1,11 +1,14 @@
-.\" $Id: pike.1,v 1.11 2001/01/14 21:16:46 grubba Exp $
+.\" $Id: pike.1,v 1.12 2001/03/10 22:52:32 grubba Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2001/01/14 21:16:46 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2001/01/14 21:16:46 $"
+.TH pike 1 "$Date: 2001/03/10 22:52:32 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2001/03/10 22:52:32 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2001/01/14 21:16:46 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2001/03/10 22:52:32 $ \" Solaris nroff
+.\" Major (mj) and minor (mn) version of Pike
+.nr mj 7
+.nr mn 3
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -136,6 +139,10 @@ to the program path.
 .B \-v, \-\-version
 Print version of Pike and exit.
 .TP
+.BI \-V major.minor, \-\-compat =major.minor
+Set the compatibility version to Pike version
+.I major.minor.
+.TP
 .B \-w, \-\-warnings
 Enable warnings.
 .TP
@@ -150,6 +157,18 @@ Turn on tracing of the Pike compiler (debug).
 .TP
 .B \-\-debug
 Increase or set the debug level (debug).
+.TP
+.BI \-\-debug\-without =feature
+Hide 
+.I feature
+from the resolver (debug).
+.TP
+.B \-\-features
+List some of the features that are enabled in this Pike binary
+and exit (debug).
+.TP
+.B \-\-info
+Show various information about this Pike installation and exit (debug).
 .TP
 .B \-\-optimizer\-debug
 Set the global optimizer debug level (debug).
@@ -176,38 +195,12 @@ If no script is specified, pike will start in interactive- (Hilfe) mode.
 .SH REGISTRY KEYS
 On NT, Pike is affected by the following keys in the registry:
 
-.nr
-.B HKEY_CURRENT_USER\eSoftware\eIdonex\ePike\e0.6\ePIKE_MASTER
-.B HKEY_LOCAL_MACHINE\eSoftware\eIdonex\ePike\e0.6\ePIKE_MASTER
+.B HKEY_CURRENT_USER\eSoftware\eIdonex\ePike\e\n(mj.\n(mn\ePIKE_MASTER
+.B HKEY_LOCAL_MACHINE\eSoftware\eIdonex\ePike\e\n(mj.\n(mn\ePIKE_MASTER
 .RS
 Specifies the name of the master program (overridden by
 .BI \-m master_program
 ).
-.RE
-.LP
-On NT, the default master program is affected by the following keys in the
-registry:
-
-.nr
-.B HKEY_CURRENT_USER\eSoftware\eIdonex\ePike\e0.6\eshare_prefix
-.B HKEY_LOCAL_MACHINE\eSoftware\eIdonex\ePike\e0.6\eshare_prefix
-.RS
-Specifies the prefix for architecture independant files.
-.BI share_prefix /include
-is added to the include path, and
-.BI share_prefix /modules
-is added to the module path.
-.RE
-
-.nr
-.B HKEY_CURRENT_USER\eSoftware\eIdonex\ePike\e0.6\elib_prefix
-.B HKEY_LOCAL_MACHINE\eSoftware\eIdonex\ePike\e0.6\elib_prefix
-.RS
-Specifies the prefix for architecture dependant files.
-.BI lib_prefix /include
-is added to the include path, and
-.BI lib_prefix /modules
-is added to the module path.
 .RE
 .SH ENVIRONMENT
 Pike is affected by the following environment variables:
