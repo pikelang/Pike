@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.54 2003/11/07 05:40:39 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.55 2004/01/14 00:44:38 nilsson Exp $
  *
  */
 
@@ -588,6 +588,7 @@ class Node
 	"$style$": style,
 	"$dotdot$": sizeof(extra_prefix)?extra_prefix:".",
 	"$imagedir$":image_prefix(),
+	"$filename$": _Roxen.html_encode_string(make_filename()),
       ]));
 
     Stdio.mkdirhier(combine_path(path+"/"+make_filename(), "../"));
