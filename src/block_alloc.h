@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.32 2001/08/30 22:27:49 mast Exp $ */
+/* $Id: block_alloc.h,v 1.33 2001/09/01 00:26:52 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -15,6 +15,13 @@
 
 #ifdef PIKE_RUN_UNLOCKED
 #include "threads.h"
+
+/* Block Alloc UnLocked */
+#define BA_UL(X) PIKE_CONCAT(X,_unlocked)
+#define BA_STATIC static
+#else
+#define BA_UL(X) X
+#define BA_STATIC
 #endif
 
 #define BLOCK_ALLOC(DATA,BSIZE)						\
@@ -29,7 +36,7 @@ static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_blocks)=0;	\
 static struct DATA *PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)-1;	\
 DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
 									\
-static struct DATA *PIKE_CONCAT3(alloc_,DATA,_unlocked)(void)		\
+BA_STATIC struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)		\
 {									\
   struct DATA *tmp;							\
   if(!PIKE_CONCAT3(free_,DATA,s))					\
@@ -65,6 +72,7 @@ static struct DATA *PIKE_CONCAT3(alloc_,DATA,_unlocked)(void)		\
   return tmp;								\
 }									\
 									\
+DO_IF_RUN_UNLOCKED(                                                     \
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
 {									\
   struct DATA *ret;  							\
@@ -72,8 +80,9 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)			        \
   ret=PIKE_CONCAT3(alloc_,DATA,_unlocked)();  				\
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));             \
   return ret;								\
-}									\
+})									\
 									\
+DO_IF_RUN_UNLOCKED(                                                     \
 void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
 {									\
   EXIT_BLOCK(d);							\
@@ -81,7 +90,7 @@ void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
   d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
   PRE_INIT_BLOCK(d);							\
   PIKE_CONCAT3(free_,DATA,s)=d;						\
-}									\
+})									\
 									\
 void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 {									\
@@ -253,7 +262,7 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, size_t hval)   \
     hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
   }									     \
 									     \
-  p=PIKE_CONCAT3(alloc_,DATA,_unlocked)();				     \
+  p=BA_UL(PIKE_CONCAT(alloc_,DATA))();					     \
   p->data=ptr;								     \
   p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];		     \
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
@@ -314,7 +323,7 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
     PIKE_CONCAT(num_,DATA)--;						     \
     if(PIKE_CONCAT(DATA,_hash_table)[hval]!=p) fatal("GAOssdf\n");	     \
     PIKE_CONCAT(DATA,_hash_table)[hval]=p->BLOCK_ALLOC_NEXT;		     \
-    PIKE_CONCAT3(really_free_,DATA,_unlocked)(p);			     \
+    BA_UL(PIKE_CONCAT(really_free_,DATA))(p);				     \
     DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                \
     return 1;								     \
   }									     \
