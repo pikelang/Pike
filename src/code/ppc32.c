@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.10 2001/08/16 18:51:10 marcus Exp $
+ * $Id: ppc32.c,v 1.11 2001/08/16 21:35:41 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -8,6 +8,7 @@
 
 #include "operators.h"
 #include "constants.h"
+#include "object.h"
 
 #if PIKE_BYTEORDER == 1234
 #define MAKE_TYPE_WORD(t,st) ((t)|((st)<<16))
@@ -219,6 +220,39 @@ void ppc32_local_lvalue(INT32 arg)
   INCR_SP_REG(sizeof(struct svalue)*2);  
 }
 
+void ppc32_push_global(INT32 arg)
+{
+  LOAD_FP_REG();
+  /* lha r5,context.identifier_level(pike_fp) */
+  LHA(PPC_REG_ARG3, PPC_REG_PIKE_FP,
+      OFFSETOF(pike_frame, context.identifier_level));
+  /* lwz r4,current_object(pike_fp) */
+  LWZ(PPC_REG_ARG2, PPC_REG_PIKE_FP, 
+      OFFSETOF(pike_frame, current_object));
+  if(arg > 32767) {
+    /* addis r5,r5,%hi(arg) */
+    ADDIS(PPC_REG_ARG3, PPC_REG_ARG3, (arg+32768)>>16);
+    if((arg &= 0xffff) > 32767)
+      arg -= 65536;
+  }
+  if(ppc32_codegen_state & PPC_CODEGEN_SP_ISSET) {
+    /* mr r3,pike_sp */
+    ORI(PPC_REG_ARG1, PPC_REG_PIKE_SP, 0);
+  } else {
+    /* lwz r3,stack_pointer(pike_interpreter) */ 
+    LWZ(PPC_REG_ARG1, PPC_REG_PIKE_INTERP,
+	OFFSETOF(Pike_interpreter, stack_pointer));
+  }
+  if(arg) {
+    /* addi r5,r5,arg */
+    ADDI(PPC_REG_ARG3, PPC_REG_ARG3, arg);
+  }
+  FLUSH_CODE_GENERATOR_STATE();
+  ADD_CALL(low_object_index_no_free);
+  LOAD_SP_REG();
+  INCR_SP_REG(sizeof(struct svalue));
+}
+
 void ppc32_push_int(INT32 x)
 {
   LOAD_SP_REG();
@@ -240,6 +274,58 @@ void ppc32_push_int(INT32 x)
   if(x != MAKE_TYPE_WORD(PIKE_T_INT, 0))
     SET_REG(0, MAKE_TYPE_WORD(PIKE_T_INT, 0));
   STW(0, PPC_REG_PIKE_SP, 0);
+  INCR_SP_REG(sizeof(struct svalue));  
+}
+
+void ppc32_push_string(INT32 arg, int st)
+{
+  INT32 offs;
+
+  LOAD_FP_REG();
+  LOAD_SP_REG();
+  
+  /* lwz r11,context.prog(pike_fp) */
+  LWZ(11, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, context.prog));
+  /* lwz r11,strings(r11) */
+  LWZ(11, 11, OFFSETOF(program, strings));
+
+  offs = arg*sizeof(struct pike_string *);
+
+  if(offs > 32767) {
+    /* addis r11,r11,%hi(offs) */
+    ADDIS(11, 11, (offs+32768)>>16);
+    if((offs &= 0xffff) > 32767)
+      offs -= 65536;
+  }
+
+  /* lwz r11,offs(r11) */
+  LWZ(11, 11, offs);
+  
+  if(sizeof(struct svalue) > 8)
+  {
+    int e;
+    SET_REG(0, 0);
+    for(e=4;e<(int)sizeof(struct svalue);e+=4)
+    {
+      if( e == OFFSETOF(svalue,u.string)) continue;
+      /* stw r0,e(pike_sp) */
+      STW(0, PPC_REG_PIKE_SP, e);
+    }
+  }
+  STW(11, PPC_REG_PIKE_SP, OFFSETOF(svalue,u.string));
+  if(st)
+    SET_REG(0, MAKE_TYPE_WORD(PIKE_T_STRING, 1));
+  else
+    SET_REG(0, MAKE_TYPE_WORD(PIKE_T_STRING, 0));
+  STW(0, PPC_REG_PIKE_SP, 0);
+
+  /* lwz r0,0(r11) */
+  LWZ(0, 11, 0);
+  /* addic r0,r0,1 */
+  ADDIC(0, 0, 1);
+  /* stw r0,0(r11) */
+  STW(0, 11, 0);
+
   INCR_SP_REG(sizeof(struct svalue));  
 }
 
@@ -335,6 +421,24 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 
    case F_LOCAL_LVALUE:
      ppc32_local_lvalue(b);
+     return;
+
+   case F_MARK_AND_GLOBAL:
+     ppc32_mark();
+
+   case F_GLOBAL:
+     ppc32_push_global(b);
+     return;
+
+   case F_MARK_AND_STRING:
+     ppc32_mark();
+
+   case F_STRING:
+     ppc32_push_string(b, 0);
+     return;
+
+   case F_ARROW_STRING:
+     ppc32_push_string(b, 1);
      return;
 
    case F_NUMBER:

@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.8 2001/08/16 18:51:10 marcus Exp $
+ * $Id: ppc32.h,v 1.9 2001/08/16 21:35:41 marcus Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -19,9 +19,10 @@
 #define ADDIC(D,A,SIMM) PPC_INSTR_D_FORM(12,D,A,SIMM)
 #define ADDI(D,A,SIMM) PPC_INSTR_D_FORM(14,D,A,SIMM)
 #define ADDIS(D,A,SIMM) PPC_INSTR_D_FORM(15,D,A,SIMM)
-#define ORI(D,A,UIMM) PPC_INSTR_D_FORM(24,D,A,UIMM)
+#define ORI(A,S,UIMM) PPC_INSTR_D_FORM(24,S,A,UIMM)
 #define LWZ(D,A,d) PPC_INSTR_D_FORM(32,D,A,d)
 #define STW(S,A,d) PPC_INSTR_D_FORM(36,S,A,d)
+#define LHA(D,A,d) PPC_INSTR_D_FORM(42,D,A,d)
 
 #define RLWINM(S,A,SH,MB,ME) PPC_INSTR_M_FORM(21,S,A,SH,MB,ME,0)
 
@@ -48,7 +49,7 @@
 
 #define PPC_REG_ARG1 3
 #define PPC_REG_ARG2 4
-
+#define PPC_REG_ARG3 5
 
 #define PPC_REG_PIKE_MARK_SP 8
 #define PPC_REG_PIKE_FP 9
