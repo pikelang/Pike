@@ -1777,7 +1777,11 @@ void init_image_efuns(void) {}
 
 void exit_image(void) 
 {
-  free_program(image_program);
+  if(image_program)
+  {
+    free_program(image_program);
+    image_program=0;
+  }
   exit_font();
 }
 

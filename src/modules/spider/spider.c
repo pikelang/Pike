@@ -1670,15 +1670,28 @@ void init_spider_programs()
    streamed_parser = end_c_program( "/precompiled/streamed_parser" );
    streamed_parser->refs++;
 
-
    init_parse_program(); /* HTTP parser */
 }
 
 void exit_spider(void)
 {
   int i;
+
+  exit_parse_program();
+
+  if(streamed_parser)
+  {
+    free_program(streamed_parser);
+    streamed_parser=0;
+  }
+
   for(i=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
+  {
     if(fd_marks[i])
+    {
       free_string(fd_marks[i]);
+      fd_marks[i]=0;
+    }
+  }
 }
 

@@ -320,3 +320,12 @@ void init_parse_program()
    feed_program = end_c_program("/precompiled/http_parse");
    feed_program->refs++;
 }
+
+void exit_parse_program()
+{
+  if(feed_program)
+  {
+    free_program(feed_program);
+    feed_program=0;
+  }
+}
