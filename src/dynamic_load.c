@@ -144,9 +144,9 @@ void f_load_module(INT32 args)
 
 void init_dynamic_load(void)
 {
+#if defined(HAVE_DLOPEN) || defined(USE_DLD)
   dlinit();
 
-#if defined(HAVE_DLOPEN) || defined(USE_DLD)
   add_efun("load_module",f_load_module,"function(string:program)",OPT_EXTERNAL_DEPEND);
 #endif
 }

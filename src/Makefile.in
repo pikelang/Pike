@@ -184,6 +184,8 @@ verify: testsuite verify_modules
 
 check: verify
 
+sure: verify
+
 # verify / debug verbose
 verbose_verify: testsuite verbose_verify_modules
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite --verbose
@@ -199,6 +201,9 @@ gdb_verify: testsuite
 # run hilfe, for interactive testing
 run_hilfe:
 	$(RUNPIKE) $(TMP_BINDIR)/hilfe
+
+feature_list:
+	$(RUNPIKE) $(TMP_BINDIR)/feature_list
 
 lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)/include
 	cp -r $(LIBDIR_SRC) .

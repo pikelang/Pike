@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.87 1997/04/17 02:58:45 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.88 1997/04/17 05:08:29 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1429,7 +1429,8 @@ fi
 
    OLD_CFLAGS="$CFLAGS"
    CFLAGS="$CFLAGS $LINKFORSHARED"
-    AC_TRY_RUN([int main() { exit(0); }], pike_cv_sys_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='')
+   AC_TRY_RUN([int main() { exit(0); }],
+ pike_cv_sys_linkforshared="$LINKFORSHARED", pike_cv_sys_linkforshared='')
    CFLAGS="$OLD_CFLAGS"
 ])
 
@@ -1440,7 +1441,7 @@ AC_MSG_RESULT($LINKFORSHARED)
 #############################################################################
 
 cat >conftest.c <<EOF
-void testfunc(void) { exit(0); }
+void testfunc(void) { testfunc2(); exit(1); }
 EOF
 
 AC_MSG_CHECKING(if dynamic loading works)
@@ -1460,6 +1461,7 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
     AC_TRY_RUN([
 #define TESTING
 #include "$srcdir/dynamic_load.c"
+void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
   fi

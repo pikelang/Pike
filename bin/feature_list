@@ -1,0 +1,19 @@
+#!/usr/local/bin/pike
+
+int main(int argc, string *argv)
+{
+  write("Features: ");
+
+  if(!_static_modules["Regexp"])
+    write("dynamic_modules ");
+
+#if efun(thread_create)
+  write("threads ");
+#endif
+
+  catch { if(master()->resolv("Gdbm")->gdbm) write("Gdbm "); };
+  catch { if(master()->resolv("Gmp")->mpz)   write("Gmp ");  };
+  catch { if(master()->resolv("Gz")->deflate)write("Gz ");   };
+
+  write("\n");
+}
