@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.24 2001/02/27 20:50:53 grubba Exp $
+# $Id: configure.in,v 1.25 2001/03/13 15:11:04 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -213,7 +213,7 @@ EOF
   if test "x$pike_cv_odbc" = "xyes"; then
 
     define(PIKE_CHECK_ODBC_TYPEDEF, [
-      AC_CHECKING([if the typedef $1 exists])
+      AC_MSG_CHECKING([if the typedef $1 exists])
       AC_CACHE_VAL(pike_cv_have_$1, [
         AC_TRY_COMPILE([
 #ifdef HAVE_ISQL_H
