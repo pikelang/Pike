@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.246 2001/05/08 13:09:20 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.247 2001/05/14 03:27:44 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1198,28 +1198,46 @@ identifier_type: idents
 	  yyerror("Destructed object used as program identifier.");
 	}else{
 	  extern void f_object_program(INT32);
-	  f_object_program(1);
+	  int f=FIND_LFUN(Pike_sp[-1].u.object->prog,LFUN_CALL);
+	  if(f!=-1)
+	  {
+	    Pike_sp[-1].subtype=f;
+	    Pike_sp[-1].type=T_FUNCTION;
+	  }else{
+	    f_object_program(1);
+	  }
 	}
       }
 
       switch(Pike_sp[-1].type) {
-      case T_FUNCTION:
-	if((p = program_from_function(Pike_sp-1)))
-	  break;
+	case T_FUNCTION:
+        if((p = program_from_function(Pike_sp-1)))
+	  push_object_type(0, p?(p->id):0);
+	else
+	{
+	  struct pike_type *a,*b;
+	  a=get_type_of_svalue(Pike_sp-1);
+	  b=check_call(function_type_string,a,0);
+	  push_finished_type(b);
+	  free_type(a);
+	  free_type(b);
+	}
+	break;
+
       
       default:
 	if (Pike_compiler->compiler_pass!=1)
 	  yyerror("Illegal program identifier.");
 	pop_stack();
 	push_int(0);
+	push_object_type(0, 0);
 	break;
 	
       case T_PROGRAM:
 	p = Pike_sp[-1].u.program;
+	push_object_type(0, p?(p->id):0);
 	break;
       }
-
-      push_object_type(0, p?(p->id):0);
     }
 #ifdef USE_PIKE_TYPE
     /* Attempt to name the type. */
@@ -2451,6 +2469,7 @@ enum_def: /* EMPTY */
       free_type(new);
       type_stack_mark();
       push_finished_type(res);
+      free_type(res);
     }
   }
   ;
