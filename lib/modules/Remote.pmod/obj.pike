@@ -1,6 +1,8 @@
 
 #include "remote.h"
 
+constant is_remote_obj = 1;
+
 string id;
 object con;
 object ctx;

@@ -97,7 +97,7 @@ array encode(mixed val)
 {
   if (intp(val) || floatp(val))
     return ({ CTX_OTHER, val });
-  if (objectp(val) && !val->_encode_object)
+  if (objectp(val) && (object_program(val)->is_remote_obj || !val->_encode_object))
     return ({ CTX_OBJECT, id_for(val) });
   if (functionp(val) || programp(val))
     return ({ CTX_FUNCTION, id_for(val) });
