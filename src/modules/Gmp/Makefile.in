@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.15 2001/01/15 21:08:33 grubba Exp $
+# $Id: Makefile.in,v 1.16 2001/01/16 01:00:54 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
@@ -17,6 +17,7 @@ prime_table.out: prime_table
 
 prime_table: prime_table.@CROSS@
 	test -f ./prime_table || ln -s prime_table.@CROSS@ ./prime_table || cp prime_table.@CROSS@ ./prime_table
+	-@chmod a+x ./prime_table
 
 # Not cross-compiling
 prime_table.no: $(SRCDIR)/prime_table.c
