@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.87 1998/04/20 18:43:52 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.88 1998/04/24 00:34:55 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -190,7 +190,6 @@ RCSID("$Id: language.yacc,v 1.87 1998/04/20 18:43:52 grubba Exp $");
 #include "error.h"
 #include "docode.h"
 #include "machine.h"
-#include "cyclic.h"
 
 #define YYMAXDEPTH	1000
 
@@ -445,23 +444,23 @@ inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
   | modifiers F_INHERIT error ';' { yyerrok; }
   ;
 
-import: modifiers F_IMPORT idents ';'
+import: F_IMPORT idents ';'
   {
-    resolv_constant($3);
-    free_node($3);
+    resolv_constant($2);
+    free_node($2);
     use_module(sp-1);
     pop_stack();
   }
-  | modifiers F_IMPORT string ';'
+  | F_IMPORT string ';'
   {
-    ref_push_string($3->u.sval.u.string);
-    free_node($3);
+    ref_push_string($2->u.sval.u.string);
+    free_node($2);
     ref_push_string(lex.current_file);
     SAFE_APPLY_MASTER("handle_import",2);
     use_module(sp-1);
     pop_stack();
   }
-  | modifiers F_IMPORT error ';' { yyerrok; }
+  | F_IMPORT error ';' { yyerrok; }
   ;
 
 constant_name: F_IDENTIFIER '=' safe_expr0
@@ -638,7 +637,7 @@ optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
   ;
 
 optional_identifier: F_IDENTIFIER
-  | bad_identifier { $$=0 }
+  | bad_identifier { $$=0; }
   | /* empty */ { $$=0; }
   ;
 
@@ -676,7 +675,7 @@ func_args: '(' arguments ')' { $$=$2; }
          ;
 
 arguments: /* empty */ optional_comma { $$=0; }
-  | arguments2 optional_comma { $$=$1; }
+  | arguments2 optional_comma
   ;
 
 arguments2: new_arg_name { $$ = 1; }
@@ -969,17 +968,19 @@ new_local_name2: F_IDENTIFIER
 
 block:'{'
   {
+    $<number>1=num_used_modules;
     $<number>$=compiler_frame->current_number_of_locals;
   } 
   statements '}'
   {
+    unuse_modules(num_used_modules - $<number>1);
     pop_local_variables($<number>2);
     $$=$3;
   }
   ;
 
 failsafe_block: block
-              | error { $$=0; yyerrok }
+              | error { $$=0; yyerrok; }
               ;
   
 
@@ -998,7 +999,8 @@ statements: { $$=0; }
   }
   ;
 
-statement: unused2 ';' { $$=$1; }
+statement: unused2 ';'
+  | import { $$=0; }
   | cond
   | while
   | do
@@ -1007,7 +1009,7 @@ statement: unused2 ';' { $$=$1; }
   | case
   | default
   | return ';'
-  | block {}
+  | block
   | foreach
   | break ';'
   | continue ';'
@@ -1152,7 +1154,7 @@ class: modifiers F_CLASS optional_identifier
     if(compiler_pass == 1)
       p=end_first_pass(0);
     else
-      p=end_program();
+      p=end_first_pass(1);
 
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
 
@@ -1187,7 +1189,7 @@ optional_else_part: { $$=0; }
   ;      
 
 safe_lvalue: lvalue
-  | error { $$=0 }
+  | error { $$=0; }
   ;
 
 safe_expr0: expr0
@@ -1332,7 +1334,7 @@ expr0: expr01
 /*  | error { $$=0; reset_type_stack(); } */
   ;
 
-expr01: expr1 { $$ = $1; }
+expr01: expr1
   | expr1 '?' expr01 ':' expr01 { $$=mknode('?',$1,mknode(':',$3,$5)); }
   ;
 
@@ -1351,7 +1353,7 @@ assign: F_AND_EQ { $$=F_AND_EQ; }
 optional_comma: | ',' ;
 
 expr_list: { $$=0; }
-  | expr_list2 optional_comma { $$=$1; }
+  | expr_list2 optional_comma
   ;
          
 
@@ -1360,7 +1362,7 @@ expr_list2: expr00
   ;
 
 m_expr_list: { $$=0; }
-  | m_expr_list2 optional_comma { $$=$1; }
+  | m_expr_list2 optional_comma
   ;
 
 m_expr_list2: assoc_pair
@@ -1374,9 +1376,6 @@ m_expr_list2: assoc_pair
     }
   }
   | m_expr_list2 ',' error
-  {
-    $$=$1;
-  }
   ;
 
 assoc_pair:  expr0 ':' expr1 { $$=mknode(F_ARG_LIST,$1,$3); }
@@ -1402,24 +1401,24 @@ expr1: expr2
   | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
   | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
   | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
-  | expr1 F_LOR error  { $$=$1; }
-  | expr1 F_LAND error { $$=$1; }
-  | expr1 '|' error    { $$=$1; }
-  | expr1 '^' error    { $$=$1; }
-  | expr1 '&' error    { $$=$1; }
-  | expr1 F_EQ error   { $$=$1; }
-  | expr1 F_NE error   { $$=$1; }
-  | expr1 '>' error    { $$=$1; }
-  | expr1 F_GE error   { $$=$1; }
-  | expr1 '<' error    { $$=$1; }
-  | expr1 F_LE error   { $$=$1; }
-  | expr1 F_LSH error  { $$=$1; }
-  | expr1 F_RSH error  { $$=$1; }
-  | expr1 '+' error    { $$=$1; }
-  | expr1 '-' error    { $$=$1; }
-  | expr1 '*' error    { $$=$1; }
-  | expr1 '%' error    { $$=$1; }
-  | expr1 '/' error    { $$=$1; }
+  | expr1 F_LOR error 
+  | expr1 F_LAND error
+  | expr1 '|' error   
+  | expr1 '^' error   
+  | expr1 '&' error   
+  | expr1 F_EQ error  
+  | expr1 F_NE error  
+  | expr1 '>' error   
+  | expr1 F_GE error  
+  | expr1 '<' error   
+  | expr1 F_LE error  
+  | expr1 F_LSH error 
+  | expr1 F_RSH error 
+  | expr1 '+' error   
+  | expr1 '-' error   
+  | expr1 '*' error   
+  | expr1 '%' error   
+  | expr1 '/' error
   ;
 
 expr2: expr3
@@ -1513,50 +1512,16 @@ low_idents: F_IDENTIFIER
     }else if((i=isidentifier(last_identifier))>=0){
       $$=mkidentifiernode(i);
     }else if(!($$=find_module_identifier(last_identifier))){
-      $$=0;
       if(!num_parse_error)
       {
-	if(get_master())
-	   {	
-	     DECLARE_CYCLIC();
-	     if(BEGIN_CYCLIC(last_identifier, lex.current_file))
-	     {
-	       my_yyerror("Recursive module dependency in %s.",
-			  last_identifier->str);
-	     }else{
-	       SET_CYCLIC_RET(1);
-	       ref_push_string(last_identifier);
-	       ref_push_string(lex.current_file);
-	       SAFE_APPLY_MASTER("resolv", 2);
-	       
-	       if(throw_value.type == T_STRING)
-	       {
-		 if(compiler_pass==2)
-		   my_yyerror("%s",throw_value.u.string->str);
-		 else
-		   $$=mknode(F_UNDEFINED,0,0);
-	       }
-	       else if(IS_ZERO(sp-1) && sp[-1].subtype==1)
-	       {
-		 if(compiler_pass==2)
-		   my_yyerror("'%s' undefined.", last_identifier->str);
-		 else
-		   $$=mknode(F_UNDEFINED,0,0);
-	       }else{
-		 $$=mkconstantsvaluenode(sp-1);
-	       }
-	       pop_stack();
-	       END_CYCLIC();
-	     }
-	   }else{
-	     if(compiler_pass==2)
-	     {
-	       my_yyerror("'%s' undefined.", last_identifier->str);
-	     }else{
-	       $$=mknode(F_UNDEFINED,0,0);
-	     }
-	   }
-      } else {
+	if(compiler_pass==2)
+	{
+	  my_yyerror("'%s' undefined.", last_identifier->str);
+	  $$=0;
+	}else{
+	  $$=mknode(F_UNDEFINED,0,0);
+	}
+      }else{
 	$$=mkintnode(0);
       }
     }
@@ -1596,13 +1561,7 @@ low_idents: F_IDENTIFIER
     free_node($3);
   }
   | F_IDENTIFIER F_COLON_COLON bad_identifier
-  {
-    $$=$1;
-  }
   | F_IDENTIFIER F_COLON_COLON error
-  {
-    $$=$1;
-  }
   | F_COLON_COLON F_IDENTIFIER
   {
     int e,i;
@@ -1769,9 +1728,9 @@ bad_lvalue: bad_expr_ident
   | F_MULTISET_ID
   { yyerror("multiset is a reserved word."); }
   | F_OBJECT_ID
-  { yyerror("mapping is a reserved word."); }
+  { yyerror("object is a reserved word."); }
   | F_PROGRAM_ID
-  { yyerror("mapping is a reserved word."); }
+  { yyerror("program is a reserved word."); }
   | F_STRING_ID
   { yyerror("string is a reserved word."); }
   | F_VOID_ID
