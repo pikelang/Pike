@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Copyright.pmod,v 1.1 2002/05/31 16:20:18 nilsson Exp $
+// $Id: Copyright.pmod,v 1.2 2002/10/10 02:09:40 nilsson Exp $
 
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.
@@ -37,6 +37,9 @@ static mapping(string:array(string)) copyrights = ([
 
   "Zlib detection and verification code":
   ({ "Copyright © 1995-1998 Jean-loup Gailly and Mark Adler" }),
+
+  "JPEG transform code":
+  ({ "Copyright © 1991-1998, Thomas G. Lane, Independent JPEG Group" }),
 ]);
 
 //! Adds a copyright message for the copyright @[holders] for the
