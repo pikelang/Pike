@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.470 2003/02/24 21:00:44 mast Exp $
+|| $Id: program.c,v 1.471 2003/03/19 18:32:00 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.470 2003/02/24 21:00:44 mast Exp $");
+RCSID("$Id: program.c,v 1.471 2003/03/19 18:32:00 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5051,14 +5051,14 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
     ptrdiff_t offset = pc - prog->program;
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       static char *file = NULL;
-      static char *cnt;
+      static char *base, *cnt;
       static INT32 off,line,pid;
       static size_t len;
       static INT32 shift;
 
-      if(prog->id != pid || offset < off)
+      if(prog->linenumbers != base || prog->id != pid || offset < off)
       {
-	cnt=prog->linenumbers;
+	base = cnt = prog->linenumbers;
 	off=line=0;
 	pid=prog->id;
 	file = 0;
