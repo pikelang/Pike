@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.85 2004/02/08 15:22:45 grubba Exp $
+|| $Id: backend.cmod,v 1.86 2004/02/08 15:32:25 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.85 2004/02/08 15:22:45 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.86 2004/02/08 15:32:25 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -265,9 +265,13 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 	;
     }
   } else {
-    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_DEL, %d, NULL)\n",
+    struct epoll_event dummy;
+    /* The last argument must be a proper struct pointer even
+     * though it isn't used...
+     */
+    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_DEL, %d, &dummy)\n",
 		  pfd, fd));
-    while (((e = epoll_ctl(pfd, EPOLL_CTL_DEL, fd, NULL)) < 0) &&
+    while (((e = epoll_ctl(pfd, EPOLL_CTL_DEL, fd, &dummy)) < 0) &&
 	   (errno == EINTR))
       ;
     if ((e < 0) && (errno == ENOENT)) return 0;
