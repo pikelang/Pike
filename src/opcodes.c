@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.106 2001/04/25 21:26:46 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.107 2001/05/15 04:33:58 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1538,7 +1538,7 @@ CHAROPT2(								 \
 		x=switch_lookup(set.a, &tmp);				 \
 		if( set.neg != (x<0 && (x&1)) ) break;			 \
 	      }else{							 \
-		break;							 \
+		if(!set.neg) break;					 \
 	      }								 \
 	    }								 \
 )									 \
