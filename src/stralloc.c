@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.166 2004/09/27 21:37:13 mast Exp $
+|| $Id: stralloc.c,v 1.167 2005/01/14 14:27:27 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.166 2004/09/27 21:37:13 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.167 2005/01/14 14:27:27 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -461,12 +461,26 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,
 
 static void rehash_string_backwards(struct pike_string *s)
 {
-  ptrdiff_t h;
+  struct pike_string *prev = NULL;
+  struct pike_string *next;
+
   if(!s) return;
-  rehash_string_backwards(s->next);
-  h = HMODULO(s->hval);
-  s->next=base_table[h];
-  base_table[h]=s;
+
+  /* Reverse the hash list. */
+  while ((next = s->next)) {
+    s->next = prev;
+    prev = s;
+    s = next;
+  }
+  s->next = prev;
+
+  /* Rehash the strings for this list. */
+  do {
+    ptrdiff_t h = HMODULO(s->hval);
+    next = s->next;
+    s->next = base_table[h];
+    base_table[h] = s;
+  } while ((s = next));
 }
 
 static void stralloc_rehash(void)
