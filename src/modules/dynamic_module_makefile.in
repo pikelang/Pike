@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.40 1998/06/07 21:29:54 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.41 1998/07/09 13:33:01 grubba Exp $
 #
 
 
@@ -10,7 +10,7 @@ AR=@AR@
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS) $(DEFINES) -DDYNAMIC_MODULE
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS) @CCSHARED@" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" $(MODULE_MAKE_FLAGS)
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) @CCSHARED@" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" $(MODULE_MAKE_FLAGS)
 
 all: subdirs dummy
 
