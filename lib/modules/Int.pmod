@@ -10,6 +10,10 @@ int(0..1) parity(int(0..) value) {
 
 constant NATIVE_MIN = __builtin.NATIVE_INT_MIN;
 constant NATIVE_MAX = __builtin.NATIVE_INT_MAX;
+
+//! @decl constant NATIVE_MIN;
+//! @decl constant NATIVE_MAX;
+//!
 //! The limits for using the native representation of integers on the
 //! current architecture. Any integer that is outside this range uses
 //! a more complex and slower representation. Also, some builtin

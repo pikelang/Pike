@@ -1,4 +1,4 @@
-// $Id: Float.pmod,v 1.3 2003/11/08 16:08:49 mast Exp $
+// $Id: Float.pmod,v 1.4 2003/11/12 19:17:24 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -8,6 +8,14 @@ constant MAX_10_EXP = __builtin.FLOAT_MAX_10_EXP;
 constant MIN = __builtin.FLOAT_MIN;
 constant MAX = __builtin.FLOAT_MAX;
 constant EPSILON = __builtin.FLOAT_EPSILON;
+
+//! @decl constant DIGITS_10;
+//! @decl constant MIN_10_EXP;
+//! @decl constant MAX_10_EXP;
+//! @decl constant MIN;
+//! @decl constant MAX;
+//! @decl constant EPSILON;
+//!
 //! These constants define the limits for floats on the current
 //! architecture:
 //!
