@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.15 1999/03/20 00:18:57 marcus Exp $
+# $Id: configure.in,v 1.16 1999/03/23 02:30:09 marcus Exp $
 #
 # Configure script for the odbc-module
 #
@@ -60,7 +60,7 @@ EOF
         if ls $bardir/qeodbc.h >/dev/null 2>&1; then
           pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
 	else
-	  if ls $bardir/iodbc.h >/dev/null 2>&1; then
+	  if ls $bardir/isql.h >/dev/null 2>&1; then
 	    pike_cv_odbc_include_dir="$bardir $pike_cv_odbc_include_dir"
 	  else
 	    :
@@ -81,97 +81,60 @@ EOF
     done
   fi
 
-  AC_MSG_CHECKING(for iODBC driver manager)
+  AC_MSG_CHECKING(for ODBC library-directory)
 
-  AC_CACHE_VAL(pike_cv_iodbc, [
-    pike_cv_iodbc=no
-    for iodbc_dir in /usr/local/lib /usr/local/mysql/lib /usr/lib; do
-      for dlsuffix in so s.o sl; do
-        if ls $iodbc_dir/iodbc-*.$dlsuffix >/dev/null 2>&1 ; then
-          pike_cv_iodbc=`ls -1 $iodbc_dir/iodbc-*.$dlsuffix | head -1`
-	  break
-        else
+  AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
+
+    # ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} does not work with stupid sh
+    # /Hubbe
+
+    if test "x$INFORMIXDIR" = "x" ; then 
+      foodir=''
+    else
+      foodir=$INFORMIXDIR/cli/dlls
+    fi
+
+    for pike_cv_odbc_lib_dir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
+        /opt/*odbc/lib /usr/opt/*odbc/lib /usr/local/lib /usr/local/odbc/lib \
+        /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib \
+        /lib/odbc /lib no; do
+      if test -d $pike_cv_odbc_lib_dir/.; then
+        if ls $pike_cv_odbc_lib_dir/*odbc* >/dev/null 2>&1 ; then
+          break
+	else
 	  :
-        fi
-      done
-      if test "x$pike_cv_iodbc" = "xno" ; then
-        :
+	fi
       else
-        break
+        :
       fi
     done
   ])
 
-  AC_MSG_RESULT($pike_cv_iodbc)
+  AC_MSG_RESULT($pike_cv_odbc_lib_dir)
 
-  if test "x$pike_cv_iodbc" = "xno" ; then
-    :
+  if test x$pike_cv_odbc_lib_dir = xno; then :; else
+    echo Adding $pike_cv_odbc_lib_dir to the library search path.
+    LDFLAGS="-L$pike_cv_odbc_lib_dir -R$pike_cv_odbc_lib_dir ${LDFLAGS}"
+  fi
+
+  AC_CHECK_HEADERS(isql.h isqlext.h)
+
+  pike_cv_odbc=no;
+
+  if test "$ac_cv_header_isql_h$ac_cv_header_isqlext_h" = "yesyes"; then
+
+    AC_CHECK_LIB(iodbc, SQLConnect, [
+      LIBS="-liodbc $LIBS"
+      pike_cv_odbc=yes;
+    ], [])
+
   else
-
-    AC_CHECK_HEADERS(isql.h isqlext.h)
-
-    AC_MSG_CHECKING(for SQLConnect in $pike_cv_iodbc)
-
-    AC_CACHE_VAL(pike_cv_lib_iodbc_SQLConnect, [
-      ac_save_LIBS="$LIBS"
-      LIBS="$pike_cv_iodbc $LIBS"
-      AC_TRY_LINK([
-        char SQLConnect();
-      ], [
-        SQLConnect();
-      ], pike_cv_lib_iodbc_SQLConnect=yes, pike_cv_lib_iodbc_SQLConnect=no)
-      LIBS="$ac_save_LIBS"
-    ])
-    AC_MSG_RESULT($pike_cv_lib_iodbc_SQLConnect)
-
-    if test "x$pike_cv_lib_iodbc_SQLConnect" = xyes; then
-      LIBS="$pike_cv_iodbc $LIBS"
-      pike_cv_odbc=yes
-    else
-      :
-    fi
-
+    :
   fi
 
   if test "x$pike_cv_odbc" = xyes; then
     :
   else
-
-    AC_MSG_CHECKING(for ODBC library-directory)
-
-    AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
-
-      # ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} does not work with stupid sh
-      # /Hubbe
-
-      if test "x$INFORMIXDIR" = "x" ; then 
-        foodir=''
-      else
-        foodir=$INFORMIXDIR/cli/dlls
-      fi
-
-      for pike_cv_odbc_lib_dir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
-          /opt/*odbc/lib /usr/opt/*odbc/lib /usr/local/lib /usr/local/odbc/lib \
-          /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib \
-          /lib/odbc /lib no; do
-        if test -d $pike_cv_odbc_lib_dir/.; then
-          if ls $pike_cv_odbc_lib_dir/*odbc* >/dev/null 2>&1 ; then
-	    break
-	  else
-	    :
-	  fi
-        else
-          :
-        fi
-      done
-    ])
-
-    AC_MSG_RESULT($pike_cv_odbc_lib_dir)
-
-    if test x$pike_cv_odbc_lib_dir = xno; then :; else
-      echo Adding $pike_cv_odbc_lib_dir to the library search path.
-      LDFLAGS="-L$pike_cv_odbc_lib_dir -R$pike_cv_odbc_lib_dir ${LDFLAGS}"
-    fi
 
     # Header file
 
