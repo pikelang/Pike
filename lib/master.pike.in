@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.152 2001/11/09 14:06:49 mast Exp $
+ * $Id: master.pike.in,v 1.153 2001/11/12 13:37:59 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -752,7 +752,11 @@ class dirnode(string dirname, object|void handler)
     }
 
     if( !files )
-      files = get_dir(fakeroot(dirname));
+      if (!(files = get_dir(fakeroot(dirname)))) {
+	werror ("Error listing module directory %O: %s\n",
+		dirname, strerror (errno()));
+	files = ({});
+      }
 
     int ret;
     foreach( files, string s )
@@ -806,7 +810,12 @@ class dirnode(string dirname, object|void handler)
     }
 
     if( !files )
-      files = get_dir(fakeroot(dirname));
+      if (!(files = get_dir(fakeroot(dirname)))) {
+	werror ("Error listing module directory %O: %s\n",
+		dirname, strerror (errno()));
+	files = ({});
+      }
+
     foreach(files, string fname) {
       mixed err = catch {
 	if (((< ".pike", ".pmod" >)[fname[sizeof(fname)-5..]]) &&
@@ -2053,9 +2062,11 @@ string describe_backtrace(mixed trace, void|int linewidth)
     }) {
       return "Error indexing backtrace!\n";
     }
-  }else{
-    ret="";
-  }
+  }else
+    if (!arrayp (trace))
+      ret = sprintf ("Unrecognized backtrace format: %O\n", trace);
+    else
+      ret="";
 
   if(!arrayp(trace))
   {
@@ -2339,10 +2350,16 @@ CompatResolver get_compilation_handler(int major, int minor)
   
   if(!zero_type(ret=compat_handler_cache[v])) return ret;
 
+  array files;
   array(Version) available=({});
 
 #if "¤share_prefix¤"[0]!='¤'
-  foreach(get_dir("¤share_prefix¤"), string ver)
+  if (!(files = get_dir("¤share_prefix¤"))) {
+    werror ("Error listing directory %O: %s\n",
+	    "¤share_prefix¤", strerror (errno()));
+    files = ({});
+  }
+  foreach(files, string ver)
     {
       if(sscanf(ver,"%d.%d",int maj, int min))
       {
@@ -2354,7 +2371,12 @@ CompatResolver get_compilation_handler(int major, int minor)
 #endif
 
 #if "¤lib_prefix¤"[0]!='¤'
-  foreach(get_dir("¤lib_prefix¤"), string ver)
+  if (!(files = get_dir("¤lib_prefix¤"))) {
+    werror ("Error listing directory %O: %s\n",
+	    "¤lib_prefix¤", strerror (errno()));
+    files = ({});
+  }
+  foreach(files, string ver)
     {
       if(sscanf(ver,"%d.%d",int maj, int min))
       {
