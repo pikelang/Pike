@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.51 1998/06/22 20:07:08 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.52 1998/06/28 16:15:26 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -390,8 +390,8 @@ void f_mkdir(INT32 args)
 }
 
 #undef HAVE_READDIR_R
-#if defined(HAVE_SOLARIS_READDIR_R) || defined(HAVE_SOLARIS_HPUX_R) || \
-    defined(HAVE_POSIX_R)
+#if defined(HAVE_SOLARIS_READDIR_R) || defined(HAVE_HPUX_READDIR_R) || \
+    defined(HAVE_POSIX_READDIR_R)
 #define HAVE_READDIR_R
 #endif
 
@@ -441,7 +441,6 @@ void f_get_dir(INT32 args)
 
       while(1)
       {
-	/* Should have code for the POSIX variant here also */
 #ifdef HAVE_SOLARIS_READDIR_R
 	/* Solaris readdir_r returns the second arg on success,
 	 * and returns NULL on error or at end of dir.
