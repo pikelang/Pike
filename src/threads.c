@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.229 2003/11/26 10:51:10 grubba Exp $
+|| $Id: threads.c,v 1.230 2003/11/26 10:56:44 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.229 2003/11/26 10:51:10 grubba Exp $");
+RCSID("$Id: threads.c,v 1.230 2003/11/26 10:56:44 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -41,16 +41,6 @@ PMOD_EXPORT int threads_disabled = 0;
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif /* HAVE_SYS_PRCTL_H */
-
-#ifdef HAVE_MACH_TASK_INFO_H
-#include <mach/task_info.h>
-#endif
-#ifdef HAVE_MACH_TASK_H
-#include <mach/task.h>
-#endif
-#ifdef HAVE_MACH_MACH_INIT_H
-#include <mach/mach_init.h>
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>

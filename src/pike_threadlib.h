@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.50 2003/11/25 17:56:07 jonasw Exp $
+|| $Id: pike_threadlib.h,v 1.51 2003/11/26 10:56:27 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -84,6 +84,16 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 
 #ifdef HAVE_THREAD_H
 #include <thread.h>
+#endif
+
+#ifdef HAVE_MACH_TASK_INFO_H
+#include <mach/task_info.h>
+#endif
+#ifdef HAVE_MACH_TASK_H
+#include <mach/task.h>
+#endif
+#ifdef HAVE_MACH_MACH_INIT_H
+#include <mach/mach_init.h>
 #endif
 
 
@@ -457,7 +467,10 @@ extern int num_pike_threads;
     mt_unlock( & thread_table_lock );					\
   } while (0)
 
-#if !defined(HAVE_GETHRTIME) && !defined(HAVE_MACH_TASK_INFO_H) && defined(HAVE_CLOCK) && !defined(HAVE_NO_YIELD)
+#if !defined(HAVE_GETHRTIME) && \
+    !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)) && \
+    defined(HAVE_CLOCK) && \
+    !defined(HAVE_NO_YIELD)
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
