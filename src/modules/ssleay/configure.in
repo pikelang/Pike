@@ -1,0 +1,32 @@
+AC_INIT(ssleay.c)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_SUBST(RANLIB)
+
+AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
+
+SSLEAY_FLAGS=
+
+if test x$with_ssleay = xyes; then
+  AC_MSG_CHECKING(Checking for SSLeay)
+  
+  AC_CACHE_VAL(pike_cv_ssleay,
+  [
+    if test -d /usr/local/ssl ; then
+      pike_cv_ssleay="yes"
+    else
+      pike_cv_ssleay="no"
+    fi
+  ])
+  
+  AC_MSG_RESULT($pike_cv_ssleay)
+  
+  if test x$pike_cv_ssleay = xyes; then
+    SSLEAY_FLAGS="-DHAVE_SSLEAY -I/usr/local/ssl/include -L/usr/local/ssl/lib"
+  fi
+fi
+
+AC_SUBST(SSLEAY_FLAGS)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )

@@ -47,6 +47,7 @@ testfont binary
 /src/modules/image/togif.c foreign_ident
 /src/modules/pipe/pipe.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
+/src/modules/ssleay/ssleay.c foreign_ident
 /src/modules/zlibmod/zlibmod.c foreign_ident
 /src/object.c foreign_ident
 /src/operators.c foreign_ident
