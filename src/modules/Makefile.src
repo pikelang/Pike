@@ -17,7 +17,7 @@ linker_options: $(MODULE_OBJS)
 	done ; ) >linker_options
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
+	gcc -MM $(PREFLAGS) @srcdir@/*.c | $(FIXDEP) $(SRCDIR)
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
 
 clean:
