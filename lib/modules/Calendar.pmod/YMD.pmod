@@ -2487,8 +2487,17 @@ static TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
    TimeRange tr;
    if (catch {
       tr=origin[whut](h,m,s);
-   } && h==24 && m==0 && s==0) // special case
-      return origin->end()->second();
+   })
+      if (h==24 && m==0 && s==0) // special case
+	 return origin->end()->second();
+      else
+      {
+	 object d=origin->day();
+	 array(cHour) ha=origin->hours();
+	 int n=search(ha->hour_no(),h);
+	 if (n!=-1) tr=ha[n]->minute(m)->second(s);
+	 else return 0; // no such hour
+      }
 
    if (tr->hour_no()!=h || tr->minute_no()!=m)
    {
