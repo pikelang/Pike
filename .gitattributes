@@ -106,7 +106,6 @@ testfont binary
 /src/modules/system/syslog.c foreign_ident
 /src/modules/system/system.c foreign_ident
 /src/modules/system/system.h foreign_ident
-/src/modules/system/system_machine.h.in foreign_ident
 /src/object.c foreign_ident
 /src/operators.c foreign_ident
 /src/pike_types.c foreign_ident
