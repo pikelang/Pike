@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.27 2003/06/26 08:28:17 tomas Exp $
+|| $Id: pike_threadlib.h,v 1.28 2003/12/10 13:01:18 jonasw Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -84,6 +84,16 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 #include <thread.h>
 #endif
 
+
+#ifdef HAVE_MACH_TASK_INFO_H
+#include <mach/task_info.h>
+#endif
+#ifdef HAVE_MACH_TASK_H
+#include <mach/task.h>
+#endif
+#ifdef HAVE_MACH_MACH_INIT_H
+#include <mach/mach_init.h>
+#endif
 
 /* Restore the fp macro. */
 #ifdef FRAMEPOINTER_WAS_DEFINED
@@ -167,6 +177,11 @@ void th_atfork_child(void);
 #define th_setconcurrency(X) 
 #ifdef HAVE_PTHREAD_YIELD
 #define low_th_yield()	pthread_yield()
+#else
+#ifdef HAVE_PTHREAD_YIELD_NP
+/* Some pthread libs define yield as non-portable function. */
+#define low_th_yield()	pthread_yield_np()
+#endif /* HAVE_PTHREAD_YIELD_NP */
 #endif /* HAVE_PTHREAD_YIELD */
 extern pthread_attr_t pattr;
 extern pthread_attr_t small_pattr;
@@ -393,7 +408,10 @@ PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
 PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
 PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
-#if !defined(HAVE_GETHRTIME) && defined(HAVE_CLOCK)
+#if !defined(HAVE_GETHRTIME) && \
+    !(defined(HAVE_MACH_TASK_INFO_H) && defined(TASK_THREAD_TIMES_INFO)) && \
+    defined(HAVE_CLOCK) && \
+    !defined(HAVE_NO_YIELD)
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
