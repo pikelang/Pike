@@ -511,10 +511,17 @@ done
 	      });
 
 
-  status("Creating",tmpname+".tar");
-  
-  Process.create_process(({"tar","cf",tmpname+".tar"})+ to_export)
-    ->wait();
+  string tmpmsg=".";
+
+  string tararg="cf";
+  foreach(to_export/50, array files_to_tar)
+    {
+      status("Creating",tmpname+".tar",tmpmsg);
+      tmpmsg+=".";
+      Process.create_process(({"tar",tararg,tmpname+".tar"})+ to_export)
+	->wait();
+      tararg="rf";
+    }
 
   status("Creating",tmpname+".tar.gz");
 

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.353 2000/03/26 20:57:27 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.354 2000/03/27 00:45:32 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1367,8 +1367,16 @@ int main(int argc, char **argv)
         AC_MSG_RESULT(no)
       else
         AC_MSG_RESULT(yes)
-        CFLAGS="${CFLAGS} -pthread"
-        LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
+
+        AC_PATH_PROG(PTHREAD_CONFIG,pthread-config,no)
+        if [ "x$PTHREAD_CONFIG" = xno ]; then
+          CFLAGS="${CFLAGS} -pthread"
+          LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
+        else
+          CFLAGS="$CFLAGS `pthread-config --cflags`"
+          LIBS="$LIBS `pthread-config --libs`"
+          LDFLAGS="$CFLAGS `pthread-config --ldflags`"
+        fi
       fi
     ;;
 

@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.29 1999/09/10 00:08:43 hubbe Exp $ */
+/* $Id: export.pike,v 1.30 2000/03/27 00:45:25 hubbe Exp $ */
 
 #include <simulate.h>
 import Stdio;
@@ -203,8 +203,32 @@ int main(int argc, string *argv)
 
   werror("Creating "+vpath+"-indigo.tar.gz:\n");
   object o=Stdio.File();
-  spawn("tar cvf - "+files*" ",0,o->pipe(Stdio.PROP_IPC));
-  spawn("gzip -9",o,Stdio.File(pike_base_name+"/"+vpath+"-indigo.tar.gz","wct"))->wait();
+
+  int first=1;
+  foreach(files/50,files)
+    {
+      if(Process.create_process(({"tar",
+				    first?"cvf":"rvf",
+				    pike_base_name+"/"+vpath+"-indigo.tar"
+				    })+files)->wait())
+      {
+	werror("Tar file creation failed!\n");
+	if(cvs) cvs->wait();
+	exit(1);
+      }
+      first=0;
+    }
+
+  if(Process.create_process(({"gzip",
+				"-9",
+				pike_base_name+"/"+vpath+"-indigo.tar"
+})
+			    )->wait())
+  {
+    werror("Gzip failed!\n");
+    if(cvs) cvs->wait();
+    exit(1);
+  }
   rm(vpath);
   werror("Done.\n");
 
