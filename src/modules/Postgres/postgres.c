@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.3 1997/12/07 21:49:14 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.4 1997/12/16 15:55:21 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -159,7 +159,7 @@ static void f_create (INT32 args)
 		PQfinish(conn);
 		PQ_UNLOCK();
 		THREADS_DISALLOW();
-		error("Could not connect to database.\n");
+		error("Could not connect to database. Reason: \"%s\".\n",THIS->last_error->str);
 	}
 	THIS->dblink=conn;
 	if (!THIS->dblink)
@@ -175,7 +175,7 @@ static void f_select_db (INT32 args)
 	check_all_args("Postgres->select_db",args,BIT_STRING,0);
 	
 	if (!THIS->dblink)
-		error ("Internal error. How can you possibly not be linked to a "
+		error ("Driver error. How can you possibly not be linked to a "
 				"database already?\n");
 	conn=THIS->dblink;
 	THREADS_ALLOW();
