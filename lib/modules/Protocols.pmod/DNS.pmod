@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.77 2003/07/30 15:18:08 anders Exp $
+// $Id: DNS.pmod,v 1.78 2003/08/05 18:04:35 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -1253,17 +1253,25 @@ void async_##X( string host, function callback, mixed ... args ) 	\
   global_async_client->X(host,callback,@args);				\
 }
 
+//! @ignore
 GAC(ip_to_host);
-//! method void async_ip_to_host(string ip, function cb, mixed ... cba)
+//! @endignore
+//! @decl void async_ip_to_host(string ip, function cb, mixed ... cba)
 
+//! @ignore
 GAC(host_to_ip);
-//! method void async_host_to_ip(string host, function cb, mixed ... cba)
+//! @endignore
+//! @decl void async_host_to_ip(string host, function cb, mixed ... cba)
 
+//! @ignore
 GAC(get_mx_all);
-//! method void async_get_mx_all(string host, function cb, mixed ... cba)
+//! @endignore
+//! @decl void async_get_mx_all(string host, function cb, mixed ... cba)
 
+//! @ignore
 GAC(get_mx);
-//! method void async_get_mx(string host, function cb, mixed ... cba)
+//! @endignore
+//! @decl void async_get_mx(string host, function cb, mixed ... cba)
 
 
 client global_client;
@@ -1276,14 +1284,22 @@ mixed X( string host ) 	                                        \
   return global_client->X(host);				\
 }
 
+//! @ignore
 GC(gethostbyname);
-//! method array gethostbyname(string host)
+//! @endignore
+//! @decl array gethostbyname(string host)
 
+//! @ignore
 GC(gethostbyaddr);
-//! method array gethostbyaddr(string host)
+//! @endignore
+//! @decl array gethostbyaddr(string host)
 
+//! @ignore
 GC(get_mx);
-//! method string get_mx(string host)
+//! @endignore
+//! @decl string get_mx(string host)
 
+//! @ignore
 GC(get_primary_mx);
-//! method string get_primary_mx(string host)
+//! @endignore
+//! @decl string get_primary_mx(string host)
