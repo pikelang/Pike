@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.70 1999/11/23 06:34:55 per Exp $
+/* $Id: master.pike.in,v 1.71 1999/11/23 16:40:01 per Exp $
  * 
  * Master-file for Pike.
  *
@@ -615,27 +615,28 @@ class joinnode
   object|mapping ind(string index)
   {
     array(mixed) res = ({});
-    foreach(joined_modules, object|mapping o) {
+    foreach(joined_modules, object|mapping o) 
+    {
       mixed ret;
-      if (!zero_type(ret = o[index])) {
+      if (!zero_type(ret = o[index])) 
+      {
 	if (objectp(ret = o[index]) &&
-	    (< joinnode, dirnode >)[object_program(ret)]) {
+	    (< joinnode, dirnode >)[object_program(ret)]) 
+        {
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
-	} else if (!sizeof(res)) {
-	  return(ret);
+	} else if ( ret ) {
+	  return (ret);
 	} else {
 	  // Ignore
-	  werror(sprintf("Ignoring index %s: %t\n", index, ret));
 	  continue;
 	}
       }
     }
-    if (sizeof(res) > 1) {
-      return joinnode(res);
-    } else if (sizeof(res)) {
+    if (sizeof(res) > 1)
+      return joinnode(res); 
+    else if (sizeof(res))
       return res[0];
-    }
     return UNDEFINED;
   }
 
