@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.233 1998/09/01 16:59:18 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.234 1998/09/01 18:06:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1450,23 +1450,20 @@ AC_MSG_CHECKING(stack direction)
 AC_CACHE_VAL(pike_cv_hardware_stack_direction,
 [
 AC_TRY_RUN([
-static int find_stack_direction ()
+static int find_stack_direction(void *foo)
 {
-  static char	*addr = NULL;
-  char dummy;
-  if (addr == NULL)
-  {
-      addr = &dummy;
-      return find_stack_direction();
+  if(!foo) {
+    return find_stack_direction((void *)&foo);
   }
-  else
-  {
-    if (&dummy > addr) return 1; else return -1;
+  if (((void *)&foo) > foo) {
+    return 1;
+  } else {
+    return -1;
   }
 }
 
-int main() { exit( find_stack_direction() < 0); }
-],pike_cv_hardware_stack_direction=up,pike_cv_hardware_stack_direction=down)
+int main() { exit( find_stack_direction(0) + 1); }
+],pike_cv_hardware_stack_direction=down,pike_cv_hardware_stack_direction=up)
 ])
 
 AC_MSG_RESULT($pike_cv_hardware_stack_direction)
