@@ -9,12 +9,19 @@ static function(int:string) blobfeeder(Search.Database.Base db, array word_ids)
 	 };
 }
 
+static array(string) uniq_preserve_order(array(string) a) {
+  array(string) result = ({});
+  foreach (a, string s)
+    if (search(result, s) < 0)
+      result += ({ s });
+  return result;
+}
 
 Search.ResultSet do_query_or(Search.Database.Base db,
 			     array(string) words,
 			     Search.RankingProfile ranking)
 {
-  array(int) word_ids=map(Array.uniq(words), db->hash_word);
+  array(int) word_ids=map(uniq_preserve_order(words), db->hash_word);
   Search.ResultSet result =
     _WhiteFish.do_query_or(word_ids,
                            ranking->field_ranking,
@@ -29,7 +36,7 @@ Search.ResultSet do_query_and(Search.Database.Base db,
 			      array(string) words,
 			      Search.RankingProfile ranking)
 {
-  array(int) word_ids=map(Array.uniq(words), db->hash_word);
+  array(int) word_ids=map(uniq_preserve_order(words), db->hash_word);
   Search.ResultSet result =
     _WhiteFish.do_query_and(word_ids,
                             ranking->field_ranking,
@@ -207,7 +214,9 @@ Search.ResultSet execute(Search.Database.Base db,
           if (hasPlus && hasOrdinary) {
             Search.ResultSet r2 = pop();
             Search.ResultSet r1 = pop();
-            push(r1->add(r2));
+            // If a document contains must-have words AND ALSO may-have words,
+            // it's ranking is increased.
+            push(r1->add_ranking(r2));
           }
 
           if ((hasPlus || hasOrdinary) && hasMinus) {
