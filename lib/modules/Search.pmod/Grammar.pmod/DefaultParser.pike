@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.7 2001/06/22 01:28:35 nilsson Exp $
+// $Id: DefaultParser.pike,v 1.8 2002/05/15 14:28:53 mattias Exp $
 
 static inherit Search.Grammar.AbstractParser;
 static inherit Search.Grammar.Lexer;
@@ -262,7 +262,13 @@ static void parseExpr6(TextNode node) {
   if (peek()[0] == TOKEN_TEXT) {
     string text = peek()[1];
     advance();
+    string star = "86196759014593256";
+    string questionmark = "76196758925470133";
+    text=replace(text,({"*","?"}), ({star, questionmark}));
     array(string) words = Unicode.split_words_and_normalize(text);
+    for(int i=0; i<sizeof(words); i++)
+      words[i]=replace(words[i], ({star, questionmark}), ({"*","?"}));
+    // End of abominable kludge
     if (!words || !sizeof(words))
       return;
     if (sizeof(words) == 1)

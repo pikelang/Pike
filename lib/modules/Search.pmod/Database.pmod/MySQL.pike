@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.72 2001/11/21 14:47:33 js Exp $
+// $Id: MySQL.pike,v 1.73 2002/05/15 14:28:53 mattias Exp $
 
 inherit .Base;
 
@@ -215,6 +215,16 @@ void insert_words(Standards.URI|string uri, void|string language,
   
   if(blobs->memsize() > MAXMEM)
     sync();
+}
+
+array(string) expand_word_glob(string g, void|int max_hits)
+{
+  g = replace( string_to_utf8(g), ({ "*", "?" }), ({ "%", "_" }) );
+  if(max_hits)
+    return db->query("select distinct word from word_hit where word like %s limit %d",
+		     g, max_hits)->word;
+  else
+    return db->query("select distinct word from word_hit where word like %s",g)->word;
 }
 
 void remove_metadata(Standards.URI|string uri, void|string language)
