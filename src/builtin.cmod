@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.77 2002/02/21 05:29:13 per-bash Exp $
+ * $Id: builtin.cmod,v 1.78 2002/02/21 05:45:19 per-bash Exp $
  */
 
 #include "global.h"
@@ -1880,7 +1880,8 @@ PIKECLASS Timer
   CVAR struct timeval last_time;
   CVAR int hard_update;
   
-  PIKEFUN float get( )
+
+  PIKEFUN float peek( )
   {
     extern struct timeval current_time;
     FLOAT_TYPE res;
@@ -1888,8 +1889,15 @@ PIKECLASS Timer
       gettimeofday( &current_time, 0 );
     res = current_time.tv_sec-THIS->last_time.tv_sec +
       (current_time.tv_usec-THIS->last_time.tv_usec)/1000000.0;
-    THIS->last_time = current_time;
     RETURN res;
+  }
+
+  PIKEFUN float get( )
+  {
+    extern struct timeval current_time;
+    f_Timer_peek( 0 );
+    THIS->last_time = current_time;
+    return;
   }
 
   PIKEFUN void create( int|void fast )
