@@ -8,8 +8,8 @@
    mind, I'm responsible for that)
 */
 
-#include "stralloc.h"
 #include "global.h"
+#include "stralloc.h"
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -37,7 +37,7 @@ static struct disc_time convert(int,int);
 
 void f_discdate(INT32 argc) 
 {
-  long t;
+  time_t t;
   int bob,raw;
   struct disc_time hastur;
   if (argc != 1) 
