@@ -1,3 +1,12 @@
+Wed Oct  9 04:02:29 1996  Fredrik Hubinette  <hubbe@nuala.infovav.se>
+
+	* mmapped stacks should now work
+	* catch() should now work in handle_error
+
+Tue Oct  8 21:26:02 1996  Fredrik Hubinette  <hubbe@nuala.infovav.se>
+
+	* gmpmod should now compile even if gmp.h is available, but not libgmp
+
 Tue Oct  8 06:19:19 1996  Fredrik Hubinette  <hubbe@cuckoo.infovav.se>
 
 	* New efun: load module
