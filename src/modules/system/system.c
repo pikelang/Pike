@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.72 1999/06/19 20:26:55 hubbe Exp $
+ * $Id: system.c,v 1.73 1999/10/27 14:37:35 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.72 1999/06/19 20:26:55 hubbe Exp $");
+RCSID("$Id: system.c,v 1.73 1999/10/27 14:37:35 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -72,6 +72,9 @@ RCSID("$Id: system.c,v 1.72 1999/06/19 20:26:55 hubbe Exp $");
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
+#ifdef HAVE_SYS_SYSTEMINFO_H
+#include <sys/systeminfo.h>
+#endif /* HAVE_SYS_SYSTEMINFO_H */
 
 #include "dmalloc.h"
 
@@ -754,6 +757,75 @@ void f_chroot(INT32 args)
 }
 #endif /* HAVE_CHROOT */
  
+#ifdef HAVE_SYSINFO
+
+static struct {
+  char *name;
+  int command;
+} si_fields[] = {
+#ifdef SI_SYSNAME
+  { "sysname", SI_SYSNAME },
+#endif /* SI_SYSNAME */
+#ifdef SI_HOSTNAME
+  { "hostname", SI_HOSTNAME },
+#endif /* SI_HOSTNAME */
+#ifdef SI_RELEASE
+  { "release", SI_RELEASE },
+#endif /* SI_RELEASE */
+#ifdef SI_VERSION
+  { "version", SI_VERSION },
+#endif /* SI_VERSION */
+#ifdef SI_MACHINE
+  { "machine", SI_MACHINE },
+#endif /* SI_MACHINE */
+#ifdef SI_ARCHITECTURE
+  { "architecture", SI_ARCHITECTURE },
+#endif /* SI_ARCHITECTURE */
+#ifdef SI_ISALIST
+  { "isalist", SI_ISALIST },
+#endif /* SI_ISALIST */
+#ifdef SI_PLATFORM
+  { "platform", SI_PLATFORM },
+#endif /* SI_PLATFORM */
+#ifdef SI_HW_PROVIDER
+  { "hw provider", SI_HW_PROVIDER },
+#endif /* SI_HW_PROVIDER */
+#ifdef SI_HW_SERIAL
+  { "hw serial", SI_HW_SERIAL },
+#endif /* SI_HW_SERIAL */
+#ifdef SI_SRPC_DOMAIN
+  { "srpc domain", SI_SRPC_DOMAIN },
+#endif /* SI_SRPC_DOMAIN */
+}
+
+/* Recomended is >257 */
+#define PIKE_SI_BUFLEN	512
+
+void f_uname(INT32 args)
+{
+  char buffer[PIKE_SI_BUFLEN];
+  int i;
+  struct svalue *old_sp;
+
+  pop_n_elems(args);
+
+  old_sp = sp;
+
+  for(i=0; i < NELEM(si_fields); i++) {
+    int res;
+    res = sysinfo(si_fields[i].command, buffer, PIKE_SI_BUFLEN);
+
+    if (res == 0) {
+      push_text(si_fields[i].name);
+      push_text(buffer);
+    }
+  }
+
+  f_aggregate_mapping(sp - old_sp);
+}
+
+#else /* !HAVE_SYSINFO */
+
 #ifdef HAVE_UNAME
 #ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
@@ -786,7 +858,8 @@ void f_uname(INT32 args)
  
   f_aggregate_mapping(sp-old_sp);
 }
-#endif
+#endif /* HAVE_UNAME */
+#endif /* HAVE_SYSINFO */
 
 #if defined(HAVE_UNAME) && (defined(SOLARIS) || !defined(HAVE_GETHOSTNAME))
 void f_gethostname(INT32 args)
@@ -805,7 +878,17 @@ void f_gethostname(INT32 args)
   gethostname(name, 1024);
   push_text(name);
 }
-#endif /* HAVE_UNAME || HAVE_GETHOSTNAME */
+#elif defined(HAVE_SYSINFO) && defined(SI_NODENAME)
+void f_gethostname(INT32 args)
+{
+  char name[1024];
+  pop_n_elems(args);
+  if (sysinfo(SI_NODENAME, name, sizeof(name)) < 0) {
+    error("sysinfo() system call failed.\n");
+  }
+  push_text(name);
+}
+#endif /* HAVE_UNAME || HAVE_GETHOSTNAME || HAVE_SYSINFO */
 
 int my_isipnr(char *s)
 {
@@ -1183,13 +1266,13 @@ void pike_module_init(void)
            OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_CHROOT */
  
-#ifdef HAVE_UNAME
+#if defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
   
 /* function(:mapping) */
   ADD_EFUN("uname", f_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
 #endif /* HAVE_UNAME */
  
-#if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME)
+#if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME) || defined(HAVE_SYSINFO)
   
 /* function(:string) */
   ADD_EFUN("gethostname", f_gethostname,tFunc(tNone,tStr),OPT_TRY_OPTIMIZE);
