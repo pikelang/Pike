@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.777 2004/02/27 13:44:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.778 2004/02/27 14:19:15 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1183,7 +1183,7 @@ MY_AC_ARG_WITH(static_linking, MY_DESCR([--with-static-linking],
 AC_ARG_WITH(bundles,
 	    MY_DESCR([--without-bundles],
 		     [do not enable bundled libraries]),
-	       [with_bundles=yes])
+	    [], [with_bundles=yes])
 pike_bundle_dir=""
 if test "$with_bundles" = "no"; then :; else
   if test -d "$with_bundles/."; then
