@@ -437,7 +437,11 @@ static void decode_value2(struct decode_data *data)
     
     case T_MAPPING:
     {
-      struct mapping *m=allocate_mapping(num);
+      struct mapping *m;
+      if(num<0)
+	error("Failed to decode string. (mapping size is negative)\n");
+
+      m=allocate_mapping(num);
       tmp.type=T_MAPPING;
       tmp.u.mapping=m;
       mapping_insert(data->decoded, & data->counter, &tmp);
