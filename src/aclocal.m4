@@ -53,9 +53,9 @@ pushdef([AC_CONFIG_HEADER],
   AC_CONFIG_HEADER($1)
 ])
 
+define([ORIG_AC_CHECK_SIZEOF], defn([AC_CHECK_SIZEOF]))
 pushdef([AC_CHECK_SIZEOF],
 [
-  popdef([AC_CHECK_SIZEOF])
   if test "x$cross_compiling" = "xyes"; then
     changequote(<<, >>)dnl
     define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
@@ -75,7 +75,11 @@ char size_info[[]] = {
 EOF
       if AC_TRY_EVAL(ac_compile); then
         if test -f "conftest.$ac_objext"; then
-	  AC_CV_NAME=`(strings "conftest.$ac_objext" | sed -e '/^SiZe_InFo_[0-9]$/s/SiZe_InFo_//p' -ed; echo ifelse([$2], , 0, [$2])) | head -1`
+	  AC_CV_NAME=`strings "conftest.$ac_objext" | sed -e '/^SiZe_InFo_[[0-9]]$/s/SiZe_InFo_//p' -ed | head -1`
+          if test "x$AC_CV_NAME" = "x"; then
+	    AC_MSG_WARN([Magic cookie not found.])
+	    AC_CV_NAME=ifelse([$2], , 0, [$2])
+	  else :; fi
         else
 	  AC_MSG_WARN([Object file not found.])
 	  AC_CV_NAME=ifelse([$2], , 0, [$2])
@@ -88,7 +92,7 @@ EOF
     AC_MSG_RESULT($AC_CV_NAME)
     undefine([AC_CV_NAME])dnl
   else :; fi
-  AC_CHECK_SIZEOF($1,$2)
+  ORIG_AC_CHECK_SIZEOF($1,$2)
 ])
 
 AC_DEFUN(AC_MY_CHECK_TYPE,
@@ -142,7 +146,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.19 2000/08/18 16:59:20 grubba Exp $
+# $Id: aclocal.m4,v 1.20 2000/08/18 17:27:24 grubba Exp $
 
 MY_AC_PROG_CC
 
