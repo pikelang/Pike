@@ -172,6 +172,7 @@ testfont binary
 /src/modules/Image/configure.in foreign_ident
 /src/modules/Image/dct.c foreign_ident
 /src/modules/Image/encodings/Makefile.in foreign_ident
+/src/modules/Image/encodings/any.c foreign_ident
 /src/modules/Image/encodings/configure.in foreign_ident
 /src/modules/Image/encodings/gif.c foreign_ident
 /src/modules/Image/encodings/gif_lzw.c foreign_ident
