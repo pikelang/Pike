@@ -38,11 +38,11 @@ static string attributequote(string s) {
                  ({ "&lt;", "&gt;", "&#34;", "&#39;", "&amp;" }));
 }
 
-static string writeattributes(mapping(string:string) attrs) {
+static string writeattributes(mapping(string:string) attrs)
+{
   string s = "";
-  foreach (indices(attrs || ([]) ), string attr) {
+  foreach(sort(indices(attrs || ([]))), string attr)
     s += sprintf(" %s='%s'", attr, attributequote(attrs[attr]));
-  }
   return s;
 }
 
