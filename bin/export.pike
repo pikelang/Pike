@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.59 2004/05/07 12:01:21 grubba Exp $ */
+/* $Id: export.pike,v 1.60 2004/06/16 20:50:37 grendel Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -109,7 +109,7 @@ void bump_version(int|void is_release)
   if (s) {
     werror("Bumping Debian changelog.\n");
     array(int) version = getversion();
-    s = sprintf("pike%d.%d (%d.%d.%d-1) experimental; urgency=low\n"
+    s = sprintf("pike%d.%d (%d.%d.%d-1) unstable; urgency=low\n"
 		"\n" +
 		"  * %s\n"
 		"\n"

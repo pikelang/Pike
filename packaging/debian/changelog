@@ -1,3 +1,10 @@
+pike7.4 (7.4.97-2) unstable; urgency=low
+
+  * Fixed a bug in export.pike that caused Pike 7.4 to be uploaded to
+    experimental
+
+ -- Marek Habersack <grendel@debian.org>  Wed, 16 Jun 2004 22:58:15 +0200
+
 pike7.4 (7.4.97-1) experimental; urgency=low
 
   * The latest cvs snapshot
