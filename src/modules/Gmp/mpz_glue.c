@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.102 2002/03/08 22:14:55 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.103 2002/04/25 08:47:40 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1561,50 +1561,50 @@ void pike_module_exit(void)
   ADD_FUNCTION("create", mpzmod_create,					\
 	       tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,			\
 			      tObj),tVoid),				\
-		   tFunc(tStr tInt,tVoid)), 0);				\
+		   tFunc(tStr tInt,tVoid)), ID_STATIC);			\
 									\
-  ADD_FUNCTION("`+",mpzmod_add,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`+=",mpzmod_add_eq,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``+",mpzmod_add_rhs,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`-",mpzmod_sub,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``-",mpzmod_rsub,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`*",mpzmod_mul,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``*",mpzmod_mul,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`*=",mpzmod_mul_eq,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`/",mpzmod_div,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``/",mpzmod_rdiv,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`%",mpzmod_mod,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``%",mpzmod_rmod,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`&",mpzmod_and,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``&",mpzmod_and,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`|",mpzmod_or,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``|",mpzmod_or,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`^",mpzmod_xor,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``^",mpzmod_xor,tMpz_binop_type,0);			\
-  ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj),0);			\
+  ADD_FUNCTION("`+",mpzmod_add,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`+=",mpzmod_add_eq,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``+",mpzmod_add_rhs,tMpz_binop_type, ID_STATIC);	\
+  ADD_FUNCTION("`-",mpzmod_sub,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``-",mpzmod_rsub,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`*",mpzmod_mul,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``*",mpzmod_mul,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`*=",mpzmod_mul_eq,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`/",mpzmod_div,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``/",mpzmod_rdiv,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`%",mpzmod_mod,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``%",mpzmod_rmod,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`&",mpzmod_and,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``&",mpzmod_and,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`|",mpzmod_or,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``|",mpzmod_or,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`^",mpzmod_xor,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("``^",mpzmod_xor,tMpz_binop_type, ID_STATIC);		\
+  ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj), ID_STATIC);		\
 									\
-  add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE,0);			\
-  add_function("`>>",mpzmod_rsh,MPZ_SHIFT_TYPE,0);			\
-  add_function("``<<",mpzmod_rlsh,MPZ_SHIFT_TYPE,0);			\
-  add_function("``>>",mpzmod_rrsh,MPZ_SHIFT_TYPE,0);			\
+  add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
+  add_function("`>>",mpzmod_rsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
+  add_function("``<<",mpzmod_rlsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
+  add_function("``>>",mpzmod_rrsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
 									\
-  add_function("`>", mpzmod_gt,MPZ_CMPOP_TYPE,0);			\
-  add_function("`<", mpzmod_lt,MPZ_CMPOP_TYPE,0);			\
-  add_function("`>=",mpzmod_ge,MPZ_CMPOP_TYPE,0);			\
-  add_function("`<=",mpzmod_le,MPZ_CMPOP_TYPE,0);			\
+  add_function("`>", mpzmod_gt,MPZ_CMPOP_TYPE, ID_STATIC);		\
+  add_function("`<", mpzmod_lt,MPZ_CMPOP_TYPE, ID_STATIC);		\
+  add_function("`>=",mpzmod_ge,MPZ_CMPOP_TYPE, ID_STATIC);		\
+  add_function("`<=",mpzmod_le,MPZ_CMPOP_TYPE, ID_STATIC);		\
 									\
-  add_function("`==",mpzmod_eq,MPZ_CMPOP_TYPE,0);			\
-  add_function("`!=",mpzmod_nq,MPZ_CMPOP_TYPE,0);			\
+  add_function("`==",mpzmod_eq,MPZ_CMPOP_TYPE, ID_STATIC);		\
+  add_function("`!=",mpzmod_nq,MPZ_CMPOP_TYPE, ID_STATIC);		\
 									\
-  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt),0);			\
+  ADD_FUNCTION("`!",mpzmod_not,tFunc(tNone,tInt), ID_STATIC);		\
 									\
-  ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt),0);		\
-  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix),0);			\
+  ADD_FUNCTION("__hash",mpzmod___hash,tFunc(tNone,tInt), ID_STATIC);	\
+  ADD_FUNCTION("cast",mpzmod_cast,tFunc(tStr,tMix), ID_STATIC);		\
 									\
-  ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), 0);	\
+  ADD_FUNCTION("_is_type", mpzmod__is_type, tFunc(tStr,tInt), ID_STATIC);\
   									\
   ADD_FUNCTION("digits", mpzmod_digits,tFunc(tOr(tVoid,tInt),tStr), 0);	\
-  ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), 0);	\
+  ADD_FUNCTION("_sprintf", mpzmod__sprintf, tFunc(tInt,tStr), ID_STATIC);\
   ADD_FUNCTION("size", mpzmod_size,tFunc(tOr(tVoid,tInt),tInt), 0);	\
 									\
   ADD_FUNCTION("cast_to_int",mpzmod_get_int,tFunc(tNone,tMpz_int),0);	\
@@ -1691,7 +1691,7 @@ void pike_module_init(void)
     /* magic /Hubbe
      * This seems to break more than it fixes though... /Hubbe
      */
-    free_string(ID_FROM_INT(Pike_compiler->new_program, id)->type);
+    free_type(ID_FROM_INT(Pike_compiler->new_program, id)->type);
     ID_FROM_INT(Pike_compiler->new_program, id)->type=CONSTTYPE(tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,tObj),tInt),tFunc(tStr tInt,tInt)));
 #endif
   }
