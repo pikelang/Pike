@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.10 2003/12/08 15:52:57 nilsson Exp $
+dnl $Id: testsuite.in,v 1.11 2003/12/12 12:19:18 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -55,6 +55,14 @@ test_any([[
   b = b + "end";
   return teststr + "end" == b->get();
 ]], 1)
+test_any([[
+  String.Buffer b = String.Buffer();
+  b->add("abc");
+  b->add("\400\500");
+  b->putchar(256);
+  b->add("x");
+  return (string)b;
+]], "abc\400\500\400x")
 
 test_eval_error([[ String.Buffer()->add("x",0); ]])
 
