@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.100 2003/01/05 01:03:55 nilsson Exp $
+|| $Id: sprintf.c,v 1.101 2003/01/26 22:20:02 mirar Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.100 2003/01/05 01:03:55 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.101 2003/01/26 22:20:02 mirar Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1278,7 +1278,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 
       case 'c':
       {
-        INT32 tmp;
+        INT_TYPE tmp;
 	ptrdiff_t l,n;
 	char *x;
         DO_OP();
