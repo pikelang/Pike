@@ -1346,22 +1346,22 @@ void do_install()
       // install the core extracted autodocs
       install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
 		   combine_path(doc_prefix, "src", "core_autodoc.xml"));
+
+      // create a directory for extracted module documentation
+      if(!export)
+	mkdirhier(combine_path(doc_prefix, "src", "extracted"));
+
+      install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
+		  combine_path(doc_prefix, "src", "images"), 0);
+      install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
+		  combine_path(doc_prefix, "src", "presentation"), 0);
+      install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
+		  combine_path(doc_prefix, "src", "src_images"), 0);
+      install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
+		  combine_path(doc_prefix, "src", "structure"), 0);
+      install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
+		   combine_path(doc_prefix, "src", "Makefile"));
     }
-
-    // create a directory for extracted module documentation
-    if(!export)
-      mkdirhier(combine_path(doc_prefix, "src", "extracted"));
-
-    install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
-		combine_path(doc_prefix, "src", "images"), 0);
-    install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
-		combine_path(doc_prefix, "src", "presentation"), 0);
-    install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
-		combine_path(doc_prefix, "src", "src_images"), 0);
-    install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
-		combine_path(doc_prefix, "src", "structure"), 0);
-    install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
-		 combine_path(doc_prefix, "src", "Makefile"));
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
