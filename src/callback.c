@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.26 2002/08/15 14:49:20 marcus Exp $");
+RCSID("$Id: callback.c,v 1.27 2002/09/30 17:40:17 grubba Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -43,11 +43,21 @@ extern int d_flag;
 
 static int is_in_free_list(struct callback * c)
 {
-  struct callback *foo;
+  struct callback_block *bar;
   int e;
-  for(foo=free_callbacks;foo;foo=foo->next)
-    if(foo==c)
-      return 1;
+
+  if (!c) return 0;
+
+  for (bar = callback_blocks; bar; bar=bar->next) {
+    if ((bar->x <= c) && ((c - bar->x) < CALLBACK_CHUNK)) {
+      struct callback *foo;
+      for (foo = bar->free_callbacks; foo;
+	   foo = (void *)foo->BLOCK_ALLOC_NEXT) {
+	if (foo == c) return 1;
+      }
+      return 0;
+    }
+  }
 
   return 0;
 }
