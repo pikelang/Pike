@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.269 1999/03/07 04:24:49 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.270 1999/03/08 05:34:35 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -180,7 +180,7 @@ if test "$uname_prog" != "no"; then
   case "$pike_cv_sys_os" in
     SunOS)
       case "`uname -r`" in
-        5.*) pike_cv_sys_os="Solaris";
+        5.*) pike_cv_sys_os="Solaris" ;;
       esac
     ;;
   esac
@@ -588,6 +588,9 @@ fi
 
 if test "$pike_cv_sys_os" = "Solaris" ; then
   AC_DEFINE(SOLARIS)
+  AC_DEFINE(USE_WAIT_THREAD)
+else
+  AC_DEFINE(USE_SIGCHILD)
 fi
 
 if test ! -d modules/. ; then

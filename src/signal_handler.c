@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.114 1999/03/07 18:07:49 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.115 1999/03/08 05:34:37 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -102,17 +102,11 @@ RCSID("$Id: signal_handler.c,v 1.114 1999/03/07 18:07:49 grubba Exp $");
 /* #define PROC_DEBUG */
 
 #ifndef __NT__
-
 #define USE_PID_MAPPING
-
-#ifdef _REENTRANT
-#define USE_WAIT_THREAD
 #else
-#define USE_SIGCHILD
+#undef USE_WAIT_THREAD
+#undef USE_SIGCHILD
 #endif
-
-#endif
-
 
 
 /* Added so we are able to patch older versions of Pike. */
@@ -666,15 +660,15 @@ void process_done(pid_t pid)
 #endif
 
 #ifdef HAVE_WAITPID
-#define WAIT_ANY(STATUS,OPT) waitpid(-1,STATUS,OPT)
+#define MY_WAIT_ANY(STATUS,OPT) waitpid(-1,STATUS,OPT)
 #else
 #ifdef HAVE_WAIT3
-#define WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
+#define MY_WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
 #else
 #ifdef HAVE_WAIT4
-#define WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
+#define MY_WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
 #else
-#define WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
+#define MY_WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
 #endif
 #endif
 #endif
@@ -698,7 +692,7 @@ static RETSIGTYPE receive_sigchild(int signum)
   
  try_reap_again:
   /* We carefully reap what we saw */
-  pid=WAIT_ANY(&status, WNOHANG);
+  pid=MY_WAIT_ANY(&status, WNOHANG);
   
   if(pid>0)
   {
@@ -806,32 +800,77 @@ static void report_child(int pid,
 #ifdef USE_WAIT_THREAD
 static COND_T process_status_change;
 static COND_T start_wait_thread;
-static int num_pids;
+static MUTEX_T wait_thread_mutex;
+
+static void do_da_lock(void)
+{
+  mt_lock(&wait_thread_mutex);
+}
+
+static void do_bi_do_da_lock(void)
+{
+  fprintf(stderr, "wait thread: This is your wakeup call!\n");
+  co_signal(&start_wait_thread);
+  mt_unlock(&wait_thread_mutex);
+}
 
 static void *wait_thread(void *data)
 {
-  mt_lock(&interpreter_lock);
-  while(!num_pids)
-    co_wait(&start_wait_thread, &interpreter_lock);
-
-  mt_unlock(&interpreter_lock);
-
+  if(pthread_atfork(do_da_lock,do_bi_do_da_lock,0))
+  {
+    perror("pthread atfork");
+    exit(1);
+  }
+  
   while(1)
   {
     WAITSTATUSTYPE status;
+    int pid;
 
-    int pid=WAIT_ANY(&status, 0);
+    mt_lock(&wait_thread_mutex);
+    pid=MY_WAIT_ANY(&status, WNOHANG);
+    
+    if(pid < 0 && errno==ECHILD)
+    {
+#ifdef PROC_DEBUG
+      fprintf(stderr, "wait_thread: sleeping\n");
+#endif
+      co_wait(&start_wait_thread, &wait_thread_mutex);
+
+#ifdef PROC_DEBUG
+      fprintf(stderr, "wait_thread: waking up\n");
+#endif
+    }
+
+    mt_unlock(&wait_thread_mutex);
+
+    if(pid <= 0) pid=MY_WAIT_ANY(&status, 0);
+
+#ifdef PROC_DEBUG
+    fprintf(stderr, "wait thread: pid=%d errno=%d\n",pid,errno);
+#endif
+    
     if(pid>0)
     {
       mt_lock(&interpreter_lock);
-      num_pids--;
       report_child(pid, status);
       co_broadcast(& process_status_change);
 
-      while(!num_pids)
-	co_wait(&start_wait_thread, &interpreter_lock);
-
       mt_unlock(&interpreter_lock);
+      continue;
+    }
+
+    if(pid == -1)
+    {
+      switch(errno)
+      {
+	case EINTR:
+	case ECHILD:
+	  break;
+
+	default:
+	  fprintf(stderr,"Wait thread: waitpid returned error: %d\n",errno);
+      }
     }
   }
 }
@@ -898,7 +937,7 @@ static void f_pid_status_wait(INT32 args)
 	s=low_mapping_lookup(pid_mapping, &key);
 	if(s && s->type == T_OBJECT && s->u.object == fp->current_object)
 	{
-	  error("Operating system failiuer: Pike lost track of a child, pid=%d, errno=%d, errorcount=%d.\n",pid,err,errorcount);
+	  error("Operating system failiuer: Pike lost track of a child, pid=%d, errno=%d.\n",pid,err);
 
 	}
 	else
@@ -2091,11 +2130,6 @@ void f_create_process(INT32 args)
       }
 #endif
 
-#ifdef USE_WAIT_THREAD
-      if(!(num_pids++))
-	co_signal(& start_wait_thread);
-#endif
-
       THIS->pid = pid;
       THIS->state = PROCESS_RUNNING;
       ref_push_object(fp->current_object);
@@ -2418,11 +2452,6 @@ void f_fork(INT32 args)
     }
 #endif
 
-#ifdef USE_WAIT_THREAD
-      if(!(num_pids++))
-	co_signal(& start_wait_thread);
-#endif
-
     o=low_clone(pid_status_program);
     call_c_initializers(o);
     p=(struct pid_status *)get_storage(o,pid_status_program);
@@ -2629,16 +2658,13 @@ void init_signals(void)
 #endif
 
 #ifdef USE_WAIT_THREAD
-  /* FIXME: Isn't it required that SIGCHLD hasn't been set to SIGIGN
-   *        for wait() et al to work? (The process that started pike
-   *        may have set it to SIGIGN).
-   *	/grubba 1999-03-07
-   */
-  co_init(& process_status_change);
-  co_init(& start_wait_thread);
   {
-    THREAD_T dummy;
-    th_create_small(&dummy,wait_thread,0);
+    THREAD_T foo;
+    co_init(& process_status_change);
+    co_init(& start_wait_thread);
+    mt_init(& wait_thread_mutex);
+    th_create_small(&foo,wait_thread,0);
+    my_signal(SIGCHLD, SIG_DFL);
   }
 #endif
 
@@ -2664,9 +2690,12 @@ void init_signals(void)
 
   firstsig=lastsig=0;
 
-#ifndef __NT__
+#ifdef USE_PID_MAPPING
   pid_mapping=allocate_mapping(2);
+
+#ifndef USE_WAIT_THREAD
   pid_mapping->flags|=MAPPING_FLAG_WEAK;
+#endif
 #endif
 
   start_new_program();

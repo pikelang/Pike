@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.38 1999/03/06 01:55:43 grubba Exp $
+ * $Id: acconfig.h,v 1.39 1999/03/08 05:34:34 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -233,6 +233,18 @@
 
 /* Use poll() instead of select() ? */
 #undef HAVE_AND_USE_POLL
+
+/* This works on Solaris or any UNIX where
+ * waitpid can report ECHILD when running more than one at once
+ * (or any UNIX where waitpid actually works)
+ */
+#undef USE_WAIT_THREAD
+
+/* This works on Linux or any UNIX where
+ * waitpid works or where threads and signals bugs in
+ * less annoying ways than Solaris.
+ */
+#undef USE_SIGCHILD
 
 /* Enable code to handle Out-Of-Band data */
 #undef WITH_OOB
