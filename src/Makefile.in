@@ -331,9 +331,10 @@ language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCD
 
 $(SRCDIR)/language.h: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
-	$(YACC) $(YFLAGS) $(SRCDIR)/language.yacc
-	mv y.tab.c $(SRCDIR)/language.c
-	mv y.tab.h $(SRCDIR)/language.h
+	( cad $(SRCDIR); \
+	  $(YACC) $(YFLAGS) language.yacc; \
+	  mv y.tab.c language.c; \
+	  mv y.tab.h language.h )
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.h
 	touch $(SRCDIR)/language.c
