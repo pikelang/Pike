@@ -11,7 +11,7 @@
 #include "fsort.h"
 #include "main.h"
 
-RCSID("$Id: fsort.c,v 1.18 2002/09/03 17:02:56 grubba Exp $");
+RCSID("$Id: fsort.c,v 1.19 2002/09/03 17:11:59 grubba Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun
@@ -61,8 +61,8 @@ RCSID("$Id: fsort.c,v 1.18 2002/09/03 17:02:56 grubba Exp $");
 #undef EXTRA_ARGS
 #undef XARGS
 
-#define EXTRA_ARGS ,fsortfun cmpfun,long size, char *tmp_area
-#define XARGS ,cmpfun,size,tmp_area
+#define EXTRA_ARGS , fsortfun cmpfun, char *tmp_area, long size
+#define XARGS , cmpfun, tmp_area, size
 
 #define SWAP(X,Y) do { \
     MEMCPY(tmp_area,X,size); \
@@ -111,11 +111,14 @@ void fsort(void *base,
     {
       /* NOTE: We need to put the alloca'd value in a variable,
        *       otherwise cc/HPUX will generate broken code.
+       *       Hmm, that didn't work, but reordering the arguments,
+       *       putting size last seems to have fixed the problem...
+       *       /grubba hunting compiler bugs 2002-09-03
        */
       char *buf = alloca(elmSize);
 
       fsort_n((char *)base,((char *)base) + elmSize * (elms - 1),
-	      cmpfunc, elmSize, buf);
+	      cmpfunc, buf, elmSize);
     }
   }
 
