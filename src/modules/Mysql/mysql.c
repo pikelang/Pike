@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.88 2005/01/20 10:48:28 nilsson Exp $
+|| $Id: mysql.c,v 1.89 2005/04/02 20:45:21 nilsson Exp $
 */
 
 /*
@@ -821,20 +821,8 @@ static void f_select_db(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl object(Mysql.mysql_result) big_query(string query)
- *!
- *! Make an SQL query.
- *!
- *! This function sends the SQL query @[query] to the Mysql-server. The result
- *! of the query is returned as a @[Mysql.mysql_result] object.
- *!
- *! Returns @expr{0@} (zero) if the query didn't return any result
- *! (e.g. @tt{INSERT@} or similar).
- *!
- *! @seealso
- *!   @[Mysql.mysql_result]
- */
-static void f_big_query(INT32 args)
+static void low_query(INT32 args, char *name,
+		      MYSQL_RES* (*mysql_func)(MYSQL*))
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   MYSQL_RES *result = NULL;
@@ -843,12 +831,12 @@ static void f_big_query(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->big_query", 1);
+    SIMPLE_TOO_FEW_ARGS_ERROR (name, 1);
   }
 #ifdef HAVE_MYSQL_REAL_QUERY
-  CHECK_8BIT_STRING ("Mysql.mysql->big_query", 1);
+  CHECK_8BIT_STRING (name, 1);
 #else
-  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->big_query", 1);
+  CHECK_8BIT_NONBINARY_STRING (name, 1);
 #endif
 
   query = sp[-args].u.string->str;
@@ -864,7 +852,7 @@ static void f_big_query(INT32 args)
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
     if (!tmp) {
-      result = mysql_use_result(socket);
+      result = mysql_func(socket);
     }
 
     MYSQL_DISALLOW();
@@ -896,7 +884,7 @@ static void f_big_query(INT32 args)
 #endif /* HAVE_MYSQL_REAL_QUERY */
 
     if (!tmp) {
-      result = mysql_use_result(socket);
+      result = mysql_func(socket);
     }
 
     MYSQL_DISALLOW();
@@ -910,10 +898,10 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (sp[-args].u.string->len <= 512) {
-      Pike_error("Mysql.mysql->big_query(): Query \"%s\" failed (%s)\n",
-	    sp[-args].u.string->str, err);
+      Pike_error("%s(): Query \"%s\" failed (%s)\n",
+		 name, query, err);
     } else {
-      Pike_error("Mysql.mysql->big_query(): Query failed (%s)\n", err);
+      Pike_error("%s(): Query failed (%s)\n", name, err);
     }
   }
 
@@ -937,8 +925,8 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (err) {
-      Pike_error("Mysql.mysql->big_query(): Couldn't create result for query (%s)\n",
-		 mysql_error(socket));
+      Pike_error("%s(): Couldn't create result for query (%s)\n",
+		 name, mysql_error(socket));
     }
     /* query was INSERT or similar - return 0 */
 
@@ -956,11 +944,51 @@ static void f_big_query(INT32 args)
     if ((!(res = (struct precompiled_mysql_result *)
 	   get_storage(o, mysql_result_program))) || res->result) {
       mysql_free_result(result);
-      Pike_error("Mysql.mysql->big_query(): Bad mysql result object!\n");
+      Pike_error("%s(): Bad mysql result object!\n", name);
     }
     res->result = result;
   }
 }
+
+/*! @decl Mysql.mysql_result big_query(string query)
+ *!
+ *! Make an SQL query.
+ *!
+ *! This function sends the SQL query @[query] to the Mysql-server. The result
+ *! of the query is returned as a @[Mysql.mysql_result] object.
+ *!
+ *! Returns @expr{0@} (zero) if the query didn't return any result
+ *! (e.g. @tt{INSERT@} or similar).
+ *!
+ *! @seealso
+ *!   @[Mysql.mysql_result] @[streaming_query]
+ */
+static void f_big_query(INT32 args)
+{
+  low_query(args, "big_query", mysql_store_result);
+}
+
+/*! @decl Mysql.mysql_result big_query(string query)
+ *!
+ *! Makes a streaming SQL query.
+ *!
+ *! This function sends the SQL query @[query] to the Mysql-server.
+ *! The result of the query is streamed through the returned
+ *! @[Mysql.mysql_result] object. Note that the involved database
+ *! tables are locked until all the results has been read.
+ *!
+ *! Returns @expr{0@} (zero) if the query didn't return any result
+ *! (e.g. @tt{INSERT@} or similar).
+ *!
+ *! @seealso
+ *!   @[Mysql.mysql_result]
+ */
+static void f_streaming_query(INT32 args)
+{
+  low_query(args, "streaming_query", mysql_use_result);
+}
+
+
 /*! @decl void create_db(string database)
  *!
  *! Create a new database
@@ -1726,7 +1754,10 @@ PIKE_MODULE_INIT
   /* function(string:void) */
   ADD_FUNCTION("select_db", f_select_db,tFunc(tStr,tVoid), ID_PUBLIC);
   /* function(string:int|object) */
-  ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tOr(tInt,tObj)), ID_PUBLIC);
+  ADD_FUNCTION("big_query", f_big_query,tFunc(tStr,tObj), ID_PUBLIC);
+  /* function(string:int|object) */
+  ADD_FUNCTION("streaming_query",
+	       f_streaming_query,tFunc(tStr,tObj), ID_PUBLIC);
 #ifdef USE_OLD_FUNCTIONS
   /* function(string:void) */
   ADD_FUNCTION("create_db", f_create_db,tFunc(tStr,tVoid), ID_PUBLIC);
