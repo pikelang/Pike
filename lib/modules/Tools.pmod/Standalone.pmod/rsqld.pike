@@ -1,4 +1,4 @@
-// $Id: rsqld.pike,v 1.3 2002/12/17 12:45:38 grubba Exp $
+// $Id: rsqld.pike,v 1.4 2003/01/19 03:08:26 nilsson Exp $
 
 constant description = "Implements an rsql daemon.";
 
@@ -72,7 +72,16 @@ class Connection
 
   static void reply_cmd(int cmd, int seq, int err, mixed val)
   {
-    string v = (val? encode_value(val):"");
+    string v;
+    if(catch( v = (val? encode_value(val):"") )) {
+      if(arrayp(val) && sizeof(val)==2 && stringp(val[0])
+	 && arrayp(val[1])) {
+	// Assume val is a backtrace.
+	v = encode_value(val[0]);
+      }
+      else
+	v = encode_value("Internal server error.\n");
+    }
     write(sprintf("%c<%c>%4c%4c%s", (err? '!':'.'), cmd, seq, sizeof(v), v));
   }
 
