@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.30 2002/10/19 15:58:32 grendel Exp $
+# $Id: rules,v 1.31 2002/10/21 13:43:22 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -48,6 +48,8 @@ CFARGS=--without-rtldebug \
        --without-libpanda
 
 RUNPIKE=$(CURDIR)/$(BUILDDIR)/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$(CURDIR)/$(BUILDDIR)/master.pike
+PIKE_FAKEROOT=$(CURDIR)/debian/$(PIKE)-core
+PIKE_FAKEROOT_OMIT=$(BUILDDIR)*:$(CURDIR)/lib*:$(CURDIR)/src*:$(CURDIR)/bin*:$(CURDIR)/man*:$(BUILDDIR)/lib*:$(CURDIR)*:$(CURDIR)/debian/$(PIKE)-core*
 
 CFLAGS=-O2 -s
 # Temporary workaround for hppa linker issues
@@ -177,7 +179,9 @@ install: build
 
 	# temporary hack
 	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*.o
-	-$(RUNPIKE) $(CURDIR)/src/dumpmodule.pike $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*
+	-$(RUNPIKE) -DPIKE_FAKEROOT="$(PIKE_FAKEROOT)" -DPIKE_FAKEROOT_OMIT="$(PIKE_FAKEROOT_OMIT)" \
+	            $(CURDIR)/src/dumpmodule.pike --target-dir=lib/modules/Standards.pmod/ \
+	            $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Standards.pmod/PKCS.pmod/*
 
 	# Some cleaning
 	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/ -name ".autodoc" -type f -print`
