@@ -23,6 +23,8 @@ Tools.Install.ProgressBar progress_bar;
 int files_to_install;
 int installed_files;
 
+// the nt scripts depends on this value
+// (incidentally defined elsewhere in the C code too)
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
 
 
