@@ -102,6 +102,10 @@ install:
 	$(INSTALL) $(TMP_LIBDIR)/master.lpc $(lib_prefix)
 	$(INSTALL) $(TMP_LIBDIR)/simulate.lpc $(lib_prefix)
 
+
+spinner-install:
+	cp ulpc $(SRCDIR)/../../server/bin/
+
 lint: *.c
 	lint *.c
 
