@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.300 2001/07/11 18:43:17 grubba Exp $");
+RCSID("$Id: program.c,v 1.301 2001/08/03 05:22:41 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3983,6 +3983,7 @@ void push_compiler_frame(int lexical_scope)
 
   f->current_number_of_locals=0;
   f->max_number_of_locals=0;
+  f->min_number_of_locals=0;
   f->last_block_level=-1;
 
   f->current_function_number=-2; /* no function */
@@ -3993,7 +3994,7 @@ void push_compiler_frame(int lexical_scope)
   Pike_compiler->compiler_frame=f;
 }
 
-void pop_local_variables(int level)
+void low_pop_local_variables(int level)
 {
   while(Pike_compiler->compiler_frame->current_number_of_locals > level)
   {
@@ -4008,6 +4009,23 @@ void pop_local_variables(int level)
   }
 }
 
+void pop_local_variables(int level)
+{
+#if 1
+  /* We need to save the variables Kuppo (but not their names) */
+  if(level < Pike_compiler->compiler_frame->min_number_of_locals)
+  {
+    for(;level<Pike_compiler->compiler_frame->min_number_of_locals;level++)
+    {
+      free_string(Pike_compiler->compiler_frame->variable[level].name);
+      MAKE_CONSTANT_SHARED_STRING(Pike_compiler->compiler_frame->variable[level].name,"");
+    }
+  }
+#endif
+  low_pop_local_variables(level);
+}
+
+
 
 void pop_compiler_frame(void)
 {
@@ -4019,7 +4037,7 @@ void pop_compiler_frame(void)
     fatal("Popping out of compiler frames\n");
 #endif
 
-  pop_local_variables(0);
+  low_pop_local_variables(0);
   if(f->current_type)
     free_string(f->current_type);
 
