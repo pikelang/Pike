@@ -44,8 +44,7 @@ int main(int argc, string *argv)
 		  {
 		    if(s->pos)
 		    {
-		      werror("This error occured close to tag "+s->tag+" near pos "+
-			     s->pos+".\n");
+		      werror("\nThis error occured close to tag "+s->tag+" near "+s->location()+"\n");
 		      throw(0);
 		    }
 		  }
