@@ -183,7 +183,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.26 2001/09/23 05:29:29 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.27 2001/09/23 15:23:45 marcus Exp $");
 
 #endif
 
@@ -1946,6 +1946,11 @@ static void init_dlopen(void)
     fflush(stderr);
   }
 #endif
+
+#ifdef PIKE_DEBUG
+  if(global_imagebase != (INT32)data->buffer)
+    fatal("LoadLibrary(ARGV[0]) didn't return instantiated program.\n");
+#endif 
 
 #ifdef DLDEBUG
   fprintf(stderr,"DL: init done\n");
