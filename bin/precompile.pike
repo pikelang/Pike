@@ -1288,7 +1288,8 @@ class ParseBlock
 		({
 		  sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
 			  mkname((string)name, "program"),
-			  attributes->flags || "0");
+			  attributes->flags || "0")
+		}));
 	ret+=DEFINE(define);
 	ret+=rest;
       }
