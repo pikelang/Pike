@@ -181,6 +181,105 @@ void copy_area(GDK.GC gc, int xdest, int ydest, GTK.Widget source,
   RETURN_THIS();
 }
 
+int selecton_convert( ?GDK.Atom selection,
+                      ?GDK.Atom target,
+                      ?int time )
+
+//! Retrieving the selection is an asynchronous process. To start the
+//! process, you call this function.
+//!
+//! This converts the selection into the form specified by target. If
+//! at all possible, the time field should be the time from the event
+//! that triggered the selection. This helps make sure that events
+//! occur in the order that the user requested them. However, if it is
+//! not available (for instance, if the conversion was triggered by a
+//! "clicked" signal), then you can omit it altogether. This will
+//! cause it to be set to GDK.CurrentTime.
+//!
+//! When the selection owner responds to the request, a
+//! "selection_received" signal is sent to your application. The
+//! handler for this signal receives a pointer to a GTK.SelectionData
+//! object.
+//!
+//! The special target TARGETS generates a list of all valid targets.
+//!
+//! Selection defaults to PRIMARY, and target defaults to STRING.
+{
+  guint32 time = GDK_CURRENT_TIME;
+  int res;
+  GdkAtom selection, target;
+  if( args == 3 && PGTK_ISINT( Pike_sp - 1 ))
+    time = PGTK_GETINT( Pike_sp - 1 );
+
+  if( !args || (Pike_sp[ -args ].type != PIKE_T_OBJECT) )
+    selection = GDK_SELECTION_PRIMARY;
+  else
+    selection = get_gdkatom( Pike_sp[ -args ].u.object );
+  if( (args < 2) || (Pike_sp[ 1-args ].type != PIKE_T_OBJECT) )
+    target = GDK_SELECTION_TYPE_STRING;
+  else
+    target = get_gdkatom( Pike_sp[ 1-args ].u.object );
+  res = gtk_selection_convert( GTK_WIDGET(THIS->obj),
+                               selection, target, time );
+  pop_n_elems( args );
+  push_int( res );
+}
+
+void selection_add_target( ?GDK.Atom selection,
+                           ?GDK.Atom target,
+                           ?int info )
+//! Supplying the selection is a bit more complicated than requesting
+//! it. You must register handlers that will be called when your
+//! selection is requested. For each selection/target pair you will
+//! handle, you make a call to this function.
+//!
+//! selection, and target identify the requests this handler will
+//! manage. When a request for a selection is received, the
+//! "selection_get" signal will be called. info can be used as an
+//! enumerator to identify the specific target within the callback
+//! function.
+//!
+//! Selection defaults to PRIMARY, and target defaults to STRING.
+{
+  int info = 0;
+  GdkAtom selection, target;
+  if( args == 3 && PGTK_ISINT( Pike_sp - 1 ))
+    info = PGTK_GETINT( Pike_sp - 1 );
+
+  if( !args || (Pike_sp[ -args ].type != PIKE_T_OBJECT) )
+    selection = GDK_SELECTION_PRIMARY;
+  else
+    selection = get_gdkatom( Pike_sp[ -args ].u.object );
+  if( (args < 2) || (Pike_sp[ 1-args ].type != PIKE_T_OBJECT ))
+    target = GDK_SELECTION_TYPE_STRING;
+  else
+    target = get_gdkatom( Pike_sp[1-args].u.object );
+  gtk_selection_add_target( GTK_WIDGET(THIS->obj), selection, target, info );
+  RETURN_THIS();
+}
+
+void selection_owner_set( ?GDK.Atom selection, ?int time )
+//! When prompted by the user, you claim ownership of the selection by
+//! calling this function.
+//!
+//! If another application claims ownership of the selection, you will
+//! receive a "selection_clear_event".
+//!
+//! The selection defaults to the PRIMARY selection, and the time to
+//! GDK.CurrentTime.
+{
+  guint32 time = GDK_CURRENT_TIME;
+  GdkAtom selection;
+  if( args == 2 && PGTK_ISINT( Pike_sp - 1 ))
+    time = PGTK_GETINT( Pike_sp - 1 );
+  if( !args || Pike_sp[ -args ].type != PIKE_T_OBJECT )
+    selection = GDK_SELECTION_PRIMARY;
+  else
+    selection = get_gdkatom( Pike_sp[ -args ].u.object );
+  gtk_selection_owner_set( GTK_WIDGET(THIS->obj), selection, time );
+  RETURN_THIS();
+}
+
 GDK.Window get_gdkwindow()
 //! Return the GDK.Window associated with this widget, if any.
 {
@@ -197,6 +296,7 @@ GDK.Window get_gdkwindow()
   } else
     push_int(0);
 }
+
 
 void shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset )
 //! Set the shape of the widget, or, rather, it's window, to that of
