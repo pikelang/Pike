@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.25 2002/09/29 01:19:30 nilsson Exp $
+// $Id: RCS.pike,v 1.26 2002/11/26 21:04:41 grubba Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -414,6 +414,10 @@ class DeltatextIterator
     return finished;
   }
 
+  //! Advance @[nsteps] sections.
+  //!
+  //! @returns
+  //!   Returns the iterator object.
   this_program `+=(int nsteps)
   {
     while(nsteps--)
