@@ -6,9 +6,13 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.205 2002/05/31 22:25:15 nilsson Exp $
+// $Id: master.pike.in,v 1.206 2002/06/28 16:10:48 nilsson Exp $
 
 #pike __REAL_VERSION__
+
+#if "¤/" != "\244/"
+#error "master.pike.in is corrupted."
+#endif
 
 // --- Some configurable parameters
 
