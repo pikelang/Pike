@@ -125,17 +125,24 @@ static void connect(string server,int port,int blocking)
 #ifdef HTTP_QUERY_DEBUG
    werror("<- %O\n",request);
 #endif
-   con->write(request);
+
 #if constant(SSL.sslfile) 
    if(https) {
-     //Gör en context
+     // Create a context
      SSL.context context = SSL.context();
      // Allow only strong crypto
      context->preferred_suites = ({
+       //Strong ciphersuites.
        SSL_rsa_with_idea_cbc_sha,
        SSL_rsa_with_rc4_128_sha,
        SSL_rsa_with_rc4_128_md5,
        SSL_rsa_with_3des_ede_cbc_sha,
+#if 0
+       //Weaker ciphersuites.
+       SSL_rsa_export_with_rc4_40_md5,
+       SSL_rsa_export_with_rc2_cbc_40_md5,
+       SSL_rsa_export_with_des40_cbc_sha,
+#endif /* 0 */
      });
      string ref;
      context->random = Crypto.randomness.reasonably_random()->read;
@@ -154,6 +161,7 @@ static void connect(string server,int port,int blocking)
    }
 #endif
 
+   con->write(request);
    ponder_answer();
 }
 
