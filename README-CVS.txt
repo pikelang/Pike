@@ -1,4 +1,4 @@
-$Id: README-CVS.txt,v 1.17 2002/04/11 06:12:08 jhs Exp $
+$Id: README-CVS.txt,v 1.18 2002/04/11 15:57:19 mast Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
@@ -31,8 +31,9 @@ There are a few simple steps to get pike from cvs:
    substitute 7.3 for whatever version you want to get.
 
 Building Pike from cvs, in addition to the requirements of a normal
-build, requires a working Pike.  You will also need autoconf, gnu m4
-and bison.
+build, requires a working Pike.  You will also need autoconf, gnu m4,
+bison and gcc (to generate the dependency files; another compiler can
+be used to do the actual compilation).
 
 The top-level makefile (in this directory, not the src directory) has
 all the magic you need to build pike directly from CVS.  Just type
