@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.3 1999/04/07 16:59:45 marcus Exp $ */
+/* $Id: ilbm.c,v 1.4 1999/04/07 17:34:06 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.3 1999/04/07 16:59:45 marcus Exp $
+**!	$Id: ilbm.c,v 1.4 1999/04/07 17:34:06 marcus Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.3 1999/04/07 16:59:45 marcus Exp $");
+RCSID("$Id: ilbm.c,v 1.4 1999/04/07 17:34:06 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -57,6 +57,8 @@ struct BMHD {
 #define cmpNone                 0
 #define cmpByteRun1             1
 
+#define CAMG_HAM 0x800
+#define CAMG_EHB 0x080
 
 
 /** decoding *****************************************/
@@ -315,6 +317,7 @@ static void image_ilbm__decode(INT32 args)
   struct BMHD bmhd;
   struct neo_colortable *ctable = NULL;
   int n = 0;
+  INT32 camg = 0;
 
   if(args>0 && sp[-args].type == T_STRING) {
     image_ilbm___decode(args);
@@ -341,15 +344,48 @@ static void image_ilbm__decode(INT32 args)
   push_object(o);
   n++;
 
+  if(ITEM(arr)[4].type == T_STRING && ITEM(arr)[4].u.string->size_shift == 0 &&
+     ITEM(arr)[4].u.string->len>=4) {
+    unsigned char *camgp = STR0(ITEM(arr)[4].u.string);
+    camg = (camgp[0]<<24)|(camgp[1]<<16)|(camgp[2]<<8)|camgp[3];
+  }
+
+  if((camg & CAMG_HAM)) {
+    push_text("ham");
+    push_int(1);
+    n++;
+  }
+  if((camg & CAMG_EHB)) {
+    push_text("ehb");
+    push_int(1);
+    n++;
+  }
+
   if(ITEM(arr)[3].type == T_STRING && ITEM(arr)[3].u.string->size_shift == 0) {
     unsigned char *pal = STR0(ITEM(arr)[3].u.string);
-    INT32 col, ncol = ITEM(arr)[3].u.string->len/3;
+    INT32 col, ncol = ITEM(arr)[3].u.string->len/3, mcol = 1<<bmhd.nPlanes;
+    if((camg & CAMG_HAM))
+      mcol = (bmhd.nPlanes>6? 64:16);
+    else if((camg & CAMG_EHB))
+      mcol >>= 1;
+    if(ncol>mcol)
+      ncol = mcol;
     push_text("palette");
     for(col=0; col<ncol; col++) {
       push_int(*pal++);
       push_int(*pal++);
       push_int(*pal++);
       f_aggregate(3);
+    }
+    if((camg & CAMG_EHB) && !(camg & CAMG_HAM)) {
+      for(col=0; col<ncol; col++) {
+	struct svalue *old = ITEM(sp[-ncol].u.array);
+	push_int(old[0].u.integer>>1);
+	push_int(old[1].u.integer>>1);
+	push_int(old[2].u.integer>>1);
+	f_aggregate(3);
+      }
+      ncol <<= 1;
     }
     f_aggregate(ncol);
     push_object(clone_object(image_colortable_program,1));
