@@ -209,14 +209,16 @@ void f_filesystem_stat(INT32 args)
     push_int(st.f_ffree);
     push_text("favail");
     push_int(st.f_favail);
+#if 0
     push_text("fsname");
     push_text(st.f_fstr);
+#endif /* 0 */
 #ifdef HAVE_STATVFS_F_BASETYPE
     push_text("fstype");
     push_text(st.f_basetype);
-    f_aggregate_mapping(9*2);
-#else /* !HAVE_STATVFS_ST_BASETYPE */
     f_aggregate_mapping(8*2);
+#else /* !HAVE_STATVFS_ST_BASETYPE */
+    f_aggregate_mapping(7*2);
 #endif /* HAVE_STATVFS_ST_BASETYPE */
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
