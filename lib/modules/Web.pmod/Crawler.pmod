@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.3 2001/05/25 20:58:02 js Exp $
+// $Id: Crawler.pmod,v 1.4 2001/05/27 01:14:27 per Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -198,6 +198,97 @@ class RuleSet
       if(rule->check(uri))
 	return 1;
     return 0;	 
+  }
+}
+
+class MySQLQueue
+{
+  Stats stats;
+  Policy policy;
+
+  string host;
+  string table;
+  
+  Sql.Sql db;
+  
+//   inherit Queue;
+
+  void create( Stats _stats, Policy _policy, string _host, string _table )
+  {
+    stats = _stats;
+    policy = _policy;
+    host = _host;
+    table = _table;
+
+    db = Sql.Sql( host );
+
+    catch
+    {
+      db->query("create table "+table+" ("
+		"done int(2) unsigned not null, "
+		"url varchar(255) not null unique primary key)" );
+    };
+  }
+
+  static int done_url( string url )
+  {
+    return sizeof(db->query("select done from "+
+			    table+" where done=2 and url=%s",
+			    url));
+  }
+
+  static int has_url( string url )
+  {
+    return sizeof(db->query("select done from "+table+" where url=%s",
+			    url));
+  }
+
+  static void add_url( string url )
+  {
+    if( !has_url( url ) )
+      db->query( "insert into "+table+" (url) values (%s)", url );
+  }
+
+  static int empty_count;
+
+  int|Standards.URI get()
+  {
+    if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
+      return -1;
+
+    db->query( "select GET_LOCK('"+table+"_query',400)");
+    array possible =
+      db->query( "select url from "+table+" where done=0 limit 1" );
+    if( sizeof( possible ) )
+    {
+      string u = possible[0]->url;
+      empty_count=0;
+      db->query( "UPDATE "+table+" SET done=1 WHERE url=%s", (string)u );
+      db->query( "select RELEASE_LOCK('"+table+"_query')");
+      return Standards.URI(u);
+    }
+    db->query( "select RELEASE_LOCK('"+table+"_query')");
+
+    if(stats->concurrent_fetchers())
+      return -1;
+
+    // delay for (quite) a while.
+    if( empty_count++ > 100 )
+      return 0;
+    return -1;
+  }
+
+  void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
+  {
+    if(arrayp(uri))
+      foreach(uri, uri) add_url((string)uri);
+    else
+      add_url((string)uri);
+  }
+
+  void done(Standards.URI uri)
+  {
+    db->query( "UPDATE "+table+" SET done=2 WHERE url=%s", (string)uri );
   }
 }
 
@@ -517,11 +608,15 @@ class Crawler
     
     void create(Standards.URI _uri)
     {
+      string get_path_query(  Standards.URI u )
+      {
+	return u->path + (u->query?"?"+u->query:"");
+      };
       uri=_uri;
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
       async_request(uri->host, uri->port,
-		    sprintf("GET %s HTTP/1.0", uri->get_path_query()),
+		    sprintf("GET %s HTTP/1.0", get_path_query(uri)),
 		    (["host": uri->host+":"+uri->port,
 		      "user-agent": "Mozilla 4.0 (PikeCrawler)",
 		    ]));
@@ -561,7 +656,7 @@ class Crawler
       done_cb();
       return;
     }
-    
+
     queue->stats->start_fetch(uri->host);
     
     
