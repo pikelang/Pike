@@ -1650,7 +1650,7 @@ void main(int argc, array argv)
   if (string files = Stdio.read_file (destination_dir + "/files_to_compile")) {
     int ok = 1;
     foreach (files / " ", string file)
-      if (!Stdio.exist (destination_dir + "/" + file)) {ok = 0; break;}
+      if (!file_stat (destination_dir + "/" + file)) {ok = 0; break;}
     if( ok && output_plugin->up_to_date() )
     {
       exit(0);
