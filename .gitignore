@@ -30,6 +30,7 @@ _$*
 *.elc
 *.ln
 core
+/build
 /reports
 /test
 /test.lpc
