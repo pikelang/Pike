@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.58 1999/07/21 19:52:09 neotron Exp $
+// $Id: module.pmod,v 1.59 1999/08/06 23:08:48 hubbe Exp $
 
 import String;
 
@@ -251,14 +251,30 @@ class File
       throw( ({"Read callback with no data to read!\n",backtrace()}) );
 #endif
     string s=::read(8192,1);
-    if(s && strlen(s))
+    if(s)
     {
-      ___read_callback(___id, s);
-    }else{
-      ::set_read_callback(0);
-      if (___close_callback) {
-	___close_callback(___id);
+      if(strlen(s))
+      {
+        ___read_callback(___id, s);
+        return;
       }
+    }else{
+      switch(errno())
+      {
+#if constant(system.EINTR)
+         case system.EINTR:
+#endif
+
+#if constant(system.EWOULDBLOCK)
+	 case system.EWOULDBLOCK:
+#endif
+	   ::set_read_callback(__stdio_read_callback);
+           return;
+      }
+    }
+    ::set_read_callback(0);
+    if (___close_callback) {
+      ___close_callback(___id);
     }
   }
 
