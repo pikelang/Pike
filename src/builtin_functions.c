@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.186 1999/10/18 17:04:28 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.187 1999/10/19 15:30:43 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3681,6 +3681,28 @@ void f__refs(INT32 args)
   push_int(i);
 }
 
+
+/* This function is for debugging *ONLY*
+ * do not document please. /Hubbe
+ */
+void f__leak(INT32 args)
+{
+  INT32 i;
+
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("_leak", 1);
+
+  if(sp[-args].type > MAX_REF_TYPE)
+    SIMPLE_BAD_ARG_ERROR("_leak", 1,
+			 "array|mapping|multiset|object|"
+			 "function|program|string");
+
+  add_ref(sp[-args].u.array);
+  i=sp[-args].u.refs[0];
+  pop_n_elems(args);
+  push_int(i);
+}
+
 void f__typeof(INT32 args)
 {
   INT32 i;
@@ -4852,6 +4874,7 @@ void init_builtin_efuns(void)
 #endif /* PROFILING */
 
   ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("_leak",f__leak,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
   ADD_EFUN("_typeof",f__typeof,tFunc(tMix,tStr),0);
   ADD_EFUN("replace_master",f_replace_master,tFunc(tObj,tVoid),OPT_SIDE_EFFECT);
   
