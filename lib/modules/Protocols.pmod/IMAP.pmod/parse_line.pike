@@ -307,7 +307,7 @@ array do_parse_simple_list(int max_depth, int terminator)
     if (!m) {
       werror(sprintf("get_simple_list(%d) failed\n", max_depth));
     } else {
-      atom->list = m;
+      a += ({ m });
     }
   }
 }
