@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.31 2004/09/07 17:01:30 grubba Exp $
+// $Id: module.pmod.in,v 1.32 2004/09/08 19:20:58 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -729,7 +729,7 @@ class PikeCompiler
       if (!tokens_left ||
 	  (token2 = tokens_left->value())->symbol != ":") {
 	token = token2 || token;
-	SYNTAX_ERROR("Missing ? operator missing :-section.");
+	SYNTAX_ERROR("?-operator missing :-section.");
       } else {
 	tokens_left->`+=(1);
       }
@@ -1438,6 +1438,38 @@ class PikeCompiler
     }
   }
 
+  class Case
+  {
+    inherit IdentifierToken;
+
+    Expression from;
+    Expression to;
+
+    // Called at
+    //   case · lor_expression ':'
+    //   case · lor_expression '..' lor_expression ':'
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      scope->add_meta_object(this);
+      from = parse_lor_expression(tokens_left);
+      Token token;
+      if (tokens_left &&
+	  (token = tokens_left->value())->symbol == "..") {
+	tokens_left->`+=(1);
+	to = parse_lor_expression(tokens_left);
+	if (tokens_left) {
+	  token = tokens_left->value();
+	}
+      }
+      if (!tokens_left || token->symbol != ":") {
+	SYNTAX_ERROR("case label missing ':'.");
+	return;
+      }
+      tokens_left->`+=(1);
+    }
+  }
+
   class Lambda
   {
     inherit IdentifierToken;
@@ -1781,7 +1813,7 @@ class PikeCompiler
 	"~":Token,
 	"array":ArrayType,
 	"break":BreakNoLabel,
-	//"case":Case,
+	"case":Case,
 	//"catch":Catch,
 	"class":Class,
 	//"continue":Continue,
