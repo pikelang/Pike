@@ -166,9 +166,29 @@ class ObjectType {
   }
 }
 
+class TypeType {
+  inherit Type;
+  Type subtype = MixedType();
+  void create() { ::create("type"); }
+  string print() {
+    if (subtype->name != "mixed") {
+      return "type(" + subtype->print() + ")";
+    }
+    return "type";
+  }
+  string xml() {
+    return xmltag("type", subtype->xml());
+  }
+}
+
 class VoidType {
   inherit Type;
   void create() { ::create("void"); }
+}
+
+class ZeroType {
+  inherit Type;
+  void create() { ::create("zero"); }
 }
 
 class OrType {
