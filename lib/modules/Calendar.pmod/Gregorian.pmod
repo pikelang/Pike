@@ -8,7 +8,7 @@
 //! class 
 
 array(string) month_names=
-   ({"January","February","March","April","May","June","July","August",
+   ({"January","February","Mars","April","May","June","July","August",
      "September","October","November","December"});
 
 array(string) week_day_names=
@@ -52,6 +52,11 @@ class Year
    array month_start_day;
 
 //-- standard methods -----------------------------------------------
+
+   string is()
+   {
+      return "year";
+   }
 
    array(string) lesser() 
    { 
@@ -282,6 +287,11 @@ class Month
 
 //-- standard methods -----------------------------------------------
 
+   string is()
+   {
+      return "month";
+   }
+
    array(string) lesser() 
    { 
       return ({"day"});
@@ -424,6 +434,11 @@ class Week
    int w;
 
 //-- standard methods -----------------------------------------------
+
+   string is()
+   {
+      return "week";
+   }
 
    array(string) lesser() 
    { 
@@ -592,6 +607,11 @@ class Day
 
 //-- standard methods -----------------------------------------------
 
+   string is()
+   {
+      return "day";
+   }
+
    array(string) greater()
    {
       return ({"year","month","week"});
@@ -602,13 +622,38 @@ class Day
       return ({"hour"});
    }
 
-   void create(int ... arg)
+   void create(int|object ... arg)
    {
       if (!sizeof(arg))
       {
 	 mapping t=localtime(time());
 	 y=1900+t->year;
 	 d=t->yday;
+      }
+      else if (sizeof(arg)==1)
+      {
+	 int jd;
+
+	 if (objectp(arg[0]))
+	    jd=(int)((arg[0]->julian_day||arg[0]->julian_day_f)());
+	 else
+	    jd=arg[0];
+
+	 object yo;
+	 y=(int)(jd/365.2425)-4712;
+	 yo=vYear(y);
+	 while (yo->julian_day(0)>jd) yo--;
+	 write("y="+yo->number()+" yd="+yo->julian_day(0)+" nod="+yo->number_of_days()+"\n");
+	 while (jd-yo->julian_day(0)>=yo->number_of_days())
+	 {
+	    yo++;
+	    write("y="+yo->number()+" yd="+yo->julian_day(0)+" nod="+yo->number_of_days()+"\n");
+
+	 }
+	 y=yo->number();
+	 write("y="+y+"\n");
+	 d=jd-vYear(y)->julian_day(0);
+	 write("d="+d+"\n");
       }
       else
       {
@@ -782,6 +827,11 @@ class Hour
    int h;
 
 //-- standard methods -----------------------------------------------
+
+   string is()
+   {
+      return "hour";
+   }
 
    array(string) greater()
    {
@@ -958,6 +1008,11 @@ class Minute
    int m;
 
 //-- standard methods -----------------------------------------------
+
+   string is()
+   {
+      return "minute";
+   }
 
    array(string) greater()
    {
@@ -1152,6 +1207,11 @@ class Second
 
 //-- standarm setsoms -----------------------------------------------
 
+   string is()
+   {
+      return "second";
+   }
+
    array(string) greater()
    {
       return ({"minute","hour","day","month","year"});
@@ -1331,4 +1391,76 @@ class Second
   
 };
 
+//-- parse functions -----------------------------------------------
+
+//! method object parse(string fmt,string arg)
+//!	parse a date, create relevant object
+//!	fmt is in the format "abc%xdef..."
+//!	where abc and def is matched, and %x is
+//!	one of those time units:
+//!	%Y absolute year 
+//!	%y year (70-99 is 1970-1999, 0-69 is 2000-2069)
+//!	%M month (number, name or short name) (needs %y)
+//!	%W week (needs %y)
+//!	%D date (needs %y, %m)
+//!	%a day (needs %y)
+//!	%e weekday (needs %y, %w)
+//!	%h hour (needs %d, %D or %W)
+//!	%m minute (needs %h)
+//!	%s second (needs %s)
+
+object parse(string fmt,string arg)
+{
+   string nfmt;
+   nfmt=replace(fmt,
+		({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s"}),
+		({"%s","%s","%s","%s","%s","%s","%s","%s","%s","%s"}));
+   array q=Array.map(replace(fmt,"%%","")/"%",
+		     lambda(string s){ return s[..0];})-({""});
+   array res=Array.map(array_sscanf(arg,nfmt),
+		       lambda(string s)
+		       {
+			  if (s[0]>='0' && s[0]<='9')
+			     return array_sscanf(s,"%d")[0];
+			  else
+			     return s;
+		       });
+
+   if (sizeof(res)<sizeof(q)) 
+      return 0; // parse error
+
+   mapping m=mkmapping(q,res);
+
+   if (m->Y) m->year=Year(m->Y);
+   else if (m->y) 
+   {
+      if (m->y<70) m->y+=2000;
+      else if (m->y<100) m->y+=1900;
+      m->year=Year(m->y);
+   }
+   else m->year=Year();
+
+   object low=m->year;
+
+   if (m->M)
+      m->month=low=m->year->month(m->M);
+   if (m->W) 
+      m->week=low=m->year->week(m->W);
+
+   if (m->D)
+      m->day=low=(m->month||Month())->day(m->D);
+   else if (m->a)
+      m->day=low=m->year->day(m->a);
+   else if (m->e)
+      m->day=low=(m->week||Week())->day(m->e);
+   
+   if (m->h)
+      low=m->hour=(m->day||Day())->hour(m->h);
+   if (m->m)
+      low=m->minute=(m->hour||Hour())->minute(m->m);
+   if (m->s)
+      low=m->second=(m->minute||Minute())->second(m->s);
+
+   return low;
+}
 
