@@ -45,7 +45,6 @@ string mkmodulename(mixed x, string dirname)
      sscanf(dirname, "%s.module", dirname);
   if(master()->resolv(dirname) == x)
     return dirname;
-  //  werror("Failed to create a module name for (%O,%O)\n", x, dirname);
   return 0;
 }
 
@@ -81,12 +80,6 @@ class Codec
 	    }
 	    return fixup_path(tmp);
 	  }
-#if 0
-	  if(tmp = search(values(_static_modules), x)!=-1)
-	  {
-	    return "_static_modules."+(indices(_static_modules)[tmp]);
-	  }
-#endif
 	}
 	break;
 
@@ -160,12 +153,12 @@ void dumpit(string file)
     {
       if(s[1]<=0)
       {
-	werror("is a directory or special file.\n");
+	if(logfile) logfile->write("is a directory or special file (not dumped).\n");
 	break;
       }
     }else{
-      if(!quiet)
-      werror("does not exist.\n");
+      if(!quiet && logfile)
+	logfile->write("does not exist (not dumped).\n");
       break;
     }
     if(programp(p=compile_file(file, Handler())))
@@ -177,51 +170,29 @@ void dumpit(string file)
 	if(programp(p))
 	{
 	  Stdio.File(fakeroot(file) + ".o","wct")->write(s);
-	  switch(quiet)
-	  {
-	    case 1: werror("."); break;
-	    case 0: werror("dumped.\n");
-	  }
-	}else{
-	  switch(quiet)
-	  {
-	    case 1: werror("i"); break;
-	    case 0: werror("Decode of %O failed.\n", file);
-	  }
+	  if(!quiet && logfile) logfile->write("dumped.\n");
 	}
-      }else{
-	switch(quiet)
-	{
-	  case 1: werror(","); break;
-	  case 0: werror("Not dumping %O.\n",file);
-	}
+	else if(!quiet && logfile)
+	  logfile->write("Decode of %O failed (not dumped).\n", file);
       }
-    }else{
-      switch(quiet)
-      {
-	case 1: werror("!"); break;
-	case 0: werror("Compilation of %O failed.\n", file);
-      }
+      else if(!quiet && logfile)
+	logfile->write("Not dumping %O (not dumped).\n", file);
     }
+    else if(!quiet && logfile)
+      logfile->write("Compilation of %O failed (not dumped).\n", file); // This should never happen.
   };
+
   if(err)
   {
-#ifdef 1 //ERRORS
-    err[0]="While dumping "+file+": "+err[0];
-    werror(master()->describe_backtrace(err));
-#else
     if(quiet)
     {
       if(quiet<2)
 	werror("X");
       if(logfile)
-      {
-	logfile->write(master()->describe_backtrace(err));
-      }
-    }else{
-      werror(err[0]);
+	  logfile->write(master()->describe_backtrace(err));
     }
-#endif
+    else
+	werror(master()->describe_backtrace(err));
   }
 }
 
@@ -242,6 +213,9 @@ int main(int argc, array(string) argv)
   function_names[Stdio.stdin]="resolv:Stdio.stdin";
   // Thread.Thread ?
   // master() ?
+
+  // Hack to get Calendar files to compile in correct order.
+  object tmp = Calendar;
 
   // Remove the name of the program.
   argv = argv[1..];
