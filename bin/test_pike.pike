@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.17 1999/02/20 21:27:50 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.18 1999/02/20 21:28:09 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -8,7 +8,7 @@
 #define _verify_internals()
 #endif
 
-#define SHIFT_MAX 0 /* 3 */
+#define SHIFT_MAX 0 /* 2 */
 
 int foo(string opt)
 {
