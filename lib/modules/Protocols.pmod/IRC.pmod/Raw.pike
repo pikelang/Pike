@@ -5,7 +5,7 @@ object con;
 // #define IRC_DEBUG
 
 function(string,string ...:void) command_callback;
-function(string,string,...:void) notify_callback;
+function(string,string ...:void) notify_callback;
 function(:void) close_callback;
 
 // command_callback(string cmd,string ... parameters)
