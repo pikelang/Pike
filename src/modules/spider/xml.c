@@ -2580,7 +2580,8 @@ static void parse_dtd(INT32 args)
   struct xmldata data;
   ONERROR e;
   
-  check_all_args("XML->parse_dtd",args,BIT_STRING, BIT_MIXED, BIT_MIXED | BIT_MANY, 0);
+  check_all_args("XML->parse_dtd",args,BIT_STRING, BIT_MIXED,
+		 BIT_MIXED | BIT_MANY | BIT_VOID, 0);
   s=sp[-args].u.string;
 
   data.input.datap=MKPCHARP_STR(s);
@@ -2779,7 +2780,7 @@ void init_xml(void)
 
   ADD_FUNCTION("isbasechar",f_isBaseChar,tFunc(tInt,tInt),0);
   ADD_FUNCTION("isidographic",f_isIdeographic,tFunc(tInt,tInt),0);
-  ADD_FUNCTION("isiletter",f_isLetter,tFunc(tInt,tInt),0);
+  ADD_FUNCTION("isletter",f_isLetter,tFunc(tInt,tInt),0);
   ADD_FUNCTION("iscombiningchar",f_isCombiningChar,tFunc(tInt,tInt),0);
   ADD_FUNCTION("isdigit",f_isDigit,tFunc(tInt,tInt),0);
   ADD_FUNCTION("isextender",f_isExtender,tFunc(tInt,tInt),0);
