@@ -1,14 +1,14 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.30 2001/10/27 20:04:18 nilsson Exp $
+# $Id: Makefile,v 1.31 2001/10/28 13:38:46 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
 
 PIKE=pike
 
-all: html traditional
+all: modref traditional
 
 modref: build/modref.xml
 	rm -rf modref || /bin/true
