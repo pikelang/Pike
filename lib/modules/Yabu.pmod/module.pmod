@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.20 2000/03/29 15:48:46 marcus Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.21 2000/06/29 12:14:41 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -486,7 +486,7 @@ class Chunk {
   void destroy()
   {
     if(parent && write)
-      destruct(parent);
+      parent->sync();
   }
 
   void create(string filename_in, string mode,
@@ -920,8 +920,11 @@ class Table {
 
   void destroy()
   {
-    remove_call_out(sync_schedule);
     sync();
+    destruct(index);
+    destruct(db);
+    destruct(lock_file);
+    remove_call_out(sync_schedule);
   }
 
   void _destroy()
