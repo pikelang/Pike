@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.49 2002/11/20 17:33:42 grubba Exp $
+|| $Id: block_alloc.h,v 1.50 2002/11/20 18:02:05 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -145,6 +145,7 @@ DO_IF_RUN_UNLOCKED(                                                     \
 void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
 {									\
   struct PIKE_CONCAT(DATA,_block) *blk = PIKE_CONCAT(DATA,_free_blocks);     \
+  EXIT_BLOCK(d);							\
   if(blk == NULL || (char *)d < (char *)blk ||				\
      (char *)d >= (char *)(blk->x+(BSIZE))) {				\
     blk = PIKE_CONCAT(DATA,_blocks);					\
@@ -153,7 +154,7 @@ void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
       do {								\
         blk = blk->next;						\
       } while((char *)d < (char *)blk ||				\
-	    (char *)d >= (char *)(blk->x+(BSIZE)));			\
+	      (char *)d >= (char *)(blk->x+(BSIZE)));			\
       if(blk == PIKE_CONCAT(DATA,_free_blocks))				\
         PIKE_CONCAT(DATA,_free_blocks) = blk->prev;			\
       blk->prev->next = blk->next;					\
@@ -167,7 +168,6 @@ void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
     if(PIKE_CONCAT(DATA,_free_blocks) == NULL)				\
       PIKE_CONCAT(DATA,_free_blocks) = blk;				\
   }									\
-  EXIT_BLOCK(d);							\
   DO_IF_DMALLOC( PIKE_CONCAT(check_free_,DATA)(d);                      \
                  dmalloc_mark_as_free(d, 1);  )				\
   d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
@@ -203,10 +203,10 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
     blk = PIKE_CONCAT(DATA,_blocks);					\
     if((char *)d < (char *)blk ||					\
        (char *)d >= (char *)(blk->x+(BSIZE))) {				\
-      do								\
+      do {								\
         blk = blk->next;						\
-      while((char *)d < (char *)blk ||					\
-	    (char *)d >= (char *)(blk->x+(BSIZE)));			\
+      } while((char *)d < (char *)blk ||				\
+	      (char *)d >= (char *)(blk->x+(BSIZE)));			\
       if(blk == PIKE_CONCAT(DATA,_free_blocks))				\
         PIKE_CONCAT(DATA,_free_blocks) = blk->prev;			\
       blk->prev->next = blk->next;					\
@@ -264,7 +264,7 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
   {									\
     PIKE_CONCAT(DATA,_blocks)=tmp->next;				\
     /* Mark meta-block as available, since libc will mess with it. */	\
-    PIKE_MEM_RW(tmp, sizeof(*tmp));					\
+    PIKE_MEM_RW(&tmp->x, sizeof(tmp->x));				\
     free((char *)tmp);							\
   }									\
   PIKE_CONCAT(DATA,_blocks)=0;						\
