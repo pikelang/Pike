@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: yp.c,v 1.28 2002/10/21 17:06:23 marcus Exp $
+|| $Id: yp.c,v 1.29 2002/11/28 06:03:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -38,14 +38,12 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: yp.c,v 1.28 2002/10/21 17:06:23 marcus Exp $");
+RCSID("$Id: yp.c,v 1.29 2002/11/28 06:03:11 nilsson Exp $");
 
 #ifdef HAVE_YPERR_STRING
-#define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
-                                           yperr_string(err)); }while(0)
+#define YPERROR(e) do{ if(err) Pike_error("%s\n", yperr_string(e)); }while(0)
 #else /* !HAVE_YPERR_STRING */
-#define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): YP error %d.\n", (fun), \
-                                           (err)); }while(0)
+#define YPERROR(e) do{ if(e) Pike_error("YP error %d.\n", (e)); }while(0)
 #endif /* HAVE_YPERR_STRING */
 
 struct my_yp_domain
@@ -63,18 +61,18 @@ struct my_yp_domain
  *! distribute passwords and similar information within a network.
  */
 
-/*! @decl string default_yp_domain()
+/*! @decl string default_domain()
  *!
  *! Returns the default yp-domain.
  */
-static void f_default_yp_domain(INT32 args)
+static void f_default_domain(INT32 args)
 {
   int err;
   char *ret;
 
   err = yp_get_default_domain(&ret);
 
-  YPERROR( "default_yp_domain", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_text( ret );
@@ -96,7 +94,7 @@ static void f_server(INT32 args)
 
   err = yp_master(this->domain, sp[-1].u.string->str, &ret);
 
-  YPERROR( "server", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_text( ret );
@@ -106,7 +104,7 @@ static void f_server(INT32 args)
  *! @decl void bind(string domain)
  *!
  *! If @[domain] is not specified , the default domain will be used.
- *! (As returned by @[Yp.default_yp_domain()]).
+ *! (As returned by @[Yp.default_domain()]).
  *!
  *! If there is no YP server available for the domain, this
  *! function call will block until there is one. If no server appears
@@ -114,17 +112,17 @@ static void f_server(INT32 args)
  *! is not configurable.
  *!
  *! @seealso
- *! @[Yp.default_yp_domain()]
+ *! @[Yp.default_domain()]
  */
 static void f_create(INT32 args)
 {
   int err;
   if(!args)
   {
-    f_default_yp_domain(0);
+    f_default_domain(0);
     args = 1;
   }
-  check_all_args("yp->create", args, BIT_STRING,0);
+  check_all_args("create", args, BIT_STRING,0);
 
   if(this->domain)
   {
@@ -134,7 +132,7 @@ static void f_create(INT32 args)
   this->domain = strdup( sp[-args].u.string->str );
   err = yp_bind( this->domain );
 
-  YPERROR("create", err);
+  YPERROR( err );
 
   pop_n_elems(args);
 }
@@ -153,7 +151,7 @@ static void f_all(INT32 args)
   int retlen, retkeylen;
   char *map;
   struct mapping *res_map;
-  check_all_args("yp->all", args, BIT_STRING, 0);
+  check_all_args("all", args, BIT_STRING, 0);
 
   map = sp[-1].u.string->str;
   res_map = allocate_mapping( (this->last_size?this->last_size+2:40) );
@@ -173,7 +171,7 @@ static void f_all(INT32 args)
   if(err != YPERR_NOMORE)
   {
     free_mapping( res_map );
-    YPERROR( "all", err );
+    YPERROR( err );
   }
 
   this->last_size = num;
@@ -215,7 +213,7 @@ static void f_map(INT32 args)
     } while(!err);
 
   if(err != YPERR_NOMORE)
-    YPERROR( "all", err );
+    YPERROR( err );
 
   pop_n_elems(args);
 }
@@ -235,11 +233,11 @@ static void f_order(INT32 args)
   int err;
   YP_ORDER_TYPE ret;
 
-  check_all_args("yp->order", args, BIT_STRING, 0);
+  check_all_args("order", args, BIT_STRING, 0);
   
   err = yp_order( this->domain, sp[-args].u.string->str, &ret);
 
-  YPERROR("order", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_int( (INT32) ret );
@@ -262,7 +260,7 @@ static void f_match(INT32 args)
   char *retval;
   int retlen;
   
-  check_all_args("yp->match", args, BIT_STRING, BIT_STRING, 0);
+  check_all_args("match", args, BIT_STRING, BIT_STRING, 0);
 
   err = yp_match( this->domain, sp[-args].u.string->str,
 		  sp[-args+1].u.string->str, sp[-args+1].u.string->len,
@@ -276,7 +274,7 @@ static void f_match(INT32 args)
     return;
   }
 
-  YPERROR( "match", err );
+  YPERROR( err );
 
   pop_n_elems( args );
   push_string(make_shared_binary_string( retval, retlen ));
@@ -308,9 +306,8 @@ static void exit_yp_struct( struct object *o )
 
 PIKE_MODULE_INIT
 {
-  
-/* function(void:string) */
-  ADD_EFUN("default_yp_domain", f_default_yp_domain,tFunc(tVoid,tStr),
+  /* function(void:string) */
+  ADD_FUNCTION("default_domain", f_default_domain,tFunc(tVoid,tStr),
 	   OPT_EXTERNAL_DEPEND);
 
   start_new_program();
