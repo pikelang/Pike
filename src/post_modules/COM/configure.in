@@ -1,0 +1,339 @@
+AC_INIT(com.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+OLD_LIBS=$LIBS
+OLD_LDFLAGS=$LDFLAGS
+OLD_CPPFLAGS=$CPPFLAGS
+OLD_LIBPATH=$LIBPATH
+COM_LIBS=""
+COM_LIBPATH=""
+COM_AVAILABLE=0
+LINKER_OPTIONS=""
+
+AC_ARG_WITH(com,  [  --without-com       no support for COM],[],[with_com=yes])
+AC_ARG_WITH(com-include-dir, 
+	[  --with-com-include-dir=dir    look for header-files in dir],
+	[pike_com_user_include_directory=$withval])
+AC_ARG_WITH(com-lib-dir, 
+	[  --with-com-lib-dir=dir    look for COM libs in dir],
+	[pike_com_user_lib_directory=$withval])
+
+if test "x$with_com" = xyes -a "x$enable_binary" != xno; then
+
+  AC_MSG_CHECKING(which operating system we're using)
+  AC_CACHE_VAL(pike_cv_com_sysos, [
+    pike_cv_com_sysos="`uname | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`"
+    case "$pike_cv_com_sysos" in
+      sunos)
+        case "`uname -r`" in
+          5.*|6.*|7.*) pike_cv_com_sysos="solaris";
+        esac
+      ;;
+    esac
+  ])
+  AC_MSG_RESULT($pike_cv_com_sysos)
+
+  AC_MSG_CHECKING(which architecture we're using)
+  AC_CACHE_VAL(pike_cv_com_arch, [
+    if test "x$pike_cv_com_sysos" = xwindows_nt; then
+      uname=uname
+    else
+      uname=/usr/bin/uname
+    fi
+    if test aix = "$pike_cv_com_sysos" && aix_cputype=`/usr/sbin/lsattr -El proc0 | awk '$1=="type" { print $2; ok=1; exit } END { exit !ok }'`; then
+      case "$aix_cputype" in
+	PowerPC*) pike_cv_com_arch=powerpc;;
+	POWER*) pike_cv_com_arch=rs6000;;
+	*) pike_cv_com_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
+      esac
+    else
+      if pike_cv_com_arch="`$uname -p || uname -p`"; then :; else pike_cv_com_arch=no; fi
+    fi
+
+    dnl Linux kluge
+
+    if test x"$pike_cv_com_arch" = xunknown; then
+      [pike_cv_com_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_com_arch)
+
+  AC_MSG_CHECKING(for working ls)
+  AC_CACHE_VAL(pike_cv_ls, [
+    pike_cv_ls=no
+    IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+    for ac_dir in $PATH; do
+      if test -x "$ac_dir"/ls && "$ac_dir"/ls . >/dev/null 2>&1; then
+        if "$ac_dir"/ls ./fnord/fnord/fnord/fnurkelfoo 2>/dev/null; then
+	  :
+	else
+	  pike_cv_ls="$ac_dir"/ls
+	fi
+      else
+	:
+      fi
+    done
+    IFS="$ac_save_ifs"
+    if test no = "$pike_cv_ls"; then
+      AC_MSG_ERROR([no working ls found!  Use --without-com])
+      exit 1
+    else
+      :
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_ls)
+  LS="$pike_cv_ls"
+
+  AC_MSG_CHECKING(for COM_HOME)
+
+  AC_CACHE_VAL(pike_cv_com_com_home, [[
+    if test "x$COM_HOME" = x; then
+      pike_cv_com_com_home=no
+
+#       # balance brackets: [ 
+#       #
+#       # I know this is bloody ugly, bug in modern (>2.13) 
+#       # autoconf's changequote doesn't work (and this is 
+#       # the only thing that breaks so far) /Mirar
+
+#       java_home_guess="`java -verbose 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e d | sed -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
+#       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
+#         if test -d $tmp_java_home/.; then
+#           if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
+# 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
+# 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
+# 	    "$LS" "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
+# 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
+# 	      pike_cv_java_java_home="$tmp_java_home"
+# 	  else
+# 	    :
+# 	  fi
+#         else
+#           :
+#         fi
+#       done
+    else
+      pike_cv_com_com_home="$COM_HOME"
+    fi
+  ]])
+  AC_MSG_RESULT($pike_cv_com_com_home)
+
+  AC_MSG_CHECKING(for COM libraries)
+  AC_CACHE_VAL(pike_cv_com_lib_dir, [
+    pike_cv_com_lib_dir=""
+    if test -z "$pike_com_user_lib_directory"; then
+      tmp_com_lib_dir="$pike_cv_com_com_home/lib"
+    else
+      tmp_com_lib_dir="$pike_com_user_lib_directory"
+    fi
+    for i in "$pike_cv_com_arch" \
+	     "." "../bin"; do
+      if test -d "$tmp_com_lib_dir/$i/." && "$LS" $tmp_com_lib_dir/$i/lib* >/dev/null 2>&1; then
+        pike_cv_com_lib_dir="$pike_cv_com_lib_dir$tmp_com_lib_dir/$i "
+      else
+	:
+      fi
+    done
+    if test -z "$pike_cv_com_lib_dir" ; then pike_cv_com_lib_dir=no; else
+      :
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_com_lib_dir)
+
+  if test "x$pike_cv_com_lib_dir" = xno; then :; else
+    echo Adding $pike_cv_com_lib_dir to the library search path.
+    for i in $pike_cv_com_lib_dir; do
+      LDFLAGS="-L$i -R$i ${LDFLAGS}"
+      LINKER_OPTIONS="-L$i -R$i ${LINKER_OPTIONS}"
+      COM_LIBPATH="${COM_LIBPATH}${COM_LIBPATH:+:}$i"
+#     LIBPATH="${LIBPATH}${LIBPATH:+:}$i"
+    done
+    export LIBPATH
+  fi
+
+  AC_MSG_CHECKING(for the COM include directory)
+  AC_CACHE_VAL(pike_cv_com_include_dir, [
+    pike_cv_com_include_dir=no
+    for tmp_com_incdir in /usr/com* /usr/local/com* "$pike_cv_com_com_home" "$pike_com_user_include_directory"; do
+      if test -d $tmp_com_incdir/. && "$LS" "$tmp_com_incdir/include/objbase.h" >/dev/null 2>&1 ; then
+	 pike_cv_com_include_dir="$tmp_com_incdir/include"
+      else
+        if test -d $tmp_com_incdir/. -a -d $tmp_com_incdir/Headers/. &&\
+        	  "$LS" "$tmp_com_incdir/Headers/objbase.h" >/dev/null 2>&1 ; then
+	  pike_cv_com_include_dir="$tmp_com_incdir/Headers"
+	else
+	  :
+	fi
+      fi
+    done
+  ])
+  AC_MSG_RESULT($pike_cv_com_include_dir)
+
+  if test "x$pike_cv_com_include_dir" = xno; then :; else
+    echo "Adding $pike_cv_com_include_dir to the include search path."
+    CPPFLAGS="-I$pike_cv_com_include_dir ${CPPFLAGS}"
+    if test -d "$pike_cv_com_include_dir/$pike_cv_com_sysos/."; then
+      echo "Adding $pike_cv_com_include_dir/$pike_cv_com_sysos to the include search path."
+      CPPFLAGS="-I$pike_cv_com_include_dir/$pike_cv_com_sysos ${CPPFLAGS}"
+    else
+      :
+    fi
+    if test -d "$pike_cv_com_include_dir/$pike_cv_com_arch/."; then
+      echo "Adding $pike_cv_com_include_dir/$pike_cv_com_arch to the include search path."
+      CPPFLAGS="-I$pike_cv_com_include_dir/$pike_cv_com_arch ${CPPFLAGS}"
+    else
+      :
+    fi
+  fi
+
+  AC_CHECK_HEADERS(objbase.h winbase.h setjmp.h)
+
+  pike_cv_com=no
+
+  if test "$ac_cv_header_objbase_h" = yes; then
+
+    AC_MSG_CHECKING([for CoCreateInstance])
+    AC_CACHE_VAL(ac_cv_lib_com_CoCreateInstance, [
+      ac_save_LIBS="$LIBS"
+      LIBS="-lole32 -loleaut32 $LIBS"
+      AC_TRY_LINK([#include <objbase.h>], dnl
+        [CoCreateInstance((REFCLSID)0,(LPUNKNOWN)0,(DWORD)0,(REFIID)0,(LPVOID*)0);], dnl
+        [ac_cv_lib_com_CoCreateInstance=yes], dnl
+        [ac_cv_lib_com_CoCreateInstance=no])
+      LIBS="$ac_save_LIBS"
+    ])
+    if test x"$ac_cv_lib_com_CoCreateInstance" = xyes; then
+      LIBS="-lole32 -loleaut32 $LIBS"
+      COM_LIBS="-lole32 -loleaut32 ${COM_LIBS}"
+      pike_cv_com=yes;
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
+
+  else
+    :
+  fi
+
+#   if test "$pike_cv_com" = yes; then
+#     AC_MSG_CHECKING(if the JVM really works)
+#     AC_CACHE_VAL(pike_cv_java_working, [
+#       OLD_CPPFLAGS="$CPPFLAGS"
+#       CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
+#       AC_TRY_RUN([#ifdef HAVE_JNI_H
+# #include <jni.h>
+# #endif
+# #ifdef HAVE_SETJMP_H
+# #include <setjmp.h>
+# #endif
+# #include <stdio.h>
+# #ifdef __NT__
+# #include <windows.h>
+# #include "ntdl.c"
+# #endif
+#         int main(int argc, char *argv[])
+#         {
+#           JavaVM *jvm;
+#           JNIEnv *env;
+#           JavaVMInitArgs vm_args;
+#           JavaVMOption vm_options[2];
+# 	  jint res;
+# 	  jmp_buf jbuf;
+# #ifndef __NT__
+# 	  alarm(50);
+# #endif
+# #ifdef __NT__
+# 	  switch(open_nt_dll()) {
+# 	    case -1:
+# 	      fprintf(stderr, "Can't load DLL\\n");
+#               exit(1);
+# 	    case -2:
+#               fprintf(stderr, "Can't GetProcAddress %s\\n", "JNI_CreateJavaVM");
+# 	    default:
+#               exit(1);
+# 	    case 0:
+# 	      ;
+# 	  }
+# #endif
+#           vm_args.version = 0x00010002;
+#           vm_args.nOptions = 0;
+#           vm_args.options = vm_options;
+#           vm_args.ignoreUnrecognized = JNI_TRUE;
+# #ifndef __NT__
+#           vm_options[0].optionString = "-Djava.library.path=$JAVA_LIBPATH";
+#           vm_options[0].extraInfo = NULL;
+#           vm_args.nOptions++;
+# #endif
+#           if((res=JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args))) {
+# 	    fprintf(stderr, "JNI_CreateJavaVM failed code %d\\n", (int)res);
+#             exit(1);
+# 	  }
+# 	  if(!setjmp(jbuf))
+# 	    longjmp(jbuf,1);
+# 	  return 0;
+#         };
+#       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
+#       CPPFLAGS="$OLD_CPPFLAGS"
+#     ])
+#     AC_MSG_RESULT($pike_cv_java_working)
+#     if test "$pike_cv_java_working" = no; then
+#       pike_cv_java=no;
+#     fi
+#   else
+#     :
+#   fi
+
+  if test "x$pike_cv_com" = xno; then
+    LIBS="$OLD_LIBS"
+    CPPFLAGS="$OLD_CPPFLAGS"
+    LDFLAGS="$OLD_LDFLAGS"
+    COM_LIBS=""
+    LINKER_OPTIONS=""
+  else
+    AC_DEFINE(HAVE_COM)
+    COM_AVAILABLE=1
+    if test "x$pike_cv_com_com_home" = xno; then :; else
+      AC_DEFINE_UNQUOTED(COM_HOME, "${pike_cv_com_com_home}")
+    fi
+  fi
+
+#   AC_MSG_CHECKING(for known machine language)
+#   AC_CACHE_VAL(pike_cv_java_cpu, [
+#     case $pike_cv_java_arch  in
+#       sparc) pike_cv_java_cpu=sparc;;
+#       i386|x86) pike_cv_java_cpu=x86;;
+#       powerpc) pike_cv_java_cpu=ppc;;
+#       *) pike_cv_java_cpu=no;;
+#     esac
+#   ])
+#   AC_MSG_RESULT($pike_cv_java_cpu)
+
+#   case $pike_cv_java_cpu in
+#     sparc) AC_DEFINE(HAVE_SPARC_CPU);;
+#     x86) AC_DEFINE(HAVE_X86_CPU);;
+#     ppc) AC_DEFINE(HAVE_PPC_CPU);;
+#   esac
+
+  if test "x$COM_LIBPATH" = x; then :; else
+    AC_DEFINE_UNQUOTED(COM_LIBPATH, "${COM_LIBPATH}")
+  fi
+
+  true
+else
+  :
+fi
+
+# if test x"$pike_cv_sys_os" = xWindows_NT ; then
+#   COM_LIBS="-lole32 $COM_LIBS"
+# fi
+
+
+LIBPATH="$OLD_LIBPATH"
+
+AC_SUBST(LINKER_OPTIONS)
+AC_SUBST(COM_LIBS)
+AC_SUBST(COM_AVAILABLE)
+
+AC_OUTPUT(Makefile module.pmod.in,echo FOO >stamp-h )
