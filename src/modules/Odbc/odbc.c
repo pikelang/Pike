@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.26 2001/10/03 09:12:42 grubba Exp $
+ * $Id: odbc.c,v 1.27 2001/10/03 11:46:58 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.26 2001/10/03 09:12:42 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.27 2001/10/03 11:46:58 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -29,6 +29,7 @@ RCSID("$Id: odbc.c,v 1.26 2001/10/03 09:12:42 grubba Exp $");
 #include "program.h"
 #include "module_support.h"
 #include "bignum.h"
+#include "builtin_functions.h"
 
 #include "precompiled_odbc.h"
 
@@ -257,13 +258,14 @@ static void f_select_db(INT32 args)
 /* Needed since free_string() can be a macro */
 static void odbc_free_string(struct pike_string *s)
 {
-  free_string(s);
+  if (s) {
+    free_string(s);
+  }
 }
 
 static void f_big_query(INT32 args)
 {
   ONERROR ebuf;
-  HSTMT hstmt = SQL_NULL_HSTMT;
   struct pike_string *q = NULL;
 #ifdef PIKE_DEBUG
   struct svalue *save_sp = sp + 1 - args;
@@ -315,6 +317,66 @@ static void f_big_query(INT32 args)
 #endif /* PIKE_DEBUG */
 }
 
+static void f_list_tables(INT32 args)
+{
+#ifdef PIKE_DEBUG
+  struct svalue *save_sp = sp + 1 - args;
+#endif /* PIKE_DEBUG */
+  ONERROR ebuf;
+  struct pike_string *pattern = NULL;
+
+  if (args) {
+    if ((Pike_sp[-args].type != T_STRING) ||
+	(Pike_sp[-args].u.string->size_shift)) {
+      Pike_error("odbc->list_tables(): "
+		 "Bad argument 1. Expected 8-bit string.\n");
+    }
+    copy_shared_string(pattern, Pike_sp[-args].u.string);
+  }
+
+  SET_ONERROR(ebuf, odbc_free_string, pattern);
+
+  pop_n_elems(args);
+
+  clean_last_error();
+
+  /* Allocate the statement (result) object */
+  ref_push_object(fp->current_object);
+  push_object(clone_object(odbc_result_program, 1));
+
+  UNSET_ONERROR(ebuf);
+
+  /* Potential return value is now in place */
+
+  PIKE_ODBC->affected_rows = 0;
+
+  /* Do the actual query */
+  if (pattern) {
+    push_string(pattern);
+    apply(sp[-1].u.object, "list_tables", 1);
+  } else {
+    apply(sp[-1].u.object, "list_tables", 0);
+  }
+  
+  if (sp[-1].type != T_INT) {
+    Pike_error("odbc->list_tables(): Unexpected return value from "
+	       "odbc_result->list_tables().\n");
+  }
+
+  if (!sp[-1].u.integer) {
+    pop_n_elems(2);	/* Zap the result object too */
+
+    push_int(0);
+  } else {
+    pop_stack();	/* Keep the result object */
+  }
+#ifdef PIKE_DEBUG
+  if (sp != save_sp) {
+    fatal("Stack error in odbc->list_tables().\n");
+  }
+#endif /* PIKE_DEBUG */
+}
+
 static void f_create_db(INT32 args)
 {
   /**************************************************/
@@ -335,6 +397,29 @@ static void f_reload(INT32 args)
   /**************************************************/
 }
 
+static void f_list_dbs(INT32 args)
+{
+  static UCHAR buf[SQL_MAX_DSN_LENGTH+1];
+  static UCHAR descr[256];
+  SQLSMALLINT buf_len = 0;
+  SQLSMALLINT descr_len = 0;
+  int cnt = 0;
+  RETCODE ret;
+
+  pop_n_elems(args);
+
+  ret = SQLDataSources(odbc_henv, SQL_FETCH_FIRST,
+		       buf, sizeof(buf), &buf_len,
+		       descr, sizeof(descr), &descr_len);
+  while ((ret == SQL_SUCCESS) || (ret == SQL_SUCCESS_WITH_INFO)) {
+    push_string(make_shared_binary_string(buf, buf_len));
+    cnt++;
+    ret = SQLDataSources(odbc_henv, SQL_FETCH_NEXT,
+			 buf, sizeof(buf), &buf_len,
+			 descr, sizeof(descr), &descr_len);
+  }
+  f_aggregate(cnt);
+}
 
 #endif /* HAVE_ODBC */
 
@@ -376,6 +461,8 @@ void pike_module_init(void)
   ADD_FUNCTION("shutdown", f_shutdown,tFunc(tVoid,tVoid), ID_PUBLIC);
   /* function(void:void) */
   ADD_FUNCTION("reload", f_reload,tFunc(tVoid,tVoid), ID_PUBLIC);
+  /* function(void|string:object) */
+  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
 #if 0
   /* function(void:int) */
   ADD_FUNCTION("insert_id", f_insert_id,tFunc(tVoid,tInt), ID_PUBLIC);
@@ -387,10 +474,6 @@ void pike_module_init(void)
   ADD_FUNCTION("host_info", f_host_info,tFunc(tVoid,tStr), ID_PUBLIC);
   /* function(void:int) */
   ADD_FUNCTION("protocol_info", f_protocol_info,tFunc(tVoid,tInt), ID_PUBLIC);
-  /* function(void|string:object) */
-  ADD_FUNCTION("list_dbs", f_list_dbs,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
-  /* function(void|string:object) */
-  ADD_FUNCTION("list_tables", f_list_tables,tFunc(tOr(tVoid,tStr),tObj), ID_PUBLIC);
   /* function(string, void|string:array(int|mapping(string:mixed))) */
   ADD_FUNCTION("list_fields", f_list_fields,tFunc(tStr tOr(tVoid,tStr),tArr(tOr(tInt,tMap(tStr,tMix)))), ID_PUBLIC);
   /* function(void|string:object) */
@@ -406,6 +489,9 @@ void pike_module_init(void)
   odbc_program = end_program();
   add_program_constant("odbc", odbc_program, 0);
  
+  /* function(void|string:array(string)) */
+  ADD_FUNCTION("list_dbs", f_list_dbs,tFunc(tOr(tVoid,tStr),tArr(tStr)), ID_PUBLIC);
+
   init_odbc_res_programs();
 
 #endif /* HAVE_ODBC */
