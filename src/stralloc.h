@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.42 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: stralloc.h,v 1.43 2000/08/03 16:30:16 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -19,19 +19,19 @@
 #endif
 struct pike_string
 {
-  INT32 refs;
-  INT32 len;
-  unsigned INT32 hval;
+  ptrdiff_t refs;
+  size_t len;
+  size_t hval;
   struct pike_string *next; 
-  int size_shift; /* 30 bit waste, but good for alignment... */
+  size_t size_shift; /* 30/62 bit waste, but good for alignment... */
   char str[1];
 };
 
 struct string_builder
 {
   struct pike_string *s;
-  int malloced;
-  int known_shift;
+  size_t malloced;
+  size_t known_shift;
 };
 
 #ifdef PIKE_DEBUG
@@ -40,7 +40,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 
 #define free_string(s) do{ struct pike_string *_=(s); debug_malloc_touch(_); if(--_->refs<=0) really_free_string(_); }while(0)
 
-#define my_hash_string(X) ((unsigned long)(X))
+#define my_hash_string(X) ((size_t)(X))
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))
 #define is_same_string(X,Y) ((X)==(Y))
 
@@ -165,16 +165,16 @@ PMOD_EXPORT INLINE void pike_string_cpy(PCHARP to,
 			    struct pike_string *from);
 PMOD_EXPORT struct pike_string *binary_findstring(const char *foo, INT32 l);
 PMOD_EXPORT struct pike_string *findstring(const char *foo);
-PMOD_EXPORT struct pike_string *debug_begin_shared_string(int len);
-PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(int len, int shift);
+PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len);
+PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift);
 PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s);
 PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s);
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,int len);
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len);
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,size_t len);
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,size_t len);
 PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str);
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,int len);
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len);
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int len);
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,size_t len);
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len);
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len);
 PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str);
 PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str);

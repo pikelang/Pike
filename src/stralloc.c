@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.85 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.86 2000/08/03 16:30:16 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -411,7 +411,7 @@ static void rehash(void)
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
-PMOD_EXPORT struct pike_string *debug_begin_shared_string(int len)
+PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
 {
   struct pike_string *t;
 #ifdef PIKE_DEBUG
@@ -471,7 +471,7 @@ static void link_pike_string(struct pike_string *s, unsigned int h)
 #endif
 }
 
-PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(int len, int shift)
+PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(size_t len, int shift)
 {
   struct pike_string *t;
 #ifdef PIKE_DEBUG
@@ -565,7 +565,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 }
 
 
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,size_t len)
 {
   struct pike_string *s;
   int h=StrHash(str,len);
@@ -583,7 +583,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str
   return s;
 }
 
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,size_t len)
 {
   switch(str.shift)
   {
@@ -605,12 +605,12 @@ PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str)
   return debug_make_shared_binary_pcharp(str, pcharp_strlen(str));
 }
 
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,size_t len)
 {
   return debug_make_shared_binary_string((const char *)str, len);
 }
 
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len)
 {
   struct pike_string *s;
   int h;
@@ -638,7 +638,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
   return s;
 }
 
-PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len)
 {
   struct pike_string *s;
   int h;
