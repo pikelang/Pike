@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.35 2003/12/09 08:09:38 nilsson Exp $
+|| $Id: roxen.c,v 1.36 2004/01/27 10:43:42 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -58,6 +58,8 @@ static void f_hp_init( struct object *o )
   THP->headers = NULL;
   THP->pnt = NULL;
   THP->hsize = 0;
+  THP->left = 0;
+  THP->spc = THP->slash_n = 0;
 }
 
 static void f_hp_exit( struct object *o )
@@ -101,6 +103,8 @@ static void f_hp_feed( INT32 args )
       free(buf);
       THP->hsize = 0;
       THP->left = 0;
+      THP->spc = THP->slash_n = 0;
+      THP->pnt = NULL;
       Pike_error("Running out of memory in header parser\n");
     }
     THP->left += 8192;
@@ -321,34 +325,83 @@ static void f_http_decode_string(INT32 args)
  */
 {
    int proc;
-   char *foo,*bar,*end;
+   int size_shift = 0;
+   int adjust_len = 0;
+   p_wchar0 *foo, *end;
    struct pike_string *newstr;
 
-   if (!args || Pike_sp[-args].type != PIKE_T_STRING)
-     Pike_error("Invalid argument to http_decode_string(STRING);\n");
+   if (!args || Pike_sp[-args].type != PIKE_T_STRING ||
+       Pike_sp[-args].u.string->size_shift)
+     Pike_error("Invalid argument to http_decode_string(string(8bit));\n");
 
-   foo=bar=Pike_sp[-args].u.string->str;
-   end=foo+Pike_sp[-args].u.string->len;
+   foo = STR0(Pike_sp[-args].u.string);
+   end = foo+Pike_sp[-args].u.string->len;
 
-   /* count '%' characters */
-   for (proc=0; foo<end; ) if (*foo=='%') { proc++; foo+=3; } else foo++;
+   /* count '%' and wide characters */
+   for (proc=0; foo<end; foo++) {
+     if (*foo=='%') {
+       proc++;
+       if (foo[1] == 'u' || foo[1] == 'U') {
+	 /* %uXXXX */
+	 if (foo[2] != '0' || foo[3] != '0') {
+	   size_shift = 1;
+	 }
+	 adjust_len += 4;
+	 foo += 4;
+       } else {
+	 adjust_len += 2;
+	 foo += 2;
+       }
+     }
+   }
 
    if (!proc) { pop_n_elems(args-1); return; }
 
-   /* new string len is (foo-bar)-proc*2 */
-   newstr=begin_shared_string((foo-bar)-proc*2);
-   foo=newstr->str;
-   for (proc=0; bar<end; foo++)
-      if (*bar=='%')
-      {
-        if (bar<end-2)
-          *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
-            ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
-        else
-          *foo=0;
-        bar+=3;
-      }
-      else { *foo=*(bar++); }
+   newstr = begin_wide_shared_string(Pike_sp[-args].u.string->len - adjust_len,
+				     size_shift);
+   if (size_shift) {
+     p_wchar1 dest = STR1(newstr);
+
+     for (proc=0; bar<end; dest++)
+       if (*bar=='%') {
+	 if (bar[1] == 'u' || bar[1] == 'U') {
+	   if (bar<end-4)
+	     *dest = (((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<12)|
+	       (((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15))<<8)|
+	       (((bar[3]<'A')?(bar[3]&15):((bar[3]+9)&15))<<4)|
+	       ((bar[4]<'A')?(bar[4]&15):((bar[4]+9)&15));
+	   else
+	     *dest=0;
+	   bar+=3;
+	 } else {
+	   if (bar<end-2)
+	     *dest=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
+	       ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
+	   else
+	     *dest=0;
+	   bar+=3;
+	 }
+       } else {
+	 *dest=*(bar++);
+       }
+   } else {
+     foo = newstr->str;
+     for (proc=0; bar<end; foo++)
+       if (*bar=='%') {
+	 if (bar[1] == 'u' || bar[1] == 'U') {
+	   /* We know that the following two characters are zeros. */
+	   bar+=2;
+	 }
+	 if (bar<end-2)
+	   *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
+	     ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
+	 else
+	   *foo=0;
+	 bar+=3;
+       } else {
+	 *foo=*(bar++);
+       }
+   }
    pop_n_elems(args);
    push_string(end_shared_string(newstr));
 }
@@ -419,11 +472,11 @@ static void f_html_encode_string( INT32 args )
     for( i = 0; i<str->len; i++ )					\
       switch( s[i] )							\
       {									\
-	case 0:   /* &#0; 	*/			\
-	case '<': /* &lt; 	*/			\
+	case 0:   		   /* &#0; 	*/			\
+	case '<': 		   /* &lt; 	*/			\
 	case '>': newlen+=3; break;/* &gt; 	*/			\
-	case '&': /* &amp;	*/			\
-	case '"': /* &#34;	*/			\
+	case '&': 		   /* &amp;	*/			\
+	case '"': 		   /* &#34;	*/			\
 	case '\'': newlen+=4;break;/* &#39;	*/		  	\
       }									\
     }
@@ -455,9 +508,9 @@ static void f_html_encode_string( INT32 args )
 
   switch( str->size_shift )
   {
-    case 0: COUNT(unsigned char);  break;
-    case 1: COUNT(unsigned short); break;
-    case 2: COUNT(int);            break;
+    case 0: COUNT(p_wchar0); break;
+    case 1: COUNT(p_wchar1); break;
+    case 2: COUNT(p_wchar2); break;
   }
 
   if( newlen == str->len )
@@ -467,9 +520,9 @@ static void f_html_encode_string( INT32 args )
     struct pike_string *res = begin_wide_shared_string(newlen,str->size_shift);
     switch( str->size_shift )
     {
-      case 0: REPLACE(unsigned char); break;
-      case 1: REPLACE(unsigned short); break;
-      case 2: REPLACE(int); break;
+      case 0: REPLACE(p_wchar0); break;
+      case 1: REPLACE(p_wchar1); break;
+      case 2: REPLACE(p_wchar2); break;
     }
     pop_stack();
     push_string( low_end_shared_string( res ) );
