@@ -240,6 +240,12 @@ cond([[Stdio.File()->lock]],
   test_true(Stdio.File("conftest","wr")->lock()&&1)
 ]])
 
+dnl pty handling
+cond([[ Stdio.File()->grantpt ]],
+[[
+    test_true(stringp(Stdio.File("/dev/ptmx")->grantpt()))
+]])
+
 test_do(rm("conftest"))
 
 test_false(Process.system(RUNPIKE+" SRCDIR/socktest.pike"))
