@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.169 2004/09/15 08:08:42 grubba Exp $
+|| $Id: builtin.cmod,v 1.170 2004/09/17 15:07:43 grubba Exp $
 */
 
 #include "global.h"
@@ -3072,6 +3072,7 @@ PIKECLASS List
   CVAR struct list_node *tail;		/* Always NULL. */
   CVAR INT32 tail_sentinel_refs;
   CVAR struct list_node *tail_pred;
+  CVAR INT32 num_elems;
 
 #define HEAD_SENTINEL(this)	((struct list_node *)(&this->head))
 #define TAIL_SENTINEL(this)	((struct list_node *)(&this->tail))
@@ -3106,6 +3107,7 @@ PIKECLASS List
     THIS->head = TAIL_SENTINEL(THIS);
     THIS->tail_pred = HEAD_SENTINEL(THIS);
     THIS->head_sentinel_refs = THIS->tail_sentinel_refs = 2;
+    THIS->num_elems = 0;
   }
 
   EXIT
@@ -3182,6 +3184,16 @@ PIKECLASS List
     push_int(!THIS->head->next);
   }
 
+  /*! @decl int(0..) _sizeof()
+   *!
+   *!   Returns the number of elements in the list.
+   */
+  PIKEFUN int(0..) _sizeof()
+    flags ID_STATIC;
+  {
+    push_int(THIS->num_elems);
+  }
+
   /*! @decl mixed head()
    *!
    *!   Get the element at the head of the list.
@@ -3239,6 +3251,7 @@ PIKECLASS List
       } else {
 	detach_list_node(THIS->head);
       }
+      THIS->num_elems--;
     } else {
       Pike_error("Empty list.\n");
     }
@@ -3259,6 +3272,7 @@ PIKECLASS List
       new->val = *(--Pike_sp);
       prepend_list_node(node, new);
       free_list_node(node = new);
+      THIS->num_elems++;
     }
     push_int(0);
   }
@@ -3278,6 +3292,7 @@ PIKECLASS List
       new->val = *(--Pike_sp);
       prepend_list_node(node, new);
       free_list_node(node = new);
+      THIS->num_elems++;
     }
     push_int(0);
   }
@@ -3311,19 +3326,21 @@ PIKECLASS List
      *       cur may however refer to a detached node, or to sentinels.
      */
 
-    INIT
+    static struct List_struct *List__get_iterator_find_parent()
     {
       struct external_variable_context loc;
-      struct List_struct *parent;
 
-      /* Find our parent. */
       loc.o = Pike_fp->current_object;
       loc.parent_identifier = Pike_fp->fun;
       loc.inherit = INHERIT_FROM_INT(loc.o->prog, loc.parent_identifier);
       find_external_context(&loc, 1);
-      parent = (struct List_struct *)(loc.o->storage +
-				      loc.inherit->storage_offset);
-      add_ref(THIS->cur = parent->head);
+      return (struct List_struct *)(loc.o->storage +
+				    loc.inherit->storage_offset);
+    }
+
+    INIT
+    {
+      add_ref(THIS->cur = List__get_iterator_find_parent()->head);
       THIS->ind = 0;
     }
 
@@ -3614,6 +3631,7 @@ PIKECLASS List
       prepend_list_node(THIS->cur, new);
       free_list_node(THIS->cur);
       THIS->cur = new;
+      List__get_iterator_find_parent()->num_elems++;
       pop_n_elems(args);
       push_int(0);
     }
@@ -3635,6 +3653,7 @@ PIKECLASS List
       assign_svalue_no_free(&new->val, val);
       append_list_node(THIS->cur, new);
       free_list_node(new);
+      List__get_iterator_find_parent()->num_elems++;
       pop_n_elems(args);
       push_int(0);
     }
@@ -3657,11 +3676,14 @@ PIKECLASS List
 	Pike_error("Attempt to delete a sentinel.\n");
       }
       add_ref(next);
-      if (THIS->cur->refs == 3) {
-	unlink_list_node(THIS->cur);
-      } else {
-	/* There's some other iterator holding references to this node. */
-	detach_list_node(THIS->cur);
+      if (next->prev == THIS->cur) {
+	if (THIS->cur->refs == 3) {
+	  unlink_list_node(THIS->cur);
+	} else {
+	  /* There's some other iterator holding references to this node. */
+	  detach_list_node(THIS->cur);
+	}
+	List__get_iterator_find_parent()->num_elems--;
       }
       free_list_node(THIS->cur);
       THIS->cur = next;
