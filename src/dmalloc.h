@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.38 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: dmalloc.h,v 1.39 2002/10/27 15:48:18 nilsson Exp $
 */
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
@@ -21,7 +21,7 @@ extern size_t dmalloc_tracelogptr;
 
 #define DMALLOC_TRACE_LOG(X)  (dmalloc_tracelog[ dmalloc_tracelogptr = (dmalloc_tracelogptr +1 )%DMALLOC_TRACELOGSIZE ] = (X))
 
-#endif
+#endif /* DMALLOC_TRACE */
 
 #ifdef DEBUG_MALLOC
 struct memhdr;
@@ -106,7 +106,8 @@ void dmalloc_add_mmap_entry(struct memory_map *m,
 int dmalloc_is_invalid_memory_block(void *block);
 
 
-#else
+#else /* DEBUG_MALLOC */
+
 #define dmalloc_touch_fd(X) (X)
 #define dmalloc_register_fd(X) (X)
 #define dmalloc_close_fd(X) (X)
@@ -118,17 +119,19 @@ int dmalloc_is_invalid_memory_block(void *block);
 #define debug_malloc_dump_references(X,x,y,z)
 #define debug_malloc_dump_fd(fd)
 #define xalloc debug_xalloc
+
 #if defined(DYNAMIC_MODULE) && defined(__NT__)
 #define xmalloc debug_xmalloc
 #define xcalloc debug_xcalloc
 #define xrealloc debug_xrealloc
 #define xfree debug_xfree
-#else
+#else /* defined(DYNAMIC_MODULE) && defined(__NT__) */
 #define xmalloc malloc
 #define xcalloc calloc
 #define xrealloc realloc
 #define xfree free
-#endif
+#endif /* !(defined(DYNAMIC_MODULE) && defined(__NT__)) */
+
 #define dbm_main main
 #define DO_IF_DMALLOC(X)
 #define dmalloc_register(X,Y,Z)
@@ -146,12 +149,12 @@ int dmalloc_is_invalid_memory_block(void *block);
 #define debug_malloc_touch(X) DMALLOC_TRACE_LOG(DMALLOC_LOCATION())
 #define debug_malloc_pass(X) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
 #define dmalloc_touch(TYPE,X) (DMALLOC_TRACE_LOG(DMALLOC_LOCATION()),(X))
-#else
+#else /* DMALLOC_TRACE */
 #define debug_malloc_update_location(X,Y) (X)
 #define dmalloc_touch_svalue(X)
 #define debug_malloc_touch(X)
 #define debug_malloc_pass(X) (X)
 #define dmalloc_touch(TYPE,X) (X)
-#endif
+#endif /* !MALLOC_TRACE */
 
-#endif
+#endif /* !DEBUG_MALLOC */
