@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.8 2003/09/02 09:49:02 grubba Exp $
+// $Id: __default.pmod,v 1.9 2003/09/02 09:54:10 grubba Exp $
 
 #pike 7.5
 
@@ -110,6 +110,16 @@ array(int) rusage() {
 	    m->stksize });
 }
 
+class Regexp74 {
+  inherit Regexp.SimpleRegexp;
+
+  // Hide replace().
+  private string replace(string in, string|function(string:string) transform)
+  {
+    return ::replace(in, transform);
+  }
+}
+
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret = predef::all_constants()+([]);
@@ -136,6 +146,6 @@ mapping(string:mixed) all_constants()
 #if constant(System.getgrent)
   ret->setgrent = System.getgrent;
 #endif
-  ret->Regexp = Regexp.SimpleRegexp;
+  ret->Regexp = Regexp74;
   return ret;
 }
