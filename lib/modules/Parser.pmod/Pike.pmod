@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.24 2002/12/18 20:23:29 nilsson Exp $
+// $Id: Pike.pmod,v 1.25 2003/01/22 15:12:51 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -55,7 +55,7 @@ array(string) split(string data, void|mapping state)
 	state->remains += data[..sizeof(data)-2];
 	return ret;
       }
-      ret += ({ state->remains + data[..pos] });
+      ret += ({ state->remains + data[..pos+1] });
       m_delete(state, "remains");
       pos+=2;
       break;
@@ -113,7 +113,7 @@ array(string) split(string data, void|mapping state)
 		(s==sizeof(data)-2 && s<q) ) {
 	      if(state) {
 		state->in_token = 1;
-		state->remains = data[pos-1..sizeof(data)-2];
+		state->remains = data[pos-1..sizeof(data)-3];
 		return ret;
 	      }
 	      error("Failed to find end of multiline string.\n");
@@ -270,7 +270,7 @@ array(string) split(string data, void|mapping state)
 	    pos=search(data,"*/",pos);
 	    if(pos==-1) {
 	      if(state) {
-		state->remains = data[start..sizeof(data)-2];
+		state->remains = data[start..sizeof(data)-3];
 		state->in_token = 1;
 		return ret;
 	      }
