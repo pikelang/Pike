@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.40 2002/11/23 20:01:44 mast Exp $
+|| $Id: pike_memory.h,v 1.41 2003/01/26 11:04:49 mirar Exp $
 */
 
 #ifndef MEMORY_H
@@ -11,11 +11,11 @@
 #include "global.h"
 #include "stralloc.h"
 
+#ifdef USE_VALGRIND
+
 #ifdef HAVE_VALGRIND_H
 #include <valgrind.h>
 #endif /* HAVE_VALGRIND_H */
-
-#ifdef USE_VALGRIND
 
 /* No Access */
 #define PIKE_MEM_NA(lvalue) do {					\
