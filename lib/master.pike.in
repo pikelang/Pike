@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.345 2004/04/18 05:37:13 mast Exp $
+// $Id: master.pike.in,v 1.346 2004/04/19 22:45:58 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2154,9 +2154,9 @@ class CompatResolver
     return ret;
   }
 
-  //! This function is called whenever an #include directive is encountered
-  //! it receives the argument for #include and should return the file name
-  //! of the file to include
+  //! This function is called whenever an #include directive is
+  //! encountered. It receives the argument for #include and should
+  //! return the file name of the file to include
   string handle_include(string f,
 			string current_file,
 			int local_include)
