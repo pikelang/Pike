@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.22 1999/08/16 18:12:38 grubba Exp $
+ * $Id: image_ttf.c,v 1.23 1999/09/07 14:26:42 mirar Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.22 1999/08/16 18:12:38 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.23 1999/09/07 14:26:42 mirar Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -564,9 +564,15 @@ static void image_ttf_face_names(INT32 args)
 
       push_text(hasname[what]);
       
-      if (ihas==30)
-	 push_string(make_shared_binary_string1((p_wchar1 *)b->item[4].u.string->str,
-						b->item[4].u.string->len/2));
+      if (ihas==30) /* unicode, M$ but wierd enough correct byteorder */
+      {
+	 int n=b->item[4].u.string->len/2;
+	 struct pike_string *ps=begin_wide_shared_string(n,1);
+	 p_wchar1 *d=STR1(ps);
+	 p_wchar0 *s=STR0(b->item[4].u.string);
+	 while (n--) *(d++)=((p_wchar1)s[0]<<8)|(p_wchar1)s[1],s+=2;
+	 push_string(end_shared_string(ps));
+      }
       else
 	 push_svalue(b->item+4);
       
