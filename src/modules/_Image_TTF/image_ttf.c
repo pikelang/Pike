@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.19 1999/07/29 22:17:14 grubba Exp $
+ * $Id: image_ttf.c,v 1.20 1999/07/29 22:20:37 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.19 1999/07/29 22:17:14 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.20 1999/07/29 22:20:37 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -1227,7 +1227,6 @@ void pike_module_exit(void)
 
 #ifdef HAVE_LIBTTF
    TT_Done_FreeType(engine);
-#endif /* HAVE_LIBTTF */
    if (image_ttf_faceinstance_program) {
      free_program(image_ttf_faceinstance_program);
      image_ttf_faceinstance_program = NULL;
@@ -1236,6 +1235,7 @@ void pike_module_exit(void)
      free_program(image_ttf_face_program);
      image_ttf_face_program = NULL;
    }
+#endif /* HAVE_LIBTTF */
 }
 
 void pike_module_init(void)
