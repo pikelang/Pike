@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.93 1998/11/29 22:09:43 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.94 1998/11/29 23:17:32 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1420,7 +1420,11 @@ void f_create_process(INT32 args)
 
     UNSET_ONERROR(err);
 
-    if(pid==-1) {
+    if(pid == -1) {
+      /*
+       * fork() failed
+       */
+
       close(control_pipe[0]);
       close(control_pipe[1]);
 
@@ -1434,7 +1438,11 @@ void f_create_process(INT32 args)
       error("Failed to start process.\n"
 	    "errno:%d\n", errno);
     } else if(pid) {
-      /* Close our childs end of the pipe. */
+      /*
+       * The parent process
+       */
+
+      /* Close our child's end of the pipe. */
       close(control_pipe[1]);
 
       free_perishables(&storage);
@@ -1453,11 +1461,11 @@ void f_create_process(INT32 args)
 						  check_signals,
 						  0,0);
       }
-      THIS->pid=pid;
-      THIS->state=PROCESS_RUNNING;
+      THIS->pid = pid;
+      THIS->state = PROCESS_RUNNING;
       ref_push_object(fp->current_object);
       push_int(pid);
-      mapping_insert(pid_mapping,sp-1, sp-2);
+      mapping_insert(pid_mapping, sp-1, sp-2);
       pop_n_elems(2);
 
       /* Wake up the child. */
@@ -1465,13 +1473,15 @@ void f_create_process(INT32 args)
       while (((e = write(control_pipe[0], buf, 1)) < 0) && (errno == EINTR))
 	;
 
-      /* Wait for exec. */
-      while(((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
+      /* Wait for exec or error */
+      while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	;
       close(control_pipe[0]);
       if (!e) {
 	/* OK! */
+	pop_n_elems(args);
 	push_int(0);
+	return;
       } else {
 	/* Something went wrong. */
 	switch(buf[0]) {
@@ -1516,6 +1526,9 @@ void f_create_process(INT32 args)
 	}
       }
     }else{
+      /*
+       * The child process
+       */
       ONERROR oe;
 
 #ifdef DECLARE_ENVIRON
@@ -1524,7 +1537,7 @@ void f_create_process(INT32 args)
       extern void my_set_close_on_exec(int,int);
       extern void do_set_close_on_exec(void);
 
-      /* Close our parents end of the pipe. */
+      /* Close our parent's end of the pipe. */
       close(control_pipe[0]);
       /* Ensure that the pipe will be closed when the child starts. */
       set_close_on_exec(control_pipe[1], 1);
@@ -1665,7 +1678,7 @@ void f_create_process(INT32 args)
       if(storage.wanted_gids)
       {
 #ifdef PROC_DEBUG
-    fprintf(stderr, "Calling setgroups()\n");
+	fprintf(stderr, "Calling setgroups()\n");
 #endif /* PROC_DEBUG */
 	if(setgroups(storage.num_wanted_gids, storage.wanted_gids))
 	{
@@ -1699,7 +1712,7 @@ void f_create_process(INT32 args)
 	  initgroupgid=pw->pw_gid;
 /*	  printf("uid=%d euid=%d initgroups(%s,%d)\n",getuid(),geteuid(),pw->pw_name, initgroupgid); */
 #ifdef PROC_DEBUG
-    fprintf(stderr, "Calling initgroups()\n");
+	  fprintf(stderr, "Calling initgroups()\n");
 #endif /* PROC_DEBUG */
 	  if(initgroups(pw->pw_name, initgroupgid))
 #ifdef _HPUX_SOURCE
