@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.169 2000/04/19 16:03:31 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.170 2000/05/23 21:14:02 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1812,8 +1812,14 @@ void f_create_process(INT32 args)
 	  {
 	    switch(ITEM(cmd)[e].u.string->str[d])
 	    {
-	      case '"':
+	      /* Hopefully this should work better -Hubbe */
 	      case '\\':
+		low_my_putchar('"', &buf);
+		low_my_putchar('\\', &buf);
+		low_my_putchar('\\', &buf);
+		low_my_putchar('"', &buf);
+		break;
+	      case '"':
 		low_my_putchar('\\', &buf);
 	      default:
 		low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
