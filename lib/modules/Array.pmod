@@ -38,7 +38,7 @@ mixed map(mixed arr, mixed fun, mixed ... args)
     return ret;
 
   default:
-    error("Bad argument 2 to map_array().\n");
+    error("Bad argument 2 to Array.map().\n");
   }
 }
 
