@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.31 2001/05/17 05:16:08 mast Exp $
+;;; $Id: pike.el,v 1.32 2001/05/20 05:16:59 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -142,8 +142,8 @@ The name is assumed to begin with a capital letter.")
 	    "\\)+")))
 
 (defconst pike-font-lock-qualified-identifier
-  (concat "\\([ \t\n\r]*\\.?[ \t\n\r]*"	; 1
-	  pike-font-lock-identifier-regexp ; 2
+  (concat "\\([ \t\n\r]*\\(\\.[ \t\n\r]*\\)?" ; 1 2
+	  pike-font-lock-identifier-regexp ; 3
 	  "\\)+"))
 
 (defun pike-font-lock-hack-file-coding-system-perhaps ( foo )
@@ -644,12 +644,12 @@ reposition the cursor to fontify more identifiers."
 
 	    ;; Inherits.
 	    (,(concat "\\<inherit\\s +"
-		      "\\(" pike-font-lock-qualified-identifier "\\)" ; 1-3
-		      "[ \t\n\r]*\\(:"	; 4
-		      pike-font-lock-semantic-whitespace ; 5-7
-		      pike-font-lock-identifier-regexp ; 8
+		      "\\(" pike-font-lock-qualified-identifier "\\)" ; 1-4
+		      "[ \t\n\r]*\\(:"	; 5
+		      pike-font-lock-semantic-whitespace ; 6-8
+		      pike-font-lock-identifier-regexp ; 9
 		      "\\)?")
-	     (8 font-lock-constant-face nil t)
+	     (9 font-lock-constant-face nil t)
 	     (,(function
 		(lambda (limit)
 		  (when (looking-at (pike-font-lock-concat-const
