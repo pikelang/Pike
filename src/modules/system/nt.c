@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.17 1999/09/01 01:32:44 mast Exp $
+ * $Id: nt.c,v 1.18 1999/09/02 22:04:27 mast Exp $
  *
  * NT system calls for Pike
  *
@@ -1866,8 +1866,6 @@ static void f_GetNamedSecurityInfo(INT32 args)
 
 void init_nt_system_calls(void)
 {
-  add_function("cp",f_cp,"function(string,string:int)", 0);
-
   add_function("GetFileAttributes",f_GetFileAttributes,"function(string:int)", 0);
   add_function("SetFileAttributes",f_SetFileAttributes,"function(string,int:int)", 0);
   
