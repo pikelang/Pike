@@ -1,3 +1,6 @@
+/*
+ * $Id: gettext.c,v 1.10 2002/10/05 10:22:35 grubba Exp $
+ */
 
 #include "global.h"
 #include "config.h"
@@ -25,7 +28,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.9 2002/09/29 00:19:49 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.10 2002/10/05 10:22:35 grubba Exp $");
 
 /*! @module Locale
  */
@@ -38,25 +41,57 @@ RCSID("$Id: gettext.c,v 1.9 2002/09/29 00:19:49 nilsson Exp $");
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
 
 /*! @decl string gettext(string msg)
+ *! @decl string gettext(string msg, string domain)
+ *! @decl string gettext(string msg, string domain, int category)
+ *!
+ *! @param msg
+ *!   Message to be translated.
+ *!
+ *! @param domain
+ *!   Domain from within the message should be translated.
+ *!   Defaults to the current domain.
+ *!
+ *! @param category
+ *!   Category from which the translation should be taken.
+ *!   Defaults to @[Locale.Gettext.LC_MESSAGES].
  *!
  *! Return a translated version of @[msg] within the context
- *! of the current domain and locale. If there is no translation
- *! available, @[msg] is returned.
+ *! of the specified @[domain] and current locale. If there is no
+ *! translation available, @[msg] is returned.
+ *!
+ *! @note
+ *!   Prior to Pike 7.3 this function only accepted one argument,
+ *!   and the other functionality was provided by @[dgettext()]
+ *!   and @[dcgettext()].
  *!
  *! @seealso
- *!   @[bindtextdomain], @[textdomain], @[dgettext], @[dcgettext], @[setlocale], @[localeconv]
+ *!   @[bindtextdomain], @[textdomain], @[setlocale], @[localeconv]
  */
 void f_gettext(INT32 args)
 {
-  char *translated;
-  if (args != 1)
-    Pike_error( "Wrong number of arguments to Gettext.gettext()\n" );
-  if (sp[-1].type != T_STRING)
-    Pike_error( "Bad argument 1 to Gettext.gettext(), expected string\n" );
-  translated = gettext(sp[-1].u.string->str);
+  check_all_args("Locale.Gettext.gettext", args, BIT_STRING,
+		 BIT_STRING|BIT_VOID, BIT_INT|BIT_VOID, 0);
 
-  pop_n_elems(args);
-  push_string(make_shared_string(translated));
+  switch(args) {
+  case 0:
+    /* NOT_REACHED, but... */
+    Pike_error("Too few arguments to Locale.Gettext.gettext().\n");
+    break;
+  case 1:
+    push_text(gettext(Pike_sp[-args].u.string->str));
+    break;
+  case 2:
+    push_text(dgettext(Pike_sp[1-args].u.string->str,
+		       Pike_sp[-args].u.string->str));
+    break;
+  default:
+    push_text(dcgettext(Pike_sp[1-args].u.string->str,
+			Pike_sp[-args].u.string->str,
+			Pike_sp[2-args].u.integer));
+    break;
+  }
+
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @decl string dgettext(string domain, string msg)
@@ -65,19 +100,20 @@ void f_gettext(INT32 args)
  *! of the specified @[domain] and current locale. If there is
  *! no translation available, @[msg] is returned.
  *!
+ *! @note
+ *!   Obsoleted by @[gettext()] in Pike 7.3.
+ *!
  *! @seealso
- *!   @[bindtextdomain], @[textdomain], @[gettext], @[dcgettext], @[setlocale], @[localeconv]
+ *!   @[bindtextdomain], @[textdomain], @[gettext], @[setlocale], @[localeconv]
 */
 void f_dgettext(INT32 args)
 {
-  char *translated;
   struct pike_string *domain, *msg;
-  get_all_args("Gettext.dgettext", args, "%S%S", &domain, &msg);
+  get_all_args("Locale.Gettext.dgettext", args, "%S%S", &domain, &msg);
 
-  translated = dgettext(domain->str, msg->str);
+  push_text(dgettext(domain->str, msg->str));
 
-  pop_n_elems(args);
-  push_string(make_shared_string(translated));
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @decl string dcgettext(string domain, string msg, int category)
@@ -89,20 +125,23 @@ void f_dgettext(INT32 args)
  *!
  *! If there is no translation available, @[msg] is returned.
  *!
+ *! @note
+ *!   Obsoleted by @[gettext()] in Pike 7.3.
+ *!
  *! @seealso
- *!   @[bindtextdomain], @[textdomain], @[gettext], @[dgettext], @[setlocale], @[localeconv]
+ *!   @[bindtextdomain], @[textdomain], @[gettext], @[setlocale], @[localeconv]
  */
 void f_dcgettext(INT32 args)
 {
-  char *translated;
   struct pike_string *domain, *msg;
   INT_TYPE category;
-  get_all_args("Gettext.dcgettext", args, "%S%S%d", &domain, &msg, &category);
 
-  translated = dcgettext(domain->str, msg->str, category);
+  get_all_args("Locale.Gettext.dcgettext", args, "%S%S%d",
+	       &domain, &msg, &category);
 
-  pop_n_elems(args);
-  push_string(make_shared_string(translated));
+  push_text(dcgettext(domain->str, msg->str, category));
+
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*
@@ -122,15 +161,15 @@ void f_dcgettext(INT32 args)
  *! calls to @[setlocale()], and @[gettext()].
  *!
  *! @returns
- *! The normal return value from textdomain() is a string
- *! containing the current setting of the domain. If domainname is
- *! void, textdomain() returns a string containing the current
- *! domain. If textdomain() was not previously called and
- *! domainname is void, the name of the default domain is
- *! returned.
+ *!   The normal return value from textdomain() is a string
+ *!   containing the current setting of the domain. If domainname is
+ *!   void, textdomain() returns a string containing the current
+ *!   domain. If textdomain() was not previously called and
+ *!   domainname is void, the name of the default domain is
+ *!   returned.
  *!
  *! @seealso
- *!   @[bindtextdomain], @[gettext], @[dgettext], @[dcgettext], @[setlocale], @[localeconv]
+ *!   @[bindtextdomain], @[gettext], @[setlocale], @[localeconv]
  */
 void f_textdomain(INT32 args)
 {
@@ -169,7 +208,7 @@ void f_textdomain(INT32 args)
  *! bindtextdomain() takes no action and returns a 0.
  *!
  *! @seealso
- *!   @[textdomain], @[gettext], @[dgettext], @[dcgettext], @[setlocale], @[localeconv]
+ *!   @[textdomain], @[gettext], @[setlocale], @[localeconv]
  */
 void f_bindtextdomain(INT32 args)
 {
@@ -444,11 +483,13 @@ void pike_module_init(void)
 	       OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION("dcgettext", f_dcgettext, tFunc(tStr tStr tInt,tStr),
 	       OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION("bindtextdomain", f_bindtextdomain, tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid), tOr(tStr,tVoid)),
+  ADD_FUNCTION("bindtextdomain", f_bindtextdomain,
+	       tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid), tOr(tStr,tVoid)),
 	       OPT_EXTERNAL_DEPEND);
   ADD_FUNCTION("textdomain", f_textdomain, tFunc(tOr(tStr, tVoid),tStr),
 	       OPT_EXTERNAL_DEPEND);
-  ADD_FUNCTION("localeconv", f_localeconv, tFunc(tVoid, tMapping), OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION("localeconv", f_localeconv, tFunc(tVoid, tMapping),
+	       OPT_EXTERNAL_DEPEND);
 
   add_integer_constant("LC_ALL", LC_ALL, 0);
   add_integer_constant("LC_COLLATE", LC_COLLATE, 0);
