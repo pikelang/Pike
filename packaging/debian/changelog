@@ -1,3 +1,27 @@
+pike7.3 (7.3.55-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * src/modules/Gz/: configure.in, zlibmod.c: The Gz module now
+          supports old versions of zlib again.  Most notably seek(), tell(),
+          eof() and setparams() are now optionally implemented in Gz._file.
+        * lib/master.pike.in: Added include_prefix.
+        * src/builtin_functions.c: More information about the use and
+          limits of mktime().
+        * src/main.c: Now calls tzset() to initialize timezone et al.
+        * lib/modules/Protocols.pmod/LDAP.pmod/client.pike: add catch to
+          prevent search from bombing out when talking to active directory
+          servers. this is not a good fix, as the cause seems to be referrer
+          data.
+          This will need to be looked at more closely, but it at least allows
+          us to talk to m$ systems.
+        * lib/modules/Protocols.pmod/LDAP.pmod/client.pike: fixed create()
+          so that connection is actually made when SSL support is not
+          present.
+        * lib/master.pike.in: Added -x option to run tools from 
+	  Tools.Standalone.
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 13 Sep 2002 15:44:33 +0200
+
 pike7.3 (7.3.53-1) unstable; urgency=low
 
   * Latest upstream version. The most important changes:
