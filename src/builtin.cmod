@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.32 2001/06/06 08:12:10 hubbe Exp $
+ * $Id: builtin.cmod,v 1.33 2001/06/18 15:45:29 grubba Exp $
  */
 
 #include "global.h"
@@ -634,7 +634,210 @@ PIKEFUN mapping random(mapping m)
   pop_stack();
 }
 
+/*
+ * Backtrace handling.
+ */
 
+/*! @class BacktraceFrame
+ */
+
+PIKECLASS backtrace_frame
+{
+  CVAR struct pike_frame *frame;
+  CVAR INT_TYPE lineno;
+  CVAR struct pike_string *filename;
+
+  INIT
+  {
+    THIS->frame = NULL;
+    THIS->filename = NULL;
+    THIS->lineno = 0;
+  }
+
+  EXIT
+  {
+    if (THIS->frame) {
+      free_pike_frame(THIS->frame);
+    }
+    if (THIS->filename) {
+      free_string(THIS->filename);
+    }
+    THIS->frame = NULL;
+    THIS->filename = NULL;
+    THIS->lineno = 0;
+  }
+
+  PIKEFUN string _sprintf(int c, mapping|void opts)
+  {
+    struct pike_frame *f = THIS->frame;
+    INT_TYPE numargs = 0;
+
+    pop_n_elems(args);
+
+    if (!f) {
+      push_text("backtrace_frame( empty )");
+      return;
+    }
+    push_text("backtrace_frame(");
+    if (f->pc) {
+      if (!THIS->filename) {
+	THIS->filename =
+	  make_shared_string(get_line(f->pc, f->context.prog,
+				      &THIS->lineno));
+      }
+      ref_push_string(THIS->filename);
+      push_text(":");
+      push_int(THIS->lineno);
+      push_text(", ");
+      f_add(4);
+    } else {
+      push_text("Unknown file, ");
+    }
+    if (f->current_object->prog) {
+      ref_push_object(f->current_object);
+      Pike_sp[-1].subtype = f->fun;
+      Pike_sp[-1].type = PIKE_T_FUNCTION;
+      f_function_name(1);
+      push_text("(), ");
+      f_add(2);
+    } else {
+      push_text("destructed_function(), ");
+    }
+
+    if (f->locals) {
+      numargs =
+	DO_NOT_WARN((INT_TYPE) MINIMUM(f->num_args, Pike_sp - f->locals));
+      if (numargs < 0) numargs = 0;
+    }
+    if (numargs) {
+      push_text("Args: ");
+      push_int(numargs);
+      f_add(2);
+    } else {
+      push_text("No args");
+    }
+    push_text(")");
+    f_add(5);
+  }
+
+  PIKEFUN int _sizeof()
+  {
+    struct pike_frame *f = THIS->frame;
+    INT_TYPE numargs = 0;
+
+    if (!f) {
+      push_int(0);
+      return;
+    }
+    if (f->locals) {
+      numargs =
+	DO_NOT_WARN((INT_TYPE) MINIMUM(f->num_args, Pike_sp - f->locals));
+      if (numargs < 0) numargs = 0;
+    }
+    push_int(numargs + 3);
+  }
+
+  PIKEFUN mixed `[](int index)
+  {
+    struct pike_frame *f = THIS->frame;
+
+    if (!f) {
+      index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		  "Indexing the empty array with %"PRINTPIKEINT"d.\n", index);
+    }
+    if (index < 0) {
+      index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		  "Indexing with negative index (%"PRINTPIKEINT"d)\n", index);
+    }
+    if (!(f->current_object && f->context.prog)) {
+      index_error("pike_frame->`[]", Pike_sp-args, args, NULL, Pike_sp-args,
+		  "Indexing the NULL value with %"PRINTPIKEINT"d.\n", index);
+    }
+
+    pop_n_elems(args);
+
+    switch(index) {
+    case 0:	/* Filename */
+      if (f->pc) {
+	if (!THIS->filename) {
+	  THIS->filename =
+	    make_shared_string(get_line(f->pc, f->context.prog,
+					&THIS->lineno));
+	}
+	ref_push_string(THIS->filename);
+      } else {
+	push_int(0);
+      }
+      return;
+    case 1:	/* Linenumber */
+      if (f->pc) {
+	if (!THIS->filename) {
+	  THIS->filename =
+	    make_shared_string(get_line(f->pc, f->context.prog,
+					&THIS->lineno));
+	}
+	push_int(THIS->lineno);
+      } else {
+	push_int(0);
+      }
+      return;
+    case 2:	/* Function */
+      if (f->current_object->prog) {
+	ref_push_object(f->current_object);
+	Pike_sp[-1].subtype = f->fun;
+	Pike_sp[-1].type = PIKE_T_FUNCTION;
+      } else {
+	push_int(0);
+	Pike_sp[-1].subtype = NUMBER_DESTRUCTED;
+      }
+      return;
+    default:	/* Arguments */
+      {
+	INT32 numargs = 0;
+	if ((index > 2) && (f->locals)) {
+	  numargs =
+	    DO_NOT_WARN((INT32) MINIMUM(f->num_args, Pike_sp - f->locals));
+	  if (numargs < 0) numargs = 0;
+	  index -= 3;
+	  if (index < numargs) {
+	    push_svalue(f->locals + index);
+	    return;
+	  }
+	}
+	bad_arg_error("backtrace_frame->`[]", Pike_sp-args, args, 1,
+		      "int(0..)", Pike_sp-args,
+		      "Bad argument 1 to backtrace_frame->`[](): "
+		      "Expected int(0..%d)\n",
+		      numargs+2);
+      }
+      /* NOT_REACHED */
+      return;
+    }
+  }
+};
+
+/*! @endclass
+ */
+
+/*! Deferred backtrace.
+ */
+PIKEFUN array(object) new_backtrace()
+   /* efun; */
+{
+  struct pike_frame *f;
+  int size = 0;
+
+  for (f = Pike_fp->next; f; f = f->next) {
+    struct object *o = low_clone(backtrace_frame_program);
+    call_c_initializers(o);
+    add_ref(OBJ2_BACKTRACE_FRAME(o)->frame = f);
+    push_object(o);
+    size++;
+  }
+
+  f_aggregate(size);
+  f_reverse(1);
+}
 
 void init_builtin(void)
 {
