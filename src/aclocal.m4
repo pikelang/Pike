@@ -32,7 +32,7 @@ pushdef([AC_PROG_CC],
     if echo "$CC $CFLAGS $CPPFLAGS" | grep " -Y" >/dev/null; then :; else
       # We want to use the system API's...
       CPPFLAGS="-Ysystem $CPPFLAGS"
-    else :; fi
+    fi
   else
     AC_MSG_RESULT(no)
     TCC=no
@@ -104,7 +104,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.14 1999/11/15 21:20:59 grubba Exp $
+# $Id: aclocal.m4,v 1.15 1999/11/15 21:39:26 grubba Exp $
 
 MY_AC_PROG_CC
 
