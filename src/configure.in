@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.435 2000/11/29 03:12:17 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.436 2000/12/05 17:43:07 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -786,7 +786,18 @@ if test "$cflags_is_set" = "no"; then
   # Do not use -Wall, since that produces a lot of warnings that are not
   # really interresting (such as the warning for if( ... ) ... if(
   # ... ) .... else
-  WARN="-W -Wall -Wno-unused -Wcomment -Wformat -Wimplicit-function-declaration -Wmultichar -Wswitch -Wuninitialized -Wpointer-arith -Wchar-subscripts -Wno-long-long"
+  AC_SYS_COMPILER_FLAG(-W,W,WARN)
+  AC_SYS_COMPILER_FLAG(-Wall,Wall,WARN)
+  AC_SYS_COMPILER_FLAG(-Wno-unused,Wno_unused,WARN)
+  AC_SYS_COMPILER_FLAG(-Wcomment,Wcomment,WARN)
+  AC_SYS_COMPILER_FLAG(-Wformat,Wformat,WARN)
+  AC_SYS_COMPILER_FLAG(-Wimplicit-function-declaration,Wimplicit_function_declaration,WARN)
+  AC_SYS_COMPILER_FLAG(-Wmultichar,Wmultichar,WARN)
+  AC_SYS_COMPILER_FLAG(-Wswitch,Wswitch,WARN)
+  AC_SYS_COMPILER_FLAG(-Wuninitialized,Wuninitialized,WARN)
+  AC_SYS_COMPILER_FLAG(-Wpointer-arith,Wpointer_arith,WARN)
+  AC_SYS_COMPILER_FLAG(-Wchar-subscripts,Wchar_subscripts,WARN)
+  AC_SYS_COMPILER_FLAG(-Wno-long-long,Wno_long_long,WARN)
 
   if test "x${with_static_linking-}" = "xyes" ; then
     AC_SYS_COMPILER_FLAG(-static,link_static,CFLAGS)
@@ -4086,6 +4097,7 @@ AC_MSG_RESULT($LINKFORSHARED)
 
 cat >conftest.c <<EOF
 #include <stdio.h>
+#include <stdlib.h>
 void testfunc(void) {
   fprintf(stderr,"Calling testfunc2\n");
   testfunc2();
