@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.36 2002/12/14 16:53:02 nilsson Exp $
+|| $Id: dumpmodule.pike,v 1.37 2003/01/27 01:17:09 grendel Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -206,14 +206,14 @@ do_dump: {
     if(Stdio.Stat s=file_stat(fakeroot(file)))
     {
       if (update) {
-	if (Stdio.Stat o = file_stat (outfile + ".o"))
+	if (Stdio.Stat o = file_stat (fakeroot(outfile) + ".o"))
 	  if (o->mtime >= s->mtime) {
 	    if (!quiet) logmsg ("Up-to-date.\n");
 	    ok = 1;
 	    break do_dump;
 	  }
       }
-      rm(outfile+".o"); // Make sure no old files are left
+      rm(fakeroot(outfile)+".o"); // Make sure no old files are left
 
       if (s->isdir && recursive) {
 	if (array(string) dirlist = get_dir (fakeroot (file))) {
@@ -267,8 +267,8 @@ do_dump: {
 	else if(programp(p))
 	{
 	  string dir = combine_path (outfile, "..");
-	  if (!Stdio.is_dir (dir))
-	    if (!Stdio.mkdirhier (dir)) {
+	  if (!Stdio.is_dir (fakeroot(dir)))
+	    if (!Stdio.mkdirhier (fakeroot(dir))) {
 	      logmsg ("Failed to create target directory %O: %s.\n",
 		      dir, strerror (errno()));
 	      break do_dump;
