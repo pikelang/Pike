@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.742 2004/10/31 22:35:45 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.743 2004/11/01 01:34:45 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -62,6 +62,42 @@ test_true(1e10<=1e100)
 test_true(1e100<=1e1000)
 test_true(1e1000<=1e10000)
 test_true(1e10000<=1e100000000000000000000000000000000000000000000000000000000000)
+
+test_compile_warning('\3434523423423523423423423423')
+test_compile_warning("\3434523423423523423423423423")
+test_compile_warning("\d109827346981234561823743412654")
+test_compile_warning("\x109a27bc69e256c83deaa34c26b4")
+test_compile_error('\u17fo')
+test_compile_warning("\u17fo")
+test_compile_error('\uu117f')
+test_compile_warning("\uuuu17fo")
+test_eq('\u117f', 0x117f)
+test_eq("\u117foo", "\10577oo")
+test_eq("\u1117foo", "\10427foo")
+test_eq("\uuuu117foo", "\\uuu117foo")
+test_compile_error('\U117f')
+test_compile_warning("\U117f")
+test_compile_warning("\UdEaDbEaT")
+test_compile_warning("\UUdEaDbEaT")
+test_eq('\UDeaDBeEF', -559038737)
+test_eq("\UDeaDBeEFFF", "\33653337357FF")
+test_eq("\UUDeaDBeEFFF", "\\UDeaDBeEFFF")
+test_any([[
+  // Suppress warnings.
+  class handler {
+    void compile_warning (string file, int line, string err) {};
+  };
+  return compile_string("string s = \"\\3434523423423523423423423423\";",
+			"-", handler())()->s;
+]], "\37777777777")
+test_any([[
+  // Suppress warnings.
+  class handler {
+    void compile_warning (string file, int line, string err) {};
+  };
+  return compile_string("int i = '\\3434523423423523423423423423';",
+			"-", handler())()->i;
+]], -1)
 
 test_do([[
   // bug 2677
@@ -9899,8 +9935,15 @@ test_eq(string_to_utf8("\77077"), "\347\270\277")
 test_eq(string_to_utf8("\7077077"), "\367\207\270\277")
 test_eq(string_to_utf8("\77077077"), "\370\277\207\270\277")
 test_eq(string_to_utf8("\7077077077"), "\374\270\277\207\270\277")
-test_eq(string_to_utf8("\77077077077", 1), "\376\203\270\277\207\270\277")
-test_eq(utf8_to_string("\376\203\270\277\207\270\277", 1), "\77077077077")
+
+// 077077077077 has 33 bits unsigned. The escape sequence parser used
+// to silently truncate too long char values, but not anymore.
+dnl test_eq(string_to_utf8("\77077077077", 1), "\376\203\270\277\207\270\277")
+dnl test_eq(utf8_to_string("\376\203\270\277\207\270\277", 1), "\77077077077")
+// The following uses the char that actually got tested.
+test_eq(string_to_utf8("\37077077077", 1), "\376\203\270\277\207\270\277")
+test_eq(utf8_to_string("\376\203\270\277\207\270\277", 1), "\37077077077")
+
 test_eq(utf8_to_string("\374\270\277\207\270\277"), "\7077077077")
 test_eq(utf8_to_string("\370\277\207\270\277"), "\77077077")
 test_eq(utf8_to_string("\367\207\270\277"), "\7077077")
