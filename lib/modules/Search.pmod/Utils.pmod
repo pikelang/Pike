@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.34 2002/02/20 17:31:08 js Exp $
+// $Id: Utils.pmod,v 1.35 2002/03/07 13:10:49 js Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -570,6 +570,7 @@ class Logger {
 
   private string|Sql.Sql logdb;
   private int profile;
+  private int stderr_logging;
 
   private Sql.Sql get_db() {
     Sql.Sql db;
@@ -586,11 +587,12 @@ class Logger {
     return db;
   }
 
-  //! @decl void create(Sql.Sql db_object, int profile)
-  //! @decl void create(string db_url, int profile)
-  void create(string|Sql.Sql _logdb, int _profile) {
+  //! @decl void create(Sql.Sql db_object, int profile, int stderr_logging)
+  //! @decl void create(string db_url, int profile, int stderr_logging)
+  void create(string|Sql.Sql _logdb, int _profile, int _stderr_logging) {
     logdb = _logdb;
     profile = _profile;
+    stderr_logging = _stderr_logging;
 
     // create table eventlog (event int unsigned auto_increment primary key,
     // at timestamp(14) not null, code int unsigned not null, extra varchar(255))
@@ -607,13 +609,28 @@ class Logger {
 		"extra varchar(255))");
   }
 
-  //!
+  void werror_event( int code, string type, void|string extra, void|int log_profile )
+  {
+    mapping types = ([ "error" : "Error",
+		       "warning" : "Warning",
+		       "notice" :  "Notice", ]);
+
+    werror(sprintf("%sSearch: %s: %s\n",
+		   "          : ",
+		   types[type],
+		   extra?sprintf(codes[(int)code], @(extra/"\n")):codes[(int)code]));
+  }
+
+    //!
   void log_event( int code, string type, void|string extra, void|int log_profile ) {
     Sql.Sql db = get_db();
     if(!db) return;
 
     if(zero_type(log_profile))
       log_profile = profile;
+
+    if(stderr_logging)
+      werror_event(code, type, extra, log_profile);
 
     if(extra)
       db->query("INSERT INTO eventlog (profile,code,type,extra) VALUES (%d,%d,%s,%s)",
@@ -622,6 +639,7 @@ class Logger {
       db->query("INSERT INTO eventlog (profile, code,type) VALUES (%d,%d,%s)",
 		log_profile, code, type);
   }
+
 
   //!
   void log_error( int code, void|string extra, void|int log_profile ) {
