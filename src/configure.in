@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.373 2000/05/19 16:58:03 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.374 2000/05/20 02:20:37 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2914,7 +2914,7 @@ AC_TRY_RUN([
 #endif
 
 #ifndef MAX_FD
-#define MAX_FD 256
+#define MAX_FD 65536
 #endif
 
 int main()
@@ -2935,10 +2935,10 @@ int main()
   }else{
     if(lim.rlim_max == RLIM_INFINITY)
     {
-      limit=131072; /* Noone needs more :-) */
+      limit = 1024 * 1024 * 2; /* Noone needs more :-) */
     }else{
       limit=lim.rlim_max;
-      if(limit > 131072) limit=131072;
+      if(limit > 1024 * 1024 * 2) limit= 1024 * 1024 * 2;
     }
   }
 #else
