@@ -7,8 +7,8 @@ signal event;
 void move( float dx, float dy );
 // Moves a canvas item by creating an affine transformation matrix for
 // translation by using the specified values.
-void scale( float x, float y, float scale_x, float scale_y );
-void rotate( float x, float y, float angle );
+//void scale( float x, float y, float scale_x, float scale_y );
+//void rotate( float x, float y, float angle );
 void raise( int positions );
 // Raises the item in its parent's stack by the specified number of
 // positions. If the number of positions is greater than the distance
