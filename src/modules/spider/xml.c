@@ -1493,7 +1493,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
       f_aggregate(num);
       if(!GOBBLE("*") && num>1)
 	XMLERROR("Expected \"*\" at the end of #PCDATA");
-      
+      seq = '#'; /* special #PCDATA marker */
     }else{
       push_int(0); /* allocate a little room */
       num++;
@@ -1566,27 +1566,28 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
   }
 
   IF_XMLDEBUG( READ(0) );
-  switch(PEEK(0))
-  {
-    case '?':
-      READ(1);
-      push_constant_text("?");
-      stack_swap();
-      f_aggregate(2);
-      break;
-    case '*':
-      READ(1);
-      push_constant_text("*");
-      stack_swap();
-      f_aggregate(2);
-      break;
-    case '+':
-      READ(1);
-      push_constant_text("+");
-      stack_swap();
-      f_aggregate(2);
-      break;
-  }
+  if(seq != '#')
+    switch(PEEK(0))
+    {
+      case '?':
+        READ(1);
+        push_constant_text("?");
+        stack_swap();
+        f_aggregate(2);
+        break;
+      case '*':
+        READ(1);
+	push_constant_text("*");
+	stack_swap();
+	f_aggregate(2);
+	break;
+      case '+':
+	READ(1);
+	push_constant_text("+");
+	stack_swap();
+	f_aggregate(2);
+	break;
+    }
 
 #ifdef PIKE_DEBUG
   if(sp != save_sp2+1)
