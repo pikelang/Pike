@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.35 2000/12/05 21:08:18 per Exp $
+ * $Id: interpret_functions.h,v 1.36 2001/01/08 20:04:48 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1614,6 +1614,11 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 
   if(Pike_sp-args != Pike_fp->locals)
   {
+#ifdef PIKE_DEBUG
+    if (Pike_sp < Pike_fp->locals + args)
+      fatal("Pike_sp (%p) < Pike_fp->locals (%p) + args (%d)\n",
+	    Pike_sp, Pike_fp->locals, args);
+#endif
     assign_svalues(Pike_fp->locals, Pike_sp-args, args, BIT_MIXED);
     pop_n_elems(Pike_sp - (Pike_fp->locals + args));
   }
