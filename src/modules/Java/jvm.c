@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.23 2000/07/07 23:12:57 grubba Exp $
+ * $Id: jvm.c,v 1.24 2000/07/08 00:17:27 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -10,6 +10,7 @@
  * Includes
  */
 
+#define NO_PIKE_SHORTHAND
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -18,7 +19,7 @@
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.23 2000/07/07 23:12:57 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.24 2000/07/08 00:17:27 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -3209,12 +3210,12 @@ void pike_module_init(void)
 
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
-  add_function("cast", f_jobj_cast, "function(string:mixed)", 0);
-  add_function("`==", f_jobj_eq, "function(mixed:int)", 0);
-  add_function("__hash", f_jobj_hash, "function(:int)", 0);
-  add_function("is_instance_of", f_jobj_instance, "function(object:int)", 0);
-  add_function("monitor_enter", f_monitor_enter, "function(:object)", 0);
-  add_function("get_object_class", f_jobj_get_class, "function(:object)", 0);
+  pike_add_function("cast", f_jobj_cast, "function(string:mixed)", 0);
+  pike_add_function("`==", f_jobj_eq, "function(mixed:int)", 0);
+  pike_add_function("__hash", f_jobj_hash, "function(:int)", 0);
+  pike_add_function("is_instance_of", f_jobj_instance, "function(object:int)", 0);
+  pike_add_function("monitor_enter", f_monitor_enter, "function(:object)", 0);
+  pike_add_function("get_object_class", f_jobj_get_class, "function(:object)", 0);
   set_init_callback(init_jobj_struct);
   set_exit_callback(exit_jobj_struct);
   set_gc_check_callback(jobj_gc_check);
@@ -3225,44 +3226,44 @@ void pike_module_init(void)
   start_new_program();
   prog.u.program = jobj_program;
   do_inherit(&prog, 0, NULL);
-  add_function("super_class", f_super_class, "function(:object)", 0);
-  add_function("is_assignable_from", f_is_assignable_from,
-	       "function(object:int)", 0);
-  add_function("throw_new", f_throw_new, "function(string:void)", 0);
-  add_function("alloc", f_alloc, "function(:object)", 0);
-  add_function("new_array", f_new_array, "function(int,object|void:object)", 0);
-  add_function("get_method", f_get_method, "function(string,string:object)", 0);
-  add_function("get_static_method", f_get_static_method, "function(string,string:object)", 0);
-  add_function("get_field", f_get_field, "function(string,string:object)", 0);
-  add_function("get_static_field", f_get_static_field, "function(string,string:object)", 0);
+  pike_add_function("super_class", f_super_class, "function(:object)", 0);
+  pike_add_function("is_assignable_from", f_is_assignable_from,
+		    "function(object:int)", 0);
+  pike_add_function("throw_new", f_throw_new, "function(string:void)", 0);
+  pike_add_function("alloc", f_alloc, "function(:object)", 0);
+  pike_add_function("new_array", f_new_array, "function(int,object|void:object)", 0);
+  pike_add_function("get_method", f_get_method, "function(string,string:object)", 0);
+  pike_add_function("get_static_method", f_get_static_method, "function(string,string:object)", 0);
+  pike_add_function("get_field", f_get_field, "function(string,string:object)", 0);
+  pike_add_function("get_static_field", f_get_static_field, "function(string,string:object)", 0);
 #ifdef SUPPORT_NATIVE_METHODS
-  add_function("register_natives", f_register_natives, "function(array(array(string|function)):object)", 0);
+  pike_add_function("register_natives", f_register_natives, "function(array(array(string|function)):object)", 0);
 #endif /* SUPPORT_NATIVE_METHODS */
   jclass_program = end_program();
   jclass_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  add_function("throw", f_javathrow, "function(:void)", 0);
+  pike_add_function("throw", f_javathrow, "function(:void)", 0);
   jthrowable_program = end_program();
   jthrowable_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
   jarray_stor_offs = ADD_STORAGE(struct jarray_storage);
-  add_function("_sizeof", f_javaarray_sizeof, "function(:int)", 0);
-  add_function("`[]", f_javaarray_getelt, "function(int,int|void:mixed)", 0);
-  add_function("`[]=", f_javaarray_setelt, "function(int,mixed:mixed)", 0);
-  add_function("_indices", f_javaarray_indices, "function(:array(int))", 0);
-  add_function("_values", f_javaarray_values, "function(:array(mixed))", 0);
+  pike_add_function("_sizeof", f_javaarray_sizeof, "function(:int)", 0);
+  pike_add_function("`[]", f_javaarray_getelt, "function(int,int|void:mixed)", 0);
+  pike_add_function("`[]=", f_javaarray_setelt, "function(int,mixed:mixed)", 0);
+  pike_add_function("_indices", f_javaarray_indices, "function(:array(int))", 0);
+  pike_add_function("_values", f_javaarray_values, "function(:array(mixed))", 0);
   jarray_program = end_program();
   jarray_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  add_function("create", f_method_create,
-	       "function(string,string,object:void)", 0);
-  add_function("`()", f_call_static, "function(mixed...:mixed)", 0);
+  pike_add_function("create", f_method_create,
+		    "function(string,string,object:void)", 0);
+  pike_add_function("`()", f_call_static, "function(mixed...:mixed)", 0);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
@@ -3272,11 +3273,11 @@ void pike_module_init(void)
 
   start_new_program();
   ADD_STORAGE(struct method_storage);
-  add_function("create", f_method_create,
-	       "function(string,string,object:void)", 0);
-  add_function("`()", f_call_virtual, "function(object,mixed...:mixed)", 0);
-  add_function("call_nonvirtual", f_call_nonvirtual,
-	       "function(object,mixed...:mixed)", 0);
+  pike_add_function("create", f_method_create,
+		    "function(string,string,object:void)", 0);
+  pike_add_function("`()", f_call_virtual, "function(object,mixed...:mixed)", 0);
+  pike_add_function("call_nonvirtual", f_call_nonvirtual,
+		    "function(object,mixed...:mixed)", 0);
   set_init_callback(init_method_struct);
   set_exit_callback(exit_method_struct);
   set_gc_check_callback(method_gc_check);
@@ -3286,10 +3287,10 @@ void pike_module_init(void)
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  add_function("create", f_field_create,
-	       "function(string,string,object:void)", 0);
-  add_function("set", f_field_set, "function(object,mixed:mixed)", 0);
-  add_function("get", f_field_get, "function(object:mixed)", 0);
+  pike_add_function("create", f_field_create,
+		    "function(string,string,object:void)", 0);
+  pike_add_function("set", f_field_set, "function(object,mixed:mixed)", 0);
+  pike_add_function("get", f_field_get, "function(object:mixed)", 0);
   set_init_callback(init_field_struct);
   set_exit_callback(exit_field_struct);
   set_gc_check_callback(field_gc_check);
@@ -3299,10 +3300,10 @@ void pike_module_init(void)
 
   start_new_program();
   ADD_STORAGE(struct field_storage);
-  add_function("create", f_field_create,
-	       "function(string,string,object:void)", 0);
-  add_function("set", f_static_field_set, "function(mixed:mixed)", 0);
-  add_function("get", f_static_field_get, "function(:mixed)", 0);
+  pike_add_function("create", f_field_create,
+		    "function(string,string,object:void)", 0);
+  pike_add_function("set", f_static_field_set, "function(mixed:mixed)", 0);
+  pike_add_function("get", f_static_field_get, "function(:mixed)", 0);
   set_init_callback(init_field_struct);
   set_exit_callback(exit_field_struct);
   set_gc_check_callback(field_gc_check);
@@ -3312,7 +3313,7 @@ void pike_module_init(void)
 
   start_new_program();
   ADD_STORAGE(struct monitor_storage);
-  add_function("create", f_monitor_create, "function(object:void)", 0);
+  pike_add_function("create", f_monitor_create, "function(object:void)", 0);
   set_init_callback(init_monitor_struct);
   set_exit_callback(exit_monitor_struct);
   set_gc_check_callback(monitor_gc_check);
@@ -3323,8 +3324,8 @@ void pike_module_init(void)
 #ifdef SUPPORT_NATIVE_METHODS
   start_new_program();
   ADD_STORAGE(struct natives_storage);
-  add_function("create", f_natives_create,
-	       "function(array(array(string|function)),object:void)", 0);
+  pike_add_function("create", f_natives_create,
+		    "function(array(array(string|function)),object:void)", 0);
   set_init_callback(init_natives_struct);
   set_exit_callback(exit_natives_struct);
   set_gc_check_callback(natives_gc_check);
@@ -3336,7 +3337,7 @@ void pike_module_init(void)
 #ifdef _REENTRANT
   start_new_program();
   ADD_STORAGE(struct att_storage);
-  add_function("create", f_att_create, "function(object:void)", 0);
+  pike_add_function("create", f_att_create, "function(object:void)", 0);
   set_init_callback(init_att_struct);
   set_exit_callback(exit_att_struct);
   set_gc_check_callback(att_gc_check);
@@ -3347,30 +3348,30 @@ void pike_module_init(void)
 
   start_new_program();
   ADD_STORAGE(struct jvm_storage);
-  add_function("create", f_create, "function(string|void:void)", 0);
-  add_function("get_version", f_get_version, "function(:int)", 0);
-  add_function("find_class", f_find_class, "function(string:object)", 0);
-  add_function("define_class", f_define_class,
-	       "function(object,string:object)", 0);
-  add_function("exception_check", f_exception_check, "function(:int)", 0);
-  add_function("exception_occurred", f_exception_occurred,
-	       "function(:object)", 0);
-  add_function("exception_describe", f_exception_describe,
-	       "function(:void)", 0);
-  add_function("exception_clear", f_exception_clear, "function(:void)", 0);
-  add_function("fatal", f_javafatal, "function(string:void)", 0);
-  add_function("new_boolean_array", f_new_boolean_array,
-	       "function(int:object)", 0);
-  add_function("new_byte_array", f_new_byte_array, "function(int:object)", 0);
-  add_function("new_char_array", f_new_char_array, "function(int:object)", 0);
-  add_function("new_short_array", f_new_short_array,
-	       "function(int:object)", 0);
-  add_function("new_int_array", f_new_int_array, "function(int:object)", 0);
-  add_function("new_long_array", f_new_long_array, "function(int:object)", 0);
-  add_function("new_float_array", f_new_float_array,
-	       "function(int:object)", 0);
-  add_function("new_double_array", f_new_double_array,
-	       "function(int:object)", 0);
+  pike_add_function("create", f_create, "function(string|void:void)", 0);
+  pike_add_function("get_version", f_get_version, "function(:int)", 0);
+  pike_add_function("find_class", f_find_class, "function(string:object)", 0);
+  pike_add_function("define_class", f_define_class,
+		    "function(object,string:object)", 0);
+  pike_add_function("exception_check", f_exception_check, "function(:int)", 0);
+  pike_add_function("exception_occurred", f_exception_occurred,
+		    "function(:object)", 0);
+  pike_add_function("exception_describe", f_exception_describe,
+		    "function(:void)", 0);
+  pike_add_function("exception_clear", f_exception_clear, "function(:void)", 0);
+  pike_add_function("fatal", f_javafatal, "function(string:void)", 0);
+  pike_add_function("new_boolean_array", f_new_boolean_array,
+		    "function(int:object)", 0);
+  pike_add_function("new_byte_array", f_new_byte_array, "function(int:object)", 0);
+  pike_add_function("new_char_array", f_new_char_array, "function(int:object)", 0);
+  pike_add_function("new_short_array", f_new_short_array,
+		    "function(int:object)", 0);
+  pike_add_function("new_int_array", f_new_int_array, "function(int:object)", 0);
+  pike_add_function("new_long_array", f_new_long_array, "function(int:object)", 0);
+  pike_add_function("new_float_array", f_new_float_array,
+		    "function(int:object)", 0);
+  pike_add_function("new_double_array", f_new_double_array,
+		    "function(int:object)", 0);
   set_init_callback(init_jvm_struct);
   set_exit_callback(exit_jvm_struct);
 #ifdef _REENTRANT
