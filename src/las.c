@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.6 1996/11/14 01:36:28 hubbe Exp $");
+RCSID("$Id: las.c,v 1.7 1996/11/18 20:44:08 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1525,7 +1525,7 @@ struct timer_oflo
   int yes;
 };
 
-static void check_evaluation_time(struct callback *cb,void *ignored,void *tmp)
+static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
 {
   struct timer_oflo *foo=(struct timer_oflo *)tmp;
   if(foo->counter-- < 0)
