@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.133 2002/01/01 22:04:55 nilsson Exp $
+// $Id: module.pmod,v 1.134 2002/02/06 15:25:24 per-bash Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -365,7 +365,7 @@ class File
 		    function(int, mixed ...:void) callback,
 		    mixed ... args)
   {
-    if (!(_fd || query_address()) && !open_socket()) {
+    if (!(_fd || !catch(query_address())) && !open_socket()) {
       // Out of sockets?
       return 0;
     }
