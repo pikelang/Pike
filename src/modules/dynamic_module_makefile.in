@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.47 1999/03/06 06:00:24 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.48 1999/03/06 06:18:31 hubbe Exp $
 #
 
 
@@ -7,9 +7,9 @@ CC=@CC@
 CPP=@CPP@
 AR=@AR@
 LIBGCC=@LIBGCC@
-REAL_LDFLAGS="@LDFLAGS@"
-REAL_CFLAGS="@CFLAGS@"
-REAL_CPPFLAGS="@CPPFLAGS@"
+REAL_LDFLAGS=@LDFLAGS@
+REAL_CFLAGS=@CFLAGS@
+REAL_CPPFLAGS=@CPPFLAGS@
 
 PIKE_SRC_DIR=$(SRCDIR)/../..
 BUILD_BASE=../..
