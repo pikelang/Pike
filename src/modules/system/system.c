@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.1 1997/01/21 20:55:02 grubba Exp $
+ * $Id: system.c,v 1.2 1997/01/21 22:37:51 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -13,7 +13,7 @@
 #include "system_machine.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.1 1997/01/21 20:55:02 grubba Exp $");
+RCSID("$Id: system.c,v 1.2 1997/01/21 22:37:51 grubba Exp $");
 #include <las.h>
 #include <interpret.h>
 #include <stralloc.h>
@@ -709,9 +709,6 @@ void f_gethostbyname(INT32 args)
   f_aggregate(3);
 }  
 #endif /* HAVE_GETHOSTBYNAME */
- 
-
-
 
 /*
  * Module linkage
@@ -731,6 +728,47 @@ void init_system_efuns(void)
 #ifdef HAVE_INITGROUPS
   add_efun("initgroups", f_initgroups, "function(string, int:void)", OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */
+  add_efun("setuid", f_setuid, "function(int:void)", OPT_SIDE_EFFECT);
+  add_efun("setgid", f_setgid, "function(int:void)", OPT_SIDE_EFFECT);
+#if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
+  add_efun("seteuid", f_seteuid, "function(int:void)", OPT_SIDE_EFFECT);
+  add_efun("setegid", f_do_setegid, "function(int:void)", OPT_SIDE_EFFECT);
+#endif /* HAVE_SETEUID || HAVE_SETRESUID */
+
+  add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
+ 
+#ifdef HAVE_GETEUID
+  add_efun("geteuid", f_geteuid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  add_efun("getegid", f_getegid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_GETEUID */
+ 
+  add_efun("getpid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#ifdef HAVE_GETPPID
+  add_efun("getppid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_GETPPID */
+ 
+#ifdef HAVE_GETPGRP
+  add_efun("getpgrp", f_getpgrp, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_GETPGRP */
+ 
+  add_efun("chroot", f_chroot, "function(string|object:int)", 
+           OPT_EXTERNAL_DEPEND);
+ 
+#ifdef HAVE_UNAME
+  add_efun("uname", f_uname, "function(:mapping)", OPT_TRY_OPTIMIZE);
+#endif /* HAVE_UNAME */
+ 
+#if defined(HAVE_GETHOSTNAME) || defined(HAVE_UNAME)
+  add_efun("gethostname", f_gethostname, "function(:string)",OPT_TRY_OPTIMIZE);
+#endif /* HAVE_GETHOSTNAME || HAVE_UNAME */
+
+#ifdef HAVE_GETHOSTBYNAME
+  add_efun("gethostbyname", f_gethostbyname, "function(string:array)",
+           OPT_TRY_OPTIMIZE);
+  add_efun("gethostbyaddr", f_gethostbyaddr, "function(string:array)",
+           OPT_TRY_OPTIMIZE);
+#endif /* HAVE_GETHOSTBYNAME */
 }
 
 void init_system_programs(void)
