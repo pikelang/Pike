@@ -1,6 +1,7 @@
-// $Id: RDF.pike,v 1.5 2002/09/14 13:11:05 nilsson Exp $
+// $Id: RDF.pike,v 1.6 2002/10/29 03:24:46 nilsson Exp $
 
-//! Represents an RDF domain which can contain any number of complete statements.
+//! Represents an RDF domain which can contain any number of complete
+//! statements.
 
 static int(1..) node_counter = 1;
 static mapping(string:Resource) uris = ([]);
@@ -12,88 +13,83 @@ static mapping(string:Resource) uris = ([]);
 //! part of a Web page; e.g. a specific HTML or XML element within the
 //! document source. A resource may also be a whole collection of pages;
 //! e.g. an entire Web site. A resource may also be an object that is
-//! not directly accessible via the Web; e.g. a printed book. Resources
-//! are always named by URIs plus optional anchor ids.
-//! Anything can have a URI; the extensibility of URIs allows the
-//! introduction of identifiers for any entity imaginable.
+//! not directly accessible via the Web; e.g. a printed book.
+//! This general resource is anonymous and has no URI or literal id.
 //!
 //! @note
 //!   Resources instantiated from this class should not be used in
 //!   other RDF domain objects.
+//!
+//! @seealso
+//!   @[URIResource], @[LiteralResource]
 class Resource {
   static int(1..) number;
-  static int(0..1) name_is_uri;
-  static string name;
 
-  //! @decl void create()
-  //! @decl void create(string id, int(0..1) is_uri)
-  //! A resource can be created both as an anonymous resource or with
-  //! an id. The resource id can be either a literal or a URI, which
-  //! then is signified by setting the second argument, @[is_uri], to
-  //! true.
-  //! @throws
-  //!   Throws an error if another resource with the
-  //!   same URI already exists in the RDF domain.
-  void create(void|string id, void|int(0..1) is_uri) {
-    if(id) {
-      if(is_uri)
-	set_uri(id);
-      else
-	set_literal(id);
-    }
+  void create() {
     number = node_counter++;
-  }
-
-  //! Sets the node value to be a literal.
-  void set_literal(string in) {
-    name = in;
-    name_is_uri = 0;
-  }
-
-  //! Sets the node value to be a URI. The
-  //! provided URI should already be normalized.
-  //! @throws
-  //!   Throws an error if another resource with the
-  //!   same URI already exists in the RDF domain.
-  void set_uri(string in) {
-    if(uris[in])
-      error("A resource with URI %s already exists in the RDF domain.\n", in);
-    uris[in] = this_object();
-    name = in;
-    name_is_uri = 1;
-  }
-
-  //! Returns the node URI value or zero.
-  string get_uri() {
-    if(name_is_uri) return name;
-    return 0;
-  }
-
-  //! Returns the node literal value or zero.
-  string get_literal() {
-    if(name_is_uri) return 0;
-    return name;
   }
 
   //! Returns the nodes' N-triple serialized ID.
   string get_n_triple_name() {
-    if(name) {
-      if(name_is_uri)
-	return "<" + name + ">";
-      return "\"" + name + "\"";
-    }
     return "_:Resource"+number;
   }
 
-  string _sprintf(int t) {
-    if(t=='t') return "RDF.Resource";
-    if(t=='O') return "RDF.Resource(" + get_n_triple_name() + ")";
-    error("Can not represent RDF.Resource as %c.\n", t);
+  static string __sprintf(string c, int t) {
+    if(t=='t') return "RDF."+c;
+    if(t=='O') return "RDF."+c+"(" + get_n_triple_name() + ")";
+    error("Can not represent RDF.%s as %c.\n", c, t);
   }
+
+  string _sprintf(int t) { return __sprintf("Resource", t); }
 }
 
+//! Resource identified by literal.
+class LiteralResource {
+  inherit Resource;
+  constant is_literal_resource = 1;
+  static string id;
+
+  //! The resource will be identified by @[literal].
+  void create(string literal) {
+    id = literal;
+    ::create();
+  }
+
+  string get_n_triple_name() {
+    return "\"" + encode_n_triple_string(id) + "\"";
+  }
+
+  string _sprintf(int t) { return __sprintf("LiteralResource", t); }
+}
+
+//! Resource identified by URI.
+class URIResource {
+  inherit Resource;
+  constant is_uri_resource = 1;
+  static string id;
+
+  //! Creates an URI resource with the @[uri] as identifier.
+  //! @throws
+  //!   Throws an error if another resource with the
+  //!   same URI already exists in the RDF domain.
+  void create(string uri) {
+    if(uris[uri])
+      error("A resource with URI %s already exists in the RDF domain.\n", uri);
+    uris[uri] = this_object();
+    id = uri;
+    ::create();
+  }
+
+  string get_n_triple_name() {
+    return "<" + id + ">";
+  }
+
+  string _sprintf(int t) { return __sprintf("URIResource", t); }
+}
+
+
 //
-//
+// General RDF set modification
 //
 
 static mapping(Resource:ADT.Relation.Binary) statements = ([]);
@@ -102,7 +98,7 @@ static mapping(Resource:ADT.Relation.Binary) statements = ([]);
 void add_statement(Resource subj, Resource pred, Resource obj) {
   ADT.Relation.Binary rel = statements[pred];
   if(!rel) {
-    rel = ADT.Relation.Binary(pred);
+    rel = ADT.Relation.Binary();
     statements[pred] = rel;
   }
 
@@ -115,6 +111,11 @@ Resource get_node(string uri) {
   if(uris[uri]) return uris[uri];
   return 0;
 }
+
+
+//
+// N-triple code
+//
 
 //! Returns an N-triples serialization of all the statements in
 //! the RDF set.
@@ -133,10 +134,27 @@ string get_n_triples() {
 }
 
 //! Parses an N-triples string and adds the found statements
-//! to the RDF set.
+//! to the RDF set. Returns the number of added relations.
 //! @throws
 //!   The parser will throw errors on invalid N-triple input.
-void parse_n_triples(string in) {
+int parse_n_triples(string in) {
+
+  class Temp(string id) {
+    constant type = "";
+    string _sprintf() { return sprintf("%s(%O)", type, id); }
+  };
+  class TempURI {
+    inherit Temp;
+    constant type = "TempURI";
+  };
+  class TempNode {
+    inherit Temp;
+    constant type = "TempNode";
+  };
+  class TempLiteral {
+    inherit Temp;
+    constant type = "TempLiteral";
+  };
 
   array(string) tokens = ({});
   int pos;
@@ -166,31 +184,74 @@ void parse_n_triples(string in) {
       // N-triple string
       while( in[++pos]!='\"' )
 	if( in[pos]=='\\' ) pos++;
-      string str = decode_n_triple_string( in[start..pos-1] );
+      string str = decode_n_triple_string( in[start+1..pos-1] );
+      tokens += ({ TempLiteral(str) });
+
+      // language (ignored)
       start = pos;
-      if( in[pos]=='-' )
+      if( in[pos]=='-' ) {
 	while( !(< ' ', '\t', '\r', '\n' >)[in[++pos]] );
-      tokens += ({ str+in[start..pos-1] });
+      }
+
+      pos++;
       continue;
 
     case '<':
-      // URI
+      // uriref
       while( in[++pos]!='>' );
-      tokens += ({ decode_n_triple_string( in[start..pos-1] ) });
+      tokens += ({ TempURI(decode_n_triple_string( in[start+1..pos-1] )) });
+      pos++;
+      continue;
+
+    case '_':
+      // nodeID
+      if(in[pos+1]!=':')
+	error("No ':' in nodeID (position %s).\n", pos);
+      while( !(< ' ', '\t', '\r', '\n' >)[in[++pos]] );
+      tokens += ({ TempNode( in[start+2..pos-1] ) });
       continue;
 
     case '.':
+      tokens += ({ "." });
       pos++;
       break;
+
+    default:
+      error("Malformed n-triples input (position %d).\n", pos);
     }
-
-    tokens += ({ in[start..pos-1] });
   }
 
-  int last;
-  while( (last=search(tokens, ".", last))!=-1 ) {
+  mapping(string:Resource) anonymous = ([]);
 
+  Resource make_resource(Temp res) {
+    switch(res->type) {
+    case "TempURI":
+      Resource ret;
+      if(ret=uris[res->id])
+	return ret;
+      return URIResource( res->id );
+
+    case "TempLiteral": return LiteralResource( res->id );
+
+    case "TempNode":
+      if(ret=anonymous[res->id])
+	return ret;
+      else
+	return anonymous[res->id]=Resource();
+    }
+    error("Unknown temp container. Strange indeed.\n");
+  };
+
+  int adds;
+  foreach(tokens/({"."}), array rel) {
+    if(!sizeof(rel)) continue;
+    if(sizeof(rel)!=3) error("N-triple isn't a triple.\n");
+    add_statement( make_resource( rel[0] ),
+		   make_resource( rel[1] ),
+		   make_resource( rel[2] ) );
+    adds++;
   }
+  return adds;
 }
 
 //! Decodes a string that has been encoded for N-triples
@@ -199,21 +260,20 @@ void parse_n_triples(string in) {
 //!   Doesn't correctly decode backslashes that has been
 //!   encoded with with \u- or \U-notation.
 string decode_n_triple_string(string in) {
-
   string build = "";
   while( sscanf(in, "%s\\u%4x%s", string a, int b, in)==3 )
     build += a + sprintf("%c", b);
 
-  in = build;
+  in = build+in;
   build = "";
   while( sscanf(in, "%s\\U%8x%s", string a, int b, in)==3 )
     build += a + sprintf("%c", b);
 
-  build = replace(build, ([ "\\\\" : "\\",
-			    "\\\"" : "\"",
-			    "\\n" : "\n",
-			    "\\r" : "\r",
-			    "\\t" : "\t" ]) );
+  build = replace(build+in, ([ "\\\\" : "\\",
+			       "\\\"" : "\"",
+			       "\\n" : "\n",
+			       "\\r" : "\r",
+			       "\\t" : "\t" ]) );
   return build;
 }
 
@@ -255,6 +315,16 @@ string encode_n_triple_string(string in) {
   }
 
   return build;
+}
+
+
+//
+// lfuns
+//
+
+int _sizeof() {
+  if(!sizeof(statements)) return 0;
+  return `+( @sizeof(values(statements)[*]) );
 }
 
 string _sprintf(int t) {
