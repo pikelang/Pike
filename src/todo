@@ -142,45 +142,87 @@ patch byacc
 	done (maybe needs more fixing)
 
 fix efun->foo (always copies value)
+	fixed?
+
+rewrite sort_array
 	fixed
 
-dokumentera mera!
+putenv
+	fixed
 
-ta bort MAX_LOCAL (& MAX_GLOBAL)
+sort()
+	fixed
 
-ta bort EXPANDMAX
+++++ -> sum()
+	fixed
 
-kommentera mera
+update README
+	fixed
+
+move the check for libsocket to the file module
+	fixed
+
+add garbage collect
+	fixed
+
+function_exists()
+	not needed, just index the object.
+
+remove MAX_LOCAL (& MAX_GLOBAL)
+
+remove EXPANDMAX
+
+write more comments
 
 typkollen m}ste generera b{ttre felmeddelanden..
 
-putenv? setugid? 
+setugid? 
 
-function_exists()
 inherit_list()
 function_args()
 get_function_list()
 fuzzymatch()
-sort()
 this_function()
-kolla upp |vriga efunnar som skall portas 
+check what other functions needs porting
 
+add generic callbacks
 
-++++ -> sum()
-
-update README
-
-flytta cheken f|r libsocket till modulen (och se till att moduler kan addera libs)
-(eller s{tt tillbaka AC_HAVE_DIRENT (?) i configure.in)
-
-add garbage collect
-
-addera generisk callback
-
-assert (kolla typer explicit)
-generalisera foreach()
+assert (check types explicitely)
+generalize foreach()
 constant
 'type wish'
-rewrite sort_array
 
 document file::set_nonblocking better (prototype callbacks etc.)
+
+fix 'private inherit'
+
+fix run time type checks.
+
+make backtrace() show the arguments.
+
+code_value()
+decode_value()
+
+threads
+
+dynamic stack
+
+command line option: -L libdir
+
+rename list->multiset
+rename uLPC
+rename perror
+make a new perror
+rename add_efun -> add_constant
+rename sizeof -> size?
+
+then make a compat.h
+
+remove some simulated functions or make the optional.
+
+change object/program naming strategy
+
+make a better module interface.
+make a C++ interface.
+
+allocate stack with MAP_NORESERV
