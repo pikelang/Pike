@@ -5,10 +5,9 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.36 1999/02/22 15:22:24 grubba Exp $
+ * $Id: cpp.c,v 1.37 1999/02/22 21:35:28 grubba Exp $
  */
 #include "global.h"
-/* #include "dynamic_buffer.h" */
 #include "language.h"
 #include "lex.h"
 #include "stralloc.h"
@@ -2099,6 +2098,28 @@ void f_cpp(INT32 args)
     copy_shared_string(this.current_file, sp[1-args].u.string);
   }else{
     this.current_file=make_shared_string("-");
+  }
+
+  if ((!sp[-args].u.string->size_shift) && (sp[-args].u.string->len > 1)) {
+    /* Try to determine if we need to recode the string */
+
+    /* At least a prefix of two bytes need to be 7bit in a valid
+     * Pike program.
+     */
+    /* Heuristic:
+     *
+     * Index 0 | Index 1 | Interpretation
+     * --------+---------+------------------------------------------
+     *       0 |       0 | 32bit wide string.
+     *       0 |      >0 | 16bit Unicode string.
+     *      >0 |       0 | 16bit Unicode string reverse byte order.
+     *    0xff |    0xfe | 16bit Unicode string.
+     *    0xfe |    0xff | 16bit Unicode string reverse byte order.
+     *    0x7b |    0x83 | EBCDIC-US ("#c").
+     *    0x7b |    0x40 | EBCDIC-US ("# ").
+     * --------+---------+------------------------------------------
+     *   Other |   Other | 8bit standard string.
+     */
   }
   
   init_string_builder(&this.buf, 0);
