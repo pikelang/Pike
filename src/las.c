@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.83 1999/08/17 01:06:58 mast Exp $");
+RCSID("$Id: las.c,v 1.84 1999/08/20 06:01:30 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1608,7 +1608,8 @@ void fix_type_field(node *n)
 
   case F_ASSIGN:
     if(CAR(n) && CDR(n) &&
-       CDR(n)->token != F_ARROW && /* a->b=c can be valid when a is an array */
+       /* a["b"]=c and a->b=c can be valid when a is an array */
+       CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
        !match_types(CDR(n)->type,CAR(n)->type))
       my_yyerror("Bad type in assignment.");
     copy_shared_string(n->type, CAR(n)->type);
