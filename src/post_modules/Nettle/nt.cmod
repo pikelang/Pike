@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: nt.cmod,v 1.10 2004/05/10 17:50:11 agehall Exp $
+ * $Id: nt.cmod,v 1.11 2004/09/03 10:32:45 grubba Exp $
  */
 
 #ifdef __NT__
@@ -97,18 +97,16 @@ PIKECLASS CryptContext
     optflags OPT_EXTERNAL_DEPEND;
   {
     struct pike_string *res;
-    struct pike_string *str = 0;
     if(size<0)
       Pike_error("Negative string length.\n");
-    if(init && init->type==T_STRING) {
-      str = init->u.string;
-      NO_WIDE_STRING(str);
+    if(init) {
+      NO_WIDE_STRING(init);
       if(size==0)
-	size = str->len;
+	size = init->len;
     }
     res = begin_shared_string(size);
-    if(str && size>0)
-      MEMCPY(res->str, str->str, MINIMUM(str->len,size));
+    if(init && size>0)
+      MEMCPY(res->str, init->str, MINIMUM(init->len,size));
     if(CryptGenRandom(THIS->handle, size, (BYTE*)res->str)) {
       pop_n_elems(args);
       push_string(end_shared_string(res));
