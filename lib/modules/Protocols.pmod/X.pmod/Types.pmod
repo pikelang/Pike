@@ -220,6 +220,11 @@ class Drawable
   }
 }
 
+class Pixmap
+{
+  inherit Drawable;
+}
+
 class Window
 {
   inherit Drawable;
@@ -534,6 +539,40 @@ class Window
   }
 
 
+  // Shape extension
+  void ShapeRectangles( string kind, int xo, int yo, string operation,
+			array (object(Rectangle)) rectangles )
+  {
+    if(kind == "both")
+    {
+      ShapeRectangles( "clip", xo, yo, operation, rectangles);
+      ShapeRectangles( "bounding", xo, yo, operation, rectangles);
+      return;
+    }
+    if(!display->extensions["SHAPE"])
+      error("No shape extension available.\n");
+    display->extensions["SHAPE"]->
+      ShapeRectangles( this_object(), xo, yo, kind, operation, rectangles );
+  }
+
+  void ShapeMask( string kind, int xo, int yo, string operation,
+		  object (Pixmap) mask )
+  {
+    if(!display->extensions["SHAPE"])
+      error("No shape extension available.\n");
+    display->extensions["SHAPE"]->
+      ShapeMask( this_object(), xo, yo, kind, operation, mask );
+  }
+
+  void ShapeOffset( string kind, int xo, int yo )
+  {
+    if(!display->extensions["SHAPE"])
+      error("No shape extension available.\n");
+    display->extensions["SHAPE"]->ShapeOffset( this_object(), kind, xo, yo );
+  }
+
+
+  // Init function.
   void create(mixed ... args)
   {
     ::create( @args );

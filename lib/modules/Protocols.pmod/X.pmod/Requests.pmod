@@ -33,6 +33,10 @@ class request
   {
     if (strlen(req) % 4)
       error("Xlib.request: internal error!\n");
+    // Big requests extension. Will not work
+    // if this extension is not present.
+    if((strlen(req)+1) > (65535*4))
+      return sprintf("%c%c\0\0%4c%s", type, data, 1 + strlen(req) / 4, req);
     return sprintf("%c%c%2c%s", type, data, 1 + strlen(req) / 4, req);
   }
 
@@ -350,4 +354,89 @@ class AllocColor
   {
     return 0;
   }
+}
+
+class QueryExtension
+{
+  inherit request;
+  constant type = 98;
+  string name;
+
+  void create(string n)
+  {
+    name = n;
+  }
+  
+  string to_string()
+  {
+    string pad="";
+    while(((strlen(name)+strlen(pad))%4)) pad += "\0";
+    return build_request(sprintf("%2c\0\0%s%s", strlen(name),name,pad));
+  }
+
+  mapping handle_reply(mapping reply)
+  {
+    int present, major, event, error_code;
+    sscanf(reply->rest, "%c%c%c%c", present, major, event, error_code);
+    if(present) return ([ "major":major, "event":event, "error":error_code ]);
+  }
+
+  mixed handle_error(string reply)
+  {
+    return 0;
+  }
+}
+
+
+
+
+class ExtensionRequest
+{
+  int type;
+  int code;
+  string data;
+  function handle_reply;
+  function handle_error;
+
+  array build_value_list(mapping m, array(string) fields)
+  {
+    int mask = 0;
+    int bit = 1;
+    array v = ({ });
+
+    foreach(fields, string f)
+      {
+	if (!zero_type(m[f]))
+	  {
+	    v += ({ objectp(m[f]) ? m[f]->id : m[f] });
+	    mask |= bit;
+	  }
+	bit <<= 1;
+      }
+    return ({ mask, sprintf("%@4c", v) });
+  }
+
+  string build_request(string req, void|int data)
+  {
+    return sprintf("%c%c%2c%s", type, data, 1 + strlen(req) / 4, req);
+  }
+
+
+  // End preamble..
+
+  varargs void create( int m, function reply_handler, function error_handler )
+  {
+    type = m;
+    handle_reply = reply_handler;
+    handle_error = error_handler;
+  }
+
+  string to_string()
+  {
+    string pad ="";
+    if(!data) data = "";
+    else while((strlen(data)+strlen(pad))%4) pad += "\0";
+    return build_request(data+pad, code);
+  }
+  
 }

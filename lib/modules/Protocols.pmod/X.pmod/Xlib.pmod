@@ -155,6 +155,8 @@ class Display
 
   array key_mapping ;
 
+  mapping extensions = ([]); // all available extensions.
+
   mapping pending_requests; /* Pending requests */
   object pending_actions;   /* Actions awaiting handling */
 
@@ -367,6 +369,15 @@ class Display
 	    state = STATE_WAIT_HEADER;
 	    received->expect(32);
 	    get_keyboard_mapping();
+
+	    foreach(values(Extensions), program p)
+	    {
+	      object e = p();
+	      if(e->init( this_object() ))
+		extensions[e->name] = e;
+	      else
+		destruct( e ) ;
+	    }
 	    return ({ ACTION_CONNECT });
 	  }
 	case STATE_WAIT_HEADER:
