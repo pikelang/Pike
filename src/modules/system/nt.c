@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.9 1999/03/23 20:25:28 marcus Exp $
+ * $Id: nt.c,v 1.10 1999/05/13 07:23:12 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -19,6 +19,7 @@
 #include "module_support.h"
 #include "array.h"
 #include "constants.h"
+#include "builtin_functions.h"
 
 #include <winsock.h>
 #include <windows.h>
