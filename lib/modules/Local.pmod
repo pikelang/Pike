@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.5 2002/08/28 09:45:13 mikael Exp $
+// $Id: Local.pmod,v 1.6 2002/08/28 13:40:24 mikael Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -25,6 +25,11 @@ mixed `[](string name) {
       return add_path;
     return remove_path;
   }
+
+  // FIXME: Should .pike och .pmod files have priority?
+  //        currently .pike files has it here, but .pmod in the
+  //        resolver. // mikael
+  
   foreach(local_path,string lp){
     program r=(program)combine_path(lp,name);
     if(r)
@@ -51,9 +56,9 @@ array(string) _indices() {
   array(string) tmp = ({ });
   foreach(local_path,string lp)
     tmp+=get_dir(lp);
-  return map(glob("*.pike",tmp)+glob("*.pmod",tmp)+glob("*.so",tmp),
+  return Array.uniq(map(glob("*.pike",tmp)+glob("*.pmod",tmp)+glob("*.so",tmp),
              lambda(string in){ if(glob("*.so",in)) return in[..sizeof(in)-4];
-             return in[..sizeof(in)-6]; });
+             return in[..sizeof(in)-6]; }));
 }
 
 // _values intentionally not overloaded
