@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.18 1999/05/24 12:09:35 mirar Exp $
+**!	$Id: colors.c,v 1.19 1999/05/24 13:01:28 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.18 1999/05/24 12:09:35 mirar Exp $");
+RCSID("$Id: colors.c,v 1.19 1999/05/24 13:01:28 mirar Exp $");
 
 #include "config.h"
 
@@ -717,8 +717,8 @@ static void image_color_equal(INT32 args)
 	  sp[-1].u.array->item[1].type==T_INT &&
 	  sp[-1].u.array->item[2].type==T_INT &&
 	  sp[-1].u.array->item[0].u.integer == THIS->rgb.r &&
-	  sp[-1].u.array->item[0].u.integer == THIS->rgb.g &&
-	  sp[-1].u.array->item[0].u.integer == THIS->rgb.b)
+	  sp[-1].u.array->item[1].u.integer == THIS->rgb.g &&
+	  sp[-1].u.array->item[2].u.integer == THIS->rgb.b)
       {
 	 pop_stack();
 	 push_int(1);
