@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.60 2001/03/03 21:34:55 grubba Exp $
+ * $Id: pike_types.h,v 1.61 2001/03/03 22:18:04 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -13,6 +13,12 @@
 #include "svalue.h"
 
 #define PIKE_TYPE_STACK_SIZE 100000
+
+#ifdef PIKE_DEBUG
+void TYPE_STACK_DEBUG(const char *fun);
+#else /* !PIKE_DEBUG */
+#define TYPE_STACK_DEBUG(X)
+#endif /* PIKE_DEBUG */
 
 #ifdef USE_PIKE_TYPE
 /*
@@ -35,12 +41,6 @@ struct pike_type
 void free_type(struct pike_type *t);
 #define copy_type(D, S)	add_ref(D = (S))
 #define CONSTTYPE(X) make_pike_type(X)
-
-#ifdef PIKE_DEBUG
-void TYPE_STACK_DEBUG(const char *fun);
-#else /* !PIKE_DEBUG */
-#define TYPE_STACK_DEBUG(X)
-#endif /* PIKE_DEBUG */
 
 extern struct pike_type *type_stack[PIKE_TYPE_STACK_SIZE];
 extern struct pike_type **pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
