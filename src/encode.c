@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.98 2002/05/06 14:37:18 mast Exp $");
+RCSID("$Id: encode.c,v 1.99 2002/05/07 09:13:47 jonasw Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1082,6 +1082,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    next_identifier_ref:
 #ifdef ENCODE_DEBUG
 	      data->depth -= 2;
+#else
+	      ;  /* Windows compiler requires a statement here */
 #endif
 	    }
 
