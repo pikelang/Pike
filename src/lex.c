@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.37 1998/03/03 22:30:22 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.38 1998/05/20 16:42:25 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1181,13 +1181,13 @@ static void do_skip(int to)
       if(GOBBLE('#'))
       {
 	SKIPWHITE();
-	READBUF(C!=' ' && C!='\t' && C!='\n');
+	READBUF(C!=' ' && C!='\t' && C!='\n' && C!='\r');
     
 	switch(buf[0])
 	{
 	case 'l':
 	  if(strcmp("line",buf)) break;
-	  READBUF(C!=' ' && C!='\t' && C!='\n');
+	  READBUF(C!=' ' && C!='\t' && C!='\n' && C!='\r');
 
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
@@ -1301,7 +1301,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 	}
             
 	SKIPWHITE();
-	READBUF(C!=' ' && C!='\t' && C!='\n');
+	READBUF(C!=' ' && C!='\t' && C!='\n' && C!='\r');
 
 	switch(buf[0])
 	{
@@ -1309,7 +1309,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 
 	case 'l':
 	  if(strcmp("line",buf)) goto badhash;
-	  READBUF(C!=' ' && C!='\t' && C!='\n');
+	  READBUF(C!=' ' && C!='\t' && C!='\n' && C!='\r');
 
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
@@ -1450,6 +1450,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 
     case ' ':
     case '\t':
+    case '\r':
       continue;
 
     case MY_EOF:
