@@ -1,8 +1,7 @@
 #!/usr/local/bin/pike 
-// Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.11 2001/09/27 19:53:28 nilsson Exp $
+// $Id: extract.pike,v 1.12 2002/01/16 03:12:32 nilsson Exp $
 //
 
 
@@ -1041,7 +1040,7 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) && 
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.11 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.12 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
