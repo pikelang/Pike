@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.148 2001/12/13 11:05:57 mast Exp $
+ * $Id: program.h,v 1.149 2001/12/14 03:44:52 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -402,6 +402,10 @@ extern int compilation_depth;
 
 #define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
 #include "program_areas.h"
+
+/* This flag is set when resolve functions should force the lookup so
+ * that we don't get a placeholder back. Used for inherits. */
+extern int force_resolve;
 
 typedef int supporter_callback (void *, int);
 struct Supporter
