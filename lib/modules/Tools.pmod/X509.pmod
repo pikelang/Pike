@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.19 2003/11/30 17:17:24 nilsson Exp $
+ * $Id: X509.pmod,v 1.20 2003/12/03 10:03:29 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -203,7 +203,7 @@ string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
     ({ tbs,
        rsa_sha1_algorithm,
        BitString(rsa_sign_digest(rsa, Identifiers.sha1_id,
-#if constant(Crypto.SHA)
+#if constant(Crypto.SHA.name)
 				 Crypto.SHA.hash(tbs->get_der())
 #else
 				 Crypto.sha()->update(tbs->get_der())->digest()
@@ -230,7 +230,7 @@ class rsa_verifier
   {
     if (algorithm->get_der() == rsa_md5_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md5_id,
-#if constant(Crypto.MD5)
+#if constant(Crypto.MD5.name)
 			       Crypto.MD5.hash(msg),
 #else
 			       Crypto.md5()->update(msg)->digest(),
@@ -238,7 +238,7 @@ class rsa_verifier
 			       signature);
     if (algorithm->get_der() == rsa_sha1_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.sha1_id,
-#if constant(Crypto.SHA)
+#if constant(Crypto.SHA.name)
 			       Crypto.SHA.hash(msg),
 #else
 			       Crypto.sha()->update(msg)->digest(),
@@ -246,7 +246,7 @@ class rsa_verifier
 			       signature);
     if (algorithm->get_der() == rsa_md2_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md2_id,
-#if constant(Crypto.MD2)
+#if constant(Crypto.MD2.name)
 			       Crypto.MD2.hash(msg),
 #else
 			       Crypto.md2()->update(msg)->digest(),
