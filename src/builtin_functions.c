@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.168 1999/05/02 08:11:32 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.169 1999/05/11 18:56:32 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -38,6 +38,7 @@ RCSID("$Id: builtin_functions.c,v 1.168 1999/05/02 08:11:32 hubbe Exp $");
 #include "cyclic.h"
 #include "signal_handler.h"
 #include "security.h"
+#include "builtin_functions.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -67,7 +68,11 @@ void f_equal(INT32 args)
   push_int(i);
 }
 
+#ifdef DEBUG_MALLOC
+void _f_aggregate(INT32 args)
+#else
 void f_aggregate(INT32 args)
+#endif
 {
   struct array *a;
 #ifdef PIKE_DEBUG
@@ -3972,7 +3977,11 @@ void init_builtin_efuns(void)
   ADD_EFUN("add_constant",f_add_constant,tFunc(tStr tOr(tVoid,tMix),tVoid),OPT_SIDE_EFFECT);
   
 /* function(0=mixed ...:array(0)) */
+#ifdef DEBUG_MALLOC
+  ADD_EFUN("aggregate",_f_aggregate,tFuncV(,tSetvar(0,tMix),tArr(tVar(0))),OPT_TRY_OPTIMIZE);
+#else
   ADD_EFUN("aggregate",f_aggregate,tFuncV(,tSetvar(0,tMix),tArr(tVar(0))),OPT_TRY_OPTIMIZE);
+#endif
   
 /* function(0=mixed ...:multiset(0)) */
   ADD_EFUN("aggregate_multiset",f_aggregate_multiset,tFuncV(,tSetvar(0,tMix),tSet(tVar(0))),OPT_TRY_OPTIMIZE);
