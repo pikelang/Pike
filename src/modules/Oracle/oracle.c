@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.58 2001/09/12 23:13:49 hubbe Exp $
+ * $Id: oracle.c,v 1.59 2001/09/12 23:24:07 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.58 2001/09/12 23:13:49 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.59 2001/09/12 23:24:07 hubbe Exp $");
 
 
 /* User-changable defines: */
@@ -2073,6 +2073,9 @@ void pike_module_init(void)
 	ADD_FUNCTION("`[]=",protect_dbresultinfo,tFunc(tStr tComma tMix,tVoid),0);
 #ifdef ORACLE_DEBUG
 	set_gc_check_callback(gc_dbresultinfo_struct);
+#endif
+#ifdef PROGRAM_USES_PARENT
+	Pike_compiler->new_program->flags|=PROGRAM_USES_PARENT;
 #endif
 	MY_END_CLASS(dbresultinfo);
       }
