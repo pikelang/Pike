@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.21 2003/01/20 17:44:00 nilsson Exp $
+ * $Id: Line.pmod,v 1.22 2003/04/07 17:12:02 nilsson Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -17,14 +17,14 @@ class simple
   static constant line_separator = "\r\n";
 
   //! If this variable has been set, multiple lines will be accumulated,
-  //! until a line with a single @tt{'.'@} (period) is received.
+  //! until a line with a single @expr{"."@} (period) is received.
   //! @[handle_data()] will then be called with the accumulated data
   //! as the argument.
   //!
   //! @note
   //! @[handle_data()] is one-shot, ie it will be cleared when it is called.
   //!
-  //! The line with the single @tt{'.'@} (period) will not be in the
+  //! The line with the single @expr{"."@} (period) will not be in the
   //! accumulated data.
   //!
   //! @seealso
@@ -137,7 +137,7 @@ class simple
   //! Read a line from the input.
   //!
   //! @returns
-  //! Returns @tt{0@} when more input is needed.
+  //! Returns @expr{0@} when more input is needed.
   //! Returns the requested line otherwise.
   //!
   //! @note
@@ -183,7 +183,7 @@ class simple
   //! Queue of data that is pending to send.
   //!
   //! The elements in the queue are either strings with data to send,
-  //! or @tt{0@} (zero) which is the end of file marker. The connection
+  //! or @expr{0@} (zero) which is the end of file marker. The connection
   //! will be closed when the end of file marker is reached.
   //!
   //! @seealso
@@ -284,7 +284,7 @@ class simple
   //! @[timeout] is an optional timeout in seconds after which the connection
   //! will be closed if there has been no data sent or received.
   //!
-  //! If @[timeout] is @tt{0@} (zero), no timeout will be in effect.
+  //! If @[timeout] is @expr{0@} (zero), no timeout will be in effect.
   //!
   //! @seealso
   //! @[touch_time()], @[do_timeout()]
@@ -323,8 +323,8 @@ class smtp_style
   //! If @[lines] is omitted, @[errorcodes] will be used to lookup
   //! an appropriate error-message.
   //!
-  //! If @[lines] is a string, it will be split on @tt{'\n'@} (newline),
-  //! and the error-code interspersed as appropriate.
+  //! If @[lines] is a string, it will be split on @expr{"\n"@}
+  //! (newline), and the error-code interspersed as appropriate.
   //!
   //! @seealso
   //! @[errorcodes]

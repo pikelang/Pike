@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mime.c,v 1.36 2002/11/25 15:35:32 marcus Exp $
+|| $Id: mime.c,v 1.37 2003/04/07 17:25:20 nilsson Exp $
 */
 
 /*
@@ -15,7 +15,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.36 2002/11/25 15:35:32 marcus Exp $");
+RCSID("$Id: mime.c,v 1.37 2003/04/07 17:25:20 nilsson Exp $");
 #include "module.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -910,7 +910,7 @@ static void low_tokenize( INT32 args, int mode )
  *! and produce an array containing the lexical elements.
  *!
  *! Individual special characters will be returned as characters (i.e.
- *! @tt{int@}s).
+ *! @expr{int@}s).
  *!
  *! Quoted-strings, domain-literals and atoms will be decoded and returned
  *! as strings.
@@ -924,7 +924,7 @@ static void low_tokenize( INT32 args, int mode )
  *! Domain-literals are used seldom, if at all, anyway...
  *! 
  *! The set of special-characters is the one specified in RFC1521
- *! (i.e. @tt{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
+ *! (i.e. @expr{"<", ">", "@@", ",", ";", ":", "\", "/", "?", "="@}),
  *! and not the set specified in RFC822.
  *!
  *! @seealso
@@ -1037,7 +1037,7 @@ static int check_encword( unsigned char *str, ptrdiff_t len )
  *! This function is the inverse of the @[MIME.tokenize] function.
  *!
  *! A header field value is constructed from a sequence of lexical elements.
- *! Characters (@tt{int@}s) are taken to be special-characters, whereas
+ *! Characters (@expr{int@}s) are taken to be special-characters, whereas
  *! strings are encoded as atoms or quoted-strings, depending on whether
  *! they contain any special characters.
  *!

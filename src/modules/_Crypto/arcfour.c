@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: arcfour.c,v 1.20 2002/10/21 17:06:23 marcus Exp $
+|| $Id: arcfour.c,v 1.21 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /* arcfour.c
@@ -26,7 +26,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: arcfour.c,v 1.20 2002/10/21 17:06:23 marcus Exp $");
+RCSID("$Id: arcfour.c,v 1.21 2003/04/07 17:20:45 nilsson Exp $");
 
 #undef THIS
 #define THIS ((struct arcfour_ctx *)(Pike_fp->current_storage))
@@ -53,7 +53,7 @@ void exit_pike_arcfour(struct object *o)
 
 /*! @decl string name()
  *!
- *! Returns the string @tt{"ARCFOUR"@}.
+ *! Returns the string @expr{"ARCFOUR"@}.
  */
 static void f_name(INT32 args)
 {
@@ -66,7 +66,7 @@ static void f_name(INT32 args)
 /*! @decl int query_key_length()
  *!
  *! Returns the minimum required encryption key length.
- *! Currently this is @tt{1@}.
+ *! Currently this is @expr{1@}.
  */
 static void f_query_key_length(INT32 args)
 {

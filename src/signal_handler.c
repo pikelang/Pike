@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.261 2003/04/06 18:36:17 grubba Exp $
+|| $Id: signal_handler.c,v 1.262 2003/04/07 17:28:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.261 2003/04/06 18:36:17 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.262 2003/04/07 17:28:56 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2396,7 +2396,7 @@ static void internal_add_limit( struct perishables *storage,
  *!  and @[getgrgid] for more info.)
  *!
  *! @member int(0..1)|object(Stdio.File) "setsid"
- *!  Set this to @tt{1@} to create a new session group.
+ *!  Set this to @expr{1@} to create a new session group.
  *!  It is also possible to set it to a File object, in which
  *!  case a new session group will be created with this file
  *!  as the controlling terminal.
@@ -2430,7 +2430,7 @@ static void internal_add_limit( struct perishables *storage,
  *!
  *! @member array(Stdio.File|int(0..0)) "fds"
  *!  This parameter allows you to map files to filedescriptors 3 and
- *!  up. The file @tt{fds[0]@} will be remapped to fd 3 in the new
+ *!  up. The file @expr{fds[0]@} will be remapped to fd 3 in the new
  *!  process, etc.
  *!
  *! @member mapping(string:limit_value) "rlimit"
@@ -2495,9 +2495,9 @@ static void internal_add_limit( struct perishables *storage,
  *!   noticeably slower using a string instead of an integer; if maximum
  *!   performance is an issue, please use integers.
  *!
- *!   The modifiers @tt{"fds"@}, @tt{"uid"@}, @tt{"gid"@}, @tt{"nice"@},
- *!   @tt{"noinitgroups"@}, @tt{"setgroups"@}, @tt{"keep_signals"@}
- *!   and @tt{"rlimit"@} only exist on unix.
+ *!   The modifiers @expr{"fds"@}, @expr{"uid"@}, @expr{"gid"@},
+ *!   @expr{"nice"@}, @expr{"noinitgroups"@}, @expr{"setgroups"@},
+ *!   @expr{"keep_signals"@} and @expr{"rlimit"@} only exist on unix.
  */
 
 /*! @endclass */
@@ -4303,7 +4303,7 @@ static void f_getpid(INT32 args)
  *! @[alarm()] arranges for a SIGALRM signal to be delivered to the
  *! process in @[seconds] seconds.
  *!
- *! If @[seconds] is @tt{0@} (zero), no new alarm will be scheduled.
+ *! If @[seconds] is @expr{0@} (zero), no new alarm will be scheduled.
  *!
  *! Any previous alarms will in any case be canceled.
  *!
@@ -4349,7 +4349,7 @@ static void f_alarm(INT32 args)
  *! @[alarm()] arranges for a SIGALRM signal to be delivered to the
  *! process in @[useconds] microseconds.
  *!
- *! If @[useconds] is @tt{0@} (zero), no new alarm will be scheduled.
+ *! If @[useconds] is @expr{0@} (zero), no new alarm will be scheduled.
  *!
  *! Any previous alarms will in any case be canceled.
  *!

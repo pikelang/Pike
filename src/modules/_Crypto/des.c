@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: des.c,v 1.27 2002/10/21 17:06:24 marcus Exp $
+|| $Id: des.c,v 1.28 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -92,7 +92,7 @@ static void exit_pike_crypto_des(struct object *o)
 
 /*! @decl string name()
  *!
- *! Return the string @tt{"DES"@}.
+ *! Return the string @expr{"DES"@}.
  */
 static void f_name(INT32 args)
 {

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.482 2003/04/02 19:16:03 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.483 2003/04/07 17:28:55 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.482 2003/04/02 19:16:03 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.483 2003/04/07 17:28:55 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -119,7 +119,7 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 /*! @decl int hash_7_4(string s)
  *! @decl int hash_7_4(string s, int max)
  *!
- *!   This function will return an @tt{int@} derived from the string @[s].
+ *!   This function will return an @expr{int@} derived from the string @[s].
  *!   The same string will always hash to the same value.
  *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
  *!   the result will be >= 0 and <= 0x7fffffff.
@@ -163,7 +163,7 @@ static void f_hash_7_4(INT32 args)
 /*! @decl int hash_7_0(string s)
  *! @decl int hash_7_0(string s, int max)
  *!
- *!   This function will return an @tt{int@} derived from the string @[s].
+ *!   This function will return an @expr{int@} derived from the string @[s].
  *!   The same string will always hash to the same value.
  *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
  *!   the result will be >= 0 and <= 0x7fffffff.
@@ -210,7 +210,7 @@ static void f_hash_7_0( INT32 args )
 /*! @decl int hash(string s)
  *! @decl int hash(string s, int max)
  *!
- *!   This function will return an @tt{int@} derived from the string @[s].
+ *!   This function will return an @expr{int@} derived from the string @[s].
  *!   The same string will always hash to the same value.
  *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
  *!   the result will be >= 0 and <= 0x7fffffff.
@@ -610,7 +610,7 @@ void f_query_num_arg(INT32 args)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
  *!
  *!   Search for @[needle] in @[haystack]. Return the position of @[needle] in
- *!   @[haystack] or @tt{-1@} if not found.
+ *!   @[haystack] or @expr{-1@} if not found.
  *!
  *!   If the optional argument @[start] is present search is started at
  *!   this position.
@@ -759,8 +759,8 @@ PMOD_EXPORT void f_search(INT32 args)
 
 /*! @decl int has_prefix(string s, string prefix)
  *!
- *!   Returns @tt{1@} if the string @[s] starts with @[prefix],
- *!   returns @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the string @[s] starts with @[prefix],
+ *!   returns @expr{0@} (zero) otherwise.
  */
 PMOD_EXPORT void f_has_prefix(INT32 args)
 {
@@ -820,8 +820,8 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
 
 /*! @decl int has_suffix(string s, string suffix)
  *!
- *!   Returns @tt{1@} if the string @[s] ends with @[suffix],
- *!   returns @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the string @[s] ends with @[suffix],
+ *!   returns @expr{0@} (zero) otherwise.
  */
 PMOD_EXPORT void f_has_suffix(INT32 args)
 {
@@ -887,8 +887,8 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
  *!   Search for @[index] in @[haystack].
  *!
  *! @returns
- *!   Returns @tt{1@} if @[index] is in the index domain of @[haystack],
- *!   or @tt{0@} (zero) if not found.
+ *!   Returns @expr{1@} if @[index] is in the index domain of @[haystack],
+ *!   or @expr{0@} (zero) if not found.
  *!
  *!   This function is equivalent to (but sometimes faster than):
  *!
@@ -898,7 +898,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
  *!
  *! @note
  *!   A negative index in strings and arrays as recognized by the
- *!   index operators @tt{`[]()@} and @tt{`[]=()@} is not considered
+ *!   index operators @expr{`[]()@} and @expr{`[]=()@} is not considered
  *!   a proper index by @[has_index()]
  *!
  *! @seealso
@@ -977,8 +977,8 @@ PMOD_EXPORT void f_has_index(INT32 args)
  *!   Search for @[value] in @[haystack].
  *!
  *! @returns
- *!   Returns @tt{1@} if @[value] is in the value domain of @[haystack],
- *!   or @tt{0@} (zero) if not found.
+ *!   Returns @expr{1@} if @[value] is in the value domain of @[haystack],
+ *!   or @expr{0@} (zero) if not found.
  *!
  *!   This function is in all cases except when both arguments are strings
  *!   equivalent to (but sometimes faster than):
@@ -1088,8 +1088,8 @@ PMOD_EXPORT void f_add_constant(INT32 args)
  *! @decl string combine_path_nt(string absolute, string ... relative)
  *!
  *!   Concatenate a relative path to an absolute path and remove any
- *!   @tt{"//"@}, @tt{"/.."@} or @tt{"/."@} to produce a straightforward
- *!   absolute path as result.
+ *!   @expr{"//"@}, @expr{"/.."@} or @expr{"/."@} to produce a
+ *!   straightforward absolute path as result.
  *!
  *!   @[combine_path_nt()] concatenates according to NT-filesystem conventions,
  *!   while @[combine_path_unix()] concatenates according to UNIX-style.
@@ -1121,13 +1121,13 @@ PMOD_EXPORT void f_add_constant(INT32 args)
  *!
  *! @returns
  *!   When doing a @[find_call_out()] or mapping lookup, @[zero_type()] on
- *!   this value will return @tt{1@} if there was no such thing present in
+ *!   this value will return @expr{1@} if there was no such thing present in
  *!   the mapping, or if no such @tt{call_out@} could be found.
  *!
  *!   If the argument to @[zero_type()] is a destructed object or a function
- *!   in a destructed object, @tt{2@} will be returned.
+ *!   in a destructed object, @expr{2@} will be returned.
  *!
- *!   In all other cases @[zero_type()] will return @tt{0@} (zero).
+ *!   In all other cases @[zero_type()] will return @expr{0@} (zero).
  *!
  *! @seealso
  *!   @[find_call_out()]
@@ -1609,7 +1609,7 @@ void f_string_to_utf8(INT32 args)
  *!   Throws an error if the stream is not a legal UFT8 byte-stream.
  *!
  *!   Accepts and decodes the extension used by @[string_to_utf8()], if
- *!   @[extended] is @tt{1@}.
+ *!   @[extended] is @expr{1@}.
  *!
  *! @seealso
  *!   @[Locale.Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
@@ -1962,9 +1962,9 @@ PMOD_EXPORT void f_throw(INT32 args)
  *!
  *!   Exit the whole Pike program with the given @[returncode].
  *!
- *!   Using @[exit()] with any other value than @tt{0@} (zero) indicates that
- *!   something went wrong during execution. See your system manuals for
- *!   more information about return codes.
+ *!   Using @[exit()] with any other value than @expr{0@} (zero) indicates
+ *!   that something went wrong during execution. See your system manuals
+ *!   for more information about return codes.
  *!
  *! @seealso
  *!   @[_exit()]
@@ -2025,7 +2025,7 @@ void f__exit(INT32 args)
  *!
  *!   This function returns the number of seconds since 1 Jan 1970.
  *!
- *!   The second syntax does not call the system call @tt{time()@} as often,
+ *!   The second syntax does not call the system call @[time()] as often,
  *!   but is only updated in the backed (when Pike code isn't running).
  *!
  *!   The third syntax can be used to measure time more preciely than one
@@ -2068,8 +2068,8 @@ PMOD_EXPORT void f_time(INT32 args)
  *!   is hopefully hard to decrypt.
  *!
  *!   The second syntax is used to verify @[typed_password] against
- *!   @[crypted_password], and returns @tt{1@} if they match, and @tt{0@}
- *!   (zero) otherwise.
+ *!   @[crypted_password], and returns @expr{1@} if they match, and
+ *!   @expr{0@} (zero) otherwise.
  */
 PMOD_EXPORT void f_crypt(INT32 args)
 {
@@ -2129,7 +2129,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   Mark an object as destructed.
  *!
- *!   Calls @tt{o->destroy()@}, and then clears all variables in the object.
+ *!   Calls @expr{o->destroy()@}, and then clears all variables in the object.
  *!
  *!   All pointers and function pointers to this object will become zero.
  *!   The destructed object will be freed from memory as soon as possible.
@@ -2473,7 +2473,7 @@ static node *fix_aggregate_mapping_type(node *n)
  *!   For strings an array of int with the ISO10646 codes of the characters in
  *!   the string is returned.
  *!
- *!   For a multiset an array filled with ones (@tt{1@}) is returned.
+ *!   For a multiset an array filled with ones (@expr{1@}) is returned.
  *!
  *!   For arrays a single-level copy of @[x] is returned.
  *!
@@ -2606,7 +2606,7 @@ PMOD_EXPORT void f_next_object(INT32 args)
  *!
  *!   Return the program from which @[o] was instantiated.
  *!
- *!   If @[o] is not an object or has been destructed @tt{0@} (zero)
+ *!   If @[o] is not an object or has been destructed @expr{0@} (zero)
  *!   will be returned.
  */
 PMOD_EXPORT void f_object_program(INT32 args)
@@ -3214,7 +3214,7 @@ PMOD_EXPORT void f_compile(INT32 args)
  *!
  *!   Set the value @[m] to use weak or normal references in its
  *!   indices and/or values (whatever is applicable). @[state] is a
- *!   bitfield built by using @tt{|@} between the following flags:
+ *!   bitfield built by using @expr{|@} between the following flags:
  *!   
  *!   @int
  *!   	@value Pike.WEAK_INDICES
@@ -3224,11 +3224,11 @@ PMOD_EXPORT void f_compile(INT32 args)
  *!   	  Use weak references for values. Only applicable for arrays
  *!   	  and mappings.
  *!   	@value Pike.WEAK
- *!   	  Shorthand for @tt{Pike.WEAK_INDICES|Pike.WEAK_VALUES@}.
+ *!   	  Shorthand for @expr{Pike.WEAK_INDICES|Pike.WEAK_VALUES@}.
  *!   @endint
  *!   
  *!   If a flag is absent, the corresponding field will use normal
- *!   references. @[state] can also be @tt{1@} as a compatibility
+ *!   references. @[state] can also be @expr{1@} as a compatibility
  *!   measure; it's treated like @[Pike.WEAK].
  *!
  *! @returns
@@ -3277,7 +3277,7 @@ void f_set_weak_flag(INT32 args)
 
 /*! @decl int objectp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is an object, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is an object, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[functionp()],
@@ -3303,7 +3303,7 @@ PMOD_EXPORT void f_objectp(INT32 args)
 
 /*! @decl int functionp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is a function, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is a function, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
@@ -3323,7 +3323,7 @@ PMOD_EXPORT void f_functionp(INT32 args)
 
 /*! @decl int callablep(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is a callable, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is a callable, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
@@ -3641,7 +3641,7 @@ PMOD_EXPORT void ID(INT32 args)						\
 
 /*! @decl int programp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is a program, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is a program, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[mappingp()], @[intp()], @[arrayp()], @[stringp()], @[objectp()],
@@ -3674,7 +3674,7 @@ PMOD_EXPORT void f_programp(INT32 args)
 
 /*! @decl int intp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is an int, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is an int, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[mappingp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
@@ -3683,7 +3683,7 @@ PMOD_EXPORT void f_programp(INT32 args)
 
 /*! @decl int mappingp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is a mapping, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is a mapping, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[intp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
@@ -3692,7 +3692,7 @@ PMOD_EXPORT void f_programp(INT32 args)
 
 /*! @decl int arrayp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is an array, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is an array, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[intp()], @[programp()], @[mappingp()], @[stringp()], @[objectp()],
@@ -3701,7 +3701,7 @@ PMOD_EXPORT void f_programp(INT32 args)
 
 /*! @decl int multisetp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is a multiset, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is a multiset, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[intp()], @[programp()], @[arrayp()], @[stringp()], @[objectp()],
@@ -3710,7 +3710,7 @@ PMOD_EXPORT void f_programp(INT32 args)
 
 /*! @decl int stringp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is a string, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is a string, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[intp()], @[programp()], @[arrayp()], @[multisetp()], @[objectp()],
@@ -3719,7 +3719,7 @@ PMOD_EXPORT void f_programp(INT32 args)
 
 /*! @decl int floatp(mixed arg)
  *!
- *!   Returns @tt{1@} if @[arg] is a float, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if @[arg] is a float, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[intp()], @[programp()], @[arrayp()], @[multisetp()], @[objectp()],
@@ -4069,7 +4069,7 @@ PMOD_EXPORT void f_gmtime(INT32 args)
  *! e.g. Windows doesn't handle a negative @[timestamp].
  *!
  *! @note
- *!   The field @tt{"timezone"@} may not be available on all platforms.
+ *!   The field @expr{"timezone"@} may not be available on all platforms.
  *!
  *! @seealso
  *!   @[Calendar], @[gmtime()], @[time()], @[ctime()], @[mktime()]
@@ -4443,7 +4443,7 @@ static int does_match(struct pike_string *s,int j,
  *!   an asterisk matches any string.
  *!
  *!   When the second argument is a string and @[str] matches
- *!   the glob @[glob] @tt{1@} will be returned, @tt{0@} (zero) otherwise.
+ *!   the glob @[glob] @expr{1@} will be returned, @expr{0@} (zero) otherwise.
  *!
  *!   If the second array is an array and array containing the strings in
  *!   @[arr] that match @[glob] will be returned.
@@ -6207,8 +6207,8 @@ static void f_get_prof_info(INT32 args)
  *!   Find out if an object identifier is a variable.
  *!
  *! @returns
- *!   This function returns @tt{1@} if @[var] exists as a non-static variable
- *!   in @[o], and returns @tt{0@} (zero) otherwise.
+ *!   This function returns @expr{1@} if @[var] exists as a non-static variable
+ *!   in @[o], and returns @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[indices()], @[values()]
@@ -6511,8 +6511,8 @@ PMOD_EXPORT void f__list_open_fds(INT32 args)
  *!
  *!   This function is mostly intended for debugging. It will search through
  *!   all data structures in Pike looking for @[o] and print the
- *!   locations on stderr. @[o] can be anything but @tt{int@} or
- *!   @tt{float@}.
+ *!   locations on stderr. @[o] can be anything but @expr{int@} or
+ *!   @expr{float@}.
  *!
  *! @note
  *!   This function only exists if the Pike runtime has been compiled
@@ -7554,7 +7554,7 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
  *!   Returns a string with filename and linenumber where @[fun]
  *!   was defined.
  *!
- *!   Returns @tt{0@} (zero) when no line can be found, e.g. for
+ *!   Returns @expr{0@} (zero) when no line can be found, e.g. for
  *!   builtin functions and functions in destructed objects.
  */
 PMOD_EXPORT void f_function_defined(INT32 args)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.59 2003/04/01 18:12:05 nilsson Exp $
+|| $Id: math.c,v 1.60 2003/04/07 17:21:57 nilsson Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.59 2003/04/01 18:12:05 nilsson Exp $");
+RCSID("$Id: math.c,v 1.60 2003/04/07 17:21:57 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -352,8 +352,8 @@ void f_pow(INT32 args)
  *! Return the closest integer value less or equal to @[f].
  *!
  *! @note
- *!   @[floor()] does @b{not@} return an @tt{int@}, merely an integer value
- *!   stored in a @tt{float@}.
+ *!   @[floor()] does @b{not@} return an @expr{int@}, merely an integer value
+ *!   stored in a @expr{float@}.
  *!
  *! @seealso
  *!   @[ceil()], @[round()]
@@ -370,8 +370,8 @@ void f_floor(INT32 args)
  *! Return the closest integer value greater or equal to @[f].
  *!
  *! @note
- *!   @[ceil()] does @b{not@} return an @tt{int@}, merely an integer value
- *!   stored in a @tt{float@}.
+ *!   @[ceil()] does @b{not@} return an @expr{int@}, merely an integer value
+ *!   stored in a @expr{float@}.
  *!
  *! @seealso
  *!   @[floor()], @[round()]
@@ -388,8 +388,8 @@ void f_ceil(INT32 args)
  *! Return the closest integer value to @[f].
  *!
  *! @note
- *!   @[round()] does @b{not@} return an @tt{int@}, merely an integer value
- *!   stored in a @tt{float@}.
+ *!   @[round()] does @b{not@} return an @expr{int@}, merely an integer value
+ *!   stored in a @expr{float@}.
  *!
  *! @seealso
  *!   @[floor()], @[ceil()]
@@ -490,8 +490,9 @@ void f_abs(INT32 args)
  *! Check the sign of a value.
  *!
  *! @returns
- *!   Returns @tt{-1@} if @[value] is less than @[zero],
- *!   @tt{1@} if @[value] is greater than @[zero] and @tt{0@} (zero) otherwise.
+ *!   Returns @expr{-1@} if @[value] is less than @[zero],
+ *!   @expr{1@} if @[value] is greater than @[zero] and @expr{0@}
+ *!   (zero) otherwise.
  *!
  *! @seealso
  *!   @[abs()]

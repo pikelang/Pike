@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.5 2003/04/05 11:59:39 grubba Exp $
+|| $Id: sequence.cmod,v 1.6 2003/04/07 17:27:11 nilsson Exp $
 */
 
 #include "global.h"
@@ -348,7 +348,7 @@ PIKECLASS Sequence
 
 /*! @decl void _search(mixed value, void|int start)
  *!   Search the sequence for a specific value. Return the index of the first 
- *!   value that is equal to @[value]. If no value was found @tt{UNDEFINED@} 
+ *!   value that is equal to @[value]. If no value was found @expr{UNDEFINED@} 
  *!   is returned insted
  *! 
  *! @param value
@@ -359,7 +359,7 @@ PIKECLASS Sequence
  *!   @[start].
  *!
  *! @returns
- *!   Returns the index of the found value or @tt{UNDEFINED@}.
+ *!   Returns the index of the found value or @expr{UNDEFINED@}.
  */
 
   PIKEFUN int _search(mixed value, void|int start)
@@ -485,7 +485,7 @@ PIKECLASS Sequence
   /*! @decl int(0..1) is_empty()
    *!
    *! @returns
-   *!   Returns @tt{1@} if the sequence is empty otherwise @tt{0@}. 
+   *!   Returns @expr{1@} if the sequence is empty otherwise @expr{0@}. 
    */
 
   PIKEFUN int is_empty()

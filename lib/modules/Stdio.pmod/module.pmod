@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.168 2003/04/01 17:42:26 nilsson Exp $
+// $Id: module.pmod,v 1.169 2003/04/07 17:15:05 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -170,28 +170,29 @@ class File
   //! Open a file for read, write or append. The parameter @[mode] should
   //! contain one or more of the following letters:
   //! @string
-  //!   @value 'r'
+  //!   @value "r"
   //!   Open file for reading.
-  //!   @value 'w'
+  //!   @value "w"
   //!   Open file for writing.
-  //!   @value 'a'
-  //!   Open file for append (use with @tt{'w'@}).
-  //!   @value 't'
-  //!   Truncate file at open (use with @tt{'w'@}).
-  //!   @value 'c'
-  //!   Create file if it doesn't exist (use with @tt{'w'@}).
-  //!   @value 'x'
-  //!   Fail if file already exists (use with @tt{'c'@}).
+  //!   @value "a"
+  //!   Open file for append (use with @expr{"w"@}).
+  //!   @value "t"
+  //!   Truncate file at open (use with @expr{"w"@}).
+  //!   @value "c"
+  //!   Create file if it doesn't exist (use with @expr{"w"@}).
+  //!   @value "x"
+  //!   Fail if file already exists (use with @expr{"c"@}).
   //! @endstring
   //!
-  //! @[mode] should always contain at least one of the letters @tt{'r'@} or
-  //! @tt{'w'@}.
+  //! @[mode] should always contain at least one of the letters
+  //! @expr{"r"@} or @expr{"w"@}.
   //!
-  //! The parameter @[mask] is protection bits to use if the file is created.
-  //! Default is @tt{0666@} (read+write for all in octal notation).
+  //! The parameter @[mask] is protection bits to use if the file is
+  //! created. Default is @expr{0666@} (read+write for all in octal
+  //! notation).
   //!
   //! @returns
-  //! This function returns 1 for success, 0 otherwise.
+  //! This function returns @expr{1@} for success, @expr{0@} otherwise.
   //!
   //! @seealso
   //! @[close()], @[create()]
@@ -254,10 +255,12 @@ class File
   //! This function returns 1 for success, 0 otherwise.
   //!
   //! @note
-  //! In nonblocking mode @tt{0@} (zero) may be returned and @[errno()] set to
-  //! @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
-  //! as a connection failure. In nonblocking mode you need to wait for a write
-  //! or close callback before you know if the connection failed or not.
+  //! In nonblocking mode @expr{0@} (zero) may be returned and
+  //! @[errno()] set to @expr{EWOULDBLOCK@} or
+  //! @expr{WSAEWOULDBLOCK@}. This should not be regarded as a
+  //! connection failure. In nonblocking mode you need to wait for a
+  //! write or close callback before you know if the connection failed
+  //! or not.
   //!
   //! @seealso
   //! @[query_address()], @[async_connect()], @[connect_unix()]
@@ -281,7 +284,7 @@ class File
   //! Open a UNIX domain socket connection to the specified destination.
   //! 
   //! @returns
-  //!  Returns @tt{1@} on success, and @tt{0@} on failure.
+  //!  Returns @expr{1@} on success, and @expr{0@} on failure.
   //!
   //! @note
   //!  Nonblocking mode is not supported while connecting
@@ -354,8 +357,8 @@ class File
   //!
   //! @param callback
   //!   Function to be called on completion.
-  //!   The first argument will be @tt{1@} if a connection was
-  //!   successfully estabished, and @tt{0@} (zero) on failure.
+  //!   The first argument will be @expr{1@} if a connection was
+  //!   successfully estabished, and @expr{0@} (zero) on failure.
   //!   The rest of the arguments to @[callback] are passed
   //!   verbatim from @[args].
   //!
@@ -363,7 +366,7 @@ class File
   //!   Extra arguments to pass to @[callback].
   //!
   //! @returns
-  //!   Returns @tt{0@} on failure, and @tt{1@} if @[callback]
+  //!   Returns @expr{0@} on failure, and @expr{1@} if @[callback]
   //!   will be used.
   //!
   //! @note
@@ -371,9 +374,9 @@ class File
   //!   the call to this function, but it is not required.
   //!
   //!   For @[callback] to be called, the backend must be active (ie
-  //!   @[main()] must have returned @tt{-1@}).
+  //!   @[main()] must have returned @expr{-1@}).
   //!
-  //!   The socket will be in non-blocking state if @tt{1@} has been
+  //!   The socket will be in non-blocking state if @expr{1@} has been
   //!   returned, and any callbacks will be cleared.
   //!
   //! @seealso
@@ -422,7 +425,7 @@ class File
   //! is created.
   //!
   //! @fixme
-  //! Document the @tt{PROP_@} properties.
+  //! Document the @expr{PROP_@} properties.
   //!
   //! @seealso
   //! @[Process.create_process()]
@@ -464,15 +467,15 @@ class File
   //! the same thing as cloning and then calling @[open()], except shorter and
   //! faster.
   //!
-  //! The third way is to call it with @[descriptorname] of @tt{"stdin"@},
-  //! @tt{"stdout"@} or @tt{"stderr"@}. This will open the specified
+  //! The third way is to call it with @[descriptorname] of @expr{"stdin"@},
+  //! @expr{"stdout"@} or @expr{"stderr"@}. This will open the specified
   //! standard stream.
   //!
   //! For the advanced users, you can use the file descriptors of the
   //! systems (note: emulated by pike on some systems - like NT). This is
   //! only useful for streaming purposes on unix systems. This is @b{not
   //! recommended at all@} if you don't know what you're into. Default
-  //! @[mode] for this is @tt{"rw"@}.
+  //! @[mode] for this is @expr{"rw"@}.
   //!
   //! @note
   //! Open mode will be filtered through the system UMASK. You
@@ -916,7 +919,7 @@ class File
 
   //! This function sets the @tt{id@} of this file. The @tt{id@} is mainly
   //! used as an identifier that is sent as the first argument to all
-  //! callbacks. The default @tt{id@} is @tt{0@} (zero). Another possible
+  //! callbacks. The default @tt{id@} is @expr{0@} (zero). Another possible
   //! use of the @tt{id@} is to hold all data related to this file in a
   //! mapping or array.
   //!
@@ -1085,11 +1088,11 @@ class Port
   //! @decl void create("stdin")
   //! @decl void create("stdin", function accept_callback)
   //!
-  //! If the first argument is other than @tt{"stdin"@} the arguments will
+  //! If the first argument is other than @expr{"stdin"@} the arguments will
   //! be passed to @[bind()].
   //!
-  //! When create is called with @tt{"stdin"@} as the first argument, a
-  //! socket is created out of the file descriptor @tt{0@}. This is only
+  //! When create is called with @expr{"stdin"@} as the first argument, a
+  //! socket is created out of the file descriptor @expr{0@}. This is only
   //! useful if that actually is a socket to begin with.
   //!
   //! @seealso
@@ -1237,7 +1240,7 @@ class FILE
   //! Read one line of input with support for input conversion.
   //!
   //! @returns
-  //! This function returns the line read if successful, and @tt{0@} if
+  //! This function returns the line read if successful, and @expr{0@} if
   //! no more lines are available.
   //!
   //! @seealso
@@ -1474,7 +1477,7 @@ class FILE
   //! Returns the ASCII value of the character.
   //!
   //! @note
-  //! Returns an @tt{int@} and not a @tt{string@} of length 1.
+  //! Returns an @expr{int@} and not a @expr{string@} of length 1.
   //!
   int getchar()
   {
@@ -1606,7 +1609,7 @@ string read_file(string filename,void|int start,void|int len)
 //!   Throws an error if @[filename] isn't a regular file.
 //!
 //! @returns
-//!   Returns @tt{0@} (zero) on failure to open @[filename].
+//!   Returns @expr{0@} (zero) on failure to open @[filename].
 //!
 //!   Returns a string with the requested data otherwise.
 //!
@@ -1718,10 +1721,10 @@ int file_size(string filename)
 }
 
 //! Append @[relative] paths to an @[absolute] path and remove any
-//! @tt{"//"@}, @tt{"../"@} or @tt{"/."@} to produce a straightforward
-//! absolute path as a result.
+//! @expr{"//"@}, @expr{"../"@} or @expr{"/."@} to produce a
+//! straightforward absolute path as a result.
 //!
-//! @tt{"../"@} is ignorded in the relative paths if it makes the
+//! @expr{"../"@} is ignorded in the relative paths if it makes the
 //! created path begin with something else than the absolute path
 //! (or so far created path).
 //!
@@ -1921,7 +1924,7 @@ static void call_cp_cb(int len,
 //!
 //! @param cb
 //!   Function to be called on completion.
-//!   The first argument will be @tt{1@} on success, and @tt{0@} (zero)
+//!   The first argument will be @expr{1@} on success, and @expr{0@} (zero)
 //!   otherwise. The rest of the arguments tp @[callback] are passed
 //!   verbatim from @[args].
 //!
@@ -1930,7 +1933,7 @@ static void call_cp_cb(int len,
 //!
 //! @note
 //!   For @[callback] to be called, the backend must be active (ie
-//!   @[main()] must have returned @tt{-1@}).
+//!   @[main()] must have returned @expr{-1@}).
 //!
 //! @bugs
 //!   Currently the file sizes are not compared, so the destination file
@@ -2394,12 +2397,12 @@ static class nb_sendfile
 //! bytes sent as the first argument, followed by @[args].
 //!
 //! Any of @[headers], @[from] and @[trailers] may be left out
-//! by setting them to @tt{0@}.
+//! by setting them to @expr{0@}.
 //!
-//! Setting @[offset] to @tt{-1@} means send from the current position in
+//! Setting @[offset] to @expr{-1@} means send from the current position in
 //! @[from].
 //!
-//! Setting @[len] to @tt{-1@} means send until @[from]'s end of file is
+//! Setting @[len] to @expr{-1@} means send until @[from]'s end of file is
 //! reached.
 //!
 //! @note
@@ -2407,7 +2410,7 @@ static class nb_sendfile
 //! before the function returns.
 //!
 //! For @[callback] to be called, the backend must be active (ie
-//! @[main()] must have returned @tt{-1@}).
+//! @[main()] must have returned @expr{-1@}).
 //!
 //! In some cases, the backend must also be active for any sending to
 //! be performed at all.

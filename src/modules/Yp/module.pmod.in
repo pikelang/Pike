@@ -3,7 +3,7 @@
 // YP (NIS) Functionality for Pike
 // Per Hedbor & Henrik Grubbström 1996-1997
 //
-// $Id: module.pmod.in,v 1.18 2002/11/28 06:04:32 nilsson Exp $
+// $Id: module.pmod.in,v 1.19 2003/04/07 17:22:53 nilsson Exp $
 
 #pike __REAL_VERSION__
 inherit @module@;
@@ -90,7 +90,7 @@ class Map {
   //! For each entry in the map, call the function @[fun].
   //!
   //! The function will be called like
-  //!   @tt{void fun(string key, string value)@}.
+  //!   @expr{void fun(string key, string value)@}.
   //!
   void map(function(string,string:void) fun)
   {

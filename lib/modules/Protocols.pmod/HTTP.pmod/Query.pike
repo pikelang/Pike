@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.55 2003/04/01 17:42:46 nilsson Exp $
+// $Id: Query.pike,v 1.56 2003/04/07 17:12:02 nilsson Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -19,10 +19,10 @@ int ok;
 //!
 mapping headers;
 
-//!	Protocol string, ie @tt{"HTTP/1.0"@}.
+//!	Protocol string, ie @expr{"HTTP/1.0"@}.
 string protocol;
 
-//!	Status number and description (eg @tt{200@} and @tt{"ok"@}).
+//!	Status number and description (eg @expr{200@} and @expr{"ok"@}).
 int status;
 string status_desc;
 
@@ -453,7 +453,7 @@ object set_callbacks(function(object,mixed...:mixed) _ok,
 //!	to complete.
 //!
 //!	@[query] is the first line sent to the HTTP server;
-//!	for instance @tt{"GET /index.html HTTP/1.1"@}.
+//!	for instance @expr{"GET /index.html HTTP/1.1"@}.
 //!
 //!	@[headers] will be encoded and sent after the first line,
 //!	and @[data] will be sent after the headers.
@@ -604,7 +604,7 @@ object async_request(string server,int port,string query,
 
 //!	Wait for connection to complete.
 //! @returns
-//!	Returns @tt{1@} on successfull connection, @tt{0@} on failure.
+//!	Returns @expr{1@} on successfull connection, @expr{0@} on failure.
 //!
 int `()()
 {
@@ -866,7 +866,7 @@ class PseudoFile
 //! @decl Protocols.HTTP.Query.PseudoFile file(mapping newheaders, @
 //!                                            void|mapping removeheaders)
 //!	Gives back a pseudo-file object,
-//!	with the methods @tt{read()@} and @tt{close()@}.
+//!	with the methods @expr{read()@} and @expr{close()@}.
 //!	This could be used to copy the file to disc at
 //!	a proper tempo.
 //!
@@ -906,7 +906,7 @@ object file(void|mapping newheader,void|mapping removeheader)
 
 //! @decl Protocols.HTTP.Query.PseudoFile datafile();
 //!	Gives back a pseudo-file object,
-//!	with the methods @tt{read()@} and @tt{close()@}.
+//!	with the methods @expr{read()@} and @expr{close()@}.
 //!	This could be used to copy the file to disc at
 //!	a proper tempo.
 //!

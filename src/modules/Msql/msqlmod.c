@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: msqlmod.c,v 1.24 2002/11/18 12:28:51 nilsson Exp $
+|| $Id: msqlmod.c,v 1.25 2003/04/07 17:23:48 nilsson Exp $
 */
 
 /* All this code is pretty useless if we don't have a msql library...*/
@@ -33,7 +33,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.24 2002/11/18 12:28:51 nilsson Exp $");
+RCSID("$Id: msqlmod.c,v 1.25 2003/04/07 17:23:48 nilsson Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -251,8 +251,9 @@ static void do_reload_acl (INT32 args)
  *! With one argument, this function
  *! tries to connect to the specified (use hostname or IP address) database
  *! server. To connect to a server running on the local host via UNIX domain
- *! sockets use @tt{"localhost"@}. To connect to the local host via TCP/IP sockets
- *! you have to use the IP address @tt{"127.0.0.1"@}.
+ *! sockets use @expr{"localhost"@}. To connect to the local host via TCP/IP
+ *! sockets
+ *! you have to use the IP address @expr{"127.0.0.1"@}.
  *! With two arguments it also selects a database to use on the server.
  *! With no arguments it tries to connect to the server on localhost, using
  *! UNIX sockets.

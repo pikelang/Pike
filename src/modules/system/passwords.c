@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: passwords.c,v 1.40 2003/04/02 20:14:29 nilsson Exp $
+|| $Id: passwords.c,v 1.41 2003/04/07 17:21:36 nilsson Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.40 2003/04/02 20:14:29 nilsson Exp $");
+RCSID("$Id: passwords.c,v 1.41 2003/04/07 17:21:36 nilsson Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -422,7 +422,7 @@ void f_getpwuid(INT32 args)
  *!   using the systemfunction @tt{setpwent(3)@}.
  *!
  *! @returns
- *!   Always @tt{0@} (zero)
+ *!   Always @expr{0@} (zero)
  *!
  *! @seealso
  *!   @[get_all_users()]
@@ -450,7 +450,7 @@ void f_setpwent(INT32 args)
  *!   systemfunction @tt{endpwent(3)@}.
  *!
  *! @returns
- *!   Always @tt{0@} (zero)
+ *!   Always @expr{0@} (zero)
  *!
  *! @seealso
  *!   @[get_all_users()]

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cast.c,v 1.15 2003/04/01 18:12:42 nilsson Exp $
+|| $Id: cast.c,v 1.16 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -74,7 +74,7 @@ void exit_pike_crypto_cast(struct object *o)
 
 /*! @decl string name()
  *!
- *! Returns the string @tt{"CAST"@}.
+ *! Returns the string @expr{"CAST"@}.
  */
 static void f_name(INT32 args)
 {

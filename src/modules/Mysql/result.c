@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.28 2002/10/20 22:05:07 marcus Exp $
+|| $Id: result.c,v 1.29 2003/04/07 17:23:15 nilsson Exp $
 */
 
 /*
@@ -87,7 +87,7 @@
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.28 2002/10/20 22:05:07 marcus Exp $");
+RCSID("$Id: result.c,v 1.29 2003/04/07 17:23:15 nilsson Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -343,7 +343,7 @@ static void f_field_seek(INT32 args)
  *!
  *! Sense end of result table.
  *!
- *! Returns @tt{1@} when all rows have been read, and @tt{0@} (zero)
+ *! Returns @expr{1@} when all rows have been read, and @expr{0@} (zero)
  *! otherwise.
  *!
  *! @seealso
@@ -366,11 +366,11 @@ static void f_eof(INT32 args)
  *! Return specification of the current field.
  *!
  *! Returns a mapping with information about the current field, and
- *! advances the field cursor one step. Returns @tt{0@} (zero) if
+ *! advances the field cursor one step. Returns @expr{0@} (zero) if
  *! there are no more fields.
  *! 
  *! The mapping contains the same entries as those returned by
- *! @[Mysql.mysql->list_fields()], except that the entry @tt{"default"@}
+ *! @[Mysql.mysql->list_fields()], except that the entry @expr{"default"@}
  *! is missing.
  *!
  *! @note
@@ -413,10 +413,10 @@ static void f_fetch_field(INT32 args)
  *! 
  *! The returned data is similar to the data returned by
  *! @[Mysql.mysql->list_fields()], except for that the entry
- *! @tt{"default"@} is missing.
+ *! @expr{"default"@} is missing.
  *!
  *! @note
- *!   Resets the field cursor to @tt{0@} (zero).
+ *!   Resets the field cursor to @expr{0@} (zero).
  *!
  *!   This function always exists even when @[fetch_field()] and
  *!   @[field_seek()] don't.
@@ -481,7 +481,7 @@ static void f_seek(INT32 args)
  *! Returns an array with the contents of the next row in the result.
  *! Advances the row cursor to the next now.
  *!
- *! Returns @tt{0@} (zero) at the end of the table.
+ *! Returns @expr{0@} (zero) at the end of the table.
  *!
  *! @seealso
  *!   @[seek()]

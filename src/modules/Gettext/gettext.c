@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.14 2002/11/26 20:54:02 grubba Exp $
+|| $Id: gettext.c,v 1.15 2003/04/07 17:27:41 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.14 2002/11/26 20:54:02 grubba Exp $");
+RCSID("$Id: gettext.c,v 1.15 2003/04/07 17:27:41 nilsson Exp $");
 
 /*! @module Locale
  */
@@ -199,7 +199,7 @@ void f_textdomain(INT32 args)
  *! @[gettext()], @[dgettext()] or @[dcgettext()] are called. If @[domainname]
  *! is zero or an empty string, @[bindtextdomain()] returns 0.
  *!
- *! User defined domain names cannot begin with the string @tt{"SYS_"@}.
+ *! User defined domain names cannot begin with the string @expr{"SYS_"@}.
  *! Domain names beginning with this string are reserved for system use.
  *!
  *! @returns

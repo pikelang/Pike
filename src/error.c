@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.105 2003/04/01 14:24:19 mast Exp $
+|| $Id: error.c,v 1.106 2003/04/07 17:28:55 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.105 2003/04/01 14:24:19 mast Exp $");
+RCSID("$Id: error.c,v 1.106 2003/04/07 17:28:55 nilsson Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -451,7 +451,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
  *! Cast operator.
  *!
  *! @note
- *!   The only supported type to cast to is @tt{"array"@}, which
+ *!   The only supported type to cast to is @expr{"array"@}, which
  *!   generates and old-style error.
  */
 static void f_error_cast(INT32 args)

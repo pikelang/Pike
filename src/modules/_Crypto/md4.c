@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: md4.c,v 1.5 2002/10/21 17:06:24 marcus Exp $
+|| $Id: md4.c,v 1.6 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -42,7 +42,7 @@ static struct program *md4mod_program;
 
 /*! @decl string name()
  *!
- *! Return the string @tt{"MD4"@}.
+ *! Return the string @expr{"MD4"@}.
  */
 static void f_name(INT32 args)
 {

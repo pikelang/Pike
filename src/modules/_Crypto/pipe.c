@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.25 2002/10/21 17:06:24 marcus Exp $
+|| $Id: pipe.c,v 1.26 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -174,9 +174,9 @@ static void f_create(INT32 args)
 
 /*! @decl string name()
  *!
- *! Returns the string @tt{"PIPE("@} followed by a
+ *! Returns the string @expr{"PIPE("@} followed by a
  *! comma-separated list of the names of contained ciphers, and
- *! terminated with the string @tt{")"@}.
+ *! terminated with the string @expr{")"@}.
  */
 static void f_name(INT32 args)
 {

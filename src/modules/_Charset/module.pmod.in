@@ -9,9 +9,9 @@ static private inherit @module@;
 //! The Charset module supports a wide variety of different character sets, and
 //! it is flexible in regard of the names of character sets it accepts. The
 //! character case is ignored, as are the most common non-alaphanumeric
-//! characters appearing in character set names. E.g. @tt{"iso-8859-1"@} works
-//! just as well as @tt{"ISO_8859_1"@}. All encodings specified in RFC 1345 are
-//! supported.
+//! characters appearing in character set names. E.g. @expr{"iso-8859-1"@}
+//! works just as well as @expr{"ISO_8859_1"@}. All encodings specified in
+//! RFC 1345 are supported.
 //!
 //! First of all the Charset module is capable of handling the following
 //! encodings of Unicode:
@@ -80,7 +80,7 @@ static private inherit @module@;
 //!   @item 918
 //!   @item 950
 //!   @item 1026
-//!     These may be prefixed with @tt{"cp"@} or @tt{"ibm"@}.
+//!     These may be prefixed with @expr{"cp"@} or @expr{"ibm"@}.
 //!   @item 1250
 //!   @item 1251
 //!   @item 1252
@@ -90,7 +90,8 @@ static private inherit @module@;
 //!   @item 1256
 //!   @item 1257
 //!   @item 1258
-//!     These may be prefixed with @tt{"cp"@}, @tt{"ibm"@} or @tt{"windows"@}.
+//!     These may be prefixed with @expr{"cp"@}, @expr{"ibm"@} or
+//!     @expr{"windows"@}.
 //! @endul
 //!
 //! +359 more.

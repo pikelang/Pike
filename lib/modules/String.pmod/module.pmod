@@ -16,9 +16,10 @@ constant int2char = int2char;
 constant int2hex = int2hex;
 
 //! This function implodes a list of words to a readable string, e.g.
-//! ({"straw","berry","pie"}) becomes "straw, berry and pie".
-//! If the separator is omitted, the default is @tt{"and"@}.
-//! If the words are numbers they are converted to strings first.
+//! @expr{({"straw","berry","pie"})@} becomes @expr{"straw, berry and
+//! pie"@}.  If the separator is omitted, the default is
+//! @expr{"and"@}. If the words are numbers they are converted to
+//! strings first.
 //!
 //! @seealso
 //! @[`*()]

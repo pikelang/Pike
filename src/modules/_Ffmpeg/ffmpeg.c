@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ffmpeg.c,v 1.16 2003/02/07 07:39:56 mirar Exp $
+|| $Id: ffmpeg.c,v 1.17 2003/04/07 17:22:36 nilsson Exp $
 */
 
 /*
@@ -218,8 +218,8 @@ static void f_codec_info(INT32 args) {
  *! Sets one codec parameter
  *!
  *! @param name
- *!   The name of parameter. One of @tt{"sample_rate"@}, @tt{"bit_rate"@},
- *!   @tt{"channels"@}.
+ *!   The name of parameter. One of @expr{"sample_rate"@},
+ *!   @expr{"bit_rate"@}, @expr{"channels"@}.
  *!
  *! @returns
  *!   Returns 1 on success, 0 otherwise (parameter not known).
@@ -319,7 +319,7 @@ static void f_get_codec_status(INT32 args) {
  *! @decl int decode(string data, function shuffler)
  *!
  *! Decode all @[data] buffer and pass result to @[shuffler].
- *! Returns @tt{1@} on success, @tt{0@} otherwise.
+ *! Returns @expr{1@} on success, @expr{0@} otherwise.
  *!
  *! @note
  *!   Shuffler variant isn't implemented, yet.
@@ -388,7 +388,7 @@ static void f_decode(INT32 args) {
  * @[data] which was used for encoding.
  *
  * @decl int encode(string data, function shuffler);
- * Returns @tt{1@} on success, @tt{0@} otherwise.
+ * Returns @expr{1@} on success, @expr{0@} otherwise.
  *
  * @note
  *   Usable only in encoder

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: idea.c,v 1.21 2002/10/21 17:06:24 marcus Exp $
+|| $Id: idea.c,v 1.22 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -70,7 +70,7 @@ void exit_pike_crypto_idea(struct object *o)
 
 /*! @decl string name()
  *!
- *! Return the string @tt{"IDEA"@}.
+ *! Return the string @expr{"IDEA"@}.
  */
 static void f_name(INT32 args)
 {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.130 2003/04/07 16:19:15 mast Exp $
+|| $Id: builtin.cmod,v 1.131 2003/04/07 17:28:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -699,10 +699,10 @@ PIKEFUN int program_inherits(program parent, program child)
  *! Returns a string with filename and linenumber describing where
  *! the program @[p] was defined.
  *!
- *! The returned string is of the format @tt{"@i{filename@}:@i{linenumber@}"@}.
+ *! The returned string is of the format @expr{"filename:linenumber"@}.
  *!
- *! If it cannot be determined where the program was defined, @tt{0@} (zero)
- *! will be returned.
+ *! If it cannot be determined where the program was defined, @expr{0@}
+ *! (zero) will be returned.
  */
 PIKEFUN string program_defined(program p)
   errname Program.defined;
@@ -847,8 +847,8 @@ PIKEFUN program __empty_program(int|void line, string|void file)
  *!
  *! Return the name of the function @[f].
  *!
- *! If @[f] is a global function defined in the runtime @tt{0@} (zero)
- *! will be returned.
+ *! If @[f] is a global function defined in the runtime @expr{0@}
+ *! (zero) will be returned.
  *!
  *! @seealso
  *! @[function_object()]
@@ -925,8 +925,8 @@ PIKEFUN string function_name(program|function func)
  *!
  *!   Return the object the function @[f] is in.
  *!
- *!   If @[f] is a global function defined in the runtime @tt{0@} (zero)
- *!   will be returned.
+ *!   If @[f] is a global function defined in the runtime @expr{0@}
+ *!   (zero) will be returned.
  *!
  *!   Zero will also be returned if @[f] is a constant in the
  *!   parent class. In that case @[function_program()] can be
@@ -971,8 +971,8 @@ PIKEFUN object function_object(function|program func)
  *!
  *!   Return the program the function @[f] is in.
  *!
- *!   If @[f] is a global function defined in the runtime @tt{0@} (zero)
- *!   will be returned.
+ *!   If @[f] is a global function defined in the runtime @expr{0@}
+ *!   (zero) will be returned.
  *!
  *! @seealso
  *!   @[function_name()], @[function_object()]

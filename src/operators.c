@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.173 2003/04/01 18:11:09 nilsson Exp $
+|| $Id: operators.c,v 1.174 2003/04/07 17:28:55 nilsson Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.173 2003/04/01 18:11:09 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.174 2003/04/07 17:28:55 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -65,8 +65,8 @@ PMOD_EXPORT void ID(INT32 args)				\
  *!   Inequality operator.
  *!
  *! @returns
- *!   Returns @tt{0@} (zero) if all the arguments are equal, and
- *!   @tt{1@} otherwise.
+ *!   Returns @expr{0@} (zero) if all the arguments are equal, and
+ *!   @expr{1@} otherwise.
  *!
  *!   This is the inverse of @[`==()].
  *!
@@ -85,8 +85,8 @@ PMOD_EXPORT void f_ne(INT32 args)
  *!   Equality operator.
  *!
  *! @returns
- *!   Returns @tt{1@} if all the arguments are equal, and
- *!   @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if all the arguments are equal, and
+ *!   @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[`!=()]
@@ -98,8 +98,8 @@ COMPARISON(f_eq,"`==", is_eq)
  *!   Less than operator.
  *!
  *! @returns
- *!   Returns @tt{1@} if the arguments are strictly increasing, and
- *!   @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the arguments are strictly increasing, and
+ *!   @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[`<=()], @[`>()], @[`>=()]
@@ -111,8 +111,8 @@ COMPARISON(f_lt,"`<" , is_lt)
  *!   Less or equal operator.
  *!
  *! @returns
- *!   Returns @tt{1@} if the arguments are not strictly decreasing, and
- *!   @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the arguments are not strictly decreasing, and
+ *!   @expr{0@} (zero) otherwise.
  *!
  *!   This is the inverse of @[`>()].
  *!
@@ -126,8 +126,8 @@ COMPARISON(f_le,"`<=",!is_gt)
  *!   Greater than operator.
  *!
  *! @returns
- *!   Returns @tt{1@} if the arguments are strictly decreasing, and
- *!   @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the arguments are strictly decreasing, and
+ *!   @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[`<()], @[`<=()], @[`>=()]
@@ -139,8 +139,8 @@ COMPARISON(f_gt,"`>" , is_gt)
  *! Greater or equal operator.
  *!
  *! @returns
- *!   Returns @tt{1@} if the arguments are not strictly increasing, and
- *!   @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} if the arguments are not strictly increasing, and
+ *!   @expr{0@} (zero) otherwise.
  *!
  *!   This is the inverse of @[`<()].
  *!
@@ -217,7 +217,7 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *! @note
  *!   In Pike 7.0 and earlier the addition order was unspecified.
  *!
- *!   If @[arg1] is @tt{UNDEFINED@} it will behave as the empty
+ *!   If @[arg1] is @expr{UNDEFINED@} it will behave as the empty
  *!   array/mapping/multiset if needed. This behaviour was new
  *!   in Pike 7.0.
  *!
@@ -1079,10 +1079,10 @@ PMOD_EXPORT void o_subtract(void)
  *!   If there are more than two arguments the result will be:
  *!   @expr{`-(`-(@[arg1], @[arg2]), @@@[extras])@}.
  *!
- *!   If @[arg1] is an object that overloads @tt{`-()@}, that function will
+ *!   If @[arg1] is an object that overloads @expr{`-()@}, that function will
  *!   be called with @[arg2] as the single argument.
  *!
- *!   If @[arg2] is an object that overloads @tt{``-()@}, that function will
+ *!   If @[arg2] is an object that overloads @expr{``-()@}, that function will
  *!   be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
@@ -2924,10 +2924,10 @@ PMOD_EXPORT void o_not(void)
  *!   If @[arg] is an object that implements @[lfun::`!()], that function
  *!   will be called.
  *!
- *!   If @[arg] is @tt{0@} (zero), a destructed object, or a function in a
- *!   destructed object, @tt{1@} will be returned.
+ *!   If @[arg] is @expr{0@} (zero), a destructed object, or a function in a
+ *!   destructed object, @expr{1@} will be returned.
  *!
- *!   Otherwise @tt{0@} (zero) will be returned.
+ *!   Otherwise @expr{0@} (zero) will be returned.
  *!
  *! @seealso
  *!   @[`==()], @[`!=()], @[lfun::`!()]
@@ -3197,10 +3197,10 @@ PMOD_EXPORT void o_range(void)
  *!   	  with @[index] will be returned.
  *!   	@type mapping
  *!   	  If @[index] exists in @[arg] the corresponding value will be
- *!       returned. Otherwise @tt{UNDEFINED@} will be returned.
+ *!       returned. Otherwise @expr{UNDEFINED@} will be returned.
  *!   	@type multiset
- *!   	  If @[index] exists in @[arg], @tt{1@} will be returned.
- *!   	  Otherwise @tt{UNDEFINED@} will be returned.
+ *!   	  If @[index] exists in @[arg], @expr{1@} will be returned.
+ *!   	  Otherwise @expr{UNDEFINED@} will be returned.
  *!   	@type string
  *!   	  The character (int) at index @[index] in @[arg] will be returned.
  *!   	@type program
@@ -3269,10 +3269,10 @@ PMOD_EXPORT void f_index(INT32 args)
  *!   	  will be returned.
  *!   	@type mapping
  *!   	  If @[index] exists in @[arg] the corresponding value will be
- *!       returned. Otherwise @tt{UNDEFINED@} will be returned.
+ *!       returned. Otherwise @expr{UNDEFINED@} will be returned.
  *!   	@type multiset
- *!   	  If @[index] exists in @[arg], @tt{1@} will be returned.
- *!   	  Otherwise @tt{UNDEFINED@} will be returned.
+ *!   	  If @[index] exists in @[arg], @expr{1@} will be returned.
+ *!   	  Otherwise @expr{UNDEFINED@} will be returned.
  *!   	@type program
  *!   	  The non-static (ie public) constant symbol @[index] will be
  *!   	  looked up in @[arg].
@@ -3317,7 +3317,7 @@ PMOD_EXPORT void f_arrow(INT32 args)
  *!   	@type array|mapping
  *!   	  Index @[index] in @[arg] will be assigned @[val].
  *!   	@type multiset
- *!   	  If @[val] is @tt{0@} (zero), one occurrance of @[index] in
+ *!   	  If @[val] is @expr{0@} (zero), one occurrance of @[index] in
  *!   	  @[arg] will be removed. Otherwise @[index] will be added
  *!   	  to @[arg] if it is not already there.
  *!   @endmixed
@@ -3366,7 +3366,7 @@ PMOD_EXPORT void f_index_assign(INT32 args)
  *!   	@type array|mapping
  *!   	  Index @[index] in @[arg] will be assigned @[val].
  *!   	@type multiset
- *!   	  If @[val] is @tt{0@} (zero), one occurrance of @[index] in
+ *!   	  If @[val] is @expr{0@} (zero), one occurrance of @[index] in
  *!   	  @[arg] will be removed. Otherwise @[index] will be added
  *!   	  to @[arg] if it is not already there.
  *!   @endmixed

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.23 2002/12/30 13:06:19 grubba Exp $
+|| $Id: gdbmmod.c,v 1.24 2003/04/07 17:25:04 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.23 2002/12/30 13:06:19 grubba Exp $");
+RCSID("$Id: gdbmmod.c,v 1.24 2003/04/07 17:25:04 nilsson Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -124,7 +124,7 @@ void gdbmmod_fatal(char *err)
  *! in the database immediately. This is dangerous because the database
  *! can be left in an unusable state if Pike is terminated abnormally.
  *!
- *! The default mode is @tt{"rwc"@}.
+ *! The default mode is @expr{"rwc"@}.
  *!
  *! @note
  *!  The gdbm manual states that it is important that the database is

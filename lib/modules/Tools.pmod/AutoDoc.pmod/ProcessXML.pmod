@@ -153,7 +153,7 @@ static object makeWrapper(array(string) modules, object|void child)
 //!   Non-zero if it is a Pike file. If the file contains
 //!   style doc comments, C-mode is used despite pikeMode != 0.
 //! @param type
-//!   @tt{"class"@}, @tt{"module"@} or @tt{"namespace"@}.
+//!   @expr{"class"@}, @expr{"module"@} or @expr{"namespace"@}.
 //! @param name
 //!   The name of the class/module/namespace.
 //! @param parentModules

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rijndael.c,v 1.10 2002/10/21 17:06:24 marcus Exp $
+|| $Id: rijndael.c,v 1.11 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -93,7 +93,7 @@ static void exit_pike_crypto_rijndael(struct object *o)
 
 /*! @decl string name()
  *!
- *! Returns the string @tt{"RIJNDAEL"@}.
+ *! Returns the string @expr{"RIJNDAEL"@}.
  */
 static void f_name(INT32 args)
 {

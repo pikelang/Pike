@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.266 2003/04/01 18:58:28 mast Exp $
+|| $Id: file.c,v 1.267 2003/04/07 17:21:13 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.266 2003/04/01 18:58:28 mast Exp $");
+RCSID("$Id: file.c,v 1.267 2003/04/07 17:21:13 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -828,9 +828,9 @@ static void file_read(INT32 args)
  *! Check if there is data available to read,
  *! or wait some time for available data to read.
  *!
- *! Returns @tt{1@} if there is data available to read,
- *! @tt{0@} (zero) if there is no data available, and
- *! @tt{-1@} if something went wrong.
+ *! Returns @expr{1@} if there is data available to read,
+ *! @expr{0@} (zero) if there is no data available, and
+ *! @expr{-1@} if something went wrong.
  *!
  *! @seealso
  *!   @[errno()], @[read()]
@@ -1534,7 +1534,7 @@ static void file_close(INT32 args)
  *!
  *! Open a file or fd.
  *!
- *! If @[access] is not specified, it will default to @tt{00666@}.
+ *! If @[access] is not specified, it will default to @expr{00666@}.
  *!
  *! @seealso
  *!   @[close()]
@@ -1694,9 +1694,9 @@ static void file_open(INT32 args)
  *!
  *! @returns
  *!
- *!   Returns @tt{0@} (zero) and sets errno on failure.
+ *!   Returns @expr{0@} (zero) and sets errno on failure.
  *!
- *!   Returns @tt{1@} on success.
+ *!   Returns @expr{1@} on success.
  */
 void file_sync(INT32 args)
 {
@@ -1739,7 +1739,7 @@ void file_sync(INT32 args)
  *! otherwise it will be an absolute offset from the start of the file.
  *!
  *! @returns
- *!   Returns the new offset, or @tt{-1@} on failure.
+ *!   Returns the new offset, or @expr{-1@} on failure.
  *!
  *! @note
  *!   The arguments @[mult] and @[add] are considered obsolete, and
@@ -1840,7 +1840,7 @@ static void file_tell(INT32 args)
  *! Truncates the file to the specified length @[length].
  *!
  *! @returns
- *!   Returns @tt{1@} on success, and @tt{0@} (zero) on failure.
+ *!   Returns @expr{1@} on success, and @expr{0@} (zero) on failure.
  *!
  *! @seealso
  *!   @[open()]
@@ -1894,7 +1894,7 @@ static void file_truncate(INT32 args)
  *! Get status for an open file.
  *!
  *! This function returns the same information as the function @[file_stat()],
- *! but for the file it is called in. If file is not an open file, @tt{0@}
+ *! but for the file it is called in. If file is not an open file, @expr{0@}
  *! (zero) will be returned. Zero is also returned if file is a pipe or
  *! socket.
  *!
@@ -2092,7 +2092,7 @@ struct object *file_make_object_from_fd(int fd, int mode, int guess)
  *! This function sets the internal buffer size of a socket or stream.
  *!
  *! The second argument allows you to set the read or write buffer by
- *! specifying @tt{"r"@} or @tt{"w"@}.
+ *! specifying @expr{"r"@} or @expr{"w"@}.
  *!
  *! @note
  *!   It is not guaranteed that this function actually does anything,
@@ -2751,11 +2751,11 @@ static void file_set_keepalive(INT32 args)
  *!   and failure with the close-callback or the read_oob-callback.
  *!
  *! @returns
- *!   Returns @tt{1@} on success, and @tt{0@} on failure.
+ *!   Returns @expr{1@} on success, and @expr{0@} on failure.
  *!
  *! @note
- *!   In nonblocking mode @tt{0@} (zero) may be returned and @[errno()] set to
- *!   @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
+ *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
+ *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
  *!   as a connection failure.
  */
 static void file_connect_unix( INT32 args )
@@ -2811,11 +2811,11 @@ static void file_connect_unix( INT32 args )
  *!   and failure with the close-callback or the read_oob-callback.
  *!
  *! @returns
- *!   Returns @tt{1@} on success, and @tt{0@} on failure.
+ *!   Returns @expr{1@} on success, and @expr{0@} on failure.
  *!
  *! @note
- *!   In nonblocking mode @tt{0@} (zero) may be returned and @[errno()] set to
- *!   @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
+ *!   In nonblocking mode @expr{0@} (zero) may be returned and @[errno()] set
+ *!   to @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
  *!   as a connection failure.
  */
 static void file_connect(INT32 args)
@@ -2910,12 +2910,12 @@ static int isipnr(char *s)
  *! This function returns the remote or local address of a socket on the
  *! form "x.x.x.x port".
  *!
- *! If the argument @[local] is not specified, or is @tt{0@} (zero),
+ *! If the argument @[local] is not specified, or is @expr{0@} (zero),
  *! the remote address will be returned. Otherwise, if @[local] is
- *! @tt{1@}, the local address will be returned.
+ *! @expr{1@}, the local address will be returned.
  *!
  *! If the file is not a socket, not connected, or some other error
- *! occurrs, @tt{0@} (zero) will be returned.
+ *! occurrs, @expr{0@} (zero) will be returned.
  *!
  *! @seealso
  *!   @[connect()]

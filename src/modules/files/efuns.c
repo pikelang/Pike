@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.125 2003/04/01 18:11:45 nilsson Exp $
+|| $Id: efuns.c,v 1.126 2003/04/07 17:21:13 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.125 2003/04/01 18:11:45 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.126 2003/04/07 17:21:13 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -141,10 +141,10 @@ struct array *encode_stat(PIKE_STAT_T *s)
  *!
  *! Stat a file.
  *!
- *! If the argument @[symlink] is @tt{1@} symlinks will not be followed.
+ *! If the argument @[symlink] is @expr{1@} symlinks will not be followed.
  *!
  *! @returns
- *!   If the path specified by @[path] doesn't exist @tt{0@} (zero) will
+ *!   If the path specified by @[path] doesn't exist @expr{0@} (zero) will
  *!   be returned.
  *!
  *!   Otherwise an object describing the properties of @[path] will be
@@ -306,7 +306,7 @@ void f_file_truncate(INT32 args)
  *! containing the path specified by @[path].
  *!
  *! @returns
- *!   If a filesystem cannot be determined @tt{0@} (zero) will be returned.
+ *!   If a filesystem cannot be determined @expr{0@} (zero) will be returned.
  *!
  *!   Otherwise a mapping(string:int) with the following fields will be
  *!   returned:
@@ -319,7 +319,7 @@ void f_file_truncate(INT32 args)
  *!       Number of free blocks in the filesystem.
  *!     @member int "bavail"
  *!       Number of available blocks in the filesystem.
- *!       This is usually somewhat less than the @tt{"bfree"@} value, and
+ *!       This is usually somewhat less than the @expr{"bfree"@} value, and
  *!       can usually be adjusted with eg tunefs(1M).
  *!     @member int "files"
  *!       Total number of files (aka inodes) allowed by this filesystem.
@@ -327,12 +327,12 @@ void f_file_truncate(INT32 args)
  *!       Number of free files in the filesystem.
  *!     @member int "favail"
  *!       Number of available files in the filesystem.
- *!       This is usually the same as the @tt{"ffree"@} value, and can
+ *!       This is usually the same as the @expr{"ffree"@} value, and can
  *!       usually be adjusted with eg tunefs(1M).
  *!     @member int "fsname"
  *!       Name assigned to the filesystem.
  *!     @member int "fstype"
- *!       Type of filesystem (eg @tt{"nfs"@}).
+ *!       Type of filesystem (eg @expr{"nfs"@}).
  *!   @endmapping
  *!
  *! @note
@@ -600,7 +600,7 @@ void f_werror(INT32 args)
  *! Remove a file or directory.
  *!
  *! @returns
- *!   Returns @tt{0@} (zero) on failure, @tt{1@} otherwise.
+ *!   Returns @expr{0@} (zero) on failure, @expr{1@} otherwise.
  *!
  *! @seealso
  *!   @[mkdir()], @[Stdio.recursive_rm()]
@@ -679,10 +679,10 @@ void f_rm(INT32 args)
  *! Create a directory.
  *!
  *! If @[mode] is specified, it's will be used for the new directory after
- *! being @tt{&@}'ed with the current umask (on OS'es that support this).
+ *! being @expr{&@}'ed with the current umask (on OS'es that support this).
  *!
  *! @returns
- *!   Returns @tt{0@} (zero) on failure, @tt{1@} otherwise.
+ *!   Returns @expr{0@} (zero) on failure, @expr{1@} otherwise.
  *!
  *! @seealso
  *!   @[rm()], @[cd()], @[Stdio.mkdirhier()]
@@ -804,7 +804,7 @@ void f_mkdir(INT32 args)
 /*! @decl array(string) get_dir(string dirname)
  *!
  *! Returns an array of all filenames in the directory @[dirname], or
- *! @tt{0@} (zero) if the directory does not exist.
+ *! @expr{0@} (zero) if the directory does not exist.
  *!
  *! @seealso
  *!   @[mkdir()], @[cd()]
@@ -1000,7 +1000,7 @@ void f_get_dir(INT32 args)
  *! Change the current directory for the whole Pike process.
  *!
  *! @returns
- *!   Returns @tt{1@} for success, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} for success, @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[getcwd()]
@@ -1088,7 +1088,7 @@ void f_getcwd(INT32 args)
  *!
  *! @returns
  *!   This function only returns if something went wrong during @tt{exece(2)@},
- *!   and in that case it returns @tt{0@} (zero).
+ *!   and in that case it returns @expr{0@} (zero).
  *!
  *! @note
  *!   The Pike driver _dies_ when this function is called. You must either
@@ -1225,7 +1225,7 @@ void f_exece(INT32 args)
  *! them.
  *!
  *! @returns
- *!   Returns @tt{0@} (zero) on failure, @tt{1@} otherwise. Call
+ *!   Returns @expr{0@} (zero) on failure, @expr{1@} otherwise. Call
  *!   @[errno()] to get more error info on failure.
  *!
  *! @seealso

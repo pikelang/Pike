@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.18 2002/12/12 13:17:13 hop Exp $
+|| $Id: dvb.c,v 1.19 2003/04/07 17:24:37 nilsson Exp $
 */
 
 /*
@@ -466,8 +466,8 @@ static int do_tune(int fefd, uint ifreq, uint sr)
  *!  Frequency divided by 1000.
  *!
  *! @param pol
- *!  Polarization. @tt{0@} or @tt{"v"@} for vertical type,
- *!  @tt{1@} or @tt{"h"@} for horizontal one.
+ *!  Polarization. @expr{0@} or @expr{"v"@} for vertical type,
+ *!  @expr{1@} or @expr{"h"@} for horizontal one.
  *!
  *! @param sr
  *!  The service rate parameter.

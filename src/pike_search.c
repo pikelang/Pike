@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.14 2003/04/02 19:22:43 mast Exp $
+|| $Id: pike_search.c,v 1.15 2003/04/07 17:28:55 nilsson Exp $
 */
 
 /* New memory searcher functions */
@@ -210,7 +210,7 @@ PMOD_EXPORT char *my_memmem(char *needle,
  *! offset @[start].
  *!
  *! @returns
- *!   Returns the offset where a match was found, or @tt{-1@} on
+ *!   Returns the offset where a match was found, or @expr{-1@} on
  *!   failure.
  *!
  *! @seealso

@@ -76,7 +76,7 @@ object do_method(string method,
 //! 	Sends a HTTP GET request to the server in the URL
 //!	and returns the created and initialized @[Query] object.
 //!	0 is returned upon failure. If a query object having
-//!	@tt{request_headers->Connection=="Keep-Alive"@} from a previous
+//!	@expr{request_headers->Connection=="Keep-Alive"@} from a previous
 //!     request is provided and the already established server connection
 //!     can be used for the next request, you may gain some performance.
 //!
@@ -102,7 +102,7 @@ object get_url(string|Standards.URI url,
 //! 	Sends a HTTP PUT request to the server in the URL
 //!	and returns the created and initialized @[Query] object.
 //!	0 is returned upon failure. If a query object having
-//!	@tt{request_headers->Connection=="Keep-Alive"@} from a previous
+//!	@expr{request_headers->Connection=="Keep-Alive"@} from a previous
 //!     request is provided and the already established server connection
 //!     can be used for the next request, you may gain some performance.
 //!
@@ -128,7 +128,7 @@ object put_url(string|Standards.URI url,
 //! 	Sends a HTTP DELETE request to the server in the URL
 //!	and returns the created and initialized @[Query] object.
 //!	0 is returned upon failure. If a query object having
-//!	@tt{request_headers->Connection=="Keep-Alive"@} from a previous
+//!	@expr{request_headers->Connection=="Keep-Alive"@} from a previous
 //!     request is provided and the already established server connection
 //!     can be used for the next request, you may gain some performance.
 //!
@@ -158,8 +158,8 @@ object delete_url(string|Standards.URI url,
 //!                                  mapping query_variables, @
 //!                                  mapping request_headers, @
 //!                                  object(Protocols.HTTP.Query) query)
-//!	Returns an array of @tt{({content_type,data})@} and just the data
-//!	string respective, 
+//!	Returns an array of @expr{({content_type,data})@} and just
+//!     the data string respective, 
 //!	after calling the requested server for the information.
 //!	0 is returned upon failure.
 //!
@@ -326,7 +326,7 @@ string http_encode_query(mapping(string:int|string) variables)
 //!	characters for transfer in HTTP.
 //!
 //!	Do not use this function to protect URLs, since
-//!	it will protect URL characters like @tt{'/'@} and @tt{'?'@}.
+//!	it will protect URL characters like @expr{'/'@} and @expr{'?'@}.
 //! @param in
 //!     The string to encode
 //! @returns

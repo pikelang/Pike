@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.24 2003/03/29 02:00:59 mast Exp $
+|| $Id: mpf.cmod,v 1.25 2003/04/07 17:26:37 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.24 2003/03/29 02:00:59 mast Exp $");
+RCSID("$Id: mpf.cmod,v 1.25 2003/04/07 17:26:37 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -319,9 +319,9 @@ PIKECLASS mpf
     }
   
   /*! @decl static int(0..1) _is_type(string arg)
-   *!   The Gmp.mpf object will claim to be a @tt{"float"@}.
+   *!   The Gmp.mpf object will claim to be a @expr{"float"@}.
    *! @fixme
-   *!   Perhaps it should also return true for @tt{"object"@}?
+   *!   Perhaps it should also return true for @expr{"object"@}?
    */
   PIKEFUN int(0..1) _is_type(string arg)
     flags ID_STATIC;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: invert.c,v 1.16 2002/10/21 17:06:24 marcus Exp $
+|| $Id: invert.c,v 1.17 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -64,7 +64,7 @@ void exit_pike_crypto_invert(struct object *o)
 
 /*! @decl string name()
  *!
- *! Returns the string @tt{"INVERT"@}.
+ *! Returns the string @expr{"INVERT"@}.
  */
 static void f_name(INT32 args)
 {

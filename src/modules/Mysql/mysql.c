@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.70 2003/02/26 18:17:42 agehall Exp $
+|| $Id: mysql.c,v 1.71 2003/04/07 17:23:15 nilsson Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.70 2003/02/26 18:17:42 agehall Exp $");
+RCSID("$Id: mysql.c,v 1.71 2003/04/07 17:23:15 nilsson Exp $");
 
 /*! @module Mysql
  *!
@@ -489,8 +489,8 @@ static void pike_mysql_reconnect(void)
  *! done with this function.
  *!
  *! @param host
- *!   If you give no argument, or give @tt{""@} as @[host] it will connect with
- *!   a UNIX-domain socket, which can be a big performance gain.
+ *!   If you give no argument, or give @expr{""@} as @[host] it will connect
+ *!   with a UNIX-domain socket, which can be a big performance gain.
  *!
  *! @param options
  *!   This optional mapping can contain zero or more of the following
@@ -507,7 +507,7 @@ static void pike_mysql_reconnect(void)
  *!       Enable compressed protocol.
  *!
  *!     @member string "mysql_config_file"
- *!       Change config file from @tt{"my.cnf"@}.
+ *!       Change config file from @expr{"my.cnf"@}.
  *!
  *!     @member string "mysql_group"
  *!       Specify additional group to read from config file.
@@ -549,12 +549,12 @@ static void pike_mysql_reconnect(void)
  *!   Some options may not be implemented. Unimplemented options are
  *!   silently ignored.
  *!
- *!   To use SSL-connections, set the SSL-parameters correctly. They corespond to
- *!   the parameters given to the mysql-client with the same name so make sure that
- *!   the mysql-client works with SSL and set these parameters to the same values and
- *!   everything should work.
- *!   If SSL-options are loaded from a config-file, one may set the connect_options to
- *!   include CLIENT_SSL.
+ *!   To use SSL-connections, set the SSL-parameters correctly. They corespond
+ *!   to the parameters given to the mysql-client with the same name so make
+ *!   sure that the mysql-client works with SSL and set these parameters to
+ *!   the same values and everything should work. If SSL-options are loaded
+ *!   from a config-file, one may set the connect_options to include
+ *!   CLIENT_SSL.
  */
 static void f_create(INT32 args)
 {
@@ -725,7 +725,7 @@ static void f_insert_id(INT32 args)
  *!
  *! Returns a string describing the last error from the Mysql-server.
  *!
- *! Returns @tt{0@} (zero) if there was no error.
+ *! Returns @expr{0@} (zero) if there was no error.
  */
 static void f_error(INT32 args)
 {
@@ -823,7 +823,7 @@ static void f_select_db(INT32 args)
  *! This function sends the SQL query @[query] to the Mysql-server. The result
  *! of the query is returned as a @[Mysql.mysql_result] object.
  *!
- *! Returns @tt{0@} (zero) if the query didn't return any result
+ *! Returns @expr{0@} (zero) if the query didn't return any result
  *! (e.g. @tt{INSERT@} or similar).
  *!
  *! @seealso
@@ -1484,10 +1484,12 @@ static void f_list_tables(INT32 args)
  *! @endmapping
  *!
  *! The type of the field can be any of:
- *!   @tt{"decimal"@}, @tt{"char"@}, @tt{"short"@}, @tt{"long"@},
- *!   @tt{"float"@}, @tt{"double"@}, @tt{"null"@}, @tt{"time"@},
- *!   @tt{"longlong"@}, @tt{"int24"@}, @tt{"tiny blob"@}, @tt{"medium blob"@},
- *!   @tt{"long blob"@}, @tt{"var string"@}, @tt{"string"@} or @tt{"unknown"@}.
+ *!   @expr{"decimal"@}, @expr{"char"@}, @expr{"short"@}, @expr{"long"@},
+ *!   @expr{"float"@}, @expr{"double"@}, @expr{"null"@}, @expr{"time"@},
+ *!   @expr{"longlong"@}, @expr{"int24"@}, @expr{"tiny blob"@},
+ *!   @expr{"medium blob"@},
+ *!   @expr{"long blob"@}, @expr{"var string"@}, @expr{"string"@} or
+ *!   @expr{"unknown"@}.
  *!
  *! The flags multiset can contain any of:
  *! @multiset
@@ -1672,7 +1674,7 @@ static void f_list_processes(INT32 args)
  *! and retreived with this version of the mysql-module.
  *!
  *! Usually, there is no problem storing binary data in mysql-tables,
- *! but data containing @tt{'\0'@} (NUL) couldn't be fetched with old
+ *! but data containing @expr{'\0'@} (NUL) couldn't be fetched with old
  *! versions (prior to 3.20.5) of the mysql-library.
  */
 static void f_binary_data(INT32 args)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.42 2003/03/12 09:58:18 agehall Exp $
+|| $Id: udp.c,v 1.43 2003/04/07 17:21:13 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.42 2003/03/12 09:58:18 agehall Exp $");
+RCSID("$Id: udp.c,v 1.43 2003/04/07 17:21:13 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -268,7 +268,7 @@ static void udp_bind(INT32 args)
  *! broadcast address.
  *!
  *! @returns
- *!  Returns @tt{1@} on success, @tt{0@} (zero) otherwise.
+ *!  Returns @expr{1@} on success, @expr{0@} (zero) otherwise.
  *!
  *! @note
  *!  This is normally only avalable to root users.
@@ -292,7 +292,7 @@ void udp_enable_broadcast(INT32 args)
  *! Check for data and wait max. @[timeout] seconds.
  *!
  *! @returns
- *!  Returns @tt{1@} if data are ready, @tt{0@} (zero) otherwise.
+ *!  Returns @expr{1@} if data are ready, @expr{0@} (zero) otherwise.
  */
 void udp_wait(INT32 args)
 {
@@ -666,7 +666,7 @@ static void udp_set_blocking(INT32 args)
  *!   number for the remote machine. 
  *!
  *! @returns
- *!   Returns @tt{1@} on success, @tt{0@} (zero) otherwise.
+ *!   Returns @expr{1@} on success, @expr{0@} (zero) otherwise.
  *!
  *! @note
  *!   If the socket is in nonblocking mode, you have to wait

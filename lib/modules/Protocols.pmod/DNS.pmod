@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.71 2003/01/20 17:44:00 nilsson Exp $
+// $Id: DNS.pmod,v 1.72 2003/04/07 17:12:02 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -452,7 +452,7 @@ class server
   //! Overload this function to implement the proper lookup.
   //!
   //! @returns
-  //!   Returns @tt{0@} (zero) on failure, or a result mapping on success:
+  //!   Returns @expr{0@} (zero) on failure, or a result mapping on success:
   //!   @mapping
   //!     @member int "rcode"
   //!     @member array(mapping(string:string|int))|void "qd"

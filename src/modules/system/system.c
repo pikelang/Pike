@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.141 2003/03/03 16:41:48 grubba Exp $
+|| $Id: system.c,v 1.142 2003/04/07 17:21:36 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.141 2003/03/03 16:41:48 grubba Exp $");
+RCSID("$Id: system.c,v 1.142 2003/04/07 17:21:36 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1025,8 +1025,8 @@ void f_setsid(INT32 args)
  *!   @endint
  *!
  *! @returns
- *!   Returns @tt{1@} if this process currently is capable of dumping core,
- *!   and @tt{0@} (zero) if not.
+ *!   Returns @expr{1@} if this process currently is capable of dumping core,
+ *!   and @expr{0@} (zero) if not.
  *!
  *! @note
  *!   This function is currently only available on some versions of Linux.

@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.25 2002/10/12 12:10:40 grubba Exp $
+// $Id: Table.pmod,v 1.26 2003/04/07 17:19:41 nilsson Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) error("(Table) "+msg+"\n")
@@ -375,8 +375,8 @@ class table {
   //! @param column_types
   //!   This is an optional array of mappings. The column type
   //!   information is only used when displaying the table. Currently, only the
-  //!   keyword @tt{"type"@} is recognized. The type can be specified as
-  //!   @tt{"text"@} or @tt{"num"@} (numerical). Text columns are left
+  //!   keyword @expr{"type"@} is recognized. The type can be specified as
+  //!   @expr{"text"@} or @expr{"num"@} (numerical). Text columns are left
   //!   adjusted, whereas numerical columns are right adjusted. If a mapping
   //!   in the array is 0 (zero), it will be assumed to be a text column.
   //!   If @[column_types] is omitted, all columns will displayed as text.
@@ -450,10 +450,10 @@ object ASCII = class {
 
   //! @decl string encode(object table, void|mapping options)
   //!
-  //! This method returns a table represented in ASCII suitable for human eyes.
-  //! @[options] is an optional mapping. If the keyword @tt{"indent"@} is used
-  //! with a number, the table will be indented with that number of space
-  //! characters.
+  //! This method returns a table represented in ASCII suitable for
+  //! human eyes.  @[options] is an optional mapping. If the keyword
+  //! @expr{"indent"@} is used with a number, the table will be
+  //! indented with that number of space characters.
 
   string encode(object t, void|mapping options)
   {

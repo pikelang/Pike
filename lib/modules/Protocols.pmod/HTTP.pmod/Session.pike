@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.10 2003/03/20 20:09:42 nilsson Exp $
+// $Id: Session.pike,v 1.11 2003/04/07 17:12:02 nilsson Exp $
 
 import Protocols.HTTP;
 
@@ -807,10 +807,10 @@ Request post_url(URL url,
 //!                                   mapping query_variables)
 //! @decl string post_url_data(URL url, @
 //!                            mapping query_variables)
-//!	Returns an array of @tt{({content_type,data})@} and just the data
-//!	string respective, 
+//!	Returns an array of @expr{({content_type,data})@} and
+//!     just the data string respective, 
 //!	after calling the requested server for the information.
-//!	0 is returned upon failure.
+//!	@expr{0@} is returned upon failure.
 //!
 //! 	post* is similar to the @[get_url()] class of functions,
 //!	except that the query variables is sent as a POST request instead

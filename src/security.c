@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.c,v 1.41 2003/04/01 18:11:09 nilsson Exp $
+|| $Id: security.c,v 1.42 2003/04/07 17:28:56 nilsson Exp $
 */
 
 #include "global.h"
@@ -81,13 +81,13 @@ static void restore_creds(struct object *creds)
  *! Call with credentials.
  *!
  *! Sets the current credentials to @[creds], and calls
- *! @expr{@[func](@@@[args])@}. If @[creds] is @tt{0@} (zero), the
+ *! @expr{@[func](@@@[args])@}. If @[creds] is @expr{0@} (zero), the
  *! credentials from the current object will be used.
  *!
  *! @note
  *!   The current creds or the current object must have the allow bit
- *!   @tt{BIT_SECURITY@} set to allow calling with @[creds] other than
- *!   @tt{0@} (zero).
+ *!   @[BIT_SECURITY] set to allow calling with @[creds] other than
+ *!   @expr{0@} (zero).
  */
 static void f_call_with_creds(INT32 args)
 {
@@ -151,7 +151,7 @@ static void f_call_with_creds(INT32 args)
  *! Get the current credentials
  *!
  *! Returns the credentials that are currently active.
- *! Returns @tt{0@} (zero) if no credentials are active.
+ *! Returns @expr{0@} (zero) if no credentials are active.
  *!
  *! @seealso
  *!   @[call_with_creds()]
@@ -178,7 +178,7 @@ static void f_get_current_creds(INT32 args)
  *! Get the default credentials.
  *!
  *! Returns the default credentials object if it has been set.
- *! Returns @tt{0@} (zero) if it has not been set.
+ *! Returns @expr{0@} (zero) if it has not been set.
  *!
  *! @seealso
  *!   @[set_default_creds()]
@@ -198,7 +198,7 @@ static void get_default_creds(INT32 args)
  *!
  *! @note
  *!   The current creds must have the allow bit
- *!   @tt{BIT_SECURITY@} set.
+ *!   @[BIT_SECURITY] set.
  *!
  *! @seealso
  *!   @[get_default_creds()]
@@ -224,7 +224,7 @@ static void set_default_creds(INT32 args)
  *!
  *! @note
  *!   The current creds must have the allow bit
- *!   @tt{BIT_SECURITY@} set.
+ *!   @[BIT_SECURITY] set.
  */
 static void creds_create(INT32 args)
 {
@@ -283,7 +283,7 @@ static void creds_get_data_bits(INT32 args)
  *!
  *! @note
  *!   To perform this operation the current credentials needs to have the bit
- *!   @tt{BIT_SECURITY@} set, or have the same user as the old credentials
+ *!   @[BIT_SECURITY] set, or have the same user as the old credentials
  *!   and not change the user by performing the operation.
  */
 static void creds_apply(INT32 args)
@@ -313,7 +313,7 @@ static void creds_apply(INT32 args)
  *!
  *! Get the credentials from @[o].
  *!
- *! Returns @tt{0@} if @[o] does not have any credentials.
+ *! Returns @expr{0@} if @[o] does not have any credentials.
  */
 static void f_get_object_creds(INT32 args)
 {

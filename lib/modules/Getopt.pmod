@@ -27,7 +27,7 @@ static void my_error(string err, int throw_errors) {
 //!
 //! @param argv
 //!   The first argument should be the array of strings that was sent as
-//!   the second argument to your @tt{main()@} function.
+//!   the second argument to your @expr{main()@} function.
 //!
 //! @param shortform
 //!   The second is a string with the short form of your option. The
@@ -37,7 +37,7 @@ static void my_error(string err, int throw_errors) {
 //!
 //! @param longform
 //!   This is an alternative and maybe more readable way to give the
-//!   same option. If you give @tt{"foo"@} as @[longform] your program
+//!   same option. If you give @expr{"foo"@} as @[longform] your program
 //!   will accept @tt{--foo@} as argument. This argument can also be
 //!   an array of strings, in which case any of the options in the
 //!   array will be accepted.
@@ -56,16 +56,17 @@ static void my_error(string err, int throw_errors) {
 //!   @[UNDEFINED] or left out if the option does not take an argument.
 //!
 //! @param throw_errors
-//!   If @[throw_errors] has been specified @[find_option()] will throw
-//!   errors on failure. If it has been left out, or is @tt{0@} (zero), it will
-//!   instead print an error message on @[Stdio.stderr] and exit the
-//!   program with result code 1 on failure.
+//!   If @[throw_errors] has been specified @[find_option()] will
+//!   throw errors on failure. If it has been left out, or is
+//!   @expr{0@} (zero), it will instead print an error message on
+//!   @[Stdio.stderr] and exit the program with result code 1 on
+//!   failure.
 //!
 //! @returns
 //!   Returns the value the option has been set to if any.
 //!
-//!   If the option is present, but has not been set to anything @tt{1@}
-//!   will be returned.
+//!   If the option is present, but has not been set to anything
+//!   @expr{1@} will be returned.
 //!
 //!   Otherwise if any of the environment variables specified in @[envvars] has
 //!   been set, that value will be returned.
@@ -84,8 +85,8 @@ static void my_error(string err, int throw_errors) {
 //!   This function reads options even if they are written after the first
 //!   non-option on the line.
 //!
-//!   Index @tt{0@} (zero) of @[argv] is not scanned for options, since it
-//!   is reserved for the program name.
+//!   Index @expr{0@} (zero) of @[argv] is not scanned for options,
+//!   since it is reserved for the program name.
 //!
 //!   Only the first ocurrance of an option will be parsed. To parse
 //!   multiple ocurrances, call @[find_option()] multiple times.
@@ -197,8 +198,8 @@ constant MAY_HAVE_ARG=3;
 //!   the first non-option on the command line.
 //!
 //! @param argv
-//!   The should be the array of strings that was sent as
-//!   the second argument to your @tt{main()@} function.
+//!   The should be the array of strings that was sent as the second
+//!   argument to your @expr{main()@} function.
 //!
 //! @param options
 //!   Each element in the array @[options] should be an array on the
@@ -219,7 +220,7 @@ constant MAY_HAVE_ARG=3;
 //!   	  looked for. Short and long options can be mixed, and short options
 //!   	  can be combined into one string. Note that you must include the
 //!       dashes so that @[find_all_options()] can distinguish between
-//!   	  long and short options. Example: @tt{({"-tT","--test"})@}
+//!   	  long and short options. Example: @expr{({"-tT","--test"})@}
 //!   	  This would make @[find_all_options] look for @tt{-t@},
 //!   	  @tt{-T@} and @tt{--test@}.
 //!   	@elem void|string|array(string) env_var
@@ -237,10 +238,11 @@ constant MAY_HAVE_ARG=3;
 //!   Don't scan for arguments after the first non-option.
 //!
 //! @param throw_errors
-//!   If @[throw_errors] has been specified @[find_all_options()] will throw
-//!   errors on failure. If it has been left out, or is @tt{0@} (zero), it will
-//!   instead print an error message on @[Stdio.stderr] and exit the
-//!   program with result code 1 on failure.
+//!   If @[throw_errors] has been specified @[find_all_options()] will
+//!   throw errors on failure. If it has been left out, or is
+//!   @expr{0@} (zero), it will instead print an error message on
+//!   @[Stdio.stderr] and exit the program with result code 1 on
+//!   failure.
 //!
 //! @returns
 //!   The good news is that the output from this function is a lot simpler.
@@ -257,8 +259,8 @@ constant MAY_HAVE_ARG=3;
 //! @note
 //!   @[find_all_options()] modifies @[argv].
 //!
-//!   Index @tt{0@} (zero) of @[argv] is not scanned for options, since it
-//!   is reserved for the program name.
+//!   Index @expr{0@} (zero) of @[argv] is not scanned for options,
+//!   since it is reserved for the program name.
 //!
 //! @seealso
 //!   @[Getopt.get_args()], @[Getopt.find_option()]

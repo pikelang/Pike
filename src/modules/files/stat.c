@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stat.c,v 1.26 2003/03/27 18:25:08 mast Exp $
+|| $Id: stat.c,v 1.27 2003/04/07 17:21:13 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.26 2003/03/27 18:25:08 mast Exp $");
+RCSID("$Id: stat.c,v 1.27 2003/04/07 17:21:13 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -85,19 +85,19 @@ RCSID("$Id: stat.c,v 1.26 2003/03/27 18:25:08 mast Exp $");
  *!   of the above:
  *!   @dl
  *!     @item type
- *!       The type as a string, can be any of @tt{"reg"@},
- *!       @tt{"dir"@}, @tt{"lnk"@}, @tt{"fifo"@}, @tt{"sock"@},
- *!       @tt{"chr"@}, @tt{"blk"@}, and @tt{"unknown"@}.
+ *!       The type as a string, can be any of @expr{"reg"@},
+ *!       @expr{"dir"@}, @expr{"lnk"@}, @expr{"fifo"@}, @expr{"sock"@},
+ *!       @expr{"chr"@}, @expr{"blk"@}, and @expr{"unknown"@}.
  *!     @item mode_string
  *!       The file mode encoded as a string in @tt{ls -l@} style, e.g.
- *!       @tt{"drwxr-xr-x"@}.
+ *!       @expr{"drwxr-xr-x"@}.
  *!   @enddl
  *!
  *!   Note that some items might not exist or have meaningful values
  *!   on some platforms.
  *!
  *!   Additionally, the object may be initialized from or casted to an
- *!   @tt{array@} on the form of a 'traditional' LPC stat-array, and
+ *!   @expr{array@} on the form of a 'traditional' LPC stat-array, and
  *!   it's also possible to index the object directly with integers as
  *!   if it were such an array. The stat-array has this format:
  *!
@@ -122,8 +122,8 @@ RCSID("$Id: stat.c,v 1.26 2003/03/27 18:25:08 mast Exp $");
  *!
  *!   It's possible to modify the stat struct by assigning values to
  *!   the items. They essentially work as variables, although some of
- *!   them affect others, e.g. setting @tt{isdir@} clears @tt{isreg@}
- *!   and setting @tt{mode_string@} changes many of the other items.
+ *!   them affect others, e.g. setting @expr{isdir@} clears @expr{isreg@}
+ *!   and setting @expr{mode_string@} changes many of the other items.
  */
 
 /* Let's define these mode flags if they don't exist, so reading and
@@ -302,9 +302,9 @@ static void stat_push_compat(INT_TYPE n)
  *!   @item
  *!     @[stat] is an object, typically another @[Stdio.Stat]. The
  *!     stat info is copied from the object by getting the values of
- *!     @tt{mode@}, @tt{size@}, @tt{atime@}, @tt{mtime@}, @tt{ctime@},
- *!     @tt{uid@}, @tt{gid@}, @tt{dev@}, @tt{ino@}, @tt{nlink@}, and
- *!     @tt{rdev@}.
+ *!     @expr{mode@}, @expr{size@}, @expr{atime@}, @expr{mtime@},
+ *!     @expr{ctime@}, @expr{uid@}, @expr{gid@}, @expr{dev@}, @expr{ino@},
+ *!     @expr{nlink@}, and @expr{rdev@}.
  *!   @item
  *!     @[stat] is a seven element array on the 'traditional' LPC
  *!     stat-array form (see the class doc).

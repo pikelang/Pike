@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sha.c,v 1.24 2002/10/21 17:06:24 marcus Exp $
+|| $Id: sha.c,v 1.25 2003/04/07 17:20:45 nilsson Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.24 2002/10/21 17:06:24 marcus Exp $");
+RCSID("$Id: sha.c,v 1.25 2003/04/07 17:20:45 nilsson Exp $");
 
 #include <sha.h>
 
@@ -43,7 +43,7 @@ static struct program *shamod_program;
 
 /*! @decl string name()
  *!
- *! Returns the string @tt{"SHA"@}.
+ *! Returns the string @expr{"SHA"@}.
  */
 static void f_name(INT32 args)
 {

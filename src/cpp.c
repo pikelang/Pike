@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.116 2003/04/01 16:30:49 nilsson Exp $
+|| $Id: cpp.c,v 1.117 2003/04/07 17:28:55 nilsson Exp $
 */
 
 #include "global.h"
@@ -197,7 +197,7 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
  *!   Get compilation handler for simulation of Pike v@[major].@[minor].
  *!
  *!   This function is called by @[cpp()] when it encounters
- *!   @tt{#pike@} directives.
+ *!   @expr{#pike@} directives.
  *!
  *! @param major
  *!   Major version.
@@ -214,7 +214,7 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
  *!   Convert @[raw] from encoding @[charset] to UNICODE.
  *!
  *!   This function is called by @[cpp()] when it encounters
- *!   @tt{#charset@} directives.
+ *!   @expr{#charset@} directives.
  *!
  *! @param raw
  *!   String to convert.
@@ -223,7 +223,7 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
  *!   Name of encoding that @[raw] uses.
  *!
  *! @returns
- *!   @[raw] decoded to UNICODE, or @tt{0@} (zero) if the decoding failed.
+ *!   @[raw] decoded to UNICODE, or @expr{0@} (zero) if the decoding failed.
  *!
  *! @seealso
  *!   @[Locale.Charset]
@@ -297,7 +297,8 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
 /*! @decl string handle_include(string header_file, string current_file, @
  *!                             int(0..1) is_local_ref)
  *!
- *!   Called by @[cpp()] to resolv @tt{#include@} and @tt{#string@} directives.
+ *!   Called by @[cpp()] to resolv @expr{#include@} and @expr{#string@}
+ *!   directives.
  *!
  *! @param header_file
  *!   File that was requested for inclusion.
@@ -309,14 +310,14 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
  *!   Specifies reference method.
  *!   @int
  *!     @value 0
- *!       Directive was @tt{#include <@}@[header_file]@tt{>@}.
+ *!       Directive was @expr{#include <header_file>@}.
  *!     @value 1
- *!       Directive was @tt{#include "@}@[header_file]@tt{"@}.
+ *!       Directive was @expr{#include "header_file"@}.
  *!   @endint
  *!
  *! @returns
  *!   Returns the filename to pass to @[read_include()] if found,
- *!   and @tt{0@} (zero) on failure.
+ *!   and @expr{0@} (zero) on failure.
  *!
  *! @seealso
  *!   @[read_include()]
@@ -331,7 +332,7 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
  *!
  *! @returns
  *!   Returns a string with the content of the header file on success,
- *!   and @tt{0@} (zero) on failure.
+ *!   and @expr{0@} (zero) on failure.
  *!
  *! @seealso
  *!   @[handle_include()]
@@ -1613,7 +1614,7 @@ static int do_safe_index_call(struct pike_string *s)
  *!
  *! Preprocesses the string @[data] with Pike's builtin ANSI-C look-alike
  *! preprocessor. If the @[current_file] argument has not been specified,
- *! it will default to @tt{"-"@}. @[charset] defaults to @tt{"ISO-10646"@}.
+ *! it will default to @expr{"-"@}. @[charset] defaults to @expr{"ISO-10646"@}.
  *!
  *! @seealso
  *!   @[compile()]

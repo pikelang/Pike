@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.17 2003/04/01 17:44:04 nilsson Exp $
+ * $Id: module.pmod,v 1.18 2003/04/07 17:16:41 nilsson Exp $
  *
  */
 
@@ -25,27 +25,27 @@ class SGML
 //!     
 //! @example
 //!	A string
-//!     @tt{"<gat>&nbsp;<gurka>&nbsp;</gurka>&nbsp;<banan>&nbsp;<kiwi>&nbsp;</gat>"@}
+//!     @expr{"<gat>&nbsp;<gurka>&nbsp;</gurka>&nbsp;<banan>&nbsp;<kiwi>&nbsp;</gat>"@}
 //!     results in 
-//!	@pre{
+//!@code
+//!({
+//!    tag "gat" object with data:
+//!    ({
+//!        tag "gurka" object with data:
 //!	({
-//!	    tag "gat" object with data:
+//!            " "
+//!        })
+//!        tag "banan" object with data:
+//!	({
+//!            " "
+//!            tag "kiwi" object with data:
 //!	    ({
-//!	        tag "gurka" object with data:
-//!		({
-//!                 " "
-//!             })
-//!	        tag "banan" object with data:
-//!		({
-//!                 " "
-//!	            tag "kiwi" object with data:
-//!		    ({
-//!                    " "
-//!                 })
-//!             })
-//!         })
-//!     })
-//!	@}
+//!               " "
+//!            })
+//!        })
+//!    })
+//!})
+//!@endcode
 //!             
 //!	ie, simple "tags" (not containers) are not detected,
 //!	but containers are ended implicitely by a surrounding

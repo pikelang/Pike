@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.497 2003/04/02 19:22:44 mast Exp $
+|| $Id: program.c,v 1.498 2003/04/07 17:28:55 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.497 2003/04/02 19:22:44 mast Exp $");
+RCSID("$Id: program.c,v 1.498 2003/04/07 17:28:55 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -264,8 +264,8 @@ static char *raw_lfun_types[] = {
  *! @note
  *!   Although these functions are called from outside the object
  *!   they exist in, they will still be used even if they are
- *!   declared @tt{static@}. It is infact recommended to declare
- *!   them @tt{static@}, since that will hinder them being used
+ *!   declared @expr{static@}. It is infact recommended to declare
+ *!   them @expr{static@}, since that will hinder them being used
  *!   for other purposes.
  *!
  *! @seealso
@@ -485,7 +485,7 @@ static char *raw_lfun_types[] = {
  *!
  *! @returns
  *!   Returns non-zero if the object should be evaluated as false,
- *!   and @tt{0@} (zero) otherwise.
+ *!   and @expr{0@} (zero) otherwise.
  *!
  *! @seealso
  *!   @[predef::`!()]
@@ -691,7 +691,7 @@ static char *raw_lfun_types[] = {
  *!   @endstring
  *!
  *! @returns
- *!   Expected to return @tt{1@} if the object is to be regarded as a
+ *!   Expected to return @expr{1@} if the object is to be regarded as a
  *!   simulation of the type specified by @[basic_type].
  *!
  *! @note
@@ -707,7 +707,7 @@ static char *raw_lfun_types[] = {
  *!   This method is called by @[predef::sprintf()] to print objects. If it is
  *!   not present, printing of the object will not be supported for any
  *!   conversion-type except for the @tt{%O@}-conversion-type, which
- *!   will output @tt{"object"@}.
+ *!   will output @expr{"object"@}.
  *!
  *! @param conversion_type
  *!   One of:
@@ -799,8 +799,8 @@ static char *raw_lfun_types[] = {
  *!   Should return an object that implements the iterator API:
  *!   @dl
  *!   	@item
- *!   	  @[lfun::`!()] should return @tt{0@} (zero) when not at end of stream,
- *!   	  and @tt{1@} at end of stream.
+ *!   	  @[lfun::`!()] should return @expr{0@} (zero) when not at end of stream,
+ *!   	  and @expr{1@} at end of stream.
  *!   	@item
  *!   	  @[lfun::`+=()] should advance the specified number of steps.
  *!   	@item
@@ -845,9 +845,9 @@ static char *raw_lfun_types[] = {
  *!   be fetched.
  *!
  *! @returns
- *!   Returns the default module, or @tt{0@} (zero).
+ *!   Returns the default module, or @expr{0@} (zero).
  *!
- *!   If @tt{0@} (zero) is returned the compiler use the mapping
+ *!   If @expr{0@} (zero) is returned the compiler use the mapping
  *!   returned by @[all_constants()] as fallback.
  *!
  *! @seealso
