@@ -1,9 +1,10 @@
 #pike __REAL_VERSION__
 
 // Moahahahah!
-// $Id: error.pmod,v 1.4 2000/09/28 03:38:27 hubbe Exp $
+// $Id: error.pmod,v 1.5 2001/03/23 18:36:27 mast Exp $
 void `()(string f, mixed ... args)
 {
   array(array) b = backtrace();
-  throw( ({ sprintf(f, @args), b[..sizeof(b)-2] }) );
+  if (sizeof(args)) f = sprintf(f, @args);
+  throw( ({ f, b[..sizeof(b)-2] }) );
 }
