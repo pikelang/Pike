@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.341 2001/06/08 14:26:40 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.342 2001/06/09 15:35:45 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1062,6 +1062,37 @@ PMOD_EXPORT void f_add_constant(INT32 args)
   pop_n_elems(args);
 }
 
+#if 1
+
+/*! @decl string combine_path(string absolute, string ... relative)
+ *! @decl string combine_path_unix(string absolute, string ... relative)
+ *! @decl string combine_path_nt(string absolute, string ... relative)
+ *!
+ *!   Concatenate a relative path to an absolute path and remove any
+ *!   @tt{"//"@}, @tt{"/.."@} or @tt{"/."@} to produce a straightforward
+ *!   absolute path as result.
+ *!
+ *!   @[combine_path_nt()] concatenates according to NT-filesystem conventions,
+ *!   while @[combine_path_unix()] concatenates according to UNIX-style.
+ *!
+ *!   @[combine_path()] is equvivalent to @[combine_path_unix()] on UNIX-like
+ *!   operating systems, and equvivalent to @[combine_path_nt()] on NT-like
+ *!   operating systems.
+ *!
+ *! @seealso
+ *!   @[getcwd()], @[Stdio.append_path()]
+ */
+
+#define NT_COMBINE_PATH
+#include "combine_path.h"
+
+#define UNIX_COMBINE_PATH
+#include "combine_path.h"
+
+#else /* !1 */
+/*
+ * Old combine_path implementation.
+ */
 #ifndef __NT__
 #define IS_SEP(X) ( (X)=='/' )
 #define IS_ABS(X) (IS_SEP((X)[0])?1:0)
@@ -1225,15 +1256,6 @@ static char *combine_path(char *cwd,char *file)
   return ret;
 }
 
-/*! @decl string combine_path(string absolute, string relative)
- *!
- *! Concatenate a relative path to an absolute path and remove any
- *! @tt{"//"@}, @tt{"/.."@} or @tt{"/."@} to produce a straightforward
- *! absolute path as a result.
- *!
- *! @seealso
- *! @[getcwd()], @[Stdio.append_path()]
- */
 PMOD_EXPORT void f_combine_path(INT32 args)
 {
   char *path=0;
@@ -1268,6 +1290,8 @@ PMOD_EXPORT void f_combine_path(INT32 args)
   pop_n_elems(args);
   push_string(ret);
 }
+
+#endif /* 1 */
 
 /*! @decl object function_object(function f)
  *!
@@ -7464,8 +7488,18 @@ void init_builtin_efuns(void)
 
   
 /* function(string...:string) */
+#if 1
+  ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+#ifdef __NT__
+  ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
+#else
+  ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+#endif
+#else /* !1 */
   ADD_EFUN("combine_path",f_combine_path,tFuncV(tNone,tStr,tStr),0);
-  
+#endif /* 1 */
+
 /* function(string,object|void,mixed...:program) */
   ADD_EFUN("compile", f_compile, tFuncV(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) ,tMix,tPrg),
 	   OPT_EXTERNAL_DEPEND);
