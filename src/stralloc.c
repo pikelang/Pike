@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.184 2004/11/06 17:34:02 grubba Exp $
+|| $Id: stralloc.c,v 1.185 2004/11/06 17:55:34 grubba Exp $
 */
 
 #include "global.h"
@@ -2397,6 +2397,8 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case 'h':
 	  flags |= APPEND_WIDTH_HALF;
 	  continue;
+
+	case 'w':	/* Same as l, but for %s. */
 	case 'l':
 	  if (flags & APPEND_WIDTH_LONG) {
 	    flags |= APPEND_WIDTH_LONG_LONG;
@@ -2418,6 +2420,9 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  break;
 	case 'S':
+	  /* Note: On some platforms this is an alias for %ls, so if you
+	   *       want to output wchar_t strings, use %ls instead!
+	   */
 	  {
 	    struct pike_string *str = va_arg(args, struct pike_string *);
 	    size_t len = str->len;
@@ -2438,7 +2443,32 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  break;
 	case 's':
-	  {
+	  if (flags & APPEND_WIDTH_LONG) {
+	    /* Wide string: %ws, %ls or %lls
+	     */
+	    PCHARP str;
+	    size_t len;
+	    if ((flags & APPEND_WIDTH_LONG)== APPEND_WIDTH_LONG) {
+	      str = MKPCHARP(va_arg(args, p_wchar1 *), 1);
+	    } else {
+	      str = MKPCHARP(va_arg(args, p_wchar2 *), 2);
+	    }
+	    len = pcharp_strlen(str);
+	    if (precision && precision < len) len = precision;
+	    if (min_width > len) {
+	      if (flags & APPEND_LEFT) {
+		string_builder_append(s, str, len);
+		string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				    4, 0);
+	      } else {
+		string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				    4, 0);
+		string_builder_append(s, str, len);
+	      }
+	    } else {
+	      string_builder_append(s, str, len);
+	    }
+	  } else {
 	    const char *str = va_arg(args, char *);
 	    size_t len = strlen(str);
 	    if (precision && precision < len) len = precision;
@@ -2487,6 +2517,9 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 flags | APPEND_SIGNED,
 					 min_width, precision);
 	  break;
+
+	  /* FIMXE: TODO: Doubles (ie 'a', 'e', 'E', 'f', 'g', 'G'). */
+
 	default:
 	  Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
 		     "'%c' 0x%x.\n", fmt[-1], fmt[-1]);
