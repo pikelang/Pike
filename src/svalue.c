@@ -24,7 +24,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.91 2000/12/19 20:54:05 marcus Exp $");
+RCSID("$Id: svalue.c,v 1.92 2000/12/22 18:42:06 mast Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -645,39 +645,33 @@ PMOD_EXPORT int low_is_equal(struct svalue *a,
   check_refs(a);
   check_refs(b);
 
-  if(a->type == T_OBJECT && a->u.object->prog)
+  if(a->type == T_OBJECT && a->u.object->prog &&
+     FIND_LFUN(a->u.object->prog, LFUN__EQUAL) != -1)
   {
-    int f=FIND_LFUN(a->u.object->prog, LFUN__EQUAL);
-    if(f != -1)
+    push_svalue(b);
+    apply_lfun(a->u.object, LFUN__EQUAL, 1);
+    if(IS_ZERO(sp-1)) 
     {
-      push_svalue(b);
-      apply_lfun(a->u.object, f, 1);
-      if(IS_ZERO(sp-1)) 
-      {
-	pop_stack();
-	return 0;
-      }else{
-	pop_stack();
-	return 1;
-      }
+      pop_stack();
+      return 0;
+    }else{
+      pop_stack();
+      return 1;
     }
   }
 
-  if(b->type == T_OBJECT && b->u.object->prog)
+  if(b->type == T_OBJECT && b->u.object->prog &&
+     FIND_LFUN(b->u.object->prog, LFUN__EQUAL) != -1)
   {
-    int f=FIND_LFUN(b->u.object->prog, LFUN__EQUAL);
-    if(f != -1)
+    push_svalue(a);
+    apply_lfun(b->u.object, LFUN__EQUAL, 1);
+    if(IS_ZERO(sp-1)) 
     {
-      push_svalue(a);
-      apply_lfun(b->u.object, f, 1);
-      if(IS_ZERO(sp-1)) 
-      {
-	pop_stack();
-	return 0;
-      }else{
-	pop_stack();
-	return 1;
-      }
+      pop_stack();
+      return 0;
+    }else{
+      pop_stack();
+      return 1;
     }
   }
 
