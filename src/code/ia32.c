@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.31 2003/03/22 13:39:37 mast Exp $
+|| $Id: ia32.c,v 1.32 2003/03/22 22:50:38 mast Exp $
 */
 
 /*
@@ -15,17 +15,56 @@
 
 enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4};
 
+#define REG_BITMASK ((1 << REG_NONE) - 1)
+
+/* #define REGISTER_DEBUG */
+
+#ifdef REGISTER_DEBUG
+static int alloc_regs = 0, valid_regs = 0;
+#define ALLOC_REG(REG) do {						\
+    alloc_regs |= (1 << (REG));						\
+  } while (0)
+#define DEALLOC_REG(REG) do {						\
+    alloc_regs &= ~(1 << (REG));					\
+    valid_regs &= ~(1 << (REG));					\
+  } while (0)
+#define CHECK_ALLOC_REG(REG) do {					\
+    if (!((1 << (REG)) & alloc_regs))					\
+      Pike_fatal ("Attempt to use unallocated register.\n");		\
+  } while (0)
+#define MAKE_VALID_REG(REG) do {					\
+    CHECK_ALLOC_REG (REG);						\
+    valid_regs |= (1 << (REG));						\
+  } while (0)
+#define CHECK_VALID_REG(REG) do {					\
+    if (!((1 << (REG)) & valid_regs))					\
+      Pike_fatal ("Attempt to use register without valid value.\n");	\
+  } while (0)
+#define CLEAR_REGS() do {alloc_regs = valid_regs = 0;} while (0)
+#else
+#define ALLOC_REG(REG) do {} while (0)
+#define DEALLOC_REG(REG) do {} while (0)
+#define CHECK_ALLOC_REG(REG) do {} while (0)
+#define MAKE_VALID_REG(REG) do {} while (0)
+#define CHECK_VALID_REG(REG) do {} while (0)
+#define CLEAR_REGS() do {} while (0)
+#endif
+
 #define PUSH_INT(X) ins_int((INT32)(X), (void (*)(char))add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
 
 #define NOP() add_to_program(0x90); /* for alignment */
 
 #define MOV_VAL32_TO_REG(VAL, REG) do {					\
+    /* movl $val,%reg */						\
     add_to_program (0xb8 | (REG)); /* Move imm32 to r32. */		\
     PUSH_INT (VAL); /* Assumed to be added last. */			\
+    MAKE_VALID_REG (REG);						\
   } while (0)
 
 #define MOV_ABSADDR_TO_REG(ADDR, REG) do {				\
+    MAKE_VALID_REG (REG);						\
+    /* movl addr,%reg */						\
     if ((REG) == REG_EAX)						\
       add_to_program (0xa1); /* Move dword at address to EAX. */	\
     else {								\
@@ -36,6 +75,8 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
   } while (0)
 
 #define MOV_REG_TO_ABSADDR(REG, ADDR) do {				\
+    CHECK_VALID_REG (REG);						\
+    /* movl %reg,addr */						\
     if ((REG) == REG_EAX)						\
       add_to_program (0xa3); /* Move EAX to dword at address. */	\
     else {								\
@@ -47,6 +88,9 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 
 #define MOV_RELADDR_TO_REG(OFFSET, REG, DSTREG) do {			\
     INT32 off_ = (OFFSET);						\
+    CHECK_VALID_REG (REG);						\
+    MAKE_VALID_REG (DSTREG);						\
+    /* movl offset(%reg),%dstreg */					\
     add_to_program (0x8b); /* Move r/m32 to r32. */			\
     if (off_ < -128 || off_ > 127) {					\
       add_to_program (0x80 | ((DSTREG) << 3) | (REG));			\
@@ -62,6 +106,9 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 
 #define MOV_RELADDR16_TO_REG(OFFSET, REG, DSTREG) do {			\
     INT32 off_ = (OFFSET);						\
+    CHECK_VALID_REG (REG);						\
+    MAKE_VALID_REG (DSTREG);						\
+    /* movswl offset(%reg),%dstreg */					\
     add_to_program (0x0f); /* Move r/m16 to r32, sign-extension. */	\
     add_to_program (0xbf);						\
     if (off_ < -128 || off_ > 127) {					\
@@ -78,6 +125,9 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 
 #define MOV_REG_TO_RELADDR(SRCREG, OFFSET, REG) do {			\
     INT32 off_ = (OFFSET);						\
+    CHECK_VALID_REG (SRCREG);						\
+    CHECK_VALID_REG (REG);						\
+    /* movl %srcreg,offset(%reg) */					\
     add_to_program (0x89); /* Move r32 to r/m32. */			\
     if (off_ < -128 || off_ > 127) {					\
       add_to_program (0x80 | ((SRCREG) << 3) | (REG));			\
@@ -93,6 +143,8 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 
 #define MOV_VAL_TO_RELADDR(VALUE, OFFSET, REG) do {			\
     INT32 off_ = (OFFSET);						\
+    CHECK_VALID_REG (REG);						\
+    /* movl $value,offset(%reg) */					\
     add_to_program(0xc7); /* Move imm32 to r/m32. */			\
     if (off_ < -128 || off_ > 127) {					\
       add_to_program (0x80 | (REG));					\
@@ -108,6 +160,7 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 
 #define MOV_VAL_TO_RELSTACK(VALUE, OFFSET) do {				\
     INT32 off_ = (OFFSET);						\
+    /* movl $value,offset(%esp) */					\
     add_to_program (0xc7); /* Move imm32 to r/m32. */			\
     if (off_ < -128 || off_ > 127) {					\
       add_to_program (0x84);						\
@@ -128,6 +181,8 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 
 #define MOV_REG_TO_RELSTACK(REG, OFFSET) do {				\
     INT32 off_ = (OFFSET);						\
+    CHECK_VALID_REG (REG);						\
+    /* movl %reg,offset(%esp) */					\
     add_to_program (0x89); /* Move r32 to r/m32. */			\
     if (off_ < -128 || off_ > 127) {					\
       add_to_program (0x84 | ((REG) << 3));				\
@@ -147,11 +202,15 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 
 #define ADD_VAL_TO_REG(VAL, REG) do {					\
     INT32 val_ = (VAL);							\
+    CHECK_VALID_REG (REG);						\
     if (val_ == 1)							\
+      /* incl %reg */							\
       add_to_program (0x40 | (REG)); /* Increment r32. */		\
     else if (val_ == -1)						\
+      /* decl %reg */							\
       add_to_program (0x48 | (REG)); /* Decrement r32. */		\
     else if (val_ < -128 || val_ > 127) {				\
+      /* addl $val,%reg */						\
       if ((REG) == REG_EAX)						\
 	add_to_program (0x05); /* Add imm32 to EAX. */			\
       else {								\
@@ -161,6 +220,7 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
       PUSH_INT (val_);							\
     }									\
     else if (val_) {							\
+      /* addl $val,%reg */						\
       add_to_program (0x83); /* Add sign-extended imm8 to r/m32. */	\
       add_to_program (0xc0 | (REG));					\
       add_to_program (val_);						\
@@ -170,17 +230,22 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 #define ADD_VAL_TO_RELADDR(VAL, OFFSET, REG) do {			\
     INT32 val_ = (VAL);							\
     INT32 off_ = (OFFSET);						\
+    CHECK_VALID_REG (REG);						\
     if (val_) {								\
       int opcode_extra_ = 0;						\
       if (val_ == 1)							\
+	/* incl offset(%reg) */						\
 	add_to_program (0xff); /* Increment r/m32 */			\
       else if (val_ == -1) {						\
+	/* decl offset(%reg) */						\
 	add_to_program (0xff); /* Decrement r/m32 */			\
 	opcode_extra_ = 1 << 3;						\
       }									\
       else if (-128 <= val_ && val_ <= 127)				\
+	/* addl $val,offset(%reg) */					\
 	add_to_program (0x83); /* Add sign-extended imm8 to r/m32. */	\
       else								\
+	/* addl $val,offset(%reg) */					\
 	add_to_program (0x81); /* Add imm32 to r/m32. */		\
       if (off_ < -128 || off_ > 127) {					\
 	add_to_program (0x80 | opcode_extra_ | (REG));			\
@@ -204,16 +269,19 @@ enum ia32_reg {REG_EAX = 0, REG_EBX = 3, REG_ECX = 1, REG_EDX = 2, REG_NONE = 4}
 #define ADD_VAL_TO_ABSADDR(VAL, ADDR) do {				\
     int val_ = (VAL);							\
     if (val_ == 1) {							\
+      /* incl addr */							\
       add_to_program (0xff); /* Increment r/m32. */			\
       add_to_program (0x05);						\
       PUSH_ADDR (&(ADDR));						\
     }									\
     else if (val_ == -1) {						\
+      /* decl addr */							\
       add_to_program (0xff); /* Decrement r/m32. */			\
       add_to_program (0x0d);						\
       PUSH_ADDR (&(ADDR));						\
     }									\
     else if (val_) {							\
+      /* addl $val,addr */						\
       if (-128 <= val_ && val_ < 127)					\
 	add_to_program (0x83); /* Add sign-extended imm8 to r/m32. */	\
       else								\
@@ -249,61 +317,91 @@ static void update_arg2(INT32 value)
   MOV_VAL_TO_RELSTACK (value, 4);
 }
 
-static enum ia32_reg first_free_reg;
+static enum ia32_reg next_reg;
 static enum ia32_reg sp_reg, fp_reg, mark_sp_reg;
 ptrdiff_t ia32_prev_stored_pc; /* PROG_PC at the last point Pike_fp->pc was updated. */
 
 void ia32_flush_code_generator(void)
 {
-  first_free_reg = REG_EAX;
+  next_reg = REG_EAX;
   sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  CLEAR_REGS();
   ia32_prev_stored_pc = -1;
 }
 
 static enum ia32_reg alloc_reg (int avoid_regs)
 {
   enum ia32_reg reg;
+  int used_regs =
+    (avoid_regs | (1 << sp_reg) | (1 << fp_reg) | (1 << mark_sp_reg)) &
+    REG_BITMASK;
 
-  do {
-    reg = first_free_reg;
-    /* If we get more things to hold than there are registers then this
-     * should probably be replaced with an LRU strategy. */
-    first_free_reg = (first_free_reg + 1) % REG_NONE;
-  } while ((1 << reg) & avoid_regs);
+  if (used_regs != REG_BITMASK) {
+    /* There's a free register. */
 
-  if (sp_reg == reg)		sp_reg = REG_NONE;
-  else if (fp_reg == reg)	fp_reg = REG_NONE;
-  else if (mark_sp_reg == reg)	mark_sp_reg = REG_NONE;
+    for (reg = next_reg; (1 << reg) & used_regs;) {
+      reg = (reg + 1) % REG_NONE;
+#ifdef PIKE_DEBUG
+      if (reg == next_reg) Pike_fatal ("Failed to find a free register.\n");
+#endif
+    }
+  }
 
+  else {
+    /* Choose a register with simple round robin. If we get more
+     * things to hold than there are registers then this should
+     * probably be replaced with an LRU strategy. */
+
+    for (reg = next_reg; (1 << reg) & avoid_regs;) {
+      reg = (reg + 1) % REG_NONE;
+#ifdef PIKE_DEBUG
+      if (reg == next_reg) Pike_fatal ("Failed to find a non-excluded register.\n");
+#endif
+    }
+
+    if (sp_reg == reg)			{sp_reg = REG_NONE; DEALLOC_REG (reg);}
+    else if (fp_reg == reg)		{fp_reg = REG_NONE; DEALLOC_REG (reg);}
+    else if (mark_sp_reg == reg)	{mark_sp_reg = REG_NONE; DEALLOC_REG (reg);}
+  }
+
+#ifdef REGISTER_DEBUG
+  if ((1 << reg) & alloc_regs) Pike_fatal ("Clobbering allocated register.\n");
+  alloc_regs &= avoid_regs;
+#endif
+  ALLOC_REG (reg);
   return reg;
 }
 
-#define LOAD_SP(AVOID_REGS) do {					\
-    if (sp_reg == REG_NONE) {						\
-      sp_reg = alloc_reg (AVOID_REGS);					\
-      MOV_ABSADDR_TO_REG (Pike_interpreter.stack_pointer, sp_reg);	\
+#define DEF_LOAD_REG(REG, SET)						\
+  static void PIKE_CONCAT(load_,REG) (int avoid_regs)			\
+  {									\
+    if (REG == REG_NONE) {						\
+      REG = alloc_reg (avoid_regs);					\
+      /* Update the round robin pointer here so that we disregard */	\
+      /* the direct calls to alloc_reg for temporary registers. */	\
+      next_reg = (REG + 1) % REG_NONE;					\
+      {SET;}								\
     }									\
-  } while (0)
+    else								\
+      ALLOC_REG (REG);							\
+  }
 
-#define LOAD_FP(AVOID_REGS) do {					\
-    if (fp_reg == REG_NONE) {						\
-      fp_reg = alloc_reg (AVOID_REGS);					\
-      MOV_ABSADDR_TO_REG (Pike_interpreter.frame_pointer, fp_reg);	\
-    }									\
-  } while (0)
-
-#define LOAD_MARK_SP(AVOID_REGS) do {					\
-    if (mark_sp_reg == REG_NONE) {					\
-      mark_sp_reg = alloc_reg (AVOID_REGS);				\
-      MOV_ABSADDR_TO_REG (Pike_interpreter.mark_stack_pointer, mark_sp_reg); \
-    }									\
-  } while (0)
+DEF_LOAD_REG (sp_reg, {
+    MOV_ABSADDR_TO_REG (Pike_interpreter.stack_pointer, sp_reg);
+  });
+DEF_LOAD_REG (fp_reg, {
+    MOV_ABSADDR_TO_REG (Pike_interpreter.frame_pointer, fp_reg);
+  });
+DEF_LOAD_REG (mark_sp_reg, {
+    MOV_ABSADDR_TO_REG (Pike_interpreter.mark_stack_pointer, mark_sp_reg);
+  });
 
 static void ia32_call_c_function(void *addr)
 {
   CALL_RELATIVE(addr);
-  first_free_reg = REG_EAX;
+  next_reg = REG_EAX;
   sp_reg = fp_reg = mark_sp_reg = REG_NONE;
+  CLEAR_REGS();
 }
 
 static void ia32_push_constant(struct svalue *tmp)
@@ -312,7 +410,7 @@ static void ia32_push_constant(struct svalue *tmp)
   if(tmp->type <= MAX_REF_TYPE)
     ADD_VAL_TO_ABSADDR (1, tmp->u.refs);
 
-  LOAD_SP (0);
+  load_sp_reg (0);
 
   for(e=0;e<(int)sizeof(*tmp)/4;e++)
     MOV_VAL_TO_RELADDR (((INT32 *)tmp)[e], e*4, sp_reg);
@@ -325,8 +423,7 @@ static void ia32_push_constant(struct svalue *tmp)
 static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
 {
   enum ia32_reg tmp_reg = alloc_reg ((1 << svalue_ptr_reg) | (1 << sp_reg));
-
-  LOAD_SP ((1 << svalue_ptr_reg) | (1 << tmp_reg));
+  load_sp_reg ((1 << svalue_ptr_reg) | (1 << tmp_reg));
 
   if(sizeof(struct svalue) > 8)
   {
@@ -348,18 +445,22 @@ static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
   /* svalue_ptr_reg now holds the type and subtype. */
 
   /* Compare the type which is in the lower 16 bits of svalue_ptr_reg. */
+  CHECK_VALID_REG (svalue_ptr_reg);
   add_to_program(0x66);		/* Switch to 16 bit operand mode. */
   add_to_program(0x83);		/* cmp $xx,svalue_ptr_reg */
   add_to_program(0xf8 | svalue_ptr_reg);
   add_to_program(MAX_REF_TYPE);
+  DEALLOC_REG (svalue_ptr_reg);
 
   add_to_program(0x77); /* ja bork */
   add_to_program(0x02);
-  
+
+  CHECK_VALID_REG (tmp_reg);
   add_to_program(0xff); /* incl (tmp_reg) */
   add_to_program(tmp_reg);
-  /* bork: */
+  DEALLOC_REG (tmp_reg);
 
+  /* bork: */
   ADD_VAL_TO_REG (sizeof(struct svalue), sp_reg);
   MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
 }
@@ -368,10 +469,9 @@ static void ia32_push_svalue (enum ia32_reg svalue_ptr_reg)
 static enum ia32_reg ia32_get_local_addr(INT32 arg)
 {
   enum ia32_reg result_reg = alloc_reg (1 << fp_reg);
-  LOAD_FP (1 << result_reg);
-  MOV_RELADDR_TO_REG (OFFSETOF (pike_frame, locals), fp_reg, result_reg);
-  /* result_reg is now fp->locals */
+  load_fp_reg (1 << result_reg);
 
+  MOV_RELADDR_TO_REG (OFFSETOF (pike_frame, locals), fp_reg, result_reg);
   ADD_VAL_TO_REG (arg * sizeof (struct svalue), result_reg);
   return result_reg;
 }
@@ -391,7 +491,7 @@ static void ia32_local_lvalue(INT32 arg)
   tmp[0].type=T_SVALUE_PTR;
   tmp[1].type=T_VOID;
 
-  LOAD_SP (1 << addr_reg);
+  load_sp_reg (1 << addr_reg);
 
   for(e=0;e<sizeof(tmp)/4;e++)
   {
@@ -402,6 +502,7 @@ static void ia32_local_lvalue(INT32 arg)
       MOV_VAL_TO_RELADDR (((INT32 *)tmp)[e], e*4, sp_reg);
     }
   }
+  DEALLOC_REG (addr_reg);
 
   ADD_VAL_TO_REG (sizeof(struct svalue)*2, sp_reg);
   MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
@@ -410,7 +511,7 @@ static void ia32_local_lvalue(INT32 arg)
 static void ia32_push_global (INT32 arg)
 {
   enum ia32_reg tmp_reg = alloc_reg ((1 << fp_reg) | (1 << sp_reg));
-  LOAD_FP ((1 << tmp_reg) | (1 << sp_reg));
+  load_fp_reg ((1 << tmp_reg) | (1 << sp_reg));
 
   MOV_RELADDR16_TO_REG (OFFSETOF (pike_frame, context.identifier_level), fp_reg, tmp_reg);
   ADD_VAL_TO_REG (arg, tmp_reg);
@@ -418,19 +519,25 @@ static void ia32_push_global (INT32 arg)
 
   MOV_RELADDR_TO_REG (OFFSETOF (pike_frame, current_object), fp_reg, tmp_reg);
   MOV_REG_TO_RELSTACK (tmp_reg, 4);
+  DEALLOC_REG (tmp_reg);
 
-  LOAD_SP (0);
+  load_sp_reg (0);
   MOV_REG_TO_RELSTACK (sp_reg, 0);
 
   ia32_call_c_function (low_object_index_no_free);
 
-  ADD_VAL_TO_ABSADDR (sizeof (struct svalue), Pike_interpreter.stack_pointer);
+  /* Could do an add directly to memory here, but this isn't much
+   * slower and it's not unlikely that sp_reg will be used later
+   * on. */
+  load_sp_reg (0);
+  ADD_VAL_TO_REG (sizeof (struct svalue), sp_reg);
+  MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
 }
 
 static void ia32_mark(void)
 {
-  LOAD_SP (1 << mark_sp_reg);
-  LOAD_MARK_SP (1 << sp_reg);
+  load_mark_sp_reg (1 << sp_reg);
+  load_sp_reg (1 << mark_sp_reg);
 
   MOV_REG_TO_RELADDR (sp_reg, 0, mark_sp_reg);
   ADD_VAL_TO_REG (sizeof (struct svalue *), mark_sp_reg);
@@ -468,24 +575,22 @@ static void ia32_push_int(INT32 x)
 
 static void ia32_push_string (INT32 x, int subtype)
 {
-  enum ia32_reg tmp_reg;
-
+  size_t e;
   struct svalue tmp = {PIKE_T_STRING, subtype,
 #ifdef HAVE_UNION_INIT
 		       {0}
 #endif
 		      };
-  size_t e;
 
-  LOAD_FP (1 << sp_reg);
-  tmp_reg = alloc_reg ((1 << fp_reg) | (1 << sp_reg));
+  enum ia32_reg tmp_reg = alloc_reg ((1 << fp_reg) | (1 << sp_reg));
+  load_fp_reg ((1 << tmp_reg) | (1 << sp_reg));
 
   MOV_RELADDR_TO_REG (OFFSETOF (pike_frame, context.prog), fp_reg, tmp_reg);
   MOV_RELADDR_TO_REG (OFFSETOF (program, strings), tmp_reg, tmp_reg);
   MOV_RELADDR_TO_REG (x * sizeof (struct pike_string *), tmp_reg, tmp_reg);
   /* tmp_reg is now Pike_fp->context.prog->strings[x] */
 
-  LOAD_SP (1 << tmp_reg);
+  load_sp_reg (1 << tmp_reg);
 
   for (e = 0; e < sizeof (tmp) / 4; e++) {
     if (((INT32 *) &tmp) + e == (INT32 *) &tmp.u.string)
@@ -495,6 +600,7 @@ static void ia32_push_string (INT32 x, int subtype)
   }
 
   ADD_VAL_TO_RELADDR (1, 0, tmp_reg);
+  DEALLOC_REG (tmp_reg);
 
   ADD_VAL_TO_REG (sizeof (struct svalue), sp_reg);
   MOV_REG_TO_ABSADDR (sp_reg, Pike_interpreter.stack_pointer);
@@ -506,19 +612,21 @@ void ia32_update_pc(void)
 
   if (ia32_prev_stored_pc < 0) {
     enum ia32_reg tmp_reg = alloc_reg (1 << fp_reg);
+    load_fp_reg (1 << tmp_reg);
 #ifdef PIKE_DEBUG
     if (a_flag >= 60)
       fprintf (stderr, "pc %d  update pc absolute\n", tmp);
 #endif
-    LOAD_FP (1 << tmp_reg);
     /* Store the negated pointer to make the relocation displacements
      * work in the right direction. */
     MOV_VAL32_TO_REG (0, tmp_reg);
     add_to_relocations(PIKE_PC - 4);
     upd_pointer(PIKE_PC - 4, - (INT32) (tmp + Pike_compiler->new_program->program));
+    CHECK_VALID_REG (tmp_reg);
     add_to_program(0xf7);		/* neg tmp_reg */
     add_to_program(0xd8 | tmp_reg);
     MOV_REG_TO_RELADDR (tmp_reg, OFFSETOF (pike_frame, pc), fp_reg);
+    DEALLOC_REG (tmp_reg);
   }
 
   else if ((disp = tmp - ia32_prev_stored_pc)) {
@@ -526,7 +634,7 @@ void ia32_update_pc(void)
     if (a_flag >= 60)
       fprintf (stderr, "pc %d  update pc relative: %d\n", tmp, disp);
 #endif
-    LOAD_FP (0);
+    load_fp_reg (0);
     ADD_VAL_TO_RELADDR (disp, OFFSETOF (pike_frame, pc), fp_reg);
   }
 
