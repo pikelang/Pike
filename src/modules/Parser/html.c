@@ -1,3 +1,5 @@
+/* $Id: html.c,v 1.127 2001/04/13 16:55:01 mast Exp $ */
+
 #include "global.h"
 #include "config.h"
 
@@ -15,6 +17,7 @@
 #include "mapping.h"
 #include "stralloc.h"
 #include "program_id.h"
+#include "block_alloc.h"
 #include <ctype.h>
 
 #include "parser.h"
@@ -31,6 +34,7 @@ extern struct program *parser_html_program;
 #undef DEBUG
 #define DEBUG(X) if (THIS->flags & FLAG_DEBUG_MODE) fprintf X
 #define DEBUG_MARK_SPOT debug_mark_spot
+#define HTML_DEBUG
 #else
 #define DEBUG(X) do; while(0)
 #define DEBUG_MARK_SPOT(TEXT,FEED,C) do; while(0)
@@ -72,11 +76,25 @@ struct piece
    struct piece *next;
 };
 
+#undef INIT_BLOCK
+#define INIT_BLOCK(p) p->next = NULL;
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(p) free_string (p->s);
+
+BLOCK_ALLOC (piece, 53);
+
 struct out_piece
 {
    struct svalue v;
    struct out_piece *next;
 };
+
+#undef INIT_BLOCK
+#define INIT_BLOCK(p) p->next = NULL;
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(p) free_svalue (&p->v);
+
+BLOCK_ALLOC (out_piece, 211);
 
 struct feed_stack
 {
@@ -89,7 +107,7 @@ struct feed_stack
       if they are to be parsed.
       
       The bottom stack element has no local feed,
-      it's just for convinience */
+      it's just for convenience */
 
    /* current position; if not local feed, use global feed */
    struct piece *local_feed;
@@ -97,6 +115,22 @@ struct feed_stack
 
    struct location pos;
 };
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT prev
+#undef INIT_BLOCK
+#define INIT_BLOCK(p) p->local_feed = NULL;
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(p)							\
+  if (p->free_feed)							\
+    while (p->local_feed)						\
+    {									\
+      struct piece *f=p->local_feed;					\
+      p->local_feed=f->next;						\
+      really_free_piece (f);						\
+    }
+
+BLOCK_ALLOC (feed_stack, 31);
 
 enum types {
   TYPE_TAG,			/* empty tag callback */
@@ -304,7 +338,7 @@ static inline long TO_LONG(ptrdiff_t x)
 #define TO_LONG(x)	((long)(x))
 #endif /* __ECL */
 
-#ifdef DEBUG
+#ifdef HTML_DEBUG
 void debug_mark_spot(char *desc,struct piece *feed,int c)
 {
    ptrdiff_t l, i, i0, m;
@@ -351,8 +385,7 @@ void reset_feed(struct parser_html_storage *this)
    {
       struct piece *f=this->feed;
       this->feed=f->next;
-      free_string(f->s);
-      free(f);
+      really_free_piece (f);
    }
    this->feed_end=NULL;
 
@@ -362,8 +395,7 @@ void reset_feed(struct parser_html_storage *this)
    {
       struct out_piece *f=this->out;
       this->out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
    }
    this->out_ctx = CTX_DATA;
 
@@ -373,40 +405,30 @@ void reset_feed(struct parser_html_storage *this)
    {
       struct out_piece *f=this->cond_out;
       this->cond_out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
    }
 
-   /* free stack */
+   /* Free stack and init new stack head. */
 
-   while (this->stack)
-   {
-      st=this->stack;
-      if (st->free_feed)
-	while (st->local_feed)
-	{
-	  struct piece *f=st->local_feed;
-	  st->local_feed=f->next;
-	  free_string(f->s);
-	  free(f);
-	}
-      this->stack=st->prev;
-      free(st);
+   if (this->stack)
+     while (1) {
+       st=this->stack;
+       if (!st->prev) break;
+       this->stack=st->prev;
+       really_free_feed_stack (st);
+     }
+   else {
+     st=this->stack=alloc_feed_stack();
+     st->prev=NULL;
    }
 
-   /* new stack head */
-
-   this->stack=(struct feed_stack*)xalloc(sizeof(struct feed_stack));
-
-   this->stack->prev=NULL;
-   this->stack->local_feed=NULL;
-   this->stack->ignore_data=0;
-   this->stack->free_feed=1;
-   this->stack->parse_tags=this->flags & FLAG_PARSE_TAGS;
-   this->stack->pos.byteno=1;
-   this->stack->pos.lineno=1;
-   this->stack->pos.linestart=1;
-   this->stack->c=0;
+   st->ignore_data=0;
+   st->free_feed=1;
+   st->parse_tags=this->flags & FLAG_PARSE_TAGS;
+   st->pos.byteno=1;
+   st->pos.lineno=1;
+   st->pos.linestart=1;
+   st->c=0;
 
    this->stack_count=0;
 }
@@ -500,7 +522,7 @@ static void init_html_struct(struct object *o)
    static p_wchar2 argq_stops[]={DEF_ARGQ_STOPS};
    static p_wchar2 lazy_eends[]={DEF_LAZY_EENDS};
 
-#ifdef DEBUG
+#ifdef HTML_DEBUG
    THIS->flags=0;
 #endif
    DEBUG((stderr,"init_html_struct %p\n",THIS));
@@ -556,16 +578,10 @@ static void init_html_struct(struct object *o)
 
 static void exit_html_struct(struct object *o)
 {
-   struct feed_stack *fsp;
-
    DEBUG((stderr,"exit_html_struct %p\n",THIS));
 
-   reset_feed(THIS); /* frees feed & out */
-
-   while ((fsp = THIS->stack)) {
-     THIS->stack = fsp->prev;
-     free(fsp);
-   }
+   reset_feed(THIS);
+   really_free_feed_stack (THIS->stack); /* Only stack head left to free. */
 
    if (THIS->lazy_entity_ends) free(THIS->lazy_entity_ends);
    if (THIS->ws) free(THIS->ws);
@@ -591,8 +607,7 @@ static void save_subparse_state (struct parser_html_storage *this,
   save->cond_out_end = this->cond_out_end;
   save->out_ctx = this->out_ctx;
   if (!this->cond_out) {
-    struct out_piece *ph = malloc (sizeof (struct out_piece));
-    if (!ph) Pike_error ("Parser.HTML: Out of memory.\n");
+    struct out_piece *ph = alloc_out_piece();
     ph->v.type = T_INT;
     ph->next = NULL;
     this->cond_out = this->cond_out_end = ph;
@@ -609,15 +624,14 @@ static void finalize_subparse_state (struct subparse_save *save)
     while (save->feed != cur) {
       struct piece *p = save->feed;
       save->feed = p->next;
-      free_string (p->s);
-      free (p);
+      really_free_piece (p);
     }
   }
 
   if (save->cond_out) {		/* Got a parent subparse save. */
     save->cond_out_end->next = this->cond_out->next;
     this->cond_out->next = save->cond_out->next;
-    free (save->cond_out);	/* Remove the placeholder. */
+    really_free_out_piece (save->cond_out); /* Remove the placeholder. */
   }
   else {			/* Append the cond queue to the real one. */
     if (this->out)
@@ -625,19 +639,18 @@ static void finalize_subparse_state (struct subparse_save *save)
     else
       this->out = this->cond_out->next;
     this->out_end = this->cond_out_end;
-    free (this->cond_out);	/* Remove the placeholder. */
-    this->cond_out = NULL;
+    really_free_out_piece (this->cond_out); /* Remove the placeholder. */
   }
 
   free_object (save->thisobj);
 
-#ifdef DEBUG
-  save->this = NULL;
-  save->thisobj = NULL;
-  save->st = NULL;
-  save->feed = NULL;
-  save->cond_out = NULL;
-  save->cond_out_end = NULL;
+#ifdef PIKE_DEBUG
+  save->this = (struct parser_html_storage *)(ptrdiff_t) -1;
+  save->thisobj = (struct object *)(ptrdiff_t) -1;
+  save->st = (struct feed_stack *)(ptrdiff_t) -1;
+  save->feed = (struct piece *)(ptrdiff_t) -1;
+  save->cond_out = (struct out_piece *)(ptrdiff_t) -1;
+  save->cond_out_end = (struct out_piece *)(ptrdiff_t) -1;
 #endif
 }
 
@@ -656,22 +669,16 @@ static void unwind_subparse_state (struct subparse_save *save)
     /* Free all local feeds below the saved feed_stack entry. */
     while (this->stack != save->st) {
       struct feed_stack *st = this->stack;
-      while (st->local_feed) {
-	struct piece *feed = st->local_feed;
-	st->local_feed = feed->next;
-	free_string (feed->s);
-	free (feed);
-      }
       this->stack = st->prev;
-      free (st);
+      st->free_feed = 1;
+      really_free_feed_stack (st);
     }
 
     /* Free the cond out queue in it and restore the saved one. */
     while (this->cond_out) {
       struct out_piece *f=this->cond_out;
       this->cond_out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
     }
     this->cond_out = save->cond_out;
     this->cond_out_end = save->cond_out_end;
@@ -685,16 +692,14 @@ static void unwind_subparse_state (struct subparse_save *save)
       while (save->feed) {
 	struct piece *p = save->feed;
 	save->feed = p->next;
-	free_string (p->s);
-	free (p);
+	really_free_piece (p);
       }
 
     /* Free the saved cond out queue. */
     while (save->cond_out) {
       struct out_piece *f=save->cond_out;
       save->cond_out=f->next;
-      free_svalue(&f->v);
-      free(f);
+      really_free_out_piece (f);
     }
   }
 
@@ -1257,9 +1262,7 @@ static void put_out_feed(struct parser_html_storage *this,
 {
    struct out_piece *f;
 
-   f=malloc(sizeof(struct out_piece));
-   if (!f)
-      Pike_error("Parser.HTML(): out of memory\n");
+   f = alloc_out_piece();
    assign_svalue_no_free(&f->v,v);
 
    f->next=NULL;
@@ -1502,10 +1505,8 @@ static void skip_feed_range(struct feed_stack *st,
       }
       skip_piece_range(&(st->pos),head,c_head,head->s->len);
       *headp=head->next;
-      if (st->free_feed) {
-	free_string(head->s);
-	free(head);
-      }
+      if (st->free_feed)
+	really_free_piece (head);
       head=*headp;
       c_head=0;
    }
@@ -2215,7 +2216,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
       cont: ;
       }
     }
-#ifdef DEBUG
+#ifdef HTML_DEBUG
     else
       DEBUG ((stderr, "quote tag lookup: no entry %c%c at %d\n",
 	      isprint (buf.str[0]) ? buf.str[0] : '.',
@@ -2233,19 +2234,15 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 static INLINE void add_local_feed (struct parser_html_storage *this,
 				   struct pike_string *str)
 {
-  struct feed_stack *new = malloc(sizeof(struct feed_stack));
-  if (!new)
-    Pike_error("out of memory\n");
+  struct piece *p = alloc_piece();
+  struct feed_stack *new = alloc_feed_stack();
+  /* Note: Assumes that above alloc never fails with an exception or a
+   * zero value (i.e. it exits the process immediately instead). */
 
-  new->local_feed=malloc(sizeof(struct piece));
-  if (!new->local_feed)
-  {
-    free(new);
-    Pike_error("out of memory\n");
-  }
+  new->local_feed = p;
 
-  copy_shared_string(new->local_feed->s,str);
-  new->local_feed->next=NULL;
+  copy_shared_string(p->s,str);
+  p->next=NULL;
   new->ignore_data=0;
   new->free_feed=1;
   new->parse_tags=this->stack->parse_tags && this->out_ctx == CTX_DATA;
@@ -2253,7 +2250,7 @@ static INLINE void add_local_feed (struct parser_html_storage *this,
   new->prev=this->stack;
   new->c=0;
   this->stack=new;
-  THIS->stack_count++;
+  this->stack_count++;
 }
 
 static newstate handle_result(struct parser_html_storage *this,
@@ -2263,7 +2260,6 @@ static newstate handle_result(struct parser_html_storage *this,
 			      struct piece *tail,
 			      ptrdiff_t c_tail)
 {
-   struct feed_stack *st2;
    int i;
 
    /* on sp[-1]:
@@ -2782,7 +2778,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	DEBUG_MARK_SPOT("find_end_of_cont : wait at tag name",s2,c2);
 	return STATE_WAIT; /* come again */
       }
-#ifdef DEBUG
+#ifdef HTML_DEBUG
       if (endtag)
 	DEBUG_MARK_SPOT("find_end_of_cont : got end tag",s2,c2);
       else
@@ -2929,7 +2925,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	     this->stack_count,this->stack_count,
 	     scan_entity,st->ignore_data));
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if (*feed && feed[0]->s->len < st->c)
 	 fatal("len (%ld) < st->c (%ld)\n",
 	       TO_LONG(feed[0]->s->len), TO_LONG(st->c));
@@ -3036,7 +3032,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 return STATE_DONE; /* done */
       }
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if (*feed != dst || st->c != cdst)
 	fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld.\n",
 	       (void *)(*feed), TO_LONG(st->c), (void *)dst, TO_LONG(cdst));
@@ -3051,7 +3047,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 DEBUG((stderr,"%*d do_try_feed scan tag %p:%d\n",
 		this->stack_count,this->stack_count,
 		*feed,st->c));
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	 if (!st->parse_tags)
 	   fatal ("What am I doing parsing tags now?\n");
 #endif
@@ -3169,7 +3165,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    }
 	    else {
 	       /* this is the hardest part : find the corresponding end tag */
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	       if (!tag && !cont) fatal ("You push that stone yourself!\n");
 #endif
 
@@ -3274,7 +3270,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       }
       else			/* entity */
       {
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if (ch!=this->entity_start)
 	  fatal ("Oups! How did I end up here? There's no entity around.\n");
 #endif
@@ -3521,7 +3517,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       this->stack_count,this->stack_count,
 	       *feed,st->c));
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 	if (!scan_entity) fatal ("Shouldn't parse entities now.\n");
 	if (*feed != dst || st->c != cdst)
 	  fatal ("Internal position confusion: feed: %p:%ld, dst: %p:%ld\n",
@@ -3730,7 +3726,7 @@ static void try_feed(int finished)
 	    if (THIS->stack->local_feed && THIS->stack->free_feed)
 	       fatal("internal wierdness in Parser.HTML: feed left\n");
 
-	    free(THIS->stack);
+	    really_free_feed_stack(THIS->stack);
 	    THIS->stack=st;
 	    THIS->stack_count--;
 	    break;
@@ -3756,12 +3752,8 @@ static void low_feed(struct pike_string *ps)
 
    if (!ps->len) return;
 
-   f=malloc(sizeof(struct piece));
-   if (!f)
-      Pike_error("feed: out of memory\n");
+   f = alloc_piece();
    copy_shared_string(f->s,ps);
-
-   f->next=NULL;
 
    if (THIS->feed_end==NULL)
    {
@@ -3790,7 +3782,7 @@ static void low_feed(struct pike_string *ps)
 **!	no data is feeded, but the parser is run.
 **!
 **!	<p>If the string argument is followed by a 0,
-**!	<tt>-&gt;feed(s,1);</tt>, the string is feeded,
+**!	<tt>-&gt;feed(s,0);</tt>, the string is feeded,
 **!	but the parser isn't run.
 **!
 **! returns the called object
@@ -3916,8 +3908,7 @@ static void html_read(INT32 args)
 	    if (got_arr) f_add(2), got_arr = 1;
 	 }
 	 THIS->out = THIS->out->next;
-	 free_svalue(&z->v);
-	 free(z);
+	 really_free_out_piece (z);
       }
       if (m)
       {
@@ -3947,7 +3938,6 @@ static void html_read(INT32 args)
 	 }
 	 n-=THIS->out->v.u.string->len;
 	 push_svalue(&THIS->out->v);
-	 free_svalue(&THIS->out->v);
 	 m++;
 	 if (m==32)
 	 {
@@ -3956,7 +3946,7 @@ static void html_read(INT32 args)
 	 }
 	 z=THIS->out;
 	 THIS->out=THIS->out->next;
-	 free(z);
+	 really_free_out_piece (z);
       }
 
       if (!m)
@@ -4027,10 +4017,12 @@ static void html_at_column(INT32 args)
 
 static void html_at(INT32 args)
 {
+   struct feed_stack *st = THIS->stack;
    pop_n_elems(args);
-   push_int(THIS->stack->pos.lineno);
-   push_int(THIS->stack->pos.byteno);
-   push_int(THIS->stack->pos.byteno-THIS->stack->pos.linestart);
+   while (st->prev) st = st->prev;
+   push_int(st->pos.lineno);
+   push_int(st->pos.byteno);
+   push_int(st->pos.byteno-st->pos.linestart);
    f_aggregate(3);
 }
 
@@ -4127,7 +4119,7 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
    int flags = this->flags;
    ptrdiff_t c1=0,c2=0,c3;
    int n=0;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
    struct piece *prev_s = NULL;
    ptrdiff_t prev_c = 0;
 #endif
@@ -4155,7 +4147,7 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff
       scan_forward(s2,c2,&s1,&c1,this->ws,-this->n_ws);
 
 new_arg:
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
       if (prev_s && cmp_feed_pos (prev_s, prev_c, s1, c1) >= 0)
 	fatal ("Not going forward in tag args loop (from %p:%ld to %p:%ld).\n",
 	       (void *)prev_s, PTRDIFF_T_TO_LONG(prev_c),
@@ -5088,7 +5080,7 @@ static void html_max_stack_depth(INT32 args)
    push_int(o);
 }
 
-#ifdef DEBUG
+#ifdef HTML_DEBUG
 static void html_debug_mode(INT32 args)
 {
    int o=!!(THIS->flags & FLAG_DEBUG_MODE);
@@ -5257,7 +5249,7 @@ void init_parser_html(void)
 		tFunc(tOr(tVoid,tInt),tInt03),0);
    ADD_FUNCTION("ws_before_tag_name",html_ws_before_tag_name,
 		tFunc(tOr(tVoid,tInt),tInt),0);
-#ifdef DEBUG
+#ifdef HTML_DEBUG
    ADD_FUNCTION("debug_mode",html_debug_mode,
 		tFunc(tOr(tVoid,tInt),tInt),0);
 #endif
@@ -5289,6 +5281,9 @@ void init_parser_html(void)
 void exit_parser_html()
 {
    free_string(empty_string);
+   free_all_piece_blocks();
+   free_all_out_piece_blocks();
+   free_all_feed_stack_blocks();
 }
 
 /*
