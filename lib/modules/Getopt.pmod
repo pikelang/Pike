@@ -169,13 +169,22 @@ string|int(0..1) find_option(array(string) argv,
   return def;
 }
 
-//!
+//! Used with @[find_all_options()] to indicate that an option
+//! requires an argument.
+//! @seealso
+//!   @[find_all_options()]
 constant HAS_ARG=1;
 
-//!
+//! Used with @[find_all_options()] to indicate that an option
+//! does not take an argument.
+//! @seealso
+//!   @[find_all_options()]
 constant NO_ARG=2;
 
-//!
+//! Used with @[find_all_options()] to indicate that an option
+//! takes an optional argument.
+//! @seealso
+//!   @[find_all_options()]
 constant MAY_HAVE_ARG=3;
 
 

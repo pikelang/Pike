@@ -8,6 +8,8 @@ constant diff_compare_table = __builtin.diff_compare_table;
 constant longest_ordered_sequence = __builtin.longest_ordered_sequence;
 constant interleave_array = __builtin.interleave_array;
 
+constant diff_dyn_longest_sequence = __builtin.diff_dyn_longest_sequence;
+
 constant sort = predef::sort;
 constant everynth = __builtin.everynth;
 constant splice = __builtin.splice;
@@ -209,7 +211,16 @@ array sort_array(array foo, function|void cmp, mixed ... args)
   return foo;
 }
 
-array columns(array x, array ind)
+//! Get multiple columns from an array.
+//!
+//! This function is equvivalent to
+//! @pre{
+//!   map(ind, lambda(mixed i) { return column(x, i); })
+//! @}
+//!
+//! @seealso
+//!   @[column()]
+array(array) columns(array x, array ind)
 {
   array ret=allocate(sizeof(ind));
   for(int e=0;e<sizeof(ind);e++) ret[e]=column(x,ind[e]);
@@ -226,6 +237,10 @@ array transpose_old(array(array|string) x)
 
 // diff3, complement to diff
 
+//! Return the three-way difference between the arrays.
+//!
+//! @seealso
+//!   @[Array.diff()], @[Array.diff_longest_sequence()]
 array(array(array)) diff3 (array a, array b, array c)
 {
   // This does not necessarily produce the optimal sequence between

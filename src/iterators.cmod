@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.42 2003/05/30 23:19:26 mast Exp $
+|| $Id: iterators.cmod,v 1.43 2003/07/24 15:56:48 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.42 2003/05/30 23:19:26 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.43 2003/07/24 15:56:48 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -380,6 +380,16 @@ PIKECLASS mapping_iterator
     }
 };
 
+/*! @module Array
+ */
+/*! @class Iterator
+ *!
+ *!   An object of this class is returned by @[get_iterator()] when
+ *!   called with an array.
+ *!
+ *! @seealso
+ *!   @[get_iterator]
+ */
 PIKECLASS array_iterator
 {
   CVAR int pos;
@@ -476,6 +486,11 @@ PIKECLASS array_iterator
     }
     
 };
+
+/*! @endclass
+ */
+/*! @endmodule
+ */
 
 #ifdef PIKE_NEW_MULTISETS
 
