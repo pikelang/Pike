@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.19 1998/03/28 15:41:37 grubba Exp $
+ * $Id: acconfig.h,v 1.20 1998/04/13 14:14:41 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -188,6 +188,12 @@
 
 /* Enable code to handle Out-Of-Band data */
 #undef WITH_OOB
+
+/* Enable individual tracing of threads */
+#undef TRACE_THREADS
+
+/* Enable tracing of the compiler */
+#undef YYDEBUG
 
 @BOTTOM@
 
