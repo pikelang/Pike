@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.718 2004/04/23 19:30:50 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.719 2004/04/23 19:31:10 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2641,6 +2641,16 @@ test_any([[
  class D { inherit C; };
  return sizeof( Program.all_inherits(D) - ({A,B,C}) );
 ]],0)
+
+test_any_equal([[
+  class A {
+    class C {}
+  };
+  class B {
+    class C {}
+  };
+  return ({A <= B, A >= B});
+]], ({1, 1}))
 
 test_tests([[
 
