@@ -4,14 +4,14 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.18 1997/10/12 21:11:12 mirar Exp $ 
+$Id: togif.c,v 1.19 1997/10/21 18:39:38 grubba Exp $ 
 
 */
 
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.18 1997/10/12 21:11:12 mirar Exp $<br>
+**!	$Id: togif.c,v 1.19 1997/10/21 18:39:38 grubba Exp $<br>
 **! class image
 */
 
@@ -163,6 +163,7 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 			   struct colortable *ct,
 			   int closest)
 {
+  HIDE_GLOBAL_VARIABLES();
    rgbl_group err;
    int x;
 
@@ -188,6 +189,7 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 				    (x==0)?NULL:errl+x-1,
 				    &err,rgb[x],ct,closest);
    }
+   REVEAL_GLOBAL_VARIABLES();
 }
 		     
 #define STD_ARENA_SIZE 16384
@@ -619,41 +621,48 @@ CHRONO("begin pack");
 
    THREADS_ALLOW();
    lzw_init(&lzw,bpp);
+   THREADS_DISALLOW();
+
    if (!fs)
    {
-      if (closest)
-	 while (i--) lzw_add(&lzw,colortable_rgb_nearest(ct,*(rgb++)));
-      else
-	 while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
-   }
-   else
-   {
+     THREADS_ALLOW();
+     if (closest)
+       while (i--) lzw_add(&lzw,colortable_rgb_nearest(ct,*(rgb++)));
+     else
+       while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
+     THREADS_DISALLOW();
+   } else {
       rgbl_group *errb;
       int w,*cres,j;
+      /* NOTE: xalloc() is NOT thread-safe. */
       errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*xs);
       cres=(int*)xalloc(sizeof(int)*xs);
+      THREADS_ALLOW();
       for (i=0; i<xs; i++)
 	errb[i].r=(rand()%(FS_SCALE*2+1))-FS_SCALE,
-	errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
-	errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
+	  errb[i].g=(rand()%(FS_SCALE*2+1))-FS_SCALE,
+	  errb[i].b=(rand()%(FS_SCALE*2+1))-FS_SCALE;
 
       w=0;
-      while (ys--)
-      {
-	 image_floyd_steinberg(rgb,xs,errb,w=!w,cres,ct,closest);
-	 for (j=0; j<xs; j++)
-	    lzw_add(&lzw,cres[j]);
-	 rgb+=xs;
+      while (ys--) {
+	image_floyd_steinberg(rgb,xs,errb,w=!w,cres,ct,closest);
+	for (j=0; j<xs; j++)
+	  lzw_add(&lzw,cres[j]);
+	rgb+=xs;
       }
-
-      free(errb);
+      THREADS_DISALLOW();
       free(cres);
+      free(errb);
    }
 
+   THREADS_ALLOW();
    lzw_write_last(&lzw);
+   THREADS_DISALLOW();
 
 CHRONO("end pack");
 
+   /* NOTE that the low_my_* functions are NOT thread-safe.
+    */
    for (i=0; i<(int)lzw.outpos; i+=254)
    {
       int wr;
@@ -665,8 +674,6 @@ CHRONO("end pack");
    low_my_putchar( 0, &buf ); /* terminate stream */
 
    lzw_quit(&lzw);
-
-   THREADS_DISALLOW();
 
 CHRONO("done");
 

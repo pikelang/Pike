@@ -1,4 +1,4 @@
-/* $Id: lzw.c,v 1.2 1997/05/29 19:37:43 mirar Exp $ */
+/* $Id: lzw.c,v 1.3 1997/10/21 18:39:37 grubba Exp $ */
 
 /*
 
@@ -15,10 +15,12 @@ the existanse of #define GIF_LZW is for that purpose. :-)
 /*
 **! module Image
 **! note
-**!	$Id: lzw.c,v 1.2 1997/05/29 19:37:43 mirar Exp $<br>
+**!	$Id: lzw.c,v 1.3 1997/10/21 18:39:37 grubba Exp $<br>
 */
 
 #include "global.h"
+
+#include "threads.h"
 
 #include "lzw.h"
 
@@ -32,6 +34,7 @@ static INLINE void lzw_output(struct lzw *lzw,lzwcode_t codeno)
    int bits,bitp;
    unsigned char c;
 
+   HIDE_GLOBAL_VARIABLES();
 /*
    fprintf(stderr,"%03x bits=%d codes %d %c\n",
            codeno,lzw->codebits,lzw->codes+1,
@@ -73,12 +76,14 @@ static INLINE void lzw_output(struct lzw *lzw,lzwcode_t codeno)
    }
    lzw->lastout=0;
    lzw->outbit=0;
+   REVEAL_GLOBAL_VARIABLES();
 }
 
 
 void lzw_init(struct lzw *lzw,int bits)
 {
    unsigned long i;
+   HIDE_GLOBAL_VARIABLES();
 #ifdef GIF_LZW
    lzw->codes=(1L<<bits)+2;
 #else
@@ -109,6 +114,7 @@ void lzw_init(struct lzw *lzw,int bits)
 #ifdef GIF_LZW
    lzw_output(lzw,1L<<bits);
 #endif
+   REVEAL_GLOBAL_VARIABLES();
 }
 
 void lzw_quit(struct lzw *lzw)
@@ -147,6 +153,7 @@ static void lzw_recurse_find_code(struct lzw *lzw,lzwcode_t codeno)
 
 void lzw_write_last(struct lzw *lzw)
 {
+  HIDE_GLOBAL_VARIABLES();
    if (lzw->current)
       lzw_output(lzw,lzw->current);
 #ifdef GIF_LZW
@@ -154,10 +161,12 @@ void lzw_write_last(struct lzw *lzw)
 #endif
    if (lzw->outbit)
       lzw->out[lzw->outpos++]=lzw->lastout;
+   REVEAL_GLOBAL_VARIABLES();
 }
 
 void lzw_add(struct lzw *lzw,int c)
 {
+  HIDE_GLOBAL_VARIABLES();
    lzwcode_t lno,lno2;
    struct lzwc *l;
 
@@ -218,6 +227,7 @@ void lzw_add(struct lzw *lzw,int c)
    if (lzw->codes>(unsigned long)(1L<<lzw->codebits)) lzw->codebits++;
 
    lzw->current=c;
+   REVEAL_GLOBAL_VARIABLES();
 }
 
 #undef UNPACK_DEBUG
