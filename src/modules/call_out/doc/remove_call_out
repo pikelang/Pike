@@ -1,0 +1,14 @@
+NAME
+	remove_call_out - remove a call out from the call out queue
+
+SYNTAX
+	int remove_call_out(function f);
+
+DESCRIPTION
+	This function finds the first call to the function f in the call
+	out queue and removes it. The time left to that call out will be
+	returned. If no call out was found, zero_type(remove_call_out(f))
+	will return 1.
+
+SEE ALSO
+	call_out_info, call_out, find_call_out
