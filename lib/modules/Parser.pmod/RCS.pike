@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.27 2002/11/29 00:52:48 nilsson Exp $
+// $Id: RCS.pike,v 1.28 2002/12/03 13:41:08 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -552,7 +552,7 @@ class Revision
   string state;
 
   //! the (UTC) date and time when the revision was committed
-  Calendar.ISO.Second time;
+  object/* Calendar.ISO.Second */ time;
 
   //! the branch name on which this revision was committed (calculated
   //! according to how cvs manages branches)
