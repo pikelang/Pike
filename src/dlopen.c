@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.12 2002/10/28 19:50:10 grubba Exp $
+|| $Id: dlopen.c,v 1.13 2003/01/21 17:12:22 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.12 2002/10/28 19:50:10 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.13 2003/01/21 17:12:22 grubba Exp $");
 
 #endif
 
@@ -813,6 +813,8 @@ static void *low_dlsym(struct DLHandle *handle,
   if(!ptr)
   {
     fprintf(stderr,"Failed to find identifier %s\n",tmp);
+  } else {
+    fprintf(stderr, "Found identifier %s at 0x%p\n", tmp, ptr);
   }
 #endif
   return ptr;
@@ -960,11 +962,13 @@ static int dl_load_coff_files(struct DLHandle *ret,
       data->peaout = NULL;
 
 #ifdef DLDEBUG
-  fprintf(stderr,"DL: %x %d %d %d\n",
+  fprintf(stderr,"DL: %p %d %d %d\n",
 	  data->coff,
 	  sizeof(data->coff[0]),
 	  data->coff->sizeof_optheader,
 	  sizeof(struct COFFsection));
+  fprintf(stderr, "DL: num_sections:%d, num_symbols: %d\n",
+	  data->coff->num_sections, data->coff->num_symbols);
 #endif
 
     for(s=0;s<data->coff->num_sections;s++)
@@ -986,7 +990,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
       if(align)
 	align=(1<<(align-1))-1;
 #ifdef DLDEBUG
-      fprintf(stderr,"DL: section[%d,%d], %d bytes, align=%d (0x%x)\n",e,s,data->sections[s].raw_data_size,align+1,data->sections[s].characteristics);
+      fprintf(stderr, "DL: section[%d,%d], %d bytes, align=%d (0x%x)\n",
+	      e, s, data->sections[s].raw_data_size, align+1,
+	      data->sections[s].characteristics);
 #endif
       if(data->sections[s].characteristics & COFF_SECT_MEM_WRITE)
       {
@@ -1013,11 +1019,44 @@ static int dl_load_coff_files(struct DLHandle *ret,
     }
     if(data->coff->num_symbols)
     {
-      /* Assumes 32 bit pointers! */
       /* symbol table in code section as well */
-      ret->codesize+=data->coff->num_symbols * 4 + 3;
-      ret->codesize&=~3;
+      ret->codesize += (data->coff->num_symbols + 1) * sizeof(void *) - 1;
+      ret->codesize &= ~(sizeof(void *) - 1);
     }
+
+#ifdef _M_IA64
+    /* To support ltoff relocations, we need to calculate the size
+     * needed for the global offset table (gp).
+     *
+     * We're conservative, and allocate an entry for every ltoff relocation.
+     */
+
+    for(s=0;s<data->coff->num_sections;s++)
+    {
+      struct COFFReloc *relocs;
+      if(data->sections[s].characteristics & 
+	 (COFF_SECT_NOLOAD | COFF_SECT_MEM_DISCARDABLE | COFF_SECT_MEM_LNK_REMOVE))
+	continue;
+
+      /* relocate all symbols in this section */
+      relocs=(struct COFFReloc *)(data->buffer +
+				  data->sections[s].ptr2_relocs);
+
+      for(r=0;r<data->sections[s].num_relocs;r++)
+      {
+/* This should work fine on x86 and other processors which handle
+ * unaligned memory access
+ */
+#define RELOCS(X) (*(struct COFFReloc *)( 10*(X) + (char *)relocs ))
+
+	if (RELOCS(r).type == COFFReloc_IA64_ltoff22) {
+	  /* FIXME: Ought to check if the symbol already has an entry. */
+	  gp_size++;
+	}
+#undef RELOCS
+      }
+    }
+#endif /* _M_IA64 */
 
     /* Count export symbols */
     for(s=0;s<data->coff->num_symbols;s++)
@@ -1055,6 +1094,19 @@ static int dl_load_coff_files(struct DLHandle *ret,
       }
     }
   }
+
+#ifdef _M_IA64
+#ifdef DLDEBUG
+  fprintf(stderr, "Global Offset Table size: %d entries.\n", gp_size);
+#endif /* DLDEBUG */
+
+  /* Allocate place in the data segment. */
+  ret->memsize += (gp_size + 1)*sizeof(void *)-1;
+  ret->memsize &= ~(sizeof(void *)-1);
+  EFENCE_ADD(ret->memsize);
+  ret->memsize += PAD_DATA;
+#endif /* _M_IA64 */
+
 
 #ifdef DLDEBUG
   fprintf(stderr,"DL: allocating %d bytes\n",ret->memsize);
@@ -1185,18 +1237,17 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
     if(data->coff->num_symbols)
     {
-      /* Assumes 32 bit pointers! */
-      codeptr+=3;
-      codeptr&=~3;
+      codeptr += sizeof(void *)-1;
+      codeptr &= ~(sizeof(void *)-1);
       data->symbol_addresses=(char **)( ((char *)ret->code) + codeptr);
       MEMSET(data->symbol_addresses,
 	     0,
-	     data->coff->num_symbols * 4);
+	     data->coff->num_symbols * sizeof(void *));
 #ifdef DLDEBUG
       fprintf(stderr,"DL: data->symbol_addresses=%p\n",
 	      data->symbol_addresses);
 #endif
-      codeptr+=data->coff->num_symbols * 4;
+      codeptr += data->coff->num_symbols * sizeof(void *);
     }
 
 
@@ -1227,8 +1278,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  case 7: align=3; break;
 	  default: align=7;
 	}
-	memptr+=align;
-	memptr&=~align;
+	memptr += align;
+	memptr &= ~align;
 
 	data->symbol_addresses[s]=
 	  EFENCE_ALIGN((char *)ret->memory + memptr,
@@ -1352,6 +1403,20 @@ static int dl_load_coff_files(struct DLHandle *ret,
     }
   }
 
+#ifdef _M_IA64
+  /* Set up the global pointer. */
+
+  memptr += sizeof(void *)-1;
+  memptr &= ~(sizeof(void *)-1);
+
+  gp = (void **)EFENCE_ALIGN((char *)ret->memory + memptr,
+			     gp_size * sizeof(void *),
+			     sizeof(void *) - 1);
+  memptr += gp_size * sizeof(void *);
+  EFENCE_ADD(memptr);
+  memptr += PAD_DATA;
+#endif /* _M_IA64 */
+
 
 #ifdef DLDEBUG
   fprintf(stderr,"DL: resolving\n");
@@ -1359,54 +1424,6 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif
 
   /* Do resolve and relocations */
-
-#ifdef _M_IA64
-  /* To support ltoff relocations, we need to calculate the size
-   * needed for the global offset table (gp).
-   */
-
-  for(e=0;e<num;e++)
-  {
-    for(s=0;s<data->coff->num_sections;s++)
-    {
-      struct COFFReloc *relocs;
-      if(data->sections[s].characteristics & 
-	 (COFF_SECT_NOLOAD | COFF_SECT_MEM_DISCARDABLE | COFF_SECT_MEM_LNK_REMOVE))
-	continue;
-
-      /* relocate all symbols in this section */
-      relocs=(struct COFFReloc *)(data->buffer +
-				  data->sections[s].ptr2_relocs);
-
-      for(r=0;r<data->sections[s].num_relocs;r++)
-      {
-/* This should work fine on x86 and other processors which handle
- * unaligned memory access
- */
-#define RELOCS(X) (*(struct COFFReloc *)( 10*(X) + (char *)relocs ))
-
-#ifdef DLDEBUG
-	fprintf(stderr,"DL: Reloc[%d] sym=%d loc=%d type=%d\n",
-		r,
-		RELOCS(r).symbol,
-		RELOCS(r).location,
-		RELOCS(r).type);
-#endif
-	if (RELOCS(r).type == COFFReloc_IA64_ltoff22) {
-	  /* FIXME: Ought to check if the symbol already has an entry. */
-	  gp_size++;
-	}
-#undef RELOCS
-      }
-    }
-  }
-
-  gp = calloc(sizeof(void *), gp_size);
-#ifdef DLDEBUG
-  fprintf(stderr, "Global Offset Table (gp) at 0x%p (%d entries)\n",
-	  gp, gp_size);
-#endif /* DLDEBUG */
-#endif /* _M_IA64 */
 
   for(e=0;e<num;e++)
   {
@@ -1435,9 +1452,6 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	ptrdiff_t sym=RELOCS(r).symbol;
 	char *name;
 	size_t len;
-#ifdef _M_IA64
-	int flag = ((size_t)loc) & 0xf;
-#endif /* _M_IA64 */
 
 	if(!SYMBOLS(sym).name.ptr[0])
 	{
@@ -1818,6 +1832,11 @@ static int dl_load_coff_files(struct DLHandle *ret,
   if(ret->code)
   {
     DWORD oldprotect;
+#if defined(_M_IA64) && 0
+    extern void (*ia64_flush_instruction_cache)(void *addr, size_t len);
+    /* Flush the instruction cache. */
+    ia64_flush_instruction_cache(ret->code, ret->codesize);
+#endif /* _M_IA64 && 0 */
     if(!VirtualProtect(ret->code,
 		       ret->codesize,
 		       PAGE_EXECUTE_READ,
@@ -2261,13 +2280,17 @@ static unsigned char *find_pdb_symtab(unsigned char *buf, size_t *plen)
 
 static void init_dlopen(void)
 {
-  int tmp;
-  extern char ** ARGV;
+  static char pike_path[MAX_PATH];
   INT32 offset;
   struct DLObjectTempData objtmp;
   HINSTANCE h;
+  DWORD c;
+
+  c=GetModuleFileName(NULL, pike_path, MAX_PATH);
+  assert(c > 0);
+
 #ifdef DLDEBUG
-  fprintf(stderr,"dlopen_init(%s)\n",ARGV[0]);
+  fprintf(stderr,"dlopen_init(%s)\n",pike_path);
 #endif
 
 #ifdef DL_SYMBOL_LOG
@@ -2275,11 +2298,11 @@ static void init_dlopen(void)
 #endif
 
   global_dlhandle.refs=1;
-  global_dlhandle.filename=ARGV[0];
+  global_dlhandle.filename=pike_path;
   global_dlhandle.next=0;
   first=&global_dlhandle;
   
-  h=low_LoadLibrary(ARGV[0]);
+  h=GetModuleHandle(NULL);
 
 #undef data
 #define data (&objtmp)
@@ -2308,7 +2331,7 @@ static void init_dlopen(void)
 					   data->coff->sizeof_optheader);
     
     
-    buf= (unsigned char *)read_file(ARGV[0], &len);
+    buf= (unsigned char *)read_file(pike_path, &len);
     
     data->symbols=(struct COFFSymbol *)(buf +
 					data->coff->symboltable);
@@ -2413,9 +2436,9 @@ static void init_dlopen(void)
     }
     free(buf);
 #ifdef USE_PDB_SYMBOLS
-    if(strlen(ARGV[0])>4) {
-      char *pdb_name = alloca(strlen(ARGV[0])+1);
-      strcpy(pdb_name, ARGV[0]);
+    if(strlen(pike_path)>4) {
+      char *pdb_name = alloca(strlen(pike_path)+1);
+      strcpy(pdb_name, pike_path);
       strcpy(pdb_name+strlen(pdb_name)-4, ".PDB");
       buf= (unsigned char *)read_file(pdb_name, &len);
     } else buf = NULL;
@@ -2465,7 +2488,7 @@ static void init_dlopen(void)
 #ifdef DLDEBUG
     fprintf(stderr,"Couldn't find PE header.\n");
 #endif
-    append_dlllist(&global_dlhandle.dlls, ARGV[0]);
+    append_dlllist(&global_dlhandle.dlls, pike_path);
     global_dlhandle.htable=alloc_htable(997);
 
 #define EXPORT(X) \
@@ -2550,6 +2573,15 @@ static void init_dlopen(void)
   fprintf(stderr,"DL: init done\n");
 #endif
 }
+
+#ifdef HAVE__ALLDIV
+/* Strap to load symbols that might be needed from modules. */
+void _alldiv(void);
+void dl_dummy(void)
+{
+  _alldiv();
+}
+#endif
 
 /****************************************************************/
 
