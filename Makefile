@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.79 2002/07/29 22:36:35 nilsson Exp $
+# $Id: Makefile,v 1.80 2002/07/30 12:03:24 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -247,10 +247,10 @@ xenofarm:
 	@echo Begin response assembly | tee -a build/xenofarm/xenofarmlog.txt
 	@date >> build/xenofarm/xenofarmlog.txt
 	-@cp "$(BUILDDIR)/config.info" build/xenofarm/configinfo.txt
-	if !test -f "build/xenofarm/verifylog.txt"; then \
+	if test ! -f "build/xenofarm/verifylog.txt"; then \
 	  -@cp "$(BUILDDIR)/config.cache" build/xenofarm/configcache.txt \
 	else:; fi
-	if !test -f "build/xenofarm/exportlog.txt"; then \
+	if test ! -f "build/xenofarm/exportlog.txt"; then \
 	  -@cp "$(BUILDDIR)/testsuite" build/xenofarm/testsuite.txt; \
 	else:; fi
 	-@cp "$(BUILDDIR)/dumpmodule.log" build/xenofarm/dumplog.txt
