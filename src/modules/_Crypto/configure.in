@@ -1,3 +1,4 @@
+syscmd(`cd lib && autoconf')
 AC_INIT(crypto.c)
 
 sinclude(../module_configure.in)
