@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.264 2001/11/29 17:02:34 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.265 2001/12/06 10:01:17 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3848,10 +3848,6 @@ static node *lexical_islocal(struct pike_string *str)
       if(f->variable[e].name==str)
       {
 	struct compiler_frame *q=Pike_compiler->compiler_frame;
-	if(f == q && f->variable[e].def) {
-	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
-	  return copy_node(f->variable[e].def);
-	}
 
 	while(q!=f) 
 	{
@@ -3864,6 +3860,12 @@ static node *lexical_islocal(struct pike_string *str)
 
 	if(q->min_number_of_locals < e+1)
 	  q->min_number_of_locals = e+1;
+
+	if(f->variable[e].def) {
+	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
+	  return copy_node(f->variable[e].def);
+	}
+
 	return mklocalnode(e,depth);
       }
     }
