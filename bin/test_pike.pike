@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.58 2001/09/11 05:36:17 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.59 2001/10/01 19:53:35 nilsson Exp $ */
 
 import Stdio;
 
@@ -524,7 +524,7 @@ int main(int argc, array(string) argv)
 	      if(catch(compile_string(to_compile, fname)))
 	      {
 		_dmalloc_set_name();
-		werror(fname + " failed.\n");
+		werror("\n" + fname + " failed.\n");
 		bzot(test);
 		errors++;
 	      }else{
@@ -542,7 +542,7 @@ int main(int argc, array(string) argv)
 		successes++;
 	      }else{
 		_dmalloc_set_name();
-		werror(fname + " failed (expected compile error).\n");
+		werror("\n" + fname + " failed (expected compile error).\n");
 		bzot(test);
 		errors++;
 	      }
@@ -566,7 +566,7 @@ int main(int argc, array(string) argv)
 		  werror("Time in a(): %f\n",at);
 	      }else{
 		_dmalloc_set_name();
-		werror(fname + " failed (expected eval error).\n");
+		werror("\n" + fname + " failed (expected eval error).\n");
 		bzot(test);
 		errors++;
 	      }
@@ -603,7 +603,7 @@ int main(int argc, array(string) argv)
 
 	      }) {
 		// trace(0);
-		werror(fname + " failed.\n");
+		werror("\n" + fname + " failed.\n");
 		bzot(test);
 		if (arrayp(err) && sizeof(err) && stringp(err[0])) {
 		  werror("Error: " + master()->describe_backtrace(err));
@@ -618,7 +618,7 @@ int main(int argc, array(string) argv)
 	      if( o->__cpp_line != o->__rtl_line ||
 		  ( computed_line && computed_line!=o->__cpp_line))
 	      {
-		werror(fname + " Line numbering failed.\n");
+		werror("\n" + fname + " Line numbering failed.\n");
 		bzot(test + linetester);
 		werror("   CPP lines: %d\n",o->__cpp_line);
 		werror("   RTL lines: %d\n",o->__rtl_line);
@@ -635,7 +635,7 @@ int main(int argc, array(string) argv)
 		case "FALSE":
 		  if(a)
 		  {
-		    werror(fname + " failed.\n");
+		    werror("\n" + fname + " failed.\n");
 		    bzot(test);
 		    werror(sprintf("o->a(): %O\n",a));
 		    errors++;
@@ -647,7 +647,7 @@ int main(int argc, array(string) argv)
 		case "TRUE":
 		  if(!a)
 		  {
-		    werror(fname + " failed.\n");
+		    werror("\n" + fname + " failed.\n");
 		    bzot(test);
 		    werror(sprintf("o->a(): %O\n",a));
 		    errors++;
@@ -663,7 +663,7 @@ int main(int argc, array(string) argv)
 		case "EQ":
 		  if(a!=b)
 		  {
-		    werror(fname + " failed.\n");
+		    werror("\n" + fname + " failed.\n");
 		    bzot(test);
 		    werror(sprintf("o->a(): %O\n",a));
 		    werror(sprintf("o->b(): %O\n",b));
@@ -676,7 +676,7 @@ int main(int argc, array(string) argv)
 		case "EQUAL":
 		  if(!equal(a,b))
 		  {
-		    werror(fname + " failed.\n");
+		    werror("\n" + fname + " failed.\n");
 		    bzot(test);
 		    werror(sprintf("o->a(): %O\n",a));
 		    werror(sprintf("o->b(): %O\n",b));
@@ -687,7 +687,7 @@ int main(int argc, array(string) argv)
 		  break;
 		
 		default:
-		  werror(sprintf("%s: Unknown test type (%O).\n", fname, type));
+		  werror(sprintf("\n%s: Unknown test type (%O).\n", fname, type));
 		  errors++;
 	      }
 	  }

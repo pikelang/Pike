@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.18 2001/09/06 18:21:55 mast Exp $ */
+/* $Id: socktest.pike,v 1.19 2001/10/01 19:55:01 nilsson Exp $ */
 
 
 import Stdio;
@@ -445,7 +445,7 @@ int main()
 
   sscanf(port2::query_address(),"%*s %d",portno2);
 
-  werror("Doing simple tests. ");
+  werror("\nDoing simple tests. ");
   stdtest();
   return -1;
 }

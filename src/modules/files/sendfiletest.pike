@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.6 2000/10/07 13:11:38 grubba Exp $ */
+/* $Id: sendfiletest.pike,v 1.7 2001/10/01 19:55:01 nilsson Exp $ */
 
 constant TEST_SIZE = 16384;
 
@@ -192,6 +192,7 @@ void test7()
 
 int main(int argc, array(string) argv)
 {
+  werror("\n");
   loopback->bind(0);
   loopbackport = (int)((loopback->query_address()/" ")[1]);
   call_out(next, 0);
