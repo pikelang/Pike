@@ -1,0 +1,16 @@
+.pure
+Makefile
+config.log
+config.status
+configure
+dependencies
+linker_options
+make_variables
+modlist_headers
+modlist_segment
+module.pmod
+module_testsuite
+stamp-h
+stamp-h.in
+pdf_machine.h
+pdf_machine.h.in
