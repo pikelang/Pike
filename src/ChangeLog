@@ -1,3 +1,14 @@
+Sat Jan 18 13:54:23 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* f___version moved from main.c to version.c and renamed to f_version.
+	* version() removed from master.pike
+	* new functions: _refs() and replace_master()
+	* All Makefile.src removed, Makefile.in are now used togheter
+	  with autoconf's include file feature instead.
+        * file.c (do_read): interrupt checking is back since I do not
+	  know why it was commented out.
+	* gdbmmod.c: index operator added
+
 Sat Jan 18 18:48:06 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* main.c (f___version): Moved Pike version information from
