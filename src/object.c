@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.105 2000/04/22 18:48:58 mast Exp $");
+RCSID("$Id: object.c,v 1.106 2000/05/05 00:26:25 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -443,7 +443,7 @@ static void call_destroy(struct object *o, int foo)
     if(check_destroy_called_mark_semafore(o))
     {
       /* fprintf(stderr, "destruct(): Calling destroy().\n"); */
-      if(foo) push_int(1);
+      if(foo) push_int(foo);
       safe_apply_low(o, e, foo?1:0);
       pop_stack();
     }
