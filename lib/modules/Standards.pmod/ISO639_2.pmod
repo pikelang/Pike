@@ -356,6 +356,7 @@ static constant languages = ([
   "sin":"Sinhalese",
   "sio":"Siouan languages",
   "sit":"Sino-Tibetan (Other)",
+  "skå":"Skånska",
   "sla":"Slavic (Other)",
   "slk":"Slovak",
   "slv":"Slovenian",
