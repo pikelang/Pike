@@ -528,7 +528,7 @@ done
     {
       status("Creating",tmpname+".tar",tmpmsg);
       tmpmsg+=".";
-      Process.create_process(({"tar",tararg,tmpname+".tar"})+ to_export)
+      Process.create_process(({"tar",tararg,tmpname+".tar"})+ files_to_tar)
 	->wait();
       tararg="rf";
     }
