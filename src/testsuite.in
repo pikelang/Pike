@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.343 2000/10/21 16:29:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.344 2000/11/04 01:34:11 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3381,6 +3381,12 @@ test_compile_any([[void a(int q){} void b(function(int:void) f){} void c(){b(a);
 test_compile_error_low([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
 test_compile_any([[void a(){} function(int:void) b = a;]]);
 test_compile_error_low([[void a(int i){} function(:void) b = a;]]);
+
+// Duplicate local variable
+test_compile_error([[void f() {int i; int i;}]]);
+test_compile_error([[void f() {int i; mapping i;}]]);
+test_compile_error([[void f() {int i; void i() {};}]]);
+test_compile_error([[void f (int i) {string i;}]]);
 
 // Not yet cataloged
 test_any(int i=10; { int i; } return i, 10)
