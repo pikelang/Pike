@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.32 2001/01/24 08:17:45 hubbe Exp $
+ * $Id: jvm.c,v 1.33 2001/04/23 22:17:32 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.32 2001/01/24 08:17:45 hubbe Exp $");
+RCSID("$Id: jvm.c,v 1.33 2001/04/23 22:17:32 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -48,10 +48,7 @@ RCSID("$Id: jvm.c,v 1.32 2001/01/24 08:17:45 hubbe Exp $");
 #endif /* _REENTRANT */
 
 #ifdef __NT__
-#define JNI_CreateJavaVM createjavavm
-typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
-static createjavavmtype JNI_CreateJavaVM = NULL;
-static HINSTANCE jvmdll = NULL;
+#include "ntdl.c"
 #endif /* __NT___ */
 
 static struct program *jvm_program = NULL;
@@ -3231,46 +3228,8 @@ void pike_module_init(void)
   prog.subtype = 0;
 
 #ifdef __NT__
-  {
-    char *libname="jvm";
-    LPCSTR keyname=(LPCSTR)"SOFTWARE\\JavaSoft\\Java Runtime Environment\\1.2";
-    HKEY key;
-    char buffer[2*MAX_PATH+32];
-    DWORD type, len = sizeof(buffer)-1;
-
-    if(RegOpenKeyEx(HKEY_CURRENT_USER, keyname, 0,
-		    KEY_READ, &key) == ERROR_SUCCESS ||
-       RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0,
-		    KEY_READ, &key) == ERROR_SUCCESS) {
-      if(ERROR_SUCCESS == RegQueryValueEx(key, "RuntimeLib", 0, &type,
-					  buffer, &len))
-	switch(type) {
-	case REG_SZ:
-	  libname = buffer;
-	  break;
-	case REG_EXPAND_SZ:
-	  type = ExpandEnvironmentStrings((LPCTSTR)buffer,
-					  buffer+len,
-					  sizeof(buffer)-len-1);
-	  if(type && type<=sizeof(buffer)-len-1)
-	    libname = buffer+len;
-	  break;
-	}
-      RegCloseKey(key);
-    }
-    if((jvmdll=LoadLibrary(libname))==NULL)
-      return;
-    else {
-      FARPROC proc;
-      if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
-	JNI_CreateJavaVM = (createjavavmtype)proc;
-      else {
-	if(FreeLibrary(jvmdll))
-	  jvmdll = NULL;
-	return;
-      }
-    }
-  }
+  if (open_nt_dll()<0)
+    return;
 #endif /* __NT__ */
 
   start_new_program();
@@ -3500,8 +3459,7 @@ void pike_module_exit(void)
     jvm_program=NULL;
   }
 #ifdef __NT__
-  if(jvmdll != NULL && FreeLibrary(jvmdll))
-    jvmdll = NULL;
+  close_nt_dll();
 #endif /* __NT __ */
 #endif /* HAVE_JAVA */
 }
