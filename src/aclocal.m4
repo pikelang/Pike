@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.37 2002/01/27 17:08:35 mast Exp $
+dnl $Id: aclocal.m4,v 1.38 2002/01/27 17:52:13 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -234,7 +234,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.37 2002/01/27 17:08:35 mast Exp $
+# $Id: aclocal.m4,v 1.38 2002/01/27 17:52:13 mast Exp $
 
 MY_AC_PROG_CC
 
@@ -345,23 +345,20 @@ pushdef([AC_OUTPUT],
   export BINDIR
   AC_SUBST(BUILDDIR)
   export BUILDDIR
-  AC_SUBST(TMP_LIBDIR)
-  export TMP_BUILDDIR
-  AC_SUBST(TMP_BUILDDIR)
-  export INSTALL
   AC_SUBST(INSTALL)
-  export AR
+  export INSTALL
   AC_SUBST(AR)
-  export CFLAGS
+  export AR
   AC_SUBST(CFLAGS)
-  export CPPFLAGS
+  export CFLAGS
   AC_SUBST(CPPFLAGS)
-  export OPTIMIZE
+  export CPPFLAGS
   AC_SUBST(OPTIMIZE)
-  export WARN
+  export OPTIMIZE
   AC_SUBST(WARN)
-  export CCSHARED
+  export WARN
   AC_SUBST(CCSHARED)
+  export CCSHARED
 
   PMOD_TARGETS=`echo $srcdir/*.cmod | sed -e "s/\.cmod/\.c/g" | sed -e "s|$srcdir/|\\$(SRCDIR)/|g"`
   test "$PMOD_TARGETS" = '$(SRCDIR)/*.c' && PMOD_TARGETS=
