@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.122 2003/03/27 18:25:08 mast Exp $
+|| $Id: spider.c,v 1.123 2003/06/02 21:07:32 nilsson Exp $
 */
 
 #include "global.h"
@@ -50,7 +50,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.122 2003/03/27 18:25:08 mast Exp $");
+RCSID("$Id: spider.c,v 1.123 2003/06/02 21:07:32 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -118,13 +118,11 @@ void do_html_parse_lines(struct pike_string *ss,
 void f_parse_accessed_database(INT32 args)
 {
   ptrdiff_t cnum = 0, i;
-  int num = 0;
   struct array *arg;
   struct mapping *m;
 
-  if(!args) {
-    Pike_error("Wrong number of arguments to parse_accessed_database(string).\n");
-  }
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("parse_accessed_database",1);
 
   if ((sp[-args].type != T_STRING) || (sp[-args].u.string->size_shift)) {
     Pike_error("Bad argument 1 to parse_accessed_database(string(8)).\n");
@@ -147,8 +145,8 @@ void f_parse_accessed_database(INT32 args)
 
   for(i = 0; i < arg->size; i++)
   {
-    ptrdiff_t j=0,k=0;
-    char *s=0;
+    ptrdiff_t j,k;
+    char *s;
     s=(char *)(ITEM(arg)[i].u.string->str);
     k=(ITEM(arg)[i].u.string->len);
     for(j=k; j>0 && s[j-1]!=':'; j--);
