@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.65 1998/02/01 02:07:24 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.66 1998/02/01 04:01:32 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -197,43 +197,58 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 {
   switch(lval->type)
   {
-  case T_LVALUE:
-    assign_svalue_no_free(to, lval->u.lval);
-    break;
-
-  case T_SHORT_LVALUE:
-    assign_from_short_svalue_no_free(to, lval->u.short_lval, lval->subtype);
-    break;
-
-  case T_OBJECT:
-    object_index_no_free(to, lval->u.object, lval+1);
-    break;
-
-  case T_ARRAY:
-    simple_array_index_no_free(to, lval->u.array, lval+1);
-    break;
-
-  case T_MAPPING:
-    mapping_index_no_free(to, lval->u.mapping, lval+1);
-    break;
-
-  case T_MULTISET:
-    to->type=T_INT;
-    if(multiset_member(lval->u.multiset,lval+1))
+    case T_ARRAY_LVALUE:
     {
-      to->u.integer=0;
-      to->subtype=NUMBER_UNDEFINED;
-    }else{
-      to->u.integer=0;
-      to->subtype=NUMBER_NUMBER;
+      INT32 e;
+      struct array *a;
+      ONERROR err;
+      a=allocate_array(lval[1].u.array->size>>1);
+      SET_ONERROR(err, do_free_array, a);
+      for(e=0;e<a->size;e++)
+	lvalue_to_svalue_no_free(a->item+e, lval[1].u.array->item+(e<<1));
+      to->type = T_ARRAY;
+      to->u.array=a;
+      UNSET_ONERROR(err);
+      break;
     }
-    break;
-    
-  default:
-   if(IS_ZERO(lval))
-     error("Indexing the NULL value.\n"); /* Per */
-   else
-     error("Indexing a basic type.\n");
+      
+    case T_LVALUE:
+      assign_svalue_no_free(to, lval->u.lval);
+      break;
+      
+    case T_SHORT_LVALUE:
+      assign_from_short_svalue_no_free(to, lval->u.short_lval, lval->subtype);
+      break;
+      
+    case T_OBJECT:
+      object_index_no_free(to, lval->u.object, lval+1);
+      break;
+      
+    case T_ARRAY:
+      simple_array_index_no_free(to, lval->u.array, lval+1);
+      break;
+      
+    case T_MAPPING:
+      mapping_index_no_free(to, lval->u.mapping, lval+1);
+      break;
+      
+    case T_MULTISET:
+      to->type=T_INT;
+      if(multiset_member(lval->u.multiset,lval+1))
+      {
+	to->u.integer=0;
+	to->subtype=NUMBER_UNDEFINED;
+      }else{
+	to->u.integer=0;
+	to->subtype=NUMBER_NUMBER;
+      }
+      break;
+      
+    default:
+      if(IS_ZERO(lval))
+	error("Indexing the NULL value.\n"); /* Per */
+      else
+	error("Indexing a basic type.\n");
   }
 }
 
@@ -241,6 +256,20 @@ void assign_lvalue(struct svalue *lval,struct svalue *from)
 {
   switch(lval->type)
   {
+    case T_ARRAY_LVALUE:
+    {
+      INT32 e;
+      if(from->type != T_ARRAY)
+	error("Trying to assign combined lvalue from non-array.\n");
+
+      if(from->u.array->size < (lval[1].u.array->size>>1))
+	error("Not enough values for multiple assign.\n");
+
+      for(e=0;e<from->u.array->size;e++)
+	assign_lvalue(lval[1].u.array->item+(e<<1),from->u.array->item+e);
+    }
+    break;
+
   case T_LVALUE:
     assign_svalue(lval->u.lval,from);
     break;
@@ -280,31 +309,34 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
 {
   switch(lval->type)
   {
-  case T_LVALUE:
-    if(lval->u.lval->type == t) return & ( lval->u.lval->u );
-    return 0;
+    case T_ARRAY_LVALUE:
+      return 0;
+      
+    case T_LVALUE:
+      if(lval->u.lval->type == t) return & ( lval->u.lval->u );
+      return 0;
+      
+    case T_SHORT_LVALUE:
+      if(lval->subtype == t) return lval->u.short_lval;
+      return 0;
+      
+    case T_OBJECT:
+      return object_get_item_ptr(lval->u.object,lval+1,t);
+      
+    case T_ARRAY:
+      return array_get_item_ptr(lval->u.array,lval+1,t);
+      
+    case T_MAPPING:
+      return mapping_get_item_ptr(lval->u.mapping,lval+1,t);
 
-  case T_SHORT_LVALUE:
-    if(lval->subtype == t) return lval->u.short_lval;
-    return 0;
-
-  case T_OBJECT:
-    return object_get_item_ptr(lval->u.object,lval+1,t);
-
-  case T_ARRAY:
-    return array_get_item_ptr(lval->u.array,lval+1,t);
-
-  case T_MAPPING:
-    return mapping_get_item_ptr(lval->u.mapping,lval+1,t);
-
-  case T_MULTISET: return 0;
-
-  default:
-    if(IS_ZERO(lval))
-      error("Indexing the NULL value.\n"); /* Per */
+    case T_MULTISET: return 0;
+      
+    default:
+      if(IS_ZERO(lval))
+	error("Indexing the NULL value.\n"); /* Per */
     else
       error("Indexing a basic type.\n");
-    return 0;
+      return 0;
   }
 }
 
@@ -732,6 +764,14 @@ static int eval_instruction(unsigned char *pc)
       sp+=2;
       break;
 
+      CASE(F_ARRAY_LVALUE);
+      f_aggregate(GET_ARG()*2);
+      sp[-1].u.array->flags |= ARRAY_LVALUE;
+      sp[0]=sp[-1];
+      sp[-1].type=T_ARRAY_LVALUE;
+      sp++;
+      break;
+
       CASE(F_CLEAR_2_LOCAL);
       instr=GET_ARG();
       free_svalues(fp->locals + instr, 2, -1);
@@ -1081,24 +1121,6 @@ static int eval_instruction(unsigned char *pc)
 	}
       }
       break;
-
-#ifdef F_ASSIGN_ARRAY
-      CASE(F_ASSIGN_ARRAY);
-      {
-	struct svalue *base=*--mark_sp;
-	INT32 e,args=(sp-base)>>1
-	if(sp[-1].type != T_ARRAY)
-	  error("Bad argument to multiple assign, not an array.\n");
-	if(sp[-1].u.array->size < args)
-	  error("Not enough elements in array for multiple assign.\n");
-
-	for(e=0;e<args;e++)
-	  assign_lvalue(base+e*2,sp[-1].u.array->item+e);
-
-	pop_n_elems(sp-base);
-	break;
-      }
-#endif
 
       /* Stack machine stuff */
       CASE(F_POP_VALUE); pop_stack(); break;

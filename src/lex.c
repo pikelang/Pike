@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.42 1998/01/29 06:02:29 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.43 1998/02/01 04:01:36 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -152,6 +152,7 @@ struct keyword instr_names[]=
 { "ltosval2",		F_LTOSVAL2 },
 { "lvalue to svalue",	F_LTOSVAL },	
 { "lvalue_list",	F_LVALUE_LIST },	
+{ "[ lvalues ]",	F_ARRAY_LVALUE, I_HASARG },	
 { "mark",               F_MARK },
 { "mark mark",          F_MARK2 },
 { "negative number",	F_NEG_NUMBER, I_HASARG },

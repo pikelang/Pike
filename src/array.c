@@ -116,6 +116,11 @@ void really_free_array(struct array *v)
   array_free_no_free(v);
 }
 
+void do_free_array(struct array *a)
+{
+  free_array(a);
+}
+
 /*
  * Extract an svalue from an array
  */

@@ -110,6 +110,7 @@
 %token F_LOCAL
 %token F_LSH_EQ
 %token F_LVALUE_LIST
+%token F_ARRAY_LVALUE
 %token F_MAPPING_ID
 %token F_MIXED_ID
 %token F_MOD_EQ
@@ -161,7 +162,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.58 1998/01/29 17:43:21 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.59 1998/02/01 04:01:33 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -322,6 +323,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> low_idents
 %type <n> lvalue
 %type <n> lvalue_list
+%type <n> low_lvalue_list
 %type <n> m_expr_list
 %type <n> m_expr_list2
 %type <n> new_local_name
@@ -1146,7 +1148,9 @@ expr00: expr0
 
 expr0: expr01
   | expr4 '=' expr0  { $$=mknode(F_ASSIGN,$3,$1); }
+  | '[' low_lvalue_list ']' '=' expr0  { $$=mknode(F_ASSIGN,$5,mknode(F_ARRAY_LVALUE,$2,0)); }
   | expr4 assign expr0  { $$=mknode($2,$1,$3); }
+  | '[' low_lvalue_list ']' assign expr0  { $$=mknode(F_ASSIGN,mknode(F_ARRAY_LVALUE,$2,0),$5); }
   | error assign expr01 { $$=0; reset_type_stack(); yyerrok; }
   ;
 
@@ -1432,12 +1436,17 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
   ;
 
 lvalue: expr4
+  | '[' low_lvalue_list ']' { $$=mknode(F_ARRAY_LVALUE, $2,0); }
   | type F_IDENTIFIER
   {
     add_local_name($2->u.sval.u.string,pop_type());
     $$=mklocalnode(islocal($2->u.sval.u.string));
     free_node($2);
   }
+
+low_lvalue_list: /* empty */ { $$=0; }
+  | lvalue lvalue_list { $$=mknode(F_LVALUE_LIST,$1,$2); }
+  ;
 
 lvalue_list: /* empty */ { $$ = 0; }
   | ',' lvalue lvalue_list { $$ = mknode(F_LVALUE_LIST,$2,$3); }

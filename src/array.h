@@ -25,6 +25,7 @@ struct array
 };
 
 #define ARRAY_CYCLIC 1
+#define ARRAY_LVALUE 2
 
 extern struct array empty_array;
 
@@ -61,6 +62,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 /* Prototypes begin here */
 struct array *low_allocate_array(INT32 size,INT32 extra_space);
 void really_free_array(struct array *v);
+void do_free_array(struct array *a);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
 void simple_array_index_no_free(struct svalue *s,

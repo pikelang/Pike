@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.29 1998/01/30 20:04:31 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.30 1998/02/01 04:01:32 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -244,20 +244,21 @@ static int do_docode2(node *n,int flags)
   {
     switch(n->token)
     {
-    default:
-      yyerror("Illegal lvalue.");
-      emit(F_NUMBER,0);
-      return 1;
+      default:
+	yyerror("Illegal lvalue.");
+	emit(F_NUMBER,0);
+	return 1;
 
-    case F_LVALUE_LIST:
-    case F_LOCAL:
-    case F_GLOBAL:
-    case F_IDENTIFIER:
-    case F_INDEX:
-    case F_ARROW:
-    case F_ARG_LIST:
-    case F_EXTERNAL:
-      break;
+      case F_ARRAY_LVALUE:
+      case F_LVALUE_LIST:
+      case F_LOCAL:
+      case F_GLOBAL:
+      case F_IDENTIFIER:
+      case F_INDEX:
+      case F_ARROW:
+      case F_ARG_LIST:
+      case F_EXTERNAL:
+	break;
     }
   }
 
@@ -972,6 +973,15 @@ static int do_docode2(node *n,int flags)
 
   case F_LVALUE_LIST:
     return do_docode(CAR(n),DO_LVALUE)+do_docode(CDR(n),DO_LVALUE);
+
+    case F_ARRAY_LVALUE:
+      tmp1=do_docode(CAR(n),DO_LVALUE);
+#ifdef DEBUG
+      if(tmp1 & 1)
+	fatal("Very internal compiler error.\n");
+#endif
+      emit(F_ARRAY_LVALUE, tmp1>>1);
+      return 2;
 
   case F_ARROW:
     if(CDR(n)->token != F_CONSTANT || CDR(n)->u.sval.type!=T_STRING)
