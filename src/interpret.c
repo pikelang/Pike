@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.11 1996/11/19 09:35:22 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.12 1996/11/21 23:50:33 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -89,7 +89,11 @@ void init_interpreter()
       fd=open("/dev/zero",O_RDONLY);
       if(fd >= 0) break;
       if(errno != EINTR)
-	fatal("Failed to open /dev/zero.\n");
+      {
+	evaluator_stack=0;
+	mark_stack=0;
+	goto use_malloc;
+      }
     }
   }
 #endif
@@ -107,6 +111,7 @@ void init_interpreter()
   mark_stack=0;
 #endif
 
+use_malloc:
   if(!evaluator_stack)
   {
     evaluator_stack=(struct svalue *)xalloc(stack_size*sizeof(struct svalue));
