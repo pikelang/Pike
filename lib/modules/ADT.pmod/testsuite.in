@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.7 2003/03/08 19:39:43 nilsson Exp $
+dnl $Id: testsuite.in,v 1.8 2003/07/04 19:26:39 nilsson Exp $
 
 dnl - ADT.History
 
@@ -238,6 +238,16 @@ test_any([[
   };
   return (string)Test();
 ]], "\1\0\0klm")
+test_any([[
+  class Test {
+    inherit ADT.Struct;
+    Item a = Word(0x1234);
+    Item b = Drow(0x1234);
+    Item c = Long(0x12345678);
+    Item d = Gnol(0x12345678);
+  };
+  return (string)Test();
+]], "\22""44\22\22""4VxxV4\22");
 
 
 dnl - ADT.Table

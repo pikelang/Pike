@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.5 2003/05/04 21:31:19 nilsson Exp $
+// $Id: Struct.pike,v 1.6 2003/07/04 19:26:39 nilsson Exp $
 //
 
 //! Implements a struct which can be used for serialization and
@@ -121,6 +121,7 @@ static mixed cast(string to) {
   }
 }
 
+
 // --- Virtual struct item class
 
 //! Interface class for struct items.
@@ -171,26 +172,53 @@ class Byte {
 }
 
 //! One word in network order, integer value between 0 and 65535.
+//! @seealso
+//! @[Drow]
 class Word {
   inherit Item;
   int size = 2;
-  static int(0..65535) value;
+  static int(0..) value;
 
   //! The byte can be initialized with an optional value.
-  void create(void|int(0..65535) initial_value) {
+  void create(void|int(0..) initial_value) {
     set(initial_value);
   }
 
-  void set(int(0..65535) in) {
-    if(in<0 || in>65535) error("Value out of bound.\n");
+  void set(int(0..) in) {
+    if(in<0 || in>=pow(2,size*8)) error("Value out of bound.\n");
     value = in;
   }
-  void decode(object f) { sscanf(f->read(2), "%2c", value); }
-  string encode() { return sprintf("%2c", value); }
+  void decode(object f) { sscanf(f->read(size), "%"+size+"c", value); }
+  string encode() { return sprintf("%"+size+"c", value); }
 
   static string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d)", this_program, value);
   }
+}
+
+//! One word in intel order, integer value between 0 and 65535.
+//! @seealso
+//! @[Word]
+class Drow {
+  inherit Word;
+  void decode(object f) { sscanf(f->read(size), "%-"+size+"c", value); }
+  string encode() { return sprintf("%-"+size+"c", value); }
+}
+
+//! One longword in network order, integer value between 0 and 2^32.
+//! @seealso
+//! @[Gnol]
+class Long {
+  inherit Word;
+  int size = 4;
+}
+
+//! One longword in inte order, integer value between 0 and 2^32.
+//! @seealso
+//! @[Long]
+class Gnol {
+  inherit Drow;
+  int size = 4;
 }
 
 //! A string of bytes.
