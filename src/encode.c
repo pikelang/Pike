@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.213 2004/05/12 08:13:30 grubba Exp $
+|| $Id: encode.c,v 1.214 2004/05/12 14:58:29 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.213 2004/05/12 08:13:30 grubba Exp $");
+RCSID("$Id: encode.c,v 1.214 2004/05/12 14:58:29 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3471,6 +3471,10 @@ static void decode_value2(struct decode_data *data)
 	  } else if (bytecode_method != PIKE_BYTECODE_METHOD) {
 	    Pike_error("Unsupported byte-code method: %d\n", bytecode_method);
 	  } else {
+
+#ifdef PIKE_PORTABLE_BYTECODE
+	    fprintf(stderr, "Warning: Decoding non-portable bytecode.\n");
+#endif /* PIKE_PORTABLE_BYTECODE */
 
 #ifdef PIKE_USE_MACHINE_CODE
 	    {
