@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.262 2005/02/09 16:43:35 mast Exp $
+|| $Id: gc.c,v 1.263 2005/04/06 19:09:45 grubba Exp $
 */
 
 #include "global.h"
@@ -1340,7 +1340,11 @@ void debug_gc_touch(void *a)
   switch (Pike_in_gc) {
     case GC_PASS_PRETOUCH:
       m = find_marker(a);
-      if (m && !(m->flags & (GC_PRETOUCHED
+      if (
+#ifdef DO_PIKE_CLEANUP
+	  !gc_keep_markers &&
+#endif
+	  m && !(m->flags & (GC_PRETOUCHED
 #ifdef PIKE_DEBUG
 			     |GC_WATCHED
 #endif
