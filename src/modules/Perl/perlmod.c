@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.19 2000/10/11 23:55:44 mast Exp $ */
+/* $Id: perlmod.c,v 1.20 2000/10/12 00:34:18 mast Exp $ */
 
 #define NO_PIKE_SHORTHAND
 
@@ -174,7 +174,8 @@ static int _perl_parse(struct perlmod_storage *ps,
     for(d=0;environ[d];d++)
       env_block_size+=strlen(environ[d])+1;
 
-    ps->env_block=xalloc(env_block_size);
+    if (env_block_size)
+      ps->env_block=xalloc(env_block_size);
     ps->env=(char **)xalloc(sizeof(char *)*(d+1));
 
     env_blockp = ps->env_block;
