@@ -99,6 +99,10 @@ void f_file_stat(INT32 args)
   }
 }
 
+#if  !defined(HAVE_STRUCT_STATFS) && !defined(HAVE_STRUCT_FS_DATA)
+#undef HAVE_STATFS
+#endif
+
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT)
 #ifdef HAVE_SYS_STATVFS_H
 /* Kludge for broken SCO headerfiles */
