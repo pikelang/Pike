@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.42 1999/04/01 18:32:37 grubba Exp $
+// $Id: module.pmod,v 1.43 1999/04/07 23:04:08 hubbe Exp $
 
 import String;
 
@@ -594,6 +594,19 @@ int write_file(string filename,string what)
   object(File) f = File();
 
   if(!f->open(filename,"twc"))
+    error("Couldn't open file "+filename+".\n");
+  
+  ret=f->write(what);
+  f->close();
+  return ret;
+}
+
+int append_file(string filename,string what)
+{
+  int ret;
+  object(File) f = File();
+
+  if(!f->open(filename,"awc"))
     error("Couldn't open file "+filename+".\n");
   
   ret=f->write(what);
