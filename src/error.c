@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.136 2004/10/30 11:41:08 mast Exp $
+|| $Id: error.c,v 1.137 2004/11/05 03:34:28 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -261,6 +261,16 @@ PMOD_EXPORT void Pike_vsnprintf(char *str, size_t size,
 	  char buf[12];
 	  int pos=0;
 	  sprintf(buf, "%d", va_arg(args, int));
+	  while( --size>0 && buf[pos]!=0 )
+	    str++[0]=buf[pos++];
+	}
+	break;
+
+      case 'x':
+	{
+	  char buf[12];
+	  int pos=0;
+	  sprintf(buf, "%x", va_arg(args, int));
 	  while( --size>0 && buf[pos]!=0 )
 	    str++[0]=buf[pos++];
 	}
