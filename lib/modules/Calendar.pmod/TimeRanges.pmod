@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.14 2001/07/18 10:03:38 nilsson Exp $
+// $Id: TimeRanges.pmod,v 1.15 2001/08/31 14:14:48 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -165,7 +165,7 @@ class TimeRange
       int(0..0x7fffffff) n;
       if (!b) 
 	 if (intp(a)) 
-	    x=[function|object(TimeRange)]this_object(),
+	    x=[function|object(TimeRange)](mixed)this_object(),
 	       n=[int(0..0x7fffffff)]a;
 	 else
 	    x=a,n=1;
@@ -210,7 +210,7 @@ class TimeRange
       int n;
       if (!b) 
 	 if (intp(a)) 
-	    x=[function|object(this_program)]this_object(),
+	    x=[function|object(this_program)](mixed)this_object(),
 	       n=[int]a;
 	 else
 	    x=a,n=1;
