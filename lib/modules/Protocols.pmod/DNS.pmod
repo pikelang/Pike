@@ -2,6 +2,8 @@
 
 //! module Protocols
 //! submodule DNS
+//!
+//! $Id: DNS.pmod,v 1.41 2000/09/06 21:33:03 leif Exp $
 
 constant NOERROR=0;
 constant FORMERR=1;
@@ -302,11 +304,15 @@ class client
       if(!domain || !sizeof(domain))
         domain=get_tcpip_param("DhcpDomain");
 
-      nameservers = get_tcpip_param("NameServer") / " ";
-      nameservers+= get_tcpip_param("DhcpNameServer") / " ";
-      nameservers -= ({""});
+      string temp;
+      if (stringp(temp = get_tcpip_param("NameServer")))
+           nameservers += temp / " ";
+      if (stringp(temp = get_tcpip_param("DhcpNameServer")))
+           nameservers += temp / " ";
+      nameservers -= ({ "" });
 
-      domains=get_tcpip_param("SearchList") / " "- ({""});
+      if (stringp(temp = get_tcpip_param("SearchList")))
+           domains = (temp / " ") - ({ "" });
 #else
       string resolv_conf;
       foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}), string resolv_loc)
