@@ -4,7 +4,7 @@ inherit Process;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
-int member_array(mixed needle,mixed *haystack,int|void start)
+int member_array(mixed needle,array(mixed) haystack,int|void start)
 {
   return search(haystack,needle,start);
 }
@@ -12,7 +12,7 @@ int member_array(mixed needle,mixed *haystack,int|void start)
 object previous_object()
 {
   int e;
-  mixed **trace;
+  array(array(mixed)) trace;
   object o,ret;
   trace=backtrace();
   o=function_object(trace[-2][2]);
@@ -38,7 +38,7 @@ function get_function(object o, string a)
   return functionp(ret) ? ret : 0;
 }
 
-string *map_regexp(string *s, string reg)
+array(string) map_regexp(array(string) s, string reg)
 {
   
   object(Regexp) regexp = Regexp(reg);

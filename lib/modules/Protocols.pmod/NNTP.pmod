@@ -18,9 +18,9 @@ class protocol
     return code;
   }
 
-  string *read_body_lines()
+  array(string) read_body_lines()
   {
-    string *ret=({});
+    array(string) ret=({});
     string s;
     while(s = news::gets())
     {
@@ -33,7 +33,7 @@ class protocol
 
   string readreturnbody()
   {
-    string *tmp=read_body_lines();
+    array(string) tmp=read_body_lines();
     return tmp*"\n"+"\n";
   }
 
