@@ -283,7 +283,6 @@ testfont binary
 /src/bignum.h foreign_ident
 /src/block_alloc.h foreign_ident
 /src/block_alloc_h.h foreign_ident
-/src/build_modlist_h foreign_ident
 /src/builtin.cmod foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/builtin_functions.h foreign_ident
