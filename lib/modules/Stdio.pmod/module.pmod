@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.37 1999/01/30 01:35:08 grubba Exp $
+// $Id: module.pmod,v 1.37 1999/03/11 22:31:05 hubbe fake $
 
 #include <string.h>
 

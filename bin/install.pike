@@ -36,8 +36,9 @@ int mkdirhier(string dir)
     if(s[1]<0)
       return 1;
 
-    werror("mkdir: Directory '%s' already exists as a file.\n",dir);
-    exit(1);
+    werror("Warning: Directory '%s' already exists as a file.\n",dir);
+    if(!mv(dir,dir+".old"))
+      fail("mv(%s,%s)",tmpfile,to);
   }
 
   mkdirhier(dirname(dir));
