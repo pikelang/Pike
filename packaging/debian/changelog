@@ -1,3 +1,9 @@
+pike7.3 (7.3.56-2) unstable; urgency=low
+
+  * Latest CVS snapshot.
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 18 Oct 2002 01:37:36 +0200
+
 pike7.3 (7.3.56-1) unstable; urgency=low
 
   * Latest upstream version. The most important changes:
