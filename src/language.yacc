@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.265 2001/12/06 10:01:17 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.266 2001/12/14 04:10:00 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -245,6 +245,7 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_dot_dot_dot
 %type <number> optional_comma
 %type <number> optional_stars
+%type <number> force_resolve
 
 %type <str> magic_identifiers
 %type <str> magic_identifiers1
@@ -369,6 +370,8 @@ optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
   | { $$=0; }
   ;
 
+force_resolve: /* empty */ { $$=force_resolve; force_resolve=1; }
+
 /* NOTE: This rule pushes a string "name" on the stack in addition
  * to resolving the program reference.
  */
@@ -405,34 +408,39 @@ program_ref: low_program_ref
   }
   ;
       
-inheritance: modifiers TOK_INHERIT low_program_ref optional_rename_inherit ';'
+inheritance: modifiers TOK_INHERIT force_resolve
+  low_program_ref optional_rename_inherit ';'
   {
+    force_resolve = $3;
     if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared inherit.");
     }
-    if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
+    if($4 && !(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
     {
       struct pike_string *s=Pike_sp[-1].u.string;
-      if($4) s=$4->u.sval.u.string;
-      compiler_do_inherit($3,$1,s);
+      if($5) s=$5->u.sval.u.string;
+      compiler_do_inherit($4,$1,s);
     }
-    if($4) free_node($4);
+    if($5) free_node($5);
     pop_n_elems(1);
-    free_node($3);
+    free_node($4);
   }
-  | modifiers TOK_INHERIT low_program_ref error ';'
+  | modifiers TOK_INHERIT force_resolve low_program_ref error ';'
   {
-    free_node($3); yyerrok;
+    force_resolve = $3;
+    free_node($4); yyerrok;
   }
-  | modifiers TOK_INHERIT low_program_ref error TOK_LEX_EOF
+  | modifiers TOK_INHERIT force_resolve low_program_ref error TOK_LEX_EOF
   {
-    free_node($3);
+    force_resolve = $3;
+    free_node($4);
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers TOK_INHERIT low_program_ref error '}'
+  | modifiers TOK_INHERIT force_resolve low_program_ref error '}'
   {
-    free_node($3); yyerror("Missing ';'.");
+    force_resolve = $3;
+    free_node($4); yyerror("Missing ';'.");
   }
   | modifiers TOK_INHERIT error ';' { yyerrok; }
   | modifiers TOK_INHERIT error TOK_LEX_EOF
