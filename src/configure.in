@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.120 1997/09/19 20:46:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.121 1997/09/21 21:08:02 nisse Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1565,6 +1565,7 @@ then
 	DYNIX/ptx*) LDSHARED="ld -G";;
 	next) LDSHARED='$(CC) $(CFLAGS) -nostdlib -r';;
 	Linux*) LDSHARED="gcc -shared";;
+       GNU*) LDSHARED="ld -Bshareable";;
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
 	OpenBSD*) LDSHARED="ld -Bshareable";;
@@ -1603,6 +1604,7 @@ then
 #	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp";;
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
+       GNU*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
 	SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
     esac
@@ -1611,6 +1613,7 @@ then
 #	AIX*)	LINKFORSHARED="-Wl,-bE:pike.exp ";;
 	hp*|HP*) LINKFORSHARED="-Wl,-E";;
 	Linux*) LINKFORSHARED="-rdynamic";;
+       GNU*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
 	SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
