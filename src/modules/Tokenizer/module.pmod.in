@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.13 2003/05/31 15:55:23 grubba Exp $
+// $Id: module.pmod.in,v 1.14 2003/05/31 17:10:49 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -975,6 +975,21 @@ class PikeCompiler
     return parse_comma_expression(tokens_left);
   }
 
+  // Called for parsing of lvalues in eg foreach and sscanf.
+  // FIXME: What about multi-assign?
+  Expression parse_lvalue(Scope current_scope, Iterator tokens_left)
+  {
+    Expression type = parse_assign_expression(tokens_left);
+    Token token;
+
+    if (tokens_left && ((token = tokens_left->value())->is_identifier)) {
+      current_scope->add_variable(0, token, type);
+      tokens_left->`+=(1);
+      return LiteralExpression(token);
+    }
+    return type;
+  }
+
   // Called at
   //   modifiers type · identifier_list ';'
   //   modifiers type · identifier '(' arguments ')' block_or_semi
@@ -1104,27 +1119,29 @@ class PikeCompiler
 
     void add_constant(Modifiers modifiers, Token name, Expression value)
     {
-      werror("Defining constant %O with modifiers %O and value %O\n",
-	     name, modifiers, value);
+      werror("%s: Defining constant %O with modifiers %O and value %O\n",
+	     this_object(), name, modifiers, value);
       identifiers[name->symbol] = ConstantDefinition(modifiers, name, value);
     }
 
     void add_variable(Modifiers modifiers, Token name, Expression type)
     {
-      werror("add_variable(%O, %O, %O)\n", modifiers, name, type);
+      werror("%s->add_variable(%O, %O, %O)\n",
+	     this_object(), modifiers, name, type);
       identifiers[name->symbol] = VariableDefinition(modifiers, name, type);
     }
 
     void add_function(Modifiers modifiers, Token name, Expression definition)
     {
-      werror("add_function(%O, %O, %O)\n", modifiers, name, definition);
+      werror("%s->add_function(%O, %O, %O)\n",
+	     this_object(), modifiers, name, definition);
       identifiers[name->symbol] =
 	FunctionDefinition(modifiers, name, definition);
     }
 
     void add_statement(Statement statement)
     {
-      werror("add_statement(%O)\n", statement);
+      werror("%s->add_statement(%O)\n", this_object(), statement);
     }
   }
 
@@ -1141,10 +1158,80 @@ class PikeCompiler
 	parse_statement(this, tokens_left, current_modifiers);
       }
     }
+
+    string _sprintf(int c)
+    {
+      return "BlockStatement";
+    }
   }
 
   class ExpressionStatement(Expression expr)
   {
+  }
+
+  class Foreach
+  {
+    inherit IdentifierToken;
+    inherit Scope;
+
+    Expression loop_expression;
+    Expression index_lvalue;
+    Expression value_lvalue;
+
+    // Called with
+    //   '(' · expr ',' lvalue ')'
+    //   '(' · expr ';' lvalue ';' lvalue ')'
+    //   '(' · expr ';' ';' lvalue ')'
+    //   '(' · expr ';' lvalue ';' ')'
+    //   '(' · expr ';' ';' ')'
+    void parse_foreach_list(TokenList tokens)
+    {
+      werror("parse_foreach_list(%O)...\n", tokens);
+      Iterator tokens_left = get_iterator(tokens);
+      Token token;
+
+      loop_expression = parse_assign_expression(tokens_left);
+      if (!tokens_left ||
+	  !(<",", ";">)[(token = tokens_left->value())->symbol]) {
+	SYNTAX_ERROR("Expected ',' or ';' in foreach statement.");
+	return;
+      }
+      tokens_left->`+=(1);
+      if (token->symbol == ";") {
+	if (tokens_left && (token = tokens_left->value())->symbol != ";") {
+	  index_lvalue = parse_lvalue(this_object(), tokens_left);
+	  if (!tokens_left ||
+	      !(<",", ";">)[(token = tokens_left->value())->symbol]) {
+	    SYNTAX_ERROR("Expected a second ';' in foreach statement.");
+	    return;
+	  }
+	  tokens_left->`+=(1);
+	}
+	if (!tokens_left) return;
+      }
+      value_lvalue = parse_lvalue(this_object(), tokens_left);
+    }
+
+    // Called at
+    //   foreach · '(' expr ',' lvalue ')' statement
+    //   foreach · '(' expr ';' lvalue ';' lvalue ')' statement
+    //   foreach · '(' expr ';' ';' lvalue ')' statement
+    //   foreach · '(' expr ';' lvalue ';' ')' statement
+    //   foreach · '(' expr ';' ';' ')' statement
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->group_start) ||
+	  (token->group_start->symbol != "(")) {
+	SYNTAX_ERROR("Expected parameters to foreach().");
+	return;
+      }
+      parse_foreach_list(token->contents);
+      tokens_left->`+=(1);
+      parse_statement(this_object(), tokens_left, current_modifiers);
+    }
   }
 
   class Lambda
@@ -1398,7 +1485,7 @@ class PikeCompiler
 	//"else":Else,
 	//"float":FloatType,
 	//"for":For,
-	//"foreach":ForEach,
+	"foreach":Foreach,
 	//"function":FunctionType,
 	//"gauge":Gauge,
 	//"if":If,
