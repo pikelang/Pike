@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.191 2000/08/22 14:10:40 mast Exp $");
+RCSID("$Id: file.c,v 1.192 2000/08/23 12:16:22 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1276,7 +1276,11 @@ static void file_open(INT32 args)
      str=Pike_sp[-args].u.string;
 
      if (strlen(str->str) != (size_t)str->len) {
-       error("Filenames with NUL are not supported.\n");
+       /* Filenames with NUL are not supported. */
+       ERRNO = ENOENT;
+       pop_n_elems(args);
+       push_int(0);
+       return;
      }
 
 #ifdef PIKE_SECURITY

@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.84 2000/08/18 21:43:36 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.85 2000/08/23 12:16:22 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -126,7 +126,11 @@ void f_file_stat(INT32 args)
   l = (args>1 && !IS_ZERO(sp+1-args))?1:0;
 
   if (strlen(str->str) != (size_t)str->len) {
-    error("Filenames with NUL are not supported.\n");
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
   THREADS_ALLOW_UID();
@@ -166,7 +170,11 @@ void f_file_truncate(INT32 args)
   len = sp[1-args].u.integer;
 
   if (strlen(str->str) != (size_t)str->len) {
-    error("Filenames with NUL are not supported.\n");
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
   VALID_FILE_IO("file_truncate","write");
@@ -322,7 +330,11 @@ void f_filesystem_stat(INT32 args)
   str = sp[-args].u.string;
 
   if (strlen(str->str) != (size_t)str->len) {
-    error("Filenames with NUL are not supported.\n");
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
   THREADS_ALLOW();
@@ -465,7 +477,11 @@ void f_rm(INT32 args)
   str = sp[-args].u.string;
   
   if (strlen(str->str) != (size_t)str->len) {
-    error("Filenames with NUL are not supported.\n");
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
   THREADS_ALLOW_UID();
@@ -516,8 +532,13 @@ void f_mkdir(INT32 args)
   str = sp[-args].u.string;
 
   if (strlen(str->str) != (size_t)str->len) {
-    error("Filenames with NUL are not supported.\n");
+    /* Filenames with NUL are not supported. */
+    errno = EINVAL;
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
+
 #if MKDIR_ARGS == 2
   THREADS_ALLOW_UID();
   i = mkdir(str->str, mode) != -1;
@@ -592,7 +613,11 @@ void f_get_dir(INT32 args)
   get_all_args("get_dir",args,"%S",&str);
 
   if (strlen(str->str) != (size_t)str->len) {
-    error("Filenames with NUL are not supported.\n");
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
 #if defined(_REENTRANT) && defined(HAVE_READDIR_R)
@@ -776,7 +801,11 @@ void f_cd(INT32 args)
   str = sp[-args].u.string;
 
   if (strlen(str->str) != (size_t)str->len) {
-    error("Filenames with NUL are not supported.\n");
+    /* Filenames with NUL are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
 
   i = chdir(str->str) != -1;
@@ -954,12 +983,19 @@ void f_mv(INT32 args)
   str1 = sp[-args].u.string;
   str2 = sp[1-args].u.string;
 
-  if (strlen(str1->str) != (size_t)str1->len) {
-    error("Filenames with NUL are not supported.\n");
+  if ((strlen(str1->str) != (size_t)str1->len) ||
+      (strlen(str2->str) != (size_t)str2->len)) {
+    /* Filenames with NUL are not supported. */
+    if (strlen(str1->str) != (size_t)str1->len) {
+      errno = ENOENT;
+    } else {
+      errno = EINVAL;
+    }
+    pop_n_elems(args);
+    push_int(0);
+    return;
   }
-  if (strlen(str2->str) != (size_t)str2->len) {
-    error("Filenames with NUL are not supported.\n");
-  }
+
   i=rename(str1->str, str2->str);
 
   pop_n_elems(args);
