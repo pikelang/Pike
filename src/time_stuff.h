@@ -2,13 +2,15 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: time_stuff.h,v 1.12 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: time_stuff.h,v 1.13 2003/02/11 19:25:59 mast Exp $
 */
 
 #ifndef TIME_STUFF_H
 #define TIME_STUFF_H
 
+#ifndef CONFIGURE_TEST
 #include "machine.h"
+#endif
 
 #if TIME_WITH_SYS_TIME
 # include <sys/time.h>

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.79 2003/02/08 02:31:57 mast Exp $
+|| $Id: global.h,v 1.80 2003/02/11 19:25:59 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -272,6 +272,7 @@ typedef struct p_wchar_p
   int shift;
 } PCHARP;
 
+#ifndef CONFIGURE_TEST
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
 #define RCSID(X) \
  static char *rcsid __attribute__ ((unused)) =X
@@ -282,6 +283,9 @@ typedef struct p_wchar_p
 #else
 #define RCSID(X) \
  static char *rcsid = X
+#endif
+#else
+#define RCSID(X)
 #endif
 
 #ifdef PIKE_DEBUG

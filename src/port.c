@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.58 2003/01/16 17:15:04 grubba Exp $
+|| $Id: port.c,v 1.59 2003/02/11 19:25:59 mast Exp $
 */
 
 /*
@@ -14,22 +14,19 @@
 #define PORT_DO_WARN
 
 #include "global.h"
-#include "pike_macros.h"
 #include "time_stuff.h"
-#include "pike_error.h"
-#include "fdlib.h"
-#include "fd_control.h"
 
-#include <ctype.h>
-#include <math.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+
+#include <ctype.h>
+#include <math.h>
 #include <errno.h>
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.58 2003/01/16 17:15:04 grubba Exp $");
+RCSID("$Id: port.c,v 1.59 2003/02/11 19:25:59 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
