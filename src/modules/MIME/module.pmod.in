@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.19 1999/07/26 17:23:13 marcus Exp $
+ * $Id: module.pmod.in,v 1.20 1999/07/28 21:57:34 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -173,7 +173,7 @@ class support {
     decode_words_tokenized_labled_remapped(string phrase)
   {
     return Array.map(decode_words_tokenized_labled(phrase),
-		     lambda(array(string|int) item) {
+		     lambda(array(string|int|array(array(string|int))) item) {
 		       switch(item[0]) {
 		       case "word":
 			 return ({ "word", remap(item[1..]) });
