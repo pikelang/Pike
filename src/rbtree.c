@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.16 2002/12/07 20:12:58 grubba Exp $
+|| $Id: rbtree.c,v 1.17 2002/12/07 22:46:52 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -12,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.16 2002/12/07 20:12:58 grubba Exp $");
+RCSID("$Id: rbtree.c,v 1.17 2002/12/07 22:46:52 mast Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"
@@ -1438,9 +1438,12 @@ struct rb_node_hdr *rb_make_tree (struct rb_node_hdr *list, size_t length)
       unsigned l = 0, h = sizeof (length) * CHAR_BIT;
       do {
 	depth = (l + h) >> 1;
-	if (1u << depth <= length) l = depth + 1; else h = depth;
+	if ((size_t) 1 << depth <= length)
+	  l = depth + 1;
+	else
+	  h = depth;
       } while (l < h);
-      if (1u << depth <= length) depth++;
+      if ((size_t) 1 << depth <= length) depth++;
     }
 
     deep_end = (length - (1 << (depth - 1))) << 1;
