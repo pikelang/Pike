@@ -3702,7 +3702,8 @@ written in C. What follows is a description of all the functions in
 <man_syntax>
 object(Stdio.File) Stdio.File();<br>
 object(Stdio.File) Stdio.File(string <I>fd</I>);<br>
-object(Stdio.File) Stdio.File(string <i>filename</i>, string <i>how</i>, int <i>mode</i>);<br>
+object(Stdio.File) Stdio.File(string <i>filename</i>, string <i>mode</i>);<br>
+object(Stdio.File) Stdio.File(string <i>filename</i>, string <i>mode</i>, int <i>mask</i>);<br>
 </man_syntax>
 <man_description>
 There are three different ways to clone a File.
@@ -3724,7 +3725,7 @@ stream.
 <method name=open title="open a file">
 <man_syntax>
 int open(string <I>filename</I>, string <I>how</I>);<br>
-int open(string <I>filename</I>, string <I>how</I>, int <i>mode<i>);<br>
+int open(string <I>filename</I>, string <I>how</I>, int <i>mode</i>);<br>
 </man_syntax>
 <man_description>
 Open a file for read, write or append. The variable <i>how</i> should
