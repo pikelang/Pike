@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.18 2000/11/21 12:16:33 per Exp $");
+RCSID("$Id: psd.c,v 1.19 2000/11/23 11:08:23 per Exp $");
 
 #include "image_machine.h"
 
@@ -609,7 +609,7 @@ static void decode_resources( struct buffer *b )
 	push_constant_text( "guides" );
 	{
 	  int i,num_guides;
-	  short magic1, magic2, magic3, magic4, magic5, magic6; // from gimp.
+	  short magic1, magic2, magic3, magic4, magic5, magic6;/* from gimp. */
 	  magic1 = read_short( &data ); magic2 = read_short( &data );
 	  magic3 = read_short( &data ); magic4 = read_short( &data );
 	  magic5 = read_short( &data ); magic6 = read_short( &data );
