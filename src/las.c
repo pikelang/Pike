@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.111 1999/11/18 02:46:03 mast Exp $");
+RCSID("$Id: las.c,v 1.112 1999/11/18 16:53:59 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -526,6 +526,13 @@ node *debug_mknode(short token, node *a, node *b)
     }else{
       res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
     }
+    break;
+
+  case F_POP_VALUE:
+    copy_shared_string(res->type, void_type_string);
+    
+    if(a) res->tree_info |= a->tree_info;
+    if(b) res->tree_info |= b->tree_info;
     break;
 
   case F_MAGIC_SET_INDEX:
@@ -1395,20 +1402,25 @@ node **last_cmd(node **a)
 {
   node **n;
   if(!a || !*a) return (node **)NULL;
-  if((*a)->token == F_CAST) return last_cmd(&_CAR(*a));
+  if(((*a)->token == F_CAST) ||
+     ((*a)->token == F_POP_VALUE)) return last_cmd(&_CAR(*a));
   if(((*a)->token != F_ARG_LIST) &&
      ((*a)->token != F_COMMA_EXPR)) return a;
   if(CDR(*a))
   {
-    if(CDR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST &&
-       CAR(*a)->token != F_COMMA_EXPR)
+    if(CDR(*a)->token != F_CAST &&
+       CDR(*a)->token != F_POP_VALUE &&
+       CAR(*a)->token != F_ARG_LIST &&	/* FIXME: typo? */
+       CAR(*a)->token != F_COMMA_EXPR)	/* FIXME: typo? */
       return &_CDR(*a);
     if((n=last_cmd(&_CDR(*a))))
       return n;
   }
   if(CAR(*a))
   {
-    if(CAR(*a)->token != F_CAST && CAR(*a)->token != F_ARG_LIST &&
+    if(CAR(*a)->token != F_CAST &&
+       CAR(*a)->token != F_POP_VALUE &&
+       CAR(*a)->token != F_ARG_LIST &&
        CAR(*a)->token != F_COMMA_EXPR)
       return &_CAR(*a);
     if((n=last_cmd(&_CAR(*a))))
@@ -1514,6 +1526,12 @@ static void low_print_tree(node *foo,int needlval)
     low_print_tree(_CDR(foo),1);
     fprintf(stderr, "=");
     low_print_tree(_CAR(foo),0);
+    break;
+
+  case F_POP_VALUE:
+    fprintf(stderr, "{");
+    low_print_tree(_CAR(foo), 0);
+    fprintf(stderr, "}");
     break;
 
   case F_CAST:
@@ -1883,6 +1901,7 @@ static int cntargs(node *n)
   case F_APPLY:
     return n->type != void_type_string;
 
+  case F_POP_VALUE:
   case F_FOREACH:
   case F_INC_NEQ_LOOP:
   case F_DEC_NEQ_LOOP:
@@ -3235,7 +3254,8 @@ static int stupid_args(node *n, int expected,int vargs)
 static int is_null_branch(node *n)
 {
   if(!n) return 1;
-  if(n->token==F_CAST && n->type==void_type_string)
+  if((n->token==F_CAST && n->type==void_type_string) ||
+     n->token == F_POP_VALUE)
     return is_null_branch(CAR(n));
   if(n->token==F_ARG_LIST)
     return is_null_branch(CAR(n)) && is_null_branch(CDR(n));
@@ -3262,7 +3282,8 @@ static struct svalue *is_stupid_func(node *n,
       continue;
     }
 
-    if(n->token == F_CAST && n->type==void_type_string)
+    if((n->token == F_CAST && n->type==void_type_string) ||
+       n->token == F_POP_VALUE)
     {
       n=CAR(n);
       continue;
