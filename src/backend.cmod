@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.10 2001/03/12 23:46:22 hubbe Exp $");
+RCSID("$Id: backend.cmod,v 1.11 2001/03/13 04:07:11 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1868,6 +1868,7 @@ PIKECLASS Backend
       THIS->fds_size=0;
 
 #ifndef HAVE_POLL
+      THIS->set.max_fd=0;
       my_FD_ZERO(&THIS->set.read);
       my_FD_ZERO(&THIS->set.write);
 #ifdef WITH_OOB
@@ -2091,7 +2092,6 @@ void init_backend(void)
 {
   INIT;
   {
-    struct svalue s;
     struct object *o=clone_object(Backend_program,0);
     default_backend=OBJ2_BACKEND(o);
     add_object_constant("__backend",o,0);
