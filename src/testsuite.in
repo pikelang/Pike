@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.534 2002/09/03 22:15:17 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.535 2002/09/07 01:03:19 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9345,6 +9345,7 @@ void test_dir(string dir, int|void base_size)
 #if !constant(GTK.Window)
       case "GTKSupport.pmod":
       case "PV.pike":
+      case "pv.pike":
 #endif
       case "GZipFile.pike":
         continue; // These modules cannot be tested properly by this test
