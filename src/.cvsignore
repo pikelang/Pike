@@ -1,4 +1,6 @@
 Makefile
+autodoc.xml
+autodoc-stamp
 backend.c
 builtin.c
 case_info.h
@@ -37,6 +39,7 @@ machine.h.in
 make_variables
 mapping_stuff.c
 master.pike
+master-stamp
 module_magic.c
 num_files_to_install
 patch_cc1
