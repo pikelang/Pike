@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.11 1997/03/18 19:51:56 grubba Exp $ */
+/* $Id: image.c,v 1.12 1997/03/20 02:23:58 mirar Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.11 1997/03/18 19:51:56 grubba Exp $");
+RCSID("$Id: image.c,v 1.12 1997/03/20 02:23:58 mirar Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1698,7 +1698,6 @@ void image_to8bit(INT32 args)
   push_string(end_shared_string(res));
 }
 
-
 static void image_to8bit_fs(INT32 args)
 {
    struct colortable *ct;
@@ -1777,6 +1776,82 @@ static void image_tozbgr(INT32 args)
    push_string(end_shared_string(sres));
 }
 
+void image_to8bit_rgbcube(INT32 args)
+/*
+
+  ->to8bit_rgbcube(int red,int green,int blue,
+                [string map])
+  
+  gives r+red*g+red*green*b       
+ */
+{
+  struct colortable *ct;
+  struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
+  unsigned long i;
+  rgb_group *s;
+  unsigned char *d;
+  unsigned char *map=NULL;
+
+  int red,green,blue,redgreen,redgreenblue;
+  
+  if(!res) error("Out of memory\n");
+
+  if (!THIS->img) 
+     error("No image\n");
+
+  if (args<3) 
+     error("Too few arguments to image->to8bit_rgbcube()\n");
+  
+  if (sp[-args].type!=T_INT
+      || sp[1-args].type!=T_INT
+      || sp[2-args].type!=T_INT) 
+     error("Illegal argument(s) to image->to8bit_rgbcube()\n");
+
+  red=sp[-args].u.integer; 
+  green=sp[1-args].u.integer;
+  blue=sp[2-args].u.integer; 
+  redgreen=red*green;
+  redgreenblue=red*green*blue;
+
+  if (args==3)
+     if (sp[3-args].type!=T_STRING)
+	error("Illegal argument 4 to image->to8bit_rgbcube()"
+	      " (expected string or no argument)\n");
+     else if (sp[3-args].u.string->len<red*green*blue)
+	error("map string is not long enough to image->to8bit_rgbcube()\n");
+     else
+	map=sp[3-args].u.string->str;
+
+  i=THIS->xsize*THIS->ysize;
+  s=THIS->img;
+  d=res->str;
+
+  THREADS_ALLOW();
+  if (!map)
+     while (i--)
+     {
+	*(d++)=
+	   (unsigned char)((s->r*red+
+			    s->g*redgreen+
+			    s->b*redgreenblue)>>8);
+	s++;
+     }
+  else
+     while (i--)
+     {
+	*(d++)=
+	   map[(s->r*red+
+		s->g*redgreen+
+		s->b*redgreenblue)>>8];
+	s++;
+     }
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  push_string(end_shared_string(res));
+}
+
+
 
 /***************** global init etc *****************************/
 
@@ -1838,6 +1913,9 @@ void pike_module_init()
 		"function(array(array(int)):string)",0);
    add_function("tozbgr",image_tozbgr,
 		"function(array(array(int)):string)",0);
+   add_function("to8bit_rgbcube",image_to8bit_rgbcube,
+		"function(int,int,int,void|string:string)",0);
+
 
    add_function("copy",image_copy,
 		"function(void|int,void|int,void|int,void|int,"RGB_TYPE":object)",0);
