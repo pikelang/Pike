@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.513 2003/10/19 16:56:00 mast Exp $
+|| $Id: builtin_functions.c,v 1.514 2003/10/30 19:33:26 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.513 2003/10/19 16:56:00 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.514 2003/10/30 19:33:26 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3490,6 +3490,14 @@ PMOD_EXPORT void f_callablep(INT32 args)
       if( Pike_sp[-args].u.object->prog &&
 	  FIND_LFUN( Pike_sp[-args].u.object->prog, LFUN_CALL ) != -1 )
 	res = 1;
+      break;
+    case T_ARRAY:
+      /* FIXME: This is not completely finished. E.g. ({ 0 }) is
+	 callable, but isn't reported as such. */
+      if( Pike_sp[-args].u.array->type_field & (BIT_CALLABLE) ||
+	  !Pike_sp[-args].u.array->type_field)
+	res = 1;
+      break;
   }
   pop_n_elems(args);
   push_int(res);
