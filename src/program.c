@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.191 1999/12/28 00:18:06 mast Exp $");
+RCSID("$Id: program.c,v 1.192 1999/12/28 01:18:43 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -870,15 +870,45 @@ void dump_program_desc(struct program *p)
   int e,d,q;
 /*  fprintf(stderr,"Program '%s':\n",p->name->str); */
 
-/*
+
   fprintf(stderr,"All inherits:\n");
   for(e=0;e<p->num_inherits;e++)
   {
-    fprintf(stderr,"%3d:",e);
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
-    fprintf(stderr,"%s\n",p->inherits[e].prog->name->str);
+    fprintf(stderr,"%3d:\n",e);
+
+    if(p->inherits[e].name)
+    {
+      for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+      fprintf(stderr,"name  : %s\n",p->inherits[e].name->str);
+    }
+
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"inherit_level: %d\n",p->inherits[e].inherit_level);
+
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"identifier_level: %d\n",p->inherits[e].identifier_level);
+
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"parent_identifier: %d\n",p->inherits[e].parent_identifier);
+
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"parent_offset: %d\n",p->inherits[e].parent_offset);
+
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"storage_offset: %d\n",p->inherits[e].storage_offset);
+
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"parent: %p\n",p->inherits[e].parent);
+
+    if(p->inherits[e].parent &&
+      p->inherits[e].parent->prog &&
+      p->inherits[e].parent->prog->num_linenumbers>1)
+    {
+      for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+      fprintf(stderr,"parent: %s\n",p->inherits[e].parent->prog->linenumbers+1);
+    }
   }
-*/
 
   fprintf(stderr,"All identifiers:\n");
   for(e=0;e<(int)p->num_identifier_references;e++)
@@ -1213,6 +1243,7 @@ struct program *end_first_pass(int finish)
     free_mapping(resolve_cache);
     resolve_cache=0;
   }
+
   return prog;
 }
 
@@ -1542,36 +1573,39 @@ void low_inherit(struct program *p,
 	inherit.parent_identifier=parent_identifier;
       }
     }else{
-      if(parent && parent->next != parent && inherit.parent_offset)
+      if(!inherit.parent)
       {
-	struct object *par=parent;
-	int e,pid=parent_identifier;
-	for(e=1;e<inherit.parent_offset;e++)
+	if(parent && parent->next != parent && inherit.parent_offset)
 	{
-	  struct inherit *in;
-	  if(!par->prog)
+	  struct object *par=parent;
+	  int e,pid=parent_identifier;
+	  for(e=1;e<inherit.parent_offset;e++)
 	  {
-	    par=0;
-	    pid=0;
-	    break;
+	    struct inherit *in;
+	    if(!par->prog)
+	    {
+	      par=0;
+	      pid=0;
+	      break;
+	    }
+	    
+	    in=INHERIT_FROM_INT(par->prog, pid);
+	    if(in->parent_offset)
+	    {
+	      pid=par->parent_identifier;
+	      par=par->parent;
+	      e-=in->parent_offset-1;
+	    }else{
+	      pid=in->parent_identifier;
+	      par=in->parent;
+	    }
 	  }
-
-	  in=INHERIT_FROM_INT(par->prog, pid);
-	  if(in->parent_offset)
-	  {
-	    pid=par->parent_identifier;
-	    par=par->parent;
-	    e-=in->parent_offset-1;
-	  }else{
-	    pid=in->parent_identifier;
-	    par=in->parent;
-	  }
+	  
+	  inherit.parent=par;
+	  inherit.parent_offset=0;
+	}else{
+	  inherit.parent_offset+=parent_offset;
 	}
-
-	inherit.parent=par;
-	inherit.parent_offset=0;
-      }else{
-	inherit.parent_offset+=parent_offset;
       }
     }
     if(inherit.parent) add_ref(inherit.parent);
