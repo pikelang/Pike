@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.97 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: program.h,v 1.98 2000/08/03 17:55:50 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -255,7 +255,7 @@ struct pike_trampoline
 
 struct program
 {
-  INT32 refs;
+  ptrdiff_t refs;
 #ifdef PIKE_SECURITY
   struct object *prot;
 #endif

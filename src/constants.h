@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.11 1999/12/13 12:08:12 mast Exp $
+ * $Id: constants.h,v 1.12 2000/08/03 17:55:50 grubba Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -20,7 +20,7 @@ typedef node *(*optimize_fun)(node *n);
 
 struct callable
 {
-  INT32 refs;
+  ptrdiff_t refs;
 #ifdef PIKE_SECURITY
   struct object *prot;
 #endif

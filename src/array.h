@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.22 2000/07/28 17:16:54 hubbe Exp $
+ * $Id: array.h,v 1.23 2000/08/03 17:55:50 grubba Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -14,7 +14,7 @@
 
 struct array
 {
-  INT32 refs;		/* Reference count */
+  ptrdiff_t refs;		/* Reference count */
 #ifdef PIKE_SECURITY
   struct object *prot;
 #endif

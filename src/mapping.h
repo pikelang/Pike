@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.28 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: mapping.h,v 1.29 2000/08/03 17:55:50 grubba Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -24,7 +24,7 @@ struct keypair
 
 struct mapping_data
 {
-  INT32 refs;
+  ptrdiff_t refs;
   INT32 valrefs; /* lock values too */
   INT32 hardlinks;
   INT32 size, hashsize;
@@ -37,7 +37,7 @@ struct mapping_data
 
 struct mapping
 {
-  INT32 refs;
+  ptrdiff_t refs;
 #ifdef PIKE_SECURITY
   struct object *prot;
 #endif
