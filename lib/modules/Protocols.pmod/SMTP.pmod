@@ -233,7 +233,7 @@ class Connection {
   constant protocol = "ESMTP";
 
   // the fd of the socket
-  static object fd = Stdio.File();
+  static Stdio.File fd = Stdio.File();
   // the domains for each i relay
   static array(string) mydomains = ({ });
   // the input buffer for read_cb
@@ -283,15 +283,19 @@ class Connection {
      log("%d %s\r\n", code, replycodes[code]);
 #endif
    }
-  
+
+  //! This function is called whenever the SMTP server logs something.
+  //! By default the log function is @[werror].
+   function(string:mixed) logfunction = werror;
+
    static void log(string fmt, mixed ... args)
    {
      string errmsg = Calendar.now()->format_time() + 
-       " Pike SMTP server : ";
+       " Pike "+protocol+" server : ";
      if(messageid)
        errmsg += messageid + ": ";
      errmsg += fmt + "\n";
-     werror(errmsg, args);
+     logfunction(sprintf(errmsg, @args));
    }
   
    // make the received header
@@ -522,7 +526,7 @@ class Connection {
      return message;
    }
    
-   MIME.Message low_message(string content)
+   static MIME.Message low_message(string content)
    {
      datamode = 0;
      if(sizeof(content) > maxsize)
@@ -620,7 +624,7 @@ class Connection {
 #ifdef SMTP_DEBUG
             log("calling %O\n", _command);
 #endif
-	    function fun = this_object()[_command];
+	    function fun = this[_command];
 	    fun(command[1..] * " ");
          };
        }
@@ -662,7 +666,7 @@ class Connection {
          launch_functions(inputbuffer[..end]);
          if(lower_case(inputbuffer[..end]) == "quit")
          {
-           destruct(this_object());
+           destruct(this);
            return;
          }
          pattern = "\n";
