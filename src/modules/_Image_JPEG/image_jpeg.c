@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.37 2000/12/05 21:08:33 per Exp $
+ * $Id: image_jpeg.c,v 1.38 2001/01/08 10:26:04 mirar Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.37 2000/12/05 21:08:33 per Exp $");
+RCSID("$Id: image_jpeg.c,v 1.38 2001/01/08 10:26:04 mirar Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -92,6 +92,7 @@ static struct pike_string *param_scale_denom;
 static struct pike_string *param_scale_num;
 static struct pike_string *param_fancy_upsampling;
 static struct pike_string *param_quant_tables;
+static struct pike_string *param_grayscale;
 
 #ifdef HAVE_JPEGLIB_H
 
@@ -380,6 +381,8 @@ static void my_term_source(struct jpeg_decompress_struct *cinfo)
 **!		images smaller than 50kpixels.
 **!	    "progressive":0|1
 **!		Make a progressive JPEG. Default is off.
+**!	    "grayscale":0|1
+**!             Make a grayscale JPEG instead of color (YCbCr).
 **!
 **!	advanced options:
 **!	    "smooth":1..100
@@ -477,6 +480,13 @@ static void image_jpeg_encode(INT32 args)
       {
 	 if (q<0) q=0; else if (q>100) q=100;
 	 jpeg_set_quality(&cinfo, q, (boolean)(!!p));
+      }
+
+      if (parameter_int(sp+1-args,param_grayscale,&p))
+      {
+	 jpeg_set_colorspace(&cinfo,JCS_GRAYSCALE);
+	 cinfo.input_components=3;     /* 1 */
+	 cinfo.in_color_space=JCS_RGB; /* JCS_GRAYSCALE */
       }
 
       if (parameter_int(sp+1-args,param_optimize,&p))
@@ -975,6 +985,7 @@ void pike_module_exit(void)
    free_string(param_block_smoothing);
    free_string(param_scale_denom);
    free_string(param_scale_num);
+   free_string(param_grayscale);
 }
 
 void pike_module_init(void)
@@ -1028,4 +1039,5 @@ void pike_module_init(void)
    param_fancy_upsampling=make_shared_string("fancy_upsampling");
    param_quant_tables=make_shared_string("quant_tables");
    param_block_smoothing=make_shared_string("block_smoothing");
+   param_grayscale=make_shared_string("grayscale");
 }
