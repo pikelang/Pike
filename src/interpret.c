@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.133 1999/12/13 21:48:24 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.134 2000/01/07 04:33:55 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -925,8 +925,8 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       fp = new_frame;
       
       if(function->func.offset == -1)
-	PIKE_ERROR(function->name->str, "Calling undefined function.\n",
-		   sp, args);
+	generic_error(NULL, sp, args,
+		      "Calling undefined function.\n");
       
       tailrecurse=-1;
 
