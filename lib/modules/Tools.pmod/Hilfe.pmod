@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.92 2002/11/28 15:42:39 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.93 2002/11/29 02:03:45 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -873,9 +873,7 @@ private class Expression {
   }
 
   string _sprintf(int t) {
-    if(t=='O') return sprintf("Expression(%O)", tokens);
-    if(t=='t') return sprintf("object(Expression)");
-    error("Can't display Expression as %c\n", t);
+    return t=='O' && sprintf("%O(%O)", this_program, tokens);
   }
 }
 
@@ -1112,9 +1110,8 @@ private class HilfeHistory {
 
   // Give the object a better name.
   string _sprintf(int t) {
-    if(t=='O') return "HilfeHistory("+_sizeof()+"/"+get_maxsize()+")";
-    if(t=='t') return "HilfeHistory";
-    error("Can't print History object as '%c'.\n", t);
+    return t=='O' && sprintf("%O(%d/%d)", this_program,
+			     _sizeof(), get_maxsize() );
   }
 }
 

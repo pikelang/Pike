@@ -250,9 +250,9 @@ class Font( static string file,
   static int fake_bold;
   static int fake_italic;
 
-  string _sprintf()
+  string _sprintf(int t)
   {
-    return sprintf("Font(%O, %d)", file, size);
+    return t=='O' && sprintf("%O(%O, %d)", this_program, file, size);
   }
 
   static void open_font( )

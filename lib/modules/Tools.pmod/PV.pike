@@ -65,9 +65,9 @@ static {
    }
  }
 
- string _sprintf( )
+ string _sprintf(int t)
  {
-   return sprintf( "Tools.PV(%O)", old_image );
+   return t=='O' && sprintf( "%O(%O)", this_program, old_image );
  }
 
  void create( PVImage i )
