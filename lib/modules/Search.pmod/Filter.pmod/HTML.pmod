@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.23 2001/12/20 14:35:57 js Exp $
+// $Id: HTML.pmod,v 1.24 2002/09/30 12:52:59 jonasw Exp $
 
 // Filter for text/html
 
@@ -247,7 +247,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   dadd = databuf->add;
   parser->_set_data_callback(lambda(object p, string data) {
-			       dadd(data);
+			       dadd(" " + data + " ");
 			     });
 
   res->fields->title="";
