@@ -505,15 +505,14 @@ void init_accessdb_program()
 {
    start_new_program();
    add_storage(sizeof(struct file_head));
-   add_function("create", f_create, "function(string:void)",
-		OPT_EXTERNAL_DEPEND);
+   add_function("create", f_create, "function(string:void)", ID_PUBLIC);
    add_function("add", f_add, "function(string,int ...:mapping(string:int))",
-		OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+		ID_PUBLIC);
    add_function("set", f_set, "function(string,int ...:mapping(string:int))",
-		OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+		ID_PUBLIC);
    add_function("new", f_new, "function(string,int ...:mapping(string:int))",
-		OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-   add_function("debug", f_debug, "function(void:mapping)",OPT_EXTERNAL_DEPEND);
+		ID_PUBLIC);
+   add_function("debug", f_debug, "function(void:mapping)", ID_PUBLIC);
    set_init_callback(init_file_head);
    set_exit_callback(free_file_head);
    end_class("accessdb",0);
