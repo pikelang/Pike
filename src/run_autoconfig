@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.34 2002/02/19 15:28:32 marcus Exp $
+# $Id: run_autoconfig,v 1.35 2003/12/06 19:21:34 nilsson Exp $
 #
 # Bootstrap script
 
@@ -31,7 +31,7 @@ else
   fi
 fi
 
-autoconf_version="`autoconf --version|head -1|awk '{ print $NF }'`"
+autoconf_version="`autoconf --version|head -n 1|awk '{ print $NF }'`"
 
 if [ "`echo $autoconf_version|awk -F. '{ print $1 }'`" -ne "2" -o \
      "`echo $autoconf_version|awk -F. '{ print $2 }'`" -le "10" -o \
