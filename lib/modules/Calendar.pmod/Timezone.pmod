@@ -87,7 +87,8 @@ static function(:.Rule.Timezone) _locale()
    }
 
 // Linux RedHat
-   if ( (s=Stdio.read_bytes("/etc/sysconfig/clock")) )
+   if (Stdio.is_dir("/etc/sysconfig/.") &&
+       (s = Stdio.read_bytes("/etc/sysconfig/clock")) )
    {
       sscanf(s,"%*sZONE=\"%s\"",s);
       tz=`[](s);
@@ -871,7 +872,7 @@ class Runtime_timezone_compiler
 	       FIXID(a[1]),-a[0],a[2]);
 	 else // simple timezone
 	    return sprintf(
-	       "Rules.Timezone(%d,%O)",
+	       "Rule.Timezone(%d,%O)",
 	       -(roff+a[0]),a[2]);
       }
 
@@ -959,9 +960,9 @@ class Runtime_timezone_compiler
 	    else a[6]=rname[a[4]]="tz"+n++;
       
 	 res+=({ "inherit TZHistory;\n"
-		 "Rules.Timezone ",
+		 "Rule.Timezone ",
 		 sort(values(rname))*",",";\n"
-		 "Rules.Timezone whatrule(int ux)\n"
+		 "Rule.Timezone whatrule(int ux)\n"
 		 "{\n" });
 
 	 foreach (rules,array a)
@@ -1061,7 +1062,7 @@ class Runtime_timezone_compiler
     (["TZrules":Dummymodule(find_rule),
       "TZRules":TZRules,
       "TZHistory":TZHistory,
-      "Rules":.Rule,
+      "Rule":.Rule,
       "ZEROSHIFT":({0,0,0,""})
     ]);
 
