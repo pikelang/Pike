@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.17 1999/10/08 13:01:43 grubba Exp $
+/* $Id: sslfile.pike,v 1.18 1999/10/08 13:08:15 grubba Exp $
  *
  */
 
@@ -83,7 +83,7 @@ void close()
   close_callback = 0;
 }
 
-int write(string|array(atring) s)
+int write(string|array(string) s)
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->write\n");
