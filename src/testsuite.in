@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.499 2002/04/26 22:48:55 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.500 2002/04/28 02:27:31 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1057,6 +1057,35 @@ Locale.Charset.encoder("]]$1[[")->feed(
 ]],3);
 ]])
 dnl test_backtrace_line_charset(utf-7)
+
+test_program([[
+  class X
+  {
+    static void create (int i)
+    {
+      if (i)
+	error ("foo\n"); // Line 7
+    }
+  }
+
+  int f()
+  {
+    X (0);
+    X (1); // Line 14
+  }
+
+  int a()
+  {
+    array bt = catch (f())[1];
+    int ok = 0;
+    foreach (reverse (bt), object ent) 
+      switch (functionp (ent[2]) && function_name (ent[2])) {
+	case "create": if (ent[1] == 7) ok++; break;
+	case "f": if (ent[1] == 14) ok++; break;
+      }
+    return ok == 2;
+  }
+]])
 
 dnl ----------------------------------------------------------------
 dnl scopes and stuff
