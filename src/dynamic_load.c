@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.67 2002/10/30 14:45:50 grubba Exp $
+|| $Id: dynamic_load.c,v 1.68 2003/04/02 20:55:03 mast Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.67 2002/10/30 14:45:50 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.68 2003/04/02 20:55:03 mast Exp $");
 
 #else /* TESTING */
 
@@ -545,7 +545,10 @@ void free_dynamic_load(void)
 #ifndef DEBUG_MALLOC
     dlclose(tmp->module);
 #endif
-    if (tmp->module_prog) free_program(tmp->module_prog);
+#ifdef PIKE_DEBUG
+    if (tmp->module_prog)
+      Pike_fatal ("There's still a program for a dynamic module.\n");
+#endif
     free((char *)tmp);
   }
 #endif
