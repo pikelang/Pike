@@ -1211,19 +1211,19 @@ static void html_clear_quote_tags (INT32 args)
 static void html_tags(INT32 args)
 {
    pop_n_elems(args);
-   ref_push_mapping(copy_mapping(THIS->maptag)); /* deferred copy */
+   push_mapping(copy_mapping(THIS->maptag)); /* deferred copy */
 }
 
 static void html_containers(INT32 args)
 {
    pop_n_elems(args);
-   ref_push_mapping(copy_mapping(THIS->mapcont)); /* deferred copy */
+   push_mapping(copy_mapping(THIS->mapcont)); /* deferred copy */
 }
 
 static void html_entities(INT32 args)
 {
    pop_n_elems(args);
-   ref_push_mapping(copy_mapping(THIS->mapentity)); /* deferred copy */
+   push_mapping(copy_mapping(THIS->mapentity)); /* deferred copy */
 }
 
 static void html_quote_tags(INT32 args)
