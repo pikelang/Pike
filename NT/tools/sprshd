@@ -64,7 +64,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 
 int main(int argc, string *argv)
 {
-  if(c<2)
+  if(argc<2)
   {
     werror("Usage: sprshd <port> <host to accept connections from>\n");
     exit(1);
