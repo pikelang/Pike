@@ -18,11 +18,13 @@ easy to get used to.</p>
 
 <subsection title="int">
 
-<p><tt>Int</tt> is short for integer, or integer number. They are normally
-32 bit integers, which means that they are in the range -2147483648 to
-2147483647. Note that on some machines an <tt>int</tt> might be larger
-than 32 bits. Since they are integers, no decimals are allowed. An integer
-constant can be written in several ways:</p>
+<p><tt>Int</tt> is short for integer, or integer number. They are
+normally 32 bit integers, which means that they are in the range
+-2147483648 to 2147483647. (Note that on some machines an <tt>int</tt>
+might be larger than 32 bits.) If Pike is compiled with bignum support
+the 32 bit limitation does not apply and thus the integers can be of
+arbitrary size.  Since they are integers, no decimals are allowed. An
+integer constant can be written in several ways:</p>
 
 <matrix>
 <r><c><b>Pattern</b></c><c><b>Example</b></c><c><b>Description</b></c></r>
@@ -47,12 +49,13 @@ characters, listed under strings, must be used instead. Specifically this
 applies to the single quote character itself, which has to be written as
 <expr>'\''</expr>.</p>
 
-<p>Integers in Pike never overflows or underflows when they reach the
-systems maxint/minint. Instead they are silently converted into bignums.
+<p>When pike is compiled with bignum support integers in never
+overflow or underflow when they reach the system-defined
+maxint/minint. Instead they are silently converted into bignums.
 Integers are usually implemented as 2-complement 32-bits integers, and
-thus are limited within -2147483648 and 2147483647. This may however vary
-between platforms, especially 64-bit platforms. <fixme>Conversion back
-to normal integer?</fixme></p>
+thus are limited within -2147483648 and 2147483647. This may however
+vary between platforms, especially 64-bit platforms. <fixme>Conversion
+back to normal integer?</fixme></p>
 
 <p>All the arithmetic, bitwise and comparison operators can be used on
 integers. Also note these functions:</p>
