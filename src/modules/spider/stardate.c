@@ -1,5 +1,5 @@
 /*
- * $Id: stardate.c,v 1.11 2000/12/01 08:10:37 hubbe Exp $
+ * $Id: stardate.c,v 1.12 2001/02/14 15:06:31 grubba Exp $
  */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include "builtin_functions.h"
 #include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.11 2000/12/01 08:10:37 hubbe Exp $");
+RCSID("$Id: stardate.c,v 1.12 2001/02/14 15:06:31 grubba Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
@@ -107,6 +107,11 @@ double sidereal (double gmt, double jd, int gyear)
   return lst;
 }
 
+/*! @module spider
+ */
+
+/*! @decl string stardate(int time)
+ */
 void f_stardate (INT32 args)
 {
   int jd, precis=0;
@@ -136,3 +141,6 @@ void f_stardate (INT32 args)
   pop_n_elems(args);
   push_string(make_shared_string(buf));
 }
+
+/*! @endmodule
+ */

@@ -26,7 +26,7 @@
 /* This must be included last! */
 #include "module_magic.h"
 
-RCSID("$Id: discdate.c,v 1.8 2000/12/01 08:10:37 hubbe Exp $");
+RCSID("$Id: discdate.c,v 1.9 2001/02/14 15:05:25 grubba Exp $");
 
 struct disc_time
 {
@@ -40,6 +40,11 @@ static char *ending(int);
 static void print(struct disc_time);
 static struct disc_time convert(int,int);
 
+/*! @module spider
+ */
+
+/*! @decl string discdate(int time)
+ */
 void f_discdate(INT32 argc) 
 {
   time_t t;
@@ -60,6 +65,9 @@ void f_discdate(INT32 argc)
   pop_n_elems(argc);
   print(hastur);
 }
+
+/*! @endmodule
+ */
 
 static char *ending(int num)
 {  
