@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.566 2004/08/13 12:13:01 grubba Exp $
+|| $Id: program.c,v 1.567 2004/09/18 20:16:15 per Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.566 2004/08/13 12:13:01 grubba Exp $");
+RCSID("$Id: program.c,v 1.567 2004/09/18 20:16:15 per Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -101,10 +101,10 @@ BLOCK_ALLOC_FILL_PAGES(program, 4)
 #define DECLARE
 #include "compilation.h"
 
-struct pike_string *this_program_string = NULL, *this_string = NULL;
-static struct pike_string *UNDEFINED_string=0;
+struct pike_string *this_program_string, *this_string;
+static struct pike_string *UNDEFINED_string;
 
-char *lfun_names[] = {
+const char *const lfun_names[]  = {
   "__INIT",
   "create",
   "destroy",
