@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.6 2001/03/23 13:09:19 norlin Exp $
+ * $Id: autodoc.pike,v 1.7 2001/04/24 21:05:37 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -23,20 +23,59 @@ int main(int argc, array(string) argv)
   	// Recurse.
       } else if (st->isreg) {
   	string raw = Stdio.read_bytes(path);
-
+	
   	Tools.AutoDoc.PikeObjects.Module info;
 	if (has_value(raw, "/*!") || has_value(raw, "//!")) {
+	  array(string) segments = path/"/";
+
+	  int module_path_fixed;
+	  string name;
+
   	  if (has_suffix(path, ".c") || has_suffix(path, ".h")) {
   	    info = Tools.AutoDoc.CExtractor.extract(raw, path);
+	    module_path_fixed = 1;
   	  } else if (has_suffix(path, ".cmod")) {
-  	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path);
-  	  } else if (has_suffix(path, ".pike") || has_suffix(path, ".pmod") ||
-  		     has_suffix(path, ".pmod.in")) {
-  	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path);
+	    name = segments[-1][..sizeof(segments[-1])-6];
+  	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
+  	  } else if (has_suffix(path, ".pmod") ||
+		     has_suffix(path, ".pmod.in")) {
+	    if (has_suffix(segments[-1], ".pmod")) {
+	      name = segments[-1][..sizeof(segments[-1])-6];
+	    } else {
+	      name = segments[-1][..sizeof(segments[-1])-9];
+	    }
+  	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
+  	  } else if (has_suffix(path, ".pike")) {
+	    name = segments[-1][..sizeof(segments[-1])-6];
+  	    info = Tools.AutoDoc.PikeExtractor.extractClass(raw, path, name);
   	  } else {
             werror("Unknown filetype %O\n", path);
   	    exit(1);
   	  }
+
+	  if (!module_path_fixed && info) {
+	    for(int i = sizeof(segments)-2; i-- > 0;) {
+	      if (name = Stdio.read_bytes(segments[..i]*"/" + "/.autodoc")) {
+		segments = name/"." +
+		  map(segments[i+1..sizeof(segments)-2],
+		      lambda(string p) {
+			if (has_suffix(p, ".pmod")) {
+			  return p[..sizeof(p)-6];
+			}
+			// Usually not reached.
+			return p;
+		      });
+		foreach(reverse(segments) + ({}), string seg) {
+		  Tools.AutoDoc.PikeObjects.Module m =
+		    Tools.AutoDoc.PikeObjects.Module();
+		  m->children = ({ info });
+		  m->name = seg;
+		  info = m;
+		}
+		break;
+	      }
+	    }
+	  }
 	}
 	write(info?sprintf("%s\n",info->xml()):
 	      "<module name=''><modifiers/></module>\n");
