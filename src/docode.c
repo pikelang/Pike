@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.106 2001/02/23 14:29:51 grubba Exp $");
+RCSID("$Id: docode.c,v 1.107 2001/02/24 02:38:31 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -883,14 +883,62 @@ static int do_docode2(node *n, INT16 flags)
   {
     node *arr;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
+    arr=CAR(n);
+
+    if(CDR(arr) && CDR(arr)->token == ':')
+    {
+      BLOCK_BEGIN;
+      /* New-style */
+      tmp1=do_docode(CAR(arr), DO_NOT_COPY);
+      emit0(F_MAKE_ITERATOR);
+
+      if(CADR(arr))
+      {
+	do_docode(CADR(arr), DO_LVALUE);
+      }else{
+	emit0(F_CONST0);
+	emit0(F_CONST0);
+	current_stack_depth+=2;
+      }
+
+      if(CDDR(arr))
+      {
+	do_docode(CDDR(arr), DO_LVALUE);
+      }else{
+	emit0(F_CONST0);
+	emit0(F_CONST0);
+	current_stack_depth+=2;
+      }
+
+      PUSH_CLEANUP_FRAME(do_pop, 5);
+
+      PUSH_STATEMENT_LABEL;
+      current_switch_jumptable=0;
+      current_label->break_label=alloc_label();
+      current_label->continue_label=alloc_label();
+      
+      tmp3=do_branch(-1);
+      tmp1=ins_label(-1);
+      DO_CODE_BLOCK(CDR(n));
+      ins_label(current_label->continue_label);
+      low_insert_label( DO_NOT_WARN((INT32)tmp3));
+      do_jump(F_NEW_FOREACH, DO_NOT_WARN((INT32)tmp1));
+      ins_label(current_label->break_label);
+      
+      current_switch_jumptable = prev_switch_jumptable;
+      POP_STATEMENT_LABEL;
+      POP_AND_DO_CLEANUP;
+      BLOCK_END;
+      return 0;
+    }
+    
+
     BLOCK_BEGIN;
 
-    arr=CAR(n);
-    
-    if(arr->token==F_RANGE)
+    if(CAR(arr) && CAR(arr)->token==F_RANGE)
     {
-      node **a1=my_get_arg(&_CDR(n),0);
-      node **a2=my_get_arg(&_CDR(n),1);
+      node **a1=my_get_arg(&_CAR(arr),0);
+      node **a2=my_get_arg(&_CAR(arr),1);
       if(a1 && a2 && a2[0]->token==F_CONSTANT &&
 	 a2[0]->u.sval.type==T_INT &&
 	 a2[0]->u.sval.type==0x7fffffff &&

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.237 2001/02/23 14:46:21 grubba Exp $");
+RCSID("$Id: las.c,v 1.238 2001/02/24 02:38:32 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3447,38 +3447,43 @@ void fix_type_field(node *n)
       if (!CAAR(n) || pike_types_le(CAAR(n)->type, void_type_string)) {
 	yyerror("foreach(): Looping over a void expression.");
       } else {
-	struct pike_type *array_zero;
-	MAKE_CONSTANT_SHARED_STRING(array_zero, tArr(tZero));
-
-	if (!pike_types_le(array_zero, CAAR(n)->type)) {
-	  yyerror("Bad argument 1 to foreach().");
-	} else {
-	  if ((lex.pragmas & ID_STRICT_TYPES) &&
-	      !pike_types_le(CAAR(n)->type, array_type_string)) {
-	    struct pike_string *t = describe_type(CAAR(n)->type);
-	    yywarning("Argument 1 to foreach() is not always an array.");
-	    yywarning("Got: %s", t->str);
-	    free_string(t);
-	  }
-
-	  if (!CDAR(n) || pike_types_le(CDAR(n)->type, void_type_string)) {
-	    yyerror("Bad argument 2 to foreach().");
+	if(CDAR(n)->token && CDAR(n)->token == ':')
+	{
+	  /* type checking for new style iterators goes here */
+	}else{
+	  struct pike_type *array_zero;
+	  MAKE_CONSTANT_SHARED_STRING(array_zero, tArr(tZero));
+	  
+	  if (!pike_types_le(array_zero, CAAR(n)->type)) {
+	    yyerror("Bad argument 1 to foreach().");
 	  } else {
-	    struct pike_type *value_type = array_value_type(CAAR(n)->type);
-
-	    if (!pike_types_le(value_type, CDAR(n)->type)) {
-	      if (!match_types(value_type, CDAR(n)->type)) {
-		yytype_error("Variable type mismatch in foreach().",
-			     value_type, CDAR(n)->type, 0);
-	      } else if (lex.pragmas & ID_STRICT_TYPES) {
-		yytype_error("Variable type mismatch in foreach().",
-			     value_type, CDAR(n)->type, YYTE_IS_WARNING);
-	      }
+	    if ((lex.pragmas & ID_STRICT_TYPES) &&
+		!pike_types_le(CAAR(n)->type, array_type_string)) {
+	      struct pike_string *t = describe_type(CAAR(n)->type);
+	      yywarning("Argument 1 to foreach() is not always an array.");
+	      yywarning("Got: %s", t->str);
+	      free_string(t);
 	    }
-	    free_type(value_type);
+	    
+	    if (!CDAR(n) || pike_types_le(CDAR(n)->type, void_type_string)) {
+	      yyerror("Bad argument 2 to foreach().");
+	    } else {
+	      struct pike_type *value_type = array_value_type(CAAR(n)->type);
+	      
+	      if (!pike_types_le(value_type, CDAR(n)->type)) {
+		if (!match_types(value_type, CDAR(n)->type)) {
+		  yytype_error("Variable type mismatch in foreach().",
+			       value_type, CDAR(n)->type, 0);
+		} else if (lex.pragmas & ID_STRICT_TYPES) {
+		  yytype_error("Variable type mismatch in foreach().",
+			       value_type, CDAR(n)->type, YYTE_IS_WARNING);
+		}
+	      }
+	      free_type(value_type);
+	    }
 	  }
+	  free_type(array_zero);
 	}
-	free_type(array_zero);
       }
     }
     copy_type(n->type, void_type_string);

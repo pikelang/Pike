@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.249 2001/02/23 22:54:32 grubba Exp $
+# $Id: Makefile.in,v 1.250 2001/02/24 02:38:31 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -146,7 +146,7 @@ OBJ= \
  version.o \
  queue.o \
  builtin.o \
- mapping_stuff.o \
+ iterators.o \
  svalue.o @EXTRA_OBJS@
 
 MODULE_REQUIREMENTS= \
@@ -697,12 +697,12 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 #
 $(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 
-$(SRCDIR)/mapping_stuff.c: $(SRCDIR)/mapping_stuff.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
+$(SRCDIR)/iterators.c: $(SRCDIR)/iterators.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c
 
-mapping_stuff.o: $(SRCDIR)/mapping_stuff.c
+iterators.o: $(SRCDIR)/iterators.c
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c

@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.47 2001/02/20 13:02:11 grubba Exp $
+ * $Id: interpret_functions.h,v 1.48 2001/02/24 02:38:31 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1010,14 +1010,47 @@ BREAK;
 	if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
 	{
 	  fast_check_threads_etc(10);
+#if 0
 	  index_no_free(Pike_sp,Pike_sp-4,Pike_sp-1);
 	  Pike_sp++;
 	  assign_lvalue(Pike_sp-4, Pike_sp-1);
 	  free_svalue(Pike_sp-1);
 	  Pike_sp--;
+#else
+	  if(Pike_sp[-1].u.integer < 0)
+	    Pike_error("Foreach loop variable is negative!\n");
+	  assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
+#endif
 	  pc+=GET_JUMP();
 	  Pike_sp[-1].u.integer++;
 	}else{
+#if 0
+	  pop_n_elems(4);
+#endif
+	  SKIPJUMP();
+	}
+	break;
+      }
+
+OPCODE0(F_MAKE_ITERATOR,"Iterator")
+{
+  extern void f_Iterator(INT32);
+  f_Iterator(1);
+}
+BREAK;
+
+
+      CASE(F_NEW_FOREACH) /* iterator, lvalue, lvalue */
+      {
+        extern int foreach_iterate(struct object *o);
+
+	if(Pike_sp[-5].type != PIKE_T_OBJECT)
+	  PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
+        if(foreach_iterate(Pike_sp[-5].u.object))
+        {
+	  fast_check_threads_etc(10);
+	  pc+=GET_JUMP();
+        }else{
 	  SKIPJUMP();
 	}
 	break;

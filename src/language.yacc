@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.227 2001/02/23 14:31:07 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.228 2001/02/24 02:38:32 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -326,6 +326,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> local_function
 %type <n> local_function2
 %type <n> magic_identifier
+%type <n> foreach_lvalues
+%type <n> foreach_optional_lvalue
 %%
 
 all: program { YYACCEPT; }
@@ -2309,6 +2311,16 @@ safe_expr0: expr0
   | error { $$=0; }
   ;
 
+
+foreach_optional_lvalue: /* empty */ { $$=0; }
+   | safe_lvalue
+   ;
+
+foreach_lvalues:  ',' safe_lvalue { $$=$2; }
+  | ';' foreach_optional_lvalue ';' foreach_optional_lvalue
+  { $$=mknode(':',$2,$4); }
+  ;
+
 foreach: TOK_FOREACH
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
@@ -2318,15 +2330,17 @@ foreach: TOK_FOREACH
     $<number>$=Pike_compiler->compiler_frame->last_block_level;
     Pike_compiler->compiler_frame->last_block_level=$<number>2;
   }
-  '(' expr0 ',' safe_lvalue end_cond statement
+  '(' expr0 foreach_lvalues end_cond statement
   {
-    if ($7) {
-      $$=mknode(F_FOREACH, mknode(F_VAL_LVAL,$5,$7),$9);
+    if ($6) {
+      $$=mknode(F_FOREACH,
+		mknode(F_VAL_LVAL,$5,$6),
+		$8);
       $$->line_number=$1;
     } else {
       /* Error in lvalue */
       free_node($5);
-      $$=$9;
+      $$=$8;
     }
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>3;
