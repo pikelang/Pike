@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.140 1999/05/24 22:09:00 neotron Exp $ */
+/* $Id: image.c,v 1.141 1999/05/25 10:50:27 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.140 1999/05/24 22:09:00 neotron Exp $
+**!	$Id: image.c,v 1.141 1999/05/25 10:50:27 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.140 1999/05/24 22:09:00 neotron Exp $");
+RCSID("$Id: image.c,v 1.141 1999/05/25 10:50:27 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -209,7 +209,7 @@ static void exit_image_struct(struct object *obj)
     0:(setpixel((int)x,(int)y),0))
 
 static INLINE int getrgb(struct image *img,
-			 INT32 args_start,INT32 args,char *name)
+			 INT32 args_start,INT32 args,INT32 max,char *name)
 {
    INT32 i;
    if (args-args_start<1) return 0;
@@ -217,7 +217,7 @@ static INLINE int getrgb(struct image *img,
    if (image_color_svalue(sp-args+args_start,&(img->rgb)))
       return 1;
 
-   if (args-args_start<3) return 0;
+   if (max<3 || args-args_start<3) return 0;
 
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
@@ -225,7 +225,8 @@ static INLINE int getrgb(struct image *img,
    img->rgb.r=(unsigned char)sp[-args+args_start].u.integer;
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
-   if (args-args_start>=4) 
+
+   if (max > 3 && args-args_start>=4) 
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
@@ -537,7 +538,7 @@ void image_create(INT32 args)
        sp[1-args].type!=T_INT)
       error("Image.Image->create(): Illegal arguments\n");
 
-   getrgb(THIS,2,args,"Image.Image->create()"); 
+   getrgb(THIS,2,args,args,"Image.Image->create()"); 
 
    if (THIS->img) free(THIS->img);
 	
@@ -615,7 +616,7 @@ void image_clone(INT32 args)
       img->ysize=sp[1-args].u.integer;
    }
 
-   getrgb(img,2,args,"Image.Image->clone()"); 
+   getrgb(img,2,args,args,"Image.Image->clone()"); 
 
    if (img->xsize<0) img->xsize=1;
    if (img->ysize<0) img->ysize=1;
@@ -676,7 +677,7 @@ void image_clear(INT32 args)
    img=(struct image*)(o->storage);
    *img=*THIS;
 
-   getrgb(img,0,args,"Image.Image->clear()"); 
+   getrgb(img,0,args,args,"Image.Image->clear()"); 
 
    img->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    if (!img->img)
@@ -752,7 +753,7 @@ void image_copy(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,4,args,"Image.Image->copy()"); 
+   getrgb(THIS,4,args,args,"Image.Image->copy()"); 
 
    o=clone_object(image_program,0);
    img=(struct image*)(o->storage);
@@ -796,10 +797,10 @@ static void image_change_color(INT32 args)
    if (!THIS->img) error("no image\n");
 
    to=THIS->rgb;   
-   if (!(arg=getrgb(THIS,0,MINIMUM(args,3),"Image.Image->change_color()")))
+   if (!(arg=getrgb(THIS,0,args,3,"Image.Image->change_color()")))
       error("too few arguments to Image.Image->change_color()\n");
    from=THIS->rgb;
-   if (getrgb(THIS,arg,args,"Image.Image->change_color()"))
+   if (getrgb(THIS,arg,args,args,"Image.Image->change_color()"))
       to=THIS->rgb;
    
    o=clone_object(image_program,0);
@@ -903,9 +904,9 @@ void image_autocrop(INT32 args)
       right=!(sp[2-args].type==T_INT && sp[2-args].u.integer==0);
       top=!(sp[3-args].type==T_INT && sp[3-args].u.integer==0);
       bottom=!(sp[4-args].type==T_INT && sp[4-args].u.integer==0);
-      getrgb(THIS,5,args,"Image.Image->autocrop()"); 
+      getrgb(THIS,5,args,args,"Image.Image->autocrop()"); 
    }
-   else getrgb(THIS,1,args,"Image.Image->autocrop()"); 
+   else getrgb(THIS,1,args,args,"Image.Image->autocrop()"); 
 
    if (!THIS->img)
    {
@@ -961,7 +962,7 @@ void image_setcolor(INT32 args)
 {
    if (args<3)
       error("illegal arguments to Image.Image->setcolor()\n");
-   getrgb(THIS,0,args,"Image.Image->setcolor()");
+   getrgb(THIS,0,args,args,"Image.Image->setcolor()");
    pop_n_elems(args);
    ref_push_object(THISOBJ);
 }
@@ -998,7 +999,7 @@ void image_setpixel(INT32 args)
        sp[-args].type!=T_INT||
        sp[1-args].type!=T_INT)
       error("Illegal arguments to Image.Image->setpixel()\n");
-   getrgb(THIS,2,args,"Image.Image->setpixel()");   
+   getrgb(THIS,2,args,args,"Image.Image->setpixel()");   
    if (!THIS->img) return;
    x=sp[-args].u.integer;
    y=sp[1-args].u.integer;
@@ -1080,7 +1081,7 @@ void image_line(INT32 args)
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
       error("Illegal arguments to Image.Image->line()\n");
-   getrgb(THIS,4,args,"Image.Image->line()");
+   getrgb(THIS,4,args,args,"Image.Image->line()");
    if (!THIS->img) return;
 
    img_line(sp[-args].u.integer,
@@ -1127,7 +1128,7 @@ void image_box(INT32 args)
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
       error("Illegal arguments to Image.Image->box()\n");
-   getrgb(THIS,4,args,"Image.Image->box()");
+   getrgb(THIS,4,args,args,"Image.Image->box()");
    if (!THIS->img) return;
 
    img_box(sp[-args].u.integer,
@@ -1178,7 +1179,7 @@ void image_circle(INT32 args)
        sp[2-args].type!=T_INT||
        sp[3-args].type!=T_INT)
       error("illegal arguments to Image.Image->circle()\n");
-   getrgb(THIS,4,args,"Image.Image->circle()");
+   getrgb(THIS,4,args,args,"Image.Image->circle()");
    if (!THIS->img) return;
 
    x=sp[-args].u.integer;
@@ -1990,7 +1991,7 @@ void image_threshold(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,0,args,"Image.Image->threshold()");
+   getrgb(THIS,0,args,args,"Image.Image->threshold()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2281,7 +2282,7 @@ void image_distancesq(INT32 args)
 
    if (!THIS->img) error("no image\n");
 
-   getrgb(THIS,0,args,"Image.Image->distancesq()");
+   getrgb(THIS,0,args,args,"Image.Image->distancesq()");
 
    o=clone_object(image_program,0);
    img=(struct image*)o->storage;
@@ -2876,7 +2877,7 @@ static void _image_outline(INT32 args,int mask)
 	 bkgl.g=s->g;
 	 bkgl.b=s->b;
       }
-      getrgb(img,ai,args,"Image.Image->outline");
+      getrgb(img,ai,args,args,"Image.Image->outline");
    }
    else
    {

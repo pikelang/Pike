@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.34 1999/05/24 15:38:26 mirar Exp $ */
+/* $Id: blit.c,v 1.35 1999/05/25 10:50:26 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.34 1999/05/24 15:38:26 mirar Exp $
+**!	$Id: blit.c,v 1.35 1999/05/25 10:50:26 mirar Exp $
 **! class Image
 */
 
@@ -81,7 +81,7 @@ static void chrono(char *x)
     0:(setpixel(x,y),0))
 
 static INLINE int getrgb(struct image *img,
-			 INT32 args_start,INT32 args,char *name)
+			 INT32 args_start,INT32 args,INT32 max,char *name)
 {
    INT32 i;
    if (args-args_start<1) return 0;
@@ -89,7 +89,7 @@ static INLINE int getrgb(struct image *img,
    if (image_color_svalue(sp-args+args_start,&(img->rgb)))
       return 1;
 
-   if (args-args_start<3) return 0;
+   if (max<3 || args-args_start<3) return 0;
 
    for (i=0; i<3; i++)
       if (sp[-args+i+args_start].type!=T_INT)
@@ -98,7 +98,7 @@ static INLINE int getrgb(struct image *img,
    img->rgb.g=(unsigned char)sp[1-args+args_start].u.integer;
    img->rgb.b=(unsigned char)sp[2-args+args_start].u.integer;
 
-   if (args-args_start>=4) 
+   if (max > 3 && args-args_start>=4) 
       if (sp[3-args+args_start].type!=T_INT)
          error("Illegal alpha argument to %s\n",name);
       else
@@ -563,7 +563,8 @@ void image_paste_alpha_color(INT32 args)
    if (!mask->img) return;
 
    if (args==6 || args==4 || args==2 || args==3) /* color at arg 2.. */
-      arg=1+getrgb(THIS,1,MINIMUM(args,4),"image->paste_alpha_color()\n");
+      arg=1+getrgb(THIS,1,args,3,"image->paste_alpha_color()\n");
+   fprintf(stderr,"%02x%02x%02x\n",THIS->rgb.r,THIS->rgb.g,THIS->rgb.b);
    if (args>arg+1) 
    {
       if (sp[arg-args].type!=T_INT
