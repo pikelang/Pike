@@ -2,96 +2,150 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.30 2003/10/24 17:54:58 mast Exp $
+|| $Id: file_functions.h,v 1.31 2003/10/27 23:25:14 mast Exp $
 */
 
-FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
-  FILE_FUNC("close",file_close,"function(string|void:int)")
-  FILE_FUNC("read",file_read,"function(int|void,int|void:string)")
+#define CB_FUNC tFunc(tNone,tOr(tVoid,tMixed))
+
+/* function(string,string,void|int:int) */
+FILE_FUNC("open",file_open, tFunc(tStr tStr tOr(tVoid,tInt),tInt));
+/* function(string|void:int) */
+FILE_FUNC("close",file_close, tFunc(tOr(tStr,tVoid),tInt));
+/* function(int|void,int|void:string) */
+FILE_FUNC("read",file_read, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr));
 #ifndef __NT__
-  FILE_FUNC("peek",file_peek,"function(float|int|void:int)")
+/* function(float|int|void:int) */
+FILE_FUNC("peek",file_peek, tFunc(tOr3(tFlt,tInt,tVoid),tInt));
 #endif
-  FILE_FUNC("write",file_write,"function(string|array(string),void|mixed...:int)")
-  FILE_FUNC("read_oob",file_read_oob,"function(int|void,int|void:string)")
-  FILE_FUNC("write_oob",file_write_oob,"function(string,void|mixed...:int)")
+/* function(string|array(string),mixed...:int) */
+FILE_FUNC("write",file_write, tFuncV(tOr(tStr,tArr(tStr)),tMixed,tInt));
+/* function(int|void,int|void:string) */
+FILE_FUNC("read_oob",file_read_oob, tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid),tStr));
+/* function(string,mixed...:int) */
+FILE_FUNC("write_oob",file_write_oob, tFuncV(tStr,tMixed,tInt));
 
 #ifdef HAVE_FSYNC
-  FILE_FUNC("sync", file_sync, "function(:int)")
+/*  function(:int) */
+FILE_FUNC("sync", file_sync, tFunc(tNone,tInt));
 #endif /* HAVE_FSYNC */
 
-  FILE_FUNC("seek",file_seek,"function(int,int|void,int|void:int)")
-  FILE_FUNC("tell",file_tell,"function(:int)")
-  FILE_FUNC("truncate",file_truncate,"function(int:int)")
-  FILE_FUNC("stat",file_stat,"function(:object)")
-  FILE_FUNC("errno",file_errno,"function(:int)")
-  FILE_FUNC("mode",file_mode,"function(:int)")
+/* function(int,int|void,int|void:int) */
+FILE_FUNC("seek",file_seek, tFunc(tInt tOr(tInt,tVoid) tOr(tInt,tVoid),tInt));
+/* function(:int) */
+FILE_FUNC("tell",file_tell, tFunc(tNone,tInt));
+/* function(int:int) */
+FILE_FUNC("truncate",file_truncate, tFunc(tInt,tInt));
+/* function(:object) */
+FILE_FUNC("stat",file_stat, tFunc(tNone,tObjImpl_STDIO_STAT));
+/* function(:int) */
+FILE_FUNC("errno",file_errno, tFunc(tNone,tInt));
+/* function(:int) */
+FILE_FUNC("mode",file_mode, tFunc(tNone,tInt));
 
-  FILE_FUNC("set_close_on_exec",file_set_close_on_exec,"function(int:void)")
-  FILE_FUNC("set_nonblocking",file_set_nonblocking,"function(:void)")
+/* function(int:void) */
+FILE_FUNC("set_close_on_exec",file_set_close_on_exec, tFunc(tInt,tVoid));
+/* function(:void) */
+FILE_FUNC("set_nonblocking",file_set_nonblocking, tFunc(tNone,tVoid));
 
-  FILE_FUNC("set_backend", file_set_backend, "function(object:void)")
-  FILE_FUNC("query_backend", file_query_backend, "function(void:object)")
+/*  function(object:void) */
+/* Note: We have no way of specifying "object that inherits Pike.Backend". */
+FILE_FUNC("set_backend", file_set_backend, tFunc(tObj,tVoid));
+/*  function(void:object) */
+FILE_FUNC("query_backend", file_query_backend, tFunc(tVoid,tObj));
 
-  FILE_FUNC("set_read_callback",file_set_read_callback,"function(mixed:void)")
-  FILE_FUNC("set_write_callback",file_set_write_callback,"function(mixed:void)")
-  FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback,"function(mixed:void)")
-  FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback,"function(mixed:void)")
+/* function(mixed:void) */
+FILE_FUNC("set_read_callback",file_set_read_callback, tFunc(CB_FUNC,tVoid));
+/* function(mixed:void) */
+FILE_FUNC("set_write_callback",file_set_write_callback, tFunc(CB_FUNC,tVoid));
+/* function(mixed:void) */
+FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback, tFunc(CB_FUNC,tVoid));
+/* function(mixed:void) */
+FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback, tFunc(CB_FUNC,tVoid));
 
-  FILE_FUNC("_enable_callbacks",file__enable_callbacks,"function(:void)")
-  FILE_FUNC("_disable_callbacks",file__disable_callbacks,"function(:void)")
+#undef CB_FUNC
 
-  FILE_FUNC("set_blocking",file_set_blocking,"function(:void)")
+/* function(:void) */
+FILE_FUNC("_enable_callbacks",file__enable_callbacks, tFunc(tNone,tVoid));
+/* function(:void) */
+FILE_FUNC("_disable_callbacks",file__disable_callbacks, tFunc(tNone,tVoid));
 
-  FILE_FUNC("query_fd",file_query_fd,"function(:int)")
+/* function(:void) */
+FILE_FUNC("set_blocking",file_set_blocking, tFunc(tNone,tVoid));
 
-  FILE_FUNC("dup2",file_dup2,"function(object:int)")
-  FILE_FUNC("dup",file_dup,"function(void:object)")
-  FILE_FUNC("pipe",file_pipe,"function(void|int:object)")
+/* function(:int) */
+FILE_FUNC("query_fd",file_query_fd, tFunc(tNone,tInt));
 
-  FILE_FUNC("set_buffer",file_set_buffer,"function(int,string|void:void)")
-  FILE_FUNC("open_socket",file_open_socket,"function(int|string|void,string|void:int)")
-  FILE_FUNC("connect",file_connect,"function(string,int|string:int)|function(string,int|string,string,int|string:int)")
+/* function(object:int) */
+/* Note: We have no way of specifying "object that inherits Fd or Fd_ref". */
+FILE_FUNC("dup2",file_dup2, tFunc(tObj,tInt));
+/* function(void:object) */
+FILE_FUNC("dup",file_dup, tFunc(tInt,tObjImpl_STDIO_FD));
+/* function(void|int:object) */
+FILE_FUNC("pipe",file_pipe, tFunc(tOr(tVoid,tInt),tObjImpl_STDIO_FD));
+
+/* function(int,string|void:void) */
+FILE_FUNC("set_buffer",file_set_buffer, tFunc(tInt tOr(tStr,tVoid),tVoid));
+/* function(int|string|void,string|void:int) */
+FILE_FUNC("open_socket",file_open_socket, tFunc(tOr3(tInt,tStr,tVoid) tOr(tStr,tVoid),tInt));
+/* function(string,int|string:int)|function(string,int|string,string,int|string:int) */
+FILE_FUNC("connect",file_connect, tOr(tFunc(tStr tOr(tInt,tStr),tInt),tFunc(tStr tOr(tInt,tStr) tStr tOr(tInt,tStr),tInt)));
 #ifdef HAVE_SYS_UN_H
-  FILE_FUNC("connect_unix",file_connect_unix,"function(string:int)")
+/* function(string:int) */
+FILE_FUNC("connect_unix",file_connect_unix, tFunc(tStr,tInt));
 #endif /* HAVE_SYS_UN_H */
-  FILE_FUNC("query_address",file_query_address,"function(int|void:string)")
-  FILE_FUNC("create",file_create,"function(void|string,void|string:void)")
-  FILE_FUNC("`<<",file_lsh,"function(mixed:object)")
+/* function(int|void:string) */
+FILE_FUNC("query_address",file_query_address, tFunc(tOr(tInt,tVoid),tStr));
+/* function(void|string,void|string:void) */
+FILE_FUNC("create",file_create, tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr),tVoid));
+/* function(mixed:object) */
+FILE_FUNC("`<<",file_lsh, tFunc(tMixed,FILE_OBJ));
 
 #ifdef _REENTRANT
-  FILE_FUNC("proxy",file_proxy,"function(object:void)")
+/* function(object:void) */
+FILE_FUNC("proxy",file_proxy, tFunc(tObj,tVoid));
 #endif
 
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
-  FILE_FUNC("lock",file_lock,"function(void|int:object)")
-  FILE_FUNC("trylock",file_trylock,"function(void|int:object)")
+/* function(void|int:object) */
+FILE_FUNC("lock",file_lock, tFunc(tOr(tVoid,tInt),tObjImpl_STDIO_FILE_LOCK_KEY));
+/* function(void|int:object) */
+FILE_FUNC("trylock",file_trylock, tFunc(tOr(tVoid,tInt),tObjImpl_STDIO_FILE_LOCK_KEY));
 #endif
 
 #if !defined(__NT__) && (defined(HAVE_POSIX_OPENPT) || defined(PTY_MASTER_PATHNAME))
-   FILE_FUNC("openpt",file_openpt,"function(string:int)")
+/* function(string:int) */
+FILE_FUNC("openpt",file_openpt, tFunc(tStr,tInt));
 #endif
 
 #if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD) || defined(USE_CHGPT)
-   FILE_FUNC("grantpt",file_grantpt,"function(void:string)")
+/* function(void:string) */
+FILE_FUNC("grantpt",file_grantpt, tFunc(tNone,tStr));
 #endif
 
 #if defined(HAVE_TERMIOS_H)
-   FILE_FUNC("tcgetattr",file_tcgetattr,"function(void:mapping)")
-   FILE_FUNC("tcsetattr",file_tcsetattr,"function(mapping,void|string:int)")
-   FILE_FUNC("tcsendbreak",file_tcsendbreak,"function(int:int)")
-   FILE_FUNC("tcflush",file_tcflush,"function(void:string)")
-/*    FILE_FUNC("tcdrain",file_tcdrain,"function(void:int)") */
-/*    FILE_FUNC("tcflow",file_tcflow,"function(string:int)") */
-/*    FILE_FUNC("tcgetpgrp",file_tcgetpgrp,"function(void:int)") */
-/*    FILE_FUNC("tcsetpgrp",file_tcsetpgrp,"function(int:int)") */
+/* function(void:mapping) */
+FILE_FUNC("tcgetattr",file_tcgetattr, tFunc(tNone,tMapping));
+/* function(mapping,void|string:int) */
+FILE_FUNC("tcsetattr",file_tcsetattr, tFunc(tMapping tOr(tVoid,tStr),tInt));
+/* function(int:int) */
+FILE_FUNC("tcsendbreak",file_tcsendbreak, tFunc(tInt,tInt));
+/* function(void:string) */
+FILE_FUNC("tcflush",file_tcflush, tFunc(tNone,tStr));
+/*    FILE_FUNC("tcdrain",file_tcdrain,"function(void:int)"); */
+/*    FILE_FUNC("tcflow",file_tcflow,"function(string:int)"); */
+/*    FILE_FUNC("tcgetpgrp",file_tcgetpgrp,"function(void:int)"); */
+/*    FILE_FUNC("tcsetpgrp",file_tcsetpgrp,"function(int:int)"); */
 #endif
 
 #ifdef SO_KEEPALIVE
-   FILE_FUNC("set_keepalive",file_set_keepalive,"function(int:int)")
+/* function(int:int) */
+FILE_FUNC("set_keepalive",file_set_keepalive, tFunc(tInt,tInt));
 #endif
 
 #ifdef HAVE_NOTIFICATIONS
-   FILE_FUNC("notify", file_set_notify, "function(int,function,void|int:void)");
+/*  function(int,function,void|int:void) */
+FILE_FUNC("notify", file_set_notify, tFunc(tInt tFunction tOr(tVoid,tInt),tVoid));
 #endif
 
 #undef FILE_FUNC
+#undef FILE_OBJ
