@@ -306,6 +306,7 @@ class client {
       }
       if(domain)
 	domains = ({ domain }) + domains;
+      domains -= ({ "" });
       domains = Array.map(domains, lambda(string d) {
 				     if (d[-1] == '.') {
 				       return d[..sizeof(d)-2];
