@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.1 2002/10/12 03:04:36 nilsson Exp $
+// $Id: testsuite.in,v 1.2 2002/10/14 14:15:50 nilsson Exp $
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
   String.Buffer s=String.Buffer();
@@ -134,7 +134,6 @@ test_any([[
 ]])
 
 dnl MISSING TEST: Replace
-
 dnl MISSING TEST: SingeReplace
 
 test_eq(String.int2char(0), "\0")
@@ -215,8 +214,31 @@ test_eq(String.int2size(pow(1024,8)),"1.0 Yb")
 test_eq(String.int2size(pow(1024,9)),"1024.0 Yb")
 
 dnl MISSING TEST: expand_tabs
-
 dnl MISSING TEST: line_expand_tabs
+
+test_eq([[
+  String.HTML.select("language",
+      ({ ({ "eng", "English" }),
+         ({ "swe", "Swedish" }),
+         ({ "nor", "Norwegian" }) }),
+      "swe")
+]],[[ "<select name=\"language\">\n<option value=\"eng\">English</option>\n<option value=\"swe\" selected=\"selected\">Swedish</option>\n<option value=\"nor\">Norwegian</option>\n</select>" ]])
+test_eq([[
+  String.HTML.select("language",
+      ({ ({ "eng", "English" }),
+         ({ "swe", "Swedish" }),
+         ({ "nor", "Norwegian" }) }))
+]],[[ "<select name=\"language\">\n<option value=\"eng\">English</option>\n<option value=\"swe\">Swedish</option>\n<option value=\"nor\">Norwegian</option>\n</select>" ]])
+test_eq([[
+  String.HTML.select("language", ({ "eng", "swe", "nor" }), "swe")
+]],[[ "<select name=\"language\">\n<option value=\"eng\">eng</option>\n<option value=\"swe\" selected=\"selected\">swe</option>\n<option value=\"nor\">nor</option>\n</select>" ]])
+test_eq([[
+  String.HTML.select("language", ({ "eng", "swe", "nor" }))
+]],[[ "<select name=\"language\">\n<option value=\"eng\">eng</option>\n<option value=\"swe\">swe</option>\n<option value=\"nor\">nor</option>\n</select>" ]])
+
+dnl MISSING TEST: String.HTML.simple_obox
+dnl MISSING TEST: String.HTML.Obox
+
 
 dnl Compatibility Tests
 
