@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.81 2000/07/21 18:54:15 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.82 2000/08/02 18:56:35 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -451,6 +451,8 @@ void f_rm(INT32 args)
   struct stat st;
   INT32 i;
   struct pike_string *str;
+
+  destruct_objects_to_destruct();
 
   if(!args)
     error("Too few arguments to rm()\n");
