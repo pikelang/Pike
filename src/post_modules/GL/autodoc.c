@@ -1,6 +1,6 @@
 
 /* AutoDoc generated from OpenGL man pages
-$Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
+$Id: autodoc.c,v 1.5 2002/06/23 21:28:44 nilsson Exp $ */
 
 /*!@module GL
  *!
@@ -735,24 +735,12 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!
  */
 
-/*!@decl void glColor(float|int|array(float|int) red, float|int|void green, float|int|void blue, float|int|void alpha)
+/*!@decl void glColor(float|int red, float|int green, float|int blue, float|int|void alpha)
+ *!@decl void glColor(array(float|int) rgb)
  *!
  *!The GL stores both a current single-valued color index
- *!and a current four-valued RGBA color.
- *!@[glColor] sets a new four-valued RGBA color.
- *!@[glColor] has two major variants:
- *!@[glColor3] and @[glColor4].
- *!@[glColor3] variants specify new red,
- *!green,
- *!and blue values explicitly
- *!and set the current alpha value to 1.0 (full intensity) implicitly.
- *!@[glColor4] variants specify all four color components explicitly.
- *!
- *!@[glColor], @[glColor],
- *!@[glColor], @[glColor], @[glColor], and @[glColor] take 
- *!three or four signed byte, short, or long integers as arguments.
- *!When @[v] is appended to the name,
- *!the color commands can take a pointer to an array of such values.
+ *!and a current four-valued RGBA color. If no alpha value has been give, 1.0 (full intensity)
+ *!is implied.
  *!
  *!Current color values are stored in floating-point format,
  *!with unspecified mantissa and exponent sizes.
@@ -782,14 +770,6 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!@param alpha
  *!
  *!Specifies a new alpha value for the current color.
- *!Included only in the four-argument @[glColor4] commands.
- *!
- *!
- *!@param v
- *!
- *!Specifies a pointer to an array that contains red, green, blue,
- *!and (sometimes) alpha values.
- *!
  *!
  */
 
@@ -931,7 +911,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!The conversion maps the largest representable component value to 1.0,
  *!and component value 0 to 0.0.
  *!The resulting floating-point color values are then multiplied
- *!by <ref>GL_c_SCALE</ref> and added to <ref>GL_c_BIAS</ref>,
+ *!by GL_c_SCALE and added to GL_c_BIAS,
  *!where <i>c</i> is RED, GREEN, BLUE, and ALPHA 
  *!for the respective color components.
  *!The results are clamped to the range [0,1].
@@ -2126,11 +2106,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
 
 /*!@decl void glEvalCoord(float|int|array(float|int) u, float|int|void v)
  *!
- *!@[glEvalCoord1] evaluates enabled one-dimensional maps at argument
- *!@i{u@}.
- *!@[glEvalCoord2] does the same for two-dimensional maps using
- *!two domain values,
- *!@i{u@} and @i{v@}.
+ *!@[glEvalCoord] evaluates enabled one-dimensional maps at argument
+ *!@[u] or two-dimensional maps using two domain values,
+ *!@[u] and @[v].
  *!To define a map, call @[glMap1] and @[glMap2]; to enable and
  *!disable it, call @[glEnable] and @[glDisable].
  *!
@@ -2196,7 +2174,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!
  *!If you have enabled automatic normal generation,
  *!by calling @[glEnable] with argument @[GL_AUTO_NORMAL],
- *!@[glEvalCoord2] generates surface normals analytically,
+ *!@[glEvalCoord] generates surface normals analytically,
  *!regardless of the contents or enabling of the @[GL_MAP2_NORMAL] map.
  *!Let
  *!.sp
@@ -2220,7 +2198,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!is used to produce a normal.
  *!If neither automatic normal generation nor a normal map is enabled,
  *!no normal is generated for 
- *!@[glEvalCoord2] commands.
+ *!@[glEvalCoord] commands.
  *!
  *!@param u
  *!
@@ -2231,7 +2209,6 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!
  *!Specifies a value that is the domain coordinate v to the basis function
  *!defined in a previous @[glMap2] command.
- *!This argument is not present in a @[glEvalCoord1] command.
  *!
  *!
  *!@param u
@@ -2239,8 +2216,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!Specifies a pointer to an array containing
  *!either one or two domain coordinates.
  *!The first coordinate is u.
- *!The second coordinate is v,
- *!which is present only in @[glEvalCoord2] versions.
+ *!The second coordinate is v.
  *!
  *!
  */
@@ -4511,7 +4487,8 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!
  */
 
-/*!@decl void glRasterPos(float|int|array(float|int) x, float|int|void y, float|int|void z, float|int|void w)
+/*!@decl void glRasterPos(float|int x, float|int y, float|int|void z, float|int|void w)
+ *!@decl void glRasterPos(array(float|int) pos)
  *!
  *!The GL maintains a 3D position in window coordinates.
  *!This position,
@@ -4528,12 +4505,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!and associated color data and texture coordinates.
  *!The w coordinate is a clip coordinate,
  *!because w is not projected to window coordinates.
- *!@[glRasterPos4] specifies object coordinates x, y, z, and w
- *!explicitly.
- *!@[glRasterPos3] specifies object coordinate x, y, and z explicitly,
- *!while w is implicitly set to 1.
- *!@[glRasterPos2] uses the argument values for x and y while
- *!implicitly setting z and w to 0 and 1.  
+ *!The variable z defaults to 0 and w defaults to 1.
  *!
  *!The object coordinates presented by @[glRasterPos] are treated just like those
  *!of a @[glVertex] command:
@@ -7318,33 +7290,33 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -7352,9 +7324,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -7362,9 +7334,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -7373,9 +7345,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -7385,18 +7357,18 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -7407,33 +7379,33 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -7441,9 +7413,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -7451,9 +7423,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -7462,9 +7434,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -7474,18 +7446,18 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -7731,7 +7703,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!If there are no right or back color buffers,
  *!only the front left color buffer is written.
  *!</c></r>
- *!<r><c><ref>GL_AUX</ref><i>i</i>
+ *!<r><c>GL_AUX<i>i</i>
  *!</c><c>Only auxiliary color buffer <i>i</i> is written.
  *!</c></r>
  *!</matrix>@}
@@ -7770,7 +7742,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!@[GL_LEFT],
  *!@[GL_RIGHT],
  *!@[GL_FRONT_AND_BACK], and
- *!@[GL_AUX]@i{i@},
+ *!GL_AUX@i{i@},
  *!where @i{i@} is between 0 and ``@[GL_AUX_BUFFERS]'' -1,
  *!are accepted (@[GL_AUX_BUFFERS] is not the upper limit; use @[glGet]
  *!to query the number of available aux buffers.)
@@ -7894,33 +7866,33 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -7928,9 +7900,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap1</ref>.
@@ -7938,9 +7910,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -7949,9 +7921,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -7961,18 +7933,18 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP1_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap1</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP1_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord1</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh1</ref>, and
- *!<ref>glEvalPoint1</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -7983,33 +7955,33 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_COLOR_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate RGBA values.
+ *!<ref>glEvalPoint</ref> generate RGBA values.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_INDEX</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate color indices.
+ *!<ref>glEvalPoint</ref> generate color indices.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_NORMAL</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate normals.
+ *!<ref>glEvalPoint</ref> generate normals.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_1</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>
  *!texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -8017,9 +7989,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_2</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i> and
  *!<i>t</i> texture coordinates.
  *!See <ref>glMap2</ref>.
@@ -8027,9 +7999,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>, and
  *!<i>r</i> texture coordinates.
@@ -8038,9 +8010,9 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_TEXTURE_COORD_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>s</i>,
  *!<i>t</i>,
  *!<i>r</i>, and
@@ -8050,18 +8022,18 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!<r><c><ref>GL_MAP2_VERTEX_3</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!<i>x</i>, <i>y</i>, and <i>z</i> vertex coordinates.
  *!See <ref>glMap2</ref>.
  *!</c></r>
  *!<r><c><ref>GL_MAP2_VERTEX_4</ref>
  *!</c><c>If enabled,
  *!calls to
- *!<ref>glEvalCoord2</ref>,
+ *!<ref>glEvalCoord</ref>,
  *!<ref>glEvalMesh2</ref>, and
- *!<ref>glEvalPoint2</ref> generate
+ *!<ref>glEvalPoint</ref> generate
  *!homogeneous
  *!<i>x</i>,
  *!<i>y</i>,
@@ -8458,7 +8430,7 @@ $Id: autodoc.c,v 1.4 2002/02/13 17:49:07 nilsson Exp $ */
  *!@[GL_BACK],
  *!@[GL_LEFT],
  *!@[GL_RIGHT], and
- *!@[GL_AUX]@i{i@},
+ *!GL_AUX@i{i@},
  *!where @i{i@} is between 0 and @[GL_AUX_BUFFERS] -1.
  *!
  *!@throws
