@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.25 2001/05/30 00:33:39 per Exp $");
+RCSID("$Id: whitefish.c,v 1.26 2001/05/31 00:19:26 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -91,7 +91,7 @@ static void handle_hit( Blob **blobs,
     for( j = 0; j<nhits[i]; j++ )
     {
       hits[i] = wf_blob_hit( blobs[i], j );
-      matrix[MOFF(hits[i])][0]++;
+      matrix[MOFF(hits[i])][3]++;
 
       /* forward the other positions */
       for( k = 0; k<nblobs; k++ )
