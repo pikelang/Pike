@@ -472,21 +472,36 @@ array convert(array x, string base)
       });
 
 
-    addfuncs+=({
-      sprintf("\n#ifdef f_%s_defined\n",name),
-      PC.Token(sprintf("  %s(%O,f_%s,tFunc(%s,%s),%s);\n",
-		       attributes->efun ? "ADD_EFUN" : "ADD_FUNCTION",
-		       attributes->name || name,
-		       name,
-		       attributes->type ? attributes->type :
-		       Array.map(args->type,convert_type)*" ",
-		       convert_type(rettype),
-		       (attributes->efun ? attributes->optflags : 
-			attributes->flags )|| "0" ,
-		       ),proto[0]->line),
-      sprintf("#endif\n",name),
-    });
-
+    if (attributes->efun) {
+      addfuncs+=({
+	sprintf("\n#ifdef f_%s_defined\n",name),
+	PC.Token(sprintf("  ADD_EFUN(%O, f_%s, tFunc(%s, %s), %s);\n",
+			 attributes->name || name,
+			 name,
+			 attributes->type ? attributes->type :
+			 Array.map(args->type,convert_type)*" ",
+			 convert_type(rettype),
+			 (attributes->efun ? attributes->optflags : 
+			  attributes->flags )|| "0" ,
+			 ),proto[0]->line),
+	sprintf("#endif\n",name),
+      });
+    } else {
+      addfuncs+=({
+	sprintf("\n#ifdef f_%s_defined\n",name),
+	PC.Token(sprintf("  ADD_FUNCTION2(%O, f_%s, tFunc(%s, %s), %s, %s);\n",
+			 attributes->name || name,
+			 name,
+			 attributes->type ? attributes->type :
+			 Array.map(args->type,convert_type)*" ",
+			 convert_type(rettype),
+			 attributes->flags || "0" ,
+			 attributes->optflags ||
+			 "OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT"
+			 ),proto[0]->line),
+	sprintf("#endif\n",name),
+      });
+    }
     int argnum;
 
     argnum=0;
