@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.682 2003/02/08 02:28:40 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.683 2003/02/08 22:50:39 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5771,7 +5771,7 @@ int main()
   if (th_create (&worker, work_thread, NULL)) {
     fputs ("unknown (failed to create thread)", res);
     fclose (res);
-    return 1;
+    return 3;
   }
   start = get_cpu_time();
   co_wait (&c, &m);
@@ -5780,7 +5780,7 @@ int main()
   if (work_time < (CPU_TIME_TICKS / 10)) {
     fputs ("unknown (get_cpu_time doesn't work)", res);
     fclose (res);
-    return 1;
+    return 4;
   }
 
   if (work_time > wait_time)
@@ -5796,7 +5796,7 @@ int main()
 int main()
 {
   FILE *res = fopen ("conftest.out.2", "w");
-  if (!res) return 2;
+  if (!res) return 5;
   fputs ("no", res);
   fclose (res);
   return 1;
