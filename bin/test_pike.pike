@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.68 2002/07/29 17:19:24 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.69 2002/07/31 12:04:42 nilsson Exp $ */
 
 import Stdio;
 
@@ -90,7 +90,7 @@ array(string) read_tests( string fn ) {
 	   fn, errno());
     exit(1);
   }
-      
+
   tests = tests/"\n....\n";
   return tests[0..sizeof(tests)-2];
 }
@@ -124,7 +124,7 @@ object watchdog_pipe;
 #define WATCHDOG
 #define WATCHDOG_SIGNAL
 #endif
-#endif	  
+#endif	
 
 #ifdef WATCHDOG
 object watchdog;
@@ -140,7 +140,7 @@ void signal_watchdog()
 #ifdef WATCHDOG_PIPE
     watchdog_pipe->write("x",1);
 #endif
-    
+
 #ifdef WATCHDOG_SIGNAL
     watchdog->kill(signum("SIGQUIT"));
 #endif
@@ -178,7 +178,7 @@ void run_watchdog(int pid) {
   else {
     exit(1);
   }
-#endif	  
+#endif	
 
   while(1)
   {
@@ -289,7 +289,7 @@ int main(int argc, array(string) argv)
 	case "watchdog":
 	  run_watchdog( (int)opt[1] );
 	  break;
-	  
+	
 	case "notty":
 	  istty_cache=-1;
 	  break;
@@ -356,7 +356,7 @@ int main(int argc, array(string) argv)
       (["stdin":watchdog_tmp ]));
     destruct(watchdog_tmp);
 #endif
-    
+
 #ifdef WATCHDOG_SIGNAL
     watchdog=Process.create_process(
       backtrace()[0][3] + ({  "--watchdog="+getpid() }) );
@@ -384,7 +384,7 @@ int main(int argc, array(string) argv)
 
       werror("Doing tests in %s (%d tests)\n", testsuite, sizeof(tests));
       int qmade, qskipped, qmadep, qskipp;
-      
+
       for(e=start;e<sizeof(tests);e++)
       {
 	signal_watchdog();
@@ -426,7 +426,7 @@ int main(int argc, array(string) argv)
 	    if(!tmp) tmp=-1;
 	    cond_cache[condition]=tmp;
 	  }
-	  
+	
 	  if(tmp==-1)
 	  {
 	    if(verbose>1)
@@ -564,7 +564,7 @@ int main(int argc, array(string) argv)
 	}
 
 	// _optimizer_debug(5);
-	   
+	
 	if(verbose>9) bzot(to_compile);
 	switch(type)
         {
@@ -584,7 +584,7 @@ int main(int argc, array(string) argv)
 	    successes++;
 	  }
 	  break;
-	    
+	
 	case "COMPILE_ERROR":
 	  master()->set_inhibit_compile_errors(1);
 	  _dmalloc_set_name(fname,0);
@@ -650,15 +650,15 @@ int main(int argc, array(string) argv)
 	  }
 	  master()->set_inhibit_compile_errors(0);
 	  break;
-	    
+	
 	default:
 	  if (err = catch{
 	    _dmalloc_set_name(fname,0);
 	    o=clone(compile_string(to_compile,testsuite));
 	    _dmalloc_set_name();
-	    
+	
 	    if(check > 1) _verify_internals();
-	    
+	
 	    a=b=0;
 	    if(t) trace(t);
 	    _dmalloc_set_name(fname,1);
@@ -673,7 +673,7 @@ int main(int argc, array(string) argv)
 	    {
 	      bt = gauge { b=o->b(); };
 	    }
-		  
+		
 	    _dmalloc_set_name();
 
 	    if(t) trace(0);
@@ -707,7 +707,7 @@ int main(int argc, array(string) argv)
 
 	  if(verbose>2)
 	    werror("Time in a(): %f, Time in b(): %O\n",at,bt);
-	    
+	
 	  switch(type)
 	  {
 	  case "FALSE":
@@ -849,7 +849,7 @@ int main(int argc, array(string) argv)
   {
     werror("Failed tests: "+errors+".\n");
   }
-      
+
   werror("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
 
 #ifdef WATCHDOG_SIGNAL
