@@ -17,9 +17,11 @@ return 0;
 ],lpc_cv_lib_gmp_is_new_enough=yes,lpc_cv_lib_gmp_is_new_enough=no)
 ])
 
-AC_MSG_RESULT($lpc_cv_lib_gmp_is_new_enough)
-if $lpc_cv_lib_gmp_is_new_enough = yes; then
+if test "$lpc_cv_lib_gmp_is_new_enough" = yes; then
+  AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_NEW_GMP)
+else
+  AC_MSG_RESULT(no)
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
