@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.31 2000/03/27 20:29:45 hubbe Exp $ */
+/* $Id: export.pike,v 1.32 2000/09/06 01:25:09 hubbe Exp $ */
 
 #include <simulate.h>
 import Stdio;
@@ -57,7 +57,7 @@ string *get_files(string path)
 
 void fix_configure(string dir)
 {
-  int *config,*config_in;
+  mixed config,config_in;
   config=file_stat(dir+"/configure");
   config_in=file_stat(dir+"/configure.in");
 
