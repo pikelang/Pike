@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.2 1999/07/16 20:01:12 marcus Exp $
+# $Id: configure.in,v 1.3 1999/07/18 15:05:13 marcus Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -6,11 +6,22 @@ AC_MODULE_INIT()
 
 AC_PATH_XTRA()
 
-AC_CHECK_LIB(GL, glOrtho,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
-if test x"$ac_cv_lib_GL_glOrtho" != yes; then
-  AC_CHECK_LIB(MesaGL, glOrtho,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
+AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
+
+AC_CHECK_LIB(GL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(MesaGL, glOrtho, AC_DEFINE_UNQUOTED(HAVE_LIBMESAGL),,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+
+if test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
+  LIBS="-lGL $LIBS"
+elif test x"$with_lib_MesaGL" = "xyes" -a x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
+  LIBS="-lMesaGL $LIBS"
+elif test x"$ac_cv_lib_GL_glOrtho" = xyes; then
+  LIBS="-lGL $LIBS"
+elif test x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
+  LIBS="-lMesaGL $LIBS"
+else
+  AC_MSG_ERROR([You need GL or MesaGL libraries])
 fi
-AC_CHECK_FUNC(glXChooseVisual)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
