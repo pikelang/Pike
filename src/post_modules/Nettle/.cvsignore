@@ -1,0 +1,9 @@
+config.h.in
+configure
+dependencies
+hash.c
+hash.cmod.compiled
+nettle.c
+nettle.cmod.compiled
+nettle_config.h.in
+stamp-h.in
