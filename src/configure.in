@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.360 2000/03/29 00:57:54 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.361 2000/03/29 22:52:12 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1325,7 +1325,8 @@ else
 
   case "x$pike_cv_sys_os" in
     xOSF1*)
-      LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
+#      LIBS="${OLDLIBS} -lpthread -lmach -lexc -lc"
+      LIBS="${OLDLIBS} -lpthread -lmach -lexc"
     ;;
  
     xBSD/OS*)
