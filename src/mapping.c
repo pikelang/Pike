@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.135 2001/09/05 03:54:00 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.136 2001/09/06 21:22:00 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -22,6 +22,7 @@ RCSID("$Id: mapping.c,v 1.135 2001/09/05 03:54:00 hubbe Exp $");
 #include "security.h"
 #include "block_alloc.h"
 #include "opcodes.h"
+#include "stuff.h"
 
 #define AVG_LINK_LENGTH 4
 #define MIN_LINK_LENGTH 1
