@@ -19,4 +19,5 @@
 // Port.pike:27:Must return a value for a non-void function.
 // test: failed to peek at "Protocols.Bittorrent.Port": Compilation failed.
 
+#pike __REAL_VERSION__
 static private function dummy=.Torrent;

@@ -15,6 +15,8 @@
 //!      return 0;
 //!   }
 
+#pike __REAL_VERSION__
+
 inherit .Torrent;
 
 string base=0;

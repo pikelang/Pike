@@ -3,6 +3,8 @@
 // Translated to Pike and expanded by Mirar
 //
 
+#pike __REAL_VERSION__
+
 /**
  * Decodes the given peerid, returning an identification string.
  */  

@@ -1,4 +1,6 @@
-// $Id: OWL.pike,v 1.1 2003/12/18 00:41:48 stensson Exp $
+// $Id: OWL.pike,v 1.2 2004/01/10 23:18:12 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 //! Represents an RDF tuple set from an OWL perspective.
 
