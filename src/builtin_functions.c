@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.553 2005/02/10 01:37:31 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.554 2005/04/02 14:25:13 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.553 2005/02/10 01:37:31 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.554 2005/04/02 14:25:13 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1768,13 +1768,18 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
 /*! @decl string utf8_to_string(string s)
  *! @decl string utf8_to_string(string s, int extended)
  *!
- *!   Converts an UTF8 byte-stream into a string.
+ *!   Converts an UTF-8 byte-stream into a string.
  *!
  *! @note
- *!   Throws an error if the stream is not a legal UFT8 byte-stream.
+ *!   Throws an error if the stream is not a legal UTF-8 byte-stream.
  *!
  *!   Accepts and decodes the extension used by @[string_to_utf8()], if
  *!   @[extended] is @expr{1@}.
+ *!
+ *! @note
+ *!   In conformance with RFC 3629 and Unicode 3.1 and later,
+ *!   non-shortest forms are not decoded. An error will be thrown
+ *!   instead.
  *!
  *! @seealso
  *!   @[Locale.Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
@@ -1784,9 +1789,9 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
 {
   struct pike_string *in;
   struct pike_string *out;
-  int len = 0;
+  ptrdiff_t len = 0;
   int shift = 0;
-  int i,j;
+  ptrdiff_t i,j;
   INT_TYPE extended = 0;
 
   get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
@@ -1796,62 +1801,141 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     len++;
     if (c & 0x80) {
       int cont = 0;
+
+      /* From table 3-6 in the Unicode standard 4.0: Well-Formed UTF-8
+       * Byte Sequences
+       *
+       *  Code Points   1st Byte  2nd Byte  3rd Byte  4th Byte
+       * 000000-00007f   00-7f
+       * 000080-0007ff   c2-df     80-bf
+       * 000800-000fff    e0       a0-bf     80-bf
+       * 001000-00cfff   e1-ec     80-bf     80-bf
+       * 00d000-00d7ff    ed       80-9f     80-bf
+       * 00e000-00ffff   ee-ef     80-bf     80-bf
+       * 010000-03ffff    f0       90-bf     80-bf     80-bf
+       * 040000-0fffff   f1-f3     80-bf     80-bf     80-bf
+       * 100000-10ffff    f4       80-8f     80-bf     80-bf
+       */
+
       if ((c & 0xc0) == 0x80) {
-	Pike_error("utf8_to_string(): "
-	      "Unexpected continuation block 0x%02x at index %d.\n",
-	      c, i);
+	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+		       NULL, Pike_sp - args,
+		       "Invalid continuation character 0x%02x "
+		       "at index %"PRINTPTRDIFFT"d.\n",
+		       c, i);
       }
+
+#define GET_CONT_CHAR(in, i, c) do {					\
+	i++;								\
+	if (i >= in->len)						\
+	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+			 NULL, Pike_sp - args,				\
+			 "Truncated UTF-8 sequence at end of string.\n"); \
+	c = ((unsigned char *)(in->str))[i];				\
+	if ((c & 0xc0) != 0x80)						\
+	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+			 NULL, Pike_sp - args,				\
+			 "Expected continuation character at index %d, " \
+			 "got 0x%02x.\n",				\
+			 i, c);						\
+      } while (0)
+
+#define UTF8_SEQ_ERROR(prefix, c, i, problem) do {			\
+	bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,	\
+		       NULL, Pike_sp - args,				\
+		       "UTF-8 sequence beginning with %s0x%02x "	\
+		       "at index %"PRINTPTRDIFFT"d %s.\n",		\
+		       prefix, c, i, problem);				\
+      } while (0)
+
       if ((c & 0xe0) == 0xc0) {
 	/* 11bit */
+	if (!(c & 0x1e))
+	  UTF8_SEQ_ERROR ("", c, i, "is a non-shortest form");
 	cont = 1;
 	if (c & 0x1c) {
 	  if (shift < 1) {
 	    shift = 1;
 	  }
 	}
-      } else if ((c & 0xf0) == 0xe0) {
+      }
+
+      else if ((c & 0xf0) == 0xe0) {
 	/* 16bit */
-	cont = 2;
+	if (c == 0xe0) {
+	  GET_CONT_CHAR (in, i, c);
+	  if (!(c & 0x20))
+	    UTF8_SEQ_ERROR ("0xe0 ", c, i - 1, "is a non-shortest form");
+	  cont = 1;
+	}
+	else
+	  cont = 2;
 	if (shift < 1) {
 	  shift = 1;
 	}
-      } else {
-	shift = 2;
+      }
+
+      else {
+	if (shift < 2)
+	  shift = 2;
+
 	if ((c & 0xf8) == 0xf0) {
 	  /* 21bit */
-	  cont = 3;
-	} else if ((c & 0xfc) == 0xf8) {
-	  /* 26bit */
-	  cont = 4;
-	} else if ((c & 0xfe) == 0xfc) {
-	  /* 31bit */
-	  cont = 5;
-	} else if (c == 0xfe) {
-	  /* 36bit */
-	  if (!extended) {
-	    Pike_error("utf8_to_string(): "
-		  "Character 0xfe at index %d when not in extended mode.\n",
-		  i);
+	  if (c == 0xf0) {
+	    GET_CONT_CHAR (in, i, c);
+	    if (!(c & 0x30))
+	      UTF8_SEQ_ERROR ("0xf0 ", c, i - 1, "is a non-shortest form");
+	    cont = 2;
 	  }
-	  cont = 6;
-	} else {
-	  Pike_error("utf8_to_string(): "
-		"Unexpected character 0xff at index %d.\n",
-		i);
+	  else
+	    cont = 3;
+	}
+
+	else if (c == 0xff)
+	  bad_arg_error ("utf8_to_string", Pike_sp - args, args, 1,
+			 NULL, Pike_sp - args,
+			 "Invalid character 0xff at index %"PRINTPTRDIFFT"d.\n",
+			 i);
+
+	else {
+	  if ((c & 0xfc) == 0xf8) {
+	    /* 26bit */
+	    if (c == 0xf8) {
+	      GET_CONT_CHAR (in, i, c);
+	      if (!(c & 0x38))
+		UTF8_SEQ_ERROR ("0xf8 ", c, i - 1, "is a non-shortest form");
+	      cont = 3;
+	    }
+	    else
+	      cont = 4;
+	  } else if ((c & 0xfe) == 0xfc) {
+	    /* 31bit */
+	    if (c == 0xfc) {
+	      GET_CONT_CHAR (in, i, c);
+	      if (!(c & 0x3c))
+		UTF8_SEQ_ERROR ("0xfc ", c, i - 1, "is a non-shortest form");
+	      cont = 4;
+	    }
+	    else
+	      cont = 5;
+	  } else if (c == 0xfe) {
+	    /* 36bit */
+	    if (!extended)
+	      UTF8_SEQ_ERROR ("", c, i - 1, "would decode to "
+			      "a too large character value");
+	    GET_CONT_CHAR (in, i, c);
+	    if (!(c & 0x3e))
+	      UTF8_SEQ_ERROR ("0xfe ", c, i - 1, "is a non-shortest form");
+	    else if (c & 0x3c)
+	      UTF8_SEQ_ERROR ("0xfe ", c, i - 1, "would decode to "
+			      "a too large character value");
+	    cont = 5;
+	  }
 	}
       }
-      while(cont--) {
-	i++;
-	if (i >= in->len) {
-	  Pike_error("utf8_to_string(): Truncated UTF8 sequence.\n");
-	}
-	c = ((unsigned char *)(in->str))[i];
-	if ((c & 0xc0) != 0x80) {
-	  Pike_error("utf8_to_string(): "
-		"Expected continuation character at index %d (got 0x%02x).\n",
-		i, c);
-	}
-      }
+
+      while(cont--)
+	GET_CONT_CHAR (in, i, c);
     }
   }
   if (len == in->len) {
@@ -1868,8 +1952,8 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
     if (c & 0x80) {
       int cont = 0;
 
-      /* NOTE: The tests aren't as paranoid here, since we've
-       * already tested the string above.
+      /* NOTE: No tests here since we've already tested the string
+       * above.
        */
       if ((c & 0xe0) == 0xc0) {
 	/* 11bit */

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.725 2004/07/21 12:08:37 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.726 2005/04/02 14:25:14 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9707,6 +9707,26 @@ test_eval_error(return utf8_to_string("\370\277\207\270a"));
 test_eval_error(return utf8_to_string("\367\207\270a"));
 test_eval_error(return utf8_to_string("\347\270a"));
 test_eval_error(return utf8_to_string("\303a"));
+
+// Non-shortest forms
+test_eval_error(return utf8_to_string ("\xc0\x80"))
+test_eval_error(return utf8_to_string ("\xc1\xbf"))
+test_eq(utf8_to_string ("\xc2\x80"), "\x80")
+test_eval_error(return utf8_to_string ("\xe0\x80\x80"))
+test_eval_error(return utf8_to_string ("\xe0\x9f\xbf"))
+test_eq(utf8_to_string ("\xe0\xa0\x80"), "\x800"))
+test_eval_error(return utf8_to_string ("\xf0\x80\x80\x80"))
+test_eval_error(return utf8_to_string ("\xf0\x8f\xbf\xbf"))
+test_eq(utf8_to_string ("\xf0\x90\x80\x80"), "\x10000")
+test_eval_error(return utf8_to_string ("\xf8\x80\x80\x80\x80", 1))
+test_eval_error(return utf8_to_string ("\xf8\x87\xbf\xbf\xbf", 1))
+test_eq(utf8_to_string ("\xf8\x88\x80\x80\x80", 1), "\x200000")
+test_eval_error(return utf8_to_string ("\xfc\x80\x80\x80\x80\x80", 1))
+test_eval_error(return utf8_to_string ("\xfc\x83\xbf\xbf\xbf\xbf", 1))
+test_eq(utf8_to_string ("\xfc\x84\x80\x80\x80\x80", 1), "\x4000000")
+test_eval_error(return utf8_to_string ("\xfe\x80\x80\x80\x80\x80\x80", 1))
+test_eval_error(return utf8_to_string ("\xfe\x81\xbf\xbf\xbf\xbf\xbf", 1))
+test_eq(utf8_to_string ("\xfe\x82\x80\x80\x80\x80\x80", 1), "\x80000000")
 
 // - stringp
 // Tested in foop
