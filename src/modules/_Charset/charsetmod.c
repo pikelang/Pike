@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.6 1998/11/16 22:44:45 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.7 1999/01/05 15:38:06 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -27,6 +27,7 @@ static struct program *utf7e_program = NULL, *utf8e_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
 static struct program *std_8bit_program = NULL, *std_8bite_program = NULL;
+static struct program *std_16bite_program = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -54,6 +55,12 @@ struct std8e_stor {
   unsigned int lowtrans, lo, hi;
 };
 static SIZE_T std8e_stor_offs = 0;
+
+struct std16e_stor {
+  p_wchar1 *revtab;
+  unsigned int lowtrans, lo, hi;
+};
+static SIZE_T std16e_stor_offs = 0;
 
 static SIGNED char rev64t['z'-'+'+1];
 static char fwd64t[64]=
@@ -329,12 +336,31 @@ static struct std8e_stor *push_std_8bite(int args, int allargs, int lo, int hi)
     push_object(o);
   }
   s8 = (struct std8e_stor *)(sp[-1].u.object->storage+std8e_stor_offs);
-  memset((s8->revtab = xalloc((hi-lo)*sizeof(p_wchar0))), 0,
+  memset((s8->revtab = (p_wchar0 *)xalloc((hi-lo)*sizeof(p_wchar0))), 0,
 	 (hi-lo)*sizeof(p_wchar0));
   s8->lo = lo;
   s8->hi = hi;
   s8->lowtrans = 0;
   return s8;
+}
+
+static struct std16e_stor *push_std_16bite(int args, int allargs, int lo, int hi)
+{
+  struct std16e_stor *s16;
+  push_object(clone_object(std_16bite_program, args));
+  if((allargs-=args)>0) {
+    struct object *o = sp[-1].u.object;
+    add_ref(o);
+    pop_n_elems(allargs+1);
+    push_object(o);
+  }
+  s16 = (struct std16e_stor *)(sp[-1].u.object->storage+std16e_stor_offs);
+  memset((s16->revtab = (p_wchar1 *)xalloc((hi-lo)*sizeof(p_wchar1))), 0,
+	 (hi-lo)*sizeof(p_wchar1));
+  s16->lo = lo;
+  s16->hi = hi;
+  s16->lowtrans = 0;
+  return s16;
 }
 
 static void f_rfc1345(INT32 args)
@@ -359,33 +385,50 @@ static void f_rfc1345(INT32 args)
       struct program *p;
 
       if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
-	struct std8e_stor *s8;
-	int lowtrans, i;
+	int lowtrans, i, j, lo2=0, hi2=0, z;
 	unsigned int c;
 
 	switch(charset_map[mid].mode) {
 	case MODE_94: lowtrans=lo=33; hi=126; break;
 	case MODE_96: lowtrans=128; lo=160; hi=255; break;
-	case MODE_9494:
-	case MODE_9696:
-	  error("No '%s' encoding today, sorry.\n", STR0(str));
+	case MODE_9494: lowtrans=lo=lo2=33; hi=hi2=126; break;
+	case MODE_9696: lowtrans=32; lo=lo2=160; hi=hi2=255; break;
 	default:
 	  fatal("Internal error in rfc1345\n");
 	}
 	
-	s8 = push_std_8bite((args>2 && sp[2-args].type == T_STRING? args-2:0),
-			    args, lowtrans, 65536);
-
-	s8->lowtrans = lowtrans;
-	s8->lo = lowtrans;
-	s8->hi = lowtrans;
-
-	for(i=lo; i<=hi; i++)
-	  if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
-	    s8->revtab[c-lo]=i;
-	    if(c>=s8->hi)
-	      s8->hi = c+1;
-	  }
+	if(hi2) {
+	  struct std16e_stor *s16;
+	  s16 = push_std_16bite((args>2 && sp[2-args].type==T_STRING?args-2:0),
+				args, lowtrans, 65536);
+	  
+	  s16->lowtrans = lowtrans;
+	  s16->lo = lowtrans;
+	  s16->hi = lowtrans;
+	  
+	  for(z=0, i=lo; i<=hi; i++, z+=(hi2-lo2+1))
+	    for(j=lo2; j<=hi2; j++)
+	      if((c=charset_map[mid].table[z+j-lo2])!=0xfffd && c>=s16->lo) {
+		s16->revtab[c-s16->lo]=(i<<8)|j;
+		if(c>=s16->hi)
+		  s16->hi = c+1;
+	      }
+	} else {
+	  struct std8e_stor *s8;
+	  s8 = push_std_8bite((args>2 && sp[2-args].type==T_STRING? args-2:0),
+			      args, lowtrans, 65536);
+	  
+	  s8->lowtrans = lowtrans;
+	  s8->lo = lowtrans;
+	  s8->hi = lowtrans;
+	  
+	  for(i=lo; i<=hi; i++)
+	    if((c=charset_map[mid].table[i-lo])!=0xfffd && c>=s8->lo) {
+	      s8->revtab[c-s8->lo]=i;
+	      if(c>=s8->hi)
+		s8->hi = c+1;
+	    }
+	}
 	return;
       }
 
@@ -917,6 +960,100 @@ static void f_feed_std8e(INT32 args)
   push_object(this_object());
 }
 
+static void std_16bite_init_stor(struct object *o)
+{
+  struct std16e_stor *s16 =
+    (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
+
+  s16->revtab = NULL;
+  s16->lowtrans = 32;
+  s16->lo = 0;
+  s16->hi = 0;
+}
+
+static void std_16bite_exit_stor(struct object *o)
+{
+  struct std16e_stor *s16 =
+    (struct std16e_stor *)(fp->current_storage+std16e_stor_offs);
+
+  if(s16->revtab != NULL)
+    free(s16->revtab);
+}
+
+static void feed_std16e(struct std16e_stor *s16, struct string_builder *sb,
+			struct pike_string *str, struct pike_string *rep)
+{
+  INT32 l = str->len;
+  p_wchar1 *tab = s16->revtab;
+  unsigned int lowtrans = s16->lowtrans, lo = s16->lo, hi = s16->hi;
+  p_wchar1 ch;
+
+  switch(str->size_shift) {
+  case 0:
+    {
+      p_wchar0 c, *p = STR0(str);
+      while(l--)
+	if((c=*p++)<lowtrans)
+	  string_builder_putchar(sb, c);
+	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
+	  string_builder_putchar(sb, (ch>>8)&0xff);
+	  string_builder_putchar(sb, ch&0xff);
+	} else if(rep != NULL)
+	  feed_std16e(s16, sb, rep, NULL);
+	else
+	  error("Character unsupported by encoding.\n");
+    }
+    break;
+  case 1:
+    {
+      p_wchar1 c, *p = STR1(str);
+      while(l--)
+	if((c=*p++)<lowtrans)
+	  string_builder_putchar(sb, c);
+	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
+	  string_builder_putchar(sb, (ch>>8)&0xff);
+	  string_builder_putchar(sb, ch&0xff);
+	} else if(rep != NULL)
+	  feed_std16e(s16, sb, rep, NULL);
+	else
+	  error("Character unsupported by encoding.\n");
+    }
+    break;
+  case 2:
+    {
+      p_wchar2 c, *p = STR2(str);
+      while(l--)
+	if((c=*p++)<lowtrans)
+	  string_builder_putchar(sb, c);
+	else if(c>=lo && c<hi && (ch=tab[c-lo])!=0) {
+	  string_builder_putchar(sb, (ch>>8)&0xff);
+	  string_builder_putchar(sb, ch&0xff);
+	} else if(rep != NULL)
+	  feed_std16e(s16, sb, rep, NULL);
+	else
+	  error("Character unsupported by encoding.\n");
+    }
+    break;
+  default:
+    fatal("Illegal shift size!\n");
+  }
+}
+
+static void f_feed_std16e(INT32 args)
+{
+  struct pike_string *str;
+  struct std_cs_stor *cs = (struct std_cs_stor *)fp->current_storage;
+
+  get_all_args("feed()", args, "%W", &str);
+
+  feed_std16e((struct std16e_stor *)(((char*)fp->current_storage)+
+				     std16e_stor_offs),
+	      &cs->strbuild, str, cs->replace);
+
+  pop_n_elems(args);
+  push_object(this_object());
+}
+
 
 void pike_module_init(void)
 {
@@ -977,6 +1114,14 @@ void pike_module_init(void)
   set_init_callback(std_8bite_init_stor);
   set_exit_callback(std_8bite_exit_stor);
   std_8bite_program = end_program();
+
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  std16e_stor_offs = add_storage(sizeof(struct std16e_stor));
+  add_function("feed", f_feed_std16e, "function(string:object)", 0);
+  set_init_callback(std_16bite_init_stor);
+  set_exit_callback(std_16bite_exit_stor);
+  std_16bite_program = end_program();
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
@@ -1048,6 +1193,9 @@ void pike_module_exit(void)
 
   if(std_8bite_program != NULL)
     free_program(std_8bite_program);
+
+  if(std_16bite_program != NULL)
+    free_program(std_16bite_program);
 
   if(std_rfc_program != NULL)
     free_program(std_rfc_program);
