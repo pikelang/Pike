@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.314 2002/07/23 13:00:56 mast Exp $");
+RCSID("$Id: program.c,v 1.315 2003/01/28 12:05:55 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -856,13 +856,12 @@ void low_start_new_program(struct program *p,
   }
 
   Pike_compiler->malloc_size_program = ALLOC_STRUCT(program);
-#ifdef PIKE_DEBUG
   Pike_compiler->fake_object=alloc_object();
+#ifdef PIKE_DEBUG
   Pike_compiler->fake_object->storage=(char *)xalloc(256 * sizeof(struct svalue));
   /* Stipple to find illegal accesses */
   MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
 #else
-  Pike_compiler->fake_object=ALLOC_STRUCT(object);
   Pike_compiler->fake_object->storage=0;
 #endif
   /* Can't use GC_ALLOC on fake objects, but still it's good to know
