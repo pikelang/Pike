@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.51 2000/01/28 21:00:44 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.52 2000/01/28 22:06:42 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1620,7 +1620,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
     fatal("Zero refs in mapping->data\n");
 #endif
 
-  if(gc_mark(m))
+  if(gc_mark(m) && gc_mark(m->data))
   {
     if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
     {
@@ -1661,6 +1661,8 @@ void gc_check_all_mappings(void)
   {
     if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
     {
+      if(gc_check(m->data)) continue;
+
       MAPPING_LOOP(m)
       {
 	/* We do not want to count this key:index pair if
