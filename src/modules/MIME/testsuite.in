@@ -1,10 +1,17 @@
-// $Id: testsuite.in,v 1.7 1999/08/07 21:59:27 marcus Exp $
+// $Id: testsuite.in,v 1.8 2002/07/03 09:59:57 grubba Exp $
 
 // MIME
 test_true([[objectp(MIME)]])
 test_true([[programp(MIME.Message)]])
 
 // Global functions
+
+// Bug 3171
+test_eq([[(MIME.parse_headers("\r\nBody\r\n\r\nMore Body\r\n")[1])]],
+          "Body\r\n\r\nMore Body\r\n")
+test_eq([[(MIME.parse_headers("\nBody\n\nMore Body\n")[1])]],
+          "Body\n\nMore Body\n")
+
 test_eq([[MIME.decode_base64("Zm9vCg==")]],"foo\n")
 test_eq([[MIME.encode_base64("bar")]],"YmFy")
 test_eq([[MIME.encode_base64("bar ")]],"YmFyIA==")
