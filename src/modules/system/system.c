@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.87 2000/08/17 18:43:42 grubba Exp $
+ * $Id: system.c,v 1.88 2000/09/15 13:45:57 leif Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.87 2000/08/17 18:43:42 grubba Exp $");
+RCSID("$Id: system.c,v 1.88 2000/09/15 13:45:57 leif Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -741,13 +741,59 @@ void f_getpgrp(INT32 args)
   }
   pgid = getpgrp();
 #endif
-  if (pgid < 0) {
+  if (pgid < 0)
     report_error("getpgrp");
-  }
 
   push_int(pgid);
 }
 #endif /* HAVE_GETPGID || HAVE_GETPGRP */
+
+#if defined(HAVE_SETPGRP)
+void f_setpgrp(INT32 args)
+{
+  int pid;
+  if (args != 0)
+       error("Too many arguments.\n");
+  pop_n_elems(args);
+  pid = setpgrp();
+  if (pid < 0)
+       report_error("setpgrp");
+
+  push_int(pid);
+}
+#endif
+
+#if defined(HAVE_GETSID)
+void f_getsid(INT32 args)
+{
+  int pid = 0;
+  if (args > 1)
+       error("Too many arguments for getsid().\n");
+  if (args == 1 && sp[-args].type != T_INT)
+       error("Bad argument for getsid().\n");
+  if (args == 1)
+       pid = sp[-args].u.integer;
+  pop_n_elems(args);
+  pid = getsid(pid);
+  if (pid < 0)
+       report_error("getsid");
+  push_int(pid);
+}
+#endif
+
+#if defined(HAVE_SETSID)
+void f_setsid(INT32 args)
+{
+  int pid;
+  if (args > 0)
+       error("setsid() takes no arguments.\n");
+  pop_n_elems(args);
+  pid = setsid();
+  if (pid < 0)
+       report_error("setsid");
+  push_int(pid);
+}
+#endif
 
 #ifdef HAVE_SETRESUID
 void f_setresuid(INT32 args)
@@ -1490,10 +1536,24 @@ void pike_module_init(void)
 #endif /* HAVE_GETPPID */
  
 #ifdef HAVE_GETPGRP
-  
 /* function(:int) */
-  ADD_EFUN("getpgrp", f_getpgrp,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
+  ADD_EFUN("getpgrp", f_getpgrp, tFunc(tOr(tInt, tVoid), tInt),
+                      OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPGRP */
+
+#ifdef HAVE_SETPGRP
+  ADD_EFUN("setpgrp", f_setpgrp, tFunc(tNone, tInt), OPT_EXTERNAL_DEPEND);
+#endif
+
+#ifdef HAVE_GETSID
+  ADD_EFUN("getsid", f_getsid, tFunc(tOr(tInt, tVoid), tInt),
+                        OPT_EXTERNAL_DEPEND);
+#endif
+
+#ifdef HAVE_SETSID
+  ADD_EFUN("setsid", f_setsid, tFunc(tNone, tInt),  OPT_EXTERNAL_DEPEND);
+#endif
+
 
 #ifdef HAVE_CHROOT 
   

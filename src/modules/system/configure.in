@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.36 2000/08/17 18:42:36 grubba Exp $
+# $Id: configure.in,v 1.37 2000/09/15 13:45:58 leif Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -21,7 +21,8 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 
 AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
-        geteuid getpgrp getpgid getppid getuid getgid setuid setgid \
+        geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
+        getsid setsid \
 	getpwnam getspnam getgrnam getpwuid getgrgid \
 	getgrent setgrent endgrent getpwent setpwent endpwent \
 	chroot fchroot uname sysinfo gethostname gethostbyname \
