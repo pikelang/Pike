@@ -1,8 +1,9 @@
 #pike __REAL_VERSION__
+constant name="Tag removal u. Regexp.PCRE";
+
 #if constant(Regexp.PCRE)
 inherit Tools.Shoot.TagRemoveSscanf;
 
-constant name="Tag removal u. Regexp.PCRE";
 int n=2000;
 
 Regexp.PCRE pcre=Regexp.PCRE.Studied("<[^>]>");
