@@ -166,7 +166,7 @@ array(string) gen_func(string name, string ty)
       after_variables =
 	"  if("+name+"_fun.type)\n"
 	"    free_svalue(&"+name+"_fun);\n"
-	"  assign_svalue_no_free(&"+name+"_fun, &sp[-args+"+(a-1)+"]);\n";
+	"  assign_svalue_no_free(&"+name+"_fun, &Pike_sp[-args+"+(a-1)+"]);\n";
 
       i+=sizeof(internal_args)+2;
       break;
@@ -175,7 +175,7 @@ array(string) gen_func(string name, string ty)
       argt += ({"string"});
       args += ({ "arg"+a });
       res += "  char *arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.string->str;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.string->str;\n";
       a++;
       break;
 
@@ -188,28 +188,28 @@ array(string) gen_func(string name, string ty)
       argt += ({"int"});
       args += ({ "arg"+a });
       res += "  INT32 arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.integer;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.integer;\n";
       a++;
       break;
     case 'D':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  double arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case 'F':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  float arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case 'R':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  double arg"+a+";\n";
-      got += "  arg"+a+"=(double)sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=(double)Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case '+':
@@ -296,7 +296,7 @@ array(string) gen_func(string name, string ty)
   if(img_obj) {
     argt += ({"object"});
     res += "  struct zimage img;\n";
-    got += "  check_img_arg(sp["+(a-1)+"-args].u.object, &img, "+a+
+    got += "  check_img_arg(Pike_sp["+(a-1)+"-args].u.object, &img, "+a+
       ", \""+name+"\");\n";
   }
 

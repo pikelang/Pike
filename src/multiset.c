@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.46 2002/01/16 02:54:15 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.47 2002/05/10 23:53:33 nilsson Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -5210,7 +5210,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.46 2002/01/16 02:54:15 nilsson Exp $");
+RCSID("$Id: multiset.c,v 1.47 2002/05/10 23:53:33 nilsson Exp $");
 
 struct multiset *first_multiset;
 
@@ -5496,10 +5496,10 @@ PMOD_EXPORT void f_aggregate_multiset(INT32 args)
 {
   struct multiset *l;
   f_aggregate(args);
-  l=allocate_multiset(sp[-1].u.array);
+  l=allocate_multiset(Pike_sp[-1].u.array);
   order_multiset(l);
-  sp[-1].type=T_MULTISET;
-  sp[-1].u.multiset=l;
+  Pike_sp[-1].type=T_MULTISET;
+  Pike_sp[-1].u.multiset=l;
 }
 
 

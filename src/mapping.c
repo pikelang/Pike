@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.146 2002/01/16 02:54:14 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.147 2002/05/10 23:52:34 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1806,7 +1806,7 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 
   m=allocate_mapping(MAP_SLOTS(args / 2));
 
-  for(e=-args;e<0;e+=2) mapping_insert(m, sp+e, sp+e+1);
+  for(e=-args;e<0;e+=2) mapping_insert(m, Pike_sp+e, Pike_sp+e+1);
   pop_n_elems(args);
 #ifdef PIKE_DEBUG
   if(d_flag)
@@ -1859,12 +1859,12 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
   add_ref(md);
   NEW_MAPPING_LOOP(md)
   {
-    copy_svalues_recursively_no_free(sp,&k->ind, 1, &doing);
-    sp++;
-    copy_svalues_recursively_no_free(sp,&k->val, 1, &doing);
-    sp++;
+    copy_svalues_recursively_no_free(Pike_sp,&k->ind, 1, &doing);
+    Pike_sp++;
+    copy_svalues_recursively_no_free(Pike_sp,&k->val, 1, &doing);
+    Pike_sp++;
     
-    mapping_insert(ret, sp-2, sp-1);
+    mapping_insert(ret, Pike_sp-2, Pike_sp-1);
     pop_n_elems(2);
   }
   md->valrefs--;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.426 2002/05/02 14:48:08 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.427 2002/05/10 23:38:10 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3141,8 +3141,8 @@ PMOD_EXPORT void f_compile(INT32 args)
 	p=Pike_sp[4-args].u.program;
 
     case 4:
-      major=sp[2-args].u.integer;
-      minor=sp[3-args].u.integer;
+      major=Pike_sp[2-args].u.integer;
+      minor=Pike_sp[3-args].u.integer;
       
     case 2:
       if(Pike_sp[1-args].type == T_OBJECT)
@@ -6562,7 +6562,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 Pike_sp--;                      /* allocate_multiset is destructive */
 	 dmalloc_touch_svalue(Pike_sp);
 	 push_multiset(allocate_multiset(Pike_sp->u.array));
-	 order_multiset(sp[-1].u.multiset);
+	 order_multiset(Pike_sp[-1].u.multiset);
 #endif
 	 return;
 
@@ -6961,7 +6961,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 Pike_sp--;                      /* allocate_multiset is destructive */
 	 dmalloc_touch_svalue(Pike_sp);
 	 push_multiset(allocate_multiset(Pike_sp->u.array));
-	 order_multiset(sp[-1].u.multiset);
+	 order_multiset(Pike_sp[-1].u.multiset);
 #endif
 	 return;
 

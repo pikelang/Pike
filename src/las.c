@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.285 2002/04/09 17:11:56 nilsson Exp $");
+RCSID("$Id: las.c,v 1.286 2002/05/10 23:52:34 nilsson Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1786,7 +1786,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
     pop_stack();
     free_svalue(&thrown);
   }else{
@@ -1901,7 +1901,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	      *(Pike_sp++) = thrown;
 	      thrown.type = PIKE_T_INT;
 	      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	      if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	      if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
 	      pop_stack();
 	    }
 	  }else if (!force_resolve) {
@@ -5202,7 +5202,7 @@ ptrdiff_t eval_low(node *n)
 	yyerror("Error evaluating constant.\n");
 	push_svalue(&thrown);
 	low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
 	pop_stack();
 	free_svalue(&thrown);
       }
@@ -5527,5 +5527,3 @@ int dooptcode(struct pike_string *name,
   free_node(n);
   return ret;
 }
-
-

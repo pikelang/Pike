@@ -134,26 +134,26 @@ array(string) gen_func(string name, string ty)
       argt += ({"int"});
       args += ({ "arg"+a });
       res += "  INT32 arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.integer;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.integer;\n";
       a++;
       break;
     case 'D':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  double arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case 'F':
       argt += ({"float"});
       args += ({ "arg"+a });
       res += "  float arg"+a+";\n";
-      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      got += "  arg"+a+"=Pike_sp["+(a-1)+"-args].u.float_number;\n";
       a++;
       break;
     case 'Z':
       argt += ({"float|int"});
-      args += ({ "sp["+(a-1)+"-args]" });
+      args += ({ "Pike_sp["+(a-1)+"-args]" });
       polya = (a++)-1;
       break;
     case '+':
@@ -218,9 +218,9 @@ array(string) gen_func(string name, string ty)
       array arrfix = special_234(nn, nn, rst, 1);
       res += "  union zvalue16 zv16;\n  int r1n;\n";
       argt += arrfix[0];
-      got += "  if(sp["+(a-1)+"-args].u.array->size != "+nn+")\n"
+      got += "  if(Pike_sp["+(a-1)+"-args].u.array->size != "+nn+")\n"
 	"    Pike_error(\""+name+": Array length is wrong (is %d, should be "+nn+
-	")\\n\", sp["+(a-1)+"-args].u.array->size);\n\n";
+	")\\n\", Pike_sp["+(a-1)+"-args].u.array->size);\n\n";
       got += "  r1n=check_1n_args(\""+name+"\", args-"+(a-1)+", "+
 	arrfix[1]+", "+arrfix[2]+", &zv16);\n";
       r234=-1;
@@ -255,7 +255,7 @@ array(string) gen_func(string name, string ty)
   if(img_obj) {
     argt += ({"object|mapping(string:object)"});
     res += "  struct zimage img;\n";
-    got += "  check_img_arg(&sp["+(a-1)+"-args], &img, "+a+
+    got += "  check_img_arg(&Pike_sp["+(a-1)+"-args], &img, "+a+
       ", \""+name+"\");\n";
   }
 

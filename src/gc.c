@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.180 2002/01/16 02:54:12 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.181 2002/05/10 23:41:19 nilsson Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2369,7 +2369,7 @@ static void warn_bad_cycles()
     for (p = kill_list; p;) {
       if ((cycle = CYCLE(p))) {
 	push_object((struct object *) p->data);
-	*obj_arr_ = append_array(*obj_arr_, --sp);
+	*obj_arr_ = append_array(*obj_arr_, --Pike_sp);
       }
       p = NEXT(p);
       if (p ? ((unsigned)(CYCLE(p) != cycle)) : cycle) {

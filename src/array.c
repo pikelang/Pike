@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.124 2002/03/06 11:01:59 grubba Exp $");
+RCSID("$Id: array.c,v 1.125 2002/05/10 23:35:06 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -741,7 +741,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(a->u.object->prog,LFUN_LT) != -1) {
       push_svalue(b);
       apply_lfun(a->u.object,LFUN_LT,1);
-      if(!UNSAFE_IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
 	return -1;
@@ -751,7 +751,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(a->u.object->prog,LFUN_GT) != -1) {
       push_svalue(b);
       apply_lfun(a->u.object,LFUN_GT,1);
-      if(!UNSAFE_IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
 	return 1;
@@ -761,7 +761,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1) {
       push_svalue(b);
       apply_lfun(a->u.object,LFUN_EQ,1);
-      if (!UNSAFE_IS_ZERO(sp-1)) {
+      if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
 	pop_stack();
 	return 0;
       }
@@ -772,7 +772,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(b->u.object->prog,LFUN_LT) != -1) {
       push_svalue(a);
       apply_lfun(b->u.object,LFUN_LT,1);
-      if(!UNSAFE_IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
 	return 1;
@@ -782,7 +782,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(b->u.object->prog,LFUN_GT) != -1) {
       push_svalue(a);
       apply_lfun(b->u.object,LFUN_GT,1);
-      if(!UNSAFE_IS_ZERO(sp-1))
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
       {
 	pop_stack();
 	return -1;
@@ -792,7 +792,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if (FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1) {
       push_svalue(a);
       apply_lfun(b->u.object,LFUN_EQ,1);
-      if (!UNSAFE_IS_ZERO(sp-1)) {
+      if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
 	pop_stack();
 	return 0;
       }

@@ -219,7 +219,7 @@ static void f_pike_search(INT32 args)
 		    Pike_sp+2-args,
 		    "Start must be greater or equal to zero.\n");
     }
-    if(start >= sp[-args].u.string->len)
+    if(start >= Pike_sp[-args].u.string->len)
     {
       pop_n_elems(args);
       push_int(-1);

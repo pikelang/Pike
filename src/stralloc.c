@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.140 2002/01/16 02:54:19 nilsson Exp $");
+RCSID("$Id: stralloc.c,v 1.141 2002/05/10 23:55:51 nilsson Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -2390,7 +2390,7 @@ PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
     convert_stack_top_with_base_to_bignum();
     if(neg) o_negate();
     
-    *r = *--sp;
+    *r = *--Pike_sp;
   }
 #endif /* AUTO_BIGNUM */
   
@@ -2402,13 +2402,13 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
   struct svalue r;
   int i;
 
-  if(sp[-1].type != T_STRING)
+  if(Pike_sp[-1].type != T_STRING)
     Pike_error("Cannot convert stack top to integer number.\n");
   
-  i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(sp[-1].u.string), 0, base, 0);
+  i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(Pike_sp[-1].u.string), 0, base, 0);
   
-  free_string(sp[-1].u.string);
-  sp[-1] = r;
+  free_string(Pike_sp[-1].u.string);
+  Pike_sp[-1] = r;
 
   return i;
 }

@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.279 2002/05/09 15:15:56 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.280 2002/05/10 23:49:16 nilsson Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3987,7 +3987,7 @@ static void safe_inc_enum(void)
 
     push_svalue(&s);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&s);
+    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&s);
     pop_stack();
     free_svalue(&s);
   } else {
@@ -4032,7 +4032,7 @@ static int call_handle_import(struct pike_string *s)
     my_yyerror("Error finding module to import");
     push_svalue(&thrown);
     low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
     pop_stack();
     free_svalue(&thrown);
   }

@@ -17,7 +17,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.62 2002/05/10 21:53:14 per Exp $");
+RCSID("$Id: dynamic_load.c,v 1.63 2002/05/10 23:39:52 nilsson Exp $");
 
 #else /* TESTING */
 
@@ -380,10 +380,10 @@ void f_load_module(INT32 args)
 
   struct compilation_save save;
 
-  if(sp[-args].type != T_STRING)
+  if(Pike_sp[-args].type != T_STRING)
     Pike_error("Bad argument 1 to load_module()\n");
 
-  module_name = sp[-args].u.string->str;
+  module_name = Pike_sp[-args].u.string->str;
 
   /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
   /* Using RTLD_LAZY is faster, but makes it impossible to 
@@ -396,9 +396,9 @@ void f_load_module(INT32 args)
   {
     const char *err = dlerror();
     if(!err) err = "Unknown reason";
-    if (sp[-args].u.string->len < 1024) {
+    if (Pike_sp[-args].u.string->len < 1024) {
       Pike_error("load_module(\"%s\") failed: %s\n",
-	    sp[-args].u.string->str, err);
+	    Pike_sp[-args].u.string->str, err);
     } else {
       Pike_error("load_module() failed: %s\n", err);
     }
@@ -452,16 +452,16 @@ void f_load_module(INT32 args)
   global_callable_flags|=CALLABLE_DYNAMIC;
 
 #ifdef PIKE_DEBUG
-  { struct svalue *save_sp=sp;
+  { struct svalue *save_sp=Pike_sp;
 #endif
   SET_ONERROR(err, cleanup_compilation, &save);
   (*(modfun)init)();
   UNSET_ONERROR(err);
 #ifdef PIKE_DEBUG
-  if(sp != save_sp)
+  if(Pike_sp != save_sp)
     fatal("load_module(%s) left %ld droppings on stack!\n",
 	  module_name,
-	  PTRDIFF_T_TO_LONG(sp - save_sp));
+	  PTRDIFF_T_TO_LONG(Pike_sp - save_sp));
   }
 #endif
 
@@ -470,7 +470,7 @@ void f_load_module(INT32 args)
   free_string(lex.current_file);
   compilation_depth = save.compilation_depth;
   lex = save.lex;
-  add_ref(new_module->module_prog = sp[-1].u.program);
+  add_ref(new_module->module_prog = Pike_sp[-1].u.program);
 }
 
 #endif /* USE_DYNAMIC_MODULES */

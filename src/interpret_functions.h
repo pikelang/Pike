@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.101 2002/05/10 22:28:28 mast Exp $
+ * $Id: interpret_functions.h,v 1.102 2002/05/10 23:44:05 nilsson Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -239,7 +239,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
   struct svalue tmp;
   struct object *o;
 
-  if ((sp[-1].type == T_OBJECT) && ((o = Pike_sp[-1].u.object)->prog) &&
+  if ((Pike_sp[-1].type == T_OBJECT) && ((o = Pike_sp[-1].u.object)->prog) &&
       (FIND_LFUN(o->prog, LFUN_ARROW) == -1)) {
     int id = FIND_LFUN(o->prog, arg1);
     if ((id != -1) &&
@@ -1261,7 +1261,7 @@ LOOP(F_DEC_NEQ_LOOP, "--Loop!=", -1, !=, !is_eq);
 OPCODE0_JUMP(F_LOOP, "loop", 0, { /* loopcnt */
   /* Use >= and 1 to be able to reuse the 1 for the subtraction. */
   push_int(1);
-  if (!is_lt(sp-2, sp-1)) {
+  if (!is_lt(Pike_sp-2, Pike_sp-1)) {
     o_subtract();
     DOJUMP();
   } else {

@@ -1,5 +1,5 @@
 /*
- * $Id: top.c,v 1.14 2000/12/01 18:46:05 hubbe Exp $
+ * $Id: top.c,v 1.15 2002/05/10 23:57:39 nilsson Exp $
  *
  */
 
@@ -24,7 +24,7 @@
 
 #include "global.h"
 
-RCSID("$Id: top.c,v 1.14 2000/12/01 18:46:05 hubbe Exp $");
+RCSID("$Id: top.c,v 1.15 2002/05/10 23:57:39 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -47,7 +47,7 @@ static void f_glGet(INT32 args)
 
   check_all_args("glGet", args, BIT_INT, 0);
 
-  arg1=sp[0-args].u.integer;
+  arg1=Pike_sp[0-args].u.integer;
 
   pop_n_elems(args);
 
