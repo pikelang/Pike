@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.351 2001/03/08 16:33:21 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.352 2001/03/11 22:50:36 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -559,7 +559,7 @@ void f_query_num_arg(INT32 args)
   push_int(Pike_fp ? Pike_fp->args : 0);
 }
 
-/*! @decl int search(string haystack, string needle, int|void start)
+/*! @decl int search(string haystack, string|int needle, int|void start)
  *! @decl int search(array haystack, mixed needle, int|void start)
  *! @decl mixed search(mapping haystack, mixed needle, mixed|void start)
  *!
@@ -569,8 +569,8 @@ void f_query_num_arg(INT32 args)
  *! If the optional argument @[start] is present search is started at
  *! this position.
  *!
- *! When @[haystack] is a string @[needle] must be a string, and the first
- *! occurrence of this string is returned.
+ *! When @[haystack] is a string @[needle] must be a string or an int,
+ *! and the first occurrence of the string or int is returned.
  *!
  *! When @[haystack] is an array, @[needle] is compared only to one value at
  *! a time in @[haystack].
@@ -594,10 +594,8 @@ PMOD_EXPORT void f_search(INT32 args)
   {
   case T_STRING:
   {
-    char *ptr;
-    if(Pike_sp[1-args].type != T_STRING)
-      SIMPLE_BAD_ARG_ERROR("search", 2, "string");
-    
+    struct pike_string *haystack = Pike_sp[-args].u.string;
+
     start=0;
     if(args > 2)
     {
@@ -611,15 +609,65 @@ PMOD_EXPORT void f_search(INT32 args)
       }
     }
 
-    if(Pike_sp[-args].u.string->len < start)
-      bad_arg_error("search", Pike_sp-args, args, 1, "int(0..)", Pike_sp-args,
+    if(haystack->len < start)
+      bad_arg_error("search", Pike_sp-args, args, 3, "int(0..)", Pike_sp-args,
 		    "Start must not be greater than the "
 		    "length of the string.\n");
 
-    start=string_search(Pike_sp[-args].u.string,
-			Pike_sp[1-args].u.string,
-			start);
-
+    if(Pike_sp[1-args].type == T_STRING) {
+      start = string_search(haystack,
+			    Pike_sp[1-args].u.string,
+			    start);
+    } else if (Pike_sp[1-args].type == T_INT) {
+      INT_TYPE val = Pike_sp[1-args].u.integer;
+      
+      switch(Pike_sp[-args].u.string->size_shift) {
+      case 0:
+	{
+	  p_wchar0 *str = STR0(haystack);
+	  if (val >= 256) {
+	    start = -1;
+	    break;
+	  }
+	  while (start < haystack->len) {
+	    if (str[start] == val) break;
+	    start++;
+	  }
+	}
+	break;
+      case 1:
+	{
+	  p_wchar1 *str = STR1(haystack);
+	  if (val >= 65536) {
+	    start = -1;
+	    break;
+	  }
+	  while (start < haystack->len) {
+	    if (str[start] == val) break;
+	    start++;
+	  }
+	}
+	break;
+      case 2:
+	{
+	  p_wchar2 *str = STR2(haystack);
+	  while (start < haystack->len) {
+	    if (str[start] == (p_wchar2)val) break;
+	    start++;
+	  }
+	}
+	break;
+      default:
+	fatal("search(): Unsupported string shift: %d!\n",
+	      haystack->size_shift);
+	break;
+      }
+      if (start >= haystack->len) {
+	start = -1;
+      }
+    } else {
+      SIMPLE_BAD_ARG_ERROR("search", 2, "string | int");
+    }
     pop_n_elems(args);
     push_int64(start);
     break;
@@ -867,7 +915,8 @@ PMOD_EXPORT void f_has_index(INT32 args)
   }
 }
 
-/*! @decl int has_value(string haystack, int value)
+/*! @decl int has_value(string haystack, string value)
+ *! @decl int has_value(string haystack, int value)
  *! @decl int has_value(array haystack, int value)
  *! @decl int has_value(mapping haystack, mixed value)
  *!
@@ -876,12 +925,12 @@ PMOD_EXPORT void f_has_index(INT32 args)
  *! Returns @tt{1@} if @[value] is in the value domain of @[haystack],
  *! or @tt{0@} (zero) if not found.
  *!
- *! This function is in all cases except for strings equivalent to
- *! (but sometimes faster than):
+ *! This function is in all cases except when both arguments are strings
+ *! equivalent to (but sometimes faster than):
  *!
  *! @code{search(values(@[haystack]), @[value]) != -1@}
  *!
- *! For strings, @[has_value()] is equivalent to:
+ *! If both arguments are strings, @[has_value()] is equivalent to:
  *!
  *! @code{search(@[haystack], @[value]) != -1@}
  *!
@@ -917,7 +966,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
 	 
 	 /Noring */
 
-      /* Fall-through. */
+      /* FALL_THROUGH */
       
     default:
       stack_swap();
@@ -7661,7 +7710,7 @@ void init_builtin_efuns(void)
 
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
   ADD_EFUN("search",f_search,
-	   tOr4(tFunc(tStr tStr tOr(tVoid,tInt),
+	   tOr4(tFunc(tStr tOr(tStr,tInt) tOr(tVoid,tInt),
 		      tInt),
 		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
 		      tInt),
@@ -7689,7 +7738,7 @@ void init_builtin_efuns(void)
 	   0);
 
   ADD_EFUN("has_value",f_has_value,
-	   tOr5(tFunc(tStr tStr, tInt),
+	   tOr5(tFunc(tStr tOr(tStr, tInt), tInt),
 		tFunc(tArr(tSetvar(0,tMix)) tVar(0), tInt),
 		tFunc(tMultiset tInt, tInt),
 		tFunc(tMap(tMix,tSetvar(1,tMix)) tVar(1), tInt),
