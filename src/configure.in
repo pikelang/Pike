@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.151 1998/01/16 21:40:13 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.152 1998/01/22 00:51:19 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -212,7 +212,7 @@ if test $cflags_is_set = no; then
 
   if test "x$with_cdebug" = "xno" ; then
     AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
-    CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @@g'`
+    CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @ @g'`
   else
     :
   fi  
@@ -245,7 +245,9 @@ if test $cflags_is_set = no; then
   # OSF/1
   AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
 
-  if test "x$with_cdebug" = "x" ; then
+  if test "x$with_cdebug" = "xyes" ; then
+    # FIXME:
+    # Maybe should remove the -g flag if this succeeds.
     AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3,OPTIMIZE)
   fi
   AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host,OPTIMIZE)
