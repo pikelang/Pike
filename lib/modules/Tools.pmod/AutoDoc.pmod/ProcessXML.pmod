@@ -363,7 +363,6 @@ static Node findNode(Node root, array(string) ref) {
 }
 
 static class ReOrganizeTask {
-  string belongsNamespace;
   array(string) belongsRef;
   string newName;
   Node n;
