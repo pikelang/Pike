@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.33 2004/12/10 15:13:36 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.34 2004/12/16 16:05:56 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -1576,6 +1576,27 @@ PIKECLASS Group
       free_object(THIS->end_token);
     }
     add_ref(THIS->end_token = token);
+  }
+
+  PIKEFUN Token get_end_token()
+  {
+    pop_n_elems(args);
+    if (THIS->end_token) {
+      ref_push_object(THIS->end_token);
+    } else {
+      push_undefined();
+    }
+  }
+
+  /*! @decl List get_contents()
+   *!
+   *! @returns
+   *!   Returns the @[ADT.List] of tokens contained in the group.
+   */
+  PIKEFUN List get_contents()
+  {
+    pop_n_elems(args);
+    ref_push_object(THIS->contents);    
   }
 
   /*! @decl Group append(Token token)
