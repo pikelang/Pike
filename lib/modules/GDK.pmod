@@ -1,7 +1,6 @@
-inherit GTK;
-#define INDEX(x) predef::`->(this_object(),(x))
+#define INDEX(x) GTK[x]
 
-object Atom = class 
+object Atom = class
 {
   mapping atoms = ([]);
 
@@ -12,7 +11,7 @@ object Atom = class
     object get_atom()
     {
       if(ra) return ra;
-      return ra = Gdk_Atom( n, 0 );
+      return ra = GTK->Gdk_Atom( n, 0 );
     }
     string get_name()
     {
@@ -35,15 +34,13 @@ object Atom = class
 mixed `[](string what)
 {
   if(what == "_module_value") return ([])[0];
-
   if(what == "Atom") return Atom;
-
   if(!zero_type(INDEX("Gdk"+what)))
     return INDEX("Gdk"+what);
   if(!zero_type(INDEX("GDK_"+what)))
     return INDEX("GDK_"+what);
-  if(!zero_type(INDEX("GDK_"+upper_case(GTK.unsillycaps(what)))))
-    return INDEX("GDK_"+upper_case(GTK.unsillycaps(what)));
+  if(!zero_type(INDEX("GDK_"+upper_case(GTK->unsillycaps(what)))))
+    return INDEX("GDK_"+upper_case(GTK->unsillycaps(what)));
   return ([])[0];
 //   return  GDKSupport[what];
 }
