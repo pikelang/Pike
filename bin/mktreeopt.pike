@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.12 1999/11/09 01:20:15 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.13 1999/11/09 12:45:41 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -15,19 +15,26 @@
  *     / \    / \    / \    / \
  *    -   -  -   X  X   -  X   X
  *
- * The node is then matched against the 9 kinds of match nodes:
+ * The node is then matched against the 16 kinds of match nodes:
  *
- *      X      X      X
- *     / \    / \    / \
- *    -   -  -   X  -   *
+ *      X      X      X      X
+ *     / \    / \    / \    / \
+ *    -   -  -   X  -   +  -   *
  *
- *      X      X      X
- *     / \    / \    / \
- *    X   -  X   X  X   *
+ *      X      X      X      X
+ *     / \    / \    / \    / \
+ *    X   -  X   X  X   +  X   *
  *
- *      X      X      X
- *     / \    / \    / \
- *    *   -  *   X  *   *
+ *      X      X      X      X
+ *     / \    / \    / \    / \
+ *    +   -  +   X  +   +  +   *
+ *
+ *      X      X      X      X
+ *     / \    / \    / \    / \
+ *    *   -  *   X  *   +  *   *
+ *
+ * Since + behaves closely like X, they will be grouped together in the
+ * tables below.
  *
  * The match-order is determined by the manhattan distance from the node
  *
@@ -53,8 +60,7 @@
  *     / \  ->                       / \                  / \    / \    / \
  *    X   X                         X   X                *   X  X   *  *   *
  *
- * Note: It might be better to let * not match -.
- *       The result would then be:
+ * The first part of the table expanded with the implicit +-nodes:
  *
  *      X        X
  *     / \  ->  / \
@@ -62,15 +68,15 @@
  *
  *      X             	X                    X
  *     / \  ->         / \                  / \
- *    -   X           -   X                -   *
+ *    -   X           -   X                -   +
  *
  *      X                      X          	    X
  *     / \  ->                / \         	   / \
- *    X   -                  X   -        	  *   -
+ *    X   -                  X   -        	  +   -
  *
  *      X                             X                    X      X      X
  *     / \  ->                       / \                  / \    / \    / \
- *    X   X                         X   X                *   X  X   *  *   *
+ *    X   X                         X   X                +   X  X   +  +   +
  *
  * Which would be much easier to generate code for, since every match node
  * occurrs exactly once, and no goto's would be needed.
@@ -83,6 +89,7 @@
  *       // Code for NULL-NULL
  *     } else {
  *       // Code for NULL-X
+ *       // Code for NULL-PLUS
  *     }
  *     // Code for NULL-ANY
  *     if (!cdr(n)) {
@@ -91,6 +98,7 @@
  *     goto ANY_X;
  *   } else if (!cdr(n)) {
  *     // Code for X-NULL
+ *     // Code for PLUS-NULL
  *   ANY_NULL:
  *     // Code for ANY-NULL
  *     if (car(n)) {
@@ -98,11 +106,16 @@
  *     }
  *   } else {
  *     // Code for X-X
+ *     // Code for X-PLUS
+ *     // Code for PLUS-X
+ *     // Code for PLUS-PLUS
  *   X_ANY:
  *     // Code for X-ANY
+ *     // Code for PLUS-ANY
  *     if (cdr(n)) {
  *     ANY_X:
  *       // Code for ANY-X
+ *       // Code for ANY-PLUS
  *     }
  *   }
  *   // Code for ANY-ANY
@@ -112,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.12 1999/11/09 01:20:15 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.13 1999/11/09 12:45:41 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -350,7 +363,22 @@ object read_node()
       pos++;
 
       tpos = "A"+otpos;
-      res->car = read_node();
+
+      if (data[pos] == '$') {
+	// FIXME: Support for recurring nodes.
+	// Useful for common subexpression elimination.
+	pos++;
+	int tag = read_int();
+	if (!marks[tag]) {
+	  fail("%s:%d: Tag $%d used before being defined.\n",
+	       fname, line, tag);
+	}
+	fail("%s:%d: Support for recurring nodes not implemented yet.\n",
+	     fname, line);
+	eat_whitespace();
+      } else {
+	res->car = read_node();
+      }
 
       expect(',');
 
