@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.69 2003/11/14 10:38:39 mast Exp $
+|| $Id: math.c,v 1.70 2003/11/14 23:11:13 mast Exp $
 */
 
 #include "global.h"
@@ -36,21 +36,50 @@
   if(sp[-args].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float"); \
   TRIM_STACK(1)
 
-RCSID("$Id: math.c,v 1.69 2003/11/14 10:38:39 mast Exp $");
+RCSID("$Id: math.c,v 1.70 2003/11/14 23:11:13 mast Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
 #endif
 
 #if defined (WITH_LONG_DOUBLE_PRECISION_SVALUE)
-#define FL(X) PIKE_CONCAT(X,l)
-#define FA(X) PIKE_CONCAT(X,l)
+
+/* Assume that if one l-suffixed function exists, they all do. */
+# ifdef HAVE_EXPL
+#  define FL1(FN, ARG1) PIKE_CONCAT(FN,l) (ARG1)
+#  define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,l) (ARG1, ARG2)
+# else
+/* Will lose precision. :\ */
+#  define FL1(FN, ARG1) FN (DO_NOT_WARN ((double) (ARG1)))
+#  define FL2(FN, ARG1, ARG2) FN (DO_NOT_WARN ((double) (ARG1)),	\
+				  DO_NOT_WARN ((double) (ARG2)))
+# endif
+
 #elif defined (WITH_DOUBLE_PRECISION_SVALUE)
-#define FL(X) X
-#define FA(X) X
+
+# define FL1(FN, ARG1) FN (ARG1)
+# define FL2(FN, ARG1, ARG2) FN (ARG1, ARG2)
+
 #else
-#define FL(X) PIKE_CONCAT(X,f)
-#define FA(X) X
+
+/* Assume that if one f-suffixed function exists, they all do. */
+# ifdef HAVE_EXPF
+#  define FL1(FN, ARG1) PIKE_CONCAT(FN,f) (ARG1)
+#  define FL2(FN, ARG1, ARG2) PIKE_CONCAT(FN,f) (ARG1, ARG2)
+# else
+#  define FL1(FN, ARG1) DO_NOT_WARN ((FLOAT_TYPE) FN (ARG1))
+#  define FL2(FN, ARG1, ARG2) DO_NOT_WARN ((FLOAT_TYPE) FN ((ARG1), (ARG2)))
+# endif
+
+# define FA1(FN, ARG1) FN (ARG1)
+# define FA2(FN, ARG1, ARG2) FN (ARG1, ARG2)
+
+#endif
+
+/* FA1 and FA2 are used for FLOAT_ARG_TYPE. */
+#ifndef FA1
+# define FA1(FN, ARG1) FL1 (FN, (ARG1))
+# define FA2(FN, ARG1, ARG2) FL2 (FN, (ARG1), (ARG2))
 #endif
 
 #ifndef NO_MATHERR
@@ -97,7 +126,7 @@ int matherr(struct exception *exc)
 void f_sin(INT32 args)
 {
   ARG_CHECK("sin");
-  sp[-1].u.float_number = FL(sin)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(sin,sp[-1].u.float_number);
 }
 
 /*! @decl float asin(float f)
@@ -111,7 +140,7 @@ void f_sin(INT32 args)
 void f_asin(INT32 args)
 {
   ARG_CHECK("asin");
-  sp[-1].u.float_number = FL(asin)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(asin,sp[-1].u.float_number);
 }
 
 /*! @decl float cos(float f)
@@ -125,7 +154,7 @@ void f_asin(INT32 args)
 void f_cos(INT32 args)
 {
   ARG_CHECK("cos");
-  sp[-1].u.float_number = FL(cos)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(cos,sp[-1].u.float_number);
 }
 
 /*! @decl float acos(float f)
@@ -139,7 +168,7 @@ void f_cos(INT32 args)
 void f_acos(INT32 args)
 {
   ARG_CHECK("acos");
-  sp[-1].u.float_number = FL(acos)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(acos,sp[-1].u.float_number);
 }
 
 /*! @decl float tan(float f)
@@ -161,7 +190,7 @@ void f_tan(INT32 args)
     Pike_error("Impossible tangent.\n");
     return;
   }
-  sp[-1].u.float_number = FL(tan)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(tan,sp[-1].u.float_number);
 }
 
 /*! @decl float atan(float f)
@@ -175,7 +204,7 @@ void f_tan(INT32 args)
 void f_atan(INT32 args)
 {
   ARG_CHECK("atan");
-  sp[-1].u.float_number = FL(atan)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(atan,sp[-1].u.float_number);
 }
 
 /*! @decl float atan2(float f1, float f2)
@@ -196,8 +225,7 @@ void f_atan2(INT32 args)
     SIMPLE_BAD_ARG_ERROR("atan2", 1, "float");
   if(sp[-1].type!=T_FLOAT)
     SIMPLE_BAD_ARG_ERROR("atan2", 2, "float");
-  sp[-2].u.float_number= FL(atan2)(sp[-2].u.float_number,
-				   sp[-1].u.float_number);
+  sp[-2].u.float_number= FL2(atan2,sp[-2].u.float_number,sp[-1].u.float_number);
   pop_stack();
 }
 
@@ -217,7 +245,7 @@ void f_sinh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA(exp)(x)-FA(exp)(-x))));
+    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(exp,x)-FA1(exp,-x))));
 }
 
 /*! @decl float asinh(float f)
@@ -234,7 +262,7 @@ void f_asinh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (FA(log)(x+FA(sqrt)(1+x*x))));
+    DO_NOT_WARN ((FLOAT_TYPE) (FA1(log,x+FA1(sqrt,1+x*x))));
 }
 
 /*! @decl float cosh(float f)
@@ -251,7 +279,7 @@ void f_cosh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA(exp)(x)+FA(exp)(-x))));
+    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(exp,x)+FA1(exp,-x))));
 }
 
 /*! @decl float acosh(float f)
@@ -268,7 +296,7 @@ void f_acosh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (2*FA(log)(FA(sqrt)(0.5*(x+1))+FA(sqrt)(0.5*(x-1)))));
+    DO_NOT_WARN ((FLOAT_TYPE) (2*FA1(log,FA1(sqrt,0.5*(x+1))+FA1(sqrt,0.5*(x-1)))));
 }
 
 /*! @decl float tanh(float f)
@@ -285,7 +313,7 @@ void f_tanh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) ((FA(exp)(x)-FA(exp)(-x))/(FA(exp)(x)+FA(exp)(-x))));
+    DO_NOT_WARN ((FLOAT_TYPE) ((FA1(exp,x)-FA1(exp,-x))/(FA1(exp,x)+FA1(exp,-x))));
 }
 
 /*! @decl float atanh(float f)
@@ -302,7 +330,7 @@ void f_atanh(INT32 args)
   x=sp[-1].u.float_number;
 
   sp[-1].u.float_number =
-    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA(log)(1+x)-FA(log)(1-x))));
+    DO_NOT_WARN ((FLOAT_TYPE) (0.5*(FA1(log,1+x)-FA1(log,1-x))));
 }
 
 #endif
@@ -360,7 +388,7 @@ void f_sqrt(INT32 args)
       Pike_error("math: sqrt(x) with (x < 0.0)\n");
       return;
     }
-    sp[-1].u.float_number = FL(sqrt)(sp[-1].u.float_number);
+    sp[-1].u.float_number = FL1(sqrt,sp[-1].u.float_number);
   }
 #ifdef AUTO_BIGNUM
   else if(sp[-1].type == T_OBJECT)
@@ -396,7 +424,7 @@ void f_log(INT32 args)
   if(sp[-1].u.float_number <=0.0)
     Pike_error("Log on number less or equal to zero.\n");
 
-  sp[-1].u.float_number = FL(log)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(log,sp[-1].u.float_number);
 }
 
 /*! @decl float exp(float|int f)
@@ -413,7 +441,7 @@ void f_exp(INT32 args)
   get_all_args("exp",args,"%F",&f);
   TRIM_STACK(1);
   sp[-1].type = T_FLOAT;
-  sp[-1].u.float_number = FL(exp)(f);
+  sp[-1].u.float_number = FL1(exp,f);
 }
 
 /*! @decl int|float pow(float|int n, float|int x)
@@ -455,7 +483,7 @@ void f_pow(INT32 args)
       get_all_args("pow",2,"%F%F",&x,&y);
       pop_stack();
       sp[-1].type = T_FLOAT;
-      sp[-1].u.float_number = FL(pow)(x, y);
+      sp[-1].u.float_number = FL2(pow,x,y);
       return;
     }
 
@@ -478,7 +506,7 @@ void f_pow(INT32 args)
 void f_floor(INT32 args)
 {
   ARG_CHECK("floor");
-  sp[-1].u.float_number = FL(floor)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(floor,sp[-1].u.float_number);
 }
 
 /*! @decl float ceil(float f)
@@ -495,7 +523,7 @@ void f_floor(INT32 args)
 void f_ceil(INT32 args)
 {
   ARG_CHECK("ceil");
-  sp[-1].u.float_number = FL(ceil)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(ceil,sp[-1].u.float_number);
 }
 
 /*! @decl float round(float f)
@@ -512,7 +540,7 @@ void f_ceil(INT32 args)
 void f_round(INT32 args)
 {
   ARG_CHECK("round");
-  sp[-1].u.float_number = FL(RINT)(sp[-1].u.float_number);
+  sp[-1].u.float_number = FL1(RINT,sp[-1].u.float_number);
 }
 
 /*! @decl int|float|object min(int|float|object ... args)
