@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.6 1998/04/10 15:23:38 grubba Exp $
+/* $Id: master.pike.in,v 1.7 1998/04/14 18:19:32 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -284,7 +284,14 @@ program cast_to_program(string pname, string current_file)
 void handle_error(mixed *trace)
 {
   predef::trace(0);
-  werror(describe_backtrace(trace));
+  if(mixed x=catch {
+    werror(describe_backtrace(trace));
+  })
+  {
+    werror("Error in handle_error in master object:\n");
+    werror("%O\nOriginal error:\n%O\n",x,trace);
+  }
+  
 }
 
 object new(mixed prog, mixed ... args)
@@ -785,6 +792,23 @@ string stupid_describe(mixed m)
   }
 }
 
+string describe_program(program p)
+{
+  string s;
+  if(!p) return 0;
+  if(s=search(programs,p))
+  {
+    if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
+      return explode_path(reverse(rest))[-1];
+    return s;
+  }
+
+  if(mixed tmp=function_object(p))
+    if(s=describe_program(object_program(tmp)))
+      return s+"."+function_name(p);
+  return 0;
+}
+
 /* It is possible that this should be a real efun,
  * it is currently used by handle_error to convert a backtrace to a
  * readable message.
@@ -843,7 +867,15 @@ string describe_backtrace(mixed *trace)
 	{
 	  row+="line "+tmp[1]+" in "+trim_file_name(tmp[0]);
 	}else{
-	  row+="Unknown program";
+	  mixed desc="Unknown program";
+	  if(sizeof(tmp)>=3 && functionp(tmp[2]))
+	  {
+	    if(mixed tmp=function_object(tmp[2]))
+	      if(tmp=object_program(tmp))
+		if(tmp=describe_program(tmp))
+		  desc=tmp;
+	  }
+	  row+=desc;
 	}
       }
       else
