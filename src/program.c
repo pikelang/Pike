@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.225 2000/04/22 18:48:58 mast Exp $");
+RCSID("$Id: program.c,v 1.226 2000/08/28 19:37:40 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -841,8 +841,8 @@ void low_start_new_program(struct program *p,
     i.storage_offset=0;
     i.inherit_level=0;
     i.parent=0;
-    i.parent_identifier=0;
-    i.parent_offset=1;
+    i.parent_identifier=-1;
+    i.parent_offset=-18;
     i.name=0;
     add_to_inherits(i);
   }
@@ -1586,6 +1586,9 @@ void rename_last_inherit(struct pike_string *n)
 /*
  * make this program inherit another program
  */
+/*
+ * make this program inherit another program
+ */
 void low_inherit(struct program *p,
 		 struct object *parent,
 		 int parent_identifier,
@@ -1593,7 +1596,8 @@ void low_inherit(struct program *p,
 		 INT32 flags,
 		 struct pike_string *name)
 {
-  int e, inherit_offset, storage_offset;
+  int e;
+  ptrdiff_t inherit_offset, storage_offset;
   struct inherit inherit;
   struct pike_string *s;
 
@@ -1610,11 +1614,20 @@ void low_inherit(struct program *p,
       yyerror("Parent pointer lost, cannot inherit!");
       /* We inherit it anyway, to avoid causing more errors */
     }
+
+#if 0
+    /* FIXME: we don't really need to set thsi flag on ALL
+     * previous compilations, but I'm too lazy to figure out
+     * exactly how deep down we need to go...
+     */
+    for(e=0;e<compilation_depth;e++,state=state->previous)
+      state->new_program->flags |= PROGRAM_USES_PARENT;
+#endif
   }
 
- /* parent offset was increased by one for above test.. */
+ /* parent offset was increased by 42 for above test.. */
   if(parent_offset)
-    parent_offset--;
+    parent_offset-=42;
 
 
   if(!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
@@ -1641,6 +1654,8 @@ void low_inherit(struct program *p,
     inherit.identifier_level += new_program->num_identifier_references;
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
+
+
     if(!e)
     {
       if(parent)
@@ -1648,7 +1663,8 @@ void low_inherit(struct program *p,
 	if(parent->next == parent)
 	{
 	  struct object *o;
-	  for(o=fake_object->parent;o!=parent;o=o->parent)
+	  inherit.parent_offset=0;
+	  for(o=fake_object;o!=parent;o=o->parent)
 	  {
 #ifdef PIKE_DEBUG
 	    if(!o) fatal("low_inherit with odd fake_object as parent!\n");
@@ -1658,10 +1674,10 @@ void low_inherit(struct program *p,
 	}else{
 	  inherit.parent=parent;
 	  inherit.parent_identifier=parent_identifier;
-	  inherit.parent_offset=0;
+	  inherit.parent_offset=-17;
 	}
       }else{
-	inherit.parent_offset+=parent_offset;
+	inherit.parent_offset=parent_offset;
 	inherit.parent_identifier=parent_identifier;
       }
     }else{
@@ -1669,34 +1685,50 @@ void low_inherit(struct program *p,
       {
 	if(parent && parent->next != parent && inherit.parent_offset)
 	{
+	  /* Fake object */
 	  struct object *par=parent;
 	  int e,pid=parent_identifier;
+
 	  for(e=1;e<inherit.parent_offset;e++)
 	  {
 	    struct inherit *in;
 	    if(!par->prog)
 	    {
 	      par=0;
-	      pid=0;
+	      pid=-1;
 	      break;
 	    }
 
 	    in=INHERIT_FROM_INT(par->prog, pid);
-	    if(in->parent_offset)
+	    switch(in->parent_offset)
 	    {
-	      pid=par->parent_identifier;
-	      par=par->parent;
-	      e-=in->parent_offset-1;
-	    }else{
-	      pid=in->parent_identifier;
-	      par=in->parent;
+	      default:
+	      {
+		struct external_variable_context tmp;
+		struct inherit *in2=in;
+		while(in2->identifier_level >= in->identifier_level) in2--;
+		tmp.o=par;
+		tmp.inherit=in2;
+		tmp.parent_identifier=pid;
+		find_external_context(&tmp, in->parent_offset);
+		par = tmp.o;
+		pid = tmp.parent_identifier;
+	      }
+	      break;
+
+	      case -17:
+		pid = in->parent_identifier;
+		par = in->parent;
+		break;
+
+	      case -18:
+		pid = par->parent_identifier;
+		par = par->parent;
 	    }
 	  }
 
 	  inherit.parent=par;
-	  inherit.parent_offset=0;
-	}else{
-	  inherit.parent_offset+=parent_offset;
+	  inherit.parent_offset=-17;
 	}
       }
     }
@@ -1764,7 +1796,7 @@ void do_inherit(struct svalue *s,
   struct program *p=program_from_svalue(s);
   low_inherit(p,
 	      s->type == T_FUNCTION ? s->u.object : 0,
-	      s->subtype,
+	      s->type == T_FUNCTION ? s->subtype : -1,
 	      0,
 	      flags,
 	      name);
@@ -1793,7 +1825,7 @@ void compiler_do_inherit(node *n,
 
     case F_EXTERNAL:
       p=parent_compilation(n->u.integer.a);
-      offset=n->u.integer.a;
+      offset=n->u.integer.a+1;
       numid=n->u.integer.b;
 
       if(!p)
@@ -1802,8 +1834,8 @@ void compiler_do_inherit(node *n,
 	return;
       }
 
-  continue_inherit:
 
+  continue_inherit:
       i=ID_FROM_INT(p, numid);
 
       if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
@@ -1825,7 +1857,7 @@ void compiler_do_inherit(node *n,
       low_inherit(p,
 		  0,
 		  numid,
-		  offset+1,
+		  offset+42,
 		  flags,
 		  name);
       break;

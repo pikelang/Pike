@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.107 2000/06/17 03:16:34 hubbe Exp $");
+RCSID("$Id: object.c,v 1.108 2000/08/28 19:37:40 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1327,43 +1327,22 @@ struct program *magic_set_index_program=0;
 
 void push_magic_index(struct program *type, int inherit_no, int parent_level)
 {
-  struct inherit *inherit;
-  struct object *o,*magic;
-  struct program *p;
+  struct external_variable_context loc;
+  struct object *magic;
 
-  o=fp->current_object;
-  if(!o) error("Illegal magic index call.\n");
+  loc.o=Pike_fp->current_object;
+  if(!loc.o) error("Illegal magic index call.\n");
+
+  loc.parent_identifier=Pike_fp->fun;
+  loc.inherit=INHERIT_FROM_INT(Pike_fp->current_object->prog, Pike_fp->fun);
   
-  inherit=INHERIT_FROM_INT(fp->current_object->prog, fp->fun);
-
-  while(parent_level--)
-  {
-    int i;
-    if(inherit->parent_offset)
-    {
-      i=o->parent_identifier;
-      o=o->parent;
-      parent_level+=inherit->parent_offset-1;
-    }else{
-      i=inherit->parent_identifier;
-      o=inherit->parent;
-    }
-    
-    if(!o)
-      error("Parent was lost!\n");
-    
-    if(!(p=o->prog))
-      error("Attempting to access variable in destructed object\n");
-    
-    inherit=INHERIT_FROM_INT(p, i);
-  }
-
+  find_external_context(&loc, parent_level);
 
   magic=low_clone(type);
-  add_ref(MAGIC_O2S(magic)->o=o);
-  MAGIC_O2S(magic)->inherit = inherit + inherit_no;
+  add_ref(MAGIC_O2S(magic)->o=loc.o);
+  MAGIC_O2S(magic)->inherit = loc.inherit + inherit_no;
 #ifdef DEBUG
-  if(inherit + inherit_no >= o->prog->inherits + o->prog->num_inherit)
+  if(loc.inherit + inherit_no >= loc.o->prog->inherits + loc.o->prog->num_inherit)
      fatal("Magic index blahonga!\n");
 #endif
   push_object(magic);
