@@ -79,6 +79,11 @@
  * compiled file
  */
 
+/* This is the end of file marker used by the lexer
+ * to enable nicer EOF in error handling.
+ */
+%token F_LEX_EOF
+
 %token F_MAX_OPCODE
 %token F_ADD_EQ
 %token F_AND_EQ
@@ -171,7 +176,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.90 1998/04/27 10:00:27 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.91 1998/04/27 18:37:39 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -350,7 +355,8 @@ int yylex(YYSTYPE *yylval);
 %type <n> low_program_ref
 %%
 
-all: program
+all: program { YYACCEPT; }
+  | program F_LEX_EOF { YYACCEPT; }
   ;
 
 program: program def optional_semi_colon
@@ -430,7 +436,23 @@ inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
   {
     free_node($3); yyerrok;
   }
+  | modifiers F_INHERIT low_program_ref error F_LEX_EOF
+  {
+    free_node($3);
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
+  }
+  | modifiers F_INHERIT low_program_ref error '}'
+  {
+    free_node($3); yyerror("Missing ';'.");
+  }
   | modifiers F_INHERIT error ';' { yyerrok; }
+  | modifiers F_INHERIT error F_LEX_EOF
+  {
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
+  }
+  | modifiers F_INHERIT error '}' { yyerror("Missing ';'."); }
   ;
 
 import: F_IMPORT idents ';'
@@ -450,6 +472,12 @@ import: F_IMPORT idents ';'
     pop_stack();
   }
   | F_IMPORT error ';' { yyerrok; }
+  | F_IMPORT error F_LEX_EOF
+  {
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
+  }
+  | F_IMPORT error '}' { yyerror("Missing ';'."); }
   ;
 
 constant_name: F_IDENTIFIER '=' safe_expr0
@@ -494,6 +522,12 @@ constant_list: constant_name
 
 constant: modifiers F_CONSTANT constant_list ';' {}
   | modifiers F_CONSTANT error ';' { yyerrok; }
+  | modifiers F_CONSTANT error F_LEX_EOF
+  {
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
+  }
+  | modifiers F_CONSTANT error '}' { yyerror("Missing ';'."); }
   ;
 
 block_or_semi: block
@@ -614,9 +648,16 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     yyerrok;
 /*     if(num_parse_error>5) YYACCEPT; */
   }
+  | error F_LEX_EOF
+  {
+    reset_type_stack();
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file");
+  }
   | error '}'
   {
     reset_type_stack();
+    yyerror("Missing ';'.");
    /* yychar = '}';	*/ /* Put the '}' back on the input stream */
   }
   ;
@@ -660,6 +701,13 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
 
 func_args: '(' arguments ')' { $$=$2; }
          | '(' error ')' { $$=0; yyerrok; }
+         | '(' error F_LEX_EOF
+         {
+	   $$=0; yyerror("Missing ')'.");
+	   yyerror("Unexpected end of file.");
+	 }
+         | '(' error ';' { $$=0; yyerror("Missing ')'."); }
+         | '(' error '}' { $$=0; yyerror("Missing ')'."); }
          | error { $$=0; yyerrok; }
          ;
 
@@ -1003,6 +1051,13 @@ statement: unused2 ';'
   | break ';'
   | continue ';'
   | error ';' { reset_type_stack(); $$=0; yyerrok; }
+  | error F_LEX_EOF
+  {
+    reset_type_stack();
+    yyerror("Missing ';'.");
+    yyerror("Unexpected end of file.");
+    $$=0;
+  }
   | error '}'
   {
     reset_type_stack();
@@ -1435,12 +1490,27 @@ expr4: string
   | idents
   | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
   | expr4 '(' error ')' { $$=mkapplynode($1, NULL); yyerrok; }
+  | expr4 '(' error F_LEX_EOF
+  {
+    yyerror("Missing ')'."); $$=mkapplynode($1, NULL);
+    yyerror("Unexpected end of file.");
+  }
+  | expr4 '(' error ';' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
+  | expr4 '(' error '}' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
   | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
   | expr4 '['  comma_expr_or_zero F_DOT_DOT comma_expr_or_maxint ']'
   {
     $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
   }
   | expr4 '[' error ']' { $$=$1; yyerrok; }
+  | expr4 '[' error F_LEX_EOF
+  {
+    $$=$1; yyerror("Missing ']'.");
+    yyerror("Unexpected end of file.");
+  }
+  | expr4 '[' error ';' { $$=$1; yyerror("Missing ']'."); }
+  | expr4 '[' error '}' { $$=$1; yyerror("Missing ']'."); }
+  | expr4 '[' error ')' { $$=$1; yyerror("Missing ']'."); }
   | '(' comma_expr2 ')' { $$=$2; }
   | '(' '{' expr_list '}' ')'
     { $$=mkefuncallnode("aggregate",$3); }
@@ -1449,6 +1519,13 @@ expr4: string
   | F_MULTISET_START expr_list F_MULTISET_END
     { $$=mkefuncallnode("aggregate_multiset",$2); }
   | '(' error ')' { $$=mkintnode(0); yyerrok; }
+  | '(' error F_LEX_EOF
+  {
+    $$=mkintnode(0); yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
+  }
+  | '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
   | expr4 F_ARROW F_IDENTIFIER
   {
     $$=mknode(F_ARROW,$1,$3);
@@ -1617,10 +1694,24 @@ typeof: F_TYPEOF '(' expr0 ')'
     free_node(tmp);
   } 
   | F_TYPEOF '(' error ')' { $$=mkintnode(0); yyerrok; }
+  | F_TYPEOF '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | F_TYPEOF '(' error F_LEX_EOF
+  {
+    $$=mkintnode(0); yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
+  }
+  | F_TYPEOF '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
   ;
  
 catch_arg: '(' comma_expr ')'  { $$=$2; }
   | '(' error ')' { $$=mkintnode(0); yyerrok; }
+  | '(' error F_LEX_EOF
+  {
+    $$=mkintnode(0); yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
+  }
+  | '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
   | block
   ; 
 
@@ -1646,13 +1737,61 @@ sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'
     free_node($5);
     yyerrok;
   }
+  | F_SSCANF '(' expr0 ',' expr0 error F_LEX_EOF
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    free_node($5);
+    yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
+  }
+  | F_SSCANF '(' expr0 ',' expr0 error '}'
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    free_node($5);
+    yyerror("Missing ')'.");
+  }
+  | F_SSCANF '(' expr0 ',' expr0 error ';'
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    free_node($5);
+    yyerror("Missing ')'.");
+  }
   | F_SSCANF '(' expr0 error ')'
   {
     $$=mkintnode(0);
     free_node($3);
     yyerrok;
   }
+  | F_SSCANF '(' expr0 error F_LEX_EOF
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
+  }
+  | F_SSCANF '(' expr0 error '}'
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    yyerror("Missing ')'.");
+  }
+  | F_SSCANF '(' expr0 error ';'
+  {
+    $$=mkintnode(0);
+    free_node($3);
+    yyerror("Missing ')'.");
+  }
   | F_SSCANF '(' error ')' { $$=mkintnode(0); yyerrok; }
+  | F_SSCANF '(' error F_LEX_EOF
+  {
+    $$=mkintnode(0); yyerror("Missing ')'.");
+    yyerror("Unexpected end of file.");
+  }
+  | F_SSCANF '(' error '}' { $$=mkintnode(0); yyerror("Missing ')'."); }
+  | F_SSCANF '(' error ';' { $$=mkintnode(0); yyerror("Missing ')'."); }
   ;
 
 lvalue: expr4
