@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.37 2002/02/12 09:49:42 anders Exp $
+ * $Id: jvm.c,v 1.38 2002/04/04 12:59:35 grubba Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.37 2002/02/12 09:49:42 anders Exp $");
+RCSID("$Id: jvm.c,v 1.38 2002/04/04 12:59:35 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -369,10 +369,10 @@ static void f_jobj_cast(INT32 args)
       push_string(make_shared_binary_string1((p_wchar1 *)wstr, l));
       (*env)->ReleaseStringChars(env, jstr, wstr);
     } else
-      push_int(0);
+      Pike_error("cast() to string failed.\n");
     jvm_vacate_env(jo->jvm, env);
   } else
-    push_int(0);
+    Pike_error("cast() to string failed (no JNIEnv).\n");
 }
 
 static void f_jobj_eq(INT32 args)
