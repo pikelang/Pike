@@ -76,7 +76,20 @@ static int close_fd(int fd)
   {
     return 0;
   }else{
-    return close(fd);
+    while(1)
+    {
+      if(close(fd) >= 0) return 0;
+      switch(errno)
+      {
+      default:
+	fatal("Unknown error in close().\n");
+	
+      case EBADF:
+	fatal("Closing a non-active file descriptor.\n");
+       
+      case EINTR:
+      }
+    }
   }
 }
 
@@ -408,6 +421,7 @@ static void file_open(INT32 args)
 
   THIS->errno = 0;
 
+ retry:
   fd=open(sp[-args].u.string->str,map(flags), 00666);
 
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
@@ -418,6 +432,9 @@ static void file_open(INT32 args)
   }
   else if(fd < 0)
   {
+    if(errno == EINTR)
+      goto retry;
+
     THIS->errno=errno;
   }
   else
@@ -482,8 +499,10 @@ static void file_stat(INT32 args)
   
   pop_n_elems(args);
 
+ retry:
   if(fstat(THIS->fd, &s) < 0)
   {
+    if(errno == EINTR) goto retry;
     THIS->errno=errno;
     push_int(0);
   }else{
@@ -1145,22 +1164,6 @@ void exit_files()
   free_program(file_program);
 }
 
-static RETSIGTYPE sig_child(int arg)
-{
-#ifdef HAVE_WAITPID
-  waitpid(-1,0,WNOHANG);
-  signal(SIGCHLD,sig_child);
-#else
-#ifdef HAVE_WAIT3
-  wait3(-1,0,WNOHANG);
-  signal(SIGCHLD,sig_child);
-#else
-
-  /* Leave'em hanging */
-
-#endif /* HAVE_WAIT3 */
-#endif /* HAVE_WAITPID */
-}
 
 void init_files_programs()
 {
@@ -1174,9 +1177,6 @@ void init_files_programs()
   reference_fd(0);
   reference_fd(1);
   reference_fd(2);
-
-  signal(SIGCHLD,sig_child);
-  signal(SIGPIPE,SIG_IGN);
 
   start_new_program();
   add_storage(sizeof(struct file));
