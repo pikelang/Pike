@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.13 1996/11/18 23:13:05 hubbe Exp $");
+RCSID("$Id: file.c,v 1.14 1996/11/26 02:28:58 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -37,6 +37,12 @@ RCSID("$Id: file.c,v 1.13 1996/11/18 23:13:05 hubbe Exp $");
 
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
+
+/* Ugly patch for AIX 3.2 */
+#ifdef u
+#undef u
+#endif
+
 #endif
 
 #ifdef HAVE_SYS_PROTOSW_H

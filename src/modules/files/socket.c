@@ -31,6 +31,12 @@
 
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
+
+/* Ugly patch for AIX 3.2 */
+#ifdef u
+#undef u
+#endif
+
 #endif
 
 #ifdef HAVE_SYS_PROTOSW_H
