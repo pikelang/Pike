@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.6 1999/09/07 20:31:12 marcus Exp $
+// $Id: Terminfo.pmod,v 1.7 1999/11/18 04:08:22 hubbe Exp $
 
 
 #if constant(thread_create)
@@ -174,7 +174,11 @@ class Termcap {
     {
       string name;
       string data;
-      sscanf(en,"%*[ \t]%[a-zA-Z_0-9&]%s"+br+"%s",name,data,en);
+      if(sscanf(en,"%*[ \t]%[a-zA-Z_0-9&]%s"+br+"%s",name,data,en) < 4)
+      {	
+	sscanf(en,"%*[ \t]%[a-zA-Z_0-9&]%s",name,data);
+	en="";
+      }
       
       if (data=="") // boolean
       {
