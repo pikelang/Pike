@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.79 2003/08/07 14:22:17 nilsson Exp $
+// $Id: DNS.pmod,v 1.80 2003/08/22 14:25:27 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -552,9 +552,8 @@ class client
 
   static private int is_ip(string ip)
   {
-    return(replace(ip,
-		   ({ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." }),
-		   ({  "", "", "", "", "", "", "", "", "", "", ""  })) == "");
+    // FIXME: Doesn't work with IPv6
+    return (replace(ip, "0123456789."/1, allocate(11,"")) == "");
   }
 
   static private mapping etc_hosts;
@@ -628,7 +627,7 @@ class client
 	}
       }
     }
-    return(etc_hosts[lower_case(host)]);
+    return etc_hosts[lower_case(host)];
   }
 
   //! @decl void create()
@@ -982,7 +981,7 @@ class client
       });
     } else {
       // Lookup failed.
-      return({ 0, ({}), ({}) });
+      return ({ 0, ({}), ({}) });
     }
   }
 

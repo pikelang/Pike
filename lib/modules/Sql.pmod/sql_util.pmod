@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.11 2003/04/22 18:02:53 nilsson Exp $
+ * $Id: sql_util.pmod,v 1.12 2003/08/22 14:24:06 nilsson Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -17,7 +17,7 @@
 //!   String to quote.
 string quote(string s)
 {
-  return(replace(s, "\'", "\'\'"));
+  return replace(s, "\'", "\'\'");
 }
 
 //! Throw an error in case an unimplemented function is called.

@@ -1,6 +1,6 @@
 /*
  * Graph sub-module providing draw functions.
- * $Id: polyline.pike,v 1.4 2001/11/19 00:01:32 nilsson Exp $
+ * $Id: polyline.pike,v 1.5 2003/08/22 14:26:26 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -33,7 +33,7 @@ static array(float) init_cap_sin_table()
   for (int i = 0; i < CAPSTEPS; i++) {
     s_t[i] = sin(PI*i/(CAPSTEPS-1));
   }
-  return(s_t);
+  return s_t;
 }
 
 static array(float) cap_sin_table = init_cap_sin_table();
@@ -45,7 +45,7 @@ static array(float) init_cap_cos_table()
   for (int i = 0; i < CAPSTEPS; i++) {
     c_t[i] = cos(PI*i/(CAPSTEPS-1));
   }
-  return(c_t);
+  return c_t;
 }
 
 static array(float) cap_cos_table = init_cap_cos_table();

@@ -3,7 +3,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: GrammarParser.pmod,v 1.4 2002/06/12 19:28:58 jhs Exp $
+ * $Id: GrammarParser.pmod,v 1.5 2003/08/22 14:25:57 nilsson Exp $
  *
  * Generates a parser from a textual specification.
  *
@@ -61,7 +61,7 @@ static private class Scan {
     while (1) {
       if (pos >= sizeof(str)) {
 	/* EOF */
-	return("");
+	return "";
       } else {
 	int start=pos++;
 	switch (str[start]) {
@@ -72,7 +72,7 @@ static private class Scan {
 		  (('a' <= str[pos]) && ('z' >= str[pos])))) {
 	    pos++;
 	  }
-	  return (lower_case(str[start..pos-1]));
+	  return lower_case(str[start..pos-1]);
 	case '\"':
 	  /* String */
 	  while ((pos < sizeof(str)) &&
@@ -108,17 +108,17 @@ static private class Scan {
 	  }
 	  break;
 	case '(':
-	  return("(");
+	  return "(";
 	case ')':
-	  return(")");
+	  return ")";
 	case '{':
-	  return("{");
+	  return "{";
 	case '}':
-	  return("}");
+	  return "}";
 	case ':':
-	  return(":");
+	  return ":";
 	case ';':
-	  return(";");
+	  return ";";
 	case '\n': 
 	case '\r':
 	case ' ':
@@ -131,7 +131,7 @@ static private class Scan {
 		 ('0' <= str[pos]) && ('9' >= str[pos])) {
 	    pos++;
 	  }
-	  return (({ "int", (int)str[start .. pos-1] }));
+	  return ({ "int", (int)str[start .. pos-1] });
 	default:
 	  /* Identifier */
 	  while ((pos < sizeof(str)) &&
@@ -141,7 +141,7 @@ static private class Scan {
 		  ('_' == str[pos]) || (str[pos] >= 128))) {
 	    pos++;
 	  }
-	  return (({ "identifier", str[start .. pos-1] }));
+	  return ({ "identifier", str[start .. pos-1] });
 	}
       }
     }
@@ -184,7 +184,7 @@ static private int add_nonterminal(string id)
     nt = nonterminal_lookup[id] = id_stack->ptr;
     id_stack->push(id);
   }
-  return(nt);
+  return nt;
 }
 
 static private void add_tokens(array(string) tokens)
@@ -207,25 +207,22 @@ static private void set_left_tokens(string ignore, int pri_val, array(string) to
 
 static private string internal_symbol_to_string(int|string symbol)
 {
-  if (intp(symbol)) {
-    return (nonterminals[symbol]);
-  } else {
-    return ("\"" + symbol + "\"");
-  }
+  if (intp(symbol))
+    return nonterminals[symbol];
+  else
+    return "\"" + symbol + "\"";
 }
 
 static private string symbol_to_string(int|string symbol)
 {
   if (intp(symbol)) {
-    if (symbol < id_stack->ptr) {
-      return (id_stack->arr[symbol]);
-    } else {
+    if (symbol < id_stack->ptr)
+      return id_stack->arr[symbol];
+    else
       /* Only happens with the initial(automatic) rule */
-      return ("nonterminal"+symbol);
-    }
-  } else {
-    return ("\""+symbol+"\"");
-  }
+      return "nonterminal"+symbol;
+  } else
+    return "\""+symbol+"\"";
 }
 
 static private void add_rule(int nt, string colon, array(mixed) symbols, string action)
@@ -275,30 +272,30 @@ void create()
 			   return ({}); } ));		/* symbols */
   _parser->add_rule(Rule(5, ({ 5, 7 }),
 			 lambda (array x, mixed|void y) {
-			   if (y) { return (x + ({ y })); }
-			   else { return (x); }} ));	/* symbols */
+			   if (y) { return x + ({ y }); }
+			   else { return x; }} ));	/* symbols */
   _parser->add_rule(Rule(6, ({ 10 }),
 			 lambda (string x) {
 			   return ({ x }); } ));	/* terminals */
   _parser->add_rule(Rule(6, ({ 6, 10 }),
 			 lambda (array(string) x, string y) {
-			   return (x + ({ y })); } ));	/* terminals */
+			   return x + ({ y }); } ));	/* terminals */
   _parser->add_rule(Rule(7, ({ 9 }), 0 ));		/* symbol */
   _parser->add_rule(Rule(7, ({ 10 }), 0 ));		/* symbol */
   _parser->add_rule(Rule(8, ({ "{", "identifier", "}" }),
 			 lambda (mixed brace_l, string id, mixed brace_r) {
-			   return (id); } ));		/* action */
+			   return id; } ));		/* action */
   _parser->add_rule(Rule(8, ({ "{", "string", "}" }),
 			 lambda (mixed brace_l, string str, mixed brace_r) {
 			   werror(sprintf("Warning: Converting string \"%s\" "
 					  "to identifier\n", str));
-			   return(str); } ));		/* action */
+			   return str; } ));		/* action */
   _parser->add_rule(Rule(9, ({ "identifier" }),
 			 add_nonterminal));		/* nonterminal */
   _parser->add_rule(Rule(10, ({ "string" }), 0));	/* terminal */
   _parser->add_rule(Rule(11, ({ "(", "int", ")" }),
 			 lambda (mixed paren_l, int val, mixed paren_r) {
-			   return (val);
+			   return val;
 			 } ));				/* priority */
   _parser->add_rule(Rule(11, ({}), 0));			/* priority */
 

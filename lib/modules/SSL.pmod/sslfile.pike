@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.55 2003/03/08 23:01:37 nilsson Exp $
+/* $Id: sslfile.pike,v 1.56 2003/08/22 14:25:00 nilsson Exp $
  *
  */
 
@@ -99,7 +99,7 @@ private int queue_write()
     if (catch {
       socket->set_write_callback(ssl_write_callback);
     }) {
-      return(0);
+      return 0;
     }
   }
 #ifdef SSL3_DEBUG

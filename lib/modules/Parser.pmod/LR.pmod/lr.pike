@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.4 2002/05/24 15:36:53 grubba Exp $
+ * $Id: lr.pike,v 1.5 2003/08/22 14:25:57 nilsson Exp $
  *
  * An LR(1) Parser in Pike
  *
@@ -21,28 +21,28 @@ Parser g;
 int add_values(int x, mixed ignore, int y)
 {
   werror(x+" + "+y+" = "+(x+y)+"\n");
-  return (x+y);
+  return x+y;
 }
 
 int mul_values(int x, mixed ignore, int y)
 {
   werror(x+" * "+y+" = "+(x*y)+"\n");
-  return (x*y);
+  return x*y;
 }
 
 int get_second_value(mixed ignored, int x, mixed ... ignored_also)
 {
-  return(x);
+  return x;
 }
 
 int concat_values(int x, int y)
 {
-  return (x*10 + y);
+  return x*10 + y;
 }
 
 int make_value(string s)
 {
-  return((int)s);
+  return (int)s;
 }
 
 /*
@@ -118,25 +118,23 @@ string a_init(string ... args)
     werror(sprintf("Reducing %s => \"%s\"\n",
 		   Array.map(args, g->symbol_to_string) * ", ",
 		   args * ""));
-    return (`+(@args));
+    return `+(@args);
   } else {
     /* Empty rule */
     werror("Reducing /* empty */ => \"\"\n");
-    return("");
+    return "";
   }
 }
 
 string symbol_to_string(int|string symbol) 
 {
   if (intp(symbol)) {
-    if (symbol < sizeof(nonterminals)) {
-      return(nonterminals[symbol]);
-    } else {
-      return("nonterminal"+symbol);
-    }
-  } else {
-    return("\""+symbol+"\"");
-  }
+    if (symbol < sizeof(nonterminals))
+      return nonterminals[symbol];
+    else
+      return "nonterminal"+symbol;
+  } else
+    return "\""+symbol+"\"";
 }
 
 void create()
@@ -177,7 +175,7 @@ class scan {
 
   string scan()
   {
-    return(s_init[s_pos++]);
+    return s_init[s_pos++];
   }
 }
 

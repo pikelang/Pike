@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.pike,v 1.17 2002/11/27 15:40:34 mast Exp $
+ * $Id: mysql.pike,v 1.18 2003/08/22 14:24:06 nilsson Exp $
  *
  * Glue for the Mysql-module
  */
@@ -32,9 +32,9 @@ void drop_db( string db )
 //!   String to quote.
 string quote(string s)
 {
-  return(replace(s,
+  return replace(s,
 		 ({ "\\", "\"", "\0", "\'", "\n", "\r" }),
-		 ({ "\\\\", "\\\"", "\\0", "\\\'", "\\n", "\\r" })));
+		 ({ "\\\\", "\\\"", "\\0", "\\\'", "\\n", "\\r" }));
 }
 
 // The following time conversion functions assumes the SQL server

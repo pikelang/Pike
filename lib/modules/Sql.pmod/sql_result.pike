@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.11 2002/11/29 01:29:14 nilsson Exp $
+ * $Id: sql_result.pike,v 1.12 2003/08/22 14:24:06 nilsson Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -42,27 +42,27 @@ string _sprintf(int type, mapping|void flags)
 int num_rows()
 {
   if (arrayp(master_res)) {
-    return(sizeof(master_res));
+    return sizeof(master_res);
   }
-  return(master_res->num_rows());
+  return master_res->num_rows();
 }
 
 //! Returns the number of fields in the result.
 int num_fields()
 {
   if (arrayp(master_res)) {
-    return(sizeof(master_res[0]));
+    return sizeof(master_res[0]);
   }
-  return(master_res->num_fields());
+  return master_res->num_fields();
 }
 
 //! Returns non-zero if there are no more rows.
 int eof()
 {
   if (arrayp(master_res)) {
-    return(index >= sizeof(master_res));
+    return index >= sizeof(master_res);
   }
-  return(master_res->eof());
+  return master_res->eof();
 }
 
 //! Return information about the available fields.
@@ -76,9 +76,9 @@ array(mapping(string:mixed)) fetch_fields()
     foreach(sort(indices(master_res[0])), string name) {
       res[index++] = ([ "name": name ]);
     }
-    return(res);
+    return res;
   }
-  return(master_res->fetch_fields());
+  return master_res->fetch_fields();
 }
 
 //! Skip past a number of rows.

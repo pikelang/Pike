@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.180 2003/07/30 16:05:20 mast Exp $
+// $Id: module.pmod,v 1.181 2003/08/22 14:23:47 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -461,7 +461,7 @@ class File
       set_nonblocking(0, 0, 0, 0, 0);
       call_out(_async_check_cb, 0);
     }
-    return(1);	// OK so far. (Or rather the callback will be used).
+    return 1;	// OK so far. (Or rather the callback will be used).
   }
 
   //! This function creates a bi-directional pipe between the object it

@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.10 2002/06/14 14:32:04 nilsson Exp $
+ * $Id: module.pmod,v 1.11 2003/08/22 14:25:57 nilsson Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -431,7 +431,7 @@ class Parser
 
       report(NOTICE, "goto_set", "=> (< %s >)",
 	     map(indices(set), symbol_to_string) * ", ");
-      return (set);
+      return set;
     }
 
     //! Generates the state reached when doing goto on the specified symbol.
@@ -621,7 +621,7 @@ class Parser
       }
       res += ({ "\n" });
     }
-    return (res * "");
+    return res * "";
   }
 
   string cast_to_string()
@@ -635,10 +635,9 @@ class Parser
   //!   Type to cast to.
   mixed cast(string type)
   {
-    if (type == "string") {
-      return(_sprintf());
-    }
-    throw(({ sprintf("Cast to %s not supported\n", type), backtrace() }));
+    if (type == "string")
+      return _sprintf();
+    error("Cast to %s not supported\n", type);
   }
 
   /* Here come the functions that actually do some work */
@@ -1017,14 +1016,13 @@ class Parser
 	    master->relation[current_item] = 1;
 	  }
 	}
-	return(nullable[i->r->symbols[i->offset]]);
-      } else {
-	return (0);	/* Not nullable */
-      }
+	return nullable[i->r->symbols[i->offset]];
+      } else
+	return 0;	/* Not nullable */
     } else {
       /* At end of rule */
       master->relation[current_item] = 1;
-      return (1);		/* Always nullable */
+      return 1;		/* Always nullable */
     }
   }
 
@@ -1283,11 +1281,11 @@ class Parser
 	     "on symbols (< %s >)",
 	     state_to_string(state),
 	     map(indices(conflict_set), symbol_to_string) * ", ");
-      return (ERROR_CONFLICTS);
+      return ERROR_CONFLICTS;
     } else {
       report(WARNING, "repair",
 	     "All conflicts removed!");
-      return (0);
+      return 0;
     }
   }
 
@@ -1555,7 +1553,7 @@ class Parser
     report(NOTICE, "compile", "DONE\n");
 #endif /* LR_PROFILE */
 
-    return (lr_error);
+    return lr_error;
   }
 
   //! Parse the input according to the compiled grammar.
@@ -1593,7 +1591,7 @@ class Parser
 	!(objectp(scanner) && functionp(scanner->`()))) {
       report(ERROR, "parse", "parser->parse(): scanner not set!\n");
       lr_error = ERROR_NO_SCANNER;
-      return(0);
+      return 0;
     }
 
     while (1) {
@@ -1677,7 +1675,7 @@ class Parser
 	  if (input == "") {
 	    /* Only the final state is allowed to shift on ""(EOF) */
 	    /* ACCEPT */
-	    return(value_stack->pop());
+	    return value_stack->pop();
 	  }
 	  /* SHIFT */
 	  report(NOTICE, "parse",
@@ -1699,11 +1697,11 @@ class Parser
 		continue;
 	      } else {
 		report(ERROR, "parse", "Empty stack at EOF!");
-		return (0);
+		return 0;
 	      }
 	    } else {
 	      report(ERROR, "parse", "Bad state at EOF");
-	      return(value_stack->pop());
+	      return value_stack->pop();
 	    }
 	  } else {
 	    lr_error |= ERROR_SYNTAX;
