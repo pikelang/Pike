@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.173 2001/03/31 01:12:47 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.174 2001/03/31 01:22:20 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2738,7 +2738,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
-      int m = ((ptrdiff_t)a->car)-'0';
+      int m = a->type - '0';
       if(a_markers[m]) {
 	a = a_markers[m];
       } else {
@@ -2822,7 +2822,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
   case '0': case '1': case '2': case '3': case '4':
   case '5': case '6': case '7': case '8': case '9':
     {
-      int m=((ptrdiff_t)b->car)-'0';
+      int m =  b->type - '0';
       if(b_markers[m]) {
 	b = b_markers[m];
       } else {
