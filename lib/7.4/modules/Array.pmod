@@ -1,5 +1,7 @@
 #pike 7.5
 
+inherit Array;
+
 // diff3, complement to diff (alpha stage)
 
 array(array(array)) diff3_old(array mid,array left,array right)
