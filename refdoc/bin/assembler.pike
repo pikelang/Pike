@@ -144,6 +144,7 @@ void section_ref_expansion(Node n) {
     case "example":
     case "dl":
     case "ul":
+    case "matrix":
       break;
 
     case "subsection":
