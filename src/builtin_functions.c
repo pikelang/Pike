@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.262 2000/04/16 22:53:18 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.263 2000/04/19 15:05:49 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6029,7 +6029,9 @@ void init_builtin_efuns(void)
   
 /* function(void|int:int|float) */
   ADD_EFUN("time",f_time,
-	   tFunc(tOr(tVoid,tInt),tOr(tInt,tFlt)),OPT_EXTERNAL_DEPEND);
+	   tOr(tFunc(tOr(tVoid,tInt01),tInt),
+	       tFunc(tAnd(tIntPos,tNot(tInt01)),tFlt)),
+	   OPT_EXTERNAL_DEPEND);
   
 /* function(int:int) */
   ADD_EFUN("trace",f_trace,tFunc(tInt,tInt),OPT_SIDE_EFFECT);
