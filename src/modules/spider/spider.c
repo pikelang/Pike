@@ -1195,9 +1195,6 @@ get(getgid)
 get(getegid)
 #endif
 get(getpid)
-#ifdef HAVE_GETPPID
-get(getppid)
-#endif
 #ifdef HAVE_GETPGRP
 get(getpgrp)
 #endif
@@ -1565,10 +1562,6 @@ void init_spider_efuns(void)
 #endif
 
   add_efun("getpid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
-
-#ifdef HAVE_GETPPID
-  add_efun("getppid", f_getppid, "function(:int)", OPT_EXTERNAL_DEPEND);
-#endif
 
 #ifdef HAVE_GETPGRP
   add_efun("getpgrp", f_getpgrp, "function(:int)", OPT_EXTERNAL_DEPEND);
