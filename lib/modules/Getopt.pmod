@@ -264,14 +264,14 @@ constant MAY_HAVE_ARG=3;
 //!   @[Getopt.get_args()], @[Getopt.find_option()]
 //!
 array(array) find_all_options(array(string) argv,
-		       array(array(array(string)|string)) options,
+		       array(array(array(string)|string|int)) options,
 		       void|int(-1..1) posix_me_harder, void|int throw_errors)
 {
   // --- Initialize variables
 
-  mapping(string:array(string|array(string))) quick=([]);
+  mapping(string:array(string|int|array(string))) quick=([]);
 
-  foreach(options; int i; array(array(string)|string) opt) {
+  foreach(options; int i; array(array(string)|string|int) opt) {
     if(sizeof(opt)!=SIZE) {
       options[i] = opt + allocate(SIZE-sizeof(opt));
       opt = options[i];
@@ -295,8 +295,8 @@ array(array) find_all_options(array(string) argv,
   array(array) ret=({});
   foreach(argv; int e; string opt) {
 
-    if(!e) continue;
-    if(!opt || sizeof(opt)<2 || opt[0]!='-') {
+    if(!e || !opt) continue;
+    if(sizeof(opt)<2 || opt[0]!='-') {
       if(posix_me_harder) break;
       continue;
     }
@@ -359,12 +359,12 @@ array(array) find_all_options(array(string) argv,
   // --- Fill out empty slots with environment values
 
   multiset(string) done = [multiset(string)]mkmultiset(column(ret, 0));
-  foreach(options, array(string|array(string)) option) {
+  foreach(options, array(string|int|array(string)) option) {
     string name=[string]option[NAME];
     if(done[name]) continue;
 
     if(option[ENV]) {
-      array(string)|string foo=option[ENV];
+      array(string)|string foo=[array(string)|string]option[ENV];
       if(!foo) continue;
       if(stringp(foo)) foo = ({ [string]foo });
 
@@ -406,8 +406,8 @@ array(string) get_args(array(string) argv, void|int(-1..1) posix_me_harder,
 
   foreach(argv; int i; string opt) {
 
-    if(!i) continue;
-    if(!stringp(opt) || sizeof(opt)<2 || opt[0]!='-') {
+    if(!i || !stringp(opt)) continue;
+    if(sizeof(opt)<2 || opt[0]!='-') {
       if(posix_me_harder) break;
       continue;
     }
