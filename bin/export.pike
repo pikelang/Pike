@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.7 1997/09/09 04:39:43 hubbe Exp $ */
+/* $Id: export.pike,v 1.8 1997/10/14 03:08:46 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -80,7 +80,6 @@ int main(int argc, string *argv)
 
   files=sum(({ vpath+"/README" }),
 	    get_files(vpath+"/src"),
-	    get_files(vpath+"/doc"),
 	    get_files(vpath+"/lib"),
 	    get_files(vpath+"/bin"));
 
