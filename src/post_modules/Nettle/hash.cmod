@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.13 2003/08/26 11:14:48 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.14 2003/11/29 00:11:39 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -61,7 +61,7 @@ PIKECLASS HashInfo
       if (!THIS->meta)
 	Pike_error("HashInfo not properly initialized.\n");
 
-      push_string(make_shared_string(THIS->meta->name));
+      push_text(THIS->meta->name);
     }
 
   /*! @decl string digest_size(void)
