@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.12 2000/03/14 21:33:24 leif Exp $ */
+/* $Id: perlmod.c,v 1.13 2000/03/18 21:12:38 leif Exp $ */
 
 #include "builtin_functions.h"
 #include "global.h"
@@ -671,8 +671,7 @@ static void perlmod_get_hash_keys(INT32 args)
 
   arr = allocate_array(n);
   for(i = 0, hv_iterinit(hv); (he = hv_iternext(hv)); ++i)
-       _sv_to_svalue(hv_iterkey(he, &len),
-                     &(arr->item[i]));
+       _sv_to_svalue(hv_iterkeysv(he), &(arr->item[i]));
 
   pop_n_elems(args);
   push_array(arr);
@@ -755,7 +754,7 @@ void pike_module_init(void)
                tFunc(tStr,tArr(tMix)),0);
 
   /* function(string:int) */
-  ADD_FUNCTION("get_hash_keys",perlmod_get_whole_array,
+  ADD_FUNCTION("get_hash_keys",perlmod_get_hash_keys,
                tFunc(tStr,tArr(tMix)),0);
 
 #if 0
