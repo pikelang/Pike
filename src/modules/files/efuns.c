@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.100 2001/05/09 16:41:06 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.101 2001/06/07 16:04:26 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -41,33 +41,33 @@ RCSID("$Id: efuns.c,v 1.100 2001/05/09 16:41:06 grubba Exp $");
 #include <limits.h>
 #endif /* HAVE_LIMITS_H */
 
-#if HAVE_DIRENT_H
+#ifdef HAVE_DIRENT_H
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
 #else
-# if HAVE_SYS_NDIR_H
+# ifdef HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
 #   define dirent direct
 #   define NAMLEN(dirent) (dirent)->d_namlen
-# endif
-# if HAVE_SYS_DIR_H
-#  include <sys/dir.h>
-#  define dirent direct
-#  define NAMLEN(dirent) (dirent)->d_namlen
-# endif
-# if HAVE_NDIR_H
-#  include <ndir.h>
-#  define dirent direct
-#  define NAMLEN(dirent) (dirent)->d_namlen
-# endif
-#endif
-
-#ifndef NAMLEN
-# if HAVE_DIRECT_H
-#  include <direct.h>
-#  define NAMLEN(dirent) strlen((dirent)->d_name)
-# endif
-#endif
+# else /* !HAVE_SYS_NDIR_H */
+#  ifdef HAVE_SYS_DIR_H
+#   include <sys/dir.h>
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
+#  else /* !HAVE_SYS_DIR_H */
+#   ifdef HAVE_NDIR_H
+#    include <ndir.h>
+#    define dirent direct
+#    define NAMLEN(dirent) (dirent)->d_namlen
+#   else /* !HAVE_NDIR_H */
+#    ifdef HAVE_DIRECT_H
+#     include <direct.h>
+#     define NAMLEN(dirent) strlen((dirent)->d_name)
+#    endif /* HAVE_DIRECT_H */
+#   endif /* HAVE_NDIR_H */
+#  endif /* HAVE_SYS_DIR_H */
+# endif /* HAVE_SYS_NDIR_H */
+#endif /* HAVE_DIRENT_H */
 
 #include "dmalloc.h"
 
@@ -1005,20 +1005,19 @@ void f_getcwd(INT32 args)
   size=1000;
   do {
     tmp=(char *)xalloc(size);
-    e=(char *)getcwd(tmp,1000); 
+    e = getcwd(tmp,1000); 
     if (e || errno!=ERANGE) break;
-    free((char *)tmp);
+    free(tmp);
     tmp=0;
     size*=2;
   } while (size < 10000);
 #else
-
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 32768
 #endif
   tmp=xalloc(MAXPATHLEN+1);
   THREADS_ALLOW_UID();
-  e=(char *)getwd(tmp);
+  e = getwd(tmp);
   THREADS_DISALLOW_UID();
 #endif
   if(!e) {
@@ -1026,6 +1025,8 @@ void f_getcwd(INT32 args)
       free(tmp);
     Pike_error("Failed to fetch current path.\n");
   }
+
+  fflush(stderr);
 
   pop_n_elems(args);
   push_string(make_shared_string(e));
