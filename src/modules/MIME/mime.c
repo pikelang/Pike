@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.10 1997/06/26 01:02:48 marcus Exp $
+ * $Id: mime.c,v 1.11 1998/04/04 01:15:40 mirar Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -9,7 +9,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: mime.c,v 1.10 1997/06/26 01:02:48 marcus Exp $");
+RCSID("$Id: mime.c,v 1.11 1998/04/04 01:15:40 mirar Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -594,7 +594,20 @@ static void f_tokenize( INT32 args )
 {
   if (args != 1)
     error( "Wrong number of arguments to MIME.tokenize()\n" );
-  else if (sp[-1].type != T_STRING)
+
+  if (sp[-1].type == T_ARRAY)
+  {
+     /* take first entry from array */
+     struct array *a=sp[-1].u.array;
+     if (a->size>0)
+     {
+	sp--;
+	push_svalue(a->item+0);
+	free_array(a);
+     }
+  }
+
+  if (sp[-1].type != T_STRING)
     error( "Wrong type of argument to MIME.tokenize()\n" );
   else {
 
