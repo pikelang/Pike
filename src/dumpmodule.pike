@@ -148,13 +148,13 @@ int main(int argc, string *argv)
 	    if(quiet)
 	      werror("i");
 	    else
-	      werror("Decode failed.\n");
+	      werror("Decode of %O failed.\n", file);
 	  }
 	}else{
 	  if(quiet)
 	    werror("!");
 	  else
-  	    werror("Compilation failed.\n");
+  	    werror("Compilation of %O failed.\n", file);
 	}
       };
       if(err)
