@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.54 1998/11/20 01:57:24 hubbe Exp $
+ * $Id: threads.h,v 1.55 1998/11/20 06:46:58 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -363,7 +363,7 @@ struct thread_state {
        (_tmp)->stack_top=stack_top; \
        (_tmp)->thread_id=thread_id;\
        DO_IF_PROFILING( (_tmp)->accounted_time=accounted_time; ) \
-       DO_IF_PROFILING( (_tmp)->time_base = gethrvtime() - time_base; ) \
+       DO_IF_PROFILING( (_tmp)->time_base = gethrtime() - time_base; ) \
        SWAP_OUT_TRACE(_tmp); \
       } while(0)
 
@@ -380,7 +380,7 @@ struct thread_state {
        stack_top=(_tmp)->stack_top;\
        thread_id=(_tmp)->thread_id;\
        DO_IF_PROFILING( accounted_time=(_tmp)->accounted_time; ) \
-       DO_IF_PROFILING(  time_base = (_tmp)->time_base + gethrvtime(); ) \
+       DO_IF_PROFILING(  time_base = (_tmp)->time_base + gethrtime(); ) \
        SWAP_IN_TRACE(_tmp); \
      } while(0)
 
