@@ -4,9 +4,9 @@
 
 #pike __REAL_VERSION__
 
-static private mixed crypto_module;
+private mixed crypto_module;
 
-mixed `[](string name)
+static mixed `[](string name)
 {
     catch {
       return (crypto_module[name]
@@ -16,9 +16,9 @@ mixed `[](string name)
     return UNDEFINED;
 }
 
-static private array(string) crypto_indices;
+private array(string) crypto_indices;
 
-array(string) _indices() {
+static array(string) _indices() {
   if(crypto_indices) return crypto_indices + ({});
   array tmp = ( __FILE__ / "/");
   tmp[-1] = "Crypto";
@@ -29,7 +29,7 @@ array(string) _indices() {
   return crypto_indices + ({});
 }
 
-void create()
+static void create()
 {
 #if constant(_Crypto)
   crypto_module=master()->resolv("_Crypto");
