@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.8 1998/11/13 14:06:44 grubba Exp $
+ * $Id: parser.pike,v 1.9 1998/11/14 01:20:02 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.8 1998/11/13 14:06:44 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.9 1998/11/14 01:20:02 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -55,13 +55,185 @@ import Array;
 /* Missing definition of nonterminal */
 #define ERROR_MISSING_DEFINITION	128
 
+import LR;
+
 /*
  * Classes
  */
 
+//. o kernel
+//.   Implements an LR(1) state
+class kernel {
+  //. + rules
+  //.   Used to check if a rule already has been added when doing closures.
+  multiset(object(rule)) rules = (<>);
+
+  //. + items
+  //.   Contains the items in this state.
+  array(object(item)) items = ({});
+
+  //. + symbol_items
+  //.   Contains the items whose next symbol is this non-terminal.
+  mapping(int : multiset(object(item))) symbol_items = ([]);
+
+  //. + action
+  //.   The action table for this state
+  //.
+  //.   object(kernel)	SHIFT to this state on this symbol.
+  //.   object(rule)	REDUCE according to this rule on this symbol.
+  mapping(int|string : object(kernel)|object(rule)) action = ([]);
+
+  /*
+   * Functions
+   */
+
+  //. - add_item
+  //.   Add an item to the state.
+  //. > i
+  //.   Item to add.
+  void add_item(object(item) i)
+  {
+    int|string symbol;
+  
+    items += ({ i });
+    if (i->offset < sizeof(i->r->symbols)) {
+      symbol = i->r->symbols[i->offset];
+
+      if (symbol_items[symbol]) {
+	symbol_items[symbol][i] = 1;
+      } else {
+	symbol_items[symbol] = (< i >);
+      }
+    }
+  }
+
+  //. - closure
+  //.   Make the closure of this state.
+  //. > nonterminal
+  //.   nonterminal to make the closure on.
+  void closure(int nonterminal)
+  {
+    if (grammar[nonterminal]) {
+      foreach (grammar[nonterminal], object(rule) r) {
+	if (!rules[r]) {
+
+	  object(item) new_item = item();
+	
+	  new_item->r = r;
+	  new_item->item_id = r->number;
+
+	  // Not needed, since 0 is the default.
+	  // new_item->offset = 0;
+	  // rules[r] is set by the post-increment above.
+	  rules[r] = 1;
+
+	  add_item(new_item);
+
+	  if (sizeof(r->symbols) && intp(r->symbols[0])) {
+	    closure(r->symbols[0]);
+	  }
+	}
+      }
+    } else {
+      werror(sprintf("Error: Definition missing for non-terminal %s\n",
+		     symbol_to_string(nonterminal)));
+      error |= ERROR_MISSING_DEFINITION;
+    }
+  }
+
+  //. - goto_set
+  //.   Make the goto-set of this state.
+  multiset(int|string) goto_set()
+  {
+    multiset(int|string) set = (<>);
+
+    foreach (items, object(item) i) {
+      if (i->offset != sizeof(i->r->symbols)) {
+	set[i->r->symbols[i->offset]] = 1;
+      }
+    }
+
+    if (verbose) {
+      werror(sprintf("goto_set()=> (< %s >)\n",
+		     map(indices(set), symbol_to_string) * ", "));
+    }
+
+    return (set);
+  }
+
+  //. - do_goto
+  //.   Generates the state reached when doing goto on the specified symbol.
+  //.   i.e. it compiles the LR(0) state.
+  //. > symbol
+  //.   symbol to make goto on.
+  object(kernel) do_goto(int|string symbol)
+  {
+    multiset(object(item)) items;
+
+    if (verbose) {
+      werror(sprintf("Performing GOTO on <%s>\n", symbol_to_string(symbol)));
+    }
+
+    items = symbol_items[symbol];
+    if (items) {
+      array(int) item_ids = Array.map(sort(indices(items)->item_id),
+				      `+, 1);
+      string kernel_hash = sprintf("%@4c", item_ids);
+
+      object(kernel) new_state = known_states[kernel_hash];
+
+      if (!new_state) {
+	known_states[kernel_hash] = new_state = kernel();
+    
+	foreach (indices(items), object(item) i) {
+	  int|string lookahead;
+
+	  object(item) new_item = item();
+	  object(rule) r;
+	  int offset = i->offset;
+
+	  new_item->offset = ++offset;
+	  new_item->r = r = i->r;
+	  new_item->item_id = r->number + offset;
+
+	  new_state->add_item(new_item);
+
+	  if ((offset != sizeof(r->symbols)) &&
+	      intp(lookahead = r->symbols[offset])) {
+	    new_state->closure(lookahead);
+	  }
+	}
+
+	s_q->push(new_state);
+      } else {
+	// werror("Known state\n");
+      }
+      /* DEBUG */
+
+      if (verbose) {
+	werror(sprintf("GOTO on %s generated state:\n%s\n",
+		       symbol_to_string(symbol),
+		       state_to_string(new_state)));
+      }
+
+      /* !DEBUG */
+
+      if (items) {
+	foreach (indices(items), object(item) i) {
+	  i->next_state = new_state;
+	}
+      }
+    } else {
+      werror(sprintf("WARNING: do_goto() on unknown symbol <%s>\n",
+		     symbol_to_string(symbol)));
+    }
+  }
+
+};
+
 //. o state_queue
 //.
-//. This is a queue.
+//. This is a queue, which keeps the elements even after they are retrieved.
 class state_queue {
   //. + head
   //. Index of the head of the queue.
@@ -71,13 +243,13 @@ class state_queue {
   int tail;
   //. + arr
   //. The queue itself.
-  array(object(LR.kernel)) arr=allocate(64);
+  array(object(kernel)) arr = allocate(64);
 
   //. - push
-  //.   Pushes the state on the queue if it isn't there already.
+  //.   Pushes the state on the queue.
   //. > state
   //.   State to push.
-  object(LR.kernel) push(object(LR.kernel) state)
+  object(kernel) push(object(kernel) state)
   {
     if (tail == sizeof(arr)) {
       arr += allocate(tail);
@@ -89,7 +261,7 @@ class state_queue {
 
   //. - next
   //.   Return the next state from the queue.
-  int|object(LR.kernel) next()
+  int|object(kernel) next()
   {
     if (head == tail) {
       return(0);
@@ -98,8 +270,6 @@ class state_queue {
     }
   }
 }
-
-import LR;
 
 /* The grammar itself */
 static private mapping(int|string : array(object(rule))) grammar = ([]);
@@ -445,54 +615,6 @@ void add_rule(object(rule) r)
 
 /* Here come the functions used by the compiler */
 
-static private multiset(int|string) make_goto_set(object(kernel) state)
-{
-  multiset(int|string) set = (<>);
-
-  foreach (state->items, object(item) i) {
-    if (i->offset != sizeof(i->r->symbols)) {
-      set[i->r->symbols[i->offset]] = 1;
-    }
-  }
-
-  if (verbose) {
-    werror(sprintf("make_goto_set()=> (< %s >)\n",
-		   map(indices(set), symbol_to_string) * ", "));
-  }
-
-  return (set);
-}
-
-static private void make_closure(object(kernel) state, int nonterminal)
-{
-  if (grammar[nonterminal]) {
-    foreach (grammar[nonterminal], object(rule) r) {
-      if (!(state->rules[r])) {
-
-	object(item) new_item = item();
-	
-	new_item->r = r;
-	new_item->item_id = r->number;
-
-	// Not needed, since 0 is the default.
-	// new_item->offset = 0;
-	// state->rules[r] is set by the post-increment above.
-	state->rules[r] = 1;
-
-	state->add_item(new_item);
-
-	if (sizeof(r->symbols) && intp(r->symbols[0])) {
-	  make_closure(state, r->symbols[0]);
-	}
-      }
-    }
-  } else {
-    werror(sprintf("Error: Definition missing for non-terminal %s\n",
-		   symbol_to_string(nonterminal)));
-    error |= ERROR_MISSING_DEFINITION;
-  }
-}
-
 static private object(kernel) first_state()
 {
   object(kernel) state = kernel();
@@ -515,7 +637,7 @@ static private object(kernel) first_state()
 
       if ((sizeof(r->symbols)) &&
 	  (intp(r->symbols[0]))) {
-	make_closure(state, r->symbols[0]);
+	state->closure(r->symbols[0]);
       }
     }
   }
@@ -528,69 +650,6 @@ static private object(kernel) first_state()
  * In the queue-part are the states that remain to be compiled.
  */
 static private object(state_queue) s_q;
-
-static private object(kernel) do_goto(object(kernel) state, int|string symbol)
-{
-  multiset(object(item)) items;
-
-  if (verbose) {
-    werror(sprintf("Performing GOTO on <%s>\n", symbol_to_string(symbol)));
-  }
-
-  items = state->symbol_items[symbol];
-  if (items) {
-    array(int) new_state_item_ids = Array.map(sort(indices(items)->item_id),
-					      `+, 1);
-    string kernel_hash = sprintf("%@4c", new_state_item_ids);
-
-    object(kernel) new_state = known_states[kernel_hash];
-
-    if (!new_state) {
-      known_states[kernel_hash] = new_state = kernel();
-    
-      foreach (indices(items), object(item) i) {
-	int|string lookahead;
-
-	object(item) new_item = item();
-	object(rule) r;
-	int offset = i->offset;
-
-	new_item->offset = ++offset;
-	new_item->r = r = i->r;
-	new_item->item_id = r->number + offset;
-
-	new_state->add_item(new_item);
-
-	if ((offset != sizeof(r->symbols)) &&
-	    intp(lookahead = r->symbols[offset])) {
-	  make_closure(new_state, lookahead);
-	}
-      }
-
-      s_q->push(new_state);
-    } else {
-      // werror("Known state\n");
-    }
-    /* DEBUG */
-
-    if (verbose) {
-      werror(sprintf("GOTO on %s generated state:\n%s\n",
-		     symbol_to_string(symbol),
-		     state_to_string(new_state)));
-    }
-
-    /* !DEBUG */
-
-    if (items) {
-      foreach (indices(items), object(item) i) {
-	i->next_state = new_state;
-      }
-    }
-  } else {
-    werror(sprintf("WARNING: do_goto() on unknown symbol <%s>\n",
-		   symbol_to_string(symbol)));
-  }
-}
 
 static private object(Stack.stack) item_stack;
 
@@ -1067,8 +1126,8 @@ int compile()
     }
 
     /* Probably better implemented as a stack */
-    foreach (indices(make_goto_set(state)), int|string symbol) {
-      do_goto(state, symbol);
+    foreach (indices(state->goto_set()), int|string symbol) {
+      state->do_goto(symbol);
     }
   }
 
@@ -1164,7 +1223,8 @@ int compile()
 
   /* Compute lookback-sets */
   for (int index = 0; index < s_q->tail; index++) {
-    foreach (s_q->arr[index]->items, object(item) transition) {
+    array(object(item)) items =  s_q->arr[index]->items;
+    foreach (items, object(item) transition) {
       int|string symbol;
 
       if ((transition->offset != sizeof(transition->r->symbols)) &&
@@ -1173,7 +1233,7 @@ int compile()
 	/* NonTerminal and master item*/
 
 	/* Find items which can reduce to the nonterminal from above */
-	foreach (s_q->arr[index]->items, object(item) i2) {
+	foreach (items, object(item) i2) {
 	  if ((!i2->offset) &&
 	      (i2->r->nonterminal == symbol)) {
 	    if (sizeof(i2->r->symbols)) {

@@ -32,7 +32,6 @@ testfont binary
 /lib/modules/Crypto/rsa.pike foreign_ident
 /lib/modules/LR.pmod/Grammar_parser.pmod foreign_ident
 /lib/modules/LR.pmod/item.pike foreign_ident
-/lib/modules/LR.pmod/kernel.pike foreign_ident
 /lib/modules/LR.pmod/lr.pike foreign_ident
 /lib/modules/LR.pmod/parser.pike foreign_ident
 /lib/modules/LR.pmod/priority.pike foreign_ident
