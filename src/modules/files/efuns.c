@@ -266,8 +266,8 @@ void f_rm(INT32 args)
 
   s = sp[-args].u.string->str;
   
-  i=lstat(s, &st) != -1;
   THREADS_ALLOW();
+  i=lstat(s, &st) != -1;
   if(i)
   {
     if(S_IFDIR == (S_IFMT & st.st_mode))
