@@ -1,5 +1,5 @@
 /*
- * $Id: rijndaeltest.pike,v 1.1 2004/02/05 17:29:53 nilsson Exp $
+ * $Id: rijndaeltest.pike,v 1.2 2005/03/13 23:45:19 nilsson Exp $
  *
  * Test Crypto.aes against the official test-vectors.
  *
@@ -21,6 +21,7 @@ int tests;
 int run_test(string raw, function(mapping(string:string):int) fun)
 {
   int fail;
+  raw -= "\r";
   foreach (raw / "\n\n", string segment) {
     tests++;
     if (has_prefix(segment, "==") || !has_value(segment, "=")) continue;
