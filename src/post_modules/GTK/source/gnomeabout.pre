@@ -7,7 +7,7 @@ inherit Gnome.Dialog;
 //! application. It also allows the programmer to provide a logo to be
 //! displayed.
 //! <p>
-//! TIMG: Gnome.About( "Example", "1.0", "(c) Roxen IS 2000", ({"Per Hedbor"}), "Some nice documentation\nabout this example" );
+//! TIMG: Gnome.About( "Example", "1.0", "(c) Roxen IS 2000\n(c) IDA, LiU 2002", ({"Per Hedbor"}), "Some nice documentation\nabout this example" );
 //! </p>
 void create( string title, string version, string copyright,
              array(string,null,cast=(const_gchar_**)) authors,
