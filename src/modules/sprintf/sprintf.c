@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.14 1997/09/11 21:01:32 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.15 1998/02/20 01:09:36 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -834,7 +834,7 @@ string pike_sprintf(char *format,struct svalue *argp,int num_arg)
 }
 
 /* The efun */
-static void f_sprintf(INT32 num_arg)
+void f_sprintf(INT32 num_arg)
 {
   struct pike_string *ret;
   struct svalue *argp;
