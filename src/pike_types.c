@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.174 2001/03/31 01:22:20 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.175 2001/03/31 16:04:34 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1774,15 +1774,21 @@ static void low_or_pike_types(struct pike_type *t1,
   }
   else if(t1->type == T_INT && t2->type == T_INT)
   {
-    /* FIXME:
-     * This should only be done if the ranges are
-     * overlapping or adjecant to each other. /Hubbe
-     */
     INT32 min, max;
-    min = MINIMUM((ptrdiff_t)t1->car, (ptrdiff_t)t2->car);
-    max = MAXIMUM((ptrdiff_t)t1->cdr, (ptrdiff_t)t2->cdr);
 
-    push_int_type(min, max);
+    if (MINIMUM((ptrdiff_t)t1->cdr, (ptrdiff_t)t2->cdr) <
+	MAXIMUM((ptrdiff_t)t1->car, (ptrdiff_t)t2->car)) {
+      /* No overlap. */
+      push_finished_type(t1);
+      push_finished_type(t2);
+      push_type(T_OR);
+    } else {
+      /* Overlap */
+      min = MINIMUM((ptrdiff_t)t1->car, (ptrdiff_t)t2->car);
+      max = MAXIMUM((ptrdiff_t)t1->cdr, (ptrdiff_t)t2->cdr);
+
+      push_int_type(min, max);
+    }
   }
   else if (t1->type == T_SCOPE)
   {
