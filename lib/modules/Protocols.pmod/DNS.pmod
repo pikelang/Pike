@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.86 2005/03/01 16:25:39 grubba Exp $
+// $Id: DNS.pmod,v 1.87 2005/03/01 17:20:44 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -909,7 +909,7 @@ class client
     mapping a6_records   = low_gethostbyname(s, T_A6);
     mapping aaaa_records = low_gethostbyname(s, T_AAAA);
 
-#if 1
+#if 0
     werror("a_records: %O\n"
 	   "a6_records: %O\n"
 	   "aaaa_records: %O\n",
