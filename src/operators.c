@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.119 2001/02/25 17:55:08 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.120 2001/06/11 21:19:34 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -947,6 +947,11 @@ PMOD_EXPORT void o_and(void)
 	      pop_n_elems(2);
 	      push_mapping(m);
 	      return;
+	   }
+	   default:
+	   {
+	      int args = 2;
+	      SIMPLE_BAD_ARG_ERROR("`&", 2, "mapping");
 	   }
 	}
      else 
