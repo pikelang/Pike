@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.42 2002/09/02 16:49:16 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.43 2002/09/03 09:50:36 grubba Exp $");
 
 #else /* TESTING */
 
@@ -274,7 +274,7 @@ int main()
   res = read(tmp[0],foo,999);
   e = errno;
   alarm(0);
-  if ((res >= 0) || (e != AGAIN)) {
+  if ((res >= 0) || (e != EAGAIN)) {
     fprintf(stderr,
 	    "Unexpected behaviour of nonblocking read() res:%d, errno:%d\n",
 	    res, e);
