@@ -56,6 +56,11 @@ test_eq([[Crypto.des()->set_decrypt_key(Crypto.hex_to_string("0123456789abcdef")
 		->crypt_block(Crypto.hex_to_string("3fa40e8a984d4815"))]],
 	[["Now is t"]])
 
+]])
+
+cond( [[ master()->resolv("Gmp")->mpz ]],
+[[
+
 // IDEA
 test_true([[objectp(Crypto.idea())]])
 test_eq([[Crypto.idea()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"
@@ -77,6 +82,11 @@ test_eq([[Crypto.rc4()->set_encrypt_key(Crypto.hex_to_string("0000000000000000")
 test_eq([[Crypto.rc4()->set_encrypt_key(Crypto.hex_to_string("ef012345"))
 		->crypt(Crypto.hex_to_string("00000000000000000000"))]],
 	[[Crypto.hex_to_string("d6a141a7ec3c38dfbd61")]])
+
+]])
+cond( [[ master()->resolv("Gmp")->mpz ]],
+[[
+
 test_eq([[Crypto.rc4()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
 		->crypt(Crypto.hex_to_string(
 		  "0101010101010101010101010101010101010101010101010101010101010101"
@@ -112,6 +122,9 @@ test_eq([[Crypto.rc4()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef")
 	  "7486d49b9c4bad9ba24b96abf924372c8a8fffb10d55354900a77a3db5f205e1"
 	  "b99fcd8660863a159ad4abe40fa48934163ddde542a6585540fd683cbfd8c00f"
 	  "12129a284deacc4cdefe58be7137541c047126c8d49e2755ab181ab7e940b0c0")]])
+]])
+cond( [[ master()->resolv("Gmp")->mpz ]],
+[[
   
 // MD5
 test_true([[objectp(Crypto.md5())]])
