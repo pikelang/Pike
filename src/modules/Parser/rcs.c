@@ -27,7 +27,7 @@ static struct svalue *aggregate_tokens(struct svalue *x)
     return Pike_sp;
 }
 
-static void push_token( unsigned char * from, int start, int end )
+static void push_token( const char * from, int start, int end )
 {
     push_string( make_shared_binary_string(from+start, end-start+1) );
 }
@@ -36,7 +36,7 @@ static void tokenize( struct pike_string *s )
 {
     int in_string = 0;
     unsigned int ts=0, i, len=s->len;
-    unsigned char *data = s->str;
+    const char *data = (const char *)s->str;
     struct svalue *osp = Pike_sp;
     struct svalue *ots = Pike_sp;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.80 2004/03/05 23:30:06 nilsson Exp $
+|| $Id: mysql.c,v 1.81 2004/03/19 14:49:44 nilsson Exp $
 */
 
 /*
@@ -97,7 +97,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.80 2004/03/05 23:30:06 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.81 2004/03/19 14:49:44 nilsson Exp $");
 
 /*! @module Mysql
  *!
@@ -739,7 +739,7 @@ static void f_insert_id(INT32 args)
 static void f_error(INT32 args)
 {
   MYSQL *socket;
-  char *error_msg;
+  const char *error_msg;
 
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
@@ -806,7 +806,7 @@ static void f_select_db(INT32 args)
   }
 
   if (tmp) {
-    char *err;
+    const char *err;
 
     MYSQL_ALLOW();
     err = mysql_error(socket);
@@ -1175,7 +1175,7 @@ static void f_reload(INT32 args)
 static void f_statistics(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
-  char *stats;
+  const char *stats;
 
   if (!socket) {
     pike_mysql_reconnect();
