@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.323 2000/12/15 21:40:50 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.324 2000/12/18 16:43:06 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -554,6 +554,64 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
   case TWO_SHIFTS(S1, S2): \
     { \
       PIKE_CONCAT(p_wchar,S1) *s1 = PIKE_CONCAT(STR,S1)(a); \
+      PIKE_CONCAT(p_wchar,S2) *s2 = PIKE_CONCAT(STR,S2)(b); \
+      ptrdiff_t len = b->len; \
+      while(len-- && (s1[len] == s2[len])) \
+	; \
+      pop_n_elems(args); \
+      push_int(len == -1); \
+      return; \
+    } \
+    break
+
+    CASE_SHIFT(1,0);
+    CASE_SHIFT(2,0);
+    CASE_SHIFT(2,1);
+  default:
+    Pike_error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
+	  a->size_shift, b->size_shift);
+    break;
+  }
+#undef CASE_SHIFT
+#undef TWO_SHIFTS
+}
+
+/* int has_suffix(string a, string suffix) */
+PMOD_EXPORT void f_has_suffix(INT32 args)
+{
+  struct pike_string *a, *b;
+
+  get_all_args("has_suffix", args, "%W%W", &a, &b);
+
+  /* First handle some common special cases. */
+  if ((b->len > a->len) || (b->size_shift > a->size_shift)) {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  /* Trivial cases. */
+  if ((a == b)||(!b->len)) {
+    pop_n_elems(args);
+    push_int(1);
+    return;
+  }
+
+  if (a->size_shift == b->size_shift) {
+    int res = !MEMCMP(a->str + (a->len - b->len)<<b->size_shift, b->str,
+		      b->len << b->size_shift);
+    pop_n_elems(args);
+    push_int(res);
+    return;
+  }
+
+  /* At this point a->size_shift > b->size_shift */
+#define TWO_SHIFTS(S1, S2)	((S1)|((S2)<<2))
+  switch(TWO_SHIFTS(a->size_shift, b->size_shift)) {
+#define CASE_SHIFT(S1, S2) \
+  case TWO_SHIFTS(S1, S2): \
+    { \
+      PIKE_CONCAT(p_wchar,S1) *s1 = PIKE_CONCAT(STR,S1)(a) + a->len - b->len; \
       PIKE_CONCAT(p_wchar,S2) *s2 = PIKE_CONCAT(STR,S2)(b); \
       ptrdiff_t len = b->len; \
       while(len-- && (s1[len] == s2[len])) \
@@ -5998,6 +6056,9 @@ void init_builtin_efuns(void)
 	   0);
   
   ADD_EFUN2("has_prefix", f_has_prefix, tFunc(tStr tStr,tInt01),
+	    OPT_TRY_OPTIMIZE, 0, 0);
+
+  ADD_EFUN2("has_suffix", f_has_suffix, tFunc(tStr tStr,tInt01),
 	    OPT_TRY_OPTIMIZE, 0, 0);
 
   ADD_EFUN("has_index",f_has_index,
