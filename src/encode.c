@@ -23,8 +23,17 @@
 #include "threads.h"
 #include "stuff.h"
 #include "version.h"
+#include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.42 1999/10/19 15:58:33 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.43 1999/10/25 10:26:23 hubbe Exp $");
+
+/* #define ENCODE_DEBUG */
+
+#ifdef ENCODE_DEBUG
+#define EDB(X) X
+#else
+#define EDB(X)
+#endif
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -139,6 +148,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data);
 static void code_entry(int type, INT32 num, struct encode_data *data)
 {
   int t;
+  EDB(
+    fprintf(stderr,"encode: code_entry(type=%d (%s), num=%d)\n",
+	    type,
+	    get_name_of_type(type),
+	    num) );
   if(num<0)
   {
     type|=T_NEG;
@@ -305,6 +319,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   switch(val->type)
   {
     case T_INT:
+      /* FIXME:
+       * if INT_TYPE is larger than 32 bits (not currently happening)
+       * then this must be fixed to encode numbers over 32 bits as
+       * Gmp.mpz objects
+       */
       code_entry(T_INT, val->u.integer,data);
       break;
       
@@ -370,6 +389,27 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       
     case T_OBJECT:
       check_stack(1);
+
+#ifdef AUTO_BIGNUM
+      /* This could be implemented a lot more generic,
+       * but that will have to wait until next time. /Hubbe
+       */
+      if(is_bignum_object(val->u.object))
+      {
+	code_entry(T_OBJECT, 2, data);
+	/* 256 would be better, but then negative numbers
+	 * doesn't work... /Hubbe
+	 */
+	push_int(36);
+	apply(val->u.object,"digits",1);
+	if(sp[-1].type != T_STRING)
+	  error("Gmp.mpz->digits did not return a string!\n");
+	encode_value2(sp-1, data);
+	pop_stack();
+	break;
+      }
+#endif
+      
       push_svalue(val);
       apply(data->codec, "nameof", 1);
       switch(sp[-1].type)
@@ -598,23 +638,32 @@ static int my_extract_char(struct decode_data *data)
 
 #define GETC() my_extract_char(data)
 
-#define DECODE() \
-  what=GETC(); \
-  e=what>>SIZE_SHIFT; \
-  if(what & T_SMALL)  { \
-     num=e; \
-  } else { \
-     num=0; \
-     while(e-->=0) num=(num<<8) + (GETC()+1); \
-     num+=MAX_SMALL - 1; \
-  } \
-  if(what & T_NEG) num=~num
+#define DECODE(Z) do {					\
+  EDB(							\
+    fprintf(stderr,"decode(%s) at %d: ",(Z),__LINE__));	\
+  what=GETC();						\
+  e=what>>SIZE_SHIFT;					\
+  if(what & T_SMALL)  {					\
+     num=e;						\
+  } else {						\
+     num=0;						\
+     while(e-->=0) num=(num<<8) + (GETC()+1);		\
+     num+=MAX_SMALL - 1;				\
+  }							\
+  if(what & T_NEG) num=~num;				\
+  EDB(							\
+    fprintf(stderr,"type=%d (%s), num=%d\n",	\
+	    (what & T_MASK),				\
+	    get_name_of_type(what & T_MASK),		\
+	    num) ); 					\
+} while (0) 
+
 
 
 #define decode_entry(X,Y,Z)					\
   do {								\
     INT32 what, e, num;                                         \
-    DECODE();							\
+    DECODE("decode_entry");						\
     if((what & T_MASK) != (X)) error("Failed to decode, wrong bits (%d).\n", what & T_MASK);\
     (Y)=num;							\
   } while(0);
@@ -641,7 +690,7 @@ static int my_extract_char(struct decode_data *data)
   if((LEN) == -1)							    \
   {									    \
     INT32 what, e, num;							    \
-    DECODE();								    \
+    DECODE("get_string_data");						    \
     what&=T_MASK;							    \
     if(data->ptr + num > data->len || num <0)				    \
        error("Failed to decode string. (string range error)\n");	    \
@@ -667,7 +716,7 @@ static int my_extract_char(struct decode_data *data)
 
 #define getdata3(X) do {						     \
   INT32 what, e, num;							     \
-  DECODE();								     \
+  DECODE("getdata3");							     \
   switch(what & T_MASK)							     \
   {									     \
     case T_INT:								     \
@@ -685,7 +734,7 @@ static int my_extract_char(struct decode_data *data)
 
 #define decode_number(X,data) do {	\
    int what, e, num;				\
-   DECODE();					\
+   DECODE("decode_number");			\
    X=(what & T_MASK) | (num<<4);		\
   }while(0)					\
 
@@ -800,7 +849,7 @@ static void decode_value2(struct decode_data *data)
   INT32 what, e, num;
   struct svalue tmp, *tmp2;
   
-  DECODE();
+  DECODE("decode_value2");
   
   check_stack(1);
   
@@ -841,7 +890,7 @@ static void decode_value2(struct decode_data *data)
       tmp=data->counter;
       data->counter.u.integer++;
       
-      DECODE();
+      DECODE("float");
       push_float(LDEXP((double)num2, num));
       break;
     }
@@ -970,6 +1019,25 @@ static void decode_value2(struct decode_data *data)
 	  if(data->pickyness && sp[-1].type != T_OBJECT)
 	    error("Failed to decode object.\n");
 	  return;
+
+#ifdef AUTO_BIGNUM
+	  /* It is possible that we should do this even without
+	   * AUTO_BIGNUM /Hubbe
+	   * However, that requires that some of the bignum functions
+	   * are always available...
+	   */
+	case 2:
+	{
+	  check_stack(2);
+	  /* 256 would be better, but then negative numbers
+	   * doesn't work... /Hubbe
+	   */
+	  push_int(36);
+	  convert_stack_top_with_base_to_bignum();
+	  break;
+	}
+
+#endif
 	  
 	default:
 	  error("Object coding not compatible.\n");

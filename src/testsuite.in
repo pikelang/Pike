@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.207 1999/10/24 14:54:13 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.208 1999/10/25 10:26:25 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1347,6 +1347,8 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
    [[ (string)(class { int f() { int x=-0x80000000;--x;return x; } })()->f()]])
   test_eq("-2147483649",
    [[ (string)(class { int f() { int x=-0x80000000;x--;return x; } })()->f()]])
+
+  test_encode(1<<99);
 ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
