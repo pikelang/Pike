@@ -1,3 +1,9 @@
+/*
+ * $Id: GLU.pmod,v 1.2 1999/08/10 17:13:31 grubba Exp $
+ *
+ * GL Utilities module.
+ */
+#if constant(GL)
 import GL;
 
 #ifndef M_PI
@@ -175,3 +181,5 @@ array(float) gluProject(float objx, float objy,
 //     return GL_FALSE;
 //   return ({ out[0]/out[3], out[1]/out[3], out[2]/out[3] });
 // }
+
+#endif /* constant(GL) */
