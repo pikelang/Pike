@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.90 1998/05/17 16:59:51 grubba Exp $
+# $Id: Makefile.in,v 1.91 1998/05/22 16:47:41 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -404,11 +404,39 @@ depend: $(SRCDIR)/language.c
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
 	$(SRCDIR)/configure @ac_configure_args@
 
+# Documentation...
+
 docs:
 	mkdir docs
 
 html_docs: docs
 	$(RUNPIKE) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `echo $(SRCDIR)/modules/*/doc`
+
+wmml: force
+	@test -d wmml/. || mkdir wmml
+	@modules="`cd $(SRCDIR)/modules; ls -d */. | sed -e '/^_.*/d' -e 's/\/\.$$//'`"; \
+	echo The following modules are interresting:; \
+	echo "$$modules"; \
+	for d in $$modules; do \
+	  echo Testing $$d...; \
+	  if test -f "$(SRCDIR)/modules/$$d/wmml-header"; then \
+	    echo Module $$d seems to contain WMML docs.; \
+	    $(RUNPIKE) $(TMP_BINDIR)/mkwmml.pike \
+	      "$(SRCDIR)/modules/$$d/wmml-header" \
+	      `find $(SRCDIR)/modules/$$d/. $(SRCDIR)/modules/_$$d*/. -name '*.[ch]' -print 2>/dev/null` \
+	      "$(SRCDIR)/modules/$$d/wmml-footer" >wmml/$$d.wmml; \
+	  else :; fi; \
+	done
+
+manpages: wmml
+	@(if test -f "$(SRCDIR)/../tutorial/tutorial.wmml"; then \
+	  cat "$(SRCDIR)/../tutorial/tutorial.wmml"; \
+	else \
+	  cat wmml/*.wmml; \
+	fi) | (cd wmml; $(RUNPIKE) $(TMP_BINDIR)/wmmltohtml2 \
+	  $(TMP_BINDIR)/manpages man/man)
+
+# Lobotomization...
 
 lobotomize_crypto:
 	( cd $(SRCDIR)/modules/_Crypto ; ./.build_lobotomized_crypto  )
@@ -466,6 +494,9 @@ $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
 	echo foo > $(SRCDIR)/stamp-h.in
 
 machine.h: stamp-h
+	@if test -f stamp-h; then \
+	  rm stamp-h; $(MAKE) stamp-h; \
+	else :; fi
 stamp-h: $(SRCDIR)/machine.h.in config.status
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status
 
