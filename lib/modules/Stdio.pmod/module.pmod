@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.104 2001/01/06 10:34:11 mirar Exp $
+// $Id: module.pmod,v 1.105 2001/01/15 17:09:24 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -571,12 +571,14 @@ class File
 
 /*
 ** 
-** nothing to read happens if you do, in backend:
-**  o (open a socket)
+** nothing to read happens if you do:
+**  o open a socket
 **  o set_read_callback
 **  o make sure something is to read on the socket
-**  o read it
-**  o finish backend (ie, callback)
+**    and on another socket
+** in that sockets read callback, do
+**  o read all from the first socket
+**  o finish callback
 ** 
 ** We still need to read 0 bytes though, to get the next callback.
 ** 
@@ -591,6 +593,8 @@ class File
     if (peek_file_before_read_callback)
        if (!::peek()) 
        {
+//  	  werror("bwah\n");
+//  	  _exit(1);
 	  ::read(0,1);
 	  return; // nothing to read
        }
