@@ -1,10 +1,13 @@
 // AutoCAD R13/R14/R2000 DWG file decoder
-// $Id: _Image_DWG.pmod,v 1.1 2002/07/10 20:16:58 nilsson Exp $
+// $Id: _Image_DWG.pmod,v 1.2 2002/07/10 20:40:33 nilsson Exp $
 
 #pike __REAL_VERSION__
 
+//! @appears Image.DWG
+
 //! This module decodes the thumbnail raster images embedded in AutoCAD DWG files for
 //! AutoCAD version R13, R14 and R2000 (which equals to file version 12, 14 and 15).
+//! Implemented according to specifications from @url{http://www.opendwg.org/@}.
 
 static constant start = "\x1F\x25\x6D\x07\xD4\x36\x28\x28\x9D\x57\xCA\x3F\x9D\x44\x10\x2B";
 
@@ -94,27 +97,34 @@ mapping __decode(string data) {
 	    "wmf" : wmfs ]);
 }
 
-//! API function. Returns a mapping which maps "image"
-//! to the result of decode(data).
-//! @code{
-//!   return ([ "image":decode(data) ]);
-//! @}
-mapping _decode(string data) {
-  return ([ "image":decode(data) ]);
-}
-
-//! Returns the first successfully decoded bitmap.
-//! @throws
-//!   If no preview was stored, or no preview could
-//!   be decoded an error is thrown.
-Image.Image decode(string data) {
-  mapping res = __decode(data);
-  if( !sizeof(res->bmp) )
+static Image.Image get_first_image( mapping data ) {
+  if( !sizeof(data->bmp) )
     error("No bitmap previews available.\n");
-  foreach(res->bmp, string bmp) {
+  foreach(data->bmp, string bmp) {
     catch {
       return Image.BMP.decode(bmp);
     };
   }
   error("Failed to decode any of the previews.\n");
+}
+
+//! Works like @[__decode], but in addition it has the element
+//! @tt{"image"@} in the result mapping, containing the first
+//! successfully decoded bitmap image.
+//! to the result of decode(data).
+//! @throws
+//!   If no preview was stored, or no preview could
+//!   be decoded an error is thrown.
+mapping _decode(string data) {
+  mapping res = __decode(data);
+  res->image = get_first_image(res);
+  return res;
+}
+
+//! Returns the first successfully decoded bitmap image.
+//! @throws
+//!   If no preview was stored, or no preview could
+//!   be decoded an error is thrown.
+Image.Image decode(string data) {
+  return _decode(data)->image;
 }
