@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.46 1999/10/21 18:15:51 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.47 1999/10/21 21:57:10 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -140,6 +140,7 @@ RCSID("$Id: sprintf.c,v 1.46 1999/10/21 18:15:51 noring Exp $");
 struct format_info
 {
   char *fi_free_string;
+  struct pike_string *to_free_string;
   PCHARP b;
   int len;
   int width;
@@ -152,6 +153,10 @@ struct format_info
   int column_width;
   int column_modulo;
 };
+
+/* FIXME:
+ * re-allocate the format stack if it's too small /Hubbe
+ */
 
 struct format_stack
 {
@@ -472,6 +477,9 @@ static void free_sprintf_strings(struct format_stack *fs)
     if(fs->fsp->fi_free_string)
       free(fs->fsp->fi_free_string);
     fs->fsp->fi_free_string=0;
+    if(fs->fsp->to_free_string)
+      free_string(fs->fsp->to_free_string);
+    fs->fsp->to_free_string=0;
   }
 }
 
@@ -734,13 +742,11 @@ INLINE static int do_one(struct format_stack *fs,
 	   /* but it cannot be since we need to break out of the case... */ \
 	  struct svalue *sv;						    \
 	  PEEK_SVALUE(sv);						    \
-	  if(sv->type == T_OBJECT)					    \
-	  {								    \
-	    ref_push_object(sv->u.object);				    \
-	    push_constant_text("_sprintf");				    \
-	    f_index(2);							    \
-	    if(sp[-1].type == T_FUNCTION || sp[-1].type == T_OBJECT)	    \
-	    {								    \
+	  if(sv->type == T_OBJECT && sv->u.object->prog)		    \
+	  {                                                                 \
+            int fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	    \
+	    if(fun != -1)                                                   \
+            {                                                               \
               int n=0;							    \
 	      push_int(EXTRACT_PCHARP(a));				    \
 	      if (fsp->precision!=SPRINTF_UNDECIDED)			    \
@@ -751,45 +757,26 @@ INLINE static int do_one(struct format_stack *fs,
 	      }								    \
 	      f_aggregate_mapping(n);					    \
 									    \
-	      apply_svalue(sp-3, 2);   /* FIXME: lfun optimisation? */	    \
-	      if(sp[-1].type == T_STRING)				      \
-	      {								      \
-		struct pike_string *s = (--sp)->u.string;		      \
-									      \
-		/* Do some evil stuff to the stack...  We want that */	      \
-		/* the allocated string is freed after it has been */	      \
-		/* copied to the result string. */			      \
-									      \
-		/* Perhaps this can be done more nicely? */		      \
-		/*  /Noring, Grubba */					      \
-		if(arg)							      \
-		{							      \
-		  free_svalue(arg);					      \
-		  *arg = *sp;						      \
-		  arg = 0;						      \
-		}							      \
-		else							      \
-		{							      \
-		  free_svalue(lastarg = argp + argument);		      \
-		  argp[argument] = *sp;					      \
-		  argument++;						      \
-		}							      \
-									      \
-		/* FIXME: What about wide strings? */			      \
-		fsp->b = MKPCHARP_STR(s);				      \
-		fsp->len = s->len;					      \
-									      \
-		pop_stack();						      \
-		break;							      \
-	      }								      \
-              if(!IS_ZERO(sp-1))					      \
-	      {								      \
-		 sprintf_error(fs,"argument %d (object) returned "	      \
+	      apply_low(sv->u.object, fun, 2);                              \
+	      if(sp[-1].type == T_STRING)				    \
+	      {	                                                            \
+                DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
+                             fatal("OOps in sprintf\n"); )                  \
+                fs->fsp->to_free_string = (--sp)->u.string;	            \
+									    \
+		fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);		    \
+		fsp->len = fs->fsp->to_free_string->len;		    \
+									    \
+		pop_stack();						    \
+		break;							    \
+	      }								    \
+              if(!IS_ZERO(sp-1))					    \
+	      {								    \
+		 sprintf_error(fs,"argument %d (object) returned "	    \
 			       "illegal value from _sprintf()\n",argument+1); \
 	      }								      \
 	      pop_stack();						      \
 	    }								      \
-	    pop_stack();						      \
 	  }								      \
 	}
 
@@ -834,6 +821,7 @@ static void low_pike_sprintf(struct format_stack *fs,
     fsp->pad_string=MKPCHARP(" ",0);
     fsp->pad_length=1;
     fsp->fi_free_string=0;
+    fsp->to_free_string=0;
     fsp->column_width=0;
     fsp->pos_pad=fsp->flags=0;
     fsp->width=fsp->precision=SPRINTF_UNDECIDED;
@@ -1300,6 +1288,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 #endif
     if(fs->fsp->fi_free_string) free(fs->fsp->fi_free_string);
     fs->fsp->fi_free_string=0;
+    if(fs->fsp->to_free_string) free(fs->fsp->to_free_string);
+    fs->fsp->to_free_string=0;
     --fs->fsp;
   }
 }
