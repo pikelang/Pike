@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.4 1997/02/12 06:10:23 nisse Exp $
+ * $Id: pipe.c,v 1.5 1997/03/11 03:17:40 nisse Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -210,6 +210,7 @@ static void f_set_encrypt_key(INT32 args)
     pop_stack(); /* Get rid of the void value */
   }
   pop_n_elems(args);
+  push_object(this_object());
 }
 
 /* void set_decrypt_key(array|string ..) */
@@ -236,6 +237,7 @@ static void f_set_decrypt_key(INT32 args)
     safe_apply(THIS->objects[args + i], "set_decrypt_key", n_args);
     pop_stack(); /* Get rid of the void value */
   }
+  push_object(this_object());
   pop_n_elems(args);
 }
 
@@ -292,14 +294,15 @@ void MOD_INIT(pipe)(void)
   start_new_program();
   add_storage(sizeof(struct pike_crypto_pipe));
 
-  add_function("create", f_create, "function(program|object|array(program|mixed) ...:void)", OPT_SIDE_EFFECT);
+  add_function("create", f_create,
+	       "function(program|object|array(program|mixed) ...:void)", 0);
 
-  add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
-  add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("name", f_name, "function(void:string)", 0);
+  add_function("query_block_size", f_query_block_size, "function(void:int)", 0);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
+  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", 0);
+  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", 0);
+  add_function("crypt_block", f_crypt_block, "function(string:string)", 0);
 
   set_init_callback(init_pike_crypto_pipe);
   set_exit_callback(exit_pike_crypto_pipe);
