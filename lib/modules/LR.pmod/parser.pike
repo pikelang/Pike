@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.20 1999/10/10 00:49:11 noring Exp $
+ * $Id: parser.pike,v 1.21 2000/02/13 19:29:33 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.20 1999/10/10 00:49:11 noring Exp $
+//. RCSID:	$Id: parser.pike,v 1.21 2000/02/13 19:29:33 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -432,7 +432,7 @@ mixed cast(string type)
   if (type == "string") {
     return(cast_to_string());
   }
-  throw ( ({ "Cast to "+type+" not supported\n", backtrace()[0..-2] }) );
+  error(sprintf("Cast to %s not supported\n", type));
 }
 
 /* Here come the functions that actually do some work */
