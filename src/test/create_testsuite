@@ -939,9 +939,9 @@ test_any(int e; object o=clone((program)"/precompiled/file"); if(!o->open("conft
 test_any([[
 #include "conftest.h"
 ]],17)
-test_any([[
-#include <conftest.h>
-]],17)
+dnltest_any([[
+dnl#include <conftest.h>
+dnl]],17)
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
 test_true(stringp(__DATE__))
