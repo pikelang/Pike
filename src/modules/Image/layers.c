@@ -1,14 +1,14 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.2 1999/04/18 22:04:20 mirar Exp $
+**!	$Id: layers.c,v 1.3 1999/04/19 16:50:47 mirar Exp $
 **! class Layer
 */
 
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: layers.c,v 1.2 1999/04/18 22:04:20 mirar Exp $");
+RCSID("$Id: layers.c,v 1.3 1999/04/19 16:50:47 mirar Exp $");
 
 #include "config.h"
 
@@ -154,7 +154,7 @@ struct layer_mode_desc
 /*    {"screen",        lm_screen,        1,  NULL            }, */
 /*    {"overlay",       lm_overlay,       1,  NULL            }, */
 /*    {"difference",    lm_difference,    1,  NULL            }, */
-/*    {"addition",      lm_addition,      1,  NULL            }, */
+/*    {"add",           lm_addition,      1,  NULL            }, */
 /*    {"subtract",      lm_subtract,      1,  NULL            }, */
 /*    {"darken",        lm_darken,        1,  NULL            }, */
 /*    {"lighten",       lm_lighten,       1,  NULL            }, */
@@ -168,6 +168,49 @@ struct layer_mode_desc
 } ;
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
+
+/*
+
+Px=pixel, Ax=alpha [0-1], Rx,Gx,Bx, Hx,Sx,Vx = kanaler
+Xs=källbild
+Xl=aktuellt lager
+Xd=målbild
+
+normal 		Pd=(Pl*Al+Ps*(1-Al)*As)/(Al+(1-Al)*As)
+		Ad=(Al+(1-Al)*As)
+
+add             Pd=Pl*Al+Ps*As
+		Ad=(Al+(1-Al)*As)
+
+subtract        Pd=Ps-Pl*Al
+		Ad=(Al+(1-Al)*As)
+
+multiply        Pd=Ps*Pl
+		Ad=(Al+(1-Al)*As)
+
+divide          Pd=Ps/Pl
+		Ad=As
+
+dissolve        i=round(random(Al)) typ
+                Pd=Al*i+As*(1-i)
+		Ad=i+As
+
+behind          
+screen          
+overlay         
+difference      
+darken          
+lighten         
+hue             
+saturation      
+color           
+value           
+erase           
+replace         
+
+*/
+
+
 
 /*** layer helpers ****************************************/
 
@@ -304,6 +347,7 @@ static void image_layer_image(INT32 args)
    else
       push_int(0);
 }
+
 
 static void image_layer_alpha(INT32 args)
 {
@@ -811,7 +855,7 @@ static void image_layer_cast(INT32 args)
 
 /*** layer helpers ************************************/
 
-#define ALPHA_METHOD_INT
+#define ALPHA_METHOD_FLOAT
 
 #ifdef ALPHA_METHOD_INT
 
@@ -834,26 +878,27 @@ static void image_layer_cast(INT32 args)
 #ifdef ALPHA_METHOD_FLOAT
 
 #define qMAX (1.0/COLORMAX)
-#define C2F(Z) (qMAX*Z)
+#define C2F(Z) (qMAX*(Z))
 #define CCUT(Z) ((COLORTYPE)(qMAX*Z))
 
 #define COMBINE_ALPHA(S,L,aS,aL) \
-    ( (COLORTYPE)( ( (S)*(1.0-C2F(aL)*C2F(aS)) + (L)*C2F(aL) ) /
-	       ( C2F(aL)+(1-C2F(aL))*C2F(aS)) ) )
+    ( (COLORTYPE)( ( (S)*(1.0-C2F(aL))*C2F(aS) + (L)*C2F(aL) ) / \
+	       ( (C2F(aL)+(1-C2F(aL))*C2F(aS))) ) )
 
 #define COMBINE_ALPHA_V(S,L,aS,aL,V) \
     COMBINE_ALPHA(S,(L)*(V),aS,aL)
 
 #define COMBINE_ALPHA_SUM(aS,aL) \
-    ((COLORTYPE)(COLORMAX*(C2F(aL)+(1.0-C2F(aL))*aS))
+    ((COLORTYPE)(COLORMAX*(C2F(aL)+(1.0-C2F(aL))*C2F(aS))))
 #define COMBINE_ALPHA_SUM_V(aS,aL,V) \
     COMBINE_ALPHA_SUM(aS,(aL)*(V))
 
 #else /* unknown ALPHA_METHOD */
 #error unknown ALPHA_METHOD
-#endif ALPHA_METHOD_FLOAT 
+#endif /* ALPHA_METHOD_FLOAT  */
 
-#endif ALPHA_INT_IS_FASTER
+#endif 
+
 
 
 /*** layer mode definitions ***************************/
@@ -965,6 +1010,12 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    }
 }
 
+
+static void lm_add(rgb_group *s,rgb_group *l,rgb_group *d,
+		   rgb_group *sa,rgb_group *la,rgb_group *da,
+		   int len,float alpha)
+    {
+    }
 
 /*** the add-layer function ***************************/
 
