@@ -46,10 +46,10 @@ bignum rsa_pad(string message, int type, mixed|void random)
   if (random)
     cookie = replace(random->read(len), "\0", "\1");
   else
-    cookie = sprintf("%@c", map(allocate(len), lambda(int dummy)
-				{
-				  return random(255) + 1;
-				} ));
+    cookie = sprintf("%@c", Array.map(allocate(len), lambda(int dummy)
+				      {
+					return random(255) + 1;
+				      } ));
   
   return BIGNUM(sprintf("%c", type) + cookie + "\0" + message, 256);
 }
@@ -89,12 +89,12 @@ int sha_verify(string message, string signature)
 
 string encrypt(string s, mixed|void r)
 {
-  return rsa_pad(msg, 2, r)->powm(e, n)->digits(256);
+  return rsa_pad(s, 2, r)->powm(e, n)->digits(256);
 }
 
 string decrypt(string s)
 {
-  return rsa_unpad(BIGNUM(msg, 256)->powm(d, n), 2));
+  return rsa_unpad(BIGNUM(s, 256)->powm(d, n), 2);
 }
 
 object set_encrypt_key(array(bignum) key)
@@ -112,7 +112,7 @@ object set_decrypt_key(array(bignum) key)
   return this_object();
 }
 
-object crypt_block(string msg)
+string crypt_block(string s)
 {
   return (encrypt_mode ? encrypt(s) : decrypt(s));
 }
