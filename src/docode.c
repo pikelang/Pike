@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.55 1999/11/18 16:40:52 grubba Exp $");
+RCSID("$Id: docode.c,v 1.56 1999/11/23 03:06:56 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -704,6 +704,9 @@ static int do_docode2(node *n,int flags)
 
     emit2(F_CAST);
     return 1;
+
+  case F_SOFT_CAST:
+    return do_docode(CAR(n), 0);
 
   case F_APPLY:
     if(CAR(n)->token == F_CONSTANT)

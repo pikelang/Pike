@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.127 1999/11/22 15:04:19 grubba Exp $");
+RCSID("$Id: las.c,v 1.128 1999/11/23 03:07:35 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -870,9 +870,11 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
 
   if(!n) return 0;
 
+#ifdef PIKE_DEBUG
   if (!type) {
     fatal("Casting to no type!\n");
   }
+#endif /* PIKE_DEBUG */
 
   if (type == void_type_string) return mknode(F_POP_VALUE, n, 0);
 
@@ -885,6 +887,48 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
   if(match_types(object_type_string, type) ||
      match_types(object_type_string, type))
     res->node_info |= OPT_SIDE_EFFECT;
+
+  _CAR(res) = n;
+#ifdef SHARED_NODES
+  _CDR(res) = (node *)type;
+#else /* !SHARED_NODES */
+#ifdef __CHECKER__
+  _CDR(res) = 0;
+#endif
+#endif /* SHARED_NODES */
+
+  n->parent = res;
+
+  return freeze_node(res);
+}
+
+node *debug_mksoftcastnode(struct pike_string *type,node *n)
+{
+  node *res;
+
+  if(!n) return 0;
+
+#ifdef PIKE_DEBUG
+  if (!type) {
+    fatal("Soft cast to no type!\n");
+  }
+#endif /* PIKE_DEBUG */
+
+  if(type==n->type) return n;
+
+  if (n->type) {
+    if (!match_types(type, n->type)) {
+      struct pike_string *t1 = describe_type(type);
+      struct pike_string *t2 = describe_type(n->type);
+      yywarning("Soft cast to %s isn't a restriction of %s.",
+		t1->str, t2->str);
+      free_string(t2);
+      free_string(t1);
+    }
+  }
+  res = mkemptynode();
+  res->token = F_SOFT_CAST;
+  copy_shared_string(res->type,type);
 
   _CAR(res) = n;
 #ifdef SHARED_NODES
@@ -1993,6 +2037,18 @@ void fix_type_field(node *n)
 
   switch(n->token)
   {
+  case F_SOFT_CAST:
+    if (CAR(n) && CAR(n)->type) {
+      if (!match_types(old_type, CAR(n)->type)) {
+	struct pike_string *t1 = describe_type(old_type);
+	struct pike_string *t2 = describe_type(CAR(n)->type);
+	yywarning("Soft cast to %s isn't a restriction of %s.",
+		  t1->str, t2->str);
+	free_string(t2);
+	free_string(t1);
+      }
+    }
+    /* FALL_THROUGH */
   case F_CAST:
     /* Type-field is correct by definition. */
     copy_shared_string(n->type, old_type);
