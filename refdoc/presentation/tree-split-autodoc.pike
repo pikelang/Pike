@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.48 2003/03/25 23:20:55 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.49 2003/03/25 23:39:39 nilsson Exp $
  *
  */
 
@@ -427,8 +427,9 @@ class Node
       string my_name = Parser.encode_html_entities(node->name);
       if(node->type=="method")
 	my_name+="()";
-      else if (node->type == "namespace")
+      else if (node->type == "namespace") {
 	my_name+="::";
+      }
       else 
 	my_name="<b>"+my_name+"</b>";
 
@@ -448,6 +449,8 @@ class Node
 
     if(node)
     {
+      if(node->type=="namespace" && node->name==default_namespace)
+	node = node->parent;
       res += make_hier_list(node->parent);
 
       string my_class_path =
@@ -473,6 +476,7 @@ class Node
     res+="<table border='0' cellpadding='1' cellspacing='0' class='sidebar'>";
 
     res += make_navbar_really_low(root->module_children);
+
     if(sizeof(root->class_children))
       res += "<tr><td nowrap='nowrap'><br /><b>Classes</b></td></tr>\n" +
 	make_navbar_really_low(root->class_children) + "<br />";
