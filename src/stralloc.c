@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.78 2000/02/03 19:09:13 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.79 2000/03/17 05:11:49 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1611,7 +1611,7 @@ static void string_build_mkspace(struct string_builder *s, int chars, int mag)
   }
 }
 
-static void *string_builder_allocate(struct string_builder *s, int chars, int mag)
+void *string_builder_allocate(struct string_builder *s, int chars, int mag)
 {
   void *ret;
   string_build_mkspace(s,chars,mag);
