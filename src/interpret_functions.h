@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.134 2003/02/15 14:09:44 grubba Exp $
+|| $Id: interpret_functions.h,v 1.135 2003/02/15 14:11:48 grubba Exp $
 */
 
 /*
@@ -927,27 +927,10 @@ OPCODE1(F_ASSIGN_GLOBAL, "assign global", 0, {
 });
 
 OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop", 0, {
-  struct identifier *i;
-  INT32 tmp=arg1 + Pike_fp->context.identifier_level;
-  if(!Pike_fp->current_object->prog)
-    Pike_error("Cannot access global variables in destructed object.\n");
-
-  i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
-  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-    Pike_error("Cannot assign functions or constants.\n");
-
-  if(i->run_time_type == PIKE_T_MIXED)
-  {
-    struct svalue *s=(struct svalue *)GLOBAL_FROM_INT(tmp);
-    free_svalue(s);
-    Pike_sp--;
-    *s=*Pike_sp;
-  }else{
-    assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
-			   i->run_time_type,
-			   Pike_sp-1);
-    pop_stack();
-  }
+  object_low_set_index(Pike_fp->current_object,
+		       arg1 + Pike_fp->context.identifier_level,
+		       Pike_sp-1);
+  pop_stack();
 });
 
 
