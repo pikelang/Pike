@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.9 1997/04/09 02:27:57 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.10 1997/04/15 20:12:49 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -736,13 +736,13 @@ void pike_module_init(void)
   add_function("probably_prime_p",mpzmod_probably_prime_p,"function(:int)",0);
   add_function("gcd",mpzmod_gcd, MPZ_BINOP_TYPE, 0);
   add_function("gcdext", mpzmod_gcdext,
-  "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":array(object))", 0);
+  "function(" MPZ_ARG_TYPE ":array(object))", 0);
   add_function("gcdext2", mpzmod_gcdext2,
-  "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":array(object))", 0);
+  "function(" MPZ_ARG_TYPE ":array(object))", 0);
   add_function("invert", mpzmod_invert,
   "function(" MPZ_ARG_TYPE ":object)", 0);
 
-  add_function("sqrt",mpzmod_sqrt,"function(:object)",0);
+  add_function("sqrt", mpzmod_sqrt,"function(:object)",0);
   add_function("sqrtrem", mpzmod_sqrtrem, "function(:array(object))", 0);
   add_function("powm",mpzmod_powm,
   "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":object)", 0);
@@ -751,7 +751,8 @@ void pike_module_init(void)
   /* These are not implemented yet */
   add_function("squarep", mpzmod_squarep, "function(:int)", 0);
   add_function("divmod", mpzmod_divmod, "function(" MPZ_ARG_TYPE ":array(object))", 0);
-  add_function("divm", mpzmod_divm, "function(string|int|float|object, string|int|float|object:object)", 0);
+  add_function("divm", mpzmod_divm, "function(" MPZ_ARG_TYPE ","
+	       MPZ_ARG_TYPE ":object)", 0);
 #endif
   set_init_callback(init_mpz_glue);
   set_exit_callback(exit_mpz_glue);
