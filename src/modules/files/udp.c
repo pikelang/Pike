@@ -1,12 +1,13 @@
 /*
- * $Id: udp.c,v 1.11 2000/07/07 13:58:29 grubba Exp $
+ * $Id: udp.c,v 1.12 2000/07/29 21:31:08 hubbe Exp $
  */
 
+#define NO_PIKE_SHORTHAND
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.11 2000/07/07 13:58:29 grubba Exp $");
+RCSID("$Id: udp.c,v 1.12 2000/07/29 21:31:08 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -149,7 +150,7 @@ static void udp_bind(INT32 args)
   
   if(args < 1) error("Too few arguments to dumudp->bind()\n");
 
-  if(sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != PIKE_T_INT)
     error("Bad argument 1 to dumudp->bind()\n");
 
   if(FD != -1)
@@ -180,13 +181,13 @@ static void udp_bind(INT32 args)
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
-  if(args > 1 && sp[1-args].type==T_STRING) {
-    get_inet_addr(&addr, sp[1-args].u.string->str);
+  if(args > 1 && Pike_sp[1-args].type==PIKE_T_STRING) {
+    get_inet_addr(&addr, Pike_sp[1-args].u.string->str);
   } else {
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
   }
 
-  addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+  addr.sin_port = htons( ((u_short)Pike_sp[-args].u.integer) );
   addr.sin_family = AF_INET;
 
   THREADS_ALLOW_UID();
@@ -199,7 +200,7 @@ static void udp_bind(INT32 args)
   {
     fd_close(fd);
     THIS->my_errno=errno;
-    error("UDP.bind: failed to bind to port %d\n",sp[-args].u.integer);
+    error("UDP.bind: failed to bind to port %d\n",Pike_sp[-args].u.integer);
     return;
   }
 
@@ -313,17 +314,17 @@ void udp_read(INT32 args)
   
   if(args)
   {
-    if(sp[-args].u.integer & 1) {
+    if(Pike_sp[-args].u.integer & 1) {
       flags |= MSG_OOB;
     }
-    if(sp[-args].u.integer & 2) {
+    if(Pike_sp[-args].u.integer & 2) {
 #ifdef MSG_PEEK
       flags |= MSG_PEEK;
 #else /* !MSG_PEEK */
       /* FIXME: What should we do here? */
 #endif /* MSG_PEEK */
     }
-    if(sp[-args].u.integer & ~3) {
+    if(Pike_sp[-args].u.integer & ~3) {
       error("Illegal 'flags' value passed to udp->read([int flags])\n");
     }
   }
@@ -399,17 +400,17 @@ void udp_sendto(INT32 args)
   
   if(args>3)
   {
-    if(sp[3-args].u.integer & 1) {
+    if(Pike_sp[3-args].u.integer & 1) {
       flags |= MSG_OOB;
     }
-    if(sp[3-args].u.integer & 2) {
+    if(Pike_sp[3-args].u.integer & 2) {
 #ifdef MSG_DONTROUTE
       flags |= MSG_DONTROUTE;
 #else /* !MSG_DONTROUTE */
       /* FIXME: What should we do here? */
 #endif /* MSG_DONTROUTE */
     }
-    if(sp[3-args].u.integer & ~3) {
+    if(Pike_sp[3-args].u.integer & ~3) {
       error("Illegal 'flags' value passed to udp->send(string m,string t,int p,[int flags])\n");
     }
   }
@@ -418,16 +419,16 @@ void udp_sendto(INT32 args)
 	  ", string message, int port[, int flags])\n");
 
 
-  if( sp[-args].type==T_STRING ) 
-    get_inet_addr(&to, sp[-args].u.string->str);
+  if( Pike_sp[-args].type==PIKE_T_STRING ) 
+    get_inet_addr(&to, Pike_sp[-args].u.string->str);
   else
     error("Illegal type of argument to sendto, got non-string to-address.\n");
 
-  to.sin_port = htons( ((u_short)sp[1-args].u.integer) );
+  to.sin_port = htons( ((u_short)Pike_sp[1-args].u.integer) );
 
   fd = FD;
-  str = sp[2-args].u.string->str;
-  len = sp[2-args].u.string->len;
+  str = Pike_sp[2-args].u.string->str;
+  len = Pike_sp[2-args].u.string->len;
 
   do {
     THREADS_ALLOW();
@@ -473,7 +474,7 @@ void udp_sendto(INT32 args)
 void zero_udp(struct object *ignored)
 {
   MEMSET(THIS, 0, sizeof(struct udp_storage));
-  THIS->read_callback.type=T_INT;
+  THIS->read_callback.type=PIKE_T_INT;
   FD = -1;
 }
 
@@ -513,9 +514,9 @@ static void udp_set_read_callback(INT32 args)
     error("Wrong number of arguments to file->set_read_callback().\n");
   
   if(IS_ZERO(& THIS->read_callback))
-    assign_svalue(& THIS->read_callback, sp-1);
+    assign_svalue(& THIS->read_callback, Pike_sp-1);
   else
-    assign_svalue_no_free(& THIS->read_callback, sp-1);
+    assign_svalue_no_free(& THIS->read_callback, Pike_sp-1);
 
   if(IS_ZERO(& THIS->read_callback))
     set_read_callback(FD, 0, 0);
