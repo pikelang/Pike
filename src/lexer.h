@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.21 2000/09/26 00:17:46 hubbe Exp $
+ * $Id: lexer.h,v 1.22 2000/10/08 19:05:01 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -512,8 +512,12 @@ static int low_yylex(YYSTYPE *yylval)
       {
 	debug_malloc_touch(yylval->n);
 	free_node(yylval->n);
-	lex.pos=p1;
 	yylval->fnum=(FLOAT_TYPE)f;
+#if 0
+	fprintf(stderr, "LEX: \"%.8s\" => %f, %f\n",
+		(char *)lex.pos, f, yylval->fnum);
+#endif /* 0 */
+	lex.pos=p1;
 	return TOK_FLOAT;
       }else{
 	debug_malloc_touch(yylval->n);
