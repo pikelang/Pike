@@ -265,7 +265,6 @@ void do_export()
   Stdio.write_file(tmpname+".x",
 		   "#!/bin/sh\n"
 #"TARFILE=\"$1\"; shift
-ARGS=\"$@\"
 
 while [ $# != 0 ]
 do
@@ -294,15 +293,14 @@ done
 		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike "
 		                "-Mbuild/lib/modules "
 		                "-Mlib/modules "
-		                "bin/install.pike "
-		                "--interactive \\\n"
+		                "bin/install.pike \\\n"
 		   "  TMP_LIBDIR=\"build/lib\"\\\n"
 		   "  LIBDIR_SRC=\"lib\"\\\n"
 		   "  SRCDIR=\"src\"\\\n"
 		   "  TMP_BINDIR=\"bin\"\\\n"
 		   "  TMP_BUILDDIR=\"build\"\\\n"
 		   "  MANDIR_SRC=\"man\"\\\n"
-		   "  \"$ARGS\"\n"
+		   "  \"$@\"\n"
 		   ")\n"
 		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
     );
