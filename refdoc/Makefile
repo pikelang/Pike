@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.24 2001/08/14 21:20:55 nilsson Exp $
+# $Id: Makefile,v 1.25 2001/09/09 00:30:28 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -21,19 +21,13 @@ _tree-split:
 	cp manual/images/* manual-tree-split/images
 	@cp src_images/next.gif src_images/prev.gif manual-tree-split/images
 
-html: split _html
-
-_html: html_manual manual/Makefile
+html: html_manual
 	cp manual/images/* html_manual/images/
-	@$(PIKE) presentation/make_html.pike --img=images/ \
-	  manual.xml > html_manual/manual.html
-	@(cd manual && $(MAKE) PIKE="$(PIKE)" html)
+	@$(PIKE) presentation/make_html.pike --img=images/ manual.xml
 
-split: join manual
-	@$(PIKE) ../bin/split-autodoc.pike manual.xml structure.xml .
-
-join: recursive_join autodoc_appendix
-	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml build/*.xml`" manual.xml
+join: recursive_join
+	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml not_extracted/*.xml`" \
+	  autodoc.xml
 
 recursive_join: images
 	@(cd build/src && $(MAKE) PIKE="$(PIKE)" join)
@@ -49,19 +43,22 @@ extract: build/src/Makefile build/lib/Makefile
 	@(cd build/src && $(MAKE) PIKE="$(PIKE)" extract)
 	@(cd build/lib && $(MAKE) PIKE="$(PIKE)" extract)
 
-autodoc_appendix: build/src
-	@echo "<module name=''>\n<appendix name='AutoDoc'><doc><text>\n<p><pre>\n" > build/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < syntax.txt >> build/autodoc.xml
-	@echo "\n\n" >> build/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < inlining.txt >> build/autodoc.xml
-	@echo "\n\n" >> build/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < tags.txt >> build/autodoc.xml
-	@echo "\n\n" >> build/autodoc.xml
-	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < xml.txt >> build/autodoc.xml
-	@echo "</pre></p></text></doc></appendix></module>" >> build/autodoc.xml
+autodoc_appendix: syntax.txt inlining.txt tags.txt xml.txt
+	@echo "<module name=''>\n<appendix name='AutoDoc'><doc><text>\n<p><pre>\n" > not_extracted/autodoc.xml
+	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < syntax.txt >> not_extracted/autodoc.xml
+	@echo "\n\n" >> not_extracted/autodoc.xml
+	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < inlining.txt >> not_extracted/autodoc.xml
+	@echo "\n\n" >> not_extracted/autodoc.xml
+	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < tags.txt >> not_extracted/autodoc.xml
+	@echo "\n\n" >> not_extracted/autodoc.xml
+	sed -e "s/&/\&amp;/g" -e "s/</\&lt;/g" -e "s/>/\&gt;/g" < xml.txt >> not_extracted/autodoc.xml
+	@echo "</pre></p></text></doc></appendix></module>" >> not_extracted/autodoc.xml
 
-manual.xml: $(XMLFILES) ../bin/join-autodoc.pike
-	@$(PIKE) ../bin/join-autodoc.pike --post-process manual.xml $(XMLFILES)
+manual.xml: autodoc.xml structure.xml bin/assembler.pike autodoc_appendix
+	@$(PIKE) bin/assembler.pike structure.xml autodoc.xml > manual.xml
+
+autodoc.xml: $(XMLFILES) bin/join.pike
+	@$(PIKE) bin/join.pike --post-process autodoc.xml $(XMLFILES)
 
 build/src/Makefile: Makefile.in build/src
 	@sed -e "s#@SRCDIR@#../../../src#" \
@@ -74,10 +71,6 @@ build/lib/Makefile: Makefile.in build/lib
 	     -e "s#@ROOT@#../..#" \
 	     -e "s#@BUILDROOT@#..#" \
 	  <Makefile.in >build/lib/Makefile
-
-manual/Makefile: PostMakefile.in manual
-	@sed -e "s#@IMGDIR@#images#" -e "s#@ROOT@#../#" \
-	  -e "s#@DEST@#../html_manual/#" <PostMakefile.in >manual/Makefile
 
 # Directories
 
@@ -107,6 +100,7 @@ clean:
 
 spotless: clean
 	@rm -f manual.xml || /bin/true
+	@rm -f autodoc.xml || /bin/true
 	@rm -rf manual || /bin/true
 	@rm -rf html_manual || /bin/true
 	@rm -rf manual-tree-split || /bin/true
