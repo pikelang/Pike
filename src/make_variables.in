@@ -1,7 +1,10 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.6 2002/01/27 01:48:43 mast Exp $
+# $Id: make_variables.in,v 1.7 2002/01/27 17:53:31 mast Exp $
 #
+# Note: This template is actually used only for make_variables in the
+# subdirectories; the one created in the build base dir is just an
+# unwanted by-product.
 
 @SET_MAKE@
 prefix=@prefix@
