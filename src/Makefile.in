@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.361 2003/10/09 11:38:37 grubba Exp $
+# $Id: Makefile.in,v 1.362 2003/10/13 08:56:16 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -380,10 +380,14 @@ undump_modules: delete_dumped_modules
 # like that.
 .h_src.h:
 	@if test -f "$@"; then \
-	  cmp -s "$<" "$@"; \
+	  test -f "$@.nolines" || \
+	    sed -e '/^[ \t]*$$/d;/^[ \t]*#[ \t]*line.*$$/d' < "$@" > "$@.nolines" && \
+	  sed -e '/^[ \t]*$$/d;/^[ \t]*#[ \t]*line.*$$/d' < "$<" > "$<.nolines" && \
+	  cmp -s "$<.nolines" "$@.nolines"; \
 	else \
 	  false; \
 	fi || ( \
+	  rm -f "$@.nolines" 2>/dev/null; \
 	  echo "cp $< $@"; \
 	  cp "$<" "$@"; \
 	)
