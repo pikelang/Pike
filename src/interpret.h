@@ -5,13 +5,48 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.43 2000/06/21 00:55:24 hubbe Exp $
+ * $Id: interpret.h,v 1.44 2000/06/24 07:20:27 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
 
 #include "global.h"
 #include "program.h"
+#include "threads.h"
+
+
+struct Pike_interpreter {
+  char swapped;
+  char status;
+#ifdef PIKE_THREADS
+  COND_T status_change;
+  THREAD_T id;
+#endif
+  struct Pike_interpreter *hashlink, **backlink;
+  struct mapping *thread_local;
+
+  /* Swapped variables */
+  struct svalue *Pike_sp,*Pike_evaluator_stack;
+  struct svalue **Pike_mark_sp,**Pike_mark_stack;
+  struct pike_frame *Pike_fp;
+  int evaluator_stack_malloced;
+  int mark_stack_malloced;
+  JMP_BUF *recoveries;
+  struct object * thread_id;
+  char *Pike_stack_top;
+  DO_IF_SECURITY(struct object *current_creds;)
+
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+  long long accounted_time;
+  long long time_base;
+#endif
+#endif
+
+#ifdef THREAD_TRACE
+  int t_flag;
+#endif /* THREAD_TRACE */
+};
 
 #ifndef STRUCT_FRAME_DECLARED
 #define STRUCT_FRAME_DECLARED

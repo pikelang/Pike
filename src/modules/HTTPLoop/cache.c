@@ -77,7 +77,7 @@ static void really_free_from_queue()
 
 static int ensure_interpreter_lock( )
 {
-  struct thread_state *thi;
+  struct Pike_interpreter *thi;
   int free=0;
   if( (thi = thread_state_for_id( th_self() )) )
   {

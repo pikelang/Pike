@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.130 2000/06/24 00:48:13 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.131 2000/06/24 07:20:27 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -194,7 +194,7 @@ int co_destroy(COND_T *c)
 #endif
 
 
-#define THIS_THREAD ((struct thread_state *)CURRENT_STORAGE)
+#define THIS_THREAD ((struct Pike_interpreter *)CURRENT_STORAGE)
 
 struct object *thread_id = NULL;
 static struct callback *threads_evaluator_callback=0;
@@ -385,7 +385,7 @@ void exit_interleave_mutex(IMUTEX_T *im)
 
 #define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
 
-static struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
+static struct Pike_interpreter *thread_table_chains[THREAD_TABLE_SIZE];
 static int num_pike_threads=0;
 
 void thread_table_init(void)
@@ -415,7 +415,7 @@ static void dumpmem(char *desc, void *x, int size)
 
 void thread_table_insert(struct object *o)
 {
-  struct thread_state *s = OBJ2THREAD(o);
+  struct Pike_interpreter *s = OBJ2THREAD(o);
   unsigned INT32 h = thread_table_hash(&s->id);
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
@@ -440,7 +440,7 @@ void thread_table_insert(struct object *o)
 
 void thread_table_delete(struct object *o)
 {
-  struct thread_state *s = OBJ2THREAD(o);
+  struct Pike_interpreter *s = OBJ2THREAD(o);
 /*  dumpmem("thread_table_delete",&s->id, sizeof(THREAD_T)); */
   mt_lock( & thread_table_lock );
   num_pike_threads--;
@@ -450,10 +450,10 @@ void thread_table_delete(struct object *o)
   mt_unlock( & thread_table_lock );
 }
 
-struct thread_state *thread_state_for_id(THREAD_T tid)
+struct Pike_interpreter *thread_state_for_id(THREAD_T tid)
 {
   unsigned INT32 h = thread_table_hash(&tid);
-  struct thread_state *s = NULL;
+  struct Pike_interpreter *s = NULL;
 #if 0
   if(num_threads>1)
     dumpmem("thread_state_for_id: ",&tid,sizeof(tid));
@@ -477,7 +477,7 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
       if(th_equal(s->id, tid))
 	break;
     if(s != NULL) {
-      /* Move the thread_state to the head of the chain, in case
+      /* Move the Pike_interpreter to the head of the chain, in case
 	 we want to search for it again */
 
       /* Unlink */
@@ -503,7 +503,7 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
 
 struct object *thread_for_id(THREAD_T tid)
 {
-  struct thread_state *s = thread_state_for_id(tid);
+  struct Pike_interpreter *s = thread_state_for_id(tid);
   return (s == NULL? NULL : THREADSTATE2OBJ(s));
   /* See NB in thread_state_for_id.  Lifespan of result can be prolonged
      by incrementing refcount though. */
@@ -517,7 +517,7 @@ void f_all_threads(INT32 args)
 
   INT32 x;
   struct svalue *oldsp;
-  struct thread_state *s;
+  struct Pike_interpreter *s;
 
   pop_n_elems(args);
   oldsp = sp;
@@ -1019,8 +1019,8 @@ void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 
 void f_thread_backtrace(INT32 args)
 {
-  struct thread_state *foo = THIS_THREAD;
-  struct thread_state *bar = OBJ2THREAD( thread_id );
+  struct Pike_interpreter *foo = THIS_THREAD;
+  struct Pike_interpreter *bar = OBJ2THREAD( thread_id );
   struct svalue *osp = sp;
   pop_n_elems(args);
   if(foo->sp)
@@ -1057,7 +1057,7 @@ void f_thread_id__sprintf (INT32 args)
 
 static void f_thread_id_result(INT32 args)
 {
-  struct thread_state *th=THIS_THREAD;
+  struct Pike_interpreter *th=THIS_THREAD;
 
   SWAP_OUT_CURRENT_THREAD();
 
@@ -1074,7 +1074,7 @@ static void f_thread_id_result(INT32 args)
 
 void init_thread_obj(struct object *o)
 {
-  MEMSET(THIS_THREAD, 0, sizeof(struct thread_state));
+  MEMSET(THIS_THREAD, 0, sizeof(struct Pike_interpreter));
   THIS_THREAD->status=THREAD_NOT_STARTED;
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
@@ -1093,14 +1093,14 @@ void exit_thread_obj(struct object *o)
 
 static void thread_was_recursed(struct object *o)
 {
-  struct thread_state *tmp=THIS_THREAD;
+  struct Pike_interpreter *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     gc_recurse_mapping(tmp->thread_local);
 }
 
 static void thread_was_checked(struct object *o)
 {
-  struct thread_state *tmp=THIS_THREAD;
+  struct Pike_interpreter *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     debug_gc_check(tmp->thread_local, T_OBJECT, o);
 
@@ -1295,7 +1295,7 @@ void th_init(void)
 	   OPT_SIDE_EFFECT);
 
   START_NEW_PROGRAM_ID(THREAD_ID);
-  thread_storage_offset=ADD_STORAGE(struct thread_state);
+  thread_storage_offset=ADD_STORAGE(struct Pike_interpreter);
   thread_id_result_variable=simple_add_variable("result","mixed",0);
   /* function(:array) */
   ADD_FUNCTION("backtrace",f_thread_backtrace,tFunc(tNone,tArray),0);

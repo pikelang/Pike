@@ -1,13 +1,14 @@
 /*
- * $Id: threads.h,v 1.93 2000/06/23 06:17:58 hubbe Exp $
+ * $Id: threads.h,v 1.94 2000/06/24 07:20:27 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
 
 #include "machine.h"
-#include "interpret.h"
 #include "object.h"
 #include "error.h"
+
+struct Pike_interpreter;
 
 /* Needed for the sigset_t typedef, which is needed for
  * the pthread_sigsetmask() prototype on Solaris 2.x.
@@ -334,41 +335,8 @@ struct interleave_mutex
 
 #ifdef PIKE_SECURITY
 extern struct object *current_creds;
-#define DO_IF_SECURITY(X) X
-#else
-#define DO_IF_SECURITY(X)
 #endif
 
-struct thread_state {
-  char swapped;
-  char status;
-  COND_T status_change;
-  THREAD_T id;
-  struct thread_state *hashlink, **backlink;
-  struct mapping *thread_local;
-
-  /* Swapped variables */
-  struct svalue *Pike_sp,*Pike_evaluator_stack;
-  struct svalue **Pike_mark_sp,**Pike_mark_stack;
-  struct pike_frame *Pike_fp;
-  int evaluator_stack_malloced;
-  int mark_stack_malloced;
-  JMP_BUF *recoveries;
-  struct object * thread_id;
-  char *Pike_stack_top;
-  DO_IF_SECURITY(struct object *current_creds;)
-
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-  long long accounted_time;
-  long long time_base;
-#endif
-#endif
-
-#ifdef THREAD_TRACE
-  int t_flag;
-#endif /* THREAD_TRACE */
-};
 
 #ifndef TH_RETURN_TYPE
 #define TH_RETURN_TYPE void *
@@ -458,7 +426,7 @@ struct thread_state {
 
 #define SWAP_OUT_CURRENT_THREAD() \
   do {\
-     struct thread_state *_tmp=OBJ2THREAD(thread_id); \
+     struct Pike_interpreter *_tmp=OBJ2THREAD(thread_id); \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
 			 __FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
@@ -492,12 +460,12 @@ struct thread_state {
 #endif /* PIKE_DEBUG */
 
 #define	OBJ2THREAD(X) \
-  ((struct thread_state *)((X)->storage+thread_storage_offset))
+  ((struct Pike_interpreter *)((X)->storage+thread_storage_offset))
 
 #define THREADSTATE2OBJ(X) ((X)->thread_id)
 
 #define THREADS_ALLOW() do { \
-     struct thread_state *_tmp=OBJ2THREAD(thread_id); \
+     struct Pike_interpreter *_tmp=OBJ2THREAD(thread_id); \
      DO_IF_DEBUG({ \
        extern int Pike_in_gc; \
        if(thread_for_id(th_self()) != thread_id) \
@@ -533,7 +501,7 @@ struct thread_state {
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
-     struct thread_state *_tmp_uid=OBJ2THREAD(thread_id); \
+     struct Pike_interpreter *_tmp_uid=OBJ2THREAD(thread_id); \
      DO_IF_DEBUG({ \
        extern int Pike_in_gc; \
        if(thread_for_id(th_self()) != thread_id) \
@@ -570,13 +538,13 @@ struct thread_state {
    } while(0)
 
 #define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
-  struct thread_state *_tmp=thread_state_for_id(th_self());	\
+  struct Pike_interpreter *_tmp=thread_state_for_id(th_self());	\
   HIDE_GLOBAL_VARIABLES();					\
   THREADS_DISALLOW()
 
 #ifdef PIKE_DEBUG
 #define ASSERT_THREAD_SWAPPED_IN() do {				\
-    struct thread_state *_tmp=thread_state_for_id(th_self());	\
+    struct Pike_interpreter *_tmp=thread_state_for_id(th_self());	\
     if(_tmp->swapped) fatal("Thread is not swapped in!\n");	\
   }while(0)
 
@@ -600,7 +568,7 @@ void thread_table_init(void);
 unsigned INT32 thread_table_hash(THREAD_T *tid);
 void thread_table_insert(struct object *o);
 void thread_table_delete(struct object *o);
-struct thread_state *thread_state_for_id(THREAD_T tid);
+struct Pike_interpreter *thread_state_for_id(THREAD_T tid);
 struct object *thread_for_id(THREAD_T tid);
 void f_all_threads(INT32 args);
 int count_pike_threads(void);
@@ -708,5 +676,7 @@ extern int thread_storage_offset;
 #endif
 
 
+/* for compatibility */
+#include "interpret.h"
 
 #endif /* THREADS_H */

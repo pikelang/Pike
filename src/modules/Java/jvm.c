@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.19 2000/06/10 11:52:46 mast Exp $
+ * $Id: jvm.c,v 1.20 2000/06/24 07:20:37 hubbe Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.19 2000/06/10 11:52:46 mast Exp $");
+RCSID("$Id: jvm.c,v 1.20 2000/06/24 07:20:37 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1651,7 +1651,7 @@ static void native_dispatch(struct native_method_context *ctx,
 			    jvalue *rc)
 {
   extern struct program *thread_id_prog;
-  struct thread_state *state;
+  struct Pike_interpreter *state;
 
   if((state = thread_state_for_id(th_self()))!=NULL) {
     /* This is a pike thread.  Do we have the interpreter lock? */
@@ -1677,14 +1677,14 @@ static void native_dispatch(struct native_method_context *ctx,
     recoveries = NULL;
     thread_id = low_clone(thread_id_prog);
     call_c_initializers(thread_id);
-    SWAP_OUT_THREAD((struct thread_state *)thread_id->storage);
-    ((struct thread_state *)thread_id->storage)->swapped=0;
-    ((struct thread_state *)thread_id->storage)->id=th_self();
+    SWAP_OUT_THREAD((struct Pike_interpreter *)thread_id->storage);
+    ((struct Pike_interpreter *)thread_id->storage)->swapped=0;
+    ((struct Pike_interpreter *)thread_id->storage)->id=th_self();
     num_threads++;
     thread_table_insert(thread_id);
     do_native_dispatch(ctx, env, cls, args, rc);
-    ((struct thread_state *)(thread_id->storage))->status=THREAD_EXITED;
-    co_signal(& ((struct thread_state *)(thread_id->storage))->status_change);
+    ((struct Pike_interpreter *)(thread_id->storage))->status=THREAD_EXITED;
+    co_signal(& ((struct Pike_interpreter *)(thread_id->storage))->status_change);
     thread_table_delete(thread_id);
     free_object(thread_id);
     thread_id=NULL;

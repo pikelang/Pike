@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.42 2000/01/10 00:52:11 hubbe Exp $
+ * $Id: global.h,v 1.43 2000/06/24 07:20:27 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -284,6 +284,13 @@ typedef struct p_wchar_p
 #if defined(PURIFY) || defined(__CHECKER__) || defined(DEBUG_MALLOC)
 #define DO_PIKE_CLEANUP
 #endif
+
+#ifdef PIKE_SECURITY
+#define DO_IF_SECURITY(X) X
+#else
+#define DO_IF_SECURITY(X)
+#endif
+
 
 #include "port.h"
 #include "dmalloc.h"
