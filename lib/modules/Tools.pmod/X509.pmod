@@ -47,7 +47,7 @@ mapping parse_time(object asn1)
     return 0;
   m->mon--;
   
-  if ( (m->mday <= 0) || (m->mday >= Calendar.ISO.Year(m->year + 1900)
+  if ( (m->mday <= 0) || (m->mday > Calendar.ISO.Year(m->year + 1900)
 			  ->month(m->mon + 1)->number_of_days()))
     return 0;
 
