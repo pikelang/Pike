@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.7 2001/09/17 02:45:43 hop Exp $
+// $Id: protocol.pike,v 1.8 2004/10/13 15:45:28 wellhard Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -171,7 +171,7 @@
   }
 
 
-  string|int do_op(object msgop) {
+  string|int do_op(object msgop, object|void controls) {
   // ---------------------------
   // Make LDAP PDU envelope for 'msgop', send it and read answer ...
 
@@ -184,7 +184,11 @@
     msgnum = next_id++;
     //THREAD_UNLOCK
     msgid = Standards.ASN1.Types.asn1_integer(msgnum);
-    msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+    if (controls) {
+      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop, controls}));
+    } else {
+      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+    }
 
     if (objectp(msgval)) {
       DWRITE(sprintf("protocol.do_op: msg = [%d]\n",sizeof(msgval->get_der())));
@@ -224,7 +228,7 @@
     string s, shlp;
 
     retv = ldapfd->read(2); 	// 1. byte = 0x0C, 2. byte = msglen
-    if (intp(retv) && (retv == -1)) {
+    if (retv == -1) {
       seterr (LDAP_TIMEOUT);
       DWRITE_HI("protocol.readmsg: ERROR: connection timeout.\n");
       THROW(({"LDAP: connection timeout.\n",backtrace()}));
@@ -240,7 +244,7 @@
 
     msglen = retv[1];
     if (msglen & 0x80) { // > 0x7f
-      if (msglen == 0x80) { // RFC not allows unexplicitly defined length
+      if (msglen == 0x80) { // RFC not allows nonexplicitly defined length
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
 	return(-ldap_errno);
