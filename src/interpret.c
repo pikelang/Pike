@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.46 1997/09/09 03:36:11 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.47 1997/09/17 10:33:12 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -354,14 +354,6 @@ void pop_n_elems(INT32 x)
 
 struct callback_list evaluator_callbacks;
 
-/* This function is called 'every now and then'. (1-10000 / sec or so)
- * It should do anything that needs to be done fairly often.
- */
-void check_threads_etc(void)
-{
-  call_callback(& evaluator_callbacks, (void *)0);
-}
-
 #ifdef DEBUG
 static char trace_buffer[100];
 #define GET_ARG() (backlog[backlogp].arg=(\
@@ -378,7 +370,7 @@ static char trace_buffer[100];
 #define CASE(X) case (X)-F_OFFSET:
 
 #define DOJUMP() \
- do { int tmp; tmp=EXTRACT_INT(pc); pc+=tmp; if(tmp < 0) check_threads_etc(); }while(0)
+ do { int tmp; tmp=EXTRACT_INT(pc); pc+=tmp; if(tmp < 0) fast_check_threads_etc(6); }while(0)
 
 #define COMPARISMENT(ID,EXPR) \
 CASE(ID); \
@@ -421,7 +413,7 @@ CASE(ID) \
   if( i->integer OP2 sp[-3].u.integer) \
   { \
     pc+=EXTRACT_INT(pc); \
-    check_threads_etc(); \
+    fast_check_threads_etc(8); \
   }else{ \
     pc+=sizeof(INT32); \
   } \
@@ -948,7 +940,7 @@ static void eval_instruction(unsigned char *pc)
 			  constants[GET_ARG()].u.array,sp-1);
 	pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
 	pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
-	if(*(INT32*)pc < 0) check_threads_etc();
+	if(*(INT32*)pc < 0) fast_check_threads_etc(7);
 	pc+=*(INT32*)pc;
 	pop_stack();
 	break;
@@ -964,7 +956,7 @@ static void eval_instruction(unsigned char *pc)
 	if(sp[-4].type != T_ARRAY) error("Bad argument 1 to foreach()\n");
 	if(sp[-1].u.integer < sp[-4].u.array->size)
 	{
-	  check_threads_etc();
+	  fast_check_threads_etc(10);
 	  index_no_free(sp,sp-4,sp-1);
 	  sp++;
 	  assign_lvalue(sp-4, sp-1);
@@ -997,9 +989,10 @@ static void eval_instruction(unsigned char *pc)
 
     do_return:
 #if defined(DEBUG) && defined(GC2)
-      if(d_flag > 2) do_gc();
-      check_threads_etc();
+      if(d_flag > 2)
+	do_gc();
 #endif
+      check_threads_etc();
 
       /* fall through */
 
@@ -1270,7 +1263,7 @@ void apply_low(struct object *o, int fun, int args)
     return;
   }
 
-  check_threads_etc();
+  fast_check_threads_etc(4);
   check_stack(256);
   check_mark_stack(256);
 

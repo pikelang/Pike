@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.39 1997/09/15 12:43:23 grubba Exp $");
+RCSID("$Id: threads.c,v 1.40 1997/09/17 10:33:14 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -32,6 +32,9 @@ struct thread_starter
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
+  static int div_;
+  if(div_++ & 255) return;
+
   THREADS_ALLOW();
 
   /* Allow other threads to run */
@@ -200,13 +203,20 @@ void f_mutex_lock(INT32 args)
     }
   }
 
-  SWAP_OUT_CURRENT_THREAD();
-  while(m->key)
+  if(m->key)
   {
-    THREADS_FPRINTF((stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
-    co_wait(& m->condition, & interpreter_lock);
+    check_objects_to_destruct();
+    if(m->key)
+    {
+      SWAP_OUT_CURRENT_THREAD();
+      do
+      {
+	THREADS_FPRINTF((stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
+	co_wait(& m->condition, & interpreter_lock);
+      }while(m->key);
+      SWAP_IN_CURRENT_THREAD();
+    }
   }
-  SWAP_IN_CURRENT_THREAD();
   m->key=o;
   OB2KEY(o)->mut=m;
 

@@ -77,6 +77,12 @@ do{ \
   safe_apply_low(master_ob, fun_, ARGS); \
 }while(0)
 
+#define check_threads_etc() \
+  call_callback(& evaluator_callbacks, (void *)0)
+
+#define fast_check_threads_etc(X) do { \
+  static int div_; if(!(div_++& ((1<<(X))-1))) check_threads_etc(); } while(0)
+
 /* Prototypes begin here */
 void push_sp_mark(void);
 int pop_sp_mark(void);
@@ -88,7 +94,6 @@ void assign_lvalue(struct svalue *lval,struct svalue *from);
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);
 void pop_n_elems(INT32 x);
-void check_threads_etc(void);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
