@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.621 2003/03/16 17:21:36 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.622 2003/03/20 16:33:07 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1325,6 +1325,13 @@ test_program([[// [bug 3060]
     return ok == 2;
   }
 ]])
+
+test_any([[
+  // Test a lot of code without a relative pc update in it. There must
+  // not be any labels in it since the pc counting is reset then.
+  int a = 1, b = 1, c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c; c=a+b,a=b,b=c;
+  return __LINE__ == backtrace()[-1][1];
+]], 1)
 
 dnl Note: This line number error tend to go away with more debug.
 test_program([[
