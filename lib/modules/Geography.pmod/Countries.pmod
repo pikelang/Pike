@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 array(Country) countries=
 ({
    Country("AD","Andorra"),

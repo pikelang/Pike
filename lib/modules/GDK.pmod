@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 #define INDEX(x) GTK[x]
 
 object Atom = class

@@ -1,8 +1,9 @@
-/* $Id: Queue.pike,v 1.1 1999/11/29 18:24:24 per Exp $
+/* $Id: Queue.pike,v 1.2 2000/09/26 18:59:09 hubbe Exp $
  *
  * A simple FIFO queue. 
  */
 
+#pike __VERSION__
 #define QUEUE_SIZE 100
 
 array l;

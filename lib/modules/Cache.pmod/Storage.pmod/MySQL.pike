@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: MySQL.pike,v 1.1 2000/08/07 17:59:57 kinkie Exp $
+ * $Id: MySQL.pike,v 1.2 2000/09/26 18:59:13 hubbe Exp $
  *
  * This storage manager provides the means to save data to an SQL-based 
  * backend.
@@ -16,6 +16,8 @@
  * of this driver to create the database itself.
  * 
  */
+
+#pike __VERSION__
 
 #define MAX_KEY_SIZE "255"
 #define CREATION_QUERY "create table cache ( \

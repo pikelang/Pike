@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit .Heap;
 
 class elem {

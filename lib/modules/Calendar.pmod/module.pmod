@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 static private int stage=0;
 static private int booted=0;
 static private object defcal;

@@ -3,6 +3,7 @@
  * New version, taken from Protocols.X
  */
 
+#pike __VERSION__
 #if 0
 #include "error.h"
 #else

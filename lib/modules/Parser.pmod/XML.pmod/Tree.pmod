@@ -1,5 +1,7 @@
+#pike __VERSION__
+
 /*
- * $Id: Tree.pmod,v 1.3 2000/07/12 20:12:13 js Exp $
+ * $Id: Tree.pmod,v 1.4 2000/09/26 18:59:50 hubbe Exp $
  *
  */
 

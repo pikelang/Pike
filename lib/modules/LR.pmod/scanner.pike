@@ -1,8 +1,9 @@
 /*
- * $Id: scanner.pike,v 1.1 1997/03/03 23:50:22 grubba Exp $
+ * $Id: scanner.pike,v 1.2 2000/09/26 18:59:47 hubbe Exp $
  *
  * Scanner using reg-exps.
  *
  * Henrik Grubbström 1996-12-16
  */
 
+#pike __VERSION__

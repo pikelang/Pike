@@ -1,5 +1,5 @@
-// $Id: Readline.pike,v 1.35 2000/09/04 09:48:56 noring Exp $
-
+// $Id: Readline.pike,v 1.36 2000/09/26 19:00:19 hubbe Exp $
+#pike __VERSION__
 class OutputController
 {
   static private object outfd, term;

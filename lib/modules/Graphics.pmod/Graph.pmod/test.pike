@@ -1,5 +1,7 @@
 
 //This is a testprogram that creates a simple graph.
+#pike __VERSION__
+
 import ".";
 
 void main()

@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit GTK.DrawingArea;
 static object backing_store, bgc;
 static int _xsize, _ysize, is_realized;

@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.26 1998/04/21 02:56:01 per Exp $
+ * $Id: Requests.pmod,v 1.27 2000/09/26 19:00:03 hubbe Exp $
  */
 
 /*
@@ -27,6 +27,8 @@
 /* Questions, bug fixes and bug reports can be sent to the pike
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
+
+#pike __VERSION__
 
 #include "error.h"
 

@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.131 2000/09/24 01:37:01 per Exp $
+ * $Id: master.pike.in,v 1.132 2000/09/26 18:58:56 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -9,6 +9,7 @@
 
 // Some configurable parameters useful for debugging
 
+#pike __VERSION__
 #define PIKE_AUTORELOAD
 
 // Used by describe_backtrace() et al.
@@ -94,9 +95,6 @@ string basename(string x)
 #define UNDEFINED (([])[0])
 #define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
 
-array(string) pike_include_path=({});
-array(string) pike_module_path=({});
-array(string) pike_program_path=({});
 int want_warnings = PIKE_WARNINGS;
 
 #ifdef PIKE_AUTORELOAD
@@ -131,9 +129,15 @@ mapping(string:int) load_time=([]);
 
 #endif
 
+int compat_major=-1;
+int compat_minor=-1;
+
 program compile_string(string data, void|string name, object|void handler)
 {
-  return compile(cpp(data,name||"-", 0, handler), handler);
+  return compile(cpp(data,name||"-", 0, handler, compat_major, compat_minor),
+		 handler,
+		 compat_major,
+		 compat_minor);
 }
 
 
@@ -149,7 +153,8 @@ program compile_file(string file, object|void handler)
 {
   AUTORELOAD_CHECK_FILE(file);
   return compile(cpp(master_read_file(file),
-		     file, 1, handler), handler);
+		     file, 1, handler, compat_major, compat_minor), handler,
+		 compat_major, compat_minor );
 }
 
 
@@ -258,49 +263,6 @@ string normalize_path( string X )
   return replace(X,"\\","/");
 #endif
 }
-
-void add_include_path(string tmp)
-{
-  tmp=normalize_path(combine_path_with_cwd(tmp));
-  pike_include_path-=({tmp});
-  pike_include_path=({tmp})+pike_include_path;
-}
-
-void remove_include_path(string tmp)
-{
-  tmp=normalize_path(combine_path_with_cwd(tmp));
-  pike_include_path-=({tmp});
-}
-
-void add_module_path(string tmp)
-{
-  tmp=normalize_path(combine_path_with_cwd(tmp));
-  pike_module_path-=({tmp});
-  pike_module_path=({tmp})+pike_module_path;
-}
-
-
-void remove_module_path(string tmp)
-{
-  tmp=normalize_path(combine_path_with_cwd(tmp));
-  pike_module_path-=({tmp});
-}
-
-
-void add_program_path(string tmp)
-{
-  tmp=normalize_path(combine_path_with_cwd(tmp));
-  pike_program_path-=({tmp});
-  pike_program_path=({tmp})+pike_program_path;
-}
-
-
-void remove_program_path(string tmp)
-{
-  tmp=normalize_path(combine_path_with_cwd(tmp));
-  pike_program_path-=({tmp});
-}
-
 
 mapping (string:program) programs=(["/master":object_program(this_object())]);
 
@@ -901,58 +863,189 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   return fc[path]=dirnode(path);
 }
 
-mixed resolv_base(string identifier, string|void current_file)
-{
-  array(mixed) tmp = ({});
-  foreach(pike_module_path, string path)
-  {
-    string file=combine_path(path,identifier);
-    if(mixed ret=findmodule(file)) {
-      if ((objectp(ret)) &&
-	  (ret->is_resolv_dirnode || ret->is_resolv_joinnode)) {
-	if (mixed new_ret = ret->_module_value) {
-	  ret = new_ret;
-	}
-	tmp += ({ ret });
-      } else {
-	if (mixed new_ret = ret->_module_value) {
-	  ret = new_ret;
-	}
-	if (!sizeof(tmp)) {
-	  return ret;
-	} else {
-	  // Ignore
-	  werror(sprintf("Ignoring file %O: %t for identifier %O\n",
-			 file, ret, identifier));
-	  continue;
-	}
-      }
-    }
-  }
-  if (sizeof(tmp)) {
-    if (sizeof(tmp) == 1) {
-      return(tmp[0]);
-    }
-    return joinnode(tmp);
-  }
-  return UNDEFINED;
-}
+
+
 multiset no_resolv = (<>);
-mapping resolv_cache = set_weak_flag( ([]), 1 );
-mixed resolv(string identifier, string|void current_file)
+class CompatResolver
 {
-  if( no_resolv[ identifier ] )
-    return UNDEFINED;
-  mixed ret;
-  string id=identifier+":"+(current_file ? dirname(current_file) : "-");
-  if( !zero_type (ret = resolv_cache[id]) )
-    return ret == ZERO_TYPE ? UNDEFINED : resolv_cache[id];
-  array(string) tmp=identifier/".";
-  ret=resolv_base(tmp[0]);
-  foreach(tmp[1..],string index) ret=ret[index];
-  resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
-  return ret;
+  array(string) pike_include_path=({});
+  array(string) pike_module_path=({});
+  array(string) pike_program_path=({});
+  int want_warnings = PIKE_WARNINGS;
+  string ver;
+
+  void create(mixed v)
+    {
+      ver=(string)v;
+    }
+
+  void add_include_path(string tmp)
+    {
+      tmp=normalize_path(combine_path_with_cwd(tmp));
+      pike_include_path-=({tmp});
+      pike_include_path=({tmp})+pike_include_path;
+    }
+  
+  void remove_include_path(string tmp)
+    {
+      tmp=normalize_path(combine_path_with_cwd(tmp));
+      pike_include_path-=({tmp});
+    }
+  
+  void add_module_path(string tmp)
+    {
+      tmp=normalize_path(combine_path_with_cwd(tmp));
+      pike_module_path-=({tmp});
+      pike_module_path=({tmp})+pike_module_path;
+    }
+  
+  
+  void remove_module_path(string tmp)
+    {
+      tmp=normalize_path(combine_path_with_cwd(tmp));
+      pike_module_path-=({tmp});
+    }
+  
+  
+  void add_program_path(string tmp)
+    {
+      tmp=normalize_path(combine_path_with_cwd(tmp));
+      pike_program_path-=({tmp});
+      pike_program_path=({tmp})+pike_program_path;
+    }
+  
+  
+  void remove_program_path(string tmp)
+    {
+      tmp=normalize_path(combine_path_with_cwd(tmp));
+      pike_program_path-=({tmp});
+    }
+
+  mapping get_default_module()
+    {
+      /* This is an ugly kluge to avoid an infinite recursion.
+       * The infinite recursion occurs because this function is
+       * called for every file when the compat_major/minor is set.
+       * This kluge could cause problems with threads if the
+       * compiler was threaded. -Hubbe
+       */
+      int saved_compat_minor=compat_minor;
+      int saved_compat_major=compat_major;
+      compat_minor=-1;
+      compat_major=-1;
+
+      mixed x;
+      mixed err =catch {
+	if(x=resolv("__default.all_constants")) x=x();
+      };
+
+      compat_major=saved_compat_major;
+      compat_minor=saved_compat_minor;
+      if(err) throw(err);
+      return x;
+    }
+
+  mixed resolv_base(string identifier, string|void current_file)
+    {
+      array(mixed) tmp = ({});
+      foreach(pike_module_path, string path)
+	{
+	  string file=combine_path(path,identifier);
+	  if(mixed ret=findmodule(file)) {
+	    if ((objectp(ret)) &&
+		(ret->is_resolv_dirnode || ret->is_resolv_joinnode)) {
+	      if (mixed new_ret = ret->_module_value) {
+		ret = new_ret;
+	      }
+	      tmp += ({ ret });
+	    } else {
+	      if (mixed new_ret = ret->_module_value) {
+		ret = new_ret;
+	      }
+	      if (!sizeof(tmp)) {
+		return ret;
+	      } else {
+		// Ignore
+		werror(sprintf("Ignoring file %O: %t for identifier %O\n",
+			       file, ret, identifier));
+		continue;
+	      }
+	    }
+	  }
+	}
+      if (sizeof(tmp)) {
+	if (sizeof(tmp) == 1) {
+	  return(tmp[0]);
+	}
+	return joinnode(tmp);
+      }
+      return UNDEFINED;
+    }
+  
+  mapping resolv_cache = set_weak_flag( ([]), 1 );
+  mixed resolv(string identifier, string|void current_file)
+    {
+      if( no_resolv[ identifier ] )
+	return UNDEFINED;
+
+      mixed ret;
+      string id=identifier+":"+(current_file ? dirname(current_file) : "-");
+      if( !zero_type (ret = resolv_cache[id]) )
+	return ret == ZERO_TYPE ? UNDEFINED : resolv_cache[id];
+      array(string) tmp=identifier/".";
+      ret=resolv_base(tmp[0]);
+      foreach(tmp[1..],string index) ret=ret[index];
+      resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
+      return ret;
+    }
+
+  /* This function is called whenever an #include directive is encountered
+   * it receives the argument for #include and should return the file name
+   * of the file to include
+   */
+  string handle_include(string f,
+			string current_file,
+			int local_include)
+    {
+      array(string) tmp;
+      string path;
+      
+      if(local_include)
+      {
+	tmp=EXPLODE_PATH(current_file);
+	tmp[-1]=f;
+	path=combine_path_with_cwd(tmp*"/");
+      }
+      else
+      {
+	foreach(pike_include_path, path)
+	  {
+	    path=combine_path(path,f);
+	    if(master_file_stat(fakeroot(path)))
+	      break;
+	    else
+	      path=0;
+	  }
+	
+      }
+      
+      return path;
+    }
+  
+  string read_include(string f)
+    {
+      AUTORELOAD_CHECK_FILE(f)
+	return master_read_file(f);
+    }
+
+
+  string _sprintf()
+    {
+      return sprintf("CompatResolver(%s)",ver);
+    }
 }
+
+inherit CompatResolver;
 
 // These are useful if you want to start other Pike processes
 // with the same options as this one was started with.
@@ -1021,6 +1114,7 @@ void _main(array(string) orig_argv, array(string) env)
     }
     
     q=tmp->find_all_options(argv,({
+      ({"compat_version",tmp->HAS_ARG,({"-V","--compat"})}),
       ({"version",tmp->NO_ARG,({"-v","--version"})}),
       ({"help",tmp->NO_ARG,({"-h","--help"})}),
       ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
@@ -1049,6 +1143,9 @@ void _main(array(string) orig_argv, array(string) env)
     {
       switch(q[i][0])
       {
+	case "compat_version":
+	  sscanf(q[i][1],"%d.%d",compat_major,compat_minor);
+	  break;
 #ifdef PIKE_AUTORELOAD
       case "autoreload":
 	autoreload_on++;
@@ -1165,7 +1262,7 @@ void _main(array(string) orig_argv, array(string) env)
 	
       case "execute":
 	  random_seed(time() + (getpid() * 0x11111111));
-	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
+	compile_string("mixed create(){"+opts[1]+";}")();
 	exit(0);
 
       case "preprocess":
@@ -1382,46 +1479,6 @@ string decode_charset(string data, string charset)
 }
 
 
-/* This function is called whenever an #include directive is encountered
- * it receives the argument for #include and should return the file name
- * of the file to include
- * Note that previous_object cannot be trusted in ths function, because
- * the compiler calls this function.
- */
-string handle_include(string f,
-		      string current_file,
-		      int local_include)
-{
-  array(string) tmp;
-  string path;
-
-  if(local_include)
-  {
-    tmp=EXPLODE_PATH(current_file);
-    tmp[-1]=f;
-    path=combine_path_with_cwd(tmp*"/");
-  }
-  else
-  {
-    foreach(pike_include_path, path)
-      {
-	path=combine_path(path,f);
-	if(master_file_stat(fakeroot(path)))
-	  break;
-	else
-	  path=0;
-      }
-    
-  }
-
-  return path;
-}
-
-string read_include(string f)
-{
-  AUTORELOAD_CHECK_FILE(f)
-  return master_read_file(f);
-}
 
 class Describer
 {
@@ -1896,4 +1953,135 @@ class Codec
   {
     o->_decode(data);
   }
+}
+
+
+class Version
+{
+  int major;
+  int minor;
+  void create(int maj, int min)
+    {
+      major=maj;
+      minor=min;
+    }
+
+#define CMP(X)  (major - (X)->major) || (minor - (X)->minor)
+  
+  int `<(Version v) { return CMP(v) < 0; }
+  int `>(Version v) { return CMP(v) > 0; }
+  int `==(Version v) { return CMP(v)== 0; }
+  int _hash() { return major * 4711 + minor ; }
+
+  string _sprintf() { return sprintf("%d.%d",major,minor); }
+  mixed cast(string type)
+    {
+      switch(type)
+      {
+	case "string":
+	  return sprintf("%d.%d",major,minor);
+      }
+    }
+}
+
+Version currentversion=Version(__MAJOR__,__MINOR__);
+mapping(Version:CompatResolver) compat_handler_cache=set_weak_flag( ([]), 1);
+
+CompatResolver get_compilation_handler(int major, int minor)
+{
+  CompatResolver ret;
+  
+  Version v=Version(major,minor);
+
+  if(v > currentversion)
+  {
+    /* do we want to make an error if major.minor > __MAJOR__.__MINOR ? */
+    return 0;
+  }
+  
+  if(!zero_type(ret=compat_handler_cache[v])) return ret;
+
+  array(Version) available=({});
+
+#if "¤share_prefix¤"[0]!='¤'
+  foreach(get_dir("¤share_prefix¤"), string ver)
+    {
+      if(sscanf(ver,"%d.%d",int maj, int min))
+      {
+	Version x=Version(maj, min) ;
+	if(x >= v)
+	  available|=({ x });
+      }
+    }
+#endif
+
+#if "¤lib_prefix¤"[0]!='¤'
+  foreach(get_dir("¤lib_prefix¤"), string ver)
+    {
+      if(sscanf(ver,"%d.%d",int maj, int min))
+      {
+	Version x=Version(maj, min) ;
+	if(x >= v)
+	  available|=({ x });
+      }
+    }
+#endif
+
+  sort(available);
+
+#ifndef RESOLVER_HACK
+  /* We need to define RESOLVER_HACK when we add
+   * version-specific stuff in the CompatResolver.
+   * As long as all the compatibility is done in the
+   * module dierctories, RESOLVER_HACK can be undefined
+   */
+
+  /* No compat needed */
+  if(!sizeof(available))
+  {
+    compat_handler_cache[v]=0;
+    return 0;
+  }
+
+  /* Same as available[0] */
+  if(ret=compat_handler_cache[available[0]])
+    return compat_handler_cache[v]=ret;
+#endif
+
+  ret=CompatResolver(v);
+  if( v < Version(0,6))
+    ret->pike_module_path+=({"."});
+
+  foreach(available, Version v)
+    {
+      string base;
+#if "¤lib_prefix¤"[0]!='¤'
+      base=combine_path("¤lib_prefix¤",sprintf("%s",v));
+      ret->add_module_path(combine_path(base,"modules"));
+      ret->add_include_path(combine_path(base,"include"));
+#endif
+
+#if "¤share_prefix¤"[0]!='¤'
+      base=combine_path("¤share_prefix¤",sprintf("%s",v));
+      ret->add_module_path(combine_path(base,"modules"));
+      ret->add_include_path(combine_path(base,"include"));
+#endif
+    }
+
+  /* Add default paths */
+  map(pike_module_path,ret->add_module_path);
+  map(pike_include_path,ret->add_include_path);
+
+  compat_handler_cache[v] = ret;
+
+#ifndef RESOLVER_HACK
+  compat_handler_cache[available[0]] = ret; /* may be equal to 'v' */
+#endif
+
+  return ret;
+}
+
+string _sprintf()
+{
+  return "master()";
 }

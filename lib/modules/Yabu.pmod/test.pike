@@ -1,6 +1,8 @@
 #!/usr/local/bin/pike
 // Yabu test program
 
+#pike __VERSION__
+
 #define ERR(msg) throw(({ msg+"\n", backtrace() }));
 
 void check_db(object db, mapping m)

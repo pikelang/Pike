@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.39 2000/05/07 18:36:59 nilsson Exp $
+ * $Id: Xlib.pmod,v 1.40 2000/09/26 19:00:04 hubbe Exp $
  */
 
 /*
@@ -27,6 +27,8 @@
 /* Questions, bug fixes and bug reports can be sent to the pike
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
+
+#pike __VERSION__
 
 #include "error.h"
 

@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 import .ProtocolTypes;
 
 /* 0 async-new-text-old */

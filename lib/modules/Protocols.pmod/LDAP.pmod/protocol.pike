@@ -1,6 +1,8 @@
+#pike __VERSION__
+
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.4 1999/12/30 15:37:26 grubba Exp $
+// $Id: protocol.pike,v 1.5 2000/09/26 18:59:59 hubbe Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //

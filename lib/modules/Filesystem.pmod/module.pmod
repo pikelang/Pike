@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 class Stat
 {
   int mode;

@@ -1,6 +1,8 @@
+#pike __VERSION__
+
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.4 2000/09/05 15:06:09 per Exp $
+// $Id: ldap_privates.pmod,v 1.5 2000/09/26 18:59:58 hubbe Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //

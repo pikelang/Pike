@@ -1,5 +1,7 @@
 #!NOMODULE
 
+#pike __VERSION__
+
 #include "graph.h"
 
 import Image;
@@ -8,7 +10,7 @@ import Stdio;
 
 inherit "polyline.pike";
 
-constant cvs_version = "$Id: create_graph.pike,v 1.2 2000/07/24 08:08:43 hedda Exp $";
+constant cvs_version = "$Id: create_graph.pike,v 1.3 2000/09/26 18:59:43 hubbe Exp $";
 
 /*
  * name = "BG: Create graphs";

@@ -1,6 +1,8 @@
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson
 
+#pike __VERSION__
+
 #define CLEAN_CYCLE 60*60
 //#define LOCALE_DEBUG
 //#define LOCALE_DEBUG_ALL

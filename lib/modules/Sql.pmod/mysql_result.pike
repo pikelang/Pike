@@ -1,8 +1,10 @@
 /*
- * $Id: mysql_result.pike,v 1.2 1998/10/17 03:07:12 grubba Exp $
+ * $Id: mysql_result.pike,v 1.3 2000/09/26 19:00:09 hubbe Exp $
  *
  * Glue for the Mysql-module
  */
+
+#pike __VERSION__
 
 #if constant(Mysql.mysql_result)
 inherit Mysql.mysql_result;

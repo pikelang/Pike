@@ -4,6 +4,7 @@
  * (C) 2000 Roxen IS
  */
 
+#pike __VERSION__
 
 int atime=0; //last-access time.
 int ctime=0; //creation-time

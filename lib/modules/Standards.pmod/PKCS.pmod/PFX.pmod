@@ -9,6 +9,8 @@
  *
  */
 
+#pike __VERSION__
+
 import Standards.ASN1;
 
 object pkcs_7_id = .Identifiers.pkcs_id->append(7);

@@ -10,6 +10,8 @@
 //! inherits Gregorian
 //!
 
+#pike __VERSION__
+
 import ".";
 inherit Gregorian:Gregorian;
 

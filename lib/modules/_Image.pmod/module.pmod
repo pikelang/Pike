@@ -1,5 +1,7 @@
+#pike __VERSION__
+
 //! module Image
-//! $Id: module.pmod,v 1.9 2000/09/12 16:41:05 jonasw Exp $
+//! $Id: module.pmod,v 1.10 2000/09/26 19:00:27 hubbe Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)

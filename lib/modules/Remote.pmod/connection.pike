@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 #include "remote.h"
 
 #ifdef REMOTE_DEBUG

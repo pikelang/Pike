@@ -1,14 +1,16 @@
 /*
- * $Id: priority.pike,v 1.2 1997/03/30 17:28:27 grubba Exp $
+ * $Id: priority.pike,v 1.3 2000/09/26 18:59:47 hubbe Exp $
  *
  * Rule priority specification
  *
  * Henrik Grubbström 1996-12-05
  */
 
+#pike __VERSION__
+
 //.
 //. File:	priority.pike
-//. RCSID:	$Id: priority.pike,v 1.2 1997/03/30 17:28:27 grubba Exp $
+//. RCSID:	$Id: priority.pike,v 1.3 2000/09/26 18:59:47 hubbe Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Rule priority specification.

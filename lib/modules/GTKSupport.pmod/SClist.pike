@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit GTK.ScrolledWindow;
 
 GTK.Clist cl;

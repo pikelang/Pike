@@ -3,8 +3,10 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Multiple.pike,v 1.1 2000/07/02 20:14:47 kinkie Exp $
+ * $Id: Multiple.pike,v 1.2 2000/09/26 18:59:11 hubbe Exp $
  */
+
+#pike __VERSION__
 
 inherit Cache.Policy.Base;
 private array(Cache.Policy.Base) my_policies;

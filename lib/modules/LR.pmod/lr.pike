@@ -1,12 +1,14 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.3 2000/03/30 21:18:53 grubba Exp $
+ * $Id: lr.pike,v 1.4 2000/09/26 18:59:46 hubbe Exp $
  *
  * An LR(1) Parser in Pike
  *
  * Henrik Grubbström 1996-11-23
  */
+
+#pike __VERSION__
 
 import LR;
 

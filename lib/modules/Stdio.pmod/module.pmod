@@ -1,4 +1,6 @@
-// $Id: module.pmod,v 1.87 2000/09/10 17:21:21 grubba Exp $
+// $Id: module.pmod,v 1.88 2000/09/26 19:00:20 hubbe Exp $
+#pike __VERSION__
+
 
 import String;
 

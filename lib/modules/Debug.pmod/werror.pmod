@@ -1,9 +1,11 @@
 /*
- * $Id: werror.pmod,v 1.3 1999/12/30 00:36:10 grubba Exp $
+ * $Id: werror.pmod,v 1.4 2000/09/26 18:59:33 hubbe Exp $
  *
  * Some functions to simplify writing debug-messages.
  * (Aren't we lazy? :-) )
  */
+
+#pike __VERSION__
 
 function(:int(0..0)) `[](string print_what)
 {

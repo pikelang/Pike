@@ -1,12 +1,12 @@
 /*
- * $Id: mysql.pike,v 1.10 2000/04/30 16:29:53 kinkie Exp $
+ * $Id: mysql.pike,v 1.11 2000/09/26 19:00:08 hubbe Exp $
  *
  * Glue for the Mysql-module
  */
 
 //.
 //. File:	mysql.pike
-//. RCSID:	$Id: mysql.pike,v 1.10 2000/04/30 16:29:53 kinkie Exp $
+//. RCSID:	$Id: mysql.pike,v 1.11 2000/09/26 19:00:08 hubbe Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the glue to the Mysql-module.
@@ -16,6 +16,8 @@
 //. Implements the glue needed to access the Mysql-module from the generic
 //. SQL module.
 //.
+
+#pike __VERSION__
 
 #if constant(Mysql.mysql)
 

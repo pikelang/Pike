@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 constant CONNECTION_CLOSED=-100;
 
 string encode(mixed ... z) // encode arguments

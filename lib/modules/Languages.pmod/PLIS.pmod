@@ -3,6 +3,8 @@
  * PLIS (Permuted Lisp). A Lisp language somewhat similar to scheme.
  */
 
+#pike __VERSION__
+
 #define error(X) throw( ({ (X), backtrace() }) )
 
 #ifdef LISP_DEBUG

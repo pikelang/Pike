@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Gdbm.pike,v 1.2 2000/07/05 21:36:03 kinkie Exp $
+ * $Id: Gdbm.pike,v 1.3 2000/09/26 18:59:12 hubbe Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -11,6 +11,8 @@
  *
  * Settings will be added later.
  */
+
+#pike __VERSION__
 
 //after this many deletion ops, the databases will be compacted.
 #define CLUTTERED 100

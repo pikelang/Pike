@@ -3,6 +3,8 @@
  * Handles the server side of the protocol.
  */
 
+#pike __VERSION__
+
 inherit Protocols.Line.imap_style;
 
 int debug_level;

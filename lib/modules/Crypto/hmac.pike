@@ -3,6 +3,8 @@
  * HMAC, defined by RFC-2104
  */
 
+#pike __VERSION__
+
 function H;  /* Constructor for hash object */
 
 /* B is the size of one compression block, in octets. */

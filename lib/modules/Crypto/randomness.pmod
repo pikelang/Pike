@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.16 2000/04/15 09:34:26 hubbe Exp $
+/* $Id: randomness.pmod,v 1.17 2000/09/26 18:59:31 hubbe Exp $
  */
 
 //! module Crypto
@@ -9,6 +9,8 @@
  * They differ in behaviour when they run low on entropy, /dev/random
  * will block if it can't provide enough random bits, while /dev/urandom
  * will degenerate into a reasonably strong pseudo random generator */
+
+#pike __VERSION__
 
 static constant RANDOM_DEVICE = "/dev/random";
 static constant PRANDOM_DEVICE = "/dev/urandom";

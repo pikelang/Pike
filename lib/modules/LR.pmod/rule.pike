@@ -1,14 +1,16 @@
 /*
- * $Id: rule.pike,v 1.5 1998/11/13 02:36:18 grubba Exp $
+ * $Id: rule.pike,v 1.6 2000/09/26 18:59:47 hubbe Exp $
  *
  * A BNF-rule.
  *
  * Henrik Grubbström 1996-11-24
  */
 
+#pike __VERSION__
+
 //.
 //. File:	rule.pike
-//. RCSID:	$Id: rule.pike,v 1.5 1998/11/13 02:36:18 grubba Exp $
+//. RCSID:	$Id: rule.pike,v 1.6 2000/09/26 18:59:47 hubbe Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements a BNF rule.

@@ -1,7 +1,8 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.18 1999/08/12 00:44:16 marcus fake $
+ * $Id: imap_server.pike,v 1.19 2000/09/26 18:59:55 hubbe Exp $
  */
+#pike __VERSION__
 
 constant unauth_commands =
 ([ "noop" : .requests.noop,

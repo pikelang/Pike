@@ -1,5 +1,7 @@
+#pike __VERSION__
+
 // Moahahahah!
-// $Id: error.pmod,v 1.2 1999/08/10 00:27:43 mast Exp $
+// $Id: error.pmod,v 1.3 2000/09/26 18:59:08 hubbe Exp $
 void `()(string f, mixed ... args)
 {
   array(array) b = backtrace();

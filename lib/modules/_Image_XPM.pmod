@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit Image._XPM;
 #if 0
 # define TE( X )  werror("XPM profile: %-20s ... ", (X));

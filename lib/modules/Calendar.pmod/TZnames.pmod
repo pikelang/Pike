@@ -24,6 +24,8 @@
 //!	Please note that loading all the timezones can take some 
 //!	time, since they are generated and compiled on the fly.
 
+#pike __VERSION__
+
 mapping zones=
 ([
    "America":   ({"Scoresbysund","Godthab","Thule","New_York","Chicago",    

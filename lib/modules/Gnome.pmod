@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 mixed `[](string what)
 {
   if(what == "_module_value") return ([])[0];

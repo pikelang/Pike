@@ -1,8 +1,10 @@
 /*
- * $Id: odbc.pike,v 1.5 2000/04/29 00:38:18 kinkie Exp $
+ * $Id: odbc.pike,v 1.6 2000/09/26 19:00:09 hubbe Exp $
  *
  * Glue for the ODBC-module
  */
+
+#pike __VERSION__
 
 #if constant(Odbc.odbc)
 inherit Odbc.odbc;

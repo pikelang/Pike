@@ -3,6 +3,8 @@
 
 // Updated 2000-06-14 from http://lcweb.loc.gov/standards/iso639-2/
 
+#pike __VERSION__
+
 // ISO 639-2/T
 static mapping(string:string) languages=([
   "aar":"Afar",

@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 #if constant(thread_create)
 
 constant Thread=__builtin.thread_id;

@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
 array(string) split(string data)

@@ -23,6 +23,8 @@
 //!	years are "AH", anno Hegirac.
 //!	
 
+#pike __VERSION__
+
 import ".";
 inherit YMD:YMD;
 

@@ -1,6 +1,6 @@
 /* _Xlib.pmod
  *
- * $Id: _Xlib.pmod,v 1.13 1998/04/19 00:31:09 grubba Exp $
+ * $Id: _Xlib.pmod,v 1.14 2000/09/26 19:00:05 hubbe Exp $
  *
  * Kluge, should be in Xlib.pmod
  */
@@ -29,6 +29,8 @@
 /* Questions, bug fixes and bug reports can be sent to the pike
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
+
+#pike __VERSION__
 
 object display_re = Regexp("^([^:]*):([0-9]+)(.[0-9]+|)$");
 

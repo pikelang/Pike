@@ -1,4 +1,6 @@
-//  $Id: Session.pike,v 1.19 2000/08/05 05:18:47 jhs Exp $
+#pike __VERSION__
+
+//  $Id: Session.pike,v 1.20 2000/09/26 19:00:01 hubbe Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session

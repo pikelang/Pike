@@ -2,7 +2,7 @@
  *
  * Kludge for pike-0.5
  *
- * $Id: _Types.pmod,v 1.3 1998/04/19 00:31:08 grubba Exp $
+ * $Id: _Types.pmod,v 1.4 2000/09/26 19:00:05 hubbe Exp $
  */
 
 /*
@@ -29,6 +29,8 @@
 /* Questions, bug fixes and bug reports can be sent to the pike
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
+
+#pike __VERSION__
 
 program pixmap_class;
 

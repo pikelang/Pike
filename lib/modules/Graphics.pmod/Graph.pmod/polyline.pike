@@ -2,8 +2,10 @@
 /*
  * name = "BG: Create pies";
  * doc = "Business Graphics sub-module providing draw functions.";
- * $Id: polyline.pike,v 1.1 1999/09/30 13:04:17 hedda Exp $
+ * $Id: polyline.pike,v 1.2 2000/09/26 18:59:44 hubbe Exp $
  */
+
+#pike __VERSION__
 
 #define CAP_BUTT       0
 #define CAP_ROUND      1

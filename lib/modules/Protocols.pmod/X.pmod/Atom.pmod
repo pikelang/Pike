@@ -1,6 +1,6 @@
 /* Atom.pmod
  *
- * X Atoms $Id: Atom.pmod,v 1.5 1998/04/21 02:55:59 per Exp $
+ * X Atoms $Id: Atom.pmod,v 1.6 2000/09/26 19:00:02 hubbe Exp $
  *
  */
 
@@ -28,6 +28,8 @@
 /* Questions, bug fixes and bug reports can be sent to the pike
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
+
+#pike __VERSION__
 
 class Atom
 {

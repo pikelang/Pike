@@ -2,6 +2,9 @@
 //! subclass Ruleset
 //!	This is the container class for rules.
 
+
+#pike __VERSION__
+
 class Timezone
 {
    constant is_timezone=1;

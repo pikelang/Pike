@@ -9,6 +9,8 @@
 //!	purposes. 
 //!
 
+#pike __VERSION__
+
 inherit Calendar.ISO:ISO;
 
 import ".";

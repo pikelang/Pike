@@ -5,6 +5,8 @@
 
 /* FIXME: This file is obsolete. All code should use ASN1.Types instead. */
 
+#pike __VERSION__
+
 #if 0
 #define WERROR werror
 #else

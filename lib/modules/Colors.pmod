@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 #define COLOR(C,R,G,B) constant C=({R,G,B})
 
 COLOR(aliceblue,240,248,255);

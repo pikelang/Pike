@@ -3,6 +3,8 @@
  * The Digital Signature Algorithm (aka DSS, Digital Signature Standard).
  */
 
+#pike __VERSION__
+
 #if constant(Gmp.mpz)
 
 #define bignum object(Gmp.mpz)

@@ -2,6 +2,8 @@
  *
  */
 
+#pike __VERSION__
+
 static private mixed crypto_module;
 
 mixed `[](string name)

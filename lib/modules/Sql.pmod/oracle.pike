@@ -1,8 +1,10 @@
 /*
- * $Id: oracle.pike,v 1.4 1999/08/31 00:24:16 grubba Exp $
+ * $Id: oracle.pike,v 1.5 2000/09/26 19:00:10 hubbe Exp $
  *
  * Glue for the Oracle-module
  */
+
+#pike __VERSION__
 
 #if constant(Oracle.oracle)
 inherit Oracle.oracle;

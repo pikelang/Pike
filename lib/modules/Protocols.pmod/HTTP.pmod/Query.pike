@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 /*
 **! module Protocols
 **! submodule HTTP

@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 // edit commands supported:
 // <firstline>,<lastline><edit command>
 //    ^^ numeral (17) ^^

@@ -3,6 +3,8 @@
  * Continuation based imap parser.
  */
 
+#pike __VERSION__
+
 object line; /* Current line */
 
 // FIXME: Propagete 0:s (errors) through the continuation functions

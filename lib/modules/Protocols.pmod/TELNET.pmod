@@ -1,10 +1,12 @@
 //
-// $Id: TELNET.pmod,v 1.9 2000/03/30 21:21:46 grubba Exp $
+// $Id: TELNET.pmod,v 1.10 2000/09/26 18:59:53 hubbe Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
 // Henrik Grubbström <grubba@idonex.se> 1998-04-04
 //
+
+#pike __VERSION__
 
 // #define TELNET_DEBUG
 

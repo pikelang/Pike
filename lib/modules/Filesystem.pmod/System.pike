@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit Filesystem.Base;
 
 static Filesystem.Base parent; // parent filesystem

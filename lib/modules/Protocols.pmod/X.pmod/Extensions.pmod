@@ -1,6 +1,6 @@
 /* Shaped windows.
  *
- * $Id: Extensions.pmod,v 1.8 1998/04/21 03:00:30 per Exp $
+ * $Id: Extensions.pmod,v 1.9 2000/09/26 19:00:03 hubbe Exp $
 
 /*
  *    Protocols.X, a Pike interface to the X Window System
@@ -26,6 +26,8 @@
 /* Questions, bug fixes and bug reports can be sent to the pike
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
+
+#pike __VERSION__
 
 static class extension
 {

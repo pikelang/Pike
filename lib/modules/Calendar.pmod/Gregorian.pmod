@@ -8,6 +8,8 @@
 //!	in most of europe.
 //!
 
+#pike __VERSION__
+
 import ".";
 inherit YMD:YMD;
 

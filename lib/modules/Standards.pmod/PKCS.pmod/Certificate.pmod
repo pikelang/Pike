@@ -6,6 +6,8 @@
 
 /* ASN.1 structures:
 
+#pike __VERSION__
+
 CertificationRequestInfo ::= SEQUENCE {
   version Version,
   subject Name,

@@ -1,5 +1,7 @@
 // Not finished - Fredrik Hubinette
 
+#pike __VERSION__
+
 class protocol
 {
   inherit Stdio.FILE : news;

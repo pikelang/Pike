@@ -2,6 +2,8 @@
  *
  */
 
+#pike __VERSION__
+
 #define error(msg) throw( ({ msg, backtrace() }) )
 
 /* Decodes a DER object. DATA is an instance of ADT.struct, and types

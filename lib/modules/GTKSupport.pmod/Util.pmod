@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 // This function will be easier to write in newer pikes, where there
 // will be a Image.ANY.decode function, but this will do for now. It
 // decoded an image from a string and returns a mapping with the

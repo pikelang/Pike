@@ -1,5 +1,7 @@
 //! module Calendar
 
+#pike __VERSION__
+
 #define zero int(0..0)
 
 import ".";

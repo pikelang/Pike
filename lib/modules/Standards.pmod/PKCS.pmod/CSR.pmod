@@ -3,6 +3,8 @@
  * Handling of Certifikate Signing Requests (PKCS-10)
  */
 
+#pike __VERSION__
+
 #if __VERSION__ >= 0.6
 import ".";
 #endif /* __VERSION__ >= 0.6 */

@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 string find_in_path( string file )
 {
   string path=getenv("PATH");

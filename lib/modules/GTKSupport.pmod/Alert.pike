@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit GTK.Dialog;
 
 void begone(object w2)

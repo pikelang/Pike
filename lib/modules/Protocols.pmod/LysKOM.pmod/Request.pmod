@@ -1,4 +1,6 @@
-//  $Id: Request.pmod,v 1.5 1999/09/28 02:08:22 js Exp $
+#pike __VERSION__
+
+//  $Id: Request.pmod,v 1.6 2000/09/26 19:00:01 hubbe Exp $
 //! module Protocols
 //! submodule LysKOM
 //! submodule Request

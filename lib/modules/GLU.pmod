@@ -1,8 +1,11 @@
 /*
- * $Id: GLU.pmod,v 1.6 1999/11/09 00:02:09 grubba Exp $
+ * $Id: GLU.pmod,v 1.7 2000/09/26 18:59:04 hubbe Exp $
  *
  * GL Utilities module.
  */
+
+#pike __VERSION__
+
 #if constant(GL.glGet)
 import GL;
 import Math;

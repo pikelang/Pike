@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit Image._XCF;
 
 #define SIGNED(X) if(X>=(1<<31)) X=-((1<<32)-X)

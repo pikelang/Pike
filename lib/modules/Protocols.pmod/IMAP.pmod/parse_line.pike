@@ -2,6 +2,8 @@
  *
  */
 
+#pike __VERSION__
+
 class partial_literal
 {
   int length;

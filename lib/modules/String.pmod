@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 #define BEGIN 32
 
 constant count=__builtin.string_count;

@@ -5,8 +5,10 @@
  *
  * All Storage-related class must MUST implement this method.
  *
- * $Id: Base.pike,v 1.1 2000/07/02 20:14:39 kinkie Exp $
+ * $Id: Base.pike,v 1.2 2000/09/26 18:59:10 hubbe Exp $
  */
+
+#pike __VERSION__
 
 void expire(Cache.Storage storage) {
   throw("Override this!");

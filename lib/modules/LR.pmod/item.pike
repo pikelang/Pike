@@ -1,14 +1,16 @@
 /*
- * $Id: item.pike,v 1.4 1998/11/12 19:45:41 grubba Exp $
+ * $Id: item.pike,v 1.5 2000/09/26 18:59:46 hubbe Exp $
  *
  * An LR(0) item
  *
  * Henrik Grubbström 1996-11-27
  */
 
+#pike __VERSION__
+
 //.
 //. File:	item.pike
-//. RCSID:	$Id: item.pike,v 1.4 1998/11/12 19:45:41 grubba Exp $
+//. RCSID:	$Id: item.pike,v 1.5 2000/09/26 18:59:46 hubbe Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	An LR(0) item

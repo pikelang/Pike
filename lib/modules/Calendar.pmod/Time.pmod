@@ -9,6 +9,8 @@
 //! 	is inherited by other modules (<ref>ISO</ref> by <ref>YMD</ref>, 
 //! 	for instance).
 
+#pike __VERSION__
+
 //  #pragma strict_types
 
 //- these classes majorly works on seconds

@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.5 2000/08/03 03:32:42 jhs Exp $
+//  $Id: Connection.pike,v 1.6 2000/09/26 18:59:59 hubbe Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -29,6 +29,8 @@
 //!	The last two is asynchronous calls, returning the
 //!	initialised <link to=Protocols.LysKOM.Request>request</link> object.
 //!
+
+#pike __VERSION__
 
 import ".";
 

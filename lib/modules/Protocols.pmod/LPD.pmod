@@ -3,8 +3,10 @@
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 //
-// $Id: LPD.pmod,v 1.4 1999/08/20 05:01:58 hubbe Exp $
+// $Id: LPD.pmod,v 1.5 2000/09/26 18:59:51 hubbe Exp $
 //
+
+#pike __VERSION__
 
 class client {
   string host;

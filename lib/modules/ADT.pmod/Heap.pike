@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 #define SWAP(X,Y) do{ mixed tmp=values[X]; values[X]=values[Y]; values[Y]=tmp; }while(0)
 
 static private array values=allocate(10);

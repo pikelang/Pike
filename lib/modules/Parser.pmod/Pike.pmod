@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit "C.pmod";
 
 array(string) split(string data)

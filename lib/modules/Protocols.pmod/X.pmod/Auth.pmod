@@ -1,6 +1,6 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.7 2000/02/26 01:07:31 hubbe Exp $
+ * $Id: Auth.pmod,v 1.8 2000/09/26 19:00:02 hubbe Exp $
  */
 
 /*
@@ -27,6 +27,8 @@
 /* Questions, bug fixes and bug reports can be sent to the pike
  * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
  * email addresses. */
+
+#pike __VERSION__
 
 class auth_file
 {

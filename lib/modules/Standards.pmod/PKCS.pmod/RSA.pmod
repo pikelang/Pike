@@ -2,6 +2,8 @@
  *
  * rsa operations and types as described in PKCS-1 */
 
+#pike __VERSION__
+
 #if 0
 #define WERROR werror
 #else

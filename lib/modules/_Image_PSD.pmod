@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 inherit Image._PSD;
 
 class Layer

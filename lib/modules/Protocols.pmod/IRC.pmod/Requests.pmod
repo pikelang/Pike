@@ -1,3 +1,4 @@
+#pike __VERSION__
 
 /*
 PASS gurka
@@ -5,7 +6,7 @@ NICK Mirar^
 USER mirar mistel.idonex.se irc.starchat.net :Mirar is testing
 */
 
-string __cvs_id="$Id: Requests.pmod,v 1.1 1999/10/27 18:01:16 mirar Exp $";
+string __cvs_id="$Id: Requests.pmod,v 1.2 2000/09/26 18:59:58 hubbe Exp $";
 
 import ".";
 

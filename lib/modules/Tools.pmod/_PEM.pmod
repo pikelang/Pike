@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 /* _PEM.pmod
  *
  * Kludge.

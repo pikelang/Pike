@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 /* PEM.pmod
  *
  * Support for parsing PEM-style messages.

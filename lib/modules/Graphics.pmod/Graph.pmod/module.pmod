@@ -1,3 +1,4 @@
+#pike __VERSION__
 
 #include "graph.h"
 

@@ -1,6 +1,7 @@
 /* test.pike
  *
  */
+#pike __VERSION__
 
 import .types;
 

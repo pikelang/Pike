@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 import ".";
 inherit Event;
 

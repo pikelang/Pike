@@ -1,6 +1,8 @@
 /*
- * $Id: Tar.pmod,v 1.7 2000/09/18 17:46:38 grubba Exp $
+ * $Id: Tar.pmod,v 1.8 2000/09/26 18:59:35 hubbe Exp $
  */
+
+#pike __VERSION__
 
 class _Tar  // filesystem
 {

@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 class protocol
 {
   // Maybe this should be the other way around?

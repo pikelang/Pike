@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 class Evaluator
 {
 /* Incremental Pike evaluator */

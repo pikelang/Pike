@@ -2,6 +2,8 @@
  *
  */
 
+#pike __VERSION__
+
 string imap_format(mixed x)
 {
   if (!x)

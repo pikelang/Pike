@@ -7,6 +7,9 @@
 /* NOTE: Unlike the functions in RSA.pmod, this function returns
  * an object rather than a string. */
 
+#pike __VERSION__
+
+
 #if constant(Gmp.mpz)
 
 constant asn1_sequence = Standards.ASN1.Types.asn1_sequence;
