@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.751 2003/12/04 13:59:26 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.752 2003/12/07 21:28:58 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -591,6 +591,16 @@ AC_PATH_PROG(uname_prog,uname,no)
 AC_MSG_CHECKING(operating system)
 AC_CACHE_VAL(pike_cv_sys_os,
 [
+if test "$cross_compiling" = "yes"; then
+  case "$host_alias" in
+    *amigaos*)	pike_cv_sys_os="AmigaOS";;
+    *linux*)	pike_cv_sys_os="Linux";;
+    *solaris*)	pike_cv_sys_os="Solaris";;
+    *sunos*)	pike_cv_sys_os="SunOS";;
+    *windows*)	pike_cv_sys_os="Windows_NT";;
+    *)		pike_cv_sys_os="Unknown";;
+  esac
+else
 if test "$uname_prog" != "no"; then
   # uname on UNICOS doesn't work like other people's uname...
   if getconf CRAY_RELEASE >/dev/null 2>&1; then
@@ -617,6 +627,7 @@ if test "$uname_prog" != "no"; then
   esac
 else
   pike_cv_sys_os="Not Solaris"
+fi
 fi
 ])
 AC_MSG_RESULT($pike_cv_sys_os)
