@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.202 2000/07/12 16:10:13 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.203 2000/07/13 06:28:05 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -263,6 +263,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> TOK_IDENTIFIER
 %type <n> assoc_pair
 %type <n> block
+%type <n> optional_block
 %type <n> failsafe_block
 %type <n> close_paren_or_missing
 %type <n> block_or_semi
@@ -1427,7 +1428,7 @@ failsafe_block: block
               | error { $$=0; }
               | TOK_LEX_EOF { yyerror("Unexpected end of file."); $$=0; }
               ;
-  
+
 
 local_name_list: new_local_name
   | local_name_list ',' { $<n>$=$<n>0; } new_local_name { $$=mknode(F_COMMA_EXPR,mkcastnode(void_type_string,$1),$4); }
@@ -2197,10 +2198,6 @@ expected_colon: ':'
   {
     yyerror("Missing ':'.");
   }
-  | '{'
-  {
-    yyerror("Missing ':'.");
-  }
   | '}'
   {
     yyerror("Missing ':'.");
@@ -2382,6 +2379,95 @@ expr3: expr4
   | expr4 TOK_DEC       { $$=mknode(F_POST_DEC,$1,0); }
   ;
 
+/* FIXMEs
+ * It would be nice if 'return' would exit from
+ * the surrounding function rather than from the
+ * implicit lambda. (I think) So beware that the
+ * behaviour of 'return' might change some day.
+ * -Hubbe
+ *
+ * It would also be nice if it was possible to send
+ * arguments to the implicit function, but it would
+ * require using ugly implicit variables or extending
+ * the syntax, and if you extend the syntax you might
+ * as well use lambda() instead.
+ * -Hubbe
+ *
+ * We might want to allow having more than block after
+ * a function ( ie. func(args) {} {} {} {} )
+ * -Hubbe
+ */
+
+optional_block: /* EMPTY */ { $$=0; }
+  | '{' push_compiler_frame0
+  {
+    debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
+    if(Pike_compiler->compiler_frame->current_return_type)
+      free_string(Pike_compiler->compiler_frame->current_return_type);
+    copy_shared_string(Pike_compiler->compiler_frame->current_return_type,any_type_string);
+
+    /* block code */
+    $<number>1=Pike_compiler->num_used_modules;
+    $<number>3=Pike_compiler->compiler_frame->current_number_of_locals;
+  }
+  statements end_block
+  {
+    struct pike_string *type;
+    char buf[40];
+    int f,e;
+    struct pike_string *name;
+
+    /* block code */
+    unuse_modules(Pike_compiler->num_used_modules - $<number>1);
+    pop_local_variables($<number>3);
+    
+    debug_malloc_touch($4);
+    $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
+    type=find_return_type($4);
+
+    if(type) {
+      push_finished_type(type);
+      free_string(type);
+    } else
+      push_type(T_MIXED);
+    
+    push_type(T_VOID);
+    push_type(T_MANY);
+/*
+    e=$4-1;
+    for(; e>=0; e--)
+      push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
+*/
+    
+    push_type(T_FUNCTION);
+    type=compiler_pop_type();
+
+    sprintf(buf,"__lambda_%ld_%ld",
+	    (long)Pike_compiler->new_program->id,
+	    (long)(Pike_compiler->local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+    name=make_shared_string(buf);
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d: IMPLICIT LAMBDA: %s 0x%08lx 0x%08lx\n",
+	    Pike_compiler->compiler_pass, buf, (long)Pike_compiler->new_program->id, Pike_compiler->local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+    
+    f=dooptcode(name,
+		$4,
+		type,
+		ID_STATIC | ID_PRIVATE | ID_INLINE);
+
+    if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
+      $$ = mktrampolinenode(f);
+    } else {
+      $$ = mkidentifiernode(f);
+    }
+    free_string(name);
+    free_string(type);
+    pop_compiler_frame();
+  }
+  ;
+
 expr4: string
   | TOK_NUMBER 
   | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
@@ -2392,7 +2478,11 @@ expr4: string
   | lambda
   | class
   | idents2
-  | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
+  | expr4 '(' expr_list  ')' optional_block
+    {
+      if($5) $3=mknode(F_ARG_LIST, $3, $5);
+      $$=mkapplynode($1,$3);
+    }
   | expr4 '(' error ')' { $$=mkapplynode($1, NULL); yyerrok; }
   | expr4 '(' error TOK_LEX_EOF
   {
