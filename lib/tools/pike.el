@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.21 2001/02/12 23:35:45 mast Exp $
+;;; $Id: pike.el,v 1.22 2001/02/13 14:11:55 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -439,7 +439,7 @@ The name is assumed to begin with a capital letter.")
       (save-excursion
 	;; Don't format identifiers as indexes in mapping constants.
 	(condition-case nil (up-list -1) (error (throw 'found t)))
-	(if (not (eq (char-after) ?\[)) (throw 'found t))))))
+	(if (not (eq (char-after (point)) ?\[)) (throw 'found t))))))
 
 ;; XEmacs way.
 (put 'pike-mode 'font-lock-defaults 
