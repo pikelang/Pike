@@ -1535,7 +1535,7 @@ void debug_dump_type_field(TYPE_FIELD t)
 
 void debug_dump_array(struct array *a)
 {
-  fprintf(stderr,"Locatoin=%p Refs=%d, next=%p, prev=%p, size=%d, malloced_size=%d\n",
+  fprintf(stderr,"Location=%p Refs=%d, next=%p, prev=%p, size=%d, malloced_size=%d\n",
 	  a,
 	  a->refs,
 	  a->next,
