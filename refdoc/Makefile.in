@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.4 2001/03/20 15:35:27 grubba Exp $
+# $Id: Makefile.in,v 1.5 2001/04/18 15:53:05 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -12,6 +12,8 @@ VPATH=@SRCDIR@:.
 
 SRCDIR=@SRCDIR@
 ROOT=@ROOT@
+
+XMLFILES=
 
 all: extract
 
@@ -38,6 +40,23 @@ xml:
 	$(MAKE) PIKE="$(PIKE)" `(cd $(SRCDIR) && ls *.c *.pike *.pmod.in 2>/dev/null)|sed -e 's/\.c$$/\.xml/' -e 's/\.pike$$/\.xml/' -e 's/\.pond\.in$$/\.xml/' ` xml_dummy
 
 xml_dummy:
+
+join: recurse_join
+	@if ls */*.xml >/dev/null 2>&1; then \
+	  $(MAKE) PIKE="$(PIKE)" XMLFILES="`echo */*.xml`" sub_manual.xml || \
+	    exit 1; \
+	fi
+
+sub_manual.xml: $(XMLFILES) $(ROOT)/../bin/join-autodoc.pike
+	@$(PIKE) $(ROOT)/../bin/join-autodoc.pike sub_manual.xml $(XMLFILES)
+
+recurse_join:
+	@for d in */.; do \
+	  if test -d "$$d"; then \
+	    (cd $$d && make PIKE="$(PIKE)" join) || exit 1; \
+	  fi; \
+	done
+
 
 recurse: subdirectories
 	@for d in */.; do \
