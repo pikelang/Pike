@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.159 2002/12/16 14:33:07 grubba Exp $
+|| $Id: html.c,v 1.160 2003/01/20 18:11:41 nilsson Exp $
 */
 
 #include "global.h"
@@ -322,7 +322,7 @@ struct parser_html_storage
 {
 /*--- current state -----------------------------------------------*/
 
-   /* Where new feeded info is added. */
+   /* Where new fed info is added. */
    struct piece *feed_end;
 
    /* Feed chain waiting to be passed to the data callback. */
@@ -3804,14 +3804,14 @@ static void low_feed(struct pike_string *ps)
 **!	Feed new data to the <ref>Parser.HTML</ref>
 **!	object. This will start a scan and may result in
 **!	callbacks. Note that it's possible that all 
-**!	data feeded isn't processed - to do that, call
+**!	data fed isn't processed - to do that, call
 **!	<ref>finish</ref>().
 **!
 **!	<p>If the function is called without arguments,
-**!	no data is feeded, but the parser is run.
+**!	no data is fed, but the parser is run.
 **!
 **!	<p>If the string argument is followed by a 0,
-**!	<tt>-&gt;feed(s,0);</tt>, the string is feeded,
+**!	<tt>-&gt;feed(s,0);</tt>, the string is fed,
 **!	but the parser isn't run.
 **!
 **! returns the called object

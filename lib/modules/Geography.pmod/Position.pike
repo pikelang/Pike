@@ -30,7 +30,7 @@ float alt;
 //! @decl void create(string lat, string long)
 //! @decl void create(string both)
 //!
-//! Constructor for this class. If feeded with strings,
+//! Constructor for this class. If fed with strings,
 //! it will perform a dwim scan on the strings. If they
 //! fails to be understood, there will be an exception.
 //!
