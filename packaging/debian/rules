@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.35 2002/12/06 04:21:21 grendel Exp $
+# $Id: rules,v 1.36 2002/12/21 19:42:17 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -58,6 +58,7 @@ CFARGS=--without-rtldebug \
        --with-postgres \
        --with-postgres-include-dir=/usr/include/postgresql \
        --with-libpq-dir=/usr/lib \
+       --with-perl \
        --without-ffmpeg \
        --without-libpdf \
        --without-libpanda $(MACHINE_OPTS)

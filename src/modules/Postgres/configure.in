@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.17 2002/08/02 21:23:38 grendel Exp $
+dnl $Id: configure.in,v 1.18 2002/12/21 19:42:17 grendel Exp $
 
 AC_INIT(postgres.c)
 AC_CONFIG_HEADER(pgres_config.h)
@@ -93,7 +93,7 @@ dnl check whether we have Postgres 7.2 or newer
   HAVE_PG72=no
   if test -f $pike_cv_pgres_include_dir/pg_config.h; then
     case `grep 'PG_VERSION \"' $pike_cv_pgres_include_dir/pg_config.h | cut -d '"' -f 2` in
-       7.2*) HAVE_PG72=yes
+       7.[[2-9]]*|8.*) HAVE_PG72=yes
              AC_DEFINE(HAVE_PG72) ;;
     esac
   fi
