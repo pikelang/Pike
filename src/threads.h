@@ -21,7 +21,7 @@ extern int num_threads;
 #define mt_unlock(X) pthread_mutex_unlock(X)
 #define mt_destroy(X) pthread_mutex_destroy(X)
 
-extern MUTEX_T interpreter_lock, compiler_lock;
+extern MUTEX_T interpreter_lock;
 
 #define th_create(ID,fun,arg) pthread_create(ID,&pattr,fun,arg)
 #define th_exit(foo) pthread_exit(foo)

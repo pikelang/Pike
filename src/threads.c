@@ -8,7 +8,7 @@ int threads_disabled = 0;
 
 #ifdef _REENTRANT
 
-MUTEX_T interpreter_lock, compiler_lock;
+MUTEX_T interpreter_lock;
 struct program *mutex_key = 0;
 pthread_attr_t pattr;
 
@@ -56,6 +56,7 @@ void f_thread_create(INT32 args)
 
 void th_init()
 {
+  thr_setconcurrency(9);
   mt_lock( & interpreter_lock);
   pthread_attr_init(&pattr);
   pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
@@ -65,84 +66,164 @@ void th_init()
 }
 
 
-#define THIS_MUTEX ((MUTEX_T *)(fp->current_storage))
+#define THIS_MUTEX ((struct mutex_storage *)(fp->current_storage))
+
+
+/* Note:
+ * No reference is kept to the key object, it is destructed if the
+ * mutex is destructed. The key pointer is set to zero by the
+ * key object when the key is destructed.
+ */
+
+struct mutex_storage
+{
+  COND_T condition;
+  struct object *key;
+};
+
+struct key_storage
+{
+  struct mutex_storage *mut;
+  int initialized;
+};
+
+static MUTEX_T mutex_kluge;
+
+#define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
 void f_mutex_lock(INT32 args)
 {
-  MUTEX_T *m;
+  struct mutex_storage  *m;
   struct object *o;
+
   pop_n_elems(args);
   m=THIS_MUTEX;
-  THREADS_ALLOW();
-  mt_lock(m);
-  THREADS_DISALLOW();
   o=clone(mutex_key,0);
-  ((struct object **)(o->storage))[0]=fp->current_object;
-  fp->current_object->refs++;
+  mt_lock(& mutex_kluge);
+  THREADS_ALLOW();
+  while(m->key) co_wait(& m->condition, & mutex_kluge);
+  OB2KEY(o)->mut=m;
+  m->key=o;
+  mt_unlock(&mutex_kluge);
+  THREADS_DISALLOW();
   push_object(o);
 }
 
 void f_mutex_trylock(INT32 args)
 {
-  MUTEX_T *m;
-  int i;
+  struct mutex_storage  *m;
+  struct object *o;
+  int i=0;
   pop_n_elems(args);
 
+  o=clone(mutex_key,0);
   m=THIS_MUTEX;
+  mt_lock(& mutex_kluge);
   THREADS_ALLOW();
-  i=mt_lock(m);
+  if(!m->key)
+  {
+    OB2KEY(o)->mut=THIS_MUTEX;
+    m->key=o;
+    i=1;
+  }
+  mt_unlock(&mutex_kluge);
   THREADS_DISALLOW();
   
   if(i)
   {
-    struct object *o;
-    o=clone(mutex_key,0);
-    ((struct object **)o->storage)[0]=fp->current_object;
-    fp->current_object->refs++;
     push_object(o);
   } else {
+    destruct(o);
+    free_object(o);
     push_int(0);
   }
 }
 
-void init_mutex_obj(struct object *o) { mt_init(THIS_MUTEX); }
-void exit_mutex_obj(struct object *o) { mt_destroy(THIS_MUTEX); }
+void init_mutex_obj(struct object *o)
+{
+  co_init(& THIS_MUTEX->condition);
+  THIS_MUTEX->key=0;
+}
 
-#define THIS_KEY (*(struct object **)fp->current_storage)
-void init_mutex_key_obj(struct object *o) { THIS_KEY=0; }
+void exit_mutex_obj(struct object *o)
+{
+  if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
+  co_destroy(& THIS_MUTEX->condition);
+}
+
+#define THIS_KEY ((struct key_storage *)(fp->current_storage))
+void init_mutex_key_obj(struct object *o)
+{
+  THIS_KEY->mut=0;
+  THIS_KEY->initialized=1;
+}
 
 void exit_mutex_key_obj(struct object *o)
 {
-  if(THIS_KEY)
+  mt_lock(& mutex_kluge);
+  if(THIS_KEY->mut)
   {
-    mt_unlock((MUTEX_T *)THIS_KEY->storage);
-    init_mutex_key_obj(o);
+#ifdef DEBUG
+    if(THIS_KEY->mut->key != o)
+      fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
+#endif
+    THIS_KEY->mut->key=0;
+    co_signal(& THIS_KEY->mut->condition);
+    THIS_KEY->mut=0;
+    THIS_KEY->initialized=0;
   }
+  mt_unlock(& mutex_kluge);
 }
 
 #define THIS_COND ((COND_T *)(fp->current_storage))
 void f_cond_wait(INT32 args)
 {
   COND_T *c;
+  struct object *key;
 
   if(args > 1) pop_n_elems(args - 1);
-  
-  if(sp[-1].type != T_OBJECT)
-    error("Bad argument 1 to condition->wait()\n");
-
-  if(sp[-1].u.object->prog)
-  {
-    if(sp[-1].u.object->prog != mutex_key)
-      error("Bad argument 1 to condition->wait()\n");
-
-    destruct(sp[-1].u.object);
-    pop_stack();
-  }
 
   c=THIS_COND;
-  THREADS_ALLOW();
-  co_wait(c,0);
-  THREADS_DISALLOW();
+
+  if(args > 0)
+  {
+    struct mutex_storage *mut;
+
+    if(sp[-1].type != T_OBJECT)
+      error("Bad argument 1 to condition->wait()\n");
+    
+    key=sp[-1].u.object;
+    
+    if(key->prog != mutex_key)
+      error("Bad argument 1 to condition->wait()\n");
+    
+    mt_lock(&mutex_kluge);
+    mut=OB2KEY(key)->mut;
+    THREADS_ALLOW();
+
+    /* Unlock mutex */
+    mut->key=0;
+    OB2KEY(key)->mut=0;
+    co_signal(& mut->condition);
+
+    /* Wait and allow mutex operations */
+    co_wait(c,&mutex_kluge);
+
+    if(OB2KEY(key)->initialized)
+    {
+      /* Lock mutex */
+      while(mut->key) co_wait(& mut->condition, & mutex_kluge);
+      mut->key=key;
+      OB2KEY(key)->mut=mut;
+    }
+    mt_unlock(&mutex_kluge);
+    THREADS_DISALLOW();
+    pop_stack();
+  } else {
+    THREADS_ALLOW();
+    co_wait(c, 0);
+    THREADS_DISALLOW();
+  }
 }
 
 void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
@@ -153,7 +234,7 @@ void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 void th_init_programs()
 {
   start_new_program();
-  add_storage(sizeof(MUTEX_T));
+  add_storage(sizeof(struct mutex_storage));
   add_function("lock",f_mutex_lock,"function(:object)",0);
   add_function("trylock",f_mutex_trylock,"function(:object)",0);
   set_init_callback(init_mutex_obj);
@@ -161,7 +242,8 @@ void th_init_programs()
   end_c_program("/precompiled/mutex");
 
   start_new_program();
-  add_storage(sizeof(struct object *));
+  add_storage(sizeof(struct key_storage));
+  set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=end_c_program("/precompiled/mutex_key");
 
