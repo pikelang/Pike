@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.38 1998/11/05 23:12:32 grubba Exp $");
+RCSID("$Id: backend.c,v 1.39 1998/11/05 23:30:42 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -217,7 +217,7 @@ void init_backend(void)
 #ifdef WITH_OOB
   my_FD_ZERO(&selectors.except);
 #endif /* WITH_OOB */
-#endif
+#endif /* !HAVE_POLL */
   if(pike_make_pipe(wakeup_pipe) < 0)
     fatal("Couldn't create backend wakup pipe! errno=%d.\n",errno);
   set_nonblocking(wakeup_pipe[0],1);
@@ -269,7 +269,10 @@ void set_read_callback(int fd,file_callback cb,void *data)
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
-#ifndef HAVE_POLL
+#ifdef HAVE_POLL
+    if(was_set)
+      POLL_FD_CLR(fd, POLLRDNORM);
+#else /* !HAVE_POLL */
     if(fd <= max_fd)
     {
       my_FD_CLR(fd, &selectors.read);
@@ -286,10 +289,7 @@ void set_read_callback(int fd,file_callback cb,void *data)
 	  max_fd--;
       }
     }
-#else
-    if(was_set)
-      POLL_FD_CLR(fd, POLLRDNORM);
-#endif
+#endif /* HAVE_POLL */
   }
 }
 
@@ -310,19 +310,27 @@ void set_write_callback(int fd,file_callback cb,void *data)
   {
 #ifdef HAVE_POLL
     if(!was_set)
-      POLL_FD_SET(fd,POLLOUT);
+      POLL_FD_SET(fd, POLLOUT);
 #else
     my_FD_SET(fd, &selectors.write);
 #endif
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
-  }else{
-#ifndef HAVE_POLL
+  } else {
+#ifdef HAVE_POLL
+#if defined(WITH_OOB) && (POLLWRBAND == POLLOUT)
+    if (was_set && !fds[fd].write_oob.callback)
+      POLL_FD_CLR(fd, POLLOUT);
+#else /* POLLWRBAND != POLLOUT */
+    if(was_set)
+      POLL_FD_CLR(fd, POLLOUT);
+#endif /* POLLWRBAND == POLLOUT */
+#else /* !HAVE_POLL */
     if(fd <= max_fd)
     {
-#ifdef WITH_POLL
+#ifdef WITH_OOB
       if (!fds[fd].write_oob.callback) {
-#endif /* WITH_POLL */
+#endif /* WITH_OOB */
 	my_FD_CLR(fd, &selectors.write);
 	if(fd == max_fd)
 	{
@@ -335,19 +343,11 @@ void set_write_callback(int fd,file_callback cb,void *data)
 		)
 	    max_fd--;
 	}
-#ifdef WITH_POLL
+#ifdef WITH_OOB
       }
-#endif /* WITH_POLL */
+#endif /* WITH_OOB */
     }
-#else
-#if defined(WITH_OOB) && (POLLWRBAND == POLLOUT)
-    if (was_set && !fds[fd].write_oob.callback)
-      POLL_FD_CLR(fd, POLLOUT);
-#else /* POLLWRBAND != POLLOUT */
-    if(was_set)
-      POLL_FD_CLR(fd, POLLOUT);
-#endif /* POLLWRBAND == POLLOUT */
-#endif
+#endif /* HAVE_POLL */
   }
 }
 
@@ -374,7 +374,10 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
-#ifndef HAVE_POLL
+#ifdef HAVE_POLL
+    if(was_set)
+      POLL_FD_CLR(fd, POLLRDBAND);
+#else /* !HAVE_POLL */
     if(fd <= max_fd)
     {
       my_FD_CLR(fd, &selectors.except);
@@ -388,10 +391,7 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
 	  max_fd--;
       }
     }
-#else
-    if(was_set)
-      POLL_FD_CLR(fd, POLLRDBAND);
-#endif
+#endif /* HAVE_POLL */
   }
 }
 
@@ -418,7 +418,15 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
-#ifndef HAVE_POLL
+#ifdef HAVE_POLL
+#if POLLWRBAND == POLLOUT
+    if (was_set && !fds[fd].write.callback)
+      POLL_FD_CLR(fd,POLLWRBAND);
+#else /* POLLWRBAND != POLLOUT */
+    if(was_set)
+      POLL_FD_CLR(fd,POLLWRBAND);
+#endif /* POLLWRBAND == POLLOUT */
+#else /* !HAVE_POLL */
     /* FIXME:? */
     if(fd <= max_fd)
     {
@@ -434,15 +442,7 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
 	}
       }
     }
-#else
-#if POLLWRBAND == POLLOUT
-    if (was_set && !fds[fd].write.callback)
-      POLL_FD_CLR(fd,POLLWRBAND);
-#else /* POLLWRBAND != POLLOUT */
-    if(was_set)
-      POLL_FD_CLR(fd,POLLWRBAND);
-#endif /* POLLWRBAND == POLLOUT */
-#endif
+#endif /* HAVE_POLL */
   }
 }
 #endif /* WITH_OOB */
