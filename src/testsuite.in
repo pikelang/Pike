@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.74 1998/02/24 23:01:35 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.75 1998/02/27 19:18:08 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -6,6 +6,7 @@ test_eq(1.1e1,11.0)
 test_eq(1e-1,0.1)
 test_eq('\x20',32)
 test_eq("\x20","\040")
+test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
 test_any([[class G { mapping t=([]);
  class tO { void init(string name) { t[name]=this_object(); }}
  class W { inherit tO; void create() { init("foo"); }}
@@ -67,6 +68,7 @@ class c1 { inherit p1; inherit p2; };
 return c1()->foo();]],2);
 
 test_any([[class foo { int x=random(100); int `<(object o) { return x < o->x; } }; object *o=Array.map(allocate(100),foo); sort(o); for(int e=1;e<100;e++) if(o[e-1]->x > o[e]->x) return e; return -1;]],-1)
+test_compile_error([[void foo() { 1++; }]])
 test_compile_error([[void foo() { return destruct(this_object()); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
@@ -1757,6 +1759,8 @@ test_true(arrayp(rusage()))
 test_true(sizeof(rusage())>0)
 
 // - search
+test_eval_error(search("foolbar","o",-10))
+test_eval_error(search("foolbar","o",2983742))
 test_eq(search("foolbar","gazonk"),-1)
 test_eq(search("qowiueproqiuweproiwqueoplkjljlklksjjriwueproiuwerowieu","lkjljlklksjj"),24)
 test_eq(search("lkjljlklksjjriwueproiuwerlskjdvlaskjfowieu","lkjljlklksjj"),0)
