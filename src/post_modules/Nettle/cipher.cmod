@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.22 2003/11/29 00:11:08 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.23 2003/11/29 18:31:01 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
@@ -645,9 +645,53 @@ pike_des3_set_key(void *c,
 {
   struct des3_ctx *ctx = (struct des3_ctx *) c;
   int i;
-  
-  if (length != 24)
+  char *nkotb[24];
+
+  switch( length ) {
+  case 7+7:
+    push_string(make_shared_binary_string(key, length));
+    push_text("1234567");
+    f_add(2);
+    f_DES3_Info_fix_parity(1);
+
+    MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8);
+    pop_stack();
+
+    key = nkotb;
+    length = 8+8;
+    /* fallthrough */
+  case 8+8:
+    push_string(make_shared_binary_string(key, length));
+    push_string(make_shared_binary_string(key, length));
+    push_int(0);
+    push_int(7);
+    o_range();
+    f_add(2);
+
+    MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
+    pop_stack();
+
+    key = nkotb;
+    length = 8+8+8;
+    break;
+
+  case 7+7+7:
+    push_string(make_shared_binary_string(key, length));
+    f_DES3_Info_fix_parity(1);
+    MEMCPY(nkotb, Pike_sp[-1].u.string->str, 8+8+8);
+    pop_stack();
+
+    key = nkotb;
+    length = 8+8+8;
+    break;
+
+  case 8+8+8:
+    break;
+
+  default:
     Pike_error("DES3_INFO: Bad keysize for DES3.\n");
+    break;
+  }
 
   /* The hack of resetting ctx->status to use a weak key doesn't
    * currently work with nettle's des3_set_key function. So we set the
@@ -702,7 +746,6 @@ PIKECLASS DES3_Info
   {
     INT32 i;
     struct array *arr;
-    struct svalue *s;
 
     if(key->len < 24 && key->len != 21)
       Pike_error("Key must be 21 or >=24 characters.\n");
@@ -888,7 +931,7 @@ pike_idea_set_encrypt_key(struct idea_ctx *ctx,
 			 int force)
 {
   if (length == IDEA_KEY_SIZE)
-    idea_expand(ctx->ctx, (unsigned INT8 *)key);
+    idea_expand((unsigned INT16 *)ctx->ctx, (unsigned INT8 *)key);
   else
     Pike_error("IDEA_Info: Bad keysize for IDEA.\n");
 }
@@ -899,8 +942,8 @@ pike_idea_set_decrypt_key(struct idea_ctx *ctx,
 			 int force)
 {
   if (length == IDEA_KEY_SIZE) {
-    idea_expand(ctx->ctx, (unsigned INT8 *)key);
-    idea_invert(ctx->ctx, ctx->ctx);
+    idea_expand((unsigned INT16 *)ctx->ctx, (unsigned INT8 *)key);
+    idea_invert((unsigned INT16 *)ctx->ctx, (unsigned INT16 *)ctx->ctx);
   }
   else
     Pike_error("IDEA_Info: Bad keysize for IDEA.\n");
