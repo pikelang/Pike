@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.48 2002/07/05 09:54:50 per Exp $
+ * $Id: image_jpeg.c,v 1.49 2002/09/05 14:09:53 marcus Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.48 2002/07/05 09:54:50 per Exp $");
+RCSID("$Id: image_jpeg.c,v 1.49 2002/09/05 14:09:53 marcus Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -978,7 +978,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 f_index(2);
 	 if (sp[-1].type==T_STRING) 
 	 {
-	    ref_push_string(param_comment);
+	    ref_push_string(param_comment); n++;
 	    stack_swap();
 	 }
 	 else
