@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.61 2004/05/28 16:08:24 grubba Exp $
+|| $Id: array.h,v 1.62 2004/09/22 13:40:27 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -36,9 +36,8 @@ struct array
 #define ARRAY_WEAK_FLAG 1
 #define ARRAY_CYCLIC 2
 #define ARRAY_LVALUE 4
-#define ARRAY_WEAK_SHRINK 8
 
-PMOD_EXPORT extern struct array empty_array, weak_empty_array, weak_shrink_empty_array;
+PMOD_EXPORT extern struct array empty_array, weak_empty_array;
 extern struct array *first_array;
 extern struct array *gc_internal_array;
 

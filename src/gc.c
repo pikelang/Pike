@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.256 2004/09/18 20:50:50 nilsson Exp $
+|| $Id: gc.c,v 1.257 2004/09/22 13:40:27 mast Exp $
 */
 
 #include "global.h"
@@ -99,7 +99,7 @@ double gc_average_slowness = 0.9;
 #define GC_VERBOSE_DO(X)
 #endif
 
-int num_objects = 3;		/* Account for *_empty_array. */
+int num_objects = 2;		/* Account for *_empty_array. */
 ALLOC_COUNT_TYPE num_allocs =0;
 ALLOC_COUNT_TYPE alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;

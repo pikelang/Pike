@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.207 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: main.c,v 1.208 2004/09/22 13:40:27 mast Exp $
 */
 
 #include "global.h"
@@ -1023,7 +1023,7 @@ void low_exit_main(void)
     gc_keep_markers = 1;
     do_gc (NULL, 1);
 
-#define STATIC_ARRAYS {&empty_array, &weak_empty_array, &weak_shrink_empty_array}
+#define STATIC_ARRAYS {&empty_array, &weak_empty_array}
 
 #define REPORT_LINKED_LIST_LEAKS(TYPE, START, STATICS, T_TYPE, NAME) do { \
       size_t num = 0;							\

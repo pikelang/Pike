@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.304 2004/09/18 20:50:55 nilsson Exp $
+|| $Id: signal_handler.c,v 1.305 2004/09/22 13:40:27 mast Exp $
 */
 
 #include "global.h"
@@ -1740,7 +1740,7 @@ static void f_trace_process_cont(INT32 args)
     int err = errno;
     THIS->state = PROCESS_STOPPED;
     /* FIXME: Better diagnostics. */
-    Pike_error("Failed to release process. errno:%d\n", err);
+    Pike_error("Failed to release process: %s (errno %d)\n", strerror (err), err);
   }
 
 #ifdef __FreeBSD__
@@ -4525,11 +4525,14 @@ static void run_atexit_functions(struct callback *cb, void *arg,void *arg2)
 {
   if(atexit_functions)
   {
-    push_array(atexit_functions);
-    atexit_functions=0;
-    f_reverse(1);
-    f_call_function(1);
-    pop_stack();
+    int i;
+    for (i = atexit_functions->size - 1; i; i--) {
+      struct svalue *s = ITEM (atexit_functions) + i;
+      if (!IS_DESTRUCTED (s)) {
+	safe_apply_svalue (s, 0, 1);
+	pop_stack();
+      }
+    }
   }
 }
 
@@ -4575,7 +4578,7 @@ void f_atexit(INT32 args)
   }
 
   atexit_functions=append_array(atexit_functions,Pike_sp-args);
-  atexit_functions->flags |= ARRAY_WEAK_FLAG | ARRAY_WEAK_SHRINK;
+  atexit_functions->flags |= ARRAY_WEAK_FLAG;
   pop_n_elems(args);
 }
 

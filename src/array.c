@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.169 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: array.c,v 1.170 2004/09/22 13:40:27 mast Exp $
 */
 
 #include "global.h"
@@ -44,17 +44,8 @@ PMOD_EXPORT struct array empty_array=
 PMOD_EXPORT struct array weak_empty_array=
 {
   PIKE_CONSTANT_MEMOBJ_INIT(1),
-  &weak_shrink_empty_array, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG,
+  0, &empty_array, 0, 0, 0, ARRAY_WEAK_FLAG,
   weak_empty_array.real_item,
-#ifdef HAVE_UNION_INIT
-  {{0, 0, {0}}}, /* Only to avoid warnings. */
-#endif
-};
-PMOD_EXPORT struct array weak_shrink_empty_array=
-{
-  PIKE_CONSTANT_MEMOBJ_INIT(1),
-  0, &weak_empty_array, 0, 0, 0, ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK,
-  weak_shrink_empty_array.real_item,
 #ifdef HAVE_UNION_INIT
   {{0, 0, {0}}}, /* Only to avoid warnings. */
 #endif
@@ -145,7 +136,7 @@ static void array_free_no_free(struct array *v)
 PMOD_EXPORT void really_free_array(struct array *v)
 {
 #ifdef PIKE_DEBUG
-  if(v == & empty_array || v == &weak_empty_array || v == &weak_shrink_empty_array)
+  if(v == & empty_array || v == &weak_empty_array)
     Pike_fatal("Tried to free some *_empty_array.\n");
   if (v->refs) {
 #ifdef DEBUG_MALLOC
@@ -183,8 +174,6 @@ PMOD_EXPORT struct array *array_set_flags(struct array *a, int flags)
 	add_ref(a = &empty_array); break;
       case ARRAY_WEAK_FLAG:
 	add_ref(a = &weak_empty_array); break;
-      case ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK:
-	add_ref(a = &weak_shrink_empty_array); break;
       default:
 	Pike_fatal("Invalid flags %x\n", flags);
     }
@@ -2170,6 +2159,7 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
       for (e=0;e<a->size;e++) {
 	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
 	Pike_sp+=args;
+	/* FIXME: Don't throw apply errors from apply_svalue here. */
 	apply_svalue(ITEM(a)+e,args);
 	new_types |= 1 << Pike_sp[-1].type;
 	DO_AGGREGATE_ARRAY(120);
@@ -2316,27 +2306,9 @@ void gc_mark_array_as_referenced(struct array *a)
       if (a->type_field & BIT_COMPLEX)
       {
 	if (a->flags & ARRAY_WEAK_FLAG) {
-	  int e;
 	  TYPE_FIELD t;
-
-	  if(a->flags & ARRAY_WEAK_SHRINK) {
-	    int d=0;
-#ifdef PIKE_DEBUG
-	    if (a->refs != 1)
-	      Pike_fatal("Got %d refs to weak shrink array "
-			 "which we'd like to change the size on.\n", a->refs);
-#endif
-	    t = 0;
-	    for(e=0;e<a->size;e++)
-	      if (!gc_mark_weak_svalues(a->item+e, 1)) {
-		a->item[d++]=a->item[e];
-		t |= 1 << a->item[e].type;
-	      }
-	    a->size=d;
-	  }
-	  else
-	    if (!(t = gc_mark_weak_svalues(a->item, a->size)))
-	      t = a->type_field;
+	  if (!(t = gc_mark_weak_svalues(a->item, a->size)))
+	    t = a->type_field;
 
 	  /* Ugly, but we are not allowed to change type_field
 	   * at the same time as the array is being built...
@@ -2368,7 +2340,7 @@ void real_gc_cycle_check_array(struct array *a, int weak)
   GC_CYCLE_ENTER(a, T_ARRAY, weak) {
 #ifdef PIKE_DEBUG
     if (!gc_destruct_everything &&
-	(a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array))
+	(a == &empty_array || a == &weak_empty_array))
       Pike_fatal("Trying to gc cycle check some *_empty_array.\n");
 #endif
 
@@ -2511,7 +2483,6 @@ void debug_dump_array(struct array *a)
 	  a->malloced_size,
 	  a == &empty_array ? " (the empty_array)" :
 	  a == &weak_empty_array ? " (the weak_empty_array)" :
-	  a == &weak_shrink_empty_array ? " (the weak_shrink_empty_array)" :
 	  "");
   fprintf(stderr,"Type field =");
   debug_dump_type_field(a->type_field);
