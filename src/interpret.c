@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.313 2003/08/03 00:55:34 mast Exp $
+|| $Id: interpret.c,v 1.314 2003/08/04 15:05:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.313 2003/08/03 00:55:34 mast Exp $");
+RCSID("$Id: interpret.c,v 1.314 2003/08/04 15:05:09 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2016,10 +2016,15 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
 
 PMOD_EXPORT void safe_apply(struct object *o, const char *fun ,INT32 args)
 {
+  int id;
 #ifdef PIKE_DEBUG
   if(!o->prog) Pike_fatal("Apply safe on destructed object.\n");
 #endif
-  safe_apply_low2(o, find_identifier(fun, o->prog), args, 1);
+  id = find_identifier(fun, o->prog);
+  if (id >= 0)
+    safe_apply_low2(o, id, args, 1);
+  else
+    Pike_error ("Cannot call unknown function \"%s\".\n", fun);
 }
 
 /* Returns nonzero if the function was called in some handler. */
