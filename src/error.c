@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.62 2000/08/21 21:32:37 grubba Exp $");
+RCSID("$Id: error.c,v 1.63 2000/09/01 18:41:27 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -449,13 +449,26 @@ PMOD_EXPORT void exit_on_error(void *msg)
   exit(1);
 }
 
+#ifdef __NT__
+/* Wrapper around abort() to avoid interactive requesters on NT. */
+static void do_abort()
+{
+  if (!d_flag && !getenv("PIKE_DEBUG")) {
+    exit(-6);	/* -SIGIOT */
+  }
+  abort();
+}
+#else /* !__NT__ */
+#define do_abort()	abort()
+#endif /* __NT__ */
+
 PMOD_EXPORT void fatal_on_error(void *msg)
 {
 #ifdef PIKE_DEBUG
   dump_backlog();
 #endif
   fprintf(stderr,"%s\n",(char *)msg);
-  abort();
+  do_abort();
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
@@ -476,7 +489,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   if (in_fatal)
   {
     (void)VFPRINTF(stderr, fmt, args);
-    abort();
+    do_abort();
   }
 
   in_fatal = 1;
@@ -507,7 +520,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
     fprintf(stderr,"No stack - no backtrace.\n");
   }
   fflush(stderr);
-  abort();
+  do_abort();
 }
 
 #if 1
