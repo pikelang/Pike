@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.98 2000/09/10 01:23:58 per Exp $ */
+/* $Id: colortable.c,v 1.99 2000/09/26 10:22:11 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.98 2000/09/10 01:23:58 per Exp $
+**!	$Id: colortable.c,v 1.99 2000/09/26 10:22:11 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.98 2000/09/10 01:23:58 per Exp $");
+RCSID("$Id: colortable.c,v 1.99 2000/09/26 10:22:11 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -4482,7 +4482,7 @@ void init_image_colortable(void)
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
 		"function(int,int,int,void|int ...:void) */
-   ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
+   ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tOr(tArr(tColor),tStr),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
    ADD_FUNCTION("_sprintf", image_colortable__sprintf, 
                 tFunc(tInt tMapping, tString ), 0 );
@@ -4513,7 +4513,7 @@ void init_image_colortable(void)
 
    /* map image */
    /* function(object:object)|function(string,int,int) */
-#define map_func_type tOr(tFunc(tObj,tObj),tFunc(tString tInt,tInt))
+#define map_func_type tOr(tFunc(tObj,tObj),tFunc(tString tInt tInt,tObj))
    ADD_FUNCTION("map",image_colortable_map,map_func_type,0);
    ADD_FUNCTION("`*",image_colortable_map,map_func_type,0);
    ADD_FUNCTION("``*",image_colortable_map,map_func_type,0);
