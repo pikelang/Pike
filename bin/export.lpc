@@ -23,11 +23,27 @@ string *get_files(string path)
   return ret;
 }
 
+void fix_configure(string dir)
+{
+  int *config,*config_in;
+  config=file_stat(dir+"/configure");
+  config_in=file_stat(dir+"/configure.in");
+
+  if(config_in)
+  {
+    if(!config || config_in[3] > config[3])
+    {
+      perror("Fixing configure in "+dir+".\n");
+      system("cd "+dir+" ; autoconf");
+    }
+  }
+}
+
 int main(int argc, string *argv)
 {
   mixed tmp;
   int e;
-  string files;
+  string *files;
   string s=replace(version()," ","_");
 
   tmp=explode(argv[0],"/");
@@ -43,6 +59,12 @@ int main(int argc, string *argv)
   tmp=reverse(tmp);
   cd(tmp*"/");
   perror("Sourcedir = "+tmp*"/"+"/ulpc\n");
+
+  fix_configure("ulpc/src");
+
+  foreach(get_dir("ulpc/src/modules") - ({"CVS","RCS"}), tmp)
+    if(file_size("ulpc/src/modules/"+tmp) == -2)
+      fix_configure("modules/"+tmp);
 
   files=sum(({ "ulpc/README" }),
 	    get_files("ulpc/src"),
