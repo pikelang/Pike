@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: passwords.c,v 1.39 2003/04/02 20:02:49 nilsson Exp $
+|| $Id: passwords.c,v 1.40 2003/04/02 20:14:29 nilsson Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.39 2003/04/02 20:02:49 nilsson Exp $");
+RCSID("$Id: passwords.c,v 1.40 2003/04/02 20:14:29 nilsson Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -413,6 +413,8 @@ void f_getpwuid(INT32 args)
 }
 #endif /* HAVE_GETPWUID */
 
+/*! @module System */
+
 #ifdef HAVE_SETPWENT
 /*! @decl int setpwent()
  *!
@@ -423,6 +425,7 @@ void f_getpwuid(INT32 args)
  *!   Always @tt{0@} (zero)
  *!
  *! @seealso
+ *!   @[get_all_users()]
  *!   @[getpwent()]
  *!   @[endpwent()]
  */
@@ -450,6 +453,7 @@ void f_setpwent(INT32 args)
  *!   Always @tt{0@} (zero)
  *!
  *! @seealso
+ *!   @[get_all_users()]
  *!   @[getpwent()]
  *!   @[setpwent()]
  */
@@ -498,6 +502,7 @@ void f_endpwent(INT32 args)
  *!   0 if EOF.
  *!
  *! @seealso
+ *!   @[get_all_users()]
  *!   @[getpwnam()]
  *!   @[getpwent()]
  *!   @[setpwent()]
@@ -524,6 +529,8 @@ void f_getpwent(INT32 args)
 
   UNLOCK_IMUTEX(&password_protection_mutex);
 }
+
+/*! @endmodule */
 
 /*! @decl array(array(int|string)) get_all_users()
  *!
@@ -571,12 +578,15 @@ void f_get_all_users(INT32 args)
 
 #endif /* HAVE_GETPWENT */
 
+/*! @module System */
+
 #ifdef HAVE_SETGRENT
 /*! @decl int setgrent()
  *!
  *!   Rewinds the @[getgrent] pointer to the first entry
  *!
  *! @seealso
+ *!   @[get_all_groups()]
  *!   @[getgrent()]
  *!   @[endgrent()]
  */
@@ -601,6 +611,7 @@ void f_setgrent(INT32 args)
  *!   Closes the /etc/groups file after using the @[getgrent] function.
  *!
  *! @seealso
+ *!   @[get_all_groups()]
  *!   @[getgrent()]
  *!   @[setgrent()]
  */
@@ -642,6 +653,7 @@ void f_endgrent(INT32 args)
  *!   @endarray
  *!
  *! @seealso
+ *!   @[get_all_groups()]
  *!   @[getgrnam()]
  *!   @[getgrgid()]
  */
@@ -666,6 +678,8 @@ void f_getgrent(INT32 args)
 
   UNLOCK_IMUTEX(&password_protection_mutex);
 }
+
+/*! @endmodule */
 
 /*! @decl array(array(int|string|array(string))) get_all_groups()
  *!
