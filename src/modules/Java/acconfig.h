@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.5 2003/01/02 17:15:01 grubba Exp $
+|| $Id: acconfig.h,v 1.6 2003/05/17 20:29:27 grubba Exp $
 */
 
 /*
@@ -37,5 +37,8 @@
 
 /* Define if you have an alpha CPU */
 #undef HAVE_ALPHA_CPU
+
+/* Define for debug if you java has ibmFindDLL(). */
+#undef HAVE_IBMFINDDLL
 
 #endif /* PIKE_JAVA_CONFIG_H */

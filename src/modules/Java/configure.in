@@ -311,6 +311,10 @@ if test "x$with_java" = xyes; then
 	LINKER_OPTIONS="${LINKER_OPTIONS} -lthread"
       ], [])
 
+      # Java/AIX has this. For debug...
+      AC_CHECK_LIB(java, ibmFindDLL, [
+        AC_DEFINE(HAVE_IBMFINDDLL)
+      ])
     else
       :
     fi
@@ -375,6 +379,13 @@ if test "x$with_java" = xyes; then
 	  }
 	  if(!setjmp(jbuf))
 	    longjmp(jbuf,1);
+#ifdef HAVE_IBMFINDDLL
+	  {
+	    /* Debug... */
+	    extern char *ibmFindDLL(void);
+	    fprintf(stderr, "ibmFindDLL: \"%s\"\n", ibmFindDLL());
+	  }
+#endif
 	  return 0;
         };
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.60 2003/03/14 15:57:48 grubba Exp $
+|| $Id: jvm.c,v 1.61 2003/05/17 20:29:27 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.60 2003/03/14 15:57:48 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.61 2003/05/17 20:29:27 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -3497,6 +3497,14 @@ PIKE_MODULE_INIT
   if (open_nt_dll()<0)
     return;
 #endif /* __NT__ */
+
+#ifdef HAVE_IBMFINDDLL
+  {
+    /* Debug... */
+    extern char *ibmFindDLL(void);
+    fprintf(stderr, "ibmFindDLL(): \"%s\"\n", ibmFindDLL());
+  }
+#endif
 
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
