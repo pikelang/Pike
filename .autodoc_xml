@@ -338,3 +338,104 @@ An argument to a method can be of the varargs type:
 ======================================================================
 f) XML generated from the doc markup
 ----------------------------------------------------------------------
+
+The documentation for an entity is put in a <doc> element. The <doc> element 
+is either a child of the element representing the entity (in the case of 
+<class>, <module>, <enum>, or <modifiers>) or a child of the <docgroup> that
+contains the element representing the entity.
+
+The doc markup has two main types of keywords. Those that create a container
+and those that create a new subsection within a container, implicitly closing
+the previous subsection. Consider e.g.:
+
+  //! @mapping
+  //!   @member int "ip"
+  //!     The IP# of the host.
+  //!   @member string "address"
+  //!     The name of the host.
+  //!   @member float "latitude"
+  //!   @member float "longitude"
+  //!     The coordinates of its physical location.
+  //! @endmapping
+
+Here @mapping and @endmapping create a container, and each @member start a 
+new subsection. The two latter @member are grouped together and thus they
+form ONE new subsection together. Each subsection is a <group>, and the 
+<group> has one or more <member> children, and a <text> child that contains
+the text that describes the <member>s:
+
+  <mapping> 
+      <group>
+          <member><type><int/></type><index>"ip"</index></member>
+          <text>
+            <p>The IP# of the host.</p>
+          </text>
+      </group>
+      <group>
+          <member><type><string/></type><index>"address"</index></member>
+          <text>
+              <p>The name of the host.</p>
+          </text>
+      </group>
+      <group>
+          <member><type><float/></type><index>"latitude"</index></member>
+          <member><type><float/></type><index>"longitude"</index></member>
+          <text>
+              <p>The coordinates of its physical location.</p>
+          </text>
+      </group>
+  </mapping>
+
+Inside a <text> element, there can not only be text, but also a nested level
+of, say @mapping - @endmapping. In that case, the <mapping> element is put in 
+the document order place as a sibling of the <p> that contain the text:
+
+  //! @mapping
+  //!   @member mapping "nested-mapping"
+  //!     A mapping inside the mapping:
+  //!     @mapping
+  //!       @member string "zip-code"
+  //!         The zip code.
+  //!     @endmapping
+  //!     And some more text ... 
+  //! @endmapping
+    
+  becomes:
+
+  <mapping>
+    <group>
+      <member><type><mapping/></type><index>"nested-mapping"</index></member>
+        <text>
+          <p>A mapping inside the mapping:</p>
+          <mapping>
+            <group>
+              <member><type><string/></type><index>"zip-code"</index></member>
+              <text>
+                <p>The zip code.</p>
+              </text>
+            </group>
+          </mapping>
+          <p>And some more text ...</p>
+        </text>
+      </group>
+  </mapping>
+
+Inside the <p> elements, there may also be some more "layout-ish" tags like 
+<b>, <code>, <tt>, <i>, needed to make the text more readable. Those tags are
+expressed as @i{ ... @} in the doc markup. However there are no <br>. A paragraph
+break is done by ending the <p> and beginning a new. A </p><p> is inserted for
+each sequence of blank lines in the doc markup:
+
+  //! First paragraph.
+  //! 
+  //! Second paragraph.
+  //! 
+  //! 
+
+  becomes:
+
+  <p>First paragraph.</p><p>Second paragraph.</p>
+
+Note that the text is trimmed from whitespaces in the end and in the beginning.
+And there are never any empty <p> elements.
+
