@@ -1,5 +1,5 @@
 #include <config.h>
-/* $Id: quant.c,v 1.3 1997/03/05 14:50:48 grubba Exp $ */
+/* $Id: quant.c,v 1.4 1997/03/10 21:36:12 grubba Exp $ */
 
 /*
 
@@ -474,10 +474,9 @@ fprintf(stderr,"space: %d,%d,%d-%d,%d,%d  ",
       {
 	 /* split tree */
 
-	 *rgb_node=
-	    ( (*rn_next)-ct->rgb_node )
-	    | ( ((unsigned long)split_on) << 22 )
-	    | ( (dir+1)<<30 ) & 0xffffffff;
+	 *rgb_node = (( (*rn_next)-ct->rgb_node ) |
+		      ( ((unsigned long)split_on) << 22 )
+		      ( (dir+1)<<30 )) & 0xffffffff;
 	 rgb_node=*rn_next;
 	 (*rn_next)+=2;
 
