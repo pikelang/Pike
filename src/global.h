@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.52 2000/08/17 20:40:43 grubba Exp $
+ * $Id: global.h,v 1.53 2000/08/20 17:12:57 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -393,5 +393,9 @@ FILE *popen PROT((char *,char *));
 #ifdef GETENV_DECL_MISSING
 char *getenv PROT((char *));
 #endif
+
+#ifdef USE_CRYPT_C
+char *crypt(char *, char *);
+#endif /* USE_CRYPT_C */
 
 #endif
