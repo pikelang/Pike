@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.138 2004/03/13 19:25:00 grubba Exp $
+|| $Id: efuns.c,v 1.139 2004/03/14 02:55:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.138 2004/03/13 19:25:00 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.139 2004/03/14 02:55:01 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -823,7 +823,6 @@ void f_mkdir(INT32 args)
  */
 void f_get_dir(INT32 args)
 {
-  struct svalue *save_sp=sp;
   DIR *dir;
   struct dirent *d;
   struct pike_string *str;
@@ -984,6 +983,7 @@ void f_get_dir(INT32 args)
     THREADS_DISALLOW();
 
     END_AGGREGATE_ARRAY;
+    Pike_sp[-1].u.array->type_field = BIT_STRING;
 
     stack_pop_n_elems_keep_top(args);
   }
@@ -1007,6 +1007,7 @@ void f_get_dir(INT32 args)
     }
     closedir(dir);
     END_AGGREGATE_ARRAY;
+    Pike_sp[-1].u.array->type_field = BIT_STRING;
 
     stack_pop_n_elems_keep_top(args);
   }
