@@ -35,11 +35,14 @@
  *
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
- *  o Not all Pike types are supported yet
- *  o No support for class variables yet
- *  o No support for set_init/exit/gc_mark/gc_check_callback
- *  o Does not generate pike_module_init/exit automatically yet
+ *  o Not all Pike types are supported yet.
+ *  o No support for functions that takes variable number of arguments yet.
+ *  o No support for class variables yet.
+ *  o No support for set_init/exit/gc_mark/gc_check_callback.
  *  o No support for 'char *', 'double'  etc.
+ *  o RETURN; (void) doesn't work yet
+ *  o need a RETURN_NULL; or something.. RETURN 0; might work but may
+ *    be confusing as RETURN x; will not work if x is zero.
  *    
  */
 
@@ -274,8 +277,6 @@ array recursive(mixed func, array data, mixed ... args)
 {
   array ret=({});
 
-  data=func(data, @args);
-
   foreach(data, mixed foo)
     {
       if(arrayp(foo))
@@ -286,7 +287,7 @@ array recursive(mixed func, array data, mixed ... args)
       }
     }
 
-  return ret;
+  return func(ret, @args);
 }
 
 mapping parse_attributes(array attr)
@@ -318,6 +319,7 @@ string file;
 array convert(array x)
 {
   array addfuncs=({});
+  array exitfuncs=({});
 
   array x=x/({"PIKECLASS"});
   array ret=x[0];
@@ -334,16 +336,28 @@ array convert(array x)
     string name=proto[p]->text;
     mapping attributes=parse_attributes(proto[p+2..]);
 
-    [ array classcode, array classaddfuncs ]=convert(body[1..sizeof(body)-2]);
+    [ array classcode, array classaddfuncs, array classexitfuncs ]=
+      convert(body[1..sizeof(body)-2]);
+    ret+=({ sprintf("#define class_%s_defined\n",name), });
     ret+=classcode;
+
     addfuncs+=({
+      sprintf("#ifdef class_%s_defined\n",name),
       "  start_new_program();\n",
     })+
-      addfuncs+
+      classaddfuncs+
 	({
 	  sprintf("  end_class(%O,%d);\n",name, attributes->flags || "0"),
+	  sprintf("#iendif\n"),
 	});
-      
+
+    exitfuncs+=({
+      sprintf("#ifdef class_%s_defined\n",name),
+    })+
+      classexitfuncs+
+	({
+	  sprintf("#iendif\n"),
+	});
   }
 
   x=ret/({"PIKEFUN"});
@@ -377,6 +391,7 @@ array convert(array x)
 //    werror("  args=%O\n",args);
 
     ret+=({
+      sprintf("#define f_%s_defined\n",name),
       sprintf("void f_%s(INT32 args) {\n",name),
     });
 
@@ -389,6 +404,7 @@ array convert(array x)
 
 
     addfuncs+=({
+      sprintf("#ifdef f_%s_defined\n",name),
       PC.Token(sprintf("  %s(%O,f_%s,tFunc(%s,%s),%s);\n",
 		       attributes->efun ? "ADD_EFUN" : "ADD_FUNCTION",
 		       attributes->name || name,
@@ -399,6 +415,7 @@ array convert(array x)
 		       (attributes->efun ? attributes->optflags : 
 			attributes->flags )|| "0" ,
 		       ),proto[0]->line),
+      sprintf("#endif\n",name),
     });
 
     int argnum;
@@ -418,14 +435,14 @@ array convert(array x)
 	{
 	  default:
 	    ret+=({
-	      PC.Token(sprintf("if(sp[%d].type != PIKE_T_%s)\n",
+	      PC.Token(sprintf("if(sp[%d].type != PIKE_T_%s)",
 			       sp,upper_case(arg->basetype->text)),arg->line)
 	    });
 	    break;
 
 	  case "program":
 	    ret+=({
-	      PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d)))\n",
+	      PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d)))",
 			       arg->name,sp),arg->line)
 	    });
 	    break;
@@ -437,7 +454,7 @@ array convert(array x)
 	{
 	  default:
 	    ret+=({
-	      PC.Token(sprintf("  SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
+	      PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
 			       attributes->errname || attributes->name || name,
 			       argnum+1,
 			       arg->typename),arg->line),
@@ -486,24 +503,13 @@ array convert(array x)
       }
     
     if(sizeof(body))
-    {
-      ret+=({
-	body,
-      });
-    }
-    ret+=({
-      "}\n"
-    });
+      ret+=({body});
+    ret+=({ "}\n" });
 
-    if(sizeof(rest))
-    {
-      ret+=recursive(replace,rest,PC.Token("INIT",0),addfuncs);
-    }
-      
+    ret+=rest;
   }
 
-
-  return ({ ret, addfuncs });
+  return ({ ret, addfuncs, exitfuncs });
 }
 
 int main(int argc, array(string) argv)
@@ -515,7 +521,23 @@ int main(int argc, array(string) argv)
   x=PC.tokenize(x,file);
   x=PC.group(x);
 
-  x=convert(x);
+  array tmp=convert(x);
+  x=tmp[0];
+  x=recursive(replace,x,PC.Token("INIT",0),tmp[1]);
+  x=recursive(replace,x,PC.Token("EXIT",0),tmp[2]);
 
-  write(PC.reconstitute_with_line_numbers(x[0]));
+  if(equal(x,tmp[0]))
+  {
+    // No INIT / EXIT, add our own stuff..
+
+    x+=({
+      "void pike_module_init(void) {\n",
+      tmp[1],
+      "}\n",
+      "void pike_module_exit(void) {\n",
+      tmp[2],
+      "}\n",
+    });
+  }
+  write(PC.reconstitute_with_line_numbers(x));
 }
