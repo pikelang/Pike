@@ -651,18 +651,76 @@ void f_timezone(INT32 args)
 #endif
 #endif
 
-#ifndef LOG_PERROR
-#define LOG_PERROR 0
-#endif
 
+#ifndef LOG_PID
+#define LOG_PID 0
+#endif
+#ifndef LOG_AUTH
+#define LOG_AUTH 0
+#endif
 #ifndef LOG_AUTHPRIV
 #define LOG_AUTHPRIV 0
 #endif
-
 #ifndef LOG_CRON
 #define LOG_CRON 0
 #endif
-
+#ifndef LOG_DAEMON
+#define LOG_DAEMON 0
+#endif
+#ifndef LOG_KERN
+#define LOG_KERN 0
+#endif
+#ifndef LOG_LOCAL0
+#define LOG_LOCAL0 0
+#endif
+#ifndef LOG_LOCAL1
+#define LOG_LOCAL1 0
+#endif
+#ifndef LOG_LOCAL2
+#define LOG_LOCAL2 0
+#endif
+#ifndef LOG_LOCAL3
+#define LOG_LOCAL3 0
+#endif
+#ifndef LOG_LOCAL4
+#define LOG_LOCAL4 0
+#endif
+#ifndef LOG_LOCAL5
+#define LOG_LOCAL5 0
+#endif
+#ifndef LOG_LOCAL6
+#define LOG_LOCAL6 0
+#endif
+#ifndef LOG_LOCAL7
+#define LOG_LOCAL7 0
+#endif
+#ifndef LOG_LPR
+#define LOG_LPR 0
+#endif
+#ifndef LOG_MAIL
+#define LOG_MAIL 0
+#endif
+#ifndef LOG_NEWS
+#define LOG_NEWS 0
+#endif
+#ifndef LOG_SYSLOG
+#define LOG_SYSLOG 0
+#endif
+#ifndef LOG_USER
+#define LOG_USER 0
+#endif
+#ifndef LOG_UUCP
+#define LOG_UUCP 0
+#endif
+#ifndef LOG_CONS
+#define LOG_CONS 0
+#endif
+#ifndef LOG_NDELAY
+#define LOG_NDELAY 0
+#endif
+#ifndef LOG_PERROR
+#define LOG_PERROR 0
+#endif
 void f_openlog(INT32 args)
 {
   int option=0, facility=0, i;
