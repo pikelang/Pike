@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.40 2001/06/19 21:46:13 grubba Exp $
+ * $Id: builtin.cmod,v 1.41 2001/06/19 22:11:59 grubba Exp $
  */
 
 #include "global.h"
@@ -698,6 +698,10 @@ PIKECLASS backtrace_frame
       if (!THIS->filename) {
 	THIS->filename =
 	  make_shared_string(get_line(THIS->pc, THIS->prog, &THIS->lineno));
+	if (THIS->prog) {
+	  free_program(THIS->prog);
+	  THIS->prog = NULL;
+	}
       }
       ref_push_string(THIS->filename);
       push_text(":");
@@ -792,6 +796,10 @@ PIKECLASS backtrace_frame
 	    THIS->filename =
 	      make_shared_string(get_line(THIS->pc, THIS->prog,
 					  &THIS->lineno));
+	    if (THIS->prog) {
+	      free_program(THIS->prog);
+	      THIS->prog = NULL;
+	    }
 	  }
 	  ref_push_string(THIS->filename);
 	} else {
@@ -804,6 +812,10 @@ PIKECLASS backtrace_frame
 	    THIS->filename =
 	      make_shared_string(get_line(THIS->pc, THIS->prog,
 					  &THIS->lineno));
+	    if (THIS->prog) {
+	      free_program(THIS->prog);
+	      THIS->prog = NULL;
+	    }
 	  }
 	  push_int(THIS->lineno);
 	} else {
