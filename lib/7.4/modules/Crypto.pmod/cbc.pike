@@ -22,14 +22,14 @@ int query_key_length() { return key_size(); }
 int query_block_size() { return block_size(); }
 
 static int(0..1) mode;
-void set_encrypt_key(string key) {
+this_program set_encrypt_key(string key) {
   mode = 0;
-  ::set_encrypt_key(key);
+  return ::set_encrypt_key(key);
 }
 
-void set_decrypt_key(string key) {
+this_program set_decrypt_key(string key) {
   mode = 1;
-  ::set_decrypt_key(key);
+  return ::set_decrypt_key(key);
 }
 
 string encrypt_block(string data) {
