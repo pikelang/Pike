@@ -324,9 +324,12 @@ SGML convert(SGML data)
 	  if(!link_to_page[to])
 	  {
 	    werror("Warning: Cannot find link "+to+" (near "+data->location()+")\n");
+	    ret+=data->data;
+	    continue;
+	  }else{
+	    data->params->href=mklinkname(link_to_page[to])+"#"+to;
+	    break;
 	  }
-	  data->params->href=mklinkname(link_to_page[to])+"#"+to;
-	  break;
 	}
 	
 	case "ref":
