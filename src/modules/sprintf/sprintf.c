@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.112 2003/09/30 01:28:42 nilsson Exp $
+|| $Id: sprintf.c,v 1.113 2003/10/16 16:17:21 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.112 2003/09/30 01:28:42 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.113 2003/10/16 16:17:21 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -636,8 +636,8 @@ INLINE static void fix_field(struct string_builder *r,
   
       if(width>0)
       {
-  	d%=pad_length;
-  	string_builder_fill(r,width,pad_string,pad_length,d);
+	d%=pad_length;
+	string_builder_fill(r, width, pad_string, pad_length, d);
       }
       
       return;
@@ -650,7 +650,7 @@ INLINE static void fix_field(struct string_builder *r,
   e=width-len;
   if(e>0)
   {
-    string_builder_fill(r,e,pad_string, pad_length, 0);
+    string_builder_fill(r, e, pad_string, pad_length, 0);
     width-=e;
   }
 
@@ -1149,8 +1149,10 @@ static void low_pike_sprintf(struct format_stack *fs,
       {
 	struct pike_string *s;
 	GET_STRING(s);
-	fs->fsp->pad_string=MKPCHARP_STR(s);
-	fs->fsp->pad_length=s->len;
+	if (s->len) {
+	  fs->fsp->pad_string=MKPCHARP_STR(s);
+	  fs->fsp->pad_length=s->len;
+	}
 	continue;
       }
 
