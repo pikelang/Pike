@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.27 1998/01/25 08:25:10 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.28 1998/02/11 00:05:01 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -562,6 +562,27 @@ struct array *mapping_values(struct mapping *m)
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
   
+  return a;
+}
+
+struct array *mapping_to_array(struct mapping *m)
+{
+  INT32 e;
+  struct keypair *k;
+  struct array *a;
+  struct svalue *s;
+  a=allocate_array(m->size);
+  s=ITEM(a);
+  LOOP(m)
+    {
+      struct array *b=allocate_array(2);
+      assign_svalue(b->item+0, & k->ind);
+      assign_svalue(b->item+1, & k->val);
+      s->u.array=b;
+      s->type=T_ARRAY;
+    }
+  a->type_field = BIT_ARRAY;
+
   return a;
 }
 

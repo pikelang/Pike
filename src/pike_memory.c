@@ -438,9 +438,9 @@ char *debug_xalloc(long size)
 
 #ifdef DEBUG_MALLOC
 
-#ifdef _REENTRANT
 #include "threads.h"
 
+#ifdef _REENTRANT
 static MUTEX_T debug_malloc_mutex;
 #endif
 
@@ -451,6 +451,9 @@ static MUTEX_T debug_malloc_mutex;
 #undef calloc
 #undef strdup
 #undef main
+
+static void add_location(struct memhdr *mh, const char *fn, int line);
+static struct memhdr *find_memhdr(void *p);
 
 int verbose_debug_malloc = 0;
 int verbose_debug_exit = 1;
@@ -468,6 +471,13 @@ struct memloc
   int times;
 };
 
+
+struct memloc_block
+{
+  struct memloc_block *next;
+  struct memloc memlocs[BSIZE];
+};
+
 struct memhdr
 {
   struct memhdr *next;
@@ -476,7 +486,6 @@ struct memhdr
   struct memloc *locations;
 };
 
-static struct memhdr *hash[HSIZE];
 
 struct memhdr_block
 {
@@ -484,10 +493,17 @@ struct memhdr_block
   struct memhdr memhdrs[BSIZE];
 };
 
+static struct memloc_block *memloc_blocks=0;
+static struct memloc *free_memlocs=0;
+static struct memhdr no_leak_memlocs;
+
+static struct memloc *mlhash[LHSIZE];
+static struct memhdr *hash[HSIZE];
+
 static struct memhdr_block *memhdr_blocks=0;
 static struct memhdr *free_memhdrs=0;
 
-static struct memhdr *alloc_memhdr(void)
+struct memhdr *alloc_memhdr(void)
 {
   struct memhdr *tmp;
   if(!free_memhdrs)
@@ -512,20 +528,54 @@ static struct memhdr *alloc_memhdr(void)
   }
 
   tmp=free_memhdrs;
+  tmp->locations=0;
   free_memhdrs=tmp->next;
   return tmp;
 }
 
-struct memloc_block
+void low_add_marks_to_memhdr(struct memhdr *to,
+				    struct memhdr *from)
 {
-  struct memloc_block *next;
-  struct memloc memlocs[BSIZE];
-};
+  struct memloc *l;
+  if(!from) return;
+  for(l=from->locations;l;l=l->next)
+    add_location(to, l->filename, l->line);
+}
 
-static struct memloc_block *memloc_blocks=0;
-static struct memloc *free_memlocs=0;
-static struct memhdr no_leak_memlocs;
-static struct memloc *mlhash[LHSIZE];
+void add_marks_to_memhdr(struct memhdr *to, void *ptr)
+{
+  low_add_marks_to_memhdr(to,find_memhdr(ptr));
+}
+
+static unsigned long lhash(struct memhdr *m,
+			   const char *fn,
+			   int line)
+{
+  unsigned long l;
+  l=(long)m;
+  l*=53;
+  l+=(long)fn;
+  l*=4711;
+  l+=line;
+  l%=LHSIZE;
+  return l;
+}
+
+void free_memhdr(struct memhdr *mh)
+{
+  struct memloc *ml;
+  while((ml=mh->locations))
+  {
+    unsigned long l=lhash(mh,ml->filename, ml->line);
+    if(mlhash[l]==ml) mlhash[l]=0;
+    
+    mh->locations=ml->next;
+    ml->next=free_memlocs;
+    free_memlocs=ml;
+  }
+  mh->next=free_memhdrs;
+  free_memhdrs=mh;
+}
 
 static struct memloc *alloc_memloc(void)
 {
@@ -567,19 +617,6 @@ static struct memhdr *find_memhdr(void *p)
   return NULL;
 }
 
-static unsigned long lhash(struct memhdr *m,
-			   const char *fn,
-			   int line)
-{
-  unsigned long l;
-  l=(long)m;
-  l*=53;
-  l+=(long)fn;
-  l*=4711;
-  l+=line;
-  l%=LHSIZE;
-  return l;
-}
 
 static void add_location(struct memhdr *mh, const char *fn, int line)
 {
@@ -660,20 +697,9 @@ static int remove_memhdr(void *p)
   {
     if(mh->data==p)
     {
-      struct memloc *ml;
-      while((ml=mh->locations))
-      {
-	unsigned long l=lhash(mh,ml->filename, ml->line);
-	if(mlhash[l]==ml) mlhash[l]=0;
-
-	add_location(&no_leak_memlocs, ml->filename, ml->line);
-	mh->locations=ml->next;
-	ml->next=free_memlocs;
-	free_memlocs=ml;
-      }
       *prev=mh->next;
-      mh->next=free_memhdrs;
-      free_memhdrs=mh;
+      low_add_marks_to_memhdr(&no_leak_memlocs, mh);
+      free_memhdr(mh);
       
       return 1;
     }
@@ -750,7 +776,20 @@ char *debug_strdup(const char *s, const char *fn, int line)
   return m;
 }
 
-static void cleanup_memhdrs()
+
+void dump_memhdr_locations(struct memhdr *from,
+			   struct memhdr *notfrom)
+{
+  struct memloc *l;
+  for(l=from->locations;l;l=l->next)
+  {
+    if(find_location(notfrom, l->filename, l->line))
+      continue;
+    fprintf(stderr," *** %s:%d (%d times)\n",l->filename,l->line,l->times);
+  }
+}
+
+void cleanup_memhdrs()
 {
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
@@ -789,7 +828,6 @@ int main(int argc, char *argv[])
 {
   extern int dbm_main(int, char **);
   mt_init(&debug_malloc_mutex);
-  atexit(cleanup_memhdrs);
   return dbm_main(argc, argv);
 }
 

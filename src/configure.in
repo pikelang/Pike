@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.157 1998/02/05 02:57:37 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.158 1998/02/11 00:04:58 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -639,9 +639,9 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock2.h \
+thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
 sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h grp.h pwd.h \
-passwd.h group.h)
+passwd.h group.h winsock2.h)
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)
@@ -1141,10 +1141,10 @@ define(MY_CHECK_HEADERS,
 
 MY_CHECK_HEADERS(strchr,string.h unistd.h stdlib.h)
 MY_CHECK_HEADERS(malloc,memory.h unistd.h stdlib.h)
-MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h winsock2.h)
+MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h winsock.h winsock2.h)
 MY_CHECK_HEADERS(popen,stdio.h unistd.h)
 MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
-MY_CHECK_HEADERS(gethostname,unistd.h netdb.h winsock2.h)
+MY_CHECK_HEADERS(gethostname,unistd.h netdb.h winsock.h winsock2.h)
 
 AC_ALLOCA
 

@@ -2,7 +2,7 @@
 #include "error.h"
 #include <math.h>
 
-#ifdef HAVE_WINSOCK2_H
+#ifdef HAVE_WINSOCK_H
 
 #ifdef _REENTRANT
 #include "threads.h"
@@ -57,7 +57,7 @@ void fd_init()
   
   mt_init(&fd_mutex);
   mt_lock(&fd_mutex);
-  if(WSAStartup(MAKEWORD(2,0), &wsadata) != 0)
+  if(WSAStartup(MAKEWORD(1,1), &wsadata) != 0)
   {
     fatal("No winsock available.\n");
   }
@@ -620,7 +620,7 @@ FD fd_dup2(FD from, FD to)
   return to;
 }
 
-#endif /* HAVE_WINSOCK2_H */
+#endif /* HAVE_WINSOCK_H */
 
 #if 0
 

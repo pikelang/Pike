@@ -1,5 +1,15 @@
 #ifdef DEBUG_MALLOC
 
+struct memhdr;
+
+void dump_memhdr_locations(struct memhdr *from,
+			   struct memhdr *notfrom);
+struct memhdr *alloc_memhdr(void);
+void free_memhdr(struct memhdr *mh);
+void add_marks_to_memhdr(struct memhdr *to,void *ptr);
+void low_add_marks_to_memhdr(struct memhdr *to,
+			     struct memhdr *from);
+
 extern int verbose_debug_malloc;
 extern int verbose_debug_exit;
 extern void *debug_malloc(size_t, const char *, int);

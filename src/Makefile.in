@@ -182,9 +182,8 @@ install:
 	  if [ -f "$(exec_prefix)/pike" ]; then \
 	    echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
 	    mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
-	  else \
-	    echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix) ; \
-	  fi ; \
+	  else : fi ; \
+          echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix) ; \
 	fi
 	@if [ -f $(SRCDIR)/../bin/hilfe ]; then \
 	  echo ; echo "Installing $(exec_prefix)/hilfe..."; \
@@ -193,10 +192,10 @@ install:
 	    if [ -f $(exec_prefix)/hilfe ]; then \
 	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
 	    else : ; fi && \
-	    sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(SRCDIR)/../bin/hilfe \
-	      >$(exec_prefix)/hilfe || exit 1\
+	    ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
+	      >./hilfe && chmod 755 ./hilfe && $(INSTALL) ./hilfe $(exec_prefix) || exit 1\
 	  else \
-	    $(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix) || exit 1; \
+	    $(INSTALL) $(TMP_BINDIR)/hilfe $(exec_prefix) || exit 1; \
 	  fi; \
 	  chmod a+rx $(exec_prefix)/hilfe; \
 	  chmod u+w $(exec_prefix)/hilfe; \

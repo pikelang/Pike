@@ -21,8 +21,8 @@
 # endif
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-# include <winsock2.h>
+#ifdef HAVE_WINSOCK_H
+# include <winsock.h>
 #endif
 
 #undef HAVE_SYS_TIME_H

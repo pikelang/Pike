@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.40 1998/02/03 05:29:26 hubbe Exp $");
+RCSID("$Id: main.c,v 1.41 1998/02/11 00:05:01 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -331,6 +331,13 @@ void do_exit(int num) ATTRIBUTE((noreturn))
 
   exit_modules();
 
+#ifdef DEBUG_MALLOC
+  {
+    extern cleanup_memhdrs(void);
+    cleanup_memhdrs();
+  }
+#endif
+
   exit(num);
 }
 
@@ -379,6 +386,7 @@ void low_exit_main(void)
   if(verbose_debug_exit)
   {
     INT32 num,size,recount=0;
+    fprintf(stderr,"Exited normally, counting bytes.\n");
 
     count_memory_in_arrays(&num, &size);
     if(num)

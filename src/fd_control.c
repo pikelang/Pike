@@ -27,8 +27,8 @@
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
 #endif
 
 #ifdef HAVE_FCNTL_H
@@ -41,7 +41,7 @@
 #include <sys/sockio.h>
 #endif
 
-void set_nonblocking(int fd,int which)
+int set_nonblocking(int fd,int which)
 {
 #ifdef DEBUG
   if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
@@ -49,19 +49,19 @@ void set_nonblocking(int fd,int which)
 #endif
 
 #if defined(USE_IOCTL_FIONBIO) || __NT__
-  fd_ioctl(fd, FIONBIO, &which);
+  return fd_ioctl(fd, FIONBIO, &which);
 #else
 
 #ifdef USE_FCNTL_O_NDELAY
-  fcntl(fd, F_SETFL, which?O_NDELAY:0);
+  return fcntl(fd, F_SETFL, which?O_NDELAY:0);
 #else
 
 #ifdef USE_FCNTL_O_NONBLOCK
-  fcntl(fd, F_SETFL, which?O_NONBLOCK:0);
+  return fcntl(fd, F_SETFL, which?O_NONBLOCK:0);
 #else
 
 #ifdef USE_FCNTL_FNDELAY
-  fcntl(fd, F_SETFL, which?FNDELAY:0);
+  return fcntl(fd, F_SETFL, which?FNDELAY:0);
 #else
 
 #error Do not know how to set your filedescriptors nonblocking.
@@ -108,7 +108,7 @@ int set_close_on_exec(int fd, int which)
 #ifdef TESTING
 
 
-#if defined(HAVE_WINSOCK2_H) && defined(USE_IOCTLSOCKET_FIONBIO)
+#if defined(HAVE_WINSOCK_H) && defined(USE_IOCTLSOCKET_FIONBIO)
 int main()
 {
   exit(0);

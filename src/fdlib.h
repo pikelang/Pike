@@ -27,7 +27,7 @@
 #define fd_BUFFERED           8
 #define fd_BIDIRECTIONAL     16
 
-#ifdef HAVE_WINSOCK2_H
+#ifdef HAVE_WINSOCK_H
 
 
 #define FILE_CAPABILITIES (fd_INTERPROCESSABLE)
@@ -38,7 +38,7 @@
 #define FD_SETSIZE MAX_OPEN_FILEDESCRIPTORS
 #endif
 
-#include <winsock2.h>
+#include <winsock.h>
 #include <winbase.h>
 
 typedef int FD;
@@ -258,8 +258,8 @@ typedef struct my_fd_set_s
 #define fd_copy_my_fd_set_to_fd_set(TO,FROM,max) \
    MEMCPY((TO),&(FROM)->tmp,sizeof(*(TO)))
 
-#define FILE_CAPABILITIES (fd_INTERPROCESSABLE)
-#define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED)
+#define FILE_CAPABILITIES (fd_INTERPROCESSABLE | fd_CAN_NONBLOCK)
+#define PIPE_CAPABILITIES (fd_INTERPROCESSABLE | fd_BUFFERED | fd_CAN_NONBLOCK)
 #define UNIX_SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK)
 #define SOCKET_CAPABILITIES (fd_INTERPROCESSABLE | fd_BIDIRECTIONAL | fd_CAN_NONBLOCK | fd_CAN_SHUTDOWN)
 

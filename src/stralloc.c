@@ -13,6 +13,8 @@
 #include "gc.h"
 #include "stuff.h"
 
+#include <ctype.h>
+
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
 #define HASH_PREFIX 20
@@ -30,6 +32,37 @@ static unsigned int StrHash(const char *s,int len)
   return full_hash_value % htable_size;
 }
 
+#ifdef DEBUG_MALLOC
+static void locate_problem(int (*isproblem)(struct pike_string *))
+{
+  unsigned INT32 e;
+  struct pike_string *s;
+  struct memhdr *yes=alloc_memhdr();
+  struct memhdr *no=alloc_memhdr();
+
+  for(e=0;e<htable_size;e++)
+    for(s=base_table[e];s;s=s->next)
+      add_marks_to_memhdr(isproblem(s)?yes:no,s);
+
+  fprintf(stderr,"Plausible problem location(s):\n");
+  dump_memhdr_locations(yes,no);
+}
+
+static int has_zero_refs(struct pike_string *s)
+{
+  return s->refs<=0;
+}
+static int wrong_hash(struct pike_string *s)
+{
+  return s->hval != StrHash(s->str, s->len);
+}
+static int improper_zero_termination(struct pike_string *s)
+{
+  return s->str[s->len];
+}
+#else
+#define locate_problem(X)
+#endif
 
 /*** find a string in the shared string table. ***/
 static struct pike_string *internal_findstring(const char *s,int len,int h)
@@ -42,6 +75,7 @@ static struct pike_string *internal_findstring(const char *s,int len,int h)
     if(curr->refs<1)
     {
       debug_dump_pike_string(curr, 70);
+      locate_problem(has_zero_refs);
       fatal("String with no references.\n");
     }
 #endif
@@ -90,6 +124,7 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,i
     if(curr->refs<1)
     {
       debug_dump_pike_string(curr, 70);
+      locate_problem(has_zero_refs);
       fatal("String with no references.\n");
     }
 #endif
@@ -294,13 +329,19 @@ void check_string(struct pike_string *s)
 {
   StrHash(s->str, s->len);
   if(full_hash_value != s->hval)
+  {
+    locate_problem(wrong_hash);
     fatal("Hash value changed?\n");
+  }
 
   if(debug_findstring(s) !=s)
     fatal("Shared string not shared.\n");
 
   if(s->str[s->len])
+  {
+    locate_problem(improper_zero_termination);
     fatal("Shared string is not zero terminated properly.\n");
+  }
 }
 
 void verify_shared_strings_tables(void)
@@ -318,13 +359,22 @@ void verify_shared_strings_tables(void)
 	fatal("Shared string shorter than zero bytes.\n");
 
       if(s->refs <= 0)
+      {
+	locate_problem(has_zero_refs);
 	fatal("Shared string had too few references.\n");
+      }
 
       if(s->str[s->len])
+      {
+	locate_problem(improper_zero_termination);
 	fatal("Shared string didn't end with a zero.\n");
+      }
 
       if(StrHash(s->str, s->len) != e)
+      {
+	locate_problem(wrong_hash);
 	fatal("Shared string hashed to wrong place.\n");
+      }
 
       if(s->hval != full_hash_value)
 	fatal("Shared string hashed to other number.\n");
