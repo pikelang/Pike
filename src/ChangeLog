@@ -1,3 +1,8 @@
+Sat Nov  2 22:17:45 1996  Fredrik Hubinette  <hubbe@tymin.blarg.com>
+
+	* language.yacc: if(int a) implemente
+	* configure.in: --without-threads implemented
+
 Fri Nov  1 15:47:48 1996  Fredrik Hubinette  <hubbe@tymin.blarg.com>
 
 	* new functions: uniq, implode_nicely
