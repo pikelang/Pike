@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.137 2002/03/05 14:17:23 mast Exp $
+// $Id: module.pmod,v 1.138 2002/03/05 15:09:15 per-bash Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1776,7 +1776,23 @@ int file_equal (string file_1, string file_2)
 //! sort of I/O error.
 {
   File f1 = File(), f2 = File();
+
+  if( file_1 == file_2 )
+    return 1;
+
   if (!f1->open (file_1, "r") || !f2->open (file_2, "r")) return 0;
+
+
+  // Some optimizations.
+  Stat s1 = f1->stat(), s2 = f2->stat();
+
+  if( s1->size != s2->size )
+    return 0;
+
+  // Detect sym- or hardlinks to the same file.
+  if( (s1->dev == s2->dev) && (s1->ino == s2->ino) )
+    return 1;
+  
   function(int,int|void:string) f1_read = f1->read, f2_read = f2->read;
   string d1, d2;
   do {
