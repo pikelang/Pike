@@ -434,7 +434,7 @@ void init_gmpmod_programs(void)
   add_function("gcd",mpzmod_gcd,"function(object|string|int|float...:object)",0);
   add_function("sqrt",mpzmod_gcd,"function(:object)",0);
   add_function("`~",mpzmod_gcd,"function(:object)",0);
-  add_function("powm",mpzmod_gcd,"function(object|string|int|float,object|string|int|float:object)",0);
+  add_function("powm",mpzmod_powm,"function(object|string|int|float,object|string|int|float:object)",0);
 
   set_init_callback(init_mpz_glue);
   set_exit_callback(exit_mpz_glue);
