@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.164 2001/09/18 22:59:57 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.165 2001/09/20 19:36:43 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -29,8 +29,9 @@ PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=256 * 1204;
 
-#ifndef HAVE_PTHREAD_ATFORK
+#if !defined(HAVE_PTHREAD_ATFORK) && !defined(th_atfork)
 #include "callback.h"
+
 
 static struct callback_list atfork_prepare_callback;
 static struct callback_list atfork_parent_callback;
