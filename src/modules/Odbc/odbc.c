@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.25 2001/07/12 13:59:49 grubba Exp $
+ * $Id: odbc.c,v 1.26 2001/10/03 09:12:42 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.25 2001/07/12 13:59:49 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.26 2001/10/03 09:12:42 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -202,18 +202,18 @@ static void f_create(INT32 args)
   /*
    * NOTE:
    *
-   * database argument is ignored
+   *   If no database has been specified, use the server argument.
+   *   If neither has been specified, connect to the database named "default".
    */
 
-  if (!server) {
-    push_constant_text("default");
-    server = sp[-1].u.string;
-    args++;
-  }
-  if (!database) {
-    push_constant_text("");
-    database = sp[-1].u.string;
-    args++;
+  if (!database || !database->len) {
+    if (!server || !server->len) {
+      push_constant_text("default");
+      database = sp[-1].u.string;
+      args++;
+    } else {
+      database = server;
+    }
   }
   if (!user) {
     push_constant_text("");
@@ -232,8 +232,8 @@ static void f_create(INT32 args)
 		     SQLDisconnect(PIKE_ODBC->hdbc), NULL);
   }
   odbc_check_error("odbc->create", "Connect failed",
-		   SQLConnect(PIKE_ODBC->hdbc, (unsigned char *)server->str,
-			      DO_NOT_WARN((SQLSMALLINT)server->len),
+		   SQLConnect(PIKE_ODBC->hdbc, (unsigned char *)database->str,
+			      DO_NOT_WARN((SQLSMALLINT)database->len),
 			      (unsigned char *)user->str,
 			      DO_NOT_WARN((SQLSMALLINT)user->len),
 			      (unsigned char *)pwd->str,
