@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.69 2002/12/01 22:54:25 nilsson Exp $
+// $Id: DNS.pmod,v 1.70 2002/12/23 18:59:54 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -15,74 +15,85 @@ constant NXRRSET=8;
 
 constant QUERY=0;
 
-//! Class Internet
-constant C_IN=1;
+//! Resource classes
+enum ResourceClass
+{
+  //! Class Internet
+  C_IN=1,
 
-//! Class CHAOS
-constant C_CH=3;
+  //! Class CSNET (Obsolete)
+  C_CS=2,
 
-//! Class Hesiod
-constant C_HS=4;
+  //! Class CHAOS
+  C_CH=3,
 
-//! Class ANY
-constant C_ANY=255;
+  //! Class Hesiod
+  C_HS=4,
 
-//! Type - host address
-constant T_A=1;
+  //! Class ANY
+  C_ANY=255,
+};
 
-//! Type - authoritative name server
-constant T_NS=2;
+//! Entry types
+enum EntryType
+{
+  //! Type - host address
+  T_A=1,
 
-//! Type - mail destination (Obsolete - use MX)
-constant T_MD=3;
+  //! Type - authoritative name server
+  T_NS=2,
 
-//! Type - mail forwarder (Obsolete - use MX)
-constant T_MF=4;
+  //! Type - mail destination (Obsolete - use MX)
+  T_MD=3,
 
-//! Type - canonical name for an alias
-constant T_CNAME=5;
+  //! Type - mail forwarder (Obsolete - use MX)
+  T_MF=4,
 
-//! Type - start of a zone of authority
-constant T_SOA=6;
+  //! Type - canonical name for an alias
+  T_CNAME=5,
 
-//! Type - mailbox domain name (EXPERIMENTAL)
-constant T_MB=7;
+  //! Type - start of a zone of authority
+  T_SOA=6,
 
-//! Type - mail group member (EXPERIMENTAL)
-constant T_MG=8;
+  //! Type - mailbox domain name (EXPERIMENTAL)
+  T_MB=7,
 
-//! Type - mail rename domain name (EXPERIMENTAL)
-constant T_MR=9;
+  //! Type - mail group member (EXPERIMENTAL)
+  T_MG=8,
 
-//! Type - null RR (EXPERIMENTAL)
-constant T_NULL=10;
+  //! Type - mail rename domain name (EXPERIMENTAL)
+  T_MR=9,
 
-//! Type - well known service description
-constant T_WKS=11;
+  //! Type - null RR (EXPERIMENTAL)
+  T_NULL=10,
 
-//! Type - domain name pointer
-constant T_PTR=12;
+  //! Type - well known service description
+  T_WKS=11,
 
-//! Type - host information
-constant T_HINFO=13;
+  //! Type - domain name pointer
+  T_PTR=12,
 
-//! Type - mailbox or mail list information
-constant T_MINFO=14;
+  //! Type - host information
+  T_HINFO=13,
 
-//! Type - mail exchange
-constant T_MX=15;
+  //! Type - mailbox or mail list information
+  T_MINFO=14,
 
-//! Type - text strings
-constant T_TXT=16;
+  //! Type - mail exchange
+  T_MX=15,
 
-//! Type - IPv6 address record (RFC 1886, deprecated) 
-constant T_AAAA=28;
+  //! Type - text strings
+  T_TXT=16,
 
-//! Type - Service location record (RFC 2782)
-constant T_SRV=33;
+  //! Type - IPv6 address record (RFC 1886, deprecated) 
+  T_AAAA=28,
 
-//! Type - IPv6 address record (RFC 2874, incomplete support)
-constant T_A6=38;
+  //! Type - Service location record (RFC 2782)
+  T_SRV=33,
+
+  //! Type - IPv6 address record (RFC 2874, incomplete support)
+  T_A6=38,
+};
 
 //! Low level DNS protocol
 class protocol
@@ -410,6 +421,7 @@ class protocol
   }
 };
 
+//! Implements a Domain Name Service (DNS) server.
 class server
 {
   inherit protocol;
@@ -429,7 +441,34 @@ class server
     udp::send(m->ip, m->port, s);
   }
 
-  static mapping reply_query(mapping q, mapping m)
+  //! Reply to a query (stub).
+  //!
+  //! @param query
+  //!   Parsed query.
+  //!
+  //! @param udp_data
+  //!   Raw UDP data.
+  //!
+  //! Overload this function to implement the proper lookup.
+  //!
+  //! @returns
+  //!   Returns @tt{0@} (zero) on failure, or a result mapping on success:
+  //!   @mapping
+  //!     @member int "rcode"
+  //!     @member array(mapping(string:string|int))|void "qd"
+  //!       @array
+  //!         @elem mapping(string:string|int) entry
+  //!           @mapping
+  //!             @member string|array(string) "name"
+  //!             @member int "type"
+  //!             @member int "cl"
+  //!           @endmapping
+  //!       @endarray
+  //!     @member array|void "an"
+  //!     @member array|void "ns"
+  //!     @member array|void "ar"
+  //!   @endmapping
+  static mapping reply_query(mapping query, mapping udp_data)
   {
     // Override this function.
     //
