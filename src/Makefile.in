@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.121 1998/10/22 09:12:25 hubbe Exp $
+# $Id: Makefile.in,v 1.122 1998/10/22 15:56:20 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -338,12 +338,12 @@ install: pike hilfe pike-module aclocal
 	else : ; fi
 
 optimize:
-	$(exec_prefix)/pike -m ./dumpmaster.pike $(lib_prefix)/master.pike
+	$(exec_prefix)/pike -m $(SRCDIR)/dumpmaster.pike $(lib_prefix)/master.pike
 	( \
 	  find $(lib_prefix)/modules -type f \( -name '*.pmod' -o -name '*.pike' \) -print  ; \
 	  find $(share_prefix)/modules -type f \( -name '*.pmod' -o -name '*.pike' \) -print \
 	) | \
-	while read file ; do $(exec_prefix)/pike ./dumpmodule.pike $$file ; done
+	while read file ; do $(exec_prefix)/pike $(SRCDIR)/dumpmodule.pike $$file ; done
 
 # tidy up a bit
 tidy:
