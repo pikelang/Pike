@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.103 1998/05/06 00:32:33 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.104 1998/05/07 23:49:36 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -372,7 +372,8 @@ cond([[all_constants()->mktime]],
 
 cond([[all_constants()->localtime && all_constants()->mktime]],
 [[
-  test_any([[ int x=time(); return mktime(localtime(x)) == x;]], 1)
+  test_any([[int x=time(); return mktime(localtime(x)) == x;]], 1)
+  test_any([[int x=time(); for(int y=0;y<100;y++) if(mktime(localtime(x+y)) != x+y) return x+y; return 0;]], 0)
 ]])
 
 cond([[all_constants()->_verify_internals]],
