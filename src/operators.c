@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.63 1999/10/15 21:08:44 noring Exp $");
+RCSID("$Id: operators.c,v 1.64 1999/10/24 14:10:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -79,7 +79,8 @@ COMPARISON(f_ge,"`>=",!is_lt)
  apply_lfun(sp[-args].u.object, OP, args-1); \
  free_svalue(sp-2); \
  sp[-2]=sp[-1]; \
- sp--;
+ sp--; \
+ dmalloc_touch_svalue(sp);
 
 void f_add(INT32 args)
 {
@@ -113,6 +114,7 @@ void f_add(INT32 args)
 	    free_svalue(sp-2);
 	    sp[-2]=sp[-1];
 	    sp--;
+	    dmalloc_touch_svalue(sp);
 	    return;
 	  }
 	}
@@ -604,6 +606,7 @@ static int call_lfun(int left, int right)
     free_svalue(sp-2);
     sp[-2]=sp[-1];
     sp--;
+    dmalloc_touch_svalue(sp);
     return 1;
   }
 
@@ -616,6 +619,7 @@ static int call_lfun(int left, int right)
     free_svalue(sp-3);
     sp[-3]=sp[-1];
     sp--;
+    dmalloc_touch_svalue(sp);
     pop_stack();
     return 1;
   }

@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include <math.h>
 #include <ctype.h>
@@ -24,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.49 1999/10/24 01:08:38 noring Exp $");
+RCSID("$Id: opcodes.c,v 1.50 1999/10/24 14:07:12 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -112,6 +113,7 @@ void o_index(void)
   index_no_free(&s,sp-2,sp-1);
   pop_n_elems(2);
   *sp=s;
+  dmalloc_touch_svalue(sp);
   sp++;
 }
 
@@ -137,6 +139,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
       free_svalue(sp-2);
       sp[-2]=sp[-1];
       sp--;
+      dmalloc_touch_svalue(sp);
     }else
 
     switch(run_time_type)
@@ -154,6 +157,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	  {
 	    f_transpose(1);
 	    sp--;
+	    dmalloc_touch_svalue(sp);
 	    push_array_items(sp->u.array);
 	    f_mkmapping(2);
 	    break;
@@ -578,6 +582,7 @@ void f_cast(void)
   free_svalue(sp-2);
   sp[-2]=sp[-1];
   sp--;
+  dmalloc_touch_svalue(sp);
 }
 
 
