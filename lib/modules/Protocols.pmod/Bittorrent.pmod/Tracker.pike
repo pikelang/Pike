@@ -5,6 +5,9 @@
 //! @expr{1800@}.
 int(0..) interval = 1800;
 
+int(0..) client_life = 1800*2;
+int(0..) torrent_life = 0;
+
 int(1..) default_numwants = 50;
 
 //! Allow clients to dynamically add torrents to the tracker.
@@ -31,6 +34,7 @@ class TorrentInfo {
   mapping(string:Client) clients = ([]);
   array(string) seeds = ({});
   int completed;
+  int poked = time();
 
   int num_seeds() {
     return sizeof(seeds);
@@ -65,6 +69,7 @@ class TorrentInfo {
   }
 
   string compact_peerlist(array peers) {
+    poked = time(1);
     String.Buffer buf = String.Buffer(sizeof(peers)*6);
     foreach(peers, string id) {
       Client c = clients[id];
@@ -77,6 +82,7 @@ class TorrentInfo {
   }
 
   array(mapping(string:string|int)) peerless_peerlist(array peers) {
+    poked = time(1);
     array ret = ({});
     foreach(peers, string id) {
       Client c = clients[id];
@@ -86,6 +92,7 @@ class TorrentInfo {
   }
 
   array(mapping(string:string|int)) peerlist(array peers) {
+    poked = time(1);
     array ret = ({});
     foreach(peers, string id) {
       Client c = clients[id];
@@ -96,7 +103,7 @@ class TorrentInfo {
 
   void gc() {
     foreach(clients; string id; Client c)
-      if( c->poked < time()-interval*2 )
+      if( c->poked < time(1)-client_life )
 	remove_client(id);
   }
 }
@@ -398,11 +405,17 @@ string udp(string msg, string ip) {
 }
 
 
-void clean_torrents() {
-  values(torrents)->gc();
-  call_out(clean_torrents, interval);
+void tracker_gc() {
+  if(torrent_life)
+    foreach(torrents; string id; TorrentInfo t)
+      if(t->poked < time()-torrent_life)
+	m_delete(torrents, id);
+  if(client_life)
+    values(torrents)->gc();
+
+  call_out(tracker_gc, interval);
 }
 
 void create() {
-  call_out(clean_torrents, interval);
+  call_out(tracker_gc, interval);
 }
