@@ -16,7 +16,7 @@
 
 ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))
-#define THIS ((struct pike_mem_searcher *)(Pike_fp->current_storage))
+#define THIS_MSEARCH ((struct pike_mem_searcher *)(Pike_fp->current_storage))
 
 static struct mapping *memsearch_cache;
 struct program *pike_search_program;
@@ -201,9 +201,9 @@ static void f_pike_search(INT32 args)
   }
 
   in=MKPCHARP_STR(s);
-  ret=THIS->mojt.vtab->funcN(THIS->mojt.data,
-			     ADD_PCHARP(in,start),
-			     s->len - start);
+  ret=THIS_MSEARCH->mojt.vtab->funcN(THIS_MSEARCH->mojt.data,
+				     ADD_PCHARP(in,start),
+				     s->len - start);
 
   pop_n_elems(args);
   push_int64( SUBTRACT_PCHARP(in, ret) );  
