@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.65 2001/08/17 22:56:42 js Exp $
+// $Id: MySQL.pike,v 1.66 2001/08/20 20:01:35 js Exp $
 
 inherit .Base;
 
@@ -213,8 +213,17 @@ void insert_words(Standards.URI|string uri, void|string language,
     sync();
 }
 
+void remove_metadata(Standards.URI|string uri, void|string language)
+{
+  int doc_id;
+  if(!intp(uri))
+    doc_id = get_document_id((string)uri, language);
+  db->query("delete from metadata where doc_id = %d", doc_id);
+}
+
+
 void set_metadata(Standards.URI|string uri, void|string language,
-			 mapping(string:string) md)
+		  mapping(string:string) md)
 {
   int doc_id;
   if(!intp(uri))

@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.15 2001/08/16 22:07:16 js Exp $
+// $Id: Base.pmod,v 1.16 2001/08/20 20:01:54 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -69,6 +69,13 @@ void insert_words(Standards.URI|string uri,
 void set_metadata(Standards.URI|string uri,
 		  void|string language,
 		  mapping(string:string) metadata);
+
+//!  Remove all metadata for a document
+//! @param uri
+//!   The URI of the resource whose metadata should be removed.
+//! @param language
+//!   A three letter ISO-639-2 language code, or 0 if the document is language neutral.
+void remove_metadata(Standards.URI|string uri, void|string language);
 
 //! Retrieve a metadata collection for a document.
 //! @param uri
