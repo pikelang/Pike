@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.69 2004/04/09 15:45:39 grubba Exp $
+// $Id: Query.pike,v 1.70 2004/04/09 16:16:13 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -353,6 +353,9 @@ string headers_encode(mapping(string:array(string)|string) h)
 		 value, "\r\n" );
      else if(!value)
        continue;
+     else if (intp(value))
+       buf->add( String.capitalize(replace(name,"_","-")), ": ",
+		 (string)value, "\r\n" );
      else if (arrayp(value)) {
        foreach(value, string value)
 	 buf->add( String.capitalize(replace(name,"_","-")), ": ",
