@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.23 2001/06/25 20:06:48 grubba Exp $
+ * $Id: builtin.cmod,v 1.24 2001/07/11 17:57:22 mast Exp $
  */
 
 #include "global.h"
@@ -554,6 +554,16 @@ PIKECLASS Buffer
     pop_n_elems(args);
     push_text("");
     return;
+  }
+
+  PIKEFUN int _sizeof()
+  /*! @decl int _sizeof()
+   *!
+   *!   Returns the size of the buffer.
+   */
+  {
+    struct Buffer_struct *str = THIS;
+    RETURN str->str.s ? str->str.s->len : 0;
   }
 
   INIT
