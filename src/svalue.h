@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.24 1999/04/07 23:10:11 hubbe Exp $
+ * $Id: svalue.h,v 1.25 1999/04/17 19:46:38 mirar Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -122,6 +122,7 @@ extern char *type_name[];
 #define tFlt "\007"
 #define tFloat "\007"
 #define tInt "\010\200\000\000\000\177\377\377\377"
+#define tInt01 "\010\000\000\000\000\000\000\000\001"
 
 #define tVoid "\020"
 #define tVar(X) #X
