@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.22 2003/01/04 00:36:06 nilsson Exp $
+// $Id: randomness.pmod,v 1.23 2003/01/09 17:43:20 grubba Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -30,7 +30,7 @@ static RandomSource global_arcfour;
 static int(0..1) goodseed;
 
 #ifdef __NT__
-static nt_random_string(int len) {
+static string nt_random_string(int len) {
   object ctx = Crypto.nt.CryptAcquireContext(0, 0, Crypto.nt.PROV_RSA_FULL,
 					     Crypto.nt.CRYPT_VERIFYCONTEXT
 					     /*|Crypto.nt.CRYPT_SILENT*/);
