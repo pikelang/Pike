@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.278 2002/05/09 14:37:45 mast Exp $");
+RCSID("$Id: language.yacc,v 1.279 2002/05/09 15:15:56 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2637,8 +2637,11 @@ cond: TOK_IF
   {
     int i=lex.current_line;
     lex.current_line=$1;
-    $$=mknode('?',$5,mknode(':',$7,$8));
-    $$=mkcastnode(void_type_string, $$);
+    $$ = mknode('?', $5,
+		mknode(':',
+		       mkcastnode(void_type_string, $7),
+		       mkcastnode(void_type_string, $8)));
+    $$ = mkcastnode(void_type_string, $$);
     lex.current_line = i;
     pop_local_variables($<number>2);
     Pike_compiler->compiler_frame->last_block_level=$<number>3;
