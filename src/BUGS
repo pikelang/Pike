@@ -322,4 +322,6 @@ Still to do:
 
 * #define foo bar, and then foo(1) does not work..
 
-* all variables aren't initialized
+* all variables aren't initialized ?
+
+* 'array' does not match 'string *' ? (in function calls)
