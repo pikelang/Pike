@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.186 2000/12/05 21:08:22 per Exp $");
+RCSID("$Id: signal_handler.c,v 1.187 2000/12/06 17:59:54 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -83,6 +83,10 @@ RCSID("$Id: signal_handler.c,v 1.186 2000/12/05 21:08:22 per Exp $");
 #include <sys/poll.h>
 #endif /* HAVE_SYS_POLL_H */
 #endif /* HAVE_POLL */
+
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 #ifdef __amigaos__
 #define timeval amigaos_timeval
@@ -1377,7 +1381,6 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 
 #ifdef HAVE_SETRLIMIT
 #include <sys/time.h>
-#include <sys/resource.h>
 struct plimit
 {
   int resource;
@@ -1696,6 +1699,7 @@ void f_set_priority( INT32 args )
  * FIXME:
  *   Support for setresgid().
  */
+#ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
 static void internal_add_limit( struct perishables *storage, 
                                 char *limit_name,
@@ -1758,6 +1762,7 @@ static void internal_add_limit( struct perishables *storage,
   }
 }
 #endif
+#endif /* __amigaos__ */
 
 void f_create_process(INT32 args)
 {
