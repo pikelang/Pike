@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.470 2004/12/08 15:16:34 mast Exp $
+|| $Id: builtin_functions.c,v 1.471 2004/12/13 19:37:30 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.470 2004/12/08 15:16:34 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.471 2004/12/13 19:37:30 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4155,57 +4155,122 @@ PMOD_EXPORT void f_localtime(INT32 args)
 }
 #endif
 
-#ifdef HAVE_GMTIME
+#if defined (HAVE_GMTIME) || defined (HAVE_LOCALTIME)
 /* Returns the approximate difference in seconds between the
  * two struct tm's.
  */
 static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
 {
-  time_t base = (t1->tm_year - t2->tm_year) * 32140800 +
+  time_t base = (t1->tm_year - t2->tm_year) * 32140800;
+
+  /* Overflow detection. (Should possibly be done on the other fields
+   * too to cope with very large invalid dates.) */
+  if ((t1->tm_year > t2->tm_year) && (base < 0))
+    return 0x7fffffff;
+  if ((t1->tm_year < t2->tm_year) && (base > 0))
+    return -0x7fffffff;
+
+  base +=
     (t1->tm_mon - t2->tm_mon) * 2678400 +
     (t1->tm_mday - t2->tm_mday) * 86400 +
     (t1->tm_hour - t2->tm_hour) * 3600 +
     (t1->tm_min - t2->tm_min) * 60 +
     (t1->tm_sec - t2->tm_sec);
-  if ((t1->tm_year > t2->tm_year) && (base < 0))
-    return 0x7fffffff;
-  if ((t1->tm_year < t2->tm_year) && (base > 0))
-    return -0x7fffffff;
+
   return base;
 }
 
-/* Inverse operation of gmtime().
+typedef struct tm *time_fn (const time_t *);
+
+/* Inverse operation of gmtime or localtime.
  */
-static time_t my_timegm(struct tm *target_tm)
+static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn)
 {
   time_t current_ts = 0;
-  time_t diff_ts;
+  time_t diff_ts, old_diff_ts = 0;
   struct tm *current_tm;
-  int loop_cnt = 0;
+  int loop_cnt, tried_dst_displacement = 0;
 
   /* This loop seems stable, and usually converges in two passes.
    * The loop counter is for paranoia reasons.
    */
-  while((diff_ts = my_tm_diff(target_tm, current_tm = gmtime(&current_ts)))) {
-    current_ts += diff_ts;
-    loop_cnt++;
-    /* fprintf(stderr, "Loop [%d]: %d, %d\n", loop_cnt, current_ts, diff_ts); */
-    if (loop_cnt > 20) {
-      /* Infinite loop? */
-      return -1;
-    }
-  }
-  /* Check that the result tm looks like what we expect... */
-  if ((current_tm->tm_sec == target_tm->tm_sec) &&
-      (current_tm->tm_min == target_tm->tm_min)) {
-    /* Odds are that the rest of the fields are correct (1:3600). */
-    return current_ts;
-  }
-  return -1;
-}
-#endif /* HAVE_GMTIME */
+  for (loop_cnt = 0; loop_cnt < 20; loop_cnt++, old_diff_ts = diff_ts) {
+    diff_ts = my_tm_diff(target_tm, current_tm = timefn(&current_ts));
 
-#ifdef HAVE_MKTIME
+#ifdef DEBUG_MY_TIME_INVERSE
+    fprintf (stderr, "curr: y %d m %d d %d h %d m %d isdst %d\n",
+	     current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
+	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
+    fprintf (stderr, "diff: %d\n", diff_ts);
+#endif
+
+    if (!diff_ts) {
+      /* Got a satisfactory time, but if target_tm has an opinion on
+       * DST we should check if we can return an alternative in the
+       * same DST zone, to cope with the overlapping DST adjustment at
+       * fall. */
+      if (target_tm->tm_isdst >= 0 &&
+	  target_tm->tm_isdst != current_tm->tm_isdst &&
+	  !tried_dst_displacement) {
+	/* Offset the time a day and iterate some more (only once
+	 * more, really), so that we approach the target time from the
+	 * right direction. */
+	if (target_tm->tm_isdst)
+	  current_ts -= 24 * 3600;
+	else
+	  current_ts += 24 * 3600;
+	tried_dst_displacement = 1;
+#ifdef DEBUG_MY_TIME_INVERSE
+	fprintf (stderr, "dst displacement\n");
+#endif
+	continue;
+      }
+      break;
+    }
+
+    if (diff_ts == -old_diff_ts) {
+      /* We're oscillating, which means the time in target_tm is
+       * invalid. mktime(3) maps to the closest "convenient" valid
+       * time in that case, so let's do that too. */
+      if (diff_ts > -24 * 3600 && diff_ts < 24 * 3600) {
+	/* The oscillation is not whole days, so it must be due to the
+	 * DST gap in the spring. Prefer the same DST zone as the
+	 * target tm, if it has one set. */
+	if (target_tm->tm_isdst >= 0) {
+	  if (target_tm->tm_isdst != current_tm->tm_isdst)
+	    current_ts += diff_ts;
+#ifdef DEBUG_MY_TIME_INVERSE
+	  fprintf (stderr, "spring dst gap\n");
+#endif
+	  break;
+	}
+      }
+      /* The oscillation is due to the gap between the 31 day months
+       * used in my_tm_diff and the actual month lengths. In that case
+       * it's correct to always go forward so that e.g. April 31st
+       * maps to May 1st. */
+      if (diff_ts > 0)
+	current_ts += diff_ts;
+#ifdef DEBUG_MY_TIME_INVERSE
+      fprintf (stderr, "end of month gap\n");
+#endif
+      break;
+    }
+
+    current_ts += diff_ts;
+  }
+
+#ifdef DEBUG_MY_TIME_INVERSE
+  fprintf (stderr, "res: y %d m %d d %d h %d m %d isdst %d\n",
+	   current_tm->tm_year, current_tm->tm_mon, current_tm->tm_mday,
+	   current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
+#endif
+  *result = current_ts;
+  return 1;
+}
+#endif /* HAVE_GMTIME || HAVE_LOCALTIME */
+
+#if defined (HAVE_MKTIME) || defined (HAVE_LOCALTIME)
 /*! @decl int mktime(mapping(string:int) tm)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
  *!                  int isdst, int tz)
@@ -4251,7 +4316,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year;
   struct tm date;
-  int retval;
+  time_t retval;
 
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
@@ -4308,13 +4373,15 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #ifdef HAVE_GMTIME
   if ((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
-    /* UTC-relative time. Use my_timegm(). */
-    retval = my_timegm(&date);
-    if (retval == -1)
+    /* UTC-relative time. Use gmtime. */
+    if (!my_time_inverse (&date, &retval, gmtime))
       PIKE_ERROR("mktime", "Time conversion failed.\n", Pike_sp, args);
     retval += Pike_sp[7-args].u.integer;
-  } else {
+  } else
 #endif /* HAVE_GMTIME */
+
+  {
+#ifdef HAVE_MKTIME
 
 #ifdef STRUCT_TM_HAS_GMTOFF
     /* BSD-style */
@@ -4329,7 +4396,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
       /* Pre-adjust for the timezone.
        *
        * Note that pre-adjustment must be done on AIX for dates
-       * near Jan 1, 1970, sine AIX mktime(3) doesn't support
+       * near Jan 1, 1970, since AIX mktime(3) doesn't support
        * negative time.
        */
       date.tm_sec += Pike_sp[7-args].u.integer
@@ -4343,42 +4410,56 @@ PMOD_EXPORT void f_mktime (INT32 args)
 
     retval = mktime(&date);
   
-    if (retval == -1)
-      PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
-
+    if (retval != -1) {
 #if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
-    if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
-    {
-      /* Post-adjust for the timezone.
-       *
-       * Note that tm_gmtoff has the opposite sign of timezone.
-       *
-       * Note also that it must be post-adjusted, since the gmtoff
-       * field is set by mktime(3).
-       */
+      if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+      {
+	/* Post-adjust for the timezone.
+	 *
+	 * Note that tm_gmtoff has the opposite sign of timezone.
+	 *
+	 * Note also that it must be post-adjusted, since the gmtoff
+	 * field is set by mktime(3).
+	 */
 #ifdef STRUCT_TM_HAS_GMTOFF
-      retval += Pike_sp[7-args].u.integer + date.tm_gmtoff;
+	retval += Pike_sp[7-args].u.integer + date.tm_gmtoff;
 #else
-      retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
+	retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
 #endif /* STRUCT_TM_HAS_GMTOFF */
-    }
+      }
 
-    if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
-	(Pike_sp[6-args].u.integer != -1) &&
-	(Pike_sp[6-args].u.integer != date.tm_isdst)) {
-      /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
-      retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
-    }
+      if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
+	  (Pike_sp[6-args].u.integer != -1) &&
+	  (Pike_sp[6-args].u.integer != date.tm_isdst)) {
+	/* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
+#ifdef HAVE_LOCALTIME
+	if (!my_time_inverse (&date, &retval, localtime))
+	  PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
+#else
+	/* Last resort: Assumes a one hour DST. */
+	retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
+#endif
+      }
 #endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
-#ifdef HAVE_GMTIME
+    }
+    else
+#endif	/* HAVE_MKTIME */
+
+    {
+#ifdef HAVE_LOCALTIME
+      /* mktime might fail on dates before 1970 (GNU libc 2.3.2), so
+       * try our own inverse function with localtime. */
+      if (!my_time_inverse (&date, &retval, localtime))
+#endif
+	PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
+    }
   }
-#endif /* HAVE_GMTIME */
 
   pop_n_elems(args);
   push_int(retval);
 }
-
-#endif
+#define GOT_F_MKTIME
+#endif	/* HAVE_MKTIME || HAVE_LOCALTIME */
 
 /* Parse a sprintf/sscanf-style format string */
 static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
@@ -8053,7 +8134,7 @@ void init_builtin_efuns(void)
   ADD_EFUN("gmtime",f_gmtime,tFunc(tInt,tMap(tStr,tInt)),OPT_EXTERNAL_DEPEND);
 #endif
 
-#ifdef HAVE_MKTIME
+#ifdef GOT_F_MKTIME
   
 /* function(int,int,int,int,int,int,int,void|int:int)|function(object|mapping:int) */
   ADD_EFUN("mktime",f_mktime,
