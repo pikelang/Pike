@@ -268,7 +268,7 @@ PIKE_FEATURE_WITHOUT(GTK.GlArea)
 AC_MODULE_INIT()
 
 AC_ARG_WITH(GTK, [  --without-GTK           no support for GTK],[],[with_GTK=yes])
-AC_ARG_WITH(GTK, [  --with-GTK2             Use GTK 2.0 if found GTK],[],[with_GTK2=no])
+AC_ARG_WITH(GTK, [  --with-GTK2             Use GTK 2.0 if found],[],[with_GTK2=no])
 
 AC_CHECK_FUNCS( gethrtime signal sigaction )
 
