@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.34 1998/07/09 01:35:12 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.35 1998/07/19 07:00:08 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -252,7 +252,8 @@ void set_read_callback(int fd,file_callback cb,void *data)
   if(cb)
   {
 #ifdef HAVE_POLL
-    POLL_FD_SET(fd,POLLRDNORM);
+    if(!was_set)
+      POLL_FD_SET(fd,POLLRDNORM);
 #else
     my_FD_SET(fd, &selectors.read);
 #endif
@@ -295,7 +296,8 @@ void set_write_callback(int fd,file_callback cb,void *data)
   if(cb)
   {
 #ifdef HAVE_POLL
-    POLL_FD_SET(fd,POLLOUT);
+    if(!was_set)
+      POLL_FD_SET(fd,POLLOUT);
 #else
     my_FD_SET(fd, &selectors.write);
 #endif
@@ -636,9 +638,9 @@ void backend(void)
     /* FIXME: OOB? */
     i=fd_select(max_fd+1, &rset, &wset, 0, &next_timeout);
 #endif
-    GETTIMEOFDAY(&current_time);
     THREADS_DISALLOW();
     may_need_wakeup=0;
+    GETTIMEOFDAY(&current_time);
 
     if (!i) {
       /* Timeout */
@@ -667,8 +669,20 @@ void backend(void)
 	{
 	  int j;
 	  for(j=0;j<num_in_poll;j++)
+	  {
 	    if(poll_fds[j].fd == fd) /* It's still there... */
-	      fatal("Bad filedescriptor %d to poll().\n", fd);
+	    {
+	      struct pollfd fds;
+	      int ret;
+	      fds.fd=fd;
+	      fds.events=POLLIN;
+	      fds.revents=0;
+	      ret=poll(&fds, 1,1 );
+	      if(fds.revents & POLLNVAL)
+		fatal("Bad filedescriptor %d to poll().\n", fd);
+	      break;
+	    }
+	  }
 #ifdef DEBUG
 	  handled = 1;
 #endif /* DEBUG */
