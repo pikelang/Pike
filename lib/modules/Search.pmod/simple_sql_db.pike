@@ -23,7 +23,7 @@ void create_tables()
 
   db->query(
 #"create table word (word varchar(255),
-                     id int unsigned auto_increment primary key)"
+                     id int unsigned primary key)"
 		     );
 
   db->query(
@@ -49,6 +49,14 @@ mapping(string:int) page_stat(string uri)
 		      "FROM document WHERE uri='%s'", uri);
   if(!sizeof(res)) return 0;
   return (mapping(string:int))res[0];
+}
+
+int hash_word(string word) {
+  string hashed=Crypto.md5()->update(word[..254])->digest();
+  return hashed[0]*16777216 +  // 2^24
+    hashed[1]*65536 +  // 2^16
+    hashed[2]*256 +  // 2^8
+    hashed[3];
 }
 
 // Insert or update a page in the database.
@@ -91,18 +99,14 @@ void insert_page(string uri, string title, string description, int last_changed,
   foreach(words, mapping word)
   {
     int word_id;
-    string the_word=word->word[..254];
-    if(!(word_id=word_ids[the_word]))
-    {
-      if(catch( word_id=(int)(db->query(sprintf("SELECT id FROM word WHERE word='%s'",
-						the_word))[0]->id)))
-      {
-	db->query(sprintf("INSERT INTO word (word) VALUES ('%s')",
-			  db->quote(the_word))); // VARCHAR(255)
-	word_id=(int)(db->query(sprintf("SELECT id FROM word WHERE word='%s'",
-					db->quote(the_word)))[0]->id); //FIXME
-      }
+    string the_word=word->word;
+    if(!(word_id=word_ids[the_word])) {
+      word_id=hash_word(the_word);
       word_ids[the_word]=word_id;
+      array res = db->query("SELECT word FROM word WHERE id="+word_id);
+      if(!sizeof(res))
+	db->query(sprintf("INSERT INTO word (id,word) VALUES (%d,'%s')",
+			  word_id, db->quote(the_word)));
     }
     db->query(sprintf("INSERT INTO occurance (word_id, document_id, word_position, "
 	      "ranking) VALUES (%d, %d, %d, %d)", word_id, doc_id,
@@ -125,15 +129,14 @@ void remove_page(string uri)
 void garbage_collect()
 {
   removed=0;
-  
-  for(int word_id = db->query("SELECT MAX(id) FROM word")[0]["MAX(id)"];
-      word_id;
-      word_id--)
-  {
-    int existence = sizeof(db->query("SELECT COUNT(id) FROM "
-				     "occurance WHERE word_id=%d",
-				     word_id));
-    if(!existence) db->query("REMOVE FROM word WHERE word_id=%d", word_id);
+
+  array ids;
+  if( catch( ids = db->query("SELECT id FROM word")->id ))
+    return;
+
+  foreach(ids, string id) {
+    int existence = sizeof(db->query("SELECT id FROM occurance WHERE word_id="+id+" LIMIT 1"));
+    if(!existence) db->query("REMOVE FROM word WHERE word_id="+id);
   }
 
   db->query("OPTIMIZE TABLE word");
@@ -141,15 +144,45 @@ void garbage_collect()
   db->query("OPTIMIZE TABLE document");
 }
 
-array search_word(string word) {
-  array temp=db->query("SELECT id FROM word WHERE word='%s'", word[..254]);
-  if(!sizeof(temp)) return 0;
-  int word_id=temp[0]->id;
-
-  array documents=db->query("SELECT * FROM occurance WHERE word_id=%d", word_id);
+array lookup_word(string word) {
+  array documents=db->query("SELECT * FROM occurance WHERE word_id=%d",
+			    hash_word(word));
   if(sizeof(documents)) return 0;
 
   //  sort(documents->ranking_type, documents);
 
   return documents;
+}
+
+array lookup_words_or(array(string) words) {
+  string sql="SELECT * FROM occurence WHERE ";
+  words=map(words, lambda(string in) {
+		   return "word_id="+hash_word(in);
+		 } );
+  sql += words*" && ";
+
+  array documents=db->query(sql);
+  if(sizeof(documents)) return 0;
+
+  //  sort(documents->ranking_type, documents);
+
+  return documents;
+}
+
+array lookup_words_and(array(string) words) {
+
+  array first_result=({});
+  array rest_results=({});
+  first_result = lookup_word(words[0]);
+  foreach(words[1..], string word) {
+    rest_results += ({ lookup_word(word) });
+    if(rest_results[-1]==({ 0 }))
+      return 0;
+    rest_results[-1]=(multiset)rest_results[-1]->uri;
+  }
+  array results=({});
+  foreach(first_result, mapping hit)
+    if(!has_value(rest_results[hit->uri], 0))
+      results += ({ hit });
+  return results;
 }
