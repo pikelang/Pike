@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.261 2001/06/20 22:28:54 grubba Exp $
+# $Id: Makefile.in,v 1.262 2001/06/21 22:47:59 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -154,6 +154,7 @@ OBJ= \
 MODULE_REQUIREMENTS= \
   machine.h \
   global.h \
+  precompile.sh-stamp \
   modules/static_module_makefile \
   modules/dynamic_module_makefile \
   $(SRCDIR)/language.h \
@@ -715,15 +716,6 @@ $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 	touch $(SRCDIR)/language.c
-
-#
-# This rule makes sure that builtin.c is created in the source dir.
-#
-$(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-
-$(SRCDIR)/iterators.c: $(SRCDIR)/iterators.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-
-$(SRCDIR)/backend.c: $(SRCDIR)/backend.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c
