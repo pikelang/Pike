@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.20 1999/07/26 19:25:53 grubba Exp $
+ * $Id: parser.pike,v 1.21 1999/09/17 23:57:34 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.20 1999/07/26 19:25:53 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.21 1999/09/17 23:57:34 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -99,6 +99,10 @@ class kernel {
   //. + closure_set
   //.   The symbols that closure has been called on.
   multiset closure_set = (<>);
+
+  //. + error
+  //.   Error code
+  int error=0;
 
   /*
    * Functions
