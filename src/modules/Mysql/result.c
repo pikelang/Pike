@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.12 1998/07/04 16:58:51 grubba Exp $
+ * $Id: result.c,v 1.13 1998/09/01 17:01:06 hubbe Exp $
  *
  * mysql query result
  *
@@ -17,6 +17,9 @@
 /*
  * Includes
  */
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
 
 /* From the mysql-dist */
 /* Workaround for versions prior to 3.20.0 not beeing protected for
@@ -80,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.12 1998/07/04 16:58:51 grubba Exp $");
+RCSID("$Id: result.c,v 1.13 1998/09/01 17:01:06 hubbe Exp $");
 
 struct program *mysql_result_program = NULL;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.5 1998/02/08 15:27:10 grubba Exp $
+ * $Id: precompiled_mysql.h,v 1.6 1998/09/01 17:01:05 hubbe Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -16,6 +16,10 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
 
 /* From the mysql-dist */
 /* Workaround for versions prior to 3.20.0 not beeing protected against

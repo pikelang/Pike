@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.4 1998/07/02 15:08:26 grubba Exp $
+# $Id: configure.in,v 1.5 1998/09/01 17:01:04 hubbe Exp $
 #
 # Configure script for the mysql-module
 #
@@ -71,7 +71,7 @@ if test x$with_mysql = xyes; then
 
   # Header file
 
-  AC_CHECK_HEADERS(mysql.h mysql/mysql.h)
+  AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h)
 
   # Mysql libs
 
@@ -146,15 +146,50 @@ if test x$with_mysql = xyes; then
   # Try a couple of mysqlclient libs
   # in order of age, newest first.
 
-  AC_CHECK_LIB(mysqlclient, mysql_connect, [
+define([AC_CHECK_SQLLIB],
+[
+AC_MSG_CHECKING(for mysql_connect in $1)
+AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_connect,
+[
+  ac_save_LIBS="$LIBS"
+LIBS="-l$1 $LIBS"
+  AC_TRY_LINK(
+[
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+],[
+  mysql_connect(0,0,0,0);
+],ac_cv_pike_lib_$1_mysql_connect=yes,ac_cv_pike_lib_$1_mysql_connect=no)
+LIBS="$ac_save_LIBS"
+])
+
+if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
+  AC_MSG_RESULT(yes)
+  $2
+else
+  AC_MSG_RESULT(no)
+  $3
+fi
+])
+
+  AC_CHECK_SQLLIB(mysqlclient, [
     LIBS="-lmysqlclient $LIBS"
     MYSQL_LIBS="-lmysqlclient ${MYSQL_LIBS}"
   ], [ 
-    AC_CHECK_LIB(mysqllib, mysql_connect, [
+    AC_CHECK_SQLLIB(mysqllib, [
       LIBS="-lmysqllib $LIBS"
       MYSQL_LIBS="-lmysqllib ${MYSQL_LIBS}"
     ], [
-      AC_CHECK_LIB(mysql, mysql_connect, [
+      AC_CHECK_SQLLIB(mysql, [
 	LIBS="-lmysql $LIBS"
 	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
       ], [ pike_cv_mysql="no" ])

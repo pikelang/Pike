@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.23 1998/07/04 16:59:32 grubba Exp $
+ * $Id: mysql.c,v 1.24 1998/09/01 17:01:04 hubbe Exp $
  *
  * SQL database functionality for Pike
  *
@@ -18,6 +18,10 @@
 /*
  * Includes
  */
+
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
 
 /* From the mysql-dist */
 /* Workaround for versions prior to 3.20.0 not beeing protected for
@@ -75,7 +79,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.23 1998/07/04 16:59:32 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.24 1998/09/01 17:01:04 hubbe Exp $");
 
 /*
 **! module Mysql
@@ -87,7 +91,7 @@ RCSID("$Id: mysql.c,v 1.23 1998/07/04 16:59:32 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.23 1998/07/04 16:59:32 grubba Exp $
+**!	$Id: mysql.c,v 1.24 1998/09/01 17:01:04 hubbe Exp $
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables
