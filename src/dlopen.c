@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.8 2001/01/18 02:19:24 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.9 2001/01/18 12:58:45 grubba Exp $");
 
 #endif
 
@@ -779,9 +779,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
   if(!ret->memory)
   {
     static char buf[300];
-    sprintf(buf,"Failed to allocate %d bytes RWX-memory.\n",ret->memsize);
+    sprintf(buf, "Failed to allocate %d bytes RWX-memory.", ret->memsize);
 #ifdef DLDEBUG
-    fprintf(stderr,buf);
+    fprintf(stderr, "%s\n", buf);
 #endif
     dlerr=buf;
     return -1;
