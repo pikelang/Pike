@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.78 2000/03/27 10:43:56 grubba Exp $
+// $Id: module.pmod,v 1.79 2000/03/27 12:28:07 grubba Exp $
 
 import String;
 
@@ -845,7 +845,7 @@ int mkdirhier (string dir, void|int mode)
 int recursive_rm (string path)
 {
   int res = 1;
-  if ( file_stat( path+"/"+name, 1 )[1] == -2 )
+  if ( file_stat( path, 1 )[1] == -2 )
     if (array(string) sub = get_dir (path))
       foreach( sub, string name )
         if (!recursive_rm (path + "/" + name)) 
