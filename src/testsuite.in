@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.571 2002/11/28 20:11:43 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.572 2002/11/28 22:04:36 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7800,8 +7800,12 @@ test_eq(1,call_function(lambda(int a){ return a; },1))
 test_eq(1,call_function(intp,1))
 
 // - new/clone
-test_true(objectp(new(compile_string("int foo() { return 17; }"))))
-test_eq(new(compile_string("int foo() { return 17; }"))->foo(),17)
+test_true([[
+#pike 7.2
+objectp(new(compile_string("int foo() { return 17; }"))) ]])
+test_eq([[
+#pike 7.2
+new(compile_string("int foo() { return 17; }"))->foo() ]],17)
 test_true([[
 #pike 7.2
 objectp(clone(compile_string("int foo() { return 17; }"))) ]])
@@ -7933,11 +7937,16 @@ test_any([[
 // - crypt
 test_true(stringp(crypt("hej")))
 test_true(crypt("hej",crypt("hej")))
+test_true(crypt("hej","Oz5i0K.16qkgA"))
+test_true(crypt("hej","buf8/Z7taE6qs"))
+test_true(crypt("123456789", crypt("123456780")))
 test_false(crypt("hej","hej"))
 test_false(crypt("h","hej"))
+test_false(crypt("hej","buf8/Z7taE6qst"))
+test_false(crypt("hej","buf8/Z7taE6q"))
 
 // - ctime
-test_true(stringp(ctime(0)))
+test_eq(ctime(0),"Thu Jan  1 01:00:00 1970\n")
 
 // - destruct
 test_do(add_constant("PROG",compile_string("int foo() { return 1; }")));
