@@ -562,14 +562,27 @@ class YMD
       return format_nice()+" "+tzname();
    }
 
+   string tzname_utc_offset()
+   {
+      int u=utc_offset();
+      return sprintf("%+03d%02d", -u/3600, abs(u)/60%60);
+   }
+
    string format_smtp()
    {
       if (m==CALUNKNOWN) make_month();
-      int u=utc_offset();
-      return sprintf("%s, %s %s %s 00:00:00 %+03d%02d",
+      return sprintf("%s, %s %s %s 00:00:00 %s",
 		     week_day_shortname(),
 		     month_day_name(),month_shortname(),year_name(),
-		     -u/3600,max(u,-u)/60%60);
+		     tzname_utc_offset());
+   }
+
+   string format_commonlog()
+   {
+      if (m==CALUNKNOWN) make_month();
+      return sprintf("%02d/%s/%d:%s %s",
+		     month_day(), month_shortname(), year_no(), format_tod(),
+		     tzname_utc_offset());
    }
 
    string format_elapsed()

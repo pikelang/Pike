@@ -741,6 +741,7 @@ class TimeofDay
 //!     nice           "2 Jun 20:53", "2 Jun 2000 20:53:14" [2][5]
 //!     nicez          "2 Jun 20:53 CET" [2][5]
 //!     smtp           "Fri, 2 Jun 2000 20:53:14 +0100" [6]
+//!     commonlog      "02/Jun/2000:20:53:14 +0100" [2]
 //!	</pre>
 //!	<tt>[1]</tt> note conflict (think 1 February 2003)
 //!	<br><tt>[2]</tt> language dependent
@@ -822,6 +823,13 @@ class TimeofDay
 
       return replace(base->format_http(),
 		     "00:00:00",format_tod());
+   }
+
+   string format_commonlog()
+   {
+      if (!base) make_base();
+      return replace(base->format_commonlog(),
+		     "00:00:00 ",format_tod()+" ");
    }
 
    string format_tod()
@@ -948,8 +956,19 @@ class TimeofDay
 	 :sprintf("UTC-%d:%02d:%02d",u/3600,(u/60)%60,u%60);
    }
 
+   string tzname_utc_offset()
+   {
+      int u=utc_offset();
+      return sprintf("%+03d%02d", -u/3600, abs(u)/60%60);
+   }
 
-   
+   string tzname_location()
+   {
+      string location = rules->timezone->zoneid;
+      if (location || tzn) return location || tzn;
+      return [utco,tzn]=rules->timezone->tz_ux(ux), tzn;
+   }
+
 // -----------------------------------------------------------------
 
    TimeRange place(TimeRange what,void|int force)
