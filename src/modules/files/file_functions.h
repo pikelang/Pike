@@ -55,4 +55,14 @@
   FILE_FUNC("trylock",file_trylock,"function(void|int:object)")
 #endif
 
+#if defined(WITH_TERMIOS) && defined(HAVE_TERMIOS_H)
+   FILE_FUNC("tcgetattr",file_tcgetattr,"function(void:mapping)")
+   FILE_FUNC("tcsetattr",file_tcsetattr,"function(mapping,void|string:int)")
+/*    FILE_FUNC("tcsendbreak",file_tcsendbreak,"function(int:int)") */
+/*    FILE_FUNC("tcdrain",file_tcdrain,"function(void:int)") */
+/*    FILE_FUNC("tcflow",file_tcflow,"function(string:int)") */
+/*    FILE_FUNC("tcgetpgrp",file_tcgetpgrp,"function(void:int)") */
+/*    FILE_FUNC("tcsetpgrp",file_tcsetpgrp,"function(int:int)") */
+#endif
+
 #undef FILE_FUNC

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.10 1998/08/06 23:37:20 grubba Exp $
+ * $Id: acconfig.h,v 1.11 1998/12/17 00:48:24 mirar Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -52,6 +52,9 @@
 
 /* Number of args to mkdir() */
 #define MKDIR_ARGS 2
+
+/* With termios */
+#undef WITH_TERMIOS 
 
 #endif
 

@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.6 1998/03/28 14:00:45 grubba Exp $
+# $Id: Makefile.in,v 1.7 1998/12/17 00:48:22 mirar Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=file.o efuns.o socket.o
+OBJS=file.o efuns.o socket.o termios.o
 MODULE_LDFLAGS=@LIBS@
 MODULE_TESTS=local_tests
 
