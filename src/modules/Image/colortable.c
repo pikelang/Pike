@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.4 1997/10/12 21:12:31 mirar Exp $ */
+/* $Id: colortable.c,v 1.5 1997/10/15 00:40:32 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.4 1997/10/12 21:12:31 mirar Exp $<br>
+**!	$Id: colortable.c,v 1.5 1997/10/15 00:40:32 mirar Exp $<br>
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -46,7 +46,15 @@ typedef unsigned long nct_weight_t;
 #define WEIGHT_NEEDED (nct_weight_t)(0x10000000)
 #define WEIGHT_REMOVE (nct_weight_t)(0x10000001)
 
-#define COLORLOOKUPCACHESIZE 5
+#define COLORLOOKUPCACHEHASHSIZE 207
+#define COLORLOOKUPCACHEHASHR 7
+#define COLORLOOKUPCACHEHASHG 17
+#define COLORLOOKUPCACHEHASHB 1
+#define COLORLOOKUPCACHEHASHVALUE(r,g,b) \
+               (((COLORLOOKUPCACHEHASHR*(int)(r))+ \
+		 (COLORLOOKUPCACHEHASHG*(int)(g))+ \
+		 (COLORLOOKUPCACHEHASHB*(int)(b)))% \
+		COLORLOOKUPCACHEHASHSIZE) 
 
 #define SQ(x) ((x)*(x))
 static INLINE int sq(int x) { return x*x; }
@@ -63,9 +71,10 @@ struct nct_scale
    struct nct_scale *next;
    rgb_group low,high;
    rgbl_group vector; /* high-low */
-   INT32 sqvector; /* |vector|² */
+   float invsqvector; /* |vector|² */
    INT32 realsteps;
    int steps;
+   float mqsteps;     /* 1.0/(steps-1) */
    int no[1];  /* actually no[steps] */
 };
 
@@ -100,12 +109,12 @@ struct neo_colortable
       } cube;
    } u;
 
-   struct lookupcachenode
+   struct lookupcache
    {
-      unsigned long rgb_as_long;
-      rgb_group rgb;
-   } lookupcache[COLORLOOKUPCACHESIZE]; /* about 5 is optimal */
-   int cacheslotsused;
+      rgb_group src;
+      rgb_group dest;
+      int index;
+   } lookupcachehash[COLORLOOKUPCACHEHASHSIZE];
 
    union /* of pointers!! */
    {
@@ -182,10 +191,13 @@ static void free_colortable_struct(struct neo_colortable *nct)
 
 static void init_colortable_struct(struct object *o)
 {
+   int i;
    THIS->type=NCT_NONE;
    THIS->lookup_mode=NCT_CUBICLES;
    THIS->lu.tree=NULL;
-   THIS->cacheslotsused=0;
+   
+   for (i=0; i<COLORLOOKUPCACHEHASHSIZE; i++)
+      THIS->lookupcachehash[i].index=-1;
 }
 
 static void exit_colortable_struct(struct object *obj)
@@ -195,11 +207,38 @@ static void exit_colortable_struct(struct object *obj)
 
 /***************** internal stuff ******************************/
 
+#if 1
+#include <sys/resource.h>
+#define CHRONO(X) chrono(X);
+
+static void chrono(char *x)
+{
+   struct rusage r;
+   static struct rusage rold;
+   getrusage(RUSAGE_SELF,&r);
+   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
+	   r.ru_utime.tv_sec,r.ru_utime.tv_usec,
+
+	   ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
+	   +r.ru_utime.tv_sec-rold.ru_utime.tv_sec,
+           ((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
+           + r.ru_utime.tv_usec-rold.ru_utime.tv_usec
+	   );
+
+   rold=r;
+}
+#else
+#define CHRONO(X)
+#endif
+
 static void _img_copy_colortable(struct neo_colortable *dest,
 				 struct neo_colortable *src)
 {
-   struct nct_scale *s,*d;
-   dest->cacheslotsused=0;
+   struct nct_scale *s,*d,**np;
+   int i;
+   for (i=0; i<COLORLOOKUPCACHEHASHSIZE; i++)
+      dest->lookupcachehash[i].index=-1;
+
    dest->lookup_mode=src->lookup_mode;
    dest->lu.tree=NULL;
    switch (src->type)
@@ -219,14 +258,16 @@ static void _img_copy_colortable(struct neo_colortable *dest,
       case NCT_CUBE:
          *dest=*src;
 	 dest->u.cube.firstscale=NULL;
+	 np=&(dest->u.cube.firstscale);
 	 s=src->u.cube.firstscale;
 	 while (s)
 	 {
 	    d=(struct nct_scale*)
 	       xalloc(sizeof(struct nct_scale)+s->steps*sizeof(int));
 	    memcpy(d,s,sizeof(struct nct_scale)+s->steps*sizeof(int));
-	    d->next=dest->u.cube.firstscale;
-	    dest->u.cube.firstscale=d;
+	    d->next=NULL;
+	    *np=d;
+	    np=&(d->next); /* don't change order */
 	    s=s->next;
 	 }
          return; /* done */
@@ -815,9 +856,9 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       b.g=((INT32)rgb.g)-s->low.g;
       b.b=((INT32)rgb.b)-s->low.b;
 
-      n=(s->steps*(b.r*s->vector.r+
-		   b.g*s->vector.g+
-		   b.b*s->vector.b))/s->sqvector;
+      n=(int)((s->steps*(b.r*s->vector.r+
+			 b.g*s->vector.g+
+			 b.b*s->vector.b))*s->invsqvector);
 
       if (n<0) n=0; else if (n>=s->steps) n=s->steps-1;
 
@@ -845,7 +886,7 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
 static struct nct_cube _img_get_cube_from_args(INT32 args)
 {
    struct nct_cube cube;
-   struct nct_scale *s;
+   struct nct_scale *s,**np;
    int no,i;
    int osteps,o2steps;
    
@@ -875,6 +916,7 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
    ap=3;
 
    cube.firstscale=NULL;
+   np=&(cube.firstscale);
 
    while (args>=ap+3)
    {
@@ -958,9 +1000,10 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       s->vector.r=high.r-(INT32)low.r;
       s->vector.g=high.g-(INT32)low.g;
       s->vector.b=high.b-(INT32)low.b;
-      s->sqvector=SQ(s->vector.r)+SQ(s->vector.g)+SQ(s->vector.b);
+      s->invsqvector=1.0/(SQ(s->vector.r)+SQ(s->vector.g)+SQ(s->vector.b));
       s->steps=steps;
       s->realsteps=isteps;
+      s->mqsteps=1.0/(steps-1);
 
 #ifdef COLORTABLE_DEBUG
       fprintf(stderr,"COLORTABLE %d steps, %d live, trig=%d\n",s->steps,s->realsteps,cube.disttrig);
@@ -987,15 +1030,16 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
 	    s->no[i]=dummyno;
       }
       
-      s->next=cube.firstscale;
-      cube.firstscale=s;
+      *np=s;
+      s->next=NULL;
+      np=&(s->next);
    }
    cube.numentries=no;
 
    return cube;
 }
 
-static struct nct_flat _img_colortable_cube_to_flat(struct nct_cube cube)
+static struct nct_flat _img_nct_cube_to_flat(struct nct_cube cube)
 {
    struct nct_flat flat;
    int no;
@@ -1066,15 +1110,18 @@ static void _img_add_colortable(struct neo_colortable *rdest,
       return;
    }
 
+   for (i=0; i<COLORLOOKUPCACHEHASHSIZE; i++)
+      dest->lookupcachehash[i].index=-1;
+
    if (src->type==NCT_CUBE)
    {
-      tmp1.u.flat=_img_colortable_cube_to_flat(src->u.cube);
+      tmp1.u.flat=_img_nct_cube_to_flat(src->u.cube);
       tmp1.type=NCT_FLAT;
       src=&tmp1;
    }
    if (dest->type==NCT_CUBE)
    {
-      tmp2.u.flat=_img_colortable_cube_to_flat(dest->u.cube);
+      tmp2.u.flat=_img_nct_cube_to_flat(dest->u.cube);
       tmp2.type=NCT_FLAT;
       dest=&tmp2;
    }
@@ -1245,15 +1292,18 @@ static void _img_sub_colortable(struct neo_colortable *rdest,
       return;
    }
 
+   for (i=0; i<COLORLOOKUPCACHEHASHSIZE; i++)
+      dest->lookupcachehash[i].index=-1;
+
    if (src->type==NCT_CUBE)
    {
-      tmp1.u.flat=_img_colortable_cube_to_flat(src->u.cube);
+      tmp1.u.flat=_img_nct_cube_to_flat(src->u.cube);
       tmp1.type=NCT_FLAT;
       src=&tmp1;
    }
    if (dest->type==NCT_CUBE)
    {
-      tmp2.u.flat=_img_colortable_cube_to_flat(dest->u.cube);
+      tmp2.u.flat=_img_nct_cube_to_flat(dest->u.cube);
       tmp2.type=NCT_FLAT;
       dest=&tmp2;
    }
@@ -1623,7 +1673,7 @@ void image_colortable_reduce(INT32 args)
       case NCT_NONE: pop_n_elems(args); push_object(o); return;
       case NCT_CUBE:
          nct->type=NCT_FLAT;
-         nct->u.flat=_img_colortable_cube_to_flat(THIS->u.cube);
+         nct->u.flat=_img_nct_cube_to_flat(THIS->u.cube);
 	 break;
       case NCT_FLAT:
          _img_copy_colortable(nct,THIS);
@@ -1737,7 +1787,7 @@ void image_colortable_cast_to_array(INT32 args)
    }
 
    if (THIS->type==NCT_CUBE)
-      flat=_img_colortable_cube_to_flat(THIS->u.cube);
+      flat=_img_nct_cube_to_flat(THIS->u.cube);
    else
       flat=THIS->u.flat;
 
@@ -1888,32 +1938,204 @@ void image_colortable_cubicles(INT32 args)
 
 /*
 **! method object map(object image)
+**! method object `*(object image)
+**! method object ``*(object image)
 **!	Map colors in an image object to the colors in 
 **!     the colortable, and creates a new image with the
 **!     closest colors. 
 **!
 **! returns a new image object
 **!
-**! arg int r
-**! arg int g
-**! arg int b
-**!     Size, ie how much the colorspace is divided.
-**!     Note that the size of each cubicle is at least about 8b,
-**!     and that it takes time to calculate them. The number of
-**!     cubicles are <tt>r*g*b</tt>, and default is r=18, g=20, b=12,
-**!     ie 4320 cubicles.
-**!
 **! note
-**!     this method doesn't figure out the cubicles, this is 
-**!     done on the first use of the colortable
+**!     Flat (not cube) and not '<ref>full</ref>' method: 
+**!     this method does figure out the data needed for
+**!	the lookup method, which may take time the first
+**!	use of the colortable - the second use is quicker.
 **!
-**!     Not applicable to colorcube types of colortable.
+**! see also
+**!     cubicle, tree, full
 **/
 
+static void _img_nct_map_to_cube(rgb_group *s,
+				 rgb_group *d,
+				 int n,
+				 struct neo_colortable *nct)
+{
+   int red,green,blue;
+   int hred,hgreen,hblue;
+   int redm,greenm,bluem;
+   float redf,greenf,bluef;
+   struct nct_cube *cube=&(nct->u.cube);
+
+   red=cube->r; 	hred=red/2;      redm=red-1;
+   green=cube->g;	hgreen=green/2;  greenm=green-1;
+   blue=cube->b; 	hblue=blue/2;    bluem=blue-1;
+
+   redf=255.0/redm;
+   greenf=255.0/greenm;
+   bluef=255.0/bluem;
+
+   if (!cube->firstscale && red && green && blue)
+   {
+      while (n--)
+      {
+	 d->r=((int)(((s->r*red+hred)>>8)*redf));
+	 d->g=((int)(((s->g*green+hgreen)>>8)*greenf));
+	 d->b=((int)(((s->b*blue+hblue)>>8)*bluef));
+	 
+	 d++;
+	 s++;
+      }
+   }
+   else
+   {
+      while (n--) /* similar to _find_cube_dist() */
+      {
+	 struct nct_scale *sc;
+	 int mindist;
+	 int i;
+	 char *n;
+	 int nc;
+	 int rgbr,rgbg,rgbb;
+	 int drgbr,drgbg,drgbb;
+	 struct lookupcache *lc;
+	 rgbr=s->r;
+	 rgbg=s->g;
+	 rgbb=s->b;
+
+	 lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
+	 if (lc->index!=-1 &&
+	     lc->src.r==rgbr &&
+	     lc->src.g==rgbg &&
+	     lc->src.b==rgbb)
+	 {
+	    *(d++)=lc->dest;
+	    s++;
+	    continue;
+	 }
+
+	 lc->src=*s;
+
+	 if (red && green && blue)
+	 {
+	    lc->dest.r=d->r=((int)(((rgbr*red+hred)>>8)*redf));
+	    lc->dest.g=d->g=((int)(((rgbg*green+hgreen)>>8)*greenf));
+	    lc->dest.b=d->b=((int)(((rgbb*blue+hblue)>>8)*bluef));
+
+	    i=((rgbr*red+hred)>>8)+
+	       ((rgbg*green+hgreen)>>8)*red+
+	       ((rgbb*blue+hblue)>>8)*red*green;
+
+	    mindist=SQ(rgbr-d->r)+SQ(rgbg-d->g)+SQ(rgbb-d->b);
+	 }
+	 else
+	 {
+	    mindist=10000000;
+	    i=0;
+	 }
+
+	 if (mindist>=cube->disttrig)
+	 {
+	    /* check scales to get better distance if possible */
+
+	    nc=cube->r*cube->g*cube->b;
+	    sc=cube->firstscale;
+	    while (sc)
+	    {
+	       /* what step is closest? project... */
+
+	       i=(int)
+		  (( sc->steps *
+		     ( ((int)rgbr-sc->low.r)*sc->vector.r +
+		       ((int)rgbg-sc->low.g)*sc->vector.g +
+		       ((int)rgbb-sc->low.b)*sc->vector.b ) ) *
+		   sc->invsqvector);
+
+	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;
+	       if (sc->no[i]>=nc) 
+	       {
+		  float f=i*sc->mqsteps;
+		  int drgbr=sc->low.r+(int)(sc->vector.r*f);
+		  int drgbg=sc->low.g+(int)(sc->vector.g*f);
+		  int drgbb=sc->low.b+(int)(sc->vector.b*f);
+
+		  int ldist=SQ(rgbr-drgbr)+SQ(rgbg-drgbg)+SQ(rgbb-drgbb);
+
+	       
+		  if (ldist<mindist)
+		  {
+		     lc->dest.r=d->r=(unsigned char)drgbr;
+		     lc->dest.g=d->g=(unsigned char)drgbg;
+		     lc->dest.b=d->b=(unsigned char)drgbb;
+		     lc->index=i;
+		     mindist=ldist;
+		  }
+	       }
+	    
+	       nc+=sc->realsteps;
+	    
+	       sc=sc->next;
+	    }
+	 }
+	 
+	 d++;
+	 s++;
+      }
+   }
+}
+
+static void _img_nct_map_to_flat(rgb_group *s,
+				 rgb_group *d,
+				 int n,
+				 struct neo_colortable *nct)
+{
+   error("colortable->map(): map to flat not implemented\n");
+}
 
 void image_colortable_map(INT32 args)
 {
-   
+   struct image *src;
+   struct image *dest;
+   struct object *o;
+
+   if (args<1)
+      error("too few arguments to colortable->map()\n");
+   if (sp[-args].type!=T_OBJECT ||
+       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("illegal argument 1 to colortable->map(), expecting image object\n");
+
+   if (!src->img) 
+      error("colortable->map(): source image is empty\n");
+
+   o=clone_object(image_program,0);
+   dest=(struct image*)(o->storage);
+   *dest=*src;
+
+   dest->img=malloc(sizeof(rgb_group)*src->xsize*src->ysize +1);
+   if (!dest->img)
+   {
+      free_object(o);
+      error("colortable->map(): out of memory\n");
+   }
+
+   switch (THIS->type)
+   {
+      case NCT_CUBE:
+	 _img_nct_map_to_cube(src->img,dest->img,
+			      src->xsize*src->ysize,THIS);
+	 pop_n_elems(args);
+	 push_object(o);
+	 return;
+      case NCT_FLAT:
+	 _img_nct_map_to_flat(src->img,dest->img,
+			      src->xsize*src->ysize,THIS);
+	 pop_n_elems(args);
+	 push_object(o);
+	 return;
+      default:
+	 free_object(o);
+	 error("colortable->map(): called colortable is not initiated\n");
+   }
 }
 
 /***************** global init etc *****************************/
@@ -1922,7 +2144,7 @@ void image_colortable_map(INT32 args)
 void init_colortable_programs(void)
 {
    start_new_program();
-   add_storage(sizeof(struct colortable*));
+   add_storage(sizeof(struct neo_colortable));
 
    set_init_callback(init_colortable_struct);
 
@@ -1944,7 +2166,7 @@ void init_colortable_programs(void)
    /* operators */
    add_function("`+",image_colortable_operator_plus,
 		"function(object:object)",0);
-   add_function("`-",image_colortable_operator_minus,
+   add_function("``+",image_colortable_operator_plus,
 		"function(object:object)",0);
 
    /* cast to array */
@@ -1961,6 +2183,10 @@ void init_colortable_programs(void)
 
    /* map image */
    add_function("map",image_colortable_map,
+		"function(object:object)",0);
+   add_function("`*",image_colortable_map,
+		"function(object:object)",0);
+   add_function("``*",image_colortable_map,
 		"function(object:object)",0);
 
    set_exit_callback(exit_colortable_struct);
