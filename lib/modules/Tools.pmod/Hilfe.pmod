@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.35 2002/02/28 02:38:00 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.36 2002/03/02 16:42:57 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -355,8 +355,8 @@ dump wrapper
 
     void|string `()(int|Evaluator e, void|string line, void|array(string) tokens) {
       if(!e) return "Dump variables and other info.";
-      write = e->write;
       if(e==1) return help();
+      write = e->write;
 
       line = tokens[2..sizeof(tokens)-2]*"";
       switch( line ) {
