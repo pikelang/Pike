@@ -61,6 +61,7 @@ void pgtk_return_this( int n );
 void push_atom( GdkAtom a );
 
 void pgtk_verify_setup();
+void pgtk_verify_gnome_setup();
 void pgtk_verify_inited();
 void pgtk_verify_not_inited();
 

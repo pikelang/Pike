@@ -7,6 +7,13 @@ void pgtk_verify_setup()
     error("You must call GTK.setup_gtk( argv ) first\n");
 }
 
+void pgtk_verify_gnome_setup()
+{
+  extern int gnome_is_setup;
+  if( !gnome_is_setup )
+    error("You must call Gnome.init( app,version,argv[,do_corba] ) first\n");
+}
+
 void pgtk_verify_inited( )
 {
   if(! THIS->obj )

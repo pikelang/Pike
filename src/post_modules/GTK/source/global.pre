@@ -3,6 +3,8 @@ require gnome;
 #include <applet-widget.h>
 endrequire;
 /* The main stuff.. */
+
+int pigtk_is_setup = 0, gnome_is_setup = 0;
 static void socket_ready_callback(int fd, void *f)
 {
   g_main_iteration(1);
@@ -68,7 +70,6 @@ static void do_error( void *dom, int level, char *err, void *data )
   pop_stack();
 }
 
-int pigtk_is_setup = 0;
 
 require gnome;
 
@@ -88,7 +89,8 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   int argc, flags=0;
   struct array *a;
   if( pigtk_is_setup )
-    error("Do not call the init funciton more than once!\n");
+    error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
+  gnome_is_setup = 1;
   pigtk_is_setup = 1;
   if( args == 4 )
     get_all_args("setup_gtk", args, "%s%s%a%d", &id, &vers, &a, &flags);
@@ -198,7 +200,8 @@ NAME_ARGS(argv, do_not_parse_rc);
 #endif /* HAVE_SIGNAL */
 #endif /* ! HAVE_SIGACTION */
 
-
+  if( pigtk_is_setup )
+    error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
   pigtk_is_setup = 1;
 
   if(args)
