@@ -5,9 +5,11 @@ This file is incuded in search.c with the following defines set:
 
 NAME The name of the match function. This is undef:ed at end of this file
 INAME The name of the match c-function. This is nudef:ed at end of this file
-FBAR The inner loop code. undef:ed at end of this file
-NEEDLEAVRCODE Not undef:ed at end
+PIXEL_VALUE_DISTANCE The inner loop code for each pixel. 
+                     undef:ed at end of this file
+NEEDLEAVRCODE This code calculate needle_average. Not undef:ed at end
 NORMCODE code used for normalizing in the haystack. Not undef:ed at end
+SCALE_MODIFY(x) This modifies the output in each pixel
 
  */
 
@@ -129,57 +131,56 @@ void INAME(INT32 args)
 	needle_certi=needle_cert->img;
 
 THREADS_ALLOW();  
-       nxs=needle->xsize;
-       nys=needle->ysize;
-       xs=this->xsize;
-       ys=this->ysize-nys;
+      nxs=needle->xsize;
+      nys=needle->ysize;
+      xs=this->xsize;
+      ys=this->ysize-nys;
 
-       NEEDLEAVRCODE
+      /* This sets needle_average to something nice :-) */ 
+      NEEDLEAVRCODE
 
-#define GURKA(ACODE, CERTI1, CERTI2,R1,G1,B1)  \
-       for(y=0; y<ys; y++) \
-	 for(x=0; x<xs-nxs; x++) \
-	   { \
-	     int i=y*this->xsize+x;  \
-	     int sum=0; \
-             int tempavr=0;\
-	     ACODE \
-	       {\
-	     NORMCODE\
-	     tempavr=(int)(((float)tempavr)/(3*needle_size)); \
-	     for(ny=0; ny<nys; ny++) \
-	       for(nx=0; nx<nxs; nx++)  \
-		 { \
-		   int j=i+ny*xs+nx; \
-		   { \
-		   int h,n; \
-		   FBAR(r,CERTI1 R1, CERTI2 R1) \
-		   FBAR(g,CERTI1 G1, CERTI2 G1) \
-		   FBAR(b,CERTI1 B1, CERTI2 B1) \
-		   }} \
-	     imgi[i+(nys/2)*xs+(nxs/2)].r=(int)(255.99/(1+((scale SUMCHECK)))); \
-               }\
-	   }
+#define DOUBLE_LOOP(IF_SOMETHING, CERTI1, CERTI2,R1,G1,B1)  \
+      for(y=0; y<ys; y++) \
+	for(x=0; x<xs-nxs; x++) \
+	  { \
+	    int i=y*this->xsize+x;  \
+	    int sum=0; \
+            int tempavr=0;\
+	    IF_SOMETHING \
+	      {\
+	    NORMCODE\
+	    tempavr=(int)(((float)tempavr)/(3*needle_size)); \
+	    for(ny=0; ny<nys; ny++) \
+	      for(nx=0; nx<nxs; nx++)  \
+		{ \
+		  int j=i+ny*xs+nx; \
+		  { \
+		  int h,n; \
+		  PIXEL_VALUE_DISTANCE(r,CERTI1 R1, CERTI2 R1) \
+		  PIXEL_VALUE_DISTANCE(g,CERTI1 G1, CERTI2 G1) \
+		  PIXEL_VALUE_DISTANCE(b,CERTI1 B1, CERTI2 B1) \
+		  }} \
+	    imgi[i+(nys/2)*xs+(nxs/2)].r=\
+              (int)(255.99/(1+((scale * SCALE_MODIFY(sum))))); \
+              }\
+	  }
 
-#define KOD if ((haystack_avoidi[i].r)>(foo)) { int k=0; imgi[k=i+(nys/2)*xs+(nxs/2)].r=0; imgi[k].g=100; imgi[k].b=0; } else
+#define IF_AVOID_IS_SMALL_ENOUGH if ((haystack_avoidi[i].r)>(foo)) { int k=0; imgi[k=i+(nys/2)*xs+(nxs/2)].r=0; imgi[k].g=100; imgi[k].b=0; } else
 	 /* FIXME imgi[k].g=100; ?!? */
 
-#define MY_MAX(x,y)  
-       if (type==1)
-	 GURKA(if (1),1,1, , , )
-       else if (type==3)
-	 GURKA(KOD,1,1, , , )
-#undef MY_MAX
-#define MY_MAX(x,y) *MAXIMUM(x,y)
-       else if (type==4)
-	 GURKA(KOD, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
-       else if (type==2)
-	 GURKA(, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
-#undef MY_MAX
+      if (type==1)
+	DOUBLE_LOOP(if (1),1,1, , , )
+      else if (type==2)
+	DOUBLE_LOOP(if (1), haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)      
+      else if (type==3)
+	DOUBLE_LOOP(IF_AVOID_IS_SMALL_ENOUGH,1,1, , , )
+      else if (type==4)
+	DOUBLE_LOOP(IF_AVOID_IS_SMALL_ENOUGH, haystack_certi[j], needle_certi[ny*nxs+nx],.r,.g,.b)
 
-#undef KOD
-#undef FBAR
-#undef GURKA
+
+#undef IF_AVOID_IS_SMALL_ENOUGH_THEN
+#undef PIXEL_VALUE_DISTANCE
+#undef DOUBLE_LOOP
    
 THREADS_DISALLOW();
     }
