@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.518 2002/05/24 17:16:18 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.519 2002/05/27 12:01:13 jhs Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9138,6 +9138,9 @@ test_eq([[
 //       Calendar module that had any errors. Please don't commit 
 //       your Pike until you've got Calendar to compile again. /Mirar
 (int)(Calendar.Stardate.Tick("julian",2500000)->tic())]],-190335)
+
+// Regression test for recent Calendar bug:  /jhs
+test_eq(Calendar.ISO.Week(2002,1)->day()->format_ymd(),"2001-12-31")
 
 // - Filesystem
 
