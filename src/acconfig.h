@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.62 2000/08/21 21:19:44 grubba Exp $
+ * $Id: acconfig.h,v 1.63 2000/08/28 23:14:23 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -151,6 +151,9 @@
 
 /* Define if gettimeofday takes to arguments */
 #undef GETTIMEOFDAY_TAKES_TWO_ARGS
+
+/* Define if your strtod is off by one (HPUX). */
+#undef HAVE_STRTOD_OFF_ONE
 
 /* Define if you have a working, 8-bit-clean memcmp */
 #undef HAVE_MEMCMP
