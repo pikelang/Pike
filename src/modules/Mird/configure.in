@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2001/03/26 12:32:39 mirar Exp $
+# $Id: configure.in,v 1.5 2001/03/26 15:27:30 mirar Exp $
 AC_INIT(mird_glue.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -17,15 +17,14 @@ if test "x$ac_cv_header_mird_h" != "xyes" -o "x$ac_cv_lib_mird_mird_sync" != "xy
 	MODULE_SUBDIRS=libmird
 	MODULE_ARCHIVES=libmird/libmird.a
 
-	CPPFLAGS='-I$(SRCDIR)/libmird'" ${CPPFLAGS}"
+	CPPFLAGS='-I./libmird'" ${CPPFLAGS}"
 	AC_DEFINE(HAVE_LIBMIRD)
 	AC_DEFINE(HAVE_MIRD_H)
 else
 	PIKE_FEATURE(Mird,[yes (system libmird)])
 fi
 
-echo CPPFLAGS="$CPPFLAGS"
-
+AC_SUBST(CPPFLAGS)
 AC_SUBST(MODULE_SUBDIRS)
 AC_SUBST(MODULE_ARCHIVES)
 

@@ -7,7 +7,7 @@
 # configure.in for Pike environment
 #
 
-# $Id: configure.in,v 1.6 2001/03/26 13:31:30 mirar Exp $
+# $Id: configure.in,v 1.7 2001/03/26 15:27:31 mirar Exp $
 AC_INIT(internal.h)
 AC_CONFIG_HEADER(config.h)
 
@@ -610,7 +610,7 @@ fi
 AC_MSG_CHECKING(if O_BINARY exist)
 AC_CACHE_VAL(mird_cv_have_o_binary,
     	    [mird_cv_have_o_binary=no;
-	     rm conftest.tmp;
+	     rm conftest.tmp 2>/dev/null;
              AC_TRY_RUN([
 #include <unistd.h>
 #include <sys/types.h>
@@ -658,7 +658,7 @@ if test "x$mird_cv_working_ftruncate" = "xyes"; then
    AC_DEFINE(WORKING_FTRUNCATE)
 fi
 
-MIRD_BUILDER="`(ls -l \`tty\` || ls -l config.log) | awk '{print $3}'`@`uname -a | awk '{print $2}'`" 2>&5
+MIRD_BUILDER="`(ls -l \`tty\` 2>/dev/null || ls -l config.log) | awk '{print $3}'`@`uname -a | awk '{print $2}'`" 2>&5
 MIRD_BUILD_TIME="`date`" 2>&5
 AC_SUBST(MIRD_BUILDER)
 AC_SUBST(MIRD_BUILD_TIME)
