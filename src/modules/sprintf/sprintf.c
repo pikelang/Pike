@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.19 1998/05/06 01:04:36 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.20 1998/05/24 22:40:53 marcus Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -107,6 +107,14 @@ RCSID("$Id: sprintf.c,v 1.19 1998/05/06 01:04:36 hubbe Exp $");
 #include "interpret.h"
 #include "pike_memory.h"
 #include "pike_macros.h"
+
+#include <math.h>
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
+#ifdef HAVE_FP_CLASS_H
+#include <fp_class.h>
+#endif
 
 #define FORMAT_INFO_STACK_SIZE 200
 #define RETURN_SHARED_STRING
@@ -149,6 +157,182 @@ static struct format_info *fsp;
 
 #define MULTILINE (LINEBREAK | COLUMN_MODE | ROUGH_LINEBREAK | \
 		   INVERSE_COLUMN_MODE | MULTI_LINE | REPEAT)
+
+
+/* Generate binary IEEE strings on a machine which uses a different kind
+   of floating point internally */
+
+#ifndef FLOAT_IS_IEEE_BIG
+#ifndef FLOAT_IS_IEEE_LITTLE
+#define NEED_CUSTOM_IEEE
+#endif
+#endif
+#ifndef NEED_CUSTOM_IEEE
+#ifndef DOUBLE_IS_IEEE_BIG
+#ifndef DOUBLE_IS_IEEE_LITTLE
+#define NEED_CUSTOM_IEEE
+#endif
+#endif
+#endif
+
+#ifdef NEED_CUSTOM_IEEE
+
+#ifndef HAVE_FPCLASS
+#ifdef HAVE_FP_CLASS_D
+#define fpclass fp_class_d
+#define FP_NZERO FP_NEG_ZERO
+#define FP_PZERO FP_POS_ZERO
+#define FP_NINF FP_NEG_INF
+#define FP_PINF FP_POS_INF
+#define FP_NNORM FP_NEG_NORM
+#define FP_PNORM FP_POS_NORM
+#define FP_NDENORM FP_NEG_DENORM
+#define FP_PDENORM FP_POS_DENORM
+#define HAVE_FPCLASS
+#endif
+#endif
+
+#ifdef HAVE_FREXP
+#define FREXP frexp
+#else
+extern double FREXP(double x, int *exp); /* defined in encode.c */
+#endif
+
+#if HAVE_LDEXP
+#define LDEXP ldexp
+#else
+extern double LDEXP(double x, int exp); /* defined in encode.c */
+#endif
+
+INLINE static void low_write_IEEE_float(char *b, double d, int sz)
+{
+  int maxexp;
+  unsigned INT32 maxf;
+  int s = 0, e = -1;
+  unsigned INT32 f = 0, extra_f=0;
+
+  if(sz==4) {
+    maxexp = 255;
+    maxf   = 0x7fffff;
+  } else {
+    maxexp = 2047;
+    maxf   = 0x0fffff; /* This is just the high part of the mantissa... */
+  }
+
+#ifdef HAVE_FPCLASS
+  switch(fpclass(d)) {
+  case FP_SNAN:
+    e = maxexp; f = 2; break;
+  case FP_QNAN:
+    e = maxexp; f = maxf; break;
+  case FP_NINF:
+    s = 1; /* FALLTHRU */
+  case FP_PINF:
+    e = maxexp; break;
+  case FP_NZERO:
+    s = 1; /* FALLTHRU */
+  case FP_PZERO:
+    e = 0; break;
+  case FP_NNORM:
+  case FP_NDENORM:
+    s = 1; d = fabs(d); break;
+  case FP_PNORM:
+  case FP_PDENORM:
+    break;
+  default:
+    if(d<0.0) {
+      s = 1;
+      d = fabs(d);
+    }
+    break;
+  }
+#else
+#ifdef HAVE_ISINF
+  if(isinf(d))
+    e = maxexp;
+  else
+#endif
+#ifdef HAVE_ISNAN
+  if(isnan(d)) {
+    e = maxexp; f = maxf;
+  } else
+#endif
+#ifdef HAVE_ISZERO
+  if(iszero(d))
+    e = 0;
+  else
+#endif
+#ifdef HAVE_FINITE
+  if(!finite(d))
+    e = maxexp;
+#endif
+  ; /* Terminate any remaining else */
+#ifdef HAVE_SIGNBIT
+  if((s = signbit(d)))
+    d = fabs(d);
+#else
+  if(d<0.0) {
+    s = 1;
+    d = fabs(d);
+  }
+#endif
+#endif
+
+  if(e<0) {
+    d = FREXP(d, &e);
+    if(d == 1.0) {
+      d=0.5;
+      e++;
+    }
+    if(d == 0.0) {
+      e = 0;
+      f = 0;
+    } else if(sz==4) {
+      e += 126;
+      d *= 16777216.0;
+      if(e<=0) {
+	d = LDEXP(d, e-1);
+	e = 0;
+      }
+      f = ((INT32)floor(d))&maxf;
+    } else {
+      double d2;
+      e += 1022;
+      d *= 2097152.0;
+      if(e<=0) {
+	d = LDEXP(d, e-1);
+	e = 0;
+      }
+      d2 = floor(d);
+      f = ((INT32)d2)&maxf;
+      d -= d2;
+      d += 1.0;
+      extra_f = (unsigned INT32)(floor(d * 4294967296.0)-4294967296.0);
+    }
+
+    if(e>=maxexp) {
+      e = maxexp;
+      f = extra_f = 0;
+    }
+  }
+
+  if(sz==4) {
+    b[0] = (s? 128:0)|((e&0xfe)>>1);
+    b[1] = ((e&1)<<7)|((f&0x7f0000)>>16);
+    b[2] = (f&0xff00)>>8;
+    b[3] = f&0xff;
+  } else {
+    b[0] = (s? 128:0)|((e&0x7f0)>>4);
+    b[1] = ((e&0xf)<<4)|((f&0x0f0000)>>16);
+    b[2] = (f&0xff00)>>8;
+    b[3] = f&0xff;
+    b[4] = (extra_f&0xff000000)>>24;
+    b[5] = (extra_f&0xff0000)>>16;
+    b[6] = (extra_f&0xff00)>>8;
+    b[7] = extra_f&0xff;
+  }
+}
+#endif
 
 /* Position a string inside a field with fill */
 
@@ -716,6 +900,8 @@ static string low_pike_sprintf(char *format,
       case 'e':
       case 'f':
       case 'g':
+      case 'E':
+      case 'G':
 	DO_OP();
 	fsp->b=(char *)xalloc(100+MAXIMUM(fsp->width,8)+
 			      MAXIMUM(fsp->precision,3));
@@ -727,6 +913,58 @@ static string low_pike_sprintf(char *format,
 	fsp->len=strlen(fsp->b);
 	fsp->fi_free_string=fsp->b;
 	break;
+
+      case 'F':
+      {
+        INT32 l;
+#ifdef DOUBLE_IS_IEEE_LITTLE
+	double td;
+#endif
+        DO_OP();
+        l=4;
+        if(fsp->width > 0) l=fsp->width;
+	if(l != 4 && l != 8)
+	  sprintf_error("Invalid IEEE witdh %d.\n", l);
+	fsp->b=(char *)alloca(l);
+	fsp->len=l;
+	GET_FLOAT(tf);
+	switch(l) {
+	case 4:
+#ifdef FLOAT_IS_IEEE_BIG
+	  *((float*)fsp->b) = tf;
+#else
+#ifdef FLOAT_IS_IEEE_LITTLE
+	  fsp->b[0] = ((char *)&tf)[3];
+	  fsp->b[1] = ((char *)&tf)[2];
+	  fsp->b[2] = ((char *)&tf)[1];
+	  fsp->b[3] = ((char *)&tf)[0];
+#else
+	  low_write_IEEE_float(fsp->b, (double)tf, 4);
+#endif
+#endif
+	  break;
+	case 8:
+#ifdef DOUBLE_IS_IEEE_BIG
+	  *((double*)fsp->b) = (double)tf;
+#else
+#ifdef DOUBLE_IS_IEEE_LITTLE
+	  td = (double)tf;
+
+	  fsp->b[0] = ((char *)&td)[7];
+	  fsp->b[1] = ((char *)&td)[6];
+	  fsp->b[2] = ((char *)&td)[5];
+	  fsp->b[3] = ((char *)&td)[4];
+	  fsp->b[4] = ((char *)&td)[3];
+	  fsp->b[5] = ((char *)&td)[2];
+	  fsp->b[6] = ((char *)&td)[1];
+	  fsp->b[7] = ((char *)&td)[0];
+#else
+	  low_write_IEEE_float(fsp->b, (double)tf, 8);
+#endif
+#endif
+	}
+	break;
+      }
 
       case 'O':
       {
