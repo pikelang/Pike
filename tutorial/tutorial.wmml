@@ -3393,8 +3393,8 @@ here is a list of the basic Pike modules:
 <dt>String
 <dd>Routines that operate on strings.
 <dt>Sql *
-<dt>Standards
 <dd>Support for ASN1, PKCS and other standards.
+<dt>Standards
 <dd>Generic SQL database support.
 <dt>System
 <dd>Support for system specific functions.
