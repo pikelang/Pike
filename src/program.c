@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.14 1997/01/22 05:19:46 hubbe Exp $");
+RCSID("$Id: program.c,v 1.15 1997/01/27 01:30:25 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -22,6 +22,7 @@ RCSID("$Id: program.c,v 1.14 1997/01/22 05:19:46 hubbe Exp $");
 #include "main.h"
 #include "gc.h"
 #include "threads.h"
+#include "constants.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -66,6 +67,10 @@ char *lfun_names[] = {
   "`[]=",
   "`->",
   "`->=",
+  "_sizeof",
+  "_indices",
+  "_values",
+  "`()",
 };
 
 struct program *first_program = 0;
@@ -81,7 +86,9 @@ dynamic_buffer used_modules;
 
 void use_module(struct svalue *s)
 {
-  low_my_binary_strcat((char *)s,sizeof(struct svalue *),&used_modules);
+  assign_svalue_no_free((struct svalue *)
+			low_make_buf_space(sizeof(struct svalue),
+					   &used_modules), s);
 }
 
 
@@ -103,12 +110,13 @@ int find_module_identifier(struct pike_string *ident)
     yyerror("Couldn't index module.");
   }else{
     struct svalue *modules=(struct svalue *)used_modules.s.str;
-    int e=used_modules.s.len / sizeof(struct svalue *);
+    int e=used_modules.s.len / sizeof(struct svalue);
 
     while(--e>=0)
     {
       push_svalue(modules+e);
       push_string(ident);
+      ident->refs++;
       f_index(2);
       
       if(!IS_ZERO(sp-1) || sp[-1].subtype != 1)
@@ -199,8 +207,6 @@ void setup_fake_program()
 void start_new_program()
 {
   int e;
-  struct inherit inherit;
-  struct pike_string *name;
 
   threads_disabled++;
   if(local_variables)
@@ -220,15 +226,28 @@ void start_new_program()
   low_reinit_buf(& used_modules);
   fake_program.id = ++current_program_id;
 
-  inherit.prog=&fake_program;
-  inherit.inherit_level=0;
-  inherit.identifier_level=0;
-  inherit.storage_offset=0;
-  add_to_mem_block(A_INHERITS,(char *)&inherit,sizeof inherit);
-  name=make_shared_string("this");
-  low_my_binary_strcat((char *)&name,sizeof(name), &inherit_names);
-  num_parse_error=0;
+  {
+    struct inherit inherit;
+    struct pike_string *name;
+    
+    inherit.prog=&fake_program;
+    inherit.inherit_level=0;
+    inherit.identifier_level=0;
+    inherit.storage_offset=0;
+    add_to_mem_block(A_INHERITS,(char *)&inherit,sizeof inherit);
+    name=make_shared_string("this");
+    low_my_binary_strcat((char *)&name,sizeof(name), &inherit_names);
+  }
+ 
 
+  {
+    struct svalue tmp;
+    tmp.type=T_MAPPING;
+    tmp.u.mapping=get_builtin_constants();
+    use_module(& tmp);
+  }
+
+  num_parse_error=0;
   local_variables=ALLOC_STRUCT(locals);
   local_variables->next=0;
   local_variables->current_number_of_locals=0;
@@ -321,7 +340,7 @@ static void toss_compilation_resources()
   toss_buffer(& inherit_names);
 
   modules=(struct svalue *)used_modules.s.str;
-  e=used_modules.s.len / sizeof(struct svalue *);
+  e=used_modules.s.len / sizeof(struct svalue);
   while(--e>=0) free_svalue(modules+e);
   toss_buffer(& used_modules);
 
@@ -973,22 +992,53 @@ int add_constant(struct pike_string *name,
   return n;
 }
 
+int simple_add_constant(char *name, 
+			struct svalue *c,
+			INT32 flags)
+{
+  INT32 ret;
+  struct pike_string *id;
+  id=make_shared_string(name);
+  ret=add_constant(id, c, flags);
+  free_string(id);
+  return ret;
+}
+
 int add_integer_constant(char *name,
 			 INT32 i,
 			 INT32 flags)
 {
   struct svalue tmp;
-  struct pike_string *id;
-  int ret;
   tmp.u.integer=i;
   tmp.type=T_INT;
   tmp.subtype=NUMBER_NUMBER;
-  id=make_shared_string(name);
-  ret=add_constant(id,&tmp, flags);
-  free_string(id);
-  return ret;
+  return simple_add_constant(name, &tmp, flags);
 }
 
+int add_float_constant(char *name,
+			 double f,
+			 INT32 flags)
+{
+  struct svalue tmp;
+  tmp.type=T_FLOAT;
+  tmp.u.float_number=f;
+  tmp.subtype=0;
+  return simple_add_constant(name, &tmp, flags);
+}
+
+int add_string_constant(char *name,
+			char *str,
+			INT32 flags)
+{
+  INT32 ret;
+  struct svalue tmp;
+  tmp.type=T_STRING;
+  tmp.subtype=0;
+  tmp.u.string=make_shared_string(str);
+  ret=simple_add_constant(name, &tmp, flags);
+  free_svalue(&tmp);
+  return ret;
+}
 
 /*
  * define a new function
