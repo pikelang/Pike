@@ -352,7 +352,16 @@
 /* Define this if you have dlsym() */
 #undef HAVE_DLSYM
 
+/* Define this if you have dld_link() */
+#undef HAVE_DLD_LINK
+
+/* Define this if you have dld_get_func() */
+#undef HAVE_DLD_GET_FUNC
+
 /* Define this if you have <dlfcn.h> */
 #undef HAVE_DLFCN_H
+
+/* Define this if you have <dld.h> */
+#undef HAVE_DLD_H
 
 #endif /* MACHINE_H */
