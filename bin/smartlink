@@ -120,6 +120,9 @@ if test x$# != x0 ; then
    IRIX\ 6.*)
      LDOPTS="$LDOPTS -rpath $RPATH"
    ;;
+   IRIX\ 5.*)
+     LDOPTS="$LDOPTS -rpath $RPATH"
+   ;;
    SunOS\ 5.*)
      LDOPTS="$LDOPTS -R$RPATH"
    ;;
