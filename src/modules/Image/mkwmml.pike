@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.1 1997/11/10 05:41:13 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.2 1997/11/10 13:24:23 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -236,6 +236,12 @@ multiset(string) get_method_names(string *decls)
    return names;
 }
 
+string *nice_order(string *arr)
+{
+   sort(map(arr,replace,({"_","`"}),({"ÿ","þ"})),
+	arr);
+   return arr;
+}
 
 string addprefix(string suffix,string prefix)
 {
@@ -266,7 +272,7 @@ void document(mapping huh,string name,string prefix,object f)
 
    f->write("<dt><encaps>NAME</encaps><dd>\n");
 
-   foreach (names,n)
+   foreach (nice_order(names),n)
       f->write("\t<tt>"+n+"</tt><br>\n");
 
    f->write("<p>\n");
@@ -309,9 +315,9 @@ void document(mapping huh,string name,string prefix,object f)
 	 if (arg->desc)
 	 {
 	    f->write("\t<tr align=left><td valign=top>\n"
-		     +rarg+"\t\t<tt>"
- 		     +arg->args*"</tt><br>\n\t\t<tt>"
-		     +"</tt></td>\n"
+		     +fixdesc(rarg+"\t\t<tt>"
+			      +arg->args*"</tt><br>\n\t\t<tt>"
+			      +"</tt></td>\n",prefix,arg->_line)
 		     +"\t<td valign=bottom>"
 		     +fixdesc(arg->desc,prefix,arg->_line)
 		     +"</td></tr>\n\n");
@@ -374,7 +380,7 @@ void document(mapping huh,string name,string prefix,object f)
 	 foreach (huh->methods,method)
 	    method_names|=(method->names=get_method_names(method->decl));
 
-      method_names_arr=sort(indices(method_names));
+      method_names_arr=nice_order(indices(method_names));
 
       // alphabetically
 
@@ -391,16 +397,11 @@ void document(mapping huh,string name,string prefix,object f)
 	    if (method_names[method_name])
 	       stderr->write("failed to find "+method_name+" again, wierd...\n");
 	 }
-
-      foreach(huh->methods,mapping child)
-      {
-	 document(child,prefix,prefix,f);
-      }
    }
 
    if (huh->classes)
    {
-      foreach(indices(huh->classes),string n)
+      foreach(nice_order(indices(huh->classes)),string n)
       {
 	 f->write("\n\n\n<section title=\""+prefix+n+"\">\n");
 	 document(huh->classes[n],
@@ -411,7 +412,7 @@ void document(mapping huh,string name,string prefix,object f)
 
    if (huh->modules)
    {
-      foreach(indices(huh->modules),string n)
+      foreach(nice_order(indices(huh->modules)),string n)
       {
 	 f->write("\n\n\n<section title=\""+prefix+n+"\">\n");
 	 document(huh->modules[n],

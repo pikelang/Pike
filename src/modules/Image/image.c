@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.57 1997/11/10 05:41:12 mirar Exp $ */
+/* $Id: image.c,v 1.58 1997/11/10 13:24:21 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.57 1997/11/10 05:41:12 mirar Exp $
+**!	$Id: image.c,v 1.58 1997/11/10 13:24:21 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -84,7 +84,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.57 1997/11/10 05:41:12 mirar Exp $");
+RCSID("$Id: image.c,v 1.58 1997/11/10 13:24:21 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2081,8 +2081,8 @@ void image_select_from(INT32 args)
 **!	<illustration>
 **!	return lena();
 **!	</illustration>
-**!	</td>
-**!	<tr><td></td><td>original</td>
+**!	</td></tr>
+**!	<tr><td></td><td>original</td></tr>
 **!	
 **!	<tr><td>
 **!     sharpen (k>8, preferably 12 or 16):
@@ -2099,7 +2099,7 @@ void image_select_from(INT32 args)
 **!	  ({-1,-1,-1})})
 **!	);
 **!	</illustration>
-**!	</td>
+**!	</td></tr>
 **!
 **!	<tr><td>
 **!     edge detect:
@@ -2116,7 +2116,7 @@ void image_select_from(INT32 args)
 **!	  ({1, 1,1})})
 **!	);
 **!	</illustration>
-**!	</td>
+**!	</td></tr>
 **!
 **!	<tr><td>
 **!     horisontal edge detect (get the idea):
@@ -2133,7 +2133,7 @@ void image_select_from(INT32 args)
 **!	  ({0, 0,0})})
 **!	);
 **!	</illustration>
-**!	</td>
+**!	</td></tr>
 **!
 **!	<tr><td rowspan=2>
 **!     emboss (might prefer to begin with a <ref>grey</ref> image):
@@ -2158,11 +2158,10 @@ void image_select_from(INT32 args)
 **!	  ({0,-1,-2})}), 128,128,128, 3
 **!	);
 **!	</illustration>
-**!	</td>
+**!	</td></tr>
 **!	<tr><td></td><td>greyed</td></tr></table>
 **!
-**!	This function is not very fast -- and it's hard to 
-**!	optimize it more, not using assembler.
+**!	This function is not very fast.
 **!
 **! returns the new image object
 **!
