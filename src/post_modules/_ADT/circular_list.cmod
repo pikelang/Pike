@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.9 2003/05/23 12:42:05 peta Exp $
+|| $Id: circular_list.cmod,v 1.10 2003/05/27 11:51:56 peta Exp $
 */
 
 #include "global.h"
@@ -640,6 +640,10 @@ PIKECLASS CircularList
 
   PIKEFUN void clear()
   {
+    should_copy();
+    int oldsize = THIS->a->size;
+    THIS->a = resize_array(THIS->a, 0);
+    THIS->a = resize_array(THIS->a, oldsize);
     THIS->size =0;
     THIS->pos  =0;
   }   
@@ -743,15 +747,20 @@ PIKECLASS CircularList
   PIKEFUN mixed popBack()
   {
     struct svalue ind;
+    struct svalue zero;
     if (THIS->size <= 0)
     {
       Pike_error("Can not pop an empty list.\n");
     }
     
+    should_copy();
     THIS->size--;
     ind.u.integer=circ2array(THIS->size);
     ind.type =T_INT;
+    zero.u.integer=0;
+    zero.type =T_INT;
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
+    simple_set_index(THIS->a, &ind, &zero);
     Pike_sp++;
   }
 
@@ -767,19 +776,24 @@ PIKECLASS CircularList
   PIKEFUN mixed popFront()
   {
     struct svalue ind;
+    struct svalue zero;
     if (THIS->size == 0)
     {
       Pike_error("Can not pop an empty list.\n");
     }
     
+    should_copy();
     ind.u.integer=THIS->pos;
     ind.type =T_INT;
+    zero.u.integer=0;
+    zero.type =T_INT;
     if (++THIS->pos >= THIS->a->size)
     {
       THIS->pos = 0;
     }
     THIS->size--;
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
+    simple_set_index(THIS->a, &ind, &zero);
     Pike_sp++;
   }
   
@@ -857,8 +871,6 @@ PIKECLASS CircularList
       
     pop_n_elems(args);
   }
-  
-
   
   /*! @decl CircularListIterator _get_iterator(void|int ind)
    *!   Create and initiate a new CircularListIterator that could be used
@@ -1212,7 +1224,31 @@ PIKECLASS CircularList
 	SIMPLE_BAD_ARG_ERROR("`>",1,"ADT.CircularList.CircularListIterator");
       }
     }
+    
+    /*! @decl int distance(object iter)
+     *!
+     *! @param iter
+     *!    The iterator to measure the distance to.
+     *! @returns
+     *!    Returns distance between this iterator and @[iter].
+     *! @throws
+     *!    An error if the two iterator could not be compared.
+     */  
 
+    PIKEFUN int distance(object iter)
+    {
+      if (iter->prog == CircularListIterator_program)
+      {
+	
+	struct CircularListIterator_struct *i = 
+	  OBJ2_CIRCULARLISTITERATOR(iter);
+	RETURN (i->pos - THIS->pos);
+      }
+      else
+      {
+	SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.CircularList.CircularListIterator");
+      }
+    }
 
     /*! @decl CircularList get_collection()
      *!
