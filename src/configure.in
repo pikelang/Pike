@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.410 2000/08/28 21:19:14 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.411 2000/08/29 01:10:25 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1341,7 +1341,7 @@ limits.h pthread.h crt/signal.h sys/id.h \
 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
-socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sched.h \
+socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sys/sched.h \
 windows.h errno.h stddef.h mmx.h)
 
 AC_CHECK_SIZEOF(char *,4)

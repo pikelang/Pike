@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.178 2000/08/19 11:35:51 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.179 2000/08/29 01:10:25 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1465,7 +1465,13 @@ extern int pike_make_pipe(int *);
 # include <sys/tspriocntl.h>
 #else
 # ifdef HAVE_SCHED_SETSCHEDULER
-#  include <sched.h>
+#  ifdef HAVE_SCHED_H
+#    include <sched.h>
+#  else
+#   ifdef HAVE_SYS_SCHED_H
+#    include <sys/sched.h>
+#   endif
+#  endif
 # endif
 #endif
 
