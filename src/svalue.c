@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.127 2001/11/10 19:43:52 mast Exp $");
+RCSID("$Id: svalue.c,v 1.128 2001/11/14 10:52:11 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1074,7 +1074,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	      break;
 
             default:
-	      if(j>=0 && j<256 && isprint(j))
+	      if(j>0 && j<256 && isprint(j))
 	      {
 		my_putchar(j);
 		break;
