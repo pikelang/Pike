@@ -9,6 +9,73 @@ void exece(string cmd, array(string) args)
 }
 #endif
 
+// Constants taken from WinNT.h
+constant status_codes = ([
+  0x00000080:"Abandoned Wait 0",
+  0x000000C0:"User APC",
+  0x00000102:"Timeout",
+  0x00000103:"Pending",
+  0x00010001:"Exception Handled (DBG)",
+  0x00010002:"Continue (DBG)",
+  0x40000005:"Segment Notification",
+  0x40010003:"Terminate Thread (DBG)",
+  0x40010004:"Terminate Process (DBG)",
+  0x40010005:"Control C (DBG)",
+  0x40010008:"Control Break (DBG)",
+  0x80000001:"Guard Page Violation",
+  0x80000002:"Datatype Misalignment",
+  0x80000003:"Breakpoint",
+  0x80000004:"Single Step",
+  0x80010001:"Exception Not Handled (DBG)",
+  0xC0000005:"Access Violation",
+  0xC0000006:"In Page Error",
+  0xC0000008:"Invalid Handle",
+  0xC0000017:"No Memory",
+  0xC000001D:"Illegal Instruction",
+  0xC0000025:"Noncontinuable Exception",
+  0xC0000026:"Invalid Disposition",
+  0xC000008C:"Array Bounds Exceeded",
+  0xC000008D:"Denormal Operand (Float)",
+  0xC000008E:"Divide By Zero (Float)",
+  0xC000008F:"Inexact Result (Float)",
+  0xC0000090:"Invalid Operation (Float)",
+  0xC0000091:"Overflow (Float)",
+  0xC0000092:"Stack Check (Float)",
+  0xC0000093:"Underflow (Float)",
+  0xC0000094:"Divide By Zero (Integer)",
+  0xC0000095:"Overflow (Integer)",
+  0xC0000096:"Priviledged Instruction",
+  0xC00000FD:"Stack Overflow",
+  0xC000013A:"Control C Exit",
+  0xC00002B4:"Multiple Faults (Float)",
+  0xC00002B5:"Multiple Traps (Float)",
+  0xC00002C9:"Reg NAT Consumption",
+]);
+string explain(int code)
+{
+  string res="";
+  switch(code & 0xc0000000) {
+  case 0x00000000:
+    res = "Sucess:";
+    break;
+  case 0x40000000:
+    res = "Informational:";
+    break;
+  case 0x80000000:
+    res = "Warning:";
+    break;
+  case 0xc0000000:
+    res = "Error:";
+    break;
+  }
+  if (status_codes[code]) {
+    res += status_codes[code];
+  } else {
+    res += "Unknown";
+  }
+  return res;
+}
+
 string follow_symlinks(string s)
 {
   mixed st;
@@ -53,6 +120,8 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
 
   string ret="";
   object(Stdio.File) f=Stdio.File();
+
+  // werror("RNT: %{%O, %}\n", cmd);
 
   switch(getenv("REMOTE_METHOD"))
   {
@@ -385,8 +454,8 @@ int silent_do_cmd(array(string) cmd, mixed|void filter, int|void silent)
       if(code > 255)
       {
 	werror("Software failure. Press left mouse button to continue.\r\n"
-	       "          Guru meditation #%s\r\n",
-	       sprintf("%016X",code)/8*".");
+	       "     Guru meditation #%s: %s\r\n",
+	       sprintf("%016X",code)/8*".", explain(code));
 	code=127;
       }
       return code;
