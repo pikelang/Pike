@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.138 1997/11/30 20:09:48 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.139 1997/12/02 23:21:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -596,6 +596,8 @@ AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(dld, dld_link)
+
+AC_HAVE_FUNCS(strdup)
 
 
 if test "${pike_cv_sys_os}" = "Linux"; then
