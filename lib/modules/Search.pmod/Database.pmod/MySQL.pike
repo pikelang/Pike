@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.70 2001/09/26 05:09:01 js Exp $
+// $Id: MySQL.pike,v 1.71 2001/09/26 09:17:35 anders Exp $
 
 inherit .Base;
 
@@ -33,7 +33,7 @@ void init_tables()
 #"create table if not exists word_hit (word        varchar(64) binary not null,
                          first_doc_id   int not null,
             	         hits           mediumblob not null,
-                         index index_word (word)");
+                         index index_word (word))");
 
   db->query(
 #"create table if not exists metadata (doc_id        int not null,
