@@ -1,0 +1,156 @@
+<chapter title="Special Functions">
+
+<p>There are some 'functions' in Pike that are not really functions at all but
+builtin items that can do things that no other functions can do. Some of them
+can not be re-defined or overloaded.
+In this chapter I will describe these functions and why they are implemented
+as special functions.</p>
+
+<section title="sscanf">
+
+<p>Sscanf may look exactly like a normal function, but normal functions
+can not set the variables you send to it. The purpose of sscanf is to
+match one string against a format string and place the matching results
+into a list of variables. The syntax looks like this:</p>
+
+<example>
+int sscanf(string str, string fmt, lvalue ...)
+</example>
+
+<p>The string <tt>str</tt> will be matched against the format string <tt>fmt</tt>.
+<tt>fmt</tt> can contain strings
+separated by special matching directives like %d,%s,%c and %f. Every % corresponds to one <tt>lvalue</tt>.
+An lvalue is the name of a variable, a name of a local variable, an index
+in an array, mapping or object. It is because of these lvalues that sscanf
+can not be implemented as a normal function.</p>
+
+<p>
+Whenever a percent character is found in the format string, a match is performed according
+to the following table.
+</p>
+
+<matrix>
+<r><c>%b</c><c>Reads a binary integer.</c></r>
+<r><c>%d</c><c>Reads a decimal integer.</c></r>
+<r><c>%o</c><c>Reads an octal integer.</c></r>
+<r><c>%x</c><c>Reads a hexadecimal integer.</c></r>
+<r><c>%D</c><c>Reads an integer that is either octal (leading zero), hexadecimal (leading 0x) or decimal.</c></r>
+<r><c>%f</c><c>Reads a float-</c></r>
+<r><c>%c</c><c>Matches one char and returns it as an integer.</c></r>
+<r><c>%2c</c><c>Matches two chars and returns them as an integer (short).</c></r>
+<r><c>%4F</c><c>Matches four chars and returns them as a float (IEEE single precision).</c></r>
+<r><c>%8F</c><c>Matches eigth chars and returns them as a float (IEEE double precision).</c></r>
+<r><c>%s</c><c>Reads a string. If followed by %d, %s will
+ only read non-numerical characters. If followed by a %[], %s will only read
+ characters not present in the set. If followed by normal text, %s will match
+ all characters up to but not including the first occurrence of that text.</c></r>
+<r><c>%5s</c><c>Reads a string of 5 characters (5 can of course be any number).</c></r>
+<r><c>%[set]</c><c>Matches a string containing a given set of characters (those given inside the brackets).
+ %[^set] means any character except those inside brackets. Ranges of characters can be defined by using a
+ minus character between the first and the last character to be included in the range. Example: %[0-9H] means any number or 'H'.
+ Note that sets that includes the character - must have it first in the brackets to avoid having a range defined.</c></r>
+<r><c>%{format%}</c><c>Repeatedly matches 'format' as many times as possible and assigns an array of arrays with the results to the lvalue.</c></r>
+<r><c>%%</c><c>Match a single percent character.</c></r>
+</matrix>
+
+<p>If a * is put between the percent and the operator, the operator
+will only match its argument, not assign any variables.</p>
+
+<p>Sscanf does not use backtracking. Sscanf simply looks at the format string
+up to the next % and tries to match that with the string. It then proceeds
+to look at the next part. If a part does not match, sscanf immediately
+returns how many % were matched. If this happens, the lvalues for % that
+were not matched will not be changed.</p>
+
+Let's look at a couple of examples.
+<example>
+// a will be assigned "oo" and 1 will be returned
+sscanf("foo", "f%s", a);
+
+// a will be 4711 and b will be "bar", 2 will be returned
+sscanf("4711bar", "%d%s", a, b);
+
+// a will be 4711, 2 will be returned
+sscanf("bar4711foo", "%*s%d", a);
+
+// a will become "test"
+sscanf(" \t test", "%*[ \t]%s", a);
+
+// Remove "the " from the beginning of a string
+// If 'str' does not begin with "the " it will not be changed
+sscanf(str, "the %s", str);
+</example>
+
+<p>It is also possible to declare a variable directly in the sscanf call.
+Another reason for sscanf not to be an ordinary function.</p>
+
+<example>
+sscanf("abc def", "%s %s", string a, string b);
+</example>
+
+<!-- Seealso sprintf, array_sscanf -->
+
+</section>
+
+
+<section title="catch">
+
+<p>Catch is used to trap errors and other exceptions in Pike.
+It works by making a block of code into an expression, like this:</p>
+
+<example>
+catch { statements }
+</example>
+
+<p>If an error occurs, catch will return a description of the error.
+The description of the error has the following format:</p>
+
+<example>
+({
+   "error description",
+   backtrace()
+})
+</example>
+
+<p>If no error occurs, catch will return zero. You may emulate your own errors
+using the function throw or error.</p>
+
+<example>
+int x,y;
+// This might generate "division by zero"
+array error = catch { x/=y; };
+</example>
+
+</section>
+
+<section title="gauge">
+
+<p>The syntax for gauge is the same as the syntax for catch:</p>
+
+<example>
+gauge { statements }
+</example>
+
+<p>However, gauge simply returns how many seconds the code took to execute.
+This can be used to find out how fast your code actually is.. :)
+Only CPU time used by the Pike process is measured. This means that if it takes
+two seconds to execute but only uses 50 % CPU, this function will return 1.0.</p>
+
+</section>
+
+<section title="typeof">
+
+<p>This function returns the type of an expression as a string. It does not
+evaluate the expression at all, which might be somewhat confusing.</p>
+
+<example>
+typeof( exit(1) )
+</example>
+
+<p>This will return the string <tt>"void"</tt> since exit is a function that
+returns void. It will not execute the function <tt>exit</tt> and exit the process as you
+might expect. If you want to know the type after evaluation, use
+<expr>sprintf("%t", expr)</expr>.</p>
+</section>
+
+</chapter>
