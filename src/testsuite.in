@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.542 2002/09/24 15:14:47 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.543 2002/10/01 10:53:56 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3336,12 +3336,32 @@ cond([[all_constants()->thread_create]],
   test_any([[ object m = Thread.Mutex(); object k = m->lock(); thread_create(lambda(object k){ sleep(10); catch { destruct(k); }; }, k);if (catch{m->lock(); return 0;}) { return 1; } return 0; ]],1)
   test_any([[ array data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(array data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l=data[2]->lock(1); object ll=data[1]->lock(); return data[0]; ]],1)
   test_any([[
-array data=({1, Thread.Mutex(), Thread.Condition(), 0});
-for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(array data) {
-  for(int e=0;e<1000;e++) { object o=data[1]->lock(); data[0]*=2;
-    for(int d=0;d<5;d++) { data[0]--; data[0]*=2; } data[0]--; destruct(o); }
-   data[3]--; data[2]->signal();}, data);}
- while(data[3]) data[2]->wait(); return data[0];]],1)
+    array data=({1, Thread.Mutex(), Thread.Condition(), 0});
+    object key = data[1]->lock();
+
+    for(int e=0;e<3;e++) {
+      data[3]++;
+      thread_create(lambda(array data) {
+        for(int e=0;e<1000;e++) {
+          object o=data[1]->lock();
+          data[0]*=2;
+          for(int d=0;d<5;d++) {
+            data[0]--;
+            data[0]*=2;
+          }
+          data[0]--;
+          destruct(o);
+        }
+	object o = data[1]->lock();
+        data[3]--;
+        data[2]->signal();
+      }, data);
+    }
+
+    while(data[3])
+      data[2]->wait(key);
+    return data[0];
+  ]],1)
 
 // /precompiled/condition
   test_true(Thread.Condition())
