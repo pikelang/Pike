@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.25 1999/06/19 19:49:46 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.26 1999/08/25 05:03:06 hubbe Exp $ */
 
 import Stdio;
 
@@ -57,6 +57,7 @@ array find_testsuites(string dir)
 int main(int argc, string *argv)
 {
   int e, verbose, successes, errors, t, check;
+  int skipped;
   string *tests,tmp;
   program testprogram;
   int start, fail, mem;
@@ -195,6 +196,7 @@ int main(int argc, string *argv)
 	      if(verbose)
 		werror("Not doing test "+(e+1)+"\n");
 	      successes++;
+	      skipped++;
 	      continue;
 	    }
 	  }
@@ -386,7 +388,7 @@ int main(int argc, string *argv)
     werror("Failed tests: "+errors+".\n");
   }
       
-  werror("Total tests: %d\n",successes+errors);
+  werror("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
 
   return errors;
 }
