@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.214 2003/03/30 14:21:56 grubba Exp $
+|| $Id: gc.c,v 1.215 2003/03/30 20:46:41 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.214 2003/03/30 14:21:56 grubba Exp $");
+RCSID("$Id: gc.c,v 1.215 2003/03/30 20:46:41 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -178,7 +178,7 @@ size_t gc_ext_weak_refs;
  * and that list represents the current prospective destruct order.
  * gc_rec_last points at the last frame in the list and new frames are
  * linked in after it. A cycle is always treated as one atomic unit,
- * e.g. it's either popped whole or not at all. That means that
+ * i.e. it's either popped whole or not at all. That means that
  * rec_list might contain frames that are no longer on the stack.
  *
  * A range of frames which always ends at the end of the list may be
@@ -1049,15 +1049,15 @@ void describe_something(void *a, int t, int indent, int depth, int flags,
 
 #ifdef DEBUG_MALLOC
   if (((int)a) == 0x55555555) {
-    fprintf(stderr,"%*s**Location: %p  Type: %s  Zapped pointer\n",indent,"",a,
+    fprintf(stderr,"%*s**Block: %p  Type: %s  Zapped pointer\n",indent,"",a,
 	    get_name_of_type(t));
   } else
 #endif /* DEBUG_MALLOC */
     if (((ptrdiff_t)a) & 3) {
-      fprintf(stderr,"%*s**Location: %p  Type: %s  Misaligned address\n",indent,"",a,
+      fprintf(stderr,"%*s**Block: %p  Type: %s  Misaligned address\n",indent,"",a,
 	      get_name_of_type(t));
     } else {
-      fprintf(stderr,"%*s**Location: %p  Type: %s  Refs: %d\n",indent,"",a,
+      fprintf(stderr,"%*s**Block: %p  Type: %s  Refs: %d\n",indent,"",a,
 	      get_name_of_type(t),
 	      *(INT32 *)a);
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.143 2003/03/29 20:09:23 mast Exp $
+|| $Id: pike_memory.c,v 1.144 2003/03/30 20:46:41 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.143 2003/03/29 20:09:23 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.144 2003/03/30 20:46:41 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2375,7 +2375,7 @@ static void low_search_all_memheaders_for_references(void)
 	  __except( 1 ) {
 	    fprintf(stderr,"*** DMALLOC memory access error ***\n");
 	    fprintf(stderr,"Failed to access this memory block:\n");
-	    fprintf(stderr,"Location: %p, size=%ld, gc_generation=%d, flags=%d\n",
+	    fprintf(stderr,"Block: %p, size=%ld, gc_generation=%d, flags=%d\n",
 		    m->data,
 		    m->size,
 		    m->gc_generation,
