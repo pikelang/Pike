@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.87 1999/12/11 03:41:47 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.88 1999/12/11 19:24:38 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -38,7 +38,7 @@ static int low_pike_types_le(char *a, char *b);
 
 /*
  * basic types are represented by just their value in a string
- * basic type are string, int, float, object and program
+ * basic type are string, type, int, float, object and program
  * arrays are coded like by the value T_ARRAY followed by the
  * data type, if the type is not known it is T_MIXED, ie:
  * T_ARRAY <data type>
@@ -57,6 +57,8 @@ static int low_pike_types_le(char *a, char *b);
  *           ^
  *           0 means 'inherits'
  *           1 means 'is'
+ * Integers are encoded as:
+ * T_INT <min> <max>
  * Everything except T_VOID matches T_ZERO.
  */
 
@@ -1423,9 +1425,43 @@ static char *low_match_types(char *a,char *b, int flags)
     for(e=0;e<indent;e++) my_strcat("  ");
     my_strcat("                ");
     low_describe_type(b);
+    my_strcat(",\n");
+    for(e=0;e<indent;e++) my_strcat("  ");
+    my_strcat("                ");
   }else{
     my_strcat(", ");
     low_describe_type(b);
+    my_strcat(", ");
+  }
+  if (flags) {
+    int f = 0;
+    if (flags & A_EXACT) {
+      my_strcat("A_EXACT");
+      f = 1;
+    }
+    if (flags & B_EXACT) {
+      if (f) {
+	my_strcat(" | ");
+      }
+      my_strcat("B_EXACT");
+      f = 1;
+    }
+    if (flags & NO_MAX_ARGS) {
+      if (f) {
+	my_strcat(" | ");
+      }
+      my_strcat("NO_MAX_ARGS");
+      f = 1;
+    }
+    if (flags & NO_SHORTCUTS) {
+      if (f) {
+	my_strcat(" | ");
+      }
+      my_strcat("NO_SHORTCUTS");
+      f = 1;
+    }
+  } else {
+    my_strcat("0");
   }
   my_strcat(");\n");
   fprintf(stderr,"%s",(s=simple_free_buf()));
@@ -1626,7 +1662,7 @@ static char *low_match_types2(char *a,char *b, int flags)
   /* 'mixed' matches anything */
 
   if(((EXTRACT_UCHAR(a) == T_ZERO || EXTRACT_UCHAR(a) == T_MIXED) &&
-      !(flags & A_EXACT) &&
+      !(flags & (A_EXACT|B_EXACT)) &&
       EXTRACT_UCHAR(b) != T_VOID))
   {
 #if 1
@@ -1651,7 +1687,7 @@ static char *low_match_types2(char *a,char *b, int flags)
   }
 
   if((( EXTRACT_UCHAR(b) == T_ZERO || EXTRACT_UCHAR(b) == T_MIXED) &&
-      !(flags & B_EXACT) &&
+      !(flags & (A_EXACT|B_EXACT)) &&
       EXTRACT_UCHAR(a) != T_VOID))
   {
 #if 1
@@ -1687,11 +1723,16 @@ static char *low_match_types2(char *a,char *b, int flags)
   case TWOT(T_PROGRAM, T_FUNCTION):
   case TWOT(T_FUNCTION, T_PROGRAM):
     return a;
+
   case TWOT(T_OBJECT, T_FUNCTION):
   {
     struct pike_string *s;
     if((s=low_object_lfun_type(a, LFUN_CALL)))
-       return low_match_types(s->str,b,flags & ~(A_EXACT|B_EXACT));
+       return low_match_types(s->str,b,flags);
+    if (flags & B_EXACT) {
+      /* A function isn't an object */
+      return 0;
+    }
     return a;
   }
 
@@ -1699,7 +1740,11 @@ static char *low_match_types2(char *a,char *b, int flags)
   {
     struct pike_string *s;
     if((s=low_object_lfun_type(b, LFUN_CALL)))
-       return low_match_types(a,s->str,flags & ~(A_EXACT|B_EXACT));
+       return low_match_types(a,s->str,flags);
+    if (flags & A_EXACT) {
+      /* A function isn't an object */
+      return 0;
+    }
     return a;
   }
   }
