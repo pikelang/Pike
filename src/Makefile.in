@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.302 2002/04/17 20:31:38 nilsson Exp $
+# $Id: Makefile.in,v 1.303 2002/04/27 22:03:17 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -920,9 +920,21 @@ module.o: post_modules/modlist.h post_modules/modlist_headers.h
 # dir, since make depend will only include the one that was chosen,
 # and that doesn't suffice in source dists.
 
-$(SRCDIR)/pikecode.h: code/ia32.h code/sparc.h code/ppc32.h code/computedgoto.h code/bytecode.h
+$(SRCDIR)/pikecode.h: \
+  $(SRCDIR)/code/ia32.h \
+  $(SRCDIR)/code/sparc.h \
+  $(SRCDIR)/code/ppc32.h \
+  $(SRCDIR)/code/computedgoto.h \
+  $(SRCDIR)/code/bytecode.h
+	touch $(SRCDIR)/pikecode.h
 
-$(SRCDIR)/pikecode.c: code/ia32.c code/sparc.c code/ppc32.c code/computedgoto.c code/bytecode.c
+$(SRCDIR)/pikecode.c: \
+  $(SRCDIR)/code/ia32.c \
+  $(SRCDIR)/code/sparc.c \
+  $(SRCDIR)/code/ppc32.c \
+  $(SRCDIR)/code/computedgoto.c \
+  $(SRCDIR)/code/bytecode.c
+	touch $(SRCDIR)/pikecode.c
 
 @dependencies@
 
