@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.297 2003/09/09 16:57:34 mast Exp $
+// $Id: master.pike.in,v 1.298 2003/09/09 17:04:06 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -2892,16 +2892,7 @@ string describe_object(object o)
       if (objectp (tmp)) parent_obj = tmp;
 
       /* Try finding ourselves in parent_obj. */
-      int i;
-      if (object_program(o)) {
-	i = search(values(parent_obj), o);
-      } else {
-	i = search(map(values(parent_obj),
-		       lambda(mixed x) {
-			 if (program p = object_program(x)) return p;
-			 return 0;
-		       }), (mixed) o);
-      }
+      int i = search(values(parent_obj), o);
       if (i >= 0) {
 	s = [string]indices(parent_obj)[i];
 	return describe_module(parent_obj) + s;
