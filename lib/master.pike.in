@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.340 2004/04/11 15:56:26 grubba Exp $
+// $Id: master.pike.in,v 1.341 2004/04/17 15:18:52 marcus Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -86,7 +86,7 @@ int compat_minor=-1;
 
 // Have to access some stuff without going through the resolver.
 private constant Builtin = _static_modules.Builtin;
-private constant Files = _static_modules.___files;
+private constant Files = _static_modules.files;
 
 #define Stat Files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
@@ -1330,11 +1330,19 @@ class dirnode
       } else {
 	resolv_debug("dirnode(%O)->ind(%O) casting (program)%O\n",
 		     dirname, index, fname);
-	program ret;
+	program|object ret;
 	if (ret = low_cast_to_program(fname, 0, compilation_handler)) {
 	  DEC_RESOLV_MSG_DEPTH();
 	  resolv_debug("dirnode(%O)->ind(%O) => found subprogram %O:%O\n",
 		       dirname, index, fname, ret);
+#if constant(load_module)
+	  if (has_suffix(fname, ".so")) {
+	    // This is compatible with 7.4 behaviour.
+	    if (!ret->_module_value)
+	      ret = ret();
+	    if(mixed tmp=ret->_module_value) ret=tmp;
+	  }
+#endif
 	  return ret;
 	}
       }
@@ -1834,7 +1842,7 @@ multiset no_resolv = (<>);
 class CompatResolver
 {
   //! Actual resolver
-  joinnode root_module = joinnode(({predef::_static_modules}));
+  joinnode root_module = joinnode(({instantiate_static_modules(predef::_static_modules)}));
 
   //! Lookup from handler module to corresponding root_module.
   mapping(object:joinnode) handler_root_modules = ([]);
@@ -1985,6 +1993,25 @@ class CompatResolver
     return predefines;
   }
 
+  //! Instantiate static modules in the same way that dynamic modules
+  //! are instantiated.
+  static mapping(string:mixed) instantiate_static_modules(object|mapping static_modules)
+  {
+    mapping(string:mixed) res = ([]);
+    foreach(indices(static_modules), string name) {
+      mixed val = static_modules[name];
+      if (!val->_module_value)
+	val = val();
+      if(mixed tmp=val->_module_value) val=tmp;
+      mapping(string:mixed) level = res;
+      string pfx;
+      while(2 == sscanf(name, "%s/%s", pfx, name))
+	level = (level[pfx] || (level[pfx] = ([])));
+      level[name] = val;
+    }
+    return res;
+  }
+
   //!
   mapping get_default_module()
     {
@@ -2034,7 +2061,7 @@ class CompatResolver
       }
     }
 
-    node = joinnode(({ static_modules,
+    node = joinnode(({ instantiate_static_modules(static_modules),
 		       // Copy relevant stuff from the root module.
 		       @filter(root_module->joined_modules,
 			       lambda(mixed x) {

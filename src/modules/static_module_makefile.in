@@ -1,12 +1,14 @@
 #
-# $Id: static_module_makefile.in,v 1.96 2003/05/15 14:05:10 grubba Exp $
+# $Id: static_module_makefile.in,v 1.97 2004/04/17 15:18:52 marcus Exp $
 #
 
 
-LINKAGE_CPPFLAGS=-Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit
+UNIQUE_MODNAME=$(MODNAME)
+
+LINKAGE_CPPFLAGS=-Dpike_module_init=pike_module_$(UNIQUE_MODNAME)_init -Dpike_module_exit=pike_module_$(UNIQUE_MODNAME)_exit
 LINKAGE_CFLAGS=
 
-MODULE_PROGRAM=_static_modules.___$(MODNAME)
+MODULE_PROGRAM=`echo $(MODDIR)|sed -e s:/:.:`$(MODULE_WRAPPER_PREFIX)$(MODNAME)
 MODULE_TARGET=module.a
 
 @common_module_makefile@
@@ -27,10 +29,11 @@ linker_options: Makefile $(MODULE_ARCHIVES)
 	done
 
 modlist_headers: Makefile
-	@echo >modlist_headers "void pike_module_$(MODNAME)_init(void), pike_module_$(MODNAME)_exit(void);"
+	@echo >modlist_headers "void pike_module_$(UNIQUE_MODNAME)_init(void), pike_module_$(UNIQUE_MODNAME)_exit(void);"
 
 modlist_segment: Makefile
-	@echo >modlist_segment " ,{ \"___$(MODNAME)\", pike_module_$(MODNAME)_init, pike_module_$(MODNAME)_exit } "
+	@echo >modlist_segment " ,{ \"$(MODDIR)$(MODULE_WRAPPER_PREFIX)$(MODNAME)\", pike_module_$(UNIQUE_MODNAME)_init, pike_module_$(UNIQUE_MODNAME)_exit } "
+
 
 # Can't depend on $(SRC_DIR)/$(CONFIG_HEADERS).in since
 # $(CONFIG_HEADERS) isn't always used.

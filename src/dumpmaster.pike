@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmaster.pike,v 1.11 2003/05/07 10:49:00 grubba Exp $
+|| $Id: dumpmaster.pike,v 1.12 2004/04/17 15:18:52 marcus Exp $
 */
 
 string fr;
@@ -35,7 +35,7 @@ string fakeroot(string s)
 
 string read_file(string s)
 {
-  return _static_modules.___files()->Fd(fakeroot(s),"r")->read();
+  return _static_modules.files()->Fd(fakeroot(s),"r")->read();
 }
 
 program compile_file(string file)
@@ -51,7 +51,7 @@ class Codec
     switch(x)
     {
 #define CONST(X) case X: return #X
-      CONST(_static_modules.___files.Stat);
+      CONST(_static_modules.files.Stat);
       CONST(_static_modules.Builtin.__backend);
     }
     encoded+=({x});
@@ -66,7 +66,7 @@ void _main(array(string) argv, array(string) env)
     
   program p=compile_file(argv[-1]);
   string s=encode_value(p, Codec());
-  _static_modules.___files()->Fd(fakeroot(argv[-1]) + ".o","wct")->write(s);
+  _static_modules.files()->Fd(fakeroot(argv[-1]) + ".o","wct")->write(s);
   exit(0);
 }
 

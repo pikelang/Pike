@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.561 2004/04/06 13:00:45 nilsson Exp $
+|| $Id: program.c,v 1.562 2004/04/17 15:18:52 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.561 2004/04/06 13:00:45 nilsson Exp $");
+RCSID("$Id: program.c,v 1.562 2004/04/17 15:18:52 marcus Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1657,17 +1657,17 @@ struct program *id_to_program(INT32 id)
 
     switch(id) {
     case PROG_PARSER_HTML_ID:
-      module = "Parser.____parser";
+      module = "Parser._parser";
       break;
     case PROG_GMP_MPZ_ID:
-      module = "___Gmp";
+      module = "Gmp";
       break;
     case PROG_MODULE_MIME_ID:
-      module = "______MIME";
+      module = "___MIME";
       break;
     default:
       if ((id >= 100) && (id <= 300)) {
-	module = "___Image";
+	module = "Image";
       } else if ((id >= 1000) && (id <= 2000)) {
 	module = "___GTK";
       }

@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.26 2004/04/01 17:20:55 grubba Exp $
+# $Id: common_module_makefile.in,v 1.27 2004/04/17 15:18:52 marcus Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -33,7 +33,7 @@ force:
 	@:;
 
 dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment $(MODULE_TARGET) module.pmod
-	@if [ x"$(PIKE_EXTERNAL_MODULE)" = x ]; then \
+	@if [ x"$(PIKE_EXTERNAL_MODULE)" = x -a x"$(MODULE_PMOD_IN)" != x ]; then \
 	  $(TMP_BINDIR)/install_module module.pmod $(TMP_MODULE_BASE)/$(MODDIR)$(MODNAME).pmod ; \
 	fi
 
@@ -105,26 +105,18 @@ config.status: $(SRCDIR)/configure
 	AR="$(AR)" CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 module.pmod: Makefile $(MODULE_PMOD_IN)
-	@echo "Making module.pmod" ; \
-	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
-	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.26 2004/04/01 17:20:55 grubba Exp $$'; \
-	  echo >>module.pmod '#pike __REAL_VERSION__'; \
-	  echo >>module.pmod '#if constant ($(MODULE_PROGRAM))'; \
-	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
-	  echo >>module.pmod '#else'; \
-	  echo >>module.pmod 'constant this_program_does_not_exist = 1;'; \
-	  echo >>module.pmod '#endif'; \
-	else \
+	@if [ "x$(MODULE_PMOD_IN)" != "x" ]; then \
+	  echo "Making module.pmod" ; \
+	  module_program=$(MODULE_PROGRAM) ; \
 	  if [ -f "$(MODULE_PMOD_IN)" ]; then \
-	    sed -e "s/@module@/$(MODULE_PROGRAM)/" \
+	    sed -e "s/@module@/$${module_program}/" \
 	      <"$(MODULE_PMOD_IN)" >module.pmod; \
 	  else \
 	   if [ -d "$(MODULE_PMOD_IN)" ]; then \
 	     find "$(MODULE_PMOD_IN)" -type d -print | sed -e "s/$(MODULE_PMOD_IN)/module.pmod/" | xargs -n 1 mkdir -p ;\
 	     for mi in `find "$(MODULE_PMOD_IN)" -type f -print | sed -e "s/$(MODULE_PMOD_IN)//"` ;\
 	     do \
-	       sed -e "s/@module@/$(MODULE_PROGRAM)/" \
+	       sed -e "s/@module@/$${module_program}/" \
 	         <"$(MODULE_PMOD_IN)/$$mi" > "module.pmod/$$mi" ; \
 	     done; \
 	  else \

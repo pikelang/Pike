@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 #
-# $Id: make_variables.in,v 1.15 2003/06/12 20:47:41 mast Exp $
+# $Id: make_variables.in,v 1.16 2004/04/17 15:18:52 marcus Exp $
 #
 # Note: This template is actually used only for make_variables in the
 # subdirectories; the one created in the build base dir is just an
@@ -33,6 +33,7 @@ SRCDIR=@srcdir@
 PMOD_TARGETS=@PMOD_TARGETS@
 make_variables_in=@make_variables_in@
 MODULE_PMOD_IN=@MODULE_PMOD_IN@
+MODULE_WRAPPER_PREFIX=@MODULE_WRAPPER_PREFIX@
 
 MODNAME=@MODULE_NAME@
 MODPATH=@MODULE_PATH@
