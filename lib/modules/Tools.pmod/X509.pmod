@@ -1,5 +1,5 @@
 /* 
- * $Id: X509.pmod,v 1.9 2000/05/25 20:19:59 sigge Exp $
+ * $Id: X509.pmod,v 1.10 2003/02/17 14:04:06 grubba Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -50,7 +50,7 @@ mapping parse_time(object asn1)
     return 0;
   m->mon--;
   
-  if ( (m->mday <= 0) || (m->mday >= Calendar.ISO.Year(m->year + 1900)
+  if ( (m->mday <= 0) || (m->mday > Calendar.ISO.Year(m->year + 1900)
 			  ->month(m->mon + 1)->number_of_days()))
     return 0;
 
