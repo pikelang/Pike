@@ -3,8 +3,10 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.25 1999/02/10 21:53:21 hubbe Exp $");
+#include "config.h"
+RCSID("$Id: call_out.c,v 1.26 1999/04/24 13:43:28 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
