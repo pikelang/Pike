@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.86 2000/06/12 19:33:08 mast Exp $");
+RCSID("$Id: mapping.c,v 1.87 2000/06/20 03:26:16 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1538,17 +1538,6 @@ node *make_node_from_mapping(struct mapping *m)
     s.u.mapping=m;
     return mkconstantsvaluenode(&s);
   }
-}
-
-void f_m_delete(INT32 args)
-{
-  if(args < 2)
-    error("Too few arguments to m_delete.\n");
-  if(sp[-args].type != T_MAPPING)
-    error("Bad argument 1 to m_delete.\n");
-
-  map_delete(sp[-args].u.mapping,sp+1-args);
-  pop_n_elems(args-1);
 }
 
 void f_aggregate_mapping(INT32 args)
