@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.546 2002/10/11 15:17:01 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.547 2002/10/12 12:09:35 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -3528,15 +3528,23 @@ cond([[0]],
 
   test_equal(Getopt.get_args(({"",0,0,"sune","--","-foo"})),({"","sune","-foo"}))
 
-  test_true(objectp(clone(String.String_buffer)))
-  test_do(clone(String.String_buffer)->append("foo"))
-  test_do(add_constant("Flurp",clone(String.String_buffer)))
+  test_true(
+#pike 7.2
+objectp(clone(String.String_buffer)))
+  test_do(
+#pike 7.2
+clone(String.String_buffer)->append("foo"))
+  test_do(
+#pike 7.2
+add_constant("Flurp",clone(String.String_buffer)))
   test_do(Flurp->append("test"))
   test_do(Flurp->append("test"))
   test_eq((string)Flurp,"testtest")
   test_do(add_constant("Flurp"))
 
-  test_eq(String.strmult("foo",4),"foofoofoofoo")
+  test_eq(
+#pike 7.2
+String.strmult("foo",4),"foofoofoofoo")
 
 // m_delete
 test_any_equal([[ mapping m=([1:1]); m_delete(m,0); return m; ]],[[ ([1:1]) ]])
