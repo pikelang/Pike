@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.28 2004/11/27 16:33:22 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.29 2004/11/28 19:38:34 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -746,22 +746,13 @@ PIKECLASS Token
   PIKEFUN string _sprintf(int format, mapping(string:string|int)|void options)
     flags ID_STATIC;
   {
-    if (format == 's') {
-      if (THIS->symbol) {
-	ref_push_string(THIS->symbol);
-      } else {
-	ref_push_string(MK_STRING("NONE"));
-      }
+    ref_push_string(MK_STRING("Tokenizer.Token(%O)"));
+    if (THIS->symbol) {
+      ref_push_string(THIS->symbol);
     } else {
-      push_text("%O:%s");
-      ref_push_mapping(THIS->context);
-      if (THIS->symbol) {
-	ref_push_string(THIS->symbol);
-      } else {
-	ref_push_string(MK_STRING("NONE"));
-      }
-      f_sprintf(3);
+      ref_push_string(MK_STRING("NONE"));
     }
+    f_sprintf(2);
     stack_pop_n_elems_keep_top(args);
     return;
   }
@@ -1535,6 +1526,8 @@ PIKECLASS Group
   INIT
   {
     THIS->contents = clone_object(List_program, 0);
+    THIS->end_token = NULL;
+    THIS->terminator = NULL;
 
     push_constant_text("{");
     push_constant_text("}");
@@ -1774,12 +1767,10 @@ PIKECLASS GroupingCompiler
   {
     int not_first = 0;
     struct svalue *orig_sp;
-    struct pike_string *terminator = NULL;	/* NOTE: Does not hold any
-						 *       reference.
-						 */
     struct object *root_group = clone_object(Group_program, 0);
     int append_fun_num = -1;
 
+    /* fprintf(stderr, "GroupingCompiler()->group(): Start.\n"); */
     ref_push_object(OBJ2_GROUP(root_group)->contents);
     push_object(root_group);
     orig_sp = Pike_sp;
@@ -1796,6 +1787,7 @@ PIKECLASS GroupingCompiler
 	 *
 	 * Clean up the stack.
 	 */
+	/* fprintf(stderr, "GroupingCompiler()->group(): Done.\n"); */
 	pop_n_elems(5);
 	break;
       }
@@ -1826,6 +1818,9 @@ PIKECLASS GroupingCompiler
        *     then be on the stack.
        */
 
+      /* fprintf(stderr, "  Examining svalue: "); */
+      /* print_svalue(stderr, Pike_sp-1); */
+      /* fprintf(stderr, "... "); */
       /* Look up the append function if needed. */
       if ((append_fun_num == -1) &&
 	  ((append_fun_num =
@@ -1843,6 +1838,7 @@ PIKECLASS GroupingCompiler
 	  /* We need to look up append() again. */
 	  append_fun_num = -1;
 	}
+	/* fprintf(stderr, "new group.\n"); */
 	continue;
       }
       if ((Pike_sp[-1].type != T_INT) || (Pike_sp[-1].u.integer)) {
@@ -1858,6 +1854,7 @@ PIKECLASS GroupingCompiler
 	  /* We need to look up append() again. */
 	  append_fun_num = -1;
 	}
+	/* fprintf(stderr, "end marker.\n"); */
 	pop_n_elems(2);
 	continue;
       }
@@ -1865,6 +1862,7 @@ PIKECLASS GroupingCompiler
        *
        * Pop the zero.
        */
+      /* fprintf(stderr, "member.\n"); */
       pop_stack();
     }
     while (Pike_sp != orig_sp) {
