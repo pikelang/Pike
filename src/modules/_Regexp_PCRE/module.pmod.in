@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.5 2004/01/08 12:01:41 nilsson Exp $
+// $Id: module.pmod.in,v 1.6 2004/02/15 19:34:28 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -241,7 +241,6 @@ class Studied
 }
 
 #if constant(@module@.UTF8_SUPPORTED)
-#define PCRE_GOT_WIDESTRINGS
 
 //! Wrapper class around Plain, that will allow widestring
 //! patterns and subjects.
@@ -334,14 +333,16 @@ class StudiedWidestring
    }
 }
 
-#define GOOD StudiedWidestring
-#define QUICK Widestring
-#else
-#define GOOD Studied
-#define QUICK Plain
 #endif // buildconfig_UTF8
 
-//! Convencience function to create a suitable PCRE Regexp object;
+#if constant(UTF8_SUPPORTED)
+#define GOOD StudiedWidestring
+#else
+#define GOOD Studied
+#endif
+
+GOOD `()(string pattern,void|int options,void|object table)
+//! Convenience function to create a suitable PCRE Regexp object;
 //! will create a StudiedWidestring from the arguments.
 //!
 //! That means the result will be able to handle widestrings,
@@ -354,29 +355,8 @@ class StudiedWidestring
 //! Widestring support will not be used if the linked libpcre
 //! lacks UTF8 support. This can be tested with
 //! checking that the Regexp.PCRE.Widestring class exist.
-
-GOOD `()(string pattern,void|int options,void|object table)
 {
    return GOOD(pattern,options,table);
-}
-
-// ****************************************************************
-
-int(0..1) match(string regexp, string data) {
-  return QUICK(regexp)->match(data);
-}
-
-array split(string regexp, string data) {
-  return QUICK(regexp)->split(data);
-}
-
-array split2(string regexp, string data) {
-  return QUICK(regexp)->split2(data);
-}
-
-string replace(string regexp, string data,
-	       string|function(string:string) transform) {
-  return QUICK(regexp)->replace(data, transform);
 }
 
 #endif // constant(_pcre)
