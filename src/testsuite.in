@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.235 1999/11/24 16:28:13 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.236 1999/11/24 16:31:41 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1650,7 +1650,7 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
   test_do(sleep(2))
   test_eq(AFJLLAF,17)
   test_do(add_constant("AFJLLAF"))
-  test_do(signal(signum("SIGFPE",0)))
+  test_do(signal(signum("SIGFPE"), 0))
   test_do(signal(signum("SIGFPE")))
 ]])
 
