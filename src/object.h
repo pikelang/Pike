@@ -14,6 +14,7 @@
 struct object
 {
   INT32 refs;                    /* Reference count, must be first. */
+  INT16 flags;
   struct program *prog;
   struct object *next;
   struct object *prev;
@@ -24,7 +25,10 @@ extern struct object fake_object;
 extern struct object *first_object;
 
 #define free_object(O) do{ struct object *o_=(O); if(!--o_->refs) really_free_object(o_); }while(0)
-#define GLOBAL_FROM_INT(I) (fp->current_object->storage+INHERIT_FROM_INT(fp->current_object->prog,(I))->storage_offset+ID_FROM_INT(fp->current_object->prog,(I))->func.offset)
+
+#define LOW_GET_GLOBAL(O,I,ID) ((O)->storage+INHERIT_FROM_INT((O)->prog, (I))->storage_offset+(ID)->func.offset)
+#define GET_GLOBAL(O,I) LOW_GET_GLOBAL(O,I,ID_FROM_INT((O)->prog,I))
+#define GLOBAL_FROM_INT(I) GET_GLOBAL(fp->current_object, I)
 
 /* Prototypes begin here */
 void setup_fake_object();

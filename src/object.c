@@ -269,18 +269,14 @@ void object_index_no_free(struct svalue *to,
     else if(i->run_time_type == T_MIXED)
     {
       struct svalue *s;
-      s=(struct svalue *)(o->storage+
-			  INHERIT_FROM_INT(p, f)->storage_offset +
-			  i->func.offset);
+      s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
       check_destructed(s);
       assign_svalue_no_free(to,s);
     }
     else
     {
       union anything *u;
-      u=(union anything *)(o->storage+
-			   INHERIT_FROM_INT(p, f)->storage_offset +
-			   i->func.offset);
+      u=(union anything *)LOW_GET_GLOBAL(o,f,i);
       check_short_destructed(u,i->run_time_type);
       assign_from_short_svalue_no_free(to,u,i->run_time_type);
     }
@@ -304,18 +300,14 @@ static void low_object_index(struct svalue *to,struct object *o, INT32 f)
   else if(i->run_time_type == T_MIXED)
   {
     struct svalue *s;
-    s=(struct svalue *)(o->storage+
-			INHERIT_FROM_INT(p, f)->storage_offset +
-			i->func.offset);
+    s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
     check_destructed(s);
     assign_svalue_no_free(to, s);
   }
   else
   {
     union anything *u;
-    u=(union anything *)(o->storage+
-			 INHERIT_FROM_INT(p, f)->storage_offset +
-			 i->func.offset);
+    u=(union anything *)LOW_GET_GLOBAL(o,f,i);
     check_short_destructed(u,i->run_time_type);
     assign_from_short_svalue_no_free(to, u, i->run_time_type);
   }
@@ -373,18 +365,12 @@ void object_low_set_index(struct object *o,
   }
   else if(i->run_time_type == T_MIXED)
   {
-    assign_svalue((struct svalue *) 
-		  (o->storage+
-		   INHERIT_FROM_INT(p, f)->storage_offset+
-		   i->func.offset),
-		  from);
+    assign_svalue((struct svalue *)LOW_GET_GLOBAL(o,f,i),from);
   }
   else
   {
     assign_to_short_svalue((union anything *) 
-			   (o->storage+
-			    INHERIT_FROM_INT(p, f)->storage_offset+
-			    i->func.offset),
+			   LOW_GET_GLOBAL(o,f,i),
 			   i->run_time_type,
 			   from);
   }
@@ -438,16 +424,12 @@ union anything *object_low_get_item_ptr(struct object *o,
   else if(i->run_time_type == T_MIXED)
   {
     struct svalue *s;
-    s=(struct svalue *)(o->storage+
-			INHERIT_FROM_INT(p, f)->storage_offset +
-			i->func.offset);
+    s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
     if(s->type == type) return & s->u;
   }
   else if(i->run_time_type == type)
   {
-    return (union anything *) (o->storage+
-			       INHERIT_FROM_INT(p, f)->storage_offset +
-			       i->func.offset);
+    return (union anything *) LOW_GET_GLOBAL(o,f,i);
   }
   return 0;
 }
@@ -534,15 +516,9 @@ void verify_all_objects(int pass)
 
 	if(i->run_time_type == T_MIXED)
 	{
-	  check_svalue((struct svalue *)
-		       (o->storage+
-			INHERIT_FROM_INT(o->prog, e)->storage_offset+
-			i->func.offset));
+	  check_svalue((struct svalue *)LOW_GET_GLOBAL(o,e,i));
 	}else{
-	  check_short_svalue((union anything *)
-			     (o->storage+
-			      INHERIT_FROM_INT(o->prog, e)->storage_offset+
-			      i->func.offset),
+	  check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
 			     i->run_time_type);
 	}
       }
@@ -601,25 +577,13 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
 
       if(i->run_time_type == T_MIXED)
       {
-	if(!low_is_equal((struct svalue *)
-			(a->storage+
-			 INHERIT_FROM_INT(a->prog, e)->storage_offset+
-			 i->func.offset),
-			(struct svalue *)
-			(b->storage+
-			 INHERIT_FROM_INT(a->prog, e)->storage_offset+
-			 i->func.offset),
-			&curr))
+	if(!low_is_equal((struct svalue *)LOW_GET_GLOBAL(a,e,i),
+			 (struct svalue *)LOW_GET_GLOBAL(b,e,i),
+			 &curr))
 	  return 0;
       }else{
-	if(!low_short_is_equal((union anything *)
-			       (a->storage+
-				INHERIT_FROM_INT(a->prog, e)->storage_offset+
-				i->func.offset),
-			       (union anything *)
-			       (b->storage+
-				INHERIT_FROM_INT(a->prog, e)->storage_offset+
-				i->func.offset),
+	if(!low_short_is_equal((union anything *)LOW_GET_GLOBAL(a,e,i),
+			       (union anything *)LOW_GET_GLOBAL(b,e,i),
 			       i->run_time_type,
 			       &curr))
 	  return 0;
@@ -682,3 +646,63 @@ struct array *object_values(struct object *o)
   }
   return a;
 }
+
+#ifdef GC
+void object_gc_clear_mark()
+{
+  struct object *o;
+  for(o=first_object;o;o=o->next)
+    o->flags &=~ OBJECT_FLAG_MARK;
+}
+
+void object_gc_mark(struct object *o)
+{
+  INT32 e;
+  if(o->flags & OBJECT_FLAG_MARK) return;
+  a->flags |= OBJECT_FLAG_MARK;
+
+  if(!o->prog) return;
+
+  for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+  {
+    struct identifier *i;
+    
+    i=ID_FROM_INT(o->prog, e);
+
+    if(i->run_time_type & IDENTIFIER_FUNCTION) continue;
+
+    if(i->run_time_type == T_MIXED)
+    {
+      svalue_gc_sweep((struct svalue *)LOW_GET_GLOBAL(o,e,i));
+    }else{
+      short_svalue_gc_sweep((struct svalue *)LOW_GET_GLOBAL(o,e,i),
+			    i->run_time_type);
+    }
+  }
+}
+
+void object_gc_sweep()
+{
+  struct object *o, *next;
+  for(o=first_object;o;o=next)
+  {
+    o->refs++;
+    if(!(o->flags & OBJECT_FLAG_MARK)) destruct(o);
+    next=o->next;
+    free_object(o);
+  }
+}
+
+#ifdef DEBUG
+void object_gc_sweep2()
+{
+  struct object *o;
+  if(!d_flag) return;
+
+
+  for(o=first_object;o;o=o->next)
+    if(!(o->flags & OBJECT_FLAG_MARK)) 
+      fatal("Object ref count incorrect.\n");
+}
+#endif /* DEBUG */
+#endif /* GC */

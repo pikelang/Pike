@@ -1266,7 +1266,7 @@ void array_gc_clear_mark()
 
 void array_gc_mark(struct array *a)
 {
-  INT e;
+  INT32 e;
   if(a->flags & ARRAY_FLAG_MARK) return;
   a->flags |= ARRAY_FLAG_MARK;
 
@@ -1306,6 +1306,7 @@ void array_gc_sweep()
 void array_gc_sweep2()
 {
   struct array *a;
+  if(!d_flag) return;
 
   a=&empty_array;
   do
