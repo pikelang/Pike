@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.106 2003/05/11 12:54:35 grubba Exp $
+|| $Id: sprintf.c,v 1.107 2003/05/15 10:42:36 grubba Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -286,7 +286,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.106 2003/05/11 12:54:35 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.107 2003/05/15 10:42:36 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1194,13 +1194,11 @@ static void low_pike_sprintf(struct format_stack *fs,
 	DO_OP();
 	for(e=1,tmp=1;tmp;e++)
 	{
-	  if(!INDEX_PCHARP(a,e))
-	  {
+	  if (!INDEX_PCHARP(a,e) &&
+	      !COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end)) {
 	    sprintf_error(fs, "Missing %%} in format string.\n");
 	    break;		/* UNREACHED */
-	  }
-	  if(INDEX_PCHARP(a,e)=='%')
-	  {
+	  } else if(INDEX_PCHARP(a,e)=='%') {
 	    switch(INDEX_PCHARP(a,e+1))
 	    {
 	    case '%': e++; break;
