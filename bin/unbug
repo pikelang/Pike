@@ -628,9 +628,9 @@ mapping syms=
 
 class Gdb
 {
-  object pid;
-  object in;
-  object out;
+  Process.Process pid;
+  Stdio.File in;
+  Stdio.File out;
   string prompt="[[`$$Ziuqakdfa972093874$q$w$09280928341kjhsdf===$$']]";
 
   string buffer="";
@@ -688,10 +688,10 @@ class Gdb
     object tmp2=out->pipe(Stdio.PROP_IPC);
     object tmp1=Stdio.File();
     in=tmp1->pipe(Stdio.PROP_IPC);
-    pid=Process.create_process( ({"gdb"}),
-				(["setsid":1,
-				  "stdin":tmp1,
-				  "stdout":tmp2]));
+    pid=Process.Process( ({"gdb"}),
+			 (["setsid":1,
+			   "stdin":tmp1,
+			   "stdout":tmp2]));
     cmd("set prompt "+prompt);
     cmd("set width 0");
     cmd("set print elements 0");
@@ -816,6 +816,8 @@ class Gdb
       }
   };
 
+  int evaluated_handles;
+
   class Handle
   {
     string __expr;
@@ -909,6 +911,7 @@ class Gdb
 
     void _evaluate()
       {
+	evaluated_handles++;
 	if(__varno==-1)
 	{
 #if DEBUG > 3
@@ -1133,7 +1136,7 @@ class Debug
 	  cnt++;
 	  int len=get_small_number();
 	  int shift = lineinfo[cnt++];
-	  file=lineinfo[cnt..cnt+len-1]; // FIXME: Only works if shift==0
+	  file=lineinfo[cnt..cnt+len-1]; // FIXME: Only works if shift==0?
 	  cnt += len<<shift;
 	}
 	off+=get_small_number();
@@ -1369,15 +1372,25 @@ class Debug
 
     class KeyPair
     {
-      SvalueHandle ind, val;
-      int hval;
+      static Handle _pair;
+      static SvalueHandle ind, val;
+      static int hval;
       
-      void create(Handle pair)
-	{
-	  ind=Svalue(pair->ind);
-	  val=Svalue(pair->val);
-	  hval=pair->hval->_value();
-	}
+      void create(Handle pair) {
+	_pair = pair;
+      }
+
+      SvalueHandle get_ind() {
+	return ind || ( ind=Svalue(_pair->ind) );
+      }
+
+      SvalueHandle get_val() {
+	return val || ( val=Svalue(_pair->val) );
+      }
+
+      int get_hval() {
+	return hval || ( hval=_pair->hval->_value() );
+      }
     }
 
     void _walk()
@@ -1417,7 +1430,7 @@ class Debug
 	      }
 	      if(sizeof(odesc)>2) odesc+=",";
 	      done++;
-	      odesc+=sprintf("%O:%O",k->ind, k->val);
+	      odesc+=sprintf("%O:%O",k->get_ind(), k->get_val());
 	    }
 	  odesc+="])";
 	}
@@ -1432,16 +1445,16 @@ class Debug
       {
 	_walk();
 	foreach(cache, KeyPair k)
-	  if(k->ind == key)
-	    return k->val;
+	  if(k->get_ind() == key)
+	    return k->get_val();
       }
 
     mixed _search(mixed val)
       {
 	_walk();
 	foreach(cache, KeyPair k)
-	  if(k->val == val)
-	    return k->ind;
+	  if(k->get_val() == val)
+	    return k->get_ind();
       }
 
     mixed `->(string val)
@@ -1451,11 +1464,11 @@ class Debug
       }
 
     mixed _indices() {
-      return cache->ind;
+      return cache->get_ind();
     }
 
     mixed _values() {
-      return cache->val;
+      return cache->get_val();
     }
   }
 
@@ -1529,20 +1542,20 @@ class Debug
 
     class Identifier
     {
-      Handle identifier;
-      int _storage_offset;
-      int _num;
-      string _name;
-      string _flags;
-      string _run_time_type;
-      int _offset=-10;
+      static Handle identifier;
+      static Handle _so;
+      static int _storage_offset=-1;
+      static int _num;
+      static string _name;
+      static string _flags;
+      static string _run_time_type;
+      static int _offset=-10;
 
-      void create(int e, int so, Handle id)
+      void create(int e, Handle in, Handle id)
 	{
 	  _num=e;
 	  identifier=id;
-	  _storage_offset=so;
-	  _name=mkhandle("(char *)",identifier->name->str)->_value();
+	  _so = in->storage_offset;
 //	  werror("Identifier { %d, name = %s }\n",_num, _name);
 	}
 
@@ -1563,11 +1576,15 @@ class Debug
 
       int storage_offset()
 	{
+	  if(_storage_offset==-1)
+	    _storage_offset = _so->_value();
 	  return _storage_offset;
 	}
 
       string name()
 	{
+	  if(!_name)
+	    _name=mkhandle("(char *)",identifier->name->str)->_value();
 	  return _name;
 	}
 
@@ -1617,7 +1634,7 @@ class Debug
 	    Handle idref = idrefs + e;
 	    Handle in=inherits + idref->inherit_offset;
 	    Handle id =in->prog->identifiers + idref->identifier_offset;
-	    object i=Identifier(e,in->storage_offset->_value(), id);
+	    object i=Identifier(e, in, id);
 	    __name_to_id[i->name()]=i;
 	    __id_to_name+=({i});
 	  }
@@ -1731,6 +1748,7 @@ class Debug
 	  if(!__ptr->prog->_value()) return 0;
 	  __prog=MKSH(ProgramHandle,__ptr->prog);
 	}
+
 	return __prog;
       }
 
@@ -1767,7 +1785,7 @@ class Debug
 	if(mixed prog=_object_program())
 	{
 	  string desc=sprintf("%O",prog);
-	  if(desc == "PROGRAM") return "object";
+	  if(desc == "PROGRAM") return "OBJECT";
 	  return sprintf("%s()",desc);
 	}
 
@@ -2065,7 +2083,7 @@ class Debug
 				fp->pc);
       }
 
-    string  get_source_line()
+    string get_source_line()
       {
 	sscanf(location(),"%s:%d",string file, int line);
 	return getline(file, line);
@@ -2901,9 +2919,12 @@ class Debug
 	    break;
 	  case "profiling":
 #define werror write
-	  PROF_RESULT();
-	  return "";
+	    PROF_RESULT();
+	    return "";
 #undef werror
+	  case "evals":
+	    write("%d Handles evaluated\n", evaluated_handles);
+	    return "";
 	  break;
 	  }
 	write("info breakpoints  : show breakpoints\n");
@@ -3050,7 +3071,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.16 2004/01/10 23:18:52 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.17 2004/01/22 01:23:09 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2004, Department of Computer and Information Science,
                      Linköping University
