@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.2 1999/02/05 17:35:28 mast Exp $
+# $Id: Makefile,v 1.3 1999/02/05 18:53:25 grubba Exp $
 #
 # Meta Makefile
 #
@@ -10,6 +10,9 @@ prefix=/usr/local
 OS=`uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`
 BUILDDIR=build/$(OS)
 METATARGET=
+
+# Used to avoid make compatibility problems.
+BIN_TRUE=":"
 
 all: bin/pike compile
 
@@ -46,6 +49,7 @@ compile: configure
 	)
 
 force:
+	-@$(BIN_TRUE)
 
 bin/pike: force
 	sed -e "s|\"BASEDIR\"|\"`pwd`\"|" < bin/pike.in > bin/pike
@@ -61,8 +65,10 @@ verify_installed:
 	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verify_installed"
 
 check: verify
+	-@$(BIN_TRUE)
 
 sure: verify
+	-@$(BIN_TRUE)
 
 verbose_verify:
 	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=verbose_verify"
