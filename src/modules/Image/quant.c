@@ -1,11 +1,11 @@
 #include <config.h>
-/* $Id: quant.c,v 1.10 1997/05/29 19:38:13 mirar Exp $ */
+/* $Id: quant.c,v 1.11 1997/07/18 05:47:14 per Exp $ */
 /* (optimized) color quantization and following lookup */
 
 /*
 **! module Image
 **! note
-**!	$Id: quant.c,v 1.10 1997/05/29 19:38:13 mirar Exp $<br>
+**!	$Id: quant.c,v 1.11 1997/07/18 05:47:14 per Exp $<br>
 */
 
 #ifdef HAVE_UNISTD_H
@@ -117,14 +117,16 @@ static INLINE int hash_enter_strip(rgb_entry *rgbe,rgb_entry *end,
 				   int len,rgb_group rgb,int strip)
 {
    register rgb_entry *re;
-
-   unsigned char strip_r[24]=
+/* Not using static here is not a very good idea. Initialization of these
+ *  took 75% of the CPU in this function. :-)
+ */
+   /*CONST*/ static unsigned char strip_r[24]=
 { 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
   0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
-   unsigned char strip_g[24]=
+   /*CONST*/ static unsigned char strip_g[24]=
 { 0xff, 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
   0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
-   unsigned char strip_b[24]=
+   /*CONST*/ static unsigned char strip_b[24]=
 { 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
   0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
 
