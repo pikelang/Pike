@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.186 2003/11/27 19:57:35 mast Exp $
+|| $Id: main.c,v 1.187 2003/11/28 13:29:37 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.186 2003/11/27 19:57:35 mast Exp $");
+RCSID("$Id: main.c,v 1.187 2003/11/28 13:29:37 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -49,8 +49,12 @@ RCSID("$Id: main.c,v 1.186 2003/11/27 19:57:35 mast Exp $");
 
 #include "las.h"
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
+#endif
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
