@@ -1,8 +1,32 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.56 2003/04/07 17:12:02 nilsson Exp $
+// $Id: Query.pike,v 1.57 2003/05/04 21:29:15 nilsson Exp $
 
-//!	Open and execute an HTTP query.
+//! Open and execute an HTTP query.
+//!
+//! @example
+//! HTTP.Query o=HTTP.Query();
+//! 
+//! void ok()
+//! {
+//!    write("ok...\n");
+//!    write("%O\n", o->headers);
+//!    exit(0);
+//! }
+//! 
+//! void fail()
+//! {
+//!    write("fail\n");
+//!    exit(0);
+//! }
+//! 
+//! int main()
+//! {
+//!    o->set_callbacks(ok, fail);
+//!    o->async_request("pike.ida.liu.se", 80, "HEAD / HTTP/1.0");
+//!    return -1;
+//! }
+//! @endexample
 
 /****** variables **************************************************/
 
@@ -954,31 +978,3 @@ static string _sprintf(int t)
   return t=='O' && status && sprintf("%O(%d %s)", this_program,
 				     status, status_desc);
 }
-
-/************************ example *****************************/
-
-#if 0
-
-object o=HTTP.Query();
-
-void ok()
-{
-   write("ok...\n");
-   write(sprintf("%O\n",o->headers));
-   exit(0);
-}
-
-void fail()
-{
-   write("fail\n");
-   exit(0);
-}
-
-int main()
-{
-   o->set_callbacks(ok,fail);
-   o->async_request("www.roxen.com",80,"HEAD / HTTP/1.0");
-   return -1;
-}
-
-#endif
