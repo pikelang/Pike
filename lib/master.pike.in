@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.211 2002/07/28 23:54:31 nilsson Exp $
+// $Id: master.pike.in,v 1.212 2002/07/29 14:34:04 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -150,6 +150,12 @@ int is_absolute_path(string p)
   return p[0]=='/';
 }
 
+#ifdef __NT__
+#define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
+#else
+#define EXPLODE_PATH(X) ((X)/"/")
+#endif
+
 //! @appears explode_path
 //! Split a path @[p] into its components.
 //!
@@ -159,13 +165,7 @@ int is_absolute_path(string p)
 //!
 array(string) explode_path(string p)
 {
-#ifdef __NT__
-  p=replace(p,"\\","/");
-#define EXPLODE_PATH(X) (replace((X),"\\","/")/"/")
-#else
-#define EXPLODE_PATH(X) ((X)/"/")
-#endif
-  return p/"/";
+  return EXPLODE_PATH(p);
 }
 
 //! @appears dirname
@@ -1259,7 +1259,7 @@ class CompatResolver
   mapping(string:string) predefines = ([]);
   string ver;
 
-  //! The ComparResolver is initialized with a value that can be
+  //! The CompatResolver is initialized with a value that can be
   //! casted into a "%d.%d" string, e.g. a version object.
   void create(mixed version)
     {
@@ -1458,9 +1458,9 @@ class CompatResolver
       }
 
       if (current_file && !stringp(current_file)) {
-	throw(({sprintf("resolv(%O, %O, %O): current_file is not a string!\n",
-			identifier, current_file, current_handler),
-		backtrace()}));
+	error( "resolv(%O, %O, %O): current_file is not a string!\n",
+	       identifier, current_file, current_handler,
+	       backtrace() );
       }
 
       mixed ret;
@@ -1600,7 +1600,10 @@ void _main(array(string) orig_argv, array(string) env)
       }		
     }
 
-
+  void _error(string a, mixed ... args) {
+    werror(a, @b);
+    exit(1);
+  };
 
 #ifndef NOT_INSTALLED
   q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
@@ -1613,16 +1616,24 @@ void _main(array(string) orig_argv, array(string) env)
   for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
 #endif
   
+  string format_paths() {
+    return  ("master.pike..." + (_master_file_name || __FILE__) + "\n"
+	     "Module path..." + pike_module_path*"\n"
+	     "              " + "\n"
+	     "Include path.." + pike_include_path*"\n"
+	     "              " + "\n"
+	     "Program path.." + pike_program_path*"\n"
+	     "              " + "\n");
+  };
+
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
     tmp=resolv("Getopt");
 
-    if (!tmp) {
-      werror("master.pike: Couldn't resolv Getopt module.\n"
+    if (!tmp)
+      _error("master.pike: Couldn't resolv Getopt module.\n"
 	     "Is your PIKE_MODULE_PATH environment variable set correctly?\n");
-      exit(1);
-    }
-    
+
     q=tmp->find_all_options(argv,({
       ({"compat_version",tmp->HAS_ARG,({"-V","--compat"})}),
       ({"version",tmp->NO_ARG,({"-v","--version"})}),
@@ -1746,7 +1757,7 @@ void _main(array(string) orig_argv, array(string) env)
       switch(opts[0])
       {
       case "version":
-	werror(version() + " Copyright © 1994-2002 Roxen Internet Software\n"
+	werror(version() + " Copyright © 1994-2002 Linköping University\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
 	       "welcome to redistribute it under certain conditions; Read the files\n"
 	       "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
@@ -1780,13 +1791,7 @@ void _main(array(string) orig_argv, array(string) env)
 	break;
 
       case "showpaths":
-	werror("Include path : " + pike_include_path*"\n"
-	       "               " + "\n"
-	       "Module path  : " + pike_module_path*"\n"
-	       "               " + "\n"
-	       "Program path : " + pike_program_path*"\n"
-	       "               " + "\n"
-	       "Master file  : " + (_master_file_name || __FILE__) + "\n");
+	werror(format_paths());
 	exit(0);
 	
       case "execute":
@@ -1807,19 +1812,20 @@ void _main(array(string) orig_argv, array(string) env)
     argv = tmp->get_args(argv,1);
   }
 
+  mixed main_resolv(array syms) {
+    mixed v = resolv(syms[0]);
+    foreach(syms[1..], string sym)
+      if(v) v = v[sym];
+    if(!v)
+      _error("Could not resolv %s\n", syms*".");
+    return v;
+  };
+
   switch (postparseaction)
   {
      case "features":
-	v = resolv("Tools");
-	if (v) v = v["Install"];
-	if (v) v = v["features"];
-	if (!v)
-	{
-	   werror("Could not resolv Tools.Install.features\n");
-	   exit(1);
-	}
-
-	_static_modules.files()->_stdout->write(v()*"\n"+"\n");
+	_static_modules.files()->_stdout->
+	  write( main_resolv( "Tools.Install.features"/"." )()*"\n"+"\n" );
 	exit(0);
 
      case "info":
@@ -1830,28 +1836,11 @@ void _main(array(string) orig_argv, array(string) env)
 	  "\n");
 
 	w("pike binary..."+_pike_file_name+"\n");
-	w("master.pike..."+__FILE__+"\n");
+	w( format_paths() + "\n");
 
-	w("Module path..." + pike_module_path*"\n"
-	  "              " + "\n"
-	  "Include path.." + pike_include_path*"\n"
-	  "              " + "\n"
-	  "Program path.." + pike_program_path*"\n"
-	  "              " + "\n"
+	w("Features......"+
+	  main_resolv( "Tools.Install.features"/"." )()*"\n              "+
 	  "\n");
-
-	v = resolv("Tools");
-	if (v) v = v["Install"];
-	if (v) v = v["features"];
-	if (!v)
-	{
-	   werror("Could not resolv Tools.Install.features\n");
-	   exit(1);
-	}
-
-	w("Features......"+v()*"\n              "+"\n");
-
-	
 	exit(0);
   }
 
@@ -1859,54 +1848,34 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(sizeof(argv)==1)
   {
-    /* Attempt to resolv Tools.Hilfe.StdinHilfe */
-    tmp = resolv("Tools");
-    if (!tmp) {
-      werror("Couldn't find Tools.\n");
-      exit(1);
-    }
-    tmp = tmp["Hilfe"];
-    if (!tmp) {
-      werror("Couldn't find Hilfe.\n");
-      exit(1);
-    }
-    tmp->StdinHilfe();
+    main_resolv( ({ "Tools", "Hilfe" }) )->StdinHilfe();
     exit(0);
-  } else {
-    argv=argv[1..];
   }
+  else
+    argv=argv[1..];
 
   argv[0]=combine_path_with_cwd(argv[0]);
 
   program prog;
-
   mixed err = catch {
     prog=(program)argv[0];
   };
 
-  if (err) {
-    werror( "Pike: Failed to compile script:\n"
+  if (err)
+    _error( "Pike: Failed to compile script:\n"
 	    "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
-    exit(1);
-  }
 
-  // FIXME: Isn't the following code dead?
   if(!prog)
-  {
-    werror("Pike: Couldn't find script to execute\n(%O)\n",argv[0]);
-    exit(1);
-  }
+    _error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
 
   object script=prog();
 
 #if constant(_debug)
   if(debug) _debug(debug);
 #endif
+
   if(!script->main)
-  {
-    werror("Error: "+argv[0]+" has no main().\n");
-    exit(1);
-  }
+    _error("Error: "+argv[0]+" has no main().\n");
 
   if(trace) predef::trace(trace);
   i=script->main(sizeof(argv),argv,env);
