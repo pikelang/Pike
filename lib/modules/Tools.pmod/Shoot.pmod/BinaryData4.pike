@@ -9,8 +9,9 @@ int n = m*k; // for reporting
 
 void perform()
 {
+   array v;
    for (int i=0; i<k; i++)
-      array_sscanf(random_string(2*m),"%2c"*m);
+      v=array_sscanf(random_string(2*m),"%2c"*m);
 }
 
 string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
