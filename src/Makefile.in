@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.154 1999/09/14 22:50:22 hubbe Exp $
+# $Id: Makefile.in,v 1.155 1999/10/04 19:36:49 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -207,13 +207,24 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Done."
 
 
+.SUFFIXES: .c .o
+
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
-interpret.o: $(SRCDIR)/interpret.c
-	$(CC) $(CFLAGS) -c $(SRCDIR)/interpret.c -o interpret.o || NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $(SRCDIR)/interpret.c -o interpret.o 
+# GCC dumps core on some files @ OSF1
+# This kluge should work around that...
+# FIXME: Make this a configure option
+.c.o:
+	@echo "Compiling $<" ;\
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
+	else \
+	echo "WARNING: Compiler failiure! Trying without optimization!" ;\
+	echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" ;\
+	NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	fi
 
 force :
-
+	@:
 
 # install
 install: pike hilfe pike-module aclocal

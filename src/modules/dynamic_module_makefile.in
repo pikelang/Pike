@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.56 1999/10/04 03:04:32 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.57 1999/10/04 19:37:03 hubbe Exp $
 #
 
 
@@ -35,6 +35,20 @@ dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	tmp2="___$$tmp" ; \
 	if [ -f $(SRCDIR)/module.pmod.in ]; then sed -e "s/@module@/.$$tmp2/" <$(SRCDIR)/module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod ; else if [ -f ./module.pmod.in ]; then sed -e "s/@module@/.$$tmp2/" <./module.pmod.in >$(TMP_LIBDIR)/modules/$$tmp.pmod; else tmp2="$$tmp"; fi; fi ; \
 	$(TMP_BINDIR)/install_module module.so $(TMP_LIBDIR)/modules/$$tmp2.so
+
+.SUFFIXES: .c .o
+
+# GCC dumps core on some files @ OSF1
+# This kluge should work around that...
+# FIXME: Make this a configure option
+.c.o:
+	@echo "Compiling $<" ;\
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
+	else \
+	echo "WARNING: Compiler failiure! Trying without optimization!" ;\
+	echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" ;\
+	NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	fi
 
 linker_options: Makefile
 	echo "$(LINKER_OPTIONS)" >linker_options

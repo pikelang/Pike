@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.50 1999/10/04 03:04:33 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.51 1999/10/04 19:37:02 hubbe Exp $
 #
 
 
@@ -31,6 +31,20 @@ dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 	@tmp="$(INSTALL_NAME)" ;\
 	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
 	$(TMP_BINDIR)/install_module module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
+
+.SUFFIXES: .c .o
+
+# GCC dumps core on some files @ OSF1
+# This kluge should work around that...
+# FIXME: Make this a configure option
+.c.o:
+	@echo "Compiling $<" ;\
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
+	else \
+	echo "WARNING: Compiler failiure! Trying without optimization!" ;\
+	echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" ;\
+	NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	fi
 
 linker_options: Makefile $(MODULE_ARCHIVES)
 	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS)
