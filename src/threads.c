@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.172 2003/12/13 21:13:08 jonasw Exp $");
+RCSID("$Id: threads.c,v 1.173 2004/03/03 13:59:10 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -840,21 +840,21 @@ PMOD_EXPORT void f_this_thread(INT32 args)
 struct mutex_storage
 {
   COND_T condition;
-  struct object *key;
+  /* Key-related data. */
+  struct object *owner;	/* NULL: Unlocked. other: locked with owner. */
 };
 
 struct key_storage
 {
   struct mutex_storage *mut;
-  struct object *owner;
-  int initialized;
+  struct object *mutex_obj;
 };
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
 void f_mutex_lock(INT32 args)
 {
-  struct mutex_storage  *m;
+  struct mutex_storage *m;
   struct object *o;
   INT_TYPE type;
 
@@ -873,14 +873,13 @@ void f_mutex_lock(INT32 args)
 
     case 0:
     case 2:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_id)
+      if(m->owner == Pike_interpreter.thread_id)
       {
 	THREADS_FPRINTF(0,
-			(stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
-			 (unsigned int)OB2KEY(m->key),
+			(stderr, "Recursive LOCK m:%08x, t:%08x(%08x)\n",
 			 (unsigned int)m,
-			 (unsigned int)OB2KEY(m->key)->mut,
-			 (unsigned int) Pike_interpreter.thread_id));
+			 (unsigned int)Pike_interpreter.thread_id,
+			 (unsigned int)m->owner));
 
 	if(type==0) Pike_error("Recursive mutex locks!\n");
 
@@ -900,7 +899,7 @@ void f_mutex_lock(INT32 args)
   DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
 	       fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; )
 
-  if(m->key)
+  if(m->owner)
   {
     if(threads_disabled)
     {
@@ -917,19 +916,19 @@ void f_mutex_lock(INT32 args)
 			    "f_mutex_lock(): Threads disabled\n"));
 	co_wait_interpreter(&threads_disabled_change);
       }
-    }while(m->key);
+    }while(m->owner);
     SWAP_IN_CURRENT_THREAD();
   }
-  m->key=o;
-  OB2KEY(o)->mut=m;
+  add_ref(m->owner = Pike_interpreter.thread_id);	/* Locked. */
+  OB2KEY(o)->mut = m;
+  add_ref(OB2KEY(o)->mutex_obj = Pike_fp->current_object);
 
   DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
 	       fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; )
 
-  THREADS_FPRINTF(1, (stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
+  THREADS_FPRINTF(1, (stderr, "LOCK k:%08x, m:%08x, t:%08x\n",
 		      (unsigned int)OB2KEY(o),
 		      (unsigned int)m,
-		      (unsigned int)OB2KEY(m->key)->mut,
 		      (unsigned int)Pike_interpreter.thread_id));
   pop_n_elems(args);
   push_object(o);
@@ -937,10 +936,9 @@ void f_mutex_lock(INT32 args)
 
 void f_mutex_trylock(INT32 args)
 {
-  struct mutex_storage  *m;
+  struct mutex_storage *m;
   struct object *o;
   INT_TYPE type;
-  int i=0;
 
   /* No reason to release the interpreter lock here
    * since we aren't calling any functions that take time.
@@ -960,7 +958,7 @@ void f_mutex_trylock(INT32 args)
 		  "Unknown mutex locking style: %d\n",type);
 
     case 0:
-      if(m->key && OB2KEY(m->key)->owner == Pike_interpreter.thread_id)
+      if(m->owner == Pike_interpreter.thread_id)
       {
 	Pike_error("Recursive mutex locks!\n");
       }
@@ -972,18 +970,15 @@ void f_mutex_trylock(INT32 args)
 
   o=clone_object(mutex_key,0);
 
-  if(!m->key)
+  if(!m->owner)
   {
+    add_ref(m->owner = Pike_interpreter.thread_id);
     OB2KEY(o)->mut=m;
-    m->key=o;
-    i=1;
-  }
-  
-  pop_n_elems(args);
-  if(i)
-  {
+    add_ref(OB2KEY(o)->mutex_obj = Pike_fp->current_object);
+    pop_n_elems(args);
     push_object(o);
   } else {
+    pop_n_elems(args);
     destruct(o);
     free_object(o);
     push_int(0);
@@ -993,15 +988,17 @@ void f_mutex_trylock(INT32 args)
 void init_mutex_obj(struct object *o)
 {
   co_init(& THIS_MUTEX->condition);
-  THIS_MUTEX->key=0;
+  THIS_MUTEX->owner = NULL;
 }
 
 void exit_mutex_obj(struct object *o)
 {
   THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%08x\n",
 		      (unsigned int)THIS_MUTEX));
-  if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
-  THIS_MUTEX->key=0;
+  if(THIS_MUTEX->owner) {
+    free_object(THIS_MUTEX->owner);
+  }
+  THIS_MUTEX->owner = NULL;
   co_destroy(& THIS_MUTEX->condition);
 }
 
@@ -1010,34 +1007,30 @@ void init_mutex_key_obj(struct object *o)
 {
   THREADS_FPRINTF(1, (stderr, "KEY k:%08x, o:%08x\n",
 		      (unsigned int)THIS_KEY, (unsigned int)Pike_interpreter.thread_id));
-  THIS_KEY->mut=0;
-  add_ref(THIS_KEY->owner=Pike_interpreter.thread_id);
-  THIS_KEY->initialized=1;
+  THIS_KEY->mut = NULL;
+  THIS_KEY->mutex_obj = NULL;
 }
 
 void exit_mutex_key_obj(struct object *o)
 {
-  THREADS_FPRINTF(1, (stderr, "UNLOCK k:%08x m:(%08x) t:%08x o:%08x\n",
+  THREADS_FPRINTF(1, (stderr, "UNLOCK k:%08x m:(%08x) t:%08x\n",
 		      (unsigned int)THIS_KEY,
 		      (unsigned int)THIS_KEY->mut,
-		      (unsigned int)Pike_interpreter.thread_id,
-		      (unsigned int)THIS_KEY->owner));
+		      (unsigned int)Pike_interpreter.thread_id));
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
 
-#ifdef PIKE_DEBUG
-    if(mut->key != o)
-      fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
-#endif
-    mut->key=0;
-    if (THIS_KEY->owner) {
-      free_object(THIS_KEY->owner);
-      THIS_KEY->owner=0;
+    if (mut->owner) {
+      free_object(mut->owner);
+      mut->owner = NULL;
     }
-    THIS_KEY->mut=0;
-    THIS_KEY->initialized=0;
     co_signal(& mut->condition);
+    THIS_KEY->mut = NULL;
+  }
+  if (THIS_KEY->mutex_obj) {
+    free_object(THIS_KEY->mutex_obj);
+    THIS_KEY->mutex_obj = NULL;
   }
 }
 
@@ -1059,25 +1052,21 @@ void f_cond_wait(INT32 args)
   if((args > 0) && !IS_ZERO(Pike_sp-1))
   {
     struct object *key;
+    struct object *owner;
     struct mutex_storage *mut;
 
     if(Pike_sp[-1].type != T_OBJECT)
       Pike_error("Bad argument 1 to condition->wait()\n");
     
-    key=Pike_sp[-1].u.object;
+    key = Pike_sp[-1].u.object;
     
     if(key->prog != mutex_key)
       Pike_error("Bad argument 1 to condition->wait()\n");
 
-    if (OB2KEY(key)->initialized) {
-
-      mut = OB2KEY(key)->mut;
-      if(!mut)
-	Pike_error("Bad argument 1 to condition->wait()\n");
-
+    if ((mut = OB2KEY(key)->mut) && (owner = mut->owner)) {
       /* Unlock mutex */
-      mut->key=0;
-      OB2KEY(key)->mut=0;
+      mut->owner = NULL;
+      OB2KEY(key)->mut = NULL;
       co_signal(& mut->condition);
     
       /* Wait and allow mutex operations */
@@ -1090,7 +1079,7 @@ void f_cond_wait(INT32 args)
       }
     
       /* Lock mutex */
-      while(mut->key) {
+      while(mut->owner) {
 	co_wait_interpreter(& mut->condition);
 	while (threads_disabled) {
 	  THREADS_FPRINTF(1, (stderr,
@@ -1098,12 +1087,17 @@ void f_cond_wait(INT32 args)
 	  co_wait_interpreter(&threads_disabled_change);
 	}
       }
-      mut->key=key;
-      OB2KEY(key)->mut=mut;
+      mut->owner = owner;
+      OB2KEY(key)->mut = mut;
       
       SWAP_IN_CURRENT_THREAD();
       pop_n_elems(args);
       return;
+    }
+    else if (mut) {
+      Pike_error("Bad argument 1 to condition->wait()\n");
+    } else {
+      Pike_error("Bad argument 1 to condition->wait(): Mutex not locked.\n");
     }
   }
 
@@ -1477,7 +1471,7 @@ void low_th_init(void)
 void th_init(void)
 {
   struct program *tmp;
-  ptrdiff_t mutex_key_offset;
+  ptrdiff_t mutex_offset;
 
 #ifdef UNIX_THREADS
   
@@ -1486,12 +1480,7 @@ void th_init(void)
 #endif
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX_KEY);
-  mutex_key_offset = ADD_STORAGE(struct key_storage);
-  /* This is needed to allow the gc to find the possible circular reference.
-   * It also allows a process to take over ownership of a key.
-   */
-  map_variable("_owner", "object", 0,
-	       mutex_key_offset + OFFSETOF(key_storage, owner), T_OBJECT);
+  ADD_STORAGE(struct key_storage);
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=Pike_compiler->new_program;
@@ -1504,7 +1493,11 @@ void th_init(void)
 #endif
 
   START_NEW_PROGRAM_ID(THREAD_MUTEX);
-  ADD_STORAGE(struct mutex_storage);
+  mutex_offset = ADD_STORAGE(struct mutex_storage);
+  /* This is needed to allow the gc to find the possible circular reference.
+   */
+  map_variable("_owner", "object", ID_PRIVATE|ID_STATIC,
+	       mutex_offset + OFFSETOF(mutex_storage, owner), T_OBJECT);
   /* function(int(0..2)|void:object(mutex_key)) */
   ADD_FUNCTION("lock",f_mutex_lock,
 	       tFunc(tOr(tInt02,tVoid),tObjIs_THREAD_MUTEX_KEY),0);
