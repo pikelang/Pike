@@ -5,7 +5,7 @@ Version 3.2.0
  Authors            Mark Davis and Ken Whistler
  Date               2002-03-22
  This Version       ftp://ftp.unicode.org/Public/3.2-Update/
- Previousn Version  ftp://ftp.unicode.org/Public/3.1-Update/
+ Previous Version   ftp://ftp.unicode.org/Public/3.1-Update/
  Latest Version     ftp://ftp.unicode.org/Public/UNIDATA/
 
           Copyright © 1991-2002 Unicode, Inc. All Rights reserved.
