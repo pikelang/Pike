@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.209 2000/09/12 14:41:40 grubba Exp $");
+RCSID("$Id: las.c,v 1.210 2000/09/12 17:06:38 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -225,6 +225,9 @@ INT32 count_args(node *n)
 {
   int a,b;
   check_tree(n,0);
+
+  fatal_check_c_stack(16384);
+
   if(!n) return 0;
   switch(n->token)
   {
@@ -292,6 +295,8 @@ struct pike_string *find_return_type(node *n)
   struct pike_string *a,*b;
 
   check_tree(n,0);
+
+  fatal_check_c_stack(16384);
 
   if(!n) return 0;
 
@@ -571,6 +576,8 @@ void debug_free_node(node *n)
   }
   sub_node(dmalloc_touch(node *, n));
 #endif /* SHARED_NODES */
+
+  fatal_check_c_stack(16384);
 
   switch(n->token)
   {
@@ -1491,6 +1498,8 @@ int node_is_eq(node *a,node *b)
   if(!a || !b) return 0;
   if(a->token != b->token) return 0;
 
+  fatal_check_c_stack(16384);
+
   switch(a->token)
   {
   case F_LOCAL:
@@ -1641,6 +1650,8 @@ node *copy_node(node *n)
     return n;
 #else /* !SHARED_NODES */
 
+    fatal_check_c_stack(16384);
+
     switch((car_is_node(n) << 1) | cdr_is_node(n))
     {
     default: fatal("fooo?\n");
@@ -1754,6 +1765,9 @@ node **last_cmd(node **a)
 {
   node **n;
   if(!a || !*a) return (node **)NULL;
+
+  fatal_check_c_stack(16384);
+
   if(((*a)->token == F_CAST) ||
      ((*a)->token == F_SOFT_CAST) ||
      ((*a)->token == F_POP_VALUE)) return last_cmd(&_CAR(*a));
@@ -1796,6 +1810,9 @@ static node **low_get_arg(node **a,int *nr)
     else
       return NULL;
   }
+
+  fatal_check_c_stack(16384);
+
   if(CAR(*a))
     if((n=low_get_arg(&_CAR(*a),nr)))
       return n;
@@ -1833,6 +1850,9 @@ static void low_print_tree(node *foo,int needlval)
   {
     fprintf(stderr, "/*%x*/",foo->tree_info);
   }
+
+  fatal_check_c_stack(16384);
+
   switch(l_flag > 99 ? -1 : foo->token)
   {
   case USHRT_MAX:
@@ -2221,6 +2241,9 @@ static int find_used_variables(node *n,
   char *q;
 
   if(!n) return 0;
+
+  fatal_check_c_stack(16384);
+
   switch(n->token)
   {
   case F_LOCAL:
@@ -2344,6 +2367,8 @@ static void find_written_vars(node *n,
 			      int lvalue)
 {
   if(!n) return;
+
+  fatal_check_c_stack(16384);
 
   switch(n->token)
   {
@@ -2631,6 +2656,9 @@ static int cntargs(node *n)
   case F_VAL_LVAL:
   case F_LVALUE_LIST:
   case F_ARG_LIST:
+
+    fatal_check_c_stack(16384);
+
     return cntargs(CAR(n))+cntargs(CDR(n));
 
     /* this might not be true, but it doesn't matter very much */
@@ -2663,6 +2691,8 @@ static void low_build_function_type(node *n)
   {
   case F_COMMA_EXPR:
   case F_ARG_LIST:
+    fatal_check_c_stack(16384);
+
     low_build_function_type(CDR(n));
     low_build_function_type(CAR(n));
     break;
@@ -3254,6 +3284,9 @@ static void zapp_try_optimize(node *n)
   if(!n) return;
   n->node_info &=~ OPT_TRY_OPTIMIZE;
   n->tree_info &=~ OPT_TRY_OPTIMIZE;
+
+  fatal_check_c_stack(16384);
+
   if(car_is_node(n)) zapp_try_optimize(CAR(n));
   if(cdr_is_node(n)) zapp_try_optimize(CDR(n));
 }
@@ -3268,6 +3301,8 @@ static void find_usage(node *n, unsigned char *usage,
 {
   if (!n)
     return;
+
+  fatal_check_c_stack(16384);
 
   switch(n->token) {
   case F_ASSIGN:
@@ -4361,6 +4396,9 @@ INT32 last_function_opt_info;
 static int stupid_args(node *n, int expected,int vargs)
 {
   if(!n) return expected;
+
+  fatal_check_c_stack(16384);
+
   switch(n->token)
   {
   case F_PUSH_ARRAY:
@@ -4385,6 +4423,9 @@ static int stupid_args(node *n, int expected,int vargs)
 static int is_null_branch(node *n)
 {
   if(!n) return 1;
+
+  fatal_check_c_stack(16384);
+
   if((n->token==F_CAST && n->type==void_type_string) ||
      n->token == F_POP_VALUE)
     return is_null_branch(CAR(n));
