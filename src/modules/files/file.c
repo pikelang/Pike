@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.228 2001/11/25 03:18:09 nilsson Exp $");
+RCSID("$Id: file.c,v 1.229 2001/12/05 16:22:36 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2693,6 +2693,12 @@ static void file_connect(INT32 args)
   if(tmp < 0
 #ifdef EINPROGRESS
      && !(errno==EINPROGRESS && (THIS->open_mode & FILE_NONBLOCKING))
+#endif
+#ifdef WSAEWOULDBLOCK
+     && !(errno==WSAEWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
+#endif
+#ifdef EWOULDBLOCK
+     && !(errno==EWOULDBLOCK && (THIS->open_mode & FILE_NONBLOCKING))
 #endif
     )
   {
