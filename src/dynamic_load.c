@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.74 2003/12/10 14:42:20 grubba Exp $
+|| $Id: dynamic_load.c,v 1.75 2004/03/21 16:42:01 grubba Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.74 2003/12/10 14:42:20 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.75 2004/03/21 16:42:01 grubba Exp $");
 
 #else /* TESTING */
 
@@ -322,6 +322,7 @@ struct module_list
 {
   struct module_list * next;
   void *module;
+  struct pike_string *name;
   struct program *module_prog;
   modfun init, exit;
 };
@@ -387,22 +388,35 @@ void f_load_module(INT32 args)
   void *module;
   modfun init, exit;
   struct module_list *new_module;
-  const char *module_name;
+  struct pike_string *module_name;
 
   ONERROR err;
 
   struct compilation_save save;
 
-  if(Pike_sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to load_module()\n");
+  module_name = Pike_sp[-args].u.string;
 
-  module_name = Pike_sp[-args].u.string->str;
+  if((Pike_sp[-args].type != T_STRING) ||
+     (module_name->size_shift) ||
+     (strlen(module_name->str) != module_name->len)) {
+    Pike_error("Bad argument 1 to load_module()\n");
+  }
+
+  {
+    struct module_list *mp;
+    for (mp = dynamic_module_list; mp; mp = mp->next)
+      if (mp->name == module_name && mp->module_prog) {
+	pop_n_elems(args);
+	ref_push_program(mp->module_prog);
+	return;
+      }
+  }
 
   /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
   /* Using RTLD_LAZY is faster, but makes it impossible to 
    * detect linking problems at runtime..
    */
-  module=dlopen(module_name, 
+  module=dlopen(module_name->str, 
                 RTLD_NOW /*|RTLD_GLOBAL*/  );
 
   if(!module)
@@ -411,21 +425,27 @@ void f_load_module(INT32 args)
     if(!err) err = "Unknown reason";
     if (Pike_sp[-args].u.string->len < 1024) {
       Pike_error("load_module(\"%s\") failed: %s\n",
-	    Pike_sp[-args].u.string->str, err);
+		 module_name->str, err);
     } else {
       Pike_error("load_module() failed: %s\n", err);
     }
   }
 
+#ifdef PIKE_DEBUG
   {
     struct module_list *mp;
     for (mp = dynamic_module_list; mp; mp = mp->next)
       if (mp->module == module && mp->module_prog) {
+	fprintf(stderr, "load_module(): Module loaded twice:\n"
+		"Old name: %s\n"
+		"New name: %s\n",
+		mp->name->str, module_name->str);
 	pop_n_elems(args);
 	ref_push_program(mp->module_prog);
 	return;
       }
   }
+#endif /* PIKE_DEBUG */
 
   init = CAST_TO_FUN(dlsym(module, "pike_module_init"));
   if (!init) {
@@ -440,8 +460,9 @@ void f_load_module(INT32 args)
   {
     dlclose(module);
 
-    if (strlen(module_name) < 1024) {
-      Pike_error("Failed to initialize dynamic module \"%s\".\n", module_name);
+    if (strlen(module_name->str) < 1024) {
+      Pike_error("Failed to initialize dynamic module \"%s\".\n",
+		 module_name->str);
     } else {
       Pike_error("Failed to initialize dynamic module.\n");
     }
@@ -464,6 +485,7 @@ void f_load_module(INT32 args)
   new_module->next=dynamic_module_list;
   dynamic_module_list=new_module;
   new_module->module=module;
+  copy_shared_string(new_module->name, Pike_sp[-args].u.string);
   new_module->module_prog = NULL;
   new_module->init=init;
   new_module->exit=exit;
@@ -492,8 +514,8 @@ void f_load_module(INT32 args)
 #ifdef PIKE_DEBUG
   if(Pike_sp != save_sp)
     Pike_fatal("load_module(%s) left %ld droppings on stack!\n",
-	  module_name,
-	  PTRDIFF_T_TO_LONG(Pike_sp - save_sp));
+	       module_name->str,
+	       PTRDIFF_T_TO_LONG(Pike_sp - save_sp));
   }
 #endif
 
@@ -512,8 +534,9 @@ void f_load_module(INT32 args)
       dlclose(module);
       dynamic_module_list = new_module->next;
       free(new_module);
-      if (strlen(module_name) < 1024) {
-	Pike_error("Failed to initialize dynamic module \"%s\".\n", module_name);
+      if (strlen(module_name->str) < 1024) {
+	Pike_error("Failed to initialize dynamic module \"%s\".\n",
+		   module_name->str);
       } else {
 	Pike_error("Failed to initialize dynamic module.\n");
       }
@@ -569,8 +592,11 @@ void free_dynamic_load(void)
 #endif
 #ifdef PIKE_DEBUG
     if (tmp->module_prog)
-      Pike_fatal ("There's still a program for a dynamic module.\n");
+      Pike_fatal ("There's still a program for dynamic module \"%s\".\n",
+		  tmp->name->str);
 #endif
+    free_string(tmp->name);
+    tmp->name = NULL;
     free((char *)tmp);
   }
 #endif
