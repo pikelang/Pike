@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.32 2002/02/26 16:13:35 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.33 2002/02/27 11:51:03 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -838,13 +838,12 @@ class Evaluator {
       existed = 1;
     }
 
-    object o = hilfe_compile("class ___HilfeWrapper {\n" +
-			     type + " " + code +
+    object o = hilfe_compile(type + " " + code +
 			     ";\nmixed ___HilfeWrapper() { return " +
-			     var + "; }\n}\n", var);
+			     var + "; }\n", var);
 
     if(	o && hilfe_error( catch( variables[var] =
-				 o->___HilfeWrapper()->___HilfeWrapper() ) ) ) {
+				 o->___HilfeWrapper() ) ) ) {
       types[var] = type;
     }
     else if(existed)
@@ -864,10 +863,10 @@ class Evaluator {
 			     ";\nmixed ___HilfeWrapper() { return " +
 			     var + "; }\n", var);
 
-    if(	o && hilfe_error( catch( vtype[var] = o->___HilfeWrapper() ) ) ) {
-      ;
-    }
-    else if(existed)
+    if(	o && hilfe_error( catch( vtype[var] = o->___HilfeWrapper() ) ) )
+      return;
+
+    if(existed)
       vtype[var] = old_value;
   }
 
@@ -1105,7 +1104,7 @@ class Evaluator {
 
        map(indices(variables),
 	   lambda(string f) {
-	     return sprintf("%s %s;", types[f], f);
+	     return sprintf("%s %s=___hilfe.%s;", types[f], f, f);
 	   }) * "\n" + "\n" +
 
        "\nmapping query_variables() { return ([\n"+
@@ -1142,10 +1141,6 @@ class Evaluator {
       write(describe_backtrace(err));
       return 0;
     }
-
-    // Populate variables
-    foreach(variables; string name; mixed value)
-      o[name] = value;
 
     return o;
   }
