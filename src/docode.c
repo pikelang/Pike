@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.68 2001/02/25 18:06:54 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.69 2003/09/19 13:54:25 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -205,6 +205,7 @@ static inline struct compiler_frame *find_local_frame(INT32 depth)
 static int do_docode2(node *n,int flags)
 {
   INT32 tmp1,tmp2,tmp3;
+  int ret;
 
   if(!n) return 0;
 
@@ -561,7 +562,8 @@ static int do_docode2(node *n,int flags)
   }
 
   case ' ':
-    return do_docode(CAR(n),0)+do_docode(CDR(n),DO_LVALUE);
+    ret = do_docode(CAR(n),0);
+    return ret + do_docode(CDR(n),DO_LVALUE);
 
   case F_FOREACH:
   {
@@ -1078,7 +1080,8 @@ static int do_docode2(node *n,int flags)
   }
 
   case F_LVALUE_LIST:
-    return do_docode(CAR(n),DO_LVALUE)+do_docode(CDR(n),DO_LVALUE);
+    ret = do_docode(CAR(n),DO_LVALUE);
+    return ret + do_docode(CDR(n),DO_LVALUE);
 
     case F_ARRAY_LVALUE:
       tmp1=do_docode(CAR(n),DO_LVALUE);
@@ -1298,7 +1301,8 @@ static int do_docode2(node *n,int flags)
     return 1;
 
   case F_VAL_LVAL:
-    return do_docode(CAR(n),flags)+do_docode(CDR(n),flags | DO_LVALUE);
+    ret = do_docode(CAR(n),flags);
+    return ret + do_docode(CDR(n),flags | DO_LVALUE);
     
   default:
     fatal("Infernal compiler error (unknown parse-tree-token).\n");
