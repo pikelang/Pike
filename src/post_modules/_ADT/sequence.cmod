@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.3 2003/04/03 14:40:15 grubba Exp $
+|| $Id: sequence.cmod,v 1.4 2003/04/04 15:10:00 peta Exp $
 */
 
 #include "global.h"
@@ -37,8 +37,7 @@ PIKECLASS Sequence
 
   CVAR int pos;
   CVAR struct array *a;
-  CVAR struct array **aptr;
-
+ 
   
   //if there is more than one reference to this array copy it.
 
@@ -512,7 +511,6 @@ PIKECLASS Sequence
 
   PIKEFUN void create(array a) {
     add_ref(THIS->a=a);
-    THIS->aptr = &a;
   }
 
 
@@ -742,7 +740,7 @@ PIKECLASS Sequence
      *!    This iterator positioned @[steps] steps forward.
      */    
 
-    PIKEFUN object aa(int steps) //shall be `-=
+    PIKEFUN object  `-=(int steps) //shall be `-=
     {
       THIS->pos-=steps;
       if (THIS->pos < 0) 
