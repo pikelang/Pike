@@ -1,11 +1,11 @@
-;/*\
+/*\
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.50 2002/09/10 14:31:26 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.51 2002/09/19 13:42:32 marcus Exp $");
 
 #include "zlib_machine.h"
 
