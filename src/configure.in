@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.375 2000/05/20 13:40:05 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.376 2000/05/25 02:18:35 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3638,6 +3638,6 @@ fi
 
 AC_SUBST(dmmsrc)
 
-AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc,[echo foo >stamp-h])
+AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc precompile.sh,[echo foo >stamp-h ; chmod +x precompile.sh])
 
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.275 2000/05/17 18:27:50 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.276 2000/05/25 02:18:35 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2382,17 +2382,6 @@ void f_mkmapping(INT32 args)
   push_mapping(m);
 }
 
-void f_mkmultiset(INT32 args)
-{
-  struct multiset *m;
-  struct array *a;
-  get_all_args("mkmultiset",args,"%a",&a);
-
-  m=mkmultiset(sp[-args].u.array);
-  pop_n_elems(args);
-  push_multiset(m);
-}
-
 #define SETFLAG(FLAGS,FLAG,ONOFF) \
   FLAGS = (FLAGS & ~FLAG) | ( ONOFF ? FLAG : 0 )
 void f_set_weak_flag(INT32 args)
@@ -2710,50 +2699,6 @@ void f_rows(INT32 args)
   push_array(a);
 }
 
-void f_column(INT32 args)
-{
-  INT32 e;
-  struct array *a,*tmp;
-  struct svalue *val;
-
-  DECLARE_CYCLIC();
-
-  get_all_args("column", args, "%a%*", &tmp, &val);
-
-  /* Optimization */
-  if(tmp->refs == 1)
-  {
-    /* An array with one ref cannot possibly be cyclic */
-    struct svalue sval;
-    tmp->type_field = BIT_MIXED | BIT_UNFINISHED;
-    for(e=0;e<tmp->size;e++)
-    {
-      index_no_free(&sval, ITEM(tmp)+e, val);
-      free_svalue(ITEM(tmp)+e);
-      ITEM(tmp)[e]=sval;
-    }
-    pop_stack();
-    return;
-  }
-
-  if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
-  {
-    pop_n_elems(args);
-    ref_push_array(a);
-  }else{
-    push_array(a=allocate_array(tmp->size));
-    SET_CYCLIC_RET(a);
-
-    for(e=0;e<a->size;e++)
-      index_no_free(ITEM(a)+e, ITEM(tmp)+e, val);
-
-    sp--;
-    dmalloc_touch_svalue(sp);
-    pop_n_elems(args);
-    push_array(a);
-  }
-  END_CYCLIC();
-}
 
 #ifdef PIKE_DEBUG
 void f__verify_internals(INT32 args)
@@ -5711,6 +5656,10 @@ void init_builtin_efuns(void)
 {
   struct program *pike___master_program;
 
+  extern init_builtin(void);
+
+  init_builtin();
+
   ADD_EFUN("gethrtime", f_gethrtime,
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
 
@@ -5813,9 +5762,6 @@ void init_builtin_efuns(void)
 	   tFunc(tNone,tArr(tArray)),OPT_EXTERNAL_DEPEND);
 
   
-/* function(array,mixed:array) */
-  ADD_EFUN("column",f_column,tFunc(tArray tMix,tArray),0);
-  
 /* function(string...:string) */
   ADD_EFUN("combine_path",f_combine_path,tFuncV(tNone,tStr,tStr),0);
   
@@ -5901,10 +5847,7 @@ void init_builtin_efuns(void)
 	   tFunc(tArr(tSetvar(1,tMix)) tArr(tSetvar(2,tMix)),
 		 tMap(tVar(1),tVar(2))),OPT_TRY_OPTIMIZE);
 
-  ADD_EFUN("mkmultiset",f_mkmultiset,
-	   tFunc(tArr(tSetvar(1,tMix)), tSet(tVar(1))),
-	   OPT_TRY_OPTIMIZE);
-  
+
 /* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,
 	   tFunc(tSetvar(1,tMix) tInt,tVar(1)),OPT_SIDE_EFFECT);

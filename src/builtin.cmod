@@ -1,0 +1,76 @@
+#include "global.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "opcodes.h"
+#include "pike_macros.h"
+#include "object.h"
+#include "program.h"
+#include "array.h"
+#include "error.h"
+#include "constants.h"
+#include "mapping.h"
+#include "stralloc.h"
+#include "multiset.h"
+#include "pike_types.h"
+#include "pike_memory.h"
+#include "threads.h"
+#include <math.h>
+#include <ctype.h>
+#include "module_support.h"
+#include "cyclic.h"
+#include "bignum.h"
+
+
+PIKEFUN array column(array tmp, mixed val)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  INT32 e;
+  struct array *a;
+
+  DECLARE_CYCLIC();
+
+  /* Optimization */
+  if(tmp->refs == 1)
+  {
+    /* An array with one ref cannot possibly be cyclic */
+    struct svalue sval;
+    tmp->type_field = BIT_MIXED | BIT_UNFINISHED;
+    for(e=0;e<tmp->size;e++)
+    {
+      index_no_free(&sval, ITEM(tmp)+e, val);
+      free_svalue(ITEM(tmp)+e);
+      ITEM(tmp)[e]=sval;
+    }
+    pop_stack();
+    return;
+  }
+
+  if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
+  {
+    add_ref(a);
+  }else{
+    push_array(a=allocate_array(tmp->size));
+    SET_CYCLIC_RET(a);
+
+    for(e=0;e<a->size;e++)
+      index_no_free(ITEM(a)+e, ITEM(tmp)+e, val);
+
+    sp--;
+  }
+  END_CYCLIC();
+  RETURN a;
+}
+
+PIKEFUN multiset(1) mkmultiset(array(1=mixed) a)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  RETURN mkmultiset(a);
+}
+
+
+void init_builtin(void)
+{
+  INIT;
+}

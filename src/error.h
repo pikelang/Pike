@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.41 2000/04/20 02:41:44 hubbe Exp $
+ * $Id: error.h,v 1.42 2000/05/25 02:18:35 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -170,6 +170,7 @@ extern int throw_severity;
 
 /* Prototypes begin here */
 void check_recovery_context(void);
+void pike_gdb_breakpoint(void);
 JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
 void pike_throw(void) ATTRIBUTE((noreturn));
 void push_error(char *description);
@@ -224,6 +225,7 @@ void permission_error(
   struct svalue *base_sp, int args,
   char *permission_type,
   char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)));
+void wrong_number_of_args_error(char *name, int args, int expected);
 void init_error(void);
 void cleanup_error(void);
 /* Prototypes end here */

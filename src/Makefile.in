@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.192 2000/05/18 19:50:12 mast Exp $
+# $Id: Makefile.in,v 1.193 2000/05/25 02:18:35 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -132,7 +132,13 @@ OBJ= \
  threads.o \
  version.o \
  queue.o \
+ builtin.o \
  svalue.o @EXTRA_OBJS@
+
+
+DEPEND= \
+ $(SRCDIR)/language.c \
+ $(SRCDIR)/builtin.c
 
 #
 # The following objectfiles differ between tpike & pike:
@@ -253,7 +259,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Done."
 
 
-.SUFFIXES: .c .o
+.SUFFIXES: .c .o .cmod
 
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
@@ -268,6 +274,14 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
 	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
 	fi
+
+#
+# Please note that this must be accompanied by a dependency rule as
+# The .c file will not be created in the SOURCE directory otherwise.
+# -Hubbe
+#
+.cmod.c:
+	./precompile.sh "$<" "$@"
 
 force :
 	@:
@@ -472,7 +486,7 @@ stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)
 	@echo foo > stamp-tpike-predep
 
 # make dependencies
-depend: $(SRCDIR)/language.c
+depend: $(DEPEND)
 	gcc -MM -MG $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
 	( cd modules && $(MAKE) $(MAKE_FLAGS) depend )
 	( cd post_modules && $(MAKE) $(MAKE_FLAGS) depend )
@@ -543,6 +557,12 @@ $(SRCDIR)/language.h: $(SRCDIR)/language.yacc
 $(SRCDIR)/language.c: $(SRCDIR)/language.h
 	touch $(SRCDIR)/language.c
 
+
+#
+# This rule makes sure that builtin.c is created in the source dir.
+#
+$(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod ./precompile.sh $(TMP_BINDIR)/precompile.pike
+
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
@@ -571,6 +591,9 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	touch remake
 	@echo "Run make again"
 	@exit 1
+
+precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
+	CONFIG_FILES=precompile.sh CONFIG_HEADERS="" ./config.status
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \

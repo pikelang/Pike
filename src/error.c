@@ -20,7 +20,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.50 2000/04/19 21:26:19 mast Exp $");
+RCSID("$Id: error.c,v 1.51 2000/05/25 02:18:35 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -550,6 +550,19 @@ void permission_error(
   ERROR_STRUCT(permission,o)->permission_type=
     make_shared_string(permission_type);
   ERROR_DONE(generic);
+}
+
+void wrong_number_of_args_error(char *name, int args, int expected)
+{
+  char *msg;
+  if(expected>args)
+  {
+    msg="Too few arguments";
+  }else{
+    msg="Too many arguments";
+  }
+
+  new_error(name, msg, sp-args, args, 0,0);
 }
 
 #ifdef PIKE_DEBUG

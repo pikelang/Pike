@@ -1,0 +1,107 @@
+#!/bin/sh
+
+#set -x
+
+TMP_BUILDDIR="@BUILDDIR@"
+TMP_BINDIR="@BINDIR@"
+LIBDIR_SRC="@LIBDIR@"
+
+if test -f "$TMP_BUILDDIR/precompile-method" ; then
+  . "$TMP_BUILDDIR/precompile-method"
+else
+  :
+fi
+
+old_method="${method-}"
+
+retries=.
+while test "$retries" != .......... ; do
+
+RUNPIKE=
+case $method in
+  Q)
+    RUNPIKE="$TMP_BUILDDIR/pike -DNOT_INSTALLED -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
+  ;;
+  QQ)
+    RUNPIKE="$TMP_BUILDDIR/tpike -DNOT_INSTALLED -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
+  ;;
+  QQQ)
+    RUNPIKE=$TMP_BUILDDIR/test-pike
+  ;;
+  QQQQ)
+    LAST_PIKE=pike
+    method=QQQQQ
+    RUNPIKE="$LAST_PIKE -DOLD"
+  ;;
+  QQQQQ)
+    RUNPIKE="$LAST_PIKE -DOLD"
+  ;;
+  QQQQQQ)
+    ifs_save="${IFS- 	}"
+    IFS=" :"
+    for dir in $PATH
+    do
+      for p in pike pike7 pike07 pike06
+      do
+        if [ -x $dir/$p ]; then
+          if [ "x$LAST_PIKE" = xpike ] ; then
+            LAST_PIKE=$dir/$p
+            RUNPIKE="$dir/$p -DOLD"
+            break
+          fi
+
+          if [ "x$LAST_PIKE" = "x$dir/$p" ]; then
+            LAST_PIKE=pike
+          fi
+        fi
+      done
+      if [ "x$RUNPIKE" != x ]; then
+        method=QQQQQ
+        break
+      fi
+    done
+    IFS="${ifs_save}"
+  ;;
+  QQQQQQQ)
+    method=
+  ;;
+esac
+
+#
+# By linking these two files to the current directory I can make
+# precompile.pike work with older versions of Pike - Hubbe
+#
+
+if test -f ./precompile.pike ; then
+  :
+else
+  ln -s "$TMP_BINDIR/precompile.pike"  ./precompile.pike
+fi
+
+if test -f ./C.pmod ; then
+  :
+else
+  ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod"  ./C.pmod
+fi
+
+
+
+if test "x${RUNPIKE-}" != x ; then
+echo "precompile: $RUNPIKE ./precompile.pike $1 >$2 (method=$method)"
+if $RUNPIKE ./precompile.pike "$1" >"$2" ; then
+
+cat > "$TMP_BUILDDIR/precompile-method" <<EOF
+LAST_PIKE=$LAST_PIKE
+method=$method
+EOF
+
+exit 0
+fi
+fi
+
+method=Q$method
+retries=.$retries
+
+done # retry
+# Total failure
+rm "$2"

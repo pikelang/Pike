@@ -10,7 +10,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.29 2000/05/20 18:58:53 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.30 2000/05/25 02:18:35 hubbe Exp $");
 
 #else /* TESTING */
 
@@ -141,11 +141,12 @@ int query_nonblocking(int fd)
 #ifdef HAVE_BROKEN_F_SETFD
 static int *fds_to_close;
 static int fds_to_close_size = 0;
+static int num_fds_to_close=0;
 
 #define ASSURE_FDS_TO_CLOSE_SIZE(X) \
 do{while(fds_to_close_size-1 < X) grow_fds_to_close();}while(0)
 
-static void grow_fds_to_close( )
+static void grow_fds_to_close(void)
 {
   if(!fds_to_close_size)
     fds_to_close_size = 1;
@@ -154,7 +155,7 @@ static void grow_fds_to_close( )
   if(!fds_to_close)
     fatal("Out of memory in fd_control::grow_fds_to_close()\n"
           "Tried to allocate %d fd_datum structs\n", fds_to_close_size);
-  MEMSET( fds+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
+  MEMSET( fds_to_close+(fds_to_close_size/2), 0, fds_to_close_size*sizeof(int)/2 );
 }
 
 void do_close_on_exec(void)
