@@ -172,3 +172,10 @@ array columns(array x, array ind)
   for(int e=0;e<sizeof(ind);e++) ret[e]=column(x,ind[e]);
   return ret;
 }
+
+array transpose(array x)
+{
+  array ret=allocate(sizeof(x[0]));
+  for(int e=0;e<sizeof(x[0]);e++) ret[e]=column(x,e);
+  return ret;
+}

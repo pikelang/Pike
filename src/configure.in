@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.155 1998/01/30 01:56:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.156 1998/02/01 07:07:38 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -970,7 +970,17 @@ AC_CHECK_FUNCS( \
 )
 
 if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
-  AC_CHECK_LIB(crypt,crypt,[LIBS="${LIBS} -lcrypt" ; AC_DEFINE(HAVE_CRYPT)])
+  AC_CHECK_LIB(crypt,crypt,[LIBS="${LIBS} -lcrypt" ; AC_DEFINE(HAVE_CRYPT)],
+[
+  if test -f "$srcdir/crypt.c"; then
+    AC_MSG_RESULT(Using crypt.c for BSD style crypt())
+    EXTRA_OBJS="${EXTRA_OBJS} crypt.o"
+    AC_DEFINE(HAVE_CRYPT)
+  else
+    :
+  fi
+])
+
 fi
 
 

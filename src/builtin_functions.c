@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.66 1998/02/01 02:07:22 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.67 1998/02/01 07:07:37 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -370,11 +370,7 @@ static char *combine_path(char *cwd,char *file)
   my_cwd=0;
   
 
-  if(IS_ABS(file)
-#ifdef IS_ROOT
-     || ( IS_ROOT(file) && !IS_ABS(cwd))
-#endif
-    )
+  if(IS_ABS(file))
   {
     MEMCPY(cwdbuf,file,IS_ABS(file));
     cwdbuf[IS_ABS(file)]=0;
@@ -383,12 +379,20 @@ static char *combine_path(char *cwd,char *file)
   }
 
 #ifdef IS_ROOT
-  else if(IS_ROOT(file) && IS_ABS(cwd))
+  else if(IS_ROOT(file))
   {
-    MEMCPY(cwdbuf,cwd,IS_ABS(cwd));
-    cwdbuf[IS_ABS(cwd)]=0;
-    cwd=cwdbuf;
-    file+=IS_ROOT(file);
+    if(IS_ABS(cwd))
+    {
+      MEMCPY(cwdbuf,cwd,IS_ABS(cwd));
+      cwdbuf[IS_ABS(cwd)]=0;
+      cwd=cwdbuf;
+      file+=IS_ROOT(file);
+    }else{
+      MEMCPY(cwdbuf,file,IS_ROOT(file));
+      cwdbuf[IS_ROOT(file)]=0;
+      cwd=cwdbuf;
+      file+=IS_ROOT(file);
+    }
   }
 #endif
 
