@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.45 1997/01/22 03:35:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.46 1997/01/26 22:47:50 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -353,8 +353,8 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h dlfcn.h \
-dld.h)
+sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
+thread.h dlfcn.h dld.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -405,22 +405,66 @@ fi
 
 if test x$with_threads = xyes ; then
 
-AC_MSG_CHECKING(posix threads)
-
 OLDLIBS="$LIBS"
 
+AC_MSG_CHECKING(unix threads)
 case "x$pike_cv_sys_os" in
-  xOSF1)
-     LIBS="${LIBS} -lpthread -lmach -lexc -lc"
-  ;;
-
   *)
-     LIBS="${LIBS} -lpthread"
+     LIBS="${LIBS} -lthread"
   ;;
 esac
 
-AC_CACHE_VAL(pike_cv_posix_threads,
+AC_CACHE_VAL(pike_cv_unix_threads,
 [
+AC_TRY_RUN([
+#define _REENTRANT
+#define _THREAD_SAFE
+#define _MIT_POSIX_THREADS
+
+#include <thread.h>
+
+void *foo(void *bar) { return ; }
+mutex_t tmp;
+thread_t gazonk;
+
+int main()
+{
+  void *sune;
+  mutex_lock(& tmp);
+  thr_create(0,0,foo,0,0,&gazonk);
+  thr_join(gazonk,0,&sune);
+  exit(0);
+}
+],pike_cv_unix_threads=yes,pike_cv_unix_threads=no)
+])
+
+if test $pike_cv_unix_threads = yes ; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(_REENTRANT)
+  AC_DEFINE(_THREAD_SAFE)
+  AC_DEFINE(_UNIX_THREADS)
+else
+  AC_MSG_RESULT(no)
+  LIBS="$OLDLIBS"
+fi
+
+if test  $pike_cv_unix_threads = "no" ; then
+ AC_MSG_CHECKING(posix threads)
+
+ OLDLIBS="$LIBS"
+
+ case "x$pike_cv_sys_os" in
+   xOSF1)
+      LIBS="${LIBS} -lpthread -lmach -lexc -lc"
+   ;;
+ 
+   *)
+      LIBS="${LIBS} -lpthread"
+   ;;
+ esac
+
+ AC_CACHE_VAL(pike_cv_posix_threads,
+ [
 AC_TRY_RUN([
 #define _REENTRANT
 #define _THREAD_SAFE
@@ -454,6 +498,7 @@ else
   LIBS="$OLDLIBS"
 fi
 
+fi
 fi
 
 ########################################################################
