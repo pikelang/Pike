@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.6 1998/01/08 17:21:14 hubbe Exp $
+ * $Id: acconfig.h,v 1.7 1998/01/29 23:52:27 grubba Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -37,6 +37,9 @@
 
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
+
+/* Does select() work together with shutdown() on UNIX sockets? */
+#undef UNIX_SOCKETS_WORKS_WITH_SHUTDOWN
 
 /* Buffer size to use on open sockets */
 #undef SOCKET_BUFFER_MAX 
