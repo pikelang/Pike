@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: neo.c,v 1.7 2003/12/13 23:34:14 nilsson Exp $
+|| $Id: neo.c,v 1.8 2003/12/13 23:37:44 nilsson Exp $
 */
 
 #include "global.h"
@@ -41,6 +41,8 @@ extern struct program *image_program;
  *!     @member string "direction"
  *!       Color cycling direction. Can be either @expr{"left"@}
  *!       or @expr{"right"@}.
+ *!     @member array(array(int(0..255))) "palette"
+ *!       The palette to be used for color cycling.
  *!   @endmapping
  */
 void image_neo_f__decode(INT32 args)
