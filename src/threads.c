@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.231 2004/04/21 19:25:23 mast Exp $
+|| $Id: threads.c,v 1.232 2004/04/23 13:43:30 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.231 2004/04/21 19:25:23 mast Exp $");
+RCSID("$Id: threads.c,v 1.232 2004/04/23 13:43:30 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -18,6 +18,8 @@ PMOD_EXPORT int threads_disabled = 0;
 #ifdef _REENTRANT
 
 #ifndef CONFIGURE_TEST
+
+/* #define VERBOSE_THREADS_DEBUG */
 
 #include "threads.h"
 #include "array.h"
@@ -998,7 +1000,8 @@ void f_thread_create(INT32 args)
      */
     SWAP_OUT_CURRENT_THREAD();
     while (thread_state->status == THREAD_NOT_STARTED) {
-      THREADS_FPRINTF(0, (stderr, "THREAD_CREATE waiting...\n"));
+      THREADS_FPRINTF(0, (stderr, "THREAD_CREATE %p waiting...\n",
+			  thread_state));
       low_co_wait_interpreter(&thread_state->status_change);
     }
     SWAP_IN_CURRENT_THREAD();
@@ -1327,12 +1330,13 @@ void init_mutex_obj(struct object *o)
 void exit_mutex_obj(struct object *o)
 {
   struct mutex_storage *m = THIS_MUTEX;
+  struct object *key = m->key;
 
   THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
 
-  if(m->key) {
-    destruct(m->key);
+  if(key) {
     m->key=0;
+    destruct(key);
     if(m->num_waiting)
     {
       THREADS_FPRINTF(1, (stderr, "DESTRUCTED MUTEX IS BEING WAITED ON\n"));
@@ -1389,10 +1393,15 @@ void exit_mutex_key_obj(struct object *o)
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
+    struct object *mutex_obj;
 
 #ifdef PIKE_DEBUG
-    if(mut->key != o)
-      Pike_fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
+    /* Note: mut->key can be NULL if our corresponding mutex
+     *       has been destructed.
+     */
+    if(mut->key && (mut->key != o))
+      Pike_fatal("Mutex unlock from wrong key %p != %p!\n",
+		 THIS_KEY->mut->key, o);
 #endif
     mut->key=0;
     if (THIS_KEY->owner) {
@@ -1404,14 +1413,15 @@ void exit_mutex_key_obj(struct object *o)
     }
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
+    mutex_obj = THIS_KEY->mutex_obj;
+    THIS_KEY->mutex_obj = NULL;
     if (mut->num_waiting)
-      co_signal(& mut->condition);
+      co_signal(&mut->condition);
 #ifndef PICKY_MUTEX
-    else if (!THIS_KEY->mutex_obj->prog)
+    else if (!mutex_obj->prog)
       co_destroy (&mut->condition);
 #endif
-    free_object (THIS_KEY->mutex_obj);
-    THIS_KEY->mutex_obj = NULL;
+    free_object(mutex_obj);
   }
 }
 
@@ -1487,6 +1497,7 @@ void f_cond_wait(INT32 args)
   /* Unlock mutex */
   mut->key=0;
   OB2KEY(key)->mut=0;
+  mut->num_waiting++;
   co_signal(& mut->condition);
     
   /* Wait and allow mutex operations */
@@ -1503,6 +1514,7 @@ void f_cond_wait(INT32 args)
   }
   mut->key=key;
   OB2KEY(key)->mut=mut;
+  mut->num_waiting--;
       
   pop_stack();
   return;
@@ -1625,11 +1637,18 @@ static void f_thread_id_result(INT32 args)
     Pike_error("Cannot wait for threads when threads are disabled!\n");
   }
 
+  THREADS_FPRINTF(0, (stderr,
+		      "Thread->result(): Waiting for thread %p (state:%d).\n",
+		      th, th->status));
   while(th->status != THREAD_EXITED) {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(&th->status_change);
     SWAP_IN_CURRENT_THREAD();
     check_threads_etc();
+    THREADS_FPRINTF(0,
+		    (stderr,
+		     "Thread->result(): Waiting for thread %p (state:%d).\n",
+		     th, th->status));
   }
 
   assign_svalue_no_free(Pike_sp, &th->result);
