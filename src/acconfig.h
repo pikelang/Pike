@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.132 2003/11/25 17:50:11 jonasw Exp $
+|| $Id: acconfig.h,v 1.133 2003/12/07 19:42:59 marcus Exp $
 */
 
 #ifndef MACHINE_H
@@ -604,7 +604,7 @@
 #endif /* !HAVE_WORKING___FUNC__ */
 
 #ifndef HAVE_WORKING_REALLOC_NULL
-#define realloc(PTR, SZ)	pike_realloc((PTR),(SZ))
+#define realloc(PTR, SZ)	pike_realloc(PTR,SZ)
 #endif
 
 /* NOTE:
