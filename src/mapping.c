@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.103 2000/09/08 17:31:26 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.104 2000/09/14 15:23:41 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -197,12 +197,17 @@ PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
   INT32 e;
   struct keypair *k;
   debug_malloc_touch(md);
+
 #ifdef PIKE_DEBUG
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
+    fatal("Can't free a mapping_data inside gc.\n");
+
   if (md->refs) {
     fatal("really_free_mapping_data(): md has non-zero refs: %d\n",
 	  md->refs);
   }
 #endif /* PIKE_DEBUG */
+
   NEW_MAPPING_LOOP(md)
   {
     free_svalue(& k->val);
@@ -305,6 +310,9 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 #ifdef PIKE_DEBUG
   if(md->refs <=0)
     fatal("Zero refs in mapping->data\n");
+
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_ZAP_WEAK)
+    fatal("Can't rehash a mapping inside gc.\n");
 
   if(d_flag>1)  check_mapping(m);
 #endif
