@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.337 2001/02/06 14:04:10 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.338 2001/02/06 14:23:41 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2298,7 +2298,7 @@ PMOD_EXPORT void f_destruct(INT32 args)
   destruct_objects_to_destruct();
 }
 
-/*! array indices(string|array|mapping|multiset|object x)
+/*! @decl array indices(string|array|mapping|multiset|object x)
  *!
  *! Return an array of all valid indices for the value @[x].
  *!
@@ -2580,7 +2580,7 @@ static node *fix_aggregate_mapping_type(node *n)
   return NULL;
 }
 
-/*! array values(string|array|mapping|multiset|object x)
+/*! @decl array values(string|array|mapping|multiset|object x)
  *!
  *! Return an array of all possible values from indexing the value @[x].
  *!
@@ -3128,7 +3128,7 @@ PMOD_EXPORT void f_replace(INT32 args)
   }
 }
 
-/*! @decl program compile(string source, object|void handler,
+/*! @decl program compile(string source, object|void handler, @
  *!                       int|void major, int|void minor)
  *!
  *! Compile a string to a program.
@@ -3195,14 +3195,14 @@ PMOD_EXPORT void f_compile(INT32 args)
 }
 
 
-/*! @decl array|mapping|multiset set_weak_flag(array|mapping|multiset m,
+/*! @decl array|mapping|multiset set_weak_flag(array|mapping|multiset m, @
  *!                                            int(0..1) state)
  *!
  *! Set the value @[m] to hold weak references if @[state] is @tt{1@}.
  *! Reset to strong references otherwise.
  *!
  *! @returns
- *! @[m] will be returned.
+ *!   @[m] will be returned.
  */
 #define SETFLAG(FLAGS,FLAG,ONOFF) \
   FLAGS = (FLAGS & ~FLAG) | ( ONOFF ? FLAG : 0 )
@@ -3392,7 +3392,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
 	 GET_TIME_ELAPSED;
 }
 
-/*! int gc()
+/*! @decl int gc()
  *!
  *! Force garbage collection.
  *!
@@ -6138,7 +6138,7 @@ PMOD_EXPORT void f__locate_references(INT32 args)
   pop_n_elems(args-1);
 }
 
-/*! mixed _describe(mixed x)
+/*! @decl mixed _describe(mixed x)
  */
 PMOD_EXPORT void f__describe(INT32 args)
 {
@@ -6963,7 +6963,7 @@ void f_enumerate(INT32 args)
    }
 }
 
-/* @module Program
+/*! @module Program
  */
 
 /*! @decl array(program) inherit_list(program p)
@@ -7139,10 +7139,13 @@ struct  buffer_str
  */
 
 static void f_buf_create( INT32 args )
-/*! @decl void create(int|void initial_size) Initializes a new
- *!   buffer. If no @[initial_size] is specified, 4096 is used. If you
+/*! @decl void create(int|void initial_size)
+ *!
+ *!   Initializes a new buffer.
+ *!
+ *!   If no @[initial_size] is specified, 4096 is used. If you
  *!   know aproximately how big the buffer will be, you can optimize
- *!   the operation of add (slightly) by passing the size to this
+ *!   the operation of @[add()] (slightly) by passing the size to this
  *!   function.
  */
 {
@@ -7195,6 +7198,7 @@ static void f_buf_nullfun( INT32 args )
 
 static void f_buf_add( INT32 args )
 /*! @decl void add(string data)
+ *!
  *!   Adds @[data] to the buffer
  */
 {
@@ -7271,8 +7275,11 @@ static void f_buf_add( INT32 args )
 
 static void f_buf_get( INT32 args )
 /*! @method string get( )
+ *!
  *!   Get the data from the buffer.
- *!   @note This will clear the data in the buffer
+ *!
+ *! @note
+ *!   This will clear the data in the buffer
  */
 {
   struct buffer_str *str = THB;
