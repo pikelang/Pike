@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.55 2003/10/24 14:52:57 mast Exp $
+|| $Id: backend.cmod,v 1.56 2003/10/24 14:53:46 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.55 2003/10/24 14:52:57 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.56 2003/10/24 14:53:46 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2110,60 +2110,62 @@ PIKECLASS Backend
 
   INIT
     {
-      THIS->id = unused_id++;
+      struct Backend_struct *me = THIS;
+
+      me->id = unused_id++;
 
       IF_PD (fprintf (stderr, "BACKEND[%d]: init\n", me->id));
 
-      THIS->exec_thread = 0;
+      me->exec_thread = 0;
 
-      THIS->backend_callbacks.callbacks=0;
-      THIS->backend_callbacks.num_calls=0;
+      me->backend_callbacks.callbacks=0;
+      me->backend_callbacks.num_calls=0;
 
       GETTIMEOFDAY(&current_time);
 
-      THIS->num_pending_calls=0;
-      THIS->call_buffer=0;
-      THIS->call_buffer_size=0;
-      THIS->hash_size=0;
-      THIS->hash_order=5;
-      THIS->call_hash=0;
+      me->num_pending_calls=0;
+      me->call_buffer=0;
+      me->call_buffer_size=0;
+      me->hash_size=0;
+      me->hash_order=5;
+      me->call_hash=0;
 
 #ifdef PIKE_DEBUG
-      THIS->inside_call_out=0;
+      me->inside_call_out=0;
 #endif
 
-      THIS->fds=0;
-      THIS->fds_size=0;
+      me->fds=0;
+      me->fds_size=0;
 
 #ifndef HAVE_POLL
-      THIS->set.max_fd=0;
-      my_FD_ZERO(&THIS->set.read);
-      my_FD_ZERO(&THIS->set.write);
-      my_FD_ZERO(&THIS->set.except);
+      me->set.max_fd=0;
+      my_FD_ZERO(&me->set.read);
+      my_FD_ZERO(&me->set.write);
+      my_FD_ZERO(&me->set.except);
       /* FIXME: Should there be something else here? */
-      /* THIS->set.num_fds=0; */
+      /* me->set.num_fds=0; */
 #else /* HAVE_POLL */
-      THIS->set.poll_fds=0;
-      THIS->set.poll_fd_size=0;
-      THIS->set.num_in_poll=0;
+      me->set.poll_fds=0;
+      me->set.poll_fd_size=0;
+      me->set.num_in_poll=0;
 
-      THIS->active_set.poll_fds=0;
-      THIS->active_set.poll_fd_size=0;
-      THIS->active_set.num_in_poll=0;
+      me->active_set.poll_fds=0;
+      me->active_set.poll_fd_size=0;
+      me->active_set.num_in_poll=0;
 #endif /* !HAVE_POLL */
 
-      if(pike_make_pipe(THIS->wakeup_pipe) < 0)
+      if(pike_make_pipe(me->wakeup_pipe) < 0)
 	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
-      set_nonblocking(THIS->wakeup_pipe[0],1);
-      set_nonblocking(THIS->wakeup_pipe[1],1);
-      backend_set_read_callback(THIS,
-				THIS->wakeup_pipe[0],
+      set_nonblocking(me->wakeup_pipe[0],1);
+      set_nonblocking(me->wakeup_pipe[1],1);
+      backend_set_read_callback(me,
+				me->wakeup_pipe[0],
 				wakeup_callback,
 				0); 
       /* Don't keep these on exec! */
-      set_close_on_exec(THIS->wakeup_pipe[0], 1);
-      set_close_on_exec(THIS->wakeup_pipe[1], 1);
+      set_close_on_exec(me->wakeup_pipe[0], 1);
+      set_close_on_exec(me->wakeup_pipe[1], 1);
     }
   
   EXIT
