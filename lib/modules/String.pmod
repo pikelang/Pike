@@ -259,6 +259,7 @@ static private class _Elite
       ({" pornography"," pr0n"}),
       ({" porn"," pr0n"}),
       ({" cool"," kewl"}),
+      ({" elite "," 1337 "}),
    });
 
 // optional recursive translation (in order)
@@ -270,6 +271,13 @@ static private class _Elite
       ({"dude","dood"}),
       ({"newbie","noob"}),
 
+      ({"one","1"}),
+      ({"two","2"}),
+      ({"ate","8"}),
+      ({"twi","2"}),
+      ({"ight","8t"}),
+      ({"ite","eet"}),
+
       ({"ff","ph"}),
       ({"f","ph"}),
       ({"cks",({"x","xx","xz"})}),
@@ -280,6 +288,7 @@ static private class _Elite
       ({"ers ",({"ors "})}),
       ({"er ",({"or "})}),
       ({"ed ",({"edz "})}),
+      ({" el",({" l"})}),
       ({"s ",({"z "})}),
       ({"s!",({"z."})}),
       ({"s.",({"z!"})}),
