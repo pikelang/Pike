@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.118 2001/07/23 12:38:42 grubba Exp $");
+RCSID("$Id: encode.c,v 1.119 2001/08/01 14:34:09 marcus Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2090,6 +2090,7 @@ static void decode_value2(struct decode_data *data)
 #ifdef DECODE_PROGRAM
 	  DECODE_PROGRAM(p);
 #endif /* DECODE_PROGRAM */
+	  make_program_executable(p);
 
 	  getdata2(p->linenumbers, p->num_linenumbers);
 
