@@ -1,8 +1,9 @@
-// $Id: Readline.pike,v 1.37 2000/09/28 03:39:13 hubbe Exp $
+// $Id: Readline.pike,v 1.38 2000/10/08 19:02:15 grubba Exp $
 #pike __REAL_VERSION__
 class OutputController
 {
-  static private object outfd, term;
+  static private object(Stdio.File) outfd;
+  static private object(Stdio.Terminfo.Termcap) term;
   static private int xpos = 0, columns = 0;
   static private mapping oldattrs = 0;
 
@@ -376,7 +377,8 @@ class OutputController
     outfd->write(term->put("bl")||"");
   }
 
-  void create(object|void _outfd, object|string|void _term)
+  void create(object(Stdio.File)|void _outfd,
+	      object(Stdio.Terminfo.Termcap)|string|void _term)
   {
     outfd = _outfd || Stdio.File("stdout");
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
