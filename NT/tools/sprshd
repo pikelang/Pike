@@ -79,6 +79,7 @@ string opt_path(string p1, string p2)
   return  ( ( ((p1||"") + ";" + (p2||"")) / ";" ) - ({""}) ) * ";";
 }
 
+Thread.Mutex outlock=Thread.Mutex();
 
 void myproxy(object pi, object io, int channel)
 {
@@ -86,7 +87,9 @@ void myproxy(object pi, object io, int channel)
   {
     string s=pi->read(1000,1);
     if(!s || !strlen(s)) break;
+    object key=outlock->lock();
     io->write(sprintf("%c%3c%s",channel,strlen(s),channel,s));
+    destruct(key);
   }
 }
 
@@ -281,14 +284,16 @@ void handle_incoming_connection(object(Stdio.File) io)
 	thread_create(monitor,p2,p);
 #endif
 	
+	object proxythread;
 	if(env->__handles_stderr)
 	{
-	  thread_create(myproxy,pe,io,2);
+	  proxythread=thread_create(myproxy,pe,io,2);
 	  myproxy(pi,io,1);
 	}else{
-	  thread_create(myproxy,pe,io,0);
+	  proxythread=thread_create(myproxy,pe,io,0);
 	  myproxy(pi,io,0);
 	}
+	proxythread->wait();
 	
 	io->write(sprintf("%4c",0));
 	int code;
