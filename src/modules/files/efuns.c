@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.91 2001/03/27 13:17:13 mast Exp $");
+RCSID("$Id: efuns.c,v 1.92 2001/04/09 14:51:41 jonasw Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -529,6 +529,7 @@ void f_rm(INT32 args)
 void f_mkdir(INT32 args)
 {
   struct pike_string *str;
+  char *s, *s_dup;
   int mode;
   int i;
 
@@ -561,9 +562,23 @@ void f_mkdir(INT32 args)
   }
 
 #if MKDIR_ARGS == 2
+  /* Remove trailing / which is not accepted by all mkdir()
+     implementations (e.g. Mac OS X) */
+  s = str->str;
+  s_dup = 0;
+  if (s[strlen(s) - 1] == '/') {
+    if (s_dup = strdup(s)) {
+      s = s_dup;
+      s[strlen(s) - 1] = '\0';
+    }
+  }
+  
   THREADS_ALLOW_UID();
-  i = mkdir(str->str, mode) != -1;
+  i = mkdir(s, mode) != -1;
   THREADS_DISALLOW_UID();
+  
+  if (s_dup)
+    free(s_dup);
 #else
 
 #ifdef HAVE_LSTAT
