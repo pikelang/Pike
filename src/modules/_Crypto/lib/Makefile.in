@@ -15,6 +15,7 @@ PREFLAGS=$(EXTRA_CPP_FLAGS) -I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR) $(DEFINES)
 
 # The flags to generate a shared library
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(EXTRA_CFLAGS)
+LDFLAGS=@LDFLAGS@
 
 default: algorithms.a
 
