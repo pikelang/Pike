@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.123 2003/03/25 15:40:40 marcus Exp $
+|| $Id: interpret_functions.h,v 1.124 2003/04/08 14:27:36 mast Exp $
 */
 
 /*
@@ -2146,11 +2146,18 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT, {
    *       the since first case is much simpler to test and
    *       is common, it should offer a speed improvement.
    *	/grubba 2002-11-14
+   *
+   * Also test if the function uses scoping. DO_RECUR() doesn't
+   * adjust fp->expendible which will make eg RETURN_LOCAL fail.
+   *
+   *	/grubba 2003-03-25
    */
-  if((p != Pike_fp->context.prog) &&
-     (p->inherits[p->identifier_references[Pike_fp->context.identifier_level +
-					   arg1].inherit_offset].prog !=
-      Pike_fp->context.prog))
+  if(((p != Pike_fp->context.prog) &&
+      (p->inherits[p->identifier_references[Pike_fp->context.identifier_level +
+					    arg1].inherit_offset].prog !=
+       Pike_fp->context.prog)) ||
+     (ID_FROM_INT(p, arg1+Pike_fp->context.identifier_level)->
+      identifier_flags & IDENTIFIER_SCOPE_USED))
   {
     PIKE_OPCODE_T *faddr = PROG_COUNTER+GET_JUMP();
     ptrdiff_t num_locals = READ_INCR_BYTE(faddr);	/* ignored */
