@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.98 2000/02/04 16:35:46 grubba Exp $
+ * $Id: master.pike.in,v 1.99 2000/02/10 17:57:37 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -250,11 +250,20 @@ array(string) query_precompiled_names(string fname)
   return ({ fname + ".o" });
 }
 
+#if constant(_static_modules.Builtin.mutex)
+#define THREADED
+object compilation_mutex = _static_modules.Builtin()->mutex();
+#endif
+
 static program low_findprog(string pname, string ext, object|void handler)
 {
   program ret;
   array s;
   string fname=pname+ext;
+
+#ifdef THREADED
+  object key=compilation_mutex->lock(2);
+#endif
 
 #ifdef PIKE_AUTORELOAD
   if(!autoreload_on || load_time[fname]>=time())
@@ -307,9 +316,11 @@ static program low_findprog(string pname, string ext, object|void handler)
 	}
       }
       
+//      werror("2.5: %O\n",fname);
       
       if ( mixed e=catch { ret=compile_file(fname); } )
       {
+//	werror("-3: %O\n",fname);
 	programs[fname]=0;
         if(arrayp(e) && sizeof(e) && e[0] == "Compilation failed.\n")
           e[1]=({});
@@ -328,6 +339,7 @@ static program low_findprog(string pname, string ext, object|void handler)
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
+//    werror("3: %O\n",fname);
     return programs[fname]=ret;
   }
   return 0;
