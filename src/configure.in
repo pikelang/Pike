@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.304 1999/08/07 23:42:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.305 1999/08/10 00:18:59 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1162,6 +1162,7 @@ fi
 ########################################################################
 
 if test x$with_threads = xyes ; then
+  AC_DEFINE(PIKE_THREADS)
   OLDLIBS="$LIBS"
   OLDCFLAGS="$CFLAGS"
 

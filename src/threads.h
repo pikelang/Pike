@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.67 1999/05/12 04:45:59 hubbe Exp $
+ * $Id: threads.h,v 1.68 1999/08/10 00:19:00 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -12,7 +12,7 @@
 /* Needed for pthread_t on OSF/1 */
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
-#ifdef _REENTRANT
+#ifdef PIKE_THREADS
 
 /*
  * Decide which type of threads to use
@@ -603,7 +603,7 @@ void th_farm(void (*fun)(void *), void *here);
 #define init_threads_disable(X)
 #define exit_threads_disable(X)
 
-#endif /* _REENTRANT */
+#endif /* PIKE_THREADS */
 
 #ifdef __NT__
 #ifndef PIKE_DEBUG

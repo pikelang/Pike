@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.45 1999/07/15 16:54:33 hubbe Exp $
+ * $Id: acconfig.h,v 1.46 1999/08/10 00:18:58 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -212,6 +212,7 @@
 #undef USHRT_MAX
 
 /* Define these if you are going to use threads */
+#undef PIKE_THREADS
 #undef _REENTRANT
 #undef _THREAD_SAFE
 
