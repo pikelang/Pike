@@ -48,6 +48,7 @@ testfont binary
 /src/modules/Image/dct.c foreign_ident
 /src/modules/Image/doc/Image.html foreign_ident
 /src/modules/Image/font.c foreign_ident
+/src/modules/Image/illustration.pike foreign_ident
 /src/modules/Image/image.c foreign_ident
 /src/modules/Image/image.h foreign_ident
 /src/modules/Image/lzw.c foreign_ident
