@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.432 2000/11/03 14:11:05 noring Exp $")
+AC_REVISION("$Id: configure.in,v 1.433 2000/11/25 16:34:21 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2777,6 +2777,13 @@ char foo[23];
 
 MY_CHECK_FUNCTION(memset,
 [
+#ifdef HAVE_STDDEF_H
+#include <stddef.h>
+#endif /* HAVE_STDDEF_H */
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#include <stdio.h>
 #include <string.h>
 char foo[23];
 
@@ -2791,48 +2798,76 @@ struct pike_string {
 
 struct pike_string *begin_shared_string(int len)
 {
-  return malloc(sizeof(pike_string) + len);
+  return malloc(sizeof(struct pike_string) + len);
 }
 
 ], [
   int i;
   struct pike_string *str;
+  ptrdiff_t len;
 
   memset(foo, 0, 11);
   memset(foo, 'a', 10);
   memset(foo, 'b', 5);
-  if(strcmp(foo,"bbbbbaaaaa")) exit(1);
+  if(strcmp(foo,"bbbbbaaaaa")) {
+    fprintf(stderr, "1\n");
+    exit(1);
+  }
   memset(foo, 0, 6);
   for (i=6; i--;) {
-    if (foo[i]) exit(1);
+    if (foo[i]) {
+      fprintf(stderr, "2\n");
+      exit(1);
+    }
   }
   memset(foo+1, 1, 6);
   for (i=6; i--;) {
-    if (foo[i+1] != 1) exit(1);
+    if (foo[i+1] != 1) {
+      fprintf(stderr, "3\n");
+      exit(1);
+    }
   }
   memset(foo+2, 0, 6);
   for (i=6; i--;) {
-    if (foo[i+2]) exit(1);
+    if (foo[i+2]) {
+      fprintf(stderr, "4\n");
+      exit(1);
+    }
   }
   memset(foo+3, 1, 6);
   for (i=6; i--;) {
-    if (foo[i+3] != 1) exit(1);
+    if (foo[i+3] != 1) {
+      fprintf(stderr, "5\n");
+      exit(1);
+    }
   }
   memset(foo+4, 0, 6);
   for (i=6; i--;) {
-    if (foo[i+4]) exit(1);
+    if (foo[i+4]) {
+      fprintf(stderr, "6\n");
+      exit(1);
+    }
   }
   memset(foo+5, 1, 6);
   for (i=6; i--;) {
-    if (foo[i+5] != 1) exit(1);
+    if (foo[i+5] != 1) {
+      fprintf(stderr, "7\n");
+      exit(1);
+    }
   }
   memset(foo+6, 0, 6);
   for (i=6; i--;) {
-    if (foo[i+6]) exit(1);
+    if (foo[i+6]) {
+      fprintf(stderr, "8\n");
+      exit(1);
+    }
   }
   memset(foo+7, 1, 6);
   for (i=6; i--;) {
-    if (foo[i+7] != 1) exit(1);
+    if (foo[i+7] != 1) {
+      fprintf(stderr, "9\n");
+      exit(1);
+    }
   }
 
   len = 6;
@@ -2843,9 +2878,12 @@ struct pike_string *begin_shared_string(int len)
   for (i=len; i--;) {
     str->str[i] = ~0;
   }
-  memset(str, 0, len);
+  memset(str->str, 0, len);
   for (i = len; i--;) {
-    if (str->str[i]) exit(1);
+    if (str->str[i]) {
+      fprintf(stderr, "string\n");
+      exit(1);
+    }
   }
   free(str);
   exit(0);
