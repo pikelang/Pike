@@ -7,8 +7,7 @@
 #define PROGRAM_H
 
 #include <stdarg.h>
-#include "config.h"
-#include "machine.h"
+#include "global.h"
 #include "types.h"
 
 #define LFUN___INIT 0
