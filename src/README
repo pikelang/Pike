@@ -11,6 +11,7 @@ This is what you need to do to install Pike:
   --without-readline  compile without readline support
   --without-debug     compile without runtime debugging
   --without-threads   compile without threads support
+  --without-zlib      compile without gzip compression libary support
 
    You might also want to set the following environment variables:
    CFLAGS     Put extra flags for your C compiler here.
