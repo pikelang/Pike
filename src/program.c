@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.33 1997/04/16 03:09:16 hubbe Exp $");
+RCSID("$Id: program.c,v 1.34 1997/06/10 20:02:17 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1249,11 +1249,9 @@ static int low_find_shared_string_identifier(struct pike_string *name,
       if(funp->flags & ID_INHERITED)
       {
         if(funp->flags & ID_PRIVATE) continue;
-	for(t=0; t>=0 && t<(int)prog->num_identifier_references; t++)
+	for(t=i+1; t>=0 && t<(int)prog->num_identifier_references; t++)
 	{
-	  if(t == i) continue;
-
-	  if(is_same_string(fun->name, ID_FROM_INT(prog, i)->name))
+	  if(is_same_string(fun->name, ID_FROM_INT(prog, t)->name))
 	    t=-10;
 	}
 	if(t < 0) continue;
