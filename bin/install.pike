@@ -1209,15 +1209,16 @@ void do_install()
   if(!export)
   {
     status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
-  }
-  catch {
-    files_to_install = (int)Stdio.read_file(combine_path(vars->TMP_BUILDDIR,
-							 "num_files_to_install"));
+    catch {
+      files_to_install = (int)Stdio.read_file
+	(combine_path(vars->TMP_BUILDDIR, "num_files_to_install"));
 
-    if(!export && files_to_install)
-      progress_bar =
-	Tools.Install.ProgressBar("Installing", 0, files_to_install, 0.0, 0.2);
-  };
+      if(files_to_install)
+	progress_bar =
+	  Tools.Install.ProgressBar("Installing", 0,
+				    files_to_install, 0.0, 0.2);
+    };
+  }
 
   mixed err = catch {
 
