@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.61 2004/04/18 19:32:32 nilsson Exp $
+|| $Id: png.c,v 1.62 2004/04/18 20:07:30 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.61 2004/04/18 19:32:32 nilsson Exp $");
+RCSID("$Id: png.c,v 1.62 2004/04/18 20:07:30 jhs Exp $");
 
 #include "image_machine.h"
 
@@ -684,7 +684,7 @@ static int _png_write_rgb(rgb_group *w1,
 	 }
 	 return 0; /* no alpha channel */
 
-      case 3: /* 1,2,4,8 bit palette index */
+      case 3: /* 1,2,4,8 bit palette index. Alpha might be in palette */
 	 if (!ct)
 	 {
 	    free(w1);
@@ -811,7 +811,7 @@ static int _png_write_rgb(rgb_group *w1,
 		  while (n)
 		  {
 		     int i;
-		     for (i=8; i>4;)
+		     for (i=8; i>=4;)
 		     {
 			i-=4;
 			if (x) 
