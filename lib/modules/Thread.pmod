@@ -132,7 +132,11 @@ optional class Fifo {
       ptr%=sizeof(buffer);
       num--;
     }else{
-      ret=buffer[ptr..]+buffer[..num-sizeof(ret)-1];
+      if (ptr+num < sizeof(buffer)) {
+	ret = buffer[ptr..ptr+num-1];
+      } else {
+	ret = buffer[ptr..]+buffer[..num-(sizeof(buffer)-ptr)-1];
+      }
       ptr=num=0;
       buffer=allocate(sizeof(buffer)); // Throw away any references.
     }
