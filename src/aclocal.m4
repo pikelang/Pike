@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.63 2003/02/22 14:39:43 grubba Exp $
+dnl $Id: aclocal.m4,v 1.64 2003/02/22 15:09:36 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -96,21 +96,21 @@ pushdef([AC_CONFIG_HEADER],
   AC_CONFIG_HEADER($1)
 ])
 
-define([PIKE_CHECK_GNU_STUB_H],[
-  AC_CHECK_HEADERS([gnu/stub.h])
+define([PIKE_CHECK_GNU_STUBS_H],[
+  AC_CHECK_HEADERS([gnu/stubs.h])
 ])
 
 define([ORIG_AC_CHECK_FUNC], defn([AC_CHECK_FUNC]))
 pushdef([AC_CHECK_FUNC],
 [
-AC_REQUIRE([PIKE_CHECK_GNU_STUB_H])
+AC_REQUIRE([PIKE_CHECK_GNU_STUBS_H])
 AC_MSG_CHECKING([for $1])
 AC_CACHE_VAL(ac_cv_func_$1,
 [AC_TRY_LINK(
 [
-#ifdef HAVE_GNU_STUB_H
+#ifdef HAVE_GNU_STUBS_H
 /* This file contains __stub_ defines for broken functions. */
-#include <gnu/stub.h>
+#include <gnu/stubs.h>
 #endif
 extern int $1();
 ], [
@@ -297,7 +297,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.63 2003/02/22 14:39:43 grubba Exp $
+# $Id: aclocal.m4,v 1.64 2003/02/22 15:09:36 grubba Exp $
 
 MY_AC_PROG_CC
 
