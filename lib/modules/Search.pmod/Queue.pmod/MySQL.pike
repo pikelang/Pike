@@ -92,7 +92,7 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
       // FIXME:
       // Race condition:
       // If a url is forced to be indexed *while* it's being indexed,
-      // and it's changed since the indexnig started, setting the stage
+      // and it's changed since the indexing started, setting the stage
       // to 0 here might be worthless, since it could be overwritten before
       // it's fetched again.
       if(force)
