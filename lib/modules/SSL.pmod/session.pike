@@ -127,6 +127,11 @@ array new_server_states(string client_random, string server_random)
       read_state->crypt->set_iv(keys[4]);
       write_state->crypt->set_iv(keys[5]);
     }
+    if (cipher_spec->cipher_type == CIPHER_BLOCK)
+    { /* Crypto.crypto takes care of splitting input into blocks */
+      read_state->crypt = Crypto.crypto(read_state->crypt);
+      write_state->crypt = Crypto.crypto(write_state->crypt);
+    }
   }
   return ({ read_state, write_state });
 }
@@ -152,6 +157,11 @@ array new_client_states(string client_random, string server_random)
     {
       read_state->crypt->set_iv(keys[5]);
       write_state->crypt->set_iv(keys[4]);
+    }
+    if (cipher_spec->cipher_type == CIPHER_BLOCK)
+    { /* Crypto.crypto takes care of splitting input into blocks */
+      read_state->crypt = Crypto.crypto(read_state->crypt);
+      write_state->crypt = Crypto.crypto(write_state->crypt);
     }
   }
   return ({ read_state, write_state });
