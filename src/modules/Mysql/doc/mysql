@@ -97,12 +97,12 @@ SEE ALSO
 
 ============================================================================
 NAME
-	query - make an SQL query
+	big_query - make an SQL query
 
 SYNTAX
 	#include <mysql.h>
 
-	int|object(Mysql.mysql_result) mysql->query(string q);
+	int|object(Mysql.mysql_result) mysql->big_query(string q);
 
 DESCRIPTION
 	This function sends an SQL query to the Mysql-server. The result
