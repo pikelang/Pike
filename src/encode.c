@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.172 2004/05/11 11:36:40 grubba Exp $
+|| $Id: encode.c,v 1.173 2004/05/11 11:40:38 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.172 2004/05/11 11:36:40 grubba Exp $");
+RCSID("$Id: encode.c,v 1.173 2004/05/11 11:40:38 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1771,7 +1771,7 @@ static int my_extract_char(struct decode_data *data)
       data->ptr+=sizeof(S[0])*(L);					\
   }while(0)
 
-#if BYTEORDER == 4123
+#if BYTEORDER == 4321
 #define BITFLIP(S)
 #else
 #define BITFLIP(S)						\
