@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.38 2003/11/19 17:19:29 grubba Exp $
+|| $Id: opcodes.h,v 1.39 2004/03/12 21:56:52 mast Exp $
 */
 
 #ifndef OPCODES_H
@@ -39,7 +39,6 @@ struct keyword
 #define I__DATA		8	/* Instruction is raw data (data, byte)*/
 #define I_HASARG2	16	/* Instruction has a second parameter. */
 #define I_HASPOINTER	32	/* Instruction is followed by a F_POINTER. */
-#define I_PC_AT_NEXT	64	/* Opcode has updated Pike_fp->pc. */
 #define I_BRANCH	128	/* Opcode either jumps to the address
 				 * given by I_POINTER/I_HASPOINTER or
 				 * continues. */

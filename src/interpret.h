@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.149 2004/03/05 23:37:14 nilsson Exp $
+|| $Id: interpret.h,v 1.150 2004/03/12 21:56:52 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -57,7 +57,8 @@ struct pike_frame
   INT16 ident;
   struct pike_frame *next;
   struct pike_frame *scope;
-  PIKE_OPCODE_T *pc;		/* Program counter of last/next opcode. */
+  PIKE_OPCODE_T *pc;		/* Address of current opcode. */
+  PIKE_OPCODE_T *return_addr;	/* Address of opcode to continue at after call. */
   struct svalue *locals;	/* Start of local variables. */
 
   /*  This is <= locals, and this is where the
