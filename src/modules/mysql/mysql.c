@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.17 1997/02/07 01:42:21 hubbe Exp $
+ * $Id: mysql.c,v 1.18 1997/02/08 02:59:08 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -71,7 +71,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.17 1997/02/07 01:42:21 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.18 1997/02/08 02:59:08 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -686,7 +686,7 @@ void pike_module_init(void)
   set_exit_callback(exit_mysql_struct);
 
   mysql_program = end_program();
-  add_program_constant("mysql");
+  add_program_constant("mysql", mysql_program, 0);
 
   init_mysql_res_programs();
 #endif /* HAVE_MYSQL */
