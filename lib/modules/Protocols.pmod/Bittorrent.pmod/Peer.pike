@@ -702,9 +702,11 @@ void got_piece_from_peer(int piece,int offset,string data)
       cancelled--;
    else
    {
+#if 0
       Function.call_callback(
 	 warning,"%O: got unrequested piece %d/%d+%db\n",
 	 ip,piece,offset,strlen(data));
+#endif
    }
 
    bytes_in+=strlen(data);
