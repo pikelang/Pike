@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.51 2002/11/23 15:58:02 mast Exp $
+|| $Id: block_alloc.h,v 1.52 2002/11/23 17:03:00 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -81,7 +81,7 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
   }									\
   n->PIKE_CONCAT3(free_,DATA,s)=&n->x[(BSIZE)-1];			\
   /* Mark the new blocks as unavailable for now... */			\
-  PIKE_MEM_NA(&n->x, sizeof(n->x));					\
+  PIKE_MEM_NA(n->x);							\
 }									\
 									\
 BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
@@ -103,7 +103,7 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 									\
   tmp = blk->PIKE_CONCAT3(free_,DATA,s);				\
   /* Mark the new block as available. */				\
-  PIKE_MEM_RW(tmp, sizeof(*tmp));					\
+  PIKE_MEM_RW(*tmp);							\
   if(!(blk->PIKE_CONCAT3(free_,DATA,s) = (void *)tmp->BLOCK_ALLOC_NEXT))    \
     PIKE_CONCAT(DATA,_free_blocks) = blk->prev;				\
   DO_IF_DMALLOC(                                                        \
@@ -111,7 +111,7 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
     dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());      \
   )                                                                     \
   /* Mark the new block as available but uninitialized. */		\
-  PIKE_MEM_WO(tmp, sizeof(*tmp));					\
+  PIKE_MEM_WO(*tmp);							\
   INIT_BLOCK(tmp);							\
   return tmp;								\
 }									\
@@ -173,7 +173,7 @@ void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
   d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
   PRE_INIT_BLOCK(d);							\
   /* Mark block as unavailable. */					\
-  PIKE_MEM_NA(d, sizeof(*d));						\
+  PIKE_MEM_NA(*d);							\
   blk->PIKE_CONCAT3(free_,DATA,s)=d;					\
   if(!--blk->used &&							\
      ++PIKE_CONCAT3(num_empty_,DATA,_blocks) > MAX_EMPTY_BLOCKS) {	\
@@ -186,7 +186,7 @@ void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
       blk->next->prev = NULL;						\
     }									\
     /* Mark meta-block as available, since libc will mess with it. */	\
-    PIKE_MEM_RW(blk, sizeof(*blk));					\
+    PIKE_MEM_RW(*blk);							\
     free(blk);								\
     --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
   }									\
@@ -225,7 +225,7 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
   PRE_INIT_BLOCK(d);							\
   /* Mark block as unavailable. */					\
-  PIKE_MEM_NA(d, sizeof(*d));						\
+  PIKE_MEM_NA(*d);							\
   blk->PIKE_CONCAT3(free_,DATA,s)=d;					\
   if(!--blk->used &&							\
      ++PIKE_CONCAT3(num_empty_,DATA,_blocks) > MAX_EMPTY_BLOCKS) {	\
@@ -238,7 +238,7 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
       blk->next->prev = NULL;						\
     }									\
     /* Mark meta-block as available, since libc will mess with it. */	\
-    PIKE_MEM_RW(blk, sizeof(*blk));					\
+    PIKE_MEM_RW(*blk);							\
     free(blk);								\
     --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
   }									\
@@ -264,7 +264,7 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
   {									\
     PIKE_CONCAT(DATA,_blocks)=tmp->next;				\
     /* Mark meta-block as available, since libc will mess with it. */	\
-    PIKE_MEM_RW(&tmp->x, sizeof(tmp->x));				\
+    PIKE_MEM_RW(tmp->x);						\
     free((char *)tmp);							\
   }									\
   PIKE_CONCAT(DATA,_blocks)=0;						\

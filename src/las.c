@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.311 2002/11/23 15:11:05 mast Exp $
+|| $Id: las.c,v 1.312 2002/11/23 17:03:00 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.311 2002/11/23 15:11:05 mast Exp $");
+RCSID("$Id: las.c,v 1.312 2002/11/23 17:03:00 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -584,7 +584,7 @@ void free_all_nodes(void)
 	  /* We want to be able to access the token field of all
 	   * the blocks...
 	   */
-	  PIKE_MEM_RW(&tmp2->x, sizeof(tmp2->x));
+	  PIKE_MEM_RW(tmp2->x);
 	  for(e=0;n && e<NODES;e++)
 	  {
 	    if (tmp2->x[e].token != USHRT_MAX)

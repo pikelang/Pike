@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.h,v 1.37 2002/11/20 18:06:05 grubba Exp $
+|| $Id: pike_memory.h,v 1.38 2002/11/23 17:03:00 mast Exp $
 */
 
 #ifndef MEMORY_H
@@ -16,19 +16,50 @@
 #endif /* HAVE_VALGRIND_H */
 
 #ifdef USE_VALGRIND
+
 /* No Access */
-#define PIKE_MEM_NA(addr, bytes)	VALGRIND_DISCARD(VALGRIND_MAKE_NOACCESS(addr, bytes))
-/* Write Only -- Will become RW when hving been written to */
-#define PIKE_MEM_WO(addr, bytes)	VALGRIND_DISCARD(VALGRIND_MAKE_WRITABLE(addr, bytes))
+#define PIKE_MEM_NA(lvalue) do {					\
+    VALGRIND_DISCARD(VALGRIND_MAKE_NOACCESS(&(lvalue), sizeof (lvalue))); \
+  } while (0)
+#define PIKE_MEM_NA_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_NOACCESS(addr, bytes));		\
+  } while (0)
+
+/* Write Only -- Will become RW when having been written to */
+#define PIKE_MEM_WO(lvalue) do {					\
+    VALGRIND_DISCARD(VALGRIND_MAKE_WRITABLE(&(lvalue), sizeof (lvalue))); \
+  } while (0)
+#define PIKE_MEM_WO_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_WRITABLE(addr, bytes));		\
+  } while (0)
+
 /* Read/Write */
-#define PIKE_MEM_RW(addr, bytes)	VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(addr, bytes))
+#define PIKE_MEM_RW(lvalue) do {					\
+    VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(&(lvalue), sizeof (lvalue))); \
+  } while (0)
+#define PIKE_MEM_RW_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(addr, bytes));		\
+  } while (0)
+
 /* Read Only -- Not currently supported by valgrind */
-#define PIKE_MEM_RO(addr, bytes)	VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(addr, bytes))
+#define PIKE_MEM_RO(lvalue) do {					\
+    VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(&(lvalue), sizeof (lvalue))); \
+  } while (0)
+#define PIKE_MEM_RO_RANGE(addr, bytes) do {				\
+    VALGRIND_DISCARD(VALGRIND_MAKE_READABLE(addr, bytes));		\
+  } while (0)
+
 #else
-#define PIKE_MEM_NA(addr, bytes)	0
-#define PIKE_MEM_WO(addr, bytes)	0
-#define PIKE_MEM_RW(addr, bytes)	0
-#define PIKE_MEM_RO(addr, bytes)	0
+
+#define PIKE_MEM_NA(lvalue)		do {} while (0)
+#define PIKE_MEM_NA_RANGE(addr, bytes)	do {} while (0)
+#define PIKE_MEM_WO(lvalue)		do {} while (0)
+#define PIKE_MEM_WO_RANGE(addr, bytes)	do {} while (0)
+#define PIKE_MEM_RW(lvalue)		do {} while (0)
+#define PIKE_MEM_RW_RANGE(addr, bytes)	do {} while (0)
+#define PIKE_MEM_RO(lvalue)		do {} while (0)
+#define PIKE_MEM_RO_RANGE(addr, bytes)	do {} while (0)
+
 #endif /* USE_VALGRIND */
 
 
