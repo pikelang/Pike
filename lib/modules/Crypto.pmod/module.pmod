@@ -227,7 +227,6 @@ class DES3_Algorithm
 
 DES3_Algorithm DES3 = DES3_Algorithm();
 
-#if 0
 class IDEA_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.
@@ -238,7 +237,6 @@ class IDEA_Algorithm
 }
 
 IDEA_Algorithm IDEA = IDEA_Algorithm();
-#endif
 
 class Serpent_Algorithm
 {
@@ -261,5 +259,7 @@ class Twofish_Algorithm
 }
 
 Twofish_Algorithm Twofish = Twofish_Algorithm();
+
+constant CBC = Nettle.CBC;
 
 #endif /* constant(Nettle.HashInfo) */
