@@ -1,7 +1,8 @@
 #pike __REAL_VERSION__
+//#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.22 2004/01/24 23:29:58 nilsson Exp $
+ * $Id: X509.pmod,v 1.23 2004/01/27 22:01:37 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -59,8 +60,9 @@ mapping(string:int) parse_time(UTC asn1)
 
   /* NOTE: This relies on pike-0.7 not interpreting leading zeros as
    * an octal prefix. */
-  mapping m = mkmapping( ({ "year", "mon", "mday", "hour", "min", "sec" }),
-			 (array(int)) (s/2));
+  mapping(string:int) m = mkmapping( ({ "year", "mon", "mday",
+					"hour", "min", "sec" }),
+				     (array(int)) (s/2));
 
   if (m->year < 50)
     m->year += 100;
@@ -135,7 +137,7 @@ Sequence make_tbs(object issuer, object algorithm,
 }
 
 //!
-string make_selfsigned_dsa_certificate(object dsa, int ttl, array name,
+string make_selfsigned_dsa_certificate(Crypto.dsa dsa, int ttl, array name,
 				       array|void extensions)
 {
   Integer serial = Integer(1); /* Hard coded serial number */
@@ -162,7 +164,7 @@ string make_selfsigned_dsa_certificate(object dsa, int ttl, array name,
 }
 
 //!
-string rsa_sign_digest(object rsa, object digest_id, string digest)
+string rsa_sign_digest(Crypto.rsa rsa, object digest_id, string digest)
 {
   Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
 				      OctetString(digest) }) );
@@ -170,7 +172,8 @@ string rsa_sign_digest(object rsa, object digest_id, string digest)
 }
 
 //!
-int rsa_verify_digest(object rsa, object digest_id, string digest, string s)
+int(0..1) rsa_verify_digest(Crypto.rsa rsa, object digest_id,
+		      string digest, string s)
 {
   Sequence digest_info = Sequence( ({ Sequence( ({ digest_id, Null() }) ),
 					 OctetString(digest) }) );
@@ -178,7 +181,7 @@ int rsa_verify_digest(object rsa, object digest_id, string digest, string s)
 }
 
 //!
-string make_selfsigned_rsa_certificate(object rsa, int ttl, array name,
+string make_selfsigned_rsa_certificate(Crypto.rsa rsa, int ttl, array name,
 				       array|void extensions)
 {
   Integer serial = Integer(1); /* Hard coded serial number */
@@ -234,7 +237,7 @@ class rsa_verifier
   }
 
   //!
-  int(0..1) verify(object algorithm, string msg, string signature)
+  int(0..1) verify(Sequence algorithm, string msg, string signature)
   {
     if (algorithm->get_der() == rsa_md5_algorithm->get_der())
       return rsa_verify_digest(rsa, Identifiers.md5_id,
@@ -281,28 +284,32 @@ class dsa_verifier
 #endif
 
 //!
-Verifier make_verifier(object keyinfo)
+Verifier make_verifier(Object _keyinfo)
 {
+  if( _keyinfo->type_name != "SEQUENCE" )
+    return 0;
+  Sequence keyinfo = [object(Sequence)]_keyinfo;
   if ( (keyinfo->type_name != "SEQUENCE")
        || (sizeof(keyinfo->elements) != 2)
        || (keyinfo->elements[0]->type_name != "SEQUENCE")
-       || !sizeof(keyinfo->elements[0]->elements)
+       || !sizeof(([object(Sequence)]keyinfo->elements[0])->elements)
        || (keyinfo->elements[1]->type_name != "BIT STRING")
        || keyinfo->elements[1]->unused)
     return 0;
   
-  if (keyinfo->elements[0]->elements[0]->get_der()
+  if (([object(Sequence)]keyinfo->elements[0])->elements[0]->get_der()
       == Identifiers.rsa_id->get_der())
   {
-    if ( (sizeof(keyinfo->elements[0]->elements) != 2)
-	 || (keyinfo->elements[0]->elements[1]->get_der()
+    if ( (sizeof(([object(Sequence)]keyinfo->elements[0])->elements) != 2)
+	 || (([object(Sequence)]keyinfo->elements[0])->elements[1]->get_der()
 	     != Null()->get_der()))
       return 0;
     
-    return rsa_verifier()->init(keyinfo->elements[1]->value);
+    return rsa_verifier()->init(([object(Sequence)]keyinfo->elements[1])
+				->value);
   }
 
-  if(keyinfo->elements[0]->elements[0]->get_der()
+  if(([object(Sequence)]keyinfo->elements[0])->elements[0]->get_der()
       == Identifiers.dsa_sha_id->get_der())
   {
     /* FIXME: Not implemented */
@@ -336,7 +343,7 @@ class TBSCertificate
     if (asn1->type_name != "SEQUENCE")
       return 0;
 
-    array a = asn1->elements;
+    array(Object) a = ([object(Sequence)]asn1)->elements;
     X509_WERR("TBSCertificate: sizeof(a) = %d\n", sizeof(a));
       
     if (sizeof(a) < 6)

@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.29 2004/01/26 21:50:06 bill Exp $
+// $Id: Types.pmod,v 1.30 2004/01/27 22:01:53 nilsson Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -169,7 +169,7 @@ class Compound
   constant constructed = 1;
 
   //! contents of compound object, elements are from @[Standards.ASN1.Types]
-  array(object) elements = ({ });
+  array(Object) elements = ({ });
 
   this_program init(array args) {
     WERROR(sprintf("asn1_compound[%s]->init(%O)\n", type_name, args));
