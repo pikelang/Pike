@@ -1,0 +1,35 @@
+#
+# $Id: pike_verify.supp,v 1.1 2003/10/16 01:12:21 nilsson Exp $
+# Suppresion for valgrind errors outside of Pike triggered
+# by the Pike test suite.
+#
+
+{
+   libgdbm/gdbm_open
+   Memcheck:Param
+   write(buf)
+   fun:__GI___libc_write
+   fun:gdbm_open
+   fun:gdbmmod_create
+   fun:low_mega_apply
+}
+
+{
+   libgdbm/gdbm_store
+   Memcheck:Param
+   write(buf)
+   fun:__GI___libc_write
+   fun:_gdbm_write_bucket
+   fun:_gdbm_end_update
+   fun:gdbm_store
+}
+
+{
+   libgdbm/gdbm_reorganize
+   Memcheck:Param
+   write(buf)
+   fun:__GI___libc_write
+   fun:gdbm_open
+   fun:gdbm_reorganize
+   fun:gdbmmod_reorganize
+}

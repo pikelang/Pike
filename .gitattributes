@@ -906,3 +906,4 @@ testfont binary
 /src/version.c foreign_ident
 /src/version.h foreign_ident
 /tools/pike.el foreign_ident
+/tools/pike_verify.supp foreign_ident
