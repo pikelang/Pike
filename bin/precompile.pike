@@ -825,7 +825,7 @@ array IFDEF(string define,
     ret+=yes;
     if(no && sizeof(no))
     {
-      ret+=sprintf("\n#else\n",define);
+      ret+=({sprintf("\n#else /* %s */\n",define)});
       ret+=no;
     }
   }
