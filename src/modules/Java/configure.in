@@ -26,7 +26,7 @@ if test "x$with_java" = xyes; then
 
   PIKE_FEATURE_NODEP(Java)
 
-  AC_MSG_CHECKING(which operating system we're using)
+  AC_MSG_CHECKING(which operating system we are using)
   AC_CACHE_VAL(pike_cv_java_sysos, [
     pike_cv_java_sysos="`uname | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`"
     case "$pike_cv_java_sysos" in
@@ -39,7 +39,7 @@ if test "x$with_java" = xyes; then
   ])
   AC_MSG_RESULT($pike_cv_java_sysos)
 
-  AC_MSG_CHECKING(which architecture we're using)
+  AC_MSG_CHECKING(which architecture we are using)
   AC_CACHE_VAL(pike_cv_java_arch, [
     if test "x$pike_cv_java_sysos" = xwindows_nt; then
       uname=uname
@@ -381,7 +381,7 @@ if test "x$with_java" = xyes; then
     PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
     if test "$pike_cv_java_working" = no; then
       pike_cv_java=no;
-      PIKE_FEATURE(Java,[no (JVM doesn't work)])
+      PIKE_FEATURE(Java,[no (JVM does not work)])
     fi
   else
     :
@@ -400,8 +400,8 @@ if test "x$with_java" = xyes; then
       AC_DEFINE_UNQUOTED(JAVA_HOME, "${pike_cv_java_java_home}")
     fi
     if test "x$pike_cv_sys_os" = xWindows_NT ; then
-      dnl We'll do LoadLibrary ourselves instead of relying on jvm.lib to
-      dnl do it for us.  That way we'll avoid nasty popup dialogs...
+      # We'll do LoadLibrary ourselves instead of relying on jvm.lib to
+      # do it for us.  That way we'll avoid nasty popup dialogs...
       JAVA_LIBS=""
     else
       :
@@ -414,6 +414,7 @@ if test "x$with_java" = xyes; then
       sparc) pike_cv_java_cpu=sparc;;
       i386|x86) pike_cv_java_cpu=x86;;
       powerpc|ppc) pike_cv_java_cpu=ppc;;
+      alpha) pike_cv_java_cpu=alpha;;
       *) pike_cv_java_cpu=no;;
     esac
   ])
@@ -423,6 +424,7 @@ if test "x$with_java" = xyes; then
     sparc) AC_DEFINE(HAVE_SPARC_CPU);;
     x86) AC_DEFINE(HAVE_X86_CPU);;
     ppc) AC_DEFINE(HAVE_PPC_CPU);;
+    alpha) AC_DEFINE(HAVE_ALPHA_CPU);;
   esac
 
   if test "x$JAVA_LIBPATH" = x; then :; else

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.4 2002/10/11 01:39:45 nilsson Exp $
+|| $Id: acconfig.h,v 1.5 2003/03/17 16:53:49 marcus Exp $
 */
 
 /*
@@ -34,5 +34,8 @@
 
 /* Define if you have a PowerPC CPU */
 #undef HAVE_PPC_CPU
+
+/* Define if you have an alpha CPU */
+#undef HAVE_ALPHA_CPU
 
 #endif /* PIKE_JAVA_CONFIG_H */
