@@ -1,5 +1,5 @@
 /*
- * $Id: Types.pmod,v 1.16 2000/09/28 03:39:11 hubbe Exp $
+ * $Id: Types.pmod,v 1.17 2000/11/20 01:28:23 mast Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
@@ -558,7 +558,7 @@ int asn1_teletex_valid (string s)
 
 class asn1_teletex_string
 {
-  // Avoid this one; it seems to be common that this type is used
+  // Avoid this one; it seems to be common that this type is used to
   // label strings encoded with the ISO 8859-1 character set (use
   // asn1_broken_teletex_string for that). From
   // http://www.mindspring.com/~asn1/nlsasn.htm:
