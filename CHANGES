@@ -48,10 +48,56 @@ o trace() can trace all threads
     instead the trace() function has been extended to make it possible
     to set the trace level in all threads simultaneously.
 
+o --help
+    The Pike --help message has been improved and it is possible to
+    retrieve further information about options and environment
+    variables. In addition most of the tools and build scripts now
+    accepts --help and describes what they do and what options they
+    take.
 
-Build baluns:
--------------
-bundles
+o unbug
+    The Pike debugger unbug has been significtly optimized.
+
+o Module system.
+    Both dynamic and static modules appears as objects and they both
+    support having an identifier _module_value, which will then be
+    what is presented by the resolver as the module. _module_value can
+    be a constant, thus preventing the program from being
+    automatically cloned.
+
+o Calendar
+
+  The %S format is added to Calendar.parse() to parse seconds since
+  the Epoch. The TimeRange class is extended with a format method
+  format_commonlog(), a tzname_utc_offset (+HHMM) and
+  tzname_location(), which, when available, returns zone names like
+  "Europe/Stockholm". The database has been updated with Swedish
+  pre-1901 namedays and Finnish namedays.
+
+Master:
+-------
+
+o The new option --dumpversion prints out the Pike version in a more
+  easily pared way than --version.
+
+o The master now supplies argv to the started application, so it can
+  use the create method for execution. Some people find it a more
+  elegant solution than having a main function.
+
+o The -e Pike environment has been improved with a lot of convenience
+  wrappings. When compiling code with pike -e the macro NOT(X) will
+  expand to !(X) and CHAR(X) to 'X', making it easier to solve quote
+  problems from a shell. If the return from a pike -e statement is a
+  positive integer it will be used as pikes exit code. If the return
+  value is a string it will be outputed, with a "\n" added, if it
+  lacked one. Finally there is a predefined variable env that contains
+  the environment variables as a string:string mapping.
+
+Building and installing pike:
+-----------------------------
+o bundles
+o no tpike
+o installs documentation (_nodoc)
 
 
 Language additions:
@@ -297,6 +343,23 @@ o Web.RDF/RDFS/OWL/RSS
 
 o Parser.RCS
 
+o Array.any
+o Array.all
+o Array.partition
+o Function.call_callback
+o Function.Y
+o Function.curry
+
+o Thread
+date: 2003/04/14 18:59:37;  author: mast;  state: Exp;  lines: +366 -58
+Added try_* varieties of all functions that can block in Thread.Fifo
+and Thread.Queue. Added functions to make Thread.Fifo and Thread.Queue
+implement the same interface. Let write and try_write return the
+number of elements in the fifo/queue. Added fallbacks for Thread.Fifo
+and Thread.Queue in nonthreaded mode since it's now possible to use
+them in a meaningful way then.
+
+
 Optimizations:
 --------------
 
@@ -324,6 +387,9 @@ C level/development changes:
 ----------------------------
 
 o The security.h include file is renamed to pike_security.h
+o cond_resolv, test_program_eq, test_program_equal, no warnings in testsuite,
+o pmod: object(programname), void may be 0, typecheck of vararg/optional,
+  inherit, PIKEVAR attributes, prototypes, program flags
 
 Bugs fixed:
 -----------
