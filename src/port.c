@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.79 2004/11/11 15:59:28 grubba Exp $
+|| $Id: port.c,v 1.80 2004/11/14 18:03:50 mast Exp $
 */
 
 /*
@@ -32,6 +32,18 @@
 #include <errno.h>
 #include <float.h>
 #include <string.h>
+
+#ifndef HAVE_ISSPACE
+PMOD_EXPORT const char Pike_isspace_vector[] =
+  "0012345678SSSSS456789012345678901"
+   "S3456789012345678901234567890123"
+   "45678901234567890123456789012345"
+   "67890123456789012345678901234567"
+   "89012345678901234567890123456789"
+   "01234567890123456789012345678901"
+   "23456789012345678901234567890123"
+   "45678901234567890123456789000000";
+#endif
 
 #ifdef sun
 time_t time PROT((time_t *));

@@ -2,12 +2,31 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stuff.c,v 1.22 2004/05/31 23:51:27 nilsson Exp $
+|| $Id: stuff.c,v 1.23 2004/11/14 18:03:50 mast Exp $
 */
 
 #include "global.h"
 #include "stuff.h"
 #include "stralloc.h"
+
+/* Used by is8bitalnum in pike_macros.h. */
+PMOD_EXPORT const char Pike_is8bitalnum_vector[] =
+  "0000000000000000"
+  "0000000000000000"
+  "0000000000000000"
+  "1111111111000000"
+  "0111111111111111"
+  "1111111111100001"
+  "0111111111111111"
+  "1111111111100000"
+  "0000000000000000"
+  "0000000000000000"
+  "1011110101100010"
+  "1011011001101110"
+  "1111111111111111"
+  "1111111011111111"
+  "1111111111111111"
+  "1111111011111111";
 
 /* Not all of these are primes, but they should be adequate */
 PMOD_EXPORT const INT32 hashprimes[32] =

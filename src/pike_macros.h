@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.37 2003/06/30 17:06:09 mast Exp $
+|| $Id: pike_macros.h,v 1.38 2004/11/14 18:03:50 mast Exp $
 */
 
 #ifndef MACROS_H
@@ -32,22 +32,8 @@
 #define MAXIMUM(X,Y) ((X)>(Y)?(X):(Y))
 
 
-#define is8bitalnum(X)	("0000000000000000" \
-			 "0000000000000000" \
-			 "0000000000000000" \
-			 "1111111111000000" \
-			 "0111111111111111" \
-			 "1111111111100001" \
-			 "0111111111111111" \
-			 "1111111111100000" \
-			 "0000000000000000" \
-			 "0000000000000000" \
-			 "1011110101100010" \
-			 "1011011001101110" \
-			 "1111111111111111" \
-			 "1111111011111111" \
-			 "1111111111111111" \
-			 "1111111011111111"[((unsigned)(X))&0xff] == '1')
+PMOD_EXPORT extern const char Pike_is8bitalnum_vector[];
+#define is8bitalnum(X)	(Pike_is8bitalnum_vector[((unsigned)(X))&0xff] == '1')
   
 #define isidchar(X) is8bitalnum(X)
 
