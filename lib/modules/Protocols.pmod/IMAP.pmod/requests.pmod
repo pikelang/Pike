@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.61 1999/03/03 17:46:04 grubba Exp $
+ * $Id: requests.pmod,v 1.62 1999/03/03 17:47:16 grubba Exp $
  */
 
 import .types;
@@ -608,7 +608,7 @@ class fetch
       }
 
       if (sizeof(atom->options)
-	  && ( (atom->options[0]->type != atom)
+	  && ( (atom->options[0]->type != "atom")
 	       || (atom->options[0]->options)))	{	// FIXME: ?????
 	werror("Insane options?\n");
 	return 0;
