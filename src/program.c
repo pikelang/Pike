@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.585 2005/01/20 00:27:17 nilsson Exp $
+|| $Id: program.c,v 1.586 2005/02/09 16:35:50 mast Exp $
 */
 
 #include "global.h"
@@ -163,7 +163,7 @@ static struct mapping *lfun_types;
 static const char *const raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tVoid),	/* "__INIT", */
   tFuncV(tNone,tZero,tVoid),	/* "create", */
-  tFuncV(tNone,tVoid,tVoid),	/* "destroy", */
+  tFuncV(tOr(tVoid,tInt),tVoid,tVoid), /* "destroy", */
   tFuncV(tZero,tZero,tMix),	/* "`+", */
   tFunc(tOr(tVoid,tZero),tMix),	/* "`-", */
   tFuncV(tNone,tZero,tMix),	/* "`&", */
@@ -329,17 +329,33 @@ static const char *const raw_lfun_types[] = {
  *!   @[lfun::__INIT()], @[lfun::destroy()]
  */
 
-/*! @decl void lfun::destroy()
+/*! @decl void lfun::destroy (void|int reason)
  *!
  *!   Object destruction callback.
  *!   
- *!   This function is called by @[predef::destruct()] right before it
- *!   zeroes all the object variables and destroys the object.
+ *!   This function is called right before the object is destructed.
+ *!   That can happen either through a call to @[predef::destruct()],
+ *!   when there are no more references to the object, or when the
+ *!   garbage collector discovers that it's part of a cyclic data
+ *!   structure that has become garbage.
  *!
- *! @note
- *!   Note that it's also called on implicit destruct, i.e. when there
- *!   are no more references to the object, or when the garbage
- *!   collector decides to destruct it.
+ *! @param reason
+ *!   A flag that tells why the object is destructed:
+ *!
+ *!   @int
+ *!     @value Object.DESTRUCT_EXPLICIT
+ *!       Destructed explicitly by @[predef::destruct].
+ *!     @value Object.DESTRUCT_NO_REFS
+ *!       Destructed due to running out of references.
+ *!     @value Object.DESTRUCT_GC
+ *!       Destructed by the garbage collector.
+ *!     @value Object.DESTRUCT_CLEANUP
+ *!       Destructed as part of the cleanup when the pike program
+ *!       exits. Note that Pike normally doesn't do any cleanup before
+ *!       exit - it must be compiled with the configure option
+ *!       @tt{--with-cleanup-on-exit@} to enable that. So this value
+ *!       normally doesn't occur.
+ *!   @endint
  *!
  *! @note
  *! Regarding destruction order during garbage collection:
@@ -409,8 +425,8 @@ static const char *const raw_lfun_types[] = {
  *! still intact. They are not freed if the @expr{destroy@} function
  *! adds external references to them. However, all objects with
  *! @[lfun::destroy] in the cycle are already scheduled for
- *! destruction and are thus be destroyed even if external references
- *! are added to them.
+ *! destruction and will therefore be destroyed even if external
+ *! references are added to them.
  *!
  *! @note
  *! The garbage collector had completely random destruct order in
@@ -469,7 +485,7 @@ static const char *const raw_lfun_types[] = {
  *!   Right side addition/concatenation callback.
  *!
  *!   This is used by @[predef::`+]. It's called with any arguments
- *!   that precedes this object in the argument list of the call to
+ *!   that precede this object in the argument list of the call to
  *!   @[predef::`+]. The returned value should be a new instance that
  *!   represents the addition/concatenation between the arguments in
  *!   the order they are given and this object.

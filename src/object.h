@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.89 2004/12/03 14:41:14 grubba Exp $
+|| $Id: object.h,v 1.90 2005/02/09 16:35:50 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -66,6 +66,13 @@ void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
 
 #define this_object() (add_ref(Pike_fp->current_object), Pike_fp->current_object)
 
+enum object_destruct_reason {
+  DESTRUCT_EXPLICIT = 0,
+  DESTRUCT_CLEANUP = 1,
+  DESTRUCT_NO_REFS,
+  DESTRUCT_GC
+};
+
 #include "block_alloc_h.h"
 /* Prototypes begin here */
 BLOCK_ALLOC_FILL_PAGES(object, 2)
@@ -87,7 +94,8 @@ PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;
 PTR_HASH_ALLOC(destroy_called_mark,128)
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
-void destruct(struct object *o);
+PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason);
+#define destruct(o) destruct_object (o, DESTRUCT_EXPLICIT)
 void low_destruct_objects_to_destruct(void);
 void destruct_objects_to_destruct_cb(void);
 PMOD_EXPORT void schedule_really_free_object(struct object *o);

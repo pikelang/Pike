@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.264 2005/01/20 14:29:25 nilsson Exp $
+|| $Id: object.c,v 1.265 2005/02/09 16:35:50 mast Exp $
 */
 
 #include "global.h"
@@ -669,7 +669,7 @@ PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct objec
   return 0;
 }
 
-static void call_destroy(struct object *o, int foo)
+static void call_destroy(struct object *o, enum object_destruct_reason reason)
 {
   volatile int e;
 
@@ -731,8 +731,8 @@ static void call_destroy(struct object *o, int foo)
       }
 
       else {
-	if(foo) push_int(1);
-	apply_low(o, e, foo?1:0);
+	push_int (reason);
+	apply_low(o, e, 1);
 	pop_stack();
 	UNSETJMP (jmp);
       }
@@ -753,7 +753,7 @@ static void call_destroy(struct object *o, int foo)
 }
 
 
-void destruct(struct object *o)
+PMOD_EXPORT void destruct_object (struct object *o, enum object_destruct_reason reason)
 {
   int e;
   struct program *p;
@@ -782,7 +782,7 @@ void destruct(struct object *o)
   }
 #endif
   add_ref( o );
-  call_destroy(o,0);
+  call_destroy(o, reason);
 
   /* destructed in destroy() */
   if(!(p=o->prog))
@@ -936,7 +936,7 @@ void low_destruct_objects_to_destruct(void)
 
       /* call destroy, keep one ref */
       add_ref(o);
-      destruct(o);
+      destruct_object (o, DESTRUCT_NO_REFS);
       free_object(o);
     } while ((o = next));
   }
@@ -981,7 +981,7 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
     add_ref(o);
-    destruct(o);
+    destruct_object (o, DESTRUCT_NO_REFS);
     if(sub_ref(o)) return;
   }
 
@@ -1981,6 +1981,11 @@ size_t gc_free_all_unreferenced_objects(void)
 {
   struct object *o,*next;
   size_t unreferenced = 0;
+  enum object_destruct_reason reason =
+#ifdef DO_PIKE_CLEANUP
+    gc_destruct_everything ? DESTRUCT_CLEANUP :
+#endif
+    DESTRUCT_GC;
 
   for(o=gc_internal_object; o; o=next)
   {
@@ -1993,7 +1998,7 @@ size_t gc_free_all_unreferenced_objects(void)
 	gc_fatal(o,0,"Can't free a live object in gc_free_all_unreferenced_objects().\n");
 #endif
       debug_malloc_touch(o);
-      destruct(o);
+      destruct_object (o, reason);
 
       gc_free_extra_ref(o);
       SET_NEXT_AND_FREE(o,free_object);
@@ -2418,7 +2423,7 @@ void exit_object(void)
   master_is_cleaned_up = 1;
   if (master_object) {
     call_destroy (master_object, 1);
-    destruct (master_object);
+    destruct_object (master_object, DESTRUCT_CLEANUP);
     free_object(master_object);
     master_object=0;
   }

@@ -145,6 +145,7 @@ testfont binary
 /lib/modules/MIME.pmod foreign_ident
 /lib/modules/MIME.pmod/ext_to_media_type.pmod foreign_ident
 /lib/modules/MIME.pmod/module.pmod foreign_ident
+/lib/modules/Object.pmod foreign_ident
 /lib/modules/Parser.pmod/C.pmod foreign_ident
 /lib/modules/Parser.pmod/LR.pmod/GrammarParser.pmod foreign_ident
 /lib/modules/Parser.pmod/LR.pmod/lr.pike foreign_ident

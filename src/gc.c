@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.261 2004/09/30 12:12:10 mast Exp $
+|| $Id: gc.c,v 1.262 2005/02/09 16:43:35 mast Exp $
 */
 
 #include "global.h"
@@ -3041,39 +3041,46 @@ size_t do_gc(void *ignored, int explicit_call)
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
   destroy_count = 0;
 #endif
-  while (kill_list) {
-    struct gc_frame *next = NEXT(kill_list);
-    struct object *o = (struct object *) kill_list->data;
+  {
+    enum object_destruct_reason reason =
+#ifdef DO_PIKE_CLEANUP
+      gc_destruct_everything ? DESTRUCT_CLEANUP :
+#endif
+      DESTRUCT_GC;
+    while (kill_list) {
+      struct gc_frame *next = NEXT(kill_list);
+      struct object *o = (struct object *) kill_list->data;
 #ifdef PIKE_DEBUG
-    if (!(kill_list->frameflags & GC_ON_KILL_LIST))
-      gc_fatal(o, 0, "Kill list element hasn't got the proper flag.\n");
-    if ((get_marker(kill_list->data)->flags & (GC_LIVE|GC_LIVE_OBJ)) !=
-	(GC_LIVE|GC_LIVE_OBJ))
-      gc_fatal(o, 0, "Invalid object on kill list.\n");
-    if (o->prog && (o->prog->flags & PROGRAM_USES_PARENT) &&
-	PARENT_INFO(o)->parent &&
-	!PARENT_INFO(o)->parent->prog &&
-	get_marker(PARENT_INFO(o)->parent)->flags & GC_LIVE_OBJ)
-      gc_fatal(o, 0, "GC destructed parent prematurely.\n");
+      if (!(kill_list->frameflags & GC_ON_KILL_LIST))
+	gc_fatal(o, 0, "Kill list element hasn't got the proper flag.\n");
+      if ((get_marker(kill_list->data)->flags & (GC_LIVE|GC_LIVE_OBJ)) !=
+	  (GC_LIVE|GC_LIVE_OBJ))
+	gc_fatal(o, 0, "Invalid object on kill list.\n");
+      if (o->prog && (o->prog->flags & PROGRAM_USES_PARENT) &&
+	  PARENT_INFO(o)->parent &&
+	  !PARENT_INFO(o)->parent->prog &&
+	  get_marker(PARENT_INFO(o)->parent)->flags & GC_LIVE_OBJ)
+	gc_fatal(o, 0, "GC destructed parent prematurely.\n");
 #endif
-    GC_VERBOSE_DO(
-      fprintf(stderr, "|   Killing %p with %d refs", o, o->refs);
-      if (o->prog) {
-	INT32 line;
-	struct pike_string *file = get_program_line (o->prog, &line);
-	fprintf(stderr, ", prog %s:%d\n", file->str, line);
-	free_string(file);
-      }
-      else fputs(", is destructed\n", stderr);
-    );
-    destruct(o);
-    free_object(o);
-    gc_free_extra_ref(o);
+      GC_VERBOSE_DO(
+	fprintf(stderr, "|   Killing %p with %d refs", o, o->refs);
+	if (o->prog) {
+	  INT32 line;
+	  struct pike_string *file = get_program_line (o->prog, &line);
+	  fprintf(stderr, ", prog %s:%d\n", file->str, line);
+	  free_string(file);
+	}
+	else fputs(", is destructed\n", stderr);
+      );
+      destruct_object (o, reason);
+      free_object(o);
+      gc_free_extra_ref(o);
 #if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
-    destroy_count++;
+      destroy_count++;
 #endif
-    debug_really_free_gc_frame(kill_list);
-    kill_list = next;
+      debug_really_free_gc_frame(kill_list);
+      kill_list = next;
+    }
   }
 
   GC_VERBOSE_DO(fprintf(stderr, "| kill: %u objects killed, %d things really freed\n",
