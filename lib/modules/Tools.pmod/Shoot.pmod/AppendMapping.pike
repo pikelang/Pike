@@ -2,8 +2,8 @@ inherit Tools.Shoot.Test;
 
 constant name="Append mapping";
 
-int k = 5; /* variable to tune the time of the test */
-int m = 100000; /* the target size of the mapping */
+int k = 10; /* variable to tune the time of the test */
+int m = 1000; /* the target size of the mapping */
 int n = m*k; // for reporting
 
 void perform()
@@ -11,9 +11,8 @@ void perform()
    for (int i=0; i<k; i++)
    {
       mapping v=([]);
-      int z=i*m+m;
-      for (int j=i*m; j<z; j++)
-	 v[j]=42;
+      for (int j=0; j<m; j++)
+	 v|=([j:42]);
    }
 }
 
