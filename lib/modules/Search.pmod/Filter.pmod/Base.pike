@@ -10,6 +10,8 @@ class Output
   // body_medium
   // body_big
   // title, description, keywords
+
+  int document_size;
   
   mapping(string:string) uri_anchors=([]);
   // Maps un-normalized URLs to raw text

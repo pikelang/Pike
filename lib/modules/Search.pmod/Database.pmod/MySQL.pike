@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.21 2001/05/31 00:59:26 js Exp $
+// $Id: MySQL.pike,v 1.22 2001/05/31 06:08:28 js Exp $
 
 inherit Search.Database.Base;
 
@@ -11,10 +11,12 @@ inherit Search.Database.Base;
 void recreate_tables()
 {
   catch(db->query("drop table uri"));
+  catch(db->query("drop table deleted_document"));
   catch(db->query("drop table document"));
   catch(db->query("drop table occurance "));
   catch(db->query("drop table field"));
   catch(db->query("drop table word_hit"));
+  catch(db->query("drop table metadata"));
   
   db->query(
 #"create table uri      (id          int unsigned primary key auto_increment not null,
@@ -31,12 +33,19 @@ void recreate_tables()
                          INDEX index_uri_id (uri_id))"
 			 );
   
+  db->query("create table deleted_document (id int unsigned not null)");
 
   db->query(
 #"create table word_hit (word_id        int not null,
-                          first_doc_id   int not null,
-            	          hits           mediumblob not null,
-                          unique(word_id,first_doc_id))");
+                         first_doc_id   int not null,
+            	         hits           mediumblob not null,
+                         unique(word_id,first_doc_id))");
+
+  db->query(
+#"create table metadata (doc_id        int not null,
+                         name          varchar(32) not null,
+            	         value         mediumblob not null,
+                         unique(doc_id,name))");
 
   db->query(
 #"create table field (id    tinyint unsigned primary key auto_increment not null,
@@ -85,12 +94,15 @@ int hash_word(string word)
 }
 
 
-int get_uri_id(string uri)
+int get_uri_id(string uri, void|int do_not_create)
 {
   string s=sprintf("select id from uri where uri_md5='%s'", db->quote(to_md5(uri)));
   array a=db->query(s);
   if(sizeof(a))
     return (int)a[0]->id;
+
+  if(do_not_create)
+    return 0;
 
   db->query("insert into uri (uri,uri_md5) "
 	    "values (%s,%s)",
@@ -164,9 +176,79 @@ void insert_words(Standards.URI|string uri, void|string language,
     sync();
 }
 
-int docs;
-void remove_document(string|Standards.URI uri, string language)
+void set_metadata(Standards.URI|string uri, void|string language,
+		  mapping(string:string) md)
 {
+  int doc_id;
+  if(!intp(uri))
+    doc_id = get_document_id((string)uri, language);
+  if(md->body)
+    md->body = Gz.deflate(6)->deflate(md->body[..64000],
+				      Gz.FINISH);
+
+  if(!sizeof(md))
+    return 0;
+
+  string s=map(Array.transpose( ({ map(indices(md),db->quote),
+				   map(values(md), db->quote) }) ),
+	       lambda(array a)
+	       {
+		 return sprintf("(%d,'%s','%s')", doc_id, @a);
+	       }) * ", ";
+  
+  db->query("replace into metadata (doc_id, name, value) values "+s);
+}
+
+mapping(string:string) get_metadata(int|Standards.URI|string uri,
+				    void|string language,
+				    void|array(string) wanted_fields)
+{
+  int doc_id;
+  if(!intp(uri))
+    doc_id = get_document_id((string)uri, language);
+  string s="";
+  if(wanted_fields && sizeof(wanted_fields))
+    s=" and name IN ('"+map(wanted_fields,db->quote)*"','"+"')";
+			      
+  array a=db->query("select name,value from metadata where doc_id=%d"+s,
+		    doc_id);
+
+  mapping md=mkmapping(a->name,a->value);
+  if(md->body)
+    md->body=Gz.inflate()->inflate(md->body);
+  return md;
+}
+
+mapping get_uri_and_language(int doc_id)
+{
+  array a=db->query("select document.language_code,uri.uri from document,uri "
+		    "where uri.id=document.uri_id and document.id=%d",doc_id);
+  if(!sizeof(a))
+    return 0;
+
+  return (["uri":1,"language":1]) & a[0];
+}
+
+int docs;
+void remove_document(string|Standards.URI uri, void|string language)
+{
+  int uri_id=get_uri_id((string)uri);
+
+  if(!uri_id)
+    return;
+  array a;
+  if(language)
+    a=db->query("select id from document where uri_id=%d and "
+		"language_code=%s",uri_id,language);
+  else
+    a=db->query("select id from document where uri_id=%d",uri_id);
+
+  if(!sizeof(a))
+    return;
+  
+  db->query("delete from document where id in ("+a->id*","+")");
+  db->query("insert into deleted_document (doc_id) values "+
+	    "("+a->id*"),("+")");
   docs++;
 }
 

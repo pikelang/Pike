@@ -1,4 +1,4 @@
-inherit .Lexer;
+inherit Search.Grammar.Lexer;
 
 #include "debug.h"
 

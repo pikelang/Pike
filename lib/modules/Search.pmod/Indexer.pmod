@@ -55,6 +55,11 @@ array(Standards.URI) index_document(Search.Database.Base db,
 			    (filteroutput->uri_anchors[link_uri]));
     db->insert_words(link_uri, 0, "anchor", words, source_hash);
   }
+  mapping md = (["title":1,
+		 "keywords": 1,
+		 "description": 1,
+		 "body": 1 ]) & filteroutput->fields;
+  db->set_metadata(uri, language, md);
   return filteroutput->links;
 }
 
