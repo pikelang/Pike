@@ -47,38 +47,38 @@ void error(string msg, mixed ... args)
 }
 
 /*
- *! Generate an array with information about how the function may
- *! be called. This function is used to generate prototype information
- *! for functions which may accept 1/2/3/4/array() parameters.
- *!
- *! @arg mi
- *! Minimum number of arguments which should be accepted. Only the mi first
- *! arguments will be required, the rest may be void.
- *!
- *! @arg mx
- *! Maximum number of arguments which should be accepted.
- *!
- *! @arg a
- *! If 0, output allows for non-arrays.
- *! If 1, output only allows for arrays.
- *!
- *! @arg ty
- *! Argument type, one of E, B, I, O, D, F, R, Z, Q.
- *!
- *! @returns
- *! array(array(string), string, string, string) where
- *! the first element is an array containing the prototype for
- *! each paramter for this function.
- *!
- *! The second element is some strange thing.
- *!
- *! The third element is the types of values that may be passed
- *! as parameters to the function. This is used to check input to
- *! the function.
- *!
- *! The fourth element describes, as a string, what types of input the
- *! function accepts. This value is used to choose which lowlevel GL function
- *! to call.
+ * Generate an array with information about how the function may
+ * be called. This function is used to generate prototype information
+ * for functions which may accept 1/2/3/4/array() parameters.
+ *
+ * @arg mi
+ * Minimum number of arguments which should be accepted. Only the mi first
+ * arguments will be required, the rest may be void.
+ *
+ * @arg mx
+ * Maximum number of arguments which should be accepted.
+ *
+ * @arg a
+ * If 0, output allows for non-arrays.
+ * If 1, output only allows for arrays.
+ *
+ * @arg ty
+ * Argument type, one of E, B, I, O, D, F, R, Z, Q.
+ *
+ * @returns
+ * array(array(string), string, string, string) where
+ * the first element is an array containing the prototype for
+ * each paramter for this function.
+ *
+ * The second element is some strange thing.
+ *
+ * The third element is the types of values that may be passed
+ * as parameters to the function. This is used to check input to
+ * the function.
+ *
+ * The fourth element describes, as a string, what types of input the
+ * function accepts. This value is used to choose which lowlevel GL function
+ * to call.
  */
 array(string|array(string)) special_234(int mi, int mx, string ty, int|void a)
 {
