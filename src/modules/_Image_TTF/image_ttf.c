@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.11 1999/02/10 21:52:29 hubbe Exp $
+ * $Id: image_ttf.c,v 1.12 1999/03/23 20:28:49 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.11 1999/02/10 21:52:29 hubbe Exp $");
+RCSID("$Id: image_ttf.c,v 1.12 1999/03/23 20:28:49 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -792,6 +792,9 @@ static void ttf_get_nice_charmap(TT_Face face,
 	    break;
 	 case 202: /* ISO: iso-8859-1 */
 	    ihas=20;
+	    break;
+       default:
+            ihas = 1;
 	    break;
       }
       
