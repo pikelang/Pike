@@ -48,6 +48,7 @@ TAG mkimgtag(string file, mapping params)
   if(params->alt) p->align=params->alt;
   add_file_to_export_list(file);
   object o;
+  // This could be optimized by using the Dims module /hubbe
   if (catch { o=Image.load(file); }) return "<!-- error -->";
   p->width=(string)o->xsize();
   p->height=(string)o->ysize();
@@ -566,6 +567,98 @@ SGML convert(SGML data)
       cpos=data->pos;
       switch(data->tag)
       {
+	case "table":
+	  data->data=convert(data->data);
+	  if(data->params->nicer)
+	  {
+	    int foo;
+	    data->params->cellpadding=(string) (
+	      ((int) (data->params->cellspacing || 3))+
+	      ((int) (data->params->cellpadding)) );
+
+	    data->params->cellspacing="0";
+	    if(!data->params->border)
+	      data->params->border="0";
+
+	    int max_rows;
+
+	    foreach(data->data, TAG t)
+	      {
+		if(objectp(t) && t->tag=="tr")
+		  {
+		    int head;
+		    foreach(t->data, TAG cell)
+		      {
+			if(objectp(cell) && cell->tag == "th")
+			{
+			  head=1;
+			  break;
+			}
+		      }
+		    
+		    if(head)
+		    {
+		      t->params->bgcolor="#27215b";
+		    }else{
+		      t->params->bgcolor=(foo++&1) ? "#ffffff" : "#ddeeff";
+		    }
+
+		    SGML new_row=({});
+		    foreach(t->data, TAG cell)
+		      {
+			if(objectp(cell))
+			{
+			  if(cell->tag == "th" || cell->tag=="td")
+			  {
+			    if(head)
+			    {
+			      if(!cell->params->align)
+				cell->params->align="left";
+			      cell->data=({
+				Sgml.Tag("font",(["color":"#ffffff"]),0,
+					 cell->data),
+			      });
+			    }
+
+			    // This adds some extra space, needed because
+			    // we do not have any lines between columns
+			    if(sizeof(new_row))
+			      new_row+=({ Sgml.Tag("td",0,0,({"\240"})) });
+
+			    new_row+=({cell});
+			  }else{
+			    werror("Tag within table row is not <th> or <td>, it is %s!\n",cell->tag);
+			  }
+			}
+		      }
+		    while(sizeof(new_row) < max_rows)
+		      new_row+=({ Sgml.Tag("td",0,0,({"\240"})) });
+		    if(sizeof(new_row) > max_rows)
+		      max_rows=sizeof(new_row);
+		    t->data=new_row;
+		  }
+	      }
+	  }
+
+	  if(data->params->framed || data->params->nicer)
+	  {
+	    m_delete(data->params,"nicer");
+	    m_delete(data->params,"framed");
+	    data=Sgml.Tag("table",(["border":"0",
+				   "cellspacing":"0",
+				   "cellpadding":"1",
+				   "bgcolor":"#27215b",
+				   ]),0,({
+				     Sgml.Tag("tr",0,0,({
+				       Sgml.Tag("td",0,0,({
+					 data
+				       }))
+				     }))
+				   }));
+	  }
+	  ret+=({data});
+	  continue;
+
 	 case "hr":
 	    data->params->noshade=1;
 	    data->params->size="1";
