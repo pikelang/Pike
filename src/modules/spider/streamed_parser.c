@@ -793,7 +793,7 @@ void streamed_parser_parse( INT32 args )
   else if (sp - sp_save == 1)
     ;
   else
-    f_sum( sp - sp_save ); /* fix? this is what we return */
+    f_add( sp - sp_save ); /* fix? this is what we return */
   SWAP;
   pop_stack(); /* get rid of data_arg */
   if (last < length-1)

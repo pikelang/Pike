@@ -718,7 +718,7 @@ echo "$ac_t""$CPP" 1>&6
 
 for ac_hdr in syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
 	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h pwd.h\
-        shadow.h
+        shadow.h sys/ipc.h sys/sem.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -760,7 +760,7 @@ for ac_func in syslog perror strerror getppid getpgrp getppid getuid getgid \
         setresgid uname gethostbyname gethostbyaddr alarm\
         getpwent setpwent endpwent getpwuid getpwnam \
         getspent setspent endspent getspuid getspnam \
-	initgroups
+	initgroups semop semctl semget
 
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6

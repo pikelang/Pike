@@ -67,7 +67,7 @@ void f_parse_accessed_database(INT32 args)
     error("Wrong number of arguments to parse_accessed_database(string)\n");
 
   push_string(make_shared_string("\n"));
-  f_explode(2);
+  f_divide(2);
   arg = sp[-1].u.array;
   arg->refs++;
   /* The initial string is gone, but the array is there now. */
@@ -75,10 +75,10 @@ void f_parse_accessed_database(INT32 args)
 
   for (i = 0; i < arg->size; i++)
   {
-    int j=0,k;
-    char *s;
-    s=(char *)(SHORT_ITEM(arg)[i].string->str);
-    k=(SHORT_ITEM(arg)[i].string->len);
+    int j=0,k=0;
+    char *s=0;
+    s=(char *)(ITEM(arg)[i].u.string->str);
+    k=(ITEM(arg)[i].u.string->len);
     for(j=k; j>0 && s[j-1]!=':'; j--);
     if(j>0)
     {
@@ -247,7 +247,7 @@ void f_parse_html(INT32 args)
 
   free_mapping(cont);
   free_mapping(single);
-  f_sum(strings);
+  f_add(strings);
 }
 
 char start_quote_character = '\000';
@@ -369,7 +369,7 @@ done:
     PUSH();
   if(strs > 1)
   {
-    f_sum(strs);
+    f_add(strs);
   } else if(strs == 0) {
     push_text("");
   }
@@ -540,8 +540,8 @@ void do_html_parse(struct lpc_string *ss,
 	} else if (sp[-1].type==T_ARRAY) {
 	  free_svalue(&sval2);
 	  free_svalue(&sval1);
-
-	  f_implode(1);
+	  push_text("");
+	  f_multiply(1);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
@@ -613,8 +613,8 @@ void do_html_parse(struct lpc_string *ss,
 	} else if (sp[-1].type==T_ARRAY) {
 	  free_svalue(&sval1);
 	  free_svalue(&sval2);
-
-	  f_implode(1);
+	  push_text("");
+	  f_multiply(1);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
@@ -1170,7 +1170,7 @@ void f_mark_fd(INT32 args)
       push_string(make_shared_string(tmp));
       sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
       push_string(make_shared_string(buf));
-      f_sum(4);
+      f_add(4);
     }
 
     if(! getpeername(fd, (struct sockaddr *) &addr, &len))
@@ -1180,7 +1180,7 @@ void f_mark_fd(INT32 args)
       push_string(make_shared_string(tmp));
       sprintf(buf,".%d",(int)(ntohs(addr.sin_port)));
       push_string(make_shared_string(buf));
-      f_sum(4);
+      f_add(4);
     }
 
     return;
@@ -1501,7 +1501,6 @@ void f_alarm(INT32 args)
 
 void init_spider_efuns(void) 
 {
-
   /* This _will_ leak some memory. It is supposed to. These
    * make_shared_string's are here to define a few very commonly used
    * strings, to speed spinner up a little.  
@@ -1509,6 +1508,11 @@ void init_spider_efuns(void)
   make_shared_string("HTTP/1.0");
   make_shared_string("GET");
   make_shared_string("POST");
+
+  add_efun("_lock", f_lock, "function(int:int)", OPT_SIDE_EFFECT);
+  add_efun("_unlock", f_unlock, "function(int:int)", OPT_SIDE_EFFECT);
+  add_efun("_free_lock", f_freelock, "function(int:int)", OPT_SIDE_EFFECT);
+  add_efun("_new_lock", f_newlock, "function(:int)", OPT_SIDE_EFFECT);
 
 #ifdef HAVE_ALARM
   add_efun("alarm", f_alarm, "function(int:int)", OPT_SIDE_EFFECT);
@@ -1625,7 +1629,7 @@ void init_spider_efuns(void)
 	   "function(string|array(string),string:string)",OPT_TRY_OPTIMIZE);
 
   add_efun("localtime",f_localtime,
-	   "function(int:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
+	   "function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_STRERROR
   add_efun("strerror", f_strerror, "function(int|void:string)",OPT_TRY_OPTIMIZE);
