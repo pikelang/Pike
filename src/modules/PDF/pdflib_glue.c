@@ -1,9 +1,9 @@
 /*
- * $Id: pdflib_glue.c,v 1.5 2001/01/17 11:52:52 mirar Exp $
+ * $Id: pdflib_glue.c,v 1.6 2001/02/03 23:10:29 mirar Exp $
  */
 
 #include "global.h"
-RCSID("$Id: pdflib_glue.c,v 1.5 2001/01/17 11:52:52 mirar Exp $");
+RCSID("$Id: pdflib_glue.c,v 1.6 2001/02/03 23:10:29 mirar Exp $");
 
 #include "pdf_machine.h"
 
@@ -1156,7 +1156,7 @@ void init_pdf_pdflib(void)
                 tFunc(tIoF tIoF,tObj),0);
 
    set_init_callback(init_pdf);
-   set_init_callback(exit_pdf);
+   set_exit_callback(exit_pdf);
    end_class("PDFgen",0);
 
    add_float_constant("a0_width",a0_width, 0);
