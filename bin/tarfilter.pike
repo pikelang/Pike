@@ -19,6 +19,7 @@ void copydata(Stdio.File in, Stdio.File out, int size)
 
 void doit(Stdio.File in, Stdio.File out)
 {
+  int written;
   for(;;) {
     string s = in->read(512);
     if(s == "")
@@ -27,8 +28,8 @@ void doit(Stdio.File in, Stdio.File out)
       werror("READ ERROR on input\n");
       exit(1);
     }
-    if(s-"\0" == "") {
-      out->write(s);
+    if(s == "\0"*512) {
+      written += out->write(s);
       continue;
     }
     array a =
@@ -52,9 +53,13 @@ void doit(Stdio.File in, Stdio.File out)
     s = sprintf("%100s%8s%8s%8s%12s%12s%8s%c%100s%8s%32s%32s%8s%8s", @a)+
       s[345..];
     out->write(s[..147]+sprintf("%07o\0", `+(@values(s[..511])))+s[156..]);
+    size = (size + 511) & -511;
     copydata(in, out, size);
-    if(size & 511)
-      copydata(in, out, 512-(size & 511));
+    written += size;
+  }
+  // GNU tar 1.14 complains if we don't pad to an even 20 of blocks.
+  if (written % 10240) {
+    out->write("\0" * (10240 - (written % 10240)));
   }
 }
 
