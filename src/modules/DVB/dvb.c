@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.13 2002/10/21 17:06:12 marcus Exp $
+|| $Id: dvb.c,v 1.14 2002/11/08 12:06:19 hop Exp $
 */
 
 /*
@@ -85,7 +85,7 @@
 
 #define _DMX_PES_RDS 129
 
-#define MAX_DVB_READ_SIZE 4096
+#define MAX_DVB_READ_SIZE 9192
 #define MAX_ERR_LEN	160
 
 struct program *dvb_program;
@@ -124,10 +124,9 @@ typedef struct dvb_stream_data_struct {
   int			 fd;
   unsigned int		 pid;
   unsigned int		 stype;
-  dvb_avpacket		 pkt;
+  struct dvb_es_packet	 pkt;
   unsigned int		 buflen;
   struct svalue		 fcb;
-  dvb_p2p		 p;
   struct ECMINFO	*ecminfo;
   char			 low_errmsg[MAX_ERR_LEN+1];
 } dvb_stream_data;
@@ -711,9 +710,9 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
     u[0].fd = fd;
     u[0].events = POLLIN;
 
-    //THREAD_ALLOW();
+    THREAD_ALLOW();
     n = poll(u,1,20000);
-    //THREAD_DISALLOW();
+    THREAD_DISALLOW();
     if (n < 0)
     {
       perror("poll error");
@@ -727,9 +726,9 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
 
     buffer[0] = 0;
 
-    //THREAD_ALLOW();
+    THREAD_ALLOW();
     n = read(fd,buffer+1,length-1);
-    //THREAD_DISALLOW();
+    THREAD_DISALLOW();
     if (n < 0)
     {
       perror("read error");
@@ -1252,16 +1251,16 @@ static void f_stream_create(INT32 args) {
 
   if((pktdata = malloc(DVBStream->buflen)) == NULL)
     Pike_error("Internal error: can't malloc buffer.\n");
+#if 0
   if(init_p2p(&DVBStream->p, 2048))
     Pike_error("Internal error: repack size %d is out of range\n", 2048);
+#endif
   DVBStream->parent = dvbstor;
-  DVBStream->p.filter = 0xC0; //FIXME: 0xC0 = audio, ...
-  DVBStream->p.es = 1;
   DVBStream->fd = fd;
   DVBStream->pid = pid;
   DVBStream->stype = ptype;
-  DVBStream->pkt.data = pktdata;
-  DVBStream->pkt.size = 0;
+  DVBStream->pkt.payload = pktdata;
+  DVBStream->pkt.payload_len = 0;
   /*DVB->pesfcb[ix] = NULL;*/
   //fcntl(DVBStream->fd, F_SETFL, O_NONBLOCK);
 #if 0
@@ -1291,9 +1290,9 @@ static void f_stream_detach(INT32 args) {
 #endif
   DVBStream->pid = 0;
   DVBStream->fd = -1;
-  if(DVBStream->pkt.data != NULL)
-    free(DVBStream->pkt.data);
-  DVBStream->pkt.data = NULL;
+  if(DVBStream->pkt.payload != NULL)
+    free(DVBStream->pkt.payload);
+  DVBStream->pkt.payload = NULL;
   push_int(1);
 
 }
@@ -1310,8 +1309,7 @@ static void f_stream_detach(INT32 args) {
  */
 static void f_stream_read(INT32 args) {
 
-  int all = 1, ret, e;
-  unsigned int cnt, ix = 0;
+  int all = 1, ret, e, cnt, ix = 0;
   char buf[MAX_DVB_READ_SIZE], *bufptr;
 
   if(DVBStream->fd < 0)
@@ -1322,18 +1320,22 @@ static void f_stream_read(INT32 args) {
     all = (u_short)Pike_sp[-1].u.integer;
   pop_n_elems(args);
 
-  DVBStream->pkt.size = 0;
+  if(DVBStream->pkt.payload_len > 0)
+    memcpy(buf, DVBStream->pkt.payload, DVBStream->pkt.payload_len);
   for(;;) {
     e = 0;
     THREADS_ALLOW();
-    ret = read(DVBStream->fd, buf, DVBStream->buflen);
+    ret = read(DVBStream->fd, buf + DVBStream->pkt.payload_len,
+               DVBStream->buflen - DVBStream->pkt.payload_len);
     e = errno; /* check_threads_etc may effect errno */
     THREADS_DISALLOW();
 
     //check_threads_etc();
 
-    if (ret > 0)
+    if (ret > 0) {
+      ret += DVBStream->pkt.payload_len;
       break;
+    }
     if (ret == -1 && (e == EAGAIN || e == EINTR)) {
       push_int(0);
       return;
@@ -1351,13 +1353,15 @@ static void f_stream_read(INT32 args) {
 
   if(ret > 0) {
     bufptr = buf;
-    while((cnt = get_pes_filt(bufptr,ret,&DVBStream->p, &DVBStream->pkt)) > 0) {
+    while((cnt = dvb_pes2es(bufptr,ret,&DVBStream->pkt, 0xC0)) > 0) {
 #ifdef DVB_DEBUG
-      printf("DEB: dvb: cnt=%d (ix: %d): pkt.size=%d\n", cnt, ix, DVBStream->pkt.size);
+      //printf("DEB: dvb: PID(%d): cnt=%d (ix: %d): pkt.len=%d (skipped: %d)\n", DVBStream->pid, cnt, ix, DVBStream->pkt.payload_len, DVBStream->pkt.skipped);
+      if(DVBStream->pkt.skipped)
+        printf("PID(%d): skipped: %d\n", DVBStream->pid, DVBStream->pkt.skipped);
 #endif
-      push_string(make_shared_binary_string((char *)DVBStream->pkt.data,
-		    DVBStream->pkt.size));
-      DVBStream->pkt.size = 0; /* clear internall buffer */
+      push_string(make_shared_binary_string((char *)DVBStream->pkt.payload,
+		    DVBStream->pkt.payload_len));
+      DVBStream->pkt.payload_len = 0; /* clear internall buffer */
       ix++;
       bufptr += cnt;
       ret -= cnt;
@@ -1366,9 +1370,10 @@ static void f_stream_read(INT32 args) {
     }
     if(ix)
       f_add(ix);
-    if(ret) {
+    if(ret && ix) {
        /* some unprocessed data remain in buf */
-       DVBStream->pkt.size = ret;
+       memcpy(DVBStream->pkt.payload, bufptr, ret);
+       DVBStream->pkt.payload_len = ret;
     }
 #ifdef DVB_DEBUG
       printf("DEB: dvb: ret=%d (ix: %d)\n", ret, ix);
@@ -1622,7 +1627,7 @@ static void init_dvb_stream(struct object *obj) {
   DVBStream->next = NULL;
   DVBStream->fd = -1;
   DVBStream->pid = 0;
-  DVBStream->pkt.data = NULL;
+  DVBStream->pkt.payload = NULL;
   DVBStream->buflen = MAX_DVB_READ_SIZE;
   DVBStream->ecminfo = NULL;
   memset(&DVBStream->low_errmsg, '\0', sizeof(DVBStream->low_errmsg));
@@ -1637,8 +1642,8 @@ static void exit_dvb_stream(struct object *obj) {
   sl_del(DVBStream->parent, DVBStream);
   if(DVBStream->fd != -1) {
     close(DVBStream->fd);
-    if(DVBStream->pkt.data != NULL)
-      free(DVBStream->pkt.data);
+    if(DVBStream->pkt.payload != NULL)
+      free(DVBStream->pkt.payload);
   }
   if(DVBStream->ecminfo != NULL)
     do {

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.h,v 1.4 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: dvb.h,v 1.5 2002/11/08 12:06:19 hop Exp $
 */
 
 #ifndef DVB_H
@@ -49,47 +49,22 @@
 
 #define P2P_LENGTH 2048
 
-	enum{NOPES, AUDIO, VIDEO};
+enum{ 
+	DVB_PES_TYPE_NOPES,
+	DVB_PES_TYPE_AUDIO,
+	DVB_PES_TYPE_VIDEO,
+	DVB_PES_TYPE_PRIVATE
+};
 
-	typedef struct dvb_avpstruct {
-		int size;
-		uint8_t *data;
-	} dvb_avpacket;
+struct dvb_es_packet {
+	unsigned char	*payload;
+	int		 payload_len;
+	int		 ptype;
+	unsigned char	 attr[2];
+	int		 skipped;
+};
 
-	typedef struct dvb_p2pstruct {
-		int found;
-		uint8_t buf[MMAX_PLENGTH];
-		uint8_t cid;
-		uint32_t plength;
-		uint8_t plen[2];
-		uint8_t flag1;
-		uint8_t flag2;
-		uint8_t hlength;
-		uint8_t pts[5];
-		int mpeg;
-		uint8_t check;
-		int es;
-		int filter;
-		int which;
-		int done;
-		int repack;
-		uint16_t bigend_repack;
-		int startv;
-                int starta;
-		int64_t apts;
-                int64_t vpts;
-		uint16_t pid;
-		uint16_t pida;
-		uint16_t pidv;
-		uint8_t acounter;
-		uint8_t vcounter;
-		uint8_t count0;
-		uint8_t count1;
-		void *data;
-	} dvb_p2p;
+extern int dvb_pes2es(unsigned char *bufin, int count, struct dvb_es_packet *pkt, int id);
 
-
-extern int init_p2p(dvb_p2p *p, int repack);
-extern int get_pes_filt (uint8_t *buf, int count, dvb_p2p *p, dvb_avpacket *pkt);
 
 #endif

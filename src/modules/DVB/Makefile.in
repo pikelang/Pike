@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.1 2002/09/09 20:10:15 hop Exp $
+# $Id: Makefile.in,v 1.2 2002/11/08 12:06:19 hop Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=dvb.o
+OBJS=dvb.o psparser.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
