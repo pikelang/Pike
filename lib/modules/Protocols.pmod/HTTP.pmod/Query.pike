@@ -206,7 +206,8 @@ static void connect(string server,int port,int blocking)
 #ifdef HTTP_QUERY_DEBUG
    werror("<- (connect %O:%d)\n",server,port);
 #endif
-   if (catch { con->connect(server,port,blocking); })
+   int success;
+   if (catch { success = con->connect(server,port,blocking); } || !success)
    {
       if (!(errno=con->errno())) errno=22; /* EINVAL */
 #ifdef HTTP_QUERY_DEBUG
@@ -344,9 +345,10 @@ void async_got_host(string server,int port)
    con->set_nonblocking(0,async_connected,async_failed);
    //   werror(server+"\n");
 
-   if (catch { con->connect(server,port);
+   int success;
+   if (catch { success = con->connect(server,port);
 #if constant(SSL.sslfile) 
-               if(https) {
+               if(success && https) {
 		 //Gör en context
 		 SSL.context context = SSL.context();
 		 // Allow only strong crypto
@@ -364,7 +366,7 @@ void async_got_host(string server,int port)
 		 con=ssl;
    }
 #endif
-   })
+   } || !success)
      {
        if (!(errno=con->errno())) errno=22; /* EINVAL */
        destruct(con);
