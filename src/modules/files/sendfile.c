@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.41 2000/08/10 08:19:38 grubba Exp $
+ * $Id: sendfile.c,v 1.42 2000/08/11 23:49:54 per Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -53,19 +53,19 @@
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
 
+#if 0
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #else /* !HAVE_SYS_MMAN_H */
 #ifdef HAVE_LINUX_MMAN_H
 #include <linux/mman.h>
 #else /* !HAVE_LINUX_MMAN_H */
-#ifdef HAVE_MMAP
-/* sys/mman.h is _probably_ there anyway. */
+#ifdef HAVE_MMAP /* sys/mman.h is _probably_ there anyway. */
 #include <sys/mman.h>
 #endif /* HAVE_MMAP */
 #endif /* HAVE_LINUX_MMAN_H */
 #endif /* HAVE_SYS_MMAN_H */
-
+#endif
 
 /* #define SF_DEBUG */
 
@@ -411,6 +411,7 @@ void low_do_sendfile(struct pike_sendfile *this)
 #endif /* HAVE_SENDFILE && !HAVE_FREEBSD_SENDFILE && !HAVE_HPUX_SENDFILE */
     SF_DFPRINTF((stderr, "sendfile: Sending file by hand\n"));
 
+#if 0 /* mmap is slower than read/write on most if not all systems */
 #if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
     {
       struct stat st;
@@ -478,7 +479,7 @@ void low_do_sendfile(struct pike_sendfile *this)
     }
   use_read_write:
 #endif /* HAVE_MMAP && HAVE_MUNMAP */
-
+#endif
     SF_DFPRINTF((stderr, "sendfile: Using read() and write().\n"));
 
     fd_lseek(this->from_fd, this->offset, SEEK_SET);
