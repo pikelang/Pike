@@ -1,6 +1,17 @@
 Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
+o New syntax to index from the end in range operations.
+  A "<" can be added before an index in the [..] operator to count
+  from the end instead. This is convenient to e.g. chop off the last
+  element in an array: a[..<1].
+
+o New `[..] operator function.
+  Range operations have been separated from the `[] operator function
+  and is handled by a new `[..] which provides greater control in how
+  the range bounds are specified. For compatibility, if there is no
+  `[..] then `[] is still called for range operations.
+
 o Stdio.*
   Stdio.cp can now work recursively in a directory tree.
   Stdio.cp now keeps permissions when copying.
