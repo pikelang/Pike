@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.8 2002/03/06 20:16:50 mast Exp $
+# $Id: Makefile.in,v 1.9 2002/05/04 15:19:04 mast Exp $
 
 @make_variables@
 
@@ -23,7 +23,7 @@ $(MODULES) no : force
 	  ) || exit $$?; \
 	fi
 
-modules: $(MODULES)
+modules: Makefile $(MODULES)
 
 modlist.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) no ; do \
