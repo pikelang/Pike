@@ -1,6 +1,5 @@
-/* $Id: font.c,v 1.49 1999/05/24 14:33:10 mirar Exp $ */
+/* $Id: font.c,v 1.50 1999/05/30 20:11:56 mirar Exp $ */
 #include "global.h"
-#include <config.h>
 
 #define SPACE_CHAR 'i'
 
@@ -10,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.49 1999/05/24 14:33:10 mirar Exp $
+**!	$Id: font.c,v 1.50 1999/05/30 20:11:56 mirar Exp $
 **! class Font
 **!
 **! note
@@ -166,7 +165,7 @@ Kerningtable types:
 
 #include <errno.h>
 
-#include "config.h"
+#include "image_machine.h"
 
 #include "stralloc.h"
 #include "pike_macros.h"

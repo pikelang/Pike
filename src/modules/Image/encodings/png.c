@@ -1,7 +1,7 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.24 1999/05/23 17:46:56 mirar Exp $");
+RCSID("$Id: png.c,v 1.25 1999/05/30 20:12:17 mirar Exp $");
 
-#include "config.h"
+#include "image_machine.h"
 
 #include "pike_macros.h"
 #include "object.h"

@@ -1,7 +1,7 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.5 1999/05/23 17:47:02 mirar Exp $");
+RCSID("$Id: xbm.c,v 1.6 1999/05/30 20:12:20 mirar Exp $");
 
-#include "config.h"
+#include "image_machine.h"
 
 #include "interpret.h"
 #include "svalue.h"

@@ -1,18 +1,17 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.13 1999/05/29 14:31:20 mirar Exp $
+**!	$Id: layers.c,v 1.14 1999/05/30 20:11:58 mirar Exp $
 **! class Layer
 */
 
 #include "global.h"
-#include <config.h>
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.13 1999/05/29 14:31:20 mirar Exp $");
+RCSID("$Id: layers.c,v 1.14 1999/05/30 20:11:58 mirar Exp $");
 
-#include "config.h"
+#include "image_machine.h"
 
 #include "stralloc.h"
 #include "pike_macros.h"

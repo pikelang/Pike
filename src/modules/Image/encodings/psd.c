@@ -1,7 +1,7 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.10 1999/05/23 17:46:59 mirar Exp $");
+RCSID("$Id: psd.c,v 1.11 1999/05/30 20:12:19 mirar Exp $");
 
-#include "config.h"
+#include "image_machine.h"
 
 #include "pike_macros.h"
 #include "object.h"

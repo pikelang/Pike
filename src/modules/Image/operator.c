@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.23 1999/05/02 08:00:15 hubbe Exp $ */
+/* $Id: operator.c,v 1.24 1999/05/30 20:11:59 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.23 1999/05/02 08:00:15 hubbe Exp $
+**!	$Id: operator.c,v 1.24 1999/05/30 20:11:59 mirar Exp $
 **! class Image
 */
 
@@ -113,7 +113,7 @@ extern struct program *image_program;
 **!	to using an uniform-colored image.
 **! arg int value
 **!	equal to ({value,value,value}).
-**! see also: `+, `|, `&, `*, add_layers, min, max, `==
+**! see also: `+, `|, `&, `*, Image.Layer, min, max, `==
 */
 
 void image_operator_minus(INT32 args)
@@ -153,7 +153,7 @@ STANDARD_OPERATOR_HEADER("`-")
 **!	to using an uniform-colored image.
 **! arg int value
 **!	equal to ({value,value,value}).
-**! see also: `-, `|, `&, `*, add_layers
+**! see also: `-, `|, `&, `*, Image.Layer
 */
 
 void image_operator_plus(INT32 args)
@@ -200,7 +200,7 @@ STANDARD_OPERATOR_HEADER("`+")
 **! arg int value
 **!	equal to ({value,value,value}).
 **!
-**! see also: `-, `+, `|, `&, add_layers
+**! see also: `-, `+, `|, `&, Image.Layer
 */
 
 void image_operator_multiply(INT32 args)
@@ -246,7 +246,7 @@ STANDARD_OPERATOR_HEADER("`*")
 **!	if specified as color or value, it will act as a whole
 **!	image of that color (or value).
 **!
-**! see also: `-, `+, `|, `&, `*, add_layers
+**! see also: `-, `+, `|, `&, `*, Image.Layer
 **!
 **! note: Divide is really not a/b but a/((b+1)/255).
 **!	  It isn't possible to do a modulo 256 either. (why?)
@@ -317,7 +317,7 @@ STANDARD_OPERATOR_HEADER("`/")
 **!	to using an uniform-colored image.
 **! arg int value
 **!	equal to ({value,value,value}).
-**! see also: `-, `+, `&, `*, add_layers
+**! see also: `-, `+, `&, `*, Image.Layer
 */
 
 void image_operator_maximum(INT32 args)
@@ -359,7 +359,7 @@ STANDARD_OPERATOR_HEADER("`| 'maximum'")
 **!	to using an uniform-colored image.
 **! arg int value
 **!	equal to ({value,value,value}).
-**! see also: `-, `+, `|, `*, add_layers
+**! see also: `-, `+, `|, `*, Image.Layer
 */
 
 void image_operator_minimum(INT32 args)

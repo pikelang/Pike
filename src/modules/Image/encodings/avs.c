@@ -1,5 +1,5 @@
 #include "global.h"
-#include "config.h"
+#include "image_machine.h"
 #include <math.h>
 #include <ctype.h>
 
@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.6 1999/05/23 17:46:50 mirar Exp $");
+RCSID("$Id: avs.c,v 1.7 1999/05/30 20:12:06 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

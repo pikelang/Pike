@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.19 1999/05/24 13:01:28 mirar Exp $
+**!	$Id: colors.c,v 1.20 1999/05/30 20:11:53 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -95,11 +95,10 @@
 */
 
 #include "global.h"
-#include <config.h>
 
-RCSID("$Id: colors.c,v 1.19 1999/05/24 13:01:28 mirar Exp $");
+RCSID("$Id: colors.c,v 1.20 1999/05/30 20:11:53 mirar Exp $");
 
-#include "config.h"
+#include "image_machine.h"
 
 #include <math.h>
 

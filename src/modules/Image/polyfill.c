@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.27 1999/04/13 12:32:33 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.28 1999/05/30 20:12:01 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -7,7 +7,7 @@ extern double floor(double);
 #include <unistd.h>
 #include <math.h>
 
-#include "config.h"
+#include "image_machine.h"
 
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.27 1999/04/13 12:32:33 mirar Exp $
+**!	$Id: polyfill.c,v 1.28 1999/05/30 20:12:01 mirar Exp $
 **! class Image
 */
 
