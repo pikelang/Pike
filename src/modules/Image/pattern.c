@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.8 1997/10/27 22:41:27 mirar Exp $ */
+/* $Id: pattern.c,v 1.9 1997/11/02 18:49:11 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.8 1997/10/27 22:41:27 mirar Exp $
+**!	$Id: pattern.c,v 1.9 1997/11/02 18:49:11 grubba Exp $
 **! class image
 */
 
@@ -179,13 +179,13 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    ( (args>n) \
       ? ( (sp[n-args].type==T_INT) ? (double)(sp[n-args].u.integer) \
 	  : ( (sp[n-args].type==T_FLOAT) ? sp[n-args].u.float_number \
-	      : ( error("illegal argument(s) to "where"\n"), 0.0 ) ) ) \
+	      : ( error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
       : def )
 #define GET_INT_ARG(sp,args,n,def,where) \
    ( (args>n) \
       ? ( (sp[n-args].type==T_INT) ? sp[n-args].u.integer \
 	  : ( (sp[n-args].type==T_FLOAT) ? (int)(sp[n-args].u.float_number) \
-	      : ( error("illegal argument(s) to "where"\n"), 0.0 ) ) ) \
+	      : ( error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
       : def )
 
 /*
