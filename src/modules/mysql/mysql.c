@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.5 1997/01/08 01:49:25 grubba Exp $
+ * $Id: mysql.c,v 1.6 1997/01/08 13:19:19 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -59,7 +59,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.5 1997/01/08 01:49:25 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.6 1997/01/08 13:19:19 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -100,13 +100,14 @@ static void exit_mysql_struct(struct object *o)
  * Methods
  */
 
-/* void create(string|void host, string|void database, string|void password) */
+/* void create(string|void host, string|void database, string|void user, string|void password) */
 static void f_create(INT32 args)
 {
   MYSQL *mysql = &PIKE_MYSQL->mysql;
   MYSQL *socket;
   char *host = NULL;
   char *database = NULL;
+  char *user = NULL;
   char *password = NULL;
 
   if (args >= 1) {
@@ -121,7 +122,7 @@ static void f_create(INT32 args)
       if (sp[1-args].type != T_STRING) {
 	error("Bad argument 2 to mysql()\n");
       }
-      if (sp[-args].u.string->len) {
+      if (sp[1-args].u.string->len) {
 	database = sp[1-args].u.string->str;
       }
 
@@ -129,8 +130,17 @@ static void f_create(INT32 args)
 	if (sp[2-args].type != T_STRING) {
 	  error("Bad argument 3 to mysql()\n");
 	}
-	if (sp[-args].u.string->len) {
-	  password = sp[2-args].u.string->str;
+	if (sp[2-args].u.string->len) {
+	  user = sp[2-args].u.string->str;
+	}
+
+	if (args >= 4) {
+	  if (sp[3-args].type != T_STRING) {
+	    error("Bad argument 4 to mysql()\n");
+	  }
+	  if (sp[3-args].u.string->len) {
+	    password = sp[3-args].u.string->str;
+	  }
 	}
       }
     }
@@ -138,7 +148,7 @@ static void f_create(INT32 args)
 
   THREADS_ALLOW();
 
-  socket = mysql_connect(mysql, host, 0, password);
+  socket = mysql_connect(mysql, host, user, password);
 
   THREADS_DISALLOW();
 
@@ -255,16 +265,23 @@ static void f_query(INT32 args)
 
   THREADS_DISALLOW();
 
-  if (!(PIKE_MYSQL->last_result = result)) {
-    error("mysql->query(): Couldn't create result for query\n");
-  }
-
   pop_n_elems(args);
 
-  push_object(fp->current_object);
-  fp->current_object->refs++;
+  if (!(PIKE_MYSQL->last_result = result)) {
+    if (mysql_num_fields(socket)) {
+      error("mysql->query(): Couldn't create result for query\n");
+    }
+    /* query was INSERT or similar - return 0 */
 
-  push_object(clone(mysql_result_program, 1));
+    push_int(0);
+  } else {
+    /* Return the result-object */
+
+    push_object(fp->current_object);
+    fp->current_object->refs++;
+
+    push_object(clone(mysql_result_program, 1));
+  }
 }
 
 /* void create_db(string database) */
@@ -408,35 +425,17 @@ static void f_server_info(INT32 args)
 /* string host_info() */
 static void f_host_info(INT32 args)
 {
-  MYSQL *socket = PIKE_MYSQL->socket;
-  char *info;
-
   pop_n_elems(args);
 
-  THREADS_ALLOW();
-
-  info = mysql_get_host_info(socket);
-
-  THREADS_DISALLOW();
-
-  push_text(info);
+  push_text(mysql_get_host_info(PIKE_MYSQL->socket));
 }
 
 /* int protocol_info() */
 static void f_protocol_info(INT32 args)
 {
-  MYSQL *socket = PIKE_MYSQL->socket;
-  int proto;
-
   pop_n_elems(args);
 
-  THREADS_ALLOW();
-
-  proto = mysql_get_proto_info(socket);
-
-  THREADS_DISALLOW();
-
-  push_int(proto);
+  push_int(mysql_get_proto_info(PIKE_MYSQL->socket));
 }
 
 /* object(mysql_res) list_dbs(void|string wild) */
@@ -617,11 +616,11 @@ void init_mysql_programs(void)
   add_storage(sizeof(struct precompiled_mysql));
 
   add_function("error", f_error, "function(void:string)", OPT_EXTERNAL_DEPEND);
-  add_function("create", f_create, "function(string|void, string|void, string|void:void)", OPT_SIDE_EFFECT);
+  add_function("create", f_create, "function(string|void, string|void, string|void:void, string|void)", OPT_SIDE_EFFECT);
   add_function("affected_rows", f_affected_rows, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("insert_id", f_insert_id, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("select_db", f_select_db, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("query", f_query, "function(string:object)", OPT_EXTERNAL_DEPEND);
+  add_function("query", f_query, "function(string:int|object)", OPT_EXTERNAL_DEPEND);
   add_function("create_db", f_create_db, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("drop_db", f_drop_db, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("shutdown", f_shutdown, "function(void:void)", OPT_SIDE_EFFECT);
