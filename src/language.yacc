@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.308 2002/11/27 15:05:00 grubba Exp $
+|| $Id: language.yacc,v 1.309 2002/12/02 18:12:14 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.308 2002/11/27 15:05:00 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.309 2002/12/02 18:12:14 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3489,7 +3489,11 @@ low_idents: TOK_IDENTIFIER
 					   $2->u.sval.u.string, 1)))
       {
 	if (Pike_compiler->compiler_pass == 2) {
-	  my_yyerror("No such inherit ::%s.", $2->u.sval.u.string->str);
+	  if (TEST_COMPAT(7,2)) {
+	    yywarning("No such inherit ::%s.", $2->u.sval.u.string->str);
+	  } else {
+	    my_yyerror("No such inherit ::%s.", $2->u.sval.u.string->str);
+	  }
 	}
 	$$=mkintnode(0);
       }
