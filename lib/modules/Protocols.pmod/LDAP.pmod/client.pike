@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.65 2004/10/14 20:01:52 bill Exp $
+// $Id: client.pike,v 1.66 2005/01/24 16:17:52 mast Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.65 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.66 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -808,189 +808,208 @@ import SSL.Constants;
 
   } // add
 
-  static string unescape_filter_value (string val)
-  // Decodes escapes in val according to section 4 in RFC 2254 and
-  // section 3 in the older RFC 1960.
+  /*private*/ object|int make_filter(string filter)
   {
-    string res = "";
-    while (sscanf (val, "%s\\%s", string pre, val) == 2) {
-      res += pre;
-      if (sscanf (val, "%2x%s", int chr, val) == 2)
-	res += sprintf ("%c", chr);
-      else {
-	res += val[..0];
-	val = val[1..];
+
+#define FILTER_PARSE_ERR(MSG...) do {					\
+      /*werror (MSG);*/							\
+      return -1;							\
+    } while (0)
+
+    // Afaict from the RFCs no insignificant whitespace is allowed in
+    // query filters, but the old parser and other query tools (at
+    // least LDP in Windows XP) seem to accept it anyway. This makes
+    // it somewhat unclear whether whitespace around values should be
+    // significant or not. This parser always treat whitespace as
+    // significant there (and inside operators) but not anywhere else.
+    // /mast
+#define WS "%*[ \t\n\r]"
+
+    string|int read_filter_value()
+    // Reads a filter value encoded according to section 4 in RFC 2254
+    // and section 3 in the older RFC 1960.
+    {
+      string res = "";
+      while (1) {
+	sscanf (filter, "%[^()*\\]%s", string val, filter);
+	res += val;
+	if (filter == "" || (<'(', ')', '*'>)[filter[0]]) break;
+	if (sscanf (filter, "\\%2x%s", int chr, filter) == 2)
+	  // RFC 2254.
+	  res += sprintf ("%c", chr);
+	else if ((<"*", "(", ")">)[val = filter[1..1]]) {
+	  // RFC 1960. Note that this RFC doesn't define a consistent
+	  // quoting since a "\" shouldn't be quoted. That means it
+	  // isn't possible to specify a value ending with "\".
+	  res += val;
+	  filter = filter[2..];
+	}
+	else
+	  FILTER_PARSE_ERR ("Invalid quoting in value.\n");
       }
-    }
-    return res + val;
-  }
+      return res;
+    };
 
-  private static array(string) filter_get_sub1expr(string fstr) {
-  // returns one-level brackets enclosed expressions
+    object|int make_filter_recur()
+    {
+      object res;
 
-    array(string) rvarr = ({});
-    int leftflg = 0, nskip = 0;
+      //werror ("make_filter_recur %O\n", filter);
 
-    for(int ix=0; ix<sizeof(fstr); ix++)
-      if((fstr[ix] == '(') && (!ix || (fstr[ix-1] != '\\'))) {
-	leftflg = ix+1;
-	while(++ix < sizeof(fstr)) {
-	  if((fstr[ix] == '(') && (fstr[ix-1] != '\\')) {
-	    nskip++;		// deeper expr.
-	    continue;
+      // Legacy error reporting: If there's a syntax error then -1 is
+      // returned if it's on the top level or 0 if it's in a
+      // subexpression. Don't know what use that is. /mast
+
+      if (sscanf (filter, WS"("WS"%s", filter) != 3)
+	FILTER_PARSE_ERR ("Expected opening parenthesis.\n");
+      if (filter == "")
+	FILTER_PARSE_ERR ("Unexpected end of filter expression.\n");
+
+      switch (filter[0]) {
+	case '&':
+	case '|': {
+	  int op = filter[0];
+	  filter = filter[1..];
+	  array(object) subs = ({});
+	  do {
+	    object|int sub = make_filter_recur();
+	    if (intp (sub)) return 0;
+	    subs += ({sub});
+	  } while (has_prefix (filter, "("));
+	  res = ASN1_CONTEXT_SET (op == '&' ? 0 : 1, subs); // 'and' or 'or'
+	  break;
+	}
+
+	case '!': {
+	  filter = filter[1..];
+	  object|int sub = make_filter_recur();
+	  if (intp (sub)) return 0;
+	  res = ASN1_CONTEXT_SEQUENCE (2, ({sub})); // 'not'
+	  break;
+	}
+
+	default: {
+	  string attr;
+	  // Doing a slightly lax check of the attribute here: Periods
+	  // are only allowed if's a string of decimal digits separated
+	  // by them.
+	  sscanf (filter, "%[-A-Za-z0-9.]"WS"%s", attr, filter);
+	  if (filter == "")
+	    FILTER_PARSE_ERR ("Unexpected end of filter expression.\n");
+
+	  string op;
+	  switch (filter[0]) {
+	    case ':': case '=':
+	      sscanf (filter, "%1s%s", op, filter);
+	      break;
+	    case '~': case '>': case '<':
+	      if (sscanf (filter, "%2s%s", op, filter) != 2 || op[1] != '=')
+		FILTER_PARSE_ERR ("Invalid filter type.\n");
+	      break;
+	    default:
+	      FILTER_PARSE_ERR ("Invalid filter type.\n");
 	  }
-	  if((fstr[ix] == ')') && (fstr[ix-1] != '\\'))
-	    if(nskip) {		// we are deeply?
-	      nskip--;
-	      continue;
-	    } else {		// ok, here is end of expr.
-	      rvarr += ({fstr[leftflg..(ix-1)]});
-	      leftflg = 0;
-	      break;
+
+	  if (op == ":") {
+	    // LDAP 3 extensible match. Note that we haven't really
+	    // parsed the operator in this case.
+
+	    if (ldap_version < 3)
+	      FILTER_PARSE_ERR ("Invalid filter type.\n");
+
+	    int dn_attrs = sscanf (filter, "dn"WS":"WS"%s", filter) == 3;
+	    string matching_rule;
+	    if (has_prefix (filter, "=")) {
+	      if (attr == "")
+		FILTER_PARSE_ERR ("Must specify either an attribute, "
+				  "a matching rule identifier, or both.\n");
+	      filter = filter[1..];
 	    }
-	} // while
-      }
-    if(leftflg) {
-      ; // silent error: Missed right-enclosed bracket !
-    }
-    //DWRITE(sprintf("client.sub1: arr=%O\n",rvarr));
-    return rvarr;
-  }
+	    else {
+	      // Same kind of slightly lax check on the matching rule
+	      // identifier here as on the attribute above.
+	      if (sscanf (filter, "%[-A-Za-z0-9.]"WS":=%s", matching_rule, filter) != 3 ||
+		  matching_rule == "")
+		FILTER_PARSE_ERR ("Error parsing matching rule identifier.\n");
+	    }
 
-  /*private*/ object make_simple_filter(string filter) {
-  // filter expression parser - only simple expressions!
+	    string|int val = read_filter_value();
+	    if (intp (val)) return 0;
 
-    object rv;
-    int op, ix;
+	    res = ASN1_CONTEXT_SEQUENCE (	// 'extensibleMatch'
+	      9, ((matching_rule ?
+		   ({ASN1_CONTEXT_OCTET_STRING (1, matching_rule)}) : ({})) +
+		  (attr != "" ?
+		   ({ASN1_CONTEXT_OCTET_STRING (2, attr)}) : ({})) +
+		  ({ASN1_CONTEXT_OCTET_STRING (3, val),
+		    ASN1_CONTEXT_BOOLEAN (4, dn_attrs)})));
+	  }
 
-    DWRITE(sprintf("client.make_simple_filter: filter: [%s]\n", filter));
-    if((op = predef::search(filter, ">=")) > 0)	{ // greater or equal
-      DWRITE("client.make_simple_filter: [>=]\n");
-      return ASN1_CONTEXT_SEQUENCE(5,
-		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
-		  Standards.ASN1.Types.asn1_octet_string(filter[(op+2)..])
-		}));
-    }
-    if((op = predef::search(filter, "<=")) > 0)	{ // less or equal
-      DWRITE("client.make_simple_filter: [<=]\n");
-      return ASN1_CONTEXT_SEQUENCE(6,
-		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
-		  Standards.ASN1.Types.asn1_octet_string(filter[(op+2)..])
-		}));
-    }
-    if((op = predef::search(filter, "=")) > 0) {	// equal, substring
-	if((filter[-2] == '=') && (filter[-1] == '*'))  // any (=*)
-	  return make_simple_filter(filter[..op-1]);
-	ix = predef::search(filter[(op+1)..], "*");
-	if ((ix != -1) && (filter[op+ix] != '\\')) {	// substring
-	    object ohlp;
-	    array oarr = ({}), ahlp = ({});
-	    array filtval = filter[(op+1)..] / "*";
+	  else {
+	    if (attr == "") FILTER_PARSE_ERR ("Expected attribute.\n");
 
-	    // escape processing
-	    for(int cnt = 0; cnt < sizeof(filtval); cnt++) {
-		if(cnt) {
-		    if(sizeof(filtval[cnt-1]) && filtval[cnt-1][-1] == '\\')
-		      ahlp[-1] = ahlp[-1][..sizeof (ahlp[-1]) - 2] + "*" + filtval[cnt];
-		    else
-			ahlp += ({ filtval[cnt] });
-		} else
-		    ahlp = ({ filtval[cnt] });
-	    } // for
+	    string|int|object val = read_filter_value();
+	    if (intp (val)) return 0;
 
-	    // filter elements processing (left, center & right)
-	    ix = sizeof(ahlp);
-	    for (int cnt = 0; cnt < ix; cnt++)
-		if(!cnt) {	// leftmost element
-		    if(sizeof(ahlp[0]))
-		      oarr = ({ASN1_CONTEXT_OCTET_STRING(
-				 0, unescape_filter_value (ahlp[0]))});
-		} else
-		    if(cnt == ix-1) {	// rightmost element
-			if(sizeof(ahlp[ix-1]))
-			    oarr += ({ASN1_CONTEXT_OCTET_STRING(
-					2, unescape_filter_value (ahlp[ix-1]))});
-		    } else {	// inside element
-			if(sizeof(ahlp[cnt]))
-			    oarr += ({ASN1_CONTEXT_OCTET_STRING(
-					1, unescape_filter_value (ahlp[cnt]))});
-		    }
-	    // for
+	    if (op == "=" && has_prefix (filter, "*")) {
+	      array(string) parts = ({val});
+	      do {
+		filter = filter[1..];
+		val = read_filter_value();
+		if (intp (val)) return 0;
+		parts += ({val});
+	      } while (has_prefix (filter, "*"));
 
-	    DWRITE(sprintf("client.make_simple_filter: substring: [%s]:\n%O\n", filter, ahlp));
-	    return ASN1_CONTEXT_SEQUENCE(4,
-		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
-		  Standards.ASN1.Types.asn1_sequence(oarr)
-		}));
-      } else {				   // equal
-        DWRITE("client.make_simple_filter: [=]\n");
-	return ASN1_CONTEXT_SEQUENCE(3,
-		({Standards.ASN1.Types.asn1_octet_string(filter[..(op-1)]),
-		  Standards.ASN1.Types.asn1_octet_string(
-		    unescape_filter_value (filter[(op+1)..]))
-		}));
-      }
-    } // if equal,substring
-    // present
-    DWRITE("client.make_simple_filter: [present]\n");
-    return ASN1_CONTEXT_OCTET_STRING(7, filter);
-}
+	      array(object) subs = sizeof (parts[0]) ?
+		({ASN1_CONTEXT_OCTET_STRING (0, parts[0])}) : ({});
+	      foreach (parts[1..sizeof (parts) - 2], string middle)
+		subs += ({ASN1_CONTEXT_OCTET_STRING (1, middle)});
+	      if (sizeof (parts) > 1 && sizeof (parts[-1]))
+		subs += ({ASN1_CONTEXT_OCTET_STRING (2, parts[-1])});
 
-
-  /*private*/ object|int make_filter(string filter) {
-  // filter expression parser
-
-    object ohlp;
-    array(object) oarr = ({});
-    int op ;
-
-    DWRITE("client.make_filter: filter=["+filter+"]\n");
-
-    if (!sizeof(filter)) return make_simple_filter(filter);
-
-    // strip leading and trailing spaces
-    filter = String.trim_all_whites(filter);
-
-    // strip leading and trailing brackets
-#if 1
-    if(filter[0] == '(') {
-      int ix;
-      string f2 = reverse(filter[1..]);
-      if((ix = predef::search(f2, ")")) > -1) {
-	filter = reverse(f2[ix+1..]);
-	return make_filter(filter);
-      }
-      return -1; // error in filter expr.
-    }
-#endif
-
-    op = -1;
-
-    DWRITE(sprintf("client.make_filter: ftype=%c\n",filter[0]));
-    switch (filter[0]) {
-      case '&':		// and
-      case '|':		// or
-	      foreach(filter_get_sub1expr(filter[1..]), string sub1expr)
-		if (objectp(ohlp = make_filter(sub1expr)))
-		  oarr += ({ohlp});
-		else
-		  return 0; // error: Filter parameter error!
-      	      DWRITE(sprintf("client.make_filter: expr_cnt=%d\n",sizeof(oarr)));
-	      //ohlp = Standards.ASN1.Encode.asn1_set(@oarr);
-	      op = 0;
-	      if (filter[0] == '|')
-		op = 1;
-	      return ASN1_CONTEXT_SET(op, oarr);
-      case '!':		// not
-	      if (objectp(ohlp = make_filter(filter_get_sub1expr(filter[1..])[0])))
-	        return ASN1_CONTEXT_SEQUENCE(2, ({ ohlp}) );
+	      if (!sizeof (subs))
+		res = ASN1_CONTEXT_OCTET_STRING (7, attr); // 'present'
 	      else
-		return 0; // error: Filter parameter error!
-	      break;
-      default :		// we assume simple filter
-	      return make_simple_filter(filter);
-    }
-}
+		res = ASN1_CONTEXT_SEQUENCE ( // 'substrings'
+		  4, ({Standards.ASN1.Types.asn1_octet_string (attr),
+		       Standards.ASN1.Types.asn1_sequence (subs)}));
+	    }
+
+	    else {
+	      int op_number;
+	      switch (op) {
+		case "=": op_number = 3; break;	// 'equalityMatch'
+		case ">=": op_number = 5; break; // 'greaterOrEqual'
+		case "<=": op_number = 6; break; // 'lessOrEqual'
+		case "~=": op_number = 8; break; // 'approxMatch'
+		default:
+		  FILTER_PARSE_ERR ("Invalid filter type.\n"); // Shouldn't be reached.
+	      }
+	      res = ASN1_CONTEXT_SEQUENCE (
+		op_number, ({Standards.ASN1.Types.asn1_octet_string (attr),
+			     Standards.ASN1.Types.asn1_octet_string (val)}));
+	    }
+	  }
+
+	  break;
+	}
+      }
+
+      //werror ("make_filter_recur => %O (rest: %O)\n", res, filter);
+
+      if (sscanf (filter, WS")"WS"%s", filter) != 3)
+	FILTER_PARSE_ERR ("Expected closing parenthesis.\n");
+      return res;
+    };
+
+    object|int res = make_filter_recur();
+    if (intp (res)) return res;
+    if (filter != "")
+      FILTER_PARSE_ERR ("Unexpected data after end of filter expression.\n");
+    return res;
+
+#undef WS
+  }
 
   private object|int make_search_op(string basedn, int scope, int deref,
 				    int sizelimit, int timelimit,
