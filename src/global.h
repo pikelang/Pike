@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.60 2001/03/28 10:02:41 hubbe Exp $
+ * $Id: global.h,v 1.61 2001/06/04 17:43:22 mast Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -324,6 +324,7 @@ typedef struct p_wchar_p
 #define DO_IF_DEBUG(X) X
 #else
 #define DO_IF_DEBUG(X)
+#define NDEBUG
 #endif
 
 #if defined(__GNUC__) && !defined(PIKE_DEBUG) && !defined(lint)
