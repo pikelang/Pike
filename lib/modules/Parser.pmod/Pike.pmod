@@ -35,7 +35,7 @@ array(string) split(string data)
   {
     int start=pos;
 
-//    werror("::::%c\n",data[pos]);
+    //    werror("::::%c\n",data[pos]);
 
     switch(data[pos])
     {
@@ -211,6 +211,7 @@ array(string) split(string data)
 	case '\'':
 	  pos++;
 	  if(data[pos]=='\\') pos++;
+	  if(data[pos..pos+1]=="''") pos++;
           int end=search(data, "'", pos)+1;
           if (!end) {
             --pos;
