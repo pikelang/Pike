@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.34 1998/02/27 08:41:20 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.35 1998/03/12 18:44:30 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -302,7 +302,7 @@ void udp_sendto(INT32 args)
       error("Not a socket!!!\n");
 #endif
      case EWOULDBLOCK:
-      return;
+      error("Message would block.\n");
     }
   }
   pop_n_elems(args);
