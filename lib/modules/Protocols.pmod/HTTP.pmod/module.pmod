@@ -60,37 +60,48 @@ constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Support
 constant TCN_VARIANT_NEGOTIATES	= 506; // RFC 2295 8.1: Variant Also Negotiates
 constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
 
-//! @decl Protcols.HTTP.Query do_method(string method,@
-//!   string|Standards.URI url, void|mapping query_variables,@
-//!   void|mapping request_headers, void|Protocols.HTTP.Query con,@
-//!   void|string data)
-//!
 //! Low level HTTP call method.
-object do_method(string method,
+//!
+//! @param method
+//!   The HTTP method to use, e.g. @expr{"GET"@}.
+//! @param url
+//!   The URL to perform @[method] on. Should be a complete URL,
+//!   including protocol, e.g. @expr{"https://pike.ida.liu.se/"@}.
+//! @param query_variables
+//!   Calls @[http_encode_query] and appends the result to the URL.
+//! @param request_headers
+//!   The HTTP headers to be added to the request. By default the
+//!   headers User-agent, Host and, if needed by the url,
+//!   Authorization will be added, with generated contents.
+//!   Providing these headers will override the default. Setting
+//!   the value to 0 will remove that header from the request.
+//! @param con
+//!   Old connection object.
+//! @param data
+//!   Data payload to be transmitted in the request.
+.Query do_method(string method,
 		 string|Standards.URI url,
-		 void|mapping query_variables,
-		 void|mapping request_headers,
+		 void|mapping(string:int|string) query_variables,
+		 void|mapping(string:string|array(string)) request_headers,
 		 void|Protocols.HTTP.Query con, void|string data)
 {
   if(!con)
-    con = Protocols.HTTP.Query();
+    con = .Query();
 
   if(stringp(url))
     url=Standards.URI(url);
   
 #if constant(SSL.sslfile) 	
   if(url->scheme!="http" && url->scheme!="https")
-    error("Protocols.HTTP can't handle %O or any other protocols than HTTP or HTTPS\n",
+    error("Can't handle %O or any other protocols than HTTP or HTTPS.\n",
 	  url->scheme);
   
-  con->https= (url->scheme=="https")? 1 : 0;
+  con->https = (url->scheme=="https")? 1 : 0;
 #else
-  if(url->scheme!="http"	)
-    error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
+  if(url->scheme!="http")
+    error("Can't handle %O or any other protocol than HTTP.\n",
 	  url->scheme);
-  
 #endif
-  
 
   if(!request_headers)
     request_headers = ([]);
@@ -126,111 +137,59 @@ object do_method(string method,
   return con;
 }
 
-//! @decl Protocols.HTTP.Query get_url(string|Standards.URI url)
-//! @decl Protocols.HTTP.Query get_url(string|Standards.URI url, @
-//!                                    mapping query_variables)
-//! @decl Protocols.HTTP.Query get_url(string|Standards.URI url, @
-//!                                    mapping query_variables, @
-//!                                    mapping request_headers)
-//! @decl Protocols.HTTP.Query get_url(string|Standards.URI url, @
-//!                                    mapping query_variables, @
-//!                                    mapping request_headers, @
-//!                                    Protocols.HTTP.Query query)
-//! 	Sends a HTTP GET request to the server in the URL
-//!	and returns the created and initialized @[Query] object.
-//!	0 is returned upon failure. If a query object having
-//!	@expr{request_headers->Connection=="Keep-Alive"@} from a previous
-//!     request is provided and the already established server connection
-//!     can be used for the next request, you may gain some performance.
+//! Sends a HTTP GET request to the server in the URL and returns the
+//! created and initialized @[Query] object. @expr{0@} is returned
+//! upon failure. If a query object having
+//! @expr{request_headers->Connection=="Keep-Alive"@} from a previous
+//! request is provided and the already established server connection
+//! can be used for the next request, you may gain some performance.
 //!
-object get_url(string|Standards.URI url,
-	       void|mapping query_variables,
-	       void|mapping request_headers,
+.Query get_url(string|Standards.URI url,
+	       void|mapping(string:int|string) query_variables,
+	       void|mapping(string:string|array(string)) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
   return do_method("GET", url, query_variables, request_headers, con);
 }
 
-//! @decl Protocols.HTTP.Query put_url(string|Standards.URI url)
-//! @decl Protocols.HTTP.Query put_url(string|Standards.URI url,string file)
-//! @decl Protocols.HTTP.Query put_url(string|Standards.URI url,string file, @
-//!                                    mapping query_variables)
-//! @decl Protocols.HTTP.Query put_url(string|Standards.URI url,string file, @
-//!                                    mapping query_variables, @
-//!                                    mapping request_headers)
-//! @decl Protocols.HTTP.Query put_url(string|Standards.URI url,string file, @
-//!                                    mapping query_variables, @
-//!                                    mapping request_headers, @
-//!                                    Protocols.HTTP.Query query)
-//! 	Sends a HTTP PUT request to the server in the URL
-//!	and returns the created and initialized @[Query] object.
-//!	0 is returned upon failure. If a query object having
-//!	@expr{request_headers->Connection=="Keep-Alive"@} from a previous
-//!     request is provided and the already established server connection
-//!     can be used for the next request, you may gain some performance.
+//! Sends a HTTP PUT request to the server in the URL and returns the
+//! created and initialized @[Query] object. @expr{0@} is returned upon
+//! failure. If a query object having
+//! @expr{request_headers->Connection=="Keep-Alive"@} from a previous
+//! request is provided and the already established server connection
+//! can be used for the next request, you may gain some performance.
 //!
-object put_url(string|Standards.URI url,
+.Query put_url(string|Standards.URI url,
 	       void|string file,
-	       void|mapping query_variables,
-	       void|mapping request_headers,
+	       void|mapping(string:int|string) query_variables,
+	       void|mapping(string:string|array(string)) request_headers,
 	       void|Protocols.HTTP.Query con)
 {
   return do_method("PUT", url, query_variables, request_headers, con, file);
 }
 
-//! @decl Protocols.HTTP.Query delete_url(string|Standards.URI url)
-//! @decl Protocols.HTTP.Query delete_url(string|Standards.URI url, @
-//!                                       mapping query_variables)
-//! @decl Protocols.HTTP.Query delete_url(string|Standards.URI url, @
-//!                                       mapping query_variables, @
-//!                                       mapping request_headers)
-//! @decl Protocols.HTTP.Query delete_url(string|Standards.URI url, @
-//!                                       mapping query_variables, @
-//!                                       mapping request_headers, @
-//!                                       Protocols.HTTP.Query query)
-//! 	Sends a HTTP DELETE request to the server in the URL
-//!	and returns the created and initialized @[Query] object.
-//!	0 is returned upon failure. If a query object having
-//!	@expr{request_headers->Connection=="Keep-Alive"@} from a previous
-//!     request is provided and the already established server connection
-//!     can be used for the next request, you may gain some performance.
+//! Sends a HTTP DELETE request to the server in the URL and returns
+//! the created and initialized @[Query] object. @expr{0@} is returned
+//! upon failure. If a query object having
+//! @expr{request_headers->Connection=="Keep-Alive"@} from a previous
+//! request is provided and the already established server connection
+//! can be used for the next request, you may gain some performance.
 //!
-object delete_url(string|Standards.URI url,
-		  void|mapping query_variables,
-		  void|mapping request_headers,
+.Query delete_url(string|Standards.URI url,
+		  void|mapping(string:int|string) query_variables,
+		  void|mapping(string:string|array(string)) request_headers,
 		  void|Protocols.HTTP.Query con)
 {
   return do_method("DELETE", url, query_variables, request_headers, con);
 }
 
-//! @decl array(string) get_url_nice(string|Standards.URI url, @
-//!                                  mapping query_variables)
-//! @decl array(string) get_url_nice(string|Standards.URI url, @
-//!                                  mapping query_variables, @
-//!                                  mapping request_headers)
-//! @decl array(string) get_url_nice(string|Standards.URI url, @
-//!                                  mapping query_variables, @
-//!                                  mapping request_headers, @
-//!                                  Protocols.HTTP.Query query)
-//! @decl string get_url_data(string|Standards.URI url, @
-//!                           mapping query_variables)
-//! @decl string get_url_data(string|Standards.URI url, @
-//!                                  mapping query_variables, @
-//!                                  mapping request_headers)
-//! @decl string get_url_data(string|Standards.URI url, @
-//!                                  mapping query_variables, @
-//!                                  mapping request_headers, @
-//!                                  object(Protocols.HTTP.Query) query)
-//!	Returns an array of @expr{({content_type,data})@} and just
-//!     the data string respective, 
-//!	after calling the requested server for the information.
-//!	0 is returned upon failure. Redirects (HTTP 302) are
-//!     automatically followed.
+//! Returns an array of @expr{({content_type, data})@} after calling
+//! the requested server for the information. @expr{0@} is returned
+//! upon failure. Redirects (HTTP 302) are automatically followed.
 //!
-
 array(string) get_url_nice(string|Standards.URI url,
-			   void|mapping query_variables,
-			   void|mapping request_headers,
+			   void|mapping(string:int|string) query_variables,
+			   void|mapping(string:string|array(string)) request_headers,
 			   void|Protocols.HTTP.Query con)
 {
   .Query c;
@@ -246,49 +205,24 @@ array(string) get_url_nice(string|Standards.URI url,
   return ({ c->headers["content-type"], c->data() });
 }
 
+//! Returns the returned data after calling the requested server for
+//! information through HTTP GET. @expr{0@} is returned upon failure.
+//! Redirects (HTTP 302) are automatically followed.
+//!
 string get_url_data(string|Standards.URI url,
-		    void|mapping query_variables,
-		    void|mapping request_headers,
+		    void|mapping(string:int|string) query_variables,
+		    void|mapping(string:string|array(string)) request_headers,
 		    void|Protocols.HTTP.Query con)
 {
   array(string) z = get_url_nice(url, query_variables, request_headers, con);
   return z && z[1];
 }
 
-//! @decl array(string) post_url_nice(string|Standards.URI url, @
-//!                                   mapping query_variables)
-//! @decl array(string) post_url_nice(string|Standards.URI url, @
-//!                                   mapping query_variables, @
-//!                                   mapping request_headers)
-//! @decl array(string) post_url_nice(string|Standards.URI url, @
-//!                                   mapping query_variables, @
-//!                                   mapping request_headers, @
-//!                                   Protocols.HTTP.Query query)
-//! @decl string post_url_data(string|Standards.URI url, @
-//!                            mapping query_variables)
-//! @decl string post_url_data(string|Standards.URI url, @
-//!                            mapping query_variables, @
-//!                            mapping request_headers)
-//! @decl string post_url_data(string|Standards.URI url, @
-//!                            mapping query_variables, @
-//!                            mapping request_headers, @
-//!                            Protocols.HTTP.Query query)
-//! @decl object(Protocols.HTTP.Query) post_url(string|Standards.URI url, @
-//!                                             mapping query_variables)
-//! @decl object(Protocols.HTTP.Query) post_url(string|Standards.URI url, @
-//!                                             mapping query_variables, @
-//!                                             mapping request_headers)
-//! @decl object(Protocols.HTTP.Query) post_url(string|Standards.URI url, @
-//!                                             mapping query_variables, @
-//!                                             mapping request_headers, @
-//!                                             Protocols.HTTP.Query query)
-//! 	Similar to the @[get_url()] class of functions, except that the
-//!	query variables is sent as a POST request instead of as a GET.
-//!
-
-object post_url(string|Standards.URI url,
-		mapping query_variables,
-		void|mapping request_headers,
+//! Similar to @[get_url], except that query variables is sent as a
+//! POST request instead of a GET request.
+.Query post_url(string|Standards.URI url,
+		mapping(string:int|string) query_variables,
+		void|mapping(string:string|array(string)) request_headers,
 		void|Protocols.HTTP.Query con)
 {
   return do_method("POST", url, 0,
@@ -299,29 +233,33 @@ object post_url(string|Standards.URI url,
 		   http_encode_query(query_variables));
 }
 
+//! Similar to @[get_url_nice], except that query variables is sent as
+//! a POST request instead of a GET request.
 array(string) post_url_nice(string|Standards.URI url,
-			    mapping query_variables,
-			    void|mapping request_headers,
+			    mapping(string:int|string) query_variables,
+			    void|mapping(string:string|array(string)) request_headers,
 			    void|Protocols.HTTP.Query con)
 {
-  object c = post_url(url, query_variables, request_headers, con);
+  .Query c = post_url(url, query_variables, request_headers, con);
   return c && ({ c->headers["content-type"], c->data() });
 }
 
+//! Similar to @[get_url_data], except that query variables is sent as
+//! a POST request instead of a GET request.
 string post_url_data(string|Standards.URI url,
-		     mapping query_variables,
-		     void|mapping request_headers,
+		     mapping(string:int|string) query_variables,
+		     void|mapping(string:string|array(string)) request_headers,
 		     void|Protocols.HTTP.Query con)
 {
-  object z = post_url(url, query_variables, request_headers, con);
+  .Query z = post_url(url, query_variables, request_headers, con);
   return z && z->data();
 }
 
-//!	Helper function for replacing HTML entities
-//!	with the corresponding iso-8859-1 characters.
+//! Helper function for replacing HTML entities with the corresponding
+//! iso-8859-1 characters.
 //! @note
-//! 	All characters aren't replaced, only those with
-//!	corresponding iso-8859-1 characters.
+//!   All characters aren't replaced, only those with corresponding
+//!   iso-8859-1 characters.
 string unentity(string s)
 {
    return replace(
