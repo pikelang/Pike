@@ -28,6 +28,21 @@
  *
  *     RETURN x;
  *   }
+ *
+ *   INIT
+ *   {
+ *     // Object initialization code.
+ *   }
+ *
+ *   EXIT
+ *   {
+ *     // Object cleanup code.
+ *   }
+ *
+ *   EXTRA
+ *   {
+ *     // Code for adding extra constants etc.
+ *   }
  * }
  *
  * All the begin_class/ADD_EFUN/ADD_FUNCTION calls will be inserted
@@ -1340,6 +1355,18 @@ class ParseBlock
 	ret+=DEFINE(define);
 	ret+=({ PC.Token("DECLARE_STORAGE") });
 	ret+=var[pos+1..];
+      }
+
+      x=ret/({"EXTRA"});
+      ret = x[0];
+      for (int f = 1; f < sizeof(x); f++)
+      {
+	array extra=x[f];
+	array rest = extra[1..];
+	string define=make_unique_name("extra",base,"defined");
+	addfuncs += IFDEF(define, extra[0]);
+	ret+=DEFINE(define);
+	ret+=rest;
       }
 
 
