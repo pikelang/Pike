@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.6 2004/05/23 17:22:16 nilsson Exp $
+//   $Id: Dims.pmod,v 1.7 2004/08/26 00:38:41 nilsson Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Schön, <js@roxen.com>.
@@ -192,6 +192,10 @@ array(int) get_PNG(Stdio.File f)
 //! @expr{0@}. The argument @[file] should be file object or the data
 //! from a file. The offset pointer will be assumed to be at the start
 //! of the file data and will be modified by the function.
+//!
+//! As a compatibility measure, if the @[file] is a path to an image
+//! file, it will be loaded and processed once the processing of the
+//! path as data has failed.
 //! @returns
 //!   @array
 //!     @elem int 0
@@ -203,7 +207,11 @@ array(int) get_PNG(Stdio.File f)
 //!       @expr{"jpeg@}.
 //!   @endarray
 array(int) get(string|Stdio.File file) {
-  if(stringp(file)) file = Stdio.FakeFile(file);
+  string fn;
+  if(stringp(file)) {
+    fn = file;
+    file = Stdio.FakeFile(file);
+  }
 
   switch(file->read(6)) {
 
@@ -219,6 +227,9 @@ array(int) get(string|Stdio.File file) {
     // JPEG
     file->seek(file->tell()-6);
     array ret = get_JPEG(file);
-    return ret ? ret+({ "jpeg" }) : 0;
+    if(ret) return ret+({ "jpeg" });
+    if(!fn) return 0;
+    file = Stdio.File(fn);
+    if(file) return get(file);
   }
 }
