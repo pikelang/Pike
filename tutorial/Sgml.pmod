@@ -207,7 +207,9 @@ string generate(SGML data, void|function mkt)
       if(stringp(foo))
       {
 	ret+=quote(foo);
-      }else{
+      }
+      else if (objectp(foo))
+      {
 	ret+=mkt(foo->tag,foo->params);
 	if(foo->data)
 	{
@@ -215,6 +217,8 @@ string generate(SGML data, void|function mkt)
 	  ret+=mkt("/"+foo->tag,([]));
 	}
       }
+      else error("got an illegal tag or string : %O\n"
+		 "in: %O\n",foo,data);
     }
 
   return ret;

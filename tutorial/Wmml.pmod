@@ -89,6 +89,8 @@ static private int verify_any(SGML data,
 	 case "illustration":
 	 case "link":
 
+	 case "add_appendix":
+
 	 case "exercises":
 	 case "exercise":
 
@@ -118,6 +120,8 @@ static private int verify_any(SGML data,
 
 	 case "data_description":
 	 case "elem": // in data_description
+
+	 case "execute":
 	 
 	 case "aargdesc": // in man_arguments
 	 case "aarg":	  // in man_arguments
@@ -131,6 +135,7 @@ static private int verify_any(SGML data,
 
 	    break;
 
+	 case "insert_added_appendices":
 	 case "ex_indent":
 	 case "ex_br":
 	 case "include":
@@ -490,6 +495,8 @@ object(Enumerator) chapterE;
 object(Stacker) classbase;
 object(TocBuilder) toker;
 
+array add_appendices=({});
+
 string name_to_link(string x)
 {
    return replace(x,({"->","-&gt;", "#"}),({".",".",""}));
@@ -644,6 +651,15 @@ SGML low_make_concrete_wmml(SGML data)
 	  ret+=fix_section(tag,appendixE);
 	  appendixE->inc();
 	  continue;
+
+	case "add_appendix":
+	  tag->tag="appendix";
+	  add_appendices+=fix_section(tag,appendixE);
+	  continue;
+
+        case "insert_added_appendices":
+	  ret+=low_make_concrete_wmml(add_appendices);
+	  continue;
 	  
 	case "table":
 	case "image":
@@ -664,6 +680,10 @@ SGML low_make_concrete_wmml(SGML data)
 	    continue;
 	  }
 	  break;
+
+        case "execute":
+	  ret+=execute_contents(tag);    
+	  continue;
 	  
 	case "class":
 	case "module":
@@ -868,9 +888,12 @@ int gifnum;
 mapping gifcache=([]);
 mapping srccache=([]);
 
-string mkgif(mixed o)
+string mkgif(mixed o,void|object alpha)
 {
-  string g=stringp(o)?o:Image.GIF.encode(o);
+  string g=
+     stringp(o)?o:
+     alpha?Image.GIF.encode(o,alpha):
+     Image.GIF.encode(o);
 
   int key=hash(g);
 
@@ -962,9 +985,66 @@ string illustration_to_gif(TAG data, float dpi)
   return ret;
 }
 
+array execute_contents(Tag tag)
+{
+   string data=get_text(tag->data);
+
+   add_constant("illustration",
+		lambda(object o,void|object alpha)
+		{
+		   return Sgml.Tag("image",(["gif":mkgif(o,alpha)]),0);
+		});
+   add_constant("mktag",
+		lambda(string name,void|mapping arg,void|mixed cont)
+		{
+		   if (arg) arg=(mapping(string:string))arg;
+		   return Sgml.Tag(name,
+				   arg||([]),
+				   tag->pos,
+				   arrayp(cont)?cont:
+				   intp(cont)?({}):({cont}),
+				   tag->file);
+		});
+
+   array ret;
+
+   mixed err=catch
+   {
+      object po;
+      po=compile_string("#1 \"static stuff\"\n"
+			"array _res=({({})});\n"
+			"void write(mixed ...args) { _res[0]+=args; }\n"
+			"\n"
+			"void begin_tag(string name,void|mapping p) "
+			"{ _res=({({}),({name,p})})+_res; }\n"
+			"object end_tag() "
+			"{ object t=mktag(@_res[1],_res[0]); "
+			"_res=_res[2..]; return t;}\n"
+			"\n"
+			"#1 \"inline wmml generating code\"\n"
+			+data)();
+      po->main();
+      ret=po->_res[0];
+   };
+   if (err)
+   {
+      werror("error while compiling and running\n"+data+"\n");
+      if (tag->params->__from__) 
+	 werror("from "+tag->params->__from__+":\n");
+      werror(master()->describe_backtrace(err)+"\n");
+      return ({"<!-- failed to execute wmml generator... -->"});
+   }
+   return ret;
+}
+
+
 string image_to_gif(TAG data, float dpi)
 {
   mapping params=data->params;
+
+  if(params->gif)
+     return params->gif;
+
   if(params->xfig)
     params->src=params->xfig+".fig";
 

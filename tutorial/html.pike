@@ -44,6 +44,9 @@ TAG mkimgtag(string file, mapping params)
   if(params->align) p->align=params->align;
   if(params->alt) p->align=params->alt;
   add_file_to_export_list(file);
+  object o=Image.load(file);
+  p->xsize=o->xsize();
+  p->ysize=o->ysize();
   return Sgml.Tag("img",p,0);
 }
 
@@ -639,7 +642,7 @@ SGML convert(SGML data)
 			   "Appendix ",
 			   data->params->number,
 			   ", ",
-			   data->params->title,
+			   data->params->title||error("Appendix without title"),
 			})),
 	       "\n"
 	    })+
@@ -748,7 +751,8 @@ SGML convert(SGML data)
 SGML wmml_to_html(SGML data)
 {
   SGML ret=convert(data);
-  if(!(objectp(data[0]) && (data[0]->tag=="body" || data[0]->tag=="frameset")))
+  if(!(objectp(data[0]) && 
+       (data[0]->tag=="body" || data[0]->tag=="frameset")))
   {
     ret=({
       Sgml.Tag("body",
