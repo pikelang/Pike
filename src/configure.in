@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.115 1997/09/16 01:22:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.116 1997/09/16 01:23:42 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1383,13 +1383,13 @@ char proc_name[20];
       pike_cv_getrusage_procfs=no
     )
   ])
-fi
 
-if test "$pike_cv_getrusage_procfs" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(GETRUSAGE_THROUGH_PROCFS)
-else
-  AC_MSG_RESULT(no)
+  if test "$pike_cv_getrusage_procfs" = yes; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(GETRUSAGE_THROUGH_PROCFS)
+  else
+    AC_MSG_RESULT(no)
+  fi
 fi
 
 #############################################################################
