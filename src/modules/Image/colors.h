@@ -449,5 +449,5 @@
    COLOR("yellowgreen"         ,154,205,50)
 #endif
 
-   COLOR("pikegreen"           ,170,238,204) /* hehe */
-
+   COLOR("pikegreen"           ,160,224,192)
+   COLOR("avantgardepikegreen" ,0,51,0)
