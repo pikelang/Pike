@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.137 2004/04/03 17:25:15 grubba Exp $
+# $Id: Makefile,v 1.138 2004/04/03 17:50:11 grubba Exp $
 #
 # Meta Makefile
 #
@@ -56,7 +56,7 @@ builddir:
 	for d in $$builddir; do \
 	  dir="$$dir$$d"; \
 	  if test x"$$dir" = x -o -d "$$dir"; then :; else \
-	    echo "Creating $$dir..." \
+	    echo "Creating $$dir..."; \
 	    mkdir "$$dir" || exit 1; \
 	  fi; \
 	  dir="$$dir/"; \
