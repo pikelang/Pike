@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.2 2004/02/19 14:24:52 nilsson Exp $
+// $Id: randomness.pmod,v 1.3 2004/02/29 02:50:17 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -10,6 +10,8 @@
 #pike 7.5
 
 // #pragma strict_types
+
+#if constant(Crypto.SHA1.name)
 
 static constant RANDOM_DEVICE = "/dev/random";
 static constant PRANDOM_DEVICE = "/dev/urandom";
@@ -168,3 +170,5 @@ RandomSource really_random(int|void may_block)
 
   error( "No source found.\n" );
 }
+
+#endif // constant(Crypto.SHA1)
