@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.35 2003/04/07 17:29:25 nilsson Exp $
+// $Id: module.pmod,v 1.36 2003/04/09 17:12:12 nilsson Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -193,7 +193,7 @@ string read_file(string file)
 //! argument is given the data will be taken from stdin. If
 //! a file object is given, it will be read to the end of the
 //! file. If a string is given the function will first attempt
-//! to load a file wiht that name, then try to download data
+//! to load a file with that name, then try to download data
 //! with the string as URL. Zero will be returned upon failure.
 local string load_file( void|object|string file )
 {
