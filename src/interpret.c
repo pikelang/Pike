@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.222 2001/07/17 08:33:22 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.223 2001/07/17 17:50:38 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -788,14 +788,35 @@ C }
 
 #undef HAVE_COMPUTED_GOTO
 
-#if defined(__i386__) && defined(__GNUC__)
+#ifdef __GNUC__
+#ifdef __i386__
 #define PROG_COUNTER (((unsigned char **)__builtin_frame_address(0))[1])
+#elif defined(sparc)
+#define PROG_COUNTER reg_pc
+register unsigned char *reg_pc __asm__ ("%i7");
+#endif /* __i386__ || sparc */
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
   do_inter_return_label = && inter_return_label;
   do_escape_catch_label = && inter_escape_catch_label;
 
+#ifdef PIKE_DEBUG
+  if (t_flag) {
+    int i;
+    fprintf(stderr, "Calling code at 0x%p:\n", pc);
+    for (i=0; i < 16; i+=4) {
+      fprintf(stderr,
+	      "  0x%08x 0x%08x 0x%08x 0x%08x\n",
+	      ((int *)pc)[i],
+	      ((int *)pc)[i+1],
+	      ((int *)pc)[i+2],
+	      ((int *)pc)[i+3]);
+    }
+  }
+#endif /* PIKE_DEBUG */
+
+#ifdef __i386__
   /* This code does not clobber %eax, but
    * the code jumped to does.
    */
@@ -804,6 +825,11 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 			: "=m" (pc)
 			:
 			: "cc", "memory", "eax" );
+#elif defined(sparc)
+  /* No extra setup needed!
+   */
+  return ((int (*)(void))pc)();
+#endif /* __i386__ || sparc */
 
   /* This code is never reached, but will
    * prevent gcc from optimizing the labels below too much
@@ -821,12 +847,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
  inter_escape_catch_label: return -2;
 }
 
-#endif
-
-#ifdef PIKE_USE_SPARC_GCC
-#define PROG_COUNTER reg_pc
-register void *reg_pc __asm__ ("%i7");
-#endif
+#endif /* __GNUC__ */
 
 #undef DONE
 #undef FETCH

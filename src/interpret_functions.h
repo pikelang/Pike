@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.76 2001/07/16 19:48:57 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.77 2001/07/17 17:50:38 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -223,10 +223,10 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", {
 
 OPCODE0(F_FLOAT, "push float", {
   /* FIXME, this opcode uses 'PROG_COUNTER' which is not allowed.. */
-  Pike_sp->type=PIKE_T_FLOAT;
   MEMCPY((void *)&Pike_sp->u.float_number, PROG_COUNTER, sizeof(FLOAT_TYPE));
   PROG_COUNTER += DO_IF_ELSE_COMPUTED_GOTO(1, sizeof(FLOAT_TYPE));
   FETCH;
+  Pike_sp->type=PIKE_T_FLOAT;
   Pike_sp++;
 });
 
@@ -1286,12 +1286,10 @@ OPCODE0(F_RETURN_1,"return 1",{
   DO_RETURN;
 });
 
-
 OPCODE0(F_RETURN_0,"return 0",{
   push_int(0);
   DO_RETURN;
 });
-
 
 OPCODE0(F_RETURN, "return", {
   DO_RETURN;

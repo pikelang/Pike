@@ -18,7 +18,7 @@
 #include "constants.h"
 #include "interpret.h"
 
-RCSID("$Id: peep.c,v 1.56 2001/07/17 08:33:23 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.57 2001/07/17 17:50:39 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -136,11 +136,14 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
+#ifdef PIKE_USE_MACHINE_CODE
 /* FIXME: Move this to pike_cpulib.h */
-#if defined(__i386__) && defined(__GNUC__)
+#ifdef __GNUC__
 
 #define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
+
+#ifdef __i386__
 
 /* This is ugly, but since the code may be moved we cannot use
  * relative addressing :(
@@ -163,12 +166,61 @@ void update_arg(int instr,INT32 arg)
     ins_int((INT32)tmp, add_to_program);				\
 }while(0)
 
-#endif
+#elif defined(sparc)
 
-#ifndef PIKE_USE_MACHINE_CODE
+#define REG_O0	8
+#define REG_O1	9
+#define REG_O2	10
+#define REG_O3	11
+#define REG_O4	12
+#define REG_O5	13
+#define REG_O6	14
+#define REG_O7	15
+
+#define SET_REG(REG, X) do {						\
+    INT32 val_ = X;							\
+    INT32 reg_ = REG;							\
+    if ((-4096 <= val_) && (val_ <= 4095)) {				\
+      /* or %g0, val_, reg */						\
+      PUSH_INT(0x80102000|(reg_<<25)|(val_ & 0x1fff));			\
+    } else {								\
+      /* sethi %hi(val_), reg */					\
+      PUSH_INT(0x01000000|(reg_<<25)|((val_ >> 10)&0x3fffff));		\
+      if (val_ & 0x3ff) {						\
+	/* or reg, %lo(val_), reg */					\
+	PUSH_INT(0x80102000|(reg_<<25)|(reg_<<14)|(val_ & 0x0fff));	\
+      }									\
+      if (val_ < 0) {							\
+	/* sra reg, %g0, reg */						\
+	PUSH_INT(0x81380000|(reg_<<25)|(reg_<<14));			\
+      }									\
+    }									\
+  } while(0)
+
+#define CALL_ABSOLUTE(X) do {				\
+    SET_REG(REG_O2, (INT32)(X));			\
+    /* jmpl %o2, %o7	*/				\
+    PUSH_INT(0x81c00000|(REG_O7<<24)|(REG_O2<<14));	\
+    /* noop		*/				\
+    PUSH_INT(0x01000000);				\
+  } while(0)
+
+#define UPDATE_PC() do {						     \
+    INT32 tmp = PC;							     \
+    SET_REG(REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	     \
+    /* lduw %o3, %o3 */							     \
+    PUSH_INT(0xc0000000|(REG_O3<<25)|(REG_O3<<14));			     \
+    SET_REG(REG_O4, tmp);						     \
+    /* stw %o4, yy(%o3) */						     \
+    PUSH_INT(0xc0202000|(REG_O4<<25)|(REG_O3<<14)|OFFSETOF(pike_frame, pc)); \
+  } while(0)
+#endif /* __i386__ || sparc */
+#endif /* __GNUC__ */
+
+#else /* !PIKE_USE_MACHINE_CODE */
 #undef UPDATE_PC
 #define UPDATE_PC()
-#endif
+#endif /* PIKE_USE_MACHINE_CODE */
 
 void ins_f_byte(unsigned int b)
 {
@@ -210,14 +262,18 @@ void ins_f_byte(unsigned int b)
 static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
 #ifdef PIKE_USE_MACHINE_CODE
-#if defined(__i386__) && defined(__GNUC__)
+#ifdef __GNUC__
+#ifdef __i386__
   add_to_program(0xc7);  /* movl $xxxx, (%esp) */
   add_to_program(0x04); 
   add_to_program(0x24); 
   PUSH_INT(b);
+#elif defined(sparc)
+  SET_REG(REG_O0, b);
+#endif /* __i386__ || sparc */
   ins_f_byte(a);
   return;
-#endif
+#endif /* __GNUC__ */
 #endif
 
 #ifndef HAVE_COMPUTED_GOTO
@@ -254,7 +310,8 @@ static void ins_f_byte_with_2_args(unsigned int a,
 				   unsigned INT32 b)
 {
 #ifdef PIKE_USE_MACHINE_CODE
-#if defined(__i386__) && defined(__GNUC__)
+#ifdef __GNUC__
+#ifdef __i386__
   add_to_program(0xc7);  /* movl $xxxx, (%esp) */
   add_to_program(0x04); 
   add_to_program(0x24); 
@@ -264,9 +321,13 @@ static void ins_f_byte_with_2_args(unsigned int a,
   add_to_program(0x24);
   add_to_program(0x04);
   PUSH_INT(b);
+#elif defined(sparc)
+  SET_REG(REG_O0, c);
+  SET_REG(REG_O1, b);
+#endif /* __i386__ || sparc */
   ins_f_byte(a);
   return;
-#endif
+#endif /* __GNUC__ */
 #endif
 
 #ifdef HAVE_COMPUTED_GOTO
