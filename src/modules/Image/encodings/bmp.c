@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.18 1999/07/29 21:57:18 grubba Exp $ */
+/* $Id: bmp.c,v 1.19 1999/08/16 18:05:42 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.18 1999/07/29 21:57:18 grubba Exp $
+**!	$Id: bmp.c,v 1.19 1999/08/16 18:05:42 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.18 1999/07/29 21:57:18 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.19 1999/08/16 18:05:42 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -225,8 +225,8 @@ void img_bmp_encode(INT32 args)
 
    /* FIXME: According to DMALLOC, oc leaks 1 ref in the testsuite */
 
-   if (oc) oc->refs++;
-   o->refs++;
+   if (oc) add_ref(oc);
+   add_ref(o);
    pop_n_elems(args);
 
    apply(o,"mirrory",0);
