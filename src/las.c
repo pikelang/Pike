@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.324 2003/02/08 03:49:22 mast Exp $
+|| $Id: las.c,v 1.325 2003/02/24 21:00:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.324 2003/02/08 03:49:22 mast Exp $");
+RCSID("$Id: las.c,v 1.325 2003/02/24 21:00:44 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -5703,7 +5703,9 @@ int dooptcode(struct pike_string *name,
 	  ret=define_function(name,
 			      type,
 			      (unsigned INT16)modifiers,
-			      (unsigned INT8)(IDENTIFIER_C_FUNCTION | vargs),
+			      (unsigned INT8)(IDENTIFIER_C_FUNCTION |
+					      IDENTIFIER_HAS_BODY |
+					      vargs),
 			      &tmp,
 			      foo->u.efun->flags);
 	  free_node(n);
@@ -5735,7 +5737,9 @@ int dooptcode(struct pike_string *name,
   ret=define_function(name,
 		      type,
 		      (unsigned INT16)modifiers,
-		      (unsigned INT8)(IDENTIFIER_PIKE_FUNCTION | vargs),
+		      (unsigned INT8)(IDENTIFIER_PIKE_FUNCTION |
+				      IDENTIFIER_HAS_BODY |
+				      vargs),
 		      Pike_compiler->num_parse_error?NULL:&tmp,
 		      (unsigned INT16)
 		      (Pike_compiler->compiler_frame->opt_flags));

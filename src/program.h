@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.177 2003/02/20 14:55:12 grubba Exp $
+|| $Id: program.h,v 1.178 2003/02/24 21:00:45 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -147,7 +147,7 @@ union idptr
 #define IDENTIFIER_CONSTANT 4
 #define IDENTIFIER_VARARGS 8	/* Used for functions only. */
 #define IDENTIFIER_NO_THIS_REF 8 /* Used for variables only: Don't count refs to self. */
-#define IDENTIFIER_PROTOTYPED 16
+#define IDENTIFIER_HAS_BODY 16  /* Function has a body (set already in pass 1). */
 #define IDENTIFIER_SCOPED 32   /* This is used for local functions only */
 #define IDENTIFIER_SCOPE_USED 64 /* contains scoped local functions */
 #define IDENTIFIER_ALIAS 128   /* This identifier is an alias. */

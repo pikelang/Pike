@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.482 2003/02/20 14:55:12 grubba Exp $
+|| $Id: program.c,v 1.483 2003/02/24 21:00:45 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.482 2003/02/20 14:55:12 grubba Exp $");
+RCSID("$Id: program.c,v 1.483 2003/02/24 21:00:45 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4288,6 +4288,10 @@ INT32 define_function(struct pike_string *name,
     }
 
     /* We modify the old definition if it is in this program */
+
+    if (funp->identifier_flags & IDENTIFIER_HAS_BODY)
+      /* Keep this flag. */
+      function_flags |= IDENTIFIER_HAS_BODY;
 
     if(!(ref.id_flags & ID_INHERITED))
     {
