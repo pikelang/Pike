@@ -1,247 +1,152 @@
-// IS-8601, international standard
+//!
+//! module Calendar
+//! submodule ISO
+//!
+//! 	This is the standard western calendar,
+//!	which is a derivate of the Gregorian calendar,
+//!	but with weeks that starts on monday 
+//!	instead of sunday.
+//!
+//! inherits Gregorian
+//!
 
-inherit Calendar.Gregorian:Gregorian;
+import ".";
+inherit Gregorian:Gregorian;
 
-class Year
+string calendar_name() { return "ISO"; }
+
+private static mixed __initstuff=lambda()
 {
-   inherit Gregorian::Year;
+   f_week_day_shortname_from_number="week_day_shortname_from_number";
+   f_week_day_name_from_number="week_day_name_from_number";
+   f_year_name_from_number="year_name_from_number";
+   f_week_day_number_from_name="week_day_number_from_name";
+}();
 
-   int leap_day()
-   {
-      if (y>1999) return 31+29-1; // 29 Feb
-      return 31+24-1; // 24 Feb
-   }
-
-   string name()
-   {
-      return (string)y;
-   }
+static int compat_week_day(int n)
+{
+   return n%7;
 }
 
-class Month
+static string year_name_from_number(int y)
 {
-   inherit Gregorian::Month;
-
-   string iso_name()
-   {
-      return sprintf("%04d-%02d",
-		     (int)this->year(),
-		     (int)this);
-   }
-  
-   string iso_short_name()
-   {
-      return name()-"-";
-   }
+   if (y>0) return ""+y;
+   else return (1-y)+" BC";
 }
-  
-class Week
+
+static array(int) week_from_julian_day(int jd)
 {
-   inherit Gregorian::Week;
+// [year,week,day-of-week,ndays,week-julian-day]
 
-   int yday()
+   [int y,int yjd]=year_from_julian_day(jd);
+   int yday=jd-yjd+1;
+
+   int k=3+(yjd-3)%7;
+   int w=(yday+k-1)/7;
+   int wjd=jd-jd%7;
+
+   if (!w) 
    {
-      return 
-	 ({0,-1,-2,-3,3,2,1})[this->year()->julian_day(0)%7]
-         +7*(w-1);
+// handle the case that the day is in the previous year;
+// years previous to years staring on saturday,
+//              ...  and leap years starting on sunday
+      y--;
+      w=52+( (k==3) || ( (k==4) && year_leap_year(y) ) );
+   }
+   else if (w==53 && k>=5-year_leap_year(y) && k<9-year_leap_year(y))
+   {
+// handle the case that the week is in the next year
+      y++;
+      w=1;
    }
 
-   array(mixed) days()
+   return ({y,w,1+(yjd+yday-1)%7,7,wjd});
+}
+
+static array(int) week_from_week(int y,int w)
+{
+// [year,week,1 (wd),ndays,week-julian-day]
+
+   int yjd=julian_day_from_year(y);
+   int wjd=-3+yjd-(yjd+4)%7;
+
+   if (w<1 || w>52) // may or may not be out of this year
+      return week_from_julian_day(wjd+w*7);
+
+   return ({y,w,1,7,wjd+w*7});
+//   fixme
+}
+
+class cYear
+{
+   inherit Gregorian::cYear;
+   TimeRange place(TimeRange what,void|int force)
    {
-       return ({1,2,3,4,5,6,7});
-   }
-  
-   string iso_name()
-   {
-      return sprintf("%04d-W%02d",
-		     (int)this->year(),
-		     (int)this);
-   }
-  
-   string iso_short_name()
-   {
-      return name()-"-";
-   }
-  
-   object day(int|string|object n)
-   {
-      if (stringp(n)) 
+      if (what->is_day)
       {
-	 if (!week_day_mapping)
-	    week_day_mapping=
-	       mkmapping(Array.map(week_day_names,lower_case),
-			 ({1,2,3,4,5,6,7}));
-	 n=week_day_mapping[n];
+	 int wyd=what->yd;
+	 if (md==CALUNKNOWN) make_month();
+	 if (wyd>=55)
+	 {
+	    int l1=year_leap_year(what->y);
+	    int l2=year_leap_year(y);
+	    if (l1||l2)
+	    {
+	       int ld1=(what->y<2000)?55:60; // 24th or 29th february
+	       int ld2=(y<2000)?55:60; // 24th or 29th february
+
+	       if (l1 && wyd==ld1) 
+		  if (l2) wyd=ld2;
+		  else { if (!force) return 0; }
+	       else
+	       {
+		  if (l1 && wyd>ld1) wyd--;
+		  if (l2 && wyd>=ld2) wyd++;
+	       }
+	    }
+	 }
+	 if (!force && wyd>number_of_days()) return 0;
+
+	 return Day("ymd_yd",rules,y,yjd,yjd+wyd-1,wyd,what->n);
       }
-      else if (objectp(n))
-	 if (object_program(n)==vDay)
-	    n=n->week_day();
-	 else return 0;
 
-      if (n<0) n=8+n;
-      else if (!n) n=1;
-      n+=this->yday()-1;
-      if (n<0) return vYear(y-1)->day(n);
-      if (n>=this->year()->number_of_days()) 
- 	 return vYear(y+1)->day(n-this->year()->number_of_days());
-      return vDay(y,n);
+      return ::place(what);
    }
 }
 
-class Day
+class cMonth
 {
-   inherit Gregorian::Day;
+   inherit Gregorian::cMonth;
 
-   int week_day()
+   TimeRange place(TimeRange what,int|void force)
    {
-      return julian_day()%7+1;
-   }
+      if (what->is_day)
+      {
+	 int wmd=what->month_day();
+	 if (md==CALUNKNOWN) make_month();
+	 if (what->m==2 && m==2 && wmd>=24)
+	 {
+	    int l1=year_leap_year(what->y);
+	    int l2=year_leap_year(y);
+	    if (l1||l2)
+	    {
+	       int ld1=(what->y<2000)?24:29; // 24th or 29th february
+	       int ld2=(y<2000)?24:29; // 24th or 29th february
 
-   string week_day_name()
-   {
-//       werror("week_days: %O\n",week_day_names);
-      return week_day_names[(this->week_day()+6)%7];
-   }
+	       if (l1 && wmd==ld1) 
+		  if (l2) wmd=ld2;
+		  else { if (!force) return 0; }
+	       else
+	       {
+		  if (l1 && wmd>ld1) wmd--;
+		  if (l2 && wmd>=ld2) wmd++;
+	       }
+	    }
+	 }
+	 if (!force && wmd>number_of_days()) return 0;
+	 return Day("ymd_yd",rules,y,yjd,jd+wmd-1,yd+wmd-1,what->n);
+      }
 
-   string iso_name()
-   {
-      return sprintf("%04d-%02d-%02d",
-		     (int)this->year(),
-		     (int)this->month(),
-		     (int)this->month_day());
-   }
-
-   string iso_short_name()
-   {
-      return iso_name()-"-";
-   }
-
-   string iso_name_by_week()
-   {
-      return sprintf("%04d-W%02d-%d",
-		     (int)this->year(),
-		     (int)this->week(),
-		     (int)this->week_day());
-   }
-  
-   string iso_name_by_yearday()
-   {
-      return sprintf("%04d-%03d",
-		     (int)this->year(),
-		     (int)this->year_day());
-   }
-  
-   string iso_short_name_by_yearday()
-   {
-      return iso_name_by_yearday()-"-";
-   }
-  
-   object week()
-   {
-      int n;
-      object ye=this->year();
-      n=(-({0,-1,-2,-3,3,2,1})[this->year()->julian_day(0)%7]+d)/7+1;
-      if (n>ye->number_of_weeks())
-	 return ye->next()->week(1);
-      else if (n<=0)
-	 return ye->prev()->week(-1);
-      return vWeek(y,n);
+      return ::place(what);
    }
 }
-
-static private class _Day
-{
-   // FIXME: Kludge because the day object does not exist in
-   // Minute and Second. This function will be shadowed in Hour.
-   object day()
-   {
-      return this_object()->hour()->day();
-   }
-}
-
-static private class Name
-{
-   object this = this_object();
-
-   string iso_name()
-   {
-      return this->day()->iso_name()+this->_iso_name();
-   }
-  
-   string iso_short_name()
-   {
-      return this->day()->iso_short_name()+this->_iso_short_name();
-   }
-  
-   string iso_name_by_week()
-   {
-      return this->day()->iso_name_by_week()+this->_iso_name();
-   }
-  
-   string iso_name_by_yearday()
-   {
-      return this->day()->iso_name_by_yearday()+this->_iso_name();
-   }
-  
-   string iso_short_name_by_yearday()
-   {
-      return this->day()->iso_short_name_by_yearday()+this->_iso_short_name();
-   }
-}
-
-class Hour
-{
-   inherit Gregorian::Hour;
-   inherit Name;
-
-   string _iso_name()
-   {
-      return sprintf("T%02d",
-		     (int)this);
-   }
-
-   string _iso_short_name()
-   {
-      return _iso_name();
-   }
-}
-
-class Minute
-{
-   inherit _Day;
-   inherit Gregorian::Minute;
-   inherit Name;
-
-   string _iso_name()
-   {
-      return sprintf("T%02d:%02d",
-		     (int)this->hour(),
-		     (int)this);
-   }
-
-   string _iso_short_name()
-   {
-      return _iso_name()-":";
-   }
-}
-
-class Second
-{
-   inherit _Day;
-   inherit Gregorian::Second;
-   inherit Name;
-
-   string _iso_name()
-   {
-      return sprintf("T%02d:%02d:%02d",
-		     (int)this->hour(),
-		     (int)this->minute(),
-		     (int)this);
-   }
-
-   string _iso_short_name()
-   {
-      return _iso_name()-":";
-   }
-}
-

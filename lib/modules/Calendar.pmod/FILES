@@ -1,0 +1,152 @@
+CHANGES
+FILES
+
+Calendar.pike 	
+	This is the virtual base class for any Calendar.
+	It might be used as type for variables 
+	containing a random calendar object.
+
+TimeRanges.pmod	
+	This contains the base classes for timerange objects:
+	TimeRange	
+ 		The TimeRange is the virtual base class for any
+		timerange object. It defines everything that needs to
+		be possible to do with it, and has a lot of
+		non-virtual functions that calls back to the virtual
+		functions to ease implementations of new timerange
+		classes.
+	SuperTimeRange	
+		The SuperTimeRange is a class that is used to 
+		contain more then one timerange. This object
+		is created by methods and operators such as subtract,
+		`| or `^. 
+			
+Time.pmod
+	This contains the base classes for calendars that uses
+	time-of-day with hours, minutes and seconds:
+	Hour
+	Minute
+	Second
+		The normal time-of-day units. They are defined
+		to contain n*3600, n*60 and n seconds respectively,
+		and to start on those positions of the day.
+		They autopromote upwards (second->minute->hour).
+	Fraction
+		A fraction is a partial second. It can start
+		and end on non-even seconds - it has an integer
+		for nanosecond precision. It autopromotes upwards
+		to second (etc).
+	This module can not be used standalone, but must have
+	some virtual functions filled in.
+	It extends the TimeRanges module.
+
+YMD.pmod
+	This contains the base classes of any traditional calendar:
+	Year
+		The Year class, which contains the largest timerange
+		unit used.
+	Month
+		The month, which divides the year into non-equal
+		- most of the calendards, anyway - long day sequences,
+		and which is aligned to the year.
+	Week
+		The week, which is a equally long day sequence,
+		and isn't aligned to the year.
+	Day
+		The Day, which is the smallest unit before
+		time-of-day, and which is the base unit of time-of-day.
+	None of these four units autopromote.
+	The YMD module also extends the Time module,
+	so it contains those classes as well.
+		
+Gregorian.pmod
+	This is the base module for Julian style calendars;
+	despite the name. Most calendars of today are in sync
+	with the Gregorian calendar.
+ISO.pmod
+	This inherits the Gregorian calendar to tweak it to
+	conform to the ISO standards. Most affected are weeks, 
+	which starts on Monday in the ISO calendar.
+	This is also the default calendar.
+Discordian.pmod
+	The Discordian calendar as described in Principia Discordia
+	is in sync with the Gregorian calendar (although some claim
+	that it should be the Julian - I go with what I can read 
+	from my Principia Discordia). The module inherits and 
+	tweaks the Gregorian module.
+Coptic.pmod
+	The Coptic calendar is by some sources ("St. Marks'
+	Coptic Orthodox Church" web pages) is for now on in sync with
+	the Gregorian Calendar, so this module too inherits
+	and tweaks the Gregorian module. It needs to be 
+	adjusted for historical use.
+Julian.pmod
+	This is the Julian calendar, with the small changes
+	to the Gregorian calendar (leap years).
+
+Islamic.pmod
+	This is the Islamic calendar, using the 'Calendrical 
+	Calculations' rules for new moon. It is based
+	directly on the YMD module.
+Stardate.pmod
+	This is the (TNG) Stardate calendar, which consists
+	of one time unit only, the Tick (1000 Tick is one earth year). 
+	It is based directly on TimeRanges.
+
+Ruleset.pike
+	Each time unit keeps track of what rules are in affect now;
+	the rules contain two things for now, language to use and
+	timezone to use. It will be extended to contain geographical
+	position and possible other needed stuff later.
+	Any TimeRange object returning a new TimeRange object
+	will transfer the rules in the creation of the object.
+Language.pmod
+	This module keeps the base classes of languages.
+Timezone.pmod
+	This module keeps the base classes of timezones,
+	inheriting the DST rules and including the timezone
+	definitions that are created by the mkrules.pike 
+	program.
+TZrules.pmod
+	This module has the DST rules (127).
+TZs.h
+	This file keeps the Timezone definitions (440).
+TZnames.pmod
+	This is a convinience module that keeps the names
+	of all possible timezones in a convinient mapping.
+mkrules.pike
+	This is the program that take timezone definition
+	files (as used by most unix systems) and create the 
+	three files listed above. It is not a base class,
+	it's a complete program.
+
+Event.pmod
+	This module defines the base classes used for event
+	definitions:
+	Event
+		The virtual base class.
+	Date
+	Date_Weekday
+	Monthday_Weekday
+	Weekday
+		Open classes for self-created events.
+	Day_Event
+	Gregorian_Fixed
+	Easter
+	Easter_Relative
+	Monthday_Weekday_Relative
+		Classes for event definitions in Events.pmod.
+
+Namedays.pmod
+	This module defines the namedays used in some
+	countries and the saints days.
+Events.pmod
+	This module defines a number of events, used
+	all over the world. It also keeps tracks	
+	of holidays and events used in countries and
+	regions.
+
+module.pmod
+	This is only used to make "Calendar.Day" equal
+	"Calendar.ISO.Day" but still keep "Calendar.Stardate"
+	intact.

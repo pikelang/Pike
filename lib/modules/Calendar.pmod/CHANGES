@@ -1,0 +1,176 @@
+Calendar -> Calendar II 
+changes and backwards issues
+================================================================
+
+a-b => b->range(a)/a
+
+	a-b does no longer give the number of a's between a and b.
+	Correct use to get the number of something in a time period
+	is to create the period using
+	
+            b->range(a)
+	or, depending on context
+	    b->distance(a)
+	
+	and then divide by the type that you wish to count,
+
+	    b->xxx(a)/a
+
+	so the old use of
+
+	    day2-day1
+
+	will now be
+
+	    day1->distance(day2)/day1
+
+	with more units allowed, so for instance
+
+	    day1->distance(day2)/Month()
+
+        will count the number of months.
+	
+	    a-b
+
+	will now return a stepped back b time,
+	    
+	    day2-day1
+	    
+	therefore means "the day before day2",
+	which might be quite not what you want in your old code.
+
+----------------------------------------------------------------
+
+a->days(), a->months(), etc
+
+	x->units() no longer gives the possible arguments
+	to x->unit(), but the timerange objects themselves:
+
+		Week()->days() 
+		=> ({day,day,day,...,day})
+
+	instead of
+		=> ({0,1,2,3,...,6})
+
+	which is quite more useful. But 
+
+	       map(x->days(),x->day)
+
+	no longer works!
+
+	Also note that ->units() and ->unit() works on 
+	*all* overlapping timeranges of that unit - 
+	this means that
+
+	    year->week(1)
+	or
+	    year->weeks()[0]
+
+	not always is week 1, but some times week 53
+	of the previous year.
+
+----------------------------------------------------------------	
+
+iso_name and other quick string formats
+	
+	The methods to conjure formats has changed name;
+	since all units are interchangable, the old method
+	names "iso_name" and "iso_short_name" are too non-
+	descript and are now represented by some new methods,
+	named "format_xxx" - depending on what unit you wish to print:
+
+         format_...
+	   iso_ymd_full   "2000-06-02 (Jun) -W22-5 (Fri)" [2]
+           ymd            "2000-06-02" 
+           ymd_short      "20000602"
+           ymd_xshort     "000602" [1]
+           iso_week       "2000-W22"
+           iso_week_short "2000W22"
+           week           "2000-w22" [2]
+           week_short     "2000w22" [2]
+           month          "2000-06"
+           month_short    "200006" [1]
+           iso_time_full  "2000-06-02 (Jun) -W22-5 (Fri) 20:53:14 UTC+1" [2]
+           ctime          "Fri Jun  2 20:53:14 2000\n" [2] [3]
+           http           "Fri, 02 Jun 2000 20:53:14 GMT" [4]
+           time           "2000-06-02 20:53:14" 
+           time_short     "20000602 20:53:14"
+           time_xshort    "000602 20:53:14"
+           mtime          "2000-06-02 20:53" 
+           xtime          "2000-06-02 20:53:14.123456" 
+           tod            "20:53:14"
+           tod_short      "205314"
+           todz           "20:53:14 CET"
+           todz_iso       "20:53:14 UTC+1"
+           xtod           "20:53:14.123456"
+           mod            "20:53"
+	
+	[1] note conflict (think 1 February 2003)
+	[2] language dependent
+	[3] as from the libc function ctime()
+	[4] as specified by the HTTP standard;
+	    not language or timezone dependant
+
+Note
+	iso_name and iso_short_name are backwards compatible
+	in the Day and Second objects. 
+
+----------------------------------------------------------------	
+
+(int), (string), number() and name()
+
+	For the same reason, these doesn't exist either.
+	Instead, there are the "datetime" method,
+	that returns a convinient mapping from any object:
+
+	 ([ "year":     int        // year number (2000 AD=2000, 1 BC==0)
+	    "month":    int(1..)   // month of year
+	    "day":      int(1..)   // day of month
+	    "yearday":  int(1..)   // day of year
+	    "week":	int(1..)   // week of year
+	    "week_day": int(1..)   // day of week (depending on calendar)
+
+	    "hour":     int(0..)   // hour of day, including dst
+	    "minute":   int(0..59) // minute of hour
+	    "second":   int(0..59) // second of minute 
+	    "fraction": float      // fraction of second
+	    "timezone": int        // offset to utc, including dst
+
+	    "unix":     int        // unix time
+	    "julian":   int|float  // julian day
+	 ]);
+	
+	and a number of query methods,
+
+	    int month_day()		 
+	    int month_no()		 
+	    int week_day()		 
+	    int week_no()		 - iso week number
+	    int year_day()		 - day of year, 1... 
+	    int year_no()		 - year number, 1AD=1, 1BC=0, 2BC=-1
+
+	    timezone dependant:
+	    float fraction_no()          
+	    int hour_no()		 
+	    int minute_no()		 
+	    int second_no()		 
+
+	    string tzname()		 - CET, CEST, etc
+	    string tzname_iso()		 - UTC+1 - always UTC something
+	    int utc_offset()		 - seconds to utc
+
+	    language dependant:
+	    string month_name()		 - "February"
+	    string month_shortname()	 - "Feb" 
+	    string week_day_name()	 - "Monday"
+	    string week_day_shortname()	 - "Mon"
+	    string week_name()		 - "w42", "v42"
+	    string year_name()		 - "2000", "437 BC"
+
+	    int leap_year()		 - 1 if year is leap year
+
+	    int|float julian_day()	 - julian day
+	    int unix_time()              - unix time
+
+	which should solve the problem better.
+		
