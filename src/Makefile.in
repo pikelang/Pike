@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.203 2000/08/12 19:17:18 mast Exp $
+# $Id: Makefile.in,v 1.204 2000/08/12 19:52:44 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -185,7 +185,7 @@ POBJ = las.o builtin_functions.o peep.o
 # static modules, and thus have to be linked into pike.
 # 
 # No rest for the wicked.
-all: module_objects hilfe
+all: module.o hilfe
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
 	  if cmp $(SRCDIR)/peep_engine.c dummy_engine >/dev/null 2>&1; then \
@@ -220,8 +220,9 @@ compiler-warnings : clean
 	@echo 'End of summary'
 	@echo '--------------'
 
-tpike-real: $(OBJ) $(TOBJ) modules/linker_options
+tpike-real: $(NOMODULE_OBJ) $(TOBJ) modules/linker_options
 	-@rm -f tpike || :
+	if [ -f module.o ] ; then : ; else $(MAKE) $(MAKE_FLAGS) module.o ; fi
 	$(LD) $(LDFLAGS) $(OBJ) $(TOBJ) `cat modules/linker_options` $(LIBS) -o tpike
 
 # Only want tpike to exist when using $(RUNTPIKE); we don't want to
@@ -244,17 +245,17 @@ pike: $(NOMODULE_OBJ) modules/linker_options stamp-tpike-predep
 	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
-pure: $(OBJ) $(POBJ) module_objects
+pure: $(OBJ) $(POBJ) module.o
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
-cover: $(OBJ) $(POBJ) module_objects
+cover: $(OBJ) $(POBJ) module.o
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
-quant: $(OBJ) $(POBJ) module_objects
+quant: $(OBJ) $(POBJ) module.o
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
@@ -611,7 +612,10 @@ $(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod ./precompile.sh $(TMP_BINDIR)/precom
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
-modules/modlist.h: module_objects
+modules/modlist.h: $(MODULE_REQUIREMENTS)
+	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
+	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
 
 modules/modlist_headers.h: modules/modlist.h
 	touch modules/modlist_headers.h
