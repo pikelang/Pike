@@ -118,10 +118,12 @@ void convert_svalue_to_bignum(struct svalue *s)
   dmalloc_touch_svalue(sp);
 }
 
+#ifdef INT64
+/* These routines can be made much more optimized. */
+
 #define BIGNUM_INT64_MASK  0xffff
 #define BIGNUM_INT64_SHIFT 16
 
-#ifdef INT64
 void push_int64(INT64 i)
 {
   if(i == (INT_TYPE)i)
@@ -158,6 +160,9 @@ void push_int64(INT64 i)
       apply_low(sp[-2].u.object, orfun, 1);
       stack_swap();
       pop_stack();
+
+      if(sp[-1].type == T_INT)
+	convert_stack_top_to_bignum();
     }
     
     if(neg)
@@ -204,7 +209,7 @@ int int64_from_bignum(INT64 *i, struct object *bignum)
 
   if(neg)
     *i = ~*i;
-
+  
   return 1;   /* We may someday return 0 if the conversion fails. */
 }
 #endif /* INT64 */
