@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.2 2001/07/22 07:27:35 js Exp $
+ * $Id: tree-split-autodoc.pike,v 1.3 2001/07/27 03:20:45 nilsson Exp $
  *
  */
 
@@ -68,6 +68,7 @@ class Node
     Parser.HTML parser = Parser.HTML();
     
     parser->case_insensitive_tag(1);
+    parser->xml_tag_syntax(3);
 
     parser->add_container("docgroup", my_parse_docgroup);
     parser->add_container("module", parse_node("module"));
@@ -328,18 +329,13 @@ class Node
       return siblings[index+1];
   }
 
-  string make_top_html()
-  {
-    
-  }
-  
-  void make_html(string template)
+  void make_html(string template, string path)
   {
     werror("Layouting...%s\n", make_class_path());
     
-    class_children->make_html(template);
-    module_children->make_html(template);
-    method_children->make_html(template);
+    class_children->make_html(template, path);
+    module_children->make_html(template, path);
+    method_children->make_html(template, path);
     if(!name || !type || name == "top")
       return;
 
@@ -349,10 +345,11 @@ class Node
     string style = ("../"*num_segments)+"style.css";
     
     extra_prefix = "../"*num_segments;
+    string contents;
     
     if(name=="")
     {
-      string contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
+      contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
       foreach(method_children/( sizeof(method_children)/4.0 ), array(Node) children)
       {
 	contents += "<td>";
@@ -360,69 +357,74 @@ class Node
 	contents += "</td>"; 
       }
       contents += "</tr></table>";
-
-      res = replace(template,
-		    (["$navbar$": make_navbar(),
-		      "$contents$": contents,
-		      "$title$": make_class_path(),
-		      "$style$": style, 
-		    ]));
-      
     }
     else
     {
       string xmldata = make_faked_wrapper(data);
       Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input(xmldata);
-      
-      
-      string contents = "";
-      
-      Node prev = find_prev_node();
-      Node next = find_next_node();
-      string next_url="", next_title="", prev_url="", prev_title="";
-      if(next)
-      {
-	next_title = next->make_class_path();
-	next_url   = make_link(next); 
-      }
-      if(prev)
-      {
-	prev_title = prev->make_class_path();
-	prev_url   = make_link(prev);
-      }
 
       resolve_reference = my_resolve_reference;
-      contents += parse_children(n, "docgroup", parse_docgroup, 1);
+      contents = parse_children(n, "docgroup", parse_docgroup, 1);
       contents += parse_children(n, "module", parse_module, 1);
       contents += parse_children(n, "class", parse_class, 1);
-      
-      res = replace(template,
-		    (["$navbar$": make_navbar(),
-		      "$contents$": contents,
-		      "$prev_url$": prev_url,
-		      "$prev_title$": prev_title,
-		      "$next_url$": next_url,
-		      "$next_title$": next_title,
-		      "$title$": make_class_path(),
-		      "$style$": style, 
-		    ]));
     }
-    
-    Stdio.mkdirhier(combine_path("manual-split/"+make_filename(), "../"));
-    Stdio.write_file("manual-split/"+make_filename(), res);
+
+    Node prev = find_prev_node();
+    Node next = find_next_node();
+    string next_url="", next_title="", prev_url="", prev_title="";
+    if(next) {
+      next_title = next->make_class_path();
+      next_url   = make_link(next);
+    }
+    if(prev) {
+      prev_title = prev->make_class_path();
+      prev_url   = make_link(prev);
+    }
+
+    res = replace(template,
+		  (["$navbar$": make_navbar(),
+		    "$contents$": contents,
+		    "$prev_url$": prev_url,
+		    "$prev_title$": prev_title,
+		    "$next_url$": next_url,
+		    "$next_title$": next_title,
+		    "$title$": make_class_path(),
+		    "$style$": style,
+		  ]));
+
+    Stdio.mkdirhier(combine_path(path+"/"+make_filename(), "../"));
+    Stdio.write_file(path+"/"+make_filename(), res);
   }
 }
 
 
 int main(int argc, array(string) argv)
 {
+  if(argc!=4) {
+    werror("Too few arguments. (in-file, template, out-dir)\n");
+    return 1;
+  }
+
   werror("Reading refdoc blob %s...\n", argv[1]);
   string doc = Stdio.read_file(argv[1]);
+  if(!doc) {
+    werror("Failed to load refdoc blob %s.\n", argv[1]);
+    return 1;
+  }
+
   werror("Reading template file %s...\n", argv[2]);
   string template = Stdio.read_file(argv[2]);
+  if(!template) {
+    werror("Failed to load template %s.\n", argv[2]);
+    return 1;
+  }
+  mapping m = localtime(time());
+  template = replace(template, ([ "$ver$":version(),
+				  "$when$":sprintf("%4d-%02d-%02d", m->year+1900, m->mon+1, m->mday),
+  ]) );
+
   werror("Splitting to destination directory %s...\n", argv[3]);
-
   Node top = Node("module","top", doc);
-
-  top->make_html(template);
+  top->make_html(template, argv[3]);
+  return 0;
 }
