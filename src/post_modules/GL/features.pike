@@ -18,6 +18,8 @@ array funcV = ({
 array func_misc = ({
   ({"glClearColor", "V+FFFF"}),
   ({"glFrustum", "VDDDDDD"}),
+  ({"glOrtho", "VDDDDDD"}),
+  ({"glViewport", "VIIII"}),
   ({"glTranslate", "V!RRR"}),
   ({"glScale", "V!RRR"}),
   ({"glRotate", "V!RRRR"}),
