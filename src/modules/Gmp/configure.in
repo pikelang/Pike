@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2000/09/05 10:11:32 grubba Exp $
+# $Id: configure.in,v 1.15 2000/09/05 11:00:53 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -150,12 +150,6 @@ int main(int argc, char **argv)
   fi
 ])
 
-if test $done = no; then
-  $3
-  :
-fi
-
-])
 
 if test x$with_gmp = xyes ; then
   AC_CHECK_GMP(gmp2,gmp2/gmp.h,[
