@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.7 2000/12/01 08:10:29 hubbe Exp $
+ * $Id: nt.c,v 1.8 2001/02/13 14:22:34 grubba Exp $
  *
  * NT crypto stuff for Pike
  */
@@ -35,6 +35,9 @@ struct cryptcontext_storage {
 
 #define THIS_CRYPTCONTEXT ((struct cryptcontext_storage *)(fp->current_storage))
 
+/*! @module Crypto
+ */
+
 static void init_cryptcontext_struct(struct object *o)
 {
   struct cryptcontext_storage *c = THIS_CRYPTCONTEXT;
@@ -50,6 +53,14 @@ static void exit_cryptcontext_struct(struct object *o)
     CryptReleaseContext(c->handle, 0);
 }
 
+/*! @class nt
+ */
+
+/*! @class CryptoContext
+ */
+
+/*! @decl string CryptGenRandom(int size, string|void init)
+ */
 static void f_CryptGenRandom(INT32 args)
 {
   struct cryptcontext_storage *c = THIS_CRYPTCONTEXT;
@@ -74,6 +85,12 @@ static void f_CryptGenRandom(INT32 args)
   }
 }
 
+/*! @endclass
+ */
+
+/*! @decl CryptoContext CryptAcquireContext(string str1, string str2, @
+ *!                                         int typ, int flags)
+ */
 static void f_CryptAcquireContext(INT32 args)
 {
   char *str1=NULL, *str2=NULL;
@@ -118,6 +135,11 @@ static void f_CryptAcquireContext(INT32 args)
     prov;
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 #endif /* __NT__ */
 
