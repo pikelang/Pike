@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.19 2000/02/17 00:31:14 hubbe Exp $
+ * $Id: preprocessor.h,v 1.20 2000/02/29 03:17:13 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1746,6 +1746,7 @@ static INT32 lower_cpp(struct cpp *this,
 	      continue;
 	      
 	    case '\\':
+	      GOBBLE('\r'); /* Should we actually do anything here ? */
 	      if(GOBBLE('\n'))
 	      { 
 		this->current_line++;
