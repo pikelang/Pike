@@ -5615,14 +5615,31 @@ mixed read()
 
 <method name=Thread.Mutex-&gt;lock title="lock the mutex">
 <man_syntax>
-object lock();
+Thread.MutexKey lock();
+Thread.MutexKey lock(int <i>type</i>);
 </man_syntax>
 <man_description>
-This function attempts to lock the mutex, if the mutex is already
-locked the current thread will sleep until the lock is unlocked by some
-other thread. The value returned is the 'key' to the lock. When the
-key is destructed or has no more references the lock will automatically
-be unlocked. The key will also be destructed if the lock is destructed.
+This function attempts to lock the mutex. If the mutex is already
+locked by a different thread the current thread will sleep until the
+mutex is unlocked. The value returned is the 'key' to the lock. When
+the key is destructed or has no more references the lock will
+automatically be unlocked. The key will also be destructed if the lock
+is destructed.
+
+<p>The <i>type</i> argument specifies what lock() should do if the
+mutex is already locked by this thread:
+
+<ul>
+  <li><b>0</b> or left out: Throw an error.
+
+  <li><b>1</b>: Sleep until the mutex is unlocked. Useful if some
+  other thread will unlock it.
+
+  <li><b>2</b>: Return zero. This allows recursion within a locked
+  region of code, but in conjunction with other locks it easily leads
+  to unspecified locking order and therefore a risk for deadlocks.
+</ul>
+
 </man_description>
 </method>
 
@@ -5630,7 +5647,7 @@ be unlocked. The key will also be destructed if the lock is destructed.
 
 <method name=Thread.Mutex-&gt;trylock title="try to lock the mutex">
 <man_syntax>
-object trylock();
+Thread.MutexKey trylock();
 </man_syntax>
 <man_description>
 This function performs the same operation as lock(), but if the mutex
@@ -12730,7 +12747,7 @@ element.<p>
 <tr><td valign=top>array</td>	<td>void|int(0)</td>	
     <td valign=top>array ret; ret[i]=arr[i](@extra)</td></tr>
 
-<tr><td valign=top>mapping</td>	<td>*</td>	
+<tr><td valign=top>mapping |<br>program |<br>function</td>	<td>*</td>	
     <td valign=top>mapping ret = 
         mkmapping(indices(arr),		     
 	map(values(arr),fun,@extra));</td></tr>
