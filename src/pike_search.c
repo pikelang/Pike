@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.18 2004/02/06 15:36:13 grubba Exp $
+|| $Id: pike_search.c,v 1.19 2004/03/07 21:07:47 nilsson Exp $
 */
 
 /* New memory searcher functions */
@@ -197,65 +197,6 @@ PMOD_EXPORT char *my_memmem(char *needle,
   /* No free required - Hubbe */
 }
 
-/*! @module __builtin
- */
-
-/*! @class Search
- */
-
-/*! @decl int(-1..) `()(string key, int|void start)
- *!
- *! Search for the string @[key] in the data. Start searching at
- *! offset @[start].
- *!
- *! @returns
- *!   Returns the offset where a match was found, or @expr{-1@} on
- *!   failure.
- *!
- *! @seealso
- *!   @[search()]
- */
-static void f_pike_search(INT32 args)
-{
-  PCHARP ret, in;
-  ptrdiff_t start=0;
-  struct pike_string *s;
-
-  check_all_args("Search->`()",args,BIT_STRING, BIT_VOID | BIT_INT, 0);
-  s=Pike_sp[-args].u.string;
-
-  if(args>1)
-  {
-    start=Pike_sp[1-args].u.integer;
-    if(start < 0)
-    {
-      bad_arg_error("Search->`()", Pike_sp-args, args, 2, "int(0..)",
-		    Pike_sp+2-args,
-		    "Start must be greater or equal to zero.\n");
-    }
-    if(start >= Pike_sp[-args].u.string->len)
-    {
-      pop_n_elems(args);
-      push_int(-1);
-      return;
-    }
-  }
-
-  in=MKPCHARP_STR(s);
-  ret=THIS_MSEARCH->mojt.vtab->funcN(THIS_MSEARCH->mojt.data,
-				     ADD_PCHARP(in,start),
-				     s->len - start);
-
-  pop_n_elems(args);
-  push_int64( SUBTRACT_PCHARP(in, ret) );  
-}
-
-/*! @endclass
- */
-
-/*! @endmodule
- */
-
 /* Compatibility: All functions using these two functions
  * should really be updated to use compile_memsearcher instead.
  * -Hubbe
@@ -288,11 +229,8 @@ void init_pike_searching(void)
 {
   start_new_program();
   pike_search_struct_offset=ADD_STORAGE(struct pike_mem_searcher);
-  map_variable("__s","string",0,
-	       pike_search_struct_offset + OFFSETOF(pike_mem_searcher,s), PIKE_T_STRING);
-  ADD_FUNCTION("`()",f_pike_search,tFunc(tStr tOr(tInt,tVoid), tInt),0);
   pike_search_program=end_program();
-  add_program_constant("Search",pike_search_program,0);
+  add_program_constant("Search",pike_search_program,ID_STATIC);
 
   memsearch_cache=allocate_mapping(10);
   memsearch_cache->data->flags |= MAPPING_FLAG_WEAK;
