@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.352 2003/05/09 12:39:15 grubba Exp $
+# $Id: Makefile.in,v 1.353 2003/06/02 19:00:39 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -468,6 +468,11 @@ testsuites:
 	  --destdir=$(TMP_BUILDDIR)/tlib --bindir=$(TMP_BINDIR) )
 
 just_verify: testsuites testsuite master-stamp
+	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
+	else args="$(TESTARGS)" ; fi; \
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
+
+valgrind_verify: testsuites testsuite master-stamp
 	if test "x$(TESTARGS)" = x ; then args="-a -v" ; \
 	else args="$(TESTARGS)" ; fi; \
 	$(VALGRIND) $(VALGRINDARGS) $(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
