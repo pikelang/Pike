@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.629 2002/10/03 11:27:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.630 2002/10/03 12:26:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -242,9 +242,7 @@ fi
 if test "x$GCC" = "x"; then
   GCC=no
 else
-  # MacOS X has precompiled headerfiles, which don't
-  # work with AC_EGREP_HEADER.
-  AC_SYS_COMPILER_FLAG(-traditional-cpp, macosx_traditional_cpp, EXTRACPPFLAGS)
+  :;
 fi
 
 if test "x$GCC" = "xno" -a "x$TCC" = "xno"; then
@@ -3435,13 +3433,16 @@ define(MY_CHECK_HEADERS,
  AC_MSG_CHECKING(for $1 declaration)
  AC_CACHE_VAL(pike_cv_decl_$1,
  [
-   # EXTRACPPFLAGS is a kludge for MacOS X.
    OLD_CPPFLAGS="$CPPFLAGS"
-   CPPFLAGS="$CPPFLAGS $EXTRACPPFLAGS"
    pike_cv_decl_$1=nonexistant
    for a in $2
    do
      AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existant; break ])
+     
+     # Kludge for MacOS X. Retry with the traditional cpp...
+     CPPFLAGS="$CPPFLAGS -traditional-cpp"
+     AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existant; break ])
+     CPPFLAGS="$OLD_CPPFLAGS"
    done
    CPPFLAGS="$OLD_CPPFLAGS"
  ])
