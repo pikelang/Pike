@@ -1,5 +1,5 @@
 /*
- * $Id: graph.h,v 1.3 2001/11/18 23:59:55 nilsson Exp $
+ * $Id: graph.h,v 1.4 2004/08/03 14:49:09 grubba Exp $
  */
 
 #define PI 3.14159265358979
@@ -11,7 +11,7 @@ private constant LITET = 1.0e-38;
 private constant STORTLITET = 1.0e-30;
 private constant STORT = 1.0e30;
 
-#define GETFONT(WHATFONT) diagram_data->font;
+#define GETFONT(WHATFONT) ((diagram_data->WHATFONT) || diagram_data->font);
 
 //#define BG_DEBUG 1
 
