@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.229 2000/01/20 23:10:59 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.230 2000/01/24 03:03:27 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -549,12 +549,12 @@ void f_has_value(INT32 args)
 
       /* Fall-through. */
       
-    case T_STRING:   /* Strings are odd. /Noring */
     default:
       stack_swap();
       f_values(1);
       stack_swap();
 
+    case T_STRING:   /* Strings are odd. /Noring */
     case T_ARRAY:
       f_search(2);
 
@@ -5691,7 +5691,7 @@ void init_builtin_efuns(void)
 
 /* function(:int *) */
   ADD_EFUN("rusage", f_rusage,tFunc(tNone,tArr(tInt)),OPT_EXTERNAL_DEPEND);
-  
+
   /* FIXME: Is the third arg a good idea when the first is a mapping? */
   ADD_EFUN("search",f_search,
 	   tOr4(tFunc(tStr tStr tOr(tVoid,tInt),
@@ -5710,44 +5710,20 @@ void init_builtin_efuns(void)
 		    tFunc( tOr(tMapping,tArray) tMix tOr(tVoid,tMix), tZero)))),
 	   0);
   
-  /* Same prototype as search, except it only has two arguments. */
   ADD_EFUN("has_index",f_has_index,
-	   tOr5(tFunc(tStr tStr tOr(tVoid,tInt),
-		      tInt),
-		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
-		      tInt),
-		tFunc(tMultiset,
-		      tInt),
-		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
-		      tInt),
-
-		tIfnot(
-		  tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
-			tInt),
-		  tIfnot(
-		    tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
-			  tInt),
-		    tFunc( tOr(tMapping,tArray) tMix tOr(tVoid,tMix), tZero)))),
+	   tOr5(tFunc(tStr tIntPos, tInt),
+		tFunc(tArray tIntPos, tInt),
+		tFunc(tSet(tSetvar(0,tMix)) tVar(0), tInt),
+		tFunc(tMap(tSetvar(1,tMix),tMix) tVar(1), tInt),
+		tFunc(tObj tMix, tInt)),
 	   0);
 
-  /* Same prototype as search, except it only has two arguments. */
   ADD_EFUN("has_value",f_has_value,
-	   tOr5(tFunc(tStr tStr tOr(tVoid,tInt),
-		      tInt),
-		tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
-		      tInt),
-		tFunc(tMultiset,
-		      tInt),
-		tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
-		      tInt),
-
-		tIfnot(
-		  tFunc(tArr(tSetvar(0,tMix)) tVar(0) tOr(tVoid,tInt),
-			tInt),
-		  tIfnot(
-		    tFunc(tMap(tSetvar(1,tMix),tSetvar(2,tMix)) tVar(2) tOr(tVoid,tVar(1)),
-			  tInt),
-		    tFunc( tOr(tMapping,tArray) tMix tOr(tVoid,tMix), tZero)))),
+	   tOr5(tFunc(tStr tStr, tInt),
+		tFunc(tArr(tSetvar(0,tMix)) tVar(0), tInt),
+		tFunc(tMultiset tInt, tInt),
+		tFunc(tMap(tMix,tSetvar(1,tMix)) tVar(1), tInt),
+		tFunc(tObj tMix, tInt)),
 	   0);
 
 /* function(float|int,int|void:void) */
@@ -5877,7 +5853,7 @@ void init_builtin_efuns(void)
 /* function(mixed,void|object:string) */
   ADD_EFUN("encode_value", f_encode_value,
 	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
-  
+
 /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
 	   tFunc(tStr tOr(tVoid,tObj),tMix), OPT_TRY_OPTIMIZE);
