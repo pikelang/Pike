@@ -334,7 +334,6 @@ testfont binary
 /src/modules/PDF/Makefile.in foreign_ident
 /src/modules/PDF/acconfig.h foreign_ident
 /src/modules/PDF/configure.in foreign_ident
-/src/modules/PDF/pdf_machine.h.in foreign_ident
 /src/modules/PDF/pdf_module.c foreign_ident
 /src/modules/PDF/pdflib_glue.c foreign_ident
 /src/modules/Parser/Makefile.in foreign_ident
