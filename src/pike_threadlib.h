@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.10 2001/11/01 18:40:12 mast Exp $
+ * $Id: pike_threadlib.h,v 1.11 2001/11/02 14:04:21 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -69,6 +69,9 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 #undef HAVE_SPROC
 #endif /* _SGI_SPROC_THREADS */
 
+#ifdef HAVE_THREAD_H
+#include <thread.h>
+#endif
 
 
 /* Restore the fp macro. */
@@ -79,7 +82,7 @@ PMOD_EXPORT extern struct program *thread_id_prog;
 
 
 extern int num_threads;
-PMOD_EXPORT extern int live_threads;
+PMOD_EXPORT extern int live_threads, disallow_live_threads;
 struct object;
 PMOD_EXPORT extern size_t thread_stack_size;
 
@@ -313,6 +316,36 @@ PMOD_EXPORT int co_destroy(COND_T *c);
 
 #endif
 
+
+struct interleave_mutex
+{
+  struct interleave_mutex *next;
+  struct interleave_mutex *prev;
+  PIKE_MUTEX_T lock;
+};
+
+#define IMUTEX_T struct interleave_mutex
+
+#define DEFINE_IMUTEX(name) IMUTEX_T name
+
+/* If threads are disabled, we already hold the lock. */
+#define LOCK_IMUTEX(im) do { \
+    if (!threads_disabled) { \
+      THREADS_FPRINTF(0, (stderr, "Locking IMutex 0x%p...\n", (im))); \
+      THREADS_ALLOW(); \
+      mt_lock(&((im)->lock)); \
+      THREADS_DISALLOW(); \
+    } \
+  } while(0)
+
+/* If threads are disabled, the lock will be released later. */
+#define UNLOCK_IMUTEX(im) do { \
+    if (!threads_disabled) { \
+      THREADS_FPRINTF(0, (stderr, "Unlocking IMutex 0x%p...\n", (im))); \
+      mt_unlock(&((im)->lock)); \
+    } \
+  } while(0)
+
 extern int th_running;
 
 PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
@@ -399,7 +432,11 @@ static inline int threads_disabled_wait()
 #endif
 
 #ifndef th_yield
+#ifdef HAVE_THR_YIELD
+#define th_yield() thr_yield()
+#else
 #define th_yield()
+#endif
 #endif
 
 #ifndef th_equal
@@ -558,6 +595,13 @@ PMOD_EXPORT extern int Pike_in_gc;
      }) \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
+       while (disallow_live_threads) {					\
+	 THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d) " \
+			     "live threads disallowed\n",		\
+			     __FILE__, __LINE__,			\
+			     (unsigned int)_tmp_uid->id, live_threads)); \
+	 co_wait_interpreter(&threads_disabled_change);			\
+       }								\
        live_threads++; \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
