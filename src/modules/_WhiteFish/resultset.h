@@ -17,6 +17,7 @@ void exit_resultset_program(void);
 
 
 void wf_resultset_add  ( struct object *o, int document, int weight );
+void wf_resultset_avg_ranking( struct object *o, int ind, int weight );
 void wf_resultset_clear( struct object *o );
 void wf_resultset_free ( struct object *o );
 

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.4 2001/05/22 11:50:59 per Exp $");
+RCSID("$Id: resultset.c,v 1.5 2001/05/22 11:56:24 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -67,6 +67,17 @@ void wf_resultset_add( struct object *o, int document, int weight )
   T(o)->d->hits[ind].doc_id = document;
   T(o)->d->hits[ind].ranking = weight;
   T(o)->d->num_docs = ind+1;
+}
+
+void wf_resultset_avg_ranking( struct object *o, int ind, int weight )
+{
+  if( ind < 0 )
+    ind = T(o)->d->num_docs-1;
+#ifdef DEBUG
+  if( ind < 0 || ind > T(o)->d->num_docs-1)
+    Pike_fatal( "Indexing resultset with -1\n");
+#endif
+  T(o)->d->hits[ind].ranking=(T(o)->d->hits[ind].ranking>>1)+(weight>>1);
 }
 
 void wf_resultset_clear( struct object *o )
@@ -258,6 +269,15 @@ static void f_resultset_overhead( INT32 args )
 }
 
 static void f_resultset_or( INT32 args )
+/*
+*! @decl ResultSet `|( ResultSet a )
+*! @decl ResultSet `+( ResultSet a )
+*! @decl ResultSet or( ResultSet a )
+*!
+*! Add the given resultsets together, to generate a resultset with
+*! both sets included. The ranking will be averaged if a document
+*! exists in both resultsets.
+*/
 {
   struct object *res = wf_resultset_new();
   struct object *left = Pike_fp->current_object;
@@ -315,6 +335,8 @@ static void f_resultset_or( INT32 args )
     {
       if(left_doc>last)
 	wf_resultset_add( res, (last = left_doc), left_rank );
+      else if( left_doc == last )
+	wf_resultset_avg_ranking( res, -1, left_rank );
       left_used=1;
     }
 
@@ -322,6 +344,8 @@ static void f_resultset_or( INT32 args )
     {
       if(right_doc>last)
 	wf_resultset_add( res, (last = right_doc), right_rank );
+      else if( right_doc == last )
+	wf_resultset_avg_ranking( res, -1, right_rank );
       right_used=1;
     }
   }
