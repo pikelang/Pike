@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.8 1998/02/10 15:09:43 mirar Exp $ */
+/* $Id: x.c,v 1.9 1998/02/10 23:52:02 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.8 1998/02/10 15:09:43 mirar Exp $
+**!	$Id: x.c,v 1.9 1998/02/10 23:52:02 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.8 1998/02/10 15:09:43 mirar Exp $");
+RCSID("$Id: x.c,v 1.9 1998/02/10 23:52:02 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -61,9 +61,9 @@ extern struct program *image_program;
 **!	<tt>encode_truecolor(img, 12,32, 0, 3,5, 4,0, 3,8)</tt>
 **!	will give (aligned to even 32 bits for each row):<br>
 **!	<tt>0bbbrrr0 gggg0bbb rrr0gggg 0bbb</tt>...<br>
-**!	<tt><--pixel 1--><--pixel 2--> <--3--></tt><br>
-**!	<tt>10987654 32101098 76543210 1098</tt>... <- bit position
-**!	<tt> <-><->  <--></tt>
+**!	<tt>&lt;--pixel 1--&gt;&lt;--pixel 2--&gt; &lt;--3--&gt;</tt><br>
+**!	<tt>10987654 32101098 76543210 1098</tt>... &lt;- bit position
+**!	<tt> &lt;-&gt;&lt;-&gt;  &lt;--&gt;</tt>
 **!	<tt>  |  |    +--- 4,0</tt>: 4 bits green shifted 0 bits
 **!	<tt>  |  +-------- 3,5</tt>: 3 bits red shifted 5 bits
 **!	<tt>  +----------- 3,8</tt>: 3 bits blue shifted 8 bits
@@ -71,7 +71,7 @@ extern struct program *image_program;
 **!	The above call is equal to 
 **!	<br><tt>encode_truecolor_masks(img, 12,32, 0, 224, 15, 768)</tt>
 **!	and
-**!	<br><tt>encode_truecolor(img, 12,32, 0, 3,5,4,0,3,8, colortable(1<<3,1<<4,1<<3))</tt>. 
+**!	<br><tt>encode_truecolor(img, 12,32, 0, 3,5,4,0,3,8, colortable(1&lt;&lt;3,1&lt;&lt;4,1&lt;&lt;3))</tt>. 
 **!	<br>The latter gives possibility to use dither algorithms, 
 **!	but is slightly slower.
 **!
@@ -436,7 +436,7 @@ static void x_encode_truecolor_masks(INT32 args)
 **!	colortable to get indices for pseudocolor
 **! arg string translate
 **!	translate table for colors. Length of this string
-**!	should be 1<<vbpp (or 2<<vbpp if vbpp are greater than 8).
+**!	should be 1&lt;&lt;vbpp (or 2&lt;&lt;vbpp if vbpp are greater than 8).
 **!
 **! note
 **!	currently, only upto 16 bits pseudocolor are supported.

@@ -202,7 +202,7 @@ static void my_term_source(struct jpeg_decompress_struct *cinfo)
 **! method string encode(object image, mapping options)
 **! 	Encodes a JPEG image. 
 **!
-**!     The <tt>options<tt> argument may be a mapping
+**!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:
 **!
 **!	<pre>
@@ -225,7 +225,7 @@ static void my_term_source(struct jpeg_decompress_struct *cinfo)
 **!
 **!	wizard options:
 **!	    "baseline":0|1
-**!		Force baseline output. Useful for quality<20.
+**!		Force baseline output. Useful for quality&lt;20.
 **!	</pre>
 **!
 **! note
@@ -388,7 +388,7 @@ static void image_jpeg_encode(INT32 args)
 **! method object decode(string data, mapping options)
 **! 	Decodes a JPEG image. 
 **!
-**!     The <tt>options<tt> argument may be a mapping
+**!     The <tt>options</tt> argument may be a mapping
 **!	containing zero or more encoding options:
 **!
 **!	<pre>
