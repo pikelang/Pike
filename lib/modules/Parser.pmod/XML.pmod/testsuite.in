@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.1 2002/08/02 20:59:08 nilsson Exp $
+// $Id: testsuite.in,v 1.2 2002/08/20 19:14:41 nilsson Exp $
 
 // DOM
 
@@ -170,6 +170,19 @@ r += ({ x->get_ns_attributes()[x->get_ns()] });
 r += ({ x->get_attributes() });
 return r;
 ]], ({ "http://www.w3.org", (["a":"2"]), (["a":"1"]) }) )
+
+// End of XML NS spec tests
+
+test_do([[
+array args = ({
+  "xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/'",
+  "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'",
+  "xmlns:xsd='http://www.w3.org/2001/XMLSchema'",
+  "xmlns:soapenc='http://schemas.xmlsoap.org/soap/encoding/'",                      
+  "soap:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'" });
+for(int i; i<120; i++)
+  Parser.XML.NSTree.parse_input("<soap:Envelope "+Array.permute(args,i)*" "+"/>");
+]])
 
 // Simple
 
