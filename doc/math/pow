@@ -2,7 +2,7 @@ NAME
 	pow - Raise a number to the power of another.
 
 SYNTAX
-	float exp(float n, float x);
+	float pow(float n, float x);
 
 DESCRIPTION
 	Return n raised to the power of x.
