@@ -18,7 +18,7 @@
 // = american standard for countries and country division codes
 
 // Updated 2001-04-17 from ...bugger, lost url
-// $Id: FIPS10_4.pmod,v 1.2 2001/04/17 18:26:16 mirar Exp $
+// $Id: FIPS10_4.pmod,v 1.3 2005/02/16 16:47:37 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -129,7 +129,7 @@ array(array(string)) division_guess_to_lines(string name)
 	 map(guess_mangle(v[2]),add_guess,guess_to_lines,v);
 	 foreach (v[4..],string q)
 	    map(guess_mangle(q),add_guess,guess_to_lines,v);
-	 guess_to_lines[v[1]]=v;
+	 guess_to_lines[v[1]] = ({ v });
       }
 //        werror("%O\n",indices(guess_to_lines));
    }
@@ -156,7 +156,7 @@ array(string) region_to_division_codes(string region)
 
 // ----------------------------------------------------------------
 
-static array regions=({
+static array(array(string)) regions = ({
    ({"AA","ARUBA"}),
    ({"AC","ANTIGUA AND BARBUDA"}),
    ({"AE","UNITED ARAB EMIRATES"}),
@@ -408,7 +408,7 @@ static array regions=({
    ({"ZI","ZIMBABWE"}),
 });
 
-static array divisions=({
+static array(array(string)) divisions = ({
    ({"AC","AC01","Barbuda","parish",}),
    ({"AC","AC03","Saint George","parish",}),
    ({"AC","AC04","Saint John","parish",}),
