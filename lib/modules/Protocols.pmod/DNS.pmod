@@ -211,14 +211,21 @@ class protocol
 class client {
   inherit protocol;
 
-  string nameserver;
+  array(string) nameservers = ({});
   array domains = ({});
   void create(void|string server)
   {
     if(!server)
     {
       string domain;
-      foreach(Stdio.read_file("/etc/resolv.conf")/"\n", string line)
+      string resolv_conf = Stdio.read_file("/etc/resolv.conf");
+
+      if (!resolv_conf) {
+	throw(({ "Protocols.DNS.client(): No /etc/resolv.conf!\n",
+		 backtrace() }));
+      }
+
+      foreach(resolv_conf/"\n", string line)
       {
 	string rest;
 	sscanf(line,"%s#",line);
@@ -240,14 +247,17 @@ class client {
 	  break;
 	      
 	 case "nameserver":
-	  nameserver=rest;
+	  nameservers += ({ rest });
 	  break;
 	}
+      }
+      if (!sizeof(nameservers)) {
+	nameservers = ({ "127.0.0.1" });
       }
       if(domain)
 	domains = ({ domain }) + domains;
     } else {
-      nameserver=server;
+      nameservers= ({ server });
     }
   }
 
@@ -257,12 +267,12 @@ class client {
   {
     object udp=spider.dumUDP();
     udp->bind(0);
-    udp->send(nameserver,53,s);
+    udp->send(nameservers[0],53,s);
     mapping m;
     do {
       m=udp->read();
     } while (m->port != 53 ||
-	     m->ip != nameserver ||
+	     m->ip != nameservers[0] ||
 	     m->data[0..1]!=s[0..1]);
     return decode_res(m->data);
   }
@@ -391,16 +401,21 @@ class async_client
     destruct(r);
   }
 
-  void retry(object(Request) r)
+  void retry(object(Request) r, void|int nsno)
   {
     if(!r) return;
-    if(r->retries++ > 12)
-    {
-      call_out(remove,120,r);
-    }else{
-      call_out(retry,5,r);
-      send(nameserver,53,r->req);
+    if (nsno >= sizeof(nameservers)) {
+      if(r->retries++ > 12)
+      {
+	call_out(remove,120,r);
+	return;
+      } else {
+	nsno = 0;
+      }
     }
+    
+    send(nameservers[nsno],53,r->req);
+    call_out(retry,5,r,nsno+1);
   }
 
   void do_query(string domain, int cl, int type,
@@ -419,14 +434,14 @@ class async_client
     r->callback=callback;
     r->args=args;
     requests[id]=r;
-    call_out(retry,5,r);
-    udp::send(nameserver,53,r->req);
+    udp::send(nameservers[0],53,r->req);
+    call_out(retry,5,r,1);
   }
 
   static private void rec_data()
   {
     mapping m=udp::read();
-    if(m->port != 53 || m->ip != nameserver) return;
+    if(m->port != 53 || search(nameservers, m->ip) == -1) return;
     sscanf(m->data,"%2c",int id);
     object r=requests[id];
     if(!r) return;
