@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.1 1996/11/16 05:17:15 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.2 1996/11/23 00:09:58 hubbe Exp $");
 
 #include "zlib_machine.h"
 #include "types.h"
@@ -159,7 +159,7 @@ static void gz_deflate(INT32 args)
       error("Argument 2 to gz_deflate->deflate() out of range.\n");
     }
   }else{
-    flush=Z_NO_FLUSH;
+    flush=Z_FINISH;
   }
 
   this->gz.next_in=(Bytef *)data->str;
@@ -203,7 +203,7 @@ static void exit_gz_deflate(struct object *o)
 
 static void gz_inflate_create(INT32 args)
 {
-  int level;
+  int tmp;
   if(THIS->gz.state)
   {
     mt_lock(this->lock);
@@ -218,9 +218,9 @@ static void gz_inflate_create(INT32 args)
 
   pop_n_elems(args);
   mt_lock(THIS->lock);
-  level=inflateInit(& THIS->gz);
+  tmp=inflateInit(& THIS->gz);
   mt_unlock(THIS->lock);
-  switch(level)
+  switch(tmp)
   {
   case Z_OK:
     return;
@@ -305,7 +305,7 @@ static void gz_inflate(INT32 args)
       error("Error in gz_inflate->inflate(): %d\n",fail);
   }
   push_string(low_free_buf(&buf));
-  if(fail == Z_STREAM_END && !sp[-1].u.string->len)
+  if(fail != Z_STREAM_END && fail!=Z_OK && !sp[-1].u.string->len)
   {
     pop_stack();
     push_int(0);
