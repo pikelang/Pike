@@ -252,14 +252,6 @@ string parse_class(Node n, void|int noheader) {
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
 
-
-  if(n->get_first_element("inherit")) {
-    ret += "Inherits<ul>";
-    foreach(n->get_elements("inherit"), Node c)
-      ret += "<li>" + quote(c->get_first_element("classname")[0]->get_text()) + "</li>\n";
-    ret += "</ul>\n";
-  }
-
   Node c = n->get_first_element("doc");
 
   if(c)
@@ -520,8 +512,9 @@ string parse_text(Node n, void|String.Buffer ret) {
 #endif
       m = c->get_attributes();
       if(!m->href)
-	m->href=c[0]->get_text();
-      ret->add( sprintf("<a%{ %s='%s'%}>%s</a>", (array)m, c[0]->get_text()) );
+	m->href=c->value_of_node();
+      ret->add( sprintf("<a%{ %s='%s'%}>%s</a>",
+			(array)m, c->value_of_node()) );
 
     case "section":
       //      werror(c->html_of_node()+"\n");
@@ -670,7 +663,7 @@ string parse_type(Node n, void|string debug) {
 
   case "object":
     if(n->count_children())
-      ret += "<font color='#005080'>" + n[0]->get_text() + "</font>";
+      ret += "<font color='#005080'>" + n->value_of_node() + "</font>";
     else
       ret += "<font color='#202020'>object</font>";
     break;
@@ -738,16 +731,12 @@ string parse_type(Node n, void|string debug) {
     ret += "<font color='#202020'>int</font>";
     c = n->get_first_element("min");
     d = n->get_first_element("max");
-    if(c) c=c[0];
-    if(d) d=d[0];
     if(c && d)
-      ret += "(" + c->get_text() + ".." + d->get_text() + ")";
+      ret += "(" + c->value_of_node() + ".." + d->value_of_node() + ")";
     else if(c)
-      ret += "(" + c->get_text() + "..)";
-#ifdef DEBUG
+      ret += "(" + c->value_of_node() + "..)";
     else if(d)
-      error( "max element without min element in int node.\n" );
-#endif
+      ret += "(.." + d->value_of_node() + ")";
     break;
 
   case "static": // Not in XSLT
@@ -854,7 +843,7 @@ string parse_not_doc(Node n) {
     case "argument":
       if(argument++) ret += ", ";
       cc = c->get_first_element("value");
-      if(cc) ret += "<font color='green'>" + cc[0]->get_text() + "</font>";
+      if(cc) ret += "<font color='green'>" + cc->value_of_node() + "</font>";
       else if( !c->count_children() );
       else if( get_first_element(c)->get_any_name()=="type" && c->get_attributes()->name) {
 	ret += parse_type(get_first_element(get_first_element(c))) + " <font color='#005080'>" +
@@ -895,8 +884,19 @@ string parse_not_doc(Node n) {
       break;
 
     case "inherit":
-      ret += "<font color='red'>Missing content (" + c->render_xml() + ")</font>";
-      // Not implemented yet.
+      ret += "<font face='courier'>inherit ";
+      Node n = c->get_first_element("classname");
+      if (resolve_reference) {
+	ret += "</font>" +
+	  resolve_reference(n->value_of_node(), n->get_attributes());
+      } else {
+	ret += Parser.encode_html_entities(n->value_of_node()) + "</font>";
+      }
+      if (c->get_attributes()->name) {
+	ret += "<font face='courier'> : " + "<font color='#F000F0'>" +
+	  Parser.encode_html_entities(c->get_attributes()->name) +
+	  "</font></font>";
+      }
       break;
 
     default:
