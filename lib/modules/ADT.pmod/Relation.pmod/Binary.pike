@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.10 2004/01/11 00:38:16 nilsson Exp $
+// $Id: Binary.pike,v 1.11 2005/01/06 00:48:29 nilsson Exp $
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__
@@ -40,6 +40,8 @@ this_program remove(mixed left, mixed right)
 {
   if (val[left] && val[left][right])
     --items, val[left][right] = 0;
+  if (!sizeof(val[left]))
+      m_delete(val, left);
   return this;
 }
 
@@ -237,7 +239,7 @@ array find_shortest_path(mixed from, mixed to, void|multiset avoiding)
 
 string _sprintf(int mode)
 {
-  return mode=='O' && sprintf("%O(%O)", this_program, id);
+  return mode=='O' && sprintf("%O(%O %O)", this_program, id, _sizeof());
 }
 
 //! Return the ID value which was given as first argument to create().
@@ -250,7 +252,7 @@ void create(void|mixed _id, void|mapping|object _initial)
 {
   id = _id;
   if (objectp(_initial) && _initial->is_binary_relation)
-    val = _initial->filter(lambda (mixed left, mixed right) { return 1;})->val;
+    _initial->map(lambda (mixed left, mixed right) { add(left,right); });
   else if (mappingp(_initial))
     foreach(indices(_initial), mixed key)
       add(key, _initial[key]);
@@ -274,11 +276,11 @@ static class _get_iterator {
   }
 
   mixed index() {
-    return lefts[ipos];
+    return finished ? UNDEFINED : lefts[ipos];
   }
 
   mixed value() {
-    return rights[vpos];
+    return finished ? UNDEFINED : rights[vpos];
   }
 
   int(0..1) `!() {
@@ -304,6 +306,7 @@ static class _get_iterator {
   }
 
   this_program `+=(int steps) {
+    if (steps < 0) error ("Cannot step backwards.\n");
     while(steps--)
       next();
     return this;
@@ -318,5 +321,14 @@ static class _get_iterator {
     else
       finished = 1;
     return !finished;
+  }
+}
+
+mixed cast(string to) {
+  switch(to) {
+  case "mapping":
+    return copy_value(val);
+  default:
+    error("Can not cast ADT.Relation.Binary to %O.\n", to);
   }
 }
