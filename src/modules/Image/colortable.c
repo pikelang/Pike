@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.69 1999/05/30 20:11:54 mirar Exp $ */
+/* $Id: colortable.c,v 1.70 1999/06/18 14:45:04 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.69 1999/05/30 20:11:54 mirar Exp $
+**!	$Id: colortable.c,v 1.70 1999/06/18 14:45:04 mast Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.69 1999/05/30 20:11:54 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.70 1999/06/18 14:45:04 mast Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3666,7 +3666,7 @@ void image_colortable_index_32bit(INT32 args)
 void image_colortable_spacefactors(INT32 args)
 {
    if (args<3)
-      error("To few arguments to colortable->spacefactors()\n");
+      error("Too few arguments to colortable->spacefactors()\n");
 
    if (sp[0-args].type!=T_INT ||
        sp[1-args].type!=T_INT ||

@@ -250,7 +250,7 @@ void image_make_ascii(INT32 args)
 
   if (args<4)
   {
-    error("To few arguments to image->make_ascii\n");
+    error("Too few arguments to image->make_ascii\n");
   }
   
   if (sp[-args].type!=T_OBJECT)

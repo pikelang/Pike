@@ -43,7 +43,7 @@ void INAME(INT32 args)
   haystacki=this->img;
   haystack=this;
   if (!args) { error("Missing arguments to image->"NAME"\n");  return; }
-  else if (args<2) { error("To few arguments to image->"NAME"\n");  return; }
+  else if (args<2) { error("Too few arguments to image->"NAME"\n");  return; }
   else 
     {
       if (sp[-args].type==T_INT) 
