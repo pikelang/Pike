@@ -1,9 +1,9 @@
 #
-# $Id: configure.in,v 1.16 2000/08/23 17:57:53 grubba Exp $
+# $Id: configure.in,v 1.17 2000/09/12 13:12:11 noring Exp $
 #
 # Configure script for the mysql-module
 #
-# Henrik Grubbstrm
+# Henrik Grubbström
 #
 
 #
