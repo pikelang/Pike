@@ -49,6 +49,9 @@ tutorial.html: .DUMMY $(SRCFILES)
 tutorial_onepage.html: .DUMMY  $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml html_onepage tutorial_onepage
 
+tutorial_split.html: .DUMMY  $(SRCFILES)
+	$(pike) ./wmmltohtml2 tutorial.wmml html_section_pages tutorial_split
+
 tutorial.tex: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml latex tutorial
 
@@ -93,9 +96,10 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
 
 clean:
-	-rm -f *.html *.md illustration_cache gfx/* $(MADEFILES) 
+	-rm -f *.html *.md $(MADEFILES) 
 	-rm -f tutorial.dvi tutorial.tex tutorial.aux
-	-rm -f tutorial.log tutorial.toc latex_wcache
+	-rm -f tutorial.log tutorial.toc
+	-rm -f latex_wcache illustration_cache image_cache gfx/* execute_cache
 
 rebuild:
 	-rm -f $(MADEFILES)
