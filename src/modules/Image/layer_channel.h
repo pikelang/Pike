@@ -41,7 +41,7 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    }
 
 	    l++; s++; la++; d++; sa++; da++;
-	 }
+        }
    }
    else
    {
@@ -49,18 +49,18 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD(s,d,d,sa,la,da,r);
-	    ALPHA_ADD(s,d,d,sa,la,da,g);
-	    ALPHA_ADD(s,d,d,sa,la,da,b);
+	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,r);
+	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,g);
+	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,b);
 	    l++; s++; d++; sa++; da++;
 	 }
       else
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD(s,d,d,sa,la,da,r);
-	    ALPHA_ADD(s,d,d,sa,la,da,g);
-	    ALPHA_ADD(s,d,d,sa,la,da,b);
+	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,r);
+	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,g);
+	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,b);
 	    l++; s++; la++; d++; sa++; da++;
 	 }
    }
