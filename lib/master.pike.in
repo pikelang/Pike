@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.55 1999/08/27 21:40:55 hubbe Exp $
+/* $Id: master.pike.in,v 1.56 1999/09/06 11:02:23 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -6,6 +6,8 @@
  */
 
 // Some configurable parameters useful for debugging
+
+#define PIKE_AUTORELOAD
 
 // Used by describe_backtrace() et al.
 #if !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0)
@@ -69,6 +71,38 @@ string *pike_module_path=({});
 string *pike_program_path=({});
 int want_warnings;
 
+#ifdef PIKE_AUTORELOAD
+
+int autoreload_on;
+int newest;
+
+#define AUTORELOAD_CHECK_FILE(X) \
+   if(autoreload_on) if(mixed fnord=master_file_stat(X)) if(fnord[3]>newest) newest=fnord[3];
+
+#define AUTORELOAD_BEGIN() \
+    int ___newest=newest;  \
+    newest=0
+    
+
+#define AUTORELOAD_FINISH(VAR, CACHE, FILE)		\
+   if(autoreload_on) {                                  \
+     if(CACHE [ FILE ] && newest <= load_time[FILE]) {	\
+        VAR = CACHE [ FILE ]; 				\
+      }                                                 \
+    }                                                   \
+    load_time[FILE]=time();				\
+    if(___newest > newest) newest=___newest;
+
+
+mapping(string:int) load_time=([]);
+#else
+
+#define AUTORELOAD_CHECK_FILE(X)
+#define AUTORELOAD_BEGIN()
+#define AUTORELOAD_FINISH(VAR,CACHE,FILE)
+
+#endif
+
 program compile_string(string data, void|string name)
 {
   return compile(cpp(data,name||"-"));
@@ -76,6 +110,7 @@ program compile_string(string data, void|string name)
 
 program compile_file(string file)
 {
+  AUTORELOAD_CHECK_FILE(file);
   return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),file, 1));
 }
 
@@ -204,9 +239,17 @@ static program low_findprog(string pname, string ext)
   program ret;
   array s;
   string fname=pname+ext;
-  if(ret=programs[fname]) return ret;
+
+#ifdef PIKE_AUTORELOAD
+  if(!autoreload_on || load_time[fname]>=time())
+#endif
+  {
+    if(ret=programs[fname]) return ret;
+  }
+
   if( (s=master_file_stat(fname))  && s[1]>=0 )
   {
+    AUTORELOAD_BEGIN();
     switch(ext)
     {
     case "":
@@ -216,12 +259,15 @@ static program low_findprog(string pname, string ext)
 	if(s2[1]>=0 && s2[3]>=s[3])
 	{
 	  mixed err=catch {
+            AUTORELOAD_CHECK_FILE(fname+".o");
 	    return programs[fname]=decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
 	  };
 	  if(want_warnings)
 	    werror("Failed to decode %s.o\n",fname);
 	}
       }
+      
+      
       if ( mixed e=catch { ret=compile_file(fname); } )
       {
 	if(arrayp(e) &&
@@ -241,6 +287,9 @@ static program low_findprog(string pname, string ext)
       ret=load_module(fname);
 #endif /* load_module */
     }
+
+    AUTORELOAD_FINISH(ret,programs,fname);
+    
     return programs[fname]=ret;
   }else{
     return UNDEFINED;
@@ -769,6 +818,9 @@ void _main(string *orig_argv, string *env)
       ({"ppath",tmp->HAS_ARG,({"-P","--program-path"})}),
       ({"showpaths",tmp->NO_ARG,"--show-paths"}),
       ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
+#ifdef PIKE_AUTORELOAD
+      ({"autoreload",tmp->NO_ARG,({"--autoreload"})}),
+#endif
       ({"master",tmp->HAS_ARG,"-m"}),
       ({"compiler_trace",tmp->NO_ARG,"--compiler-trace"}),
       ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
@@ -782,6 +834,11 @@ void _main(string *orig_argv, string *env)
     {
       switch(q[i][0])
       {
+#ifdef PIKE_AUTORELOAD
+      case "autoreload":
+	autoreload_on++;
+#endif
+
       case "debug":
 	debug+=(int)q[i][1];
 	break;
@@ -1042,6 +1099,7 @@ string handle_include(string f,
 
 string read_include(string f)
 {
+  AUTORELOAD_CHECK_FILE(f)
   object o=_static_modules.files()->Fd();
   if(o->open(f,"r"))
     return o->read();
@@ -1052,41 +1110,56 @@ string stupid_describe(mixed m, int maxlen)
 {
   switch(string typ=sprintf("%t",m))
   {
-  case "int":
-  case "float":
-    return (string)m;
-
-  case "string":
-    if(sizeof(m) < maxlen)
-    {
-      string t = sprintf("%O", m);
-      if (sizeof(t) < (maxlen + 2)) {
-	return t;
+    case "int":
+    case "float":
+      return (string)m;
+      
+    case "string":
+      if(sizeof(m) < maxlen)
+      {
+	string t = sprintf("%O", m);
+	if (sizeof(t) < (maxlen + 2)) {
+	  return t;
+	}
+	t = 0;
       }
-      t = 0;
-    }
-    if(maxlen>10)
-    {
-      return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
-    }else{
-      return "string["+sizeof(m)+"]";
-    }
+      if(maxlen>10)
+      {
+	return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
+      }else{
+	return "string["+sizeof(m)+"]";
+      }
+      
+    case "array":
+      if(!sizeof(m)) return "({})";
+      if(maxlen<5) return "array["+sizeof(m)+"]";
+      return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
+      
+    case "mapping":
+      if(!sizeof(m)) return "([])";
+      return "mapping["+sizeof(m)+"]";
+      
+    case "multiset":
+      if(!sizeof(m)) return "(<>)";
+      return "multiset["+sizeof(m)+"]";
+      
+    case "function":
+      if(string tmp=describe_program(m)) return tmp;
+      if(object o=function_object(m))
+	return (describe_object(o)||"")+"->"+function_name(m);
+      else
+	return function_name(m) || "function";
+      
+    case "program":
+      if(string tmp=describe_program(m)) return tmp;
+      return typ;
 
-  case "array":
-    if(!sizeof(m)) return "({})";
-    if(maxlen<5) return "array["+sizeof(m)+"]";
-    return "({" + stupid_describe_comma_list(m,maxlen-2) +"})";
+    case "object":
+      if(string tmp=describe_object(m)) return tmp;
+      return typ;
 
-  case "mapping":
-    if(!sizeof(m)) return "([])";
-    return "mapping["+sizeof(m)+"]";
-
-  case "multiset":
-    if(!sizeof(m)) return "(<>)";
-    return "multiset["+sizeof(m)+"]";
-
-  default:
-    return typ;
+    default:
+      return typ;
   }
 }
 
@@ -1108,6 +1181,21 @@ string stupid_describe_comma_list(array x, int maxlen)
   return ret;
 }
 
+string describe_object(object o)
+{
+  string s;
+  if(!o) return 0;
+  if(s=search(objects,object_program(o)))
+  {
+    if(sscanf(reverse(s),"%s.%s",string ext,string rest) && ext=="domp")
+      return EXPLODE_PATH(reverse(rest))[-1];
+    return s;
+  }
+  if(( s=describe_program(object_program(o)) ))
+    return s+"()";
+  return 0;
+}
+
 string describe_program(program p)
 {
   string s;
@@ -1123,6 +1211,10 @@ string describe_program(program p)
     if(mixed tmp=function_object(p))
       if(s=describe_program(object_program(tmp)))
 	return s+"."+function_name(p);
+
+  if(s=_static_modules.Builtin()->program_defined(p))
+    return EXPLODE_PATH(s)[-1];
+
   return 0;
 }
 
