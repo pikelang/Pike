@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.35 2001/01/25 19:12:20 mast Exp $
+# $Id: Makefile,v 1.36 2001/01/26 02:18:24 mast Exp $
 #
 # Meta Makefile
 #
@@ -29,9 +29,8 @@ all: bin/pike compile
 force:
 	-@$(BIN_TRUE)
 
-src/configure: src/configure.in
+src/configure:
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
-	-rm -f "$(BUILDDIR)/Makefile"
 
 force_autoconfig:
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
@@ -71,7 +70,8 @@ configure: src/configure builddir
 	    echo Running "$$srcdir"/configure $$configureargs in "$$builddir"; \
 	    CONFIG_SITE=x "$$srcdir"/configure $$configureargs && { \
 	      echo "$$configureargs" > .configureargs; \
-	      $(MAKE) "MAKE=$(MAKE)" clean > /dev/null; \
+	      test "x$(LIMITED_TARGETS)" = "x" && \
+		$(MAKE) "MAKE=$(MAKE)" clean > /dev/null; \
 	      :; \
 	    } \
 	  fi; \
@@ -80,9 +80,11 @@ configure: src/configure builddir
 compile: configure
 	@builddir="$(BUILDDIR)"; \
 	metatarget="$(METATARGET)"; \
-	test -f "$$builddir"/master.pike -a -x "$$builddir"/pike || \
-          metatarget="all $$metatarget"; \
-	test "x$$metatarget" = x && metatarget=all; \
+	test "x$(LIMITED_TARGETS)" = "x" && { \
+	  test -f "$$builddir"/master.pike -a -x "$$builddir"/pike || \
+	    metatarget="all $$metatarget"; \
+	  test "x$$metatarget" = x && metatarget=all; \
+	}; \
 	cd "$$builddir" && for target in $$metatarget; do \
 	  echo Making $$target in "$$builddir"; \
 	  rm -f remake; \
@@ -137,8 +139,13 @@ gdb_verify:
 run_hilfe:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
 
+source:
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary" "OS=source" \
+	  "RUNPIKE=$(RUNPIKE)" "LIMITED_TARGETS=yes" "METATARGET=source" compile
+
 export:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=export"
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary" "OS=source" \
+	  "RUNPIKE=$(RUNPIKE)" "LIMITED_TARGETS=yes" "METATARGET=export" compile
 
 bin_export:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
@@ -149,19 +156,23 @@ feature_list:
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
 	  res=$$?; \
-	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean
+	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean; \
 	  else exit $$res; fi; \
 	}
 
 spotless:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" spotless || { \
 	  res=$$?; \
-	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean \
+	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" spotless; \
 	  else exit $$res; fi; \
 	}
 
-distclean:
-	-rm -rf "$(BUILDDIR)" bin/pike
+delete_builddir:
+	-rm -rf "$(BUILDDIR)"
+
+distclean: delete_builddir
+	$(MAKE) "OS=source" delete_builddir
+	-rm -rf bin/pike
 
 cvsclean: distclean
 	for d in `find src -type d -print`; do \
@@ -174,11 +185,8 @@ depend: configure
 	-@cd "$(BUILDDIR)" && \
 	$(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
 	  res=$$?; \
-	  if test -f remake; then \
-	    $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend \
-	  else \
-	    exit $$res; \
-	  fi; \
+	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend; \
+	  else exit $$res; fi; \
 	}
 
 pikefun_TAGS:
