@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.42 2000/12/01 08:09:52 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.43 2000/12/02 14:23:21 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -435,7 +435,8 @@ static int fifo_len;
 static ptrdiff_t eye, len;
 static p_instr *instructions;
 
-ptrdiff_t insopt2(int f, INT32 a, INT32 b, int cl, struct pike_string *cf)
+static INLINE ptrdiff_t insopt2(int f, INT32 a, INT32 b,
+				int cl, struct pike_string *cf)
 {
   p_instr *p;
 
@@ -459,14 +460,14 @@ ptrdiff_t insopt2(int f, INT32 a, INT32 b, int cl, struct pike_string *cf)
 
   p->opcode=f;
   p->line=cl;
-  copy_shared_string(p->file, lex.current_file);
+  copy_shared_string(p->file, cf);
   p->arg=a;
   p->arg2=b;
 
   return p - (p_instr *)instrbuf.s.str;
 }
 
-ptrdiff_t insopt1(int f, INT32 a, int cl, struct pike_string *cf)
+static INLINE ptrdiff_t insopt1(int f, INT32 a, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(!hasarg(f) && a)
@@ -476,7 +477,7 @@ ptrdiff_t insopt1(int f, INT32 a, int cl, struct pike_string *cf)
   return insopt2(f,a,0,cl, cf);
 }
 
-ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
+statci INLINE ptrdiff_t insopt0(int f, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
