@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.c,v 1.110 2002/11/02 15:26:19 grubba Exp $
+|| $Id: lex.c,v 1.111 2002/11/04 17:04:01 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: lex.c,v 1.110 2002/11/02 15:26:19 grubba Exp $");
+RCSID("$Id: lex.c,v 1.111 2002/11/04 17:04:01 marcus Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -25,6 +25,7 @@ RCSID("$Id: lex.c,v 1.110 2002/11/02 15:26:19 grubba Exp $");
 #include "builtin_functions.h"
 #include "main.h"
 #include "mapping.h"
+#include "pikecode.h"
 
 #include "pike_macros.h"
 
@@ -180,6 +181,7 @@ void exit_lex(void)
 #define OPCODE0_TAILBRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(void);
 #define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(INT32);
 #define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) int PIKE_CONCAT(test_opcode_,OP)(INT32,INT32);
+#define BRANCHADDR(X) , (void *)PIKE_CONCAT(test_opcode_,X)
 #else /* !OPCODE_INLINE_BRANCH */
 #define OPCODE0_BRANCH		OPCODE0_JUMP
 #define OPCODE1_BRANCH		OPCODE1_JUMP
@@ -187,6 +189,7 @@ void exit_lex(void)
 #define OPCODE0_TAILBRANCH	OPCODE0_TAILJUMP
 #define OPCODE1_TAILBRANCH	OPCODE1_TAILJUMP
 #define OPCODE2_TAILBRANCH	OPCODE2_TAILJUMP
+#define BRANCHADDR(X) , (void *)PIKE_CONCAT(opcode_,X)
 #endif /* OPCODE_INLINE_BRANCH */
 
 #include "interpret_protos.h"
@@ -223,6 +226,7 @@ void exit_lex(void)
 
 #else
 #define ADDR(X)
+#define BRANCHADDR(X)
 #define NULLADDR
 #endif
 
@@ -248,12 +252,12 @@ void exit_lex(void)
 #define OPCODE1_TAILRETURN(OP, DESC, FLAGS) OPCODE1_TAIL(OP, DESC, FLAGS)
 #define OPCODE2_TAILRETURN(OP, DESC, FLAGS) OPCODE2_TAIL(OP, DESC, FLAGS)
 
-#define OPCODE0_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCH ADDR(OP) },
-#define OPCODE1_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARG ADDR(OP) },
-#define OPCODE2_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARGS ADDR(OP) },
-#define OPCODE0_TAILBRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCH ADDR(OP) },
-#define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARG ADDR(OP) },
-#define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARGS ADDR(OP) },
+#define OPCODE0_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCH BRANCHADDR(OP) },
+#define OPCODE1_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARG BRANCHADDR(OP) },
+#define OPCODE2_BRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARGS BRANCHADDR(OP) },
+#define OPCODE0_TAILBRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCH BRANCHADDR(OP) },
+#define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARG BRANCHADDR(OP) },
+#define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) { DESC, OP, FLAGS | I_ISBRANCHARGS BRANCHADDR(OP) },
 
 #define LEXER
 
