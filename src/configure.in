@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.427 2000/10/02 16:22:43 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.428 2000/10/03 19:12:57 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1688,8 +1688,7 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
     ;;
   esac
 
-  AC_CHECK_FUNCS(pthread_init)
-  AC_CHECK_FUNCS(pthread_mutexattr_init)
+  AC_CHECK_FUNCS(pthread_init pthread_mutexattr_init pthread_kill)
 
   AC_MSG_CHECKING(posix threads)
 
