@@ -1,4 +1,4 @@
-$Id: README-CVS,v 1.19 2002/12/05 17:31:21 nilsson fake $
+$Id: README-CVS,v 1.20 2003/02/20 00:10:52 mast Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
@@ -59,8 +59,7 @@ depend              Build the files that tracks dependencies between
                     the source files.  This is necessary to ensure
                     correct rebuilding if some of the source files
                     change, but not if you only intend to use the
-                    build tree once.  It's not run by default.  See
-                    also the note below about this target.
+                    build tree once.  It's not run by default.
 source              Prepare the source tree for compiliation without
                     the need for a preexisting installed pike.
 force_autoconfig    Forces a build of the configure scripts.  This is
@@ -110,16 +109,6 @@ which runs the built Pike directly without installing it first.  If
 you want to use Pike this way (which is mainly useful if you update
 from CVS often), you should consider doing 'make dump_modules' to make
 it start faster.
-
-Note about the depend target: Dependencies are typically between *.c
-files and the *.h files they include.  Since many *.c files are
-generated from other input, the depend target often trigs other
-targets to generate them.  Some of those targets use the pike binary
-in the build tree, so if you do make depend before pike is first built
-in a new build tree, you're likely to end up building everything.
-That can seem like a bit of catch 22, but since the dependency files
-are only needed to correctly rebuild in an old tree, it's perfectly ok
-to wait with make depend until you have built Pike once.
 
 
 CONFIGURE OPTIONS AND BUILD VARIABLES
