@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.68 2004/09/19 19:37:48 grubba Exp $ */
+/* $Id: export.pike,v 1.69 2004/09/20 21:51:11 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -165,7 +165,7 @@ void bump_version(int|void is_release)
 		     lines*"\r\n");
     Process.create_process( ({ "cvs", "commit", "-m",
 			       "release number bumped to "+rel+" by export.pike",
-			       "changelog" }),
+			       "pike.iss" }),
 			     ([ "cwd":pike_base_name+"/packaging/windows" ])
 			     )->wait();
   }
