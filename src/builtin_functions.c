@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.373 2001/06/06 02:22:39 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.374 2001/06/07 16:20:29 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1166,7 +1166,7 @@ static char *combine_path(char *cwd,char *file)
 #ifdef IS_ROOT
   else if(IS_ROOT(file))
   {
-    if(tmp=IS_ABS(cwd))
+    if(cwd && (tmp=IS_ABS(cwd)))
     {
       cwdbuf = (char *)xalloc(tmp+1);
       MEMCPY(cwdbuf,cwd,tmp);
@@ -1292,7 +1292,8 @@ PMOD_EXPORT void f_combine_path(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("combine_path", 1);
 
-  if(Pike_sp[-args].type != T_STRING)
+  if((Pike_sp[-args].type != T_STRING) ||
+     (Pike_sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("combine_path", 1, "string");
 
   path=Pike_sp[-args].u.string->str;
@@ -1300,10 +1301,12 @@ PMOD_EXPORT void f_combine_path(INT32 args)
   for(e=1;e<args;e++)
   {
     char *newpath;
-    if(Pike_sp[e-args].type != T_STRING)
+    if((Pike_sp[e-args].type != T_STRING) ||
+       (Pike_sp[e-args].u.string->size_shift))
     {
       if(dofree) free(path);
       SIMPLE_BAD_ARG_ERROR("combine_path", e+1, "string");
+      /* NOT_REACHED */
     }
 
     newpath=combine_path(path,Pike_sp[e-args].u.string->str);
