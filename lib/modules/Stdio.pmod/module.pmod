@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.50 1999/05/01 21:18:10 grubba Exp $
+// $Id: module.pmod,v 1.51 1999/05/13 07:26:38 hubbe Exp $
 
 import String;
 
@@ -228,6 +228,13 @@ class File
   {
     if(::close(how||"rw"))
     {
+#define FREE_CB(X) if(___##X && query_##X == __stdio_##X) ::set_##X(0)
+      FREE_CB(read_callback);
+      FREE_CB(write_callback);
+#if constant(files.__HAVE_OOB__)
+      FREE_CB(read_oob_callback);
+      FREE_CB(write_oob_callback);
+#endif
       _fd=0;
 #ifdef __STDIO_DEBUG
       __closed_backtrace=master()->describe_backtrace(backtrace());
@@ -355,7 +362,6 @@ class File
   {
     if(_fd)
     { 
-#define FREE_CB(X) if(___##X && query_##X == __stdio_##X) ::set_##X(0)
       FREE_CB(read_callback);
       FREE_CB(write_callback);
 #if constant(files.__HAVE_OOB__)
