@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.20 2001/04/09 15:49:55 grubba Exp $
+ * $Id: udp.c,v 1.21 2002/06/11 09:56:58 grubba Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.20 2001/04/09 15:49:55 grubba Exp $");
+RCSID("$Id: udp.c,v 1.21 2002/06/11 09:56:58 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -402,6 +402,9 @@ void udp_sendto(INT32 args)
 
   if(FD < 0)
     Pike_error("UDP: not open\n");
+
+  check_all_args("send", args,
+		 BIT_STRING, BIT_INT, BIT_STRING, BIT_INT|BIT_VOID, 0);
   
   if(args>3)
   {
