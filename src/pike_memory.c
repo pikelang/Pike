@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.147 2003/11/13 02:09:11 mast Exp $
+|| $Id: pike_memory.c,v 1.148 2004/03/16 18:35:13 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.147 2003/11/13 02:09:11 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.148 2004/03/16 18:35:13 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -372,6 +372,9 @@ int dmalloc_print_trace;
 #define DMALLOC_TRACE_LOG(X)
 #endif
 
+#if defined (PIKE_DEBUG) && defined (DO_PIKE_CLEANUP)
+int verbose_debug_exit = 1;
+#endif
 
 #ifdef DEBUG_MALLOC
 
@@ -704,7 +707,6 @@ BLOCK_ALLOC_FILL_PAGES(memory_map_entry, n/a)
 #include "block_alloc.h"
 
 int verbose_debug_malloc = 0;
-int verbose_debug_exit = 1;
 int debug_malloc_check_all = 0;
 
 /* #define DMALLOC_PROFILE */

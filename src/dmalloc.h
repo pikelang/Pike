@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.45 2003/03/28 23:48:45 mast Exp $
+|| $Id: dmalloc.h,v 1.46 2004/03/16 18:35:13 mast Exp $
 */
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
@@ -26,6 +26,10 @@ extern size_t dmalloc_tracelogptr;
 
 #endif /* DMALLOC_TRACE */
 
+#if defined (PIKE_DEBUG) && defined (DO_PIKE_CLEANUP)
+extern int verbose_debug_exit;
+#endif
+
 #ifdef DEBUG_MALLOC
 struct memhdr;
 
@@ -37,7 +41,6 @@ void really_free_memhdr(struct memhdr *mh);
 void add_marks_to_memhdr(struct memhdr *to,void *ptr);
 
 extern int verbose_debug_malloc;
-extern int verbose_debug_exit;
 extern void dmalloc_trace(void *);
 extern void dmalloc_register(void *, int, char *);
 extern int dmalloc_unregister(void *, int);
