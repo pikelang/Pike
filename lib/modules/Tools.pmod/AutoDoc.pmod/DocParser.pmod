@@ -252,7 +252,7 @@ static array(Token) split(string s, SourcePosition pos) {
 
 static class DocParserClass {
 
-  static SourcePosition currentPosition = 0;
+  SourcePosition currentPosition = 0;
 
   static void parseError(string s, mixed ... args) {
     s = sprintf(s, @args);
