@@ -2,7 +2,7 @@
 ||| This file a part of Pike, and is copyright by Fredrik Hubinette
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
-\*/
+ */
 #include "global.h"
 #include "readline_machine.h"
 #include "interpret.h"
@@ -49,13 +49,75 @@
 #endif
 #endif
 
+struct svalue *complete_callback = NULL;
+
+char *my_copy_string(struct pike_string *s)
+{
+  char *res = malloc(s->len+1);
+  MEMCPY(res,s->str,s->len+1);
+  return res;
+}
+
+char *low_do_rl_complete(char *string, int state)
+{
+  JMP_BUF tmp;
+  rl_completer_quote_characters = "`'\"";
+  if(complete_callback)
+  {
+    push_text(string);
+    push_int(state);
+    push_string(make_shared_binary_string(rl_line_buffer, rl_end));
+    push_int(rl_point);
+    if(SETJMP(tmp))
+    {
+      fprintf(stderr, "error in completion function");
+      return 0;
+    }
+    else
+      apply_svalue(complete_callback, 4);
+     UNSETJMP(tmp);
+
+    if(sp[-1].type == T_STRING)
+      return my_copy_string(sp[-1].u.string);
+    // Note that we do _not_ pop the stack here...
+    // All strings will be pop()ed when f_readline returns.
+  }
+  return 0;
+}
+
+char *my_rl_complete(char *text, int status)
+{
+  struct thread_state *state;
+  char *res;
+  if((state = thread_state_for_id(th_self()))!=NULL)
+  {
+    /* This is a pike thread.  Do we have the interpreter lock? */
+    if(!state->swapped) {
+      /* Yes.  Go for it... */
+      res=low_do_rl_complete(text,status);
+    } else {
+      /* Nope, let's get it... */
+      mt_lock(&interpreter_lock);
+      SWAP_IN_THREAD(state);
+      res=low_do_rl_complete(text,status);
+      /* Restore */
+      SWAP_OUT_THREAD(state);
+      mt_unlock(&interpreter_lock);
+    }
+  } else
+    fatal("Bad idea!\n");
+  return res;
+}
+
 static void f_readline(INT32 args)
 {
   char *r;
   struct pike_string *str;
+  struct svalue *osp = sp;
   if(args < 1)
     error("Too few arguments to readline().\n");
-
+  if(args > 1) 
+    complete_callback = sp-args+1;
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to readline()\n");
 
@@ -73,8 +135,8 @@ retry:
     goto retry;
   }
 #endif
-
-  pop_n_elems(args);
+  complete_callback = 0;
+  pop_n_elems(args+(sp-osp));
   if(r)
   {
     if(*r) add_history(r);
@@ -87,8 +149,10 @@ retry:
 
 void pike_module_init(void)
 {
-  rl_bind_key('\t', rl_insert);
-  add_function_constant("_module_value",f_readline,"function(string:string)",OPT_SIDE_EFFECT);
+  rl_completion_entry_function = (void *)my_rl_complete;
+  add_function_constant("_module_value",f_readline,
+			"function(string,void|function:string)",
+			OPT_SIDE_EFFECT);
 }
 
 #else
@@ -141,7 +205,7 @@ static void f_readline(INT32 args)
 
 void pike_module_init(void)
 {
-  add_function_constant("_module_value",f_readline,"function(string:string)",OPT_SIDE_EFFECT);
+  add_function_constant("_module_value",f_readline,"function(string,function|void:string)",OPT_SIDE_EFFECT);
 }
 
 #endif
