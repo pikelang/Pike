@@ -1134,7 +1134,7 @@ class cYear
 	 case 't':
 	    return "Calendar."+calendar_name()+".Year";
 	 default:
-	    return ::sprintf(t,m);
+	    return ::_sprintf(t,m);
       }
    }
 
