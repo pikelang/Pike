@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.36 1998/04/30 02:39:23 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.37 1998/05/01 15:32:49 hubbe Exp $
 #
 
 
@@ -15,7 +15,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 all: subdirs dummy
 
 subdirs:
-	@for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$? ; else :; fi ; done
+	@for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$? ; else :; fi ; done
 
 dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	@tmp="$(INSTALL_NAME)" ; \
