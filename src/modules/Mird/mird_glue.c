@@ -310,10 +310,10 @@ UNLOCK(this);
 **! method void destroy()
 **!	This closes the database, ie
 **!	<ol>
-**!	<li>cancels all ongoing transactions
+**!	<li>cancels all ongoing transactions</li>
 **!	<li>syncs the database (flushes caches,
-**!	and frees all unused blocks)
-**!	<li>destroys the database object
+**!	and frees all unused blocks)</li>
+**!	<li>destroys the database object</li>
 **!	</ol>
 **!	Call this or destroy the database object
 **!	when you want the database closed.
