@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.17 2000/09/12 13:12:11 noring Exp $
+# $Id: configure.in,v 1.18 2001/01/18 13:10:53 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -58,7 +58,7 @@ else
 
   if test x$pike_cv_mysql_lib_dir = xno; then :; else
     echo Adding $pike_cv_mysql_lib_dir to the library search path.
-    LDFLAGS="-R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir ${LDFLAGS}"
+    LDFLAGS="${LDFLAGS} -R$pike_cv_mysql_lib_dir -L$pike_cv_mysql_lib_dir"
   fi
 
   AC_MSG_CHECKING(for Mysql include-directory)
@@ -77,7 +77,7 @@ else
 
   if test x$pike_cv_mysql_include_dir = xno; then :; else
     echo Adding $pike_cv_mysql_include_dir to the include search path.
-    CPPFLAGS="-I$pike_cv_mysql_include_dir ${CPPFLAGS}"
+    CPPFLAGS="${CPPFLAGS} -I$pike_cv_mysql_include_dir"
   fi
 
   # Header file
