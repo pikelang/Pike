@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.99 2001/01/17 13:44:37 grubba Exp $
+ * $Id: system.c,v 1.100 2001/04/09 16:51:05 jonasw Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.99 2001/01/17 13:44:37 grubba Exp $");
+RCSID("$Id: system.c,v 1.100 2001/04/09 16:51:05 jonasw Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -98,6 +98,10 @@ RCSID("$Id: system.c,v 1.99 2001/01/17 13:44:37 grubba Exp $");
 
 #ifdef HAVE_SYS_UTIME_H
 #include <sys/utime.h>
+#endif
+
+#ifdef HAVE_NETINFO_NI_H
+#include <netinfo/ni.h>
 #endif
 
 /* Restore the sp macro */
@@ -1787,6 +1791,76 @@ static void f_setrlimit(INT32 args)
 }
 #endif
 
+#ifdef HAVE_NETINFO_NI_H
+/*! @decl array(string) get_netinfo_property(string domain, string path,
+ *!                                          string property)
+ *!
+ *! Queries a NetInfo server for property values at the given path.
+ *!
+ *! @param domain
+ *!  NetInfo domain. Use "." for the local domain.
+ *! @param path
+ *!  NetInfo path for the property.
+ *! @property
+ *!  Name of the property to return.
+ *! @returns
+ *!  An array holding all property values. If the @[path] or @[property]
+ *!  cannot be not found 0 is returned instead. If the NetInfo @[domain]
+ *!  is not found or cannot be queried an exception is thrown.
+ *!
+ *! @example
+ *!   system.get_netinfo_property(".", "/locations/resolver", "domain");
+ *!   ({ 
+ *!      "idonex.se"
+ *!   })
+ *! @endexample
+ *!
+ *! @note
+ *!  Only available on operating systems which have NetInfo libraries
+ *!  installed.
+ */
+static void f_get_netinfo_property(INT32 args)
+{
+  char         *domain_str, *path_str, *prop_str;
+  void         *dom;
+  ni_id        dir;
+  ni_namelist  prop_list;
+  ni_status    res;
+  unsigned int i, num_replies;
+  
+  get_all_args("get_netinfo_property", args, "%s%s%s",
+	       &domain_str, &path_str, &prop_str);
+  pop_n_elems(args);
+  
+  /* open domain */
+  num_replies = 0;
+  res = ni_open(NULL, domain_str, &dom);
+  if (res == NI_OK) {
+    res = ni_pathsearch(dom, &dir, path_str);
+    if (res == NI_OK) {
+      res = ni_lookupprop(dom, &dir, prop_str, &prop_list);
+      if (res == NI_OK) {
+	for (i = 0; i < prop_list.ni_namelist_len; i++) {
+	  push_text(prop_list.ni_namelist_val[i]);
+	  num_replies++;
+	}
+	ni_namelist_free(&prop_list);
+      }
+    }
+    ni_free(dom);
+  } else {
+    Pike_error("get_netinfo_property: error: %s\n", ni_error(res));
+  }
+  
+  /* make array of all replies; missing properties or invalid directory
+     are simply returned as integer 0 */
+  if (res == NI_OK)
+    f_aggregate(num_replies);
+  else
+    push_int(0);
+}
+#endif
+
 /*
  * Module linkage
  */
@@ -2045,6 +2119,13 @@ void pike_module_init(void)
 #ifdef HAVE_SLEEP
   ADD_FUNCTION("sleep",f_system_sleep,tFunc(tInt,tInt), 0);
 #endif /* HAVE_SLEEP */
+
+#ifdef HAVE_NETINFO_NI_H
+  /* array(string) get_netinfo_property(string domain, string path,
+                                        string property) */
+  ADD_FUNCTION("get_netinfo_property", f_get_netinfo_property,
+	       tFunc(tStr tStr tStr, tArray), 0);
+#endif /* NETINFO */
 
   init_passwd();
 
