@@ -165,9 +165,12 @@ testfont binary
 /src/modules/files/file.c foreign_ident
 /src/modules/files/socktest.pike foreign_ident
 /src/modules/readline/acconfig.h foreign_ident
+/src/modules/spider/accesseddb.c foreign_ident
 /src/modules/spider/accesseddb.h foreign_ident
 /src/modules/spider/dumudp.c foreign_ident
 /src/modules/spider/spider.c foreign_ident
+/src/modules/spider/stardate.c foreign_ident
+/src/modules/spider/streamed_parser.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
 /src/modules/static_module_makefile.in foreign_ident
 /src/modules/system/acconfig.h foreign_ident

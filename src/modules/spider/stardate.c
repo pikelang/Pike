@@ -1,7 +1,12 @@
+/*
+ * $Id: stardate.c,v 1.7 1998/07/04 16:51:04 grubba Exp $
+ */
+
+#include "global.h"
+
 #include "config.h"
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

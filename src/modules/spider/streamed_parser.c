@@ -1,9 +1,14 @@
+/*
+ * $Id: streamed_parser.c,v 1.9 1998/07/04 16:51:48 grubba Exp $
+ */
+
+#include "global.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"

@@ -1,7 +1,12 @@
+/*
+ * $Id: accesseddb.c,v 1.12 1998/07/04 16:50:28 grubba Exp $
+ */
+
+#include "global.h"
+
 #include "config.h"
 
 #include "stralloc.h"
-#include "global.h"
 #include "pike_macros.h"
 #include "backend.h"
 #include "object.h"
