@@ -88,6 +88,8 @@ class protocol
 	  continue;
 	  
 	default:
+	  if((~len)&0xc0) 
+	    throw(({"Invalid message compression mode\n",backtrace()}));
 	  if(next==-1) next=pos+2;
 	  pos=((len&63)<<8) + msg[pos+1];
 	  continue;
@@ -181,29 +183,29 @@ class protocol
 	   m->ancount,
 	   m->nscount,
 	   m->arcount);
-    m->rd=(m->c1>>7)&1;
-    m->tc=(m->c1>>6)&1;
-    m->aa=(m->c1>>5)&1;
-    m->opcode=(m->c1>>1)&15;
-    m->qr=m->c1&1;
+    m->rd=m->c1&1;
+    m->tc=(m->c1>>1)&1;
+    m->aa=(m->c1>>2)&1;
+    m->opcode=(m->c1>>3)&15;
+    m->qr=(m->c1>>7)&1;
     
-    m->rcode=(m->c2>>4)&15;
-    m->cd=(m->c2>>3)&1;
-    m->ad=(m->c2>>2)&1;
-    m->ra=(m->c2)&1;
+    m->rcode=m->c2&15;
+    m->cd=(m->c2>>4)&1;
+    m->ad=(m->c2>>5)&1;
+    m->ra=(m->c2>>7)&1;
     
     m->length=strlen(s);
     
     array(string) tmp=({});
     int e;
     
-    if(m->qdcount!=1)
-      return m;
-    
     array(int) next=({12});
-    m->qd=decode_domain(s,next);
-    sscanf(s[next[0]..next[0]+3],"%2c%2c",m->type, m->cl);
-    next[0]+=4;
+    m->qd = allocate(m->qdcount);
+    for(int i=0; i<m->qdcount; i++) {
+      m->qd[i]=(["name":decode_domain(s,next)]);
+      sscanf(s[next[0]..next[0]+3],"%2c%2c",m->qd[i]->type, m->qd[i]->cl);
+      next[0]+=4;
+    }
     m->an=decode_entries(s,m->ancount,next);
     m->ns=decode_entries(s,m->nscount,next);
     m->ar=decode_entries(s,m->arcount,next);
