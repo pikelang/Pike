@@ -599,7 +599,7 @@ static void f_accept_with_http_parse(INT32 nargs)
 #ifdef HAVE_TIMEOUTS
   args->timeout = to;
 #endif
-  assign_svalue_no_free(&args->cb, fun);
+  assign_svalue_no_free(&args->cb, fun);   /* FIXME: cb isn't freed on exit */
   assign_svalue_no_free(&args->args, cb);
 
   request_program = program_from_svalue( program );
