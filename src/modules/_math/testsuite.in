@@ -45,3 +45,4 @@ test_true(2.70001>log(exp(2.7)))
 test_true(2.69999<log(exp(2.7)))
 // - pow
 test_eq(pow(10.0,10.0),10000000000.0)
+test_eq(pow(9,9),387420489)
