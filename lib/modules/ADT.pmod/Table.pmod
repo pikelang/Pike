@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.10 1999/11/25 00:55:54 hubbe Exp $
+// $Id: Table.pmod,v 1.11 1999/12/21 12:06:47 noring Exp $
 
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
 
@@ -42,10 +42,8 @@ class table {
     switch(type) {
     case "array":
       return copy_value(table);
-#if 0 // This works only in Pike 0.6.
     case "string":
       return ASCII->encode(this_object());
-#endif
     }
   }
 
@@ -328,7 +326,7 @@ object Separated = class {
 object ASCII = class {
   object decode(string s, void|mapping options)
   {
-    // Yet to be done
+    // Yet to be done.
     return 0;
   }
 
@@ -340,13 +338,18 @@ object ASCII = class {
     string indent = String.strmult(" ", options->indent);
     
     t = t->copy(({ fields }) + values(t));
-    foreach(indices(fields), string field)
-      t = (t->map(lambda(mixed m, string field, mapping sizes)
-		  { m = (string)m;
-		  sizes[field] = max(sizeof(m), sizes[field]);
-		  return m; }, field, field, sizes)->
+    for(int field = 0; field < sizeof(fields); field++)
+      t = (t->map(lambda(mixed m, int field, mapping sizes)
+		  {
+		    m = (string)m;
+		    sizes[field] = max(sizeof(m), sizes[field]);
+		    return m;
+		  },
+		  field, field, sizes)->
 	   map(lambda(string s, string size, int num)
-	       { return sprintf("%"+(num?"":"-")+size+"s", s); },
+	       {
+		 return sprintf("%"+(num?"":"-")+size+"s", s);
+	       },
 	       field, (string)sizes[field],
 	       (t->type(field)||([]))->type == "num"));
 
