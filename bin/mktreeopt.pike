@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.28 2000/04/08 17:51:03 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.29 2000/05/15 21:24:39 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -236,7 +236,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.28 2000/04/08 17:51:03 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.29 2000/05/15 21:24:39 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -1024,7 +1024,18 @@ string generate_match(array(object(node)) rule_set, string indent)
       } else {
 	res += indent;
       }
-      res += sprintf("if (CA%sR(n) == %s) {\n", tpos, expr);
+      res +=
+	sprintf("if ((CA%sR(n) == %s)\n"
+		"#ifdef SHARED_NODES_MK2\n" + indent +
+		"  || (CA%sR(n) && %s &&\n" + indent +
+		"      ((CA%sR(n)->master?CA%sR(n)->master:CA%sR(n))==\n" +
+		indent + "       (%s->master?%s->master:%s)))\n"
+		"#endif /* SHARED_NODES_MK2 */\n" +
+		indent + ") {\n",
+		tpos, expr,
+		tpos, expr,
+		tpos, tpos, tpos,
+		expr, expr, expr);
       res += generate_match(exacts[expr], indent + "  ");
       res += indent + "}";
     }
