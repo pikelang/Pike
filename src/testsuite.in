@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.115 1998/05/25 20:48:03 marcus Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.116 1998/06/24 04:56:46 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -141,6 +141,32 @@ test_any([[int x,y=1; if(x==y && x==0) return 2; return 0;]],0);
 test_eq([[ "\007" & "\023"]],"\003")
 test_eq([[ "\007" | "\023"]],"\027")
 test_eq([[ "\007" ^ "\023"]],"\024")
+
+test_compile_any([[
+  class X { void hej() {} }
+  class Y { inherit X:banan; void hopp() { banan::hej(); } }
+]])
+
+test_compile_any([[
+  class X { static void hej() {} }
+  class Y { inherit X:banan; void hopp() { ::hej(); } }
+]])
+
+test_compile_any([[
+  class X { static void hej() {} }
+  class Y { inherit X; void hopp() { X::hej(); } }
+]])
+
+test_compile_any([[
+  class X { static void hej() {} }
+  class Y { public inherit X:banan; void hopp() { banan::hej(); } }
+]])
+
+test_compile_any([[
+  class X { static void hej() {} }
+  class Y { inherit X:banan; void hopp() { banan::hej(); } }
+]])
+
 
 // Testing the 'inline' keyword
 test_program([[class foo { inline int c() { return time(); } int d() { return c(); } }; class bar { inherit foo; int c() { return 0; } } int a() { return bar()->d(); }]],0)

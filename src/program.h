@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.43 1998/05/25 16:40:26 grubba Exp $
+ * $Id: program.h,v 1.44 1998/06/24 04:56:46 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -335,6 +335,9 @@ INT32 define_function(struct pike_string *name,
 		      INT16 flags,
 		      INT8 function_flags,
 		      union idptr *func);
+int really_low_find_shared_string_identifier(struct pike_string *name,
+					     struct program *prog,
+					     int see_static);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);
 struct ff_hash;

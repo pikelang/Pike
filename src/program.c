@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.94 1998/05/25 19:00:37 grubba Exp $");
+RCSID("$Id: program.c,v 1.95 1998/06/24 04:56:46 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1037,7 +1037,11 @@ int low_reference_inherited_identifier(struct program_state *q,
 
   p=np->inherits[e].prog;
   i=find_shared_string_identifier(name,p);
-  if(i==-1) return i;
+  if(i==-1)
+  {
+    i=really_low_find_shared_string_identifier(name,p,1);
+    if(i==-1) return -1;
+  }
 
   if(p->identifier_references[i].id_flags & ID_HIDDEN)
     return -1;
@@ -1839,6 +1843,46 @@ INT32 define_function(struct pike_string *name,
 }
 
 
+int really_low_find_shared_string_identifier(struct pike_string *name,
+					     struct program *prog,
+					     int see_static)
+{
+  struct reference *funp;
+  struct identifier *fun;
+  int i,t;
+  for(i=0;i<(int)prog->num_identifier_references;i++)
+  {
+    funp = prog->identifier_references + i;
+    if(funp->id_flags & ID_HIDDEN) continue;
+    if(funp->id_flags & ID_HIDDEN)
+      if(!see_static)
+	continue;
+    fun = ID_FROM_PTR(prog, funp);
+    /* if(fun->func.offset == -1) continue; * Prototype */
+    if(!is_same_string(fun->name,name)) continue;
+    if(funp->id_flags & ID_INHERITED)
+    {
+      if(funp->id_flags & ID_PRIVATE) continue;
+      for(t=0; t>=0 && t<(int)prog->num_identifier_references; t++)
+      {
+	struct reference *funpb;
+	struct identifier *funb;
+	
+	if(t==i) continue;
+	funpb=prog->identifier_references+t;
+	if(funpb->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
+	if((funpb->id_flags & ID_INHERITED) && t<i) continue;
+	funb=ID_FROM_PTR(prog,funpb);
+	/* if(funb->func.offset == -1) continue; * prototype */
+	if(fun->name==funb->name) t=-10;
+      }
+      if(t < 0) continue;
+    }
+    return i;
+  }
+  return -1;
+}
+
 /*
  * lookup the number of a function in a program given the name in
  * a shared_string
@@ -1847,7 +1891,6 @@ int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog)
 {
   int max,min,tst;
-  struct reference *funp;
   struct identifier *fun;
 
   if(prog->flags & PROGRAM_FIXED)
@@ -1872,34 +1915,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
 	min=tst+1;
     }
   }else{
-    int i,t;
-    for(i=0;i<(int)prog->num_identifier_references;i++)
-    {
-      funp = prog->identifier_references + i;
-      if(funp->id_flags & ID_HIDDEN) continue;
-      fun = ID_FROM_PTR(prog, funp);
-      /* if(fun->func.offset == -1) continue; * Prototype */
-      if(!is_same_string(fun->name,name)) continue;
-      if(funp->id_flags & ID_INHERITED)
-      {
-        if(funp->id_flags & ID_PRIVATE) continue;
-	for(t=0; t>=0 && t<(int)prog->num_identifier_references; t++)
-	{
-	  struct reference *funpb;
-	  struct identifier *funb;
-	  
-	  if(t==i) continue;
-	  funpb=prog->identifier_references+t;
-	  if(funpb->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
-	  if((funpb->id_flags & ID_INHERITED) && t<i) continue;
-	  funb=ID_FROM_PTR(prog,funpb);
-	  /* if(funb->func.offset == -1) continue; * prototype */
-	  if(fun->name==funb->name) t=-10;
-	}
-	if(t < 0) continue;
-      }
-      return i;
-    }
+    return really_low_find_shared_string_identifier(name,prog,0);
   }
   return -1;
 }
