@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -23,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.26 1998/11/22 11:02:43 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.27 1999/03/07 20:07:09 grubba Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -176,6 +177,15 @@ one_more_type:
     case T_NOT:
       goto one_more_type;
       
+    case T_INT:
+      {
+	int i;
+	for(i = 0; i < 2*sizeof(INT32); i++) {
+	  addchar(EXTRACT_UCHAR(t++));
+	}
+      }
+      break;
+
     case '0':
     case '1':
     case '2':
@@ -186,7 +196,6 @@ one_more_type:
     case '7':
     case '8':
     case '9':
-    case T_INT:
     case T_FLOAT:
     case T_STRING:
     case T_PROGRAM:
