@@ -1130,9 +1130,15 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
     if(!ret)
       error("Invalid address '%s'\n",name);
 
+#ifdef HAVE_H_ADDR_LIST
     MEMCPY((char *)&(addr->sin_addr),
 	   (char *)ret->h_addr_list[0],
 	   ret->h_length);
+#else
+    MEMCPY((char *)&(addr->sin_addr),
+	   (char *)ret->h_addr,
+	   ret->h_length);
+#endif
   }
 }
 

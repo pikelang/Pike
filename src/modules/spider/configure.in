@@ -28,6 +28,29 @@ fi
 
 AC_SUBST(RANLIB)
 
+
+AC_MSG_CHECKING(for h_addr_list)
+AC_CACHE_VAL(pike_cv_struct_has_h_addr_list,
+[
+AC_TRY_LINK([
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+],[
+struct hostent foo;
+foo.h_addr_list[0];
+],pike_cv_struct_has_h_addr_list=yes,pike_cv_struct_has_h_addr_list=no)
+])
+
+if test "$pike_cv_struct_has_h_addr_list" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_H_ADDR_LIST)
+else
+  AC_MSG_RESULT(no)
+fi
+
 AC_MSG_CHECKING(how to find timezone)
 
 AC_CACHE_VAL(pike_cv_timezone,

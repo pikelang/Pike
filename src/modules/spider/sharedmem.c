@@ -166,7 +166,7 @@ void shared_free(void *pointer)
 
 #else
 /* Should look for shmop as well, probably */
-void *shared_malloc(int size)
+void *shared_malloc(size_t size)
 {
 #ifdef SHARED_MALLOC_DEBUG
   fprintf(stderr, "fake_shared_malloc(%d)\n", size);

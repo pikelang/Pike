@@ -46,5 +46,11 @@
 /* Define if you have a working getcwd */
 #undef HAVE_WORKING_GETCWD
 
+/* Define this if you have perror() */
+#undef HAVE_PERROR
+
+/* Define this if your struct hostent has h_addr_list */
+#undef HAVE_H_ADDR_LIST
+
 #endif
 

@@ -1266,8 +1266,9 @@ void f_gethostbyaddr(INT32 args)
 {
   u_long addr;
   struct hostent *hp;
-  char **p;
+  char **p, **q;
   struct svalue *old_sp;
+  int nelem;
  
   if ((args != 1) || sp[-1].type != T_STRING) 
     error("gethostbyaddr(IP-ADDRESS)\n");
@@ -1284,29 +1285,40 @@ void f_gethostbyaddr(INT32 args)
     push_int(0);
     return;
   }
+
+  push_text(hp->h_name);
   
+#ifdef HAVE_H_ADDR_LIST
+  nelem=0;
   for (p = hp->h_addr_list; *p != 0; p++) {
-    int nelem = 0;
     struct in_addr in;
-    char **q;
  
     memcpy(&in.s_addr, *p, sizeof (in.s_addr));
-    push_text(inet_ntoa(in)); nelem++;
-
-    for (q = hp->h_aliases; *q != 0; q++)
-    {
-      push_text(*q); nelem++;
-    }
-    f_aggregate(nelem);
+    push_text(inet_ntoa(in));
+    nelem++;
   }
+  f_aggregate(nelem);
+
+  nelem=0;
+  for (q = hp->h_aliases; *q != 0; q++)
+  {
+    push_text(*q);
+    nelem++;
+  }
+  f_aggregate(nelem);
+#else
+  f_aggregate(0);
+  f_aggregate(0);
+#endif
   f_aggregate(sp-old_sp);
 }  
 
 void f_gethostbyname(INT32 args)
 {
   struct hostent *hp;
-  char **p;
+  char **p, **q;
   struct svalue *old_sp;
+  int nelem;
  
   if ((args != 1) || sp[-1].type != T_STRING) 
     error("gethostbyname(NAME)\n");
@@ -1322,20 +1334,28 @@ void f_gethostbyname(INT32 args)
     return;
   }
   
+#ifdef HAVE_H_ADDR_LIST
+  nelem=0;
   for (p = hp->h_addr_list; *p != 0; p++) {
-    int nelem = 0;
     struct in_addr in;
-    char **q;
  
     memcpy(&in.s_addr, *p, sizeof (in.s_addr));
-    push_text(inet_ntoa(in)); nelem++;
-
-    for (q = hp->h_aliases; *q != 0; q++)
-    {
-      push_text(*q); nelem++;
-    }
-    f_aggregate(nelem);
+    push_text(inet_ntoa(in));
+    nelem++;
   }
+  f_aggregate(nelem);
+
+  nelem=0;
+  for (q = hp->h_aliases; *q != 0; q++)
+  {
+    push_text(*q);
+    nelem++;
+  }
+  f_aggregate(nelem);
+#else
+  f_aggregate(0);
+  f_aggregate(0);
+#endif
   f_aggregate(sp-old_sp);
 }  
 #endif
