@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.31 1998/07/26 10:25:02 hubbe Exp $
+// $Id: Stdio.pmod,v 1.32 1998/07/27 21:56:35 hubbe Exp $
 
 #include <string.h>
 
@@ -220,7 +220,7 @@ class File
 #endif
 
 #define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
-#define _SET(X,Y) do { _##X=__stdio_##X; ___##X = (Y); }while(0)
+#define _SET(X,Y) do { _fd->_##X=__stdio_##X; ___##X = (Y); }while(0)
 
 #define CBFUNC(X)					\
   void set_##X (mixed l##X)				\
