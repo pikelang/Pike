@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.508 2003/06/09 16:36:39 mast Exp $
+|| $Id: program.c,v 1.509 2003/06/30 16:47:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.508 2003/06/09 16:36:39 mast Exp $");
+RCSID("$Id: program.c,v 1.509 2003/06/30 16:47:14 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1506,13 +1506,12 @@ void optimize_program(struct program *p)
 }
 
 /* internal function to make the index-table */
-static ptrdiff_t program_identifier_index_compare(int a, int b,
-						  const struct program *p)
+static int program_identifier_index_compare(int a, int b,
+					    const struct program *p)
 {
-  ptrdiff_t val_a = ((char *)(ID_FROM_INT(p, a)->name))-(char *)0;
-  ptrdiff_t val_b = ((char *)(ID_FROM_INT(p, b)->name))-(char *)0;
-
-  return val_a - val_b;
+  size_t val_a = PTR_TO_INT (ID_FROM_INT(p, a)->name);
+  size_t val_b = PTR_TO_INT (ID_FROM_INT(p, b)->name);
+  return val_a < val_b ? -1 : (val_a == val_b ? 0 : 1);
 }
 
 #define CMP(X,Y)	program_identifier_index_compare(*(X), *(Y), prog)
@@ -1530,7 +1529,6 @@ static ptrdiff_t program_identifier_index_compare(int a, int b,
 #ifdef PIKE_DEBUG
 struct pike_string *find_program_name(struct program *p, INT32 *line)
 {
-  ptrdiff_t pos;
   INT32 l;
   if(!line) line=&l;
 
@@ -4730,7 +4728,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
   if(prog->flags & PROGRAM_FIXED)
   {
     unsigned short *funindex = prog->identifier_index;
-    ptrdiff_t val_n = ((char *)name) - (char *)0;
+    size_t val_n = PTR_TO_INT (name);
 
 #ifdef PIKE_DEBUG
     if(!funindex)
@@ -4741,13 +4739,13 @@ int low_find_shared_string_identifier(struct pike_string *name,
     min = 0;
     while(max != min)
     {
-      ptrdiff_t val_t;
+      size_t val_t;
 
       tst=(max + min) >> 1;
       fun = ID_FROM_INT(prog, funindex[tst]);
       if(is_same_string(fun->name,name)) return funindex[tst];
-      val_t = ((char *)fun->name) - (char *)0;
-      if ((val_n - val_t) < 0) {
+      val_t = PTR_TO_INT (fun->name);
+      if (val_n < val_t) {
 	max = tst;
       } else {
 	min = tst+1;
@@ -6047,7 +6045,7 @@ static int run_pass1(struct compilation *c)
       debug_malloc_touch(c->placeholder);
       c->placeholder->storage=c->p->storage_needed ?
 	(char *)xalloc(c->p->storage_needed) :
-	(char *)0;
+	(char *)NULL;
       call_c_initializers(c->placeholder);
     }
   }
