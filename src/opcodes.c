@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.66 1999/11/04 22:27:59 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.67 1999/11/08 18:14:08 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -697,7 +697,7 @@ CHAROPT(							\
 	if(match[cnt] < sizeof(set->c))				\
 	{							\
 )								\
-	  for(e=last;e<match[cnt];e++) set->c[e]=1;		\
+	  for(e=last;e<=match[cnt];e++) set->c[e]=1;		\
 CHAROPT(							\
 	}else{							\
 	  for(e=last;e<sizeof(set->c);e++) set->c[e]=1;		\
