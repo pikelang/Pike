@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.21 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_error.h,v 1.22 2002/11/23 14:41:56 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -107,10 +107,14 @@ PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #endif
 
 #define DEBUG_LINE_ARGS ,char *location
-#define SETJMP(X) setjmp((init_recovery(&X, PERR_LOCATION())->recovery))
+#define SETJMP(X) setjmp((init_recovery(&X, 0, PERR_LOCATION())->recovery))
+#define SETJMP_SP(jmp, stack_pop_levels)				\
+  setjmp((init_recovery(&jmp, stack_pop_levels, PERR_LOCATION())->recovery))
 #else
 #define DEBUG_LINE_ARGS 
-#define SETJMP(X) setjmp((init_recovery(&X)->recovery))
+#define SETJMP(X) setjmp((init_recovery(&X, 0)->recovery))
+#define SETJMP_SP(jmp, stack_pop_levels)				\
+  setjmp((init_recovery(&X, stack_pop_levels)->recovery))
 #define UNSETJMP(X) Pike_interpreter.recoveries=X.previous
 #endif
 
@@ -193,7 +197,7 @@ PMOD_EXPORT extern const char msg_assert_onerr[];
 /* Prototypes begin here */
 PMOD_EXPORT void check_recovery_context(void);
 PMOD_EXPORT void pike_gdb_breakpoint(void);
-PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
+PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r, size_t stack_pop_levels DEBUG_LINE_ARGS);
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
 PMOD_EXPORT void push_error(const char *description);
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn));
