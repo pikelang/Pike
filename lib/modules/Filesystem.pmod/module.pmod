@@ -173,21 +173,23 @@ class Base
   //! Change the root of the filesystem.
   Base chroot(void|string directory);
 
-  //! Return a stat-object for a file or a directory within the filesystem.
+  //! Return a stat-object for a file or a directory within the
+  //! filesystem.
   Stat stat(string file, int|void lstat);
 
-  //! Returns an array of all files and directories within a given directory.
+  //! Returns an array of all files and directories within a given
+  //! directory.
   //! @param directory
-  //! Directory where the search should be made within the filesystem. CWD is assumed
-  //! if none (or 0) is given.
+  //! Directory where the search should be made within the filesystem.
+  //! CWD is assumed if none (or 0) is given.
   //! @param glob
   //! Return only files and dirs matching the glob (if given).
   //! @seealso
   //! [get_stats]
   array(string) get_dir(void|string directory, void|string|array glob);
 
-  //! Returns stat-objects for the files and directories matching the given glob
-  //! within the given directory.
+  //! Returns stat-objects for the files and directories matching the
+  //! given glob within the given directory.
   //! @seealso
   //! [get_dir]
   array(Stat) get_stats(void|string directory, void|string|array glob);
@@ -297,11 +299,6 @@ class Traversion {
     }
 
     current = Traversion(path + files[pos], symlink);
-    if(Traversion) return;
-    current = 0;
-    pos++;
-    if(pos < sizeof(files))
-      set_current();
   }
 
   int `!() {
