@@ -4,7 +4,11 @@ AC_ARG_WITH(freetype,     [  --with(out)-freetype       Support Freetype via Fre
 
 AC_MODULE_INIT()
 
+PIKE_FEATURE_WITHOUT(_Image_FreeType,Image.FreeType.....)
+
 if test "x$with_freetype" = "xyes" ; then
+
+  PIKE_FEATURE_NODEP(_Image_FreeType,Image.FreeType.....)
 
   AC_PATH_PROG(FT_CONFIG, freetype-config, no)
 
@@ -28,6 +32,7 @@ if test "x$with_freetype" = "xyes" ; then
     if test yes = "$ft_ok" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_LIBFT2)
+      PIKE_FEATURE_OK(_Image_FreeType,Image.FreeType.....)
     else
       AC_MSG_RESULT(no)
       CFLAGS="$OLDCFLAGS"
