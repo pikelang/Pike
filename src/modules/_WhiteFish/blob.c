@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.6 2001/05/24 14:16:34 per Exp $");
+RCSID("$Id: blob.c,v 1.7 2001/05/24 14:23:47 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -264,6 +264,37 @@ static void f_blob_create( INT32 args )
   }
 }
 
+static void f_blob_remove( INT32 args )
+{
+  int doc_id = sp[-1].u.integer;
+
+  pop_n_elems(args);
+
+  int r = doc_id % HSIZE;
+  struct hash *h = THIS->hash[r], *p = 0;
+  
+  while( h )
+  {
+    if( h->doc_id == doc_id )
+    {
+      if( p )
+	p->next = h->next;
+      else
+	THIS->hash[ r ] = h->next;
+      if( h->data )
+	wf_buffer_free( h->data );
+      free( h );
+      THIS->size--;
+      push_int(1);
+      return;
+    }
+    p = h;
+    h = h->next;
+  }
+
+  push_int(0);
+}
+
 static void f_blob_add( INT32 args )
 {
   int docid = sp[-2].u.integer;
@@ -391,7 +422,8 @@ void init_blob_program()
   ADD_STORAGE( struct blob_data );
   add_function( "create", f_blob_create, "function(string|void:void)", 0 );
   add_function( "add", f_blob_add, "function(int,int:void)",0 );
-  add_function( "cast", f_blob__cast, "function(string:string)", 0 );
+  add_function( "remove", f_blob_remove, "function(int:void)",0 );
+  add_function( "data", f_blob__cast, "function(void:string)", 0 );
   set_init_callback( init_blob_struct );
   set_exit_callback( exit_blob_struct );
   blob_program = end_program( );
