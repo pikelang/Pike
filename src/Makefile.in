@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.155 1999/10/04 19:36:49 hubbe Exp $
+# $Id: Makefile.in,v 1.156 1999/10/05 19:21:32 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -218,9 +218,9 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Compiling $<" ;\
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
 	else \
-	echo "WARNING: Compiler failiure! Trying without optimization!" ;\
-	echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" ;\
-	NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
 	fi
 
 force :
@@ -233,137 +233,6 @@ install: pike hilfe pike-module aclocal
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
 	man_prefix="$(man_prefix)" pike_name=$(pike_name)
-
-old-install: pike hilfe pike-module aclocal
-	@echo
-	@echo Installing Pike...
-	@echo
-	@echo "Creating directories..."; \
-	for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
-		 "$(man_prefix)" "$(man_prefix)/man1" "$(man_prefix)/man3" \
-	         "$(lib_prefix)" "$(data_prefix)" "$(share_prefix)" \
-	         "$(prefix)/include" "$(prefix)/include/pike"; do \
-	  if [ -d "$$d/." ]; then : ; else \
-	    echo "$$d"; \
-	    mkdir "$$d" || exit 1; \
-	    chmod a+rx "$$d"; \
-	    chmod u+w "$$d"; \
-	  fi; \
-	done
-	@for d in `cd "$(TMP_LIBDIR)"; find . -type d -print` `cd "$(LIBDIR_SRC)"; find . ! -name CVS ! -name '.#*' ! -name '#*#' ! -name '*~' -type d -print`; do \
-	  if [ -d "$(lib_prefix)/$$d/." ]; then : ; else \
-	    echo "$(lib_prefix)/$$d"; \
-	    mkdir "$(lib_prefix)/$$d" || exit 1; \
-	    chmod a+rx "$(lib_prefix)/$$d/."; \
-	    chmod u+w "$(lib_prefix)/$$d/."; \
-	  fi; \
-	done
-	@echo ; echo "Installing pike..."; \
-	if cmp "$(exec_prefix)/pike" ./pike >/dev/null 2>&1 ; then \
-	  echo "This pike-binary is already installed." ; \
-	else \
-	  if [ -f "$(exec_prefix)/pike" ]; then \
-	    echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
-	    mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old" || exit 1; \
-	  else : ; fi ; \
-	  echo "$(exec_prefix)/pike"; \
-	  $(INSTALL) ./pike "$(exec_prefix)" || exit 1; \
-	  chmod a+rx "$(exec_prefix)/pike"; \
-	  chmod u+w "$(exec_prefix)/pike"; \
-	fi
-	@if [ -f ./hilfe ]; then \
-	  echo ; echo "Installing hilfe..."; \
-	  if cmp "$(exec_prefix)/hilfe" $(TMP_BINDIR)/hilfe >/dev/null 2>&1 ; \
-	  then \
-	    echo "$(exec_prefix)/hilfe already installed." ; \
-	  else \
-	    if [ -f "$(exec_prefix)/hilfe" ]; then \
-	      mv "$(exec_prefix)/hilfe" "$(exec_prefix)/hilfe.old" || exit 1; \
-	    else : ; fi; \
-	    echo "$(exec_prefix)/hilfe"; \
-	    $(INSTALL) $(TMP_BINDIR)/hilfe "$(exec_prefix)" || exit 1; \
-	    chmod a+rx "$(exec_prefix)/hilfe"; \
-	    chmod u+w "$(exec_prefix)/hilfe"; \
-	  fi; \
-	else : ; fi
-	@if [ -f ./pike-module ]; then \
-	  echo ; echo "Installing pike-module..."; \
-	  if cmp "$(exec_prefix)/pike-module" ./pike-module >/dev/null 2>&1 ; \
-	  then \
-	    echo "$(exec_prefix)/pike-module already installed." ; \
-	  else \
-	    if [ -f "$(exec_prefix)/pike-module" ]; then \
-	      mv "$(exec_prefix)/pike-module" "$(exec_prefix)/pike-module.old" || exit 1; \
-	    else : ; fi; \
-	    echo "$(exec_prefix)/pike-module"; \
-	    $(INSTALL) ./pike-module "$(exec_prefix)" || exit 1; \
-	    chmod a+rx "$(exec_prefix)/pike-module"; \
-	    chmod u+w "$(exec_prefix)/pike-module"; \
-	  fi; \
-	else : ; fi
-	@echo ; echo "Installing header-files..."; \
-	for a in $(SRCDIR)/*.h *.h ; do \
-	  $(INSTALL) $$a "$(prefix)/include/pike" || exit 1; \
-	  : Should use the basename here. ; \
-	  : chmod a+r "$(prefix)/include/pike" ; \
-	  : chmod u+w "$(prefix)/include/pike" ; \
-	done
-	@$(INSTALL) modules/dynamic_module_makefile $(prefix)/include/pike/dynamic_module_makefile
-	@$(INSTALL) ./aclocal $(prefix)/include/pike/aclocal.m4
-	@echo ; echo "Installing modules written in Pike..."; \
-	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print | grep -v '/CVS/'`; do \
-	  if cmp "$(lib_prefix)/$$f" "$(LIBDIR_SRC)/$$f" >/dev/null 2>&1 ; \
-	  then : ; else \
-	    echo "$(lib_prefix)/$$f"; \
-	    if [ -f "$(lib_prefix)/$$f" ]; then \
-	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.old"; \
-	    else : ; fi; \
-	    rm -f "$(lib_prefix)/$$f.o" >/dev/null 2>/dev/null ; \
-	    cp "$(LIBDIR_SRC)/$$f" "$(lib_prefix)/$$f" || exit 1; \
-	    chmod a+r "$(lib_prefix)/$$f"; \
-	    chmod u+w "$(lib_prefix)/$$f"; \
-	  fi ; \
-	  if [ -f "$(lib_prefix)/$$f" ]; then \
-            if test "x$(lib_prefix)" != "x$(lib_prefix)"; then \
-	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
-	    else : ; fi; \
-          else : ; fi; \
-	done
-	@echo ; echo "Installing modules written in C..."; \
-	for f in `cd "$(TMP_LIBDIR)"; find . -type f -print`; do \
-	  if cmp "$(lib_prefix)/$$f" "$(TMP_LIBDIR)/$$f" >/dev/null 2>&1 ; \
-	  then : ; else \
-	    echo "$(lib_prefix)/$$f"; \
-	    if [ -f "$(lib_prefix)/$$f" ]; then \
-	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.old"; \
-	    else : ; fi; \
-	    rm -f "$(lib_prefix)/$$f.o" >/dev/null 2>/dev/null ; \
-	    cp "$(TMP_LIBDIR)/$$f" "$(lib_prefix)/$$f" || exit 1; \
-	    chmod a+r "$(lib_prefix)/$$f"; \
-	    chmod u+w "$(lib_prefix)/$$f"; \
-	  fi ; \
-	done
-	@if [ -d "$(MANDIR_SRC)/." ]; then \
-	  echo ; echo "Installing manual pages..."; \
-	  for f in `cd "$(MANDIR_SRC)/"; echo *.1`; do \
-	    dest="$(man_prefix)/man1/$$f"; \
-	    if cmp "$$dest" "$(MANDIR_SRC)/$$f" >/dev/null 2>&1 ; \
-	    then : ; else \
-	      echo "$$dest"; \
-	      if [ -f "$$dest" ]; then \
-	        mv -f "$$dest" "$$dest.old"; \
-	      else : ; fi; \
-	      cp "$(MANDIR_SRC)/$$f" "$$dest" || exit 1; \
-	      chmod a+r "$$dest"; \
-	      chmod u+w "$$dest"; \
-	    fi ; \
-	  done ; \
-	else : ; fi
-	$(exec_prefix)/pike -m $(SRCDIR)/dumpmaster.pike $(lib_prefix)/master.pike
-	( \
-	  find $(lib_prefix)/modules -type f \( -name '*.pmod' -o -name '*.pike' \) -print  ; \
-	) | \
-	while read file ; do $(exec_prefix)/pike $(SRCDIR)/dumpmodule.pike $$file ; done
 
 # tidy up a bit
 tidy:
