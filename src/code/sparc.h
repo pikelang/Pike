@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.1 2001/07/20 12:44:55 grubba Exp $
+ * $Id: sparc.h,v 1.2 2001/07/20 13:16:50 grubba Exp $
  */
 
 #define REG_O0	8
@@ -41,3 +41,10 @@
     add_to_program(0xc0202000|(REG_O4<<25)|(REG_O3<<14)|		\
 		   OFFSETOF(pike_frame, pc));				\
   } while(0)
+
+#define ins_pointer(PTR)  add_to_program((INT32)(PTR))
+#define read_pointer(OFF) (Pike_compiler->new_program->program[(INT32)(OFF)])
+#define upd_pointer(OFF,PTR) (Pike_compiler->new_program->program[(INT32)(OFF)] = (INT32)(PTR))
+#define ins_align(ALIGN)
+#define ins_byte(VAL)	  add_to_program((INT32)(VAL))
+#define ins_data(VAL)	  add_to_program((INT32)(VAL))
