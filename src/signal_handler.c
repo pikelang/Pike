@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.188 2001/01/16 14:14:54 jhs Exp $");
+RCSID("$Id: signal_handler.c,v 1.189 2001/01/23 10:36:17 norlin Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1731,7 +1731,7 @@ static void internal_add_limit( struct perishables *storage,
  *!  @enddl
  */
 
-/*! @decl void Process.create_process.create(array(string) command_args, void|mapping modifiers);
+/*! @decl void create(array(string) command_args, void|mapping modifiers);
  *!
  *! @param command_args
  *! The command name and its command-line arguments. You do not have
