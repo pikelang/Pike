@@ -975,8 +975,10 @@ int main(int num, array args) {
     error( "No input file given.\n" );
 
   string file = Stdio.read_file(args[-1]);
-  if(!file || !sizeof(file))
+  if(!file)
     error( "Could not read %s.\n", args[-1] );
+  if(!sizeof(file))
+    error( "%s is empty.\n", args[-1] );
 
   // We are only interested in what's in the
   // module container.
