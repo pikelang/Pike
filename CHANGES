@@ -442,7 +442,11 @@ o SSL
 o Standards.IDNA
     This module implements various algorithms specified by the
     Internationalizing Domain Names in Applications (IDNA) memo by the
-    Internet Engineering Task Force (IETF), RFC 3490.
+    Internet Engineering Task Force (IETF), RFC 3490. Your most likely
+    apllication of this will be the encoding and decoding of punycode:
+
+      Standards.IDNA.Punycode.encode("räksmörgås");
+
 
 o Thread
     Thread.Fifo and Thread.Queue have been extended with try_*
