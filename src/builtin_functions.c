@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.334 2001/03/08 09:02:49 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.335 2001/03/08 16:44:27 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7140,6 +7140,9 @@ static void f_buf_nullfun( INT32 args )
   push_int( 0 );
 }
 
+/* The size of the 'str' member of the pike_string struct. */
+#define PIKE_STRING_STR_SIZE 4
+
 static void f_buf_add( INT32 args )
 /*! @decl void add(string data)
  *!
@@ -7162,9 +7165,10 @@ static void f_buf_add( INT32 args )
   if( !str->size )
   {
     str->shift = a->size_shift;
-    str->size  = str->initial + sizeof( struct pike_string );
+    str->size  = str->initial +
+      (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
     str->data  = xalloc( str->size );
-    str->len   = sizeof( struct pike_string );
+    str->len   = (sizeof( struct pike_string ) - PIKE_STRING_STR_SIZE);
   }
   else if( str->shift < a->size_shift )
   {
@@ -7227,7 +7231,7 @@ static void f_buf_get( INT32 args )
  */
 {
   struct buffer_str *str = THB;
-  int len = str->len-sizeof(struct pike_string);
+  int len = str->len-(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
   if( len <= 0 )
   {    
     push_text("");
@@ -7236,7 +7240,7 @@ static void f_buf_get( INT32 args )
 
   if( str->len < 64 )
   {
-    char *d = str->data+sizeof(struct pike_string);
+    char *d = str->data+(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
     switch( str->shift )
     {
       case 0:
