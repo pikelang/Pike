@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.190 2000/04/20 02:41:44 hubbe Exp $
+# $Id: Makefile.in,v 1.191 2000/04/30 14:03:01 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -32,6 +32,9 @@ man_prefix = $(prefix)/man
 
 # Arguments for test_pike.pike used by the verify targets.
 TESTARGS = -a
+
+# Arguments for install.pike used by the install targets.
+INSTALLARGS = --new-style
 
 #
 # use bison please, yacc isn't good enough.
@@ -271,7 +274,7 @@ force :
 
 # install
 install: pike hilfe pike-module aclocal
-	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --new-style \
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
@@ -342,7 +345,7 @@ just_verify: module_testsuites testsuite master.pike
 
 tinstall: aclocal master.pike aclocal
 	rm -rf test-install
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike --new-style pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)"
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)"
 
 
 verify: module_testsuites testsuite tinstall
