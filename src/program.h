@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.217 2005/03/14 17:59:14 per Exp $
+|| $Id: program.h,v 1.218 2005/03/15 09:59:28 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -592,7 +592,7 @@ void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
       really_free_program(_);						\
   }while(0)
 
-BLOCK_ALLOC_FILL_PAGES(program, n/a)
+BLOCK_ALLOC_FILL_PAGES(program, n/a);
 
 
 extern struct object *error_handler;
@@ -614,18 +614,7 @@ extern int compilation_depth;
 
 #define COMPILER_IN_CATCH 1
 
-#ifdef __cplusplus
-extern "C++" {
-    template<typename T> static inline int _low_alignof(T *ignored)
-    {
-	struct { char x; T y;} *bar = NULL;
-	return PTR_TO_INT(&bar->y);
-    }
-};
-#define ADD_STORAGE(X) low_add_storage( sizeof(X),_low_alignof((X*)NULL),0)
-#else
 #define ADD_STORAGE(X) low_add_storage(sizeof(X), ALIGNOF(X),0)
-#endif
 
 #define STORAGE_NEEDED(X) ((X)->storage_needed - (X)->inherits[0].storage_offset)
 
