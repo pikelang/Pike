@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.47 2001/06/25 22:19:18 mast Exp $
+ * $Id: builtin.cmod,v 1.48 2001/06/25 23:16:36 grubba Exp $
  */
 
 #include "global.h"
@@ -675,7 +675,7 @@ PIKECLASS backtrace_frame
       free_string(THIS->filename);
       THIS->filename = NULL;
     }
-    THIS->pc = 0;
+    THIS->pc = NULL;
     THIS->lineno = 0;
     free_svalue(&THIS->fun);
     THIS->fun.type = T_INT;
@@ -698,11 +698,14 @@ PIKECLASS backtrace_frame
       if (!THIS->filename) {
 	THIS->filename =
 	  make_shared_string(get_line(THIS->pc, THIS->prog, &THIS->lineno));
-	if (THIS->prog) {
-	  free_program(THIS->prog);
-	  THIS->prog = NULL;
-	}
       }
+      THIS->pc = NULL;
+    }
+    if (THIS->prog) {
+      free_program(THIS->prog);
+      THIS->prog = NULL;
+    }
+    if (THIS->filename) {
       ref_push_string(THIS->filename);
       push_text(":");
       push_int(THIS->lineno);
@@ -791,37 +794,31 @@ PIKECLASS backtrace_frame
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-	if (THIS->pc) {
-	  if (!THIS->filename) {
-	    THIS->filename =
-	      make_shared_string(get_line(THIS->pc, THIS->prog,
-					  &THIS->lineno));
-	    if (THIS->prog) {
-	      free_program(THIS->prog);
-	      THIS->prog = NULL;
-	    }
-	  }
-	  ref_push_string(THIS->filename);
-	} else {
-	  push_int(0);
-	}
-	break;
       case 1:	/* Linenumber */
 	if (THIS->pc) {
 	  if (!THIS->filename) {
 	    THIS->filename =
 	      make_shared_string(get_line(THIS->pc, THIS->prog,
 					  &THIS->lineno));
-	    if (THIS->prog) {
-	      free_program(THIS->prog);
-	      THIS->prog = NULL;
-	    }
 	  }
+	  THIS->pc = NULL;
+	}
+        if (THIS->prog) {
+	  free_program(THIS->prog);
+	  THIS->prog = NULL;
+	}
+        if (i) {
+	  /* Linenumber */
 	  push_int(THIS->lineno);
 	} else {
-	  push_int(0);
+	  /* Filename */
+	  if (THIS->filename) {
+	    ref_push_string(THIS->filename);
+	  } else {
+	    push_int(0);
+	  }
 	}
-        break;
+	break;
       case 2:	/* Function */
         push_svalue(&THIS->fun);
         break;
@@ -844,6 +841,84 @@ PIKECLASS backtrace_frame
     if (end_or_none) {
       f_aggregate(1 + end - index);
     }
+  }
+
+  PIKEFUN mixed `[]=(int index, mixed value)
+  {
+    INT32 numargs = 0;
+    INT32 i;
+
+    if (THIS->args) {
+      numargs = THIS->args->size;
+    }
+
+    numargs += 3;
+
+    if ((index < -numargs) || (index >= numargs)) {
+	index_error("pike_frame->`[]=", Pike_sp-args, args, NULL, Pike_sp-args,
+		    "Index %"PRINTPIKEINT"d is out of array range 0 - %d,\n",
+		    index, numargs-1);
+    } else if (index < 0) {
+      index += numargs;
+    }
+
+    if (args > 2) {
+      pop_n_elems(args - 2);
+      args = 2;
+    }
+
+    switch(index) {
+    case 0:	/* Filename */
+    case 1:	/* Linenumber */
+      /* First make sure we have line-number info. */
+      if (THIS->pc) {
+	if (!THIS->filename) {
+	  THIS->filename =
+	  make_shared_string(get_line(THIS->pc, THIS->prog,
+				      &THIS->lineno));
+	}
+	THIS->pc = NULL;
+      }
+      if (THIS->prog) {
+	free_program(THIS->prog);
+	THIS->prog = NULL;
+      }
+      if (index) {
+	/* Linenumber */
+	if (value->type != PIKE_T_INT) {
+	  SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2, "int(1..)");
+	}
+	THIS->lineno = value->u.integer;
+      } else {
+	/* Filename */
+	if (value->type != PIKE_T_STRING) {
+	  if ((value->type != PIKE_T_INT) ||
+	      (value->u.integer)) {
+	    SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2,
+				 "string|int(0..0)");
+	  }
+	  if (THIS->filename) {
+	    free_string(THIS->filename);
+	    THIS->filename = NULL;
+	  }
+	} else {
+	  if (THIS->filename) {
+	    free_string(THIS->filename);
+	    THIS->filename = NULL;
+	  }
+	  copy_shared_string(THIS->filename, value->u.string);
+	}
+      }
+      break;
+    case 2:	/* Function */
+      assign_svalue(&THIS->fun, value);
+      break;
+    default:	/* Arguments */
+      assign_svalue(THIS->args->item + index - 3, value);
+      break;
+    }
+    stack_swap();
+    pop_stack();
   }
 
 };
