@@ -1,8 +1,18 @@
-dnl $Id: testsuite.in,v 1.5 2003/08/07 16:12:38 nilsson Exp $
+dnl $Id: testsuite.in,v 1.6 2003/08/07 20:59:29 nilsson Exp $
 
 dnl Nettle.Yarrow
 
 cond([[ master()->resolv("Nettle") ]], [[
+  test_eq( Nettle.Yarrow()->min_seed_size(), 32)
+  test_eq( Nettle.Yarrow()->get_seed(), "")
+  test_eq( Nettle.Yarrow()->seed("\0"*32)->get_seed(),
+    String.hex2string("200fe7972e93822621682027def987291e977e546fd879bd86643e593212350701") )
+  test_eq( Nettle.Yarrow()->is_seeded(), 0)
+  test_eq( Nettle.Yarrow()->seed("\0"*32)->is_seeded(), 1)
+  test_do( Nettle.Yarrow()->seed("\0"*32)->force_reseed() )
+  test_do( Nettle.Yarrow()->needed_sources(), 2 )
+  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(0), "")
+  test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(1), "\26")
   test_eq( Nettle.Yarrow()->seed("\0"*32)->random_string(32),
     String.hex2string("16bcc413e02acc9fce9991ed14816cd3bb0b9da2deb8898fe1b0639234cd6c93") )
   test_eq( Nettle.Yarrow(7)->seed("\0"*32)->random_string(32),
@@ -20,6 +30,16 @@ cond([[ master()->resolv("Nettle") ]], [[
     return r->random_string(32)
   ]], String.hex2string("62bf8e8dcc9ec262ebc57a00005d3b98bf4336004c015c3eb97361e95e5b814d") )
 ]])  
+
+
+dnl Crypto.Random
+cond([[ master()->resolv("Nettle") ]], [[
+  test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
+  test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
+  test_eq( sizeof( Crypto.Random.random_string(128) ), 128)
+  test_eq( sizeof( Crypto.Random.blocking_random_string(3) ), 3)
+  test_do( Crypto.Random.add_entropy("xy", 16) )
+]])
 
 dnl Crypto.randomness
 
