@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.372 2003/11/13 00:25:49 mast Exp $
+# $Id: Makefile.in,v 1.373 2003/11/14 09:14:42 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -158,6 +158,7 @@ OBJ= \
  program.o \
  rbtree.o \
  rusage.o \
+ sscanf.o \
  stralloc.o \
  stuff.o \
  threads.o \
