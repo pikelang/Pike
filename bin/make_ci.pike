@@ -1,5 +1,5 @@
 /*
- * $Id: make_ci.pike,v 1.3 1999/03/20 16:23:26 grubba Exp $
+ * $Id: make_ci.pike,v 1.4 1999/03/20 16:30:55 grubba Exp $
  *
  * Creates the file case_info.h
  *
@@ -19,8 +19,9 @@ int main(int argc, array(string) argv)
 
   string data = Stdio.stdin.read();
 
-  foreach(data/"\r\n", string line) {
+  foreach(data/"\n", string line) {
     lineno++;
+    line -= "\r";
     array(string) info = line/";";
 
     if (!sizeof(line)) continue;
@@ -72,7 +73,7 @@ int main(int argc, array(string) argv)
 
   write(sprintf("/*\n"
 		" * Created by\n"
-		" * $Id: make_ci.pike,v 1.3 1999/03/20 16:23:26 grubba Exp $\n"
+		" * $Id: make_ci.pike,v 1.4 1999/03/20 16:30:55 grubba Exp $\n"
 		" * on %s"
 		" *\n"
 		" * Table used for looking up the case of\n"
