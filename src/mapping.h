@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.54 2004/04/18 02:16:06 mast Exp $
+|| $Id: mapping.h,v 1.55 2004/04/29 23:56:21 nilsson Exp $
 */
 
 #ifndef MAPPING_H
@@ -74,12 +74,16 @@ extern struct mapping *gc_internal_mapping;
 /* WARNING: this should not be used */
 #define MAPPING_LOOP(m) \
   for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data))) ;e<(m)->data->hashsize;e++) for(k=(m)->data->hash[e];k;k=k->next)
+
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
+
 #define NEW_MAPPING_LOOP(md) \
   for(((k = MD_KEYPAIRS(md, (md)->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ; e<(md)->size; e++,k++)
+
 /* WARNING: this should not be used */
 #define MAPPING_LOOP(m) \
   for(((k = MD_KEYPAIRS((m)->data, (m)->data->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data)) ) ; e<(m)->data->size; e++,k++)
+
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 #define free_mapping(M) do{						\
