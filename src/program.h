@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.149 2001/12/14 03:44:52 mast Exp $
+ * $Id: program.h,v 1.150 2001/12/16 18:51:58 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -18,6 +18,7 @@
 #include "time_stuff.h"
 #include "program_id.h"
 #include "pikecode.h"
+#include "block_alloc_h.h"
 
 #define STRUCT
 #include "compilation.h"
@@ -376,6 +377,8 @@ struct program
 #define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
 
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!sub_ref(_)) really_free_program(_); }while(0)
+
+BLOCK_ALLOC(program, n/a);
 
 
 extern struct object *error_handler;

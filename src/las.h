@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.53 2001/09/29 06:19:27 hubbe Exp $
+ * $Id: las.h,v 1.54 2001/12/16 18:51:57 mast Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -29,6 +29,7 @@ void yytype_error(char *msg, struct pike_type *expected_t,
 void yyerror(char *s);
 int islocal(struct pike_string *str);
 int verify_declared(struct pike_string *str);
+void cleanup_compiler(void);
 
 
 extern int cumulative_parse_error;
