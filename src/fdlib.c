@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.44 2000/08/20 16:15:25 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.45 2000/09/01 16:06:18 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -16,6 +16,8 @@ static MUTEX_T fd_mutex;
 HANDLE da_handle[MAX_OPEN_FILEDESCRIPTORS];
 int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
+
+#define FD_DEBUG
 
 #ifdef FD_DEBUG
 #define FDDEBUG(X) X
@@ -291,7 +293,8 @@ PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   return 0;
 }
 
-PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen)
+PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr,
+			       ACCEPT_SIZE_T *addrlen)
 {
   FD new_fd;
   SOCKET s;
@@ -312,7 +315,6 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addr
   }
   s=(SOCKET)da_handle[fd];
   mt_unlock(&fd_mutex);
-  *addrlen = 0;		/* Just in case it's a larger type than it should be */
   s=accept(s, addr, addrlen);
   if(s==INVALID_SOCKET)
   {
