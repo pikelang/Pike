@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.136 2003/04/24 23:48:36 mast Exp $
+|| $Id: interpret.h,v 1.137 2003/04/25 00:09:17 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -221,16 +221,16 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   }while(0)
 
 #define push_program(P) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct program *_=(P);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.program=_;							\
     _sp_++->type=PIKE_T_PROGRAM;					\
   }while(0)
 
 #define push_int(I) do{							\
-    struct svalue *_sp_ = Pike_sp++;					\
     INT_TYPE _=(I);							\
+    struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.integer=_;							\
     _sp_->type=PIKE_T_INT;						\
     _sp_->subtype=NUMBER_NUMBER;					\
@@ -244,32 +244,32 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   }while(0)
 
 #define push_mapping(M) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct mapping *_=(M);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.mapping=_;							\
     _sp_->type=PIKE_T_MAPPING;						\
   }while(0)
 
 #define push_array(A) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct array *_=(A);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.array=_ ;							\
     _sp_->type=PIKE_T_ARRAY;						\
   }while(0)
 
 #define push_multiset(L) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct multiset *_=(L);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.multiset=_;							\
     _sp_->type=PIKE_T_MULTISET;						\
   }while(0)
 
 #define push_string(S) do {						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct pike_string *_=(S);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->subtype=0;							\
     _sp_->u.string=_;							\
@@ -277,24 +277,24 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   }while(0)
 
 #define push_type_value(S) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct pike_type *_=(S);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.type=_;							\
     _sp_->type=PIKE_T_TYPE;						\
   }while(0)
 
 #define push_object(O) do {						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct object *_=(O);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.object=_;							\
     _sp_->type=PIKE_T_OBJECT;						\
   }while(0)
 
 #define push_float(F) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     FLOAT_TYPE _=(F);							\
+    struct svalue *_sp_ = Pike_sp++;					\
     _sp_->u.float_number=_;						\
     _sp_->type=PIKE_T_FLOAT;						\
   }while(0)
@@ -309,8 +309,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   }while(0)
 
 #define push_function(OBJ, FUN) do {					\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct object *_=(OBJ);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     debug_malloc_touch(_);						\
     _sp_->u.object=_;							\
     _sp_->subtype=(FUN);						\
@@ -318,40 +318,40 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   } while (0)
 
 #define ref_push_program(P) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct program *_=(P);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.program=_;							\
     _sp_->type=PIKE_T_PROGRAM;						\
   }while(0)
 
 #define ref_push_mapping(M) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct mapping *_=(M);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.mapping=_;							\
     _sp_->type=PIKE_T_MAPPING;						\
   }while(0)
 
 #define ref_push_array(A) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct array *_=(A);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.array=_ ;							\
     _sp_->type=PIKE_T_ARRAY;						\
   }while(0)
 
 #define ref_push_multiset(L) do{					\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct multiset *_=(L);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.multiset=_;							\
     _sp_->type=PIKE_T_MULTISET;						\
   }while(0)
 
 #define ref_push_string(S) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct pike_string *_=(S);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->subtype=0;							\
     _sp_->u.string=_;							\
@@ -359,24 +359,24 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   }while(0)
 
 #define ref_push_type_value(S) do{					\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct pike_type *_=(S);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.type=_;							\
     _sp_->type=PIKE_T_TYPE;						\
   }while(0)
 
 #define ref_push_object(O) do{						\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct object  *_=(O);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.object=_;							\
     _sp_->type=PIKE_T_OBJECT;						\
   }while(0)
 
 #define ref_push_function(OBJ, FUN) do {				\
-    struct svalue *_sp_ = Pike_sp++;					\
     struct object *_=(OBJ);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     add_ref(_);								\
     _sp_->u.object=_;							\
     _sp_->subtype=(FUN);						\
@@ -384,8 +384,8 @@ PMOD_EXPORT extern const char msg_pop_neg[];
   } while (0)
 
 #define push_svalue(S) do {						\
-    struct svalue *_sp_ = Pike_sp++;					\
     const struct svalue *_=(S);						\
+    struct svalue *_sp_ = Pike_sp++;					\
     assign_svalue_no_free(_sp_,_);					\
   }while(0)
 
