@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.188 2003/11/14 00:11:44 mast Exp $
+|| $Id: program.h,v 1.189 2003/11/14 00:35:11 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -10,19 +10,12 @@
 
 #include <stdarg.h>
 #include "global.h"
-#include "pike_types.h"
 #include "pike_macros.h"
 #include "pike_error.h"
 #include "svalue.h"
 #include "time_stuff.h"
 #include "program_id.h"
 #include "block_alloc_h.h"
-
-#define STRUCT
-#include "compilation.h"
-
-#define EXTERN
-#include "compilation.h"
 
 /* Needed to support dynamic loading on NT */
 PMOD_PROTO extern struct program_state * Pike_compiler;
@@ -93,12 +86,19 @@ struct svalue;
 #ifndef STRUCT_NODE_S_DECLARED
 #define STRUCT_NODE_S_DECLARED
 struct node_s;
+typedef struct node_s node;
 #endif
 
 #ifndef STRUCT_OBJECT_DECLARED
 #define STRUCT_OBJECT_DECLARED
 struct object;
 #endif
+
+#define STRUCT
+#include "compilation.h"
+
+#define EXTERN
+#include "compilation.h"
 
 /* Byte-code method identification. */
 #define PIKE_BYTECODE_DEFAULT	0
@@ -492,7 +492,7 @@ struct program
   struct program *prev;
   struct program *parent;
   
-  struct node_s *(*optimize)(struct node_s *n);
+  node *(*optimize)(node *n);
 
   void (*event_handler)(int);
 #ifdef PIKE_DEBUG
@@ -595,13 +595,13 @@ void ins_short(int i, void (*func)(char tmp));
 void add_relocated_int_to_program(INT32 i);
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
-struct node_s *find_module_identifier(struct pike_string *ident,
-				      int see_inherit);
-struct node_s *resolve_identifier(struct pike_string *ident);
-struct node_s *program_magic_identifier (struct program_state *state,
-					 int state_depth, int inherit_num,
-					 struct pike_string *ident,
-					 int colon_colon_ref);
+node *find_module_identifier(struct pike_string *ident,
+			     int see_inherit);
+node *resolve_identifier(struct pike_string *ident);
+node *program_magic_identifier (struct program_state *state,
+				int state_depth, int inherit_num,
+				struct pike_string *ident,
+				int colon_colon_ref);
 struct program *parent_compilation(int level);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
@@ -649,9 +649,7 @@ void low_inherit(struct program *p,
 PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
-void compiler_do_inherit(node *n,
-			 INT32 flags,
-			 struct pike_string *name);
+void compiler_do_inherit(node *n, INT32 flags, struct pike_string *name);
 int call_handle_inherit(struct pike_string *s);
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
