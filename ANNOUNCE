@@ -109,10 +109,10 @@ Image - Image Processing Module
 The Image module lets you perform common image manipulation and
 processing operations from Pike programs. The supported operations
 include cutting and pasting, scaling, rotation, linear filtering of
-most kinds, rendering text, etc. All drawing uses anti-alias. Using
-the Image module, you can automate jobs that would otherwise have
-required tedious work in an interactive image processing program such
-as Adobe PhotoShop.
+most kinds, rendering text, etc. Anti-aliasing can be used when
+performing any kind of drawing operation. Using the Image module, you
+can automate jobs that would otherwise have required tedious work in
+an interactive image processing program such as Adobe PhotoShop.
 
 Currently, the only input format is ppm. Output formats are ppm and
 gif.
