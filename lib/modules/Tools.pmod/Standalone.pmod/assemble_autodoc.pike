@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.22 2002/12/12 21:15:02 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.23 2002/12/13 12:40:11 grubba Exp $
 
 // AutoDoc mk II assembler
 
@@ -400,7 +400,7 @@ void move_items(Node n, mapping jobs, void|Node wrapper)
     mapping e = jobs[name];
     if(!e) continue;
 
-    Node wr = Node(XML_ELEMENT, "namespace",
+    Node wr = Node(XML_ELEMENT, "autodoc",
 		   n->get_attributes()+(["hidden":"1"]), 0);
     if(wrapper)
       wr = wrap( wr, wrapper->clone() );
