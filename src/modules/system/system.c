@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.100 2001/04/09 16:51:05 jonasw Exp $
+ * $Id: system.c,v 1.101 2002/09/30 11:01:54 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.100 2001/04/09 16:51:05 jonasw Exp $");
+RCSID("$Id: system.c,v 1.101 2002/09/30 11:01:54 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2104,11 +2104,11 @@ void pike_module_init(void)
 #ifdef HAVE_SYSLOG
   
 /* function(string,int,int:void) */
-  ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
+  ADD_EFUN("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("openlog", f_openlog,tFunc(tStr tInt tInt,tVoid), 0);
   
 /* function(int,string:void) */
-  ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
+  ADD_EFUN("syslog", f_syslog,tFunc(tInt tStr,tVoid), OPT_SIDE_EFFECT);
   ADD_FUNCTION("syslog", f_syslog,tFunc(tInt tStr,tVoid), 0);
   
 /* function(:void) */
