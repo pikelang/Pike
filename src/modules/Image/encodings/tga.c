@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.19 2000/08/09 13:03:49 grubba Exp $
+ * $Id: tga.c,v 1.20 2000/08/10 16:30:04 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.19 2000/08/09 13:03:49 grubba Exp $");
+RCSID("$Id: tga.c,v 1.20 2000/08/10 16:30:04 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -490,7 +490,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   unsigned char *cmap=NULL, *data;
   int itype=0;
   int really_no_alpha = 0;
-  ptrdiff_t (*myfread)(unsigned char *, int, int, struct buffer *);
+  ptrdiff_t (*myfread)(unsigned char *, size_t, size_t, struct buffer *);
 
   /* Find out whether the image is horizontally or vertically reversed.
      The GIMP likes things left-to-right, top-to-bottom. */
