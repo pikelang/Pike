@@ -1,4 +1,4 @@
-// $Id: benchmark.pike,v 1.2 2002/12/14 04:34:15 nilsson Exp $
+// $Id: benchmark.pike,v 1.3 2002/12/17 19:49:34 per Exp $
 
 constant description = "Runs some built in Pike benchmarks.";
 constant help = #"
@@ -14,6 +14,9 @@ Arguments:
 -s<number>, --max-seconds=<number>
   Runs a test at most <number> of seconds, rounded up to the closest
   complete test. Defaults to 5.
+
+-t<glob>, --tests=<glob>
+  Only run the specified tests.
 ";
 
 int(0..0) main(int num, array(string) args)
@@ -32,12 +35,14 @@ int(0..0) main(int num, array(string) args)
 
    int seconds_per_test = 5;
    int maximum_runs = 25;
+   string test_glob = "*";
 
-  foreach(Getopt.find_all_options(args, ({
-    ({ "help",    Getopt.NO_ARG,  "-h,--help"/"," }),
-    ({ "maxrun",  Getopt.HAS_ARG, "-m,--max-runs"/"," }),
-    ({ "maxsec",  Getopt.HAS_ARG, "-s,--max-seconds"/"," }),
-  })), array opt)
+   foreach(Getopt.find_all_options(args, ({
+     ({ "help",    Getopt.NO_ARG,  "-h,--help"/"," }),
+     ({ "maxrun",  Getopt.HAS_ARG, "-m,--max-runs"/"," }),
+     ({ "maxsec",  Getopt.HAS_ARG, "-s,--max-seconds"/"," }),
+     ({ "tests",   Getopt.HAS_ARG, "-t,--tests"/"," }),
+   })), array opt)
     switch(opt[0])
     {
       case "help":
@@ -49,6 +54,8 @@ int(0..0) main(int num, array(string) args)
       case "maxsec":
 	seconds_per_test = (int)opt[1];
 	break;
+      case "tests":
+	test_glob = opt[1];
     }
 
    Tools.Shoot.ExecTest("Overhead",Tools.Shoot.Overhead())
@@ -57,7 +64,7 @@ int(0..0) main(int num, array(string) args)
    write("test                        total    user    mem   (runs)\n");
 
 /* always run overhead check first */
-   foreach (({"Overhead"})+(sort(indices(tests))-({"Overhead"}));;string id)
+   foreach (glob(test_glob,({"Overhead"})+(sort(indices(tests))-({"Overhead"})));;string id)
    {
       Tools.Shoot.ExecTest(id,tests[id])
 	 ->run(seconds_per_test,maximum_runs);
