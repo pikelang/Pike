@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.35 2004/03/10 16:31:41 nilsson Exp $
+|| $Id: accept_and_parse.c,v 1.36 2004/03/25 12:56:07 grubba Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -785,9 +785,6 @@ PIKE_MODULE_EXIT
    * pike level.
    */
   mt_lock( &queue_mutex );
-#ifdef HAVE_TIMEOUTS
-  mt_lock( &aap_timeout_mutex );
-#endif
   /* Now, in theory, if all threads are stopped, we can free all the data.
    * BUT: There is no way to know _when_ all threads are stopped, they may
    * be in read() or something similar. Also, the locking of aap_timeout_mutex
