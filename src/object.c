@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.192 2001/12/19 15:19:24 mast Exp $");
+RCSID("$Id: object.c,v 1.193 2001/12/19 22:01:01 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1328,9 +1328,9 @@ void cleanup_objects(void)
     }
     SET_NEXT_AND_FREE(o,free_object);
   }
-  free_object(master_object);
+  if (master_object) free_object(master_object);
   master_object=0;
-  free_program(master_program);
+  if (master_program) free_program(master_program);
   master_program=0;
   destruct_objects_to_destruct();
 }

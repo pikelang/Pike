@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.80 2001/12/09 19:58:36 mast Exp $");
+RCSID("$Id: error.c,v 1.81 2001/12/19 22:01:01 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -371,7 +371,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   (void)VFPRINTF(stderr, fmt, args);
 
   d_flag=t_flag=0;
-  if(Pike_sp && Pike_interpreter.evaluator_stack)
+  if(Pike_sp && Pike_interpreter.evaluator_stack && get_master())
   {
     fprintf(stderr,"Attempting to dump backlog (may fail)...\n");
     push_error("Backtrace at time of fatal:\n");

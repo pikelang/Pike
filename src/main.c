@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.139 2001/12/14 04:10:20 nilsson Exp $");
+RCSID("$Id: main.c,v 1.140 2001/12/19 22:01:01 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -669,30 +669,30 @@ int dbm_main(int argc, char **argv)
 
   init_modules();
 
-  TRACE((stderr, "Init master...\n"));
-
-  master();
-  call_callback(& post_master_callbacks, 0);
-  free_callback_list(& post_master_callbacks);
-
 #ifdef TEST_MULTISET
   /* A C-level testsuite for the low level stuff in multisets. */
   test_multiset();
 #endif
 
-  TRACE((stderr, "Call master->_main()...\n"));
-  
   if(SETJMP(back))
   {
     if(throw_severity == THROW_EXIT)
     {
       num=throw_value.u.integer;
     }else{
-      call_handle_error();
+      if (get_master()) call_handle_error();
       num=10;
     }
   }else{
     back.severity=THROW_EXIT;
+
+    TRACE((stderr, "Init master...\n"));
+
+    master();
+    call_callback(& post_master_callbacks, 0);
+    free_callback_list(& post_master_callbacks);
+
+    TRACE((stderr, "Call master->_main()...\n"));
 
     a=allocate_array_no_init(argc,0);
     for(num=0;num<argc;num++)
