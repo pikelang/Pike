@@ -955,9 +955,11 @@ string parse_not_doc(Node n) {
       cc = c->get_first_element("value");
       if(cc) ret += "<font color='green'>" + cc->value_of_node() + "</font>";
       else if( !c->count_children() );
-      else if( get_first_element(c)->get_any_name()=="type" && c->get_attributes()->name) {
-	ret += parse_type(get_first_element(get_first_element(c))) + " <font color='#005080'>" +
-	  c->get_attributes()->name + "</font>";
+      else if( get_first_element(c)->get_any_name()=="type") {
+	ret += parse_type(get_first_element(get_first_element(c)));
+	if(c->get_attributes()->name)
+	  ret += " <font color='#005080'>" +
+	    c->get_attributes()->name + "</font>";
       }
       else
 	error( "Malformed argument element.\n" + c->html_of_node() + "\n" );
