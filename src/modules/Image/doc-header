@@ -62,3 +62,18 @@
 **!	</table>
 **! note
 **!	<font size=-1><pre>Image module documentation is based on these file versions:
+**!
+**! module Image
+**! class Image
+**! class Colortable
+**! class Layer
+**! class Font
+**!
+**! module Image
+**! submodule Color
+**!
+**! module Image
+**! submodule X
+**!
+**! module Image
+**! submodule ANY
