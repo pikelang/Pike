@@ -92,6 +92,9 @@ testfont binary
 /src/modules/Image/x.c foreign_ident
 /src/modules/MIME/mime.c foreign_ident
 /src/modules/MIME/module.pmod.in foreign_ident
+/src/modules/Msql/configure.in foreign_ident
+/src/modules/Msql/msql_config.h.in foreign_ident
+/src/modules/Msql/msqlmod.c foreign_ident
 /src/modules/Mysql/Makefile.in foreign_ident
 /src/modules/Mysql/acconfig.h foreign_ident
 /src/modules/Mysql/configure.in foreign_ident

@@ -1,0 +1,23 @@
+/* $Id: msql_config.h.in,v 1.1.1.1 1997/10/14 21:55:42 grubba Exp $ */
+#undef STDC_HEADERS
+
+#undef HAVE_MSQL_H
+
+#undef HAVE_LIBMSQL
+
+#undef HAVE_MSQLLISTINDEX
+
+#undef HAVE_PIKE_SVALUE_H
+
+/* End of autoconfigurable section */
+#undef HAVE_MSQL
+
+#ifdef HAVE_MSQL_H
+#ifdef HAVE_LIBMSQL
+#define HAVE_MSQL
+#endif
+#endif
+
+#ifdef HAVE_MSQLLISTINDEX
+#define MSQL_VERSION_2
+#endif

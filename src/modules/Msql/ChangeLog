@@ -1,0 +1,49 @@
+Mon Jun 30 13:57:46 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* configure.in, configure:
+	Configure fixes which allow much more flexibility in configuration and
+	maintainance.
+
+Sun Jun 29 20:05:50 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* msqlmod.c:
+	Corretto un errore nel parsing degli argomenti in list_index()
+
+	* configure.in: Eliminati dei doppi test in configure.in
+
+Thu Jun 19 10:26:29 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* msqlmod.c:
+	I had unavvertitedly rolled back to an older version of msqlmod.c.
+	Corrected the reinserted bugs.
+
+Fri Jun 13 21:42:48 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* ChangeLog, INSTALL: Some documentation.
+
+	* Makefile.in, msqlmod.c:
+	Seems to work now. I guess it's time to bump the version number up...
+
+	* msqlmod.c, Makefile.in: Piccola correzione in msqlmod.c
+	Sempre alla caccia di un hook in dynamic_module_makefile
+
+	* Makefile.in:
+	Sulla strada per sistemare la compilazione... dovremmo quasi esserci.
+
+	* lib/msql.h, lib/msql.pike, configure.in, msql_config.h.in, msqlmod.c, Makefile.in, configure:
+	Compattata la distribuzione: ora installa le librerie
+	partendo dalla sola directory pike/src/modules/Msql.
+
+	* configure, dependencies: Aggiunto il file vuoto "dependencies".
+
+Wed Apr  2 11:31:44 1997  Francesco Chemolli  <kinkie@ai-chan>
+
+	* COPYING, ChangeLog, INSTALL, Makefile.in, NOTES, configure, configure.in, doc/msql, msqlmod.c, test_msqlmod.pike, testsuite.in:
+	Initial revision
+
+	* COPYING, ChangeLog, INSTALL, Makefile.in, NOTES, configure, configure.in, doc/msql, msqlmod.c, test_msqlmod.pike, testsuite.in:
+	Initial version of the Msql module for Pike/0.5b4.
+	The Makefile has to be adjusted to auto-install all necessary things,
+	but this needs investigation in the Pike makefiles structure.
+	Maybe the documentation is out of date.
+
