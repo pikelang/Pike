@@ -2,16 +2,13 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.30 2003/01/20 17:48:45 nilsson Exp $ */
+// $Id: mkpeep.pike,v 1.31 2003/04/01 00:08:16 nilsson Exp $
 
-string skipwhite(string s)
-{
-#if DEBUG > 9
-  werror("skipwhite("+s+")\n");
-#endif
+#define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
-  sscanf(s,"%*[ \t\n]%s",s);
-  return s;
+void err(string e) {
+  werror(e);
+  exit(1);
 }
 
 /* Find the matching parenthesis */
@@ -81,141 +78,133 @@ array(string) explode_comma_expr(string s)
   return ret;
 }
 
+array(string) tokenize(string line) {
+  array(string) t = ({});
 
-/* Splitline into components */
-array(int|string|array(string)) split(string s)
-{
-  array(string) a, b;
-  int e,opcodes;
-  string line=s;
-  opcodes=0;
-
-#ifdef DEBUG
-  werror("split("+s+")\n");
-#endif
-
-  b=({});
-
-  s=skipwhite(s);
-
-  /* First, we tokenize */
-  while(sizeof(s))
+  while(sizeof(line))
   {
-    switch(s[0])
+    switch(line[0])
     {
-      /* Source / Target separator */
+      // Source / Target separator
     case ':':
-      b+=({":"});
-      s=s[1..];
+      t += ({":"});
+      line = line[1..];
       break;
 
     case '!':
-      b+=({"!"});
-      s=s[1..];
+      t += ({"!"});
+      line = line[1..];
       break;
 
       // Any identifier (i.e. not eof).
     case '?':
-      b+=({"?"});
-      s=s[1..];
+      t += ({"?"});
+      line = line[1..];
       break;
 
-      /* Identifier */
+      // Identifier
     case 'A'..'Z':
     case 'a'..'z':
     case '0'..'9':
     case '_':
-      sscanf(s,"%[a-zA-Z0-9_]%s",string tmp,s);
-      b+=({"F_"+tmp});
+      sscanf(line, "%[a-zA-Z0-9_]%s", string id, line);
+      t += ({"F_"+id});
       break;
 
-      /* argument */
+      // argument
     case '(':
       {
-	int i=find_end(s);
-	b+=({ s[0..i] });
-	s=s[i+1..sizeof(s)];
+	int i=find_end(line);
+	t += ({ line[0..i] });
+	line = line[i+1..];
       }
       break;
 
-      /* condition */
+      // condition
     case '[':
       {
-	int i=find_end(s);
-	b+=({ s[0..i] });
-	s=s[i+1..sizeof(s)];
+	int i=find_end(line);
+	t += ({ line[0..i] });
+	line = line[i+1..];
       }
       break;
     }
 
-    s=skipwhite(s);
+    SKIPWHITE(line);
   }
 
-  /* Find the source/dest separator */
-  int i=search(b, ":");
-  if(i==-1)
-  {
-    werror("Syntax error (%O).\n",b);
-    return 0;
+  return t;
+}
+
+class Rule {
+  array(string) from;
+  array(string) to;
+  int opcodes;
+  string line;
+
+  mapping(string:array(string)) varmap = ([]);
+
+  void create(string _line) {
+    line = _line;
+    array(string) tokens = tokenize(line);
+
+    // Section tokens into source and target.
+    int div = search(tokens, ":");
+    if(div==-1) err("Syntax error. No source/target delimiter.\n");
+    from = tokens[..div-1];
+    to = tokens[div+1..];
+
+    // Count opcodes
+    foreach(from, string ops)
+      if( (<'F', '?'>)[ops[0]] )
+	opcodes++;
+
+    post_process();
   }
 
-  /* a=source, b=dest */
-  a=b[..i-1];
-  b=b[i+1..];
+  void post_process() {
+    array(string) nt = ({});
 
-  /* Count 'steps' in source */
-  for(e=0;e<sizeof(a);e++)
-    if((<'F', '?'>)[a[e][0]])
-      opcodes++;
-
-  i=0;
-  array(string) newa=({});
-  for(e=0;e<sizeof(a);e++)
-  {
-    switch(a[e][0])
-    {
+    int i;
+    foreach(from, string t)
+      switch(t[0]) {
       case '(':
-	array(string) tmp=explode_comma_expr(a[e][1..sizeof(a[e])-2]);
-	for(int x=0;x<sizeof(tmp);x++)
-	{
-	  string arg=sprintf("$%d%c", i, 'a'+x);
-	  if(arg != tmp[x] && sizeof(tmp[x]))
-	    newa+=({ sprintf("(%s)==%s",tmp[x], arg) });
+	array(string) exprs = explode_comma_expr(t[1..sizeof(t)-2]);
+	foreach(exprs; int x; string expr) {
+	  string arg = sprintf("$%d%c", i, 'a'+x);
+	  if(arg != expr && sizeof(expr))
+	    nt += ({ sprintf("(%s)==%s", expr, arg) });
 	}
-      break;
+	break;
 
-    case '[':
-      newa+=({ a[e][1..sizeof(a[e])-2] });
-      break;
+      case '[':
+	nt += ({ t[1..sizeof(t)-2] });
+	break;
 
-    case 'F':
-      i++;
-      newa+=({ a[e]+"==$"+i+"o" });
-      break;
+      case 'F':
+	i++;
+	nt += ({ t+"==$"+i+"o" });
+	break;
 
-    case '?':
-      i++;
-      newa += ({"$" + i + "o != -1"});
-      break;
+      case '?':
+	i++;
+	nt += ({ "$"+i+"o != -1" });
+	break;
 
-      default: newa+=({a[e]});
-    }
+      default:
+	nt += ({ t });
+      }
+
+    for(int e; e<sizeof(nt); e++)
+      if(nt[e]=="!") {
+	sscanf(nt[e+1], "%s==%s", string op, string arg);
+	nt[e+1] = sprintf("%s != %s && %s !=-1", op, arg, arg);
+	nt = nt[..e-1]+nt[e+1..];
+	e--;
+      }
+
+    from = nt;
   }
-  a=newa;
-
-  // Magic for the '!' operator
-  for(e=0;e<sizeof(a);e++)
-  {
-    if(a[e]=="!")
-    {
-      sscanf(a[e+1],"%s==%s",string op, string arg);
-      a[e+1]=sprintf("%s != %s && %s !=-1",op,arg,arg);
-      a=a[..e-1]+a[e+1..];
-      e--;
-    }
-  }
-
-  return ({a,b,opcodes, line,a});
 }
 
 /* Replace $[0-9]+(o|a|b) with something a C compiler can understand */
@@ -243,7 +232,7 @@ string treat(string expr)
 }
 
 /* Dump C co(d|r)e */
-void dump2(array(array(array(string))) data,int ind)
+void dump2(array(Rule) data, int ind)
 {
   int i,maxv;
   string test;
@@ -251,13 +240,11 @@ void dump2(array(array(array(string))) data,int ind)
 
   while(1)
   {
-    mapping(string:mapping(string:array(array(array(string))))) foo = ([]);
+    // meta variable : condition (from) : array(Rule)
+    mapping(string:mapping(string:array(Rule))) foo = ([]);
 
-    /* First we create a mapping:
-     * foo [ meta variable ] [ condition ] = ({ lines });
-     */
-    foreach(data, array(array(string)) d)
-      foreach(d[0], string line)
+    foreach(data, Rule d)
+      foreach(d->from, string line)
       {
 	if(sscanf(line,"F_%*[A-Z0-9_]==%s", var)==2 ||
 	   sscanf(line,"(%*d)==%s", var)==2 ||
@@ -265,11 +252,12 @@ void dump2(array(array(array(string))) data,int ind)
 	{
 	  if(!foo[var]) foo[var]=([]);
 	  if(!foo[var][line]) foo[var][line]=({});
-	  foo[var][line]+=({d});
+	  foo[var][line] += ({d});
 	}
       }
 
-    /* Check what variable has most values */
+    // Check what variable has most values.
+    // Sort to create deterministic result.
     maxv = 0;
     foreach(sort(indices(foo)), string ptest)
       if(sizeof(foo[ptest])>maxv) {
@@ -277,20 +265,21 @@ void dump2(array(array(array(string))) data,int ind)
 	maxv = sizeof(foo[ptest]);
       }
 
-    /* If zero, done */
+    // If zero, done
     if(maxv <= 1) break;
 
     write("%*nswitch(%s)\n", ind, treat(test));
     write("%*n{\n", ind);
 
-    mapping(string:array(array(array(string)))) d = foo[test];
+    // condition : array(Rule)
+    mapping(string:array(Rule)) d = foo[test];
     array(string) a = indices(d);
-    array(array(array(array(string)))) b = values(d);
+    array(array(Rule)) b = values(d);
     sort(a,b);
 
-    /* foo: variable
+    /* test : variable
      * a[x] : condition
-     * b[x] : line
+     * b[x] : rules
      */
 
     for(int i=0; i<sizeof(a); i++)
@@ -305,7 +294,9 @@ void dump2(array(array(array(string))) data,int ind)
 
       write("%*ncase %s:\n", ind, cons);
 
-      foreach(b[i], array(array(string)) d) d[0]-=({a[i]});
+      foreach(b[i], Rule d)
+	d->from -= ({ a[i] });
+
       dump2(b[i], ind+2);
       write("%*n  break;\n", ind);
       write("\n");
@@ -317,27 +308,27 @@ void dump2(array(array(array(string))) data,int ind)
   /* Take care of whatever is left */
   if(sizeof(data))
   {
-    foreach(data, array(array(string)) d)
+    foreach(data, Rule d)
     {
-      write("%*n/* %s */\n", ind, d[3]);
+      write("%*n/* %s */\n", ind, d->line);
 
-      if(sizeof(d[0]))
+      if(sizeof(d->from))
       {
 	string test;
-	test=treat(d[0]*" && ");
+	test=treat(d->from*" && ");
 	write("%*nif(%s)\n", ind, test);
       }
       write("%*n{\n", ind);
       ind+=2;
-      write("%*ndo_optimization(%d,\n", ind, d[2]);
+      write("%*ndo_optimization(%d,\n", ind, d->opcodes);
 
-      for(int i=0; i<sizeof(d[1]); i++)
+      for(int i=0; i<sizeof(d->to); i++)
       {
 	array args=({});
-	string fcode=d[1][i];
-	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
+	string fcode=d->to[i];
+	if(i+1<sizeof(d->to) && d->to[i+1][0]=='(')
 	{
-	  string tmp=d[1][i+1];
+	  string tmp=d->to[i+1];
 	  args=explode_comma_expr(tmp[1..sizeof(tmp)-2]);
 	  i++;
 	}
@@ -360,21 +351,21 @@ void dump2(array(array(array(string))) data,int ind)
 
 int main(int argc, array(string) argv)
 {
-  array(array(array(string))) data=({});
+  array(Rule) data=({});
 
-  /* Read input file */
-  string f=cpp(Stdio.read_file(argv[1]),argv[1]);
+  // Read input file
+  string f=cpp(Stdio.read_file(argv[1]), argv[1]);
   foreach(f/"\n",f)
   {
     if(f=="" || f[0]=='#') continue;
 
-    /* Parse expressions */
-    foreach(f/";",f)
-      {
-	f=skipwhite(f);
-	if(!sizeof(f)) continue;
-	data+=({split(f)});
-      }
+    // Parse expressions
+    foreach(f/";",f) {
+      SKIPWHITE(f);
+      //      f = String.trim_all_whites(f);
+      if(!sizeof(f)) continue;
+      data += ({ Rule(f) });
+    }
   }
 
   write("  len=instrbuf.s.len/sizeof(p_instr);\n"
@@ -398,7 +389,7 @@ int main(int argc, array(string) argv)
 	"    }\n"
 	"#endif\n\n");
 
-  dump2(data,4);
+  dump2(data, 4);
 
   write("    advance();\n");
   write("  }\n");
