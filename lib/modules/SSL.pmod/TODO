@@ -1,0 +1,7 @@
+SSL TODO-list, 970307
+
+* ASN.1 support
+* Client connections
+* Splitting of large handshake packets
+* Combining small application packets
+* Blocking I/O
