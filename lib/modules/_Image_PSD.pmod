@@ -216,9 +216,6 @@ mapping __decode( mapping|string what, mapping|void options )
 array(object) decode_background( mapping data )
 {
   object img;
-  if( data->depth == 1 &&
-      data->mode != Greyscale )
-    return ({ 0, 0 });
 
   if( data->image_data )
     img = ___decode_image_data(data->width,       data->height, 
@@ -278,22 +275,26 @@ array decode_layers( string|mapping what, mapping|void opts )
   
   mapping lopts = ([ "tiled":1, ]);
 
-   if( opts->background )
-   {
-     lopts->image = Image.Image( 32, 32, opts->background );
-     lopts->alpha = Image.Image( 32, 32, Image.Color.white );
-     lopts->alpha_value = 1.0;
-   }
-
-  [object img,object alpha] = decode_background( what );
-  if( img )
+  if( opts->background )
   {
-    lopts->image = img;
-    if( alpha )
-      lopts->alpha = alpha;
-    else
-      lopts->alpha = 0;
+    lopts->image = Image.Image( 32, 32, opts->background );
+    lopts->alpha = Image.Image( 32, 32, Image.Color.white );
     lopts->alpha_value = 1.0;
+  }
+
+  object img, alpha;
+  if( !what->layers || !sizeof(what->layers))
+  {
+    [ img, alpha ] = decode_background( what );
+    if( img )
+    {
+      lopts->image = img;
+      if( alpha )
+        lopts->alpha = alpha;
+      else
+        lopts->alpha = 0;
+      lopts->alpha_value = 1.0;
+    }
   }
   array layers;
   if( lopts->image )
