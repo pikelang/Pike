@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.3 1997/02/27 09:10:52 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.4 1997/02/27 09:14:21 hubbe Exp $");
 
 #include "zlib_machine.h"
 #include "types.h"
@@ -314,7 +314,7 @@ static void gz_inflate(INT32 args)
 
 static void init_gz_inflate(struct object *o)
 {
-  mt_init(& THIS->locked);
+  mt_init(& THIS->lock);
   MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
