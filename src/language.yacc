@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.274 2002/05/02 12:41:29 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.275 2002/05/05 00:28:30 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3263,24 +3263,38 @@ idents: low_idents
 
 inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
   {
-    int e = 0;
+    int e = -1;
 
     inherit_state = Pike_compiler;
 
     for (inherit_depth = -1; inherit_depth < compilation_depth;
 	 inherit_depth++, inherit_state = inherit_state->previous) {
-      if ((e = find_inherit(inherit_state->new_program, $1->u.sval.u.string)))
+      int inh = find_inherit(inherit_state->new_program, $1->u.sval.u.string);
+      if (inh) {
+	e = inh;
 	break;
+      }
+      if (!TEST_COMPAT (7, 2) &&
+	  inherit_state->previous->new_program &&
+	  ID_FROM_INT (inherit_state->previous->new_program,
+		       inherit_state->previous->parent_identifier)->name ==
+	  $1->u.sval.u.string) {
+	e = 0;
+	break;
+      }
     }
-    if (!e) {
-      my_yyerror("No such inherit %s.", $1->u.sval.u.string->str);
+    if (e == -1) {
+      if (TEST_COMPAT (7, 2))
+	my_yyerror("No such inherit %s.", $1->u.sval.u.string->str);
+      else
+	my_yyerror("No inherit or surrounding class %s.", $1->u.sval.u.string->str);
     }
     free_node($1);
     $$ = e;
   }
   | inherit_specifier TOK_IDENTIFIER TOK_COLON_COLON
   {
-    if ($1) {
+    if ($1 >= 0) {
       int e = 0;
 #if 0
       /* FIXME: The inherit modifiers aren't kept. */
@@ -3299,7 +3313,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 	} else {
 	  my_yyerror("No such inherit %s.", $2->u.sval.u.string->str);
 	}
-	$$ = 0;
+	$$ = -1;
       } else {
 	/* We know stuff about the inherit structure... */
 	$$ = e + $1;
@@ -3307,7 +3321,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
     }
     free_node($2);
   }
-  | inherit_specifier bad_identifier TOK_COLON_COLON { $$ = 0; }
+  | inherit_specifier bad_identifier TOK_COLON_COLON { $$ = -1; }
   ;
 
 low_idents: TOK_IDENTIFIER
@@ -3359,7 +3373,7 @@ low_idents: TOK_IDENTIFIER
   }
   | inherit_specifier TOK_IDENTIFIER
   {
-    if ($1) {
+    if ($1 >= 0) {
       int id;
 
       if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);

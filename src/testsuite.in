@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.507 2002/05/02 16:33:14 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.508 2002/05/05 00:28:30 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2062,6 +2062,83 @@ test_compile_any([[
 test_compile_any([[
   class X { static void hej() {} }
   class Y { inherit X:banan; void hopp() { banan::hej(); } }
+]])
+
+test_program([[
+  class X {
+    int i = 17;
+    class Y {
+      constant i = 18;
+      mixed f (int i) {return ({i, Y::i, X::i});}
+    }
+  }
+  int a() {return equal (X()->Y()->f (19), ({19, 18, 17}));}
+]])
+
+test_compile_error_any([[
+  #pike 7.2
+  class X {
+    int i = 17;
+    class Y {
+      constant i = 18;
+      mixed f (int i) {return ({i, Y::i, X::i});}
+    }
+  }
+]])
+
+test_compile_error_any([[
+  class X {
+    constant i = 18;
+    mixed f() {return Y::i;}
+  }
+]])
+
+test_program([[
+  class A {
+    int i = 17;
+  }
+  class X {
+    inherit A: Y;
+    class Y {
+      constant i = 18;
+      mixed f() {return Y::i;}
+    }
+  }
+  int a() {return X()->Y()->f() == 18;}
+]])
+
+test_program([[
+  #pike 7.2
+  class A {
+    int i = 17;
+  }
+  class X {
+    inherit A: Y;
+    class Y {
+      constant i = 18;
+      mixed f() {return Y::i;}
+    }
+  }
+  int a() {return X()->Y()->f() == 17;}
+]])
+
+test_program([[
+  class A {
+    string s = "A";
+  }
+  class B {
+    constant s = "B";
+  }
+  class X {
+    constant s = "X";
+    inherit A;
+    class Y {
+      inherit B: A;
+      constant s = "Y";
+      mixed f() {return X::s + X::A::s + Y::s + Y::A::s + A::s;}
+    }
+  }
+  int a() {return X()->Y()->f() == "XAYBB";}
 ]])
 
 // testing virtual overloading
