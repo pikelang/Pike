@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.402 2001/08/10 21:38:57 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.403 2001/08/15 18:42:49 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3111,6 +3111,8 @@ PMOD_EXPORT void f_compile(INT32 args)
 		 BIT_VOID | BIT_INT | BIT_PROGRAM,
 		 BIT_VOID | BIT_INT | BIT_OBJECT,
 		 0);
+
+  check_c_stack(65536);
 
   o=0;
   switch(args)
