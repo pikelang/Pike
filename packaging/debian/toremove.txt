@@ -17,8 +17,14 @@ usr/lib/pike/@VERSION@/lib/modules/*sybase.*
 usr/share/pike/@VERSION@/lib/modules/*sybase.*
 usr/lib/pike/@VERSION@/lib/modules/Sql.pmod/*sybase.*
 usr/share/pike/@VERSION@/lib/modules/Sql.pmod/*sybase.*
+usr/lib/pike/@VERSION@/lib/modules/*Oracle.*
+usr/share/pike/@VERSION@/lib/modules/*Oracle.*
+usr/lib/pike/@VERSION@/lib/modules/Sql.pmod/*oracle.*
+usr/share/pike/@VERSION@/lib/modules/Sql.pmod/*oracle.*
 usr/lib/pike/@VERSION@/lib/modules/*Gnome.*
 usr/share/pike/@VERSION@/lib/modules/*Gnome.*
+usr/lib/pike/@VERSION@/lib/modules/*DVB.*
+usr/share/pike/@VERSION@/lib/modules/*DVB.*
 usr/lib/pike/@VERSION@/include/pike/fixdepends.sh
 usr/lib/pike/@VERSION@/include/pike/install_module
 usr/lib/pike/@VERSION@/include/pike/mktestsuite
