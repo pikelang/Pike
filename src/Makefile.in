@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.280 2001/11/28 01:06:18 nilsson Exp $
+# $Id: Makefile.in,v 1.281 2001/12/09 01:13:14 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -494,8 +494,8 @@ gdb_verify: module_testsuites testsuite master-stamp
 	  echo >>.gdbinit handle SIG32 nostop noprint pass ;\
 	else :; fi
 	@echo >>.gdbinit break debug_fatal
-	@if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi;  \
-	echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike --no-watchdog -v -v $$args
+	@if test "$(TESTARGS)" = "" ; then args="-a -v -v" ; else args="$(TESTARGS)" ; fi;  \
+	echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike --no-watchdog $$args
 	gdb ./pike
 	@rm .gdbinit
 
