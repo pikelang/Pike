@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.116 2003/04/15 14:39:43 nilsson Exp $
+# $Id: Makefile,v 1.117 2003/06/02 19:01:27 mast Exp $
 #
 # Meta Makefile
 #
@@ -181,6 +181,9 @@ testsuites:
 
 just_verify:
 	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=just_verify"
+
+valgrind_verify:
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=valgrind_verify"
 
 verify:
 	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=verify"
