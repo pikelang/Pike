@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.26 1998/05/25 16:41:23 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.27 1998/05/25 20:47:47 marcus Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -424,6 +424,97 @@ static int read_set(unsigned char *match,int cnt,char *set,int match_len)
 }
 
 
+
+/* Parse binary IEEE strings on a machine which uses a different kind
+   of floating point internally */
+
+#ifndef FLOAT_IS_IEEE_BIG
+#ifndef FLOAT_IS_IEEE_LITTLE
+#define NEED_CUSTOM_IEEE
+#endif
+#endif
+#ifndef NEED_CUSTOM_IEEE
+#ifndef DOUBLE_IS_IEEE_BIG
+#ifndef DOUBLE_IS_IEEE_LITTLE
+#define NEED_CUSTOM_IEEE
+#endif
+#endif
+#endif
+
+#ifdef NEED_CUSTOM_IEEE
+
+#if HAVE_LDEXP
+#define LDEXP ldexp
+#else
+extern double LDEXP(double x, int exp); /* defined in encode.c */
+#endif
+
+INLINE static float low_parse_IEEE_float(char *b, int sz)
+{
+  unsigned INT32 f, extra_f;
+  int s, e;
+  unsigned char x[4];
+  double r;
+
+  x[0] = EXTRACT_UCHAR(b);
+  x[1] = EXTRACT_UCHAR(b+1);
+  x[2] = EXTRACT_UCHAR(b+2);
+  x[3] = EXTRACT_UCHAR(b+3);
+  s = ((x[0]&0x80)? 1 : 0);
+
+  if(sz==4) {
+    e = (((int)(x[0]&0x7f))<<1)|((x[1]&0x80)>>7);
+    f = (((unsigned INT32)(x[1]&0x7f))<<16)|(((unsigned INT32)x[2])<<8)|x[3];
+    extra_f = 0;
+    if(e==255)
+      e = 9999;
+    else if(e>0) {
+      f |= 0x00800000;
+      e -= 127+23;
+    } else
+      e -= 126+23;
+  } else {
+    e = (((int)(x[0]&0x7f))<<4)|((x[1]&0xf0)>>4);
+    f = (((unsigned INT32)(x[1]&0x0f))<<16)|(((unsigned INT32)x[2])<<8)|x[3];
+    extra_f = (((unsigned INT32)EXTRACT_UCHAR(b+4))<<24)|
+      (((unsigned INT32)EXTRACT_UCHAR(b+5))<<16)|
+      (((unsigned INT32)EXTRACT_UCHAR(b+6))<<8)|
+      ((unsigned INT32)EXTRACT_UCHAR(b+7));
+    if(e==2047)
+      e = 9999;
+    else if(e>0) {
+      f |= 0x00100000;
+      e -= 1023+20;
+    } else
+      e -= 1022+20;
+  }
+  if(e>=9999)
+    if(f||extra_f) {
+      /* NAN */
+      
+      /* Hmm...  No idea how to generate NaN in a portable way. */
+      /* Let's turn it into a 0 for now... */
+      return (float)0.0;
+    } else {
+      /* +/- Infinity */
+#ifdef HUGE_VAL
+      return (float)(s? -HUGE_VAL:HUGE_VAL);
+#else
+      /* This number is infinite enough...  :) */
+      e = 1024;
+      f = 1;
+      extra_f = 0;
+#endif
+    }
+
+  r = (double)f;
+  if(extra_f)
+    r += ((double)extra_f)/4294967296.0;
+  return (float)(s? -LDEXP(r, e):LDEXP(r, e));
+}
+
+#endif
+
 static INT32 really_low_sscanf(char *input,
 			       long input_len,
 			       char *match,
@@ -706,6 +797,84 @@ static INT32 really_low_sscanf(char *input,
 #endif
 	break;
       }
+
+      case 'F':
+	if(field_length == -1) field_length = 4;
+	if(field_length != 4 && field_length != 8)
+	  error("Invalid IEEE width %d in sscanf format string.\n",
+		field_length);
+	if(eye+field_length > input_len)
+	{
+	  chars_matched[0]=eye;
+	  return matches;
+	}
+	sval.type=T_FLOAT;
+#ifdef __CHECKER__
+	sval.subtype=0;
+#endif
+	switch(field_length) {
+	case 4:
+#ifdef FLOAT_IS_IEEE_BIG
+	  {
+	    float f;
+	    ((char *)&f)[0] = *(input+eye);
+	    ((char *)&f)[1] = *(input+eye+1);
+	    ((char *)&f)[2] = *(input+eye+2);
+	    ((char *)&f)[3] = *(input+eye+3);
+	    sval.u.float_number = f;
+	  }
+#else
+#ifdef FLOAT_IS_IEEE_LITTLE
+	  {
+	    float f;
+	    ((char *)&f)[3] = *(input+eye);
+	    ((char *)&f)[2] = *(input+eye+1);
+	    ((char *)&f)[1] = *(input+eye+2);
+	    ((char *)&f)[0] = *(input+eye+3);
+	    sval.u.float_number = f;
+	  }
+#else
+	  sval.u.float_number = low_parse_IEEE_float(input+eye, 4);
+#endif
+#endif
+	  eye += 4;
+	  break;
+	case 8:
+#ifdef DOUBLE_IS_IEEE_BIG
+	  {
+	    double d;
+	    ((char *)&d)[0] = *(input+eye);
+	    ((char *)&d)[1] = *(input+eye+1);
+	    ((char *)&d)[2] = *(input+eye+2);
+	    ((char *)&d)[3] = *(input+eye+3);
+	    ((char *)&d)[4] = *(input+eye+4);
+	    ((char *)&d)[5] = *(input+eye+5);
+	    ((char *)&d)[6] = *(input+eye+6);
+	    ((char *)&d)[7] = *(input+eye+7);
+	    sval.u.float_number = (float)d;
+	  }
+#else
+#ifdef DOUBLE_IS_IEEE_LITTLE
+	  {
+	    double d;
+	    ((char *)&d)[7] = *(input+eye);
+	    ((char *)&d)[6] = *(input+eye+1);
+	    ((char *)&d)[5] = *(input+eye+2);
+	    ((char *)&d)[4] = *(input+eye+3);
+	    ((char *)&d)[3] = *(input+eye+4);
+	    ((char *)&d)[2] = *(input+eye+5);
+	    ((char *)&d)[1] = *(input+eye+6);
+	    ((char *)&d)[0] = *(input+eye+7);
+	    sval.u.float_number = (float)d;
+	  }
+#else
+	  sval.u.float_number = low_parse_IEEE_float(input+eye, 8);
+#endif
+#endif
+	  eye += 8;
+	  break;
+	}
+	break;
 
       case 's':
 	if(field_length != -1)
