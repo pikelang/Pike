@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.459 2003/05/07 12:31:52 mast Exp $
+|| $Id: builtin_functions.c,v 1.460 2003/06/12 20:43:32 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.459 2003/05/07 12:31:52 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.460 2003/06/12 20:43:32 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -819,7 +819,7 @@ PMOD_EXPORT void f_has_suffix(INT32 args)
 
 /*! @decl int has_index(string haystack, int index)
  *! @decl int has_index(array haystack, int index)
- *! @decl int has_index(mapping haystack, mixed index)
+ *! @decl int has_index(mapping|multiset|object|program haystack, mixed index)
  *!
  *!   Search for @[index] in @[haystack].
  *!
@@ -877,6 +877,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
       break;
       
     case T_OBJECT:
+    case T_PROGRAM:
       /* FIXME: If the object behaves like an array, it will throw an
 	 error for non-valid indices. Therefore it's not a good idea
 	 to use the index operator.
@@ -886,9 +887,6 @@ PMOD_EXPORT void f_has_index(INT32 args)
 	 
 	 /Noring */
 
-      /* Fall-through. */
-      
-    default:
       stack_swap();
       f_indices(1);
       stack_swap();
@@ -899,13 +897,17 @@ PMOD_EXPORT void f_has_index(INT32 args)
       else
 	PIKE_ERROR("has_index",
 		   "Function `search' gave incorrect result.\n", Pike_sp, args);
+      break;
+
+    default:
+      SIMPLE_BAD_ARG_ERROR ("has_index", 1,
+			    "string|array|mapping|multiset|object|program");
   }
 }
 
 /*! @decl int has_value(string haystack, string value)
  *! @decl int has_value(string haystack, int value)
- *! @decl int has_value(array haystack, int value)
- *! @decl int has_value(mapping haystack, mixed value)
+ *! @decl int has_value(array|mapping|object|program haystack, mixed value)
  *!
  *!   Search for @[value] in @[haystack].
  *!
@@ -942,7 +944,8 @@ PMOD_EXPORT void f_has_value(INT32 args)
 	PIKE_ERROR("has_value",
 		   "Function `zero_type' gave incorrect result.\n", Pike_sp, args);
       break;
-      
+
+    case T_PROGRAM:
     case T_OBJECT:
       /* FIXME: It's very sad that we always have to do linear search
 	 with `values' in case of objects. The problem is that we cannot
@@ -955,11 +958,15 @@ PMOD_EXPORT void f_has_value(INT32 args)
 	 /Noring */
 
       /* FALL_THROUGH */
-      
-    default:
+
+    case T_MULTISET:
+      /* FIXME: This behavior for multisets isn't clean. It should be
+       * compat only. */
       stack_swap();
       f_values(1);
       stack_swap();
+
+      /* FALL_THROUGH */
 
     case T_STRING:   /* Strings are odd. /Noring */
     case T_ARRAY:
@@ -969,6 +976,10 @@ PMOD_EXPORT void f_has_value(INT32 args)
 	Pike_sp[-1].u.integer = (Pike_sp[-1].u.integer != -1);
       else
 	PIKE_ERROR("has_value", "Search gave incorrect result.\n", Pike_sp, args);
+      break;
+
+    default:
+      SIMPLE_BAD_ARG_ERROR ("has_value", 1, "string|array|mapping|object|program");
   }
 }
 
