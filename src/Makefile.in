@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.232 2001/01/18 14:42:33 grubba Exp $
+# $Id: Makefile.in,v 1.233 2001/01/19 19:14:54 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -155,8 +155,7 @@ MODULE_REQUIREMENTS= \
   modules/dynamic_module_makefile \
   $(SRCDIR)/language.h \
   $(SRCDIR)/interpret_protos.h \
-  lib \
-  @EXTRA_MODULE_REQUIREMENTS@
+  lib @EXTRA_MODULE_REQUIREMENTS@
 
 
 DEPEND= \
