@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.171 1999/12/07 09:40:52 hubbe Exp $
+# $Id: Makefile.in,v 1.172 1999/12/13 02:01:45 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -295,6 +295,7 @@ clean: tidy
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
+	-rm -f tpike stamp-tpike-predep
 	-find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
 #	-rm -f lib/master.pike
 
@@ -305,7 +306,6 @@ spotless: clean
 	find . -type f '(' -name 'Makefile' -o -name '*~' -o -name '.*~' -o \
 	  -name core -o -name '.nfs*' -name '#*#' -o -name '.pure' -o \
 	  -name 'conftest.*' -o -name 'stamp-h' ')' -exec rm -f \{\} \;
-	-rm -f tpike stamp-tpike-predep
 	-rm -f lexical.c mon.out *.ln config.status
 	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/\#*\#
 	-rm -f pike pike.old l.outa*
