@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.677 2003/09/15 20:36:59 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.678 2003/09/18 16:01:03 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9754,7 +9754,7 @@ test_eq(a,this_object()->a)
 // - catch
 test_false([[class X { string test(string foo) { catch { return lower_case(foo); }; return foo; }}()->test(0); ]])
 test_true([[catch (1.0 / 0.0)]])
-test_true([[catch {1.0 / 0.0;}]])
+test_true([[catch {float f = 1.0 / 0.0;}]])
 
 
 // Pike modules
