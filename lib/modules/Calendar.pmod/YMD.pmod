@@ -2283,6 +2283,7 @@ class cSuperTimeRange
 //!     %f fraction of a second (needs %s)
 //!	%t short time (205314, 2053)
 //!	%z zone
+//!	%p "am" or "pm"
 //!	</pre>
 //!
 //! returns 0 if format doesn't match data, or the appropriate time object.
@@ -2338,11 +2339,12 @@ TimeRange parse(string fmt,string arg)
 
    nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
 #define ALNU "%[^ -,./:-?[-`{-¿]"
+#define AMPM "%[ampAMP]"
 #define NUME "%[0-9]"
    nfmt=replace(nfmt,
-		({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s",
-		  "%t","%f","%d","%z"}),
-		({ALNU,ALNU,ALNU,"%d","%d","%d",ALNU,"%d","%d","%d",
+		({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s","%p",
+		  "%t","%f","%d","%z",}),
+		({ALNU,ALNU,ALNU,"%d","%d","%d",ALNU,"%d","%d","%d",AMPM,
 		  NUME,NUME,NUME,"%[-+0-9A-Za-z/]"}));
    array q=Array.map(replace(fmt,({"%*","%%"}),({"",""}))/"%",
 		     lambda(string s){ return s[..0];})-({""});
@@ -2411,6 +2413,40 @@ TimeRange parse(string fmt,string arg)
 	    m->day=low=(m->week||cal->Week())->day(m->e);
 	 else
 	    low=m->day=cal->Day();
+
+	 if (m->day && zero_type(m->Y) && m->e)
+	    if (m->month)
+	    {
+	 // scan for closest year that matches
+	       cYear y2=m->day->year();
+	       object d2;
+	       int i;
+	       for (i=0; i<20; i++)
+	       {
+		  d2=(y2+i)->place(m->day);
+		  if (d2 && d2->week()->day(m->e)==d2) break;
+		  d2=(y2-i)->place(m->day);
+		  if (d2 && d2->week()->day(m->e)==d2) break;
+	       }
+	       if (i==20) return 0; 
+	       low=m->day=d2;
+	    }
+	    else
+	    {
+	 // scan for closest month that matches
+	       cYear m2=m->day->month();
+	       object d2;
+	       int i;
+	       for (i=0; i<20; i++)
+	       {
+		  d2=(m2+i)->place(m->day);
+		  if (d2 && d2->week()->day(m->e)==d2) break;
+		  d2=(m2-i)->place(m->day);
+		  if (d2 && d2->week()->day(m->e)==d2) break;
+	       }
+	       if (i==20) return 0; 
+	       low=m->day=d2;
+	    }
       }
 
       int h=0,mi=0,s=0,g=0;
@@ -2428,6 +2464,21 @@ TimeRange parse(string fmt,string arg)
 	 if (!zero_type(m->h)) h=m->h,g=1;
 	 if (!zero_type(m->m)) mi=m->m,g=1;
 	 if (!zero_type(m->s)) s=m->s,g=1;
+      }
+
+      if (!zero_type(m->p))
+      {
+	 switch (lower_case(m->p))
+	 {
+	    case "am": 
+	       if (h==12) h=0;
+	       break;
+	    case "pm":
+	       if (h!=12) h+=12;
+	       break;
+	    default:
+	       return 0; // need "am" or "pm"
+	 }
       }
 
       if (m->z) // zone
@@ -2502,24 +2553,27 @@ Calendar.dwim_day("next monday");
 
 */
 
+array dwim_day_strings=
+({"%y-%M-%D (%*s) -W%W-%e (%e)",
+  "%D%*[ /]%M%*[- /,]%y",
+  "%M %D%*[- /,]%y",
+  "%e%*[, ]%D%*[a-z:]%*[ /]%M%*[-/ ,]%y",
+  "%y-%M-%D",
+  "-%y%*[ /]%D%*[ /]%M",
+  "-%y%*[ /]%M%*[ /]%D",
+  "%y%*[ /]%D%*[ /]%M",
+  "%y%*[ /]%M%*[ /]%D",
+  "%D%*[- /]%M",
+  "%M%*[- /]%D",
+  "%e%*[- /wv]%W%*[ -/]%y",
+  "%e%*[- /wv]%W", 
+  "%d"});
+
 cDay dwim_day(string day)
 {
    cDay d;
 
-   foreach ( ({ "%y-%M-%D (%*s) -W%W-%e (%e)",
-		"%D%*[ /]%M%*[- /,]%y",
-		"%M %D%*[- /,]%y",
-		"%e%*[ ]%D%*[ /]%M%*[-/ ,]%y",
-		"%y-%M-%D",
-		"-%y%*[ /]%D%*[ /]%M",
-		"-%y%*[ /]%M%*[ /]%D",
-		"%y%*[ /]%D%*[ /]%M",
-		"%y%*[ /]%M%*[ /]%D",
-		"%D%*[- /]%M",
-		"%M%*[- /]%D",
-		"%e%*[- /wv]%W%*[ -/]%y",
-		"%e%*[- /wv]%W",
-		"%d"}), 
+   foreach ( dwim_day_strings, 
 	     string dayformat)
       if ( (d=parse(dayformat,day)) ) return d;
 
@@ -2557,29 +2611,22 @@ TimeofDay dwim_time(string what)
    foreach ( ({ " %z","%z",""}),
 	     string zone )
    foreach ( ({ "%t",
+		"T%t",
+		"%h:%*[ :]%m%*[ :]:%s %p",
 		"%h:%*[ :]%m%*[ :]:%s",
+		"%h:%*[ :]%m %p",
 		"%h:%*[ :]%m",
-		"T%t"}),
+		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]:%s %p",
+		"%[a-zA-Z.] %h:%*[ :]%m%*[ :]:%s",
+		"%[a-zA-Z.] %h:%*[ :]%m %p",
+		"%[a-zA-Z.] %h:%*[ :]%m", }),
 	     string todformat )
-      foreach ( ({ "%y-%M-%D (%*s) -W%W-%e (%e)",
-		   "%D%*[ /]%M%*[- /,]%y",
-		   "%M %D%*[- /,]%y",
-		   "%e%*[ ]%D%*[ /]%M%*[-/ ,]%y",
-		   "%y-%M-%D",
-		   "%d",
-		   "-%y%*[ /]%D%*[ /]%M",
-		   "-%y%*[ /]%M%*[ /]%D",
-		   "%y%*[ /]%D%*[ /]%M",
-		   "%y%*[ /]%M%*[ /]%D",
-		   "%D%*[- /]%M",
-		   "%M%*[- /]%D",
-		   "%e%*[- /wv]%W%*[ -/]%y",
-		   "%e%*[- /wv]%W",
-		   ""}),
+      foreach ( dwim_day_strings +
+		({""}),
 		string dayformat )
       {
-	 if ( (t=parse(dayformat+" "+todformat+zone,what)) ) return t;
-	 if ( (t=parse(todformat+zone+" "+dayformat,what)) ) return t;
+	 if ( (t=parse(dayformat+"%*[ ,]"+todformat+zone,what)) ) return t;
+	 if ( (t=parse(todformat+zone+"%*[ ,]"+dayformat,what)) ) return t;
       }
 
    error("Failed to dwim time from %O\n",what);
