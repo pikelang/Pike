@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.49 1997/07/19 20:25:29 hubbe Exp $");
+RCSID("$Id: file.c,v 1.50 1997/08/15 20:20:53 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -105,7 +105,7 @@ static void init_fd(int fd, int open_mode)
 static int close_fd(int fd)
 {
 #ifdef DEBUG
-  if(fd < 0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
+  if(fd < 0 || fd >= MAX_OPEN_FILEDESCRIPTORS)
     fatal("Bad argument to close_fd()\n");
 
   if(files[fd].refs<1)
