@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.29 2002/02/21 20:24:37 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.30 2002/02/23 17:45:36 jhs Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -986,7 +986,7 @@ class Evaluator {
 #if constant(_debug)
   //! The current debug level.
   //! Only available if Pike is compiled with RTL debug.
-  int debug_level
+  int debug_level;
 #endif
 
   function reswrite = lambda(string sres, int num, mixed res) {
@@ -1131,7 +1131,7 @@ class Evaluator {
 #endif
 #if constant(_debug)
     if(debug_level)
-      a = "\n_debug("+compiler_level+");\n" + a;
+      a = "\n_debug("+debug_level+");\n" + a;
 #endif
     a = "mixed ___HilfeWrapper() { " + a + " ; }";
 
