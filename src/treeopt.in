@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.12 1999/11/11 16:29:05 grubba Exp $
+// $Id: treeopt.in,v 1.13 1999/11/12 01:30:33 grubba Exp $
 //
 // The tree optimizer
 //
@@ -29,10 +29,6 @@ F_CAST[$$->type == void_type_string](F_CONSTANT, *):
 
 F_CAST[$$->type == void_type_string](F_COMMA_EXPR(0, F_CONSTANT), *):
 {
-  tmp1 = $0;
-#ifndef SHARED_NODES
-  $0 = 0;
-#endif /* SHARED_NODES */
   $$ = mkcastnode(void_type_string, $0);
 }
 ;
@@ -44,13 +40,8 @@ F_CAST[$$->type == void_type_string]
 			    OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
 	       F_ARG_LIST(1, 2)), *):
 {
-  tmp1 = $1;
-  tmp2 = $2;
-#ifndef SHARED_NODES
-  $1 = $2 = 0;
-#endif /* !SHARED_NODES */
   $$ = mkcastnode(void_type_string,
-		  mknode(F_COMMA_EXPR, tmp1, tmp2));
+		  mknode(F_COMMA_EXPR, $1, $2));
 }
 ;
 
@@ -349,13 +340,9 @@ F_FOR(0, ':'(-, -)):
 F_FOR(0 = +[node_is_true($$)], -):
 {
   /* Infinite loop */
-  tmp1 = $0;
-#ifndef SHARED_NODES
-  $0 = 0;
-#endif /* !SHARED_NODES */
-  $$ = mknode(F_FOR, tmp1, mknode(':',
-				  mkefuncallnode("sleep", mkintnode(255)),
-				  0));
+  $$ = mknode(F_FOR, $0, mknode(':',
+				mkefuncallnode("sleep", mkintnode(255)),
+				0));
 }
 ;
 
@@ -410,7 +397,7 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 		  [$$->u.sval.type == T_FUNCTION]
 		  [$$->u.sval.subtype == FUNCTION_BUILTIN],
                   2),
-      ':'(3, 4)):
+      4 = ':'(3, *)):
 {
   node **last;
 
@@ -418,7 +405,7 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
    * tree. This is needed so we can nullify this pointer later and
    * free the rest of the tree
    */
-  last = &$4;
+  last = &_CDR($4);
   tmp1 = *last;
 
   /* We're not interested in casts to void */
@@ -426,7 +413,7 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 	tmp1->token == F_CAST &&
 	tmp1->type == void_type_string)
   {
-    last = &CAR(tmp1);
+    last = &_CAR(tmp1);
     tmp1 = *last;
   }
 
@@ -462,8 +449,8 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
     if(count_args($2) != 2)
       goto next_for_opt;
 
-    arg1 = my_get_arg(&$2, 0);
-    arg2 = my_get_arg(&$2, 1);
+    arg1 = my_get_arg(&_CDR($0), 0);
+    arg2 = my_get_arg(&_CDR($0), 1);
 
     /* it was not on the form for(; x op y; z++) p; */
     if(!node_is_eq(*arg1, CAR(tmp1)) || /* x == z */
@@ -529,9 +516,9 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 	token = F_DEC_LOOP;
     }
     tmp2 = mknode(token, mknode(F_VAL_LVAL, tmp3, *arg1), $3);
-#ifndef SHARED_NODES
-    *arg1 = *arg2 = $3 = 0;
-#endif /* !SHARED_NODES */
+    ADD_NODE_REF(*arg1);
+    ADD_NODE_REF(*arg2);
+    ADD_NODE_REF($3);
 
     if(inc)
     {
