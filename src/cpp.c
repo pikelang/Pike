@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.42 1999/02/24 23:27:11 grubba Exp $
+ * $Id: cpp.c,v 1.43 1999/02/24 23:44:17 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -2122,8 +2122,36 @@ static struct pike_string *recode_string(struct pike_string *data)
     if ((!((unsigned char *)data->str)[0]) &&
 	(!((unsigned char *)data->str)[1])) {
       /* 32bit Unicode (UCS4) */
+      struct pike_string *new_str;
+      int len;
+      int i;
+      int j;
+      p_wchar0 *orig = STR0(data);
+      p_wchar2 *dest;
+
+      if (data->len & 3) {
+	/* String len is not a multiple of 4 */
+	return data;
+      }
+      len = data->len/4;
+      new_str = begin_wide_shared_string(len, 2);
+
+      dest = STR2(new_str);
+
+      j = 0;
+      for(i=0; i<len; i++) {
+	dest[i] = (orig[j]<<24) | (orig[j+1]<<16) | (orig[j+2]<<8) | orig[j+3];
+	j += 4;
+      }
+
+      free_string(data);
+      return(end_shared_string(new_str));
     } else {
       /* 16bit Unicode (UCS2) */
+      if (data->len & 1) {
+	/* String len is not a multiple of 2 */
+	return data;
+      }
       if ((!((unsigned char *)data->str)[1]) ||
 	  (((unsigned char *)data->str)[1] == 0xfe)) {
 	/* Reverse Byte-order */
@@ -2132,15 +2160,15 @@ static struct pike_string *recode_string(struct pike_string *data)
 	for(i=0; i<data->len; i++) {
 	  new_str->str[i^1] = data->str[i];
 	}
-	new_str = end_shared_string(new_str);
 	free_string(data);
-	data = new_str;
+	data = end_shared_string(new_str);
       }
       /* Note: We lose the extra reference to data here. */
       push_string(data);
       f_unicode_to_string(1);
       add_ref(data = sp[-1].u.string);
       pop_stack();
+      return data;
     }
   } else if (((unsigned char *)data->str)[0] == 0x7b) {
     /* EBCDIC */
