@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.12 2001/01/26 02:19:51 mast Exp $
+# $Id: configure.in,v 1.13 2001/02/27 20:50:53 grubba Exp $
 AC_INIT(crypto.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -16,8 +16,8 @@ else
   AC_MSG_CHECKING(for RSA libraries)
   pike_cv_rsa_dir="no"
   for d in `echo ${with_rsaref} | sed 's/:/ /g'` \
-    `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"` \
-    /usr/local /sw/local /sw $srcdir `pwd`; do
+    `echo $prefix | sed "s@^NONE@$with_root/$ac_default_prefix@g"` \
+    $with_root/usr/local $with_root/sw/local $with_root/sw $srcdir `pwd`; do
     echo "[" $d "]"
     if test -d "$d/."; then
       if test -d "$d/rsa/."; then

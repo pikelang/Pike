@@ -164,7 +164,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.24 2001/01/27 03:57:18 mast Exp $
+# $Id: aclocal.m4,v 1.25 2001/02/27 20:50:52 grubba Exp $
 
 MY_AC_PROG_CC
 
@@ -178,6 +178,22 @@ dependencies=$srcdir/dependencies
 AC_SUBST_FILE(dynamic_module_makefile)
 AC_SUBST_FILE(static_module_makefile)
 
+AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
+  case "$with_root" in
+    /)
+      with_root=""
+    ;;
+    /*)
+    ;;
+    no)
+      with_root=""
+    ;;
+    *)
+      AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
+      with_root=""
+    ;;
+  esac
+],[with_root=""])
 ])
 
 

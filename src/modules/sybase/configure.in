@@ -6,6 +6,8 @@ dnl (C) Roxen IS
 AC_INIT(sybase.c)
 AC_CONFIG_HEADER(sybase_config.h)
 
+AC_MODULE_INIT()
+
 echo "Configureing for sybase support"
 OLD_CPPFLAGS="$CPPFLAGS"
 OLD_CFLAGS="$CFLAGS"
@@ -24,7 +26,7 @@ AC_ARG_WITH(sybase-lib-dir,
 
 
 dnl "reasonable" search paths we'll look in $root/$prefix/$path
-pike_sybase_reasonable_roots="$SYBASE / /usr/local /usr /opt /usr $HOME"
+pike_sybase_reasonable_roots="$SYBASE $with_root/ $with_root/usr/local $with_root/usr $with_root/opt $with_root/usr $HOME"
 pike_sybase_reasonable_prefixes="sybase include lib /"
 pike_sybase_reasonable_paths="sybase include lib /"
 pike_sybase_reasonable_extra_paths="$pike_sybase_include_dir $pike_sybase_lib_dir"
@@ -110,8 +112,6 @@ fi
 if test x$pike_cv_sybase_lib_dir != x; then
     LDFLAGS="-L$pike_cv_sybase_lib_dir $LDFLAGS"
 fi
-
-AC_MODULE_INIT()
 
 if test x$with_sybase != xno; then
     AC_CHECK_LIB(m,floor)
