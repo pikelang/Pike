@@ -1,3 +1,8 @@
+Tue Apr 23 22:32:04 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.in: Now language.c and language.h is a part of the
+	  distribution so you won't need bison to compile.
+
 Sat Apr 13 04:00:45 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* simulate.lpc: replaced sort_array with a faster one
