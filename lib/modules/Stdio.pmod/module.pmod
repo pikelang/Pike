@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.206 2004/09/03 11:55:14 vida Exp $
+// $Id: module.pmod,v 1.207 2004/09/20 20:29:04 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1896,7 +1896,7 @@ string read_bytes(string filename, void|int start,void|int len)
     if (f->errno() == System.ENOENT)
       return 0;
     else
-      error ("Failed to open %O: %s", filename, strerror (f->errno()));
+      error ("Failed to open %O: %s\n", filename, strerror (f->errno()));
   }
 
   // Disallow devices and directories.
