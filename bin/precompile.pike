@@ -126,7 +126,7 @@ string cname(mixed type)
 
   // werror("type:%O\n" "btype: %O\n", type, btype);
 
-  if (sizeof(type / ({"|"})) > 1) {
+  if (arrayp(type) && (sizeof(type / ({"|"})) > 1)) {
     // werror("Found '|'.\n");
     btype = "mixed";
   } else {
@@ -213,15 +213,41 @@ array convert_ctype(array tokens)
 
 string basetype(array x)
 {
-  /* FIXME: should deal with ored types */
-  return (string) x[0];
+  multiset(string) subtypes = (<>);
+  int i = 0;
+  do {
+    subtypes[(string)x[i++]] = 1;
+
+    if (sizeof(x) > i) {
+      if (arrayp(x[i])) {
+	i++;
+      }
+      if (sizeof(x) > i) {
+	if (((string)x[i]) == "|") {
+	  i++;
+	  continue;
+	}
+      }
+    }
+    break;
+  } while(1);
+
+  subtypes->zero = 0;
+
+  if (sizeof(subtypes) <= 1) {
+    return (string)x[0];
+  } else {
+    // werror(sprintf("type: %O\nsubtypes: %O\n", x, subtypes));
+
+    return "mixed";
+  }
 }
 
 mapping(string:string) parse_arg(array x)
 {
   mapping ret=(["name":x[-1]]);
   ret->type=x[..sizeof(x)-2];
-  ret->basetype=x[0];
+  ret->basetype = x[0];
   if(ret->basetype == PC.Token("CTYPE"))
   {
     // werror("Is CTYPE\n");
@@ -930,7 +956,7 @@ array convert(array x, string base)
         argnum++;
       }
     
-    body=recursive(fix_return,body, rettype[0], cname(rettype), num_arguments); 
+    body=recursive(fix_return, body, basetype(rettype), cname(basetype(rettype)), num_arguments); 
     if(sizeof(body))
       ret+=({body});
     ret+=({ "}\n" });
