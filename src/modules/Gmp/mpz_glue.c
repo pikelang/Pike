@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.122 2003/01/27 10:12:40 mirar Exp $
+|| $Id: mpz_glue.c,v 1.123 2003/01/27 10:44:54 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.122 2003/01/27 10:12:40 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.123 2003/01/27 10:44:54 mirar Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1347,7 +1347,7 @@ static void mpzmod_lsh(INT32 args)
 /* unsigned long int is the type of the argument to mpz_mul_2exp */
     if (sp[-1].u.integer != (unsigned long int)sp[-1].u.integer)
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-	Pike_error("Gmp.mpz->lsh: shift count too large.\n");
+	 goto too_large;
 #endif
     res = fast_clone_object(THIS_PROGRAM, 0);
     mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
@@ -1357,17 +1357,23 @@ static void mpzmod_lsh(INT32 args)
     if(mpz_sgn(mi)<0)
       Pike_error("Gmp.mpz->lsh on negative number.\n");
     i=mpz_get_si(mi);
-    if(mpz_cmp_si(mi, i)) {
-      if(mpz_sgn(THIS))
-	Pike_error("Gmp.mpz->lsh: shift count too large.\n");
-      else {
-	/* Special case: shifting 0 left any number of bits still yields 0 */
-	res = fast_clone_object(THIS_PROGRAM, 0);
-	mpz_set_si(OBTOMPZ(res), 0);
-      }
+    if(mpz_cmp_si(mi, i)) 
+    {
+too_large:
+       push_text("%O\n");
+       stack_swap();
+       f_sprintf(2);
+       
+       if(mpz_sgn(THIS))
+	  Pike_error("Gmp.mpz->lsh: shift count too large.\n");
+       else {
+    /* Special case: shifting 0 left any number of bits still yields 0 */
+	  res = fast_clone_object(THIS_PROGRAM, 0);
+	  mpz_set_si(OBTOMPZ(res), 0);
+       }
     } else {
-      res = fast_clone_object(THIS_PROGRAM, 0);
-      mpz_mul_2exp(OBTOMPZ(res), THIS, i);
+       res = fast_clone_object(THIS_PROGRAM, 0);
+       mpz_mul_2exp(OBTOMPZ(res), THIS, i);
     }
   }
   pop_n_elems(args);
@@ -1427,6 +1433,7 @@ static void mpzmod_rlsh(INT32 args)
   if(mpz_sgn(THIS) < 0)
     Pike_error("Gmp.mpz->``<< on negative number.\n");
   i=mpz_get_si(THIS);
+
   if(mpz_cmp_si(THIS, i)) {
     if(mpz_sgn(OBTOMPZ(sp[-1].u.object)))
       Pike_error("Gmp.mpz->``<<: shift count too large.\n");
@@ -1488,13 +1495,13 @@ static void mpzmod_pow(INT32 args)
   if (sp[-1].type == T_INT) {
     if (sp[-1].u.integer < 0)
       Pike_error("Gmp.mpz->pow: Negative exponent.\n");
-    res = fast_clone_object(THIS_PROGRAM, 0);
 #if SIZEOF_INT_TYPE > SIZEOF_LONG
 /* unsigned long int is the type of the argument to mpz_pow_ui */
     if (sp[-1].u.integer != (unsigned long int)sp[-1].u.integer)
       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-	Pike_error("Gmp.mpz->pow: Exponent too large.\n");
+	 goto too_large;
 #endif
+    res = fast_clone_object(THIS_PROGRAM, 0);
     mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
     INT32 i;
@@ -1503,24 +1510,27 @@ static void mpzmod_pow(INT32 args)
       Pike_error("Gmp.mpz->pow: Negative exponent.\n");
     i=mpz_get_si(mi);
     if(mpz_cmp_si(mi, i))
-      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
-	Pike_error("Gmp.mpz->pow: Exponent too large.\n");
-      else {
-	/* Special case: these three integers can be raised to any power
-	   without overflowing.						 */
-	res = fast_clone_object(THIS_PROGRAM, 0);
-	switch(mpz_get_si(THIS)) {
-	case 0:
-	  mpz_set_si(OBTOMPZ(res), 0);
-	  break;
-	case 1:
-	  mpz_set_si(OBTOMPZ(res), 1);
-	  break;
-	case -1:
-	  mpz_set_si(OBTOMPZ(res), mpz_odd_p(mi)? -1:1);
-	  break;
-	}
-      }
+    {
+too_large:
+       if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
+	  Pike_error("Gmp.mpz->pow: Exponent too large.\n");
+       else {
+    /* Special case: these three integers can be raised to any power
+       without overflowing.						 */
+	  res = fast_clone_object(THIS_PROGRAM, 0);
+	  switch(mpz_get_si(THIS)) {
+	     case 0:
+		mpz_set_si(OBTOMPZ(res), 0);
+		break;
+	     case 1:
+		mpz_set_si(OBTOMPZ(res), 1);
+		break;
+	     case -1:
+		mpz_set_si(OBTOMPZ(res), mpz_odd_p(mi)? -1:1);
+		break;
+	  }
+       }
+    }
     else {
       res = fast_clone_object(THIS_PROGRAM, 0);
       mpz_pow_ui(OBTOMPZ(res), THIS, i);
