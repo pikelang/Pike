@@ -25,8 +25,11 @@ typedef void (*error_call)(void *);
 struct frame;
 #endif
 
-#define THROW_ERROR 1
-#define THROW_EXIT 1000
+#define THROW_ERROR 10
+#define THROW_THREAD_EXIT 20
+#define THROW_THREAD_KILLED 30
+#define THROW_EXIT 40
+#define THROW_MAX_SEVERITY 100
 
 typedef struct ONERROR
 {

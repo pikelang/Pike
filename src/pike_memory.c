@@ -397,14 +397,31 @@ void memfill(char *to,
   }
 }
 
+char *debug_xalloc(long size)
+{
+  char *ret;
+  if(!size) return 0;
+
+  ret=(char *)malloc(size);
+  if(ret) return ret;
+
+  error("Out of memory.\n");
+  return 0;
+}
+
 #ifdef DEBUG_MALLOC
 
-#undef xalloc
+#ifdef _REENTRANT
+#include "threads.h"
+
+static MUTEX_T debug_malloc_mutex;
+#endif
+
+
 #undef malloc
 #undef free
 #undef realloc
 #undef calloc
-#undef xalloc
 #undef strdup
 #undef main
 
@@ -413,11 +430,13 @@ int verbose_debug_exit = 1;
 
 #define BSIZE 16382
 #define HSIZE 65599
+#define LHSIZE 133153
 
 struct memloc
 {
   struct memloc *next;
   const char *filename;
+  struct memhdr *mh;
   int line;
   int times;
 };
@@ -479,6 +498,7 @@ struct memloc_block
 static struct memloc_block *memloc_blocks=0;
 static struct memloc *free_memlocs=0;
 static struct memhdr no_leak_memlocs;
+static struct memloc *mlhash[LHSIZE];
 
 static struct memloc *alloc_memloc(void)
 {
@@ -520,27 +540,67 @@ static struct memhdr *find_memhdr(void *p)
   return NULL;
 }
 
+static unsigned long lhash(struct memhdr *m,
+			   const char *fn,
+			   int line)
+{
+  unsigned long l;
+  l=(long)m;
+  l*=53;
+  l+=(long)fn;
+  l*=4711;
+  l+=line;
+  l%=LHSIZE;
+  return l;
+}
+
 static void add_location(struct memhdr *mh, const char *fn, int line)
 {
   struct memloc *ml;
+  unsigned long l=lhash(mh,fn,line);
+
+  if(mlhash[l] &&
+     mlhash[l]->mh==mh &&
+     mlhash[l]->filename==fn &&
+     mlhash[l]->line==line)
+    return;
+
   for(ml=mh->locations;ml;ml=ml->next)
     if(ml->filename==fn && ml->line==line)
-      return;
+      break;
 
-  ml=alloc_memloc();
-  ml->line=line;
-  ml->filename=fn;
-  ml->next=mh->locations;
-  ml->times++;
-  mh->locations=ml;
+  if(!ml)
+  {
+    ml=alloc_memloc();
+    ml->line=line;
+    ml->filename=fn;
+    ml->next=mh->locations;
+    ml->times++;
+    ml->mh=mh;
+    mh->locations=ml;
+  }
+  mlhash[l]=ml;
 }
 
 static int find_location(struct memhdr *mh, const char *fn, int line)
 {
   struct memloc *ml;
+  unsigned long l=lhash(mh,fn,line);
+
+  if(mlhash[l] &&
+     mlhash[l]->mh==mh &&
+     mlhash[l]->filename==fn &&
+     mlhash[l]->line==line)
+    return 1;
+
   for(ml=mh->locations;ml;ml=ml->next)
+  {
     if(ml->filename==fn && ml->line==line)
+    {
+      mlhash[l]=ml;
       return 1;
+    }
+  }
   return 0;
 }
 
@@ -548,8 +608,10 @@ static void make_memhdr(void *p, int s, const char *fn, int line)
 {
   struct memhdr *mh=alloc_memhdr();
   struct memloc *ml=alloc_memloc();
+  unsigned long l=lhash(mh,fn,line);
   unsigned long h=(long)p;
   h%=HSIZE;
+
   mh->next=hash[h];
   mh->data=p;
   mh->size=s;
@@ -559,6 +621,7 @@ static void make_memhdr(void *p, int s, const char *fn, int line)
   ml->next=0;
   ml->times=1;
   hash[h]=mh;
+  mlhash[l]=ml;
 }
 
 static int remove_memhdr(void *p)
@@ -573,6 +636,9 @@ static int remove_memhdr(void *p)
       struct memloc *ml;
       while((ml=mh->locations))
       {
+	unsigned long l=lhash(mh,ml->filename, ml->line);
+	if(mlhash[l]==ml) mlhash[l]=0;
+
 	add_location(&no_leak_memlocs, ml->filename, ml->line);
 	mh->locations=ml->next;
 	ml->next=free_memlocs;
@@ -590,42 +656,38 @@ static int remove_memhdr(void *p)
 
 void *debug_malloc(size_t s, const char *fn, int line)
 {
-  void *m=malloc(s);
+  void *m;
+  mt_lock(&debug_malloc_mutex);
+  m=malloc(s);
   if(m) make_memhdr(m, s, fn, line);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "malloc(%d) => %p  (%s:%d)\n", s, m, fn, line);
 
+  mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
-char *debug_xalloc(long size, const char *fn, int line)
-{
-  char *ret;
-  if(!size) return 0;
-
-  ret=(char *)debug_malloc(size,fn, line);
-  if(ret) return ret;
-
-  error("Out of memory.\n");
-  return 0;
-}
 
 void *debug_calloc(size_t a, size_t b, const char *fn, int line)
 {
-  void *m=calloc(a, b);
+  void *m;
+  mt_lock(&debug_malloc_mutex);
+  m=calloc(a, b);
 
   if(m) make_memhdr(m, a*b, fn, line);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "calloc(%d,%d) => %p  (%s:%d)\n", a, b, m, fn, line);
 
+  mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
 void *debug_realloc(void *p, size_t s, const char *fn, int line)
 {
   void *m;
+  mt_lock(&debug_malloc_mutex);
   m=realloc(p, s);
   if(m) {
     if(p) remove_memhdr(p);
@@ -633,31 +695,38 @@ void *debug_realloc(void *p, size_t s, const char *fn, int line)
   }
   if(verbose_debug_malloc)
     fprintf(stderr, "realloc(%p,%d) => %p  (%s:%d)\n", p, s, m, fn,line);
+  mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
 void debug_free(void *p, const char *fn, int line)
 {
+  mt_lock(&debug_malloc_mutex);
   remove_memhdr(p);
   free(p);
   if(verbose_debug_malloc)
     fprintf(stderr, "free(%p) (%s:%d)\n", p, fn,line);
+  mt_unlock(&debug_malloc_mutex);
 }
 
 char *debug_strdup(const char *s, const char *fn, int line)
 {
-  char *m=strdup(s);
+  char *m;
+  mt_lock(&debug_malloc_mutex);
+  m=strdup(s);
 
   if(m) make_memhdr(m, strlen(s)+1, fn, line);
 
   if(verbose_debug_malloc)
     fprintf(stderr, "strdup(\"%s\") => %p  (%s:%d)\n", s, m, fn, line);
+  mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
 static void cleanup_memhdrs()
 {
   unsigned long h;
+  mt_lock(&debug_malloc_mutex);
   if(verbose_debug_exit)
   {
     for(h=0;h<HSIZE;h++)
@@ -678,6 +747,8 @@ static void cleanup_memhdrs()
       }
     }
   }
+  mt_unlock(&debug_malloc_mutex);
+  mt_destroy(&debug_malloc_mutex);
 }
 
 int main(int argc, char *argv[])
@@ -698,19 +769,5 @@ void * debug_malloc_update_location(void *p,const char *fn, int line)
   return p;
 }
 
-
-#else
-
-char *xalloc(long size)
-{
-  char *ret;
-  if(!size) return 0;
-
-  ret=(char *)malloc(size);
-  if(ret) return ret;
-
-  error("Out of memory.\n");
-  return 0;
-}
 
 #endif
