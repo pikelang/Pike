@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.17 2001/06/15 02:12:53 per Exp $");
+RCSID("$Id: resultset.c,v 1.18 2001/06/15 03:16:56 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -166,8 +166,14 @@ static void f_resultset_create( INT32 args )
     int i;
     wf_resultset_clear(  Pike_fp->current_object );
     for(i = 0; i<sp[-1].u.array->size; i++ )
-      wf_resultset_add( Pike_fp->current_object,
-			sp[-1].u.array->item[i].u.integer, 1 );
+      if( sp[-1].u.array->item[i].type == PIKE_T_ARRAY )
+	wf_resultset_add( Pike_fp->current_object,
+			  sp[-1].u.array->item[i].u.array->item[0].u.integer,
+			  sp[-1].u.array->item[i].u.array->item[1].u.integer );
+      else
+	wf_resultset_add( Pike_fp->current_object,
+			  sp[-1].u.array->item[i].u.integer, 1 );
+
   }
 }
 
@@ -349,7 +355,7 @@ static void f_resultset_overhead( INT32 args )
     f_resultset_memsize( 0 );
   else
     push_int( (THIS->allocated_size-THIS->d->num_docs)*8
-	      + sizeof(struct object) + 4 );
+	      + sizeof(struct object) + 8 );
 }
 
 static void duplicate_resultset( struct object *dest,
@@ -428,6 +434,7 @@ static void f_resultset_or( INT32 args )
       if( ++lp == left_size )
       {
 	left_left = 0;
+	left_rank = 0;
 	if( !right_left )
 	  continue;
       }
@@ -444,6 +451,7 @@ static void f_resultset_or( INT32 args )
       if( ++rp == right_size )
       {
 	right_left = 0;
+	right_rank = 0;
 	if( !left_left )
 	  continue;
       }
@@ -549,7 +557,7 @@ static void f_resultset_intersect( INT32 args )
       else
       {
 	right_doc = set_r->hits[rp].doc_id;
-	right_rank = set_l->hits[lp].ranking;
+	right_rank = set_r->hits[rp].ranking;
 	right_used = 0;
       }
     }
@@ -793,7 +801,7 @@ void init_resultset_program(void)
     ADD_STORAGE( ResultSet );
     add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
     add_function("create",f_resultset_create,
-		 "function(void|array(int):void)",0);
+		 "function(void|array(int|array(int)):void)",0);
 
     add_function("sort",f_resultset_sort,"function(void:object)",0);
     add_function("sort_docid",f_resultset_sort_docid,
