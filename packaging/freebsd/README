@@ -4,8 +4,82 @@ FreeBSD port for Pike
 Just copy the directory pike74 to /usr/ports/lang/ directory on your FreeBSD
 box.
 
-Then go to /usr/ports/lang/pike74/ and just do make.
+This port tries to autoconfigure itself by looking known libraries in your
+system. You can force this port to install dependencies :
+
+ WITH_FFMPEG 
+  Will install FFMpeg software on your system and link pike with it
+
+ WITH_TTF
+  Will install FreeType1 on your system and link pike with it. 
+  This is usefull for example if you use Caudium with it.
+
+ WITH_FREETYPE
+  Will install FreeType2 on your system.
+
+ WITH_MYSQL
+  Will install Mysql Client libraries and headers.
+
+ WITH_POSTGRES
+  Will install Postgres7.2 clients libraries and headers.
+
+ WITH_MSQL
+  Will install Msql database (not fully tested).
+
+ WITH_UNIXODBC / WITH_IODBC
+  Will install unixODBC or iodbc. Note you *cannot* link a pike with
+  both libs. You'll have to choose :)
+
+ WITH_SANE
+  Will install and link pike against SANE.
+
+ WITH_PDF
+  Will install libpdf and libpanda and link pike against it.
+
+ WITH_SVG2
+  Will install librsvg2 and add support for it in pike.
+
+ WITH_TDS
+  Will install FreeTDS and link pike with it. Usefull for access to sybase
+  or MS-SQL database. (Not fully tested).
+
+ WITH_GNOME
+  Will install gnome (loooooong time to compile this !) and add GTK / Gnome 
+  support with pike.
+
+ WITH_MESA
+  Will install Mesa-GL and link pike with it.
+
+Other things :
+
+ WITH_OPTIMIZED_CFLAGS
+  Will use -O3 for x86 arch and add -ffast-math -fomit-frame-pointer
+
+ WITH_EXPIREMENTAL_FEATURES
+  Will enable some experimental features of Pike. Use at your own risk.
+  Features enabled :
+    --with-computed-goto, --with-pg, --with-long-long-int, --with-long-int,
+    --with-short-int, --with-keypair-loop, --without-lock,
+    --with-new-multisets
+
+ WITHOUT_RELOCATABLE_DUMPED_MODULES
+  Will compile pike with : --without-relocatable-dumped-modules
+
+ WITH_MOST
+  Same as WITH_TTF=yes and WITH_FREETYPE=yes
+
+How to use it:
+
+ As root :
+ 
+ # cd /usr/port/lang/pike74
+ # make WITH_MOST=yes WITH_MYSQL=yes install clean
+
+ And you will have a pike installed :)
+
+This port has been sent to FreeBSD port team 01/23/2003. You can see progress
+at the following URL : http://www.freebsd.org/cgi/query-pr.cgi?pr=47433
 
 - Xavier Beaudouin <kiwi@caudium.net>
 
-$Id: README,v 1.1 2003/01/21 03:12:08 kiwi Exp $
+$Id: README,v 1.2 2003/01/24 13:07:35 kiwi Exp $
