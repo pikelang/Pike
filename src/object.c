@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.111 2000/04/17 14:11:09 mast Exp $");
+RCSID("$Id: object.c,v 1.112 2000/04/17 21:06:24 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -471,6 +471,8 @@ void low_destruct(struct object *o,int do_free)
 
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
+  if(Pike_in_gc && Pike_in_gc<4)
+    fatal("Destructing object inside gc()\n");
 #endif
 
   add_ref(o);
@@ -625,7 +627,7 @@ void really_free_object(struct object *o)
     FREE_PROT(o);
 
     free((char *)o);
-    GC_FREE();
+    GC_FREE_OBJ();
   }
 }
 

@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.18 2000/03/24 01:24:49 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.19 2000/04/17 21:06:24 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -72,9 +72,9 @@ void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
    for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                 \
    {                                                                    \
      int tmp2;                                                          \
-     extern void dmalloc_check_block_free(void *p);                     \
+     extern void dmalloc_check_block_free(void *p, char *loc);          \
      for(tmp2=0;tmp2<BSIZE;tmp2++)                                      \
-       dmalloc_check_block_free(tmp->x+tmp2);                           \
+       dmalloc_check_block_free(tmp->x+tmp2, DMALLOC_LOCATION());       \
    }                                                                    \
   )                                                                     \
   while((tmp=PIKE_CONCAT(DATA,_blocks)))				\

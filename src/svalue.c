@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.68 2000/04/13 20:14:35 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.69 2000/04/17 21:06:24 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1394,11 +1394,14 @@ void debug_gc_mark_svalues(struct svalue *s, int num)
 	enqueue(&gc_mark_queue,
 		(queue_call)gc_mark_object_as_referenced,
 		debug_malloc_pass(s->u.object));
-      }else{
-	free_svalue(s);
-	s->type=T_INT;
-	s->u.integer=0;
       }
+#ifdef PIKE_DEBUG
+      else
+      {
+	describe(s->u.object);
+	fatal("Unfreed destructed object in GC pass 2??\n");
+      }
+#endif
       break;
     }
   }
@@ -1436,10 +1439,14 @@ void debug_gc_mark_short_svalue(union anything *u, TYPE_T type)
     if(u->object->prog)
     {
       gc_mark_object_as_referenced(u->object);
-    }else{
-      free_short_svalue(u,T_OBJECT);
-      u->object=0;
     }
+#ifdef PIKE_DEBUG
+    else
+    {
+      describe(u->object);
+      fatal("Unfreed destructed object in GC pass 2??\n");
+    }
+#endif
     break;
   }
 }

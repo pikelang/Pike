@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.31 2000/04/15 07:45:52 hubbe Exp $
+ * $Id: gc.h,v 1.32 2000/04/17 21:06:24 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -82,13 +82,35 @@ void f__gc_status(INT32 args);
 #define gc_check(VP) real_gc_check(debug_malloc_pass(VP))
 
 #ifdef PIKE_DEBUG
-#define GC_FREE() do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); }while(0)
+#define LOW_GC_FREE() do {						\
+  num_objects-- ; 							\
+  if(num_objects < 0)							\
+    fatal("Panic!! less than zero objects!\n");				\
+}while(0)
+
+#define GC_FREE() do {							\
+  DO_IF_DEBUG(								\
+  if(Pike_in_gc >0 && Pike_in_gc<3)					\
+    fatal("Freeing objects within gc is not allowed!\n");	\
+  )									\
+  LOW_GC_FREE();							\
+}while(0)
+
+#define GC_FREE_OBJ() do {						\
+  DO_IF_DEBUG(								\
+  if(Pike_in_gc >1 && Pike_in_gc<4)					\
+    fatal("Allocating new objects within gc is not allowed!\n");	\
+  )									\
+  LOW_GC_FREE();							\
+}while(0)
+
 #else
 #define debug_gc_check_svalues(S,N,T,V) gc_check_svalues((S),N)
 #define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
 #define GC_FREE() do { num_objects-- ; }while(0)
+#define GC_FREE_OBJ() do { num_objects-- ; }while(0)
 #endif
 
 

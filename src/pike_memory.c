@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.65 2000/04/15 05:05:28 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.66 2000/04/17 21:06:24 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1354,7 +1354,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
   mt_unlock(&debug_malloc_mutex);
 }
 
-void dmalloc_check_block_free(void *p)
+void dmalloc_check_block_free(void *p, char *location)
 {
   struct memhdr *mh;
   mt_lock(&debug_malloc_mutex);
@@ -1362,7 +1362,7 @@ void dmalloc_check_block_free(void *p)
 
   if(mh && mh->size>=0 && !(mh->flags & MEM_IGNORE_LEAK))
   {
-    fprintf(stderr,"Freeing storage for small block still in use %p.\n",p);
+    fprintf(stderr,"Freeing storage for small block still in use %p at %s.\n",p,LOCATION_NAME(location));
     debug_malloc_dump_references(p,0,2,0);
   }
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.141 2000/04/17 17:52:13 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.142 2000/04/17 21:06:24 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1249,12 +1249,19 @@ void safe_apply_low(struct object *o,int fun,int args)
   {
     if(throw_value.type == T_ARRAY)
     {
-      ONERROR tmp;
-      SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-      assign_svalue_no_free(sp++, & throw_value);
-      APPLY_MASTER("handle_error", 1);
-      pop_stack();
-      UNSET_ONERROR(tmp);
+      static int inside=0;
+      if(!inside)
+      {
+	ONERROR tmp;
+	/* We silently ignore errors if we are already describing one.. */
+	inside=1;
+	SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+	assign_svalue_no_free(sp++, & throw_value);
+	APPLY_MASTER("handle_error", 1);
+	pop_stack();
+	UNSET_ONERROR(tmp);
+	inside=0;
+      }
     }
       
     sp->u.integer = 0;

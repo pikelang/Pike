@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.68 2000/04/15 08:15:49 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.69 2000/04/17 21:06:24 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -485,6 +485,7 @@ void low_describe_something(void *a,
 
 void describe_something(void *a, int t, int indent, int depth, int flags)
 {
+  int tmp;
   struct program *p=(struct program *)a;
   if(!a) return;
 
@@ -493,6 +494,10 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
     fprintf(stderr,"%*s**Location description: %s\n",indent,"",(char *)a);
     return;
   }
+
+  /* Disable debug, this may help reduce recursion bugs */
+  tmp=d_flag;
+  d_flag=0;
 
 #ifdef DEBUG_MALLOC
   if (((int)a) == 0x55555555) {
@@ -518,6 +523,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
 
   
   fprintf(stderr,"%*s*******************\n",indent,"");
+  d_flag=tmp;
 }
 
 void describe(void *x)
