@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.16 2000/07/28 07:15:07 hubbe Exp $");
+RCSID("$Id: iso2022.c,v 1.17 2000/08/09 21:08:38 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -60,8 +60,8 @@ extern UNICHAR *iso2022_9696[];
 static UNICHAR **transltab[4] = { iso2022_94, iso2022_96,
 				  iso2022_9494, iso2022_9696 };
 
-static INT32 eat_text(unsigned char *src, INT32 srclen, struct iso2022_stor *s,
-		     struct gdesc *g)
+static ptrdiff_t eat_text(unsigned char *src, ptrdiff_t srclen,
+			  struct iso2022_stor *s, struct gdesc *g)
 {
   if(g->transl == NULL) switch(g->mode) {
   case MODE_94:
@@ -149,7 +149,8 @@ static INT32 eat_text(unsigned char *src, INT32 srclen, struct iso2022_stor *s,
   return srclen;
 }
 
-static INT32 parse_esc(unsigned char *src, INT32 srclen, struct iso2022_stor *s)
+static INT32 parse_esc(unsigned char *src, INT32 srclen,
+		       struct iso2022_stor *s)
 {
   int grp=-1, wide=0, final, mode, l=1;
   struct gdesc *g;
@@ -243,10 +244,10 @@ static INT32 parse_esc(unsigned char *src, INT32 srclen, struct iso2022_stor *s)
   return l;
 }
 
-static INT32 eat_chars(unsigned char *src, INT32 srclen,
-		       struct iso2022_stor *s)
+static ptrdiff_t eat_chars(unsigned char *src, ptrdiff_t srclen,
+			   struct iso2022_stor *s)
 {
-  INT32 l;
+  ptrdiff_t l;
   while(srclen>0)
     if(((*src)&0x7f)<0x20)
       switch(*src++) {
@@ -365,7 +366,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 {
   extern UNICHAR map_ANSI_X3_4_1968[];
   extern UNICHAR map_ISO_8859_1_1998[];
-  INT32 l = str->len;
+  ptrdiff_t l = str->len;
   int s1 = 0;
 
   switch(str->size_shift) {

@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.22 2000/08/09 21:05:54 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.23 2000/08/09 21:13:23 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -210,7 +210,8 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
 }
 
 
-static INT32 feed_utf8(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
+			   struct std_cs_stor *s)
 {
   static int utf8len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
 			   0, 0, 0, 0, 0, 0, 0, 0,
@@ -532,7 +533,7 @@ static void f_rfc1345(INT32 args)
   push_int(0);
 }
 
-static INT32 feed_94(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_94(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
@@ -551,7 +552,7 @@ static void f_feed_94(INT32 args)
   f_std_feed(args, feed_94);
 }
 
-static INT32 feed_96(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_96(const p_wchar0 *p, ptrdiff_t l, struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
@@ -570,7 +571,8 @@ static void f_feed_96(INT32 args)
   f_std_feed(args, feed_96);
 }
 
-static INT32 feed_9494(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_9494(const p_wchar0 *p, ptrdiff_t l,
+			   struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
@@ -596,7 +598,8 @@ static void f_feed_9494(INT32 args)
   f_std_feed(args, feed_9494);
 }
 
-static INT32 feed_9696(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_9696(const p_wchar0 *p, ptrdiff_t l,
+			   struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
@@ -622,7 +625,8 @@ static void f_feed_9696(INT32 args)
   f_std_feed(args, feed_9696);
 }
 
-static INT32 feed_8bit(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+static ptrdiff_t feed_8bit(const p_wchar0 *p, ptrdiff_t l,
+			   struct std_cs_stor *s)
 {
   UNICHAR const *table =
     ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
@@ -740,7 +744,8 @@ static void feed_utf7e(struct utf7_stor *u7, struct string_builder *sb,
 		       struct pike_string *str, struct pike_string *rep,
 		       struct svalue *repcb)
 {
-  ptrdiff_t l = str->len, dat = u7->dat;
+  ptrdiff_t l = str->len;
+  INT32 dat = u7->dat;
   int shift = u7->shift, datbit = u7->datbit;
 
   switch(str->size_shift) {

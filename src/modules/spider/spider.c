@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.95 2000/08/09 12:41:37 grubba Exp $");
+RCSID("$Id: spider.c,v 1.96 2000/08/09 21:22:54 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -151,7 +151,8 @@ void f_http_decode_string(INT32 args)
 
 void f_parse_accessed_database(INT32 args)
 {
-  int cnum=0, i, num=0;
+  ptrdiff_t cnum = 0, i;
+  int num = 0;
   struct array *arg;
   struct mapping *m;
 
@@ -198,7 +199,7 @@ void f_parse_accessed_database(INT32 args)
   }
   stack_swap();
   pop_stack();
-  push_int(cnum);
+  push_int(DO_NOT_WARN(cnum));
   f_aggregate(2);
 }
 

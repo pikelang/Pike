@@ -17,6 +17,7 @@
 #include "error.h"
 #include "opcodes.h"
 #include "block_alloc.h"
+#include "bignum.h"
 
 /* This must be included last! */
 #include "module_magic.h"
@@ -1056,7 +1057,7 @@ static int gobble(struct xmldata *data, char *s)
   check_stack(1+data->num_extra_args);			\
   push_constant_text("location");			\
   while(i->next) i=i->next;				\
-  push_int(i->pos);					\
+  push_int64(i->pos);					\
   f_aggregate_mapping(2);				\
   assign_svalues_no_free(sp, data->extra_args,		\
 			  data->num_extra_args,		\

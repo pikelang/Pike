@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.38 2000/08/03 18:45:52 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.39 2000/08/09 21:01:23 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -189,11 +189,11 @@ static INLINE void output_try_write_some(struct object *obj);
 
 /* Push a callback to this object given the internal function number.
  */
-static void push_callback(int no)
+static void push_callback(ptrdiff_t no)
 {
   add_ref(Pike_sp->u.object=THISOBJ);
-  Pike_sp->subtype=no+Pike_fp->context.identifier_level;
-  Pike_sp->type=T_FUNCTION;
+  Pike_sp->subtype = DO_NOT_WARN(no + Pike_fp->context.identifier_level);
+  Pike_sp->type = T_FUNCTION;
   Pike_sp++;
 }
 
@@ -439,10 +439,10 @@ static INLINE void input_finish(void)
 /* This function reads some data from the file cache..
  * Called when we want some data to send.
  */
-static INLINE struct pike_string* gimme_some_data(unsigned long pos)
+static INLINE struct pike_string* gimme_some_data(size_t pos)
 {
    struct buffer *b;
-   long len;
+   ptrdiff_t len;
    struct pipe *this = THIS;
 
    /* We have a file cache, read from it */
@@ -1257,13 +1257,13 @@ void port_setup_program(void);
 void f__pipe_debug(INT32 args)
 {
   pop_n_elems(args);
-  push_int(noutputs);
-  push_int(ninputs);
-  push_int(nstrings);
-  push_int(nobjects);
-  push_int(mmapped);
-  push_int(nbuffers);
-  push_int(sbuffers);
+  push_int(DO_NOT_WARN(noutputs));
+  push_int(DO_NOT_WARN(ninputs));
+  push_int(DO_NOT_WARN(nstrings));
+  push_int(DO_NOT_WARN(nobjects));
+  push_int(DO_NOT_WARN(mmapped));
+  push_int(DO_NOT_WARN(nbuffers));
+  push_int(DO_NOT_WARN(sbuffers));
   f_aggregate(7);
 }
 

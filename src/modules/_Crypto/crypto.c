@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.35 2000/08/09 13:17:17 grubba Exp $
+ * $Id: crypto.c,v 1.36 2000/08/09 21:19:11 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -271,7 +271,7 @@ static void f_create(INT32 args)
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
-  push_int(THIS->block_size);
+  push_int(DO_NOT_WARN(THIS->block_size));
 }
 
 /* int query_key_length(void) */
@@ -395,8 +395,7 @@ static void f_crypto_crypt(INT32 args)
 /* string pad(void) */
 static void f_pad(INT32 args)
 {
-  int i;
-  int len;
+  ptrdiff_t i;
   
   if (args) {
     error("Too many arguments to crypto->pad()\n");
@@ -419,7 +418,7 @@ static void f_pad(INT32 args)
 /* string unpad(string) */
 static void f_unpad(INT32 args)
 {
-  int len;
+  ptrdiff_t len;
   struct pike_string *str;
 
   if (args != 1) 
