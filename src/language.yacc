@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.294 2002/09/21 14:20:35 mast Exp $");
+RCSID("$Id: language.yacc,v 1.295 2002/09/21 14:20:53 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3150,7 +3150,7 @@ idents2: idents
 	 * error is removed then local:: will do nothing on variables
 	 * except forcing a lookup in the closest surrounding class
 	 * scope. */
-	yyerror ("Cannot make local references variables.");
+	yyerror ("Cannot make local references to variables.");
 	$$ = 0;
       }
       else {
