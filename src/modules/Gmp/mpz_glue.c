@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.21 1997/08/30 22:25:44 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.22 1997/09/07 15:04:08 nisse Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -200,6 +200,8 @@ static void mpzmod_get_string(INT32 args)
 static void mpzmod_digits(INT32 args)
 {
   INT32 base;
+  struct pike_string *s;
+  
   if (!args)
   {
     base = 10;
@@ -210,9 +212,11 @@ static void mpzmod_digits(INT32 args)
       error("Bad argument 1 for Mpz->digits().\n");
     base = sp[-args].u.integer;
   }
+
+  s = low_get_digits(THIS, base);
   pop_n_elems(args);
 
-  push_string(low_get_digits(THIS, base));
+  push_string(s);
 }
 
 static void mpzmod_size(INT32 args)
