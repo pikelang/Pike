@@ -40,7 +40,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.46 1997/12/05 22:49:18 grubba Exp $);
+RCSID("$Id: spider.c,v 1.47 1997/12/06 03:47:13 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
