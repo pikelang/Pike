@@ -19,7 +19,7 @@
 #include "module_support.h"
 #include "threads.h"
 
-RCSID("$Id: error.c,v 1.41 2000/01/29 08:43:37 hubbe Exp $");
+RCSID("$Id: error.c,v 1.42 2000/03/20 21:00:04 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -35,6 +35,10 @@ void check_recovery_context(void)
     fatal("Recoveries is out biking (recoveries=%p, sp=%p, %d)!\n",recoveries, &foo,TESTILITEST);
 
   /* Add more stuff here when required */
+}
+
+void pike_gdb_breakpoint(void) 
+{
 }
 #endif
 

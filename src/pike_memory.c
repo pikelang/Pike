@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.54 2000/03/07 23:52:03 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.55 2000/03/20 21:00:04 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -682,7 +682,12 @@ static MUTEX_T debug_malloc_mutex;
 #undef strdup
 #undef main
 
-static void add_location(struct memhdr *mh, int locnum);
+#define LOCATION char *
+#define LOCATION_NAME(X) ((X)+1)
+#define LOCATION_IS_DYNAMIC(X) ((X)[0]=='D')
+
+
+static void add_location(struct memhdr *mh, LOCATION location);
 static struct memhdr *my_find_memhdr(void *, int);
 
 #include "block_alloc.h"
@@ -701,7 +706,8 @@ int debug_malloc_check_all = 0;
 #define LHSIZE 1109891
 #endif
 
-#define FLSIZE 43391
+#define DSTRHSIZE 10007
+
 #define DEBUG_MALLOC_PAD 32
 #define FREE_DELAY 4096
 #define MAX_UNFREE_MEM 1024*1024*32
@@ -713,26 +719,16 @@ static unsigned int blocks_to_free_ptr=0;
 static unsigned long unfree_mem=0;
 static int exiting=0;
 
-struct fileloc
-{
-  struct fileloc *next;
-  const char *file;
-  int line;
-  int number;
-};
-
-
 /* Hepp, we cannot do dmalloc on dmalloc structures... */
 #undef DO_IF_DMALLOC
 #define DO_IF_DMALLOC(X)
 
-BLOCK_ALLOC(fileloc, 4090)
 
 struct memloc
 {
   struct memloc *next;
   struct memhdr *mh;
-  int locnum;
+  LOCATION location;
   int times;
 };
 
@@ -752,14 +748,12 @@ struct memhdr
   struct memloc *locations;
 };
 
-static struct fileloc *flhash[FLSIZE];
 static struct memloc *mlhash[LHSIZE];
 static char rndbuf[RNDSIZE + DEBUG_MALLOC_PAD*2];
 
 static struct memhdr no_leak_memlocs;
-static int file_location_number=10;
-static int loc_accepted_leak=0;
-static int loc_referenced=0;
+static LOCATION loc_accepted_leak="*acceptable leak*";
+static LOCATION loc_referenced="*referenced*";
 static int memheader_references_located=0;
 
 
@@ -897,72 +891,6 @@ void check_pad(struct memhdr *mh, int freeok)
 #define check_pad(M,X)
 #endif
 
-int location_number(const char *file, int line)
-{
-  struct fileloc *f,**prev;
-  unsigned long h=(long)file;
-  h*=4711;
-  h+=line;
-  h%=FLSIZE;
-  for(prev=flhash+h;(f=*prev);prev=&f->next)
-  {
-    if(f->line == line && f->file == file)
-    {
-      *prev=f->next;
-      f->next=flhash[h];
-      flhash[h]=f;
-      return f->number;
-    }
-  }
-
-  f=alloc_fileloc();
-  f->line=line;
-  f->file=file;
-  f->number=++file_location_number;
-  f->next=flhash[h];
-  flhash[h]=f;
-  return f->number;
-}
-
-int dynamic_location_number(const char *file, int line)
-{
-  struct fileloc *f,**prev;
-  unsigned long h=hashstr(file, 4711);
-  h*=4711;
-  h+=line;
-  h%=FLSIZE;
-  for(prev=flhash+h;(f=*prev);prev=&f->next)
-  {
-    if(f->line == line && !strcmp(f->file,file))
-    {
-      *prev=f->next;
-      f->next=flhash[h];
-      flhash[h]=f;
-      return f->number;
-    }
-  }
-
-  f=alloc_fileloc();
-  f->line=line;
-  f->file=strdup(file);
-  f->number=~ ( ++file_location_number );
-  f->next=flhash[h];
-  flhash[h]=f;
-  return f->number;
-}
-
-static struct fileloc *find_file_location(int locnum)
-{
-  int e;
-  struct fileloc *r;
-  for(e=0;e<FLSIZE;e++)
-    for(r=flhash[e];r;r=r->next)
-      if(r->number == locnum)
-	return r;
-
-  fprintf(stderr,"Internal error in DEBUG_MALLOC, failed to find location.\n");
-  abort();
-}
 
 static void low_add_marks_to_memhdr(struct memhdr *to,
 				    struct memhdr *from)
@@ -970,7 +898,7 @@ static void low_add_marks_to_memhdr(struct memhdr *to,
   struct memloc *l;
   if(!from) return;
   for(l=from->locations;l;l=l->next)
-    add_location(to, l->locnum);
+    add_location(to, l->location);
 }
 
 void add_marks_to_memhdr(struct memhdr *to, void *ptr)
@@ -982,12 +910,12 @@ void add_marks_to_memhdr(struct memhdr *to, void *ptr)
   mt_unlock(&debug_malloc_mutex);
 }
 
-static inline unsigned long lhash(struct memhdr *m, int locnum)
+static inline unsigned long lhash(struct memhdr *m, LOCATION location)
 {
   unsigned long l;
   l=(long)m;
   l*=53;
-  l+=locnum;
+  l+=(long)location;
   l%=LHSIZE;
   return l;
 }
@@ -1000,7 +928,7 @@ static inline unsigned long lhash(struct memhdr *m, int locnum)
   struct memloc *ml;					\
   while((ml=X->locations))				\
   {							\
-    unsigned long l=lhash(X,ml->locnum);		\
+    unsigned long l=lhash(X,ml->location);		\
     if(mlhash[l]==ml) mlhash[l]=0;			\
 							\
     X->locations=ml->next;				\
@@ -1044,19 +972,19 @@ static struct memhdr *my_find_memhdr(void *p, int already_gone)
 }
 
 
-static int find_location(struct memhdr *mh, int locnum)
+static int find_location(struct memhdr *mh, LOCATION location)
 {
   struct memloc *ml;
-  unsigned long l=lhash(mh,locnum);
+  unsigned long l=lhash(mh,location);
 
   if(mlhash[l] &&
      mlhash[l]->mh==mh &&
-     mlhash[l]->locnum==locnum)
+     mlhash[l]->location==location)
     return 1;
 
   for(ml=mh->locations;ml;ml=ml->next)
   {
-    if(ml->locnum==locnum)
+    if(ml->location==location)
     {
       mlhash[l]=ml;
       return 1;
@@ -1065,7 +993,7 @@ static int find_location(struct memhdr *mh, int locnum)
   return 0;
 }
 
-static void add_location(struct memhdr *mh, int locnum)
+static void add_location(struct memhdr *mh, LOCATION location)
 {
   struct memloc *ml=0;
   unsigned long l;
@@ -1076,16 +1004,16 @@ static void add_location(struct memhdr *mh, int locnum)
 #endif
   
 #if DEBUG_MALLOC - 0 < 2
-  if(find_location(&no_leak_memlocs, locnum)) return;
+  if(find_location(&no_leak_memlocs, location)) return;
 #endif
 
 #ifdef DMALLOC_PROFILE
   add_location_calls++;
 #endif
 
-  l=lhash(mh,locnum);
+  l=lhash(mh,location);
 
-  if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->locnum==locnum)
+  if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->location==location)
   {
     mlhash[l]->times++;
 #ifdef DMALLOC_PROFILE
@@ -1104,13 +1032,13 @@ static void add_location(struct memhdr *mh, int locnum)
 #ifdef DMALLOC_PROFILE
       add_location_seek++;
 #endif
-      if(ml->locnum == locnum)
+      if(ml->location == location)
 	break;
 
-      l2=lhash(mh, ml->locnum);
+      l2=lhash(mh, ml->location);
 
       if(mlhash[l2] && mlhash[l2]!=ml &&
-	 mlhash[l2]->mh == mh && mlhash[l2]->locnum == ml->locnum)
+	 mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
       {
 	/* We found a duplicate */
 #ifdef DMALLOC_PROFILE
@@ -1131,7 +1059,7 @@ static void add_location(struct memhdr *mh, int locnum)
 #ifdef DMALLOC_PROFILE
     add_location_seek++;
 #endif
-    if(ml->locnum==locnum)
+    if(ml->location==location)
       break;
   }
 #endif
@@ -1143,7 +1071,7 @@ static void add_location(struct memhdr *mh, int locnum)
 #endif
     ml=alloc_memloc();
     ml->times=0;
-    ml->locnum=locnum;
+    ml->location=location;
     ml->next=mh->locations;
     ml->mh=mh;
     mh->locations=ml;
@@ -1157,7 +1085,7 @@ static void add_location(struct memhdr *mh, int locnum)
   mlhash[l]=ml;
 }
 
-static void remove_location(struct memhdr *mh, int locnum)
+static void remove_location(struct memhdr *mh, LOCATION location)
 {
   struct memloc *ml,**prev;
   unsigned long l;
@@ -1168,19 +1096,19 @@ static void remove_location(struct memhdr *mh, int locnum)
 #endif
   
 #if DEBUG_MALLOC - 0 < 2
-  if(find_location(&no_leak_memlocs, locnum)) return;
+  if(find_location(&no_leak_memlocs, location)) return;
 #endif
 
-  l=lhash(mh,locnum);
+  l=lhash(mh,location);
 
-  if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->locnum==locnum)
+  if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->location==location)
     mlhash[l]=0;
 
   
   prev=&mh->locations;
   while((ml=*prev))
   {
-    if(ml->locnum==locnum)
+    if(ml->location==location)
     {
       *prev=ml->next;
       really_free_memloc(ml);
@@ -1193,17 +1121,17 @@ static void remove_location(struct memhdr *mh, int locnum)
   }
 }
 
-int dmalloc_default_location=0;
+LOCATION dmalloc_default_location=0;
 
-static struct memhdr *low_make_memhdr(void *p, int s, int locnum)
+static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
 {
   struct memhdr *mh=get_memhdr(p);
   struct memloc *ml=alloc_memloc();
-  unsigned long l=lhash(mh,locnum);
+  unsigned long l=lhash(mh,location);
 
   mh->size=s;
   mh->locations=ml;
-  ml->locnum=locnum;
+  ml->location=location;
   ml->next=0;
   ml->times=1;
   mlhash[l]=ml;
@@ -1213,17 +1141,10 @@ static struct memhdr *low_make_memhdr(void *p, int s, int locnum)
   return mh;
 }
 
-static void low_dmalloc_register(void *p, int s, const char *file, int line)
-{
-  low_make_memhdr(p,s,location_number(file, line));
-}
-
-void dmalloc_register(void *p, int s, const char *file, int line)
+void dmalloc_register(void *p, int s, LOCATION location)
 {
   mt_lock(&debug_malloc_mutex);
-
-  low_dmalloc_register(p, s, file, line);
-
+  low_make_memhdr(p, s, location);
   mt_unlock(&debug_malloc_mutex);
 }
 
@@ -1261,7 +1182,7 @@ int dmalloc_unregister(void *p, int already_gone)
   return ret;
 }
 
-void *debug_malloc(size_t s, const char *fn, int line)
+void *debug_malloc(size_t s, LOCATION location)
 {
   char *m;
 
@@ -1271,30 +1192,30 @@ void *debug_malloc(size_t s, const char *fn, int line)
   if(m)
   {
     m=do_pad(m, s);
-    low_make_memhdr(m, s, location_number(fn,line))->flags|=MEM_PADDED;
+    low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
   }
 
   if(verbose_debug_malloc)
-    fprintf(stderr, "malloc(%d) => %p  (%s:%d)\n", s, m, fn, line);
+    fprintf(stderr, "malloc(%d) => %p  (%s)\n", s, m, LOCATION_NAME(location));
 
   mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
 
-void *debug_calloc(size_t a, size_t b, const char *fn, int line)
+void *debug_calloc(size_t a, size_t b, LOCATION location)
 {
-  void *m=debug_malloc(a*b,fn,line);
+  void *m=debug_malloc(a*b,location);
   if(m)
     MEMSET(m, 0, a*b);
 
   if(verbose_debug_malloc)
-    fprintf(stderr, "calloc(%d,%d) => %p  (%s:%d)\n", a, b, m, fn, line);
+    fprintf(stderr, "calloc(%d,%d) => %p  (%s)\n", a, b, m, LOCATION_NAME(location));
 
   return m;
 }
 
-void *debug_realloc(void *p, size_t s, const char *fn, int line)
+void *debug_realloc(void *p, size_t s, LOCATION location)
 {
   char *m,*base;
   mt_lock(&debug_malloc_mutex);
@@ -1305,21 +1226,21 @@ void *debug_realloc(void *p, size_t s, const char *fn, int line)
   if(m) {
     m=do_pad(m, s);
     if(p) low_dmalloc_unregister(p,1);
-    low_make_memhdr(m, s, location_number(fn,line))->flags|=MEM_PADDED;
+    low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
   }
   if(verbose_debug_malloc)
-    fprintf(stderr, "realloc(%p,%d) => %p  (%s:%d)\n", p, s, m, fn,line);
+    fprintf(stderr, "realloc(%p,%d) => %p  (%s)\n", p, s, m, LOCATION_NAME(location));
   mt_unlock(&debug_malloc_mutex);
   return m;
 }
 
-void debug_free(void *p, const char *fn, int line, int mustfind)
+void debug_free(void *p, LOCATION location, int mustfind)
 {
   struct memhdr *mh;
   if(!p) return;
   mt_lock(&debug_malloc_mutex);
   if(verbose_debug_malloc)
-    fprintf(stderr, "free(%p) (%s:%d)\n", p, fn,line);
+    fprintf(stderr, "free(%p) (%s)\n", p, LOCATION_NAME(location));
   mh=my_find_memhdr(p,0);
 
   if(!mh && mustfind && p)
@@ -1334,7 +1255,7 @@ void debug_free(void *p, const char *fn, int line, int mustfind)
     MEMSET(p, 0x55, mh->size);
     if(mh->size < MAX_UNFREE_MEM/FREE_DELAY)
     {
-      add_location(mh, location_number(fn,line));
+      add_location(mh, location);
       mh->size = ~mh->size;
       blocks_to_free_ptr++;
       blocks_to_free_ptr%=FREE_DELAY;
@@ -1372,19 +1293,19 @@ void debug_free(void *p, const char *fn, int line, int mustfind)
 
 void dmalloc_free(void *p)
 {
-  debug_free(p, __FILE__, __LINE__, 0);
+  debug_free(p, DMALLOC_LOCATION(), 0);
 }
 
-char *debug_strdup(const char *s, const char *fn, int line)
+char *debug_strdup(const char *s, LOCATION location)
 {
   char *m;
   long length;
   length=strlen(s);
-  m=(char *)debug_malloc(length+1,fn,line);
+  m=(char *)debug_malloc(length+1,location);
   MEMCPY(m,s,length+1);
 
   if(verbose_debug_malloc)
-    fprintf(stderr, "strdup(\"%s\") => %p  (%s:%d)\n", s, m, fn, line);
+    fprintf(stderr, "strdup(\"%s\") => %p  (%s)\n", s, m, LOCATION_NAME(location));
 
   return m;
 }
@@ -1397,17 +1318,14 @@ void dump_memhdr_locations(struct memhdr *from,
   if(!from) return;
   for(l=from->locations;l;l=l->next)
   {
-    struct fileloc *f;
-    if(notfrom && find_location(notfrom, l->locnum))
+    if(notfrom && find_location(notfrom, l->location))
       continue;
 
-    f=find_file_location(l->locnum);
-    fprintf(stderr," %s %s:%d (%d times) %s\n",
-	    l->locnum<0 ? "-->" : "***",
-	    f->file,
-	    f->line,
+    fprintf(stderr," %s %s (%d times) %s\n",
+	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
+	    LOCATION_NAME(l->location),
 	    l->times,
-	    find_location(&no_leak_memlocs, l->locnum) ? "" : "*");
+	    find_location(&no_leak_memlocs, l->location) ? "" : "*");
   }
 }
 
@@ -1422,8 +1340,8 @@ void debug_malloc_dump_references(void *x)
 
     for(l=mh->locations;l;l=l->next)
     {
-      if(l->locnum == loc_accepted_leak) referenced|=2;
-      if(l->locnum == loc_referenced) referenced|=1;
+      if(l->location == loc_accepted_leak) referenced|=2;
+      if(l->location == loc_referenced) referenced|=1;
     }
     if(referenced & 2)
     {
@@ -1463,13 +1381,11 @@ void list_open_fds(void)
 
 	  for(l=m->locations;l;l=l->next)
 	  {
-	    struct fileloc *f=find_file_location(l->locnum);
-	    fprintf(stderr,"   %s %s:%d (%d times) %s\n",
-		    l->locnum<0 ? "-->" : "***",
-		    f->file,
-		    f->line,
+	    fprintf(stderr,"   %s %s (%d times) %s\n",
+		    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
+		    LOCATION_NAME(l->location),
 		    l->times,
-		    find_location(&no_leak_memlocs, l->locnum) ? "" : "*"
+		    find_location(&no_leak_memlocs, l->location) ? "" : "*"
 		    );
 	  }
 	}
@@ -1551,8 +1467,8 @@ void cleanup_memhdrs(void)
 
 	for(l=m->locations;l;l=l->next)
 	{
-	  if(l->locnum == loc_accepted_leak) referenced|=2;
-	  if(l->locnum == loc_referenced) referenced|=1;
+	  if(l->location == loc_accepted_leak) referenced|=2;
+	  if(l->location == loc_referenced) referenced|=1;
 	}
 
 	if(referenced & 2) continue;
@@ -1597,13 +1513,11 @@ void cleanup_memhdrs(void)
 	
 	for(l=m->locations;l;l=l->next)
 	{
-	  struct fileloc *f=find_file_location(l->locnum);
-	  fprintf(stderr,"  %s %s:%d (%d times) %s\n",
-		  l->locnum<0 ? "-->" : "***",
-		  f->file,
-		  f->line,
+	  fprintf(stderr,"  %s %s (%d times) %s\n",
+		  LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
+		  LOCATION_NAME(l->location),
 		  l->times,
-		  find_location(&no_leak_memlocs, l->locnum) ? "" : "*");
+		  find_location(&no_leak_memlocs, l->location) ? "" : "*");
 	}
       }
     }
@@ -1625,9 +1539,6 @@ void cleanup_memhdrs(void)
 
       count_memory_in_memhdrs(&num,&mem);
       fprintf(stderr,"memhdrs:  %8ld, %10ld bytes\n",(long)num,(long)mem);
-
-      count_memory_in_filelocs(&num,&mem);
-      fprintf(stderr,"filelocs: %8ld, %10ld bytes\n",(long)num,(long)mem);
     }
 #endif
 
@@ -1666,33 +1577,84 @@ int main(int argc, char *argv[])
   th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
   init_memhdr_hash();
-  loc_accepted_leak=location_number("*acceptable leak*", 0);
-  loc_referenced=location_number("*referenced*", 0);
+
   return dbm_main(argc, argv);
 }
 
-void * debug_malloc_update_location(void *p,const char *fn, int line)
+void * debug_malloc_update_location(void *p,LOCATION location)
 {
   if(p)
   {
     struct memhdr *mh;
     mt_lock(&debug_malloc_mutex);
     if((mh=my_find_memhdr(p,0)))
-      add_location(mh, location_number(fn,line));
+      add_location(mh, location);
 
     mt_unlock(&debug_malloc_mutex);
   }
   return p;
 }
 
-void * debug_malloc_name(void *p,const char *fn, int line)
+/* another shared-string table... */
+struct dmalloc_string
+{
+  struct dmalloc_string *next;
+  unsigned long hval;
+  char str[1];
+};
+
+static struct dmalloc_string *dstrhash[DSTRHSIZE];
+
+LOCATION dynamic_location(char *file, int line)
+{
+  struct dmalloc_string **prev, *str;
+  int len=strlen(file);
+  unsigned long h,hval=hashmem(file,len,64)+line;
+  h=hval % DSTRHSIZE;
+
+  mt_lock(&debug_malloc_mutex);
+
+  for(prev = dstrhash + h; (str=*prev); prev = &str->next)
+  {
+    if(hval == str->hval &&
+       str->str[len+1]==':' &&
+       !MEMCMP(str->str+1, file, len) &&
+       str->str[0]=='D' &&
+       atoi(str->str+len+2) == line)
+    {
+      *prev=str->next;
+      str->next=dstrhash[h];
+      dstrhash[h]=str;
+      break;
+    }
+  }
+  
+  if(!str)
+  {
+    str=malloc( sizeof(struct dmalloc_string) + len + 20);
+    sprintf(str->str, "D%s:%d", file, line);
+    str->hval=hval;
+    str->next=dstrhash[h];
+    dstrhash[h]=str;
+  }
+
+  mt_unlock(&debug_malloc_mutex);
+
+  return str->str;
+}
+
+
+void * debug_malloc_name(void *p,char *file, int line)
 {
   if(p)
   {
     struct memhdr *mh;
+    LOCATION loc=dynamic_location(file, line);
+
     mt_lock(&debug_malloc_mutex);
+      
     if((mh=my_find_memhdr(p,0)))
-      add_location(mh, dynamic_location_number(fn,line));
+      add_location(mh, loc);
 
     mt_unlock(&debug_malloc_mutex);
   }
@@ -1716,8 +1678,8 @@ void debug_malloc_copy_names(void *p, void *p2)
       struct memloc *l;
       for(l=from->locations;l;l=l->next)
       {
-	if(l->locnum < 0)
-	  add_location(mh, l->locnum);
+	if(LOCATION_IS_DYNAMIC(l->location))
+	  add_location(mh, l->location);
       }
     }
 
@@ -1725,21 +1687,21 @@ void debug_malloc_copy_names(void *p, void *p2)
   }
 }
 
-int debug_malloc_touch_fd(int fd, const char *fn, int line)
+int debug_malloc_touch_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
-  debug_malloc_update_location( FD2PTR(fd), fn, line);
+  debug_malloc_update_location( FD2PTR(fd), location);
   return fd;
 }
 
-int debug_malloc_register_fd(int fd, const char *fn, int line)
+int debug_malloc_register_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
-  dmalloc_register( FD2PTR(fd), 0 , fn, line);
+  dmalloc_register( FD2PTR(fd), 0, location);
   return fd;
 }
 
-int debug_malloc_close_fd(int fd, const char *fn, int line)
+int debug_malloc_close_fd(int fd, LOCATION location)
 {
   if(fd==-1) return fd;
   dmalloc_unregister( FD2PTR(fd), 1);

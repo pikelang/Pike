@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: dynamic_buffer.h,v 1.6 1998/03/28 15:33:30 grubba Exp $
+ * $Id: dynamic_buffer.h,v 1.7 2000/03/20 21:00:04 hubbe Exp $
  */
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H
@@ -52,7 +52,7 @@ char *debug_return_buf(void);
 #ifdef DEBUG_MALLOC
 #define initialize_buf(X) \
   do { dynamic_buffer *b_=(X); debug_initialize_buf(b_); \
-   debug_malloc_update_location(b_->s.str,__FILE__,__LINE__); } while(0)
+   debug_malloc_touch(b_->s.str); } while(0)
 #define low_free_buf(X) \
   ((struct pike_string *)debug_malloc_touch(debug_low_free_buf(X)))
 

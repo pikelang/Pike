@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.37 2000/03/17 05:13:17 hubbe Exp $
+ * $Id: pike_types.h,v 1.38 2000/03/20 21:00:04 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -240,10 +240,10 @@ struct pike_string *make_pike_type(char *t);
 } while (0)
 
 #ifdef DEBUG_MALLOC
-#define pop_type() ((struct pike_string *)debug_malloc_update_location(debug_pop_type(),__FILE__,__LINE__))
-#define compiler_pop_type() ((struct pike_string *)debug_malloc_update_location(debug_compiler_pop_type(),__FILE__,__LINE__))
+#define pop_type() ((struct pike_string *)debug_malloc_pass(debug_pop_type()))
+#define compiler_pop_type() ((struct pike_string *)debug_malloc_pass(debug_compiler_pop_type()))
 #define pop_unfinished_type() \
- ((struct pike_string *)debug_malloc_update_location(debug_pop_unfinished_type(),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_pop_unfinished_type()))
 #else
 #define pop_type debug_pop_type
 #define compiler_pop_type debug_compiler_pop_type

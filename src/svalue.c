@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.62 2000/02/03 19:09:13 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.63 2000/03/20 21:00:04 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -139,7 +139,7 @@ void do_free_svalue(struct svalue *s)
  * We put this routine here so the compiler can optimize the call
  * inside the loop if it wants to
  */
-void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
+void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE_ARGS)
 {
   switch(type_hint)
   {
@@ -151,7 +151,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
 
 #define DOTYPE(X,Y,Z) case X:						\
    while(--num>=0) {							\
-    DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, file, line));	\
+    DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z DMALLOC_PROXY_ARGS));	\
     Y(s->u.Z);								\
     DO_IF_DMALLOC(s->u.Z=0);						\
     s++;								\
@@ -187,7 +187,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
     while(--num>=0)
     {
 #ifdef DEBUG_MALLOC
-      debug_malloc_update_location(s->u.refs, file, line);
+      debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
       if(--s->u.refs[0]<=0)
       {
@@ -202,7 +202,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
     while(--num>=0)
     {
 #ifdef DEBUG_MALLOC
-      debug_malloc_update_location(s->u.refs, file, line);
+      debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
       if(--s->u.refs[0] <= 0)
       {
@@ -222,7 +222,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint LINE_ARGS)
       {
 #ifdef DEBUG_MALLOC
 	if(s->type <= MAX_REF_TYPE)
-	  debug_malloc_update_location(s->u.refs, file, line);
+	  debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
 	free_svalue(s++);
       }

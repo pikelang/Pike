@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.244 2000/03/17 05:13:17 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.245 2000/03/20 21:00:03 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4647,13 +4647,13 @@ void f__dmalloc_set_name(INT32 args)
 {
   char *s;
   INT_TYPE i;
-  extern int dynamic_location_number(const char *file, int line);
-  extern int dmalloc_default_location;
+  extern char * dynamic_location(const char *file, int line);
+  extern char * dmalloc_default_location;
 
   if(args)
   {
     get_all_args("_dmalloc_set_name", args, "%s%i", &s, &i);
-    dmalloc_default_location = dynamic_location_number(s, i);
+    dmalloc_default_location = dynamic_location(s, i);
   }else{
     dmalloc_default_location=0;
   }

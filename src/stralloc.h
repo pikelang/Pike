@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.40 2000/03/17 05:11:49 hubbe Exp $
+ * $Id: stralloc.h,v 1.41 2000/03/20 21:00:04 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -269,34 +269,34 @@ p_wchar2 *require_wstring2(struct pike_string *s,
 
 #ifdef DEBUG_MALLOC
 #define make_shared_string(X) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_string(X),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_string(X)))
 #define make_shared_binary_string(X,Y) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_string((X),(Y)),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_string((X),(Y))))
 
 #define make_shared_string0(X) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_string0(X),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_string0(X)))
 #define make_shared_binary_string0(X,Y) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_string0((X),(Y)),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_string0((X),(Y))))
 
 #define make_shared_string1(X) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_string1(X),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_string1(X)))
 #define make_shared_binary_string1(X,Y) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_string1((X),(Y)),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_string1((X),(Y))))
 
 #define make_shared_string2(X) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_string2(X),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_string2(X)))
 #define make_shared_binary_string2(X,Y) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_string2((X),(Y)),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_string2((X),(Y))))
 
 #define begin_shared_string(X) \
- ((struct pike_string *)debug_malloc_update_location(debug_begin_shared_string(X),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_begin_shared_string(X)))
 #define begin_wide_shared_string(X,Y) \
- ((struct pike_string *)debug_malloc_update_location(debug_begin_wide_shared_string((X),(Y)),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_begin_wide_shared_string((X),(Y))))
 
 #define make_shared_pcharp(X) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_pcharp(X),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_pcharp(X)))
 #define make_shared_binary_pcharp(X,Y) \
- ((struct pike_string *)debug_malloc_update_location(debug_make_shared_binary_pcharp((X),(Y)),__FILE__,__LINE__))
+ ((struct pike_string *)debug_malloc_pass(debug_make_shared_binary_pcharp((X),(Y))))
 
 #else
 #define make_shared_string debug_make_shared_string

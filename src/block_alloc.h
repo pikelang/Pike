@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.15 2000/01/27 23:13:03 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.16 2000/03/20 21:00:03 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -51,7 +51,7 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)				\
 									\
   tmp=PIKE_CONCAT3(free_,DATA,s);					\
   PIKE_CONCAT3(free_,DATA,s)=tmp->BLOCK_ALLOC_NEXT;			\
-  DO_IF_DMALLOC( dmalloc_register(tmp,0, __FILE__, __LINE__);  )	\
+  DO_IF_DMALLOC( dmalloc_register(tmp,0, DMALLOC_LOCATION());  )	\
   INIT_BLOCK(tmp);							\
   return tmp;								\
 }									\
