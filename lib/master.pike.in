@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.49 1999/06/01 12:12:11 mirar Exp $
+/* $Id: master.pike.in,v 1.50 1999/06/02 21:21:39 marcus Exp $
  * 
  * Master-file for Pike.
  *
@@ -722,6 +722,24 @@ void _main(string *orig_argv, string *env)
     }
 
 
+#if defined(__NT__) && !defined(NOT_INSTALLED)
+  function rget=lambda(string ent) {
+    catch { return RegGetValue(HKEY_CURRENT_USER,"SOFTWARE\\Idonex\\Pike\\0.7",ent); };
+    catch { return RegGetValue(HKEY_LOCAL_MACHINE,"SOFTWARE\\Idonex\\Pike\\0.7",ent); };
+    
+ };
+  string tmppath=rget("share_prefix");
+  // add path for architecture-shared files
+  add_include_path(tmppath+"/include");
+  add_module_path(tmppath+"/modules");
+
+  tmppath=rget("lib_prefix");
+  // add path for architecture-dependant files
+  add_include_path(tmppath+"/include");
+  add_module_path(tmppath+"/modules");
+
+#else
+
 #if "¤share_prefix¤"[0]!='¤'
   // add path for architecture-dependant files
   add_include_path("¤share_prefix¤/include");
@@ -732,6 +750,8 @@ void _main(string *orig_argv, string *env)
   // add path for architecture-dependant files
   add_include_path("¤lib_prefix¤/include");
   add_module_path("¤lib_prefix¤/modules");
+#endif
+
 #endif
 
 #ifndef NOT_INSTALLED
