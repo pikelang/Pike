@@ -1,8 +1,4 @@
-// Roxen Intraseek 3 main pike module
-// Roxen Pathfinder
-// Roxen Finder
-// Pike Seek
-// IKEA Leta
+// Roxen Whitefish main pike module
 //
 // Copyright © 2000, Roxen IS.
 
@@ -10,8 +6,8 @@
 
 private mapping filters=([]);
 
-void create() {
-
+void create()
+{
   // Load filters
   werror("Load filters\n");
   array tmp=__FILE__/"/";
@@ -53,11 +49,13 @@ private constant rank_list = ([
   T_H5       : 14,
   T_H6       : 15 ]);
 
-int rank(mapping word) {
+int rank(mapping word)
+{
   return rank_list[word->type];
 }
 
-class Filter {
+class Filter
+{
   void set_content(string);
   array(array(string)) get_anchors();
   void add_content(string, int);
@@ -68,33 +66,39 @@ class Filter {
   // string normalization(string);
 }
 
-Filter get_filter(string mime_type) {
+Filter get_filter(string mime_type)
+{
   if(!filters[mime_type]) return 0;
   return filters[mime_type]->Filter();
 }
 
-array(string) get_filter_mime_types() {
+array(string) get_filter_mime_types()
+{
   return indices(filters);
 }
 
 array(mapping) splitter(array(string) text, array(int) context, array(int) offset,
 			function(string:string) post_normalization,
-			function(mapping:int) ranking) {
+			function(mapping:int) ranking)
+{
   if(sizeof(text)!=sizeof(context) ||
      sizeof(text)!=sizeof(offset) ) return 0;
 
   array(mapping) result=({});
-  for(int i=0; i<sizeof(text); i++) {
+  for(int i=0; i<sizeof(text); i++)
+  {
     array words=text[i]/" ";
     int inc=0, oldinc;
-    foreach(words, string word) {
+    foreach(words, string word)
+    {
       oldinc=inc;
       inc+=sizeof(word)+1;
       word=post_normalization(word);
       if(!sizeof(word)) continue;
       mapping n_word=([ "word":word,
 			"type":context[i],
-			"offset":offset[i]+oldinc, // This might be destroyed by pre_normalization
+			"offset":offset[i]+oldinc,
+			// This might be destroyed by pre_normalization
       ]);
       n_word->rank=ranking(n_word);
       result+=({ n_word });
