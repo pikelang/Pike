@@ -1,6 +1,6 @@
 
 /*
- * $Id: md2.c,v 1.1 2000/08/01 19:48:36 sigge Exp $
+ * $Id: md2.c,v 1.2 2000/08/02 18:13:51 grubba Exp $
  *
  *  md2.c : MD2 hash algorithm.
  *
@@ -54,7 +54,7 @@ void md2_update(struct md2_ctx *ctx,
   unsigned INT32 L;
   while (len) 
   {
-    L=(16-ctx->count) < len ? (16-ctx->count) : len;
+    L = (16 < (len + ctx->count)) ? (16-ctx->count) : len;
     memcpy(ctx->buf+ctx->count, buffer, L);
     ctx->count+=L;
     buffer+=L;
@@ -98,11 +98,12 @@ void md2_digest(struct md2_ctx *ctx, INT8 *s)
   unsigned INT8 padding[16];
   unsigned INT32 padlen;
   struct md2_ctx temp;
-  int i;
+  unsigned int i;
 
   md2_copy(&temp, ctx);
-  padlen= 16-ctx->count;
-  for(i=0; i<padlen; i++) padding[i]=padlen;
+  padlen = 16-ctx->count;
+  for(i=0; i<padlen; i++)
+    padding[i] = padlen;
   md2_update(&temp, padding, padlen);
   md2_update(&temp, temp.C, 16);
   memcpy(s, temp.X, 16);
