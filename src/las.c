@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.188 2000/07/18 16:22:37 grubba Exp $");
+RCSID("$Id: las.c,v 1.189 2000/08/14 17:48:49 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -302,7 +302,7 @@ BLOCK_ALLOC(node_s, NODES)
 
 struct node_hash_table node_hash;
 
-static unsigned INT32 hash_node(node *n)
+static size_t hash_node(node *n)
 {
   return hashmem((unsigned char *)&(n->token),
 		 sizeof(node) - OFFSETOF(node_s, token), sizeof(node));
@@ -310,7 +310,7 @@ static unsigned INT32 hash_node(node *n)
 
 static void add_node(node *n)
 {
-  unsigned INT32 hval = n->hash % node_hash.size;
+  size_t hval = n->hash % node_hash.size;
 
   n->next = node_hash.table[hval];
   node_hash.table[hval] = n;
@@ -344,7 +344,7 @@ static void sub_node(node *n)
 
 static node *freeze_node(node *orig)
 {
-  unsigned INT32 hash = hash_node(orig);
+  size_t hash = hash_node(orig);
   node *n;
 
   /* free_node() wants a correct hash */
@@ -483,9 +483,11 @@ void debug_free_node(node *n)
 
 #ifdef SHARED_NODES
   {
-    unsigned INT32 hash;
+    size_t hash;
     if ((hash = hash_node(n)) != n->hash) {
-      fprintf(stderr, "Hash-value is bad 0x%08x != 0x%08x\n", hash, n->hash);
+      fprintf(stderr, "Hash-value is bad 0x%08x != 0x%08lx\n",
+	      DO_NOT_WARN((unsigned long)hash),
+	      DO_NOT_WARN((unsigned long)n->hash));
       print_tree(n);
       fatal("token:%d, car:%p cdr:%p file:%s line:%d\n",
 	    n->token, _CAR(n), _CDR(n), n->current_file->str, n->line_number);
@@ -1123,7 +1125,7 @@ void resolv_constant(node *n)
       char fnord[1000];
       if(is_const(n))
       {
-	int args=eval_low(n);
+	ptrdiff_t args=eval_low(n);
 	if(args==1) return;
 
 	if(args!=-1)
@@ -1133,7 +1135,7 @@ void resolv_constant(node *n)
 	    yyerror("Expected constant, got void expression");
 	  }else{
 	    yyerror("Possible internal error!!!");
-	    pop_n_elems(args-1);
+	    pop_n_elems(DO_NOT_WARN(args-1));
 	    return;
 	  }
 	}
@@ -1294,9 +1296,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
     default:
     {
-      int c;
+      ptrdiff_t c;
       DECLARE_CYCLIC();
-      c=(int)BEGIN_CYCLIC(Pike_sp[-1].u.refs, id);
+      c = (ptrdiff_t)BEGIN_CYCLIC(Pike_sp[-1].u.refs, id);
       if(c>1)
       {
 	my_yyerror("Recursive module dependency in '%s'.",id->str);
@@ -3697,12 +3699,12 @@ static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
   }
 }
 
-int eval_low(node *n)
+ptrdiff_t eval_low(node *n)
 {
   unsigned INT16 num_strings, num_constants;
   INT32 jump;
   struct svalue *save_sp = Pike_sp;
-  int ret;
+  ptrdiff_t ret;
 
 #ifdef PIKE_DEBUG
   if(l_flag > 3 && n)
@@ -3808,7 +3810,7 @@ int eval_low(node *n)
 static node *eval(node *n)
 {
   node *new;
-  int args;
+  ptrdiff_t args;
   if(!is_const(n) || n->token==':')
     return n;
   

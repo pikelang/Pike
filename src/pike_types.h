@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.41 2000/08/09 12:49:28 grubba Exp $
+ * $Id: pike_types.h,v 1.42 2000/08/14 17:48:50 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -39,7 +39,7 @@ struct node_s
 {
 #if defined(SHARED_NODES)
   unsigned INT32 refs;
-  unsigned INT32 hash;
+  size_t hash;
   struct node_s *next;
 #endif /* SHARED_NODES */
 #ifdef PIKE_DEBUG
@@ -62,7 +62,7 @@ struct node_identifier
 {
   ptrdiff_t refs;
   struct node_identifier *next;
-  unsigned INT32 hash;
+  size_t hash;
   INT16 token;
   union node_data u;
 };

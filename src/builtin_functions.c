@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.295 2000/08/10 09:51:51 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.296 2000/08/14 17:41:10 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -83,7 +83,8 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 
 void f_hash(INT32 args)
 {
-  INT32 i;
+  size_t i;
+
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
   if(Pike_sp[-args].type != T_STRING)
@@ -122,7 +123,7 @@ void f_hash(INT32 args)
     i%=(unsigned INT32)Pike_sp[1-args].u.integer;
   }
   pop_n_elems(args);
-  push_int(i);
+  push_int64(i);
 }
 
 PMOD_EXPORT void f_copy_value(INT32 args)
@@ -251,7 +252,7 @@ static struct case_info *find_ci_shift0(int c)
       case CIM_LOWERDELTA: C = c - ci->data; break; \
       case CIM_CASEBIT: C = c & ~ci->data; break; \
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
-      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+      default: fatal("upper_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
    } \
   } while(0)
@@ -272,7 +273,7 @@ static struct case_info *find_ci_shift0(int c)
 
 PMOD_EXPORT void f_lower_case(INT32 args)
 {
-  INT_TYPE i;
+  ptrdiff_t i;
   struct pike_string *orig;
   struct pike_string *ret;
   get_all_args("lower_case", args, "%W", &orig);
@@ -311,7 +312,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 
 PMOD_EXPORT void f_upper_case(INT32 args)
 {
-  INT_TYPE i;
+  ptrdiff_t i;
   struct pike_string *orig;
   struct pike_string *ret;
   int widen = 0;
@@ -431,7 +432,7 @@ void f_query_num_arg(INT32 args)
 
 PMOD_EXPORT void f_search(INT32 args)
 {
-  INT32 start;
+  ptrdiff_t start;
 
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("search", 2);
@@ -466,7 +467,7 @@ PMOD_EXPORT void f_search(INT32 args)
 			Pike_sp[1-args].u.string,
 			start);
     pop_n_elems(args);
-    push_int(start);
+    push_int64(start);
     break;
   }
 
@@ -485,7 +486,7 @@ PMOD_EXPORT void f_search(INT32 args)
     }
     start=array_search(Pike_sp[-args].u.array,Pike_sp+1-args,start);
     pop_n_elems(args);
-    push_int(start);
+    push_int64(start);
     break;
 
   case T_MAPPING:
@@ -541,7 +542,7 @@ PMOD_EXPORT void f_has_prefix(INT32 args)
     { \
       PIKE_CONCAT(p_wchar,S1) *s1 = PIKE_CONCAT(STR,S1)(a); \
       PIKE_CONCAT(p_wchar,S2) *s2 = PIKE_CONCAT(STR,S2)(b); \
-      int len = b->len; \
+      ptrdiff_t len = b->len; \
       while(len-- && (s1[len] == s2[len])) \
 	; \
       pop_n_elems(args); \
@@ -701,9 +702,9 @@ PMOD_EXPORT void f_backtrace(INT32 args)
     {
       INT32 args;
       args=f->num_args;
-      args=MINIMUM(f->num_args, Pike_sp - f->locals);
+      args = DO_NOT_WARN((INT32) MINIMUM(f->num_args, Pike_sp - f->locals));
       if(of)
-	args=MINIMUM(f->num_args, of->locals - f->locals);
+	args = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
       args=MAXIMUM(args,0);
 
       ITEM(a)[frames].u.array=i=allocate_array_no_init(3+args,0);
@@ -1041,8 +1042,8 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 {
   struct pike_string *in;
   struct pike_string *out = NULL;
-  INT32 len;
-  int i;
+  ptrdiff_t len;
+  ptrdiff_t i;
 
   get_all_args("string_to_unicode", args, "%W", &in);
 
@@ -1086,7 +1087,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
     /* 32 bit characters -- Is someone writing in Klingon? */
     {
       p_wchar2 *str2 = STR2(in);
-      int j;
+      ptrdiff_t j;
       len = in->len * 2;
       /* Check how many extra wide characters there are. */
       for(i = in->len; i--;) {
@@ -1148,7 +1149,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 {
   struct pike_string *in;
   struct pike_string *out = NULL;
-  INT32 len;
+  ptrdiff_t len;
 
   get_all_args("unicode_to_string", args, "%S", &in);
 
@@ -1172,7 +1173,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 #else
   /* Little endian */
   {
-    int i;
+    ptrdiff_t i;
     p_wchar1 *str1 = STR1(out);
 
     for (i = len; i--;) {
@@ -1188,7 +1189,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
 
 void f_string_to_utf8(INT32 args)
 {
-  int len;
+  ptrdiff_t len;
   struct pike_string *in;
   struct pike_string *out;
   int i,j;
@@ -1624,9 +1625,9 @@ PMOD_EXPORT void f_crypt(INT32 args)
   } else {
     unsigned int foo; /* Sun CC want's this :( */
     foo=my_rand();
-    salt[0] = choise[foo % (unsigned int) strlen(choise)];
+    salt[0] = choise[foo % (size_t) strlen(choise)];
     foo=my_rand();
-    salt[1] = choise[foo % (unsigned int) strlen(choise)];
+    salt[1] = choise[foo % (size_t) strlen(choise)];
     saltp=salt;
   }
 #ifdef HAVE_CRYPT
@@ -1678,8 +1679,9 @@ PMOD_EXPORT void f_destruct(INT32 args)
 
 PMOD_EXPORT void f_indices(INT32 args)
 {
-  INT32 size;
+  ptrdiff_t size;
   struct array *a;
+
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("indices", 1);
 
@@ -1944,7 +1946,7 @@ static node *fix_aggregate_mapping_type(node *n)
 
 PMOD_EXPORT void f_values(INT32 args)
 {
-  INT32 size;
+  ptrdiff_t size;
   struct array *a;
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("values", 1);
@@ -2162,18 +2164,20 @@ struct tupel
 
 static int replace_sortfun(struct tupel *a,struct tupel *b)
 {
-  return my_quick_strcmp(a->ind,b->ind);
+  return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
 }
 
 /* Magic, magic and more magic */
 static int find_longest_prefix(char *str,
-			       INT32 len,
+			       ptrdiff_t len,
 			       int size_shift,
 			       struct tupel *v,
 			       INT32 a,
 			       INT32 b)
 {
-  INT32 tmp,c,match=-1;
+  INT32 c,match=-1;
+  ptrdiff_t tmp;
+
   while(a<b)
   {
     c=(a+b)/2;
@@ -2235,7 +2239,8 @@ static struct pike_string * replace_many(struct pike_string *str,
 					struct array *from,
 					struct array *to)
 {
-  INT32 s,length,e,num;
+  INT32 e,num;
+  ptrdiff_t s, length;
   struct string_builder ret;
 
   struct tupel *v;
@@ -2297,14 +2302,15 @@ static struct pike_string * replace_many(struct pike_string *str,
 
   for(s=0;length > 0;)
   {
-    INT32 a,b,ch;
+    INT32 a,b;
+    ptrdiff_t ch;
 
     ch=index_shared_string(str,s);
-    if(ch<(INT32)NELEM(set_end)) b=set_end[ch]; else b=num;
+    if(ch<(ptrdiff_t)NELEM(set_end)) b=set_end[ch]; else b=num;
 
     if(b)
     {
-      if(ch<(INT32)NELEM(set_start)) a=set_start[ch]; else a=0;
+      if(ch<(ptrdiff_t)NELEM(set_start)) a=set_start[ch]; else a=0;
 
       a=find_longest_prefix(str->str+(s << str->size_shift),
 			    length,
@@ -2313,7 +2319,7 @@ static struct pike_string * replace_many(struct pike_string *str,
 
       if(a!=-1)
       {
-	ch=v[a].ind->len;
+	ch = v[a].ind->len;
 	if(!ch) ch=1;
 	s+=ch;
 	length-=ch;
@@ -2321,7 +2327,8 @@ static struct pike_string * replace_many(struct pike_string *str,
 	continue;
       }
     }
-    string_builder_putchar(&ret, ch);
+    string_builder_putchar(&ret,
+			   DO_NOT_WARN((INT32)ch));
     s++;
     length--;
   }
@@ -2546,7 +2553,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
 	 if(left<=0.0) break;
 
 #ifdef __NT__
-	 Sleep((int)(left*1000));
+	 Sleep(DO_NOT_WARN((int)(left*1000)));
 #elif defined(HAVE_POLL)
 	 poll(NULL,0,(int)(left*1000));
 #else
@@ -2944,16 +2951,16 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #endif
 
 /* Parse a sprintf/sscanf-style format string */
-static int low_parse_format(p_wchar0 *s, int slen)
+static ptrdiff_t low_parse_format(p_wchar0 *s, ptrdiff_t slen)
 {
-  int i;
-  int offset = 0;
+  ptrdiff_t i;
+  ptrdiff_t offset = 0;
   int num_percent_percent = 0;
   struct svalue *old_sp = Pike_sp;
 
   for (i=offset; i < slen; i++) {
     if (s[i] == '%') {
-      int j;
+      ptrdiff_t j;
       if (i != offset) {
 	push_string(make_shared_binary_string0(s + offset, i));
 	if ((Pike_sp != old_sp+1) && (Pike_sp[-2].type == T_STRING)) {
@@ -3012,7 +3019,7 @@ static int low_parse_format(p_wchar0 *s, int slen)
 	  i += 2;
 	  break;
 	case '}':
-	  f_aggregate(Pike_sp - old_sp);
+	  f_aggregate(DO_NOT_WARN(Pike_sp - old_sp));
 	  return i;
 	  /* Set */
 	case '[':
@@ -3039,7 +3046,7 @@ static int low_parse_format(p_wchar0 *s, int slen)
     }
   }
 
-  f_aggregate(Pike_sp - old_sp);
+  f_aggregate(DO_NOT_WARN(Pike_sp - old_sp));
   return i;
 }
 
@@ -3047,7 +3054,7 @@ static void f_parse_format(INT32 args)
 {
   struct pike_string *s = NULL;
   struct array *a;
-  int len;
+  ptrdiff_t len;
 
   get_all_args("parse_format", args, "%W", &s);
 
@@ -4269,7 +4276,7 @@ PMOD_EXPORT void f__memory_usage(INT32 args)
 
   call_callback(&memory_usage_callback, (void *)0);
 
-  f_aggregate_mapping(Pike_sp-ss);
+  f_aggregate_mapping(DO_NOT_WARN(Pike_sp - ss));
 }
 
 PMOD_EXPORT void f__next(INT32 args)

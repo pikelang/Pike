@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.40 2000/07/12 12:38:41 grubba Exp $
+ * $Id: las.h,v 1.41 2000/08/14 17:48:50 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -151,7 +151,7 @@ void print_tree(node *n);
 struct used_vars;
 void fix_type_field(node *n);
 struct timer_oflo;
-int eval_low(node *n);
+ptrdiff_t eval_low(node *n);
 int dooptcode(struct pike_string *name,
 	      node *n,
 	      struct pike_string *type,
