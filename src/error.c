@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.83 2002/03/10 02:11:15 mast Exp $");
+RCSID("$Id: error.c,v 1.84 2002/03/26 19:38:26 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -329,6 +329,9 @@ static void do_abort()
 
 PMOD_EXPORT void fatal_on_error(const void *msg)
 {
+  /* It's ok if we're exiting. */
+  if (throw_severity == THROW_EXIT) return;
+
 #ifdef PIKE_DEBUG
   dump_backlog();
 #endif
