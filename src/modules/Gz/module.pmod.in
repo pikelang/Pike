@@ -1,8 +1,9 @@
-// $Id: module.pmod.in,v 1.5 2002/11/25 11:18:14 grubba Exp $
+// $Id: module.pmod.in,v 1.6 2002/11/25 11:51:51 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
 
+#if constant(@module@._file)
 
 //! Allows the user to open a Gzip archive and read and write
 //! it's contents in an uncompressed form, emulating the @[Stdio.File]
@@ -104,3 +105,5 @@ class File {
     return ret;
   }
 }
+
+#endif /* constant(@module@._file) */
