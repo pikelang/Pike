@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.434 2001/07/03 17:05:40 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.435 2001/07/03 17:31:33 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -148,17 +148,20 @@ test_any([[{
   class Foo
   {
     mixed m;
-  }
+  };
   class Bar
   {
     inherit Foo;
     string m;
     Foo b;
-    string f() {return werror ("%O", typeof (b->m));}
-  }
+    mixed f() {
+      return typeof(b->m);
+    }
+  };
   Foo c;
   Bar d;
-  return Bar()->f()+"$"+typeof(c->m)+"$"+typeof(d->m)+"$"+typeof(d->b->m);
+  return sprintf("%O$%O$%O$%O",
+                 Bar()->f(), typeof(c->m), typeof(d->m), typeof(d->b->m));
 }]], "mixed$mixed$string$mixed")
 
 // type checks
