@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.175 1998/04/13 14:18:41 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.176 1998/04/16 01:22:03 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -97,7 +97,7 @@ AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_
 AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
-AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC)],[])
+AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[AC_DEFINE(HAVE_AND_USE_POLL)],[])
 AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
