@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.7 1996/11/14 01:24:10 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.8 1996/11/17 03:45:15 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -640,7 +640,12 @@ opt_object_type:  /* Empty */ { push_type_int(0); }
   | '(' program_ref ')'
   {
     if(sp[-1].type == T_PROGRAM)
+    {
       push_type_int(sp[-1].u.program->id);
+    }else{
+      yyerror("Not a valid program specifyer");
+      push_type_int(0);
+    }
     pop_n_elems(2);
   }
   ;
