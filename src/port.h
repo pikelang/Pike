@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.53 2003/08/04 16:34:04 mast Exp $
+|| $Id: port.h,v 1.54 2003/08/08 11:14:59 grubba Exp $
 */
 
 #ifndef PORT_H
@@ -162,7 +162,7 @@ PMOD_EXPORT char *STRTOK(char *s1,char *s2);
 #  define STRTOK strtok
 #endif
 
-#if !defined(HAVE_VFPRINTF) || !defined(HAVE_VSPRINTF)
+#if !defined(HAVE_VFPRINTF) || !defined(HAVE_VSPRINTF) || !defined(HAVE_VSNPRINTF)
 #  include <stdarg.h>
 #endif
 
