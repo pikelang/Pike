@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.13 1999/01/01 00:54:29 hubbe Exp $
+ * $Id: odbc.c,v 1.14 1999/03/20 00:19:24 marcus Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.13 1999/01/01 00:54:29 hubbe Exp $");
+RCSID("$Id: odbc.c,v 1.14 1999/03/20 00:19:24 marcus Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -199,7 +199,7 @@ static void f_create(INT32 args)
     user = make_shared_string("");
   }
   if (!server) {
-    server = make_shared_string("");
+    server = make_shared_string("default");
   }
   if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
     PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
