@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.226 2001/07/18 11:36:01 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.227 2001/07/18 20:20:23 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -761,20 +761,28 @@ void *do_inter_return_label;
 void *do_escape_catch_label;
 void *dummy_label;
 
+#ifdef sparc
+#define DEF_PROG_COUNTER	register unsigned INT32 *reg_pc __asm__ ("%i7")
+#else /* !sparc */
+#define DEF_PROG_COUNTER
+#endif /* sparc */
 
 #define OPCODE0(O,N,C) \
 void PIKE_CONCAT(opcode_,O)(void) { \
+  DEF_PROG_COUNTER; \
 DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s()\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N));\
 C }
 
 #define OPCODE1(O,N,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1) {\
+  DEF_PROG_COUNTER; \
 DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s(%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1)); \
 C }
 
 
 #define OPCODE2(O,N,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) { \
+  DEF_PROG_COUNTER; \
 DO_IF_DEBUG(if(t_flag > 3) fprintf(stderr,"- (%p,%ld): %s(%d,%d)\n",PROG_COUNTER,DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),N,arg1,arg2)); \
 C }
 
