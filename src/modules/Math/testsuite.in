@@ -99,25 +99,28 @@ test_true([[Math.inf>0.0]])
 test_true( Math.inf == Math.inf )
 test_false( Math.inf != Math.inf )
 test_true([[(Math.inf/2)==Math.inf]])
-// -Inf
 test_true([[-Math.inf<0.0]])
 test_true( -Math.inf == -Math.inf )
 test_false( -Math.inf != -Math.inf )
 test_true([[(-Math.inf/2)==-Math.inf]])
 test_false( Math.inf == -Math.inf )
 test_true( Math.inf != -Math.inf )
+
 // NaN
 test_false([[Math.nan>0.0]])
 test_false([[Math.nan<0.0]])
 test_false([[Math.nan==0.0]])
 test_true([[Math.nan!=0.0]])
-// -NaN
 test_false([[-Math.nan>0.0]])
 test_false([[-Math.nan<0.0]])
 test_false([[-Math.nan==0.0]])
 test_true([[-Math.nan!=0.0]])
 test_false( Math.nan == Math.nan )
 test_true( Math.nan != Math.nan )
+test_false(Math.nan < Math.nan)
+test_false(Math.nan > Math.nan)
+test_false(Math.nan <= Math.nan)
+test_false(Math.nan >= Math.nan)
 
 dnl Floating point comparison.
 define([[test_approx]], [[
