@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.30 2001/01/16 09:22:57 hubbe Exp $
+ * $Id: nt.c,v 1.31 2001/03/08 00:19:19 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -2273,6 +2273,110 @@ static void f_GetNamedSecurityInfo(INT32 args)
   if(desc) LocalFree(desc);
 }
 
+
+static void f_nt_uname(INT32 args)
+{
+  /* More info could be added here */
+
+  char buf[1024];
+  OSVERSIONINFO osversion;
+  SYSTEM_INFO sysinfo;
+  int n=0;
+
+  pop_n_elems(args);
+
+  osversion.dwOSVersionInfoSize=sizeof(osversion);
+  if(!GetVersionEx(&osversion))
+    Pike_error("GetVersionEx failed with errno %d\n",GetLastError());
+
+  GetSystemInfo(&sysinfo);
+
+  n+=2;
+  push_text("machine");
+  switch(sysinfo.wProcessorArchitecture)
+  {
+    case PROCESSOR_ARCHITECTURE_INTEL:
+      sprintf(buf,"i%d",sysinfo.dwProcessorType);
+      push_text(buf);
+      break;
+
+    case PROCESSOR_ARCHITECTURE_MIPS:
+      push_text("mips");
+      break;
+
+    case PROCESSOR_ARCHITECTURE_ALPHA:
+      push_text("alpha");
+      break;
+
+    case PROCESSOR_ARCHITECTURE_PPC:
+      push_text("PPC");
+      break;
+
+    default:
+    case PROCESSOR_ARCHITECTURE_UNKNOWN:
+      push_text("unknown");
+      break;
+  }
+
+  n+=2;
+  push_text("sysname");
+  switch(osversion.dwPlatformId)
+  {
+    case VER_PLATFORM_WIN32s:
+      push_text("Win32s");
+      break;
+
+    case VER_PLATFORM_WIN32_WINDOWS:
+      push_text("Win32");
+      if(osversion.dwMajorVersion)
+      {
+	sprintf(buf,"Windows 95 %d.%d.%d",
+		osversion.dwMajorVersion,
+		osversion.dwMinorVersion,
+		osversion.dwBuildNumber & 0xffff);
+		
+      }else{
+	sprintf(buf,"Windows 98 %d.%d.%d",
+		osversion.dwMajorVersion,
+		osversion.dwMinorVersion,
+		osversion.dwBuildNumber & 0xffff);
+		
+      }
+      break;
+
+    case VER_PLATFORM_WIN32_NT:
+      push_text("Win32");
+      sprintf(buf,"Windows NT %d.%d.%d",
+	      osversion.dwMajorVersion,
+	      osversion.dwMinorVersion,
+	      osversion.dwBuildNumber);
+      break;
+
+    default:
+      push_text("Win32");
+      sprintf(buf,"Windows ?? %d.%d.%d",
+	      osversion.dwMajorVersion,
+	      osversion.dwMinorVersion,
+	      osversion.dwBuildNumber);
+      break;
+  }
+
+  n+=2;
+  push_text("release");
+  push_text(buf);
+
+  n+=2;
+  push_text("version");
+  push_text(osversion.szCSDVersion);
+
+  n+=2;
+  push_text("nodename");
+  gethostname(buf, sizeof(buf));
+  push_text(buf);
+
+  f_aggregate_mapping(n);
+}
+
 #define ADD_GLOBAL_INTEGER_CONSTANT(X,Y) \
    push_int((long)(Y)); low_add_constant(X,sp-1); pop_stack();
 #define SIMPCONST(X) \
@@ -2325,6 +2429,9 @@ void init_nt_system_calls(void)
 
   ADD_EFUN("RegGetKeyNames", f_RegGetKeyNames, tFunc(tInt tStr, tArr(tStr)),
 	   OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("uname", f_nt_uname,tFunc(tNone,tMapping), OPT_TRY_OPTIMIZE);
+  ADD_FUNCTION2("uname", f_nt_uname,tFunc(tNone,tMapping), 0, OPT_TRY_OPTIMIZE);
 
   /* LogonUser only exists on NT, link it dynamically */
   if(advapilib=LoadLibrary("advapi32"))
