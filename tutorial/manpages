@@ -56,12 +56,12 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	       case "link":
 	       case "i": 
 	       case "emboss":
-		  res+="\\f2"+make_manpage(base,tag->data,ind,fbase)+"\\f0";
+		  res+="\\f2"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
 		  continue;
 
 	       case "b": 
 	       case "strong":
-		  res+="\\f3"+make_manpage(base,tag->data,ind,fbase)+"\\f0";
+		  res+="\\f3"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
 		  continue;
 
 	       case "pre":
@@ -80,6 +80,11 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	 }
 
    return res;
+}
+
+string strip_eightbit(string s)
+{
+  return(s & String.strmult("\177", sizeof(s)));
 }
 
 void make_page(string base, TAG tag, string ind, string fbase)
@@ -114,11 +119,11 @@ void make_page(string base, TAG tag, string ind, string fbase)
    werror("creating "+outfiles[0]+"...\n"); 
    object f=Stdio.File(outfiles[0],"wtc");
    string t=ctime(time());
-   f->write(".\\\" t\n"
-	    ".\\\" automatic generated from wmml\n"
-	    ".TH "+names*","+" "+obase+" \""+
-	    t[8..9]+t[4..7]+t[20..23]+"\"\n"
-	    +page);
+   f->write(strip_eightbit(".\\\" t\n"
+			   ".\\\" automatic generated from wmml\n"
+			   ".TH "+names*","+" "+obase+" \""+
+			   t[8..9]+t[4..7]+t[20..23]+"\"\n"
+			   +page));
    f->close();
 
    foreach (outfiles[1..],string s)
