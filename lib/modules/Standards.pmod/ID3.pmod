@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.10 2003/04/24 01:29:57 nilsson Exp $
+//  $Id: ID3.pmod,v 1.11 2003/08/07 14:28:05 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -763,8 +763,7 @@ class FrameDatav1 {
 
     frame_data = buffer;
     id = name;
-    if((i = search(buffer, "\0")) > -1)
-      frame_data = i ? buffer[..i-1] : "";
+    sscanf(frame_data, "%s\0", frame_data);
   }
 
   string get_string() {
