@@ -192,7 +192,7 @@ verbose_verify: testsuite verbose_verify_modules
 # verify & debug VERBOSE
 gdb_verify: testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f
+	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f
 	gdb ./pike
 	@rm .gdbinit
 
