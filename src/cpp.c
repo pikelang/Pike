@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.69 2000/08/10 08:39:37 grubba Exp $
+ * $Id: cpp.c,v 1.70 2000/08/10 08:43:22 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -66,7 +66,7 @@ struct define_part
 
 struct define_argument {
   PCHARP arg;
-  INT32 len;
+  ptrdiff_t len;
 };
 
 
