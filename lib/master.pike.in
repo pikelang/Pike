@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.114 2000/04/10 21:20:08 grubba Exp $
+ * $Id: master.pike.in,v 1.115 2000/04/13 18:54:05 per Exp $
  * 
  * Master-file for Pike.
  *
@@ -204,23 +204,31 @@ void putenv(string var, string val)
   environment[var]=val;
 }
 
+string normalize_path( string X )
+{
+#ifndef __NT__
+  return X;
+#else
+  return replace(X,"\\","/");
+#endif
+}
 
 void add_include_path(string tmp)
 {
-  tmp=combine_path_with_cwd(tmp);
+  tmp=normalize_path(combine_path_with_cwd(tmp));
   pike_include_path-=({tmp});
   pike_include_path=({tmp})+pike_include_path;
 }
 
 void remove_include_path(string tmp)
 {
-  tmp=combine_path_with_cwd(tmp);
+  tmp=normalize_path(combine_path_with_cwd(tmp));
   pike_include_path-=({tmp});
 }
 
 void add_module_path(string tmp)
 {
-  tmp=combine_path_with_cwd(tmp);
+  tmp=normalize_path(combine_path_with_cwd(tmp));
   pike_module_path-=({tmp});
   pike_module_path=({tmp})+pike_module_path;
 }
@@ -228,14 +236,14 @@ void add_module_path(string tmp)
 
 void remove_module_path(string tmp)
 {
-  tmp=combine_path_with_cwd(tmp);
+  tmp=normalize_path(combine_path_with_cwd(tmp));
   pike_module_path-=({tmp});
 }
 
 
 void add_program_path(string tmp)
 {
-  tmp=combine_path_with_cwd(tmp);
+  tmp=normalize_path(combine_path_with_cwd(tmp));
   pike_program_path-=({tmp});
   pike_program_path=({tmp})+pike_program_path;
 }
@@ -243,7 +251,7 @@ void add_program_path(string tmp)
 
 void remove_program_path(string tmp)
 {
-  tmp=combine_path_with_cwd(tmp);
+  tmp=normalize_path(combine_path_with_cwd(tmp));
   pike_program_path-=({tmp});
 }
 
@@ -496,6 +504,7 @@ constant master_efuns = ({
   "new",
   "clone",
 
+  "normalize_path",
   "getenv",
   "putenv",
 
