@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.30 1998/11/22 11:02:39 hubbe Exp $
+ * $Id: cpp.c,v 1.31 1998/11/23 00:50:29 marcus Exp $
  */
 #include "global.h"
 #include "dynamic_buffer.h"
@@ -2121,6 +2121,9 @@ void f_cpp(INT32 args)
   simple_add_define(&this,"__VERSION__"," 0.6 ");
 #ifdef __NT__
   simple_add_define(&this,"__NT__"," 1 ");
+#endif
+#ifdef __amigaos__
+  simple_add_define(&this,"__amigaos__"," 1 ");
 #endif
 
   for (tmpf=pike_predefs; tmpf; tmpf=tmpf->next)

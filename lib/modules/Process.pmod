@@ -84,11 +84,11 @@ object spawn(string s,object|void stdin,object|void stdout,object|void stderr,
   if(stdin) data->stdin=stdin;
   if(stdout) data->stdout=stdout;
   if(stderr) data->stderr=stderr;
-#ifdef __NT__
+#if defined(__NT__) || defined(__amigaos__)
   return create_process(split_quoted_string(s),data);
-#else /* !__NT__ */
+#else /* !__NT__||__amigaos__ */
   return create_process(({ "/bin/sh", "-c", s }),data);
-#endif /* __NT__ */
+#endif /* __NT__||__amigaos__ */
 #else
 
   object pid;
