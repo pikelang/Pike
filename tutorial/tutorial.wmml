@@ -4326,6 +4326,136 @@ of just <tt>write</tt> because they are the same function.
 </anchor>
 </anchor>
 
+
+
+<section title="Stdio.UDP">
+<class name="UDP">
+<man_syntax>
+Stdio.UDP();
+</man_syntax>
+<man_description>
+Stdio.UDP is the way of transceiving UDP from Pike.
+</man_description>
+<man_see>
+Stdio.File
+</man_see>
+
+<method name="bind">
+<man_syntax>
+ 	bind(int port);
+ 	bind(int port,string address);
+</man_syntax>
+<man_description>
+	binds a port for recieving or transmitting UDP
+</man_description>
+<man_returns>
+        the called object
+</man_returns>
+</method>
+
+<method name="enable_broadcast">
+<man_syntax>
+ 	enable_broadcast()
+</man_syntax>
+<man_description>
+	enable transmission of broadcasts. This is normally only avalable
+ 	to root users.
+</man_description>
+<man_returns>
+	1 upon success, 0 otherwise
+</man_returns>
+</method>
+
+<method name="read">
+<man_syntax>
+        read() <br>
+        read(int flags)
+</man_syntax>
+<man_description>
+	read from the UDP socket. Flags is a bitfield, 1 for out of band
+	data and 2 for peek.
+</man_description>
+<man_returns>
+	mapping(string:int|string) in the form
+        <data_description type=mapping>
+        <elem name=data type="string">recieved data</elem>
+        <elem name=ip type="string">recieved from this ip</elem>
+        <elem name=port type="int">...and this port</elem>
+        </data_description>
+</man_returns>
+<man_see>
+	Stdio.UDP.set_nonblocking, Stdio.UDP.set_read_callback
+</man_see>
+</method>
+
+<method name="send">
+<man_syntax>
+ 	send(string to_addr,int to_port,string data)<br>
+	send(string to_addr,int to_port,string data,int flags)
+</man_syntax>
+<man_description>
+
+</man_description>
+<man_returns>
+	number of bytes sent
+</man_returns>
+</method>
+
+<method name="set_nonblocking">
+<man_syntax>
+	set_nonblocking();<br>
+	set_blocking();<br>
+	set_nonblocking(function, mixed ...);
+</man_syntax>
+<man_description>
+	sets this object to be nonblocking or blocking.  
+
+        If set_nonblocking is given with argument, 
+        these are passed to 
+	<link to=Stdio.UDP.set_read_callback>set_read_callback</link>().
+</man_description>
+<man_returns>
+        the called object
+</man_returns>
+</method>
+
+<method name="set_read_callback">
+<man_syntax>
+	set_read_callback(function(mapping(string:int|string), mixed...), mixed ... extra);
+</man_syntax>
+<man_description>
+	The called function is 
+	recieving mapping similar to the return value of 
+	<link to=Stdio.UDP.read>read</link>:
+        <data_description type=mapping>
+        <elem name=data type="string">recieved data</elem>
+        <elem name=ip type="string">recieved from this ip</elem>
+        <elem name=port type="int">...and this port</elem>
+        </data_description>
+</man_description>
+<man_returns>
+        the called object
+</man_returns>
+</method>
+
+<method name="query_address">
+<man_syntax>
+  query_address()
+</man_syntax>
+<man_description>
+
+</man_description>
+<man_returns>
+  the current address in format "<ip> <port>".
+</man_returns>
+<man_see>Stdio.File.query_address</man_see>
+</method>
+
+</class name="UDP">
+</section title="Stdio.UDP">
+
+
+
 <section title="Stdio.Terminfo">
 <module name="Terminfo">
 <function name=Stdio.Terminfo.getFallbackTerm title="get fallback terminal">

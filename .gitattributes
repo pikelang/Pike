@@ -385,6 +385,7 @@ testfont binary
 /src/modules/files/socket.c foreign_ident
 /src/modules/files/socktest.pike foreign_ident
 /src/modules/files/termios.c foreign_ident
+/src/modules/files/udp.c foreign_ident
 /src/modules/math/Makefile.in foreign_ident
 /src/modules/math/configure.in foreign_ident
 /src/modules/math/math.c foreign_ident

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.157 1999/06/10 07:16:20 hubbe Exp $");
+RCSID("$Id: file.c,v 1.158 1999/07/15 17:36:34 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2599,6 +2599,7 @@ void pike_module_init(void)
   struct object *o;
   extern void port_setup_program(void);
   extern void init_sendfile(void);
+  extern void init_udp(void);
   int e;
 
   init_files_efuns();
@@ -2654,6 +2655,7 @@ void pike_module_init(void)
   port_setup_program();
 
   init_sendfile();
+  init_udp();
 
   add_integer_constant("PROP_IPC",fd_INTERPROCESSABLE,0);
   add_integer_constant("PROP_NONBLOCK",fd_CAN_NONBLOCK,0);
