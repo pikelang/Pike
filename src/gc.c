@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.192 2003/02/01 15:37:23 mast Exp $
+|| $Id: gc.c,v 1.193 2003/04/15 17:01:02 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.192 2003/02/01 15:37:23 mast Exp $");
+RCSID("$Id: gc.c,v 1.193 2003/04/15 17:01:02 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -40,7 +40,7 @@ RCSID("$Id: gc.c,v 1.192 2003/02/01 15:37:23 mast Exp $");
 
 #define GC_CONST 20
 #define MIN_ALLOC_THRESHOLD 1000
-#define MAX_ALLOC_THRESHOLD 10000000
+#define MAX_ALLOC_THRESHOLD 2000000000
 #define MULTIPLIER 0.9
 #define GC_LINK_CHUNK_SIZE 64
 
