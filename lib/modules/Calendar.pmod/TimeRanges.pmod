@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.10 2000/10/10 11:00:49 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.11 2000/10/18 10:05:46 mirar Exp $
 
 #pike __REAL_VERSION__
 
@@ -1201,12 +1201,12 @@ static class NullTimeRange
 
    int(0..1) `==(TimeRange with)
    {
-      return with->is_nulltimerange;
+      return objectp(with) && with->is_nulltimerange;
    }
 
    int(0..1) equals(TimeRange with)
    {
-      return with->is_nulltimerange;
+      return objectp(with) && with->is_nulltimerange;
    }
 
    TimeRange `&(TimeRange with, mixed ...extra)
