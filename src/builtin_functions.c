@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.177 1999/07/27 20:14:44 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.178 1999/07/27 20:21:18 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4902,15 +4902,15 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("enumerate",f_enumerate,
-	   tOr7(tFunc(tIntPos,tArr(tInt)),
+	   tOr8(tFunc(tIntPos,tArr(tInt)),
 		tFunc(tIntPos tInt,tArr(tInt)),
 		tFunc(tIntPos tInt tOr(tVoid,tInt),tArr(tInt)),
 		tFunc(tIntPos tFloat tOr3(tVoid,tInt,tFloat),tArr(tFloat)),
 		tFunc(tIntPos tOr(tInt,tFloat) tFloat,tArr(tFloat)),
-		tFunc(tIntPos tMix tObj 
-		      tOr(tVoid,tFuncV(,tMix,tSetvar(1,tMix))),tArr(tVar(1))),
-		tFunc(tIntPos tObj tOr(tVoid,tMix)
-		      tOr(tVoid,tFuncV(,tMix,tSetvar(1,tMix))),tArr(tVar(1)))),
+		tFunc(tIntPos tMix tObj,tArr(tVar(1))),
+		tFunc(tIntPos tObj tOr(tVoid,tMix),tArr(tVar(1))),
+		tFunc(tIntPos tMix tMix 
+		      tFuncV(,tMix,tSetvar(1,tMix)),tArr(tVar(1)))),
 	   OPT_TRY_OPTIMIZE);
 		
 
