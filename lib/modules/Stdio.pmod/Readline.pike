@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.45 2003/05/04 21:27:09 nilsson Exp $
+// $Id: Readline.pike,v 1.46 2003/05/06 00:06:03 nilsson Exp $
 #pike __REAL_VERSION__
 
 class OutputController
@@ -1562,3 +1562,5 @@ void create(object|void infd, object|string|void interm,
   DefaultEditKeys(this_object());
 }
 
+// compatibility
+void destroy() {}
