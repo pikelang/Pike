@@ -2,8 +2,224 @@
 
 inherit files;
 
-constant File=files.file;
-constant Port=files.port;
+class File
+{
+  inherit Fd_ref;
+
+  mixed ___read_callback;
+  mixed ___write_callback;
+  mixed ___close_callback;
+#if constant(__HAVE_OOB__)_
+  mixed ___read_oob_callback;
+  mixed ___write_oob_callback;
+#endif
+  mixed ___id;
+
+  int open(string file, string mode,void|int bits)
+  {
+    _fd=Fd();
+    if(query_num_arg()<3) bits=0666;
+    return ::open(file,mode,bits);
+  }
+
+  int open_socket()
+  {
+    _fd=Fd();
+    return ::open_socket();
+  }
+
+  int connect(string host, int port)
+  {
+    if(!_fd) _fd=Fd();
+    return ::connect(host,port);
+  }
+
+  object(File) pipe(void|int how)
+  {
+    _fd=Fd();
+    if(query_num_arg()==0)
+      how=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
+    if(object(Fd) fd=::pipe(how))
+    {
+      object o=File();
+      o->_fd=fd;
+      return o;
+    }else{
+      return 0;
+    }
+  }
+
+  void create(mixed ... args)
+  {
+    if(sizeof(args))
+    {
+      switch(args[0])
+      {
+	case "stdin":
+	  _fd=_stdin;
+	  break;
+
+	case "stdout":
+	  _fd=_stdin;
+	  break;
+
+	case "stderr":
+	  _fd=_stderr;
+	  break;
+
+	default:
+	  open(@args);
+      }
+    }
+  }
+
+  static int do_assign(object to, object from)
+  {
+    if((program)Fd == (program)object_program(from))
+    {
+      to->_fd=from->dup();
+    }else{
+      to->_fd=from->_fd;
+      to->___read_callback=from->___read_callback;
+      to->___write_callback=from->___write_callback;
+      to->___close_callback=from->___close_callback;
+#if constant(__HAVE_OOB__)_
+      to->___read_oob_callback=from->___read_oob_callback;
+      to->___write_oob_callback=from->___write_oob_callback;
+#endif
+      to->___id=from->___id;
+    }
+    return 0;
+  }
+
+  int assign(object o)
+  {
+    return do_assign(this_object(), o);
+  }
+
+    object dup()
+    {
+      object o;
+      o=File();
+      do_assign(o,this_object());
+      return o;
+    }
+
+
+  int close(void|string how)
+  {
+      if(::close(how||"rw"))
+	_fd=0;
+      return 1;
+#if 0
+    if(how)
+    {
+      if(::close(how))
+	_fd=0;
+    }else{
+      _fd=0;
+    }
+#endif
+  }
+
+  static void my_read_callback()
+  {
+    string s=::read(8192,1);
+    if(s && strlen(s))
+    {
+      ___read_callback(___id, s);
+    }else{
+      ___close_callback(___id);
+    }
+  }
+
+  static void my_write_callback() { ___write_callback(___id); }
+
+#if constant(__HAVE_OOB__)_
+  static void my_read_oob_callback()
+  {
+    string s=::read_oob(8192,1);
+    if(s && strlen(s))
+    {
+      ___read_oob_callback(___id, s);
+    }else{
+      ___close_callback(___id);
+    }
+  }
+
+  static void my_write_oob_callback() { ___write_oob_callback(___id); }
+#endif
+
+#define CBFUNC(X)				\
+  void set_##X (mixed l##X)			\
+  {						\
+    ___##X=l##X;				\
+    ::set_##X(l##X && my_##X);			\
+  }						\
+						\
+  mixed query_##X ()				\
+  {						\
+    return ___##X;				\
+  }
+
+  CBFUNC(read_callback)
+  CBFUNC(write_callback)
+#if constant(__HAVE_OOB__)_
+  CBFUNC(read_oob_callback)
+  CBFUNC(write_oob_callback)
+#endif
+
+  mixed query_close_callback()  { return ___close_callback; }
+  mixed set_close_callback(mixed c)  { ___close_callback=c; }
+  void set_id(mixed i) { ___id=i; }
+  void query_id() { return ___id; }
+
+  void set_nonblocking(mixed|void rcb,
+		       mixed|void wcb,
+		       mixed|void ccb,
+#if constant(__HAVE_OOB__)_
+		       mixed|void roobcb,
+		       mixed|void woobcb
+#endif
+    )
+  {
+    set_read_callback(rcb);
+    set_write_callback(wcb);
+    set_close_callback(ccb);
+#if constant(__HAVE_OOB__)_
+    set_read_oob_callback(roobcb);
+    set_write_oob_callback(woobcb);
+#endif
+    ::set_nonblocking();
+  }
+
+  void set_blocking()
+  {
+    set_read_callback(0);
+    set_write_callback(0);
+    set_close_callback(0);
+#if constant(__HAVE_OOB__)_
+    set_read_oob_callback(0);
+    set_write_oob_callback(0);
+#endif
+    ::set_blocking();
+  }
+};
+
+class Port
+{
+  inherit port;
+  object(File) accept()
+  {
+    if(object x=::accept())
+    {
+      object y=File();
+      y->_fd=x;
+      return y;
+    }
+    return 0;
+  }
+}
 
 object stderr=File("stderr");
 object stdout=File("stdout");
@@ -94,20 +310,19 @@ class FILE {
       return file::pipe();
     }
 
-    object dup()
-    {
-      object o;
-      o=object_program(this_object())();
-      o->assign(file::dup());
-      return o;
-    }
-
     int assign(object foo)
     {
       bpos=0;
       b="";
       return ::assign(foo);
     }
+
+  object(FILE) dup()
+  {
+    object(FILE) o=FILE();
+    o->assign(this_object());
+    return o;
+  }
 
     void set_nonblocking()
     {
