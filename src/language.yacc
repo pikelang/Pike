@@ -158,7 +158,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.30 1997/03/11 03:36:40 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.31 1997/03/11 22:31:21 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -362,7 +362,7 @@ program_ref: string_constant
     SAFE_APPLY_MASTER("handle_inherit", 2);
 
     if(sp[-1].type != T_PROGRAM)
-      my_yyerror("Couldn't cast program to string (%s)",$1->str);
+      my_yyerror("Couldn't cast string \"%s\" to program",$1->str);
   }
   | idents
   {
@@ -579,7 +579,7 @@ new_arg_name: type optional_dot_dot_dot optional_identifier
     }
     if(!$3) $3=make_shared_string("");
     if(islocal($3) >= 0)
-      my_yyerror("Variable '%s' appear twice in argument list.",
+      my_yyerror("Variable '%s' appears twice in argument list.",
 		 $3->str);
     
     add_local_name($3, pop_type());
