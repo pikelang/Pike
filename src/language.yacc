@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.331 2004/03/13 16:16:21 grubba Exp $
+|| $Id: language.yacc,v 1.332 2004/03/16 13:42:30 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.331 2004/03/13 16:16:21 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.332 2004/03/16 13:42:30 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -253,7 +253,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> optional_dot_dot_dot
 %type <number> optional_comma
 %type <number> optional_stars
-%type <number> force_resolve
 
 %type <str> magic_identifiers
 %type <str> magic_identifiers1
@@ -343,6 +342,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> while
 %type <n> optional_comma_expr
 %type <n> low_program_ref
+%type <n> inherit_ref
 %type <n> local_function
 %type <n> local_function2
 %type <n> magic_identifier
@@ -379,17 +379,6 @@ optional_rename_inherit: ':' TOK_IDENTIFIER { $$=$2; }
   | ':' bad_identifier { $$=0; }
   | ':' error { $$=0; }
   | { $$=0; }
-  ;
-
-force_resolve: /* empty */
-  {
-    $$ = Pike_compiler->flags;
-    Pike_compiler->flags |= COMPILATION_FORCE_RESOLVE;
-#ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "force_resolve on, flags: 0x%02x (0x%02x)\n",
-            Pike_compiler->flags, $$);
-#endif
-  }
   ;
 
 /* NOTE: This rule pushes a string "name" on the stack in addition
@@ -439,59 +428,49 @@ program_ref: low_program_ref
     STACK_LEVEL_DONE(1);
   }
   ;
-      
-inheritance: modifiers TOK_INHERIT force_resolve
-  low_program_ref optional_rename_inherit ';'
+
+inherit_ref:
   {
-    Pike_compiler->flags = $3;
-#ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
-            Pike_compiler->flags);
-#endif
+    SET_FORCE_RESOLVE($<number>$);
+  }
+  low_program_ref
+  {
+    UNSET_FORCE_RESOLVE($<number>1);
+    $$ = $2;
+  }
+  ;
+
+inheritance: modifiers TOK_INHERIT inherit_ref optional_rename_inherit ';'
+  {
     if (($1 & ID_EXTERN) && (Pike_compiler->compiler_pass == 1)) {
       yywarning("Extern declared inherit.");
     }
-    if($4 && !(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
+    if($3 && !(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
     {
       struct pike_string *s=Pike_sp[-1].u.string;
-      if($5) s=$5->u.sval.u.string;
-      compiler_do_inherit($4,$1,s);
+      if($4) s=$4->u.sval.u.string;
+      compiler_do_inherit($3,$1,s);
     }
-    if($5) free_node($5);
+    if($4) free_node($4);
     pop_stack();
-    if ($4) free_node($4);
+    if ($3) free_node($3);
   }
-  | modifiers TOK_INHERIT force_resolve low_program_ref error ';'
+  | modifiers TOK_INHERIT inherit_ref error ';'
   {
-    Pike_compiler->flags = $3;
-#ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
-            Pike_compiler->flags);
-#endif
-    free_node($4);
+    if ($3) free_node($3);
     pop_stack();
     yyerrok;
   }
-  | modifiers TOK_INHERIT force_resolve low_program_ref error TOK_LEX_EOF
+  | modifiers TOK_INHERIT inherit_ref error TOK_LEX_EOF
   {
-    Pike_compiler->flags = $3;
-#ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
-            Pike_compiler->flags);
-#endif
-    free_node($4);
+    if ($3) free_node($3);
     pop_stack();
     yyerror("Missing ';'.");
     yyerror("Unexpected end of file.");
   }
-  | modifiers TOK_INHERIT force_resolve low_program_ref error '}'
+  | modifiers TOK_INHERIT inherit_ref error '}'
   {
-    Pike_compiler->flags = $3;
-#ifdef FORCE_RESOLVE_DEBUG
-    fprintf(stderr, "Compilation flags restored to 0x%02x.\n",
-            Pike_compiler->flags);
-#endif
-    free_node($4);
+    if ($3) free_node($3);
     pop_stack();
     yyerror("Missing ';'.");
   }
