@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.88 1999/10/26 06:30:31 hubbe Exp $");
+RCSID("$Id: object.c,v 1.89 1999/10/26 14:17:10 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -991,7 +991,6 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
       return 1;
 
   /* NOTE: At this point a->prog and b->prog are equal (see test 2 above). */
-  /* FIXME: The code past this point can only return 0! */
   if(a->prog)
   {
     int e;
@@ -1022,7 +1021,7 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
     }
   }
 
-  return 0;
+  return 1;
 }
 
 void cleanup_objects(void)
