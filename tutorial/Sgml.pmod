@@ -109,6 +109,7 @@ SGML lex(string data, string file)
       }
     }
 
+//    werror("Fount tag "+tag+" at pos "+pos+".\n");
     ret+=({ Tag(tag,params,pos,0,file), unquote(s) });
     pos+=sizeof(foo[e]);
   }
@@ -145,24 +146,38 @@ SGML group(SGML data)
 }
 
 
-string generate(SGML data)
+
+string mktag(string tag, mapping params)
+{
+  string ret="<"+tag;
+  foreach(indices(params),string i)
+  {
+    ret+=" "+i;
+
+    if(stringp(params[i]))ret+="="+params[i];
+  }
+  return ret+">";
+}
+
+varargs string generate(SGML data, function mkt)
 {
   string ret="";
+  if(!mkt)
+  {
+    werror("ARNING");
+    mkt=mktag;
+  }
   foreach(data, TAG foo)
     {
       if(stringp(foo))
       {
 	ret+=quote(foo);
       }else{
-	ret+="<"+foo->tag;
-	foreach(indices(foo->params), string name)
-	  ret+=" "+name+"="+foo->params[name];
-
-	ret+=">";
+	ret+=mkt(foo->tag,foo->params);
 	if(foo->data)
 	{
-	  ret+=generate(foo->data);
-	  ret+="</"+foo->tag+">";
+	  ret+=generate(foo->data,mkt);
+	  ret+=mkt("/"+foo->tag,([]));
 	}
       }
     }

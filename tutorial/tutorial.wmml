@@ -32,7 +32,9 @@ extensions to Pike. I have been trying for years to get someone else to
 write this book, but since it seems impossible without paying a fortune for
 it I will have to do it myself. 
 A big thanks goes to
-<a href="http://www.emit.com.pl/ian.html">Ian Carr-de Avelon</a> for helping
+<a href="http://www.emit.com.pl/ian.html">Ian Carr-de Avelon</a> and
+<a href="mailto:hedda@idonix.se">Henrik Wallin</a>
+ for helping
 me iron out some of the rough spots. 
 
 The book assumes that
@@ -176,7 +178,7 @@ data type.
 <chapter title="Getting started">
 <p>
 First you need to have Pike installed on your computer. See <ref to=install>
-"how to install Pike" if this is not already done. It is also vital
+ if this is not already done. It is also vital
 for the first of the following examples that the Pike binary is in your UNIX search
 path. If you have problems with this, consult the manual for your shell
 or go buy a beginners book about UNIX.
@@ -4480,7 +4482,7 @@ a slow machine available for the server.
 </chapter>
 </module>
 
-<anchor name=Threads>
+<module name=Threads>
 <chapter title="Threads">
 Threads are used to run several Pike functions at the same time without having to start
 several Pike processes. Using threads often simplifies coding and because the
@@ -4597,16 +4599,12 @@ this example again.
 This section describes all thread-related functions and classes.
 
 <hr noshade size=1>
-<anchor name=Thread.thread_create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.thread_create</tt> - create a thread
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object thread_create(function <I>f</I>, mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=thread_create title="create a thread">
+<man_syntax>
+object thread_create(function <I>f</I>, mixed ... <I>args</I>);<br>
+</man_syntax>
+<man_description>
 This function creates a new thread which will run simultaneously
 to the rest of the program. The new thread will call the function
 <i>f</i> with the arguments <i>args</i>. When f returns the thread will cease
@@ -4614,37 +4612,25 @@ to exist. All Pike functions are 'thread safe' meaning that running
 a function at the same time from different threads will not corrupt
 any internal data in the Pike process. The returned value will be
 the same as the return value of this_thread() for the new thread.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_nb>
 This function is only available on systems with POSIX or UNIX threads support.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Thread.Mutex>Thread.Mutex</link>, <link to=Thread.Condition>Thread.Condition</link> and <link to=Thread.this_thread>Thread.this_thread</link>
-<p>
-</dl>
+</man_nb>
+<man_see>Thread.Mutex, Thread.Condition, Thread.this_thread</man_see>
+</function>
 
-</anchor>
-<hr noshade size=1>
 
-<anchor name=Thread.this_thread>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.this_thread</tt> - return thread id
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object thread_id();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=this_thread title="return thread id">
+<man_syntax>
+object thread_id();<br>
+</man_syntax>
+<man_description>
 This function returns the object that identifies this thread.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Thread.thread_create>Thread.thread_create</link>
-<p>
-</dl>
+</man_description>
+<man_see>Thread.thread_create</man_see>
+</function>
 
-</anchor>
-<hr noshade size=1>
+
 <anchor name=Thread.Mutex>
 <dl>
 <dt><encaps>NAME</encaps><dd>
@@ -5131,7 +5117,7 @@ on some UNIX systems. The above example does not work if your system does
 not have threads.
 </section>
 </chapter>
-</anchor>
+</module>
 
 <chapter title="Modules for specific data types">
 
@@ -12881,7 +12867,7 @@ init_module_programs are called to initialize it. When Pike exits
 exit_module is called in all dynamically loaded modules. These
 functions _must_ be available in the module.
 <p>Please see the source and any examples available at
-ftp://www.infovav.se/pub/pike for more information on how to
+ftp://www.idonex.se/pub/pike for more information on how to
 write modules for Pike in C.
 <p>
 <dt><encaps>BUGS</encaps><dd>
@@ -14887,20 +14873,21 @@ This is the BNF for Pike:
 <appendix title="How to install Pike" name=install>
 To install Pike, you need a C compiler, a couple of Mb of disk space,
 the source for Pike, and a bit of patience. The latest version of Pike is
-always available from <a href=http://pike.infovav.se>the Pike home page</a>.
+always available from <a href=http://pike.idonex.se>the Pike home page</a>.
 Lists of mirror sites and binary releases should also be available there.
 Pike should compile and install nicely on almost any UNIX platform. It has
 been tested on the following:
 <ul>
-<li> Solaris 2.4, 2.5, 2.5.1
-<li> SunOs 4.1.1, 4.1.3
+<li> Solaris 2.4, 2.5, 2.5.1, 2.6
 <li> Linux Red Hat 3, Red Hat 4, Slackware 3.0, Slackware 96
-<li> HP-UX 9, 10
+<li> Digital Unix (OSF/1)
+<li> HP-UX 10
 <li> AIX 4
 <li> IRIX
+<li> NetBSD 2.2.2
+<li> SunOs 4.1.1, 4.1.3
 <li> SCO UNIX
 <li> Ultrix
-<li> Digital Unix (OSF/1)
 </ul>
 
 After obtaining the Pike source you need to unpack it. To unpack Pike you

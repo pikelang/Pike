@@ -36,6 +36,34 @@ string *srt(string *x)
   return x;
 }
 
+int useful_tag(TAG t)
+{
+  return !stringp(t) || sscanf(t,"%*[ \n\r\t ]%*c")==2;
+}
+
+TAG get_tag(TAG t)
+{
+  while(1)
+  {
+    switch(t->tag)
+    {
+      default: return t;
+
+      case "a":
+      case "anchor":
+    }
+    if(!t->data) return t;
+
+    SGML x=Array.filter(t->data,useful_tag);
+    if(sizeof(x)==1 && objectp(t->data[0]))
+      t=t->data[0];
+    else
+      break;
+  }
+
+  return t;
+}
+
 void add_target_to_links(SGML foo, string target)
 {
   foreach(foo, TAG t)
@@ -101,7 +129,10 @@ varargs SGML low_toc_to_wmml(SGML toc)
 	name=0;
 	link=0;
 	title="Appendices";
-	break;
+	ret+=({Sgml.Tag("dt",([]),t->pos),
+		 " "+title+"\n"})+
+	  low_toc_to_wmml(t->data);
+	continue;
 	
       case "appendix_toc":
 	name="Appendix "+t->params->number;
@@ -287,7 +318,7 @@ SGML convert(SGML data)
 	    werror("Warning: Cannot find ref "+to+" (near pos "+data->pos+")\n");
 	  }
 	  if(t2)
-	    data->data=({t2->tag+" "+t2->params->number});
+	    data->data=({t2->tag+" "+t2->params->number+" \""+t2->params->title+"\""});
 	  else
 	    data->data=({"unknown"});
 	  data->tag="a";
@@ -506,6 +537,7 @@ SGML wmml_to_html(SGML data)
       });
 }
 
+
 SGML low_split(SGML data)
 {
   SGML current=({});
@@ -513,7 +545,8 @@ SGML low_split(SGML data)
     {
       if(objectp(t))
       {
-	switch(t->tag)
+	TAG t2=get_tag(t);
+	switch(t2->tag)
 	{
 	case "preface":
 	  if(!sections->introduction)
@@ -543,9 +576,12 @@ SGML low_split(SGML data)
 	  continue;
 
 	case "index":
+	  sections[t2->params->name || "index"]=({ t });
+	  continue;
+
 	case "chapter":
 	case "appendix":
-	  sections[t->params->number]=({ t });
+	  sections[t2->params->number]=({ t });
 	  continue;
 
 	case "firstpage":
@@ -576,7 +612,8 @@ SGML low_split(SGML data)
 	  });
 
 	  sections->toc_frame=Sgml.copy(({ t }));
-	  sections->toc_frame[0]->params->target="display";
+	  TAG t3=get_tag(sections->toc_frame[0]);
+	  t3->params->target="display";
 	  sections->toc_frame[0]->params->name="toc_frame";
 	  break;
 
@@ -591,64 +628,21 @@ SGML low_split(SGML data)
   return current;
 }
 
-void de_abstract_anchors(SGML data)
-{
-  for(int e=0;e<sizeof(data);e++)
-  {
-    TAG t=data[e];
-    if(objectp(t))
-    {
-      if(Wmml.islink(t->tag))
-      {
-	if(string tmp=t->params->name)
-	  data[e]=Sgml.Tag("anchor",(["name":tmp]),t->pos,({data[e]}));
-
-	if(string tmp=t->params->number)
-	  data[e]=Sgml.Tag("anchor",(["name":tmp]),t->pos,({data[e]}));
-      }else{
-	switch(t->tag)
-	{
-	case "index":
-	case "preface":
-	case "introduction":
-	case "table-of-contents":
-	  data[e]=Sgml.Tag("anchor",
-			   ([
-			     "name":t->namet || t->tag
-			     ]),t->pos,({data[e]}));
-	}
-      }
-
-      if(t->data)
-	de_abstract_anchors(t->data);
-    }
-  }
-}
-
-
 void low_collect_links(SGML data, string file)
 {
   foreach(data,TAG t)
     {
       if(objectp(t))
       {
-	if(Wmml.islink(t->tag))
+	if(t->tag == "anchor")
 	{
 	  if(t->params->name)
 	  {
 	    link_to_page[t->params->name]=file;
-	    link_to_data[t->params->name]=t;
+	    link_to_data[t->params->name]=get_tag(t);
 	  }
 	  if(t->params->number)
 	    link_to_page[t->params->number]=file;
-	}
-	switch(t->tag)
-	{
-	case "index":
-	case "introduction":
-	case "preface":
-	case "table-of-contents":
-	  link_to_page[t->params->name || t->tag]=file;
 	}
 
 	if(t->data)
@@ -684,13 +678,13 @@ string prevify(string num)
   return tmp*".";
 }
 
-void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
+void output(string base, WMML data)
 {
   basename=base;
 
   werror("Splitting ");
   sections=([]);
-  sections[""]=low_split(data);
+  sections[""]=low_split(data->data);
 
   werror("Finding links ");
   foreach(indices(sections), string file)
@@ -704,7 +698,8 @@ void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
       string tmp1;
       if(sizeof(data)>0 && objectp(data[0]))
       {
-	switch(data[0]->tag)
+	TAG t2=get_tag(data[0]);
+	switch(t2->tag)
 	{
 	  string name;
 	  string to;
@@ -715,20 +710,22 @@ void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
 	  case "appendix":
 	  case "section":
 	  case "introduction":
-	  tmp1=data[0]->params->number;
+	  tmp1=t2->params->number;
 
 	  
 	  if(sections[to=prevify(tmp1)])
 	  {
-	    name="Previous "+data[0]->tag;
+	    name="Previous "+t2->tag;
 	  }
 	  
 	  if(name && sections[to])
 	  {
 	    links+=({ Sgml.Tag("a",(["href":mkfilename(to)]),0,
 			       ({
-				 Sgml.Tag("img",(["src":"left.gif",
-					       "border":"0"])),
+				 Sgml.Tag("img",([
+				   "src":"left.gif",
+				   "alt":" < ",
+				   "border":"0"])),
 				 name,
 			       })),
 		      "\n",
@@ -738,8 +735,11 @@ void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
 
 	  links+=({ Sgml.Tag("a",(["href":mkfilename("")]),0,
 			     ({
-			       Sgml.Tag("img",(["src":"up.gif",
-					       "border":"0"])),
+			       Sgml.Tag("img",
+					([
+					  "src":"up.gif",
+					  "alt":" ^ ",
+					 "border":"0"])),
 			       "To contents",
 			     })),
 		      "\n",
@@ -750,9 +750,9 @@ void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
 
 	  if(sections[to=nextify(tmp1)])
 	  {
-	    name="Next "+data[0]->tag;
+	    name="Next "+t2->tag;
 	  }else{
-	    switch(data[0]->tag)
+	    switch(t2->tag)
 	    {
 	      case "chapter": name="To appendices"; to="A"; break;
 	      case "appendix": name="To index"; to="index"; break;
@@ -767,8 +767,10 @@ void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
 	  {
 	    links+=({ Sgml.Tag("a",(["href":mkfilename(to)]),0,
 			       ({
-				 Sgml.Tag("img",(["src":"right.gif",
-					       "border":"0"])),
+				 Sgml.Tag("img",([
+				   "src":"right.gif",
+				   "alt":" > ",
+				   "border":"0"])),
 				 name,
 			       })),
 		      "\n",
@@ -793,10 +795,10 @@ void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
 
 
   werror("Converting TOC to WMML\n");
-  html_toc=toc_to_wmml(toc);
+  html_toc=toc_to_wmml(data->toc);
 
   werror("Converting index to WMML\n");
-  INDEX index=Wmml.group_index(index_data);
+  INDEX index=Wmml.group_index(data->index_data);
   index=Wmml.group_index_by_character(index);
   html_index=index_to_wmml(index);
   index=0;
@@ -805,11 +807,10 @@ void output(string base, SGML data, SGML toc, INDEX_DATA index_data)
     {
       string filename=mkfilename(file);
       werror("Anchoring ");
-      de_abstract_anchors(sections[file]);
       werror(filename+": WMML->HTML");
-      data=wmml_to_html(sections[file]);
+      SGML data=wmml_to_html(sections[file]);
       werror("->String");
-      string data=Sgml.generate(data);
+      string data=Sgml.generate(data,Html.mktag);
       werror("->disk");
       out::open(filename,"wct");
       out::write(data);

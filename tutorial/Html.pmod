@@ -53,10 +53,25 @@ string mktag(string tag, mapping params)
   string ret="<"+tag;
   foreach(indices(params),string i)
   {
-    ret+=" "+quote_param(i);
+    ret+=" "+i;
 
     if(stringp(params[i]))
-      ret+="='"+quote_param(params[i])+"'";
+    {
+      switch(i)
+      {
+	case "href":
+	  ret+="='"+quote_param(params[i])+"'";
+	  break;
+
+	default:
+	  if(search(params[i],"\"")==-1)
+	    ret+="=\""+params[i]+"\"";
+	  else if(search(params[i],"'")==-1)
+	    ret+="='"+params[i]+"'";
+	  else
+	    ret+="=\""+replace(params[i],"\"","'")+"\"";
+      }
+    }
   }
   return ret+">";
 }

@@ -1,5 +1,7 @@
 #include "types.h"
-impoert Sgml;
+import Sgml;
+
+SGML low_make_concrete_wmml(SGML data);
 
 static private int verify_any(SGML data, string in)
 {
@@ -114,23 +116,6 @@ int verify(SGML data)
   return verify_any(data,"");
 }
 
-int islink(string tag)
-{
-  switch(tag)
-  {
-  case "anchor":
-  case "chapter":
-  case "preface":
-  case "introduction":
-  case "section":
-  case "table":
-  case "appendix":
-  case "image":
-  case "illustration":
-    return 1;
-  }
-}
-
 INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
 {
   if(!index) index=([]);
@@ -140,7 +125,7 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
   {
     if(objectp(data))
     {
-      if(islink(data->tag))
+      if(data->tag == "anchor" && !data->params->type)
       {
 	if(string real_name=data->params->name)
 	{
@@ -370,19 +355,158 @@ string name_to_link(string x)
   return replace(x,({"->","-&gt;"}),({".","."}));
 }
 
-SGML metadata=({});
-
 class Wmml
 {
   SGML metadata;
-  SGML toc_data;
-  SGML index_data;
+  TOC toc;
+  INDEX_DATA index_data;
   SGML data;
 };
 
-SGML low_make_concrete_wmml(SGML data,
-			    string classbase,
-			    string *current)
+class Enumerator
+{
+  string *base;
+
+  object push() { base+=({"1"}); return this_object(); }
+  object pop()  { base=base[..sizeof(base)-2]; return this_object();  }
+  object inc() 
+  {
+    switch(base[-1][0])
+    {
+      case '0'..'9':
+	base[-1]=(string)( 1+ (int) base[-1]);
+	break;
+
+      default:
+	base[-1]=sprintf("%c",base[-1][0]+1);
+    }
+
+    return this_object();
+  }
+
+  string query()
+  {
+    return base*".";
+  }
+
+  void create(mixed b)
+  {
+    if(objectp(b)) b=b->base;
+    if(!arrayp(b)) b=({b});
+    base=b;
+  }
+};
+
+class Stacker
+{
+  inherit Enumerator;
+
+  object push(string what) { base+=({what}); return this_object(); }
+  object pop()  { base=base[..sizeof(base)-2]; return this_object();  }
+
+  void create(void|mixed b)
+  {
+    ::create(b||({}));
+  }
+};
+
+class TocBuilder
+{
+  import Sgml;
+
+  TOC *stack=({ ({}) });
+
+  void push() { stack+=({ ({}) });  }
+
+  void pop(TAG t)
+  {
+    stack[-2]+=({
+      Tag(t->tag+"_toc",
+	  t->params+([]),
+	  t->pos,
+	  stack[-1],
+	  t->file)
+    });
+    stack=stack[..sizeof(stack)-2];
+  }
+
+  TOC query() { return stack[0]; }
+};
+
+
+SGML metadata;
+object(Enumerator) currentE;
+object(Enumerator) appendixE;
+object(Enumerator) chapterE;
+object(Stacker) classbase;
+object(TocBuilder) toker;
+
+SGML fix_anchors(TAG t)
+{
+  TAG ret=t;
+  if(t->params->number)
+  {
+    ret=Tag("anchor",
+	    (["name":t->params->number,"type":t->tag]),
+	    t->pos,
+	    ({ret}),
+	    t->file);
+  }
+
+  if(t->params->name)
+  {
+    ret=Tag("anchor",
+	    (["name":t->params->name,"type":t->tag]),
+	    t->pos,
+	    ({ret}),
+	    t->file);
+  }
+  return ({ret});
+}
+
+SGML fix_section(TAG t, object(Enumerator) e)
+{
+  object(Enumerator) save=currentE;
+  string num=e->query();
+  e->push();
+  currentE=e;
+
+  toker->push();
+
+  TAG ret=Tag(t->tag,
+	      t->params+(["number":num]),
+	      t->pos,
+	      t->data=low_make_concrete_wmml(t->data),
+	      t->file);
+  toker->pop(ret);
+
+  currentE->pop();
+  currentE=save;
+
+  return fix_anchors(ret);
+}
+
+SGML fix_class(TAG t, string name)
+{
+  classbase->push(name);
+  TAG ret=Tag(t->tag,
+	      t->params+(["name":classbase->query()]),
+	      t->pos,
+	      t->data=low_make_concrete_wmml(t->data),
+	      t->file);
+
+  classbase->pop();
+
+  return ({
+    Tag("anchor",
+	(["name":classbase->query(),"type":t->tag]),
+	t->pos,
+	({t}),
+	t->file)
+      });
+}
+
+SGML low_make_concrete_wmml(SGML data)
 {
   if(!data) return 0;
   SGML ret=({});
@@ -395,6 +519,27 @@ SGML low_make_concrete_wmml(SGML data,
     }else{
       switch(tag->tag)
       {
+	case "index":
+	case "table-of-contents":
+	  ret+=({
+	    Tag("anchor",
+		(["name":tag->params->name || tag->tag]),
+		tag->pos,
+		({
+		  Tag(tag->tag,
+		      tag->params,
+		      tag->pos,
+		      low_make_concrete_wmml(tag->data),
+		      tag->file),
+		    }),
+		tag->file,
+		)
+	      });
+	  toker->push();
+	  toker->pop(tag);
+	  continue;
+
+
 	case "head":
 	  metadata+=tag->data;
 	  continue;
@@ -403,21 +548,32 @@ SGML low_make_concrete_wmml(SGML data,
 	{
 	  string filename=tag->params->file;
 	  SGML tmp=group(lex(Stdio.read_file(filename),filename));
-	  ret+=low_make_concrete_wmml(tmp,classbase);
+	  ret+=low_make_concrete_wmml(tmp);
 	  continue;
 	}
 	  
-	case "section":
 	case "chapter":
-	case "preface":
-	case "introduction":
-	case "appendix":
-	  switch(tag->t)
-	  {
-	    tag->params->number=current*".";
-	    current[-1]=(string)(1+(int)current[-1]);
-	  }
+	  ret+=fix_section(tag,chapterE);
+	  chapterE->inc();
+	  continue;
 
+	case "section":
+	  ret+=fix_section(tag,currentE);
+	  currentE->inc();
+	  continue;
+
+	case "preface":
+	  ret+=fix_section(tag,Enumerator("preface"));
+	  continue;
+
+	case "introduction":
+	  ret+=fix_section(tag,Enumerator("introduction"));
+	  continue;
+
+	case "appendix":
+	  ret+=fix_section(tag,appendixE);
+	  appendixE->inc();
+	  continue;
 	  
 	case "table":
 	case "image":
@@ -427,9 +583,7 @@ SGML low_make_concrete_wmml(SGML data,
 	    TAG t=Tag(tag->tag,
 		      tag->params,
 		      tag->pos,
-		      tag->data=low_make_concrete_wmml(tag->data,
-						       current,
-						       classbase),
+		      tag->data=low_make_concrete_wmml(tag->data),
 		      tag->file);
 	    ret+=({
 	      Tag("anchor",
@@ -443,21 +597,8 @@ SGML low_make_concrete_wmml(SGML data,
 	  
 	case "class":
 	case "module":
-	{
-	  string tmp=classbase;
-	  if(!classbase || classbase=="")
-	  {
-	    classbase=tag->params->name;
-	  }else{
-	    classbase+="."+tag->params->name;
-	  }
-	  ret+=({
-	    Tag("anchor",(["name":classbase,"type":tag->tag]),tag->pos,
-		low_make_concrete_wmml(tag->data))
-	      });
-	  classbase=tmp;
+	  ret+=fix_class(tag, tag->params->name);
 	  continue;
-	}
 	
 	case "man_syntax":
 	case "man_example":
@@ -514,10 +655,10 @@ SGML low_make_concrete_wmml(SGML data,
 	  switch(tag->tag)
 	  {
 	    case "method":
-	      fullname=classbase+"->"+tag->params->name;
+	      fullname=classbase->query()+"->"+tag->params->name;
 	      break;
 	    case "function":
-	      fullname=classbase+"."+tag->params->name;
+	      fullname=classbase->query()+"."+tag->params->name;
 	      break;
 	  }
 	  ret+=low_make_concrete_wmml(({
@@ -567,6 +708,22 @@ SGML low_make_concrete_wmml(SGML data,
 		 tag->file)});
     }
   }
+  return ret;
+}
+
+object(Wmml) make_concrete_wmml(SGML data)
+{
+  classbase=Stacker();
+  currentE=0;
+  appendixE=Enumerator("A");
+  chapterE=Enumerator("1");
+  toker=TocBuilder();
+  object(Wmml) ret= Wmml();
+  metadata=({});
+  ret->data=low_make_concrete_wmml(data);
+  ret->index_data=collect_index(ret->data);
+  ret->toc=toker->query();
+  ret->metadata=metadata;
   return ret;
 }
 
@@ -715,131 +872,3 @@ void create()
   }
 }
 
-int chapters;
-int appendices;
-
-static private SGML low_collect_toc(mixed *data,
-				    string prefix,
-				    int *current)
-{
-  SGML ret=({});
-
-  foreach(data, TAG t)
-    {
-      if(objectp(t))
-      {
-	switch(t->tag)
-	{
-	case "section":
-	  t->params->number=prefix+(string)current[-1];
-	  
-	  ret+=({
-	    Tag("section_toc",
-		     t->params,
-		     t->pos,
-		     low_collect_toc(t->data,
-				 t->params->number+".",
-				 current+({1})))
-	      });	      ;
-	  current[-1]++;
-	  break;
-
-	case "chapter":
-	  if(current)
-	    werror("Chapter inside chapter/appendix near "+t->pos+".\n");
-	  t->params->number=(string)chapters;
-
-	  ret+=({
-	    Tag("chapter_toc",
-		     t->params,
-		     t->pos,
-		     low_collect_toc(t->data,
-				 t->params->number+".",
-				 ({1})))
-	      });
-	  chapters++;
-	  break;
-	  
-	case "appendix":
-	  if(current)
-	    werror("Appendix inside chapter/appendix near "+t->pos+".\n");
-	  
-	  t->params->number=sprintf("%c",appendices);
-	  
-	  ret+=({
-	    Tag("appendix_toc",
-		     t->params,
-		     t->pos,
-		     low_collect_toc(t->data,
-				 t->params->number+".",
-				 ({1}))),
-	      });
-	  appendices++;
-	  break;
-
-	case "preface":
-	  if(current)
-	    werror("Preface inside chapter/appendix near "+t->pos+".\n");
-
-	  t->params->number="preface";
-	  
-	  ret+=({
-	    Tag("preface_toc",
-		     t->params,
-		     t->pos,
-		     low_collect_toc(t->data,
-				 t->params->number+".",
-				 ({1}))),
-	      });
-	  break;
-
-	case "introduction":
-	  if(current)
-	    werror("Introduction inside chapter/appendix near "+t->pos+".\n");
-
-	  t->params->number="introduction";
-	  
-	  ret+=({
-	    Tag("introduction_toc",
-		     t->params,
-		     t->pos,
-		     low_collect_toc(t->data,
-				 t->params->number+".",
-				 ({1}))),
-	      });
-	  break;
-
-	case "index":
-	case "table-of-contents":
-	  t->params->number=t->tag;
-	  ret+=({
-	    Tag(t->tag+"_toc",
-		     t->params,
-		     t->pos)
-	      });
-	  break;
-
-
-	default:
-	  if(t->data)
-	    ret+=low_collect_toc(t->data,prefix,current);
-	}
-      }
-    }
-  return ret;
-}
-
-SGML sort_toc(SGML toc)
-{
-  // Assume correct order
-  return toc;
-}
-
-SGML collect_toc(SGML data)
-{
-  SGML toc;
-  chapters=1;
-  appendices='A';
-  toc=low_collect_toc(data,"",0);
-  return sort_toc(toc);
-}

@@ -17,16 +17,9 @@ int main(int argc, string *argv)
     werror("Verifying\n");
     Wmml.verify(data);
     werror("Concretizing\n");
-    data=Wmml.make_concrete_wmml(data);
-    werror("Verifying (again)\n");
-    Wmml.verify(data);
-    werror("Collecting TOC ");
-    SGML toc=Wmml.collect_toc(data);
-    werror("index ");
-    INDEX_DATA index=Wmml.collect_index(data);
-    // write(sprintf("%O\n",Wmml.group_index(Wmml.collect_index(data))));
+    WMML wmml=Wmml.make_concrete_wmml(data);
     werror("\nWriting output\n");
-    output()->output(argv[2],data,toc,index);
+    output()->output(argv[2],wmml);
     write("Ok\n");
     exit(0);
   };

@@ -8,6 +8,9 @@ tutorial.html: tutorial.wmml
 tutorial_onepage.html: tutorial.wmml
 	./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
 
+clean:
+	rm *.html illustration_cache illustration*.gif
+
 # tutorial.html: tutorial.wmml wmml_to_html
 #	./wmml_to_html <tutorial.wmml >tutorial.html
 
