@@ -10153,40 +10153,32 @@ object instead.
 </anchor>
 
 <HR NEWPAGE>
-<anchor name=exece>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>exece</tt> - execute a program
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int exece(string <I>file</I>, array(string) <I>args</I>);<br>
+<method name=exece>
+<man_syntax>
+int exece(string <I>file</I>, array(string) <I>args</I>);<br>
 or<br>
 int exece(string <I>file</I>, array(string) <I>args</I>, mapping(string:string) <I>env</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function transforms the Pike process into a process running
 the program specified in the argument 'file' with the argument 'args'.
 If the mapping 'env' is present, it will completely replace all
 environment variables before the new program is executed.
 This function only returns if something went wrong during exece(),
 and in that case it returns zero.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 The Pike driver _dies_ when this function is called. You must use
 fork() if you wish to execute a program and still run the Pike
 driver.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
+</man_note>
+<man_example>
 <tt>exece("/bin/ls", ({"-l"}));<br>
 exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 </tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=fork>fork</link> and <link to=Stdio.File.pipe>file-&gt;pipe</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>fork, Stdio.File-&gt;pipe</man_see>
+</method>
 
 <HR NEWPAGE>
 <anchor name=exit>
