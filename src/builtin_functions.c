@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.549 2004/12/14 16:22:00 mast Exp $
+|| $Id: builtin_functions.c,v 1.550 2004/12/14 16:26:28 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.549 2004/12/14 16:22:00 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.550 2004/12/14 16:26:28 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4629,13 +4629,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
      * /mast */
     if ((isdst != -1) && (isdst != date.tm_isdst)) {
       /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
-#ifdef HAVE_LOCALTIME
-      if (!my_time_inverse (&date, &retval, localtime))
-	PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
-#else
-      /* Last resort: Assumes a one hour DST. */
       retval += 3600 * (isdst - date.tm_isdst);
-#endif
     }
 #endif	/* 0 */
   }
