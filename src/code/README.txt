@@ -98,6 +98,11 @@ void FLUSH_CODE_GENERATOR_STATE(void)
 	the code generator that registers and other states
 	must be updated at this point.
 
+void ADJUST_PIKE_PC(PIKE_OPCODE_T *pc)
+	Called after opcodes that modify Pike_fp->pc. The passed
+	argument is the pc they will put there. Useful when UPDATE_PC
+	inserts code that update Pike_fp->pc relatively.
+
 int ALIGN_PIKE_JUMPS
         This can be defined to a number which will cause Pike to
 	insert zeroes in the code after instructions which do not
@@ -105,7 +110,7 @@ int ALIGN_PIKE_JUMPS
         this is not guaranteed and should only be used for optimization.
 
 int ALIGN_PIKE_FUNCTION_BEGINNINGS
-        Similar to ALIIGN_PIKE_JUMPS, but only for the beginning
+	Similar to ALIGN_PIKE_JUMPS, but only for the beginning
         of a function.
 
 int INS_F_JUMP(unsigned int op)
