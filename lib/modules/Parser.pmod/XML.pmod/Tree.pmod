@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.23 2002/11/29 16:29:07 grubba Exp $
+ * $Id: Tree.pmod,v 1.24 2002/11/29 21:36:48 nilsson Exp $
  *
  */
 
@@ -237,8 +237,8 @@ class AbstractNode {
   //! subtrees from left to right, calling the callback function
   //! for every node. If the callback function returns @[STOP_WALK]
   //! the traverse is promptly aborted and @[STOP_WALK] is returned.
-  int|void walk_preorder(function(AbstractNode, mixed ...:int|void) callback,
-			 mixed ... args)
+  int walk_preorder(function(AbstractNode, mixed ...:int|void) callback,
+		    mixed ... args)
   {
     if (callback(this_object(), @args) == STOP_WALK)
       return STOP_WALK;
@@ -254,9 +254,9 @@ class AbstractNode {
   //! If the callback function returns @[STOP_WALK] the traverse
   //! decend is aborted and @[STOP_WALK] is returned once all waiting
   //! callback_2 functions has been called.
-  int|void walk_preorder_2(function(AbstractNode, mixed ...:int|void) callback_1,
-			   function(AbstractNode, mixed ...:int|void) callback_2,
-			   mixed ... args)
+  int walk_preorder_2(function(AbstractNode, mixed ...:int|void) callback_1,
+		      function(AbstractNode, mixed ...:int|void) callback_2,
+		      mixed ... args)
   {
     int  res;
 	
@@ -272,8 +272,8 @@ class AbstractNode {
   //! function for every node. If the callback function returns
   //! @[STOP_WALK] the traverse is promptly aborted and @[STOP_WALK]
   //! is returned.
-  int|void walk_inorder(function(AbstractNode, mixed ...:int|void) callback,
-			mixed ... args)
+  int walk_inorder(function(AbstractNode, mixed ...:int|void) callback,
+		   mixed ... args)
   {
     if (sizeof(mChildren) > 0)
       if (mChildren[0]->walk_inorder(callback, @args) == STOP_WALK)
@@ -289,8 +289,8 @@ class AbstractNode {
   //! right, then the root node, calling the callback function for every
   //! node. If the callback function returns @[STOP_WALK] the traverse
   //! is promptly aborted and @[STOP_WALK] is returned.
-  int|void walk_postorder(function(AbstractNode, mixed ...:int|void) callback,
-			  mixed ... args)
+  int walk_postorder(function(AbstractNode, mixed ...:int|void) callback,
+		     mixed ... args)
   {
     foreach(mChildren, AbstractNode c)
       if (c->walk_postorder(callback, @args) == STOP_WALK)
@@ -302,8 +302,8 @@ class AbstractNode {
   //! Iterates over the nodes children from left to right, calling the callback
   //! function for every node. If the callback function returns @[STOP_WALK]
   //! the iteration is promptly aborted and @[STOP_WALK] is returned.
-  int|void iterate_children(function(AbstractNode, mixed ...:int|void) callback,
-			    mixed ... args)
+  int iterate_children(function(AbstractNode, mixed ...:int|void) callback,
+		       mixed ... args)
   {
     foreach(mChildren, AbstractNode c)
       if (callback(c, @args) == STOP_WALK)
@@ -642,17 +642,6 @@ class Node {
     }
 
     if (n->get_node_type() == XML_ELEMENT) {
-      if (n->count_children() != sizeof(children)) {
-	werror("Strange children count: %d: %O\n"
-	       "  children:%O\n"
-	       "  mChildren:%O\n"
-	       "Need to run walk_preorder()?\n",
-	       n->count_children(),
-	       n,
-	       children,
-	       n->mChildren);
-      }
-
       if (n->count_children())
 	if (strlen(n->get_tag_name()))
 	  data->add("</", n->get_tag_name(), ">");
