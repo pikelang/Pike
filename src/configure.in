@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.549 2001/09/14 19:58:04 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.550 2001/09/17 13:57:53 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5300,7 +5300,7 @@ if test -z "$LDSHARED" ; then
       fi
     ;;
     Darwin*)
-      LDSHARED="ld -bundle -bind_at_load -undefined suppress -ldylib1.o"
+      LDSHARED="ld -bundle -bind_at_load -undefined suppress -lbundle1.o"
     ;;
     IRIX*)
       if test "$GCC" = yes ; then
@@ -5607,7 +5607,7 @@ CFLAGS="$NEW_CFLAGS"
 ##########################################################################
 
 case "x$pike_cv_sys_os" in
-  xSolaris | xAIX)
+  xSolaris | xAIX | xDarwin)
    if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
      AC_DEFINE(USE_WAIT_THREAD)
    else
