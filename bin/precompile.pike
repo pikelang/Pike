@@ -1545,7 +1545,7 @@ class ParseBlock
 	    if(arg->may_be_void() && "mixed" != (string)arg->basetype())
 	    {
 	      ret+=({
-		PC.Token(sprintf("if(args >= %s) ",argnum)),
+		PC.Token(sprintf("if(args > %s) ",argnum)),
 		  });
 	    }
 	    if(arg->is_c_type() && arg->basetype() == "string")
@@ -1597,7 +1597,7 @@ class ParseBlock
 	    if(arg->may_be_void())
 	    {
 	      ret+=({
-		PC.Token(sprintf("if(args >= %d) { ",argnum)),
+		PC.Token(sprintf("if(args > %d) { ",argnum)),
 		  });
 	    }
 
