@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.47 2004/05/07 09:09:13 grubba Exp $
+ * $Id: Tree.pmod,v 1.48 2004/05/14 18:29:33 grubba Exp $
  *
  */
 
@@ -425,6 +425,11 @@ class AbstractNode {
 
   //! Returns the parent node.
   AbstractNode get_parent()          { return (mParent); }
+
+  static void create()
+  {
+    error("Creating a plain AbstractNode.\n");
+  }
 
   //! Returns an initialized copy of the node.
   //! @note
@@ -1089,6 +1094,12 @@ class SimpleNode
 {
   inherit AbstractSimpleNode;
   inherit VirtualNode;
+
+  // Needed for cross-overloading
+  void low_clone()
+  {
+    VirtualNode::low_clone();
+  }
 }
 
 // Convenience stuff for creation of @[SimpleNode]s.
@@ -1177,6 +1188,12 @@ class Node
 {
   inherit AbstractNode;
   inherit VirtualNode;
+
+  // Needed for cross-overloading
+  void low_clone()
+  {
+    VirtualNode::low_clone();
+  }
 
 //   int get_tag_code()
 //   {
