@@ -1,10 +1,10 @@
-# $Id: Makefile.in,v 1.5 2000/03/29 05:09:28 hubbe Exp $
+# $Id: Makefile.in,v 1.6 2002/03/14 01:53:03 mast Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=top.o @AUTO@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
-MODULE_CFLAGS=@CPPFLAGS@ @CFLAGS@
+MODULE_CFLAGS=@CFLAGS@
 @dynamic_module_makefile@
 
 $(SRCDIR)/auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike

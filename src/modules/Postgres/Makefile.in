@@ -1,8 +1,8 @@
-# $Id: Makefile.in,v 1.6 2002/01/16 03:08:22 nilsson Exp $
+# $Id: Makefile.in,v 1.7 2002/03/14 01:53:02 mast Exp $
 
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
+MODULE_CPPFLAGS=@DEFS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=postgres.o pgresult.o
 POSTGRES_SUPPORTED=@POSTGRES_SUPPORTED@

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.26 2002/02/26 16:54:15 marcus Exp $
+# $Id: Makefile.in,v 1.27 2002/03/14 01:53:02 mast Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 
@@ -14,7 +14,7 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 @SET_MAKE@
 
-MODULE_CPPFLAGS= -I$(SRCDIR)/include -DPIKE @CPPFLAGS@
+MODULE_CPPFLAGS= -I$(SRCDIR)/include -DPIKE
 MODULE_MAKE_FLAGS="EXTRA_CPP_FLAGS=-DPIKE -I$(SRCDIR)/../.. -I../../.."
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
