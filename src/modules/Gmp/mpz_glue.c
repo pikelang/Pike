@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.20 1997/08/30 18:36:06 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.21 1997/08/30 22:25:44 grubba Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -630,7 +630,7 @@ static void mpzmod_lsh(INT32 args)
     error("Wrong number of arguments to Gmp.mpz->rsh.\n");
   push_string(int_type_string);
   int_type_string->refs++;
-  f_cast(2);
+  f_cast();
   if(sp[-1].u.integer < 0)
     error("mpz->lsh on negative number.\n");
   res = clone_object(mpzmod_program, 0);
@@ -646,7 +646,7 @@ static void mpzmod_rsh(INT32 args)
     error("Wrong number of arguments to Gmp.mpz->rsh.\n");
   push_string(int_type_string);
   int_type_string->refs++;
-  f_cast(2);
+  f_cast();
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->rsh: Shift count must be positive.\n");
   res = clone_object(mpzmod_program, 0);

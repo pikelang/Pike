@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.4 1997/08/30 18:36:04 grubba Exp $");
+RCSID("$Id: gdbmmod.c,v 1.5 1997/08/30 22:21:49 grubba Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -312,7 +312,7 @@ static void gdbmmod_close(INT32 args)
 {
   pop_n_elems(args);
 
-  do_free(THIS->dbf);
+  do_free();
   push_int(0);
 }
 
