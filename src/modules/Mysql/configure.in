@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.46 2004/07/15 08:39:09 grubba Exp $
+# $Id: configure.in,v 1.47 2004/10/05 13:09:51 mast Exp $
 #
 # Configure script for the mysql-module
 #
@@ -38,7 +38,7 @@ else
 
   AC_MSG_CHECKING(for Mysql lib-directory)
 
-  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
+  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread"
   incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/pkg/include/mysql $with_root/usr/local/mysql/include no"
 
   if test x$with_mysql = xyes; then :; else
@@ -49,12 +49,21 @@ else
   fi
 
   AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
-    for pike_cv_mysql_lib_dir in $libdirs; do
-      if test -d $pike_cv_mysql_lib_dir/.; then
-        break
-      else
-        :
-      fi
+    pike_cv_mysql_lib_dir=no
+    for dir in $libdirs; do
+      for sedpat in 's|foo|foo|' \
+		    's|lib/|lib32/|' \
+		    's|lib/|lib64/|' \
+		    's|lib/|lib/64/|'
+      do
+        d=`echo $dir | sed -e $sedpat`
+	if test -d $d/.; then
+	  pike_cv_mysql_lib_dir=$d
+	  break 2
+	else
+	  :
+	fi
+      done
     done
   ])
 
