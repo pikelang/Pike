@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.81 1999/11/26 01:31:08 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.82 1999/11/27 07:42:56 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -454,8 +454,12 @@ static void internal_parse_typeA(char **_s)
 	  ++*s;
 	  type_stack_reverse(); 
 	}else{
+	  push_type(T_VOID);
 	  push_type(T_MIXED);
+	  push_type(T_OR);
+	  push_type(T_VOID);
 	  push_type(T_MIXED);
+	  push_type(T_OR);
 	  push_type(T_MANY);
 	}
 	push_type(T_FUNCTION);
