@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.667 2003/09/22 09:45:15 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.668 2003/10/28 13:13:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -518,34 +518,6 @@ Please check config.log, and fix the problem.])
     exit 1
   fi  
 fi
-
-#############################################################################
-
-if test $ac_cv_prog_gcc = yes; then
-  AC_MSG_CHECKING(for libgcc file name)
-  AC_CACHE_VAL(pike_cv_libgcc_filename,
-  [
-    pike_cv_libgcc_filename="`${CC-cc} -print-libgcc-file-name`"
-    if test -z "$pike_cv_libgcc_filename"; then
-      pike_cv_libgcc_filename=no
-    else
-       if test -f "$pike_cv_libgcc_filename"; then
-         :
-       else
-         pike_cv_libgcc_filename=no
-       fi
-    fi
-  ])
-  AC_MSG_RESULT($pike_cv_libgcc_filename)
-  if test x"$pike_cv_libgcc_filename" = xno; then
-    LIBGCC=""
-  else
-    LIBGCC="$pike_cv_libgcc_filename"
-  fi
-else
-  LIBGCC=""
-fi
-AC_SUBST(LIBGCC)
 
 #############################################################################
 
@@ -5858,6 +5830,37 @@ fi
 LINKFORSHARED="$pike_cv_sys_linkforshared"
 
 AC_MSG_RESULT($LINKFORSHARED)
+
+#############################################################################
+
+if test $ac_cv_prog_gcc = yes; then
+  AC_MSG_CHECKING(for libgcc file name)
+  AC_CACHE_VAL(pike_cv_libgcc_filename,
+  [
+    pike_cv_libgcc_filename="`${CC-cc} $CCSHARED -print-libgcc-file-name`"
+    if test -z "$pike_cv_libgcc_filename"; then
+      pike_cv_libgcc_filename=no
+    else
+       if test -f "$pike_cv_libgcc_filename"; then
+         pic_name=`echo "$pike_cv_libgcc_filename"|sed -e 's/\.a$/_pic.a/'`
+	 if test -f "$pic_name"; then
+	   pike_cv_libgcc_filename="$pic_name"
+	 fi
+       else
+         pike_cv_libgcc_filename=no
+       fi
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_libgcc_filename)
+  if test x"$pike_cv_libgcc_filename" = xno; then
+    LIBGCC=""
+  else
+    LIBGCC="$pike_cv_libgcc_filename"
+  fi
+else
+  LIBGCC=""
+fi
+AC_SUBST(LIBGCC)
 
 # In case we're going to use gcc for linking shared objects,
 # we should use the -static-libgcc flag if it exists.
