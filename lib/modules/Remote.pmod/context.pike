@@ -215,7 +215,10 @@ string describe(array data)
   case CTX_ERROR:
     return "ERROR "+sprintf("%O",data[1]);
   case CTX_OTHER:
-    return sprintf("%O",data[1]);
+    if (!stringp (data[1]) || sizeof (data[1]) < 64)
+      return sprintf("%O",data[1]);
+    else
+      return sprintf("%O..(%db more)",data[1][..63], sizeof (data[1]) - 64);
   case CTX_OBJECT:
     return "<object "+data[1]+">";
   case CTX_FUNCTION:
