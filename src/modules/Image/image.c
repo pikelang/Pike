@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.33 1997/05/29 23:31:01 mirar Exp $ */
+/* $Id: image.c,v 1.34 1997/05/29 23:36:58 per Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.33 1997/05/29 23:31:01 mirar Exp $<br>
+**!	$Id: image.c,v 1.34 1997/05/29 23:36:58 per Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.33 1997/05/29 23:31:01 mirar Exp $");
+RCSID("$Id: image.c,v 1.34 1997/05/29 23:36:58 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1675,6 +1675,70 @@ void image_hsv_to_rgb(INT32 args)
    push_object(o);
 }
 
+#ifndef MAX
+#define MAX(X,Y) ((X)>(Y)?(X):(Y))
+#endif
+#ifndef MAX3
+#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)
+#endif
+
+#ifndef MIN
+#define MIN(X,Y) ((X)<(Y)?(X):(Y))
+#endif
+#ifndef MIN3
+#define MIN3(X,Y,Z) MIN(MIN(X,Y),Z)
+#endif
+
+void image_rgb_to_hsv(INT32 args)
+{
+   INT32 i;
+   rgb_group *s,*d;
+   struct object *o;
+   struct image *img;
+   if (!THIS->img) error("no image\n");
+
+   o=clone_object(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+
+   d=img->img;
+   s=THIS->img;
+
+   THREADS_ALLOW();
+   i=img->xsize*img->ysize;
+   while (i--)
+   {
+     register int r,g,b;
+     register int v, delta;
+     register int h;
+
+     r = s->r; g = s->g; b = s->b;
+     v = MAX3(r,g,b);
+     delta = v - MIN3(r,g,b);
+
+     if(r==v)      h = (int)(((g-b)/(float)delta)*(255.0/6.0));
+     else if(g==v) h = (int)((2.0+(b-r)/(float)delta)*(255.0/6.0));
+     else h = (int)((4.0+(r-g)/(float)delta)*(255.0/6.0));
+     if(h<0) h+=255;
+
+/*     printf("hsv={ %d,%d,%d }\n", h, (int)((delta/(float)v)*255), v);*/
+     d->r = (int)h;
+     d->g=(int)((delta/(float)v)*255.0);
+     d->b=v;
+     s++; d++;
+   }
+   THREADS_DISALLOW();
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
 
 
 /*
@@ -2677,7 +2741,7 @@ void pike_module_init()
    add_function("distancesq",image_distancesq,
 		"function("RGB_TYPE":object)",0);
 
-/*   add_function("rgb_to_hsv",image_rgb_to_hsv, "function(void:object)",0);*/
+   add_function("rgb_to_hsv",image_rgb_to_hsv, "function(void:object)",0);
    add_function("hsv_to_rgb",image_hsv_to_rgb,"function(void:object)",0);
 
    add_function("select_from",image_select_from,
