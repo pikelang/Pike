@@ -1,0 +1,3 @@
+test_do( Filesystem.System() )
+test_do( Filesystem.Base() )
+test_do( Filesystem.Traversion(".") )
