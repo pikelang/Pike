@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.42 2002/04/11 22:13:32 mast Exp $
+# $Id: Makefile.in,v 1.43 2002/05/04 15:18:13 mast Exp $
 
 @make_variables@
 
@@ -21,7 +21,7 @@ $(MODULES): Makefile force
 	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$@ ) ) \
 	  ) || exit $$?;
 
-modules: $(MODULES)
+modules: Makefile $(MODULES)
 
 modlist.h: $(MODULE_SEGMENTS)
 	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
