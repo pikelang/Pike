@@ -231,7 +231,8 @@ Event.Namedays find_namedays(string region)
 	    if (mday<1 || mday>nd_m_nd[w])
 	       error("Nameday date doesn't exists:\n%O\n",line);
 #endif
-	    names[nd_m_yd[w]+mday-1]=`+(@name);
+	    if (sizeof(name))
+	       names[nd_m_yd[w]+mday-1]=`+(@name);
 	    break;
 	 case "leapday":
 	    sscanf(s,"%{%*[, ]%[^,]%}",name);
