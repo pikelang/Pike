@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.64 1999/03/03 18:06:17 grubba Exp $
+ * $Id: requests.pmod,v 1.65 1999/03/04 17:33:56 grubba Exp $
  */
 
 import .types;
@@ -582,7 +582,7 @@ class fetch
       }
       atom->options = ({ ([ "type":"atom", "atom":section ]) });
 
-      res->raw_wanted = atom->atom;
+      res->raw_wanted = upper_case(atom->atom);
       res->wanted = wanted;
 
       werror("Options specified. "
