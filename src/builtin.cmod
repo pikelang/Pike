@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.110 2003/01/26 18:31:19 mirar Exp $
+|| $Id: builtin.cmod,v 1.111 2003/01/26 19:00:53 mirar Exp $
 */
 
 #include "global.h"
@@ -218,7 +218,7 @@ PIKEFUN string int2hex(int|object x)
   len=1;
   if(c<0) {
     len++;
-    n=(-c)&((unsigned int)(-1));
+    n=(-c)&((unsigned INT_TYPE)(-1));
   }else{
     n=c;
   }
@@ -234,7 +234,7 @@ PIKEFUN string int2hex(int|object x)
     if(c<0)
     {
       s->str[0]='-';
-      n=(-c)&((unsigned int)(-1));
+      n=(-c)&((unsigned INT_TYPE)(-1));
     }else{
       n=c;
     }
