@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.13 2004/11/18 15:55:29 agehall Exp $
+// $Id: FakeFile.pike,v 1.14 2004/12/26 01:07:38 per Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -148,8 +148,15 @@ int seek(int pos, void|int mult, void|int add) {
   if(mult)
     pos = pos*mult+add;
   if(pos<0)
+  {
     pos = sizeof(data)+pos;
+    if( pos < 0 )
+	pos = 0;
+  }
   ptr = pos;
+  if( ptr > strlen( data ) )
+      ptr = strlen(data);
+  return ptr;
 }
 
 //! Always returns 1.
