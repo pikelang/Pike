@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.14 2000/05/10 02:13:22 mast Exp $
+ * $Id: tga.c,v 1.15 2000/07/07 00:41:46 hubbe Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -32,6 +32,7 @@
 **! submodule TGA
 **!
 */
+#define NO_PIKE_SHORTHAND
 
 #include "global.h"
 
@@ -76,7 +77,7 @@
 #include "image.h"
 #include "colortable.h"
 
-RCSID("$Id: tga.c,v 1.14 2000/05/10 02:13:22 mast Exp $");
+RCSID("$Id: tga.c,v 1.15 2000/07/07 00:41:46 hubbe Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -707,23 +708,23 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     {
       apply( i.io, "mirrorx", 0 );
       free_object(i.io);
-      i.io = sp[-1].u.object;
-      sp--;
+      i.io = Pike_sp[-1].u.object;
+      Pike_sp--;
       apply( i.ao, "mirrorx", 0 );
       free_object(i.ao);
-      i.ao = sp[-1].u.object;
-      sp--;
+      i.ao = Pike_sp[-1].u.object;
+      Pike_sp--;
     }
     if(vertrev)
     {
       apply( i.io, "mirrory", 0 );
       free_object(i.io);
-      i.io = sp[-1].u.object;
-      sp--;
+      i.io = Pike_sp[-1].u.object;
+      Pike_sp--;
       apply( i.ao, "mirrory", 0 );
       free_object(i.ao);
-      i.ao = sp[-1].u.object;
-      sp--;
+      i.ao = Pike_sp[-1].u.object;
+      Pike_sp--;
     }
     return i;
   }
@@ -957,9 +958,9 @@ void image_tga_encode( INT32 args )
   if (!args)
     error("Image.TGA.encode: too few arguments\n");
 
-  if (sp[-args].type!=T_OBJECT ||
+  if (Pike_sp[-args].type!=PIKE_T_OBJECT ||
       !(img=(struct image*)
-        get_storage(sp[-args].u.object,image_program)))
+        get_storage(Pike_sp[-args].u.object,image_program)))
     error("Image.TGA.encode: illegal argument 1\n");
 
   if (!img->img)
@@ -967,17 +968,17 @@ void image_tga_encode( INT32 args )
 
   if (args>1)
   {
-    if (sp[1-args].type!=T_MAPPING)
+    if (Pike_sp[1-args].type!=PIKE_T_MAPPING)
       error("Image.TGA.encode: illegal argument 2\n");
 
-    push_svalue(sp+1-args);
+    push_svalue(Pike_sp+1-args);
     ref_push_string(param_alpha);
     f_index(2);
-    if (!(sp[-1].type==T_INT
-          && sp[-1].subtype==NUMBER_UNDEFINED))
-      if (sp[-1].type!=T_OBJECT ||
+    if (!(Pike_sp[-1].type==PIKE_T_INT
+          && Pike_sp[-1].subtype==NUMBER_UNDEFINED))
+      if (Pike_sp[-1].type!=PIKE_T_OBJECT ||
           !(alpha=(struct image*)
-            get_storage(sp[-1].u.object,image_program)))
+            get_storage(Pike_sp[-1].u.object,image_program)))
         error("Image.TGA.encode: option (arg 2) \"alpha\" has illegal type\n");
     pop_stack();
 
@@ -988,10 +989,10 @@ void image_tga_encode( INT32 args )
     if (alpha && !alpha->img)
       error("Image.TGA.encode option (arg 2) \"alpha\"; no image\n");
 
-    push_svalue(sp+1-args);
+    push_svalue(Pike_sp+1-args);
     ref_push_string(param_raw);
     f_index(2);
-    rle = !sp[-1].u.integer;
+    rle = !Pike_sp[-1].u.integer;
     pop_stack();
   }
 
@@ -1005,11 +1006,11 @@ void image_tga_encode( INT32 args )
 static struct program *image_encoding_tga_program=NULL;
 void init_image_tga( )
 {
-   add_function( "_decode", image_tga__decode,
+   pike_add_function( "_decode", image_tga__decode,
                  "function(string:mapping(string:object))", 0);
-   add_function( "decode", image_tga_decode,
+   pike_add_function( "decode", image_tga_decode,
                  "function(string:object)", 0);
-   add_function( "encode", image_tga_encode,
+   pike_add_function( "encode", image_tga_encode,
                  "function(object,mapping|void:string)", 0);
 
    param_alpha=make_shared_string("alpha");

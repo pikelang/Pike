@@ -5,35 +5,27 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.44 2000/06/24 07:20:27 hubbe Exp $
+ * $Id: interpret.h,v 1.45 2000/07/07 00:21:48 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
 
 #include "global.h"
 #include "program.h"
-#include "threads.h"
-
+#include "error.h"
 
 struct Pike_interpreter {
-  char swapped;
-  char status;
-#ifdef PIKE_THREADS
-  COND_T status_change;
-  THREAD_T id;
-#endif
-  struct Pike_interpreter *hashlink, **backlink;
-  struct mapping *thread_local;
-
   /* Swapped variables */
-  struct svalue *Pike_sp,*Pike_evaluator_stack;
-  struct svalue **Pike_mark_sp,**Pike_mark_stack;
-  struct pike_frame *Pike_fp;
+  struct svalue *stack_pointer;
+  struct svalue *evaluator_stack;
+  struct svalue **mark_sp;
+  struct svalue **mark_stack;
+  struct pike_frame *frame_pointer;
   int evaluator_stack_malloced;
   int mark_stack_malloced;
   JMP_BUF *recoveries;
   struct object * thread_id;
-  char *Pike_stack_top;
+  char *stack_top;
   DO_IF_SECURITY(struct object *current_creds;)
 
 #ifdef PROFILING
@@ -70,7 +62,7 @@ struct pike_frame
 };
 
 #ifdef PIKE_DEBUG
-#define debug_check_stack() do{if(Pike_sp<Pike_evaluator_stack)fatal("Stack error.\n");}while(0)
+#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal("Stack error.\n");}while(0)
 #define check__positive(X,Y) if((X)<0) fatal Y
 #include "error.h"
 #else
@@ -79,19 +71,19 @@ struct pike_frame
 #endif
 
 #define check_stack(X) do {			\
-  if(Pike_sp - Pike_evaluator_stack + (X) >= Pike_stack_size)	\
+  if(Pike_sp - Pike_interpreter.evaluator_stack + (X) >= Pike_stack_size)	\
     error("Svalue stack overflow. " \
 	  "(%d of %d entries on stack, needed %d more entries)\n", \
-	  Pike_sp-Pike_evaluator_stack,Pike_stack_size,(X)); \
+	  Pike_sp-Pike_interpreter.evaluator_stack,Pike_stack_size,(X)); \
   }while(0)
 
 #define check_mark_stack(X) do {		\
-  if(Pike_mark_sp - Pike_mark_stack + (X) >= Pike_stack_size)	\
+  if(Pike_interpreter.mark_sp - Pike_interpreter.mark_stack + (X) >= Pike_stack_size)	\
     error("Mark stack overflow.\n");		\
   }while(0)
 
 #define check_c_stack(X) do { 			\
-  long x_= ((char *)&x_) + STACK_DIRECTION * (X) - Pike_stack_top ;	\
+  long x_= ((char *)&x_) + STACK_DIRECTION * (X) - Pike_interpreter.stack_top ;	\
   x_*=STACK_DIRECTION;							\
   if(x_>0)								\
     low_error("C stack overflow.\n");					\
@@ -245,34 +237,23 @@ void cleanup_interpret(void);
 void really_clean_up_interpret(void);
 /* Prototypes end here */
 
-extern struct svalue *Pike_sp;
-extern struct svalue **Pike_mark_sp;
-extern struct svalue *Pike_evaluator_stack;
-extern struct svalue **Pike_mark_stack;
-extern struct pike_frame *Pike_fp; /* pike_frame pointer */
-extern char *Pike_stack_top;
 extern int Pike_stack_size;
-extern int evaluator_stack_malloced, mark_stack_malloced;
 struct callback;
 extern struct callback_list evaluator_callbacks;
 extern void call_callback(struct callback_list *, void *);
 
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-extern long long accounted_time;
-extern long long time_base;
-#endif
-#endif
+extern struct Pike_interpreter Pike_interpreter;
+
+#define Pike_sp Pike_interpreter.stack_pointer
+#define Pike_fp Pike_interpreter.frame_pointer
+
 
 #ifndef NO_PIKE_SHORTHAND
 
+/* Shouldn't this be in Pike_interpreter? - Hubbe */
+#define stack_size Pike_stack_size
 #define sp Pike_sp
 #define fp Pike_fp
-#define evaluator_stack Pike_evaluator_stack
-#define stack_top Pike_stack_top
-#define mark_sp Pike_mark_sp
-#define mark_stack Pike_mark_stack
-#define stack_size Pike_stack_size
 
 #endif /* !NO_PIKE_SHORTHAND */
 

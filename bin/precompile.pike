@@ -504,7 +504,7 @@ array convert(array x, string base)
 	{
 	  default:
 	    ret+=({
-	      PC.Token(sprintf("if(Pike_interpreter.stack_pointer[%d].type != PIKE_T_%s)",
+	      PC.Token(sprintf("if(Pike_sp[%d].type != PIKE_T_%s)",
 			       sp,upper_case(arg->basetype->text)),arg->line)
 	    });
 	    break;
@@ -536,13 +536,13 @@ array convert(array x, string base)
 	{
 	  case "int":
 	    ret+=({
-	      sprintf("%s=Pike_interpreter.stack_pointer[%d].u.integer;\n",arg->name,sp)
+	      sprintf("%s=Pike_sp[%d].u.integer;\n",arg->name,sp)
 	    });
 	    break;
 
 	  case "float":
 	    ret+=({
-	      sprintf("%s=Pike_interpreter.stack_pointer[%d].u.float_number;\n",
+	      sprintf("%s=Pike_sp[%d].u.float_number;\n",
 		      arg->name,
 		      sp)
 	    });
@@ -559,7 +559,7 @@ array convert(array x, string base)
 
 	  default:
 	    ret+=({
-	      PC.Token(sprintf("debug_malloc_pass(%s=Pike_interpreter.stack_pointer[%d].u.%s);\n",
+	      PC.Token(sprintf("debug_malloc_pass(%s=Pike_sp[%d].u.%s);\n",
 			       arg->name,
 			       sp,
 			       arg->basetype),arg->line)

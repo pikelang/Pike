@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.176 2000/06/09 21:55:17 mast Exp $");
+RCSID("$Id: file.c,v 1.177 2000/07/07 00:33:09 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -100,7 +100,7 @@ RCSID("$Id: file.c,v 1.176 2000/06/09 21:55:17 mast Exp $");
 #include "dmalloc.h"
 
 #undef THIS
-#define THIS ((struct my_file *)(fp->current_storage))
+#define THIS ((struct my_file *)(Pike_fp->current_storage))
 #define FD (THIS->fd)
 #define ERRNO (THIS->my_errno)
 
@@ -643,14 +643,14 @@ static void file_read(INT32 args)
   }
   else
   {
-    if(sp[-args].type != T_INT)
+    if(Pike_sp[-args].type != T_INT)
       error("Bad argument 1 to file->read().\n");
-    len=sp[-args].u.integer;
+    len=Pike_sp[-args].u.integer;
     if(len<0)
       error("Cannot read negative number of characters.\n");
   }
 
-  if(args > 1 && !IS_ZERO(sp+1-args))
+  if(args > 1 && !IS_ZERO(Pike_sp+1-args))
   {
     all=0;
   }else{
@@ -747,14 +747,14 @@ static void file_read_oob(INT32 args)
   }
   else
   {
-    if(sp[-args].type != T_INT)
+    if(Pike_sp[-args].type != T_INT)
       error("Bad argument 1 to file->read_oob().\n");
-    len=sp[-args].u.integer;
+    len=Pike_sp[-args].u.integer;
     if(len<0)
       error("Cannot read negative number of characters.\n");
   }
 
-  if(args > 1 && !IS_ZERO(sp+1-args))
+  if(args > 1 && !IS_ZERO(Pike_sp+1-args))
   {
     all=0;
   }else{
@@ -790,8 +790,8 @@ static void PIKE_CONCAT(file_set_,X) (INT32 args)		\
     error("File is not open.\n");				\
   if(!args)							\
     error("Too few arguments to file_set_%s\n",#X);		\
-  assign_svalue(& THIS->X, sp-args);				\
-  if(IS_ZERO(sp-args))						\
+  assign_svalue(& THIS->X, Pike_sp-args);				\
+  if(IS_ZERO(Pike_sp-args))						\
   {								\
     PIKE_CONCAT(set_,X)(FD, 0, 0);				\
     check_internal_reference(THIS);                             \
@@ -866,16 +866,16 @@ static void file_write(INT32 args)
   INT32 written,i;
   struct pike_string *str;
 
-  if(args<1 || ((sp[-args].type != T_STRING) && (sp[-args].type != T_ARRAY)))
+  if(args<1 || ((Pike_sp[-args].type != T_STRING) && (Pike_sp[-args].type != T_ARRAY)))
     error("Bad argument 1 to file->write().\n"
 	  "Type is %s. Expected string or array(string)\n",
-	  get_name_of_type(sp[-args].type));
+	  get_name_of_type(Pike_sp[-args].type));
 
   if(FD < 0)
     error("File not open for write.\n");
 
-  if (sp[-args].type == T_ARRAY) {
-    struct array *a = sp[-args].u.array;
+  if (Pike_sp[-args].type == T_ARRAY) {
+    struct array *a = Pike_sp[-args].u.array;
     i = a->size;
     while(i--) {
       if (a->item[i].type != T_STRING) {
@@ -895,12 +895,12 @@ static void file_write(INT32 args)
       ref_push_array(a);
       push_constant_text("");
       o_multiply();
-      sp--;
-      dmalloc_touch_svalue(sp);
-      assign_svalue(sp-args, sp);
+      Pike_sp--;
+      dmalloc_touch_svalue(Pike_sp);
+      assign_svalue(Pike_sp-args, Pike_sp);
 
 #ifdef PIKE_DEBUG
-      if (sp[-args].type != T_STRING) {
+      if (Pike_sp[-args].type != T_STRING) {
 	error("Bad return value from string multiplication.");
       }
 #endif /* PIKE_DEBUG */
@@ -1009,7 +1009,7 @@ static void file_write(INT32 args)
 #endif /* HAVE_WRITEV */
   }
 
-  /* At this point sp[-args].type is T_STRING */
+  /* At this point Pike_sp[-args].type is T_STRING */
 
   if(args > 1)
   {
@@ -1018,7 +1018,7 @@ static void file_write(INT32 args)
     args=1;
   }
 
-  str=sp[-args].u.string;
+  str=Pike_sp[-args].u.string;
 
   for(written=0;written < str->len;check_signals(0,0,0))
   {
@@ -1079,7 +1079,7 @@ static void file_write_oob(INT32 args)
   INT32 written,i;
   struct pike_string *str;
 
-  if(args<1 || sp[-args].type != T_STRING)
+  if(args<1 || Pike_sp[-args].type != T_STRING)
     error("Bad argument 1 to file->write().\n");
 
   if(args > 1)
@@ -1093,7 +1093,7 @@ static void file_write_oob(INT32 args)
     error("File not open for write_oob.\n");
 
   written=0;
-  str=sp[-args].u.string;
+  str=Pike_sp[-args].u.string;
 
   while(written < str->len)
   {
@@ -1208,9 +1208,9 @@ static void file_close(INT32 args)
   int flags;
   if(args)
   {
-    if(sp[-args].type != T_STRING)
+    if(Pike_sp[-args].type != T_STRING)
       error("Bad argument 1 to file->close()\n");
-    flags=parse(sp[-args].u.string->str);
+    flags=parse(Pike_sp[-args].u.string->str);
   }else{
     flags=FILE_READ | FILE_WRITE;
   }
@@ -1242,26 +1242,26 @@ static void file_open(INT32 args)
   if(args < 2)
     error("Too few arguments to file->open()\n");
 
-  if(sp[-args].type != T_STRING &&
-     sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_STRING &&
+     Pike_sp[-args].type != T_INT)
     error("Bad argument 1 to file->open()\n");
 
-  if(sp[1-args].type != T_STRING)
+  if(Pike_sp[1-args].type != T_STRING)
     error("Bad argument 2 to file->open()\n");
 
   if (args > 2)
   {
-    if (sp[2-args].type != T_INT)
+    if (Pike_sp[2-args].type != T_INT)
       error("Bad argument 3 to file->open()\n");
-    access = sp[2-args].u.integer;
+    access = Pike_sp[2-args].u.integer;
   } else
     access = 00666;
 
-  flags = parse((flag_str = sp[1-args].u.string)->str);
+  flags = parse((flag_str = Pike_sp[1-args].u.string)->str);
 
-  if (sp[-args].type==T_STRING)
+  if (Pike_sp[-args].type==T_STRING)
   {
-     str=sp[-args].u.string;
+     str=Pike_sp[-args].u.string;
 
 #ifdef PIKE_SECURITY
      if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -1276,16 +1276,16 @@ static void file_open(INT32 args)
 	   push_text("read");
 	}
 
-	ref_push_object(fp->current_object);
+	ref_push_object(Pike_fp->current_object);
 	ref_push_string(str);
 	ref_push_string(flag_str);
 	push_int(access);
 
-	safe_apply(OBJ2CREDS(current_creds)->user,"valid_open",5);
-	switch(sp[-1].type)
+	safe_apply(OBJ2CREDS(Pike_interpreter.current_creds)->user,"valid_open",5);
+	switch(Pike_sp[-1].type)
 	{
 	   case T_INT:
-	      switch(sp[-1].u.integer)
+	      switch(Pike_sp[-1].u.integer)
 	      {
 		 case 0: /* return 0 */
 		    ERRNO=EPERM;
@@ -1314,7 +1314,7 @@ static void file_open(INT32 args)
 	      error("Error in user->valid_open, wrong return type.\n");
 
 	   case T_STRING:
-	      str=sp[-1].u.string;
+	      str=Pike_sp[-1].u.string;
 	      args++;
 	}
      }
@@ -1331,7 +1331,7 @@ static void file_open(INT32 args)
 	 check_threads_etc();
      } while(fd < 0 && errno == EINTR);
 
-     if(!fp->current_object->prog)
+     if(!Pike_fp->current_object->prog)
      {
 #ifdef DEBUG_MALLOC
        extern int d_flag;
@@ -1339,7 +1339,7 @@ static void file_open(INT32 args)
        if(d_flag)
        {
 	 fprintf(stderr,"Possible gc() failure detected in open()\n");
-	 describe(fp->current_object);
+	 describe(Pike_fp->current_object);
        }
 #endif
        if (fd >= 0)
@@ -1368,7 +1368,7 @@ static void file_open(INT32 args)
 	/* FIXME!! Insert better security here */
      }
 #endif
-     fd=sp[-args].u.integer;
+     fd=Pike_sp[-args].u.integer;
      if (fd<0)
 	error("Not a valid FD.\n");
 
@@ -1391,30 +1391,30 @@ static void file_seek(INT32 args)
 
 #ifdef HAVE_LSEEK64
 #ifdef AUTO_BIGNUM
-  if(1 <= args && is_bignum_object_in_svalue(&sp[-args]))
-    int64_from_bignum(&to, sp[-args].u.object);
+  if(1 <= args && is_bignum_object_in_svalue(&Pike_sp[-args]))
+    int64_from_bignum(&to, Pike_sp[-args].u.object);
   else
 #endif /* AUTO_BIGNUM */
 #endif
-  if(args<1 || sp[-args].type != T_INT)
+  if(args<1 || Pike_sp[-args].type != T_INT)
     error("Bad argument 1 to file->seek(int to).\n");
   else
-    to=sp[-args].u.integer;
+    to=Pike_sp[-args].u.integer;
 
   if(FD < 0)
     error("File not open.\n");
 
   if(args>1)
   {
-    if(sp[-args+1].type != T_INT)
+    if(Pike_sp[-args+1].type != T_INT)
       error("Bad argument 2 to file->seek(int unit,int mult).\n");
-    to *= sp[-args+1].u.integer;
+    to *= Pike_sp[-args+1].u.integer;
   }
   if(args>2)
   {
-    if(sp[-args+2].type != T_INT)
+    if(Pike_sp[-args+2].type != T_INT)
       error("Bad argument 3 to file->seek(int unit,int mult,int add).\n");
-    to += sp[-args+2].u.integer;
+    to += Pike_sp[-args+2].u.integer;
   }
 
   ERRNO=0;
@@ -1463,13 +1463,13 @@ static void file_truncate(INT32 args)
 #endif
   int res;
 
-  if(args<1 || sp[-args].type != T_INT)
+  if(args<1 || Pike_sp[-args].type != T_INT)
     error("Bad argument 1 to file->truncate(int length).\n");
 
   if(FD < 0)
     error("File not open.\n");
 
-  len = sp[-args].u.integer;
+  len = Pike_sp[-args].u.integer;
 
   ERRNO=0;
   res=fd_ftruncate(FD, len);
@@ -1562,7 +1562,7 @@ static void file_set_close_on_exec(INT32 args)
   if(FD <0)
     error("File not open.\n");
 
-  if(IS_ZERO(sp-args))
+  if(IS_ZERO(Pike_sp-args))
   {
     my_set_close_on_exec(FD,0);
   }else{
@@ -1598,18 +1598,18 @@ static void file_set_buffer(INT32 args)
     error("file->set_buffer() on closed file.\n");
   if(!args)
     error("Too few arguments to file->set_buffer()\n");
-  if(sp[-args].type!=T_INT)
+  if(Pike_sp[-args].type!=T_INT)
     error("Bad argument 1 to file->set_buffer()\n");
 
-  bufsize=sp[-args].u.integer;
+  bufsize=Pike_sp[-args].u.integer;
   if(bufsize < 0)
     error("Bufsize must be larger than zero.\n");
 
   if(args>1)
   {
-    if(sp[1-args].type != T_STRING)
+    if(Pike_sp[1-args].type != T_STRING)
       error("Bad argument 2 to file->set_buffer()\n");
-    flags=parse(sp[1-args].u.string->str);
+    flags=parse(Pike_sp[1-args].u.string->str);
   }else{
     flags=FILE_READ | FILE_WRITE;
   }
@@ -1836,7 +1836,7 @@ static void file_pipe(INT32 args)
   int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
 
   check_all_args("file->pipe",args, BIT_INT | BIT_VOID, 0);
-  if(args) type = sp[-args].u.integer;
+  if(args) type = Pike_sp[-args].u.integer;
 
   close_fd();
   pop_n_elems(args);
@@ -2003,10 +2003,10 @@ static void file_dup2(INT32 args)
   if(FD < 0)
     error("File not open.\n");
 
-  if(sp[-args].type != T_OBJECT)
+  if(Pike_sp[-args].type != T_OBJECT)
     error("Bad argument 1 to file->dup2()\n");
 
-  o=sp[-args].u.object;
+  o=Pike_sp[-args].u.object;
 
   fd=get_file_storage(o);
 
@@ -2081,21 +2081,21 @@ static void file_open_socket(INT32 args)
     struct sockaddr_in addr;
     int o;
 
-    if (sp[-args].type != T_INT) {
+    if (Pike_sp[-args].type != T_INT) {
       fd_close(fd);
       error("Bad argument 1 to open_socket(), expected int\n");
     }
     if (args > 1) {
-      if (sp[1-args].type != T_STRING) {
+      if (Pike_sp[1-args].type != T_STRING) {
 	close(fd);
 	error("Bad argument 2 to open_socket(), expected string\n");
       }
-      get_inet_addr(&addr, sp[1-args].u.string->str);
+      get_inet_addr(&addr, Pike_sp[1-args].u.string->str);
     } else {
       addr.sin_addr.s_addr = htonl(INADDR_ANY);
       addr.sin_family = AF_INET;
     }
-    addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+    addr.sin_port = htons( ((u_short)Pike_sp[-args].u.integer) );
 
     o=1;
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
@@ -2182,7 +2182,7 @@ static void file_connect(INT32 args)
       ref_push_string(src_addr);
       file_open_socket(2);
     }
-    if(IS_ZERO(sp-1) || FD < 0)
+    if(IS_ZERO(Pike_sp-1) || FD < 0)
       error("file->connect(): Failed to open socket.\n");
     pop_stack();
   }
@@ -2248,7 +2248,7 @@ static void file_query_address(INT32 args)
     error("file->query_address(): Connection not open.\n");
 
   len=sizeof(addr);
-  if(args > 0 && !IS_ZERO(sp-args))
+  if(args > 0 && !IS_ZERO(Pike_sp-args))
   {
     i=fd_getsockname(FD,(struct sockaddr *)&addr,&len);
   }else{
@@ -2276,16 +2276,16 @@ static void file_lsh(INT32 args)
   if(args != 1)
     error("Too few/many args to file->`<<\n");
 
-  if(sp[-1].type != T_STRING)
+  if(Pike_sp[-1].type != T_STRING)
   {
     ref_push_string(string_type_string);
     stack_swap();
     f_cast();
   }
 
-  len=sp[-1].u.string->len;
+  len=Pike_sp[-1].u.string->len;
   file_write(1);
-  if(len != sp[-1].u.integer) error("File << failed.\n");
+  if(len != Pike_sp[-1].u.integer) error("File << failed.\n");
   pop_stack();
 
   push_object(this_object());
@@ -2294,8 +2294,8 @@ static void file_lsh(INT32 args)
 static void file_create(INT32 args)
 {
   if(!args) return;
-  if(sp[-args].type != T_STRING &&
-     sp[-args].type != T_INT)
+  if(Pike_sp[-args].type != T_STRING &&
+     Pike_sp[-args].type != T_INT)
     error("Bad argument 1 to file->create()\n");
 
   close_fd();
@@ -2360,7 +2360,7 @@ void file_proxy(INT32 args)
 
   THREAD_T id;
   check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
-  f=get_file_storage(sp[-args].u.object);
+  f=get_file_storage(Pike_sp[-args].u.object);
   if(!f)
     error("Bad argument 1 to Stdio.File->proxy, not a Stdio.File object.\n");
 
@@ -2400,9 +2400,9 @@ void create_proxy_pipe(struct object *o, int for_reading)
   push_object(n=clone_object(file_program,0));
   push_int(fd_INTERPROCESSABLE);
   apply(n,"pipe",1);
-  if(sp[-1].type!=T_OBJECT)
+  if(Pike_sp[-1].type!=T_OBJECT)
     error("Failed to create proxy pipe (errno=%d)!\n",get_file_storage(n)->my_errno);
-  n2=sp[-1].u.object;
+  n2=Pike_sp[-1].u.object;
   /* Stack is now: pipe(read), pipe(write) */
   if(for_reading)
   {
@@ -2411,8 +2411,8 @@ void create_proxy_pipe(struct object *o, int for_reading)
     pop_n_elems(2);
   }else{
     /* Swap */
-    sp[-2].u.object=n2;
-    sp[-1].u.object=n;
+    Pike_sp[-2].u.object=n2;
+    Pike_sp[-1].u.object=n;
     apply(o,"proxy",1);
     pop_stack();
   }
@@ -2443,11 +2443,11 @@ static void low_file_lock(INT32 args, int flags)
   if(FD==-1)
     error("File->lock(): File is not open.\n");
 
-  if(!args || IS_ZERO(sp-args))
+  if(!args || IS_ZERO(Pike_sp-args))
   {
     if(THIS->key
 #ifdef _REENTRANT
-       && OB2KEY(THIS->key)->owner == thread_id
+       && OB2KEY(THIS->key)->owner == Pike_interpreter.thread_id
 #endif
       )
     {
@@ -2499,13 +2499,13 @@ static void file_trylock(INT32 args)
 }
 #endif
 
-#define THIS_KEY ((struct file_lock_key_storage *)(fp->current_storage))
+#define THIS_KEY ((struct file_lock_key_storage *)(Pike_fp->current_storage))
 static void init_file_lock_key(struct object *o)
 {
   THIS_KEY->f=0;
 #ifdef _REENTRANT
-  THIS_KEY->owner=thread_id;
-  add_ref(thread_id);
+  THIS_KEY->owner=Pike_interpreter.thread_id;
+  add_ref(Pike_interpreter.thread_id);
 #endif
 }
 
@@ -2602,7 +2602,7 @@ void pike_module_exit(void)
 
 void init_files_efuns(void);
 
-#define REF (*((struct object **)(fp->current_storage)))
+#define REF (*((struct object **)(Pike_fp->current_storage)))
 
 #define FILE_FUNC(X,Y,Z) \
 static int PIKE_CONCAT(Y,_function_number);
@@ -2621,7 +2621,7 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {				\
      if(d_flag)							\
      {								\
        fprintf(stderr,"Possible gc() failiure detected\n");	\
-       describe(fp->current_object);				\
+       describe(Pike_fp->current_object);				\
        if(o) describe(o);					\
      }								\
    );								\

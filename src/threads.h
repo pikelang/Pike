@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.94 2000/06/24 07:20:27 hubbe Exp $
+ * $Id: threads.h,v 1.95 2000/07/07 00:21:48 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -7,6 +7,7 @@
 #include "machine.h"
 #include "object.h"
 #include "error.h"
+#include "interpret.h"
 
 struct Pike_interpreter;
 
@@ -56,7 +57,6 @@ extern int num_threads;
 extern int live_threads;
 struct object;
 extern size_t thread_stack_size;
-extern struct object *thread_id;
 
 #define DEFINE_MUTEX(X) PIKE_MUTEX_T X
 
@@ -333,9 +333,15 @@ struct interleave_mutex
 #define THREAD_RUNNING 0
 #define THREAD_EXITED 1
 
-#ifdef PIKE_SECURITY
-extern struct object *current_creds;
-#endif
+struct thread_state {
+  struct Pike_interpreter state;
+  char swapped;
+  char status;
+  COND_T status_change;
+  THREAD_T id;
+  struct mapping *thread_local;
+  struct thread_state *hashlink, **backlink;
+};
 
 
 #ifndef TH_RETURN_TYPE
@@ -375,8 +381,8 @@ extern struct object *current_creds;
 #endif /* VERBOSE_THREADS_DEBUG */
 
 #ifdef THREAD_TRACE
-#define SWAP_OUT_TRACE(_tmp)	do { extern int t_flag; (_tmp)->t_flag = t_flag; } while(0)
-#define SWAP_IN_TRACE(_tmp)	do { extern int t_flag; t_flag = (_tmp)->t_flag; } while(0)
+#define SWAP_OUT_TRACE(_tmp)	do { extern int t_flag; (_tmp)->status.t_flag = t_flag; } while(0)
+#define SWAP_IN_TRACE(_tmp)	do { extern int t_flag; t_flag = (_tmp)->status.t_flag; } while(0)
 #else /* !THREAD_TRACE */
 #define SWAP_OUT_TRACE(_tmp)
 #define SWAP_IN_TRACE(_tmp)
@@ -388,45 +394,21 @@ extern struct object *current_creds;
 #define DO_IF_PROFILING(X)
 #endif
 
-#define SWAP_OUT_THREAD(_tmp) do { \
-       (_tmp)->swapped=1; \
-       (_tmp)->Pike_evaluator_stack=Pike_evaluator_stack;\
-       (_tmp)->evaluator_stack_malloced=evaluator_stack_malloced;\
-       debug_malloc_pass( (_tmp)->Pike_fp=Pike_fp );\
-       (_tmp)->Pike_mark_sp=Pike_mark_sp;\
-       (_tmp)->Pike_mark_stack=Pike_mark_stack;\
-       (_tmp)->mark_stack_malloced=mark_stack_malloced;\
-       (_tmp)->recoveries=recoveries;\
-       (_tmp)->Pike_sp=Pike_sp; \
-       (_tmp)->Pike_stack_top=Pike_stack_top; \
-       (_tmp)->thread_id=thread_id;\
-       DO_IF_PROFILING( (_tmp)->accounted_time=accounted_time; ) \
-       DO_IF_PROFILING( (_tmp)->time_base = gethrtime() - time_base; ) \
-       DO_IF_SECURITY( (_tmp)->current_creds = current_creds ;) \
-       SWAP_OUT_TRACE(_tmp); \
+#define SWAP_OUT_THREAD(_tmp) do {				\
+       (_tmp)->state=Pike_interpreter;				\
+       (_tmp)->swapped=1;					\
+       DO_IF_PROFILING( (_tmp)->time_base += gethrtime() ; )	\
       } while(0)
 
-#define SWAP_IN_THREAD(_tmp) do {\
-       (_tmp)->swapped=0; \
-       Pike_evaluator_stack=(_tmp)->Pike_evaluator_stack;\
-       evaluator_stack_malloced=(_tmp)->evaluator_stack_malloced;\
-       debug_malloc_pass( Pike_fp=(_tmp)->Pike_fp );\
-       Pike_mark_sp=(_tmp)->Pike_mark_sp;\
-       Pike_mark_stack=(_tmp)->Pike_mark_stack;\
-       mark_stack_malloced=(_tmp)->mark_stack_malloced;\
-       recoveries=(_tmp)->recoveries;\
-       Pike_sp=(_tmp)->Pike_sp;\
-       Pike_stack_top=(_tmp)->Pike_stack_top;\
-       thread_id=(_tmp)->thread_id;\
-       DO_IF_PROFILING( accounted_time=(_tmp)->accounted_time; ) \
-       DO_IF_PROFILING(  time_base =  gethrtime() - (_tmp)->time_base; ) \
-       DO_IF_SECURITY( current_creds = (_tmp)->current_creds ;) \
-       SWAP_IN_TRACE(_tmp); \
+#define SWAP_IN_THREAD(_tmp) do {					\
+       (_tmp)->swapped=0;						\
+       Pike_interpreter=(_tmp)->state;					\
+       DO_IF_PROFILING(  Pike_interpreter.time_base -=  gethrtime();)	\
      } while(0)
 
 #define SWAP_OUT_CURRENT_THREAD() \
   do {\
-     struct Pike_interpreter *_tmp=OBJ2THREAD(thread_id); \
+     struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
 			 __FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
@@ -444,9 +426,7 @@ extern struct object *current_creds;
  * environment.
  */
 #define HIDE_GLOBAL_VARIABLES() do { \
-   int Pike_sp = 0, Pike_evaluator_stack = 0, Pike_mark_sp = 0, Pike_mark_stack = 0, Pike_fp = 0; \
-   void *evaluator_stack_malloced = NULL, *mark_stack_malloced = NULL; \
-   int recoveries = 0, thread_id = 0; \
+   int Pike_interpreter =0; \
    int pop_n_elems = 0; \
    int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1
 
@@ -460,16 +440,16 @@ extern struct object *current_creds;
 #endif /* PIKE_DEBUG */
 
 #define	OBJ2THREAD(X) \
-  ((struct Pike_interpreter *)((X)->storage+thread_storage_offset))
+  ((struct thread_state *)((X)->storage+thread_storage_offset))
 
-#define THREADSTATE2OBJ(X) ((X)->thread_id)
+#define THREADSTATE2OBJ(X) ((X)->state.thread_id)
 
 #define THREADS_ALLOW() do { \
-     struct Pike_interpreter *_tmp=OBJ2THREAD(thread_id); \
+     struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \
        extern int Pike_in_gc; \
-       if(thread_for_id(th_self()) != thread_id) \
-	 fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id); \
+       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
+	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id); \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
 	 fatal("Threads allowed during garbage collection.\n"); \
      }) \
@@ -496,16 +476,16 @@ extern struct object *current_creds;
        } \
        SWAP_IN_THREAD(_tmp);\
      } \
-     DO_IF_DEBUG( if(thread_for_id(th_self()) != thread_id) \
-        fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id) ; ) \
+     DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
+        fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id) ; ) \
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
-     struct Pike_interpreter *_tmp_uid=OBJ2THREAD(thread_id); \
+     struct thread_state *_tmp_uid=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \
        extern int Pike_in_gc; \
-       if(thread_for_id(th_self()) != thread_id) \
-	 fatal("thread_for_id() (or thread_id) failed! %p != %p\n",thread_for_id(th_self()),thread_id); \
+       if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
+	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id); \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \
 	 fatal("Threads allowed during garbage collection.\n"); \
      }) \
@@ -538,13 +518,13 @@ extern struct object *current_creds;
    } while(0)
 
 #define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
-  struct Pike_interpreter *_tmp=thread_state_for_id(th_self());	\
+  struct thread_state *_tmp=thread_state_for_id(th_self());	\
   HIDE_GLOBAL_VARIABLES();					\
   THREADS_DISALLOW()
 
 #ifdef PIKE_DEBUG
 #define ASSERT_THREAD_SWAPPED_IN() do {				\
-    struct Pike_interpreter *_tmp=thread_state_for_id(th_self());	\
+    struct thread_state *_tmp=thread_state_for_id(th_self());	\
     if(_tmp->swapped) fatal("Thread is not swapped in!\n");	\
   }while(0)
 
@@ -568,7 +548,7 @@ void thread_table_init(void);
 unsigned INT32 thread_table_hash(THREAD_T *tid);
 void thread_table_insert(struct object *o);
 void thread_table_delete(struct object *o);
-struct Pike_interpreter *thread_state_for_id(THREAD_T tid);
+struct thread_state *thread_state_for_id(THREAD_T tid);
 struct object *thread_for_id(THREAD_T tid);
 void f_all_threads(INT32 args);
 int count_pike_threads(void);
@@ -621,7 +601,7 @@ void th_farm(void (*fun)(void *), void *here);
 #define mt_lock(X)
 #define mt_unlock(X)
 #define mt_destroy(X)
-#define THREADS_ALLOW()
+#define THREAS_ALLOW()
 #define THREADS_DISALLOW()
 #define THREADS_ALLOW_UID()
 #define THREADS_DISALLOW_UID()

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.43 2000/02/22 03:41:27 per Exp $
+**!	$Id: layers.c,v 1.44 2000/07/07 00:40:19 hubbe Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.43 2000/02/22 03:41:27 per Exp $");
+RCSID("$Id: layers.c,v 1.44 2000/07/07 00:40:19 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -296,8 +296,8 @@ struct layer
 };
 
 #undef THIS
-#define THIS ((struct layer *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct layer *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 #define LMFUNC(X) \
    static void X(rgb_group *s,rgb_group *l,rgb_group *d, \
@@ -586,14 +586,18 @@ static INLINE void smear_color(rgb_group *d,rgb_group s,int len)
 #define MAX3(X,Y,Z) MAXIMUM(MAXIMUM(X,Y),Z)
 #define MIN3(X,Y,Z) MINIMUM(MINIMUM(X,Y),Z)
 
-static INLINE void rgb_to_hsv(rgb_group color,double *hp,double *sp,double *vp)
+/* Pike_sp was renamed to not_sp by hubbe */
+static INLINE void rgb_to_hsv(rgb_group color,
+			      double *hp,
+			      double *not_sp,
+			      double *vp)
 {
    double max,min,delta;
    double r,g,b;
 
    if (color.r==color.g && color.g==color.b)
    {
-      *hp=*sp=0.0;
+      *hp=*not_sp=0.0;
       *vp=C2F(color.r);
       return;
    }
@@ -607,7 +611,7 @@ static INLINE void rgb_to_hsv(rgb_group color,double *hp,double *sp,double *vp)
 
    *vp = max;
 
-   *sp = (max - min)/max;
+   *not_sp = (max - min)/max;
 
    delta = max-min;
 
@@ -733,17 +737,17 @@ static void image_layer_set_image(INT32 args)
    THIS->alp=NULL;
 
    if (args>=1)
-      if ( sp[-args].type!=T_OBJECT )
+      if ( Pike_sp[-args].type!=T_OBJECT )
       {
-	 if (sp[-args].type!=T_INT ||
-	     sp[-args].u.integer!=0)
+	 if (Pike_sp[-args].type!=T_INT ||
+	     Pike_sp[-args].u.integer!=0)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
 				 "object(Image)|int(0)");
       }
       else if ((img=(struct image*)
-		get_storage(sp[-args].u.object,image_program)))
+		get_storage(Pike_sp[-args].u.object,image_program)))
       {
-	 THIS->image=sp[-args].u.object;
+	 THIS->image=Pike_sp[-args].u.object;
 	 add_ref(THIS->image);
 	 THIS->img=img;
 	 THIS->xsize=img->xsize;
@@ -754,15 +758,15 @@ static void image_layer_set_image(INT32 args)
 			      "object(Image)|int(0)");
 
    if (args>=2)
-      if ( sp[1-args].type!=T_OBJECT )
+      if ( Pike_sp[1-args].type!=T_OBJECT )
       {
-	 if (sp[1-args].type!=T_INT ||
-	     sp[1-args].u.integer!=0)
+	 if (Pike_sp[1-args].type!=T_INT ||
+	     Pike_sp[1-args].u.integer!=0)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
 				 "object(Image)|int(0)");
       }
       else if ((img=(struct image*)
-		get_storage(sp[1-args].u.object,image_program)))
+		get_storage(Pike_sp[1-args].u.object,image_program)))
       {
 	 if (THIS->img &&
 	     (img->xsize!=THIS->xsize ||
@@ -774,7 +778,7 @@ static void image_layer_set_image(INT32 args)
 	    THIS->xsize=img->xsize;
 	    THIS->ysize=img->ysize;
 	 }
-	 THIS->alpha=sp[1-args].u.object;
+	 THIS->alpha=Pike_sp[1-args].u.object;
 	 add_ref(THIS->alpha);
 	 THIS->alp=img;
       }
@@ -816,7 +820,7 @@ static void image_layer_set_misc_value( INT32 args )
   if( !THIS->misc )
     THIS->misc = allocate_mapping( 4 );
 
-  mapping_insert( THIS->misc, sp-2, sp-1 );
+  mapping_insert( THIS->misc, Pike_sp-2, Pike_sp-1 );
   stack_swap();
   pop_stack();
 }
@@ -918,11 +922,11 @@ static void image_layer_set_mode(INT32 args)
    int i;
    if (args!=1)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->set_mode",1);
-   if (sp[-args].type!=T_STRING)
+   if (Pike_sp[-args].type!=T_STRING)
       SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"string");
 
    for (i=0; i<LAYER_MODES; i++)
-      if (sp[-args].u.string==layer_mode[i].ps)
+      if (Pike_sp[-args].u.string==layer_mode[i].ps)
       {
 	 THIS->row_func=layer_mode[i].func;
 	 THIS->optimize_alpha=layer_mode[i].optimize_alpha;
@@ -988,7 +992,7 @@ static void image_layer_set_fill(INT32 args)
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->set_fill",1);
 
-   if (sp[-args].type==T_INT && !sp[-args].u.integer)
+   if (Pike_sp[-args].type==T_INT && !Pike_sp[-args].u.integer)
       THIS->fill=black;
    else
       if (!image_color_arg(-args,&(THIS->fill)))
@@ -998,7 +1002,7 @@ static void image_layer_set_fill(INT32 args)
 
    THIS->fill_alpha=white;
    if (args>1)
-      if (sp[1-args].type==T_INT && !sp[1-args].u.integer)
+      if (Pike_sp[1-args].type==T_INT && !Pike_sp[1-args].u.integer)
 	 ; /* white is good */
       else
 	 if (!image_color_arg(1-args,&(THIS->fill_alpha)))
@@ -1169,7 +1173,7 @@ static INLINE void try_parameter(char *a,void (*f)(INT32))
    push_text(a);
    f_index(2);
 
-   if (!IS_UNDEFINED(sp-1))
+   if (!IS_UNDEFINED(Pike_sp-1))
       f(1);
    pop_stack();
 }
@@ -1184,8 +1188,8 @@ static INLINE void try_parameter_pair(char *a,char *b,void (*f)(INT32))
    push_text(b); /* map map[a] map b */
    f_index(2);   /* map map[a] map[b] */
 
-   if (!IS_UNDEFINED(sp-2) ||
-       !IS_UNDEFINED(sp-1))
+   if (!IS_UNDEFINED(Pike_sp-2) ||
+       !IS_UNDEFINED(Pike_sp-1))
    {
       f(2);
       pop_stack();
@@ -1198,7 +1202,7 @@ static void image_layer_create(INT32 args)
 {
    if (!args)
       return;
-   if (sp[-args].type==T_MAPPING)
+   if (Pike_sp[-args].type==T_MAPPING)
    {
       pop_n_elems(args-1);
       try_parameter_pair("image","alpha",image_layer_set_image);
@@ -1212,8 +1216,8 @@ static void image_layer_create(INT32 args)
       pop_stack();
       return;
    }
-   else if (sp[-args].type==T_INT && args>1
-	    && sp[1-args].type==T_INT)
+   else if (Pike_sp[-args].type==T_INT && args>1
+	    && Pike_sp[1-args].type==T_INT)
    {
       rgb_group col=black,alpha=white;
 
@@ -1244,7 +1248,7 @@ static void image_layer_create(INT32 args)
 
       pop_n_elems(args);
    }
-   else if (sp[-args].type==T_OBJECT || args>1)
+   else if (Pike_sp[-args].type==T_OBJECT || args>1)
    {
       if (args>2)
       {
@@ -1265,9 +1269,9 @@ static void image_layer_cast(INT32 args)
 {
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.Layer->cast",1);
-   if (sp[-args].type==T_STRING||sp[-args].u.string->size_shift)
+   if (Pike_sp[-args].type==T_STRING||Pike_sp[-args].u.string->size_shift)
    {
-      if (strncmp(sp[-args].u.string->str,"mapping",7)==0)
+      if (strncmp(Pike_sp[-args].u.string->str,"mapping",7)==0)
       {
 	 int n=0;
 	 pop_n_elems(args);
@@ -2526,7 +2530,7 @@ void image_lay(INT32 args)
    if (!args)
       SIMPLE_TOO_FEW_ARGS_ERROR("Image.lay",1);
 
-   if (sp[-args].type!=T_ARRAY)
+   if (Pike_sp[-args].type!=T_ARRAY)
       SIMPLE_BAD_ARG_ERROR("Image.lay",1,
 			   "array(Image.Layer|mapping)");
 
@@ -2540,7 +2544,7 @@ void image_lay(INT32 args)
 	 SIMPLE_BAD_ARG_ERROR("Image.lay",5,"int(1..)");
    }
 
-   layers=(a=sp[-args].u.array)->size;
+   layers=(a=Pike_sp[-args].u.array)->size;
 
    if (!layers) /* dummy return empty layer */
    {
@@ -2620,7 +2624,7 @@ void image_lay(INT32 args)
 
    free(l);
 
-   sp--;
+   Pike_sp--;
    pop_n_elems(args);
    push_object(o);
 }
@@ -2630,7 +2634,7 @@ void image_lay(INT32 args)
 static INLINE struct layer *push_new_layer()
 {
    push_object(clone_object(image_layer_program,0));
-   return (struct layer*)get_storage(sp[-1].u.object,image_layer_program);
+   return (struct layer*)get_storage(Pike_sp[-1].u.object,image_layer_program);
 }
 
 static INLINE struct layer *clone_this_layer()
@@ -2722,8 +2726,8 @@ static void image_layer_crop(INT32 args)
       push_int(THIS->fill.g);
       push_int(THIS->fill.b);
       f_call_function(8);
-      if (sp[-1].type!=T_OBJECT ||
-	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
+      if (Pike_sp[-1].type!=T_OBJECT ||
+	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
 	 error("No image returned from image->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 error("Image returned from image->copy had "
@@ -2731,9 +2735,9 @@ static void image_layer_crop(INT32 args)
 	       img->xsize,img->ysize,xz,yz);
 
       free_object(l->image);
-      l->image=sp[-1].u.object;
-      sp--;
-      dmalloc_touch_svalue(sp);
+      l->image=Pike_sp[-1].u.object;
+      Pike_sp--;
+      dmalloc_touch_svalue(Pike_sp);
       l->img=img;
    }
 
@@ -2750,17 +2754,17 @@ static void image_layer_crop(INT32 args)
       push_int(THIS->fill_alpha.g);
       push_int(THIS->fill_alpha.b);
       f_call_function(8);
-      if (sp[-1].type!=T_OBJECT ||
-	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
+      if (Pike_sp[-1].type!=T_OBJECT ||
+	  !(img=(struct image*)get_storage(Pike_sp[-1].u.object,image_program)))
 	 error("No image returned from alpha->copy\n");
       if (img->xsize!=xz || img->ysize!=yz)
 	 error("Image returned from alpha->copy had "
 	       "unexpected size (%d,%d, expected %d,%d)\n",
 	       img->xsize,img->ysize,xz,yz);
       free_object(l->alpha);
-      l->alpha=sp[-1].u.object;
-      sp--;
-      dmalloc_touch_svalue(sp);
+      l->alpha=Pike_sp[-1].u.object;
+      Pike_sp--;
+      dmalloc_touch_svalue(Pike_sp);
       l->alp=img;
    }
 
@@ -2842,9 +2846,9 @@ static void image_layer_find_autocrop(INT32 args)
 void image_layer_autocrop(INT32 args)
 {
    image_layer_find_autocrop(args);
-   sp--;
-   dmalloc_touch_svalue(sp);
-   push_array_items(sp->u.array); /* frees */
+   Pike_sp--;
+   dmalloc_touch_svalue(Pike_sp);
+   push_array_items(Pike_sp->u.array); /* frees */
    image_layer_crop(4);
 }
 

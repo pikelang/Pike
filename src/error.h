@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.44 2000/06/05 14:29:11 grubba Exp $
+ * $Id: error.h,v 1.45 2000/07/07 00:21:48 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -58,9 +58,9 @@ typedef struct JMP_BUF
 {
   struct JMP_BUF *previous;
   jmp_buf recovery;
-  struct pike_frame *Pike_fp;
-  INT32 Pike_sp;
-  INT32 Pike_mark_sp;
+  struct pike_frame *frame_pointer;
+  INT32 stack_pointer;
+  INT32 mark_sp;
   INT32 severity;
   ONERROR *onerror;
 #ifdef PIKE_DEBUG
@@ -69,7 +69,6 @@ typedef struct JMP_BUF
 #endif
 } JMP_BUF;
 
-extern JMP_BUF *recoveries;
 extern struct svalue throw_value;
 extern int throw_severity;
 
@@ -78,13 +77,13 @@ extern int throw_severity;
    check_recovery_context(); \
    OED_FPRINTF((stderr, "unsetjmp(%p) %s:%d\n", \
                 &(X),  __FILE__, __LINE__)); \
-  if(recoveries != &X) { \
-    if(recoveries) \
-      fatal("UNSETJMP out of sync! (last SETJMP at %s:%d)!\n",recoveries->file,recoveries->line); \
+  if(Pike_interpreter.recoveries != &X) { \
+    if(Pike_interpreter.recoveries) \
+      fatal("UNSETJMP out of sync! (last SETJMP at %s:%d)!\n",Pike_interpreter.recoveries->file,Pike_interpreter.recoveries->line); \
     else \
-      fatal("UNSETJMP out of sync! (recoveries = 0)\n"); \
+      fatal("UNSETJMP out of sync! (Pike_interpreter.recoveries = 0)\n"); \
     } \
-    recoveries=X.previous; \
+    Pike_interpreter.recoveries=X.previous; \
    check_recovery_context(); \
   }while (0)
 #define DEBUG_LINE_ARGS ,int line, char *file
@@ -92,7 +91,7 @@ extern int throw_severity;
 #else
 #define DEBUG_LINE_ARGS 
 #define SETJMP(X) setjmp((init_recovery(&X)->recovery))
-#define UNSETJMP(X) recoveries=X.previous
+#define UNSETJMP(X) Pike_interpreter.recoveries=X.previous
 #endif
 
 
@@ -105,36 +104,36 @@ extern int throw_severity;
      X.func=(error_call)(Y); \
      DO_IF_DMALLOC( if( X.func == free ) X.func=dmalloc_free;) \
      X.arg=(void *)(Z); \
-     if(!recoveries) break; \
-     X.previous=recoveries->onerror; \
+     if(!Pike_interpreter.recoveries) break; \
+     X.previous=Pike_interpreter.recoveries->onerror; \
      X.file = __FILE__; \
      X.line = __LINE__; \
-     recoveries->onerror=&X; \
+     Pike_interpreter.recoveries->onerror=&X; \
   }while(0)
 
 #define UNSET_ONERROR(X) do {\
     check_recovery_context(); \
     OED_FPRINTF((stderr, "UNSET_ONERROR(%p) %s:%d\n", \
                  &(X), __FILE__, __LINE__)); \
-    if(!recoveries) break; \
-    if(recoveries->onerror != &(X)) { \
-      fprintf(stderr,"LAST SETJMP: %s:%d\n",recoveries->file,recoveries->line); \
-      if (recoveries->onerror) { \
+    if(!Pike_interpreter.recoveries) break; \
+    if(Pike_interpreter.recoveries->onerror != &(X)) { \
+      fprintf(stderr,"LAST SETJMP: %s:%d\n",Pike_interpreter.recoveries->file,Pike_interpreter.recoveries->line); \
+      if (Pike_interpreter.recoveries->onerror) { \
         fatal("UNSET_ONERROR out of sync (%p != %p).\n" \
               "Last SET_ONERROR is from %s:%d\n",\
-              recoveries->onerror, &(X), \
-              recoveries->onerror->file, recoveries->onerror->line ); \
+              Pike_interpreter.recoveries->onerror, &(X), \
+              Pike_interpreter.recoveries->onerror->file, Pike_interpreter.recoveries->onerror->line ); \
       } else { \
-        fatal("UNSET_ONERROR out of sync. No recoveries left.\n"); \
+        fatal("UNSET_ONERROR out of sync. No Pike_interpreter.recoveries left.\n"); \
       } \
     } \
-    recoveries->onerror=(X).previous; \
+    Pike_interpreter.recoveries->onerror=(X).previous; \
   } while(0)
 
 #define ASSERT_ONERROR(X) \
   do{ \
-    if (!recoveries) break; \
-    if (recoveries->onerror != &X) { \
+    if (!Pike_interpreter.recoveries) break; \
+    if (Pike_interpreter.recoveries->onerror != &X) { \
       fatal("%s:%d ASSERT_ONERROR(%p) failed\n", \
             __FILE__, __LINE__, &(X)); \
     } \
@@ -144,12 +143,12 @@ extern int throw_severity;
   do{ \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
-     if(!recoveries) break; \
-     X.previous=recoveries->onerror; \
-     recoveries->onerror=&X; \
+     if(!Pike_interpreter.recoveries) break; \
+     X.previous=Pike_interpreter.recoveries->onerror; \
+     Pike_interpreter.recoveries->onerror=&X; \
   }while(0)
 
-#define UNSET_ONERROR(X) recoveries && (recoveries->onerror=X.previous)
+#define UNSET_ONERROR(X) Pike_interpreter.recoveries && (Pike_interpreter.recoveries->onerror=X.previous)
 
 #define ASSERT_ONERROR(X)
 #endif /* PIKE_DEBUG */
