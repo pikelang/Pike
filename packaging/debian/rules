@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.37 2003/01/27 23:43:23 grendel Exp $
+# $Id: rules,v 1.38 2003/01/27 23:53:19 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -44,6 +44,7 @@ BUILDDIR=build/$(OS)
 CFARGS=--without-rtldebug \
        --without-cdebug \
        --without-ssleay \
+       --with-security \
        --with-bignums \
        --with-gmp \
        --with-poll \
