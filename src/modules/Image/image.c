@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.210 2004/05/02 21:04:32 nilsson Exp $
+|| $Id: image.c,v 1.211 2004/05/02 23:04:00 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.210 2004/05/02 21:04:32 nilsson Exp $");
+RCSID("$Id: image.c,v 1.211 2004/05/02 23:04:00 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -741,11 +741,12 @@ static void image_gradients(INT32 args);
 static void image_tuned_box(INT32 args);
 static void image_test(INT32 args);
 
+static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_cmy;
+static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
+  *s_random,*s_randomgrey,*s_tuned_box;
+
 void image_create_method(INT32 args)
 {
-   static struct pike_string *s_grey,*s_rgb,*s_cmyk,*s_cmy;
-   static struct pike_string *s_test,*s_gradients,*s_noise,*s_turbulence,
-      *s_random,*s_randomgrey,*s_tuned_box;
    struct image *img;
 
    if (!args)
@@ -754,17 +755,19 @@ void image_create_method(INT32 args)
    if (sp[-args].type!=T_STRING)
       SIMPLE_BAD_ARG_ERROR("create_method",1,"string");
 
-   MAKE_CONSTANT_SHARED_STRING(s_grey,"grey");
-   MAKE_CONSTANT_SHARED_STRING(s_rgb,"rgb");
-   MAKE_CONSTANT_SHARED_STRING(s_cmyk,"cmyk");
-   MAKE_CONSTANT_SHARED_STRING(s_cmy,"cmy");
-   MAKE_CONSTANT_SHARED_STRING(s_test,"test");
-   MAKE_CONSTANT_SHARED_STRING(s_gradients,"gradients");
-   MAKE_CONSTANT_SHARED_STRING(s_noise,"noise");
-   MAKE_CONSTANT_SHARED_STRING(s_turbulence,"turbulence");
-   MAKE_CONSTANT_SHARED_STRING(s_random,"random");
-   MAKE_CONSTANT_SHARED_STRING(s_randomgrey,"randomgrey");
-   MAKE_CONSTANT_SHARED_STRING(s_tuned_box,"tuned_box");
+   if(!s_grey) {
+     MAKE_CONSTANT_SHARED_STRING(s_grey,"grey");
+     MAKE_CONSTANT_SHARED_STRING(s_rgb,"rgb");
+     MAKE_CONSTANT_SHARED_STRING(s_cmyk,"cmyk");
+     MAKE_CONSTANT_SHARED_STRING(s_cmy,"cmy");
+     MAKE_CONSTANT_SHARED_STRING(s_test,"test");
+     MAKE_CONSTANT_SHARED_STRING(s_gradients,"gradients");
+     MAKE_CONSTANT_SHARED_STRING(s_noise,"noise");
+     MAKE_CONSTANT_SHARED_STRING(s_turbulence,"turbulence");
+     MAKE_CONSTANT_SHARED_STRING(s_random,"random");
+     MAKE_CONSTANT_SHARED_STRING(s_randomgrey,"randomgrey");
+     MAKE_CONSTANT_SHARED_STRING(s_tuned_box,"tuned_box");
+   }
 
    if (THIS->xsize<=0 || THIS->ysize<=0)
       Pike_error("create_method: image size is too small\n");
@@ -800,8 +803,20 @@ void image_create_method(INT32 args)
 
    if (sp[-args].u.string==s_test)
       image_test(args-1);
-   else if (sp[-args].u.string==s_gradients)
-      image_gradients(args-1);
+   else if (sp[-args].u.string==s_gradients) {
+     if(args<2) {
+       push_int(THIS->xsize/2);
+       push_int(0);
+       push_int(0); push_int(0); push_int(0);
+       f_aggregate(5);
+       push_int(THIS->xsize/2);
+       push_int(THIS->ysize);
+       push_int(255); push_int(255); push_int(255);
+       f_aggregate(5);
+       args+=2;
+     }
+     image_gradients(args-1);
+   }
    else if (sp[-args].u.string==s_noise)
       image_noise(args-1);
    else if (sp[-args].u.string==s_turbulence)
@@ -816,12 +831,14 @@ void image_create_method(INT32 args)
 
       THIS->img=(rgb_group*)
 	 xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize);
+
       if (args>2) pop_n_elems(args-2);
       push_int(0); stack_swap();
       push_int(0); stack_swap();
       push_int(THIS->xsize-1); stack_swap();
       push_int(THIS->ysize-1); stack_swap();
       image_tuned_box(5);
+      return;
    }
    else 
       Pike_error("create_method: unknown method\n");
@@ -1084,9 +1101,9 @@ void image_copy(INT32 args)
 
 /*
 **! method object change_color(int tor,int tog,int tob)
-**! method object change_color(int fromr,int fromg,int fromb, int tor,int tog,int tob)
-**! 	Changes one color (exakt match) to another.
-**!	If non-exakt-match is preferred, check <ref>distancesq</ref>
+**! method object change_color(int fromr,int fromg,int fromb,int tor,int tog,int tob)
+**! 	Changes one color (exact match) to another.
+**!	If non-exact-match is preferred, check <ref>distancesq</ref>
 **!	and <ref>paste_alpha_color</ref>.
 **! returns a new (the destination) image object
 **!
@@ -4864,6 +4881,18 @@ void init_image_image(void)
    s_value=0;
    s_saturation=0;
    s_hue=0;
+
+   s_grey=0;
+   s_rgb=0;
+   s_cmyk=0;
+   s_cmy=0;
+   s_test=0;
+   s_gradients=0;
+   s_noise=0;
+   s_turbulence=0;
+   s_random=0;
+   s_randomgrey=0;
+   s_tuned_box=0;
 }
 
 void exit_image_image(void) 
@@ -4875,5 +4904,19 @@ void exit_image_image(void)
     free_string(s_value);
     free_string(s_saturation);
     free_string(s_hue);
+  }
+
+  if(s_grey) {
+   free_string(s_grey);
+   free_string(s_rgb);
+   free_string(s_cmyk);
+   free_string(s_cmy);
+   free_string(s_test);
+   free_string(s_gradients);
+   free_string(s_noise);
+   free_string(s_turbulence);
+   free_string(s_random);
+   free_string(s_randomgrey);
+   free_string(s_tuned_box);
   }
 }
