@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.347 2001/02/28 04:18:42 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.348 2001/03/03 00:23:21 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2435,7 +2435,11 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
 #if 1
     if(deftype)
     {
+#ifdef USE_PIKE_TYPE
+      t2 = make_pike_type(deftype);
+#else /* !USE_PIKE_TYPE */
       t2 = make_shared_binary_string(deftype, deftypelen);
+#endif /* USE_PIKE_TYPE */
       t = n->type;
       n->type = or_pike_types(t,t2,0);
       free_type(t);
@@ -2521,7 +2525,7 @@ static node *fix_aggregate_mapping_type(node *n)
 	/* FIXME: Should get the type from the pushed array. */
 	/* FIXME: Should probably be fixed in las.c:fix_type_field() */
 	/* FIXME: */
-	MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tMixed, tMixed));
+	MAKE_CONSTANT_TYPE(new_type, tMap(tMixed, tMixed));
 	goto set_type;
       }
 #ifdef PIKE_DEBUG
@@ -2559,8 +2563,7 @@ static node *fix_aggregate_mapping_type(node *n)
     }
 
     if (!types[0]) {
-      /* FIXME: */
-      MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tZero, tZero));
+      MAKE_CONSTANT_TYPE(new_type, tMap(tZero, tZero));
       goto set_type;
     }
 
@@ -2570,8 +2573,7 @@ static node *fix_aggregate_mapping_type(node *n)
     push_type(T_MAPPING);
     new_type = pop_unfinished_type();
   } else {
-    /* FIXME: */
-    MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tZero, tZero));
+    MAKE_CONSTANT_TYPE(new_type, tMap(tZero, tZero));
     goto set_type;
   }
   if (new_type) {

@@ -16,7 +16,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.27 2001/02/23 14:29:35 grubba Exp $");
+RCSID("$Id: constants.c,v 1.28 2001/03/03 00:23:45 grubba Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -147,8 +147,12 @@ PMOD_EXPORT struct callable *quick_add_efun(char *name, ptrdiff_t name_length,
   struct pike_type *t;
   struct callable *ret;
 
-  n=make_shared_binary_string(name,name_length);
-  t=make_shared_binary_string(type,type_length);
+  n = make_shared_binary_string(name, name_length);
+#ifdef USE_PIKE_TYPE
+  t = make_pike_type(type);
+#else /* !USE_PIKE_TYPE */
+  t = make_shared_binary_string(type, type_length);
+#endif /* USE_PIKE_TYPE */
 #ifdef DEBUG
   check_type_string(t);
 #endif

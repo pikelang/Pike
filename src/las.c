@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.241 2001/02/25 13:37:50 grubba Exp $");
+RCSID("$Id: las.c,v 1.242 2001/03/03 00:22:44 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3452,9 +3452,9 @@ void fix_type_field(node *n)
 	  /* Check the iterator type */
 	  struct pike_type *iterator_type;
 	  struct pike_type *foreach_call_type;
-	  MAKE_CONSTANT_SHARED_STRING(iterator_type,
-				      tOr5(tArray, tStr, tObj,
-					   tMapping, tMultiset));
+	  MAKE_CONSTANT_TYPE(iterator_type,
+			     tOr5(tArray, tStr, tObj,
+				  tMapping, tMultiset));
 	  if (!pike_types_le(CAAR(n)->type, iterator_type)) {
 	    if (!match_types(CAAR(n)->type, iterator_type)) {
 	      yytype_error("Bad argument 1 to foreach()", iterator_type,
@@ -3484,13 +3484,13 @@ void fix_type_field(node *n)
 	    /* Check the index type */
 	    struct pike_type *index_fun_type;
 	    struct pike_type *index_type;
-	    MAKE_CONSTANT_SHARED_STRING(index_fun_type,
-					tOr4(tFunc(tOr(tArray, tStr), tZero),
-					     tFunc(tMap(tSetvar(0, tMix),
-							tMix), tVar(0)),
-					     tFunc(tSet(tSetvar(1, tMix)),
-						   tVar(1)),
-					     tFunc(tObj, tZero)));
+	    MAKE_CONSTANT_TYPE(index_fun_type,
+			       tOr4(tFunc(tOr(tArray, tStr), tZero),
+				    tFunc(tMap(tSetvar(0, tMix),
+					       tMix), tVar(0)),
+				    tFunc(tSet(tSetvar(1, tMix)),
+					  tVar(1)),
+				    tFunc(tObj, tZero)));
 	    index_type = check_call(foreach_call_type, index_fun_type, 0);
 	    if (!index_type) {
 	      /* Should not happen. */
@@ -3513,14 +3513,14 @@ void fix_type_field(node *n)
 	    /* Check the value type */
 	    struct pike_type *value_fun_type;
 	    struct pike_type *value_type;
-	    MAKE_CONSTANT_SHARED_STRING(value_fun_type,
-					tOr5(tFunc(tArr(tSetvar(0, tMix)),
-						   tVar(0)),
-					     tFunc(tStr, tZero),
-					     tFunc(tMap(tMix,tSetvar(1, tMix)),
-						   tVar(1)),
-					     tFunc(tMultiset, tInt1),
-					     tFunc(tObj, tZero)));
+	    MAKE_CONSTANT_TYPE(value_fun_type,
+			       tOr5(tFunc(tArr(tSetvar(0, tMix)),
+					  tVar(0)),
+				    tFunc(tStr, tZero),
+				    tFunc(tMap(tMix,tSetvar(1, tMix)),
+					  tVar(1)),
+				    tFunc(tMultiset, tInt1),
+				    tFunc(tObj, tZero)));
 	    value_type = check_call(foreach_call_type, value_fun_type, 0);
 	    if (!value_type) {
 	      /* Should not happen. */
@@ -3543,7 +3543,7 @@ void fix_type_field(node *n)
 	} else {
 	  /* Old-style foreach */
 	  struct pike_type *array_zero;
-	  MAKE_CONSTANT_SHARED_STRING(array_zero, tArr(tZero));
+	  MAKE_CONSTANT_TYPE(array_zero, tArr(tZero));
 	  
 	  if (!pike_types_le(array_zero, CAAR(n)->type)) {
 	    yyerror("Bad argument 1 to foreach().");
@@ -3606,7 +3606,7 @@ void fix_type_field(node *n)
       }
     }
     /* FIXME: */
-    MAKE_CONSTANT_SHARED_STRING(n->type, tIntPos);
+    MAKE_CONSTANT_TYPE(n->type, tIntPos);
     break;
 
   case F_UNDEFINED:
@@ -3647,12 +3647,12 @@ void fix_type_field(node *n)
   case F_MAGIC_INDEX:
     /* FIXME: Could have a stricter type for ::`->(). */
     /* FIXME: */
-    MAKE_CONSTANT_SHARED_STRING(n->type, tFunc(tMix,tMix));
+    MAKE_CONSTANT_TYPE(n->type, tFunc(tMix,tMix));
     break;
   case F_MAGIC_SET_INDEX:
     /* FIXME: Could have a stricter type for ::`->=(). */
     /* FIXME: */
-    MAKE_CONSTANT_SHARED_STRING(n->type, tFunc(tMix tSetvar(0,tMix), tVar(0)));
+    MAKE_CONSTANT_TYPE(n->type, tFunc(tMix tSetvar(0,tMix), tVar(0)));
     break;
 
   case F_CATCH:
@@ -4004,7 +4004,7 @@ static node *low_localopt(node *n,
       if (!(usage[CDR(n)->u.integer.a] & 1)) {
 	/* Value isn't used. */
 	struct pike_type *ref_type;
-	MAKE_CONSTANT_SHARED_STRING(ref_type, tOr(tComplex, tString));
+	MAKE_CONSTANT_TYPE(ref_type, tOr(tComplex, tString));
 	if (!match_types(CDR(n)->type, ref_type)) {
 	  /* The variable doesn't hold a refcounted value. */
 	  free_type(ref_type);

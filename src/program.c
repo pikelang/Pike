@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.299 2001/02/24 22:02:13 grubba Exp $");
+RCSID("$Id: program.c,v 1.300 2001/03/03 00:24:40 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2583,8 +2583,12 @@ PMOD_EXPORT int quick_map_variable(char *name,
 	   compilation_depth, "                ", Pike_compiler->compiler_pass, type, name);
 #endif
 
-  n=make_shared_binary_string(name,name_length);
-  t=make_shared_binary_string(type,type_length);
+  n = make_shared_binary_string(name, name_length);
+#ifdef USE_PIKE_TYPE
+  t = make_pike_type(type);
+#else /* !USE_PIKE_TYPE */
+  t = make_shared_binary_string(type, type_length);
+#endif /* USE_PIKE_TYPE */
   ret=low_define_variable(n,t,flags,offset,run_time_type);
   free_string(n);
   free_type(t);
@@ -3939,8 +3943,12 @@ PMOD_EXPORT int quick_add_function(char *name,
   struct pike_type *type_tmp;
   union idptr tmp;
 /*  fprintf(stderr,"ADD_FUNC: %s\n",name); */
-  name_tmp = make_shared_binary_string(name,name_length);
-  type_tmp = make_shared_binary_string(type,type_length);
+  name_tmp = make_shared_binary_string(name, name_length);
+#ifdef USE_PIKE_TYPE
+  type_tmp = make_pike_type(type);
+#else /* !USE_PIKE_TYPE */
+  type_tmp = make_shared_binary_string(type, type_length);
+#endif /* USE_PIKE_TYPE */
 
   if(cfun)
   {
