@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.21 1999/11/12 14:32:53 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.22 1999/11/12 18:51:04 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.21 1999/11/12 14:32:53 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.22 1999/11/12 18:51:04 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -523,13 +523,18 @@ string fix_action(string s)
 
     new_node = b * "";
 
-    string clean_up = "\n";
+    string pre_cleanup = "\n";
+    string post_cleanup = "\n";
 
     if (sizeof(used_nodes)) {
-      clean_up = "\nADD_NODE_REF(" +
-	(indices(used_nodes) * ");\nADD_NODE_REF(") + ");\n";
+      pre_cleanup = "\n  ADD_NODE_REF2(" +
+	(indices(used_nodes) * ",\n  ADD_NODE_REF2(") + ",\n  ";
+      post_cleanup = "\n  " + (")" * sizeof(used_nodes)) + ";\n";
     }
-    a[i] = "tmp1" + new_node + clean_up + "goto use_tmp1;" + rest;
+    a[i] = pre_cleanup +
+      "  tmp1" + new_node +
+      post_cleanup +
+      "  goto use_tmp1;" + rest;
   }
   s = a * "";
 
@@ -696,19 +701,23 @@ void parse_data()
 	action = "goto use_cdr;";
 	break;
       default:
-	string fix_refs = "";
+	string pre_fix_refs = "";
+	string post_fix_refs = "";
 	if (sizeof(t)) {
-	  fix_refs = "  ADD_NODE_REF(" +
-	    t * ");\n  ADD_NODE_REF(" +
-	    ");\n";
+	  pre_fix_refs = "  ADD_NODE_REF2(" +
+	    t * ",\n  ADD_NODE_REF2(" +
+	    ",\n  ";
+	  post_fix_refs = "  " + (")" * sizeof(t)) + ";\n";
 	}
 	action = sprintf("{\n"
+			 "%s"
 			 "  tmp1 = %s;\n"
 			 "%s"
 			 "  goto use_tmp1;\n"
 			 "}",
+			 pre_fix_refs,
 			 expr,
-			 fix_refs);
+			 post_fix_refs);
 	break;
       }
     } else {
