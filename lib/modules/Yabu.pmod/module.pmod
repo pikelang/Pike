@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.13 1999/08/25 14:24:29 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.14 1999/08/30 06:22:07 hubbe Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -21,7 +21,7 @@ constant cvs_id = "$Id: module.pmod,v 1.13 1999/08/25 14:24:29 noring Exp $";
 #undef  THREAD_SAFE
 #define LOCK() do {
 #define UNLOCK() } while(0)
-#undef  INHERIT_MUTEX
+#define INHERIT_MUTEX
 #endif
 
 
