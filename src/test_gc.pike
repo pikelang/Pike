@@ -1,649 +1,750 @@
 array(int) a() {
   int got_error = 0;
   array(string) destruct_order;
+
+  // Ugly use of constants since I'm too lazy to make a local resolver.
+
   add_constant ("destructing", lambda (string id) {destruct_order += ({id});});
   add_constant ("my_error", lambda (string s, mixed... args) {
 			      if (!got_error) werror ("\n");
 			      werror (s, @args);
 			      got_error++;
 			    });
-  program Dead = compile_string (#"
+
+  mapping valid_vars = (["nk1": 1, "nk2": 1, "n1": 1, "n2": 1, "n3": 1,
+			 "wk1": 1, "w1": 1, "w2": 1,
+			 "checkfn": 1]);
+
+  add_constant ("B_dead", compile_string ("# " + __LINE__ + #"\n
       string id;
-      void create (int i) {id = sprintf (\"dead[%d]\", i);}
-      mixed a = 1, b = 1; // Mustn't be zero at destruct time.
-      mixed x, y, z;
-      array v = set_weak_flag (({1}), 1); // Mustn't be zero at destruct time.
-      array w = set_weak_flag (({0, 0}), 1);
+      // [n]ormal or [w]eak ref, should be [k]ept after gc.
+      mixed get_nk1() {return 1;}
+      mixed get_nk2() {return 1;}
+      mixed get_n1()  {return 0;}
+      mixed get_n2()  {return 0;}
+      mixed get_n3()  {return 0;}
+      mixed get_wk1() {return 1;}
+      mixed get_w1()  {return 0;}
+      mixed get_w2()  {return 0;}
       function(object:mixed) checkfn;
       void check_live (mapping(object:int) checked) {
 	//werror (\"check_live %s\\n\", id);
 	checked[this_object()] = 1;
-	if (!a) my_error (id + \"->a got destructed too early.\\n\");
-	else if (!b) my_error (id + \"->b got destructed too early.\\n\");
-	else if (!v[0]) my_error (id + \"->v[0] got destructed too early.\\n\");
+	if (!get_nk1()) my_error (id + \"->nk1 got destructed too early.\\n\");
+	else if (!get_nk2()) my_error (id + \"->nk2 got destructed too early.\\n\");
+	else if (!get_wk1()) my_error (id + \"->wk1 got destructed too early.\\n\");
 	else if (functionp (checkfn) && !checkfn (this_object()))
 	  my_error (id + \"->checkfn failed.\\n\");
 	else {
-	  if (objectp (a) && !checked[a]) a->check_live (checked);
-	  if (objectp (b) && !checked[b]) b->check_live (checked);
-	  if (objectp (x) && !checked[x]) x->check_live (checked);
-	  if (objectp (y) && !checked[y]) y->check_live (checked);
-	  if (objectp (z) && !checked[z]) z->check_live (checked);
-	  if (objectp (v[0]) && !checked[v[0] ]) v[0]->check_live (checked);
-	  if (objectp (w[0]) && !checked[w[0] ]) w[0]->check_live (checked);
-	  if (objectp (w[1]) && !checked[w[1] ]) w[1]->check_live (checked);
+	  mixed v;
+	  if (objectp (v = get_nk1()) && !checked[v]) v->check_live (checked);
+	  if (objectp (v = get_nk2()) && !checked[v]) v->check_live (checked);
+	  if (objectp (v = get_n1())  && !checked[v]) v->check_live (checked);
+	  if (objectp (v = get_n2())  && !checked[v]) v->check_live (checked);
+	  if (objectp (v = get_n3())  && !checked[v]) v->check_live (checked);
+	  if (objectp (v = get_wk1()) && !checked[v]) v->check_live (checked);
+	  if (objectp (v = get_w1())  && !checked[v]) v->check_live (checked);
+	  if (objectp (v = get_w2())  && !checked[v]) v->check_live (checked);
 	}
 	//werror (\"check_live %s done\\n\", id);
       }
-    ");
-  add_constant ("Dead", Dead);
-  program Live = compile_string (#"
-      inherit Dead;
-      void create (int i) {id = sprintf (\"live[%d]\", i);}
+    ", __FILE__));
+
+  add_constant ("B_live", compile_string ("# " + __LINE__ + #"\n
+      inherit B_dead;
       void destroy() {
 	destructing (id);
 	//werror (\"destroy %s\\n\", id);
 	check_live (([]));
       }
-    ");
-  add_constant ("Live", Live);
-  program LiveNested = compile_string (#"
-      inherit Live;
-      string id = \"live_nested[0]\";
-      void create() {}
-      void check_live_0 (mapping(object:int) checked) {check_live (checked);}
-      class LiveNested1
-      {
-        inherit Live;
-	string id = \"live_nested[1]\";
-	void create() {}
-	void check_live (mapping(object:int) checked) {
-	  checked[this_object()] = 1;
-	  if (catch (check_live_0 (checked)))
-	    my_error (\"Parent for %s got destructed too early.\\n\", id);
-	  else ::check_live (checked);
-	}
-        void check_live_1 (mapping(object:int) checked) {check_live (checked);}
-	class LiveNested2
-	{
-	  inherit Live;
-	  string id = \"live_nested[2]\";
-	  void create() {}
-	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
-	    if (catch (check_live_1 (checked)))
-	      my_error (\"Parent for %s got destructed too early.\\n\", id);
-	    else ::check_live (checked);
-	  }
-	}
-	class LiveNested3
-	{
-	  inherit Live;
-	  string id = \"live_nested[3]\";
-	  void create() {}
-	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
-	    if (catch (check_live_1 (checked)))
-	      my_error (\"Parent for %s got destructed too early.\\n\", id);
-	    else ::check_live (checked);
-	  }
-	}
-      }
-    ");
-  program DeadNested = compile_string (#"
-      inherit Dead;
-      string id = \"dead_nested[0]\";
-      void create() {}
-      void check_live_0 (mapping(object:int) checked) {check_live (checked);}
-      class DeadNested1
-      {
-        inherit Dead;
-	string id = \"dead_nested[1]\";
-	void create() {}
-	void check_live (mapping(object:int) checked) {
-	  checked[this_object()] = 1;
-	  if (catch (check_live_0 (checked)))
-	    my_error (\"Parent for %s got destructed too early.\\n\", id);
-	  else ::check_live (checked);
-	}
-        void check_live_1 (mapping(object:int) checked) {check_live (checked);}
-	class DeadNested2
-	{
-	  inherit Dead;
-	  string id = \"dead_nested[2]\";
-	  void create() {}
-	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
-	    if (catch (check_live_1 (checked)))
-	      my_error (\"Parent for %s got destructed too early.\\n\", id);
-	    else ::check_live (checked);
-	  }
-	}
-	class DeadNested3
-	{
-	  inherit Dead;
-	  string id = \"dead_nested[3]\";
-	  void create() {}
-	  void check_live (mapping(object:int) checked) {
-	    checked[this_object()] = 1;
-	    if (catch (check_live_1 (checked)))
-	      my_error (\"Parent for %s got destructed too early.\\n\", id);
-	    else ::check_live (checked);
-	  }
-	}
-      }
-    ");
-  add_constant ("destructing");
-  add_constant ("my_error");
-  add_constant ("Dead");
-  add_constant ("Live");
+    ", __FILE__));
 
-  array(object) live, dead, live_nested, dead_nested;
+  add_constant ("B_live_nested_0", compile_string ("# " + __LINE__ + #"\n
+      inherit B_live;
+      void check_live_0 (mapping(object:int) checked) {check_live (checked);}
+      class B_live_nested_1
+      {
+	inherit B_live;
+	void check_live (mapping(object:int) checked) {
+	  checked[this_object()] = 1;
+	  if (catch (check_live_0 (checked)))
+	    my_error (\"Parent for %s got destructed too early.\\n\", id);
+	  else ::check_live (checked);
+	}
+        void check_live_1 (mapping(object:int) checked) {check_live (checked);}
+	class B_live_nested_2
+	{
+	  inherit B_live;
+	  string id = \"live_nested[2]\";
+	  void check_live (mapping(object:int) checked) {
+	    checked[this_object()] = 1;
+	    if (catch (check_live_1 (checked)))
+	      my_error (\"Parent for %s got destructed too early.\\n\", id);
+	    else ::check_live (checked);
+	  }
+	}
+	class B_live_nested_3
+	{
+	  inherit B_live;
+	  string id = \"live_nested[3]\";
+	  void check_live (mapping(object:int) checked) {
+	    checked[this_object()] = 1;
+	    if (catch (check_live_1 (checked)))
+	      my_error (\"Parent for %s got destructed too early.\\n\", id);
+	    else ::check_live (checked);
+	  }
+	}
+      }
+    ", __FILE__));
+
+  add_constant ("B_dead_nested_0", compile_string ("# " + __LINE__ + #"\n
+      inherit B_dead;
+      void check_live_0 (mapping(object:int) checked) {check_live (checked);}
+      class B_dead_nested_1
+      {
+	inherit B_dead;
+	void check_live (mapping(object:int) checked) {
+	  checked[this_object()] = 1;
+	  if (catch (check_live_0 (checked)))
+	    my_error (\"Parent for %s got destructed too early.\\n\", id);
+	  else ::check_live (checked);
+	}
+        void check_live_1 (mapping(object:int) checked) {check_live (checked);}
+	class B_dead_nested_2
+	{
+	  inherit B_dead;
+	  void check_live (mapping(object:int) checked) {
+	    checked[this_object()] = 1;
+	    if (catch (check_live_1 (checked)))
+	      my_error (\"Parent for %s got destructed too early.\\n\", id);
+	    else ::check_live (checked);
+	  }
+	}
+	class B_dead_nested_3
+	{
+	  inherit B_dead;
+	  void check_live (mapping(object:int) checked) {
+	    checked[this_object()] = 1;
+	    if (catch (check_live_1 (checked)))
+	      my_error (\"Parent for %s got destructed too early.\\n\", id);
+	    else ::check_live (checked);
+	  }
+	}
+      }
+    ", __FILE__));
+
   array(array) destruct_order_tests = ({
     ({3,			// Wanted number of live objects.
       0,			// Wanted number of dead objects.
       0,			// Wanted live nested objects.
       0,			// Wanted dead nested objects.
-      lambda() {		// Function to connect them.
-	live[0]->x = live[1], live[0]->a = live[2];
-	live[1]->x = live[0];
-      }}),
-    ({2, 2, 0, 0, lambda() {	// 1
-		    live[0]->x = live[1], live[0]->a = dead[0];
-		    live[1]->x = live[0];
-		    dead[0]->a = dead[1];
-		    dead[1]->a = dead[0];
-		  }}),
-    ({1, 2, 0, 0, lambda() {	// 2
-		    live[0]->a = live[0], live[0]->b = dead[0];
-		    dead[0]->a = dead[1];
-		    dead[1]->a = dead[0];
-		  }}),
-    ({0, 3, 0, 0, lambda() {	// 3
-		    dead[0]->a = dead[1];
-		    dead[1]->a = dead[0];
-		    dead[2]->a = dead[0], dead[2]->b = dead[2];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 4
-		    live[0]->a = live[0], live[0]->b = live[1];
-		    live[1]->a = live[2];
-		  }}),
-    ({1, 2, 0, 0, lambda() {	// 5
-		    live[0]->a = live[0], live[0]->b = dead[0];
-		    dead[0]->a = dead[1];
-		  }}),
-    ({1, 2, 0, 0, lambda() {	// 6
-		    live[0]->a = live[0], live[0]->b = dead[1];
-		    dead[0]->a = dead[0], dead[0]->b = dead[1];
-		    dead[1]->a = dead[1];
-		  }}),
-    ({2, 2, 0, 0, lambda() {	// 7
-		    live[0]->a = live[0], live[0]->b = live[1];
-		    dead[0]->a = dead[0];
-		    dead[0]->b = live[1];
-		    live[1]->a = dead[1];
-		    dead[1]->a = dead[1];
-		  }}),
-    ({1, 3, 0, 0, lambda() {	// 8
-		    live[0]->a = live[0], live[0]->b = dead[2];
-		    dead[0]->a = dead[0];
-		    dead[0]->b = dead[2];
-		    dead[2]->a = dead[1];
-		    dead[1]->a = dead[1];
-		  }}),
-    ({3, 1, 0, 0, lambda() {	// 9
-		    live[0]->a = live[0], live[0]->b = live[1];
-		    dead[0]->a = dead[0], dead[0]->b = live[1];
-		    live[1]->a = live[2];
-		  }}),
-    ({1, 3, 0, 0, lambda() {	// 10
-		    live[0]->a = live[0], live[0]->b = dead[1];
-		    dead[0]->a = dead[0], dead[0]->b = dead[1];
-		    dead[1]->a = dead[2];
-		  }}),
-    ({1, 3, 0, 0, lambda() {	// 11
-		    live[0]->a = live[0], live[0]->b = dead[1];
-		    dead[0]->a = dead[0], dead[0]->b = dead[1];
-		    dead[1]->a = dead[1], dead[1]->b = dead[2];
-		    dead[2]->a = dead[2];
-		  }}),
-    ({5, 0, 0, 0, lambda() {	// 12
-		    live[0]->x = live[1];
-		    live[1]->x = live[0], live[1]->a = live[2];
-		    live[2]->x = live[3];
-		    live[3]->x = live[2], live[3]->a = live[4];
-		    live[4]->a = live[4];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 13
-		    live[0]->x = live[1], live[0]->y = live[2];
-		    live[1]->x = live[2];
-		    live[2]->x = live[0];
-		  }}),
-    ({2, 0, 0, 0, lambda() {	// 14
-		    live[0]->a = live[1], live[0]->b = live[0];
-		    live[1]->w[0] = live[0];
-		  }}),
-    ({2, 0, 0, 0, lambda() {	// 15
-		    live[0]->a = live[0], live[0]->b = live[1];
-		    live[1]->w[0] = live[0];
-		  }}),
-    ({2, 0, 0, 0, lambda() {	// 16
-		    live[0]->a = live[0], live[0]->w[0] = live[1];
-		    live[1]->x = live[0];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 17
-		    live[0]->a = live[0], live[0]->b = live[1];
-		    live[1]->w[0] = live[2];
-		    live[2]->a = live[2], live[2]->b = live[1];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 18
-		    live[0]->a = live[1], live[0]->x = live[2];
-		    live[1]->w[0] = live[2];
-		    live[2]->x = live[0];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 19
-		    live[0]->x = live[0], live[0]->a = live[1], live[0]->b = live[2];
-		    live[1]->a = live[3];
-		    live[2]->a = live[3];
-		    live[3]->w[0] = live[0];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 20
-		    live[0]->x = live[1];
-		    live[1]->x = live[0], live[1]->a = live[2];
-		    live[2]->w[0] = live[1];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 21
-		    live[0]->w[0] = live[1], live[0]->a = live[3];
-		    live[1]->w[0] = live[2];
-		    live[2]->a = live[0], live[2]->b = live[3], live[2]->x = live[2];
-		    live[3]->a = live[1];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 22
-		    live[0]->a = dead[0], live[0]->x = live[1];
-		    live[1]->x = live[0];
-		    dead[0]->w[0] = live[1];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 23
-		    live[0]->a = live[1], live[0]->b = dead[0];
-		    live[1]->w[0] = dead[0];
-		    dead[0]->x = live[0];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 24
-		    live[0]->x = live[0], live[0]->a = live[1], live[0]->b = live[2];
-		    live[1]->w[0] = live[0], live[1]->w[1] = live[2];
-		    live[2]->a = live[1];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 25
-		    live[0]->a = live[1];
-		    live[1]->w[0] = live[2];
-		    live[2]->x = live[2], live[2]->a = live[0], live[2]->b = live[1];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 26
-		    live[0]->w[0] = live[1], live[0]->a = live[2];
-		    live[1]->x = live[1], live[1]->a = live[0], live[1]->b = live[2];
-		    live[2]->w[0] = live[1];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 27
-		    live[0]->w[0] = live[1];
-		    live[1]->x = live[1], live[1]->a = live[0], live[1]->b = live[2];
-		    live[2]->a = live[0];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 28
-		    live[0]->a = live[0], live[0]->v[0] = live[1];
-		    live[1]->a = live[1], live[1]->v[0] = live[2];
-		    live[2]->a = live[2];
-		  }}),
-    ({2, 2, 0, 0, lambda() {	// 29
-		    live[0]->x = live[1], live[0]->v[0] = dead[0];
-		    live[1]->x = live[0];
-		    dead[0]->a = dead[1];
-		    dead[1]->a = dead[0];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 30
-		    live[0]->a = live[1], live[0]->b = live[2], live[0]->v[0] = live[3];
-		    live[1]->w[0] = live[0];
-		    live[2]->a = live[3];
-		    live[3]->w[0] = live[2];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 31
-		    live[0]->a = dead[0];
-		    dead[0]->a = live[0], dead[0]->b = live[1];
-		    live[1]->a = live[1];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 32
-		    live[0]->a = live[0], live[0]->b = dead[0];
-		    live[1]->a = dead[0];
-		    dead[0]->a = live[1];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 33
-		    dead[0]->a = live[0];
-		    live[0]->a = dead[0], live[0]->b = live[1];
-		    live[1]->a = live[1];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 34
-		    live[0]->a = dead[0];
-		    dead[0]->b = live[0], dead[0]->a = live[1];
-		    live[1]->a = live[1];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 35
-		    live[0]->b = live[0], live[0]->a = dead[0];
-		    live[1]->a = dead[0];
-		    dead[0]->a = live[1];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 36
-		    dead[0]->a = live[0];
-		    live[0]->b = dead[0], live[0]->a = live[1];
-		    live[1]->a = live[1];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 37
-		    live[0]->a = live[0], live[0]->v[0] = live[1];
-		    live[0]->checkfn = lambda (object o) {
-					 return o->v[0]->w[0];
-				       };
-		    live[1]->w[0] = live[2];
-		    live[2]->a = live[1], live[2]->b = live[2];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 38
-		    live[0]->x = live[1];
-		    live[1]->x = live[2];
-		    live[2]->x = live[0], live[2]->w[0] = live[3];
-		    live[3]->a = live[1], live[3]->b = live[3];
-		  }}),
-    ({0, 2, 2, 0, lambda() {	// 39
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    dead[1]->x = dead[1], dead[1]->a = live_nested[1];
-		    live_nested[0]->x = live_nested[1];
-		  }}),
-    ({0, 2, 2, 0, lambda() {	// 40
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    dead[1]->x = dead[1], dead[1]->a = live_nested[1];
-		    live_nested[0]->w[0] = live_nested[1];
-		  }}),
-    ({3, 0, 3, 0, lambda() {	// 41
-		    live[0]->x = live[0], live[0]->a = live_nested[0];
-		    live[1]->x = live[1], live[1]->a = live_nested[2];
-		    live[2]->x = live[2], live[2]->a = live_nested[1];
-		    live_nested[0]->x = live_nested[2];
-		  }}),
-    ({4, 0, 4, 0, lambda() {	// 42
-		    live[0]->x = live[0], live[0]->a = live_nested[0];
-		    live[1]->x = live[1], live[1]->a = live_nested[1];
-		    live[2]->x = live[2], live[2]->a = live_nested[2];
-		    live[3]->x = live[3], live[3]->a = live_nested[3];
-		    live_nested[0]->x = live_nested[3];
-		  }}),
-    ({3, 0, 2, 0, lambda() {	// 43
-		    live[0]->x = live[0], live[0]->a = live_nested[0];
-		    live[1]->x = live[1], live[1]->a = live_nested[1];
-		    live_nested[0]->a = live[2];
-		    live[2]->x = live_nested[1];
-		  }}),
-    ({3, 0, 3, 0, lambda() {	// 44
-		    live[0]->x = live[0], live[0]->a = live_nested[0];
-		    live[1]->x = live[1], live[1]->a = live_nested[2];
-		    live[2]->x = live[2], live[2]->a = live_nested[1];
-		    live_nested[0]->x = live_nested[2];
-		    live_nested[1]->a = live[0];
-		  }}),
-    ({0, 2, 0, 2, lambda() {	// 45
-		    dead[0]->x = dead[0], dead[0]->a = dead_nested[0];
-		    dead[1]->x = dead[1], dead[1]->a = dead_nested[1];
-		    dead_nested[0]->x = dead_nested[1];
-		  }}),
-    ({0, 2, 0, 2, lambda() {	// 46
-		    dead[0]->x = dead[0], dead[0]->a = dead_nested[0];
-		    dead[1]->x = dead[1], dead[1]->a = dead_nested[1];
-		    dead_nested[0]->w[0] = dead_nested[1];
-		  }}),
-    ({3, 0, 0, 3, lambda() {	// 47
-		    live[0]->x = live[0], live[0]->a = dead_nested[0];
-		    live[1]->x = live[1], live[1]->a = dead_nested[2];
-		    live[2]->x = live[2], live[2]->a = dead_nested[1];
-		    dead_nested[0]->x = dead_nested[2];
-		  }}),
-    ({4, 0, 0, 4, lambda() {	// 48
-		    live[0]->x = live[0], live[0]->a = dead_nested[0];
-		    live[1]->x = live[1], live[1]->a = dead_nested[1];
-		    live[2]->x = live[2], live[2]->a = dead_nested[2];
-		    live[3]->x = live[3], live[3]->a = dead_nested[3];
-		    dead_nested[0]->x = dead_nested[3];
-		  }}),
-    ({3, 0, 0, 2, lambda() {	// 49
-		    live[0]->x = live[0], live[0]->a = dead_nested[0];
-		    live[1]->x = live[1], live[1]->a = dead_nested[1];
-		    dead_nested[0]->a = live[2];
-		    live[2]->x = dead_nested[1];
-		  }}),
-    ({3, 0, 0, 3, lambda() {	// 50
-		    live[0]->x = live[0], live[0]->a = dead_nested[0];
-		    live[1]->x = live[1], live[1]->a = dead_nested[2];
-		    live[2]->x = live[2], live[2]->a = dead_nested[1];
-		    dead_nested[0]->x = dead_nested[2];
-		    dead_nested[1]->a = live[0];
-		  }}),
-    ({0, 4, 2, 2, lambda() {	// 51
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    dead[1]->x = dead[1], dead[1]->a = live_nested[1];
-		    dead[2]->x = dead[2], dead[2]->a = dead_nested[0];
-		    dead[3]->x = dead[3], dead[3]->a = dead_nested[1];
-		    live_nested[0]->x = dead_nested[1];
-		    dead_nested[0]->x = live_nested[1];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 52
-		    live[0]->w[0] = live[1];
-		    live[1]->x = live[1], live[1]->a = live[0], live[1]->b = live[2];
-		    live[2]->w[0] = live[3];
-		    live[3]->x = live[3], live[3]->a = live[0];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 53
-		    live[0]->w[0] = live[1];
-		    live[1]->x = live[1], live[1]->b = live[0], live[1]->a = live[2];
-		    live[2]->w[0] = live[3];
-		    live[3]->x = live[3], live[3]->a = live[0];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 54
-		    live[0]->x = live[0], live[0]->w[0] = live[1];
-		    live[1]->w[0] = live[2];
-		    live[2]->x = live[2], live[2]->a = live[1], live[2]->b = live[3];
-		    live[3]->x = live[3], live[3]->a = live[0];
-		  }}),
-    ({4, 0, 0, 0, lambda() {	// 55
-		    live[0]->x = live[0], live[0]->w[0] = live[1];
-		    live[1]->w[0] = live[2];
-		    live[2]->x = live[2], live[2]->b = live[1], live[2]->a = live[3];
-		    live[3]->x = live[3], live[3]->a = live[0];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 56
-		    live[0]->a = live[2];
-		    live[1]->x = live[1], live[1]->a = live[0], live[1]->b = live[2];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 57
-		    live[0]->a = live[2];
-		    live[1]->x = live[1], live[1]->b = live[0], live[1]->a = live[2];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 58
-		    live[0]->x = live[1], live[0]->y = dead[0];
-		    live[0]->checkfn = lambda (object o) {
-					 return o->y;
-				       };
-		    live[1]->x = live[0];
-		    dead[0]->x = dead[0];
-		  }}),
-    ({2, 1, 0, 0, lambda() {	// 59
-		    live[0]->y = live[1], live[0]->x = dead[0];
-		    live[0]->checkfn = lambda (object o) {
-					 return o->x;
-				       };
-		    live[1]->x = live[0];
-		    dead[0]->x = dead[0];
-		  }}),
-    ({1, 2, 0, 2, lambda() {	// 60
-		    live[0]->x = dead_nested[0], live[0]->y = dead_nested[0];
-		    dead[0]->x = dead[0], dead[0]->y = dead_nested[0];
-		    dead[1]->x = dead[1], dead[1]->y = dead_nested[1];
-		    dead_nested[0]->x = live[0], dead_nested[0]->y = dead_nested[1];
-		  }}),
-    ({1, 2, 0, 2, lambda() {	// 61
-		    live[0]->x = dead_nested[0], live[0]->y = dead_nested[0];
-		    dead[0]->x = dead[0], dead[0]->y = dead_nested[0];
-		    dead[1]->x = dead[1], dead[1]->y = dead_nested[1];
-		    dead_nested[0]->y = live[0], dead_nested[0]->x = dead_nested[1];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 62
-		    live[0]->x = live[1];
-		    live[1]->x = live[0], live[1]->y = live[2];
-		    live[2]->x = live[1];
-		  }}),
-    ({3, 0, 0, 0, lambda() {	// 63
-		    live[0]->x = live[1];
-		    live[1]->y = live[0], live[1]->x = live[2];
-		    live[2]->x = live[1];
-		  }}),
-    ({2, 0, 2, 0, lambda() {	// 64
-		    live[0]->x = live[1], live[0]->y = live_nested[1];
-		    live[1]->w[0] = live_nested[0];
-		    live_nested[0]->y = live[0];
-		  }}),
-    ({2, 0, 2, 0, lambda() {	// 65
-		    live[0]->y = live[1], live[0]->x = live_nested[1];
-		    live[1]->w[0] = live_nested[0];
-		    live_nested[0]->y = live[0];
-		  }}),
-    ({1, 1, 3, 0, lambda() {	// 66
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    live_nested[0]->x = live[0], live_nested[0]->y = live_nested[2];
-		    live[0]->x = live_nested[1];
-		  }}),
-    ({1, 1, 3, 0, lambda() {	// 67
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    live_nested[0]->y = live[0], live_nested[0]->x = live_nested[2];
-		    live[0]->x = live_nested[1];
-		  }}),
-    ({0, 1, 2, 2, lambda() {	// 68
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    live_nested[0]->y = live_nested[1], live_nested[0]->x = dead_nested[0];
-		    live_nested[1]->x = dead_nested[1];
-		    dead_nested[0]->x = live_nested[1];
-		  }}),
-    ({0, 1, 2, 2, lambda() {	// 69
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    live_nested[0]->x = live_nested[1], live_nested[0]->y = dead_nested[0];
-		    live_nested[1]->x = dead_nested[1];
-		    dead_nested[0]->x = live_nested[1];
-		  }}),
-    ({0, 1, 2, 2, lambda() {	// 70
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    live_nested[0]->x = live_nested[1], live_nested[0]->y = dead_nested[1];
-		    live_nested[1]->x = dead_nested[0];
-		    dead_nested[0]->x = live_nested[0];
-		  }}),
-    ({0, 1, 2, 2, lambda() {	// 71
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    live_nested[0]->y = live_nested[1], live_nested[0]->x = dead_nested[1];
-		    live_nested[1]->x = dead_nested[0];
-		    dead_nested[0]->x = live_nested[0];
-		  }}),
-    ({2, 0, 2, 0, lambda() {	// 72
-		    live[0]->x = live[1];
-		    live[1]->x = live_nested[1];
-		    live_nested[1]->x = live[0];
-		    live_nested[0]->x = live[1];
-		  }}),
-    ({2, 0, 4, 0, lambda() {	// 73
-		    live[0]->x = live[1], live[0]->y = live_nested[2], live[0]->z = live_nested[3];
-		    live[1]->x = live[0];
-		    live_nested[1]->x = live[0];
-		  }}),
-    ({2, 0, 4, 0, lambda() {	// 74
-		    live[0]->y = live[1], live[0]->z = live_nested[2], live[0]->x = live_nested[3];
-		    live[1]->x = live[0];
-		    live_nested[1]->x = live[0];
-		  }}),
-    ({2, 0, 4, 0, lambda() {	// 75
-		    live[0]->z = live[1], live[0]->x = live_nested[2], live[0]->y = live_nested[3];
-		    live[1]->x = live[0];
-		    live_nested[1]->x = live[0];
-		  }}),
-    ({2, 1, 2, 0, lambda() {	// 76
-		    dead[0]->x = dead[0], dead[0]->a = live_nested[0];
-		    live_nested[0]->y = live_nested[1], live_nested[0]->x = live[1];
-		    live_nested[1]->x = live[0];
-		    live[0]->x = live_nested[0];
-		    live[1]->x = live[0];
-		  }}),
-    //       ({3, 0, 0, 0, lambda() { // Not possible without weak refs directly in objects.
-    // 		   live[0]->x = live[0], live[0]->v[0] = live[1];
-    // 		   live[1]->x = live[1], live[1]->w[0] = live[2];
-    // 		   live[2]->x = live[2], live[2]->a = live[0];
-    // 		 }}),
+      // Assignments to connect them on the form "obj1->var = obj2".
+      ({"live_0->n1 = live_1",
+	"live_0->nk1 = live_2",
+	"live_1->n1 = live_0",
+      })}),
+    ({2, 2, 0, 0,	// 1
+      ({"live_0->n1 = live_1", "live_0->nk1 = dead_0",
+	"live_1->n1 = live_0",
+	"dead_0->nk1 = dead_1",
+	"dead_1->nk1 = dead_0",
+      })}),
+    ({1, 2, 0, 0,	// 2
+      ({"live_0->nk1 = live_0", "live_0->nk2 = dead_0",
+	"dead_0->nk1 = dead_1",
+	"dead_1->nk1 = dead_0",
+      })}),
+    ({0, 3, 0, 0,	// 3
+      ({"dead_0->nk1 = dead_1",
+	"dead_1->nk1 = dead_0",
+	"dead_2->nk1 = dead_0", "dead_2->nk2 = dead_2",
+      })}),
+    ({3, 0, 0, 0,	// 4
+      ({"live_0->nk1 = live_0", "live_0->nk2 = live_1",
+	"live_1->nk1 = live_2",
+      })}),
+    ({1, 2, 0, 0,	// 5
+      ({"live_0->nk1 = live_0", "live_0->nk2 = dead_0",
+	"dead_0->nk1 = dead_1",
+      })}),
+    ({1, 2, 0, 0,	// 6
+      ({"live_0->nk1 = live_0", "live_0->nk2 = dead_1",
+	"dead_0->nk1 = dead_0", "dead_0->nk2 = dead_1",
+	"dead_1->nk1 = dead_1",
+      })}),
+    ({2, 2, 0, 0,	// 7
+      ({"live_0->nk1 = live_0", "live_0->nk2 = live_1",
+	"dead_0->nk1 = dead_0",
+	"dead_0->nk2 = live_1",
+	"live_1->nk1 = dead_1",
+	"dead_1->nk1 = dead_1",
+      })}),
+    ({1, 3, 0, 0,	// 8
+      ({"live_0->nk1 = live_0", "live_0->nk2 = dead_2",
+	"dead_0->nk1 = dead_0",
+	"dead_0->nk2 = dead_2",
+	"dead_2->nk1 = dead_1",
+	"dead_1->nk1 = dead_1",
+      })}),
+    ({3, 1, 0, 0,	// 9
+      ({"live_0->nk1 = live_0", "live_0->nk2 = live_1",
+	"dead_0->nk1 = dead_0", "dead_0->nk2 = live_1",
+	"live_1->nk1 = live_2",
+      })}),
+    ({1, 3, 0, 0,	// 10
+      ({"live_0->nk1 = live_0", "live_0->nk2 = dead_1",
+	"dead_0->nk1 = dead_0", "dead_0->nk2 = dead_1",
+	"dead_1->nk1 = dead_2",
+      })}),
+    ({1, 3, 0, 0,	// 11
+      ({"live_0->nk1 = live_0", "live_0->nk2 = dead_1",
+	"dead_0->nk1 = dead_0", "dead_0->nk2 = dead_1",
+	"dead_1->nk1 = dead_1", "dead_1->nk2 = dead_2",
+	"dead_2->nk1 = dead_2",
+      })}),
+    ({5, 0, 0, 0,	// 12
+      ({"live_0->n1 = live_1",
+	"live_1->n1 = live_0", "live_1->nk1 = live_2",
+	"live_2->n1 = live_3",
+	"live_3->n1 = live_2", "live_3->nk1 = live_4",
+	"live_4->nk1 = live_4",
+      })}),
+    ({3, 0, 0, 0,	// 13
+      ({"live_0->n1 = live_1", "live_0->n2 = live_2",
+	"live_1->n1 = live_2",
+	"live_2->n1 = live_0",
+      })}),
+    ({2, 0, 0, 0,	// 14
+      ({"live_0->nk1 = live_1", "live_0->nk2 = live_0",
+	"live_1->w1 = live_0",
+      })}),
+    ({2, 0, 0, 0,	// 15
+      ({"live_0->nk1 = live_0", "live_0->nk2 = live_1",
+	"live_1->w1 = live_0",
+      })}),
+    ({2, 0, 0, 0,	// 16
+      ({"live_0->nk1 = live_0", "live_0->w1 = live_1",
+	"live_1->n1 = live_0",
+      })}),
+    ({3, 0, 0, 0,	// 17
+      ({"live_0->nk1 = live_0", "live_0->nk2 = live_1",
+	"live_1->w1 = live_2",
+	"live_2->nk1 = live_2", "live_2->nk2 = live_1",
+      })}),
+    ({3, 0, 0, 0,	// 18
+      ({"live_0->nk1 = live_1", "live_0->n1 = live_2",
+	"live_1->w1 = live_2",
+	"live_2->n1 = live_0",
+      })}),
+    ({4, 0, 0, 0,	// 19
+      ({"live_0->n1 = live_0", "live_0->nk1 = live_1", "live_0->nk2 = live_2",
+	"live_1->nk1 = live_3",
+	"live_2->nk1 = live_3",
+	"live_3->w1 = live_0",
+      })}),
+    ({3, 0, 0, 0,	// 20
+      ({"live_0->n1 = live_1",
+	"live_1->n1 = live_0", "live_1->nk1 = live_2",
+	"live_2->w1 = live_1",
+      })}),
+    ({4, 0, 0, 0,	// 21
+      ({"live_0->w1 = live_1", "live_0->nk1 = live_3",
+	"live_1->w1 = live_2",
+	"live_2->nk1 = live_0", "live_2->nk2 = live_3", "live_2->n1 = live_2",
+	"live_3->nk1 = live_1",
+      })}),
+    ({2, 1, 0, 0,	// 22
+      ({"live_0->nk1 = dead_0", "live_0->n1 = live_1",
+	"live_1->n1 = live_0",
+	"dead_0->w1 = live_1",
+      })}),
+    ({2, 1, 0, 0,	// 23
+      ({"live_0->nk1 = live_1", "live_0->nk2 = dead_0",
+	"live_1->w1 = dead_0",
+	"dead_0->n1 = live_0",
+      })}),
+    ({3, 0, 0, 0,	// 24
+      ({"live_0->n1 = live_0", "live_0->nk1 = live_1", "live_0->nk2 = live_2",
+	"live_1->w1 = live_0", "live_1->w2 = live_2",
+	"live_2->nk1 = live_1",
+      })}),
+    ({3, 0, 0, 0,	// 25
+      ({"live_0->nk1 = live_1",
+	"live_1->w1 = live_2",
+	"live_2->n1 = live_2", "live_2->nk1 = live_0", "live_2->nk2 = live_1",
+      })}),
+    ({3, 0, 0, 0,	// 26
+      ({"live_0->w1 = live_1", "live_0->nk1 = live_2",
+	"live_1->n1 = live_1", "live_1->nk1 = live_0", "live_1->nk2 = live_2",
+	"live_2->w1 = live_1",
+      })}),
+    ({3, 0, 0, 0,	// 27
+      ({"live_0->w1 = live_1",
+	"live_1->n1 = live_1", "live_1->nk1 = live_0", "live_1->nk2 = live_2",
+	"live_2->nk1 = live_0",
+      })}),
+    ({3, 0, 0, 0,	// 28
+      ({"live_0->nk1 = live_0", "live_0->wk1 = live_1",
+	"live_1->nk1 = live_1", "live_1->wk1 = live_2",
+	"live_2->nk1 = live_2",
+      })}),
+    ({2, 2, 0, 0,	// 29
+      ({"live_0->n1 = live_1", "live_0->wk1 = dead_0",
+	"live_1->n1 = live_0",
+	"dead_0->nk1 = dead_1",
+	"dead_1->nk1 = dead_0",
+      })}),
+    ({4, 0, 0, 0,	// 30
+      ({"live_0->nk1 = live_1", "live_0->nk2 = live_2", "live_0->wk1 = live_3",
+	"live_1->w1 = live_0",
+	"live_2->nk1 = live_3",
+	"live_3->w1 = live_2",
+      })}),
+    ({2, 1, 0, 0,	// 31
+      ({"live_0->nk1 = dead_0",
+	"dead_0->nk1 = live_0", "dead_0->nk2 = live_1",
+	"live_1->nk1 = live_1",
+      })}),
+    ({2, 1, 0, 0,	// 32
+      ({"live_0->nk1 = live_0", "live_0->nk2 = dead_0",
+	"live_1->nk1 = dead_0",
+	"dead_0->nk1 = live_1",
+      })}),
+    ({2, 1, 0, 0,	// 33
+      ({"dead_0->nk1 = live_0",
+	"live_0->nk1 = dead_0", "live_0->nk2 = live_1",
+	"live_1->nk1 = live_1",
+      })}),
+    ({2, 1, 0, 0,	// 34
+      ({"live_0->nk1 = dead_0",
+	"dead_0->nk2 = live_0", "dead_0->nk1 = live_1",
+	"live_1->nk1 = live_1",
+      })}),
+    ({2, 1, 0, 0,	// 35
+      ({"live_0->nk2 = live_0", "live_0->nk1 = dead_0",
+	"live_1->nk1 = dead_0",
+	"dead_0->nk1 = live_1",
+      })}),
+    ({2, 1, 0, 0,	// 36
+      ({"dead_0->nk1 = live_0",
+	"live_0->nk2 = dead_0", "live_0->nk1 = live_1",
+	"live_1->nk1 = live_1",
+      })}),
+    ({3, 0, 0, 0,	// 37
+      ({"live_0->nk1 = live_0", "live_0->wk1 = live_1",
+	"live_0->checkfn = lambda (object o) {return o->wk1[0]->w1[0];}",
+	"live_1->w1 = live_2",
+	"live_2->nk1 = live_1", "live_2->nk2 = live_2",
+      })}),
+    ({4, 0, 0, 0,	// 38
+      ({"live_0->n1 = live_1",
+	"live_1->n1 = live_2",
+	"live_2->n1 = live_0", "live_2->w1 = live_3",
+	"live_3->nk1 = live_1", "live_3->nk2 = live_3",
+      })}),
+    ({0, 2, 2, 0,	// 39
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"dead_1->n1 = dead_1", "dead_1->nk1 = live_nested_1",
+	"live_nested_0->n1 = live_nested_1",
+      })}),
+    ({0, 2, 2, 0,	// 40
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"dead_1->n1 = dead_1", "dead_1->nk1 = live_nested_1",
+	"live_nested_0->w1 = live_nested_1",
+      })}),
+    ({3, 0, 3, 0,	// 41
+      ({"live_0->n1 = live_0", "live_0->nk1 = live_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = live_nested_2",
+	"live_2->n1 = live_2", "live_2->nk1 = live_nested_1",
+	"live_nested_0->n1 = live_nested_2",
+      })}),
+    ({4, 0, 4, 0,	// 42
+      ({"live_0->n1 = live_0", "live_0->nk1 = live_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = live_nested_1",
+	"live_2->n1 = live_2", "live_2->nk1 = live_nested_2",
+	"live_3->n1 = live_3", "live_3->nk1 = live_nested_3",
+	"live_nested_0->n1 = live_nested_3",
+      })}),
+    ({3, 0, 2, 0,	// 43
+      ({"live_0->n1 = live_0", "live_0->nk1 = live_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = live_nested_1",
+	"live_nested_0->nk1 = live_2",
+	"live_2->n1 = live_nested_1",
+      })}),
+    ({3, 0, 3, 0,	// 44
+      ({"live_0->n1 = live_0", "live_0->nk1 = live_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = live_nested_2",
+	"live_2->n1 = live_2", "live_2->nk1 = live_nested_1",
+	"live_nested_0->n1 = live_nested_2",
+	"live_nested_1->nk1 = live_0",
+      })}),
+    ({0, 2, 0, 2,	// 45
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = dead_nested_0",
+	"dead_1->n1 = dead_1", "dead_1->nk1 = dead_nested_1",
+	"dead_nested_0->n1 = dead_nested_1",
+      })}),
+    ({0, 2, 0, 2,	// 46
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = dead_nested_0",
+	"dead_1->n1 = dead_1", "dead_1->nk1 = dead_nested_1",
+	"dead_nested_0->w1 = dead_nested_1",
+      })}),
+    ({3, 0, 0, 3,	// 47
+      ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_2",
+	"live_2->n1 = live_2", "live_2->nk1 = dead_nested_1",
+	"dead_nested_0->n1 = dead_nested_2",
+      })}),
+    ({4, 0, 0, 4,	// 48
+      ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_1",
+	"live_2->n1 = live_2", "live_2->nk1 = dead_nested_2",
+	"live_3->n1 = live_3", "live_3->nk1 = dead_nested_3",
+	"dead_nested_0->n1 = dead_nested_3",
+      })}),
+    ({3, 0, 0, 2,	// 49
+      ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_1",
+	"dead_nested_0->nk1 = live_2",
+	"live_2->n1 = dead_nested_1",
+      })}),
+    ({3, 0, 0, 3,	// 50
+      ({"live_0->n1 = live_0", "live_0->nk1 = dead_nested_0",
+	"live_1->n1 = live_1", "live_1->nk1 = dead_nested_2",
+	"live_2->n1 = live_2", "live_2->nk1 = dead_nested_1",
+	"dead_nested_0->n1 = dead_nested_2",
+	"dead_nested_1->nk1 = live_0",
+      })}),
+    ({0, 4, 2, 2,	// 51
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"dead_1->n1 = dead_1", "dead_1->nk1 = live_nested_1",
+	"dead_2->n1 = dead_2", "dead_2->nk1 = dead_nested_0",
+	"dead_3->n1 = dead_3", "dead_3->nk1 = dead_nested_1",
+	"live_nested_0->n1 = dead_nested_1",
+	"dead_nested_0->n1 = live_nested_1",
+      })}),
+    ({4, 0, 0, 0,	// 52
+      ({"live_0->w1 = live_1",
+	"live_1->n1 = live_1", "live_1->nk1 = live_0", "live_1->nk2 = live_2",
+	"live_2->w1 = live_3",
+	"live_3->n1 = live_3", "live_3->nk1 = live_0",
+      })}),
+    ({4, 0, 0, 0,	// 53
+      ({"live_0->w1 = live_1",
+	"live_1->n1 = live_1", "live_1->nk2 = live_0", "live_1->nk1 = live_2",
+	"live_2->w1 = live_3",
+	"live_3->n1 = live_3", "live_3->nk1 = live_0",
+      })}),
+    ({4, 0, 0, 0,	// 54
+      ({"live_0->n1 = live_0", "live_0->w1 = live_1",
+	"live_1->w1 = live_2",
+	"live_2->n1 = live_2", "live_2->nk1 = live_1", "live_2->nk2 = live_3",
+	"live_3->n1 = live_3", "live_3->nk1 = live_0",
+      })}),
+    ({4, 0, 0, 0,	// 55
+      ({"live_0->n1 = live_0", "live_0->w1 = live_1",
+	"live_1->w1 = live_2",
+	"live_2->n1 = live_2", "live_2->nk2 = live_1", "live_2->nk1 = live_3",
+	"live_3->n1 = live_3", "live_3->nk1 = live_0",
+      })}),
+    ({3, 0, 0, 0,	// 56
+      ({"live_0->nk1 = live_2",
+	"live_1->n1 = live_1", "live_1->nk1 = live_0", "live_1->nk2 = live_2",
+      })}),
+    ({3, 0, 0, 0,	// 57
+      ({"live_0->nk1 = live_2",
+	"live_1->n1 = live_1", "live_1->nk2 = live_0", "live_1->nk1 = live_2",
+      })}),
+    ({2, 1, 0, 0,	// 58
+      ({"live_0->n1 = live_1", "live_0->n2 = dead_0",
+	"live_0->checkfn = lambda (object o) {return o->n2[0];}",
+	"live_1->n1 = live_0",
+	"dead_0->n1 = dead_0",
+      })}),
+    ({2, 1, 0, 0,	// 59
+      ({"live_0->n2 = live_1", "live_0->n1 = dead_0",
+	"live_0->checkfn = lambda (object o) {return o->n1[0];}",
+	"live_1->n1 = live_0",
+	"dead_0->n1 = dead_0",
+      })}),
+    ({1, 2, 0, 2,	// 60
+      ({"live_0->n1 = dead_nested_0", "live_0->n2 = dead_nested_0",
+	"dead_0->n1 = dead_0", "dead_0->n2 = dead_nested_0",
+	"dead_1->n1 = dead_1", "dead_1->n2 = dead_nested_1",
+	"dead_nested_0->n1 = live_0", "dead_nested_0->n2 = dead_nested_1",
+      })}),
+    ({1, 2, 0, 2,	// 61
+      ({"live_0->n1 = dead_nested_0", "live_0->n2 = dead_nested_0",
+	"dead_0->n1 = dead_0", "dead_0->n2 = dead_nested_0",
+	"dead_1->n1 = dead_1", "dead_1->n2 = dead_nested_1",
+	"dead_nested_0->n2 = live_0", "dead_nested_0->n1 = dead_nested_1",
+      })}),
+    ({3, 0, 0, 0,	// 62
+      ({"live_0->n1 = live_1",
+	"live_1->n1 = live_0", "live_1->n2 = live_2",
+	"live_2->n1 = live_1",
+      })}),
+    ({3, 0, 0, 0,	// 63
+      ({"live_0->n1 = live_1",
+	"live_1->n2 = live_0", "live_1->n1 = live_2",
+	"live_2->n1 = live_1",
+      })}),
+    ({2, 0, 2, 0,	// 64
+      ({"live_0->n1 = live_1", "live_0->n2 = live_nested_1",
+	"live_1->w1 = live_nested_0",
+	"live_nested_0->n2 = live_0",
+      })}),
+    ({2, 0, 2, 0,	// 65
+      ({"live_0->n2 = live_1", "live_0->n1 = live_nested_1",
+	"live_1->w1 = live_nested_0",
+	"live_nested_0->n2 = live_0",
+      })}),
+    ({1, 1, 3, 0,	// 66
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"live_nested_0->n1 = live_0", "live_nested_0->n2 = live_nested_2",
+	"live_0->n1 = live_nested_1",
+      })}),
+    ({1, 1, 3, 0,	// 67
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"live_nested_0->n2 = live_0", "live_nested_0->n1 = live_nested_2",
+	"live_0->n1 = live_nested_1",
+      })}),
+    ({0, 1, 2, 2,	// 68
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"live_nested_0->n2 = live_nested_1", "live_nested_0->n1 = dead_nested_0",
+	"live_nested_1->n1 = dead_nested_1",
+	"dead_nested_0->n1 = live_nested_1",
+      })}),
+    ({0, 1, 2, 2,	// 69
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"live_nested_0->n1 = live_nested_1", "live_nested_0->n2 = dead_nested_0",
+	"live_nested_1->n1 = dead_nested_1",
+	"dead_nested_0->n1 = live_nested_1",
+      })}),
+    ({0, 1, 2, 2,	// 70
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"live_nested_0->n1 = live_nested_1", "live_nested_0->n2 = dead_nested_1",
+	"live_nested_1->n1 = dead_nested_0",
+	"dead_nested_0->n1 = live_nested_0",
+      })}),
+    ({0, 1, 2, 2,	// 71
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"live_nested_0->n2 = live_nested_1", "live_nested_0->n1 = dead_nested_1",
+	"live_nested_1->n1 = dead_nested_0",
+	"dead_nested_0->n1 = live_nested_0",
+      })}),
+    ({2, 0, 2, 0,	// 72
+      ({"live_0->n1 = live_1",
+	"live_1->n1 = live_nested_1",
+	"live_nested_1->n1 = live_0",
+	"live_nested_0->n1 = live_1",
+      })}),
+    ({2, 0, 4, 0,	// 73
+      ({"live_0->n1 = live_1", "live_0->n2 = live_nested_2", "live_0->n3 = live_nested_3",
+	"live_1->n1 = live_0",
+	"live_nested_1->n1 = live_0",
+      })}),
+    ({2, 0, 4, 0,	// 74
+      ({"live_0->n2 = live_1", "live_0->n3 = live_nested_2", "live_0->n1 = live_nested_3",
+	"live_1->n1 = live_0",
+	"live_nested_1->n1 = live_0",
+      })}),
+    ({2, 0, 4, 0,	// 75
+      ({"live_0->n3 = live_1", "live_0->n1 = live_nested_2", "live_0->n2 = live_nested_3",
+	"live_1->n1 = live_0",
+	"live_nested_1->n1 = live_0",
+      })}),
+    ({2, 1, 2, 0,	// 76
+      ({"dead_0->n1 = dead_0", "dead_0->nk1 = live_nested_0",
+	"live_nested_0->n2 = live_nested_1", "live_nested_0->n1 = live_1",
+	"live_nested_1->n1 = live_0",
+	"live_0->n1 = live_nested_0",
+	"live_1->n1 = live_0",
+      })}),
+//      ({3, 0, 0, 0, // Not possible without weak refs directly in objects.
+//        ({"live_0->n1 = live_0", "live_0->wk1 = live_1",
+//          "live_1->n1 = live_1", "live_1->w1 = live_2",
+//          "live_2->n1 = live_2", "live_2->nk1 = live_0",
+//        })}),
   });
 
   int quiet = !_verbose;
 
   int tests_failed = 0;
   int tests = 0;
-  for (int test = 0; test < sizeof (destruct_order_tests); test++) {
-    [int nlive, int ndead, int nlnested, int ndnested, function(void:void) setup] =
-      destruct_order_tests[test];
-    int objs = nlive + ndead;
-    array(int) idx = indices (allocate (objs));
+  foreach (destruct_order_tests;
+	   int test;
+	   [int nlive, int ndead, int nlnested, int ndnested, array setup]) {
+    int to_garb = nlive + ndead + nlnested + ndnested;
+
+    foreach (setup; int i; string assignment) {
+      array a = setup[i] = array_sscanf (assignment, "%s->%s = %s");
+      if (sizeof (a) != 3)
+	error ("Invalid format in assignment %O in test %d.\n", assignment, test);
+      if (a[1] != "checkfn") to_garb++;
+    }
+
+    array(string) obj_names = ({});
+    for (int i = 0; i < nlive; i++) obj_names += ({"live_" + i});
+    for (int i = 0; i < ndead; i++) obj_names += ({"dead_" + i});
+    switch (nlnested) {
+      // Don't count the implied parent objects.
+      case 1: obj_names += ({"live_nested_0"}); break;
+      case 2: obj_names += ({"live_nested_1"}); break;
+      case 3: obj_names += ({"live_nested_2"}); break;
+      case 4: obj_names += ({"live_nested_2", "live_nested_3"}); break;
+      case 5..: error ("Too many live nested in test %d\n", test);
+    }
+    switch (ndnested) {
+      case 1: obj_names += ({"dead_nested_0"}); break;
+      case 2: obj_names += ({"dead_nested_1"}); break;
+      case 3: obj_names += ({"dead_nested_2"}); break;
+      case 4: obj_names += ({"dead_nested_2", "dead_nested_3"}); break;
+      case 5..: error ("Too many dead nested in test %d\n", test);
+    }
+
     int n = 1;
     for (int f = nlive + ndead; f > 1; f--) n *= f;
     if(!quiet)
       werror ("GC destruct order test %d, %d permutations      \r", test, n);
     tests += n;
+
     while (n--) {
-      array(int) alloc_order = Array.permute (idx, n);
-      array(int) create_order = ({});
-      live = allocate (nlive);
-      dead = allocate (ndead);
-      if (nlnested >= 1) {
-	// Creating these before the Dead and Live objects below assumes
-	// that the gc will start with the last created object first, so
-	// the order can be controlled with those objects.
-	live_nested = ({LiveNested()});
-	if (nlnested >= 2) live_nested += ({live_nested[0]->LiveNested1()});
-	if (nlnested >= 3) live_nested += ({live_nested[1]->LiveNested2()});
-	if (nlnested >= 4) live_nested += ({live_nested[1]->LiveNested3()});
+      array(string) alloc_order = Array.permute (obj_names, n);
+
+      foreach (({"dead", "live"}), string base) {
+	int i, j;
+	if ((i = search (alloc_order, base + "_nested_2")) >= 0 ||
+	    (j = search (alloc_order, base + "_nested_3")) >= 0) {
+	  i = i >= 0 ? j >= 0 ? min (i, j) : i : j;
+	  alloc_order = alloc_order[..i-1] + ({base + "_nested_1"}) + alloc_order[i..];
+	}
+	if ((i = search (alloc_order, base + "_nested_1")) >= 0)
+	  alloc_order = alloc_order[..i-1] + ({base + "_nested_0"}) + alloc_order[i..];
       }
-      if (ndnested >= 1) {
-	dead_nested = ({DeadNested()});
-	if (ndnested >= 2) dead_nested += ({dead_nested[0]->DeadNested1()});
-	if (ndnested >= 3) dead_nested += ({dead_nested[1]->DeadNested2()});
-	if (ndnested >= 4) dead_nested += ({dead_nested[1]->DeadNested3()});
+
+      // All this fiddling to make sure the objects are created in the
+      // permuted order, and that the variables within them are
+      // visited in the reverse of that order. It's reversed since the
+      // gc will visit the objects in the reverse create order.
+
+      mapping(string:string) class_bodies = ([]);
+      string obj_creates = "", var_assigns = "";
+      mapping(string:int) positions = mkmapping (alloc_order, indices (alloc_order));
+      array(array(string)) setup_left = setup;
+
+      foreach (alloc_order; int i; string obj) {
+	string basename = obj[..sizeof (obj) - 3];
+	string class_body;
+
+	obj_creates += "object " + obj + " = ";
+	if (has_value (obj, "_nested_")) {
+	  class_body = "inherit B_" + obj + ";\n";
+	  switch (obj[-1]) {
+	    case '0': obj_creates += "C_" + obj + "();\n"; break;
+	    case '1': obj_creates += basename + "_0->C_" + obj + "();\n"; break;
+	    case '2': case '3': obj_creates += basename + "_1->C_" + obj + "();\n"; break;
+	  }
+	}
+	else {
+	  class_body = "inherit B_" + basename + ";\n";
+	  obj_creates += "C_" + obj + "();\n";
+	}
+	class_body += "string id=\"" + obj + "\";\n";
+
+	array(array(string)) assigns =
+	  Array.sort_array (
+	    filter (setup_left, lambda (array a) {
+				  return a[0] == obj;
+				}),
+	    lambda (array a, array b) {
+	      int ap, bp;
+	      if (zero_type (ap = positions[a[2]]) && a[1] != "checkfn")
+		error ("Invalid object %O in test %d.\n", a[2], test);
+	      if (zero_type (bp = positions[b[2]]) && b[1] != "checkfn")
+		error ("Invalid object %O in test %d.\n", b[2], test);
+	      return ap < bp;
+	    });
+	setup_left -= assigns;
+
+	foreach (assigns, array(string) a) {
+	  if (!valid_vars[a[1]])
+	    error ("Invalid variable %O in test %d.\n", a[1], test);
+	  if (a[1] == "checkfn")
+	    var_assigns += obj + "->checkfn = " + a[2] + ";\n";
+	  else {
+	    class_body += "array " + a[1] + " = " +
+	      (a[1][0] == 'w' ? "set_weak_flag (({0}), Pike.WEAK)" : "({0})") + ";\n"
+	      "mixed get_" + a[1] + "() {return " + a[1] + "[0];}\n";
+	    var_assigns += obj + "->" + a[1] + "[0] = " + a[2] + ";\n";
+	  }
+	}
+
+	class_bodies[obj] = class_body;
       }
-      for (int i = 0; i < objs; i++) {
-	int p = alloc_order[i];
-	if (p < nlive) live[p] = Live (p), create_order += ({p});
-	else p -= nlive, dead[p] = Dead (p), create_order += ({-p - 1});
-      }
+
+      if (sizeof (setup_left))
+	error ("Invalid object %O in test %d.\n", setup[0][0], test);
+
+      string prog = "";
+
+      foreach (alloc_order; int i; string obj)
+	if (!has_value (obj, "_nested_")) {
+	  prog += "class C_" + obj + " {\n" + class_bodies[obj] + "}\n\n";
+	}
+      foreach (({"dead", "live"}), string base)
+	if (string class_body = class_bodies[base + "_nested_0"]) {
+	  prog += "class C_" + base + "_nested_0 {\n" + class_body + "\n";
+	  if ((class_body = class_bodies[base + "_nested_1"])) {
+	    prog += "class C_" + base + "_nested_1 {\n" + class_body + "\n";
+	    if ((class_body = class_bodies[base + "_nested_2"]))
+	      prog += "class C_" + base + "_nested_2 {\n" + class_body + "}\n";
+	    if ((class_body = class_bodies[base + "_nested_3"]))
+	      prog += "class C_" + base + "_nested_3 {\n" + class_body + "}\n";
+	    prog += "}\n";
+	  }
+	  prog += "}\n\n";
+	}
+
+      prog += "void setup() {\n" + obj_creates + "\n" + var_assigns + "}\n";
+      //werror ("\nTest " + alloc_order * ", " + ":\n" + prog + "\n");
+
       destruct_order = ({""}); // Using ({}) would alloc a new array in destructing().
-      setup();
-      live = dead = live_nested = dead_nested = 0;
+      object o;
+      if (mixed err = catch (o = compile_string(prog)())) {
+	werror ("Failed program was:\n\n" + prog + "\n");
+	throw (err);
+      }
+      gc();
+      o->setup();
       int garbed = gc();
-      gc();			// To garb live object leftovers.
       destruct_order = destruct_order[1..];
+
       if (!got_error && (got_error = sizeof (destruct_order) != nlive + nlnested))
 	werror ("\nGC should garb %d live objects, "
 		"but took %d.\n", nlive + nlnested, sizeof (destruct_order));
-      if (!got_error && (got_error = garbed < 3 * (objs + nlnested + ndnested)))
+      if (!got_error && (got_error = garbed < to_garb))
 	werror ("\nGC should garb at least %d things, "
-		"but took only %d.\n", 3 * (objs + nlnested + ndnested), garbed);
+		"but took only %d.\n", to_garb, garbed);
       if (got_error) {
-	werror ("Create order was: " +
-		map (create_order, lambda (int i) {
-				     if (i < 0) return "dead[" + (-i - 1) + "]";
-				     else return "live[" + i + "]";
-				   }) * ", " + "\n"
-		"Destruct order was: " + destruct_order * ", " + "\n");
-	tests_failed += got_error;
+	werror ("Destruct order was: " + destruct_order * ", " + "\n"
+		"Setup program was:\n\n" + prog + "\n");
+	tests_failed += 1;
 	got_error = 0;
 	break;
       }
     }
   }
+
   if (!quiet) {
     werror ("%60s\r", "");
   }
+
+  add_constant ("destructing");
+  add_constant ("my_error");
+  add_constant ("B_dead");
+  add_constant ("B_live");
+  add_constant ("B_live_nested_0");
+  add_constant ("B_dead_nested_0");
+
   return ({ tests-tests_failed, tests_failed });
 }
