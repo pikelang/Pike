@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.73 1998/04/10 23:23:08 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.74 1998/04/13 12:51:09 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -195,7 +195,10 @@ RCSID("$Id: language.yacc,v 1.73 1998/04/10 23:23:08 grubba Exp $");
 #define YYMAXDEPTH	1000
 
 #ifdef DEBUG
+#ifndef YYDEBUG
+/* May also be defined by machine.h */
 #define YYDEBUG 1
+#endif /* YYDEBUG */
 #endif
 
 
@@ -285,10 +288,11 @@ int yylex(YYSTYPE *yylval);
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
+%type <number> opt_string_type
 %type <number> optional_dot_dot_dot
 %type <number> optional_stars
 
-/* The following symbos return type information */
+/* The following symbols return type information */
 
 %type <n> cast
 %type <n> simple_type
@@ -355,9 +359,11 @@ int yylex(YYSTYPE *yylval);
 %type <n> low_program_ref
 %%
 
-all: program;
+all: program
+  ;
 
 program: program def optional_semi_colon
+  | error { yyerrok; }
   |  /* empty */
   ;
 
@@ -380,6 +386,7 @@ string_constant: string
   ;
 
 optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
+  | ':' bad_identifier { $$=0; }
   | { $$=0; }
   ;
 
@@ -427,6 +434,11 @@ inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
     pop_n_elems(1);
     free_node($3);
   }
+  | modifiers F_INHERIT low_program_ref error ';'
+  {
+    free_node($3); yyerrok;
+  }
+  | modifiers F_INHERIT error ';' { yyerrok; }
   ;
 
 import: modifiers F_IMPORT idents ';'
@@ -436,6 +448,7 @@ import: modifiers F_IMPORT idents ';'
     use_module(sp-1);
     pop_stack();
   }
+  | modifiers F_IMPORT error ';' { yyerrok; }
   ;
 
 constant_name: F_IDENTIFIER '=' expr0
@@ -467,6 +480,7 @@ constant_name: F_IDENTIFIER '=' expr0
     if($3) free_node($3);
     free_node($1);
   }
+  | bad_identifier '=' expr0 { if ($3) free_node($3); }
   ;
 
 constant_list: constant_name
@@ -474,6 +488,7 @@ constant_list: constant_name
   ;
 
 constant: modifiers F_CONSTANT constant_list ';' {}
+  | modifiers F_CONSTANT error ';' { yyerrok; }
   ;
 
 block_or_semi: block
@@ -500,7 +515,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     if(!compiler_frame->previous ||
        !compiler_frame->previous->current_type)
     {
-      yyerror("Internal compiler fault");
+      yyerror("Internal compiler fault.");
       copy_shared_string(compiler_frame->current_type,
 			 mixed_type_string);
     }else{
@@ -564,7 +579,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 	if(!compiler_frame->variable[e].name ||
 	   !compiler_frame->variable[e].name->len)
 	  {
-	    my_yyerror("Missing name for argument %d",e);
+	    my_yyerror("Missing name for argument %d.",e);
 	  }
       }
 
@@ -578,14 +593,20 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     free_node($4);
     free_node($<n>9);
   }
+  | modifiers type_or_error optional_stars bad_identifier
+    '(' arguments ')' block_or_semi
+  {
+    free_string(pop_type());
+  }
   | modifiers type_or_error name_list ';' {}
   | inheritance {}
   | import {}
   | constant {}
   | class { free_node($1); }
-  | error ';' { yyerrok; }
+  | error ';'
   {
     reset_type_stack();
+    yyerrok;
 /*     if(num_parse_error>5) YYACCEPT; */
   }
   ;
@@ -595,6 +616,7 @@ optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
   ;
 
 optional_identifier: F_IDENTIFIER
+  | bad_identifier { $$=0 }
   | /* empty */ { $$=0; }
   ;
 
@@ -726,16 +748,23 @@ type2: type2 '|' type3 { push_type(T_OR); }
 
 type3: F_INT_ID      { push_type(T_INT); }
   | F_FLOAT_ID    { push_type(T_FLOAT); }
-  | F_STRING_ID   { push_type(T_STRING); }
   | F_PROGRAM_ID  { push_type(T_PROGRAM); }
   | F_VOID_ID     { push_type(T_VOID); }
   | F_MIXED_ID    { push_type(T_MIXED); }
+  | F_STRING_ID opt_string_type { push_type(T_STRING); }
   | F_OBJECT_ID   opt_object_type { push_type(T_OBJECT); }
   | F_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
   | F_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
   | F_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
   | F_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
   ;
+
+opt_string_type:  /* Empty */ { $$=1; }
+  | '(' F_NUMBER ')'
+  {
+    if ($2 != 1) yyerror("Wide strings are not supported.");
+    $$=1;
+  }
 
 opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
   | '(' program_ref ')'
@@ -745,7 +774,7 @@ opt_object_type:  /* Empty */ { push_type_int(0); push_type(0); }
     {
       push_type_int(p->id);
     }else{
-      yyerror("Not a valid program specifier");
+      yyerror("Not a valid program specifier.");
       push_type_int(0);
     }
     pop_n_elems(2);
@@ -840,6 +869,7 @@ new_name: optional_stars F_IDENTIFIER
     free_string(type);
     free_node($2);
   }
+  | optional_stars bad_identifier {}
   | optional_stars F_IDENTIFIER '='
   {
     struct pike_string *type;
@@ -857,6 +887,10 @@ new_name: optional_stars F_IDENTIFIER
 				       mkidentifiernode($<number>4))));
     free_node($2);
   }
+  | optional_stars bad_identifier '=' expr0
+  {
+    free_node($4);
+  }
   ;
 
 
@@ -868,6 +902,7 @@ new_local_name: optional_stars F_IDENTIFIER
     $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string)));
     free_node($2);
   }
+  | optional_stars bad_identifier {}
   | optional_stars F_IDENTIFIER '=' expr0
   {
     push_finished_type($<n>0->u.sval.u.string);
@@ -875,6 +910,15 @@ new_local_name: optional_stars F_IDENTIFIER
     add_local_name($2->u.sval.u.string, pop_type());
     $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string)));
     free_node($2);
+  }
+  | optional_stars bad_identifier '=' expr0
+  {
+    free_node($4);
+  }
+  | optional_stars F_IDENTIFIER '=' error
+  {
+    free_node($2);
+    /* No yyerok here since we aren't done yet. */
   }
   ;
 
@@ -884,11 +928,21 @@ new_local_name2: F_IDENTIFIER
     $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string)));
     free_node($1);
   }
+  | bad_identifier { $$=mkintnode(0); }
   | F_IDENTIFIER '=' expr0
   {
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
     $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string)));
     free_node($1);
+  }
+  | bad_identifier '=' expr0 { $$=$3; }
+  | F_IDENTIFIER '=' error
+  {
+    /* Just ignore the assignment */
+    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
+    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string)));
+    free_node($1);
+    yyerrok;
   }
   ;
 
@@ -905,7 +959,7 @@ block:'{'
   ;
 
 failsafe_block: block
-              | error { $$=0; }
+              | error { $$=0; yyerrok }
               ;
   
 
@@ -1026,6 +1080,7 @@ class: modifiers F_CLASS optional_identifier
       free_string(s);
       $1|=ID_PRIVATE | ID_INLINE;
     }
+    /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
     if(compiler_pass==1)
     {
       low_start_new_program(0, $3->u.sval.u.string, $1);
@@ -1066,6 +1121,8 @@ class: modifiers F_CLASS optional_identifier
     else
       p=end_program();
 
+    /* fprintf(stderr, "LANGUAGE.YACC: CLASS end\n"); */
+
     $$=mkidentifiernode(isidentifier($3->u.sval.u.string));
 
     if(!p)
@@ -1075,7 +1132,6 @@ class: modifiers F_CLASS optional_identifier
 
     free_node($3);
     check_tree($$,0);
-
   }
   ;
 
@@ -1214,10 +1270,13 @@ expr00: expr0
 
 expr0: expr01
   | expr4 '=' expr0  { $$=mknode(F_ASSIGN,$3,$1); }
+  | expr4 '=' error { $$=$1; reset_type_stack(); yyerrok; }
   | '[' low_lvalue_list ']' '=' expr0  { $$=mknode(F_ASSIGN,$5,mknode(F_ARRAY_LVALUE,$2,0)); }
   | expr4 assign expr0  { $$=mknode($2,$1,$3); }
-  | '[' low_lvalue_list ']' assign expr0  { $$=mknode(F_ASSIGN,mknode(F_ARRAY_LVALUE,$2,0),$5); }
-  | error assign expr01 { $$=0; reset_type_stack(); yyerrok; }
+  | expr4 assign error { $$=$1; reset_type_stack(); yyerrok; }
+  | '[' low_lvalue_list ']' assign expr0  { $$=mknode($4,mknode(F_ARRAY_LVALUE,$2,0),$5); }
+  | '[' low_lvalue_list error ']' { $$=$2; reset_type_stack(); yyerrok; }
+/*  | error { $$=0; reset_type_stack(); } */
   ;
 
 expr01: expr1 { $$ = $1; }
@@ -1307,11 +1366,13 @@ expr4: string
   | class
   | idents
   | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
+  | expr4 '(' error ')' { $$=mkapplynode($1, NULL); yyerrok; }
   | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
   | expr4 '['  comma_expr_or_zero F_DOT_DOT comma_expr_or_maxint ']'
   {
     $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
   }
+  | expr4 '[' error ']' { $$=$1; yyerrok; }
   | '(' comma_expr2 ')' { $$=$2; }
   | '(' '{' expr_list '}' ')'
     { $$=mkefuncallnode("aggregate",$3); }
@@ -1319,10 +1380,12 @@ expr4: string
     { $$=mkefuncallnode("aggregate_mapping",$3); };
   | F_MULTISET_START expr_list F_MULTISET_END
     { $$=mkefuncallnode("aggregate_multiset",$2); }
+  | '(' error ')' { yyerrok; }
   | expr4 F_ARROW F_IDENTIFIER
   {
     $$=mknode(F_ARROW,$1,$3);
   }
+  | expr4 F_ARROW bad_identifier {}
   ;
 
 idents: low_idents
@@ -1334,6 +1397,7 @@ idents: low_idents
     copy_shared_string(last_identifier, $3->u.sval.u.string);
     free_node($3);
   }
+  | idents '.' bad_identifier {}
   ;
 
 low_idents: F_IDENTIFIER
@@ -1356,7 +1420,8 @@ low_idents: F_IDENTIFIER
 	     DECLARE_CYCLIC();
 	     if(BEGIN_CYCLIC(last_identifier, lex.current_file))
 	     {
-	       my_yyerror("Recursive module dependency in %s",last_identifier->str);
+	       my_yyerror("Recursive module dependency in %s.",
+			  last_identifier->str);
 	     }else{
 	       SET_CYCLIC_RET(1);
 	       ref_push_string(last_identifier);
@@ -1410,6 +1475,10 @@ low_idents: F_IDENTIFIER
     free_node(tmp2);
     free_node($3);
   }
+  | F_PREDEF F_COLON_COLON bad_identifier
+  {
+    $$=mkintnode(0);
+  }
   | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER
   {
     $$=reference_inherited_identifier($1->u.sval.u.string,
@@ -1424,6 +1493,10 @@ low_idents: F_IDENTIFIER
 
     free_node($1);
     free_node($3);
+  }
+  | F_IDENTIFIER F_COLON_COLON bad_identifier
+  {
+    $$=$1;
   }
   | F_COLON_COLON F_IDENTIFIER
   {
@@ -1449,6 +1522,10 @@ low_idents: F_IDENTIFIER
       if($$->token==F_ARG_LIST) $$=mkefuncallnode("aggregate",$$);
     }
     free_node($2);
+  }
+  | F_COLON_COLON bad_identifier
+  {
+    $$=mkintnode(0);
   }
   ;
 
@@ -1493,6 +1570,7 @@ typeof: F_TYPEOF '(' expr0 ')'
   } ;
  
 catch_arg: '(' comma_expr ')'  { $$=$2; }
+  | '(' error ')' { $$=mkintnode(0); yyerrok; }
   | block
   ; 
 
@@ -1543,6 +1621,90 @@ string: F_STRING
   }
   ;
 
+/*
+ * Some error-handling
+ */
+
+bad_identifier : bad_def_identifier
+  | F_INLINE
+  { yyerror("inline is a reserved word."); }
+  | F_LOCAL
+  { yyerror("local is a reserved word."); }
+  | F_NO_MASK
+  { yyerror("nomask is a reserved word."); }
+  | F_PREDEF
+  { yyerror("predef is a reserved word."); }
+  | F_PRIVATE
+  { yyerror("private is a reserved word."); }
+  | F_PROTECTED
+  { yyerror("protected is a reserved word."); }
+  | F_PUBLIC
+  { yyerror("public is a reserved word."); }
+  | F_STATIC
+  { yyerror("static is a reserved word."); }
+  | F_ARRAY_ID
+  { yyerror("array is a reserved word."); }
+  | F_FLOAT_ID
+  { yyerror("float is a reserved word.");}
+  | F_INT_ID
+  { yyerror("int is a reserved word."); }
+  | F_MAPPING_ID
+  { yyerror("mapping is a reserved word."); }
+  | F_MULTISET_ID
+  { yyerror("multiset is a reserved word."); }
+  | F_STRING_ID
+  { yyerror("string is a reserved word."); }
+  | F_VOID_ID
+  { yyerror("void is a reserved word."); }
+  ;
+
+bad_def_identifier
+  : F_DO
+  { yyerror("do is a reserved word."); }
+  | F_ELSE
+  { yyerror("else is a reserved word."); }
+  | F_RETURN
+  { yyerror("return is a reserved word."); }
+  | F_CONSTANT
+  { yyerror("constant is a reserved word."); }
+  | F_IMPORT
+  { yyerror("import is a reserved word."); }
+  | F_INHERIT
+  { yyerror("inherit is a reserved word."); }
+  | F_CLASS
+  { yyerror("class is a reserved word."); }
+  | F_CATCH
+  { yyerror("catch is a reserved word."); }
+  | F_GAUGE
+  { yyerror("gauge is a reserved word."); }
+  | F_LAMBDA
+  { yyerror("lambda is a reserved word."); }
+  | F_SSCANF
+  { yyerror("sscanf is a reserved word."); }
+  | F_SIZEOF
+  { yyerror("sizeof is a reserved word."); }
+  | F_SWITCH
+  { yyerror("switch is a reserved word."); }
+  | F_TYPEOF
+  { yyerror("typeof is a reserved word."); }
+  | F_BREAK
+  { yyerror("break is a reserved word."); }
+  | F_CASE
+  { yyerror("case is a reserved word."); }
+  | F_CONTINUE
+  { yyerror("continue is a reserved word."); }
+  | F_DEFAULT
+  { yyerror("default is a reserved word."); }
+  | F_FOR
+  { yyerror("for is a reserved word."); }
+  | F_FOREACH
+  { yyerror("foreach is a reserved word."); }
+  | F_IF
+  { yyerror("if is a reserved word."); }
+  ;
+
+
+
 %%
 
 void yyerror(char *str)
@@ -1555,7 +1717,7 @@ void yyerror(char *str)
     fatal("Stack error (underflow)\n");
 #endif
 
-  if (num_parse_error > 5) return;
+  if (num_parse_error > 10) return;
   num_parse_error++;
   cumulative_parse_error++;
 
@@ -1582,7 +1744,7 @@ void add_local_name(struct pike_string *str,
   reference_shared_string(str);
   if (compiler_frame->current_number_of_locals == MAX_LOCAL)
   {
-    yyerror("Too many local variables");
+    yyerror("Too many local variables.");
   }else {
     compiler_frame->variable[compiler_frame->current_number_of_locals].type = type;
     compiler_frame->variable[compiler_frame->current_number_of_locals].name = str;
