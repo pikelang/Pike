@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.107 2000/08/28 21:47:57 grubba Exp $
+ * $Id: program.h,v 1.108 2000/08/29 00:09:47 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -508,7 +508,7 @@ void *parent_storage(int depth);
 #define ADD_INT_CONSTANT(NAME,CONST,FLAGS) \
   quick_add_integer_constant(NAME,CONSTANT_STRLEN(NAME),CONST,FLAGS)
 
-#define MAP_VARIABLE(NAME,OFFSET,TYPE,RTTYPE,FLAGS) \
+#define PIKE_MAP_VARIABLE(NAME,OFFSET,TYPE,RTTYPE,FLAGS) \
   quick_map_variable(NAME,CONSTANT_STRLEN(NAME),OFFSET,TYPE,CONSTANT_STRLEN(TYPE),RTTYPE,FLAGS)
 
 #define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {				\

@@ -4988,31 +4988,31 @@ void init_parser_html(void)
 
    offset = ADD_STORAGE(struct parser_html_storage);
 
-   MAP_VARIABLE(" maptag", offset + OFFSETOF(parser_html_storage, maptag),
+   PIKE_MAP_VARIABLE(" maptag", offset + OFFSETOF(parser_html_storage, maptag),
 		tMap(tStr,tTodo(tTagargs)),
 		T_MAPPING, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" mapcont", offset + OFFSETOF(parser_html_storage, mapcont),
+   PIKE_MAP_VARIABLE(" mapcont", offset + OFFSETOF(parser_html_storage, mapcont),
 		tMap(tStr,tTodo(tTagargs tStr)),
 		T_MAPPING, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" mapentity", offset + OFFSETOF(parser_html_storage, mapentity),
+   PIKE_MAP_VARIABLE(" mapentity", offset + OFFSETOF(parser_html_storage, mapentity),
 		tMap(tStr,tTodo(tNone)),
 		T_MAPPING, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" mapqtag", offset + OFFSETOF(parser_html_storage, mapqtag),
+   PIKE_MAP_VARIABLE(" mapqtag", offset + OFFSETOF(parser_html_storage, mapqtag),
 		tMap(tStr,tTodo(tStr)),
 		T_MAPPING, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" callback__tag", offset + OFFSETOF(parser_html_storage, callback__tag),
+   PIKE_MAP_VARIABLE(" callback__tag", offset + OFFSETOF(parser_html_storage, callback__tag),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
 		T_MIXED, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" callback__data", offset + OFFSETOF(parser_html_storage, callback__data),
+   PIKE_MAP_VARIABLE(" callback__data", offset + OFFSETOF(parser_html_storage, callback__data),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
 		T_MIXED, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" callback__entity", offset + OFFSETOF(parser_html_storage, callback__entity),
+   PIKE_MAP_VARIABLE(" callback__entity", offset + OFFSETOF(parser_html_storage, callback__entity),
 		tFuncV(tObjImpl_PARSER_HTML tStr,tMix,tCbret),
 		T_MIXED, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" splice_arg", offset + OFFSETOF(parser_html_storage, splice_arg),
+   PIKE_MAP_VARIABLE(" splice_arg", offset + OFFSETOF(parser_html_storage, splice_arg),
 		tString,
 		T_STRING, ID_STATIC|ID_PRIVATE);
-   MAP_VARIABLE(" extra_args", offset + OFFSETOF(parser_html_storage, extra_args),
+   PIKE_MAP_VARIABLE(" extra_args", offset + OFFSETOF(parser_html_storage, extra_args),
 		tArray,
 		T_ARRAY, ID_STATIC|ID_PRIVATE);
 
