@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.103 1998/11/20 08:04:09 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.104 1998/11/20 08:07:05 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2123,8 +2123,8 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 		(long)(time_passed/1000),
 		(long)(time_in_children/1000),
 		(long)(children_base/1000),
-		(long)(accounted_time/1000)
-		(long)(time_base/1000)
+		(long)(accounted_time/1000),
+		(long)(time_base/1000),
 		(long)(start_time/1000)
 		);
 #endif
