@@ -13,7 +13,7 @@ DESCRIPTION
 	Modifyers:
 	  0  Zero pad numbers (implies right justification)
 	  !  Toggle truncation
-	     pad positive integers with a space
+	 ' ' (space) pad positive integers with a space
 	  +  pad positive integers with a plus sign
 	  -  left adjusted within field size (default is right)
 	  |  centered within field size
@@ -36,21 +36,21 @@ DESCRIPTION
 	  _ Set width to the length of data
 
 	Operators:
-	 %% percent
-	 %d signed decimal int
-	 %u unsigned decimal int (doesn't really exist in lpc)
-	 %o unsigned octal int
-	 %x lowercase unsigned hexadecimal int
-	 %X uppercase unsigned hexadecimal int
-	 %c char
-	 %f float
-	 %g heruistically chosen representation of float
-	 %e exponential notation float
-	 %s string
-	 %O any type (debug style)
-	 %n nop
-	 %t type of argument
-	 %<modifyers>{format%}  do a format for every index in an array.
+	  %% percent
+	  %d signed decimal int
+	  %u unsigned decimal int (doesn't really exist in lpc)
+	  %o unsigned octal int
+	  %x lowercase unsigned hexadecimal int
+	  %X uppercase unsigned hexadecimal int
+	  %c char
+	  %f float
+	  %g heruistically chosen representation of float
+	  %e exponential notation float
+	  %s string
+	  %O any type (debug style)
+	  %n nop
+	  %t type of argument
+	  %<modifyers>{format%}  do a format for every index in an array.
 
 EXAMPLES
 	uLPC v1.0E-95 Running Hilfe v1.2 (Hubbe's Incremental LPC FrontEnd)

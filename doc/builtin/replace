@@ -28,3 +28,6 @@ DESCRIPTION
 	   When the first argument is an array or mapping, the values in
 	   a are searched for values equal to from, which are replaced by
 	   to destructively.
+
+KEYWORDS
+	string, array, mapping

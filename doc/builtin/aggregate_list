@@ -12,5 +12,8 @@ DESCRIPTION
 
 	list aggregate(mixed ... elems) { return mklist(elems); }
 
+KEYWORDS
+	list
+
 SEE ALSO
 	sizeof, listp, mklist

@@ -8,4 +8,6 @@ DESCRIPTION
 	This function returns the number of indexes available in the argument
 	given to it. It replaces older functions like strlen, m_sizeof and
 	size.
-	
+
+KEYWORDS
+	string, list, mapping, array

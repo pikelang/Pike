@@ -18,3 +18,6 @@ DESCRIPTION
 	This function does exactly the same thing as adding all the arguments
 	together with +. It's just here so you can get a function-pointer to
 	the summation operator.
+
+KEYWORDS
+	int, float, string, array, mapping, list

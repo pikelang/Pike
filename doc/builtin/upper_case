@@ -8,5 +8,8 @@ DESCRIPTION
 	Return a copy of the string s with all lower case character converted
 	to upper case character.
 
+KEYWORDS
+	string
+
 SEE ALSO
 	lower_case

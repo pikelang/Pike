@@ -10,5 +10,8 @@ DESCRIPTION
 	will be used as the file name of the program and will be used for
 	error messages and such.
 
+KEYWORDS
+	program
+
 SEE ALSO
 	compile_string, clone

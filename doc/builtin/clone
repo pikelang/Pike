@@ -10,5 +10,8 @@ DESCRIPTION
 	all global variables initalized, and then create() will be called
 	with args as arguments.
 
+KEYWORDS
+	object, program
+
 SEE ALSO
 	destruct, compile_string, compile_file

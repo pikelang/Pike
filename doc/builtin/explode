@@ -22,5 +22,8 @@ EXAMPLES
 	> explode("foobar","");
 	Result: ({ "f", "o", "o", "b", "a", "r" })
 
+KEYWORDS
+	string
+
 SEE ALSO
 	implode

@@ -6,3 +6,6 @@ SYNTAX
 
 DESCRIPTION
 	This function returns the object we are curently evaluating in.
+
+KEYWORDS
+	object

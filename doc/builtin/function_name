@@ -8,5 +8,8 @@ DESCRIPTION
 	This function returns the name of the function f. If the function is
 	a pre-defined function in the driver, zero will be returned.
 
+KEYWORDS
+	function
+
 SEE ALSO
 	function_object, get_function

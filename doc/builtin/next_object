@@ -17,5 +17,8 @@ EXAMPLES
 	for(o=next_object();o;o=next_object(o))
 	  o->shutting_down();
 
+KEYWORDS
+	object
+
 SEE ALSO
 	clone, destruct

@@ -2,7 +2,7 @@ NAME
 	aggregate_mapping - construct a mapping
 
 SYNTAX
-	mapping aggregate_list(mixed ... elems);
+	mapping aggregate_mapping(mixed ... elems);
 	or
 	(< key1:val1, key2:val2, ... >)
 
@@ -10,6 +10,9 @@ DESCRIPTION
 	Groups the arguments together two and two to key-index pairs and
 	creates a mapping of those pairs. The second syntax is always
 	preferable.
+
+KEYWORDS
+	list
 
 SEE ALSO
 	sizeof, mappingp, mkmapping
