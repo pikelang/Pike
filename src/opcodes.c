@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.55 1999/10/31 20:52:09 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.56 1999/10/31 21:51:59 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1264,12 +1264,14 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	\
 									\
 	    if(!contains_percent_percent)				\
 	    {								\
-	      /* FIXME! */						\
+	      struct generic_mem_searcher searcher;			\
 	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			\
-      	      s2=my_memmem(end_str_start,				\
-			   end_str_end-end_str_start,			\
-			   input+eye,					\
-			   input_len-eye);				\
+	      init_generic_memsearcher(&searcher, end_str_start,	\
+				       end_str_end - end_str_start,	\
+				       MATCH_SHIFT, input_len - eye,	\
+				       INPUT_SHIFT);			\
+	      s2 = generic_memory_search(&searcher, input+eye,		\
+					 input_len - eye, INPUT_SHIFT);	\
 	      if(!s2)							\
 	      {								\
 		chars_matched[0]=eye;					\
