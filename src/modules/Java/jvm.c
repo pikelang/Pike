@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.39 2002/04/22 15:39:52 tomas Exp $
+ * $Id: jvm.c,v 1.40 2002/04/25 16:13:14 tomas Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.39 2002/04/22 15:39:52 tomas Exp $");
+RCSID("$Id: jvm.c,v 1.40 2002/04/25 16:13:14 tomas Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1737,13 +1737,11 @@ static void do_native_dispatch(struct native_method_context *ctx,
     memset(rc, 0, sizeof(*rc));
 
     if(*p != 'V') {
-      /* The Local Referens that may be created here will be
+      /* The Local Referens that is created here will be
          released automatically when we return to java */
       make_jargs(rc, -1, NULL, p, ctx->nat->jvm, env);
-      /*
       if((*p == 'L' || *p == '[') && rc->l != NULL)
-	rc->l = (*env)->NewGlobalRef(env, rc->l);
-      */
+	rc->l = (*env)->NewLocalRef(env, rc->l);
     }
   }
 
