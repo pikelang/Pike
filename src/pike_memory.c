@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.125 2002/10/11 13:18:09 grubba Exp $
+|| $Id: pike_memory.c,v 1.126 2002/11/24 20:03:29 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.125 2002/10/11 13:18:09 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.126 2002/11/24 20:03:29 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1488,6 +1488,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, LOCATION location)
   ml->location=location;
   ml->next=0;
   ml->times=1;
+  ml->mh=mh;
   mlhash[l]=ml;
 
   if(dmalloc_default_location)
