@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.10 2004/01/11 00:38:16 nilsson Exp $
+// $Id: Binary.pike,v 1.11 2004/05/01 12:51:25 mast Exp $
 // An abstract data type for binary relations.
 
 #pike __REAL_VERSION__
@@ -274,11 +274,11 @@ static class _get_iterator {
   }
 
   mixed index() {
-    return lefts[ipos];
+    return finished ? UNDEFINED : lefts[ipos];
   }
 
   mixed value() {
-    return rights[vpos];
+    return finished ? UNDEFINED : rights[vpos];
   }
 
   int(0..1) `!() {
@@ -304,6 +304,7 @@ static class _get_iterator {
   }
 
   this_program `+=(int steps) {
+    if (steps < 0) error ("Cannot step backwards.\n");
     while(steps--)
       next();
     return this;
