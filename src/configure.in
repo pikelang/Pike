@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.724 2003/06/27 13:16:56 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.725 2003/07/28 13:21:26 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1393,10 +1393,8 @@ AC_ARG_WITH(machine-code,
 	MY_DESCR([--without-machine-code],
 		 [do not try to use of machine code on supported architectures.]),
 	[], [
-	  # Currently only supported with gcc.
-	  #
 	  # Further tests later on.
-	  with_machine_code="$GCC"
+	  with_machine_code="yes"
 	])
 
 MY_AC_ARG_WITH(keypair-loop,
@@ -4096,18 +4094,34 @@ if test "$with_machine_code" = "no"; then :; else
   AC_CACHE_VAL(pike_cv_machine_code_arch, [
     pike_cv_machine_code_arch=unknown
     AC_TRY_COMPILE([
+#if defined(__GNUC__)
 #if !defined(__i386__) && !defined(__i386)
 #error Not ia32 architecture
 #endif
+#elif defined(_MSC_VER)
+#if !defined(_M_IX86)
+#error Not ia32 architecture
+#endif
+#else
+#error Unsupported compiler
+#endif
     ], [], [pike_cv_machine_code_arch=ia32], [])
     AC_TRY_COMPILE([
+#if defined(__GNUC__)
 #if !defined(sparc) && !defined(__sparc__) && !defined(__sparc)
 #error Not sparc architecture
 #endif
+#else
+#error Unsupported compiler
+#endif
     ], [], [pike_cv_machine_code_arch=sparc], [])
     AC_TRY_COMPILE([
+#if defined(__GNUC__)
 #if !defined(__ppc__) && !defined(__powerpc__) && !defined(_POWER)
 #error Not ppc32 architecture
+#endif
+#else
+#error Unsupported compiler
 #endif
     ], [], [pike_cv_machine_code_arch=ppc32], [])
   ])
