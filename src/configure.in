@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.450 2000/12/27 23:09:11 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.451 2000/12/28 13:04:58 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1502,6 +1502,12 @@ AC_CACHE_VAL(pike_cv_sys_resource_h, [
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif /* HAVE_TIME_H */
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif /* HAVE_SYS_TIME_H */
 
 #include <sys/resource.h>
 
