@@ -15,7 +15,8 @@
  *     attributes;
  *
  *   CVAR int foo;
- *   PIKEVAR mapping m;
+ *   PIKEVAR mapping m
+ *     attributes;
  *
  *   DECLARE_STORAGE; // optional
  *
