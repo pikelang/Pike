@@ -46,7 +46,7 @@ static string stripDocMarker(string s) {
 static void extractorErrorAt(SourcePosition sp, string message, mixed ... args)
 {
   message = sprintf(message, @args);
-  werror("CExtractor error! %O\n", message);
+  werror("CExtractor error! %O  %O\n", message, sp);
   message = "CExtractor error: " + message;
   throw ( ({ message, sp }) );
 }
