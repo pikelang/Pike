@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.9 1998/05/17 22:59:18 grubba Exp $
+ * $Id: pike_macros.h,v 1.10 1999/01/31 22:37:47 grubba Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -52,7 +52,9 @@
 #define isgraph(X)	(ispunct(X) || isupper(X) || islower(X) || isdigit(X))
 #endif /* !HAVE_ISGRAPH */
 
-#define ALIGN_BOUND sizeof(char *)
+/* On some OS's sizeof(long long) is 8 while sizeof(char *) is still 4.
+ */
+#define ALIGN_BOUND 16 /* sizeof(char *) */
 
 #ifdef __GNUC__
 #define ALIGNOF(X) __alignof__(X)
