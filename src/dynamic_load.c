@@ -71,7 +71,13 @@ void f_load_module(INT32 args)
 
 #ifdef HAVE_DLOPEN
   init=(modfun)dlsym(module, "pike_module_init");
+  if (!init) {
+    init=(modfun)dlsym(module, "_pike_module_init");
+  }
   exit=(modfun)dlsym(module, "pike_module_exit");
+  if (!exit) {
+    exit=(modfun)dlsym(module, "_pike_module_exit");
+  }
 
 #elif defined(USE_DLD)
   init = (modfun)dld_get_func("pike_module_init");
