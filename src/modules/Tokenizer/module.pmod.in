@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.34 2004/12/03 15:32:12 grubba Exp $
+// $Id: module.pmod.in,v 1.35 2004/12/16 16:22:02 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -200,9 +200,7 @@ class PikeCompiler
   inherit GroupingCompiler;
 
 #define SYNTAX_ERROR(MSG)						\
-    report(ERROR, token && (token->context ||				\
-			    (token->group_start &&			\
-			     token->group_start->context)), "parser",	\
+    report(ERROR, token && token->context, "parser",			\
 	   sprintf("%s Detected when looking at %s.", MSG, token||"EOS"))
 
   class Modifiers
@@ -509,6 +507,7 @@ class PikeCompiler
       expr = LiteralExpression(token);
       tokens_left->next();
       if (token->parse_meta_function) {
+	werror("Parsing meta function for token %O...\n", token);
 	token->parse_meta_function(tokens_left);
       }
       if (!tokens_left ||
@@ -551,27 +550,25 @@ class PikeCompiler
       return 0;
     }
     token = tokens_left->value();
-    if (token->group_start) {
-      if (token->group_start->symbol == "(") {
+    if (token->is_group) {
+      if (token->symbol == "(") {
 	tokens_left->next();
 	do {
 	  Token sub_token;
-	  if ((sizeof(token->contents) == 1) &&
-	      ((sub_token = token->contents->head())->group_start)) {
+	  if ((sizeof(token->get_contents()) == 1) &&
+	      ((sub_token = token->get_contents()->head())->is_group)) {
 	    werror("sub_token: %O\n"
-		   "group_start: %O\n"
-		   "symbol: %O\n", sub_token, sub_token->group_start,
-		   sub_token->group_start->symbol);
-	    switch (sub_token->group_start->symbol) {
+		   "symbol: %O\n", sub_token, sub_token->symbol);
+	    switch (sub_token->symbol) {
 	    case "(":
 	      token = sub_token;
 	      continue;
 	    case "{":
 	      return predef_call("aggregate",
-				 parse_argument_list(sub_token->contents));
+				 parse_argument_list(sub_token->get_contents()));
 	    case "[":
 	      return predef_call("aggregate_mapping",
-				 parse_mapping_list(sub_token->contents));
+				 parse_mapping_list(sub_token->get_contents()));
 	    default:
 	      // Shouldn't be reached, but...
 	      token = sub_token;
@@ -583,24 +580,23 @@ class PikeCompiler
 	} while(1);
 	werror("Checking for multiset in %O...\n", tokens_left);
 	werror("Current token: %s\n", token);
-	werror("token->contents: %O\n", token->contents);
-	if (sizeof(token->contents) &&
-	    (token->contents->head()->symbol == "<")) {
-	  return parse_multiset_expression(token->contents);
+	werror("token->contents: %O\n", token->get_contents());
+	if (sizeof(token->get_contents()) &&
+	    (token->get_contents()->head()->symbol == "<")) {
+	  return parse_multiset_expression(token->get_contents());
 	}
-	tokens_left = get_iterator(token->contents);
+	tokens_left = get_iterator(token->get_contents());
 	Expression expr = parse_expression(tokens_left);
 	if (tokens_left) {
 	  // FIXME:
 	  // return parse_var_decl(expr, tokens_left);
 	}
 	return expr;
-      } else if (token->group_start->symbol == "[") {
+      } else if (token->symbol == "[") {
 	// Probable soft cast.
 	tokens_left->next();
-	return parse_expression(get_iterator(token->contents));	
+	return parse_expression(get_iterator(token->get_contents()));	
       }
-      token = token->group_start;
       SYNTAX_ERROR("Unexpected grouping.");
       tokens_left->next();
       return 0;
@@ -638,27 +634,25 @@ class PikeCompiler
 
   Expression parse_funcall_expression(Iterator tokens_left)
   {
-    int potential_cast =
-      tokens_left && tokens_left->value()->group_start &&
-      (<"(", "[">)[tokens_left->value()->group_start->symbol];
+    Token token = tokens_left && tokens_left->value();
+    int potential_cast = token && token->is_group &&
+      (<"(", "[">)[token->symbol];
     int is_fun_call;
     Expression expr = parse_basic_expression(tokens_left);
     werror("parse_funcall_expression(%O)\n", tokens_left);
-    Token token;
     while (tokens_left && 
 	   (((token = tokens_left->value())->symbol == "->") ||
-	    (token->group_start &&
-	     (<"(", "[">)[token->group_start->symbol]))) {
+	    (token->is_group && (<"(", "[">)[token->symbol]))) {
       is_fun_call = 0;
-      if (token->group_start) {
-	if (token->group_start->symbol == "(") {
-	  expr = FunCallExpression(expr, parse_argument_list(token->contents));
+      if (token->is_group) {
+	if (token->symbol == "(") {
+	  expr = FunCallExpression(expr, parse_argument_list(token->get_contents()));
 	  is_fun_call = 1;
 	} else {
 	  expr =
 	    predef_call("`[]",
 			ArgList(expr,
-				ArgList(parse_expression(get_iterator(token->contents)))));
+				ArgList(parse_expression(get_iterator(token->get_contents())))));
 	}
 	tokens_left->next();
       } else {
@@ -677,10 +671,10 @@ class PikeCompiler
     }
     if (tokens_left) {
       werror("Left overs:%O\n", tokens_left);
-      if ((token = tokens_left->value())->group_start) {
-	if (is_fun_call && (token->group_start->symbol == "{")) {
+      if ((token = tokens_left->value())->is_group) {
+	if (is_fun_call && (token->symbol == "{")) {
 	  // Implicit lambda.
-	  Lambda implicit_lambda = Lambda("lambda", token->group_start->pos);
+	  Lambda implicit_lambda = Lambda("lambda", token->pos);
 	  implicit_lambda->parse_lambda_body(tokens_left);
 	  if (expr->args) {
 	    ArgList last_arg = expr->args;
@@ -815,9 +809,9 @@ class PikeCompiler
       }
       Token name = token;
       tokens_left->next();
-      if (tokens_left && (token = tokens_left->value())->group_start) {
+      if (tokens_left && (token = tokens_left->value())->is_group) {
 	// Function prototype/definition.
-	if (token->group_start->symbol == "[") {
+	if (token->symbol == "[") {
 	  SYNTAX_ERROR("Unexpected index operation.");
 	  tokens_left->next();
 	} else {
@@ -862,14 +856,14 @@ class PikeCompiler
     if (!tokens_left) return 0;
     if ((token = tokens_left->value())->parse_meta_program) {
       tokens_left->next();
+      werror("Parsing meta program for token %O...\n", token);
       token->parse_meta_program(scope, tokens_left, current_modifiers);
       return;
     }
-    if (token->group_start &&
-	token->group_start->symbol == "{") {
+    if (token->is_group && token->symbol == "{") {
       tokens_left->next();
       BlockStatement block = BlockStatement();
-      block->parse_meta_program(scope, get_iterator(token->contents),
+      block->parse_meta_program(scope, get_iterator(token->get_contents()),
 				current_modifiers);
       scope->add_meta_object(block);
       return;
@@ -975,8 +969,8 @@ class PikeCompiler
     {
       Token token;
       if (!tokens_left ||
-	  !(token = tokens_left->value())->group_start ||
-	  (token->group_start->symbol != "(")) {
+	  !(token = tokens_left->value())->is_group ||
+	  (token->symbol != "(")) {
 	tokens_left->insert(default_args());
 	werror("Hooked in default arguments: %O\n"
 	       "%s\n", tokens_left, describe_backtrace(backtrace()));
@@ -1147,13 +1141,13 @@ class PikeCompiler
     {
       Token token;
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "{")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "{")) {
 	SYNTAX_ERROR("Expected function body.");
 	return;
       }
       function_body = BlockStatement();
-      function_body->parse_meta_program(this, get_iterator(token->contents),
+      function_body->parse_meta_program(this, get_iterator(token->get_contents()),
 					0);
       tokens_left->next();
     }
@@ -1167,16 +1161,16 @@ class PikeCompiler
     {
       Token token;
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "(")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
 	SYNTAX_ERROR("Expected list of parameters.");
 	return;
       }
-      parse_param_list(token->contents);
+      parse_param_list(token->get_contents());
       tokens_left->next();
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "{")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "{")) {
 	return;
       }
       parse_lambda_body(tokens_left);
@@ -1193,18 +1187,18 @@ class PikeCompiler
     {
       Token token;
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "(")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
 	SYNTAX_ERROR("Expected list of parameters.");
 	return;
       }
 #if 0
       // FIXME:
-      parse_param_list(token->contents);
+      parse_param_list(token->get_contents());
       tokens_left->next();
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "{")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "{")) {
 	return;
       }
       parse_lambda_body(tokens_left);
@@ -1341,7 +1335,7 @@ class PikeCompiler
 			    Modifiers current_modifiers)
     {
       Token token = tokens_left->value();
-      SYNTAX_ERROR("else without a corresponing if.");
+      SYNTAX_ERROR("else without a corresponding if.");
     }
   }
 
@@ -1413,12 +1407,12 @@ class PikeCompiler
       scope->add_meta_object(this);
       Token token;
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "(")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
 	SYNTAX_ERROR("Expected parameters to for().");
 	return;
       }
-      parse_for_list(token->contents);
+      parse_for_list(token->get_contents());
       tokens_left->next();
       parse_statement(this_object(), tokens_left, current_modifiers);
     }
@@ -1479,12 +1473,12 @@ class PikeCompiler
       scope->add_meta_object(this);
       Token token;
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "(")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
 	SYNTAX_ERROR("Expected parameters to foreach().");
 	return;
       }
-      parse_foreach_list(token->contents);
+      parse_foreach_list(token->get_contents());
       tokens_left->next();
       parse_statement(this_object(), tokens_left, current_modifiers);
     }
@@ -1537,12 +1531,12 @@ class PikeCompiler
       scope->add_meta_object(this);
       Token token;
       if (!tokens_left ||
-	  !((token = tokens_left->value())->group_start) ||
-	  (token->group_start->symbol != "(")) {
+	  !((token = tokens_left->value())->is_group) ||
+	  (token->symbol != "(")) {
 	SYNTAX_ERROR("Expected expression to if().");
 	return;
       }
-      parse_if_expr(token->contents);
+      parse_if_expr(token->get_contents());
       tokens_left->next();
       parse_statement(this_object(), tokens_left, current_modifiers);
       if (!tokens_left ||
@@ -1678,6 +1672,7 @@ class PikeCompiler
 
     // Called at
     //   class name '{' · class_body '}'
+    // and at the top-level.
     void parse_class_body(TokenList tokens, Modifiers|void default_modifiers)
     {
       if (!tokens) return;
@@ -1699,10 +1694,11 @@ class PikeCompiler
 	    return;
 	  }
 	}
-	if (token->group_start) {
-	  if (token->group_start->symbol == "{") {
+	werror("Parse_class_body(): Token: %O\n", token);
+	if (token->is_group) {
+	  if (token->symbol == "{") {
 	    // Modifier scope.
-	    parse_class_body(token->contents, current_modifiers);
+	    parse_class_body(token->get_contents(), current_modifiers);
 	  } else {
 	    report(ERROR, token->context, "parser",
 		   "Unexpected grouped expression in class body %s.",
@@ -1715,9 +1711,11 @@ class PikeCompiler
 	  } else if (token->parse_meta_program) {
 	    // inherit, class, constant, typedef, enum, etc.
 	    tokens_left->next();
+	    werror("Parsing meta program for token %O...\n", token);
 	    token->parse_meta_program(this, tokens_left, current_modifiers);
 	  } else {
 	    // FIXME: variable, function, etc.
+	    werror("var func etc, token:%O\n", token);
 	    Expression type = parse_expression(tokens_left);
 	    parse_decl(this, tokens_left, type, current_modifiers);
 	  }
@@ -1774,17 +1772,17 @@ class PikeCompiler
 	return;
       }
       Token token = tokens_left->value();
-      if (!token->group_start) {
+      if (!token->is_group) {
 	current_class->add_identifier(current_modifiers, token, this);
 	tokens_left->next();
 	token = tokens_left->value();
       }
-      if (!token->group_start) {
+      if (!token->is_group) {
 	report(ERROR, tokens_left->last_pos, "parser",
 	       "Expected class definition.");
 	return;
       }
-      if (token->group_start->symbol == "(") {
+      if (token->symbol == "(") {
 	Lambda create_fun = Lambda("lambda", token->context);
 	create_fun->return_type =
 	  LiteralExpression(VoidType("void", token->context));
@@ -1792,16 +1790,16 @@ class PikeCompiler
 	this->add_meta_object(create_fun);
 	this->add_identifier(Modifiers(({Modifier("static", token->context)})),
 			     create_fun->name, create_fun);
-	parse_create_args(create_fun, token->contents);
+	parse_create_args(create_fun, token->get_contents());
 	tokens_left->next();
 	token = tokens_left->value();
       }
-      if (!token->group_start || token->group_start->symbol != "{") {
+      if (!token->is_group || token->symbol != "{") {
 	report(ERROR, tokens_left->last_pos, "parser",
 	       "Expected class body.");
 	return;
       }
-      parse_class_body(token->contents);
+      parse_class_body(token->get_contents());
       tokens_left->next();
     }
 
@@ -1887,9 +1885,6 @@ class PikeCompiler
     static {
       // Symbol ==> TokenClass
       mapping(string:program(Token)) Pike_0_1_Tokens = ([
-	"]":EndGroup,
-	")":EndGroup,
-	"}":EndGroup,
 	"!":Token,
 	"%":Token,
 	"&":Token,
