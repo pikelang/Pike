@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.73 2004/08/16 20:27:23 mast Exp $
+/* $Id: sslfile.pike,v 1.74 2004/08/17 16:06:07 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -250,6 +250,7 @@ static THREAD_T op_thread;
       stream->set_id (0);						\
       SSL3_DEBUG_MSG ("Starting %s local backend\n",			\
 		      NONBLOCKING_MODE ? "nonblocking" : "blocking");	\
+									\
       while (1) {							\
 	stream->set_read_callback ((ENABLE_READS) && ssl_read_callback); \
 	stream->set_write_callback (sizeof (write_buffer) && ssl_write_callback); \
@@ -268,7 +269,7 @@ static THREAD_T op_thread;
 	  if (stream) {							\
 	    stream->set_backend (real_backend);				\
 	    stream->set_id (1);						\
-	    update_internal_state (1);					\
+	    update_internal_state();					\
 	  }								\
 	  {ERROR_CODE;}							\
 	  break run_maybe_blocking;					\
@@ -297,7 +298,7 @@ static THREAD_T op_thread;
 									\
       stream->set_backend (real_backend);				\
       stream->set_id (1);						\
-      update_internal_state (2);					\
+      update_internal_state();						\
     }									\
   } while (0)
 
@@ -990,22 +991,13 @@ string _sprintf(int t) {
 }
 
 
-static void update_internal_state (void|int x)
+static void update_internal_state()
 // Update the internal callbacks according to the current state.
 {
-  if (stream->query_backend() == local_backend) {
-    // Inside the local backend. Read and close callbacks are assumed
-    // to be installed already.
-    stream->set_write_callback (sizeof (write_buffer) && ssl_write_callback);
-#ifdef SSL3_DEBUG_MORE
-    SSL3_DEBUG_MSG ("update_internal_state: Using local backend [%O %O %O]\n",
-		    stream->query_read_callback(),
-		    stream->query_write_callback(),
-		    stream->query_close_callback());
-#endif
-  }
+  // When the local backend is used, callbacks are set explicitly
+  // before it's started.
+  if (stream->query_backend() != local_backend) {
 
-  else {
     if (CALLBACK_MODE) {
 
       if (read_callback || close_callback || accept_callback || SSL_INTERNAL_TALK) {
