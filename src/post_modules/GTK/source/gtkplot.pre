@@ -1,20 +1,28 @@
-require plot;
-ADD_INCLUDE(#include "gtkplot.h");
-ADD_INCLUDE(#include "gtkplotlayout.h");
+require gtkextra;
+class plot;
+inherit misc;
+#define GTK_PLOT_DATASET(X) ((GtkPlotData *)X)
+#define GtkPlotDataset GtkPlotData
+#define GdkGc GdkGC
+#define pgtk_GdkGc_program pgtk_GdkGC_program
+// W(GtkPlot) is a widget for GTK+. It allows to draw high quality
+// scientific plots in two dimensions with a look and feel very
+// similar to Microcal Origin for Windows. The distribution includes
+// W(GtkPlotLayout), a simple GtkLayout subclass, and a demo program
+// showing two layered plots with different kind of curves. You can
+// choose between a number of symbol types, lines, connectors
+// -straight lines, steps, splines-, and change their attributes
+// -color, size, width-. You can also plot functions, add error bars,
+// edit legends, rotate and move axis titles, change axis properties,
+// etc.
+// <p>
+//  W(GtkPlotCanvas) is a W(GtkPlotLayout) and allows to DnD plots,
+//  points, and child objects (text, axis titles). You can move them
+//  or resize your plots dragging with the mouse!
 
-constant int GTK_PLOT_SHOW_LEFT_AXIS;
-constant int GTK_PLOT_SHOW_RIGHT_AXIS;
-constant int GTK_PLOT_SHOW_TOP_AXIS;
-constant int GTK_PLOT_SHOW_BOTTOM_AXIS;
-constant int GTK_PLOT_SHOW_V_GRID;
-constant int GTK_PLOT_SHOW_H_GRID;
-constant int GTK_PLOT_SHOW_X0;
-constant int GTK_PLOT_SHOW_Y0;
-
-
+constant int GTK_PLOT_TRANSPARENT;
 constant int GTK_PLOT_SCALE_LINEAR;
 constant int GTK_PLOT_SCALE_LOG10;
-
 constant int GTK_PLOT_SYMBOL_NONE;
 constant int GTK_PLOT_SYMBOL_SQUARE;
 constant int GTK_PLOT_SYMBOL_CIRCLE;
@@ -26,360 +34,123 @@ constant int GTK_PLOT_SYMBOL_PLUS;
 constant int GTK_PLOT_SYMBOL_CROSS;
 constant int GTK_PLOT_SYMBOL_STAR;
 constant int GTK_PLOT_SYMBOL_IMPULSE;
-
 constant int GTK_PLOT_SYMBOL_EMPTY;
 constant int GTK_PLOT_SYMBOL_FILLED;
 constant int GTK_PLOT_SYMBOL_OPAQUE;
-
 constant int GTK_PLOT_LINE_NONE;
-constant int GTK_PLOT_LINE_FULL;
 constant int GTK_PLOT_LINE_DOTTED;
 constant int GTK_PLOT_LINE_DASHED;
 constant int GTK_PLOT_LINE_DOT_DASH;
 constant int GTK_PLOT_LINE_DOT_DOT_DASH;
 constant int GTK_PLOT_LINE_DOT_DASH_DASH;
-
 constant int GTK_PLOT_CONNECT_NONE;
 constant int GTK_PLOT_CONNECT_STRAIGHT;
 constant int GTK_PLOT_CONNECT_SPLINE;
 constant int GTK_PLOT_CONNECT_HV_STEP;
 constant int GTK_PLOT_CONNECT_VH_STEP;
 constant int GTK_PLOT_CONNECT_MIDDLE_STEP;
-
 constant int GTK_PLOT_LABEL_NONE;
 constant int GTK_PLOT_LABEL_LEFT;
 constant int GTK_PLOT_LABEL_RIGHT;
 constant int GTK_PLOT_LABEL_TOP;
 constant int GTK_PLOT_LABEL_BOTTOM;
-
+constant int GTK_PLOT_ERROR_DIV_ZERO;
+constant int GTK_PLOT_ERROR_LOG_NEG;
 constant int GTK_PLOT_AXIS_LEFT;
 constant int GTK_PLOT_AXIS_RIGHT;
 constant int GTK_PLOT_AXIS_TOP;
 constant int GTK_PLOT_AXIS_BOTTOM;
-
-constant int GTK_PLOT_LABEL_FIXED;
+constant int GTK_PLOT_LABEL_FLOAT;
 constant int GTK_PLOT_LABEL_EXP;
-
-
 constant int GTK_PLOT_TICKS_NONE;
 constant int GTK_PLOT_TICKS_LEFT;
 constant int GTK_PLOT_TICKS_RIGHT;
 constant int GTK_PLOT_TICKS_UP;
 constant int GTK_PLOT_TICKS_DOWN;
 
-
-class plot;
-#include "gtkplot.h"
-#include "gtkplotlayout.h"
-
-#define GTK_PLOT_DATASET(X) ((GtkPlotData *)X)
-#define GtkPlotDataset GtkPlotData
-
-static void push_gtk_plot_text( GtkPlotText *t )
-{
-  push_text("x");      push_int( t->x );
-  push_text("y");      push_int( t->y );
-  push_text("angle");  push_int( t->angle );
-  push_text("font");   push_gdkobject( t->font, Font );
-  push_text("color");  push_gdkobject( &t->color, Color );
-  f_aggregate_mapping( 10 );
-}
-
-static void push_gtk_plot_point( GtkPlotPoint *p )
-{
-  push_text( "x" ); push_float( p->x );
-  push_text( "y" ); push_float( p->y );
-  push_text( "xerr" ); push_float( p->xerr );
-  push_text( "yerr" ); push_float( p->yerr );
-  push_text( "deltax" ); push_float( p->deltax );
-  f_aggregate_mapping( 5 );
-}
-
-static void push_gtk_plot_line( GtkPlotLine *l )
-{
-  push_text( "line_style" ); push_int( l->line_style );
-  push_text( "line_width" ); push_int( l->line_width );
-  push_text("color");  push_gdkobject( &l->color, Color );
-  f_aggregate_mapping( 6 );
-}
-
-static void push_gtk_plot_symbol( GtkPlotSymbol *l )
-{
-  push_text( "symbol_type" ); push_int( l->symbol_type );
-  push_text( "symbol_style" ); push_int( l->symbol_style );
-  push_text( "size" );         push_int( l->size );
-  push_text( "line_width" );   push_int( l->line_width );
-  push_text("color");  push_gdkobject( &l->color, Color );
-  f_aggregate_mapping( 10 );
-}
-
-static void push_gtk_plot_axis( GtkPlotAxis *a )
-{
-  push_text( "title" ); push_text( a->title );
-  push_text( "title_attr" ); push_gtk_plot_text( &a->title_attr );
-  push_text( "title_visible" ); push_int( a->title_visible );
-  push_text( "orientation" ); push_int( a->orientation );
-  push_text( "scale_type" ); push_int( a->scale_type );
-  push_text( "scale_type" ); push_int( a->scale_type );
-  push_text( "line" ); push_gtk_plot_line( &a->line );
-  push_text( "min" ); push_float( a->min );
-  push_text( "max" ); push_float( a->max );
-  push_text( "major_ticks" ); push_float( a->major_ticks );
-  push_text( "minor_ticks" ); push_float( a->minor_ticks );
-  push_text( "ticks_length" ); push_int( a->ticks_length );
-  push_text( "ticks_width" ); push_int( a->ticks_width );
-  push_text( "label_attr" ); push_gtk_plot_text( &a->label_attr );
-  push_text( "label_precision" ); push_int( a->label_precision );
-  push_text( "label_style" ); push_int( a->label_style );
-  push_text( "label_mask" ); push_int( a->label_mask );
-  push_text( "ticks_mask" ); push_int( a->ticks_mask );
-  f_aggregate_mapping( 36 );
-}
-
-static void push_gtk_plot_data( GtkPlotData *d )
-{
-  int i;
-  push_text( "is_function" ); push_int( d->is_function );
-  push_text( "is_visible" );  push_int( d->is_visible );
-  push_text( "legend" );  push_text( d->legend );
-  push_text( "symbol" ); push_gtk_plot_symbol( &d->symbol );
-  push_text( "line" ); push_gtk_plot_line( &d->line );
-  push_text( "x" ); push_gtk_plot_line( &d->x );
-  push_text( "y" ); push_gtk_plot_line( &d->y );
-  push_text( "line_connector" ); push_int( d->line_connector );
-  push_text( "show_xerrbars"); push_int( d->show_xerrbars );
-  push_text( "show_yerrbars"); push_int( d->show_yerrbars );
-  push_text( "xerrbar_length"); push_int( d->xerrbar_length );
-  push_text( "yerrbar_length"); push_int( d->yerrbar_length );
-  if(!d->is_function)
-  {
-    push_text( "points" );
-    for(i=0; i<d->num_points; i++)
-      push_gtk_plot_point( d->points+i );
-    f_aggregate( d->num_points );
-  } else {
-    /*     push_text("function"); */
-    /*                            */
-  }
-  push_text("x_step"); push_int( d->x_step );
-}
-
+setmember int flags;
 member int flags;
-member float x;
-member float y;
-member float width;
-member float height;
 
-member float xmin;
-member float ymin;
-member float xmax;
-member float ymax;
-member float xscale;
-member float yscale;
-
-member float legends_x;
-member float legends_y;
-member int legends_line_width;
-member int legends_shadow_width;
-member int show_legends;
-member int show_legends_border;
-member int show_legends_shadow;
-
-
-FUNCTION(get_bottom, "function(void:mapping)");
-{
-  push_gtk_plot_axis( &GTK_PLOT(THIS->obj)->bottom );
-}
-FUNCTION(get_top, "function(void:mapping)");
-{
-  push_gtk_plot_axis( &GTK_PLOT(THIS->obj)->top );
-}
-FUNCTION(get_left, "function(void:mapping)");
-{
-  push_gtk_plot_axis( &GTK_PLOT(THIS->obj)->left );
-}
-FUNCTION(get_right, "function(void:mapping)");
-{
-  push_gtk_plot_axis( &GTK_PLOT(THIS->obj)->right );
-}
-
-FUNCTION(get_major_vgrid, "function(void:mapping)");
-{
-  push_gtk_plot_line( &GTK_PLOT(THIS->obj)->major_vgrid );
-}
-
-FUNCTION(get_major_hgrid, "function(void:mapping)");
-{
-  push_gtk_plot_line( &GTK_PLOT(THIS->obj)->major_hgrid );
-}
-
-FUNCTION(get_minor_vgrid, "function(void:mapping)");
-{
-  push_gtk_plot_line( &GTK_PLOT(THIS->obj)->minor_vgrid );
-}
-
-FUNCTION(get_minor_hgrid, "function(void:mapping)");
-{
-  push_gtk_plot_line( &GTK_PLOT(THIS->obj)->minor_hgrid );
-}
-
-FUNCTION(get_x0_line, "function(void:mapping)");
-{
-  push_gtk_plot_line( &GTK_PLOT(THIS->obj)->x0_line );
-}
-
-FUNCTION(get_y0_line, "function(void:mapping)");
-{
-  push_gtk_plot_line( &GTK_PLOT(THIS->obj)->y0_line );
-}
-
-FUNCTION(get_legends_attr, "function(void:mapping)");
-{
-  push_gtk_plot_text( &GTK_PLOT(THIS->obj)->legends_attr );
-}
-
-
-void create( ?GdkDrawable );
-void set_drawable( GdkDrawable );
-void move( float, float );
-void resize( float, float );
-void move_resize( float, float, float, float );
+void create( ?GDK.Drawable drawable );
+void set_drawable( GDK.Drawable drawable );
+GDK.Drawable get_drawable();
+void set_background( *GDK.Color );
+void paint( GDK.Rectangle );
+void refresh( GDK.Rectangle );
+void move( float x, float y );
+void resize( float w, float h );
+void move_resize( float x, float y, float w, float h );
+void set_xrange( float xmin, float xmax );
+void set_yrange( float ymin, float ymax );
 void set_range( float xmin, float xmax, float ymin, float ymax );
-void set_xscale( int );
-void set_yscale( int );
-void put_text( float x, float y, int angle, ?GdkFont font, *GdkColor color, string text );
-FUNCTION(get_axis, "function(int:mapping)");
-{
-  int ax;
-  get_all_args( "get_axis", args, "%d", &ax );
-  push_gtk_plot_axis( gtk_plot_get_axis( GTK_PLOT( THIS->obj ), ax) );
-}
-void axis_set_title( int axis, string title );
-void axis_show_title( int );
-void axis_hide_title( int );
-void axis_move_title( int axis, int angle, int x, int y );
-void axis_set_attributes( int axis, int width, *GdkColor color );
-void axis_set_ticks( int axis, float major_tic, float minor_tic );
+void set_xscale( int scale_type );
+void set_yscale( int scale_type );
+int get_xscale();
+int get_yscale();
+void put_text( float x, float y, int angle, string font, int height, GDK.Color fg, GDK.Color bg, int justification, string text );
+void axis_set_visible( int axis, int visible );
+int axis_get_visible( int axis );
+void axis_show_title( int ais );
+void axis_hide_title( int ais );
+void axis_move_title( int axis, int angle, float x, float y );
+void axis_justify_title( int axis, int justification);
+void axis_set_attributes( int axis, int width, *GDK.Color color );
+void axis_set_ticks( int orientation, float major_ticks, float minor_ticks );
 void axis_set_ticks_length( int axis, int length );
-void axis_set_ticks_width( int axis, int width );
-void axis_show_ticks( int axis, int mask );
-void axis_labels_set_attributes( int axis, GdkFont font, *GdkColor color );
-void axis_labels_set_numbers( int axis, int style, int precision );
-
-void set_y0line_attributes( int style, int width, *GdkColor color );
-void set_x0line_attributes( int style, int width, *GdkColor color );
-void set_major_vgrid_attributes( int style, int width, *GdkColor color );
-void set_major_hgrid_attributes( int style, int width, *GdkColor color );
-void set_minor_vgrid_attributes( int style, int width, *GdkColor color );
-void set_minor_hgrid_attributes( int style, int width, *GdkColor color );
-
+void axis_set_ticks_width( int axis, int width ));
+void axis_show_ticks( int axis, int major_mask, int minor_mask );
+void axis_set_ticks_limits( int orientation, float begin, float end );
+void axis_unset_ticks_limits( int orientation );
+void axis_show_labels( int axis, int labels_mask );
+void axis_labels_set_attributes( int axis, string font, int height, *GDK.Color foreground, *GDK.Color background );
+void axis_labels_set_numbers( int axis, int stype, int precision );
+void x0_set_visible( int visible );
+int x0_get_visible(  );
+void y0_set_visible( int visible );
+int y0_get_visible(  );
+void grids_set_visible( int vmajor, int vminor, int hmajor, int hminor );
+void y0line_set_attributes( int style, int width, *GDK.Color color );
+void x0line_set_attributes( int style, int width, *GDK.Color color );
+void major_vgrid_set_attributes( int style, int width, *GDK.Color color );
+void minor_vgrid_set_attributes( int style, int width, *GDK.Color color );
+void major_hgrid_set_attributes( int style, int width, *GDK.Color color );
+void minor_hgrid_set_attributes( int style, int width, *GDK.Color color );
 void show_legends();
 void hide_legends();
 void show_legends_border( int show_shadow, int shadow_width );
 void hide_legends_border();
 void legends_move( float x, float y );
-void legends_set_attributes( GdkFont font, *GdkColor color );
-
-plot_dataset dataset_new();
-void add_dataset( plot_dataset );
-
-/* static struct svalue *my_dup_svalue( struct svalue *s ) */
-/* { */
-/*   struct svalue *res; */
-/*   res = malloc(sizeof(struct svalue)); */
-/*   assign_svalue_no_free( res, s ); */
-/*   return res; */
-/* } */
-
-/* static void my_free_svalue( struct svalue *s ) */
-/* { */
-/*   free_svalue( s ); */
-/*   free( s ); */
-/* } */
-
-/* static gdouble my_generic_function_wrapper( float x, float *err ) */
-/* { */
-/*   if(err) *err = 0.0; */
-
-/* } */
-
-/* FUNCTION(add_function, "function(function:object)"); */
-/* NAME_ARGS(f); */
-/* RETURNS(GTK.PlotData); */
-/* // f(x) -> y || ({ y,y_error }) */
-/* { */
-/*   GtkPlotData *d = gtk_plot_add_function( my_generic_function_wrapper ); */
-
-/*   gtk_object_set_data_full(THIS->obj, "pike_method_function", */
-/*                              (void*)my_dup_svalue(sp-1), (void*)my_free_svalue); */
-/* } */
+void legends_set_attributes(string font, int height, GDK.Color fg, GDK.Color bg);
+void add_dataset( plot_dataset data );
+void remove_dataset( plot_dataset data );
+void draw_dataset( GDK.GC gc, plot_dataset data );
 
 
 class plot_dataset;
-#include "gtkplot.h"
-#include "gtkplotlayout.h"
 #define GTK_PLOT_DATASET(X) ((GtkPlotData *)X)
 #define GtkPlotDataset GtkPlotData
-
-
-void set_symbol( int type, int style, int size, int line_width, *GdkColor color );
-void set_connector( int type );
-
-void set_line_attributes( int style, int width, *GdkColor color );
-
-void set_xy_attributes( int style, int width, *GdkColor color );
-
+void create();
+void set_points(doublearray x, doublearray y, doublearray dx, doublearray dy, int num_points);
+void set_x( doublearray x );
+void set_y( doublearray y );
+void set_dx( doublearray dx );
+void set_dy( doublearray dy );
+void set_numpoints( int numpoints );
+int get_numpoints( );
+void set_symbol( int type, int style, int size, int line_width, *GDK.Color color);
+void set_connector( int connector );
+int get_connector( );
+void set_line_attributes( int style, int width, *GDK.Color color);
+void set_xy_attributes( int style, int width, *GDK.Color color );
 void show_xerrbars();
 void show_yerrbars();
 void hide_xerrbars();
 void hide_yerrbars();
-void set_legend( string );
+void set_legend( string legend );
+void show_legend();
+void hide_legend();
+void set_name( string nme );
 #define gtk_plot_dataset_show gtk_plot_show_dataset
-void show();
 #define gtk_plot_dataset_hide gtk_plot_hide_dataset
+void show();
 void hide();
-
-FUNCTION(set_points, "function(array(array):object)");
-// ({ ({ x,y,[xerr[,yerr[,deltax]]] }), ... })
-// all numbers are floats.
-{
-  struct array *a;
-  GtkPlotPoint *points;
-  int npoints;
-  int i;
-  get_all_args( "set_points", args, "%a", &a );
-  points = gtk_plot_dataset_get_points( GTK_PLOT_DATASET(THIS->obj), &npoints );
-  if(points) free(points);
-  points = malloc( sizeof( GtkPlotPoint ) * a->size );
-  MEMSET(points, 0, sizeof( GtkPlotPoint ) * a->size);
-  for(i=0; i<a->size; i++)
-  {
-    points[i].x=points[i].y=points[i].xerr=points[i].yerr=points[i].deltax=0.0;
-    if(a->item[i].type == T_ARRAY)
-    {
-      struct array *q;
-      q = a->item[i].u.array;
-      switch(q->size)
-      {
-       case 5:
-         points[i].deltax = q->item[3].u.float_number;
-       case 4:
-         points[i].yerr = q->item[3].u.float_number;
-       case 3:
-         points[i].xerr = q->item[2].u.float_number;
-       case 2:
-         points[i].y = q->item[1].u.float_number;
-       case 1:
-         points[i].x = q->item[0].u.float_number;
-      }
-    }
-  }
-}
-
-class plot_layout;
-#include "gtkplot.h"
-#include "gtkplotlayout.h"
-inherit layout;
-void create( int width, int height );
-void add_plot( plot plot, int x, int y );
-

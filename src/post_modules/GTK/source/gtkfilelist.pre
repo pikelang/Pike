@@ -1,0 +1,19 @@
+require gtkextra;
+class file_list;
+inherit icon_list;
+// A list of files with icons for each file.
+constant int GTK_FILE_LIST_SORT_NAME;
+constant int GTK_FILE_LIST_SORT_TYPE;
+
+void create(int icon_width, int mode, ?string path );
+// mode is one of CONST(GTK_ICON_LIST_);
+void set_filter( string filter );
+// filter is a shell glob pattern
+void open_dir( string path );
+string get_path();
+string get_filename();
+setmember int show_folders;
+member int show_folders;
+setmember int sort_mode;
+member int sort_mode;
+member string filter;

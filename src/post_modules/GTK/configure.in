@@ -16,24 +16,6 @@ AC_ARG_WITH(GTK, [  --without-GTK           no support for GTK],[],[with_GTK=yes
 
 if test "x$with_GTK" = "xyes" ; then
 
-
-
-dnl aclocal.m4 generated automatically by aclocal 1.3
-
-dnl Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
-dnl This Makefile.in is free software; the Free Software Foundation
-dnl gives unlimited permission to copy and/or distribute it,
-dnl with or without modifications, as long as this notice is preserved.
-
-dnl This program is distributed in the hope that it will be useful,
-dnl but WITHOUT ANY WARRANTY, to the extent permitted by law; without
-dnl even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-dnl PARTICULAR PURPOSE.
-
-
-dnl a macro to get the libs/cflags for libglade
-dnl serial 1
-
 dnl AM_PATH_LIBGLADE([ACTION-IF-FOUND [, ACTION-IF-NOT-FOUND [, MODULES]]])
 dnl Test to see if libglade is installed, and define LIBGLADE_CFLAGS, LIBS
 dnl
@@ -282,29 +264,6 @@ PGTK_LIBS="$GTK_LIBS"
 CFLAGS="$CFLAGS $GTK_CFLAGS"
 LIBS="$MODULE_LDFLAGS $LIBS"
 
-# For now, lets ignore this...
-# AC_SUBST(pgtk_has_sheet)
-# AC_CHECK_LIB(GtkSheet, main,,,`gtk-config --libs`)
-# if test x$ac_cv_lib_GtkSheet_main = xyes ; then
-#   pgtk_has_sheet=sheet
-#   echo "**********************************"
-#   echo "Enabling GTK.Sheet related widgets"
-#   if test -f `gtk-config --prefix`/lib/libGtkSheet.a ; then
-#     echo "Forcing addition of .a file to our .so file"
-#     LIBS="$LIBS `gtk-config --prefix`/lib/libGtkSheet.a"
-#   fi
-#   echo "**********************************"
-# else
-#   pgtk_has_sheet=nosheet
-#   unset ac_cv_lib_GtkSheet_main
-#   echo "*********************************************"
-#   echo " Failed to find the GTK Sheet widget. If you "
-#   echo " need it, you can download it from           "
-#   echo " ftp://ripley.ifir.edu.ar/pub/gtk/gtksheet/  "
-#   echo " When you have installed it, rerun configure "
-#   echo "*********************************************"
-# fi
-
 dnl Check for GL/MesaGL libraries
 AC_ARG_WITH(GL-prefix,  [  --with-GL-prefix=DIR    Prefix where GL/MesaGL is installed])
 AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
@@ -336,8 +295,8 @@ if test "$GNOME_CONFIG" = "no"; then
   pgtk_has_gnome=nognome
   AC_MSG_RESULT(no);
 else
-  GNOME_CFLAGS="`gnome-config --cflags gnome gnomeui gnorba gtkxmhtml applets`"
-  GNOME_LIBS="`gnome-config --libs gnome gnomeui gnorba gtkxmhtml applets`"
+  GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets`"
+  GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets`"
   pgtk_has_gnome=gnome
   AC_DEFINE(HAVE_GNOME)
   AC_MSG_RESULT(yes);
@@ -348,14 +307,14 @@ if test "$GNOME_CONFIG" = "no"; then
   pgtk_has_docklets=nodocklets
   AC_MSG_RESULT(no);
 else
-  GNOME_DOCKLETS_LIBS="`gnome-config --libs docklets 2>/dev/null`"
+  GNOME_DOCKLETS_LIBS="`$GNOME_CONFIG --libs docklets 2>/dev/null`"
   if test x"$GNOME_DOCKLETS_LIBS" = x ; then
     pgtk_has_docklets=nodocklets
     AC_MSG_RESULT(no);
   else
     pgtk_has_docklets=docklets
-    GNOME_LIBS="`gnome-config --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
-    GNOME_CFLAGS="`gnome-config --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
+    GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
+    GNOME_CFLAGS="`$GNOME_CONFIG --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
     AC_MSG_RESULT(yes);
   fi
 fi
@@ -364,6 +323,29 @@ fi
 
 AC_CHECK_HEADERS( X11/xpm.h )
 AC_CHECK_LIB(Xpm, XpmReadFileToXpmImage)
+
+
+AC_PATH_PROG(GTKEXTRA_CONFIG,gtkextra-config,no)
+
+AC_SUBST(pgtk_has_gtkextra)
+AC_SUBST(GTKEXTRA_LIBS)
+AC_SUBST(GTKEXTRA_CFLAGS)
+
+if test "$GTKEXTRA_CONFIG" = "no"; then
+  pgtk_has_gtkextra=nogtkextra
+  GTKEXTRA_LIBS=""
+  GTKEXTRA_CFLAGS=""
+else
+  GTKEXTRA_LIBS="`$GTKEXTRA_CONFIG --libs`"
+  save_CFLAGS=$CFLAGS
+  GTKEXTRA_CFLAGS="`$GTKEXTRA_CONFIG --cflags`"
+  CFLAGS="`$GTKEXTRA_CONFIG --cflags`"
+AC_CHECK_HEADERS(gtkextra/gtkextra.h)
+  CFLAGS=$save_CFLAGS
+  pgtk_has_gtkextra=gtkextra
+fi
+
+
 
 AC_MSG_CHECKING([OpenGL])
 

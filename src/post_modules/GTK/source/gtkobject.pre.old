@@ -1,0 +1,106 @@
+class object;
+// The basic GTK class.
+// All other GTK classes inherit this class.
+// The only user-callable functions are the signal related ones.
+signal destroy;
+// Called when the object is destroyed
+
+FUNCTION(destroy, "function(void:void)");
+{
+  if(!args && THIS->obj)
+  {
+    gtk_object_destroy( THIS->obj );
+    THIS->obj = NULL;
+  }
+  my_pop_n_elems(args);
+  push_int(0);
+}
+
+FUNCTION(signal_emit_stop, "function(string:object)")
+RETURNS(GTK.Object);
+NAME_ARGS(signal_name);
+// Halt the emit of the current named signal.
+// Useful in signal handlers when you want to override the behaviour
+// of some default signal handler (key press events, as an example)
+// See signal_connect.
+{
+  char *s;
+  get_all_args("signal_emit_stop", args, "%s", &s);
+  gtk_signal_emit_stop_by_name( GTK_OBJECT(THIS->obj), s);
+  RETURN_THIS();
+}
+
+FUNCTION(signal_disconnect, "function(mixed:object)");
+RETURNS(GTK.Object);
+NAME_ARGS(signal_id);
+// Remove a signal formerly added by signal_connect. The argument is
+// the return value of signal_connect(). See signal connect for more info.
+{
+  int i;
+  get_all_args("signal_disconnect", args, "%d", &i);
+  gtk_signal_disconnect( GTK_OBJECT( THIS->obj ), i );
+}
+
+FUNCTION(signal_block, "function(mixed:object)");
+RETURNS(GTK.Object);
+NAME_ARGS(signal_id);
+// Temporarily block a signal handler. No signals will be received
+// while the hander is blocked.
+// See signal connect for more info.
+{
+  int i;
+  get_all_args("signal_block", args, "%d", &i);
+  gtk_signal_handler_block( GTK_OBJECT( THIS->obj ), i );
+}
+
+FUNCTION(signal_unblock, "function(mixed:object)");
+RETURNS(GTK.Object);
+NAME_ARGS(signal_id);
+// Unblock a formerly blocked signal handler. See signal_block and
+// signal_connect for more info.
+{
+  int i;
+  get_all_args("signal_unblock", args, "%d", &i);
+  gtk_signal_handler_unblock( GTK_OBJECT( THIS->obj ), i );
+}
+
+FUNCTION(signal_connect, "function(string,function,mixed|void:mixed)");
+NAME_ARGS(signal_name,callback_function,callback_arg);
+// Connect a signal to a pike function. The function will be called with
+// the last argument to this function as it's first argument (defaults
+// to 0), the second argument is always the widget, any other
+// arguments are the ones supplied by GTK.
+// <p>
+// The return value of this function can be used to remove a signal
+// with signal_disconnect, and block and unblock the signal will
+// signal_block and signal_unblock.
+{
+  char *a;
+  int id;
+  struct signal_data *b;
+  struct svalue *tmp1, *tmp2;
+  guint signal_id;
+  b = malloc(sizeof(struct signal_data));
+  if(args == 2)
+  {
+    push_int( 0 );
+    args++;
+  }
+  get_all_args("signal_connect", args, "%s%*%*", &a, &tmp1, &tmp2 );
+
+  assign_svalue_no_free( &b->cb, tmp1 );
+  assign_svalue_no_free( &b->args, tmp2 );
+
+  signal_id = gtk_signal_lookup (a, GTK_OBJECT_TYPE (THIS->obj));
+  if(!signal_id)
+  {
+    free(b);
+    error("Signal \"%s\" not defined in the `%s' class ancestry\n",
+	  a, gtk_type_name (GTK_OBJECT_TYPE(THIS->obj)));
+  }
+  id = gtk_signal_connect_full(THIS->obj, a, 0,
+                               (void *)pgtk_signal_func_wrapper, b,
+			       (void *)pgtk_free_signal_data, FALSE, FALSE);
+  my_pop_n_elems(args);
+  push_int( id );
+}

@@ -1,0 +1,118 @@
+class text;
+inherit editable;
+// The Text widget allows multiple lines of text to be displayed and
+// edited. It supports both multi-colored and multi-font text,
+// allowing them to be mixed in any way we wish. It also has a wide
+// set of key based text editing commands, which are compatible with
+// Emacs.
+// <p>
+// The text widget supports full cut-and-paste facilities, including
+// the use of double- and triple-click to select a word and a whole
+// line, respectively.
+// <p>
+// Bugs:<ul>
+//      <li> You cannot add text to the widget before it is realized.
+//     </ul>
+// IMG: GTK.Text(GTK.Adjustment(),GTK.Adjustment())
+// IMG: function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->set_text, 0, "Some text")[0])
+// IMG: function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->insert, 0, "Some text", 0, GDK.Color(255,255,0), GDK.Color(0,0,0))[0])
+void create( ?adjustment xadjustment, ?adjustment yadjustment );
+//  Creates a new GTK.Text widget, initialized with the given
+//  Gtk.Adjustments. These pointers can be used to track the viewing
+//  position of the GTK.Text widget. Passing NULL to either or both of
+//  them will make the text widget create it's own. You can set these
+//  later with the function gtk_text_set_adjustment()
+void set_editable( int editablep );
+// If true, the user can change the text in the widget.
+void set_word_wrap( int wordwrapp );
+// If true, the widget will automatically wrap the contents.
+void set_line_wrap( int linewrapp );
+// If true, the widget will automatically wrap the contents.
+void set_adjustments( adjustment xadjustment, adjustment yadjustment );
+// Change the adjustments (as supplied to the constructor) to other
+// adjustments.
+void set_point( int point );
+// Sets the cursor at the given point. In this case a point
+// constitutes the number of characters from the extreme upper left
+// corner of the widget.
+int get_point();
+// Gets the current position of the cursor as the number of characters
+// from the upper left corner of the GtkText widget.
+int get_length();
+// Returns the length of the all the text contained within the widget
+void freeze();
+// Freezes the widget which disallows redrawing of the widget until it
+// is thawed. This is useful if a large number of changes are going to
+// made to the text within the widget, reducing the amount of flicker
+// seen by the user.
+void thaw();
+// unfreeze the widget.
+FUNCTION(insert, "function(string,void|object,void|object,void|object:object)");
+ARGS(string,GDK.Font,GDK.Color,GDK.Color);
+RETURNS(GTK.Text);
+NAME_ARGS(string,font,bg,fg);
+// syntax:<p>
+// object insert(string what); OR<br>
+// object insert(string what, GDK.Font font, GDK.Color fg, GDK.Color bg); OR<br>
+// object insert(string what, 0, GDK.Color fg, GDK.Color bg); OR<br>
+// object insert(string what, 0, GDK.Color fg); OR<br>
+// object insert(string what, 0, 0, GDK.Color bg);<br>
+// <p>
+//
+// Insert new text, optionally with colors.
+{
+  struct svalue *a, *b, *c;
+  struct pike_string *s;
+  GdkFont *font = 0;
+  GdkColor *fg=0, *bg=0;
+  if(args == 4)
+  {
+    get_all_args("insert", args, "%S%*%*%*", &s,&a,&b,&c);
+
+    if(a->type == T_OBJECT)
+      font = get_gdkobject( a->u.object,Font );
+
+    if(b->type == T_OBJECT)
+      fg = get_gdkobject( b->u.object,Color );
+
+    if(c->type == T_OBJECT)
+      bg = get_gdkobject( c->u.object,Color );
+  } else
+    get_all_args("insert", args, "%S", &s);
+
+  gtk_text_insert( GTK_TEXT( THIS->obj ), font, fg, bg, s->str, s->len );
+
+  RETURN_THIS();
+}
+
+void backward_delete( int nchars );
+// Delete n characters backwards from the cursor position
+void forward_delete( int nchars );
+// Delete n characters forward from the cursor position
+
+FUNCTION(set_text, "function(string:object)")
+NAME_ARGS(to);
+// Set the text to the specified string.
+{
+  gtk_text_freeze( GTK_TEXT( THIS->obj ) );
+  gtk_text_set_point( GTK_TEXT( THIS->obj ), 0 );
+  gtk_text_forward_delete( GTK_TEXT( THIS->obj ),
+			   gtk_text_get_length( GTK_TEXT( THIS->obj ) ) );
+  pgtk_text_insert( 1 );
+  gtk_text_thaw( GTK_TEXT( THIS->obj ) );
+  RETURN_THIS();
+}
+
+FUNCTION(get_text, "function(void:string)")
+// Get the current contents of the text object.
+{
+  struct pike_string *res;
+  unsigned int i;
+  my_pop_n_elems(args);
+  res = begin_shared_string( gtk_text_get_length( GTK_TEXT( THIS->obj ) ) );
+  for(i=0; i<(unsigned int)res->len; i++)
+    res->str[i] = GTK_TEXT_INDEX( GTK_TEXT( THIS->obj ), i );
+  push_string( end_shared_string( res ) );
+}
+
+/* FIXME: Wide string support! */

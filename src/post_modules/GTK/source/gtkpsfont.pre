@@ -1,0 +1,8 @@
+require gtkextra;
+class psfont;
+#define GTK_PSFONT(X) ((GtkPSFont *)X)
+member string fontname;
+member string psname;
+member string family;
+member int italic;
+member int bold;

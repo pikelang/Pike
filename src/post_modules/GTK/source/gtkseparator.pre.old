@@ -1,0 +1,3 @@
+class separator;
+inherit widget;
+// A generic separator. Basicaly a line, like &lt;hr&gt; in HTML.

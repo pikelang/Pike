@@ -21,6 +21,9 @@
 #else
 # include <gtk/gtk.h>
 #endif
+#ifdef HAVE_GTKEXTRA_GTKEXTRA_H
+# include <gtkextra/gtkextra.h>
+#endif
 #include "prototypes.h"
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>

@@ -1,0 +1,6 @@
+require gtkextra;
+class dir_tree;
+inherit ctree;
+// IMG: GTK.DirTree()->open_dir( "/" );
+void create();
+void open_dir( string path );

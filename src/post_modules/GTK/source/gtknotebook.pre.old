@@ -1,0 +1,104 @@
+class notebook;
+inherit container;
+// The NoteBook Widget is a collection of 'pages' that overlap each
+// other, each page contains different information. This widget has
+// become more common lately in GUI programming, and it is a good way
+// to show blocks similar information that warrant separation in their
+// display.
+//
+// IMG: GTK.Notebook( )->set_tab_pos( GTK.POS_LEFT )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))
+// IMG: GTK.Notebook( )->set_tab_pos( GTK.POS_TOP )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))
+// IMG: GTK.Notebook( )->set_tab_pos( GTK.POS_RIGHT )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))->next_page()->next_page()
+signal switch_page;
+// Called when a different page is selected
+void create();
+void append_page( widget contents, widget label );
+// Add a new 'page' to the notebook. The first argument is the contents of
+// the page, the second argument is the label.
+void append_page_menu( widget contents, widget label, widget mennu );
+// Add a new 'page' to the notebook. The first argument is the
+// contents of the page, the second argument is the label, the third
+// argument is a menu widget.
+void prepend_page( widget contents, widget label );
+// Add a page at the end of the list of pages. The first argument is
+// the contents of the page, the second argument is the label.
+void prepend_page_menu( widget contents, widget label, widget menu );
+// Add a new 'page' at the end of the list of pages. The first
+// argument is the contents of the page, the second argument is the
+// label, the third argument is a menu widget.
+void insert_page( widget contents, widget label, int pos );
+// Insert a page at the specified location, arguments as for
+// append_page, but an aditional integer specifies the location.
+void insert_page_menu( widget contents, widget label, widget menu, int pos );
+// Insert a page at the specified location, arguments as for
+// append_page_menu, but an aditional integer specifies the location.
+void remove_page( int pos );
+// Remove a page.
+int get_current_page();
+//  Returns the index of the currently selected page
+widget get_nth_page( int index );
+//  Returns the page for the specified index
+int page_num( widget widget );
+//  Returns the index for the specified page
+void set_page( int pos );
+// Go to the specified page
+void next_page();
+// Go to the next page
+void prev_page();
+// Go to the previous page
+void set_tab_pos( int pos );
+// One of CONST(GTK_POS)
+void set_show_tabs( int showtabsp );
+// If supplied with a true value, the tabs will be shown. Otherwise
+// they will not be shown. The user will not be able to select the
+// pages without them, but you can add 'next' and 'previous' buttons
+// to create a wizard-line interface.
+void set_homogeneous_tabs( int homogeneousp );
+// If true, all tabs will have the same size
+void set_show_border( int showborderp );
+// If true, show the borders around the contents and tabs.
+void set_scrollable( int scrollablep );
+// If true, add scrollbars if nessesary.
+void set_tab_border( int border_width );
+// In pixels.
+void set_tab_hborder( int border_width );
+// In pixels.
+void set_tab_vborder( int border_width );
+// In pixels.
+void popup_enable();
+// Enable the popup menu (set with insert_page_menu)
+void popup_disable();
+// Disable the popup menu (set with insert_page_menu)
+widget get_tab_label( widget page );
+void set_tab_label( widget page, widget label );
+void set_tab_label_text( widget page, string title );
+widget get_menu_label( widget page );
+void set_menu_label( widget page, widget label );
+void set_menu_label_text( widget page, string label );
+void set_tab_label_packing( widget child, int expand, int fill, int type );
+
+FUNCTION(query_tab_label_packing, "function(object:mapping)");
+NAME_ARGS(page);
+// Returns ([ "expand":expandp, "fill":fillp, "pack_type":type ])
+{
+  struct object *o;
+  gboolean expand=0, fill=0;
+  GtkPackType pack_type=0;
+  get_all_args( "query_tab_label_packing", args, "%o", &o );
+  gtk_notebook_query_tab_label_packing( GTK_NOTEBOOK( THIS->obj ),
+                                        GTK_WIDGET( get_gtkobject( o ) ),
+                                        &expand,
+                                        &fill,
+                                        &pack_type );
+  my_pop_n_elems(args);
+  push_text( "expand" );
+  push_int( expand );
+  push_text( "fill" );
+  push_int( fill );
+  push_text( "pack_type" );
+  push_int( pack_type );
+  f_aggregate_mapping( 6 );
+}
+
+void reorder_child( widget page, int new_index );
+// Move the specified page to the index new_index

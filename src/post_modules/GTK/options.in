@@ -4,3 +4,4 @@
 @pgtk_has_libglade@
 @pgtk_has_gnome@
 @pgtk_has_docklets@
+@pgtk_has_gtkextra@

@@ -1,0 +1,14 @@
+require gtkextra;
+class item_entry;
+inherit entry;
+// a W(GtkEntry) subclass. It can have fixed size or can be
+// dynamically resized when the text is entered. You can change text
+// justification to centered, left, or right. It only displays the
+// text and has no borders.
+#define GtkItemEntry GtkIentry
+#define GTK_ITEM_ENTRY(X) GTK_IENTRY(X)
+void create();
+void set_text( string text, int justification );
+void set_justification( int justification );
+member int text_max_size;
+setmember int text_max_size;

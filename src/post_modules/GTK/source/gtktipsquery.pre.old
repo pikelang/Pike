@@ -1,0 +1,17 @@
+class tips_query;
+inherit label;
+signal start_query;
+signal stop_query;
+signal widget_entered;
+signal widget_selected;
+void create();
+void start_query();
+void stop_query();
+void set_caller( widget caller_widget );
+void set_labels( string label_inactive, string label_no_tip );
+
+member int in_query;
+member string label_inactive;
+member string label_no_tip;
+subwidget widget caller;
+subwidget widget last_crossed;

@@ -1,0 +1,16 @@
+class layout;
+inherit container;
+void create( adjustment hadjustment, adjustment vadjustment );
+void put( widget widget, int x, int y );
+void move( widget widget, int x, int y );
+void set_size( int xsize, int ysize );
+void freeze();
+void thaw();
+adjustment get_hadjustment();
+adjustment get_vadjustment();
+void set_hadjustment( adjustment adj );
+void set_vadjustment( adjustment adj );
+member int width;
+member int height;
+member int xoffset;
+member int yoffset;

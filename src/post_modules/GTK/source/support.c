@@ -394,15 +394,12 @@ void my_destruct( struct object *o )
 void pgtk__init_object( struct object *o )
 {
   GtkObject *go = get_gtkobject(o);
-  if(!go)
-    fatal("pgtk__init_object called on a non-pgtk object!\n");
-
-  /* A real refcounting system.. Might work, who knows? :-) */
+  if(!go) return; /* Not a real GTK object */
+/* A real refcounting system.. Might work, who knows? :-) */
 /*   if( GTK_IS_WIDGET( go ) ) */
 /*     gtk_signal_connect( go, "parent_set", adjust_refs, NULL ); */
 /*   else */
   o->refs++;
-
   gtk_object_set_data_full(go,"pike_object",
 			   (void*)o, (void*)my_destruct);
 }

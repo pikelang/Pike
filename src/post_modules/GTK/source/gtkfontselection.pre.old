@@ -1,0 +1,33 @@
+class font_selection;
+inherit notebook;
+// IMG: GTK.FontSelection()
+subwidget vbox main_vbox;
+subwidget label font_label;
+subwidget entry font_entry;
+subwidget clist font_clist;
+subwidget entry font_style_entry;
+subwidget clist font_style_clist;
+subwidget entry size_entry;
+subwidget clist size_clist;
+subwidget button pixels_button;
+subwidget button points_button;
+subwidget button filter_button;
+subwidget entry preview_entry;
+subwidget label message_label;
+subwidget vbox info_vbox;
+subwidget clist info_clist;
+subwidget label requested_font_name;
+subwidget label actual_font_name;
+subwidget vbox filter_vbox;
+subwidget button type_bitmaps_button;
+subwidget button type_scalable_button;
+subwidget button type_scaled_bitmaps_button;
+GDK.Font get_font();
+string get_font_name();
+void set_font_name( string xlfd );
+// This sets the currently displayed font. It should be a valid X Logical
+// Font Description font name (anything else will be ignored), e.g.
+// "-adobe-courier-bold-o-normal--25-*-*-*-*-*-*-*"
+void create();
+string get_preview_text();
+void set_preview_text( string text );

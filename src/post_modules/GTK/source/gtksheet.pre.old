@@ -1,47 +1,50 @@
-require gtkextra;
-constant int GTK_SHEET_FOREGROUND;
-constant int GTK_SHEET_BACKGROUND;
-constant int GTK_SHEET_FONT;
-constant int GTK_SHEET_JUSTIFICATION;
-constant int GTK_SHEET_BORDER;
-constant int GTK_SHEET_BORDER_COLOR;
-constant int GTK_SHEET_IS_EDITABLE;
-constant int GTK_SHEET_IS_VISIBLE;
+require sheet;
+ADD_INCLUDE(#include <gtksheet.h>);
+ADD_INCLUDE(#include <gtksheetentry.h>);
+CONSTANT(GTK_SHEET_FOREGROUND);
+CONSTANT(GTK_SHEET_BACKGROUND);
+CONSTANT(GTK_SHEET_FONT);
+CONSTANT(GTK_SHEET_JUSTIFICATION);
+CONSTANT(GTK_SHEET_BORDER);
+CONSTANT(GTK_SHEET_BORDER_COLOR);
+CONSTANT(GTK_SHEET_IS_EDITABLE);
+CONSTANT(GTK_SHEET_IS_VISIBLE);
+CONSTANT(GTK_SHEET_NORMAL);
+CONSTANT(GTK_SHEET_ROW_SELECTED);
+CONSTANT(GTK_SHEET_COLUMN_SELECTED);
+CONSTANT(GTK_SHEET_RANGE_SELECTED);
+CONSTANT(GTK_SHEET_IS_LOCKED);
+CONSTANT(GTK_SHEET_IS_FROZEN);
+CONSTANT(GTK_SHEET_IN_XDRAG);
+CONSTANT(GTK_SHEET_IN_YDRAG);
+CONSTANT(GTK_SHEET_IN_DRAG);
+CONSTANT(GTK_SHEET_IN_SELECTION);
+CONSTANT(GTK_SHEET_IN_RESIZE);
+CONSTANT(GTK_SHEET_IN_CLIP);
+CONSTANT(GTK_SHEET_ROW_FROZEN);
+CONSTANT(GTK_SHEET_COLUMN_FROZEN);
+CONSTANT(GTK_SHEET_AUTORESIZE);
+CONSTANT(GTK_SHEET_ADJUST_TEXT);
+CONSTANT(GTK_SHEET_ROW_TITLES_VISIBLE);
+CONSTANT(GTK_SHEET_COL_TITLES_VISIBLE);
+CONSTANT(GTK_SHEET_AUTO_SCROLL);
 
-constant int GTK_SHEET_NORMAL;
-constant int GTK_SHEET_ROW_SELECTED;
-constant int GTK_SHEET_COLUMN_SELECTED;
-constant int GTK_SHEET_RANGE_SELECTED;
-
-constant int GTK_SHEET_LEFT_BORDER;
-constant int GTK_SHEET_RIGHT_BORDER;
-constant int GTK_SHEET_TOP_BORDER;
-constant int GTK_SHEET_BOTTOM_BORDER;
-
-constant int GTK_SHEET_IS_LOCKED;
-constant int GTK_SHEET_IS_FROZEN;
-constant int GTK_SHEET_IN_XDRAG;
-constant int GTK_SHEET_IN_YDRAG;
-constant int GTK_SHEET_IN_DRAG;
-constant int GTK_SHEET_IN_SELECTION;
-constant int GTK_SHEET_IN_RESIZE;
-constant int GTK_SHEET_IN_CLIP;
-constant int GTK_SHEET_ROW_FROZEN;
-constant int GTK_SHEET_COLUMN_FROZEN;
-constant int GTK_SHEET_AUTORESIZE;
-constant int GTK_SHEET_ROW_TITLES_VISIBLE;
-constant int GTK_SHEET_COL_TITLES_VISIBLE;
-constant int GTK_SHEET_AUTO_SCROLL;
+class shentry;
+#include <gtksheetentry.h>
+inherit entry;
+FUNCTION(create, "function(void|int:void)");
+NAME_ARGS(max_width);
+{
+  if(args)
+    THIS->obj = GTK_OBJECT(gtk_shentry_new_with_max_length( sp[-1].u.integer ));
+  else
+    THIS->obj = GTK_OBJECT(gtk_shentry_new(  ));
+}
+void set_text( string text, int justifictation );
+void set_justification( int justifictation );
 
 class sheet;
-#define GTK_SHEET_CHILD(X) ((GtkSheetChild *)X)
-// W(GtkSheet) is a matrix widget for GTK+. It consists of an scrollable
-// grid of cells where you can allocate text. Cell contents can be
-// edited interactively through a specially designed entry,
-// W(GtkItemEntry). It is also a container subclass, allowing you to
-// display buttons, curves, pixmaps and any other widget in it. You
-// can also set many attributes as: border, foreground and background
-// color, text justification, and more.
+#include <gtksheet.h>
 // IMG: GTK.Sheet( 10,10, "example")
 inherit container;
 signal activate;
@@ -146,39 +149,49 @@ FUNCTION(get_attributes, "function(int,int:mapping)");
 }
 
 void create( int rows, int columns, string title );
-void set_hadjustment( adjustment adj );
-void set_vadjustment( adjustment adj );
 entry get_entry();
+void set_hadjustment( adjustment );
+void set_vadjustment( adjustment );
+
+void set_column_titles_height( int height );
+void set_row_titles_width( int height );
+void put( widget child, int x, int y );
+void move_child( widget child, int x, int y );
+void set_cell_text( int, int, string );
 int get_state();
-void set_selection_mode( int mode );
 void set_title( string title );
-void set_border( int type );
+/* set_border( int );
+/* NAME_ARGS(border_style); */
 void freeze();
 void thaw();
-void set_column_title( int column, string title );
-void set_row_title( int row, string title );
-void row_button_add_label( int row, string label );
-void column_button_add_label( int col, string label );
-void row_button_justify( int row, int justify );
-void column_button_justify( int column, int justify );
-void moveto( int row, int column, float row_align, float col_align );
-void set_row_titles_width( int width );
-void set_column_titles_height( int height );
-void show_row_titles(  );
-void show_column_titles( );
-void hide_row_titles(  );
-void hide_column_titles( );
-void row_set_sensitivity( int row, int sensitive );
-void column_set_sensitivity( int col, int sensitive );
-void rows_set_sensitivity( int sensitive );
-void columns_set_sensitivity( int sensitive );
-void column_set_visibility( int column, int visible );
-void row_set_visibility( int row, int visible );
-void select_row( int row );
-void select_column( int column );
+void set_column_title( int, string );
+void set_row_title( int, string );
+void row_button_add_label( int, string );
+void column_button_add_label( int, string );
+void moveto( int, int, float, float );
+void show_column_titles();
+void show_row_titles();
+void hide_column_titles();
+void hide_row_titles();
+void column_set_sensitivity( int, int );
+void row_set_sensitivity( int, int );
+void columns_set_sensitivity( int );
+void rows_set_sensitivity( int );
+void column_set_visibility( int, int );
+void row_set_visibility( int, int );
+void select_row( int );
+void select_column( int );
+FUNCTION(clip_range, "function(int,int,int,int:object)");
+NAME_ARGS(x0,y0,x1,y1);
+{
+  GtkSheetRange r;
+  get_all_args( "clip_range", args, "%d%d%d%d", &r.col0,&r.row0,&r.coli,&r.rowi);
+  gtk_sheet_clip_range( GTK_SHEET( THIS->obj ), r );
+  RETURN_THIS();
+}
+void unclip_range();
 adjustment get_vadjustment();
 adjustment get_hadjustment();
-
 FUNCTION(select_range, "function(void:mapping)");
 NAME_ARGS(x0,y0,x1,y1);
 {
@@ -203,7 +216,7 @@ NAME_ARGS(x0,y0,x1,y1);
   push_text( "y1" ); push_int( r.rowi );
   f_aggregate_mapping( 4 );
 }
-int set_active_cell( int row, int column );
+int set_active_cell( int, int );
 FUNCTION(get_active_cell, "function(void:mapping)");
 {
   int x, y;
@@ -214,10 +227,8 @@ FUNCTION(get_active_cell, "function(void:mapping)");
   f_aggregate_mapping( 4 );
 }
 void set_cell( int row, int col, int justification, string text );
-void set_cell_text( int row, int col, string text );
-string cell_get_text( int row, int col );
-void cell_clear( int row, int col );
-void cell_delete( int row, int col );
+string cell_get_text( int, int );
+void cell_clear( int, int );
 FUNCTION(clear, "function(void:object)");
 {
   my_pop_n_elems(args);
@@ -232,26 +243,8 @@ NAME_ARGS(x0,y0,x1,y1);
   gtk_sheet_range_clear( GTK_SHEET( THIS->obj ), &r );
   RETURN_THIS();
 }
-FUNCTION(range_delete, "function(int,int,int,int:object)");
-NAME_ARGS(x0,y0,x1,y1);
-{
-  GtkSheetRange r;
-  get_all_args( "clip_range", args, "%d%d%d%d", &r.col0,&r.row0,&r.coli,&r.rowi);
-  gtk_sheet_range_delete( GTK_SHEET( THIS->obj ), &r );
-  RETURN_THIS();
-}
-FUNCTION(clip_range, "function(int,int,int,int:object)");
-NAME_ARGS(x0,y0,x1,y1);
-{
-  GtkSheetRange r;
-  get_all_args( "clip_range", args, "%d%d%d%d", &r.col0,&r.row0,&r.coli,&r.rowi);
-  gtk_sheet_range_delete( GTK_SHEET( THIS->obj ), &r );
-  RETURN_THIS();
-}
-int cell_get_state( int row, int col );
-void link_cell( int row, int col, string link );
-void get_link( int row, int col );
-void remove_link( int row, int col );
+int cell_get_state( int, int );
+
 FUNCTION(get_pixel_info, "function(int,int:mapping)");
 {
   int x, y, r, c;
@@ -263,25 +256,6 @@ FUNCTION(get_pixel_info, "function(int,int:mapping)");
   push_text( "col" ); push_int( c );
   f_aggregate_mapping( 4 );
 }
-void set_column_width( int column, int width );
-void set_row_height( int row, int height );
-void add_column( int ncols );
-void add_row( int nrows );
-void insert_columns( int after, int ncolumns );
-void insert_rows( int after, int ncolumns);
-void delete_columns( int col, int ncols);
-void delete_rows( int row, int nrows );
-FUNCTION(range_set_background, "function(int,int,int,int,object:object)");
-NAME_ARGS(x0,y0,x1,y1,color);
-{
-  GtkSheetRange r;
-  struct object *c;
-  get_all_args( "range_set_background", args, "%d%d%d%d%o",
-                &r.col0,&r.row0,&r.coli,&r.rowi, &c);
-  gtk_sheet_range_set_background( GTK_SHEET( THIS->obj ),
-                                  r, get_gdkobject( c, Color ) );
-  RETURN_THIS();
-}
 FUNCTION(range_set_foreground, "function(int,int,int,int,object:object)");
 NAME_ARGS(x0,y0,x1,y1,color);
 {
@@ -290,6 +264,17 @@ NAME_ARGS(x0,y0,x1,y1,color);
   get_all_args( "range_set_foreground", args, "%d%d%d%d%o",
                 &r.col0,&r.row0,&r.coli,&r.rowi,&c);
   gtk_sheet_range_set_foreground( GTK_SHEET( THIS->obj ),
+                                  r, get_gdkobject( c, Color ) );
+  RETURN_THIS();
+}
+FUNCTION(range_set_background, "function(int,int,int,int,object:object)");
+NAME_ARGS(x0,y0,x1,y1,color);
+{
+  GtkSheetRange r;
+  struct object *c;
+  get_all_args( "range_set_background", args, "%d%d%d%d%o",
+                &r.col0,&r.row0,&r.coli,&r.rowi, &c);
+  gtk_sheet_range_set_background( GTK_SHEET( THIS->obj ),
                                   r, get_gdkobject( c, Color ) );
   RETURN_THIS();
 }
@@ -355,10 +340,19 @@ NAME_ARGS(x0,y0,x1,y1,mask,width,style);
   gtk_sheet_range_set_border( GTK_SHEET( THIS->obj ), r, f,q,w );
   RETURN_THIS();
 }
-sheet_child put( widget widget, int x, int y );
-void attach( widget widget, int row, int col, float x_align, float y_align );
-void move_child( widget widget, float x, float y );
-sheet_child get_child_at( int row, int col );
+void column_set_justification( int column, int justification );
+// justification is one of CONST(GTK_JUSTIFY)
+
+
+void set_column_width( int, int );
+void set_row_height( int, int );
+void add_column( int );
+void add_row( int );
+void insert_columns( int, int );
+void insert_rows( int, int );
+void delete_columns( int, int );
+void delete_rows( int, int );
+
 member int flags;
 member int maxrow;
 member int maxcol;
@@ -368,14 +362,3 @@ member int maxrange;
 member int hoffset;
 member int voffset;
 member int shadow_type;
-
-class sheet_child;
-#define GTK_SHEET_CHILD(X) ((GtkSheetChild *)X)
-subwidget widget widget;
-member int x;
-member int y;
-member int attached_to_cell;
-member int row;
-member int col;
-member float x_align;
-member float y_align;

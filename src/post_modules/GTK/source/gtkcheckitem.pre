@@ -1,0 +1,25 @@
+require gtkextra;
+class check_item;
+inherit toggle_button;
+// It is a W(CheckButton) hack with the look and feel of the Redmond95
+// theme.
+// IMG: GTK.CheckItem("Indeed")
+FUNCTION(create, "function(string|void:void)");
+ARGS(label);
+// Create a new CheckItem. If label is supplied, it is the
+// label of the widget.
+{
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+  if( args )
+  {
+    char *label;
+    get_all_args( "create", args, "%s", &label );
+    THIS->obj = gtk_check_item_new_with_label( label );
+  }
+  else
+    THIS->obj = gtk_check_item_new( );
+  pgtk__init_this_object();
+  my_pop_n_elems(args);
+  push_int( 0 );
+}

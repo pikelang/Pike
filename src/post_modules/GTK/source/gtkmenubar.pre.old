@@ -1,0 +1,12 @@
+class menu_bar;
+inherit menu_shell;
+// Basically a horizontal W(Menu)<p>
+// The menu image cannot be
+// grabbed automatically, but this is how you would create a menu all
+// in one line. This is not the recommended coding style.<p>
+// IMG: GTK.MenuBar()->add(GTK.Menu_item("Menu")->set_submenu(GTK.Menu()->add(GTK.Menu_item("Sub")))->select()->activate())->add(GTK.Menu_item("Bar"))
+void create();
+void append( widget menu );
+void prepend( widget menu );
+void insert( widget menu, int position );
+void set_shadow_type( int int );

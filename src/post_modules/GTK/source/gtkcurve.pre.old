@@ -1,0 +1,25 @@
+class curve;
+inherit drawing_area;
+// IMG: GTK.Curve()
+void create();
+void reset();
+void set_gamma( float gamma );
+void set_range( float min_x, float max_x, float min_y, float max_y );
+FUNCTION(get_vector, "function(int:array(float))");
+NAME_ARGS(num_points);
+{
+  int num_points, q=0;
+  gfloat *vector;
+  get_all_args("get_vector", args, "%d", &num_points);
+  my_pop_n_elems(args);
+  vector = malloc(sizeof(gfloat) * num_points);
+  gtk_curve_get_vector( GTK_CURVE(THIS->obj), num_points, vector );
+  while(q < num_points)
+    push_float(vector[q++]);
+  f_aggregate(num_points);
+  free(vector);
+}
+void set_vector( floatarray curve );
+void set_curve_type( int type );
+// One of CONST(GTK_CURVE_TYPE);
+

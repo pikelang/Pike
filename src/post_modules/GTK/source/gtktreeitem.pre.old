@@ -1,0 +1,43 @@
+class tree_item;
+inherit item;
+// A item to be places in a W(Tree).
+// <br>The item can have a subtree attached to it.
+// <br>A subtree is a normal tree.
+signal expand;
+signal collapse;
+FUNCTION(create, "function(string|void:void)");
+NAME_ARGS(label);
+// If you specify a string it is used as a label, otherwise pack a widget
+// in the tree item with -&gt;add(widget).
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if(args)
+  {
+    char *s;
+    get_all_args("GTK.Tree_item", args, "%s", &s);
+    THIS->obj = GTK_OBJECT( gtk_tree_item_new_with_label( s ) );
+  } else {
+    THIS->obj = GTK_OBJECT( gtk_tree_item_new( ) );
+  }
+  pgtk__init_this_object();
+}
+void set_subtree( tree tree );
+// Sets the subtree.
+void remove_subtree();
+// Removes the subtree.
+void select();
+// Select this item. The item must be realized (the tree and all it's
+// parents shown) for this to work.<br>
+// This generates a 'select' event.
+void deselect();
+// Deselect this item.<br>
+// This generates a 'deselect' event.
+void expand();
+// Expand this subtree. The item must be realized (the tree and all it's
+// parents shown) for this to work.<br>
+// This generates a 'expand' event.
+void collapse();
+// Collapse this subtree. The item must be realized (the tree and all it's
+// parents shown) for this to work.<br>
+// This generates a 'collapse' event.

@@ -1,0 +1,53 @@
+require gtkextra;
+class icon_list;
+inherit layout;
+#define GTK_ICON_LIST_ITEM(X) ((GtkIconListItem *)X)
+constant int GTK_ICON_LIST_ICON;
+constant int GTK_ICON_LIST_TEXT_RIGHT;
+constant int GTK_ICON_LIST_TEXT_BELOW;
+
+signal select_icon;
+signal unselect_icon;
+signal text_changed;
+signal activate_icon;
+signal deactivate_icon;
+signal click_event;
+
+void create( int icon_width, int mode );
+// mode is one of CONST(GTK_ICON_LIST_)
+
+void freeze();
+void thaw();
+void set_background( *GDK.Color color );
+icon_list_item add( string pixmap_file, string label, ?string linkage );
+icon_list_item get( int x, int y );
+icon_list_item get_nth( int n );
+int get_index( icon_list_item item );
+void remove( icon_list_item item );
+void set_active_icon( icon_list_item icon );
+void remove_nth( int n );
+void clear();
+void get_icon_from_link( string linkage );
+icon_list_item get_icon_at( int x, int y );
+void set_label( icon_list_item item, string label );
+void set_selection_mode( int mode );
+void select_icon( icon_list_item icon );
+void unselect_icon( icon_list_item icon );
+void unselect_all( );
+
+class icon_list_item;
+#define GTK_ICON_LIST_ITEM(X) ((GtkIconListItem *)X)
+#define gtk_icon_list_item_link gtk_icon_list_link
+void link( string linkage );
+#define gtk_icon_list_item_get_link gtk_icon_list_get_link
+string get_link();
+#define gtk_icon_list_item_get_entry gtk_icon_list_get_entry
+entry get_entry( );
+#define gtk_icon_list_item_get_pixmap gtk_icon_list_get_pixmap
+pixmap get_pixmap( );
+#define gtk_icon_list_item_set_pixmap gtk_icon_list_set_pixmap
+void set_pixmap( GdkPixmap pixmap,  GdkBitmap mask );
+
+member int x;
+member int y;
+member int state;

@@ -1,0 +1,9 @@
+require gtkextra;
+class plot_layout;
+inherit layout;
+
+void create(int width, int height);
+void add_plot( plot plot, int x, int y );
+void set_background( *GDK.Color color );
+void refresh();
+void put_text( float x, float y, int angle, string font, int height, GDK.Color fg, GDK.Color bg, int justification, string text );

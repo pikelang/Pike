@@ -1,0 +1,4 @@
+/* class draw; */
+/* inherit data; */
+/* #define GTK_DRAW(X) ((GtkStyle *)(X)) */
+/* TBD */

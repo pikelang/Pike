@@ -1,0 +1,28 @@
+class check_button;
+// Check buttons inherent many properties and functions from the the
+// toggle buttons, but look a little different. Rather than
+// being buttons with text inside them, they are small squares with
+// the text to the right of them. These are often used for toggling
+// options on and off in applications.
+// IMG: GTK.Check_button( "title" )
+inherit toggle_button;
+FUNCTION(create, "function(string|void:void)")
+NAME_ARGS(label);
+// The argument, if specified, is the label of the item.
+// If no label is specified, use object->add() to add some
+// other widget (such as an pixmap or image widget)
+{
+  pgtk_verify_not_inited();
+  pgtk_verify_setup();
+  if(args)
+  {
+    char *s;
+    get_all_args("GTK.Check_button", args, "%s", &s);
+    THIS->obj = GTK_OBJECT( gtk_check_button_new_with_label( s ) );
+  } else {
+    THIS->obj = GTK_OBJECT( gtk_check_button_new( ) );
+  }
+  pgtk__init_this_object();
+}
+
+

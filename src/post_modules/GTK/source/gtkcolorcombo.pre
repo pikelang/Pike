@@ -1,0 +1,47 @@
+require gtkextra;
+class color_combo;
+inherit combo_box;
+// It is a GtkComboBox subclass with a pallette of colors in the
+// popdown window to pickup the one you like the most. It has a
+// default pallette, but it's completelly customizable.
+// IMG: GTK.ColorCombo();
+// IMG: GTK.ColorCombo(1,1,({"blue"}));
+// IMG: GTK.ColorCombo(1,2,({"pink","black"}));
+signal changed;
+
+FUNCTION(create, "function(int|void,int|void,array(string)|void:void)");
+NAME_ARGS(nrows,ncols,color_names);
+{
+  int nrows, ncols;
+  int i;
+  gchar **names;
+  struct array *rnames;
+
+  pgtk_verify_setup();
+  pgtk_verify_not_inited();
+
+  if( args )
+  {
+    get_all_args( "create", args, "%d%d%a", &nrows, &ncols, &rnames );
+    if( rnames->size < (nrows * ncols) )
+      error("Too few names in name array\n");
+    names = malloc( sizeof( gchar *) * nrows * ncols );
+    for( i = 0; i<nrows*ncols; i++ )
+    {
+      if( rnames->item[i].type != T_STRING )
+      {
+        free( names );
+        error("Bad element %d in name array\n", i );
+      }
+      names[i] = rnames->item[i].u.string->str;
+    }
+    THIS->obj = gtk_color_combo_new_with_values( nrows, ncols, names );
+  } else {
+    THIS->obj = gtk_color_combo_new( );
+  }
+  pgtk__init_this_object();
+  my_pop_n_elems(args);
+  push_int( 0 );
+}
+
+string get_color_at( int row, int col );

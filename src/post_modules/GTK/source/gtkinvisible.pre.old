@@ -1,0 +1,6 @@
+class invisible;
+inherit bin;
+// An invisible container, useful, eh? :)
+#include <gtk/gtkinvisible.h>
+void create();
+// Create a new invisible widget

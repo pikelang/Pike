@@ -1,0 +1,17 @@
+class entry;
+inherit editable;
+// Use this widget when you want the user to input a single line of text.
+// IMG: GTK.Entry()->set_text("Hello world")->set_editable(1)
+void create();
+void set_text( string text );
+// Set the text to the specified string. The old text is dropped.
+void append_text( string text );
+// Append the specified string at the end of the entry
+void prepend_text( string text );
+// Prepend the specified string to the start of the entry
+void set_visibility( int visiblep );
+// 0 indicates invisible text (password boxes, as an example)
+void set_max_length( int maxlen );
+// text is truncated if needed
+string get_text();
+// Returns the contents of the entry widget.

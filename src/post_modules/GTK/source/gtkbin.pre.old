@@ -1,0 +1,6 @@
+class bin;
+// A container that can only contain one child.
+inherit container;
+subwidget widget child;
+// Returns the (one and only) child of this container.
+

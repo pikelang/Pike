@@ -1,0 +1,37 @@
+require gtkextra;
+class plot_canvas;
+inherit plot_layout;
+
+constant int GTK_PLOT_CANVAS_CAN_RESIZE_PLOT;
+constant int GTK_PLOT_CANVAS_CAN_MOVE_PLOT;
+constant int GTK_PLOT_CANVAS_CAN_MOVE_LEGENDS;
+constant int GTK_PLOT_CANVAS_CAN_MOVE_TITLES;
+constant int GTK_PLOT_CANVAS_CAN_MOVE_TEXT;
+constant int GTK_PLOT_CANVAS_CAN_DND_POINT;
+constant int GTK_PLOT_CANVAS_ALLOCATE_TITLES;
+constant int GTK_PLOT_CANVAS_DND_FLAGS;
+
+
+constant int GTK_PLOT_CANVAS_INACTIVE;
+constant int GTK_PLOT_CANVAS_RESIZE_PLOT;
+constant int GTK_PLOT_CANVAS_MOVE_PLOT;
+constant int GTK_PLOT_CANVAS_MOVE_LEGENDS;
+constant int GTK_PLOT_CANVAS_MOVE_TITLE;
+constant int GTK_PLOT_CANVAS_MOVE_TEXT;
+constant int GTK_PLOT_CANVAS_DND_POINT;
+constant int GTK_PLOT_CANVAS_IN_SELECTION;
+
+signal click_on_plot;
+signal click_on_point;
+signal click_on_legends;
+signal click_on_axis;
+signal click_on_title;
+signal click_on_text;
+signal select_region;
+
+void create( int width, int height );
+void add_plot( plot plot, float x, float y );
+void set_active_plot( plot plot );
+void cancel_action();
+plot get_active_plot();
+plot_dataset get_active_dataset();
