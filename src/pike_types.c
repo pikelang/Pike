@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.205 2003/01/26 11:09:01 mirar Exp $
+|| $Id: pike_types.c,v 1.206 2003/01/26 12:47:42 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.205 2003/01/26 11:09:01 mirar Exp $");
+RCSID("$Id: pike_types.c,v 1.206 2003/01/26 12:47:42 mirar Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -518,6 +518,23 @@ struct pike_type *debug_peek_type_stack(void)
 
 void debug_push_int_type(INT_TYPE min, INT_TYPE max)
 {
+#if SIZEOF_INT_TYPE > 4
+/* a bit kludgy: should maybe really allow 64 bit INT_TYPE */
+/* see also extract_type_int */
+  if (min<MIN_INT32) min=MIN_INT32;
+  else if (min>MAX_INT32) min=MAX_INT32;
+  if (max<MIN_INT32) max=MIN_INT32;
+  else if (max>MAX_INT32) max=MAX_INT32;
+
+#if 0
+  if (min!=(INT32)min ||
+      max!=(INT32)max)
+    Pike_fatal("push_int_type(): int outside INT32 range (sorry)"
+	       " (%"PRINTPIKEINT"d..%"PRINTPIKEINT"d)\n",
+	       min,max);
+#endif
+#endif
+  
   *(++Pike_compiler->type_stackp) = mk_type(T_INT,
 					    (void *)(ptrdiff_t)min,
 					    (void *)(ptrdiff_t)max, 0);
@@ -4537,6 +4554,10 @@ static struct pike_type *debug_low_make_pike_type(unsigned char *type_string,
 	     !type_string[bytes+4] && !type_string[bytes+5])
 	    break;
 	break;
+      default: /* will not happen? */
+	 bytes=0;
+	 Pike_fatal("unexpected case in make_pike_type (%d)\n",
+		    type_string[1]);
       }
       str = begin_wide_shared_string(bytes>>size_shift, size_shift);
       MEMCPY(str->str, type_string+2, bytes);
