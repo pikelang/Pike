@@ -450,8 +450,8 @@ class PikeType
 
 	case "int":
 	  ret=sprintf("int(%s..%s)",
-		      args[0]->t == "-536870912" ? "" : args[0]->t,
-		      args[1]->t ==  "536870911" ? "" : args[1]->t);
+		      args[0]->t == "-2147483648" ? "" : args[0]->t,
+		      args[1]->t ==  "2147483647" ? "" : args[1]->t);
 	  if(ret=="int(..)") return "int";
 	  return ret;
 
@@ -563,8 +563,8 @@ class PikeType
 		args=({PikeType("mixed")});
 		break;
 	      case "int":
-		string low = (string)(int)-0x20000000;
-		string high = (string)0x1fffffff;
+		string low = (string)(int)-0x80000000;
+		string high = (string)0x7fffffff;
 		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});
 		break;
 
@@ -618,8 +618,8 @@ class PikeType
 		return;
 		
 	      case "int":
-		string low = (string)(int)-0x20000000;
-		string high = (string)0x1fffffff;
+		string low = (string)(int)-0x80000000;
+		string high = (string)0x7fffffff;
 
 		if(arrayp(q=tok[1]))
 		{
