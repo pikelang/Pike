@@ -203,10 +203,11 @@ int main() {
 
   write("\nMysql\n");
   M(Mysql.mysql);
-  int mysql_db_fun = master()->resolv("Mysql.mysql")->MYSQL_NO_ADD_DROP_DB;
+  object mysql_obj = master()->resolv("Mysql.mysql");
+  int mysql_db_fun = mysql_obj && mysql_obj->MYSQL_NO_ADD_DROP_DB;
   item("Mysql.mysql->create_db", mysql_db_fun);
   item("Mysql.mysql->drop_db", mysql_db_fun);
-  item("SSL support", master()->resolv("Mysql.mysql")->CLIENT_SSL);
+  item("SSL support", mysql_obj && mysql_obj->CLIENT_SSL);
 
   write("\nNettle\n");
   M(Nettle.Yarrow);
