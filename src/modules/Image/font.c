@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.29 1998/02/10 13:45:46 mirar Exp $ */
+/* $Id: font.c,v 1.30 1998/02/11 00:45:57 hubbe Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.29 1998/02/10 13:45:46 mirar Exp $
+**!	$Id: font.c,v 1.30 1998/02/11 00:45:57 hubbe Exp $
 **! class font
 **!
 **! note
@@ -111,8 +111,8 @@ Kerningtable types:
 #include <netinet/in.h>
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
 #endif
 
 #include <errno.h>
