@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.7 1998/04/14 18:19:32 hubbe Exp $
+/* $Id: master.pike.in,v 1.8 1998/04/15 14:16:54 grubba Exp $
  *
  * Master-file for Pike.
  *
@@ -207,6 +207,10 @@ static program low_findprog(string pname, string ext)
       break;
 #if constant(load_module)
     case ".so":
+      if (fname == "") {
+	werror(sprintf("low_find_prog(\"%s\", \"%s\") => load_module(\"\")\n"
+		       "%s\n", pname, ext, describe_backtrace(backtrace())));
+      }
       ret=load_module(fname);
 #endif /* load_module */
     }
@@ -615,27 +619,25 @@ void _main(string *orig_argv, string *env)
       }
     }
 
-    argv=tmp->get_args(argv,1);
+    argv = tmp->get_args(argv,1);
   }
 
   if(sizeof(argv)==1)
   {
-    argv=explode_path(argv[0]);
-    argv[-1]="hilfe";
-    argv=({ argv*"/" });
-    if(!master_file_stat(argv[0]))
-    {
-      if(master_file_stat("¤exec_prefix¤/bin/hilfe"))
-	argv[0]="¤exec_prefix¤/bin/hilfe";
-      else if(master_file_stat("../bin/hilfe"))
-	argv[0]="../bin/hilfe";
-      else
-      {
-	werror("Couldn't find hilfe.\n");
-	exit(1);
-      }
+    /* Attempt to resolv Tools.Hilfe.StdinHilfe */
+    tmp = resolv("Tools");
+    if (!tmp) {
+      werror("Couldn't find Tools.\n");
+      exit(1);
     }
-  }else{
+    tmp = tmp["Hilfe"];
+    if (!tmp) {
+      werror("Couldn't find Hilfe.\n");
+      exit(1);
+    }
+    tmp->StdinHilfe();
+    exit(0);
+  } else {
     argv=argv[1..];
   }
 
