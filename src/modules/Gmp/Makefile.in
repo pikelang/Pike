@@ -7,6 +7,8 @@ PRIME_LIMIT=1024
 
 @dynamic_module_makefile@
 
+next_prime.o: prime_table.out
+
 prime_table.out: prime_table
 	./prime_table $(PRIME_LIMIT) >prime_table.out
 
