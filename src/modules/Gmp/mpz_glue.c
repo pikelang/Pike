@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.157 2004/01/12 22:33:13 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.158 2004/01/14 00:42:35 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.157 2004/01/12 22:33:13 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.158 2004/01/14 00:42:35 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -245,6 +245,7 @@ overflow:
  *! can be used to explicitly type integers that are to big to be
  *! INT_TYPE. Best is however to not use this program unless you
  *! really know what you are doing.
+ *! @endclass
  */
 
 /*! @class mpz
