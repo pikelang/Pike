@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.3 2004/02/02 16:27:05 nilsson Exp $
+// $Id: Random.pmod,v 1.4 2004/02/06 14:38:20 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -10,8 +10,8 @@ static class RND {
   inherit Nettle.Yarrow;
   static int bytes_left = 32;
 
-#if constant(Crypto.nt)
-  static object ctx;
+#if constant(Crypto.NT)
+  static Crypto.NT.CryptContext ctx;
 #else
   static Stdio.File f;
 #endif
@@ -24,9 +24,9 @@ static class RND {
     // Source 1: ticker
     // Source 2: external
     ::create(3);
-#if constant(Crypto.nt)
-    ctx = Crypto.nt.CryptAcquireContext(0, 0, Crypto.nt.PROV_RSA_FULL,
-					Crypto.nt.CRYPT_VERIFYCONTEXT );
+#if constant(Crypto.NT)
+    ctx = Crypto.NT.CryptContext(0, 0, Crypto.NT.PROV_RSA_FULL,
+				 Crypto.NT.CRYPT_VERIFYCONTEXT );
     seed( ctx->CryptGenRandom(min_seed_size()*2) );
 #else
     if(no_block)
@@ -58,7 +58,7 @@ static class RND {
       bytes_left -= pass;
       len -= pass;
       if(!bytes_left) {
-#if constant(Crypto.nt)
+#if constant(Crypto.NT)
 	// CryptGenRandom claims to be cryptographically strong.
 	update( ctx->CryptGenRandom(32), 0, 256 );
 #else
