@@ -3,13 +3,14 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "pike_memory.h"
 #include "error.h"
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.30 1999/02/23 11:18:36 marcus Exp $");
+RCSID("$Id: pike_memory.c,v 1.31 1999/02/27 21:25:43 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -27,6 +28,12 @@ char *strdup(const char *str)
   return(res);
 }
 #endif /* !HAVE_STRDUP */
+
+int pcharp_memcmp(PCHARP a, PCHARP b, int sz)
+{
+  return generic_quick_binary_strcmp(a.str, sz, a.shift,
+				     b.str, sz, b.shift);
+}
 
 INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e)
 {
