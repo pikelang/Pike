@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.12 2002/01/15 22:35:21 nilsson Exp $
+// $Id: Crawler.pmod,v 1.13 2002/12/11 22:18:02 anders Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -189,26 +189,32 @@ class Queue
     if(link->fragment)
       link->fragment=0;
 
+    /*  a  d  check_link
+        -  -  ----------
+        0  0           0
+	0  1           0
+	1  1           0
+	1  0           1
+    */
+
     int a = 1, d = 0;
-//     if( link->query )
-//       link->query = normalize_query( link->query );
 
     if( allow ) a = allow->check(link);
     if( deny )  d = deny->check(link);
-    return a || !d;
+    return a && !d;
   }
 }
 
 class Rule
 {
-  int check(Standards.URI uri);
+  int check(string|Standards.URI uri);
 }
 
 class GlobRule(string pattern)
 {
   inherit Rule;
 
-  int check(Standards.URI uri)
+  int check(string|Standards.URI uri)
   {
     return glob(pattern, (string)uri);
   }
@@ -225,7 +231,7 @@ class RegexpRule
     regexp=Regexp(re);
   }
 
-  int check(Standards.URI uri)
+  int check(string|Standards.URI uri)
   {
     return regexp->match((string)uri);
   }
@@ -245,7 +251,7 @@ class RuleSet
     rules[rule]=0;
   }
 
-  int check(Standards.URI uri)
+  int check(string|Standards.URI uri)
   {
     foreach(indices(rules), Rule rule)
       if(rule->check(uri))
@@ -572,11 +578,15 @@ class RobotExcluder
   string host;
   Standards.URI base_uri;
   function done_cb;
-  
-  void create(Standards.URI _base_uri,
-	      function _done_cb)
+  array(mixed) args;
+  string user_agent;
+
+  void create(Standards.URI _base_uri, function _done_cb,
+	      void|mixed _user_agent, void|mixed ... _args)
   {
     base_uri=_base_uri; done_cb=_done_cb;
+    user_agent = _user_agent || "RoxenCrawler";
+    args = _args;
     set_callbacks(request_ok, request_fail);
     async_request(base_uri->host, base_uri->port,
 		  "GET /robots.txt HTTP/1.0",
@@ -594,7 +604,7 @@ class RobotExcluder
   void request_ok(object httpquery, int gotdata)
   {
     if(!gotdata)
-      async_fetch(request_ok, 1);
+      async_fetch(request_ok, httpquery, 1);
     else
     {
       if(httpquery->status!=200)
@@ -603,7 +613,7 @@ class RobotExcluder
  	reject_globs=parse_robot_txt(httpquery->data(), base_uri);
       got_reply=1;
       
-      done_cb(this_object());
+      done_cb(this_object(), @args);
     }
   }
   
@@ -620,22 +630,49 @@ class RobotExcluder
   array(string) parse_robot_txt(string robottxt, Standards.URI uri)
   {
     array(string) collect_rejected=({});
-    int rejected=1;
+    int rejected=0,
+      parsed_disallow=0; 
     foreach( robottxt/"\n"-({""}), string line )
     {
       line -= "\r";
       string field, value;
       if(sscanf(line, "%s:%*[ \t]%[^ \t#]", field, value)==3)
       {
-	switch(lower_case(field))
+	if(lower_case(field)=="user-agent")
 	{
-          case "user-agent":
-	    rejected=glob(value, "PikeCrawler");
-	    break;
-          case "disallow":
-	    if(rejected)
-	      collect_rejected+=({ (string)Standards.URI(value, uri) });
-	    break;
+	  if(parsed_disallow)
+	  {
+	    if(rejected==2)
+	      break;
+	    parsed_disallow=rejected=0;
+	  }
+	  if(value=="*")
+	  {
+	    if(rejected==0)
+	      rejected=1;
+	    else if(rejected==2)
+	      rejected=0;
+	  }
+	  else if(has_value(lower_case(user_agent), lower_case(value)))
+	  {
+	    switch(rejected)
+	    {
+	      case 0: rejected=2; break;
+	      case 1: rejected=2; collect_rejected = ({}); break;
+	      case 2: if(sizeof(collect_rejected)) rejected=0; break;
+	    }
+	  }
+	}
+	else if(lower_case(field)=="disallow")
+	{
+	  if(rejected)
+	  {
+	    if (!sizeof(value))
+	      collect_rejected = ({});
+	    else
+	      collect_rejected+=({ (string)Standards.URI(value+"*", uri) });
+	  }
+	  parsed_disallow=1;
 	}
       }
     }
@@ -646,31 +683,35 @@ class RobotExcluder
 class Crawler
 {
   Queue queue;
-  function page_cb, done_cb;
+  function page_cb, done_cb, error_cb;
   function prepare_cb;
   
   array(mixed) args;
 
   mapping _hostname_cache=([]);
-  
+  mapping _robot_excluders=([]);
+
   class HTTPFetcher
   {
     inherit Protocols.HTTP.Query;
-    Standards.URI uri;
+    Standards.URI uri, real_uri;
     
     void got_data()
     {
-      int called;
-      queue->stats->close_callback(uri);
-      if(status==200)
+      queue->stats->close_callback(real_uri);
+      if(status>=200 && status<=206)
       {
-	add_links(page_cb(uri, data(), headers, @args));
-	called=1;
+	add_links(page_cb(real_uri, data(), headers, @args));
       }
-      if(headers->location)
-	add_links(({ Standards.URI(headers->location) }));
-
-      queue->done(uri,called);
+      else
+      {
+	error_cb(real_uri, status, headers, @args);
+	if(status>=300 && status <=307)
+	  if(headers->location && sizeof(headers->location))
+	    add_links(({ Standards.URI(headers->location) }));
+      }
+      if(queue->get_stage(real_uri)<=1)
+	queue->set_stage(real_uri, 5);
     }
     
     void request_ok(object httpquery)
@@ -680,33 +721,34 @@ class Crawler
     
     void request_fail(object httpquery)
     {
-      queue->stats->close_callback(uri);
-      queue->done(uri);
+      queue->stats->close_callback(real_uri);
+      error_cb(real_uri, 1100, ([]));
+      if(queue->get_stage(real_uri)<=1)
+	queue->set_stage(real_uri, 6);
     }
     
-    void create(Standards.URI _uri)
+    void create(Standards.URI _uri, void|Standards.URI _real_uri, mapping extra_headers)
     {
       string pq;
       mapping headers;
-      string get_path_query(  Standards.URI u )
-      {
-	return u->path + (u->query?"?"+u->query:"");
-      };
       uri=_uri;
+      real_uri=_real_uri;
+      if(!real_uri)
+	real_uri=uri;
 
       headers = ([
 	"host": uri->host+":"+uri->port,
 	"user-agent": "Mozilla 4.0 (PikeCrawler)",
       ]);
-      pq = get_path_query( uri );
+      if(extra_headers)
+	headers |= extra_headers;
+
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
 
-      if( prepare_cb )
-	[pq, headers] = prepare_cb( uri, pq, headers );
-
+      https= (uri->scheme=="https")? 1 : 0;
       async_request(uri->host, uri->port,
-		    sprintf("GET %s HTTP/1.0", pq),
+		    sprintf("GET %s HTTP/1.0", uri->get_path_query()),
 		    headers );
     }
   }
@@ -715,42 +757,92 @@ class Crawler
   {
     map(links,queue->put);
   }
-  
-  void get_next_uri()
+
+  void got_robot_excluder(RobotExcluder excl, Standards.URI _real_uri, mapping _headers)
   {
-    object|int uri=queue->get();
+    get_next_uri(excl->base_uri, _real_uri, _headers);
+  }
+  
+  void get_next_uri(void|Standards.URI _uri, void|Standards.URI _real_uri,
+		    void|mapping _headers)
+  {
+    object|int uri;
+    mapping headers;
+    Standards.URI real_uri;
 
-    if(uri==-1)
+    if (_uri) {
+      uri = _uri;
+      real_uri = _real_uri;
+      headers = _headers;
+    }
+    else
     {
-      call_out(get_next_uri,0.1);
-      return;
+      uri=queue->get();
+
+      if(uri==-1)
+      {
+	call_out(get_next_uri,0.1);
+	return;
+      }
+
+      if(!uri)
+      {
+	done_cb();
+	return;
+      }
+
+      queue->stats->start_fetch(uri->host);
+
+      real_uri = uri;
+      if( prepare_cb )
+	[uri, headers] = prepare_cb( uri );
     }
 
-    if(!uri)
-    {
-      done_cb();
-      return;
-    }
-
-    queue->stats->start_fetch(uri->host);
-    
-    
     if(objectp(uri))
     {
+
+      string site = uri->host+":"+uri->port;
+      if(!_robot_excluders[site])
+      {
+	_robot_excluders[site] = RobotExcluder(uri, got_robot_excluder,
+					       headers["user-agent"],
+					       real_uri, headers);
+	return;
+      }
+
+      if (!_robot_excluders[site]->check((string)uri))
+      {
+	queue->stats->close_callback(real_uri);
+	error_cb(real_uri, 1000, headers, @args); // robots.txt said no!
+	queue->set_stage(real_uri, 6);
+	call_out(get_next_uri,0);
+	return;
+      }
+
       switch(uri->scheme)
       {
         case "http":
         case "https":
-	  HTTPFetcher(uri);
+	  HTTPFetcher(uri, real_uri, headers);
+	  break;
+        default:
+	  queue->stats->close_callback(real_uri);
+	  error_cb(real_uri, 1001, headers, @args); // Unknown scheme
+	  queue->set_stage(real_uri, 6);
       }
+    }
+    else
+    {
+      queue->stats->close_callback(real_uri);
+      queue->set_stage(real_uri, 5);
     }
   
     call_out(get_next_uri,0);
   }
   
   void create(Queue _queue,
-	      function _page_cb, function _done_cb, function _prepare_cb, 
-
+	      function _page_cb, function _error_cb,
+	      function _done_cb, function _prepare_cb, 
 	      string|array(string)|Standards.URI|
 	      array(Standards.URI) start_uri,
 	      mixed ... _args)
@@ -758,6 +850,7 @@ class Crawler
     queue=_queue;
     args=_args;
     page_cb=_page_cb;
+    error_cb=_error_cb;
     done_cb=_done_cb;
     prepare_cb=_prepare_cb;
     
