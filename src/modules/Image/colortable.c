@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.19 1997/11/03 00:34:45 mirar Exp $ */
+/* $Id: colortable.c,v 1.20 1997/11/03 01:40:34 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.19 1997/11/03 00:34:45 mirar Exp $
+**!	$Id: colortable.c,v 1.20 1997/11/03 01:40:34 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.19 1997/11/03 00:34:45 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.20 1997/11/03 01:40:34 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -3145,6 +3145,17 @@ void image_colortable_floyd_steinberg(INT32 args)
 
    pop_n_elems(args);
    push_object(THISOBJ); THISOBJ->refs++;
+}
+
+/* called by GIF encoder */
+void image_colortable_internal_floyd_steinberg(struct neo_colortable *nct)
+{
+   nct->du.floyd_steinberg.forward=0.95*(7.0/16);
+   nct->du.floyd_steinberg.downforward=0.95*(1.0/16);
+   nct->du.floyd_steinberg.down=0.95*(5.0/16);
+   nct->du.floyd_steinberg.downback=0.95*(3.0/16);
+
+   nct->dither_type=NCTD_FLOYD_STEINBERG;
 }
 
 /*
