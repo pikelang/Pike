@@ -93,15 +93,6 @@ testfont binary
 /lib/modules/Crypto.pmod/randomness.pmod foreign_ident
 /lib/modules/Crypto.pmod/rsa.pike foreign_ident
 /lib/modules/Crypto.pmod/testsuite.in foreign_ident
-/lib/modules/Crypto/_rsa.pike foreign_ident
-/lib/modules/Crypto/aes.pike foreign_ident
-/lib/modules/Crypto/des3.pike foreign_ident
-/lib/modules/Crypto/des3_cbc.pike foreign_ident
-/lib/modules/Crypto/des_cbc.pike foreign_ident
-/lib/modules/Crypto/idea_cbc.pike foreign_ident
-/lib/modules/Crypto/randomness.pmod foreign_ident
-/lib/modules/Crypto/rsa.pike foreign_ident
-/lib/modules/Crypto/testsuite.in foreign_ident
 /lib/modules/Debug.pmod/Subject.pike foreign_ident
 /lib/modules/Debug.pmod/module.pmod foreign_ident
 /lib/modules/Debug.pmod/werror.pmod foreign_ident
