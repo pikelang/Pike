@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.22 2004/07/20 17:06:37 grubba Exp $");
+RCSID("$Id: resultset.c,v 1.23 2004/07/21 12:07:43 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -25,7 +25,7 @@ RCSID("$Id: resultset.c,v 1.22 2004/07/20 17:06:37 grubba Exp $");
  *! A resultset is basically an array of hits from the search.
  *! 
  *! Note: inheriting this class is _not_ supported (for performance
- * reasons) 
+ *! reasons) 
  */
 
 /* The resultset class abstractions. */
@@ -835,5 +835,5 @@ void init_resultset_program(void)
 }
 
 /*
- * @endclass ResultSet
+ *! @endclass ResultSet
  */
