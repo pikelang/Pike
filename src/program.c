@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.441 2002/08/15 14:49:25 marcus Exp $");
+RCSID("$Id: program.c,v 1.442 2002/09/11 16:03:32 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1778,7 +1778,6 @@ void low_start_new_program(struct program *p,
     i.parent_identifier=-1;
     i.parent_offset=-18;
     i.name=0;
-    Pike_compiler->new_program->parent_program_id=compilation_depth>0 && Pike_compiler->previous->new_program ? Pike_compiler->previous->new_program->id : -1;
     add_to_inherits(i);
   }
 

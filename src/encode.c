@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.151 2002/08/15 14:49:20 marcus Exp $");
+RCSID("$Id: encode.c,v 1.152 2002/09/11 16:03:32 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2521,7 +2521,6 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  if(p->parent) {
 	    add_ref(p->parent);
-	    p->parent_program_id = p->parent->id;
 	  }
 	  pop_stack();
 
