@@ -76,7 +76,7 @@ int query_nonblocking(int fd)
 #ifdef USE_FCNTL_FNDELAY
   return fcntl(fd, F_GETFL, 0) & FNDELAY;
 #else
-INSERT YOUR NONBLOCK METHOD HERE
+#error Don not know how to set your filedescriptors nonblocking.
 #endif
 #endif
 #endif
