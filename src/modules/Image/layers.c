@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.47 2000/08/05 23:47:27 grubba Exp $
+**!	$Id: layers.c,v 1.48 2000/08/06 13:53:30 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.47 2000/08/05 23:47:27 grubba Exp $");
+RCSID("$Id: layers.c,v 1.48 2000/08/06 13:53:30 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1377,12 +1377,20 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    }
 }
 
+
+#if defined(__ECL) && 1
+#define WARN_TRACE(X)	static char PIKE_CONCAT(foo__, X) = (char)0.0
+#else /* !__ECL */
+#define WARN_TRACE(X)
+#endif /* __ECL */
+
 /* operators from template */
 
 #define LM_FUNC lm_add
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)+DOUBLE_TO_INT(B))
 #define L_MMX_OPER(A,MMXR) paddusb_m2r(A,MMXR)
+WARNTRACE(1);
 #include "layer_oper.h"
 #undef L_MMX_OPER
 #undef LM_FUNC
@@ -1393,6 +1401,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define L_TRUNC(X) MAXIMUM(0,(X))
 #define L_OPER(A,B) ((A)-DOUBLE_TO_INT(B))
 #define L_MMX_OPER(A,MMXR) psubusb_m2r(A,MMXR)
+WARNTRACE(2);
 #include "layer_oper.h"
 #undef L_MMX_OPER
 #undef LM_FUNC
@@ -1402,6 +1411,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_multiply
 #define L_TRUNC(X) (X)
 #define L_OPER(A,B) CCUT((A)*DOUBLE_TO_INT(B))
+WARNTRACE(3);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1410,6 +1420,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((A)/C2F(1+DOUBLE_TO_INT(B)))
+WARNTRACE(4);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1418,6 +1429,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_modulo
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)%((B)?(B):1))
+WARNTRACE(5);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1428,6 +1440,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_invsubtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
 #define L_OPER(A,B) ((B)-DOUBLE_TO_INT(A))
+WARNTRACE(6);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1436,6 +1449,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_invdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
 #define L_OPER(A,B) ((B)/C2F(1+DOUBLE_TO_INT(A)))
+WARNTRACE(7);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1444,6 +1458,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_invmodulo
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((B)%((A)?(A):1))
+WARNTRACE(8);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1454,6 +1469,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_difference
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) abs((A)-(B))
+WARNTRACE(9);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1462,6 +1478,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_max
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) MAXIMUM((A),(B))
+WARNTRACE(10);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1470,6 +1487,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_min
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) MINIMUM((A),(B))
+WARNTRACE(11);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1478,6 +1496,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_bitwise_and
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)&(B))
+WARNTRACE(12);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1486,6 +1505,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_bitwise_or
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)|(B))
+WARNTRACE(13);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1494,6 +1514,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_bitwise_xor
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)^(B))
+WARNTRACE(14);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1502,6 +1523,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)==(B))?COLORMAX:0)
+WARNTRACE(15);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1510,6 +1532,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_not_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)!=(B))?COLORMAX:0)
+WARNTRACE(16);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1518,6 +1541,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_less
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)>(B))?COLORMAX:0)
+WARNTRACE(17);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1526,6 +1550,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_more
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)<(B))?COLORMAX:0)
+WARNTRACE(18);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1534,6 +1559,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_less_or_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)>=(B))?COLORMAX:0)
+WARNTRACE(19);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1542,6 +1568,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_more_or_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) (((A)<=(B))?COLORMAX:0)
+WARNTRACE(20);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1553,6 +1580,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_logic_equal
 #define L_OPER(A,B) ((A)==(B))
 #define L_TRANS white
+WARNTRACE(21);
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1563,6 +1591,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_logic_not_equal
 #define L_OPER(A,B) ((A)!=(B))
 #define L_TRANS black
+WARNTRACE(22);
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1573,6 +1602,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_logic_strict_less
 #define L_OPER(A,B) ((A)>(B))
 #define L_TRANS white
+WARNTRACE(23);
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1583,6 +1613,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_logic_strict_more
 #define L_OPER(A,B) ((A)<(B))
 #define L_TRANS white
+WARNTRACE(24);
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1593,6 +1624,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_logic_strict_less_or_equal
 #define L_OPER(A,B) ((A)>=(B))
 #define L_TRANS white
+WARNTRACE(25);
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1603,6 +1635,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #define LM_FUNC lm_logic_strict_more_or_equal
 #define L_OPER(A,B) ((A)<=(B))
 #define L_TRANS white
+WARNTRACE(26);
 #include "layer_oper.h"
 #undef L_TRANS
 #undef L_OPER
@@ -1876,7 +1909,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
    }
    else
    {
-      int v=(int)(COLORMAX*alpha);
+      int v = DOUBLE_TO_INT(COLORMAX*alpha);
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
 	 {
@@ -2005,9 +2038,9 @@ static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-	    da->r=CCUT(sa->r*(int)(COLORMAX-alpha*la->r));
-	    da->g=CCUT(sa->g*(int)(COLORMAX-alpha*la->g));
-	    da->b=CCUT(sa->b*(int)(COLORMAX-alpha*la->b));
+	    da->r=CCUT(sa->r*DOUBLE_TO_INT(COLORMAX-alpha*la->r));
+	    da->g=CCUT(sa->g*DOUBLE_TO_INT(COLORMAX-alpha*la->g));
+	    da->b=CCUT(sa->b*DOUBLE_TO_INT(COLORMAX-alpha*la->b));
 
 	    la++; sa++; da++;
 	 }
