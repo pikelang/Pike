@@ -651,7 +651,7 @@ class async_client
 		   sort(column(mx, "preference"), a);
 		 }
 		 callback(a, @args);
-	       }, callback, args);
+	       }, callback, @args);
   }
 
   void create(void|string|array(string) server, void|string|array(string) domain)
