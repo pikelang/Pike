@@ -2,6 +2,37 @@
 // Common routines which are useful for various install scripts based on Pike.
 //
 
+array(string) features()
+{
+  array a = ({});
+  
+  if(!_static_modules["Regexp"])
+    a += ({ "dynamic_modules" });
+
+#if efun(thread_create)
+  a += ({ "threads" });
+#endif
+
+  foreach(({ "_Crypto", "CommonLog", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
+	     "_Image_JPEG", "_Image_TIFF", "_Image_TTF", "Java", "MIME",
+	     "Msql", "Mysql", "Odbc", "Oracle", "Perl", "Postgres", "Ssleay",
+	     "sybase", "WideValues", "X", "Yp" }),
+	  string modname)
+  {
+    catch
+    {
+      if(sizeof(indices(master()->resolv(modname) || ({}))))
+      {
+	if(modname[0] == '_')
+	  modname = replace(modname[1..], "_", ".");
+	a += ({ modname });
+      }
+    };
+  }
+
+  return a;
+}
+
 string make_absolute_path(string path, string|void cwd)
 {
 #if constant(getpwnam)

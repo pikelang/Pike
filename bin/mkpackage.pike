@@ -41,6 +41,7 @@ class Package
      "echo '  -h, --help              Display this help and exit.'\n"
      "echo '  -l, --list              Display the contents of the package and exit.'\n"
      "echo '  -v, --version           Display version information and exit.'\n"
+     "echo '  --features              Display feature information and exit.'\n"
      "echo '  -a, --add <component>   Add a component to the package and exit.'\n"
      "echo\n"
      "echo 'When no arguments are given, the installation script will be started.'\n"
@@ -115,6 +116,9 @@ class Package
 			       setup_filename);
 		    
     rmrf("#!", setup_filename);
+    
+    string features = Process.popen(pike_filename+" --features");
+    options[({ "--features" })] = "echo \""+(features || "")+"\"\nexit";
     
     if(!Stdio.write_file(setup_filename, setup))
       ERR(("Failed to write setup script %O., ", setup_filename));

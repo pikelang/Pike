@@ -409,6 +409,7 @@ string helptext=#"Usage: $TARFILE [options] [variables]
 Options:
   -h, --help            Display this help and exit.
   -v, --version         Display version information and exit.
+  --features            Display features and exit.
   --interactive         Interactive installation (default).
   --new-style           Install in <prefix>/pike/<ver>/{lib,include,bin}.
   --traditional         Install in <prefix>/{lib/pike,include/pike,bin}.
@@ -539,15 +540,19 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2000 Fredrik Hübinette and Roxen Internet Software AB
-Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are
-welcome to redistribute it under certain conditions; Read the files
-COPYING and DISCLAIMER in the Pike distribution for more details.
+#" Copyright (C) 1994-2000 Fredrik Hübinette and
+Roxen Internet Software AB Pike comes with ABSOLUTELY NO WARRANTY;
+This is free software and you are welcome to redistribute it under
+certain conditions; Read the files COPYING and DISCLAIMER in the
+Pike distribution for more details.
 \";
                   exit 0 ;;
 
               -h|\\
           --help) echo \"" + helptext + #"\"
+                  exit 0 ;;
+
+      --features) echo \"" + Tools.Install.features()*"\n" + #"\"
                   exit 0 ;;
 
               -s|\\
