@@ -247,7 +247,7 @@ array(Country) countries=
    Country("ZW","Zimbabwe"),
 });
 
-//! module Geographical
+//! module Geography
 //! submodule Countries
 //! subclass Country
 
@@ -302,7 +302,7 @@ class Country
 
 }
 
-//! module Geographical
+//! module Geography
 //! submodule Countries
 
 //! constant array(Country) countries
@@ -388,13 +388,13 @@ Country from_name(string name)
 //!	returns that country if possible:
 //!
 //!     <pre>
-//! &gt; Geographical.Countries.se;    
+//! &gt; Geography.Countries.se;    
 //! Result: Country(Sweden)
-//! &gt; Geographical.Countries.djibouti;
+//! &gt; Geography.Countries.djibouti;
 //! Result: Country(Djibouti)
-//! &gt; Geographical.Countries.com;     
+//! &gt; Geography.Countries.com;     
 //! Result: Country(United States)
-//! &gt; Geographical.Countries.wallis_and_futuna_islands->iso2;
+//! &gt; Geography.Countries.wallis_and_futuna_islands->iso2;
 //! Result: "WF"
 //! 	</pre>
 
