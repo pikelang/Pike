@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.122 1998/08/08 13:53:23 grubba Exp $");
+RCSID("$Id: file.c,v 1.123 1998/09/01 17:02:28 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -812,10 +812,8 @@ static void file__enable_callbacks(INT32 args)
   if(IS_ZERO(& THIS->X )) \
   {								\
     PIKE_CONCAT(set_,X)(FD, 0, 0);				\
-    check_internal_reference(THIS);                             \
   }else{							\
     PIKE_CONCAT(set_,X)(FD, PIKE_CONCAT(file_,X), THIS);	\
-    SET_INTERNAL_REFERENCE(THIS);                               \
   }								
 
 DO_TRIGGER(read_callback)
@@ -824,6 +822,8 @@ DO_TRIGGER(write_callback)
 DO_TRIGGER(read_oob_callback)
 DO_TRIGGER(write_oob_callback)
 #endif
+
+  check_internal_reference(THIS);
   pop_n_elems(args);
   push_int(0);
 }
@@ -831,8 +831,7 @@ DO_TRIGGER(write_oob_callback)
 static void file__disable_callbacks(INT32 args)
 {
 #define DO_DISABLE(X) \
-  PIKE_CONCAT(set_,X)(FD, 0, 0);  \
-  check_internal_reference(THIS);
+  PIKE_CONCAT(set_,X)(FD, 0, 0); 
 
 
 DO_DISABLE(read_callback)
@@ -841,6 +840,8 @@ DO_DISABLE(write_callback)
 DO_DISABLE(read_oob_callback)
 DO_DISABLE(write_oob_callback)
 #endif
+
+  check_internal_reference(THIS);
 
   pop_n_elems(args);
   push_int(0);
