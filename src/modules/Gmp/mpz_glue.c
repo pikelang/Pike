@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.52 1999/10/24 01:08:42 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.53 1999/10/25 10:20:26 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1006,6 +1006,7 @@ void pike_module_exit(void)
 void pike_module_init(void)
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
+  int id;
   start_new_program();
   ADD_STORAGE(MP_INT);
   
@@ -1113,12 +1114,29 @@ void pike_module_init(void)
   set_init_callback(init_mpz_glue);
   set_exit_callback(exit_mpz_glue);
 
-  add_program_constant("mpz", mpzmod_program=end_program(), 0);
+  id=add_program_constant("mpz", mpzmod_program=end_program(), 0);
 
   /* function(int, int:object) */
   ADD_FUNCTION("pow", gmp_pow,tFunc(tInt tInt,tObj), 0);
   /* function(int:object) */
   ADD_FUNCTION("fac", gmp_fac,tFunc(tInt,tObj), 0);
+
+
+#ifdef AUTO_BIGNUM
+  {
+    /* Alert bignum.c that we have been loaded /Hubbe */
+    extern gmp_library_loaded;
+    gmp_library_loaded=1;
+
+#if 0
+    /* magic /Hubbe
+     * This seems to break more than it fixes though... /Hubbe
+     */
+    free_string(ID_FROM_INT(new_program, id)->type);
+    ID_FROM_INT(new_program, id)->type=CONSTTYPE(tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,tObj),tInt),tFunc(tStr tInt,tInt)));
+#endif
+  }
+#endif
 
 #endif
 }

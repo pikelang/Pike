@@ -10,6 +10,8 @@
 
 struct svalue auto_bignum_program = { T_INT };
 
+int gmp_library_loaded=0;
+
 static void resolve_auto_bignum_program(void)
 {
   if(auto_bignum_program.type == T_INT)
@@ -52,6 +54,14 @@ void convert_stack_top_with_base_to_bignum(void)
 
 int is_bignum_object(struct object *o)
 {
+  /* Note:
+   * This function should *NOT* try to resolv Gmp.mpz unless
+   * it is already loaded into memory.
+   * /Hubbe
+   */
+
+  if(!gmp_library_loaded) return 0; /* not possible */
+ 
   resolve_auto_bignum_program();
   return o->prog == program_from_function(&auto_bignum_program);
 }

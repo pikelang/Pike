@@ -40,6 +40,15 @@ int is_bignum_object(struct object *o);
 int is_bignum_object_in_svalue(struct svalue *sv);
 /* Prototypes end here */
 
+#else
+
+#define INT_TYPE_MUL_OVERFLOW(a, b) 0
+#define INT_TYPE_NEG_OVERFLOW(x)    0
+#define INT_TYPE_ADD_OVERFLOW(a, b) 0
+#define INT_TYPE_SUB_OVERFLOW(a, b) 0
+#define INT_TYPE_LSH_OVERFLOW(a, b) 0
+#define INT_TYPE_RSH_OVERFLOW(a, b) 0
+
 #endif /* AUTO_BIGNUM */
 
 #endif /* BIGNUM_H */
