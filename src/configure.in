@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.158 1998/02/11 00:04:58 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.159 1998/02/20 01:05:34 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -663,7 +663,7 @@ AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(socket, socket)
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
-  LIBS="-lkernel32 -lws2_32  $LIBS"
+  LIBS="-lkernel32  $LIBS"
 fi
 
 AC_CHECK_LIB(nsl, gethostbyname)
