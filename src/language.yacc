@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.245 2001/04/03 12:14:47 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.246 2001/05/08 13:09:20 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1155,6 +1155,30 @@ simple_identifier_type: identifier_type
   }
   ;
 
+type4: type4 '|' type8 { push_type(T_OR); }
+  | type8
+  ;
+
+type2: type2 '|' type8 { push_type(T_OR); }
+  | basic_type 
+  ;
+
+type8: basic_type | identifier_type ;
+
+basic_type:
+    TOK_FLOAT_ID                      { push_type(T_FLOAT); }
+  | TOK_VOID_ID                       { push_type(T_VOID); }
+  | TOK_MIXED_ID                      { push_type(T_MIXED); }
+  | TOK_STRING_ID                     { push_type(T_STRING); }
+  | TOK_INT_ID      opt_int_range     {}
+  | TOK_MAPPING_ID  opt_mapping_type  {}
+  | TOK_FUNCTION_ID opt_function_type {}
+  | TOK_OBJECT_ID   opt_object_type   {}
+  | TOK_PROGRAM_ID  opt_object_type   { push_type(T_PROGRAM); }
+  | TOK_ARRAY_ID    opt_array_type    { push_type(T_ARRAY); }
+  | TOK_MULTISET_ID opt_array_type    { push_type(T_MULTISET); }
+  ;
+
 identifier_type: idents
   { 
     resolv_constant($1);
@@ -1207,29 +1231,6 @@ identifier_type: idents
     free_node($1);
   }
   ;
-
-type4: type4 '|' type8 { push_type(T_OR); }
-  | type8
-  ;
-
-type2: type2 '|' type3 { push_type(T_OR); }
-  | type3 
-  ;
-
-type3: TOK_INT_ID  opt_int_range    {}
-  | TOK_FLOAT_ID    { push_type(T_FLOAT); }
-  | TOK_PROGRAM_ID  { push_object_type(0, 0); push_type(T_PROGRAM); }
-  | TOK_VOID_ID     { push_type(T_VOID); }
-  | TOK_MIXED_ID    { push_type(T_MIXED); }
-  | TOK_STRING_ID { push_type(T_STRING); }
-  | TOK_OBJECT_ID   opt_object_type {}
-  | TOK_MAPPING_ID opt_mapping_type {}
-  | TOK_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
-  | TOK_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
-  | TOK_FUNCTION_ID opt_function_type {}
-  ;
-
-type8: type3 | identifier_type ;
 
 number_or_maxint: /* Empty */
   {
