@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.81 2000/07/07 02:11:40 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.82 2000/10/30 19:01:21 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -91,7 +91,9 @@ void exit_lex(void)
 
 struct keyword instr_names[]=
 {
+#ifndef PIKE_PRECOMPILER
 #include "interpret_protos.h"
+#endif /* !PIKE_PRECOMPILER */
 { "!=",			F_NE,0 },	
 { "%=",			F_MOD_EQ,0 },	
 { "&=",			F_AND_EQ,0 },	

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.214 2000/10/17 14:48:38 mast Exp $
+# $Id: Makefile.in,v 1.215 2000/10/30 19:01:22 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -281,16 +281,20 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Done."
 
 
-.SUFFIXES: .c .o .cmod .pp .protos
+.SUFFIXES: .c .h .o .cmod .pp .pph .protos
 
 .c.pp:
-	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
+	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	  -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
 
 .c.protos:
-	./precompile.sh fake_dynamic_load.pike "$@" --cpp --protos $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT -DPMOD_PROTO=PMOD_PROTO "$<"
+	./precompile.sh fake_dynamic_load.pike "$@" --cpp --protos \
+	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<"
 
 .h.pph:
-	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
+	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
+	  -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
 
 
 # Several optimizers have problems with interpret.c
