@@ -7175,6 +7175,11 @@ The following options are only available on some systems.
     handlers to their default value for the
     new process. Useful to ignore certain signals
     in the new process.
+
+<dt><tt>"fds" : array(Stdio.File|zero) fds</tt>
+<dd>This parameter allows you to map files to filedescriptors 3 and up.
+The file <tt>fds[0]</tt> will be remapped to fd #3 in the new process, etc.
+
 </dl>
 
 These parameter limits the new process in certain ways,
