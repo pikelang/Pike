@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.28 2002/11/09 13:41:14 grubba Exp $
+|| $Id: sparc.c,v 1.29 2002/11/10 18:33:56 grubba Exp $
 */
 
 /*
@@ -81,8 +81,10 @@
 #define SPARC_OP3_SRL		0x26
 #define SPARC_OP3_SRA		0x27
 #define SPARC_OP3_RD		0x28
+#define SPARC_OP3_JMPL		0x38
 #define SPARC_OP3_RETURN	0x39
 #define SPARC_OP3_SAVE		0x3c
+#define SPARC_OP3_RESTORE	0x3d
 
 #define SPARC_RD_REG_CCR	0x02
 #define SPARC_RD_REG_PC		0x05
@@ -112,6 +114,10 @@
 #define SPARC_RD(D, RDREG)	SPARC_ALU_OP(SPARC_OP3_RD, D, RDREG, 0, 0)
 
 #define SPARC_RETURN(S1, S2, I)	SPARC_ALU_OP(SPARC_OP3_RETURN, 0, S1, S2, I)
+
+#define SPARC_JMPL(D,S1,S2,I)	SPARC_ALU_OP(SPARC_OP3_JMPL, D, S1, S2, I)
+#define SPARC_RET()		SPARC_JMPL(SPARC_REG_G0, SPARC_REG_I7, 8, 1)
+#define SPARC_RESTORE(D,S1,S2,I) SPARC_ALU_OP(SPARC_OP3_RESTORE, D, S1, S2, I)
 
 #define SPARC_LDUW(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_LDUW, D, S1, S2, I)
 #define SPARC_LDUH(D,S1,S2,I)	SPARC_MEM_OP(SPARC_OP3_LDUH, D, S1, S2, I)
@@ -449,10 +455,21 @@ void sparc_escape_catch(void)
   /* stw %i0, [ %pike_fp, %offset(pike_frame, pc) ] */
   SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_FP,
 	    OFFSETOF(pike_frame, pc), 1);
+#if 0
+  /* The following code is Sparc V9 only code. */
   /* return %i7 + 8 */
   SPARC_RETURN(SPARC_REG_I7, 8, 1);
   /* or %g0, -2, %o0 */
   SPARC_OR(SPARC_REG_O0, SPARC_REG_G0, -2, 1);
+#else /* ! 0 */
+  /* Sparc V7 & V8 code. */
+  /* or %g0, -2, %i0 */
+  SPARC_OR(SPARC_REG_I0, SPARC_REG_G0, -2, 1);
+  /* ret */
+  SPARC_RET();
+  /* restore */
+  SPARC_RESTORE(SPARC_REG_G0, SPARC_REG_G0, SPARC_REG_G0, 0);
+#endif /* 0 */
   SPARC_UNLOAD_CACHED();
 }
 
@@ -524,26 +541,28 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   case F_MARK - F_OFFSET:
     sparc_mark(0);
     return;
+
   case F_POP_MARK - F_OFFSET:
     sparc_incr_mark_sp(-1);
     return;
   case F_UNDEFINED - F_OFFSET:
     sparc_push_int(0, 1);
     return;
+
+  case F_MARK_AND_CONST0 - F_OFFSET:
+    sparc_mark(0);
+    /* FALL_THROUGH */
   case F_CONST0 - F_OFFSET:
     sparc_push_int(0, 0);
     return;
+
+  case F_MARK_AND_CONST1 - F_OFFSET:
+    sparc_mark(0);
+    /* FALL_THROUGH */
   case F_CONST1 - F_OFFSET:
     sparc_push_int(1, 0);
     return;
-  case F_MARK_AND_CONST0 - F_OFFSET:
-    sparc_mark(0);
-    sparc_push_int(0, 0);
-    return;
-  case F_MARK_AND_CONST1 - F_OFFSET:
-    sparc_mark(0);
-    sparc_push_int(1, 0);
-    return;
+
   case F_CONST_1 - F_OFFSET:
     sparc_push_int(-1, 0);
     return;
@@ -796,7 +815,10 @@ void sparc_disassemble_code(void *addr, size_t bytes)
 	  case SPARC_OP3_SRL:	mnemonic = "srl"; break;
 	  case SPARC_OP3_SRA:	mnemonic = "sra"; break;
 	  case SPARC_OP3_RD:	mnemonic = "rd"; break;
+	  case SPARC_OP3_JMPL:  mnemonic = "jmpl"; break;
+	  case SPARC_OP3_RETURN:mnemonic = "return"; break;
 	  case SPARC_OP3_SAVE:	mnemonic = "save"; break;
+	  case SPARC_OP3_RESTORE:mnemonic = "restore"; break;
 	  default:
 	    sprintf(buf, "op3(0x%02x)", op3);
 	    mnemonic = buf;
