@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.718 2003/04/30 10:24:52 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.719 2003/04/30 10:39:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4274,7 +4274,9 @@ MY_CHECK_FUNCTION(gethostname,
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_WINSOCK_H
+#ifdef HAVE_WINSOCK2_H
+#include <winsock2.h>
+#elif defined(HAVE_WINSOCK_H)
 #include <winsock.h>
 #endif
 ], [
