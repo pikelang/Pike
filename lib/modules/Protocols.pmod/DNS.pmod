@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.70 2003/07/30 15:17:56 anders Exp $
+// $Id: DNS.pmod,v 1.71 2003/09/11 16:53:18 kiwi Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -1184,6 +1184,7 @@ void async_##X( string host, function callback, mixed ... args ) 	\
   global_async_client->X(host,callback,@args);				\
 }
 
+//! @ignore
 GAC(ip_to_host);
 //! method void async_ip_to_host(string ip, function cb, mixed ... cba)
 
@@ -1195,7 +1196,7 @@ GAC(get_mx_all);
 
 GAC(get_mx);
 //! method void async_get_mx(string host, function cb, mixed ... cba)
-
+//! @endignore
 
 client global_client;
 
@@ -1207,6 +1208,7 @@ mixed X( string host ) 	                                        \
   return global_client->X(host);				\
 }
 
+//! @ignore
 GC(gethostbyname);
 //! method array gethostbyname(string host)
 
@@ -1218,3 +1220,4 @@ GC(get_mx);
 
 GC(get_primary_mx);
 //! method string get_primary_mx(string host)
+//! @endignore
