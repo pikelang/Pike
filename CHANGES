@@ -45,7 +45,7 @@ o IPv6
 
 o mysqls
     The Mysql glue can operate over SSL. Use the "mysqls://" protocol
-    in the Sql.Sql module to use this secuity feature.
+    in the Sql.Sql module to use this security feature.
 
 o trace() can trace all threads
     The configure option --without-thread-trace has been removed, but
@@ -84,25 +84,25 @@ o hash
 
 o #warning
     A new The Pike preprocessor directive #warning has been added. It
-    simply write the rest of the line to stderr.
+    simply writes the rest of the line to stderr.
 
 
 The Pike master:
 ----------------
 
 o The new option --dumpversion prints out the Pike version in a more
-  easily pared way than --version.
+  easily parsed way than --version.
 
-o The master now supplies argv to the started application, so it can
-  use the create method for execution. Some people find it a more
-  elegant solution than having a main function.
+o The master now supplies argv to the started application's create()
+  callback, so it can be used for execution. Some people find it a
+  more elegant solution than having a main function.
 
 o The -e Pike environment has been improved with a lot of convenience
   wrappings. When compiling code with pike -e the macro NOT(X) will
   expand to !(X) and CHAR(X) to 'X', making it easier to solve quote
   problems from a shell. If the return from a pike -e statement is a
   positive integer it will be used as pikes exit code. If the return
-  value is a string it will be outputed, with a "\n" added, if it
+  value is a string it will be output, and with a trailing "\n", if it
   lacked one. Finally there is a predefined variable env that contains
   the environment variables as a string:string mapping.
 
@@ -112,16 +112,16 @@ Building and installing pike:
 
 o To simplify the process of building Pike source distributions it is
   now possible to bundle less common libraries such as Nettle with
-  Pike. The bundle, found in the bundle directory, will be compiled
+  Pike. The bundles, found in the bundle/ directory, will be compiled
   and statically linked if the no matching library is found on the
   system.
 
 o The Pike build process no longer builds a bootstrap pike, used to
   run various small programs to generate source files. This means that
   in order to build Pike from CVS you need the latest major version of
-  Pike installed on your system. Pike source distributions contains
-  the generated files and is not affected (except it compiles in less
-  time).
+  Pike installed on your system. Pike source distributions will still
+  contain the generated files and are not affected (except they compile
+  in less time).
 
 o By default pike want you to build a documentation source file, i.e.
   "make && make doc && make install". This makes it possible for third
@@ -140,14 +140,16 @@ o rsif
 
 o benchmark
     A set of benchmarks is available in the benchmark tool. They are
-    based on the Great Computer Language Shootout, but has been
+    based on the Great Computer Language Shootout, but have been
     modified to make more sense in the context of Pike and to test
     various aspects of Pike we suspect (or at least at one time
-    suspected) performs badly.
+    suspected) perform badly.
 
 o cgrep
-    Context sensitive grep is very helpful when you are looking for
-    substrings that are common. The implemented search modes are:
+    Context sensitive grep (grepping through tokenized code, at
+    present handling Pike and C source files) is very helpful when
+    you are looking for substrings that are common. The implemented
+    search modes are:
       o Complete token
       o Part of a token
       o Complete string literal
@@ -174,7 +176,7 @@ o extract_locale
 
 o monger
     A new utility to download, install and otherwise manage external
-    modules from the Fresh Pike project.
+    modules from the Fresh Pike project (modules.gotpike.org).
 
 
 New modules / classes / methods added:
