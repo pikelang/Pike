@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.21 2000/10/27 13:49:23 grubba Exp $
+# $Id: configure.in,v 1.22 2000/10/31 16:03:39 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -128,6 +128,8 @@ if test x$with_oracle = xyes; then
   oracle_include_dir="`cat conftest`"
 
   AC_MSG_RESULT($oracle_include_dir/rdbms/demo/)
+
+  AC_CHECK_HEADERS(oci.h ocidfn.h ociapr.h)
 
   AC_MSG_CHECKING(for sysliblist)
 
