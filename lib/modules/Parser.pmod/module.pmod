@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.10 2001/07/17 11:34:30 nilsson Exp $
+ * $Id: module.pmod,v 1.11 2001/10/22 14:01:49 nilsson Exp $
  *
  */
 
@@ -208,7 +208,7 @@ class SGML
 //!	to unicode characters. Either return a complete
 //!	parser (to build on or use) or parse a string.
 //! @note
-//!	Currently using HTML 4.0 tables.
+//!	Currently using XHTML 1.0 tables.
 
 static HTML entityparser=0;
 
@@ -246,17 +246,25 @@ string parse_html_entities(string in)
 
 constant html_entities=
 ([
+  // Basic Latin
    "quot":"\x22",
    "amp":"\x26",
+   "apos":"\x27",
    "lt":"\x3C",
    "gt":"\x3E",
+
+   // Latin Extended-A
    "OElig":"\x152",
    "oelig":"\x153",
    "Scaron":"\x160",
    "scaron":"\x161",
    "Yuml":"\x178",
+
+   // Spacing Modifier Letters
    "circ":"\x2C6",
    "tilde":"\x2DC",
+
+   // General Punctuation
    "ensp":"\x2002",
    "emsp":"\x2003",
    "thinsp":"\x2009",
@@ -279,6 +287,7 @@ constant html_entities=
    "rsaquo":"\x203A",
    "euro":"\x20AC",
 
+   // Latin 1
    "nbsp":"\xA0",
    "iexcl":"\xA1",
    "cent":"\xA2",
@@ -376,8 +385,10 @@ constant html_entities=
    "thorn":"\xFE",
    "yuml":"\xFF",
 
-
+   // Latin Extended-B
    "fnof":"\x192",
+
+   // Greek
    "Alpha":"\x391",
    "Beta":"\x392",
    "Gamma":"\x393",
@@ -430,17 +441,23 @@ constant html_entities=
    "thetasym":"\x3D1",
    "upsih":"\x3D2",
    "piv":"\x3D6",
+
+   // General Punctuation
    "bull":"\x2022",
    "hellip":"\x2026",
    "prime":"\x2032",
    "Prime":"\x2033",
    "oline":"\x203E",
    "frasl":"\x2044",
+
+   // Letterlike symbols
    "weierp":"\x2118",
    "image":"\x2111",
    "real":"\x211C",
    "trade":"\x2122",
    "alefsym":"\x2135",
+
+   // Arrows
    "larr":"\x2190",
    "uarr":"\x2191",
    "rarr":"\x2192",
@@ -452,6 +469,8 @@ constant html_entities=
    "rArr":"\x21D2",
    "dArr":"\x21D3",
    "hArr":"\x21D4",
+
+   // Mathematical Operators
    "forall":"\x2200",
    "part":"\x2202",
    "exist":"\x2203",
@@ -490,13 +509,19 @@ constant html_entities=
    "otimes":"\x2297",
    "perp":"\x22A5",
    "sdot":"\x22C5",
+
+   // Misecellaneous Technical
    "lceil":"\x2308",
    "rceil":"\x2309",
    "lfloor":"\x230A",
    "rfloor":"\x230B",
    "lang":"\x2329",
    "rang":"\x232A",
+
+   // Geometric Shapes
    "loz":"\x25CA",
+
+   // Miscellaneous Symbols
    "spades":"\x2660",
    "clubs":"\x2663",
    "hearts":"\x2665",
