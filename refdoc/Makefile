@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.3 2001/02/02 20:39:29 grubba Exp $
+# $Id: Makefile,v 1.4 2001/02/02 20:44:06 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -24,7 +24,11 @@ xml:
 	$(MAKE) PIKE="$(PIKE)" `(cd $(SRCDIR) && ls *.c) | sed -e 's/\.c$$/\.xml/'`
 
 recurse: subdirectories
-	for d in */.; do (cd $$d && make PIKE="$(PIKE)" all)||exit 1; done
+	for d in */.; do \
+	  if test "$$d" = "CVS/." -o ! -d "$$d"; then :; else \
+	    (cd $$d && make PIKE="$(PIKE)" all) || exit 1; \
+	  fi; \
+	done
 
 subdirectories:
 	for d in `cd $(SRCDIR) && echo *`; do \
@@ -40,7 +44,7 @@ subdirectories:
 	done
 
 clean:
-	rm *.xml
+	-@rm *.xml
 	for d in *; do \
 	  if test "$$d" = "CVS" -o ! -d "$$d/."; then :; else \
 	    rm -rf "$$d"; \
