@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.36 2001/03/31 15:39:52 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.37 2001/03/31 15:41:23 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -302,7 +302,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    
 	  case T_FUNCTION:
 	    if (sp[-1].subtype == FUNCTION_BUILTIN) {
-	      Pike_error("Cannot cast builtin functions to object.\n");
+	      error("Cannot cast builtin functions to object.\n");
 	    } else {
 	      sp[-1].type = T_OBJECT;
 	    }
