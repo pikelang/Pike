@@ -6,9 +6,14 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include "callback.h"
+
 extern int d_flag, t_flag, a_flag, l_flag, c_flag;
 
 /* Prototypes begin here */
+struct callback *add_post_master_callback(callback_func call,
+					  void *arg,
+					  callback_func free_func);
 void main(int argc, char **argv, char **env);
 void init_main_efuns();
 void init_main_programs();

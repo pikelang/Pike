@@ -23,18 +23,7 @@
 #include <locale.h>
 #endif
 
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  if HAVE_TIME_H
-#   include <time.h>
-#  endif
-# endif
-#endif
+#include "time_stuff.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -50,11 +39,11 @@ int l_flag=0;
 
 static struct callback *post_master_callbacks =0;
 
-struct callback *add_post_master_callback(callback call,
+struct callback *add_post_master_callback(callback_func call,
 					  void *arg,
-					  callback free_func)
+					  callback_func free_func)
 {
-  return add_to_callback_list(&post_master_callbacks, call, arg, free_func);
+  return add_to_callback(&post_master_callbacks, call, arg, free_func);
 }
 
 
@@ -164,7 +153,7 @@ void main(int argc, char **argv, char **env)
   }
 #endif
 
-  current_time = get_current_time();
+  GETTIMEOFDAY(&current_time);
 
   init_modules_efuns();
   master();
@@ -214,6 +203,7 @@ void main(int argc, char **argv, char **env)
 
 void init_main_efuns()
 {
+  init_interpreter();
   init_lex();
   init_types();
   init_builtin_efuns();
@@ -228,7 +218,6 @@ void init_main_programs()
 void exit_main()
 {
   void cleanup_added_efuns();
-  void free_all_call_outs();
   void cleanup_lpc_types();
   void cleanup_program();
 
@@ -238,9 +227,9 @@ void exit_main()
   exit_lex();
   cleanup_interpret();
   cleanup_added_efuns();
-  free_all_call_outs();
   cleanup_lpc_types();
   cleanup_shared_string_table();
   cleanup_program();
+  exit_interpreter();
 }
 
