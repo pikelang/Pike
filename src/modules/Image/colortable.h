@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.17 1999/04/11 12:55:43 mirar Exp $
+**!	$Id: colortable.h,v 1.18 2000/08/07 13:43:32 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -59,7 +59,7 @@ struct neo_colortable
    {
       struct nct_flat
       {
-	 int numentries;
+	 ptrdiff_t numentries;
 	 struct nct_flat_entry *entries;
       } flat;
       struct nct_cube
@@ -68,7 +68,7 @@ struct neo_colortable
 	 int r,g,b; /* steps of sides */
 	 struct nct_scale *firstscale;
 	 INT32 disttrig; /* (sq) distance trigger */
-	 int numentries;
+	 ptrdiff_t numentries;
       } cube;
    } u;
 
