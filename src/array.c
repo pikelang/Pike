@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.171 2004/09/27 21:26:13 mast Exp $
+|| $Id: array.c,v 1.172 2004/09/27 21:47:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -1194,13 +1194,13 @@ PMOD_EXPORT TYPE_FIELD array_fix_type_field(struct array *v)
   int e;
   TYPE_FIELD t;
 
-  t=0;
-
   if(v->flags & ARRAY_LVALUE)
   {
     v->type_field=BIT_MIXED|BIT_UNFINISHED;
     return BIT_MIXED|BIT_UNFINISHED;
   }
+
+  t=0;
 
   for(e=0; e<v->size; e++) {
     check_svalue (ITEM(v) + e);
