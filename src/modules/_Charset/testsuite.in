@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.6 2003/12/17 00:15:44 marcus Exp $
+// $Id: testsuite.in,v 1.7 2003/12/17 02:05:23 nilsson Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -47,6 +47,10 @@ test_eq([[_Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
 // _Charset.UTF16
 test_eq([[_Charset.decoder("utf-16")->feed("\0h\0e\0j")->drain()]],"hej")
 test_eq([[_Charset.encoder("utf-16")->feed("hej")->drain()]],"\0h\0e\0j")
+test_eq([[_Charset.decoder("utf-16BE")->feed("\0h\0e\0j")->drain()]],"hej")
+test_eq([[_Charset.encoder("utf-16BE")->feed("hej")->drain()]],"\0h\0e\0j")
+test_eq([[_Charset.decoder("utf-16LE")->feed("h\0e\0j\0")->drain()]],"hej")
+test_eq([[_Charset.encoder("utf-16LE")->feed("hej")->drain()]],"h\0e\0j\0")
 
 // Find codecs for all IANA names
 define(test_codec,[[
