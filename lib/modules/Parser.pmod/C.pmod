@@ -210,7 +210,7 @@ class Token
 
   int `==(mixed foo)
     {
-      return objectp(foo) ? foo->text : foo == text;
+      return (objectp(foo) ? foo->text : foo) == text;
     }
 
   string `+(string ... s)
