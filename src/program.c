@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.40 1997/09/10 04:08:28 hubbe Exp $");
+RCSID("$Id: program.c,v 1.41 1997/09/11 22:51:40 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1821,7 +1821,12 @@ char *get_storage(struct object *o, struct program *p)
   if(!o->prog) return 0;
   oid=o->prog->id;
   pid=p->id;
-  hval=(oid*9248339 + pid) % GET_STORAGE_CACHE_SIZE;
+  hval=oid*9248339 + pid;
+  hval %= GET_STORAGE_CACHE_SIZE;
+#ifdef DEBUG
+  if(hval>GET_STORAGE_CACHE_SIZE)
+    fatal("hval>GET_STORAGE_CACHE_SIZE");
+#endif
   if(get_storage_cache[hval].oid == oid &&
      get_storage_cache[hval].pid == pid)
   {
