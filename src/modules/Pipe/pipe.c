@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.25 1998/06/12 19:20:45 noring Exp $");
+RCSID("$Id: pipe.c,v 1.26 1998/07/22 18:01:12 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -764,6 +764,9 @@ static void pipe_input(INT32 args)
 	 /* Try blocking mode */
 	 i->type = I_BLOCKING_OBJ;
 	 if (i==THIS->firstinput) {
+	   /*
+	    * FIXME: What if read_som_data() returns 0?
+	    */
 	   read_some_data();
 	 }
 	 return;
