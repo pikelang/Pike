@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.115 2003/04/09 20:27:56 mast Exp $
+# $Id: Makefile,v 1.116 2003/04/15 14:39:43 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -281,9 +281,6 @@ clean:
 	  if test -f remake; then $(DO_MAKE) clean; \
 	  else exit $$res; fi; \
 	} || exit $$?
-	if test -f "refdoc/Makefile"; then \
-	  cd refdoc; $(DO_MAKE) clean; \
-	else :; fi
 
 spotless:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(DO_MAKE) spotless || { \
