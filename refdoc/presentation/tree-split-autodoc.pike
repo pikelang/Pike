@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.46 2002/12/30 14:44:20 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.47 2003/01/14 12:04:59 jhs Exp $
  *
  */
 
@@ -597,11 +597,11 @@ class Node
       (["$navbar$": make_navbar(),
 	"$contents$": make_content(),
 	"$prev_url$": prev_url,
-	"$prev_title$": prev_title,
+	"$prev_title$": _Roxen.html_encode_string(prev_title),
 	"$next_url$": next_url,
-	"$next_title$": next_title,
+	"$next_title$": _Roxen.html_encode_string(next_title),
 	"$type$": String.capitalize(type),
-	"$title$": make_class_path(1),
+	"$title$": _Roxen.html_encode_string(make_class_path(1)),
 	"$style$": style,
 	"$dotdot$": sizeof(extra_prefix)?extra_prefix:".",
 	"$imagedir$":image_prefix(),
