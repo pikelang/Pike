@@ -645,7 +645,27 @@ static INT32 low_cpp(struct cpp *this,
 	      {
 		PUSH_STRING(a,l,&tmp);
 	      }else{
-		low_my_binary_strcat(a, l, &tmp);
+		if(DEF_ARG_NOPRESPACE)
+		  while(l && isspace(*(unsigned char *)a))
+		    a++,l--;
+		
+		if(DEF_ARG_NOPOSTSPACE)
+		  while(l && isspace(*(unsigned char *)(a+l-1)))
+		    l--;
+
+		if(d->parts[e].argument & (DEF_ARG_NOPRESPACE | DEF_ARG_NOPOSTSPACE))
+		{
+		  
+		  low_my_binary_strcat(a, l, &tmp);
+		}else{
+		  dynamic_buffer save;
+		  save=this->buf;
+		  this->buf=tmp;
+		  low_cpp(this, a, l,
+			  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+		  tmp=this->buf;
+		  this->buf=save;
+		}
 	      }
 	      
 	      if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
@@ -1136,11 +1156,19 @@ static INT32 low_cpp(struct cpp *this,
 		extra=DEF_ARG_NOPRESPACE;
 		while(str.s.len && isspace(str.s.str[str.s.len-1]))
 		  str.s.len--;
+		if(!str.s.len && sp-partbase>1)
+		{
+#ifdef DEBUG
+		  if(sp[-1].type != T_INT)
+		    fatal("Internal error in CPP\n");
+#endif
+		  sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
+		}
 	      }else{
 		extra=DEF_ARG_STRINGIFY;
 	      }
 	      SKIPSPACE();
-	      
+	      pos++;
 	      /* fall through */
 	      
 	    default:
@@ -1799,11 +1827,11 @@ static void dumpdef(struct cpp *this,
 	  low_my_putchar('#',tmp);
 	
 	sprintf(buffer,"%ld",(long)(d->parts[e].argument & DEF_ARG_MASK));
+	low_my_binary_strcat(buffer,strlen(buffer), tmp);
 	
 	if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
 	  low_my_putchar(' ',tmp);
 	
-	low_my_binary_strcat(buffer,strlen(buffer), tmp);
 	PUSH_STRING(d->parts[e].postfix->str, d->parts[e].postfix->len, tmp);
       } 
     }
