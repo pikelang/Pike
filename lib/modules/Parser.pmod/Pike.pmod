@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.30 2003/01/18 18:38:12 nilsson Exp $
+// $Id: Pike.pmod,v 1.31 2003/03/13 22:05:36 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -14,21 +14,21 @@ inherit "C.pmod";
   error("Unknown pike token: %O\n", data[pos..pos+20])
 
 static mapping(string : int) backquoteops =
-(["/":1,
-  "%":1,
-  "*":1,
-  "*=":2,
-  "&":1,
-  "|":1,
-  "^":1,
-  "~":1,
-   "+=":2, "+":1,
-   "<<":2, "<=":2, "<":1,
-   ">>":2, ">=":2, ">":1,
+([ "/":1, "/=":2,
+   "%":1, "%=":2,
+   "*":1, "*=":2,
+   "&":1, "&=":2,
+   "|":1, "|=":2,
+   "^":1, "^=":2,
+   "~":1,
+   "+":1, "+=":2,
+   "-":1, "-=":2,
+   "<<=":3, "<<":2, "<=":2, "<":1,
+   ">>=":3, ">>":2, ">=":2, ">":1,
    "!=":2, "!":1,
    "==":2, "=":1,
    "()":2,
-   "->=":3, "->":2, "-":1,
+   "->=":3, "->":2,
    "[]=":3, "[]":2 ]);
 
 //! Splits the @[data] string into an array of tokens. An additional
