@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.1 2002/11/10 08:41:30 nilsson Exp $
+// $Id: module.pmod,v 1.2 2002/11/24 22:07:43 jhs Exp $
 
 #pike __REAL_VERSION__
 inherit ___MIME;
@@ -912,7 +912,7 @@ class Message {
       body_parts = map(parts[1..sizeof(parts)-2], lambda(string part){
 	if(sizeof(part) && part[-1]=='\r')
 	  part = part[..sizeof(part)-2];
-	return object_program(this_object())(part[1..]);
+	return object_program(this_object())(part[1..], 0, 0, guess);
       });
     }
     if((hdrs || parts) && !decoded_data) {
