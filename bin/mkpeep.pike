@@ -2,9 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.27 2003/01/13 21:05:14 nilsson Exp $ */
-
-#define JUMPBACK 3
+/* $Id: mkpeep.pike,v 1.28 2003/01/13 21:25:47 nilsson Exp $ */
 
 string skipwhite(string s)
 {
@@ -16,24 +14,16 @@ string skipwhite(string s)
   return s;
 }
 
-string stripwhite(string s)
-{
-  sscanf(s,"%*[ \t\n]%s",s);
-  s=reverse(s);
-  sscanf(s,"%*[ \t\n]%s",s);
-  return reverse(s);
-}
-
 /* Find the matching parenthesis */
 int find_end(string s)
 {
-  int e,parlvl=1;
+  int parlvl=1;
 
 #if DEBUG > 8
   werror("find_end("+s+")\n");
 #endif
   
-  for(e=1;e<strlen(s);e++)
+  for(int e=1; e<strlen(s); e++)
   {
     switch(s[e])
     {
@@ -61,7 +51,7 @@ array(string) explode_comma_expr(string s)
   array(string) ret=({});
   int begin=0;
 
-  for(int e=0;e<strlen(s);e++)
+  for(int e=0; e<strlen(s); e++)
   {
     switch(s[e])
     {
@@ -76,15 +66,15 @@ array(string) explode_comma_expr(string s)
     case ',':
       if(!parlvl)
       {
-	ret+=({ stripwhite(s[begin..e-1]) });
+	ret+=({ String.trim_all_whites(s[begin..e-1]) });
 	begin=e+1;
       }
     }
   }
 
   /* Ignore empty last arguments */
-  if(strlen(stripwhite(s[begin..])))
-    ret+=({ stripwhite(s[begin..]) });
+  if(strlen(String.trim_all_whites(s[begin..])))
+    ret+=({ String.trim_all_whites(s[begin..]) });
 #if DEBUG>4
   werror("RESULT: %O\n",ret);
 #endif
@@ -96,7 +86,6 @@ array(string) explode_comma_expr(string s)
 array(int|string|array(string)) split(string s)
 {
   array(string) a, b;
-  string tmp;
   int e,opcodes;
   string line=s;
   opcodes=0;
@@ -136,7 +125,7 @@ array(int|string|array(string)) split(string s)
     case 'a'..'z':
     case '0'..'9':
     case '_':
-      sscanf(s,"%[a-zA-Z0-9_]%s",tmp,s);
+      sscanf(s,"%[a-zA-Z0-9_]%s",string tmp,s);
       b+=({"F_"+tmp});
       break;
 
@@ -178,30 +167,6 @@ array(int|string|array(string)) split(string s)
   for(e=0;e<sizeof(a);e++)
     if((<'F', '?'>)[a[e][0]])
       opcodes++;
-
-#if 0
-  /* It was a good idea, but it doesn't work */
-  mixed qqqq=copy_value(b);
-  i=0;
-  while(sizeof(b))
-  {
-    if(b[0] != a[i])
-      break;
-    
-    if(sizeof(b)>1 && b[1][0]!='F')
-    {
-      if(b[1] != sprintf("($%da)",i+1))
-	break;
-      b=b[2..];
-    }else{
-      b=b[1..];
-    }
-    i++;
-    opcodes--;
-  }
-  if(i)
-    werror("----------------------\n%d\n%O\n%O\n%O\n",opcodes,a,b,qqqq);
-#endif
 
   i=0;
   array(string) newa=({});
@@ -256,10 +221,8 @@ array(int|string|array(string)) split(string s)
 /* Replace $[0-9]+(o|a|b) with something a C compiler can understand */
 string treat(string expr)
 {
-  int e;
-  array(string) tmp;
-  tmp=expr/"$";
-  for(e=1;e<sizeof(tmp);e++)
+  array(string) tmp = expr/"$";
+  for(int e=1; e<sizeof(tmp); e++)
   {
     string num, rest;
     int type;
@@ -282,37 +245,29 @@ string treat(string expr)
 /* Dump C co(d|r)e */
 void dump2(array(array(array(string))) data,int ind)
 {
-  int e,i,maxv;
-  mixed tmp;
+  int i,maxv;
   string test;
-  mapping(string:mapping(string:array(array(array(string))))) foo;
   mixed cons, var;
-
-  foo=([]);
 
   while(1)
   {
-    foo=([]);
+    mapping(string:mapping(string:array(array(array(string))))) foo = ([]);
 
     /* First we create a mapping:
      * foo [ meta variable ] [ condition ] = ({ lines });
      */
     foreach(data, array(array(string)) d)
-    {
-      array(string) a = d[0];
-      array(string) b = d[1];
-      for(e=0;e<sizeof(a);e++)
+      foreach(d[0], string line)
       {
-	if(sscanf(a[e],"F_%[A-Z0-9_]==%s",cons,var)==2 ||
-	   sscanf(a[e],"(%d)==%s",cons,var)==2 ||
-	   sscanf(a[e],"%d==%s",cons,var)==2)
+	if(sscanf(line,"F_%*[A-Z0-9_]==%s", var)==2 ||
+	   sscanf(line,"(%*d)==%s", var)==2 ||
+	   sscanf(line,"%*d==%s", var)==2)
 	{
 	  if(!foo[var]) foo[var]=([]);
-	  if(!foo[var][a[e]]) foo[var][a[e]]=({});
-	  foo[var][a[e]]+=({d});
+	  if(!foo[var][line]) foo[var][line]=({});
+	  foo[var][line]+=({d});
 	}
       }
-    }
 
     /* Check what variable has most values */
     maxv = 0;
@@ -325,8 +280,8 @@ void dump2(array(array(array(string))) data,int ind)
     /* If zero, done */
     if(maxv <= 1) break;
 
-    write(sprintf("%*nswitch(%s)\n",ind,treat(test)));
-    write(sprintf("%*n{\n",ind));
+    write("%*nswitch(%s)\n", ind, treat(test));
+    write("%*n{\n", ind);
 
     mapping(string:array(array(array(string)))) d = foo[test];
     array(string) a = indices(d);
@@ -338,25 +293,25 @@ void dump2(array(array(array(string))) data,int ind)
      * b[x] : line
      */
 
-    for(e=0;e<sizeof(a);e++)
+    for(int i=0; i<sizeof(a); i++)
     {
-      /* The lines b[e] are removed from data as they
+      /* The lines b[i] are removed from data as they
        * will be treated below
        */
-      data-=b[e];
+      data-=b[i];
 
-      if(sscanf(a[e],"(%s)==%s",cons,var)!=2)
-	sscanf(a[e],"%s==%s",cons,var);
+      if(sscanf(a[i],"(%s)==%s",cons,var)!=2)
+	sscanf(a[i],"%s==%s",cons,var);
       
-      write(sprintf("%*ncase %s:\n",ind,cons+""));
+      write("%*ncase %s:\n", ind, cons);
 
-      foreach(b[e], array(array(string)) d) d[0]-=({a[e]});
-      dump2(b[e],ind+2);
-      write(sprintf("%*n  break;\n",ind));
+      foreach(b[i], array(array(string)) d) d[0]-=({a[i]});
+      dump2(b[i], ind+2);
+      write("%*n  break;\n", ind);
       write("\n");
     }
 
-    write(sprintf("%*n}\n",ind));
+    write("%*n}\n", ind);
   }
   
   /* Take care of whatever is left */
@@ -364,19 +319,19 @@ void dump2(array(array(array(string))) data,int ind)
   {
     foreach(data, array(array(string)) d)
     {
-      write(sprintf("%*n/* %s */\n",ind,d[3]));
+      write("%*n/* %s */\n", ind, d[3]);
       
       if(sizeof(d[0]))
       {
 	string test;
 	test=treat(d[0]*" && ");
-	write(sprintf("%*nif(%s)\n",ind,test));
+	write("%*nif(%s)\n", ind, test);
       }
-      write(sprintf("%*n{\n",ind));
+      write("%*n{\n", ind);
       ind+=2;
-      write("%*ndo_optimization(%d,\n",ind,d[2]);
+      write("%*ndo_optimization(%d,\n", ind, d[2]);
 
-      for(i=0;i<sizeof(d[1]);i++)
+      for(int i=0; i<sizeof(d[1]); i++)
       {
 	array args=({});
 	string fcode=d[1][i];
@@ -395,9 +350,9 @@ void dump2(array(array(array(string))) data,int ind)
       }
       write("%*n                0);\n",ind);
 
-      write(sprintf("%*ncontinue;\n",ind));
+      write("%*ncontinue;\n", ind);
       ind-=2;
-      write(sprintf("%*n}\n",ind,test));
+      write("%*n}\n", ind, test);
     }
   }
 }
@@ -406,21 +361,13 @@ void dump2(array(array(array(string))) data,int ind)
 
 int main(int argc, array(string) argv)
 {
-  int e,max,maxe;
-  string f;
-  mapping foo=([]);
   array(array(array(string))) data=({});
 
-  mapping tests=([]);
-
   /* Read input file */
-  f=cpp(Stdio.read_bytes(argv[1]),argv[1]);
+  string f=cpp(Stdio.read_file(argv[1]),argv[1]);
   foreach(f/"\n",f)
   {
-    array(string) a, b;
-    mapping tmp;
-
-    sscanf(f,"%s#",f);
+    if(f=="" || f[0]=='#') continue;
 
     /* Parse expressions */
     foreach(f/";",f)
@@ -430,8 +377,6 @@ int main(int argc, array(string) argv)
 	data+=({split(f)});
       }
   }
-
-//  write(sprintf("%O\n",data));
 
   write("  len=instrbuf.s.len/sizeof(p_instr);\n"
 	"  instructions=(p_instr *)instrbuf.s.str;\n"
