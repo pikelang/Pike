@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.360 2004/07/14 14:04:33 grubba Exp $
+// $Id: master.pike.in,v 1.361 2004/09/06 20:40:37 mast Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -583,11 +583,12 @@ string normalize_path( string path )
 //! @mapping
 //!    @member program filename
 //! @endmapping
-//! The filename path seperator is / on both NT and UNIX.
+//! The filename path separator is / on both NT and UNIX.
 //!
 //! @note
-//!   As a special case the current master program is available
-//!   under the name @expr{"/master"@}.
+//!   Special cases: The current master program is available under the
+//!   name @expr{"/master"@}, and the program containing the @[main]
+//!   function under @expr{"/main"@}.
 mapping(string:program|NoValue) programs=(["/master":this_program]);
 
 mapping (program:object|NoValue) objects=([
@@ -2674,7 +2675,14 @@ void _main(array(string) orig_argv, array(string) env)
       error( "Pike: Failed to compile script:\n"
 	     "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
     }
+
+    // Don't list the program with its real path in the programs
+    // mapping, so that reverse lookups (typically by the codec)
+    // always find the canonical "/main" instead.
+    programs[argv[0]] = no_value;
   }
+
+  programs["/main"] = prog;
 
   if(!prog)
     error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
@@ -3716,7 +3724,8 @@ class Encoder
 //! @appears Pike.Encoder
 //!
 //! Codec for use with @[encode_value]. It understands all the
-//! standard references to builtin functions and pike modules.
+//! standard references to builtin functions, pike modules, and the
+//! main program script.
 //!
 //! The format of the produced identifiers are documented here to
 //! allow extension of this class:
