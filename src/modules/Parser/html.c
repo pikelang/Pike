@@ -3754,7 +3754,7 @@ void init_parser_html(void)
    set_gc_check_callback(gc_check_html);
    set_gc_mark_callback(gc_mark_html);
 
-   ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),0);
+   ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),ID_STATIC);
    ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tObjImpl_PARSER_HTML),0);
 
    /* feed control */
