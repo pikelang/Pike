@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.6 2002/11/25 01:25:24 nilsson Exp $
+//  $Id: ID3.pmod,v 1.7 2002/11/26 15:46:06 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -257,8 +257,8 @@ array(string|int) encode_string(string in) {
   return ({ 0, in });
 }
 
-//! Encodes several strings in the same way as @[encoding_string], but
-//! encodes all the strings with the same method, selected as in @[encoding_string].
+//! Encodes several strings in the same way as @[encode_string], but
+//! encodes all the strings with the same method, selected as in @[encode_string].
 //! The first element in the resulting array is the selected method, while the
 //! following elements are the encoded strings.
 //! @seealso
