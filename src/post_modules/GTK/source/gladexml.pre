@@ -1,11 +1,30 @@
+/* This is -*- c -*- code */
+/* Sort of unnessesary, and decreases code-size with 140Kb */
 COND_WIDGET(libglade);
 PROGRAM(GladeXML);
+
+// <a href=http://glade.pn.org/>Glade</a> is a free GUI builder for
+// GTK+ and Gnome. It's normally used to create C-code, but can also
+// produce code for other languages. <a
+// href=http://www.daa.com.au/~james/gnome/>Libglade</a> is a utility
+// library that builds the GUI from the Glade XML save files. This
+// module uses libglade and allows you to easily make GUI designs to
+// be used with your Pike applications. Since PiGTK doesn't
+// support Gnome yet, you can only use the normal GTK widgets. 
+
 #include <errno.h>
 #include "builtin_functions.h"
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
 
+
+/* This function is used by signal_autoconnect to handle signal
+   connection Basically it uses a mapping and data from the stack to
+   do signal callbacks exactly in the same way as normal signals in
+   PiGTK.
+   
+ */
 void pgtk__signal_connect(const gchar *handler_name,
 			  GtkObject *obj,
 			  const gchar *signal_name,
@@ -33,11 +52,11 @@ void pgtk__signal_connect(const gchar *handler_name,
   cb = low_mapping_string_lookup(callbacks, funname);
   free_string(funname);
   if(cb == NULL) {
-    fprintf(stderr, "** WARNING: Unknown function %s for signal %s\n",
+    fprintf(stderr, "** WARNING **: Unknown function %s for signal %s\n",
 	    handler_name, signal_name);
     return;
   } else if(cb->type != T_FUNCTION) {
-    fprintf(stderr, "** WARNING: Value for handler %s for signal %s not a function\n.\n",
+    fprintf(stderr, "** WARNING **: Value for handler %s for signal %s not a function\n.\n",
 	    handler_name, signal_name);
     return;
   }
@@ -50,7 +69,7 @@ void pgtk__signal_connect(const gchar *handler_name,
   {
     free(b);
     fprintf(stderr,
-	    "** WARNING: Signal \"%s\" not defined in the `%s' "
+	    "** WARNING **: Signal \"%s\" not defined in the `%s' "
 	    "class ancestry\n",
 	    signal_name, gtk_type_name (GTK_OBJECT_TYPE(obj)));
   }
@@ -93,7 +112,6 @@ RETURNS(GTK.GladeXML);
       args--;
     } else
       error("GladeXML->new_from_memory(): Invalid argument 2, expected string.\n");
-    break;
    case 1:
     if(sp[-1].type == T_STRING) {
       data = sp[-1].u.string;
@@ -149,7 +167,7 @@ NAME_ARGS(filename, root, domain);
       args--;
     } else
       error("GladeXML->new(): Invalid argument 2, expected string.\n");
-    break;
+    
    case 1:
     if(sp[-1].type == T_STRING) {
       data = sp[-1].u.string->str;
@@ -170,7 +188,8 @@ NAME_ARGS(filename, root, domain);
 }
 
 FUNCTION(create, "function(void|int:void)");
-// Create a new GladeXML object. 
+// Create a new GladeXML object. The first time it is run the libglade
+// initializing function is automatically run.
 {
   if(!glade_is_setup)
   {
@@ -288,9 +307,11 @@ ARGS(GTK.Widget);
 
 FUNCTION(signal_autoconnect, "function(mapping(string:function),mixed:void)");
 NAME_ARGS(callbacks,data);
+ARGS(mapping(string:function) callbacks,mixed data);
+RETURNS(void);
 // Try to connect functions to all signals in the interface. The mapping should
-// consist of signal name - function name pairs. The data argument will be saved
-// and sent to all callbacks.
+// consist of handler name - function name pairs. The data argument will be
+// saved and sent as the first argument to all callback functions. 
 {
   GladeXML *xml;
   if(args != 2 || sp[-args].type != T_MAPPING)
