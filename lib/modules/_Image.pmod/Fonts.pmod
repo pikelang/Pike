@@ -292,12 +292,12 @@ class Font( static string file,
   {
     if( fake_bold > 0 )
     {
-      object r2 = Image.Image( rr->xsize()+2, rr->ysize() );
+      object r2 = Image.Image( rr->xsize()+fake_bold+2, rr->ysize() );
       object r3 = rr*0.5;
       for( int i = 0; i<=fake_bold; i++ )
 	for( int j = 0; j<=fake_bold; j++ )
 	  r2->paste_alpha_color( r3,  255, 255, 255, i, j-2 );
-      rr = r2->paste_alpha_color( rr, 255,255,255, 1, -1 );
+        rr = r2->paste_alpha_color( rr, 255,255,255, 1, -1 );
     }
 
     // FIXME: Should skewx line-by-line.
