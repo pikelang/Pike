@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.261 2004/12/30 13:44:52 grubba Exp $
+|| $Id: object.c,v 1.262 2005/01/11 19:34:32 nilsson Exp $
 */
 
 #include "global.h"
@@ -447,7 +447,7 @@ struct object *decode_value_clone_object(struct svalue *prog)
   return o;
 }
 
-static struct pike_string *low_read_file(char *file)
+static struct pike_string *low_read_file(const char *file)
 {
   struct pike_string *s;
   ptrdiff_t len;
