@@ -1,0 +1,30 @@
+diff -u orig/Makefile ./Makefile
+--- orig/Makefile	Fri Jan 10 02:23:08 1997
++++ ./Makefile	Fri Jan 10 02:41:18 1997
+@@ -47,7 +47,7 @@
+ 
+ test:		desCore.a desTest.o
+ 		$(LINK.c) -o $@ desTest.o desCore.a
+-		test
++		./test
+ 
+ # get stuff from RCS
+ $(RCS):
+@@ -71,7 +71,7 @@
+ desTest.o:	desCore.h
+ 
+ $(GH):		desdata
+-		desdata $@ > $@
++		./desdata $@ > $@
+ 
+ desdata:	desdata.o
+ 		$(LINK.c) -o $@ desdata.o
+@@ -111,7 +111,7 @@
+ 		-e '1s/^;*//' |				\
+ 	 tr ';'\\012 \\012';' > $@
+ 	@echo ""  >> $@
+-	@echo "}" >> $@			# last definition must be a procedure
++#	@echo "}" >> $@			# last definition must be a procedure
+ 
+ #		-e 's/\(;[kmxyz][0-9]*\)\([^;]*=\)/\1  \2/g'
+ 

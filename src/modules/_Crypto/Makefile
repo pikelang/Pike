@@ -19,21 +19,21 @@ CPPFLAGS=
 # The flags to generate a shared library
 CFLAGS=-Wall -O -shared -fpic $(IFLAGS) $(CPPFLAGS) -pedantic -Wall
 
-LDFLAGS=-shared -fpic -Llib  -R$(SSLROOT)/lib -L$(SSLROOT)/lib
-LOADLIBES=-lcrypto -lssl
+LDFLAGS=-shared -fpic -Llib # -R$(SSLROOT)/lib -L$(SSLROOT)/lib
+#LOADLIBES=-lcrypto -lssl
 
 OBJS=crypto.o md5.o md2.o idea.o des.o invert.o cbc.o pipe.o sha.o
 
 # The actual rules
 
 crypto.so: $(OBJS) lib/libib.a
-	$(CC) $(LDFLAGS) $(OBJS) -Llib -lib -o crypto.so
+	$(CC) $(LDFLAGS) $(OBJS) -lib -o crypto.so
 
 idea.so: idea.o lib/libib.a
-	$(CC) $(LDFLAGS) idea.o -Llib -lib -o idea.so
+	$(CC) $(LDFLAGS) idea.o -lib -o idea.so
 
 sha.so: sha.o lib/libib.a
-	$(CC) $(LDFLAGS) sha.o -Llib -lib -o sha.so
+	$(CC) $(LDFLAGS) sha.o -lib -o sha.so
 
 lib/libib.a:
 	cd lib; $(MAKE) libib.a
