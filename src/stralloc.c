@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.81 2000/04/01 07:27:02 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.82 2000/04/15 05:05:28 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -258,10 +258,10 @@ static void locate_problem(int (*isproblem)(struct pike_string *))
   }
 
   DM(fprintf(stderr,"Plausible problem location(s):\n"));
-  DM(dump_memhdr_locations(yes,0));
+  DM(dump_memhdr_locations(yes,0,0));
 
   DM(fprintf(stderr,"More Plausible problem location(s):\n"));
-  DM(dump_memhdr_locations(yes,no));
+  DM(dump_memhdr_locations(yes,no,0));
 }
 
 static int has_zero_refs(struct pike_string *s)

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.50 2000/04/12 10:39:09 grubba Exp $
+ * $Id: svalue.h,v 1.51 2000/04/15 05:05:28 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -250,9 +250,20 @@ do{ \
 }while(0)
 
 #ifdef PIKE_DEBUG
+extern void describe(void *); /* defined in gc.c */
 #define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal("Type error: %d\n",T)
-#define check_refs(S) if((S)->type < MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) fatal("Svalue to object without references.\n")
-#define check_refs2(S,T) if((T) < MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) fatal("Svalue to object without references.\n")
+
+#define check_refs(S) do {\
+ if((S)->type < MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
+ describe((S)->u.refs); \
+ fatal("Svalue to object without references.\n"); \
+} }while(0)
+
+#define check_refs2(S,T) do { \
+if((T) < MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
+ describe((S)->refs); \
+ fatal("(short) Svalue to object without references.\n"); \
+} }while(0)
 
 #ifdef DEBUG_MALLOC
 #define add_ref(X) ((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.225 2000/04/13 12:16:14 grubba Exp $");
+RCSID("$Id: program.c,v 1.226 2000/04/15 05:05:28 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -546,6 +546,30 @@ int program_function_index_compare(const void *a,const void *b)
 		    ID_FROM_INT(new_program, *(unsigned short *)b)->name);
 }
 
+#ifdef PIKE_DEBUG
+char *find_program_name(struct program *p, INT32 *line)
+{
+  INT32 pos;
+
+#ifdef DEBUG_MALLOC
+  char *tmp=dmalloc_find_name(p);
+  *line=0;
+  if(tmp) return tmp;
+#endif
+
+  /* Didn't find a given name, revert to ad-hoc method */
+	
+  for(pos=0;pos<100;pos++)
+  {
+    tmp=get_line(p->program+pos, p, line);
+    if(tmp && *line) return tmp;
+    if(pos+1>=(long)p->num_program) break;
+  }
+  *line=0;
+  return 0;
+}
+#endif
+
 void fixate_program(void)
 {
   INT32 i,e,t;
@@ -600,8 +624,23 @@ void fixate_program(void)
   {
 #define DBSTR(X) ((X)?(X)->str:"")
     int e,v;
-    struct memory_map *m=dmalloc_alloc_mmap( DBSTR(lex.current_file),
-					     lex.current_line);
+    INT32 line;
+    char *tmp;
+    struct memory_map *m=0;;
+    if(lex.current_file && 
+       lex.current_file->str &&
+       lex.current_file->len &&
+       !strcmp(lex.current_file->str,"-"))
+    {
+      m=dmalloc_alloc_mmap( DBSTR(lex.current_file), lex.current_line);
+    }
+    else if( (tmp=find_program_name(new_program, &line)) )
+    {
+      m=dmalloc_alloc_mmap( tmp, line);
+    }else{
+      m=dmalloc_alloc_mmap( "program id", new_program->id);
+    }
+
     for(e=0;e<new_program->num_inherits;e++)
     {
       struct inherit *i=new_program->inherits+e;
@@ -624,21 +663,11 @@ void fixate_program(void)
       if(i->name)
       {
 	tmp=i->name->str;
-      }else if(!(tmp=dmalloc_find_name(i->prog))){
-	/* Didn't find a given name, revert to ad-hoc method */
-	INT32 line,pos;
-	
-	for(pos=0;pos<100;pos++)
-	{
-	  tmp=get_line(i->prog->program+pos, i->prog, &line);
-	  if(tmp && line) break;
-	  if(pos+1>=(long)i->prog->num_program) break;
-	}
-	if(!(tmp && line))
-	{
-	  sprintf(buffer,"inherit[%d]",e);
-	  tmp=buffer;
-	}
+      }
+      else if(!(tmp=find_program_name(i->prog, &line)))
+      {
+	sprintf(buffer,"inherit[%d]",e);
+	tmp=buffer;
       }
       dmalloc_add_mmap_entry(m,
 			     tmp,

@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.64 2000/04/15 01:04:01 mast Exp $");
+RCSID("$Id: gc.c,v 1.65 2000/04/15 05:05:28 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -128,17 +128,30 @@ static char *found_where="";
 static void *found_in=0;
 static int found_in_type=0;
 void *gc_svalue_location=0;
-
-#ifdef PIKE_DEBUG
 static char *fatal_after_gc=0;
-#endif
 
+#define DESCRIBE_MEM 1
+#define DESCRIBE_NO_REFS 2
+#define DESCRIBE_SHORT 4
+#define DESCRIBE_NO_DMALLOC 8
 
-void describe_location(void *memblock, int type, void *location)
+/* type == -1 means that memblock is a char* and should be
+ * really be printed..
+ */
+void describe_location(void *real_memblock,
+		       int real_type,
+		       void *location,
+		       int indent,
+		       int depth,
+		       int flags)
 {
   struct program *p;
+  void *memblock=0;
+  int type=real_type;
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
+
+  if(real_type!=-1) real_memblock=memblock;
 
 #ifdef DEBUG_MALLOC
   if(memblock == 0 || type == -1)
@@ -148,20 +161,25 @@ void describe_location(void *memblock, int type, void *location)
   }
 #endif
 
-  if(type==T_UNKNOWN) type=attempt_to_identify(memblock);
+  if(type==T_UNKNOWN)
+    type=attempt_to_identify(memblock);
 
   if(memblock)
-    fprintf(stderr,"  <from %s %p offset %ld>\n",
+    fprintf(stderr,"%*s-> from %s %p offset %ld\n",
+	    indent,"",
 	    get_name_of_type(type),
 	    memblock,
 	    ((long)location - (long)memblock));
   else
-    fprintf(stderr,"  <at location %p in unknown memblock (mmaped?)>\n",
+    fprintf(stderr,"%*s-> at location %p in unknown memblock (mmaped?)\n",
+	    indent,"",
 	    location);
 
 
-  if(memblock) describe_something(memblock,type,1);
+  if(memblock && depth>0)
+    describe_something(memblock,type,indent+2,depth-1,flags | DESCRIBE_MEM);
 
+ again:
   switch(type)
   {
     case T_UNKNOWN:
@@ -169,59 +187,66 @@ void describe_location(void *memblock, int type, void *location)
       {
 	if(memblock == (void *)p->program)
 	{
-	  fprintf(stderr,"    **In memory block for program at %p\n",p);
+	  fprintf(stderr,"%*s  **In memory block for program at %p\n",
+		  indent,"",
+		  p);
 	  memblock=p;
 	  type=T_PROGRAM;
-	  goto describe_program_location;
+	  goto again;
 	}
       }
       break;
       
     case T_PROGRAM:
-  describe_program_location:
     {
       long e;
-      struct program *p=(struct program *)memblock;
       char *ptr=(char *)location;
+      p=(struct program *)memblock;
 
       if(location == (void *)&p->prev)
-	fprintf(stderr,"    **In p->prev\n");
+	fprintf(stderr,"%*s  **In p->prev\n",indent,"");
 
       if(location == (void *)&p->next)
-	fprintf(stderr,"    **In p->next\n");
+	fprintf(stderr,"%*s  **In p->next\n",indent,"");
 
-      if(ptr >= (char *)p->inherits  && ptr<(char*)(p->inherits+p->num_inherits)) 
+      if(p->inherits &&
+	 ptr >= (char *)p->inherits  &&
+	 ptr<(char*)(p->inherits+p->num_inherits)) 
       {
 	e=((long)ptr - (long)(p->inherits)) / sizeof(struct inherit);
-	fprintf(stderr,"    **In p->inherits[%ld] (%s)\n",
+	fprintf(stderr,"%*s  **In p->inherits[%ld] (%s)\n",indent,"",
 		e,
 		p->inherits[e].name ? p->inherits[e].name->str : "no name");
 	return;
       }
 
-      if(ptr >= (char *)p->constants  && ptr<(char*)(p->constants+p->num_constants))
+      if(p->constants &&
+	 ptr >= (char *)p->constants  &&
+	 ptr<(char*)(p->constants+p->num_constants))
       {
 	e=((long)ptr - (long)(p->constants)) / sizeof(struct program_constant);
-	fprintf(stderr,"    **In p->constants[%ld] (%s)\n",
+	fprintf(stderr,"%*s  **In p->constants[%ld] (%s)\n",indent,"",
 		e,
 		p->constants[e].name ? p->constants[e].name->str : "no name");
 	return;
       }
 
 
-      if(ptr >= (char *)p->identifiers  && ptr<(char*)(p->identifiers+p->num_identifiers))
+      if(p->identifiers && 
+	 ptr >= (char *)p->identifiers  &&
+	 ptr<(char*)(p->identifiers+p->num_identifiers))
       {
 	e=((long)ptr - (long)(p->identifiers)) / sizeof(struct identifier);
-	fprintf(stderr,"    **In p->identifiers[%ld] (%s)\n",
+	fprintf(stderr,"%*s  **In p->identifiers[%ld] (%s)\n",indent,"",
 		e,
-		p->identifiers[e].name ? p->constants[e].name->str : "no name");
+		p->identifiers[e].name ? p->identifiers[e].name->str : "no name");
 	return;
       }
 
 #define FOO(NTYP,TYP,NAME) \
-    if(location == (void *)&p->NAME) fprintf(stderr,"    **In p->" #NAME "\n"); \
+    if(location == (void *)&p->NAME) fprintf(stderr,"%*s  **In p->" #NAME "\n",indent,""); \
     if(ptr >= (char *)p->NAME  && ptr<(char*)(p->NAME+p->PIKE_CONCAT(num_,NAME))) \
-      fprintf(stderr,"    **In p->" #NAME "[%ld]\n",((long)ptr - (long)(p->NAME)) / sizeof(TYP));
+      fprintf(stderr,"%*s  **In p->" #NAME "[%ld]\n",indent,"",((long)ptr - (long)(p->NAME)) / sizeof(TYP));
 #include "program_areas.h"
       
       return;
@@ -232,10 +257,10 @@ void describe_location(void *memblock, int type, void *location)
       struct object *o=(struct object *)memblock;
       struct program *p;
 
-      if(location == (void *)&o->parent) fprintf(stderr,"    **In o->parent\n");
-      if(location == (void *)&o->prog)  fprintf(stderr,"    **In o->prog\n");
-      if(location == (void *)&o->next)  fprintf(stderr,"    **In o->next\n");
-      if(location == (void *)&o->prev)  fprintf(stderr,"    **In o->prev\n");
+      if(location == (void *)&o->parent) fprintf(stderr,"%*s  **In o->parent\n",indent,"");
+      if(location == (void *)&o->prog)  fprintf(stderr,"%*s  **In o->prog\n",indent,"");
+      if(location == (void *)&o->next)  fprintf(stderr,"%*s  **In o->next\n",indent,"");
+      if(location == (void *)&o->prev)  fprintf(stderr,"%*s  **In o->prev\n",indent,"");
 
       p=o->prog;
 
@@ -243,7 +268,7 @@ void describe_location(void *memblock, int type, void *location)
       {
 	p=id_to_program(o->program_id);
 	if(p)
-	  fprintf(stderr,"    **(We are lucky, found program for destructed object)\n");
+	  fprintf(stderr,"%*s  **(We are lucky, found program for destructed object)\n",indent,"");
       }
 
       if(p)
@@ -261,14 +286,14 @@ void describe_location(void *memblock, int type, void *location)
 	    
 	    if(location == (void *)(base + id->func.offset))
 	    {
-	      fprintf(stderr,"    **In variable %s\n",id->name->str);
+	      fprintf(stderr,"%*s  **In variable %s\n",indent,"",id->name->str);
 	    }
 	  }
 
 	  if((char *)location >= base && (char *)location <= base +
 	     ( tmp.prog->storage_needed - tmp.prog->inherits[0].storage_offset ))
 	  {
-	    fprintf(stderr,"    **In storage for inherit %d",e);
+	    fprintf(stderr,"%*s  **In storage for inherit %d",indent,"",e);
 	    if(tmp.name)
 	      fprintf(stderr," (%s)",tmp.name->str);
 	    fprintf(stderr,"\n");
@@ -283,7 +308,7 @@ void describe_location(void *memblock, int type, void *location)
     {
       struct array *a=(struct array *)memblock;
       struct svalue *s=(struct svalue *)location;
-      fprintf(stderr,"    **In index %ld\n",(long)(s-ITEM(a)));
+      fprintf(stderr,"%*s  **In index %ld\n",indent,"",(long)(s-ITEM(a)));
       return;
     }
   }
@@ -292,8 +317,8 @@ void describe_location(void *memblock, int type, void *location)
 static void gdb_gc_stop_here(void *a)
 {
   fprintf(stderr,"***One ref found%s.\n",found_where?found_where:"");
-  describe_something(found_in, found_in_type, 0);
-  describe_location(found_in , found_in_type, gc_svalue_location);
+  describe_something(found_in, found_in_type, 2, 1, DESCRIBE_NO_DMALLOC);
+  describe_location(found_in , found_in_type, gc_svalue_location,2,1,0);
   fprintf(stderr,"----------end------------\n");
 }
 
@@ -338,39 +363,47 @@ int debug_gc_check(void *x, TYPE_T t, void *data)
   return ret;
 }
 
-void low_describe_something(void *a, int t, int dm)
+void low_describe_something(void *a,
+			    int t,
+			    int indent,
+			    int depth,
+			    int flags)
 {
   struct program *p=(struct program *)a;
+
+  if(depth<0) return;
 
   switch(t)
   {
     case T_FUNCTION:
       if(attempt_to_identify(a) != T_OBJECT)
       {
-	fprintf(stderr,"**Builtin function!\n");
+	fprintf(stderr,"%*s**Builtin function!\n",indent,"");
 	break;
       }
 
     case T_OBJECT:
       p=((struct object *)a)->prog;
-      fprintf(stderr,"**Parent identifier: %d\n",((struct object *)a)->parent_identifier);
-      fprintf(stderr,"**Program id: %ld\n",((struct object *)a)->program_id);
+      fprintf(stderr,"%*s**Parent identifier: %d\n",indent,"",((struct object *)a)->parent_identifier);
+      fprintf(stderr,"%*s**Program id: %ld\n",indent,"",((struct object *)a)->program_id);
 
       if( ((struct object *)a)->parent)
       {
-	fprintf(stderr,"**Describing object's parent:\n");
-	describe_something( ((struct object *)a)->parent, t, 1);
+	fprintf(stderr,"%*s**Describing object's parent:\n",indent,"");
+	describe_something( ((struct object *)a)->parent, t, indent+2,depth-1,
+			    (flags | DESCRIBE_SHORT | DESCRIBE_NO_REFS )
+			    & ~ (DESCRIBE_MEM));
       }else{
-	fprintf(stderr,"**There is no parent (any longer?)\n");
+	fprintf(stderr,"%*s**There is no parent (any longer?)\n",indent,"");
       }
       if(!p)
       {
-	fprintf(stderr,"**The object is destructed.\n");
+	fprintf(stderr,"%*s**The object is destructed.\n",indent,"");
 	p=id_to_program(((struct object *)a)->program_id);
 
 	if(!p) break;
       }
-      fprintf(stderr,"**Attempting to describe program object was instantiated from:\n");
+      fprintf(stderr,"%*s**Attempting to describe program object was instantiated from:\n",indent,"");
       
     case T_PROGRAM:
     {
@@ -378,17 +411,17 @@ void low_describe_something(void *a, int t, int dm)
       INT32 line,pos;
       int foo=0;
 
-      fprintf(stderr,"**Program id: %ld\n",(long)(p->id));
+      fprintf(stderr,"%*s**Program id: %ld\n",indent,"",(long)(p->id));
       if(p->flags & PROGRAM_HAS_C_METHODS)
       {
-	fprintf(stderr,"**The program was written in C.\n");
+	fprintf(stderr,"%*s**The program was written in C.\n",indent,"");
       }
       for(pos=0;pos<100;pos++)
       {
 	tmp=get_line(p->program+pos, p, &line);
 	if(tmp && line)
 	{
-	  fprintf(stderr,"**Location: %s:%ld\n",tmp,(long)line);
+	  fprintf(stderr,"%*s**Location: %s:%ld\n",indent,"",tmp,(long)line);
 	  foo=1;
 	  break;
 	}
@@ -398,7 +431,7 @@ void low_describe_something(void *a, int t, int dm)
 #if 0
       if(!foo && p->num_linenumbers>1 && EXTRACT_UCHAR(p->linenumbers)=='\177')
       {
-	fprintf(stderr,"**From file: %s\n",p->linenumbers+1);
+	fprintf(stderr,"%*s**From file: %s\n",indent,"",p->linenumbers+1);
 	foo=1;
       }
 #endif
@@ -406,93 +439,90 @@ void low_describe_something(void *a, int t, int dm)
       if(!foo)
       {
 	int e;
-#if 0
-	fprintf(stderr,"**identifiers:\n");
-	for(e=0;e<p->num_identifiers;e++)
-	  fprintf(stderr,"**** %s\n",p->identifiers[e].name->str);
-#else
-	fprintf(stderr,"**identifiers:\n");
+	fprintf(stderr,"%*s**identifiers:\n",indent,"");
 	for(e=0;e<p->num_identifier_references;e++)
-	  fprintf(stderr,"**** %s\n",ID_FROM_INT(p,e)->name->str);
+	  fprintf(stderr,"%*s**** %s\n",indent,"",ID_FROM_INT(p,e)->name->str);
 	
-#endif
-
-	fprintf(stderr,"**num inherits: %d\n",p->num_inherits);
+	fprintf(stderr,"%*s**num inherits: %d\n",indent,"",p->num_inherits);
       }
+
+      if(flags & DESCRIBE_MEM)
+      {
 #define FOO(NUMTYPE,TYPE,NAME) \
-      fprintf(stderr,"* " #NAME " %p[%d]\n",p->NAME,p->PIKE_CONCAT(num_,NAME));
+      fprintf(stderr,"%*s* " #NAME " %p[%d]\n",indent,"",p->NAME,p->PIKE_CONCAT(num_,NAME));
 #include "program_areas.h"
+      }
 
       break;
     }
       
     case T_ARRAY:
-      fprintf(stderr,"**Describing array:\n");
+      fprintf(stderr,"%*s**Describing array:\n",indent,"");
       debug_dump_array((struct array *)a);
       break;
 
     case T_MAPPING:
-      fprintf(stderr,"**Describing mapping:\n");
+      fprintf(stderr,"%*s**Describing mapping:\n",indent,"");
       debug_dump_mapping((struct mapping *)a);
-      fprintf(stderr,"**Describing mapping data block:\n");
-      describe_something( ((struct mapping *)a)->data, -2, dm);
+      fprintf(stderr,"%*s**Describing mapping data block:\n",indent,"");
+      describe_something( ((struct mapping *)a)->data, -2, indent+2,depth-1,flags);
       break;
 
     case T_STRING:
     {
       struct pike_string *s=(struct pike_string *)a;
-      fprintf(stderr,"**String length is %d:\n",s->len);
+      fprintf(stderr,"%*s**String length is %d:\n",indent,"",s->len);
       if(s->len>77)
       {
-	fprintf(stderr,"** \"%60s ...\"\n",s->str);
+	fprintf(stderr,"%*s** \"%60s ...\"\n",indent,"",s->str);
       }else{
-	fprintf(stderr,"** \"%s\"\n",s->str);
+	fprintf(stderr,"%*s** \"%s\"\n",indent,"",s->str);
       }
       break;
     }
   }
 }
 
-void describe_something(void *a, int t, int dm)
+void describe_something(void *a, int t, int indent, int depth, int flags)
 {
   struct program *p=(struct program *)a;
   if(!a) return;
 
   if(t==-1)
   {
-    fprintf(stderr,"**Location description: %s\n",(char *)a);
+    fprintf(stderr,"%*s**Location description: %s\n",indent,"",(char *)a);
     return;
   }
 
 #ifdef DEBUG_MALLOC
   if (((int)a) == 0x55555555) {
-    fprintf(stderr,"**Location: %p  Type: %s  Zapped pointer\n",a,
+    fprintf(stderr,"%*s**Location: %p  Type: %s  Zapped pointer\n",indent,"",a,
 	    get_name_of_type(t));
   } else
 #endif /* DEBUG_MALLOC */
   if (((int)a) & 3) {
-    fprintf(stderr,"**Location: %p  Type: %s  Missaligned address\n",a,
+    fprintf(stderr,"%*s**Location: %p  Type: %s  Missaligned address\n",indent,"",a,
 	    get_name_of_type(t));
   } else {
-    fprintf(stderr,"**Location: %p  Type: %s  Refs: %d\n",a,
+    fprintf(stderr,"%*s**Location: %p  Type: %s  Refs: %d\n",indent,"",a,
 	    get_name_of_type(t),
 	    *(INT32 *)a);
   }
 
-  low_describe_something(a,t,dm);
+  low_describe_something(a,t,indent,depth,flags);
 
 #ifdef DEBUG_MALLOC
-  if(dm)
-    debug_malloc_dump_references(a);
+  if(!(flags & DESCRIBE_NO_DMALLOC))
+    debug_malloc_dump_references(a,indent+2,depth-1,flags);
 #endif
 
   
-  fprintf(stderr,"*******************\n");
+  fprintf(stderr,"%*s*******************\n",indent,"");
 }
 
 void describe(void *x)
 {
-  describe_something(x, attempt_to_identify(x),1);
+  describe_something(x, attempt_to_identify(x), 0, 2, 0);
 }
 
 void debug_describe_svalue(struct svalue *s)
@@ -527,7 +557,7 @@ void debug_describe_svalue(struct svalue *s)
 	}
       }
   }
-  describe_something(s->u.refs,s->type,1);
+  describe_something(s->u.refs,s->type,0,2,0);
 }
 
 #endif
@@ -684,7 +714,7 @@ int debug_gc_is_referenced(void *a)
     d_flag=0;
 
     fprintf(stderr,"**Something has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
-    describe_something(a, t, 1);
+    describe_something(a, t, 0,2,0);
 
     locate_references(a);
 
@@ -728,7 +758,7 @@ int gc_external_mark3(void *a, void *in, char *where)
       {
 	fprintf(stderr,"EXTERNAL Reference to object to free%s!\n",in?(char *)in:"");
 	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
-	if(where) describe_location(0,T_UNKNOWN,where);
+	if(where) describe_location(0,T_UNKNOWN,where,4,1,0);
 	describe(a);
 	locate_references(a);
 	fprintf(stderr,"##### Continuing search for more bugs....\n");
@@ -779,7 +809,7 @@ int debug_gc_do_free(void *a)
 	      "**gc_is_referenced failed, object has %ld references,\n"
 	      "** while gc() found %ld + %ld external. (type=%d, flags=%d)\n",
 	      (long)*(INT32 *)a,(long)refs,(long)xrefs,t,m->flags);
-      describe_something(a, t, 1);
+      describe_something(a, t, 4,1,0);
 
       locate_references(a);
       
@@ -799,6 +829,7 @@ void do_gc(void)
   double tmp;
   INT32 tmp2;
   double multiplier;
+#ifdef HAVE_GETHRTIME
 #ifdef PIKE_DEBUG
 #ifdef HAVE_GETHRTIME
   hrtime_t gcstarttime;
@@ -897,6 +928,7 @@ void do_gc(void)
 
   exit_gc();
 
+  Pike_in_gc=5;
   destruct_objects_to_destruct();
   
   objects_freed -= (double) num_objects;
@@ -919,14 +951,16 @@ void do_gc(void)
 
 #ifdef PIKE_DEBUG
   if(t_flag)
+  {
+#ifdef HAVE_GETHRTIME
     fprintf(stderr,"done (freed %ld of %ld objects), %ld ms.\n",
 	    (long)(tmp2-num_objects),(long)tmp2,
-#ifdef HAVE_GETHRTIME
-	    (long)((gethrtime() - gcstarttime)/1000000)
+	    (long)((gethrtime() - gcstarttime)/1000000));
 #else
-	    0l
+    fprintf(stderr,"done (freed %ld of %ld objects)\n",
+	    (long)(tmp2-num_objects),(long)tmp2);
 #endif
-	   );
+  }
 #endif
 
 #ifdef ALWAYS_GC

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.108 2000/04/14 19:35:29 grubba Exp $");
+RCSID("$Id: object.c,v 1.109 2000/04/15 05:05:28 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -115,11 +115,8 @@ struct object *low_clone(struct program *p)
   add_ref(p);
   o->parent=0;
   o->parent_identifier=0;
-  o->next=first_object;
-  o->prev=0;
-  if(first_object)
-    first_object->prev=o;
-  first_object=o;
+
+  DOUBLELINK(first_object,o);
   o->refs=1;
 
 #ifdef PIKE_DEBUG
@@ -541,29 +538,25 @@ static struct callback *destruct_object_evaluator_callback =0;
  */
 void destruct_objects_to_destruct(void)
 {
+  struct object *my_list=0;
   struct object *o, *next;
 
   while((o=objects_to_destruct))
   {
-#ifdef PIKE_DEBUG
-    if(o->refs)
-      fatal("Object to be destructed grew extra references.\n");
-#endif
     /* Link object back to list of objects */
-    objects_to_destruct=o->next;
+    DOUBLEUNLINK(objects_to_destruct,o);
     
-    if(first_object)
-      first_object->prev=o;
-
-    o->next=first_object;
-    first_object=o;
-    o->prev=0;
-
+    /* link */
+    DOUBLELINK(first_object,o);
+    
+    /* call destroy, keep one ref */
     add_ref(o);
+    call_destroy(o,0);
+    
     destruct(o);
     free_object(o);
   }
-  objects_to_destruct=0;
+
   if(destruct_object_evaluator_callback)
   {
     remove_callback(destruct_object_evaluator_callback);
@@ -572,7 +565,7 @@ void destruct_objects_to_destruct(void)
 }
 
 
-/* really_free_objects:
+/* really_free_object:
  * This function is called when an object runs out of references.
  * It frees the object if it is destructed, otherwise it moves it to
  * a separate list of objects which will be destructed later.
@@ -580,6 +573,7 @@ void destruct_objects_to_destruct(void)
 
 void really_free_object(struct object *o)
 {
+  debug_malloc_touch(o);
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
     add_ref(o);
@@ -587,12 +581,9 @@ void really_free_object(struct object *o)
     if(--o->refs > 0) return;
   }
 
-  if(o->prev)
-    o->prev->next=o->next;
-  else
-    first_object=o->next;
+  debug_malloc_touch(o);
 
-  if(o->next) o->next->prev=o->prev;
+  DOUBLEUNLINK(first_object,o);
 
   if(o->prog)
   {
@@ -603,9 +594,8 @@ void really_free_object(struct object *o)
 			(callback_func)destruct_objects_to_destruct,
 			0,0);
     }
-    o->next=objects_to_destruct;
-    o->prev=0;
-    objects_to_destruct=o;
+
+    DOUBLELINK(objects_to_destruct,o);
   } else {
     if(o->parent)
     {
@@ -1002,7 +992,11 @@ void cleanup_objects(void)
   {
     add_ref(o);
     if(o->prog && !(o->prog->flags & PROGRAM_NO_EXPLICIT_DESTRUCT))
+    {
+      debug_malloc_touch(o);
+      call_destroy(o,1);
       low_destruct(o,1);
+    }
     SET_NEXT_AND_FREE(o,free_object);
   }
   free_object(master_object);
@@ -1214,6 +1208,7 @@ void gc_mark_all_objects(void)
 void gc_free_all_unreferenced_objects(void)
 {
   struct object *o,*next;
+  extern int Pike_in_gc;
 
 #ifdef PIKE_DEBUG
   if(d_flag)
@@ -1232,15 +1227,15 @@ void gc_free_all_unreferenced_objects(void)
   }
 #endif
 
+  Pike_in_gc=4;  /* Allow thread switches, god help us */
+
   for(o=first_object;o;o=next)
   {
+    next=o->next;
     if(gc_do_free(o))
     {
       add_ref(o);
       call_destroy(o,0);
-      SET_NEXT_AND_FREE(o,free_object);
-    }else{
-      next=o->next;
     }
   }
 
@@ -1248,8 +1243,7 @@ void gc_free_all_unreferenced_objects(void)
   {
     if(gc_do_free(o))
     {
-      add_ref(o);
-      destruct(o);
+      low_destruct(o,1);
       SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
@@ -1481,12 +1475,18 @@ void check_object(struct object *o)
   if(o == fake_object) return;
 
   if(o->next && o->next->prev !=o)
+  {
+    describe(o);
     fatal("Object check: o->next->prev != o\n");
+  }
   
   if(o->prev)
   {
     if(o->prev->next != o)
+    {
+      describe(o);
       fatal("Object check: o->prev->next != o\n");
+    }
     
     if(o == first_object)
       fatal("Object check: o->prev !=0 && first_object == o\n");
@@ -1522,9 +1522,11 @@ void check_all_objects(void)
     SET_NEXT_AND_FREE(o,free_object);
   }
 
+#if 0
   for(o=objects_to_destruct;o;o=o->next)
     if(o->refs)
       fatal("Object to be destructed has references.\n");
+#endif
 
 }
 

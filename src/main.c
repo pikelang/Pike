@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.88 2000/04/08 01:09:56 hubbe Exp $");
+RCSID("$Id: main.c,v 1.89 2000/04/15 05:05:28 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -676,7 +676,7 @@ void low_exit_main(void)
     {
       struct program *p;
       for(p=first_program;p;p=p->next)
-	describe_something(p, T_PROGRAM, 1);
+	describe_something(p, T_PROGRAM, 0,2,0);
     }
 
 
@@ -687,7 +687,7 @@ void low_exit_main(void)
     {
       struct object *o;
       for(o=first_object;o;o=o->next)
-	describe_something(o, T_OBJECT, 1);
+	describe_something(o, T_OBJECT, 0,2,0);
     }
 
     cleanup_shared_string_table();

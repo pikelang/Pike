@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.14 2000/04/08 01:09:33 hubbe Exp $
+ * $Id: pike_macros.h,v 1.15 2000/04/15 05:05:28 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -72,5 +72,27 @@
   }						\
   free_program(p);				\
 }while(0)
-  
+
+#define DOUBLELINK(first_object, o) do {	\
+  o->next=first_object;				\
+  o->prev=0;					\
+  if(first_object) first_object->prev=o;	\
+  first_object=o;				\
+}while(0)
+
+#define DOUBLEUNLINK(first_object,o) do{	\
+  if(o->prev) {					\
+    o->prev->next=o->next;			\
+  }else {					\
+    DO_IF_DEBUG(				\
+      if(first_object != o)			\
+        fatal("Linked in wrong list!\n");	\
+    )						\
+    first_object=o->next;			\
+  }						\
+						\
+  if(o->next) o->next->prev=o->prev;		\
+}while(0)
+
+
 #endif

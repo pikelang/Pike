@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.174 2000/04/06 09:03:59 hubbe Exp $");
+RCSID("$Id: las.c,v 1.175 2000/04/15 05:05:28 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -380,7 +380,7 @@ void free_all_nodes(void)
 			tmp, tmp->current_file->str, tmp->line_number,
 			tmp->token);
 
-		debug_malloc_dump_references(tmp);
+		debug_malloc_dump_references(tmp,0,2,0);
 
 		if(tmp->token==F_CONSTANT)
 		  print_tree(tmp);

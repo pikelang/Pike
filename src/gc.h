@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.28 2000/04/14 16:05:27 mast Exp $
+ * $Id: gc.h,v 1.29 2000/04/15 05:05:28 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -48,12 +48,12 @@ struct callback *debug_add_gc_callback(callback_func call,
 				 callback_func free_func);
 void dump_gc_info(void);
 TYPE_T attempt_to_identify(void *something);
-void describe_location(void *memblock, int type, void *location);
+void describe_location(void *memblock, int type, void *location,int indent, int depth, int flags);
 void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
 TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 int debug_gc_check(void *x, TYPE_T t, void *data);
-void describe_something(void *a, int t, int dm);
+void describe_something(void *a, int t, int indent, int depth, int flags);
 void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 INT32 real_gc_check(void *a);

@@ -276,7 +276,7 @@ static int eval_instruction(unsigned char *pc)
 #ifdef DEBUG_MALLOC
 	  if (inherit->storage_offset == 0x55555555) {
 	    fprintf(stderr, "The inherit %p has been zapped!\n", inherit);
-	    debug_malloc_dump_references(inherit);
+	    debug_malloc_dump_references(inherit,0,2,0);
 	    fprintf(stderr, "It was extracted from the program %p %d\n", p, i);
 	    describe(p);
 	    fprintf(stderr, "Which was in turn taken from the object %p\n", o);
