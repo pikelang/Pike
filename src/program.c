@@ -788,13 +788,13 @@ int define_variable(struct pike_string *name,
       my_yyerror("Illegal to redefine 'nomask' variable/functions \"%s\"", name->str);
 
     if(PROG_FROM_INT(& fake_program, n) == &fake_program)
-      my_yyerror("Variable '%s' defined twice.\n",name->str);
+      my_yyerror("Variable '%s' defined twice.",name->str);
 
     if(ID_FROM_INT(& fake_program, n)->type != type)
-      my_yyerror("Illegal to redefine inherited variable with different type.\n");
+      my_yyerror("Illegal to redefine inherited variable with different type.");
 
     if(ID_FROM_INT(& fake_program, n)->flags != flags)
-      my_yyerror("Illegal to redefine inherited variable with different type.\n");
+      my_yyerror("Illegal to redefine inherited variable with different type.");
 
   } else {
     struct identifier dummy;
