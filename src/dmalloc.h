@@ -1,8 +1,12 @@
 /*
- * $Id: dmalloc.h,v 1.27 2000/09/02 23:11:27 mast Exp $
+ * $Id: dmalloc.h,v 1.28 2000/12/13 21:24:44 hubbe Exp $
  */
 
-extern char *debug_xalloc(size_t);
+PMOD_EXPORT extern char *debug_xalloc(size_t);
+PMOD_EXPORT extern void debug_xfree(void *);
+PMOD_EXPORT extern void *debug_xmalloc(size_t);
+PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
+PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
 
 #define DMALLOC_LOCATION() ("S"  __FILE__ ":" DEFINETOSTR(__LINE__) )
 
@@ -54,6 +58,7 @@ char *dmalloc_find_name(void *p);
 #define debug_malloc_touch(X) debug_malloc_update_location((X),DMALLOC_LOCATION())
 #define debug_malloc_pass(X) debug_malloc_update_location((X),DMALLOC_LOCATION())
 #define xalloc(X) ((char *)debug_malloc_pass(debug_xalloc(X)))
+#define xfree(X) debug_xfree(debug_malloc_pass((X)))
 void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_update_location((X),DMALLOC_LOCATION()))
 #define dmalloc_touch_svalue(X) do { struct svalue *_tmp = (X); if ((X)->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); } } while(0)
@@ -94,6 +99,17 @@ int dmalloc_is_invalid_memory_block(void *block);
 #define DMALLOC_PROXY_ARGS
 #define debug_malloc_dump_references(X,x,y,z)
 #define xalloc debug_xalloc
+#if defined(DYNAMIC_MODULE) && defined(__NT__)
+#define xmalloc debug_xmalloc
+#define xcalloc debug_xcalloc
+#define xrealloc debug_xrealloc
+#define xfree debug_xfree
+#else
+#define xmalloc malloc
+#define xcalloc calloc
+#define xrealloc realloc
+#define xfree free
+#endif
 #define dbm_main main
 #define DO_IF_DMALLOC(X)
 #define debug_malloc_update_location(X,Y) (X)

@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.95 2000/12/01 20:42:10 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.96 2000/12/13 21:31:52 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -566,19 +566,32 @@ PMOD_EXPORT char *debug_xalloc(size_t size)
   if(!size) 
      Pike_error("Allocating zero bytes.\n");
 
-#ifdef SOFTLIM
-  if(softlim_should_be)
-  {
-    
-  }
-
-#endif
 
   ret=(char *)malloc(size);
   if(ret) return ret;
 
   Pike_error("Out of memory.\n");
   return 0;
+}
+
+PMOD_EXPORT void debug_xfree(void *mem)
+{
+  free(mem);
+}
+
+PMOD_EXPORT void *debug_xmalloc(size_t s)
+{
+  return malloc(s);
+}
+
+PMOD_EXPORT void *debug_xrealloc(void *m, size_t s)
+{
+  return realloc(m,s);
+}
+
+PMOD_EXPORT void *debug_xcalloc(size_t n, size_t s)
+{
+  return calloc(n,s);
 }
 
 char *debug_qalloc(size_t size)
@@ -720,14 +733,14 @@ void *fake_malloc(size_t x)
   return 0;
 }
 
-void *malloc(size_t x)
+PMOD_EXPORT void *malloc(size_t x)
 {
   if(!x) return 0;
   if(real_malloc) return debug_malloc(x,DMALLOC_LOCATION());
   return fake_malloc(x);
 }
 
-void fake_free(void *x)
+PMOD_EXPORT void fake_free(void *x)
 {
   struct fakemallocblock * block;
 
@@ -742,7 +755,7 @@ void fake_free(void *x)
   }
 }
 
-void free(void *x)
+PMOD_EXPORT void free(void *x)
 {
   struct fakemallocblock * block;
 
@@ -757,7 +770,7 @@ void free(void *x)
   }
 }
 
-void *realloc(void *x,size_t y)
+PMOD_EXPORT void *realloc(void *x,size_t y)
 {
   void *ret;
   size_t old_size;
