@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.7 2004/03/06 01:24:30 nilsson Exp $
+// $Id: Random.pmod,v 1.8 2004/03/06 12:48:58 grubba Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -15,7 +15,6 @@ void create() {
   if(file_stat("/dev/random")) dev_random = "/dev/random";
   if(dev_random && !dev_urandom) dev_urandom=dev_random;
   if(!dev_random && dev_urandom) dev_random=dev_urandom;
-  if(!dev_random && !dev_urandom) error("No entropy source found.\n");
 }
 #endif
 
@@ -37,18 +36,63 @@ static class RND {
     // Source 1: ticker
     // Source 2: external
     ::create(3);
+    int entropy_needed = min_seed_size()*2;
 
 #if constant(Crypto.NT)
     ctx = Crypto.NT.CryptContext(0, 0, Crypto.NT.PROV_RSA_FULL,
 				 Crypto.NT.CRYPT_VERIFYCONTEXT );
-    seed( ctx->CryptGenRandom(min_seed_size()*2) );
+    seed( ctx->CryptGenRandom(entropy_needed) );
 #else
-    if(no_block)
-      f = Stdio.File(dev_urandom, "r");
-    else
-      f = Stdio.File(dev_random, "r");
-
-    seed( f->read(min_seed_size()*2) );
+    if (dev_random) {
+      if(no_block)
+	f = Stdio.File(dev_urandom, "r");
+      else
+	f = Stdio.File(dev_random, "r");
+    } else {
+      // No entropy device.
+      f = Stdio.File();
+      Stdio.File child_pipe = f->pipe();
+      if (!child_pipe) {
+	f = 0;
+      } else {
+	// Attempt to generate some entropy by running some
+	// statistical commands.
+	mapping(string:string) env = getenv() + ([
+	  "PATH":"/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin",
+	]);
+	mapping(string:mixed) modifiers = ([
+	  "stdin":Stdio.File("/dev/null", "rw"),
+	  "stdout":child_pipe,
+	  "stderr":child_pipe,
+	  "env":env,
+	]);
+	foreach(({ ({ "last", "-256" }),
+		   ({ "arp", "-a" }), 
+		   ({ "netstat", "-anv" }), ({ "netstat", "-mv" }),
+		   ({ "netstat", "-sv" }), 
+		   ({ "uptime" }),
+		   ({ "ps", "-fel" }), ({ "ps", "aux" }),
+		   ({ "vmstat", "-f" }), ({ "vmstat", "-s" }),
+		   ({ "vmstat", "-M" }),
+		   ({ "iostat" }), ({ "iostat", "-t" }),
+		   ({ "iostat", "-cdDItx" }),
+		   ({ "ipcs", "-a" }),
+		   ({ "pipcs", "-a" }),
+		   }), array(string) cmd) {
+	  catch {
+	    Process.create_process(cmd, modifiers);
+	  };
+	}
+	child_pipe->close();
+	destruct(child_pipe);
+	// We need as much as we can get.
+	entropy_needed = 0x7fffffff;
+      }
+    }
+    if (!f) {
+      error("Failed to open entropy source.\n");
+    }
+    seed( f->read(entropy_needed) );
 #endif
 
 #if constant(System.rdtsc)
