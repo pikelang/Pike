@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.113 2001/06/26 12:42:48 grubba Exp $");
+RCSID("$Id: array.c,v 1.114 2001/06/30 18:44:21 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2015,7 +2015,7 @@ PMOD_EXPORT struct array *reverse_array(struct array *a)
   return ret;
 }
 
-PMOD_EXPORT void array_replace(struct array *a,
+void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to)
 {
