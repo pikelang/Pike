@@ -1,3 +1,9 @@
+pike7.4 (7.4.47-3) unstable; urgency=medium
+
+  * The latest CVS update
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 11 May 2004 16:13:46 +0200
+
 pike7.4 (7.4.47-2.1) unstable; urgency=medium
 
   * NMU.
