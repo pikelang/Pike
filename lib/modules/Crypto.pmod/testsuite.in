@@ -1,8 +1,8 @@
-dnl $Id: testsuite.in,v 1.6 2003/08/07 20:59:29 nilsson Exp $
+dnl $Id: testsuite.in,v 1.7 2003/08/08 10:26:16 grubba Exp $
 
 dnl Nettle.Yarrow
 
-cond([[ master()->resolv("Nettle") ]], [[
+cond([[ master()->resolv("Nettle") && master()->resolv("Nettle")["Yarrow"] ]], [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
   test_eq( Nettle.Yarrow()->get_seed(), "")
   test_eq( Nettle.Yarrow()->seed("\0"*32)->get_seed(),
