@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.141 1999/05/31 20:17:45 mast Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.142 1999/06/30 23:45:23 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2492,6 +2492,7 @@ test_eq([[random_seed(18),random(20000)]],[[random_seed(18),random(20000)]])
 test_eq([[random_seed(19),random(20000)]],[[random_seed(19),random(20000)]])
 
 // - replace
+test_eq(replace("foo",({"f"}),({"\x9999"})),"\x9999oo")
 test_eq(replace("foobargazonk","o","-"),"f--bargaz-nk")
 test_eq(replace("foobargazonk",({"o","a"}),({"()","<>"})),"f()()b<>rg<>z()nk")
 test_eq(replace("f--barf--",({"f--","f--bar"}),({"f--bar","f--"})),"f--f--bar")
