@@ -143,6 +143,9 @@ o ::_indices(), ::_values().
 o UNDEFINED
 
 o _m_delete
+   There is now an LFUN mixed _m_delete(mixed index) to overload in
+   your classes to imitate mappings. It gets invoked when m_delete
+   is performed on your object.
 
 o :: includes current class
    class X {
