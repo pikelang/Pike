@@ -3,14 +3,15 @@
 
 // Implemented by Johan Sundström and Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.8 2001/01/30 22:04:40 jhs Exp $
+// $Id: URI.pike,v 1.9 2001/06/16 13:47:57 per Exp $
 
 #pragma strict_types
 
 //! Scheme component of URI
 string scheme;
 
-//! Authority component of URI (formerly called net_loc, from RFC 2396 known as authority)
+//! Authority component of URI (formerly called net_loc, from RFC 2396
+//! known as authority)
 string authority;
 
 //! Path component of URI. May be empty, but not undefined.
@@ -25,8 +26,8 @@ string fragment;
 //! Certain classes of URI (e.g. URL) may have these defined
 string host, user, password;
 
-//! If no port number is present in URI, but the scheme used has a default port number,
-//! this number is put here.
+//! If no port number is present in URI, but the scheme used has a
+//! default port number, this number is put here.
 int port;
 
 //! The base URI object, if present
