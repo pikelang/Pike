@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.79 2003/03/29 01:45:22 mast Exp $
+|| $Id: global.h,v 1.80 2005/03/18 21:38:18 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -25,13 +25,6 @@
 #ifndef _PROTOTYPES
 #  define _PROTOTYPES
 #endif /* !_PROTOTYPES */
-
-/*
- * We want to use __builtin functions.
- */
-#ifndef __BUILTIN_VA_ARG_INCR
-#define __BUILTIN_VA_ARG_INCR	1
-#endif /* !__BUILTIN_VA_ARG_INCR */
 
 /*
  * Some structure forward declarations are needed.
