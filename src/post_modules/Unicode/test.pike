@@ -1,4 +1,4 @@
-#define FILE "NormalizationTest-3.1.0.txt"
+#! /usr/bin/env pike
 
 #define c1 c[0]
 #define c2 c[1]
@@ -9,12 +9,19 @@
 void main(int argc, array argv)
 {
   int tests, fail, part, opl;
-  write("Performing Unicode normalization tests\n");
-  write("See http://www.unicode.org/Public/3.1-Update/" FILE "\n" );
 
-  foreach( Stdio.File( argv[1]+"/"+FILE,"r" )->read()/"\n", string l )
+  write("Performing Unicode normalization tests\n");
+  write("See http://www.unicode.org/Public/3.2-Update/NormalizationTest-3.2.0.txt\n");
+  if( argc<2 || has_value( argv, "--help" ) )
   {
-    if( !strlen( l ) )
+    write("\nUsage %s <path>\nwhere path is the path to the directory with the NormalizationTest.txt file.\n",
+	  argv[0]);
+    exit(0);
+  }
+
+  foreach( Stdio.File( argv[1]+"/NormalizationTest.txt","r" )->read()/"\n", string l )
+  {
+    if( !strlen( l ) || l[0] == '#' )
       continue;
 
     if( l[0] == '@' )
