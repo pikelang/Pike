@@ -26,7 +26,7 @@ static string make_example_image( string data, int toplevel )
 			      dir, tim
 			    }))->wait();
   return ("@code{" + data + "@}\n"
-	  "@xml{<image src='../"+tim+"'/>@}\n");
+	  "@xml{<image>../"+tim+"</image>@}\n");
 }
 
 static string fix_images( string data )
