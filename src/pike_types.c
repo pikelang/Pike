@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.167 2001/03/27 20:13:21 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.168 2001/03/27 20:18:37 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1069,55 +1069,55 @@ void stupid_describe_type_string(char *a, ptrdiff_t len)
   ptrdiff_t e;
   for(e=0;e<len;e++)
   {
-    if(e) printf(" ");
+    if(e) fprintf(stderr, " ");
     switch(EXTRACT_UCHAR(a+e))
     {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	printf("%c",EXTRACT_UCHAR(a+e));
+	fprintf(stderr, "%c",EXTRACT_UCHAR(a+e));
 	break;
 
-      case T_SCOPE: printf("scope"); break;
-      case T_TUPLE: printf("tuple"); break;
-      case T_ASSIGN: printf("="); break;
+      case T_SCOPE: fprintf(stderr, "scope"); break;
+      case T_TUPLE: fprintf(stderr, "tuple"); break;
+      case T_ASSIGN: fprintf(stderr, "="); break;
       case T_INT:
 	{
 	  INT32 min=extract_type_int(a+e+1);
 	  INT32 max=extract_type_int(a+e+1+sizeof(INT32));
-	  printf("int");
+	  fprintf(stderr, "int");
 	  if(min!=MIN_INT32 || max!=MAX_INT32)
-	    printf("(%ld..%ld)",(long)min,(long)max);
+	    fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
 	  e+=sizeof(INT32)*2;
 	  break;
 	}
-      case T_FLOAT: printf("float"); break;
-      case T_STRING: printf("string"); break;
-      case T_TYPE: printf("type"); break;
-      case T_PROGRAM: printf("program"); break;
+      case T_FLOAT: fprintf(stderr, "float"); break;
+      case T_STRING: fprintf(stderr, "string"); break;
+      case T_TYPE: fprintf(stderr, "type"); break;
+      case T_PROGRAM: fprintf(stderr, "program"); break;
       case T_OBJECT:
-	printf("object(%s %ld)",
+	fprintf(stderr, "object(%s %ld)",
 	       EXTRACT_UCHAR(a+e+1)?"is":"implements",
 	       (long)extract_type_int(a+e+2));
 	e+=sizeof(INT32)+1;
 	break;
-      case T_FUNCTION: printf("function"); break;
-      case T_ARRAY: printf("array"); break;
-      case T_MAPPING: printf("mapping"); break;
-      case T_MULTISET: printf("multiset"); break;
+      case T_FUNCTION: fprintf(stderr, "function"); break;
+      case T_ARRAY: fprintf(stderr, "array"); break;
+      case T_MAPPING: fprintf(stderr, "mapping"); break;
+      case T_MULTISET: fprintf(stderr, "multiset"); break;
 	
-      case PIKE_T_UNKNOWN: printf("unknown"); break;
-      case T_MANY: printf("many"); break;
-      case T_OR: printf("or"); break;
-      case T_AND: printf("and"); break;
-      case T_NOT: printf("not"); break;
-      case T_VOID: printf("void"); break;
-      case T_ZERO: printf("zero"); break;
-      case T_MIXED: printf("mixed"); break;
+      case PIKE_T_UNKNOWN: fprintf(stderr, "unknown"); break;
+      case T_MANY: fprintf(stderr, "many"); break;
+      case T_OR: fprintf(stderr, "or"); break;
+      case T_AND: fprintf(stderr, "and"); break;
+      case T_NOT: fprintf(stderr, "not"); break;
+      case T_VOID: fprintf(stderr, "void"); break;
+      case T_ZERO: fprintf(stderr, "zero"); break;
+      case T_MIXED: fprintf(stderr, "mixed"); break;
 	
-      default: printf("%d",EXTRACT_UCHAR(a+e)); break;
+      default: fprintf(stderr, "%d",EXTRACT_UCHAR(a+e)); break;
     }
   }
-  printf("\n");
+  fprintf(stderr, "\n");
 }
 
 void simple_describe_type(struct pike_type *s)
@@ -1126,127 +1126,127 @@ void simple_describe_type(struct pike_type *s)
     switch(s->type) {
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-	printf("%d", s->type-'0');
+	fprintf(stderr, "%d", s->type-'0');
 	break;
 
       case PIKE_T_NAME:
-	printf("{ %s = ", ((struct pike_string *)s->car)->str);
+	fprintf(stderr, "{ %s = ", ((struct pike_string *)s->car)->str);
 	simple_describe_type(s->cdr);
-	printf(" }");
+	fprintf(stderr, " }");
 	break;
 
       case T_SCOPE:
-	printf("scope(%ld, ", (long)(ptrdiff_t)s->car);
+	fprintf(stderr, "scope(%ld, ", (long)(ptrdiff_t)s->car);
 	simple_describe_type(s->cdr);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
       case T_TUPLE:
-	printf("tuple(");
+	fprintf(stderr, "tuple(");
 	simple_describe_type(s->car);
-	printf(", ");
+	fprintf(stderr, ", ");
 	simple_describe_type(s->cdr);
-	printf(")");	
+	fprintf(stderr, ")");	
 	break;
       case T_ASSIGN:
-	printf("%ld = ", (long)(ptrdiff_t)s->car);
+	fprintf(stderr, "%ld = ", (long)(ptrdiff_t)s->car);
 	simple_describe_type(s->cdr);
 	break;
       case T_INT:
 	{
 	  INT32 min = (ptrdiff_t)s->car;
 	  INT32 max = (ptrdiff_t)s->cdr;
-	  printf("int");
+	  fprintf(stderr, "int");
 	  if(min!=MIN_INT32 || max!=MAX_INT32)
-	    printf("(%ld..%ld)",(long)min,(long)max);
+	    fprintf(stderr, "(%ld..%ld)",(long)min,(long)max);
 	  break;
 	}
-      case T_FLOAT: printf("float"); break;
-      case T_STRING: printf("string"); break;
+      case T_FLOAT: fprintf(stderr, "float"); break;
+      case T_STRING: fprintf(stderr, "string"); break;
       case T_TYPE:
-	printf("type(");
+	fprintf(stderr, "type(");
 	simple_describe_type(s->car);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
-      case T_PROGRAM: printf("program"); break;
+      case T_PROGRAM: fprintf(stderr, "program"); break;
       case T_OBJECT:
-	printf("object(%s %ld)",
+	fprintf(stderr, "object(%s %ld)",
 	       s->car?"is":"implements",
 	       (long)(ptrdiff_t)s->cdr);
 	break;
       case T_FUNCTION:
       case T_MANY:
-	printf("function(");
+	fprintf(stderr, "function(");
 	while(s->type == T_FUNCTION) {
 	  simple_describe_type(s->car);
 	  s = s->cdr;
 	  if ((s->type == T_FUNCTION) ||
 	      (s->car->type != T_VOID)) {
-	    printf(", ");
+	    fprintf(stderr, ", ");
 	  }
 	}
 	if (s->car->type != T_VOID) {
 	  simple_describe_type(s->car);
 	}
-	printf(":");
+	fprintf(stderr, ":");
 	describe_type(s->cdr);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
       case T_ARRAY:
-	printf("array(");
+	fprintf(stderr, "array(");
 	simple_describe_type(s->car);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
       case T_MAPPING:
-	printf("mapping(");
+	fprintf(stderr, "mapping(");
 	simple_describe_type(s->car);
-	printf(":");
+	fprintf(stderr, ":");
 	simple_describe_type(s->cdr);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
       case T_MULTISET:
-	printf("multiset(");
+	fprintf(stderr, "multiset(");
 	simple_describe_type(s->car);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
 	
-      case PIKE_T_UNKNOWN: printf("unknown"); break;
+      case PIKE_T_UNKNOWN: fprintf(stderr, "unknown"); break;
       case PIKE_T_RING:
-	printf("ring(");
+	fprintf(stderr, "ring(");
 	simple_describe_type(s->car);
-	printf("°");
+	fprintf(stderr, "°");
 	simple_describe_type(s->cdr);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
       case T_OR:
-	printf("or(");
+	fprintf(stderr, "or(");
 	simple_describe_type(s->car);
-	printf("|");
+	fprintf(stderr, "|");
 	simple_describe_type(s->cdr);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
       case T_AND:
-	printf("and(");
+	fprintf(stderr, "and(");
 	simple_describe_type(s->car);
-	printf("&");
+	fprintf(stderr, "&");
 	simple_describe_type(s->cdr);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
       case T_NOT:
-	printf("not(");
+	fprintf(stderr, "not(");
 	simple_describe_type(s->car);
-	printf(")");
+	fprintf(stderr, ")");
 	break;
-      case T_VOID: printf("void"); break;
-      case T_ZERO: printf("zero"); break;
-      case T_MIXED: printf("mixed"); break;
+      case T_VOID: fprintf(stderr, "void"); break;
+      case T_ZERO: fprintf(stderr, "zero"); break;
+      case T_MIXED: fprintf(stderr, "mixed"); break;
 	
       default:
-	printf("Unknown type node: %d, %p:%p",
+	fprintf(stderr, "Unknown type node: %d, %p:%p",
 	       s->type, s->car, s->cdr);
 	break;
     }
   } else {
-    printf("NULL");
+    fprintf(stderr, "NULL");
   }
 }
 #endif
