@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.23 2004/09/03 12:46:43 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.24 2004/09/07 15:43:55 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -1471,12 +1471,14 @@ PIKECLASS TokenizingCompiler
 	    /* FALL_THROUGH */
 
 	  case '/':
-	    /* Comment, since all other cases should be handled though
-	     * the mapping token_lookup.
-	     */
-	    pop_n_elems(args);
-	    push_int(0);
-	    return;
+	    if (symbol->len > 1) {
+	      /* Comment, since all other cases should be handled though
+	       * the mapping token_lookup.
+	       */
+	      pop_n_elems(args);
+	      push_int(0);
+	      return;
+	    }
 	  }
 	}
 	if (UNSAFE_IS_ZERO(Pike_sp - args)) {
