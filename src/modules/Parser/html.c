@@ -797,6 +797,27 @@ static INLINE void push_feed_range(struct piece *head,
    DEBUG((stderr,"push len=%d\n",sp[-1].u.string->len));
 }
 
+/* ------------------------- */
+/* compare positions in feed */
+
+static INLINE int cmp_feed_pos(struct piece *piece_a, int pos_a,
+			       struct piece *piece_b, int pos_b)
+{
+  struct piece *a_save = piece_a;
+
+  if (piece_a == piece_b)
+    return pos_a < pos_b ? -1 : (pos_a > pos_b ? 1 : 0);
+
+  while (piece_a && piece_a != piece_b)
+    piece_a = piece_a->next;
+  if (piece_a) return -1;
+
+  while (piece_b && piece_b != a_save)
+    piece_b = piece_b->next;
+  if (piece_b) return 1;
+
+  return 17;			/* Not in the same feed! */
+}
 
 /* ------------------------------------ */
 /* skip feed range and count lines, etc */
@@ -1181,7 +1202,8 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 			       int c,
 			       struct piece **destp,
 			       int *d_p,
-			       int finished)
+			       int finished,
+			       int match_tag)
 {
    p_wchar2 ch;
    int res,i;
@@ -1225,7 +1247,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
       }
 
       if (ch==this->tag_end)
-	 if (this->match_tag && q--) 
+	if (match_tag && q--)
 	 {
 	    DEBUG_MARK_SPOT("scan for end of tag: inner tag end",
 			    destp[0],*d_p);
@@ -1240,15 +1262,24 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 	    return 1;
 	 }
 
-      if (ch==this->tag_start && this->match_tag)
-      {
-	 DEBUG_MARK_SPOT("scan for end of arg: inner tag start",
-			 destp[0],*d_p);
-	 q++;
-	 feed=*destp;
-	 c=d_p[0]+1;
-	 continue;
-      }
+      if (ch==this->tag_start)
+	if (match_tag)
+	{
+	  DEBUG_MARK_SPOT("scan for end of tag: inner tag start",
+			  destp[0],*d_p);
+	  q++;
+	  feed=*destp;
+	  c=d_p[0]+1;
+	  continue;
+	}
+	else
+	{
+	  DEBUG_MARK_SPOT("scan for end of tag: ignored inner tag start",
+			  destp[0],*d_p);
+	  feed=*destp;
+	  c=d_p[0]+1;
+	  continue;
+	}
 
       /* scan for (possible) end(s) of this argument quote */
 
@@ -1630,8 +1661,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 				      struct piece **e2,int *ce2,
 				      int finished)
 {
-   struct piece *s1,*s2;
-   int c1,c2;
+   struct piece *s1,*s2,*s3;
+   int c1,c2,c3;
    newstate res;
    struct svalue e;
 
@@ -1656,13 +1687,13 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       {
 	 if (!finished) 
 	 {
-	    DEBUG_MARK_SPOT("find_end_of_cont : wait\n",s1,c1);
+	    DEBUG_MARK_SPOT("find_end_of_cont : wait",s1,c1);
 	    free_svalue(endtagname);
 	    return STATE_WAIT; /* please wait */
 	 }
 	 else
 	 {
-	    DEBUG_MARK_SPOT("find_end_of_cont : forced end\n",s1,c1);
+	    DEBUG_MARK_SPOT("find_end_of_cont : forced end",s1,c1);
 	    *e1=*e2=s1;
 	    *ce1=*ce2=c1;
 	    free_svalue(endtagname);
@@ -1670,21 +1701,30 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	 }
       }
       DEBUG_MARK_SPOT("find_end_of_container got tag",feed,c);
-      if (!scan_for_end_of_tag(this,s1,c1+1,&s2,&c2,finished))
+      if (!scan_for_end_of_tag(this,s1,c1+1,&s2,&c2,finished,0))
       {
-	 DEBUG_MARK_SPOT("find_end_of_cont : wait for end\n",s1,c1);
+	 DEBUG_MARK_SPOT("find_end_of_cont : wait for end",s1,c1);
 	 free_svalue(endtagname);
 	 return STATE_WAIT;
       }
+
+      while (scan_forward(s1,c1+1,&s3,&c3,&(this->tag_start),1) &&
+	     cmp_feed_pos(s3,c3,s2,c2) == -1)
+      {
+	DEBUG_MARK_SPOT("find_end_of_cont : skipping open tag",s3,c3);
+	s1=s3;
+	c1=c3;
+      }
+
       tag_name(this,s1,c1+1);
 
       if (is_eq(sp-1,tagname)) /* push a new level */
       {
 	 pop_stack();
-	 DEBUG_MARK_SPOT("find_end_of_cont : push\n",s2,c2);
+	 DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2);
 	 res=find_end_of_container(this,tagname,endtagname,
 				   s2,c2,e1,ce1,&feed,&c,finished);
-	 DEBUG_MARK_SPOT("find_end_of_cont : push end\n",feed,c);
+	 DEBUG_MARK_SPOT("find_end_of_cont : push end",feed,c);
 	 if (res)
 	 {
 	    DEBUG((stderr,"find_end_of_cont (pushed) return %d %p:%d\n",
@@ -1850,7 +1890,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	     this->mapcont->size)
 	 {
 	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
-				    finished);
+				    finished,this->match_tag);
 	    if (!res) 
 	    {
 	       st->ignore_data=1;
@@ -1926,7 +1966,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	 if (this->callback__tag.type!=T_INT)
 	 {
 	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
-				    finished);
+				    finished,this->match_tag);
 	    if (!res) 
 	    {
 	       st->ignore_data=1;
@@ -1956,7 +1996,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	 else
 	 {
 	    res=scan_for_end_of_tag(this,*feed,st->c+1,&dst,&cdst,
-				    finished);
+				    finished,this->match_tag);
 	    if (!res) return 1; /* come again */
 
 	    put_out_feed_range(this,*feed,st->c,dst,cdst+1);
