@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.95 2003/09/08 15:28:14 mast Exp $
+|| $Id: gc.h,v 1.96 2003/09/08 20:06:46 mast Exp $
 */
 
 #ifndef GC_H
@@ -14,7 +14,7 @@
 #include "threads.h"
 #include "interpret.h"
 
-#define GC_MARK_DEBUG
+/* #define GC_MARK_DEBUG */
 
 extern INT32 num_objects;
 extern INT32 num_allocs;
