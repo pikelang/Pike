@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.2 2001/07/30 20:56:28 marcus Exp $
+ * $Id: ppc32.h,v 1.3 2001/07/31 23:10:35 marcus Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -76,3 +76,6 @@ void ppc32_decode_program(struct program *p);
 #define ENCODE_PROGRAM(P, BUF)	ppc32_encode_program(P, BUF)
 #define DECODE_PROGRAM(P)	ppc32_decode_program(p)
 */
+
+#define CALL_MACHINE_CODE(pc)    do { if(pc) goto *(pc); } while(0)
+

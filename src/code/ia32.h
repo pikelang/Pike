@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.h,v 1.10 2001/07/27 08:32:04 hubbe Exp $
+ * $Id: ia32.h,v 1.11 2001/07/31 23:10:35 marcus Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT8
@@ -125,3 +125,13 @@ void update_f_jump(INT32 offset, INT32 to_offset);
 
 void ia32_flush_code_generator(void);
 #define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator
+
+#define CALL_MACHINE_CODE(pc)						\
+  /* This code does not clobber %eax, %ecx & %edx, but			\
+   * the code jumped to does.						\
+   */									\
+  __asm__ __volatile__( "	sub $8,%%esp\n"				\
+			"	jmp *%0"				\
+			: "=m" (pc)					\
+			:						\
+			: "cc", "memory", "eax", "ecx", "edx" )
