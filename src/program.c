@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.511 2003/08/02 01:10:17 mast Exp $
+|| $Id: program.c,v 1.512 2003/08/03 01:01:37 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.511 2003/08/02 01:10:17 mast Exp $");
+RCSID("$Id: program.c,v 1.512 2003/08/03 01:01:37 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1312,7 +1312,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 
 /*! @decl constant this
  *!
- *! Builtin constant that evaluates to the current object.
+ *! Builtin read only variable that evaluates to the current object.
  *!
  *! @seealso
  *!   @[this_program], @[this_object()]
@@ -1345,15 +1345,25 @@ struct node_s *program_magic_identifier (struct program_state *state,
     /* These are only recognized when looking in the current program
      * and not an inherited one. */
 
-    /* Handle this */
-    if (ident == this_string)
-      return mkefuncallnode ("this_object", mknewintnode (state_depth));
+    /* Handle this by referring to the magic this identifier at index 0. */
+    if (ident == this_string) {
+      if (state_depth > 0) 
+	return mkexternalnode (state->new_program, IDREF_MAGIC_THIS);
+      else
+	return mkidentifiernode (IDREF_MAGIC_THIS);
+    }
 
     /* Handle this_program */
-    if (ident == this_program_string)
-      return mkefuncallnode ("object_program",
-			     mkefuncallnode ("this_object",
-					     mknewintnode (state_depth)));
+    if (ident == this_program_string) {
+      node *n = mkefuncallnode ("object_program",
+				state_depth > 0 ?
+				mkexternalnode (state->new_program, IDREF_MAGIC_THIS) :
+				mkidentifiernode (IDREF_MAGIC_THIS));
+      /* We know this expression is constant. */
+      n->node_info &= ~OPT_NOT_CONST;
+      n->tree_info &= ~OPT_NOT_CONST;
+      return n;
+    }
   }
 
   if (colon_colon_ref) {
@@ -2532,7 +2542,7 @@ void check_program(struct program *p)
       Pike_fatal("Not enough room allocated by inherit!\n");
 
     if (p->inherits[e].inherit_level == 1 &&
-	p->inherits[e].identifier_level != p->inherits[e].identifier_ref_offset) {
+	p->inherits[e].identifier_level != (INT32) p->inherits[e].identifier_ref_offset) {
       dump_program_tables (p, 0);
       Pike_fatal ("Unexpected difference between identifier_level "
 		  "and identifier_ref_offset in inherit %d.\n", e);
@@ -2559,6 +2569,17 @@ void check_program(struct program *p)
   {
     check_string(p->identifiers[e].name);
     check_type_string(p->identifiers[e].type);
+
+    switch (p->identifiers[e].identifier_flags & IDENTIFIER_TYPE_MASK) {
+      case IDENTIFIER_VARIABLE:
+      case IDENTIFIER_PIKE_FUNCTION:
+      case IDENTIFIER_C_FUNCTION:
+      case IDENTIFIER_CONSTANT:
+	break;
+
+      default:
+	Pike_fatal("Invalid identifier type.\n");
+    }
 
     if(p->identifiers[e].identifier_flags & ~IDENTIFIER_MASK)
       Pike_fatal("Unknown flags in identifier flag field.\n");
@@ -2601,7 +2622,7 @@ void check_program(struct program *p)
 
     i=ID_FROM_INT(p, e);
 
-    if( !(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
+    if(IDENTIFIER_IS_VARIABLE(i->identifier_flags))
     {
       size_t q, size;
       /* Variable */
@@ -3228,6 +3249,7 @@ void rename_last_inherit(struct pike_string *n)
 		     n);
 }
 
+#if 0
 static int locate_parent_state(struct program_state **state,
 			       struct inherit **i,
 			       int *parent_identifier,
@@ -3295,6 +3317,7 @@ static int find_depth(struct program_state *state,
 			     &parent_identifier,
 			     depth);
 }
+#endif
 
 /*
  * make this program inherit another program
@@ -3594,9 +3617,8 @@ void compiler_do_inherit(node *n,
 
   continue_inherit:
 
-      i=ID_FROM_INT(p, numid);
-
-      if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
+      if(numid != IDREF_MAGIC_THIS &&
+	 (i=ID_FROM_INT(p, numid), IDENTIFIER_IS_CONSTANT(i->identifier_flags)))
       {
 	struct svalue *s=&PROG_FROM_INT(p, numid)->
 	  constants[i->func.offset].sval;
@@ -3715,9 +3737,9 @@ int low_define_variable(struct pike_string *name,
   copy_shared_string(dummy.name, name);
   copy_pike_type(dummy.type, type);
   if (flags & ID_ALIAS) {
-    dummy.identifier_flags = IDENTIFIER_ALIAS;
+    dummy.identifier_flags = IDENTIFIER_VARIABLE | IDENTIFIER_ALIAS;
   } else {
-    dummy.identifier_flags = 0;
+    dummy.identifier_flags = IDENTIFIER_VARIABLE;
   }
   dummy.run_time_type=run_time_type;
   dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
@@ -4025,7 +4047,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       if(c->u.object->prog == Pike_compiler->new_program &&
 	 !c->u.object->prog->identifier_references[c->subtype].inherit_offset)
       {
-	if(id->identifier_flags & IDENTIFIER_FUNCTION)
+	if(IDENTIFIER_IS_FUNCTION(id->identifier_flags))
 	{
 	  return define_function(name,
 				 id->type,
@@ -4035,7 +4057,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 				 id->opt_flags);
 	  
 	}
-	else if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
+	else if(IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
 		id->func.offset != -1)
 	{
 	  c=& Pike_compiler->new_program->constants[id->func.offset].sval;
@@ -4043,7 +4065,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
       }
       else
       {
-	if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
+	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
 	   id->func.offset != -1 &&
 	   INHERIT_FROM_INT(c->u.object->prog, c->subtype)->prog->
 	   constants[id->func.offset].sval.type == T_PROGRAM)
@@ -7470,6 +7492,9 @@ PMOD_EXPORT void *parent_storage(int depth)
   loc.inherit=INHERIT_FROM_INT(p, Pike_fp->fun);
   
   find_external_context(&loc, depth);
+
+  if (!loc.o->prog)
+    Pike_error ("Cannot access storage of destructed parent object.\n");
 
   return loc.o->storage + loc.inherit->storage_offset;
 }
