@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.74 2004/09/18 21:38:51 marcus Exp $
+|| $Id: preprocessor.h,v 1.75 2004/10/15 15:40:10 nilsson Exp $
 */
 
 /*
@@ -2238,6 +2238,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	goto unknown_preprocessor_directive;
       }
     default:
+      if(!OUTP()) break;
     unknown_preprocessor_directive:
       {
 	WCHAR buffer[180];
