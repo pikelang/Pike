@@ -1,11 +1,12 @@
 #
-# $Id: Makefile,v 1.31 2001/01/21 23:06:29 jhs Exp $
+# $Id: Makefile,v 1.32 2001/01/23 02:20:27 mast Exp $
 #
 # Meta Makefile
 #
 
 VPATH=.
 MAKE=make
+MAKEFLAGS=
 OS=`uname -s -r -m|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_'`
 BUILDDIR=build/$(OS)
 METATARGET=
@@ -101,14 +102,14 @@ bin/pike: force
 	chmod a+x bin/pike
 
 # This skips the modules.
-pike: force
-	@$(MAKE) "METATARGET=pike master.pike"
+pike:
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=pike"
 
 install:
-	@$(MAKE) "METATARGET=install"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=install"
 
 install_interactive:
-	@$(MAKE) "METATARGET=install_interactive"
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive"
 
 just_verify:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=just_verify"
@@ -141,19 +142,39 @@ feature_list:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
 
 clean:
-	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean
+	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
+	  res=$$?; \
+	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean
+	  else exit $$res; fi; \
+	}
 
 spotless:
-	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" spotless
+	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" spotless || { \
+	  res=$$?; \
+	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean \
+	  else exit $$res; fi; \
+	}
 
 distclean:
 	-rm -rf "$(BUILDDIR)" bin/pike
 
 cvsclean: distclean
-	for d in `find src -type d -print`; do if test -f "$$d/.cvsignore"; then (cd "$$d" && rm -f `cat ".cvsignore"`); else :; fi; done
+	for d in `find src -type d -print`; do \
+	  if test -f "$$d/.cvsignore"; then \
+	    (cd "$$d" && rm -f `cat ".cvsignore"`); \
+	  else :; fi; \
+	done
 
 depend: configure
-	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" depend
+	-@cd "$(BUILDDIR)" && \
+	$(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
+	  res=$$?; \
+	  if test -f remake; then \
+	    $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend \
+	  else \
+	    exit $$res; \
+	  fi; \
+	}
 
 pikefun_TAGS:
 	cd src && etags -l none -r \
