@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.145 2001/03/09 02:51:18 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.146 2003/01/30 13:45:16 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -611,7 +611,8 @@ break
 CASE(ID)							\
 {								\
   union anything *i=get_pointer_if_this_type(sp-2, T_INT);	\
-  if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC))		\
+  if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC) &&		\
+     sp[-3].type == T_INT)					\
   {								\
     i->integer += INC;						\
     if(i->integer OP2 sp[-3].u.integer)				\
