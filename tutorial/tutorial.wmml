@@ -8547,40 +8547,27 @@ It is only used for debugging.
 
 <HR NEWPAGE>
 
-<anchor name=acos>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>acos</tt> - Trigonometrical inverse cosine
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float acos(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=acos title="trigonometrical inverse cosine">
+<man_syntax>
+float acos(float <I>f</I>);
+</man_syntax>
+<man_description>
 Return the arcus cosine value for <i>f</i>.
 The result will be in radians.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=cos>cos</link> and <link to=asin>asin</link>
-<p>
-</dl>
-</anchor>
-
-
+</man_description>
+<man_see>
+cos, asin
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=add_constant>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>add_constant</tt> - add new predefined functions or constants
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void add_constant(string <I>name</I>, mixed <I>value</I>);<br>
-or<br>
-void add_constant(string <I>name</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=add_constant title="add new predefined functions or constants">
+<man_syntax>
+void add_constant(string <I>name</I>, mixed <I>value</I>);<br>
+void add_constant(string <I>name</I>);
+</man_syntax>
+<man_description>
 This function adds a new constant to Pike, it is often used to
 add builtin functions. All programs compiled after add_constant
 function is called can access 'value' by the name given by 'name'.
@@ -8590,173 +8577,132 @@ by the new definition. This will not affect already compiled programs.
 Calling add_constant without a value will remove that name from the list
 of constants. As with replacing, this will not affect already compiled
 programs.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>add_constant("true",1);<br>
+</man_description>
+<man_example>
+add_constant("true",1);<br>
 add_constant("false",0);<br>
 add_constant("PI",4.0);<br>
 add_constant("sqr",lambda(mixed x) { return x * x; });<br>
 add_constant("add_constant");<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=all_constants>all_constants</link>
-<p>
-</dl>
-</anchor>
-
+</man_example>
+<man_see>
+all_constants
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=add_include_path>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>add_include_path</tt> - add a directory to search for include files
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void add_include_path(string <I>path</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=add_include_path title="add a directory to search for include files">
+<man_syntax>
+void add_include_path(string <I>path</I>);
+</man_syntax>
+<man_description>
 This function adds another directory to the search for include files.
 This is the same as the command line option <tt>-I</tt>. Note that
 the added directory will only be searched when using &lt;&nbsp;&gt; to
 quote the included file.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_include_path>remove_include_path</link> and <link to=include>#include</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+remove_include_path, #include
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=add_module_path>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>add_module_path</tt> - add a directory to search for modules
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void add_module_path(string <I>path</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=add_module_path title="add a directory to search for modules">
+<man_syntax>
+void add_module_path(string <I>path</I>);
+</man_syntax>
+<man_description>
 This function adds another directory to the search for modules.
 This is the same as the command line option <tt>-M</tt>. For more
 information about modules, see <ref to=modules>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_module_path>remove_module_path</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+remove_module_path
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=add_program_path>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>add_program_path</tt> - add a directory to search for modules
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void add_program_path(string <I>path</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=add_program_path title="add a directory to search for modules">
+<man_syntax>
+void add_program_path(string <I>path</I>);
+</man_syntax>
+<man_description>
 This function adds another directory to the search for programs.
 This is the same as the command line option <tt>-P</tt>. For more
 information about programs, see <ref to=programs>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_program_path>remove_program_path</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+remove_program_path
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=aggregate>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>aggregate</tt> - construct an array
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *aggregate(mixed ... <I>elems</I>);<br>
-or<br>
-({ elem1, elem2, ... })<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=aggregate title="construct an array">
+<man_syntax>
+array aggregate(mixed ... <I>elems</I>);<br>
+({ elem1, elem2, ... });
+</man_syntax>
+<man_description>
 Construct an array with the arguments as indices. This function
 could be written in Pike as:
-<p>mixed *aggregate(mixed ... elems) { return elems; }
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+<p>array aggregate(mixed ... elems) { return elems; }
+</man_description>
+<man_note>
 Arrays are dynamically allocated there is no need to declare them
 like int a[10]=allocate(10); (and it isn't possible either) like
-in C, just int *a=allocate(10); will do.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=arrayp>arrayp</link> and <link to=allocate>allocate</link>
-<p>
-</dl>
-</anchor>
+in C, just array(int) a=allocate(10); will do.
+</man_note>
+<man_see>
+sizeof, arrayp, allocate
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=aggregate_mapping>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>aggregate_mapping</tt> - construct a mapping
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping aggregate_mapping(mixed ... <I>elems</I>);<br>
-or<br>
-([ key1:val1, key2:val2, ... ])<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=aggregate_mapping title="construct a mapping">
+<man_syntax>
+mapping aggregate_mapping(mixed ... <I>elems</I>);<br>
+([ key1:val1, key2:val2, ... ]);
+</man_syntax>
+<man_description>
 Groups the arguments together two and two to key-index pairs and
 creates a mapping of those pairs. The second syntax is always
 preferable.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=mappingp>mappingp</link> and <link to=mkmapping>mkmapping</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+sizeof, mappingp, mkmapping
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=aggregate_multiset>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>aggregate_multiset</tt> - construct a multiset
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>multiset aggregate_multiset(mixed ... <I>elems</I>);<br>
-or<br>
-(&lt; elem1, elem2, ... &gt;)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=aggregate_multiset title="construct a multiset">
+<man_syntax>
+multiset aggregate_multiset(mixed ... <I>elems</I>);<br>
+(&lt; elem1, elem2, ... &gt;);
+</man_syntax>
+<man_description>
 Construct a multiset with the arguments as indexes. This function
 could be written in Pike as:
 <p>multiset aggregate(mixed ... elems) { return mkmultiset(elems); }
 <p>The only problem is that mkmultiset is implemented using
 aggregate_multiset...
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=multisetp>multisetp</link> and <link to=mkmultiset>mkmultiset</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+sizeof, multisetp, mkmultiset
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=alarm>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>alarm</tt> - set an alarm clock for delivery of a signal
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int alarm(int <I>seconds</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=alarm title="set an alarm clock for delivery of a signal">
+<man_syntax>
+int alarm(int <I>seconds</I>);
+</man_syntax>
+<man_description>
 <tt>alarm</tt> arranges for a SIGALRM signal to be delivered to the
 process <!-- hedda: Menar du process eller thread? Lite mer förklaring, tack.  hubbe: det st}r process, vad tror du jag menar??? -->in <i>seconds</i> seconds.
 <p>
@@ -8768,129 +8714,99 @@ In any event any previously set alarm is canceled.
 <tt>alarm</tt> returns the number of seconds remaining until any
 previously  scheduled  alarm  was  due to be delivered, or
 zero if there was no previously scheduled alarm.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=signal>signal</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+signal
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=all_constants>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>all_constants</tt> - return all predefined constants
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping (string:mixed) <I>all_constant</I>();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=all_constants title="return all predefined constants">
+<man_syntax>
+mapping (string:mixed) <I>all_constant</I>();
+</man_syntax>
+<man_description>
 Returns a mapping containing all constants, indexed on the names of the
 constant, and with the value of the efun as argument.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=add_constant>add_constant</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+add_constant
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=allocate>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>allocate</tt> - allocate an array
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *allocate(int <I>size</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=allocate title="allocate an array">
+<man_syntax>
+array allocate(int <I>size</I>);
+</man_syntax>
+<man_description>
 Allocate an array of size elements and initialize them to zero.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>mixed *a=allocate(17);<br>
-</tt>
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_example>
+array a=allocate(17);
+</man_example>
+<man_note>
 Arrays are dynamically allocated there is no need to declare them
 like <tt>int a[10]=allocate(10);</tt> (and it is not possible either) like
 in C, just <tt>array(int) a=allocate(10);</tt> will do.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=aggregate>aggregate</link> and <link to=arrayp>arrayp</link>
-<p>
-</dl>
-</anchor>
+</man_note>
+<man_see>
+sizeof, aggregate, arrayp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=arrayp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>arrayp</tt> - is the argument an array?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int arrayp(mixed <I>arg</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=arrayp title="is the argument an array?">
+<man_syntax>
+int arrayp(mixed <I>arg</I>);
+</man_syntax>
+<man_description>
 Returns 1 if <i>arg</i> is an array, zero otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=allocate>allocate</link>, <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+allocate, intp, programp, floatp, stringp, objectp, mappingp, multisetp,
+functionp
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=asin>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>asin</tt> - Trigonometrical inverse sine
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float asin(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=asin title="trigonometrical inverse sine">
+<man_syntax>
+float asin(float <I>f</I>);
+</man_syntax>
+<man_description>
 Returns the arcus sinus value for <i>f</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sin>sin</link> and <link to=acos>acos</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+sin, acos
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=atan>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>atan</tt> - Trigonometrical inverse tangent
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float atan(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=atan title="trigonometrical inverse tangent">
+<man_syntax>
+float atan(float <I>f</I>);
+</man_syntax>
+<man_description>
 Returns the arcus tangent value for <i>f</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=tan>tan</link>, <link to=asin>asin</link> and <link to=acos>acos</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+tan, asin, acos
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=backtrace>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>backtrace</tt> - get a description of the call stack
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(array) backtrace();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=backtrace title="get a description of the call stack">
+<man_syntax>
+array(array) backtrace();
+</man_syntax>
+<man_description>
 This function returns a description of the call stack at this moment.
 The description is returned in an array with one entry for each call
 in the stack. Each entry has this format:
@@ -8905,69 +8821,54 @@ in the stack. Each entry has this format:
 
 <p>The current call frame will be last in the array, and the one above
 that the last but one and so on.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=catch>catch</link> and <link to=throw>throw</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+catch, throw
+</man_see>
+</function>
+
 <HR NEWPAGE>
-<anchor name=call_function>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>call_function</tt> - call a function with arguments
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed call_function(function <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-mixed fun ( mixed ... <I>args</I> );<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=call_function title="call a function with arguments">
+<man_syntax>
+mixed call_function(function <I>fun</I>,mixed ... <I>args</I>);<br>
+mixed fun ( mixed ... <I>args</I> );
+</man_syntax>
+<man_description>
 This function takes a function pointer as first argument and calls
 this function with the rest of the arguments as arguments. Normally,
 you will never have to write call_function(), because you will use the
 second syntax instead.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=backtrace>backtrace</link> and <link to=Simulate.get_function>Simulate.get_function</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+backtrace, Simulate.get_function
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=call_out>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>call_out</tt> - make a delayed call to a function
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed call_out(function <I>f</I>, int <I>delay</I>, mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=call_out title="make a delayed call to a function">
+<man_syntax>
+mixed call_out(function <I>f</I>, int <I>delay</I>, mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
 Call_out places a call to the function <i>f</i> with the argument <i>args</i>
 in a queue to be called in about delay seconds. The return value
 identifies this call out. The return value can be sent to
 find_call_out or remove_call_out to remove the call out again.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=remove_call_out>remove_call_out</link>, <link to=find_call_out>find_call_out</link> and <link to=call_out_info>call_out_info</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+remove_call_out, find_call_out, call_out_info
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=call_out_info>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>call_out_info</tt> - get info about all call outs
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed **call_out_info();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=call_out_info title="get info about all call outs">
+<man_syntax>
+mixed **call_out_info();
+</man_syntax>
+<man_description>
 This function returns an array with one entry for each entry in the
 call out queue. The first in the queue will be in index 0. Each index
 contains an array that looks like this:
@@ -8981,136 +8882,119 @@ contains an array that looks like this:
 <tr valign=top><td> ...   </td><td> /* and so on... */ </td></tr>
 </table>
 </dl>})<br>
-
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=call_out>call_out</link>, <link to=find_call_out>find_call_out</link> and <link to=remove_call_out>remove_call_out</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+call_out, find_call_out, remove_call_out
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=_do_call_outs>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-	<tt>_do_call_outs</tt> - do all pending call_outs.
 
-<dt><encaps>SYNTAX</encaps><dd>
-	<tt>void _do_call_out();</tt>
-
-<dt><encaps>DESCRIPTION</encaps><dd>
-<dd>        This function runs all pending call_outs that should have been
-        run if Pike returned to the backend.  It should not be used in
-        normal operation.
+<function name=_do_call_outs title="do all pending call_outs">
+<man_syntax>
+void _do_call_out();
+</man_syntax>
+<man_description>
+This function runs all pending call_outs that should have been
+run if Pike returned to the backend.  It should not be used in
+normal operation.
 <p>
-	As a side-effect, this function sets the value returned by
-	<tt>time(1)</tt> to the current time.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=call_out>call_out</link>, <link to=find_call_out>find_call_out</link> and <link to=remove_call_out>remove_call_out</link>
-<p>
-</dl>
-</anchor>
+As a side-effect, this function sets the value returned by
+<tt>time(1)</tt> to the current time.
+</man_description>
+<man_see>
+call_out, find_call_out, remove_call_out
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=catch>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>catch</tt> - catch errors
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>catch { commands }<br>
-or<br>
-catch ( expression )<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=catch>
+<man_syntax>
+catch { commands };<br>
+catch ( expression );
+</man_syntax>
+<man_description>
 catch traps exceptions such as run time errors or calls to throw() and
 returns the argument given to throw. For a run time error, this value
 is ({ "error message", backtrace }) 
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=throw>throw</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+throw
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=cd>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>cd</tt> - change directory
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int cd(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=cd title="change directory">
+<man_syntax>
+int cd(string <I>s</I>);
+</man_syntax>
+<man_description>
 Change the current directory for the whole Pike process, return
 1 for success, 0 otherwise.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=getcwd>getcwd</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+getcwd
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=ceil>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>ceil</tt> - Truncate a number upward
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float ceil(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=ceil title="truncate a number upward">
+<man_syntax>
+float ceil(float <I>f</I>);
+</man_syntax>
+<man_description>
 Return the closest integer value higher or equal to <i>f</i>.
 Note that <tt>ceil()</tt> does <strong>not</strong> return an int, merely an integer value stored in a float.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=floor>floor</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+floor
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=clone>
-<anchor name=new>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>clone</tt> - clone an object from a program
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object clone(program <I>p</I>,mixed ... <I>args</I>);</tt><br>
-or<br>
-<tt>object new(program <I>p</I>,mixed ... <I>args</I>);</tt><br>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-<tt>new()</tt> or <tt>clone()</tt> creates an object from the program <i>p</i>. Or in C++ terms:
+
+<function name=clone title="clone an object from a program">
+<man_syntax>
+object clone(program <I>p</I>,mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
+<tt>clone()</tt> creates an object from the program <i>p</i>. Or in C++ terms:
 It creates an instance of the class <i>p</i>. This clone will first have
 all global variables initialized, and then <tt>create()</tt> will be called
 with <i>args</i> as arguments.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=destruct>destruct</link>, <link to=compile_string>compile_string</link> and <link to=compile_file>compile_file</link>
-<p>
-</dl>
-</anchor>
-</anchor>
+</man_description>
+<man_see>
+new, destruct, compile_string, compile_file
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=column>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>column</tt> - extract a column
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array column(mixed *data,mixed index)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=new title="clone an object from a program">
+<man_syntax>
+object new(program <I>p</I>,mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
+<tt>new()</tt> creates an object from the program <i>p</i>. Or in C++ terms:
+It creates an instance of the class <i>p</i>. This clone will first have
+all global variables initialized, and then <tt>create()</tt> will be called
+with <i>args</i> as arguments.
+</man_description>
+<man_see>
+clone, destruct, compile_string, compile_file
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=column title="extract a column">
+<man_syntax>
+array column(mixed *data,mixed index)
+</man_syntax>
+<man_description>
 This function is exactly equivalent to:
 <example language=pike>
 map_array(data, lambda(mixed x,mixed y) { return x[y]; }, index)
@@ -9118,188 +9002,152 @@ map_array(data, lambda(mixed x,mixed y) { return x[y]; }, index)
 Except of course it is a lot shorter and faster.
 That is, it indexes every index in the array data on the value of
 the argument index and returns an array with the results.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
+</man_description>
+<man_example>
 <pre>
 	&gt; column( ({ ({1,2}), ({3,4}), ({5,6}) }), 1)
 	Result: ({2, 4, 6})
 </pre>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=rows>rows</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+rows
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=combine_path>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>combine_path</tt> - concatenate paths
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string combine_path(string <I>absolute</I>, string <I>relative</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=combine_path title="concatenate paths">
+<man_syntax>
+string combine_path(string <I>absolute</I>, string <I>relative</I>);
+</man_syntax>
+<man_description>
 Concatenate a relative path to an absolute path and remove any
 "//", "/.." or "/." to produce a straightforward absolute path
 as a result.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>&gt; combine_path("/foo/bar/","..");<br>
+</man_description>
+<man_example>
+&gt; combine_path("/foo/bar/","..");<br>
 Result: /foo<br>
 &gt; combine_path("/foo/bar/","../apa.c");<br>
 Result: /foo/apa.c<br>
 &gt; combine_path("/foo/bar","./sune.c");<br>
 Result: /foo/bar/sune.c<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=getcwd>getcwd</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+getcwd
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=compile_file>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>compile_file</tt> - compile a file to a program
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>program compile_file(string <I>filename</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=compile_file title="compile a file to a program">
+<man_syntax>
+program compile_file(string <I>filename</I>);
+</man_syntax>
+<man_description>
 This function will compile the file <i>filename</i> to a Pike program that can
 later be used for cloning.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link> and <link to=compile_string>compile_string</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+clone, compile_string
+</man_see>
+</function>
+
 <HR NEWPAGE>
-<anchor name=compile_string>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>compile_string</tt> - compile a string to a program
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>program compile_string(string <I>prog</I>, string <I>name</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=compile_string title="compile a string to a program">
+<man_syntax>
+program compile_string(string <I>prog</I>, string <I>name</I>);
+</man_syntax>
+<man_description>
 <tt>compile_string()</tt> takes a piece of Pike code as a string and
 compiles it into a clonable program. Note that <i>prog</i> must contain
 the complete source for a program. You can not compile a single expression
 or statement.The second argument will be used as the file name of the
 program and will be used for error messages and such.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=compile_string>compile_string</link> and <link to=clone>clone</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+compile_string, clone
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=copy_value>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>copy_value</tt> - copy a value recursively
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed copy_value(mixed <I>value</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=copy_value title="copy a value recursively">
+<man_syntax>
+mixed copy_value(mixed <I>value</I>);
+</man_syntax>
+<man_description>
 Copy value will copy the value given to it recursively. If the result
 value is changed destructively (only possible for multisets, arrays and
 mappings) the copied value will not be changed. The resulting value
 will always be equal to the copied (tested with the efun equal), but
 they may not the the same value. (tested with ==)
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=equal>equal</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+equal
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=cos>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>cos</tt> - Trigonometrical cosine
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>float cos(float <I>f</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=cos title="trigonometrical cosine">
+<man_syntax>
+float cos(float <I>f</I>);
+</man_syntax>
+<man_description>
 Returns the cosine value for <i>f</i>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=acos>acos</link> and <link to=sin>sin</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+acos, sin
+</man_see>
+</function>
 
 <HR NEWPAGE>
-<anchor name=crypt>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>crypt</tt> - crypt a password
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string crypt(string <I>password</I>);<br>
-or<br>
-int crypt(string <I>typed_password</I>, string <I>crypted_password</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=crypt title="crypt a password">
+<man_syntax>
+string crypt(string <I>password</I>);<br>
+int crypt(string <I>typed_password</I>, string <I>crypted_password</I>);
+</man_syntax>
+<man_description>
 This function crypts and verifies a short string. (normally only
 the first 8 characters are significant) The first syntax crypts
 the string password into something that is hopefully hard to decrypt,
 and the second function crypts the first string and verifies that the
 crypted result matches the second argument and returns 1 if they
 matched, 0 otherwise.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>To crypt a password use:<br>
+</man_description>
+<man_example>
+To crypt a password use:<br>
 <dl><dt><dd>crypted_password = crypt(typed_password);<br>
 </dl>To see if the same password was used again use:<br>
 <dl><dt><dd>matched = crypt(typed_password, crypted_password);<br>
 </dl>
-</tt>
-</dl>
+</man_example>
+</function>
 
-</anchor>
 <HR NEWPAGE>
-<anchor name=ctime>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>ctime</tt> - convert time int to readable date string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string ctime(int <I>current_time</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=ctime title="convert time int to readable date string">
+<man_syntax>
+string ctime(int <I>current_time</I>);
+</man_syntax>
+<man_description>
 Convert the output from a previous call to time() into a readable
 string containing the current year, month, day and time.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>&gt; ctime(time());<br>
+</man_description>
+<man_example>
+&gt; ctime(time());<br>
 Result: Wed Jan 14 03:36:08 1970<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=time>time</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+time
+</man_see>
+</function>
 
 <HR NEWPAGE>
+
 <anchor name=decode_value>
 <dl>
 <dt><encaps>NAME</encaps><dd>
