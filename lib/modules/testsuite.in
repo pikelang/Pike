@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.21 2003/10/05 19:35:18 grubba Exp $
+dnl $Id: testsuite.in,v 1.22 2003/10/16 14:29:27 grubba Exp $
 
 dnl - Array
 
@@ -799,15 +799,15 @@ test_do([[
 ]], ({}))
 ]])
 
-cond([[ file_stat("/bin/cat") && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/dd") && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
 test_any([[
   // Check that tracing works...
-  // Spawn a /bin/cat that hangs on a read from a pipe connected to
+  // Spawn a /bin/dd that hangs on a read from a pipe connected to
   // this process, so that it will die of SIGPIPE if we die.
   Stdio.File input_fd = Stdio.File();
   Process.TraceProcess proc =
-    Process.TraceProcess(({ "/bin/cat" }), ([
+    Process.TraceProcess(({ "/bin/dd", "of=/dev/null" }), ([
       "stdin":input_fd->pipe(Stdio.PROP_IPC|Stdio.PROP_REVERSE),
     ]));
 
