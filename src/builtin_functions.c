@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.582 2004/12/18 18:39:11 grubba Exp $
+|| $Id: builtin_functions.c,v 1.583 2004/12/22 12:45:37 grubba Exp $
 */
 
 #include "global.h"
@@ -4410,7 +4410,12 @@ PMOD_EXPORT void f_localtime(INT32 args)
  */
 static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
 {
-  time_t base = (t1->tm_year - t2->tm_year) * 32140800;
+  time_t base;
+
+  /* Win32 localtime() returns NULL for all dates before Jan 01, 1970. */
+  if (!t2) return -1;
+
+  base = (t1->tm_year - t2->tm_year) * 32140800;
 
   /* Overflow detection. (Should possibly be done on the other fields
    * too to cope with very large invalid dates.) */
@@ -4453,6 +4458,13 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
 	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
     fprintf (stderr, "diff: %ld\n", (long) diff_ts);
 #endif
+
+    if (!current_tm) {
+#ifdef DEBUG_MY_TIME_INVERSE
+      fprintf (stderr, "outside range for timefn().\n");
+#endif
+      return 0;
+    }
 
     if (!diff_ts) {
       /* Got a satisfactory time, but if target_tm has an opinion on
@@ -4566,8 +4578,8 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
  *!   Or you can just send them all on one line as the second syntax suggests.
  *!
  *! @note
- *!   On some operating systems (notably AIX), dates before 00:00:00
- *!   UTC, Jan 1, 1970 are not supported.
+ *!   On some operating systems (notably AIX and Win32), dates before
+ *!   00:00:00 UTC, Jan 1, 1970 are not supported.
  *!
  *!   On most systems, the supported range of dates are Dec 13, 1901
  *!   20:45:52 UTC through Jan 19, 2038 03:14:07 UTC (inclusive).
@@ -4665,7 +4677,10 @@ PMOD_EXPORT void f_mktime (INT32 args)
     {
 #ifdef HAVE_LOCALTIME
       /* mktime might fail on dates before 1970 (e.g. GNU libc 2.3.2),
-       * so try our own inverse function with localtime. */
+       * so try our own inverse function with localtime.
+       *
+       * Note that localtime on Win32 will also fail for dates before 1970.
+       */
       if (!my_time_inverse (&date, &retval, localtime))
 #endif
 	PIKE_ERROR("mktime", "Time conversion unsuccessful.\n", Pike_sp, args);
