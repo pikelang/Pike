@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.190 2003/12/15 17:54:16 grubba Exp $
+// $Id: module.pmod,v 1.191 2004/03/13 10:42:07 agehall Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1186,7 +1186,7 @@ class Port
 
   static string _sprintf( int f )
   {
-    return f=='O' && sprintf( "%O(%s:%O)", this_program, debug_ip, debug_port );
+    return f=='O' && sprintf( "%O(%s:%O)", this_program, (string)debug_ip, debug_port );
   }
 
   //! @decl void create()
@@ -1219,6 +1219,13 @@ class Port
         ::create( p, cb );
     else
       ::create( p );
+  }
+
+  int bind(int|string port, void|function accept_callback, void|string ip) {
+    // Needed to fix _sprintf().
+    debug_ip = (ip||"ANY");
+    debug_port = p;
+    ::bind(port, accept_callback, ip);
   }
 
   //! This function completes a connection made from a remote machine to
