@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.290 2003/10/05 19:32:56 grubba Exp $
+|| $Id: file.c,v 1.291 2003/10/05 19:50:51 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.290 2003/10/05 19:32:56 grubba Exp $");
+RCSID("$Id: file.c,v 1.291 2003/10/05 19:50:51 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2521,11 +2521,6 @@ static void file_pipe(INT32 args)
     {
       i=fd_pipe(&inout[0]);
       if (i >= 0) {
-	if (type & fd_REVERSE) {
-	  int tmp = inout[0];
-	  inout[0] = inout[1];
-	  inout[1] = tmp;
-	}
 	type=PIPE_CAPABILITIES;
 	break;
       }
