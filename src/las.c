@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.130 1999/11/24 00:59:11 grubba Exp $");
+RCSID("$Id: las.c,v 1.131 1999/11/24 21:41:44 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2119,7 +2119,16 @@ void fix_type_field(node *n)
 	/* a["b"]=c and a->b=c can be valid when a is an array */
 	if (CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
+
+	  struct pike_string *s1,*s2;
+	  s1=describe_type(CDR(n)->type);
+	  s2=describe_type(CAR(n)->type);
 	  my_yyerror("Bad type in assignment.");
+	  my_yyerror("Expected: %s",s1->str);
+	  my_yyerror("Got     : %s",s2->str);
+	  free_string(s1);
+	  free_string(s2);
+
 	} else if (lex.pragmas & ID_STRICT_TYPES) {
 	  struct pike_string *t1 = describe_type(CAR(n)->type);
 	  struct pike_string *t2 = describe_type(CDR(n)->type);
@@ -2178,10 +2187,10 @@ void fix_type_field(node *n)
       max_args = count_arguments(f);
       if(max_args<0) max_args = 0x7fffffff;
 
-      free_string(s);
 
       if (n->type) {
 	/* Type/argument-check OK. */
+	free_string(s);
 	break;
       }
 
@@ -2236,6 +2245,17 @@ void fix_type_field(node *n)
 	my_yyerror("Bad argument %d to %s.",
 		   max_correct_args+1, name);
       }
+      
+      {
+	struct pike_string *s1,*s2;
+	s1=describe_type(f);
+	s2=describe_type(s);
+	my_yyerror("Expected: %s",s1->str);
+	my_yyerror("Got     : %s",s2->str);
+	free_string(s1);
+	free_string(s2);
+      }
+      free_string(s);
     }
     copy_shared_string(n->type, mixed_type_string);
     break;
