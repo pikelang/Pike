@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.18 1997/05/19 23:31:04 hubbe Exp $");
+RCSID("$Id: object.c,v 1.19 1997/07/14 18:23:20 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -294,7 +294,7 @@ void really_free_object(struct object *o)
 
   if(o->prog)
   {
-    if(!objects_to_destruct)
+    if(!destruct_object_evaluator_callback)
     {
       destruct_object_evaluator_callback=
 	add_to_callback(&evaluator_callbacks,
