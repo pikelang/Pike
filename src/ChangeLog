@@ -1,3 +1,8 @@
+Sat Jan 18 18:48:06 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* main.c (f___version): Moved Pike version information from
+	master.pike to efun __version() in main.c.
+
 Fri Jan 17 10:59:26 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* master.pike, simulate.pike, getopt.pre.pike: cleaned up some
