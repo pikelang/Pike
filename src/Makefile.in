@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.118 1998/09/29 13:51:44 grubba Exp $
+# $Id: Makefile.in,v 1.119 1998/09/29 14:30:19 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -208,10 +208,10 @@ install: pike hilfe pike-module aclocal
 	@echo Installing Pike...
 	@echo
 	@echo "Creating directories..."; \
-	@for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
-		  "$(man_prefix)" "$(man_prefix)/man1" "$(man_prefix)/man3" \
-	          "$(lib_prefix)" "$(data_prefix)" "$(share_prefix)" \
-	          "$(prefix)/include" "$(prefix)/include/pike"; do \
+	for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
+		 "$(man_prefix)" "$(man_prefix)/man1" "$(man_prefix)/man3" \
+	         "$(lib_prefix)" "$(data_prefix)" "$(share_prefix)" \
+	         "$(prefix)/include" "$(prefix)/include/pike"; do \
 	  if [ -d "$$d/." ]; then : ; else \
 	    echo "$$d"; \
 	    mkdir "$$d" || exit 1; \
@@ -319,7 +319,7 @@ install: pike hilfe pike-module aclocal
 	done
 	@if [ -d "$(MANDIR_SRC)/." ]; then \
 	  echo ; echo "Installing manual pages..."; \
-	  for f in `cd "$(MANDIR_SRC)/; echo *.1`; do \
+	  for f in `cd "$(MANDIR_SRC)/"; echo *.1`; do \
 	    dest = "$(man_prefix)/man1/$$f"; \
 	    if cmp "$$dest" "$(MANDIR_SRC)/$$f" >/dev/null 2>&1 ; \
 	    then : ; else \
