@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.41 2000/10/18 20:28:53 mast Exp $
+ * $Id: sql.pike,v 1.42 2001/01/01 04:40:54 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.41 2000/10/18 20:28:53 mast Exp $
+//. RCSID:	$Id: sql.pike,v 1.42 2001/01/01 04:40:54 nilsson Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -328,8 +328,9 @@ string|object compile_query(string q)
 //. - handle_extraargs
 //.   Handle sprintf-based quoted arguments
 private string handle_extraargs(string query, array(mixed) extraargs) {
-  return sprintf(query,@Array.map(extraargs,lambda(mixed s)
-                                            {return quote((string)s);}));
+  return sprintf(query,@Array.map(extraargs,
+				  lambda(mixed s)
+				  {return intp(s)||floatp(s)?s:quote(s);}));
 }
 
 //. - query
