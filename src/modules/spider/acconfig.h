@@ -4,3 +4,6 @@
 
 /* If you do not have an 'time_t', define this to 'int' */
 #undef time_t
+
+/* Define this to enable the streamed parser module */
+#undef ENABLE_STREAMED_PARSER
