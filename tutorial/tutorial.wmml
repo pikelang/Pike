@@ -636,12 +636,12 @@ This means that you cannot assign new values to individual characters in a strin
 Also, all strings are "shared", i.e. if the same string is used in several places, it will be stored in memory only once.
 When writing a string in a program, you enclose it in double quotes. To write special characters you need to use the following syntax:
 <table>
-<tr><td><li>\n</td><td>newline</td></tr>
-<tr><td><li>\r</td><td>carriage return</td></tr>
-<tr><td><li>\t</td><td>tab</td></tr>
-<tr><td><li>\b</td><td>backspace</td></tr>
-<tr><td><li>\"</td><td>" (quotation character)</td></tr>
-<tr><td><li>\\</td><td>\ (literal backslash)</td></tr>
+<tr><td>\n</td><td>newline</td></tr>
+<tr><td>\r</td><td>carriage return</td></tr>
+<tr><td>\t</td><td>tab</td></tr>
+<tr><td>\b</td><td>backspace</td></tr>
+<tr><td>\"</td><td>" (quotation character)</td></tr>
+<tr><td>\\</td><td>\ (literal backslash)</td></tr>
 </table>
 <dt>Mapping
 <dd>A mapping is basically an array that can be indexed on any type, not just integers. It can also be seen as a way of linking data (usually strings) together. It consists of a lot of index-data pairs which are linked together in such a way that map[index1] returns data1.
@@ -2326,14 +2326,14 @@ The arithmetic operators are the simplest ones, since they work just like
 you remember from math in school. The arithmetic operators are:
 <center>
 <p>
-<table border=1>
+<table nicer>
 <tr>			<th>Function</th>	<th>Syntax</th>		<th>Identifier</th>	<th>Returns</th></tr>
 <tr><td><anchor name=`+>Addition</anchor></td>	<td><tt>a + b</tt></td>	<td><tt>`+</tt></td>	<td>the sum of a and b</td></tr>
-<tr><anchor name=`->	<td>Subtraction</td>	<td><tt>a - b</tt></td>	<td><tt>`-</tt></td>	<td>b subtracted from a</td></anchor></tr>
-<tr>			<td>Negation</td>	<td><tt>- a</tt></td>	<td><tt>`-</tt></td>	<td>minus a</td></tr>
-<tr><anchor name=`*>	<td>Multiplication</td>	<td><tt>a * b</tt></td>	<td><tt>`*</tt></td>	<td>a multiplied by b</td></anchor></tr>
-<tr><anchor name=`/>	<td>Division</td>	<td><tt>a / b</tt></td>	<td><tt>`/</tt></td>	<td>a divided by b</td></anchor></tr>
-<tr><anchor name=`%>	<td>Modulo</td>		<td><tt>a % b</tt></td>	<td><tt>`%</tt></td>	<td>the remainder of a division between a and b</td></anchor></tr>
+<tr><td><anchor name=`->Subtraction</anchor></td>	<td><tt>a - b</tt></td>	<td><tt>`-</tt></td>	<td>b subtracted from a</td></tr>
+<tr><td>Negation</td>	<td><tt>- a</tt></td>	<td><tt>`-</tt></td>	<td>minus a</td></tr>
+<tr><td><anchor name=`*>Multiplication</anchor></td>	<td><tt>a * b</tt></td>	<td><tt>`*</tt></td>	<td>a multiplied by b</td></tr>
+<tr><td><anchor name=`/>Division</anchor></td>	<td><tt>a / b</tt></td>	<td><tt>`/</tt></td>	<td>a divided by b</td></tr>
+<tr><td><anchor name=`%>Modulo</anchor></td>		<td><tt>a % b</tt></td>	<td><tt>`%</tt></td>	<td>the remainder of a division between a and b</td></tr>
 </table>
 </center>
 <p>
@@ -2361,7 +2361,7 @@ However, there are more types in Pike than integers and floats. Here is
 the complete list of combinations of types you can use with these operators:
 
 <center>
-<table border=1>
+<table nicer>
 
 <tr>
 <th>Operation</th><th>Returned type</th><th>Returned value</th>
@@ -2525,14 +2525,14 @@ For this purpose there are six comparison operators:
 
 <center>
 <p>
-<table border=1>
+<table nicer>
 <tr>			<th>Function</th>		 <th>Syntax</th>	<th>Identifier</th> <th>Returns</th></tr>
-<tr><anchor name=`==>	<td>Same</td>                    <td><tt>a == b</tt></td>   <td><tt>`==</tt></td>   <td>1 if a is the same value as b, 0 otherwise</td></anchor></tr>
-<tr><anchor name=`!=>	<td>Not same</td>                <td><tt>a != b</tt></td>   <td><tt>`!=</tt></td>   <td>0 if a is the same value as b, 1 otherwise</td></anchor></tr>
-<tr><anchor name="`>">	<td>Greater than</td>            <td><tt>a &gt; b</tt></td> <td><tt>`&gt; </tt></td><td>1 if a is greater than b, 0 otherwise</td></anchor></tr>
-<tr><anchor name="`>=">	<td>Greater than or equal to</td><td><tt>a &gt;= b</tt></td><td><tt>`&gt;=</tt></td><td>1 if a is greater to or equal to b, 0 otherwise</td></anchor></tr>
-<tr><anchor name="`<">	<td>Lesser than</td>             <td><tt>a &lt; b</tt></td> <td><tt>`&lt; </tt></td><td>1 if a is lesser than b, 0 otherwise</td></anchor></tr>
-<tr><anchor name="`<=">	<td>Lesser than or equal to</td> <td><tt>a &lt;= b</tt></td><td><tt>`&lt;=</tt></td><td>1 if a is lesser than or equal to b, 0 otherwise</td></anchor></tr>
+<tr><td><anchor name=`==>Same</anchor></td>                    <td><tt>a == b</tt></td>   <td><tt>`==</tt></td>   <td>1 if a is the same value as b, 0 otherwise</td></tr>
+<tr><td><anchor name=`!=>Not same</anchor></td>                <td><tt>a != b</tt></td>   <td><tt>`!=</tt></td>   <td>0 if a is the same value as b, 1 otherwise</td></tr>
+<tr><td><anchor name="`>">Greater than</anchor></td>            <td><tt>a &gt; b</tt></td> <td><tt>`&gt; </tt></td><td>1 if a is greater than b, 0 otherwise</td></tr>
+<tr><td><anchor name="`>=">Greater than or equal to</anchor></td><td><tt>a &gt;= b</tt></td><td><tt>`&gt;=</tt></td><td>1 if a is greater to or equal to b, 0 otherwise</td></tr>
+<tr><td><anchor name="`<">Lesser than</anchor></td>             <td><tt>a &lt; b</tt></td> <td><tt>`&lt; </tt></td><td>1 if a is lesser than b, 0 otherwise</td></tr>
+<tr><td><anchor name="`<=">Lesser than or equal to</anchor></td> <td><tt>a &lt;= b</tt></td><td><tt>`&lt;=</tt></td><td>1 if a is lesser than or equal to b, 0 otherwise</td></tr>
 </table>
 <p>
 </center>
@@ -2559,7 +2559,7 @@ can not be called as normal functions. There are four logical operators:
 
 <center>
 <p>
-<table border=1>
+<table nicer>
 <tr><th>Function</th>	<th>Syntax</th>	<th>Returns</th></tr>
 <tr><td>And</td>	<td><tt>a &amp;&amp; b</tt></td> <td>If a is false, a is returned and b is not evaluated. Otherwise, b is returned.</td></tr>
 <tr><td>Or</td>		<td><tt>a || b</tt></td> 	<td>If a is true, a is returned and b is not evaluated. Otherwise, b is returned.</td></tr>
@@ -2575,14 +2575,14 @@ They can also manipulate arrays, multisets and mappings as sets.
 
 <center>
 <p>
-<table border=1>
+<table nicer>
 <tr>			<th>Function</th>		<th>Syntax</th>			<th>Identifier</th>		<th>Returns</th></tr>
-<tr><anchor name="`<<">	<td>Shift left</td>		<td><tt>a &lt;&lt; b</tt></td>	<td><tt>`&lt;&lt;</tt></td>	<td>Multiplies a by 2 b times.</td></anchor></tr>
-<tr><anchor name="`>>">	<td>Shift right</td>		<td><tt>a &gt;&gt; b</tt></td>	<td><tt>`&gt;&gt;</tt></td>	<td>Divides a by 2 b times.</td></anchor></tr>
-<tr><anchor name=`~>	<td>Inverse (not)</td>		<td><tt>~ a</tt></td>		<td><tt>`~</tt></td>		<td>Returns -1-a.</td></anchor></tr>
-<tr><anchor name=`&>	<td>Intersection (and)</td>	<td><tt>a &amp; b</tt></td>	<td><tt>`&amp;</tt></td>	<td>All elements present in both a and b.</td></anchor></tr>
-<tr><anchor name=`|>	<td>Union (or)</td>		<td><tt>a | b</tt></td>		<td><tt>`|</tt></td>		<td>All elements present in a or b.</td></anchor></tr>
-<tr><anchor name=`^>	<td>Symmetric difference (xor)</td><td><tt>a ^ b</tt></td>	<td><tt>`^</tt></td>		<td>All elements present in a or b, but not present in both.</td></anchor></tr>
+<tr><td><anchor name="`<<">Shift left</anchor></td>		<td><tt>a &lt;&lt; b</tt></td>	<td><tt>`&lt;&lt;</tt></td>	<td>Multiplies a by 2 b times.</td></tr>
+<tr><td><anchor name="`>>">Shift right</anchor></td>		<td><tt>a &gt;&gt; b</tt></td>	<td><tt>`&gt;&gt;</tt></td>	<td>Divides a by 2 b times.</td></tr>
+<tr><td><anchor name=`~>Inverse (not)</anchor></td>		<td><tt>~ a</tt></td>		<td><tt>`~</tt></td>		<td>Returns -1-a.</td></tr>
+<tr><td><anchor name=`&>Intersection (and)</anchor></td>	<td><tt>a &amp; b</tt></td>	<td><tt>`&amp;</tt></td>	<td>All elements present in both a and b.</td></tr>
+<tr><td><anchor name=`|>Union (or)</anchor></td>		<td><tt>a | b</tt></td>		<td><tt>`|</tt></td>		<td>All elements present in a or b.</td></tr>
+<tr><td><anchor name=`^>Symmetric difference (xor)</anchor></td><td><tt>a ^ b</tt></td>	<td><tt>`^</tt></td>		<td>All elements present in a or b, but not present in both.</td></tr>
 </table>
 <p>
 </center>
@@ -2615,13 +2615,13 @@ complex data type.
 
 <center>
 <p>
-<table border=1>
+<table nicer>
 <tr>			<th>Function</th>	<th>Syntax</th>				<th>Identifier</th>	<th>Returns</th></tr>
-<tr><anchor name=`[]>	<td>Index</td>		<td><tt>a [ b ]</tt></td>		<td><tt>`[]</tt></td>	<td>Returns the index b from a.</td></anchor></tr>
-<tr><anchor name="`->">	<td>Lookup</td>		<td><tt>a -&gt;<i>identifier</i></tt></td><td><tt>`-&gt;</tt></td><td>Looks up the identifier. Same as a["<i>identifier</i>"].</td></anchor></tr>
-<tr><anchor name=`[]=>	<td>Assign index</td>	<td><tt>a [ b ] = c</tt></td>		<td><tt>`[]=;</tt></td><td>Sets the index b in a to c.</td></anchor></tr>
-<tr><anchor name="`->="><td>Assign index</td>	<td><tt>a -&gt;<i>identifier</i> = c</tt></td><td><tt>`-&gt;=</tt></td><td>Sets the index "<i>identifier</i>" in a to c.</td></anchor></tr>
-<tr><anchor name=`[..]>	<td>Range</td>		<td><tt>a [ b .. c ]</tt></td>		<td><tt>`[..]</tt></td>	<td>Returns a slice of a starting at the index b and ending at c.</td></anchor></tr>
+<tr><td><anchor name=`[]>Index</anchor></td>		<td><tt>a [ b ]</tt></td>		<td><tt>`[]</tt></td>	<td>Returns the index b from a.</td></tr>
+<tr><td><anchor name="`->">Lookup</anchor></td>		<td><tt>a -&gt;<i>identifier</i></tt></td><td><tt>`-&gt;</tt></td><td>Looks up the identifier. Same as a["<i>identifier</i>"].</td></tr>
+<tr><td><anchor name=`[]=>Assign index</anchor></td>	<td><tt>a [ b ] = c</tt></td>		<td><tt>`[]=;</tt></td><td>Sets the index b in a to c.</td></tr>
+<tr><td><anchor name="`->=">Assign index</anchor></td>	<td><tt>a -&gt;<i>identifier</i> = c</tt></td><td><tt>`-&gt;=</tt></td><td>Sets the index "<i>identifier</i>" in a to c.</td></tr>
+<tr><td><anchor name=`[..]>Range</anchor></td>		<td><tt>a [ b .. c ]</tt></td>		<td><tt>`[..]</tt></td>	<td>Returns a slice of a starting at the index b and ending at c.</td></tr>
 <tr>			<td>Range</td>		<td><tt>a [ .. c ]</tt></td>		<td><tt>`[..]</tt></td>	<td>Returns a slice of a starting at the beginning of a and ending at c.</td></tr>
 <tr>			<td>Range</td>		<td><tt>a [ b .. ]</tt></td>		<td><tt>`[..]</tt></td>	<td>Returns a slice of a from the index b to the end of a.</td></tr>
 </table>
@@ -2638,7 +2638,7 @@ index strings, arrays, mapping, multisets and objects, and some of these
 can only be indexed on certain things as shown in this list:
 <p>
 <center>
-<table border=1>
+<table nicer>
 <tr>
 <th>Operation</th> <th>Returns</th>
 </tr>
@@ -2777,7 +2777,7 @@ that modify the contents of a variable instead of just assigning it.
 Here is a list of all the combinations:
 <p>
 <center>
-<table border=1>
+<table nicer>
 <tr><th>Syntax</th> <th>Same as</th> <th>Function</th></tr>
 <tr><td><tt><i>variable</i> += <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> + <i>expression</i></td><td>Add <i>expression</i> to <i>variable</i></td></tr>
 <tr><td><tt><i>variable</i> -= <i>expression</i></tt></td><td> <i>variable</i> = <i>variable</i> - <i>expression</i></td><td>Subtract <i>expression</i> from <i>variable</i></td></tr>
@@ -2798,7 +2798,7 @@ of assignable values. Assignable values are also known as <b>lvalues</b> and
 here is a list of <b>lvalues</b>:
 <p>
 <center>
-<table border=1>
+<table nicer>
 <tr><th>Lvalue type</th><th>Syntax</th><th>Valid assignment type</th></tr>
 <tr><td> a local or global variable </td><td> <i>identifier</i> </td> <td>same as variable</td></tr>
 <tr><td> an element in an array </td><td> <i>array</i> [ <i>int</i> ]</td><td>any type</td></tr>
@@ -2821,7 +2821,7 @@ not fit in any particular categories.
 
 <center>
 <p>
-<table border=1>
+<table nicer>
 <tr><th>Function</th>	<th>Syntax</th>			<th>Identifier</th><th>Returns</th></tr>
 <tr><anchor name=`()><td>Calling</td><td><tt>a ( <i>args</i> )</tt></td><td><tt>`()</tt></td><td>Calls the function a.</td></anchor></tr>
 <tr><td>splice</td>	<td><tt>@ <i>a</i></tt></td>	<td>none</td>	<td>Sends each element in the array a as an individual argument to a function call.</td></tr>
@@ -2874,7 +2874,7 @@ Casting is used to convert one type to another, not all casts are
 possible. Here is a list of all casts that actually _do_ anything:
 <p>
 <center>
-<table border=1>
+<table nicer>
 <tr><th>casting from</th><th>to</th><th>operation</th></tr>
 <tr><td>int</td><td>string</td><td>Convert the int to ASCII representation</td></tr>
 <tr><td>float</td><td>string</td><td>Convert the float to ASCII representation</td></tr>
@@ -2915,8 +2915,7 @@ with higher priority before those with lower. The following table shows
 the relative priority of all the operators in descending order:
 <p>
 <center>
-<table border=1 halign=center>
-<tr><th>Operators</th></tr>
+<table halign=center>
 <tr><td><center><tt>(a) a() a[b] a-&gt;b a[b..c] ({}) ([]) (&lt;&gt;)</tt></center></td></tr>
 <tr><td><center><tt>!a ~a (type)a ++a --a</tt></center></td></tr>
 <tr><td><center><tt>a++ a--</tt></center></td></tr>
@@ -2940,7 +2939,7 @@ the relative priority of all the operators in descending order:
 
 Examples:
 <center>
-<table border=1>
+<table nicer>
 <tr><th>The expression</th><th>is evaluated in this order:</th></tr>
 <tr><td><tt> 1+2*2 </tt></td><td><tt> 1+(2*2) </tt></td></tr>
 <tr><td><tt> 1+2*2*4 </tt></td><td><tt> 1+((2*2)*4) </tt></td></tr>
@@ -3272,7 +3271,7 @@ Other operators will simply fail if called with objects. Refer to
 <ref to=operators> for information on which operators can operate on objects
 without operator overloading.
 <center>
-<table border=1>
+<table nicer>
 <tr><th>Operation</th><th>Will call</th><th>Or</th></tr>
 <tr><td>a+b</td><td>a-&gt;`+(b)</td><td>b-&gt;``+(a)</td></tr>
 <tr><td>a+b+c+d</td><td>a-&gt;`+(b,c,d)</td><td>(b-&gt;(a))+c+d</td></tr>
@@ -3634,7 +3633,7 @@ access modules in the same directory as the program itself. For instance,
 <section title="How to write a module">
 Here is an example of a simple module:
 <example language=pike>
-constant PI = 3.14159265358979323846264338327950288419716939937510;
+constant PI = 3.14159265358979323846264338327950;
 float cos2(float f) { return pow(cos(f),2.0); }
 </example>
 if we save this short file as <tt>Trig.pmod</tt> we can now use this
@@ -9266,7 +9265,7 @@ Content-Type header field.  This function can be used to obtain a
 reasonable default subtype given the type of a message.  (This is done
 automatically by the MIME.Message class.)  Currently, the function uses
 the following guesses:
-<table border=1>
+<table>
 <tr><th>type</th><th>subtype</th></tr>
 <tr><td>text</td><td>plain</td></tr>
 <tr><td>message</td><td>rfc822</td></tr>
