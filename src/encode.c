@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.49 1999/12/11 00:02:14 grubba Exp $");
+RCSID("$Id: encode.c,v 1.50 1999/12/11 00:31:47 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -332,11 +332,20 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       adddata(val->u.string);
       break;
 
+    case T_TYPE:
+      /* NOTE: Floats are encoded with the tag T_TYPE (7)
+       * for backward compatibility.
+       */
+      error("Encoding of the type type not supported yet!");
+      break;
+
     case T_FLOAT:
     {
       if(val->u.float_number==0.0)
       {
-	/* Backward compatibility! */
+	/* NOTE: Floats are encoded with the tag T_TYPE (7)
+	 * for backward compatibility.
+	 */
 	code_entry(T_TYPE,0,data);
 	code_entry(T_TYPE,0,data);
       }else{
@@ -354,7 +363,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  y++;
 	}
 #endif
-	/* Backward compatibility! */
+	/* NOTE: Floats are encoded with the tag T_TYPE (7)
+	 * for backward compatibility.
+	 */
 	code_entry(T_TYPE,x,data);
 	code_entry(T_TYPE,y,data);
       }
@@ -580,9 +591,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       pop_stack();
       break;
       }
-    case T_TYPE:
-      error("Encoding of the type type not supported yet!");
-      break;
   }
 }
 
@@ -932,9 +940,9 @@ static void decode_value2(struct decode_data *data)
     }
 
     case T_TYPE:
-      /* Used to be T_FLOAT at this code (7). */
-      /* FALL_THROUGH */
-    case T_FLOAT:
+      /* NOTE: Floats are encoded with the tag T_TYPE (7)
+       * for backward compatibility.
+       */
     {
       INT32 num2=num;
       
@@ -943,6 +951,16 @@ static void decode_value2(struct decode_data *data)
       
       DECODE("float");
       push_float(LDEXP((double)num2, num));
+      break;
+    }
+
+    case T_FLOAT:
+      /* NOTE: Floats are encoded with the tag T_TYPE (7)
+       * for backward compatibility.
+       */
+    {
+      error("Failed to decode string. "
+	    "(decode of the type type isn't supported yet).\n");
       break;
     }
     
@@ -1487,15 +1505,22 @@ static void rec_restore_value(char **v, INT32 *l)
   case T_INT: push_int(t); return;
     
   case T_TYPE:
-    /* Backward compatibility! */
-    /* FALL_THROUGH */
-  case T_FLOAT:
+    /* NOTE: Floats are encoded with the tag T_TYPE (7)
+     * for backward compatibility.
+     */
     if(sizeof(INT32) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
       error("Float architecture not supported.\n"); 
     push_int(t); /* WARNING! */
     sp[-1].type = T_FLOAT;
     return;
     
+  case T_FLOAT:
+    /* NOTE: Floats are encoded with the tag T_TYPE (7)
+     * for backward compatibility.
+     */
+    error("Format error:decoding of the type type not supported yet.\n");
+    return;
+
   case T_STRING:
     if(t<0) error("Format error, length of string is negative.\n");
     if(*l < t) error("Format error, string to short\n");
