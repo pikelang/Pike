@@ -771,14 +771,30 @@ class Argument
     }
 };
 
-
 /*
  * This function takes a bunch of strings an makes
- * a C identifier with underscores in between.
+ * a unique C identifier with underscores in between.
  */
 string mkname(string ... parts)
 {
   return map(parts - ({"",0}), cquote) * "_";
+}
+
+mapping(string:int) names = ([]);
+
+/*
+ * Variant of mkname that always returns a unique name.
+ */
+string make_unique_name(string ... parts)
+{
+  string id = mkname(@parts);
+  if (names[id]) {
+    int i = 2;
+    while (names[id + "_" + i]) i++;
+    id += "_" + i;
+  }
+  names[id] = 1;
+  return id;
 }
 
 
@@ -1208,7 +1224,7 @@ class ParseBlock
 	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],name);
 	string program_var =mkname(name,"program");
 
-	string define=mkname("class",name,"defined");
+	string define=make_unique_name("class",name,"defined");
 
 	ret+=DEFINE(define);
 	ret+=({sprintf("struct program *%s=0;\n",program_var)});
@@ -1259,7 +1275,7 @@ class ParseBlock
 	mixed name=var[pos-1];
 	PikeType type=PikeType(var[..pos-2]);
 	array rest=var[pos+1..];
-	string define=mkname("var",name,base,"defined");
+	string define=make_unique_name("var",name,base,"defined");
     
 //    werror("type: %O\n",type);
 
@@ -1293,7 +1309,7 @@ class ParseBlock
 	while(arrayp(var[npos])) npos--;
 	mixed name=(string)var[npos];
 
-	string define=mkname("var",name,base,"defined");
+	string define=make_unique_name("var",name,base,"defined");
     
 	thestruct+=IFDEF(define,var[..pos-1]+({";"}));
 	ret+=DEFINE(define);
@@ -1312,8 +1328,8 @@ class ParseBlock
       x=ret/({"PIKE_INTERNAL"});
       ret=x[0];
       
-      string ev_handler_define=mkname(base,"event","handler","defined");
-      string opt_callback_define=mkname(base,"optimize","callback","defined");
+      string ev_handler_define=make_unique_name(base,"event","handler","defined");
+      string opt_callback_define=make_unique_name(base,"optimize","callback","defined");
       int opt_callback;
       array ev_handler=({});
       for(int f=1;f<sizeof(x);f++)
@@ -1329,7 +1345,7 @@ class ParseBlock
 //	werror("%O\n",func);
 	string name=(string)func[0];
 	string funcname=mkname(name,base,"struct");
-	string define=mkname("internal",name,base,"defined");
+	string define=make_unique_name("internal",name,base,"defined");
 	ret+=DEFINE(define);
 	if (name == "optimize") {
 	  opt_callback = 1;
@@ -1477,7 +1493,7 @@ class ParseBlock
 	}
 
 	string funcname=mkname("f",base,name);
-	string define=mkname("f",base,name,"defined");
+	string define=make_unique_name("f",base,name,"defined");
 
 //    werror("FIX RETURN: %O\n",body);
     
@@ -1742,7 +1758,7 @@ class ParseBlock
 	  /* Generate real funcname here */
 	  name=common_name;
 	  funcname=mkname("f",base,common_name);
-	  define=mkname("f",base,common_name,"defined");
+	  define=make_unique_name("f",base,common_name,"defined");
 	  array(string) defines=({});
 	  
 	  type=PikeType(PC.Token("|"), tmp->type);
