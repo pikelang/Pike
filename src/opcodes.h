@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.14 2001/05/10 22:14:38 hubbe Exp $
+ * $Id: opcodes.h,v 1.15 2001/06/17 18:18:05 grubba Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -150,6 +150,7 @@ enum Pike_opcodes
 /* Prototypes begin here */
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind);
 void o_index(void);
+void o_cast_to_int(void);
 void o_cast(struct pike_type *type, INT32 run_time_type);
 PMOD_EXPORT void f_cast(void);
 void o_sscanf(INT32 args);

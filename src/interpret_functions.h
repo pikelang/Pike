@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.59 2001/06/16 17:07:44 per Exp $
+ * $Id: interpret_functions.h,v 1.60 2001/06/17 18:18:05 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1429,6 +1429,10 @@ BREAK;
 
 OPCODE0(F_CAST, "cast")
   f_cast();
+BREAK;
+
+OPCODE0(F_CAST_TO_INT, "cast_to_int")
+  o_cast_to_int();
 BREAK;
 
 OPCODE0(F_SOFT_CAST, "soft cast")

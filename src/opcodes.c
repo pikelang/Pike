@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.110 2001/06/16 13:49:40 per Exp $");
+RCSID("$Id: opcodes.c,v 1.111 2001/06/17 18:18:05 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -132,6 +132,93 @@ void o_index(void)
   *sp=s;
   dmalloc_touch_svalue(sp);
   sp++;
+}
+
+/* Special case for casting to int. */
+void o_cast_to_int(void)
+{
+  switch(sp[-1].type)
+  {
+  case T_OBJECT:
+    {
+      struct pike_string *s;
+      MAKE_CONSTANT_SHARED_STRING(s, "int");
+      push_string(s);
+      if(!sp[-2].u.object->prog)
+	Pike_error("Cast called on destructed object.\n");
+      if(FIND_LFUN(sp[-2].u.object->prog,LFUN_CAST) == -1)
+	Pike_error("No cast method in object.\n");
+      apply_lfun(sp[-2].u.object, LFUN_CAST, 1);
+      free_svalue(sp-2);
+      sp[-2]=sp[-1];
+      sp--;
+      dmalloc_touch_svalue(sp);
+    }
+    break;
+  case T_FLOAT:
+    {
+      int i=DO_NOT_WARN((int)(sp[-1].u.float_number));
+#ifdef AUTO_BIGNUM
+      if((i < 0 ? -i : i) < floor(fabs(sp[-1].u.float_number)))
+      {
+	/* Note: This includes the case when i = 0x80000000, i.e.
+	   the absolute value is not computable. */
+	convert_stack_top_to_bignum();
+	return;   /* FIXME: OK to return? Cast tests below indicates
+		     we have to do this, at least for now... /Noring */
+	/* Yes, it is ok to return, it is actually an optimization :)
+	 * /Hubbe
+	 */
+      }
+      else
+#endif /* AUTO_BIGNUM */
+      {
+	sp[-1].type=T_INT;
+	sp[-1].u.integer=i;
+      }
+    }
+    break;
+      
+  case T_STRING:
+    /* This can be here independently of AUTO_BIGNUM. Besides,
+       we really want to reduce the number of number parsers
+       around here. :) /Noring */
+#ifdef AUTO_BIGNUM
+
+    /* The generic function is rather slow, so I added this
+     * code for benchmark purposes. :-) /per
+     */
+    if( sp[-1].u.string->len < 10 &&
+	!sp[-1].u.string->size_shift )
+    {
+      int i=atoi(sp[-1].u.string->str);
+      free_string(sp[-1].u.string);
+      sp[-1].type=T_INT;
+      sp[-1].u.integer=i;
+    }
+    else
+      convert_stack_top_string_to_inumber(10);
+    return;   /* FIXME: OK to return? Cast tests below indicates
+		 we have to do this, at least for now... /Noring */
+    /* Yes, it is ok to return, it is actually an optimization :)
+     * /Hubbe
+     */
+#else
+    {
+      int i=STRTOL(sp[-1].u.string->str,0,10);
+      free_string(sp[-1].u.string);
+      sp[-1].type=T_INT;
+      sp[-1].u.integer=i;
+    }
+#endif /* AUTO_BIGNUM */
+    break;
+
+  case PIKE_T_INT:
+    break;
+	    
+  default:
+    Pike_error("Cannot cast %s to int.\n", get_name_of_type(sp[-1].type));
+  }
 }
 
 void o_cast(struct pike_type *type, INT32 run_time_type)
@@ -239,69 +326,9 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	}
 	break;
 	
-      case T_INT:
-	switch(sp[-1].type)
-	{
-	  case T_FLOAT:
-	    i=DO_NOT_WARN((int)(sp[-1].u.float_number));
-#ifdef AUTO_BIGNUM
-	    if((i < 0 ? -i : i) < floor(fabs(sp[-1].u.float_number)))
-	    {
-	      /* Note: This includes the case when i = 0x80000000, i.e.
-		 the absolute value is not computable. */
-	      convert_stack_top_to_bignum();
-	      return;   /* FIXME: OK to return? Cast tests below indicates
-			   we have to do this, at least for now... /Noring */
-	      /* Yes, it is ok to return, it is actually an optimization :)
-	       * /Hubbe
-	       */
-	    }
-	    else
-#endif /* AUTO_BIGNUM */
-	    {
-	      sp[-1].type=T_INT;
-	      sp[-1].u.integer=i;
-	    }
-	    break;
-	    
-	  case T_STRING:
-	    /* This can be here independently of AUTO_BIGNUM. Besides,
-	       we really want to reduce the number of number parsers
-	       around here. :) /Noring */
-#ifdef AUTO_BIGNUM
-
-
-	    /* The generic function is rather slow, so I added this
-	     * code for benchmark purposes. :-) /per
-	     */
-	    if( sp[-1].u.string->len < 10 &&
-		!sp[-1].u.string->size_shift )
-	    {
-	      i=atoi(sp[-1].u.string->str);
-	      free_string(sp[-1].u.string);
-	      sp[-1].type=T_INT;
-	      sp[-1].u.integer=i;
-	    }
-	    else
-	      convert_stack_top_string_to_inumber(10);
-	    return;   /* FIXME: OK to return? Cast tests below indicates
-			 we have to do this, at least for now... /Noring */
-	      /* Yes, it is ok to return, it is actually an optimization :)
-	       * /Hubbe
-	       */
-#else
-	    i=STRTOL(sp[-1].u.string->str,0,10);
-	    free_string(sp[-1].u.string);
-	    sp[-1].type=T_INT;
-	    sp[-1].u.integer=i;
-#endif /* AUTO_BIGNUM */
-	    break;
-	    
-	  default:
-	    Pike_error("Cannot cast %s to int.\n",get_name_of_type(sp[-1].type));
-	}
-	
-	break;
+    case T_INT:
+      o_cast_to_int();
+      break;
 	
       case T_FLOAT:
       {
