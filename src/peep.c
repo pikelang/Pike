@@ -17,7 +17,7 @@
 #include "builtin_functions.h"
 #include "constants.h"
 
-RCSID("$Id: peep.c,v 1.49 2001/07/02 04:09:49 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.50 2001/07/08 20:47:07 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -147,11 +147,16 @@ void ins_f_byte(unsigned int b)
   if(b>255)
     Pike_error("Instruction too big %d\n",b);
 #endif
+#ifdef HAVE_COMPUTED_GOTO
+  add_to_program(fcode_to_opcode[b-1]);
+#else /* !HAVE_COMPUTED_GOTO */
   add_to_program((unsigned char)b);
+#endif /* HAVE_COMPUTED_GOTO */
 }
 
 static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
+#ifndef HAVE_COMPUTED_GOTO
   switch(b >> 8)
   {
   case 0 : break;
@@ -175,15 +180,16 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
       add_to_program((unsigned char)(b>>8));
     }
   }
+#endif /* !HAVE_COMPUTED_GOTO */
   ins_f_byte(a);
-  add_to_program((unsigned char)b);
+  add_to_program((PIKE_OPCODE_T)b);
 }
 
 static void ins_f_byte_with_2_args(unsigned int a,
 				   unsigned INT32 c,
 				   unsigned INT32 b)
 {
-
+#ifndef HAVE_COMPUTED_GOTO
   switch(b >> 8)
   {
   case 0 : break;
@@ -207,8 +213,9 @@ static void ins_f_byte_with_2_args(unsigned int a,
       add_to_program((unsigned char)(b>>8));
     }
   }
+#endif /* !HAVE_COMPUTED_GOTO */
   ins_f_byte_with_arg(a,c);
-  add_to_program((unsigned char)b);
+  add_to_program((PIKE_OPCODE_T)b);
 }
 
 void assemble(void)
@@ -357,11 +364,19 @@ void assemble(void)
       break;
 
     case F_BYTE:
+#ifdef HAVE_COMPUTED_GOTO
+      add_to_program((void *)(ptrdiff_t)(unsigned char)(c->arg));
+#else /* !HAVE_COMPUTED_GOTO */
       add_to_program((unsigned char)(c->arg));
+#endif /* HAVE_COMPUTED_GOTO */
       break;
 
     case F_DATA:
+#ifdef HAVE_COMPUTED_GOTO
+      add_to_program((void *)(ptrdiff_t)c->arg);
+#else /* !HAVE_COMPUTED_GOTO */
       ins_int(c->arg, (void(*)(char))add_to_program);
+#endif /* HAVE_COMPUTED_GOTO */
       break;
 
     case F_LABEL:
@@ -391,12 +406,16 @@ void assemble(void)
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
 	tmp = DO_NOT_WARN((INT32)PC);
+#fidef HAVE_COMPUTED_GOTO
+	add_to_program(jumps[c->arg]);
+#else /* !HAVE_COMPUTED_GOTO */
 	ins_int(jumps[c->arg], (void(*)(char))add_to_program);
+#endif /* HAVE_COMPUTED_GOTO */
 	jumps[c->arg]=tmp;
 	break;
 
 	case I_TWO_ARGS:
-	  ins_f_byte_with_2_args(c->opcode, c->arg,c->arg2);
+	  ins_f_byte_with_2_args(c->opcode, c->arg, c->arg2);
 	  break;
 	  
 	case I_HASARG:
