@@ -12,15 +12,18 @@ int main(int argc, string *argv)
   mixed *ER=catch {
     program output=(program)argv[1];
     werror("Reading ");
-    mixed data=stdin->read(0x7fffffff);
+    string input=stdin->read(0x7fffffff);
     werror("Lexing ");
-    data=Sgml.lex(data,"stdin");
+    mixed data=Sgml.lex(input,"stdin");
     werror("Grouping ");
     data=Sgml.group(data);
     werror("Verifying\n");
-    Wmml.verify(data);
+    Wmml.verify(data,input,"stdin");
     werror("Concretizing\n");
     WMML wmml=Wmml.make_concrete_wmml(data);
+#ifdef WALL
+    werror("Undocumented functions: \n%-#75s\n",(indices(all_constants()) - indices(wmml->index_data))*"\n");
+#endif
     werror("\nWriting output\n");
     output()->output(argv[2],wmml);
     write("Ok\n");

@@ -7,13 +7,22 @@ import Sgml;
 SGML low_make_concrete_wmml(SGML data);
 
 
-static private int verify_any(SGML data, string in)
+static private int verify_any(SGML data, string in, string input, string input_name)
 {
   int i=1;
   foreach(data,mixed x)
   {
     if(objectp(x))
     {
+      if(x->file == input_name)
+      {
+	if(input[x->pos-1]!='<')
+	{
+	  werror("Location out of sync in tag "+x->tag+" near "+x->location()+"\n");
+	  werror(in);
+	}
+      }
+     
       if(strlen(x->tag) && x->tag[0]=='/')
       {
 	werror("Unmatched "+x->tag+" near "+x->location()+"\n");
@@ -120,16 +129,19 @@ static private int verify_any(SGML data, string in)
       }
 
       if(x->data)
-	if(!verify_any(x->data,"  In tag "+(x->tag=="anchor"?x->tag+" (name="+x->params->name+")":x->tag)+" near "+x->location()+"\n"+in))
+	if(!verify_any(x->data,
+		       ("  In tag "+(x->tag=="anchor"?x->tag+" (name="+x->params->name+")":x->tag)+" near "+x->location()+"\n"+in),
+		       input,
+		       input_name))
 	  i=0;
     }
   }
   return i;
 }
 
-int verify(SGML data)
+int verify(SGML data, string input, string input_name)
 {
-  return verify_any(data,"");
+  return verify_any(data,"", input, input_name);
 }
 
 INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
@@ -572,8 +584,9 @@ SGML low_make_concrete_wmml(SGML data)
 	case "include":
 	{
 	  string filename=tag->params->file;
-	  SGML tmp=group(lex(Stdio.read_file(filename),filename));
-	  verify(tmp);
+	  string file=Stdio.read_file(filename);
+	  SGML tmp=group(lex(file,filename));
+	  verify(tmp,file,filename);
 	  ret+=low_make_concrete_wmml(tmp);
 	  continue;
 	}

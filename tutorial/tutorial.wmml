@@ -116,8 +116,9 @@ get a more commercially viable name.
      whole thing in C or C++.
 
 <dt> Lisp and Scheme
-<dd> Internally Pike has a lot in common with Lisp and Scheme. They are both
-     stack based, byte-compiled, interpreted languages. Pike is also
+<dd> Internally Pike has a lot in common with simple interpreted Lisp and
+     Scheme implementations. They are all stack based, byte-compiled,
+     interpreted languages. Pike is also
      a 'one-cell' language, just like Scheme.
 
 <dt> Pascal
@@ -150,7 +151,7 @@ Pike has:
 <ul>
 <li> Garbage collection
 <li> Advanced string functions
-<li> 5 years of development behind it
+<li> 6 years of development behind it
 <li> Advanced data types such as associative arrays
 <li> Support for bignums
 <li> Builtin socket support
@@ -284,7 +285,7 @@ This is what it could look like:
 <example language=pike>
 	#!/usr/local/bin/pike
 
-	int main(int argc, string *argv)
+	int main(int argc, array(string) argv)
 	{
 	  if(argc &gt; 1 &amp;&amp; argv[1]=="--traditional")
 	  {
@@ -307,16 +308,12 @@ Let's run it:
 </pre>
 What is new in this version, then?
 <example language=pike>
-	int main(int argc, string *argv)
+	int main(int argc, array(string) argv)
 </example>
 In this version the space between the parenthesis has been filled.
 What it means is that <tt>main</tt> now takes two arguments.
 One is called <tt>argc</tt>, and is of the type <tt>int</tt>.
 The other is called <tt>argv</tt> and is a an array of strings.
-A perhaps better way to represent an array of strings would be
-<tt>array(string)</tt> which is exactly the same as <tt>string *</tt>
-and probably easier to understand. The syntax <tt>string *</tt>
-is more like the syntax in C/C++ however.
 <p>
 The arguments to <tt>main</tt> are taken from the command line when the
 Pike program is executed. The first argument, <tt>argc</tt>, is how many
@@ -713,8 +710,7 @@ Finally, remember to close the file.
 	void save(string file_name)
 	{
 	  string name, song;
-	  object o;
-	  o=Stdio.File();
+	  Stdio.File o=Stdio.File();
 
 	  if(!o-&gt;open(file_name,"wct"))
 	  {
@@ -744,11 +740,10 @@ After having closed the file we initialize our database, i.e. the mapping record
 <example language=pike>
 	void load(string file_name)
 	{
-	  object o;
 	  string name="ERROR";
 	  string file_contents,line;
 
-	  o=Stdio.File();
+	  Stdio.File o=Stdio.File();
 	  if(!o-&gt;open(file_name,"r"))
 	  {
 	    write("Failed to open file.\n");
@@ -1319,7 +1314,7 @@ Also, these functions operates on floats:
 </section>
 
 <section title="string">
-A <tt>string</tt> can be seen as an array of values from 0 to 255.
+A <tt>string</tt> can be seen as an array of values from 0 to 2^32.
 Usually a string contains text such as a word, a sentence, a page or
 even a whole book. But it can also contain parts of a binary file,
 compressed data or other binary data. Strings in Pike are <b>shared</b>,
@@ -1339,7 +1334,12 @@ string:
 	"\""          // A double quote character
 	"\\"          // A singe backslash
 	"\x4e"        // N (4e is the hexadecimal ASCII value for N)
+	"\d78"        // N (78 is the decimal ACII value for N)
 	"hello world\116\t\n\r\b\0\"\\" // All of the above
+	"\xff"        // the character 255
+	"\xffff"      // the character 65536
+	"\xffffff"    // the character 16777215
+	"\116""3"     // 'N' followed by a '3'
 </pre>
 As you can see, any sequence of characters within double quotes is a string.
 The backslash character is used to escape characters that are not allowed or
@@ -1347,17 +1347,38 @@ impossible to type. As you can see, <tt>\t</tt> is the sequence to produce
 a tab character, <tt>\\</tt> is used when you want one backslash and
 <tt>\"</tt> is used when you want a double quote to be a part of the string
 instead of ending it. Also, <tt>\<i>XXX</i></tt> where <i>XXX</i> is an
-octal number from 000 to 377 or <tt>\<i>XX</i></tt> where <i>XX</i> is 00 to
-FF lets you write any character you want in the
-string, even null characters. If you write two constant strings after each
-other, they will be concatenated into one string.
+octal number from 0 to 37777777777 or <tt>\x<i>XX</i></tt> where <i>XX</i>
+is 0 to ffffffff lets you write any character you want in the
+string, even null characters. From version 0.6.105, you may also use
+<tt>\d<i>XXX</i></tt> where <i>XXX</i> is 0 to 2^32. If you write two constant
+strings after each other, they will be concatenated into one string.
 <p>
-Although a string is an array, you can not change the individual characters in the string. Instead you have to construct a new string, here is an example
-of how:
+You might be surprised to see that individual characters can have values
+up to 2^32 and wonder how much memory that use. Do not worry, Pike
+automatically decides the proper amount of memory for a string, so all
+strings with character values in the range 0-255 will be stored with
+one byte per character. You should also beware that not all functions
+can handle strings which are not stored as one byte per character, so
+there are some limits to when this feature can be used.
+<p>
+Although strings are a form of arrays, they are immutable. This means that
+there is no way to change an individual character within a string without
+creating a new string. This may seem strange, but keep in mind that strings
+are shared, so if you would change a character in the string <tt>"foo"</tt>,
+you would change *all* <tt>"foo"</tt> everywhere in the program.
+<p>
+However, the Pike compiler will allow you to to write code like you could
+change characters within strings, the following code is valid and works:
 <example language=pike>
-	string s = "hello torld";
-	s=s[..5]+"w"+s[7..];
+	string s="hello torld";
+	s[6]='w';
 </example>
+However, you should be aware that this does in fact create a new string and
+it may need to copy the string <i>s</i> to do so. This means that the above
+operation can be quite slow for large strings. You have been warned.
+Most of the time, you can use <tt>replace</tt>, <tt>sscanf</tt>, <tt>`/</tt>
+or some other high-level string operation to avoid having to use the above
+construction too much.
 <p>
 All the comparison operators plus the operators listed here can be used on strings:
 <dl>
@@ -1369,7 +1390,7 @@ All the comparison operators plus the operators listed here can be used on strin
      of the second string from the first one. So 
      <tt>"foobarfoogazonk" - "foo"</tt> results in <tt>"bargazonk"</tt>.
 <dt> Indexing
-<dd> Indexing will let you get the ascii value of any character in a string.
+<dd> Indexing will let you get the ASCII value of any character in a string.
      The first character is index zero.
 <dt> Range
 <dd> The range operator will let you copy any part of the string into a
@@ -1386,6 +1407,10 @@ All the comparison operators plus the operators listed here can be used on strin
      an array with a string. So if you evaluate
      <tt>({"f","","bargaz","nk"}) * "o"</tt> the result would be
      <tt>"foobargazonk"</tt>.
+<dt> Modulo
+<dd> To complement the division operator, you can do <tt>string</tt> % <tt>int</tt>.
+     This operator will simply return the part of the string that was not 
+     included in the array returned by <tt>string</tt> / <tt>int</tt>
 </dl>
 <p>
 Also, these functions operates on strings:
@@ -1512,6 +1537,11 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
      return <tt>({ ({1}), ({4,5}) })</tt> and <tt>({1,2,3,4})/2</tt> will
      return <tt>({ ({1,2}), ({3,4}) })</tt>.
 
+<dt> Modulo (<tt><i>a</i> % <i>b</i></tt>)
+<dd> This operation is valid only if <i>b</i> is an integer. It will return
+     the part of the array that was not included by dividing <i>a</i> by
+     <i>b</i>.
+
 <dt><tt>array aggregate(mixed ... <i>elems</i>)</tt>
 <dd> This function does the same as the <tt>({ })</tt> operator; it creates an
      array from all arguments given to it. In fact, writing <tt>({1,2,3})</tt>
@@ -1562,7 +1592,6 @@ For example: <tt>rows( ({"a","b","c"}), ({ 2,1,2,0}) ) </tt> will return
 <dd>This function returns the index of the first occurrence of an element
     equal (tested with <tt>==</tt>) to <i>needle</i> in the array
     <i>haystack</i>. 
-
 
 <dt><tt>int sizeof(mixed <i>arr</i>)</tt>
 <dd>This function returns the number of elements in the array <i>arr</i>.
@@ -1797,17 +1826,20 @@ section again.
      same thing except you can use a string to specify what program you
      want to clone.
 <dt> compiling
-<dd> All programs are generated by compiling a file or a string. For this
-     purpose there are two functions:
+<dd> All programs are generated by compiling a string. The string may of
+     course be read from a file. For this purpose there are three functions:
 <example language=pike meta=p,filename>
+	program compile(string p);
 	program compile_file(string filename);
 	program compile_string(string p, string filename);
 </example>
-     <tt>Compile_file</tt> simply reads the file given as argument, compiles
-     it and returns the resulting program. <tt>Compile_string</tt> instead
+     <tt>compile_file</tt> simply reads the file given as argument, compiles
+     it and returns the resulting program. <tt>compile_string</tt> instead
      compiles whatever is in the string <i>p</i>. The second argument,
      <i>filename</i>, is only used in debug printouts when an error occurs
-     in the newly made program.
+     in the newly made program. Both <tt>compile_file</tt> and
+     <tt>compile_string</tt> calls <tt>compile</tt> to actually compile
+     the string after calling <tt>cpp</tt> on it.
 
 <dt> casting
 <dd> Another way of compiling files to program is to use the <b>cast</b>
@@ -2074,7 +2106,7 @@ than that, let's look at a few examples:
 	function(int...:void) x;
 
 	// x is ... complicated
-	mapping(string:function(string|int...:mapping(string:string*))) x;
+	mapping(string:function(string|int...:mapping(string:array(string)))) x;
 </pre>
 As you can see there are some interesting ways to specify types.
 Here is a list of what is possible:
@@ -2333,7 +2365,7 @@ the complete list of combinations of types you can use with these operators:
 </section>
 
 <section title="Comparison operators">
-The arithmetic operators would be hard to use for something interesting
+The arithmetic operators would be hard to use for anything interesting
 without the ability to compare the results to each other.
 For this purpose there are six comparison operators:
 
@@ -2673,10 +2705,19 @@ possible. Here is a list of all casts that actually _do_ anything:
 <tr><th>casting from</th><th>to</th><th>operation</th></tr>
 <tr><td>int</td><td>string</td><td>Convert the int to ASCII representation</td></tr>
 <tr><td>float</td><td>string</td><td>Convert the float to ASCII representation</td></tr>
-<tr><td>string</td><td>int</td><td>Convert decimal, octal or hexadecimal number to an int.</td></tr>
+<tr><td>string</td><td>int</td><td>Convert decimal, octal or hexadecimal number to an int. Note that this will only work with decimal numbers in future versions.</td></tr>
 <tr><td>string</td><td>float</td><td>Convert ASCII number to a float.</td></tr>
 <tr><td>string</td><td>program</td><td>String is a filename, compile the file and return the program. Results are cached.</td></tr>
 <tr><td>string</td><td>object</td><td>This first casts the string to a program, (see above) and then clones the result. Results are cached.</td></tr>
+<tr><td>object</td><td><i>type</i></td><td>This calls the function 'cast' with a string containing the type as an argument.</td></tr>
+<tr><td>string</td><td>array</td><td>Same as doing <tt>values(<i>string</i>)</tt></td></tr>
+<tr><td>array(int)</td><td>string</td><td>This does the inverse of the operation above. Ie. it constructs a string from an array of integers.</td></tr>
+<tr><td>array</td><td>array(<i>type</i>)</td><td>This recursively casts all values in the array to <i>type</i>.</td></tr>
+<tr><td>mapping</td><td>array</td><td>Same as <tt>Array.transpose(({indices(<i>mapping</i>),values(<i>mapping</i>))</tt>. Example: <tt>(array)([1:2,3:4])</tt> will return <tt>({ ({1,2}), ({3,4}) })</tt> </td></tr>
+<tr><td>multiset</td><td>array</td><td>Same as doing <tt>indices(<i>multiset</i>)</tt>.</td></tr>
+<tr><td>int</td><td>float</td><td>Returns a float with the same value as the integer.</td></tr>
+<tr><td>float</td><td>int</td><td>Returns the integer closest to the float.</td></tr>
+<tr><td>function</td><td>object</td><td>Same as <tt>function_object(<i>function</i>)</tt>.</td></tr>
 </table>
 </center>
 <p>
@@ -3191,6 +3232,7 @@ to the following table:
  all characters up to but not including the first occurrence of that text. </td></tr>
 <tr valign=top><td> %5s </td><td> gives a string of 5 characters (5 can be any number) </td></tr>
 <tr valign=top><td> %[set] </td><td> matches a string containing a given set of characters (those given inside the brackets). %[^set] means any character except those inside brackets. Example: %[0-9H] means any number or 'H'. </td></tr>
+<tr valign=top><td> %{format%} </td><td> Repeatedly matches 'format' as many times as possible and assigns an array of arrays with the results to the lvalue. </td></tr>
 </table>
 
 <p>If a * is put between the percent and the operator, the operator
@@ -3583,7 +3625,7 @@ Returns the current position in the file.
 
 <method name=stat title="do file_stat on an open file">
 <man_syntax>
-int *stat();<br>
+array(int) stat();<br>
 </man_syntax>
 <man_description>
 This function returns the same information as the function file_stat,
@@ -4736,6 +4778,16 @@ This function returns the object that identifies this thread.
 <man_see>Thread.thread_create</man_see>
 </function>
 
+<function name=all_threads title="return all thread ids">
+<man_syntax>
+array(object) all_threads();<br>
+</man_syntax>
+<man_description>
+This function returns an array with the thread ids of all threads.
+</man_description>
+<man_see>Thread.thread_create</man_see>
+</function>
+
 
 <class name=Thread.Mutex title="mutex locks">
 <man_description>
@@ -4834,7 +4886,7 @@ inherit Thread.Condition : r_cond;
 inherit Thread.Condition: w_cond;
 inherit Thread.Mutex: lock;
 
-mixed *buffer = allocate(128);
+array buffer = allocate(128);
 int r_ptr, w_ptr;
 
 int query_messages()    {  return w_ptr - r_ptr;  }
@@ -4998,7 +5050,6 @@ Queues are only available on systems with POSIX or UNIX threads support.
 <man_see>
 Thread.Fifo
 </man_see>
-</class>
 
 <hr noshade size=1>
 
@@ -5037,8 +5088,41 @@ int queue-&gt;size();
 This function returns how many values are currently in the queue.
 </man_description>
 </method>
+</class>
 
 <hr noshade size=1>
+
+<class name=thread_local title="Thread local variable class">
+<man_description>
+This class allows you to have variables which are separate for each
+thread that uses it. It has two methods: get and set. A value stored
+in an instance of thread_local can only be retreived by that same thread.
+</man_description>
+
+<hr noshade size=1>
+<method name=thread_local.set title="Set the thread_local value">
+<man_syntax>
+mixed set(mixed <i>value</i>);
+</man_syntax>
+<man_description>
+This sets the value returned by the <tt>get</tt> method. Note that
+this value can only be retreived by the same thread. Calling this method
+does not affect the value returned by <tt>get</tt> when called by another
+thread.
+</man_description>
+</method>
+
+<hr noshade size=1>
+<method name=thread_local.get title="Get the thread_local value">
+<man_syntax>
+mixed set(mixed <i>value</i>);
+</man_syntax>
+<man_description>
+This returns the value prevoiusly stored in the thread_local by the
+<tt>set</tt> method by this thread.
+</man_description>
+</method>
+</class>
 
 </section>
 
@@ -5522,9 +5606,9 @@ Array.shuffle
 
 <function name=Array.search_array title="search for something in an array">
 <man_syntax>
-int search_array(mixed *<I>arr</I>,function <I>fun</I>,mixed <I>arg</I>, ...);<br>
-int search_array(object *<I>arr</I>,string <I>fun</I>,mixed <I>arg</I>, ...);<br>
-int search_array(function *<I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);
+int search_array(array <I>arr</I>,function <I>fun</I>,mixed <I>arg</I>, ...);<br>
+int search_array(array(object) <I>arr</I>,string <I>fun</I>,mixed <I>arg</I>, ...);<br>
+int search_array(array(function) <I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);
 </man_syntax>
 <man_description>
 search_array works like map_array, only it returns the index of the
@@ -5540,14 +5624,14 @@ Array.sum_arrays, Array.filter
 
 <function name=Array.sum_arrays title="map any number of arrays over a function">
 <man_syntax>
-mixed *sum_arrays(function <I>fun</I>,mixed *<I>arr1</I>,...);
+array sum_arrays(function <I>fun</I>,array <I>arr1</I>,...);
 </man_syntax>
 <man_description>
 Works like this:
-<p><tt>mixed *sum_arrays(function fun,mixed *arr1,...)<br>
+<p><tt>array sum_arrays(function fun,array arr1,...)<br>
 {<br>
 <dl><dt><dd>int e;<br>
-mixed *res=allocate(sizeof(arr1));<br>
+array res=allocate(sizeof(arr1));<br>
 for(e=0;e&lt;sizeof(arr1);e++)<br>
 {<br>
 <dl><dt><dd>res[e]=fun(arr1[e],arr2[e],...);<br>
@@ -5566,7 +5650,7 @@ Array.map, Array.filter, Array.search_array
 
 <function name=Array.sort_array title="sort an array">
 <man_syntax>
-mixed *sort_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);
+array sort_array(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);
 </man_syntax>
 <man_description>
 This function sorts an array after a compare-function <i>fun</i>
@@ -9087,7 +9171,7 @@ modules. In addition, these functions are available:
 
 <function name=Simulate.member_array title="find first occurrence of a value in an array">
 <man_syntax>
-int member_array(mixed <I>item</I>, mixed *<I>arr</I>);
+int member_array(mixed <I>item</I>, array <I>arr</I>);
 </man_syntax>
 <man_description>
 Returns the index of the first occurrence of item in array arr.
@@ -9197,9 +9281,9 @@ Simulate.implode
 
 <function name=Simulate.filter_array title="filter an array through a function">
 <man_syntax>
-mixed *filter_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-mixed *filter_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-mixed *filter_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
+array filter_array(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+array filter_array(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+array filter_array(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
 </man_syntax>
 <man_description>
 Filter array is the same function as Array.filter.
@@ -9236,7 +9320,7 @@ Simulate.explode
 
 <function name=Simulate.m_indices title="return all indices from a mapping">
 <man_syntax>
-mixed *m_indices(mapping <I>m</I>);
+array m_indices(mapping <I>m</I>);
 </man_syntax>
 <man_description>
 This function is equal to indices.
@@ -9264,7 +9348,7 @@ sizeof
 
 <function name=Simulate.m_values title="return all values from a mapping">
 <man_syntax>
-mixed *m_values(mapping <I>m</I>);
+array m_values(mapping <I>m</I>);
 </man_syntax>
 <man_description>
 This function is equal to values.
@@ -9278,9 +9362,9 @@ values
 
 <function name=Simulate.map_array title="map an array over a function">
 <man_syntax>
-mixed *map_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-mixed *map_array(object *<I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);
+array map_array(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+array map_array(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+array map_array(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);
 </man_syntax>
 <man_description>
 This function is the same as Array.map.
@@ -9370,7 +9454,7 @@ Simulate.multisetp
 
 <function name=Simulate.mklist title="make a multiset">
 <man_syntax>
-multiset mklist(mixed *<I>a</I>);
+multiset mklist(array <I>a</I>);
 </man_syntax>
 <man_description>
 This function creates a multiset from an array.
@@ -9680,9 +9764,55 @@ They are listed in alphabetical order.
 
 <HR NEWPAGE>
 
+<function name=_disable_threads title="temporarily disable threads" fullpath>
+<man_syntax>
+object _disable_threads();
+</man_syntax>
+<man_description>
+This function first posts a notice to all threads that it is time to stop.
+It then waits until all threads actually *have* stopped, and then then 
+returns an object. All other threads will be blocked from running until
+that object has been freed/destroyed. This function can completely block
+Pike if used incorrectly. Use with extreme caution.
+</man_description>
+</function>
+
+<HR NEWPAGE>
+
+<function name=_exit title="Really exit" fullpath>
+<man_syntax>
+void _exit(int <i>returncode</I>);
+</man_syntax>
+<man_description>
+This function does the same as <tt>exit</tt>, but doesn't bother to clean
+up the Pike interpreter before exiting. This means that no destructors
+will be called, caches will not be flushed, file locks might not be released,
+and databases might not be closed properly. Use with extreme caution.
+</man_description>
+<man_see>
+exit
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=_locate_references title="locate where an object is referenced from">
+<man_syntax>
+mapping(string:int) _locate_references(string|array|mapping|multiset|function|object|program <i>o</i>);
+</man_syntax>
+<man_description>
+This function is mostly intended for debugging. It will search through
+all data structures in Pike looking for <i>o</i> and print the
+locations on stderr. <i>o</i> can be anything but <tt>int</tt> or
+<tt>float</tt>.
+</man_description>
+</function>
+
+<HR NEWPAGE>
+
 <function name=_memory_usage title="check memory usage">
 <man_syntax>
-mapping(string:int) <I>_memory_usage</I>();
+mapping(string:int) _memory_usage();
 </man_syntax>
 <man_description>
 This function is mostly intended for debugging. It delivers a mapping
@@ -9989,6 +10119,22 @@ functionp
 
 <HR NEWPAGE>
 
+<function name=array_sscanf title="sscanf to an array">
+<man_syntax>
+array array_sscanf(string <i>data</i>, string <i>format</i>);
+</man_syntax>
+<man_description>
+This function works just like <tt>sscanf</tt>, but returns the matched
+results in an array instead of assigning them to lvalues. This is often
+useful for user-defined sscanf strings.
+</man_description>
+<man_see>
+sscanf, `/
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
 <function name=asin title="trigonometrical inverse sine">
 <man_syntax>
 float asin(float <I>f</I>);
@@ -10017,6 +10163,21 @@ tan, asin, acos
 
 <HR NEWPAGE>
 
+<function name=basename title="get the base of a filename">
+<man_syntax>
+string basename(string <i>filename</i>);
+</man_syntax>
+<man_description>
+This function returns the base of a filename, for instance the base of
+<tt>"/home/hubbe/bin/pike"</tt> would be <tt>"pike"</tt>.
+</man_description>
+<man_see>
+dirname, explode_path
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
 <function name=backtrace title="get a description of the call stack">
 <man_syntax>
 array(array) backtrace();
@@ -10039,6 +10200,22 @@ that the last but one and so on.
 </man_description>
 <man_see>
 catch, throw
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=cpp title="run the preprocessor on a string">
+<man_syntax>
+string cpp ( string <i>source</i>, string <i>filename</i>);
+</man_syntax>
+<man_description>
+This function runs the Pike preprocessor on a string. The second argument
+<i>filename</i> will be used for inserting <tt>#line</tt> statements into
+the result.
+</man_description>
+<man_see>
+compile, compile_string, compile_file
 </man_see>
 </function>
 
@@ -10081,7 +10258,7 @@ remove_call_out, find_call_out, call_out_info
 
 <function name=call_out_info title="get info about all call outs">
 <man_syntax>
-mixed **call_out_info();
+array(array) call_out_info();
 </man_syntax>
 <man_description>
 This function returns an array with one entry for each entry in the
@@ -10207,7 +10384,7 @@ clone, destruct, compile_string, compile_file
 
 <function name=column title="extract a column">
 <man_syntax>
-array column(mixed *data,mixed index)
+array column(array data,mixed index)
 </man_syntax>
 <man_description>
 This function is exactly equivalent to:
@@ -10255,13 +10432,34 @@ getcwd
 
 <HR NEWPAGE>
 
+<function name=compile title="compile a string to a program">
+<man_syntax>
+program compile(string <I>program</I>);
+</man_syntax>
+<man_description>
+<tt>compile</tt> takes a piece of Pike code as a string and
+compiles it into a clonable program. Note that <i>prog</i> must contain
+the complete source for a program. You can not compile a single expression
+or statement. Also note that <tt>compile</tt> does not preprocess the
+program. To preprocess the program you can use <tt>compile_string</tt> or
+call the preprocessor manually by calling <tt>cpp</tt>.
+
+</man_description>
+<man_see>
+clone, compile_string, compile_file, cpp
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
 <function name=compile_file title="compile a file to a program">
 <man_syntax>
 program compile_file(string <I>filename</I>);
 </man_syntax>
 <man_description>
 This function will compile the file <i>filename</i> to a Pike program that can
-later be used for cloning.
+later be used for cloning. It is the same as doing
+<tt>compile_string(Stdio.read_file(<i>filename</i>),<i>filename</i>)</tt>.
 </man_description>
 <man_see>
 clone, compile_string
@@ -10275,11 +10473,7 @@ clone, compile_string
 program compile_string(string <I>prog</I>, string <I>name</I>);
 </man_syntax>
 <man_description>
-<tt>compile_string()</tt> takes a piece of Pike code as a string and
-compiles it into a clonable program. Note that <i>prog</i> must contain
-the complete source for a program. You can not compile a single expression
-or statement.The second argument will be used as the file name of the
-program and will be used for error messages and such.
+Equal to <tt>compile(cpp(<i>prog</i>, <i>name</i>));</tt>
 </man_description>
 <man_see>
 compile_string, clone
@@ -10357,7 +10551,7 @@ string containing the current year, month, day and time.
 Result: Wed Jan 14 03:36:08 1970<br>
 </man_example>
 <man_see>
-time, localtime, mktime
+time, localtime, mktime, gmtime
 </man_see>
 </function>
 
@@ -10380,7 +10574,7 @@ encode_value
 
 <function name=describe_backtrace title="make a backtrace readable">
 <man_syntax>
-string describe_backtrace(mixed **<I>backtrace</I>);
+string describe_backtrace(array(array) <I>backtrace</I>);
 </man_syntax>
 <man_description>
 Describe backtrace returns a string containing a readable message
@@ -10406,6 +10600,21 @@ o-&gt;destroy.
 </man_description>
 <man_see>
 clone
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=dirname title="find the directory part of a path">
+<man_syntax>
+string dirname(string <i>path</i>);
+</man_syntax>
+<man_description>
+This function returns the directory part of a path. For example, the
+directory part of <tt>"/home/hubbe/bin/pike"</tt> would be <tt>"/home/hubbe/bin"</tt>.
+</man_description>
+<man_see>
+basename, explode_path
 </man_see>
 </function>
 
@@ -10500,6 +10709,23 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 
 <HR NEWPAGE>
 
+<function name=explode_path fullpath title="exit Pike interpreter">
+<man_syntax>
+array(string) explode_path(string <I>path</I>);
+</man_syntax>
+<man_description>
+This function divides a path into its components. This might seem like
+it could be done by dividing the string on <tt>"/"</tt>, but that would
+not work on other operating systems.
+</man_description>
+<man_example>
+&gt; explode_path("/home/hubbe/bin/pike");
+Result: ({ "home", "hubbe", "bin", "pike" })
+</man_example>
+</function>
+
+<HR NEWPAGE>
+
 <function name=exit fullpath title="exit Pike interpreter">
 <man_syntax>
 void exit(int <I>returncode</I>);
@@ -10530,9 +10756,9 @@ pow, log
 
 <function name=file_stat title="stat a file" fullpath>
 <man_syntax>
-int *file_stat(string <I>file</I>);<br>
-int *file_stat(string <I>file</I>, <I>1</I>);<br>
-int *file-&gt;stat();
+array(int) file_stat(string <I>file</I>);<br>
+array(int) file_stat(string <I>file</I>, <I>1</I>);<br>
+array(int) file-&gt;stat();
 </man_syntax>
 <man_description>
 file_stat returns an array of integers describing some properties<br>
@@ -10771,6 +10997,21 @@ second argument, an array containing all matching strings is returned.
 
 <HR NEWPAGE>
 
+<function name=gmtime title="break down time() into intelligible components">
+<man_syntax>
+mapping(string:int) gmtime(int <I>time</I>);
+</man_syntax>
+<man_description>
+This function works like <tt>localtime</tt> but the result is
+not adjusted for the local time zone.
+</man_description>
+<man_see>
+localtime, time, ctime, mktime
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
 <function name=hash title="hash a string">
 <man_syntax>
 int hash(string <I>s</I>);<br>
@@ -10787,7 +11028,7 @@ is given, the result will be &gt;= 0 and lesser than that argument.
 
 <function name=indices title="return an array of all index possible for a value">
 <man_syntax>
-mixed *indices(string|array|mapping|multiset|object <I>foo</I>);
+array indices(string|array|mapping|multiset|object <I>foo</I>);
 </man_syntax>
 <man_description>
 <tt>indices</tt> returns an array of all values you can use as index when
@@ -10797,6 +11038,20 @@ kind of value. For objects, the result is an array of strings.
 </man_description>
 <man_see>
 values
+</man_see>
+</function>
+
+<HR NEWPAGE>
+
+<function name=is_absolute_path title="Is the given pathname relative or not?">
+<man_syntax>
+int is_absolute_path(string <I>path</I>);
+</man_syntax>
+<man_description>
+Returns 1 if <i>path</i> is an absolute path, 0 otherwise.
+</man_description>
+<man_see>
+
 </man_see>
 </function>
 
@@ -10911,7 +11166,7 @@ components:
 The 'timezone' might not be available on all platforms.
 </man_note>
 <man_see>
-time, ctime, mktime
+gmtime, time, ctime, mktime
 </man_see>
 </function>
 
@@ -11004,7 +11259,7 @@ rm, cd
 
 <function name=mkmapping title="make a mapping from two arrays">
 <man_syntax>
-mapping mkmapping(mixed *<I>ind</I>, mixed *<I>val</I>);
+mapping mkmapping(array <I>ind</I>, array <I>val</I>);
 </man_syntax>
 <man_description>
 Makes a mapping ind[x]:val[x], 0&lt;=x&lt;sizeof(ind).
@@ -11020,7 +11275,7 @@ indices, values
 
 <function name=mkmultiset title="make a multiset">
 <man_syntax>
-multiset mkmultiset(mixed *a);
+multiset mkmultiset(array a);
 </man_syntax>
 <man_description>
 This function creates a multiset from an array.
@@ -11066,7 +11321,7 @@ call this function with a mapping containing the following elements:
 Or you can just send them all on one line as the second syntax suggests.
 </man_description>
 <man_see>
-time, ctime, localtime
+time, ctime, localtime, gmtime
 </man_see>
 </function>
 
@@ -11423,7 +11678,7 @@ mkdir
 
 <function name=rows title="select a set of rows from an array">
 <man_syntax>
-array rows(mixed data, mixed *index);
+array rows(mixed data, array index);
 </man_syntax>
 <man_description>
 This function is exactly equivalent to:
@@ -11441,7 +11696,7 @@ column
 
 <function name=rusage title="return resource usage">
 <man_syntax>
-int *rusage();
+array(int) rusage();
 </man_syntax>
 <man_description>
 This function returns an array of ints describing how much resources
@@ -11490,7 +11745,7 @@ time
 <function name=search title="search for a value in a string or array">
 <man_syntax>
 int search(string <I>haystack</I>, string <I>needle</I>, [ int <I>start</I> ]);<br>
-int search(mixed *<I>haystack</I>, mixed <I>needle</I>, [ int <I>start</I> ]);<br>
+int search(array <I>haystack</I>, mixed <I>needle</I>, [ int <I>start</I> ]);<br>
 mixed search(mapping <I>haystack</I>, mixed <I>needle</I>, [ mixed <I>start</I> ]);
 </man_syntax>
 <man_description>
@@ -11618,7 +11873,7 @@ signal
 
 <function name=sort title="sort an array destructively">
 <man_syntax>
-mixed *sort(array(mixed) <I>index</I>, array(mixed) ... <I>data</I>);
+array sort(array(mixed) <I>index</I>, array(mixed) ... <I>data</I>);
 </man_syntax>
 <man_description>
 This function sorts the array 'index' destructively. That means
@@ -11928,16 +12183,21 @@ catch
 <function name=time title="return the current time">
 <man_syntax>
 int time();<br>
-int time(1);
+int time(1);<br>
+float time(int <I>t</I>);<br>
 </man_syntax>
 <man_description>
 This function returns the number of seconds since 1 Jan 1970.
 The function ctime() converts this integer to a readable string.
 <p>The second syntax does not call the system call time() as often,
 but is only updated in the backed. (when Pike code isn't running)
+<p>
+The third syntax can be used to measure time more preciely than one second.
+It return how many seconds has passed since <I>t</i>. The precision of this
+function varies from system to system.
 </man_description>
 <man_see>
-ctime, localtime, mktime
+ctime, localtime, mktime, gmtime
 </man_see>
 </function>
 
@@ -12020,7 +12280,7 @@ lower_case
 
 <function name=values title="return an array of all possible values from indexing">
 <man_syntax>
-mixed *values(string|multiset|mapping|array|object <I>foo</I>);
+array values(string|multiset|mapping|array|object <I>foo</I>);
 </man_syntax>
 <man_description>
 Values return an array of all values you can get when indexing the
@@ -12130,7 +12390,7 @@ in the <b>master object</b>:
 <dt> <tt>program handle_inherit(string <i>program_name</i>, string <i>current_file</i>)</tt>
 <dd> This is called whenever a Pike program which uses inherit with a string
      argument is called. It is expected to return the program to inherit.
-<dt> <tt>void handle_error(mixed *<i>trace</i>)</tt>
+<dt> <tt>void handle_error(array <i>trace</i>)</tt>
 <dd> This function is expected to write the error messages when a
      run time error occurs. The argument is of the form
      <tt>({"<i>error_description</i>", backtrace() })</tt>. If any error
@@ -12213,7 +12473,7 @@ Let's look an example:
  	    }
  	  }
 
-	  void handle_error(mixed *trace)
+	  void handle_error(array trace)
 	  {
 	    Stdio.write_file("error log",describe_backtrace(trace));
 	  }
@@ -12327,7 +12587,7 @@ void show_record(int num)
   int i;
   array(string) record_names=sort(indices(records));
   string name=record_names[num-1];
-  string songs=records[name];
+  array(string) songs=records[name];
   
   write(sprintf("Record %d, %s\n",num,name));
   for(i=0;i&lt;sizeof(songs);i++)
@@ -12351,8 +12611,7 @@ void add_record()
 void save(string file_name)
 {
   string name, song;
-  object o;
-  o=Stdio.File();
+  Stdio.File o=Stdio.File();
 
   if(!o-&gt;open(file_name,"wct"))
   {
@@ -12372,11 +12631,10 @@ void save(string file_name)
 
 void load(string file_name)
 {
-  object o;
   string name="ERROR";
   string file_contents,line;
 
-  o=Stdio.File();
+  Stdio.File o=Stdio.File();
   if(!o-&gt;open(file_name,"r"))
   {
     write("Failed to open file.\n");
@@ -12589,11 +12847,11 @@ been tested on the following:
 
 After obtaining the Pike source you need to unpack it. To unpack Pike you
 need gzip, which is available from any GNU mirror site. You also need tar,
-which is a part of UNIX. If you got Pike-v0.6.53.tar.gz, simply unpack it by
+which is a part of UNIX. If you got Pike-v0.6.105.tar.gz, simply unpack it by
 typing:
 <pre>
-	$ gunzip -d Pike-v0.6.53.tar.gz
-	$ tar xvf Pike-v0.5.53.tar
+	$ gunzip -d Pike-v0.6.105.tar.gz
+	$ tar xvf Pike-v0.5.105.tar
 </pre>
 
 Now you have a directory called Pike-v0.6.53. Please read the README file
@@ -12602,7 +12860,7 @@ available at the time this book was written.
 <p>
 Now, to compile Pike, the following three commands should be enough.
 <pre>
-	$ cd Pike-v0.6.53/src
+	$ cd Pike-v0.6.105/src
 	$ ./configure --prefix=/dir/to/install/pike
 	$ make
 </pre>

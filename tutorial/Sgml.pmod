@@ -36,21 +36,22 @@ SGML lex(string data, string file)
 {
   mixed foo=data/"<";
   SGML ret=({ unquote(foo[0]) });
-  int pos=strlen(foo[0]);
+  int nextpos=strlen(foo[0]);
   for(int e=1;e<sizeof(foo);e++)
   {
+    int pos;
     string tag;
     string s=foo[e];
-    pos++;
+    pos=++nextpos;
 
     if(s[0..2]=="!--")
     {
-      pos+=strlen(foo[e]);
+      nextpos+=strlen(foo[e]);
       while(sscanf(s,"%*s-->%s",s)!=2)
       {
 	e++;
 	s+="<"+foo[e];
-	pos+=strlen(foo[e])+1;
+	nextpos+=strlen(foo[e])+1;
       }
       ret[-1]+=unquote(s);
       continue;
@@ -67,7 +68,7 @@ SGML lex(string data, string file)
       sscanf(s,"%*[ \t\r\n]%s",s);
       if(!strlen(s))
       {
-	write(sprintf("Missing end > (around pos %d in %s)\n",pos,file));
+	write(sprintf("Missing end > (around pos %d in %s)\n",nextpos,file));
 	break;
       }
       if(s[0]=='>')
@@ -87,17 +88,17 @@ SGML lex(string data, string file)
 	  case '\'':
 	    while(sscanf(s,"='%s'%s",val,s)!=2)
 	    {
+	      nextpos+=strlen(foo[e])+1;
 	      e++;
 	      s+="<"+foo[e];
-	      pos+=strlen(foo[e])+1;
 	    }
 	    break;
 	  case '\"':
 	    while(sscanf(s,"=\"%s\"%s",val,s)!=2)
 	    {
+	      nextpos+=strlen(foo[e])+1;
 	      e++;
 	      s+="<"+foo[e];
-	      pos+=strlen(foo[e])+1;
 	    }
 	    break;
 	  default:
@@ -117,7 +118,7 @@ SGML lex(string data, string file)
 
 //    werror("Fount tag "+tag+" at pos "+pos+".\n");
     ret+=({ Tag(tag,params,pos,0,file), unquote(s) });
-    pos+=sizeof(foo[e]);
+    nextpos+=sizeof(foo[e]);
   }
 
   return ret;
