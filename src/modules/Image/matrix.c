@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.31 2001/01/22 17:32:32 mirar Exp $ */
+/* $Id: matrix.c,v 1.32 2001/01/22 17:40:42 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.31 2001/01/22 17:32:32 mirar Exp $
+**!	$Id: matrix.c,v 1.32 2001/01/22 17:40:42 mirar Exp $
 **! class Image
 */
 
@@ -668,6 +668,7 @@ static void img_skewx(struct image *src,
    dest->ysize=src->ysize;
    len=src->xsize;
 
+   if (!src->xsize) dest->xsize=0;
    d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize+1);
    if (!d) return;
    s=src->img;
@@ -749,6 +750,7 @@ static void img_skewy(struct image *src,
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
 
+   if (!src->ysize) dest->ysize=0;
    d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize+1);
    if (!d) return;
    s=src->img;
