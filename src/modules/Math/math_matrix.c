@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.20 2000/12/05 21:08:28 per Exp $ */
+/* $Id: math_matrix.c,v 1.21 2000/12/13 21:14:19 hubbe Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -120,7 +120,7 @@ static void matrix_create(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("matrix",1);
 
    if (THIS->m)
-      bad_arg_error("Matrix", sp-args, args, 1, "", sp-args,\
+      bad_arg_error("Matrix", sp-args, args, 1, "", sp-args,
 		    "Has already been called.\n");
    
    if (sp[-args].type==T_ARRAY)
