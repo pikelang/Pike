@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.64 1998/06/09 17:14:02 grubba Exp $");
+RCSID("$Id: file.c,v 1.65 1998/07/21 17:13:28 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -1087,13 +1087,13 @@ retry_connect:
   retry_accept:
     sv[0]=accept(fd,(struct sockaddr *)&addr,&len);
 
-    set_nonblocking(sv[0],0);
-
     if(sv[0] < 0) {
       if(errno==EINTR) goto retry_accept;
       close(sv[1]);
       return -1;
     }
+
+    set_nonblocking(sv[0],0);
 
     /* We do not trust accept */
     len=sizeof(addr);
