@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.113 2003/08/04 16:14:21 mast Exp $
+|| $Id: error.c,v 1.114 2003/08/20 11:53:58 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.113 2003/08/04 16:14:21 mast Exp $");
+RCSID("$Id: error.c,v 1.114 2003/08/20 11:53:58 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -567,6 +567,7 @@ static void f_error_backtrace(INT32 args)
 static void f_error__sprintf(INT32 args)
 {
   struct program *p = Pike_fp->current_object->prog;
+  /* FIXME: What about obscure overloadings? */
   int i = find_identifier("error_type", p);
   struct identifier *id = ID_FROM_INT(p, i);
   int mode = 0;
