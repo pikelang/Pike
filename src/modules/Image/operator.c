@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.25 1999/09/14 23:17:15 marcus Exp $ */
+/* $Id: operator.c,v 1.26 2000/05/29 09:58:24 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.25 1999/09/14 23:17:15 marcus Exp $
+**!	$Id: operator.c,v 1.26 2000/05/29 09:58:24 per Exp $
 **! class Image
 */
 
@@ -25,6 +25,11 @@
 #include "builtin_functions.h"
 
 #include "image.h"
+#include "image_machine.h"
+
+#ifdef ASSEMBLY_OK
+#include "assembly.h"
+#endif
 
 extern struct program *image_program;
 #ifdef THIS
@@ -159,20 +164,71 @@ STANDARD_OPERATOR_HEADER("`-")
 void image_operator_plus(INT32 args)
 {
 STANDARD_OPERATOR_HEADER("`+")
-   while (i--)
    {
-      d->r=MINIMUM(s1->r+s2->r,255);
-      d->g=MINIMUM(s1->g+s2->g,255);
-      d->b=MINIMUM(s1->b+s2->b,255);
-      s1++; s2++; d++; 
+#ifdef ASSEMBLY_OK
+     extern int try_use_mmx;
+     if( try_use_mmx )
+     {
+       int nleft;
+       if( d != s1 ) MEMCPY( d, s1, i*3 );
+       image_add_buffers_mmx_x86asm( (char *)d, (char *)s2, (i*3)/8 );
+       nleft = (i*3)%8;
+       for( ; nleft; nleft-- )
+         ((char *)d)[i-nleft-1] = MINIMUM((((char *)s1)[i-nleft-1] +
+                                           ((char *)s2)[i-nleft-1]), 255 );
+     } else 
+#endif
+     while (i--)
+     {
+       d->r=MINIMUM(s1->r+s2->r,255);
+       d->g=MINIMUM(s1->r+s2->r,255);
+       d->b=MINIMUM(s1->r+s2->r,255);
+       s1++; s2++; d++; 
+     }
    }
    else
-   while (i--)
    {
-      d->r=MAXIMUM(MINIMUM(s1->r+rgb.r,255),0);
-      d->g=MAXIMUM(MINIMUM(s1->g+rgb.g,255),0);
-      d->b=MAXIMUM(MINIMUM(s1->b+rgb.b,255),0);
-      s1++; d++;
+#ifdef ASSEMBLY_OK
+#define MCcol( A, B, C, D )   ((A<<24) | (B<<16) | (C<<8) | D)
+     extern int try_use_mmx;
+     if( try_use_mmx )
+     {
+       if( (rgb.r >= 0) && (rgb.g >= 0) && (rgb.b >= 0) )
+       {
+         if( d != s1 ) MEMCPY( d, s1, i*3 );
+         if( rgb.r > 255 )   rgb.r = 255;
+         if( rgb.g > 255 )   rgb.g = 255;
+         if( rgb.b > 255 )   rgb.b = 255;
+         image_add_buffer_mmx_x86asm( (char *)d,i/4,
+                                      MCcol( rgb.r, rgb.b, rgb.g, rgb.r ),
+                                      MCcol( rgb.g, rgb.r, rgb.b, rgb.g ),  
+                                      MCcol( rgb.b, rgb.g, rgb.r, rgb.b ) ); 
+         d += i;  s1 += i;
+         i = i%4;
+         d -= i;  s1 -= i;
+       } else  if( (rgb.r >= 0) && (rgb.g >= 0) && (rgb.b >= 0) ) {
+         if( d != s1 ) MEMCPY( d, s1, i*3 );
+         if( rgb.r > 255 )   rgb.r = 255;
+         if( rgb.g > 255 )   rgb.g = 255;
+         if( rgb.b > 255 )   rgb.b = 255;
+         image_sub_buffer_mmx_x86asm( (char *)d,i/4,
+                                      MCcol( rgb.r, rgb.b, rgb.g, rgb.r ),
+                                      MCcol( rgb.g, rgb.r, rgb.b, rgb.g ),  
+                                      MCcol( rgb.b, rgb.g, rgb.r, rgb.b ) ); 
+         d += i;  s1 += i;
+         i = i%4;
+         d -= i;  s1 -= i;
+       }
+     }
+#undef MCcol
+#endif
+     while (i--)
+     {
+       d->r=MAXIMUM(MINIMUM(s1->r+rgb.r,255),0);
+       d->g=MAXIMUM(MINIMUM(s1->g+rgb.g,255),0);
+       d->b=MAXIMUM(MINIMUM(s1->b+rgb.b,255),0);
+       s1++; d++;
+     }
    }
    THREADS_DISALLOW();
    pop_n_elems(args);		   		   		
@@ -183,6 +239,7 @@ STANDARD_OPERATOR_HEADER("`+")
 **! method object `*(object operand)
 **! method object `*(array(int) color)
 **! method object `*(int value)
+**! method object `*(float value)
 **!	Multiplies pixel values and creates a new image.
 **! returns the new image object
 **!
@@ -207,20 +264,69 @@ void image_operator_multiply(INT32 args)
 {
    double q=1/255.0;
 STANDARD_OPERATOR_HEADER("`*")
-   while (i--)
+  {
+#ifdef ASSEMBLY_OK
+     extern int try_use_mmx;
+     if( try_use_mmx )
+     {
+       int nleft;
+       if( d != s1 ) MEMCPY( d, s1, i*3 );
+       image_mult_buffers_mmx_x86asm( (char *)d,(char *)s2,(i*3)/4 );
+       nleft =  (i*3)%4;
+       for( ; nleft; nleft-- )
+         ((char *)d)[i-nleft-1]  = (((char *)s1)[i-nleft-1] * 
+                                    ((char *)s2)[i-nleft-1]) / 255;
+     } else
+#endif
+     while (i--)
+     {
+        d->r=(s1->r * s2->r) / 255;
+        d->g=(s1->g * s2->g) / 255;
+        d->b=(s1->b * s2->b) / 255;
+        s1++; s2++; d++; 
+     }
+  }
+   else if( rgb.r < 255 && 
+            rgb.g < 255 &&
+            rgb.b < 255 )
    {
-      d->r=floor(s1->r*q*s2->r+0.5);
-      d->g=floor(s1->g*q*s2->g+0.5);
-      d->b=floor(s1->b*q*s2->b+0.5);
-      s1++; s2++; d++; 
+#ifdef ASSEMBLY_OK
+#define MCcol( A, B, C, D )   ((A<<24) | (B<<16) | (C<<8) | D)
+     extern int try_use_mmx;
+     if( try_use_mmx )
+     {
+       if( d != s1 ) MEMCPY( d, s1, i*3 );
+       image_mult_buffer_mmx_x86asm( (char *)d,i/4,
+                                     MCcol( rgb.r, rgb.b, rgb.g, rgb.r ),
+                                     MCcol( rgb.g, rgb.r, rgb.b, rgb.g ),  
+                                     MCcol( rgb.b, rgb.g, rgb.r, rgb.b ) ); 
+       d += i;  s1 += i;
+       i = i%4;
+       d -= i;  s1 -= i;
+     }
+#undef MCcol
+#endif
+     while (i--)
+     {
+       d->r=(s1->r * rgb.r) / 255;
+       d->g=(s1->g * rgb.g) / 255;
+       d->b=(s1->b * rgb.b) / 255;
+       s1++; d++; 
+     }
    }
    else
-   while (i--)
    {
-      d->r=testrange(floor(s1->r*q*rgb.r+0.5));
-      d->g=testrange(floor(s1->g*q*rgb.g+0.5));
-      d->b=testrange(floor(s1->b*q*rgb.b+0.5));
-      s1++; d++; 
+     while (i--)
+     {
+       int r, g, b;
+       r = (s1->r * rgb.r) / 255;
+       g = (s1->g * rgb.g) / 255;
+       b = (s1->b * rgb.b) / 255;
+       d->r=MINIMUM(r,255);
+       d->g=MINIMUM(g,255);
+       d->b=MINIMUM(b,255);
+       s1++; d++; 
+     }
    }
    THREADS_DISALLOW();
    pop_n_elems(args);		   		   		

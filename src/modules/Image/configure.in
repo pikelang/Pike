@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.12 1999/11/27 00:33:02 grubba Exp $
+# $Id: configure.in,v 1.13 2000/05/29 09:58:24 per Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -13,6 +13,19 @@ AC_FUNC_MMAP
 AC_CHECK_HEADERS(math.h sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h)
 
 AC_CHECK_LIB(m, abs, [], [])
+
+# Do we have nasm?
+AC_SUBST(ASSEMBLY_OBJECTS)
+ASSEMBLY_OBJECTS=""
+AC_MSG_CHECKING( [if nasm can be used] )
+
+if nasm -f elf -o assembly.o $srcdir/assembly.s ; then
+  ASSEMBLY_OBJECTS=assembly.o
+  AC_DEFINE(ASSEMBLY_OK)
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
 
 # Perform this test by hand since Sun cc fails otherwise.
 AC_MSG_CHECKING([for fabs in -lm])
