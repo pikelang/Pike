@@ -37,16 +37,17 @@ PIKECLASS CryptContext
 {
   CVAR HCRYPTPROV handle;
 
-  /*! @decl void create(string|int str1, string|int str2, int type, int flags)
+  /*! @decl void create(void|string str1, void|string str2, int type,@
+   *!                   int flags)
    */
-  PIKEFUN void create(string|int str1, string|int str2, int type, int flags)
+  PIKEFUN void create(void|string str1, void|string str2, int type, int flags)
     flags ID_STATIC;
   {
     if(THIS->handle) Pike_error("Already initialized.\n");
-    if(str1->type==T_INT) str1=0;
-    if(str2->type==T_INT) str2=0;
-    if(!CryptAcquireContext(THIS->handle, str1->u.string->str,
-			    str2->u.string->str, type, flags)) {
+    if(!CryptAcquireContext(THIS->handle,
+			    str1->type==T_STRING ? str1->u.string->str : 0,
+			    str2->type==T_STRING ? str2->u.string->str : 0,
+			    type, flags)) {
       INT32 errcode = GetLastError();
       if(errcode == 0x80090016)
 	Pike_error("CryptContext->create(): No default key container.\n");
