@@ -325,3 +325,5 @@ Still to do:
 * all variables aren't initialized ?
 
 * 'array' does not match 'string *' ? (in function calls)
+
+* compile errors generate memory leaks
