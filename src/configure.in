@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.162 1998/02/27 17:35:04 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.163 1998/02/27 17:59:11 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1480,6 +1480,22 @@ else
   AC_MSG_RESULT(not by cast)
 fi
 
+#############################################################################
+
+AC_MSG_CHECKING(for volatile)
+AC_CACHE_VAL(pike_cv_volatile,
+[
+ AC_TRY_COMPILE([],[ volatile int foo=1;], pike_cv_volatile=yes,pike_cv_volatile=no)
+])
+
+if test "$pike_cv_volatile" = yes; then
+ AC_MSG_RESULT(yes)
+ AC_DEFINE(VOLATILE,volatile)
+else
+ AC_MSG_RESULT(no)
+ AC_DEFINE(VOLATILE,)
+fi
+
 ########################################################################
 
 AC_MSG_CHECKING(for sig_atomic_t)
@@ -1513,7 +1529,7 @@ AC_TRY_RUN([
 #include <stdlib.h>
 #include <stddef.h>
 #endif
-volatile sig_atomic_t sigrun=0;
+VOLATILE sig_atomic_t sigrun=0;
 RETSIGTYPE func(int sig) { sigrun=1; }
 
 int main()
@@ -1696,22 +1712,6 @@ char proc_name[20];
   else
     AC_MSG_RESULT(no)
   fi
-fi
-
-#############################################################################
-
-AC_MSG_CHECKING(for volatile)
-AC_CACHE_VAL(pike_cv_volatile,
-[
- AC_TRY_COMPILE([],[ volatile int foo=1;], pike_cv_volatile=yes,pike_cv_volatile=no)
-])
-
-if test "$pike_cv_volatile" = yes; then
- AC_MSG_RESULT(yes)
- AC_DEFINE(VOLATILE,volatile)
-else
- AC_MSG_RESULT(no)
- AC_DEFINE(VOLATILE,)
 fi
 
 #############################################################################
