@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.59 2001/10/01 19:53:35 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.60 2001/11/08 14:00:09 grubba Exp $ */
 
 import Stdio;
 
@@ -146,6 +146,17 @@ int main(int argc, array(string) argv)
     signal(signum("SIGQUIT"),lambda()
 	   {
 	     master()->handle_error( ({"\nSIGQUIT recived, printing backtrace and continuing.\n",backtrace() }) );
+
+	     mapping x=_memory_usage();
+	     foreach(sort(indices(x)),string p)
+	     {
+	       if(sscanf(p,"%s_bytes",p))
+	       {
+		 werror("%20ss:  %8d   %8d Kb\n",p,
+			x["num_"+p+"s"],
+			x[p+"_bytes"]/1024);
+	       }
+	     }
 	   });
   }
 #endif
@@ -162,7 +173,7 @@ int main(int argc, array(string) argv)
     ({"verbose",Getopt.MAY_HAVE_ARG,({"-v","--verbose"})}),
     ({"quiet",Getopt.NO_ARG,({"-q","--quiet"})}),
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
-    ({"end",Getopt.HAS_ARG,({"--end-after"})}),
+    ({"end",Getopt.HAS_ARG,({"-e","--end-after"})}),
     ({"fail",Getopt.MAY_HAVE_ARG,({"-f","--fail"})}),
     ({"loop",Getopt.MAY_HAVE_ARG,({"-l","--loop"})}),
     ({"trace",Getopt.MAY_HAVE_ARG,({"-t","--trace"})}),
