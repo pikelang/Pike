@@ -382,13 +382,13 @@ void o_subtract()
   case T_STRING:
   {
     struct lpc_string *s,*ret;
-    sp--;
     s=make_shared_string("");
-    ret=string_replace(sp[-1].u.string,sp[0].u.string,s);
+    ret=string_replace(sp[-2].u.string,sp[-1].u.string,s);
+    free_string(sp[-2].u.string);
     free_string(sp[-1].u.string);
-    free_string(sp[0].u.string);
     free_string(s);
-    sp[-1].u.string=ret;
+    sp[-2].u.string=ret;
+    sp--;
     return;
   }
 
@@ -704,12 +704,12 @@ void o_multiply()
   case TWO_TYPES(T_ARRAY,T_STRING):
     {
       struct lpc_string *ret;
+      ret=implode(sp[-2].u.array,sp[-1].u.string);
+      free_string(sp[-1].u.string);
+      free_array(sp[-2].u.array);
+      sp[-2].type=T_STRING;
+      sp[-2].u.string=ret;
       sp--;
-      ret=implode(sp[-1].u.array,sp[0].u.string);
-      free_string(sp[0].u.string);
-      free_array(sp[-1].u.array);
-      sp[-1].type=T_STRING;
-      sp[-1].u.string=ret;
       return;
     }
 
@@ -779,12 +779,12 @@ void o_divide()
   case T_STRING:
   {
     struct array *ret;
-    sp--;
-    ret=explode(sp[-1].u.string,sp[0].u.string);
+    ret=explode(sp[-2].u.string,sp[-1].u.string);
+    free_string(sp[-2].u.string);
     free_string(sp[-1].u.string);
-    free_string(sp[0].u.string);
-    sp[-1].type=T_ARRAY;
-    sp[-1].u.array=ret;
+    sp[-2].type=T_ARRAY;
+    sp[-2].u.array=ret;
+    sp--;
     return;
   }
 
