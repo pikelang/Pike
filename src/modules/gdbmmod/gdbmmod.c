@@ -6,6 +6,9 @@
 #include "global.h"
 #include "gdbm_machine.h"
 #include "types.h"
+#include "threads.h"
+
+/* Todo: make sure only one thread accesses the same gdbmmod */
 
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
@@ -18,6 +21,10 @@
 
 #include <gdbm.h>
 
+#ifdef _REENTRANT
+static MUTEX_T gdbm_lock;
+#endif  
+
 struct gdbm_glue
 {
   GDBM_FILE dbf;
@@ -29,8 +36,15 @@ static void do_free()
 {
   if(THIS->dbf)
   {
-    gdbm_close(THIS->dbf);
+    GDBM_FILE dbf;
+    dbf=THIS->dbf;
     THIS->dbf=0;
+
+    THREADS_ALLOW();
+    mt_lock(& gdbm_lock);
+    gdbm_close(dbf);
+    mt_unlock(& gdbm_lock);
+    THREADS_DISALLOW();
   }
 }
 
@@ -76,10 +90,14 @@ void gdbmmod_fatal(char *err)
 
 static void gdbmmod_create(INT32 args)
 {
+  struct gdbm_glue *this=THIS;
   do_free();
   if(args)
   {
+    GDBM_FILE tmp;
+    struct pike_string *tmp2;
     int rwmode = GDBM_WRCREAT;
+
     if(sp[-args].type != T_STRING)
       error("Bad argument 1 to gdbm->create()\n");
 
@@ -91,7 +109,21 @@ static void gdbmmod_create(INT32 args)
       rwmode=fixmods(sp[1-args].u.string->str);
     }
 
-    THIS->dbf=gdbm_open(sp[-args].u.string->str, 512, rwmode, 00666, gdbmmod_fatal);
+    tmp2=sp[-args].u.string;
+
+    THREADS_ALLOW();
+    mt_lock(& gdbm_lock);
+    tmp=gdbm_open(tmp2->str, 512, rwmode, 00666, gdbmmod_fatal);
+    mt_unlock(& gdbm_lock);
+    THREADS_DISALLOW();
+
+    if(!fp->current_object->prog)
+    {
+      if(tmp) gdbm_close(tmp);
+      error("Object destructed in gdbm->open()n");
+    }
+    THIS->dbf=tmp;
+
     pop_n_elems(args);
     if(!THIS->dbf)
       error("Failed to open GDBM database.\n");
@@ -103,7 +135,9 @@ static void gdbmmod_create(INT32 args)
 
 static void gdbmmod_fetch(INT32 args)
 {
+  struct gdbm_glue *this=THIS;
   datum key,ret;
+
   if(!args)
     error("Too few arguments to gdbm->fetch()\n");
 
@@ -115,7 +149,12 @@ static void gdbmmod_fetch(INT32 args)
 
   STRING_TO_DATUM(key, sp[-args].u.string);
 
-  ret=gdbm_fetch(THIS->dbf, key);
+  THREADS_ALLOW();
+  mt_lock(& gdbm_lock);
+  ret=gdbm_fetch(this->dbf, key);
+  mt_unlock(& gdbm_lock);
+  THREADS_DISALLOW();
+
   pop_n_elems(args);
   if(ret.dptr)
   {
@@ -128,6 +167,7 @@ static void gdbmmod_fetch(INT32 args)
 
 static void gdbmmod_delete(INT32 args)
 {
+  struct gdbm_glue *this=THIS;
   datum key;
   int ret;
   if(!args)
@@ -136,24 +176,35 @@ static void gdbmmod_delete(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to gdbm->delete()\n");
 
-  if(!THIS->dbf)
+  if(!this->dbf)
     error("GDBM database not open.\n");
 
   STRING_TO_DATUM(key, sp[-args].u.string);
 
-  ret=gdbm_delete(THIS->dbf, key);
+  THREADS_ALLOW();
+  mt_lock(& gdbm_lock);
+  ret=gdbm_delete(this->dbf, key);
+  mt_unlock(& gdbm_lock);
+  THREADS_DISALLOW();
+  
   pop_n_elems(args);
   push_int(0);
 }
 
 static void gdbmmod_firstkey(INT32 args)
 {
+  struct gdbm_glue *this=THIS;
   datum ret;
   pop_n_elems(args);
 
-  if(!THIS->dbf) error("GDBM database not open.\n");
+  if(!this->dbf) error("GDBM database not open.\n");
 
-  ret=gdbm_firstkey(THIS->dbf);
+  THREADS_ALLOW();
+  mt_lock(& gdbm_lock);
+  ret=gdbm_firstkey(this->dbf);
+  mt_unlock(& gdbm_lock);
+  THREADS_DISALLOW();
+
   if(ret.dptr)
   {
     push_string(DATUM_TO_STRING(ret));
@@ -165,6 +216,7 @@ static void gdbmmod_firstkey(INT32 args)
 
 static void gdbmmod_nextkey(INT32 args)
 {
+  struct gdbm_glue *this=THIS;
   datum key,ret;
   if(!args)
     error("Too few arguments to gdbm->nextkey()\n");
@@ -177,7 +229,12 @@ static void gdbmmod_nextkey(INT32 args)
 
   STRING_TO_DATUM(key, sp[-args].u.string);
 
-  ret=gdbm_nextkey(THIS->dbf, key);
+  THREADS_ALLOW();
+  mt_lock(& gdbm_lock);
+  ret=gdbm_nextkey(this->dbf, key);
+  mt_unlock(& gdbm_lock);
+  THREADS_DISALLOW();
+
   pop_n_elems(args);
   if(ret.dptr)
   {
@@ -190,6 +247,7 @@ static void gdbmmod_nextkey(INT32 args)
 
 static void gdbmmod_store(INT32 args)
 {
+  struct gdbm_glue *this=THIS;
   datum key,data;
   int ret;
   if(args<2)
@@ -207,7 +265,12 @@ static void gdbmmod_store(INT32 args)
   STRING_TO_DATUM(key, sp[-args].u.string);
   STRING_TO_DATUM(data, sp[1-args].u.string);
 
-  ret=gdbm_store(THIS->dbf, key, data, GDBM_REPLACE);
+  THREADS_ALLOW();
+  mt_lock(& gdbm_lock);
+  ret=gdbm_store(this->dbf, key, data, GDBM_REPLACE);
+  mt_unlock(& gdbm_lock);
+  THREADS_DISALLOW();
+
   if(ret == -1)
     error("GDBM database not open for writing.\n");
 
@@ -217,27 +280,31 @@ static void gdbmmod_store(INT32 args)
 
 static void gdbmmod_reorganize(INT32 args)
 {
-  datum ret;
+  struct gdbm_glue *this=THIS;
+  int ret;
   pop_n_elems(args);
 
   if(!THIS->dbf) error("GDBM database not open.\n");
-  ret=gdbm_firstkey(THIS->dbf);
+  THREADS_ALLOW();
+  mt_lock(& gdbm_lock);
+  ret=gdbm_reorganize(this->dbf);
+  mt_unlock(& gdbm_lock);
+  THREADS_DISALLOW();
   pop_n_elems(args);
-  if(ret.dptr)
-  {
-    push_string(DATUM_TO_STRING(ret));
-    free(ret.dptr);
-  }else{
-    push_int(0);
-  }
+  push_int(ret);
 }
 
 static void gdbmmod_sync(INT32 args)
 {
+  struct gdbm_glue *this=THIS;
   pop_n_elems(args);
 
   if(!THIS->dbf) error("GDBM database not open.\n");
-  gdbm_sync(THIS->dbf);
+  THREADS_ALLOW();
+  mt_lock(& gdbm_lock);
+  gdbm_sync(this->dbf);
+  mt_unlock(& gdbm_lock);
+  THREADS_DISALLOW();
   push_int(0);
 }
 

@@ -31,6 +31,7 @@
 #include "array.h"
 #include "builtin_functions.h"
 #include "lock.h"
+#include "threads.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -163,7 +164,7 @@ void f_parse_accessed_database(INT32 args)
 #define HAVE_SEND_FD
 void f_send_fd(INT32 args)
 {
-  int sock_fd, fd;
+  int sock_fd, fd, tmp;
 
   if(args != 2) error("RTSL\n");
 
@@ -172,7 +173,11 @@ void f_send_fd(INT32 args)
   pop_stack();
   pop_stack();
 
-  while(ioctl(sock_fd, I_SENDFD, fd) == -1)
+  THREADS_ALLOW();
+  tmp=ioctl(sock_fd, I_SENDFD, fd);
+  THREADS_DISALLOW();
+
+  while(tmp == -1)
   {
     switch(errno)
     {
@@ -220,7 +225,7 @@ void f_send_fd(INT32 args)
 {
   struct iovec iov; 
   struct msghdr msg;
-  int sock_fd, fd;
+  int sock_fd, fd, tmp;
 
   if(args != 2) error("RTSL\n");
   sock_fd = sp[-args].u.integer;
@@ -236,7 +241,12 @@ void f_send_fd(INT32 args)
   msg.msg_accrights    = (caddr_t)&fd;
   msg.msg_accrightslen = sizeof(fd);
 
-  while(sendmsg(sock_fd, &msg, 0) == -1)
+
+  THREADS_ALLOW();
+  tmp=sendmsg(sock_fd, &msg, 0);
+  THREADS_DISALLOW();
+
+  while(tmp == -1)
   {
     switch(errno)
     {

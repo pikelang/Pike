@@ -245,7 +245,7 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
-sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h)
+sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -265,6 +265,7 @@ dnl AC_CHECK_LIB(PW, alloca)
 dnl AC_CHECK_LIB(crypt, crypt)
 
 AC_CHECK_LIB(m, floor)
+
 if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then
   AC_MSG_WARN(I will compensate for this by adding -lc -lm)
   LIBS="${LIBS} -lc -lm"
@@ -272,7 +273,53 @@ fi
 
 AC_CHECK_LIB(crypt, crypt)
 
-OLD_LIBOBJS="${LIBOBJS}"
+
+########################################################################
+
+AC_MSG_CHECKING(posix threads)
+
+OLDLIBS="$LIBS"
+
+case "x$pike_cv_sys_os" in
+  xOSF1)
+     LIBS="${LIBS} -lpthread -lmach -lexc -lc"
+  ;;
+
+  *)
+     LIBS="${LIBS} -lpthread"
+  ;;
+esac
+
+AC_CACHE_VAL(pike_cv_posix_threads,
+[
+AC_TRY_RUN([
+#include <pthread.h>
+
+void *foo(void *bar) { return ; }
+pthread_mutex_t tmp;
+pthread_t gazonk;
+
+int main()
+{
+  void *sune;
+  pthread_mutex_lock(& tmp);
+  pthread_create(&gazonk,0,foo,0);
+  pthread_join(gazonk,&sune);
+  exit(0);
+}
+],pike_cv_posix_threads=yes,pike_cv_posix_threads=no)
+])
+
+if test $pike_cv_posix_threads = yes ; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(_REENTRANT)
+  AC_DEFINE(_THREAD_SAFE)
+else
+  AC_MSG_RESULT(no)
+  LIBS="$OLDLIBS"
+fi
+
+########################################################################
 
 AC_FUNC_MEMCMP
 
@@ -553,6 +600,10 @@ case "$LIBOBJS" in
   ;;
 esac
 
+OLD_LIBOBJS="${LIBOBJS}"
+
+########################################################################
+
 AC_MSG_CHECKING(byteorder)
 AC_CACHE_VAL(pike_cv_hardware_byteorder,
 [
@@ -590,6 +641,8 @@ pike_cv_hardware_byteorder=0
 
 AC_MSG_RESULT($pike_cv_hardware_byteorder)
 AC_DEFINE_UNQUOTED(BYTEORDER,$pike_cv_hardware_byteorder)
+
+########################################################################
 
 AC_MSG_CHECKING(for working memmem)
 AC_CACHE_VAL(pike_cv_func_memmem,
@@ -646,6 +699,8 @@ else
   AC_MSG_RESULT(no)
 fi
 
+########################################################################
+
 AC_MSG_CHECKING(how to extract an unsigned char)
 AC_CACHE_VAL(pike_cv_method_extract_uchar,
 [
@@ -667,6 +722,8 @@ if test "$pike_cv_method_extract_uchar" = by_cast; then
 else
   AC_MSG_RESULT(not by cast)
 fi
+
+########################################################################
 
 AC_MSG_CHECKING(how to extract a signed char)
 AC_CACHE_VAL(pike_cv_method_extract_char,
@@ -690,6 +747,7 @@ else
   AC_MSG_RESULT(not by cast)
 fi
 
+########################################################################
 
 AC_MSG_CHECKING(if signal handlers reset automatically)
 AC_CACHE_VAL(pike_cv_sys_signal_oneshot,
@@ -746,7 +804,7 @@ else
   AC_MSG_RESULT(no)
 fi
 
-
+########################################################################
 
 AC_MSG_CHECKING(available file descriptors)
 AC_CACHE_VAL(pike_cv_max_open_fd,
@@ -848,6 +906,8 @@ else
   AC_MSG_RESULT(getrusage is restricted)
   AC_DEFINE(GETRUSAGE_RESTRICTED)
 fi
+
+########################################################################
 
 AC_MSG_CHECKING(getrusage() through procfs)
 AC_CACHE_VAL(pike_cv_getrusage_procfs,

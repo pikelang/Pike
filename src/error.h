@@ -39,7 +39,6 @@ typedef struct JMP_BUF
   ONERROR *onerror;
 } JMP_BUF;
 
-extern ONERROR *onerror_stack;
 extern JMP_BUF *recoveries;
 extern struct svalue throw_value;
 extern char *automatic_fatal, *exit_on_error;
@@ -51,11 +50,11 @@ extern char *automatic_fatal, *exit_on_error;
   do{ \
      X.func=(error_call)(Y); \
      X.arg=(void *)(Z); \
-     X.previous=onerror_stack; \
-     onerror_stack=&X; \
+     X.previous=recoveries->onerror; \
+     recoveries->onerror=&X; \
   }while(0)
 
-#define UNSET_ONERROR(X) onerror_stack=X.previous
+#define UNSET_ONERROR(X) recoveries->onerror=X.previous
 
 /* Prototypes begin here */
 JMP_BUF *init_recovery(JMP_BUF *r);

@@ -12,6 +12,7 @@
 #include "array.h"
 #include "object.h"
 #include "macros.h"
+#include "threads.h"
 
 #ifndef HAVE_LIBTERMCAP
 #undef HAVE_LIBREADLINE
@@ -50,13 +51,18 @@
 static void f_readline(INT32 args)
 {
   char *r;
+  struct pike_string *str;
   if(args < 1)
     error("Too few arguments to readline().\n");
 
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to readline()\n");
 
-  r=readline(sp[-args].u.string->str);
+  str=sp[-args].u.string;
+  THREADS_ALLOW();
+  r=readline(str->str);
+  THREADS_DISALLOW();
+
   pop_n_elems(args);
   if(r)
   {
@@ -84,6 +90,8 @@ static void f_readline(INT32 args)
 {
   char line[BLOCK];
   char *r;
+  int tmp;
+
   if(args < 1)
     error("Too few arguments to readline().\n");
 
@@ -94,7 +102,11 @@ static void f_readline(INT32 args)
   fflush(stdout);
 
   pop_n_elems(args);
-  if(fgets(line,BLOCK,stdin))
+  THREADS_ALLOW();
+  r=fgets(line,BLOCK,stdin);
+  THREADS_DISALLOW();
+
+  if(r)
   {
     INT32 len;
     if(len=strlen(line))

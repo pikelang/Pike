@@ -25,6 +25,7 @@
 #include "backend.h"
 #include "main.h"
 #include "memory.h"
+#include "threads.h"
 #include "time_stuff.h"
 #include <math.h>
 #include <ctype.h>
@@ -1178,7 +1179,9 @@ void f_sleep(INT32 args)
     t3=t1;
     my_subtract_timeval(&t3, &t2);
 
+    THREADS_ALLOW();
     select(0,0,0,0,&t3);
+    THREADS_DISALLOW();
     check_threads_etc();
   }
 }

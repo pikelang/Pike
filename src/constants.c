@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#include "global.h"
 #include "constants.h"
 #include "macros.h"
 #include "program.h"

@@ -20,6 +20,7 @@
 #include "hashtable.h"
 #include "main.h"
 #include "gc.h"
+#include "threads.h"
 #include <stdio.h>
 #include <fcntl.h>
 
@@ -124,6 +125,7 @@ void start_new_program()
   struct inherit inherit;
   struct pike_string *name;
 
+  threads_disabled++;
 #define PROGRAM_STATE
 #define PUSH
 #include "compilation.h"
@@ -528,6 +530,7 @@ struct program *end_program()
 #include "compilation.h"
 #undef POP
 #undef PROGRAM_STATE
+  threads_disabled--;
 
   return prog;
 }

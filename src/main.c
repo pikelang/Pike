@@ -18,6 +18,7 @@
 #include "macros.h"
 #include "callback.h"
 #include "signal_handler.h"
+#include "threads.h"
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
@@ -251,10 +252,12 @@ void init_main_efuns()
   init_types();
   init_builtin_efuns();
   init_signals();
+  th_init();
 }
 
 void init_main_programs()
 {
+  th_init_programs();
 }
 
 

@@ -24,6 +24,7 @@
 #include "builtin_functions.h"
 #include "signal_handler.h"
 #include "gc.h"
+#include "threads.h"
 
 #ifdef HAVE_MMAP
 #ifdef HAVE_SYS_TYPES_H
@@ -84,6 +85,8 @@ void init_interpreter()
 
 #define MMALLOC(X,Y) (Y *)mmap(0,X*sizeof(Y),PROT_READ|PROT_WRITE, MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, fd, 0)
 
+  evaluator_stack_malloced=0;
+  mark_stack_malloced=0;
   evaluator_stack=MMALLOC(stack_size,struct svalue);
   mark_stack=MMALLOC(stack_size, struct svalue *);
 
@@ -91,22 +94,26 @@ void init_interpreter()
 
   if((char *)MAP_FAILED == (char *)evaluator_stack)  evaluator_stack=0;
   if((char *)MAP_FAILED == (char *)mark_stack) mark_stack=0;
-
+#else
+  evaluator_stack=0;
+  mark_stack=0;
 #endif
+
   if(!evaluator_stack)
   {
-    evaluator_stack=(struct svalue *)malloc(stack_size*sizeof(struct svalue));
+    evaluator_stack=(struct svalue *)xalloc(stack_size*sizeof(struct svalue));
     evaluator_stack_malloced=1;
   }
 
   if(!mark_stack)
   {
-    mark_stack=(struct svalue **)malloc(stack_size*sizeof(struct svalue *));
+    mark_stack=(struct svalue **)xalloc(stack_size*sizeof(struct svalue *));
     mark_stack_malloced=1;
   }
 
   sp=evaluator_stack;
   mark_sp=mark_stack;
+  fp=0;
 }
 
 void check_stack(INT32 size)
@@ -291,6 +298,12 @@ void pop_n_elems(INT32 x)
  */
 void check_threads_etc()
 {
+  THREADS_ALLOW();
+
+  /* Allow other threads to run */
+
+  THREADS_DISALLOW();
+
   check_signals();
   if(objects_to_destruct) destruct_objects_to_destruct();
   CHECK_FOR_GC();
@@ -437,6 +450,11 @@ static void eval_instruction(unsigned char *pc)
 
   again:
 #ifdef DEBUG
+#ifdef _REENTRANT
+    if(!mt_trylock(& interpreter_lock))
+      fatal("Interpreter running unlocked!\n");
+#endif
+
     sp[0].type=99; /* an invalid type */
     sp[1].type=99;
     sp[2].type=99;

@@ -12,6 +12,7 @@
 #include "mapping.h"
 #include "macros.h"
 #include "fd_control.h"
+#include "threads.h"
 
 #include "file_machine.h"
 
@@ -229,7 +230,11 @@ void f_getcwd(INT32 args)
 void f_fork(INT32 args)
 {
   pop_n_elems(args);
+#if defined(HAVE_FORK1) && defined(_REENTRANT)
+  push_int(fork1());
+#else
   push_int(fork());
+#endif
 }
 
 

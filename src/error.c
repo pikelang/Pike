@@ -17,7 +17,6 @@
 
 char *automatic_fatal, *exit_on_error;
 JMP_BUF *recoveries=0;
-ONERROR *onerror_stack=0;
 
 JMP_BUF *init_recovery(JMP_BUF *r)
 {
@@ -25,7 +24,7 @@ JMP_BUF *init_recovery(JMP_BUF *r)
   r->sp=sp-evaluator_stack;
   r->mark_sp=mark_sp - mark_stack;
   r->previous=recoveries;
-  r->onerror=onerror_stack;
+  r->onerror=0;
   recoveries=r;
   return r;
 }
@@ -55,14 +54,10 @@ void throw() ATTRIBUTE((noreturn))
   pop_n_elems(sp - evaluator_stack - recoveries->sp);
   mark_sp = mark_stack + recoveries->mark_sp;
 
-  while(recoveries->onerror != onerror_stack)
+  while(recoveries->onerror)
   {
-#ifdef DEBUG
-    if(!onerror_stack)
-      fatal("Popped out of onerror stack!\n");
-#endif    
-    (*onerror_stack->func)(onerror_stack->arg);
-    onerror_stack=onerror_stack->previous;
+    (*recoveries->onerror->func)(recoveries->onerror->arg);
+    recoveries->onerror=recoveries->onerror->previous;
   }
 
   longjmp(recoveries->recovery,1);

@@ -18,6 +18,7 @@
 #include "fd_control.h"
 #include "main.h"
 #include "callback.h"
+#include "threads.h"
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -214,9 +215,10 @@ void backend()
       next_timeout.tv_sec = 0;
     }
 
+    THREADS_ALLOW();
     i=select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
-
     GETTIMEOFDAY(&current_time);
+    THREADS_DISALLOW();
 
     check_threads_etc();
     

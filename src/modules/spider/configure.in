@@ -21,7 +21,7 @@ AC_HAVE_FUNCS(syslog perror getppid getpgrp strdup\
         uname gethostbyname getpwnam getspnam initgroups \
 	mutex_unlock mmap sendmsg)
 
-if test x$ac_cv_lib_thread_mutex_inlock = xno ;  then
+if test x$ac_cv_lib_thread_mutex_unlock = xno ;  then
  AC_HAVE_HEADERS( pthread.h )
  AC_HAVE_FUNCS(pthread_mutex_unlock)
 fi

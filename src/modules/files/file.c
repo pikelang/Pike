@@ -21,6 +21,7 @@
 #include "error.h"
 #include "signal_handler.h"
 #include "pike_types.h"
+#include "threads.h"
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -64,11 +65,11 @@
 struct file_struct
 {
   short fd;
-  short errno;
+  short my_errno;
 };
 
 #define FD (((struct file_struct *)(fp->current_storage))->fd)
-#define ERRNO (((struct file_struct *)(fp->current_storage))->errno)
+#define ERRNO (((struct file_struct *)(fp->current_storage))->my_errno)
 #define THIS (files + FD)
 
 static struct my_file files[MAX_OPEN_FILEDESCRIPTORS];
@@ -107,7 +108,12 @@ static int close_fd(int fd)
   {
     while(1)
     {
-      if(close(fd) < 0)
+      int i;
+      THREADS_ALLOW();
+      i=close(fd);
+      THREADS_DISALLOW();
+      
+      if(i < 0)
       {
 	switch(errno)
 	{
@@ -248,7 +254,10 @@ static void file_read(INT32 args)
     SET_ONERROR(ebuf, call_free, str);
 
     do{
-      i=read(FD, str->str+bytes_read, r);
+      int fd=FD;
+      THREADS_ALLOW();
+      i=read(fd, str->str+bytes_read, r);
+      THREADS_DISALLOW();
 
       check_signals();
 
@@ -287,7 +296,7 @@ static void file_read(INT32 args)
     }
     
   }else{
-#define CHUNK 16384
+#define CHUNK 65536
     INT32 try_read;
     dynamic_buffer b;
 
@@ -295,9 +304,12 @@ static void file_read(INT32 args)
     low_init_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
+      int fd=FD;
       try_read=MINIMUM(CHUNK,r);
       
-      i=read(FD, low_make_buf_space(try_read, &b), try_read);
+      THREADS_ALLOW();
+      i=read(fd, low_make_buf_space(try_read, &b), try_read);
+      THREADS_DISALLOW();
 
       check_signals();
       
@@ -353,6 +365,7 @@ static void file_write_callback(int fd, void *data)
 static void file_write(INT32 args)
 {
   INT32 written,i;
+  struct pike_string *str;
 
   if(args<1 || sp[-args].type != T_STRING)
     error("Bad argument 1 to file->write().\n");
@@ -361,9 +374,14 @@ static void file_write(INT32 args)
     error("File not open for write.\n");
   
   written=0;
-  while(written < sp[-args].u.string->len)
+  str=sp[-args].u.string;
+
+  while(written < str->len)
   {
-    i=write(FD, sp[-args].u.string->str + written, sp[-args].u.string->len - written);
+    int fd=FD;
+    THREADS_ALLOW();
+    i=write(fd, str->str + written, str->len - written);
+    THREADS_DISALLOW();
 
     if(i<0)
     {
@@ -452,6 +470,7 @@ static void file_close(INT32 args)
 static void file_open(INT32 args)
 {
   int flags,fd;
+  struct pike_string *str;
   do_close(FD, FILE_READ | FILE_WRITE);
   FD=-1;
   
@@ -463,6 +482,8 @@ static void file_open(INT32 args)
 
   if(sp[1-args].type != T_STRING)
     error("Bad argument 2 to file->open()\n");
+
+  str=sp[-args].u.string;
   
   flags=parse(sp[1-args].u.string->str);
 
@@ -470,7 +491,12 @@ static void file_open(INT32 args)
     error("Must open file for at least one of read and write.\n");
 
  retry:
-  fd=open(sp[-args].u.string->str,map(flags), 00666);
+  THREADS_ALLOW();
+  fd=open(str->str,map(flags), 00666);
+  THREADS_DISALLOW();
+
+  if(!fp->current_object->prog)
+    error("Object destructed in file->open()\n");
 
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
@@ -540,15 +566,23 @@ struct array *encode_stat(struct stat *);
 
 static void file_stat(INT32 args)
 {
+  int fd;
   struct stat s;
+  int tmp;
 
   if(FD < 0)
     error("File not open.\n");
   
   pop_n_elems(args);
 
+  fd=FD;
+
  retry:
-  if(fstat(FD, &s) < 0)
+  THREADS_ALLOW();
+  tmp=fstat(fd, &s);
+  THREADS_DISALLOW();
+
+  if(tmp < 0)
   {
     if(errno == EINTR) goto retry;
     ERRNO=errno;
@@ -575,7 +609,9 @@ static struct pike_string *do_read(INT32 *amount,int fd)
 {
   char buffer[READ_BUFFER];
   
+  THREADS_ALLOW();
   *amount = read(fd, buffer, READ_BUFFER);
+  THREADS_DISALLOW();
 
   if(*amount>0) return make_shared_binary_string(buffer,*amount);
   return 0;
@@ -756,7 +792,7 @@ struct object *file_make_object_from_fd(int fd, int mode)
   init_fd(fd, mode);
   o=clone(file_program,0);
   ((struct file_struct *)(o->storage))->fd=fd;
-  ((struct file_struct *)(o->storage))->errno=0;
+  ((struct file_struct *)(o->storage))->my_errno=0;
   return o;
 }
 
@@ -949,7 +985,7 @@ static void file_dup(INT32 args)
 
   o=clone(file_program,0);
   ((struct file_struct *)o->storage)->fd=FD;
-  ((struct file_struct *)o->storage)->errno=0;
+  ((struct file_struct *)o->storage)->my_errno=0;
   ERRNO=0;
   files[FD].refs++;
   push_object(o);
@@ -1079,6 +1115,7 @@ static void file_open_socket(INT32 args)
 static void file_connect(INT32 args)
 {
   struct sockaddr_in addr;
+  int tmp;
   if(args < 2)
     error("Too few arguments to file->connect()\n");
 
@@ -1095,7 +1132,12 @@ static void file_connect(INT32 args)
   get_inet_addr(&addr, sp[-args].u.string->str);
   addr.sin_port = htons(((u_short)sp[1-args].u.integer));
 
-  if(connect(FD, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+  tmp=FD;
+  THREADS_ALLOW();
+  tmp=connect(tmp, (struct sockaddr *)&addr, sizeof(addr));
+  THREADS_DISALLOW();
+
+  if(tmp < 0)
   {
     /* something went wrong */
     ERRNO=errno;
@@ -1128,7 +1170,20 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
   else
   {
     struct hostent *ret;
+
+#ifdef _REENTRANT
+    static MUTEX_T l;
+
+    THREADS_ALLOW();
+
+    mt_lock(&l);
     ret=gethostbyname(name);
+    mt_unlock(&l);
+
+    THREADS_DISALLOW();
+#else
+    ret=gethostbyname(name);
+#endif
     if(!ret)
       error("Invalid address '%s'\n",name);
 

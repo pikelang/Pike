@@ -328,4 +328,11 @@
 /* Define this to the max value of an unsigned short unles <limits.h> does.. */
 #undef USHRT_MAX
 
+/* define this if you have pthreads.h */
+#undef HAVE_PTHREAD_H
+
+/* Define this if you are going to use threads */
+#undef _REENTRANT
+#undef _THREAD_SAFE
+
 #endif /* MACHINE_H */

@@ -13,6 +13,7 @@
 #include "macros.h"
 #include "backend.h"
 #include "fd_control.h"
+#include "threads.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -40,17 +41,10 @@
 #include <sys/socketvar.h>
 #endif
 
-#ifdef SOLARIS
-#include <synch.h>
-#include <sys/mman.h>
-
-mutex_t *locks;
-#endif
-
 struct port
 {
   int fd;
-  int errno;
+  int my_errno;
   struct svalue accept_callback;
   struct svalue id;
 };
@@ -90,7 +84,7 @@ static void port_query_id(INT32 args)
 static void port_errno(INT32 args)
 {
   pop_n_elems(args);
-  push_int(THIS->errno);
+  push_int(THIS->my_errno);
 }
 
 static void port_accept_callback(int fd,void *data)
@@ -122,7 +116,7 @@ static void port_listen_fd(INT32 args)
 
   if(fd<0 || fd >MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno=EBADF;
+    THIS->my_errno=EBADF;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -130,7 +124,7 @@ static void port_listen_fd(INT32 args)
 
   if(listen(fd, 16384) < 0)
   {
-    THIS->errno=errno;
+    THIS->my_errno=errno;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -145,7 +139,7 @@ static void port_listen_fd(INT32 args)
   }
 
   THIS->fd=fd;
-  THIS->errno=0;
+  THIS->my_errno=0;
   pop_n_elems(args);
   push_int(1);
 }
@@ -154,7 +148,7 @@ static void port_bind(INT32 args)
 {
   struct sockaddr_in addr;
   int o;
-  int fd;
+  int fd,tmp;
 
   do_close(THIS);
 
@@ -168,14 +162,14 @@ static void port_bind(INT32 args)
 
   if(fd < 0)
   {
-    THIS->errno=errno;
+    THIS->my_errno=errno;
     pop_n_elems(args);
     push_int(0);
     return;
   }
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno=EBADF;
+    THIS->my_errno=EBADF;
     close(fd);
     pop_n_elems(args);
     push_int(0);
@@ -185,7 +179,7 @@ static void port_bind(INT32 args)
   o=1;
   if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
-    THIS->errno=errno;
+    THIS->my_errno=errno;
     close(fd);
     push_int(0);
     return;
@@ -204,10 +198,13 @@ static void port_bind(INT32 args)
 
   addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
 
-  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
-     listen(fd, 16384) < 0 )
+  THREADS_ALLOW();
+  tmp=bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || listen(fd, 16384) < 0;
+  THREADS_DISALLOW();
+
+  if(tmp)
   {
-    THIS->errno=errno;
+    THIS->my_errno=errno;
     close(fd);
     pop_n_elems(args);
     push_int(0);
@@ -224,7 +221,7 @@ static void port_bind(INT32 args)
   }
 
   THIS->fd=fd;
-  THIS->errno=0;
+  THIS->my_errno=0;
   pop_n_elems(args);
   push_int(1);
 }
@@ -247,7 +244,7 @@ static void port_create(INT32 args)
 
       if(listen(THIS->fd, 16384) < 0)
       {
-	THIS->errno=errno;
+	THIS->my_errno=errno;
       }else{
 	if(args > 1)
 	{
@@ -266,6 +263,7 @@ extern struct program *file_program;
 
 static void port_accept(INT32 args)
 {
+  struct port *this=THIS;
   int fd,tmp;
   int len=0;
   struct object *o;
@@ -273,24 +271,21 @@ static void port_accept(INT32 args)
   if(THIS->fd < 0)
     error("port->accept(): Port not open.\n");
 
-#ifdef SOLARIS
-  mutex_lock(locks+THIS->fd);
-  fd=accept(THIS->fd, 0, &len);
-  mutex_unlock(locks+THIS->fd);
-#else
-  fd=accept(THIS->fd, 0, &len);
-#endif
+
+  THREADS_ALLOW();
+  fd=accept(this->fd, 0, &len);
+  THREADS_DISALLOW();
 
   if(fd < 0)
   {
-    THIS->errno=errno;
+    THIS->my_errno=errno;
     pop_n_elems(args);
     push_int(0);
     return;
   }
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno=EBADF;
+    THIS->my_errno=EBADF;
     pop_n_elems(args);
     push_int(0);
     close(fd);
@@ -317,7 +312,7 @@ static void init_port_struct(struct object *o)
   THIS->id.u.object=o;
   o->refs++;
   THIS->accept_callback.type=T_INT;
-  THIS->errno=0;
+  THIS->my_errno=0;
 }
 
 static void exit_port_struct(struct object *o)
@@ -331,41 +326,6 @@ static void exit_port_struct(struct object *o)
 
 void port_setup_program()
 {
-#ifdef SOLARIS
-  /* Note:
-   * This hack is because solaris accept() isn't atomic and problems arise
-   * when several processes do accept() on the same fd IF that fd is
-   * nonblocking. This patch puts an atomic mutex lock around accept().
-   * We allocate one lock / filedescriptor with mmap, and use MAP_SHARED
-   * so they are shared across fork()... For people who doesn't use fork()
-   * or nonblocking sockets this patch won't do anything.
-   *
-   * This is an ugly workaround (tm)  /Fredrik Hubinette
-   */
-  int i;
-  i=open("/dev/zero",O_RDWR);
-  if(i<0)
-  {
-    perror("Failed to open /dev/zero");
-    exit(5);
-  }
-  locks=(mutex_t *)mmap(0, sizeof(mutex_t)*MAX_OPEN_FILEDESCRIPTORS,
-			PROT_READ | PROT_WRITE, MAP_SHARED, i, 0);
-  if(!locks)
-  {
-    perror("Failed to mmap /dev/zero");
-    exit(5);
-  }
-  close(i);
-  for(i=0;i<MAX_OPEN_FILEDESCRIPTORS;i++)
-  {
-    if(mutex_init(locks+i,USYNC_PROCESS,0))
-    {
-      perror("Mutex init failed");
-      exit(5);
-    }
-  }
-#endif
   start_new_program();
   add_storage(sizeof(struct port));
   add_function("bind",port_bind,"function(int,void|mixed:int)",0);

@@ -40,6 +40,9 @@
 /* Define if you have getwd.  */
 #undef HAVE_GETWD
 
+/* Define if you have fork1.  */
+#undef HAVE_FORK1
+
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR
 
