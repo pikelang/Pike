@@ -5,9 +5,13 @@
 \*/
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_TIME
 #include <sys/time.h>
+#endif
 #include <fcntl.h>
+#ifdef HAVE_TIME
 #include <time.h>
+#endif
 #include <errno.h>
 #include "global.h"
 #include "types.h"
