@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.97 2000/12/13 23:06:21 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.98 2000/12/22 20:58:24 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1019,12 +1019,16 @@ void check_pad(struct memhdr *mh, int freeok)
     if(MEMCMP(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
     {
       out_biking=1;
-      fprintf(stderr,"Pre-padding overwritten for "
+      fprintf(stderr,"Post-padding overwritten for "
 	      "block at %p (size %ld)!\n", mem, size);
       describe(mem);
       abort();
     }
-    fprintf(stderr,"Padding completely screwed up!");
+
+    out_biking=1;
+    fprintf(stderr,"Padding completely screwed up for "
+	    "block at %p (size %ld)!\n", mem, size);
+    describe(mem);
     abort();
   }
 #else
@@ -1747,7 +1751,7 @@ void list_open_fds(void)
       {
 	if( FD2PTR( PTR2FD(p) ) == p)
 	{
-	  fprintf(stderr,"Filedescriptor %ld\n",PTR2FD(p));
+	  fprintf(stderr,"Filedescriptor %ld\n", (long) PTR2FD(p));
 
 	  dump_memhdr_locations(m, 0, 0);
 	}
@@ -1849,7 +1853,7 @@ void cleanup_memhdrs(void)
 	{
 	  if( FD2PTR( PTR2FD(p) ) == p)
 	  {
-	    fprintf(stderr," Filedescriptor %ld\n",PTR2FD(p));
+	    fprintf(stderr," Filedescriptor %ld\n", (long) PTR2FD(p));
 	  }
 	}else{
 #ifdef PIKE_DEBUG
