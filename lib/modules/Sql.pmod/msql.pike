@@ -1,6 +1,9 @@
 
 #pike __REAL_VERSION__
 
+//! Implements the glue needed to access the Msql-module from the generic
+//! SQL module.
+
 #if constant(Msql.msql)
 inherit Msql.msql;
 
