@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.362 2001/08/13 23:15:58 mast Exp $");
+RCSID("$Id: program.c,v 1.363 2001/08/13 23:31:34 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3954,7 +3954,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
     char *file=0;
     char *cnt=Pike_compiler->new_program->linenumbers;
 
-    if (d_flag > 5) {
+    if (d_flag > 50) {
       fprintf(stderr, "store_line_number(%d, \"%s\")\n",
 	      current_line, current_file->str);
       fprintf(stderr, "  last_line:%d last_file:\"%s\"\n",
@@ -3981,7 +3981,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
       }
       off+=get_small_number(&cnt);
       line+=get_small_number(&cnt);
-      if (d_flag > 10) {
+      if (d_flag > 100) {
 	fprintf(stderr, "  off: %d, line: %d\n"
 		"  raw: ",
 		off, line);
