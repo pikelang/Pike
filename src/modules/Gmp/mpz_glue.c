@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.42 1999/06/19 20:20:47 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.43 1999/08/06 22:13:46 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -31,15 +31,20 @@ RCSID("$Id: mpz_glue.c,v 1.42 1999/06/19 20:20:47 hubbe Exp $");
 #include "opcodes.h"
 #include "module_support.h"
 
-#ifdef USE_GMP2
-#include <gmp2/gmp.h>
-#else /* !USE_GMP2 */
-#include <gmp.h>
-#endif /* USE_GMP2 */
-
 #include "my_gmp.h"
 
 #include <limits.h>
+
+#ifdef _MSC_VER
+/* No random()... provide one for gmp
+ * This should possibly be a configure test
+ * /Hubbe
+ */
+long random(void)
+{
+  return my_rand();
+}
+#endif
 
 #undef THIS
 #define THIS ((MP_INT *)(fp->current_storage))
