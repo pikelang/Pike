@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.550 2004/01/17 19:20:43 nilsson Exp $
+|| $Id: program.c,v 1.551 2004/01/19 12:07:01 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.550 2004/01/17 19:20:43 nilsson Exp $");
+RCSID("$Id: program.c,v 1.551 2004/01/19 12:07:01 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3305,6 +3305,49 @@ void pike_set_prog_optimize_callback(node *(*opt)(node *))
   Pike_compiler->new_program->optimize = opt;
 }
 
+int really_low_reference_inherited_identifier(struct program_state *q,
+					      int e,
+					      int i)
+{
+  struct program *np=(q?q:Pike_compiler)->new_program;
+  struct reference funp;
+  struct program *p;
+  int d, num_id_refs;
+
+  if(i==-1) return -1;
+
+  p = np->inherits[e].prog;
+
+  funp = p->identifier_references[i];
+  funp.inherit_offset += e;
+  funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
+
+  num_id_refs = np->num_identifier_references;
+
+  for(d = 0; d < num_id_refs; d++)
+  {
+    struct reference *refp;
+    refp = np->identifier_references + d;
+
+    if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) return d;
+  }
+
+  if(q)
+    low_add_to_identifier_references(q,funp);
+  else
+    add_to_identifier_references(funp);
+  /* NOTE: np->num_identifier_references has been increased by one by
+   *       {low_,}add_to_identifier_references().
+   */
+#ifdef PIKE_DEBUG
+  if (num_id_refs != np->num_identifier_references-1) {
+    fatal("Unexpected number of identifier references: %d != %d\n",
+	  num_id_refs, np->num_identifier_references-1);
+  }
+#endif /* PIKE_DEBUG */
+  return num_id_refs; /* aka np->num_identifier_references - 1 */
+}
+
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name,
@@ -3330,27 +3373,7 @@ int low_reference_inherited_identifier(struct program_state *q,
     if(!(flags & SEE_PRIVATE))
       return -1;
 
-  /* really_low_reference_inherited_identifier */
-
-  refs = (int)np->num_identifier_references;
-
-  funp = p->identifier_references[i];
-  funp.inherit_offset += e;
-  funp.id_flags = (funp.id_flags & ~ID_INHERITED) | ID_INLINE|ID_HIDDEN;
-
-  for(d=0;d<refs;d++)
-  {
-    struct reference *refp;
-    refp=np->identifier_references+d;
-
-    if(!MEMCMP((char *)refp,(char *)&funp,sizeof funp)) return d;
-  }
-
-  if(q)
-    low_add_to_identifier_references(q,funp);
-  else
-    add_to_identifier_references(funp);
-  return refs;
+  return really_low_reference_inherited_identifier(q, e, i);
 }
 
 int find_inherit(struct program *p, struct pike_string *name)
