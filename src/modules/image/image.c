@@ -127,7 +127,7 @@ static INLINE void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
 {
    while (lines--)
    {
-      memcpy(dest,src,sizeof(rgb_group)*width);
+      MEMCPY(dest,src,sizeof(rgb_group)*width);
       dest+=moddest;
       src+=modsrc;
    }
@@ -152,7 +152,7 @@ static void img_crop(struct image *dest,
       new=malloc( (x2-x1+1)*(y2-y1+1)*sizeof(rgb_group) + 1);
       if (!new) 
 	error("Out of memory.\n");
-      memcpy(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
+      MEMCPY(new,img->img,(x2-x1+1)*(y2-y1+1)*sizeof(rgb_group));
       dest->img=new;
       return;
    }
@@ -186,7 +186,7 @@ static INLINE void img_clone(struct image *newimg,struct image *img)
    if (newimg->img) free(newimg->img);
    newimg->img=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
    if (!newimg->img) error("Out of memory!\n");
-   memcpy(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
+   MEMCPY(newimg->img,img->img,sizeof(rgb_group)*img->xsize*img->ysize);
    newimg->xsize=img->xsize;
    newimg->ysize=img->ysize;
    newimg->rgb=img->rgb;
