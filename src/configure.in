@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.52 1997/01/29 20:15:42 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.53 1997/01/30 21:23:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -236,7 +236,6 @@ if test $cppflags_is_set$ldflags_is_set = nono -a x${C_INCLUDE_PATH-} = x ; then
       :
     fi
   done
-  export LDFLAGS CPPFLAGS
 else
   :
 fi
@@ -530,6 +529,7 @@ int main()
         AC_DEFINE(_REENTRANT)
 	AC_DEFINE(_THREAD_SAFE)
 	AC_DEFINE(_SGI_SPROC_THREADS)
+	AC_DEFINE(_SGI_MP_SOURCE)
       else
         AC_MSG_RESULT(no)
         :
@@ -1263,6 +1263,8 @@ LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
 DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
+
+export LDFLAGS CPPFLAGS LIBS
 
 AC_CONFIG_SUBDIRS(modules)
 
