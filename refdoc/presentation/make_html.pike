@@ -156,9 +156,9 @@ string parse_text(Node n) {
 	    "</font> : " + parse_type(get_first_element(get_tag(e, "type"))) +
 	    "</tt></dt><dd></dd>\n";
 
-      	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
+      	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>\n";
       }
-      ret += "</dl>";
+      ret += "</dl>\n";
       break;
 
     case "array":
@@ -171,9 +171,9 @@ string parse_text(Node n) {
 
 
 	if(get_tag(d, "text")) // Must there be one?
-	   ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
+	   ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>\n";
       }
-      ret += "</dl>";
+      ret += "</dl>\n";
       break;
 
     case "int":
@@ -187,24 +187,43 @@ string parse_text(Node n) {
 	    ret += parse_text(get_tag(e, "value"));
 	  ret += "</font></tt></dt><dd></dd>\n";
 	}
-       	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
+       	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>\n";
       }
-      ret += "</dl>";
+      ret += "</dl>\n";
       break;
 
     case "mixed":
-      /*
       ret += "<tt>" + c->get_attributes()->name + "</tt> can have any of the following types:<dl>";
       foreach(get_tags(c, "group"), Node d)
 	ret += "<dt><tt>" + parse_type(get_first_element(get_tag(d, "type"))) + "</tt></dt>"
 	  "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
       ret += "</dl>";
       break;
-      */
-    case "multiset": // Not in XSLT
+
     case "string": // Not in XSLT
-      ret += " <font color='red'>Missing content (" + c->get_any_name() + ")</font> ";
-      // Not implemented yet.
+      ret += "<dl>";
+      foreach(get_tags(c, "group"), Node d) {
+	ret += "<dt><font color='green'>" + parse_text(get_tag(d, "value")) + "</font>:</dt>";
+	if(d=get_tag(d,"text"))
+	  ret += "<dd>" + parse_text(d) + "</dd>\n";
+	else
+	  werror("Warning: string element group without text element.\n");
+      }
+      ret += "</dl>\n";
+      break;
+
+    case "multiset": // Not in XSLT
+      ret += "<dl>";
+      foreach(get_tags(c, "group"), Node d) {
+	ret += "<dt><font color='green'>" +
+	  parse_text(get_tag(get_tag(d, "index"), "value"))
+	  + "</font>:</dt>";
+	if(d=get_tag(d,"text"))
+	  ret += "<dd>" + parse_text(d) + "</dd>\n";
+	else
+	  werror("Warning: multiset element group without text element.\n");
+      }
+      ret += "</dl>\n";
       break;
 
     case "image": // Not in XSLT
@@ -248,6 +267,11 @@ string parse_text(Node n) {
 
 
     case "source-position":
+      break;
+
+    case "value": // Temporary kludge
+      werror("Warning: Multiple levels of value.\n");
+      ret += parse_text(c);
       break;
 
     default:
@@ -398,6 +422,11 @@ string parse_type(Node n, void|string debug) {
   case "int":
     ret += "<font color='#202020'>int</font>";
     // min/max ...
+    break;
+
+  case "type": // Temporary kludge
+    werror("Warning: Multiple levels of type.\n");
+    ret += parse_type(n[0]);
     break;
 
   case "static": // Not in XSLT
