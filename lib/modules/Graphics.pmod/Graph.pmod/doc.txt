@@ -1,0 +1,299 @@
+Graph-doc
+
+Methods
+Image.Image Graphics.Graph.pie(mapping(string:mixed) graphdata)
+Image.Image Graphics.Graph.bars(mapping(string:mixed) graphdata)
+Image.Image Graphics.Graph.sumbars(mapping(string:mixed) graphdata)
+Image.Image Graphics.Graph.line(mapping(string:mixed) graphdata)
+Image.Image Graphics.Graph.norm(mapping(string:mixed) graphdata)
+Image.Image Graphics.Graph.graph(mapping(string:mixed) graphdata)
+
+The mapping graphdata can contain the following (all arguments can be
+left out):
+
+Note: type and subtype is left out.
+
+drawtype   Only "linear" works for now.
+tone       If present a Pie-chart will be toned.
+3Ddepth    How much 3D-depth a graph will have in pixels Default is 10.
+data       An array of arrays. Each array describing a data-set.
+           The graph-function however should be fed with an array
+           of arrays with X,Y-pairs.
+labels     An array(string) with four elements
+           ({xquantity, yquantity, xunit, yunit}). The strings will
+           be written on the axis.
+xnames     An array(string) with the text that will be written under
+           the X-axis. This should be the same size as sizeof(data).
+ynames     An array(string) with the text that will be written to
+           the left of the Y-axis. 
+fontsize   The size of the text. Default is 10.
+labelsize  The size of the text for labels. Default is fontsize.
+legendfontsize The size of the text for the legend. Default is fontsize.
+legend_texts   The texts that will be written the legend. 
+values_for_xnames An array(float) that describes where the ynames should 
+                  be placed. The numbers are like the data-numbers.
+                  Default is equally distributed.
+values_for_ynames An array(float) that describes where the ynames should 
+                  be placed. The numbers are like the data-numbers.
+                  Default is equally distributed.
+xsize      X-size of the graph in pixels. Default is 100.
+ysize      Y-size of the graph in pixels. Default is 100.
+image      An image that the graph will be drawn on.
+legendcolor    The color of the text in the legend. Default is?
+legendimage    I have no idea.
+bgcolor        The bakground-color. If the the background is a image
+               this color is used for antialias the texts.
+gbimage    Some sort of image...
+axcolor    The color of the axis.
+datacolors An array of colors for the datasets. 
+backdatacolors An array of color that do something...
+textcolor  Color of the text. Defualt is black.
+labelcolor Color of the labeltexts.
+orient     Can be "hor" or "vert". 
+linewidth  Width of the lines.
+backlinewidth Width of the outline-lines. Defualt is 0.
+vertgrid   If the vertical grid should be present.
+horgrid    If the horizontal grid should be present.
+gridwidth  Width of the grid. Defualt is linewidth/4.
+rotate     How much a the Pie in a Pie-shart should be rotated in degrees. 
+center     Makes the first Pie-slice be centered.
+bw         Draws the grapf black and white.
+eng        Writes the numbers in eng format.
+neng       Writes the numbers in engformat except for 0.1 < x < 1.0
+xmin       Where the X-axis should start. This will be overrided 
+           by datavalues.
+ymin       Where the Y-axis should start. This will be overrided 
+           by datavalues.
+name       A string with the name of the graph that will be written
+           at top of the graph.
+namecolor  The color of the name.
+font       The font that will be used. Default is Image.Font().
+gridcolor  The color of the grid. Default is black.
+
+
+
+
+
+Diagram info:
+
+Huvud-funktioner:
+create_graph(mapping diagram_data);
+create_bars(mapping diagram_data);
+create_sumbars(mapping diagram_data);
+create_pie(mapping diagram_data);
+
+
+Graphs: 
+Graphs är punkter eller punkter med linjer mellan sig. Punkterna anges
+med x, y.
+Indata på formen x, y, y, y omvandlas av inläsningsfunktionen.
+
+Bars:
+Barsdata består av en lista av listor med värden i. Värdena skrivs
+ut som staplar eller negativa staplar.
+
+Data lagras i ett data-mapping:
+diagram_data
+
+
+string type;
+//Är lika med "graph", "bars", "sumbars", "pie";
+
+string subtype;
+//Är alltid "line" för graph-er. Tänkbara för bars är "line", "dot", "box"  
+//Är "pie" för tårtor?
+//Sumbars: "norm" ger alla staplar lika höga.
+
+//Följande gäller för bars-line och graph-diagram
+string drawtype;
+ "level"; //Om !=0 så är bars-diagrammet bara vågräta streck 
+ "linear"; //Om !=0 så är bars/graph-diagrammet linjärt spline (default)
+ "quadratic"; //Om !=0 så är bars/graph-diagrammet kvadratiskt spline
+ "cubic";//Om !=0 så är bars/graph-diagrammet kubiskt spline 
+ //För bars-box och pie:
+ "2D" - ritar 2D boxar/kakor
+ "3D" - flash!!!
+
+int tone;
+  //Anger om skuggning ska ske
+ 
+float|int 3Ddepth;
+//Anger hur djup 3D ska vara i pixel
+
+array(array(float|string)) data; 
+//Innehåller för graph 
+ // en array med arrayer av typ x-pos1, y-pos1, x-pos2, ...
+//För Bars:
+ // x-data1, x-data2, ...
+//För pie:
+ // value1, value2, ... 
+//Om ett dataelement är lika med "\n" så betyder det VOID
+
+
+array(string) labels;
+//Innehåller en array med ({xstorhet, ystorhet, xenhet, yenhet})
+// För bars kan används inte xenhet
+//Om ett dataelement är lika med "\n" så betyder det VOiD
+
+array(string) xnames;
+//Innehåller en array med olika namn som ska stå längs x-axeln 
+//(t ex jan, feb).
+//Om ett dataelement är lika med "\n" så betyder det VOiD
+
+
+array(string) ynames;
+//Innehåller en array med olika namn som ska stå längs y-axeln (t ex
+//lite, mycket).
+// Dessa namn skrivs i diagrammet av create_pie.
+//Om ett dataelement är lika med "\n" så betyder det VOiD
+
+
+array(object(image)) xnamesimg;
+array(object(image)) ynamesimg;
+//bilderna på x- och ynames.
+
+int xmaxxnames;
+int ymaxxnames;
+int xmaxynames;
+int ymaxynames;
+//Anger max-storleken på text-bilderna.
+
+int fontsize;
+//anger med vilken storlek texten ska skrivas
+
+int labelsize;
+// anger med vilken storlek texten för labels ska skrivas
+// Denna ska sättas till 0 om det inte finns några labels!!!
+
+int legendfontsize;
+//Anger storleken på legend-texten.
+// (Default fontsize)
+//Om den är för stor minskas den. 
+
+int legend_size;
+//Storleken på legenden.
+
+array(string) legend_texts;
+// innehåller texten som ska stå i Legenden.
+// Det ska vara en text per data
+// Är 0 om ingen text ska skrivas ut.
+array(froat) values_for_xnames;
+//Innehåller en array med nivåerna som ska förknippas med vissa xnames.
+//Om dessa inte anges kan de sättas ut jämt.
+//Bars sätter denna själv
+// Dessa namn är de som används av pie-diagramet för legenden.
+//Om ett dataelement är lika med "\n" så betyder det VOID
+
+
+array(froat) values_for_ynames;
+//Innehåller en array med nivåerna som ska förknippas med vissa ynames.
+//Om dessa inte anges kan de sättas ut jämt.
+
+float xmaxvalue, xminvalue, ymaxvalue, yminvalue;
+//anger inom vilka områden man ska förvänta sig data. Minvalue sätts
+//i normala fall till min(0, minsta_värde) och maxvalue till 
+//max(0, största_värde).
+
+
+float xspace, float yspace, 
+//anger hur lång det ska vara mellan utskrifterna av nuffror/xnames/ynames
+
+int xsize, ysize;
+//anger hur stor bild man ska generera.
+
+"image":image-object,
+// Denna kan sättas till bakgrundsbilden innan create_XXX anropas.
+// OBS om den ska användas så måste bgcolor vara 0!!!
+ 
+"xstart": var_i_bilden_vi_kan_börja_rita_data-int, //från höger
+"ystart": var_i_bilden_vi_kan_börja_rita_data-int, //Nerifrån!
+"xstop":int, //från höger
+"ystop":int //Nerifrån!
+
+"legendcolor":({int r, int g, int b}) 
+//bgfärgen på bakgrunden i legenden
+//Om legendcolor är 0 så är det bilden:
+
+"legendimage": object(image) 
+// som ska användas som bakgrundsbild.
+
+"bgcolor":({int r, int g, int b}) 
+//färgen på bakgrunden i bilden
+//Om bgcolor är 0 så är det bilden:
+
+"bgimage": object(image) 
+// som ska användas som bakgrundsbild.
+
+"axcolor":({int r, int g, int b}) 
+//Färgen på axlarna och på outlines i pie
+
+"datacolors":({({int r, int g, int b}), ... }) 
+//Färgen på linjerna/barsen/slicerna
+//För grapher och bars måste de vara av samma antal som antalet 
+//uppsättningar data
+
+"backdatacolors":({({int r, int g, int b}), ... }) 
+//Färgen på kontueren kring linjerna/barsen/slicerna
+//För grapher och bars måste de vara av samma antal som antalet 
+//uppsättningar data
+
+"textcolor":({int r, int g, int b})
+// färgen på texten
+
+"labelcolor":({int r, int g, int b})
+// färgen på labelstexten (default är textcolor):({int r, int g, int b})
+
+"orient":"hor" eller "vert"
+//Anger om skriften på x-axel ska skrivas horizontelt eller vertikalt.
+//hor är default.
+
+"linewidth":float bredd på alla linjer
+
+"backlinewidth":float bredd på alla linjer
+
+"grindwidth":float bredd på alla linjer i grinden
+
+"vertgrind": int om denna är så blir det vertikala grind
+
+"horgrind": int om denna är så blir det horizontella grind
+
+"image":object(image)
+//bilden som grafen ritas i.
+
+"rotate": int|float 
+//How much the pie should be rotated in degres (0-360).
+
+"center": int
+//If center==0 no centration takes place.
+//Else the slice number center-1 will be in the topp.
+
+"datasize": int
+//how many datas there are in the biggest dataset
+
+"bw": int
+//If this is != 0 the graphs are drawn in black and white.
+//The black and white colors are set to be as different as possible
+//If colors are given, bw is ignored
+//the bgpicture or bg is not affected.
+
+"eng": mixed
+//If this is != 0 the information on the axis are presented in
+//engineer-format (120k, 34u (LPC?)) 
+
+"neng": mixed
+//If this is != 0 the information on the axis are presented in
+//Norings engineer-format (120k, 34u, and 0.434) 
+
+"xmin": int
+//If this is !=0 the xaxis starts at the minumum value. 
+"ymin": int
+//If this is !=0 the yaxis starts at the minumum value. 
+
+"name":string
+//The name of the diagram that will be written at the top of the diagram
+
+"namesize":int
+//The size of the name. If it is 0, "fontsize" is used instead.
+
+"namecolor":int
+//The color of the name. If it is 0, "textcolor" is used instead.
