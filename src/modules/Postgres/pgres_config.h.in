@@ -1,9 +1,14 @@
-/* $Id: pgres_config.h.in,v 1.2 1997/11/25 20:57:57 grubba Exp $ */
+/* $Id: pgres_config.h.in,v 1.3 1998/08/25 13:11:51 grubba Exp $ */
 #undef STDC_HEADERS
 
+/* Define if you have the <postgres.h> header file.  */
 #undef HAVE_POSTGRES_H
+/* Define if you have the <libpq-fe.h> header file.  */
 #undef HAVE_LIBPQ_FE_H
+/* Define if you have the pq library (-lpq).  */
 #undef HAVE_LIBPQ
+/* Define if you have the PQsetdbLogin function.  */
+#undef HAVE_PQSETDBLOGIN
 
 
 /* End of autoconfigurable section */
