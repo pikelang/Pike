@@ -46,10 +46,10 @@ EBCDIC and the rest of the file in any other charset stated in the
 <section title="Code Normalization">
 
 <p>The preprocessor collapses all consecutive white space characters
-except for newlines single space characters. All // and /**/ comments
-are removed, as is #! lines. Pike considers ANSI/DEC escape sequences
-as white spaces and will thus be disregarded from. Supported formats
-are &lt;ESC&gt;[\040-\077]+[\100-\177] and
+outside of strings, except for newlines, to single space characters.
+All // and /**/ comments are removed, as are #! lines. Pike considers
+ANSI/DEC escape sequences as white space. Supported formats are
+&lt;ESC&gt;[\040-\077]+[\100-\177] and
 &lt;CSI&gt;[\040-\077]*[\100-\177]. Note that this means that it is
 possible to do color markup in the actual source file.</p>
 
@@ -97,6 +97,14 @@ void do_stuff() {
 }
 </example>
 
+<p>Defines can be given specific values on the command line too, just
+be sure to quote them as required by your shell.</p>
+
+<example>
+~% pike '-DTEXT="Hello world!"' -e 'write("%s\n", TEXT);'
+Hello world!
+</example>
+
 <p>Finally #define can also be used to define macros. Macros are just
 text expansion with arguments, but it is often very useful to make a
 cleaner looking code and to write less.</p>
@@ -116,19 +124,22 @@ cleaner looking code and to write less.</p>
 
 <ul>
 <li>A macro can have up to 255 arguments.</li>
-<li>It can be wise to put extra parenthesis around the arguments
-expension since it is a purely textual expansion. I.e. if the macro
-DOUBLE(X) is defined as X*2, then DOUBLE(2+3) will produce 2+3*2.</li>
-<li>A backslash (\) can be used to make the definition span several
-lines.</li>
+<li>It can be wise to put extra parentheses around the arguments
+expanded since it is a purely textual expansion. I.e. if the macro
+DOUBLE(X) is defined as X*2, then DOUBLE(2+3) will produce 2+3*2,
+probably producing a hard to track down bug.</li>
+<li>A backslash (\) at the end of the line can be used to make the
+definition span several lines.</li>
 <li>A hash (#) in front of a macro variable "casts" it to a string.</li>
 <li>It is possible to define macros with a variable list of arguments
 by using the ... syntax.</li>
 <li>Macros are often formulated so that a semicolon after it is
-apropriate.</li>
+apropriate, for improved code readability.</li>
 <li>In Pike code macros and defines are most often written in all caps.</li>
-<li>If a macro expands into several expressions it is often safest to
-group them together in a bigger block, such as do-while(0).</li>
+<li>If a macro expands into several statements, you are well advised to
+group them together in containment block, such as do { BODY } while(0).
+If you do not, your macro could produce other hard to track down bugs,
+if put as a loop or if body without surrounding curly braces.</li>
 <li>A double hash (##) in front of a macro variable concatenates it with
 the text before it.</li>
 </ul>
@@ -171,9 +182,9 @@ appear.</p>
 </subsection>
 
 <subsection title="#string">
-<p>The preprocessor #string will load the file in the string that
-follows and insert its contents as a string. This preprocessor
-directive may appear anywhere a string may appear.</p>
+<p>The preprocessor directive #string will load the file in the
+string that follows and insert its contents as a string. This
+preprocessor directive may appear anywhere a string may appear.</p>
 <example>
 do_something(#string "the_file.wks");
 </example>
