@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.65 2000/03/07 21:22:08 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.66 2000/03/09 20:37:15 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -1183,6 +1183,7 @@ static int do_docode2(node *n,int flags)
 	    x++;
 	  emit(F_LDA, x);
 	  emit(F_EXTERNAL, n->u.sval.subtype);
+	  new_program->flags |= PROGRAM_USES_PARENT;
 	  return 1;
 	}
       }

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.92 2000/01/22 02:34:59 hubbe Exp $");
+RCSID("$Id: object.c,v 1.93 2000/03/09 20:37:15 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -200,7 +200,11 @@ void do_free_object(struct object *o)
 struct object *debug_clone_object(struct program *p, int args)
 {
   ONERROR tmp;
-  struct object *o=low_clone(p);
+  struct object *o;
+  if(p->flags & PROGRAM_USES_PARENT)
+    error("Parent lost, cannot clone program.\n");
+
+  o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
   call_c_initializers(o);
