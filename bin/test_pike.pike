@@ -1,8 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.86 2003/06/05 12:57:59 grubba Exp $ */
-
-import Stdio;
+/* $Id: test_pike.pike,v 1.87 2003/06/26 17:36:16 nilsson Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -26,7 +24,7 @@ mapping(string:int) cond_cache=([]);
 #define HAVE_DEBUG
 #endif
 
-void bzot(string test)
+void print_code(string test)
 {
   array lines = test/"\n";
   foreach(lines; int r; string line) {
@@ -55,7 +53,7 @@ array find_testsuites(string dir)
     foreach(s, string file)
       {
 	string name=combine_path(dir||"",file);
-	if(file_size(name)==-2)
+	if(Stdio.is_dir(name))
 	  ret+=find_testsuites(name);
       }
   }
@@ -63,7 +61,7 @@ array find_testsuites(string dir)
 }
 
 array(string) read_tests( string fn ) {
-  string|array(string) tests = read_bytes( fn );
+  string|array(string) tests = Stdio.read_file( fn );
   if(!tests) {
     werror("Failed to read test file %O, errno=%d.\n",
 	   fn, errno());
@@ -253,7 +251,7 @@ int main(int argc, array(string) argv)
     ({"asm",Getopt.MAY_HAVE_ARG,({"--assembler-debug"})}),
 #endif
     ({"mem",Getopt.NO_ARG,({"-m","--mem","--memory"})}),
-    ({"auto",Getopt.NO_ARG,({"-a","--auto"})}),
+    ({"auto",Getopt.MAY_HAVE_ARG,({"-a","--auto"})}),
     ({"notty",Getopt.NO_ARG,({"-T","--notty"})}),
 #ifdef HAVE_DEBUG
     ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
@@ -291,7 +289,10 @@ int main(int argc, array(string) argv)
 	case "mem": mem=1; break;
 
 	case "auto":
-	  testsuites=find_testsuites(".");
+	  if(stringp(opt[1]))
+	    testsuites=find_testsuites(opt[1]);
+	  else
+	    testsuites=find_testsuites(".");
 	  break;
 
         case "regression":
@@ -448,7 +449,7 @@ int main(int argc, array(string) argv)
 	}
 
 	string pad_on_error = "\n";
-	if(maybe_tty && Terminfo.is_tty())
+	if(maybe_tty && Stdio.Terminfo.is_tty())
         {
 	  if(verbose<2) {
 	    werror("test %d, line %d\r", e+1, testline);
@@ -514,7 +515,7 @@ int main(int argc, array(string) argv)
 	{
 	  werror("Doing test %d (%d total) at %s:%d%s\n",
 		 testno, successes+errors+1, testfile, testline, extra_info);
-	  if(verbose>2) bzot(test);
+	  if(verbose>2) print_code(test);
 	}
 
 	if(check > 1) _verify_internals();
@@ -565,7 +566,7 @@ int main(int argc, array(string) argv)
 
 	// _optimizer_debug(5);
 	
-	if(verbose>9) bzot(to_compile);
+	if(verbose>9) print_code(to_compile);
 	switch(type)
         {
 	  mixed at,bt;
@@ -576,7 +577,7 @@ int main(int argc, array(string) argv)
 	  {
 	    _dmalloc_set_name();
 	    werror(pad_on_error + fname + " failed.\n");
-	    bzot(test);
+	    print_code(test);
 	    errors++;
 	  }
 	  else {
@@ -596,7 +597,7 @@ int main(int argc, array(string) argv)
 	  else {
 	    _dmalloc_set_name();
 	    werror(pad_on_error + fname + " failed (expected compile error).\n");
-	    bzot(test);
+	    print_code(test);
 	    errors++;
 	  }
 	  master()->set_inhibit_compile_errors(0);
@@ -610,7 +611,7 @@ int main(int argc, array(string) argv)
 	  {
 	    _dmalloc_set_name();
 	    werror(pad_on_error + fname + " failed.\n");
-	    bzot(test);
+	    print_code(test);
 	    errors++;
 	  }
 	  else {
@@ -619,7 +620,7 @@ int main(int argc, array(string) argv)
 	      successes++;
 	    else {
 	      werror(pad_on_error + fname + " failed (expected compile warning).\n");
-	      bzot(test);
+	      print_code(test);
 	      errors++;
 	    }
 	  }
@@ -646,7 +647,7 @@ int main(int argc, array(string) argv)
 	    _dmalloc_set_name();
 	    werror(pad_on_error + fname + " failed (expected eval error).\n");
 	    werror("Got %O\n", a);
-	    bzot(test);
+	    print_code(test);
 	    errors++;
 	  }
 	  master()->set_inhibit_compile_errors(0);
@@ -683,7 +684,7 @@ int main(int argc, array(string) argv)
 	  }) {
 	    // trace(0);
 	    werror(pad_on_error + fname + " failed.\n");
-	    bzot(test);
+	    print_code(test);
 	    if (arrayp(err) && sizeof(err) && stringp(err[0])) {
 	      werror("Error: " + master()->describe_backtrace(err));
 	    }
@@ -698,7 +699,7 @@ int main(int argc, array(string) argv)
 	      ( computed_line && computed_line!=o->__cpp_line))
 	    {
 	      werror(pad_on_error + fname + " Line numbering failed.\n");
-	      bzot(test + linetester);
+	      print_code(test + linetester);
 	      werror("   CPP lines: %d\n",o->__cpp_line);
 	      werror("   RTL lines: %d\n",o->__rtl_line);
 	      if(computed_line)
@@ -715,7 +716,7 @@ int main(int argc, array(string) argv)
 	    if(a)
 	    {
 	      werror(pad_on_error + fname + " failed.\n");
-	      bzot(test);
+	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      errors++;
 	    }
@@ -728,7 +729,7 @@ int main(int argc, array(string) argv)
 	    if(!a)
 	    {
 	      werror(pad_on_error + fname + " failed.\n");
-	      bzot(test);
+	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      errors++;
 	    }
@@ -744,7 +745,7 @@ int main(int argc, array(string) argv)
 	  case "RUNCT":
 	    if(!a || !arrayp(a) || sizeof(a)!=2 || !intp(a[0]) || !intp(a[1])) {
 	      werror(pad_on_error + fname + " failed to return proper results.\n");
-	      bzot(test);
+	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      errors++;
 	    }
@@ -763,7 +764,7 @@ int main(int argc, array(string) argv)
 	    if(a!=b)
 	    {
 	      werror(pad_on_error + fname + " failed.\n");
-	      bzot(test);
+	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      werror(sprintf("o->b(): %O\n",b));
 	      errors++;
@@ -787,7 +788,7 @@ int main(int argc, array(string) argv)
 	    if(!equal(a,b))
 	    {
 	      werror(pad_on_error + fname + " failed.\n");
-	      bzot(test);
+	      print_code(test);
 	      werror(sprintf("o->a(): %O\n",a));
 	      werror(sprintf("o->b(): %O\n",b));
 	      errors++;
@@ -828,7 +829,7 @@ int main(int argc, array(string) argv)
 	a=b=0;
       }
 
-      if(maybe_tty && Terminfo.is_tty())
+      if(maybe_tty && Stdio.Terminfo.is_tty())
       {
 	werror("                                        \r");
       }
@@ -945,7 +946,7 @@ Usage: test_pike [args] [testfiles]
                     X<0 For values below zero, _verify_internals will be run
                         before every n:th test, where n=abs(X).
 -m, --mem, --memory Print out memory allocations after the tests.
--a, --auto          Let the test program find the testsuits self.
+-a, --auto[=dir]    Let the test program find the testsuits self.
 -T, --notty         Format output for non-tty.
 -d, --debug         Opens a debug port.
 ";
