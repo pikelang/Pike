@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.8 2001/05/21 15:41:42 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.9 2001/05/26 18:02:56 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -26,6 +26,8 @@ RCSID("$Id: iterators.cmod,v 1.8 2001/05/21 15:41:42 grubba Exp $");
 #include "pike_error.h"
 #include "program.h"
 #include "operators.h"
+#include "builtin_functions.h"
+#include "constants.h"
 
 DECLARATIONS
 
@@ -776,6 +778,158 @@ PIKECLASS string_split_iterator
       free_svalue(&THIS->feed);
       THIS->feed.type = T_INT;
       THIS->feed.u.integer = 0;
+    }
+
+  OPTIMIZE
+    {
+      if (CDR(n) && (CDR(n)->token == F_ARG_LIST) &&
+	  CADR(n) && (CADR(n)->token == F_APPLY) &&
+	  CAADR(n) && (CAADR(n)->token == F_CONSTANT) &&
+	  (CAADR(n)->u.sval.type == T_FUNCTION) &&
+	  (CAADR(n)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	  (CAADR(n)->u.sval.u.efun->function == f_replace)) {
+	/* String.SplitIterator(replace(...),...) */
+	node *repl_args = CDADR(n);
+	node **str = my_get_arg(&repl_args, 0);
+	node **from = my_get_arg(&repl_args, 1);
+	node **to = my_get_arg(&repl_args, 2);
+
+	if (str && from && to) {
+	  /* String.SplitIterator(replace(str, from, to), ...) */
+
+	  int num;
+
+	  if (((*to)->token == F_APPLY) &&
+	      CAR(*to) && (CAR(*to)->token == F_CONSTANT) &&
+	      (CAR(*to)->u.sval.type == T_FUNCTION) &&
+	      (CAR(*to)->u.sval.subtype == FUNCTION_BUILTIN) &&
+	      (CAR(*to)->u.sval.u.efun->function == f_allocate) &&
+	      CDR(*to) && (CDR(*to)->token == F_ARG_LIST) &&
+	      CADR(*to) && (CADR(*to)->token == F_CONSTANT) &&
+	      (CADR(*to)->u.sval.type == T_INT) &&
+	      (num = CADR(*to)->u.sval.u.integer) &&
+	      CDDR(*to) && (CDDR(*to)->token == F_CONSTANT) &&
+	      (CDDR(*to)->u.sval.type == T_STRING) &&
+	      (CDDR(*to)->u.sval.u.string->len == 1)) {
+	    /* String.SplitIterator(replace(str, from, allocate(num, "x")),
+	     *                      ...) */
+	    int split_val = index_shared_string(CDDR(*to)->u.sval.u.string, 0);
+
+	    if (CDDR(n) &&
+		(((CDDR(n)->token == F_CONSTANT) &&
+		  (CDDR(n)->u.sval.type == T_INT) &&
+		  (CDDR(n)->u.sval.u.integer == split_val)) ||
+		 ((CDDR(n)->token == F_ARG_LIST) &&
+		  CADDR(n) && (CADDR(n)->token == F_CONSTANT) &&
+		  (CADDR(n)->u.sval.type == T_INT) &&
+		  (CADDR(n)->u.sval.u.integer == split_val)))) {
+	      /* String.SplitIterator(replace(str, from, allocate(n, "x")),
+	       *                      'x', ...)
+	       */
+	      struct array *split = NULL;
+	      node *res = NULL;
+
+	      switch((*from)->token) {
+	      case F_CONSTANT:
+		if (((*from)->u.sval.type == T_ARRAY) &&
+		    ((*from)->u.sval.u.array->size == num)) {
+		  int i;
+		  for (i=0; i < num; i++) {
+		    if (((*from)->u.sval.u.array->item[i].type != T_STRING) ||
+			((*from)->u.sval.u.array->item[i].u.string->len != 1)) {
+		      return NULL;
+		    }
+		  }
+		  split = allocate_array(num+1);
+		  split->item[0].type = T_INT;
+		  split->item[0].u.integer = split_val;
+		  for (i=0; i < num; i++) {
+		    split->item[i+1].type = T_INT;
+		    split->item[i+1].u.integer =
+		      index_shared_string((*from)->u.sval.u.array->
+					  item[i].u.string, 0);
+		  }		  
+		}
+		break;
+	      case F_APPLY:
+		if (CAR(*from) && (CAR(*from)->token == F_CONSTANT) &&
+		    (CAR(*from)->u.sval.type == T_FUNCTION) &&
+		    (CAR(*from)->u.sval.subtype == FUNCTION_BUILTIN)) {
+		  if (CAR(*from)->u.sval.u.efun->function == f_allocate) {
+		    /* Not likely */
+		  } else if (CAR(*from)->u.sval.u.efun->function ==
+			     debug_f_aggregate) {
+		    node *tmp = CDR(*from);
+		    int i;
+		    for (i = 0; tmp && (tmp->token == F_ARG_LIST);
+			 tmp = CDR(tmp)) {
+		      if (!CAR(tmp)) continue;
+		      if ((CAR(tmp)->token != F_CONSTANT) || 
+			  (CAR(tmp)->u.sval.type != T_STRING) ||
+			  (CAR(tmp)->u.sval.u.string->len != 1)) {
+			return NULL;
+		      }
+		      i++;
+		    }
+		    if (i != num) {
+		      return NULL;
+		    }
+		    split = allocate_array(num+1);
+		    split->item[0].type = T_INT;
+		    split->item[0].u.integer = split_val;
+		    tmp = CDR(*from);
+		    for (i = 1; tmp && (tmp->token == F_ARG_LIST);
+			 tmp = CDR(tmp)) {
+		      if (!CAR(tmp)) continue;
+		      split->item[i].type = T_INT;
+		      split->item[i].u.integer =
+			index_shared_string(CAR(tmp)->u.sval.u.string, 0);
+		      i++;
+		    }		    
+		  }
+		} else {
+		  return NULL;
+		}
+		break;
+	      default:
+		return NULL;
+	      }
+	      if (!split) {
+		return NULL;
+	      }
+	      push_array(split);	/* Simplify error-handling... */
+
+	      /* Create the result...
+	       *
+	       * String.SplitIterator(str, split, ...)
+	       */
+	      if (CDDR(n)->token == F_ARG_LIST) {
+		ADD_NODE_REF2(CAR(n),
+		ADD_NODE_REF2(*str,
+		ADD_NODE_REF2(CDDDR(n),
+		  res =
+		    mkapplynode(CAR(n),
+			        mknode(F_ARG_LIST, *str,
+				       mknode(F_ARG_LIST,
+					      mkconstantsvaluenode(Pike_sp-1),
+					      CDDDR(n))));
+		)));
+	      } else {
+		ADD_NODE_REF2(CAR(n),
+		ADD_NODE_REF2(*str,
+		  res =
+		    mkapplynode(CAR(n),
+			        mknode(F_ARG_LIST, *str,
+				       mkconstantsvaluenode(Pike_sp-1)));
+		));
+	      }
+	      pop_stack();
+	      return res;
+	    }
+	  }
+	}
+      }
+      return NULL;
     }
 };
 
