@@ -7,7 +7,11 @@ rm -f lib/modules/Crypto/des3.pike
 rm -f lib/modules/Crypto/des3_cbc.pike
 rm -f lib/modules/Crypto/idea_cbc.pike
 rm -f lib/modules/Crypto/rsa.pike
-(cd src/modules/_Crypto ; ./.build_lobotomized_crypto)
+# Delete crypto dependent modules?
+# rm -rf lib/modules/SSL.pmod
+# rm -f lib/modules/Standards.pmod/PKCS.pmod/RSA.pmod
+# rm -f lib/modules/Tools.pmod/X509.pmod
+(cd src/modules/_Crypto && ./.build_lobotomized_crypto)
 echo
 echo "Removing low Crypto module."
 rm -rf src/modules/_Crypto
