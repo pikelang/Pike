@@ -76,17 +76,12 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   res->fields->description="";
   res->fields->keywords="";
 
-  int h = gethrtime();
   parser->feed(data);
   parser->finish();
-//   werror("\n%.1f\n", (gethrtime()-h)/1000000.0 );
-  array links = lf->read();
-//   werror("%O\n", links );
-  res->links = map( links, fix_entities );
-  
+
+  res->links = fix_entities(lf->read()*"\0")/"\0";
   res->fields->body=fix_entities(databuf->get());
   res->fix_relative_links(uri);
-
   return res;
 }
 
