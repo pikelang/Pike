@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.19 2003/09/05 16:25:51 grubba Exp $
+// $Id: module.pmod.in,v 1.20 2003/09/05 16:44:02 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -658,10 +658,8 @@ class PikeCompiler
     Expression parse_ ## NAME ## _expression(Iterator tokens_left)	\
     {									\
       Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
-      Token token;							\
-      while (tokens_left &&						\
-	     SYMS[(token = tokens_left->value())->symbol]) {		\
-	tokens_left->`+=(1);						\
+      foreach(tokens_left;; Token token) {				\
+	if (!SYMS[token->symbol]) return expr;				\
 	expr = SuffixExpression(token, expr);				\
       }									\
       return expr;							\
@@ -750,7 +748,7 @@ class PikeCompiler
     ArgList arg_list;
     ArgList current_arg;
 
-    while(tokens_left) {
+    foreach(tokens_left;;) {
       ArgList next_arg = ArgList(parse_pair_expression(tokens_left));
       if (arg_list) {
 	current_arg->next = next_arg;
@@ -765,7 +763,6 @@ class PikeCompiler
 	  SYNTAX_ERROR("Expected , in argument list.");
 	  return arg_list;
 	}
-	tokens_left->`+=(1);
       }
     }
     return arg_list;
