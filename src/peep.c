@@ -18,7 +18,7 @@
 #include "constants.h"
 #include "interpret.h"
 
-RCSID("$Id: peep.c,v 1.57 2001/07/17 17:50:39 grubba Exp $");
+RCSID("$Id: peep.c,v 1.58 2001/07/17 20:16:40 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -200,7 +200,7 @@ void update_arg(int instr,INT32 arg)
 #define CALL_ABSOLUTE(X) do {				\
     SET_REG(REG_O2, (INT32)(X));			\
     /* jmpl %o2, %o7	*/				\
-    PUSH_INT(0x81c00000|(REG_O7<<24)|(REG_O2<<14));	\
+    PUSH_INT(0x81c00000|(REG_O7<<25)|(REG_O2<<14));	\
     /* noop		*/				\
     PUSH_INT(0x01000000);				\
   } while(0)
