@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.59 2003/07/08 13:25:45 grubba Exp $
+|| $Id: preprocessor.h,v 1.60 2003/11/14 00:15:06 mast Exp $
 */
 
 /*
@@ -801,17 +801,7 @@ static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   if (SETJMP(recovery))
   {
-    struct svalue thrown = throw_value;
-    throw_value.type = T_INT;
-
-    cpp_error(this, "Error evaluating expression.");
-
-    push_svalue(&thrown);
-    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
-    pop_stack();
-    free_svalue(&thrown);
-
+    cpp_handle_exception (this, "Error evaluating expression.");
     pos=tmp;
     FIND_EOL();
     push_int(0);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.124 2003/09/30 15:55:42 grubba Exp $
+|| $Id: cpp.c,v 1.125 2003/11/14 00:15:06 mast Exp $
 */
 
 #include "global.h"
@@ -114,7 +114,7 @@ struct cpp
 struct define *defined_macro =0;
 struct define *constant_macro =0;
 
-void cpp_error(struct cpp *this,char *err)
+void cpp_error(struct cpp *this, const char *err)
 {
   this->compile_errors++;
   if(this->compile_errors > 10) return;
@@ -135,45 +135,48 @@ void cpp_error(struct cpp *this,char *err)
   }
 }
 
-void cpp_error_sprintf(struct cpp *this, char *fmt, ...)  ATTRIBUTE((format(printf,2,3)))
+void cpp_error_vsprintf (struct cpp *this, const char *fmt, va_list args)
 {
-  va_list args;
   char buf[8192];
-
-  va_start(args,fmt);
   VSNPRINTF (buf, sizeof (buf), fmt, args);
-  va_end(args);
-
   cpp_error(this, buf);
 }
 
-void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
+void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
+  ATTRIBUTE((format(printf,2,3)))
 {
-  /* FIXME: Doesn't handle wide string error messages. */
-  struct pike_string *s = 0;
+  va_list args;
+  va_start(args,fmt);
+  cpp_error_vsprintf (this, fmt, args);
+  va_end(args);
+}
 
-  if ((thrown->type == T_ARRAY) && thrown->u.array->size &&
-      (thrown->u.array->item[0].type == T_STRING)) {
-    /* Old-style backtrace */
-    s = thrown->u.array->item[0].u.string;
-  } else if (thrown->type == T_OBJECT) {
-    struct generic_error_struct *ge;
-    if ((ge = (struct generic_error_struct *)
-	 get_storage(thrown->u.object, generic_error_program))) {
-      s = ge->desc;
-    }
+void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
+  ATTRIBUTE((format(printf,2,3)))
+{
+  struct svalue thrown;
+  move_svalue (&thrown, &throw_value);
+  throw_value.type = T_INT;
+
+  if (cpp_error_fmt) {
+    va_list args;
+    va_start (args, cpp_error_fmt);
+    cpp_error_vsprintf (this, cpp_error_fmt, args);
+    va_end (args);
   }
 
-  if (s && !s->size_shift) {
-    extern void f_string_trim_all_whites(INT32 args);
-    ref_push_string(s);
-    f_string_trim_all_whites(1);
-    push_constant_text("\n");
-    push_constant_text(" ");
-    f_replace(3);
-    cpp_error(this, sp[-1].u.string->str);
-    pop_stack();
+  push_svalue(&thrown);
+  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+
+  if (SAFE_IS_ZERO(sp-1)) {
+    /* FIXME: Doesn't handle wide string error messages. */
+    struct pike_string *s = format_exception_for_error_msg (&thrown);
+    if (!s->size_shift) cpp_error (this, s->str);
+    free_string (s);
   }
+
+  pop_stack();
+  free_svalue(&thrown);
 }
 
 /*! @class MasterObject
@@ -1363,25 +1366,15 @@ static void check_constant(struct cpp *this,
 	  res = 0;
 	}
 	else {
-	  struct svalue thrown = throw_value;
-	  throw_value.type = T_INT;
-
 	  if (!data.shift) {
 	    char *str = malloc(dlen + 1);
 	    MEMCPY(str, data.ptr, dlen);
 	    str[dlen] = 0;
-	    cpp_error_sprintf(this, "Error resolving '%s'.", str);
+	    cpp_handle_exception (this, "Error resolving '%s'.", str);
 	    free(str);
 	  }
 	  else
-	    cpp_error(this, "Error resolving identifier.");
-
-	  push_svalue(&thrown);
-	  low_safe_apply_handler("compile_exception", this->handler,
-				 this->compat_handler, 1);
-	  if (SAFE_IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
-	  pop_stack();
-	  free_svalue(&thrown);
+	    cpp_handle_exception (this, "Error resolving identifier.");
 	  res = 0;
 	}
       }
@@ -1404,17 +1397,7 @@ static void check_constant(struct cpp *this,
 			   BIT_MAPPING|BIT_OBJECT|BIT_PROGRAM))
       res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
     else {
-      struct svalue thrown = throw_value;
-      throw_value.type = T_INT;
-
-      cpp_error(this, "Error importing '.'.");
-
-      push_svalue(&thrown);
-      low_safe_apply_handler("compile_exception", this->handler,
-			     this->compat_handler, 1);
-      if (SAFE_IS_ZERO(sp-1)) cpp_describe_exception(this, &thrown);
-      pop_stack();
-      free_svalue(&thrown);
+      cpp_handle_exception (this, "Error importing '.'.");
       res = 0;
     }
   }
