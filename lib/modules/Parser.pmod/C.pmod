@@ -4,12 +4,17 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.35 2002/12/30 14:37:27 nilsson Exp $
+// $Id: C.pmod,v 1.36 2003/01/18 02:13:06 nilsson Exp $
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
-//! Splits the @[data] string into an array of tokens.
-array(string) split(string data)
+//! Splits the @[data] string into an array of tokens. An additional
+//! element with a newline will be added to the resulting array of
+//! tokens. If the optional argument @[state] is provided the split
+//! function is able to pause and resume splitting inside /**/ tokens.
+//! The @[state] argument should be an initially empty mapping, in
+//! which split will store its state between successive calls.
+array(string) split(string data, void|mapping state)
 {
   int start;
   int line=1;
@@ -17,11 +22,27 @@ array(string) split(string data)
   int pos;
   data += "\n\0";	/* End sentinel. */
 
+  if(state && state->in_token) {
+    switch(state->remains[0..1]) {
+
+    case "/*":
+      pos = search(data, "*/");
+      if(pos==-1) {
+	state->in_token = 1;
+	state->remains += data[..sizeof(data)-2];
+	return ret;
+      }
+      ret += ({ state->remains + data[..pos] });
+      m_delete(state, "remains");
+      pos+=2;
+      break;
+    }
+    state->in_token = 0;
+  }
+
   while(1)
   {
     int start=pos;
-
-//    werror("::::%c\n",data[pos]);
 
     switch(data[pos])
     {
@@ -138,8 +159,14 @@ array(string) split(string data)
 
 	  case "/*":
 	    pos=search(data,"*/",pos);
-	    if(pos==-1)
+	    if(pos==-1) {
+	      if(state) {
+		state->remains = data[start..sizeof(data)-2];
+		state->in_token = 1;
+		return ret;
+	      }
 	      error("Failed to find end of comment.\n");
+	    }
 	    pos+=2;
 	    break;
 
