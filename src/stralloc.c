@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.119 2001/08/29 11:52:11 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.120 2001/09/21 21:53:08 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1795,6 +1795,7 @@ static void string_build_mkspace(struct string_builder *s,
 			    (size_t)(s->s->len + chars));
     ptrdiff_t oldlen = s->s->len;
 
+    s->s->len = s->malloced;	/* Restore the real length */
     s->s = realloc_unlinked_string(s->s, newlen);
     s->s->len = oldlen;
     s->malloced = newlen;
