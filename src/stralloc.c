@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.80 2000/03/20 21:00:04 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.81 2000/04/01 07:27:02 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1755,8 +1755,8 @@ PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
   return MKPCHARP(0,0); /* make wcc happy */
 }
 
-#define DIGIT(x)	(isdigit(x) ? (x) - '0' : \
-			 islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
+#define DIGIT(x)	(WIDE_ISDIGIT(x) ? (x) - '0' : \
+			 WIDE_ISLOWER(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
 
 long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
@@ -1767,7 +1767,7 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
 
   if (ptr)  *ptr = str;
   if (base < 0 || base > MBASE)  return 0;
-  if (!isalnum(c = EXTRACT_PCHARP(str)))
+  if (!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
     while (ISSPACE(c))
     {
@@ -1794,7 +1794,7 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
       base = 8;
   }
 
-  if (!isalnum(c) || (xx = DIGIT(c)) >= base)
+  if (!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
     return 0;			/* no number formed */
   if (base == 16 && c == '0' && isxdigit(INDEX_PCHARP(str,2)) &&
       (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
@@ -1807,7 +1807,7 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   {
     INC_PCHARP(str,1);
     c=EXTRACT_PCHARP(str);
-    if(!(isalnum(c)  && (xx=DIGIT(c)) < base)) break;
+    if(!(WIDE_ISALNUM(c)  && (xx=DIGIT(c)) < base)) break;
     val = base * val - xx;
   }
   if (ptr) *ptr = str;
@@ -1872,9 +1872,9 @@ int pcharp_to_svalue_inumber(struct svalue *r,
   if(base < 0 || MBASE < base)
     return 0;
   
-  if(!isalnum(c = EXTRACT_PCHARP(str)))
+  if(!WIDE_ISALNUM(c = EXTRACT_PCHARP(str)))
   {
-    while(ISSPACE(c))
+    while(WIDE_ISSPACE(c))
     {
       INC_PCHARP(str,1);
       c = EXTRACT_PCHARP(str);
@@ -1909,7 +1909,7 @@ int pcharp_to_svalue_inumber(struct svalue *r,
    * For any base > 10, the digits incrementally following
    * 9 are assumed to be "abc...z" or "ABC...Z".
    */
-  if(!isalnum(c) || (xx = DIGIT(c)) >= base)
+  if(!WIDE_ISALNUM(c) || (xx = DIGIT(c)) >= base)
     return 0;   /* No number formed. */
   
   if(implicit_base && c == '0' &&
@@ -1924,7 +1924,7 @@ int pcharp_to_svalue_inumber(struct svalue *r,
   }
   
   for(val = -DIGIT(c);
-      isalnum(c = ( INC_PCHARP(str,1),EXTRACT_PCHARP(str) )) &&
+      (INC_PCHARP(str,1), WIDE_ISALNUM(c = EXTRACT_PCHARP(str) )) &&
 	(xx = DIGIT(c)) < base &&
 	0 != maxlength--; )
   {
@@ -2023,7 +2023,7 @@ double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
   s = nptr;
 
   /* Eat whitespace.  */
-  while (EXTRACT_PCHARP(s) <256 && ISSPACE(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
+  while (EXTRACT_PCHARP(s) <256 && WIDE_ISSPACE(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
 
   /* Get the sign.  */
   sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
@@ -2036,7 +2036,7 @@ double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
   exponent = 0;
   for (;; INC_PCHARP(s,1))
   {
-    if (EXTRACT_PCHARP(s)<256 && isdigit (EXTRACT_PCHARP(s)))
+    if (EXTRACT_PCHARP(s)<256 && WIDE_ISDIGIT (EXTRACT_PCHARP(s)))
     {
       got_digit = 1;
 
@@ -2121,7 +2121,10 @@ double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
       goto overflow;
   }
 
-  num *= pow(10.0, (double) exponent);
+  if(exponent < 0 && exponent >-100) /* make sure we don't underflow */
+    num /= pow(10.0, (double) -exponent);
+  else
+    num *= pow(10.0, (double) exponent);
 
   return num * sign;
 

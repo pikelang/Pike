@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.24 2000/03/29 10:47:56 grubba Exp $
+ * $Id: port.h,v 1.25 2000/04/01 07:27:02 hubbe Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -21,6 +21,14 @@ struct timeval;
 #else
 #define ISSPACE(X) ("0012345678SSSSS456789012345678901S3456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789000000"[(X)+1] == 'S')
 #endif
+
+/* Warning, these run 'C' more than once */
+#define WIDE_ISSPACE(C)	(((C) < 256)?isspace(C):0)
+#define WIDE_ISIDCHAR(C) (((C) < 256)?isidchar(C):1)
+#define WIDE_ISALNUM(C)	(((C) < 256)?isalnum(C):0)
+#define WIDE_ISDIGIT(C)	(((C) < 256)?isdigit(C):0)
+#define WIDE_ISLOWER(C)	(((C) < 256)?islower(C):0)
+
 
 #ifndef HAVE_GETTIMEOFDAY
 void GETTIMEOFDAY(struct timeval *t);
