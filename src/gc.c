@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.158 2001/06/29 01:21:52 mast Exp $");
+RCSID("$Id: gc.c,v 1.159 2001/06/30 02:35:50 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -717,7 +717,7 @@ void low_describe_something(void *a,
     case T_PROGRAM:
     {
       char *tmp;
-      INT32 line,pos;
+      INT32 line;
       int foo=0;
 
       fprintf(stderr,"%*s**Program id: %ld, flags: %x\n",indent,"",
@@ -728,17 +728,12 @@ void low_describe_something(void *a,
       {
 	fprintf(stderr,"%*s**The program was written in C.\n",indent,"");
       }
-      for(pos=0;pos<100;pos++)
+      tmp=get_program_line(p, &line);
+      if(strcmp(tmp, "-"))
       {
-	tmp=get_line(p->program+pos, p, &line);
-	if(tmp && line)
-	{
-	  fprintf(stderr,"%*s**Location: %s:%ld\n",indent,"",tmp,(long)line);
-	  foo=1;
-	  break;
-	}
-	if(pos+1>=(ptrdiff_t)p->num_program)
-	  break;
+	fprintf(stderr,"%*s**Location: %s:%ld\n",indent,"",tmp,(long)line);
+	foo=1;
+	break;
       }
 #if 0
       if(!foo && p->num_linenumbers>1 && EXTRACT_UCHAR(p->linenumbers)=='\177')
@@ -908,17 +903,30 @@ void debug_gc_touch(void *a)
       m = find_marker(a);
       if (m && !(m->flags & GC_PRETOUCHED))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
-      get_marker(a)->flags |= GC_PRETOUCHED;
+      m = get_marker(a);
+      m->flags |= GC_PRETOUCHED;
+      m->saved_refs = *(INT32 *) a;
       break;
 
-    case GC_PASS_MIDDLETOUCH:
+    case GC_PASS_MIDDLETOUCH: {
+      int extra_ref;
       m = find_marker(a);
       if (!m)
 	gc_fatal(a, 1, "Found a thing without marker.\n");
       else if (!(m->flags & GC_PRETOUCHED))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
+      extra_ref = (m->flags & GC_GOT_EXTRA_REF) == GC_GOT_EXTRA_REF;
+      if (m->saved_refs + extra_ref < *(INT32 *) a)
+	if (m->flags & GC_WEAK_FREED)
+	  gc_fatal(a, 1, "Something failed to remove weak reference(s) to thing, "
+		   "or it has gotten more references since gc start.\n");
+	else
+	  gc_fatal(a, 1, "Thing has gotten more references since gc start.\n");
+      else if (m->weak_refs > m->saved_refs)
+	gc_fatal(a, 0, "A thing got more weak references than references.\n");
       m->flags |= GC_MIDDLETOUCHED;
       break;
+    }
 
     case GC_PASS_POSTTOUCH:
       m = find_marker(a);
@@ -985,9 +993,9 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
 
   if (!*(INT32 *)a)
     gc_fatal(a, 1, "GC check on thing without refs.\n");
-  if (m->saved_refs != -1 && m->saved_refs != *(INT32 *)a)
+  if (m->saved_refs == -1) m->saved_refs = *(INT32 *)a;
+  else if (m->saved_refs != *(INT32 *)a)
     gc_fatal(a, 1, "Refs changed in gc check pass.\n");
-  m->saved_refs = *(INT32 *)a;
   if (m->refs + m->xrefs >= *(INT32 *) a)
     /* m->refs will be incremented by the caller. */
     gc_fatal(a, 1, "Thing is getting more internal refs than refs.\n");
@@ -1011,7 +1019,7 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
 
   ret=m->refs;
   add_ref(m);
-  if (m->refs >= *(INT32 *) a)
+  if (m->refs == *(INT32 *) a)
     m->flags |= GC_NOT_REFERENCED;
   return ret;
 }
@@ -1035,12 +1043,12 @@ INT32 real_gc_check_weak(void *a)
 
   m->weak_refs++;
   gc_ext_weak_refs++;
-  if (m->weak_refs >= *(INT32 *) a)
+  if (m->weak_refs == *(INT32 *) a)
     m->weak_refs = -1;
 
   ret=m->refs;
   add_ref(m);
-  if (m->refs >= *(INT32 *) a)
+  if (m->refs == *(INT32 *) a)
     m->flags |= GC_NOT_REFERENCED;
   return ret;
 }
@@ -2206,6 +2214,29 @@ int do_gc(void)
 			  obj_count - num_objects, max_gc_frames));
   }
 
+  if (gc_ext_weak_refs) {
+    size_t to_free = gc_ext_weak_refs;
+#ifdef PIKE_DEBUG
+    obj_count = num_objects;
+#endif
+    Pike_in_gc = GC_PASS_ZAP_WEAK;
+    /* Zap weak references from external to internal things. That
+     * doesn't occur very often; only when something have both
+     * external weak refs and nonweak cyclic refs from internal
+     * things. */
+    gc_zap_ext_weak_refs_in_mappings();
+    gc_zap_ext_weak_refs_in_arrays();
+    /* Multisets handled as arrays. */
+    gc_zap_ext_weak_refs_in_objects();
+    gc_zap_ext_weak_refs_in_programs();
+    GC_VERBOSE_DO(
+      fprintf(stderr,
+	      "| zap weak: freed %ld external weak refs, %lu internal still around,\n"
+	      "|           %d things really freed\n",
+	      PTRDIFF_T_TO_LONG(to_free - gc_ext_weak_refs),
+	      SIZE_T_TO_ULONG(gc_ext_weak_refs), obj_count - num_objects));
+  }
+
 #ifdef PIKE_DEBUG
   if (gc_debug) {
     unsigned n;
@@ -2241,29 +2272,6 @@ int do_gc(void)
     GC_VERBOSE_DO(fprintf(stderr, "| middletouch\n"));
   }
 #endif
-
-  if (gc_ext_weak_refs) {
-    size_t to_free = gc_ext_weak_refs;
-#ifdef PIKE_DEBUG
-    obj_count = num_objects;
-#endif
-    Pike_in_gc = GC_PASS_ZAP_WEAK;
-    /* Zap weak references from external to internal things. That
-     * doesn't occur very often; only when something have both
-     * external weak refs and nonweak cyclic refs from internal
-     * things. */
-    gc_zap_ext_weak_refs_in_mappings();
-    gc_zap_ext_weak_refs_in_arrays();
-    /* Multisets handled as arrays. */
-    gc_zap_ext_weak_refs_in_objects();
-    gc_zap_ext_weak_refs_in_programs();
-    GC_VERBOSE_DO(
-      fprintf(stderr,
-	      "| zap weak: freed %ld external weak refs, %lu internal still around,\n"
-	      "|           %d things really freed\n",
-	      PTRDIFF_T_TO_LONG(to_free - gc_ext_weak_refs),
-	      SIZE_T_TO_ULONG(gc_ext_weak_refs), obj_count - num_objects));
-  }
 
   /* Add an extra reference to the stuff gc_internal_* point to, so we
    * know they're still around when gc_free_all_unreferenced_* are
