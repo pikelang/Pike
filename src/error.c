@@ -70,14 +70,15 @@ struct svalue throw_value = { T_INT };
 void va_error(char *fmt, va_list args)
 {
   char buf[2000];
-  static int in_error;
+  static char *in_error;
   if(in_error)
   {
+    char *tmp=in_error;
     in_error=0;
-    fatal("Recursive error() calls.\n");
+    fatal("Recursive error() calls, original error: %s",tmp);
   }
 
-  in_error=1;
+  in_error=buf;
 
   VSPRINTF(buf, fmt, args);
 
