@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.118 2003/01/26 15:53:55 mirar Exp $
+|| $Id: mpz_glue.c,v 1.119 2003/01/26 19:41:38 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.118 2003/01/26 15:53:55 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.119 2003/01/26 19:41:38 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1602,11 +1602,11 @@ PIKE_MODULE_EXIT
 
 
 #define tMpz_arg tOr3(tInt,tFloat,tObj)
-#define tMpz_ret tObj
+#define tMpz_ret tObjIs_GMP_MPZ
 #define tMpz_int tInt
 #define tMpz_shift_type tFunc(tMpz_arg,tMpz_ret)
 #define tMpz_binop_type tFuncV(tNone, tMpz_arg, tMpz_ret)
-#define tMpz_cmpop_type tFunc(tMixed, tInt)
+#define tMpz_cmpop_type tFunc(tMixed, tInt01)
 
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
