@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.186 1998/05/17 20:37:55 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.187 1998/05/17 22:57:57 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1744,6 +1744,20 @@ char proc_name[20];
     AC_MSG_RESULT(no)
   fi
 fi
+
+#############################################################################
+
+AC_MSG_CHECKING(for isgraph)
+AC_CACHE_VAL(pike_cv_func_isgraph, [ AC_COMPILE([
+#include <ctype.h>
+], [
+return(!isgraph('A'));
+], pike_cv_func_isgraph=yes, pike_cv_func_isgraph=no)
+])
+AC_MSG_RESULT($pike_cv_func_isgraph)
+if test "x$pike_cv_func_isgraph" = "xyes" ; then
+  AC_DEFINE(HAVE_ISGRAPH)
+else :; fi
 
 #############################################################################
 
