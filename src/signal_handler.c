@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.110 1999/05/14 20:39:23 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.111 1999/05/14 23:22:41 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1040,7 +1040,7 @@ static int set_priority( int pid, char *to )
     /* Time to get tricky :-) */
     struct {
       id_t pc_cid;
-      pri_t rt_pri;
+      short rt_pri;
       ulong rt_tqsecs;
       long rt_tqnsecs;
       long padding[10];
