@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.299 2000/06/11 11:59:47 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.300 2000/06/12 03:21:34 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2274,6 +2274,54 @@ ifefun(gc,
 		      dead[3]->x = dead[3], dead[3]->a = dead_nested[1];
 		      live_nested[0]->x = dead_nested[1];
 		      dead_nested[0]->x = live_nested[1];
+		    }}),
+      ({4, 0, 0, 0, lambda() {	// 52
+		      live[0]->w[0] = live[1];
+		      live[1]->x = live[1], live[1]->a = live[0], live[1]->b = live[2];
+		      live[2]->w[0] = live[3];
+		      live[3]->x = live[3], live[3]->a = live[0];
+		    }}),
+      ({4, 0, 0, 0, lambda() {	// 53
+		      live[0]->w[0] = live[1];
+		      live[1]->x = live[1], live[1]->b = live[0], live[1]->a = live[2];
+		      live[2]->w[0] = live[3];
+		      live[3]->x = live[3], live[3]->a = live[0];
+		    }}),
+      ({4, 0, 0, 0, lambda() {	// 54
+		      live[0]->x = live[0], live[0]->w[0] = live[1];
+		      live[1]->w[0] = live[2];
+		      live[2]->x = live[2], live[2]->a = live[1], live[2]->b = live[3];
+		      live[3]->x = live[3], live[3]->a = live[0];
+		    }}),
+      ({4, 0, 0, 0, lambda() {	// 55
+		      live[0]->x = live[0], live[0]->w[0] = live[1];
+		      live[1]->w[0] = live[2];
+		      live[2]->x = live[2], live[2]->b = live[1], live[2]->a = live[3];
+		      live[3]->x = live[3], live[3]->a = live[0];
+		    }}),
+      ({3, 0, 0, 0, lambda() {	// 56
+		      live[0]->a = live[2];
+		      live[1]->x = live[1], live[1]->a = live[0], live[1]->b = live[2];
+		    }}),
+      ({3, 0, 0, 0, lambda() {	// 57
+		      live[0]->a = live[2];
+		      live[1]->x = live[1], live[1]->b = live[0], live[1]->a = live[2];
+		    }}),
+      ({2, 1, 0, 0, lambda() {	// 58
+		      live[0]->x = live[1], live[0]->y = dead[0];
+		      live[0]->checkfn = lambda (object o) {
+					   return o->y;
+					 };
+		      live[1]->x = live[0];
+		      dead[0]->x = dead[0];
+		    }}),
+      ({2, 1, 0, 0, lambda() {	// 59
+		      live[0]->y = live[1], live[0]->x = dead[0];
+		      live[0]->checkfn = lambda (object o) {
+					   return o->x;
+					 };
+		      live[1]->x = live[0];
+		      dead[0]->x = dead[0];
 		    }}),
       //       ({3, 0, 0, 0, lambda() { // Not possible without weak refs directly in objects.
       // 		   live[0]->x = live[0], live[0]->v[0] = live[1];
