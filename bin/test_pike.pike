@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.44 2000/03/31 22:29:43 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.45 2000/04/01 02:08:38 hubbe Exp $ */
 
 import Stdio;
 
@@ -439,7 +439,7 @@ int main(int argc, array(string) argv)
 
 	  int computed_line=sizeof(test/"\n");
 	  array gnapp= test/"#";
-	  for(int e=0;e<sizeof(gnapp);e++)
+	  for(int e=1;e<sizeof(gnapp);e++)
 	  {
 	    if(sscanf(gnapp[e],"%*d"))
 	    {
