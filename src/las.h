@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.24 1999/11/11 13:53:14 grubba Exp $
+ * $Id: las.h,v 1.25 1999/11/12 01:00:50 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -75,6 +75,8 @@ extern struct node_hash_table node_hash;
 #define OPT_BREAK           0x100  /* contains break(s) */
 #define OPT_RETURN          0x200  /* contains return(s) */
 
+#define OPT_NOT_SHARED	    0x8000 /* Node is not to be shared */
+
 /* Prototypes begin here */
 int car_is_node(node *n);
 int cdr_is_node(node *n);
@@ -83,31 +85,31 @@ INT32 count_args(node *n);
 struct pike_string *find_return_type(node *n);
 struct node_chunk;
 void free_all_nodes(void);
-void free_node(node *n);
+void debug_free_node(node *n);
 node *debug_check_node_hash(node *n);
-node *mknode(short token,node *a,node *b);
-node *mkstrnode(struct pike_string *str);
-node *mkintnode(int nr);
-node *mknewintnode(int nr);
-node *mkfloatnode(FLOAT_TYPE foo);
-node *mkprgnode(struct program *p);
-node *mkapplynode(node *func,node *args);
-node *mkefuncallnode(char *function, node *args);
-node *mkopernode(char *oper_id, node *arg1, node *arg2);
-node *mklocalnode(int var, int depth);
-node *mkidentifiernode(int i);
-node *mkexternalnode(int level,
-		     int i,
-		     struct identifier *id);
-node *mkcastnode(struct pike_string *type,node *n);
+node *debug_mknode(short token,node *a,node *b);
+node *debug_mkstrnode(struct pike_string *str);
+node *debug_mkintnode(int nr);
+node *debug_mknewintnode(int nr);
+node *debug_mkfloatnode(FLOAT_TYPE foo);
+node *debug_mkprgnode(struct program *p);
+node *debug_mkapplynode(node *func,node *args);
+node *debug_mkefuncallnode(char *function, node *args);
+node *debug_mkopernode(char *oper_id, node *arg1, node *arg2);
+node *debug_mklocalnode(int var, int depth);
+node *debug_mkidentifiernode(int i);
+node *debug_mkexternalnode(int level,
+			   int i,
+			   struct identifier *id);
+node *debug_mkcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
 void resolv_class(node *n);
 void resolv_class(node *n);
 node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
-node *mkconstantsvaluenode(struct svalue *s);
-node *mkliteralsvaluenode(struct svalue *s);
-node *mksvaluenode(struct svalue *s);
+node *debug_mkconstantsvaluenode(struct svalue *s);
+node *debug_mkliteralsvaluenode(struct svalue *s);
+node *debug_mksvaluenode(struct svalue *s);
 node *copy_node(node *n);
 int is_const(node *n);
 int node_is_tossable(node *n);
@@ -129,20 +131,54 @@ int dooptcode(struct pike_string *name,
 void resolv_program(node *n);
 /* Prototypes end here */
 
+/* Handling of nodes */
+#define free_node(n)        debug_free_node(dmalloc_touch(node *,n))
+
+#define mknode(token, a, b) dmalloc_touch(node *, debug_mknode(token, dmalloc_touch(node *, a), dmalloc_touch(node *, b)))
+#define mkstrnode(str)      dmalloc_touch(node *, debug_mkstrnode(str))
+#define mkintnode(nr)       dmalloc_touch(node *, debug_mkintnode(nr))
+#define mknewintnode(nr)    dmalloc_touch(node *, debug_mknewintnode(nr))
+#define mkfloatnode(foo)    dmalloc_touch(node *, debug_mkfloatnode(foo))
+#define mkprgnode(p)        dmalloc_touch(node *, debug_mkprgnode(p))
+#define mkapplynode(func, args) dmalloc_touch(node *, debug_mkapplynode(dmalloc_touch(node *, func),dmalloc_touch(node *, args)))
+#define mkefuncallnode(function, args) dmalloc_touch(node *, debug_mkefuncallnode(function, dmalloc_touch(node *, args)))
+#define mkopernode(oper_id, arg1, arg2) dmalloc_touch(node *, debug_mkopernode(oper_id, dmalloc_touch(node *, arg1), dmalloc_touch(node *, arg2)))
+#define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
+#define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
+#define mkexternalnode(level, i, id) dmalloc_touch(node *, debug_mkexternalnode(level, i, id))
+#define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))
+#define mkconstantsvaluenode(s) dmalloc_touch(node *, debug_mkconstantsvaluenode(dmalloc_touch(struct svalue *, s)))
+#define mkliteralsvaluenode(s) dmalloc_touch(node *, debug_mkliteralsvaluenode(dmalloc_touch(struct svalue *, s)))
+#define mksvaluenode(s)     dmalloc_touch(node *, debug_mksvaluenode(dmalloc_touch(struct svalue *, s)))
+
+
 #if defined(PIKE_DEBUG) && defined(SHARED_NODES)
 #define check_node_hash(X)	debug_check_node_hash(X)
 #else /* !PIKE_DEBUG || !SHARED_NODES */
 #define check_node_hash(X)	(X)
 #endif /* PIKE_DEBUG && SHARED_NODES */
 
+/* lvalue variants of CAR(n) & CDR(n) */
 #define _CAR(n) (dmalloc_touch(node *,(n))->u.node.a)
 #define _CDR(n) (dmalloc_touch(node *,(n))->u.node.b)
 #define _CAAR(n) _CAR(_CAR(n))
 #define _CADR(n) _CAR(_CDR(n))
 #define _CDAR(n) _CDR(_CAR(n))
 #define _CDDR(n) _CDR(_CDR(n))
+
+#ifdef SHARED_NODES
+#define ADD_NODE_REF(n)	(n?add_ref(n):0)
+#else /* !SHARED_NODES */
+#define ADD_NODE_REF(n)	(n = 0)
+#endif /* SHARED_NODES */
+
+#ifdef SHARED_NODES
 #define CAR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.a)))
 #define CDR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.b)))
+#else /* !SHARED_NODES */
+#define CAR(n) _CAR(n)
+#define CDR(n) _CDR(n)
+#endif /* SHARED_NODES */ 
 #define CAAR(n) CAR(CAR(n))
 #define CADR(n) CAR(CDR(n))
 #define CDAR(n) CDR(CAR(n))
