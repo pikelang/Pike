@@ -965,6 +965,7 @@ void fix_type_field(node *n)
     if(CAR(n) && CDR(n) && 
        !match_types(CDR(n)->type,CAR(n)->type))
       my_yyerror("Bad type in assignment.\n");
+    copy_shared_string(b->type, CDR(n)->type);
     break;
 
   case F_INDEX:
