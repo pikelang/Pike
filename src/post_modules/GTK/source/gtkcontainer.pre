@@ -63,11 +63,3 @@ void set_focus_hadjustment( GTK.Adjustment adj );
 //! Set the hadjustment used to focus children.
 void focus( int focus_direction );
 //! Emulate a focus event. direction is one of CONST(GTK_DIR_).
-void register_toplevel();
-//! Register this container as a toplevel widget.
-//! Not normally called by applications
-void unregister_toplevel();
-//! Unregister this container as a toplevel widget.
-//! Not normally called by applications
-
-
