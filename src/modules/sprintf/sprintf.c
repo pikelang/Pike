@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.37 1999/06/17 19:59:43 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.38 1999/06/17 20:31:52 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1005,10 +1005,9 @@ static void low_pike_sprintf(struct string_builder *r,
       {
 	char *x;
 	DO_OP();
-	if (fsp->width==SPRINTF_UNDECIDED) fsp->width=1;
 	if (fsp->precision==SPRINTF_UNDECIDED) fsp->precision=3;
 
-	x=(char *)xalloc(100+MAXIMUM(fsp->width,8)+MAXIMUM(fsp->precision,3));
+	x=(char *)xalloc(100+MAXIMUM(fsp->precision,3));
 	fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
@@ -1018,17 +1017,15 @@ static void low_pike_sprintf(struct string_builder *r,
 	  tf=rint(tf*m)/m;
 	}
 	
-	sprintf(x,buffer,
-		fsp->width,
-		fsp->precision<0?0:fsp->precision,tf);
+	sprintf(x,buffer,1,fsp->precision<0?0:fsp->precision,tf);
 	fsp->len=strlen(x);
 	
 	/* Make sure that the last digits really are zero. */
 	if(fsp->precision<0)
 	{
 	  INT32 i, j;
-	  /* Find the ending of the number.  May
-	     be skew because of space padding. */
+	  /* Find the ending of the number.  Yes, this can be made
+	     simpler now when the alignment bug for floats is fixed. */
 	  for(i=fsp->len-1; i>=0; i--)
  	    if('0'<=x[i] && x[i]<='9')
 	    {
@@ -1039,7 +1036,7 @@ static void low_pike_sprintf(struct string_builder *r,
 	      break;
 	    }
 	}
-	
+
 	fsp->fi_free_string=x;
 	break;
       }
