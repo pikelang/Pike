@@ -280,3 +280,40 @@ char *my_memmem(char *needle,
   init_memsearch(&tmp, needle, needlelen, haystacklen);
   return memory_search(&tmp, haystack, haystacklen);
 }
+
+void memfill(char *to,
+	     INT32 tolen,
+	     char *from,
+	     INT32 fromlen,
+	     INT32 offset)
+{
+  if(fromlen==1)
+  {
+    MEMSET(to, *from, tolen);
+  }
+  else if(tolen>0)
+  {
+    INT32 tmp=MINIMUM(tolen, fromlen - offset);
+    MEMCPY(to, from + offset, tmp);
+    to+=tmp;
+    tolen-=tmp;
+
+    if(tolen > 0)
+    {
+      tmp=MINIMUM(tolen, fromlen);
+      MEMCPY(to, from, tmp);
+      from=to;
+      to+=tmp;
+      tolen-=tmp;
+      
+      while(tolen>0)
+      {
+	tmp=MINIMUM(tolen, fromlen);
+	MEMCPY(to, from, MINIMUM(tolen, fromlen));
+	fromlen+=tmp;
+	tolen-=tmp;
+	to+=tmp;
+      }
+    }
+  }
+}
