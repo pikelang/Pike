@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.557 2001/11/02 14:01:56 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.558 2001/11/08 23:34:28 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1061,7 +1061,7 @@ AC_ARG_WITH(computed-goto,
 	    [], [with_computed_goto=no])
 AC_ARG_WITH(machine-code,
 	MY_DESCR([--with-machine-code],
-		 [enable use of machine code when possible (EXPERIMENTAL).]))
+		 [enable use of machine code.]))
 
 MY_AC_ARG_WITH(keypair-loop,
 	MY_DESCR([--with-keypair-loop],
@@ -1574,11 +1574,14 @@ fi
 if test "$with_machine_code" = "no"; then :; else
   if test "x${GCC-}" = xyes ; then
     case "`uname -p 2>/dev/null || echo unknown`" in
-      powerpc|sparc|ia32|i[3456]86)
+      powerpc|sparc|ia32|i?86)
         with_machine_code="yes"
       ;;
       unknown)
         case "`uname -m`" in
+          powerpc|sparc|ia32|i?86)
+            with_machine_code="yes"
+          ;;
 	  ia64)
 	    # with_machine_code="yes"
 	  ;;
@@ -1586,8 +1589,9 @@ if test "$with_machine_code" = "no"; then :; else
       ;;
     esac
   else :; fi
+
   if test "$with_machine_code" = "yes"; then
-    AC_MSG_WARN([Enabling machine-code interpreter.])
+    echo 'Enabling machine-code interpreter.'
     AC_DEFINE(PIKE_USE_MACHINE_CODE)
   else :; fi
 fi
