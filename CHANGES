@@ -12,6 +12,14 @@ o New `[..] operator function.
   the range bounds are specified. For compatibility, if there is no
   `[..] then `[] is still called for range operations.
 
+o Unicode escapes.
+  Pike now understands the common way to escape unicode chars, using
+  \uxxxx and \Uxxxxxxxx escapes. These escapes works both in string
+  and character literals and in the preprocessor. The latter means
+  that unicode escapes can be used in identifiers, which is useful if
+  they contain characters that can't be represented raw in the source
+  code charset.
+
 o Stdio.*
   Stdio.cp can now work recursively in a directory tree.
   Stdio.cp now keeps permissions when copying.
