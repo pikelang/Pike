@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.7 1999/03/23 18:30:06 marcus Exp $
+// $Id: Readline.pike,v 1.8 1999/03/23 20:48:36 marcus Exp $
 
 class OutputController
 {
@@ -84,8 +84,9 @@ class OutputController
       if(!term->tgetflag("am"))
 	outfd->write((term->put("cr")||"")+(term->put("do")||"\n"));
     }
-    if(xpos==0 && term->tgetflag("am"))
-      outfd->write(" "+(term->put("le")||""));
+    string le;
+    if(xpos==0 && term->tgetflag("am") && (le=term->put("le")))
+      outfd->write(" "+le);
     if(n>0) {
       outfd->write(s);
       xpos += n;
