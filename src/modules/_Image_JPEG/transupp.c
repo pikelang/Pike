@@ -1,5 +1,5 @@
 /*
- * $Id: transupp.c,v 1.5 2002/10/06 12:17:25 grubba Exp $
+ * $Id: transupp.c,v 1.6 2002/10/06 12:21:36 grubba Exp $
  */
 
 #include "global.h"
@@ -878,7 +878,7 @@ jt_read_integer (const char ** strptr, JDIMENSION * result)
   const char * ptr = *strptr;
   JDIMENSION val = 0;
 
-  for (; isdigit(*ptr); ptr++) {
+  for (; isdigit(*(unsigned char *)ptr); ptr++) {
     val = val * 10 + (JDIMENSION) (*ptr - '0');
   }
   *result = val;
@@ -911,7 +911,7 @@ jtransform_parse_crop_spec (jpeg_transform_info *info, const char *spec)
   info->crop_xoffset_set = JCROP_UNSET;
   info->crop_yoffset_set = JCROP_UNSET;
 
-  if (isdigit(*spec)) {
+  if (isdigit(*(unsigned char *)spec)) {
     /* fetch width */
     if (! jt_read_integer(&spec, &info->crop_width))
       return FALSE;
