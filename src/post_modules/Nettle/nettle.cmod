@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.33 2004/02/14 07:33:57 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.34 2004/02/21 02:20:09 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -17,6 +17,7 @@ RCSID("$Id: nettle.cmod,v 1.33 2004/02/14 07:33:57 nilsson Exp $");
 #include "nettle.h"
 
 #include <nettle/yarrow.h>
+#include <nettle/knuth-lfib.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -217,11 +218,13 @@ char *crypt_md5(int pl, const char *pw, int sl, const char *salt);
 PIKEFUN string crypt_md5(string pw, string salt)
      optflags OPT_TRY_OPTIMIZE;
 {
+  char *hash;
   NO_WIDE_STRING(pw);
   NO_WIDE_STRING(salt);
   THREADS_ALLOW();
-  push_text(crypt_md5(pw->len, pw->str,salt->len, salt->str));
+  hash = crypt_md5(pw->len, pw->str,salt->len, salt->str);
   THREADS_DISALLOW();
+  push_text(hash);
 }
 
 
@@ -788,6 +791,62 @@ PIKECLASS Proxy {
 
 /*! @endclass
  */
+
+#if 0
+
+/* @class LFib
+ * The Donald Knuth Lagged Fibonacci pseudo random number generator.
+ * This is @b{not@} a source for cryptographic randomness. Use
+ * @[Crypto.Yarrow] instead.
+ */
+PIKECLASS LFib
+{
+  CVAR struct knuth_lfib_ctx *ctx;
+
+  INIT {
+    THIS->ctx = xalloc(sizeof(struct knuth_lfib_ctx));
+  }
+
+  EXIT {
+    free(THIS->ctx);
+  }
+
+  /* @decl void create(int seed)
+   * The Lfib generator must be seeded with a number.
+   */
+  PIKEFUN void create(int seed) {
+    knuth_lfib_init(THIS->ctx, seed);
+  }
+
+  /* @decl this_program reseed(int s)
+   * Reseed this object with seed @[s].
+   * @return
+   *   Returns the current object.
+   */
+  PIKEFUN object reseed(int s) {
+    knuth_lfib_init(THIS->ctx, s);
+    RETURN this_object();
+  }
+
+  /* Get one 32bit pseudorandom integer.
+   */
+  PIKEFUN int get() {
+    RETURN knuth_lfib_get(THIS->ctx);
+  }
+
+  /* Get a pseudorandom string of length @[len].
+   */
+  PIKEFUN string get_string(int len) {
+    struct pike_string *s = begin_shared_string(len);
+    knuth_lfib_random(THIS->ctx, len, s->str);
+    push_string(end_shared_string(s));
+  }
+}
+
+/* @endclass
+ */
+
+#endif
 
 /*! @endmodule
  */
