@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.71 2001/09/26 09:17:35 anders Exp $
+// $Id: MySQL.pike,v 1.72 2001/11/21 14:47:33 js Exp $
 
 inherit .Base;
 
@@ -238,7 +238,8 @@ void set_metadata(Standards.URI|string uri, void|string language,
   // Still our one, single special case
   if(md->body)
   {
-    md->body = Unicode.normalize( Unicode.split_words_and_normalize( md->body ) * " ", "C");
+    if(sizeof(md->body))
+      md->body = Unicode.normalize( Unicode.split_words_and_normalize( md->body ) * " ", "C");
     md->body = Gz.deflate(6)->deflate(string_to_utf8(md->body[..64000]),
 				      Gz.FINISH);
   }
