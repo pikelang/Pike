@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.397 2004/12/30 13:43:45 grubba Exp $
+# $Id: Makefile.in,v 1.398 2004/12/30 14:24:23 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -340,6 +340,9 @@ cover: $(OBJ) master-stamp module_objects
 quant: $(OBJ) master-stamp module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
+
+splint:
+	splint $(PREFLAGS) -warnposix +charintliteral -realcompare -boolops -predboolint $(FILE)
 
 atom: pike
 	atom pike -tool atom -env threads -g -v `find lib/modules -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
