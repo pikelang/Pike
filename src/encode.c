@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.225 2004/12/18 15:45:04 grubba Exp $
+|| $Id: encode.c,v 1.226 2004/12/18 22:05:45 grubba Exp $
 */
 
 #include "global.h"
@@ -861,6 +861,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    EDB(5,fprintf(stderr, "%*s(UNDEFINED)\n", data->depth, ""));
 
+	    if (val->subtype) {
+	      Pike_error("Encoding of subtyped objects is not supported yet.\n");
+	    }
+
 	    /* We have to remove ourself from the cache */
 	    map_delete(data->encoded, val);
 	    
@@ -932,7 +936,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    code_entry(TAG_FUNCTION, 1, data);
 	    push_svalue(val);
-	    Pike_sp[-1].type=T_OBJECT;
+	    Pike_sp[-1].type = T_OBJECT;
+	    Pike_sp[-1].subtype = 0;
 	    encode_value2(Pike_sp-1, data, 0);
 	    ref_push_string(ID_FROM_INT(val->u.object->prog, val->subtype)->name);
 	    encode_value2(Pike_sp-1, data, 0);
@@ -1688,6 +1693,10 @@ void f_encode_value(INT32 args)
 
   if(args > 1 && Pike_sp[1-args].type == T_OBJECT)
   {
+    if (Pike_sp[1-args].subtype) {
+      Pike_error("encode_value: "
+		 "The codec may not be a subtyped object yet.\n");
+    }
     data->codec=Pike_sp[1-args].u.object;
   }else{
     data->codec=get_master();
@@ -1767,6 +1776,10 @@ void f_encode_value_canonic(INT32 args)
 
   if(args > 1 && Pike_sp[1-args].type == T_OBJECT)
   {
+    if (Pike_sp[1-args].subtype) {
+      Pike_error("encode_value_canonic: "
+		 "The codec may not be a subtyped object yet.\n");
+    }
     data->codec=Pike_sp[1-args].u.object;
   }else{
     data->codec=get_master();
@@ -2700,7 +2713,8 @@ static void decode_value2(struct decode_data *data)
 	  if (Pike_sp[-2].type == T_OBJECT &&
 	      Pike_sp[-1].type == T_STRING &&
 	      (p = Pike_sp[-2].u.object->prog)) {
-	    int f = find_shared_string_identifier(Pike_sp[-1].u.string, p);
+	    int f = find_shared_string_identifier(Pike_sp[-1].u.string,
+						  p->inherits[Pike_sp[-2].subtype].prog);
 	    if (f >= 0) {
 	      struct svalue func;
 	      low_object_index_no_free(&func, Pike_sp[-2].u.object, f);
@@ -4658,6 +4672,10 @@ void f_decode_value(INT32 args)
     case 2:
 #endif
       if (Pike_sp[1-args].type == T_OBJECT) {
+	if (Pike_sp[1-args].subtype) {
+	  Pike_error("decode_value: "
+		     "The codec may not be a subtyped object yet.\n");
+	}
 	codec = Pike_sp[1-args].u.object;
 	break;
       }
