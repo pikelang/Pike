@@ -1310,9 +1310,9 @@ void output(string base, WMML data)
       string filename=mkfilename(file);
       werror("Anchoring ");
       werror(filename+": WMML->HTML");
-      SGML data=wmml_to_html(sections[file]);
+      SGML data2=wmml_to_html(sections[file]);
       werror("->String");
-      string data=Sgml.generate(data,Html.mktag);
+      string data=Sgml.generate(data2,Html.mktag);
       werror("->disk");
       add_file_to_export_list(filename);
       out::open(filename,"wct");

@@ -1148,7 +1148,6 @@ SGML low_make_concrete_wmml(SGML data)
 	    case "see":
 	    {
 	      title="see also";
-	      SGML tmp=({});
 	      string *tmp2=(replace(get_text(args),
 				   ({" ","\n"}),({"",""}))/",")-({""});
 	      if(!sizeof(tmp2))

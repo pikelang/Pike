@@ -416,7 +416,7 @@ string mkref(string label)
 string convert_table(TAG table)
 {
   SGML data=table->data;
-  int rows,columns,nicer,framed;
+  int rows,nicer;
 
   // FIXME, nicer tables not supported (yet)
 
@@ -440,7 +440,6 @@ string convert_table(TAG table)
     spaced=1;
   }
   framed|=border;
-  array(float) column_data=allocate(100,1.0);
 
 
   int cellpadding=3;
