@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.112 1998/05/24 21:41:09 noring Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.113 1998/05/24 23:21:00 marcus Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2379,6 +2379,3 @@ cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
-
-// - Yabu
-// test_true(compile_file("../lib/modules/Yabu.pmod/module.pmod")()->main())
