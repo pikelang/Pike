@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.256 2003/02/26 16:35:09 mast Exp $
+// $Id: master.pike.in,v 1.257 2003/02/27 14:27:35 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -578,7 +578,8 @@ static program low_findprog(string pname,
 	    mixed err=catch {
 	      AUTORELOAD_CHECK_FILE(oname);
 	      ret = decode_value(master_read_file(oname),
-				 Codec(fname, mkobj));
+				 (handler && handler->get_codec ||
+				  get_codec)(fname, mkobj));
 #ifdef RESOLV_DEBUG
 	      werror ("low_findprog: %s returning decoded dump\n", fname);
 #endif
@@ -943,7 +944,7 @@ class dirnode
 	     sizeof(backtrace()),dirname);
 #endif
       // Pretend not to exist for now...
-      module=0;
+      // module=0;
       if(module=findmodule(dirname+"/module", handler))
       {
 	if(mixed tmp=module->_module_value)
@@ -2896,10 +2897,11 @@ class Codec (void|string fname, void|int mkobj)
       if(sscanf(x,"resolv:%s",x)) return [object]resolv(x);
       if(sscanf(x,"mpath:%s",x))
 	foreach(pike_module_path, string path) {
-	  object ret = low_cast_to_object(combine_path(path,x),0);
+	  object ret = low_cast_to_object(combine_path(path,x),0,
+					  this_object());
 	  if (objectp (ret)) return ret;
 	}
-      return cast_to_object(x,0);
+      return low_cast_to_object(x, 0, this_object());
     }
   
   program programof(string x)
@@ -2908,9 +2910,10 @@ class Codec (void|string fname, void|int mkobj)
       if(sscanf(x,"resolv:%s",x)) return [program]resolv(x);
       if(sscanf(x,"mpath:%s",x))
 	foreach(pike_module_path, string path)
-	  if(program ret=cast_to_program(combine_path(path,x),0))
+	  if(program ret=cast_to_program(combine_path(path,x), 0,
+					 this_object()))
 	    return ret;
-      return cast_to_program(x,0);
+      return cast_to_program(x, 0, this_object());
     }
   
   mixed encode_object(object x)
@@ -2925,6 +2928,16 @@ class Codec (void|string fname, void|int mkobj)
     o->_decode(data);
   }
 }
+
+
+mapping(string:Codec) codecs = set_weak_flag(([]));
+Codec get_codec(string|void fname, int|void mkobj)
+{
+  string key = fname + "\0" + mkobj;
+  if (codecs[key]) return codecs[key];
+  return codecs[key] = Codec(fname, mkobj);
+}
+
 
 
 //! Contains version information about a Pike version.
