@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.39 2002/10/27 15:48:18 nilsson Exp $
+|| $Id: dmalloc.h,v 1.40 2002/11/25 00:52:18 mast Exp $
 */
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
@@ -52,6 +52,8 @@ extern int dmalloc_mark_as_free(void*,int);
 void *debug_malloc_update_location(void *, char *);
 void *debug_malloc_update_location_ptr(void *, ptrdiff_t, char *);
 void search_all_memheaders_for_references(void);
+void cleanup_memhdrs(void);
+void cleanup_debug_malloc(void);
 
 /* Beware! names of named memory regions are never ever freed!! /Hubbe */
 void *debug_malloc_name(void *p, const char *fn, int line);

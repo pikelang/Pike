@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.128 2002/11/24 23:31:01 mast Exp $
+|| $Id: pike_memory.c,v 1.129 2002/11/25 00:52:18 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.128 2002/11/24 23:31:01 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.129 2002/11/25 00:52:18 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2595,6 +2595,25 @@ int dmalloc_is_invalid_memory_block(void *block)
   if(!mh) return -1; /* no such known block */
   if(mh->size < 0) return -2; /* block has been freed */
   return 0; /* block is valid */
+}
+
+void cleanup_debug_malloc(void)
+{
+  size_t i;
+
+  free_all_memloc_blocks();
+  exit_memhdr_hash();
+  free_all_memory_map_blocks();
+  free_all_memory_map_entry_blocks();
+
+  for (i = 0; i < DSTRHSIZE; i++) {
+    struct dmalloc_string *str = dstrhash[i], *next;
+    while (str) {
+      next = str->next;
+      free(str);
+      str = next;
+    }
+  }
 }
 
 #endif

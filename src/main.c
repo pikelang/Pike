@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.157 2002/10/11 13:18:09 grubba Exp $
+|| $Id: main.c,v 1.158 2002/11/25 00:52:18 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.157 2002/10/11 13:18:09 grubba Exp $");
+RCSID("$Id: main.c,v 1.158 2002/11/25 00:52:18 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -746,10 +746,8 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
   exit_modules();
 
 #ifdef DEBUG_MALLOC
-  {
-    extern void cleanup_memhdrs(void);
-    cleanup_memhdrs();
-  }
+  cleanup_memhdrs();
+  cleanup_debug_malloc();
 #endif
 
 
