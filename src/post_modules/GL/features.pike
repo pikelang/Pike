@@ -23,7 +23,6 @@ array func_misc = ({
   ({"glTranslate", "V!RRR"}),
   ({"glScale", "V!RRR"}),
   ({"glRotate", "V!RRRR"}),
-  ({"glLight","VEE@Q"}),
   ({"glMaterial","VEE@Q"}),
   ({"glFog","VE@Q"}),
   ({"glLightModel","VE@Q"}),
@@ -36,6 +35,12 @@ array func_misc = ({
   ({"glClear","VB"}),
   ({"glIsEnabled","OE"}),
   ({"glBlendFunc","VEE"}),
+  ({"glBindTexture","VEI"}),
+  ({"glTexEnv","VEE@Q"}),
+  ({"glTexParameter","VEE@Q"}),
+  ({"glTexCoord", "V+Z"}),
+  ({"glTexGen","VEE@Z"}),
+  ({"glTexImage2D","VEIIwhIfti"}),
 });
 mapping func_cat = ([
   "VE":funcEV,

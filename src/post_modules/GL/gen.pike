@@ -13,12 +13,21 @@
 
    +XXXX = 3/4/array(3/4)
    +XXX  = 2/3/4/array(2/3/4)
+   +X    = 1/2/3/4/array(1/2/3/4)
    =XXXX = 4/array(4)
    =XXX  = 3/array(3)
    @X    = 1/array(n)
 
    #     = like =, but add count
    !     = like =, but no vector version available
+
+   image object support:
+
+   w     = width of image
+   h     = height of image
+   f     = format of image
+   t     = type of image
+   i     = image data
 
 */
 
@@ -84,7 +93,7 @@ array(string) gen_func(string name, string ty)
 {
   string res="", got="", prot, vdec, vret, fu=name;
   array novec, args=({}), argt=({});
-  int r234, argt_cut=-1;
+  int r234, argt_cut=-1, img_obj=0;
   string rtypes;
 
   switch(ty[0]) {
@@ -104,6 +113,7 @@ array(string) gen_func(string name, string ty)
   res += "static void f_"+name+"(INT32 args)\n{\n"+
     (vdec?("  "+vdec+" res;\n"):"");
 
+  int a=1;
   for(int i=1; i<sizeof(ty); i++)
     switch(ty[i]) {
     case 'B':
@@ -111,25 +121,30 @@ array(string) gen_func(string name, string ty)
     case 'O':
     case 'I':
       argt += ({"int"});
-      args += ({ "arg"+i });
-      res += "  INT32 arg"+i+";\n";
-      got += "  arg"+i+"=sp["+(i-1)+"-args].u.integer;\n";
+      args += ({ "arg"+a });
+      res += "  INT32 arg"+a+";\n";
+      got += "  arg"+a+"=sp["+(a-1)+"-args].u.integer;\n";
+      a++;
       break;
     case 'D':
       argt += ({"float"});
-      args += ({ "arg"+i });
-      res += "  double arg"+i+";\n";
-      got += "  arg"+i+"=sp["+(i-1)+"-args].u.float_number;\n";
+      args += ({ "arg"+a });
+      res += "  double arg"+a+";\n";
+      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      a++;
       break;
     case 'F':
       argt += ({"float"});
-      args += ({ "arg"+i });
-      res += "  float arg"+i+";\n";
-      got += "  arg"+i+"=sp["+(i-1)+"-args].u.float_number;\n";
+      args += ({ "arg"+a });
+      res += "  float arg"+a+";\n";
+      got += "  arg"+a+"=sp["+(a-1)+"-args].u.float_number;\n";
+      a++;
       break;
     case '+':
       int mi, mx;
       switch(sizeof(ty[i+1..])) {
+      case 1:
+	mi = 1; mx = 4; break;
       case 3:
 	mi = 2; mx = 4; break;
       case 4:
@@ -141,7 +156,7 @@ array(string) gen_func(string name, string ty)
       res += "  struct zvalue4 zv4;\n";
       argt_cut = sizeof(argt);
       argt += plusfix[0];
-      res += "\n  int r234=check_234_args(\""+name+"\", args-"+(i-1)+", "+
+      res += "\n  int r234=check_234_args(\""+name+"\", args-"+(a-1)+", "+
 	mi+", "+mx+", "+plusfix[1]+", "+plusfix[2]+", &zv4);\n";
       r234=1;
       rtypes=plusfix[3];
@@ -158,7 +173,7 @@ array(string) gen_func(string name, string ty)
       res += "  struct zvalue4 zv4;\n";
       argt_cut = sizeof(argt);
       argt += eqfix[0];
-      res += "\n  check_234_args(\""+name+"\", args-"+(i-1)+", "+
+      res += "\n  check_234_args(\""+name+"\", args-"+(a-1)+", "+
 	sizeof(ty[i+1..])+", "+sizeof(ty[i+1..])+", "+eqfix[1]+", "+
 	eqfix[2]+", &zv4);\n";
       r234=2;
@@ -172,17 +187,43 @@ array(string) gen_func(string name, string ty)
       res += "  union zvalue16 zv16;\n";
       argt_cut = sizeof(argt);
       argt += atfix[0];
-      res += "\n  int r1n=check_1n_args(\""+name+"\", args-"+(i-1)+", "+
+      res += "\n  int r1n=check_1n_args(\""+name+"\", args-"+(a-1)+", "+
 	atfix[1]+", "+atfix[2]+", &zv16);\n";
       r234=3;
       rtypes=atfix[3];
       i=sizeof(ty);
       break;
+    case 'w':
+      img_obj=1;
+      args += ({ "img.width" });
+      break;
+    case 'h':
+      img_obj=1;
+      args += ({ "img.height" });
+      break;
+    case 'f':
+      img_obj=1;
+      args += ({ "img.format" });
+      break;
+    case 't':
+      img_obj=1;
+      args += ({ "img.type" });
+      break;
+    case 'i':
+      img_obj=1;
+      args += ({ "img.pixels" });
+      break;
 
     default:
       error("%s: Unknown parameter type '%c'.", name, ty[i]);
     }
-  
+
+  if(img_obj) {
+    argt += ({"object"});
+    res += "  struct zimage img;\n";
+    got += "  check_img_arg(sp["+(a-1)+"-args].u.object, &img);\n";
+  }
+
   prot = (argt*",")+prot;
 
   if(sizeof(argt))
@@ -284,6 +325,9 @@ array(string) gen_func(string name, string ty)
     break;
   }
 
+  if(img_obj) {
+    res += "  release_img(&img);\n";
+  }
   res += "  pop_n_elems(args);\n";
   res += (vret? "  "+vret+"(res);\n":/*"  push_int(0);\n"*/"");
   res += "}\n\n";
@@ -309,11 +353,13 @@ string gen()
     prot[f]=r[1];
   }
   res += "void add_auto_funcs()\n{\n";
+  res += "  pre_init();\n";
   foreach(fn, string f)
     res += "  add_function_constant(\""+f+"\", f_"+f+",\n\t\t\t\"function("+
       prot[f]+")\", OPT_SIDE_EFFECT);\n";
   foreach(sort(indices(constants)), string co)
     res += "  add_integer_constant(\""+co+"\", "+constants[co]+", 0);\n";
+  res += "  post_init();\n";
   res += "}\n";
   return res;
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: auto.c.in,v 1.5 1999/07/16 20:01:26 marcus Exp $
+ * $Id: auto.c.in,v 1.6 1999/07/17 00:21:35 marcus Exp $
  *
  */
 
@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.5 1999/07/16 20:01:26 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.6 1999/07/17 00:21:35 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -38,6 +38,14 @@ union zvalue16 {
   GLfloat f[16];
   GLdouble d[16];
 };
+
+struct zimage {
+  GLsizei width, height;
+  GLenum format, type;
+  GLvoid *pixels;
+};
+
+static struct program *image_program=NULL;
 
 static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
 			  int rty, struct zvalue4 *ret)
@@ -98,6 +106,26 @@ static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
       break;      
     }
   return args;
+}
+
+static void check_img_arg(struct object *obj, struct zimage *img)
+{
+  struct {
+    void *img;
+    INT_TYPE w, h;
+  } *stor = get_storage(obj, image_program);
+  if(stor == NULL || stor->img == NULL)
+    error("Bad image object\n");
+  img->width = stor->w;
+  img->height = stor->h;
+  img->pixels = stor->img;
+  img->format = GL_RGB;
+  img->type = GL_UNSIGNED_BYTE;
+}
+
+static void release_img(struct zimage *img)
+{
+  /**/
 }
 
 static int check_1n_args(char *func, INT32 args, int ty, int rty,
@@ -166,6 +194,23 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 #define glClearColor3v(f) glClearColor((f)[0], (f)[1], (f)[2], 0.0)
 #define glClearColor4v(f) glClearColor((f)[0], (f)[1], (f)[2], (f)[3])
 
+static void pre_init()
+{
+   image_program = NULL;
+   push_string(make_shared_string("Image")); push_int(0);
+   SAFE_APPLY_MASTER("resolv",2);
+   if (sp[-1].type==T_OBJECT) 
+   {
+     push_string(make_shared_string("image"));
+     f_index(2);
+     image_program=program_from_svalue(sp-1);
+     pop_stack();
+   }
+}
+
+static void post_init()
+{
+}
 
 @@
 
