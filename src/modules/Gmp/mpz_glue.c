@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.124 2003/01/27 11:52:59 mirar Exp $
+|| $Id: mpz_glue.c,v 1.125 2003/02/07 08:56:08 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.124 2003/01/27 11:52:59 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.125 2003/02/07 08:56:08 mirar Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1335,6 +1335,8 @@ static void mpzmod_sqrtrem(INT32 args)
 static void mpzmod_lsh(INT32 args)
 {
   struct object *res = NULL;
+  INT32 i;
+  MP_INT *mi;
   if (args != 1)
     Pike_error("Wrong number of arguments to Gmp.mpz->`<<.\n");
   ref_push_type_value(int_type_string);
@@ -1352,14 +1354,15 @@ static void mpzmod_lsh(INT32 args)
     res = fast_clone_object(THIS_PROGRAM, 0);
     mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
-    INT32 i;
-    MP_INT *mi = get_mpz(sp-1,1);
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
+too_large:
+#endif
+    mi = get_mpz(sp-1,1);
     if(mpz_sgn(mi)<0)
       Pike_error("Gmp.mpz->lsh on negative number.\n");
     i=mpz_get_si(mi);
     if(mpz_cmp_si(mi, i)) 
     {
-too_large:
        if(mpz_sgn(THIS))
 	  Pike_error("Gmp.mpz->lsh: shift count too large.\n");
        else {
@@ -1485,6 +1488,8 @@ static void mpzmod_powm(INT32 args)
 static void mpzmod_pow(INT32 args)
 {
   struct object *res = NULL;
+  INT32 i;
+  MP_INT *mi;
   
   if (args != 1)
     Pike_error("Gmp.mpz->pow: Wrong number of arguments.\n");
@@ -1500,14 +1505,15 @@ static void mpzmod_pow(INT32 args)
     res = fast_clone_object(THIS_PROGRAM, 0);
     mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
-    INT32 i;
-    MP_INT *mi = get_mpz(sp-1,1);
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
+too_large:
+#endif
+    mi = get_mpz(sp-1,1);
     if(mpz_sgn(mi)<0)
       Pike_error("Gmp.mpz->pow: Negative exponent.\n");
     i=mpz_get_si(mi);
     if(mpz_cmp_si(mi, i))
     {
-too_large:
        if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
 	  Pike_error("Gmp.mpz->pow: Exponent too large.\n");
        else {
