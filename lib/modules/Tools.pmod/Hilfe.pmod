@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.62 2002/04/06 21:17:35 mikael%unix.pp.se Exp $
+// $Id: Hilfe.pmod,v 1.63 2002/04/08 09:35:47 mikael%unix.pp.se Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -502,7 +502,8 @@ private class SubSysBackend {
       if(err)
 	write_err(describe_backtrace(err));
      }while(!once && err);
-    write_err("Backend done.\n");
+    if(once && err)
+      write_err("Backend done.\r\n");
     is_running=0;
   }
 
