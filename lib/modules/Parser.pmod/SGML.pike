@@ -1,5 +1,5 @@
 //
-// $Id: SGML.pike,v 1.1 2003/11/07 18:38:50 nilsson Exp $
+// $Id: SGML.pike,v 1.2 2003/11/07 18:40:08 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -144,7 +144,7 @@ class SGML
    }
 
 
-   private static object p=HTML();
+   private static object p=.HTML();
 
    //! @decl void create()
    //! @decl void create(string filename)
