@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.14 2002/10/16 13:19:01 marcus Exp $
+|| $Id: my_gmp.h,v 1.15 2003/03/29 03:07:19 mast Exp $
 */
 
 /*
@@ -70,6 +70,11 @@ extern struct program *bignum_program;
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))
 #define OBTOMPF(o) ((MP_FLT *)(o->storage))
+
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
+/* INT_TYPE is too big to feed directly to mpz_set_si etc. */
+#define BIG_PIKE_INT
+#endif
 
 /* MPQ protos */
 void pike_init_mpq_module(void);

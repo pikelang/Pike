@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gmp_machine.h.in,v 1.9 2002/11/25 01:03:51 nilsson Exp $
+|| $Id: gmp_machine.h.in,v 1.10 2003/03/29 03:07:19 mast Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -25,8 +25,5 @@
 
 /* Define this if you have mpz_popcount */
 #undef HAVE_MPZ_POPCOUNT
-
-/* define this if INT_TYPE is bigger then signed long int */
-#undef BIG_PIKE_INT
 
 #endif
