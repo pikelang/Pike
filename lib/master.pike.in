@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.277 2003/05/07 20:10:03 mast Exp $
+// $Id: master.pike.in,v 1.278 2003/05/15 13:54:07 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1555,9 +1555,23 @@ class CompatResolver
 		    object|void current_handler)
     {
 //      werror("Resolv_base(%O)\n",identifier);
-      if (identifier == "_static_modules") return _static_modules;
-
+      mapping(string:mixed)|object static_modules = _static_modules;
+      if (current_handler && current_handler->get_default_module) {
+	mapping(string:mixed) default_module =
+	  current_handler->get_default_module();
+	if (default_module) {
+	  static_modules = (default_module->_static_modules || ([]));
+	}
+      }
       array(mixed) tmp = ({});
+
+      if (static_modules[identifier]) {
+	tmp += ({ static_modules[identifier] });
+      }
+      if (identifier == "_static_modules") {
+	tmp += ({ static_modules });
+      }
+
       string dir=current_file ? dirname(current_file) : "/";
 
       foreach(pike_module_path, string path)
@@ -1977,11 +1991,12 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(0);
 	
       case "execute":
-	random_seed(time() ^ (getpid()<<8));
-	argv = tmp->get_args(argv,1);
 #ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp", "bignum" );
 #endif /* __AUTO_BIGNUM__ */
+
+	random_seed((time() ^ (getpid()<<8)));
+	argv = tmp->get_args(argv,1);
 
 	program prog;
 	if(Version(compat_major,compat_minor) <= Version(7,4))
