@@ -412,6 +412,22 @@ fi
 
 AC_MSG_RESULT($pike_cv_struct_tm_has_gmtoff)
 
+AC_MSG_CHECKING(for USHRT_MAX definition)
+
+AC_CACHE_VAL(pike_cv_ushrt_max_is_defined,[
+AC_EGREP_CPP(yes,[
+#include <limits.h>
+#ifdef USHRT_MAX
+yes
+#endif
+],pike_cv_ushrt_max_is_defined=yes,pike_cv_ushrt_max_is_defined=no)
+])
+
+if test "$pike_cv_ushrt_max_is_defined" = "no" ; then
+  AC_DEFINE(USHRT_MAX,65535)
+fi
+
+AC_MSG_RESULT($pike_cv_ushrt_max_is_defined)
 
 define(MY_CHECK_HEADERS,
 [
