@@ -12,6 +12,8 @@ bignum g; /* Generator */
 bignum y; /* Public key */
 bignum x; /* Private key */
 
+function random;
+
 object set_public_key(bignum p_, bignum q_, bignum g_, bignum y_)
 {
   p = p_; q = q_; g = g_; y = y_;
@@ -22,6 +24,11 @@ object set_private_key(bignum secret)
 {
   x = secret;
   return this_object();
+}
+
+object use_random(function r)
+{
+  random = r;
 }
 
 bignum hash2number(string digest)
@@ -35,19 +42,19 @@ bignum dsa_hash(string msg)
 }
   
 /* Generate a random number k, 0<=k<n */
-bignum random_number(bignum n, function r)
+bignum random_number(bignum n)
 {
-  return Gmp.mpz(r( (q->size() + 10 / 8)), 256) % n;
+  return Gmp.mpz(random( (q->size() + 10 / 8)), 256) % n;
 }
 
-bignum random_exponent(function r)
+bignum random_exponent()
 {
-  return random_number(q - 1, r) + 1;
+  return random_number(q - 1) + 1;
 }
 
-array(bignum) raw_sign(bignum h, function random)
+array(bignum) raw_sign(bignum h)
 {
-  bignum k = random_exponent(random);
+  bignum k = random_exponent();
   
   bignum r = g->powm(k, p) % q;
   bignum s = (k->invert(q) * (h + x*r)) % q;
@@ -69,7 +76,7 @@ int raw_verify(bignum h, bignum r, bignum s)
   return r == (g->powm(w * h % q, p) * y->powm(w * r % q, p) % p) % q;
 }
 
-string sign_rsaref(string msg, function random)
+string sign_rsaref(string msg)
 {
   [bignum r, bignum s] = raw_sign(dsa_hash(msg), random);
 
@@ -86,7 +93,7 @@ int verify_rsaref(string msg, string s)
 		    Gmp.mpz(s[20..], 256));
 }
 
-string sign_ssl(string msg, function random)
+string sign_ssl(string msg)
 {
   return Standards.ASN1.Types.asn1_sequence(
     Array.map(raw_sign(dsa_hash(msg), random),
@@ -140,7 +147,7 @@ string nist_hash(bignum x)
 }
 
 /* Returns ({ p, q }) */
-array(bignum) nist_primes(int l, function r)
+array(bignum) nist_primes(int l)
 {
   if ( (l < 0) || (l > 8) )
     throw( ({ "Crypto.dsa->nist_primes: Unsupported key size.\n",
@@ -154,7 +161,7 @@ array(bignum) nist_primes(int l, function r)
   for (;;)
   {
     /* Generate q */
-    string seed = r(SEED_LENGTH);
+    string seed = random(SEED_LENGTH);
     bignum s = Gmp.mpz(seed, 256);
 
     string h = nist_hash(s) ^ nist_hash(s + 1);
@@ -194,7 +201,7 @@ array(bignum) nist_primes(int l, function r)
   }
 }
       
-bignum find_generator(bignum p, bignum q, function r)
+bignum find_generator(bignum p, bignum q)
 {
   bignum e = (p - 1) / q;
   bignum g;
@@ -202,7 +209,7 @@ bignum find_generator(bignum p, bignum q, function r)
   do
   {
     /* A random number in { 2, 3, ... p - 2 } */
-    g = (random_number(p-3, r) + 2)
+    g = (random_number(p-3) + 2)
       /* Exponentiate to get an element of order 1 or q */
       ->powm(e, p);
   }
@@ -211,16 +218,13 @@ bignum find_generator(bignum p, bignum q, function r)
   return g;
 }
 
-object generate_key(int bits, function r)
+object generate_parameters(int bits)
 {
-  if (!r)
-    r = Crypto.randomness.really_random()->read;
-
   if (bits % 64)
     throw( ({ "Crypto.dsa->generate_key: Unsupported key size.\n",
 		backtrace() }) );
 
-  [p, q] = nist_primes(bits / 64 - 8, r);
+  [p, q] = nist_primes(bits / 64 - 8);
 
   if (p % q != 1)
     throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
@@ -228,13 +232,18 @@ object generate_key(int bits, function r)
   if (q->size() != 160)
     throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
   
-  g = find_generator(p, q, r);
+  g = find_generator(p, q);
 
   if ( (g == 1) || (g->powm(q, p) != 1))
     throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
-    
+
+  return this_object();
+}
+
+object generate_key()
+{
   /* x in { 2, 3, ... q - 1 } */
-  x = random_number(q - 2, r) + 2;
+  x = random_number(q - 2) + 2;
   y = g->powm(x, p);
 
   return this_object();
