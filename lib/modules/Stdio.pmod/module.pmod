@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.54 1999/05/26 14:17:37 grubba Exp $
+// $Id: module.pmod,v 1.55 1999/06/09 21:13:05 mirar Exp $
 
 import String;
 
@@ -503,7 +503,7 @@ class FILE {
 	return file::write(sprintf(fmt,@data));
     }
     
-    string read(int|void bytes)
+    string read(int|void bytes,void|int(0..1) now)
     {
       if (!query_num_arg()) {
 	bytes = 0x7fffffff;
@@ -516,6 +516,7 @@ class FILE {
 	  bpos = 0;
 	  return res;
 	}
+	else if (now) break;
 
       return extract(bytes);
     }
