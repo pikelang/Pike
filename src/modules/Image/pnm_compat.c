@@ -1,10 +1,10 @@
-/* $Id: pnm_compat.c,v 1.2 1999/04/13 12:32:31 mirar Exp $ */
+/* $Id: pnm_compat.c,v 1.3 1999/05/24 15:09:20 mirar Exp $ */
 
 /*
-**! module Image
-**! note
-**!	$Id: pnm_compat.c,v 1.2 1999/04/13 12:32:31 mirar Exp $
-**! class Image
+**< module Image
+**< note
+**<	$Id: pnm_compat.c,v 1.3 1999/05/24 15:09:20 mirar Exp $
+**< class Image
 */
 
 #include "global.h"
@@ -33,22 +33,22 @@
 extern struct program *image_program;
 
 /*
-**! method string toppm()
-**!	<b>compability method</b> - do not use in new programs.
-**!	
-**!	See <ref>Image.PNM.encode</ref>().
-**!
-**! returns PPM data
-**!
-**! method object|string frompnm(string pnm)
-**! method object|string fromppm(string pnm)
-**!	<b>compability method</b> - do not use in new programs.
-**!	
-**!	See <ref>Image.PNM.decode</ref>().
-**!
-**! returns the called object or a hint of what wronged.
-**! arg string pnm
-**!	pnm data, as a string
+**< method string toppm()
+**<	<b>compability method</b> - do not use in new programs.
+**<	
+**<	See <ref>Image.PNM.encode</ref>().
+**<
+**< returns PPM data
+**<
+**< method object|string frompnm(string pnm)
+**< method object|string fromppm(string pnm)
+**<	<b>compability method</b> - do not use in new programs.
+**<	
+**<	See <ref>Image.PNM.decode</ref>().
+**<
+**< returns the called object or a hint of what wronged.
+**< arg string pnm
+**<	pnm data, as a string
 */
 
 void img_pnm_encode_binary(INT32 args);

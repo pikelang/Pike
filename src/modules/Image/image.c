@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.137 1999/05/24 12:22:49 mirar Exp $ */
+/* $Id: image.c,v 1.138 1999/05/24 15:09:17 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.137 1999/05/24 12:22:49 mirar Exp $
+**!	$Id: image.c,v 1.138 1999/05/24 15:09:17 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.137 1999/05/24 12:22:49 mirar Exp $");
+RCSID("$Id: image.c,v 1.138 1999/05/24 15:09:17 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3512,48 +3512,6 @@ void image_cast(INT32 args)
 
 /***************** global init etc *****************************/
 
-extern void init_font_programs(void);
-extern void exit_font(void);
-extern void init_colortable_programs(void);
-extern void exit_colortable(void);
-extern void init_image_colors(void);
-extern void exit_image_colors(void);
-extern void init_image_layers(void);
-extern void exit_image_layers(void);
-
-/* encoders */
-
-extern void init_image_gif(void);
-extern void exit_image_gif(void);
-extern void init_image_pnm(void);
-extern void exit_image_pnm(void);
-extern void init_image_bmp(void);
-extern void exit_image_bmp(void);
-extern void init_image_xwd(void);
-extern void exit_image_xwd(void);
-extern void init_image_x(void);
-extern void exit_image_x(void);
-extern void init_image_any(void);
-extern void exit_image_any(void);
-extern void init_image_tga(void);
-extern void exit_image_tga(void);
-extern void init_image_pcx(void);
-extern void exit_image_pcx(void);
-extern void init_image__xpm(void);
-extern void exit_image__xpm(void);
-extern void exit_image_xbm(void);
-extern void init_image_xbm(void);
-extern void exit_image_ilbm(void);
-extern void init_image_ilbm(void);
-extern void init_image_xcf(void);
-extern void exit_image_xcf(void);
-extern void init_image_psd(void);
-extern void exit_image_psd(void);
-extern void init_image_hrz(void);
-extern void exit_image_hrz(void);
-extern void init_image_avs(void);
-extern void exit_image_avs(void);
-
 #define tRGB tOr3(tColor,tVoid,tInt) tOr(tInt,tVoid) tOr(tInt,tVoid)
 
 void init_image_image(void)
@@ -3568,6 +3526,8 @@ void init_image_image(void)
 		tFunc(tInt tInt tRGB,tObj),0);
    ADD_FUNCTION("clear",image_clear,
 		tFunc(tRGB,tObj),0);
+
+#if 0
    ADD_FUNCTION("toppm",image_toppm,tFunc(,tStr),0);
    ADD_FUNCTION("frompnm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
    ADD_FUNCTION("fromppm",image_frompnm,tFunc(tStr,tOr(tObj,tStr)),0);
@@ -3595,6 +3555,7 @@ void init_image_image(void)
 		tFunc(,tStr),0);
    ADD_FUNCTION("gif_netscape_loop",image_gif_netscape_loop,
 		tFunc(,tStr),0);
+#endif
 
    ADD_FUNCTION("cast",image_cast,
 		tFunc(tStr,tStr),0);

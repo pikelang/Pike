@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.34 1999/05/20 17:34:38 mirar Exp $ 
+$Id: togif.c,v 1.35 1999/05/24 15:09:21 mirar Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.34 1999/05/20 17:34:38 mirar Exp $
+**!	$Id: togif.c,v 1.35 1999/05/24 15:09:21 mirar Exp $
 **! class Image
 */
 
@@ -46,49 +46,49 @@ old GIF API compat stuff
 extern struct program *image_colortable_program;
 
 /*
-**! method string gif_begin()
-**! method string gif_begin(int num_colors)
-**! method string gif_begin(array(array(int)) colors)
-**! method string gif_end()
-**! method string gif_netscape_loop(int loops)
-**! method string togif()
-**! method string togif(int trans_r,int trans_g,int trans_b)
-**! method string togif(int num_colors,int trans_r,int trans_g,int trans_b)
-**! method string togif(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
-**! method string togif_fs()
-**! method string togif_fs(int trans_r,int trans_g,int trans_b)
-**! method string togif_fs(int num_colors,int trans_r,int trans_g,int trans_b)
-**! method string togif_fs(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
-**! method string gif_add()
-**! method string gif_add_fs()
-**! method string gif_add_nomap()
-**! method string gif_add_fs_nomap()
-**! method string gif_add*(int x,int y)
-**! method string gif_add*(int x,int y,int delay_cs)
-**! method string gif_add*(int x,int y,int num_colors,int delay_cs)
-**! method string gif_add*(int x,int y,array(array(int)) colors,int delay_cs)
-**!	old GIF API compatibility function. Don't use 
-**!	in any new code. 
-**!
-**!	<table>
-**!	<tr><td></td><td>is replaced by</td></tr>
-**!	<tr><td>gif_begin</td><td><ref>Image.GIF.header_block</ref></td></tr>
-**!	<tr><td>gif_end</td><td><ref>Image.GIF.end_block</ref></td></tr>
-**!	<tr><td>gif_netscape_loop</td><td><ref>Image.GIF.netscape_loop_block</ref></td></tr>
-**!	<tr><td>togif</td><td><ref>Image.GIF.encode</ref></td></tr>
-**!	<tr><td>togif_fs</td><td><ref>Image.GIF.encode</ref>¹</td></tr>
-**!	<tr><td>gif_add</td><td><ref>Image.GIF.render_block</ref>¹²</td></tr>
-**!	<tr><td>gif_add_fs</td><td><ref>Image.GIF.render_block</ref>¹</td></tr>
-**!	<tr><td>gif_add_nomap</td><td><ref>Image.GIF.render_block</ref>²</td></tr>
-**!	<tr><td>gif_add_fs_nomap</td><td><ref>Image.GIF.render_block</ref>¹²</td></tr>
-**!	</table>
-**!
-**!	¹ Use <ref>Image.Colortable</ref> to get whatever dithering
-**!	you want.
-**!
-**!	² local map toggle is sent as an argument
-**!
-**! returns GIF data.
+**< method string gif_begin()
+**< method string gif_begin(int num_colors)
+**< method string gif_begin(array(array(int)) colors)
+**< method string gif_end()
+**< method string gif_netscape_loop(int loops)
+**< method string togif()
+**< method string togif(int trans_r,int trans_g,int trans_b)
+**< method string togif(int num_colors,int trans_r,int trans_g,int trans_b)
+**< method string togif(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
+**< method string togif_fs()
+**< method string togif_fs(int trans_r,int trans_g,int trans_b)
+**< method string togif_fs(int num_colors,int trans_r,int trans_g,int trans_b)
+**< method string togif_fs(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
+**< method string gif_add()
+**< method string gif_add_fs()
+**< method string gif_add_nomap()
+**< method string gif_add_fs_nomap()
+**< method string gif_add*(int x,int y)
+**< method string gif_add*(int x,int y,int delay_cs)
+**< method string gif_add*(int x,int y,int num_colors,int delay_cs)
+**< method string gif_add*(int x,int y,array(array(int)) colors,int delay_cs)
+**<	 old GIF API compatibility function. Don't use 
+**<	 in any new code. 
+**<
+**<	 <table>
+**<	 <tr><td></td><td>is replaced by</td></tr>
+**<	 <tr><td>gif_begin</td><td><ref>Image.GIF.header_block</ref></td></tr>
+**<	 <tr><td>gif_end</td><td><ref>Image.GIF.end_block</ref></td></tr>
+**<	 <tr><td>gif_netscape_loop</td><td><ref>Image.GIF.netscape_loop_block</ref></td></tr>
+**<	 <tr><td>togif</td><td><ref>Image.GIF.encode</ref></td></tr>
+**<	 <tr><td>togif_fs</td><td><ref>Image.GIF.encode</ref>¹</td></tr>
+**<	 <tr><td>gif_add</td><td><ref>Image.GIF.render_block</ref>¹²</td></tr>
+**<	 <tr><td>gif_add_fs</td><td><ref>Image.GIF.render_block</ref>¹</td></tr>
+**<	 <tr><td>gif_add_nomap</td><td><ref>Image.GIF.render_block</ref>²</td></tr>
+**<	 <tr><td>gif_add_fs_nomap</td><td><ref>Image.GIF.render_block</ref>¹²</td></tr>
+**<	 </table>
+**<
+**<	 ¹ Use <ref>Image.Colortable</ref> to get whatever dithering
+**<	 you want.
+**<
+**<	 ² local map toggle is sent as an argument
+**<
+**< returns GIF data.
 */
 
 extern void image_gif_header_block(INT32 args);
@@ -241,27 +241,27 @@ void image_gif_add_fs_nomap(INT32 args)
 }
 
 /*
-**! method string togif()
-**! method string togif(int trans_r,int trans_g,int trans_b)
-**! method string togif(int num_colors,int trans_r,int trans_g,int trans_b)
-**! method string togif(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
-**! method string togif_fs()
-**! method string togif_fs(int trans_r,int trans_g,int trans_b)
-**! method string togif_fs(int num_colors,int trans_r,int trans_g,int trans_b)
-**! method string togif_fs(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
-**!	Makes GIF data. The togif_fs variant uses floyd-steinberg 
-**!	dithereing.
-**! returns the GIF data
-**!
-**! arg int num_colors
-**!	number of colors to quantize to (default is 256) 
-**! array array(array(int)) colors
-**!	colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
-**! arg int trans_r
-**! arg int trans_g
-**! arg int trans_b
-**!	one color, that is to be transparent.
-**! see also: gif_begin, gif_add, gif_end, toppm, fromgif
+**< method string togif()
+**< method string togif(int trans_r,int trans_g,int trans_b)
+**< method string togif(int num_colors,int trans_r,int trans_g,int trans_b)
+**< method string togif(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
+**< method string togif_fs()
+**< method string togif_fs(int trans_r,int trans_g,int trans_b)
+**< method string togif_fs(int num_colors,int trans_r,int trans_g,int trans_b)
+**< method string togif_fs(array(array(int)) colors,int trans_r,int trans_g,int trans_b)
+**<	 Makes GIF data. The togif_fs variant uses floyd-steinberg 
+**<	 dithereing.
+**< returns the GIF data
+**<
+**< arg int num_colors
+**<	 number of colors to quantize to (default is 256) 
+**< array array(array(int)) colors
+**<	 colors to map to (default is to quantize to 256), format is ({({r,g,b}),({r,g,b}),...}).
+**< arg int trans_r
+**< arg int trans_g
+**< arg int trans_b
+**<	 one color, that is to be transparent.
+**< see also: gif_begin, gif_add, gif_end, toppm, fromgif
 */
 
 extern void _image_gif_encode(INT32 args,int fs);
