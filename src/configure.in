@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.802 2004/03/08 20:33:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.803 2004/03/09 09:20:20 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6923,7 +6923,6 @@ if test "$pike_bundle_dir" = ""; then :; else
     if test -f "${pike_bundle_prefix}/bin/makeinfo"; then :; else
       cat >"${pike_bundle_prefix}/bin/makeinfo" <<EOF
 #!/bin/sh
-exit 1
 EOF
       chmod a+x "${pike_bundle_prefix}/bin/makeinfo"
     fi
