@@ -308,3 +308,6 @@ class Angle {
     return 0;
   }
 }
+
+constant inf=array_sscanf("\x7f\xf0\0\0\0\0\0\0","%8F")[0];
+constant nan=array_sscanf("\x7f\xf8\0\0\0\0\0\0","%8F")[0];
