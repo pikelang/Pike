@@ -78,6 +78,7 @@ filesystem_stat
 get_all_groups
 get_all_users
 get_groups_for_user
+get_weak_flag
 getgrent
 getgroups
 getegid		need ref

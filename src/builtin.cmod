@@ -195,6 +195,28 @@ PIKEFUN 1 m_delete(mapping(mixed:1=mixed) m, mixed val)
   sp++;
 }
 
+PIKEFUN int get_weak_flag(mixed m)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  int flag;
+  switch (m->type) {
+    case T_ARRAY:
+      flag = !!(m->u.array->flags & ARRAY_WEAK_FLAG);
+      break;
+    case T_MAPPING:
+      flag = !!(m->u.mapping->flags & MAPPING_FLAG_WEAK);
+      break;
+    case T_MULTISET:
+      flag = !!(m->u.multiset->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK));
+      break;
+    default:
+      SIMPLE_BAD_ARG_ERROR("get_weak_flag",1,"array|mapping|multiset");
+  }
+  pop_n_elems(args);
+  push_int(flag);
+}
+
 void init_builtin(void)
 {
 INIT
