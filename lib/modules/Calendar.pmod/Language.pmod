@@ -65,7 +65,7 @@ static class _ymd_base
 
    int month_number_from_name(string name)
    {
-      int j=(month_s2n[lower_case(name)]);
+      int j=(month_s2n[flat(name)]);
       if (!j) error("no such month of year: %O\n",name);
       return j;
    }
@@ -82,7 +82,7 @@ static class _ymd_base
 
    int week_day_number_from_name(string name)
    {
-      int j=(week_day_s2n[lower_case(name)]);
+      int j=(week_day_s2n[flat(name)]);
       if (!j) error("no such day of week: %O\n",name);
       return j;
    }
@@ -141,7 +141,7 @@ static class _ymd_base
 
    int gregorian_week_day_number_from_name(string name)
    {
-      int j=(week_day_s2n[lower_case(name)]);
+      int j=(week_day_s2n[flat(name)]);
       if (!j) error("no such day of week: %O\n",name);
       return j%7+1;
    }
@@ -170,7 +170,7 @@ static class _ymd_base
       return (["chaos":1,"discord":2,"confusion":3,
 	       "bureaucracy":4,"the aftermath":5,
 	       "chs":1,"dsc":2,"cfn":3,"bcy":4,"afm":5])
-	 [lower_case(name)];
+	 [flat(name)];
    }
 
    string discordian_week_day_shortname_from_number(int n)
@@ -191,7 +191,7 @@ static class _ymd_base
 	       "prickleprickle":4,"setting":5,"orange":5,"tib":6,"tibs":6,
 	       "sttib":6,"sttibs":6,"saint tib's day":6,
 	       "sm":1,"bt":2,"pd":3,"pp":4,"so":5,"st":6])
-	 [lower_case(name)];
+	 [flat(name)];
    }
 
    string discordian_week_name_from_number(int n)
@@ -228,7 +228,7 @@ static class _ymd_base
 	       "tou":1,"bab":2,"hat":3,"kia":4,"tob":5,
 	       "ams":6,"bar":7,"bar":8,"pak":9,
 	       "pao":10,"epe":11,"mes":12,"nas":13])
-	 [lower_case(name)];
+	 [flat(name)];
    }
 
    string coptic_year_name_from_number(int y)
