@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.504 2003/06/04 09:09:23 grubba Exp $
+|| $Id: program.c,v 1.505 2003/06/06 12:57:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.504 2003/06/04 09:09:23 grubba Exp $");
+RCSID("$Id: program.c,v 1.505 2003/06/06 12:57:00 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1559,6 +1559,11 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
 int override_identifier (struct reference *ref, struct pike_string *name)
 {
   int id = -1, cur_id = 0;
+
+  int new_is_variable =
+    IDENTIFIER_IS_VARIABLE(ID_FROM_PTR(Pike_compiler->new_program,
+				       ref)->identifier_flags);
+
   /* This loop could possibly be optimized by looping over
    * each inherit and looking up 'name' in each inherit
    * and then see if should be overwritten
@@ -1585,6 +1590,20 @@ int override_identifier (struct reference *ref, struct pike_string *name)
 	    compilation_depth, "                ", cur_id,
 	    Pike_compiler->new_program->identifier_references[cur_id].id_flags);
 #endif
+
+    if (!new_is_variable &&
+	IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
+					   cur_id)->identifier_flags)) {
+      // Overloading a variable with a constant or a function.
+      // This is generally a bad idea.
+      Pike_compiler->new_program->identifier_references[cur_id].id_flags |=
+	ID_INLINE|ID_HIDDEN;
+      yywarning("Attempt to override a non local variable %s%s%swith a non variable.",
+		(name&&!name->size_shift)?"\"":"",
+		(name&&!name->size_shift)?name->str:"",
+		(name&&!name->size_shift)?"\" ":"");
+      continue;
+    }
 
     Pike_compiler->new_program->identifier_references[cur_id]=*ref;
     id = cur_id;
