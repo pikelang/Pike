@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.377 2004/01/12 17:59:46 grubba Exp $
+# $Id: Makefile.in,v 1.378 2004/01/13 18:26:50 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -279,7 +279,14 @@ gcov:
 	@echo
 	@echo "Summary:"
 	@for f in `find . -name '*.gcov' -print`; do \
-	  grep -c '######' $f /dev/null | grep -v ':0'; \
+	  grep '######' $$f | \
+	  grep -v fatal | \
+	  grep -v -i inline | \
+	  grep -v PIKE_MODULE_EXIT | \
+	  egrep -v '######[ 	]*{$$' | \
+	  egrep -v '######[ 	]*}$$' | \
+	  wc -l | sed -e "s|^|$$f:|" -e 's/:[   ]*/:/' | \
+	  grep -v ':0'; \
 	done | sort -n -t: -k2
 
 # purify
