@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.59 2003/02/11 19:25:59 mast Exp $
+|| $Id: port.c,v 1.60 2003/02/22 10:21:35 grubba Exp $
 */
 
 /*
@@ -26,7 +26,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.59 2003/02/11 19:25:59 mast Exp $");
+RCSID("$Id: port.c,v 1.60 2003/02/22 10:21:35 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -610,7 +610,7 @@ PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args)
     case 'E':
     case 'g':
       *fmt2p=0;
-      sprintf(buf,fmt2,va_arg(args,FLOAT_TYPE));
+      sprintf(buf,fmt2,va_arg(args,double));
       buf+=strlen(buf);
       break;
     }
