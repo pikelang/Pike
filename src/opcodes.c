@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.139 2003/02/13 13:53:08 grubba Exp $
+|| $Id: opcodes.c,v 1.140 2003/02/19 01:57:34 marcus Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.139 2003/02/13 13:53:08 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.140 2003/02/19 01:57:34 marcus Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1219,8 +1219,8 @@ CHAROPT(							\
     order=get_switch_order(set->a);				\
     for(e=0;e<(size_t)set->a->size;e+=2)			\
     {								\
-      if(order[e]+1 != order[e+1])				\
-      {								\
+      if(order[e]+1 != order[e+1] &&				\
+         order[e+1]+1 != order[e])				\
         free_array(set->a);					\
         set->a=0;						\
         free((char *)order);					\
