@@ -1,0 +1,16 @@
+AC_INIT(mpz_glue.c)
+AC_CONFIG_HEADER(gmp_machine.h)
+AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
+
+sinclude(../module_configure.in)
+
+if test x$with_gmp = xyes ; then
+  AC_CHECK_HEADERS(gmp.h)
+  if test $ac_cv_header_gmp_h = yes ; then
+    AC_CHECK_LIB(gmp, mpz_set_d)
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

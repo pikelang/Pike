@@ -1,0 +1,52 @@
+// gdbm
+cond( [[ master()->programs["/precompiled/gdbm"] ]],
+[[
+  define([[GDBM]],[[ (program)"/precompiled/gdbm" ]])
+  test_true(programp(GDBM))
+  test_do(destruct(clone(GDBM)))
+
+  define([[GDBMTESTS]],
+  [[
+    test_do(rm("test.gdbm"))
+    test_do(add_efun("GDBMBASE",clone(GDBM,"test.gdbm")))
+    test_true(file_stat("test.gdbm"))
+
+    GDBMNULLTEST
+    test_true(GDBMBASE->store("foo","bar"))
+    GDBMNULLTEST
+    test_equal(GDBMBASE->fetch("foo"),"bar")
+    test_do([[int e; for(e=0;e<100;e++) GDBMBASE->store("x"+e,"y"+e)]])
+    GDBMNULLTEST
+    test_any(int e; for(e=0;e<100;e++) if(GDBMBASE->fetch("x"+e)!="y"+e) return e; return -1,-1)
+    GDBMNULLTEST
+    test_true(GDBMBASE->store(sprintf("%'23'100000s","") , sprintf("%'32'100000s","")))
+    test_true(GDBMBASE->fetch(sprintf("%'23'100000s",""))==sprintf("%'32'100000s",""))
+    GDBMNULLTEST
+    test_equal(GDBMBASE->fetch("foo"),"bar")
+    test_any(int e; for(e=0;e<100;e++) if(GDBMBASE->fetch("x"+e)!="y"+e) return e; return -1,-1)
+    test_true(GDBMBASE->fetch(sprintf("%'23'100000s",""))==sprintf("%'32'100000s",""))
+    test_any(int e; string k; for(k=GDBMBASE->firstkey();k;k=GDBMBASE->nextkey(k)) e++; return e,102)
+
+    test_do(GDBMBASE->sync())
+    test_do(GDBMBASE->reorganize())
+    test_do(GDBMBASE->close())
+  ]])
+
+  define([[GDBMNULLTEST]],[[
+    test_false(GDBMBASE->fetch("slakjdfasdf"))
+  ]])
+
+  GDBMTESTS
+
+  define([[GDBMNULLTEST]],[[
+    test_false(GDBMBASE->fetch("slakjdfasdf"))
+    test_do(GDBMBASE->reorganize())
+    test_do(GDBMBASE->sync())
+    test_do(GDBMBASE->close())
+    test_do(GDBMBASE->create("test.gdbm"))
+  ]])
+
+  GDBMTESTS
+
+  test_do(rm("test.gdbm"))
+]])

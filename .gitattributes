@@ -20,6 +20,8 @@ testfont binary
 /src/lex.c foreign_ident
 /src/main.c foreign_ident
 /src/mapping.c foreign_ident
+/src/modules/Gdbm/gdbmmod.c foreign_ident
+/src/modules/Gmp/mpz_glue.c foreign_ident
 /src/modules/_Crypto/cbc.c foreign_ident
 /src/modules/_Crypto/crypto.c foreign_ident
 /src/modules/_Crypto/crypto.h foreign_ident

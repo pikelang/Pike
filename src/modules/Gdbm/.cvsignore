@@ -1,0 +1,10 @@
+
+.pure
+Makefile
+config.log
+config.status
+configure
+dependencies
+gdbm_machine.h
+linker_options
+stamp-h
