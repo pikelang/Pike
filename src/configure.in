@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.719 2003/04/30 10:39:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.720 2003/05/07 10:47:08 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6598,7 +6598,19 @@ AC_SUBST(ac_configure_args)
 
 AC_SUBST(dmmsrc)
 
-AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc precompile.sh specs,[echo foo >stamp-h ; chmod +x precompile.sh])
+common_module_makefile=modules/common_module_makefile
+AC_SUBST_FILE(common_module_makefile)
+
+AC_OUTPUT(Makefile \
+          modules/common_module_makefile \
+          modules/static_module_makefile \
+          post_modules/static_module_makefile:modules/static_module_makefile.in \
+          modules/dynamic_module_makefile:$dmmsrc \
+          post_modules/dynamic_module_makefile:$dmmsrc \
+          precompile.sh specs, [
+            echo foo >stamp-h
+            chmod +x precompile.sh
+          ])
 
 # NOTE: M4 uses [] as quotes.
 
