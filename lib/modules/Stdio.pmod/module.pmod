@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.146 2002/04/07 11:16:51 nilsson Exp $
+// $Id: module.pmod,v 1.147 2002/04/07 12:29:41 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1725,6 +1725,7 @@ string simplify_path(string path)
   return combine_path("/", path)[1..];
 }
 
+#if constant(system.readlink)
 //! Unwinds all symlinks along the directory trail @[path], returning
 //! a path with no symlink components or 0, in case @[path] does not
 //! exist, for instance because one of its links pointed to a
@@ -1753,6 +1754,7 @@ string|int(0..0) expand_symlinks(string path)
   }
   return 0;
 }
+#endif /* constant(system.readlink) */
 
 //! This function prints a message to stderr along with a description
 //! of what went wrong if available. It uses the system errno to find
