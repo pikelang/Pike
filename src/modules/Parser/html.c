@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.127 2001/02/03 00:03:16 mast Exp $ */
+/* $Id: html.c,v 1.128 2001/02/03 00:37:22 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -1552,10 +1552,9 @@ static int scan_forward(struct piece *feed,
    if (num_look_for<0) num_look_for=-num_look_for,rev=1;
 
 #ifdef SCAN_DEBUG
-   DEBUG_MARK_SPOT("scan_forward",feed,c);
-   do
-   {
+   if (THIS->flags & FLAG_DEBUG_MODE) {
       int i=0;
+      DEBUG_MARK_SPOT("scan_forward",feed,c);
       fprintf(stderr,"    n=%d%s; ",num_look_for,rev?"; rev":"");
       for (i=0; i<num_look_for; i++)
 	 if (i > 30) {
@@ -1569,7 +1568,6 @@ static int scan_forward(struct piece *feed,
 	    fprintf(stderr,"%d:'%c' ",look_for[i],look_for[i]);
       fprintf(stderr,"\n");
    }
-   while(0);
 #define SCAN_DEBUG_MARK_SPOT(A,B,C) DEBUG_MARK_SPOT(A,B,C)
 #else
 #define SCAN_DEBUG_MARK_SPOT(A,B,C) do {} while (0);
@@ -1607,41 +1605,24 @@ static int scan_forward(struct piece *feed,
 	       SCAN_DEBUG_MARK_SPOT("scan_forward piece loop (1)",feed,c);
 	       switch (feed->s->size_shift)
 	       {
-		  case 0:
-		  {
-		     p_wchar0*s=((p_wchar0*)feed->s->str)+c;
-		     while (ce--)
-			if ((p_wchar2)*(s++)==f)
-			{
-			   c=feed->s->len-ce;
-			   goto found;
-			}
+#define LOOP(TYPE)							\
+		  {							\
+		     TYPE *s=((TYPE *)feed->s->str)+c;			\
+		     while (ce--)					\
+			if ((p_wchar2)*(s++)==f)			\
+			{						\
+			   c=feed->s->len-ce;				\
+			   goto found;					\
+			}						\
 		  }
-		  break;
-		  case 1:
-		  {
-		     p_wchar1*s=((p_wchar1*)feed->s->str)+c;
-		     while (ce--)
-			if ((p_wchar2)*(s++)==f)
-			{
-			   c=feed->s->len-ce;
-			   goto found;
-			}
-		  }
-		  break;
-		  case 2:
-		  {
-		     p_wchar2*s=((p_wchar2*)feed->s->str)+c;
-		     while (ce--)
-			if (*(s++)==f)
-			{
-			   c=feed->s->len-ce;
-			   goto found;
-			}
-		  }
-		  break;
+		  case 0: LOOP (p_wchar0); break;
+		  case 1: LOOP (p_wchar1); break;
+		  case 2: LOOP (p_wchar2); break;
+#undef LOOP
+#ifdef PIKE_DEBUG
 		  default:
 		     Pike_error("unknown width of string\n");
+#endif
 	       }
 	       if (!feed->next) break;
 	       c=0;
@@ -1658,59 +1639,30 @@ static int scan_forward(struct piece *feed,
 	    SCAN_DEBUG_MARK_SPOT("scan_forward piece loop (>1)",feed,c);
 	    switch (feed->s->size_shift)
 	    {
-	       case 0:
-	       {
-		  int n;
-		  p_wchar0*s=((p_wchar0*)feed->s->str)+c;
-		  while (ce--)
-		  {
-		     for (n=0; n<num_look_for; n++)
-			if (((p_wchar2)*s)==look_for[n])
-			{
-			   c=feed->s->len-ce;
-			   if (!rev) goto found; else break;
-			}
-		     if (rev && n==num_look_for) goto found;
-		     s++;
-		  }
+#define LOOP(TYPE)							\
+	       {							\
+		  int n;						\
+		  TYPE *s=((TYPE *)feed->s->str)+c;			\
+		  while (ce--)						\
+		  {							\
+		     for (n=0; n<num_look_for; n++)			\
+			if (((p_wchar2)*s)==look_for[n])		\
+			{						\
+			   c=feed->s->len-ce;				\
+			   if (!rev) goto found; else break;		\
+			}						\
+		     if (rev && n==num_look_for) goto found;		\
+		     s++;						\
+		  }							\
 	       }
-	       break;
-	       case 1:
-	       {
-		  int n;
-		  p_wchar1*s=((p_wchar1*)feed->s->str)+c;
-		  while (ce--)
-		  {
-		     for (n=0; n<num_look_for; n++)
-			if (((p_wchar2)*s)==look_for[n])
-			{
-			   c=feed->s->len-ce;
-			   if (!rev) goto found; else break;
-			}
-		     if (rev && n==num_look_for) goto found;
-		     s++;
-		  }
-	       }
-	       break;
-	       case 2:
-	       {
-		  int n;
-		  p_wchar2*s=((p_wchar2*)feed->s->str)+c;
-		  while (ce--)
-		  {
-		     for (n=2; n<num_look_for; n++)
-			if (((p_wchar2)*s)==look_for[n])
-			{
-			   c=feed->s->len-ce;
-			   if (!rev) goto found; else break;
-			}
-		     if (rev && n==num_look_for) goto found;
-		     s++;
-		  }
-	       }
-	       break;
+	       case 0: LOOP (p_wchar0); break;
+	       case 1: LOOP (p_wchar1); break;
+	       case 2: LOOP (p_wchar2); break;
+#undef LOOP
+#ifdef PIKE_DEBUG
 	       default:
 		  Pike_error("unknown width of string\n");
+#endif
 	    }
 	    if (!feed->next) break;
 	    c=0;
