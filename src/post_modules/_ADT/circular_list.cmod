@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.8 2003/04/28 00:32:44 mast Exp $
+|| $Id: circular_list.cmod,v 1.9 2003/05/23 12:42:05 peta Exp $
 */
 
 #include "global.h"
@@ -32,8 +32,8 @@ DECLARATIONS
 
 /*! @class CircularList
  *! This is an circular list implemented by an array. It has a constant time 
- *! complexity for pop and push. It has a limited max size but int can be 
- *! increased withthe method allocate.
+ *! complexity for pop and push. It has a limited max size but it can be 
+ *! increased with the method allocate.
  *! 
  */
 
@@ -106,8 +106,8 @@ PIKECLASS CircularList
   }
   
 
-/*! @decl int `[]=(int index, mixed value)
- *! Index assign operator
+/*! @decl mixed `[]=(int index, mixed value)
+ *! Index assign operator.
  *! Set the value at the index @[index] to be @[value]
  *! 
  *! @param index 
@@ -123,7 +123,7 @@ PIKECLASS CircularList
  *!   An error if the index is out of range.
  */
   
-  PIKEFUN int `[]=(int index, mixed value) {
+  PIKEFUN mixed `[]=(int index, mixed value) {
     struct svalue ind;
     if(index<0) index+=THIS->a->size;
     if(index<0 || index>=THIS->size) {
@@ -150,7 +150,7 @@ PIKECLASS CircularList
  *! as a new @[CircularList].
  *! 
  *! @param coll 
- *!   The list to apend to his list
+ *!   The list to append to his list
  *!
  *! @returns
  *!   The result of the append as a new @[CircularList]. 
@@ -225,10 +225,10 @@ PIKECLASS CircularList
   }
 
   
-  /*! @decl array _equal(mixed coll)
+  /*! @decl int(0..1) _equal(mixed coll)
    *!
    *! @returns
-   *!   Returns @tt{true@} if the object @[coll] is an @[CircularList]
+   *!   Returns @tt{true@} if the object @[coll] is a @[CircularList]
    *!   and contains the same values in the same order.
    */
   
@@ -312,15 +312,15 @@ PIKECLASS CircularList
   }
 
 /*! @decl void _insert_element(int index, mixed value)
- *! Insert an element in the list at the postion @[index], the value
+ *! Insert an element in the list at the position @[index], the value
  *! at the position @[index] and all above will have thier index increased 
  *! with one.
  *! 
  *! @param index 
- *!   The index to insert the value at
+ *!   The index to insert the value at.
  *!
  *! @param value
- *!   The new value
+ *!   The new value.
  *!
  *! @throws 
  *!   An error if the index is out of range.
@@ -352,7 +352,7 @@ PIKECLASS CircularList
  *!  Remove the values at index @[index] from the list.
  *! 
  *! @param index 
- *!   The index to remove
+ *!   The index to remove.
  *!
  *! @returns
  *!   The removed value.
@@ -388,7 +388,7 @@ PIKECLASS CircularList
 /*! @decl int _search(mixed value, void|int start)
  *!   Search the list for a specific value. Return the index of the first 
  *!   value that is equal to @[value]. If no value was found @expr{UNDEFINED@} 
- *!   is returned insted
+ *!   is returned instead
  *! 
  *! @param value
  *!   The value to find
@@ -492,7 +492,7 @@ PIKECLASS CircularList
  *!   Add a value at the front of the list
  *!
  *! @param value
- *!   The value to add
+ *!   The value to add.
  *!
  *! @throws 
  *!   An error if the list is full.
@@ -652,7 +652,7 @@ PIKECLASS CircularList
    *!
    *! @returns
    *!   The index of the removed element or -1 if there was no value to 
-   *!   remove
+   *!   remove.
    */
   
   PIKEFUN int delete_value(mixed value)
@@ -678,7 +678,7 @@ PIKECLASS CircularList
    *!   Returns @expr{1@} if the list is empty otherwise @expr{0@}. 
    */
 
-  PIKEFUN int is_empty()
+  PIKEFUN int(0..1) is_empty()
   {
     RETURN !(THIS->size);
   }
@@ -836,40 +836,6 @@ PIKECLASS CircularList
     pop_n_elems(args);
   }
 
-  PIKEFUN int getpos()
-  {
-    RETURN THIS->pos;
-  }
-
-  PIKEFUN int getsize()
-  {
-    RETURN THIS->size;
-  }
-
-  PIKEFUN array getarray()
-  {
-    RETURN THIS->a;
-  }
-
-  PIKEFUN int getmalloc()
-  {
-    RETURN THIS->a->malloced_size;
-  }
-
-  PIKEFUN int array2circ(int n)
-  {
-    RETURN array2circ(n);
-  }
-  
-  PIKEFUN int circ2array(int n)
-  {
-    RETURN circ2array(n);
-  }
-
-  PIKEFUN int getref()
-  {
-    RETURN THIS->a->refs;
-  }
 
   /*! @decl void create(array|int arg)
    *!   Creates a new @[CircularList] around the array arg or a new
@@ -910,7 +876,7 @@ PIKECLASS CircularList
   
   /*! @decl CircularListIterator first()
    *!   Create and initiate a new CircularListIterator that could be used
-   *!   to iterate over this list
+   *!   to iterate over this list.
    *!
    *! @returns
    *!   An iterator positioned at the first element in the list.
@@ -942,7 +908,7 @@ PIKECLASS CircularList
 
   /*! @class CircularListIterator
    *!    This is the iterator for the CircularList. It implements the 
-   *!    IndexedIterator and the OutputIterator
+   *!    IndexIterator and the OutputIterator.
    */  
   
   PIKECLASS CircularListIterator
@@ -954,7 +920,7 @@ PIKECLASS CircularList
     
   /*! @decl void create(object list, void|int start)
    *!   Creates a new iterator for the CircularList @[list]. If @[start] is
-   *!   supplied it will try to position the iterater at @[start].
+   *!   supplied it will try to position the iterator at @[start].
    *! 
    */
 
@@ -1089,7 +1055,7 @@ PIKECLASS CircularList
 
     /*! @decl CircularListIterator `-(int steps)
      *!   Move the iterator @[steps] steps backwards (negative value on 
-     *!   @[steps] will cause the iterator to move forwars) and return 
+     *!   @[steps] will cause the iterator to move forwards) and return 
      *!   the result as a new iterator.
      *! @returns
      *!    A new iterator positioned @[steps] steps backwards.
@@ -1118,11 +1084,11 @@ PIKECLASS CircularList
     /*! @decl int(0..1) has_next(void|int steps)
      *! @returns
      *!    Returns @tt{true@} if it is possible to move @[steps] steps
-     *!    forwards, if @[steps] wasn't supplied it check if it is
+     *!    forwards, if @[steps] weren't supplied it check if it is
      *!    possible to move one step forward.
      */    
 
-    PIKEFUN int has_next(void|int steps)
+    PIKEFUN int(0..1) has_next(void|int steps)
     {
       if (args==0)
       {
@@ -1141,11 +1107,11 @@ PIKECLASS CircularList
     /*! @decl int(0..1) has_previous(void|int steps)
      *! @returns
      *!    Returns @tt{true@} if it is possible to move @[steps] steps
-     *!    backwards, if @[steps] wasn't supplied it check if it is
+     *!    backwards, if @[steps] weren't supplied it check if it is
      *!    possible to move one step backward.
      */  
 
-    PIKEFUN int has_previous(void|int steps)
+    PIKEFUN int(0..1) has_previous(void|int steps)
     {
       if (args==0)
       {
@@ -1166,7 +1132,7 @@ PIKECLASS CircularList
      *!    Returns @tt{false@} if the iterator has reached the end.
      */  
 
-    PIKEFUN int `!()
+    PIKEFUN int(0..1) `!()
     {
       RETURN (THIS->list && 
 	      THIS->pos  == THIS->list->size);
@@ -1183,7 +1149,7 @@ PIKECLASS CircularList
      *!    objects and are positioned at the same spot.
      */  
 
-    PIKEFUN int _equal(mixed iter)
+    PIKEFUN int(0..1) _equal(mixed iter)
     {
       if (iter->type == T_OBJECT && 
 	  iter->u.object->prog == CircularListIterator_program)
@@ -1199,7 +1165,7 @@ PIKECLASS CircularList
     }
 	
     
-    /*! @decl int `<(mixed iter)
+    /*! @decl int(0..1) `<(mixed iter)
      *!    Less then operator
      *!
      *! @returns
@@ -1207,7 +1173,7 @@ PIKECLASS CircularList
      *!    then @[iter].
      */
 
-    PIKEFUN int `<(mixed iter)
+    PIKEFUN int(0..1) `<(mixed iter)
     {
       if (iter->type == T_OBJECT &&
 	  iter->u.object->prog == CircularListIterator_program)
@@ -1223,7 +1189,7 @@ PIKECLASS CircularList
     }
 
 
-    /*! @decl int `>(mixed iter)
+    /*! @decl int(0..1) `>(mixed iter)
      *!    Greater then operator
      *!
      *! @returns
@@ -1232,7 +1198,7 @@ PIKECLASS CircularList
      */
 
 
-    PIKEFUN int `>(mixed iter)
+    PIKEFUN int(0..1) `>(mixed iter)
     {
       if (iter->type == T_OBJECT &&
 	  iter->u.object->prog == CircularListIterator_program)
@@ -1261,7 +1227,7 @@ PIKECLASS CircularList
     }
 
     
-    /*! @decl int set_value(mixed val)
+    /*! @decl mixed set_value(mixed val)
      *!    Set the value at the current position.
      *!
      *! @param val
