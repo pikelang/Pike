@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: signal_handler.h,v 1.7 1999/04/12 02:24:19 hubbe Exp $
+ * $Id: signal_handler.h,v 1.8 1999/04/12 05:27:49 hubbe Exp $
  */
 #ifndef SIGNAL_H
 #define SIGNAL_H
@@ -27,10 +27,10 @@ struct perishables;
 void f_set_priority( INT32 args );
 void f_create_process(INT32 args);
 void f_fork(INT32 args);
-void f_kill(INT32 args);
 void f_atexit(INT32 args);
 void init_signals(void);
 void exit_signals(void);
 /* Prototypes end here */
+
 
 #endif

@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.123 1999/04/12 02:24:17 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.124 1999/04/12 05:27:48 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2572,7 +2572,7 @@ static void f_kill(INT32 args)
 
 #ifdef __NT__
 #define HAVE_KILL
-void f_kill(INT32 args)
+static void f_kill(INT32 args)
 {
   HANDLE proc=INVALID_HANDLE_VALUE;
 
@@ -2765,10 +2765,9 @@ void f_atexit(INT32 args)
     atexit_functions=low_allocate_array(0,1);
   }
 
-  f_aggregate(args);
-  atexit_functions=append_array(atexit_functions,sp-1);
+  atexit_functions=append_array(atexit_functions,sp-args);
   atexit_functions->flags |= ARRAY_WEAK_FLAG | ARRAY_WEAK_SHRINK;
-  pop_stack();
+  pop_n_elems(args);
 }
 
 

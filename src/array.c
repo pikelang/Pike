@@ -20,7 +20,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.46 1999/04/12 02:24:10 hubbe Exp $");
+RCSID("$Id: array.c,v 1.47 1999/04/12 05:27:46 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1767,7 +1767,7 @@ void gc_free_all_unreferenced_arrays(void)
 	  else
 	    a->item[d++]=a->item[e];
 	}
-	a->size=e;
+	a->size=d;
       }else{
 	for(e=0;e<a->size;e++)
 	{
