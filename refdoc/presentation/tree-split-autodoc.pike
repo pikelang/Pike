@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.34 2002/11/27 17:38:39 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.35 2002/12/06 20:57:25 grubba Exp $
  *
  */
 
@@ -174,6 +174,7 @@ class Node
 
       case "constant":
       case "variable":
+      case "inherit":
 	string path = replace(make_class_path(), "()->", ".");
 	if(sizeof(path)) path += ".";
 	if(!m["homogen-name"]) {
@@ -189,7 +190,13 @@ class Node
 		   string name = Parser.parse_html_entities(m->name);
 		   refs[path + name] =
 		     Node( "variable", name, "", this_object());
-		 }
+		 },
+		 "inherit":
+		 lambda(Parser.HTML p, mapping m, string c) {
+		   string name = Parser.parse_html_entities(m->name);
+		   refs[path + name] =
+		     Node( "inherit", name, "", this_object());
+		 },
 	    ]) )->finish(c);
 	}
 	else
