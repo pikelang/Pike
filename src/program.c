@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.537 2003/11/19 20:23:03 grubba Exp $
+|| $Id: program.c,v 1.538 2003/11/20 13:54:32 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.537 2003/11/19 20:23:03 grubba Exp $");
+RCSID("$Id: program.c,v 1.538 2003/11/20 13:54:32 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -369,7 +369,7 @@ static char *raw_lfun_types[] = {
  *!   from B to A that is weaker than any reference from A to B, then
  *!   A is destructed before B.
  *! @item
- *!   Weak references (e.g. set with @[set_weak_flag]) are considered
+ *!   Weak references (e.g. set with @[predef::set_weak_flag()]) are considered
  *!   weaker than normal references, and both are considered weaker
  *!   than strong references.
  *! @item
@@ -723,7 +723,7 @@ static char *raw_lfun_types[] = {
  *!   @[lfun::__hash] too. Otherwise mappings might hold several
  *!   objects as indices which are duplicates according to this
  *!   function. Various other functions that use hashing also might
- *!   not work correctly, e.g. @[Array.uniq].
+ *!   not work correctly, e.g. @[predef::Array.uniq].
  *!
  *! @note
  *!   It's assumed that this function is side-effect free.
@@ -843,7 +843,7 @@ static char *raw_lfun_types[] = {
  *!
  *!   Size query callback.
  *!
- *!   Called by @[sizeof()] to determine the number of elements
+ *!   Called by @[predef::sizeof()] to determine the number of elements
  *!   in an object. If this function is not present, the number
  *!   of public symbols in the object will be returned.
  *!
@@ -1045,11 +1045,11 @@ static char *raw_lfun_types[] = {
  *!   @[predef::m_delete()]
  */
 
-/*! @decl Iterator lfun::_get_iterator()
+/*! @decl predef::Iterator lfun::_get_iterator()
  *!
  *!   Iterator creation callback.
  *!
- *!   The returned @[Iterator] instance works as a cursor that
+ *!   The returned @[predef::Iterator] instance works as a cursor that
  *!   references a specific item contained (in some arbitrary sense)
  *!   in this one.
  *!
@@ -1057,7 +1057,7 @@ static char *raw_lfun_types[] = {
  *!   It's assumed that this function is side-effect free.
  *!
  *! @seealso
- *!   @[Iterator], @[get_iterator], @[predef::foreach()]
+ *!   @[predef::Iterator], @[predef::get_iterator], @[predef::foreach()]
  */
 
 /*! @decl mixed lfun::_search(mixed needle, mixed|void start)
