@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.98 2002/04/11 22:09:21 mast Exp $
+ * $Id: acconfig.h,v 1.99 2002/05/04 18:12:53 nilsson Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -461,7 +461,38 @@
 /* Define when binary --disable-binary is used. */
 #undef DISABLE_BINARY
 
+/* Define if your system header files have AF_INET6 */
+#undef HAVE_AF_INET6
+
+/* Define if your system libraries support IPv6 */
+#undef HAVE_IPV6
+
+/* Define if your IPv6 implementation is KAME */
+#undef HAVE_IPV6_KAME
+
+/* Define if your IPv6 implementation is Linux (glibc 2.1.x+) */
+#undef HAVE_IPV6_LINUX
+
+/* Define if the IPv6 implementation is unknown to us */
+#undef HAVE_IPV6_UNKNOWN
+
+/* Define if struct sockaddr_in6 is present */
+#undef HAVE_STRUCT_SOCKADDR_IN6
+
+/* Define if struct sockaddr_storage is present */
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
+
 @BOTTOM@
+
+#ifdef HAVE_STRUCT_SOCKADDR_STORAGE
+typedef struct sockaddr_storage SOCKADDR;
+#define SOCKADDR_IN(_x_) (*((struct sockaddr_in*)&(_x_)))
+#define SOCKADDR_IN6(_x_) (*((struct sockaddr_in6*)&(_x_)))
+#else
+typedef struct sockaddr_in SOCKADDR;
+#define SOCKADDR_IN(_x_) (_x_)
+#define SOCKADDR_IN6(_x_) (_x_)
+#endif
 
 /* NT stuff */
 #undef HAVE_GETSYSTEMTIMEASFILETIME
