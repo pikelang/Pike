@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.85 2000/08/14 20:29:14 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.86 2000/08/14 20:31:17 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -224,7 +224,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	switch(sp[-1].type)
 	{
 	  case T_FLOAT:
-	    i=(int)(sp[-1].u.float_number);
+	    i=DO_NOT_WARN((int)(sp[-1].u.float_number));
 #ifdef AUTO_BIGNUM
 	    if((i < 0 ? -i : i) < floor(fabs(sp[-1].u.float_number)))
 	    {
