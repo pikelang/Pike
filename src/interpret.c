@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.231 2001/07/24 12:33:48 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.232 2001/07/24 17:26:40 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1493,7 +1493,11 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	new_frame->save_mark_sp=Pike_mark_sp;
 	new_frame->mark_sp_base=Pike_mark_sp;
 	check_threads_etc();
-	new_frame->pc = pc;
+	new_frame->pc = pc
+#ifdef ENTRY_PROLOGUE_SIZE
+	  + ENTRY_PROLOGUE_SIZE
+#endif /* ENTRY_PROLOGUE_SIZE */
+	  ;
 	return 1;
       }
       }
@@ -1657,7 +1661,11 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   if(low_mega_apply(type, args, arg1, arg2))
   {
-    eval_instruction(Pike_fp->pc);
+    eval_instruction(Pike_fp->pc
+#ifdef ENTRY_PROLOGUE_SIZE
+		     - ENTRY_PROLOGUE_SIZE
+#endif /* ENTRY_PROLOGUE_SIZE */
+		     );
     low_return();
   }
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.6 2001/07/21 16:30:50 grubba Exp $
+ * $Id: sparc.h,v 1.7 2001/07/24 17:26:40 grubba Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -12,6 +12,14 @@
 #define SPARC_REG_O5	13
 #define SPARC_REG_O6	14
 #define SPARC_REG_O7	15
+#define SPARC_REG_L0	16
+#define SPARC_REG_L1	17
+#define SPARC_REG_L2	18
+#define SPARC_REG_L3	19
+#define SPARC_REG_L4	20
+#define SPARC_REG_L5	21
+#define SPARC_REG_L6	22
+#define SPARC_REG_L7	23
 
 #define SET_REG(REG, X) do {						\
     INT32 val_ = X;							\
@@ -33,13 +41,26 @@
     }									\
   } while(0)
 
+/*
+ * Allocate a stack frame.
+ *
+ * Note that the prologue size must be constant.
+ */
+#define INS_ENTRY()	do {						\
+    /* save	%sp, -112, %sp */					\
+    add_to_program(0x81e02000|(SPARC_REG_O6<<25)|			\
+		   (SPARC_REG_O6<<14)|((-112)&0x1fff));			\
+  } while(0)
+
+#define ENTRY_PROLOGUE_SIZE	1
+
 #define UPDATE_PC() do {						\
     INT32 tmp = PC;							\
     SET_REG(SPARC_REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	\
-    /* lduw %o3, %o3 */							\
+    /* lduw [ %o3 ], %o3 */						\
     add_to_program(0xc0000000|(SPARC_REG_O3<<25)|(SPARC_REG_O3<<14));	\
     SET_REG(SPARC_REG_O4, tmp);						\
-    /* stw %o4, yy(%o3) */						\
+    /* stw %o4, [ %o3 + pike_frame ] */					\
     add_to_program(0xc0202000|(SPARC_REG_O4<<25)|(SPARC_REG_O3<<14)|	\
 		   OFFSETOF(pike_frame, pc));				\
   } while(0)

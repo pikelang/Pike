@@ -49,6 +49,9 @@ void INS_ENTRY(void)
 	Mark the entry point from eval_instruction().
 	Useful to add startup code.
 
+int ENTRY_PROLOGUE_SIZE
+	Size (in opcodes) of the prologue to be skipped if tail-recursing.
+
 void RELOCATE_program(struct program *p, PIKE_OPCODE_T *new);
 	Relocate the copy of 'p'->program at 'new' to be able
 	to execute at the new position.
