@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.14 2000/05/04 16:19:41 grubba Exp $
+ * $Id: rsa.c,v 1.15 2000/06/13 21:43:58 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -31,7 +31,7 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.14 2000/05/04 16:19:41 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.15 2000/06/13 21:43:58 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -322,6 +322,72 @@ static void f_cooked_get_e(INT32 args)
 
   push_string(make_shared_binary_string(rsa_public_key->exponent.data,
 					rsa_public_key->exponent.len));
+}
+
+/* string cooked_get_d() */
+static void f_cooked_get_d(INT32 args)
+{
+  A_RSA_KEY *rsa_private_key = NULL;
+  int code;
+
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
+  if ((code = B_GetKeyInfo((POINTER *)&rsa_private_key, THIS->private_key,
+			   KI_RSAPrivate))) {
+    error("Crypto rsa.cooked_get_d(): "
+	  "Failed to get private key: %04x\n", code);
+  }
+
+  pop_n_elems(args);
+
+  push_string(make_shared_binary_string(rsa_private_key->exponent.data,
+					rsa_private_key->exponent.len));
+}
+
+/* string cooked_get_p() */
+static void f_cooked_get_p(INT32 args)
+{
+  A_PKCS_RSA_PRIVATE_KEY *rsa_private_key = NULL;
+  int code;
+
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
+  if ((code = B_GetKeyInfo((POINTER *)&rsa_private_key, THIS->private_key,
+			   KI_PKCS_RSAPrivate))) {
+    error("Crypto rsa.cooked_get_p(): "
+	  "Failed to get private key: %04x\n", code);
+  }
+
+  pop_n_elems(args);
+
+  push_string(make_shared_binary_string(rsa_private_key->prime[0].data,
+					rsa_private_key->prime[0].len));
+}
+
+/* string cooked_get_q() */
+static void f_cooked_get_q(INT32 args)
+{
+  A_PKCS_RSA_PRIVATE_KEY *rsa_private_key = NULL;
+  int code;
+
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
+  if ((code = B_GetKeyInfo((POINTER *)&rsa_private_key, THIS->private_key,
+			   KI_PKCS_RSAPrivate))) {
+    error("Crypto rsa.cooked_get_q(): "
+	  "Failed to get private key: %04x\n", code);
+  }
+
+  pop_n_elems(args);
+
+  push_string(make_shared_binary_string(rsa_private_key->prime[1].data,
+					rsa_private_key->prime[1].len));
 }
 
 /* int query_blocksize() */
@@ -859,6 +925,15 @@ void pike_rsa_init(void)
 	       tFunc(tNone, tString), 0);
 
   ADD_FUNCTION("cooked_get_e", f_cooked_get_e,
+	       tFunc(tNone, tString), 0);
+
+  ADD_FUNCTION("cooked_get_d", f_cooked_get_d,
+	       tFunc(tNone, tString), 0);
+
+  ADD_FUNCTION("cooked_get_p", f_cooked_get_p,
+	       tFunc(tNone, tString), 0);
+
+  ADD_FUNCTION("cooked_get_q", f_cooked_get_q,
 	       tFunc(tNone, tString), 0);
 
   ADD_FUNCTION("query_blocksize", f_query_blocksize,
