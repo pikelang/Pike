@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.29 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: backend.cmod,v 1.30 2002/11/18 13:37:16 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.29 2002/10/11 01:39:28 nilsson Exp $");
+RCSID("$Id: backend.cmod,v 1.30 2002/11/18 13:37:16 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -177,7 +177,7 @@ struct timeval next_timeout;
 struct Backend_struct;
 static struct Backend_struct **fd_map=0;
 static int fd_map_size=0;
-static struct Backend_struct *default_backend;
+static struct Backend_struct *default_backend = NULL;
 
 static void backend_do_call_outs(struct Backend_struct *me);
 static void backend_verify_call_outs(struct Backend_struct *me);
@@ -214,11 +214,11 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
   if((b=get_backend_for_fd(fd)))
     return b;
 
-  set_backend_for_fd(fd, default_backend);
 #ifdef PIKE_DEBUG
   if(!default_backend)
     Pike_fatal("No backend!\n");
 #endif
+  set_backend_for_fd(fd, default_backend);
   return default_backend;
 }
 
@@ -537,6 +537,7 @@ PIKECLASS Backend
   void backend_wake_up_backend(struct Backend_struct *me)
     {
       char foo=0;
+
       if(me->may_need_wakeup)
 	fd_write(me->wakeup_pipe[1], &foo ,1);
     }
@@ -1924,6 +1925,25 @@ PIKECLASS Backend
 
   INIT
     {
+      THIS->may_need_wakeup=0;
+
+
+      THIS->backend_callbacks.callbacks=0;
+      THIS->backend_callbacks.num_calls=0;
+
+      GETTIMEOFDAY(&current_time);
+
+      THIS->num_pending_calls=0;
+      THIS->call_buffer=0;
+      THIS->call_buffer_size=0;
+      THIS->hash_size=0;
+      THIS->hash_order=5;
+      THIS->call_hash=0;
+
+#ifdef PIKE_DEBUG
+      THIS->inside_call_out=0;
+#endif
+
       THIS->fds=0;
       THIS->fds_size=0;
 
@@ -1958,26 +1978,6 @@ PIKECLASS Backend
       /* Don't keep these on exec! */
       set_close_on_exec(THIS->wakeup_pipe[0], 1);
       set_close_on_exec(THIS->wakeup_pipe[1], 1);
-
-      THIS->may_need_wakeup=0;
-
-
-      THIS->backend_callbacks.callbacks=0;
-      THIS->backend_callbacks.num_calls=0;
-
-      GETTIMEOFDAY(&current_time);
-
-      THIS->num_pending_calls=0;
-      THIS->call_buffer=0;
-      THIS->call_buffer_size=0;
-      THIS->hash_size=0;
-      THIS->hash_order=5;
-      THIS->call_hash=0;
-
-#ifdef PIKE_DEBUG
-      THIS->inside_call_out=0;
-#endif
-
     }
   
   EXIT
