@@ -1,16 +1,29 @@
-/* -*- Pike -*-
- *	
- * $Id: master.pike.in,v 1.194 2002/03/10 02:53:12 mast Exp $
- * 
- * Master-file for Pike.
- *
- * Based on master.pike 1.67.
- */
-
-// Some configurable parameters useful for debugging
+//
+// Master Control Program for Pike.
+//
+// This file is part of Pike. For copyright information see COPYRIGHT.
+// Pike is distributed as GPL (General Public License)
+// See the files COPYING and DISCLAIMER for more information.
+//
+// $Id: master.pike.in,v 1.195 2002/04/27 22:18:40 nilsson Exp $
 
 #pike __REAL_VERSION__
+
+// --- Some configurable parameters
+
 #define PIKE_AUTORELOAD
+#define GETCWD_CACHE
+#define FILE_STAT_CACHE
+
+// This define is search and replaced by bin/install.pike.
+#undef PIKE_MODULE_RELOC
+
+#ifndef PIKE_WARNINGS
+#define PIKE_WARNINGS 0
+#endif /* PIKE_WARNINGS */
+
+
+// --- Global constants and variables
 
 // Used by describe_backtrace() et al.
 #if !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0)
@@ -35,15 +48,21 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 //! 1 means yes and 0 means no. Controlled by the OUT_OF_DATE_WARNING
 //! define.
 
-#ifndef PIKE_WARNINGS
-#define PIKE_WARNINGS 0
-#endif /* PIKE_WARNINGS */
+//! If not zero compilation warnings will be written out on stderr.
+int want_warnings = PIKE_WARNINGS;
 
-#undef PIKE_MODULE_RELOC
+//!
+int compat_major=-1;
 
-/*
- * Functions begin here.
- */
+//!
+int compat_minor=-1;
+
+
+// ---  Functions begin here.
+
+#define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
+#define Stat _static_modules.files.Stat
+#define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 
 // FIXME: Should the pikeroot-things be private?
 #ifdef PIKE_FAKEROOT
@@ -60,7 +79,7 @@ string fakeroot(string s)
 }
 #else
 #define fakeroot(X) X
-#endif
+#endif // PIKE_FAKEROOT
 
 #ifdef PIKE_MODULE_RELOC
 string relocate_module(string s)
@@ -95,7 +114,7 @@ string unrelocate_module(string s)
 #undef fakeroot
 #endif
 #define fakeroot relocate_module
-#endif
+#endif // PIKE_MODULE_RELOC
 
 
 //! @appears is_absolute_path
@@ -155,16 +174,7 @@ string basename(string x)
   array(string) tmp=EXPLODE_PATH(x);
   return tmp[-1];
 }
-#define DIRNAME dirname
 #define BASENAME(X) (EXPLODE_PATH(X)[-1])
-
-#define GETCWD_CACHE
-#define FILE_STAT_CACHE
-
-#define error(X) throw( ({ (X), backtrace()/*[0..sizeof(backtrace())-2]*/ }) )
-
-//!
-int want_warnings = PIKE_WARNINGS;
 
 #ifdef PIKE_AUTORELOAD
 
@@ -196,13 +206,7 @@ mapping(string:int) load_time=([]);
 #define AUTORELOAD_BEGIN()
 #define AUTORELOAD_FINISH(VAR,CACHE,FILE)
 
-#endif
-
-//!
-int compat_major=-1;
-
-//!
-int compat_minor=-1;
+#endif // PIKE_AUTORELOAD
 
 //! @appears compile_string
 //! Compile the Pike code in the string @[source] into a program.
@@ -244,14 +248,13 @@ string getcwd()
 {
   return current_path || (current_path=predef::getcwd());
 }
-#endif
+#endif // GETCWD_CACHE
 
 string combine_path_with_cwd(string path)
 {
   return combine_path(IS_ABSOLUTE_PATH(path)?"/":getcwd(),path);
 }
 
-#define Stat _static_modules.files.Stat
 #ifdef FILE_STAT_CACHE
 
 #define FILE_STAT_CACHE_TIME 20
@@ -264,7 +267,7 @@ Stat master_file_stat(string x)
   string file, dir=combine_path_with_cwd(x);
 
   file=BASENAME(dir);
-  dir=DIRNAME(dir);
+  dir=dirname(dir);
 
   multiset(string) d;
   if(time() > invalidate_time)
@@ -294,7 +297,7 @@ Stat master_file_stat(string x)
 }
 #else
 #define master_file_stat file_stat
-#endif
+#endif // FILE_STAT_CACHE
 
 mapping (string:array(string)) environment=([]);
 
@@ -411,8 +414,6 @@ string normalize_path( string path )
 
 mapping (string:program) programs=(["/master":object_program(this_object())]);
 
-#define capitalize(X) (upper_case((X)[..0])+(X)[1..])
-
 array(string) query_precompiled_names(string fname)
 {
   // Filenames of potential precompiled files in priority order.
@@ -453,8 +454,8 @@ static program low_findprog(string pname,
     key=compilation_mutex->lock(2);
   };
   if (err) {
-    werror(sprintf("low_findprog: Caught spurious error:\n"
-		   "%s\n", describe_backtrace(err)));
+    werror( "low_findprog: Caught spurious error:\n"
+	    "%s\n", describe_backtrace(err) );
   }
 #endif
 
@@ -529,7 +530,6 @@ static program low_findprog(string pname,
 	}
       }
       
-//      werror("2.5: %O\n",fname);
       programs[fname]=ret=__empty_program();
       if ( mixed e=catch {
 	ret=compile_file(fname,
@@ -538,7 +538,6 @@ static program low_findprog(string pname,
 			 mkobj? (objects[ret]=__null_program()) : 0);
       } )
       {
-//	werror("-3: %O\n",fname);
 	ret=programs[fname]=0;
         throw(e);
       }
@@ -546,8 +545,8 @@ static program low_findprog(string pname,
 #if constant(load_module)
     case ".so":
       if (fname == "") {
-	werror(sprintf("low_findprog(\"%s\", \"%s\") => load_module(\"\")\n"
-		       "%s\n", pname, ext, describe_backtrace(backtrace())));
+	werror( "low_findprog(\"%s\", \"%s\") => load_module(\"\")\n"
+		"%s\n", pname, ext, describe_backtrace(backtrace()) );
       }
 
   ret=load_module(fakeroot(fname));
@@ -556,7 +555,6 @@ static program low_findprog(string pname,
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
-//    werror("3: %O (%O)\n",fname, ret);
     return programs[fname]=ret;
   }
   return 0;
@@ -623,21 +621,25 @@ program low_cast_to_program(string pname,
     ext="."+reverse(ext);
     tmp[-1]=reverse(nname);
     pname=tmp*"/";
-  }else{
+  }
+  else {
     ext="";
   }
+
   if(IS_ABSOLUTE_PATH(pname))
   {
     if (programs[pname])
       return programs[pname];
     pname=combine_path("/",pname);
     return findprog(pname,ext,handler,mkobj);
-  }else{
+  }
+  else {
     string cwd;
     if(current_file)
     {
-      cwd=DIRNAME(current_file);
-    }else{
+      cwd=dirname(current_file);
+    }
+    else {
       cwd=getcwd();
     }
 
@@ -1392,8 +1394,8 @@ class CompatResolver
 		return ret;
 	      } else {
 		// Ignore
-		werror(sprintf("Ignoring file %O: %t for identifier %O\n",
-			       file, ret, identifier));
+		werror( "Ignoring file %O: %t for identifier %O\n",
+			file, ret, identifier );
 		continue;
 	      }
 	    }
@@ -1838,8 +1840,8 @@ void _main(array(string) orig_argv, array(string) env)
   };
 
   if (err) {
-    werror(sprintf("Pike: Failed to compile script:\n"
-		   "%s\n", stringp(err[0])?err[0]:describe_backtrace(err)));
+    werror( "Pike: Failed to compile script:\n"
+	    "%s\n", stringp(err[0])?err[0]:describe_backtrace(err) );
     exit(1);
   }
 
@@ -1944,8 +1946,8 @@ void compile_error(string file,int line,string err)
   mixed val;
   if(! (val = get_inhibit_compile_errors() ))
   {
-    werror(sprintf("%s:%s:%s\n",trim_file_name(file),
-		   line?(string)line:"-",err));
+    werror( "%s:%s:%s\n",trim_file_name(file),
+	    line?(string)line:"-",err );
   }
   else if(objectp(val) ||
 	  programp(val) ||
@@ -1971,9 +1973,10 @@ void compile_warning(string file,int line,string err)
   if(!(val = get_inhibit_compile_errors() ))
   {
     if(want_warnings)
-      werror(sprintf("%s:%s: Warning: %s\n",trim_file_name(file),
-		     line?(string)line:"-",err));
-  } else if (objectp(val) && val->compile_warning) {
+      werror( "%s:%s: Warning: %s\n",trim_file_name(file),
+	      line?(string)line:"-",err );
+  }
+  else if (objectp(val) && val->compile_warning) {
     val->compile_warning(file, line, err);
   }
 }
