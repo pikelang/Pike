@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree_low.h,v 1.5 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: rbtree_low.h,v 1.6 2002/12/19 01:44:00 mast Exp $
 */
 
 /* The lower level api for using rbtree. This is in a separate file
@@ -61,8 +61,7 @@ void rbstack_shift (struct rbstack_ptr rbstack,
     {NULL,}								\
   };									\
   struct rbstack_ptr rbstack = {					\
-    (PIKE_CONCAT3 (_, rbstack, _top_).up = NULL,			\
-     &PIKE_CONCAT3 (_, rbstack, _top_)),				\
+    &PIKE_CONCAT3 (_, rbstack, _top_),					\
     0									\
   }
 
@@ -191,7 +190,6 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 #define LOW_RB_TRAVERSE(label, rbstack, node, push, p_leaf, p_sub,	\
 			between, n_leaf, n_sub, pop)			\
   do {									\
-    struct rb_node_hdr *rb_last_;					\
     DO_IF_RB_STATS (rb_num_traverses++);				\
     if (node) {								\
       PIKE_CONCAT (enter_, label):					\
@@ -219,11 +217,15 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 	PIKE_CONCAT (leave_, label):					\
 	DO_IF_RB_STATS (rb_num_traverse_ops++);				\
 	{pop;}								\
-	rb_last_ = (node);						\
-	RBSTACK_POP (rbstack, node);					\
-	if (!(node)) break;						\
-	if (rb_last_ == (node)->prev)					\
-	  goto PIKE_CONCAT (between_, label);				\
+	{								\
+	  struct rb_node_hdr *rb_last_ = (node);			\
+	  RBSTACK_POP (rbstack, node);					\
+	  if (!(node)) break;						\
+	  /* Compare with next and not prev to avoid an infinite */	\
+	  /* loop if a node (incorrectly) got prev == next. */		\
+	  if (rb_last_ != (node)->next)					\
+	    goto PIKE_CONCAT (between_, label);				\
+	}								\
       }									\
     }									\
   } while (0)
@@ -260,7 +262,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
       rb_num_finds++;							\
     );									\
     while (1) {								\
-      DO_IF_DEBUG (if (!node) Pike_fatal ("Recursing into null node.\n"));	\
+      DO_IF_DEBUG (if (!node) Pike_fatal ("Recursing into null node.\n")); \
       DO_IF_RB_STATS (							\
 	if (++stat_depth_count_ > rb_max_depth)				\
 	  rb_max_depth = stat_depth_count_;				\
@@ -306,7 +308,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
       rb_num_finds++;							\
     );									\
     while (1) {								\
-      DO_IF_DEBUG (if (!node) Pike_fatal ("Recursing into null node.\n"));	\
+      DO_IF_DEBUG (if (!node) Pike_fatal ("Recursing into null node.\n")); \
       DO_IF_RB_STATS (							\
 	if (++stat_depth_count_ > rb_max_depth)				\
 	  rb_max_depth = stat_depth_count_;				\
@@ -336,7 +338,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 #define LOW_RB_TRACK(rbstack, node, cmp, got_lt, got_eq, got_gt)	\
   do {									\
     DO_IF_DEBUG (							\
-      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n");	\
+      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n"); \
     );									\
     DO_IF_RB_STATS (rb_num_finds--);					\
     LOW_RB_FIND (							\
@@ -357,7 +359,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 #define LOW_RB_TRACK_NEQ(rbstack, node, cmp, got_lt, got_gt)		\
   do {									\
     DO_IF_DEBUG (							\
-      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n");	\
+      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n"); \
     );									\
     DO_IF_RB_STATS (rb_num_finds--);					\
     LOW_RB_FIND_NEQ (							\
@@ -374,7 +376,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
 #define LOW_RB_TRACK_FIRST(rbstack, node)				\
   do {									\
     DO_IF_DEBUG (							\
-      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n");	\
+      if (RBSTACK_PEEK (rbstack)) Pike_fatal ("The stack is not empty.\n"); \
     );									\
     DO_IF_RB_STATS (rb_num_sidetracks++);				\
     if (node) {								\
@@ -394,7 +396,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
   do {									\
     DO_IF_DEBUG (							\
       if (node != RBSTACK_PEEK (rbstack))				\
-	Pike_fatal ("Given node is not on top of stack.\n");			\
+	Pike_fatal ("Given node is not on top of stack.\n");		\
     );									\
     DO_IF_RB_STATS (rb_num_sidetracks++);				\
     if (node->flags & RB_THREAD_NEXT) {					\
@@ -420,7 +422,7 @@ void debug_check_rbstack (struct rb_node_hdr *root, struct rbstack_ptr rbstack);
   do {									\
     DO_IF_DEBUG (							\
       if (node != RBSTACK_PEEK (rbstack))				\
-	Pike_fatal ("Given node is not on top of stack.\n");			\
+	Pike_fatal ("Given node is not on top of stack.\n");		\
     );									\
     DO_IF_RB_STATS (rb_num_sidetracks++);				\
     if (node->flags & RB_THREAD_PREV) {					\
