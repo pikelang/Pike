@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 1997/06/04 00:21:52 grubba Exp $
+# $Id: configure.in,v 1.6 1997/06/13 15:58:02 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -50,7 +50,7 @@ if test x$with_odbc = xyes; then
 
   if test x$pike_cv_odbc_lib_dir = xno; then :; else
     echo Adding $pike_cv_odbc_lib_dir to the library search path.
-    LDFLAGS="-L$pike_cv_odbc_lib_dir ${LDFLAGS}"
+    LDFLAGS="-L$pike_cv_odbc_lib_dir -R$pike_cv_odbc_lib_dir ${LDFLAGS}"
   fi
 
   AC_MSG_CHECKING(for the ODBC include-directory)
