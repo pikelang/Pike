@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.177 2003/07/10 13:08:56 grubba Exp $
+// $Id: module.pmod,v 1.178 2003/07/22 16:57:10 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -115,15 +115,16 @@ class File
 
 #ifdef __STDIO_DEBUG
   string __closed_backtrace;
-#define CHECK_OPEN()								\
-    if(!_fd)									\
-    {										\
-      error( "Stdio.File(): line "+__LINE__+" on closed file.\n" +		\
-	     (__closed_backtrace ? 						\
-	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :	\
-	   "This file has never been open.\n" ) );				\
-      										\
-    }
+#define CHECK_OPEN()							\
+  if(!_fd)								\
+  {									\
+    error( "Stdio.File(): line "+__LINE__+" on closed file.\n" +	\
+	   (__closed_backtrace ?					\
+	    sprintf("File was closed from:\n"				\
+		    "    %-=200s\n",					\
+		    __closed_backtrace) :				\
+	    "This file has never been open.\n" ) );			\
+  }
 #else
 #define CHECK_OPEN()
 #endif
@@ -369,8 +370,8 @@ class File
   function(:string) read_function(int nbytes)
   //! Returns a function that when called will call @[read] with
   //! nbytes as argument. Can be used to get various callback
-  //! functions, as an example the fourth argument to
-  //! String.SplitIterator.
+  //! functions, eg for the fourth argument to
+  //! @[String.SplitIterator].
   {
     return lambda(){ return read( nbytes); };
   }
@@ -379,8 +380,8 @@ class File
 
   String.SplitIterator|LineIterator line_iterator( int|void trim )
   //! Returns an iterator that will loop over the lines in this file. 
-  //! If trim is true, all '\r' characters will be removed from the
-  //! input.
+  //! If trim is true, all @tt{'\r'@} characters will be removed from
+  //! the input.
   {
     if( trim )
       return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
@@ -418,10 +419,11 @@ class File
   //!   the call to this function, but it is not required.
   //!
   //!   For @[callback] to be called, the backend must be active (ie
-  //!   @[main()] must have returned @expr{-1@}).
+  //!   @[main()] must have returned @expr{-1@}, or @[Pike.DefaultBackend]
+  //!   get called in some other way).
   //!
   //!   The socket will be in non-blocking state if @expr{1@} has been
-  //!   returned, and any callbacks will be cleared.
+  //!   returned, and any non-blocking callbacks will be cleared.
   //!
   //! @seealso
   //!   @[connect()], @[open_socket()], @[set_nonblocking()]
@@ -469,10 +471,10 @@ class File
   //! is created.
   //!
   //! @fixme
-  //! Document the @expr{PROP_@} properties.
+  //!   Document the @expr{PROP_@} properties.
   //!
   //! @seealso
-  //! @[Process.create_process()]
+  //!   @[Process.create_process()]
   //!
   File pipe(void|int how)
   {
@@ -702,7 +704,7 @@ class File
 
 /*
 ** 
-** nothing to read happens if you do:
+** Nothing to read happens if you do:
 **  o open a socket
 **  o set_read_callback
 **  o make sure something is to read on the socket
@@ -840,17 +842,21 @@ class File
     return ___##X;					\
   }
 
-  //! @decl void set_read_callback(function(mixed, string:void) read_cb)
+  //! @decl void set_read_callback(function(mixed, string:void) read_callback)
   //!
   //! This function sets the @tt{read_callback@} for the file. The
   //! @tt{read_callback@} is called whenever there is data to read from
   //! the file.
   //!
-  //! The callback is called with the @tt{id@} of the file as first argument and
-  //! some or all of its data as second.
+  //! The callback is called with the @tt{id@} of the file as
+  //! first argument and some or all of its data as second.
   //!
   //! @note
-  //! This function does not set the file nonblocking.
+  //!   This function does not set the file nonblocking.
+  //!
+  //! @note
+  //!   The @tt{read_callback@} can also be set by calling
+  //!   @[set_nonblocking()].
   //!
   //! @seealso
   //! @[set_nonblocking()], @[read()],
@@ -891,6 +897,10 @@ class File
   //!
   //! @note
   //! This function does not set the file nonblocking.
+  //!
+  //! @note
+  //!   The @tt{write_callback@} can also be set by calling
+  //!   @[set_nonblocking()].
   //!
   //! @seealso
   //! @[set_nonblocking()], @[write()],
@@ -947,6 +957,10 @@ class File
   //!
   //! @note
   //! This function does not set the file nonblocking.
+  //!
+  //! @note
+  //!   The @tt{close_callback@} can also be set by calling
+  //!   @[set_nonblocking()].
   //!
   //! @seealso
   //! @[set_nonblocking()], @[close]
@@ -1015,19 +1029,20 @@ class File
   //! out-of-band data to be sent, @[write_oob_callback] will be called so that
   //! you can write out-of-band data to it.
   //!
-  //! All callbacks will have the @tt{id@} of file as first argument when called
-  //! (see @[set_id()]).
-  //!
-  //! If no arguments are given, the callbacks will not be changed. The
-  //! stream will just be set to nonblocking mode.
+  //! All callbacks will have the @tt{id@} of the file as first argument
+  //! when called (see @[set_id()]).
   //!
   //! @note
-  //! Out-of-band data will note be supported if Pike was compiled with the
-  //! option @tt{'--without-oob'@}.
+  //!   If no arguments are given, the callbacks will be cleared.
+  //!
+  //! @note
+  //!   Out-of-band data will not be supported if Pike was compiled with the
+  //!   option @tt{'--without-oob'@}.
   //!
   //! @seealso
   //! @[set_blocking()], @[set_id()], @[set_read_callback()],
   //! @[set_write_callback()], @[set_close_callback()]
+  //! @[set_nonblocking_keep_callbacks()], @[set_blocking_keep_callbacks()]
   //!
   void set_nonblocking(mixed|void rcb,
 		       mixed|void wcb,
@@ -1064,14 +1079,17 @@ class File
     ::set_nonblocking();
 #endif
     ::_enable_callbacks();
-
   }
 
   //! This function sets a stream to blocking mode. i.e. all reads and writes
   //! will wait until data has been transferred before returning.
   //!
+  //! @note
+  //!   Calling this function will also clear all non-blocking callbacks.
+  //!
   //! @seealso
-  //! @[set_nonblocking()]
+  //! @[set_nonblocking()], @[set_nonblocking_keep_callbacks()],
+  //! @[set_blocking_keep_callbacks()]
   //!
   void set_blocking()
   {
@@ -1090,8 +1108,11 @@ class File
 
   //! @decl void set_nonblocking_keep_callbacks()
   //! @decl void set_blocking_keep_callbacks()
-  //!    toggle between blocking and nonblocking,
-  //!    without changing the callbacks
+  //!    Toggle between blocking and nonblocking,
+  //!    without changing the callbacks.
+  //!
+  //! @seealso
+  //!   @[set_nonblocking()], @[set_blocking()]
 
   void set_blocking_keep_callbacks()
   {
@@ -1151,7 +1172,7 @@ class Port
   //!
   //! When create is called with @expr{"stdin"@} as the first argument, a
   //! socket is created out of the file descriptor @expr{0@}. This is only
-  //! useful if that actually is a socket to begin with.
+  //! useful if it actually is a socket to begin with.
   //!
   //! @seealso
   //! @[bind]
@@ -1173,7 +1194,7 @@ class Port
 
   //! This function completes a connection made from a remote machine to
   //! this port. It returns a two-way stream in the form of a clone of
-  //! Stdio.File. The new file is by default set to blocking mode.
+  //! @[Stdio.File]. The new file is by initially set to blocking mode.
   //!
   //! @seealso
   //! @[Stdio.File]
@@ -1191,20 +1212,26 @@ class Port
   }
 }
 
-//! An instance of FILE("stderr"), the standard error stream. Use this
+//! An instance of @tt{FILE("stderr")@}, the standard error stream. Use this
 //! when you want to output error messages.
+//!
+//! @seealso
+//!   @[predef::werror()]
 File stderr=FILE("stderr");
 
-//! An instance of FILE("stdout"), the standatd output stream. Use this
+//! An instance of @tt{FILE("stdout")@}, the standatd output stream. Use this
 //! when you want to write anything to the standard output.
+//!
+//! @seealso
+//!   @[predef::write()]
 File stdout=FILE("stdout");
 
-//! An instance of FILE("stdin"), the standard input stream. Use this
+//! An instance of @tt{FILE("stdin")@}, the standard input stream. Use this
 //! when you want to read anything from the standard input.
 //! This example will read lines from standard input for as long as there
 //! are more lines to read. Each line will then be written to stdout together
-//! with the line number. We could use @[Stdio.stdout.write] instead
-//! of just @[write], since they are the same function.
+//! with the line number. We could use @[Stdio.stdout.write()] instead
+//! of just @[write()], since they are the same function.
 //!
 //! @example
 //!  int main()
@@ -1215,10 +1242,15 @@ File stdout=FILE("stdout");
 //!  }
 FILE stdin=FILE("stdin");
 
-//! Stdio.FILE is a buffered version of Stdio.File, it inherits Stdio.File and
-//! has most of the functionality of Stdio.File. However, it has an input buffer
-//! that allows line-by-line input. Note that the output part of Stdio.FILE is
-//! not buffered at this moment.
+//! @[Stdio.FILE] is a buffered version of @[Stdio.File], it inherits
+//! @[Stdio.File] and has most of the functionality of @[Stdio.File].
+//! However, it has an input buffer that allows line-by-line input.
+//!
+//! It also has support for automatic charset conversion for both input
+//! and output (see @[Stdio.FILE()->set_charset()]).
+//!
+//! @note
+//!   The output part of @[Stdio.FILE] is currently not buffered.
 class FILE
 {
 #define BUFSIZE 8192
@@ -1302,7 +1334,9 @@ class FILE
 
   void set_charset( string charset )
   //! Sets the input and output charset of this file to the specified
-  //! charset.
+  //! @[charset].
+  //!
+  //! The default charset is @tt{"ISO-8859-1"@}.
   {
     charset = lower_case( charset );
     if( charset != "iso-8859-1" &&
@@ -1429,7 +1463,11 @@ class FILE
     return res;
   }
 
-  object pipe(void|int flags)
+  //! Same as @[Stdio.File()->pipe()].
+  //!
+  //! @note
+  //!   Returns an @[Stdio.File] object, NOT a @[Stdio.FILE] object.
+  File pipe(void|int flags)
   {
     bpos=0; cached_lines=({}); lp=0;
     b="";
@@ -1437,7 +1475,7 @@ class FILE
   }
 
   
-  int assign(object foo)
+  int assign(File|FILE foo)
   {
     bpos=0; cached_lines=({}); lp=0;
     b="";
@@ -1509,8 +1547,8 @@ class FILE
 
   object line_iterator( int|void trim )
   //! Returns an iterator that will loop over the lines in this file. 
-  //! If trim is true, all '\r' characters will be removed from the
-  //! input.
+  //! If @[trim] is true, all @tt{'\r'@} characters will be removed
+  //! from the input.
   //!
   //! @seealso
   //!   @[_get_iterator()]
@@ -1520,7 +1558,8 @@ class FILE
     return _get_iterator();
   }
 
-  //! Read @[bytes] with buffering and support for input conversion.
+  //! Read @[bytes] (wide-) characters with buffering and support for
+  //! input conversion.
   //!
   //! @seealso
   //!   @[Stdio.File()->read()], @[set_charset()]
@@ -1532,8 +1571,12 @@ class FILE
 
     /* Optimization - Hubbe */
     if(!sizeof(b) && bytes > BUFSIZE) {
-      if (input_conversion)
+      if (input_conversion) {
+	// NOTE: This may depending on the charset return less
+	//       characters than requested.
+	// FIXME: Does this handle EOF correctly?
 	return input_conversion(::read(bytes, now));
+      }
       return ::read(bytes, now);
     }
 
@@ -1572,10 +1615,10 @@ class FILE
   //! This function returns one character from the input stream.
   //!
   //! @returns
-  //! Returns the ASCII value of the character.
+  //!   Returns the ISO-10646 (Unicode) value of the character.
   //!
   //! @note
-  //! Returns an @expr{int@} and not a @expr{string@} of length 1.
+  //!   Returns an @expr{int@} and not a @expr{string@} of length 1.
   //!
   int getchar()
   {
