@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.85 2001/07/16 21:57:55 mast Exp $");
+RCSID("$Id: encode.c,v 1.86 2001/08/13 23:01:19 mast Exp $");
 
 /* #define ENCODE_DEBUG */
   
@@ -941,6 +941,9 @@ struct decode_data
   int pickyness;
   struct pike_string *raw;
   struct decode_data *next;
+#ifdef PIKE_THREADS
+  struct object *thread_id;
+#endif
 #ifdef ENCODE_DEBUG
   int debug, depth;
 #endif
@@ -2046,6 +2049,9 @@ static void free_decode_data(struct decode_data *data)
     }
 #endif /* PIKE_DEBUG */
   }
+#ifdef PIKE_THREADS
+  free_object(data->thread_id);
+#endif
 }
 
 static INT32 my_decode(struct pike_string *tmp,
@@ -2060,15 +2066,16 @@ static INT32 my_decode(struct pike_string *tmp,
 
   /* Attempt to avoid infinite recursion on circular structures. */
   for (data = current_decode; data; data=data->next) {
-    if (data->raw == tmp) {
+    if (data->raw == tmp && data->codec == codec
+#ifdef PIKE_THREADS
+	&& data->thread_id == Pike_interpreter.thread_id
+#endif
+       ) {
       struct svalue *res;
       struct svalue val = {
 	T_INT, NUMBER_NUMBER,
-#ifdef HAVE_UNION_INIT
-	{0},	/* Only to avoid warnings. */
-#endif /* HAVE_UNION_INIT */
       };
-      val.u.integer = 0;
+      val.u.integer = COUNTER_START;
       if ((res = low_mapping_lookup(data->decoded, &val))) {
 	push_svalue(res);
 	return 1;
@@ -2090,6 +2097,10 @@ static INT32 my_decode(struct pike_string *tmp,
   data->unfinished_objects=0;
   data->raw = tmp;
   data->next = current_decode;
+#ifdef PIKE_THREADS
+  data->thread_id = Pike_interpreter.thread_id;
+  add_ref(Pike_interpreter.thread_id);
+#endif
 #ifdef ENCODE_DEBUG
   data->debug = debug;
   data->depth = -2;
