@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.121 2002/02/14 01:42:54 nilsson Exp $
+ * $Id: system.c,v 1.122 2002/05/04 18:54:34 nilsson Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.121 2002/02/14 01:42:54 nilsson Exp $");
+RCSID("$Id: system.c,v 1.122 2002/05/04 18:54:34 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -109,6 +109,10 @@ RCSID("$Id: system.c,v 1.121 2002/02/14 01:42:54 nilsson Exp $");
 #include <netinfo/ni.h>
 #endif
 
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+
 /* Restore the sp macro */
 #ifdef STACKPOINTER_WAS_DEFINED
 #define sp Pike_sp
@@ -130,6 +134,8 @@ RCSID("$Id: system.c,v 1.121 2002/02/14 01:42:54 nilsson Exp $");
 #else /* !HAVE_IN_ADDR_T */
 #define IN_ADDR_T	unsigned int
 #endif /* HAVE_IN_ADDR_T */
+
+/* #define GETADDR_DEBUG */
 
 /*
  * Functions
@@ -1582,36 +1588,143 @@ static MUTEX_T gethostbyname_mutex;
 
 #endif /* REENTRANT */
 
-/* this is used from modules/file, and modules/spider! */
-void get_inet_addr(struct sockaddr_in *addr,char *name)
+#ifdef HAVE_GETADDRINFO
+static int my_getaddrinfo(SOCKADDR *addr, int family, char *name, int flags)
 {
-  MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
+  struct addrinfo     *ainf = NULL, *tmp;
+  struct addrinfo      hints;
+  int                  ret;
+  int                  pref_family;
+    
+  MEMSET((char*)&hints, 0, sizeof(hints));
+  hints.ai_family = family;
+  hints.ai_flags = flags;
 
-  addr->sin_family = AF_INET;
+  ret = getaddrinfo(name, NULL, &hints, &ainf);
+
+  if (ret) {
+    if (ret == EAI_SYSTEM)
+      Pike_error("System error while getting address info: %d\n", errno);
+        
+#ifdef HAVE_GAI_STRERROR
+    Pike_error("Error getting address info: %s\n", gai_strerror(ret));
+#else
+    Pike_error("Error getting address info: %d\n", ret);
+#endif
+  }
+
+  if (family == AF_UNSPEC)
+    pref_family = AF_INET;
+  else
+    pref_family = family;
+
+  tmp = ainf;
+  while (tmp) {
+    if (tmp->ai_family == pref_family) {
+      switch (pref_family) {
+          case AF_INET:
+            MEMCPY(&((struct sockaddr_in*)addr)->sin_addr,
+                   tmp->ai_addr, tmp->ai_addrlen);
+            ((struct sockaddr_in*)addr)->sin_family = AF_INET;
+            freeaddrinfo(ainf);
+            return 0;
+
+#ifdef HAVE_IPV6
+          case AF_INET6:
+            MEMCPY(&((struct sockaddr_in6*)addr)->sin6_addr,
+                   tmp->ai_addr, tmp->ai_addrlen);
+            ((struct sockaddr_in6*)addr)->sin6_family = AF_INET6;
+            freeaddrinfo(ainf);
+            return 0;
+#endif
+      }
+    }
+
+    tmp = tmp->ai_next;
+  }
+  freeaddrinfo(ainf);
+
+  return 1;
+}
+#endif
+
+/* this is used from modules/file, and modules/spider! */
+void get_inet_addr(SOCKADDR *addr,char *name,int family)
+{
+  MEMSET((char *)addr,0,sizeof(SOCKADDR));
+  
+  ((struct sockaddr_in*)addr)->sin_family = family;
+  
   if(!strcmp(name,"*"))
   {
-    addr->sin_addr.s_addr=htonl(INADDR_ANY);
+    switch (family) {
+        case AF_INET:              
+          ((struct sockaddr_in*)addr)->sin_addr.s_addr=htonl(INADDR_ANY);
+          return;
+
+#ifdef HAVE_IPV6
+        case AF_INET6:
+          MEMCPY(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr,
+                 &in6addr_any, sizeof(in6addr_any));
+          return;
+#endif
+        case AF_UNSPEC:
+          Pike_error("Cannot use wildcard addresses with unspecified address family.\n");
+              
+        default:
+          Pike_error("Unsupported address family.\n");
+    }
   }
+#ifndef HAVE_INET_PTON
   else if(my_isipnr(name)) /* I do not entirely trust inet_addr */
   {
     if (((IN_ADDR_T)inet_addr(name)) == ((IN_ADDR_T)-1))
-      Pike_error("Malformed ip number.\n");
+      Pike_error("Malformed IPv4 address.\n");
 
-    addr->sin_addr.s_addr = inet_addr(name);
+    ((struct sockaddr_in*)addr)->sin_addr.s_addr = inet_addr(name);
+    ((struct sockaddr_in*)addr)->sin_family = AF_INET;
+    return;
   }
-  else
+#else /* HAVE_INET_PTON */
   {
-#ifdef GETHOST_DECLARE
-    GETHOST_DECLARE;
-    CALL_GETHOSTBYNAME(name);
+    int  ret;
 
-    if(!ret) {
-      if (strlen(name) < 1024) {
-	Pike_error("Invalid address '%s'\n",name);
-      } else {
-	Pike_error("Invalid address\n");
-      }
+    ret = inet_pton(AF_INET, name, &((struct sockaddr_in*)addr)->sin_addr);
+    if (ret < 0 && errno == EAFNOSUPPORT)
+      Pike_error("Address family %s (%d) is not supported.\n", "AF_INET", AF_INET);
+      
+    if (!ret) {
+#ifdef HAVE_IPV6
+      ret = inet_pton(AF_INET6, name, &((struct sockaddr_in6*)addr)->sin6_addr);
+      if (ret < 0 && errno == EAFNOSUPPORT)
+        Pike_error("Address family %s (%d) is not supported.\n", "AF_INET6", AF_INET6);
+
+      if (ret) {
+        ((struct sockaddr_in6*)addr)->sin6_family = AF_INET6;
+        return;
+      }          
+#endif /* HAVE_IPV6 */
+    } else {
+      ((struct sockaddr_in*)addr)->sin_family = AF_INET;
+      return;
     }
+  }
+#endif /* HAVE_INET_PTON */
+
+#ifdef HAVE_GETADDRINFO
+  if (my_getaddrinfo(addr, family, name, 0))
+    Pike_error("Couldn't convert address '%s' to a valid IP number.\n", name);
+#elif defined(GETHOST_DECLARE)
+  GETHOST_DECLARE;
+  CALL_GETHOSTBYNAME(name);
+
+  if(!ret) {
+    if (strlen(name) < 1024) {
+      Pike_error("Invalid address '%s'\n",name);
+    } else {
+      Pike_error("Invalid address\n");
+    }
+  }
 
 #ifdef HAVE_H_ADDR_LIST
     MEMCPY((char *)&(addr->sin_addr),
@@ -1629,9 +1742,7 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
       Pike_error("Invalid address\n");
     }
 #endif
-  }
 }
-
 
 #ifdef GETHOST_DECLARE
 
@@ -1761,9 +1872,141 @@ static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
 }
 #endif
 
+#ifdef HAVE_IF_NAMETOINDEX
+/*! @decl int if_nametoindex(string ifname)
+ *!
+ *! Returns an index of the specified network interface.
+ *!
+ *! @returns
+ *!   The returned integer is an arbitrarily assigned integer index of the
+ *!   device in the operating system network tables. If the value returned
+ *!   is 0 then no interface of that name exists.
+ *!
+ *! @note
+ *!   This is a SUSv2 (POSIX) call available on the compliant Unix or
+ *!   Unix-like systems
+ *!
+ *! @seealso
+ *!   @[if_indextoname()], @[if_nameindex()]
+ */
+void f_if_nametoindex(INT32 args)
+{
+  char   *ifname;
+    
+  get_all_args("if_nametoindex", args, "%s", &ifname);
+
+  pop_n_elems(args);
+  push_int(if_nametoindex(ifname));
+}
+#endif /* HAVE_IF_NAMETOINDEX */
+
+#ifdef HAVE_IF_INDEXTONAME
+/*! @decl string if_indextoname(int ifidx)
+ *!
+ *! Returns a name associated with the interface of the specified index.
+ *!
+ *! @returns
+ *!   The returned string is a name of the interface selected by the given
+ *!   index in the operating system network tables. If the value returned
+ *!   is 0 then no interface of that index exists.
+ *!
+ *! @note
+ *!   This is a SUSv2 (POSIX) call available on the compliant Unix or
+ *!   Unix-like systems
+ *!
+ *! @seealso
+ *!   @[if_nametoindex()], @[if_nameindex()]
+ */
+void f_if_indextoname(INT32 args)
+{
+  unsigned int    ifidx;
+  char           *buf;
+    
+  get_all_args("if_nametoindex", args, "%i", &ifidx);
+
+  buf = (char*)malloc(IFNAMSIZ * sizeof(char));
+  if (!buf)
+    Pike_error("if_indextoname: Out of memory.\n");
+
+  pop_n_elems(args);
+
+  MEMSET(buf, 0, IFNAMSIZ);
+  push_string(make_shared_string(if_indextoname(ifidx,buf)));
+  free(buf);
+}
+#endif /* HAVE_IF_INDEXTONAME */
+
+#ifdef HAVE_IF_NAMEINDEX
+/*! @decl array(mapping(string:mixed)) if_nameindex(void)
+ *!
+ *! Returns an array of mappings that describe all the interfaces present
+ *! on the host machine.
+ *!
+ *! @returns
+ *!   The returned array stores mappings of the following structure:
+ *!   @mapping
+ *!      @member int "index"
+ *!         The index of the interface.
+ *!      @member string "name"
+ *!         The name of the interface.
+ *!   @endmapping
+ *!
+ *! @note
+ *!   This is a SUSv2 (POSIX) call available on the compliant Unix or
+ *!   Unix-like systems
+ *!
+ *! @seealso
+ *!   @[if_nametoindex()], @[if_indextoname()]
+ */
+void f_if_nameindex(INT32 args)
+{
+  static struct pike_string  *ps_index = NULL;
+  static struct pike_string  *ps_name = NULL;
+  struct if_nameindex        *iar;
+  struct if_nameindex        *tmp;
+  int                         cnt;
+  struct array               *ret;
+    
+  iar = if_nameindex();
+  if (!iar) {
+    push_int(0);
+    return;
+  }
+
+  if (!ps_index) {
+    ps_index = make_shared_string("index");
+    ps_name = make_shared_string("name");
+  }
+
+  pop_n_elems(args);
+    
+  tmp = iar;
+  cnt = 0;
+  while(tmp && (tmp->if_index && tmp->if_name)) {
+    push_string(ps_index);
+    push_int(tmp->if_index);
+
+    push_string(ps_name);
+    push_string(make_shared_string(tmp->if_name));
+        
+    f_aggregate_mapping(4);
+
+    tmp++;
+    cnt++;
+  }
+
+  ret = aggregate_array(cnt);
+
+#ifdef HAVE_IF_FREENAMEINDEX
+  if_freenameindex(iar);
+#endif
+
+  push_array(ret);
+}
+#endif /* HAVE_IF_NAMEINDEX */
+
 extern void init_passwd(void);
 extern void init_system_memory(void);
-
 
 #ifdef HAVE_SLEEP
 
@@ -2719,6 +2962,18 @@ void pike_module_init(void)
            OPT_TRY_OPTIMIZE);
 #endif /* GETHOST_DECLARE */
 
+#ifdef HAVE_IF_NAMETOINDEX
+  ADD_FUNCTION("if_nametoindex", f_if_nametoindex, tFunc(tStr,tInt), 0);
+#endif /* HAVE_IF_NAMETOINDEX */
+
+#ifdef HAVE_IF_INDEXTONAME
+  ADD_FUNCTION("if_indextoname", f_if_indextoname, tFunc(tInt,tStr), 0);
+#endif /* HAVE_IF_INDEXTONAME */
+
+#ifdef HAVE_IF_NAMEINDEX
+  ADD_FUNCTION("if_nameindex", f_if_nameindex, tFunc(tVoid,tArr(tMap(tString,tMixed))), 0);
+#endif /* HAVE_IF_NAMEINDEX */
+  
   /*
    * From syslog.c:
    */
@@ -2789,6 +3044,12 @@ void pike_module_init(void)
 	       tFunc(tStr tStr tStr, tArray), 0);
 #endif /* NETINFO */
 
+  ADD_INT_CONSTANT("AF_INET", AF_INET, 0);
+  
+#ifdef HAVE_AF_INET6
+  ADD_INT_CONSTANT("AF_INET6", AF_INET6, 0);
+#endif
+  
   init_passwd();
   init_system_memory();
 
