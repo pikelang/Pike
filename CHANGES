@@ -67,11 +67,43 @@ o Regexp.PCRE added to give libpcre support.
 
 o Crypto/Nettle
     The crypto module has been almost completely rewritten and now
-    uses libnettle as backend instead of the built int crypto
-    algorithms that Pike had before. This will lead to more active
-    development and optimization. The most common hash and cipher
-    methods are already written in assembler for several platforms. As
-    an example SHA1 is 40% faster than before.
+    uses libnettle as backend instead of the built in crypto
+    algorithms that Pike had before. This way Pike will benefit from
+    the more active development and optimization work in the Nettle
+    project. The most common hash and cipher methods are already
+    written in assembler for several platforms. As an example SHA1 is
+    about 40% faster than before on Intel platforms.
+
+    With the new nettle support comes support for two new cipher
+    algorithms, Blowfish and Serpent, and the new NIST hash algorithm
+    SHA256. Note that the new Crypto module has renamed its
+    identifiers to be consistent with the rest of Pike, and in some
+    cases to clarify or correct bad names. The old names still work,
+    but produce a warning unless Pike is run in compatibility mode.
+    Compatibility outside compatibility mode will be removed in the
+    future.
+
+    The interfaces for the hash and cipher algorithms has been
+    improved and they no longer only conform to predefined interfaces,
+    but actually inherits Hash/HashState and Cipher/CipherState. Every
+    algorithm is in itself a module in the Crypto module, and inherits
+    the Hash/Cipher class. This module contains instance non-specific
+    methods such as digest_size or key_size. By calling the `() method
+    in the module a HashState/CipherState object is returned, which is
+    a hash/cipher instance which can be used for streaming operations.
+
+    Examples:
+
+      Crypto.MD5.hash("Hash this string");
+
+      Crypto.MD5()->update("Hash this ")->update("string")->digest();
+
+   The confusing and hard to use Crypto.randomness has been obsoleted
+   by the Nettle implementation of the Yarrow random generator. The
+   Nettle implementation of Yarrow uses AES and SHA256. The
+   Crypto.Random module acts as a frontend before system crypto
+   sources and ensure that no matter how bad your OS is, you will
+   still get cryptographically strong random data.
 
 o _ADT
 o ADT.Struct
@@ -94,6 +126,8 @@ o Instantiation and destruction of pike-classes is now significantly faster.
 
 o Handling of bignums has been optimized, especially conversion
   to/from normal integers.
+
+o String case conversion is now five times faster than before on average.
 
 
 Compatibility changes:
