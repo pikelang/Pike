@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.329 2003/09/08 20:05:21 mast Exp $
+|| $Id: interpret.c,v 1.330 2003/09/24 00:20:49 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.329 2003/09/08 20:05:21 mast Exp $");
+RCSID("$Id: interpret.c,v 1.330 2003/09/24 00:20:49 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -127,21 +127,36 @@ ptrdiff_t pop_sp_mark(void)
 
 
 #ifdef PIKE_DEBUG
+void gc_mark_stack_external (struct pike_frame *f,
+			     struct svalue *stack_p, struct svalue *stack)
+{
+  for (; f; f = f->next)
+    GC_ENTER (f, T_PIKE_FRAME) {
+
+      if(f->context.parent)
+	gc_mark_external (f->context.parent, " in context.parent in frame on stack");
+      gc_mark_external (f->current_object, " in current_object in frame on stack");
+      gc_mark_external (f->context.prog, " in context.prog in frame on stack");
+
+      if (f->locals) {
+	ptrdiff_t numargs = MAXIMUM (0, MINIMUM (f->num_args, stack_p - f->locals));
+	if (numargs > 0)
+	  gc_mark_external_svalues (f->locals, numargs,
+				    " in function arguments for frame on stack");
+	if (f->locals + numargs < stack_p)
+	  gc_mark_external_svalues (f->locals + numargs,
+				    stack_p - (f->locals + numargs),
+				    " in locals for frame on stack");
+	stack_p = f->locals;
+      }
+    } GC_LEAVE;
+  if (stack != stack_p)
+    gc_mark_external_svalues (stack, stack_p - stack, " on bottom of svalue stack");
+}
+
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
-  struct pike_frame *f;
-  gc_mark_external_svalues(Pike_interpreter.evaluator_stack,
-			   Pike_sp-Pike_interpreter.evaluator_stack,
-			   " on current interpreter stack");
-
-  for(f=Pike_fp;f;f=f->next)
-  {
-    if(f->context.parent)
-      gc_mark_external (f->context.parent, " in Pike_fp->context.parent on current stack");
-    gc_mark_external (f->current_object, " in Pike_fp->current_object on current stack");
-    gc_mark_external (f->context.prog, " in Pike_fp->context.prog on current stack");
-  }
-
+  gc_mark_stack_external (Pike_fp, Pike_sp, Pike_interpreter.evaluator_stack);
 }
 #endif
 

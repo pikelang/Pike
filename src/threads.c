@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.220 2003/09/08 20:05:21 mast Exp $
+|| $Id: threads.c,v 1.221 2003/09/24 00:20:49 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.220 2003/09/08 20:05:21 mast Exp $");
+RCSID("$Id: threads.c,v 1.221 2003/09/24 00:20:49 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1548,22 +1548,8 @@ static void thread_was_checked(struct object *o)
 
 #ifdef PIKE_DEBUG
   if(tmp->swapped)
-  {
-    struct pike_frame *f;
-    debug_malloc_touch(o);
-    gc_mark_external_svalues(tmp->state.evaluator_stack,
-			     tmp->state.stack_pointer-tmp->state.evaluator_stack,
-			     " in idle thread stack");
-    
-    for(f=tmp->state.frame_pointer;f;f=f->next)
-    {
-      debug_malloc_touch(f);
-      if(f->context.parent)
-	gc_mark_external (f->context.parent, " in Pike_fp->context.parent of idle thread");
-      gc_mark_external (f->current_object, " in Pike_fp->current_object of idle thread");
-      gc_mark_external (f->context.prog, " in Pike_fp->context.prog of idle thread");
-    }
-  }
+    gc_mark_stack_external (tmp->state.frame_pointer, tmp->state.stack_pointer,
+			    tmp->state.evaluator_stack);
 #endif
 }
 
