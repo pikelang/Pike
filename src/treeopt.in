@@ -1,20 +1,22 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.33 1999/12/10 22:57:10 grubba Exp $
+// $Id: treeopt.in,v 1.34 1999/12/14 08:45:42 hubbe Exp $
 //
 // The tree optimizer
 //
 // Henrik Grubbström 1999-11-06
 
+
+// Note: This can cause problems if optimize is called
+// before the other tests... /Hubbe
 0 = F_APPLY(1 = F_CONSTANT
 	    [$$->u.sval.type == T_FUNCTION]
 	    [$$->u.sval.subtype == FUNCTION_BUILTIN]
-	    [$$->u.sval.u.efun->optimize], *):
+	    [$$->u.sval.u.efun->optimize]
+            [ (tmp1=$$->u.sval.u.efun->optimize($0)) ], *):
 
 {
-  if ((tmp1 = $1->u.sval.u.efun->optimize($0))) {
-    goto use_tmp1;
-  }
+  goto use_tmp1;
 }
 ;
 
@@ -724,3 +726,25 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 }
 ;
 
+
+'?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, *), 1)) :
+{
+  struct pike_string *tmpname;
+  int tmpvar;
+  void add_local_name(struct pike_string *,struct pike_string *, node *);
+
+  MAKE_CONSTANT_SHARED_STRING(tmpname, " ");
+  tmpvar=islocal(tmpname);
+  if(tmpvar==-1)
+  {
+     add_ref(mixed_type_string);
+     add_local_name(tmpname, mixed_type_string,0);
+     tmpvar=islocal(tmpname);
+  }
+  free_string(tmpname);
+  tmp1=mknode('?', mknode(F_ASSIGN, $0, mklocalnode(tmpvar,0)),
+	      mknode(':',mknode(F_RETURN,mklocalnode(tmpvar,0),0),
+		     $1));
+  goto use_tmp1;
+}
+;
