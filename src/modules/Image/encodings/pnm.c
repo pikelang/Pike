@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.7 1998/01/08 20:51:39 mirar Exp $ */
+/* $Id: pnm.c,v 1.8 1998/01/13 01:32:20 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.7 1998/01/08 20:51:39 mirar Exp $
+**!	$Id: pnm.c,v 1.8 1998/01/13 01:32:20 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pnm.c,v 1.7 1998/01/08 20:51:39 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.8 1998/01/13 01:32:20 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -230,12 +230,12 @@ void img_pnm_decode(INT32 args)
 /*
 **! method string encode(object image)
 **! method string encode_binary(object image)
-**  method string encode_ascii(object image)
-**  method string encode_P1(object image)
-**  method string encode_P2(object image)
-**  method string encode_P3(object image)
-**  method string encode_P4(object image)
-**  method string encode_P5(object image)
+**! method string encode_ascii(object image)
+**! method string encode_P1(object image)
+**! method string encode_P2(object image)
+**! method string encode_P3(object image)
+**! method string encode_P4(object image)
+**! method string encode_P5(object image)
 **! method string encode_P6(object image)
 **  method string encode_P7(object image)
 **!	Make a complete PNM file from an image.
@@ -244,16 +244,221 @@ void img_pnm_decode(INT32 args)
 **!	uses the most optimized encoding for this image (bitmap, grey
 **!	or truecolor) - P4, P5 or P6 respective P1, P2 or P3.
 **!
-**!	<ref>encode</ref>() maps to <ref>encode_binary</ref>().
-**! 	
 **! see also: decode
 **!
 **! returns the encoded image as a string
 **!
-**! bugs
-**!	Currently only supports type P5 (binary grey) and
-**!	P6 (binary truecolor). 
+**! note
+**!	<ref>encode</ref>() is equal to <ref>encode_binary</ref>(),
+**!	but may change in a future release.
 */
+
+void img_pnm_encode_P1(INT32 args) /* ascii PBM */
+{
+   char buf[80];
+   struct pike_string *a,*b;
+   struct image *img;
+   unsigned char *c;
+   int x,y;
+   rgb_group *s;
+
+   if (args<1 ||
+       sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("Image.PNM.encode_P1(): Illegal arguments\n");
+   if (!img->img)
+      error("Image.PNM.encode_P1(): Given image is empty\n");
+
+   sprintf(buf,"P1\n%d %d\n",img->xsize,img->ysize);
+   a=make_shared_string(buf);
+
+   y=img->ysize;
+   s=img->img;
+   c=(unsigned char*)((b=begin_shared_string((img->xsize*2)*
+					     img->ysize))->str);
+   if (img->xsize)
+   while (y--)
+   {
+      x=img->xsize;
+      while (x--)
+      {
+	 *(c++)=48+!(s->r|s->g|s->b);
+	 *(c++)=' ';
+	 s++;
+      }
+      *(c-1)='\n';
+   }
+   b=end_shared_string(b);
+
+   pop_n_elems(args);
+   push_string(add_shared_strings(a,b));
+   free_string(a);
+   free_string(b);
+}
+
+extern void f_add(INT32 args);
+
+void img_pnm_encode_P2(INT32 args) /* ascii PGM */
+{
+   char buf[80];
+   struct image *img;
+   int y,x;
+   rgb_group *s;
+   int n;
+   struct object *o;
+
+   if (args<1 ||
+       sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
+      error("Image.PNM.encode_P2(): Illegal arguments\n");
+   if (!img->img)
+      error("Image.PNM.encode_P2(): Given image is empty\n");
+
+   o->refs++;
+   pop_n_elems(args);
+
+   sprintf(buf,"P2\n%d %d\n255\n",img->xsize,img->ysize);
+   push_string(make_shared_string(buf));
+   n=1;
+
+   y=img->ysize;
+   s=img->img;
+   while (y--)
+   {
+      x=img->xsize;
+      while (x--)
+      {
+	 sprintf(buf,"%d%c",(s->r+s->g*2+s->b)/4,x?' ':'\n');
+	 push_string(make_shared_string(buf));
+	 n++;
+	 if (n>32) { f_add(n); n=1; }
+	 s++;
+      }
+   }
+   f_add(n);
+   free_object(o);
+}
+
+void img_pnm_encode_P3(INT32 args) /* ascii PPM */
+{
+   char buf[80];
+   struct image *img;
+   int y,x;
+   rgb_group *s;
+   int n;
+   struct object *o;
+
+   if (args<1 ||
+       sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage((o=sp[-args].u.object),image_program)))
+      error("Image.PNM.encode_P3(): Illegal arguments\n");
+   if (!img->img)
+      error("Image.PNM.encode_P3(): Given image is empty\n");
+
+   o->refs++;
+   pop_n_elems(args);
+
+   sprintf(buf,"P3\n%d %d\n255\n",img->xsize,img->ysize);
+   push_string(make_shared_string(buf));
+   n=1;
+
+   y=img->ysize;
+   s=img->img;
+   while (y--)
+   {
+      x=img->xsize;
+      while (x--)
+      {
+	 sprintf(buf,"%d %d %d%c",s->r,s->g,s->b,x?' ':'\n');
+	 push_string(make_shared_string(buf));
+	 n++;
+	 if (n>32) { f_add(n); n=1; }
+	 s++;
+      }
+   }
+   f_add(n);
+   free_object(o);
+}
+
+void img_pnm_encode_P4(INT32 args) /* binary PBM */
+{
+   char buf[80];
+   struct pike_string *a,*b;
+   struct image *img;
+   unsigned char *c;
+   int y,x,bit;
+   rgb_group *s;
+
+   if (args<1 ||
+       sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("Image.PNM.encode_P4(): Illegal arguments\n");
+   if (!img->img)
+      error("Image.PNM.encode_P4(): Given image is empty\n");
+
+   sprintf(buf,"P4\n%d %d\n",img->xsize,img->ysize);
+   a=make_shared_string(buf);
+
+   y=img->ysize;
+   s=img->img;
+   c=(unsigned char*)((b=begin_shared_string(((img->xsize+7)>>3)*
+					     img->ysize))->str);
+   if (img->xsize)
+   while (y--)
+   {
+      x=img->xsize;
+      bit=128;
+      *c=0;
+      while (x--)
+      {
+	 *c|=bit*!(s->r|s->g|s->b);
+	 if (!(bit>>=1)) { *(++c)=0; bit=128; }
+	 s++;
+      }
+      if (y && bit>1) *(++c)=0; 
+   }
+   b=end_shared_string(b);
+
+   pop_n_elems(args);
+   push_string(add_shared_strings(a,b));
+   free_string(a);
+   free_string(b);
+}
+
+void img_pnm_encode_P5(INT32 args) /* binary PGM */
+{
+   char buf[80];
+   struct pike_string *a,*b;
+   struct image *img;
+   unsigned char *c;
+   int n;
+   rgb_group *s;
+
+   if (args<1 ||
+       sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("Image.PNM.encode_P5(): Illegal arguments\n");
+   if (!img->img)
+      error("Image.PNM.encode_P5(): Given image is empty\n");
+
+   sprintf(buf,"P5\n%d %d\n255\n",img->xsize,img->ysize);
+   a=make_shared_string(buf);
+
+   n=img->xsize*img->ysize;
+   s=img->img;
+   c=(unsigned char*)((b=begin_shared_string(n))->str);
+   while (n--)
+   {
+      *(c++)=(s->r+s->g*2+s->b)/4;
+      s++;
+   }
+   b=end_shared_string(b);
+
+   pop_n_elems(args);
+   push_string(add_shared_strings(a,b));
+   free_string(a);
+   free_string(b);
+}
 
 void img_pnm_encode_P6(INT32 args)
 {
@@ -295,9 +500,72 @@ void img_pnm_encode_P6(INT32 args)
 }
 
 
+void img_pnm_encode_ascii(INT32 args)
+{
+   struct image *img;
+   rgb_group *s;
+   int n;
+   void (*func)(INT32);
+
+   if (args<1 ||
+       sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("Image.PNM.encode_binary(): Illegal arguments\n");
+   if (!img->img)
+      error("Image.PNM.encode_binary(): Given image is empty\n");
+
+   func=img_pnm_encode_P1; /* PBM */
+   n=img->xsize*img->ysize;
+   s=img->img;
+   while (n--)
+   {
+      if (s->r!=s->g || s->g!=s->b)
+      {
+	 func=img_pnm_encode_P3; 
+	 break;
+      }
+      else if ((s->r!=0 && s->r!=255) ||
+	       (s->g!=0 && s->g!=255) ||
+	       (s->b!=0 && s->b!=255))
+	 func=img_pnm_encode_P2; 
+      s++;
+   }
+
+   (*func)(args);
+}
+
 void img_pnm_encode_binary(INT32 args)
 {
-   img_pnm_encode_P6(args);
+   struct image *img;
+   rgb_group *s;
+   int n;
+   void (*func)(INT32);
+
+   if (args<1 ||
+       sp[-args].type!=T_OBJECT ||
+       !(img=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      error("Image.PNM.encode_binary(): Illegal arguments\n");
+   if (!img->img)
+      error("Image.PNM.encode_binary(): Given image is empty\n");
+
+   func=img_pnm_encode_P4; /* PBM */
+   n=img->xsize*img->ysize;
+   s=img->img;
+   while (n--)
+   {
+      if (s->r!=s->g || s->g!=s->b)
+      {
+	 func=img_pnm_encode_P6; 
+	 break;
+      }
+      else if ((s->r!=0 && s->r!=255) ||
+	       (s->g!=0 && s->g!=255) ||
+	       (s->b!=0 && s->b!=255))
+	 func=img_pnm_encode_P5; 
+      s++;
+   }
+
+   (*func)(args);
 }
 
 
@@ -310,6 +578,20 @@ void init_image_pnm(void)
    add_function("encode",img_pnm_encode_binary,
 		"function(object:string)",0);
    add_function("encode_binary",img_pnm_encode_binary,
+		"function(object:string)",0);
+   add_function("encode_ascii",img_pnm_encode_ascii,
+		"function(object:string)",0);
+
+   add_function("encode_P1",img_pnm_encode_P1,
+		"function(object:string)",0);
+   add_function("encode_P2",img_pnm_encode_P2,
+		"function(object:string)",0);
+   add_function("encode_P3",img_pnm_encode_P3,
+		"function(object:string)",0);
+
+   add_function("encode_P4",img_pnm_encode_P4,
+		"function(object:string)",0);
+   add_function("encode_P5",img_pnm_encode_P5,
 		"function(object:string)",0);
    add_function("encode_P6",img_pnm_encode_P6,
 		"function(object:string)",0);
