@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.47 2002/03/21 00:29:21 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.48 2002/03/21 00:47:10 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -56,36 +56,7 @@ name. Example: \"reset tmp\"";
 
 private void|string command_set(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(e==0) return "Change Hilfe settings.";
-  if(e==1) return #"
-Change Hilfe settings. Used as \"set <setting> <parameter>\".
-Available parameters:
-
-assembler_debug
-    Changes the level of assembler debug used when evaluating
-    expressions in Pike. Requires that Pike is compiled with
-    RTL debug.
-
-compiler_trace
-    Changes the level of compiler trace used when evaluating
-    expressions in Pike. Requires that Pike is compiled with
-    RTL debug.
-
-debug
-    Changes the level of debug used when evaluating expressions in
-    Pike. Requires that Pike is compiled with RTL debug.
-
-history
-    Change the maximum number of entries that are kept in the
-    result history. Default is 10.
-
-trace
-     Changes the level of trace used when evaluating expressions
-     in Pike. Possible values are:
-       0 Off
-       1 Calls to Pike functions are printed.
-       2 Calls to buitin functions are printed.
-       3 Every opcode interpreted is printed.
-       4 Arguments to these opcodes are printed as well.";
+  if(e==1) return documentation_set;
 
   line = sizeof(tokens)>2 && tokens[2];
   function write = e->write;
@@ -160,40 +131,7 @@ private void|string command_help(int|Evaluator e, void|string line, void|array(s
   function write = e->write;
 
   if(line == "me more") {
-    write( #"Some commands has extended help available. This can be displayed by
-typing help followed by the name of the command, e.g. \"help dump\".
-Commands clobbered by e.g. variable declarations can be reached by
-prefixing a dot to the command, e.g. \".exit\".
-
-A history of the last returned results are kept and can be accessed
-from your hilfe expressions with the variable __. You can either
-\"address\" your results with absolute addresses, e.g. __[2] to get
-the second result ever, or with relative addresses, e.g. __[-1] to
-get the last result. The last result is also available in the
-variable _, thus _==__[-1] is true. The magic _ and __ variable can
-be clobbered with local definitions to disable them, e.g. by typing
-\"int _;\". The result history is currently ten entries long.
-
-A history of the 512 last entered lines is kept in Hilfe. You can
-browse this list with your arrow keys up/down. When you exit Hilfe
-your history will be saved in .hilfe_history in the directory set
-in environment variable $HOME or $USERPROFILE. Next time hilfe is
-started the history is imported.
-
-You can put a .hilferc file at the directory set in your
-environment variable $HOME or $USERPROFILE. The contents of this
-file will be evaulated in hilfe during each startup.
-
-Note that there are a few symbols that you can not define, since
-they are used by Hilfe. They are:
-
-___hilfe         A mapping containing all defined symbols.
-___Hilfe         The Hilfe object.
-___HilfeWrapper  A wrapper around the entered expression.
-
-
-Type \"help hilfe todo\" to get a list of known Hilfe bugs/lackings.
-");
+    write( documentation_help_me_more );
     return;
   }
 
@@ -280,21 +218,7 @@ private object command_dump = class {
     private function write;
 
     private string help() {
-      return #"dump
-      Shows the currently defined constants, variables, functions
-      and programs. It also lists all active inherits ans imports.
-
-dump history
-      Shows all items in the history queue.
-
-dump state
-      Shows the current parser state. Only useful for debugging
-      Hilfe.
-
-dump wrapper
-      Show the latest Hilfe wrapper that the last expression was
-      evaulated in. Useful when debugging Hilfe (i.e. investigating
-      why valid Pike expressions doesn't compile).";
+      return documentation_dump;
     }
 
     private void wrapper(Evaluator e) {
@@ -377,26 +301,7 @@ dump wrapper
 
 private void|string command_new(int|Evaluator e, void|string line, void|array(string) tokens) {
   if(!e) return "Clears the Hilfe state.";
-  if(e==1) return #"
-new
-      Clears the current Hilfe state. This includes the parser
-      state, variables, constants, functions, programs, inherits,
-      imports and the history. It does not include the currently
-      installed commands. Note that code in your .hilferc will not
-      be reevaluated.
-
-new history
-      Remove all history entries from the result history.
-
-new constants
-new functions
-new programs
-new variables
-      Clears all locally defined symbols of the given type.
-
-new imports
-new inherits
-      Removes all imports/inherits made.";
+  if(e==1) return documentation_new;
 
   line = sizeof(tokens)>2 && tokens[2];
   switch(line) {
@@ -1541,3 +1446,112 @@ int main() {
   StdinHilfe();
   return 0;
 }
+
+
+constant documentation_set =
+#"Change Hilfe settings. Used as \"set <setting> <parameter>\".
+Available parameters:
+
+assembler_debug
+    Changes the level of assembler debug used when evaluating
+    expressions in Pike. Requires that Pike is compiled with
+    RTL debug.
+
+compiler_trace
+    Changes the level of compiler trace used when evaluating
+    expressions in Pike. Requires that Pike is compiled with
+    RTL debug.
+
+debug
+    Changes the level of debug used when evaluating expressions in
+    Pike. Requires that Pike is compiled with RTL debug.
+
+history
+    Change the maximum number of entries that are kept in the
+    result history. Default is 10.
+
+trace
+     Changes the level of trace used when evaluating expressions
+     in Pike. Possible values are:
+       0 Off
+       1 Calls to Pike functions are printed.
+       2 Calls to buitin functions are printed.
+       3 Every opcode interpreted is printed.
+       4 Arguments to these opcodes are printed as well.
+";
+
+constant documentation_help_me_more =
+#"Some commands has extended help available. This can be displayed by
+typing help followed by the name of the command, e.g. \"help dump\".
+Commands clobbered by e.g. variable declarations can be reached by
+prefixing a dot to the command, e.g. \".exit\".
+
+A history of the last returned results are kept and can be accessed
+from your hilfe expressions with the variable __. You can either
+\"address\" your results with absolute addresses, e.g. __[2] to get
+the second result ever, or with relative addresses, e.g. __[-1] to
+get the last result. The last result is also available in the
+variable _, thus _==__[-1] is true. The magic _ and __ variable can
+be clobbered with local definitions to disable them, e.g. by typing
+\"int _;\". The result history is currently ten entries long.
+
+A history of the 512 last entered lines is kept in Hilfe. You can
+browse this list with your arrow keys up/down. When you exit Hilfe
+your history will be saved in .hilfe_history in the directory set
+in environment variable $HOME or $USERPROFILE. Next time hilfe is
+started the history is imported.
+
+You can put a .hilferc file at the directory set in your
+environment variable $HOME or $USERPROFILE. The contents of this
+file will be evaulated in hilfe during each startup.
+
+Note that there are a few symbols that you can not define, since
+they are used by Hilfe. They are:
+
+___hilfe         A mapping containing all defined symbols.
+___Hilfe         The Hilfe object.
+___HilfeWrapper  A wrapper around the entered expression.
+
+
+Type \"help hilfe todo\" to get a list of known Hilfe bugs/lackings.
+";
+
+constant documentation_dump =
+#"dump
+      Shows the currently defined constants, variables, functions
+      and programs. It also lists all active inherits ans imports.
+
+dump history
+      Shows all items in the history queue.
+
+dump state
+      Shows the current parser state. Only useful for debugging
+      Hilfe.
+
+dump wrapper
+      Show the latest Hilfe wrapper that the last expression was
+      evaulated in. Useful when debugging Hilfe (i.e. investigating
+      why valid Pike expressions doesn't compile).
+";
+
+constant documentation_new =
+#"new
+      Clears the current Hilfe state. This includes the parser
+      state, variables, constants, functions, programs, inherits,
+      imports and the history. It does not include the currently
+      installed commands. Note that code in your .hilferc will not
+      be reevaluated.
+
+new history
+      Remove all history entries from the result history.
+
+new constants
+new functions
+new programs
+new variables
+      Clears all locally defined symbols of the given type.
+
+new imports
+new inherits
+      Removes all imports/inherits made.
+";
