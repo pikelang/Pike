@@ -5,7 +5,7 @@
 
 class encapsulated_message {
 
-  import _PEM;
+  import ._PEM;
 
   string boundary;
   string body;
@@ -67,7 +67,7 @@ class encapsulated_message {
 
 class rfc934 {
 
-  import _PEM;
+  import ._PEM;
 
   string initial_text;
   string final_text;
@@ -157,7 +157,7 @@ class rfc934 {
 
 class pem_msg
 {
-  import _PEM;
+  import ._PEM;
   
   string initial_text;
   string final_text;
