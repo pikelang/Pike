@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.237 2000/02/29 03:16:20 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.238 2000/03/08 14:22:17 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -572,6 +572,8 @@ void f_has_value(INT32 args)
 	PIKE_ERROR("has_value", "Search gave incorrect result.\n", sp, args);
   }
 }
+
+/* Old backtrace */
 
 void f_backtrace(INT32 args)
 {
