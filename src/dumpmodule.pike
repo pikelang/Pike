@@ -1,7 +1,6 @@
 #!/usr/local/bin/pike
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
-string target_dir = 0;
 
 program p; /* program being dumped */
 
@@ -119,42 +118,52 @@ class Codec
 }
 
 Stdio.File logfile = Stdio.stderr;
+
 int padline = 0;
+string next_file = 0;
 
-class Handler (string file)
+void logstart (int one_line)
 {
-  int file_logged = 0;
-
-  void logstart (int one_line)
-  {
-    if (padline) logfile->write ("\n");
-    if (one_line) {
-      logfile->write("#### %s: ",file);
-      padline = 0;
-    }
-    else {
-      logfile->write("#### %s:\n",file);
-      padline = 1;
-    }
-    file_logged = 1;
+  if (padline) logfile->write ("\n");
+  if (one_line) {
+    logfile->write("#### %s: ", next_file);
+    padline = 0;
   }
-
-  void logmsg (mixed... args)
-  {
-    if(logfile) {
-      if (!file_logged) logstart (1);
-      if (args) logfile->write (@args);
-    }
+  else {
+    logfile->write("#### %s:\n", next_file);
+    padline = 1;
   }
+  next_file = 0;
+}
 
-  void logmsg_long (mixed... args)
-  {
-    if(logfile) {
-      if (!file_logged) logstart (0);
-      if (args) logfile->write (@args);
-    }
+void logmsg (mixed... args)
+{
+  if(logfile) {
+    if (next_file) logstart (1);
+    if (args) logfile->write (@args);
   }
+}
 
+void logmsg_long (mixed... args)
+{
+  if(logfile) {
+    if (next_file) logstart (0);
+    if (args) logfile->write (@args);
+  }
+}
+
+class MyMaster
+{
+  inherit "/master";
+
+  void handle_error (mixed trace)
+  {
+    logmsg_long (describe_backtrace (trace));
+  }
+}
+
+class Handler
+{
   void compile_error(string file,int line,string err)
   {
     logmsg_long("%s:%d:%s\n",file,line,err);
@@ -182,54 +191,52 @@ program compile_file(string file, object|void handler)
     return master()->compile_file(file, handler);
 }
 
-void dumpit(string file)
+void dumpit(string file, string outfile)
 {
   int ok = 0;
-  Handler handler = Handler (file);
+  next_file = file;
 
   mixed err=catch {
-    string outfile = (target_dir ? combine_path (target_dir, file) : file) + ".o";
-
     if(Stdio.Stat s=file_stat(fakeroot(file)))
     {
       if (update) {
-	if (Stdio.Stat o = file_stat (outfile))
+	if (Stdio.Stat o = file_stat (outfile + ".o"))
 	  if (o->mtime >= s->mtime) {
-	    if (!quiet) handler->logmsg ("Up-to-date.\n");
+	    if (!quiet) logmsg ("Up-to-date.\n");
 	    ok = 1;
 	    break;
 	  }
       }
-      rm(outfile); // Make sure no old files are left
+      rm(outfile+".o"); // Make sure no old files are left
 
       if (s->isdir && recursive) {
 	if (array(string) dirlist = get_dir (fakeroot (file))) {
-	  if (!quiet) handler->logmsg ("Is a directory (dumping recursively).\n");
+	  if (!quiet) logmsg ("Is a directory (dumping recursively).\n");
 	  foreach (dirlist, string subfile)
 	    if (subfile != "CVS" &&
 		(has_suffix (subfile, ".pike") || has_suffix (subfile, ".pmod") ||
 		 Stdio.is_dir (file + "/" + subfile)))
-	      dumpit (file + "/" + subfile);
+	      dumpit (combine_path (file, subfile), combine_path (outfile, subfile));
 	  ok = 1;
 	  break;
 	}
 	else {
-	  handler->logmsg ("Is an unreadable directory (not dumped recursively): %s.\n",
-			   strerror (errno()));
+	  logmsg ("Is an unreadable directory (not dumped recursively): %s.\n",
+		  strerror (errno()));
 	  break;
 	}
       }
       else if (!s->isreg)
       {
-	handler->logmsg("Is a directory or special file (not dumped).\n");
+	logmsg("Is a directory or special file (not dumped).\n");
 	break;
       }
     }else{
-      if(!quiet) handler->logmsg("Does not exist (not dumped).\n");
+      if(!quiet) logmsg("Does not exist (not dumped).\n");
       break;
     }
 
-    if(programp(p=compile_file(file, handler)))
+    if(programp(p=compile_file(file, Handler())))
     {
       if(!p->dont_dump_module && !p->dont_dump_program)
       {
@@ -238,32 +245,30 @@ void dumpit(string file)
 
 	if(programp(p))
 	{
-	  if (target_dir) {
-	    string dir = combine_path (outfile, "..");
-	    if (!Stdio.is_dir (dir))
-	      if (!Stdio.mkdirhier (dir)) {
-		handler->logmsg ("Failed to create target directory %O: %s.\n",
-				 dir, strerror (errno()));
-		break;
-	      }
-	  }
+	  string dir = combine_path (outfile, "..");
+	  if (!Stdio.is_dir (dir))
+	    if (!Stdio.mkdirhier (dir)) {
+	      logmsg ("Failed to create target directory %O: %s.\n",
+		      dir, strerror (errno()));
+	      break;
+	    }
 
-	  Stdio.File(fakeroot(outfile),"wct")->write(s);
+	  Stdio.File(fakeroot(outfile)+".o","wct")->write(s);
 	  ok = 1;
-	  if(!quiet) handler->logmsg("Dumped.\n");
+	  if(!quiet) logmsg("Dumped.\n");
 	}
 	else if(!quiet)
-	  handler->logmsg("Decode of %O failed (not dumped).\n", file);
+	  logmsg("Decode of %O failed (not dumped).\n", file);
 
       }
       else if(!quiet)
-	handler->logmsg("Not dumping %O (not dumped).\n", file);
+	logmsg("Not dumping %O (not dumped).\n", file);
     }
     else if(!quiet)
-      handler->logmsg("Compilation of %O failed (not dumped).\n", file); // This should never happen.
+      logmsg("Compilation of %O failed (not dumped).\n", file); // This should never happen.
   };
 
-  if(err) handler->logmsg_long(describe_backtrace(err));
+  if(err) logmsg_long(describe_backtrace(err));
 
   if (report_failed && !ok)
     write ("Dumping failed for %s\n", file);
@@ -271,7 +276,10 @@ void dumpit(string file)
 
 int main(int argc, array(string) argv)
 {
+  string target_dir = 0;
   string update_stamp = 0;
+
+  replace_master (MyMaster());
 
   foreach (Getopt.find_all_options (argv, ({
     ({"log-file", Getopt.MAY_HAVE_ARG, ({"-l", "--log-file"})}),
@@ -360,8 +368,16 @@ int main(int argc, array(string) argv)
   {
     if(progress_bar)
       progress_bar->update(1);
-      
-    dumpit(file);
+
+    string outfile = file;
+    if (target_dir) {
+#ifdef __NT__
+      outfile = replace (outfile, "\\", "/");
+#endif
+      outfile = combine_path (target_dir, ((outfile / "/") - ({""}))[-1]);
+    }
+
+    dumpit(file, outfile);
   }
 
   if (update_stamp)
