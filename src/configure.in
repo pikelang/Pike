@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.487 2001/09/23 12:03:52 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.488 2001/10/05 18:45:51 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -495,6 +495,7 @@ if test "$GCC" = "yes"; then
 fi
 
 LD='$(CC) $(CFLAGS)'
+LC_REQ="-lc"
 
 case "$pike_cv_sys_os" in
   SCO*)
@@ -540,6 +541,7 @@ case "$pike_cv_sys_os" in
 	  # We are using built-in inline function
 	  CFLAGS="$CFLAGS -Kalloca"
 	  CXX="$CXX -DNO_CPLUSPLUS_ALLOCA"
+	  LC_REQ=""
 	fi
       ;;
     esac
@@ -547,6 +549,7 @@ case "$pike_cv_sys_os" in
 esac
 
 AC_SUBST(LD)
+AC_SUBST(LC_REQ)
 
 #############################################################################
 
