@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.39 2001/08/29 20:35:18 grubba Exp $
+ * $Id: nt.c,v 1.40 2001/08/29 21:28:25 nilsson Exp $
  *
  * NT system calls for Pike
  *
@@ -38,6 +38,9 @@
 #include "interpret.h"
 #include "operators.h"
 #include "stuff.h"
+
+/*! @module system
+ */
 
 static void throw_nt_error(char *funcname, int err)
 /*
@@ -1946,7 +1949,7 @@ static void f_NetWkstaUserEnum(INT32 args)
  *!   Normalize an NT filesystem path.
  *!
  *!   The following transformations are currently done:
- *!   @dl
+ *!   @ul
  *!     @item
  *!       Trailing slashes are removed.
  *!     @item
@@ -1962,7 +1965,7 @@ static void f_NetWkstaUserEnum(INT32 args)
  *!       Relative paths are expanded to absolute paths.
  *!     @item
  *!       Case-information is restored.
- *!   @enddl
+ *!   @endul
  *!
  *! @returns
  *!   A normalized absolute path without trailing slashes.
@@ -2907,3 +2910,5 @@ void exit_nt_system_calls(void)
 
 #endif
 
+/*! @endmodule
+ */

@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.166 2001/08/28 23:01:20 marcus Exp $
+ * $Id: master.pike.in,v 1.167 2001/08/29 21:28:03 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -343,12 +343,14 @@ void putenv(string varname, string value)
 }
 
 //! @appears normalize_path
-string normalize_path( string X )
+//! Replaces "\" with "/" if runing on MS Windows. It is
+//! adviced to use @[system.normalize_path] instead.
+string normalize_path( string path )
 {
 #ifndef __NT__
-  return X;
+  return path;
 #else
-  return replace(X,"\\","/");
+  return replace(path,"\\","/");
 #endif
 }
 
