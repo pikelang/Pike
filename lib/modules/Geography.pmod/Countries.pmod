@@ -486,7 +486,7 @@ Country from_name(string name)
 //!	an array of the countries on that continent.
 //!
 //!	The continents are:
-//!	@tt{
+//!	@pre{
 //!    	  "Europe"
 //!    	  "Africa"
 //!    	  "Asia"

@@ -21,7 +21,7 @@ class _TimeUnit
    //!	a list of day objects in the object @tt{o@}.
    //!
    //!	
-   //!	Ie: @tt{
+   //!	Ie: @pre{
    //!	  array(string) lesser()    - gives back a list of possible xxx's.
    //!	  object xxxs()             - gives back a list of possible n's.
    //!	  object xxx(mixed n)       - gives back xxx n

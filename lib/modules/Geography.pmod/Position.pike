@@ -106,7 +106,7 @@ string prettyprint(float what,int n,string directions)
 //!
 //! Returns the nicely formatted latitude or longitude.
 //!
-//! @tt{
+//! @pre{
 //!  n    format
 //!  -    17°42.19'N       42°22.2'W
 //!  1    17.703°N         42.37°W
