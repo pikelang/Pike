@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.69 1998/11/17 22:57:50 hubbe Exp $");
+RCSID("$Id: las.c,v 1.70 1998/11/17 23:16:39 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -81,6 +81,8 @@ void check_tree(node *n, int depth)
   if(!n) return;
   if(n->token==USHRT_MAX)
     fatal("Free node in tree.\n");
+
+  if(d_flag<2) return;
 
   if(!(depth & 1023))
   {
@@ -333,6 +335,12 @@ static node *mkemptynode(void)
 node *mknode(short token,node *a,node *b)
 {
   node *res;
+#ifdef DEBUG
+  if(a && a==b)
+    fatal("mknode: a and be are the same!\n");
+#endif    
+    
+
   check_tree(a,0);
   check_tree(b,0);
   res = mkemptynode();
@@ -1056,7 +1064,7 @@ node **is_call_to(node *n, c_fun f)
 static void low_print_tree(node *foo,int needlval)
 {
   if(!foo) return;
-  if(l_flag>4)
+  if(l_flag>9)
   {
     printf("/*%x*/",foo->tree_info);
   }
