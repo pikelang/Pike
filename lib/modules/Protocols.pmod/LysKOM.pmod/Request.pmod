@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.9 2001/04/27 13:38:41 grubba Exp $
+//  $Id: Request.pmod,v 1.10 2003/04/01 17:45:35 nilsson Exp $
 //!	This module contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or 
@@ -115,7 +115,7 @@ class _Request
    int(0..1) ok;
 
    //!	How the call failed.
-   //!	The call has completed if @code{(ok||error)@}.
+   //!	The call has completed if @expr{(ok||error)@}.
    //!
    object error;
 

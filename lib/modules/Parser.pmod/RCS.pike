@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.29 2002/12/03 16:08:30 jhs Exp $
+// $Id: RCS.pike,v 1.30 2003/04/01 17:44:23 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -44,17 +44,17 @@
 //! Version number of the head version of the file
 string head;
 
-//! The default branch (or revision), if present, @code{0@} otherwise
+//! The default branch (or revision), if present, @expr{0@} otherwise
 string|int(0..0) branch;
 
 //! The usernames listed in the ACCESS section of the RCS file
 array(string) access;
 
-//! The RCS file comment if present, @code{0@} otherwise
+//! The RCS file comment if present, @expr{0@} otherwise
 string|int(0..0) comment;
 
 //! The keyword expansion options (as named by RCS) if present,
-//! @code{0@} otherwise
+//! @expr{0@} otherwise
 string expand;
 
 //! The RCS file description
@@ -164,7 +164,7 @@ string rcs_file_name;
 //!   mainly for error reporting (truncated RCS file).
 //! @param file_contents
 //!   If a string is provided, that string will be parsed to
-//!   initialize the RCS object. If a zero (@code{0@}) is sent, no
+//!   initialize the RCS object. If a zero (@expr{0@}) is sent, no
 //!   initialization will be performed at all. If no value is given at
 //!   all, but @[file_name] was provided, that file will be loaded and
 //!   parsed for object initialization.

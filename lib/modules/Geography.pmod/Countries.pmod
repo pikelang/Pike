@@ -375,7 +375,7 @@ class Country
    //! @decl string cast("string")
    //!	It is possible to cast a country to a string,
    //!	which will be the same as performing 
-   //!	@code{country->name;@}.
+   //!	@expr{country->name;@}.
    string cast(string to)
    {
       if (to[..5]=="string") return name;
@@ -531,7 +531,7 @@ mapping(string:array(Country)) continents()
 //!	is in the name- and domain-space and
 //!	returns that country if possible:
 //!
-//!     @tt{
+//! @code
 //! > Geography.Countries.se;    
 //! Result: Country(Sweden)
 //! > Geography.Countries.djibouti;
@@ -540,7 +540,7 @@ mapping(string:array(Country)) continents()
 //! Result: Country(United States)
 //! > Geography.Countries.wallis_and_futuna_islands->iso2;
 //! Result: "WF"
-//! 	@}
+//! @endcode
 
 Country|function(string:Country)|array(Country)|program
    `->(string what)

@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.29 2003/03/13 22:06:37 nilsson Exp $
+ * $Id: Tree.pmod,v 1.30 2003/04/01 17:46:41 nilsson Exp $
  *
  */
 
@@ -229,7 +229,7 @@ class AbstractNode {
   }
   
   //! The [] operator indexes among the node children, so
-  //! @code{node[0]@} returns the first node and @code{node[-1]@} the last.
+  //! @expr{node[0]@} returns the first node and @expr{node[-1]@} the last.
   //! @note
   //!   The [] operator will select a node from all the nodes children,
   //!   not just its element children.

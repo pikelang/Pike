@@ -115,8 +115,8 @@ int search_array(array arr, string|function|int fun, mixed ... args)
 }
 
 //! Applies the function @[sum] columnwise on the elements in the
-//! provided arrays. E.g. @tt{sum_array(`+,a,b,c)@} does the same
-//! as @tt{`+(a[*],b[*],c[*])@}.
+//! provided arrays. E.g. @expr{sum_array(`+,a,b,c)@} does the same
+//! as @expr{`+(a[*],b[*],c[*])@}.
 array sum_arrays(function(mixed ...:mixed) sum, array ... args)
 {
   array ret = allocate(sizeof(args[0]));
@@ -128,7 +128,7 @@ array sum_arrays(function(mixed ...:mixed) sum, array ... args)
 //! @decl array sort_array(array arr, function|void cmp, mixed ... args)
 //!
 //! This function sorts the array @[arr] after a compare-function
-//! @[cmp] which takes two arguments and should return @tt{1@} if the
+//! @[cmp] which takes two arguments and should return @expr{1@} if the
 //! first argument is larger then the second. Returns the sorted array
 //! - @[arr] is not sorted destructively.
 //!
@@ -663,11 +663,11 @@ out:if(sizeof(yb) > sizeof(b))
 //! Like @[Array.diff], but tries to generate bigger continuous chunks of the
 //! differences, instead of maximizing the number of difference chunks. More
 //! specifically, @[greedy_diff] optimizes the cases where @[Array.diff] returns
-//! @code{({ ..., A, Z, B, ({}), C, ... })@}
-//! @code{({ ..., A, X, B,  Y+B, C, ... })@}
+//! @expr{({ ..., A, Z, B, ({}), C, ... })@}
+//! @expr{({ ..., A, X, B,  Y+B, C, ... })@}
 //! into the somewhat shorter diff arrays
-//! @code{({ ..., A, Z,     B+C, ... })@}
-//! @code{({ ..., A, X+B+Y, B+C, ... })@}
+//! @expr{({ ..., A, Z,     B+C, ... })@}
+//! @expr{({ ..., A, X+B+Y, B+C, ... })@}
 array(array(array)) greedy_diff(array from, array to)
 {
   array(array) d1, d2;

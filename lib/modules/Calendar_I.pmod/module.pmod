@@ -11,12 +11,12 @@
 //!    To be forward compatible the lazy way, you can do
 //!    something like this, though:
 //!
-//!   @code{
+//!   @code
 //!   #if constant(Calendar.II)
 //!   #define Calendar Calendar_I
 //!   #endif
 //!   @i{...@} import Calendar @i{or whatever ...@}
-//!   @}
+//!   @endcode
 //!
 //!   This module implements calendar calculations, and base classes
 //!   for time units. 
@@ -29,12 +29,12 @@ class _TimeUnit
    object this=this_object();
 
    //!	Gives a list of methods to get lesser (shorter) time units.
-   //!	ie, for a month, this gives back @code{({"day"})@}
-   //!	and the method @code{day(mixed n)@} gives back that 
-   //!	day object. The method @code{days()@} gives back a
-   //!	list of possible argument values to the method @tt{day@}.
-   //!	Concurrently, @code{Array.map(o->days(),o->day)@} gives
-   //!	a list of day objects in the object @tt{o@}.
+   //!	ie, for a month, this gives back @expr{({"day"})@}
+   //!	and the method @expr{day(mixed n)@} gives back that 
+   //!	day object. The method @expr{days()@} gives back a
+   //!	list of possible argument values to the method @expr{day@}.
+   //!	Concurrently, @expr{Array.map(o->days(),o->day)@} gives
+   //!	a list of day objects in the object @expr{o@}.
    //!
    //!	
    //!	Ie:@pre{
@@ -48,19 +48,19 @@ class _TimeUnit
    //!
    //!	There are two n's with special meaning, 0 and -1.
    //!	0 always gives the first xxx, equal to 
-   //!	@code{my_obj->xxx(my_obj->xxxs()[0])@}, and -1 gives the last,
-   //!	equal to @code{my_obj->xxx(my_obj->xxxs()[-1])@}.
+   //!	@expr{my_obj->xxx(my_obj->xxxs()[0])@}, and -1 gives the last,
+   //!	equal to @expr{my_obj->xxx(my_obj->xxxs()[-1])@}.
    //!
    //!	To get all xxxs in the object, do something like
-   //!	@code{Array.map(my_obj->xxxs(),my_obj->xxx)@}.
+   //!	@expr{Array.map(my_obj->xxxs(),my_obj->xxx)@}.
    //!
    //!	xxx(object) may return zero, if there was no correspondning xxx.
    //!
    array(string) lesser() { return ({}); }
 
    //!	Gives a list of methods to get greater (longer) time units 
-   //!	from this object. For a month, this gives back @code{({"year"})@},
-   //!	thus the method @code{month->year()@} gives the year object.
+   //!	from this object. For a month, this gives back @expr{({"year"})@},
+   //!	thus the method @expr{month->year()@} gives the year object.
    //!
    array(string) greater() { return ({}); }
 
@@ -75,7 +75,7 @@ class _TimeUnit
    //! @decl object `-(object x)
    //!	@[next()] and @[prev()] give the logical next and previous object.
    //!	The @[`+()] operator gives that logical relative object,
-   //!	ie @code{my_day+14@} gives 14 days ahead.
+   //!	ie @expr{my_day+14@} gives 14 days ahead.
    //!     @[`-()] works the same way, but can also take an object
    //!	of the same type and give the difference as an integer.
 

@@ -2,21 +2,21 @@
 
 constant defined = __builtin.function_defined;
 
-//! Calls the given function with the @tt{args@} array plus the optional
+//! Calls the given function with the @[args] array plus the optional
 //! extra arguments as its arguments and returns the result.
 //!
-//! Most useful in conjunction with @ref{map@}, and particularly in combination
-//! with @ref{sscanf@} with @tt{"...%{...%}..."@} scan strings (which indeed
+//! Most useful in conjunction with @[map], and particularly in combination
+//! with @[sscanf] with @expr{"...%{...%}..."@} scan strings (which indeed
 //! was what it was invented for in the first place).
 //!
 //! @param args
-//!  The first arguments the function @tt{f@} expects
+//!  The first arguments the function @[f] expects.
 //! @param f
-//!  The function to apply the arguments on
+//!  The function to apply the arguments on.
 //! @param extra
-//!  Optional extra arguments to send to @tt{f@}
+//!  Optional extra arguments to send to @[f].
 //! @returns
-//!  Whatever the supplied function @tt{f@} returns
+//!  Whatever the supplied function @[f] returns.
 //!
 //! @example
 //!   @code{

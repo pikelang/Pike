@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.7 2003/02/01 20:07:42 marcus Exp $
+// $Id: module.pmod,v 1.8 2003/04/01 17:44:43 nilsson Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -46,15 +46,15 @@
 //! and text char set are also extracted into separate variables for easy
 //! access.
 //!
-//! The Message class does not make any interpretation of the body data,
-//! unless the content type is @tt{multipart@}.  A multipart message
-//! contains several individual messages separated by boundary strings.
-//! The @tt{create@} method of the Message class will divide a multipart
-//! body on these boundaries, and then create individual Message objects
-//! for each part.  These objects will be collected in the array
-//! @tt{body_parts@} within the original Message object.  If any of the new
-//! Message objects have a body of type multipart, the process is of course
-//! repeated recursively.
+//! The Message class does not make any interpretation of the body
+//! data, unless the content type is @tt{multipart@}.  A multipart
+//! message contains several individual messages separated by boundary
+//! strings.  The @[Message->create] method of the Message class will
+//! divide a multipart body on these boundaries, and then create
+//! individual Message objects for each part.  These objects will be
+//! collected in the array @[Message->body_parts] within the original
+//! Message object. If any of the new @[Message] objects have a body of
+//! type multipart, the process is of course repeated recursively.
 
 
 #pike __REAL_VERSION__
@@ -191,8 +191,8 @@ array(string) decode_word( string word )
 //! containing a raw text string and a char set name.
 //!
 //! The text will be transfer encoded according to the encoding argument,
-//! which can be either @tt{"base64"@} or @tt{"quoted-printable"@}
-//! (or either @tt{"b"@} or @tt{"q"@} for short).
+//! which can be either @expr{"base64"@} or @expr{"quoted-printable"@}
+//! (or either @expr{"b"@} or @expr{"q"@} for short).
 //!
 //! If either the second element of the array (the char set name), or
 //! the encoding argument is 0, the raw text is returned as is.
@@ -236,7 +236,7 @@ static string remap(array(string) item)
 
 //! Separates a header value containing @i{text@} into units and calls
 //! @[MIME.decode_word()] on them.  The result is an array where each element
-//! is a result from @tt{decode_word()@}.
+//! is a result from @[decode_word()].
 //!
 //! @seealso
 //! @[MIME.decode_words_tokenized]
@@ -275,11 +275,11 @@ string decode_words_text_remapped( string txt )
   return Array.map(decode_words_text(txt), remap)*"";
 }
 
-//! Tokenizes a header value just like @[MIME.tokenize()], but also converts
-//! encoded words using @[MIME.decode_word()].  The result is an array where
-//! each element is either an @tt{int@} representing a special character,
-//! or an array as returned by @tt{decode_word()@} representing an atom or
-//! a quoted string.
+//! Tokenizes a header value just like @[MIME.tokenize()], but also
+//! converts encoded words using @[MIME.decode_word()].  The result is
+//! an array where each element is either an @expr{int@} representing
+//! a special character, or an @expr{array@} as returned by
+//! @[decode_word()] representing an atom or a quoted string.
 //!
 //! @seealso
 //! @[MIME.decode_words_tokenized_labled]
@@ -319,7 +319,7 @@ array(string|int) decode_words_tokenized_remapped( string phrase )
 //! @string
 //!   @value "special"
 //!     One additional element, containing the character code for the special
-//!     character as an @tt{int@}.
+//!     character as an @expr{int@}.
 //!   @value "word"
 //!     Two additional elements, the first being the word, and the second
 //!     being the character set of this word (or 0 if it did not originate
@@ -378,8 +378,8 @@ array(array(string|int))
 //! by @[encode_word()], after which they are all pasted together.
 //!
 //! @param encoding
-//!   Either @tt{"base64"@} or @tt{"quoted-printable"@}
-//!  (or either @tt{"b"@} or @tt{"q"@} for short).
+//!   Either @expr{"base64"@} or @expr{"quoted-printable"@}
+//!  (or either @expr{"b"@} or @expr{"q"@} for short).
 //!
 string encode_words_text(array(string|array(string)) phrase, string encoding)
 {
@@ -408,8 +408,8 @@ string encode_words_text(array(string|array(string)) phrase, string encoding)
 //! be passed to @[encode_word()].
 //!
 //! @param encoding
-//!   Either @tt{"base64"@} or @tt{"quoted-printable"@}
-//!  (or either @tt{"b"@} or @tt{"q"@} for short).
+//!   Either @expr{"base64"@} or @expr{"quoted-printable"@}
+//!  (or either @expr{"b"@} or @expr{"q"@} for short).
 //!
 //! @seealso
 //!   @[MIME.encode_words_quoted_labled()]
@@ -431,8 +431,8 @@ string encode_words_quoted(array(array(string)|int) phrase, string encoding)
 //! @[encode_words_text()] is expected.
 //!
 //! @param encoding
-//!   Either @tt{"base64"@} or @tt{"quoted-printable"@}
-//!  (or either @tt{"b"@} or @tt{"q"@} for short).
+//!   Either @expr{"base64"@} or @expr{"quoted-printable"@}
+//!  (or either @expr{"b"@} or @expr{"q"@} for short).
 //!
 //! @seealso
 //!   @[MIME.encode_words_quoted()]
@@ -470,11 +470,11 @@ string encode_words_quoted_labled(array(array(string|int|array(string|array(stri
 //! Currently, the function uses the following guesses:
 //! @string
 //!   @value "text"
-//!     @tt{"plain"@}
+//!     @expr{"plain"@}
 //!   @value "message"
-//!     @tt{"rfc822"@}
+//!     @expr{"rfc822"@}
 //!   @value "multipart"
-//!     @tt{"mixed"@}
+//!     @expr{"mixed"@}
 //! @endstring
 //!
 string guess_subtype( string type )
@@ -588,7 +588,7 @@ class Message {
 
   //! If the message is of type @tt{multipart@}, this is an array
   //! containing one Message object for each part of the message.
-  //! If the message is not a multipart, this field is @tt{0@} (zero).
+  //! If the message is not a multipart, this field is @expr{0@} (zero).
   //!
   //! @seealso
   //! @[type], @[boundary]
@@ -610,7 +610,7 @@ class Message {
   //! type @tt{text@}.
   //!
   //! If there is no @tt{Content-Type@} header, the value of this field
-  //! is @tt{"us-ascii"@}.
+  //! is @expr{"us-ascii"@}.
   //!
   //! @seealso
   //! @[type]
@@ -622,7 +622,7 @@ class Message {
   //! from the header.
   //!
   //! If there is no @tt{Content-Type@} header, the value of this field
-  //! is @tt{"text"@}.
+  //! is @expr{"text"@}.
   //!
   //! @seealso
   //! @[subtype], @[params]
@@ -634,7 +634,7 @@ class Message {
   //! from the header.
   //!
   //! If there is no @tt{Content-Type@} header, the value of this field
-  //! is @tt{"plain"@}.
+  //! is @expr{"plain"@}.
   //!
   //! @seealso
   //! @[type], @[params]
@@ -644,7 +644,7 @@ class Message {
   //! The contents of the @tt{Content-Transfer-Encoding@} header.
   //!
   //! If no @tt{Content-Transfer-Encoding@} header is given, this field
-  //! is @tt{0@} (zero).
+  //! is @expr{0@} (zero).
   //!
   //! Transfer encoding and decoding is done transparently by the module,
   //! so this field should be interesting only to applications wishing to
@@ -671,7 +671,7 @@ class Message {
   //! application.
   //!
   //! If there is no @tt{Content-Disposition@} header, this field
-  //! is @tt{0@}.
+  //! is @expr{0@}.
   //!
   string disposition;
 
@@ -781,7 +781,7 @@ class Message {
   //! Select a new transfer encoding for this message.
   //!
   //! The @tt{Content-Transfer-Encoding@} header will be modified accordingly,
-  //! and subsequent calls to @tt{getencoded@} will produce data encoded using
+  //! and subsequent calls to @[getencoded] will produce data encoded using
   //! the new encoding.
   //!
   //! See @[MIME.encode()] for a list of valid encodings.
@@ -870,7 +870,7 @@ class Message {
 
   //! Sets the @tt{charset@} parameter of the @tt{Content-Type@} header.
   //!
-  //! This is equivalent of calling @code{setparam("charset", @[charset])@}.
+  //! This is equivalent of calling @expr{setparam("charset", @[charset])@}.
   //!
   //! @seealso
   //! @[setparam()]
@@ -882,7 +882,7 @@ class Message {
 
   //! Sets the @tt{boundary@} parameter of the @tt{Content-Type@} header.
   //!
-  //! This is equivalent of calling @code{setparam("boundary", @[boundary])@}.
+  //! This is equivalent of calling @expr{setparam("boundary", @[boundary])@}.
   //!
   //! @seealso
   //! @[setparam()]

@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.264 2003/03/27 03:32:15 nilsson Exp $
+// $Id: master.pike.in,v 1.265 2003/04/01 17:48:15 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -104,7 +104,7 @@ void resolv_debug (string fmt, mixed... args)
 
 //! @appears error
 //! Throws an error. A more readable version of the code
-//! @tt{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
+//! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
 void error(string f, mixed ... args) {
   array b = backtrace();
   if (sizeof(args)) f = sprintf(f, @args);
@@ -269,9 +269,9 @@ mapping(string:int) load_time=([]);
 
 //! @appears compile_string
 //! Compile the Pike code in the string @[source] into a program.
-//! If @[filename] is not specified, it will default to @tt{"-"@}.
+//! If @[filename] is not specified, it will default to @expr{"-"@}.
 //!
-//! Functionally equal to @code{@[compile](@[cpp](@[source], @[filename]))@}.
+//! Functionally equal to @expr{@[compile](@[cpp](@[source], @[filename]))@}.
 //!
 //! @seealso
 //! @[compile()], @[cpp()], @[compile_file()]
@@ -394,7 +394,7 @@ mapping(string:array(string)) environment=([]);
 //!
 //! If the @[varname] argument has been given, the value of the environment
 //! variable with the name @[varname] will be returned. If no such
-//! environment variable exists, @tt{0@} (zero) will be returned.
+//! environment variable exists, @expr{0@} (zero) will be returned.
 //!
 //! On NT the environment variable name is case insensitive.
 //!
@@ -413,7 +413,7 @@ string|mapping(string:string) getenv(string|void s)
 //!
 //! This function will compile the file @[filename] to a Pike program that can
 //! later be instantiated. It is the same as doing
-//! @code{@[compile_string](@[Stdio.read_file](@[filename]), @[filename])@}.
+//! @expr{@[compile_string](@[Stdio.read_file](@[filename]), @[filename])@}.
 //!
 //! @seealso
 //! @[compile()], @[compile_string()], @[cpp()]
@@ -504,7 +504,7 @@ string normalize_path( string path )
 //!
 //! @note
 //!   As a special case the current master program is available
-//!   under the name @tt{"/master"@}.
+//!   under the name @expr{"/master"@}.
 mapping(string:program) programs=(["/master":object_program(this_object())]);
 
 array(string) query_precompiled_names(string fname)
@@ -2592,14 +2592,14 @@ static string get_clean_program_path ( program p, string pref1,
 //!
 //! @param ret_obj
 //!   If an instance of @[mod] is found, it will be returned
-//!   by changing element @tt{0@} of @[ret_obj].
+//!   by changing element @expr{0@} of @[ret_obj].
 //!
 //! @returns
 //!   The a description of the path.
 //!
 //! @note
 //!   The returned description will end with a proper indexing method
-//!   currently either @tt{"."@} or @tt{"->"@}.
+//!   currently either @expr{"."@} or @expr{"->"@}.
 string describe_module(object|program mod, array(object)|void ret_obj)
 {
   if (!mod) return "";	// efun or function in gmp(0).

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.54 2003/03/31 14:20:43 mirar Exp $
+// $Id: Query.pike,v 1.55 2003/04/01 17:42:46 nilsson Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -353,8 +353,9 @@ mapping hostname_cache=([]);
 //!	Set this to an array of Protocols.DNS.async_clients,
 //!	if you wish to limit the number of outstanding DNS
 //!	requests. Example:
-//!	   @code{async_dns = allocate(20, Protocols.DNS.async_client)();@}
-//!
+//! @code
+//! async_dns = allocate(20, Protocols.DNS.async_client)();
+//! @endcode
 array async_dns=0;
 
 void dns_lookup_callback(string name,string ip,function callback,
@@ -773,16 +774,33 @@ int total_bytes()
 }
 
 //! @decl array cast("array")
-//!	Gives back @code{({mapping headers, string data,
-//!		           string protocol, int status, string status_desc});@}
+//! @returns
+//!   @array
+//!     @elem mapping 0
+//!       Headers
+//!     @elem string 1
+//!       Data
+//!     @elem string 2
+//!       Protocol
+//!     @elem int 3
+//!       Status
+//!     @elem string 4
+//!       Status description
+//!   @endarray
 
 //! @decl mapping cast("mapping")
-//!	Gives back
-//!	@code{ headers |
-//!	(["protocol":protocol,
-//!	  "status":status number,
-//!	  "status_desc":status description,
-//!	  "data":data]); @}
+//! @returns
+//!   The header mapping ORed with the following mapping.
+//!   @mapping
+//!     @member string "protocol"
+//!       The protocol.
+//!     @member int "status"
+//!       The status code.
+//!     @member string "status_desc"
+//!       The status description.
+//!     @member string "data"
+//!       The returned data.
+//!   @endmapping
 
 //! @decl string cast("string")
 //!	Gives back the answer as a string.
@@ -853,7 +871,7 @@ class PseudoFile
 //!	a proper tempo.
 //!
 //!	@[newheaders], @[removeheaders] is applied as:
-//!	@code{(oldheaders|newheaders))-removeheaders@}
+//!	@expr{(oldheaders|newheaders))-removeheaders@}
 //!	Make sure all new and remove-header indices are lower case.
 //!
 //! @seealso

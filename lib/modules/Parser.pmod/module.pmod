@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.16 2003/02/25 14:31:29 grubba Exp $
+ * $Id: module.pmod,v 1.17 2003/04/01 17:44:04 nilsson Exp $
  *
  */
 
@@ -15,7 +15,9 @@ class SGML
 //!	but finding the corresponding end-tags.
 //!	
 //!	It's used like this:
-//!	@code{array res=Parser.SGML()->feed(string)->finish()->result();@}
+//! @code
+//! array res=Parser.SGML()->feed(string)->finish()->result();
+//! @endcode
 //!
 //!	The resulting structure is an array of atoms,
 //!	where the atom can be a string or a tag.

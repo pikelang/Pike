@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.167 2003/03/19 15:21:29 mast Exp $
+// $Id: module.pmod,v 1.168 2003/04/01 17:42:26 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1384,7 +1384,7 @@ class FILE
   }
 
   //! This function does approximately the same as:
-  //! @code{@[write](@[sprintf](@[format],@@@[data]))@}.
+  //! @expr{@[write](@[sprintf](@[format],@@@[data]))@}.
   //!
   //! @seealso
   //! @[write()], @[sprintf()]

@@ -9,22 +9,22 @@
 //! Translation rules for conversions from Pike datatypes to XML-RPC
 //! datatypes:
 //!
-//! Pike @code{int@} is translated to XML-RPC @tt{<int>@}.
-//! Pike @code{string@} is translated to XML-RPC @tt{<string>@}.
-//! Pike @code{float@} is translated to XML-RPC @tt{<double>@}.
-//! Pike @code{mapping@} is translated to XML-RPC @tt{<struct>@}.
-//! Pike @code{array@} is translated to XML-RPC @tt{<array>@}.
+//! Pike @expr{int@} is translated to XML-RPC @tt{<int>@}.
+//! Pike @expr{string@} is translated to XML-RPC @tt{<string>@}.
+//! Pike @expr{float@} is translated to XML-RPC @tt{<double>@}.
+//! Pike @expr{mapping@} is translated to XML-RPC @tt{<struct>@}.
+//! Pike @expr{array@} is translated to XML-RPC @tt{<array>@}.
 //!
 //! Translation rules for conversions from XML-RPC datatypes to Pike
 //! datatypes:
 //!
 //! XML-RPC @tt{<i4>@}, @tt{<int>@} and @tt{<boolean>@} are
-//!   translated to Pike @code{int@}.
+//!   translated to Pike @expr{int@}.
 //! XML-RPC @tt{<string>@} and @tt{<base64>@} are translated to
-//!   Pike @code{string@}.
-//! XML_RPC @tt{<double>@} is translated to Pike @code{float@}.
-//! XML-RPC @tt{<struct>@} is translated to Pike @code{mapping@}.
-//! XML-RPC @tt{<array>@} is translated to Pike @code{array@}.
+//!   Pike @expr{string@}.
+//! XML_RPC @tt{<double>@} is translated to Pike @expr{float@}.
+//! XML-RPC @tt{<struct>@} is translated to Pike @expr{mapping@}.
+//! XML-RPC @tt{<array>@} is translated to Pike @expr{array@}.
 //! XML-RPC @tt{<dateTime.iso8601>@} is translated to Pike Calendar object.
 //!
 //! @note

@@ -37,10 +37,10 @@ class cTick
   //!	Since the precision is limited to the float type
   //!	of Pike you can get non-precise results:
   //!
-  //!   @code{
-  //!	> Calendar.Second(Calendar.Stardate.Day(Calendar.Year()));
-  //!	Result: Second(Fri 31 Dec 1999 23:59:18 CET - Sun 31 Dec 2000 23:59:18 CET)
-  //!	@}
+  //! @code
+  //! > Calendar.Second(Calendar.Stardate.Day(Calendar.Year()));
+  //! Result: Second(Fri 31 Dec 1999 23:59:18 CET - Sun 31 Dec 2000 23:59:18 CET)
+  //! @endcode
 
 
    void create(mixed ...args)
