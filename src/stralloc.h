@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.19 1998/10/11 11:18:53 hubbe Exp $
+ * $Id: stralloc.h,v 1.20 1998/10/11 22:34:02 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -182,6 +182,7 @@ void string_builder_putchar(struct string_builder *s, int ch);
 void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len);
 void string_builder_strcat(struct string_builder *s, char *str);
 void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
+void reset_string_builder(struct string_builder *s);
 struct pike_string *finish_string_builder(struct string_builder *s);
 /* Prototypes end here */
 

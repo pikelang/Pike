@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.41 1998/10/11 21:07:30 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.42 1998/10/11 22:34:02 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1071,18 +1071,21 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 	b=begin_wide_shared_string(a->len,1);
 	convert_0_to_1(STR1(b),a->str,a->len);
 	STR1(b)[index]=c;
+	free_string(a);
 	return end_shared_string(b);
 
       case TWO_SIZES(2,0):
 	b=begin_wide_shared_string(a->len,2);
 	convert_0_to_2(STR2(b),a->str,a->len);
 	STR2(b)[index]=c;
+	free_string(a);
 	return end_shared_string(b);
 
       case TWO_SIZES(2,1):
 	b=begin_wide_shared_string(a->len,2);
 	convert_1_to_2(STR2(b),STR1(a),a->len);
 	STR2(b)[index]=c;
+	free_string(a);
 	return end_shared_string(b);
 
       default:
@@ -1533,6 +1536,13 @@ void string_builder_shared_strcat(struct string_builder *s, struct pike_string *
 		  str);
   s->known_shift=MAXIMUM(s->known_shift,str->size_shift);
   s->s->len+=str->len;
+}
+
+
+void reset_string_builder(struct string_builder *s)
+{
+  s->known_shift=0;
+  s->s->len=0;
 }
 
 struct pike_string *finish_string_builder(struct string_builder *s)
