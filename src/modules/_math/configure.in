@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 1998/09/20 08:33:34 hubbe Exp $
+# $Id: configure.in,v 1.7 1999/03/31 13:12:37 mirar fake $
 AC_INIT(math.c)
 
 

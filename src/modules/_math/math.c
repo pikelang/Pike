@@ -24,7 +24,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.17 1999/02/10 21:53:47 hubbe Exp $");
+RCSID("$Id: math.c,v 1.17 1999/03/31 13:12:37 mirar fake $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080

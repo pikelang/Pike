@@ -210,6 +210,9 @@ testfont binary
 /src/modules/MIME/module.pmod.in foreign_ident
 /src/modules/MIME/testsuite.in foreign_ident
 /src/modules/Makefile.in foreign_ident
+/src/modules/Math/Makefile.in foreign_ident
+/src/modules/Math/configure.in foreign_ident
+/src/modules/Math/math.c foreign_ident
 /src/modules/Msql/Makefile.in foreign_ident
 /src/modules/Msql/configure.in foreign_ident
 /src/modules/Msql/msql_config.h.in foreign_ident
@@ -338,6 +341,9 @@ testfont binary
 /src/modules/_Image_XFace/configure.in foreign_ident
 /src/modules/_Image_XFace/image_xface.c foreign_ident
 /src/modules/_Image_XFace/testsuite.in foreign_ident
+/src/modules/_math/Makefile.in foreign_ident
+/src/modules/_math/configure.in foreign_ident
+/src/modules/_math/math.c foreign_ident
 /src/modules/call_out/Makefile.in foreign_ident
 /src/modules/call_out/call_out.c foreign_ident
 /src/modules/call_out/configure.in foreign_ident

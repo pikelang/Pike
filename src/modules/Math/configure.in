@@ -1,0 +1,9 @@
+# $Id: configure.in,v 1.1 1999/03/31 13:12:36 mirar Exp $
+AC_INIT(math.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_C_CHAR_UNSIGNED
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
