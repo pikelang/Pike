@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.11 1997/01/19 09:08:02 hubbe Exp $");
+RCSID("$Id: object.c,v 1.12 1997/01/27 01:22:56 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -709,12 +709,21 @@ struct array *object_indices(struct object *o)
   if(!p)
     error("indices() on destructed object.\n");
 
-  a=allocate_array_no_init(p->num_identifier_indexes,0);
-  for(e=0;e<(int)p->num_identifier_indexes;e++)
+  if(p->lfuns[LFUN__INDICES]==-1)
   {
-    copy_shared_string(ITEM(a)[e].u.string,
-		       ID_FROM_INT(p,p->identifier_index[e])->name);
-    ITEM(a)[e].type=T_STRING;
+    a=allocate_array_no_init(p->num_identifier_indexes,0);
+    for(e=0;e<(int)p->num_identifier_indexes;e++)
+    {
+      copy_shared_string(ITEM(a)[e].u.string,
+			 ID_FROM_INT(p,p->identifier_index[e])->name);
+      ITEM(a)[e].type=T_STRING;
+    }
+  }else{
+    apply_lfun(o, LFUN__INDICES, 0);
+    if(sp[-1].type != T_ARRAY)
+      error("Bad return type from o->_indices()\n");
+    a=sp[-1].u.array;
+    sp--;
   }
   return a;
 }
@@ -729,10 +738,19 @@ struct array *object_values(struct object *o)
   if(!p)
     error("values() on destructed object.\n");
 
-  a=allocate_array_no_init(p->num_identifier_indexes,0);
-  for(e=0;e<(int)p->num_identifier_indexes;e++)
+  if(p->lfuns[LFUN__INDICES]==-1)
   {
-    low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
+    a=allocate_array_no_init(p->num_identifier_indexes,0);
+    for(e=0;e<(int)p->num_identifier_indexes;e++)
+    {
+      low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
+    }
+  }else{
+    apply_lfun(o, LFUN__VALUES, 0);
+    if(sp[-1].type != T_ARRAY)
+      error("Bad return type from o->_values()\n");
+    a=sp[-1].u.array;
+    sp--;
   }
   return a;
 }
