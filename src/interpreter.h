@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.81 2003/03/20 18:02:57 mast Exp $
+|| $Id: interpreter.h,v 1.82 2003/03/26 12:43:18 mast Exp $
 */
 
 #undef LOW_GET_ARG
@@ -106,8 +106,8 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     STEP_BREAK_LINE
 
 #ifdef PIKE_DEBUG
-    if (d_flag || Pike_interpreter.trace_level > 2)
-      low_debug_instr_prologue (Pike_fp->pc, instr);
+    if (d_flag || t_flag > 2)
+      low_debug_instr_prologue (instr);
 #endif
 
 #ifdef HAVE_COMPUTED_GOTO
