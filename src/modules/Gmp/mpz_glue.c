@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.123 2003/01/27 10:44:54 mirar Exp $
+|| $Id: mpz_glue.c,v 1.124 2003/01/27 11:52:59 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.123 2003/01/27 10:44:54 mirar Exp $");
+RCSID("$Id: mpz_glue.c,v 1.124 2003/01/27 11:52:59 mirar Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -1360,10 +1360,6 @@ static void mpzmod_lsh(INT32 args)
     if(mpz_cmp_si(mi, i)) 
     {
 too_large:
-       push_text("%O\n");
-       stack_swap();
-       f_sprintf(2);
-       
        if(mpz_sgn(THIS))
 	  Pike_error("Gmp.mpz->lsh: shift count too large.\n");
        else {
