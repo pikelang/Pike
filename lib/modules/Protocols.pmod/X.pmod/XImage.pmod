@@ -189,7 +189,9 @@ class WindowImage
 
   void exposed(mixed event)
   {
+    werror("expose...");
     redraw(event->x, event->y, event->width, event->height);
+    werror("done\n");
   }
 
 
@@ -262,7 +264,7 @@ class WindowImage
     }
     dgc = window->CreateGC();
 
-    w->set_event_callback("_Expose", exposed); // internal callback...
+    w->set_event_callback("Expose", exposed); // internal callback...
     w->SelectInput("Exposure");
   }
 }
