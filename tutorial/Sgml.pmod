@@ -45,11 +45,13 @@ class Tag
   void create(string t,
 	      void|mapping p,
 	      void|int po, 
-	      void|array(object|string) d, void|string f)
+	      void|array(object|string)|object(Tag) d,
+	      void|string f)
   {
     tag=t;
     pos=po;
     params=p||([]);
+    if(objectp(d)) d=({d});
     data=d;
     file=f;
   }
