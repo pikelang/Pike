@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.213 2005/01/31 18:51:52 mast Exp $
+// $Id: module.pmod,v 1.214 2005/01/31 19:16:02 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -786,6 +786,11 @@ class File
   {
     BE_WERR("__stdio_read_callback()");
 
+    if (!___read_callback) {
+      if (___close_callback) return __stdio_close_callback();
+      return 0;
+    }
+
     if (!errno()) {
 #if 0
       if (!(::mode() & PROP_IS_NONBLOCKING))
@@ -844,6 +849,8 @@ class File
     if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
 #endif /* 0 */
 
+    if (!___close_callback) return 0;
+
     if (!errno() && peek (0)) {
       // There's data to read...
       //
@@ -874,7 +881,10 @@ class File
   static int __stdio_write_callback()
   {
     BE_WERR("__stdio_write_callback()");
+
     if (!errno()) {
+      if (!___write_callback) return 0;
+
       BE_WERR ("  calling write callback");
       return ___write_callback(___id);
     }
@@ -892,11 +902,16 @@ class File
     BE_WERR ("__stdio_read_oob_callback()");
 
     string s;
+    if (!___read_oob_callback)
+      s = "";
+    else {
 #ifdef STDIO_CALLBACK_TEST_MODE
-    s = ::read_oob (1, 1);
+      s = ::read_oob (1, 1);
 #else
-    s = ::read_oob(8192,1);
+      s = ::read_oob(8192,1);
 #endif
+    }
+
     if(s)
     {
       if (sizeof(s)) {
@@ -948,6 +963,8 @@ class File
   static int __stdio_write_oob_callback()
   {
     BE_WERR ("__stdio_write_oob_callback()");
+    if (!___write_oob_callback) return 0;
+
     BE_WERR ("  calling write oob callback");
     return ___write_oob_callback(___id);
   }
