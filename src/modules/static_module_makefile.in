@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.46 1999/03/26 21:27:32 grubba Exp $
+# $Id: static_module_makefile.in,v 1.47 1999/04/23 20:22:20 grubba Exp $
 #
 
 
@@ -18,6 +18,8 @@ PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. -Dpike_module_init=pike_m
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" $(MODULE_MAKE_FLAGS)
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
 
 all: dummy
 
@@ -53,8 +55,8 @@ modlist_headers: Makefile
 modlist_segment: Makefile
 	echo >modlist_segment " ,{ \"$(MODNAME)\", pike_module_$(MODNAME)_init, pike_module_$(MODNAME)_exit } "
 
-Makefile: ../static_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+Makefile: ../static_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies $(SRCDIR)/$(CONFIG_HEADERS).in config.status
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
 	touch remake
 	@echo "Run make again"
 	@exit 1
@@ -66,7 +68,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status --recheck
 
 module.pmod: Makefile
 	if [ -f $(SRCDIR)/module.pmod.in ]; then \
