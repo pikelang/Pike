@@ -9,7 +9,7 @@ array l;
 int head;
 int tail;
 
-void create(mixed ..args)
+void create(mixed ...args)
 {
   l = args + allocate(QUEUE_SIZE);
   head = sizeof(args);
