@@ -451,18 +451,20 @@ static array(string) splitRef(string ref) {
     return ref/"/";
   }
   array(string) a = Parser.Pike.split(ref);
-  string scope = "";
+  string namespace;
   array result = ({});
-  if (sizeof(a) && (a[0] == "lfun" || a[0] == "predef" || a[0] == "top")) {
-    scope += a[0];
-    a = a[1..];
+  if (sizeof(a)) {
+    // Check for a namespace.
+    if (a[0] == "::") {
+      namespace = "::";
+      a = a[1..];
+    } else if ((sizeof(a) > 1) && a[1] == "::") {
+      namespace = a[0]+"::";
+      a = a[2..];
+    }
   }
-  if (sizeof(a) && a[0] == "::") {
-    scope += a[0];
-    a = a[1..];
-  }
-  if (strlen(scope))
-    result = ({ scope });
+  if (namespace)
+    result = ({ namespace });
   for (;;) {
     if (!sizeof(a))
       return result;
@@ -494,7 +496,7 @@ static array(string) splitRef(string ref) {
 
 static string mergeRef(array(string) ref) {
   string s = "";
-  if (sizeof(ref) && search(ref[0], "::") >= 0) {
+  if (sizeof(ref) && has_suffix(ref[0], "::")) {
     s = ref[0];
     ref = ref[1..];
   }
@@ -514,25 +516,42 @@ static class Scope(string|void type, string|void name) {
 }
 
 static class ScopeStack {
-  /*static*/ array(Scope) scopeArr = ({ 0 }); // sentinel
+  mapping(string:array(Scope)) scopes = ([]);
+  string namespace = "predef";
+
+  array(array(string|array(Scope))) namespaceStack = ({});
 
   void enter(string|void type, string|void name) {
     //werror("entering scope type(%O), name(%O)\n", type, name);
-    scopeArr += ({ Scope(type, name) });
+    if (type == "namespace") {
+      namespaceStack += ({ ({ namespace, scopes[name] }) });
+      scopes[namespace = name] = ({ Scope(type, name+"::") });
+    } else {
+      scopes[namespace] += ({ Scope(type, name) });
+    }
   }
   void leave() {
-    if (sizeof(scopeArr[-1]->failures)) {
-      werror("WARNING: Failed to resolv the following symbols in scope %O:\n"
-	     "%{  %O\n%}\n",
-	     scopeArr[1..]->name * ".",
-	     indices(scopeArr[-1]->failures));
+    if (sizeof(scopes[namespace]||({}))) {
+      if (sizeof(scopes[namespace][-1]->failures)) {
+	werror("WARNING: Failed to resolv the following symbols in scope %O:\n"
+	       "%{  %O\n%}\n",
+	       namespace + "::" + scopes[namespace][1..]->name * ".",
+	       indices(scopes[namespace][-1]->failures));
+      }
+      if (sizeof(scopes[namespace][-1]) == 1) {
+	// Leaving namespace...
+	scopes[namespace] = namespaceStack[-1][1];
+	namespace = namespaceStack[-1][0];
+	namespaceStack = namespaceStack[..sizeof(namespaceStack)-2];
+      } else {
+	scopes[namespace] = scopes[namespace][..sizeof(scopes[namespace])-2];
+      }
     }
-    scopeArr = scopeArr[..sizeof(scopeArr)-2];
   }
 
-  void addName(string sym) { scopeArr[-1]->idents[sym] = 1; }
+  void addName(string sym) { scopes[namespace][-1]->idents[sym] = 1; }
 
-  void remName(string sym) { scopeArr[-1]->idents[sym] = 0; }
+  void remName(string sym) { scopes[namespace][-1]->idents[sym] = 0; }
 
   mapping resolveRef(string ref) {
     array(string) idents = splitRef(ref);
@@ -550,61 +569,59 @@ static class ScopeStack {
     }
 #endif /* 0 */
 
-    if (idents[0] == "top::") {
-      // top:: is an anchor to the root.
-      ref = mergeRef(idents[1..]);
-      idents = idents[1..];
-    } else if(idents[0] == "predef::") {
-      // Better-than-nothing
-      // FIXME: Should look backwards until it finds a
-      // matching symbol.
-      ref = mergeRef(idents[1..]);
-      idents = idents[1..];
+    if (has_suffix(idents[0], "::")) {
+      // Namespace specifier.
+      if (idents[0] == "top::") {
+	// top:: is an anchor to the root of the current namespace.
+	idents[0] = namespace + "::";
+      }
+      ref = mergeRef(idents);
+
+      // we consider it to be an absolute reference
+      // TODO: should we check that the symbol really DOES appear
+      // in the specified scope too?
+      return ([ "resolved" : ref ]);
     }
-    else {
-      if (!scopeArr[-1]->failures[ref]) {
-	array(string) matches = ({});
 
-	ref = mergeRef(idents);
+    // Relative reference.
+    if (!scopes[namespace][-1]->failures[ref]) {
+      array(string) matches = ({});
 
-	string firstIdent = idents[0];
-	for(int i = sizeof(scopeArr)-1; i ; i--) {
-	  Scope s = scopeArr[i];
-	  if (s->idents[firstIdent])
-	    if (s->type == "params" && !not_param) {
-	      return ([ "param" : ref ]);
-	    }
-	    else {
-	      //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
-	      string res = "";
-	      // work our way from the root of the stack
-	      for (int j = 1; j <= i; j++) {
-		string name = scopeArr[j]->name;
-		if (name && name != "")
-		  res += name + ".";
-		//werror("[[[[ name == %O\n", name);
-	      }
-	      matches += ({ res + ref });
-	    }
-	}
-	if (sizeof(matches)) {
-	  return ([ "resolved" : matches*"\0" ]);
-	}
-	// Resolution failure.
-	int i;
-	for (i = sizeof(scopeArr)-1; i; i--) {
-	  if (scopeArr[i]->type != "params") {
-	    scopeArr[i]->failures[ref] = 1;
-	    break;
+      ref = (idents - ({""}))*".";
+
+      string firstIdent = idents[0];
+      for(int i = sizeof(scopes[namespace]); i--;) {
+	Scope s = scopes[namespace][i];
+	if (s->idents[firstIdent])
+	  if (s->type == "params" && !not_param) {
+	    return ([ "param" : ref ]);
 	  }
+	  else {
+	    //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
+	    string res = namespace + "::";
+	    // work our way from the root of the stack
+	    for (int j = 1; j <= i; j++) {
+	      string name = scopes[namespace][j]->name;
+	      if (name && name != "")
+		res += name + ".";
+	      //werror("[[[[ name == %O\n", name);
+	    }
+	    matches += ({ res + ref });
+	  }
+      }
+      if (sizeof(matches)) {
+	return ([ "resolved" : matches*"\0" ]);
+      }
+      // Resolution failure.
+      int i;
+      for (i = sizeof(scopes[namespace]); i--;) {
+	if (scopes[namespace][i]->type != "params") {
+	  scopes[namespace][i]->failures[ref] = 1;
+	  break;
 	}
       }
-      return ([ "resolution-failure" : "yes" ]);
     }
-
-    // TODO: should we check that the symbol really DOES appear
-    // on the top level too?
-    return ([ "resolved" : ref ]); // we consider it to be an absolute reference
+    return ([ "resolution-failure" : "yes" ]);
   }
 }
 
@@ -661,6 +678,7 @@ static void resolveFun(ScopeStack scopes, Node node) {
     if (child->get_node_type() == XML_ELEMENT) {
       string tag = child->get_any_name();
       switch (tag) {
+        case "namespace":
         case "class":
         case "module":
           scopes->enter(tag, child->get_attributes()["name"]);
@@ -738,7 +756,7 @@ static void resolveFun(ScopeStack scopes, Node node) {
 // hierarchy. 'tree' might be the node <root> or <module name="Pike">
 void resolveRefs(Node tree) {
   ScopeStack scopes = ScopeStack();
-  scopes->enter("module", "");    // The top level scope
+  scopes->enter("autodoc", "");    // The top level scope
   resolveFun(scopes, tree);
   scopes->leave();
 }
