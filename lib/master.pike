@@ -1,3 +1,7 @@
+#if !efun(version)
+string version() { return "Pike 0.4pl2"; }
+#endif 
+
 #define UNDEFINED (([])[0])
 string describe_backtrace(mixed *trace);
 
