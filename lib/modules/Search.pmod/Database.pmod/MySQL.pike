@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.43 2001/06/26 01:55:32 js Exp $
+// $Id: MySQL.pike,v 1.44 2001/06/26 04:05:47 js Exp $
 
 inherit .Base;
 
@@ -50,10 +50,9 @@ void recreate_tables()
                          unique(doc_id,name))");
 
   db->query(
-#"create table field (id    tinyint unsigned primary key
-                            not null,
+#"create table field (id    tinyint unsigned primary key not null,
                       name  varchar(127) not null,
-                      INDEX index_name (name))");
+                      UNIQUE(name))");
 
 }
 
@@ -69,7 +68,7 @@ static void init_fields()
     return;
 
   init_done=1;
-  foreach(Search.get_filter_fields(), string field)
+  foreach(({"uri"})+Search.get_filter_fields(), string field)
     allocate_field_id(field);
 }
 
@@ -164,7 +163,7 @@ int allocate_field_id(string field)
     array a=db->query("select name from field where id=%d",i);
     if(!sizeof(a))
     {
-      a=db->query("insert into field (id,name) values (%d,%s)",
+      a=db->query("replace into field (id,name) values (%d,%s)",
 		  i, field);
       list_fields_cache=0;
       db->query("unlock tables");
@@ -371,12 +370,13 @@ string get_blob(int word_id, int num)
   return a[0]->hits;
 }
 
-void zap()
+void clear()
 {
   db->query("delete from word_hit");
   db->query("delete from uri");
   db->query("delete from document");
-  db->query("delete from field");
+  db->query("delete from deleted_document");
+  db->query("delete from metadata");
 }
 
 
@@ -581,6 +581,12 @@ class Queue
     else
       set_stage( uri, 5 );
   }
+
+  void clear()
+  {
+    db->query("delete from "+table);
+  }
+
 
   void clear_stage( int ... stages )
   {
