@@ -1157,12 +1157,12 @@ class Second
 
    array(string) greater()
    {
-      return ({"minute"});
+      return ({"minute","hour","day","month","year"});
    } 
 
    array(string) lesser()
    {
-      return ({"second"});
+      return ({});
    }
 
    void create(int|object ... arg)
@@ -1298,12 +1298,33 @@ class Second
       return sprintf("%s:%02s",m->timeofyear(),name());
    }
 
-//-- more -----------------------------------------------------------
+//-- greater --------------------------------------------------------
      
    object minute()
    {
       return m;
    }
+
+   object hour()
+   {
+      return minute()->hour();
+   }
+
+   object day()
+   {
+      return minute()->hour()->day();
+   }
+
+  object month()
+  {
+    return minute()->hour()->day()->month();
+  }
+
+  object year()
+  {
+    return minute()->hour()->day()->month()->year();
+  }
+  
 };
 
 
