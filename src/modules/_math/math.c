@@ -29,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.37 2001/09/24 12:21:08 grubba Exp $");
+RCSID("$Id: math.c,v 1.38 2001/09/30 04:01:19 hubbe Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -298,9 +298,38 @@ void f_exp(INT32 args)
 void f_pow(INT32 args)
 {
   FLOAT_TYPE x,y;
-  get_all_args("pow",args,"%F%F",&x,&y);
-  pop_n_elems(args);
-  push_float(DO_NOT_WARN((FLOAT_TYPE)pow((double)x, (double)y)));
+  if(args != 2) wrong_number_of_args_error("pow",args,2);
+  switch(Pike_sp[-2].type * 16 + Pike_sp[-1].type)
+  {
+    case T_OBJECT * 17:
+    case T_INT * 17:
+    case T_OBJECT * 16 + T_INT:
+    case T_OBJECT * 16 + T_FLOAT:
+      stack_swap();
+      push_constant_text("pow");
+      f_index(2);
+      stack_swap();
+      f_call_function(2);
+      return;
+
+    case T_FLOAT * 16 + T_INT:
+    pop_n_elems(args);
+    push_float(DO_NOT_WARN((FLOAT_TYPE)pow((double)Pike_sp[-2].u.float_number,
+					   (double)Pike_sp[-1].u.integer)));
+    return;
+
+    case T_INT * 16 + T_FLOAT:
+    pop_n_elems(args);
+    push_float(DO_NOT_WARN((FLOAT_TYPE)pow((double)Pike_sp[-2].u.integer,
+					   (double)Pike_sp[-1].u.float_number)));
+    return;
+
+    case T_FLOAT * 17:
+    pop_n_elems(args);
+    push_float(DO_NOT_WARN((FLOAT_TYPE)pow((double)Pike_sp[-2].u.float_number,
+					   (double)Pike_sp[-1].u.float_number)));
+    return;
+  }
 }
 
 /*! @decl float floor(float f)
@@ -499,7 +528,12 @@ void pike_module_init(void)
   ADD_EFUN("exp",f_exp,tFunc(tNUM,tFlt),0);
   
 /* function(float,float:float) */
-  ADD_EFUN("pow",f_pow,tFunc(tNUM tNUM,tFlt),0);
+  ADD_EFUN("pow",f_pow,
+	   tOr5(tFunc(tFlt tFlt,tFlt),
+		tFunc(tInt tFlt,tFlt),
+		tFunc(tFlt tInt,tFlt),
+		tFunc(tInt tInt,tInt),
+		tFunc(tObj tOr3(tInt,tObj,tFlt),tMix)),0);
   
 /* function(float:float) */
   ADD_EFUN("floor",f_floor,tFunc(tFlt,tFlt),0);
