@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.68 2001/04/10 19:22:34 mirar Exp $
+**!	$Id: layers.c,v 1.69 2001/06/03 09:07:46 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -216,7 +216,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.68 2001/04/10 19:22:34 mirar Exp $");
+RCSID("$Id: layers.c,v 1.69 2001/06/03 09:07:46 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -2660,6 +2660,9 @@ static INLINE void img_lay_line(struct layer *ly,
 				int y, /* y in ly layer */
 				rgb_group *d,rgb_group *da)
 {
+/*     fprintf(stderr,"tiled:%d xoffs:%d xsize:%d y:%d\n", */
+/*  	   ly->tiled,xoffs,xsize,y); */
+
    if (!ly->tiled)
    {
       int len;
@@ -2723,6 +2726,9 @@ static INLINE void img_lay_line(struct layer *ly,
 	 int len;
 	 if (xoffs<0) xoffs+=ly->xsize;
 	 len=ly->xsize-xoffs;
+	 if (len>xsize) len=xsize;
+
+/*  	 fprintf(stderr,"a xoffs=%d len=%d xsize=%d ly->xsize:%d\n",xoffs,len,xsize,ly->xsize); */
 
 	 img_lay_stroke(ly,l?l+xoffs:NULL,
 			la?la+(xoffs%ly->xsize):NULL,
@@ -2735,6 +2741,8 @@ static INLINE void img_lay_line(struct layer *ly,
       }
       while (xsize>ly->xsize)
       {
+/*  	 fprintf(stderr,"b xsize=%d\n",xsize); */
+
 	 img_lay_stroke(ly,l,la,s,sa,d,da,ly->xsize);
 	 da+=ly->xsize;
 	 d+=ly->xsize;
@@ -2743,7 +2751,10 @@ static INLINE void img_lay_line(struct layer *ly,
 	 xsize-=ly->xsize;
       }
       if (xsize)
+      {
+/*  	 fprintf(stderr,"c xsize=%d\n",xsize); */
 	 img_lay_stroke(ly,l,la,s,sa,d,da,xsize);
+      }
    }
 }
 
