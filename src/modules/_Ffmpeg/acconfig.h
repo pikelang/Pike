@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.5 2002/10/11 01:39:52 nilsson Exp $
+|| $Id: acconfig.h,v 1.6 2002/12/06 11:03:18 mirar Exp $
 */
 
 /*
@@ -22,6 +22,12 @@
 
 /* Define if you have the ffmpeg library (-lffmpeg).  */
 #undef HAVE_LIBFFMPEG
+
+/* Define if you have the avformat library (-lavformat).  */
+#undef HAVE_LIBAVFORMAT
+
+/* Define if you have the libmp3lame library (-lmp3lame).  */
+#undef HAVE_LIBMP3LAME
 
 /* Define if you have a working ffmpeg library */
 #undef HAVE_WORKING_LIBFFMPEG
