@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.60 1998/05/06 00:32:02 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.61 1998/05/09 15:00:35 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -285,11 +285,11 @@ static struct sigdesc signal_desc []={
 #ifdef SIGPTRESCHED
   { SIGPTRESCHED, "SIGPTRESCHED" },
 #endif
+
+#ifndef _REENTRANT
 #ifdef SIGWAITING
   { SIGWAITING, "SIGWAITING" },
 #endif
-
-#ifndef _REENTRANT
 #ifdef SIGLWP
   { SIGLWP, "SIGLWP" },
 #endif
@@ -314,14 +314,21 @@ void my_signal(int sig, sigfunctype fun)
 #ifdef HAVE_SIGACTION
   {
     struct sigaction action;
-    action.sa_handler=fun;
+    /* NOTE:
+     *   sa_handler is really _funcptr._handler, and
+     *   sa_sigaction is really _funcptr._sigaction,
+     *   where _funcptr is a union. ie sa_handler and
+     *   sa_sigaction overlap.
+     */
+    MEMSET((char *)&action, 0, sizeof(action));
+    action.sa_handler = fun;
     sigfillset(&action.sa_mask);
-    action.sa_flags=0;
+    action.sa_flags = 0;
 #ifdef SA_INTERRUPT
     if(fun != SIG_IGN)
-      action.sa_flags=SA_INTERRUPT;
+      action.sa_flags |= SA_INTERRUPT;
 #endif
-    sigaction(sig,&action,0);
+    sigaction(sig, &action, NULL);
   }
 #else
 #ifdef HAVE_SIGVEC
@@ -330,7 +337,7 @@ void my_signal(int sig, sigfunctype fun)
     MEMSET((char *)&action, 0, sizeof(action));
     action.sv_handler= fun;
     action.sv_mask=-1;
-#ifdef SA_INTERRUPT
+#ifdef SV_INTERRUPT
     if(fun != SIG_IGN)
       action.sv_flags=SV_INTERRUPT;
 #endif
