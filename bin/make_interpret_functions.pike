@@ -120,9 +120,15 @@ int main(int argc, array(string) argv)
   x=PC.hide_whitespaces(x);
   x=PC.group(x);
 
-  for(int e=0;e<=2;e++)
-    foreach( ({"","_JUMP","_TAIL","_TAILJUMP"}) , string postfix)
-      ops[sprintf("OPCODE%d%s",e,postfix)]=1;
+  for(int e=0;e<=2;e++) {
+    foreach( ({"","TAIL"}), string tail) {
+      foreach( ({"", "JUMP", "RETURN", "BRANCH"}), string kind) {
+	string postfix = tail+kind;
+	if (sizeof(postfix)) postfix = "_" + postfix;
+	ops[sprintf("OPCODE%d%s",e,postfix)]=1;
+      }
+    }
+  }
 
 //  werror("%O\n",ops);
 
