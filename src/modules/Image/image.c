@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.153 1999/07/21 02:58:38 hubbe Exp $ */
+/* $Id: image.c,v 1.154 1999/07/21 14:48:56 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.153 1999/07/21 02:58:38 hubbe Exp $
+**!	$Id: image.c,v 1.154 1999/07/21 14:48:56 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.153 1999/07/21 02:58:38 hubbe Exp $");
+RCSID("$Id: image.c,v 1.154 1999/07/21 14:48:56 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -107,6 +107,7 @@ RCSID("$Id: image.c,v 1.153 1999/07/21 02:58:38 hubbe Exp $");
 #include "array.h"
 #include "error.h"
 #include "operators.h"
+#include "module_support.h"
 
 
 #include "image.h"
@@ -1555,35 +1556,32 @@ void image_circle(INT32 args)
    ref_push_object(THISOBJ);
 }
 
-static INLINE void get_rgba_group_from_array_index(rgba_group *rgba,struct array *v,INT32 index)
+static INLINE int image_color_svalue_rgba(struct svalue *s,
+					   rgba_group *d)
 {
-   struct svalue s,s2;
+   rgb_group rgb;
+   if (s->type==T_ARRAY && s->u.array->size>=4)
+   {
+      if (s->u.array->item[0].type!=T_INT) return 0;
+      else d->r=(COLORTYPE)s->u.array->item[0].u.integer; 
+      if (s->u.array->item[1].type!=T_INT) return 0;
+      else d->g=(COLORTYPE)s->u.array->item[1].u.integer; 
+      if (s->u.array->item[2].type!=T_INT) return 0;
+      else d->b=(COLORTYPE)s->u.array->item[2].u.integer; 
 
-   array_index_no_free(&s,v,index);
-   if (s.type!=T_ARRAY||
-       s.u.array->size<=3) 
-   {
-      rgba->alpha=0;
-      image_color_svalue(&s,(rgb_group*)&rgba);
+      if (s->u.array->item[3].type!=T_INT) return 0;
+      else d->alpha=(COLORTYPE)s->u.array->item[3].u.integer; 
+      return 1;
    }
-   else
+   else if (image_color_svalue(s,&rgb))
    {
-      array_index_no_free(&s2,s.u.array,0);
-      if (s2.type!=T_INT) rgba->r=0; else rgba->r=s2.u.integer;
-      array_index(&s2,s.u.array,1);
-      if (s2.type!=T_INT) rgba->g=0; else rgba->g=s2.u.integer;
-      array_index(&s2,s.u.array,2);
-      if (s2.type!=T_INT) rgba->b=0; else rgba->b=s2.u.integer;
-      if (s.u.array->size>=4)
-      {
-	 array_index(&s2,s.u.array,3);
-	 if (s2.type!=T_INT) rgba->alpha=0; else rgba->alpha=s2.u.integer;
-      }
-      else rgba->alpha=0;
-      free_svalue(&s2);
+      d->r=rgb.r;
+      d->g=rgb.g;
+      d->b=rgb.b;
+      d->alpha=0;
+      return 1;
    }
-   free_svalue(&s); 
-   return; 
+   return 0; 
 }
 
 static INLINE void
@@ -1739,10 +1737,8 @@ void image_tuned_box(INT32 args)
       sp[-args].type!=T_INT||
       sp[1-args].type!=T_INT||
       sp[2-args].type!=T_INT||
-      sp[3-args].type!=T_INT||
-      sp[4-args].type!=T_ARRAY||
-      sp[4-args].u.array->size<4)
-    error("Illegal number of arguments to Image.Image->tuned_box()\n");
+      sp[3-args].type!=T_INT)
+     SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->tuned_box",5);
 
   if (!THIS->img)
     error("Called Image.Image object is not initialized\n");;
@@ -1752,10 +1748,25 @@ void image_tuned_box(INT32 args)
   x2=sp[2-args].u.integer;
   y2=sp[3-args].u.integer;
 
-  get_rgba_group_from_array_index(&topleft,sp[4-args].u.array,0);
-  get_rgba_group_from_array_index(&topright,sp[4-args].u.array,1);
-  get_rgba_group_from_array_index(&bottomleft,sp[4-args].u.array,2);
-  get_rgba_group_from_array_index(&bottomright,sp[4-args].u.array,3);
+  if (sp[4-args].type==T_ARRAY)
+  {
+     if (args>5) pop_n_elems(args-5);
+     args+=sp[-1].u.array->size-1;
+     sp--;
+     push_array_items(sp->u.array); /* frees */
+  }
+
+  if (args<8)
+     SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->tuned_box",8);
+
+  if (!image_color_svalue_rgba(sp-4,&topleft))
+     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",5,"color");
+  if (!image_color_svalue_rgba(sp-3,&topright))
+     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",6,"color");
+  if (!image_color_svalue_rgba(sp-2,&bottomleft))
+     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",7,"color");
+  if (!image_color_svalue_rgba(sp-1,&bottomright))
+     SIMPLE_BAD_ARG_ERROR("Image.Image->tuned_box",8,"color");
 
   if (x1>x2) x1^=x2,x2^=x1,x1^=x2,
 	       sum=topleft,topleft=topright,topright=sum,
@@ -1797,7 +1808,7 @@ void image_tuned_box(INT32 args)
     ugly:
       dxw = 1.0/(float)xw;
       dyw = 1.0/(float)yw;
-      ymax=MINIMUM(yw,this->ysize-y1);
+      ymax=MINIMUM(yw,this->ysize-y1-1);
       for (x=MAXIMUM(0,-x1); x<=xw && x+x1<this->xsize; x++)
 	{
 #define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
@@ -1806,7 +1817,7 @@ void image_tuned_box(INT32 args)
 
 	  img=this->img+x+x1+this->xsize*MAXIMUM(0,y1);
 	  if (topleft.alpha||topright.alpha||bottomleft.alpha||bottomright.alpha)
-	    for (y=MAXIMUM(0,-y1); y<ymax; y++)
+	    for (y=MAXIMUM(0,-y1); y<=ymax; y++)
 	      {
 		float tfy;
 		rgbda_group sum={0.0,0.0,0.0,0.0};
@@ -1819,9 +1830,9 @@ void image_tuned_box(INT32 args)
 
 		sum.alpha*=(1.0/255.0);
 
-		rgb.r=sum.r*sum.alpha+img->r*(1.0-sum.alpha);
-		rgb.g=sum.g*sum.alpha+img->g*(1.0-sum.alpha);
-		rgb.b=sum.b*sum.alpha+img->b*(1.0-sum.alpha);
+		rgb.r=sum.r*(1.0-sum.alpha)+img->r*sum.alpha;
+		rgb.g=sum.g*(1.0-sum.alpha)+img->g*sum.alpha;
+		rgb.b=sum.b*(1.0-sum.alpha)+img->b*sum.alpha;
 
 		img->r=testrange(rgb.r+0.5);
 		img->g=testrange(rgb.g+0.5);
@@ -1830,7 +1841,7 @@ void image_tuned_box(INT32 args)
 		img+=this->xsize;
 	      }
 	  else
-	    for (y=MAXIMUM(0,-y1); y<ymax; y++)
+	    for (y=MAXIMUM(0,-y1); y<=ymax; y++)
 	      {
 		float tfy;
 		rgbd_group sum={0,0,0};
