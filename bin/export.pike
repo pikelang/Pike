@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.19 1998/03/31 21:59:29 hubbe Exp $ */
+/* $Id: export.pike,v 1.20 1998/05/13 23:29:09 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -65,12 +65,28 @@ string getversion()
   return s;
 }
 
+void bump_version()
+{
+  werror("Bumping release number.\n");
+  Process.create_process(({"cvs","update","version.c"}),(["cwd":"pike/src"] ))->wait();
+
+  string s=Stdio.read_file("pike/src/version.c");
+  sscanf(s,"%s release %d%s",string pre, int rel, string post);
+  rel++;
+  Stdio.File("pike/src/version.c","wct")->write(pre+" release "+rel+post);
+  Process.create_process(({"cvs","commit","-m",
+			     "release number bumped by export.pike",
+			     "version.c"}),
+			 (["cwd":"pike/src"]))->wait();
+}
+
 
 int main(int argc, string *argv)
 {
   mixed tmp;
   int e;
   string *files;
+  object cvs;
 
   tmp=reverse(argv[0]/"/");
   except_modules=mklist(argv[1..]);
@@ -87,24 +103,14 @@ int main(int argc, string *argv)
 
   if(file_stat("pike/CVS"))
   {
-    werror("Bumping release number.\n");
-    Process.create_process(({"cvs","update","version.c"}),
-			   (["cwd":"pike/src"] ))->wait();
-    string s=Stdio.read_file("pike/src/version.c");
-    sscanf(s,"%s release %d%s",string pre, int rel, string post);
-    rel++;
-    Stdio.File("pike/src/version.c","wct")->write(pre+" release "+rel+post);
-    Process.create_process(({"cvs","commit","-m",
-			       "release number bumped by export.pike",
-			       "version.c"}),
-			   (["cwd":"pike/src"]))->wait();
-
+    bump_version();
 
     vpath=replace(replace(getversion()," ","-"),"-release-",".");
     string tag=replace(vpath,({"Pike-","."}),({"","_"}));
 
     werror("Creating tag "+tag+" in the background.\n");
-    system("cd pike ; cvs tag -R -F "+tag+"&");
+    cvs=Process.create_process(({"cvs","tag","-R","-F",tag}),
+			   (["cwd":"pike/src"]));
   }else{
     vpath=replace(replace(getversion()," ","-"),"-release-",".");
   }
@@ -129,5 +135,11 @@ int main(int argc, string *argv)
   spawn("gzip -9",o,Stdio.File("pike/"+vpath+"-indigo.tar.gz","wct"))->wait();
   rm(vpath);
   werror("Done.\n");
+
+  if(cvs)
+  {
+    cvs->wait();
+    bump_version();
+  }
   return 0;
 }
