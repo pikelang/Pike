@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.258 2002/05/10 22:28:28 mast Exp $");
+RCSID("$Id: interpret.c,v 1.259 2002/05/10 23:41:57 nilsson Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1368,27 +1368,27 @@ void unlink_previous_frame(void)
   current->save_mark_sp=smsp;
 
   /* Move svalues down */
-  freespace=fp->locals - target;
-  if(freespace > ((Pike_sp - fp->locals)<<2) + 32)
+  freespace=Pike_fp->locals - target;
+  if(freespace > ((Pike_sp - Pike_fp->locals)<<2) + 32)
   {
     assign_svalues(target,
-		   fp->locals,
-		   Pike_sp - fp->locals,
+		   Pike_fp->locals,
+		   Pike_sp - Pike_fp->locals,
 		   BIT_MIXED);
-    
-    fp->locals-=freespace;
-    fp->expendible-=freespace;
+
+    Pike_fp->locals-=freespace;
+    Pike_fp->expendible-=freespace;
     pop_n_elems(freespace);
   }
 
   /* Move pointers down */
-  freespace=fp->mark_sp_base - smsp;
-  if(freespace > ((Pike_mark_sp - fp->mark_sp_base)<<2)+32)
+  freespace=Pike_fp->mark_sp_base - smsp;
+  if(freespace > ((Pike_mark_sp - Pike_fp->mark_sp_base)<<2)+32)
   {
     MEMMOVE(smsp,
-	    fp->mark_sp_base,
-	    sizeof(struct svalue **)*(Pike_mark_sp - fp->mark_sp_base));
-    fp->mark_sp_base-=freespace;
+	    Pike_fp->mark_sp_base,
+	    sizeof(struct svalue **)*(Pike_mark_sp - Pike_fp->mark_sp_base));
+    Pike_fp->mark_sp_base-=freespace;
     Pike_mark_sp-=freespace;
   }
 }
