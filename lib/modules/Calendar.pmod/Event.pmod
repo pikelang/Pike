@@ -1203,14 +1203,14 @@ class SuperEvent
       return best;
    }
 
-   Event `|(Event ... with)
+   Event `|(Event|SuperEvent ... with)
    {
       with-=({0});
       return SuperEvent(events|with,flags,"?");
    }
-   Event ``|(Event with) { return `|(with); }
+   Event ``|(Event|SuperEvent with) { return `|(with); }
 
-   Event `-(Event ...subtract)
+   Event `-(Event|SuperEvent ...subtract)
    {
       array(Event) res=events-subtract;
       if (res==events) return this_object();
