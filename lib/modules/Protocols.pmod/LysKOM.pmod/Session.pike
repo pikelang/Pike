@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.23 2000/11/11 03:45:34 jhs Exp $
+//  $Id: Session.pike,v 1.24 2000/11/26 17:31:45 nilsson Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -1120,9 +1120,9 @@ object|void send_message(string textstring, mapping options)
   if(!options) options = ([]);
 
   if(!options->recpt)
-    res = con["broadcast"](textstring);
+    res = con["async_broadcast"](textstring);
   else
-    res = con["send_message"](options->recpt->no, textstring);
+    res = con["async_send_message"](options->recpt->no, textstring);
 
   if (objectp(res)) return res;
   return text(res);
