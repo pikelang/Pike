@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.22 1998/01/11 21:55:47 mirar Exp $ */
+/* $Id: gif.c,v 1.23 1998/01/14 16:11:55 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.22 1998/01/11 21:55:47 mirar Exp $
+**!	$Id: gif.c,v 1.23 1998/01/14 16:11:55 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.22 1998/01/11 21:55:47 mirar Exp $");
+RCSID("$Id: gif.c,v 1.23 1998/01/14 16:11:55 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -353,7 +353,7 @@ void image_gif_end_block(INT32 args)
 **!
 **! note
 **!	This is in the very advanced sector of the GIF support;
-**!	please read about how GIFs file works.
+**!	please read about how GIF files works.
 **!
 **!	Most decoders just ignore some or all of these parameters.
 */
@@ -416,7 +416,7 @@ static void image_gif__gce_block(INT32 args)
 **! 
 **! note
 **!	This is in the very advanced sector of the GIF support;
-**!	please read about how GIFs file works.
+**!	please read about how GIF files works.
 */
 
 static void image_gif__render_block(INT32 args)
@@ -1236,25 +1236,25 @@ void image_gif_netscape_loop_block(INT32 args)
 **!     returns an array containing the GIF structure;
 **!	
 **!     <pre>
-**!	({int xsize,int ysize,    // 0: size of image drawing area
-**!	  int numcol,             // 2: suggested number of colors 
-**!	  void|string colortable, // 3: opt. global colortable 
-**!	  ({ int aspx, int aspy,  // 4,0: aspect ratio or 0, 0 if not set
-**!	     int background }),   //   1: index of background color
+**!	({int xsize,int ysize,      // 0: size of image drawing area
+**!	  int numcol,               // 2: suggested number of colors 
+**!	  void|string colortable,   // 3: opt. global colortable 
+**!	  ({ int aspx, int aspy,    // 4,0: aspect ratio or 0, 0 if not set
+**!	     int background }),     //   1: index of background color
 **!	</pre>
 **!     followed by any number these blocks in any order:
 **!	<pre>
-**!	  ({ GIF.EXTENSION,       //   0: block identifier
-**!	     int extension,       //   1: extension number
-**!	     string data })       //   2: extension data
-**!
-**!	  ({ GIF.RENDER,          //   0: block identifier
-**!	     int x, int y,        //   1: position of render
-**!	     int xsize, int ysize,//   3: size of render
-**!	     int interlace,       //   5: interlace flag
-**!	     void|string colortbl,//   6: opt. local colortable 
-**!	     int lzwsize,         //   7: lzw code size
-**!	     string lzwdata })    //   8: packed lzw data
+**!	  ({ GIF.EXTENSION,         //   0: block identifier
+**!	     int extension,         //   1: extension number
+**!	     string data })         //   2: extension data
+**!				    
+**!	  ({ GIF.RENDER,            //   0: block identifier
+**!	     int x, int y,          //   1: position of render
+**!	     int xsize, int ysize,  //   3: size of render
+**!	     int interlace,         //   5: interlace flag
+**!	     void|string colortbl,  //   6: opt. local colortable 
+**!	     int lzwsize,           //   7: lzw code size
+**!	     string lzwdata })      //   8: packed lzw data
 **!     </pre>
 **!	and possibly ended with one of these:
 **!     <pre>
@@ -1273,7 +1273,7 @@ void image_gif_netscape_loop_block(INT32 args)
 **!	May throw errors if the GIF header is incomplete or illegal.
 **!
 **!	This is in the very advanced sector of the GIF support;
-**!	please read about how GIFs file works.
+**!	please read about how GIF files works.
 */
 
 static void _decode_get_extension(unsigned char **s,
@@ -1544,8 +1544,8 @@ static void image_gif___decode(INT32 args)
 **!     <pre>
 **!	({int xsize,int ysize,    // 0: size of image drawing area
 **!	  void|string colortable, // 2: opt. global colortable 
-**!	  ({ int aspx, int aspy,  // 3,0: aspect ratio or 0, 0 if not set
-**!	     int background }),   //   3: index of background color
+**!	  ({ int aspx, int aspy,  // 3 0: aspect ratio or 0, 0 if not set
+**!	     int background }),   //   2: index of background color
 **!	</pre>
 **!     followed by any number these blocks in any order (gce chunks 
 **!	are decoded and incorporated in the render chunks):
@@ -1578,6 +1578,25 @@ static void image_gif___decode(INT32 args)
 **!          string data })               // (rest of file)
 **!     </pre>
 **!
+**!	The <ref>decode</ref> method uses this data in a way similar
+**!	to this program:
+**!   
+**!	<pre> 
+**!	import Image;
+**!	
+**!	object my_decode_gif(string data)
+**!	{
+**!	   array a=GIF._decode(data);
+**!	   object img=image(a[0],a[1]);
+**!	   foreach (a[4..],array b)
+**!	      if (b[0]==GIF.RENDER)
+**!		 if (b[4]) img->paste_alpha(b[3],b[4],b[1],b[2]);
+**!		 else img->paste(b[3],b[1],b[2]);
+**!	   return img;
+**!	}
+**!	</pre>
+**!	
+**!
 **! arg string gifdata
 **!	GIF data (with header and all)
 **! arg array __decoded
@@ -1589,7 +1608,7 @@ static void image_gif___decode(INT32 args)
 **!	May throw errors if the GIF header is incomplete or illegal.
 **!
 **!	This is in the very advanced sector of the GIF support;
-**!	please read about how GIFs file works.
+**!	please read about how GIF files works.
 */
 
 static void _gif_decode_lzw(unsigned char *s,
