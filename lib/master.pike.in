@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.269 2003/04/10 00:31:07 nilsson Exp $
+// $Id: master.pike.in,v 1.270 2003/04/10 02:02:33 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1979,7 +1979,7 @@ void _main(array(string) orig_argv, array(string) env)
 #endif /* __AUTO_BIGNUM__ */
 
 	program prog;
-	if(currentversion <= Version(7,4))
+	if(Version(compat_major,compat_minor) <= Version(7,4))
 	  prog = compile_string(
 	    "mixed create(int argc, array(string) argv,array(string) env){"+
 	    opts[1]+";}");
@@ -2116,7 +2116,13 @@ void _main(array(string) orig_argv, array(string) env)
       // The main reason for this catch is actually to get a new call
       // to eval_instruction in interpret.c so that the debug and
       // trace levels set above take effect in the bytecode evaluator.
-      object script=prog(argv);
+      object script;
+      if(Version(compat_major,compat_minor) <= Version(7,4)) {
+	script=prog();
+      }
+      else {
+	script=prog(argv);
+      }
       if(!script->main)
 	_error("Error: %s has no main().\n", argv[0]);
       ret=script->main(sizeof(argv),argv,env);
@@ -3096,6 +3102,8 @@ class Version
   //! Set the version in the object.
   void create(int maj, int min)
   {
+    if(maj==-1) maj = __REAL_MAJOR__;
+    if(min==-1) min = __REAL_MINOR__;
     major = maj;
     minor = min;
   }
