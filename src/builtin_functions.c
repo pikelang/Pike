@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.259 2000/09/01 19:17:39 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.260 2000/10/04 22:50:00 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -602,14 +602,20 @@ void f_backtrace(INT32 args)
     {
       INT32 args;
       args=f->num_args;
-      args=MINIMUM(f->num_args, sp - f->locals);
-      if(of)
-	args=MINIMUM(f->num_args, of->locals - f->locals);
-      args=MAXIMUM(args,0);
+      if(!f->locals)
+	args=0;
+      {
+	args=MINIMUM(f->num_args, sp - f->locals);
+	if(of)
+	  args=MINIMUM(f->num_args, of->locals - f->locals);
+	args=MAXIMUM(args,0);
+      }
 
       ITEM(a)[frames].u.array=i=allocate_array_no_init(3+args,0);
       ITEM(a)[frames].type=T_ARRAY;
-      assign_svalues_no_free(ITEM(i)+3, f->locals, args, BIT_MIXED);
+
+      if(f->locals)
+	assign_svalues_no_free(ITEM(i)+3, f->locals, args, BIT_MIXED);
       if(f->current_object->prog)
       {
 #ifdef PIKE_DEBUG
