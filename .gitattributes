@@ -50,6 +50,7 @@ testfont binary
 /src/modules/Image/pnm.c foreign_ident
 /src/modules/Image/quant.c foreign_ident
 /src/modules/Image/togif.c foreign_ident
+/src/modules/Image/x.c foreign_ident
 /src/modules/MIME/mime.c foreign_ident
 /src/modules/Mysql/Makefile.in foreign_ident
 /src/modules/Mysql/acconfig.h foreign_ident
