@@ -1,3 +1,8 @@
+Fri Mar 22 21:57:43 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* regexp.c: added + operator, and added support for 8-bit
+	  characters.
+
 Mon Mar  4 00:00:19 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* hilfe.lpc: fixed a bug when doing 'mapping m=([]);'
