@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.70 1998/02/12 14:11:59 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.71 1998/02/12 14:19:50 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1632,9 +1632,6 @@ static struct array *longest_ordered_sequence(struct array *a)
     else
       links[i] = -1;
     stack[pos] = i;
-
-    fprintf(stderr, "%d: link:%d ltop:%d pos:%d top:%d\n",
-	    i, links[i], ltop, pos, top);
   }
 
   /* FIXME(?) memory unfreed upon error here */
