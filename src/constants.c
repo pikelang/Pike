@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.48 2003/05/31 01:14:27 mast Exp $
+|| $Id: constants.c,v 1.49 2003/08/20 16:31:44 mast Exp $
 */
 
 #include "global.h"
@@ -18,9 +18,13 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.48 2003/05/31 01:14:27 mast Exp $");
+RCSID("$Id: constants.c,v 1.49 2003/08/20 16:31:44 mast Exp $");
 
 struct mapping *builtin_constants = 0;
+
+#ifdef PIKE_DEBUG
+struct callable *first_callable = NULL;
+#endif
 
 PMOD_EXPORT struct mapping *get_builtin_constants(void)
 {
@@ -60,13 +64,20 @@ PMOD_EXPORT void add_global_program(const char *name, struct program *p)
   low_add_constant(name, &s);
 }
 
+#undef INIT_BLOCK
+#define INIT_BLOCK(X) do {						\
+    DO_IF_DEBUG (DOUBLELINK (first_callable, X));			\
+  } while (0)
+
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {		\
+  DO_IF_DEBUG (DOUBLEUNLINK (first_callable, X)); \
   free_type(X->type);			\
   free_string(X->name);			\
   X->name=0;				\
   EXIT_PIKE_MEMOBJ(X);                  \
 }while(0)
+
 BLOCK_ALLOC_FILL_PAGES(callable,2)
 
 int global_callable_flags=0;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.h,v 1.31 2003/05/31 01:14:27 mast Exp $
+|| $Id: constants.h,v 1.32 2003/08/20 16:31:44 mast Exp $
 */
 
 #ifndef ADD_EFUN_H
@@ -31,11 +31,18 @@ struct callable
   INT8 may_return_void;
   long compiles;
   long runs;
+  struct callable *prev;
 #endif
   optimize_fun optimize;
   docode_fun docode;
   struct callable *next;
 };
+
+#ifdef PIKE_DEBUG
+/* We have a double-linked list in debug mode for identification
+ * purposes. */
+extern struct callable *first_callable;
+#endif
 
 /* Prototypes begin here */
 PMOD_EXPORT struct mapping *get_builtin_constants(void);
