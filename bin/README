@@ -102,6 +102,10 @@ test_pike.pike
 unbug
   A GDB frontend for debugging pike code.
 
+xenofarm.sh
+  Generates a Xenofarm result package if run in a Xenofarm build
+  package.
+
 xenofarm_gdb_cmd
   GDB commands that the Xenofarm client will run on any resulting core
   files once its build and verification is done.
