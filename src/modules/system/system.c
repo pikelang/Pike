@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.84 2000/06/21 00:54:30 hubbe Exp $
+ * $Id: system.c,v 1.85 2000/07/07 19:03:47 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.84 2000/06/21 00:54:30 hubbe Exp $");
+RCSID("$Id: system.c,v 1.85 2000/07/07 19:03:47 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -35,6 +35,12 @@ RCSID("$Id: system.c,v 1.84 2000/06/21 00:54:30 hubbe Exp $");
 #include "constants.h"
 #include "pike_memory.h"
 #include "security.h"
+
+/* The sp macro conflicts with Solaris 2.5.1's <sys/conf.h>. */
+#ifdef sp
+#undef sp
+#define STACKPOINTER_WAS_DEFINED
+#endif /* sp */
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -86,6 +92,12 @@ RCSID("$Id: system.c,v 1.84 2000/06/21 00:54:30 hubbe Exp $");
 #ifdef HAVE_SYS_UTIME_H
 #include <sys/utime.h>
 #endif
+
+/* Restore the sp macro */
+#ifdef STACKPOINTER_WAS_DEFINED
+#define sp Pike_sp
+#undef STACK_POINTER_WAS_DEFINED
+#endif /* STACKPOINTER_WAS_DEFINED */
 
 #include "dmalloc.h"
 
