@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.86 2000/08/10 09:51:55 per Exp $
+ * $Id: system.c,v 1.87 2000/08/17 18:43:42 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.86 2000/08/10 09:51:55 per Exp $");
+RCSID("$Id: system.c,v 1.87 2000/08/17 18:43:42 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -84,6 +84,10 @@ RCSID("$Id: system.c,v 1.86 2000/08/10 09:51:55 per Exp $");
 #ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
 #endif
+
+#ifdef HAVE_SYS_ID_H
+#include <sys/id.h>
+#endif /* HAVE_SYS_ID_H */
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>
