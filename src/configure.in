@@ -535,11 +535,12 @@ AC_CACHE_VAL(pike_cv_sys_free_return,
 #if !defined(STDC_HEADERS) && defined(HAVE_MEMORY_H)
 #include <memory.h>
 #endif
-
-void free();
+char foo;
 
 ],
-[],
+[
+  foo=free(malloc(2))[0];
+],
   pike_cv_sys_free_return='char *'
 ,
   pike_cv_sys_free_return='void'
@@ -570,20 +571,14 @@ AC_TRY_LINK([
 #include <memory.h>
 #endif
 
-#define POINTER void *
-POINTER malloc(size_t);
-
-#ifdef FREE_RETURNS_VOID
-void free(POINTER);
-#else
-int free(POINTER);
-#endif
-
+char foo;
 ],
-[],
-  pike_cv_sys_malloc_return="void *"
-,
+[
+  foo=malloc(2)[0];
+],
   pike_cv_sys_malloc_return="char *"
+,
+  pike_cv_sys_malloc_return="void *"
 )])
 
 AC_MSG_RESULT($pike_cv_sys_malloc_return)
