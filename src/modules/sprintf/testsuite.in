@@ -75,9 +75,7 @@ cond([[pow(2.0,-128.0)!=0.0]],
   test_eq([[sprintf("%4F", pow(2.0,-128.0))]], "\000\040\000\000")
 ]])
 test_eq([[sprintf("%4F", 0.033)]], "\075\007\053\002")
-test_do(signal(signum("SIGFPE"),0))
 test_eq([[sprintf("%4F", pow(2.0,128.0))]], "\177\200\000\000")
-test_do(signal(signum("SIGFPE")))
 test_eq([[sprintf("%8F", 0.0)]], "\000\000\000\000\000\000\000\000")
 test_eq([[sprintf("%8F", 1.0)]], "\077\360\000\000\000\000\000\000")
 test_eq([[sprintf("%8F", 0.5)]], "\077\340\000\000\000\000\000\000")
@@ -90,9 +88,7 @@ cond([[pow(2.0,-128.0)!=0.0]],
   test_eq([[sprintf("%8F", pow(2.0,-128.0))]], "\067\360\000\000\000\000\000\000")
 ]])
 test_eq([[sprintf("%8F", 0.032999999821186065673828125)]], "\077\240\345\140\100\000\000\000")
-test_do(signal(signum("SIGFPE"),0))
 test_eq([[sprintf("%8F", pow(2.0,1024.0))]], "\177\360\000\000\000\000\000\000")
-test_do(signal(signum("SIGFPE")))
 
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
