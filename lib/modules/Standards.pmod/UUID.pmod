@@ -2,7 +2,7 @@
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.4 2004/10/05 00:47:35 nilsson Exp $
+// $Id: UUID.pmod,v 1.5 2004/10/05 10:47:55 grubba Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -86,17 +86,16 @@ class UUID {
 	      4 : "Random" ])[version] || "Unknown";
   }
 
-  //! The variant of the UUID, zero padded. I.e. any of 0, 4, 6 and 7.
-  int var = 4; // 1-3 bits
+  //! The variant of the UUID.
+  int var = 1; // 0-2.
 
   //! Returns a string representation of the variant, e.g.
   //! @expr{"IETF draft variant"@}.
   string str_variant() {
     switch(var) {
     case 0: return "Reserved, NCS backward compatibility";
-    case 4: return "IETF draft variant";
-    case 6: return "Reserved, Microsoft Corporation backward compatibility";
-    case 7: return "Reserved for future definition";
+    case 1: return "IETF draft variant";
+    case 2: return "Reserved, Microsoft Corporation backward compatibility";
     default: return "Illegal variant";
     }
   }
@@ -113,18 +112,20 @@ class UUID {
     if(!timestamp && !version && !var && !clk_seq && !node)
       return;
 
-    if( !(< 0,4,6,7 >)[var] ) error("Illegal variant %O.\n", var);
+    if( !(< 0,1,2 >)[var] ) error("Illegal variant %O.\n", var);
 
-    if(timestamp>=pow(2,60) || timestamp<0)
+    if(timestamp & ~((1<<60)-1))
       error("Timestamp %O out of range.\n", timestamp);
-    if( version<0 || version>15 )
+    if(version & ~15)
       error("Version %O out of range.\n", version);
 
-    int seq_limit = ([ 0:15, 4:14, 6:13, 7:13 ])[var];
-    if(clk_seq>=pow(2,seq_limit) || clk_seq<0)
+    int seq_mask = ([ 0:~((1<<15)-1),
+		      1:~((1<<14)-1),
+		      2:~((1<<13)-1) ])[var];
+    if(clk_seq & ~((1<<seq_limit)-1))
       error("Clock sequence %O out of range.\n", clk_seq);
 
-    if(node>=pow(2,48) || node<0)
+    if(node & ~((1<<48)-1))
       error("Node %012x out of range\n", node);
   }
 
@@ -154,15 +155,13 @@ class UUID {
     t >>= 32;
     ret += sprintf("%2c", t); // time_mid
     t >>= 16;
-    t <<= 4;
-    t |= version;
+    t |= version<<4;
     ret += sprintf("%2c", t);
 
-    // FIXME: Hardcoded for variant 10.
-    t = clk_seq>>8;
-    t |= (var<<5);
-    ret += sprintf("%c", t);
-    ret += sprintf("%c", clk_seq&255);
+    int variant_mask = (1<<(16-var))-1;
+    t = 0xffff & ~variant_mask;
+    t |= clk_seq & (variant_mask >> 1);
+    ret += sprintf("%2c", t);
 
     ret += sprintf("%6c", node);
 
@@ -198,21 +197,14 @@ class UUID {
     case 16:
       int time_low, time_mid, time_hi_and_version, clk_seq_res;
       sscanf(in, "%4c%2c%2c%2c%6c", time_low, time_mid, time_hi_and_version,
-	     clk_seq_res, node);
-      version = time_hi_and_version & 0b1111;
-      time_hi_and_version >>= 4;
+	     clk_seq, node);
+      version = (time_hi_and_version & 0xf0)>>4;
+      time_hi_and_version &= 0x0f;
       timestamp = time_hi_and_version<<(6*8) | time_mid<<(4*8) | time_low;
-      var = clk_seq_res >> 13;
-      if( !(var & 4) ) {
-	var = 0;
-	clk_seq = clk_seq_res;
-      }
-      else if( !(var & 2) ) {
-	var = 4;
-	clk_seq = clk_seq_res & 0x7fff;
-      }
-      else
-	clk_seq = clk_seq_res & 0x3fff;
+      int var_mask = 1<<15;
+      for (var = 0; clk_seq & var_mask; var++, var_mask>>=1)
+	;
+      clk_seq &= var_mask - 1;
       break;
     default:
       error("Illegal UUID.\n");
@@ -233,10 +225,11 @@ class UUID {
 
 }
 
-// Internal clock class. Only works for variant 4, but all others are
+// Internal clock sequence class. Only works for variant 4, but all others are
 // reserved, so it shouldn't be a problem in practice.
-static class ClkSeq {
-  int clk_seq = random(pow(2,14));
+static class ClkSeq
+{
+  int clk_seq = random(1<<14);
   int last_time;
 
   System.Time clock = System.Time();
@@ -251,7 +244,7 @@ static class ClkSeq {
 
     if( timestamp <= last_time) {
       clk_seq++;
-      clk_seq %= pow(2,14);
+      clk_seq &= (1<<14)-1;
     }
     last_time = timestamp;
 
@@ -285,49 +278,18 @@ void set_clock_state(int last_time, int seq) {
   clk_seq->set_state(last_time, seq);
 }
 
-//! Creates a null UUID object.
-UUID make_null() {
-  UUID u=UUID();
-  u->version = 0;
-  u->var = 0;
-  u->clk_seq = 0;
-  return u;
-}
-
 //! Creates a new version 1 UUID.
 //! @param node
-//!   Either the 48 bit mac address of the system or -1.
+//!   Either the 48 bit IEEE 802 (aka MAC) address of the system or -1.
 UUID make_version1(int node) {
   UUID u=UUID();
   [ u->timestamp, u->clk_seq ] = clk_seq->get();
   u->version = 1;
   if(node<0)
-    u->node = random(pow(2,48)) | 1<<47;
+    u->node = random(1<<48) | 1<<40;
   else
     u->node = node;
   return u;
-}
-
-#define H(X) String.hex2string((X)-"-")
-
-//! Creates a DNS UUID with the given DNS name.
-UUID make_dns(string name) {
-  return make_version3(name, H("6ba7b810-9dad-11d1-80b4-00c04fd430c8"));
-}
-
-//! Creates a URL UUID with the given URL.
-UUID make_url(string name) {
-  return make_version3(name, H("6ba7b811-9dad-11d1-80b4-00c04fd430c8"));
-}
-
-//! Creates a OID UUID with the given OID.
-UUID make_oid(string name) {
-  return make_version3(name, H("6ba7b812-9dad-11d1-80b4-00c04fd430c8"));
-}
-
-//! Creates a X500 UUID with the gived X500 address.
-UUID make_x500(string name) {
-  return make_version3(name, H("6ba7b814-9dad-11d1-80b4-00c04fd430c8"));
 }
 
 //! Creates a version 3 UUID with a @[name] string and a binary
@@ -362,10 +324,10 @@ UUID make_version3(string name, string namespace) {
 //! Creates a version 4 (random) UUID.
 UUID make_version4() {
   UUID u=UUID();
-  u->timestamp = random(pow(2,60));
+  u->timestamp = random(1<<60);
   u->version = 4;
-  u->clk_seq = random(pow(2,14));
-  u->node = random(pow(2,48));
+  u->clk_seq = random(1<<14);
+  u->node = random(1<<48);
   return u;
 }
 
@@ -412,3 +374,35 @@ constant NameSpace_OID = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
 
 //! Name space UUID for X500.
 constant NameSpace_X500 = "6ba7b814-9dad-11d1-80b4-00c04fd430c8";
+
+//! Creates a null UUID object.
+UUID make_null() {
+  UUID u=UUID();
+  u->version = 0;
+  u->var = 0;
+  u->clk_seq = 0;
+  return u;
+}
+
+#define H(X) String.hex2string((X)-"-")
+
+//! Creates a DNS UUID with the given DNS name.
+UUID make_dns(string name) {
+  return make_version3(name, H(NameSpace_DNS));
+}
+
+//! Creates a URL UUID with the given URL.
+UUID make_url(string name) {
+  return make_version3(name, H(NameSpace_URL));
+}
+
+//! Creates an OID UUID with the given OID.
+UUID make_oid(string name) {
+  return make_version3(name, H(NameSpace_OID));
+}
+
+//! Creates an X500 UUID with the gived X500 address.
+UUID make_x500(string name) {
+  return make_version3(name, H(NameSpace_X500));
+}
+
