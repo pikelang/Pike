@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.117 2000/08/11 13:17:13 grubba Exp $");
+RCSID("$Id: gc.c,v 1.118 2000/08/11 14:27:41 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -2186,16 +2186,16 @@ void f__gc_status(INT32 args)
   push_int(num_allocs);
 
   push_constant_text("alloc_threshold");
-  push_int32(alloc_threshold);
+  push_int64(alloc_threshold);
 
   push_constant_text("objects_alloced");
-  push_int32(objects_alloced);
+  push_int64(objects_alloced);
 
   push_constant_text("objects_freed");
-  push_int32(objects_freed);
+  push_int64(objects_freed);
 
   push_constant_text("last_gc");
-  push_int32(last_gc);
+  push_int64(last_gc);
 
   push_constant_text("projected_garbage");
   push_float(objects_freed * (double) num_allocs / (double) alloc_threshold);
