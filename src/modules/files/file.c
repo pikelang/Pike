@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.286 2003/08/31 22:38:33 nilsson Exp $
+|| $Id: file.c,v 1.287 2003/09/05 16:08:23 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.286 2003/08/31 22:38:33 nilsson Exp $");
+RCSID("$Id: file.c,v 1.287 2003/09/05 16:08:23 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1637,7 +1637,7 @@ static void file_open(INT32 args)
 	ref_push_string(flag_str);
 	push_int(access);
 
-	safe_apply(OBJ2CREDS(Pike_interpreter.current_creds)->user,"valid_open",5);
+	safe_apply(OBJ2CREDS(CURRENT_CREDS)->user,"valid_open",5);
 	switch(Pike_sp[-1].type)
 	{
 	   case PIKE_T_INT:
