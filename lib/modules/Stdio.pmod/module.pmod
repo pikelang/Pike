@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.90 2000/10/11 13:23:06 grubba Exp $
+// $Id: module.pmod,v 1.91 2000/11/06 20:40:13 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -76,6 +76,8 @@ class File
 {
   inherit Fd_ref;
 
+  int is_file;
+
   mixed ___read_callback;
   mixed ___write_callback;
   mixed ___close_callback;
@@ -142,6 +144,7 @@ class File
   int open(string file, string mode, void|int bits)
   {
     _fd=Fd();
+    is_file = 1;
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
@@ -154,6 +157,7 @@ class File
   int open_socket(int|void port, string|void address)
   {
     _fd=Fd();
+    is_file = 0;
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
@@ -175,6 +179,7 @@ class File
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
+    is_file = 0;
     debug_file="socket";
     debug_mode=host+":"+port; 
     debug_bits=0;
@@ -233,6 +238,7 @@ class File
 #ifdef __STDIO_DEBUG
     __closed_backtrace=0;
 #endif
+    is_file = 0;
     if(query_num_arg()==0)
       how=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
     if(Fd fd=[object(Fd)]::pipe(how))
@@ -285,6 +291,7 @@ class File
 
       default:
 	_fd=Fd();
+	is_file = 1;
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
 #endif
@@ -298,6 +305,7 @@ class File
 
   int assign(File|Fd o)
   {
+    is_file = o->is_file;
     if((program)Fd == (program)object_program(o))
     {
       _fd = o->dup();
@@ -327,6 +335,7 @@ class File
   File dup()
   {
     File to = File();
+    to->is_file = is_file;
     to->_fd = _fd;
     if(to->___read_callback = ___read_callback)
       _fd->_read_callback=to->__stdio_read_callback;
@@ -1027,7 +1036,7 @@ static class nb_sendfile
     werror("Stdio.sendfile(): Reader done.\n");
 #endif /* SENDFILE_DEBUG */
 
-    from->set_nonblocking(0,0,0);
+    from->set_blocking();
     from = 0;
     if (trailers) {
       to_write += trailers;
@@ -1068,7 +1077,8 @@ static class nb_sendfile
 #ifdef SENDFILE_DEBUG
     werror("Stdio.sendfile(): Blocking read.\n");
 #endif /* SENDFILE_DEBUG */
-
+    if( sizeof( to_write ) > 2)
+      return;
     string more_data = from->read(65536, 1);
     if (more_data == "") {
       // EOF.
@@ -1097,6 +1107,7 @@ static class nb_sendfile
 	to_write += ({ data });
       } else {
 	to_write += ({ data[..len-1] });
+	from->set_blocking();
 	reader_done();
 	return;
       }
@@ -1118,7 +1129,7 @@ static class nb_sendfile
     } else {
       if (sizeof(to_write) > READER_HALT) {
 	// Go to sleep.
-	from->set_nonblocking(0,0,0);
+	from->set_blocking();
 	reader_awake = 0;
       }
       start_writer();
@@ -1321,8 +1332,9 @@ static class nb_sendfile
     callback = cb;
     args = a;
 
-    blocking_to = ((!to->set_nonblocking) ||
-		   (to->mode && !(to->mode() & PROP_NONBLOCK)));
+    blocking_to = to->is_file ||
+      ((!to->set_nonblocking) ||
+       (to->mode && !(to->mode() & PROP_NONBLOCK)));
 
     if (blocking_to && to->set_blocking) {
 #ifdef SENDFILE_DEBUG
@@ -1332,8 +1344,9 @@ static class nb_sendfile
     }
 
     if (from) {
-      blocking_from = ((!from->set_nonblocking) ||
-		       (from->mode && !(from->mode() & PROP_NONBLOCK)));
+      blocking_from = from->is_file ||
+	((!from->set_nonblocking) ||
+	 (from->mode && !(from->mode() & PROP_NONBLOCK)));
 	
       if (off >= 0) {
 	from->seek(off);
