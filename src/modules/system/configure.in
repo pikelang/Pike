@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.25 1998/06/25 13:01:39 grubba Exp $
+# $Id: configure.in,v 1.26 1998/06/25 13:03:42 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -135,8 +135,9 @@ AC_TRY_COMPILE([
 # include <shadow.h>
 #endif /* HAVE_SHADOW_H */
 ], [
-  struct passwd ent;
-  ent.pw_gecos = "FOO";
+  static struct passwd ent;
+  char *gecos;
+  gecos = ent.pw_gecos;
 ], pike_cv_struct_has_pw_gecos=yes, pike_cv_struct_has_pw_gecos=no)
 ])
 
