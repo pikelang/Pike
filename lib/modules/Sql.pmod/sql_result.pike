@@ -1,5 +1,5 @@
 /*
- * $Id: sql_result.pike,v 1.7 2000/09/28 03:39:10 hubbe Exp $
+ * $Id: sql_result.pike,v 1.8 2000/11/13 04:29:10 nilsson Exp $
  *
  * Implements the generic result module of the SQL-interface
  *
@@ -10,7 +10,7 @@
 
 //.
 //. File:	sql_result.pike
-//. RCSID:	$Id: sql_result.pike,v 1.7 2000/09/28 03:39:10 hubbe Exp $
+//. RCSID:	$Id: sql_result.pike,v 1.8 2000/11/13 04:29:10 nilsson Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic result of the SQL-interface.
@@ -103,7 +103,7 @@ void seek(int skip)
   if (arrayp(master_res)) {
     index += skip;
   } else if (functionp(master_res->seek)) {
-    master_res->seek(index);
+    master_res->seek(skip);
   } else {
     while (skip--) {
       master_res->fetch_row();
