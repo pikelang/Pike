@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_macros.h,v 1.34 2003/01/02 15:33:43 grubba Exp $
+|| $Id: pike_macros.h,v 1.35 2003/01/02 18:22:37 grubba Exp $
 */
 
 #ifndef MACROS_H
@@ -16,9 +16,12 @@
 
 #include "pike_memory.h"
 
-#define OFFSETOF(str_type, field) ((size_t)& (((struct str_type *)0)->field))
+#define OFFSETOF(str_type, field) \
+  ((size_t)(((char *)& (((struct str_type *)0)->field))-((char *)0)))
 #define BASEOF(ptr, str_type, field)  \
-((struct str_type *)((char*)ptr - (size_t)& (((struct str_type *)0)->field)))
+  ((struct str_type *)((char*)ptr - OFFSETOF(str_type, field)))
+#define ALIGNOF(X) OFFSETOF({ char ignored_; X fooo_;}, fooo_)
+/* #define ALIGNOF(X) ((size_t)(((char *)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))-((char *)0))) */
 
 #define NELEM(a) (sizeof (a) / sizeof ((a)[0]))
 #define ALLOC_STRUCT(X) ( (struct X *)xalloc(sizeof(struct X)) )
@@ -50,12 +53,7 @@
 #define isgraph(X)	(ispunct(X) || isupper(X) || islower(X) || isdigit(X))
 #endif /* !HAVE_ISGRAPH */
 
-/*
- * #define ALIGNOF(X) __alignof__(X)
- * #define ALIGNOF(X) (sizeof(X)>ALIGN_BOUND?ALIGN_BOUND:( 1<<my_log2(sizeof(X))))
- */
 
-#define ALIGNOF(X) ((size_t)(((char *)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))-((char *)0)))
 
 #define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & -(Y))
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
