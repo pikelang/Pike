@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.76 1999/10/29 20:55:09 noring Exp $");
+RCSID("$Id: efuns.c,v 1.77 1999/12/27 20:57:18 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -62,7 +62,7 @@ RCSID("$Id: efuns.c,v 1.76 1999/10/29 20:55:09 noring Exp $");
 # endif
 #endif
 
-#ifndef NAMELEN
+#ifndef NAMLEN
 # if HAVE_DIRECT_H
 #  include <direct.h>
 #  define NAMLEN(dirent) strlen((dirent)->d_name)
