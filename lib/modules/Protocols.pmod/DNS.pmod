@@ -179,7 +179,7 @@ class protocol
 	   m->arcount);
     m->rd=(m->c1>>7)&1;
     m->tc=(m->c1>>6)&1;
-    m->tc=(m->c1>>5)&1;
+    m->aa=(m->c1>>5)&1;
     m->opcode=(m->c1>>1)&15;
     m->qr=m->c1&1;
     
