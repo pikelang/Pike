@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.41 2002/02/04 09:23:30 grubba Exp $ */
+/* $Id: export.pike,v 1.42 2002/02/25 13:32:29 nilsson Exp $ */
 
 import Stdio;
 
@@ -203,9 +203,9 @@ int main(int argc, string *argv)
     if(file_size(pike_base_name+"/src/modules/"+tmp) == -2)
       fix_configure("modules/"+tmp);
 
-  werror("vpath = %s  pwd = %s\n",vpath,getcwd());
+  //  werror("vpath = %s  pwd = %s\n",vpath,getcwd());
   symlink(".",vpath);
-//    system("ln -s pike "+vpath);
+  //  system("ln -s pike "+vpath);
 
   files=`+(({ vpath+"/README", vpath+"/ANNOUNCE", vpath+"/Makefile" }),
 	   get_files(vpath+"/src"),
@@ -218,7 +218,6 @@ int main(int argc, string *argv)
 	   get_files(vpath+"/refdoc/src_images"),
 	   get_files(vpath+"/refdoc/structure"),
 	   ({ vpath+"/refdoc/Makefile",
-	      vpath+"/refdoc/Makefile.in",
 	      vpath+"/refdoc/inlining.txt",
 	      vpath+"/refdoc/keywords.txt",
 	      vpath+"/refdoc/syntax.txt",
@@ -227,6 +226,12 @@ int main(int argc, string *argv)
 	      vpath+"/refdoc/xml.txt",
 	      vpath+"/refdoc/.cvsignore",
 	   }));
+
+  if(notag) {
+    mapping m = gmtime(time());
+    vpath = sprintf("%04d%02d%02d_%02d%02d%02d", 1900+m->year, m->mon+1, m->mday,
+		    m->hour, m->min, m->sec);
+  }
 
   werror("Creating "+vpath+".tar.gz:\n");
   object o=Stdio.File();
