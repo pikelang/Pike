@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.48 1999/04/23 21:31:28 grubba Exp $
+# $Id: static_module_makefile.in,v 1.49 1999/05/29 17:52:26 grubba Exp $
 #
 
 
@@ -84,6 +84,8 @@ module.a: $(OBJS)
 	$(AR) cq module.a $(OBJS)
 	-@RANLIB@ module.a
 	if test -f linker_options ; then touch linker_options ; else :; fi
+
+$(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
 clean:
 	-rm -f *.o *.a *.so module.so module.pmod linker_options modlist_headers modlist_segment module_testsuite

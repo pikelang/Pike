@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.53 1999/04/23 21:31:50 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.54 1999/05/29 17:52:19 grubba Exp $
 #
 
 
@@ -62,6 +62,8 @@ config.status: $(SRCDIR)/configure
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	$(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) -lc $(LIBGCC)
 	if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi
+
+$(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
 clean:
 	-rm -f *.o *.a *.so module.so linker_options modlist_headers modlist_segment module_testsuite
