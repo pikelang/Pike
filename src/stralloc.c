@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.191 2004/11/14 18:21:56 mast Exp $
+|| $Id: stralloc.c,v 1.192 2004/11/14 18:30:40 mast Exp $
 */
 
 #include "global.h"
@@ -217,12 +217,23 @@ PMOD_EXPORT struct pike_string *debug_check_size_shift(struct pike_string *a,
 }
 #endif
 
-#define CONVERT(FROM,TO) \
-void PIKE_CONCAT4(convert_,FROM,_to_,TO)(PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len) \
-{  while(--len>=0) *(to++)=*(from++); } \
-INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *to, const PIKE_CONCAT(p_wchar,FROM) *from, ptrdiff_t len) \
-{ int tmp; while(--len>=0) if((tmp=*(to++)-*(from++))) return tmp; return 0; }
-
+#define CONVERT(FROM,TO)						\
+  void PIKE_CONCAT4(convert_,FROM,_to_,TO) (PIKE_CONCAT(p_wchar,TO) *to, \
+					    const PIKE_CONCAT(p_wchar,FROM) *from, \
+					    ptrdiff_t len)		\
+  {									\
+    while(--len>=0) *(to++)=*(from++);					\
+  }									\
+  INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO) (const PIKE_CONCAT(p_wchar,TO) *to,	\
+					     const PIKE_CONCAT(p_wchar,FROM) *from, \
+					     ptrdiff_t len)		\
+  {									\
+    int tmp;								\
+    while(--len>=0)							\
+      if((tmp=*(to++)-*(from++)))					\
+	return tmp;							\
+    return 0;								\
+  }
 
 CONVERT(0,1)
 CONVERT(0,2)
@@ -1239,8 +1250,12 @@ void dump_stralloc_strings(void)
   for(e=0;e<htable_size;e++)
   {
     LOCK_BUCKET(e);
-    for(p=base_table[e];p;p=p->next)
+    for(p=base_table[e];p;p=p->next) {
       debug_dump_pike_string(p, 70);
+#ifdef DEBUG_MALLOC
+      debug_malloc_dump_references (p, 2, 1, 0);
+#endif
+    }
     UNLOCK_BUCKET(e);
   }
 }
@@ -2002,6 +2017,7 @@ PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
 
 PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag)
+/* Doesn't touch or sanity check s->known_shift. */
 {
   if(mag > s->s->size_shift)
   {
@@ -2057,35 +2073,112 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 }
 
 
-PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s,
-					      const char *str, ptrdiff_t len)
+PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
+					       const p_wchar0 *str, ptrdiff_t len)
 {
   string_build_mkspace(s,len,0);
   switch(s->s->size_shift)
   {
-    case 0: convert_0_to_0(STR0(s->s)+s->s->len,(p_wchar0 *)str,len); break;
-    case 1: convert_0_to_1(STR1(s->s)+s->s->len,(p_wchar0 *)str,len); break;
-    case 2: convert_0_to_2(STR2(s->s)+s->s->len,(p_wchar0 *)str,len); break;
+    case 0: convert_0_to_0(STR0(s->s)+s->s->len,str,len); break;
+    case 1: convert_0_to_1(STR1(s->s)+s->s->len,str,len); break;
+    case 2: convert_0_to_2(STR2(s->s)+s->s->len,str,len); break;
+#ifdef PIKE_DEBUG
     default:
-      Pike_fatal("Illegal magnitude!\n");
+      Pike_fatal ("Illegal magnitude! (%d)\n", s->s->size_shift);
+#endif
   }
   s->s->len+=len;
   /* Ensure NUL-termination */
   s->s->str[s->s->len << s->s->size_shift] = 0;
 }
 
+PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
+					       const p_wchar1 *str, ptrdiff_t len)
+{
+  if (s->s->size_shift == 0) {
+    if (find_magnitude1 (str, len) == 0) {
+      string_build_mkspace (s, len, 0);
+      convert_1_to_0 (STR0(s->s) + s->s->len, str, len);
+      s->s->len += len;
+      /* Ensure NUL-termination */
+      s->s->str[s->s->len] = 0;
+      return;
+    }
+    s->known_shift = 1;
+  }
+
+  string_build_mkspace (s, len, 1);
+  if (s->s->size_shift == 1)
+    convert_1_to_1 (STR1(s->s)+s->s->len, str, len);
+  else {
+#ifdef PIKE_DEBUG
+    if (s->s->size_shift != 2)
+      Pike_fatal ("I aint got no clue 'bout nothing, dude. (%d)\n",
+		  s->s->size_shift);
+#endif
+    convert_1_to_2 (STR2(s->s)+s->s->len, str, len);
+  }
+  s->s->len += len;
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
+}
+
+PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
+					       const p_wchar2 *str, ptrdiff_t len)
+{
+  if (s->s->size_shift < 2) {
+    int shift = find_magnitude2 (str, len);
+
+    if (shift > s->s->size_shift) {
+      string_build_mkspace (s, len, shift);
+      if (shift == 1)
+	convert_2_to_1 (STR1(s->s) + s->s->len, str, len);
+      else {
+#ifdef PIKE_DEBUG
+	if (shift != 2) Pike_fatal ("Uhh.. Like, what? (%d)\n", shift);
+#endif
+	convert_2_to_2 (STR2(s->s) + s->s->len, str, len);
+      }
+      s->known_shift = shift;
+    }
+
+    else {
+      string_build_mkspace (s, len, 0);
+      if (s->s->size_shift == 0)
+	convert_2_to_0 (STR0(s->s) + s->s->len, str, len);
+      else {
+#ifdef PIKE_DEBUG
+	if (s->s->size_shift != 1)
+	  Pike_fatal ("This is soo way bogus, man. (%d)\n", s->s->size_shift);
+#endif
+	convert_2_to_1 (STR1(s->s) + s->s->len, str, len);
+      }
+    }
+  }
+
+  else {
+    string_build_mkspace (s, len, 2);
+    convert_2_to_2 (STR2(s->s) + s->s->len, str, len);
+  }
+
+  s->s->len += len;
+  /* Ensure NUL-termination */
+  s->s->str[s->s->len << s->s->size_shift] = 0;
+}
 
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
 				       PCHARP from,
 				       ptrdiff_t len)
 {
-  int shift;
-  if ((shift = from.shift) > s->s->size_shift) {
+  int shift = from.shift;
+  if (shift > s->s->size_shift) {
     if (shift == 1) {
       shift = find_magnitude1((p_wchar1 *)from.ptr, len);
     } else {
       shift = find_magnitude2((p_wchar2 *)from.ptr, len);
     }
+    if (shift > s->known_shift)
+      s->known_shift = shift;
   }
   string_build_mkspace(s, len, shift);
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len), from, len);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.89 2004/11/14 18:21:56 mast Exp $
+|| $Id: stralloc.h,v 1.90 2004/11/14 18:30:40 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -290,8 +290,12 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
-PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s,
-					      const char *str, ptrdiff_t len);
+PMOD_EXPORT void string_builder_binary_strcat0(struct string_builder *s,
+					       const p_wchar0 *str, ptrdiff_t len);
+PMOD_EXPORT void string_builder_binary_strcat1(struct string_builder *s,
+					       const p_wchar1 *str, ptrdiff_t len);
+PMOD_EXPORT void string_builder_binary_strcat2(struct string_builder *s,
+					       const p_wchar2 *str, ptrdiff_t len);
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
 				       PCHARP from,
 				       ptrdiff_t len);
@@ -343,6 +347,12 @@ PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
 PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
 			   char **to_free);
 /* Prototypes end here */
+
+static INLINE void string_builder_binary_strcat(struct string_builder *s,
+						const char *str, ptrdiff_t len)
+{
+  string_builder_binary_strcat0 (s, (const p_wchar0 *) str, len);
+}
 
 #define ISCONSTSTR(X,Y) c_compare_string((X),Y,sizeof(Y)-sizeof(""))
 
