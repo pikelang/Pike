@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.15 2001/05/07 18:05:11 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.16 2001/05/07 18:08:38 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -713,7 +713,7 @@ void document(string enttype,
 
    if (huh["see also"])
    {
-      res+="<group><see_also/>\n";
+      res+="<group><seealso/>\n";
       res+=fixdesc(
 	 map(huh["see also"],
 	       lambda(string s)
