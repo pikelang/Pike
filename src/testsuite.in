@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.181 1999/07/04 12:07:43 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.182 1999/07/05 21:58:45 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -3399,6 +3399,15 @@ void test_dir(string dir)
 {
   foreach(get_dir(dir), string s)
   {
+    switch(s)
+    {
+      case "msql.pike":
+      case "mysql.pike":
+      case "odbc.pike":
+      case "oracle.pike":
+      case "postgres.pike":
+        continue; // These modules cannot be tested properly by this test
+    }
     string file=combine_path(dir,s);
     mixed stat=file_stat(file);
     if(!stat) continue;
