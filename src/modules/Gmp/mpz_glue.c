@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.73 2000/03/01 08:41:35 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.74 2000/03/27 00:12:36 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -513,8 +513,6 @@ static void mpzmod__sprintf(INT32 args)
 
 static void mpzmod__is_type(INT32 args)
 {
-  INT32 r = 0;
-  
   if(args < 1 || sp[-args].type != T_STRING)
     error("Bad argument 1 for Mpz->_is_type().\n");
 
@@ -697,6 +695,8 @@ double double_from_sval(struct svalue *s)
     default:
       error("Bad argument, expected a number of some sort.\n");
   }
+  /* NOT_REACHED */
+  return (double)0.0;	/* Keep the compiler happy. */
 }
 
 #else
@@ -893,7 +893,6 @@ static void mpzmod_sub(INT32 args)
 
 static void mpzmod_rsub(INT32 args)
 {
-  INT32 e;
   struct object *res;
   MP_INT *a;
   
