@@ -308,38 +308,43 @@ mixed call_sync(array data)
   int refno = data[4];
   string s = encode_value(data);
   con->set_blocking();
-  DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
-  pending_calls[refno] = 17; // a mutex lock key maybe?
-  send(sprintf("%4c%s", sizeof(s), s));
-  while(zero_type(finished_calls[refno]))
-  {
+  mixed err = catch {
+    DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
+    pending_calls[refno] = 17; // a mutex lock key maybe?
+    send(sprintf("%4c%s", sizeof(s), s));
+    while(zero_type(finished_calls[refno]))
+    {
 #if constant(Thread.Mutex)
-    // Only one thread does read(), the rest just waits. When the
-    // read() finishes, all threads loop once.
-    object lock = block_read_mutex->trylock();
-    if (lock) {
+      // Only one thread does read(), the rest just waits. When the
+      // read() finishes, all threads loop once.
+      object lock = block_read_mutex->trylock();
+      if (lock) {
 #endif
-      string s = con->read(8192,1);
-      if(s && strlen(s)) read_some(0,s);
-      else
-      {
+	string s = con->read(8192,1);
+	if(s && strlen(s)) read_some(0,s);
+	else
+	{
+#if constant(Thread.Mutex)
+	  lock = 0;
+#endif
+	  if (!catch (con->close()))
+	    closed_connection();
+	  if (!nice)
+	    error("Could not read");
+	  else
+	    return ([])[0]; // failed, like
+	}
 #if constant(Thread.Mutex)
 	lock = 0;
-#endif
-	if (!catch (con->close()))
-	  closed_connection();
-	if (!nice)
-	  error("Could not read");
-	else
-	  return ([])[0]; // failed, like
       }
-#if constant(Thread.Mutex)
-      lock = 0;
-    }
-    else block_read_mutex->lock();
+      else block_read_mutex->lock();
 #endif
-  }
-  con->set_nonblocking(read_some, write_some, closed_connection);
+    }
+  };
+  mixed err2 = catch {
+    con->set_nonblocking(read_some, write_some, closed_connection);
+  };
+  if (err || err2) throw (err || err2);
   return get_result(refno);
 }
 
