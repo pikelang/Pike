@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.662 2003/07/30 18:53:27 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.663 2003/08/03 01:03:06 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2553,18 +2553,19 @@ void low_generate(int depth,
       "int main() { trace(9); werror(\"%O\\n\","+acc+"()); }\n"
       ;
 
-    mixed tmp;
+    mixed tmp, x;
     mixed err=catch {
       tmp=compile_string(test)();
       res=tmp->Q();
       if(res != ans)
-      throw("Test failed");
+	throw("Test failed");
+      res = "None";
       tmp = decode_value(encode_value(tmp, Codec()), Codec());
       res=tmp->Q();
       if(res != ans)
-      throw("Test failed for encode/decode.");
+	throw("Test failed for encode/decode.");
+      x=Program.inherit_list(object_program(tmp));
     };
-    mixed x=Program.inherit_list(object_program(tmp));
     if(err)
     {
       errors++;
@@ -9160,8 +9161,15 @@ test_eq(strlen, sizeof)
 
 // - this_object and this
 test_true(objectp(this_object()))
+test_true(objectp(this))
+test_true(objectp(global::this))
+test_true(this_object() == this)
+test_true([[typeof(this) == typeof(this_object())]])
+test_true([[typeof(this) == typeof(global::this)]])
+test_true([[typeof(this_program) == typeof(object_program(this_object()))]])
+test_true([[typeof(this_program) == typeof(object_program(global::this))]])
 
-test_program([[
+test_program_eq([[
   string _sprintf() {return "g";}
   class A {
     string _sprintf() {return "A";}
@@ -9173,10 +9181,10 @@ test_program([[
       }
     }
   }
-  int a() {return A()->B()->f() == "gABBB";}
-]])
+  string a() {return A()->B()->f();}
+]], "gABBB")
 
-test_program([[
+test_program_eq([[
   string _sprintf() {return "g";}
   class A {
     string _sprintf() {return "A";}
@@ -9188,10 +9196,10 @@ test_program([[
       }
     }
   }
-  int a() {return A()->B()->f() == "gABB";}
-]])
+  string a() {return A()->B()->f();}
+]], "gABB")
 
-test_program([[
+test_program_eq([[
   string _sprintf() {return "g";}
   class A {
     string _sprintf() {return "A";}
@@ -9204,10 +9212,10 @@ test_program([[
       }
     }
   }
-  int a() {return A()->B()->f() == "gAB";}
-]])
+  string a() {return A()->B()->f();}
+]], "gAB")
 
-test_program([[
+test_program_eq([[
   string _sprintf() {return "g";}
   class A {
     string _sprintf() {return "A";}
@@ -9220,8 +9228,92 @@ test_program([[
     }
     constant this = 7;
   }
-  int a() {return A()->B()->f() == "g7BB7";}
+  string a() {return A()->B()->f();}
+]], "g7BB7")
+
+test_compile_error([[
+  this = 17;
 ]])
+
+test_compile_error([[
+  class A {
+    class B {
+      void f() {A::this = 17;}
+    }
+  };
+]])
+
+test_any([[
+  class A {
+    class B {
+      A parent() {return A::this;}
+    }
+  };
+  A a = A();
+  A.B b = a->B();
+  destruct (a);
+  return zero_type (b->parent());
+]], 2)
+
+test_eval_error([[
+  class A {
+    class B {
+      class C {
+	A grandparent() {return A::this;}
+      }
+    }
+  };
+  A.B b = A()->B();
+  A.B.C c = b->C();
+  destruct (b);
+  b->grandparent();
+]], 2)
+
+test_program_eq([[
+  string _sprintf() {return "g";}
+  class A {
+    string _sprintf() {return "A";}
+    mixed f() {
+      return sprintf ("%O%O", global::this, A::this);
+    }
+  }
+  class B {
+    string _sprintf() {return "B";}
+    class C {
+      inherit A;
+      string _sprintf() {return "C";}
+      mixed f() {
+	return A::f() + sprintf ("%O%O%O%O",
+				 global::this, B::this, this_program::this, this);
+      }
+    }
+  }
+  string a() {return B()->C()->f();}
+]], "gCgBCC")
+
+test_program_eq([[
+  string _sprintf() {return "g";}
+  class A {
+    string _sprintf() {return "A";}
+    mixed f() {
+      return sprintf ("%O%O%O%O",
+		      global::this, A::this, this_program::this, this);
+    }
+  }
+  class B {
+    string _sprintf() {return "B";}
+    class C {
+      inherit A;
+      string _sprintf() {return "C";}
+      mixed f() {
+	return A::f() + "|" +
+	  sprintf ("%O%O%O%O%O",
+		   global::this, B::this, C::this, this_program::this, this);
+      }
+    }
+  }
+  string a() {return B()->C()->f();}
+]], "gCCC|gBCCC")
 
 test_program([[
   class A {
@@ -9244,6 +9336,78 @@ test_program([[
   }
   int a() {return A()->B()->f();}
 ]])
+
+test_program([[
+  class A {
+    class B {
+      mixed f() {
+	return typeof (A::this_program) != typeof (B::this_program);
+      }
+    }
+  }
+  int a() {return A()->B()->f();}
+]])
+
+test_program_eq([[
+  object ao = compile_string(#"
+    string id() {return \"A\";}
+    class B {
+      string id() {return \"B\";}
+      string foo()
+      {
+	return this->id() + id() + local::id() + global::this->id() + global::id();
+      }
+    }")();
+
+  class Handler
+  {
+    mixed resolv (string id, void|string file, void|object handler)
+    {
+      if (id == "B") return ao->B;
+      return master()->resolv (id, file, handler);
+    }
+  }
+
+  string a()
+  {
+    object c = compile_string(#"
+      string id() {return \"C\";}
+      class D {
+	inherit B;
+	string id() {return \"D\";}
+	string foo()
+	{
+	  return ::foo() + \"|\" +
+	    this->id() + id() + B::id() + global::this->id() + global::id();
+	}
+      }", 0, Handler())();
+
+    return c->D()->foo();
+  }
+]], "DDBAA|DDBCC")
+
+test_program_eq([[
+  class X
+  {
+    object parent() {return global::this;}
+  }
+
+  class Handler
+  {
+    mixed resolv (string id, void|string file, void|object handler)
+    {
+      if (id == "X") return X;
+      return master()->resolv (id, file, handler);
+    }
+  }
+
+  object a()
+  {
+    object o = compile_string ("inherit X;", 0, Handler())();
+    return o->parent();
+  }
+]], this_object())
+
 
 // - this_thread
 // - thread_create
