@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.40 1999/03/26 23:40:58 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.41 1999/04/01 17:22:18 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -810,6 +810,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	      {
 		case '0': case '1': case '2': case '3':
 		case '4': case '5': case '6': case '7':
+		case '8': case '9':
 		  my_putchar('"');
 		  my_putchar('"');
 	      }
