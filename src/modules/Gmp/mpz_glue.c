@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.3 1997/03/10 10:42:28 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.4 1997/03/11 03:21:39 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -270,7 +270,6 @@ static void mpzmod_cast(INT32 args)
     if(!strcmp(sp[-args].u.string->str, "object"))
     {
       pop_n_elems(args);
-      this_object()->refs++;
       push_object(this_object());
     }
     break;
@@ -279,7 +278,6 @@ static void mpzmod_cast(INT32 args)
     if(!strcmp(sp[-args].u.string->str, "mixed"))
     {
       pop_n_elems(args);
-      this_object()->refs++;
       push_object(this_object());
     }
     break;
@@ -347,10 +345,14 @@ static void return_temporary(INT32 args)
 static void name(INT32 args)				\
 {							\
   INT32 e;						\
-  struct object *res = clone(mpzmod_program, 0);	\
+  struct object *res;					\
+  for(e=0; e<args; e++)					\
+    get_mpz(sp+e-args);					\
+  res = clone(mpzmod_program, 0);			\
   mpz_set(OBTOMPZ(res), THIS);				\
   for(e=0;e<args;e++)					\
-    fun(OBTOMPZ(res), OBTOMPZ(res), get_mpz(sp+e-args));\
+    fun(OBTOMPZ(res), OBTOMPZ(res),			\
+	OBTOMPZ(sp[e-args].u.object));			\
   pop_n_elems(args);					\
   push_object(res);					\
 }
@@ -362,13 +364,19 @@ BINFUN(mpzmod_gcd,mpz_gcd)
 static void mpzmod_sub(INT32 args)
 {
   INT32 e;
-  struct object *res = clone(mpzmod_program, 0);
+  struct object *res;
+  
+  if (args)
+    for (e = 0; e<args; e++)
+      get_mpz(sp + e - args);
+  
+  res = clone(mpzmod_program, 0);
   mpz_set(OBTOMPZ(res), THIS);
 
   if(args)
   {
     for(e=0;e<args;e++)
-      mpz_sub(OBTOMPZ(res), OBTOMPZ(res), get_mpz(sp+e-args));
+      mpz_sub(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
   }else{
     mpz_neg(OBTOMPZ(res), OBTOMPZ(res));
   }
@@ -379,21 +387,17 @@ static void mpzmod_sub(INT32 args)
 static void mpzmod_div(INT32 args)
 {
   INT32 e;
-
-  struct object *res = clone(mpzmod_program, 0);
-  mpz_set(OBTOMPZ(res), THIS);
+  struct object *res;
   
   for(e=0;e<args;e++)
-  {
-    MP_INT *tmp;
-    tmp=get_mpz(sp+e-args);
-    if(!mpz_sgn(tmp))
-    {
-      really_free_object(res);
-      error("Division by zero.\n");
-    }
-    mpz_tdiv_q(OBTOMPZ(res), OBTOMPZ(res), tmp);
-  }
+    if (mpz_sgn(get_mpz(sp+e-args)))
+      error("Division by zero.\n");	
+  
+  res = clone(mpzmod_program, 0);
+  mpz_set(OBTOMPZ(res), THIS);
+  for(e=0;e<args;e++)	
+    mpz_tdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+
   pop_n_elems(args);
   push_object(res);
 }
@@ -401,17 +405,17 @@ static void mpzmod_div(INT32 args)
 static void mpzmod_mod(INT32 args)
 {
   INT32 e;
-  struct object *res = clone(mpzmod_program, 0);
-  mpz_set(OBTOMPZ(res), THIS);
-
+  struct object *res;
+  
   for(e=0;e<args;e++)
-  {
-    MP_INT *tmp;
-    tmp=get_mpz(sp+e-args);
-    if(!mpz_sgn(tmp))
-      error("Modulo by zero.\n");
-    mpz_tdiv_r(OBTOMPZ(res), OBTOMPZ(res), tmp);
-  }
+    if (mpz_sgn(get_mpz(sp+e-args)))
+      error("Division by zero.\n");	
+  
+  res = clone(mpzmod_program, 0);
+  mpz_set(OBTOMPZ(res), THIS);
+  for(e=0;e<args;e++)	
+    mpz_tdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
+
   pop_n_elems(args);
   push_object(res);
 }
@@ -459,7 +463,9 @@ static void mpzmod_invert(INT32 args)
 {
   MP_INT *modulo;
   struct object *res;
-  
+
+  if (args != 1)
+    error("Gmp.mpz->invert: wrong number of arguments.\n");
   modulo = get_mpz(sp-args);
   if (!mpz_sgn(modulo))
     error("divide by zero");
@@ -467,7 +473,7 @@ static void mpzmod_invert(INT32 args)
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
     really_free_object(res);
-    error("not invertible");
+    error("Gmp.mpz->invert: not invertible");
   }
   pop_n_elems(args);
   push_object(res);
@@ -592,12 +598,57 @@ static void mpzmod_powm(INT32 args)
   push_object(res);
 }
 
+static void mpzmod_pow(INT32 args)
+{
+  struct object *res;
+  
+  if (args != 1)
+    error("Gmp.mpz->pow: Wrong number of arguments.\n");
+  if (sp[-1].type != T_INT)
+    error("Gmp.mpz->pow: Non int exponent.\n");
+  if (sp[-1].u.integer < 0)
+    error("Gmp.mpz->pow: Negative exponent.\n");
+  res = clone(mpzmod_program, 0);
+  mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  pop_n_elems(args);
+  push_object(res);
+}
+
 static void mpzmod_not(INT32 args)
 {
   pop_n_elems(args);
   push_int(!mpz_sgn(THIS));
 }
 
+static void gmp_pow(INT32 args)
+{
+  struct object *res;
+  if (args != 2)
+    error("Gmp.pow: Wrong number of arguments");
+  if ( (sp[-2].type != T_INT) || (sp[-2].u.integer < 0)
+       || (sp[-1].type != T_INT) || (sp[-1].u.integer < 0))
+    error("Gmp.pow: Negative arguments");
+  res = clone(mpzmod_program, 0);
+  mpz_ui_pow_ui(OBTOMPZ(res), sp[-2].u.integer, sp[-1].u.integer);
+  pop_n_elems(args);
+  push_object(res);
+}
+
+static void gmp_fac(INT32 args)
+{
+  struct object *res;
+  if (args != 1)
+    error("Gmp.fac: Wrong number of arguments.\n");
+  if (sp[-1].type != T_INT)
+    error("Gmp.fac: Non int argument.\n");
+  if (sp[-1].u.integer < 0)
+    error("Gmp.mpz->pow: Negative exponent.\n");
+  res = clone(mpzmod_program, 0);
+  mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
+  pop_n_elems(args);
+  push_object(res);
+}
+  
 static void init_mpz_glue(struct object *o)
 {
   mpz_init(THIS);
@@ -677,19 +728,20 @@ void pike_module_init(void)
   add_function("`~",mpzmod_gcd,"function(:object)",0);
   add_function("powm",mpzmod_powm,
   "function(" MPZ_ARG_TYPE "," MPZ_ARG_TYPE ":object)", 0);
+  add_function("pow", mpzmod_pow, "function(int:object)", 0);
 #if 0
   /* These are not implemented yet */
   add_function("squarep", mpzmod_squarep, "function(:int)", 0);
   add_function("divmod", mpzmod_divmod, "function(" MPZ_ARG_TYPE ":array(object))", 0);
-  add_function("pow", mpzmod_pow, "function(int:object)", 0);
   add_function("divm", mpzmod_divm, "function(string|int|float|object, string|int|float|object:object)", 0);
-  add_function("mpz_pow", mpz_pow, "function(int, int)", 0);
-  add_function("mpz_fac", mpz_fac, "function(int|object:object)", 0);
 #endif
   set_init_callback(init_mpz_glue);
   set_exit_callback(exit_mpz_glue);
 
   add_program_constant("mpz", mpzmod_program=end_program(), 0);
+
+  add_function("mpz_pow", gmp_pow, "function(int, int:object)", 0);
+  add_function("mpz_fac", gmp_fac, "function(int:object)", 0);
 
 #endif
 }
