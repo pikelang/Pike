@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.156 2002/11/15 13:26:43 grubba Exp $
+|| $Id: docode.c,v 1.157 2002/11/18 16:41:11 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.156 2002/11/15 13:26:43 grubba Exp $");
+RCSID("$Id: docode.c,v 1.157 2002/11/18 16:41:11 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2067,13 +2067,12 @@ static int do_docode2(node *n, INT16 flags)
 	}
       }
       /* FALL_THROUGH */
+    default:
 #ifdef PIKE_DEBUG
-    case T_OBJECT:
-      if(n->u.sval.u.object->next == n->u.sval.u.object)
+      if((n->type == T_OBJECT) &&
+	 (n->u.sval.u.object->next == n->u.sval.u.object))
 	Pike_fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
 #endif
-      /* FALL_THROUGH */
-    default:
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
