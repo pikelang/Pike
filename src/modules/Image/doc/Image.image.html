@@ -1431,6 +1431,14 @@ the new image object
 <blockquote>
 Invert an image. Each pixel value gets to be 255-x, where x 
     is the old value.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_13.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->invert();</td>
+     </tr></table>
 </blockquote>
 <h4>RETURNS</h4>
 
@@ -1494,7 +1502,7 @@ Maps all pixel colors to the colors given.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_13.gif width=67 height=67></td>
+     <td><img src=illustration_15.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->map_closest(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
@@ -1578,7 +1586,7 @@ Maps all pixel colors to the colors given.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_15.gif width=67 height=67></td>
+     <td><img src=illustration_17.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->map_fs(({({255,0,0}),({255,255,255}),({0,0,0})}));</td>
@@ -1617,7 +1625,7 @@ the new image object
 mirrors an image:
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_17.gif width=67 height=67></td>
+     <td><img src=illustration_19.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->mirrorx();</td>
@@ -1644,7 +1652,7 @@ the new image object
 mirrors an image:
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_19.gif width=67 height=67></td>
+     <td><img src=illustration_21.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->mirrory();</td>
@@ -1673,7 +1681,7 @@ Recolor an image from intensity values.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_21.gif width=67 height=67></td>
+     <td><img src=illustration_23.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->grey()->modify_by_intensity(1,0,0, 0,({255,0,0}),({0,255,0}));</td>
@@ -1969,8 +1977,8 @@ Rotates an image a certain amount of degrees (360° is
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_23.gif width=87 height=88></td>
-     <td><img src=illustration_24.gif width=87 height=88></td>
+     <td><img src=illustration_25.gif width=87 height=88></td>
+     <td><img src=illustration_26.gif width=87 height=88></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate(15,255,0,0);</td>
@@ -2014,7 +2022,7 @@ rotates an image counter-clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_26.gif width=67 height=67></td>
+     <td><img src=illustration_28.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_ccw();</td>
@@ -2042,7 +2050,7 @@ rotates an image clockwise, 90 degrees.
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_28.gif width=67 height=67></td>
+     <td><img src=illustration_30.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->rotate_cw();</td>
@@ -2132,9 +2140,9 @@ Selects the best colors to represent the image.
 <p>
      <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_30.gif width=67 height=67></td>
-     <td><img src=illustration_31.gif width=67 height=67></td>
      <td><img src=illustration_32.gif width=67 height=67></td>
+     <td><img src=illustration_33.gif width=67 height=67></td>
+     <td><img src=illustration_34.gif width=67 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>2</td>
@@ -2286,8 +2294,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_34.gif width=82 height=67></td>
-     <td><img src=illustration_35.gif width=82 height=67></td>
+     <td><img src=illustration_36.gif width=82 height=67></td>
+     <td><img src=illustration_37.gif width=82 height=67></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewx(15,255,0,0);</td>
@@ -2339,8 +2347,8 @@ Skews an image an amount of pixels or a factor;
 
 <p>     <table><tr valign=center>
      <td><img src=lena.gif width=67 height=67></td>
-     <td><img src=illustration_37.gif width=67 height=82></td>
-     <td><img src=illustration_38.gif width=67 height=82></td>
+     <td><img src=illustration_39.gif width=67 height=82></td>
+     <td><img src=illustration_40.gif width=67 height=82></td>
      </tr><tr valign=center>
      <td>original</td>
      <td>->skewy(15,255,0,0);</td>
@@ -2367,6 +2375,56 @@ Skews an image an amount of pixels or a factor;
 
 <blockquote>
 the new image object
+</blockquote>
+
+<hr>
+<a name=threshold> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>threshold</b>()<br>
+object <b>threshold</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Makes a black-white image. 
+
+<p>     If all red, green, blue parts of a pixel
+     is larger or equal then the given value, the pixel will become
+     white, else black.
+
+<p>     This method works fine with the grey method.
+
+<p>     If no arguments are given, the current color is used 
+     for threshold values.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_42.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>->threshold(90,100,110);</td>
+     </tr></table>
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>int r</tt>
+<dt><tt>int g</tt>
+<dt><tt>int b</tt>
+  <dd>red, green, blue threshold values
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the new image object
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.image.html#grey>grey</a></tt>
 </blockquote>
 
 <hr>
@@ -2532,48 +2590,6 @@ PPM data
 </blockquote>
 
 <hr>
-<a name=treshold> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>treshold</b>()<br>
-object <b>treshold</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Makes a black-white image. 
-
-<p>     If all red, green, blue parts of a pixel
-     is larger or equal then the given value, the pixel will become
-     white, else black.
-
-<p>     This method works fine with the grey method.
-
-<p>     If no arguments are given, the current color is used 
-     for treshold values.
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int r</tt>
-<dt><tt>int g</tt>
-<dt><tt>int b</tt>
-  <dd>red, green, blue threshold values
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the new image object
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#grey>grey</a></tt>
-</blockquote>
-
-<hr>
 <a name=tuned_box> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
@@ -2590,6 +2606,16 @@ Draws a filled rectangle with colors (and alpha values) tuned
 <p>     Tuning function is (1.0-x/xw)*(1.0-y/yw) where x and y is
      the distance to the corner and xw and yw are the sides of the
      rectangle.
+
+<p>     <table><tr valign=center>
+     <td><img src=lena.gif width=67 height=67></td>
+     <td><img src=illustration_44.gif width=67 height=67></td>
+     <td><img src=illustration_45.gif width=67 height=67></td>
+     </tr><tr valign=center>
+     <td>original</td>
+     <td>solid tuning<br>(blue,red,green,yellow)</td>
+     <td>tuning transparency<br>(as left + 255,128,128,0)</td>
+     </tr></table>
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>

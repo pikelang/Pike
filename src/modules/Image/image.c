@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.32 1997/05/29 22:45:03 mirar Exp $ */
+/* $Id: image.c,v 1.33 1997/05/29 23:31:01 mirar Exp $ */
 
 /*
 **! module Image
@@ -6,7 +6,7 @@
 **!     This module adds image-drawing and -manipulating
 **!	capabilities to pike. 
 **! note
-**!	$Id: image.c,v 1.32 1997/05/29 22:45:03 mirar Exp $<br>
+**!	$Id: image.c,v 1.33 1997/05/29 23:31:01 mirar Exp $<br>
 **! see also: Image.font, Image.image
 **!
 **! class image
@@ -107,7 +107,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.32 1997/05/29 22:45:03 mirar Exp $");
+RCSID("$Id: image.c,v 1.33 1997/05/29 23:31:01 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1143,6 +1143,16 @@ static INLINE void
 **!	the distance to the corner and xw and yw are the sides of the
 **!	rectangle.
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->copy()->tuned_box(0,0,lena()->xsize(),lena()->ysize(),({({255,0,0}),({0,255,0}),({0,0,255}),({255,255,0})})); </illustration></td>
+**!	<td><illustration> return lena()->copy()->tuned_box(0,0,lena()->xsize(),lena()->ysize(),({({255,0,0,255}),({0,255,0,128}),({0,0,255,128}),({255,255,0})})); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>solid tuning<br>(blue,red,green,yellow)</td>
+**!	<td>tuning transparency<br>(as left + 255,128,128,0)</td>
+**!	</tr></table>
+**!
 **! returns the object called
 **!
 **! arg int x1
@@ -1418,6 +1428,14 @@ void image_color(INT32 args)
 **!    Invert an image. Each pixel value gets to be 255-x, where x 
 **!    is the old value.
 **!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->invert(); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->invert();</td>
+**!	</tr></table>
+**!
 **! returns the new image object
 */
 
@@ -1459,8 +1477,8 @@ void image_invert(INT32 args)
 }
 
 /*
-**! method object treshold()
-**! method object treshold(int r,int g,int b)
+**! method object threshold()
+**! method object threshold(int r,int g,int b)
 **! 	Makes a black-white image. 
 **!
 **! 	If all red, green, blue parts of a pixel
@@ -1470,7 +1488,15 @@ void image_invert(INT32 args)
 **!	This method works fine with the grey method.
 **!
 **!	If no arguments are given, the current color is used 
-**!	for treshold values.
+**!	for threshold values.
+**!
+**!	<table><tr valign=center>
+**!	<td><illustration> return lena(); </illustration></td>
+**!	<td><illustration> return lena()->threshold(90,100,110); </illustration></td>
+**!	</tr><tr valign=center>
+**!	<td>original</td>
+**!	<td>->threshold(90,100,110);</td>
+**!	</tr></table>
 **!
 **! returns the new image object
 **!

@@ -195,7 +195,7 @@ string fixdesc(string s,string prefix)
    while (sscanf(t,"%s<illustration>%s</illustration>%s",t,u,v)==3)
    {
       s+=t;
-      mixed err=catch {
+      array err=catch {
 	 object x=compile_string(replace(illustration_code,"***the string***",u))();
 	 x->lena_image=lena_image;
 	 u=x->doit("illustration_"+illustration_counter+++".gif");
@@ -203,6 +203,7 @@ string fixdesc(string s,string prefix)
       if (err)
       {
 	 stderr->write("error while compiling and running\n"+u+"\n");
+	 stderr->write(master()->describe_backtrace(err)+"\n");
       }
       else s+=u;
       t=v;
