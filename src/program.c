@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.491 2003/03/29 21:23:11 mast Exp $
+|| $Id: program.c,v 1.492 2003/03/29 22:42:48 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.491 2003/03/29 21:23:11 mast Exp $");
+RCSID("$Id: program.c,v 1.492 2003/03/29 22:42:48 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5107,36 +5107,111 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   }
 }
 
+#define FIND_PROGRAM_LINE(prog, file, len, shift, line) do {		\
+    char *pos = prog->linenumbers;					\
+    len = 0;								\
+    shift = 0;								\
+    file = NULL;							\
+									\
+    if (pos < prog->linenumbers + prog->num_linenumbers) {		\
+      if (*pos == 127) {						\
+	pos++;								\
+	len = get_small_number(&pos);					\
+	shift = *pos;							\
+	file = ++pos;							\
+	CHECK_FILE_ENTRY (prog, pos, len, shift);			\
+	pos += len<<shift;						\
+      }									\
+      get_small_number(&pos);	/* Ignore the offset */			\
+      line = get_small_number(&pos);					\
+    }									\
+  } while (0)
+
 PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
 						      INT32 *linep)
 {
   *linep = 0;
 
   if (prog->linenumbers) {
-    char *cnt;
-    size_t len = 0;
-    INT32 shift = 0;
-    char *file = NULL;
+    size_t len;
+    INT32 shift;
+    char *file;
 
-    cnt = prog->linenumbers;
-    if (cnt < prog->linenumbers + prog->num_linenumbers) {
-      if (*cnt == 127) {
-	cnt++;
-	len = get_small_number(&cnt);
-	shift = *cnt;
-	file = ++cnt;
-	CHECK_FILE_ENTRY (prog, cnt, len, shift);
-	cnt += len<<shift;
-      }
-      get_small_number(&cnt);	/* Ignore the offset */
-      *linep = get_small_number(&cnt);
-    }
+    FIND_PROGRAM_LINE (prog, file, len, shift, (*linep));
 
     if (file) {
       struct pike_string *str = begin_wide_shared_string(len, shift);
       memcpy(str->str, file, len<<shift);
       return end_shared_string(str);
     }
+  }
+
+  return NULL;
+}
+
+static char *make_plain_file (char *file, size_t len, INT32 shift, int malloced)
+{
+  if(shift)
+  {
+    static char buf[1000];
+    char *buffer = malloced ?
+      malloc (len + 1) : (len = NELEM(buf) - 1, buf);
+    PCHARP from=MKPCHARP(file, shift);
+    int chr;
+    size_t ptr=0;
+
+    for (; chr = EXTRACT_PCHARP(from); INC_PCHARP(from, 1))
+    {
+      size_t space = chr > 255 ? 20 : 1;
+
+      if (ptr + space > len) {
+	if (malloced)
+	  buffer = realloc (buffer, (len = (len << 1) + space) + 1);
+	else
+	  break;
+      }
+
+      if(chr > 255)
+      {
+	sprintf(buffer+ptr,"\\0x%x",chr);
+	ptr+=strlen(buffer+ptr);
+      }else{
+	buffer[ptr++]=chr;
+      }
+    }
+
+    buffer[ptr]=0;
+    return buffer;
+  }
+
+  else{
+    char *buffer = malloc (len + 1);
+    MEMCPY (buffer, file, len);
+    buffer[len] = 0;
+    return buffer;
+  }
+}
+
+/* Same as low_get_program_line but returns a plain char *. It's
+ * malloced if the malloced flag is set, otherwise it's a pointer to a
+ * static buffer which might be clobbered by later calls.
+ *
+ * This function is useful when the shared string table has been freed
+ * and in sensitive parts of the gc where the shared string structures
+ * can't be touched. It also converts wide strings to ordinary ones
+ * with escaping.
+ */
+PMOD_EXPORT char *low_get_program_line_plain(struct program *prog, INT32 *linep,
+					     int malloced)
+{
+  *linep = 0;
+
+  if (prog->linenumbers) {
+    char *file;
+    size_t len;
+    INT32 shift;
+    FIND_PROGRAM_LINE (prog, file, len, shift, (*linep));
+    if (file) return make_plain_file (file, len, shift, malloced);
   }
 
   return NULL;
@@ -5158,70 +5233,11 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 }
 
 #ifdef PIKE_DEBUG
-/* Same as get_program_line but only used for debugging,
- * returns a char* 
- * This is important because this function may be called
- * after the shared string table has expired.
- */
-char *debug_get_program_line(struct program *prog,
-			     INT32 *linep)
-{
-  char *cnt;
-  size_t len = 0;
-  INT32 shift = 0;
-  char *file = NULL;
-  static char buffer[1025];
-  *linep = 0;
-
-  if (!prog->linenumbers)
-    return "stub";
-
-  cnt = prog->linenumbers;
-  if (cnt < prog->linenumbers + prog->num_linenumbers) {
-    if (*cnt == 127) {
-      cnt++;
-      len = get_small_number(&cnt);
-      shift = *cnt;
-      file = ++cnt;
-      CHECK_FILE_ENTRY (prog, cnt, len, shift);
-      cnt += len<<shift;
-    }
-    get_small_number(&cnt);	/* Ignore the offset */
-    *linep = get_small_number(&cnt);
-  }
-
-  if (file) {
-    if(shift)
-    {
-      PCHARP from=MKPCHARP(file, shift);
-      size_t ptr=0;
-      while(ptr < NELEM(buffer)-20 &&
-	    EXTRACT_PCHARP(from))
-      {
-	if(EXTRACT_PCHARP(from) > 255)
-	{
-	  sprintf(buffer+ptr,"\\0x%x",EXTRACT_PCHARP(from));
-	  ptr+=strlen(buffer+ptr);
-	}else{
-	  buffer[ptr++]=EXTRACT_PCHARP(from);
-	}
-	INC_PCHARP(from, 1);
-      }
-      buffer[ptr]=0;
-      return buffer;
-    }else{
-      return file;
-    }
-  } else {
-    return "-";
-  }
-}
-
 /* Variant for convenient use from a debugger. */
 void gdb_program_line (struct program *prog)
 {
   INT32 line;
-  char *file = debug_get_program_line (prog, &line);
+  char *file = low_get_program_line_plain (prog, &line, 0);
   fprintf (stderr, "%s:%d\n", file, line);
 }
 #endif
@@ -5278,6 +5294,48 @@ PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
 
   return NULL;
 }
+
+/* This is to low_get_line as low_get_program_line_plain is to
+ * low_get_program_line. */
+PMOD_EXPORT char *low_get_line_plain (PIKE_OPCODE_T *pc, struct program *prog,
+				      INT32 *linep, int malloced)
+{
+  linep[0] = 0;
+
+  if (prog->program && prog->linenumbers) {
+    ptrdiff_t offset = pc - prog->program;
+
+    if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
+      char *cnt = prog->linenumbers;
+      INT32 off = 0, line = 0;
+      char *file = NULL;
+      size_t len;
+      INT32 shift;
+
+      while(cnt < prog->linenumbers + prog->num_linenumbers)
+      {
+	if(*cnt == 127)
+	{
+	  cnt++;
+	  len = get_small_number(&cnt);
+	  shift = *cnt;
+	  file = ++cnt;
+	  CHECK_FILE_ENTRY (prog, cnt, len, shift);
+	  cnt += len<<shift;
+	}
+	off+=get_small_number(&cnt);
+	if(off > offset) break;
+	line+=get_small_number(&cnt);
+      }
+      linep[0]=line;
+
+      if (file) return make_plain_file (file, len, shift, malloced);
+    }
+  }
+
+  return NULL;
+}
+
 
 /*
  * return the file in which we were executing. pc should be the
