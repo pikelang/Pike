@@ -449,34 +449,31 @@ array parseArgList(int|void allowLiterals) {
     if (typ && typ->name == "void" && peekToken() == ")")
       return ({ argnames, argtypes });
     string literal = 0;
+    string identifier = 0;
     if (!typ)
       literal = parseLiteral();
-    else if (peekToken() == "...") {
-      typ = VarargsType(typ);
-      eat("...");
+    else {
+      if (peekToken() == "...") {
+	typ = VarargsType(typ);
+	eat("...");
+      }
+      if (isIdent(peekToken()))
+	identifier = readToken();
     }
-    string identifier = 0;
-    if (isIdent(peekToken()))
-      identifier = readToken();
 
-    if (typ && identifier) {
+    if (typ && (identifier || !allowLiterals || (typ->name != "object"))) {
+      // Note: identifier may be zero for unnamed arguments in prototypes.
       argnames += ({ identifier });
       argtypes += ({ typ });
     }
     else {
       if (typ) {
-        // it's an identifier 'Foo.Bar.gazonk' designating a constant that
-        // has been mistaken for an object type ...
-        if (typ->name != "object")
-          parseError("Expected type, idents or literal constant");
-        literal = typ->classname;
+	// it's an identifier 'Foo.Bar.gazonk' designating a constant that
+	// has been mistaken for an object type ...
+	literal = typ->classname;
       }
-      if (literal && !identifier) {
-        argnames += ({ literal });
-        argtypes += ({ 0 });
-      }
-      else
-        parseError("Expected type, idents or literal constant, got %O",peekToken());
+      argnames += ({ literal });
+      argtypes += ({ 0 });
     }
     if (peekToken() == ")")
       return ({ argnames, argtypes });

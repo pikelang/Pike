@@ -473,7 +473,7 @@ class Method {
     for(int i = 0; i < sizeof(argnames); ++i) {
       if (argtypes[i])
         args += xmltag("argument",
-                       (["name" : argnames[i] ]),
+                       argnames[i]&&([ "name" : argnames[i] ]),
                        xmltag("type", argtypes[i]->xml()));
       else
         args += xmltag("argument",
