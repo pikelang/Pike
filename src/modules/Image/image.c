@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.14 1997/03/20 07:56:56 mirar Exp $ */
+/* $Id: image.c,v 1.15 1997/03/21 16:56:20 per Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.14 1997/03/20 07:56:56 mirar Exp $");
+RCSID("$Id: image.c,v 1.15 1997/03/21 16:56:20 per Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1681,6 +1681,8 @@ void pike_module_init()
    add_function("tozbgr",image_tozbgr,
 		"function(array(array(int)):string)",0);
    add_function("to8bit_rgbcube",image_to8bit_rgbcube,
+		"function(int,int,int,void|string:string)",0);
+   add_function("to8bit_rgbcube_rdither",image_to8bit_rgbcube_rdither,
 		"function(int,int,int,void|string:string)",0);
 
 
