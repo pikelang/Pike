@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.378 2001/05/28 18:19:42 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.379 2001/06/18 20:01:47 david%hedbor.org Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -59,7 +59,6 @@ pike_cv_prog_CC_save="$CC"
 AC_PROG_CC
 AC_ISC_POSIX
 AC_PROG_CPP
-
 #############################################################################
 
 #
@@ -697,13 +696,21 @@ if test $cflags_is_set = no; then
     # FIXME: Optimize for V9
     AC_SYS_COMPILER_FLAG(-msupersparc,ultrasparc,OPTIMIZE)
    ;;
-   i586)
-    AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
+   i486)
+    AC_SYS_COMPILER_FLAG(-mcpu=i486,mcpu_i486,OPTIMIZE)
    ;;
-   i686)
-    AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,OPTIMIZE,[
+   i586)
+    AC_SYS_COMPILER_FLAG(-mcpu=i586,mcpu_i586,OPTIMIZE,[
        AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
     ])
+   ;;
+   i686)
+    AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,CFLAGS,[
+        AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,CFLAGS,[
+	    AC_SYS_COMPILER_FLAG(-mpentium,pentium,CFLAGS)
+        ])
+    ])
+    AC_SYS_COMPILER_FLAG(-march=i686,march_i686,CFLAGS)
    ;;
   esac
 
