@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.23 2001/02/08 19:09:18 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.24 2001/02/15 18:13:16 hubbe Exp $");
 
 #include "zlib_machine.h"
 
@@ -121,6 +121,7 @@ static int do_deflate(dynamic_buffer *buf,
 	this->gz.avail_out += BUF;
       } 
       low_make_buf_space(-this->gz.avail_out,buf);
+      if(ret == Z_BUF_ERROR) ret=Z_OK;
       if(ret != Z_OK)
       {
 	fail=ret;
