@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.38 2001/06/04 23:59:56 mast Exp $
+ * $Id: mapping.h,v 1.39 2001/06/30 17:50:36 mast Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -68,17 +68,17 @@ extern struct mapping *gc_internal_mapping;
 
 #ifndef PIKE_MAPPING_KEYPAIR_LOOP
 #define NEW_MAPPING_LOOP(md) \
-  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ;e<md->hashsize;e++) for(k=md->hash[e];k;k=k->next)
+  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ;e<(md)->hashsize;e++) for(k=(md)->hash[e];k;k=k->next)
 
 /* WARNING: this should not be used */
 #define MAPPING_LOOP(m) \
-  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch(m->data))) ;e<m->data->hashsize;e++) for(k=m->data->hash[e];k;k=k->next)
+  for((e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data))) ;e<(m)->data->hashsize;e++) for(k=(m)->data->hash[e];k;k=k->next)
 #else /* PIKE_MAPPING_KEYPAIR_LOOP */
 #define NEW_MAPPING_LOOP(md) \
-  for(((k = MD_KEYPAIRS(md, md->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ; e<md->size; e++,k++)
+  for(((k = MD_KEYPAIRS(md, (md)->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(md)) ) ; e<(md)->size; e++,k++)
 /* WARNING: this should not be used */
 #define MAPPING_LOOP(m) \
-  for(((k = MD_KEYPAIRS(m->data, m->data->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch(m->data)) ) ; e<m->data->size; e++,k++)
+  for(((k = MD_KEYPAIRS((m)->data, (m)->data->hashsize)), e=0) DO_IF_DMALLOC( ?0:(debug_malloc_touch(m),debug_malloc_touch((m)->data)) ) ; e<(m)->data->size; e++,k++)
 #endif /* PIKE_MAPPING_KEYPAIR_LOOP */
 
 #define free_mapping(M) do{ struct mapping *m_=(M); debug_malloc_touch(m_); if(!sub_ref(m_)) really_free_mapping(m_); }while(0)
