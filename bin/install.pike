@@ -1,6 +1,7 @@
 #!/usr/local/bin/pike
 
 int last_len;
+int redump_all;
 string pike;
 array(string) to_dump=({});
 
@@ -57,17 +58,16 @@ int compare_files(string a,string b)
   return 0;
 }
 
-void install_file(string from,
-		 string to,
-		 void|int mode,
-		 void|int dump)
+int low_install_file(string from,
+		     string to,
+		     void|int mode)
 {
   status("installing",to);
 
   if(compare_files(from,to))
   {
     status("installing",to,"Already installed");
-    return;
+    return 0;
   }
   mkdirhier(dirname(to));
   switch(query_num_arg())
@@ -94,7 +94,16 @@ void install_file(string from,
   if(!mv(tmpfile,to))
     fail("mv(%s,%s)",tmpfile,to);
 
-  if(dump)
+  return 1;
+}
+
+int install_file(string from,
+		     string to,
+		     void|int mode,
+		     void|int dump)
+{
+  int ret=install_file(from,to,mode);
+  if((ret || redump_all) && dump)
   {
     switch(reverse(to)[..4])
     {
@@ -104,6 +113,7 @@ void install_file(string from,
 	to_dump+=({to});
     }
   }
+  return ret;
 }
 
 string stripslash(string s)
@@ -181,7 +191,10 @@ int main(int argc, string *argv)
   mixed err=catch {
     pike=combine_path(getenv("exec_prefix"),"pike");
     write("\nInstalling Pike... in %s\n\n",getenv("prefix"));
-    install_file("pike",pike);
+    if(install_file("pike",pike))
+    {
+      redump_all=1;
+    }
     install_file("hilfe",combine_path(getenv("exec_prefix"),"hilfe"));
     install_dir(getenv("TMP_LIBDIR"),getenv("lib_prefix"),1);
     install_dir(getenv("LIBDIR_SRC"),getenv("lib_prefix"),1);
@@ -216,7 +229,7 @@ int main(int argc, string *argv)
   string master=combine_path(getenv("lib_prefix"),"master.pike");
   mixed s1=file_stat(master);
   mixed s2=file_stat(master+".o");
-  if(!s1 || !s2 || s1[3]>=s2[3])
+  if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
   {
     Process.create_process( ({pike,"-m",combine_path(getenv("SRCDIR"),"dumpmaster.pike"),master}))->wait();
   }

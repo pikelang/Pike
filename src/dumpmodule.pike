@@ -92,6 +92,7 @@ int main(int argc, string *argv)
     {
       werror(file +": ");
       mixed err=catch {
+	rm(file+".o"); // Make sure no old files are left
 	if(mixed s=file_stat(file))
 	{
 	  if(s[1]<=0)
