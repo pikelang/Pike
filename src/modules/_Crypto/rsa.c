@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.13 2000/05/03 20:20:02 grubba Exp $
+ * $Id: rsa.c,v 1.14 2000/05/04 16:19:41 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -25,11 +25,13 @@
 #endif /* !HAVE_RSA_LIB */
 #endif /* HAVE_LIBCRYPTOCI */
 
+/* #define PIKE_RSA_DEBUG */
+
 #ifdef HAVE_RSA_LIB
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.13 2000/05/03 20:20:02 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.14 2000/05/04 16:19:41 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -278,6 +280,50 @@ static void f_set_private_key(INT32 args)
   ref_push_object(fp->current_object);
 }
 
+/* string cooked_get_n() */
+static void f_cooked_get_n(INT32 args)
+{
+  A_RSA_KEY *rsa_public_key = NULL;
+  int code;
+
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
+  if ((code = B_GetKeyInfo((POINTER *)&rsa_public_key, THIS->public_key,
+			   KI_RSAPublic))) {
+    error("Crypto rsa.cooked_get_n(): "
+	  "Failed to get public key: %04x\n", code);
+  }
+
+  pop_n_elems(args);
+
+  push_string(make_shared_binary_string(rsa_public_key->modulus.data,
+					rsa_public_key->modulus.len));
+}
+
+/* string cooked_get_e() */
+static void f_cooked_get_e(INT32 args)
+{
+  A_RSA_KEY *rsa_public_key = NULL;
+  int code;
+
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
+  if ((code = B_GetKeyInfo((POINTER *)&rsa_public_key, THIS->public_key,
+			   KI_RSAPublic))) {
+    error("Crypto rsa.cooked_get_n(): "
+	  "Failed to get public key: %04x\n", code);
+  }
+
+  pop_n_elems(args);
+
+  push_string(make_shared_binary_string(rsa_public_key->exponent.data,
+					rsa_public_key->exponent.len));
+}
+
 /* int query_blocksize() */
 static void f_query_blocksize(INT32 args)
 {
@@ -295,6 +341,45 @@ static void f_rsa_pad(INT32 args)
   error("Not yet implemented.\n");
   pop_n_elems(args);
   push_int(0);
+}
+
+/* string low_unpad(string block, int type) */
+static void f_low_unpad(INT32 args)
+{
+  INT32 type;
+  int i = 0;
+  struct pike_string *block = NULL;
+  struct pike_string *res;
+
+  get_all_args("low_unpad", args, "%S%i", &block, &type);
+
+  if (!THIS->n) {
+    error("Public key has not been set.\n");
+  }
+
+  if ((block->str[0]) ||
+      ((i = strlen(block->str+1)) < 9) ||
+      (block->len != THIS->n->len) ||
+      (block->str[1] != type)) {
+
+#ifdef PIKE_RSA_DEBUG
+    fprintf(stderr, "RSA: low_unpad() failed\n"
+	    "len: %d, block->len:%d, n->len:%d, blocktype:%d, type:%d\n",
+	    i, block->len, THIS->n->len, block->len && block->str[0], type);
+#endif /* PIKE_RSA_DEBUG */
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+#ifdef PIKE_RSA_DEBUG
+  fprintf(stderr, "RSA: low_unpad() ok.\n");
+#endif /* PIKE_RSA_DEBUG */
+
+  res = make_shared_binary_string(block->str + i + 2, block->len - i - 2);
+
+  pop_n_elems(args);
+  push_string(res);
 }
 
 /* string rsa_unpad(bignum block, int type) */
@@ -334,60 +419,181 @@ static void f_rsa_unpad(INT32 args)
   push_string(res);
 }
 
-/* object raw_sign(string digest) */
-static void f_raw_sign(INT32 args)
+/* string cooked_sign(string digest) */
+static void f_cooked_sign(INT32 args)
 {
-  error("Not yet implemented.\n");
+  struct pike_string *digest = NULL;
+  struct pike_string *s = NULL;
+  int err;
+  unsigned char *buffer;
+  unsigned int len;
+  unsigned int flen;
+  unsigned int i;
+
+  /* Digits(Decrypt(Pad(digest, 1))); */
+
+  if (!THIS->private_key) {
+    error("Private key has not been set.\n");
+  }
+
+  get_all_args("cooked_sign", args, "%S", &digest);
+
+  if ((err = B_DecryptInit(THIS->cipher, THIS->private_key, rsa_chooser,
+			   (A_SURRENDER_CTX *)NULL_PTR))) {
+    error("Failed to initialize decrypter: %04x\n", err);
+  }
+
+  /* rsa_pad(digest, 1, 0) inlined. */
+  len = THIS->n->len - 3 - digest->len;
+  if (len < 8) {
+    error("Too large block.\n");
+  }
+  
+  buffer = (unsigned char *)xalloc(THIS->n->len+1);
+  buffer[THIS->n->len] = 0;	/* Ensure NUL-termination. */
+
+  buffer[0] = 0;	/* Ensure that it is less than n. */
+  buffer[1] = 1;	/* Padding type 1. */
+
+  MEMSET(buffer+2, 0xff, len);	/* Pad with 0xff */
+
+  buffer[len+2] = 0;	/* End of pad marker. */
+
+  MEMCPY(buffer + len + 3, digest->str, digest->len);
+
+  /* End of rsa_pad */
+
+  s = begin_shared_string(THIS->n->len);
+
+  len = 0;
+  if ((err = B_DecryptUpdate(THIS->cipher, (POINTER)s->str, &len, THIS->n->len,
+			     buffer, THIS->n->len,
+			     (B_ALGORITHM_OBJ)NULL_PTR,
+			     (A_SURRENDER_CTX *)NULL_PTR))) {
+    free_string(s);
+    free(buffer);
+    error("Decrypt failed: %04x\n", err);
+  }
+
+#ifdef PIKE_RSA_DEBUG
+  fprintf(stderr, "RSA: Decrypt len: %d\n", len);
+#endif /* PIKE_RSA_DEBUG */
+
+  free(buffer);
+
+  flen = 0;
+  if ((err = B_DecryptFinal(THIS->cipher, (POINTER)s->str + len, &flen,
+			    THIS->n->len - len,
+			    (B_ALGORITHM_OBJ)NULL_PTR,
+			    (A_SURRENDER_CTX *)NULL_PTR))) {
+    free_string(s);
+    error("Decrypt failed: %04x\n", err);
+  }
+
+#ifdef PIKE_RSA_DEBUG
+  fprintf(stderr, "RSA: Decrypt flen: %d\n", flen);
+#endif /* PIKE_RSA_DEBUG */
+
+  len += flen;
+
+#if defined(PIKE_RSA_DEBUG) || defined(PIKE_DEBUG)
+  if (len != (unsigned int)THIS->n->len) {
+    free_string(s);
+    error("Decrypted string has bad length. Expected %d. Got %d\n",
+	  THIS->n->len, len);
+  }
+#endif /* PIKE_RSA_DEBUG || PIKE_DEBUG */
+
   pop_n_elems(args);
-  push_int(0);
+  push_string(end_shared_string(s));
 }
 
-/* int raw_verify(string digest, object s) */
+/* int raw_verify(string digest, object o) */
 static void f_raw_verify(INT32 args)
 {
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
+  struct pike_string *digest = NULL;
+  struct object *o = NULL;
+  struct pike_string *s = NULL;
+  char *buffer = NULL;
+  int err;
+  int flen;
+  unsigned int len;
 
-/* object sign(string message, program h, mixed|void r) */
-static void f_sign(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
+  if (!THIS->private_key) {
+    error("Private key has not been set.\n");
+  }
 
-/* int verify(string msg, program h, object sign) */
-static void f_verify(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
+  get_all_args("raw_verify", args, "%S%o", &digest, &o);
 
-/* string sha_sign(string message, mixed|void r) */
-static void f_sha_sign(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
+  if ((err = B_EncryptInit(THIS->cipher, THIS->public_key, rsa_chooser,
+			   (A_SURRENDER_CTX *)NULL_PTR))) {
+    error("Failed to initialize encrypter: %04x\n", err);
+  }
 
-/* int sha_verify(string message, string signature) */
-static void f_sha_verify(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
+  /* Digest == rsa_unpad(encrypt(digits(s)), 1) */
 
-/* object generate_key(int bits, function|void r) */
-static void f_generate_key(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
+  push_int(256);
+  apply(o, "digits", 1);
+
+  if ((sp[-1].type != T_STRING) || (!sp[-1].u.string) ||
+      (sp[-1].u.string->size_shift)) {
+    error("Crypto.rsa.raw_verify(): "
+	  "Unexpected return value from o->digits().\n");
+  }
+
+  buffer = sp[-1].u.string->str;
+
+  s = begin_shared_string(THIS->n->len);
+
+  len = 0;
+  if ((err = B_EncryptUpdate(THIS->cipher, (POINTER)s->str, &len, THIS->n->len,
+			     buffer, THIS->n->len,
+			     (B_ALGORITHM_OBJ)NULL_PTR,
+			     (A_SURRENDER_CTX *)NULL_PTR))) {
+    free_string(s);
+    error("Encrypt failed: %04x\n", err);
+  }
+
+#ifdef PIKE_RSA_DEBUG
+  fprintf(stderr, "RSA: Encrypt len: %d\n", len);
+#endif /* PIKE_RSA_DEBUG */
+
+  flen = 0;
+  if ((err = B_EncryptFinal(THIS->cipher, (POINTER)s->str + len, &flen,
+			    THIS->n->len - len,
+			    (B_ALGORITHM_OBJ)NULL_PTR,
+			    (A_SURRENDER_CTX *)NULL_PTR))) {
+    free_string(s);
+    error("Encrypt failed: %04x\n", err);
+  }
+
+#ifdef PIKE_RSA_DEBUG
+  fprintf(stderr, "RSA: Encrypt flen: %d\n", flen);
+#endif /* PIKE_RSA_DEBUG */
+
+  len += flen;
+
+#if defined(PIKE_RSA_DEBUG) || defined(PIKE_DEBUG)
+  if (len != (unsigned int)THIS->n->len) {
+    free_string(s);
+    error("Encrypted string has bad length. Expected %d. Got %d\n",
+	  THIS->n->len, len);
+  }
+#endif /* PIKE_RSA_DEBUG || PIKE_DEBUG */
+
+  pop_stack();	/* Drop the return-value from o->digits(). */
+
+  push_string(end_shared_string(s));
+  
+  push_int(1);
+
+  f_low_unpad(2);
+
+  if (sp[-1].type == T_STRING) {
+    int res = (sp[-1].u.string == digest);
+    pop_stack();
+    push_int(res);
+  }
 }
 
 /* string encrypt(string s, mixed|void r) */
@@ -583,30 +789,6 @@ static void f_decrypt(INT32 args)
   free(buffer);
 }
 
-/* object set_encrypt_key(array(bignum) key) */
-static void f_set_encrypt_key(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
-
-/* object set_decrypt_key(array(bignum) key) */
-static void f_set_decrypt_key(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
-
-/* string crypt_block(string s) */
-static void f_crypt_block(INT32 args)
-{
-  error("Not yet implemented.\n");
-  pop_n_elems(args);
-  push_int(0);
-}
-
 /* int rsa_size() */
 static void f_rsa_size(INT32 args)
 {
@@ -673,6 +855,12 @@ void pike_rsa_init(void)
   ADD_FUNCTION("set_private_key", f_set_private_key,
 	       tFunc(tObj tOr(tArr(tObj),tVoid),tObj), 0);
 
+  ADD_FUNCTION("cooked_get_n", f_cooked_get_n,
+	       tFunc(tNone, tString), 0);
+
+  ADD_FUNCTION("cooked_get_e", f_cooked_get_e,
+	       tFunc(tNone, tString), 0);
+
   ADD_FUNCTION("query_blocksize", f_query_blocksize,
 	       tFunc(tNone, tInt), 0);
 
@@ -682,40 +870,16 @@ void pike_rsa_init(void)
   ADD_FUNCTION("rsa_unpad", f_rsa_unpad,
 	       tFunc(tObj tInt, tString), 0);
 
-  ADD_FUNCTION("raw_sign", f_raw_sign,
-	       tFunc(tString, tObj), 0);
+  ADD_FUNCTION("cooked_sign", f_cooked_sign,
+	       tFunc(tString, tString), 0);
 
   ADD_FUNCTION("raw_verify", f_raw_verify,
 	       tFunc(tString tObj, tInt), 0);
-
-  ADD_FUNCTION("sign", f_sign,
-	       tFunc(tString tPrg tOr(tMix, tVoid), tObj), 0);
-
-  ADD_FUNCTION("verify", f_verify,
-	       tFunc(tString tPrg tObj, tInt), 0);
-
-  ADD_FUNCTION("sha_sign", f_sha_sign,
-	       tFunc(tString tOr(tMix, tVoid), tString), 0);
-
-  ADD_FUNCTION("sha_verify", f_sha_verify,
-	       tFunc(tString tString, tInt), 0);
-
-  ADD_FUNCTION("generate_key", f_generate_key,
-	       tFunc(tInt tOr(tFunction, tVoid), tObj), 0);
 
   ADD_FUNCTION("encrypt", f_encrypt,
 	       tFunc(tString tOr(tMix, tVoid), tString), 0);
 
   ADD_FUNCTION("decrypt", f_decrypt,
-	       tFunc(tString, tString), 0);
-
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,
-	       tFunc(tArr(tObj), tObj), 0);
-
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,
-	       tFunc(tArr(tObj), tObj), 0);
-
-  ADD_FUNCTION("crypt_block", f_crypt_block,
 	       tFunc(tString, tString), 0);
 
   ADD_FUNCTION("rsa_size", f_rsa_size,
@@ -728,7 +892,7 @@ void pike_rsa_init(void)
   set_exit_callback(exit_pike_rsa);
   
   pike_rsa_program = end_program();
-  add_program_constant("rsa", pike_rsa_program, 0);
+  add_program_constant("_rsa", pike_rsa_program, 0);
 #endif /* HAVE_RSA_LIB */
 }
 

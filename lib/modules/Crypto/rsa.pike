@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.18 1999/08/27 15:33:37 grubba Exp $
+/* $Id: rsa.pike,v 1.19 2000/05/04 16:18:33 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -8,40 +8,248 @@
 #define bignum object(Gmp.mpz)
 #define BIGNUM (Gmp.mpz)
 
-import Standards.PKCS;
-
-bignum n;  /* modulo */
-bignum e;  /* public exponent */
-bignum d;  /* private exponent (if known) */
-int size;
-
-/* Extra info associated with a private key. Not currently used. */
-   
-bignum p;
-bignum q;
-
-int encrypt_mode; /* For block cipher compatible functions */
-
-object set_public_key(bignum modulo, bignum pub)
+#ifdef USE_RSA_WRAPPER
+static class rsa_wrapper
 {
-  n = modulo;
-  e = pub;
-  size = n->size(256);
-  if (size < 12)
-    throw( ({ "Crypto.rsa->set_public_key: Too small modulo.\n",
-		backtrace() }) );
-  return this_object();
+  object _rsa_c;
+  object _rsa_pike;
+
+  string n = "n is not in the API";
+  string e = "e is not in the API";
+  string d = "d is not in the API";
+  string size = "size is not in the API";
+
+  string p = "p is not in the API";
+  string q = "q is not in the API";
+
+  object set_public_key(bignum modulo, bignum pub)
+  {
+    _rsa_pike->set_public_key(modulo, pub);
+    _rsa_c->set_public_key(modulo, pub);
+
+    return this_object();
+  }
+
+  object set_private_key(bignum priv, array(bignum)|void extra)
+  {
+    _rsa_pike->set_private_key(priv, extra);
+    _rsa_c->set_private_key(priv, extra);
+
+    return this_object();
+  }
+
+  int query_blocksize()
+  {
+    int res1 = _rsa_pike->query_blocksize();
+    int res2 = _rsa_c->query_blocksize();
+
+    if (res1 != res2) {
+      werror("RSA: query_blocksize() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  bignum rsa_pad(string message, int type, mixed|void random)
+  {
+    bignum res1 = _rsa_pike->rsa_pad(message, type, random);
+    bignum res2 = _rsa_c->rsa_pad(message, type, random);
+
+    if (res1 != res2) {
+      werror("RSA: rsa_pad() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  string rsa_unpad(bignum block, int type)
+  {
+    string res1 = _rsa_pike->rsa_unpad(block, type);
+    string res2 = _rsa_c->rsa_unpad(block, type);
+
+    if (res1 != res2) {
+      werror("RSA: rsa_unpad() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  bignum raw_sign(string digest)
+  {
+    bignum res1 = _rsa_pike->raw_sign(digest);
+    bignum res2 = Gmp.mpz(_rsa_c->cooked_sign(digest), 256);
+
+    if (res1 != res2) {
+      werror("RSA: rsa_sign() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  string cooked_sign(string digest)
+  {
+    string res1 = _rsa_pike->cooked_sign(digest);
+    string res2 = _rsa_c->cooked_sign(digest);
+
+    if (res1 != res2) {
+      werror("RSA: cooked_sign() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  int raw_verify(string digest, bignum s)
+  {
+    int res1 = _rsa_pike->cooked_sign(digest, s);
+    int res2 = _rsa_c->cooked_sign(digest, s);
+
+    if (res1 != res2) {
+      werror("RSA: rsa_verify() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  string encrypt(string s, mixed|void r)
+  {
+    string res1 = _rsa_pike->encrypt(s, r);
+    string res2 = _rsa_c->encrypt(s, r);
+
+    if (res1 != res2) {
+      werror("RSA: encrypt() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  string decrypt(string s)
+  {
+    string res1 = _rsa_pike->decrypt(s);
+    string res2 = _rsa_c->decrypt(s);
+
+    if (res1 != res2) {
+      werror("RSA: decrypt() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  int rsa_size()
+  {
+    int res1 = _rsa_pike->rsa_size();
+    int res2 = _rsa_c->rsa_size();
+
+    if (res1 != res2) {
+      werror("RSA: rsa_size() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  int public_key_equal(object rsa_wrapper)
+  {
+    int res1 = _rsa_pike->public_key_equal(rsa_wrapper->_rsa_pike);
+    int res2 = _rsa_c->public_key_equal(rsa_wrapper->_rsa_c);
+
+    if (res1 != res2) {
+      werror("RSA: public_key_equal() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  object get_n()
+  {
+    object res1 = _rsa_pike->get_n();
+    object res2 = BIGNUM(_rsa_c->cooked_get_n(), 256);
+
+    if (res1 != res2) {
+      werror("RSA: get_n() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  object get_e()
+  {
+    object res1 = _rsa_pike->get_e();
+    object res2 = BIGNUM(_rsa_c->cooked_get_e(), 256);
+
+    if (res1 != res2) {
+      werror("RSA: get_e() failed!\n");
+      error(sprintf("res1:%O != res2:%O\n", res1, res2));
+    }
+    return res1;
+  }
+
+  static void create()
+  {
+    werror("RSA: Using rsa_wrapper\n");
+    _rsa_c = _Crypto._rsa();
+    _rsa_pike = ((program)"_rsa.pike")();
+  }
+}
+inherit rsa_wrapper;
+#else /* !USE_RSA_WRAPPER */
+#ifdef USE_PIKE_RSA
+inherit "_rsa.pike";
+#else /* !USE_PIKE_RSA */
+inherit Crypto._rsa;
+#endif /* USE_PIKE_RSA */
+#endif /* !USE_RSA_WRAPPER */
+
+#if !defined(USE_PIKE_RSA) && !defined(USE_RSA_WRAPPER) && constant(_Crypto._rsa)
+// Only the cooked variant is implemented in C. */
+bignum raw_sign(string digest)
+{
+  return BIGNUM(cooked_sign(digest), 256);
 }
 
-object set_private_key(bignum priv, array(bignum)|void extra)
+bignum get_n()
 {
-  d = priv;
-  if (extra)
-  {
-    p = extra[0];
-    q = extra[1];
-  }
-  return this_object();
+  return BIGNUM(cooked_get_n(), 256);
+}
+
+bignum get_e()
+{
+  return BIGNUM(cooked_get_e(), 256);
+}
+#endif /* !USE_PIKE_RSA && !USE_RSA_WRAPPER && constant(_Crypto._rsa) */
+
+object sign(string message, program h)
+{
+  return raw_sign(Standards.PKCS.Signature.build_digestinfo(message, h()));
+}
+
+int verify(string msg, program h, object sign)
+{
+  // werror(sprintf("msg: '%s'\n", Crypto.string_to_hex(msg)));
+  string s = Standards.PKCS.Signature.build_digestinfo(msg, h());
+  // werror(sprintf("rsa: s = '%s'\n", s));
+  return raw_verify(s, sign);
+}
+
+string sha_sign(string message, mixed|void r)
+{
+  object hash = Crypto.sha();
+  string s;
+
+  hash->update(message);
+  s = hash->digest();
+  s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
+  return cooked_sign(s);
+}
+  
+int sha_verify(string message, string signature)
+{
+  object hash = Crypto.sha();
+  string s;
+  
+  hash->update(message);
+  s = hash->digest();
+  s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
+
+  return raw_verify(s, BIGNUM(signature, 256));
 }
 
 bignum get_prime(int bits, function r)
@@ -61,105 +269,6 @@ bignum get_prime(int bits, function r)
   return p;
 }
 
-int query_blocksize() { return size - 3; }
-
-bignum rsa_pad(string message, int type, mixed|void random)
-{
-  string cookie;
-  int len;
-
-  len = size - 3 - strlen(message);
-  /*  write(sprintf("%d, %d, %d, %s", len, size, strlen(message), message)); */
-  if (len < 8)
-    throw( ({ "Crypto.rsa->rsa_pad: Too large block.\n",
-		backtrace() }) );
-
-  switch(type)
-  {
-  case 1:
-    cookie = sprintf("%@c", replace(allocate(len), 0, 0xff));
-    break;
-  case 2:
-    if (random)
-      cookie = replace(random(len), "\0", "\1");
-    else
-      cookie = sprintf("%@c", Array.map(allocate(len), lambda(int dummy)
-					{
-					  return predef::random(255) + 1;
-					} ));
-    break;
-  default:
-    throw( ({ "Crypto.rsa->rsa_pad: Unknown type.\n",
-		backtrace() }) );
-  }    
-  return BIGNUM(sprintf("%c", type) + cookie + "\0" + message, 256);
-}
-
-string rsa_unpad(bignum block, int type)
-{
-  string s = block->digits(256);
-  int i = search(s, "\0");
-
-  if ((i < 9) || (strlen(s) != (size - 1)) || (s[0] != type))
-    return 0;
-  return s[i+1..];
-}
-
-object raw_sign(string digest)
-{
-  return rsa_pad(digest, 1, 0)->powm(d, n);
-}
-
-int raw_verify(string digest, object s)
-{
-  return s->powm(e, n) == rsa_pad(digest, 1, 0);
-}
-
-object sign(string message, program h, mixed|void r)
-{
-  // FIXME: The r argument is ignored and should be removed
-  return raw_sign(Signature.build_digestinfo(message, h()));
-}
-
-int verify(string msg, program h, object sign)
-{
-  // FIXME: Use raw_verify()
-  
-  // werror(sprintf("msg: '%s'\n", Crypto.string_to_hex(msg)));
-  string s = Signature.build_digestinfo(msg, h());
-  // werror(sprintf("rsa: s = '%s'\n", s));
-  // werror(sprintf("decrypted: '%s'\n", sign->powm(e, n)->digits(256)));
-  string s2 = rsa_unpad(sign->powm(e, n), 1);
-  // werror(sprintf("rsa: s2 = '%s'\n", s2));
-  return s == s2;
-}
-
-string sha_sign(string message, mixed|void r)
-{
-  // FIXME: Use raw_sign()
-  object hash = Crypto.sha();
-  string s;
-
-  hash->update(message);
-  s = hash->digest();
-  s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
-  return rsa_pad(s, 1, r)->powm(d, n)->digits(256);
-}
-  
-int sha_verify(string message, string signature)
-{
-  // FIXME: Use raw_verify()
-  
-  object hash = Crypto.sha();
-  string s;
-  
-  hash->update(message);
-  s = hash->digest();
-  s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
-
-  return s == rsa_unpad(BIGNUM(signature, 256)->powm(e, n), 1);
-}
-
 object generate_key(int bits, function|void r)
 {
   if (!r)
@@ -174,8 +283,8 @@ object generate_key(int bits, function|void r)
   
   do
   {
-    p = get_prime(s1, r);
-    q = get_prime(s2, r);
+    object p = get_prime(s1, r);
+    object q = get_prime(s2, r);
     bignum phi = Gmp.mpz(p-1)*Gmp.mpz(q-1);
 
     array gs; /* gcd(pub, phi), and pub^-1 mod phi */
@@ -190,7 +299,7 @@ object generate_key(int bits, function|void r)
       gs[1] += phi;
     
     set_public_key(p * q, pub);
-    set_private_key(gs[1]);
+    set_private_key(gs[1], ({ p, q }));
 
 //    werror(sprintf("p = %s\nq = %s\ne = %s\nd = %s\n",
 //		   p->digits(), q->digits(), pub->digits(), gs[1]->digits()));
@@ -198,15 +307,11 @@ object generate_key(int bits, function|void r)
   return this_object();
 }
 
-string encrypt(string s, mixed|void r)
-{
-  return rsa_pad(s, 2, r)->powm(e, n)->digits(256);
-}
+/*
+ * Block cipher compatibility.
+ */
 
-string decrypt(string s)
-{
-  return rsa_unpad(BIGNUM(s, 256)->powm(d, n), 2);
-}
+int encrypt_mode; /* For block cipher compatible functions */
 
 object set_encrypt_key(array(bignum) key)
 {
@@ -226,13 +331,6 @@ object set_decrypt_key(array(bignum) key)
 string crypt_block(string s)
 {
   return (encrypt_mode ? encrypt(s) : decrypt(s));
-}
-
-int rsa_size() { return n->size(); }
-
-int public_key_equal (object rsa)
-{
-  return n == rsa->n && e == rsa->e;
 }
 
 #endif
