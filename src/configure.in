@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.645 2002/11/22 12:49:43 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.646 2002/11/22 13:19:52 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1893,6 +1893,8 @@ if test $ldflags_is_set = no ; then
     $with_root/opt/sfw/lib $with_root/opt/gnome-1.4/lib \
     `echo $with_root/usr/X11*/lib | sort -r`
   do
+    if test "$dd" = "/lib"; then continue; fi
+    if test "$dd" = "/usr/lib"; then continue; fi
     for suff in '' 32 64 '/64'; do
       d="$dd$suff"
       AC_MSG_CHECKING($d)
