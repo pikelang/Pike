@@ -47,8 +47,8 @@ wmml: wmml@WITH_GTK@
 	@:
 
 docs1:
-	-@mkdir docs
-	-$(MYRUNPIKE) $(SRCDIR)/dump_cursors.pike docs/cursor_
+	-@mkdir xmldocs
+	-$(MYRUNPIKE) $(SRCDIR)/dump_cursors.pike xmldocs/cursor_
 	$(MYRUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR) docs
 
 
