@@ -1,11 +1,6 @@
-/* PLIS.pmod
- *
- * PLIS (Permuted Lisp). A Lisp language somewhat similar to scheme.
- */
+//! PLIS, Permuted Lisp. A Lisp language somewhat similar to scheme.
 
 #pike __REAL_VERSION__
-
-#define error(X) throw( ({ (X), backtrace() }) )
 
 #ifdef LISP_DEBUG
 #define WERROR werror
@@ -427,8 +422,6 @@ class Parser (string buffer)
   object comment_re = Regexp("^(;[^\n]*\n)");
   object string_re = Regexp("^(\"([^\\\\\"]|\\\\.)*\")");
 
-  object read_list();
-
   mixed _read()
     {
       if (!strlen(buffer))
@@ -826,6 +819,9 @@ object f_global_environment(object arglist, Environment env, Environment globals
   return globals;
 }
 
+//! Adds the special functions quote, set!, setq,
+//! while, define, defmacro, lambda, if, and, or,
+//! begin and catch to the @[environment].
 void init_specials(Environment environment)
 {
   environment->extend(make_symbol("quote"), Special(s_quote));
@@ -842,6 +838,11 @@ void init_specials(Environment environment)
   environment->extend(make_symbol("catch"), Special(s_catch));
 }
 
+//! Adds the functions +, *, -, =, <, >,
+//! concat, read-string, eval,
+//! apply, global-environment, var, cdr, null?,
+//! setcar!, setcdr!, cons and list to the
+//! @[environment].
 void init_functions(Environment environment)
 {
   environment->extend(make_symbol("+"), Builtin(f_add));
@@ -883,7 +884,7 @@ Parser(
   "\n"
   //"  (defmacro (defun name arguments . body)\n"
   //"    (cons (quote define) (cons (cons name arguments) body)))\n"
-  "\n"
+  //"\n"
   "  (defmacro (when cond . body)\n"
   "    (list (quote if) cond\n"
   "	  (cons (quote begin) body)))\n"
@@ -898,6 +899,34 @@ Parser(
   "		(cons (map car decl) body))\n"
   "	  (map cadr decl))))")->read();
 
+//! Creates a new environment on which
+//! it runs init_functions, init_specials
+//! and the following boot code.
+//! @pre{@code{
+//! (begin
+//!   (defmacro (cddr x)
+//!     (list (quote cdr) (list (quote cdr) x)))
+//!   (defmacro (cadr x)
+//!     (list (quote car) (list (quote cdr) x)))
+//!   (defmacro (cdar x)
+//!     (list (quote cdr) (list (quote car) x)))
+//!   (defmacro (caar x)
+//!     (list (quote car) (list (quote car) x)))
+//!
+//!   (defmacro (when cond . body)
+//!     (list (quote if) cond
+//! 	  (cons (quote begin) body)))
+//!
+//!   (define (map fun list)
+//!     (if (null? list) (quote ())
+//!       (cons (fun (car list))
+//! 	         (map fun (cdr list)))))
+//!
+//!   (defmacro (let decl . body)
+//!     (cons (cons (quote lambda)
+//! 		(cons (map car decl) body))
+//! 	  (map cadr decl))))
+//! @}@}
 Environment default_environment()
 {
   Environment env = Environment();
@@ -907,6 +936,20 @@ Environment default_environment()
   return env;
 }
 
+//! Instantiates a copy of the default environment and
+//! starts an interactive main loop that connects to
+//! standard I/O. The main loop is as follows:
+//! @pre{@code{
+//! (begin
+//!    (define (loop)
+//!      (let ((line (read-line \"PLIS: \")))
+//!          (if line
+//!              (let ((res (catch (eval (read-string line)
+//!                                     (global-environment)))))
+//!                 (display res)
+//!                (loop)))))
+//!    (loop))
+//! @}@}
 void main()
 {
   Environment e = default_environment();
