@@ -8,6 +8,10 @@
 #define WERROR(x)
 #endif
 
+#if __VERSION__ >= 0.6
+import ".";
+#endif /* __VERSION__ >= 0.6 */
+
 import Standards.ASN1.Encode;
 
 /* Create a DER-coded RSAPrivateKey structure */

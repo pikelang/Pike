@@ -124,6 +124,10 @@ Version ::= INTEGER
 
 */
 
+#if __VERSION__ >= 0.6
+import ".";
+#endif /* __VERSION__ >= 0.6 */
+
 import Standards.ASN1.Encode;
 import Identifiers;
 
