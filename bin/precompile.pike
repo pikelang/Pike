@@ -450,7 +450,7 @@ class PikeType
 				   (int)(string)(args[1]->t)));
 
 	default:
-	  error("Don't know how to convert %O to C type.\n",t);
+	  return "tObjImpl_"+upper_case(ret);
       }
     }
 
@@ -1229,7 +1229,10 @@ class ParseBlock
 				  upper_case(name)),
 			  "#else\n",
 			  "  start_new_program();\n"
-			}))
+			})),
+		  IFDEF("tObjImpl_"+upper_case(name),
+			0,
+			DEFINE("tObjImpl_"+upper_case(name), "tObj")),
 		})+
 		IFDEF("THIS_"+upper_case(name),
 		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
