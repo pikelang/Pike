@@ -306,7 +306,7 @@ static void decode_value2(struct decode_data *data)
     data->counter.u.integer++;
     if(data->ptr + num > data->len)
       error("Failed to decode string. (string range error)\n");
-    push_string(make_shared_binary_string(data->data + data->ptr, num));
+    push_string(make_shared_binary_string((char *)(data->data + data->ptr), num));
     data->ptr+=num;
     break;
 
@@ -422,7 +422,7 @@ static INT32 my_decode(struct pike_string *tmp)
   data=&d;
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
-  data->data=tmp->str;
+  data->data=(unsigned char *)tmp->str;
   data->len=tmp->len;
   data->ptr=0;
 

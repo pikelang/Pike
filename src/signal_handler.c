@@ -187,7 +187,7 @@ static int my_signal(int sig, sigfunctype fun)
     sigvec(sig,&action,0);
   }
 #else
-  signal(sig, func);
+  signal(sig, fun);
 #endif
 #endif
 }
