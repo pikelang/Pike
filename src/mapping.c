@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.54 2000/01/31 03:24:05 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.55 2000/01/31 21:26:59 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -156,7 +156,7 @@ static void init_mapping(struct mapping *m, INT32 size)
 
 /* This function allocates an empty mapping with room for 'size' values
  */
-struct mapping *allocate_mapping(int size)
+struct mapping *debug_allocate_mapping(int size)
 {
   struct mapping *m;
 
@@ -258,6 +258,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 #endif
 
   init_mapping(m, new_size);
+  debug_malloc_touch(m);
 
   for(e=0;e<md->hashsize;e++)
     mapping_rehash_backwards(m->data, md->hash[e]);
