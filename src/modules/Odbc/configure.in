@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.22 2000/09/14 13:05:11 grubba Exp $
+# $Id: configure.in,v 1.23 2000/09/14 17:43:52 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -252,6 +252,8 @@ EOF
         AC_MSG_RESULT(no)
       fi
     ])
+    PIKE_CHECK_ODBC_TYPEDEF(SQLSMALLINT)
+    PIKE_CHECK_ODBC_TYPEDEF(SQLUSMALLINT)
     PIKE_CHECK_ODBC_TYPEDEF(SQLINTEGER)
     PIKE_CHECK_ODBC_TYPEDEF(SQLUINTEGER)
     PIKE_CHECK_ODBC_TYPEDEF(SQLLEN)
