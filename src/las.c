@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.149 1999/12/22 23:04:50 grubba Exp $");
+RCSID("$Id: las.c,v 1.150 1999/12/23 15:42:33 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2532,7 +2532,7 @@ void fix_type_field(node *n)
 			     value_type, CDAR(n)->type, 0);
 	      } else if (lex.pragmas & ID_STRICT_TYPES) {
 		yytype_error("Variable type mismatch in foreach().",
-			     value_type, CDAR(n)->type, 0);
+			     value_type, CDAR(n)->type, YYTE_IS_WARNING);
 	      }
 	    }
 	    free_string(value_type);
