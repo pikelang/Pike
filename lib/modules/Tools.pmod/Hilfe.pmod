@@ -23,9 +23,9 @@ import Getopt;
 
   mapping variables=([]);
   mapping(string:mixed) constants=([]);
-  string *functions=({});
-  string *function_names=({});
-  string *imports_and_inherits=({});
+  array(string) functions=({});
+  array(string) function_names=({});
+  array(string) imports_and_inherits=({});
 
   mapping query_variables() { return variables; }
 /* do nothing */
@@ -172,7 +172,7 @@ import Getopt;
     return 0;
   }
   
-  string *get_name(string f)
+  array(string) get_name(string f)
   {
     int e,d;
     string rest;
@@ -571,7 +571,8 @@ import Getopt;
   
   void add_input_line(string s)
   {
-    string *tmp,a,b,c,f,name;
+    string a,b,c,f,name;
+    array(string) tmp;
     int e,d;
     object foo;
     
