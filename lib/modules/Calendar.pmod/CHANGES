@@ -174,3 +174,19 @@ Note
 
 	which should solve the problem better.
 		
+================================================================
+
+Depricated and removed:
+	
+	Calendar.Swedish and Calendar.Austrian is to be
+	replaced by the language rules. Those still exist
+	for backwards compatibility issues.
+
+	Orthodox is removed; it was based on something
+	that never was accepted. The Orthodox church still
+	uses the julian calendar to calculate the holidays;
+	but the holidays are better calculated using the
+	Events sub-module.
+
+================================================================
+

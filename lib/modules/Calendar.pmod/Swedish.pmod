@@ -3,8 +3,7 @@
 //! submodule Swedish
 //!
 //!	Same as the ISO calendar,
-//!	but with swedish namedays added, and
-//!	swedish is the default language.
+//!	but with swedish as the default language.
 //!
 //!	This calendar exist only for backwards compatible 
 //!	purposes. 
