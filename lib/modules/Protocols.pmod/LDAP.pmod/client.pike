@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.14 2000/02/17 17:59:53 hop Exp $
+// $Id: client.pike,v 1.15 2000/07/14 15:29:39 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -47,6 +47,8 @@
 //	v1.13 2000-02-12 - fixed search NOT op bug (end revision normalized)
 //
 //	v1.14 2000-02-17 - added decoding of UTF8 strings for v3 protocol
+//
+//	newer versions - see CVS at roxen.com (hop)
 //
 // Specifications:
 //
@@ -939,6 +941,54 @@
     return (seterr (rv->error_number()));
 
   } // modify
+
+
+  // API function
+  //
+  // parse_url(string ldapuri)
+  //
+  //	ldapuri:	LDAP URL
+  mapping|int parse_url (string ldapuri) {
+
+  // ldap://machine.at.home.cz:123/c=cz?attr1,attr2,attr3?sub?(uid=*)?!bindname=uid=hop,dc=unibase,dc=cz"
+
+  string url=ldapuri, s, scheme;
+  array ar;
+  mapping res;
+
+    s = (url / ":")[0];
+    url = url[sizeof(s)..];
+
+    res = ([ "scheme" : s ]);
+
+#ifdef LDAP_URL_STRICT
+    if (url[..2] != "://")
+      return(-1);
+#endif
+
+    s = (url[3..] / "/")[0];
+    url = url[sizeof(s)+4..];
+
+    res += ([ "host" : (s / ":")[0] ]);
+
+    if(sizeof(s / ":") > 1)
+      res += ([ "port" : (s / ":")[1] ]);
+
+    ar = url / "?";
+
+    switch (sizeof(ar)) {
+      case 5: res += ([ "ext" : ar[4] ]);
+      case 4: res += ([ "filter" : ar[3] ]);
+      case 3: res += ([ "scope" : ar[2] ]);
+      case 2: res += sizeof(ar[1]) ? ([ "attributes" : ar[1] / "," ]) : ([]);
+      case 1: res += ([ "dn" : ar[0] ]);
+    }
+
+    //write("DEB: mapping: [%O] \n", res);
+
+    return (res);
+
+  } //parse_uri
 
 
 #endif
