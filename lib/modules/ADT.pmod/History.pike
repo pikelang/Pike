@@ -1,4 +1,6 @@
-// $Id: History.pike,v 1.2 2002/03/02 16:03:08 nilsson Exp $
+#pike __REAL_VERSION__
+
+// $Id: History.pike,v 1.3 2002/03/20 16:39:52 nilsson Exp $
 
 //! A history is a stack where you can only push entries. When the stack has
 //! reached a certain size the oldest entries are removed on every push.

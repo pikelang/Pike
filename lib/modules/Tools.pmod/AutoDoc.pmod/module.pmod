@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // This module contains utility functions for XML creation and
 // some other useful stuff common to all the modules.
 

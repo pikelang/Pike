@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 #! /usr/bin/env pike
 
 // SSL Client example

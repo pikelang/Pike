@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! Display a image on the screen. Requires GTK.
 
 inherit GTK.Window;

@@ -1,5 +1,7 @@
+#pike __REAL_VERSION__
+
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.12 2002/03/12 18:42:22 jhs Exp $
+// $Id: RCS.pike,v 1.13 2002/03/20 16:39:58 nilsson Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.

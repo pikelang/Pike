@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 
 //! Slovenian language locale by Iztok Umek 7. 8. 1997
 

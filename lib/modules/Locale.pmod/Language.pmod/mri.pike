@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 
 //! Maaori (New Zealand) language locale by Jason Rumney
 
-// $Id: mri.pike,v 1.1 2002/01/17 05:43:14 nilsson Exp $
+// $Id: mri.pike,v 1.2 2002/03/20 16:39:56 nilsson Exp $
 
 inherit "abstract";
 

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // by Martin Baehr <mbaehr@email.archlab.tuwien.ac.at>
 
 inherit Calendar_I.ISO:ISO;

@@ -1,4 +1,6 @@
-/* $Id: connection.pike,v 1.21 2002/03/20 14:43:26 nilsson Exp $
+#pike __REAL_VERSION__
+
+/* $Id: connection.pike,v 1.22 2002/03/20 16:40:00 nilsson Exp $
  *
  * SSL packet layer
  */

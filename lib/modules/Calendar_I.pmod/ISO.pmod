@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // IS-8601, international standard
 
 inherit Calendar_I.Gregorian:Gregorian;

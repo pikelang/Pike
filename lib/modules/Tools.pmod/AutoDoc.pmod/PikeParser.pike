@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // A very special purpose Pike parser that can parse some selected
 // elements of the Pike language...
 

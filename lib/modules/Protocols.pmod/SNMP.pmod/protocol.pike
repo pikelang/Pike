@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //: SNMP protocol implementation for Pike
 //:
 //: Honza Petrous, 2000-10-07 (on the 'coding party' after user conference :)
@@ -11,7 +13,7 @@
 //:      2570   : v3 description
 //:
 
-// $Id: protocol.pike,v 1.3 2001/09/11 13:39:19 hop Exp $
+// $Id: protocol.pike,v 1.4 2002/03/20 16:39:59 nilsson Exp $
 
 
 #include "snmp_globals.h"

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 
 // Compatibility
 // FIXME: We really need a better way to do this..

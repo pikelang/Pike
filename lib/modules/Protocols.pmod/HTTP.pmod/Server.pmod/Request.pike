@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 import ".";
 
 constant MAXIMUM_REQUEST_SIZE=1000000;

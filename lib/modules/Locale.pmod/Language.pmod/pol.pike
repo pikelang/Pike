@@ -1,8 +1,10 @@
+#pike __REAL_VERSION__
+
 #charset iso-8859-2
 
 //! Polish language locale by Piotr Klaban.
 
-// $Id: pol.pike,v 1.1 2002/01/17 05:43:14 nilsson Exp $
+// $Id: pol.pike,v 1.2 2002/03/20 16:39:57 nilsson Exp $
 
 inherit "abstract";
 

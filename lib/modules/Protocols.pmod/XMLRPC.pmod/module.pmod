@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // XML-RPC by Fredrik Noring.
 // The implementation is based on specifications from http://xml-rpc.org/.
 

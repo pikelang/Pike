@@ -1,8 +1,10 @@
+#pike __REAL_VERSION__
+
 #charset iso-2022
 
 //! Japanese language locale.
 
-// $Id: jpn.pike,v 1.1 2002/01/17 05:43:13 nilsson Exp $
+// $Id: jpn.pike,v 1.2 2002/03/20 16:39:56 nilsson Exp $
 
 inherit "abstract";
 

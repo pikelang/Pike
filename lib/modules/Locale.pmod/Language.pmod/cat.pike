@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 
 //! Catalan language locale.
 
-// $Id: cat.pike,v 1.1 2002/01/17 05:43:11 nilsson Exp $
+// $Id: cat.pike,v 1.2 2002/03/20 16:39:54 nilsson Exp $
 
 inherit "abstract";
 

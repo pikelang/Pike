@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 
 //! Croatian language locale by  Klara Makovac 1997/07/02
 
-// $Id: hrv.pike,v 1.1 2002/01/17 05:43:12 nilsson Exp $
+// $Id: hrv.pike,v 1.2 2002/03/20 16:39:55 nilsson Exp $
 
 inherit "abstract";
 

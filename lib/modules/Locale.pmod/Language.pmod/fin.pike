@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 
 //! Finnish language locale created by Janne Edelman, Turku Unix Users Group ry, Turku, Finland
 
-// $Id: fin.pike,v 1.1 2002/01/17 05:43:12 nilsson Exp $
+// $Id: fin.pike,v 1.2 2002/03/20 16:39:55 nilsson Exp $
 
 inherit "abstract";
 

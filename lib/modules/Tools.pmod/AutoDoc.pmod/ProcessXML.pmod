@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // This module is the most high-level.
 // Some functions to apply to the XML tree after extraction, too, for
 // reference resolving etc.

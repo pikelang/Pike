@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 //! This module implements EXIF (Exchangeable image file format for Digital Still Cameras) 2.1
 //! parsing.
 
-// $Id: EXIF.pmod,v 1.6 2002/01/15 22:35:00 nilsson Exp $
+// $Id: EXIF.pmod,v 1.7 2002/03/20 16:40:03 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //

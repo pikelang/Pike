@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 
 //! Serbian language locale by Goran Opacic 1996/12/11
 
-// $Id: srp.pike,v 1.1 2002/01/17 05:43:16 nilsson Exp $
+// $Id: srp.pike,v 1.2 2002/03/20 16:39:58 nilsson Exp $
 
 inherit "abstract";
 

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //! @appears Image.Fonts
 //! Abstracted Font-handling support
 

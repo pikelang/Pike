@@ -1,4 +1,6 @@
-/* $Id: state.pike,v 1.13 2002/02/08 07:48:29 per-bash Exp $
+#pike __REAL_VERSION__
+
+/* $Id: state.pike,v 1.14 2002/03/20 16:40:02 nilsson Exp $
  *
  */
 

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //!	time unit: TNGDate
 
 //!	Implements ST:TNG stardates.

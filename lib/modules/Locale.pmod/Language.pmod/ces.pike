@@ -1,9 +1,11 @@
+#pike __REAL_VERSION__
+
 #charset iso-8859-2
 
 //! Czech language locale by Jan Petrous 16.10.1997,
 //! based on Slovenian language module by Iztok Umek.
 
-// $Id: ces.pike,v 1.1 2002/01/17 05:43:11 nilsson Exp $
+// $Id: ces.pike,v 1.2 2002/03/20 16:39:55 nilsson Exp $
 
 inherit "abstract";
 

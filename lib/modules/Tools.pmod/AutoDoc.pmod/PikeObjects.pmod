@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // This module contains classes to represent Pike objects such as
 // classes, modules, methods, variables ...
 // The classes can produce XML representations of themselves.

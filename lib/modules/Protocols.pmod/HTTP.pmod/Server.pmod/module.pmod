@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // FIXME! doc bad
 
 //! module Protocols

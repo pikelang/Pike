@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // example server implementation user the Port server backend
 
 inherit Protocols.HTTP.Server.Port;

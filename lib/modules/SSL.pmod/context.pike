@@ -1,4 +1,6 @@
-/* $Id: context.pike,v 1.13 2001/09/17 14:51:19 nilsson Exp $
+#pike __REAL_VERSION__
+
+/* $Id: context.pike,v 1.14 2002/03/20 16:40:01 nilsson Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.

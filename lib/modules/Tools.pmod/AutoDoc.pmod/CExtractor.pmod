@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 // Extraction of C files.
 //
 // NOTE that a C file always produces a full module tree with

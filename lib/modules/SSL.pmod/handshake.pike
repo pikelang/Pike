@@ -1,4 +1,6 @@
-/* $Id: handshake.pike,v 1.28 2002/03/09 20:30:09 nilsson Exp $
+#pike __REAL_VERSION__
+
+/* $Id: handshake.pike,v 1.29 2002/03/20 16:40:01 nilsson Exp $
  *
  */
 

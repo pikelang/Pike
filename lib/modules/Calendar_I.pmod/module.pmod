@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 
 //!   This module exist only for backwards compatibility issues with
 //!   earlier Pike releases. Use the Calendar module instead.

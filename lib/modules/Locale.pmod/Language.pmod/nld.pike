@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 
 //! Dutch language locale by Stephen R. van den Berg
 
-// $Id: nld.pike,v 1.1 2002/01/17 05:43:14 nilsson Exp $
+// $Id: nld.pike,v 1.2 2002/03/20 16:39:56 nilsson Exp $
 
 inherit "abstract";
 

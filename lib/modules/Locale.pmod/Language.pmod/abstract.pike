@@ -1,6 +1,8 @@
+#pike __REAL_VERSION__
+
 //! Abstract language locale class, inherited by all the language locale classes.
 
-// $Id: abstract.pike,v 1.1 2002/01/17 05:43:10 nilsson Exp $
+// $Id: abstract.pike,v 1.2 2002/03/20 16:39:54 nilsson Exp $
 
 //! Array(string) with the months of the year, beginning with January.
 constant months = ({ "", "", "", "", "", "", "", "", "", "", "", "" });

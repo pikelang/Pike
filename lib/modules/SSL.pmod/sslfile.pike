@@ -1,4 +1,6 @@
-/* $Id: sslfile.pike,v 1.42 2002/03/20 14:43:26 nilsson Exp $
+#pike __REAL_VERSION__
+
+/* $Id: sslfile.pike,v 1.43 2002/03/20 16:40:02 nilsson Exp $
  *
  */
 

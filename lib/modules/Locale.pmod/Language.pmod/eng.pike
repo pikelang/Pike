@@ -1,7 +1,9 @@
+#pike __REAL_VERSION__
+
 
 //! English language locale.
 
-// $Id: eng.pike,v 1.1 2002/01/17 05:43:11 nilsson Exp $
+// $Id: eng.pike,v 1.2 2002/03/20 16:39:55 nilsson Exp $
 
 inherit "abstract";
 

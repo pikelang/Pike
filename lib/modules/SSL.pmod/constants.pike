@@ -1,4 +1,6 @@
-/* $Id: constants.pike,v 1.9 2001/09/17 14:51:18 nilsson Exp $
+#pike __REAL_VERSION__
+
+/* $Id: constants.pike,v 1.10 2002/03/20 16:40:01 nilsson Exp $
  *
  */
 

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //
 // getcmd.pike
 // Example of using low level SNMP API

@@ -1,3 +1,5 @@
+#pike __REAL_VERSION__
+
 //
 // experimental module to read CIFF data
 // Canon "Camera Image File Format"
