@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.215 2001/06/25 12:34:58 grubba Exp $");
+RCSID("$Id: file.c,v 1.216 2001/07/01 16:14:13 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3193,6 +3193,8 @@ void pike_module_init(void)
   extern void init_sendfile(void);
   extern void init_udp(void);
   int e;
+
+  Pike_compiler->new_program->id = PROG_MODULE_FILES_ID;
 
   init_files_efuns();
   init_files_stat();

@@ -52,6 +52,7 @@
 #define     PROG_GMP_MPZ_ID                                         025
 
 #define     PROG_MODULE_MIME_ID					   0100
+#define     PROG_MODULE_FILES_ID				   0101
 
 /* NOTE: 0144 == 100. */
 /* 100 - 300 reserverd for Image.Image */
