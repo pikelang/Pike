@@ -339,11 +339,13 @@ string parse_text(Node n) {
       break;
 
     case "code":
-      ret += "<font face='courier'><pre><code>" + parse_text(c) + "</code></pre></font>";
+      ret += "<font face='courier'><pre><code>" + parse_text(c) +
+	"</code></pre></font>";
       break;
 
     case "expr":
-      ret += "<font face='courier'><code>" + replace(parse_text(c), " ", "&nbsp;") +
+      ret += "<font face='courier'><code>" +
+	replace(parse_text(c), " ", "&nbsp;") +
 	"</code></font>";
       break;
 
@@ -374,8 +376,10 @@ string parse_text(Node n) {
     case "mapping":
       ret += build_box(c, "group", "member",
 		       lambda(Node n) {
-			 return "<font color='green'>" + parse_text(n->get_first_element("index")) +
-			   "</font> : " + parse_type(get_first_element(n->get_first_element("type"))); } );
+			 return "<font color='green'>" + parse_text(n->get_first_element
+								    ("index")) +
+			   "</font> : " + parse_type(get_first_element(n->get_first_element
+								       ("type"))); } );
       break;
 
     case "array":
@@ -469,6 +473,10 @@ string parse_text(Node n) {
 
     case "matrix":
       ret += layout_matrix( map(c->get_elements("r")->get_elements("c"), map, parse_text) );
+      break;
+
+    case "fixme":
+      ret += "<font color='red'>FIXME: " + parse_text(c) + "</font>";
       break;
 
     // Not really allowed
