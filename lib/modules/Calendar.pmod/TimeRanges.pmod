@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.27 2004/01/11 00:51:22 nilsson Exp $
+// $Id: TimeRanges.pmod,v 1.28 2004/03/30 18:11:59 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -882,7 +882,7 @@ class TimeRange
 //!	this may include timezone shanges,
 //!	and change the time of day.
 
-   TimeRange set_ruleset(.Ruleset r);
+   this_program set_ruleset(.Ruleset r);
    .Ruleset ruleset()
    {
       return rules;
@@ -903,7 +903,7 @@ class TimeRange
 //!	<tt>Year(2003)-&gt;...-&gt;set_timezone(TimeZone.CET)-&gt;...-&gt;hour(14)-&gt;...</tt>
 //!
 
-   TimeRange set_timezone(string|.Rule.Timezone tz)
+   this_program set_timezone(string|.Rule.Timezone tz)
    {
       return set_ruleset(rules->set_timezone(tz));
    }
@@ -918,7 +918,7 @@ class TimeRange
 //! method Language language()
 //!	Set or get the current language rule.
 
-   TimeRange set_language(string|.Rule.Language lang)
+   this_program set_language(string|.Rule.Language lang)
    {
       return set_ruleset(rules->set_language(lang));
    }

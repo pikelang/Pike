@@ -185,7 +185,7 @@ class TimeofDay
    }
 
 // default autopromote
-   TimeRange autopromote()
+   this_program autopromote()
    {
       return this;
    }
@@ -918,7 +918,7 @@ class TimeofDay
 
 // --------
 
-   TimeofDay set_ruleset(.Ruleset r)
+   this_program set_ruleset(.Ruleset r)
    {
       return 
 	 Second("timeofday",r,ux,len)
@@ -1786,7 +1786,7 @@ class cFraction
       return this;
    }
 
-   TimeofDay set_ruleset(.Ruleset r)
+   this_program set_ruleset(.Ruleset r)
    {
       return 
 	 Fraction("timeofday",r,ux,len,ns)
