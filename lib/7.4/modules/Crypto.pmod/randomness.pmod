@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.1 2004/02/07 03:06:44 nilsson Exp $
+// $Id: randomness.pmod,v 1.2 2004/02/19 14:24:52 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -7,7 +7,7 @@
 //! will degenerate into a reasonably strong pseudo random generator
 //! @deprecated Crypto.Random
 
-#pike __REAL_VERSION__
+#pike 7.5
 
 // #pragma strict_types
 

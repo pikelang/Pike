@@ -1,5 +1,5 @@
 
-#pike __REAL_VERSION__
+#pike 7.5
 
 //! @deprecated Crypto.Koremutake
 

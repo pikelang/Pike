@@ -1,5 +1,5 @@
 
-#pike __REAL_VERSION__
+#pike 7.5
 
 //! Use @expr{Crypto.CBC(Crypto.DES3)@} instead.
 //! @deprecated
