@@ -11,7 +11,7 @@ constant TraceProcess = __builtin.TraceProcess;
 //!   @[create_process]
 class Process
 {
-  inherit __builtin.create_process;
+  inherit create_process;
   static function(Process:void) read_cb;
   static function(Process:void) timeout_cb;
 
