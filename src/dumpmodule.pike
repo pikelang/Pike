@@ -24,21 +24,29 @@ class Codec
 
   string nameof(mixed x)
   {
+    string tmp;
 //    if(logfile) logfile->write("%O\n",x);
 //    werror("%O\n",x);
     if(p!=x)
-      if(mixed tmp=function_names[x])
+      if(tmp = function_names[x])
 	return tmp;
 
     switch(sprintf("%t",x))
     {
+      case "function":
+	if (!function_object(x) &&
+	    (tmp = search(all_constants(), x))) {
+	  function_names[tmp = "efun:"+tmp] = x;
+	  return tmp;
+	}
+	break;
       case "program":
 	if(p!=x)
 	{
-	  if(mixed tmp=search(master()->programs,x))
+	  if(tmp = search(master()->programs,x))
 	    return tmp;
 #if 0
-	  if(mixed tmp=search(values(_static_modules), x)!=-1)
+	  if(tmp = search(values(_static_modules), x)!=-1)
 	  {
 	    return "_static_modules."+(indices(_static_modules)[tmp]);
 	  }
@@ -49,7 +57,7 @@ class Codec
       case "object":
 	if(program p=search(master()->objects,x))
 	{
-	  if(string tmp=search(master()->programs,p))
+	  if(tmp = search(master()->programs,p))
 	  {
 	    return tmp;
 	  }else{
@@ -243,7 +251,7 @@ int main(int argc, array(string) argv)
 {
   /* Redirect all debug and error messages to a logfile. */
   Stdio.File("dumpmodule.log", "caw")->dup2(Stdio.stderr);
-  
+
   foreach( (array)all_constants(), [string name, mixed func])
     function_names[func]="efun:"+name;
 
@@ -286,6 +294,8 @@ int main(int argc, array(string) argv)
       argv = argv[2..];
   }
 
+  // werror("Files to dump: %O\n", argv);
+  
   foreach(argv, string file)
   {
     if(progress_bar)
