@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.92 2001/03/20 15:02:28 jhs Exp $");
+RCSID("$Id: efuns.c,v 1.93 2001/03/20 15:33:44 jhs Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -261,7 +261,7 @@ void f_file_truncate(INT32 args)
  *!       Number of free blocks in the filesystem.
  *!     @member int "bavail"
  *!       Number of available blocks in the filesystem.
- *!       This is usually somewhat less than the @["bfree"] value, and
+ *!       This is usually somewhat less than the @tt{"bfree"@} value, and
  *!       can usually be adjusted with eg tunefs(1M).
  *!     @member int "files"
  *!       Total number of files (aka inodes) allowed by this filesystem.
@@ -514,7 +514,7 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_STATVFS || HAVE_STATFS || HAVE_USTAT */
 #endif /* __NT__ */
 
-/*! @decl void werror(string, mixed ... args)
+/*! @decl void werror(string msg, mixed ... args)
  *!
  *! Write to standard error.
  */
@@ -602,7 +602,7 @@ void f_rm(INT32 args)
  *! being @tt{&@}'ed with the current umask (on OS'es that support this).
  *!
  *! @returns
- *!   @returns @tt{0@} (zero) on failure, @tt{1@} otherwise.
+ *!   Returns @tt{0@} (zero) on failure, @tt{1@} otherwise.
  *!
  *! @seealso
  *!   @[rm()], @[cd()], @[Stdio.mkdirhier()]
@@ -978,7 +978,7 @@ void f_getcwd(INT32 args)
 }
 
 /*! @decl int exece(string file, array(string) args)
- *! @decl int exece(string file, array(string) args,
+ *! @decl int exece(string file, array(string) args, @
  *!                 mapping(string:string) env)
  *!
  *! This function transforms the Pike process into a process running
@@ -988,7 +988,7 @@ void f_getcwd(INT32 args)
  *! environment variables before the new program is executed.
  *!
  *! This function only returns if something went wrong during exece(2),
- *! and in that case it returns @tt[0@} (zero).
+ *! and in that case it returns @tt{0@} (zero).
  *!
  *! @note
  *!   The Pike driver _dies_ when this function is called. You must either
