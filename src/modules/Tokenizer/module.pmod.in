@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.7 2003/04/13 19:33:15 grubba Exp $
+// $Id: module.pmod.in,v 1.8 2003/04/17 15:19:34 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -23,86 +23,6 @@ class Position(string filename, int line)
 class CompilerContext
 {
   mapping(string:mixed) pragmas = ([]);
-}
-
-//! List of Tokens and Groups
-class TokenList
-{
-  array(Token|Group) tokens = ({});
-
-  TokenList `+=(mixed x)
-  {
-    tokens += ({ x });
-    return this;
-  }
-
-  static class _get_iterator()
-  {
-    static int pos = 0;
-
-    static int(0..1) `!()
-    {
-      return pos >= sizeof(tokens);
-    }
-
-    this_program `+=(int i)
-    {
-      pos += i;
-      if (pos < 0) pos = 0;
-      else if (pos > sizeof(tokens)) pos = sizeof(tokens);
-      return this;
-    }
-
-    Token|Group value()
-    {
-      return (pos < sizeof(tokens))?tokens[pos]:UNDEFINED;
-    }
-
-    int(0..) index()
-    {
-      return pos;
-    }
-
-    string _sprintf()
-    {
-      return sprintf("%{%s %}·%{ %s%}",
-		     tokens[..pos-1], tokens[pos..]);
-    }
-  }
-
-  static string _sprintf()
-  {
-    return sprintf("%{%O, %}", tokens);
-  }
-}
-
-class Group
-{
-  TokenList contents = TokenList();
-  Token group_start;
-  Token group_end;
-  string group_terminator;
-
-  static void create(Token|void token)
-  {
-    if (token) {
-      string sym = token->symbol;
-      if (!(group_terminator =
-	    ([ "(":")", "{":"}", "[":"]" ])[sym])) {
-	error("Unsupported grouping symbol: %O\n", sym);
-      }
-      group_start = token;
-    }
-  }
-
-  static string _sprintf(int c)
-  {
-    if (!group_start) {
-      return sprintf("%O", contents);
-    } else {
-      return sprintf("%O%O%O", group_start, contents, group_end);
-    }
-  }
 }
 
 class TokenizingCompiler
@@ -437,6 +357,86 @@ class TokenizingCompiler
   }
 }
 
+//! List of Tokens and Groups
+class TokenList
+{
+  array(Token|Group) tokens = ({});
+
+  TokenList `+=(mixed x)
+  {
+    tokens += ({ x });
+    return this;
+  }
+
+  static class _get_iterator()
+  {
+    static int pos = 0;
+
+    static int(0..1) `!()
+    {
+      return pos >= sizeof(tokens);
+    }
+
+    this_program `+=(int i)
+    {
+      pos += i;
+      if (pos < 0) pos = 0;
+      else if (pos > sizeof(tokens)) pos = sizeof(tokens);
+      return this;
+    }
+
+    Token|Group value()
+    {
+      return (pos < sizeof(tokens))?tokens[pos]:UNDEFINED;
+    }
+
+    int(0..) index()
+    {
+      return pos;
+    }
+
+    string _sprintf()
+    {
+      return sprintf("%{%s %}·%{ %s%}",
+		     tokens[..pos-1], tokens[pos..]);
+    }
+  }
+
+  static string _sprintf()
+  {
+    return sprintf("%{%O, %}", tokens);
+  }
+}
+
+class Group
+{
+  TokenList contents = TokenList();
+  Token group_start;
+  Token group_end;
+  string group_terminator;
+
+  static void create(Token|void token)
+  {
+    if (token) {
+      string sym = token->symbol;
+      if (!(group_terminator =
+	    ([ "(":")", "{":"}", "[":"]" ])[sym])) {
+	error("Unsupported grouping symbol: %O\n", sym);
+      }
+      group_start = token;
+    }
+  }
+
+  static string _sprintf(int c)
+  {
+    if (!group_start) {
+      return sprintf("%O", contents);
+    } else {
+      return sprintf("%O%O%O", group_start, contents, group_end);
+    }
+  }
+}
+
 class GroupingCompiler
 {
   inherit TokenizingCompiler;
@@ -540,6 +540,212 @@ class PikeCompiler
       }
       report(ERROR, pos, "parser", "Syntax error");      
     }
+  }
+
+  class Expression
+  {
+  }
+
+  class ValueExpression(Token value)
+  {
+  }
+
+  class PrefixExpression(Token operator, Expression operand)
+  {
+    inherit Expression;
+  }
+
+  class SuffixExpression(Token operator, Expression operand)
+  {
+    inherit Expression;
+  }
+
+  class BinaryExpression(Token operator, Expression operand1,
+			 Expression operand2)
+  {
+    inherit Expression;
+  }
+
+  class TrinaryExpression(Token operator1, Expression operand1,
+			  Token operator2, Expression operand2,
+			  Expression operand3)
+  {
+    inherit Expression;
+  }
+
+#define UNARY_SUFFIX(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(object tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      while (tokens_left &&						\
+	     SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->`+=(1);						\
+	expr = SuffixExpression(token, expr);				\
+      }									\
+      return expr;							\
+    }
+#define UNARY_PREFIX(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(object tokens_left)	\
+    {									\
+      Token token;							\
+      if (tokens_left &&						\
+	  SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->`+=(1);						\
+	return								\
+	  PrefixExpression(token,					\
+			   parse_ ## NAME ## _expression(tokens_left));	\
+      } else {								\
+        return parse_ ## BASE ## _expression(tokens_left);		\
+      }									\
+    }
+#define RIGHT_ASSOC(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(object tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      if (tokens_left &&						\
+	  SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->`+=(1);						\
+	expr =								\
+	  BinaryExpression(token, expr,					\
+			   parse_ ## NAME ## _expression(tokens_left));	\
+      }									\
+      return expr;							\
+    }
+#define LEFT_ASSOC(NAME, BASE, SYMS)					\
+    Expression parse_ ## NAME ## _expression(object tokens_left)	\
+    {									\
+      Expression expr = parse_ ## BASE ## _expression(tokens_left);	\
+      Token token;							\
+      while (tokens_left &&						\
+	     SYMS[(token = tokens_left->value())->symbol]) {		\
+	tokens_left->`+=(1);						\
+	expr =								\
+	  BinaryExpression(token, expr,					\
+			   parse_ ## BASE ## _expression(tokens_left));	\
+      }									\
+      return expr;							\
+    }
+
+  Expression parse_basic_expression(object tokens_left)
+  {
+    if (!tokens_left) {
+      SYNTAX_ERROR();
+      return 0;
+    }
+    Token token = tokens_left->value();
+    if (token->group_start) {
+      if (token->group_start->symbol == "(") {
+	tokens_left->`+=(1);
+	do {
+	  Token sub_token;
+	  if ((sizeof(token->contents) == 1) &&
+	      (sub_token = token->contents[0]->group_start)) {
+	    switch (sub_token->symbol) {
+	    case "(":
+	      token = sub_token;
+	      continue;
+	    case "{":
+	      return parse_array_expression(sub_token->contents);
+	    case "[":
+	      return parse_mapping_expression(sub_token->contents);
+	    default:
+	      SYNTAX_ERROR();
+	      return 0;
+	    }
+	  }
+	  break;
+	} while(1);
+	if (sizeof(token->contents) && (token->contents[0]->symbol == "<")) {
+	  return parse_multiset_expression(token->contents);
+	}
+	tokens_left = __builtin.Iterator(token->contents);
+	Expression expr = parse_expression(tokens_left);
+	if (tokens_left) {
+	  return parse_var_decl(expr, tokens_left);
+	}
+	return expr;
+      }
+      SYNTAX_ERROR();
+      return 0;
+    } else {
+      switch(token->token) {
+      case "identifier":
+	return parse_identifier_expression(tokens_left);
+      case "string_constant":
+      case "int_constant":
+      case "float_constant":
+	tokens_left->`+=(1);
+	return LiteralExpression(token->value);
+      default:
+	SYNTAX_ERROR();
+	return 0;
+      }
+    }
+  }
+
+  Expression parse_funcall_expression(object tokens_left)
+  {
+    int potential_cast =
+      tokens_left && tokens_left->group_start &&
+      (<"(", "[">)[tokens_left->group_start->symbol];
+    Expression expr = parse_basic_expression(tokens_left);
+    Token token;
+    while (tokens_left && 
+	   (((token = tokens_left->value())->symbol == "->") ||
+	    (token->group_start &&
+	     (<"(", "[">)[token->group_start->symbol]))) {
+      if (token->group_start) {
+	expr = BinaryExpression(token->group_start, expr,
+				parse_argument_list(token->contents));
+      } else {
+	tokens_left->`+=(1);
+	expr = BinaryExpression(token, expr, parse_basic_expression());
+      }
+    }
+  }
+
+  UNARY_POSTFIX(postfix, funcall, (<"++", "--">));
+  UNARY_PREFIX(prefix, postfix, (<"!", "~", "-", "++", "--">));
+  LEFT_ASSOC(product, prefix (<"*", "%", "/">));
+  LEFT_ASSOC(sum, product, (<"+", "-">));
+  LEFT_ASSOC(shift, sum, (<"<<", ">>">));
+  LEFT_ASSOC(rel, shift, (<">", ">=", "<", "<=">));
+  LEFT_ASSOC(eq, rel, (<"==", "!=">));
+  LEFT_ASSOC(and, eq, (<"&">));
+  LEFT_ASSOC(xor, and, (<"^">));
+  LEFT_ASSOC(or, xor, (<"|">));
+  LEFT_ASSOC(land, or, (<"&&">));
+  LEFT_ASSOC(lor, land, (<"||">));
+
+  Expression parse_cond_expression(object tokens_left)
+  {
+    Expression expr = parse_lor_expression(tokens_left);
+    Token token;
+    if (tokens_left &&
+	(token = tokens_left->value())->symbol == "?") {
+      tokens_left->`+=(1);
+      Expression true = parse_cond_expression(tokens_left);
+      Token token2;
+      if (!tokens_left ||
+	  (token2 = tokens_left->value())->symbol != ":") {
+	SYNTAX_ERROR(token2 || token);
+      } else {
+	tokens_left->`+=(1);
+      }
+      return TrinaryExpression(token, expr, token2, true,
+			       parse_cond_expression(tokens_left));
+    }
+    return expr;
+  }
+
+  RIGHT_ASSOC(assign, cond, (<"=", "+=", "-=", "*=", "/=">));
+  LEFT_ASSOC(comma, assign, (<",">));
+
+  Expression parse_expression(object tokens_left)
+  {
+    return parse_comma_expression(tokens_left);
   }
 
   class Class
@@ -647,112 +853,114 @@ class PikeCompiler
 
     // Note: Pike prior to 0.6 used a K&R-style cpp.
 
-    // Symbol ==> TokenClass
-    mapping(string:program(Token)) Pike_0_1_Tokens = ([
-      //"array":ArrayType,
-      //"break":Break,
-      //"case":Case,
-      //"catch":Catch,
-      "class":Class,
-      //"continue":Continue,
-      //"default":Default,
-      //"do":Do,
-      //"predef":Predef,
-      //"else":Else,
-      //"float":FloatType,
-      //"for":For,
-      //"foreach":ForEach,
-      //"function":FunctionType,
-      //"gauge":Gauge,
-      //"if":If,
-      "inherit":NameSpace,
-      "inline":Modifier,
-      //"int":IntType,
-      //"lambda":Lambda,
-      //"multiset":MultisetType,
-      //"mapping":MappingType,
-      //"mixed":MixedType,
-      "nomask":Modifier,
-      //"object":ObjectType,
-      "private":Modifier,
-      //"program":ProgramType,
-      "protected":Modifier,
-      "public":Modifier,
-      //"return":Return,
-      //"sscanf":Sscanf,
-      "static":Modifier,
-      //"string":StringType,
-      //"switch":Switch,
-      //"typeof":Typeof,
-      "varargs":Modifier,
-      //"void":VoidType,
-      //"while":While,
-    ]);
+    static {
+      // Symbol ==> TokenClass
+      mapping(string:program(Token)) Pike_0_1_Tokens = ([
+	//"array":ArrayType,
+	//"break":Break,
+	//"case":Case,
+	//"catch":Catch,
+	"class":Class,
+	//"continue":Continue,
+	//"default":Default,
+	//"do":Do,
+	//"predef":Predef,
+	//"else":Else,
+	//"float":FloatType,
+	//"for":For,
+	//"foreach":ForEach,
+	//"function":FunctionType,
+	//"gauge":Gauge,
+	//"if":If,
+	"inherit":NameSpace,
+	"inline":Modifier,
+	//"int":IntType,
+	//"lambda":Lambda,
+	//"multiset":MultisetType,
+	//"mapping":MappingType,
+	//"mixed":MixedType,
+	"nomask":Modifier,
+	//"object":ObjectType,
+	"private":Modifier,
+	//"program":ProgramType,
+	"protected":Modifier,
+	"public":Modifier,
+	//"return":Return,
+	//"sscanf":Sscanf,
+	"static":Modifier,
+	//"string":StringType,
+	//"switch":Switch,
+	//"typeof":Typeof,
+	"varargs":Modifier,
+	//"void":VoidType,
+	//"while":While,
+      ]);
 
-    mapping(string:program(Token)) Pike_0_3_Tokens = Pike_0_1_Tokens + ([
-      //"constant":Constant,	// 0.3
-    ]);
+      mapping(string:program(Token)) Pike_0_3_Tokens = Pike_0_1_Tokens + ([
+	//"constant":Constant,	// 0.3
+      ]);
 
-    mapping(string:program(Token)) Pike_0_4_Tokens = Pike_0_3_Tokens + ([
-      "import":NameSpace,	// 0.4.8
-    ]);
+      mapping(string:program(Token)) Pike_0_4_Tokens = Pike_0_3_Tokens + ([
+	"import":NameSpace,	// 0.4.8
+      ]);
 
-    mapping(string:program(Token)) Pike_0_6_Tokens = Pike_0_4_Tokens + ([
-      "final":Modifier,		// 0.6.36
-      "local":Modifier,		// 0.6.36
-    ]) - ([
-      "varargs":Modifier,	// Obsoleted in 0.6.2
-    ]);
+      mapping(string:program(Token)) Pike_0_6_Tokens = Pike_0_4_Tokens + ([
+	"final":Modifier,	// 0.6.36
+	"local":Modifier,	// 0.6.36
+      ]) - ([
+	"varargs":Modifier,	// Obsoleted in 0.6.2
+      ]);
 
-    mapping(string:program(Token)) Pike_0_7_Tokens = Pike_0_6_Tokens + ([
-      "extern":Modifier,	// 0.7.85
-      "optional":Modifier,	// 0.7.85
-    ]);
+      mapping(string:program(Token)) Pike_0_7_Tokens = Pike_0_6_Tokens + ([
+	"extern":Modifier,	// 0.7.85
+	"optional":Modifier,	// 0.7.85
+      ]);
 
-    mapping(string:program(Token)) Pike_7_1_Tokens = Pike_0_7_Tokens + ([
-      "variant":Modifier,	// 7.1.3
-    ]);
+      mapping(string:program(Token)) Pike_7_1_Tokens = Pike_0_7_Tokens + ([
+	"variant":Modifier,	// 7.1.3
+      ]);
 
-    mapping(string:program(Token)) Pike_7_2_Tokens = Pike_7_1_Tokens + ([
-      //"enum":Enum,		// 7.2.27, 7.3.6
-      //"typedef":Typedef,	// 7.2.27, 7.3.6
-    ]);
+      mapping(string:program(Token)) Pike_7_2_Tokens = Pike_7_1_Tokens + ([
+	//"enum":Enum,		// 7.2.27, 7.3.6
+	//"typedef":Typedef,	// 7.2.27, 7.3.6
+      ]);
 
-    mapping(string:program(Token)) Pike_7_3_Tokens = Pike_7_2_Tokens + ([
-      "global":Modifier,	// 7.3.42
-    ]);
+      mapping(string:program(Token)) Pike_7_3_Tokens = Pike_7_2_Tokens + ([
+	"global":Modifier,	// 7.3.42
+      ]);
 
-    array(array(int|mapping(string:program(Token)))) compat_lookup = ({
-      ({ 7, 3, Pike_7_3_Tokens, }),
-      ({ 7, 2, Pike_7_2_Tokens, }),
-      ({ 7, 1, Pike_7_1_Tokens, }),
-      ({ 0, 7, Pike_0_7_Tokens, }),
-      ({ 0, 6, Pike_0_6_Tokens, }),
-      ({ 0, 4, Pike_0_4_Tokens, }),
-      ({ 0, 3, Pike_0_3_Tokens, }),
-      ({ 0, 0, Pike_0_1_Tokens, }),
-    });
+      array(array(int|mapping(string:program(Token)))) compat_lookup = ({
+	({ 7, 3, Pike_7_3_Tokens, }),
+	({ 7, 2, Pike_7_2_Tokens, }),
+	({ 7, 1, Pike_7_1_Tokens, }),
+	({ 0, 7, Pike_0_7_Tokens, }),
+	({ 0, 6, Pike_0_6_Tokens, }),
+	({ 0, 4, Pike_0_4_Tokens, }),
+	({ 0, 3, Pike_0_3_Tokens, }),
+	({ 0, 0, Pike_0_1_Tokens, }),
+      });
 
-    void handle_pike_compat(int major, int minor)
-    {
-      if (major < 0) major = 0;
-      if (minor < 0) minor = 0;
-      foreach(compat_lookup,
-	      [int maj, int min, mapping(string:program(Token)) tokens]) {
-	if ((maj < major) || (maj == major && (min <= minor))) {
-	  token_lookup = tokens;
-	  return;
+      void handle_pike_compat(int major, int minor)
+      {
+	if (major < 0) major = 0;
+	if (minor < 0) minor = 0;
+	foreach(compat_lookup,
+		[int maj, int min, mapping(string:program(Token)) tokens]) {
+	  if ((maj < major) || (maj == major && (min <= minor))) {
+	    token_lookup = tokens;
+	    return;
+	  }
 	}
+	// NOT REACHED.
       }
-      // NOT REACHED.
-    }
 
-    static void create(string data, CompilerContext|void context)
-    {
-      // Default token_lookup.
-      token_lookup = compat_lookup[0][2];
+      void create(string data, CompilerContext|void context)
+      {
+	// Default token_lookup.
+	token_lookup = compat_lookup[0][2];
 
-      ::create(data, context);
+	::create(data, context);
+      }
     }
   }
 
