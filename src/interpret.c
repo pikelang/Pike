@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.90 1998/06/19 00:39:49 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.91 1998/07/16 19:25:43 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1889,13 +1889,16 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	return;
       }
       
-      check_threads_etc();
       check_stack(256);
       check_mark_stack(256);
 
 #ifdef DEBUG
       if(d_flag>2) do_debug();
 #endif
+
+      /* If we are really unlucky, o hasn't just been destructed, it has
+       * also been freed!
+       */
 
       p=o->prog;
       if(!p)
@@ -1955,6 +1958,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       case IDENTIFIER_C_FUNCTION:
 	fp->num_args=args;
 	new_frame.num_locals=args;
+	check_threads_etc();
 	(*function->func.c_fun)(args);
 	break;
 	
@@ -1963,10 +1967,12 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	struct svalue *s=fp->context.prog->constants+function->func.offset;
 	if(s->type == T_PROGRAM)
 	{
-	  struct object *tmp=parent_clone_object(s->u.program,
-						 o,
-						 fun,
-						 args);
+	  struct object *tmp;
+	  check_threads_etc();
+	  tmp=parent_clone_object(s->u.program,
+				  o,
+				  fun,
+				  args);
 	  push_object(tmp);
 	  break;
 	}
@@ -2026,6 +2032,9 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 	new_frame.num_locals=num_locals;
 	new_frame.num_args=num_args;
+
+	check_threads_etc();
+
 	{
 	  struct svalue **save_mark_sp=mark_sp;
 	  tailrecurse=eval_instruction(pc);
