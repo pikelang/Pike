@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.122 2004/03/09 10:07:12 grubba Exp $
+ * $Id: threads.h,v 1.123 2004/05/01 12:19:47 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -546,11 +546,11 @@ PMOD_EXPORT extern int t_flag;
      struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
-			 __FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
+			 __FILE__, __LINE__, (unsigned int)_tmp->id)) \
 
 #define SWAP_IN_CURRENT_THREAD() \
    THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		       __FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+		       __FILE__, __LINE__, (unsigned int)_tmp->id)); \
    SWAP_IN_THREAD(_tmp);\
  } while(0)
 
@@ -594,7 +594,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        SWAP_OUT_THREAD(_tmp); \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp->thread_id, live_threads)); \
+			   (unsigned int)_tmp->id, live_threads)); \
        mt_unlock_interpreter(); \
      } else {} \
      HIDE_GLOBAL_VARIABLES()
@@ -605,7 +605,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        mt_lock_interpreter(); \
        THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-                           (unsigned int)_tmp->thread_id, live_threads)); \
+			   (unsigned int)_tmp->id, live_threads)); \
        while (threads_disabled) { \
          THREADS_FPRINTF(1, (stderr, \
                              "THREADS_DISALLOW(): Threads disabled\n")); \
@@ -635,7 +635,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        live_threads++; \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp_uid->thread_id, live_threads)); \
+			   (unsigned int)_tmp_uid->id, live_threads)); \
        mt_unlock_interpreter(); \
      } else {} \
      HIDE_GLOBAL_VARIABLES()
@@ -648,7 +648,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        THREADS_FPRINTF(1, (stderr, \
                            "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-                           (unsigned int)_tmp_uid->thread_id, live_threads)); \
+			   (unsigned int)_tmp_uid->id, live_threads)); \
        co_broadcast(&live_threads_change); \
        while (threads_disabled) { \
          THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW_UID(): Wait...\n")); \
