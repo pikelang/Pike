@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.12 1998/03/28 13:44:34 grubba Exp $
+ * $Id: image_jpeg.c,v 1.13 1998/03/28 13:45:55 grubba Exp $
  */
 
 #include "config.h"
@@ -22,7 +22,7 @@
 #undef HAVE_STDLIB_H
 #endif
 #include "global.h"
-RCSID("$id: $");
+RCSID("$Id: image_jpeg.c,v 1.13 1998/03/28 13:45:55 grubba Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
