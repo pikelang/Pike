@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.28 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: module.c,v 1.29 2004/09/18 23:00:52 nilsson Exp $
 */
 
 #include "global.h"
@@ -40,7 +40,7 @@ struct static_module
   modfun exit;
 };
 
-static struct static_module module_list[] = {
+static const struct static_module module_list[] = {
   { "Builtin", low_init_main, low_exit_main }
 #include "modules/modlist.h"
 #include "post_modules/modlist.h"

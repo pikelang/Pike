@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.46 2004/05/19 00:08:02 nilsson Exp $
+|| $Id: x.c,v 1.47 2004/09/18 23:00:25 nilsson Exp $
 */
 
 /*
@@ -37,7 +37,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.46 2004/05/19 00:08:02 nilsson Exp $");
+RCSID("$Id: x.c,v 1.47 2004/09/18 23:00:25 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -111,7 +111,7 @@ extern struct program *image_program;
 **! 
 */
 
-static unsigned char swap_bits[256] = 
+static const unsigned char swap_bits[256] =
 { 0,128,64,192,32,160,96,224,16,144,80,208,48,176,112,
   240,8,136,72,200,40,168,104,232,24,152,88,216,56,184,
   120,248,4,132,68,196,36,164,100,228,20,148,84,212,52,

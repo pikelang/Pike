@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ilbm.c,v 1.28 2004/03/06 00:06:59 nilsson Exp $
+|| $Id: ilbm.c,v 1.29 2004/09/18 23:00:25 nilsson Exp $
 */
 
 /*
@@ -17,7 +17,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.28 2004/03/06 00:06:59 nilsson Exp $");
+RCSID("$Id: ilbm.c,v 1.29 2004/09/18 23:00:25 nilsson Exp $");
 #include "object.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -826,7 +826,7 @@ struct program *image_encoding_ilbm_program=NULL;
 
 void init_image_ilbm(void)
 {
-   static char *str[] = { "BMHD", "CMAP", "CAMG", "BODY" };
+   static const char *str[] = { "BMHD", "CMAP", "CAMG", "BODY" };
    int n;
 
    for(n=0; n<4; n++) {
