@@ -13,6 +13,11 @@ void create(object x) {
   }();
 }
 
+int(0..1) `!()
+{
+  return !wrappee;
+}
+
 mixed `[](mixed x, void|mixed y) {
   if(zero_type(y)) {
     werror("%O[%O]\n", wrappee, x);
