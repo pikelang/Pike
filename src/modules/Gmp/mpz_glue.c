@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.112 2002/10/15 10:35:39 marcus Exp $
+|| $Id: mpz_glue.c,v 1.113 2002/10/15 16:34:14 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.112 2002/10/15 10:35:39 marcus Exp $");
+RCSID("$Id: mpz_glue.c,v 1.113 2002/10/15 16:34:14 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1346,10 +1346,30 @@ static void mpzmod_lsh(INT32 args)
   ref_push_type_value(int_type_string);
   stack_swap();
   f_cast();
-  if(sp[-1].u.integer < 0)
-    Pike_error("mpz->lsh on negative number.\n");
-  res = fast_clone_object(THIS_PROGRAM, 0);
-  mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  if(sp[-1].type == T_INT) {
+    if(sp[-1].u.integer < 0)
+      Pike_error("mpz->lsh on negative number.\n");
+    res = fast_clone_object(THIS_PROGRAM, 0);
+    mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  } else {
+    INT32 i;
+    MP_INT *mi = get_mpz(sp-1,1);
+    if(mpz_sgn(mi)<0)
+      Pike_error("mpz->lsh on negative number.\n");
+    i=mpz_get_si(mi);
+    if(mpz_cmp_si(mi, i)) {
+      if(mpz_sgn(THIS))
+	Pike_error("mpz->lsh: shift count too large.\n");
+      else {
+	/* Special case: shifting 0 left any number of bits still yields 0 */
+	res = fast_clone_object(THIS_PROGRAM, 0);
+	mpz_set_si(OBTOMPZ(res), 0);
+      }
+    } else {
+      res = fast_clone_object(THIS_PROGRAM, 0);
+      mpz_mul_2exp(OBTOMPZ(res), THIS, i);
+    }
+  }
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -1362,10 +1382,23 @@ static void mpzmod_rsh(INT32 args)
   ref_push_type_value(int_type_string);
   stack_swap();
   f_cast();
-  if (sp[-1].u.integer < 0)
-    Pike_error("Gmp.mpz->rsh: Shift count must be positive.\n");
-  res = fast_clone_object(THIS_PROGRAM, 0);
-  mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  if(sp[-1].type == T_INT) {
+    if (sp[-1].u.integer < 0)
+      Pike_error("Gmp.mpz->rsh: Shift count must be positive.\n");
+    res = fast_clone_object(THIS_PROGRAM, 0);
+    mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  } else {
+    INT32 i;
+    MP_INT *mi = get_mpz(sp-1,1);
+    if(mpz_sgn(mi)<0)
+      Pike_error("Gmp.mpz->rsh: Shift count must be positive.\n");
+    i=mpz_get_si(mi);
+    res = fast_clone_object(THIS_PROGRAM, 0);
+    if(mpz_cmp_si(mi, i))
+      mpz_set_si(OBTOMPZ(res), mpz_sgn(THIS)<0? -1:0);
+    else
+      mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, i);
+  }
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -1377,12 +1410,21 @@ static void mpzmod_rlsh(INT32 args)
   if (args != 1)
     Pike_error("Wrong number of arguments to Gmp.mpz->``<<.\n");
   get_mpz(sp-1,1);
-  i=mpz_get_si(THIS);
-  if(i < 0)
+  if(mpz_sgn(THIS) < 0)
     Pike_error("mpz->``<< on negative number.\n");
-
-  res = fast_clone_object(THIS_PROGRAM, 0);
-  mpz_mul_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
+  i=mpz_get_si(THIS);
+  if(mpz_cmp_si(THIS, i)) {
+    if(mpz_sgn(OBTOMPZ(sp[-1].u.object)))
+      Pike_error("mpz->``<<: shift count too large.\n");
+    else {
+      /* Special case: shifting 0 left any number of bits still yields 0 */
+      res = fast_clone_object(THIS_PROGRAM, 0);
+      mpz_set_si(OBTOMPZ(res), 0);
+    }
+  } else {
+    res = fast_clone_object(THIS_PROGRAM, 0);
+    mpz_mul_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
+  }
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -1394,11 +1436,14 @@ static void mpzmod_rrsh(INT32 args)
   if (args != 1)
     Pike_error("Wrong number of arguments to Gmp.mpz->``>>.\n");
   get_mpz(sp-1,1);
-  i=mpz_get_si(THIS);
-  if(i < 0)
+  if(mpz_sgn(THIS) < 0)
     Pike_error("mpz->``>> on negative number.\n");
+  i=mpz_get_si(THIS);
   res = fast_clone_object(THIS_PROGRAM, 0);
-  mpz_fdiv_q_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
+  if(mpz_cmp_si(THIS, i))
+    mpz_set_si(OBTOMPZ(res), mpz_sgn(OBTOMPZ(sp[-1].u.object))<0? -1:0);
+  else
+    mpz_fdiv_q_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -1426,12 +1471,41 @@ static void mpzmod_pow(INT32 args)
   
   if (args != 1)
     Pike_error("Gmp.mpz->pow: Wrong number of arguments.\n");
-  if (sp[-1].type != T_INT)
-    Pike_error("Gmp.mpz->pow: Non int exponent.\n");
-  if (sp[-1].u.integer < 0)
-    Pike_error("Gmp.mpz->pow: Negative exponent.\n");
-  res = fast_clone_object(THIS_PROGRAM, 0);
-  mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  if (sp[-1].type == T_INT) {
+    if (sp[-1].u.integer < 0)
+      Pike_error("Gmp.mpz->pow: Negative exponent.\n");
+    res = fast_clone_object(THIS_PROGRAM, 0);
+    mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  } else {
+    INT32 i;
+    MP_INT *mi = get_mpz(sp-1,1);
+    if(mpz_sgn(mi)<0)
+      Pike_error("Gmp.mpz->pow: Negative exponent.\n");
+    i=mpz_get_si(mi);
+    if(mpz_cmp_si(mi, i))
+      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
+	Pike_error("Gmp.mpz->pow: Exponent too large.\n");
+      else {
+	/* Special case: these three integers can be raised to any power
+	   without overflowing.						 */
+	res = fast_clone_object(THIS_PROGRAM, 0);
+	switch(mpz_get_si(THIS)) {
+	case 0:
+	  mpz_set_si(OBTOMPZ(res), 0);
+	  break;
+	case 1:
+	  mpz_set_si(OBTOMPZ(res), 1);
+	  break;
+	case -1:
+	  mpz_set_si(OBTOMPZ(res), mpz_odd_p(mi)? -1:1);
+	  break;
+	}
+      }
+    else {
+      res = fast_clone_object(THIS_PROGRAM, 0);
+      mpz_pow_ui(OBTOMPZ(res), THIS, i);
+    }
+  }
   pop_n_elems(args);
   PUSH_REDUCED(res);
 }
@@ -1577,10 +1651,10 @@ void pike_module_exit(void)
   ADD_FUNCTION("``^",mpzmod_xor,tMpz_binop_type, ID_STATIC);		\
   ADD_FUNCTION("`~",mpzmod_compl,tFunc(tNone,tObj), ID_STATIC);		\
 									\
-  add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
-  add_function("`>>",mpzmod_rsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
-  add_function("``<<",mpzmod_rlsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
-  add_function("``>>",mpzmod_rrsh,MPZ_SHIFT_TYPE, ID_STATIC);		\
+  ADD_FUNCTION("`<<",mpzmod_lsh,tMpz_shift_type, ID_STATIC);		\
+  ADD_FUNCTION("`>>",mpzmod_rsh,tMpz_shift_type, ID_STATIC);		\
+  ADD_FUNCTION("``<<",mpzmod_rlsh,tMpz_shift_type, ID_STATIC);		\
+  ADD_FUNCTION("``>>",mpzmod_rrsh,tMpz_shift_type, ID_STATIC);		\
 									\
   add_function("`>", mpzmod_gt,MPZ_CMPOP_TYPE, ID_STATIC);		\
   add_function("`<", mpzmod_lt,MPZ_CMPOP_TYPE, ID_STATIC);		\
@@ -1621,7 +1695,7 @@ void pike_module_exit(void)
   ADD_FUNCTION("_sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
   ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0);\
   ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
-  ADD_FUNCTION("pow", mpzmod_pow,tFunc(tInt,tMpz_ret), 0);		\
+  ADD_FUNCTION("pow", mpzmod_pow,tMpz_shift_type, 0);			\
 									\
   ADD_FUNCTION("popcount", mpzmod_popcount,tFunc(tVoid,tInt), 0);	\
 									\

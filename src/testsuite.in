@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.551 2002/10/15 14:21:00 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.552 2002/10/15 16:34:14 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5484,6 +5484,12 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("8589934592", [[ (string)(1<<33) ]])
   test_eq("1267650600228229401496703205376", [[ (string)(1<<100) ]])
   
+  test_eval_error(function f=`<<; f(1, 100000000000000))
+  test_eval_error(function f=`<<; f(-1, 100000000000000))
+  test_eq(0<<100000000000000, 0)
+  test_eval_error(function f=`<<; f(100000000000000, 100000000000000))
+  test_eval_error(function f=`<<; f(-100000000000000, 100000000000000))
+
   // - Right shift.
   test_eq("53265209898187398182",
 		[[ (string)((int)"54543574935743895738479">>10) ]])
@@ -5492,6 +5498,12 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq(0, [[ 25>>31 ]])
   test_eq(0, [[ 25>>32 ]])
   test_eq(0, [[ 25>>33 ]])
+
+  test_eq(1>>100000000000000, 0)
+  test_eq(-1>>100000000000000, -1)
+  test_eq(0>>100000000000000, 0)
+  test_eq(100000000000000>>100000000000000, 0)
+  test_eq(-100000000000000>>100000000000000, -1)
 
   // - abs.
   test_eq("2147483648", [[ (string)abs(-0x80000000) ]])

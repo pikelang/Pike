@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.20 2002/10/14 16:24:20 jhs Exp $
+// $Id: testsuite.in,v 1.21 2002/10/15 16:34:14 marcus Exp $
 
 // mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
@@ -244,9 +244,27 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(Gmp.mpz(17)->pow(17)->popcount(), 31)
   test_eq(Gmp.mpz(-1)->popcount(), -1)
   test_eq(Gmp.mpz(-4711)->popcount(), -1)
+
+  test_eq(1>>Gmp.mpz("100000000000000"), 0)
+  test_eq(-1>>Gmp.mpz("100000000000000"), -1)
+  test_eq(0>>Gmp.mpz("100000000000000"), 0)
+  test_eval_error(1<<Gmp.mpz("100000000000000"))
+  test_eval_error(-1<<Gmp.mpz("100000000000000"))
+  test_eq(0<<Gmp.mpz("100000000000000"), 0)
+
+  test_eq(Gmp.mpz("100000000000000")>>Gmp.mpz("100000000000000"), 0)
+  test_eq(Gmp.mpz("-100000000000000")>>Gmp.mpz("100000000000000"), -1)
+  test_eq(Gmp.mpz(0)>>Gmp.mpz("100000000000000"), 0)
+  test_eval_error(Gmp.mpz("100000000000000")<<Gmp.mpz("100000000000000"))
+  test_eval_error(Gmp.mpz("-100000000000000")<<Gmp.mpz("100000000000000"))
+  test_eq(Gmp.mpz(0)<<Gmp.mpz("100000000000000"), 0)
+
+  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000000")), 0)
+  test_eq(Gmp.mpz(0)->pow(Gmp.mpz("100000000000001")), 0)
+  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000000")), 1)
+  test_eq(Gmp.mpz(1)->pow(Gmp.mpz("100000000000001")), 1)
+  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000")), 1)
+  test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000001")), -1)
+  test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000")))
 ]]);
 
-dnl test_eval_error(1<<10000000000000)
-dnl test_eval_error(pow(2, 10000000000000))
-test_eval_error(2->pow(10000000000000))
-dnl test_eval_error(Gmp.pow(2, 10000000000000))

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.50 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: math.c,v 1.51 2002/10/15 16:34:14 marcus Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: math.c,v 1.50 2002/10/11 01:39:54 nilsson Exp $");
+RCSID("$Id: math.c,v 1.51 2002/10/15 16:34:14 marcus Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -309,6 +309,7 @@ void f_pow(INT32 args)
   {
     case T_OBJECT * 17:
     case T_INT * 17:
+    case T_INT * 16 + T_OBJECT:
     case T_OBJECT * 16 + T_INT:
     case T_OBJECT * 16 + T_FLOAT:
       stack_swap();
@@ -328,6 +329,9 @@ void f_pow(INT32 args)
       push_float(pow((double)x, (double)y));
       return;
     }
+
+  default:
+    Pike_error("Invalid argument types to pow.\n");
   }
 }
 
