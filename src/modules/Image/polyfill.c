@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.16 1997/12/22 23:26:50 hubbe Exp $");
+RCSID("$Id: polyfill.c,v 1.17 1998/01/06 21:39:30 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -29,7 +29,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.16 1997/12/22 23:26:50 hubbe Exp $
+**!	$Id: polyfill.c,v 1.17 1998/01/06 21:39:30 mirar Exp $
 **! class image
 */
 
@@ -46,8 +46,11 @@ extern double floor(double);
 **!	will make a hole.
 **!
 **! note
-**!	Lines in the polygon may not be crossed without
-**!	midpoints.
+**!	Lines in the polygon may <i>not</i> be crossed without
+**!	the crossing coordinate specified in both lines.
+**!
+**! bugs
+**!	Inverted lines reported on Intel and Alpha processors.
 **!
 **! see also: setcolor
 */

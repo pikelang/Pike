@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.11 1997/12/22 23:26:47 hubbe Exp $ */
+/* $Id: matrix.c,v 1.12 1998/01/06 21:39:29 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.11 1997/12/22 23:26:47 hubbe Exp $
+**!	$Id: matrix.c,v 1.12 1998/01/06 21:39:29 mirar Exp $
 **! class image
 */
 
@@ -245,17 +245,17 @@ void img_scale2(struct image *dest, struct image *source)
    dest->ysize=newy;
    for (y = 0; y < newy; y++)
      for (x = 0; x < newx; x++) {
-       pixel(dest,x,y).r = (COLOURTYPE)
+       pixel(dest,x,y).r = (COLORTYPE)
 	                    (((INT32) pixel(source,2*x+0,2*y+0).r+
 			      (INT32) pixel(source,2*x+1,2*y+0).r+
 			      (INT32) pixel(source,2*x+0,2*y+1).r+
 			      (INT32) pixel(source,2*x+1,2*y+1).r) >> 2);
-       pixel(dest,x,y).g = (COLOURTYPE)
+       pixel(dest,x,y).g = (COLORTYPE)
 	                    (((INT32) pixel(source,2*x+0,2*y+0).g+
 			      (INT32) pixel(source,2*x+1,2*y+0).g+
 			      (INT32) pixel(source,2*x+0,2*y+1).g+
 			      (INT32) pixel(source,2*x+1,2*y+1).g) >> 2);
-       pixel(dest,x,y).b = (COLOURTYPE)
+       pixel(dest,x,y).b = (COLORTYPE)
 	                    (((INT32) pixel(source,2*x+0,2*y+0).b+
 			      (INT32) pixel(source,2*x+1,2*y+0).b+
 			      (INT32) pixel(source,2*x+0,2*y+1).b+
