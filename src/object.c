@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.234 2003/03/30 17:15:09 mast Exp $
+|| $Id: object.c,v 1.235 2003/03/30 20:26:49 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.234 2003/03/30 17:15:09 mast Exp $");
+RCSID("$Id: object.c,v 1.235 2003/03/30 20:26:49 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1767,11 +1767,16 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
     
       LOW_POP_FRAME();
 
-      /* Strong refs follows. They must be last. */
+      /* Even though it's essential that the program isn't freed
+       * before the object, it doesn't need a strong link. That since
+       * programs can't be destructed before they run out of
+       * references. */
+      gc_cycle_check_program (p, 0);
+
+      /* Strong ref follows. It must be last. */
       if(o->prog->flags & PROGRAM_USES_PARENT)
 	if(PARENT_INFO(o)->parent)
 	  gc_cycle_check_object(PARENT_INFO(o)->parent, -1);
-      gc_cycle_check_program (p, -1);
     }
   } GC_CYCLE_LEAVE;
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.100 2003/03/30 02:08:08 mast Exp $
+|| $Id: gc.h,v 1.101 2003/03/30 20:26:49 mast Exp $
 */
 
 #ifndef GC_H
@@ -422,8 +422,12 @@ extern int gc_in_cycle_check;
 
 /* Use WEAK < 0 for strong links. The gc makes these assumptions about
  * them:
+ *
  * 1.  All strong links are recursed before any other links, i.e.
- *     strong links must be passed to gc_cycle_check_* last.
+ *     strong links must be passed to gc_cycle_check_* last. This also
+ *     means that if following a strong link causes nonstrong links to
+ *     be followed recursively then there can only be one strong link
+ *     in a thing.
  * 2.  There can never be a cycle consisting of only strong links.
  *
  * Warning: This is unusable other than internally; you'll never be
