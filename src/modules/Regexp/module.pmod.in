@@ -1,0 +1,61 @@
+#define ERR(msg) throw(({ "(Regexp) "+sprintf msg+"\n", backtrace() }))
+
+class Regexp
+{
+   inherit @module@;
+
+   static private object repreg;
+   static private string regexp_string;
+
+  /* Semi-optimal speed, yes, I agree, but it should work. */
+   string replace(string in, string|function(string:string) transform)
+   {
+      if(!repreg)
+	 repreg = 
+	    object_program(this_object())("(.*)("+regexp_string+")(.*)");
+    
+      for(string result = ""; ; )
+      {
+	 if(in == "")
+	    return result;
+      
+	 array a = repreg->split(in);
+      
+	 if(!a)
+	    return in + result;
+	 else if(sizeof(a) < 3)
+	    ERR(("Split resulted in less than three elements: %O", a));
+	 else if(a[0] == in)
+	    return in + result;
+      
+	 result =
+	    (functionp(transform)?transform(a[1]):transform)+
+	    a[-1]+result;
+      
+	 in = a[0];
+      }
+   }
+  
+   void create(string|void _regexp_string)
+   {
+      regexp_string = _regexp_string;
+  
+      if(query_num_arg())
+	 ::create(regexp_string);
+      else
+	 ::create();
+   }
+
+   string _sprintf(int t)
+   {
+      switch(t)
+      {
+	 case 'O':
+	    return sprintf("Regexp(%O)", regexp_string);
+      }
+      return 0;
+   }
+}
+
+program _module_value=Regexp;
+
