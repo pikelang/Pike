@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.246 2001/03/17 06:25:58 hubbe Exp $");
+RCSID("$Id: las.c,v 1.247 2001/03/20 00:25:02 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2381,6 +2381,14 @@ static void low_print_tree(node *foo,int needlval)
     low_print_tree(_CDR(foo),0);
     return;
 
+  case F_LOOP:
+    fprintf(stderr, "loop(");
+    if(car_is_node(foo)) low_print_tree(_CAR(foo),0);
+    fprintf(stderr, ",{");
+    if(cdr_is_node(foo)) low_print_tree(_CDR(foo),0);
+    fprintf(stderr, "})");
+    return;
+
   default:
     if(!car_is_node(foo) && !cdr_is_node(foo))
     {
@@ -2995,6 +3003,20 @@ static int depend_p(node *a,node *b)
 #else
 #define depend_p depend_p3
 #endif
+
+/* Check if n depends on the lvalue lval */
+static int depend2_p(node *n, node *lval)
+{
+  node *tmp;
+  int ret;
+
+  /* Make a temporary node (lval = 0), so that we can use depend_p(). */
+  ADD_NODE_REF2(lval,
+		tmp = mknode(F_ASSIGN, mkintnode(0), lval));
+  ret = depend_p(n, tmp);
+  free_node(tmp);
+  return ret;
+}
 
 /* FIXME: Ought to use parent pointer to avoid recursion. */
 static int cntargs(node *n)
