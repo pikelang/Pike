@@ -294,9 +294,10 @@ o _ADT
 o Geography RT38
 o Int
 o Pike.Security
-o Protocols.HTTP.Session
 
-    Handles an HTTP connection as a session, with cookies and stuff.
+o Protocols.HTTP.Session
+    Handles an HTTP connection as a session, with cookies, redirects,
+    HTTP keep-alive etc.
 
 o Bz2
     Support for the compression format used by the bzip2 program. The
@@ -307,9 +308,11 @@ o Error
 o Float
 o Protocols.Bittorrent
 
-o Protocols.LMTP
-    Implements the Local Mail Transfer Protocol, LMTP, as specified in
-    RFC2033. This module has been well tested against Postfix clients.
+o Protocols.LMTP/Protocols.SMTP
+    Protocols.LMTP Implements a server for the Local Mail Transfer
+    Protocol, LMTP, as specified in RFC2033. This module has been well
+    tested against Postfix clients. Protocols.LMTP is based on a new
+    server implementation in Protocols.SMTP.
 
 o Protocols.OBEX
     An implementation of the IrDA(R) Object Exchange Protocol. OBEX is
@@ -377,6 +380,17 @@ o Calendar module
     tzname_location(), which, when available, returns zone names like
     "Europe/Stockholm". The database has been updated with Swedish
     pre-1901 namedays and Finnish namedays.
+
+o SSL
+
+o Sql.Provider
+
+o EXIF
+    The EXIF module is now much more robust than before and can handle
+    some of the erroneous EXIF tags some cameras procduce. Extended
+    support for Nikon cameras.
+
+o Standards.IDNA
 
 
 Optimizations:
