@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.81 2000/01/16 04:54:24 hubbe Exp $
+ * $Id: system.c,v 1.82 2000/01/17 02:34:04 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.81 2000/01/16 04:54:24 hubbe Exp $");
+RCSID("$Id: system.c,v 1.82 2000/01/17 02:34:04 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -81,6 +81,10 @@ RCSID("$Id: system.c,v 1.81 2000/01/16 04:54:24 hubbe Exp $");
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>
+#endif
+
+#ifdef HAVE_SYS_UTIME_H
+#include <sys/utime.h>
 #endif
 
 #include "dmalloc.h"
@@ -404,7 +408,12 @@ void f_utime(INT32 args)
   char *path;
   INT32 atime, mtime;
   int err;
+  /*&#()&@(*#&$ NT ()*&#)(&*@$#*/
+#ifdef _UTIMBUF_DEFINED
+  struct _utimbuf b;
+#else
   struct utimbuf b;
+#endif
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
