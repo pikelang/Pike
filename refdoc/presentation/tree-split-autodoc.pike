@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.38 2002/12/11 12:50:07 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.39 2002/12/11 16:47:25 grubba Exp $
  *
  */
 
@@ -180,7 +180,7 @@ class Node
       case "variable":
       case "inherit":
 	string path = raw_class_path();
-	if(sizeof(path)) path += ".";
+	if(sizeof(path) && (path[-1] != ':')) path += ".";
 	if(!m["homogen-name"]) {
 	  Parser.HTML()->add_tags
 	    ( ([ "constant":
@@ -337,13 +337,14 @@ class Node
     _raw_class_path = "";
     foreach(a, Node n)
     {
-      _raw_class_path += n->name + ".";
       // Hide most namepaces from the class path.
       if (n->type == "namespace") {
+	_raw_class_path += n->name + "::";
 	if ((<"","lfun">)[n->name]) {
 	  _make_class_path += n->name + "::";
 	}
       } else {
+	_raw_class_path += n->name + ".";
 	_make_class_path += n->name;
 	if(n->type=="class")
 	  _make_class_path += "()->";
@@ -358,6 +359,7 @@ class Node
       _make_class_path += "()";
     } else if (type == "namespace") {
       _make_class_path += "::";
+      _raw_class_path += "::";
     }
 
     ENDPROFILE("make_class_path");
