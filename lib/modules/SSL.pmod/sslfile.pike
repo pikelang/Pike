@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.25 2000/08/15 21:35:29 mast Exp $
+/* $Id: sslfile.pike,v 1.26 2000/10/12 13:55:15 sigge Exp $
  *
  */
 
@@ -115,8 +115,10 @@ int write(string|array(string) s)
     s = s[PACKET_MAX_SIZE..];
   }
 
+#ifndef __NT__  
   if (call_write)
     ssl_write_callback(socket->query_id());
+#endif
 
 #if 0
   if (queue_write() == -1)
