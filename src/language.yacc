@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.188 2000/06/21 00:56:02 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.189 2000/06/21 15:01:58 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -290,6 +290,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> foreach
 %type <n> gauge
 %type <n> idents
+%type <n> idents2
 %type <n> lambda
 %type <n> local_name_list
 %type <n> local_name_list2
@@ -2201,7 +2202,7 @@ expr4: string
   | sscanf
   | lambda
   | class
-  | idents
+  | idents2
   | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
   | expr4 '(' error ')' { $$=mkapplynode($1, NULL); yyerrok; }
   | expr4 '(' error TOK_LEX_EOF
@@ -2262,6 +2263,62 @@ expr4: string
     $$=mknode(F_ARROW,$1,$3);
   }
   | expr4 TOK_ARROW error {}
+  ;
+
+idents2: idents
+  | TOK_LOCAL_ID TOK_COLON_COLON TOK_IDENTIFIER
+  {
+    int i;
+
+    if(last_identifier) free_string(last_identifier);
+    copy_shared_string(last_identifier, $3->u.sval.u.string);
+
+    if (((i = find_shared_string_identifier(last_identifier,
+					    new_program)) >= 0) ||
+	((i = really_low_find_shared_string_identifier(last_identifier,
+						       new_program,
+						       SEE_STATIC|
+						       SEE_PRIVATE)) >= 0)) {
+      if (!(new_program->identifier_references[i].id_flags & ID_HIDDEN)) {
+	/* We need to generate a new reference. */
+	int d;
+	struct reference funp = new_program->identifier_references[i];
+	funp.id_flags |= ID_HIDDEN;
+	i = -1;
+	for(d = 0; d < (int)new_program->num_identifier_references; d++) {
+	  struct reference *fp;
+	  fp = new_program->identifier_references + d;
+
+	  if(!MEMCMP((char *)fp,(char *)&funp,sizeof funp)) {
+	    i = d;
+	    break;
+	  }
+	}
+	if (i < 0) {
+	  add_to_identifier_references(funp);
+	  i = new_program->num_identifier_references - 1;
+	}
+      }
+      $$ = mkidentifiernode(i);
+    } else {
+      if (!num_parse_error) {
+	if (compiler_pass == 2) {
+	  my_yyerror("'%s' not defined in local scope.", last_identifier->str);
+	  $$ = 0;
+	} else {
+	  $$ = mknode(F_UNDEFINED, 0, 0);
+	}
+      } else {
+	$$ = mkintnode(0);
+      }
+    }
+
+    free_node($3);
+  }
+  | TOK_LOCAL_ID TOK_COLON_COLON bad_identifier
+  {
+    $$=0;
+  }
   ;
 
 idents: low_idents
