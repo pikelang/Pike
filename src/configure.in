@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.673 2004/01/12 12:26:54 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.674 2004/03/09 13:43:58 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -53,12 +53,12 @@ AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
 	      [], [enable_make_conf=yes])
 
-if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
-  set >conftest.tmp
-  echo Using settings from /etc/make.conf...
-  source /etc/make.conf
-  set | diff -u conftest.tmp -  | grep '^+C'
-fi
+# if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
+#   set >conftest.tmp
+#   echo Using settings from /etc/make.conf...
+#   source /etc/make.conf
+#   set | diff -u conftest.tmp -  | grep '^+C'
+# fi
 
 if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
