@@ -278,6 +278,7 @@ void f_get_dir(INT32 args)
     closedir(dir);
     THREADS_DISALLOW();
     a=aggregate_array(sp-save_sp);
+    free((char *)dir);
   }
 #else
   dir=opendir(path);
