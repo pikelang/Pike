@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.29 2001/01/30 00:15:03 grubba Exp $
+ * $Id: lexer.h,v 1.30 2001/03/18 21:49:52 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -365,6 +365,9 @@ static int low_yylex(YYSTYPE *yylval)
 	  break;
 	case TWO_CHAR('e','l'):
 	  if(ISWORD("else")) return TOK_ELSE;
+	  break;
+	case TWO_CHAR('e','n'):
+	  if(ISWORD("enum")) return TOK_ENUM;
 	  break;
 	case TWO_CHAR('e','x'):
 	  if(ISWORD("extern")) return TOK_EXTERN;

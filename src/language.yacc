@@ -49,6 +49,7 @@
 %token TOK_DOT_DOT
 %token TOK_DOT_DOT_DOT
 %token TOK_ELSE
+%token TOK_ENUM
 %token TOK_EXTERN
 %token TOK_FLOAT_ID
 %token TOK_FOR
@@ -110,7 +111,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.233 2001/03/17 06:25:58 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.234 2001/03/18 21:49:52 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1005,6 +1006,7 @@ magic_identifiers2:
   | TOK_STRING_ID     { $$ = "string"; }
   | TOK_FLOAT_ID      { $$ = "float"; }
   | TOK_INT_ID        { $$ = "int"; }
+  | TOK_ENUM	      { $$ = "enum"; }
   ;
 
 magic_identifiers3:
@@ -3386,6 +3388,8 @@ bad_identifier: bad_expr_ident
   { yyerror("string is a reserved word."); }
   | TOK_VOID_ID
   { yyerror("void is a reserved word."); }
+  | TOK_ENUM
+  { yyerror("enum is a reserved word."); }
   ;
 
 bad_expr_ident:
