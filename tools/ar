@@ -36,7 +36,9 @@ case "`echo $CC`" in
         do_cmd lib "-OUT:`fixpath $OUTPUT`" `fixpath $@`
         winname="`echo $OUTPUT | sed -e 's/^lib\(.*\)\.a/\1.lib/'`"
         if [ "$winname" != "$OUTPUT" ]; then
-          cp "$OUTPUT" "$winname"
+	  # Perform the copy on the WIN32 side to make sure
+	  # we won't be affected by filesystem buffers.
+	  do_cmd copy "`fixpath $OUTPUT`" "`fixpath $winname`"
         fi
         exit $?
       ;;
