@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.269 2003/04/22 16:06:07 marcus Exp $
+|| $Id: file.c,v 1.270 2003/04/23 09:57:14 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.269 2003/04/22 16:06:07 marcus Exp $");
+RCSID("$Id: file.c,v 1.270 2003/04/23 09:57:14 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2925,15 +2925,18 @@ static int isipnr(char *s)
  *!
  *! Get address and port of a socket end-point.
  *!
- *! This function returns the remote or local address of a socket on the
- *! form "x.x.x.x port".
+ *! @param local
+ *!   If the argument @[local] is not specified, or is @expr{0@} (zero),
+ *!   the remote end-point will be returned. Otherwise, if @[local] is
+ *!   @expr{1@}, the local end-point will be returned.
  *!
- *! If the argument @[local] is not specified, or is @expr{0@} (zero),
- *! the remote address will be returned. Otherwise, if @[local] is
- *! @expr{1@}, the local address will be returned.
+ *! @returns
+ *!   This function returns the address and port of a socket end-point
+ *!   on the form @expr{"x.x.x.x port"@} (IPv4) or
+ *!   @expr{"x:x:x:x:x:x:x:x port"@} (IPv6).
  *!
- *! If the file is not a socket, not connected, or some other error
- *! occurrs, @expr{0@} (zero) will be returned.
+ *!   If this file is not a socket, is not connected, or some other
+ *!   error occurrs, @expr{0@} (zero) will be returned.
  *!
  *! @seealso
  *!   @[connect()]
@@ -2943,8 +2946,8 @@ static void file_query_address(INT32 args)
   struct sockaddr_in addr;
   int i;
   char buffer[496],*q;
-  /* XOPEN GROUP think this variable should a size_t, BSD thinks it should
-   * be an int.
+  /* XOPEN GROUP thinks this variable should be a size_t.
+   * BSD thinks it should be an int.
    */
   ACCEPT_SIZE_T len;
 
