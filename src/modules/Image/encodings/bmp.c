@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.25 2000/08/04 10:53:20 grubba Exp $ */
+/* $Id: bmp.c,v 1.26 2000/08/08 10:52:38 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.25 2000/08/04 10:53:20 grubba Exp $
+**!	$Id: bmp.c,v 1.26 2000/08/08 10:52:38 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.25 2000/08/04 10:53:20 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.26 2000/08/08 10:52:38 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -55,14 +55,14 @@ static struct pike_string *rle_string = NULL;
 static struct pike_string *bpp_string = NULL;
 static struct pike_string *colortable_string = NULL;
 
-static INLINE void push_ubo_32bit(unsigned long x)
+static INLINE void push_ubo_32bit(size_t x)
 {
    char buf[4];
 
-   buf[0]=(char)(x);
-   buf[1]=(char)(x>>8);
-   buf[2]=(char)(x>>16);
-   buf[3]=(char)(x>>24);
+   buf[0] = DO_NOT_WARN((char)(x));
+   buf[1] = DO_NOT_WARN((char)(x>>8));
+   buf[2] = DO_NOT_WARN((char)(x>>16));
+   buf[3] = DO_NOT_WARN((char)(x>>24));
    push_string(make_shared_binary_string(buf,4));
 }
 
@@ -491,8 +491,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
    struct neo_colortable *nct=NULL;
    struct object *o;
    rgb_group *d;
-   int n=0,i,y,skip;
-   ptrdiff_t j=0;
+   int n=0,y,skip;
+   ptrdiff_t i, j=0;
    int windows=0;
    int quality=50; /* for JPEG decoding */
 
@@ -732,9 +732,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 y=img->ysize;
 	 while (j && y--)
 	 {
-	    d=img->img+img->xsize*y;
-	    i=img->xsize; if (i>j) i=j; 
-	    j-=i*3;
+	    d = img->img+img->xsize*y;
+	    i = img->xsize;
+	    if (i>j) i=j;
+	    j -= i*3;
 	    while (i--)
 	    {
 	       d->b=*(s++);
@@ -742,7 +743,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       d->r=*(s++);
 	       d++;
 	    }
-	    if (j>=skip) { j-=skip; s+=skip; }
+	    if (j >= skip) { j -= skip; s += skip; }
 	 }
 	 break;
       case 16:
@@ -755,8 +756,9 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 y=img->ysize;
 	 while (j && y--)
 	 {
-	    d=img->img+img->xsize*y;
-	    i=img->xsize; if (i>j) i=j; 
+	    d = img->img+img->xsize*y;
+	    i = img->xsize;
+	    if (i>j) i=j; 
 	    j-=i*2;
 	    while (i--)
 	    {
@@ -844,8 +846,9 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	    y=img->ysize;
 	    while (j && y--)
 	    {
-	       d=img->img+img->xsize*y;
-	       i=img->xsize; if (i>j) i=j; 
+	       d = img->img+img->xsize*y;
+	       i = img->xsize;
+	       if (i>j) i=j; 
 	       j-=i;
 	       while (i--)
 		  *(d++)=nct->u.flat.entries[*(s++)].color;

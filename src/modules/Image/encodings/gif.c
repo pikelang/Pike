@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.54 2000/08/04 10:46:55 grubba Exp $ */
+/* $Id: gif.c,v 1.55 2000/08/08 10:43:13 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.54 2000/08/04 10:46:55 grubba Exp $
+**!	$Id: gif.c,v 1.55 2000/08/08 10:43:13 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.54 2000/08/04 10:46:55 grubba Exp $");
+RCSID("$Id: gif.c,v 1.55 2000/08/08 10:43:13 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1285,7 +1285,7 @@ static void _decode_get_extension(unsigned char **s,
    if (!n)
       push_string(make_shared_binary_string("",0));
    else
-      f_add(n);
+      f_add(DO_NOT_WARN(n));
 
    f_aggregate(3);
 }
@@ -2351,7 +2351,7 @@ void image_gif__encode_extension(INT32 args)
       else
       {
 	 d=begin_shared_string(s->len-i+2);
-	 d->str[0] = s->len-i;
+	 d->str[0] = DO_NOT_WARN(s->len - i);
 	 MEMCPY(d->str+1, s->str+i, d->len-i);
 	 d->str[d->len-i+1]=0;
 	 push_string(end_shared_string(d));

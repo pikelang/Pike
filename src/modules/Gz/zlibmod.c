@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.29 2000/07/28 07:12:19 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.30 2000/08/08 10:41:46 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -170,7 +170,7 @@ static void gz_deflate(INT32 args)
   }
 
   this->gz.next_in=(Bytef *)data->str;
-  this->gz.avail_in=data->len;
+  this->gz.avail_in = DO_NOT_WARN(data->len);
 
   initialize_buf(&buf);
 
@@ -300,7 +300,7 @@ static void gz_inflate(INT32 args)
   data=sp[-args].u.string;
 
   this->gz.next_in=(Bytef *)data->str;
-  this->gz.avail_in=data->len;
+  this->gz.avail_in = DO_NOT_WARN(data->len);
 
   initialize_buf(&buf);
 
@@ -360,7 +360,7 @@ static void gz_crc32(INT32 args)
 	 
    crc=crc32(crc,
 	     (unsigned char*)sp[-args].u.string->str,
-	     sp[-args].u.string->len);
+	     DO_NOT_WARN(sp[-args].u.string->len));
 
    pop_n_elems(args);
    push_int((INT32)crc);
