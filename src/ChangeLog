@@ -1,3 +1,8 @@
+Fri Feb 23 02:39:11 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+        * version 1.7E-12 released
+	* file->close() fixed to handle unknown errors
+
 Sun Feb 11 01:04:38 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* export.lpc: now updates configure files if needed
