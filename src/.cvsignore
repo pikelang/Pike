@@ -12,6 +12,7 @@ dependencies
 dumpmodule.log
 hilfe
 hsort_template.h
+interpret_protos.h
 isort_template.h
 language.c
 language.h
@@ -23,11 +24,13 @@ master.pike
 peep_engine.c
 pike
 pike.tmp
+precompile.sh
 qsort_template.h
 remake
 smartlink
 stamp-h
 stamp-h.in
+stamp-tpike-predep
 test-install
 testsuite
 tpike
