@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.1 2003/02/12 18:33:23 peta Exp $
+# $Id: Makefile.in,v 1.2 2003/03/18 11:25:28 peta Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=adt.o array_adapter.o
+OBJS=adt.o sequence.o 
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
@@ -10,6 +10,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 # Compatibility with stupid makes..
 adt.o: $(SRCDIR)/adt.c
-array_adapter.o: $(SRCDIR)/array_adapter.c
+sequence.o: $(SRCDIR)/sequence.c
 
 @dependencies@

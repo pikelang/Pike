@@ -2,23 +2,25 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: adt.cmod,v 1.2 2003/02/14 12:46:48 grubba Exp $
+|| $Id: adt.cmod,v 1.3 2003/03/18 11:25:16 peta Exp $
 */
 #include "global.h"
 
 #include "module_support.h"
-#include "array_adapter.h"
+#include "sequence.h"
 
 DECLARATIONS
 
 PIKE_MODULE_INIT
 {
   INIT;
-  pike_init_ArrayAdapter_module();
+  pike_init_Sequence_module();
+  //pike_init_CircularList_module();
 }
 
 PIKE_MODULE_EXIT
 {
   EXIT;
-  pike_exit_ArrayAdapter_module();  
+  pike_init_Sequence_module();  
+  //pike_init_CircularList_module();
 } 

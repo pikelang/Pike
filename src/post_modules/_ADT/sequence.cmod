@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array_adapter.cmod,v 1.6 2003/03/13 21:45:24 nilsson Exp $
+|| $Id: sequence.cmod,v 1.1 2003/03/18 11:23:10 peta Exp $
 */
 
 #include "global.h"
@@ -27,12 +27,12 @@
 
 DECLARATIONS
 
-/*! @class ArrayAdapter
- *! This adapter gives the possibility to use normal arrays as collections.
- *! 
+/*! @class Sequence
+ *! The sequence work similar to an array but has the possibilities to 
+ *! insert and remove elements. It also have a more powerful iterator.
  */
 
-PIKECLASS ArrayAdapter
+PIKECLASS Sequence
 {
 
   CVAR int pos;
@@ -81,68 +81,68 @@ PIKECLASS ArrayAdapter
   } 
 
 
-/*! @decl ArrayAdapter `+(ArrayAdapter coll)
+/*! @decl Sequence `+(Sequence coll)
  *! Addition operator
- *! Append the content of this ArrayAdapter and @[coll] and return the results 
- *! as a new @[ArrayAdapter].
+ *! Append the content of this Sequence and @[coll] and return the results 
+ *! as a new @[Sequence].
  *! 
  *! @param coll 
  *!   The adapter to apend to his adapter
  *!
  *! @returns
- *!   The result of the append as a new @[ArrayAdapter]. 
+ *!   The result of the append as a new @[Sequence]. 
  */
 
   PIKEFUN object `+(object coll)
   {
     //Should work  om collection classes too
-    if (coll->prog == ArrayAdapter_program)
+    if (coll->prog == Sequence_program)
     {
       ref_push_array(THIS->a);
-      ref_push_array(OBJ2_ARRAYADAPTER(coll)->a);
+      ref_push_array(OBJ2_SEQUENCE(coll)->a);
       push_array(add_arrays(Pike_sp-2, 2));
   
-      push_object(clone_object(ArrayAdapter_program, 1));
+      push_object(clone_object(Sequence_program, 1));
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`+",1,"ADT.ArrayAdapter");
+      SIMPLE_BAD_ARG_ERROR("`+",1,"ADT.Sequence");
     }
   }
 
   
-/*! @decl ArrayAdapter `-(ArrayAdapter coll)
+/*! @decl Sequence `-(Sequence coll)
  *! Subtraction operator
- *! Removes those values in this adapter that also are present in @[coll] 
- *! and return the results as a new @[ArrayAdapter].
+ *! Removes those values in this sequence that also are present in @[coll] 
+ *! and return the results as a new @[Sequence].
  *! 
  *! @param coll 
  *!   The adapter to subtract from this adapter
  *!
  *! @returns
- *!   The result of the subtraction as a new @[ArrayAdapter]. 
+ *!   The result of the subtraction as a new @[Sequence]. 
  */
 
   PIKEFUN object `-(object coll)
   {
     //Should work on collection classes too
-    if (coll->prog == ArrayAdapter_program)
+    if (coll->prog == Sequence_program)
     {
-      push_array(subtract_arrays(THIS->a, OBJ2_ARRAYADAPTER(coll)->a));
+      push_array(subtract_arrays(THIS->a, OBJ2_SEQUENCE(coll)->a));
   
-      push_object(clone_object(ArrayAdapter_program, 1));
+      push_object(clone_object(Sequence_program, 1));
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.ArrayAdapter");
+      SIMPLE_BAD_ARG_ERROR("`-",1,"ADT.Sequence");
     }
   }
     
   
-/*! @decl ArrayAdapter `&(ArrayAdapter coll)
+/*! @decl Sequence `&(Sequence coll)
  *! And operator
- *! Perform an and on this adapter and the @[coll] adapter by only returning 
- *! those values that is present in both adapters as a new @[ArrayAdapter].
+ *! Perform an and on this sequence and the @[coll] adapter by only returning 
+ *! those values that is present in both adapters as a new @[Sequence].
  *! The remaning values is in the same order as they are in this adapter and
  *! the values are compared using `==.
  *!
@@ -150,85 +150,85 @@ PIKECLASS ArrayAdapter
  *!   The adapter to and to his adapter
  *!
  *! @returns
- *!   The result of the and as a new @[ArrayAdapter]. 
+ *!   The result of the and as a new @[Sequence]. 
  */
 
   PIKEFUN object `&(object coll)
   {
     //Should work on collection classes too
-    if (coll->prog == ArrayAdapter_program)
+    if (coll->prog == Sequence_program)
     {
       push_array(and_arrays(THIS->a,
-			    OBJ2_ARRAYADAPTER(coll)->a));
+			    OBJ2_SEQUENCE(coll)->a));
   
-      push_object(clone_object(ArrayAdapter_program, 1));
+      push_object(clone_object(Sequence_program, 1));
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`&",1,"ADT.ArrayAdapter");
+      SIMPLE_BAD_ARG_ERROR("`&",1,"ADT.Sequence");
     }
   }
 
   
-/*! @decl ArrayAdapter `|(ArrayAdapter coll)
+/*! @decl Sequence `|(Sequence coll)
  *! Or operator
- *! Perform an or on this adapter and the @[coll] adapter by returning 
- *! those values that is present in both adapters as a new @[ArrayAdapter].
+ *! Perform an or on this sequence and the @[coll] adapter by returning 
+ *! those values that is present in both adapters as a new @[Sequence].
  *! The values are compared using `==.
  *!
  *! @param coll 
  *!   The adapter to or with his adapter
  *!
  *! @returns
- *!   The result of the or as a new @[ArrayAdapter]. 
+ *!   The result of the or as a new @[Sequence]. 
  */
 
   PIKEFUN object `|(object coll)
   {
     //Should work on collection classes too
-    if (coll->prog == ArrayAdapter_program)
+    if (coll->prog == Sequence_program)
     {
       push_array(merge_array_with_order(THIS->a, 
-					OBJ2_ARRAYADAPTER(coll)->a,
+					OBJ2_SEQUENCE(coll)->a,
 					PIKE_ARRAY_OP_OR));
   
-      push_object(clone_object(ArrayAdapter_program, 1));
+      push_object(clone_object(Sequence_program, 1));
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`|",1,"ADT.ArrayAdapter");
+      SIMPLE_BAD_ARG_ERROR("`|",1,"ADT.Sequence");
     }
   }
 
 
-/*! @decl ArrayAdapter `^(ArrayAdapter coll)
+/*! @decl Sequence `^(Sequence coll)
  *! Xor operator
- *! Perform a xor on this adapter and the @[coll] adapter by returning 
+ *! Perform a xor on this sequence and the @[coll] adapter by returning 
  *! those values that is present in one of the adpaters but not in both 
- *! adapters as a new @[ArrayAdapter].
+ *! adapters as a new @[Sequence].
  *! The values are compared using `==.
  *!
  *! @param coll 
  *!   The adapter to xor with his adapter
  *!
  *! @returns
- *!   The result of the xor as a new @[ArrayAdapter]. 
+ *!   The result of the xor as a new @[Sequence]. 
  */
 
   PIKEFUN object `^(object coll)
   {
     //Should work on collection classes too
-    if (coll->prog == ArrayAdapter_program)
+    if (coll->prog == Sequence_program)
     {
       push_array(merge_array_with_order(THIS->a, 
-					OBJ2_ARRAYADAPTER(coll)->a,
+					OBJ2_SEQUENCE(coll)->a,
 					PIKE_ARRAY_OP_XOR));
   
-      push_object(clone_object(ArrayAdapter_program, 1));
+      push_object(clone_object(Sequence_program, 1));
     }
     else
     {
-      SIMPLE_BAD_ARG_ERROR("`^",1,"ADT.ArrayAdapter");
+      SIMPLE_BAD_ARG_ERROR("`^",1,"ADT.Sequence");
     }
   }
 
@@ -236,16 +236,16 @@ PIKECLASS ArrayAdapter
   /*! @decl array _equal(mixed coll)
    *!
    *! @returns
-   *!   Returns @tt{true@} if the object @[coll] is and @[ArrayAdapter]
+   *!   Returns @tt{true@} if the object @[coll] is and @[Sequence]
    *!   and contains the same values in the same order.
    */
 
   PIKEFUN int _equal(mixed coll)
   {
     if (coll->type == T_OBJECT && 
-	coll->u.object->prog == ArrayAdapter_program)
+	coll->u.object->prog == Sequence_program)
     {
-      struct ArrayAdapter_struct *adapter = OBJ2_ARRAYADAPTER(coll->u.object);
+      struct Sequence_struct *adapter = OBJ2_SEQUENCE(coll->u.object);
       RETURN  (array_equal_p(THIS->a, adapter->a, 0));
     }
     RETURN 0;
@@ -273,7 +273,7 @@ PIKECLASS ArrayAdapter
   }
 
 /*! @decl void _insert_element(int index, mixed value)
- *! Insert an element in the adapter at the postion @[index], the value
+ *! Insert an element in the sequence at the postion @[index], the value
  *! at the position @[index] and all above will have thier index increased 
  *! with one.
  *! 
@@ -304,7 +304,7 @@ PIKECLASS ArrayAdapter
   }
 
 /*! @decl void _remove_element(int index)
- *!  Remove the values at index @[index] from the adapter.
+ *!  Remove the values at index @[index] from the sequence.
  *! 
  *! @param index 
  *!   The index to remove
@@ -336,7 +336,7 @@ PIKECLASS ArrayAdapter
 
 
 /*! @decl void _search(mixed value, void|int start)
- *!   Search the adapter for a specific value. Return the index of the first 
+ *!   Search the sequence for a specific value. Return the index of the first 
  *!   value that is equal to @[value]. If no value was found @tt{UNDEFINED@} 
  *!   is returned insted
  *! 
@@ -393,7 +393,7 @@ PIKECLASS ArrayAdapter
 
   
 /*! @decl void add(mixed value)
- *!   Add a value at the end of the adapter
+ *!   Add a value at the end of the sequence
  *!
  *! @param value
  *!   The value to add
@@ -415,11 +415,11 @@ PIKECLASS ArrayAdapter
  *!   Casts to the following types are supported:
  *!   @string
  *!     @value "array"
- *!       Cast the content of this adapter to an array.
+ *!       Cast the content of this sequence to an array.
  *!   @endstring
  *!
  *! @returns
- *!   An array with the contents of this adapter.
+ *!   An array with the contents of this sequence.
  */
 
   PIKEFUN mixed cast(string type)
@@ -439,7 +439,7 @@ PIKECLASS ArrayAdapter
   }
 
   /*! @decl void clear()
-   *!   Clear the contents of the adapter.
+   *!   Clear the contents of the sequence.
    *!
    */
 
@@ -450,10 +450,10 @@ PIKECLASS ArrayAdapter
   }   
 
   /*! @decl int delete_value(mixed value)
-   *!   Remove the first occurrence of the value @[value] from the adapter.
+   *!   Remove the first occurrence of the value @[value] from the sequence.
    *!
    *! @param value
-   *!   The value to remove from the adapter.
+   *!   The value to remove from the sequence.
    *!
    *! @returns
    *!   The index of the removed element or -1 if there was no value to 
@@ -474,7 +474,7 @@ PIKECLASS ArrayAdapter
   /*! @decl int(0..1) is_empty()
    *!
    *! @returns
-   *!   Returns @tt{1@} if the adapter is empty otherwise @tt{0@}. 
+   *!   Returns @tt{1@} if the sequence is empty otherwise @tt{0@}. 
    */
 
   PIKEFUN int is_empty()
@@ -495,7 +495,7 @@ PIKECLASS ArrayAdapter
 
   
   /*! @decl void create(array a)
-   *!   Creates a new @[ArrayAdapter] around the array a.
+   *!   Creates a new @[Sequence] around the array a.
    */
 
   PIKEFUN void create(array a) {
@@ -505,9 +505,9 @@ PIKECLASS ArrayAdapter
 
 
   
-  /*! @decl ArrayAdapterIterator _get_iterator(void|int ind)
-   *!   Create and initiate a new ArrayAdapterIterator that could be used
-   *!   to iterate over this adapter.
+  /*! @decl SequenceIterator _get_iterator(void|int ind)
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
    *!
    *! @param ind
    *!   If an @[ind] value is supplied the iterator will be positioned at
@@ -519,21 +519,21 @@ PIKECLASS ArrayAdapter
 
 
   
-  /*! @decl ArrayAdapterIterator first()
-   *!   Create and initiate a new ArrayAdapterIterator that could be used
-   *!   to iterate over this adapter.
+  /*! @decl SequenceIterator first()
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
    *!
    *! @returns
-   *!   An iterator positioned at the first element in the adapter.
+   *!   An iterator positioned at the first element in the sequence.
    */
 
   
-  /*! @decl ArrayAdapterIterator last()
-   *!   Create and initiate a new ArrayAdapterIterator that could be used
-   *!   to iterate over this adapter.
+  /*! @decl SequenceIterator last()
+   *!   Create and initiate a new SequenceIterator that could be used
+   *!   to iterate over this sequence.
    *!
    *! @returns
-   *!   An iterator positioned after the last element in the adapter.
+   *!   An iterator positioned after the last element in the sequence.
    */
 
 
@@ -560,45 +560,45 @@ PIKECLASS ArrayAdapter
   }    
 
 
-  /*! @class ArrayAdapterIterator
-   *!    This is the iterator for the ArrayAdapter. It implements the 
+  /*! @class SequenceIterator
+   *!    This is the iterator for the Sequence. It implements the 
    *!    IndexedIterator and the OutputIterator
    */  
   
-  PIKECLASS ArrayAdapterIterator
+  PIKECLASS SequenceIterator
   {
     CVAR int pos;
-    CVAR struct ArrayAdapter_struct *adapter;
+    CVAR struct Sequence_struct *sequence;
     CVAR struct object *obj; 
 
     
-  /*! @decl void create(object adapter, void|int start)
-   *!   Creates a new iterator for the adapter @[adapter]. If start is
+  /*! @decl void create(object sequence, void|int start)
+   *!   Creates a new iterator for the sequence @[sequence]. If start is
    *!   supplied it will try to position the iterater at @[start].
    *! 
    */
 
-    PIKEFUN void create(object adapter, void|int start) 
+    PIKEFUN void create(object sequence, void|int start) 
     {
       
-      if (adapter->prog != ArrayAdapter_program)
+      if (sequence->prog != Sequence_program)
       {
-	SIMPLE_BAD_ARG_ERROR("create",1,"ADT.ArrayAdapter");
+	SIMPLE_BAD_ARG_ERROR("create",1,"ADT.Sequence");
       
       }
       else
       {
-	THIS->adapter = OBJ2_ARRAYADAPTER(adapter);
-	add_ref(THIS->obj = adapter);
+	THIS->sequence = OBJ2_SEQUENCE(sequence);
+	add_ref(THIS->obj = sequence);
 	if (args == 2) // if there was an start index supplied
 	{
 	  THIS->pos=start->u.integer;
-	  if (THIS->adapter->a && ((THIS->pos > THIS->adapter->a->size) 
+	  if (THIS->sequence->a && ((THIS->pos > THIS->sequence->a->size) 
 				   || (THIS->pos < 0)))
 	  {
 	      Pike_error("Index %d is out of array range 0 - %d.\n", 
 			 THIS->pos, 
-			 THIS->adapter->a->size);
+			 THIS->sequence->a->size);
 	  }
 	}
 	else
@@ -617,9 +617,9 @@ PIKECLASS ArrayAdapter
 
     PIKEFUN int index()
     {
-      if(!THIS->adapter || 
-	 !THIS->adapter->a || 
-	 THIS->pos >= THIS->adapter->a->size) 
+      if(!THIS->sequence || 
+	 !THIS->sequence->a || 
+	 THIS->pos >= THIS->sequence->a->size) 
       {
 	push_int(0);
 	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
@@ -639,21 +639,21 @@ PIKECLASS ArrayAdapter
 
     PIKEFUN mixed value()
     {
-      if(!THIS->adapter || 
-	 !THIS->adapter->a || 
-	 THIS->pos >= THIS->adapter->a->size) 
+      if(!THIS->sequence || 
+	 !THIS->sequence->a || 
+	 THIS->pos >= THIS->sequence->a->size) 
       {
 	push_int(0);
 	Pike_sp[-1].subtype=NUMBER_UNDEFINED;
       }
       else
       {
-	push_svalue(THIS->adapter->a->item + THIS->pos);
+	push_svalue(THIS->sequence->a->item + THIS->pos);
       }
     }
 
 
-    /*! @decl ArrayAdapterIterator `+(int steps)
+    /*! @decl SequenceIterator `+(int steps)
      *!   Move the iterator @[steps] steps forward (negative value on @[steps]
      *!   will cause the iterator to move backwards) and return the result
      *!   as a new iterator.
@@ -663,9 +663,9 @@ PIKECLASS ArrayAdapter
 
     PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(ArrayAdapterIterator_program);
-      struct ArrayAdapterIterator_struct *new;
-      new = OBJ2_ARRAYADAPTERITERATOR(o);
+      struct object *o=low_clone(SequenceIterator_program);
+      struct SequenceIterator_struct *new;
+      new = OBJ2_SEQUENCEITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
       new->pos+=steps;
@@ -673,14 +673,14 @@ PIKECLASS ArrayAdapter
       { 
 	new->pos = 0;
       }
-      else if (new->pos > new->adapter->a->size) 
+      else if (new->pos > new->sequence->a->size) 
       { 
-	new->pos = new->adapter->a->size; 
+	new->pos = new->sequence->a->size; 
       }
       RETURN o;
     }    
 
-    /*! @decl ArrayAdapterIterator `+=(int steps)
+    /*! @decl SequenceIterator `+=(int steps)
      *!   Move this iterator @[steps] steps forward (negative value on @[steps]
      *!   will cause the iterator to move backwards) and return the result.
      *!
@@ -696,9 +696,9 @@ PIKECLASS ArrayAdapter
       { 
 	THIS->pos = 0;
       }
-      else if (THIS->pos > THIS->adapter->a->size) 
+      else if (THIS->pos > THIS->sequence->a->size) 
       { 
-	THIS->pos = THIS->adapter->a->size; 
+	THIS->pos = THIS->sequence->a->size; 
       }
       
       REF_RETURN Pike_fp->current_object;
@@ -706,7 +706,7 @@ PIKECLASS ArrayAdapter
 
     
 
-    /*! @decl ArrayAdapterIterator `-(int steps)
+    /*! @decl SequenceIterator `-(int steps)
      *!   Move the iterator @[steps] steps backwards (negative value on 
      *!   @[steps] will cause the iterator to move forwars) and return 
      *!   the result as a new iterator.
@@ -716,9 +716,9 @@ PIKECLASS ArrayAdapter
 
     PIKEFUN object `-(int steps)
     {
-      struct object *o=low_clone(ArrayAdapterIterator_program);
-      struct ArrayAdapterIterator_struct *new;
-      new = OBJ2_ARRAYADAPTERITERATOR(o);
+      struct object *o=low_clone(SequenceIterator_program);
+      struct SequenceIterator_struct *new;
+      new = OBJ2_SEQUENCEITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
       new->pos-=steps;
@@ -726,15 +726,15 @@ PIKECLASS ArrayAdapter
       { 
 	new->pos = 0;
       }
-      else if (new->pos > new->adapter->a->size) 
+      else if (new->pos > new->sequence->a->size) 
       { 
-	new->pos = new->adapter->a->size; 
+	new->pos = new->sequence->a->size; 
       }
       RETURN o;
     }
 
-    /*! @decl ArrayAdapterIterator `-=(int steps)
-     *!   Move this iterator @[steps] steps backwatds (negative value on 
+    /*! @decl SequenceIterator `-=(int steps)
+     *!   Move this iterator @[steps] steps backwards (negative value on 
      *!   @[steps] will cause the iterator to move backwards) and return 
      *!   the result as a new iterator.
      *!
@@ -749,9 +749,9 @@ PIKECLASS ArrayAdapter
       { 
 	THIS->pos = 0;
       }
-      else if (THIS->pos > THIS->adapter->a->size) 
+      else if (THIS->pos > THIS->sequence->a->size) 
       { 
-	THIS->pos = THIS->adapter->a->size; 
+	THIS->pos = THIS->sequence->a->size; 
       }
       REF_RETURN Pike_fp->current_object;
     }
@@ -768,14 +768,14 @@ PIKECLASS ArrayAdapter
     {
       if (args==0)
       {
-	RETURN (THIS->adapter && THIS->adapter->a && 
-		(THIS->pos + 1) <= THIS->adapter->a->size);
+	RETURN (THIS->sequence && THIS->sequence->a && 
+		(THIS->pos + 1) <= THIS->sequence->a->size);
       }
       else
       {	
-	RETURN (THIS->adapter && THIS->adapter->a && 
+	RETURN (THIS->sequence && THIS->sequence->a && 
 		(THIS->pos + steps->u.integer) >= 0 &&
-		(THIS->pos + steps->u.integer) <= THIS->adapter->a->size);
+		(THIS->pos + steps->u.integer) <= THIS->sequence->a->size);
       }
     }
     
@@ -791,14 +791,14 @@ PIKECLASS ArrayAdapter
     {
       if (args==0)
       {
-	RETURN (THIS->adapter && THIS->adapter->a &&
+	RETURN (THIS->sequence && THIS->sequence->a &&
 		(THIS->pos) > 0);
       }
       else
       {
-	RETURN (THIS->adapter && THIS->adapter->a &&
+	RETURN (THIS->sequence && THIS->sequence->a &&
 		(THIS->pos - steps->u.integer) >= 0 &&
-		(THIS->pos - steps->u.integer) <= THIS->adapter->a->size);
+		(THIS->pos - steps->u.integer) <= THIS->sequence->a->size);
       }
     }
 
@@ -810,8 +810,8 @@ PIKECLASS ArrayAdapter
 
     PIKEFUN int(0..1) `!()
     {
-      RETURN (THIS->adapter && THIS->adapter->a &&
-	      THIS->pos  == THIS->adapter->a->size);
+      RETURN (THIS->sequence && THIS->sequence->a &&
+	      THIS->pos  == THIS->sequence->a->size);
     }
 
     
@@ -828,12 +828,12 @@ PIKECLASS ArrayAdapter
     PIKEFUN int(0..1) _equal(mixed iter)
     {
       if (iter->type == T_OBJECT && 
-	  iter->u.object->prog == ArrayAdapterIterator_program)
+	  iter->u.object->prog == SequenceIterator_program)
       {
-	//to do: Check so that it is an ArrayAdapterIterator
-	struct ArrayAdapterIterator_struct *i = 
-	  OBJ2_ARRAYADAPTERITERATOR(iter->u.object);
-	RETURN (THIS->adapter == i->adapter && THIS->pos == i->pos);
+	//to do: Check so that it is an SequenceIterator
+	struct SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCEITERATOR(iter->u.object);
+	RETURN (THIS->sequence == i->sequence && THIS->pos == i->pos);
       }
       else
       {
@@ -853,16 +853,16 @@ PIKECLASS ArrayAdapter
     PIKEFUN int(0..1) `<(mixed iter)
     {
       if (iter->type == T_OBJECT &&
-	  iter->u.object->prog == ArrayAdapterIterator_program)
+	  iter->u.object->prog == SequenceIterator_program)
       {
-	//to do: Check so that it is an ArrayAdapterIterator
-	struct ArrayAdapterIterator_struct *i = 
-	  OBJ2_ARRAYADAPTERITERATOR(iter->u.object);
+	//to do: Check so that it is an SequenceIterator
+	struct SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCEITERATOR(iter->u.object);
 	RETURN (THIS->pos < i->pos);
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.ArrayAdapter.ArrayAdapterIterator");
+	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.Sequence.SequenceIterator");
       }
     }
 	
@@ -879,24 +879,24 @@ PIKECLASS ArrayAdapter
     PIKEFUN int(0..1) `>(mixed iter)
     {
       if (iter->type == T_OBJECT &&
-	  iter->u.object->prog == ArrayAdapterIterator_program)
+	  iter->u.object->prog == SequenceIterator_program)
       {
-	//to do: Check so that it is an ArrayAdapterIterator
-	struct ArrayAdapterIterator_struct *i = 
-	  OBJ2_ARRAYADAPTERITERATOR(iter->u.object);
+	//to do: Check so that it is an SequenceIterator
+	struct SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCEITERATOR(iter->u.object);
 	RETURN (THIS->pos > i->pos);
       }
       else
       {
-	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.ArrayAdapter.ArrayAdapterIterator");
+	SIMPLE_BAD_ARG_ERROR("`<",1,"ADT.Sequence.SequenceIterator");
       }
     }
 
     
-    /*! @decl ArrayAdapter get_collection()
+    /*! @decl Sequence get_collection()
      *!
      *! @returns
-     *!    Returns the ArrayAdapter this iterator currently iterates over.
+     *!    Returns the Sequence this iterator currently iterates over.
      */  
 
 
@@ -918,24 +918,24 @@ PIKECLASS ArrayAdapter
 
     PIKEFUN mixed set_value(mixed val)
     {
-      if (THIS->adapter && THIS->adapter->a &&
-	  THIS->pos < THIS->adapter->a->size)
+      if (THIS->sequence && THIS->sequence->a &&
+	  THIS->pos < THIS->sequence->a->size)
       {
 	struct svalue ind;
 	struct svalue retval;
 
 	//if there is someone else using the array but the adapter
-	if (THIS->adapter->a->refs > 1)
+	if (THIS->sequence->a->refs > 1)
 	{
 	  //copy it
-	  free_array(THIS->adapter->a);
-	  THIS->adapter->a = copy_array(THIS->adapter->a);
+	  free_array(THIS->sequence->a);
+	  THIS->sequence->a = copy_array(THIS->sequence->a);
 	}
 
 	ind.u.integer = THIS->pos;
 	ind.type = T_INT;
-	simple_array_index_no_free(&retval, THIS->adapter->a, &ind);
-	simple_set_index(THIS->adapter->a, &ind, val);
+	simple_array_index_no_free(&retval, THIS->sequence->a, &ind);
+	simple_set_index(THIS->sequence->a, &ind, val);
 	push_svalue(&retval);
       }
       else
@@ -947,7 +947,7 @@ PIKECLASS ArrayAdapter
     
     INIT 
     {
-      THIS->adapter=0;
+      THIS->sequence=0;
       THIS->pos=0;
     }
 
@@ -958,7 +958,7 @@ PIKECLASS ArrayAdapter
     
   }
 
-  //End ArrayAdapterIterator
+  //End SequenceIterator
   /*! @endclass
   */
   
@@ -969,7 +969,7 @@ PIKECLASS ArrayAdapter
     {
       push_svalue(ind);
     }
-    push_object(clone_object(ArrayAdapterIterator_program, args+1));
+    push_object(clone_object(SequenceIterator_program, args+1));
   }
 
   
@@ -977,7 +977,7 @@ PIKECLASS ArrayAdapter
   PIKEFUN object first()
   {
     ref_push_object(Pike_fp->current_object);
-    push_object(clone_object(ArrayAdapterIterator_program, 1));
+    push_object(clone_object(SequenceIterator_program, 1));
   }
 
 
@@ -985,18 +985,18 @@ PIKECLASS ArrayAdapter
   PIKEFUN object last()
   {
     struct svalue ind;
-    ind.u.integer=THIS_ARRAYADAPTER->a->size;
+    ind.u.integer=THIS_SEQUENCE->a->size;
     ind.type=T_INT;
     ref_push_object(Pike_fp->current_object);
     push_svalue(&ind);
-    push_object(clone_object(ArrayAdapterIterator_program, 2));
+    push_object(clone_object(SequenceIterator_program, 2));
   }
 
   
 }	
 
 
-//End of ArrayAdapter
+//End of Sequence
 /*! @endclass    
   */
 
@@ -1004,12 +1004,12 @@ PIKECLASS ArrayAdapter
  */
 
 
-void pike_init_ArrayAdapter_module(void)
+void pike_init_Sequence_module(void)
 {
   INIT;
 }
 
-void pike_exit_ArrayAdapter_module(void)
+void pike_exit_Sequence_module(void)
 {
   EXIT
 } 

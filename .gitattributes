@@ -845,8 +845,8 @@ testfont binary
 /src/post_modules/Unicode/unicode_module.cmod foreign_ident
 /src/post_modules/_ADT/Makefile.in foreign_ident
 /src/post_modules/_ADT/adt.cmod foreign_ident
-/src/post_modules/_ADT/array_adapter.cmod foreign_ident
 /src/post_modules/_ADT/configure.in foreign_ident
+/src/post_modules/_ADT/sequence.cmod foreign_ident
 /src/post_modules/_Image_SVG/Makefile.in foreign_ident
 /src/post_modules/_Image_SVG/acconfig.h foreign_ident
 /src/post_modules/_Image_SVG/configure.in foreign_ident
