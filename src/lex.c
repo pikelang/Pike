@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.35 1998/03/03 11:24:33 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.36 1998/03/03 14:30:35 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1195,7 +1195,7 @@ static void do_skip(int to)
 	  READBUF(C!='\n');
 	  if(buf[0]=='"' &&
 	     buf[strlen(buf)-1]=='2' &&
-	     ISSPACE(buf[strlen(buf)-2]))
+	     ISSPACE(((unsigned char *)buf)[strlen(buf)-2]))
 	  {
 	    if(lvl)
 	    {
