@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.30 2004/02/07 04:09:27 nilsson Exp $
+// $Id: testsuite.in,v 1.31 2004/02/07 19:41:14 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -282,6 +282,51 @@ test_true( RSA->public_key_equal(RSA) )
 test_false( RSA->public_key_equal(Crypto.RSA()->generate_key(512)) )
 test_do( add_constant("RSA") )
 
+
+// Crypto.DSA
+test_do( add_constant("DSA", Crypto.DSA()) )
+test_eq( DSA->name(), "DSA" )
+test_do( DSA->set_public_key(
+  Gmp.mpz( "8df2a494492276aa3d25759bb06869cb"
+           "eac0d83afb8d0cf7cbb8324f0d7882e5"
+           "d0762fc5b7210eafc2e9adac32ab7aac"
+           "49693dfbf83724c2ec0736ee31c80291", 16 ), // p
+  Gmp.mpz( "c773218c737ec8ee993b4f2ded30f48edace915f", 16 ), // q
+  Gmp.mpz( "626d027839ea0a13413163a55b4cb500"
+           "299d5522956cefcb3bff10f399ce2c2e"
+           "71cb9de5fa24babf58e5b79521925c9c"
+           "c42e9f6f464b088cc572af53e6d78802", 16 ), // g
+  Gmp.mpz( "19131871d75b1612a819f29d78d1b0d7"
+           "346f7aa77bb62a859bfd6c5675da9d21"
+           "2d3a36ef1672ef660b8c7c255cc0ec74"
+           "858fba33f44c06699630a76b030ee333", 16 )) )
+test_do( DSA->set_private_key(
+  Gmp.mpz( "2070b3223dba372fde1c0ffc7b2e3b498b260614", 16 )) )
+test_do( DSA->set_random( Crypto.Random.random_string ) )
+test_equal( DSA->raw_sign(DSA->hash("abc"),
+         Gmp.mpz("358dad571462710f50e254cf1a376b2bdeaadfbf", 16))->digits(16),
+         ({ "8bac1ab66410435cb7181f95b16ab97c92b341c0",
+            "41e2345f1f56df2458f426d155b4ba2db6dcd8c8" }) )
+test_true(DSA->raw_verify(DSA->hash("abc"), @DSA->raw_sign(DSA->hash("abc"))))
+test_true( DSA->verify_rsaref("abc", DSA->sign_rsaref("abc")) )
+test_true( DSA->verify_ssl("abc", DSA->sign_ssl("abc")) )
+test_do( add_constant("DSB", Crypto.DSA()) )
+test_do( DSB->set_public_key( DSA->get_p(), DSA->get_q(),
+                              DSA->get_g(), DSA->get_y() ) )
+test_true( DSB->public_key_equal(DSA) )
+test_true( DSA->public_key_equal(DSB) )
+test_do( add_constant("DSB", Crypto.DSA()) )
+test_true( DSB->generate_parameters(1024) )
+test_true( DSB->generate_key() )
+test_false( DSB->public_key_equal(DSA) )
+test_false( DSA->public_key_equal(DSB) )
+test_true( DSB->get_p()->gcdext2 )
+test_true( DSB->get_q()->gcdext2 )
+test_true( DSB->get_g()->gcdext2 )
+test_true( DSB->get_x()->gcdext2 )
+test_true( DSB->get_y()->gcdext2 )
+test_do( add_constant("DSB") )
+test_do( add_constant("DSA") )
 
 dnl Crypto.substitution
 
