@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.18 1996/12/06 08:30:18 per Exp $");
+RCSID("$Id: file.c,v 1.19 1996/12/15 15:50:37 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -436,17 +436,21 @@ static void file_write(INT32 args)
   push_int(written);
 }
 
-static void do_close(int fd, int flags)
+static int do_close(int fd, int flags)
 {
-  if(fd == -1) return; /* already closed */
+  if(fd == -1) return 1; /* already closed */
 
   /* files[fd].errno=0; */
+
+  if(!(files[fd].open_mode & (FILE_READ | FILE_WRITE)))
+    return 1;
+
   flags &= files[fd].open_mode;
 
   switch(flags & (FILE_READ | FILE_WRITE))
   {
   case 0:
-    return;
+    return 0;
 
   case FILE_READ:
     if(files[fd].open_mode & FILE_WRITE)
@@ -454,10 +458,11 @@ static void do_close(int fd, int flags)
       set_read_callback(fd,0,0);
       shutdown(fd, 0);
       files[fd].open_mode &=~ FILE_READ;
+      return 0;
     }else{
       close_fd(fd);
+      return 1;
     }
-    break;
 
   case FILE_WRITE:
     if(files[fd].open_mode & FILE_READ)
@@ -465,14 +470,19 @@ static void do_close(int fd, int flags)
       set_write_callback(fd,0,0);
       shutdown(fd, 1);
       files[fd].open_mode &=~ FILE_WRITE;
+      return 0;
     }else{
       close_fd(fd);
+      return 1;
     }
-    break;
 
   case FILE_READ | FILE_WRITE:
     close_fd(fd);
-    break;
+    return 1;
+
+  default:
+    fatal("Bug in switch implementation!\n");
+    return 0; /* Make CC happy */
   }
 }
 
@@ -488,8 +498,8 @@ static void file_close(INT32 args)
     flags=FILE_READ | FILE_WRITE;
   }
 
-  do_close(FD,flags);
-  FD=-1;
+  if(do_close(FD,flags))
+    FD=-1;
   pop_n_elems(args);
   push_int(1);
 }
@@ -620,9 +630,6 @@ static void file_stat(INT32 args)
 
 static void file_errno(INT32 args)
 {
-  if(FD < 0)
-    error("File not open.\n");
-
   pop_n_elems(args);
   push_int(ERRNO);
 }
@@ -684,6 +691,9 @@ static void file_read_callback(int fd, void *data)
 
 static void file_set_read_callback(INT32 args)
 {
+  if(FD < 0)
+    error("File is not open.\n");
+
   if(args < 1)
     error("Too few arguments to file->set_read_callback().\n");
 
@@ -700,6 +710,9 @@ static void file_set_read_callback(INT32 args)
 
 static void file_set_write_callback(INT32 args)
 {
+  if(FD < 0)
+    error("File is not open.\n");
+
   if(args < 1)
     error("Too few arguments to file->set_write_callback().\n");
 
@@ -716,6 +729,9 @@ static void file_set_write_callback(INT32 args)
 
 static void file_set_close_callback(INT32 args)
 {
+  if(FD < 0)
+    error("File is not open.\n");
+
   if(args < 1)
     error("Too few arguments to file->set_close_callback().\n");
 
@@ -931,26 +947,29 @@ int socketpair(int family, int type, int protocol, int sv[2])
    * Let's hope those few people who doesn't have socketpair has
    * a loopback on 127.0.0.1
    */
-  addr.sin_addr.s_addr=inet_addr("127.0.0.1");
+  addr.sin_addr.s_addr=htonl(INADDR_ANY);
   addr.sin_port=htons(0);
-  addr2.sin_addr.s_addr=inet_addr("127.0.0.1");
-  addr2.sin_port=htons(0);
 
   /* Bind our sockets on any port */
   if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -1;
-  if(bind(sv[1], (struct sockaddr *)&addr2, sizeof(addr2)) < 0) return -1;
 
   /* Check what ports we got.. */
   len=sizeof(addr);
   if(getsockname(fd,(struct sockaddr *)&addr,&len) < 0) return -1;
-  len=sizeof(addr);
-  if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
+
+  addr.sin_addr.s_addr=inet_addr("127.0.0.1");
 
   /* Listen to connections on our new socket */
   if(listen(fd, 3) < 0 ) return -1;
+
+/*  set_nonblocking(sv[1],1); */
   
   /* Connect */
   if(connect(sv[1], (struct sockaddr *)&addr, sizeof(addr)) < 0) return -1;
+
+  len=sizeof(addr);
+  if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
+  
 
   /* Accept connection
    * Make sure this connection was our OWN connection,
@@ -964,11 +983,17 @@ int socketpair(int family, int type, int protocol, int sv[2])
     len=sizeof(addr);
     sv[0]=accept(fd,(struct sockaddr *)&addr,&len);
     if(sv[0] < 0) return -1;
-  }while(len < sizeof(addr) ||
-       addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
-       addr2.sin_port != addr.sin_port);
+
+    /* We do not trust accept */
+    len=sizeof(addr);
+    if(getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
+  }while(len < (int)sizeof(addr) ||
+	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
+	 addr2.sin_port != addr.sin_port);
 
   if(close(fd) <0) return -1;
+
+/*   set_nonblocking(sv[1],0); */
 
   return 0;
 }
