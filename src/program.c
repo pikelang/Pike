@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.72 1998/04/08 01:32:35 hubbe Exp $");
+RCSID("$Id: program.c,v 1.73 1998/04/09 02:49:48 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -644,7 +644,7 @@ static void toss_compilation_resources(void)
   
 }
 
-static int sizeof_variable(int run_time_type)
+int sizeof_variable(int run_time_type)
 {
   switch(run_time_type)
   {
@@ -2044,8 +2044,9 @@ struct program *compile(struct pike_string *prog)
   return p;
 }
 
-void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
+int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 {
+  int ret;
   struct pike_string *name_tmp,*type_tmp;
   union idptr tmp;
   
@@ -2055,20 +2056,21 @@ void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
   if(cfun)
   {
     tmp.c_fun=cfun;
-    define_function(name_tmp,
-		    type_tmp,
-		    flags,
-		    IDENTIFIER_C_FUNCTION,
-		    &tmp);
+    ret=define_function(name_tmp,
+			type_tmp,
+			flags,
+			IDENTIFIER_C_FUNCTION,
+			&tmp);
   }else{
-    define_function(name_tmp,
-		    type_tmp,
-		    flags,
-		    IDENTIFIER_C_FUNCTION,
-		    0);
+    ret=define_function(name_tmp,
+			type_tmp,
+			flags,
+			IDENTIFIER_C_FUNCTION,
+			0);
   }
   free_string(name_tmp);
   free_string(type_tmp);
+  return ret;
 }
 
 #ifdef DEBUG

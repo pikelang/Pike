@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.37 1998/04/08 01:00:58 hubbe Exp $
+ * $Id: program.h,v 1.38 1998/04/09 02:49:48 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -250,6 +250,7 @@ void low_start_new_program(struct program *p,
 void start_new_program(void);
 void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
+int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 struct program *debug_end_program(void);
@@ -338,7 +339,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog);
-void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
+int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
 void check_all_programs(void);
 void cleanup_program(void);
 void gc_mark_program_as_referenced(struct program *p);
