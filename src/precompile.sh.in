@@ -83,10 +83,10 @@ while test "$retries" != .............. ; do
 RUNPIKE=
 case $method in
   Q)
-    RUNPIKE="$TMP_BUILDDIR/pike -DNOT_INSTALLED -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
+    RUNPIKE="$TMP_BUILDDIR/pike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
   ;;
   QQ)
-    RUNPIKE="$TMP_BUILDDIR/tpike -DNOT_INSTALLED -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
+    RUNPIKE="$TMP_BUILDDIR/tpike -DNOT_INSTALLED -DPRECOMPILED_SEARCH_MORE -m$TMP_BUILDDIR/master.pike $PIKEOPTS"
   ;;
   QQQ)
     RUNPIKE=$TMP_BUILDDIR/test-pike

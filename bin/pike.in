@@ -35,5 +35,5 @@ EOF`
   rm .gdbinit
   test -f .gdbinit.orig && mv .gdbinit.orig .gdbinit
 else
-  exec "$BUILDDIR/pike" "-m$BUILDDIR/master.pike" "$@"
+  exec "$BUILDDIR/pike" "-DPRECOMPILED_SEARCH_MORE" "-m$BUILDDIR/master.pike" "$@"
 fi
