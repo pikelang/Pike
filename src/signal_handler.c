@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.245 2003/03/06 12:50:22 grubba Exp $
+|| $Id: signal_handler.c,v 1.246 2003/03/06 15:35:14 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.245 2003/03/06 12:50:22 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.246 2003/03/06 15:35:14 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1920,11 +1920,11 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
 
 #ifdef HAVE_SETRLIMIT
 #include <sys/time.h>
-struct plimit
+struct pike_limit
 {
   int resource;
   struct rlimit rlp;
-  struct plimit *next;
+  struct pike_limit *next;
 };
 #endif
 
@@ -1937,7 +1937,7 @@ struct perishables
 
   int disabled;
 #ifdef HAVE_SETRLIMIT
-  struct plimit *limits;
+  struct pike_limit *limits;
 #endif
 
 #ifdef HAVE_SETGROUPS
@@ -1960,7 +1960,7 @@ static void free_perishables(struct perishables *storage)
 #ifdef HAVE_SETRLIMIT
   while(storage->limits) 
   {
-    struct plimit *n = storage->limits->next;
+    struct pike_limit *n = storage->limits->next;
     free( storage->limits );
     storage->limits = n;
   }
@@ -2221,7 +2221,7 @@ static void internal_add_limit( struct perishables *storage,
                                 struct svalue *limit_value )
 {
   struct rlimit ol;
-  struct plimit *l = NULL;
+  struct pike_limit *l = NULL;
 #ifndef RLIM_SAVED_MAX
   getrlimit( limit_resource, &ol );
 #else
@@ -2231,12 +2231,12 @@ static void internal_add_limit( struct perishables *storage,
 
   if(limit_value->type == T_INT)
   {
-    l = malloc(sizeof( struct plimit ));
+    l = malloc(sizeof( struct pike_limit ));
     l->rlp.rlim_max = ol.rlim_max;
     l->rlp.rlim_cur = limit_value->u.integer;
   } else if(limit_value->type == T_MAPPING) {
     struct svalue *tmp3;
-    l = malloc(sizeof( struct plimit ));
+    l = malloc(sizeof( struct pike_limit ));
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "soft"))) {
       if(tmp3->type == T_INT)
         l->rlp.rlim_cur = (tmp3->u.integer >= 0) ?
@@ -2254,7 +2254,7 @@ static void internal_add_limit( struct perishables *storage,
     } else
       l->rlp.rlim_max = ol.rlim_max;
   } else if(limit_value->type == T_ARRAY && limit_value->u.array->size == 2) {
-    l = malloc(sizeof( struct plimit ));
+    l = malloc(sizeof( struct pike_limit ));
     if(limit_value->u.array->item[0].type == T_INT)
       l->rlp.rlim_max = limit_value->u.array->item[0].u.integer;
     else
@@ -2264,7 +2264,7 @@ static void internal_add_limit( struct perishables *storage,
     else
       l->rlp.rlim_max = ol.rlim_cur;
   } else if(limit_value->type == T_STRING) {
-    l = malloc(sizeof(struct plimit));
+    l = malloc(sizeof(struct pike_limit));
     l->rlp.rlim_max = RLIM_INFINITY;
     l->rlp.rlim_cur = RLIM_INFINITY;
   }
@@ -3595,7 +3595,7 @@ void f_create_process(INT32 args)
 #ifdef HAVE_SETRLIMIT
       if(storage.limits)
       {
-        struct plimit *l = storage.limits;
+        struct pike_limit *l = storage.limits;
         while(l)
         {
           setrlimit( l->resource, &l->rlp );
