@@ -449,6 +449,14 @@
    COLOR("yellowgreen"         ,154,205,50)
 #endif
 
+   COLOR("silver"              ,192,192,192)
+   COLOR("lime"                ,0,255,0)
+   COLOR("gray"                ,128,128,128)
+   COLOR("olive"               ,128,128,0)
+   COLOR("teal"                ,0,128,128)
+   COLOR("fuchsia"             ,255,0,255)
+   COLOR("aqua"                ,0,255,255)
+
    COLOR("pikegreen"           ,160,224,192)
    COLOR("avantgardepikegreen" ,0,51,0)
    COLOR("roxenorange"         ,255,140,0)
