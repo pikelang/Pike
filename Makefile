@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.113 2003/03/19 16:24:52 nilsson Exp $
+# $Id: Makefile,v 1.114 2003/03/25 21:18:33 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -310,6 +310,13 @@ cvsclean: srcclean distclean
 	-rm -rf build
 	-rm -f export_result.txt
 	-rm -f Pike*.tar.gz
+
+docclean:
+	-rm -rf "$(BUILDDIR)/doc_build"
+	-rm -f "$(BUILDDIR)/autodoc.xml"
+	-rm -f "$(BUILDDIR)/modref.xml"
+	-rm -f "$(BUILDDIR)/onepage.xml"
+	-rm -f "$(BUILDDIR)/traditional.xml"
 
 depend: configure
 	-@cd "$(BUILDDIR)" && \
