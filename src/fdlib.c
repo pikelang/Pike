@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.27 1999/06/19 19:59:38 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.28 1999/08/06 15:23:46 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -413,6 +413,10 @@ long debug_fd_write(FD fd, void *buf, long len)
       {
 	errno=WSAGetLastError();
 	FDDEBUG(fprintf(stderr,"Write on %d failed (%d)\n",fd,errno));
+	if (errno == ENOENT) {
+	  /* UGLY kludge */
+	  errno = WSAEWOULDBLOCK;
+	}
 	return -1;
       }
       FDDEBUG(fprintf(stderr,"Wrote %d bytes to %d)\n",len,fd));
