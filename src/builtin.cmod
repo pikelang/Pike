@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.48 2001/06/25 23:16:36 grubba Exp $
+ * $Id: builtin.cmod,v 1.49 2001/06/28 13:16:33 grubba Exp $
  */
 
 #include "global.h"
@@ -26,6 +26,7 @@
 #include "main.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "fsort.h"
 
 /*! @decl array column(array data, mixed index)
  *!
@@ -1275,7 +1276,242 @@ PIKECLASS Buffer
     }
 }
 
-/* @endmodule */
+/*! @endmodule
+ */
+
+/*! @module String
+ */
+
+/*! @class Replace
+ */
+PIKECLASS multi_string_replace
+{
+  CVAR struct tupel
+  {
+    int prefix;
+    struct pike_string *ind;
+    struct pike_string *val;
+  } *v;
+  CVAR size_t v_sz;
+  CVAR size_t sz;
+  CVAR INT32 set_start[256];
+  CVAR INT32 set_end[256];
+
+  static int replace_sortfun(struct tupel *a,struct tupel *b)
+  {
+    return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
+  }
+
+  PIKEFUN void create(array(string) from, array(string) to)
+  {
+    int i;
+    if (from->size != to->size) {
+      Pike_error("Replace must have equal-sized from and to arrays.\n");
+    }
+    for (i = 0; i < (int)from->size; i++) {
+      if (from->item[i].type != PIKE_T_STRING) {
+	Pike_error("Replace: from array is not an array(string).\n");
+      }
+      if (to->item[i].type != PIKE_T_STRING) {
+	Pike_error("Replace: to array is not an array(string).\n");
+      }
+    }
+    if (THIS->v) {
+      for (i = 0; i < (int)THIS->v_sz; i++) {
+	if (!THIS->v[i].ind) break;
+	free_string(THIS->v[i].ind);
+	THIS->v[i].ind = NULL;
+	free_string(THIS->v[i].val);
+	THIS->v[i].val = NULL;	
+      }
+    }
+    if (THIS->v && (THIS->v_sz < (size_t)from->size)) {      
+      free(THIS->v);
+      THIS->v = NULL;
+      THIS->v_sz = 0;
+    }
+    if (!THIS->v) {
+      THIS->v = (struct tupel *)xalloc(sizeof(struct tupel) * from->size);
+      THIS->v_sz = from->size;
+    }
+    for (i = 0; i < (int)from->size; i++) {
+      copy_shared_string(THIS->v[i].ind, from->item[i].u.string);
+      copy_shared_string(THIS->v[i].val, to->item[i].u.string);
+      THIS->v[i].prefix = -2;	/* Uninitialized */
+    }
+    THIS->sz = from->size;
+    fsort((char *)THIS->v, from->size, sizeof(struct tupel),
+	  (fsortfun)replace_sortfun);
+
+    MEMSET(THIS->set_start, 0, sizeof(INT32)*256);
+    MEMSET(THIS->set_end, 0, sizeof(INT32)*256);
+
+    for (i = 0; i < (int)from->size; i++) {
+      INT32 x = index_shared_string(THIS->v[from->size-1-i].ind, 0);
+      if ((x >= 0) && (x < 256))
+	THIS->set_start[x] = from->size-1-i;
+      x = index_shared_string(THIS->v[i].ind, 0);
+      if ((x >= 0) && (x < 256))
+	THIS->set_end[x] = i+1;
+    }
+  }
+
+  static int find_longest_prefix(char *str,
+				 ptrdiff_t len,
+				 int size_shift,
+				 struct tupel *v,
+				 INT32 a,
+				 INT32 b)
+  {
+    INT32 c,match=-1;
+    ptrdiff_t tmp;
+
+    while(a<b)
+    {
+      c=(a+b)/2;
+      
+      tmp=generic_quick_binary_strcmp(v[c].ind->str,
+				      v[c].ind->len,
+				      v[c].ind->size_shift,
+				      str,
+				      MINIMUM(len,v[c].ind->len),
+				      size_shift);
+      if(tmp<0)
+      {
+	INT32 match2=find_longest_prefix(str,
+					 len,
+					 size_shift,
+					 v,
+					 c+1,
+					 b);
+	if(match2!=-1) return match2;
+
+	while(1)
+	{
+	  if(v[c].prefix==-2)
+	  {
+	    v[c].prefix=find_longest_prefix(v[c].ind->str,
+					    v[c].ind->len,
+					    v[c].ind->size_shift,
+					    v,
+					    0 /* can this be optimized? */,
+					    c);
+	  }
+	  c=v[c].prefix;
+	  if(c<a || c<match) return match;
+
+	  if(!generic_quick_binary_strcmp(v[c].ind->str,
+					  v[c].ind->len,
+					  v[c].ind->size_shift,
+					  str,
+					  MINIMUM(len,v[c].ind->len),
+					  size_shift))
+	    return c;
+	}
+      }
+      else if(tmp>0)
+      {
+	b=c;
+      }
+      else
+      {
+	a=c+1; /* There might still be a better match... */
+	match=c;
+      }
+    }
+    return match;
+  }
+
+  PIKEFUN string `()(string str)
+  {
+    struct string_builder ret;
+    ptrdiff_t length = str->len;
+    ptrdiff_t s;
+    int *set_start = THIS->set_start;
+    int *set_end = THIS->set_end;
+    struct tupel *v = THIS->v;
+    int num = THIS->sz;
+
+    if (!num) {
+      add_ref(str);
+      RETURN str;
+    }
+
+    init_string_builder(&ret,str->size_shift);
+
+    for(s=0;length > 0;)
+    {
+      INT32 a,b;
+      ptrdiff_t ch;
+
+      ch = index_shared_string(str, s);
+      if((ch >= 0) && (ch < 256))
+	b = set_end[ch];
+      else
+	b = num;
+
+      if(b)
+      {
+	if((ch >= 0) && (ch < 256))
+	  a = set_start[ch];
+	else
+	  a = 0;
+
+	a = find_longest_prefix(str->str+(s << str->size_shift),
+				length,
+				str->size_shift,
+				v, a, b);
+
+	if(a!=-1)
+	{
+	  ch = v[a].ind->len;
+	  if(!ch) ch=1;
+	  s += ch;
+	  length -= ch;
+	  string_builder_shared_strcat(&ret, v[a].val);
+	  continue;
+	}
+      }
+      string_builder_putchar(&ret,
+			     DO_NOT_WARN((INT32)ch));
+      s++;
+      length--;
+    }
+
+    RETURN finish_string_builder(&ret);
+  }
+
+  INIT
+  {
+    THIS->v = NULL;
+    THIS->v_sz = 0;
+    THIS->sz = 0;
+  }
+
+  EXIT
+  {
+    if (THIS->v) {
+      int i;
+      for (i = 0; i < (int)THIS->v_sz; i++) {
+	if (!THIS->v[i].ind) break;
+	free_string(THIS->v[i].ind);
+	THIS->v[i].ind = NULL;
+	free_string(THIS->v[i].val);
+	THIS->v[i].val = NULL;	
+      }
+      free(THIS->v);
+    }
+    THIS->v = NULL;
+    THIS->v_sz = 0;
+    THIS->sz = 0;
+  }
+}
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 void init_builtin(void)
 {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.384 2001/06/28 10:24:21 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.385 2001/06/28 13:16:33 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3094,6 +3094,53 @@ node *optimize_replace(node *n)
      */
     n->node_info |= OPT_SIDE_EFFECT;
     n->tree_info |= OPT_SIDE_EFFECT;
+  } else {
+    /* First argument is not an array or mapping,
+     *
+     * It thus must be a string.
+     */
+    node **arg1 = my_get_arg(&_CDR(n), 1);
+    node **arg2 = my_get_arg(&_CDR(n), 2);
+
+    if (arg1 && pike_types_le((*arg1)->type, array_type_string) &&
+	arg2 && pike_types_le((*arg2)->type, array_type_string)) {
+      /* The second and third arguments are arrays. */
+      if (!is_const(*arg0) && is_const(*arg1) && is_const(*arg2)) {
+	/* The second and third arguments are constants. */
+	struct svalue *save_sp = Pike_sp;
+	JMP_BUF tmp;
+	if (SETJMP(tmp)) {
+	  yywarning("Optimizer failure in replace().");
+	  pop_n_elems(Pike_sp - save_sp);
+	} else {
+	  extern struct program *multi_string_replace_program;
+	  INT16 lfun;
+	  struct object *replace_obj =
+	    clone_object(multi_string_replace_program,
+			 eval_low(*arg1) + eval_low(*arg2));
+	  node *ret = NULL;
+
+	  push_object(replace_obj);
+	  if (replace_obj->prog &&
+	      ((lfun = FIND_LFUN(replace_obj->prog, LFUN_CALL)) != -1)) {
+	    Pike_sp[-1].subtype = lfun;
+	    Pike_sp[-1].type = PIKE_T_FUNCTION;
+	    ADD_NODE_REF2(*arg0,
+	      ret = mkapplynode(mkconstantsvaluenode(Pike_sp-1),
+				 *arg0);
+	    );
+
+	    UNSETJMP(tmp);
+
+	    free_type(array_zero);
+	    free_type(mapping_zero);
+
+	    return ret;
+	  }
+	}
+	UNSETJMP(tmp);
+      }
+    }
   }
 
   free_type(array_zero);
