@@ -72,7 +72,9 @@ int main()
    z = (int)(p->query_address()/" ")[-1];
 //     werror("port: %d\n",z);
 #ifndef TEST_NORMAL
+   p->close();
    destruct(p); // this port can't be connected to now
+   p = 0;
 #endif
 
    werror(PRE "using port %d\n",z);
