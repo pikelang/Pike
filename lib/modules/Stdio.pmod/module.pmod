@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.140 2002/03/12 14:06:31 nilsson Exp $
+// $Id: module.pmod,v 1.141 2002/03/12 14:09:13 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1846,21 +1846,50 @@ static void call_cp_cb(int len,
 		       function(int, mixed ...:void) cb, mixed ... args)
 {
   // FIXME: Check that the lengths are the same?
-  cb(0, @args);
+  cb(1, @args);
 }
 
+//! Copy a file asynchronously.
+//!
+//! This function is similar to @[cp()], but works asynchronously.
+//!
+//! @param from
+//!   Name of file to copy.
+//!
+//! @param to
+//!   Name of file to create or replace with a copy of @[from].
+//!
+//! @param cb
+//!   Function to be called on completion.
+//!   The first argument will be @tt{1@} on success, and @tt{0@} (zero)
+//!   otherwise. The rest of the arguments tp @[callback] are passed
+//!   verbatim from @[args].
+//!
+//! @param args
+//!   Extra arguments to pass to @[callback].
+//!
+//! @note
+//!   For @[callback] to be called, the backend must be active (ie
+//!   @[main()] must have returned @tt{-1@}).
+//!
+//! @bugs
+//!   Currently the file sizes are not compared, so the destination file
+//!   (@[to]) may be truncated.
+//!
+//! @seealso
+//!   @[cp()], @[sendfile()]
 void async_cp(string from, string to,
-	      function(int, mixed...:void) cb, mixed ... args)
+	      function(int, mixed...:void) callback, mixed ... args)
 {
   object from_file = File();
   object to_file = File();
 
   if ((!(from_file->open(from, "r"))) ||
       (!(to_file->open(to, "wct")))) {
-    call_out(cb, 0, 0, @args);
+    call_out(callback, 0, 0, @args);
     return;
   }
-  sendfile(0, from_file, 0, -1, 0, to_file, call_cp_cb, cb, @args);
+  sendfile(0, from_file, 0, -1, 0, to_file, call_cp_cb, callback, @args);
 }
 
 //! Creates zero or more directories to ensure that the given @[pathname] is
