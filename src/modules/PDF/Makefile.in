@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.1 2001/01/13 18:35:17 mirar Exp $
+# $Id: Makefile.in,v 1.2 2001/01/17 11:52:50 mirar Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=pdflib_glue.o
+OBJS=pdf_module.o pdflib_glue.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@

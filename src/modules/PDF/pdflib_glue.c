@@ -1,9 +1,9 @@
 /*
- * $Id: pdflib_glue.c,v 1.4 2001/01/14 08:59:39 mirar Exp $
+ * $Id: pdflib_glue.c,v 1.5 2001/01/17 11:52:52 mirar Exp $
  */
 
 #include "global.h"
-RCSID("$Id: pdflib_glue.c,v 1.4 2001/01/14 08:59:39 mirar Exp $");
+RCSID("$Id: pdflib_glue.c,v 1.5 2001/01/17 11:52:52 mirar Exp $");
 
 #include "pdf_machine.h"
 
@@ -1049,14 +1049,15 @@ static void pdf_set_border_dash(INT32 args)
 #endif /* HAVE_PDFLIB_H */
 /*** module init & exit & stuff *****************************************/
 
-void pike_module_exit(void)
+void exit_pdf_pdflib(void)
 {
 #if 0
+/* this is documented, but not in library */
    PDF_shutdown(); /* stop pdflib */
 #endif
 }
 
-void pike_module_init(void)
+void init_pdf_pdflib(void)
 {
 #ifdef HAVE_PDFLIB_H
    PDF_boot(); /* start pdflib */

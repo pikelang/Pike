@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.1 2001/01/13 18:35:17 mirar Exp $
+ * $Id: acconfig.h,v 1.2 2001/01/17 11:52:50 mirar Exp $
  */
 
 #ifndef PDF_MACHINE_H
@@ -10,5 +10,8 @@
 
 /* Define this if you have -lpdf */
 #undef HAVE_LIBPDF
+
+/* Define this if you have -lpanda */
+#undef HAVE_LIBPANDA
 
 #endif

@@ -1,9 +1,10 @@
 #
-# $Id: configure.in,v 1.1 2001/01/13 18:35:18 mirar Exp $
+# $Id: configure.in,v 1.2 2001/01/17 11:52:51 mirar Exp $
 #
 AC_INIT(pdflib_glue.c)
 AC_CONFIG_HEADER(pdf_machine.h)
 AC_ARG_WITH(libpdf,     [  --with(out)-libpdf       Support PDF through PDFlib],[],[with_libpdf=yes])
+AC_ARG_WITH(libpanda,     [  --with(out)-libpanda   Support PDF through libpanda],[],[with_libpanda=yes])
 
 AC_MODULE_INIT()
 
@@ -20,6 +21,22 @@ if test x$with_libpdf = xyes ; then
     AC_CHECK_LIB(pdf, PDF_boot, [
       AC_DEFINE(HAVE_LIBPDF) 
       LIBS="${LIBS-} -lpdf"
+      ])
+
+  fi
+fi
+
+if test x$with_libpanda = xyes ; then
+  AC_CHECK_HEADERS(panda/functions.h)
+  if test x$ac_cv_header_panda_functions_h = xyes ; then
+
+# libpanda might need these
+    AC_CHECK_LIB(tiff,TIFFOpen,       [ LIBS="${LIBS-} -ltiff" ])
+
+# now check
+    AC_CHECK_LIB(panda, settitle, [
+      AC_DEFINE(HAVE_LIBPANDA) 
+      LIBS="${LIBS-} -lpanda"
       ])
 
   fi
