@@ -24,6 +24,7 @@ o pike -x
     you may be familiar with from Tools.PV).
 
 o unbug
+    Embryo of a Pike debugger. Not stable nor finished.
 
 o Unicode 3.2.0
     All charts have been updated to Unicode 3.2.0. This applies both to
@@ -115,6 +116,27 @@ o Automap
 	sprintf("%O", a[*]);
 
 o Implicit lambda.
+    A convenient way to embed code that needs pre- and/or post-
+    initialization. 
+
+    FIXME: Not stable. mast type here.
+
+    This example embeds OpenGL calls that modifies the matrix in an
+    implicit lambda that will save the matrix before execution and
+    restore it afterwards.
+
+    void PushPop( function f )
+    {
+      GL.glPushMatrix();
+      mixed err = catch(f());
+      GL.glPopMatrix();
+    }
+
+    PushPop() {
+      glTranslate( ((1.0-0.08)-pcs)/2, 0.0, 0.0 );
+      drawstuff();
+    };
+
 
 o Access to hidden variables in surrounding scopes.
     Include the names of the surrounding classes themselves in the lookup for
@@ -153,32 +175,32 @@ o The Local module
     inspect when resolving Local.* symbols.
 
 o enum reserved
-
+   
 o enum and typedef have implicit local binding
 
 o ::_indices(), ::_values().
-   There are now two "magic" functions ::_indices() and ::_values()
-   that can be used by an object to list all identifiers and their
-   values in itself. They are primarily intended when the _indices()
-   and _values() lfuns have been defined, to get the default
-   implementations. This is to complement the "magic" ::`->() and
-   ::`->=() functions that exist in earlier releases.
+    There are now two "magic" functions ::_indices() and ::_values()
+    that can be used by an object to list all identifiers and their
+    values in itself. They are primarily intended when the _indices()
+    and _values() lfuns have been defined, to get the default
+    implementations. This is to complement the "magic" ::`->() and
+    ::`->=() functions that exist in earlier releases.
 
 o UNDEFINED
-   To generate a 0 (zero) with a zero_type(var) == 1, you previously
-   had to use constructs like ([])[0]. This is now available as the
-   globally available symbol UNDEFINED.
+    To generate a 0 (zero) with a zero_type(var) == 1, you previously
+    had to use constructs like ([])[0]. This is now available as the
+    globally available symbol UNDEFINED.
 
 o _m_delete
-   There is now an LFUN mixed _m_delete(mixed index) to overload in
-   your classes to imitate mappings. It gets invoked when m_delete
-   is performed on your object.
+    There is now an LFUN mixed _m_delete(mixed index) to overload in
+    your classes to imitate mappings. It gets invoked when m_delete
+    is performed on your object.
 
 o :: includes current class
-   class X {
-     int i;
-     void create (int i) {X::i = i;}
-   }
+    class X {
+      int i;
+      void create (int i) {X::i = i;}
+    }
 
 
 New modules / classes / methods added:
@@ -226,7 +248,7 @@ o Audio.Codec and Audio.Codec
 o Calendar.verify
 
 o Crypto.MD4
-
+    
 o Crypto.crypt_md5
 
 o Debug.Tracer
@@ -266,8 +288,8 @@ o Stdio.FakeFile
 o Stdio.GZipFile
 
 o Stdio.expand_symlinks(string path)
-  Expands all symlinks along a path (returns 0 for broken links).
-  (Only available on systems with readlink.)
+    Expands all symlinks along a path (returns 0 for broken links).
+    (Only available on systems with readlink.)
 
 o Tools.PV
     Convenience tool that sets up a canvas with GTK, presents a
