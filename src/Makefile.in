@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.288 2002/03/09 16:17:00 nilsson Exp $
+# $Id: Makefile.in,v 1.289 2002/03/09 16:45:22 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -319,7 +319,7 @@ dump_modules: pike master-stamp $(SRCDIR)/dumpmodule.pike
 	  -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
 
 .c.protos: precompile.sh-stamp
-	./precompile.sh fake_dynamic_load.pike >"$@" --cpp --protos \
+	./precompile.sh --cache fake_dynamic_load.pike >"$@" --cpp --protos \
 	  $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
 	    -DPMOD_PROTO=PMOD_PROTO -DPIKE_PRECOMPILER=1 "$<" || \
 	  { rm "$@"; exit 1; }
@@ -354,7 +354,7 @@ dump_modules: pike master-stamp $(SRCDIR)/dumpmodule.pike
 # -Hubbe
 #
 .cmod.c: precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	./precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+	./precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 # This rule is used for some header files that are generated from the
 # source, to avoid excessive rebuilding when the source change in ways
@@ -722,7 +722,7 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 
 
 interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
-	./precompile.sh make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
+	./precompile.sh --cache make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c

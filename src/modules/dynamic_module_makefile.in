@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.85 2002/03/06 20:16:46 mast Exp $
+# $Id: dynamic_module_makefile.in,v 1.86 2002/03/09 16:45:23 mast Exp $
 #
 
 
@@ -52,7 +52,7 @@ dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 .SUFFIXES: .c .o .cmod
 
 .cmod.c: $(BUILD_BASE)/precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
-	$(BUILD_BASE)/precompile.sh precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+	$(BUILD_BASE)/precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
 
 
 # GCC dumps core on some files @ OSF1
