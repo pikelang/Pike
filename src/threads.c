@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.34 1997/09/05 22:16:18 per Exp $");
+RCSID("$Id: threads.c,v 1.35 1997/09/08 03:54:10 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -191,7 +191,6 @@ void f_mutex_lock(INT32 args)
   mt_lock(& m->kludge);
   if(m->key && OB2KEY(m->key)->owner == thread_id)
   {
-    mt_unlock(& m->kludge);
     THREADS_FPRINTF((stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 		     (unsigned int)OB2KEY(m->key),
 		     (unsigned int)m,
