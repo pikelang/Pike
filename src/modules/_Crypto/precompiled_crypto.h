@@ -1,13 +1,13 @@
 /*
- * precompiled_X.h
+ * precompiled_crypto.h
  *
- * A pike module for getting access to X11
+ * A pike module for getting access to some common cryptos.
  *
  * Henrik Grubbström 1996-10-15
  */
 
-#ifndef PRECOMPILED_X_H
-#define PRECOMPILED_X_H
+#ifndef PRECOMPILED_CRYPTO_H
+#define PRECOMPILED_CRYPTO_H
 
 /*
  * Includes
@@ -139,4 +139,4 @@ void init_pipe_efuns(void);
 void init_pipe_programs(void);
 void exit_pipe(void);
 
-#endif /* PRECOMPILED_X_H */
+#endif /* PRECOMPILED_CRYPTO_H */
