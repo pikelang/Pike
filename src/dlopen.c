@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.55 2002/10/27 18:19:17 grubba Exp $
+|| $Id: dlopen.c,v 1.56 2002/10/27 18:26:33 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.55 2002/10/27 18:19:17 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.56 2002/10/27 18:26:33 grubba Exp $");
 
 #endif
 
@@ -1693,6 +1693,12 @@ static int dl_load_coff_files(struct DLHandle *ret,
 		(((instr & 0xfe0000) >> 12)|((instr & 0x1fffc00000) >> 14));
 	      instr = (instr & 0x1e000301fff) |
 		((S & 0x3fff80)<<15)|((S & 0x7f)<<13);
+#ifdef DLDEBUG
+	      if ((S & ~0x3fffff) + ((S & 0x200000)<<1)) {
+		fprintf(stderr, "DL: gp relative offset > 22 bits: 0x%p\n",
+			(void *)S);
+	      }
+#endif /* DLDEBUG */
 	      break;
 
 	    case COFFReloc_IA64_ltoff22:
