@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.214 1998/07/11 15:19:25 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.215 1998/07/11 15:49:27 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2130,6 +2130,32 @@ int main()
 AC_MSG_RESULT($pike_cv_have_working___func__)
 if test "$pike_cv_have_working___func__" = yes; then
   AC_DEFINE(HAVE_WORKING___FUNC__)
+else :; fi
+
+# gcc has __FUNCTION__ instead.
+
+AC_MSG_CHECKING(if __FUNCTION__ exists and works)
+AC_CACHE_VAL(pike_cv_have_working___FUNCTION__,
+[
+  AC_TRY_RUN([
+#ifdef HAVE_STRING_H
+#include <string.h>
+#else /* !HAVE_STRING_H */
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif /* HAVE_STRIGNS_H */
+#endif /* HAVE_STRING_H */
+int main()
+{
+  exit(strcmp("main", __FUNCTION__));
+}
+  ], pike_cv_have_working___FUNCTION__=yes,
+     pike_cv_have_working___FUNCTION__=no,
+     pike_cv_have_working___FUNCTION__=no)
+])
+AC_MSG_RESULT($pike_cv_have_working___FUNCTION__)
+if test "$pike_cv_have_working___FUNCTION__" = yes; then
+  AC_DEFINE(HAVE_WORKING___FUNCTION__)
 else :; fi
 
 #############################################################################
