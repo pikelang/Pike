@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.36 2002/01/23 06:59:29 hop Exp $
+// $Id: client.pike,v 1.37 2002/02/14 01:46:18 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -358,7 +358,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.36 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.37 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -880,13 +880,12 @@ int _prof_gtim;
   }
 
 
-  // API function (ldap_search)
-  //
-  // search(string filter, int|void attrsonly, array(string)|void attrs)
-  //
-  //	filter:		search filter
-  //	attrsonly:	flag
-  //	attrsy:		attribute(s) name
+  //! @param filter
+  //!   search filter
+  //! @param attrsonly
+  //!   flag
+  //! @param attrs
+  //!   attribute(s) name
   object|int search (string|void filter, int|void attrsonly, array(string)|void attrs) {
 
     int id,nv;
@@ -956,11 +955,8 @@ int _prof_gtim;
   } // search
 
 
-  // API function (ldap_setbasedn)
-  //
-  // set_basedn(string base_dn)
-  //
-  //	base_dn:	base DN for search
+  //! @param base_dn
+  //!   base DN for search
   string set_basedn (string base_dn) {
 
     string old_dn = ldap_basedn;
@@ -1001,12 +997,10 @@ int _prof_gtim;
     return(old_scope);
   }
 
-  // API function (ldap_setoption)
-  //
-  // set_option(int option_type, mixed value)
-  //
-  //	option_type:	LDAP_OPT_xxx
-  //	value:		new value for option
+  //! @param option_type
+  //!   LDAP_OPT_xxx
+  //! @param value
+  //!   new value for option
   int set_option (int opttype, int value) {
 
     DWRITE_HI("client.SET_OPTION: " + (string)opttype + " = " + (string)value + "\n");
@@ -1037,11 +1031,8 @@ int _prof_gtim;
     return(0);
   }
 
-  // API function (ldap_getoption)
-  //
-  // get_option(int option_type)
-  //
-  //	option_type:	LDAP_OPT_xxx
+  //! @param option_type
+  //!   LDAP_OPT_xxx
   int get_option (int opttype) {
 
 
@@ -1222,11 +1213,8 @@ int _prof_gtim;
   } // modify
 
 
-  // API function
-  //
-  // parse_url(string ldapuri)
-  //
-  //	ldapuri:	LDAP URL
+  //! @param  ldapuri
+  //!   LDAP URL
   mapping|int parse_url (string ldapuri) {
 
   // ldap://machine.at.home.cz:123/c=cz?attr1,attr2,attr3?sub?(uid=*)?!bindname=uid=hop,dc=unibase,dc=cz"

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.120 2002/02/05 19:09:00 mast Exp $
+ * $Id: system.c,v 1.121 2002/02/14 01:42:54 nilsson Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.120 2002/02/05 19:09:00 mast Exp $");
+RCSID("$Id: system.c,v 1.121 2002/02/14 01:42:54 nilsson Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1929,9 +1929,11 @@ static void make_rlimit_strings(void)
 #endif
 
 #ifdef HAVE_GETRLIMIT
-/* array(int) getrlimit(string resource) */
-/* mapping(string:array(int)) getrlimits() */
-
+/*! @decl array(int) getrlimit(string resource)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void f_getrlimit(INT32 args)
 {
    struct rlimit rl;
@@ -2035,6 +2037,11 @@ static void f_getrlimit(INT32 args)
    f_aggregate(2);
 }
 
+/*! @decl mapping(string:array(int)) getrlimits()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void f_getrlimits(INT32 args)
 {
    int n=0;
@@ -2135,8 +2142,11 @@ static void f_getrlimits(INT32 args)
 #endif
 
 #ifdef HAVE_SETRLIMIT
-/* int(0..1) setrlimit(string resource, int cur, int max) */
-
+/*! @decl int(0..1) setrlimit(string resource, int cur, int max)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void f_setrlimit(INT32 args)
 {
    struct rlimit rl;
@@ -2243,6 +2253,11 @@ static void f_setrlimit(INT32 args)
 
 
 #ifdef HAVE_SETITIMER
+/*! @decl float setitimer(int|float arg)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_system_setitimer(INT32 args)
 {
    FLOAT_TYPE interval;
@@ -2287,6 +2302,11 @@ void f_system_setitimer(INT32 args)
 #endif
 
 #ifdef HAVE_GETITIMER
+/*! @decl array(float) getitimer()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_system_getitimer(INT32 args)
 {
    INT_TYPE what;

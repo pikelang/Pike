@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.59 2002/02/05 19:08:59 mast Exp $");
+RCSID("$Id: socket.c,v 1.60 2002/02/14 01:43:57 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -65,6 +65,12 @@ RCSID("$Id: socket.c,v 1.59 2002/02/05 19:08:59 mast Exp $");
 
 #include "dmalloc.h"
 
+/*! @module Stdio
+ */
+
+/*! @class Port
+ */
+
 struct port
 {
   int fd;
@@ -101,6 +107,11 @@ static void do_close(struct port *p, struct object *o)
   }
 }
 
+/*! @decl mixed set_id(mixed arg1)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void port_set_id(INT32 args)
 {
   if(args < 1)
@@ -110,12 +121,22 @@ static void port_set_id(INT32 args)
   pop_n_elems(args-1);
 }
 
+/*! @decl mixed query_id()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void port_query_id(INT32 args)
 {
   pop_n_elems(args);
   assign_svalue_no_free(Pike_sp++,& THIS->id);
 }
 
+/*! @decl int errno()
+ *!
+ *! @fixme
+ *!   Doxument this function.
+ */
 static void port_errno(INT32 args)
 {
   pop_n_elems(args);
@@ -139,6 +160,11 @@ static void port_accept_callback(int fd,void *data)
   return;
 }
 
+/*! @decl int listen_fd(int arg1, void|mixed arg2)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void port_listen_fd(INT32 args)
 {
   int fd;
@@ -186,6 +212,11 @@ static void port_listen_fd(INT32 args)
   push_int(1);
 }
 
+/*! @decl int bind(int arg1, void|mixed arg2, void|string arg3)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void port_bind(INT32 args)
 {
   struct sockaddr_in addr;
@@ -340,6 +371,11 @@ static void port_accept(INT32 args)
   push_object(o);
 }
 
+/*! @decl string query_address(string arg1)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 static void socket_query_address(INT32 args)
 {
   struct sockaddr_in addr;
@@ -392,6 +428,12 @@ static void exit_port_struct(struct object *o)
   THIS->accept_callback.type=PIKE_T_INT;
 #endif
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 struct program *port_program = NULL;
 
