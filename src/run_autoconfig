@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.31 2001/09/23 17:59:21 grubba Exp $
+# $Id: run_autoconfig,v 1.32 2001/09/23 21:22:16 grubba Exp $
 #
 # Bootstrap script
 
@@ -31,7 +31,7 @@ else
   fi
 fi
 
-autoconf_version="`autoconf --version|head -1|sed -e 's/.* \([0-9]*\.[0-9]*\).*/\1/p' -ed`"
+autoconf_version="`autoconf --version|head -1|awk '{ print $NF }'`"
 
 if [ "`echo $autoconf_version|awk -F. '{ print $1 }'`" -ne "2" -o \
      "`echo $autoconf_version|awk -F. '{ print $2 }'`" -ge "50" ]; then
