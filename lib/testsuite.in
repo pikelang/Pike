@@ -1,0 +1,31 @@
+dnl add_include_path
+dnl add_module_path
+dnl add_program_path
+
+test_eq(basename("/a/b"),"b")
+test_eq(basename("/a/"),"")
+test_eq(basename("/a"),"a")
+test_eq(basename("/"),"")
+test_eq(basename("a/b"),"b")
+test_eq(basename("a/"),"")
+test_eq(basename("a"),"a")
+test_eq(basename(""),"")
+
+test_eq(dirname("/a/b/"),"/a/b")
+test_eq(dirname("/a/b"),"/a")
+test_eq(dirname("/a/"),"/a")
+test_eq(dirname("/a"),"/")
+test_eq(dirname("/"),"/")
+test_eq(dirname(""),"")
+test_eq(dirname("a/b/"),"a/b")
+test_eq(dirname("a/b"),"a")
+test_eq(dirname("a/"),"a")
+test_eq(dirname("a"),"")
+
+dnl error
+dnl is_absolute_path
+dnl normalize_path
+dnl putenv
+dnl remove_include_path
+dnl remove_module_path
+dnl remove_program_path
