@@ -137,9 +137,9 @@ PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
 
 PMOD_EXPORT void push_int64(INT64 i)
 {
-  if(i == (INT_TYPE)i)
+  if(i == DO_NOT_WARN((INT_TYPE)i))
   {
-    push_int((INT_TYPE)i);
+    push_int(DO_NOT_WARN((INT_TYPE)i));
   }
   else
   {
@@ -150,7 +150,7 @@ PMOD_EXPORT void push_int64(INT64 i)
     if(neg)
       i = ~i;
 
-    push_int(i & BIGNUM_INT64_MASK);
+    push_int(DO_NOT_WARN(i & BIGNUM_INT64_MASK));
     i >>= BIGNUM_INT64_SHIFT;
     convert_stack_top_to_bignum();
     
@@ -159,7 +159,7 @@ PMOD_EXPORT void push_int64(INT64 i)
     
     for(pos = BIGNUM_INT64_SHIFT; i; pos += BIGNUM_INT64_SHIFT)
     {
-      push_int(i & BIGNUM_INT64_MASK);
+      push_int(DO_NOT_WARN(i & BIGNUM_INT64_MASK));
       i >>= BIGNUM_INT64_SHIFT;
       convert_stack_top_to_bignum();
       
