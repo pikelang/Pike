@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.36 1998/03/26 14:31:02 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.37 1998/05/22 12:28:30 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -179,14 +179,19 @@ void udp_read(INT32 args)
   
   if(args)
   {
-    if(sp[-args].u.integer == 1)
-      flags = MSG_OOB;
-    else if(sp[-args].u.integer == 2)
-      flags = MSG_PEEK;
-    else if(sp[-args].u.integer == 3)
-      flags = MSG_PEEK|MSG_OOB;
-    else
+    if(sp[-args].u.integer & 1) {
+      flags |= MSG_OOB;
+    }
+    if(sp[-args].u.integer & 2) {
+#ifdef MSG_PEEK
+      flags |= MSG_PEEK;
+#else /* !MSG_PEEK */
+      /* FIXME: What should we do here? */
+#endif /* MSG_PEEK */
+    }
+    if(sp[-args].u.integer & ~3) {
       error("Illegal 'flags' value passed to udp->read([int flags])\n");
+    }
   }
   pop_n_elems(args);
   fd = FD;
@@ -254,14 +259,19 @@ void udp_sendto(INT32 args)
   
   if(args>3)
   {
-    if(sp[3-args].u.integer == 1)
-      flags = MSG_OOB;
-    else if(sp[3-args].u.integer == 2)
-      flags = MSG_DONTROUTE;
-    else if(sp[3-args].u.integer == 3)
-      flags = MSG_DONTROUTE|MSG_OOB;
-    else
+    if(sp[3-args].u.integer & 1) {
+      flags |= MSG_OOB;
+    }
+    if(sp[3-args].u.integer & 2) {
+#ifdef MSG_DONTROUTE
+      flags |= MSG_DONTROUTE;
+#else /* !MSG_DONTROUTE */
+      /* FIXME: What should we do here? */
+#endif /* MSG_DONTROUTE */
+    }
+    if(sp[3-args].u.integer & ~3) {
       error("Illegal 'flags' value passed to udp->send(string m,string t,int p,[int flags])\n");
+    }
   }
   if(!args)
     error("Illegal number of arguments to udp->sendto(string to"
