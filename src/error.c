@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.124 2004/06/01 19:12:06 mast Exp $
+|| $Id: error.c,v 1.125 2004/06/01 23:36:19 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.124 2004/06/01 19:12:06 mast Exp $");
+RCSID("$Id: error.c,v 1.125 2004/06/01 23:36:19 nilsson Exp $");
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -59,8 +59,6 @@ PMOD_EXPORT const char msg_div_by_zero[] =
 /*
  * Recoveries handling.
  */
-
-JMP_BUF *recoveries=0;
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT void check_recovery_context(void)
