@@ -1,7 +1,9 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: RankingProfile.pike,v 1.18 2001/08/08 23:08:21 js Exp $
+// $Id: RankingProfile.pike,v 1.19 2004/03/15 18:09:12 stewa Exp $
+
+#include "search.h"
 
 //!
 array(int) field_ranking;
@@ -34,8 +36,13 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
     if(mappingp(_field_ranking))
     {
       for(int i=0; i<65; i++)
-	field_ranking[i]=100;
+ 	field_ranking[i] = FIELD_RANKING_DEFAULT;
       int field_id;
+      // Let the defaults for the path1 and path1 fields be 0
+      if( (field_id=db->get_field_id("path1", 1)) != -1 )
+ 	field_ranking[field_id] = 0;
+      if( (field_id=db->get_field_id("path2", 1)) != -1 )
+ 	field_ranking[field_id] = 0;
       foreach(indices(_field_ranking), string field)
         if( (field_id=db->get_field_id(field, 1)) != -1 )
 	  field_ranking[field_id]=_field_ranking[field];
