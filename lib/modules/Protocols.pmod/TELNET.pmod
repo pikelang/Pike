@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.4 1998/04/23 22:33:51 grubba Exp $
+// $Id: TELNET.pmod,v 1.5 1998/04/30 13:53:41 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -92,12 +92,37 @@ class protocol
   //.   Data queued to be sent.
   static private string to_send = "";
 
+  //. + nonblocking_write
+  //.   Tells if we have set the nonblocking write callback or not.
+  static private int nonblocking_write;
+
+  //. - enable_write
+  //.   Turns on the write callback if apropriate.
+  static private void enable_write()
+  {
+    if (!nonblocking_write && (write_cb || sizeof(to_send))) {
+      fd->set_nonblocking(got_data, send_data, close_cb, got_oob);
+      nonblocking_write = 1;
+    }
+  }
+
+  //. - disable_write
+  //.   Turns off the write callback if apropriate.
+  static private void disable_write()
+  {
+    if (!write_cb && !sizeof(to_send) && nonblocking_write) {
+      fd->set_nonblocking(got_data, 0, close_cb, got_oob);
+      nonblocking_write = 0;
+    }
+  }
+
   //. - write
   //.   Queues data to be sent to the other end of the connection.
   //. > s - String to send.
   void write(string s)
   {
     to_send += replace(s, "\377", "\377\377");
+    enable_write();
   }
 
   //. + write_raw
@@ -106,6 +131,7 @@ class protocol
   void write_raw(string s)
   {
     to_send += s;
+    enable_write();
   }
 
   //. - send_data
@@ -114,7 +140,9 @@ class protocol
   static private void send_data()
   {
     if (!sizeof(to_send)) {
-      to_send = write_cb(id);
+      if (write_cb) {
+	to_send = write_cb(id);
+      }
     }
     if (!to_send) {
       // Support for delayed close.
@@ -130,6 +158,7 @@ class protocol
 
       to_send = to_send[n..];
     }
+    disable_write();
   }
 
   //. + default_cb
@@ -141,12 +170,15 @@ class protocol
 	  },
     "AYT":lambda() {
 	    to_send += "\377\361";	// NOP
+	    enable_write();
 	  },
     "WILL":lambda(int code) {
 	     to_send += sprintf("\377\376%c", code);	// DON'T xxx
+	     enable_write();
 	   },
     "DO":lambda(int code) {
 	   to_send += sprintf("\377\374%c", code);	// WON'T xxx
+	   enable_write();
 	 },
   ]);
 
@@ -200,6 +232,7 @@ class protocol
       option_states[option] &= ~option_him_opposite;
       break;
     }
+    enable_write();
   }
 
   //. - disable_option
@@ -235,6 +268,7 @@ class protocol
       /* Error: Already queued an disable request */
       break;
     }
+    enable_write();
   }
 
   //. + synch
@@ -535,6 +569,7 @@ class protocol
 	rest = line;
       }
     }
+    enable_write();
   }
 
   //. - set_write_callback
@@ -543,7 +578,11 @@ class protocol
   void set_write_callback(function(mixed|void:string) w_cb)
   {
     write_cb = w_cb;
-    fd->set_nonblocking(got_data, w_cb && send_data, close_cb, got_oob);
+    if (w_cb) {
+      enable_write();
+    } else {
+      disable_write();
+    }
   }
 
   //. - create
@@ -569,5 +608,6 @@ class protocol
     id = new_id;
 
     fd->set_nonblocking(got_data, w_cb && send_data, close_cb, got_oob);
+    nonblocking_write = !!w_cb;
   }
 }
