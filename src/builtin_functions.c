@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.548 2004/05/01 15:32:01 mast Exp $
+|| $Id: builtin_functions.c,v 1.549 2004/05/02 21:35:54 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.548 2004/05/01 15:32:01 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.549 2004/05/02 21:35:54 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4884,7 +4884,7 @@ static void f_interleave_array(INT32 args)
     ITEM(min)[i].u.integer = low;
   }
 
-  min->type_field = T_INT;
+  min->type_field = BIT_INT;
   ref_push_array(order);
   f_sort(2);	/* Sort the order array on the minimum index */
 
@@ -5057,7 +5057,7 @@ static struct array *longest_ordered_sequence(struct array *a)
     ITEM(res)[--top].u.integer = ltop;
     ltop = links[ltop];
   }
-  res->type_field = T_INT;
+  res->type_field = BIT_INT;
 
   UNSET_ONERROR(tmp2);
   UNSET_ONERROR(tmp);
