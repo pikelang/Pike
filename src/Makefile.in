@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.188 2000/04/18 17:23:35 hubbe Exp $
+# $Id: Makefile.in,v 1.189 2000/04/18 19:08:28 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -537,6 +537,8 @@ interpret_protos.h: $(SRCDIR)/interpret_functions.h
 	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >interpret_protos.h
 
 lex.o: $(SRCDIR)/lex.c interpret_protos.h
+
+lex_t.o: $(SRCDIR)/lex_t.c interpret_protos.h
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
