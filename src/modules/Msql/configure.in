@@ -1,5 +1,5 @@
-dnl $Id: configure.in,v 1.2 1997/11/24 21:32:14 grubba Exp $
-dnl (C) 1997 Francesco Chemolli <kinkie@comedia.it>
+dnl $Id: configure.in,v 1.3 1998/07/15 19:03:07 grubba Exp $
+dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(msqlmod.c)
 AC_CONFIG_HEADER(msql_config.h)
@@ -7,7 +7,7 @@ AC_CONFIG_HEADER(msql_config.h)
 AC_ARG_WITH(msql,    [  --with(out)-msql      mSQL Database engine support ],[]
 ,[with_msql=yes])
 
-echo "Configuring msql module, (C) 1996,1997 Francesco Chemolli <kinkie@comedia.it>"
+echo "Configuring msql module, (C) 1996,1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>"
 
 sinclude(../module_configure.in)
 

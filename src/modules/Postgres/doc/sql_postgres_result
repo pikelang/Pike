@@ -2,7 +2,7 @@ NAME
 	Sql.postgres_result - result of a Postgres query 
 
 AUTHOR
-	Francesco Chemolli <kinkie@comedia.it>
+	Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 DESCRIPTION
 	Sql.postgres_result contains the result of a Postgres-query.
@@ -132,7 +132,7 @@ THANKS
 
 COPYRIGHT
 	This code and documentation are copyright 1997 Francesco Chemolli 
-	<kinkie@comedia.it>.
+	<kinkie@kame.usr.dsi.unimi.it>.
 	It may be copied, modified, redistributed under the terms of the
 	GNU General Public License, version 2.
 	

@@ -2,7 +2,7 @@ NAME
 	Postgres.postgres - Postgres (Postgres95, PgSQL) _RAW_ Server interface
 
 AUTHOR
-	Francesco Chemolli <kinkie@comedia.it>
+	Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 DESCRIPTION
 	This is an interface to the Postgres (Postgres95, pgsql) database server.
@@ -248,7 +248,7 @@ THANKS
 
 COPYRIGHT
 	This code and documentation are copyright 1997 Francesco Chemolli 
-	<kinkie@comedia.it>.
+	<kinkie@kame.usr.dsi.unimi.it>.
 	It may be copied, modified, redistributed under the terms of the
 	GNU General Public License, version 2.
 	
