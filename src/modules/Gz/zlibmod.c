@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.58 2002/11/24 20:48:56 agehall Exp $
+|| $Id: zlibmod.c,v 1.59 2002/11/25 11:39:37 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.58 2002/11/24 20:48:56 agehall Exp $");
+RCSID("$Id: zlibmod.c,v 1.59 2002/11/25 11:39:37 grubba Exp $");
 
 #include "zlib_machine.h"
 #include "module.h"
@@ -498,7 +498,7 @@ static void exit_gz_inflate(struct object *o)
 
 /*! @decl int crc32(string data, void|int start_value)
  *!
- *! This function calculates the standard ISO3309 Cyclic Redundancy Check.
+ *!   This function calculates the standard ISO3309 Cyclic Redundancy Check.
  */
 static void gz_crc32(INT32 args)
 {
@@ -528,19 +528,18 @@ static void gz_crc32(INT32 args)
  */
 
 /*! @decl int open(string|int file, void|string mode)
- *! Opens a file for I/O.
+ *!   Opens a file for I/O.
  *! @param file
- *! The filename or an open filedescriptor for the GZip file to open.
+ *!   The filename or an open filedescriptor for the GZip file to use.
  *! @param mode
- *! Mode for the fileoperations. Defaults to read only.
+ *!   Mode for the fileoperations. Defaults to read only.
  *!
  *! @note
- *! If the object represents a file, it will first be closed.
+ *!   If the object already has been opened, it will first be closed.
  */
 void gz_file_open(INT32 args)
 {
-  char default_mode[] = "rb";
-  char *mode = default_mode;
+  char *mode = "rb";
 
   if (THIS->gzfile!=NULL) {
     gzclose(THIS->gzfile);
@@ -560,15 +559,14 @@ void gz_file_open(INT32 args)
   if (args == 2 && sp[1-args].type != PIKE_T_STRING) {
     Pike_error("Bad parameter 2 to file->open()\n");
   } else if (args == 2) {
-    mode = sp[1-args].u.string->str;
+    mode = STR0(sp[1-args].u.string);
   }
 
   if (sp[-args].type == PIKE_T_INT) {
-    THIS->gzfile = gzdopen(sp[-args].u.integer,
-			   mode);
+    /* FIXME: This is not likely to work on NT. */
+    THIS->gzfile = gzdopen(sp[-args].u.integer, mode);
   } else {
-    THIS->gzfile = gzopen(sp[-args].u.string->str,
-			  mode);
+    THIS->gzfile = gzopen(STR0(sp[-args].u.string), mode);
   }
 
   pop_n_elems(args);
@@ -576,7 +574,7 @@ void gz_file_open(INT32 args)
 }
 
 /*! @decl void create(void|string gzFile, void|string mode)
- *! Opens a gzip file for reading.
+ *!   Opens a gzip file for reading.
  */
 void gz_file_create(INT32 args)
 {
@@ -586,7 +584,7 @@ void gz_file_create(INT32 args)
     if (sp[-1].u.integer == 0) {
       Pike_error("Failed to open file.\n");
     }
-    pop_n_elems(1);
+    pop_stack();
   }
 }
 
@@ -648,11 +646,10 @@ void gz_file_read(INT32 args)
     return;
   }
 
-  /* Make sure the returned string is the same lenght as
+  /* Make sure the returned string is the same length as
    * the data read.
    */
   push_string(end_and_resize_shared_string(buf, res));
-
 }
 
 /*! @decl int write(string data)
