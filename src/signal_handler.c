@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.175 2000/08/12 23:08:29 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.176 2000/08/13 15:15:22 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1700,16 +1700,16 @@ static void internal_add_limit( struct perishables *storage,
     l = malloc(sizeof( struct plimit ));
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "soft"))) {
       if(tmp3->type == T_INT)
-        l->rlp.rlim_cur=
-          tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_cur;
+        l->rlp.rlim_cur = (tmp3->u.integer >= 0) ?
+	  (unsigned INT32)tmp3->u.integer:(unsigned INT32)ol.rlim_cur;
       else
         l->rlp.rlim_cur = RLIM_INFINITY;
     } else
       l->rlp.rlim_cur = ol.rlim_cur;
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "hard"))) {
       if(tmp3->type == T_INT)
-        l->rlp.rlim_max =
-          tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_max;
+        l->rlp.rlim_max = (tmp3->u.integer >= 0) ?
+	  (unsigned INT32)tmp3->u.integer:(unsigned INT32)ol.rlim_max;
       else
         l->rlp.rlim_max = RLIM_INFINITY;
     } else

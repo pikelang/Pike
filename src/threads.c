@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.136 2000/08/11 11:02:36 grubba Exp $");
+RCSID("$Id: threads.c,v 1.137 2000/08/13 15:16:33 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -20,6 +20,7 @@ PMOD_EXPORT int threads_disabled = 0;
 #include "module_support.h"
 #include "pike_types.h"
 #include "operators.h"
+#include "bignum.h"
 
 #include <errno.h>
 

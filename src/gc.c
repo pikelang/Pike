@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.120 2000/08/12 23:06:53 grubba Exp $");
+RCSID("$Id: gc.c,v 1.121 2000/08/13 15:12:55 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1827,7 +1827,7 @@ static void warn_bad_cycles()
 	obj_arr = append_array(obj_arr, --sp);
       }
       p = NEXT(p);
-      if (p ? CYCLE(p) != cycle : cycle) {
+      if (p ? ((unsigned)(CYCLE(p) != cycle)) : cycle) {
 	if (obj_arr->size >= 2) {
 	  push_constant_text("gc");
 	  push_constant_text("bad_cycle");
