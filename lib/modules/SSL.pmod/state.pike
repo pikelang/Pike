@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.27 2004/03/25 21:29:35 bill Exp $
+// $Id: state.pike,v 1.28 2004/07/05 17:01:24 grubba Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -50,7 +50,7 @@ string tls_unpad(string data) {
   foreach(values(padding), int tmp)
     {
       if(tmp!=plen) {
-	werror("Incorrect padding detected!!!\n");
+	werror("Incorrect padding detected!!!: %O\n", padding);
 	throw(0);
       }
     }
