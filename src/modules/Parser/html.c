@@ -2454,11 +2454,8 @@ static void tag_name(struct parser_html_storage *this,struct piece *feed,int c)
 
 static INLINE void tag_push_default_arg(struct svalue *def)
 {
-   if (def) push_svalue (def);
-   else {
-      stack_dup();
-      if (THIS->mixed_mode) f_aggregate(1);
-   }
+   if (def) push_svalue(def);
+   else stack_dup();
 }
 
 static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
@@ -2526,7 +2523,6 @@ new_arg:
 
       /* scan the argument value */
       scan_forward_arg(this,s2,c2,&s1,&c1,1);
-      if (THIS->mixed_mode) f_aggregate(1);
 
       /* next argument in the loop */
       s2 = s1;
@@ -2549,11 +2545,16 @@ static void html_tag_args(INT32 args)
 {
    struct svalue def;
    check_all_args("tag_args",args,BIT_MIXED|BIT_VOID,0);
-   if (args) def = sp[-args];
+   if (args) assign_svalue_no_free(&def,sp-args);
    pop_n_elems(args);
 
    if (!THIS->start) error ("Parser.HTML: There's no current tag\n");
-   tag_args(THIS,THIS->start,THIS->cstart,&def);
+   if (args)
+   {
+     tag_args(THIS,THIS->start,THIS->cstart,&def);
+     free_svalue(&def);
+   }
+   else tag_args(THIS,THIS->start,THIS->cstart,NULL);
 }
 
 static void html_tag(INT32 args)
@@ -2808,8 +2809,7 @@ static void html_match_tag(INT32 args)
 **!
 **!	If the mixed mode flag is nonzero, callbacks may return
 **!	arbitrary data in arrays, which will be concatenated in the
-**!	output. It also means that all callbacks will receive arrays
-**!	as content and argument values.
+**!	output.
 */
 
 static void html_mixed_mode(INT32 args)
@@ -2826,7 +2826,7 @@ static void html_mixed_mode(INT32 args)
 #define tCbret tOr3(tInt0,tStr,tArr(tMixed))
 #define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObj X,tCbret))
 #define tTodo(X) tOr3(tStr,tCbfunc(X),tArr(tCbfunc(X)))
-#define tTagargs tMap(tStr,tOr3(tStr,tInt1,tArr(tMixed)))
+#define tTagargs tMap(tStr,tStr)
 
 void init_parser_html(void)
 {
@@ -2861,8 +2861,12 @@ void init_parser_html(void)
    ADD_FUNCTION("at_column",html_at_column,tFunc(tNone,tInt),0);
 
    ADD_FUNCTION("tag_name",html_tag_name,tFunc(tNone,tStr),0);
-   ADD_FUNCTION("tag_args",html_tag_args,tFunc(tOr(tVoid,tMixed),tMapping),0);
-   ADD_FUNCTION("tag",html_tag,tFunc(tOr(tVoid,tMixed),tArr(tOr(tStr,tMapping))),0);
+   ADD_FUNCTION("tag_args",html_tag_args,
+		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
+		      tMap(tStr,tOr(tStr,tVar(1)))),0);
+   ADD_FUNCTION("tag",html_tag,
+		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
+		      tArr(tOr(tStr,tMap(tStr,tOr(tStr,tVar(1)))))),0);
 
    /* callback setup */
 

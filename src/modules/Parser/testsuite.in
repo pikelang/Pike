@@ -84,18 +84,17 @@ test_any([[
     return p->finish("<t>&e;")->read();
   }) return 1;
 ]], "&e;<t>");
-test_any([[
+test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
   p->add_tag ("t", ({lambda (object p, mixed... e) {return e;}, 17, (<>)}));
   p->add_container ("c", ({lambda (object p, mixed... e) {return e;}, ({}), 0, 0}));
   p->add_entity ("e", ({lambda (object p, mixed... e) {return e;}, "f"}));
   p->set_extra (4711);
-  return equal (p->finish("<t a><c>x</c>&e;")->read(),
-		({(["a": ({"a"})]), 17, (<>), 4711,
-		  ([]), "x", ({}), 0, 0, 4711,
-		  "f", 4711}));
-]], 1);
+  return p->finish("<t a><c>x</c>&e;")->read();
+]], ({(["a": "a"]), 17, (<>), 4711,
+      ([]), "x", ({}), 0, 0, 4711,
+      "f", 4711}));
 
 
 // Argument quoting
@@ -210,18 +209,18 @@ test_any([[
   p->add_tag ("t", lambda (object p, mapping a) {return ({1});});
   return !!catch (p->finish("a<t>b")->read());
 ]], 1);
-test_any([[
+test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
   p->add_tag ("t", lambda (object p, mapping a) {p->write_out(1); return ({2});});
-  return equal (p->finish("a<t>b")->read(), ({"a",1,2,"b"}));
-]], 1);
-test_any([[
+  return p->finish("a<t>b")->read();
+]], ({"a",1,2,"b"}));
+test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
   p->add_tag ("t", lambda (object p, mapping a) {return ({a});});
-  return equal (p->finish("<t a=b>")->read(), ({(["a": ({"b"})])}));
-]], 1);
+  return p->finish("<t a=b>")->read();
+]], ({(["a": "b"])}));
 
 // Misc
 test_any([[
@@ -274,15 +273,15 @@ test_any([[
 			   {return ({"[",s,"]"});});
   return p->finish("x<f x<t2>=<t2>x>x<t>x<t2>x<a<t2>x>x</t>x<o>x")->read();
 ]], "[x]<[f x]2[=]2[x>x]|[x]2[x]<[a]2[x>xx]<[o>x]");
-test_any([[
+test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
   p->add_tag ("t", lambda (object p, mapping a) {return p->tag();});
-  return equal(p->finish("<t a='b>")->read(), ({"t", (["a": ({"b>"})])}));
-]], 1);
-test_any([[
+  return p->finish("<t a b='b>")->read();
+]], ({"t", (["a": "a", "b": "b>"])}));
+test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
-  p->add_tag ("t", lambda (object p, mapping a) {return p->tag(1);});
-  return equal(p->finish("<t a>")->read(), ({"t", (["a": 1])}));
-]], 1);
+  p->add_tag ("t", lambda (object p, mapping a) {return p->tag((<>));});
+  return p->finish("<t a b='b>")->read();
+]], ({"t", (["a": (<>), "b": "b>"])}));
