@@ -1,6 +1,6 @@
 // By Martin Nilsson
 
-// Updated 2003-03-19 from http://lcweb.loc.gov/standards/iso639-2/
+// Updated 2003-07-02 from http://lcweb.loc.gov/standards/iso639-2/
 
 #pike __REAL_VERSION__
 
@@ -11,6 +11,7 @@ static constant languages = ([
   "ace":"Achinese",
   "ach":"Acoli",
   "ada":"Adangme",
+  "ady":"Adyghe; Adygei",
   "afa":"Afro-Asiatic (Other)",
   "afh":"Afrihili",
   "afr":"Afrikaans",
@@ -94,7 +95,9 @@ static constant languages = ([
   "cpf":"Creoles and pidgins, French-based (Other)",
   "cpp":"Creoles and pidgins, Portuguese-based (Other)",
   "cre":"Cree",
+  "crh":"Crimean Turkish; Crimean Tatar",
   "crp":"Creoles and pidgins (Other)",
+  "csb":"Kashubian",
   "cus":"Cushitic (Other)",
   "cym":"Welsh",
   "dak":"Dakota",
@@ -222,6 +225,7 @@ static constant languages = ([
   "kor":"Korean",
   "kos":"Kosraean",
   "kpe":"Kpelle",
+  "krc":"Karachay-Balkar",
   "kro":"Kru",
   "kru":"Kurukh",
   "kum":"Kumyk",
@@ -257,6 +261,7 @@ static constant languages = ([
   "map":"Austronesian (Other)",
   "mar":"Marathi",
   "mas":"Masai",
+  "mdf":"Moksha",
   "mdr":"Mandar",
   "men":"Mende",
   "mga":"Irish, Middle (900-1200)",
@@ -282,6 +287,7 @@ static constant languages = ([
   "mwr":"Marwari",
   "mya":"Burmese",
   "myn":"Mayan languages",
+  "myv":"Erzya",
   "nah":"Nahuatl",
   "nai":"North American Indian",
   "nap":"Neapolitan",
@@ -424,6 +430,7 @@ static constant languages = ([
   "tvl":"Tuvalu",
   "twi":"Twi",
   "tyv":"Tuvinian",
+  "udm":"Udmurt",
   "uga":"Ugaritic",
   "uig":"Uighur",
   "ukr":"Ukrainian",
