@@ -15,19 +15,11 @@ class File
 #endif
   mixed ___id;
 
-  // This function is needed so that create() doesn't call an overloaded
-  // variant by mistake.
-  static private nomask int __open(string file, string mode,void|int bits)
+  int open(string file, string mode, void|int bits)
   {
     _fd=Fd();
     if(query_num_arg()<3) bits=0666;
     return ::open(file,mode,bits);
-  }
-
-  int open(string file, string mode, void|int bits)
-  {
-    if(query_num_arg()<3) bits=0666;
-    return __open(file, mode, bits);
   }
 
   int open_socket(int|void port, string|void address)
@@ -64,27 +56,27 @@ class File
     }
   }
 
-  void create(mixed ... args)
+  void create(string|void file,void|string mode,void|int bits)
   {
-    if(sizeof(args))
+    switch(file)
     {
-      switch(args[0])
-      {
-	case "stdin":
-	  _fd=_stdin;
-	  break;
-
-	case "stdout":
-	  _fd=_stdin;
-	  break;
-
-	case "stderr":
-	  _fd=_stderr;
-	  break;
-
-	default:
-	  __open(@args);
-      }
+      case "stdin":
+	_fd=_stdin;
+      case 0:
+	break;
+	
+      case "stdout":
+	_fd=_stdin;
+	break;
+	
+      case "stderr":
+	_fd=_stderr;
+	break;
+	
+      default:
+	_fd=Fd();
+	if(query_num_arg()<3) bits=0666;
+	::open(file,mode,bits);
     }
   }
 
@@ -167,16 +159,12 @@ class File
   static void my_write_oob_callback() { ___write_oob_callback(___id); }
 #endif
 
+#define SET(X,Y) ::set_##X ((___##X = (Y)) && my_##X)
+
 #define CBFUNC(X)					\
-  static private nomask void __set_##X (mixed l##X)	\
-  {							\
-    ___##X=l##X;					\
-    ::set_##X(l##X && my_##X);				\
-  }							\
-							\
   void set_##X (mixed l##X)				\
   {							\
-    __set_##X(l##X);					\
+    SET( X , l##X );					\
   }							\
 							\
   mixed query_##X ()					\
@@ -192,11 +180,7 @@ class File
 #endif
 
   mixed query_close_callback()  { return ___close_callback; }
-  static private nomask void __set_close_callback(mixed c)
-  {
-    ___close_callback=c;
-  }
-  mixed set_close_callback(mixed c)  { __set_close_callback(c); }
+  mixed set_close_callback(mixed c)  { ___close_callback=c; }
   void set_id(mixed i) { ___id=i; }
   mixed query_id() { return ___id; }
 
@@ -209,30 +193,25 @@ class File
 #endif
     )
   {
-    // Use the __set_xxxx_callback() functions here, so that we
-    // don't call overloaded versions by mistake.
-    //	/grubba 1998-04-10
-    __set_read_callback(rcb);
-    __set_write_callback(wcb);
-    __set_close_callback(ccb);
+    SET(read_callback,rcb);
+    SET(write_callback,wcb);
+    ___close_callback=ccb;
+
 #if constant(__HAVE_OOB__)_
-    __set_read_oob_callback(roobcb);
-    __set_write_oob_callback(woobcb);
+    SET(read_oob_callback,roobcb);
+    SET(write_oob_callback,woobcb);
 #endif
     ::set_nonblocking();
   }
 
   void set_blocking()
   {
-    // Use the __set_xxxx_callback() functions here, so that we
-    // don't call overloaded versions by mistake.
-    //	/grubba 1998-04-10
-    __set_read_callback(0);
-    __set_write_callback(0);
-    __set_close_callback(0);
+    SET(read_callback,0);
+    SET(write_callback,0);
+    ___close_callback=0;
 #if constant(__HAVE_OOB__)_
-    __set_read_oob_callback(0);
-    __set_write_oob_callback(0);
+    SET(read_oob_callback,0);
+    SET(write_oob_callback,0);
 #endif
     ::set_blocking();
   }
