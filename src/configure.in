@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.59 1997/03/05 14:48:45 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.60 1997/03/10 19:13:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -472,13 +472,16 @@ int main()
 #include <pthread.h>
 
 void *foo(void *bar) { return ; }
+pthread_mutexattr_t attr;
 pthread_mutex_t tmp;
 pthread_t gazonk;
 
 int main()
 {
   void *sune;
-  pthread_mutex_lock(& tmp);
+  pthread_mutexattr_init(&attr);
+  pthread_mutex_init(&tmp, &attr);
+  pthread_mutex_lock(&tmp);
   pthread_create(&gazonk,0,foo,0);
   pthread_join(gazonk,&sune);
   exit(0);
