@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.218 2002/02/14 00:35:10 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.219 2002/04/15 23:34:41 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3374,10 +3374,9 @@ void Pike_f_fork(INT32 args)
 #ifdef HAVE_KILL
 /*! @decl void kill(int pid, int signal)
  *!
- *! Send a signal to another process.
- *!
- *! Kill sends a signal to another process. If something goes wrong
- *! -1 is returned, 0 otherwise.
+ *! Send a signal to another process. Returns nonzero if it worked,
+ *! zero otherwise. @[errno] may be used in the latter case to find
+ *! out what went wrong.
  *!
  *! Some signals and their supposed purpose:
  *! @int
@@ -3466,7 +3465,7 @@ static void f_kill(INT32 args)
 {
   int signum;
   int pid = 0;
-  int res;
+  int res, save_errno;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -3499,11 +3498,13 @@ static void f_kill(INT32 args)
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
+  save_errno = errno;
   THREADS_DISALLOW_UID();
 
   check_signals(0,0,0);
   pop_n_elems(args);
   push_int(res);
+  errno = save_errno;
 }
 
 /*! @module Process
@@ -3518,7 +3519,7 @@ static void f_pid_status_kill(INT32 args)
 {
   int pid = THIS->pid;
   INT_TYPE signum;
-  int res;
+  int res, save_errno;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -3537,11 +3538,13 @@ static void f_pid_status_kill(INT32 args)
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
+  save_errno = errno;
   THREADS_DISALLOW_UID();
 
   check_signals(0,0,0);
   pop_n_elems(args);
   push_int(res);
+  errno = save_errno;
 }
 
 /*! @endclass
