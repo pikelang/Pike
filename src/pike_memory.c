@@ -44,6 +44,11 @@ void swap(char *a, char *b, INT32 size)
 
 void reverse(char *memory, INT32 nitems, INT32 size)
 {
+#ifdef DEBUG
+  if(((unsigned long)memory) % size)
+    fatal("Unaligned memory in argument to reverse()\n");
+#endif
+
 #define DOSIZE(X,Y)						\
  case X:							\
  {								\
@@ -92,6 +97,12 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   INT32 e;
   char *tmp;
   if(nitems<2) return;
+
+#ifdef DEBUG
+  if(((unsigned long)memory) % size)
+    fatal("Unaligned memory in argument to reorder()\n");
+#endif
+
   tmp=xalloc(size * nitems);
 #undef DOSIZE
 #define DOSIZE(X,Y)				\

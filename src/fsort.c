@@ -80,6 +80,10 @@ void fsort(void *base,
 	   long elmSize,
 	   fsortfun cmpfunc)
 {
+#ifdef DEBUG
+  if(((unsigned long)base) % elmSize)
+    fatal("Unaligned memory in argument to fsort()()\n");
+#endif
 
   if(elms<=0) return;
   cmpfun=cmpfunc;

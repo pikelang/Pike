@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.26 1998/01/29 00:30:33 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.27 1998/01/29 01:55:34 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -764,10 +764,10 @@ static int do_docode2(node *n,int flags)
     current_switch_values_on_stack=0;
     current_switch_case=0;
     current_switch_default=-1;
-    current_switch_jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+1));
-    jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+1));
+    current_switch_jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
+    jumptable=(INT32 *)xalloc(sizeof(INT32)*(cases*2+2));
 
-    for(e=0; e<cases*2+1; e++)
+    for(e=1; e<cases*2+2; e++)
     {
       jumptable[e]=emit(F_POINTER, 0);
       current_switch_jumptable[e]=-1;
@@ -790,7 +790,7 @@ static int do_docode2(node *n,int flags)
     {
       if(order[e] < cases-1)
       {
-	int o1=order[e]*2+1;
+	int o1=order[e]*2+2;
 	if(current_switch_jumptable[o1]==current_switch_jumptable[o1+1] &&
 	   current_switch_jumptable[o1]==current_switch_jumptable[o1+2])
 	{
@@ -804,16 +804,16 @@ static int do_docode2(node *n,int flags)
     if(current_switch_default < 0)
       current_switch_default = ins_label(-1);
 
-    for(e=0;e<cases*2+1;e++)
+    for(e=1;e<cases*2+2;e++)
       if(current_switch_jumptable[e]==-1)
 	current_switch_jumptable[e]=current_switch_default;
 
     order_array(sp[-1].u.array,order);
 
-    reorder((void *)(current_switch_jumptable+1),cases,sizeof(INT32)*2,order);
+    reorder((void *)(current_switch_jumptable+2),cases,sizeof(INT32)*2,order);
     free((char *)order);
 
-    for(e=0; e<cases*2+1; e++)
+    for(e=1; e<cases*2+2; e++)
       update_arg(jumptable[e], current_switch_jumptable[e]);
 
     update_arg(tmp1, store_constant(sp-1,1));

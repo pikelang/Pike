@@ -155,18 +155,14 @@ char *alloca ();
 #define B8_T long
 #elif SIZEOF_CHAR_P == 8
 #define B8_T char *
-#elif SIZEOF_DOUBLE == 8
-#define B8_T double
 #elif defined(B4_T)
 struct b8_t_s { B4_T x,y; };
-#define B8_T struct b8_t
+#define B8_T struct b8_t_s
 #endif
 
-#if SIZEOF_DOUBLE == 16
-#define B16_T double
-#elif defined(B8_T)
+#if defined(B8_T)
 struct b16_t { B8_T x,y; };
-#define B16_T struct b16_t
+#define B16_T struct b16_t_s
 #endif
 
 
