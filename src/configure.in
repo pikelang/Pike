@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.251 1998/11/09 09:46:05 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.252 1998/11/17 05:13:19 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -650,7 +650,7 @@ esac
 AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
 AC_CACHE_VAL(pike_cv_prog_working_yacc,
 [
-for YACC in byacc "bison -y" yacc "None"; do
+for YACC in pyacc byacc "bison -y" yacc "None"; do
   set dummy $YACC; ac_word=$2
   has_it=no
   IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
