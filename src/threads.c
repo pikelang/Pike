@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.95 1999/05/08 16:49:24 grubba Exp $");
+RCSID("$Id: threads.c,v 1.96 1999/05/12 04:45:58 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -25,6 +25,24 @@ size_t thread_stack_size=1024 * 1204;
 
 #ifdef __NT__
 
+int low_nt_create_thread(unsigned stack_size,
+			 unsigned (TH_STDCALL *fun)(void *),
+			 void *arg,
+			 unsigned *id)
+{
+  HANDLE h=_beginthreadex(NULL, stack_size, fun, arg, 0, id);
+  if(h)
+  {
+    CloseHandle(h);
+    return 0;
+  }
+  else
+  {
+    return 1;
+  }
+}
+
+
 #ifdef PIKE_DEBUG
 static int IsValidHandle(HANDLE h)
 {
@@ -49,10 +67,11 @@ static int IsValidHandle(HANDLE h)
   return 1;
 }
 
-void CheckValidHandle(HANDLE h)
+HANDLE CheckValidHandle(HANDLE h)
 {
-  if(!IsValidHandle((HANDLE)h))
+  if(!IsValidHandle(h))
     fatal("Invalid handle!\n");
+  return h;
 }
 
 #endif
@@ -492,7 +511,13 @@ TH_RETURN_TYPE new_thread_func(void * data)
 		      (unsigned int)arg.id));
   
   if((tmp=mt_lock( & interpreter_lock)))
-    fatal("Failed to lock interpreter, errno %d\n",tmp);
+    fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
+#ifdef __NT__
+	  GetLastError()
+#else
+	  errno
+#endif
+	  );
   init_interpreter();
   thread_id=arg.id;
   SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */

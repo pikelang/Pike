@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.66 1999/05/08 00:41:03 hubbe Exp $
+ * $Id: threads.h,v 1.67 1999/05/12 04:45:59 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -181,10 +181,11 @@ extern pthread_attr_t small_pattr;
 
 #define THREAD_T unsigned
 #define th_setconcurrency(X)
-#define th_create(ID,fun,arg) (!_beginthreadex(NULL, 2*1024*1024,fun, arg,0,ID))
-#define th_create_small(ID,fun,arg) (!_beginthreadex(NULL, 8192*sizeof(char *), fun,arg,0,ID))
+#define th_create(ID,fun,arg) low_nt_create_thread(2*1024*1024,fun, arg,ID)
+#define th_create_small(ID,fun,arg) low_nt_create_thread(8192*sizeof(char *), fun,arg,ID)
 #define TH_RETURN_TYPE unsigned __stdcall
-#define th_exit(foo) _endthread(foo)
+#define TH_STDCALL __stdcall
+#define th_exit(foo) _endthreadex(foo)
 #define th_join(ID,res)	/******************* FIXME! ****************/
 #define th_self() GetCurrentThreadId()
 #define th_destroy(X)
@@ -194,16 +195,16 @@ extern pthread_attr_t small_pattr;
 
 #define MUTEX_T HANDLE
 #define mt_init(X) CheckValidHandle((*(X)=CreateMutex(NULL, 0, NULL)))
-#define mt_lock(X) (CheckValidHandle(*(X)),WaitForSingleObject(*(X), INFINITE))
-#define mt_trylock(X) (CheckValidHandle(*(X)),WaitForSingleObject(*(X), 0))
-#define mt_unlock(X) (CheckValidHandle(*(X)),ReleaseMutex(*(X)))
-#define mt_destroy(X) (CheckValidHandle(*(X)),CloseHandle(*(X)))
+#define mt_lock(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
+#define mt_trylock(X) WaitForSingleObject(CheckValidHandle(*(X)), 0)
+#define mt_unlock(X) ReleaseMutex(CheckValidHandle(*(X)))
+#define mt_destroy(X) CloseHandle(CheckValidHandle(*(X)))
 
 #define EVENT_T HANDLE
 #define event_init(X) CheckValidHandle(*(X)=CreateEvent(NULL, 1, 0, NULL))
-#define event_signal(X) (CheckValidHandle(*(X)),SetEvent(*(X)))
-#define event_destroy(X) (CheckValidHandle(*(X)),CloseHandle(*(X)))
-#define event_wait(X) (CheckValidHandle(*(X)),WaitForSingleObject(*(X), INFINITE))
+#define event_signal(X) SetEvent(CheckValidHandle(*(X)))
+#define event_destroy(X) CloseHandle(CheckValidHandle(*(X)))
+#define event_wait(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
 
 #endif
 
@@ -319,6 +320,10 @@ struct thread_state {
 
 #ifndef TH_RETURN_TYPE
 #define TH_RETURN_TYPE void *
+#endif
+
+#ifndef TH_STDCALL
+#define TH_STDCALL
 #endif
 
 #ifndef th_destroy
@@ -517,7 +522,24 @@ struct thread_state {
 #endif
 
 /* Prototypes begin here */
+int low_nt_create_thread(unsigned stack_size,
+			 unsigned (TH_STDCALL *func)(void *),
+			 void *arg,
+			 unsigned *id);
 struct thread_starter;
+struct thread_local;
+void low_init_threads_disable(void);
+void init_threads_disable(struct object *o);
+void exit_threads_disable(struct object *o);
+void init_interleave_mutex(IMUTEX_T *im);
+void exit_interleave_mutex(IMUTEX_T *im);
+void thread_table_init(void);
+unsigned INT32 thread_table_hash(THREAD_T *tid);
+void thread_table_insert(struct object *o);
+void thread_table_delete(struct object *o);
+struct thread_state *thread_state_for_id(THREAD_T tid);
+struct object *thread_for_id(THREAD_T tid);
+void f_all_threads(INT32 args);
 TH_RETURN_TYPE new_thread_func(void * data);
 void f_thread_create(INT32 args);
 void f_thread_set_concurrency(INT32 args);
@@ -539,24 +561,15 @@ void f_thread_backtrace(INT32 args);
 void f_thread_id_status(INT32 args);
 void init_thread_obj(struct object *o);
 void exit_thread_obj(struct object *o);
-void th_farm(void (*fun)(void *), void *);
-void th_init(void);
-void low_th_init(void);
-void th_cleanup(void);
-void thread_table_insert(struct object *o);
-void thread_table_delete(struct object *o);
-struct thread_state *thread_state_for_id(THREAD_T tid);
-struct object *thread_for_id(THREAD_T tid);
-void f_all_threads(INT32 args);
 void f_thread_local(INT32 args);
-
-void low_init_threads_disable(void);
-void init_threads_disable(struct object *o);
-void exit_threads_disable(struct object *o);
-
-void init_interleave_mutex(IMUTEX_T *im);
-void exit_interleave_mutex(IMUTEX_T *im);
-
+void f_thread_local_get(INT32 args);
+void f_thread_local_set(INT32 args);
+void low_th_init(void);
+void th_init(void);
+void th_cleanup(void);
+int th_num_idle_farmers(void);
+int th_num_farmers();
+void th_farm(void (*fun)(void *), void *here);
 /* Prototypes end here */
 
 #else
@@ -594,9 +607,9 @@ void exit_interleave_mutex(IMUTEX_T *im);
 
 #ifdef __NT__
 #ifndef PIKE_DEBUG
-#define CheckValidHandle(X) 0
+#define CheckValidHandle(X) (X)
 #else
-void CheckValidHandle(HANDLE h);
+HANDLE CheckValidHandle(HANDLE h);
 #endif
 #endif
 
