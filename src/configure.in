@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.669 2003/01/02 17:04:51 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.670 2003/01/02 17:05:49 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1793,7 +1793,7 @@ if test "$cflags_is_set" = "no"; then
     # sopt disabled since it takes too long time on interpret.c (>45min on an O²)
     # AC_SYS_COMPILER_FLAG(-sopt,sopt,OPTIMIZE)
 
-    # -n32 moved to smartlink so it will affekt cc as well as linker
+    # -n32 moved to smartlink so it will affect cc as well as linker
     # this way the user can override it by setting LDFLAGS and/or CFLAGS
     # AC_SYS_COMPILER_FLAG(-n32,n32,CFLAGS)
     AC_SYS_COMPILER_FLAG(-fullwarn,fullwarn,WARN)
