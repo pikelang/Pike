@@ -18,13 +18,11 @@ class Reloc
 class Section
 {
   string name;
-  string data;
+  int|string data;
   array(Reloc) relocs;
 
   int virtual_size;
   int characteristics;
-
-  int section_number;
 };
 
 class Symbol
@@ -53,8 +51,11 @@ class Linker
   string sectiontable="";
   int num_symbols;
 
-  int base;
   mapping(Symbol:int) symbol_to_number=([]);
+
+  int base;
+  int num_sections;
+  mapping(Section:int) section_to_number=([]);
 
   mapping(string:int) stringtablecache=([]);
   int add_string(string s)
@@ -91,7 +92,7 @@ class Linker
       symboltable+=sprintf("%s%-4c%-2c%-2c%c%c",
 			   add_sym_name(s->name),
 			   s->value,
-			   s->section ? s->section->section_number + 1 : 0,
+			   s->section ? add_section(s->section) +1 : 0,
 			   s->type,
 			   s->cls,
 			   0); /* aux symbols not supported */
@@ -99,18 +100,37 @@ class Linker
       return symbol_to_number[s]-1;
     }
 
+  int add_section(Section s)
+    {
+      if(section_to_number[s])
+	return section_to_number[s]-1;
+
+      section_to_number[s]=++num_sections;
+      return section_to_number[s]-1;
+    }
+
+  int virtual_data_size(int|string s)
+    {
+      return intp(s) ? s : strlen(s);
+    }
+
+  int file_data_size(int|string s)
+    {
+      return intp(s) ? 0 : strlen(s);
+    }
 
   string out(array(Section) sections,
 	     array(Symbol) exports)
     {
       int secnum;
-      base=20 /*coff*/ +
-	sizeof(sections) * 40;
+      foreach(sections, Section s) add_section(s);
+      foreach(exports, Symbol s) add_symbol(s);
 
-      foreach(sections, Section s)
-	s->section_number = secnum++;
 
-      foreach(sections, Section s)
+      /* Actually output data */
+      Section s;
+      base=20 /*coff*/ + sizeof(section_to_number) * 40;
+      for(int secnum=1;s=search(section_to_number, secnum);secnum++)
 	{
 #ifdef DEBUG
 	  werror("Encoding section named: %s\n",s->name);
@@ -120,22 +140,24 @@ class Linker
 		    add_sym_name(s->name),
 		    s->virtual_size,
 		    0, /* virtual address */
-		    s->data ? sizeof(s->data) : 0,
-		    base + strlen(sectiondata),
-		    base + strlen(sectiondata) + (s->data ? sizeof(s->data) : 0),
-		    0, /* no linenums */
-		    sizeof(s->relocs),
+		    virtual_data_size(s->data),
+		    stringp(s->data) ? (base + strlen(sectiondata)) : 0,
+		    s->relocs && (base + strlen(sectiondata) + file_data_sizes->data),
+		    0, /* no linenums yet */
+		    s->relocs && sizeof(s->relocs),
 		    0,
 		    s->characteristics);
-	  sectiondata+=s->data;
-	  foreach(s->relocs, Reloc r)
-	    sectiondata+=sprintf("%-4c%-4c%-2c",
-				 r->loc,
-				 add_symbol(r->sym),
-				 r->type);
-	}
 
-      foreach(exports, Symbol s) add_symbol(s);
+	  if(stringp(s->data))
+	    sectiondata+=s->data;
+
+	  if(s->relocs)
+	    foreach(s->relocs, Reloc r)
+	      sectiondata+=sprintf("%-4c%-4c%-2c",
+				   r->loc,
+				   add_symbol(r->sym),
+				   r->type);
+	}
 
       return 
 	sprintf("%-2c%-2c%-4c%-4c%-4c%-2c%-2c" /* coff */
@@ -143,7 +165,7 @@ class Linker
 		
 		/* coff */
 		0x14c, /* Intel x86 */
-		sizeof(sections),
+		sizeof(section_to_number),
 		time(),
 		base+strlen(sectiondata),
 		num_symbols,
@@ -402,10 +424,19 @@ class dumpfile
 #endif
 	
 	file_sections[e]->name=getCOFFstring(pos);
-	file_sections[e]->data=range(i4(pos+20),i4(pos+16));
+
+	if(i4(pos+20))
+	{
+	  file_sections[e]->data=range(i4(pos+20),i4(pos+16));
+	}else{
+	  file_sections[e]->data=i4(pos+16);
+	}
+
 	file_sections[e]->virtual_size=i4(pos+8);;
 	file_sections[e]->characteristics=i4(pos+36);
-	file_sections[e]->relocs=dumpRelocs(i4(pos+24), i2(pos+32));
+
+	if(i4(pos+24))
+	  file_sections[e]->relocs=dumpRelocs(i4(pos+24), i2(pos+32));
 
 
 	if(file_sections[e]->characteristics & CHR_LINK_INFO)
@@ -562,7 +593,7 @@ class dumpfile
 	  {
 	    s=global_symbols[name];
 	    if(s->section && sect > 0)
-	      werror("%s: Warning: Symbol %s defined twice.\n",
+	      werror("%s: Warning: Symbol %s redefined.\n",
 		     filename,
 		     name);
 	  }
@@ -745,7 +776,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.2 2000/12/27 07:55:09 hubbe Exp $\n"
+	 "$Id: pntld,v 1.3 2000/12/28 01:01:11 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
