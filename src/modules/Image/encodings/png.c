@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.15 1998/05/02 01:24:26 mirar Exp $");
+RCSID("$Id: png.c,v 1.16 1998/05/07 20:57:41 mirar Exp $");
 
 #include "config.h"
 
@@ -517,7 +517,7 @@ static int _png_write_rgb(rgb_group *w1,
 			  struct neo_colortable *ct,
 			  struct pike_string *trns)
 {
-   /* returns 1 if interlace, 0 if not */
+   /* returns 1 if alpha channel, 0 if not */
    /* w1, wa1 will be freed upon error */
 
    static rgb_group white={255,255,255};
@@ -936,6 +936,8 @@ static int _png_write_rgb(rgb_group *w1,
 	 error("Image.PNG->_decode: Unknown color type %d (bit depth %d).\n",
 	       type,bpp);
    }
+   error("Image.PNG->_decode: illegal state\n");
+   return 0; /* stupid */
 }
 
 struct png_interlace
