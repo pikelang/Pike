@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.24 2003/12/08 14:26:33 nilsson Exp $
+// $Id: RDF.pike,v 1.25 2003/12/08 15:13:15 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -607,12 +607,20 @@ static int dirty_namespaces = 1;
 static mapping(string:string) namespaces = ([]); // url-prefix:name
 
 static Node add_xml_children(Node p, string rdfns) {
-  string subj_uri = p->get_ns_attributes(rdf_ns)->about;
+  mapping rdf_m = p->get_ns_attributes(rdf_ns);
+  if(rdf_m->about && rdf_m->ID)
+    error("Both rdf:about and rdf:ID defined on the same element.\n");
+
+  string subj_uri = rdf_m->about;
   Resource subj;
-  if(!subj_uri)
+  if(rdf_m->about)
+    subj = make_resource(rdf_m->about);
+  else if(rdf_m->ID) {
+    subj = make_resource(rdf_m->ID);
+    add_statement(subj, rdf_type,
+		  make_resource(p->get_ns()+p->get_any_name()) );
+  } else
     subj = Resource();
-  else
-    subj = make_resource(subj_uri);
 
   if(rdfns && p->get_ns()!=rdfns) {
     add_statement( subj, rdf_type,
@@ -624,7 +632,7 @@ static Node add_xml_children(Node p, string rdfns) {
   // Handle attribute abbreviation (2.2.2. Basic Abbreviated Syntax)
   mapping m = p->get_ns_attributes();
   foreach(m; string ns; mapping m) {
-    if(ns==rdfns) continue;
+    if(ns==rdf_ns) continue;
     foreach(m; string pred; string obj)
       add_statement( subj, make_resource(ns+pred), LiteralResource(obj) );
   }
