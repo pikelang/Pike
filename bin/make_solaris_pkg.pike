@@ -1,3 +1,5 @@
+#! /usr/bin/env pike
+
 /*
 # this script prepares a pike package from a previously created
 # pike installation.
