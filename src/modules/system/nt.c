@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.13 1999/05/13 01:22:37 marcus Exp $
+ * $Id: nt.c,v 1.14 1999/05/13 17:52:42 marcus Exp $
  *
  * NT system calls for Pike
  *
@@ -308,69 +308,117 @@ static void encode_user_info(BYTE *u, int level)
   }
 }
 
-
-static void encode_group_info(BYTE *u)
+static void low_encode_group_info_0(GROUP_INFO_0 *tmp)
 {
-  GROUP_INFO_2 *tmp;
-  if(!u)
-  {
-    push_int(0);
-    return;
-  }
+  SAFE_PUSH_WSTR(tmp->grpi0_name);
+}
 
-  tmp=(GROUP_INFO_2 *)u;
+static void low_encode_group_info_1(GROUP_INFO_1 *tmp)
+{
+  low_encode_group_info_0((GROUP_INFO_0 *)tmp);
+  SAFE_PUSH_WSTR(tmp->grpi1_comment);
+  /* 2 entries */
+}
 
-  SAFE_PUSH_WSTR(tmp->grpi2_name);
-  SAFE_PUSH_WSTR(tmp->grpi2_comment);
+static void low_encode_group_info_2(GROUP_INFO_2 *tmp)
+{
+  low_encode_group_info_1((GROUP_INFO_1 *)tmp);
   push_int(tmp->grpi2_group_id);
   push_int(tmp->grpi2_attributes);
-  f_aggregate(4);
+  /* 4 entries */
 }
 
-static void encode_localgroup_info(BYTE *u)
+static void encode_group_info(BYTE *u, int level)
 {
-  LOCALGROUP_INFO_1 *tmp;
   if(!u)
   {
     push_int(0);
     return;
   }
+  switch(level)
+  {
+    case 0: low_encode_group_info_0 ((GROUP_INFO_0 *) u);break;
+    case 1: low_encode_group_info_1 ((GROUP_INFO_1 *) u);f_aggregate(2); break;
+    case 2: low_encode_group_info_2 ((GROUP_INFO_2 *) u);f_aggregate(4);break;
+    default:
+      error("Unsupported GROUPINFO level.\n");
+  }
+}
 
-  tmp=(LOCALGROUP_INFO_1 *)u;
+static void low_encode_localgroup_info_0(LOCALGROUP_INFO_0 *tmp)
+{
+  SAFE_PUSH_WSTR(tmp->lgrpi0_name);
+}
 
-  SAFE_PUSH_WSTR(tmp->lgrpi1_name);
+static void low_encode_localgroup_info_1(LOCALGROUP_INFO_1 *tmp)
+{
+  low_encode_localgroup_info_0((LOCALGROUP_INFO_0 *)tmp);
   SAFE_PUSH_WSTR(tmp->lgrpi1_comment);
-  f_aggregate(2);
+  /* 2 entries */
 }
 
-static void encode_group_name(BYTE *u)
+static void encode_localgroup_info(BYTE *u, int level)
 {
-  GROUP_USERS_INFO_0 *tmp;
   if(!u)
   {
     push_int(0);
     return;
   }
+  switch(level)
+  {
+    case 0: low_encode_localgroup_info_0 ((LOCALGROUP_INFO_0 *) u);break;
+    case 1: low_encode_localgroup_info_1 ((LOCALGROUP_INFO_1 *) u);f_aggregate(2); break;
+    default:
+      error("Unsupported LOCALGROUPINFO level.\n");
+  }
+}
 
-  tmp=(GROUP_USERS_INFO_0 *)u;
-
+static void low_encode_group_users_info_0(GROUP_USERS_INFO_0 *tmp)
+{
   SAFE_PUSH_WSTR(tmp->grui0_name);
+}
 
+static void low_encode_group_users_info_1(GROUP_USERS_INFO_1 *tmp)
+{
+  low_encode_group_users_info_0((GROUP_USERS_INFO_0 *)tmp);
+  push_int(tmp->grui1_attributes);
+  /* 2 entries */
+}
+
+static void encode_group_users_info(BYTE *u, int level)
+{
+  if(!u)
+  {
+    push_int(0);
+    return;
+  }
+  switch(level)
+  {
+    case 0: low_encode_group_users_info_0 ((GROUP_USERS_INFO_0 *) u);break;
+    case 1: low_encode_group_users_info_1 ((GROUP_USERS_INFO_1 *) u);f_aggregate(2); break;
+    default:
+      error("Unsupported GROUPUSERSINFO level.\n");
+  }
 }
   
-static void encode_localgroup_name(BYTE *u)
+static void low_encode_localgroup_users_info_0(LOCALGROUP_USERS_INFO_0 *tmp)
 {
-  LOCALGROUP_USERS_INFO_0 *tmp;
+  SAFE_PUSH_WSTR(tmp->lgrui0_name);
+}
+
+static void encode_localgroup_users_info(BYTE *u, int level)
+{
   if(!u)
   {
     push_int(0);
     return;
   }
-
-  tmp=(LOCALGROUP_USERS_INFO_0 *)u;
-
-  SAFE_PUSH_WSTR(tmp->lgrui0_name);
-
+  switch(level)
+  {
+    case 0: low_encode_localgroup_users_info_0 ((LOCALGROUP_USERS_INFO_0 *) u);break;
+    default:
+      error("Unsupported LOCALGROUPUSERSINFO level.\n");
+  }
 }
 
 static int sizeof_user_info(int level)
@@ -384,6 +432,46 @@ static int sizeof_user_info(int level)
     case 10:return sizeof(USER_INFO_10);
     case 11:return sizeof(USER_INFO_11);
     case 20:return sizeof(USER_INFO_20);
+    default: return -1;
+  }
+}
+
+static int sizeof_group_info(int level)
+{
+  switch(level)
+  {
+    case 0: return sizeof(GROUP_INFO_0);
+    case 1: return sizeof(GROUP_INFO_1);
+    case 2: return sizeof(GROUP_INFO_2);
+    default: return -1;
+  }
+}
+
+static int sizeof_localgroup_info(int level)
+{
+  switch(level)
+  {
+    case 0: return sizeof(LOCALGROUP_INFO_0);
+    case 1: return sizeof(LOCALGROUP_INFO_1);
+    default: return -1;
+  }
+}
+
+static int sizeof_group_users_info(int level)
+{
+  switch(level)
+  {
+    case 0: return sizeof(GROUP_USERS_INFO_0);
+    case 1: return sizeof(GROUP_USERS_INFO_1);
+    default: return -1;
+  }
+}
+
+static int sizeof_localgroup_users_info(int level)
+{
+  switch(level)
+  {
+    case 0: return sizeof(LOCALGROUP_USERS_INFO_0);
     default: return -1;
   }
 }
@@ -566,14 +654,27 @@ void f_NetUserEnum(INT32 args)
 void f_NetGroupEnum(INT32 args)
 {
   char *to_free1, *tmp_server=NULL;
-  DWORD level=2;
+  DWORD level=0;
   LPWSTR server=NULL;
   INT32 pos=0,e;
   struct array *a=0;
   DWORD resume=0;
 
+  check_all_args("NetGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
+
   if(args && sp[-args].type==T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+
+  if(args>1 && sp[1-args].type==T_INT) {
+    level = sp[1-args].u.integer;
+    switch(level)
+    {
+      case 0: case 1: case 2:
+	break;
+      default:
+	error("Unsupported information level in NetGroupEnum.\n");
+    }
+  }
 
   pop_n_elems(args);
 
@@ -612,12 +713,12 @@ void f_NetGroupEnum(INT32 args)
 	ptr=buf;
 	for(e=0;e<read;e++)
 	{
-	  encode_group_info(ptr);
+	  encode_group_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
 	  pos++;
 	  if(pos>=a->size) break;
-	  ptr+=sizeof(GROUP_INFO_2);
+	  ptr+=sizeof_group_info(level);
 	}
 	netapibufferfree(buf);
 	if(ret==ERROR_MORE_DATA) continue;
@@ -630,14 +731,27 @@ void f_NetGroupEnum(INT32 args)
 void f_NetLocalGroupEnum(INT32 args)
 {
   char *to_free1, *tmp_server=NULL;
-  DWORD level=1;
+  DWORD level=0;
   LPWSTR server=NULL;
   INT32 pos=0,e;
   struct array *a=0;
   DWORD resume=0;
 
+  check_all_args("NetLocalGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
+
   if(args && sp[-args].type==T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+
+  if(args>1 && sp[1-args].type==T_INT) {
+    level = sp[1-args].u.integer;
+    switch(level)
+    {
+      case 0: case 1:
+	break;
+      default:
+	error("Unsupported information level in NetLocalGroupEnum.\n");
+    }
+  }
 
   pop_n_elems(args);
 
@@ -676,12 +790,12 @@ void f_NetLocalGroupEnum(INT32 args)
 	ptr=buf;
 	for(e=0;e<read;e++)
 	{
-	  encode_localgroup_info(ptr);
+	  encode_localgroup_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
 	  pos++;
 	  if(pos>=a->size) break;
-	  ptr+=sizeof(LOCALGROUP_INFO_1);
+	  ptr+=sizeof_localgroup_info(level);
 	}
 	netapibufferfree(buf);
 	if(ret==ERROR_MORE_DATA) continue;
@@ -703,11 +817,24 @@ void f_NetUserGetGroups(INT32 args)
   NET_API_STATUS ret;
   LPBYTE buf=0,ptr;
 
+  check_all_args("NetUserGetGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, 0);
+
   if(args>0 && sp[-args].type==T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
   if(args>1 && sp[-args+1].type==T_STRING)
     user=(LPWSTR)require_wstring1(sp[-args+1].u.string,&to_free2);
+
+  if(args>2 && sp[2-args].type==T_INT) {
+    level = sp[2-args].u.integer;
+    switch(level)
+    {
+      case 0: case 1:
+	break;
+      default:
+	error("Unsupported information level in NetUserGetGroups.\n");
+    }
+  }
 
   pop_n_elems(args);
 
@@ -742,12 +869,12 @@ void f_NetUserGetGroups(INT32 args)
     ptr=buf;
     for(e=0;e<read;e++)
     {
-      encode_group_name(ptr);
+      encode_group_users_info(ptr,level);
       a->item[pos]=sp[-1];
       sp--;
       pos++;
       if(pos>=a->size) break;
-      ptr+=sizeof(GROUP_USERS_INFO_0);
+      ptr+=sizeof_group_users_info(level);
     }
     netapibufferfree(buf);
   }
@@ -759,6 +886,7 @@ void f_NetUserGetLocalGroups(INT32 args)
 {
   char *to_free1, *to_free2, *tmp_server=NULL, *tmp_user;
   DWORD level=0;
+  DWORD flags=0;
   LPWSTR server=NULL;
   LPWSTR user=NULL;
   INT32 pos=0,e;
@@ -767,11 +895,27 @@ void f_NetUserGetLocalGroups(INT32 args)
   NET_API_STATUS ret;
   LPBYTE buf=0,ptr;
 
+  check_all_args("NetUserGetLocalGroups",args,BIT_STRING|BIT_INT, BIT_STRING,BIT_INT|BIT_VOID, BIT_INT|BIT_VOID, 0);
+
   if(args>0 && sp[-args].type==T_STRING)
     server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
 
   if(args>1 && sp[-args+1].type==T_STRING)
     user=(LPWSTR)require_wstring1(sp[-args+1].u.string,&to_free2);
+
+  if(args>2 && sp[2-args].type==T_INT) {
+    level = sp[2-args].u.integer;
+    switch(level)
+    {
+      case 0:
+	break;
+      default:
+	error("Unsupported information level in NetUserGetLocalGroups.\n");
+    }
+  }
+
+  if(args>3 && sp[3-args].type==T_INT)
+    flags = sp[3-args].u.integer;
 
   pop_n_elems(args);
 
@@ -780,7 +924,7 @@ void f_NetUserGetLocalGroups(INT32 args)
   ret=netusergetlocalgroups(server,
 			    user,
 			    level,
-			    0,
+			    flags,
 			    &buf,
 			    0x100000,
 			    &read,
@@ -807,12 +951,12 @@ void f_NetUserGetLocalGroups(INT32 args)
     ptr=buf;
     for(e=0;e<read;e++)
     {
-      encode_localgroup_name(ptr);
+      encode_localgroup_users_info(ptr,level);
       a->item[pos]=sp[-1];
       sp--;
       pos++;
       if(pos>=a->size) break;
-      ptr+=sizeof(LOCALGROUP_USERS_INFO_0);
+      ptr+=sizeof_localgroup_users_info(level);
     }
     netapibufferfree(buf);
   }
@@ -917,7 +1061,11 @@ void init_nt_system_calls(void)
       {
 	netgroupenum=(netgroupenumtype)proc;
 	
-  	add_function("NetGroupEnum",f_NetGroupEnum,"function(string|int|void,int|void:array(array(string|int)))",0); 
+  	add_function("NetGroupEnum",f_NetGroupEnum,"function(string|int|void,int|void:array(string|array(string|int)))",0); 
+
+	SIMPCONST(SE_GROUP_ENABLED_BY_DEFAULT);
+	SIMPCONST(SE_GROUP_MANDATORY);
+	SIMPCONST(SE_GROUP_OWNER);
       }
 
       if(proc=GetProcAddress(netapilib, "NetLocalGroupEnum"))
@@ -931,14 +1079,16 @@ void init_nt_system_calls(void)
       {
 	netusergetgroups=(netusergetgroupstype)proc;
 	
- 	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string,int|void:array(string))",0); 
+ 	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
       }
 
       if(proc=GetProcAddress(netapilib, "NetUserGetLocalGroups"))
       {
 	netusergetlocalgroups=(netusergetlocalgroupstype)proc;
 	
- 	add_function("NetUserGetLocalGroups",f_NetUserGetLocalGroups,"function(string|int,string,int|void:array(string))",0); 
+ 	add_function("NetUserGetLocalGroups",f_NetUserGetLocalGroups,"function(string|int,string,int|void,int|void:array(string))",0); 
+
+	SIMPCONST(LG_INCLUDE_INDIRECT);
       }
     }
   }
