@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.23 2002/12/07 14:11:40 grubba Exp $
+|| $Id: _xpm.c,v 1.24 2003/09/05 16:21:22 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.23 2002/12/07 14:11:40 grubba Exp $");
+RCSID("$Id: _xpm.c,v 1.24 2003/09/05 16:21:22 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -37,7 +37,6 @@ RCSID("$Id: _xpm.c,v 1.23 2002/12/07 14:11:40 grubba Exp $");
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
-#include "security.h"
 
 #include "image.h"
 #include "colortable.h"
