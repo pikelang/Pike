@@ -372,7 +372,7 @@ object get_row_data(int row)
 
 int find_row_from_data(object data)
 //! Find a row in the list that has the given user data.  If no node is
-//! found, 0 is returned.
+//! found, -1 is returned.
 {
   int row;
   struct object *o;
