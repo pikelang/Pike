@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.41 1997/08/30 18:35:22 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.42 1997/09/06 13:50:08 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1690,6 +1690,13 @@ void f_replace_master(INT32 args)
   pop_n_elems(args);
 }
 
+void f_master(INT32 args)
+{
+  pop_n_elems(args);
+  master_object->refs++;
+  push_object(master_object);
+}
+
 #ifdef HAVE_GETHRVTIME
 #include <sys/time.h>
 
@@ -1760,6 +1767,7 @@ void init_builtin_efuns(void)
 
   add_efun("_refs",f__refs,"function(function|string|array|mapping|multiset|object|program:int)",OPT_EXTERNAL_DEPEND);
   add_efun("replace_master",f_replace_master,"function(object:void)",OPT_SIDE_EFFECT);
+  add_efun("master",f_master,"function(:object)",OPT_TRY_OPTIMIZE);
   add_efun("add_constant",f_add_constant,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
   add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);
   add_efun("aggregate_multiset",f_aggregate_multiset,"function(mixed ...:multiset)",OPT_TRY_OPTIMIZE);
