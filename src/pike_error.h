@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.34 2004/08/31 20:25:40 grubba Exp $
+|| $Id: pike_error.h,v 1.35 2004/10/28 22:08:18 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -310,8 +310,8 @@ PMOD_EXPORT extern const char msg_bad_arg[];
    bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
 		 msg_bad_arg, ARG, FUNC, EXPECT)
 
-/* This one should be used when there's some other problem with the
- * argument than a bogus type. PROBLEM is a full sentence without a
+/* This one should be used when there's some problem with the argument
+ * other than a bogus type. PROBLEM is a full sentence without a
  * trailing newline. */
 PMOD_EXPORT extern const char msg_bad_arg_2[];
 #define SIMPLE_ARG_ERROR(FUNC, ARG, PROBLEM) \
