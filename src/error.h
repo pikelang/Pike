@@ -23,10 +23,12 @@ typedef struct ONERROR
   void *arg;
 } ONERROR;
 
+typedef jmp_buf my_jmp_buf; /* Maybe I'll get less warnings like this */
+
 typedef struct JMP_BUF
 {
   struct JMP_BUF *previous;
-  jmp_buf recovery;
+  my_jmp_buf recovery;
   struct frame *fp;
   struct svalue *sp;
   struct svalue **mark_sp;
@@ -51,7 +53,7 @@ extern char *automatic_fatal;
 
 #define UNSET_ONERROR(X) onerror_stack=X.previous
 
-jmp_buf *init_recovery(JMP_BUF *r);
+my_jmp_buf *init_recovery(JMP_BUF *r);
 int fix_recovery(int i, JMP_BUF *r);
 void throw() ATTRIBUTE((noreturn));
 void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn));
