@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.235 2002/05/31 22:31:40 nilsson Exp $");
+RCSID("$Id: file.c,v 1.236 2002/06/10 15:27:12 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2671,10 +2671,14 @@ static void file_connect_unix( INT32 args )
 
   if( args != 1 )
     Pike_error("Wrong number of arguments\n");
-  if( (Pike_sp[-1].type != PIKE_T_STRING) ||
-      (Pike_sp[-1].u.string->size_shift) ||
-      (Pike_sp[-1].u.string->len >= PATH_MAX) )
+  if( (Pike_sp[-args].type != PIKE_T_STRING) ||
+      (Pike_sp[-args].u.string->size_shift) ||
+      (Pike_sp[-args].u.string->len >= PATH_MAX) )
     Pike_error("Illegal argument. Expected string(8bit)\n");
+
+  name.sun_family=AF_UNIX;
+  strcpy( name.sun_path, Pike_sp[-args].u.string->str );
+  pop_n_elems(args);
 
   if(FD >= 0)
     file_close(0);
@@ -2683,21 +2687,22 @@ static void file_connect_unix( INT32 args )
 
   if( FD < 0 )
   {
-    pop_n_elems(1);
+    ERRNO = errno;
     push_int(0);
     return;
   }
 
   init_fd(FD, FILE_READ | FILE_WRITE
 	  | fd_query_properties(FD, SOCKET_CAPABILITIES));
-
-  name.sun_family=AF_UNIX;
-  strcpy( name.sun_path, Pike_sp[-1].u.string->str );
-  pop_n_elems(1);
+  my_set_close_on_exec(FD, 1);
 
   tmp=connect(FD,(void *)&name,sizeof(struct sockaddr_un));
-  ERRNO=errno;
-  push_int(tmp!=-1);
+  if (tmp == -1) {
+    ERRNO = errno;
+    push_int(0);
+  } else {
+    push_int(1);
+  }
 }
 #endif
 
