@@ -285,12 +285,15 @@ class GimpImage
     int last_selected_row;
     int num_paths;
     array res = ({});
-    sscanf( data, "%4c%4c%s", last_selected_row, num_paths, data );
-    while(num_paths--)
+    if( stringp( data ) )
     {
-      Path path = Path();
-      data = decode_one_path( data, path );
-      res += ({ path });
+      sscanf( data, "%4c%4c%s", last_selected_row, num_paths, data );
+      while(num_paths--)
+      {
+        Path path = Path();
+        data = decode_one_path( data, path );
+        res += ({ path });
+      }
     }
     return res;
   }
@@ -330,7 +333,7 @@ class GimpImage
          res_unit = p->data->get_int( 0 );
          break;
        case PROP_PATHS:
-         paths = decode_paths( p->data );
+         paths = decode_paths( (string)p->data );
          break;
        case PROP_USER_UNIT:
          /* NYI */
