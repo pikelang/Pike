@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.29 2001/06/15 11:05:51 wellhard Exp $
+/* $Id: sslfile.pike,v 1.30 2001/06/20 22:21:10 js Exp $
  *
  */
 
@@ -11,7 +11,7 @@ inherit "connection" : connection;
 #else /*! SSL3_DEBUG */
 #define SSL3_DEBUG_MSG
 #endif /* SSL3_DEBUG */
-static object(Stdio.File) socket;
+object(Stdio.File) socket;
 
 static object context;
 
