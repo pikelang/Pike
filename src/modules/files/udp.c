@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.16 2000/10/12 20:22:57 mirar Exp $
+ * $Id: udp.c,v 1.17 2000/10/24 12:25:27 leif Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.16 2000/10/12 20:22:57 mirar Exp $");
+RCSID("$Id: udp.c,v 1.17 2000/10/24 12:25:27 leif Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -331,6 +331,8 @@ void udp_read(INT32 args)
   }
   pop_n_elems(args);
   fd = FD;
+  if (FD < 0)
+    error("UDP: not open\n");
   do {
     THREADS_ALLOW();
     res = fd_recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
