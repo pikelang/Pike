@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.147 2004/09/27 21:55:31 nilsson Exp $
+# $Id: Makefile,v 1.148 2004/10/16 22:03:11 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -176,6 +176,9 @@ documentation:
 	@$(DO_MAKE) "METATARGET=documentation" _make_in_builddir
 
 doc: documentation
+
+doxygen:
+	doxygen refdoc/doxygen.cfg
 
 legal: bin/pike
 	bin/pike -e 'Stdio.write_file("COPYRIGHT", \
