@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.6 1998/01/06 21:39:30 mirar Exp $ */
+/* $Id: pnm.c,v 1.7 1998/01/08 20:51:39 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.6 1998/01/06 21:39:30 mirar Exp $
+**!	$Id: pnm.c,v 1.7 1998/01/08 20:51:39 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pnm.c,v 1.6 1998/01/06 21:39:30 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.7 1998/01/08 20:51:39 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -278,7 +278,7 @@ void img_pnm_encode_P6(INT32 args)
       unsigned char *c;
       int n=img->xsize*img->ysize;
       rgb_group *s=img->img;
-      c=(unsigned char*)(b=begin_shared_string(n*3));
+      c=(unsigned char*)((b=begin_shared_string(n*3))->str);
       while (n--)
       {
 	 *(c++)=s->r;

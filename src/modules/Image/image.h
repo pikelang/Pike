@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.16 1998/01/06 21:39:28 mirar Exp $
+**!	$Id: image.h,v 1.17 1998/01/08 20:51:38 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -22,7 +22,7 @@
 typedef struct 
 {
    COLORTYPE r,g,b;
-   COLORTYPE __padding_dont_use__;
+/*   COLORTYPE __padding_dont_use__;*/
 } rgb_group;
 
 typedef struct 
