@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.37 1999/02/13 16:43:45 grubba Exp $
+ * $Id: requests.pmod,v 1.38 1999/02/13 16:47:33 grubba Exp $
  */
 
 import .types;
@@ -183,7 +183,7 @@ class logout
 class create_mailbox
 {
   inherit request;
-  constant arg_info = ({ "string" });
+  constant arg_info = ({ ({ "string" }) });
 
   mapping easy_process(string mailbox_name)
   {
