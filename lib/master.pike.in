@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.123 2000/07/12 01:19:18 hubbe Exp $
+ * $Id: master.pike.in,v 1.124 2000/08/02 11:06:36 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -23,6 +23,10 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 #define OUT_OF_DATE_WARNING 1
 #endif /* OUT_OF_DATE_WARNING */
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
+
+#ifndef PIKE_WARNINGS
+#define PIKE_WARNINGS 0
+#endif /* PIKE_WARNINGS */
 
 /*
  * Functions begin here.
@@ -96,7 +100,7 @@ object low_cast_to_object(string oname, string current_file);
 array(string) pike_include_path=({});
 array(string) pike_module_path=({});
 array(string) pike_program_path=({});
-int want_warnings = 0;
+int want_warnings = PIKE_WARNINGS;
 
 #ifdef PIKE_AUTORELOAD
 
@@ -214,9 +218,34 @@ mapping (string:string) environment=([]);
 
 string|mapping(string:string) getenv(string|void s)
 {
-  if(!s) return environment;
+  if(!s) return environment + ([]);
   return environment[s];
 }
+
+#if 0
+variant mapping(string:string) getenv()
+{
+  return environment + ([]);
+}
+
+variant string getenv(string s)
+{
+  return environment[s];
+}
+
+function(:mapping(string:string))|function(string:string) getenv(s)
+{
+  if(!s) return environment + ([]);
+  return environment[s];
+}
+
+mapping(string:string) getenv() |
+string getenv(string s)
+{
+  if(!s) return environment + ([]);
+  return environment[s];
+}
+#endif /* 0 */
 
 void putenv(string var, string val)
 {
@@ -1213,11 +1242,16 @@ string trim_file_name(string s)
 {
   if(getenv("LONG_PIKE_ERRORS")) return s;
   if(getenv("SHORT_PIKE_ERRORS")) return BASENAME(s);
-  string cwd=getcwd();
-  if (sizeof(cwd) && (cwd[-1] != '/')) {
-    cwd += "/";
-  }
-  if(s[..sizeof(cwd)-1]==cwd) return s[sizeof(cwd)..];
+  /* getcwd() can fail, but since this is called from handle_error(),
+   * we don't want to fail, so we don't care about that.
+   */
+  catch {
+    string cwd=getcwd();
+    if (sizeof(cwd) && (cwd[-1] != '/')) {
+      cwd += "/";
+    }
+    if(s[..sizeof(cwd)-1]==cwd) return s[sizeof(cwd)..];
+  };
   return s;
 }
 
@@ -1678,7 +1712,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  }
 	}
       }) {
-	row += sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
+	row = sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
       }
       ret += row + "\n";
     }
