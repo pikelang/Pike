@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.60 1999/03/03 17:37:03 grubba Exp $
+ * $Id: requests.pmod,v 1.61 1999/03/03 17:46:04 grubba Exp $
  */
 
 import .types;
@@ -602,13 +602,17 @@ class fetch
       }
       /* Fall through */
     case "body.peek":
-      if (!atom->options)
+      if (!atom->options) {
+	werror("No options\n");
 	return 0;
+      }
 
       if (sizeof(atom->options)
 	  && ( (atom->options[0]->type != atom)
-	       || (atom->options[0]->options)))	// FIXME: ?????
+	       || (atom->options[0]->options)))	{	// FIXME: ?????
+	werror("Insane options?\n");
 	return 0;
+      }
 	
       array path = atom->options[0]->atom / ".";
 
@@ -622,10 +626,6 @@ class fetch
 	if (n<0)
 	  break;
 	part_number += ({ n });
-      }
-
-      if (sizeof(part_number) < sizeof(path)) {
-	break;
       }
 
       res->raw_options = atom->options;
