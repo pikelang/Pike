@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: result.c,v 1.31 2004/03/05 23:30:07 nilsson Exp $
+|| $Id: result.c,v 1.32 2004/09/23 14:55:03 grubba Exp $
 */
 
 /*
@@ -90,7 +90,7 @@
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.31 2004/03/05 23:30:07 nilsson Exp $");
+RCSID("$Id: result.c,v 1.32 2004/09/23 14:55:03 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -186,6 +186,21 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
       break;
     case FIELD_TYPE_STRING:
       push_text("string");
+      break;
+    case FIELD_TYPE_DATE:
+      push_text("date");
+      break;
+    case FIELD_TYPE_DATETIME:
+      push_text("datetime");
+      break;
+    case FIELD_TYPE_TIMESTAMP:
+      push_text("timestamp");
+      break;
+    case FIELD_TYPE_YEAR:
+      push_text("year");
+      break;
+    case FIELD_TYPE_NEWDATE:
+      push_text("newdate");
       break;
     default:
       push_text("unknown");
