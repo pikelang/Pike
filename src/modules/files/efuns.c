@@ -162,6 +162,12 @@ void f_mkdir(INT32 args)
   push_int(i);
 }
 
+#undef HAVE_REDDIR_R
+#if defined(HAVE_SOLARIS_READDIR_R) || defined(HAVE_SOLARIS_HPUX_R) || \
+    defined(HAVE_POSIX_R)
+#define HAVE_READDIR_R
+#endif
+
 void f_get_dir(INT32 args)
 {
   struct svalue *save_sp=sp;
@@ -172,7 +178,7 @@ void f_get_dir(INT32 args)
 
   get_all_args("get_dir",args,"%s",&path);
 
-#if defined(_REENTRANT) && ( defined(HAVE_SOLARIS_READDIR_R) || defined(HAVE_HPUX_READDIR_R) || defined(HAVE_POSIX_READDIR_R))
+#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
   THREADS_ALLOW();
   dir=opendir(path);
   THREADS_DISALLOW();
@@ -205,6 +211,7 @@ void f_get_dir(INT32 args)
 	/* Solaris readdir_r returns the second arg on success,
 	 * and returns NULL on error or at end of dir.
 	 */
+	errno=0;
 	do {
 	  d=readdir_r(dir, tmp);
 	} while ((!d) && ((errno == EAGAIN)||(errno == EINTR)));
@@ -220,6 +227,7 @@ void f_get_dir(INT32 args)
 	 *  0	- Successfull operation.
 	 * -1	- End of directory or encountered an error (sets errno).
 	 */
+	errno=0;
 	if (readdir_r(dir, tmp)) {
 	  d = NULL;
 	  err = errno;
