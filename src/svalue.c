@@ -646,17 +646,17 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 
     case T_STRING:
       {
-        char *a;
+	int i;
         my_putchar('"');
-        for(a=s->u.string->str;*a;a++)
+	for(i=0; i < s->u.string->len; i++)
         {
-          switch(*a)
+          switch(s->u.string->str[i])
           {
             case '"':
             case '\\':
               my_putchar('\\');
             default:
-              my_putchar(*a);
+              my_putchar(s->u.string->str[i]);
           } 
         }
         my_putchar('"');
