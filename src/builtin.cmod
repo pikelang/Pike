@@ -20,6 +20,7 @@
 #include "cyclic.h"
 #include "bignum.h"
 #include "main.h"
+#include "operators.h"
 
 
 PIKEFUN array column(array tmp, mixed val)
@@ -143,6 +144,35 @@ PIKEFUN int program_inherits(program p, program p2)
   optflags OPT_TRY_OPTIMIZE;
 {
   RETURN !!low_get_storage(p2,p);
+}
+
+PIKEFUN string program_defined(program p)
+  errname Program.defined;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  if(p && p->num_linenumbers)
+  {
+    char *tmp;
+    INT32 line;
+    if((tmp=get_line(p->program, p, &line)))
+    {
+      struct pike_string *tmp2;
+      tmp2=make_shared_string(tmp);
+      pop_n_elems(args);
+
+      push_string(tmp2);
+      if(line > 1)
+      {
+	push_constant_text(":");
+	push_int(line);
+	f_add(3);
+      }
+      return;
+    }
+  }
+
+  pop_n_elems(args);
+  push_int(0);
 }
 
 PIKEFUN int string_width(string s)
