@@ -1,3 +1,5 @@
+#if constant(thread_create)
+
 constant Mutex=__builtin.mutex;
 constant Condition=__builtin.condition;
 
@@ -372,4 +374,4 @@ class Farm
   }
 }
 
-
+#endif /* constant(thread_create) */
