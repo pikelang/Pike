@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.342 2001/02/19 23:49:57 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.343 2001/02/20 00:08:19 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2378,10 +2378,13 @@ PMOD_EXPORT void f_indices(INT32 args)
 
 /* this should probably be moved to pike_constants.c or something */
 #define FIX_OVERLOADED_TYPE(n, lf, X) fix_overloaded_type(n,lf,X,CONSTANT_STRLEN(X))
+/* FIXME: This function messes around with the implementation of pike_type,
+ * and should probably be in pike_types.h instead.
+ */
 static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int deftypelen)
 {
   node **first_arg;
-  struct pike_string *t,*t2;
+  struct pike_type *t, *t2;
   first_arg=my_get_arg(&_CDR(n), 0);
   if(!first_arg) return 0;
   t=first_arg[0]->type;
@@ -2511,7 +2514,7 @@ static node *fix_aggregate_mapping_type(node *n)
 #endif /* PIKE_DEBUG */
       do {
 	if (types[argno]) {
-	  struct pike_string *t = or_pike_types(types[argno], arg->type, 0);
+	  struct pike_type *t = or_pike_types(types[argno], arg->type, 0);
 	  free_type(types[argno]);
 	  types[argno] = t;
 #ifdef PIKE_DEBUG
@@ -2756,10 +2759,10 @@ node *fix_object_program_type(node *n)
    * object_program(object(is|implements foo))
    */
   node *nn;
-  struct pike_string *new_type = NULL;
+  struct pike_type *new_type = NULL;
 
   if (!n->type) {
-    copy_shared_string(n->type, program_type_string);
+    copy_type(n->type, program_type_string);
   }
   if (!(nn = CDR(n))) return NULL;
   if ((nn->token == F_ARG_LIST) && (!(nn = CAR(nn)))) return NULL;
@@ -2801,7 +2804,7 @@ PMOD_EXPORT void f_reverse(INT32 args)
     INT32 e;
     struct pike_string *s;
     s=begin_wide_shared_string(Pike_sp[-args].u.string->len,
-			  Pike_sp[-args].u.string->size_shift);
+			       Pike_sp[-args].u.string->size_shift);
     switch(Pike_sp[-args].u.string->size_shift)
     {
       case 0:
@@ -5651,15 +5654,14 @@ PMOD_EXPORT void f__leak(INT32 args)
  */
 PMOD_EXPORT void f__typeof(INT32 args)
 {
-  struct pike_string *s;
+  struct pike_string *t;
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("_typeof", 1);
 
-  s = get_type_of_svalue(Pike_sp-args);
+  t = get_type_of_svalue(Pike_sp-args);
 
   pop_n_elems(args);
-  push_string(s);
-  Pike_sp[-1].type = T_TYPE;
+  push_type_value(t);
 }
 
 /*! @decl void replace_master(object o)
