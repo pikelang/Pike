@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#This can be 'sprsh' or 'wine'
+#This can be 'sprsh', 'wine' or 'cygwin'
 REMOTE_METHOD=sprsh
 
 # Choose 'rntcc' for Watcom or 'rntcl' for Microsoft VC++
@@ -57,7 +57,7 @@ lib=$watcom\\lib386;$local\\lib
 esac
 
 
-# Don't edit
+# Don't edit anything below this point..
 
 case /$0 in
   */init_nt)
@@ -72,7 +72,26 @@ case /$0 in
   ;;
 esac
 
-NT_TOOL_PATH=$base/tools
+if [ "x$OSTYPE" = xcygwin32 ]; then
+  REMOTE_METHOD=cygwin
+  driveletter=`echo $base | sed -e 's@^//\(.\)/.*@\1@`
+  if [ "x$driveletter" != "x" ]; then
+    NTDRIVE=${driveletter}:
+    NTMOUNT="//$driveletter"
+  fi
+  mkdir $base/cygtools 2>/dev/null || :
+  (
+    cd $base/tools
+    cp rntcc rntcl ar nm ranlib uname bash-fixup sprsh lib lib.pike $base/cygtools || :
+  )
+  SHELL=bash
+  
+  NT_TOOL_PATH=$base/cygtools
+else
+  NT_TOOL_PATH=$base/tools
+fi
+
+
 
 export NT_TOOL_PATH
 
@@ -88,6 +107,7 @@ case :$PATH: in
 esac
 
 NTTOOLS=$NT_TOOL_PATH/lib
+
 
 if [ "x$NTMOUNT" = x ]; then
   MNTREPLACE=""

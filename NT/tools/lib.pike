@@ -2,6 +2,13 @@
 #define strerror(X) X
 #endif
 
+#ifdef __NT__
+void exece(string cmd, array(string) args)
+{
+  exit(Process.create_process( ({ cmd }) + args )->wait());
+}
+#endif
+
 string fixpath(string s)
 {
   string mnt=getenv("NTMOUNT");
@@ -14,6 +21,12 @@ string fixabspath(string s)
 {
   return replace(s,"/","\\");
 }
+
+string opt_path(string p1, string p2)
+{
+  return  ( ( ((p1||"") + ";" + (p2||"")) / ";" ) - ({""}) ) * ";";
+}
+
 
 int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 {
@@ -39,12 +52,85 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	object o=f->pipe(Stdio.PROP_BIDIRECTIONAL | Stdio.PROP_IPC);
 	cmd=({"wine",
 	      "-winver","win95",
-					       "-debugmsg","fixme-all",
+	      "-debugmsg","fixme-all",
 	      "-debugmsg","trace+all",
 	      "-debugmsg","+relay",
 	      cmd*" "});
 //	werror("WINE %O\n",cmd);
-	object proc=Process.create_process(cmd,(["stdout":o]));
+	object proc=Process.create_process(cmd, (["stdout":o]) );
+	destruct(o);
+	while(1)
+	{
+	  string s=f->read(8192,1);
+	  if(!s || !strlen(s)) break;
+	  s=replace(s,"\r\n","\n");
+	  if(!silent) write(s);
+	  ret+=s;
+	}
+	if(filter) filter(ret);
+	destruct(f);
+	return proc->wait();
+      }
+
+    case "cygwin":
+    case "CYGWIN":
+    {
+      mapping env=copy_value(getenv());
+      if(string tmp=getenv("REMOTE_VARIABLES"))
+      {
+	foreach(tmp/"\n",string var)
+	  {
+	    if(search(var,"=")!=-1 && sscanf(var,"%s=%s",string key, string val))
+	    {
+	      // Magic
+	      if(!env[key])
+	      {
+		if(env[lower_case(key)])
+		  key=lower_case(key);
+		else if(env[upper_case(key)])
+		  key=upper_case(key);
+		else
+		{
+		  foreach(indices(env), string x)
+		    {
+		      if(lower_case(x) == lower_case(key))
+		      {
+			key=x;
+			break;
+		      }
+		    }
+		}
+	      }
+	      if(val[0]==';')
+	      {
+		env[key]=opt_path(env[key], val);
+	      }
+	      else if(val[-1]==';')
+	      {
+		env[key]=opt_path(val, env[key]);
+	      }
+	      else
+	      {
+		env[key]=val;
+	      }
+//    werror("%s = %s\n",key,env[key]);
+	    }
+	  }
+      }
+
+      string mnt=getenv("NTMOUNT");
+#if 1
+      /* Experimental */
+      if(mnt && strlen(mnt)>1)
+      {
+	for(int e=1;e<sizeof(cmd);e++)
+	  cmd[e]=replace(cmd[e],mnt,getenv("NTDRIVE"));
+      }
+#endif
+      
+	object o=f->pipe(Stdio.PROP_IPC);
+	object proc=Process.create_process(cmd,
+					   (["stdout":o,"env":env]));
 	destruct(o);
 	while(1)
 	{
@@ -72,8 +158,14 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
       }
       string tmp=getcwd();
       string mnt=getenv("NTMOUNT");
-      if(mnt && strlen(mnt)) tmp=replace(tmp,mnt,"");
-      cmd=({getenv("NTDRIVE")+replace(tmp,"/","\\")})+cmd;
+      if(mnt && strlen(mnt))
+	tmp=replace(tmp,mnt,getenv("NTDRIVE"));
+      else
+	tmp=getenv("NTDRIVE")+tmp;
+      
+      tmp=replace(tmp,"/","\\");
+
+      cmd=({ tmp })+cmd;
 
 #if 1
       /* Experimental */

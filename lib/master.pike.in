@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.101 2000/02/19 21:30:28 nilsson Exp $
+ * $Id: master.pike.in,v 1.102 2000/02/29 03:15:43 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -277,6 +277,21 @@ static program low_findprog(string pname, string ext, object|void handler)
   {
     if(!zero_type (ret=programs[fname])) return ret;
   }
+
+#ifdef __NT__
+  // Ugly kluge to work better with cygwin32
+  if(getenv("OSTYPE")=="cygwin32")
+  {
+    string tmp=fname[..1];
+    if((tmp=="//" || tmp=="\\\\") && (fname[3]=='/' || fname[3]=='\\'))
+    {
+      if(!master_file_stat(fname))
+      {
+	fname=fname[2..2]+":"+fname[3..];
+      }
+    }
+  }
+#endif
 
   if( (s=master_file_stat(fname))  && s[1]>=0 )
   {

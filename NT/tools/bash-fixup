@@ -2,11 +2,18 @@ if [ -f $HOME/.bashrc ]; then
   . $HOME/.bashrc
 fi
 
-if [ $REMOTE_METHOD = sprsh ]; then
-  PS1="NT $NTHOST \\$ "
-else
-  PS1="WINE \\$ "
-fi
+case "$REMOTE_METHOD" in
+  sprsh)
+    PS1="NT $NTHOST \\$ "
+  ;;
+  wine)
+    PS1="WINE \\$ "
+  ;;
+  cygwin)
+    PS1="Pike-cygwin \\$ "
+  ;;
+esac
+
 export PS1
 
 case $TERM in
