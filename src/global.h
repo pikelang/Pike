@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.22 1998/05/12 23:51:23 hubbe Exp $
+ * $Id: global.h,v 1.23 1998/06/12 19:16:40 noring Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -15,6 +15,11 @@
 #  define _LARGEFILE_SOURCE
 #  define _LARGEFILE64_SOURCE 1
 #endif
+
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
 
 /*
  * Some structure forward declarations are needed.
