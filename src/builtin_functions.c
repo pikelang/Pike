@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.336 2001/02/05 19:25:26 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.337 2001/02/06 14:04:10 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1960,34 +1960,63 @@ PMOD_EXPORT void f_allocate(INT32 args)
  *! The elements are as follows:
  *! @array
  *!   @elem int user_time
+ *!     Time in seconds spent in user code.
  *!   @elem int system_time
+ *!     Time in seconds spent in system calls.
  *!   @elem int maxrss
+ *!     Maximum resident size.
+ *!   @elem int ixrss
+ *!     ?
  *!   @elem int idrss
+ *!     Integral resident size.
  *!   @elem int isrss
- *!   @elem int minflt
+ *!     ?
  *!   @elem int minor_page_faults
+ *!     Minor page faults (TLB misses).
  *!   @elem int major_page_faults
+ *!     Major page faults (paging required).
  *!   @elem int swaps
+ *!     Number of full swaps.
  *!   @elem int block_input_op
+ *!     Number of block input operations.
  *!   @elem int block_output_op
+ *!     Number of block output operations.
  *!   @elem int messages_sent
+ *!     Number of messsages sent.
  *!   @elem int messages_received
+ *!     Number of messsages received.
  *!   @elem int signals_received
+ *!     Number of signals received.
  *!   @elem int voluntary_context_switches
+ *!     Number of voluntary context switches.
  *!   @elem int involuntary_context_switches
+ *!     Number of preemptions.
  *!   @elem int sysc
+ *!     Number of system calls.
  *!   @elem int ioch
+ *!     ?
  *!   @elem int rtime
+ *!     ?
  *!   @elem int ttime
+ *!     ?
  *!   @elem int tftime
+ *!     ?
  *!   @elem int dftime
- *!   @elem int dftime
+ *!     ?
+ *!   @elem int kftime
+ *!     ?
  *!   @elem int ltime
+ *!     ?
  *!   @elem int slptime
+ *!     ?
  *!   @elem int wtime
+ *!     ?
  *!   @elem int stoptime
+ *!     ?
  *!   @elem int brksize
+ *!     Heap size.
  *!   @elem int stksize
+ *!     Stack size.
  *! @endarray
  *!
  *! The values will not be further explained here; read your system manual
