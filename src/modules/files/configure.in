@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.48 1998/05/22 15:10:46 grubba Exp $
+# $Id: configure.in,v 1.49 1998/05/24 19:39:02 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -17,6 +17,11 @@ AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat socketpa
 AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
 AC_CACHE_VAL(pike_cv_func_mkdir_args,[
 AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #include <sys/types.h>
 #include <unistd.h>
 #ifdef HAVE_DIRECT_H
@@ -34,6 +39,11 @@ if test x$ac_cv_func_readdir_r = xyes ; then
   AC_MSG_CHECKING(if readdir_r takes 2(Solaris & HPUX) or 3(Posix) arguments)
   AC_CACHE_VAL(pike_cv_func_posix_readdir_r, [
     AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 /* For _REENTRANT */
 #include "machine.h"
 #ifndef POSIX_SOURCE
@@ -75,6 +85,11 @@ else
   AC_MSG_CHECKING(if readdir_r returns an int(HPUX) or a pointer(Solaris))
   AC_CACHE_VAL(pike_cv_func_solaris_style_readdir_r, [
     AC_TRY_RUN([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 /* For _REENTRANT */
 #include "machine.h"
 #ifndef POSIX_SOURCE
@@ -147,6 +162,11 @@ if test x$ac_cv_func_statvfs = xyes ; then
   AC_MSG_CHECKING(if the struct statvfs exists)
   AC_CACHE_VAL(pike_cv_struct_statvfs, [
     AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -183,6 +203,11 @@ if test x$ac_cv_func_statvfs = xyes ; then
     AC_MSG_CHECKING(if the struct statvfs has the member f_basetype)
     AC_CACHE_VAL(pike_cv_struct_statvfs_f_basetype, [
       AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -223,6 +248,11 @@ if test x$ac_cv_func_statfs = xyes ; then
   AC_MSG_CHECKING(if statfs takes 2(BSD) or 4(SysV) arguments)
   AC_CACHE_VAL(pike_cv_func_sysv_statfs, [
     AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -271,6 +301,11 @@ if test x$ac_cv_func_statfs = xyes ; then
   AC_MSG_CHECKING(if the struct statfs exists)
   AC_CACHE_VAL(pike_cv_struct_statfs, [
     AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -306,6 +341,11 @@ if test x$ac_cv_func_statfs = xyes ; then
     AC_MSG_CHECKING(if the struct statfs has the member f_bavail)
     AC_CACHE_VAL(pike_cv_struct_statfs_f_bavail, [
       AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -345,6 +385,11 @@ if test x$ac_cv_func_statfs = xyes ; then
     AC_MSG_CHECKING(if the struct fs_data exists)
     AC_CACHE_VAL(pike_cv_struct_fs_data, [
       AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -407,6 +452,11 @@ AC_MSG_CHECKING(for select on AF_UNIX sockets)
 AC_CACHE_VAL(pike_cv_select_on_unix_sockets,
 [
 AC_TRY_RUN([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -550,6 +600,11 @@ AC_MSG_CHECKING(size of socket buffers)
 AC_CACHE_VAL(pike_cv_socket_buffer_max,
 [
 AC_TRY_RUN([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -600,6 +655,11 @@ AC_MSG_CHECKING(for working getcwd)
 AC_CACHE_VAL(pike_cv_func_working_getcwd,
 [
 AC_TRY_RUN([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
