@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.279 2003/05/15 16:13:33 marcus Exp $
+|| $Id: file.c,v 1.280 2003/07/02 20:08:39 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.279 2003/05/15 16:13:33 marcus Exp $");
+RCSID("$Id: file.c,v 1.280 2003/07/02 20:08:39 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1488,7 +1488,10 @@ static void file_grantpt( INT32 args )
   ref_push_object(Pike_fp->current_object);
   ref_push_object(Pike_fp->current_object);
   f_aggregate(2);
-  f_aggregate_mapping(2);
+  /* /usr/lbin/chgpt on HPUX 10.20 wants to get the pty on fd 0. */
+  push_constant_text("stdin");
+  ref_push_object(Pike_fp->current_object);
+  f_aggregate_mapping(3);
   apply_svalue(Pike_sp-3, 2);
   apply(Pike_sp[-1].u.object, "wait", 0);
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
