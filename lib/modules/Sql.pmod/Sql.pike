@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.59 2002/04/15 16:28:08 agehall%shadowbyte.com Exp $
+ * $Id: Sql.pike,v 1.60 2002/05/26 11:50:02 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -251,7 +251,7 @@ string _sprintf(int type, mapping|void flags)
   {
     case 't': return "Sql";
     case 'O':
-      if(master_sql->_sprintf)
+      if(master_sql && master_sql->_sprintf)
 	return sprintf("Sql.%O", master_sql);
       return "Sql()";
   }
