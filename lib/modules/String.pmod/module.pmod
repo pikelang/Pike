@@ -300,7 +300,7 @@ string hex2string(string hex)
  */
 string string2hex(string s)
 {
-  if(String.width(s)>8)
+  if(width(s)>8)
     error("Can't convert wide string to hex");
   
   return sprintf("%@02x", (array(int)) s);

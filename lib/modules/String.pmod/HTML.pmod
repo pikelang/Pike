@@ -1,4 +1,4 @@
-// $Id: HTML.pmod,v 1.5 2003/05/01 23:11:52 nilsson Exp $
+// $Id: HTML.pmod,v 1.6 2003/06/26 23:35:41 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -88,7 +88,7 @@ string simple_obox( array(array(string)) rows,
 		    void|string width, void|string padding,
 		    void|function(int,int,string,string:string) cell_callback )
 {
-  String.Buffer res = String.Buffer();
+  .Buffer res = .Buffer();
   if(!cell_color) cell_color = "#ffffff";
   if(cell_callback) {
     foreach(rows; int y; array(string) row) {
