@@ -477,12 +477,7 @@ class async_client
 {
   inherit client;
   inherit spider.dumUDP : udp;
-  int id;
   async_client next_client;
-
-#if constant(thread_create)
-  static private inherit Thread.Mutex : lock;
-#endif /* constant(thread_create) */
 
   class Request
   {
@@ -526,68 +521,34 @@ class async_client
 		function(string,mapping,mixed...:void) callback,
 		mixed ... args)
   {
-    int lid;
-#if constant(thread_create)
-    object key=lock::lock();
-#endif /* constant(thread_create) */
-    for(int e=next_client ? 5 : 1024;e>=0;e--)
+    for(int e=next_client ? 5 : 256;e>=0;e--)
     {
-      id++;
-      id&=65535;
-      lid=id;
-      
-      if(requests[lid])
+      int lid = random(65536);
+      if(!catch { requests[lid]++; })
       {
-	if(time() - requests[lid]->timestamp > GIVE_UP_DELAY)
-	{
-#if constant(thread_create)
-	  // We need to unlock the lock for the remove operation...
-	  destruct(key);
-#endif /* constant(thread_create) */
-	  remove(requests[lid]);
-#if constant(thread_create)
-	  key=lock::lock();
-#endif /* constant(thread_create) */
-	  if(requests[lid]) continue;	/* Another thread has stolen lid */
-	}else{
-	  continue;
-	}
+	string req=low_mkquery(lid,domain,cl,type);
+	
+	object r=Request();
+	r->req=req;
+	r->domain=domain;
+	r->callback=callback;
+	r->args=args;
+	r->timestamp=time();
+	requests[lid]=r;
+	udp::send(nameservers[0],53,r->req);
+	call_out(retry,RETRY_DELAY,r,1);
+	return;
       }
-      break;
     }
-
-    if(requests[lid])
-    {
-      /* We failed miserably to find a request id to use,
-       * so we create a second UDP port to be able to have more 
-       * requests 'in the air'. /Hubbe
-       */
-      if(!next_client)
-      {
-	next_client=async_client(nameservers,domains);
-	next_client->nameservers=nameservers;
-	next_client->domains=domains;
-      }
-
-#if constant(thread_create)
-      key=0;
-#endif /* constant(thread_create) */
-
-      next_client->do_query(domain, cl, type, callback, @args);
-      return;
-    }
-
-    string req=low_mkquery(lid,domain,cl,type);
-
-    object r=Request();
-    r->req=req;
-    r->domain=domain;
-    r->callback=callback;
-    r->args=args;
-    r->timestamp=time();
-    requests[lid]=r;
-    udp::send(nameservers[0],53,r->req);
-    call_out(retry,RETRY_DELAY,r,1);
+    
+    /* We failed miserably to find a request id to use,
+     * so we create a second UDP port to be able to have more 
+     * requests 'in the air'. /Hubbe
+     */
+    if(!next_client)
+      next_client=async_client(nameservers,domains);
+    
+    next_client->do_query(domain, cl, type, callback, @args);
   }
 
   static private void rec_data()
