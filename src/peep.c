@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.82 2002/11/07 12:39:13 grubba Exp $
+|| $Id: peep.c,v 1.83 2002/11/07 15:28:26 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.82 2002/11/07 12:39:13 grubba Exp $");
+RCSID("$Id: peep.c,v 1.83 2002/11/07 15:28:26 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -554,6 +554,8 @@ void assemble(void)
   if (a_flag > 6) {
     size_t len = (Pike_compiler->new_program->num_program - fun_start)*
       sizeof(PIKE_OPCODE_T);
+    fprintf(stderr, "Code at offset %d through %d:\n",
+	    fun_start, Pike_compiler->new_program->num_program-1);
 #ifdef DISASSEMBLE_CODE
     DISASSEMBLE_CODE(Pike_compiler->new_program->program + fun_start, len);
 #else /* !DISASSEMBLE_CODE */
