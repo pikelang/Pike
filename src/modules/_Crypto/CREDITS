@@ -1,9 +1,9 @@
 We have not written up the code for all these crypto algorithms by
-ourselves. There are plenty of implementations floating around on the net,
-some in the public domain, others covered by the GNU General Public
-License. We have assembled, tested and adapted this code, but most of
-the work was done by to those who carefully coded and optimized the
-implementations.
+ourselves. There are plenty of implementations floating around on the
+net, some in the public domain, others covered by the GNU Library
+General Public License. We have assembled, tested and adapted this
+code, but most of the work was done by to those who carefully coded
+and optimized the implementations.
 
 idea.c     Original implementation by Xuejia Lai, heavily optimized by
            Colin Plumb. In the Public Domain (although the algorithm
@@ -14,6 +14,6 @@ sha.c      Written by Peter Gutmann, somewhat hacked by Andrew
 
 md5.c      Written by Colin Plumb. Also hacked by Andrew Kuchling.
 
-descore    Written by Dana L. How. GPL.
+descore    Written by Dana L. How. LGPL.
 
 cast.c     Written by Steve Reid <sreid@sea-to-sky.net>. Public Domain.
