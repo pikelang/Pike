@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.2 2002/07/22 13:42:15 nilsson Exp $
+// $Id: FakeFile.pike,v 1.3 2002/07/22 13:47:55 nilsson Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -154,6 +154,8 @@ string _sprintf(int t) {
   error("Could not format Stdio.FakeFile as '%c'.\n", t);
 }
 
+//! @ignore
+
 #define NOPE(X) mixed X (mixed ... args) { error("This is a FakeFile. %s is not available.\n", #X); }
 NOPE(assign);
 NOPE(async_connect);
@@ -193,3 +195,5 @@ NOPE(sync);
 NOPE(trylock); // We could implement this
 NOPE(write); // We could implement this
 NOPE(write_oob);
+
+//! @endignore
