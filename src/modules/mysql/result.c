@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.8 1997/01/08 15:36:05 grubba Exp $
+ * $Id: result.c,v 1.9 1997/01/11 20:59:48 grubba Exp $
  *
  * mysql query result
  *
@@ -62,7 +62,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.8 1997/01/08 15:36:05 grubba Exp $");
+RCSID("$Id: result.c,v 1.9 1997/01/11 20:59:48 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -91,19 +91,19 @@ static void exit_res_struct(struct object *o)
  * Help functions
  */
 
-static void parse_field(MYSQL_FIELD *field)
+void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
 {
   if (field) {
     push_text("name"); push_text(field->name);
     push_text("table"); push_text(field->table);
-#ifdef SUPPORT_DEFAULT
-    push_text("default");
-    if (field->def) {
-      push_text(field->def);
-    } else {
-      push_int(0);
+    if (support_default) {
+      push_text("default");
+      if (field->def) {
+	push_text(field->def);
+      } else {
+	push_int(0);
+      }
     }
-#endif /* SUPPORT_DEFAULT */
     push_text("type");
     switch(field->type) {
     case FIELD_TYPE_DECIMAL:
@@ -163,11 +163,11 @@ static void parse_field(MYSQL_FIELD *field)
     push_text("flags"); push_int(field->flags);		/*************/
     push_text("decimals"); push_int(field->decimals);
       
-#ifdef SUPPORT_DEFAULT
-    f_aggregate_mapping(8*2);
-#else
-    f_aggregate_mapping(7*2);
-#endif /* SUPPORT_DEFAULT */
+    if (support_default) {
+      f_aggregate_mapping(8*2);
+    } else {
+      f_aggregate_mapping(7*2);
+    }
   } else {
     /*
      * Should this be an error?
@@ -255,7 +255,7 @@ static void f_fetch_field(INT32 args)
 
   THREADS_DISALLOW();
 
-  parse_field(field);
+  mysqlmod_parse_field(field, 0);
 }
 
 #endif /* SUPPORT_FIELD_SEEK */
@@ -269,7 +269,7 @@ static void f_fetch_fields(INT32 args)
   pop_n_elems(args);
 
   while ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
-    parse_field(field);
+    mysqlmod_parse_field(field, 0);
     i++;
   }
   f_aggregate(i);
