@@ -14,6 +14,9 @@
 
 @TOP@
 
+/* Enable profiling */
+#undef PROFILING
+
 /* Define for solaris */
 #undef SOLARIS
 
