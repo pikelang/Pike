@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.46 2002/05/11 00:27:03 nilsson Exp $
+ * $Id: image_jpeg.c,v 1.47 2002/05/11 18:17:13 nilsson Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.46 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.47 2002/05/11 18:17:13 nilsson Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -1238,7 +1238,8 @@ void pike_module_init(void)
 
       ADD_FUNCTION("decode",image_jpeg_decode,tFunc(tStr tOr(tVoid,tOptions),tObj),0);
       ADD_FUNCTION("_decode",image_jpeg__decode,tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tMixed)),0);
-      ADD_FUNCTION("decode_header",image_jpeg_decode_header,tFunc(tStr tOr(tVoid,tOptions),tObj),0);
+      ADD_FUNCTION("decode_header",image_jpeg_decode_header,
+		   tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tOr4(tStr,tInt,tFlt,tMap(tInt,tStr)))),0);
       ADD_FUNCTION("encode",image_jpeg_encode,tFunc(tObj tOr(tVoid,tOptions),tStr),0);
    }
 
