@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.96 2000/12/13 21:31:52 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.97 2000/12/13 23:06:21 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1310,7 +1310,7 @@ static void remove_location(struct memhdr *mh, LOCATION location)
   struct memloc *ml,**prev;
   unsigned long l;
 
-#ifndef __NT__
+#if !defined(__NT__) && defined(PIKE_THREADS)
   if(!mt_trylock(& debug_malloc_mutex))
     fatal("remove_location running unlocked!\n");
 #endif
