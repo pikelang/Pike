@@ -268,3 +268,30 @@ static string line_expand_tab(string line, int tab_width,
   }
   return result;
 }
+
+/*! @decl string hex2string(string hex)
+ *!
+ *! Convert a string of hexadecimal digits to binary data.
+ *!
+ *! @seealso
+ *!   @[string2hex()]
+ */
+string hex2string(string hex)
+{
+  if (sizeof(hex) % 2)
+    error("Can't have an odd number of digits.");
+
+  return (string)(array_sscanf(hex, "%{%2x%}")[0] * ({})); 
+}
+
+/*! @decl string string2hex(string s)
+ *!
+ *! Convert a string of binary data to hexadecimal digits.
+ *!
+ *! @seealso
+ *!   @[hex2string()]
+ */
+string string2hex(string s)
+{
+  return sprintf("%@02x", (array(int)) s);
+}
