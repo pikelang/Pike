@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! $Id: DNS.pmod,v 1.60 2001/09/17 21:36:45 grubba Exp $
+//! $Id: DNS.pmod,v 1.61 2002/01/13 18:44:33 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -214,8 +214,8 @@ class protocol
 
   int decode_int(string s, array(int) next)
   {
-    sscanf(s[next[0]..next[0]+1],"%2c",int ret);
-    next[0]+=2;
+    sscanf(s[next[0]..next[0]+3],"%4c",int ret);
+    next[0]+=4;
     return ret;
   }
   
