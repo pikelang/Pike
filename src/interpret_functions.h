@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.170 2004/09/22 17:55:29 grubba Exp $
+|| $Id: interpret_functions.h,v 1.171 2004/09/23 11:45:22 grubba Exp $
 */
 
 /*
@@ -344,7 +344,7 @@ OPCODE1(F_LFUN, "local function", I_UPDATE_SP, {
 
 OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
   struct pike_frame *f=Pike_fp;
-  DO_IF_DEBUG(INT32 arg2_ = arg2);
+  DO_IF_DEBUG(INT32 arg2_ = arg2;)
   LOCAL_VAR(struct object *o);
   o = low_clone(pike_trampoline_program);
 
