@@ -366,6 +366,7 @@ testfont binary
 /src/lexer.h foreign_ident
 /src/main.c foreign_ident
 /src/main.h foreign_ident
+/src/make_banner.pike foreign_ident
 /src/make_variables.in foreign_ident
 /src/mapping.c foreign_ident
 /src/mapping.h foreign_ident
