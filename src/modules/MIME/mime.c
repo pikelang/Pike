@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.5 1997/04/11 23:01:43 marcus Exp $
+ * $Id: mime.c,v 1.6 1997/04/17 16:42:43 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -9,7 +9,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: mime.c,v 1.5 1997/04/11 23:01:43 marcus Exp $");
+RCSID("$Id: mime.c,v 1.6 1997/04/17 16:42:43 marcus Exp $");
 #include "stralloc.h"
 #include "types.h"
 #include "pike_macros.h"
@@ -18,6 +18,12 @@ RCSID("$Id: mime.c,v 1.5 1997/04/11 23:01:43 marcus Exp $");
 #include "interpret.h"
 #include "builtin_functions.h"
 #include "error.h"
+
+#ifdef __CHAR_UNSIGNED__
+#define SIGNED signed
+#else
+#define SIGNED
+#endif
 
 
 /** Forward declarations of functions implementing Pike functions **/
@@ -36,9 +42,9 @@ static void f_quote( INT32 args );
 /** Global tables **/
 
 static char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static char base64rtab[0x80-' '];
+static SIGNED char base64rtab[0x80-' '];
 static char qptab[16] = "0123456789ABCDEF";
-static char qprtab[0x80-'0'];
+static SIGNED char qprtab[0x80-'0'];
 
 #define CT_CTL     0
 #define CT_WHITE   1
@@ -136,7 +142,7 @@ static void f_decode_base64( INT32 args )
        instead. */
 
     dynamic_buffer buf;
-    char *src;
+    SIGNED char *src;
     INT32 cnt, d = 1;
     int pads = 0;
 
@@ -275,7 +281,7 @@ static void f_decode_qp( INT32 args )
        so we'll use a dynamic buffer to hold the result. */
 
     dynamic_buffer buf;
-    char *src;
+    SIGNED char *src;
     INT32 cnt;
 
     buf.s.str=NULL;
