@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt_md5.c,v 1.3 2003/08/25 03:32:15 nilsson Exp $
+|| $Id: crypt_md5.c,v 1.4 2003/08/25 22:09:36 nilsson Exp $
 */
 
 /*
@@ -18,6 +18,8 @@
  * Adapted to Pike by Andreas Lange and Martin Nilsson
  *
  */
+
+#include "nettle_config.h"
 
 #ifdef HAVE_LIBNETTLE
 
