@@ -186,8 +186,8 @@ string eatIdentifier(void|int allowScopePrefix) {
   string colons = peekToken() == "::" ? readToken() : "";
   //  werror("scope == %O ,colons == %O\n", scope, colons);
 
-  if (scope != "" && colons == "")
-    parseError("%s must be followed by ::", scope);
+  if (!colons)
+    scope = "";
   if (strlen(scope + colons) && !allowScopePrefix)
     parseError("scope prefix not allowed");
   string s = peekToken();
