@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.56 2003/10/07 16:27:25 mast Exp $
+|| $Id: pipe.c,v 1.57 2003/10/08 14:53:48 grubba Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.56 2003/10/07 16:27:25 mast Exp $");
+RCSID("$Id: pipe.c,v 1.57 2003/10/08 14:53:48 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -732,9 +732,6 @@ static void pipe_input(INT32 args)
 	  && ((m=(char *)mmap(0, len, PROT_READ,
 			      MAP_FILE|MAP_SHARED,fd,filep))+1))
        {
-#ifdef HAVE_GETEUID
-	 int ou = 0;
-#endif
 	 mmapped += len;
 
 	 i->type=I_MMAP;
@@ -742,35 +739,7 @@ static void pipe_input(INT32 args)
 	 i->u.mmap=m;
 #if defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
 	 /* Mark the pages as sequential read only access... */
-
-	 /* NOTE:
-	  *
-	  *	Potential race-condition with other threads
-	  */
-
-#ifdef HAVE_GETEUID
-	 if((ou=geteuid()) && !getuid()) {
-#ifdef HAVE_SETEUID
-	   seteuid(0);
-#else /* ! HAVE_SETEUID */
-#ifdef HAVE_SETRESUID
-	   setresuid(-1, 0, -1);
-#endif /* HAVE_SETRESUID */
-#endif /* HAVE_SETEUID */
-	 }
-#endif
 	 madvise(m, len, MADV_SEQUENTIAL);
-#ifdef HAVE_GETEUID
-	 if(ou) {
-#ifdef HAVE_SETEUID
-	   seteuid(ou);
-#else /* ! HAVE_SETEUID */
-#ifdef HAVE_SETRESUID
-	   setresuid(-1, ou, -1);
-#endif /* HAVE_SETRESUID */
-#endif /* HAVE_SETEUID */
-	 }
-#endif
 #endif
 	 pop_n_elems(args);
 	 push_int(0);
