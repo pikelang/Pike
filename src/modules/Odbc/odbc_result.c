@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.26 2001/10/08 09:17:00 wellhard Exp $
+ * $Id: odbc_result.c,v 1.27 2001/10/08 20:10:14 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.26 2001/10/08 09:17:00 wellhard Exp $");
+RCSID("$Id: odbc_result.c,v 1.27 2001/10/08 20:10:14 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -235,7 +235,6 @@ static void odbc_fix_fields(void)
       break;
     default:
       push_text("unknown");
-      odbc_field_types[i] = SQL_C_BINARY;
       break;
     }
     push_text("length"); push_int64(precision);
