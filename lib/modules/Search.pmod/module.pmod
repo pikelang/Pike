@@ -80,7 +80,6 @@ array(string) get_filter_mime_types() {
 }
 
 array(mapping) splitter(array(string) text, array(int) context, array(int) offset,
-			function(string:string) pre_normalization, 
 			function(string:string) post_normalization,
 			function(mapping:int) ranking) {
   if(sizeof(text)!=sizeof(context) ||
@@ -88,7 +87,7 @@ array(mapping) splitter(array(string) text, array(int) context, array(int) offse
 
   array(mapping) result=({});
   for(int i=0; i<sizeof(text); i++) {
-    array words=pre_normalization(text[i])/" ";
+    array words=text[i]/" ";
     int inc=0, oldinc;
     foreach(words, string word) {
       oldinc=inc;
