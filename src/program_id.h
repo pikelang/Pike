@@ -40,4 +40,6 @@
 #define   tObjIs_STDIO_STAT                   "\003\001\000\000\000\012"
 
 
+/* 1000 - 2000 reserved for GTK. */
+
 #endif
