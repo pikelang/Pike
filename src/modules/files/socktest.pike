@@ -1,6 +1,7 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.10 1998/04/14 18:56:23 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.11 1998/04/16 21:41:49 hubbe Exp $ */
+
 
 import Stdio;
 import String;
@@ -31,28 +32,14 @@ class Socket {
   int input_finished;
   int output_finished;
 
-//  void destroy()
-//  {
-//    werror("GONE FISHING %d\n",id);
-//    werror(master()->describe_backtrace( ({"backtrace:",backtrace() }) ) +"\n");
-//    if(in_cleanup[id])  trace(0);
-//  }
-
   void cleanup()
   {
-//    int i=id;
-//    werror(">>>>>>>>>ENTER CLEANUP %d\n",i);
     if(input_finished && output_finished)
     {
-//      in_cleanup[i]++;
       daemon->finish();
-//      if(!this_object())
-//	werror("GURKA %d\n",i);
       close();
-//      in_cleanup[i]--;
       destruct(this_object());
     }
-//    werror("<<<<<<<<<<EXIT CLEANUP\n",i);
   }
 
   void close_callback()
@@ -137,6 +124,7 @@ void die()
 }
 
 int counter;
+
 
 void got_callback()
 {
@@ -261,6 +249,7 @@ void finish()
 	tests=(_tests-2)*2;
 	werror("Testing "+(tests*2)+" sockets. ");
 	for(int e=0;e<tests;e++) stdtest();
+	stdtest();
 	break;
 
       case 27..48:
@@ -318,7 +307,7 @@ int main()
 
   if(!port2::bind(0))
   {
-    werror("Bind failed. (%d)\n",port2::errno());
+    werror("Bind failed(2). (%d)\n",port2::errno());
     exit(1);
   }
 
