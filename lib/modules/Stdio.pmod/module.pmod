@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.171 2003/04/22 15:15:49 marcus Exp $
+// $Id: module.pmod,v 1.172 2003/04/26 15:24:18 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -223,13 +223,18 @@ class File
   //! @[port] can also be specified as a string, giving the name of the
   //! service associated with the port.
   //!
+  //! Finally, a protocol @[family] for the socket can be specified.
+  //! If no @[family] is specified, one which is appropriate for the
+  //! @[address] is automatically selected.  Thus, there is normally
+  //! no need to specify it.
+  //!
   //! @returns
   //! This function returns 1 for success, 0 otherwise.
   //!
   //! @seealso
   //! @[connect()], @[set_nonblocking()], @[set_blocking()]
   //!
-  int open_socket(int|string|void port, string|void address)
+  int open_socket(int|string|void port, string|void address, int|void family)
   {
     _fd=Fd();
     is_file = 0;
@@ -243,8 +248,10 @@ class File
       return ::open_socket();
     case 1:
       return ::open_socket(port);
-    default:
+    case 2:
       return ::open_socket(port, address);
+    default:
+      return ::open_socket(port, address, family);
     }
   }
 
@@ -1299,14 +1306,12 @@ class FILE
     return file::open(file,mode);
   }
 
-  int open_socket(int|string|void port, string|void address)
+  int open_socket(int|string|void port, string|void address, int|void family)
   {
     bpos=0;  b="";
     if(zero_type(port))
       return file::open_socket();
-    if(!address)
-      return file::open_socket(port);
-    return file::open_socket(port, address);
+    return file::open_socket(port, address, family);
   }
 
   array(string) ngets(void|int(1..) n)
