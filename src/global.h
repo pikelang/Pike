@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.50 2000/08/16 17:46:22 grubba Exp $
+ * $Id: global.h,v 1.51 2000/08/17 18:20:18 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -343,6 +343,16 @@ typedef struct p_wchar_p
 
 /* Used by the AutoBuild system to mark known warnings. */
 #define DO_NOT_WARN(X)	(X)
+
+/* Some functions/macros used to avoid loss of precision warnings. */
+#ifdef __ECL
+static inline long PTRDIFF_T_TO_LONG(ptrdiff_t x)
+{
+  return DO_NOT_WARN((long)x);
+}
+#else /* !__ECL */
+#define PTRDIFF_T_TO_LONG(x)       ((long)(x))
+#endif /* __ECL */
 
 #include "port.h"
 #include "dmalloc.h"
