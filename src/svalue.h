@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.104 2002/05/31 22:41:26 nilsson Exp $
+ * $Id: svalue.h,v 1.105 2002/06/25 14:26:41 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -105,7 +105,7 @@ struct svalue
 #define T_MANY       17
 
 #define PIKE_T_RING 240
-#define PIKE_T_NAME 241		/* Only supported in USE_PIKE_TYPE-mode. */
+#define PIKE_T_NAME 241		/* Named type. */
 #define PIKE_T_SCOPE 243	/* Not supported yet */
 #define PIKE_T_TUPLE 244	/* Not supported yet */
 #define T_ASSIGN 245

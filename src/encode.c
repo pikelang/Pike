@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.148 2002/06/11 17:41:36 mast Exp $");
+RCSID("$Id: encode.c,v 1.149 2002/06/25 14:26:40 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -251,7 +251,6 @@ static void do_enable_threads(void)
 }
 #endif
 
-#ifdef USE_PIKE_TYPE
 /* NOTE: Take care to encode it exactly as the corresponing
  *       type string would have been encoded (cf TFUNCTION, T_MANY).
  */
@@ -373,103 +372,6 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
     }
   }
 }
-#else /* !USE_PIKE_TYPE */
-static ptrdiff_t low_encode_type(unsigned char *t, struct encode_data *data)
-{
-  unsigned char *q = t;
-one_more_type:
-  addchar(EXTRACT_UCHAR(t));
-  switch(EXTRACT_UCHAR(t++))
-  {
-    default:
-      fatal("error in type string: %d.\n", t[-1]);
-      /*NOTREACHED*/
-
-      break;
-
-    case T_ASSIGN:
-      addchar(EXTRACT_UCHAR(t++));
-      goto one_more_type;
-
-    case T_FUNCTION:
-      while(EXTRACT_UCHAR(t)!=T_MANY)
-	t += low_encode_type(t, data);
-      addchar(EXTRACT_UCHAR(t++));
-
-    case T_MAPPING:
-    case T_OR:
-    case T_AND:
-      t += low_encode_type(t, data);
-
-    case T_TYPE:
-    case T_PROGRAM:
-    case T_ARRAY:
-    case T_MULTISET:
-    case T_NOT:
-      goto one_more_type;
-
-    case T_INT:
-      {
-	int i;
-	/* FIXME: I assume the type is saved in network byte order. Is it?
-	 *	/grubba 1999-03-07
-	 * Yes - Hubbe
-	 */
-	for(i = 0; i < (int)(2*sizeof(INT32)); i++) {
-	  addchar(EXTRACT_UCHAR(t++));
-	}
-      }
-      break;
-
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-    case T_FLOAT:
-    case T_STRING:
-    case T_MIXED:
-    case T_ZERO:
-    case T_VOID:
-    case PIKE_T_UNKNOWN:
-      break;
-
-    case T_OBJECT:
-    {
-      INT32 x;
-      addchar(EXTRACT_UCHAR(t++));
-      x=EXTRACT_INT(t);
-      t+=sizeof(INT32);
-      if(x >= PROG_DYNAMIC_ID_START)
-      {
-	struct program *p=id_to_program(x);
-	if(p)
-	{
-	  ref_push_program(p);
-	}else{
-	  push_int(0);
-	}
-      }else{
-	push_int(x);
-      }
-      encode_value2(Pike_sp-1, data);
-      pop_stack();
-      break;
-    }
-  }
-  return t-q;
-}
-
-static void encode_type(struct pike_type *t, struct encode_data *data)
-{
-  low_encode_type(t->str, data);
-}
-#endif /* USE_PIKE_TYPE */
 
 static void zap_unfinished_program(struct program *p)
 {
@@ -1867,13 +1769,9 @@ static void restore_type_stack(struct pike_type **old_stackp)
     fatal("type stack out of sync!\n");
   }
 #endif /* PIKE_DEBUG */
-#ifdef USE_PIKE_TYPE
   while(Pike_compiler->type_stackp > old_stackp) {
     free_type(*(Pike_compiler->type_stackp--));
   }
-#else
-  Pike_compiler->type_stackp = old_stackp;
-#endif
 }
 
 static void restore_type_mark(struct pike_type ***old_type_mark_stackp)
@@ -1901,9 +1799,6 @@ static void low_decode_type(struct decode_data *data)
   SET_ONERROR(err1, restore_type_stack, Pike_compiler->type_stackp);
   SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
 
-#ifndef USE_PIKE_TYPE
-one_more_type:
-#endif /* !USE_PIKE_TYPE */
   tmp = GETC();
   switch(tmp)
   {
@@ -1917,18 +1812,11 @@ one_more_type:
       if ((tmp < '0') || (tmp > '9')) {
 	Pike_error("decode_value(): Bad marker in type string (%d).\n", tmp);
       }
-#ifdef USE_PIKE_TYPE
       low_decode_type(data);
       push_assign_type(tmp);	/* Actually reverse, but they're the same */
       break;
-#else /* !USE_PIKE_TYPE */
-      push_type(T_ASSIGN);
-      push_type(tmp);
-      goto one_more_type;
-#endif /* USE_PIKE_TYPE */
 
     case T_FUNCTION:
-#ifdef USE_PIKE_TYPE
       {
 	int narg = 0;
 
@@ -1945,48 +1833,25 @@ one_more_type:
 	}
       }
       break;
-#else /* !USE_PIKE_TYPE */
-      push_type(tmp);
-      while(GETC()!=T_MANY)
-      {
-	data->ptr--;
-	low_decode_type(data);
-      }
-      push_type(T_MANY);
-      low_decode_type(data);
-      goto one_more_type;
-#endif /* USE_PIKE_TYPE */
 
     case T_MAPPING:
     case T_OR:
     case T_AND:
-#ifdef USE_PIKE_TYPE
       low_decode_type(data);
       low_decode_type(data);
       push_reverse_type(tmp);
       break;
-#else /* !USE_PIKE_TYPE */
-      push_type(tmp);
-      low_decode_type(data);
-      goto one_more_type;
-#endif /* USE_PIKE_TYPE */
 
     case T_TYPE:
     case T_PROGRAM:
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
-#ifdef USE_PIKE_TYPE
       low_decode_type(data);
       push_type(tmp);
       break;
-#else /* !USE_PIKE_TYPE */
-      push_type(tmp);
-      goto one_more_type;
-#endif /* USE_PIKE_TYPE */
 
     case T_INT:
-#ifdef USE_PIKE_TYPE
       {
 	INT32 min=0, max=0;
 	min = GETC();
@@ -1999,18 +1864,6 @@ one_more_type:
 	max = (max<<8)|GETC();
 	push_int_type(min, max);
       }
-#else /* !USE_PIKE_TYPE */
-      {
-	int i;
-	push_type(tmp);
-	/* FIXME: I assume the type is saved in network byte order. Is it?
-	 *	/grubba 1999-03-07
-	 */
-	for(i = 0; i < (int)(2*sizeof(INT32)); i++) {
-	  push_type(GETC());
-	}
-      }
-#endif /* USE_PIKE_TYPE */
       break;
 
     case '0':
@@ -2113,23 +1966,12 @@ static int init_placeholder(struct object *placeholder);
   data->counter.u.integer++;						\
 }while(0)
 
-#ifdef USE_PIKE_TYPE
 /* This really needs to disable threads.... */
 #define decode_type(X,data)  do {		\
   type_stack_mark();				\
   low_decode_type(data);			\
   (X)=pop_unfinished_type();			\
 } while(0)
-#else /* !USE_PIKE_TYPE */
-/* This really needs to disable threads.... */
-#define decode_type(X,data)  do {		\
-  type_stack_mark();				\
-  type_stack_mark();				\
-  low_decode_type(data);			\
-  type_stack_reverse();				\
-  (X)=pop_unfinished_type();			\
-} while(0)
-#endif /* USE_PIKE_TYPE */
 
 static void decode_value2(struct decode_data *data)
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.294 2002/06/07 17:45:49 nilsson Exp $");
+RCSID("$Id: las.c,v 1.295 2002/06/25 14:26:40 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3290,7 +3290,6 @@ static void low_build_function_type(node *n)
 
   case F_PUSH_ARRAY:
     {
-#ifdef USE_PIKE_TYPE
       struct pike_type *so_far;
       struct pike_type *arg_type;
       struct pike_type *tmp;
@@ -3331,20 +3330,6 @@ static void low_build_function_type(node *n)
       free_type(so_far);
       free_type(tmp);
       push_type(T_MANY);
-#else /* !USE_PIKE_TYPE */
-      /* We let this ruin type-checking for now.. */
-      reset_type_stack();
-
-      push_type(T_MIXED);
-      push_type(T_VOID);
-      push_type(T_OR);  /* return type is void or mixed */
-
-      push_type(T_MIXED);
-      push_type(T_VOID);
-      push_type(T_OR);  /* varargs */
-
-      push_type(T_MANY);
-#endif /* USE_PIKE_TYPE */
     }
     return;
 
@@ -3356,9 +3341,7 @@ static void low_build_function_type(node *n)
     }else{
       push_type(T_MIXED);
     }
-#ifdef USE_PIKE_TYPE
     push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
   }
 }
 
@@ -3574,7 +3557,7 @@ void fix_type_field(node *n)
       char *name;
       INT32 max_args,args;
 
-#if defined(USE_PIKE_TYPE) && defined(NEW_ARG_CHECK)
+#ifdef NEW_ARG_CHECK
 
       args = 0;
 
@@ -3595,7 +3578,7 @@ void fix_type_field(node *n)
 	break;
       }
 
-#else /* !(USE_PIKE_TYPE && NEW_ARG_CHECK) */
+#else /* !NEW_ARG_CHECK */
 
       push_type(T_MIXED); /* match any return type */
       push_type(T_VOID);  /* even void */
@@ -3605,9 +3588,6 @@ void fix_type_field(node *n)
       push_type(T_MANY);
       function_type_max=0;
       low_build_function_type(CDR(n));
-#ifndef USE_PIKE_TYPE
-      push_type(T_FUNCTION);
-#endif /* !USE_PIKE_TYPE */
       s = pop_type();
       f = CAR(n)->type?CAR(n)->type:mixed_type_string;
       n->type = check_call(s, f,
@@ -3755,7 +3735,7 @@ void fix_type_field(node *n)
       /* print_tree(n); */
 
       free_type(s);
-#endif /* USE_PIKE_TYPE && NEW_ARG_CHECK */
+#endif /* NEW_ARG_CHECK */
     }
     copy_pike_type(n->type, mixed_type_string);
     break;
@@ -3853,9 +3833,7 @@ void fix_type_field(node *n)
       push_type(T_VOID);
       push_type(T_MANY);
       push_finished_type(CDR(n)->type);
-#ifdef USE_PIKE_TYPE
       push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
       push_finished_type(CAR(n)->type);
       push_type(T_FUNCTION);
 

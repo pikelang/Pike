@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.148 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: main.c,v 1.149 2002/06/25 14:26:41 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -915,12 +915,10 @@ void low_exit_main(void)
 	describe_something(o, T_OBJECT, 0,2,0, NULL);
     }
 
-#ifdef USE_PIKE_TYPE
     count_memory_in_pike_types(&num, &size);
     if (num)
       fprintf(stderr, "Types left: %d (%d bytes)\n", num, size);
     describe_all_types();
-#endif /* USE_PIKE_TYPE */
   }
 #else
 

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.589 2002/06/05 19:34:55 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.590 2002/06/25 14:26:40 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1120,11 +1120,10 @@ MY_AC_ARG_WITH(new-multisets,
 	       [AC_DEFINE(PIKE_NEW_MULTISETS)],[])
 
 AC_ARG_WITH(pike-type, MY_DESCR([--without-pike-type],
-				[disable struct pike_type.]))
+				[disable struct pike_type (IGNORED).]))
 
-if test "x$with_pike_type" = "xno"; then :; else
-  echo 'Enabling the USE_PIKE_TYPE mode of the compiler.'
-  AC_DEFINE(USE_PIKE_TYPE)
+if test "x$with_pike_type" = "xno"; then
+  AC_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
 fi
 
 if test "x$with_oob" = "xno"; then :; else

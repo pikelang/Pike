@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.287 2002/06/10 20:49:50 mast Exp $");
+RCSID("$Id: language.yacc,v 1.288 2002/06/25 14:26:40 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -671,13 +671,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     for(; e>=0; e--)
     {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-#ifdef USE_PIKE_TYPE
       push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
     }
-#ifndef USE_PIKE_TYPE
-    push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
 
     {
       struct pike_type *s=compiler_pop_type();
@@ -1288,12 +1283,10 @@ identifier_type: idents
 	break;
       }
     }
-#ifdef USE_PIKE_TYPE
     /* Attempt to name the type. */
     if (Pike_compiler->last_identifier) {
       push_type_name(Pike_compiler->last_identifier);
     }
-#endif /* USE_PIKE_TYPE */
     pop_stack();
     free_node($1);
   }
@@ -1388,12 +1381,10 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
       }
     }
     push_object_type(0, p?(p->id):0);
-#ifdef USE_PIKE_TYPE
     /* Attempt to name the type. */
     if (Pike_sp[-2].type == T_STRING) {
       push_type_name(Pike_sp[-2].u.string);
     }
-#endif /* USE_PIKE_TYPE */
     pop_n_elems(2);
   }
   ;
@@ -1401,9 +1392,6 @@ opt_object_type:  /* Empty */ { push_object_type(0, 0); }
 opt_function_type: '('
   {
     type_stack_mark();
-#ifndef USE_PIKE_TYPE
-    type_stack_mark();
-#endif /* !USE_PIKE_TYPE */
   }
   function_type_list optional_dot_dot_dot ':'
   {
@@ -1417,40 +1405,20 @@ opt_function_type: '('
 	if (Pike_compiler->compiler_pass == 1) {
 	  yyerror("Missing type before ... .");
 	}
-#ifndef USE_PIKE_TYPE
-	type_stack_reverse();
-	type_stack_mark();
-#endif /* !USE_PIKE_TYPE */
 	push_type(T_MIXED);
       }
     }else{
-#ifndef USE_PIKE_TYPE
-      type_stack_reverse();
-      type_stack_mark();
-#endif /* !USE_PIKE_TYPE */
       push_type(T_VOID);
     }
-#ifndef USE_PIKE_TYPE
-    /* Rotate T_MANY into the proper position. */
-    push_type(T_MANY);
-    type_stack_reverse();
-    type_stack_mark();
-#endif /* !USE_PIKE_TYPE */
   }
   type7 ')'
   {
-#ifdef USE_PIKE_TYPE
     push_reverse_type(T_MANY);
     Pike_compiler->pike_type_mark_stackp--;
     while (*Pike_compiler->pike_type_mark_stackp+1 <
 	   Pike_compiler->type_stackp) {
       push_reverse_type(T_FUNCTION);
     }
-#else /* !USE_PIKE_TYPE */
-    type_stack_reverse();
-    type_stack_reverse();
-    push_type(T_FUNCTION); 
-#endif /* USE_PIKE_TYPE */
   }
   | /* empty */
   {
@@ -1463,9 +1431,6 @@ opt_function_type: '('
    push_type(T_OR);
 
    push_type(T_MANY);
-#ifndef USE_PIKE_TYPE
-   push_type(T_FUNCTION); 
-#endif /* !USE_PIKE_TYPE */
   }
   ;
 
@@ -1476,10 +1441,6 @@ function_type_list: /* Empty */ optional_comma { $$=0; }
 function_type_list2: type7 { $$=1; }
   | function_type_list2 ','
   {
-#ifndef USE_PIKE_TYPE
-    type_stack_reverse();
-    type_stack_mark();
-#endif /* !USE_PIKE_TYPE */
   }
   type7
   ;
@@ -1490,27 +1451,13 @@ opt_array_type: '(' type7 ')'
 
 opt_mapping_type: '('
   { 
-#ifndef USE_PIKE_TYPE
-    type_stack_mark();
-    type_stack_mark();
-#endif /* !USE_PIKE_TYPE */
   }
   type7 ':'
   { 
-#ifndef USE_PIKE_TYPE
-    type_stack_reverse();
-    type_stack_mark();
-#endif /* !USE_PIKE_TYPE */
   }
   type7
   { 
-#ifdef USE_PIKE_TYPE
     push_reverse_type(T_MAPPING);
-#else /* !USE_PIKE_TYPE */
-    type_stack_reverse();
-    type_stack_reverse();
-    push_type(T_MAPPING);
-#endif /* USE_PIKE_TYPE */
   }
   ')'
   | /* empty */ 
@@ -1894,13 +1841,8 @@ lambda: TOK_LAMBDA push_compiler_frame1
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-#ifdef USE_PIKE_TYPE
       push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
     }
-#ifndef USE_PIKE_TYPE
-    push_type(T_FUNCTION);
-#endif /* !USE_PIKE_TYPE */
     
     type=compiler_pop_type();
 
@@ -1976,13 +1918,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-#ifdef USE_PIKE_TYPE
     push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
     }
-#ifndef USE_PIKE_TYPE
-    push_type(T_FUNCTION);
-#endif /* !USE_PIKE_TYPE */
     
     type=compiler_pop_type();
     /***/
@@ -2119,13 +2056,8 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     push_type(T_MANY);
     for(; e>=0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-#ifdef USE_PIKE_TYPE
       push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
     }
-#ifndef USE_PIKE_TYPE
-    push_type(T_FUNCTION);
-#endif /* !USE_PIKE_TYPE */
     
     type=compiler_pop_type();
     /***/
@@ -2307,13 +2239,8 @@ optional_create_arguments: /* empty */ { $$ = 0; }
     push_type(T_MANY);
     for(; e >= 0; e--) {
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
-#ifdef USE_PIKE_TYPE
       push_type(T_FUNCTION);
-#endif /* USE_PIKE_TYPE */
     }
-#ifndef USE_PIKE_TYPE
-    push_type(T_FUNCTION);
-#endif /* !USE_PIKE_TYPE */
 
     type = compiler_pop_type();
 
@@ -3067,9 +2994,6 @@ optional_block: ';' /* EMPTY */ { $$=0; }
       push_finished_type(Pike_compiler->compiler_frame->variable[e].type);
 */
     
-#ifndef USE_PIKE_TYPE
-    push_type(T_FUNCTION);
-#endif /* !USE_PIKE_TYPE */
     type=compiler_pop_type();
 
     sprintf(buf,"__lambda_%ld_%ld_line_%d",

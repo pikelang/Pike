@@ -65,7 +65,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.141 2002/06/11 13:47:23 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.142 2002/06/25 14:26:41 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -177,7 +177,6 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
     break;
     
   case T_TYPE:
-#ifdef USE_PIKE_TYPE
     /* Add back the reference, and call the normal free_type(). */
     add_ref(s->u.type);
     free_type(s->u.type);
@@ -185,8 +184,7 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s)
     s->type = 99;
 #endif /* PIKE_DEBUG */
     break;
-#endif /* USE_PIKE_TYPE */
-    /* FALL_THROUGH */
+
   case T_STRING:
     really_free_string(s->u.string);
 #ifdef PIKE_DEBUG

@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.26 2001/12/12 21:06:58 mast Exp $
+ * $Id: compilation.h,v 1.27 2002/06/25 14:26:40 grubba Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -138,13 +138,8 @@
   ZMEMBER(int,varargs,0)
   STRMEMBER(last_identifier,0)
   ZMEMBER(struct mapping *,module_index_cache,0)
-#ifdef USE_PIKE_TYPE
   STACKMEMBER(struct pike_type **,type_stackp,type_stack)
   STACKMEMBER(struct pike_type ***,pike_type_mark_stackp,pike_type_mark_stack)
-#else /* !USE_PIKE_TYPE */
-  STACKMEMBER(unsigned char *,type_stackp,type_stack)
-  STACKMEMBER(unsigned char **,pike_type_mark_stackp,pike_type_mark_stack)
-#endif /* USE_PIKE_TYPE */
   ZMEMBER(INT32,parent_identifier,0)
   IMEMBER(int, compat_major, PIKE_MAJOR_VERSION)
   IMEMBER(int, compat_minor, PIKE_MINOR_VERSION)

@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.100 2002/05/05 13:22:40 nilsson Exp $
+ * $Id: acconfig.h,v 1.101 2002/06/25 14:26:39 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -439,9 +439,6 @@
 
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
-
-/* Define if you want to enable use of the struct pike_type (EXPERIMENTAL) */
-#undef USE_PIKE_TYPE
 
 /* set this to the modifier type string to print size_t, like "" or "l" */
 #undef PRINTSIZET

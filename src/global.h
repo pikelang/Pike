@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.69 2002/05/31 22:41:24 nilsson Exp $
+ * $Id: global.h,v 1.70 2002/06/25 14:26:40 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -387,15 +387,8 @@ char *crypt(char *, char *);
  */
 #define Pike_error_present
 
-/* This stuff is here to avoid circularities with
- * svalue.h and pike_types.h
- */
-#ifndef USE_PIKE_TYPE
-/*
- * The old type type.
- */
-#define pike_type	pike_string
-#endif /* !USE_PIKE_TYPE */
+/* Compatibility... */
+#define USE_PIKE_TYPE	2
 
 #ifdef PIKE_RUN_UNLOCKED
 #define DO_IF_RUN_UNLOCKED(X) X

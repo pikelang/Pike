@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.432 2002/06/13 21:54:32 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.433 2002/06/25 14:26:40 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2293,28 +2293,15 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
   t=first_arg[0]->type;
   if(!t || match_types(t, object_type_string))
   {
-#ifdef USE_PIKE_TYPE
     /* Skip any name-nodes. */
     while(t && t->type == PIKE_T_NAME) {
       t = t->cdr;
     }
-#endif /* USE_PIKE_TYPE */
+
     /* FIXME: Ought to handle or-nodes here. */
-    if(t && (
-#ifdef USE_PIKE_TYPE
-	     t->type
-#else /* !USE_PIKE_TYPE */
-	     t->str[0]
-#endif /* USE_PIKE_TYPE */
-	     == T_OBJECT))
+    if(t && (t->type == T_OBJECT))
     {
-      struct program *p = id_to_program(
-#ifdef USE_PIKE_TYPE
-					(ptrdiff_t)t->cdr
-#else /* !USE_PIKE_TYPE */
-					extract_type_int(t->str+2)
-#endif /* USE_PIKE_TYPE */
-					);
+      struct program *p = id_to_program((ptrdiff_t)t->cdr);
       if(p)
       {
 	int fun=FIND_LFUN(p, lfun);
@@ -2339,11 +2326,7 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
 #if 1
     if(deftype)
     {
-#ifdef USE_PIKE_TYPE
       t2 = make_pike_type(deftype);
-#else /* !USE_PIKE_TYPE */
-      t2 = make_shared_binary_string(deftype, deftypelen);
-#endif /* USE_PIKE_TYPE */
       t = n->type;
       n->type = or_pike_types(t,t2,0);
       free_type(t);
@@ -7542,13 +7525,12 @@ void init_builtin_efuns(void)
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
 
-#if USE_PIKE_TYPE
   /* FIXME: */
   ADD_EFUN("replace_master", f_replace_master,
 	   tFunc(tObj, tVoid), OPT_SIDE_EFFECT);
   ADD_EFUN("master", f_master,
 	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
-#else /* !USE_PIKE_TYPE */
+#if 0 /* FIXME: dtFunc isn't USE_PIKE_TYPE compatible */
   ADD_EFUN_DTYPE("replace_master", f_replace_master,
 		 dtFunc(dtObjImpl(pike___master_program), dtVoid),
 		 OPT_SIDE_EFFECT);
@@ -7558,7 +7540,7 @@ void init_builtin_efuns(void)
   ADD_EFUN_DTYPE("master", f_master,
 		 dtFunc(dtNone, dtObjImpl(pike___master_program)),
 		 OPT_EXTERNAL_DEPEND);
-#endif /* USE_PIKE_TYPE */
+#endif /* 0 */
   
   /* __master still contains a reference */
   free_program(pike___master_program);
