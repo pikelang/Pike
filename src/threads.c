@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.71 1998/05/01 15:49:18 grubba Exp $");
+RCSID("$Id: threads.c,v 1.72 1998/05/01 15:57:43 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -887,8 +887,8 @@ static void *farm(void *_a)
     mt_unlock( &rosie );
 /*     fprintf(stderr, "farm_endwait %p\n", me); */
   } while(1);
-  // NOT_REACHED
-  return NULL;	// Keep the compiler happy.
+  /* NOT_REACHED */
+  return NULL;	/* Keep the compiler happy. */
 }
 
 int th_num_idle_farmers(void)
