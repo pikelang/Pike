@@ -298,7 +298,7 @@ AC_SUBST(have_gtk_20)
 AC_SUBST(have_gtk_120)
 
  if test "$PKG_CONFIG" = "no" ; then
-   MY_AC_PATH_PROG(GTK_CONFIG, ${ac_tools_prefix}gtk-config,no)
+   MY_AC_PATH_PROG(GTK_CONFIG, ${ac_tool_prefix}gtk-config,no)
    AM_PATH_GTK(1.2.0,[have_gtk_120=gtk_120],[have_gtk_120=no_gtk_120])
    if test x$have_gtk_120 = xno_gtk_120 ; then
      AM_PATH_GTK(1.1.13,[WITH_GTK=1],[WITH_GTK=0])
