@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.220 2002/09/09 13:46:29 marcus Exp $
+// $Id: master.pike.in,v 1.221 2002/11/06 19:29:49 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1810,7 +1810,20 @@ void _main(array(string) orig_argv, array(string) env)
 	random_seed(time() ^ (getpid()<<8));
 	argv = tmp->get_args(argv,1);
 	if(trace) predef::trace(trace);
-	compile_string("mixed create(int argc, array(string) argv,array(string) env){"+
+	compile_string(#"
+string read(void|string fn) {
+  if(fn) return Stdio.read_file(fn);
+  return Stdio.stdin.read();
+}
+int write(string a, void|string b, void|int access) {
+  if(b) {
+    if(query_num_arg()==3)
+      return Stdio.write_file(a, b, access);
+    return Stdio.write_file(a, b);
+  }
+  return Stdio.stdout.write(a);
+}
+mixed create(int argc, array(string) argv, array(string) env){"+
 			opts[1]+";}")(sizeof(argv),argv,env);
 	exit(0);
 
