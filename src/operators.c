@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.131 2001/03/17 17:39:08 grubba Exp $");
+RCSID("$Id: operators.c,v 1.132 2001/03/18 16:10:10 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1846,6 +1846,13 @@ PMOD_EXPORT void o_lsh(void)
       SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|object");
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int|object");
   }
+#ifndef AUTO_BIGNUM
+  if (sp[-1].u.integer > 31) {
+    sp--;
+    sp[-1].u.integer = 0;
+    return;
+  }
+#endif /* !AUTO_BIGNUM */
   sp--;
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
 }
@@ -1904,6 +1911,16 @@ PMOD_EXPORT void o_rsh(void)
   {
     sp--;
     sp[-1].u.integer = 0;
+    return;
+  }
+#else /* !AUTO_BIGNUM */
+  if (sp[-1].u.integer > 31) {
+    sp--;
+    if (sp[-1].u.integer < 0) {
+      sp[-1].u.integer = -1;
+    } else {
+      sp[-1].u.integer = 0;
+    }
     return;
   }
 #endif /* AUTO_BIGNUM */
