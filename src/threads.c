@@ -2,16 +2,18 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.230 2003/11/26 10:56:44 grubba Exp $
+|| $Id: threads.c,v 1.231 2004/04/21 19:25:23 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.230 2003/11/26 10:56:44 grubba Exp $");
+RCSID("$Id: threads.c,v 1.231 2004/04/21 19:25:23 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
 #endif	/* !CONFIGURE_TEST */
+
+/* #define PICKY_MUTEX */
 
 #ifdef _REENTRANT
 
@@ -1063,6 +1065,7 @@ struct mutex_storage
 {
   COND_T condition;
   struct object *key;
+  int num_waiting;
 };
 
 struct key_storage
@@ -1169,6 +1172,7 @@ void f_mutex_lock(INT32 args)
 
   if(m->key)
   {
+    m->num_waiting++;
     if(threads_disabled)
     {
       free_object(o);
@@ -1176,13 +1180,24 @@ void f_mutex_lock(INT32 args)
     }
     do
     {
-      SWAP_OUT_CURRENT_THREAD();
       THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%p\n",m));
+      SWAP_OUT_CURRENT_THREAD();
       co_wait_interpreter(& m->condition);
       SWAP_IN_CURRENT_THREAD();
       check_threads_etc();
     }while(m->key);
+    m->num_waiting--;
   }
+
+#ifdef PICKY_MUTEX
+  if (!Pike_fp->current_object->prog) {
+    free_object (o);
+    if (!m->num_waiting)
+      co_destroy (&m->condition);
+    Pike_error ("Mutex was destructed while waiting for lock.\n");
+  }
+#endif
+
   m->key=o;
   OB2KEY(o)->mut=m;
   add_ref (OB2KEY(o)->mutex_obj = Pike_fp->current_object);
@@ -1306,14 +1321,35 @@ void init_mutex_obj(struct object *o)
 {
   co_init(& THIS_MUTEX->condition);
   THIS_MUTEX->key=0;
+  THIS_MUTEX->num_waiting = 0;
 }
 
 void exit_mutex_obj(struct object *o)
 {
+  struct mutex_storage *m = THIS_MUTEX;
+
   THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
-  if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
-  THIS_MUTEX->key=0;
-  co_destroy(& THIS_MUTEX->condition);
+
+  if(m->key) {
+    destruct(m->key);
+    m->key=0;
+    if(m->num_waiting)
+    {
+      THREADS_FPRINTF(1, (stderr, "DESTRUCTED MUTEX IS BEING WAITED ON\n"));
+#ifdef PICKY_MUTEX
+      /* exit_mutex_key_obj has already signalled, but since the
+       * waiting threads will throw an error instead of making a new
+       * lock we need to double it to a broadcast. The last thread
+       * that stops waiting will destroy m->condition. */
+      co_broadcast (&m->condition);
+#else
+      /* The last thread that stops waiting will destroy
+       * m->condition. */
+#endif
+      return;
+    }
+  }
+  co_destroy(& m->condition);
 }
 
 /*! @endclass
@@ -1366,11 +1402,16 @@ void exit_mutex_key_obj(struct object *o)
       free_object(THIS_KEY->owner_obj);
       THIS_KEY->owner_obj=0;
     }
-    free_object (THIS_KEY->mutex_obj);
     THIS_KEY->mut=0;
-    THIS_KEY->mutex_obj = NULL;
     THIS_KEY->initialized=0;
-    co_signal(& mut->condition);
+    if (mut->num_waiting)
+      co_signal(& mut->condition);
+#ifndef PICKY_MUTEX
+    else if (!THIS_KEY->mutex_obj->prog)
+      co_destroy (&mut->condition);
+#endif
+    free_object (THIS_KEY->mutex_obj);
+    THIS_KEY->mutex_obj = NULL;
   }
 }
 
@@ -1400,15 +1441,21 @@ void exit_mutex_key_obj(struct object *o)
  *! Wait for contition.
  *!
  *! This function makes the current thread sleep until the condition
- *! variable is signalled. The optional argument should be the 'key'
- *! to a mutex lock. If present the mutex lock will be unlocked before
- *! waiting for the condition in one atomic operation. After waiting
- *! for the condition the mutex referenced by mutex_key will be re-locked.
+ *! variable is signalled. The argument should be a @[Thread.MutexKey]
+ *! object for a @[Thread.Mutex]. It will be unlocked atomically
+ *! before waiting for the signal and then relocked atomically when
+ *! the signal is received.
+ *!
+ *! The thread that sends the signal should have the mutex locked
+ *! while sending it. Otherwise it's impossible to avoid races where
+ *! signals are sent while the listener(s) haven't arrived to the
+ *! @[wait] calls yet.
  *!
  *! @note
  *!   In Pike 7.2 and earlier it was possible to call @[wait()]
- *!   without arguments. This possibility was removed in Pike 7.3,
- *!   since it lead to programs with deadlocks.
+ *!   without arguments. This possibility was removed in later
+ *!   versions since it unavoidably leads to programs with races
+ *!   and/or deadlocks.
  *!
  *! @seealso
  *!   @[Mutex->lock()]
