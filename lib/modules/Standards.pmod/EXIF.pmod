@@ -3,7 +3,7 @@
 //!
 //! Copyright (c) Roxen Internet Software 2001
 
-// $Id: EXIF.pmod,v 1.3 2001/09/17 08:47:27 mirar Exp $
+// $Id: EXIF.pmod,v 1.4 2001/09/17 09:20:19 mirar Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -357,8 +357,7 @@ int long_value(string str)
   return (str[3]<<24)|(str[2]<<16)|(str[1]<<8)|str[0];
 }
 
-int exif_offset=12;
-void exif_seek(Stdio.File file, int offset)
+void exif_seek(Stdio.File file, int offset, int exif_offset)
 {
   file->seek(offset+exif_offset);
 }
@@ -368,7 +367,8 @@ string format_bytes(string str)
   return (array(string))((array(int))str)*" ";
 }
 
-mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info)
+mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
+		  int exif_offset)
 {
   int tag_id=short_value(file->read(2));
   int tag_type=short_value(file->read(2));
@@ -398,7 +398,7 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info)
   
   int pos=file->tell();
   if(tag_len>4)
-    exif_seek(file, long_value(file->read(4)));
+    exif_seek(file, long_value(file->read(4)), exif_offset);
 
   if(tag_type==1 || tag_type==6 || tag_type==7)
   {
@@ -408,7 +408,7 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info)
     {
       int num_entries=short_value(file->read(2));
       for(int i=0; i<num_entries; i++)
-	tags|=parse_tag(file, tags, tag_map);
+	tags|=parse_tag(file, tags, tag_map, exif_offset);
     }
     else
     {
@@ -513,6 +513,7 @@ mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info)
 //!   A mapping with all found EXIF properties.
 mapping get_properties(Stdio.File|string file)
 {
+  int exif_offset=12;
   if(!objectp(file))
     file=Stdio.File(file, "rb");
 
@@ -520,6 +521,7 @@ mapping get_properties(Stdio.File|string file)
 
   if (skip[strlen(skip)-6..]!="Exif\0\0")
   {
+     werror("BIPA\n");
      skip=file->read(100);
      int z=search(skip,"Exif\0\0");
      if (z==-1) return ([]); // no exif header?
@@ -536,10 +538,10 @@ mapping get_properties(Stdio.File|string file)
     int offset=long_value(file->read(4));
     while(offset>0)
     {
-      exif_seek(file,offset);
+      exif_seek(file,offset,exif_offset);
       int num_entries=short_value(file->read(2));
       for(int i=0; i<num_entries; i++)
-	tags|=parse_tag(file, tags, TAG_INFO);
+	tags|=parse_tag(file, tags, TAG_INFO, exif_offset);
 
       offset=long_value(file->read(4));
 
