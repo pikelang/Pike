@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.154 2001/02/27 01:05:15 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.155 2001/03/03 18:05:08 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -263,6 +263,12 @@ void push_int_type(INT32 min, INT32 max)
   push_type_int(max);
   push_type_int(min);
   push_type(T_INT);
+}
+
+static void push_assign_type(int marker)
+{
+  push_type(marker);
+  push_type(T_ASSIGN);
 }
 
 void push_object_type(int flag, INT32 id)
