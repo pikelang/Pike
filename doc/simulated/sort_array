@@ -7,10 +7,10 @@ SYNTAX
 	mixed *sort_array(mixed *arr,function fun,mixed ... args);
 
 DESCRIPTION
-	The first syntax sorts an array after a compare-function fun
+	This function sorts an array after a compare-function 'fun'
 	which takes two arguments and should return 1 if the first argument
 	is larger then the second. The rest of the arguments 'args' will be
-	sent as 3rd, 4th etc. argument to fun. If fun is omitted, < is unsed
+	sent as 3rd, 4th etc. argument to fun. If fun is omitted, `< is unsed
 	instead.
 
 KEYWORDS
