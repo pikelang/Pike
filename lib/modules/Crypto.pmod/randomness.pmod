@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.2 2003/03/24 17:09:18 nilsson Exp $
+// $Id: randomness.pmod,v 1.3 2003/08/26 16:38:36 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -6,7 +6,12 @@
 //! will block if it can't provide enough random bits, while /dev/urandom
 //! will degenerate into a reasonably strong pseudo random generator
 
+#if constant(Crypto.arcfour)
 #pike __REAL_VERSION__
+#else
+#pike 7.4
+#endif
+
 // #pragma strict_types
 
 static constant RANDOM_DEVICE = "/dev/random";

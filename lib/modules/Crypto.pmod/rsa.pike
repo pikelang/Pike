@@ -1,9 +1,13 @@
-/* $Id: rsa.pike,v 1.4 2003/04/18 15:43:45 mast Exp $
+/* $Id: rsa.pike,v 1.5 2003/08/26 16:38:35 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
 
+#if constant(Crypto.sha)
 #pike __REAL_VERSION__
+#else
+#pike 7.4
+#endif
 
 #if constant(Gmp.mpz)
 
