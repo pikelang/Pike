@@ -27,3 +27,19 @@ test_do(_Roxen.http_decode_string("%41%u000"))
 test_do(_Roxen.http_decode_string("%41%u000_"))
 test_eq(_Roxen.http_decode_string("%u12345"), "\x1234""5")
 test_eq(_Roxen.http_decode_string("%U12345"), "\x1234""5")
+
+define(test_mkhttp,[[
+  test_any_equal([[
+    string x=_Roxen.make_http_headers($1);
+    if(!has_suffix(x, "\r\n")) return -1;
+    return sort(x/"\r\n"-({""}));
+  ]],$2)
+]])
+
+test_eval_error(_Roxen.make_http_headers(0))
+
+test_mkhttp( ([]), ({}) )
+test_mkhttp( (["":""]), ({": "}) )
+test_mkhttp( (["a":"1","b":"2"]), ({"a: 1","b: 2"}) )
+test_mkhttp( (["a":"1","b":({"2","3"})]), ({"a: 1","b: 2","b: 3"}) )
+test_mkhttp( (["a":"1","b":({"2","2"})]), ({"a: 1","b: 2","b: 2"}) )
