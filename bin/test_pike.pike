@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.37 2000/03/07 08:14:57 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.38 2000/03/20 20:57:34 hubbe Exp $ */
 
 import Stdio;
 
@@ -181,9 +181,9 @@ int main(int argc, string *argv)
 	  while(1)
 	  {
 	    sleep(10);
-	    if(exit_quietly) exit(0);
+	    if(exit_quietly) _exit(0);
 #ifndef __NT__
-	    if(!kill(pid, 0)) exit(0);
+	    if(!kill(pid, 0)) _exit(0);
 #endif
 //	    werror("[WATCHDOG] t=%d\n",time()-last_time);
 
@@ -192,12 +192,12 @@ int main(int argc, string *argv)
 	    {
 	      werror("\n[WATCHDOG] Pike testsuite timeout, sending SIGABRT.\n");
 	      kill(pid, signum("SIGABRT"));
-	      for(int q=0;q<60;q++) if(!kill(pid,0)) exit(0); else sleep(1);
+	      for(int q=0;q<60;q++) if(!kill(pid,0)) _exit(0); else sleep(1);
 	      werror("\n"
 		     "[WATCHDOG] This is your friendly watchdog again...\n"
 		     "[WATCHDOG] testsuite failed to die from SIGABRT, sending SIGKILL\n");
 	      kill(pid, signum("SIGKILL"));
-	      for(int q=0;q<60;q++) if(!kill(pid,0)) exit(0); else sleep(1);
+	      for(int q=0;q<60;q++) if(!kill(pid,0)) _exit(0); else sleep(1);
 	      werror("\n"
 		     "[WATCHDOG] This is your friendly watchdog AGAIN...\n"
 		     "[WATCHDOG] SIGKILL, SIGKILL, SIGKILL, DIE!\n");
@@ -205,14 +205,14 @@ int main(int argc, string *argv)
 	      kill(pid, signum("SIGKILL"));
 	      kill(pid, signum("SIGKILL"));
 	      kill(pid, signum("SIGKILL"));
-	      for(int q=0;q<60;q++) if(!kill(pid,0)) exit(0); else sleep(1);
+	      for(int q=0;q<60;q++) if(!kill(pid,0)) _exit(0); else sleep(1);
 	      werror("\n"
 		     "[WATCHDOG] Giving up, must be a device wait.. :(\n");
-	      exit(0);
+	      _exit(0);
 	    }
 	  }
 #else
-	  exit(1);
+	  _exit(1);
 #endif
 	  break;
 	  
@@ -641,7 +641,21 @@ int main(int argc, string *argv)
 
 #ifdef WATCHDOG_SIGNAL
   if(use_watchdog)
+  {
     watchdog->kill(signum("SIGKILL"));
+    watchdog->wait();
+  }
+#endif
+
+#ifdef WATCHDOG_PIPE
+  if(use_watchdog)
+  {
+    destruct(watchdog_pipe);
+#if constant(signum)
+    catch { watchdog->kill(signum("SIGKILL")); };
+#endif
+    watchdog->wait();
+  }
 #endif
 
   return errors;
