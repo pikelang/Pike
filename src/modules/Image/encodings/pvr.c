@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.2 2000/02/27 12:50:44 marcus Exp $");
+RCSID("$Id: pvr.c,v 1.3 2000/02/27 13:06:45 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -158,7 +158,6 @@ static void pvr_decode_twiddled(INT32 attr, unsigned char *s, rgb_group *dst,
 	 dst->r = ((p&0x7c00)>>7)|((p&0x7000)>>12);
 	 dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
 	 dst->b = ((p&0x001f)<<3)|((p&0x001c)>>2);
-	 src+=2;
 	 dst++;
        }
        dst += stride;
@@ -173,7 +172,6 @@ static void pvr_decode_twiddled(INT32 attr, unsigned char *s, rgb_group *dst,
 	 dst->r = ((p&0xf800)>>8)|((p&0xe000)>>13);
 	 dst->g = ((p&0x07e0)>>3)|((p&0x0600)>>9);
 	 dst->b = ((p&0x001f)<<3)|((p&0x001c)>>2);
-	 src+=2;
 	 dst++;
        }
        dst += stride;
@@ -188,7 +186,67 @@ static void pvr_decode_twiddled(INT32 attr, unsigned char *s, rgb_group *dst,
 	 dst->r = ((p&0x0f00)>>4)|((p&0x0f00)>>8);
 	 dst->g = (p&0x00f0)|((p&0x00f0)>>4);
 	 dst->b = ((p&0x000f)<<4)|(p&0x000f);
-	 src+=2;
+	 dst++;
+       }
+       dst += stride;
+     }
+     break;
+  }
+}
+
+static void pvr_decode_alpha_rect(INT32 attr, unsigned char *src,
+				  rgb_group *dst, INT32 stride,
+				  unsigned int h, unsigned int w)
+{
+  INT32 cnt = h * w;
+  switch(attr&0xff) {
+   case MODE_ARGB1555:
+     while(cnt--) {
+       if(src[1]&0x8000)
+	 dst->r = dst->g = dst->b = ~0;
+       else
+	 dst->r = dst->g = dst->b = 0;
+       src+=2;
+       dst++;
+     }
+     break;
+   case MODE_ARGB4444:
+     while(cnt--) {
+       int a = src[1]&0xf0;
+       a |= a>>4;
+       dst->r = dst->g = dst->b = a;
+       src+=2;
+       dst++;
+     }
+     break;
+  }
+}
+
+static void pvr_decode_alpha_twiddled(INT32 attr, unsigned char *s,
+				      rgb_group *dst, INT32 stride,
+				      unsigned int sz)
+{
+  unsigned int x, y;
+  unsigned char *src;
+  switch(attr&0xff) {
+   case MODE_ARGB1555:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 if(s[(((twiddletab[x]<<1)|twiddletab[y])<<1)+1]&0x80)
+	   dst->r = dst->g = dst->b = ~0;
+	 else
+	   dst->r = dst->g = dst->b = 0;
+	 dst++;
+       }
+       dst += stride;
+     }
+     break;
+   case MODE_ARGB4444:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 int a = s[(((twiddletab[x]<<1)|twiddletab[y])<<1)+1]&0xf0;
+	 a |= a>>4;
+	 dst->r = dst->g = dst->b = a;
 	 dst++;
        }
        dst += stride;
@@ -323,6 +381,28 @@ void img_pvr_decode(INT32 args,int header_only)
 	   pvr_decode_twiddled(attr, s+bpp*w*x, img->img+w*x, 0, w);
      else
        pvr_decode_rect(attr, s, img->img, 0, h, w);
+
+     if(hasalpha) {
+
+       push_text("alpha");
+       push_int(w);
+       push_int(h);
+       o=clone_object(image_program,2);
+       img=(struct image*)get_storage(o,image_program);
+       push_object(o);
+       n++;
+       
+       if(twiddle)
+	 if(h<w)
+	   for(x=0; x<w; x+=h)
+	     pvr_decode_alpha_twiddled(attr, s+bpp*h*x, img->img+x, w-h, h);
+	 else
+	   for(x=0; x<h; x+=w)
+	     pvr_decode_alpha_twiddled(attr, s+bpp*w*x, img->img+w*x, 0, w);
+       else
+	 pvr_decode_alpha_rect(attr, s, img->img, 0, h, w);
+     }
+
    }
 
    f_aggregate_mapping(2*n);
