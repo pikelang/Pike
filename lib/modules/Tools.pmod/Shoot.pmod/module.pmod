@@ -94,7 +94,7 @@ class ExecTest(string id,Test test)
 	 if (status=="")
 	 {
 	    write("Failed to spawn pike or run test (code:%d, errno:%d)\n",
-		  ret, errno);
+		  ret, err);
 	    return 1;
 	 }
 
