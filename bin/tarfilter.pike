@@ -54,9 +54,13 @@ void doit(Stdio.File in, Stdio.File out)
       s[345..];
     written +=
       out->write(s[..147]+sprintf("%07o\0", `+(@values(s[..511])))+s[156..]);
-    size = (size + 511) & -511;
+    //size = (size + 511) & -511;
     copydata(in, out, size);
     written += size;
+    if (size & 511) {
+      copydata(in, out, 512 - (size & 511));
+      written += 512 - (size & 511);
+    }
   }
   // GNU tar 1.14 complains if we don't pad to an even 20 of blocks.
   if (written % 10240) {
