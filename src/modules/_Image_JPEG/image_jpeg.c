@@ -9,7 +9,9 @@ RCSID("$id: $");
 
 #ifdef HAVE_JPEGLIB_H
 
-#include "jpeglib.h"
+#include <jpeglib.h>
+
+#endif /* HAVE_JPEGLIB_H */
 
 #include "pike_macros.h"
 #include "object.h"
@@ -22,6 +24,8 @@ RCSID("$id: $");
 #include "error.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
+
+#ifdef HAVE_JPEGLIB_H
 
 #include "../Image/image.h"
 
