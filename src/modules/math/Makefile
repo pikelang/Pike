@@ -15,7 +15,10 @@ clean:
 	-rm -f *.o
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\.\./;;g' | sed 's;\./;;g'>$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
+	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
+	config.status
 
-include ./dependencies
-
+math.o: ./math.c ./../../interpret.h ./../../program.h \
+ ./../../config.h ./../../machine.h ./../../types.h ./../../add_efun.h \
+ ./../../svalue.h ./../../hashtable.h

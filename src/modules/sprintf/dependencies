@@ -1,15 +1,5 @@
-sprintf.o: sprintf.c \
-  global.h \
-  config.h machine.h \
-  port.h \
-  error.h \
-  svalue.h \
-  array.h \
-  las.h \
-  dynamic_buffer.h \
-  program.h \
-  stralloc.h \
-  lpc_types.h \
-  add_efun.h \
-  hashtable.h \
-  interpret.h
+sprintf.o: ./sprintf.c ./../../global.h ./../../config.h \
+ ./../../machine.h ./../../port.h ./../../error.h ./../../svalue.h \
+ ./../../array.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../program.h ./../../stralloc.h ./../../lpc_types.h \
+ ./../../add_efun.h ./../../hashtable.h ./../../interpret.h

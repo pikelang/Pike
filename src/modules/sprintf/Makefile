@@ -15,8 +15,13 @@ clean:
 	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\.\./;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
+	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
+	config.status
 
-include ./dependencies
 
-
+sprintf.o: ./sprintf.c ./../../global.h ./../../config.h \
+ ./../../machine.h ./../../port.h ./../../error.h ./../../svalue.h \
+ ./../../array.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../program.h ./../../stralloc.h ./../../lpc_types.h \
+ ./../../add_efun.h ./../../hashtable.h ./../../interpret.h

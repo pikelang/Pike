@@ -15,8 +15,14 @@ clean:
 	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\.\./;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
+	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
+	config.status
 
-include ./dependencies
-
-
+glue.o: ./glue.c ./../../global.h ./../../config.h ./../../machine.h \
+ ./../../port.h ./../../interpret.h ./../../program.h ./../../svalue.h \
+ ./../../stralloc.h ./../../array.h ./../../las.h \
+ ./../../dynamic_buffer.h ./../../object.h ./../../macros.h
+regexp.o: ./regexp.c ./../../global.h ./../../config.h \
+ ./../../machine.h ./../../port.h ./regexp.h ./../../error.h \
+ ./../../svalue.h

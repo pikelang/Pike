@@ -16,6 +16,30 @@ clean:
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
+	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
+	config.status
 
-include ./dependencies
-
+discdate.o: ./discdate.c ./../../stralloc.h ./../../types.h \
+ ./../../machine.h ./../../global.h ./../../config.h ./../../port.h \
+ ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
+ ./../../hashtable.h ./../../interpret.h ./../../program.h \
+ ./../../mapping.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../array.h ./../../builtin_efuns.h ./spider.h
+sdebug.o: ./sdebug.c ./../../stralloc.h ./../../types.h \
+ ./../../machine.h ./../../global.h ./../../config.h ./../../port.h \
+ ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
+ ./../../hashtable.h ./../../interpret.h ./../../program.h \
+ ./../../mapping.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../array.h ./../../builtin_efuns.h ./spider.h
+spider.o: ./spider.c ./../../machine.h ./../../stralloc.h \
+ ./../../types.h ./../../global.h ./../../config.h ./../../port.h \
+ ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
+ ./../../hashtable.h ./../../interpret.h ./../../program.h \
+ ./../../mapping.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../array.h ./../../builtin_efuns.h ./spider.h ./conf.h
+stardate.o: ./stardate.c ./../../stralloc.h ./../../types.h \
+ ./../../machine.h ./../../global.h ./../../config.h ./../../port.h \
+ ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
+ ./../../hashtable.h ./../../interpret.h ./../../program.h \
+ ./../../mapping.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../array.h ./../../builtin_efuns.h ./spider.h

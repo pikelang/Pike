@@ -1,0 +1,4 @@
+pipe.o: ./pipe.c ./../../global.h ./../../config.h ./../../machine.h \
+ ./../../port.h ./../../stralloc.h ./../../macros.h ./../../object.h \
+ ./../../svalue.h ./../../add_efun.h ./../../hashtable.h \
+ ./../../interpret.h ./../../program.h ./../../error.h

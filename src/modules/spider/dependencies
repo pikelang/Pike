@@ -1,6 +1,10 @@
-debug.o: ./debug.c ./spider.h ./../../config.h ./../../machine.h \
- ./../../program.h ./../../types.h
 discdate.o: ./discdate.c ./../../stralloc.h ./../../types.h \
+ ./../../machine.h ./../../global.h ./../../config.h ./../../port.h \
+ ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
+ ./../../hashtable.h ./../../interpret.h ./../../program.h \
+ ./../../mapping.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../array.h ./../../builtin_efuns.h ./spider.h
+sdebug.o: ./sdebug.c ./../../stralloc.h ./../../types.h \
  ./../../machine.h ./../../global.h ./../../config.h ./../../port.h \
  ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
  ./../../hashtable.h ./../../interpret.h ./../../program.h \
@@ -12,4 +16,9 @@ spider.o: ./spider.c ./../../machine.h ./../../stralloc.h \
  ./../../hashtable.h ./../../interpret.h ./../../program.h \
  ./../../mapping.h ./../../las.h ./../../dynamic_buffer.h \
  ./../../array.h ./../../builtin_efuns.h ./spider.h ./conf.h
-stardate.o: ./stardate.c ./spider.h
+stardate.o: ./stardate.c ./../../stralloc.h ./../../types.h \
+ ./../../machine.h ./../../global.h ./../../config.h ./../../port.h \
+ ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
+ ./../../hashtable.h ./../../interpret.h ./../../program.h \
+ ./../../mapping.h ./../../las.h ./../../dynamic_buffer.h \
+ ./../../array.h ./../../builtin_efuns.h ./spider.h

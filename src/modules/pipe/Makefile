@@ -15,7 +15,11 @@ clean:
 	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c  >$(SRCDIR)/dependencies
+	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
+	config.status
 
-include ./dependencies
-
+pipe.o: ./pipe.c ./../../global.h ./../../config.h ./../../machine.h \
+ ./../../port.h ./../../stralloc.h ./../../macros.h ./../../object.h \
+ ./../../svalue.h ./../../add_efun.h ./../../hashtable.h \
+ ./../../interpret.h ./../../program.h ./../../error.h
