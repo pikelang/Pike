@@ -176,3 +176,4 @@ testfont binary
 /src/program.c foreign_ident
 /src/testsuite.in foreign_ident
 /src/threads.c foreign_ident
+/tutorial/Image.wmml foreign_ident
