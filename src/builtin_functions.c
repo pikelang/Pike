@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.57 1997/11/13 22:13:28 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.58 1997/11/17 03:23:14 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -460,8 +460,8 @@ static char *combine_path(char *cwd,char *file)
     to++;
   }
 
-  if(*cwd && from[-1]!='/' && *ret && ret[-1]=='/')
-    *--to=0;
+  if(*ret && from[-1]!='/' && to[-1]=='/')
+      *--to=0;
 
   if(!*ret)
   {
