@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.18 2002/12/12 13:16:50 hop Exp $
+|| $Id: dvb.c,v 1.19 2003/05/30 00:07:35 mast Exp $
 */
 
 /*
@@ -292,12 +292,13 @@ static void f_create(INT32 args) {
  */
 static void f_fe_status(INT32 args) {
 
+  dvb_data *dvb = DVB;
   uint32_t status;
   int cnt = 0, ret;
 
   pop_n_elems(args);
   THREADS_ALLOW();
-  ret = ioctl(DVB->fefd, FE_READ_STATUS, &status);
+  ret = ioctl(dvb->fefd, FE_READ_STATUS, &status);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
@@ -312,21 +313,21 @@ static void f_fe_status(INT32 args) {
     push_text("tuner_lock"); push_int(!!(status & ~FE_TUNER_HAS_LOCK));
     cnt = 7;
     THREADS_ALLOW();
-    ret = ioctl(DVB->fefd, FE_READ_BER, &status);
+    ret = ioctl(dvb->fefd, FE_READ_BER, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
       push_text("ber"); push_int(status);
       cnt++;
     }
     THREADS_ALLOW();
-    ret = ioctl(DVB->fefd, FE_READ_SNR, &status);
+    ret = ioctl(dvb->fefd, FE_READ_SNR, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
       push_text("snr"); push_int(status);
       cnt++;
     }
     THREADS_ALLOW();
-    ret = ioctl(DVB->fefd, FE_READ_SIGNAL_STRENGTH, &status);
+    ret = ioctl(dvb->fefd, FE_READ_SIGNAL_STRENGTH, &status);
     THREADS_DISALLOW();
     if(ret > -1) {
       push_text("signal_strength"); push_int(status);
@@ -347,12 +348,13 @@ static void f_fe_status(INT32 args) {
  */
 static void f_fe_info(INT32 args) {
 
+  dvb_data *dvb = DVB;
   FrontendInfo info;
   int ret;
 
   pop_n_elems(args);
   THREADS_ALLOW();
-  ret = ioctl(DVB->fefd, FE_GET_INFO, &info);
+  ret = ioctl(dvb->fefd, FE_GET_INFO, &info);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
@@ -474,6 +476,7 @@ static int do_tune(int fefd, uint ifreq, uint sr)
  *!
  */
 static void f_zap(INT32 args) {
+  dvb_data *dvb = DVB;
   int secfd;
   uint ifreq;
   int hiband, result;
@@ -503,7 +506,7 @@ static void f_zap(INT32 args) {
 
   satno = (u_short)Pike_sp[-1].u.integer;
 
-  if((devname = mk_devname(DVB->cardn, SECDEVICE)) == NULL)
+  if((devname = mk_devname(dvb->cardn, SECDEVICE)) == NULL)
       Pike_error("Internal error: can't malloc buffer.\n");
   secfd = open (devname, O_RDWR);
   /* free(devname); */
@@ -511,7 +514,7 @@ static void f_zap(INT32 args) {
       Pike_error ("opening SEC device failed\n");
   }
   THREADS_ALLOW();
-  result = ioctl (DVB->fefd, FE_GET_INFO, &fe_info);
+  result = ioctl (dvb->fefd, FE_GET_INFO, &fe_info);
   THREADS_DISALLOW();
   if (result == -1 || fe_info.type != FE_QPSK) {
       close (secfd);
@@ -526,13 +529,13 @@ static void f_zap(INT32 args) {
 
   result = 0;
   if (diseqc (secfd, satno, pol, hiband))
-    if (do_tune (DVB->fefd, ifreq, sr))
+    if (do_tune (dvb->fefd, ifreq, sr))
 	  result = 1;
 
   close (secfd);
 
   if(!result)
-    Pike_error(DVB->low_errmsg);
+    Pike_error(dvb->low_errmsg);
 
   push_int(result);
 }
@@ -1303,10 +1306,11 @@ static void f_stream_detach(INT32 args) {
  */
 static void f_stream_read(INT32 args) {
 
+  dvb_stream_data *dvb_stream = DVBStream;
   int all = 1, ret, e, cnt, ix = 0;
   char buf[MAX_DVB_READ_SIZE], *bufptr;
 
-  if(DVBStream->fd < 0)
+  if(dvb_stream->fd < 0)
     Pike_error("Object destroyed!\n");
 
   check_all_args("DVB.dvb->stream_read", args, BIT_INT | BIT_VOID, 0);
@@ -1314,20 +1318,20 @@ static void f_stream_read(INT32 args) {
     all = (u_short)Pike_sp[-1].u.integer;
   pop_n_elems(args);
 
-  if(DVBStream->pkt.payload_len > 0)
-    memcpy(buf, DVBStream->pkt.payload, DVBStream->pkt.payload_len);
+  if(dvb_stream->pkt.payload_len > 0)
+    memcpy(buf, dvb_stream->pkt.payload, dvb_stream->pkt.payload_len);
   for(;;) {
     e = 0;
     THREADS_ALLOW();
-    ret = read(DVBStream->fd, buf + DVBStream->pkt.payload_len,
-               DVBStream->buflen - DVBStream->pkt.payload_len);
+    ret = read(dvb_stream->fd, buf + dvb_stream->pkt.payload_len,
+               dvb_stream->buflen - dvb_stream->pkt.payload_len);
     e = errno; /* check_threads_etc may effect errno */
     THREADS_DISALLOW();
 
     /* check_threads_etc(); */
 
     if (ret > 0) {
-      ret += DVBStream->pkt.payload_len;
+      ret += dvb_stream->pkt.payload_len;
       break;
     }
     if (ret == -1 && (e == EAGAIN || e == EINTR)) {
@@ -1347,15 +1351,15 @@ static void f_stream_read(INT32 args) {
 
   if(ret > 0) {
     bufptr = buf;
-    while((cnt = dvb_pes2es(bufptr,ret,&DVBStream->pkt, 0xC0)) > 0) {
+    while((cnt = dvb_pes2es(bufptr,ret,&dvb_stream->pkt, 0xC0)) > 0) {
 #ifdef DVB_DEBUG
-      /* printf("DEB: dvb: PID(%d): cnt=%d (ix: %d): pkt.len=%d (skipped: %d)\n", DVBStream->pid, cnt, ix, DVBStream->pkt.payload_len, DVBStream->pkt.skipped); */
-      if(DVBStream->pkt.skipped)
-        printf("PID(%d): skipped: %d\n", DVBStream->pid, DVBStream->pkt.skipped);
+      /* printf("DEB: dvb: PID(%d): cnt=%d (ix: %d): pkt.len=%d (skipped: %d)\n", dvb_stream->pid, cnt, ix, dvb_stream->pkt.payload_len, dvb_stream->pkt.skipped); */
+      if(dvb_stream->pkt.skipped)
+        printf("PID(%d): skipped: %d\n", dvb_stream->pid, dvb_stream->pkt.skipped);
 #endif
-      push_string(make_shared_binary_string((char *)DVBStream->pkt.payload,
-		    DVBStream->pkt.payload_len));
-      DVBStream->pkt.payload_len = 0; /* clear internall buffer */
+      push_string(make_shared_binary_string((char *)dvb_stream->pkt.payload,
+		    dvb_stream->pkt.payload_len));
+      dvb_stream->pkt.payload_len = 0; /* clear internall buffer */
       ix++;
       bufptr += cnt;
       ret -= cnt;
@@ -1366,8 +1370,8 @@ static void f_stream_read(INT32 args) {
       f_add(ix);
     if(ret && ix) {
        /* some unprocessed data remain in buf */
-       memcpy(DVBStream->pkt.payload, bufptr, ret);
-       DVBStream->pkt.payload_len = ret;
+       memcpy(dvb_stream->pkt.payload, bufptr, ret);
+       dvb_stream->pkt.payload_len = ret;
     }
 #ifdef DVB_DEBUG
       printf("DEB: dvb: ret=%d (ix: %d)\n", ret, ix);
@@ -1454,6 +1458,7 @@ static void f_audio_create(INT32 args) {
  */
 static void f_audio_mute(INT32 args) {
 
+  dvb_audio_data *dvb_audio = DVBAudio;
   int mute = 1; /* default is mute = on */
   int ret;
 
@@ -1465,7 +1470,7 @@ static void f_audio_mute(INT32 args) {
   }
 
   THREADS_ALLOW();
-  ret = ioctl(DVBAudio->fd, AUDIO_SET_MUTE, mute);
+  ret = ioctl(dvb_audio->fd, AUDIO_SET_MUTE, mute);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
@@ -1480,12 +1485,13 @@ static void f_audio_mute(INT32 args) {
  */
 static void f_audio_status(INT32 args) {
 
+  dvb_audio_data *dvb_audio = DVBAudio;
   int ret;
   audioStatus_t status;
 
   pop_n_elems(args);
   THREADS_ALLOW();
-  ret = ioctl(DVBAudio->fd, AUDIO_GET_STATUS, &status);
+  ret = ioctl(dvb_audio->fd, AUDIO_GET_STATUS, &status);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
@@ -1528,6 +1534,7 @@ static void f_audio_status(INT32 args) {
 
 static void f_audio_ctrl(INT32 args) {
 
+  dvb_audio_data *dvb_audio = DVBAudio;
   int ret;
   int cw = -1;
 
@@ -1552,7 +1559,7 @@ static void f_audio_ctrl(INT32 args) {
   }
 
   THREADS_ALLOW();
-  ret = ioctl(DVBAudio->fd, cw);
+  ret = ioctl(dvb_audio->fd, cw);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
@@ -1571,6 +1578,7 @@ static void f_audio_ctrl(INT32 args) {
  */
 static void f_audio_mixer(INT32 args) {
 
+  dvb_audio_data *dvb_audio = DVBAudio;
   int ret;
   audioMixer_t mixer;
 
@@ -1585,7 +1593,7 @@ static void f_audio_mixer(INT32 args) {
     mixer.volume_left = mixer.volume_right;
 
   THREADS_ALLOW();
-  ret = ioctl(DVBAudio->fd, AUDIO_SET_MIXER, &mixer);
+  ret = ioctl(dvb_audio->fd, AUDIO_SET_MIXER, &mixer);
   THREADS_DISALLOW();
   if(ret < 0)
     Pike_error("Seting mixer failed.\n");
