@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.11 2000/08/14 14:24:04 grubba Exp $ */
+/* $Id: ras.c,v 1.12 2000/09/16 23:53:23 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.11 2000/08/14 14:24:04 grubba Exp $
+**!	$Id: ras.c,v 1.12 2000/09/16 23:53:23 grubba Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.11 2000/08/14 14:24:04 grubba Exp $");
+RCSID("$Id: ras.c,v 1.12 2000/09/16 23:53:23 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -315,7 +315,7 @@ void img_ras_decode(INT32 args)
 	      if(numcolors>0)
 		*rgb = entries[0].color;
 	      else
-		rgb->r = rgb->g = rgb->b = ~0;
+		rgb->r = rgb->g = rgb->b = 0xff;
 	    rgb++;
 	    data<<=1;
 	    --bits;
