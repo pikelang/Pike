@@ -1,10 +1,12 @@
-# $Id: Makefile.in,v 1.4 1999/11/18 07:59:55 hubbe Exp $
+# $Id: Makefile.in,v 1.5 2002/05/09 16:04:55 agehall Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=math_module.o math_matrix.o
+OBJS=math_module.o math_matrix.o transforms.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
+transform.o: $(SRCDIR)/transform.c
+
 @dependencies@

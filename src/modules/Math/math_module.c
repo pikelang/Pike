@@ -1,5 +1,5 @@
 /*
- * $Id: math_module.c,v 1.8 2001/07/31 19:31:22 marcus Exp $
+ * $Id: math_module.c,v 1.9 2002/05/09 16:04:55 agehall Exp $
  */
 
 #include "global.h"
@@ -7,6 +7,7 @@
 #include "program.h"
 
 #include "math_module.h"
+#include "transforms.h"
 
 /* must be included last */
 #include "module_magic.h"
@@ -22,6 +23,7 @@ struct program *math_smatrix_program;
 #ifdef INT64
 struct program *math_lmatrix_program;
 #endif /* INT64 */
+struct program *math_transforms_program;
 
 static struct math_class
 {
@@ -36,6 +38,7 @@ static struct math_class
 #endif /* INT64 */
    {"FMatrix",init_math_fmatrix,&math_fmatrix_program},
    {"SMatrix",init_math_smatrix,&math_smatrix_program},
+   {"Transforms",init_math_transforms,&math_transforms_program},
 };
 
 void pike_module_exit(void)
@@ -49,6 +52,7 @@ void pike_module_exit(void)
    exit_math_imatrix();
    exit_math_fmatrix();
    exit_math_smatrix();
+   exit_math_transforms();
 }
 
 void pike_module_init(void)

@@ -1,11 +1,32 @@
-# $Id: configure.in,v 1.4 2001/02/13 15:44:16 mirar Exp $
+# $Id: configure.in,v 1.5 2002/05/09 16:04:55 agehall Exp $
 AC_INIT(math_module.c)
 AC_CONFIG_HEADER(config.h)
+AC_ARG_WITH(fftw,     [  --with(out)-fftw       Support for fftw],[],[with_fftw=yes])
 
 AC_MODULE_INIT()
 
 PIKE_FEATURE_OK(Math.)
 
 AC_C_CHAR_UNSIGNED
+
+if test x$with_fftw = xyes ; then
+    dnl Checks for header files.
+    AC_CHECK_HEADERS(fftw.h)
+    AC_CHECK_HEADERS(rfftw.h)
+
+    if test $ac_cv_header_fftw_h = yes; then
+	dnl Checks for libraries.
+	AC_CHECK_LIB(fftw, fftw,,ac_cv_header_fftw_h=no,-lm)
+	AC_CHECK_LIB(rfftw, rfftw,,ac_cv_header_rfftw_h=no,-lm)
+
+	dnl Checks for typedefs, structures, and compiler characteristics.
+
+	dnl Checks for library functions.
+	AC_HEADER_STDC
+	if test $ac_cv_header_fftw_h = yes; then
+		PIKE_FEATURE_OK(Math.Transforms.FFT)
+	fi
+    fi
+fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
