@@ -5,19 +5,6 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 MODULE_CPPFLAGS=@CPPFLAGS@
 MSQL_SUPPORTED=@MSQL_SUPPORTED@
 
-all: module_install
-
-module_install: include_install glue_install mod_install
-
-include_install: lib/msql.h
-	if [ x$(MSQL_SUPPORTED) = xyes ] ; then cp lib/msql.h $(TMP_LIBDIR)/include/msql.h; fi
-
-glue_install: lib/msql.pike
-	if [ x$(MSQL_SUPPORTED) = xyes ] ; then cp lib/msql.pike $(TMP_LIBDIR)/modules/Sql.pmod/msql.pike; fi
-
-mod_install:
-	if [ x$(MSQL_SUPPORTED) = xyes ] ; then make dummy; fi
-
 @dynamic_module_makefile@
 
 spotless: clean

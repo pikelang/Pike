@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.1.1.1 1997/10/14 22:07:21 grubba Exp $
+# $Id: Makefile.in,v 1.2 1997/10/15 00:10:21 grubba Exp $
 # (C) 1997 Francesco Chemolli <kinkie@comedia.it>
 
 SRCDIR=@srcdir@
@@ -7,19 +7,6 @@ MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=postgres.o pgresult.o
 POSTGRES_SUPPORTED=@POSTGRES_SUPPORTED@
-
-all: module_install
-
-module_install: include_install glue_install mod_install
-
-include_install: lib/postgres.h
-	if [ x$(POSTGRES_SUPPORTED) = xyes ]; then cp $^ $(TMP_LIBDIR)/include; fi
-
-glue_install: lib/postgres.pike lib/postgres_result.pike
-	if [ x$(POSTGRES_SUPPORTED) = xyes ]; then cp $^ $(TMP_LIBDIR)/modules/Sql.pmod; fi 
-
-mod_install:
-	if [ x$(POSTGRES_SUPPORTED) = xyes ] ; then make dummy; fi
 
 @dynamic_module_makefile@
 
