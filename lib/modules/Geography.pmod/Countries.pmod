@@ -2,6 +2,7 @@
 
 array(Country) countries=
 ({
+   Country("AC","Ascension"),
    Country("AD","Andorra"),
    Country("AE","United Arab Emirates"),
    Country("AF","Afghanistan"),
