@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.488 2001/02/17 15:49:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.489 2001/02/18 12:21:34 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5232,35 +5232,40 @@ prefix........ $prefix
 pike binary... $prefix/bin/pike
 pike library.. $prefix/lib/${PIKE_VERSION}/
 
-system........ $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`
+system information:
+system.... $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`
 EOF
 
-uname -a >/dev/null 2>/dev/null && echo "uname......... `uname -a`" >>config.info
-hostname >/dev/null 2>/dev/null && echo "hostname...... `hostname`" >>config.info
+uname -a >/dev/null 2>/dev/null && echo "uname..... `uname -a`" >>config.info
+hostname >/dev/null 2>/dev/null && echo "hostname.. `hostname`" >>config.info
+whoami >/dev/null 2>/dev/null   && echo "user...... `whoami`" >>config.info
+
+# too many dots makes too long lines, keep them as short as possible
+# inside each section
 
 cat >>config.info <<EOF
-user.......... `whoami 2>/dev/null || echo '?'`
 
-PAD_FEATURE([source path]) $srcdir
-PAD_FEATURE([build path]) $BUILDDIR
-PAD_FEATURE([cpp]) $CPP
-PAD_FEATURE([cc]) $CC
-PAD_FEATURE([ld]) $LD
-PAD_FEATURE([cc shared]) $CCSHARED
-PAD_FEATURE([ld shared]) $LINKFORSHARED
-PAD_FEATURE([pike]) $PIKE
-PAD_FEATURE([install]) $INSTALL
-PAD_FEATURE([shared object]) .$SO
-PAD_FEATURE([libs]) $LIBS
-PAD_FEATURE([optimize]) $OPTIMIZE
-PAD_FEATURE([cross-compiled]) $cross_compiling
+build information:
+source path..... $srcdir
+build path...... $BUILDDIR
+cpp............. $CPP
+cc.............. $CC
+ld.............. $LD
+cc shared....... $CCSHARED
+ld shared....... $LINKFORSHARED
+pike............ $PIKE
+install......... $INSTALL
+shared object... .$SO
+libs............ $LIBS
+optimize........ $OPTIMIZE
+cross-compiled.. $cross_compiling
 
 features:
-PAD_FEATURE([dynamic loading]) $pike_cv_sys_dynamic_loading
-PAD_FEATURE([threads]) $using_threads
-PAD_FEATURE([debug]) $with_debug
-PAD_FEATURE([dmalloc]) $with_dmalloc
-PAD_FEATURE([rtldebug]) $with_rtldebug
+PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading
+PAD_FEATURE([threads])$using_threads
+PAD_FEATURE([debug])$with_debug
+PAD_FEATURE([dmalloc])$with_dmalloc
+PAD_FEATURE([rtldebug])$with_rtldebug
 EOF
 
 touch confdefs.h 2>/dev/null
@@ -5281,28 +5286,28 @@ int main()
    if (!out) return 1;
 
    fp=fopen("conftypes.txt", "r");
-   if (out && fp)
+   if (fp)
    {
       fgets(float_type, 79, fp);
       fgets(int_type, 79, fp);
       s=float_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
       s=int_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
       
-      fprintf(out, "]PAD_FEATURE([float type])[ %s (%d bytes)\n",
-   	      float_type, sizeof(FLOAT_TYPE));
-      fprintf(out, "]PAD_FEATURE([int type])[ %s (%d bytes)\n",
-   	      int_type, sizeof(INT_TYPE));
+      fprintf(out,"]PAD_FEATURE([float type])[%s (%d bytes)\n",
+              float_type, sizeof(FLOAT_TYPE));
+      fprintf(out,"]PAD_FEATURE([int type])[%s (%d bytes)\n",
+              int_type, sizeof(INT_TYPE));
    
       fclose(fp);
    }
 
-   fprintf(out, "]PAD_FEATURE([pointer size])[ %d bytes\n",
-	   sizeof(void*));
-   fprintf(out, "]PAD_FEATURE([svalue size])[ %d bytes (%d+%d+%d)\n",
-	   sizeof(sval),
-	   sizeof(sval.type),
-	   sizeof(sval.subtype),
-	   sizeof(sval.u));
+   fprintf(out,"]PAD_FEATURE([pointer size])[%d bytes\n",
+           sizeof(void*));
+   fprintf(out,"]PAD_FEATURE([svalue size])[%d bytes (%d+%d+%d)\n",
+           sizeof(sval),
+           sizeof(sval.type),
+           sizeof(sval.subtype),
+           sizeof(sval.u));
 
    fclose(out);
 

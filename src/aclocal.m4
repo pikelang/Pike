@@ -180,7 +180,7 @@ EOF])
 dnl newer autoconf call substr m4_substr
 ifdef([substr], ,m4_copy(m4_substr,substr))
 
-define([PAD_FEATURE],[substr([$1][................................],0,22)])
+define([PAD_FEATURE],[substr([$1][................................],0,17) ])
 
 define(PIKE_FEATURE_3,[
   cat >pike_[$1].feature <<EOF
@@ -206,7 +206,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.27 2001/02/13 15:44:18 mirar Exp $
+# $Id: aclocal.m4,v 1.28 2001/02/18 12:21:34 mirar Exp $
 
 MY_AC_PROG_CC
 
