@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.60 2000/08/19 11:15:40 grubba Exp $ */
+/* $Id: image_gif.c,v 1.1 2000/09/11 16:05:04 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.60 2000/08/19 11:15:40 grubba Exp $
+**!	$Id: image_gif.c,v 1.1 2000/09/11 16:05:04 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -27,11 +27,15 @@
 */
 #include "global.h"
 
+#include "config.h"
+
+#ifdef WITH_GIF
+
 #include <math.h>
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.60 2000/08/19 11:15:40 grubba Exp $");
+RCSID("$Id: image_gif.c,v 1.1 2000/09/11 16:05:04 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -42,8 +46,9 @@ RCSID("$Id: gif.c,v 1.60 2000/08/19 11:15:40 grubba Exp $");
 #include "error.h"
 #include "threads.h"
 
-#include "image.h"
-#include "colortable.h"
+#include "../Image/image.h"
+#include "../Image/colortable.h"
+
 #include "builtin_functions.h"
 #include "operators.h"
 #include "mapping.h"
@@ -51,14 +56,18 @@ RCSID("$Id: gif.c,v 1.60 2000/08/19 11:15:40 grubba Exp $");
 
 #include "gif_lzw.h"
 
-#include "encodings.h"
-
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
-extern struct program *image_colortable_program;
+#ifdef DYNAMIC_MODULE
+static struct program *image_program = NULL;
+static struct program *image_colortable_program = NULL;
+static struct program *image_layer_program = NULL;
+#else
 extern struct program *image_program;
+extern struct program *image_colortable_program;
 extern struct program *image_layer_program;
+#endif /* DYNAMIC_MODULE */
 
 enum 
 {
@@ -2695,69 +2704,99 @@ static void image_gif_lzw_decode(INT32 args)
 
 struct program *image_encoding_gif_program=NULL;
 
-void init_image_gif(void)
+void pike_module_init(void)
 {
+#ifdef DYNAMIC_MODULE
+   push_string(make_shared_string("Image"));
+   push_int(0);
+   SAFE_APPLY_MASTER("resolv",2);
+   if (sp[-1].type==T_OBJECT) 
+   {
+      stack_dup();
+      stack_dup();
+      push_string(make_shared_string("Image"));
+      f_index(2);
+      image_program=program_from_svalue(sp-1);
+      pop_stack();
+      push_string(make_shared_string("Colortable"));
+      f_index(2);
+      image_colortable_program=program_from_svalue(sp-1);
+      pop_stack();
+      push_string(make_shared_string("Layer"));
+      f_index(2);
+      image_layer_program=program_from_svalue(sp-1);
+   }
+   pop_stack();
+#endif /* DYNAMIC_MODULE */
+
+   if (image_program && image_colortable_program && image_layer_program) {
+      add_function("render_block",image_gif_render_block,
+ 		   "function(object,object,void|int,void|int,void|int,void|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)"
+ 		   "|function(object,object,void|int,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
+      add_function("_gce_block",image_gif__gce_block,
+ 		   "function(int,int,int,int,int:string)",0);
+      add_function("_render_block",image_gif__render_block,
+ 		   "function(int,int,int,int,string,void|string,int:string)",0);
+      add_function("header_block",image_gif_header_block,
+ 		   "function(int,int,int|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
+      add_function("end_block",image_gif_end_block,
+ 		   "function(:string)",0);
+      add_function("encode",image_gif_encode,
+ 		   "function(object,mixed...:string)",0);
+      add_function("encode_trans",image_gif_encode,
+ 		   "function(object,mixed...:string)",0);
+      add_function("encode_fs",image_gif_encode_fs,
+ 		   "function(object,mixed...:string)",0);
+      add_function("netscape_loop_block",image_gif_netscape_loop_block,
+ 		   "function(int|void:string)",0);
    
-   add_function("render_block",image_gif_render_block,
-		"function(object,object,void|int,void|int,void|int,void|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)"
-		"|function(object,object,void|int,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
-   add_function("_gce_block",image_gif__gce_block,
-		"function(int,int,int,int,int:string)",0);
-   add_function("_render_block",image_gif__render_block,
-		"function(int,int,int,int,string,void|string,int:string)",0);
-   add_function("header_block",image_gif_header_block,
-		"function(int,int,int|object,void|int,void|int,void|int,void|int,void|int,void|int,void|int:string)",0);
-   add_function("end_block",image_gif_end_block,
-		"function(:string)",0);
-   add_function("encode",image_gif_encode,
-		"function(object,mixed...:string)",0);
-   add_function("encode_trans",image_gif_encode,
-		"function(object,mixed...:string)",0);
-   add_function("encode_fs",image_gif_encode_fs,
-		"function(object,mixed...:string)",0);
-   add_function("netscape_loop_block",image_gif_netscape_loop_block,
-		"function(int|void:string)",0);
-
-   add_function("__decode",image_gif___decode,
-		"function(string:array)",0);
-   add_function("_decode",image_gif__decode,
-		"function(string|array:array)",0);
-   add_function("decode",image_gif_decode,
-		"function(string|array:object)",0);
-   add_function("decode_layers",image_gif_decode_layers,
-		"function(string|array:array(object))",0);
-   add_function("decode_layer",image_gif_decode_layer,
-		"function(string|array:object)",0);
-   add_function("decode_map",image_gif_decode_map,
-		"function(string|array:mapping)",0);
-
-   add_function("_encode",image_gif__encode,
-		"function(array:string)",0);
-   add_function("_encode_render",image_gif__encode_render,
-		"function(array:string)",0);
-   add_function("_encode_extension",image_gif__encode_extension,
-		"function(array:string)",0);
-
-   add_function("lzw_encode",image_gif_lzw_encode,
-		"function(string,void|int,void|int:string)",0);
-   add_function("lzw_decode",image_gif_lzw_decode,
-		"function(string,void|int,void|int:string)",0);
-
-   /** constants **/
-
-   add_integer_constant("RENDER",GIF_RENDER,0);
-   add_integer_constant("EXTENSION",GIF_EXTENSION,0);
-
-   add_integer_constant("LOOSE_GCE",GIF_LOOSE_GCE,0);
-   add_integer_constant("NETSCAPE_LOOP",GIF_NETSCAPE_LOOP,0);
-
-   add_integer_constant("ERROR_PREMATURE_EOD",GIF_ERROR_PREMATURE_EOD,0);
-   add_integer_constant("ERROR_UNKNOWN_DATA",GIF_ERROR_UNKNOWN_DATA,0);
-   add_integer_constant("ERROR_TOO_MUCH_DATA",GIF_ERROR_TOO_MUCH_DATA,0);
-
-   /** done **/
+      add_function("__decode",image_gif___decode,
+ 		   "function(string:array)",0);
+      add_function("_decode",image_gif__decode,
+ 		   "function(string|array:array)",0);
+      add_function("decode",image_gif_decode,
+ 		   "function(string|array:object)",0);
+      add_function("decode_layers",image_gif_decode_layers,
+ 		   "function(string|array:array(object))",0);
+      add_function("decode_layer",image_gif_decode_layer,
+ 		   "function(string|array:object)",0);
+      add_function("decode_map",image_gif_decode_map,
+ 		   "function(string|array:mapping)",0);
+   
+      add_function("_encode",image_gif__encode,
+ 		   "function(array:string)",0);
+      add_function("_encode_render",image_gif__encode_render,
+ 		   "function(array:string)",0);
+      add_function("_encode_extension",image_gif__encode_extension,
+ 		   "function(array:string)",0);
+   
+      add_function("lzw_encode",image_gif_lzw_encode,
+ 		   "function(string,void|int,void|int:string)",0);
+      add_function("lzw_decode",image_gif_lzw_decode,
+ 		   "function(string,void|int,void|int:string)",0);
+   
+      /** constants **/
+   
+      add_integer_constant("RENDER",GIF_RENDER,0);
+      add_integer_constant("EXTENSION",GIF_EXTENSION,0);
+   
+      add_integer_constant("LOOSE_GCE",GIF_LOOSE_GCE,0);
+      add_integer_constant("NETSCAPE_LOOP",GIF_NETSCAPE_LOOP,0);
+   
+      add_integer_constant("ERROR_PREMATURE_EOD",GIF_ERROR_PREMATURE_EOD,0);
+      add_integer_constant("ERROR_UNKNOWN_DATA",GIF_ERROR_UNKNOWN_DATA,0);
+      add_integer_constant("ERROR_TOO_MUCH_DATA",GIF_ERROR_TOO_MUCH_DATA,0);
+   
+      /** done **/
+   }
 }
 
-void exit_image_gif(void)
+#else /* !WITH_GIF */
+void pike_module_init(void)
+{
+}
+#endif /* WITH_GIF */
+
+void pike_module_exit(void)
 {
 }

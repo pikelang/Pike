@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.h,v 1.8 2000/08/03 21:25:32 grubba Exp $
+**!	$Id: gif_lzw.h,v 1.1 2000/09/11 16:05:04 grubba Exp $
 */
 
 typedef unsigned short lzwcode_t; /* no more than 12 bits used */

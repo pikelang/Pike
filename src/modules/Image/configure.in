@@ -1,8 +1,6 @@
-# $Id: configure.in,v 1.15 2000/07/28 07:12:44 hubbe Exp $
+# $Id: configure.in,v 1.16 2000/09/11 16:04:56 grubba Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
-
-AC_ARG_WITH(gif-rle,      [  --with-gif-rle        use kind-of-rle packing instead of lzw],[AC_DEFINE(GIF_LZW_RLE)],[])
 
 AC_SET_MAKE
 

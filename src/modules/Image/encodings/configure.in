@@ -1,5 +1,5 @@
-# $Id: configure.in,v 1.5 1998/09/20 08:31:22 hubbe Exp $
-AC_INIT(gif.c)
+# $Id: configure.in,v 1.6 2000/09/11 16:04:57 grubba Exp $
+AC_INIT(pnm.c)
 
 AC_SET_MAKE
 

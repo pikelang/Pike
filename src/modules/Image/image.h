@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.43 2000/08/09 11:27:13 grubba Exp $
+**!	$Id: image.h,v 1.44 2000/09/11 16:04:56 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -116,19 +116,6 @@ struct color_struct
 
 #define tColor tOr3(tArr(tInt),tString,tObj)
 #define tLayerMap tMap(tString,tOr4(tString,tColor,tFloat,tInt))
-
-/* COMPAT: encoding of a gif - from togif */
-
-void image_togif(INT32 args);
-void image_togif_fs(INT32 args);
-void image_fromgif(INT32 args);
-void image_gif_begin(INT32 args);
-void image_gif_add(INT32 args);
-void image_gif_add_fs(INT32 args);
-void image_gif_add_nomap(INT32 args);
-void image_gif_add_fs_nomap(INT32 args);
-void image_gif_end(INT32 args);
-void image_gif_netscape_loop(INT32 args);
 
 /* blit.c */
 
