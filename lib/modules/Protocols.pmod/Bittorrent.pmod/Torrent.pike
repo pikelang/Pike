@@ -1,4 +1,62 @@
 // Bittorrent client - originally by Mirar 
+
+//! Bittorrent peer - download and share.
+//! Read more about bittorrent at 
+//! http://bitconjurer.org/BitTorrent/introduction.html
+//! 
+//! @example
+//! The smallest usable torrent downloader. As first argument,
+//! it expects a filename to a .torrent file.
+//! @code
+//!   int main(int ac,array am)
+//!   {
+//!      // initialize Torrent from file:
+//!      Protocols.Bittorrent.Torrent t=Protocols.Bittorrent.Torrent(); 
+//!      t->load_metainfo(am[1]); 
+//!   
+//!      // Callback when download status changes:
+//!      // t->downloads_update_status=...;
+//!   
+//!      // Callback when pieces status change (when we get new stuff):
+//!      // t->pieces_update_status=...; 
+//!   
+//!      // Callback when peer status changes (connect, disconnect, choked...):
+//!      // t->peer_update_status=...;
+//!   
+//!      // Callback when download is completed:
+//!      t->download_completed_callback=
+//!         lambda()
+//!         {
+//!             call_out(exit,3600,0);    // share for an hour, then exit
+//!         };
+//!   
+//!      // Callback to print warnings (same args as sprintf):
+//!      //   t->warning=werror; 
+//!   
+//!      // type of progress function used below:
+//!      void progress(int n,int of) { /* ... */ };
+//!   
+//!      // Initiate targets from Torrent,
+//!      // if target was created, no need to verify:
+//!      if (t->fix_targets(1,0,progress)==1)
+//!         t->verify_targets(progress); 
+//!   
+//!      // Open port to listen on,
+//!      // we want to do this to be able to talk to firewalled peers:
+//!      t->my_port=6881;
+//!      t->open_port();
+//!   
+//!      // Ok, start calling tracker to get peers,
+//!      // and tell about us:
+//!      t->start_update_tracker();
+//!   
+//!      // Finally, start the download:
+//!      t->start_download();
+//!   
+//!      return -1;
+//!   }
+//! @endcode
+
 #pike __REAL_VERSION__
 
 import .Bencoding;
@@ -42,6 +100,9 @@ function pieces_update_status=0;
 
 //! if set, called when we start to download another piece (no args)
 function downloads_update_status=0;
+
+//! if set, called when peer status changes
+function peer_update_status=0;
 
 //! if set, called when download is completed
 function download_completed_callback=0;
@@ -513,7 +574,6 @@ void stop_update_tracker(void|string event)
 }
 
 //! contact all or n peers 
-
 void contact_peers(void|int n)
 {
    array v=filter(values(peers),"is_connectable");

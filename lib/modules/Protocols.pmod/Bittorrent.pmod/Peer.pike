@@ -93,6 +93,7 @@ private static inline void _status(string type,void|string|int data)
 #endif
 
    mode=type;
+   Function.call_callback(parent->peer_update_status,type,data);
    status(type,data);
 }
 
@@ -848,14 +849,6 @@ void show_uninterest()
 //!
 //! does not need to call inherited function
 void status(string type,void|int|string data)
-{
-}
-
-//! called for downloading progress; this is called from zero
-//! to total for each downloaded piece.
-//!
-//! does not need to call inherited function
-void progress(int pieceno,int byte,int total)
 {
 }
 
