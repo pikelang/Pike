@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.16 1997/08/30 18:35:48 grubba Exp $");
+RCSID("$Id: operators.c,v 1.17 1997/09/12 00:07:28 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1061,12 +1061,12 @@ void o_mod(void)
       {
 	sp[-1].u.integer %= sp[0].u.integer;
       }else{
-	sp[-1].u.integer=sp[0].u.integer+(sp[-1].u.integer % -sp[0].u.integer);
+	sp[-1].u.integer=((sp[-1].u.integer+~sp[0].u.integer)%-sp[0].u.integer)-~sp[0].u.integer;
       }
     }else{
       if(sp[0].u.integer>=0)
       {
-	sp[-1].u.integer=sp[0].u.integer-(-sp[-1].u.integer % sp[0].u.integer);
+	sp[-1].u.integer=sp[0].u.integer+~((~sp[-1].u.integer) % sp[0].u.integer);
       }else{
 	sp[-1].u.integer=-(-sp[-1].u.integer % -sp[0].u.integer);
       }
