@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: perlmod.c,v 1.31 2002/11/26 14:18:34 nilsson Exp $
+|| $Id: perlmod.c,v 1.32 2002/11/26 14:22:47 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1081,6 +1081,12 @@ static void perlmod_array_size_limit(INT32 args)
   pop_n_elems(args);
   push_int(_THIS->array_size_limit);
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 PIKE_MODULE_INIT
 {
