@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.82 2001/02/23 12:17:35 grubba Exp $
+ * $Id: cpp.c,v 1.83 2001/05/29 18:05:39 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -84,7 +84,7 @@ struct define
   magic_define_fun magic;
   int args;
   ptrdiff_t num_parts;
-  short inside;
+  short inside;		/* 1 - Don't expand. 2 - In use. */
   short varargs;
   struct pike_string *first;
   struct define_part parts[1];
@@ -189,6 +189,11 @@ static void undefine(struct cpp *this,
   d=find_define(name);
 
   if(!d) return;
+
+  if (d->inside) {
+    cpp_error(this, "Illegal to undefine a macro during its expansion.");
+    return;
+  }
 
   this->defines=hash_unlink(this->defines, & d->link);
 
@@ -823,6 +828,18 @@ static struct pike_string *filter_bom(struct pike_string *data)
   return(data);
 }
 
+void free_one_define(struct hash_entry *h)
+{
+  int e;
+  struct define *d=BASEOF(h, define, link);
+
+  for(e=0;e<d->num_parts;e++)
+    free_string(d->parts[e].postfix);
+  if(d->first)
+    free_string(d->first);
+  free((char *)d);
+}
+
 static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
 			 int shift, int flags, int auto_convert,
 			 struct pike_string *charset);
@@ -858,18 +875,6 @@ static ptrdiff_t low_cpp(struct cpp *this, void *data, ptrdiff_t len,
   }
   /* NOT_REACHED */
   return 0;
-}
-
-void free_one_define(struct hash_entry *h)
-{
-  int e;
-  struct define *d=BASEOF(h, define, link);
-
-  for(e=0;e<d->num_parts;e++)
-    free_string(d->parts[e].postfix);
-  if(d->first)
-    free_string(d->first);
-  free((char *)d);
 }
 
 /*** Magic defines ***/
