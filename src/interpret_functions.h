@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.152 2003/08/03 00:56:46 mast Exp $
+|| $Id: interpret_functions.h,v 1.153 2003/08/03 02:34:46 mast Exp $
 */
 
 /*
@@ -2274,15 +2274,15 @@ OPCODE0(F_BREAKPOINT, "breakpoint", 0, {
 
 OPCODE1(F_THIS_OBJECT, "this_object", 0, {
     struct object *o = Pike_fp->current_object;
-    int level = arg1;
-    for (; level > 0; level--) {
+    int level;
+    for (level = 0; level < arg1; level++) {
       struct program *p = o->prog;
       if (!p)
-	Pike_error ("Cannot get the parent object of a destructed object.\n");
-      DO_IF_DEBUG (
-	if (!(p->flags & PROGRAM_USES_PARENT))
-	  Pike_fatal ("optimize_this_object failed to set up parent pointers.\n");
-      );
+	Pike_error ("Object %d level(s) up is destructed - cannot get the parent.\n",
+		    level);
+      if (!(p->flags & PROGRAM_USES_PARENT))
+	/* FIXME: Ought to write out the object here. */
+	Pike_error ("Object %d level(s) up lacks parent reference.\n", level);
       o = PARENT_INFO(o)->parent;
     }
     ref_push_object(o);
