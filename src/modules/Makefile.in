@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.45 2002/12/12 21:19:57 nilsson Exp $
+# $Id: Makefile.in,v 1.46 2003/05/07 10:50:59 grubba Exp $
 
 @make_variables@
 
@@ -17,8 +17,8 @@ $(MODULES): Makefile force
 	  @echo Making $@; \
 	  ( cd $@ && \
 	    (  rm remake >/dev/null 2>&1 || : ) && \
-	    ( $(MAKE) $(MAKE_FLAGS) MODNAME=$@ || \
-	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) MODNAME=$@ ) ) \
+	    ( $(MAKE) $(MAKE_FLAGS) || \
+	      ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) \
 	  ) || exit $$?;
 
 modules: Makefile $(MODULES)
@@ -57,19 +57,19 @@ depend: Makefile
 	@for a in $(MODULES) ; do \
 	  ( cd $$a && { \
 	    rm -f remake; \
-	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend || \
-	      if test -f remake; then ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend; else exit $$?; fi; \
+	    ${MAKE} $(MAKE_FLAGS) depend || \
+	      if test -f remake; then ${MAKE} $(MAKE_FLAGS) depend; else exit $$?; fi; \
 	  }); \
 	done
 
 install:
 	@for a in $(MODULES) ; do \
-	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; \
+	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) install ) ; \
 	done
 
 clean:
 	@for a in $(MODULES) ; do \
-	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; \
+	  ( cd $$a && ${MAKE} $(MAKE_FLAGS) clean ) ; \
 	done
 	-rm -f linker_options modlist.h modlist_headers.h
 
@@ -77,14 +77,14 @@ verify:
 	@for a in $(MODULES) ; do \
 	  ( cd $$a && \
 	    echo verifying $$a && \
-	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify \
+	    ${MAKE} $(MAKE_FLAGS) verify \
 	  ) || exit $$? ; \
 	done
 
 verbose_verify:
 	@for a in $(MODULES) ; do \
 	  ( cd $$a && \
-	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify \
+	    ${MAKE} $(MAKE_FLAGS) verbose_verify \
 	  ) || exit $$? ; \
 	done
 
@@ -102,7 +102,7 @@ testsuites:
 extra_tests:
 	@for a in $(MODULES) ; do \
 	  ( cd $$a && \
-	    ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests \
+	    ${MAKE} $(MAKE_FLAGS) extra_tests \
 	  ) || exit $$? ; \
 	done
 
