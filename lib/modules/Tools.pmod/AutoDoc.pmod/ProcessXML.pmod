@@ -1099,11 +1099,27 @@ class NScopeStack
   static void destroy()
   {
     if (sizeof(failures)) {
-      werror("Resolution failures:\n");
-      foreach(failures; string ref; mapping(string:int) where) {
-	werror("  %O: %{%O:%d, %}\n",
+      werror("Resolution failed for %d symbols. Logging to resolution.log\n",
+	     sizeof(failures));
+      Stdio.File f = Stdio.File("resolution.log", "cwt");
+      f->write("Reference target: Reference source:references\n\n");
+      mapping(string:array(string)) rev = ([]);
+      foreach(sort(indices(failures)), string ref) {
+	mapping(string:int) where = failures[ref];
+	f->write("  %O: %{%O:%d, %}\n",
 	       ref, (array)where);
+	foreach(indices(where), string source)
+	  if(rev[source])
+	    rev[source] += ({ ref });
+	  else
+	    rev[source] = ({ ref });
       }
+      f->write("\n\nReference source: Reference targets.\n\n");
+      foreach(sort(indices(rev)), string source) {
+	array(string) targets = rev[source];
+	f->write("%O:%{ %O%}\n", source, targets);
+      }
+      f->close();
     }
   }
   void reset()
