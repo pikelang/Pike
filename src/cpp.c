@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.55 1999/10/24 13:36:02 grubba Exp $
+ * $Id: cpp.c,v 1.56 1999/11/04 15:40:24 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -101,6 +101,7 @@ struct cpp
   INT32 compile_errors;
   struct pike_string *current_file;
   struct string_builder buf;
+  struct object *handler;
 };
 
 struct define *defined_macro =0;
@@ -110,12 +111,16 @@ void cpp_error(struct cpp *this,char *err)
 {
   this->compile_errors++;
   if(this->compile_errors > 10) return;
-  if(get_master())
+  if((this->handler && this->handler->prog) || get_master())
   {
     ref_push_string(this->current_file);
     push_int(this->current_line);
     push_text(err);
-    SAFE_APPLY_MASTER("compile_error",3);
+    if (this->handler && this->handler->prog) {
+      safe_apply(this->handler, "compile_error", 3);
+    } else {
+      SAFE_APPLY_MASTER("compile_error", 3);
+    }
     pop_stack();
   }else{
     (void)fprintf(stderr, "%s:%ld: %s\n",
@@ -980,7 +985,12 @@ static void check_constant(struct cpp *this,
     /* Handle contant(.foo) */
     push_text(".");
     ref_push_string(this->current_file);
-    SAFE_APPLY_MASTER("handle_import",2);
+    if (this->handler && this->handler->prog) {
+      ref_push_object(this->handler);
+      SAFE_APPLY_MASTER("handle_import", 3);
+    } else {
+      SAFE_APPLY_MASTER("handle_import", 2);
+    }
     
     res=(throw_value.type!=T_STRING) &&
       (!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED));
@@ -1049,7 +1059,9 @@ static int do_safe_index_call(struct pike_string *s)
   return res;
 }
 
-/* string cpp(string data, string|void current_file, int|string|void charset) */
+/* string cpp(string data, string|void current_file,
+ *            int|string|void charset, object|void handler)
+ */
 void f_cpp(INT32 args)
 {
   struct pike_string *data;
@@ -1067,19 +1079,26 @@ void f_cpp(INT32 args)
 
   data = sp[-args].u.string;
 
+  add_ref(data);
+
+  this.handler = NULL;
+
   if(args>1)
   {
-    if(sp[1-args].type != T_STRING)
+    if(sp[1-args].type != T_STRING) {
+      free_string(data);
       error("Bad argument 2 to cpp()\n");
+    }
     copy_shared_string(this.current_file, sp[1-args].u.string);
 
     if (args > 2) {
       if (sp[2-args].type == T_STRING) {
 	charset = sp[2 - args].u.string;
-	ref_push_string(data);
+	push_string(data);
 	ref_push_string(charset);
 	SAFE_APPLY_MASTER("decode_charset", 2);
 	if (sp[-1].type != T_STRING) {
+	  free_string(this.current_file);
 	  error("Unknown charset\n");
 	}
 	data = sp[-1].u.string;
@@ -1088,14 +1107,22 @@ void f_cpp(INT32 args)
       } else if (sp[2-args].type == T_INT) {
 	auto_convert = sp[2-args].u.integer;
       } else {
+	free_string(data);
 	error("Bad argument 3 to cpp()\n");
+      }
+      if (args > 3) {
+	if (sp[3-args].type == T_OBJECT) {
+	  this.handler = sp[3-args].u.object;
+	} else if (sp[3-args].type != T_INT) {
+	  free_string(data);
+	  free_string(this.current_file);
+	  error("Bad argument 4 to cpp()\n");
+	}
       }
     }
   }else{
     this.current_file=make_shared_string("-");
   }
-
-  add_ref(data);
 
   if (auto_convert && (!data->size_shift) && (data->len > 1)) {
     /* Try to determine if we need to recode the string */
@@ -1188,8 +1215,9 @@ void init_cpp()
   constant_macro->args=1;
 
   
-/* function(string,string|void,int|void:string) */
-  ADD_EFUN("cpp",f_cpp,tFunc(tStr tOr(tStr,tVoid) tOr(tInt,tOr(tStr,tVoid)),tStr),OPT_EXTERNAL_DEPEND);
+/* function(string, string|void, int|string|void, object|void:string) */
+  ADD_EFUN("cpp", f_cpp, tFunc(tStr tOr(tStr,tVoid) tOr(tInt,tOr(tStr,tVoid))
+			       tOr(tObj,tVoid), tStr), OPT_EXTERNAL_DEPEND);
 }
 
 
