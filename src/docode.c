@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.46 1999/04/15 04:08:12 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.47 1999/04/30 07:24:06 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -542,6 +542,7 @@ static int do_docode2(node *n,int flags)
 
   case F_FOREACH:
   {
+    node *arr;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     INT32 break_save = current_break;
     INT32 continue_save = current_continue;
@@ -550,8 +551,26 @@ static int do_docode2(node *n,int flags)
     current_break=alloc_label();
     current_continue=alloc_label();
 
+    arr=CAR(n);
+    
+    if(arr->token==F_RANGE)
+    {
+      node **a1=my_get_arg(&CDR(n),0);
+      node **a2=my_get_arg(&CDR(n),1);
+      if(a1 && a2 && a2[0]->token==F_CONSTANT &&
+	 a2[0]->u.sval.type==T_INT &&
+	 a2[0]->u.sval.type==0x7fffffff &&
+	a1[0]->type == int_type_string)
+      {
+	tmp2=do_docode(CAR(arr),DO_NOT_COPY);
+	do_docode(&a1,DO_NOT_COPY);
+	goto foreach_arg_pushed;
+      }
+    }
     tmp2=do_docode(CAR(n),DO_NOT_COPY);
     emit2(F_CONST0);
+
+  foreach_arg_pushed:
 #ifdef PIKE_DEBUG
     /* This is really ugly because there is always a chance that the bug
      * will disappear when new instructions are added to the code, but
