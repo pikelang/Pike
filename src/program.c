@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.439 2002/07/09 16:48:34 grubba Exp $");
+RCSID("$Id: program.c,v 1.440 2002/07/23 12:58:45 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4922,7 +4922,8 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
     pid=prog->id;
     file = 0;
   }else{
-    goto fromold;
+    if (cnt < prog->linenumbers + prog->num_linenumbers)
+      goto fromold;
   }
 
   while(cnt < prog->linenumbers + prog->num_linenumbers)
@@ -4936,8 +4937,8 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
       cnt += len<<shift;
     }
     off+=get_small_number(&cnt);
-    if(off > offset) break;
   fromold:
+    if(off > offset) break;
     line+=get_small_number(&cnt);
   }
   linep[0]=line;
