@@ -2,7 +2,7 @@
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.2 2004/10/04 21:34:33 nilsson Exp $
+// $Id: UUID.pmod,v 1.3 2004/10/04 21:57:17 nilsson Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -59,7 +59,7 @@
     distance(Calendar.ISO.Second("unix",0))->how_many(Calendar.Second)
     * 10000000;
 #else
-  constant clk_offset = 12219297132 * 10000000;
+  constant clk_offset = 0x01b21dd213814000 * 10000000;
 #endif
 
 
