@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.350 2001/11/22 12:11:04 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.351 2001/11/27 11:46:13 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3428,7 +3428,7 @@ PMOD_EXPORT void f_sleep(INT32 args)
  *!
  *!   Only signal handlers can interrupt the sleep. Other callbacks are
  *!   not called during sleep. Beware that this function uses busy-waiting
- *!   to achive the highest possible accuracy.
+ *!   to achieve the highest possible accuracy.
  *!   
  *! @seealso
  *!   @[signal()], @[sleep()]
