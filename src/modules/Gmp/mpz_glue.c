@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.155 2003/11/14 10:26:43 mast Exp $
+|| $Id: mpz_glue.c,v 1.156 2003/11/15 17:25:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.155 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.156 2003/11/15 17:25:05 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -116,6 +116,7 @@ overflow:
   else
     push_object (o);
 }
+
 #define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
    if(THIS_PROGRAM == bignum_program)				\
      mpzmod_reduce(reducetmp__);					\
@@ -124,6 +125,18 @@ overflow:
 }while(0)
 
 #ifdef INT64
+
+static void gmp_reduce_stack_top_bignum (void)
+{
+  struct object *o;
+#ifdef PIKE_DEBUG
+  if (sp[-1].type != T_OBJECT || sp[-1].u.object->prog != bignum_program)
+    Pike_fatal ("Not a Gmp.bignum.\n");
+#endif
+  o = (--sp)->u.object;
+  debug_malloc_touch (o);
+  mpzmod_reduce (o);
+}
 
 static void gmp_push_int64 (INT64 i)
 {
@@ -1890,7 +1903,7 @@ PIKE_MODULE_EXIT
     mpz_clear (mpz_int_type_min);
 #ifdef INT64
     mpz_clear (mpz_int64_min);
-    hook_in_int64_funcs (NULL, NULL);
+    hook_in_int64_funcs (NULL, NULL, NULL);
 #endif
   }
 #endif
@@ -2050,7 +2063,8 @@ PIKE_MODULE_INIT
     mpz_init (mpz_int64_min);
     mpz_setbit (mpz_int64_min, INT64_BITS);
     mpz_neg (mpz_int64_min, mpz_int64_min);
-    hook_in_int64_funcs (gmp_push_int64, gmp_int64_from_bignum);
+    hook_in_int64_funcs (gmp_push_int64, gmp_int64_from_bignum,
+			 gmp_reduce_stack_top_bignum);
 #endif
 
 #if 0

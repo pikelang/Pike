@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.198 2003/11/14 00:41:27 mast Exp $
+|| $Id: encode.c,v 1.199 2003/11/15 17:25:05 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 #include "pikecode.h"
 #include "pike_types.h"
 
-RCSID("$Id: encode.c,v 1.198 2003/11/14 00:41:27 mast Exp $");
+RCSID("$Id: encode.c,v 1.199 2003/11/15 17:25:05 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2508,6 +2508,9 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  push_int(36);
 	  convert_stack_top_with_base_to_bignum();
+#if SIZEOF_INT_TYPE > 4
+	  reduce_stack_top_bignum();
+#endif
 	  break;
 	}
 
