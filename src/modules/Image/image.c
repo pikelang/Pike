@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.159 2000/03/14 00:28:05 mast Exp $ */
+/* $Id: image.c,v 1.160 2000/04/09 06:15:17 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.159 2000/03/14 00:28:05 mast Exp $
+**!	$Id: image.c,v 1.160 2000/04/09 06:15:17 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.159 2000/03/14 00:28:05 mast Exp $");
+RCSID("$Id: image.c,v 1.160 2000/04/09 06:15:17 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2903,6 +2903,91 @@ void image_select_from(INT32 args)
 
 
 /*
+**! method object bitscale(float factor)
+**! method object bitscale(float xfactor,float yfactor)
+**!	scales the image with a factor, without smoothing.
+**!     This routine is faster than scale, but gives less correct
+**!     results
+**! returns the new image object
+**! arg float factor
+**!	factor to use for both x and y
+**! arg float xfactor
+**! arg float yfactor
+**!	separate factors for x and y
+**!
+**! method object bitscale(int newxsize,int newysize)
+**! method object bitscale(0,int newysize)
+**! method object bitscale(int newxsize,0)
+**!	scales the image to a specified new size,
+**!	if one of newxsize or newysize is 0,
+**!	the image aspect ratio is preserved.
+**! returns the new image object
+**! arg int newxsize
+**! arg int newysize
+**!	new image size in pixels
+**!
+**! note
+**!     resulting image will be 1x1 pixels, at least
+*/
+void image_bitscale( INT32 args )
+{
+  int newx=1, newy=1;
+  int oldx, oldy;
+  int x, y, xx;
+  struct object *ro;
+  rgb_group *s, *d;
+  oldx = THIS->xsize;
+  oldy = THIS->ysize;
+
+  if( args == 1 )
+  {
+    if( sp[-1].type == T_INT )
+    {
+      newx = oldx * sp[-1].u.integer;
+      newy = oldy * sp[-1].u.integer;
+    } else if( sp[-1].type == T_FLOAT ) {
+      newx = (int)(oldx * sp[-1].u.float_number);
+      newy = (int)(oldy * sp[-1].u.float_number);
+    } else 
+      error("The scale factor must be an integer less than 2^32, or a float\n");
+  } else if( args == 2 ) {
+    if( sp[-1].type != sp[-2].type )
+      error("Wrong type of argument\n");
+    if( sp[-2].type  == T_INT )
+      (newx = sp[-2].u.integer),(newy = sp[-1].u.integer);
+    else if( sp[-2].type  == T_FLOAT )
+    {
+      newx = (int)(oldx*sp[-2].u.float_number);
+      newy = (int)(oldy*sp[-1].u.float_number);
+
+    } else
+      error( "Wrong type of arguments\n");
+  }
+
+  /* Not really nessesary if I use floats below.. */
+  /* FIXME */
+  if( newx > 65536 || newy > 65536 || oldx > 65536 || oldy > 65536)
+    error("Image too big.\n");
+
+  if( newx < 1 ) newx = 1;
+  if( newy < 1 ) newy = 1;
+
+  pop_n_elems( args );
+  push_int( newx );
+  push_int( newy );
+  ro = clone_object( image_program, 2 );
+  d=((struct image *)get_storage( ro, image_program))->img;
+  
+  for( y = 0; y<newy; y++ )
+  {
+    s = THIS->img + (y * oldy / newy) * THIS->xsize;
+    for( x = 0; x<newx; x++ )
+      *(d++) = *(s+x*oldx/newx);
+  }
+  push_object( ro );
+}
+
+/*
 **! method object apply_matrix(array(array(int|array(int))) matrix)
 **! method object apply_matrix(array(array(int|array(int))) matrix,int r,int g,int b)
 **! method object apply_matrix(array(array(int|array(int))) matrix,int r,int g,int b,int|float div)
@@ -4000,6 +4085,8 @@ void init_image_image(void)
    ADD_FUNCTION("find_autocrop",image_find_autocrop,
 		tFuncV(tNone,tOr(tVoid,tArr(tInt)),tArr(tInt)),0);
    ADD_FUNCTION("scale",image_scale,
+		tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
+   ADD_FUNCTION("bitscale",image_bitscale,
 		tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
    ADD_FUNCTION("translate",image_translate,
 		tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),0);

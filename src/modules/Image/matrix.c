@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.21 2000/01/30 21:29:29 hubbe Exp $ */
+/* $Id: matrix.c,v 1.22 2000/04/09 06:15:17 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.21 2000/01/30 21:29:29 hubbe Exp $
+**!	$Id: matrix.c,v 1.22 2000/04/09 06:15:17 per Exp $
 **! class Image
 */
 
@@ -317,17 +317,32 @@ void image_scale(INT32 args)
    float factor;
    struct object *o;
    struct image *newimg;
+   extern void image_bitscale( INT32 args );
 
    o=clone_object(image_program,0);
    newimg=(struct image*)(o->storage);
 
-   if (args==1 && sp[-args].type==T_FLOAT) 
+   if (args==1 && sp[-args].type==T_INT)
+   {
+      image_bitscale( args );
+      return;
+   }
+   else if (args==1 && sp[-args].type==T_FLOAT) 
+   {
       if (sp[-args].u.float_number == 0.5)
 	 img_scale2(newimg,THIS);
       else
+      {
+         if( floor( sp[-args].u.float_number ) == sp[-args].u.float_number)
+         {
+            image_bitscale( args );
+            return;
+         }
 	 img_scale(newimg,THIS,
 		   (INT32)(THIS->xsize*sp[-args].u.float_number),
 		   (INT32)(THIS->ysize*sp[-args].u.float_number));
+      }
+   }
    else if (args>=2 &&
 	    sp[-args].type==T_INT && sp[-args].u.integer==0 &&
 	    sp[1-args].type==T_INT)
