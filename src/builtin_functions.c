@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.344 2001/06/21 00:25:15 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.345 2001/06/21 12:48:04 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -210,7 +210,7 @@ static const struct case_info case_info[] = {
 #else /* !IN_TPIKE */
 #include "case_info.h"
 #endif /* IN_TPIKE */
-  { 0x10000, CIM_NONE, 0x0000, },	/* End sentinel. */
+  { 0x7fffffff, CIM_NONE, 0x0000, },	/* End sentinel. */
 };
 
 static struct case_info *find_ci(int c)
@@ -220,7 +220,7 @@ static struct case_info *find_ci(int c)
   int lo = 0;
   int hi = NELEM(case_info);
 
-  if ((c < 0) || (c > 0xffff))
+  if ((c < 0) || (c > 0xeffff))
     return NULL;
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
@@ -248,7 +248,7 @@ static struct case_info *find_ci_shift0(int c)
   int lo = 0;
   int hi = CASE_INFO_SHIFT0_HIGH;
 
-  if ((c < 0) || (c > 0xffff))
+  if ((c < 0) || (c > 0xeffff))
     return NULL;
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
