@@ -1965,7 +1965,10 @@ test_eq(zero_type(([])[7]),1)
 
 // - call_out, call_out_info, remove_call_out, find_call_out
 test_do(call_out(a,100000))
-test_do(call_out(lambda() {},1000.0))
+test_true(call_out(lambda() {},1000.0))
+test_true(remove_call_out(call_out(lambda() {},1000.0)) != -1)
+test_true(find_call_out(call_out(lambda() {},1000.0)) > 990)
+test_false(zero_type(remove_call_out(call_out(lambda() {},1000.0))))
 test_true(arrayp(call_out_info()))
 test_true(sizeof(call_out_info()) > 0)
 test_true(call_out_info()[-1][0] > 1)
