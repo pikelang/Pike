@@ -367,10 +367,25 @@ static class DocParserClass {
     .PikeParser parser = .PikeParser(arg, currentPosition);
     //  werror("&&& %O\n", arg);
     string s = parser->parseLiteral() || parser->parseIdents();
-    if (!s)
-      parseError("@value: expected indentifier or literal constant, got %O", arg);
+    string s2 = 0;
+    int dots = 0;
+    if (parser->peekToken() == "..") {
+      dots = 1;
+      parser->readToken();
+      s2 = parser->parseLiteral() || parser->parseIdents();
+    }
     parser->eat(EOF);
-    return xmltag("value", xmlquote(s));
+    if (s)
+      if (s2)
+        return xmltag("minvalue", xmlquote(s))
+          + xmltag("maxvalue", xmlquote(s2));
+      else
+        return xmltag(dots ? "minvalue" : "value", xmlquote(s));
+    else
+      if (s2)
+        return xmltag("maxvalue", xmlquote(s2));
+      else
+        parseError("@value: expected indentifier or literal constant, got %O", arg);
   }
 
   static mapping(string : string) standardArgHandler(string keyword, string arg)
