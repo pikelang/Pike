@@ -35,6 +35,7 @@ testfont binary
 /src/modules/gdbmmod/gdbmmod.c foreign_ident
 /src/modules/gmpmod/mpz_glue.c foreign_ident
 /src/modules/image/blit.c foreign_ident
+/src/modules/image/dct.c foreign_ident
 /src/modules/image/font.c foreign_ident
 /src/modules/image/image.c foreign_ident
 /src/modules/image/image.h foreign_ident
