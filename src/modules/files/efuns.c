@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.59 1998/08/06 17:17:01 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.60 1998/10/27 16:09:10 per Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -133,6 +133,58 @@ void f_file_stat(INT32 args)
     push_array(encode_stat(&st));
   }
 }
+#ifdef __NT__
+
+void f_filesystem_stat( INT32 args )
+{
+  char *path;
+  DWORD sectors_per_cluster = -1;
+  DWORD bytes_per_sector = -1;
+  DWORD free_clusters = -1;
+  DWORD total_clusters = -1;
+  char _p[4];
+  char *p = _p;
+  unsigned int free_sectors;
+  unsigned int total_sectors;
+
+  get_all_args( "filesystem_stat", args, "%s", &path );
+
+  if(sp[-1].u.string->len < 2 || path[1] != ':')
+  {
+    p = 0;
+  } else {
+    p[0] = path[0];
+    p[1] = ':';
+    p[2] = '\\';
+    p[3] = 0;
+  }
+  
+  if(!GetDiskFreeSpace( p, &sectors_per_cluster, 
+			&bytes_per_sector,
+			&free_clusters, 
+			&total_clusters ))
+  {
+    pop_n_elems(args);
+    push_int( 0 );
+    return;
+  }
+
+  free_sectors = sectors_per_cluster  * free_clusters;
+  total_sectors = sectors_per_cluster * total_clusters;
+  
+  pop_n_elems( args );
+  push_text("blocksize");
+  push_int(bytes_per_sector);
+  push_text("blocks");
+  push_int(total_sectors);
+  push_text("bfree");
+  push_int(free_sectors);
+  push_text("bavail");
+  push_int(free_sectors);
+  f_aggregate_mapping( 8 );
+}
+
+#else /* !__NT__ */
 
 #if  !defined(HAVE_STRUCT_STATFS) && !defined(HAVE_STRUCT_FS_DATA)
 #undef HAVE_STATFS
@@ -309,6 +361,7 @@ void f_filesystem_stat(INT32 args)
 }
   
 #endif /* HAVE_STATVFS || HAVE_STATFS || HAVE_USTAT */
+#endif /* __NT__ */
 
 void f_werror(INT32 args)
 {
@@ -786,7 +839,7 @@ void init_files_efuns(void)
 
   add_efun("file_stat",f_file_stat,
 	   "function(string,int|void:int *)", OPT_EXTERNAL_DEPEND);
-#if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT)
+#if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT) || defined(__NT__)
   add_efun("filesystem_stat", f_filesystem_stat,
 	   "function(string:mapping(string:string|int))", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_STATVFS || HAVE_STATFS */
