@@ -1,5 +1,7 @@
 import ".";
 
+inherit _Port;
+
 Stdio.Port port;
 int portno;
 string|int(0..0) interface;

@@ -12,7 +12,6 @@
 constant HeaderParser=_Roxen.HeaderParser;
 constant http_decode_string=_Roxen.http_decode_string;
 
-
 //! method mapping(string:string|array(string)) http_decode_urlencoded_query(string query,void|mapping dest)
 //!	Decodes an URL-encoded query into a mapping.
 
@@ -88,4 +87,10 @@ string http_date(int time)
 // server id prefab
 
 constant http_serverid=version()+": HTTP Server module";
+
+// Port class standard to avoid recursion
+class _Port
+{
+   void close();
+}
 
