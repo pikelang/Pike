@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.36 2003/03/31 16:10:38 marcus Exp $
+|| $Id: pike_threadlib.h,v 1.37 2003/03/31 17:46:38 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -515,6 +515,7 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
     _th_state->id = th_self();						\
     _th_state->status = THREAD_RUNNING;					\
     _th_state->swapped = 0;						\
+    DO_IF_DEBUG(_th_state->debug_flags = 0;)				\
     DO_IF_USE_CLOCK_FOR_SLICES (thread_start_clock = 0);		\
   } while (0)
 
@@ -531,7 +532,11 @@ PMOD_EXPORT extern THREAD_T threads_disabled_thread;
     DO_IF_DEBUG (							\
       /* Yo! Yo run now, yo DIE! Hear! */				\
       Pike_sp = (struct svalue *) (ptrdiff_t) -1;			\
+      Pike_fp = (struct pike_frame *) (ptrdiff_t) -1;			\
     );									\
+    /* Do this one always to catch nested THREADS_ALLOW(), etc. */	\
+    Pike_interpreter.thread_state = 					\
+      (struct thread_state *) (ptrdiff_t) -1;				\
   } while(0)
 
 #define SWAP_IN_THREAD(_tmp) do {					\
@@ -619,17 +624,26 @@ extern void dumpmem(char *desc, void *x, int size);
 #endif /* PIKE_DEBUG */
 
 #ifdef PIKE_DEBUG
-#define ASSERT_THREAD_SWAPPED_IN() do {				\
-    struct thread_state *_tmp=thread_state_for_id(th_self());	\
+#define ASSERT_THREAD_SWAPPED_IN() do {					\
+    struct thread_state *_tmp=thread_state_for_id(th_self());		\
     if(_tmp->swapped) Pike_fatal("Thread is not swapped in!\n");	\
+    if (_tmp->debug_flags & THREAD_DEBUG_LOOSE) {			\
+      Pike_fatal("Current thread is not bound to the interpreter! "	\
+		 "Nested use of ALLOW_THREADS()?\n");			\
+    }									\
   }while(0)
 #define DEBUG_CHECK_THREAD() do {					\
-    if(thread_state_for_id(th_self()) != Pike_interpreter.thread_state) { \
+    struct thread_state *_tmp=thread_state_for_id(th_self());		\
+    if (_tmp->debug_flags & THREAD_DEBUG_LOOSE) {			\
+      Pike_fatal("Current thread is not bound to the interpreter! "	\
+		 "Nested use of ALLOW_THREADS()?");			\
+    }									\
+    if(_tmp != Pike_interpreter.thread_state) {				\
       debug_list_all_threads();						\
-      Pike_fatal("thread_state_for_id() (or Pike_interpreter.thread_state) " \
+      Pike_fatal("thread_state_for_id() "				\
+		 "(or Pike_interpreter.thread_state) "			\
 		 "failed! %p != %p\n",					\
-		 thread_state_for_id(th_self()),			\
-		 Pike_interpreter.thread_state) ;			\
+		 _tmp, Pike_interpreter.thread_state) ;			\
     }									\
   } while (0)
 #else
@@ -658,9 +672,10 @@ PMOD_EXPORT extern int Pike_in_gc;
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
 	   Pike_fatal("Threads allow blocked from a different thread "	\
-		 "when threads are disabled.\n");			\
+		      "when threads are disabled.\n");			\
        );								\
      }									\
+     DO_IF_DEBUG(_tmp->debug_flags |= THREAD_DEBUG_LOOSE;)		\
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW() \
@@ -673,6 +688,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
+     DO_IF_DEBUG(_tmp->debug_flags &= ~THREAD_DEBUG_LOOSE;) \
      DEBUG_CHECK_THREAD(); \
    } while(0)
 
@@ -705,9 +721,10 @@ PMOD_EXPORT extern int Pike_in_gc;
 	 THREAD_T self = th_self();					\
 	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
 	   Pike_fatal("Threads allow blocked from a different thread "	\
-		 "when threads are disabled.\n");			\
+		      "when threads are disabled.\n");			\
        );								\
      }									\
+     DO_IF_DEBUG(_tmp_uid->debug_flags |= THREAD_DEBUG_LOOSE;)		\
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW_UID() \
@@ -723,6 +740,8 @@ PMOD_EXPORT extern int Pike_in_gc;
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp_uid);\
      } \
+     DO_IF_DEBUG(_tmp_uid->debug_flags &= ~THREAD_DEBUG_LOOSE;) \
+     DEBUG_CHECK_THREAD(); \
    } while(0)
 
 #define SWAP_IN_THREAD_IF_REQUIRED() do { 			\
