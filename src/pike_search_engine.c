@@ -33,7 +33,7 @@ PCHARP PxC3(NAME,NSHIFT,N)(void *s,	\
     INTERCASE(NAME,2);				\
   }                                             \
   fatal("Illegal shift\n");                     \
-  return NULL;	/* NOT_REACHED */		\
+  return haystack;	/* NOT_REACHED */	\
 }						\
 						\
 static struct SearchMojtVtable PxC3(NAME,NSHIFT,_vtable) = {	\
@@ -112,7 +112,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   q=(NCHAR *)needle;
   
 #if PIKE_BYTEORDER == 4321 && NSHIFT == 0
-  for(tmp=e=0;e<sizeof(INT32)-1;e++)
+  for(tmp = e = 0; e < (ptrdiff_t)sizeof(INT32)-1; e++)
   {
     tmp<<=8;
     tmp|=*(q++);
