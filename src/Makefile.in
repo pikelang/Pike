@@ -157,7 +157,7 @@ install:
 	@if [ -f "$(exec_prefix)/pike" ]; then \
 	  echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
 	  mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
-	fi
+	else : ; fi
 	@echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix)
 	@if [ -f $(SRCDIR)/../bin/hilfe ]; then \
 	  echo "$(exec_prefix)/hilfe"; \
