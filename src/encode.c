@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.131 2001/11/08 23:34:28 nilsson Exp $");
+RCSID("$Id: encode.c,v 1.132 2001/11/10 17:22:40 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2944,14 +2944,14 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     if(t<0) Pike_error("Format error: length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate(DO_NOT_WARN(t));
+    f_aggregate(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MULTISET:
     if(t<0) Pike_error("Format error: length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
-    f_aggregate_multiset(DO_NOT_WARN(t));
+    f_aggregate_multiset(DO_NOT_WARN(t)); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_MAPPING:
@@ -2962,7 +2962,7 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
       rec_restore_value(v,l);
       rec_restore_value(v,l);
     }
-    f_aggregate_mapping(DO_NOT_WARN(t*2));
+    f_aggregate_mapping(DO_NOT_WARN(t*2)); /* FIXME: Unbounded stack consumption. */
     return;
 
   case TAG_OBJECT:
