@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.51 2003/10/23 12:34:02 grubba Exp $
+|| $Id: backend.cmod,v 1.52 2003/10/24 13:44:50 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.51 2003/10/23 12:34:02 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.52 2003/10/24 13:44:50 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -434,6 +434,10 @@ static void copy_selectors(struct active_selectors *to,
  */
 PIKECLASS Backend
 {
+  /* Provide a unique count to be able to tell backends apart with _sprintf. */
+  static int unused_id = 0;
+  CVAR int id;
+
   /*
    * Backend callbacks
    */
@@ -569,8 +573,8 @@ PIKECLASS Backend
 				 void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_read_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_read_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
 
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -612,8 +616,8 @@ PIKECLASS Backend
 				  void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_write_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_write_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
       
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -651,8 +655,8 @@ PIKECLASS Backend
 				     void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_read_oob_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_read_oob_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
       
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -691,8 +695,8 @@ PIKECLASS Backend
 				      void *data)
     {
       int was_set;
-      IF_PD(fprintf(stderr, "BACKEND: set_write_oob_callback(%d, %p, %p)\n",
-		    fd, cb, data));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: set_write_oob_callback(%d, %p, %p)\n",
+		    me->id, fd, cb, data));
       
       if(!me || (!cb && me->fds_size <= fd)) return;
 
@@ -731,7 +735,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -744,7 +748,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -757,7 +761,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_oob_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -770,7 +774,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_oob_callback(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -783,7 +787,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -797,7 +801,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -811,7 +815,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_read_oob_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd );
       debug_malloc_touch(me->fds);
@@ -825,7 +829,7 @@ PIKECLASS Backend
       if(fd<0)
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
-      IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback_data(%d)\n", fd));
+      IF_PD(fprintf(stderr, "BACKEND[%d]: query_write_oob_callback_data(%d)\n", me->id, fd));
       if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -964,7 +968,7 @@ PIKECLASS Backend
 	  msec= (timeout.tv_sec*1000) +
 	    timeout.tv_usec/1000;
 
-	IF_PD(fprintf(stderr, "BACKEND: poll(%p, %d, %ld)...",
+	IF_PD(fprintf(stderr, "BACKEND[%d]: poll(%p, %d, %ld)...", me->id,
 		      me->active_set.poll_fds,
 		      me->active_set.num_in_poll,
 		      msec));
@@ -1011,7 +1015,7 @@ PIKECLASS Backend
 	      }
 	  }
 	}
-#else
+#else  /* HAVE_POLL */
 	for(i=0; i<me->active_set.num_in_poll; i++)
 	{
 	  int fd = me->active_set.poll_fds[i].fd;
@@ -1044,9 +1048,9 @@ PIKECLASS Backend
 	  if ((me->active_set.poll_fds[i].revents & POLLRDBAND) &&
 	      me->fds[fd].read_oob.callback)
 	  {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLRDBAND\n"));
-	    IF_PD(fprintf(stderr, "BACKEND: read_oob_callback(%d, %p)\n",
-			  fd, me->fds[fd].read_oob.data));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			  me->id, fd, me->fds[fd].read_oob.data));
 	    (*(me->fds[fd].read_oob.callback))(fd, me->fds[fd].read_oob.data);
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -1062,16 +1066,16 @@ PIKECLASS Backend
 	      fprintf(stderr, "Got POLLERR on fd %d\n", i);
 	    }
 #endif /* PIKE_DEBUG */
-	    IF_PD(fprintf(stderr, "BACKEND: POLLHUP | POLLERR\n"));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP | POLLERR\n", me->id));
 	    /* We don't want to keep this fd anymore. */
 	    MY_FD_CLR(&me->set, fd, ~0);
 	    if (me->fds[fd].read.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
-			    fd, me->fds[fd].read.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read.data));
 	      (*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data);
 	    } else if (me->fds[fd].write.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: write_callback(%d, %p)\n",
-			    fd, me->fds[fd].write.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write.data));
 	      (*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data);
 	    }
 #ifdef PIKE_DEBUG
@@ -1081,10 +1085,10 @@ PIKECLASS Backend
 	  
 	  if(me->active_set.poll_fds[i].revents & (POLLRDNORM|POLLIN))
 	  {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLRDNORM|POLLIN\n"));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDNORM|POLLIN\n", me->id));
 	    if (me->fds[fd].read.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: read_callback(%d, %p)\n",
-			    fd, me->fds[fd].read.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].read.data));
 	      (*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data);
 	    } else {
 	      MY_FD_CLR(&me->set, fd, POLLRDNORM|POLLIN);
@@ -1096,9 +1100,9 @@ PIKECLASS Backend
 	  
 	  if ((me->active_set.poll_fds[i].revents & POLLWRBAND) &&
 	      me->fds[fd].write_oob.callback) {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLWRBAND\n"));
-	    IF_PD(fprintf(stderr, "BACKEND: write_oob_callback(%d, %p)\n",
-			  fd, me->fds[fd].write_oob.data));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLWRBAND\n", me->id));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
+			  me->id, fd, me->fds[fd].write_oob.data));
 	    (*(me->fds[fd].write_oob.callback))(fd, me->fds[fd].write_oob.data);
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -1106,10 +1110,10 @@ PIKECLASS Backend
 	  }
 	  
 	  if(me->active_set.poll_fds[i].revents & POLLOUT) {
-	    IF_PD(fprintf(stderr, "BACKEND: POLLOUT\n"));
+	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLOUT\n", me->id));
 	    if (me->fds[fd].write.callback) {
-	      IF_PD(fprintf(stderr, "BACKEND: write_callback(%d, %p)\n",
-			    fd, me->fds[fd].write.data));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
+			    me->id, fd, me->fds[fd].write.data));
 	      (*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data);
 	    } else {
 	      MY_FD_CLR(&me->set, fd, POLLOUT);
@@ -1121,8 +1125,8 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
 	  num_active -= handled;
 	  if (!handled && me->active_set.poll_fds[i].revents) {
-	    fprintf(stderr, "BACKEND: fd %ld has revents 0x%08lx, "
-		    "but hasn't been handled.\n",
+	    fprintf(stderr, "BACKEND[%d]: fd %ld has revents 0x%08lx, "
+		    "but hasn't been handled.\n", me->id,
 		    (long)me->active_set.poll_fds[i].fd,
 		    (long)me->active_set.poll_fds[i].revents);
 	  }
@@ -1130,17 +1134,18 @@ PIKECLASS Backend
 	}
 #ifdef PIKE_DEBUG
 	if (num_active) {
-	  fprintf(stderr, "BACKEND: %d more active fds than were handled.\n",
-		  num_active);
+	  fprintf(stderr, "BACKEND[%d]: %d more active fds than were handled.\n",
+		  me->id, num_active);
 	  for(i=0; i<me->active_set.num_in_poll; i++) {
-	    fprintf(stderr, "BACKEND: fd %ld, events 0x%08lx, revents 0x%08lx\n",
+	    fprintf(stderr, "BACKEND[%d]: fd %ld, events 0x%08lx, revents 0x%08lx\n",
+		    me->id,
 		    (long)me->active_set.poll_fds[i].fd,
 		    (long)me->active_set.poll_fds[i].events,
 		    (long)me->active_set.poll_fds[i].revents);
 	  }
 	}
 #endif /* PIKE_DEBUG */
-#endif
+#endif	/* HAVE_POLL */
       }else{
 	switch(errno)
 	{
@@ -1251,7 +1256,7 @@ PIKECLASS Backend
 	      Pike_fatal("Bad filedescriptor to select().\n");
 #endif /* _REENTRANT */
 	    }
-#endif
+#endif	/* HAVE_POLL */
 	    break;
 	    
 	}
@@ -1906,6 +1911,30 @@ PIKECLASS Backend
        RETURN backend_get_all_call_outs(THIS);
      }
 
+   /*! @decl int id()
+    *!
+    *! Return an integer that uniquely identifies this backend. For
+    *! the default backend that integer is @expr{0@}.
+    */
+   PIKEFUN int id()
+   {
+     RETURN (THIS->id);
+   }
+
+   PIKEFUN string _sprintf(int type, mapping flags)
+   {
+     if (type == 'O') {
+       push_constant_text ("Pike.Backend(%d)");
+       push_int (THIS->id);
+       f_sprintf (2);
+       stack_pop_n_elems_keep_top (args);
+     }
+     else {
+       pop_n_elems (args);
+       push_int (0);
+     }
+   }
+
   extern int pike_make_pipe(int *);
 
 #ifdef PIKE_DEBUG
@@ -1931,6 +1960,7 @@ PIKECLASS Backend
     {
       THIS->may_need_wakeup=0;
 
+      IF_PD (fprintf (stderr, "BACKEND[%d]: init\n", me->id));
 
       THIS->backend_callbacks.callbacks=0;
       THIS->backend_callbacks.num_calls=0;
@@ -1986,6 +2016,8 @@ PIKECLASS Backend
     {
       struct Backend_struct *me=THIS;
       int e;
+
+      IF_PD (fprintf (stderr, "BACKEND[%d]: exit\n", me->id));
 
       /* Make sure we aren't referenced any more. */
       /* FIXME: Ought to keep better track of our fds so that we don't
