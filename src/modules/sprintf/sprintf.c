@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.41 1999/08/16 17:48:06 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.42 1999/10/15 21:04:56 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -110,6 +110,7 @@ RCSID("$Id: sprintf.c,v 1.41 1999/08/16 17:48:06 grubba Exp $");
 #include "interpret.h"
 #include "pike_memory.h"
 #include "pike_macros.h"
+#include "bignum.h"
 #include <ctype.h>
 
 #ifdef PC
@@ -656,6 +657,19 @@ INLINE static int do_one(struct string_builder *r,
     VAR=lastarg=argp+(argument++); \
   }
 
+#define PEEK_SVALUE(VAR) \
+  if(arg) \
+  { \
+    VAR=arg; \
+  }else{ \
+    if(argument >= num_arg) \
+    { \
+      sprintf_error("Too few arguments to sprintf.\n"); \
+      break; /* make gcc happy */ \
+    } \
+    VAR=argp+argument; \
+  }
+
 #define GET(VAR,PIKE_TYPE,TYPE_NAME,EXTENSION) \
   { \
     struct svalue *tmp_; \
@@ -704,6 +718,7 @@ INLINE static int do_one(struct string_builder *r,
      break; \
    }
 
+#define IS_BIGNUM(sv) ((sv)->type == T_OBJECT)
 
 /* This is the main pike_sprintf function, note that it calls itself
  * recursively during the '%{ %}' parsing. The string is stored in
@@ -996,6 +1011,34 @@ static void low_pike_sprintf(struct string_builder *r,
       case 'X':
       {
 	char *x;
+#ifdef AUTO_BIGNUM
+	struct svalue *sv;
+
+	PEEK_SVALUE(sv);
+	if(IS_BIGNUM(sv))
+	{
+	  struct pike_string *s;
+	  struct object *o;
+	  int base = 10;
+	  
+	  GET_OBJECT(o);
+	  switch(EXTRACT_PCHARP(a))
+	  {
+	  case 'o': base =  8; break;
+	  case 'd': base = 10; break;
+	  case 'u': base = 10; break;
+	  case 'x': base = 16; break;
+	  case 'X': base = 16; break;
+	  default:
+	    fatal("sprintf: unknown bignum base.\n");
+	  }
+	  
+	  s = string_from_bignum(o, base);
+	  fsp->b = MKPCHARP_STR(s);
+	  fsp->len = s->len;
+	  break;
+	}
+#endif /* AUTO_BIGNUM */
 	DO_OP();
 	GET_INT(tmp);
 	buffer[0]='%';
