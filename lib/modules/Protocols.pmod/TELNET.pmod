@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.11 2000/09/28 03:38:53 hubbe Exp $
+// $Id: TELNET.pmod,v 1.12 2000/09/30 20:35:23 per Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -621,7 +621,7 @@ class protocol
 #endif
 
 #define HANDLE(OPTIONS,WILL,WONT,DO,DONT)						\
-	    case WILL:									\
+	    case WILL:{									\
 	      int option = a[i][1];							\
 	      int state = OPTIONS##_options[option];				       	\
 	      a[i] = a[i][2..];								\
@@ -667,9 +667,9 @@ class protocol
 	      }										\
 	      DWRITE(sprintf("=> " #WILL " %s, state 0x%04x\n", lookup_telopt[option], state));	\
 	      set_##OPTIONS##_option(option,state);					\
-	      break;									\
+	      break;}									\
 											\
-	    case WONT:									\
+	    case WONT:{									\
 	      int option = a[i][1];							\
 	      int state = OPTIONS##_options[option];					\
 	      a[i] = a[i][2..];								\
@@ -710,7 +710,7 @@ class protocol
 											\
 	      DWRITE(sprintf("=> " #WONT " %s, state 0x%04x\n", lookup_telopt[option], state));	\
 	      set_##OPTIONS##_option(option,state);					\
-	      break
+	      }break
 
 
 
@@ -941,7 +941,7 @@ class Readline
 	      {
 		read_cb2=read_cb;
 		term=data[2..];
-//		werror("Enabeling READLINE, term=%s\n",term);
+// 		werror("Enabeling READLINE, term=%s\n",term);
 		readline=Stdio.Readline(this_object(),lower_case(term));
 		readline->set_nonblocking(readline_callback);
 		readline->enable_history(200);
