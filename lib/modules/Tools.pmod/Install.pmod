@@ -14,6 +14,10 @@ array(string) features()
   a += ({ "threads" });
 #endif
 
+#if constant(Stdio.__HAVE_OOB__)
+  a += ({ "out-of-band data" });
+#endif
+
   foreach(({ "_Crypto", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
 	     "_Image_JPEG", "_Image_GIF", "_Image_TIFF", "_Image_TTF", 
 	     "Image.PNG", "Java", "Mird",
