@@ -27,7 +27,6 @@ o sort() is portable
     every character.
 
 o Reworked codec
-
     The codec for serialization of Pike data types has been updated
     and has a significally improved successrate at encoding modules.
 
@@ -49,6 +48,7 @@ Optimizations:
 --------------
 
 o Instantiation and destruction of pike-classes is now significantly faster.
+
 o Handling of bignums has been optimized, especially conversion
   to/from normal integers.
 
