@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.171 2002/12/16 14:32:21 grubba Exp $
+|| $Id: program.h,v 1.172 2003/01/11 00:01:21 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -630,7 +630,7 @@ void gc_check_all_programs(void);
 void gc_mark_all_programs(void);
 void gc_cycle_check_all_programs(void);
 void gc_zap_ext_weak_refs_in_programs(void);
-void gc_free_all_unreferenced_programs(void);
+size_t gc_free_all_unreferenced_programs(void);
 void push_compiler_frame(int lexical_scope);
 void low_pop_local_variables(int level);
 void pop_local_variables(int level);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.65 2003/01/09 15:21:27 grubba Exp $
+|| $Id: multiset.c,v 1.66 2003/01/11 00:01:20 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.65 2003/01/09 15:21:27 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.66 2003/01/11 00:01:20 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -4122,9 +4122,10 @@ void gc_zap_ext_weak_refs_in_multisets (void)
   discard_queue (&gc_mark_queue);
 }
 
-void gc_free_all_unreferenced_multisets (void)
+size_t gc_free_all_unreferenced_multisets (void)
 {
   struct multiset *l, *next;
+  size_t freed = 0;
 
   for (l = gc_internal_multiset; l; l = next) {
     if (gc_do_free (l)) {
@@ -4137,9 +4138,12 @@ void gc_free_all_unreferenced_multisets (void)
       }
       gc_free_extra_ref (l);
       SET_NEXT_AND_FREE (l, free_multiset);
+      freed++;
     }
     else next = l->next;
   }
+
+  return freed;
 }
 
 void init_multiset()
@@ -5277,7 +5281,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.65 2003/01/09 15:21:27 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.66 2003/01/11 00:01:20 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -5669,9 +5673,10 @@ void gc_cycle_check_all_multisets(void)
   }
 }
 
-void gc_free_all_unreferenced_multisets(void)
+size_t gc_free_all_unreferenced_multisets(void)
 {
   struct multiset *l,*next;
+  size_t freed = 0;
 
   for(l=gc_internal_multiset;l;l=next)
   {
@@ -5683,10 +5688,13 @@ void gc_free_all_unreferenced_multisets(void)
 
       gc_free_extra_ref(l);
       SET_NEXT_AND_FREE(l, free_multiset);
+      freed++;
     }else{
       next=l->next;
     }
   }
+
+  return freed;
 }
 
 void count_memory_in_multisets(INT32 *num_, INT32 *size_)

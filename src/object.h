@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.75 2002/11/24 22:47:06 mast Exp $
+|| $Id: object.h,v 1.76 2003/01/11 00:01:20 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -109,7 +109,7 @@ void gc_check_all_objects(void);
 void gc_mark_all_objects(void);
 void gc_cycle_check_all_objects(void);
 void gc_zap_ext_weak_refs_in_objects(void);
-void gc_free_all_unreferenced_objects(void);
+size_t gc_free_all_unreferenced_objects(void);
 struct magic_index_struct;
 void push_magic_index(struct program *type, int inherit_no, int parent_level);
 void init_object(void);

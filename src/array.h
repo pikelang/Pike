@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.44 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: array.h,v 1.45 2003/01/11 00:01:20 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -171,7 +171,7 @@ void gc_check_all_arrays(void);
 void gc_mark_all_arrays(void);
 void gc_cycle_check_all_arrays(void);
 void gc_zap_ext_weak_refs_in_arrays(void);
-void gc_free_all_unreferenced_arrays(void);
+size_t gc_free_all_unreferenced_arrays(void);
 void debug_dump_type_field(TYPE_FIELD t);
 void debug_dump_array(struct array *a);
 void zap_all_arrays(void);

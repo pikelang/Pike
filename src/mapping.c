@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.159 2003/01/10 12:49:03 grubba Exp $
+|| $Id: mapping.c,v 1.160 2003/01/11 00:01:20 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.159 2003/01/10 12:49:03 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.160 2003/01/11 00:01:20 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2392,10 +2392,11 @@ void gc_zap_ext_weak_refs_in_mappings(void)
   discard_queue(&gc_mark_queue);
 }
 
-void gc_free_all_unreferenced_mappings(void)
+size_t gc_free_all_unreferenced_mappings(void)
 {
   struct mapping *m,*next;
   struct mapping_data *md;
+  size_t freed = 0;
 
   for(m=gc_internal_mapping;m;m=next)
   {
@@ -2420,12 +2421,15 @@ void gc_free_all_unreferenced_mappings(void)
 #endif
       gc_free_extra_ref(m);
       SET_NEXT_AND_FREE(m, free_mapping);
+      freed++;
     }
     else
     {
       next=m->next;
     }
   }
+
+  return freed;
 }
 
 #ifdef PIKE_DEBUG

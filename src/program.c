@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.471 2003/01/09 18:59:00 grubba Exp $
+|| $Id: program.c,v 1.472 2003/01/11 00:01:20 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.471 2003/01/09 18:59:00 grubba Exp $");
+RCSID("$Id: program.c,v 1.472 2003/01/11 00:01:20 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6234,7 +6234,7 @@ static void gc_recurse_trampoline(struct object *o)
 }
 
 
-/* This placeholder should is used
+/* This placeholder should be used
  * in the first compiler pass to take the place
  * of unknown things
  */
@@ -6568,9 +6568,10 @@ void gc_zap_ext_weak_refs_in_programs(void)
   discard_queue(&gc_mark_queue);
 }
 
-void gc_free_all_unreferenced_programs(void)
+size_t gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
+  size_t freed = 0;
 #ifdef PIKE_DEBUG
   int first = 1;
 #endif
@@ -6610,6 +6611,7 @@ void gc_free_all_unreferenced_programs(void)
 
       gc_free_extra_ref(p);
       SET_NEXT_AND_FREE(p, free_program);
+      freed++;
 #ifdef PIKE_DEBUG
       if (first) gc_internal_program = next;
 #endif
@@ -6636,6 +6638,8 @@ void gc_free_all_unreferenced_programs(void)
 	gc_fatal(p, 1 ,"garbage collector failed to free program!!!\n");
     }
 #endif
+
+  return freed;
 }
 
 #endif /* GC2 */
