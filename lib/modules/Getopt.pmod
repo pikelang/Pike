@@ -12,7 +12,8 @@ string|int find_option(array argv,
 		       array|string shortform,
 		       array|string|void longform,
 		       array|string|void envvars,
-		       mixed|void def)
+		       mixed|void def,
+		       int|void throw_errors)
 {
   mixed value;
   int i,hasarg;
@@ -46,8 +47,13 @@ string|int find_option(array argv,
 	      {
 		if(i == sizeof(argv)-1)
 		{
-		  werror("No argument to option "+tmp+".\n");
-		  exit(1);
+		  if (throw_errors) {
+		    throw(({ "No argument to option "+tmp+".\n",
+			       backtrace() }));
+		  } else {
+		    werror("No argument to option "+tmp+".\n");
+		    exit(1);
+		  }
 		}
 		value=argv[i+1];
 		argv[i+1]=0;
@@ -74,9 +80,14 @@ string|int find_option(array argv,
 		{
 		  if(i == sizeof(argv)-1)
                   {
-                    werror("No argument to option -"+argv[i][j..j]+".\n");
-                    exit(1);
-                  }
+		    if (throw_errors) {
+		      throw(({ "No argument to option -"+argv[i][j..j]+".\n",
+				 backtrace() }));
+		    } else {
+		      werror("No argument to option -"+argv[i][j..j]+".\n");
+		      exit(1);
+		    }
+		  }
 
                   value=argv[i+1];
 		  argv[i+1] = 0;
@@ -120,7 +131,8 @@ constant MAY_HAVE_ARG=3;
 #define ENV 3
 #define DEF 4
 
-mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
+mixed *find_all_options(string *argv, mixed *options,
+			void|int posix_me_harder, void|int throw_errors)
 {
   mapping quick=([]);
   foreach(options, mixed opt)
@@ -162,8 +174,13 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
 	  {
 	    if(e==sizeof(argv)-1)
 	    {
-	      werror("No argument to option "+opt+".\n");
-	      exit(1);
+	      if (throw_errors) {
+		throw(({ "No argument to option "+opt+".\n",
+			   backtrace() }));
+	      } else {
+		werror("No argument to option "+opt+".\n");
+		exit(1);
+	      }
 	    }
 	    arg=argv[e+1];
 	    argv[e+1]=0;
@@ -187,8 +204,13 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
 	      {
 		if(e==sizeof(argv)-1)
 		{
-		  werror("No argument to option "+opt+".\n");
-		  exit(1);
+		  if (throw_errors) {
+		    throw(({ "No argument to option "+opt+".\n",
+			       backtrace() }));
+		  } else {
+		    werror("No argument to option "+opt+".\n");
+		    exit(1);
+		  }
 		}
 		arg=argv[e+1];
 		argv[e+1]=0;
@@ -240,7 +262,7 @@ mixed *find_all_options(string *argv, mixed *options, void|int posix_me_harder)
 }
 
 
-string *get_args(string *argv, void|int posix_me_harder)
+string *get_args(string *argv, void|int posix_me_harder, void|int throw_errors)
 {
   int i;
   for(i=1;i<sizeof(argv);i++)
@@ -254,14 +276,30 @@ string *get_args(string *argv, void|int posix_me_harder)
 	  argv[i]=0;
 	  break;
 	}else{
-	  werror("Unknown option "+argv[i]+".\n");
-	  exit(1);
+	  if (throw_errors) {
+	    throw(({ "Unknown option "+argv[i]+".\n",
+		       backtrace() }));
+	  } else {
+	    werror("Unknown option "+argv[i]+".\n");
+	    exit(1);
+	  }
 	}
       }else{
-	if(strlen(argv[i]) == 2)
-	  werror("Unknown option "+argv[i]+".\n");
-	else
-	  werror("Unknown options "+argv[i]+".\n");
+	if(strlen(argv[i]) == 2) {
+	  if (throw_errors) {
+	    throw(({ "Unknown option "+argv[i]+".\n",
+		       backtrace() }));
+	  } else {
+	    werror("Unknown option "+argv[i]+".\n");
+	  }
+	} else {
+	  if (throw_errors) {
+	    throw(({ "Unknown options "+argv[i]+".\n",
+		       backtrace() }));
+	  } else {
+	    werror("Unknown options "+argv[i]+".\n");
+	  }
+	}
 	exit(1);
       }
     }else{
