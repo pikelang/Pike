@@ -497,9 +497,9 @@ void set_cursor(?int cursor_type, ?GDK.Color fg, ?GDK.Color bg)
   if(!args)
     i = -1;
   else if( args >= 3 )
-    get_all_args("set_cursor", args, "%d%o%o", &i, &fg, &bg);
+    get_all_args("set_cursor", args, "%i%o%o", &i, &fg, &bg);
   else
-    get_all_args("set_cursor", args, "%d", &i);
+    get_all_args("set_cursor", args, "%i", &i);
 
   if(i>255)
     Pike_error("No such cursor\n");
