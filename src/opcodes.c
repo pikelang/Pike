@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.72 2000/03/10 01:23:19 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.73 2000/04/01 18:59:51 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -42,10 +42,19 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
   {
 #ifdef AUTO_BIGNUM
   case T_INT:
-    convert_svalue_to_bignum(what);
-    index_no_free(to, what, ind);
-    if(IS_UNDEFINED(to))
-      error("Indexing an integer with an unknown method.\n");
+    {
+      INT_TYPE val = what->u.integer;
+
+      convert_svalue_to_bignum(what);
+      index_no_free(to, what, ind);
+      if(IS_UNDEFINED(to)) {
+	if (val) {
+	  error("Indexing the integer %d with an unknown method.\n", val);
+	} else {
+	  error("Indexing the NULL value.\n");
+	}
+      }
+    }
     break;
 #endif /* AUTO_BIGNUM */
     
