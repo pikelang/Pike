@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.38 1998/05/17 17:18:12 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.39 1998/06/07 21:24:50 grubba Exp $
 #
 
 
@@ -32,11 +32,20 @@ modlist_headers: Makefile
 modlist_segment: Makefile
 	echo "" >modlist_segment
 
-Makefile: ../dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
+Makefile: ../dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again"
 	@exit 1
+
+$(SRCDIR)/configure: $(SRCDIR)/configure.in $(SRCDIR)/../module_configure.in
+	cd $(SRCDIR) && autoconf
+	if [ -f $(SRCDIR)/acconfig.h ]; then
+	  cd $(SRCDIR) && autoheader
+	else :; fi
+
+config.status: $(SRCDIR)/configure
+	./config.status --recheck
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) -lc
