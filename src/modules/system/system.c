@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.9 1997/01/28 22:40:08 grubba Exp $
+ * $Id: system.c,v 1.10 1997/02/05 01:22:55 neotron Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.9 1997/01/28 22:40:08 grubba Exp $");
+RCSID("$Id: system.c,v 1.10 1997/02/05 01:22:55 neotron Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -725,7 +725,7 @@ void init_system_efuns(void)
  
   add_efun("getpid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #ifdef HAVE_GETPPID
-  add_efun("getppid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
+  add_efun("getppid", f_getppid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_GETPPID */
  
 #ifdef HAVE_GETPGRP
