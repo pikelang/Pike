@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.8 1999/03/24 02:00:10 marcus Exp $
+ * $Id: precompiled_odbc.h,v 1.9 1999/03/24 19:12:04 marcus Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -60,9 +60,6 @@ extern struct program *odbc_result_program;
  */
 
 struct field_info {
-  SDWORD len;
-  int size;		/* Size of buffer */
-  void *buf;
   SWORD type;
 };
 
