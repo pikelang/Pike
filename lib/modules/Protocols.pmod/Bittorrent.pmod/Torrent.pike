@@ -10,26 +10,37 @@ string info_sha1;
 array(Target) targets;
 
 string all_pieces_bits=0; // to compare to see which hosts are complete
+string no_pieces_bits=0; // to compare to see which hosts are empty
 
 string my_peer_id=generate_peer_id();
 
 string my_ip;
-int my_port=6881;
+int my_port=7881;
 int uploaded=0;   // bytes
 int downloaded=0; // bytes
 
 int downloading=0; // flag
+int we_are_completed=0; // set when no more to download
+
+int allow_free=262144; // free bytes before demanding back from peers
 
 string datamode="rw";
 
 function(this_program,mapping:object(.Peer)) peer_program=.Peer;
 mapping(string:object(.Peer)) peers=([]);
+array(.Peer) peers_ordered=({});
+array(.Peer) peers_unused=({});
+// stop adding peers at this number, increased if we need more
+int max_peers=100; 
 
 //! if set, called when we got another piece downloaded (no args)
 function pieces_update_status=0;
 
 //! if set, called when we start to download another piece (no args)
 function downloads_update_status=0;
+
+//! if set, called when download is completed
+function download_completed_callback=0;
 
 //! called if there is a protocol error; defaults to werror
 function(string,mixed...:void|mixed) warning=werror;
@@ -42,8 +53,6 @@ void load_metainfo(string filename)
       error("Failed to read metainfo file %O: %s\n",
 	    filename,strerror(errno()));
 
-   string t;
-   sscanf(s,"%*s4:info%s",t);
 
    mixed err=catch {
       metainfo=decode(s);
@@ -62,12 +71,15 @@ void load_metainfo(string filename)
 // 	       ((info->length+info["piece length"]-1)/info["piece length"]),
 // 	       strlen(info["pieces"]));
 
-#if 1
+#if 0
 // check if our encoder makes the same string; it should
+// (but only if there isn't stuff after "info" in the dictionary)
+      string t;
+      sscanf(s,"%*s4:info%s",t);
+
       if (encode(info)+"e"!=t)
 	 error("internal encoder error (?): %O\n !=\n %O\n",
 	       encode(info)+"e",t);
-
 #endif
       info_sha1=SHA1(encode(info));
    };
@@ -188,7 +200,7 @@ class Target(string base,int length,int offset,void|array path)
 //! 2 if all target files were created 
 //!
 //! If all files are created, the verify info will be filled as well,
-//! but if it isn't created, a call to verify_file() is necessary after
+//! but if it isn't created, a call to verify_target() is necessary after
 //! this call.
 //!
 int fix_targets(void|int(-1..2) allocate, void|string base_filename,
@@ -241,7 +253,7 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
 	 break;
    }
 
-   if (targets->created==({1})*sizeof(targets))
+   if (search(targets->created,0)==-1)
    {
       array(string) want_sha1s=info->pieces/20;
       string zeropiece=SHA1("\0"*info["piece length"]);
@@ -259,7 +271,8 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
    file_want=(multiset)filter(indices(file_got),
 			      lambda(int i) { return !file_got[i]; });
 
-   all_pieces_bits=bits2string(replace(file_got,0,1));
+   all_pieces_bits=bits2string(replace(copy_value(file_got),0,1));
+   no_pieces_bits="\0"*strlen(file_got);
 
    return search(targets->created,0)==-1 ? 2 : 1;
 }
@@ -276,32 +289,21 @@ void verify_targets(void|function(int,int:void) progress_callback)
    {
       if (progress_callback) progress_callback(n,sizeof(want_sha1s));
 
-//       werror(strlen(targets->pread(n*info["piece length"],
-// 				   info["piece length"])*"")+"\n");
       string sha1=SHA1(targets->pread(n*info["piece length"],
 				      info["piece length"])*"");
-//       if (sha1!=".\0\17§èWYÇôÂTÔÙÃ>ô\201äY§")
-//       werror("got %O want %O\n",sha1,want_sha1);
-//       if (want_sha1!=sha1)
-//       {
-// 	 werror("%d failed verify\n",n);
-// 	 Stdio.write_file("piece "+n,
-// 			  targets->pread(n*info["piece length"],
-// 					 info["piece length"])*"");
-// 	 exit(1);
-//       }
-//       if (n<352)
-	 file_got+=({want_sha1==sha1});
-//       else
-// 	 file_got+=({0});
+      file_got+=({want_sha1==sha1});
       n++;
    }
    if (progress_callback) progress_callback(n,sizeof(want_sha1s));
 
+
+   file_got[random(sizeof(file_got))]=0;
+   file_got[random(sizeof(file_got))]=0;
+   file_got[random(sizeof(file_got))]=0;
+   file_got[random(sizeof(file_got))]=0;
+
    file_want=(multiset)filter(indices(file_got),
 			      lambda(int i) { return !file_got[i]; });
-   
-//    werror("%O\n",file_want);
 }
 
 // helper functions
@@ -342,9 +344,13 @@ int bytes_left()
    return total_bytes-bytes_done();
 }
 
+int last_tracker_update;
+int tracker_update_interval=300;
+int tracker_call_if_starved=60; // delay until ok to call if starved
+
 //! contact and update the tracker with current status
 //! will fill the peer list
-void update_tracker(void|string event)
+void update_tracker(void|string event,void|int contact)
 {
    mapping req=
       (["info_hash":info_sha1,
@@ -360,6 +366,12 @@ void update_tracker(void|string event)
    object q=Protocols.HTTP.get_url(
       metainfo->announce,
       req);
+
+   if (!q)
+   {
+      error("tracker request failed, %s\n",
+	    strerror(errno()));
+   }
 
    if (q->status!=200)
    {
@@ -389,8 +401,97 @@ void update_tracker(void|string event)
    {
       foreach (m->peers;;mapping m)
 	 if (!peers[m["peer id"]])
-	    peers[m["peer id"]]=peer_program(this_object(),m);
+	 {
+	    .Peer p;
+	    peers[m["peer id"]]=(p=peer_program(this_object(),m));
+	    if (sizeof(peers_ordered)<max_peers && contact) 
+	    {
+	       peers_ordered+=({p});
+	       p->connect();
+	    }
+	    else 
+	       peers_unused+=({p});
+	 }
    }
+
+   last_tracker_update=time(1);
+
+   if (find_call_out(update_tracker_loop)!=-1)
+   {
+      remove_call_out(update_tracker_loop);
+      call_out(update_tracker_loop,tracker_update_interval);
+   }
+}
+
+int last_increase=0;
+int min_time_between_increase=30;
+void increase_number_of_peers(void|int n)
+{
+   if (time(1)-last_increase<min_time_between_increase)
+   {
+      remove_call_out(increase_number_of_peers);
+      call_out(increase_number_of_peers,
+	       min_time_between_increase+last_increase-time(1));
+      return;
+   }
+   last_increase=time(1);
+   
+   if (n<=0) n=25;
+
+   max_peers=max(max_peers, sizeof(peers_ordered)+n);
+
+#if 0
+   werror("want to increase number of peers. "
+	  "time left before next update: %O\n",
+	  last_tracker_update+tracker_call_if_starved-time(1));
+#endif
+
+   if (sizeof(peers_unused)<n &&
+       find_call_out(update_tracker_loop)!=-1 &&
+       time(1)>=last_tracker_update+tracker_call_if_starved)
+   { 
+      remove_call_out(update_tracker_loop);
+      call_out(update_tracker_loop,
+	       last_tracker_update+tracker_call_if_starved-time(1));
+   }
+
+   n=max_peers-sizeof(peers_ordered);
+   array v=peers_unused[..n-1];
+   v->connect();
+   peers_ordered+=v;
+   peers_unused=peers_unused[n..];
+}
+
+//! starts to contact the tracker at regular intervals,
+//! giving it the status and recieving more peers to talk to,
+//! will also contact these peers
+//!
+//! default interval is 5 minutes
+//!
+//! if given an event, will update tracker with it
+void start_update_tracker(void|int interval)
+{
+   remove_call_out(update_tracker_loop);
+   if (interval>0) tracker_update_interval=interval;
+   update_tracker_loop();
+}
+
+static void update_tracker_loop()
+{
+   call_out(update_tracker_loop,tracker_update_interval);
+   if (!sizeof(peers))
+      update_tracker(sizeof(file_want)?"started":"completed",1);
+   else if (sizeof(peers))
+      update_tracker(0,!we_are_completed);
+}
+
+//! stops updating the tracker; will send the event as a last
+//! event, if set
+//! will not contact new peers
+void stop_update_tracker(void|string event)
+{
+   if (event) update_tracker(event,0);
+   remove_call_out(update_tracker_loop);
 }
 
 //! contact all or n peers 
@@ -445,6 +546,25 @@ mapping(int:PieceDownload) handovers=([]);
 void download_more()
 {
    int did=0;
+
+   if (!sizeof(file_want)) 
+   {
+      if (!we_are_completed) // all done, tidy up
+      {
+	 we_are_completed=1;
+	 downloading=0;
+	 Function.call_callback(download_completed_callback);
+	 
+	 max_peers=sizeof(peers_ordered);
+	 update_tracker("completed");
+
+	 remove_call_out(increase_number_of_peers);
+	 filter(filter(peers_ordered,"is_online"),"is_completed")
+	    ->disconnect();
+      }
+      return;
+   }
+
    while (download_one_more()) did++;
 
    if (did) Function.call_callback(downloads_update_status);
@@ -464,21 +584,37 @@ int download_one_more()
 
    int completed_peers_used=sizeof(completed_peers&activated_peers);
 
-   werror("downloads: %d  available: %d  complete: %d  activated: %d  "
+#if 0
+   werror("downloads: %d/%d  available: %d  complete: %d  activated: %d  "
 	  "c-a: %d\n",
-	  sizeof(downloads),
+	  sizeof(downloads), sizeof(handovers), 
 	  sizeof(available_peers),
 	  sizeof(completed_peers),
 	  sizeof(activated_peers),
 	  sizeof(completed_peers_avail));
+#endif
 
-   if (!downloading || sizeof(downloads)>=max_downloads ||
-       !sizeof(available_peers))
+   if (!downloading || sizeof(downloads)>=max_downloads)
+   {
+#if 0
+      werror("doesn't download: too many downloads %O/%O\n",
+	     sizeof(downloads),max_downloads);
+#endif
       return 0;
+   }
+
+   if (!sizeof(available_peers))
+   {
+#if 0
+      werror("doesn't download: no available peers\n");
+#endif
+      increase_number_of_peers();
+      return 0; 
+   }
 
 // ----------------
 
-   array v=indices(file_peers)-indices(downloads);
+   array v=indices(file_peers)-indices(downloads)-indices(handovers);
    array w=map(rows(file_peers,v),sizeof);
    sort(w,v);
 
@@ -487,17 +623,20 @@ int download_one_more()
    array choices=({});
    int minp=0;
 
-   if (completed_peers_used
-       < min(sizeof(completed_peers_avail),
-	     min_completed_peers) ||
-       sizeof(file_want) == sizeof(file_got)) // first seed
+   if (sizeof(completed_peers_avail) &&
+       (completed_peers_used<min_completed_peers ||
+	sizeof(file_want) == sizeof(file_got))) // first seed
       from_peers&=completed_peers_avail;
 
    if (!sizeof(from_peers)) 
+   {
+      werror("NO SOURCE!!\n");
+      exit(1);
       return 0; // no source
+   }
 
-   if (sizeof(lost_in_space))
-      werror("lost_in_space=%O\n",lost_in_space);
+//    if (sizeof(lost_in_space))
+//       werror("lost_in_space=%O\n",lost_in_space);
 
    for (int i=!sizeof(lost_in_space); i<2 && !sizeof(choices); i++)
    {
@@ -521,11 +660,10 @@ int download_one_more()
       int i=random(sizeof(choices));
       array v=(array)choices[i][1];
       int n=choices[i][0];
-	 
-//       werror("download piece %O, available from %O\n",
-// 	     n,v);
 
       .Peer peer=v[random(sizeof(v))];
+
+//       werror("download piece %O from %O\n",n,peer);
 
       if (lost_in_space[n])
       {
@@ -538,9 +676,36 @@ int download_one_more()
       return 1;
    }
 
-// switch algorithm - download same block from more then one peer
-      
 // ----------------
+
+// switch algorithm - download same block from more then one peer
+
+// try downloading random one *again*
+   w=Array.shuffle((array)file_want);
+
+// don't download from the handover peers though
+   from_peers-=(multiset)values(handovers)->peer;
+
+   foreach (w;;int piece)
+   {
+      multiset m=file_peers[piece]&from_peers;
+
+      if (sizeof(m))
+      {
+	 .Peer peer=((array)m)[random(sizeof(m))];
+	 
+	 (downloads[piece]||handovers[piece])
+	    ->use_more_peers(peer);
+
+	 return 1;
+      }
+   }
+
+#if 0
+   werror("doesn't download: endgame (%d pieces left) but no more useable\n",
+	  sizeof(file_want));
+#endif
+   increase_number_of_peers();
 }
 
 int download_chunk_size=32768;
@@ -550,6 +715,8 @@ class PieceDownload
 {
    .Peer peer;
    int piece;
+   array(.Peer) more_peers=({});
+   int using_more_peers=0; // to know if we should warn 
 
    mapping chunks=([]);
    mapping expect_chunks=([]);
@@ -581,14 +748,27 @@ class PieceDownload
 
    void reactivate(.Peer _peer)
    {
+#ifdef TORRENT_PIECEDOWNLOAD_DEBUG
       werror("reactivate lost download: %O %O %O\n",
-	     peer,piece,indices(chunks));
+ 	     peer,piece,indices(chunks));
+#endif
 
       peer=_peer;
 
       downloads[piece]=this_object();
 
       queue_chunks();
+   }
+
+   void use_more_peers(.Peer p2)
+   {
+      more_peers+=({p2});
+
+// queue a random part that we haven't got yet      
+      array v=indices(expect_chunks)-indices(chunks);
+      int i=v[random(sizeof(v))];
+
+      p2->request(piece,i,expect_chunks[i],got_data);
    }
 
    void queue_chunks()
@@ -609,19 +789,17 @@ class PieceDownload
 	 peer->handover=1;
 	 handovers[piece]=this_object();
 	 disjoin();
+	 handed_over=1;
       }
    }
 
 // seconds before aborting if choked and not unchoked
-   constant choke_abort_delay=10; 
+   constant choke_abort_delay=45; 
 
    void got_data(int n,int i,string data,object from)
    {
-      if (!peer || peer!=from) 
-      {
-	 werror("you shouldn't call me!!\n");
-	 exit(1);
-      }
+      downloaded+=strlen(data); // always, even if bad
+
       if (n==-1)
 	 switch (data)
 	 {
@@ -629,11 +807,15 @@ class PieceDownload
 	       if (find_call_out(abort)==-1)
 	       {
 		  call_out(abort,choke_abort_delay);
+#ifdef TORRENT_PIECEDOWNLOAD_DEBUG
 		  werror("call_out abort\n");
+#endif
 	       }
 	       return;
 	    case "unchoked":
+#ifdef TORRENT_PIECEDOWNLOAD_DEBUG
 	       werror("remove_call_out abort\n");
+#endif
 	       remove_call_out(abort);
 	       return;
 	    case "disconnected":
@@ -642,6 +824,12 @@ class PieceDownload
 	    default:
 	       error("unknown message from Peer: %O\n",data);
 	 }
+
+      if (from!=peer)
+      {
+	 more_peers-=({from});
+	 download_more();
+      }
 
       if (piece==n && expect_chunks[i]==strlen(data))
       {
@@ -680,7 +868,7 @@ class PieceDownload
 	    finish();
 	 }
       }
-      else
+      else if (!use_more_peers)
       {
 	 Function.call_callback(
 	    warning,"got unrequested chunk from %s:%d, "
@@ -693,7 +881,9 @@ class PieceDownload
    void abort()
    {
       if (!this_object()) werror("abort in destructed\n");
+#ifdef TORRENT_PIECEDOWNLOAD_DEBUG
       werror("%O abort\n",this_object());
+#endif
 
       remove_call_out(abort);
       if (sizeof(chunks))
@@ -704,11 +894,14 @@ class PieceDownload
 	 lost_in_space[piece]=this_object();
 
    // cancel outstanding
+#ifdef TORRENT_PIECEDOWNLOAD_DEBUG
 	 werror("%O %O->cancel\n",this_object(),peer);
-	 peer->cancel_requests();
+#endif
+	 peer->cancel_requests(0);
 
    // reset some stuff
 	 disjoin();
+	 handed_over=0; // if we ever were
 
 	 peer=0;
 	 queued_chunks=([]);
@@ -717,24 +910,46 @@ class PieceDownload
       }
       else // we didn't get any, just drop it
       {
-	 peer->cancel_requests();
+	 peer->cancel_requests(0);
 	 finish(); 
       }
    }
 
    void disjoin()
    {
+#ifdef TORRENT_PIECEDOWNLOAD_DEBUG
       werror("%O disjoin\n",this_object());
+#endif
 
-      m_delete(downloads,piece);
+      if (!handed_over)
+	 m_delete(downloads,piece);
+      else
+	 m_delete(handovers,piece);
       Function.call_callback(downloads_update_status);
    }
 
    void finish()
    {
+#ifdef TORRENT_PIECEDOWNLOAD_DEBUG
       werror("finish\n");
+#endif
       disjoin();
       download_more();
+
+      if (handovers[piece]==this_object() ||
+	  downloads[piece]==this_object())
+      {
+	 werror("destruction of download still in structs:\n"
+		"download: %O\ndownloads: %O\nhandovers: %O\n",
+		this_object(),downloads,handovers);
+
+	 werror("%s\n",master()->describe_backtrace(backtrace()));
+
+	 exit(1);
+      }
+
+      more_peers->cancel_requests(0);
+
       destruct(this_object());
    }
 
@@ -782,14 +997,32 @@ void peer_gained(.Peer peer)
 	     int i; )
       if ((m=file_peers[i])) m[peer]=1;
       else file_peers[i]=(<peer>);
-   file_available=(multiset)indices(file_peers);
+   file_available|=(multiset)indices(file_peers);
 
-   if (sizeof(file_available))
-      download_more();
+   multiset mz=(multiset)string2arr(peer->bitfield);
+#ifdef TORRENT_PEERS_DEBUG
+   werror("%O gained: %d blocks, we want %d of those\n",
+	  peer->ip,sizeof(mz),sizeof(mz&file_want));
+#endif
+
+   download_more();
+}
+
+void peer_unchoked(.Peer peer)
+{
+   multiset m=(multiset)string2arr(peer->bitfield);
+#ifdef TORRENT_PEERS_DEBUG
+   werror("%O unchoked: %d blocks, we want %d of those\n",
+	  peer->ip,sizeof(m),sizeof(m&file_want));
+#endif
+
+   download_more();
 }
 
 void peer_have(.Peer peer,int n)
 {
+   if (!file_want[n]) return; // ignore
+   
    file_available[n]=1;
    if (file_peers[n])
       file_peers[n][peer]=1;
@@ -798,15 +1031,6 @@ void peer_have(.Peer peer,int n)
    if (file_want[n])
       download_more();
 }
-
-// void peer_got_piece(int n)
-// {
-//    if (file_peers) 
-//    {
-//       m_delete(file_peers,n);
-//       file_available[n]=0;
-//    }
-// }
 
 string get_piece_chunk(int piece,int offset,int length)
 {
@@ -826,6 +1050,10 @@ void got_piece(int piece,string data)
    file_available[piece]=0;
 
    Function.call_callback(pieces_update_status);
+
+   if (!sizeof(file_want) &&
+       find_call_out(update_tracker_loop)!=-1)
+      update_tracker("completed");
 }
 
 // ----------------------------------------------------------------
