@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.8 2003/11/28 14:33:10 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.9 2003/11/28 16:49:37 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -700,6 +700,127 @@ PIKECLASS OperatorToken
     MAKE_CONST_STRING(tmp.u.string, "operator");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_operator", 1, 0);
+  }
+}
+/*! @endclass
+ */
+
+/*! @class LiteralToken
+ */
+PIKECLASS LiteralToken
+{
+  INHERIT Token;
+
+  PIKEVAR mixed value;
+
+  static int literal_token_inherited_create;
+
+  INIT
+  {
+    THIS->value.type = PIKE_T_INT;
+    THIS->value.subtype = NUMBER_UNDEFINED;
+    THIS->value.u.integer = 0;
+  }
+
+  EXIT
+  {
+    free_svalue(&THIS->value);
+    THIS->value.type = PIKE_T_INT;
+    THIS->value.subtype = NUMBER_UNDEFINED;
+    THIS->value.u.integer = 0;
+  }
+
+  EXTRA
+  {
+    struct svalue tmp = {
+      PIKE_T_STRING, 0, { 0 },
+    };
+    MAKE_CONST_STRING(tmp.u.string, "literal");
+    simple_add_constant("token", &tmp, 0);
+    add_integer_constant("is_literal", 1, 0);
+    /* We want to access the inherited create(). */
+    literal_token_inherited_create =
+      really_low_reference_inherited_identifier(NULL, 1,
+						f_Token_create_fun_num);
+  }
+
+  PIKEFUN void create(string token, mixed pos, mixed value)
+    flags ID_STATIC;
+  {
+    assign_svalue(&THIS->value, value);
+    pop_stack();
+    args=2;
+    apply_low(Pike_fp->current_object, literal_token_inherited_create, 2);
+    args=1;
+  }
+}
+/*! @endclass
+ */
+
+/*! @class StringToken
+ */
+PIKECLASS StringToken
+{
+  INHERIT LiteralToken;
+
+  EXTRA
+  {
+    struct svalue tmp = {
+      PIKE_T_STRING, 0, { 0 },
+    };
+    MAKE_CONST_STRING(tmp.u.string, "string_constant");
+    simple_add_constant("token", &tmp, 0);
+    add_integer_constant("is_string", 1, 0);
+
+    /* Modify the type of "value". */
+    simple_add_variable("value", "string", 0);
+    /* FIXME: Do the same for create()? */
+  }
+}
+/*! @endclass
+ */
+
+/*! @class IntegerToken
+ */
+PIKECLASS IntegerToken
+{
+  INHERIT LiteralToken;
+
+  EXTRA
+  {
+    struct svalue tmp = {
+      PIKE_T_STRING, 0, { 0 },
+    };
+    MAKE_CONST_STRING(tmp.u.string, "int_constant");
+    simple_add_constant("token", &tmp, 0);
+    add_integer_constant("is_int", 1, 0);
+
+    /* Modify the type of "value". */
+    simple_add_variable("value", "int", 0);
+    /* FIXME: Do the same for create()? */
+  }
+}
+/*! @endclass
+ */
+
+/*! @class FloatToken
+ */
+PIKECLASS FloatToken
+{
+  INHERIT LiteralToken;
+
+  EXTRA
+  {
+    struct svalue tmp = {
+      PIKE_T_STRING, 0, { 0 },
+    };
+    MAKE_CONST_STRING(tmp.u.string, "float_constant");
+    simple_add_constant("token", &tmp, 0);
+    add_integer_constant("is_float", 1, 0);
+
+    /* Modify the type of "value". */
+    simple_add_variable("value", "float", 0);
+    /* FIXME: Do the same for create()? */
   }
 }
 /*! @endclass

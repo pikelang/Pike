@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.24 2003/11/28 14:33:10 grubba Exp $
+// $Id: module.pmod.in,v 1.25 2003/11/28 16:49:38 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -30,41 +30,6 @@ class TokenizingCompiler
   //! @ignore
   inherit compiler;
   //! @endignore
-
-  // Token classes.
-  class StringToken {
-    inherit Token;
-    constant token = "string_constant";
-    constant is_string = 1;
-    string value;
-    static void create(string token, Position pos, string value)
-    {
-      this_program::value = value;
-      ::create(token, pos);
-    }
-  }
-  class IntegerToken {
-    inherit Token;
-    constant token = "int_constant";
-    constant is_int = 1;
-    int value;
-    static void create(string token, Position Pos, int value)
-    {
-      this_program::value = value;
-      ::create(token, pos);
-    }
-  }
-  class FloatToken {
-    inherit Token;
-    constant token = "float_constant";
-    constant is_float = 1;
-    float value;
-    static void create(string token, Position Pos, float value)
-    {
-      this_program::value = value;
-      ::create(token, pos);
-    }
-  }
 
   //! Pike tokenizer.
   class pike_tokenizer
