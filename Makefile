@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.68 2002/05/03 19:39:13 nilsson Exp $
+# $Id: Makefile,v 1.69 2002/05/03 21:50:23 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -247,14 +247,14 @@ autobuild:
 autobuild_low:
 	@echo Begin build | tee -a build/autobuild/autobuildlog.txt
 	@date >> build/autobuild/autobuildlog.txt
-	@$(MAKE) $(MAKE_FLAGS) TERM=dumb > build/autobuild/makelog.txt 2>&1
+	@$(MAKE) $(MAKE_FLAGS) > build/autobuild/makelog.txt 2>&1
 	@echo Begin verify | tee -a build/autobuild/autobuildlog.txt
 	@date >> build/autobuild/autobuildlog.txt
-	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TERM=dumb TESTARGS="-a -q" > \
+	@$(MAKE) $(MAKE_FLAGS) METATARGET=verify TESTARGS="-a -q" > \
 	  build/autobuild/verifylog.txt 2>&1
 	@echo Begin export | tee -a build/autobuild/autobuildlog.txt
 	@date >> build/autobuild/autobuildlog.txt
-	@$(MAKE) $(MAKE_FLAGS) TERM=dumb bin_export > build/autobuild/exportlog.txt 2>&1
+	@$(MAKE) $(MAKE_FLAGS) bin_export > build/autobuild/exportlog.txt 2>&1
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
