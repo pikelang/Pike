@@ -104,6 +104,7 @@ string moveImages(string docXMLFile,
 {
   array(string) parents = ({});
   int counter = 0;
+  array(int) docgroupcounters = ({}); // docgroup on top level is impossible
   string cwd = getcwd();
   Node n = parse_input(docXMLFile)[0];
   n->walk_preorder_2(
@@ -112,6 +113,7 @@ string moveImages(string docXMLFile,
         mapping(string : string) attr = n->get_attributes();
         switch (n->get_any_name()) {
           case "docgroup":
+            ++docgroupcounters[-1];
             if (attr["homogen-name"])
               parents += ({ attr["homogen-name"] });
             else {
@@ -121,10 +123,7 @@ string moveImages(string docXMLFile,
                   if (name = c->get_attributes()["name"])
                     break;
               }
-              if (!name)
-                processError("<docgroup> had no child "
-                               "with a name=\"...\" attribute");
-              parents += ({ name });
+              parents += ({ name || (string) docgroupcounters[-1] });
             }
             counter = 0;
             break;
@@ -133,6 +132,7 @@ string moveImages(string docXMLFile,
             if (attr["name"] != "")
               parents += ({ attr["name"] });
             counter = 0;
+            docgroupcounters += ({ 0 });
             break;
           case "image":
             array(Node) children = n->get_children();
@@ -158,9 +158,12 @@ string moveImages(string docXMLFile,
     lambda(Node n) {
       if (n->get_node_type() == XML_ELEMENT) {
         switch (n->get_any_name()) {
-          case "docgroup":
           case "class":
           case "module":
+            docgroupcounters =
+              docgroupcounters[0 .. sizeof(docgroupcounters) - 2];
+            // fall through
+          case "docgroup":
             parents = parents[0 .. sizeof(parents) - 2];
             break;
         }
