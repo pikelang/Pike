@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.75 1999/10/27 15:03:57 grubba Exp $
+ * $Id: system.c,v 1.76 1999/10/27 15:16:40 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.75 1999/10/27 15:03:57 grubba Exp $");
+RCSID("$Id: system.c,v 1.76 1999/10/27 15:16:40 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -770,7 +770,7 @@ static struct {
   { "sysname", SI_SYSNAME },
 #endif /* SI_SYSNAME */
 #ifdef SI_HOSTNAME
-  { "hostname", SI_HOSTNAME },
+  { "nodename", SI_HOSTNAME },
 #endif /* SI_HOSTNAME */
 #ifdef SI_RELEASE
   { "release", SI_RELEASE },
@@ -879,12 +879,12 @@ void f_gethostname(INT32 args)
   gethostname(name, 1024);
   push_text(name);
 }
-#elif defined(HAVE_SYSINFO) && defined(SI_NODENAME)
+#elif defined(HAVE_SYSINFO) && defined(SI_HOSTNAME)
 void f_gethostname(INT32 args)
 {
   char name[1024];
   pop_n_elems(args);
-  if (sysinfo(SI_NODENAME, name, sizeof(name)) < 0) {
+  if (sysinfo(SI_HOSTNAME, name, sizeof(name)) < 0) {
     error("sysinfo() system call failed.\n");
   }
   push_text(name);
