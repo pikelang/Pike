@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.9 2002/12/06 11:03:18 mirar Exp $
+# $Id: configure.in,v 1.10 2003/01/07 18:39:31 marcus Exp $
 #
 AC_INIT(ffmpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -68,7 +68,7 @@ dnl my libavcodec needs libmp3lame that needs libm /Mirar
     PIKE_FEATURE(FFmpeg,[yes (using libffmpeg)])
     ])
 
-  if test x"$got_lib" == x"yes"; then
+  if test x"$got_lib" = x"yes"; then
     AC_MSG_CHECKING([if library is really working])
     AC_CACHE_VAL(pike_cv_ffmpeg_working, [
       AC_TRY_COMPILE([
