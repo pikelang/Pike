@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.22 1997/09/08 21:51:04 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.23 1997/10/16 06:34:26 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -994,8 +994,8 @@ void gc_check_all_mappings(void)
 	   !(k->ind.u.object->prog))
 	  continue;
 	  
-	gc_check_svalues(&k->ind, 1);
-	m->val_types |= gc_check_svalues(&k->val, 1);
+	debug_gc_check_svalues(&k->ind, 1, T_MAPPING, m);
+	m->val_types |= debug_gc_check_svalues(&k->val, 1, T_MAPPING, m);
       }
 
 #ifdef DEBUG

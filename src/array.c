@@ -1468,7 +1468,7 @@ void gc_check_all_arrays(void)
     if(a->type_field & BIT_COMPLEX)
     {
       TYPE_FIELD t;
-      t=gc_check_svalues(ITEM(a), a->size);
+      t=debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
 
       /* Ugly, but we are not allowed to change type_field
        * at the same time as the array is being built...

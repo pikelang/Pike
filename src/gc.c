@@ -145,11 +145,75 @@ TYPE_T attempt_to_identify(void *something)
 
 static void *check_for =0;
 static char *found_where="";
+static void *found_in=0;
+static TYPE_T found_in_type=0;
+void *gc_svalue_location=0;
 
 static void gdb_gc_stop_here(void *a)
 {
-  fprintf(stderr,"One ref found%s.\n",found_where);
+  fprintf(stderr,"**One ref found%s.\n",found_where);
+  fprintf(stderr,"**Location of (short) svalue: %p\n",gc_svalue_location);
+  describe_something(found_in, found_in_type);
 }
+
+TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data)
+{
+  TYPE_FIELD ret;
+  found_in=data;
+  found_in_type=t;
+  ret=gc_check_svalues(s,num);
+  found_in_type=T_UNKNOWN;
+  return ret;
+}
+
+void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data)
+{
+  found_in=data;
+  found_in_type=t;
+  gc_check_short_svalue(u,type);
+  found_in_type=T_UNKNOWN;
+}
+
+void describe_something(void *a, TYPE_T t)
+{
+  struct program *p=(struct program *)a;
+  if(!a) return;
+  fprintf(stderr,"**Location: %p  Type: %s  Refs: %d\n",a,
+	  get_name_of_type(t),
+	  *(INT32 *)a);
+
+  switch(t)
+  {
+    case T_OBJECT:
+      p=((struct object *)a)->prog;
+      if(!p)
+      {
+	fprintf(stderr,"**The object is destructed.\n");
+	break;
+      }
+      fprintf(stderr,"**Attempting to describe program object was instantiated from:\n");
+      
+    case T_PROGRAM:
+      if(!p->num_linenumbers)
+      {
+	fprintf(stderr,"**The program was written in C.\n");
+	break;
+      }
+      if(p->linenumbers[0]==127)
+      {
+	fprintf(stderr,"**The program may have been compiled from %s.\n",p->linenumbers+1);
+	break;
+      }
+      fprintf(stderr,"**No information available about this program.\n");
+      break;
+      
+    case T_ARRAY:
+      fprintf(stderr,"**Describing array:\n");
+      debug_dump_array((struct array *)a);
+      break;
+  }
+}
+
 #endif
 
 INT32 gc_check(void *a)
@@ -178,43 +242,8 @@ int gc_is_referenced(void *a)
     INT32 xrefs=m->xrefs;
     TYPE_T t=attempt_to_identify(a);
 
-    fprintf(stderr,"**An object of type %s at addres %p has wrong number of references.\n",get_name_of_type(t),a);
-    fprintf(stderr,"**The object has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
-
-    {
-      struct program *p=(struct program *)a;
-      switch(t)
-      {
-	case T_OBJECT:
-	  p=((struct object *)a)->prog;
-	  if(!p)
-	  {
-	    fprintf(stderr,"**The object is destructed.\n");
-	    break;
-	  }
-	  fprintf(stderr,"**Attempting to describe program object was instantiated from:\n");
-	  
-	case T_PROGRAM:
-	  if(!p->num_linenumbers)
-	  {
-	    fprintf(stderr,"**The program was written in C.\n");
-	    break;
-	  }
-	  if(p->linenumbers[0]==127)
-	  {
-	    fprintf(stderr,"**The program may have been compiled from %s.\n",p->linenumbers+1);
-	    break;
-	  }
-	  fprintf(stderr,"**No information available about this program.\n");
-	  break;
-
-	case T_ARRAY:
-	  fprintf(stderr,"**Describing array:\n");
-	  debug_dump_array((struct array *)a);
-	  break;
-      }
-    }
-      
+    fprintf(stderr,"**Something has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
+    describe_something(t, a);
 
     fprintf(stderr,"**Looking for references:\n");
     check_for=a;

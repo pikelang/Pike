@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.44 1997/10/05 03:40:34 grubba Exp $");
+RCSID("$Id: threads.c,v 1.45 1997/10/16 06:34:28 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -399,6 +399,17 @@ void init_thread_obj(struct object *o)
   MEMSET(o->storage, 0, sizeof(struct thread_state));
 }
 
+#ifdef DEBUG
+static void thread_was_marked(struct object *o)
+{
+  struct thread_state *tmp=(struct thread_state *)(o->storage);
+  if(tmp->swapped)
+  {
+    gc_xmark_svalues(tmp->evaluator_stack,tmp->sp-tmp->evaluator_stack-1);
+  }
+}
+#endif
+
 void th_init(void)
 {
   struct program *tmp;
@@ -470,6 +481,9 @@ void th_init(void)
   start_new_program();
   add_storage(sizeof(struct thread_state));
   add_function("backtrace",f_thread_backtrace,"function(:array)",0);
+#ifdef DEBUG
+  set_gc_mark_callback(thread_was_marked);
+#endif
   set_init_callback(init_thread_obj);
   thread_id_prog=end_program();
   if(!mutex_key)

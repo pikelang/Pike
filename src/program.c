@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.43 1997/10/11 06:48:25 hubbe Exp $");
+RCSID("$Id: program.c,v 1.44 1997/10/16 06:34:27 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1734,7 +1734,7 @@ void gc_check_all_programs(void)
   struct program *p;
   for(p=first_program;p;p=p->next)
   {
-    gc_check_svalues(p->constants, p->num_constants);
+    debug_gc_check_svalues(p->constants, p->num_constants, T_PROGRAM, p);
 
     if(d_flag)
     {

@@ -855,6 +855,10 @@ TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
   {
     check_type(s->type);
     check_refs(s);
+
+#ifdef DEBUG
+    gc_svalue_location=(void *)s;
+#endif
     
     switch(s->type)
     {
@@ -922,6 +926,9 @@ void gc_xmark_svalues(struct svalue *s, int num)
 void gc_check_short_svalue(union anything *u, TYPE_T type)
 {
   if(!u->refs) return;
+#ifdef DEBUG
+  gc_svalue_location=(void *)u;
+#endif
   switch(type)
   {
   case T_FUNCTION:

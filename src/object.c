@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.25 1997/09/29 01:40:15 hubbe Exp $");
+RCSID("$Id: object.c,v 1.26 1997/10/16 06:34:26 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -848,10 +848,10 @@ void gc_check_all_objects(void)
 	
 	if(i->run_time_type == T_MIXED)
 	{
-	  gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
+	  debug_gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1, T_OBJECT, o);
 	}else{
-	  gc_check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
-				i->run_time_type);
+	  debug_gc_check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
+				      i->run_time_type, T_OBJECT,o);
 	}
       }
     }
