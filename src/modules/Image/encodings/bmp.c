@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.31 2001/04/07 00:58:12 nilsson Exp $ */
+/* $Id: bmp.c,v 1.32 2002/05/08 11:11:08 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.31 2001/04/07 00:58:12 nilsson Exp $
+**!	$Id: bmp.c,v 1.32 2002/05/08 11:11:08 marcus Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.31 2001/04/07 00:58:12 nilsson Exp $");
+RCSID("$Id: bmp.c,v 1.32 2002/05/08 11:11:08 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -520,7 +520,7 @@ void img_bmp_encode(INT32 args)
 **!	<ref>decode</ref> gives an image object,
 **!	<ref>_decode</ref> gives a mapping in the format
 **!	<pre>
-**!		"type":"image/bmp",
+**!		"type":"image/x-MS-bmp",
 **!		"image":image object,
 **!		"colortable":colortable object (if applicable)
 **!
@@ -680,6 +680,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       "(illegal info size %ld, expected 68, 40 or 12)\n",
 	       int_from_32bit(s+14));
    }
+
+   push_text("type");
+   push_text("image/x-MS-bmp");
+   n++;
 
    if (header_only)
    {
