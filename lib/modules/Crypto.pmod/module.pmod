@@ -13,8 +13,12 @@
 //! @[Twofish]. The @[Substitution] program is compatible with the
 //! CipherState. Also conforming to the API are the helper programs
 //! @[Buffer], @[CBC] and @[Pipe].
+//!
+//! @note
+//!   This module is only available if Pike has been compiled with
+//!   @[Nettle] enabled (this is the default).
 
-#if constant(Nettle)
+#if constant(Nettle.HashState)
 
 class HashState {
   inherit Nettle.HashState;
@@ -93,4 +97,7 @@ class Buffer {
   inherit Nettle.Proxy;
 }
 
-#endif /* constant(Nettle) */
+
+#else
+constant this_program_does_not_exist=1;
+#endif /* constant(Nettle.HashState) */
