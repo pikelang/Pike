@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.51 2004/07/06 15:48:10 grubba Exp $
+/* $Id: handshake.pike,v 1.52 2004/08/09 18:14:18 mast Exp $
  *
  */
 
@@ -539,19 +539,6 @@ string describe_type(int i)
 }
 #endif
 
-
-#ifdef SSL3_DEBUG
- void  printHex(string buf) {
-  int i;
-  string res="";
-  for(i=0; i< sizeof(buf) ; i++) {
-    int data=buf[i];
-    res+=sprintf("%02x ",data&0xff);
-  } 
-  res+="\n";
-  werror(res);
-}
-#endif
 
 // verify that a certificate chain is acceptable
 //
