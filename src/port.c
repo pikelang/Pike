@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.19 1999/04/01 17:21:09 hubbe Exp $");
+RCSID("$Id: port.c,v 1.20 1999/08/14 15:09:18 per Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -193,12 +193,90 @@ char *MEMSET(char *s,int c,int n)
 }
 #endif
 
-#if !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
+#if defined(TRY_USE_MMX) || !defined(HAVE_MEMCPY) && !defined(HAVE_BCOPY)
+#ifdef TRY_USE_MMX
+#include <mmx.h>
+#endif
 void MEMCPY(void *bb,const void *aa,int s)
 {
-  char *b=(char *)bb;
-  char *a=(char *)aa;
-  for(;s;s--) *(b++)=*(a++);
+  if(!s) return;
+#ifdef TRY_USE_MMX
+  {
+    extern int try_use_mmx;
+    if( (s>64) && !(((int)bb)&7) && !(((int)aa)&7) && try_use_mmx )
+    {
+      unsigned char *source=(char *)aa;
+      unsigned char *dest=(char *)bb;
+
+/*       fprintf(stderr, "mmx memcpy[%d]\n",s); */
+      while( s > 64 )
+      {
+        movq_m2r(*source, mm0);      source += 8;
+        movq_m2r(*source, mm1);      source += 8;
+        movq_m2r(*source, mm2);      source += 8;
+        movq_m2r(*source, mm3);      source += 8;
+        movq_m2r(*source, mm4);      source += 8;
+        movq_m2r(*source, mm5);      source += 8;
+        movq_m2r(*source, mm6);      source += 8;
+        movq_m2r(*source, mm7);      source += 8;
+        movq_r2m(mm0,*dest);         dest += 8;
+        movq_r2m(mm1,*dest);         dest += 8;
+        movq_r2m(mm2,*dest);         dest += 8;
+        movq_r2m(mm3,*dest);         dest += 8;
+        movq_r2m(mm4,*dest);         dest += 8;
+        movq_r2m(mm5,*dest);         dest += 8;
+        movq_r2m(mm6,*dest);         dest += 8;
+        movq_r2m(mm7,*dest);         dest += 8;
+        s -= 64;
+      }
+      if( s > 31 )
+      {
+        movq_m2r(*source, mm0);      source += 8;
+        movq_m2r(*source, mm1);      source += 8;
+        movq_m2r(*source, mm2);      source += 8;
+        movq_m2r(*source, mm3);      source += 8;
+        movq_r2m(mm0,*dest);         dest += 8;
+        movq_r2m(mm1,*dest);         dest += 8;
+        movq_r2m(mm2,*dest);         dest += 8;
+        movq_r2m(mm3,*dest);         dest += 8;
+        s -= 32;
+      }
+      if( s > 15 )
+      {
+        movq_m2r(*source, mm0);      source += 8;
+        movq_m2r(*source, mm1);      source += 8;
+        movq_r2m(mm0,*dest);         dest += 8;
+        movq_r2m(mm1,*dest);         dest += 8;
+        s -= 16;
+      }
+      if( s > 7 )
+      {
+        movq_m2r(*source, mm0);      source += 8;
+        movq_r2m(mm0,*dest);         dest += 8;
+        s -= 8;
+      }
+      emms();
+      while( s )
+      {
+        *(dest++) = *(source++);
+        s-=1;
+      }
+    }
+    else 
+    {
+#endif
+#ifdef HAVE_MEMCPY
+      /*     fprintf(stderr, "plain ol' memcpy\n"); */
+      memcpy( bb, aa, s );
+#else
+      char *b=(char *)bb;
+      char *a=(char *)aa;
+      for(;s;s--) *(b++)=*(a++);
+#endif
+#ifdef TRY_USE_MMX
+    }
+  }
+#endif
 }
 #endif
 
