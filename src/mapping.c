@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.74 2000/09/03 21:48:03 mast Exp $");
+RCSID("$Id: mapping.c,v 1.75 2001/02/08 00:53:02 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1422,6 +1422,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   INT32 e,d;
   struct keypair *k;
   char buf[40];
+  int save_t_flag = t_flag;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
@@ -1454,9 +1455,11 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
   a = mapping_indices(m);
   SET_ONERROR(err, do_free_array, a);
 
+  t_flag = 0;
   if(!SETJMP(catch))
     sort_array_destructively(a);
   UNSETJMP(catch);
+  t_flag = save_t_flag;
 
   /* no mapping locking required (I hope) */
   for(e = 0; e < a->size; e++)
