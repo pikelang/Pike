@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.278 2000/02/15 22:06:23 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.279 2000/02/29 03:17:54 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2822,6 +2822,18 @@ test_compile_error([[
 #error FOOd
 FOO
 ]])
+
+test_any([[
+#define FOOa(X) (X)
+return FOOa(2);
+]],2)
+
+test_any([[
+#define FOOa(X) \
+(X)
+return FOOa(2);
+]],2)
+
 
 // /* */
 test_any([[
