@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include <math.h>
 #include <ctype.h>
@@ -22,7 +23,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.34 1999/01/21 09:08:22 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.35 1999/06/19 11:26:26 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -669,7 +670,7 @@ static INT32 really_low_sscanf(char *input,
 	  sval.u.array=allocate_array(0);
 	  SET_ONERROR(err, do_free_array, sval.u.array);
 
-	  while(1)
+	  while(input_len - eye)
 	  {
 	    int yes;
 	    struct svalue *save_sp=sp;
