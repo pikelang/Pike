@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.152 2004/04/06 15:37:54 nilsson Exp $
+|| $Id: builtin.cmod,v 1.153 2004/04/15 17:34:40 mast Exp $
 */
 
 #include "global.h"
@@ -1776,10 +1776,10 @@ PIKECLASS Buffer
   PIKEFUN int add( string ... arg1 )
   {
     struct Buffer_struct *str = THIS;
-    int j;
+    int init_from_arg0 = 0, j;
 
     if (!str->str.s && args) {
-      int sum = 0;
+      ptrdiff_t sum = 0;
       int shift = 0;
       for (j=0; j < args; j++) {
 	struct pike_string *a = Pike_sp[j-args].u.string;
@@ -1790,12 +1790,22 @@ PIKECLASS Buffer
 	sum = str->initial * 2;
       }
       shift = shift & ~(shift >> 1);
-      init_string_builder_alloc(&str->str, sum, shift);
+
+      if (shift == Pike_sp[-args].u.string->size_shift &&
+	  init_string_builder_with_string (&str->str, Pike_sp[-args].u.string)) {
+	Pike_sp[-args].type = T_INT;
+	if (sum > str->str.s->len)
+	  string_build_mkspace (&str->str, sum - str->str.s->len, shift);
+	init_from_arg0 = 1;
+      }
+      else
+	init_string_builder_alloc(&str->str, sum, shift);
+
       /* We know it will be a string that really is this wide. */
       str->str.known_shift = shift;
     }
 
-    for( j = 0; j<args; j++ )
+    for( j = init_from_arg0; j<args; j++ )
     {
       struct pike_string *a = Pike_sp[j-args].u.string;
       string_builder_shared_strcat( &str->str, a );

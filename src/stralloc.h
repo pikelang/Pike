@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.80 2004/03/19 16:11:02 grubba Exp $
+|| $Id: stralloc.h,v 1.81 2004/04/15 17:34:40 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -20,20 +20,20 @@
 #define PIKE_STRING_CONTENTS						\
   INT32 refs;								\
   INT32 size_shift; /* 30 bit waste, but good for alignment... */	\
-  ptrdiff_t len;							\
+  ptrdiff_t len; /* Not counting terminating NUL. */			\
   size_t hval;								\
   struct pike_string *next 
 
 struct pike_string
 {
   PIKE_STRING_CONTENTS;
-  char str[1];
+  char str[1];			/* NUL terminated. */
 };
 
 struct string_builder
 {
   struct pike_string *s;
-  size_t malloced;
+  ptrdiff_t malloced;
   size_t known_shift;
 };
 
@@ -261,6 +261,10 @@ PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
 PMOD_EXPORT void init_string_builder_alloc(struct string_builder *s, ptrdiff_t length, int mag);
 PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
 					  struct string_builder *from);
+PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
+						 struct pike_string *str);
+PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
+				      ptrdiff_t chars, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
 PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, ptrdiff_t len);

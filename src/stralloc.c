@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.164 2004/03/24 20:19:23 grubba Exp $
+|| $Id: stralloc.c,v 1.165 2004/04/15 17:34:40 mast Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.164 2004/03/24 20:19:23 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.165 2004/04/15 17:34:40 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1979,8 +1979,24 @@ PMOD_EXPORT void init_string_builder_copy(struct string_builder *to,
   to->known_shift = from->known_shift;
 }
 
-static void string_build_mkspace(struct string_builder *s,
-				 ptrdiff_t chars, int mag)
+/* str becomes invalid if successful (i.e. nonzero returned),
+ * otherwise nothing happens. */
+PMOD_EXPORT int init_string_builder_with_string (struct string_builder *s,
+						 struct pike_string *str)
+{
+  if (str->refs == 1 && str->len > SHORT_STRING_THRESHOLD) {
+    /* Unlink the string and use it as buffer directly. */
+    unlink_pike_string (str);
+    s->s = str;
+    s->malloced = str->len;
+    s->known_shift = str->size_shift;
+    return 1;
+  }
+  return 0;
+}
+
+PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
+				      ptrdiff_t chars, int mag)
 {
   if(mag > s->s->size_shift)
   {
@@ -1994,10 +2010,10 @@ static void string_build_mkspace(struct string_builder *s,
     s->malloced=l;
     s->s=n;
   }
-  else if(((size_t)s->s->len+chars) > ((size_t)s->malloced))
+  else if(s->s->len+chars > s->malloced)
   {
-    size_t newlen = MAXIMUM((size_t)(s->malloced*2),
-			    (size_t)(s->s->len + chars));
+    ptrdiff_t newlen = MAXIMUM(s->malloced*2,
+			       s->s->len + chars);
     ptrdiff_t oldlen = s->s->len;
 
     s->s->len = s->malloced;	/* Restore the real length */
