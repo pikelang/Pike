@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.53 2000/02/09 16:21:46 grubba Exp $");
+RCSID("$Id: encode.c,v 1.54 2000/02/16 03:58:16 per Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -238,28 +238,28 @@ one_more_type:
     default:
       fatal("error in type string.\n");
       /*NOTREACHED*/
-      
+
       break;
-      
+
     case T_ASSIGN:
       addchar(EXTRACT_UCHAR(t++));
       goto one_more_type;
-      
+
     case T_FUNCTION:
       while(EXTRACT_UCHAR(t)!=T_MANY)
 	t+=encode_type(t, data);
       addchar(EXTRACT_UCHAR(t++));
-      
+
     case T_MAPPING:
     case T_OR:
     case T_AND:
       t+=encode_type(t, data);
-      
+
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
       goto one_more_type;
-      
+
     case T_INT:
       {
 	int i;
@@ -290,7 +290,7 @@ one_more_type:
     case T_VOID:
     case T_UNKNOWN:
       break;
-      
+
     case T_OBJECT:
     {
       INT32 x;
@@ -329,11 +329,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   static struct svalue dested = { T_INT, NUMBER_DESTRUCTED };
   INT32 i;
   struct svalue *tmp;
-  
+
   if((val->type == T_OBJECT || (val->type==T_FUNCTION && \
 				val->subtype!=FUNCTION_BUILTIN)) && !val->u.object->prog)
     val=&dested;
-  
+
   if((tmp=low_mapping_lookup(data->encoded, val)))
   {
     code_entry(TAG_AGAIN, tmp->u.integer, data);
@@ -342,8 +342,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     mapping_insert(data->encoded, val, &data->counter);
     data->counter.u.integer++;
   }
-  
-  
+
+
   switch(val->type)
   {
     case T_INT:
@@ -354,7 +354,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
        */
       code_entry(TAG_INT, val->u.integer,data);
       break;
-      
+
     case T_STRING:
       adddata(val->u.string);
       break;
@@ -373,7 +373,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	INT32 x;
 	int y;
 	double tmp;
-	
+
 	tmp=FREXP((double)val->u.float_number, &y);
 	x=(INT32)((1<<30)*tmp);
 	y-=30;
@@ -389,21 +389,21 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       }
       break;
     }
-    
+
     case T_ARRAY:
       code_entry(TAG_ARRAY, val->u.array->size, data);
       for(i=0; i<val->u.array->size; i++)
 	encode_value2(ITEM(val->u.array)+i, data);
       break;
-      
+
     case T_MAPPING:
       check_stack(2);
       ref_push_mapping(val->u.mapping);
       f_indices(1);
-      
+
       ref_push_mapping(val->u.mapping);
       f_values(1);
-      
+
       code_entry(TAG_MAPPING, sp[-2].u.array->size,data);
       for(i=0; i<sp[-2].u.array->size; i++)
       {
@@ -412,13 +412,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       }
       pop_n_elems(2);
       break;
-      
+
     case T_MULTISET:
       code_entry(TAG_MULTISET, val->u.multiset->ind->size,data);
       for(i=0; i<val->u.multiset->ind->size; i++)
 	encode_value2(ITEM(val->u.multiset->ind)+i, data);
       break;
-      
+
     case T_OBJECT:
       check_stack(1);
 
@@ -441,28 +441,28 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	break;
       }
 #endif
-      
+
       push_svalue(val);
       apply(data->codec, "nameof", 1);
       switch(sp[-1].type)
       {
 	case T_INT:
-	  if(sp[-1].subtype == NUMBER_UNDEFINED) 
+	  if(sp[-1].subtype == NUMBER_UNDEFINED)
 	  {
 	    pop_stack();
 	    push_svalue(val);
 	    f_object_program(1);
-	    
+
 	    code_entry(type_to_tag(val->type), 1,data);
 	    encode_value2(sp-1, data);
 	    pop_stack();
-	    
+
 	    push_svalue(val);
 	    apply(data->codec,"encode_object",1);
 	    break;
 	  }
 	  /* FALL THROUGH */
-	
+
 	default:
 	  code_entry(type_to_tag(val->type), 0,data);
 	  break;
@@ -470,7 +470,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       encode_value2(sp-1, data);
       pop_stack();
       break;
-      
+
     case T_FUNCTION:
       check_stack(1);
       push_svalue(val);
@@ -494,14 +494,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    struct svalue tmp=data->counter;
 	    tmp.u.integer--;
 	    map_delete(data->encoded, val);
-	    
+
 	    push_svalue(val);
 	    sp[-1].type=T_OBJECT;
 	    encode_value2(sp-1, data);
 	    ref_push_string(ID_FROM_INT(val->u.object->prog, val->subtype)->name);
 	    encode_value2(sp-1, data);
 	    pop_n_elems(3);
-	    
+
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
 	    return;
@@ -513,8 +513,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       encode_value2(sp-1, data);
       pop_stack();
       break;
-      
-      
+
+
     case T_PROGRAM:
     {
       int d;
@@ -559,7 +559,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  code_number(p->identifier_references[d].identifier_offset,data);
 	  code_number(p->identifier_references[d].id_flags,data);
 	}
-	  
+
 	for(d=0;d<p->num_strings;d++) adddata(p->strings[d]);
 
 	for(d=0;d<p->num_inherits;d++)
@@ -623,7 +623,7 @@ void f_encode_value(INT32 args)
   ONERROR tmp;
   struct encode_data d, *data;
   data=&d;
-  
+
   check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT, 0);
 
   initialize_buf(&data->buf);
@@ -688,7 +688,7 @@ static int my_extract_char(struct decode_data *data)
 	    (what & TAG_MASK),				\
 	    get_name_of_type(tag_to_type(what & TAG_MASK)),		\
 	    num) ); 					\
-} while (0) 
+} while (0)
 
 
 
@@ -820,11 +820,11 @@ one_more_type:
       fatal("error in type string.\n");
       /*NOTREACHED*/
       break;
-      
+
     case T_ASSIGN:
       push_type(GETC());
       goto one_more_type;
-      
+
     case T_FUNCTION:
       while(GETC()!=T_MANY)
       {
@@ -832,7 +832,7 @@ one_more_type:
 	low_decode_type(data);
       }
       push_type(T_MANY);
-      
+
     case T_MAPPING:
     case T_OR:
     case T_AND:
@@ -874,7 +874,7 @@ one_more_type:
     case T_VOID:
     case T_UNKNOWN:
       break;
-      
+
     case T_OBJECT:
     {
       INT32 x;
@@ -940,11 +940,11 @@ static void decode_value2(struct decode_data *data)
 {
   INT32 what, e, num;
   struct svalue tmp, *tmp2;
-  
+
   DECODE("decode_value2");
-  
+
   check_stack(1);
-  
+
   switch(what & TAG_MASK)
   {
     case TAG_AGAIN:
@@ -958,13 +958,13 @@ static void decode_value2(struct decode_data *data)
 	error("Failed to decode string. (invalid T_AGAIN)\n");
       }
       return;
-      
+
     case TAG_INT:
       tmp=data->counter;
       data->counter.u.integer++;
       push_int(num);
       break;
-      
+
     case TAG_STRING:
     {
       struct pike_string *str;
@@ -978,10 +978,10 @@ static void decode_value2(struct decode_data *data)
     case TAG_FLOAT:
     {
       INT32 num2=num;
-      
+
       tmp=data->counter;
       data->counter.u.integer++;
-      
+
       DECODE("float");
       push_float(LDEXP((double)num2, num));
       break;
@@ -993,7 +993,7 @@ static void decode_value2(struct decode_data *data)
 	    "(decode of the type type isn't supported yet).\n");
       break;
     }
-    
+
     case TAG_ARRAY:
     {
       struct array *a;
@@ -1008,13 +1008,13 @@ static void decode_value2(struct decode_data *data)
       tmp.u.array=a=allocate_array(num);
       mapping_insert(data->decoded, & data->counter, &tmp);
       data->counter.u.integer++;
-      
+
       /* Since a reference to the array is stored in the mapping, we can
        * safely decrease this reference here. Thus it will be automatically
        * freed if something goes wrong.
        */
       a->refs--;
-      
+
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
@@ -1025,7 +1025,7 @@ static void decode_value2(struct decode_data *data)
       ref_push_array(a);
       return;
     }
-    
+
     case TAG_MAPPING:
     {
       struct mapping *m;
@@ -1042,7 +1042,7 @@ static void decode_value2(struct decode_data *data)
       mapping_insert(data->decoded, & data->counter, &tmp);
       data->counter.u.integer++;
       m->refs--;
-      
+
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
@@ -1053,7 +1053,7 @@ static void decode_value2(struct decode_data *data)
       ref_push_mapping(m);
       return;
     }
-    
+
     case TAG_MULTISET:
     {
       struct multiset *m;
@@ -1071,7 +1071,7 @@ static void decode_value2(struct decode_data *data)
       data->counter.u.integer++;
       m->refs--;
       debug_malloc_touch(m);
-      
+
       for(e=0;e<num;e++)
       {
 	decode_value2(data);
@@ -1081,13 +1081,13 @@ static void decode_value2(struct decode_data *data)
       ref_push_multiset(m);
       return;
     }
-    
-    
+
+
     case TAG_OBJECT:
       tmp=data->counter;
       data->counter.u.integer++;
       decode_value2(data);
-      
+
       switch(num)
       {
 	case 0:
@@ -1100,7 +1100,7 @@ static void decode_value2(struct decode_data *data)
 	    f_index(2);
 	  }
 	  break;
-	  
+
 	case 1:
 	  if(IS_ZERO(sp-1))
 	  {
@@ -1139,20 +1139,21 @@ static void decode_value2(struct decode_data *data)
 	}
 
 #endif
-	  
+
 	default:
 	  error("Object coding not compatible.\n");
 	  break;
       }
       if(data->pickyness && sp[-1].type != T_OBJECT)
-	error("Failed to decode.\n");
+	error("Failed to decode (got type %d; expected object).\n",
+              sp[-1].type);
       break;
-      
+
     case TAG_FUNCTION:
       tmp=data->counter;
       data->counter.u.integer++;
       decode_value2(data);
-      
+
       switch(num)
       {
 	case 0:
@@ -1165,7 +1166,7 @@ static void decode_value2(struct decode_data *data)
 	    f_index(2);
 	  }
 	  break;
-	  
+
 	case 1:
 	  decode_value2(data);
 	  if(sp[-2].type==T_INT)
@@ -1175,7 +1176,7 @@ static void decode_value2(struct decode_data *data)
 	    f_arrow(2);
 	  }
 	  break;
-	  
+
 	default:
 	  error("Function coding not compatible.\n");
 	  break;
@@ -1183,8 +1184,8 @@ static void decode_value2(struct decode_data *data)
       if(data->pickyness && sp[-1].type != T_FUNCTION)
 	error("Failed to decode function.\n");
       break;
-      
-      
+
+
     case TAG_PROGRAM:
       switch(num)
       {
@@ -1244,7 +1245,7 @@ static void decode_value2(struct decode_data *data)
 	  mapping_insert(data->decoded, & data->counter, &tmp);
 	  data->counter.u.integer++;
 	  p->refs--;
-	  
+
 	  decode_value2(data);
 	  f_version(0);
 	  if(!is_eq(sp-1,sp-2))
@@ -1261,7 +1262,7 @@ static void decode_value2(struct decode_data *data)
 #define FOO(X,Y,Z) \
 	  decode_number( p->num_##Z, data);
 #include "program_areas.h"
-	  
+
 #define FOO(NUMTYPE,TYPE,NAME) \
           size=DO_ALIGN(size, ALIGNOF(TYPE)); \
           size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
@@ -1298,11 +1299,11 @@ static void decode_value2(struct decode_data *data)
 	    foo=p->linenumbers+1;
 	    foo+=strlen(foo)+1;
 	    get_small_number(&foo); /* pc offset */
-	    debug_malloc_name(p, p->linenumbers+1, 
+	    debug_malloc_name(p, p->linenumbers+1,
 			      get_small_number(&foo));
 	  }
 #endif
-	    
+
 
 	  for(d=0;d<p->num_identifier_index;d++)
 	  {
@@ -1313,7 +1314,7 @@ static void decode_value2(struct decode_data *data)
 	      error("Malformed program in decode.\n");
 	    }
 	  }
-	  
+
 	  for(d=0;d<p->num_variable_index;d++)
 	  {
 	    decode_number(p->variable_index[d],data);
@@ -1323,7 +1324,7 @@ static void decode_value2(struct decode_data *data)
 	      error("Malformed program in decode.\n");
 	    }
 	  }
-	  
+
 	  for(d=0;d<p->num_identifier_references;d++)
 	  {
 	    decode_number(p->identifier_references[d].inherit_offset,data);
@@ -1335,7 +1336,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifier_references[d].identifier_offset,data);
 	    decode_number(p->identifier_references[d].id_flags,data);
 	  }
-	  
+
 	  for(d=0;d<p->num_strings;d++)
 	    getdata(p->strings[d]);
 
@@ -1343,7 +1344,7 @@ static void decode_value2(struct decode_data *data)
 
 	  data->pickyness++;
 
-	     
+
 /*	  p->inherits[0].prog=p;
 	  p->inherits[0].parent_offset=1;
 */
@@ -1354,7 +1355,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->inherits[d].identifier_level,data);
 	    decode_number(p->inherits[d].parent_offset,data);
 	    decode_number(p->inherits[d].storage_offset,data);
-	    
+
 	    decode_value2(data);
 	    if(d==0)
 	    {
@@ -1363,13 +1364,13 @@ static void decode_value2(struct decode_data *data)
 		error("Program decode failed!\n");
 	      p->refs--;
 	    }
-	      
+
 	    switch(sp[-1].type)
 	    {
 	      case T_FUNCTION:
 		if(sp[-1].subtype == FUNCTION_BUILTIN)
 		  error("Failed to decode parent.\n");
-		
+
 		p->inherits[d].parent_identifier=sp[-1].subtype;
 		p->inherits[d].prog=program_from_svalue(sp-1);
 		if(!p->inherits[d].prog)
@@ -1389,10 +1390,10 @@ static void decode_value2(struct decode_data *data)
 	      default:
 		error("Failed to decode inheritance.\n");
 	    }
-	    
+
 	    getdata3(p->inherits[d].name);
 	  }
-	  
+
 	  debug_malloc_touch(dat);
 
 	  SET_ONERROR(err1, restore_type_stack, type_stackp);
@@ -1411,7 +1412,7 @@ static void decode_value2(struct decode_data *data)
 	  UNSET_ONERROR(err1);
 
 	  debug_malloc_touch(dat);
-	  
+
 	  for(d=0;d<p->num_constants;d++)
 	  {
 	    decode_value2(data);
@@ -1427,7 +1428,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->lfuns[d],data);
 
 	  debug_malloc_touch(dat);
-	  
+
 	  {
 	    struct program *new_program_save=new_program;
 	    new_program=p;
@@ -1533,14 +1534,14 @@ static void rec_restore_value(char **v, INT32 *l)
   switch(i)
   {
   case TAG_INT: push_int(t); return;
-    
+
   case TAG_FLOAT:
     if(sizeof(INT32) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
-      error("Float architecture not supported.\n"); 
+      error("Float architecture not supported.\n");
     push_int(t); /* WARNING! */
     sp[-1].type = T_FLOAT;
     return;
-    
+
   case TAG_TYPE:
     error("Format error:decoding of the type type not supported yet.\n");
     return;
@@ -1551,7 +1552,7 @@ static void rec_restore_value(char **v, INT32 *l)
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t; (*v)+= t;
     return;
-    
+
   case TAG_ARRAY:
     if(t<0) error("Format error, length of array is negative.\n");
     check_stack(t);
@@ -1565,7 +1566,7 @@ static void rec_restore_value(char **v, INT32 *l)
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate_multiset(t);
     return;
-    
+
   case TAG_MAPPING:
     if(t<0) error("Format error, length of mapping is negative.\n");
     check_stack(t*2);
@@ -1584,7 +1585,7 @@ static void rec_restore_value(char **v, INT32 *l)
     (*l) -= t; (*v) += t;
     APPLY_MASTER("objectof", 1);
     return;
-    
+
   case TAG_FUNCTION:
     if(t<0) error("Format error, length of function is negative.\n");
     if(*l < t) error("Format error, string to short\n");
@@ -1592,7 +1593,7 @@ static void rec_restore_value(char **v, INT32 *l)
     (*l) -= t; (*v) += t;
     APPLY_MASTER("functionof", 1);
     return;
-     
+
   case TAG_PROGRAM:
     if(t<0) error("Format error, length of program is negative.\n");
     if(*l < t) error("Format error, string to short\n");
@@ -1600,7 +1601,7 @@ static void rec_restore_value(char **v, INT32 *l)
     (*l) -= t; (*v) += t;
     APPLY_MASTER("programof", 1);
     return;
-    
+
   default:
     error("Format error. Unknown type tag %d:%d\n", i, t);
   }
@@ -1637,5 +1638,3 @@ void f_decode_value(INT32 args)
   assign_svalue(sp-args-1, sp-1);
   pop_n_elems(args);
 }
-
-
