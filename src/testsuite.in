@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.353 2000/12/13 15:15:22 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.354 2000/12/14 07:38:31 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1994,6 +1994,12 @@ ifefun(gc,
   }]], 1)
 
   test_any([[{
+    object o = class {}();
+    mapping m = ([o: ({17})]);
+    gc(); destruct (o); return gc() > 0;
+  }]], 1)
+
+  test_any([[{
     class Dead {object o;};
     object o = Dead(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
@@ -2323,7 +2329,7 @@ ifefun(gc,
 ifefun(gc,
 [[
 
-test_any([[{
+  test_any([[{
     object o = class{}();
     mapping a = set_weak_flag ((["foo": o]), 1);
     destruct (o);
