@@ -55,11 +55,7 @@ string input="";
 
 string skipwhite(string f)
 {
-//  perror("skipwhite '"+f+"'\n");
-//  trace(99);
   while(sscanf(f,"%*[ \r\n\t]%s",f) && sscanf(f,"/*%*s*/%s",f));
-//  trace(0);
-//  perror("returned  '"+f+"'\n");
   return f;
 }
 
