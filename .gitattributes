@@ -586,9 +586,7 @@ testfont binary
 /src/modules/_Crypto/crypto.c foreign_ident
 /src/modules/_Crypto/crypto.h foreign_ident
 /src/modules/_Crypto/des.c foreign_ident
-/src/modules/_Crypto/des.pike foreign_ident
 /src/modules/_Crypto/idea.c foreign_ident
-/src/modules/_Crypto/idea.pike foreign_ident
 /src/modules/_Crypto/include/.exportable_files foreign_ident
 /src/modules/_Crypto/include/RCSID.h foreign_ident
 /src/modules/_Crypto/include/arcfour.h foreign_ident
@@ -631,7 +629,6 @@ testfont binary
 /src/modules/_Crypto/md2.c foreign_ident
 /src/modules/_Crypto/md4.c foreign_ident
 /src/modules/_Crypto/md5.c foreign_ident
-/src/modules/_Crypto/md5.pike foreign_ident
 /src/modules/_Crypto/nt.c foreign_ident
 /src/modules/_Crypto/pipe.c foreign_ident
 /src/modules/_Crypto/rc4.c foreign_ident
