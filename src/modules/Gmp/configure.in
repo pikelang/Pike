@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.32 2003/02/26 00:16:18 mast Exp $
+# $Id: configure.in,v 1.33 2003/03/26 15:22:48 mast Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
       AC_MSG_RESULT(yes)
       LIBS="${LIBS-} -l$1"
 
-      AC_MSG_CHECKING([gmp version...])
+      AC_MSG_CHECKING([gmp version])
 dnl figure out version; not necessary, but pretty
       rm config.gmpversion 2>/dev/null
       AC_TRY_RUN([
@@ -179,6 +179,24 @@ int main()
   fi
 ])
 
+define(CHECK_GMP_FUNC,
+[
+  AC_MSG_CHECKING([for $1])
+  AC_CACHE_VAL([pike_cv_have_gmp_$1], [
+    AC_TRY_COMPILE([
+#ifdef HAVE_GMP2_GMP_H
+#include <gmp2/gmp.h>
+#elif defined (HAVE_GMP_H)
+#include <gmp.h>
+#endif
+      ], [$2], [pike_cv_have_gmp_$1=yes], [pike_cv_have_gmp_$1=no])
+  ])
+  AC_MSG_RESULT([$pike_cv_have_gmp_$1])
+  if test x"$pike_cv_have_gmp_$1" = xyes; then
+    AC_DEFINE(HAVE_[]translit($1,[a-z],[A-Z]))
+  fi
+])
+
 PIKE_FEATURE_WITHOUT([Gmp (bignums)])
 
 if test x$with_gmp = xyes ; then
@@ -196,7 +214,8 @@ with the option --without-bignums instead.
       fi
     ])
   ])
-  AC_CHECK_FUNC(__gmpz_popcount, AC_DEFINE_UNQUOTED(HAVE_MPZ_POPCOUNT))
+  CHECK_GMP_FUNC(mpz_popcount, [mpz_t a; mpz_popcount(a)])
+  CHECK_GMP_FUNC(mpz_xor, [mpz_t a, b, c; mpz_xor(a, b, c)])
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.1 2003/01/09 15:55:08 marcus Exp $
+|| $Id: acconfig.h,v 1.2 2003/03/26 15:22:48 mast Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -28,6 +28,9 @@
 
 /* Define this if you have mpz_popcount */
 #undef HAVE_MPZ_POPCOUNT
+
+/* Define this if you have mpz_xor */
+#undef HAVE_MPZ_XOR
 
 /* define this if INT_TYPE is bigger then signed long int */
 #undef BIG_PIKE_INT
