@@ -1,0 +1,11 @@
+AC_INIT(gif.c)
+
+AC_SET_MAKE
+
+sinclude(../../module_configure.in)
+
+AC_SUBST(RANLIB)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

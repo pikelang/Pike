@@ -1,0 +1,33 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../../..:../../..
+GIF_OBJS = gif.o gif_lzw.o
+OBJS=gif.a
+
+@SET_MAKE@
+
+CC=@CC@
+CPP=@CPP@
+
+PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../../.. -I$(SRCDIR)/.. -I../../.. -I.. -I. $(MODULE_CPPFLAGS) $(DEFINES) 
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS) #@CCSHARED@ 
+
+all: $(OBJS)
+
+gif.a : $(GIF_OBJS)
+	rm -f gif.a
+	ar cq gif.a $(GIF_OBJS)
+	$(RANLIB) gif.a
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+
+clean:
+	-rm -f *.o *.a *.so module.so
+
+pike: all
+	cd ../../..; $(MAKE)
+
+pure: all
+	cd ../../..; $(MAKE) pure
+
+@dependencies@

@@ -11,6 +11,8 @@ AC_CHECK_HEADERS(sys/fcntl.h fcntl.h stdlib.h)
 
 AC_SUBST(RANLIB)
 
+AC_CONFIG_SUBDIRS(encodings)
+
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
 

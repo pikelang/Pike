@@ -15,6 +15,48 @@ This object keeps colortable information,
 </blockquote>
 
 <hr>
+<a name=%60*> </a>
+<a name=%60%60*> </a>
+<a name=map> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>map</b>(object&nbsp;image)<br>
+object <b>`*</b>(object&nbsp;image)<br>
+object <b>``*</b>(object&nbsp;image)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Map colors in an image object to the colors in 
+     the colortable, and creates a new image with the
+     closest colors.
+</blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+a new image object
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+Flat (not cube) colortable and not '<tt><a href=Image.colortable.html#full>full</a></tt>' method: 
+     this method does figure out the data needed for
+     the lookup method, which may take time the first
+     use of the colortable - the second use is quicker.
+
+<p>     cubicle, tree, full
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.colortable.html#></a></tt>
+</blockquote>
+
+<hr>
 <a name=%60+> </a>
 <h4>SYNOPSIS</h4>
 <blockquote>
@@ -75,11 +117,11 @@ void <b>create</b>(object(Image.image)&nbsp;image, int&nbsp;number)<br>
 void <b>create</b>(object(Image.image)&nbsp;image, int&nbsp;number, array(array(int))&nbsp;needed)<br>
 void <b>create</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
 void <b>create</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, &nbsp;array(int)&nbsp;from1, array(int)&nbsp;to1, int&nbsp;steps1, &nbsp;..., &nbsp;array(int)&nbsp;fromn, array(int)&nbsp;ton, int&nbsp;stepsn)<br>
-void <b>add</b>(array(array(int))&nbsp;colors)<br>
-void <b>add</b>(object(Image.image)&nbsp;image, int&nbsp;number)<br>
-void <b>add</b>(object(Image.image)&nbsp;image, int&nbsp;number, array(array(int))&nbsp;needed)<br>
-void <b>add</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
-void <b>add</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, &nbsp;array(int)&nbsp;from1, array(int)&nbsp;to1, int&nbsp;steps1, &nbsp;..., &nbsp;array(int)&nbsp;fromn, array(int)&nbsp;ton, int&nbsp;stepsn)</tt>
+object <b>add</b>(array(array(int))&nbsp;colors)<br>
+object <b>add</b>(object(Image.image)&nbsp;image, int&nbsp;number)<br>
+object <b>add</b>(object(Image.image)&nbsp;image, int&nbsp;number, array(array(int))&nbsp;needed)<br>
+object <b>add</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>add</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, &nbsp;array(int)&nbsp;from1, array(int)&nbsp;to1, int&nbsp;steps1, &nbsp;..., &nbsp;array(int)&nbsp;fromn, array(int)&nbsp;ton, int&nbsp;stepsn)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -192,7 +234,8 @@ ignores argument (ie <tt>(string)colortable</tt> gives an array)
 <h4>SYNOPSIS</h4>
 <blockquote>
 <tt>object <b>cubicles</b>()<br>
-object <b>cubicles</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+object <b>cubicles</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)<br>
+object <b>cubicles</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b, int&nbsp;accuracy)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -216,7 +259,16 @@ Set the colortable to use the cubicles algorithm to lookup
 
 <p>     example: <tt>colors=Image.colortable(img)->cubicles();</tt>
 
-<p>     algorithm time: between O[ln n] and O[n]
+<p>     algorithm time: between O[m] and O[m * n], 
+     where n is numbers of colors and m is number of pixels
+
+<p>     The arguments can be heavy trimmed for the usage
+     of your colortable; a large number (10×10×10 or bigger)
+     of cubicles is recommended when you use the colortable
+     repeatedly, since the calculation takes much
+     more time then usage.
+
+<p>     In some cases, the <tt><a href=Image.colortable.html#full>full</a></tt> method is faster.
 </blockquote>
 <h4>ARGUMENTS</h4>
 <blockquote><dl>
@@ -226,8 +278,14 @@ Set the colortable to use the cubicles algorithm to lookup
   <dd>Size, ie how much the colorspace is divided.
      Note that the size of each cubicle is at least about 8b,
      and that it takes time to calculate them. The number of
-     cubicles are <tt>r*g*b</tt>, and default is r=18, g=20, b=12,
-     ie 4320 cubicles.
+     cubicles are <tt>r*g*b</tt>, and default is 4,5,4,
+     ie 80 cubicles. This works good for 200±100 colors.
+<dt><tt>int accuracy</tt>
+  <dd>Accuracy when checking sides of cubicles.
+     Default is 16. A value of 1 gives complete accuracy,
+     ie cubicle() method gives exactly the same result
+     as full(), but takes (in worst case) 16× the time
+     to calculate.
 </dl></blockquote>
 <h4>RETURNS</h4>
 
@@ -260,7 +318,8 @@ Set the colortable to use full scan to lookup the closest color.
 
 <p>     example: <tt>colors=Image.colortable(img)->full();</tt>
 
-<p>     algorithm time: O[n], where n is numbers of colors
+<p>     algorithm time: O[n*m], where n is numbers of colors 
+     and m is number of pixels
 </blockquote>
 <h4>RETURNS</h4>
 
@@ -273,48 +332,6 @@ the called object
 <h4>NOTE</h4>
 <blockquote>
 Not applicable to colorcube types of colortable.
-</blockquote>
-
-<hr>
-<a name=map> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>object <b>map</b>(object&nbsp;image)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Map colors in an image object to the colors in 
-     the colortable, and creates a new image with the
-     closest colors.
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int r</tt>
-<dt><tt>int g</tt>
-<dt><tt>int b</tt>
-  <dd>Size, ie how much the colorspace is divided.
-     Note that the size of each cubicle is at least about 8b,
-     and that it takes time to calculate them. The number of
-     cubicles are <tt>r*g*b</tt>, and default is r=18, g=20, b=12,
-     ie 4320 cubicles.
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-a new image object
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-this method doesn't figure out the cubicles, this is 
-     done on the first use of the colortable
-
-<p>     Not applicable to colorcube types of colortable.
 </blockquote>
 
 <hr>
@@ -342,6 +359,41 @@ reduces the number of colors
 
 <blockquote>
 the new <ref>colortable</ref> object
+</blockquote>
+
+<hr>
+<a name=spacefactors> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>spacefactors</b>(int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Colortable tuning option, this sets the color space
+     distance factors. This is used when comparing distances
+     in the colorspace and comparing grey levels.
+
+<p>     Default factors are 2, 3 and 1; blue is much 
+     darker than green. Compare with <tt><a href=Image.image.html#grey>Image.image::grey</a></tt>().
+</blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the called object
+</blockquote>
+
+
+<h4>NOTE</h4>
+<blockquote>
+This has no sanity check. Some functions may bug
+     if the factors are to high - color reduction functions 
+     sums grey levels in the image, this could exceed maxint
+     in the case of high factors. Negative values may 
+     also cause strange effects. *grin*
 </blockquote>
 
 <hr>

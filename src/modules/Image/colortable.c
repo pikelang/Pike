@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.8 1997/10/21 18:37:01 mirar Exp $ */
+/* $Id: colortable.c,v 1.9 1997/10/27 02:50:45 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.8 1997/10/21 18:37:01 mirar Exp $<br>
+**!	$Id: colortable.c,v 1.9 1997/10/27 02:50:45 mirar Exp $<br>
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -18,7 +18,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.8 1997/10/21 18:37:01 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.9 1997/10/27 02:50:45 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,15 +39,14 @@ RCSID("$Id: colortable.c,v 1.8 1997/10/21 18:37:01 mirar Exp $");
 #include "builtin_functions.h"
 
 #include "image.h"
+#include "colortable.h"
 
 struct program *image_colortable_program;
 extern struct program *image_program;
 
-typedef unsigned long nct_weight_t;
 #define WEIGHT_NEEDED (nct_weight_t)(0x10000000)
 #define WEIGHT_REMOVE (nct_weight_t)(0x10000001)
 
-#define COLORLOOKUPCACHEHASHSIZE 207
 #define COLORLOOKUPCACHEHASHR 7
 #define COLORLOOKUPCACHEHASHG 17
 #define COLORLOOKUPCACHEHASHB 1
@@ -72,91 +71,6 @@ typedef unsigned long nct_weight_t;
 
 #define SQ(x) ((x)*(x))
 static INLINE int sq(int x) { return x*x; }
-
-struct nct_flat_entry /* flat colorentry */
-{
-   rgb_group color;
-   nct_weight_t weight;
-   signed long no;
-};
-
-struct nct_scale
-{
-   struct nct_scale *next;
-   rgb_group low,high;
-   rgbl_group vector; /* high-low */
-   float invsqvector; /* |vector|² */
-   INT32 realsteps;
-   int steps;
-   float mqsteps;     /* 1.0/(steps-1) */
-   int no[1];  /* actually no[steps] */
-};
-
-struct neo_colortable
-{
-   enum nct_type 
-   { 
-      NCT_NONE, /* no colors */
-      NCT_FLAT, /* flat with weight */
-      NCT_CUBE  /* cube with additions */
-   } type;
-   enum nct_lookup_mode /* see union "lu" below */
-   {
-      NCT_TREE, /* tree lookup */
-      NCT_CUBICLES, /* cubicle lookup */
-      NCT_FULL /* scan all values */
-   } lookup_mode;
-
-   union
-   {
-      struct nct_flat
-      {
-	 int numentries;
-	 struct nct_flat_entry *entries;
-      } flat;
-      struct nct_cube
-      {
-	 nct_weight_t weight;
-	 int r,g,b; /* steps of sides */
-	 struct nct_scale *firstscale;
-	 INT32 disttrig; /* (sq) distance trigger */
-	 int numentries;
-      } cube;
-   } u;
-
-   rgbl_group spacefactor; 
-      /* rgb space factors, normally 2,3,1 */
-
-   struct lookupcache
-   {
-      rgb_group src;
-      rgb_group dest;
-      int index;
-   } lookupcachehash[COLORLOOKUPCACHEHASHSIZE];
-
-   union /* of pointers!! */
-   {
-      struct nctlu_cubicles
-      {
-	 int r,g,b; /* size */
-	 int accur; /* accuracy, default 2 */
-	 struct nctlu_cubicle
-	 {
-	    int n; 
-	    int *index; /* NULL if not initiated */
-	 } *cubicles; /* [r*g*b], index as [ri+(gi+bi*g)*r] */
-      } cubicles;
-      struct nctlu_tree
-      {
-	 struct nctlu_treenode
-	 {
-	    int splitvalue;
-	    enum { SPLIT_R,SPLIT_G,SPLIT_B,SPLIT_DONE } split_direction;
-	    int less,more;
-	 } *nodes; /* shoule be colors×2 */
-      } tree;
-   } lu;
-};
 
 #define THIS ((struct neo_colortable *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
@@ -1889,6 +1803,48 @@ void image_colortable_cast_to_array(INT32 args)
       free(flat.entries);
 }
 
+int image_colortable_size(struct neo_colortable *nct)
+{
+   if (nct->type==NCT_FLAT)
+      return nct->u.flat.numentries;
+   else if (nct->type==NCT_CUBE)
+      return nct->u.cube.numentries;
+   else return 0;
+}
+
+void image_colortable__sizeof(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(image_colortable_size(THIS));
+}
+
+void image_colortable_write_rgb(struct neo_colortable *nct,
+				unsigned char *dest)
+{
+   struct nct_flat flat;
+   int i;
+   
+   if (nct->type==NCT_NONE)
+      return;
+
+   if (nct->type==NCT_CUBE)
+      flat=_img_nct_cube_to_flat(nct->u.cube);
+   else
+      flat=nct->u.flat;
+
+   /* sort in number order? */
+
+   for (i=0; i<flat.numentries; i++)
+   {
+      *(dest++)=flat.entries[i].color.r;
+      *(dest++)=flat.entries[i].color.g;
+      *(dest++)=flat.entries[i].color.b;
+   }
+
+   if (nct->type==NCT_CUBE)
+      free(flat.entries);
+}
+
 /*
 **! method object cast(string to)
 **!	cast the colortable to an array
@@ -2078,7 +2034,7 @@ void image_colortable_cubicles(INT32 args)
 **!	the lookup method, which may take time the first
 **!	use of the colortable - the second use is quicker.
 **!
-**! see also
+**! see also:
 **!     cubicle, tree, full
 **/
 
@@ -2718,6 +2674,13 @@ static void _img_nct_map_to_flat_tree(rgb_group *s,
    error("colortable->map(): map to flat/tree not implemented\n");   
 }
 
+void image_colortable_get_index_line(struct neo_colortable *nct,
+				     rgb_group *s,
+				     unsigned char *buf,
+				     int len)
+{
+}
+
 void image_colortable_map(INT32 args)
 {
    struct image *src;
@@ -2850,6 +2813,10 @@ void init_colortable_programs(void)
    /* cast to array */
    add_function("cast",image_colortable_cast,
 		"function(string:array)",0);
+
+   /* info */
+   add_function("_sizeof",image_colortable__sizeof,
+		"function(:int)",0);
 
    /* modes */
    add_function("tree",image_colortable_tree,

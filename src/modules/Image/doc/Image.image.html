@@ -2024,6 +2024,42 @@ This function is new (april-97) and rather untested.
 </blockquote>
 
 <hr>
+<a name=read_lsb_grey> </a>
+<a name=read_lsb_rgb> </a>
+<a name=write_lsb_grey> </a>
+<a name=write_lsb_rgb> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>write_lsb_rgb</b>(string&nbsp;what)<br>
+object <b>write_lsb_grey</b>(string&nbsp;what)<br>
+string <b>read_lsb_rgb</b>()<br>
+string <b>read_lsb_grey</b>()</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+These functions read/write in the least significant bit
+     of the image pixel values. The _rgb() functions
+     read/write on each of the red, green and blue values,
+     and the grey keeps the same lsb on all three.
+
+<p>     The string is nullpadded or cut to fit.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>string what</tt>
+  <dd>the hidden message
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the current object or the read string
+</blockquote>
+
+<hr>
 <a name=rotate> </a>
 <a name=rotate_expand> </a>
 <h4>SYNOPSIS</h4>
