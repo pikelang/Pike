@@ -1,6 +1,6 @@
-#pike __REAL_VERSION__
+#pike 7.4
 
-/* $Id: cipher.pike,v 1.2 2003/02/08 02:04:07 nilsson Exp $
+/* $Id: cipher.pike,v 1.3 2003/11/30 17:05:05 nilsson Exp $
  *
  */
 
