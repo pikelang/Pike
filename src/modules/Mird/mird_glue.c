@@ -33,6 +33,21 @@ struct program *mird_scanner_program;
 #define TRY(X) \
    do { MIRD_RES res; if ( (res=(X)) ) pmird_exception(res); } while (0)
 
+#ifndef PIKE_THREADS
+
+#define LOCK(PMIRD)							\
+   do									\
+   {									\
+      struct pmird_storage *me=(PMIRD);					\
+      THREADS_ALLOW();
+
+#define UNLOCK(PMIRD)							\
+      UNSET_ONERROR(err);						\
+   }									\
+   while (0);
+
+#else
+
 #define LOCK(PMIRD)							\
    do									\
    {									\
@@ -55,6 +70,8 @@ static void pmird_unlock(PIKE_MUTEX_T *mutex)
 {
    mt_unlock(mutex);
 }
+
+#endif
 
 static void pmird_exception(MIRD_RES res)
 {
