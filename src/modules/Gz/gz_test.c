@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h 
  */
 
-/* @(#) $Id: gz_test.c,v 1.1 1999/10/05 05:29:28 hubbe Exp $ */
+/* @(#) $Id: gz_test.c,v 1.2 1999/10/05 05:48:32 hubbe Exp $ */
 
 #include <stdio.h>
 #include "zlib.h"
@@ -69,7 +69,7 @@ void test_compress(compr, comprLen, uncompr, uncomprLen)
         fprintf(stderr, "bad uncompress\n");
 	exit(1);
     } else {
-        printf("uncompress(): %s\n", (char *)uncompr);
+/*        printf("uncompress(): %s\n", (char *)uncompr); */
     }
 }
 
@@ -148,7 +148,7 @@ void test_inflate(compr, comprLen, uncompr, uncomprLen)
         fprintf(stderr, "bad inflate\n");
 	exit(1);
     } else {
-        printf("inflate(): %s\n", (char *)uncompr);
+/*        printf("inflate(): %s\n", (char *)uncompr); */
     }
 }
 
@@ -244,7 +244,7 @@ void test_large_inflate(compr, comprLen, uncompr, uncomprLen)
         fprintf(stderr, "bad large inflate: %ld\n", d_stream.total_out);
 	exit(1);
     } else {
-        printf("large_inflate(): OK\n");
+/*        printf("large_inflate(): OK\n"); */
     }
 }
 
@@ -327,7 +327,7 @@ void test_sync(compr, comprLen, uncompr, uncomprLen)
     err = inflateEnd(&d_stream);
     CHECK_ERR(err, "inflateEnd");
 
-    printf("after inflateSync(): hel%s\n", (char *)uncompr);
+/*    printf("after inflateSync(): hel%s\n", (char *)uncompr); */
 }
 
 /* ===========================================================================
@@ -413,7 +413,7 @@ void test_dict_inflate(compr, comprLen, uncompr, uncomprLen)
         fprintf(stderr, "bad inflate with dict\n");
 	exit(1);
     } else {
-        printf("inflate with dictionary: %s\n", (char *)uncompr);
+/*        printf("inflate with dictionary: %s\n", (char *)uncompr); */
     }
 }
 
