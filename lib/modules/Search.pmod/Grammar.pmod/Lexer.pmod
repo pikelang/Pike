@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Lexer.pmod,v 1.7 2004/08/07 15:27:00 js Exp $
+// $Id: Lexer.pmod,v 1.8 2004/12/29 12:52:13 anders Exp $
 
 // Lexer for search queries
 
@@ -99,7 +99,7 @@ public string|array(array(Token|string)) tokenize(string query) {
       case "<":
 	if (query[pos + 1] == '=') {
 	  ++pos;
-	  EMIT2(TOKEN_LESSEQUAL, "=>");
+	  EMIT2(TOKEN_LESSEQUAL, "<=");
 	}
 	else if (query[pos + 1] == '>') {
 	  ++pos;
