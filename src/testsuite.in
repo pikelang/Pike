@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.175 1999/06/15 18:54:35 mirar Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.176 1999/06/17 20:33:06 noring Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2960,6 +2960,15 @@ test_search4("\345677777-------------------")
 test_search4("kapit\3333l>")
 test_search4("kapit\3333333l>")
 
+
+// - sprintf
+test_eq(sprintf("%.1f",31415.9267),"31415.9")
+test_eq(sprintf("%.0f",31415.9267),"31416")
+test_eq(sprintf("%.-1f",31415.9267),"31420")
+test_eq(sprintf("%.-2f",31415.9267),"31400")
+test_eq(sprintf("%.-2f",-31415.9267),"-31400")
+test_eq(sprintf("%.-10f",31415.9267),"0")
+test_eq(sprintf("%20.-3f", 31415.92670),"               31000")
 
 // - sizeof
 test_eq(sizeof("felbar"),6)
