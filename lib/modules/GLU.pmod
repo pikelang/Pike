@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.4 1999/10/25 18:32:25 mirar Exp $
+ * $Id: GLU.pmod,v 1.5 1999/10/25 19:10:26 mirar Exp $
  *
  * GL Utilities module.
  */
@@ -45,10 +45,10 @@ void gluLookAt(float|object eye,float|object center,float|object up,
 			     @(z->vect()), 0.0,
 			     0.0, 0.0, 0.0, 1.0 })/4)*({}); 
   
-//   glMultMatrix( m );
+  glMultMatrix( m );
   
   /* Translate Eye to Origin */
-//   glTranslate( ((array)(-1*eye))[0] );
+  glTranslate( ((array)(-1*eye))[0] );
 }  
 
 void gluOrtho2D(float left, float right,
