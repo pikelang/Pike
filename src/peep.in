@@ -1,7 +1,7 @@
 //
 // -*- C -*-
 //
-// $Id: peep.in,v 1.62 2002/02/26 18:53:21 grubba Exp $
+// $Id: peep.in,v 1.63 2002/09/24 09:10:53 grubba Exp $
 //
 
 NOP :
@@ -93,6 +93,11 @@ VOLATILE_RETURN ? DeadCodeEndCond($2o) : VOLATILE_RETURN
 RETURN_0 ? DeadCodeEndCond($2o) : RETURN_0
 RETURN_1 ? DeadCodeEndCond($2o) : RETURN_1
 RETURN_LOCAL ? DeadCodeEndCond($2o) : RETURN_LOCAL($1a)
+
+// Get rid of extra catch-levels.
+// Note that the corresponding exit catch is killed
+// by dead code elimination.
+CATCH ESCAPE_CATCH:
 
 LOCAL_LVALUE INC : INC_LOCAL ($1a)
 LOCAL_LVALUE POST_INC : POST_INC_LOCAL ($1a)
