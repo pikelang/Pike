@@ -144,7 +144,7 @@ install:
 	fi
 	@echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix)
 	@if [ -f $(SRCDIR)/../bin/hilfe ]; then \
-	  echo "$(exec_prefix)/hilfe" \
+	  echo "$(exec_prefix)/hilfe"; \
 	  if [ "$(exec_prefix)" != "/usr/local/bin" -a \
 	       "$(exec_prefix)" != "/usr/local/bin/" ]; then \
 	    if [ -f $(exec_prefix)/hilfe ]; then \
