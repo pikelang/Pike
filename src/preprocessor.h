@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.2 1999/02/28 03:17:43 grubba Exp $
+ * $Id: preprocessor.h,v 1.3 1999/02/28 03:22:30 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -773,11 +773,11 @@ static INT32 lower_cpp(struct cpp *this,
 	  static WCHAR efun_[] = { 'e','f','u','n' };
 	  static WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
 
-	  if(pos-tmp == 7 && !memcmp(defined_, data+tmp, 7<<SHIFT))
+	  if(pos-tmp == 7 && !MEMCMP(defined_, data+tmp, 7<<SHIFT))
 	  {
 	    d = defined_macro;
-	  } else if((pos-tmp == 4 && !memcmp(efun_, data+tmp, 4<<SHIFT)) ||
-		    (pos-tmp == 8 && !memcmp(constant_, data+tmp, 8<<SHIFT)))
+	  } else if((pos-tmp == 4 && !MEMCMP(efun_, data+tmp, 4<<SHIFT)) ||
+		    (pos-tmp == 8 && !MEMCMP(constant_, data+tmp, 8<<SHIFT)))
 	  {
 	    d = constant_macro;
 	  } else {
