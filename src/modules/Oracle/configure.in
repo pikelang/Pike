@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.10 1998/05/14 20:56:01 marcus Exp $
+# $Id: configure.in,v 1.11 1998/05/23 23:10:02 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -49,7 +49,7 @@ if test x$with_oracle = xyes; then
 
   AC_MSG_CHECKING(for Oracle oratab)
 
-  oratab_locations="/var/opt/oracle/oratab"
+  oratab_locations="/var/opt/oracle/oratab /etc/oratab"
 
   AC_CACHE_VAL(pike_cv_oracle_oratab_file, [
 
