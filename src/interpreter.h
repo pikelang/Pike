@@ -1311,8 +1311,18 @@ static int eval_instruction(unsigned char *pc)
 	      !match_types(sval_type, sp[-2].u.string)) {
 	    struct pike_string *t1;
 	    struct pike_string *t2;
+	    char *fname = "soft_cast";
 	    ONERROR tmp1;
 	    ONERROR tmp2;
+
+	    if (fp->current_object && fp->context.prog &&
+		fp->current_object->prog) {
+	      /* Look up the function-name */
+	      struct pike_string *name =
+		ID_FROM_INT(fp->current_object->prog, fp->fun)->name;
+	      if (!name->size_shift)
+		fname = name->str;
+	    }
 
 	    t1 = describe_type(sp[-2].u.string);
 	    SET_ONERROR(tmp1, do_free_string, t1);
@@ -1322,10 +1332,9 @@ static int eval_instruction(unsigned char *pc)
 	  
 	    free_string(sval_type);
 
-	    bad_arg_error("soft_cast", sp-1, 1, 1, t1->str, sp-1,
-			  "Assertion failed in soft_cast(). "
-			  "Expected %s, got %s\n",
-			  t1->str, t2->str);
+	    bad_arg_error(fname, sp-1, 1, 1, t1->str, sp-1,
+			  "%s(): Soft cast failed. Expected %s, got %s\n",
+			  fname, t1->str, t2->str);
 	    /* NOT_REACHED */
 	    UNSET_ONERROR(tmp2);
 	    UNSET_ONERROR(tmp1);
