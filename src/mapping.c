@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.8 1996/12/05 00:47:15 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.9 1996/12/05 01:51:22 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -1044,7 +1044,7 @@ void zap_all_mappings()
     
     next=m->next;
     
-    free_mapping(m);
+    /* free_mapping(m); */
   }
 }
 

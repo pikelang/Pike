@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.12 1996/12/03 21:41:19 hubbe Exp $");
+RCSID("$Id: main.c,v 1.13 1996/12/05 01:51:21 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -288,6 +288,7 @@ void exit_main()
 
   cleanup_callbacks();
   zap_all_arrays();
+  zap_all_mappings();
 
   cleanup_shared_string_table();
 }
