@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc_h.h,v 1.20 2003/06/30 17:05:56 mast Exp $
+|| $Id: block_alloc_h.h,v 1.21 2004/02/06 12:26:15 grubba Exp $
 */
 
 #undef BLOCK_ALLOC
@@ -15,6 +15,10 @@
 #ifndef PIKE_HASH_T
 #define PIKE_HASH_T	size_t
 #endif /* !PIKE_HASH_T */
+
+#ifdef BLOCK_ALLOC_USED
+#error "block_alloc.h must be included after all uses of block_alloc_h.h"
+#endif /* BLOCK_ALLOC_USED */
 
 #define BLOCK_ALLOC(DATA,SIZE)						\
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void);				\
