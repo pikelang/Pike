@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.63 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: module_support.c,v 1.64 2004/12/13 19:09:58 mast Exp $
 */
 
 #include "global.h"
@@ -205,7 +205,15 @@ static int va_get_args_2(struct svalue *s,
       return ret;
     }
 
-    switch(*++fmt)
+    if (optional && IS_UNDEFINED (s)) {
+      /* An optional argument with an undefined value should be
+       * treated as if it isn't given at all, i.e. don't assign this
+       * argument. */
+      fmt++;
+      va_arg (ap, void *);
+    }
+
+    else switch(*++fmt)
     {
     case 'd':
       if(s->type != T_INT) goto type_err;
