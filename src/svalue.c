@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.52 1999/10/25 21:43:00 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.53 1999/10/26 03:35:30 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -296,7 +296,9 @@ void assign_to_short_svalue(union anything *u,
     if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
     u->refs=0;
   }else{
-    error("Wrong type in assignment.\n");
+    error("Wrong type in assignment, expected %s, got %s.\n",
+	  get_name_of_type(type),
+	  get_name_of_type(s->type));
   }
 }
 
@@ -321,7 +323,9 @@ void assign_to_short_svalue_no_free(union anything *u,
   }else if(type<=MAX_REF_TYPE && IS_ZERO(s)){
     u->refs=0;
   }else{
-    error("Wrong type in assignment.\n");
+    error("Wrong type in assignment, expected %s, got %s.\n",
+	  get_name_of_type(type),
+	  get_name_of_type(s->type));
   }
 }
 
