@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transforms.cmod,v 1.12 2004/03/10 16:32:26 nilsson Exp $
+|| $Id: transforms.cmod,v 1.13 2004/03/21 06:09:46 nilsson Exp $
 */
 
 #include "global.h"
@@ -162,7 +162,7 @@ PIKECLASS FFT
    */
   PIKEFUN array rIFFT(array myarray)
     {
-      int i, j;
+      int i, j=1;
       struct array *r;
       struct array *p;
       int n;
@@ -188,7 +188,6 @@ PIKECLASS FFT
 	  else Pike_error("Invalid type in array!\n");
 	}
 
-      j=1;
       for(;i<n;i++)
 	{
 	  if (p->item[j].type == PIKE_T_INT)

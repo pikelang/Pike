@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.40 2004/03/05 12:01:16 grubba Exp $
+|| $Id: image_tiff.c,v 1.41 2004/03/21 06:11:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -16,7 +16,7 @@
  */
 
 #ifdef HAVE_WORKING_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.40 2004/03/05 12:01:16 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.41 2004/03/21 06:11:42 nilsson Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -269,7 +269,7 @@ void low_image_tiff_encode( struct buffer *buf,
                             struct imagealpha *img,
                             struct options *opts)
 {
-  struct image *i, *a;
+  struct image *i, *a=0;
   int spp = 3;
   char *buffer;
   int n;
