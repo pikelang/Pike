@@ -1,0 +1,281 @@
+/* cipher.cmod -*- c -*- */
+
+#include "global.h"
+RCSID("$Id: cipher.cmod,v 1.1 2003/03/18 15:27:33 nisse Exp $");
+#include "interpret.h"
+#include "svalue.h"
+
+/* For this_object() */
+#include "object.h"
+#include "module_support.h"
+
+#include "nettle_config.h"
+
+#ifdef HAVE_LIBNETTLE
+
+#include "nettle.h"
+
+#include <nettle/aes.h>
+#include <nettle/nettle-meta.h>
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdarg.h>
+
+#if 0
+static void
+werror(const char *format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+}
+#else
+#define werror(x)
+#endif
+
+
+/* Checks if a key is acceptable. STR can be NULL, in which case only
+ * the length is checked. */
+typedef int check_key_func(ptrdiff_t len, const char *str);
+
+/*! @class CipherInfo
+ *!
+ *! Represents information about a cipher algorithm, such as
+ *! name, key size, and block size.
+ */
+PIKECLASS CipherInfo
+{
+  CVAR const struct nettle_cipher *meta;
+  CVAR check_key_func *check_key;
+  
+  /*! @decl string name(void)
+   *!
+   *! Returns a human readable name for the algorithm.
+   */
+  PIKEFUN string name()
+    {
+      if (!THIS->meta)
+	Pike_error("CipherInfo not properly initialized.");
+
+      push_string(make_shared_string(THIS->meta->name));
+    }
+
+  /*! @decl string key_size(void)
+   *!
+   *! Returns the recommended key size for the cipher.
+   */
+  PIKEFUN int key_size()
+    {
+      if (!THIS->meta)
+	Pike_error("CipherInfo not properly initialized.");
+
+      push_int(THIS->meta->key_size);
+    }
+
+  /*! @decl string check_key_size(void)
+   *!
+   *! Returns 1 if the given key size is acceptable for the cipher,
+   *! otherwise zero.
+   */
+  PIKEFUN int check_key_size(int size)
+    {
+      if (!THIS->meta)
+	Pike_error("CipherInfo not properly initialized.");
+
+      push_int(THIS->check_key(size, NULL));
+    }
+  
+  /*! @decl string block_size(void)
+   *!
+   *! Returns the internal block size of the cipher (or zero for
+   *! stream ciphers).
+   */
+  PIKEFUN int block_size()
+    {
+      if (!THIS->meta)
+	Pike_error("CipherInfo not properly initialized.");
+
+      push_int(THIS->meta->block_size);
+    }
+  INIT
+    {
+      THIS->meta = NULL;
+      THIS->check_key = NULL;
+    }
+}
+
+#define GET_INFO(o) \
+((struct CipherInfo_struct *) get_storage((o), CipherInfo_program))
+
+/*! @class CipherState
+ *!
+ *! Base class for hashing contexts.
+ */
+PIKECLASS CipherState
+{
+  INHERIT CipherInfo;
+  CVAR nettle_crypt_func crypt;
+  CVAR void *ctx;
+  
+  /* FIXME: Create should copy state from the other object, if
+   * provided. */
+
+  /*! @decl object set_encrypt_key(string key)
+   *!
+   *! Initializes the object for encryption.
+   */
+  PIKEFUN object set_encrypt_key(string key)
+    {
+      struct CipherInfo_struct *info = GET_INFO(this_object());
+      assert(info);
+      
+      if (!THIS->ctx || !info->meta)
+	Pike_error("CipherState not properly initialized.");
+
+      NO_WIDE_STRING(key);
+      if (!info->check_key(key->len, key->str))
+	Pike_error("Invalid key.");
+      
+      info->meta->set_encrypt_key(THIS->ctx, key->len, key->str);
+      THIS->crypt = info->meta->encrypt;
+
+      push_object(this_object());
+    }
+
+  /*! @decl object set_decrypt_key(string key)
+   *!
+   *! Initializes the object for decryption.
+   */
+  PIKEFUN object set_decrypt_key(string key)
+    {
+      struct CipherInfo_struct *info = GET_INFO(this_object());
+      assert(info);
+      
+      if (!THIS->ctx || !info->meta)
+	Pike_error("CipherState not properly initialized.");
+
+      NO_WIDE_STRING(key);
+      if (!info->check_key(key->len, key->str))
+	Pike_error("Invalid key.");
+      
+      info->meta->set_decrypt_key(THIS->ctx, key->len, key->str);
+      THIS->crypt = info->meta->decrypt;
+
+      push_object(this_object());
+    }
+
+  /*! @decl string crypt(string data)
+   *!
+   *! Encrypts or decrypts data, using the current key.
+   *!
+   *! @param data
+   *!   For block ciphers, data must be an integral number of blocks.
+   */
+
+  PIKEFUN string crypt (string data)
+    {
+      struct CipherInfo_struct *info = GET_INFO(this_object());
+      struct pike_string *s;
+      assert(info);
+      
+      if (!THIS->ctx || !THIS->crypt|| !info->meta)
+	Pike_error("CipherState not properly initialized.");
+
+      NO_WIDE_STRING(data);
+
+      if (info->meta->block_size
+	  && (data->len % info->meta->block_size))
+	Pike_error("Data must be an integral number of blocks.");
+
+      s = begin_shared_string(data->len);
+
+      THIS->crypt(&THIS->ctx, data->len, s->str, data->str);
+      push_string(end_shared_string(s));      
+    }
+
+  INIT
+    {
+      THIS->ctx = NULL;
+      THIS->crypt = NULL;
+    }
+
+  EXIT
+    {
+      if (THIS->ctx)
+      {
+	struct CipherInfo_struct *info = GET_INFO(this_object());
+	assert(info);
+	assert(info->meta);
+	memset(THIS->ctx, 0, info->meta->context_size);
+      }
+    }
+}
+/*! @endclass CipherState */
+
+static int
+AES_check_key(ptrdiff_t len, const char *key)
+{
+  return (len == 16 || len == 24 || len == 32);
+}
+
+/*! @class AES_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo. */
+
+PIKECLASS AES_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(this_object());
+
+      if (CipherInfo || !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_aes256;
+	CipherInfo->check_key = &AES_check_key;
+      }
+    }
+}
+
+/*! @endclass AES_Info */
+
+/*! @class AES_State
+ *!
+ *! State for AES encyption
+ */
+PIKECLASS AES_State
+{
+  INHERIT AES_Info;
+  INHERIT CipherState;
+  CVAR struct aes_ctx aes;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(this_object(),
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->aes;
+    }
+}
+/*! @endclass AES_State */
+
+/*! @endmodule Nettle */
+
+void
+cipher_init(void)
+{
+  INIT;
+}
+
+void
+cipher_exit(void)
+{
+  EXIT;
+}
+
+#endif /* HAVE_LIBNETTLE */
