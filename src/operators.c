@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.196 2004/09/20 12:10:52 mast Exp $
+|| $Id: operators.c,v 1.197 2004/09/20 14:59:58 grubba Exp $
 */
 
 #include "global.h"
@@ -344,18 +344,15 @@ void o_cast_to_string(void)
     if(!sp[-1].u.object->prog) {
       /* Casting a destructed object should be like casting a zero. */
       pop_stack();
-      push_int (0);
-    }
-
-    else {
+      push_constant_text("0");
+    } else {
       {
 	struct object *o = sp[-1].u.object;
 	struct pike_string *s;
 	int f = FIND_LFUN(o->prog,LFUN_CAST);
 	if(f == -1)
 	  Pike_error("No cast method in object.\n");
-	REF_MAKE_CONST_STRING(s, "string");
-	push_string(s);
+	push_constant_text("string");
 	apply_low(o, f, 1);
 	stack_pop_keep_top();
       }
@@ -379,10 +376,8 @@ void o_cast_to_string(void)
 	Pike_error("Cast failed, wanted string, got %s\n",
 		   get_name_of_type(sp[-1].type));
       }
-      return;
     }
-
-    /* Fall through. */
+    return;
 	    
   case T_INT:
     sprintf(buf, "%"PRINTPIKEINT"d", sp[-1].u.integer);
@@ -492,9 +487,8 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
       int f = FIND_LFUN(o->prog,LFUN_CAST);
       if(f == -1)
 	Pike_error("No cast method in object.\n");
-      s=describe_type(type);
-      push_string(s);
-      apply_lfun(o, f, 1);
+      push_string(describe_type(type));
+      apply_low(o, f, 1);
       stack_pop_keep_top();
     }else
 
