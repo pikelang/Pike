@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.47 1999/04/19 21:19:26 grubba Exp $
+// $Id: module.pmod,v 1.48 1999/04/20 16:00:53 grubba Exp $
 
 import String;
 
@@ -982,20 +982,20 @@ object sendfile(array(string) headers,
 		function(int, mixed ...:void)|void cb,
 		mixed ... args)
 {
-#if constant(_Sendfile.sendfile)
-  // Try using _Sendfile.sendfile().
+#if constant(files.sendfile)
+  // Try using files.sendfile().
   
   mixed err = catch {
-    return _Sendfile.sendfile(headers, from, offset, len,
-			      trailers, to, cb, @args);
+    return files.sendfile(headers, from, offset, len,
+			  trailers, to, cb, @args);
   };
 
 #ifdef SENDFILE_DEBUG
-  werror(sprintf("_Sendfile.sendfile() failed:\n%s\n",
+  werror(sprintf("files.sendfile() failed:\n%s\n",
 		 describe_backtrace(err)));
 #endif /* SENDFILE_DEBUG */
 
-#endif /* _Sendfile.sendfile */
+#endif /* files.sendfile */
 
   // Use nb_sendfile instead.
   return nb_sendfile(headers, from, offset, len, trailers, to, cb, @args);
