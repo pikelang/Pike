@@ -1,4 +1,4 @@
-// $Id: Subject.pike,v 1.1 2002/10/20 00:07:11 nilsson Exp $
+// $Id: Subject.pike,v 1.2 2002/10/21 02:10:54 grendel Exp $
 
 //! This is a probe subject which you can send in somewhere to
 //! get probed (not to be confused with a probe object, which
@@ -47,53 +47,61 @@ void create(mixed ... args) {
     id = "(" + args[0] + ") ";
 }
 
-void PROXY(destroy, 0)
+void PROXY(destroy, 0);
 
-mixed PROXY(`->, 0)
-mixed PROXY(`->=, 0)
-mixed PROXY(`[], 0)
-mixed PROXY(`[]=, 0)
-array PROXY(_indices, ::_indices())
-array PROXY(_values, ::_values())
+mixed PROXY(`->, 0);
+mixed PROXY(`->=, 0);
+mixed PROXY(`[], 0);
+mixed PROXY(`[]=, 0);
 
-mixed PROXY(`+, 0)
-mixed PROXY(`-, 0)
-mixed PROXY(`&, 0)
-mixed PROXY(`|, 0)
-mixed PROXY(`^, 0)
-mixed PROXY(`<<, 0)
-mixed PROXY(`>>, 0)
-mixed PROXY(`*, 0)
-mixed PROXY(`/, 0)
-mixed PROXY(`%, 0)
-mixed PROXY(`~, 0)
+mixed PROXY(`+, 0);
+mixed PROXY(`-, 0);
+mixed PROXY(`&, 0);
+mixed PROXY(`|, 0);
+mixed PROXY(`^, 0);
+mixed PROXY(`<<, 0);
+mixed PROXY(`>>, 0);
+mixed PROXY(`*, 0);
+mixed PROXY(`/, 0);
+mixed PROXY(`%, 0);
+mixed PROXY(`~, 0);
 
-int(0..1) PROXY(`==, 0)
-int(0..1) PROXY(`<, 0)
-int(0..1) PROXY(`>, 0)
-int PROXY(`!, 0)
+int(0..1) PROXY(`==, 0);
+int(0..1) PROXY(`<, 0);
+int(0..1) PROXY(`>, 0);
+int PROXY(`!, 0);
 
-int PROXY(__hash, 0)
-int PROXY(_sizeof, 0)
-mixed PROXY(cast, 0)
-mixed PROXY(`(), 0)
+int PROXY(__hash, 0);
+int PROXY(_sizeof, 0);
+mixed PROXY(cast, 0);
+mixed PROXY(`(), 0);
 
-mixed PROXY(``+, 0)
-mixed PROXY(``-, 0)
-mixed PROXY(``&, 0)
-mixed PROXY(``|, 0)
-mixed PROXY(``^, 0)
-mixed PROXY(``<<, 0)
-mixed PROXY(``>>, 0)
-mixed PROXY(``*, 0)
-mixed PROXY(``/, 0)
-mixed PROXY(``%, 0)
+mixed PROXY(``+, 0);
+mixed PROXY(``-, 0);
+mixed PROXY(``&, 0);
+mixed PROXY(``|, 0);
+mixed PROXY(``^, 0);
+mixed PROXY(``<<, 0);
+mixed PROXY(``>>, 0);
+mixed PROXY(``*, 0);
+mixed PROXY(``/, 0);
+mixed PROXY(``%, 0);
 
-mixed PROXY(`+=, 0)
+mixed PROXY(`+=, 0);
 
-int(0..1) PROXY(_is_type, 0)
-int PROXY(_equal, 0)
-mixed PROXY(_m_delete, 0)
+int(0..1) PROXY(_is_type, 0);
+int PROXY(_equal, 0);
+mixed PROXY(_m_delete, 0);
+
+array _indices(mixed ... args) { 
+   werror(id+"_values got %O\n", args); 
+   return ::_indices(); 
+}
+
+array _values(mixed ... args) { 
+   werror(id+"_values got %O\n", args); 
+   return ::_values(); 
+}
 
 object _get_iterator(mixed ... args) {
   werror(id+"_get_iterator got %O\n", args);
@@ -106,4 +114,4 @@ string _sprintf(mixed ... args) {
   return sprintf("Debug.Subject"+id);
 }
 
-mixed PROXY(_random, 0)
+mixed PROXY(_random, 0);
