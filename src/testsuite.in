@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.380 2001/01/26 00:54:17 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.381 2001/02/04 09:09:01 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6198,6 +6198,18 @@ test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return
 test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i=0;return i;}})->foo())
 
 // Pike modules
+
+// - this failed in Calendar.Timezone
+
+test_compile( 
+[[
+   array tz_ux(int ux)
+   {
+      if (ux<-0x80000000 || ux>0x7fffffff)
+	 error("bah\n");
+      return ({}); 
+   };
+]]);
 
 // - Calendar
 test_true(Calendar.Day())
