@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
-// RFC 1035
-
-//! $Id: DNS.pmod,v 1.66 2002/11/27 01:59:13 grendel Exp $
+//! Domain Name System
+//! RFC 1035
+//! $Id: DNS.pmod,v 1.67 2002/12/01 21:08:59 bill Exp $
 
 #pike __REAL_VERSION__
 
@@ -14,27 +14,76 @@ constant NXRRSET=8;
 
 constant QUERY=0;
 
+//! Class Internet
 constant C_IN=1;
+
+//! Class CHAOS
+constant C_CH=3;
+
+//! Class Hesiod
+constant C_HS=4;
+
+//! Class ANY
 constant C_ANY=255;
 
+//! Type - host address
 constant T_A=1;
+
+//! Type - authoritative name server
 constant T_NS=2;
+
+//! Type - mail destination (Obsolete - use MX)
 constant T_MD=3;
+
+//! Type - mail forwarder (Obsolete - use MX)
 constant T_MF=4;
+
+//! Type - canonical name for an alias
 constant T_CNAME=5;
+
+//! Type - start of a zone of authority
 constant T_SOA=6;
+
+//! Type - mailbox domain name (EXPERIMENTAL)
 constant T_MB=7;
+
+//! Type - mail group member (EXPERIMENTAL)
 constant T_MG=8;
+
+//! Type - mail rename domain name (EXPERIMENTAL)
 constant T_MR=9;
+
+//! Type - null RR (EXPERIMENTAL)
 constant T_NULL=10;
+
+//! Type - well known service description
+constant T_WKS=11;
+
+//! Type - domain name pointer
 constant T_PTR=12;
+
+//! Type - host information
 constant T_HINFO=13;
+
+//! Type - mailbox or mail list information
 constant T_MINFO=14;
+
+//! Type - mail exchange
 constant T_MX=15;
+
+//! Type - text strings
 constant T_TXT=16;
+
+//! Type - IPv6 address record (RFC 1886, deprecated) 
 constant T_AAAA=28;
+
+//! Type - Service location record (RFC 2782)
 constant T_SRV=33;
 
+//! Type - IPv6 address record (RFC 2874, incomplete support)
+constant T_A6=38;
+
+//! Low level DNS protocol
 class protocol
 {
   string mklabel(string s)
@@ -161,6 +210,17 @@ class protocol
 			     "qd":(["name":dname, "cl":cl, "type":type])]));
   }
 
+//! create a DNS query PDU
+//! 
+//! @param dnameorquery
+//! @param cl
+//!   record class such as Protocols.DNS.C_IN
+//! @param type
+//!  query type such Protocols.DNS.T_A
+//!
+//! @returns
+//!  data suitable for use with 
+//!  @[Protocols.DNS.client.do_sync_query]
   string mkquery(string|mapping dnameorquery, int|void cl, int|void type)
   {
     if(mappingp(dnameorquery))
@@ -636,6 +696,12 @@ class client
     }
   }
 
+//! perform a syncronous query
+//! 
+//! @param s
+//!   result of @[Protocols.DNS.protocol.mkquery]
+//! @returns
+//!  mapping containing query result or 0 on failure/timeout
   mapping do_sync_query(string s)
   {
     object udp = Stdio.UDP();
@@ -720,7 +786,7 @@ class client
     });
   }
 
-  //!	Queries the service record from the default or given
+  //!	Queries the service record (RFC 2782) from the default or given
   //!	DNS server. The result is an array of arrays with the
   //!   following six elements for each record. The array is
   //!   sorted according to the priority of each record.
