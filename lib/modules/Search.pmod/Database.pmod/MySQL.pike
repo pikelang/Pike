@@ -1,7 +1,7 @@
 // SQL index database without fragments
 // Copyright © 2000, Roxen IS.
 //
-// $Id: MySQL.pike,v 1.11 2001/03/20 04:55:39 js Exp $
+// $Id: MySQL.pike,v 1.12 2001/03/28 12:07:27 js Exp $
 
 // inherit Search.Database.Base;
 
@@ -177,6 +177,15 @@ void remove_document(string uri)
 }
 
 
+string create_temp_table(Sql.sql db, int num)
+{
+  db->query("create temporary table t"+num+"("+
+	    "document_id int not null, "
+	    "ranking float not null, "
+	    "key(document_id))");
+  return "t"+num;
+}
+
 class Node
 {
   mapping build_sql_components(mapping(string:int) ref);
@@ -253,13 +262,13 @@ class And
     children=_children;
   }
   
-  mapping build_sql_components(mapping(string:int) ref)
-  {
-    array(mapping) children_tmp=children->build_sql_components(ref);
-    return ([ "from": Array.flatten(children_tmp->from),
-	      "ranking": Array.flatten(children_tmp->ranking),
-	      "where": "("+children_tmp->where*" AND\n       "+")"]);
-  }
+//   mapping build_sql_components(mapping(string:int) ref)
+//   {
+//     array(mapping) children_tmp=children->build_sql_components(ref);
+//     return ([ "from": Array.flatten(children_tmp->from),
+// 	      "ranking": Array.flatten(children_tmp->ranking),
+// 	      "where": "("+children_tmp->where*" AND\n       "+")"]);
+//   }
 }
 
 class Or
@@ -272,47 +281,47 @@ class Or
     children=_children;
   }
   
-  mapping build_sql_components(mapping(string:int) ref)
-  {
-    array(mapping) children_tmp=children->build_sql_components(ref);
-    return ([ "from": Array.flatten(children_tmp->from),
-	      "ranking": Array.flatten(children_tmp->ranking),
-	      "where": "("+children_tmp->where*" OR\n       "+")"]);
-  }
+//   mapping build_sql_components(mapping(string:int) ref)
+//   {
+//     array(mapping) children_tmp=children->build_sql_components(ref);
+//     return ([ "from": Array.flatten(children_tmp->from),
+// 	      "ranking": Array.flatten(children_tmp->ranking),
+// 	      "where": "("+children_tmp->where*" OR\n       "+")"]);
+//   }
 }
 
 class Not(Node child)
 {
   inherit GroupNode;
 
-  mapping build_sql_components(mapping(string:int) ref)
-  {
-    mapping child_tmp=child->build_sql_components(ref);
-    child_tmp->where="not "+child_tmp->where;
-    return child_tmp;
-  }
+//   mapping build_sql_components(mapping(string:int) ref)
+//   {
+//     mapping child_tmp=child->build_sql_components(ref);
+//     child_tmp->where="not "+child_tmp->where;
+//     return child_tmp;
+//   }
 }
 
 class Contains(string field, string word)
 {
   inherit LeafNode;
 
-  mapping build_sql_components(mapping(string:int) ref)
-  {
-    return (["from": ({"field", sprintf("occurance t%d",ref->ref)}),
-	     "ranking": ({/*sprintf("sum((t%d.tf * t%d.idf * t%d.idf)/document.length)",
-			    ref->ref,ref->ref,ref->ref)*/}),
-	     "where":  sprintf("t%d.field_id=field.id and field.name="
-			       "'%s' and t%d.word='%d'",
-			       ref->ref, db->quote(field), ref->ref++,
-			       hash_word(word)) ]);
-  }
+//   mapping build_sql_components(mapping(string:int) ref)
+//   {
+//     return (["from": ({"field", sprintf("occurance t%d",ref->ref)}),
+// 	     "ranking": ({/*sprintf("sum((t%d.tf * t%d.idf * t%d.idf)/document.length)",
+// 			    ref->ref,ref->ref,ref->ref)*/}),
+// 	     "where":  sprintf("t%d.field_id=field.id and field.name="
+// 			       "'%s' and t%d.word='%d'",
+// 			       ref->ref, db->quote(field), ref->ref++,
+// 			       hash_word(word)) ]);
+//   }
 }
+
 
 class Phrase
 {
   inherit LeafNode;
-
   string|array(string) field;
   array(string) words;
   void create(string|array(string) _field, string ... _words)
@@ -320,42 +329,51 @@ class Phrase
     field=_field;
     words=_words;
   }
-  
-  mapping build_sql_components(mapping(string:int) ref, void|int window_size)
+
+  string create_temp_offset_table(Sql.sql db, int num)
   {
-    int real_window_size=window_size||1;
+      db->query("create temporary table to"+num+"("+
+	    "offset int not null, "
+	    "key(document_id), key(offset))");
+      return "to"+num;
+  }
+  
+  void do_sql(Sql.sql db, mapping ref, void|int window_size)
+  {
     if(sizeof(words)<2)
-      return Contains(field, @words)->build_sql_components(ref);
-    
-    array(string) from=({}), where=({}), ranking=({});
-    int i=0;
-    
-//      where+=({ sprintf("t%d.field_id=field.id",ref->ref) });
-//      if(arrayp(field))
-//        where+=({ sprintf("field.name in (%s)'",
-//  			map(field, lambda(string f)
-//  				   {
-//  				     return sprintf("'%s'",db->quote(f));
-//  				   }) * ", ") });
-//      else
-//        where+=({ sprintf("field.name='%s'", db->quote(field)) });
-    
+      return Contains(field, @words)->do_sql(db,ref);
+    int real_window_size=window_size||1;
+
+    array(string) offset_tables=({});
+    string temp_table;
     foreach(words, string word)
     {
-//       ranking+=({sprintf("sum((document.tf * t%d.idf * t%d.idf)/document.length)",
-// 			 ref->ref,ref->ref)});
-      from+=({ sprintf("occurance t%d",ref->ref) });
-      where+= ({ sprintf("t%d.word='%d'",ref->ref,hash_word(word)) });
-      if(i++<sizeof(words)-1)
-	where+=({ sprintf("t%d.offset-t%d.offset = "+real_window_size,
-			  ref->ref+1, ref->ref) });
-      ref->ref++;
+      int i=0;
+      offset_tables+=({ temp_table=create_temp_offset_table(db,i++) });
+      db->query("insert into "+temp_table+" (document_id,offset) "
+		"select occurance.document_id, occurance.offset "
+		"from occurance where occurance.word=%d",hash_word(word));
     }
-    return ([ "from": ({"field"})+from,
-              "ranking":ranking,
-	      "where": "("+where*" and\n       "+")" ]);
+    
+    temp_table=create_temp_table(db,ref->ref++);
+
+    string s=sprintf(" select %s.document_id, 0.0 as ranking from %s"
+		     "where",offset_table[0], offset_tables*", ");
+
+    for(int i=1; i++; i<sizeof(offset_tables)-1)
+      s+=sprintf("%s.document_id=%s.document_id and %s.offset-%s.offset=%d ",
+		 offset_tables[0], offset_tables[i],
+		 offset_tables[i], offset_tables[i]-1,
+		 real_window_size);
+    
+    s+=sprintf(" group by %s.document_id", offset_tables[0]);
+    db->query(s);
+    
+    foreach(offset_tables, string offset_table)
+      db->query("drop table "+offset_table);
   }
 }
+
 
 class Near
 {
@@ -380,27 +398,29 @@ class Near
 class URIPrefix(string prefix)
 {
   inherit LeafNode;
-
-  mapping build_sql_components(mapping(string:int) ref)
+  
+  void do_sql(Sql.sql db, mapping ref)
   {
-    return ([ "where": "uri.uri_first like '"+db->quote(prefix)+"'", 
-	      "ranking": ({ }),
-	      "from": ({ }) ]);
+    string temp_table=create_temp_table(db,ref->ref++);
+    db->query("insert into "+temp_table+" (document_id,ranking) "
+	      "select document.id as document_id, 0.0 as ranking "
+	      "from document,uri where document.uri_id=uri.id and uri.first like %s",prefix)
   }
 }
 
-class Language(/*Linguistics.Language*/string language)
+class Language(string language)
 {
   inherit LeafNode;
 
-  mapping build_sql_components(mapping(string:int) ref)
+  void do_sql(Sql.sql db, mapping ref)
   {
-    return ([ "where": "document.language_code ='"+(string)language+"'",
-	      "ranking": ({ }),
-	      "from": ({ }) ]);
+    string temp_table=create_temp_table(db,ref->ref++);
+    db->query("insert into "+temp_table+" (document_id,ranking) "
+	      "select id as document_id, 0.0 as ranking "
+	      "from document where language_code=%s",language);
   }
 }
-		 
+
 class FloatOP(string field, string op, float value)
 {
   inherit LeafNode;
