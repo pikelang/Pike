@@ -56,7 +56,14 @@ extern struct svalue throw_value;
      recoveries->onerror=&X; \
   }while(0)
 
+#ifdef DEBUG
+#define UNSET_ONERROR(X) do {\
+  if(recoveries->onerror != &(X)) fatal("UNSET_ONERROR out of sync.\n"); \
+  recoveries->onerror=(X).previous; \
+  } while(0)
+#else
 #define UNSET_ONERROR(X) recoveries->onerror=X.previous
+#endif
 
 /* Prototypes begin here */
 JMP_BUF *init_recovery(JMP_BUF *r);
