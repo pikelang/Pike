@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.153 2004/09/02 11:17:30 grubba Exp $
+|| $Id: pike_memory.c,v 1.154 2004/09/02 11:19:29 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.153 2004/09/02 11:17:30 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.154 2004/09/02 11:19:29 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2468,7 +2468,7 @@ int debug_malloc_register_fd(int fd, LOCATION location)
 
 void debug_malloc_accept_leak_fd(int fd)
 {
-  debug_malloc_accept_leak(FD2PTR(fd));
+  dmalloc_accept_leak(FD2PTR(fd));
 }
 
 int debug_malloc_close_fd(int fd, LOCATION location)
