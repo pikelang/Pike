@@ -598,8 +598,12 @@ static class DocParserClass {
           meta->type = keyword;
           .PikeParser nameparser = .PikeParser(arg);
           string s = nameparser->readToken();
-          if (!isIdent(s) || nameparser->readToken() != EOF)
+          if (!isIdent(s))
             parseError("expected %s name, got %O", keyword, s);
+          if (nameparser->peekToken() == "::")
+            s += nameparser->readToken();
+          if (nameparser->peekToken() != EOF)
+            parseError("expected %s name, got %O", keyword, arg);
           meta->name = s;
           }
           break;
