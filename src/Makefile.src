@@ -3,7 +3,7 @@
 
 # Don't change this line.  Define EXTRALIBS before this line if you
 # wish to add any libraries.
-LIBS=@LIBS@ $(EXTRALIBS) `for a in $(MODULES) ; do if [ -f $$a/linker_options ]; then cat $$a/linker_options ; fi ; done`
+LIBS=@LIBS@ $(EXTRALIBS)
 
 # not used yet
 INSTALL=@INSTALL@
@@ -44,14 +44,14 @@ WARN=@WARN@
 #add extra defines here
 # Be sure to use -g and -DDEBUG when looking for bugs
 DEBUGDEF=-DDEBUG
-DEFINES=$(DEBUGDEF) -DDEFAULT_MASTER=\"$(lib_prefix)/master.lpc\"
+DEFINES=-DDEFAULT_MASTER=\"$(lib_prefix)/master.lpc\"
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
 
 # Preprocessor flags.
 PREFLAGS=-I. -I$(SRCDIR) $(DEFINES)
-OTHERFLAGS=$(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
+OTHERFLAGS=$(DEBUGDEF) $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 CC=@CC@
@@ -63,22 +63,46 @@ LDFLAGS=$(CFLAGS)
 RUNULPC=$(TMP_BUILDDIR)/ulpc -m $(TMP_LIBDIR)/master.lpc $(LPCOPTS)
 FIXDEP=$(TMP_BINDIR)/fixdepends.sh
 
-MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "FIXDEP=$(FIXDEP)"
+MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "FIXDEP=$(FIXDEP)" "DEBUGDEF=$(DEBUGDEF)"
 
 # Add alloca.o if you don't have alloca() on your machine.
 # Add ualarm.o if you don't have ualarm() on your machine.
 #
-OBJ=language.o peep.o add_efun.o array.o builtin_efuns.o backend.o \
-    call_out.o docode.o dynamic_buffer.o error.o fd_control.o \
-    fsort.o hashtable.o interpret.o lex.o las.o list.o \
-    lpc_types.o main.o mapping.o memory.o module.o object.o \
-    opcodes.o operators.o port.o program.o rusage.o stralloc.o \
-    stuff.o svalue.o gc.o callback.o lpc_signal.o @EXTRA_OBJS@
-
-#
-MODULES=@subdirs@
-MODULE_OBJS=@MODULE_OBJS@
-
+OBJ= \
+ add_efun.o \
+ array.o \
+ backend.o \
+ builtin_efuns.o \
+ callback.o \
+ docode.o \
+ dynamic_buffer.o \
+ error.o \
+ fd_control.o \
+ fsort.o \
+ gc.o \
+ hashtable.o \
+ interpret.o \
+ language.o \
+ las.o \
+ lex.o \
+ list.o \
+ lpc_signal.o \
+ lpc_types.o \
+ main.o \
+ mapping.o \
+ memory.o \
+ module.o \
+ object.o \
+ opcodes.o \
+ operators.o \
+ peep.o \
+ port.o \
+ program.o \
+ rusage.o \
+ stralloc.o \
+ stuff.o \
+ svalue.o \
+ @EXTRA_OBJS@
 #
 # User callable targets
 #
@@ -86,9 +110,9 @@ MODULE_OBJS=@MODULE_OBJS@
 all: $(OBJ) module_objects
 	$(MAKE) $(MAKE_FLAGS) ulpc
 
-ulpc: $(OBJ) $(MODULE_OBJS)
+ulpc: $(OBJ) modules/linker_options
 	-mv ulpc ulpc.old
-	$(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o ulpc
 
 # purify
 pure: $(OBJ) module_objects
@@ -184,19 +208,19 @@ peep.o: peep_engine.c
 # make dependencies (requires compiled uLPC)
 depend: language.c
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
+	( cd modules ; $(MAKE) $(MAKE_FLAGS) depend )
 
 docs:
 	mkdir docs
 
 html_docs: docs
-	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `for a in $(MODULES); do echo $(SRCDIR)/$$a/doc ; done`
+	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs docs $(TMP_DOCDIR) `echo $(SRCDIR)/modules/*/doc` ; done`
 
 #
 # uLPC internal targets
 #
 module_objects:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) ) ; done
+	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
 
 lang.o: lang.c config.h object.h interpret.h program.h
 
@@ -228,9 +252,6 @@ Makefile: $(SRCDIR)/Makefile.in config.status
 machine.h: stamp-h
 stamp-h: machine.h.in config.status
 	CONFIG_FILES= CONFIG_HEADERS=machine.h ./config.status
-
-modlist.h:
-	CONFIG_FILES=modlist.h CONFIG_HEADERS= ./config.status
 
 $(SRCDIR)/test/testsuite: $(SRCDIR)/test/create_testsuite
 	m4 <$(SRCDIR)/test/create_testsuite >$(SRCDIR)/test/testsuite
