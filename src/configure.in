@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.847 2004/10/24 16:22:46 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.848 2004/11/01 14:16:10 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2365,7 +2365,7 @@ fi
 AC_SUBST(AR)
 
 if test "x${RNTANY-}" = x ; then
-  AC_PATH_PROG(RNTANY, rntany, false, $PATH:$EXTRA_PATH)
+  AC_PATH_PROG(RNTANY, rntany, rntany, $PATH:$EXTRA_PATH)
   export RNTANY
 fi
 AC_SUBST(RNTANY)
@@ -2383,6 +2383,13 @@ if test "x${LIGHT-}" = x ; then
   export LIGHT
 fi
 AC_SUBST(LIGHT)
+
+# Wix tool
+if test "x${TALLOW-}" = x ; then
+  AC_PATH_PROG(TALLOW, tallow, $RNTANY tallow, $PATH:$EXTRA_PATH)
+  export TALLOW
+fi
+AC_SUBST(TALLOW)
 
 #############################################################################
 
@@ -7214,7 +7221,7 @@ $bundle_info])
 	        # Normalize the cpu.
 	        cpu="i386"
 	      fi
-	      extra_configure_args="--build=${cpu}-unknown-winnt`uname -r`"
+	      extra_configure_args="--build=${cpu}-unknown-winnt`uname -r|sed -e 's/-/_/g'`"
 	    fi
 
 	    echo "${CONFIG_SHELL-/bin/sh} \"$bundle_source_dir/configure\"" \
