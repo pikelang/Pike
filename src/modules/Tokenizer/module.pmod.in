@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.10 2003/04/26 16:23:27 grubba Exp $
+// $Id: module.pmod.in,v 1.11 2003/04/27 15:44:01 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -946,24 +946,25 @@ class PikeCompiler
   // Called at
   //   modifiers type · identifier_list ';'
   //   modifiers type · identifier '(' arguments ')' block_or_semi
-  void parse_decl(Scope current_scope, Iterator tokens_left,
-		  Expression type, Modifiers|void current_modifiers)
+  //
+  // Adds symbols as needed to the scope.
+  //
+  // Returns the corresponding expression.
+  Expression parse_decl(Scope current_scope, Iterator tokens_left,
+			Expression type, Modifiers|void current_modifiers)
   {
+    Expression result;
     while(1) {
+      Expression sub_expression;
       Token token;
       if (!tokens_left ||
 	  !(token = tokens_left->value())->is_identifier) {
 	SYNTAX_ERROR("Expected an identifier.");
-	return;
+	return result;
       }
       Token name = token;
       tokens_left->`+=(1);
-      if (!tokens_left) {
-	// Variable decl inside parenthesis?
-	current_scope->add_variable(current_modifiers, type, name);
-	return;
-      }
-      if ((token = tokens_left->value())->group_start) {
+      if (tokens_left && (token = tokens_left->value())->group_start) {
 	// Function prototype/definition.
 	if (token->group_start->symbol == "[") {
 	  SYNTAX_ERROR("Unexpected index operation.");
@@ -974,19 +975,28 @@ class PikeCompiler
 	  func->parse_meta_program(current_scope, tokens_left,
 				   current_modifiers);
 	  current_scope->add_function(current_modifiers, name, func);
-	  return;
+	  tokens_left = 0;	// Force loop to stop.
 	}
-      }
-      if (token->symbol == "=") {
-	tokens_left->`+=(1);
-	current_scope->add_variable(current_modifiers, type, name,
-				    parse_pair_expression(tokens_left));
-	if (!tokens_left) return;
-	token = tokens_left->value();
       } else {
 	current_scope->add_variable(current_modifiers, type, name);
       }
-      if (token->symbol != ",") return;
+      sub_expression = LiteralExpression(name);
+      if (tokens_left && (token = tokens_left->value())->symbol == "=") {
+	// Initializer.
+	tokens_left->`+=(1);
+	sub_expression =
+	  BinaryExpression(token, sub_expression,
+			   parse_pair_expression(tokens_left));
+      }
+      if (!result) {
+	result = sub_expression;
+      } else {
+	result = BinaryExpression(Token(",", ",", ",", name->pos),
+				  result, sub_expression);
+      }
+      if (!tokens_left || tokens_left->value()->symbol != ",") {
+	return result;
+      }
       tokens_left->`+=(1);
     }
   }
@@ -1015,12 +1025,14 @@ class PikeCompiler
       return;
     }
     Expression expr = parse_expression(tokens_left);
-    if (!tokens_left ||
-	(token = tokens_left->value())->symbol == ";") {
-      if (tokens_left) tokens_left->`+=(1);
-      scope->add_statement(ExpressionStatement(expr));
+    if (tokens_left &&
+	(token = tokens_left->value())->symbol != ";") {
+      expr = parse_decl(scope, tokens_left, expr, current_modifiers);
     }
-    parse_decl(scope, tokens_left, type, current_modifiers);
+    scope->add_statement(ExpressionStatement(expr));
+    if (tokens_left && tokens_left->value()->symbol == ";") {
+      tokens_left->`+=(1);
+    }
   }
 
   // Start of metaprograms.
