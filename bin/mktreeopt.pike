@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.26 1999/12/12 18:26:13 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.27 2000/02/13 06:14:21 hubbe Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -127,7 +127,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.26 1999/12/12 18:26:13 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.27 2000/02/13 06:14:21 hubbe Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -138,7 +138,7 @@ mapping(string: array(object(node))) rules = ([]);
 void fail(string msg, mixed ... args)
 {
   werror(msg, @args);
-  exit(1);
+  exit(7); /* distinctive error... */
 }
 
 string fname;
