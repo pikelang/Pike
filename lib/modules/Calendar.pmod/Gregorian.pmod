@@ -133,8 +133,8 @@ class Year
    {
       if (!sizeof(arg))
       {
-	 mapping t=localtime(time());
-	 y=1900+t->year;
+	 object yp=vDay()->year();
+	 y=yp->y;
       }
       else
 	 y=arg[0];
@@ -331,9 +331,9 @@ class Month
    {
       if (!sizeof(arg))
       {
-	 mapping t=localtime(time());
-	 y=1900+t->year;
-	 m=t->mon+1;
+	 object mp=vDay()->month();
+	 y=mp->y;
+	 m=mp->m;
       }
       else
       {
@@ -745,7 +745,7 @@ class Day
 
    int julian_day()
    {
-      return vYear(y)->julian_day()+d;
+      return vYear(y)->julian_day(d);
    }
 
    int year_day()
