@@ -549,6 +549,9 @@ static int isChar(INT32 c)
   {
     if(c>0x20 || c==0x9 || c==0x0a || c==0x0d) return 1;
   }else{
+    /* FIXME: The test below is always false!
+     * /grubba 1998-12-05
+     */
     if(c <=0xffd)
     {
       if(c>=0xe000) return 1;
