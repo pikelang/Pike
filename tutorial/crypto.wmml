@@ -1,6 +1,6 @@
-<--! -*-html-*- -->
+<!-- -*-html-*- -->
 
-<chapter title="The Pike Crypto Toolkit" name=crypto>
+<section title="The Pike Crypto Toolkit" name=crypto>
 
 <section title="Introduction">
 
@@ -64,6 +64,7 @@ Encrypts or decrypts an even number of block, using the current key.
 If more than one block is given, they are encrypted/decrypted
 independently, i.e. in <i>Electronic Code Book</i> (ECB) mode.
 </man_description>
+</method>
 
 <method name="query_block_size">
 <man_syntax>
@@ -75,6 +76,7 @@ Returns the block size of the cipher, in octets. A typical block size
 is 8 octets. A string passed to crypt_block() must have a length that
 is a multiple of the block size.
 </man_description>
+</method>
 
 <method name="query_key_length">
 <man_syntax>
@@ -92,8 +94,8 @@ For DES, the real key length is seven octets (56 bits), but the DES
 standard mandates the use of parity bits. The query_key_length method
 lies about DES, and says that the key_size is eight octets (64 bits).
 See also <link to=des_parity>des_parity</link>.
-
 </man_description>
+</method>
 
 <method name="set_encrypt_key">
 <man_syntax>
@@ -104,6 +106,7 @@ object o->set_encrypt_key(string <i>key</i>);
 Installs a key, and configures the object for doing encryption. For
 convenience, this method returns the object itself.
 </man_description>
+</method>
 
 <method name="set_decrypt_key">
 <man_syntax>
@@ -114,9 +117,11 @@ object o->set_decrypt_key(string <i>key</i>);
 Installs a key, and configures the object for doing decryption. For
 convenience, this method returns the object itself.
 </man_description>
+</method>
 
-The classes are <class name="Crypto.des"></class> <class
-name="Crypto.idea"></class> <class name="Crypto.cast"></class>.
+The classes are <class name="Crypto.des">Crypto.des</class> <class
+name="Crypto.idea">Crypto.idea</class> and <class
+name="Crypto.cast">Crypto.cast</class>.
 
 To encrypt the block "Pike des" using the DES-key '0123456789abcdef'
 (in hex), use
@@ -128,7 +133,7 @@ Crypto.des()->set_encrypt_key(Crypto.hex_to_string("0123456789abcdef"))
 although most applications will not use the Crypto.des class directly.
 </section>
 
-<section name="Stream Ciphers">
+<section title="Stream Ciphers">
 
 Currently the only stream cipher in the toolkit is the RC4 cipher
 (also known as "arcfour"). 
@@ -137,12 +142,13 @@ Currently the only stream cipher in the toolkit is the RC4 cipher
 
 <method name="crypt">
 <man_syntax>
-string Crypto.rc4->crypt(string <i>data</>);
+string Crypto.rc4->crypt(string <i>data</i>);
 </man_syntax>
 
 <man_description>
 Encrypts or decrypts a string of data.
 </man_description>
+</method>
 
 <method name="set_encrypt_key">
 <man_syntax>
@@ -153,6 +159,7 @@ object Crypto.rc4->set_encrypt_key(string <i>key</i>);
 Installs a key, and configures the object for doing encryption. For
 convenience, this method returns the object itself. 
 </man_description>
+</method>
 
 <method name="set_decrypt_key">
 <man_syntax>
@@ -163,13 +170,14 @@ object Crypto.rc4->set_decrypt_key(string <i>key</i>);
 Installs a key, and configures the object for doing decryption. For
 convenience, this method returns the object itself.
 </man_description>
+</method>
 
 Because of the way RC4 works, set_encrypt_key and set_decrypt_key are
 actually equivalent.
-
+</class>
 </section>
 
-<section name="Hash Functions">
+<section title="Hash Functions">
 
 Cryptographic hash functions are essential for many cryptographic
 applications, and are also useful in other contexts. The Toolkit
@@ -186,6 +194,7 @@ object o->update(string <i>data</i>);
 Processes some more data. For convenience, this method returns the
 object itself. 
 </man_description>
+</method>
 
 <method name="digest">
 <man_syntax>
@@ -197,6 +206,7 @@ Returns the hash value, or <i>message digest</i>, corresponding to all
 the data that was previously passed to the update method. Also resets
 the hash object, so that it can be used to process a new message.
 </man_description>
+</method>
 
 <method name="query_digest_size">
 <man_syntax>
@@ -206,6 +216,7 @@ int o->query_digest_size();
 <man_description>
 Returns the size, in octets, of the digests produced by this hash function.
 </man_description>
+</method>
 
 To get the md5 hash of a string s, you would use
 
@@ -230,6 +241,7 @@ object rsa->set_public_key(object(Gmp.mpz) modulo, object(Gmp.mpz) e)
 Sets the modulo and the public exponent. For convenience, returns the
 object itself.
 </man_description>
+</method>
 
 <method name=set_private_key>
 <man_syntax>
@@ -325,6 +337,7 @@ int verify(string message, program hash, object(Gmp.mpz) signature)
 Verifies a PKCS#1-style RSA signature. Returns 1 if the signature is
 valid, 0 if not.
 </man_description>
+</method>
 
 <method name=sha_sign>
 <man_syntax>
@@ -335,7 +348,7 @@ Creates an RSA signature using a simpler but non-standard convention.
 </man_description>
 </method>
 
-<method>
+<method name=sha_verify>
 <man_syntax>
 int sha_verify(string message, string signature)
 </man_syntax>
@@ -350,4 +363,4 @@ valid, 0 if not.
 
 <section title="Combining block cryptos">
 </section>
-</chapter>
+</section>
