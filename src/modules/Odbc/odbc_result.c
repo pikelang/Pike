@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.9 1998/05/31 18:15:21 grubba Exp $
+ * $Id: odbc_result.c,v 1.10 1998/06/04 12:06:11 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.9 1998/05/31 18:15:21 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.10 1998/06/04 12:06:11 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -40,7 +40,7 @@ RCSID("$Id: odbc_result.c,v 1.9 1998/05/31 18:15:21 grubba Exp $");
 /* #define ODBC_DEBUG */
 
 /*
- * Contants
+ * Constants
  */
 
 /* Buffer size used when retrieving BLOBs
@@ -176,59 +176,63 @@ static void odbc_fix_fields(void)
     case SQL_CHAR:
       push_text("char");
       break;
-    case SQL_DATE:
-      push_text("date");
-      odbc_field_sizes[i] = 12;
+    case SQL_NUMERIC:
+      push_text("numeric");
       break;
     case SQL_DECIMAL:
       push_text("decimal");
       odbc_field_sizes[i] += 2;
       break;
-    case SQL_DOUBLE:
-      push_text("double");
-      break;
     case SQL_INTEGER:
       push_text("integer");
       break;
-    case SQL_LONGVARBINARY:
-      push_text("long blob");
-      odbc_field_sizes[i] = 0;
-#if 0
-      if (odbc_field_sizes[i] > 0x100000) {
-	/* Don't allocate more than 1M */
-	odbc_field_sizes[i] = 0x100000;
-      }
-#endif /* 0 */
-      break;
-    case SQL_LONGVARCHAR:
-      push_text("var string");
-      odbc_field_sizes[i] = 0;
-#if 0
-      if (odbc_field_sizes[i] > 0x100000) {
-	/* Don't allocate more than 1M */
-	odbc_field_sizes[i] = 0x100000;
-      }
-#endif /* 0 */
-      break;
-    case SQL_REAL:
-      push_text("float");
-      break;
     case SQL_SMALLINT:
       push_text("short");
+      break;
+    case SQL_FLOAT:
+      push_text("float");
+      odbc_field_sizes[i] += 2;	/* Paranoia */
+      break;
+    case SQL_REAL:
+      push_text("real");
+      break;
+    case SQL_DOUBLE:
+      push_text("double");
+      break;
+    case SQL_VARCHAR:
+      push_text("var string");
+      odbc_field_sizes[i] = 0;
+      break;
+    case SQL_DATE:
+      push_text("date");
+      odbc_field_sizes[i] = 12;
       break;
     case SQL_TIMESTAMP:
       push_text("time");
       odbc_field_sizes[i] = 22 + scale;
       break;
-    case SQL_VARCHAR:
+    case SQL_LONGVARCHAR:
       push_text("var string");
       odbc_field_sizes[i] = 0;
-#if 0
-      if (odbc_field_sizes[i] > 0x100000) {
-	/* Don't allocate more than 1M */
-	odbc_field_sizes[i] = 0x100000;
-      }
-#endif /* 0 */
+      break;
+    case SQL_BINARY:
+      push_text("binary");
+      break;
+    case SQL_VARBINARY:
+      push_text("blob");
+      break;
+    case SQL_LONGVARBINARY:
+      push_text("long blob");
+      odbc_field_sizes[i] = 0;
+      break;
+    case SQL_BIGINT:
+      push_text("long integer");
+      break;
+    case SQL_TINYINT:
+      push_text("tiny integer");
+      break;
+    case SQL_BIT:
+      push_text("bit");
       break;
     default:
       push_text("unknown");
