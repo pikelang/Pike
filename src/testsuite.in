@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.236 1999/11/24 16:31:41 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.237 1999/11/24 18:17:25 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -65,6 +65,12 @@ test_any([[class foo { string a; };
 test_any([[class foo { string a; };
 	   array(object(foo)) bar;
 	   return typeof(bar[0]->a);]], "string");
+
+test_any([[function(:string)|function(int:int) f; return typeof(f()); ]],
+	 "string")
+
+test_any([[function(:string)|function(int:int) f; return typeof(f(1)); ]],
+	 "int")
 
 test_any([[return class Z {
 string bonk() { return "oiff"; }
