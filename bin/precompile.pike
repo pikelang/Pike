@@ -628,7 +628,7 @@ class PikeType
 		{
 		  tmp=q[1..sizeof(q)-2]/({".."});
 		  /* Workaround for buggy Parser.Pike */
-		  if(sizeof(tmp)==1) tmp=tok/".. ";
+		  if(sizeof(tmp)==1) tmp=tok/({".. "});
 		  if(sizeof(tmp[0])) low=(string)tmp[0][0];
 		  if(sizeof(tmp[1])) high=(string)tmp[1][0];
 		}
