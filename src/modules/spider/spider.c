@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.121 2002/11/28 23:52:42 nilsson Exp $
+|| $Id: spider.c,v 1.122 2003/03/27 18:25:08 mast Exp $
 */
 
 #include "global.h"
@@ -50,7 +50,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.121 2002/11/28 23:52:42 nilsson Exp $");
+RCSID("$Id: spider.c,v 1.122 2003/03/27 18:25:08 mast Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -992,7 +992,7 @@ void do_html_parse_lines(struct pike_string *ss,
 void f_get_all_active_fd(INT32 args)
 {
   int i,fds,ne;
-  struct stat foo;
+  PIKE_STAT_T foo;
 
   ne = MAX_OPEN_FILEDESCRIPTORS;
 
@@ -1018,7 +1018,7 @@ void f_fd_info(INT32 args)
 {
   static char buf[256];
   int i;
-  struct stat foo;
+  PIKE_STAT_T foo;
 
   if (args<1||
       sp[-args].type!=T_INT)

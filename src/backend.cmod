@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.38 2003/03/14 15:53:09 grubba Exp $
+|| $Id: backend.cmod,v 1.39 2003/03/27 18:25:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.38 2003/03/14 15:53:09 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.39 2003/03/27 18:25:08 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -848,7 +848,7 @@ PIKECLASS Backend
   static void backend_do_debug(struct Backend_struct *me)
     {
       int e;
-      struct stat tmp;
+      PIKE_STAT_T tmp;
       extern void check_all_arrays(void);
       extern void check_all_mappings(void);
       extern void check_all_programs(void);

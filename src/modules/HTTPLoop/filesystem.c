@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: filesystem.c,v 1.8 2002/10/21 17:06:13 marcus Exp $
+|| $Id: filesystem.c,v 1.9 2003/03/27 18:25:08 mast Exp $
 */
 
 #include "config.h"
@@ -38,7 +38,8 @@ struct file_ret *aap_find_file( char *s, int len,
                                 char *ho, int hlen, 
                                 struct filesystem *f )
 {
-  struct stat s;
+  /* FIXME: Clobbering between s above and s below?? */
+  PIKE_STAT_T s;
   char *fname = alloca( fs->base.len + len + hlen + 2);
   int res;
 

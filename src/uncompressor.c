@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: uncompressor.c,v 1.6 2002/10/11 01:39:39 nilsson Exp $
+|| $Id: uncompressor.c,v 1.7 2003/03/27 18:25:08 mast Exp $
 */
 
 #include <sys/types.h>
@@ -285,7 +285,6 @@ int main(int argc, char **argv)
     if(next!=pos)
     {
       char *ptr=tmp;
-      struct stat buf;
 
       memcpy(ptr=tmp,pos,next-pos);
       ptr+=next-pos;

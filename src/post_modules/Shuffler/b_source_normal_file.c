@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.8 2003/03/14 15:57:49 grubba Exp $
+|| $Id: b_source_normal_file.c,v 1.9 2003/03/27 18:25:09 mast Exp $
 */
 
 #include "global.h"
@@ -84,7 +84,7 @@ struct source *source_normal_file_make( struct svalue *s,
 					INT64 start, INT64 len )
 {
   struct fd_source *res;
-  struct stat st;
+  PIKE_STAT_T st;
   if(s->type != PIKE_T_OBJECT)
     return 0;
 
