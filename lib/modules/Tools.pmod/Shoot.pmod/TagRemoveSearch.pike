@@ -2,7 +2,7 @@
 inherit Tools.Shoot.TagRemoveSscanf;
 
 constant name="Tag removal u. search";
-int n=200;
+int n=300;
 
 string tagremove(string line)
 {
