@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.254 2000/08/10 09:51:52 per Exp $");
+RCSID("$Id: program.c,v 1.255 2000/08/10 14:39:00 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2515,7 +2515,9 @@ INT32 define_function(struct pike_string *name,
       /* match types against earlier prototype or vice versa */
       if(!match_types(type, funp->type))
       {
-	my_yyerror("Prototype doesn't match for function %s.",name->str);
+	if (!(flags & ID_VARIANT)) {
+	  my_yyerror("Prototype doesn't match for function %s.",name->str);
+	}
       }
     }
 
@@ -3649,7 +3651,7 @@ static void gc_check_program(struct program *p)
     }
 
 #ifdef PIKE_DEBUG
-    if(d_flag && p->inherits[e].name && check_for != (void *)1)
+    if(d_flag && p->inherits[e].name && check_for != (void *)(ptrdiff_t)1)
       debug_gc_check(p->inherits[e].name, T_PROGRAM, p);
 #endif
 
@@ -3658,7 +3660,7 @@ static void gc_check_program(struct program *p)
   }
 
 #ifdef PIKE_DEBUG
-  if(d_flag && check_for != (void *)1)
+  if(d_flag && check_for != (void *)(ptrdiff_t)1)
   {
     int e;
     for(e=0;e<(int)p->num_strings;e++)

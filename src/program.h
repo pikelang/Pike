@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.99 2000/08/09 12:49:28 grubba Exp $
+ * $Id: program.h,v 1.100 2000/08/10 14:51:16 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -439,7 +439,7 @@ INT32 define_function(struct pike_string *name,
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
-int low_find_lfun(struct program *p, int lfun);
+int low_find_lfun(struct program *p, ptrdiff_t lfun);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);
 struct ff_hash;

@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.73 2000/08/04 00:44:57 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.74 2000/08/10 14:41:20 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -40,13 +40,13 @@ long pcharp_strlen(PCHARP a)
   return len;
 }
 
-INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e)
+INLINE p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar1 c, ptrdiff_t e)
 {
   while(--e >= 0) if(*(p++)==c) return p-1;
   return (p_wchar1 *)0;
 }
 
-INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e)
+INLINE p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
 {
   while(--e >= 0) if(*(p++)==c) return p-1;
   return (p_wchar2 *)0;
@@ -166,11 +166,11 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
-unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
+size_t hashmem(const unsigned char *a, size_t len, size_t mlen)
 {
   unsigned INT32 ret;
 
-  ret=9248339*len;
+  ret = 9248339*len;
   if(len<mlen)
     mlen=len;
   else
@@ -200,19 +200,39 @@ unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   {
-    unsigned INT32 *b;
-    b=(unsigned INT32 *)a;
+    size_t *b;
+    b=(size_t *)a;
 
-    for(mlen>>=3;--mlen>=0;)
+    for(
+#if SIZEOF_CHAR_P == 4
+	mlen >>= 3;
+#else /* sizeof(char *) != 4 */
+#if SIZEOF_CHAR_P == 8
+	mlen >>= 4;
+#else /* sizeof(char *) != 8 */
+	mlen /= 2*sizeof(size_t);
+#endif /* sizeof(char *) == 8 */
+#endif /* sizeof(char *) == 4 */
+	--mlen >= 0;)
     {
       ret^=(ret<<7)+*(b++);
       ret^=(ret>>6)+*(b++);
     }
   }
 #else
-  for(mlen>>=3;--mlen>=0;)
+  for(
+#if SIZEOF_CHAR_P == 4
+      mlen >>= 3;
+#else /* sizeof(char *) != 4 */
+#if SIZEOF_CHAR_P == 8
+      mlen >>= 4;
+#else /* sizeof(char *) != 8 */
+      mlen /= 2*sizeof(size_t);
+#endif /* sizeof(char *) == 8 */
+#endif /* sizeof(char *) == 4 */
+      --mlen >= 0;)
   {
-    register unsigned int t1,t2;
+    register size_t t1,t2;
     t1= *(a++);
     t2= *(a++);
     t1=(t1<<5) + *(a++);
@@ -228,9 +248,9 @@ unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
   return ret;
 }
 
-unsigned INT32 hashstr(const unsigned char *str,INT32 maxn)
+size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
 {
-  unsigned INT32 ret,c;
+  size_t ret,c;
   
   if(!(ret=str++[0]))
     return ret;
@@ -245,13 +265,13 @@ unsigned INT32 hashstr(const unsigned char *str,INT32 maxn)
   return ret;
 }
 
-unsigned INT32 simple_hashmem(const unsigned char *str,INT32 len, INT32 maxn)
+size_t simple_hashmem(const unsigned char *str, ptrdiff_t len, ptrdiff_t maxn)
 {
-  unsigned INT32 ret,c;
+  size_t ret,c;
   
-  ret=len*92873743;
+  ret = len*92873743;
 
-  len=MINIMUM(maxn,len);
+  len = MINIMUM(maxn,len);
   for(; len>=0; len--)
   {
     c=str++[0];

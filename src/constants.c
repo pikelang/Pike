@@ -16,7 +16,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.22 2000/07/28 17:16:54 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.23 2000/08/10 14:46:54 grubba Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -134,12 +134,12 @@ PMOD_EXPORT struct callable *add_efun(char *name, c_fun fun, char *type, INT16 f
   return add_efun2(name,fun,type,flags,0,0);
 }
 
-PMOD_EXPORT struct callable *quick_add_efun(char *name, int name_length,
-				c_fun fun,
-				char *type, int type_length,
-				INT16 flags,
-				optimize_fun optimize,
-				docode_fun docode)
+PMOD_EXPORT struct callable *quick_add_efun(char *name, ptrdiff_t name_length,
+					    c_fun fun,
+					    char *type, ptrdiff_t type_length,
+					    INT16 flags,
+					    optimize_fun optimize,
+					    docode_fun docode)
 {
   struct svalue s;
   struct pike_string *n,*t;
