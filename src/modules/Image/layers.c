@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.62 2001/03/04 15:27:55 mirar Exp $
+**!	$Id: layers.c,v 1.63 2001/03/17 14:44:29 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.62 2001/03/04 15:27:55 mirar Exp $");
+RCSID("$Id: layers.c,v 1.63 2001/03/17 14:44:29 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -316,6 +316,9 @@ LMFUNC(lm_modulo);
 LMFUNC(lm_invsubtract);
 LMFUNC(lm_invdivide);
 LMFUNC(lm_invmodulo);
+LMFUNC(lm_imultiply);
+LMFUNC(lm_idivide);
+LMFUNC(lm_invidivide);
 LMFUNC(lm_difference);
 LMFUNC(lm_min);
 LMFUNC(lm_max);
@@ -332,6 +335,7 @@ LMFUNC(lm_replace_hsv);
 LMFUNC(lm_hue);
 LMFUNC(lm_saturation);
 LMFUNC(lm_value);
+LMFUNC(lm_value_mul);
 LMFUNC(lm_color);
 
 LMFUNC(lm_darken);
@@ -376,35 +380,47 @@ struct layer_mode_desc
 } layer_mode[]=
 {
    {"normal",        lm_normal,        1, NULL,
-    "D=(L*aL+S*(1-aL)*aS) / (aL+(1-aL)*aS), aD=(aL+(1-aL)*aS)"},
+    "D=L applied with alpha: "
+    "D=(L*aL+S*(1-aL)*aS) / (aL+(1-aL)*aS), "
+    "aD=(aL+(1-aL)*aS)"},
+
    {"add",           lm_add,           1, NULL,
-    "D=L+S, apply alpha as \"normal\" mode"},
+    "D=L+S applied with alpha, aD=aS"},
    {"subtract",      lm_subtract,      1, NULL,
-    "D=L-S, apply alpha as \"normal\" mode"},
+    "D=S-L applied with alpha, aD=aS"},
    {"multiply",      lm_multiply,      1, NULL,
-    "D=L*S, apply alpha as \"normal\" mode"},
+    "D=S*L applied with alpha, aD=aS"},
    {"divide",        lm_divide,        1, NULL,
-    "D=L/S, apply alpha as \"normal\" mode"},
+    "D=S/L applied with alpha, aD=aS"},
    {"modulo",        lm_modulo,        1, NULL,
-    "D=L%S, apply alpha as \"normal\" mode"},
+    "D=S%L applied with alpha, aD=aS"},
+
    {"invsubtract",   lm_invsubtract,   1, NULL,
-    "D=S-L, apply alpha as \"normal\" mode"},
+    "D=L-S applied with alpha, aD=aS"},
    {"invdivide",     lm_invdivide,     1, NULL,
-    "D=S/L, apply alpha as \"normal\" mode"},
+    "D=L/S applied with alpha, aD=aS"},
    {"invmodulo",     lm_invmodulo,     1, NULL,
-    "D=S%L, apply alpha as \"normal\" mode"},
+    "D=L%S applied with alpha, aD=aS"},
+
+   {"imultiply",     lm_imultiply,     1, NULL,
+    "D=(1-L)*S applied with alpha, aD=aS"},
+   {"idivide",       lm_idivide,       1, NULL,
+    "D=S/(1-L) applied with alpha, aD=aS"},
+   {"invidivide",    lm_invidivide,    1, NULL,
+    "D=L/(1-S) applied with alpha, aD=aS"},
+
    {"difference",    lm_difference,    1, NULL,
-    "D=abs(L-S), apply alpha as \"normal\" mode"},
+    "D=abs(L-S) applied with alpha, aD=aS"},
    {"max",           lm_max,           1, NULL,
-    "D=max(L,S), apply alpha as \"normal\" mode"},
+    "D=max(L,S) applied with alpha, aD=aS"},
    {"min",           lm_min,           1, NULL,
-    "D=min(L,S), apply alpha as \"normal\" mode"},
+    "D=min(L,S) applied with alpha, aD=aS"},
    {"bitwise_and",   lm_bitwise_and,   1, NULL,
-    "D=L&S, apply alpha as \"normal\" mode"},
+    "D=L&S applied with alpha, aD=aS"},
    {"bitwise_or",    lm_bitwise_or,    1, NULL,
-    "D=L|S, apply alpha as \"normal\" mode"},
+    "D=L|S applied with alpha, aD=aS"},
    {"bitwise_xor",   lm_bitwise_xor,   1, NULL,
-    "D=L^S, apply alpha as \"normal\" mode"},
+    "D=L^S applied with alpha, aD=aS"},
 
    {"replace",       lm_replace,       1, NULL,
     "D=(L*aL+S*(1-aL)*aS) / (aL+(1-aL)*aS), aD=aS"},
@@ -425,6 +441,8 @@ struct layer_mode_desc
     "Dv=(Lv*aLb+Sv*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
    {"color",         lm_color,         1, NULL,
     "Dhs=(Lhs*aLrg+Shs*(1-aLrg)*aSrg) / (aLrg+(1-aLrg)*aSrg), Dv=Lv, aD=aS"},
+   {"value_mul",     lm_value_mul,     1, NULL,
+    "Dv=((Lv*Sv)*aLb+Sv*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
 
    {"darken",        lm_darken,        1, NULL,
     "Dv=min(Lv,Sv), Dhs=Lhs, aD=aS"},
@@ -444,11 +462,12 @@ struct layer_mode_desc
     "D=S, aD=aS*(1-aL)"},
 
    {"screen",        lm_screen,        1, NULL,
-    "1-(1-S)*(1-L), apply alpha as \"normal\""},
+    "1-(1-S)*(1-L) applied with alpha, aD=aS"},
    {"overlay",       lm_overlay,       1, NULL,
-    "(1-(1-a)*(1-b)-a*b)*a+a*b, apply alpha as \"normal\""},
+    "(1-(1-a)*(1-b)-a*b)*a+a*b applied with alpha, aD=aS"},
    {"burn_alpha",    (lm_row_func*)lm_spec_burn_alpha, 1, NULL,
-    "aD=aL+aS, D=L+S; experimental, may change or be removed"},
+    "aD=aL+aS applied with alpha, D=L+S;" 
+    " experimental, may change or be removed"},
 
    {"equal",         lm_equal,         0, NULL,
     "each channel D=max if L==S, 0 otherwise, apply with alpha"},
@@ -575,6 +594,40 @@ struct layer_mode_desc
 	       {							   \
 		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,(LA)->C,V); \
 		  (DA)->C=COMBINE_ALPHA_SUM_V((LA)->C,(SA)->C,V);	   \
+	       }							   \
+	    } while (0)
+
+#define ALPHA_ADD_nA(S,L,D,SA,LA,DA,C)					\
+            do {							\
+	       if (!(LA)->C) (D)->C=(S)->C;				\
+	       else if (!(SA)->C) (D)->C=(L)->C;			\
+	       else if ((LA)->C==COLORMAX) (D)->C=(L)->C;		\
+	       else							\
+		  (D)->C=COMBINE_ALPHA((S)->C,(L)->C,(SA)->C,(LA)->C);	\
+	    } while(0)
+
+#define ALPHA_ADD_V_NOLA_nA(L,S,D,SA,DA,V,C)				\
+            do {							\
+               if (!(SA)->C) (D)->C=(L)->C;				\
+               else							\
+               {							\
+                 if ((SA)->C==COLORMAX)					\
+		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,COLORMAX,255,V);	\
+  	         else							\
+                  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,255,V);	\
+               }							\
+	    } while(0)
+
+#define ALPHA_ADD_V_nA(L,S,D,LA,SA,DA,V,C)				   \
+            do {							   \
+ 	       if (!(LA)->C) (D)->C=(S)->C;				   \
+	       else if (!(SA)->C)					   \
+	       {							   \
+		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,0,(LA)->C,V);	   \
+	       }							   \
+	       else							   \
+	       {							   \
+		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,(LA)->C,V); \
 	       }							   \
 	    } while (0)
 
@@ -1389,9 +1442,22 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 /* operators from template */
 
+#define L_COPY_ALPHA
+
 #define LM_FUNC lm_add
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) ((A)+DOUBLE_TO_INT(B))
+#define L_OPER(A,B) ((A)+(int)(B))
+#define L_MMX_OPER(A,MMXR) paddusb_m2r(A,MMXR)
+WARN_TRACE(1);
+#include "layer_oper.h"
+#undef L_MMX_OPER
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_a_add
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) ((A)+(int)(B))
 #define L_MMX_OPER(A,MMXR) paddusb_m2r(A,MMXR)
 WARN_TRACE(1);
 #include "layer_oper.h"
@@ -1402,7 +1468,7 @@ WARN_TRACE(1);
 
 #define LM_FUNC lm_subtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
-#define L_OPER(A,B) ((A)-DOUBLE_TO_INT(B))
+#define L_OPER(A,B) ((A)-(int)(B))
 #define L_MMX_OPER(A,MMXR) psubusb_m2r(A,MMXR)
 WARN_TRACE(2);
 #include "layer_oper.h"
@@ -1413,7 +1479,7 @@ WARN_TRACE(2);
 
 #define LM_FUNC lm_multiply
 #define L_TRUNC(X) (X)
-#define L_OPER(A,B) CCUT((A)*DOUBLE_TO_INT(B))
+#define L_OPER(A,B) CCUT((A)*(int)(B))
 WARN_TRACE(3);
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1422,7 +1488,7 @@ WARN_TRACE(3);
 
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) (CCUT((A)/C2F(1+DOUBLE_TO_INT(B))))
+#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((A)/C2F(1+(int)(B))), COLORMAX)
 WARN_TRACE(4);
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1442,7 +1508,7 @@ WARN_TRACE(5);
 
 #define LM_FUNC lm_invsubtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
-#define L_OPER(A,B) ((B)-DOUBLE_TO_INT(A))
+#define L_OPER(A,B) ((B)-(int)(A))
 WARN_TRACE(6);
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1451,7 +1517,7 @@ WARN_TRACE(6);
 
 #define LM_FUNC lm_invdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) (CCUT((B)/C2F(1+DOUBLE_TO_INT(A))))
+#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((B)/C2F(1+(int)(A))), COLORMAX)
 WARN_TRACE(7);
 #include "layer_oper.h"
 #undef LM_FUNC
@@ -1462,6 +1528,33 @@ WARN_TRACE(7);
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((B)%((A)?(A):1))
 WARN_TRACE(8);
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_idivide
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((A)/C2F(COLORMAX+1-(int)(B))), COLORMAX)
+WARN_TRACE(4);
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_imultiply
+#define L_TRUNC(X) (X)
+#define L_OPER(A,B) CCUT((A)*(COLORMAX-(int)(B)))
+WARN_TRACE(3);
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_invidivide
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) MINIMUM( DOUBLE_TO_INT((B)/C2F(COLORMAX+1-(int)(A))), COLORMAX)
+WARN_TRACE(7);
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1522,6 +1615,8 @@ WARN_TRACE(14);
 #undef LM_FUNC
 #undef L_TRUNC
 #undef L_OPER
+
+#undef L_COPY_ALPHA
 
 #define LM_FUNC lm_equal
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
@@ -1772,6 +1867,21 @@ WARN_TRACE(26);
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
+#define LM_FUNC lm_value_mul
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      dv=sv*lv*(V)*C2F((A).b)+sv*(1-(V)*C2F((A).b));			\
+      hsv_to_rgb(sh,ss,dv,&(D));					\
+   } while (0)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
 /* h, s */
 
 #define LM_FUNC lm_color
@@ -1840,6 +1950,8 @@ WARN_TRACE(26);
 
 /* screen: 255 - ((255-A)*(255-B)/255) */
 
+#define L_COPY_ALPHA
+
 #define LM_FUNC lm_screen
 #define L_TRUNC(X) (X<0?0:(X>255?255:X))
 #define L_OPER(A,B) 255 - CCUT((255-A)*(int)(255-B))
@@ -1875,7 +1987,7 @@ WARN_TRACE(26);
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
-
+#undef L_COPY_ALPHA
 #undef L_CHANNEL_DO
 
 /* special modes */

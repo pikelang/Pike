@@ -4,9 +4,8 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    rgb_group *sa,rgb_group *la,rgb_group *da,
 		    int len,double alpha)
 {
-#ifdef LAYER_DUAL
    MEMCPY(da,sa,sizeof(rgb_group)*len); /* always copy alpha channel */
-#endif
+#define da da da /* protect */
    if (alpha==0.0)
    {
 #ifdef LAYER_DUAL
@@ -30,18 +29,17 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	    else if (la->r==0 && la->g==0 && la->b==0)
 	    {
 	       *d=*s;
-	       *da=*sa;
 	    }
 	    else
 	    {
 	       L_CHANNEL_DO(*s,*l,*d,*la);
-	       ALPHA_ADD(s,d,d,sa,la,da,r);
-	       ALPHA_ADD(s,d,d,sa,la,da,g);
-	       ALPHA_ADD(s,d,d,sa,la,da,b);
+	       ALPHA_ADD_nA(s,d,d,sa,la,da,r);
+	       ALPHA_ADD_nA(s,d,d,sa,la,da,g);
+	       ALPHA_ADD_nA(s,d,d,sa,la,da,b);
 	    }
 
-	    l++; s++; la++; d++; sa++; da++;
-        }
+	    l++; s++; la++; d++; sa++; 
+	 }
    }
    else
    {
@@ -49,19 +47,20 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,r);
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,g);
-	    ALPHA_ADD_V_NOLA(s,d,d,sa,da,alpha,b);
-	    l++; s++; d++; sa++; da++;
+	    ALPHA_ADD_V_NOLA_nA(s,d,d,sa,da,alpha,r);
+	    ALPHA_ADD_V_NOLA_nA(s,d,d,sa,da,alpha,g);
+	    ALPHA_ADD_V_NOLA_nA(s,d,d,sa,da,alpha,b);
+	    l++; s++; la++; d++; sa++; 
 	 }
       else
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,r);
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,g);
-	    ALPHA_ADD_V(s,d,d,sa,la,da,alpha,b);
-	    l++; s++; la++; d++; sa++; da++;
+	    ALPHA_ADD_V_nA(s,d,d,sa,la,da,alpha,r);
+	    ALPHA_ADD_V_nA(s,d,d,sa,la,da,alpha,g);
+	    ALPHA_ADD_V_nA(s,d,d,sa,la,da,alpha,b);
+	    l++; s++; la++; d++; sa++; 
 	 }
    }
 }
+#undef da
