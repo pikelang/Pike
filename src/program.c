@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.80 1998/04/14 22:10:50 hubbe Exp $");
+RCSID("$Id: program.c,v 1.81 1998/04/15 02:11:24 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -390,23 +390,6 @@ void fixate_program(void)
     new_program->lfuns[i]=find_identifier(lfun_names[i],new_program);
   
   new_program->flags |= PROGRAM_FIXED;
-}
-
-/*
- * Error handler.
- *
- * This function should not normally be called,
- * but is here for safety reasons.
- */
-void restore_threads_disabled(void *arg)
-{
-  fprintf(stderr, "restore_threads_disabled(): threads_disabled:%d, saved_threads_disabled:%d compilation_depth:%d\n", threads_disabled, (int)arg, compilation_depth);
-#ifdef DEBUG
-  fatal("restore_threads_disabled() called\n");
-#endif /* DEBUG */
-
-  threads_disabled = (int)arg;
-  co_signal(&threads_disabled_change);
 }
 
 /*
@@ -2068,7 +2051,7 @@ struct program *compile(struct pike_string *prog)
   }
 
 #ifdef DEBUG
-  if (threads_disabled != saved_threads_disabled+1) {
+  if (threads_disabled < saved_threads_disabled) {
     fatal("compile(): threads_disabled:%d saved_threads_disabled:%d\n",
 	  threads_disabled, saved_threads_disabled);
   }
