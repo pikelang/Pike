@@ -1,5 +1,5 @@
 /*
- * $Id: join_autodoc.pike,v 1.10 2002/12/14 04:34:15 nilsson Exp $
+ * $Id: join_autodoc.pike,v 1.11 2002/12/14 17:32:06 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -135,6 +135,7 @@ int(0..1) join_files(array(string) files, string save_to, int(0..1) post_process
 
   if(post_process) {
     werror("Post processing manual file.\n");
+    Tools.AutoDoc.ProcessXML.handleAppears(dest);
     Tools.AutoDoc.ProcessXML.postProcess(dest);
   }
 
