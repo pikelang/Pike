@@ -24,7 +24,7 @@ string raw_hash(string s)
 
 string pkcs_digest(string s)
 {
-  return Standards.PKCS.Signature.build_digestinfo(s, H());
+  return Crypto.Signature.build_digestinfo(s, H());
 }
 
 class `()
