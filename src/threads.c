@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.142 2000/11/06 16:46:42 mast Exp $");
+RCSID("$Id: threads.c,v 1.143 2000/11/06 17:03:32 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -633,7 +633,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
     if(throw_severity == THROW_EXIT)
     {
       free((char *) data);
-      do_exit(throw_value.u.integer);
+      pike_do_exit(throw_value.u.integer);
     }
   } else {
     INT32 args=arg.args->size;

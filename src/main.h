@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: main.h,v 1.13 2000/08/21 21:37:12 grubba Exp $
+ * $Id: main.h,v 1.14 2000/11/06 17:03:32 grubba Exp $
  */
 #ifndef MAIN_H
 #define MAIN_H
@@ -36,7 +36,7 @@ struct callback *add_exit_callback(callback_func call,
 				   void *arg,
 				   callback_func free_func);
 int dbm_main(int argc, char **argv);
-DECLSPEC(noreturn) void do_exit(int num) ATTRIBUTE((noreturn));
+DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn));
 void low_init_main(void);
 void exit_main(void);
 void init_main(void);
