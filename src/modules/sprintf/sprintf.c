@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.74 2000/12/01 08:10:38 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.75 2000/12/01 20:39:28 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -373,7 +373,7 @@ INLINE static void fix_field(struct string_builder *r,
 			     ptrdiff_t pad_length,
 			     char pos_pad)
 {
-  ptrdiff_t e,d;
+  ptrdiff_t e;
   if(!width || width==SPRINTF_UNDECIDED)
   {
     if(pos_pad && EXTRACT_PCHARP(b)!='-') string_builder_putchar(r,pos_pad);
@@ -381,75 +381,89 @@ INLINE static void fix_field(struct string_builder *r,
     return;
   }
 
-  d=0;
   if(!(flags & DO_TRUNC) && len+(pos_pad && EXTRACT_PCHARP(b)!='-')>=width)
   {
     if(pos_pad && EXTRACT_PCHARP(b)!='-') string_builder_putchar(r,pos_pad);
     string_builder_append(r,b,len);
     return;
   }
-  if(flags & ZERO_PAD)		/* zero pad is kind of special... */
-  {
-    if(EXTRACT_PCHARP(b)=='-')
+
+  if (flags & (ZERO_PAD|FIELD_CENTER|FIELD_LEFT)) {
+    /* Some flag is set. */
+
+    if(flags & ZERO_PAD)		/* zero pad is kind of special... */
     {
-      string_builder_putchar(r,'-');
-      INC_PCHARP(b,1);
-      len--;
-      width--;
-    }else{
-      if(pos_pad)
+      if(EXTRACT_PCHARP(b)=='-')
       {
-        string_builder_putchar(r,pos_pad);
-        width--;
+  	string_builder_putchar(r,'-');
+  	INC_PCHARP(b,1);
+  	len--;
+  	width--;
+      }else{
+  	if(pos_pad)
+  	{
+  	  string_builder_putchar(r,pos_pad);
+  	  width--;
+  	}
       }
-    }
 #if 1
-    string_builder_fill(r,width-len,MKPCHARP("0",0),1,0);
+      string_builder_fill(r,width-len,MKPCHARP("0",0),1,0);
 #else
-    for(;width>len;width--) string_builder_putchar(r,'0');
+      for(;width>len;width--) string_builder_putchar(r,'0');
 #endif
-    string_builder_append(r,b,len);
-    return;
-  }
-
-  if(flags & FIELD_CENTER)
-  {
-    e=len;
-    if(pos_pad && EXTRACT_PCHARP(b)!='-') e++;
-    e=(width-e)/2;
-    if(e>0)
-    {
-      string_builder_fill(r, e, pad_string, pad_length, 0);
-      width-=e;
+      string_builder_append(r,b,len);
+      return;
     }
-    flags|=FIELD_LEFT;
-  }
+  
+    if (flags & (FIELD_CENTER|FIELD_LEFT)) {
+      ptrdiff_t d=0;
+  
+      if(flags & FIELD_CENTER)
+      {
+  	e=len;
+  	if(pos_pad && EXTRACT_PCHARP(b)!='-') e++;
+  	e=(width-e)/2;
+  	if(e>0)
+  	{
+  	  string_builder_fill(r, e, pad_string, pad_length, 0);
+  	  width-=e;
+  	}
+      }
+  
+      /* Left adjust */
+      if(pos_pad && EXTRACT_PCHARP(b)!='-')
+      {
+  	string_builder_putchar(r,pos_pad);
+  	width--;
+  	d++;
+      }
 
-  if(flags & FIELD_LEFT)
-  {
-    if(pos_pad && EXTRACT_PCHARP(b)!='-')
-    {
-      string_builder_putchar(r,pos_pad);
-      width--;
-      d++;
+#if 1
+      len = MINIMUM(width, len);
+      if (len) {
+        d += len;
+	string_builder_append(r, b, len);
+	width -= len;
+      }
+#else /* 0 */  
+      d+=MINIMUM(width,len);
+      while(len && width)
+      {
+  	string_builder_putchar(r,EXTRACT_PCHARP(b));
+  	INC_PCHARP(b,1);
+  	len--;
+  	width--;
+      }
+#endif /* 1 */
+  
+      if(width>0)
+      {
+  	d%=pad_length;
+  	string_builder_fill(r,width,pad_string,pad_length,d);
+      }
+      
+      return;
     }
-
-    d+=MINIMUM(width,len);
-    while(len && width)
-    {
-      string_builder_putchar(r,EXTRACT_PCHARP(b));
-      INC_PCHARP(b,1);
-      len--;
-      width--;
-    }
-
-    if(width>0)
-    {
-      d%=pad_length;
-      string_builder_fill(r,width,pad_string,pad_length,d);
-    }
-    
-    return;
   }
 
   /* Right-justification */
