@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.17 1999/03/09 22:18:31 marcus Exp $
+ * $Id: mime.c,v 1.18 1999/03/09 22:46:19 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.17 1999/03/09 22:18:31 marcus Exp $");
+RCSID("$Id: mime.c,v 1.18 1999/03/09 22:46:19 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -44,9 +44,9 @@ static void f_quote_labled( INT32 args );
 /** Global tables **/
 
 static char base64tab[64] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-static SIGNED char base64rtab[0x80-' '];
+static SIGNED char base64rtab[(1<<(CHAR_BIT-1))-' '];
 static char qptab[16] = "0123456789ABCDEF";
-static SIGNED char qprtab[0x80-'0'];
+static SIGNED char qprtab[(1<<(CHAR_BIT-1))-'0'];
 
 #define CT_CTL     0
 #define CT_WHITE   1
@@ -58,7 +58,7 @@ static SIGNED char qprtab[0x80-'0'];
 #define CT_LBRACK  7
 #define CT_RBRACK  8
 #define CT_QUOTE   9
-unsigned char rfc822ctype[256];
+unsigned char rfc822ctype[1<<CHAR_BIT];
 
 
 /** Externally available functions **/
@@ -144,6 +144,8 @@ static void f_decode_base64( INT32 args )
     error( "Wrong number of arguments to MIME.decode_base64()\n" );
   else if (sp[-1].type != T_STRING)
     error( "Wrong type of argument to MIME.decode_base64()\n" );
+  else if (sp[-1].u.string->size_shift != 0)
+    error( "Char out of range for MIME.decode_base64()\n" );
   else {
 
     /* Decode the string in sp[-1].u.string.  Any whitespace etc
@@ -233,6 +235,8 @@ static void f_encode_base64( INT32 args )
     error( "Wrong number of arguments to MIME.encode_base64()\n" );
   else if(sp[-args].type != T_STRING)
     error( "Wrong type of argument to MIME.encode_base64()\n" );
+  else if (sp[-args].u.string->size_shift != 0)
+    error( "Char out of range for MIME.encode_base64()\n" );
   else {
 
     /* Encode the string in sp[-args].u.string.  First, we need to know
@@ -291,6 +295,8 @@ static void f_decode_qp( INT32 args )
     error( "Wrong number of arguments to MIME.decode_qp()\n" );
   else if(sp[-1].type != T_STRING)
     error( "Wrong type of argument to MIME.decode_qp()\n" );
+  else if (sp[-1].u.string->size_shift != 0)
+    error( "Char out of range for MIME.decode_qp()\n" );
   else {
 
     /* Decode the string in sp[-1].u.string.  We have absolutely no idea
@@ -343,6 +349,8 @@ static void f_encode_qp( INT32 args )
     error( "Wrong number of arguments to MIME.encode_qp()\n" );
   else if (sp[-args].type != T_STRING)
     error( "Wrong type of argument to MIME.encode_qp()\n" );
+  else if (sp[-args].u.string->size_shift != 0)
+    error( "Char out of range for MIME.encode_qp()\n" );
   else {
 
     /* Encode the string in sp[-args].u.string.  We don't know how
@@ -394,6 +402,8 @@ static void f_decode_uue( INT32 args )
     error( "Wrong number of arguments to MIME.decode_uue()\n" );
   else if(sp[-1].type != T_STRING)
     error( "Wrong type of argument to MIME.decode_uue()\n" );
+  else if (sp[-1].u.string->size_shift != 0)
+    error( "Char out of range for MIME.decode_uue()\n" );
   else {
 
     /* Decode string in sp[-1].u.string.  This is done much like in
@@ -525,6 +535,10 @@ static void f_encode_uue( INT32 args )
 	   (args == 2 && sp[-1].type != T_VOID && sp[-1].type != T_STRING &&
 	    sp[-1].type != T_INT))
     error( "Wrong type of argument to MIME.encode_uue()\n" );
+  else if (sp[-args].u.string->size_shift != 0 ||
+	   (args == 2 && sp[-1].type == T_STRING &&
+	    sp[-1].u.string->size_shift != 0))
+    error( "Char out of range for MIME.encode_uue()\n" );
   else {
 
     /* Encode string in sp[-args].u.string.  If args == 2, there may be
@@ -807,6 +821,9 @@ static void f_tokenize( INT32 args )
   if (sp[-1].type != T_STRING)
     error( "Wrong type of argument to MIME.tokenize()\n" );
 
+  if (sp[-1].u.string->size_shift != 0)
+    error( "Char out of range for MIME.tokenize()\n" );
+
   low_tokenize( args, 0 );
 }
 
@@ -817,6 +834,9 @@ static void f_tokenize_labled( INT32 args )
 
   if (sp[-1].type != T_STRING)
     error( "Wrong type of argument to MIME.tokenize_labled()\n" );
+
+  if (sp[-1].u.string->size_shift != 0)
+    error( "Char out of range for MIME.tokenize_labled()\n" );
 
   low_tokenize( args, 1 );
 }
@@ -900,6 +920,11 @@ static void f_quote( INT32 args )
       /* Neither int or string.  Too bad... */
       toss_buffer( &buf );
       error( "Wrong type of argument to MIME.quote()\n" );
+
+    } else if (item->u.string->size_shift != 0) {
+
+      toss_buffer( &buf );
+      error( "Char out of range for MIME.quote()\n" );
 
     } else {
 
@@ -987,6 +1012,11 @@ static void f_quote_labled( INT32 args )
       /* All the remaining lexical items require item[1] to be a string */
       toss_buffer( &buf );
       error( "Wrong type of argument to MIME.quote_labled()\n" );
+
+    } else if (item->u.array->item[1].u.string->size_shift != 0) {
+
+      toss_buffer( &buf );
+      error( "Char out of range for MIME.quote_labled()\n" );
 
     } else if (c_compare_string( item->u.array->item[0].u.string, "word", 4 )){
 
