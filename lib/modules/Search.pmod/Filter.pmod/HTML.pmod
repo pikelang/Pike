@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.21 2001/09/01 23:03:55 js Exp $
+// $Id: HTML.pmod,v 1.22 2001/12/20 14:34:24 js Exp $
 
 // Filter for text/html
 
@@ -177,6 +177,35 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     return ({ " " });
   };
 
+  array(string) parse_noindex(Parser.HTML p, mapping m, string c)
+  {
+    werror("noindex: %s\n", c);
+    if(m->nofollow)
+      return ({ "" });
+    Parser.HTML parser = Parser.HTML();
+    parser->add_tags( (["a":parse_a,
+			"base": parse_base,
+			"link":parse_a,
+			"frame":parse_frame,
+			"iframe":parse_frame,
+			"layer":parse_layer,
+			"ilayer":parse_layer,
+			"applet":parse_applet,
+			"area":parse_src_alt,
+			"bgsound":parse_src_alt,
+			"sound":parse_src_alt,
+			"body":parse_background,
+			"table":parse_background,
+			"td":parse_background,
+			"object": parse_object,
+			"q":parse_q,
+			"embed":parse_embed,
+			"xml":parse_xml, ]) );
+    parser->feed(c);
+    parser->finish();
+    return ({""});
+  };
+
   String.Buffer databuf=String.Buffer();
   Parser.HTML parser = Parser.HTML();
 
@@ -187,7 +216,10 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->add_containers( ([ "title":parse_title,
 			     "h1": parse_headline,
 			     "h2": parse_headline,
-			     "h3": parse_headline, ]) );
+			     "h3": parse_headline, 
+			     "noindex": parse_noindex,
+			     "no-index":parse_noindex,
+			     "no_index": parse_noindex,  ]) );
 			     
   parser->add_tags( ([ "meta":parse_meta,
 		       "a":parse_a,
@@ -208,10 +240,10 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 		       "object": parse_object,
 		       "q":parse_q,
 		       "embed":parse_embed,
-		       "xml":parse_xml,
+		       "xml":parse_xml
   ]) );
 
-  constant ignore_tags = ({ "noindex", "script", "style", "no-index" });
+  constant ignore_tags = ({ "script", "style", });
   parser->add_containers(mkmapping(ignore_tags, ({""})*sizeof(ignore_tags)));
 
   dadd = databuf->add;
