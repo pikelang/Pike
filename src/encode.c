@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.50 1999/12/11 00:31:47 grubba Exp $");
+RCSID("$Id: encode.c,v 1.51 1999/12/11 01:14:56 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -72,6 +72,34 @@ double LDEXP(double x, int exp)
 #endif
 
 
+/* Tags used by encode value.
+ * Currently they only differ from the PIKE_T variants by
+ *   TAG_FLOAT == PIKE_T_TYPE == 7
+ * and
+ *   TAG_TYPE == PIKE_T_FLOAT == 9
+ * These are NOT to be renumbered unless the file-format version is changed!
+ */
+/* Current encoding: ¶ik0 */
+#define TAG_ARRAY 0
+#define TAG_MAPPING 1
+#define TAG_MULTISET 2
+#define TAG_OBJECT 3
+#define TAG_FUNCTION 4
+#define TAG_PROGRAM 5
+#define TAG_STRING 6
+#define TAG_FLOAT 7
+#define TAG_INT 8
+#define TAG_TYPE 9           /* Not supported yet */
+
+#define TAG_AGAIN 15
+#define TAG_MASK 15
+#define TAG_NEG 16
+#define TAG_SMALL 32
+#define SIZE_SHIFT 6
+#define MAX_SMALL (1<<(8-SIZE_SHIFT))
+#define COUNTER_START -MAX_SMALL
+
+
 
 struct encode_data
 {
@@ -114,11 +142,11 @@ static void encode_value2(struct svalue *val, struct encode_data *data);
   if((S)->size_shift)					\
   {							\
     int q;                                              \
-    code_entry(T_STRING,-1, data);			\
+    code_entry(TAG_STRING,-1, data);			\
     code_entry((S)->size_shift, (S)->len, data);	\
     ENCODE_DATA(S);                                     \
   }else{						\
-    code_entry(T_STRING, (S)->len, data);		\
+    code_entry(TAG_STRING, (S)->len, data);		\
     addstr((char *)((S)->str),(S)->len);		\
   }							\
 }while(0)
@@ -129,43 +157,43 @@ static void encode_value2(struct svalue *val, struct encode_data *data);
   if(S) {					\
     adddata(S);                                 \
   } else {					\
-    code_entry(T_INT, 0, data);			\
+    code_entry(TAG_INT, 0, data);			\
   }						\
 }while(0)
 
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof(s[0]));
 
-/* Current encoding: ¶ik0 */
-#define T_AGAIN 15
-#define T_MASK 15
-#define T_NEG 16
-#define T_SMALL 32
-#define SIZE_SHIFT 6
-#define MAX_SMALL (1<<(8-SIZE_SHIFT))
-#define COUNTER_START -MAX_SMALL
+/* NOTE: Fix when type encodings change. */
+static int type_to_tag(int type)
+{
+  if (type == T_FLOAT) return TAG_FLOAT;
+  if (type == T_TYPE) return TAG_TYPE;
+  return type;
+}
+static int (*tag_to_type)(int) = type_to_tag;
 
 /* Let's cram those bits... */
-static void code_entry(int type, INT32 num, struct encode_data *data)
+static void code_entry(int tag, INT32 num, struct encode_data *data)
 {
   int t;
   EDB(
-    fprintf(stderr,"encode: code_entry(type=%d (%s), num=%d)\n",
-	    type,
-	    get_name_of_type(type),
+    fprintf(stderr,"encode: code_entry(tag=%d (%s), num=%d)\n",
+	    tag,
+	    get_name_of_type(tag_to_type(tag)),
 	    num) );
   if(num<0)
   {
-    type|=T_NEG;
-    num=~num;
+    tag |= TAG_NEG;
+    num = ~num;
   }
 
   if(num < MAX_SMALL)
   {
-    type|=T_SMALL | (num << SIZE_SHIFT);
-    addchar(type);
+    tag |= TAG_SMALL | (num << SIZE_SHIFT);
+    addchar(tag);
     return;
   }else{
-    num-=MAX_SMALL;
+    num -= MAX_SMALL;
   }
 
   for(t=0;t<3;t++)
@@ -176,8 +204,8 @@ static void code_entry(int type, INT32 num, struct encode_data *data)
       break;
   }
 
-  type|=t << SIZE_SHIFT;
-  addchar(type);
+  tag |= t << SIZE_SHIFT;
+  addchar(tag);
 
   switch(t)
   {
@@ -187,7 +215,6 @@ static void code_entry(int type, INT32 num, struct encode_data *data)
   case 0: addchar(num&0xff);
   }
 }
-
 
 static void code_number(INT32 num, struct encode_data *data)
 {
@@ -309,7 +336,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
   
   if((tmp=low_mapping_lookup(data->encoded, val)))
   {
-    code_entry(T_AGAIN, tmp->u.integer, data);
+    code_entry(TAG_AGAIN, tmp->u.integer, data);
     return;
   }else{
     mapping_insert(data->encoded, val, &data->counter);
@@ -325,7 +352,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
        * then this must be fixed to encode numbers over 32 bits as
        * Gmp.mpz objects
        */
-      code_entry(T_INT, val->u.integer,data);
+      code_entry(TAG_INT, val->u.integer,data);
       break;
       
     case T_STRING:
@@ -333,9 +360,6 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
 
     case T_TYPE:
-      /* NOTE: Floats are encoded with the tag T_TYPE (7)
-       * for backward compatibility.
-       */
       error("Encoding of the type type not supported yet!");
       break;
 
@@ -343,11 +367,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     {
       if(val->u.float_number==0.0)
       {
-	/* NOTE: Floats are encoded with the tag T_TYPE (7)
-	 * for backward compatibility.
-	 */
-	code_entry(T_TYPE,0,data);
-	code_entry(T_TYPE,0,data);
+	code_entry(TAG_FLOAT,0,data);
+	code_entry(TAG_FLOAT,0,data);
       }else{
 	INT32 x;
 	int y;
@@ -363,17 +384,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  y++;
 	}
 #endif
-	/* NOTE: Floats are encoded with the tag T_TYPE (7)
-	 * for backward compatibility.
-	 */
-	code_entry(T_TYPE,x,data);
-	code_entry(T_TYPE,y,data);
+	code_entry(TAG_FLOAT,x,data);
+	code_entry(TAG_FLOAT,y,data);
       }
       break;
     }
     
     case T_ARRAY:
-      code_entry(T_ARRAY, val->u.array->size, data);
+      code_entry(TAG_ARRAY, val->u.array->size, data);
       for(i=0; i<val->u.array->size; i++)
 	encode_value2(ITEM(val->u.array)+i, data);
       break;
@@ -386,7 +404,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       ref_push_mapping(val->u.mapping);
       f_values(1);
       
-      code_entry(T_MAPPING, sp[-2].u.array->size,data);
+      code_entry(TAG_MAPPING, sp[-2].u.array->size,data);
       for(i=0; i<sp[-2].u.array->size; i++)
       {
 	encode_value2(ITEM(sp[-2].u.array)+i, data); /* indices */
@@ -396,7 +414,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
       
     case T_MULTISET:
-      code_entry(T_MULTISET, val->u.multiset->ind->size,data);
+      code_entry(TAG_MULTISET, val->u.multiset->ind->size,data);
       for(i=0; i<val->u.multiset->ind->size; i++)
 	encode_value2(ITEM(val->u.multiset->ind)+i, data);
       break;
@@ -410,7 +428,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
        */
       if(is_bignum_object(val->u.object))
       {
-	code_entry(T_OBJECT, 2, data);
+	code_entry(TAG_OBJECT, 2, data);
 	/* 256 would be better, but then negative numbers
 	 * doesn't work... /Hubbe
 	 */
@@ -435,7 +453,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    push_svalue(val);
 	    f_object_program(1);
 	    
-	    code_entry(val->type, 1,data);
+	    code_entry(type_to_tag(val->type), 1,data);
 	    encode_value2(sp-1, data);
 	    pop_stack();
 	    
@@ -446,9 +464,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  /* FALL THROUGH */
 	
 	default:
-	  code_entry(val->type, 0,data);
+	  code_entry(type_to_tag(val->type), 0,data);
 	  break;
-	  
       }
       encode_value2(sp-1, data);
       pop_stack();
@@ -463,7 +480,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	if(val->subtype != FUNCTION_BUILTIN)
 	{
 	  int eq;
-	  code_entry(val->type, 1, data);
+
+	  code_entry(type_to_tag(val->type), 1, data);
 	  push_svalue(val);
 	  sp[-1].type=T_OBJECT;
 	  ref_push_string(ID_FROM_INT(val->u.object->prog, val->subtype)->name);
@@ -491,7 +509,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	}
       }
 
-      code_entry(val->type, 0,data);
+      code_entry(type_to_tag(val->type), 0,data);
       encode_value2(sp-1, data);
       pop_stack();
       break;
@@ -512,7 +530,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	if(p->init || p->exit || p->gc_marked || p->gc_check ||
 	   (p->flags & PROGRAM_HAS_C_METHODS))
 	  error("Cannot encode C programs.\n");
-	code_entry(val->type, 1,data);
+	code_entry(type_to_tag(val->type), 1,data);
 	f_version(0);
 	encode_value2(sp-1,data);
 	pop_stack();
@@ -585,7 +603,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	for(d=0;d<NUM_LFUNS;d++)
 	  code_number(p->lfuns[d], data);
       }else{
-	code_entry(val->type, 0,data);
+	code_entry(type_to_tag(val->type), 0,data);
 	encode_value2(sp-1, data);
       }
       pop_stack();
@@ -657,18 +675,18 @@ static int my_extract_char(struct decode_data *data)
     fprintf(stderr,"decode(%s) at %d: ",(Z),__LINE__));	\
   what=GETC();						\
   e=what>>SIZE_SHIFT;					\
-  if(what & T_SMALL)  {					\
+  if(what & TAG_SMALL) {				\
      num=e;						\
   } else {						\
      num=0;						\
      while(e-->=0) num=(num<<8) + (GETC()+1);		\
      num+=MAX_SMALL - 1;				\
   }							\
-  if(what & T_NEG) num=~num;				\
+  if(what & TAG_NEG) num=~num;				\
   EDB(							\
     fprintf(stderr,"type=%d (%s), num=%d\n",	\
-	    (what & T_MASK),				\
-	    get_name_of_type(what & T_MASK),		\
+	    (what & TAG_MASK),				\
+	    get_name_of_type(tag_to_type(what & TAG_MASK)),		\
 	    num) ); 					\
 } while (0) 
 
@@ -678,7 +696,7 @@ static int my_extract_char(struct decode_data *data)
   do {								\
     INT32 what, e, num;                                         \
     DECODE("decode_entry");						\
-    if((what & T_MASK) != (X)) error("Failed to decode, wrong bits (%d).\n", what & T_MASK);\
+    if((what & TAG_MASK) != (X)) error("Failed to decode, wrong bits (%d).\n", what & TAG_MASK);\
     (Y)=num;							\
   } while(0);
 
@@ -705,7 +723,7 @@ static int my_extract_char(struct decode_data *data)
   {									    \
     INT32 what, e, num;							    \
     DECODE("get_string_data");						    \
-    what&=T_MASK;							    \
+    what&=TAG_MASK;							    \
     if(data->ptr + num > data->len || num <0)				    \
        error("Failed to decode string. (string range error)\n");	    \
     if(what<0 || what>2) error("Failed to decode string. (Illegal size shift)\n"); \
@@ -724,32 +742,33 @@ static int my_extract_char(struct decode_data *data)
 
 #define getdata(X) do {				\
    long length;					\
-   decode_entry(T_STRING, length,data);		\
+   decode_entry(TAG_STRING, length,data);	\
    get_string_data(X, length, data);		\
   }while(0)
 
 #define getdata3(X) do {						     \
   INT32 what, e, num;							     \
   DECODE("getdata3");							     \
-  switch(what & T_MASK)							     \
+  switch(what & TAG_MASK)						     \
   {									     \
-    case T_INT:								     \
+    case TAG_INT:							     \
       X=0;								     \
       break;								     \
 									     \
-    case T_STRING:							     \
+    case TAG_STRING:							     \
       get_string_data(X,num,data);                                           \
       break;								     \
 									     \
     default:								     \
-      error("Failed to decode string, type is wrong: %d\n",what & T_MASK);   \
+      error("Failed to decode string, tag is wrong: %d\n",		     \
+            what & TAG_MASK);						     \
     }									     \
 }while(0)
 
 #define decode_number(X,data) do {	\
    int what, e, num;				\
    DECODE("decode_number");			\
-   X=(what & T_MASK) | (num<<4);		\
+   X=(what & TAG_MASK) | (num<<4);		\
   }while(0)					\
 
 
@@ -783,6 +802,8 @@ static void restore_type_mark(unsigned char **old_type_mark_stackp)
 
 static void low_decode_type(struct decode_data *data)
 {
+  /* FIXME: Probably ought to use the tag encodings too. */
+
   int tmp;
   ONERROR err1;
   ONERROR err2;
@@ -909,9 +930,9 @@ static void decode_value2(struct decode_data *data)
   
   check_stack(1);
   
-  switch(what & T_MASK)
+  switch(what & TAG_MASK)
   {
-    case T_AGAIN:
+    case TAG_AGAIN:
       tmp.type=T_INT;
       tmp.subtype=0;
       tmp.u.integer=num;
@@ -923,13 +944,13 @@ static void decode_value2(struct decode_data *data)
       }
       return;
       
-    case T_INT:
+    case TAG_INT:
       tmp=data->counter;
       data->counter.u.integer++;
       push_int(num);
       break;
       
-    case T_STRING:
+    case TAG_STRING:
     {
       struct pike_string *str;
       tmp=data->counter;
@@ -939,10 +960,7 @@ static void decode_value2(struct decode_data *data)
       break;
     }
 
-    case T_TYPE:
-      /* NOTE: Floats are encoded with the tag T_TYPE (7)
-       * for backward compatibility.
-       */
+    case TAG_FLOAT:
     {
       INT32 num2=num;
       
@@ -954,17 +972,14 @@ static void decode_value2(struct decode_data *data)
       break;
     }
 
-    case T_FLOAT:
-      /* NOTE: Floats are encoded with the tag T_TYPE (7)
-       * for backward compatibility.
-       */
+    case TAG_TYPE:
     {
       error("Failed to decode string. "
 	    "(decode of the type type isn't supported yet).\n");
       break;
     }
     
-    case T_ARRAY:
+    case TAG_ARRAY:
     {
       struct array *a;
       if(num < 0)
@@ -996,7 +1011,7 @@ static void decode_value2(struct decode_data *data)
       return;
     }
     
-    case T_MAPPING:
+    case TAG_MAPPING:
     {
       struct mapping *m;
       if(num<0)
@@ -1024,7 +1039,7 @@ static void decode_value2(struct decode_data *data)
       return;
     }
     
-    case T_MULTISET:
+    case TAG_MULTISET:
     {
       struct multiset *m;
       if(num<0)
@@ -1053,7 +1068,7 @@ static void decode_value2(struct decode_data *data)
     }
     
     
-    case T_OBJECT:
+    case TAG_OBJECT:
       tmp=data->counter;
       data->counter.u.integer++;
       decode_value2(data);
@@ -1118,7 +1133,7 @@ static void decode_value2(struct decode_data *data)
 	error("Failed to decode.\n");
       break;
       
-    case T_FUNCTION:
+    case TAG_FUNCTION:
       tmp=data->counter;
       data->counter.u.integer++;
       decode_value2(data);
@@ -1155,7 +1170,7 @@ static void decode_value2(struct decode_data *data)
       break;
       
       
-    case T_PROGRAM:
+    case TAG_PROGRAM:
       switch(num)
       {
 	case 0:
@@ -1502,47 +1517,41 @@ static void rec_restore_value(char **v, INT32 *l)
   t=extract_int(v,l);
   switch(i)
   {
-  case T_INT: push_int(t); return;
+  case TAG_INT: push_int(t); return;
     
-  case T_TYPE:
-    /* NOTE: Floats are encoded with the tag T_TYPE (7)
-     * for backward compatibility.
-     */
+  case TAG_FLOAT:
     if(sizeof(INT32) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
       error("Float architecture not supported.\n"); 
     push_int(t); /* WARNING! */
     sp[-1].type = T_FLOAT;
     return;
     
-  case T_FLOAT:
-    /* NOTE: Floats are encoded with the tag T_TYPE (7)
-     * for backward compatibility.
-     */
+  case TAG_TYPE:
     error("Format error:decoding of the type type not supported yet.\n");
     return;
 
-  case T_STRING:
+  case TAG_STRING:
     if(t<0) error("Format error, length of string is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t; (*v)+= t;
     return;
     
-  case T_ARRAY:
+  case TAG_ARRAY:
     if(t<0) error("Format error, length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate(t);
     return;
 
-  case T_MULTISET:
+  case TAG_MULTISET:
     if(t<0) error("Format error, length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate_multiset(t);
     return;
     
-  case T_MAPPING:
+  case TAG_MAPPING:
     if(t<0) error("Format error, length of mapping is negative.\n");
     check_stack(t*2);
     for(i=0;i<t;i++)
@@ -1553,7 +1562,7 @@ static void rec_restore_value(char **v, INT32 *l)
     f_aggregate_mapping(t*2);
     return;
 
-  case T_OBJECT:
+  case TAG_OBJECT:
     if(t<0) error("Format error, length of object is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
@@ -1561,7 +1570,7 @@ static void rec_restore_value(char **v, INT32 *l)
     APPLY_MASTER("objectof", 1);
     return;
     
-  case T_FUNCTION:
+  case TAG_FUNCTION:
     if(t<0) error("Format error, length of function is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
@@ -1569,7 +1578,7 @@ static void rec_restore_value(char **v, INT32 *l)
     APPLY_MASTER("functionof", 1);
     return;
      
-  case T_PROGRAM:
+  case TAG_PROGRAM:
     if(t<0) error("Format error, length of program is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
@@ -1578,7 +1587,7 @@ static void rec_restore_value(char **v, INT32 *l)
     return;
     
   default:
-    error("Format error. Unknown type\n");
+    error("Format error. Unknown type tag %d:%d\n", i, t);
   }
 }
 
