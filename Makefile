@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.101 2002/10/21 12:55:02 grubba Exp $
+# $Id: Makefile,v 1.102 2002/10/28 13:14:24 grubba Exp $
 #
 # Meta Makefile
 #
@@ -261,7 +261,8 @@ xenofarm:
 	test -d build || mkdir build
 	-rm -rf build/xenofarm
 	mkdir build/xenofarm
-	-$(MAKE) $(MAKE_FLAGS) xenofarm_low
+	-CCACHE_DIR="`pwd`/build/xenofarm/ccache.log.txt" \
+	  $(MAKE) $(MAKE_FLAGS) xenofarm_low
 	echo Begin response assembly | tee -a build/xenofarm/xenofarmlog.txt
 	date >> build/xenofarm/xenofarmlog.txt
 	-cp "$(BUILDDIR)/config.info" build/xenofarm/configinfo.txt
