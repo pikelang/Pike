@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.51 2000/07/28 00:35:50 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.52 2000/10/08 18:21:31 grubba Exp $ */
 
 import Stdio;
 
@@ -337,7 +337,8 @@ int main(int argc, array(string) argv)
       tmp=read_bytes(argv[f]);
       if(!tmp)
       {
-	werror("Failed to read test file, errno="+errno()+".\n");
+	werror("Failed to read test file %O, errno=%d.\n",
+	       argv[f], errno());
 	exit(1);
       }
       
@@ -492,6 +493,8 @@ int main(int argc, array(string) argv)
 	    fname+=" (CRNL)";
 	    to_compile=replace(to_compile,"\n","\r\n");
 	  }
+
+	  // _optimizer_debug(5);
 	   
 	  if(verbose>9) bzot(to_compile);
 	  switch(type)
@@ -565,7 +568,9 @@ int main(int argc, array(string) argv)
 		_dmalloc_set_name(fname,1);
 		if(functionp(o->a))
 		{
+		  // trace(10);
 		  at = gauge { a=o->a(); };
+		  // trace(0);
 		}
 
 		if(functionp(o->b))
@@ -579,6 +584,7 @@ int main(int argc, array(string) argv)
 		if(check > 1) _verify_internals();
 
 	      }) {
+		// trace(0);
 		werror(fname + " failed.\n");
 		bzot(test);
 		if (arrayp(err) && sizeof(err) && stringp(err[0])) {
