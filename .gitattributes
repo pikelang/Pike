@@ -5,6 +5,7 @@
 *.gz binary
 *.ppm binary
 *.rs binary
+init_nt -text -crlf
 lib -text -crlf
 testfont binary
 

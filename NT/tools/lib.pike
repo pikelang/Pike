@@ -60,6 +60,7 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
     sscanf(f->read(4),"%4c",int len);
     if(!len) break;
     s=f->read(len);
+    s=replace(s,"\r\n","\n");
     if(!silent) write(s);
     ret+=s;
   }
@@ -123,7 +124,7 @@ string find_next_in_path(string argv0,string cmd)
 	{
 	  if(argv0)
 	  {
-	    if(argv0==s)
+	    if(argv0==fname)
 	      argv0=0;
 	  }else{
 	    return fname;

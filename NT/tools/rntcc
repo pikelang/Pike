@@ -11,6 +11,15 @@ inherit "lib.pike";
 
 int verbose=1;
 
+// Temporary variable
+int linking_failed;
+
+string get_ext(string file)
+{
+  sscanf(file=lower_case(reverse(file)),"%s.",file);
+  return reverse(file);
+}
+
 int compile(string *sources,
 	     string dest,
 	     string errorfile,
@@ -28,13 +37,21 @@ int compile(string *sources,
   dest=fixpath(dest);
 
   sources=Array.map(sources,fixpath);
-  if(lower_case(sources[0][strlen(sources[0])-3..])==".s")
+  switch(get_ext(sources[0]))
   {
-    cmd=({ "wasm", "-fe"+errorfile, "-fo"+dest,})+ sources;
-  }else{
-    cmd=({ "wcc386" }) + cflags + ({"-fr"+errorfile, "-fo"+dest}) + sources;
-  }
+    case "c":
+      cmd=({ "wcc386" }) + cflags + ({"-fr"+errorfile, "-fo"+dest}) + sources;
+      break;
 
+    case "cpp":
+    case "cc":
+      cmd=({ "wpp386" }) + cflags + ({"-fr"+errorfile, "-fo"+dest}) + sources;
+      break;
+
+    case "s":
+      cmd=({ "wasm", "-fe"+errorfile, "-fo"+dest,})+ sources;
+  }
+      
   if(verbose)
     return do_cmd(cmd);
   else
@@ -65,7 +82,7 @@ int main(int argc, string *argv)
 {
   string target;
   string operation="link";
-  string *cflags=({});
+  string *cflags=({"-d__WIN32__","-d_WIN32"});
   string *ldopts=({"OPTION","STACK=8m"});
   string *libraries=({});
   string *objects=({});
@@ -196,22 +213,20 @@ int main(int argc, string *argv)
   argv=Getopt.get_args(argv);
   foreach(argv[1..], string tmp)
   {
-    string ext;
     if(tmp[0]=='-')
     {
       werror("Unrecognized option "+tmp+".\n");
       exit(1);
     }
-    sscanf(reverse(tmp),"%s.",ext);
 
     // Recognize which files need to be compiled
-    switch(ext)
+    switch(get_ext(tmp))
     {
-      case "bil":
       case "o":
-      case "jbo":
       case "a":
-      case "lld":
+      case "obj":
+      case "dll":
+      case "lib":
 	objects+=({tmp});
 	break;
 	
@@ -240,7 +255,18 @@ int main(int argc, string *argv)
 
     case "preprocess":
     {
-      int ret=silent_do_cmd( ({"wcc386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
+      switch(get_ext(sources[0]))
+      {
+	default:
+	case "c":
+	  int ret=silent_do_cmd( ({"wcc386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
+	  break;
+
+	case "cc":
+	case "cpp":
+	  int ret=silent_do_cmd( ({"wpp386","-p","-fr"+errorfile}) + cflags + Array.map(sources, fixpath));
+	  break;
+      }
       break;
     }
 
@@ -256,9 +282,11 @@ int main(int argc, string *argv)
 	  check_errorfile(errorfile);
 	}
 
+//      objects+=({"BINMODE.OBJ"});
       string ldfile="TMP"+getpid()+".lk";
       if(!output) output="a.out";
       rm(ldfile);
+
 
       target=output;
       if(!share) target+=".exe";
@@ -275,15 +303,18 @@ int main(int argc, string *argv)
       Process.system("cat "+ldfile);
       write("\n");
 #endif
+      linking_failed=0;
 
       silent_do_cmd( ({"wlink","@"+ldfile }), lambda(string data)
       {
 	if(search(data," W1008:")!=-1)
-	  exit(1);
+	  linking_failed++;
       });
 
       if(getenv("CLEANUP")!="no")
 	rm(ldfile);
+
+      if(linking_failed) exit(1);
   }
 
   check_errorfile(errorfile);
