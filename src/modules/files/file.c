@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.213 2001/09/06 18:23:47 mast Exp $");
+RCSID("$Id: file.c,v 1.214 2001/09/28 23:15:46 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -231,6 +231,55 @@ static void free_fd_stuff(void)
   }
 #endif
   check_internal_reference(THIS);
+}
+
+static void close_fd_quietly(void)
+{
+  int fd=FD;
+  if(fd<0) return;
+
+  set_read_callback(FD,0,0);
+  set_write_callback(FD,0,0);
+#ifdef WITH_OOB
+  set_read_oob_callback(FD,0,0);
+  set_write_oob_callback(FD,0,0);
+#endif /* WITH_OOB */
+  check_internal_reference(THIS);
+
+  FD=-1;
+  while(1)
+  {
+    int i;
+    THREADS_ALLOW_UID();
+    i=fd_close(fd);
+    THREADS_DISALLOW_UID();
+
+    if(i < 0)
+    {
+      switch(errno)
+      {
+	default:
+	{
+	  /* Delay close until next gc() */
+	  struct object *o=file_make_object_from_fd(fd,0,0);
+	  ((struct my_file *)(o->storage))->read_callback.u.object=o;
+	  ((struct my_file *)(o->storage))->read_callback.type=PIKE_T_OBJECT;
+	  break;
+	}
+
+	case EBADF:
+#ifdef SOLARIS
+	  /* It's actually OK. This is a bug in Solaris 8. */
+       case EAGAIN:
+         break;
+#endif
+
+       case EINTR:
+         continue;
+      }
+    }
+    break;
+  }
 }
 
 static void just_close_fd(void)
@@ -2018,7 +2067,7 @@ static void exit_file_struct(struct object *o)
   if(!(THIS->flags & (FILE_NO_CLOSE_ON_DESTRUCT |
 		      FILE_LOCK_FD |
 		      FILE_NOT_OPENED)))
-     just_close_fd();
+    close_fd_quietly();
   free_fd_stuff();
 
   REMOVE_INTERNAL_REFERENCE(THIS);
