@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.67 2002/05/01 18:45:30 mast Exp $
+# $Id: Makefile,v 1.68 2002/05/03 19:39:13 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -239,7 +239,8 @@ autobuild:
 	-@cp "$(BUILDDIR)/testsuite" build/autobuild/testsuite.txt
 	-@cp "$(BUILDDIR)/dumpmodule.log" build/autobuild/dumplog.txt
 	-@cp export.stamp build/autobuild/exportstamp.txt
-	-@uname -a > build/autobuild/machineid.txt
+	-@uname -s -r -m > build/autobuild/machineid.txt
+	-@uname -n >> build/autobuild/machineid.txt
 	@tar -c build/autobuild/*.txt > autobuild_result.tar
 	@gzip -f9 autobuild_result.tar
 
