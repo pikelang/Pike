@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.5 2003/05/19 19:02:17 mast Exp $
+|| $Id: acconfig.h,v 1.6 2003/05/19 19:22:54 mast Exp $
 */
 
 #ifndef GMP_MACHINE_H
@@ -52,5 +52,8 @@
 
 /* Define if mpz_getlimbn works on negative numbers. */
 #undef MPZ_GETLIMBN_WORKS
+
+/* Define if mpz_set_si works for LONG_MIN. */
+#undef MPZ_SET_SI_WORKS
 
 #endif
