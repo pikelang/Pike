@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.132 1999/04/21 16:44:57 mirar Exp $ */
+/* $Id: image.c,v 1.133 1999/04/21 23:33:31 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.132 1999/04/21 16:44:57 mirar Exp $
+**!	$Id: image.c,v 1.133 1999/04/21 23:33:31 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.132 1999/04/21 16:44:57 mirar Exp $");
+RCSID("$Id: image.c,v 1.133 1999/04/21 23:33:31 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3883,6 +3883,8 @@ void pike_module_init(void)
    ADD_FUNCTION("`*",image_operator_multiply,
 		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    ADD_FUNCTION("`/",image_operator_divide,
+		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
+   ADD_FUNCTION("`%",image_operator_rest,
 		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);
    ADD_FUNCTION("`&",image_operator_minimum,
 		tFunc(tOr3(tObj,tArr(tInt),tInt),tObj),0);

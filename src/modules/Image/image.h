@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.28 1999/04/21 16:45:00 mirar Exp $
+**!	$Id: image.h,v 1.29 1999/04/21 23:33:34 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -154,6 +154,7 @@ void image_operator_minus(INT32 args);
 void image_operator_plus(INT32 args);
 void image_operator_multiply(INT32 args);
 void image_operator_divide(INT32 args);
+void image_operator_rest(INT32 args);
 void image_operator_maximum(INT32 args);
 void image_operator_minimum(INT32 args);
 

@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.21 1999/04/21 16:45:02 mirar Exp $ */
+/* $Id: operator.c,v 1.22 1999/04/21 23:33:29 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.21 1999/04/21 16:45:02 mirar Exp $
+**!	$Id: operator.c,v 1.22 1999/04/21 23:33:29 mirar Exp $
 **! class Image
 */
 
@@ -42,6 +42,7 @@ extern struct program *image_program;
    struct image *img,*oper=NULL;					\
    rgb_group *s1,*s2,*d;						\
    rgbl_group rgb;							\
+   rgb_group trgb;                                                      \
    INT32 i;								\
 									\
    if (!THIS->img) error("no image\n");					\
@@ -63,8 +64,9 @@ extern struct program *image_program;
    else if (args && (sp[-args].type==T_ARRAY ||				\
 		     sp[-args].type==T_OBJECT ||			\
 		     sp[-args].type==T_STRING) &&			\
-            image_color_arg(-args,&rgb))				\
+            image_color_arg(-args,&trgb))				\
    {									\
+      rgb.r=trgb.r; rgb.g=trgb.g; rgb.b=trgb.b; 			\
       oper=NULL;							\
    }									\
    else									\
@@ -227,37 +229,62 @@ STANDARD_OPERATOR_HEADER("`*")
 
 /*
 **! method object `/(object operand)
-**! method object `/(array(int) color)
+**! method object `/(Color color)
 **! method object `/(int value)
-**!	Multiplies pixel values and creates a new image.
+**! method object `%(object operand)
+**! method object `%(Color color)
+**! method object `%(int value)
+**!	Divides pixel values and creates a new image from the result or
+**!	the rest.
 **! returns the new image object
 **!
-**!	This can be useful to lower the values of an image,
-**!	making it greyer, for instance:
-**!
-**!	<pre>image=image/128+64;</pre>
-**!
 **! arg object operand
-**!	the other image to multiply with;
+**!	the other image to divide with;
 **!	the images must have the same size.
-**! arg array(int) color
-**!	an array in format ({r,g,b}), this is equal
-**!	to using an uniform-colored image.
+**! arg Color color
 **! arg int value
-**!	equal to ({value,value,value}).
+**!	if specified as color or value, it will act as a whole
+**!	image of that color (or value).
 **!
-**! see also: `-, `+, `|, `&, add_layers
+**! see also: `-, `+, `|, `&, `*, add_layers
+**!
+**! note: Divide is really not a/b but a/((b+1)/255).
+**!	  It isn't possible to do a modulo 256 either. (why?)
 */
+
+void image_operator_rest(INT32 args)
+{
+   double q=1/255.0;
+STANDARD_OPERATOR_HEADER("`%")
+   while (i--)
+   {
+      d->r=s1->r%(s2->r?s2->r:1);
+      d->g=s1->g%(s2->g?s2->g:1);
+      d->b=s1->b%(s2->b?s2->b:1);
+      s1++; s2++; d++; 
+   }
+   else
+   while (i--)
+   {
+      d->r=s1->r%(rgb.r?rgb.r:1);
+      d->g=s1->g%(rgb.g?rgb.g:1);
+      d->b=s1->b%(rgb.b?rgb.b:1);
+      s1++; d++; 
+   }
+   THREADS_DISALLOW();
+   pop_n_elems(args);		   		   		
+   push_object(o);		   		   		
+}
 
 void image_operator_divide(INT32 args)
 {
    double q=1/255.0;
-STANDARD_OPERATOR_HEADER("`*")
+STANDARD_OPERATOR_HEADER("`/")
    while (i--)
    {
-      d->r=floor(s1->r/(q*(s2->r+1))+0.5);
-      d->g=floor(s1->g/(q*(s2->g+1))+0.5);
-      d->b=floor(s1->b/(q*(s2->b+1))+0.5);
+      d->r=testrange(floor(s1->r/(q*(s2->r+1))+0.5));
+      d->g=testrange(floor(s1->g/(q*(s2->g+1))+0.5));
+      d->b=testrange(floor(s1->b/(q*(s2->b+1))+0.5));
       s1++; s2++; d++; 
    }
    else
@@ -272,6 +299,7 @@ STANDARD_OPERATOR_HEADER("`*")
    pop_n_elems(args);		   		   		
    push_object(o);		   		   		
 }
+
 
 /*
 **! method object `|(object operand)
