@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.11 2001/09/22 02:43:03 js Exp $
+// $Id: Crawler.pmod,v 1.12 2002/03/06 10:21:27 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -567,6 +567,7 @@ class RobotExcluder
   {
     base_uri=_base_uri; done_cb=_done_cb;
     user_agent = _user_agent || "PikeCrawler";
+    user_agent = (user_agent/"/")[0];
     args = _args;
     set_callbacks(request_ok, request_fail);
     async_request(base_uri->host, base_uri->port,
@@ -611,26 +612,49 @@ class RobotExcluder
   array(string) parse_robot_txt(string robottxt, Standards.URI uri)
   {
     array(string) collect_rejected=({});
-    int rejected=1;
+    int rejected=0,
+      parsed_disallow=0; 
     foreach( robottxt/"\n"-({""}), string line )
     {
       line -= "\r";
       string field, value;
       if(sscanf(line, "%s:%*[ \t]%[^ \t#]", field, value)==3)
       {
-	switch(lower_case(field))
+	if(lower_case(field)=="user-agent")
 	{
-          case "user-agent":
-	    rejected=glob("*"+lower_case(value)+"*", lower_case(user_agent));
-	    break;
-          case "disallow":
-	    if(rejected) {
-	      if (!sizeof(value))
-		collect_rejected = ({});
-	      else
-		collect_rejected+=({ (string)Standards.URI(value+"*", uri) });
+	  if(parsed_disallow)
+	  {
+	    if(rejected==2)
+	      break;
+	    parsed_disallow=rejected=0;
+	  }
+	  if(value=="*")
+	  {
+	    if(rejected==0)
+	      rejected=1;
+	    else if(rejected==2)
+	      rejected=0;
+	  }
+	  else if(glob("*"+lower_case(value)+"*", lower_case(user_agent)))
+	  {
+	    switch(rejected)
+	    {
+	      case 0: rejected=2; break;
+	      case 1: rejected=2; collect_rejected = ({}); break;
+	      case 2: if(sizeof(collect_rejected)) rejected=0; break;
 	    }
-	    break;
+	  }
+	}
+	else if(lower_case(field)=="disallow")
+	{
+	  if(rejected)
+	  {
+	    if (!sizeof(value))
+	      collect_rejected = ({});
+	    else
+	      collect_rejected+=({ (string)Standards.URI(value+"*", uri) });
+	  }
+	  parsed_disallow=1;
 	}
       }
     }
