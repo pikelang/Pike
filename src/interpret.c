@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.134 2000/01/07 04:33:55 mast Exp $");
+RCSID("$Id: interpret.c,v 1.135 2000/01/22 22:13:08 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -745,6 +745,13 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	break;
       }else{
 	o=s->u.object;
+	if(o->prog == pike_trampoline_program)
+	{
+	  fun=((struct pike_trampoline *)(o->storage))->func;
+	  scope=((struct pike_trampoline *)(o->storage))->frame;
+	  o=scope->current_object;
+	  goto apply_low_with_scope;
+	}
 	fun=s->subtype;
 	goto apply_low;
       }

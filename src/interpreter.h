@@ -184,6 +184,9 @@ static int eval_instruction(unsigned char *pc)
 	add_ref( ((struct pike_trampoline *)(o->storage))->frame=fp );
 	((struct pike_trampoline *)(o->storage))->func=GET_ARG()+fp->context.identifier_level;
 	push_object(o);
+	/* Make it look like a function. */
+	sp[-1].subtype = pike_trampoline_program->lfuns[LFUN_CALL];
+	sp[-1].type = T_FUNCTION;
 	print_return_value();
 	break;
       }
