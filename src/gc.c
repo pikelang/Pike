@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.133 2000/09/14 15:25:36 mast Exp $");
+RCSID("$Id: gc.c,v 1.134 2000/09/15 00:30:55 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1207,13 +1207,8 @@ int gc_do_weak_free(void *a)
 #endif
 
   if (Pike_in_gc != GC_PASS_ZAP_WEAK) {
-    if (m->weak_refs < 0) {
-      gc_ext_weak_refs--;
-#ifdef PIKE_DEBUG
-      m->flags |= GC_WEAK_FREED;
-#endif
-      return 1;
-    }
+    if (m->weak_refs < 0)
+      goto should_free;
   }
   else
     if (!(m->flags & GC_MARKED)) {
@@ -1223,13 +1218,25 @@ int gc_do_weak_free(void *a)
 		 "weak refs.\n");
 #endif
       m->weak_refs--;
-      gc_ext_weak_refs--;
-#ifdef PIKE_DEBUG
-      m->flags |= GC_WEAK_FREED;
-#endif
-      return 1;
+      goto should_free;
     }
   return 0;
+
+should_free:
+  gc_ext_weak_refs--;
+#ifdef PIKE_DEBUG
+  m->flags |= GC_WEAK_FREED;
+#endif
+
+  if (*(INT32 *) a == 1) {
+    /* Make sure the thing doesn't run out of refs, since we can't
+     * handle cascading frees now. We'll do it in the free pass
+     * instead. */
+    gc_add_extra_ref(a);
+    m->flags |= GC_GOT_DEAD_REF;
+  }
+
+  return 1;
 }
 
 int gc_mark(void *a)
@@ -1778,13 +1785,13 @@ static void gc_cycle_pop(void *a)
 #ifdef PIKE_DEBUG
     if (pm->frame != p)
       gc_fatal(p->data, 0, "Bogus marker for thing being popped.\n");
-    if (pm->flags & GC_GOT_DEAD_REF)
-      gc_fatal(p->data, 0, "Didn't expect a dead extra ref.\n");
 #endif
     p->frameflags &= ~(GC_WEAK_REF|GC_STRONG_REF);
     if (pm->flags & GC_LIVE_OBJ) {
-      /* This extra ref is taken away in the kill pass. */
-      gc_add_extra_ref(p->data);
+      /* This extra ref is taken away in the kill pass. Don't add one
+       * if it got an extra ref already due to weak free. */
+      if (!(pm->flags & GC_GOT_DEAD_REF))
+	gc_add_extra_ref(p->data);
       base = p;
       DO_IF_DEBUG(PREV(p) = (struct gc_frame *)(ptrdiff_t) -1);
       CYCLE_DEBUG_MSG(pm, "gc_cycle_pop, put on kill list");
@@ -1795,14 +1802,16 @@ static void gc_cycle_pop(void *a)
 	 * is done to not refcount garb the cycles themselves
 	 * recursively, which in bad cases can consume a lot of C
 	 * stack. */
-#ifdef PIKE_DEBUG
-	if (pm->flags & GC_GOT_DEAD_REF)
-	  gc_fatal(pm->data, 0,
-		   "A thing already got an extra dead cycle ref.\n");
-#endif
-	gc_add_extra_ref(pm->data);
-	pm->flags |= GC_GOT_DEAD_REF;
+	if (!(pm->flags & GC_GOT_DEAD_REF)) {
+	  gc_add_extra_ref(pm->data);
+	  pm->flags |= GC_GOT_DEAD_REF;
+	}
       }
+#ifdef PIKE_DEBUG
+      else
+	if (pm->flags & GC_GOT_DEAD_REF)
+	  gc_fatal(p->data, 0, "Didn't expect a dead extra ref.\n");
+#endif
       NEXT(base) = NEXT(p);
       CYCLE_DEBUG_MSG(pm, "gc_cycle_pop, pop off");
       pm->frame = 0;
