@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.18 2002/08/09 17:29:02 grendel Exp $
+# $Id: rules,v 1.19 2002/08/10 13:52:04 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -233,14 +233,6 @@ install: build
             && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/$(PIKE)@' $$f; \
 	done; exit 0
 
-	# /usr/share/doc/* links
-	for f in `cat $(CURDIR)/debian/tocoredoc.txt`; do \
-	    dh_link -p$$f /usr/share/doc/$(PIKE)-core /usr/share/doc/$ff ; \
-	done
-	for f in `cat $(CURDIR)/debian/todocdoc.txt`; do \
-	    dh_link -p$$f /usr/share/doc/$(PIKE)-doc /usr/share/doc/$$f ; \
-	done
-
 	dh_movefiles --sourcedir=debian/$(PIKE)-core
 
 # Build architecture-independent files here.
@@ -261,7 +253,7 @@ binary-indep: build install
 #	dh_installman -i
 #	dh_installinfo -i
 #	dh_undocumented -i
-#	dh_installchangelogs  -i
+	dh_installchangelogs  -i
 	dh_link -i
 	dh_compress -i
 	dh_fixperms -i
@@ -276,7 +268,7 @@ binary-arch: build install
 	dh_testdir -a
 	dh_testroot -a
 #	dh_installdebconf -a
-	dh_installdocs -a -p$(PIKE)
+	dh_installdocs -a
 #	dh_installexamples -a
 	dh_installmenu -a -p$(PIKE)
 #	dh_installlogrotate -a
@@ -288,7 +280,7 @@ binary-arch: build install
 	dh_installman -p$(PIKE)-core debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
 #	dh_installinfo -a
 #	dh_undocumented -a
-	dh_installchangelogs -a -p$(PIKE)
+	dh_installchangelogs -a
 	dh_strip -a
 	dh_link -a
 	dh_compress -a
