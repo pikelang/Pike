@@ -54,6 +54,10 @@ struct frame
 
 #define push_svalue(S) do { struct svalue *_=(S); assign_svalue_no_free(sp,_); sp++; }while(0)
 
+#define stack_dup() push_svalue(sp-1)
+#define stack_swap() do { struct svalue _=sp[-1]; sp[-1]=sp[-2]; sp[-2]=_; } while(0)
+
+
 #define APPLY_MASTER(FUN,ARGS) \
 do{ \
   static int fun_,master_cnt=0; \
