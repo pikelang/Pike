@@ -1,5 +1,5 @@
 /*
- * $Id: mysql_result.pike,v 1.1 2004/06/13 21:47:21 mast Exp $
+ * $Id: mysql_result.pike,v 1.2 2004/06/14 07:33:20 mast Exp $
  *
  * Glue for the old broken Mysql-module which fetched all rows at once always
  */
@@ -29,7 +29,7 @@ void seek(int skip) {
 }
 
 int eof() {
-  return recno>sizeof(stash);
+  return recno>=sizeof(stash);
 }
 
 int num_rows() {
