@@ -85,9 +85,6 @@ precompile.pike
 rsif
   The extremly handy "replace string in file" utility.
 
-rsqld.pike
-  An SQL proxy daemon.
-
 smartlink
   [FIXME: What does this do?]
 
