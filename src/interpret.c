@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.184 2001/03/09 02:43:58 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.185 2001/06/08 14:28:22 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1482,13 +1482,18 @@ PMOD_EXPORT void call_handle_error(void)
     Pike_interpreter.svalue_stack_margin = 0;
     Pike_interpreter.c_stack_margin = 0;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-    assign_svalue_no_free(Pike_sp++, & throw_value);
+    *(Pike_sp++) = throw_value;
+    throw_value.type=T_INT;
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
     Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
     Pike_interpreter.c_stack_margin = C_STACK_MARGIN;
     t_flag = old_t_flag;
+  }
+  else {
+    free_svalue(&throw_value);
+    throw_value.type=T_INT;
   }
 }
 
