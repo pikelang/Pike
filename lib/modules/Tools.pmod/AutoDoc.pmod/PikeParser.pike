@@ -550,7 +550,8 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   if (s == "import") {
     Import i = Import();
     i->position = position;
-    skipUntil(";");
+    readToken();
+    i->classname = parseProgramName();
     return i;
   }
   else if (s == "class") {

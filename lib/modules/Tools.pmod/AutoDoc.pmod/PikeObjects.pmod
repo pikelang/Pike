@@ -333,8 +333,11 @@ class Inherit {
 }
 
 class Import {
-  inherit PikeObject;
+  inherit Inherit;
   constant objtype = "import";
+  string print() {
+    return ::print() + " " + classname;
+  }
 }
 
 class _Class_or_Module {
@@ -346,7 +349,7 @@ class _Class_or_Module {
   // NB: The documentation appears as a child of the <class> or <module>
   Documentation documentation;
 
-  array(Inherit) inherits = ({ });
+  array(Inherit|Import) inherits = ({ });
   array(_Class_or_Module) children = ({ });
   array(DocGroup) docGroups = ({ });
 

@@ -412,6 +412,7 @@ void mergeTrees(Node dest, Node source) {
         }
         break;
       case "inherit":
+      case "import":
       case "modifiers":
         // these shouldn't be duplicated..
         break;
@@ -892,7 +893,8 @@ static void resolveFun(ScopeStack scopes, Node node) {
 	    if (!doc)
 	      werror("No doc element found\n%s\n\n", child->render_xml());
 	    scopes->leave();
-	    if ((child->get_attributes()["homogen-type"] == "inherit") &&
+	    if (((child->get_attributes()["homogen-type"] == "inherit") ||
+		 (child->get_attributes()["homogen-type"] == "import")) &&
 		(child->get_attributes()["homogen-name"])) {
 	      // Avoid finding ourselves...
 	      scopes->remName(child->get_attributes()["homogen-name"]);
@@ -915,6 +917,7 @@ static void resolveFun(ScopeStack scopes, Node node) {
           fixupRefs(scopes, child);
           break;
         case "inherit":
+        case "import":
 	  child = child->get_first_element("classname");
           mapping m = child->get_attributes();
           if (m["resolved"])
@@ -951,6 +954,7 @@ class NScope
   string path;
   mapping(string:int(1..1)|NScope) symbols = ([]);
   mapping(string:string|NScope) inherits;
+  multiset(string|NScope) imports;
 
   // @[tree] is a node of type autodoc, namespace, module, class, enum,
   // or docgroup.
@@ -998,9 +1002,20 @@ class NScope
 	      symbols[n] = h_scope;
 	    }
 	    break;
+	  case "import":
+	    Node imp = thing->get_first_element("classname");
+	    string scope = imp->value_of_node();
+	    if (!n) n = scope;
+	    // We can't lookup the import yet, so put a place holder for it.
+	    if (imports) {
+	      imports[scope] = 1;
+	    } else {
+	      imports = (< scope >);
+	    }
+	    break;
 	  case "inherit":
 	    Node inh = thing->get_first_element("classname");
-	    string scope = inh->value_of_node();
+	    scope = inh->value_of_node();
 	    if (!n) n = scope;
 	    // We can't lookup the inherit yet, so put a place holder for it.
 	    if (inherits) {
@@ -1059,7 +1074,7 @@ class NScope
     return sprintf("NScope(type:%O, name:%O, symbols:%d, inherits:%d)",
 		   type, name, sizeof(symbols), sizeof(inherits||([])));
   }
-  string lookup(array(string) path)
+  string lookup(array(string) path, int(0..1)|void no_imports )
   {
     int(1..1)|NScope scope = symbols[path[0]];
     if (!scope) {
@@ -1067,7 +1082,15 @@ class NScope
       if (inherits) {
 	foreach(inherits; string inh; scope) {
 	  if (objectp(scope)) {
-	    string res = scope->lookup(path);
+	    string res = scope->lookup(path, 1);
+	    if (res) return res;
+	  }
+	}
+      }
+      if (imports && !no_imports) {
+	foreach(imports; scope; ) {
+	  if (objectp(scope)) {
+	    string res = scope->lookup(path, 1);
 	    if (res) return res;
 	  }
 	}
@@ -1081,7 +1104,7 @@ class NScope
     } else if (!objectp(scope)) {
       return 0;
     }
-    return scope->lookup(path[1..]);
+    return scope->lookup(path[1..], 1);
   }
 }
 
@@ -1206,7 +1229,7 @@ class NScopeStack
 	}
 	break;
       }
-      return (scopes->lookup(ref));
+      return scopes->lookup(ref, 1);
     }
     if (!sizeof(ref[0])) {
       // .module
@@ -1232,6 +1255,7 @@ class NScopeStack
       }
     }
     while(pos--) {
+      // Look in imports too.
       string res = current->lookup(ref);
       if (res) return res;
       current = stack[pos];
@@ -1246,6 +1270,9 @@ class NScopeStack
       removed_self = 1;
       m_delete(stack[-1]->symbols, name);
     }
+    // FIXME: Inherits and imports add visibility of symbols
+    //        to later inherits and imports. This is not handled
+    //        by the code below.
     foreach(top->inherits||([]); string inh; string|NScope scope) {
       if (stringp(scope)) {
 	if (sizeof(scope) && scope[0] == '"') {
@@ -1264,6 +1291,25 @@ class NScopeStack
 	  }
 	}
 	m_delete(top->inherits, inh);
+      }
+    }
+    foreach(indices(top->imports||(<>)); ; string|NScope scope) {
+      if (stringp(scope)) {
+	top->imports[scope] = 0;
+	if (sizeof(scope) && scope[0] == '"') {
+	  // Import of files not supported yet.
+	} else {
+	  string path = resolve(splitRef(scope));
+	  if (path) {
+	    top->imports[path] = 1;
+	    continue;
+	  } else {
+	    werror("Failed to resolve import %O.\n"
+		   "  Top: %O\n"
+		   "  Stack: %O\n",
+		   scope, top, stack);
+	  }
+	}
       }
     }
     // Make ourselves available again.
@@ -1302,11 +1348,54 @@ class NScopeStack
 	m_delete(top->inherits, inh);
       }
     }
+    foreach(indices(top->imports||(<>)); ; string|NScope scope) {
+      if (stringp(scope)) {
+	string path = [string]scope;
+	top->imports[path] = 0;
+	int(1..1)|NScope nscope = lookup(path);
+	if (objectp(nscope)) {
+	  // Avoid loops...
+	  if (nscope != top) {
+	    top->imports[nscope] = 1;
+	    continue;
+	  }
+	  werror("Failed to lookup import %O (loop).\n"
+		 "  Top: %O\n"
+		 "  Scope: %O\n"
+		 "  NewScope: %O\n"
+		 "  Stack: %O\n",
+		 path, top, scope, nscope, stack);
+	} else {
+	  werror("Failed to lookup import %O.\n"
+		 "  Top: %O\n"
+		 "  Scope: %O\n"
+		 "  NewScope: %O\n"
+		 "  Stack: %O\n"
+		 "  Top->Symbols: %O\n",
+		 path, top, scope, nscope, stack,
+		 indices(top->symbols));
+	}
+      }
+    }
     array(NScope) old_stack = stack;
     NScope old_top = top;
     foreach(top->inherits||([]); string inh; NScope scope) {
       if (sizeof(filter(scope->inherits||({}), stringp))) {
 	// We've inherited a scope with unresolved inherits.
+	// We need to resolve them before we can resolve
+	// stuff in ourselves.
+	reset();
+	foreach(splitRef(scope->name), string sym) {
+	  enter(sym);
+	}
+	resolveInherits();
+      }
+    }
+    // Note: We need to do the same for imports, since
+    //       they may contain inherited symbols.
+    foreach(top->imports||(<>); NScope scope; ) {
+      if (sizeof(filter(scope->inherits||({}), stringp))) {
+	// We've imported a scope with unresolved inherits.
 	// We need to resolve them before we can resolve
 	// stuff in ourselves.
 	reset();

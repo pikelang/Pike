@@ -455,9 +455,10 @@ static private class Extractor {
           context = "_general";
         doc->xml = parse->doc(context);
       } else {
-	// Make sure that all inherits are added:
+	// Make sure that all inherits and imports are added:
 	foreach(decls, PikeObject obj) {
-	  if (obj->objtype == "inherit") {
+	  if ((obj->objtype == "inherit") ||
+	      (obj->objtype == "import")) {
 	    c->AddInherit(obj);
 	  }
 	}

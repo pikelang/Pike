@@ -42,6 +42,8 @@ mapping(string : int) keywordtype =
   "namespace" : METAKEYWORD,
   "endnamespace" : METAKEYWORD,
   "decl" : METAKEYWORD,
+  "enum" : METAKEYWORD,
+  "endenum" : METAKEYWORD,
 
   "b" : BRACEKEYWORD,
   "i" : BRACEKEYWORD,
