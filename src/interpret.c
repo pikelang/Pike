@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.180 2001/01/11 23:28:30 mast Exp $");
+RCSID("$Id: interpret.c,v 1.181 2001/01/12 01:58:38 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -756,14 +756,17 @@ static int o_catch(unsigned char *pc);
 
 struct light_frame_info
 {
+  struct pike_frame *saved_fp;
   struct svalue *expendible;
   struct svalue *locals;
 };
 
 static void restore_light_frame_info(struct light_frame_info *info)
 {
-  Pike_fp->expendible = info->expendible;
-  Pike_fp->locals = info->locals;
+  if (Pike_fp == info->saved_fp) {
+    Pike_fp->expendible = info->expendible;
+    Pike_fp->locals = info->locals;
+  }
 }
 
 #ifdef PIKE_DEBUG
