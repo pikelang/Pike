@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.143 1999/02/05 01:03:55 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.144 1999/02/05 05:30:15 mast Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1357,6 +1357,9 @@ test_true(([])?1:0)
 test_true(({})?1:0)
 test_true((<>)?1:0)
 test_true(object_program(this_object())?1:0)
+test_eq(1 ? "a" : 1 ? "b" : 1, "a")
+test_eq(0 ? "a" : 1 ? "b" : 1 ? "c" : 1, "b")
+test_eq(0 ? "a" : 0 ? "b" : 1 ? "c" : 1, "c")
 
 // testing indexing
 test_eq("foo"[0],'f')
