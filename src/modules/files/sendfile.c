@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.28 1999/10/06 22:40:18 hubbe Exp $
+ * $Id: sendfile.c,v 1.29 1999/10/14 19:37:47 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -198,10 +198,14 @@ static void exit_pike_sendfile(struct object *o)
     free_object(THIS->self);
     THIS->self = NULL;
   }
-  /* This is not required since  this is a mapped variable
+  /* This is not required since this is a mapped variable.
    * /Hubbe
-   * free_svalue(&(THIS->callback));
+   * But we do it anyway for paranoia reasons.
+   * /grubba 1999-10-14
    */
+   free_svalue(&(THIS->callback));
+   THIS->callback.type = T_INT;
+   THIS->callback.u.integer = 0;
 }
 
 /*
@@ -636,6 +640,17 @@ static void sf_create(INT32 args)
     error("sendfile->create(): Called a second time!\n");
   }
 
+  /* In case the user has succeeded in initializing _callback
+   * before create() is called.
+   */
+  free_svalue(&(THIS->callback));
+  THIS->callback.type = T_INT;
+  THIS->callback.u.integer = 0;
+
+  /* NOTE: The references to the stuff in sf are held by the stack.
+   * This means that we can throw errors without needing to clean up.
+   */
+
   MEMSET(&sf, 0, sizeof(struct pike_sendfile));
   sf.callback.type = T_INT;
 
@@ -644,7 +659,11 @@ static void sf_create(INT32 args)
 	       &(sf.len), &(sf.trailers), &(sf.to_file), &cb);
 
   /* We need to give 'cb' another reference /Hubbe */
-  assign_svalue(&(sf.callback),cb);
+  /* No, we don't. We steal the reference from the stack.
+   * /grubba
+   */
+  /* assign_svalue(&(sf.callback),cb); */
+  sf.callback = *cb;
 
   /* Fix the trailing args */
   push_array(sf.args = aggregate_array(args-7));
@@ -880,7 +899,7 @@ static void sf_create(INT32 args)
     /* set_blocking */
     set_nonblocking(sf.to_fd, 0);
     sf.to->open_mode &= ~FILE_NONBLOCKING;
-    
+
     /*
      * Setup done. Note that we keep refs to all refcounted svalues in
      * our object.
