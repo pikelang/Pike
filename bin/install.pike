@@ -1153,6 +1153,9 @@ void do_install()
     foreach(glob("*.dll", get_dir(vars->TMP_BUILDDIR)), string dll_name)
       install_file(combine_path(vars->TMP_BUILDDIR, dll_name),
 		   combine_path(exec_prefix, dll_name));
+    // Copy the Program Database (debuginfo)
+    install_file(combine_path(vars->TMP_BUILDDIR, "pike.pdb"),
+                 combine_path(exec_prefix, "pike.pdb"));
 #endif
     install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),combine_path(exec_prefix,"hilfe"));
     string master=combine_path(vars->LIBDIR_SRC,"master.pike.in");
