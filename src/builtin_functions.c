@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.219 1999/12/07 18:58:47 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.220 1999/12/08 21:19:21 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1554,6 +1554,11 @@ static node *fix_aggregate_mapping_type(node *n)
     args->parent = 0;
 
     while(arg) {
+#ifdef PIKE_DEBUG
+      if (l_flag > 4) {
+	fprintf(stderr, "Searching for arg #%d...\n", argno);
+      }
+#endif /* PIKE_DEBUG */
       if (arg->token == F_ARG_LIST) {
 	if (CAR(arg)) {
 	  CAR(arg)->parent = arg;
@@ -1567,6 +1572,11 @@ static node *fix_aggregate_mapping_type(node *n)
 	}
 	/* Retrace */
       retrace:
+#ifdef PIKE_DEBUG
+	if (l_flag > 4) {
+	  fprintf(stderr, "Retracing in search for arg %d...\n", argno);
+	}
+#endif /* PIKE_DEBUG */
 	while (arg->parent &&
 	       (!CDR(arg->parent) || (CDR(arg->parent) == arg))) {
 	  arg = arg->parent;
@@ -1586,14 +1596,32 @@ static node *fix_aggregate_mapping_type(node *n)
 	MAKE_CONSTANT_SHARED_STRING(new_type, tMap(tMixed, tMixed));
 	goto set_type;
       }
-      if (types[argno]) {
-	struct pike_string *t = or_pike_types(types[argno], arg->type, 0);
-	free_string(types[argno]);
-	types[argno] = t;
-      } else {
-	copy_shared_string(types[argno], arg->type);
+#ifdef PIKE_DEBUG
+      if (l_flag > 4) {
+	fprintf(stderr, "Found arg #%d:\n", argno);
+	print_tree(arg);
+	simple_describe_type(arg->type);
       }
-      argno = !argno;
+#endif /* PIKE_DEBUG */
+      do {
+	if (types[argno]) {
+	  struct pike_string *t = or_pike_types(types[argno], arg->type, 0);
+	  free_string(types[argno]);
+	  types[argno] = t;
+#ifdef PIKE_DEBUG
+	  if (l_flag > 4) {
+	    fprintf(stderr, "Resulting type for arg #%d:\n", argno);
+	    simple_describe_type(types[argno]);
+	  }
+#endif /* PIKE_DEBUG */
+	} else {
+	  copy_shared_string(types[argno], arg->type);
+	}
+	argno = !argno;
+	/* Handle the special case where CAR & CDR are the same.
+	 * Only occurrs with SHARED_NODES.
+	 */
+      } while (argno && arg->parent && CAR(arg->parent) == CDR(arg->parent));
       goto retrace;
     }
 
