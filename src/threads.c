@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.135 2000/08/10 18:25:17 grubba Exp $");
+RCSID("$Id: threads.c,v 1.136 2000/08/11 11:02:36 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1055,7 +1055,7 @@ void f_thread_id__sprintf (INT32 args)
 {
   pop_n_elems (args);
   push_constant_text ("Thread.Thread(");
-  push_int (THIS_THREAD->id);
+  push_int64((ptrdiff_t)THIS_THREAD->id);
   push_constant_text (")");
   f_add (3);
 }

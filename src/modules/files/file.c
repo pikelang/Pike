@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.184 2000/08/09 21:21:02 grubba Exp $");
+RCSID("$Id: file.c,v 1.185 2000/08/11 11:01:04 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -989,7 +989,7 @@ static void file_write(INT32 args)
 	    break;
 
 	  while(i) {
-	    if (iov->iov_len <= i) {
+	    if ((ptrdiff_t)iov->iov_len <= i) {
 	      i -= iov->iov_len;
 	      iov++;
 	      iovcnt--;
