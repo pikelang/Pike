@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.26 1997/11/29 02:57:46 marcus Exp $
+# $Id: dynamic_module_makefile.in,v 1.27 1997/12/01 20:21:33 grubba Exp $
 #
 
 
@@ -33,7 +33,7 @@ modlist_segment: Makefile
 	echo "" >modlist_segment
 
 Makefile: ../dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
-	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	@echo "Run make again"
 	@exit 1
 
