@@ -19,6 +19,9 @@ tone       If present a Pie-chart will be toned.
 data       An array of arrays. Each array describing a data-set.
            The graph-function however should be fed with an array
            of arrays with X,Y-pairs.
+       Example:
+       ({({1.0, 2.0, 3.0}),({1.2, 2.2, 3.8})}) draws stuff in yellow
+        with the values (1.0, 2.0, 3.0), and (1.2, 2.2, 3.8) in blue.
 labels     An array(string) with four elements
            ({xquantity, yquantity, xunit, yunit}). The strings will
            be written on the axis.
