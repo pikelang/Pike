@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.268 2001/09/28 00:01:45 hubbe Exp $");
+RCSID("$Id: las.c,v 1.269 2001/09/29 06:19:27 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1301,9 +1301,11 @@ node *debug_mkidentifiernode(int i)
 #endif
 }
 
-node *debug_mktrampolinenode(int i)
+node *debug_mktrampolinenode(int i, struct compiler_frame *frame)
 {
+  struct compiler_frame *f;
   node *res = mkemptynode();
+
   res->token = F_TRAMPOLINE;
   copy_pike_type(res->type, ID_FROM_INT(Pike_compiler->new_program, i)->type);
 
@@ -1319,9 +1321,15 @@ node *debug_mktrampolinenode(int i)
 #ifdef __CHECKER__
   _CDR(res) = 0;
 #endif
-  res->u.id.number = i;
+  res->u.trampoline.ident=i;
+  res->u.trampoline.frame=frame;
+  
+  for(f=Pike_compiler->compiler_frame;f != frame;f=f->previous)
+    f->lexical_scope|=SCOPE_SCOPED;
+  f->lexical_scope|=SCOPE_SCOPE_USED;
+
 #ifdef SHARED_NODES
-  res->u.id.prog = Pike_compiler->new_program;
+  res->u.trampoline.prog = Pike_compiler->new_program;
 #endif /* SHARED_NODES */
 
   res = freeze_node(res);
@@ -1864,13 +1872,20 @@ int node_is_eq(node *a,node *b)
 
   switch(a->token)
   {
+  case F_TRAMPOLINE: /* FIXME, the context has to be the same! */
+#ifdef SHARED_NODES
+    if(a->u.trampoline.prog != b->u.trampoline.prog)
+      return 0;
+#endif
+    return a->u.trampoline.ident == b->u.trampoline.ident &&
+      a->u.trampoline.frame == b->u.trampoline.frame;
+      
   case F_EXTERNAL:
   case F_LOCAL:
     return a->u.integer.a == b->u.integer.a &&
       a->u.integer.b == b->u.integer.b;
       
   case F_IDENTIFIER:
-  case F_TRAMPOLINE: /* FIXME, the context has to be the same! */
     return a->u.id.number == b->u.id.number;
 
   case F_CAST:
@@ -2370,7 +2385,7 @@ static void low_print_tree(node *foo,int needlval)
   case F_TRAMPOLINE:
     if (Pike_compiler->new_program) {
       fprintf(stderr, "trampoline<%s>",
-	      ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
+	      ID_FROM_INT(Pike_compiler->new_program, foo->u.trampoline.ident)->name->str);
     } else {
       fprintf(stderr, "trampoline<unknown identifier>");
     }
@@ -3355,7 +3370,7 @@ void fix_type_field(node *n)
       copy_pike_type(n->type, zero_type_string);
     } else {
       type_a=CAR(n)->type;
-      if(!check_indexing(type_a, int_type_string, n))
+      if(!match_types(type_a, array_type_string))
 	if(!Pike_compiler->catch_level)
 	  my_yyerror("[*] on non-array.");
       n->type=index_type(type_a, int_type_string, n);

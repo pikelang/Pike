@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.377 2001/09/27 15:17:47 grubba Exp $");
+RCSID("$Id: program.c,v 1.378 2001/09/29 06:19:28 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3216,21 +3216,18 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 				 id->opt_flags);
 	  
 	}
-	else if(id->identifier_flags & IDENTIFIER_CONSTANT &&
+	else if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
 		id->func.offset != -1)
 	{
 	  c=& Pike_compiler->new_program->constants[id->func.offset].sval;
 	}
       }
-#if 0
       else
       {
-	/* Actually, we do not allow fake objects to enter
-	 * the mainstream, but it would be possible to do so.
-	 * I will leave this code here just in case someone wants
-	 * to use it in the future
-	 */
-	if(id->identifier_flags & IDENTIFIER_CONSTANT)
+	if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
+	   id->func.offset != -1 &&
+	   INHERIT_FROM_INT(c->u.object->prog, c->subtype)->prog->
+	   constants[id->func.offset].sval.type == T_PROGRAM)
 	{
 	  /* In this one case we allow fake objects to enter the
 	   * mainstream...
@@ -3238,7 +3235,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 	  break;
 	}
       }
-#endif
     }
     
     if(c && !svalues_are_constant(c,1,BIT_MIXED,0))

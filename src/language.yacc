@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.261 2001/09/28 00:01:45 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.262 2001/09/29 06:19:27 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1872,7 +1872,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
     if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
-      $$ = mktrampolinenode(f);
+      $$ = mktrampolinenode(f, Pike_compiler->compiler_frame->previous);
     } else {
       $$ = mkidentifiernode(f);
     }
@@ -1943,19 +1943,26 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 
     name=make_shared_string(buf);
 
-    id=define_function(name,
-		       type,
-		       0,
-		       IDENTIFIER_PIKE_FUNCTION,
-		       0,
-		       OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    if(Pike_compiler->compiler_pass > 1)
+    {
+      id=isidentifier(name);
+    }else{
+      id=define_function(name,
+			 type,
+			 0,
+			 IDENTIFIER_PIKE_FUNCTION,
+			 0,
+			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    }
     n=0;
-#if 0
     if(Pike_compiler->compiler_pass > 1 &&
        (i=ID_FROM_INT(Pike_compiler->new_program, id)))
-      if(!(i->identifier_flags & IDENTIFIER_SCOPED))
+    {
+      if(i->identifier_flags & IDENTIFIER_SCOPED)
+	n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+      else
 	n = mkidentifiernode(id);
-#endif
+    }
 
     low_add_local_name(Pike_compiler->compiler_frame->previous,
 		       $1->u.sval.u.string, type, n);
@@ -2004,11 +2011,9 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
       if(Pike_compiler->compiler_frame->lexical_scope & 
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
-	$$ = mknode(F_ASSIGN, mktrampolinenode($<number>3),
-		    mklocalnode(localid,0));
+	$$ = mktrampolinenode($<number>3,Pike_compiler->compiler_frame);
       }else{
-	$$ = mknode(F_ASSIGN, mkidentifiernode($<number>3),
-		    mklocalnode(localid,0));
+	$$ = mkidentifiernode($<number>3);
       }
     }
   }
@@ -2081,20 +2086,26 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
     name=make_shared_string(buf);
 
-
-    id=define_function(name,
-		       type,
-		       0,
-		       IDENTIFIER_PIKE_FUNCTION,
-		       0,
-		       OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    if(Pike_compiler->compiler_pass > 1)
+    {
+      id=isidentifier(name);
+    }else{
+      id=define_function(name,
+			 type,
+			 0,
+			 IDENTIFIER_PIKE_FUNCTION,
+			 0,
+			 OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+    }
     n=0;
-#if 0
     if(Pike_compiler->compiler_pass > 1 &&
        (i=ID_FROM_INT(Pike_compiler->new_program, id)))
-      if(!(i->identifier_flags & IDENTIFIER_SCOPED))
+    {
+      if(i->identifier_flags & IDENTIFIER_SCOPED)
+	n = mktrampolinenode(id, Pike_compiler->compiler_frame->previous);
+      else
 	n = mkidentifiernode(id);
-#endif
+    }
 
     low_add_local_name(Pike_compiler->compiler_frame->previous,
 		       $2->u.sval.u.string, type, n);
@@ -2144,11 +2155,9 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
       if(Pike_compiler->compiler_frame->lexical_scope & 
 	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
-        $$ = mknode(F_ASSIGN, mktrampolinenode($<number>5),
-	  mklocalnode(localid,0));
+        $$ = mktrampolinenode($<number>5,Pike_compiler->compiler_frame);
       }else{
-        $$ = mknode(F_ASSIGN, mkidentifiernode($<number>5),
-	  mklocalnode(localid,0));
+        $$ = mkidentifiernode($<number>5);
       }
     }
   }
@@ -3015,7 +3024,7 @@ optional_block: ';' /* EMPTY */ { $$=0; }
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
     if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
-      $$ = mktrampolinenode(f);
+      $$ = mktrampolinenode(f,Pike_compiler->compiler_frame->previous);
     } else {
       $$ = mkidentifiernode(f);
     }

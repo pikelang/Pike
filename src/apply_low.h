@@ -129,6 +129,12 @@
       new_frame->pc = 0;
 #ifdef SCOPE
       new_frame->scope=scope;
+#ifdef PIKE_DEBUG
+      if(new_frame->fun == scope->fun)
+      {
+	fatal("Que? A function cannot be parented by itself!\n");
+      }
+#endif
 #else
       new_frame->scope=0;
 #endif

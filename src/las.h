@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.52 2001/08/13 23:15:58 mast Exp $
+ * $Id: las.h,v 1.53 2001/09/29 06:19:27 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -137,7 +137,7 @@ node *debug_mkefuncallnode(char *function, node *args);
 node *debug_mkopernode(char *oper_id, node *arg1, node *arg2);
 node *debug_mklocalnode(int var, int depth);
 node *debug_mkidentifiernode(int i);
-node *debug_mktrampolinenode(int i);
+node *debug_mktrampolinenode(int i, struct compiler_frame *depth);
 node *debug_mkexternalnode(struct program *prog, int i);
 node *debug_mkcastnode(struct pike_type *type, node *n);
 node *debug_mksoftcastnode(struct pike_type *type, node *n);
@@ -188,7 +188,7 @@ void resolv_program(node *n);
 #define mkopernode(oper_id, arg1, arg2) dmalloc_touch(node *, debug_mkopernode(oper_id, dmalloc_touch(node *, arg1), dmalloc_touch(node *, arg2)))
 #define mklocalnode(var, depth) dmalloc_touch(node *, debug_mklocalnode(var, depth))
 #define mkidentifiernode(i) dmalloc_touch(node *, debug_mkidentifiernode(i))
-#define mktrampolinenode(i) dmalloc_touch(node *, debug_mktrampolinenode(i))
+#define mktrampolinenode(i,f) dmalloc_touch(node *, debug_mktrampolinenode(i, f))
 #define mkexternalnode(parent_prog, i) dmalloc_touch(node *, debug_mkexternalnode(parent_prog, i))
 #define mkcastnode(type, n) dmalloc_touch(node *, debug_mkcastnode(type, dmalloc_touch(node *, n)))
 #define mksoftcastnode(type, n) dmalloc_touch(node *, debug_mksoftcastnode(type, dmalloc_touch(node *, n)))

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.133 2001/09/28 00:01:44 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.134 2001/09/29 06:19:26 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2013,8 +2013,16 @@ static int do_docode2(node *n, INT16 flags)
     }
 
     case F_TRAMPOLINE:
-      emit1(F_TRAMPOLINE,n->u.id.number);
+    {
+      struct compiler_frame *f;
+      int depth=0;
+      for(f=Pike_compiler->compiler_frame;
+	  f!=n->u.trampoline.frame;f=f->previous)
+	depth++;
+
+      emit2(F_TRAMPOLINE,n->u.trampoline.ident,depth);
       return 1;
+    }
 
   case F_IDENTIFIER:
     if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(Pike_compiler->new_program, n->u.id.number)->identifier_flags))

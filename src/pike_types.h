@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.72 2001/08/30 23:32:16 mast Exp $
+ * $Id: pike_types.h,v 1.73 2001/09/29 06:19:28 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -81,6 +81,8 @@ extern unsigned char *pike_type_mark_stack[PIKE_TYPE_STACK_SIZE/4];
 
 #endif /* USE_PIKE_TYPE */
 
+struct compiler_frame;
+
 /* Also used in struct node_identifier */
 union node_data
 {
@@ -89,6 +91,14 @@ union node_data
     int number;
     struct program *prog;
   } id;
+  struct
+  {
+    int ident;
+    struct compiler_frame *frame;
+#ifdef SHARED_NODES
+    struct program *prog;
+#endif
+  } trampoline;
   struct svalue sval;
   struct
   {
