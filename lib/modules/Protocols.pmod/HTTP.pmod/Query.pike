@@ -525,7 +525,7 @@ string data()
    if (zero_type(len)) 
       l=0x7fffffff;
    else
-      l=len-strlen(buf)+4+strlen(headerbuf);
+      l=len-strlen(buf)+datapos;
    if (l>0 && con)
    {
       string s=con->read(l);
