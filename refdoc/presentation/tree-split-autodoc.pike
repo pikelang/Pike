@@ -1,9 +1,18 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.1 2001/07/20 00:04:46 js Exp $
+ * $Id: tree-split-autodoc.pike,v 1.2 2001/07/22 07:27:35 js Exp $
  *
  */
 
 inherit "make_html.pike";
+
+mapping (string:Node) refs = ([ ]);
+
+string extra_prefix = "";
+string image_prefix()
+{
+  return extra_prefix + ::image_prefix();
+}
+
 
 class Node
 {
@@ -23,11 +32,12 @@ class Node
     parent = _parent;
     data = parse( _data );
 
+    refs[make_class_path()] = this_object();
+    refs[replace(make_class_path(), "()->", "->")] = this_object();
+
     sort(class_children->name, class_children);
     sort(module_children->name, module_children);
     sort(method_children->name, method_children);
-
-    werror("name: %O    type: %O\n", name,type);
   }
 
   static function parse_node(string type)
@@ -41,7 +51,7 @@ class Node
 	   };
   }
 
-  string parse_docgroup(Parser.HTML p, mapping m, string c)
+  string my_parse_docgroup(Parser.HTML p, mapping m, string c)
   {
     if(m["homogen-name"] && m["homogen-type"] && m["homogen-type"]=="method")
     {
@@ -59,7 +69,7 @@ class Node
     
     parser->case_insensitive_tag(1);
 
-    parser->add_container("docgroup", parse_docgroup);
+    parser->add_container("docgroup", my_parse_docgroup);
     parser->add_container("module", parse_node("module"));
     parser->add_container("class",  parse_node("class"));
     
@@ -70,6 +80,8 @@ class Node
 
   string make_faked_wrapper(string s)
   {
+    if(name=="top")
+      return s;
     if(type=="method")
       s = sprintf("<docgroup homogen-type='method' homogen-name='%s'>\n"
 		  "%s\n</docgroup>\n",
@@ -104,57 +116,152 @@ class Node
   
   string make_filename_low()
   {
-    string fn = cquote(lower_case(name));
+    string fn = cquote(name);
+    if(fn=="")
+      fn=="__index";
     if(parent)
-      return parent->make_filename_low()+"."+fn;
+      return parent->make_filename_low()+"/"+fn;
     else
       return fn;
   }
 
-
-  
   string make_filename()
   {
-    return replace(make_filename_low()+".html",
-		   "top..", "");
+    string s=make_filename_low()[5..]+".html";
+    if(s==".html")
+      return "index.html";
+    else
+      return s;
   }
 
+  string make_link(Node to)
+  {
+    // FIXME: Optimize the length of relative links
+    int num_segments = sizeof(make_filename()/"/") - 1;
+    return ("../"*num_segments)+to->make_filename();
+  }
+
+  array(Node) get_ancestors()
+  {
+    if(!parent)
+      return ({ });
+    else
+      return ({ this_object() }) + parent->get_ancestors();
+  }
+
+  string my_resolve_reference(string _reference)
+  {
+    foreach( ({ _reference,
+		Parser.parse_html_entities(_reference) }),
+	     string reference)
+    {
+      if(refs[reference])
+	return make_link( refs[reference] );
+
+      if(refs[reference])
+	return make_link( refs[reference] );
+      
+      foreach(find_siblings(), Node sibling)
+	if(sibling->name==reference ||
+	   sibling->name+"()"==reference)
+	  return make_link( sibling );
+    }
+      
+    werror("Missed reference: %O\n", _reference);
+    return 0;
+  }
+
+  string make_class_path()
+  {
+    array a;
+    if(parent)
+      a = reverse(parent->get_ancestors());
+    else
+      return "";
+
+    string res = "";
+    foreach(a[1..], Node n)
+    {
+      res += n->name;
+      if(n->type=="class")
+	res += "()->";
+      else if(n->type=="module")
+	res += ".";
+    }
+    res += name;
+
+    if(type=="method")
+      res +="()";
+
+    return res;
+  }
+
+  string make_navbar_really_low(array(Node) children, void|int notables)
+  {
+    string a="<tr><td>", b="</td></tr>";
+    if(notables)
+    {
+      a=""; b="<br />";
+    }
+    string res = "";
+    foreach(children, Node node)
+    {
+      string extension = "";
+      string my_name=node->name;
+      if(node->type=="method")
+	extension="()";
+      else
+	my_name="<b>"+my_name+"</b>";
+	  
+      if(node==this_object())
+	res += sprintf("%s� %s%s%s",
+		       a, my_name, extension, b);
+      else
+	res += sprintf("%s� <a href='%s'>%s%s</a>%s",
+		       a, make_link(node), my_name, extension, b);
+    }
+    return res;
+  }
+
+  string make_hier_list(Node node)
+  {
+    string res="";
+
+    if(node)
+    {
+      res += make_hier_list(node->parent);
+
+      string my_class_path = (node->name!="")?node->make_class_path():"[Top]";
+      
+      if(node == this_object())
+	res += sprintf("<b>%s</b><br />\n", my_class_path);
+      else
+	res += sprintf("<a href='%s'><b>%s</b></a><br />\n",
+		       make_link(node), my_class_path);
+    }
+    return res;
+  }
+  
   string make_navbar_low(Node root)
   { 
     string res="";
-    if(parent)
-      res += sprintf("<a href='%s'>Up</a><br />\n", parent->make_filename());
-    else
-      return "";
+
+    res += make_hier_list(root);
+
     res+="<table border='0' cellpadding='1' cellspacing='0' class='sidebar'>";
 
-    foreach( ({ root->module_children,
-		root->class_children,
-		root->method_children }),
-	     array children)
-    {
-      if(sizeof(children))
-	switch(children[0]->type)
-	{
-  	  case "module": 
-  	    res += "<tr><td>Modules:</b></td></tr>";
-  	    break;
-  	  case "class": 
-  	    res += "<tr><td>Classes:</b></td></tr>";
-  	    break;
-  	  case "method": 
-  	    res += "<tr><td>Methods:</b></td></tr>";
-  	    break;
-	}
-      foreach(children, Node node)
-      {
-	if(node==this_object())
-	  res += sprintf("<tr><td>� <b>%s</b></td></tr>",node->name);
-	else
-	  res += sprintf("<tr><td>� <a href='%s'>%s</a></td></tr>",
-			 node->make_filename(), node->name);
-      }
-    }
+    array(array(Node)) children_groups;
+
+    if(root->name=="")
+      children_groups = ({ root->module_children,
+			   root->class_children,  });
+    else
+      children_groups = ({ root->module_children,
+			   root->class_children,
+			   root->method_children,  });
+    
+    foreach( children_groups, array children)
+      res += make_navbar_really_low(children);
     
     return res+"</table>";
   }
@@ -166,40 +273,144 @@ class Node
     else
       return make_navbar_low(this_object());
   }
-  
-  void make_html()
+
+  array(Node) find_siblings()
   {
-    class_children->make_html();
-    module_children->make_html();
-    method_children->make_html();
-    if(!name || !type)
-      return;
+    return
+      parent->class_children+
+      parent->module_children+
+      parent->method_children;
+  }
 
-    Stdio.mkdirhier("manual-split/");
+  array(Node) find_children()
+  {
+    return
+      class_children+
+      module_children+
+      method_children;
+  }
 
-    string xmldata = make_faked_wrapper(data);
-    Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input(xmldata)[0];
+  Node find_prev_node()
+  {
+    if(!parent)
+      return 0;
 
-    werror("Layouting...%s\n", name);
-    string res =
-      "<html><head><title>Pike manual ?.?.?</title>"
-      "<link rel='stylesheet' href='style.css' /></head>\n"
-      "<body topmargin='0' leftmargin='0' marginheight='0' marginwidth='0' " 
-      "bgcolor='#ffffff' text='#000000' link='#000099' alink='#0000ff' "
-      "vlink='#000099'><body bgcolor='white' text='black'>\n";
+    array(Node) siblings = find_siblings();
+    int index = search( siblings, this_object() );
 
-    res+="<table><tr><td valign='top' bgcolor='#f0f0f0'>"+make_navbar()+"</td><td valign='top'>";
+    Node tmp;
 
-    res += parse_children(n, "docgroup", parse_docgroup);
-    res += parse_children(n, "module", parse_module);
-    res += parse_children(n, "class", parse_class);
-
-    res += "</td></tr></table></body></html>\n";
+    if(index==0)
+      return parent;
     
-    Stdio.write_file("manual-split/"+make_filename(),
-		     res);
+    tmp = siblings[index-1];
+
+    while(sizeof(tmp->find_children()))
+      tmp = tmp->find_children()[-1];
+    
+    return tmp;
+  }
+
+  Node find_next_node(void|int dont_descend)
+  {
+    if(!parent)
+      return 0;
+
+    if(!dont_descend && sizeof(find_children()))
+      return find_children()[0];
+
+    array(Node) siblings = find_siblings();
+    int index = search( siblings, this_object() );
+
+    if(index==sizeof(siblings)-1)
+      return parent->find_next_node(1);
+    else
+      return siblings[index+1];
+  }
+
+  string make_top_html()
+  {
+    
   }
   
+  void make_html(string template)
+  {
+    werror("Layouting...%s\n", make_class_path());
+    
+    class_children->make_html(template);
+    module_children->make_html(template);
+    method_children->make_html(template);
+    if(!name || !type || name == "top")
+      return;
+
+    string res;
+    
+    int num_segments = sizeof(make_filename()/"/")-1;
+    string style = ("../"*num_segments)+"style.css";
+    
+    extra_prefix = "../"*num_segments;
+    
+    if(name=="")
+    {
+      string contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
+      foreach(method_children/( sizeof(method_children)/4.0 ), array(Node) children)
+      {
+	contents += "<td>";
+	contents += make_navbar_really_low(children, 1);
+	contents += "</td>"; 
+      }
+      contents += "</tr></table>";
+
+      res = replace(template,
+		    (["$navbar$": make_navbar(),
+		      "$contents$": contents,
+		      "$title$": make_class_path(),
+		      "$style$": style, 
+		    ]));
+      
+    }
+    else
+    {
+      string xmldata = make_faked_wrapper(data);
+      Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input(xmldata);
+      
+      
+      string contents = "";
+      
+      Node prev = find_prev_node();
+      Node next = find_next_node();
+      string next_url="", next_title="", prev_url="", prev_title="";
+      if(next)
+      {
+	next_title = next->make_class_path();
+	next_url   = make_link(next); 
+      }
+      if(prev)
+      {
+	prev_title = prev->make_class_path();
+	prev_url   = make_link(prev);
+      }
+
+      resolve_reference = my_resolve_reference;
+      contents += parse_children(n, "docgroup", parse_docgroup, 1);
+      contents += parse_children(n, "module", parse_module, 1);
+      contents += parse_children(n, "class", parse_class, 1);
+      
+      res = replace(template,
+		    (["$navbar$": make_navbar(),
+		      "$contents$": contents,
+		      "$prev_url$": prev_url,
+		      "$prev_title$": prev_title,
+		      "$next_url$": next_url,
+		      "$next_title$": next_title,
+		      "$title$": make_class_path(),
+		      "$style$": style, 
+		    ]));
+    }
+    
+    Stdio.mkdirhier(combine_path("manual-split/"+make_filename(), "../"));
+    Stdio.write_file("manual-split/"+make_filename(), res);
+  }
 }
 
 
@@ -207,10 +418,11 @@ int main(int argc, array(string) argv)
 {
   werror("Reading refdoc blob %s...\n", argv[1]);
   string doc = Stdio.read_file(argv[1]);
-  werror("Reading structure file %s...\n", argv[2]);
-  string struct = Stdio.read_file(argv[2]);
+  werror("Reading template file %s...\n", argv[2]);
+  string template = Stdio.read_file(argv[2]);
   werror("Splitting to destination directory %s...\n", argv[3]);
 
   Node top = Node("module","top", doc);
-  top->make_html();
+
+  top->make_html(template);
 }
