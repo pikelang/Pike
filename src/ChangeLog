@@ -1,3 +1,8 @@
+Tue Aug 26 19:37:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* builtin_functions.c (combine_path): Fixed so combine_path now
+	  handles that the first argument is a relative path.
+
 Wed Aug 27 01:25:02 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* builtin_functions.c (combine_path): Fixed bug. combine_path("/", ".")
