@@ -1,3 +1,9 @@
+Thu May 22 18:23:07 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/*/acconfig.h: Several more modules now use autoheader.
+	* modules/readline/: Old readline_machine.h.in was protected with the
+	wrong #define.
+
 Thu May 22 16:29:10 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* return on a void expression now gives an error
