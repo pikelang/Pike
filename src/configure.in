@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.776 2004/02/27 13:43:33 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.777 2004/02/27 13:44:24 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6941,6 +6941,9 @@ $bundle_info])
 	  # Install bundle.
 	  echo "Installing bundle $bundle in ${pike_bundle_prefix}..."
 	  ${MAKE-make} install || exit 1
+
+	  # Done.
+	  echo "Bundle $bundle installed successfully."
 	) || exit 1
       fi
     done
