@@ -1,5 +1,5 @@
 /*
- * $Id: rijndael.c,v 1.4 2000/12/01 08:10:30 hubbe Exp $
+ * $Id: rijndael.c,v 1.5 2001/02/13 16:10:16 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -75,21 +75,51 @@ static void exit_pike_crypto_rijndael(struct object *o)
  * efuns and the like
  */
 
-/* int query_block_size(void) */
+/*! @module Crypto
+ */
+
+/*! @class rijndael
+ *!
+ *! Implementation of the Rijndael (aka AES) block-crypto.
+ *!
+ *! @seealso
+ *!   @[Crypto.aes]
+ */
+
+/*! @decl string name()
+ *!
+ *! Returns the string @tt{"RIJNDAEL"@}.
+ */
+static void f_name(INT32 args)
+{
+  pop_n_elems(args);
+  push_constant_text("RIJNDAEL");
+}
+
+/*! @decl int query_block_size()
+ *!
+ *! Returns the Rijndael block size.
+ */
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
   push_int(RIJNDAEL_BLOCK_SIZE);
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ *!
+ *! Returns the key length used by Rijndael (currently 32).
+ */
 static void f_query_key_length(INT32 args)
 {
   pop_n_elems(args);
   push_int(32);
 }
 
-/* void set_encrypt_key */
+/*! @decl void set_encrypt_key(string key)
+ *!
+ *! Set the encryption key.
+ */
 static void f_set_encrypt_key(INT32 args)
 {
   struct pike_string *key = NULL;
@@ -106,7 +136,10 @@ static void f_set_encrypt_key(INT32 args)
   THIS->crypt_fun = rijndaelEncrypt;
 }
 
-/* void set_decrypt_key */
+/*! @decl void set_decrypt_key(string key)
+ *!
+ *! Set the decryption key.
+ */
 static void f_set_decrypt_key(INT32 args)
 {
   struct pike_string *key = NULL;
@@ -124,7 +157,10 @@ static void f_set_decrypt_key(INT32 args)
   THIS->crypt_fun = rijndaelDecrypt;
 }
 
-/* string encrypt(string) */
+/*! @decl string encrypt(string data)
+ *!
+ *! De/encrypt @[data] with Rijndael using the current key.
+ */
 static void f_crypt_block(INT32 args)
 {
   size_t len;
@@ -151,6 +187,12 @@ static void f_crypt_block(INT32 args)
   pop_n_elems(args);
   push_string(end_shared_string(s));
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*
  * Module linkage
@@ -179,17 +221,18 @@ void pike_rijndael_init(void)
   start_new_program();
   ADD_STORAGE(struct pike_crypto_rijndael);
 
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
 
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt_block", f_crypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
   set_init_callback(init_pike_crypto_rijndael);
   set_exit_callback(exit_pike_crypto_rijndael);
 
