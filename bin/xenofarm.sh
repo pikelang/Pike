@@ -14,7 +14,7 @@ log_start() {
 
 log_end() {
   LAST=$?
-  if [ "$LAST"="0" ] ; then
+  if [ "$LAST" = "0" ] ; then
     log "PASS"
   else
     log "FAIL"
@@ -26,18 +26,18 @@ xenofarm_low() {
   log_start build
   $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
   log_end
-  if [ \! X$LAST = X0 ] ; then return; fi
+  if [ \! X$LAST = X0 ] ; then return 1; fi
 
   log_start verify
   $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
     build/xenofarm/verifylog.txt 2>&1
   log_end
-  if [ \! X$LAST = X0 ] ; then return; fi
+  if [ \! X$LAST = X0 ] ; then return 1; fi
 
   log_start export
   $MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
   log_end
-  if [ \! X$LAST = X0 ] ; then return; fi
+  if [ \! X$LAST = X0 ] ; then return 1; fi
 }
 
 
@@ -45,8 +45,10 @@ xenofarm_low() {
 
 LC_CTYPE=C
 export LC_CTYPE
-log "FORMAT 2" 
+log "FORMAT 2"
+log_start xenofarm
 xenofarm_low
+log_end
 
 log_start response_assembly
   cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt
