@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.181 2001/08/23 13:41:54 grubba Exp $");
+RCSID("$Id: object.c,v 1.182 2001/08/30 20:16:52 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -266,10 +266,21 @@ void call_prog_event(struct object *o, int event)
 
 void call_pike_initializers(struct object *o, int args)
 {
-  apply_lfun(o,LFUN___INIT,0);
-  pop_stack();
-  apply_lfun(o,LFUN_CREATE,args);
-  pop_stack();
+  ptrdiff_t fun;
+  struct program *p=o->prog;
+  if(!p) return;
+  fun=FIND_LFUN(p, LFUN___INIT);
+  if(fun!=-1)
+  {
+    apply_low(o,fun,0);
+    pop_stack();
+  }
+  fun=FIND_LFUN(p, LFUN_CREATE);
+  if(fun!=-1)
+  {
+    apply_low(o,fun,args);
+    pop_stack();
+  }
 }
 
 PMOD_EXPORT void do_free_object(struct object *o)
