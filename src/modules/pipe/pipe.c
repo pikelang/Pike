@@ -29,31 +29,7 @@
 #include "svalue.h"
 #include "error.h"
 
-
-#if !defined(S_ISREG) && defined(__NeXT__)
-#define S_IRUSR _S_IRUSR        /* read permission, owner */
-#define S_IRGRP 0000040         /* read permission, group */
-#define S_IROTH 0000004         /* read permission, other */
-#define S_IWUSR _S_IWUSR        /* write permission, owner */
-#define S_IWGRP 0000020         /* write permission, group */
-#define S_IWOTH 0000002         /* write permission, other */
-#define S_IXUSR _S_IXUSR        /* execute/search permission, */
-/* owner */
-#define S_IXGRP 0000010         /* execute/search permission, */
-/* group */
-#define S_IXOTH 0000001         /* execute/search permission, */
-/* other */
-#define S_IRWXU 0000700         /* read, write, execute */
-/* permissions, owner */
-#define S_IRWXG 0000070         /* read, write, execute */
-/* permissions, group */
-#define S_IRWXO 0000007         /* read, write, execute */
-/* permissions, other */
-
-#define S_ISBLK(mode)   (((mode) & (_S_IFMT)) == (_S_IFBLK))
-#define S_ISCHR(mode)   (((mode) & (_S_IFMT)) == (_S_IFCHR))
-#define S_ISDIR(mode)   (((mode) & (_S_IFMT)) == (_S_IFDIR))
-#define S_ISFIFO(mode)  (((mode) & (_S_IFMT)) == (_S_IFIFO))
+#ifndef S_ISREG
 #define S_ISREG(mode)   (((mode) & (_S_IFMT)) == (_S_IFREG))
 #endif
 
@@ -848,9 +824,12 @@ static void pipe_start(INT32 args) /* force start */
 
 static void pipe_write_output_callback(INT32 args)
 {
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
-       sp[-args].u.object->prog != output_program)
+   if (args<1 || sp[-args].type!=T_OBJECT)
+     error("Illegal argument to pipe->write_output_callback\n");
+
+   if(!sp[-args].u.object->prog) return 0;
+
+   if(sp[-args].u.object->prog != output_program)
      error("Illegal argument to pipe->write_output_callback\n");
 
    output_try_write_some(sp[-args].u.object);
@@ -860,9 +839,11 @@ static void pipe_write_output_callback(INT32 args)
 static void pipe_close_output_callback(INT32 args)
 {
   struct output *o;
-   if (args<1 ||
-       sp[-args].type!=T_OBJECT ||
-       sp[-args].u.object->prog != output_program)
+   if (args<1 || sp[-args].type!=T_OBJECT)
+
+   if(!sp[-args].u.object->prog) return 0;
+
+   if(sp[-args].u.object->prog != output_program)
      error("Illegal argument to pipe->close_output_callback\n");
 
   o=(struct output *)&(sp[-args].u.object->storage);
