@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.545 2001/09/02 01:36:14 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.546 2001/09/10 15:51:22 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1914,7 +1914,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/select.h net/socket.h sys/mman.h setjmp.h \
-limits.h pthread.h crt/signal.h sys/id.h \
+limits.h pthread.h crt/signal.h sys/id.h mach-o/dyld.h \
 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
@@ -5299,6 +5299,9 @@ if test -z "$LDSHARED" ; then
         fi
       fi
     ;;
+    Darwin*)
+      LDSHARED="ld -bundle -bind_at_load -undefined suppress -ldylib1.o"
+    ;;
     IRIX*)
       if test "$GCC" = yes ; then
         # egcs defaults to building -n32 objects
@@ -5358,6 +5361,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
            *) CCSHARED="";;
          esac
 	;;
+	Darwin*)
+	  CCSHARED="-fPIC"
+	;;
 	Solaris*)
 	  # The Image module runs out of symbol reference space unless we
 	  # use the large PIC model:
@@ -5371,6 +5377,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
       esac
     else
       case "$pike_cv_sys_os" in
+	Darwin*)
+	  CCSHARED="-fPIC"
+	;;
         IRIX*)
           AC_SYS_COMPILER_FLAG(-share,cc_shared,CCSHARED)
         ;;
@@ -5410,6 +5419,7 @@ then
 	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
 	fi
       ;;
+      Darwin*) LINKFORSHARED="-dynamic";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
       BSD/OS*)
@@ -5449,6 +5459,7 @@ then
 	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
 	fi
       ;;
+      Darwin*) LINKFORSHARED="-dynamic";;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
       GNU*) LINKFORSHARED="-rdynamic";;

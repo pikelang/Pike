@@ -9,7 +9,11 @@
 #  include "main.h"
 #  include "constants.h"
 
-RCSID("$Id: dynamic_load.c,v 1.53 2001/08/02 22:24:54 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.54 2001/09/10 15:51:23 grubba Exp $");
+
+#else /* TESTING */
+
+#include <stdio.h>
 
 #endif /* !TESTING */
 
@@ -42,11 +46,18 @@ RCSID("$Id: dynamic_load.c,v 1.53 2001/08/02 22:24:54 hubbe Exp $");
 #endif
 #endif /* 0 */
 
+#ifdef HAVE_MACH_O_DYLD_H
+/* MacOS X... */
+#define USE_DYLD
+#define HAVE_SOME_DLOPEN
+#define EMULATE_DLOPEN
+#else /* !HAVE_MACH_O_DYLD_H */
 #ifdef USE_MY_WIN32_DLOPEN
 #include "pike_dlfcn.h"
 #define HAVE_SOME_DLOPEN
 #define HAVE_DLOPEN
 #endif
+#endif /* HAVE_MACH_O_DYLD_H */
 
 #endif
 #endif
@@ -108,7 +119,7 @@ static void dlclose(void *module)
   FreeLibrary((HMODULE)module);
 }
 
-#define dlinit()
+#define dlinit()	1
 
 #endif /* USE_LOADLIBRARY */
 
@@ -143,14 +154,16 @@ static void *dlclose(void *module)
   free(module);
 }
 
-static void dlinit(void)
+static int dlinit(void)
 {
   extern char ** ARGV;
   if(dld_init(dld_find_executable(ARGV[0])))
   {
     fprintf(stderr,"Failed to init dld\n");
-    exit(1);
+    return 0;
   }
+  /* OK */
+  return 1;
 }
 
 #endif /* USE_DLD */
@@ -203,9 +216,56 @@ static void dlclose(void *module)
   shl_unload((shl_t)module);
 }
 
-#define dlinit()
+#define dlinit()	1
 
 #endif /* USE_HPUX_DL */
+
+#ifdef USE_DYLD
+
+#include <mach-o/dyld.h>
+
+#define RTLD_NOW	NSLINKMODULE_OPTION_BINDNOW
+
+#define dlinit()	_dyld_present()
+
+static void *dlopen(const char *module_name, int how)
+{
+  NSObjectFileImageReturnCode code = 0;
+  NSObjectFileImage image = NULL;
+
+  if ((code = NSCreateObjectFileImageFromFile(module_name, &image)) !=
+      NSObjectFileImageSuccess) {
+    fprintf(stderr, "NSCreateObjectFileImageFromFile(\"%s\") failed with %d\n",
+	    module_name, code);
+    return NULL;
+  }
+  /* FIXME: image should be freed somewhere! */
+  return NSLinkModule(image, module_name,
+		      how | NSLINKMODULE_OPTION_RETURN_ON_ERROR);
+}
+
+static char *dlerror(void)
+{
+  NSLinkEditErrors class = 0;
+  int error_number = 0;
+  char *file_name = NULL;
+  char *error_string = NULL;
+  NSLinkEditError(&class, &error_number, &file_name, &error_string);
+  return error_string;
+}
+
+static void *dlsym(void *module, char *function)
+{
+  return NSLookupSymbolInModule(module, function);
+}
+
+static void *dlclose(void *module)
+{
+  NSUnLinkModule(module, NSUNLINKMODULE_OPTION_NONE);
+  return NULL;
+}
+
+#endif /* USE_DYLD */
 
 
 #ifndef EMULATE_DLOPEN
@@ -214,7 +274,7 @@ static void dlclose(void *module)
 #include <dlfcn.h>
 #endif
 
-#define dlinit()
+#define dlinit()	1
 #endif  /* !EMULATE_DLOPEN */
 
 
@@ -370,12 +430,13 @@ void f_load_module(INT32 args)
 void init_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
-  dlinit();
-
+  if (dlinit()) {
   
-/* function(string:program) */
+    /* function(string:program) */
 
-  ADD_EFUN("load_module",f_load_module,tFunc(tStr,tPrg(tObj)),OPT_EXTERNAL_DEPEND);
+    ADD_EFUN("load_module", f_load_module,
+	     tFunc(tStr,tPrg(tObj)), OPT_EXTERNAL_DEPEND);
+  }
 #endif
 }
 
