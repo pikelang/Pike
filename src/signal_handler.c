@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.279 2003/11/21 14:02:33 grubba Exp $
+|| $Id: signal_handler.c,v 1.280 2003/11/21 14:21:23 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.279 2003/11/21 14:02:33 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.280 2003/11/21 14:21:23 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -4014,6 +4014,20 @@ void Pike_f_fork(INT32 args)
 /*  THREADS_DISALLOW_UID(); */
 
   if(pid) {
+#ifdef USE_WAIT_THREAD
+    if (!wait_thread_running) {
+      /* NOTE: This code is delayed to after the fork so as to allow for
+       *       detaching.
+       */
+      THREAD_T foo;
+      if (th_create_small(&foo, wait_thread, 0)) {
+	Pike_error("Failed to create wait thread!\n"
+		   "errno: %d\n", errno);
+      }
+      wait_thread_running = 1;
+    }
+    num_threads++;    /* We use the interpreter lock */
+#endif
     th_atfork_parent();
   } else {
     th_atfork_child();
