@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.12 2004/03/20 01:02:19 nilsson Exp $
+// $Id: Random.pmod,v 1.13 2004/03/30 12:26:36 vida Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -133,9 +133,9 @@ static class RND {
       buf->add( ::random_string(pass) );
       bytes_left -= pass;
       len -= pass;
-      if(!bytes_left) {
+      if(bytes_left - pass <= 0) {
 	update( s->read(32), 0, 256 );
-	bytes_left = 32;
+	bytes_left += 32;
       }
     }
     return (string)buf;
