@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.181 2004/05/28 16:08:24 grubba Exp $
+|| $Id: mapping.c,v 1.182 2004/07/02 17:34:45 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.181 2004/05/28 16:08:24 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.182 2004/07/02 17:34:45 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2000,7 +2000,11 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 
   m=allocate_mapping(MAP_SLOTS(args / 2));
 
-  for(e=-args;e<0;e+=2) low_mapping_insert(m, Pike_sp+e, Pike_sp+e+1, 2);
+  for(e=-args;e<0;e+=2) {
+    STACK_LEVEL_START(-e);
+    low_mapping_insert(m, Pike_sp+e, Pike_sp+e+1, 2);
+    STACK_LEVEL_DONE(-e);
+  }
   pop_n_elems(args);
 #ifdef PIKE_DEBUG
   if(d_flag)
@@ -2049,12 +2053,16 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
   add_ref(md);
   NEW_MAPPING_LOOP(md)
   {
-    copy_svalues_recursively_no_free(Pike_sp,&k->ind, 1, p);
-    Pike_sp++;
-    dmalloc_touch_svalue(Pike_sp-1);
-    copy_svalues_recursively_no_free(Pike_sp,&k->val, 1, p);
-    Pike_sp++;
-    dmalloc_touch_svalue(Pike_sp-1);
+    /* Place holders.
+     *
+     * NOTE: copy_svalues_recursively_no_free() may store stuff in
+     *       the destination svalue, and then call stuff that uses
+     *       the stack (eg itself).
+     */
+    push_int(0);
+    push_int(0);
+    copy_svalues_recursively_no_free(Pike_sp-2,&k->ind, 1, p);
+    copy_svalues_recursively_no_free(Pike_sp-1,&k->val, 1, p);
     
     low_mapping_insert(ret, Pike_sp-2, Pike_sp-1, 2);
     pop_n_elems(2);
