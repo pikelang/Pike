@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.4 1999/07/21 18:04:43 grubba Exp $
+ * $Id: udp.c,v 1.5 1999/07/25 18:29:16 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.4 1999/07/21 18:04:43 grubba Exp $");
+RCSID("$Id: udp.c,v 1.5 1999/07/25 18:29:16 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -36,6 +36,38 @@ RCSID("$Id: udp.c,v 1.4 1999/07/21 18:04:43 grubba Exp $");
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif /* HAVE_SYS_TIME_H */
+
+#ifdef HAVE_POLL
+
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif /* HAVE_POLL_H */
+
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif /* HAVE_SYS_POLL_H */
+
+/* Some constants... */
+
+#ifndef POLLRDNORM
+#define POLLRDNORM	POLLIN
+#endif /* !POLLRDNORM */
+
+#ifndef POLLRDBAND
+#define POLLRDBAND	POLLPRI
+#endif /* !POLLRDBAND */
+
+#else /* !HAVE_POLL */
+
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
+#endif /* HAVE_POLL */
 
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
@@ -183,6 +215,80 @@ void udp_enable_broadcast(INT32 args)
   pop_n_elems(args);
   push_int(0);
 #endif /* SO_BROADCAST */
+}
+
+/* int wait(int timeout) */
+void udp_wait(INT32 args)
+{
+#ifdef HAVE_POLL
+  struct pollfd pollfds[1];
+  int ms;
+#else /* !HAVE_POLL */
+  fd_set rset;
+  struct timeval tv;
+#endif /* HAVE_POLL */
+  FLOAT_TYPE timeout;
+  int fd = FD;
+  int res;
+  int e;
+
+  get_all_args("wait", args, "%F", &timeout);
+
+  if (timeout < 0.0) {
+    timeout = 0.0;
+  }
+
+  if (fd < 0) {
+    error("udp->wait(): Port not bound!\n");
+  }
+
+#ifdef HAVE_POLL
+  pollfds->fd = fd;
+  pollfds->events = POLLIN;
+  pollfds->revents = 0;
+  ms = timeout * 1000;
+  res = poll(pollfds, 1, ms);
+  e = errno;
+  if (!res) {
+    /* Timeout */
+  } else if (res < 0) {
+    /* Error */
+    error("udp->wait(): poll() failed with errno %d\n", e);
+  } else {
+    /* Success? */
+    if (pollfds->revents) {
+      res = 1;
+    } else {
+      res = 0;
+    }
+  }
+#else /* !HAVE_POLL */
+  FD_ZERO(&rset);
+  FD_SET(fd, &rset);
+  tv.tv_sec = (int)timeout;
+  tv.tv_usec = (int)(timeout * 1000000.0);
+  THREADS_ALLOW();
+  res = select(fd+1, &rset, NULL, NULL, &tv);
+  e = errno;
+  THREADS_DISALLOW();
+  if (!res) {
+    /* Timeout */
+  } else if (res < 0) {
+    /* Error */
+    error("udp->wait(): select() failed with errno %d\n", e);
+  } else {
+    /* Success? */
+    if (FD_ISSET(fd, &rset)) {
+      res = 1;
+    } else {
+      res = 0;
+    }
+  }
+#endif /* HAVE_POLL */
+
+  pop_n_elems(args);
+
+  push_int(res);
 }
 
 #define UDP_BUFFSIZE 65536
@@ -469,8 +575,15 @@ void init_udp(void)
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tVoid), 0);
 
+  ADD_FUNCTION("wait", udp_wait, tFunc(tOr(tInt, tFloat), tInt), 0);
+
   ADD_FUNCTION("read",udp_read,
 	       tFunc(tOr(tInt,tVoid),tMap(tStr,tOr(tInt,tStr))),0);
+
+  add_integer_constant("MSG_OOB", 1, 0);
+#ifdef MSG_PEEK
+  add_integer_constant("MSG_PEEK", 2, 0);
+#endif /* MSG_PEEK */
 
   ADD_FUNCTION("send",udp_sendto,
 	       tFunc(tStr tInt tStr tOr(tVoid,tInt),tInt),0);
