@@ -365,7 +365,7 @@ void create()
   add_efun("strstr",search);
   add_efun("sum_arrays",sum_arrays);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.7E-12"; });
+  add_efun("version",lambda() { return "uLPC v1.0E-11"; });
   add_efun("write_file",write_file);
   add_efun("get_function",get_function);
   add_efun("regexp",regexp);
