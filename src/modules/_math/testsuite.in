@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.10 2003/01/05 15:40:51 nilsson Exp $
+dnl $Id: testsuite.in,v 1.11 2003/07/17 19:26:37 marcus Exp $
 
 define(exarg,[[test_any([[
   function x=$1;
@@ -9,6 +9,13 @@ define(exarg2,[[test_any([[
   function x=$1;
   return x(0.5, 0.4, 0.0);
 ]], $1(0.5, 0.4)) ]])
+
+define(test_approx_eq,[[test_any([[
+  float x=$1, y=$2;
+  float fuzz=abs(y)/1048576;
+  return (x==y) || (x > y-fuzz && x < y+fuzz);
+]], 1)]])
+
 
 dnl - tan
 test_true(floatp(tan(0.5)))
@@ -47,6 +54,30 @@ test_true(floatp(cos(1.2)))
 test_true(cos(atan(1.0))>0.707)
 test_true(cos(atan(1.0))<0.708)
 exarg(cos)
+
+dnl - hyperbolic functions
+
+define(test_hyper,[[dnl
+ifelse([[$2]],,,[[test_approx_eq([[sinh($1)]],[[$2]])]])dnl
+ifelse([[$3]],,,[[test_approx_eq([[cosh($1)]],[[$3]])]])dnl
+ifelse([[$4]],,,[[test_approx_eq([[tanh($1)]],[[$4]])]])dnl
+ifelse([[$5]],,,[[test_approx_eq([[asinh($1)]],[[$5]])]])dnl
+ifelse([[$6]],,,[[test_approx_eq([[acosh($1)]],[[$6]])]])dnl
+ifelse([[$7]],,,[[test_approx_eq([[atanh($1)]],[[$7]])]])dnl
+]])
+
+test_hyper(-42.0,-869637470800000000.0,869637470800000000.0,-1.0,-4.430958492,,)
+test_hyper(-13.7,-445455.583,445455.583,-1.0,-3.311872344,,)
+test_hyper(-1.4,-1.904301501,2.150898465,-0.885351648,-1.137982046,,)
+test_hyper(-0.65,-0.696747526,1.218793303,-0.571669966,-0.611224313,,-0.775298706)
+test_hyper(-0.01,-0.010000166,1.00005,-0.009999666,-0.009999833,,-0.010000333)
+test_hyper(0.0,0.0,1.0,0.0,0.0,,0.0)
+test_hyper(0.01,0.010000166,1.00005,0.009999666,0.009999833,,0.010000333)
+test_hyper(0.65,0.696747526,1.218793303,0.571669966,0.611224313,,0.775298706)
+test_hyper(1.4,1.904301501,2.150898465,0.885351648,1.137982046,0.867014726,)
+test_hyper(13.7,445455.583,445455.583,1.0,3.311872344,3.309208361,)
+test_hyper(42.0,869637470800000000.0,869637470800000000.0,1.0,4.430958492,,)
+
 
 dnl - sqrt
 test_eq(4,sqrt(16))
