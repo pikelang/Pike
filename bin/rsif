@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif,v 1.6 2002/04/06 22:12:52 jhs Exp $
+// -*- pike -*- $Id: rsif,v 1.7 2002/04/21 04:06:42 jhs Exp $
 
-string version = ("$Revision: 1.6 $"/" ")[1];
+string version = ("$Revision: 1.7 $"/" ")[1];
 int verbosity = 1; // interactive
 int overwrite = 1; // no backups
 
@@ -34,14 +34,14 @@ int main(int argc, array(string) argv)
     {
       case "backup": overwrite = 0; break;
       case "verbose": verbosity++; break;
-      case "version": return 0, write(version + "\n");
+      case "version": write(version + "\n"); return 0;
       case "quiet": verbosity = 0; break;
-      case "help": return 0, usage();
+      case "help": usage(); return 0;
     }
   argv = Getopt.get_args(argv);
 
   if(4 > (argc = sizeof(argv)))
-    return 1, usage(werror);
+    return usage(werror), 1;
 
   string from = argv[1], to = argv[2], file;
   if(argc == 4 && argv[-1] == "-")
