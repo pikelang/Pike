@@ -19,23 +19,29 @@
  */
 
 #ifdef STRUCT
-#define IMEMBER(X,Y,Z) X Y Z ;
-#define ZMEMBER(X,Y,Z) X Y Z ;
+#define IMEMBER(X,Y) X Y ;
+#define IMEMBER2(X,Y,Z) X Y Z ;
+#define ZMEMBER(X,Y) X Y ;
+#define ZMEMBER2(X,Y,Z) X Y Z ;
 #define SNAME(X,Y) struct X { struct X *previous;
 #define SEND };
 #endif
 
 #ifdef DECLARE
-#define IMEMBER(X,Y,Z) 
-#define ZMEMBER(X,Y,Z) 
+#define IMEMBER(X,Y)
+#define IMEMBER2(X,Y,Z)
+#define ZMEMBER(X,Y)
+#define ZMEMBER2(X,Y,Z)
 #define SNAME(X,Y) static struct X * Y = 0;
 #define SEND
 #endif
 
 #ifdef PUSH
-#define IMEMBER(X,Y,Z) MEMCPY((char *)&(oLd->Y), (char *)&(Y), sizeof(Y));
-#define ZMEMBER(X,Y,Z) MEMCPY((char *)&(oLd->Y), (char *)&(Y), sizeof(Y)); \
-                       MEMSET((char *)&(Y), 0, sizeof(Y));
+#define IMEMBER(X,Y) MEMCPY((char *)&(oLd->Y), (char *)&(Y), sizeof(Y));
+#define IMEMBER2(X,Y,Z) IMEMBER(X,Y)
+#define ZMEMBER(X,Y) MEMCPY((char *)&(oLd->Y), (char *)&(Y), sizeof(Y)); \
+                     MEMSET((char *)&(Y), 0, sizeof(Y));
+#define ZMEMBER2(X,Y,Z) ZMEMBER(X,Y)
 #define SNAME(X,Y) { \
       struct X *oLd; \
       oLd=ALLOC_STRUCT(X); \
@@ -45,8 +51,10 @@
 
 
 #ifdef POP
-#define IMEMBER(X,Y,Z) MEMCPY((char *)&(Y), (char *)&(oLd->Y), sizeof(Y));
-#define ZMEMBER(X,Y,Z) MEMCPY((char *)&(Y), (char *)&(oLd->Y), sizeof(Y));
+#define IMEMBER(X,Y) MEMCPY((char *)&(Y), (char *)&(oLd->Y), sizeof(Y));
+#define IMEMBER2(X,Y,Z) IMEMBER(X,Y)
+#define ZMEMBER(X,Y) MEMCPY((char *)&(Y), (char *)&(oLd->Y), sizeof(Y));
+#define ZMEMBER2(X,Y,Z) ZMEMBER(X,Y)
 #define SNAME(X,Y) { \
       struct X *oLd; \
       oLd=Y; Y=oLd->previous;
@@ -61,36 +69,36 @@
 #ifdef DEBUG
 #define STRMEMBER(X,Y) \
   PCODE(if(X) fatal("Variable %s not deallocated properly.\n",Y);) \
-  ZMEMBER(struct lpc_string *,X,)
+  ZMEMBER(struct lpc_string *,X)
 #else
-#define STRMEMBER(X) \
-  ZMEMBER(struct lpc_string *,X,)
+#define STRMEMBER(X,Y) \
+  ZMEMBER(struct lpc_string *,X)
 #endif
 
 #ifdef FILE_STATE
   SNAME(file_state,previous_file_state)
-  ZMEMBER(INT32,old_line,)
-  ZMEMBER(INT32,current_line,)
-  ZMEMBER(INT32,nexpands,)
-  ZMEMBER(int,pragma_all_inline,)
-  ZMEMBER(struct inputstate *,istate,)
-  ZMEMBER(struct hash_table *,defines,)
+  ZMEMBER(INT32,old_line)
+  ZMEMBER(INT32,current_line)
+  ZMEMBER(INT32,nexpands)
+  ZMEMBER(int,pragma_all_inline)
+  ZMEMBER(struct inputstate *,istate)
+  ZMEMBER(struct hash_table *,defines)
   STRMEMBER(current_file,"current_file")
   SEND
 #endif
 
 #ifdef PROGRAM_STATE
   SNAME(program_state,previous_program_state)
-  ZMEMBER(INT32,last_line,)
+  ZMEMBER(INT32,last_line)
   STRMEMBER(last_file,"last_file")
-  ZMEMBER(struct program,fake_program,)
-  ZMEMBER(node *,init_node,)
-  ZMEMBER(INT32,last_pc,)
-  ZMEMBER(int,num_parse_error,)
-  ZMEMBER(struct locals *,local_variables,)
-  ZMEMBER(dynamic_buffer,inherit_names,)
-  ZMEMBER(dynamic_buffer,areas,[NUM_AREAS])
-  IMEMBER(int,comp_stackp,)
+  ZMEMBER(struct program,fake_program)
+  ZMEMBER(node *,init_node)
+  ZMEMBER(INT32,last_pc)
+  ZMEMBER(int,num_parse_error)
+  ZMEMBER(struct locals *,local_variables)
+  ZMEMBER(dynamic_buffer,inherit_names)
+  ZMEMBER2(dynamic_buffer,areas,[NUM_AREAS])
+  IMEMBER(int,comp_stackp)
   SEND
 #endif
 
@@ -98,5 +106,7 @@
 #undef STRMEMBER
 #undef IMEMBER
 #undef ZMEMBER
+#undef IMEMBER2
+#undef ZMEMBER2
 #undef SNAME
 #undef SEND
