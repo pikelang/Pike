@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.557 2004/03/13 14:45:06 grubba Exp $
+|| $Id: program.c,v 1.558 2004/03/13 19:50:23 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.557 2004/03/13 14:45:06 grubba Exp $");
+RCSID("$Id: program.c,v 1.558 2004/03/13 19:50:23 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1464,7 +1464,7 @@ struct node_s *resolve_identifier(struct pike_string *ident)
     }
   }
 
-  if(!Pike_compiler->num_parse_error && get_master())
+  if(get_master())
   {
     DECLARE_CYCLIC();
     node *ret=0;
@@ -1525,7 +1525,8 @@ struct node_s *resolve_identifier(struct pike_string *ident)
 	}
     }
     END_CYCLIC();
-    if(ret) return ret;
+
+    return ret;
   }
 
   return 0;
