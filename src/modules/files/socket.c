@@ -20,6 +20,15 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 
+
+#ifdef HAVE_SYS_STREAM_H
+#include <sys/stream.h>
+#endif
+
+#ifdef HAVE_SYS_PROTOSW_H
+#include <sys/protosw.h>
+#endif
+
 #ifdef HAVE_SYS_SOCKETVAR_H
 #include <sys/socketvar.h>
 #endif
