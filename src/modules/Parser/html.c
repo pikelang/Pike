@@ -2323,7 +2323,7 @@ static newstate handle_result(struct parser_html_storage *this,
 		 this->out_ctx = CTX_TAG;
 		 return STATE_REREAD;
 	       }
-	       else {
+	       else if (*head) {
 		 /* just output the whole range */
 		 put_out_feed_range(this,*head,*c_head,tail,c_tail);
 		 skip_feed_range(st,head,c_head,tail,c_tail);

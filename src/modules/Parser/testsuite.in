@@ -941,3 +941,8 @@ test_any([[{
     feed("<? ? >")->
     finish()->read();
 }]], "<? ? >");
+test_any([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda () {});
+  return p->finish ("<x>")->read();
+}]], "<x>");
