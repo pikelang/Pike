@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.43 2004/09/26 13:35:58 marcus Exp $
+# $Id: configure.in,v 1.44 2004/09/27 08:47:26 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -76,27 +76,20 @@ __MPN(PiKe)
       AC_DEFINE_UNQUOTED(PIKE_MPN_PREFIX, $PIKE_PREFIX_NAME)
     fi
 
-dnl 
-dnl  Autoconf 2.52 seems to barf on this undefine for
-dnl  some unknown reason. This file should work just
-dnl  as well without it.
-dnl
-dnl    undefine(PIKE_PREFIX_NAME)
-
     AC_MSG_CHECKING(working <$2>)
     AC_CACHE_VAL(pike_cv_working_$1,[
       OLDLIBS="${LIBS-}"
       LIBS="${LIBS-} -l$1"
       AC_TRY_RUN([
-#include <stdio.h>
-
-/* Kludge for some compilers only defining __STDC__ in strict mode. */
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
 #define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
+#include <stdio.h>
 #include <$2>
 int main(int argc, char **argv)
 {
@@ -115,15 +108,15 @@ int main(int argc, char **argv)
 
       ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
         AC_TRY_LINK([
-#include <stdio.h>
-
-/* Kludge for some compilers only defining __STDC__ in strict mode. */
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
 #define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
+#include <stdio.h>
 #include <$2>
 
         ],[
@@ -150,13 +143,14 @@ int main(int argc, char **argv)
 dnl figure out version; not necessary, but pretty
       rm config.gmpversion 2>/dev/null
       AC_TRY_RUN([
-/* Kludge for some compilers only defining __STDC__ in strict mode. */
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
 #if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
 #define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
 #endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
 #include <gmp.h>
 #include <stdio.h>
 
@@ -183,6 +177,18 @@ int main()
   if test "x$done" = "xno"; then
     $3
     :
+  else
+    # Now we can enable the __STDC__ kludge globally.
+    echo >>confdefs.h '
+/* Kludge for some compilers only defining __STDC__ in strict mode,
+ * which leads to <gmp.h> using the wrong token concat method.
+ */
+#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
+#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
+#define PIKE_MPN_CONCAT(x,y)		PIKE_LOW_MPN_CONCAT(x,y)
+#define __MPN(x)			PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
+#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
+'
   fi
 ])
 
@@ -191,15 +197,6 @@ define(CHECK_GMP_FUNC,
   AC_MSG_CHECKING([for $1])
   AC_CACHE_VAL([pike_cv_have_gmp_$1], [
     AC_TRY_LINK([
-/* Kludge for some compilers only defining __STDC__ in strict mode,
- * which leads to <gmp.h> using the wrong token concat method.
- */
-#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
-#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
 #ifdef HAVE_GMP2_GMP_H
 #include <gmp2/gmp.h>
 #elif defined (HAVE_GMP_H)
@@ -250,15 +247,6 @@ with the option --without-bignums instead.
   AC_CACHE_VAL([pike_cv_mpz_getlimbn_works], [
     rm -f confdefs.out.2 2>/dev/null
     AC_TRY_RUN([
-/* Kludge for some compilers only defining __STDC__ in strict mode,
- * which leads to <gmp.h> using the wrong token concat method.
- */
-#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
-#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
 #ifdef HAVE_GMP2_GMP_H
 #include <gmp2/gmp.h>
 #elif defined (HAVE_GMP_H)
@@ -289,15 +277,6 @@ int main()
   AC_CACHE_VAL([pike_cv_mpz_set_si_works], [
     rm -f confdefs.out.2 2>/dev/null
     AC_TRY_RUN([
-/* Kludge for some compilers only defining __STDC__ in strict mode,
- * which leads to <gmp.h> using the wrong token concat method.
- */
-#if !defined(__STDC__) && defined(HAVE_ANSI_CONCAT) && defined(PIKE_MPN_PREFIX)
-#define PIKE_LOW_MPN_CONCAT(x,y)	x##y
-#define PIKE_MPN_CONCAT(x,y)	PIKE_LOW_MPN_CONCAT(x,y)
-#define __MPN(x)	PIKE_MPN_CONCAT(PIKE_MPN_PREFIX,x)
-#endif /* !__STDC__ && HAVE_ANSI_CONCAT && PIKE_MPN_PREFIX */
-
 #ifdef HAVE_GMP2_GMP_H
 #include <gmp2/gmp.h>
 #elif defined (HAVE_GMP_H)
