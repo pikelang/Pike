@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.3 2001/01/17 19:34:40 grubba Exp $");
+RCSID("$Id: pdf_module.c,v 1.4 2001/01/17 19:35:27 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -28,7 +28,7 @@ RCSID("$Id: pdf_module.c,v 1.3 2001/01/17 19:34:40 grubba Exp $");
     void func(INT32 args);
 #include "initstuff.h"
 
-static struct program *pdf_sentinel = NULL
+static struct program *pdf_sentinel = NULL;
 
 static struct 
 {
