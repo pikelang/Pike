@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.210 2001/11/13 15:43:57 tomas Exp $");
+RCSID("$Id: signal_handler.c,v 1.211 2001/11/26 14:58:00 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1204,6 +1204,7 @@ static void f_pid_status_wait(INT32 args)
   while(THIS->state == PROCESS_RUNNING)
   {
     SWAP_OUT_CURRENT_THREAD();
+    /* FIXME: What about threads disable? */
     co_wait_interpreter( & process_status_change);
     SWAP_IN_CURRENT_THREAD();
   }
