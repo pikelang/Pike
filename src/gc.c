@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.86 2000/06/10 18:09:17 mast Exp $");
+RCSID("$Id: gc.c,v 1.87 2000/06/10 19:20:40 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -782,6 +782,9 @@ static INLINE struct marker *gc_check_debug(void *a)
   if(m->saved_refs != -1 && m->saved_refs != *(INT32 *)a)
     gc_fatal(a, 1, "Refs changed in gc.\n");
   m->saved_refs = *(INT32 *)a;
+  if (m->refs + m->xrefs >= *(INT32 *) a)
+    /* m->refs will be incremented by the caller. */
+    gc_fatal(a, 1, "Thing is getting more internal refs than refs.\n");
   checked++;
 
   return m;
@@ -809,6 +812,16 @@ INT32 real_gc_check_weak(void *a)
   m = get_marker(a);
 #endif
   m->weak_refs++;
+#ifdef PIKE_DEBUG
+  if (m->weak_refs > m->refs + 1)
+    gc_fatal(a, 1, "Thing has gotten more weak refs than internal refs.\n");
+  if (m->weak_refs == m->saved_refs) {
+    if (m->flags & GC_IS_ONLY_WEAK)
+      gc_fatal(a, 0, "Already counted this as weakly freed.\n");
+    weak_freed++;
+    m->flags |= GC_IS_ONLY_WEAK;
+  }
+#endif
   return add_ref(m);
 }
 
@@ -916,14 +929,6 @@ void gc_free_extra_ref(void *a)
   gc_extra_refs--;
 }
 
-static INLINE void ref_count_check(void *a, struct marker *m)
-{
-  if(m->refs + m->xrefs > *(INT32 *)a ||
-     (Pike_in_gc == GC_PASS_CHECK &&
-      m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
-    gc_fatal(a, 1, "Ref counts are wrong.\n");
-}
-
 int debug_gc_is_referenced(void *a)
 {
   struct marker *m;
@@ -943,7 +948,6 @@ int debug_gc_is_referenced(void *a)
   if (m->flags & GC_IS_REFERENCED)
     gc_fatal(a, 0, "gc_is_referenced() called twice for thing.\n");
   m->flags |= GC_IS_REFERENCED;
-  ref_count_check(a, m);
   return m->refs < *(INT32 *)a;
 }
 
@@ -976,49 +980,41 @@ int gc_external_mark3(void *a, void *in, char *where)
   m=get_marker(a);
   m->xrefs++;
   m->flags|=GC_XREFERENCED;
-  ref_count_check(a, m);
+  if(m->refs + m->xrefs > *(INT32 *)a ||
+     (Pike_in_gc == GC_PASS_CHECK &&
+      m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
+    gc_fatal(a, 1, "Ref counts are wrong.\n");
   return 0;
 }
-
-#endif /* PIKE_DEBUG */
 
 int gc_do_weak_free(void *a)
 {
   struct marker *m;
 
-#ifdef PIKE_DEBUG
+  if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE)
     fatal("gc_do_weak_free() called in invalid gc pass.\n");
   if (gc_debug) {
     if (!(m = find_marker(a)))
       gc_fatal(a, 0, "gc_do_weak_free() got unknown object.\n");
   }
-  else
-#endif
-    m = get_marker(a);
-
+  else m = get_marker(a);
   debug_malloc_touch(a);
 
-#ifdef PIKE_DEBUG
+  if (m->weak_refs > m->saved_refs)
+    gc_fatal(a, 0, "More weak references than references.\n");
   if (m->weak_refs > m->refs)
     gc_fatal(a, 0, "More weak references than internal references.\n");
-  if (m->weak_refs > *(INT32 *) a)
-    gc_fatal(a, 0, "More weak references than references.\n");
-  ref_count_check(a, m);
-#endif
 
   if (m->weak_refs >= *(INT32 *) a) {
-#ifdef PIKE_DEBUG
-    if (!(m->flags & GC_IS_ONLY_WEAK)) weak_freed++;
-    m->flags |= GC_IS_ONLY_WEAK;
-    /* Caller should free it after we return. */
-    if (m->saved_refs != -1) m->saved_refs--;
-    m->refs--, m->weak_refs--;
-#endif
+    if (!(m->flags & GC_IS_ONLY_WEAK))
+      gc_fatal(a, 0, "Got only weak refs but flag isn't set by real_gc_check_weak().\n");
     return 1;
   }
   else return 0;
 }
+
+#endif /* PIKE_DEBUG */
 
 int gc_mark(void *a)
 {

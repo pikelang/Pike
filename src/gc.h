@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.43 2000/06/10 18:09:18 mast Exp $
+ * $Id: gc.h,v 1.44 2000/06/10 19:20:40 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -179,6 +179,7 @@ void f__gc_status(INT32 args);
 #define gc_is_referenced(X) debug_gc_is_referenced(debug_malloc_pass(X))
 #else
 #define gc_is_referenced(X) (get_marker(X)->refs < *(INT32 *)(X))
+#define gc_do_weak_free(X) (get_marker(X)->weak_refs >= *(INT32 *) (X))
 #endif
 
 #define gc_do_weak_free_svalue(S) \
