@@ -271,6 +271,33 @@ test_any([[
 	  p->feed("->")->read());
 ]], "   x-");
 
+// Exception handling
+test_any([[{
+  object p = Parser.HTML();
+  int t, c, e, q;
+  p->add_tag ("t", lambda (object p, mapping a) {
+		     if (t++ < 3) {p->write_out ((string) t); throw (t);}
+		     return ({"|", (string) t});
+		   });
+  p->add_container ("c", lambda (object p, mapping a, string s) {
+			   if (c++ < 3) {p->write_out ((string) c); throw (c);}
+			   return ({"|", (string) c});
+			 });
+  p->add_entity ("e", lambda (object p) {
+			if (e++ < 3) {p->write_out ((string) e); throw (e);}
+			return ({"|", (string) e});
+		      });
+  p->add_quote_tag ("q", lambda (object p, string s) {
+			   if (q++ < 3) {p->write_out ((string) q); throw (q);}
+			   return ({"|", (string) q});
+			 },
+		    "q");
+  if (catch (p->finish ("<t> <c> <t> &e; </c> &e; <q &e; q>")))
+    for (int i; i < 20; i++)
+      if (!catch (p->finish())) break;
+  return p->read();
+}]], "123|4 123|4 123|4 123|4")
+
 // Mixed mode
 test_any([[
   object p = Parser.HTML();
