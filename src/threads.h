@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.113 2001/10/22 23:52:54 mast Exp $
+ * $Id: threads.h,v 1.114 2002/09/13 19:18:00 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -123,8 +123,6 @@ void th_atfork_child(void);
 #define th_setconcurrency(X) 
 #ifdef HAVE_PTHREAD_YIELD
 #define th_yield()	pthread_yield()
-#else
-#define th_yield()
 #endif /* HAVE_PTHREAD_YIELD */
 extern pthread_attr_t pattr;
 extern pthread_attr_t small_pattr;
