@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.346 2001/02/25 14:00:20 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.347 2001/02/28 04:18:42 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7983,15 +7983,19 @@ void init_builtin_efuns(void)
 #endif
 
 
-  start_new_program();
-  ADD_STORAGE( struct buffer_str  );
-  ADD_FUNCTION( "add", f_buf_add, tFunc(tString,tInt), 0);
-  ADD_FUNCTION("nullfun", f_buf_nullfun, tFunc(tString,tInt),0);
-  ADD_FUNCTION( "get", f_buf_get, tFunc(tVoid,tString), 0);
-  ADD_FUNCTION( "_sprintf", f_buf__sprintf, tFunc(tInt,tString), 0);
-  ADD_FUNCTION( "create", f_buf_create, tFunc( tOr(tInt,tVoid), tVoid ), 0 );
-  set_init_callback( f_buf_init );
-  set_exit_callback( f_buf_free );
-  add_program_constant("Buffer",end_program(),0);
+  {
+    struct program *tmp;
+    start_new_program();
+    ADD_STORAGE( struct buffer_str  );
+    ADD_FUNCTION( "add", f_buf_add, tFunc(tString,tInt), 0);
+    ADD_FUNCTION("nullfun", f_buf_nullfun, tFunc(tString,tInt),0);
+    ADD_FUNCTION( "get", f_buf_get, tFunc(tVoid,tString), 0);
+    ADD_FUNCTION( "_sprintf", f_buf__sprintf, tFunc(tInt,tString), 0);
+    ADD_FUNCTION( "create", f_buf_create, tFunc( tOr(tInt,tVoid), tVoid ), 0 );
+    set_init_callback( f_buf_init );
+    set_exit_callback( f_buf_free );
+    add_program_constant("Buffer",tmp=end_program(),0);
+    free_program(tmp);
+  }
 }
 
