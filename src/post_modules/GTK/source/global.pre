@@ -1,6 +1,6 @@
 #include <gdk/gdkx.h>
 require gnome;
-#include <applet-widget.h>
+/* #include <applet-widget.h> */
 endrequire;
 /* The main stuff.. */
 
@@ -132,9 +132,10 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
 /*   g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL ); */
 
   gtk_set_locale();
-  if( args == 4 )
-    applet_widget_init( id, vers, argc, data, NULL, flags, NULL );
-  else
+  /*   if( args == 4 )
+     applet_widget_init( id, vers, argc, data, NULL, flags, NULL );
+     else
+     */
     gnome_init( id, vers, argc, data );
 
 /*   g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL ); */
@@ -158,18 +159,19 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   push_int( 0 );
 }
 
-FUNCTION(applet_widget_gtk_main_quit, "function(void:void)");
-// Exit from the applet_widget_gtk_main function on the next iteration.
-{
-  gtk_main_quit();
-}
 
-FUNCTION(applet_widget_gtk_main, "function(void:void)");
-// Special corba main loop for gnome panel applets
-{
-  applet_widget_gtk_main();
-}
-endrequire;
+/* FUNCTION(applet_widget_gtk_main_quit, "function(void:void)"); */
+/* // Exit from the applet_widget_gtk_main function on the next iteration. */
+/* { */
+/*   gtk_main_quit(); */
+/* } */
+
+/* FUNCTION(applet_widget_gtk_main, "function(void:void)"); */
+/* // Special corba main loop for gnome panel applets */
+/* { */
+/*   applet_widget_gtk_main(); */
+/* } */
+/* endrequire; */
 
 
 FUNCTION(setup_gtk, "function(array|void,int|void:array)");
