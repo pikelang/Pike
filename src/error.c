@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.130 2004/06/29 16:52:16 grubba Exp $
+|| $Id: error.c,v 1.131 2004/08/31 20:25:40 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.130 2004/06/29 16:52:16 grubba Exp $");
+RCSID("$Id: error.c,v 1.131 2004/08/31 20:25:40 grubba Exp $");
 
 /* __attribute__ only applies to function declarations, not
    definitions, so we disable them here. */
@@ -160,7 +160,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn))
   accept_unfinished_type_fields--;
 #endif
 
-  longjmp(Pike_interpreter.recoveries->recovery,1);
+  LOW_LONGJMP(Pike_interpreter.recoveries->recovery,1);
 }
 
 PMOD_EXPORT void push_error(const char *description)
