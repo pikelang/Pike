@@ -367,7 +367,7 @@ void port_setup_program()
   add_function("query_address",socket_query_address,"function(:string)",0);
   add_function("errno",port_errno,"function(:int)",0);
   add_function("accept",port_accept,"function(:object)",0);
-  add_function("create",port_create,"function(void|string,void|mixed:void)",0);
+  add_function("create",port_create,"function(void|string|int,void|mixed:void)",0);
 
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
