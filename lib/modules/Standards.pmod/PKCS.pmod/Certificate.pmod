@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.12 2003/01/27 02:54:02 nilsson Exp $
+// $Id: Certificate.pmod,v 1.13 2004/01/14 22:06:00 bill Exp $
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -164,6 +164,21 @@ Sequence build_distinguished_name(mapping(string:object) ... args)
 			      return attribute_set(
 				.Identifiers.at_ids, rdn);
 			    } ));
+}
+
+//! Return the certificate issuer from a certificate string.
+//!
+//! @param cert
+//! A string containing an X509 certificate.
+//!
+//! Note that the certificate normally must be decoded using @[MIME.decode_base64].
+//!
+//! @returns
+//!  an Standards.ASN1.Sequence object containing the certificate issuers Distinguished 
+//!  Name (DN).
+Sequence get_certificate_issuer(string cert)
+{
+  return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[3];
 }
 
 class Attribute
