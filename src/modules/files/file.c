@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.212 2001/02/20 13:02:12 grubba Exp $");
+RCSID("$Id: file.c,v 1.213 2001/03/10 12:30:41 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -733,8 +733,10 @@ static void file_read(INT32 args)
 
 #ifndef __NT__
 /*! @decl int(-1..1) peek()
+ *! @decl int(-1..1) peek(int|float timeout)
  *!
- *! Check if there is data available to read.
+ *! Check if there is data available to read,
+ *! or wait some time for available data to read.
  *!
  *! Returns @tt{1@} if there is data available to read,
  *! @tt{0@} (zero) if there is no data available, and
@@ -748,13 +750,21 @@ static void file_peek(INT32 args)
 #ifdef HAVE_AND_USE_POLL
   struct pollfd fds;
   int ret;
+  int timeout=1;
 
   fds.fd=THIS->fd;
   fds.events=POLLIN;
   fds.revents=0;
 
+  if (args)
+  {
+     FLOAT_TYPE tf;
+     get_all_args("peek",args,"%F",&tf);
+     timeout=(int)(tf*1000); /* ignore overflow for now */
+  }
+
   THREADS_ALLOW();
-  ret=poll(&fds, 1, 1);
+  ret=poll(&fds, 1, timeout);
   THREADS_DISALLOW();
 
   if(ret < 0)
@@ -775,6 +785,14 @@ static void file_peek(INT32 args)
   fd_FD_ZERO(&tmp);
   fd_FD_SET(ret=THIS->fd, &tmp);
 
+  if (args)
+  {
+     FLOAT_TYPE tf;
+     get_all_args("peek",args,"%F",&tf);
+     tv.tv_sec=(int)tf;
+     tv.tv_usec=(int)(1000000*(tf-tv.tv_sec));
+  }
+
   THREADS_ALLOW();
   ret=select(ret+1,&tmp,0,0,&tv);
   THREADS_DISALLOW();
@@ -790,6 +808,7 @@ static void file_peek(INT32 args)
   pop_n_elems(args);
   push_int(ret);
 }
+
 #endif
 
 #ifdef WITH_OOB
