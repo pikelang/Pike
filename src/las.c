@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.21 1997/02/18 05:13:35 hubbe Exp $");
+RCSID("$Id: las.c,v 1.22 1997/02/27 08:09:46 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1942,16 +1942,16 @@ static struct svalue *is_stupid_func(node *n,
     break;
   }
 
-  if(n->token != F_RETURN) return 0;
+  if(!n || n->token != F_RETURN) return 0;
   n=CAR(n);
 
-  if(n->token != F_APPLY) return 0;
+  if(!n || n->token != F_APPLY) return 0;
 
   tmp=stupid_args(CDR(n),0,vargs);
   if(!(vargs?tmp==65535:tmp==args)) return 0;
 
   n=CAR(n);
-  if(n->token != F_CONSTANT) return 0;
+  if(!n || n->token != F_CONSTANT) return 0;
   return &n->u.sval;
 }
 
