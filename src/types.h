@@ -1,5 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
+#include "sys/types.h"
 
 /* we here define a few types with more defined values */
 
