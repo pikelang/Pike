@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.99 2002/09/13 01:14:27 marcus Exp $
+# $Id: dynamic_module_makefile.in,v 1.100 2002/11/05 16:52:05 grubba Exp $
 #
 
 
@@ -31,10 +31,11 @@ force:
 
 $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; \
-	echo Making $(MODNAME)/$$a ; \
+	 m=`echo $@ | sed -e 's@.*/@@g'`; \
+	echo Making $(MODNAME)/$$a/$$m ; \
 	( rm $$a/remake >/dev/null 2>&1 ||: ; \
-	  cd $$a && ( $(MAKE) $(MAKE_FLAGS) || \
-	              ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) \
+	  cd $$a && ( $(MAKE) $(MAKE_FLAGS) $$m || \
+	              ( test -f remake ; $(MAKE) $(MAKE_FLAGS) $$m ) ) \
 	) || exit $$?
 
 dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment module.so
