@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.h,v 1.30 2003/04/02 19:22:42 mast Exp $
+|| $Id: constants.h,v 1.31 2003/05/31 01:14:27 mast Exp $
 */
 
 #ifndef ADD_EFUN_H
@@ -24,6 +24,7 @@ struct callable
   c_fun function;
   struct pike_type *type;
   struct pike_string *name;
+  struct program *prog;
   INT16 flags; /* OPT_* */
   INT16 internal_flags;
 #ifdef PIKE_DEBUG

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.47 2003/04/02 19:22:42 mast Exp $
+|| $Id: constants.c,v 1.48 2003/05/31 01:14:27 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.47 2003/04/02 19:22:42 mast Exp $");
+RCSID("$Id: constants.c,v 1.48 2003/05/31 01:14:27 mast Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -84,6 +84,7 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
   f->function=fun;
   f->name=name;
   f->type=type;
+  f->prog=Pike_compiler->new_program;
   f->flags=flags;
   f->docode=docode;
   f->optimize=optimize;

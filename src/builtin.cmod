@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.136 2003/05/15 15:33:30 mast Exp $
+|| $Id: builtin.cmod,v 1.137 2003/05/31 01:14:27 mast Exp $
 */
 
 #include "global.h"
@@ -963,8 +963,10 @@ PIKEFUN program function_program(program|function func)
     case PIKE_T_FUNCTION:
       {
 	struct program *p;
-	if(func->subtype == FUNCTION_BUILTIN) break;
-	p = func->u.object->prog;
+	if(func->subtype == FUNCTION_BUILTIN)
+	  p = func->u.efun->prog;
+	else
+	  p = func->u.object->prog;
 	if(p == pike_trampoline_program)
 	{
 	  p = ((struct pike_trampoline *)func->u.object->storage)->
