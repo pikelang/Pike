@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.145 1999/06/19 19:52:34 hubbe Exp $
+# $Id: Makefile.in,v 1.146 1999/08/11 15:42:31 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -409,10 +409,12 @@ tinstall: aclocal
 
 
 verify: module_testsuites testsuite tinstall
-	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike -a ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike -a ; fi
+	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	if test -f ./test-pike ; then ./test-pike -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike $$args ; else sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(TMP_BINDIR)/test_pike.pike $$args ; fi
 
 verify_installed: module_testsuites testsuite master.pike
-	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike -a
+	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike $$args
 
 check: verify
 
@@ -420,7 +422,8 @@ sure: verify
 
 # verify / debug verbose
 verbose_verify: module_testsuites testsuite master.pike
-	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose -a
+	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose $$args
 
 # verify & debug VERBOSE
 gdb_verify: module_testsuites testsuite master.pike
