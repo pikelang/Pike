@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.414 2000/08/29 19:51:27 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.415 2000/09/15 21:29:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -49,6 +49,16 @@ It is probably best to delete ./config.cache before proceeding])
 fi
 
 pike_cv_prog_CC_save="$CC"
+
+#
+# We want 64bit mode if possible.
+# This variable is looked at by AIX 5L/cc.
+#
+
+if test "x$OBJECT_MODE" = "x"; then
+  OBJECT_MODE=64
+  export OBJECT_MODE
+fi
 
 # MY_AC_PROG_CC
 # The above has problems if the smartlink binary is removed. /grubba
@@ -183,6 +193,12 @@ if test "$uname_prog" != "no"; then
       case "`uname -r`" in
         5.*) pike_cv_sys_os="Solaris" ;;
       esac
+    ;;
+    Monterey64)
+      # According to the release notes, the string "Monterey64"
+      # will be changed to "AIX" in the final release.
+      # (Monterey 64 is also known as AIX 5L).
+      pike_cv_sys_os="AIX"
     ;;
   esac
 else
@@ -379,7 +395,7 @@ fi
 #############################################################################
 
 if test "$GCC" = "yes"; then
-  if test $cflags_is_set = no; then
+  if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-pipe, pipe, CFLAGS)
   fi
 fi
@@ -704,7 +720,7 @@ fi
 WARN=""
 OPTIMIZE=""
 
-if test $cflags_is_set = no; then
+if test "$cflags_is_set" = "no"; then
   if test "x$with_cdebug" = "xno" ; then
     CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @ @g'`
   else
@@ -861,6 +877,40 @@ if test $cflags_is_set = no; then
     # which is needed for several configure-scripts.
     AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
     AC_SYS_COMPILER_FLAG(-qro,qro,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-qfold,qfold,OPTIMIZE)
+    AC_SYS_COMPILER_FLAG(-qwarn64,qwarn64,WARN)
+    AC_SYS_COMPILER_FLAG(-qflag=i,qflag_i,WARN)
+    AC_DEFUN(AC_SYS_COMPILER_FLAG_QINFO, [
+      AC_SYS_COMPILER_FLAG(-qinfo=$1,qinfo_$1,WARN)
+    ])
+    AC_SYS_COMPILER_FLAG_QINFO(cmp)
+    AC_SYS_COMPILER_FLAG_QINFO(cnd)
+    AC_SYS_COMPILER_FLAG_QINFO(cns)
+    AC_SYS_COMPILER_FLAG_QINFO(cnv)
+    AC_SYS_COMPILER_FLAG_QINFO(dcl)
+    AC_SYS_COMPILER_FLAG_QINFO(eff)
+    AC_SYS_COMPILER_FLAG_QINFO(enu)
+    AC_SYS_COMPILER_FLAG_QINFO(ext)
+    AC_SYS_COMPILER_FLAG_QINFO(gen)
+    AC_SYS_COMPILER_FLAG_QINFO(gnr)
+    AC_SYS_COMPILER_FLAG_QINFO(got)
+    AC_SYS_COMPILER_FLAG_QINFO(ini)
+    AC_SYS_COMPILER_FLAG_QINFO(inl)
+    AC_SYS_COMPILER_FLAG_QINFO(lan)
+    AC_SYS_COMPILER_FLAG_QINFO(obs)
+    AC_SYS_COMPILER_FLAG_QINFO(ord)
+    AC_SYS_COMPILER_FLAG_QINFO(par)
+    AC_SYS_COMPILER_FLAG_QINFO(por)
+    AC_SYS_COMPILER_FLAG_QINFO(ppc)
+    AC_SYS_COMPILER_FLAG_QINFO(pro)
+    AC_SYS_COMPILER_FLAG_QINFO(rea)
+    AC_SYS_COMPILER_FLAG_QINFO(ret)
+    AC_SYS_COMPILER_FLAG_QINFO(trd)
+    AC_SYS_COMPILER_FLAG_QINFO(tru)
+    AC_SYS_COMPILER_FLAG_QINFO(uni)
+    AC_SYS_COMPILER_FLAG_QINFO(use)
+    # AC_SYS_COMPILER_FLAG(-qalias=addr,qalias_addr,OPTIMIZE)    
+    # AC_SYS_COMPILER_FLAG(-qlibansi,qlibansi,OPTIMIZE)
     # Tell the linker to generate a large toc if needed
     AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
   ])
@@ -1089,7 +1139,7 @@ fi
 
 echo Searching for binary directories...
 for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` \
-    "" /usr /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu \
+    "" /usr /usr/ccs /usr/vac /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu \
     /sw /usr/freeware /usr/pkg
 do
   AC_MSG_CHECKING($d/bin)
