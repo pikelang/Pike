@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.17 2000/08/16 19:58:59 grubba Exp $ */
+/* $Id: math_matrix.c,v 1.18 2000/10/11 10:11:50 mirar Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -239,13 +239,14 @@ done_made:
 	 get_all_args("matrix",args,"%s%i",&dummy,&side);
 
 	 THIS->xsize=THIS->ysize=side;
-	 THIS->m=m=malloc(sizeof(FTYPE)*xs*ys);
+	 THIS->m=m=malloc(sizeof(FTYPE)*side*side);
 	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR("matrix",sizeof(FTYPE)*side*side);
 
+  	 n=side*side;
+	 while (n--) *(m++)=0.0; 
 	 n=side*side;
-	 while (n--) *(m++)=0.0;
-	 for (n=0; i<side; i++)
-	    THIS->m[i*(side+1)]=1.0;
+	 for (i=0; i<n; i+=side+1)
+	    THIS->m[i]=1.0;
       }
       else if (sp[-args].u.string==s_rotate)
       {
