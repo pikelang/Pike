@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.139 2001/01/19 11:05:15 mirar Exp $
+ * $Id: master.pike.in,v 1.140 2001/01/19 13:51:37 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -1438,8 +1438,7 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(1);
      }
 
-     _static_modules.files()->_stdout->write(version()+"\n"+
-					     v()*"\n"+"\n");
+     _static_modules.files()->_stdout->write(v()*"\n"+"\n");
      exit(0);
   }
 
