@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.331 2001/01/09 15:37:12 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.332 2001/01/11 18:22:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3680,6 +3680,32 @@ PMOD_EXPORT void f__optimizer_debug(INT32 args)
   push_int(l_flag);
   l_flag = l;
 }
+
+
+/*! @decl int _assembler_debug(int(0..) level)
+ *!
+ *! Set the assembler debug level.
+ *!
+ *! @returns
+ *! The old assembler debug level will be returned.
+ *! 
+ *! @note
+ *! This function is only available if the Pike runtime has been compiled
+ *! with RTL debug.
+ */
+PMOD_EXPORT void f__assembler_debug(INT32 args)
+{
+  INT_TYPE l;
+
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("_assembler_debug: permission denied.\n"));
+
+  get_all_args("_optimizer_debug", args, "%i", &l);
+  pop_n_elems(args);
+  push_int(a_flag);
+  a_flag = l;
+}
+
 
 #ifdef YYDEBUG
 
@@ -7435,6 +7461,10 @@ void init_builtin_efuns(void)
 /* function(int:int) */
   ADD_EFUN("_optimizer_debug",f__optimizer_debug,
 	   tFunc(tInt,tInt),OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
+
+/* function(int:int) */
+  ADD_EFUN("_assembler_debug",f__assembler_debug,
+	   tFunc(tInt,tInt), OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);
 
 #ifdef YYDEBUG
   
