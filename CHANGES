@@ -1,4 +1,4 @@
-Changes since Pike 7.2:
+Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
 
 New/improved functionality:
@@ -14,7 +14,8 @@ o AutoDoc
     The major parts of Pike now have some sort of documentation on
     class and function level thanks to the AutoDoc system which has
     been deployed during the last year. Manual dumps are published on
-    http://pike.ida.liu.se/docs/reference/.
+    http://pike.ida.liu.se/docs/reference/. Note that the manuals and
+    the manual system are still work in progress.
 
 o pike -x
     When starting pike with the -x parameter, the pike process will
@@ -84,6 +85,11 @@ o SSL
     protocol and the methods in HTTP.Query now support secure transport
     over SSL/TLS.
 
+o Better predefine handling
+    It is now possible to change the Pike predefines without forking a
+    new Pike process. Use the master function add_predefine() and
+    remove_predefine() to add and remove defines.
+
 
 Language additions:
 -------------------
@@ -132,6 +138,11 @@ o Iterators
     example, to get some arbitrary index in a mapping m:
 
         mixed any_index = Mapping.Iterator(m)->index();
+
+    Other available iterators includes the file line iterator,
+    available from Stdio.File through the method line_iterator(), and
+    the split iterator that iterates over the fragments of a splitted
+    string, available as String.SplitIterator.
 
 o Automap
     To perform per-element operations on arrays, there is now a convenience
@@ -260,6 +271,15 @@ o Constant objects
     and better dumping. Used for example with Gmp.Bignum, Math.Matrix
     and Image.Color.
 
+o Increased weakness granularity
+    Instead of just declaring a mapping as weak, to avoid its
+    references to be counted during garbage collection, it is now
+    possible to declare only the indices or values as weak. To this
+    end set_weak_flag() now takes a second argument to define the kind
+    of weakness its first argument should have; Pike.WEAK,
+    Pike.WEAK_VALUES or Pike.WEAK_INDICES. No second argument implies
+    Pike.WEAK, which is both Pike.WEAK_VALUES and Pike.WEAK_INDICES.
+
 
 New modules / classes / methods added:
 --------------------------------------
@@ -296,6 +316,17 @@ o ADT.Relation.Binary
                       3,
                       5
                   })
+
+o Array
+    The array module has quite a few new and handy methods.
+    common_prefix() finds the longest common prefix in an array of
+    arrays. count() counts the number of occurences of an element in
+    an array. greedy_diff() is a greedy version of the diff()
+    algorithm. oid_sort_func() is an ordering function for
+    sort_array() that sorts SNMP OID values correctly. arrayify() is a
+    simple helper function that makes arrays out of non arrays.
+    uniq2(), unlike uniq(), works as the UNIX uniq command. Finally
+    sum() sums the elements in an array using +.
 
 o Audio.Codec and Audio.Format
     Contain decoders/encoders and format parsers for audio using
@@ -452,6 +483,10 @@ o Pike.Backend and Pike.DefaultBackend
 	}
       }
 
+o Pike.Security
+    If Pike has been compiled with security support, the security
+    related stuff can now be found in this module.
+
 o Protocols.XMLRPC
     Implements most features of the XML-RPC standard.
 
@@ -520,11 +555,10 @@ o Stdio.FakeFile
 
 o Stdio.File
     This object has received a few additions; With the sync() method
-    the file object can be synchronized with the disk. line_iterator()
-    returns an iterator object that iterates over the lines in the
-    file. It is now possible to open UNIX domain sockets with the
-    connect_unix() method. Finally grantpt() can allocate a VTY on
-    systems with /dev/ptmx support.
+    the file object can be synchronized with the disk. It is now
+    possible to open UNIX domain sockets with the connect_unix()
+    method. Finally grantpt() can allocate a VTY on systems with
+    /dev/ptmx support.
 
     Minimal example:
       fd = Stdio.File("/dev/ptmx", "rw" );
@@ -553,13 +587,13 @@ o String
    to the soundex algorithm. The algorithm in itself is not very useful,
    but some databases support it.
 
+o String.Buffer
+    A buffer used for building strings very fast.
+
 o String.Elite
     Contains methods that transfer ordinary readable text into
     leet-speak. A fairly good argument could be laid out for putting this
     in Crypto as a one way cipher...
-
-o String.Buffer
-    A buffer used for building strings very fast.
 
 o String.HTML
     Contains methods that help in generating HTML.
@@ -568,7 +602,8 @@ o System
     The following methods have been added: normalize_path(), which works
     on NT style paths. get_netinfo_property(), which queries a NetInfo
     server on MacOS X. gettimeofday(), which uses the system gettimeofday
-    to retrieve the time.
+    to retrieve the time. nanosleep() and usleep(), which calls the
+    system nanosleep and usleep functions.
 
 o System.Time
     Used to get the current time with sub-second precision.
@@ -790,8 +825,8 @@ o Protocols.LDAP.client()
     a compatibility layer.
 
 o Protocols.SNMP
-    Support for SNMP v1 and v2c, including a simple SNMP agent with
-    support for Get requests.
+    Extended to support both SNMP v1 and v2c. A simple SNMP agent with
+    support for Get requests has also been added.
 
 o Protocols.X
     Support for the X11 XTEST extension has been added.
@@ -847,43 +882,21 @@ o Image.Layer modes modified
 
     (which is the behavior of the 'normal' mode.)
 
-    Bug fixes in the above modes so that alpha r,g,b channels
-    are handled properly (separately).
-
-    Bug fixes in equal, not_equal, less, more, less_or_equal, and
-    more_or_equal modes so that the alpha channel is handled as
-    documented (which is, in fact, as above; aD=aS).
-
-    Bug fix in divide and invdivide to actually do what the modes are
-    supposed to do (rather then just black the layer).
-
-    And while on it, adding some modes:
-
-    'imultiply'  - D=(1-L)*S
-    'idivide'    - D=S/(1-L)
-    'invidivide' - D=L/(1-S)
-
-    'value_mul' - multiplying the source layer value
-    (as in h,s,v) with the current layer value to the destination
-    layer ("true burn").
-
 
 C level/development changes:
 ----------------------------
 
 o Some global symbols have been renamed to avoid name clashes.
-    sp -> Pike_sp
-    fp -> Pike_fp
-    fatal -> Pike_fatal
+    sp           -> Pike_sp
+    fp           -> Pike_fp
+    fatal        -> Pike_fatal
     empty_string -> empty_pike_string
-
-o Module symbols not available from other modules.
-    FIXME: Expand on this.
 
 o C-module symbols not available from other modules.
     To avoid clashes between modules the symbols of dynamically loaded
-    modules are now no longer available to eachother.
-    FIXME: How to do now?
+    modules are now no longer available to each other. This relied on
+    a predefined load order of dynamic modules to work, so any module
+    that used this could have crashed unpredictably during start up.
 
 o Pike valgrinded
     Pike has been the subject to some Valgrind scrutiny. Some specific
@@ -905,6 +918,7 @@ o Some gdb helpers.
     pike_gdb_breakpoint and then use _gdb_breakpoint at the
     appropriate place in the Pike code to enter gdb at that point.
 
+
 Bugs fixed:
 -----------
 
@@ -916,38 +930,10 @@ o It is now possible to inherit Pike programs from C programs.
 
 o Now supports Autoconf 2.50 & Autoconf 2.52
 
+o Modules with the constant dont_dump_mode will not be dumped, as a
+  workaround for modules that can not yet be dumped.
 
-Uncategorized misc changes:
----------------------------
 
-o it is possible to change predefines without forking a new pike
-  add_predefine()/remove_predefine()
+  Enjoy!
 
-o dont_dump_module *FIXME: grubba*
-
-System.usleep()/nanosleep()
-   FIXME: per?
-
-master.pike
-- Improved handling of module cross dependencies.
-
-Multiset
-
-Pike.Security
-Pike.BacktraceFrame
-Pike.WEAK_INDICES, WEAK_VALUES, WEAK
-
-o String.SplitIterator
-    FIXME: grubba
-
-o String.Replace, String.SingleReplace
-    FIXME
-
-Array.common_prefix
-Array.count
-Array.greedy_diff
-Array.oid_sort_func
-Array.arrayify
-Array.uniq2
-Array.sum
-
+     The Pike Team
