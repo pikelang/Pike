@@ -189,6 +189,10 @@ testfont binary
 /src/modules/Gdbm/configure.in foreign_ident
 /src/modules/Gdbm/gdbmmod.c foreign_ident
 /src/modules/Gdbm/testsuite.in foreign_ident
+/src/modules/Gettext/Makefile.in foreign_ident
+/src/modules/Gettext/acconfig.h foreign_ident
+/src/modules/Gettext/configure.in foreign_ident
+/src/modules/Gettext/gettext.c foreign_ident
 /src/modules/Gmp/Makefile.in foreign_ident
 /src/modules/Gmp/configure.in foreign_ident
 /src/modules/Gmp/gmp_machine.h.in foreign_ident
