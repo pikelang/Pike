@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: monger.pike,v 1.7 2004/09/21 20:50:25 nilsson Exp $
+// $Id: monger.pike,v 1.8 2004/10/30 12:07:05 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.7 $"/" ")[1];
+constant version = ("$Revision: 1.8 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -334,6 +334,8 @@ void do_install(string name, string|void version)
 
   foreach(jobs, string j)
   {
+    write("\nRunning %O in %O\n\n", run_pike+" "+pike_args*" "+" -x module "+j,
+	  getcwd());
     builder = Process.create_process(
       ({run_pike}) + pike_args + ({"-x", "module"}) + ({ j }));
     res = builder->wait();
