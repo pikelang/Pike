@@ -12,7 +12,7 @@ void main(int argc, array argv)
   write("Performing Unicode normalization tests\n");
   write("See http://www.unicode.org/Public/3.1-Update/" FILE "\n" );
 
-  foreach( Stdio.File( argv[1]+FILE,"r" )->read()/"\n", string l )
+  foreach( Stdio.File( argv[1]+"/"+FILE,"r" )->read()/"\n", string l )
   {
     if( !strlen( l ) )
       continue;
