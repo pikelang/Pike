@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.20 1999/11/09 07:06:44 mast Exp $
+# $Id: Makefile,v 1.21 1999/11/13 18:04:13 mast Exp $
 #
 # Meta Makefile
 #
@@ -35,6 +35,7 @@ src/configure: src/configure.in
 force_configure:
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
 	-rm -f "$(BUILDDIR)/Makefile"
+	@$(MAKE) $(MAKE_FLAGS) configure
 
 builddir:
 	@builddir="$(BUILDDIR)"; \
