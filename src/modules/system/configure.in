@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.38 2000/09/17 17:07:29 grubba Exp $
+# $Id: configure.in,v 1.39 2000/12/06 12:36:23 mirar Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -17,7 +17,8 @@ fi
 AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 	sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
 	sys/utsname.h pwd.h passwd.h shadow.h grp.h sys/stat.h winsock.h \
-        sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h)
+        sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h \
+	sys/resource.h)
 
 AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
@@ -28,7 +29,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	chroot fchroot uname sysinfo gethostname gethostbyname \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
-        getspnam_r innetgr utime)
+        getspnam_r innetgr utime sleep getrlimit setrlimit)
 
 
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
@@ -217,6 +218,63 @@ if test "$pike_cv_struct_has_pw_gecos" = yes; then
 else
   AC_MSG_RESULT(no)
 fi
+
+
+
+AC_MSG_CHECKING(setrlimit syntax)
+AC_CACHE_VAL(pike_cv_setrlimit_syntax_bsd43,
+[
+AC_TRY_COMPILE([
+#include <unistd.h>
+#include <sys/resource.h>
+],[
+struct rlimit rl;
+int res;
+rl.rlim_cur=60;
+rl.rlim_max=60;
+#ifdef RLIMIT_CPU
+res=setrlimit(RLIMIT_CPU,&rl);
+res=getrlimit(RLIMIT_CPU,&rl);
+#else
+res=setrlimit(0,&rl);
+res=getrlimit(RLIMIT_CPU,&rl);
+#endif
+],pike_cv_setrlimit_syntax_bsd43=yes,pike_cv_setrlimit_syntax_bsd43=no)
+])
+
+AC_CACHE_VAL(pike_cv_setrlimit_syntax_solaris,
+[
+AC_TRY_COMPILE([
+#include <unistd.h>
+#include <sys/resource.h>
+],[
+struct rlimit rl;
+int res;
+rl.rlim_cur=(rlim_t)60;
+rl.rlim_max=(rlim_t)60;
+#ifdef RLIMIT_CPU
+res=setrlimit(RLIMIT_CPU,&rl);
+res=getrlimit(RLIMIT_CPU,&rl);
+#else
+res=setrlimit(0,&rl);
+res=getrlimit(RLIMIT_CPU,&rl);
+#endif
+],pike_cv_setrlimit_syntax_standard=yes,pike_cv_setrlimit_syntax_standard=no)
+])
+
+if test "$pike_cv_setrlimit_syntax_standard" = yes; then
+  AC_MSG_RESULT(standard)
+  AC_DEFINE(SETRLIMIT_SYNTAX_STANDARD)
+else if test "$pike_cv_setrlimit_syntax_bsd43" = yes; then
+  AC_MSG_RESULT(BSD 4.3)
+  AC_DEFINE(SETRLIMIT_SYNTAX_BSD43)
+else
+  AC_MSG_RESULT(unknown)
+  AC_DEFINE(SETRLIMIT_SYNTAX_UNKNOWN)
+fi
+fi
+
+
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 

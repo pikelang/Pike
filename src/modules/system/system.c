@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.95 2000/12/05 21:08:40 per Exp $
+ * $Id: system.c,v 1.96 2000/12/06 12:36:24 mirar Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.95 2000/12/05 21:08:40 per Exp $");
+RCSID("$Id: system.c,v 1.96 2000/12/06 12:36:24 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -83,6 +83,9 @@ RCSID("$Id: system.c,v 1.95 2000/12/05 21:08:40 per Exp $");
 #endif /* HAVE_SYS_SYSTEMINFO_H */
 #ifdef HAVE_SYS_UTSNAME_H
 #include <sys/utsname.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
 #endif
 
 #ifdef HAVE_SYS_ID_H
@@ -1424,6 +1427,346 @@ static void f_system_sleep(INT32 args)
 }
 #endif /* HAVE_SLEEP */
 
+/* can't do this if we don't know the syntax */
+#ifdef SETRLIMIT_SYNTAX_UNKNOWN
+#ifdef HAVE_GETRLIMIT
+#undef HAVE_GETRLIMIT
+#endif
+#ifdef HAVE_SETRLIMIT
+#undef HAVE_SETRLIMIT
+#endif
+#endif
+
+#ifdef SETRLIMIT_SYNTAX_BSD43
+#define PIKE_RLIM_T int
+#endif
+
+#ifdef SETRLIMIT_SYNTAX_STANDARD
+#define PIKE_RLIM_T rlim_t
+#endif
+
+#if HAVE_GETRLIMIT || HAVE_SETRLIMIT
+static struct pike_string *s_cpu=NULL;
+static struct pike_string *s_fsize=NULL;
+static struct pike_string *s_data=NULL;
+static struct pike_string *s_stack=NULL;
+static struct pike_string *s_core=NULL;
+static struct pike_string *s_rss=NULL;
+static struct pike_string *s_nproc=NULL;
+static struct pike_string *s_nofile=NULL;
+static struct pike_string *s_memlock=NULL;
+static struct pike_string *s_as=NULL;
+
+static void make_rlimit_strings()
+{
+   MAKE_CONSTANT_SHARED_STRING(s_cpu,"cpu");
+   MAKE_CONSTANT_SHARED_STRING(s_fsize,"fsize");
+   MAKE_CONSTANT_SHARED_STRING(s_data,"data");
+   MAKE_CONSTANT_SHARED_STRING(s_stack,"stack");
+   MAKE_CONSTANT_SHARED_STRING(s_core,"core");
+   MAKE_CONSTANT_SHARED_STRING(s_rss,"rss");
+   MAKE_CONSTANT_SHARED_STRING(s_nproc,"nproc");
+   MAKE_CONSTANT_SHARED_STRING(s_nofile,"nofile");
+   MAKE_CONSTANT_SHARED_STRING(s_memlock,"memlock");
+   MAKE_CONSTANT_SHARED_STRING(s_as,"as");
+}
+#endif
+
+#ifdef HAVE_GETRLIMIT
+/* array(int) getrlimit(string resource) */
+/* mapping(string:array(int)) getrlimits() */
+
+static void f_getrlimit(INT32 args)
+{
+   struct rlimit rl;
+   int res=-1;
+   if (!s_cpu) make_rlimit_strings();
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("getrlimit",1);
+   if (sp[-args].type!=T_STRING) 
+      SIMPLE_BAD_ARG_ERROR("getrlimit",1,"string");
+
+#ifdef RLIMIT_CPU
+   if (sp[-args].u.string==s_cpu)
+      res=getrlimit(RLIMIT_CPU,&rl);
+#endif
+#ifdef RLIMIT_FSIZE
+   else if (sp[-args].u.string==s_fsize)
+      res=getrlimit(RLIMIT_FSIZE,&rl);
+#endif
+#ifdef RLIMIT_DATA
+   else if (sp[-args].u.string==s_data)
+      res=getrlimit(RLIMIT_DATA,&rl);
+#endif
+#ifdef RLIMIT_STACK
+   else if (sp[-args].u.string==s_stack)
+      res=getrlimit(RLIMIT_STACK,&rl);
+#endif
+#ifdef RLIMIT_CORE
+   else if (sp[-args].u.string==s_core)
+      res=getrlimit(RLIMIT_CORE,&rl);
+#endif
+#ifdef RLIMIT_RSS
+   else if (sp[-args].u.string==s_rss)
+      res=getrlimit(RLIMIT_RSS,&rl);
+#endif
+#ifdef RLIMIT_NPROC
+   else if (sp[-args].u.string==s_nproc)
+      res=getrlimit(RLIMIT_NPROC,&rl);
+#endif
+#ifdef RLIMIT_NOFILE
+   else if (sp[-args].u.string==s_nofile)
+      res=getrlimit(RLIMIT_NOFILE,&rl);
+#endif
+#ifdef RLIMIT_MEMLOCK
+   else if (sp[-args].u.string==s_memlock)
+      res=getrlimit(RLIMIT_MEMLOCK,&rl);
+#endif
+#ifdef RLIMIT_AS
+   else if (sp[-args].u.string==s_as)
+      res=getrlimit(RLIMIT_AS,&rl);
+#endif
+/* NOFILE is called OFILE on some systems */
+#ifdef RLIMIT_OFILE
+   else if (sp[-args].u.string==s_nofile)
+      res=getrlimit(RLIMIT_OFILE,&rl);
+#endif
+   else if (sp[-args].u.string==s_cpu      ||
+	    sp[-args].u.string==s_fsize    ||
+	    sp[-args].u.string==s_data     ||
+	    sp[-args].u.string==s_stack    ||
+	    sp[-args].u.string==s_core     ||
+	    sp[-args].u.string==s_rss      ||
+	    sp[-args].u.string==s_nproc    ||
+	    sp[-args].u.string==s_nofile   ||
+	    sp[-args].u.string==s_memlock  ||
+	    sp[-args].u.string==s_as)
+   {
+/* no such resource on this system */
+      rl.rlim_cur=(PIKE_RLIM_T)0;
+      rl.rlim_max=(PIKE_RLIM_T)0;
+      res=0;
+   }
+   else
+      Pike_error("getrlimit: no such resource\n");
+
+   if (res==-1)
+   {
+/* this shouldn't happen */
+      Pike_error("getrlimit: error; errno=%d\n",errno);
+   }
+
+   pop_n_elems(args);
+#ifdef RLIM_INFINITY
+   if (rl.rlim_cur==RLIM_INFINITY)
+      push_int(-1);
+   else
+#endif
+      push_int( (INT_TYPE)rl.rlim_cur );
+
+#ifdef RLIM_INFINITY
+   if (rl.rlim_max==RLIM_INFINITY)
+      push_int(-1);
+   else
+#endif
+      push_int( (INT_TYPE)rl.rlim_max );
+
+   f_aggregate(2);
+}
+
+static void f_getrlimits(INT32 args)
+{
+   int n=0;
+   pop_n_elems(args); /* no args */
+
+   if (!s_cpu) make_rlimit_strings();
+
+#ifdef RLIMIT_CPU
+   ref_push_string(s_cpu);
+   ref_push_string(s_cpu);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_FSIZE
+   ref_push_string(s_fsize);
+   ref_push_string(s_fsize);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_DATA
+   ref_push_string(s_data);
+   ref_push_string(s_data);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_STACK
+   ref_push_string(s_stack);
+   ref_push_string(s_stack);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_CORE
+   ref_push_string(s_core);
+   ref_push_string(s_core);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_RSS
+   ref_push_string(s_rss);
+   ref_push_string(s_rss);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_NPROC
+   ref_push_string(s_nproc);
+   ref_push_string(s_nproc);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_NOFILE 
+   ref_push_string(s_nofile);
+   ref_push_string(s_nofile);
+   f_getrlimit(1);
+   n+=2;
+#else
+#ifdef RLIMIT_OFILE 
+   ref_push_string(s_nofile);
+   ref_push_string(s_nofile);
+   f_getrlimit(1);
+   n+=2;
+#endif
+#endif
+
+#ifdef RLIMIT_MEMLOCK
+   ref_push_string(s_memlock);
+   ref_push_string(s_memlock);
+   f_getrlimit(1);
+   n+=2;
+#endif
+
+#ifdef RLIMIT_AS
+   ref_push_string(s_as);
+   ref_push_string(s_as);
+   f_getrlimit(1);
+   n+=2;
+#endif
+   
+   fprintf(stderr,"n=%d\n",n);
+
+   f_aggregate_mapping(n);
+}
+
+#endif
+
+#ifdef HAVE_SETRLIMIT
+/* int(0..1) setrlimit(string resource, int cur, int max) */
+
+static void f_setrlimit(INT32 args)
+{
+   struct rlimit rl;
+   int res=-1;
+   if (!s_cpu) make_rlimit_strings();
+   if (args<3)
+      SIMPLE_TOO_FEW_ARGS_ERROR("setrlimit",3);
+   if (sp[-args].type!=T_STRING) 
+      SIMPLE_BAD_ARG_ERROR("setrlimit",1,"string");
+   if (sp[1-args].type!=T_INT ||
+       sp[1-args].u.integer<-1) 
+      SIMPLE_BAD_ARG_ERROR("setrlimit",2,"int(-1..)");
+   if (sp[2-args].type!=T_INT ||
+       sp[1-args].u.integer<-1) 
+      SIMPLE_BAD_ARG_ERROR("setrlimit",3,"int(-1..)");
+
+#ifdef RLIM_INFINITY
+   if (sp[1-args].u.integer==-1)
+      rl.rlim_cur=RLIM_INFINITY;
+   else
+#endif
+      rl.rlim_cur=(PIKE_RLIM_T)sp[1-args].u.integer;
+
+#ifdef RLIM_INFINITY
+   if (sp[2-args].u.integer==-1)
+      rl.rlim_max=RLIM_INFINITY;
+   else
+#endif
+      rl.rlim_max=(PIKE_RLIM_T)sp[2-args].u.integer;
+
+
+#ifdef RLIMIT_CPU
+   if (sp[-args].u.string==s_cpu)
+      res=setrlimit(RLIMIT_CPU,&rl);
+#endif
+#ifdef RLIMIT_FSIZE
+   else if (sp[-args].u.string==s_fsize)
+      res=setrlimit(RLIMIT_FSIZE,&rl);
+#endif
+#ifdef RLIMIT_DATA
+   else if (sp[-args].u.string==s_data)
+      res=setrlimit(RLIMIT_DATA,&rl);
+#endif
+#ifdef RLIMIT_STACK
+   else if (sp[-args].u.string==s_stack)
+      res=setrlimit(RLIMIT_STACK,&rl);
+#endif
+#ifdef RLIMIT_CORE
+   else if (sp[-args].u.string==s_core)
+      res=setrlimit(RLIMIT_CORE,&rl);
+#endif
+#ifdef RLIMIT_RSS
+   else if (sp[-args].u.string==s_rss)
+      res=setrlimit(RLIMIT_RSS,&rl);
+#endif
+#ifdef RLIMIT_NPROC
+   else if (sp[-args].u.string==s_nproc)
+      res=setrlimit(RLIMIT_NPROC,&rl);
+#endif
+#ifdef RLIMIT_NOFILE
+   else if (sp[-args].u.string==s_nofile)
+      res=setrlimit(RLIMIT_NOFILE,&rl);
+#endif
+#ifdef RLIMIT_MEMLOCK
+   else if (sp[-args].u.string==s_memlock)
+      res=setrlimit(RLIMIT_MEMLOCK,&rl);
+#endif
+#ifdef RLIMIT_AS
+   else if (sp[-args].u.string==s_as)
+      res=setrlimit(RLIMIT_AS,&rl);
+#endif
+/* NOFILE is called OFILE on some systems */
+#ifdef RLIMIT_OFILE
+   else if (sp[-args].u.string==s_nofile)
+      res=setrlimit(RLIMIT_OFILE,&rl);
+#endif
+   else if (sp[-args].u.string==s_cpu      ||
+	    sp[-args].u.string==s_fsize    ||
+	    sp[-args].u.string==s_data     ||
+	    sp[-args].u.string==s_stack    ||
+	    sp[-args].u.string==s_core     ||
+	    sp[-args].u.string==s_rss      ||
+	    sp[-args].u.string==s_nproc    ||
+	    sp[-args].u.string==s_nofile   ||
+	    sp[-args].u.string==s_memlock  ||
+	    sp[-args].u.string==s_as)
+      Pike_error("setrlimit: no %s resource on this system\n",
+		 sp[-args].u.string->str);
+   else
+      Pike_error("setrlimit: no such resource\n");
+
+   pop_n_elems(args);
+   if (res==-1)
+      push_int(0);
+   else
+      push_int(1);
+}
+#endif
+
 /*
  * Module linkage
  */
@@ -1607,6 +1950,17 @@ void pike_module_init(void)
   ADD_FUNCTION2("setsid", f_setsid, tFunc(tNone, tInt), 0, OPT_EXTERNAL_DEPEND);
 #endif
 
+#ifdef HAVE_GETRLIMIT
+  ADD_FUNCTION2("getrlimit", f_getrlimit, tFunc(tString, tArr(tInt)), 
+		0, OPT_EXTERNAL_DEPEND);
+  ADD_FUNCTION2("getrlimits", f_getrlimits, 
+		tFunc(tNone, tMap(tStr,tArr(tInt))), 
+		0, OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_SETRLIMIT
+  ADD_FUNCTION2("setrlimit", f_setrlimit, tFunc(tString tInt tInt, tInt01), 
+		0, OPT_EXTERNAL_DEPEND);
+#endif
 
 #ifdef HAVE_CHROOT 
   
