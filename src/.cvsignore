@@ -1,2 +1,4 @@
 configure
+language.c
+language.h
 peep_engine.c
