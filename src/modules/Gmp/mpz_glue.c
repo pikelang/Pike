@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.62 1999/10/30 09:31:33 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.63 1999/10/30 13:15:56 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -986,7 +986,7 @@ static void mpzmod_sgn(INT32 args)
 
 static void mpzmod_sqrt(INT32 args)
 {
-  struct object *o;
+  struct object *o = 0;   /* Make gcc happy. */
   pop_n_elems(args);
   if(mpz_sgn(THIS)<0)
     error("mpz->sqrt() on negative number.\n");
@@ -998,7 +998,7 @@ static void mpzmod_sqrt(INT32 args)
 
 static void mpzmod_sqrtrem(INT32 args)
 {
-  struct object *root, *rem;
+  struct object *root = 0, *rem = 0;   /* Make gcc happy. */
   
   pop_n_elems(args);
   if(mpz_sgn(THIS)<0)
@@ -1166,7 +1166,7 @@ static void gmp_fac(INT32 args)
 
 static void mpzmod_random(INT32 args)
 {
-  struct object *res;
+  struct object *res = 0;   /* Make gcc happy. */
   pop_n_elems(args);
   if(mpz_sgn(THIS) <= 0)
     error("random on negative number.\n");
@@ -1285,6 +1285,7 @@ void pike_module_exit(void)
   ADD_FUNCTION("invert", mpzmod_invert,tFunc(tMpz_arg,tMpz_ret),0);	\
 									\
   ADD_FUNCTION("sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
+  ADD_FUNCTION("_sqrt", mpzmod_sqrt,tFunc(tNone,tMpz_ret),0);		\
   ADD_FUNCTION("sqrtrem",mpzmod_sqrtrem,tFunc(tNone,tArr(tMpz_ret)),0);\
   ADD_FUNCTION("powm",mpzmod_powm,tFunc(tMpz_arg tMpz_arg,tMpz_ret),0);	\
   ADD_FUNCTION("pow", mpzmod_pow,tFunc(tInt,tMpz_ret), 0);		\
@@ -1323,7 +1324,7 @@ void pike_module_init(void)
 #ifdef AUTO_BIGNUM
   {
     int id;
-    extern gmp_library_loaded;
+    extern int gmp_library_loaded;
 
     /* This program autoconverts to integers, Gmp.mpz does not!!
      * magic? no, just an if statement :)              /Hubbe
