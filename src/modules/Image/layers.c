@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.72 2001/07/19 21:10:56 nilsson Exp $
+**!	$Id: layers.c,v 1.73 2001/07/27 15:20:45 nilsson Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -29,7 +29,8 @@
 **! 		     Image img,
 **!                  string longdesc)
 **! {
-**!    begin_tag("tr");
+**!    longdesc = replace(longdesc, ([ "&lt;":"&amp;lt;", "&gt;":"&amp;gt;", "&amp;":"&amp;amp;" ]));
+**!    write(begin_tag("tr"));
 **!    write(mktag("td",(["align":"right","valign":"center"]),
 **!          mktag("b",0,desc)));
 **!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0]))));
@@ -37,7 +38,7 @@
 **           (replace(longdesc,({",",";",")"}),
 **                    ({",<wbr>",";<wbr>",")<wbr>"}))/
 **            "<wbr>")/1*({mktag("wbr")}) ) );
-**!    write(end_tag());
+**!    write(end_tag()+"\n");
 **! }
 **!
 **! int main()
@@ -49,9 +50,9 @@
 **! 			     "tiled":1,
 **! 			     "mode":"normal"]));
 **!
-**!    object circle=load("circle50.pnm");
-**!    object image_test=load("image_ill.pnm");
-**!    object ryoki=load_layer("ryoki_carrot.png");
+**!    object circle=load(fix_image_path("circle50.pnm"));
+**!    object image_test=load(fix_image_path("image_ill.pnm"));
+**!    object ryoki=load_layer(fix_image_path("ryoki_carrot.png"));
 **!
 **!    object lc1=
 **! 	     Layer((["image":circle->clear(255,0,0),
@@ -167,7 +168,7 @@
 **!
 **    xv(a); xv(b);
 **!
-**!    begin_tag("table",(["cellspacing":"0","cellpadding":"1"]));
+**!    write(begin_tag("table",(["cellspacing":"0","cellpadding":"1"])));
 **!
 **! //    write_image("top layer image","bi",b->image());
 **! //    write_image("top layer alpha","ba",b->alpha());
@@ -216,7 +217,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.72 2001/07/19 21:10:56 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.73 2001/07/27 15:20:45 nilsson Exp $");
 
 #include "image_machine.h"
 
