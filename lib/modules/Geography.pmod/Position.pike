@@ -6,10 +6,12 @@
 //! (__hash, `==, `< and `>) so that you can compare
 //! and sort positions as well as using them as index
 //! in mappings. Comparision is made primary on latidue
-//! and secondly on longitude. It is possible to cast
-//! a position into an array, which will yield
-//! ({ float latitude, float longitude }), as well as
-//! into a string.
+//! and secondly on longitude. It does not currently
+//! take the ellipsoid into account.
+//!
+//! It is possible to cast a position into an array, which
+//! will yield ({ float latitude, float longitude }), as
+//! well as into a string.
 
 
 //! Latitude (N--S) of the position, in degrees.
@@ -53,14 +55,15 @@ void create(int|float|string _lat,void|int|float|string _long)
    }
    lat=(float)_lat;
    long=(float)_long;
+   set_ellipsoid("WGS 84");
 }
 
-float|string dwim(string what,string direction)
+private float|string dwim(string what,string direction)
 {
    float d,m,s;
    string dir=0;
    int neg=0;
-#define DIV "%*[ \t\r\n'`°\"]"
+#define DIV "%*[ \t\r\n'`°\":.]"
 
    if (sscanf(what,"-%s",what)) neg=1;
 
@@ -130,45 +133,98 @@ string standard_grid() {
   return "UTM";
 }
 
-// Reference ellipsoids derived from Peter H. Dana's website,
-// Department of Geography, University of Texas at Austin,
-// who in turn presented information from
-// Defense Mapping Agency. 1987b. DMA Technical Report:
-// Supplement to Department of Defense World Geodetic System
-// 1984 Technical Report. Part I and II. Washington, DC: Defense Mapping Agency
+//! The polar radius is how many meters the earth
+//! radius is at the poles (north-south direction).
+float polar_radius;
 
-//! A mapping with reference ellipsoids, which can be fed to the
-//! UTM converter. The mapping maps the name of the ellipsoid to
-//! an array where the first element is an int describing the
-//! equatorial radius and the second element is a float describing
-//! the square of eccentricity.
-//!
-constant ellipsoids =
-  ([ "Airy" : ({ 6377563, 0.00667054 }),
+//! The equatorial radius is how many meters the earth
+//! radius is at the equator (east-west direction).
+float equatorial_radius;
+
+//! Returns the flattening factor for the selected
+//! earth approximation ellipsoid.
+float flattening() {
+  return (equatorial_radius - polar_radius) / equatorial_radius;
+}
+
+//! Returns the first eccentricity squared for the
+//! selected earth approximation ellipsoid.
+float eccentricity_squared() {
+  float f = flattening();
+  return 2*f - pow(f,2);
+}
+
+/*
      "Australian National" : ({ 6378160, 0.006694542 }),
      "Bessel 1841" : ({ 6377397, 0.006674372 }),
      "Bessel 1841 (Nambia)" : ({ 6377484, 0.006674372 }),
-     "Clarke 1866" : ({ 6378206, 0.006768658 }),
-     "Clarke 1880" : ({ 6378249, 0.006803511 }),
-     "Everest" : ({ 6377276, 0.006637847 }),
-     "Fischer 1960 (Mercury)" : ({ 6378166, 0.006693422 }),
-     "Fischer 1968" : ({ 6378150, 0.006693422 }),
-     "GRS 1967" : ({ 6378160, 0.006694605 }),
-     "GRS 1980" : ({ 6378137, 0.00669438 }),
      "Helmert 1906" : ({ 6378200, 0.006693422 }),
-     "Hough" : ({ 6378270, 0.00672267 }),
-     "International" : ({ 6378388, 0.00672267 }),
-     "Krassovsky" : ({ 6378245, 0.006693422 }),
      "Modified Airy" : ({ 6377340, 0.00667054 }),
      "Modified Everest" : ({ 6377304, 0.006637847 }),
      "Modified Fischer 1960" : ({ 6378155, 0.006693422 }),
-     "South American 1969" : ({ 6378160, 0.006694542 }),
-     "WGS 60" : ({ 6378165, 0.006693422 }),
-     "WGS 66" : ({ 6378145, 0.006694542 }),
-     "WGS-72" : ({ 6378135, 0.006694318 }),
-     "WGS-84" : ({ 6378137, 0.00669438 }),
+*/
+
+//! A mapping with reference ellipsoids, which can be fed to the
+//! UTM converter. The mapping maps the name of the ellipsoid to
+//! an array where the first element is a float describing the
+//! equatorial radius and the second element is a float describing
+//! the polar radius.
+//!
+constant ellipsoids = 
+  ([ "Airy 1830" : ({ 6377563.396, 6356256.909237 }),
+     "Bessel 1841" : ({ 6377397.155, 6356078.962818 }),
+     "Clarke 1866" : ({ 6378206.4, 6356583.799999 }),
+     "Clarke 1880" : ({ 6378249.145, 6356514.869550 }),
+     "Everest 1830" : ({ 6377276.345, 6356075.413140 }),
+     "Fisher 1960" : ({ 6378166.0, 6356784.283607 }),
+     "Fisher 1968" : ({ 6378150.0, 6356768.337244 }),
+     "G R S 1967" : ({ 6378160.0, 6356774.516091 }),
+     "G R S 1975" : ({ 6378140.0, 6356755.288158 }),
+     "G R S 1980" : ({ 6378137.0, 6356752.314140 }),
+     "Hough 1956" : ({ 6378270.0, 6356794.343434 }),
+     "International" : ({ 6378388.0, 6356911.946128 }),
+     "Krassovsky 1940" : ({ 6378245.0, 6356863.018773 }),
+     "South American 1969" : ({ 6378160.0, 6356774.719195 }),
+     "WGS 60" : ({ 6378165.0, 6356783.286959 }),
+     "WGS 66" : ({ 6378145.0, 6356759.769489 }),
+     "WGS 72" : ({ 6378135.0, 6356750.520016 }),
+     "WGS 84" : ({ 6378137.0, 6356752.3142 }),
   ]);
 
+private constant ellipsoid_sym =
+  ([ "airy" : "Airy 1830",
+     "grs 1697" : "G R S 1967",
+     "grs 1975" : "G R S 1975",
+     "grs 1980" : "G R S 1980",
+     "krassovsky" : "Krassovsky 1940",
+     "mercury" : "Fisher 1960",
+     "wgs-60" : "WGS 60",
+     "wgs-66" : "WGS 66",
+     "wgs-72" : "WGS 72",
+     "wgs-84" : "WGS 84",
+  ]);
+
+//! @decl int(0..1) set_ellipsoid(string name)
+//! @decl int(0..1) set_ellipsoid(float equatorial_radius, float polar_radius)
+//!
+//! Sets the equatorial and polar radius to the provided values.
+//! A name can also be provided, in which case the radius will be looked
+//! up in the ellipsoid mapping. The function returns 1 upon success, 0 on
+//! failure. Warning: the longitude and lattitude are not converted to the
+//! new ellipsoid.
+int(0..1) set_ellipsoid(string|float er, float|void pr) {
+  if(stringp(er)) {
+    if(ellipsoid_sym[lower_case(er)])
+      er = ellipsoid_sym[lower_case(er)];
+    if(ellipsoids[er])
+      [er,pr] = ellipsoids[er];
+    else
+      return 0;
+  }
+  equatorial_radius = er;
+  polar_radius = pr;
+  return 1;
+}
 
 // The following code for UTM conversion is base on code by
 // Chuck Gants and equations from USGS Bulletin 1532.
@@ -195,7 +251,7 @@ int UTM_zone_number() {
 
 //! Returns the UTM letter designator for the current latitude.
 //! Returns "Z" if latitude is outside the UTM limits of 84N to 80S.
-string UTM_zone_letter()
+string UTM_zone_designator()
 {
   if(lat > 84) return "Z";
   int min = 72;
@@ -206,12 +262,10 @@ string UTM_zone_letter()
   return "Z";
 }
 
-//! Returns the offset within the present UTM cell, given the
-//! equatorial radius and the square of eccentricity of a
-//! ellipsoid that represent an approximation of the shape of the
-//! earth. The result will be returned in an array of floats,
+//! Returns the offset within the present UTM cell.
+//! The result will be returned in an array of floats,
 //! containing easting and northing.
-array(float) UTM_offset(float radius, float ecc) {
+array(float) UTM_offset() {
 
   float k0 = 0.9996;
   float LatRad = lat * Math.pi/180;
@@ -219,14 +273,15 @@ array(float) UTM_offset(float radius, float ecc) {
 
   float LongOriginRad = ((UTM_zone_number() - 1)*6 - 180 + 3) * Math.pi/180;
   // +3 puts origin in middle of zone
+  float ecc = eccentricity_squared();
   float eccPrime = ecc/(1-ecc);
 
-  float N = radius/sqrt(1-ecc*sin(LatRad)*sin(LatRad));
+  float N = equatorial_radius/sqrt(1-ecc*sin(LatRad)*sin(LatRad));
   float T = tan(LatRad)*tan(LatRad);
   float C = eccPrime*cos(LatRad)*cos(LatRad);
   float A = cos(LatRad)*(LongRad-LongOriginRad);
 
-  float M = radius*
+  float M = equatorial_radius *
     ((1 - ecc/4        - 3*ecc*ecc/64    - 5*ecc*ecc*ecc/256)*LatRad 
      - (3*ecc/8        + 3*ecc*ecc/32    + 45*ecc*ecc*ecc/1024)*sin(2*LatRad)
      + (15*ecc*ecc/256 + 45*ecc*ecc*ecc/1024)*sin(4*LatRad) 
@@ -248,38 +303,41 @@ array(float) UTM_offset(float radius, float ecc) {
 //! Returns the current UTM coordinates position.
 //! An example output is
 //! "32T 442063.562 5247479.500"
-//! where the parts is zone number + zone letter,
+//! where the parts is zone number + zone designator,
 //! easting and northing.
-string UTM(float radius, float ecc) {
-  return sprintf("%d%s %f %f", UTM_zone_number(), UTM_zone_letter(),
-		 @UTM_offset(radius, ecc));
+string UTM() {
+  return sprintf("%d%s %f %f", UTM_zone_number(), UTM_zone_designator(),
+		 @UTM_offset());
 }
 
-void set_from_UTM(float radius, float ecc, float UTME, float UTMN, int zone_num, string zone_char) {
+//! Sets the longitude and lattitude from the given
+//! UTM coordinates.
+void set_from_UTM(int zone_number, string zone_designator, float UTME, float UTMN) {
+
+  float ecc = eccentricity_squared();
+  float eccPrime = (ecc)/(1-ecc);
 
   float k0 = 0.9996;
   float e1 = (1-sqrt(1-ecc))/(1+sqrt(1-ecc));
 
   UTME -= 500000.0; // remove 500,000 meter offset for longitude
-  if(zone_char[0]-'N' < 0)
+  if(zone_designator[0]-'N' < 0)
     UTMN -= 10000000.0; // remove 10,000,000 meter offset used for southern hemisphere
 
-  float LongOrigin = (zone_num - 1)*6 - 180 + 3.0;  // +3 puts origin in middle of zone
-
-  float eccPrime = (ecc)/(1-ecc);
+  float LongOrigin = (zone_number - 1)*6 - 180 + 3.0;  // +3 puts origin in middle of zone
 
   float M = UTMN / k0;
-  float mu = M/(radius*(1-ecc/4-3*ecc*ecc/64-5*ecc*ecc*ecc/256));
+  float mu = M/(equatorial_radius*(1-ecc/4-3*ecc*ecc/64-5*ecc*ecc*ecc/256));
 
   float phi1Rad = mu + (3*e1/2-27*e1*e1*e1/32)*sin(2*mu) 
     + (21*e1*e1/16-55*e1*e1*e1*e1/32)*sin(4*mu)
     +(151*e1*e1*e1/96)*sin(6*mu);
   float phi1 = phi1Rad * 180/Math.pi;
 
-  float N1 = radius/sqrt(1-ecc*sin(phi1Rad)*sin(phi1Rad));
+  float N1 = equatorial_radius/sqrt(1-ecc*sin(phi1Rad)*sin(phi1Rad));
   float T1 = tan(phi1Rad)*tan(phi1Rad);
   float C1 = eccPrime*cos(phi1Rad)*cos(phi1Rad);
-  float R1 = radius*(1-ecc)/pow(1-ecc*sin(phi1Rad)*sin(phi1Rad), 1.5);
+  float R1 = equatorial_radius*(1-ecc)/pow(1-ecc*sin(phi1Rad)*sin(phi1Rad), 1.5);
   float D = UTME/(N1*k0);
 
   lat = phi1Rad - (N1*tan(phi1Rad)/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*eccPrime)*D*D*D*D/24
@@ -291,6 +349,19 @@ void set_from_UTM(float radius, float ecc, float UTME, float UTMN, int zone_num,
   long = LongOrigin + long * 180/Math.pi;
 }
 
+string GEOREF() {
+  int x_square = (int)((90+lat)/15);
+  int y_square = (int)((180+long)/15);
+  int x_sub = (int)(90+lat - x_square*15);
+  int y_sub = (int)(180+long - y_square*15);
+
+  string pos = ("ABCDEFGHJKLM"/1)[ y_square ] + 
+    ("ABCDEFGHJKLMNPQRSTUVWXZY"/1)[ x_square ] +
+    ("ABCDEFGHJKLMNPQ"/1)[ y_sub ] +
+    ("ABCDEFGHJKLMNPQ"/1)[ x_sub ];
+
+  return pos + (int)floor(60*(long-floor(long))) + (int)floor(60*(lat-floor(lat)));
+}
 
 
 // --- "Technical" methods --------------
