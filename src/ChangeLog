@@ -1,3 +1,22 @@
+Sun Jan 26 13:44:18 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* endode.c: encode_value and spinner compatible decode_value added
+	* operators.c: optimized string adding by a factor 10 or so
+	* configure.in: Now uses AC_TRY_COMPILE (needs autoconf 2.12)
+	  -R now used only on Solaris
+	* object.c: overloading for indices() and values() added
+	* svalue.c: overloading for sizeof() added
+	* operators.c: overloading for [ .. ] added
+	* pike_types.c: support for `() added, and optimized some other things
+	
+Sat Jan 25 19:01:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* constants.c: constants are now stored in a mapping
+	* program.h: now possible to overload `()
+	* program.c: some new functions to easy the transition to the
+	  new module stuff...
+	* dynamic_load.c: fixed to return a program
+
 Sat Jan 25 17:34:16 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* module_support.c (check_all_args): Renamed check_args to
