@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.8 1999/04/02 19:38:35 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.9 1999/04/02 20:53:12 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -109,7 +109,7 @@ struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				\
 									\
 									\
 									\
-inline struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
+struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
 {									\
   struct DATA *p;							\
 									\
@@ -119,8 +119,7 @@ inline struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
      PIKE_CONCAT(DATA,_hash_table_size))				\
   {									\
     /* Time to re-hash */						\
-    struct DATA **PIKE_CONCAT(DATA,_hash_table_old)=			\
-        PIKE_CONCAT(DATA,_hash_table);					\
+    struct DATA **old_hash= PIKE_CONCAT(DATA,_hash_table);		\
     int e=PIKE_CONCAT(DATA,_hash_table_size);				\
 									\
     PIKE_CONCAT(DATA,_hash_table_size)*=2;				\
@@ -133,9 +132,9 @@ inline struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
 	 sizeof(struct DATA *)*PIKE_CONCAT(DATA,_hash_table_size));	\
       while(e-- >=0)							\
       {									\
-	while((p=PIKE_CONCAT(DATA,_hash_table_old)[e]))		        \
+	while((p=old_hash[e]))		        \
 	{								\
-	  PIKE_CONCAT(DATA,_hash_table_old)[e]=p->next;                 \
+	  old_hash[e]=p->next;                 \
 	  hval=(long)(p-> data);					\
 	  hval%=PIKE_CONCAT(DATA,_hash_table_size);			\
 	  p->next=PIKE_CONCAT(DATA,_hash_table)[hval];			\
@@ -144,13 +143,15 @@ inline struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)	\
       }									\
       hval=(long)ptr;							\
       hval%=PIKE_CONCAT(DATA,_hash_table_size);				\
+      free((char *)old_hash);\
     }else{								\
-      PIKE_CONCAT(DATA,_hash_table)=PIKE_CONCAT(DATA,_hash_table_old);	\
+      PIKE_CONCAT(DATA,_hash_table)=old_hash;	\
       PIKE_CONCAT(DATA,_hash_table_size)=e;				\
     }									\
   }									\
 									\
   p=PIKE_CONCAT(alloc_,DATA)();	        				\
+  p->data=ptr; \
   p->next=PIKE_CONCAT(DATA,_hash_table)[hval];				\
   PIKE_CONCAT(DATA,_hash_table)[hval]=p;				\
   return p;								\
@@ -187,8 +188,9 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				\
   if((p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))			\
   {									\
     PIKE_CONCAT(num_,DATA)--;						\
+    if(PIKE_CONCAT(DATA,_hash_table)[hval]!=p) fatal("GAOssdf\n");      \
     PIKE_CONCAT(DATA,_hash_table)[hval]=p->next;			\
-    PIKE_CONCAT(really_free_,DATA)(p);						\
+    PIKE_CONCAT(really_free_,DATA)(p);					\
     return 1;								\
   }									\
   return 0;								\
