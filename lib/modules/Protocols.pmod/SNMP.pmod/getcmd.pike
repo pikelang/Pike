@@ -39,7 +39,7 @@ int main(int argc, array(string) argv) {
   o = Protocols.SNMP.protocol();
   o->snmp_community = comm;
   int idx = o->get_request(({
-    "1.2.3.42.1",	// system.sysDescr  -> String
+    "1.3.6.1.2.1.1.1.0",	// system.sysDescr  -> String
     "1.3.6.1.2.1.1.3.0",	// system.sysUpTime -> TimeTicks
     "1.3.6.1.2.1.6.9.0"		// tcp.tcpCurrEstab -> Gauge
    }), host,161);
