@@ -1,10 +1,10 @@
-# $Id: Makefile.in,v 1.1 1999/11/14 00:01:49 per Exp $
+# $Id: Makefile.in,v 1.2 1999/11/15 19:29:55 neotron Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=top.o @AUTO@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
-
+MODULE_CFLAGS=@X_CFLAGS@
 @dynamic_module_makefile@
 
 $(SRCDIR)/auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike

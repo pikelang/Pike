@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.3 1999/11/14 00:11:57 per Exp $
+# $Id: configure.in,v 1.4 1999/11/15 19:29:56 neotron Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -11,16 +11,16 @@ AC_ARG_WITH(GLUT,  [  --without-GLUT    no support for GLUT],[without_GLUT=yes],
 if test x$without_GLUT = xyes; then
   AUTO=""
 else
-
-AC_CHECK_LIB(X11, main)
-AC_CHECK_LIB(Xmu, main)
-AC_CHECK_LIB(GL,  main)
-AC_CHECK_LIB(OpenGL,  main)
-AC_CHECK_LIB(MesaGL,  main)
-AC_CHECK_LIB(MesaGLU,  main)
-AC_CHECK_LIB(Xinput, main)
-AC_CHECK_LIB(Xi, main)
-AC_CHECK_LIB(Xext, main)
+CPPFLAGS="$X_CFLAGS"
+AC_CHECK_LIB(X11, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(Xmu, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(GL,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(OpenGL,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(MesaGL,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(MesaGLU,  main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(Xinput, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(Xi, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
+AC_CHECK_LIB(Xext, main,,,[$X_LIBS $X_PRE_LIBS -lXext -lX11 $X_EXTRA_LIBS])
 
 AC_CHECK_HEADERS(GL/glut.h)
 

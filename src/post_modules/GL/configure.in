@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.11 1999/11/15 19:13:10 neotron Exp $
+# $Id: configure.in,v 1.12 1999/11/15 19:29:55 neotron Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -13,9 +13,7 @@ if test x$with_GL = xno; then
 else
 
   AC_PATH_XTRA()
-  AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
-  AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
-
+  CPPFLAGS="$X_CFLAGS"
   AC_CHECK_HEADERS(windef.h wingdi.h GL/gl.h GL/glx.h)
 
   if test "x$ac_cv_header_windef_h$ac_cv_header_wingdi_h$ac_cv_header_GL_gl_h$ac_cv_header_GL_glx_h" = "xnononono"; then
