@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.25 2003/03/26 15:23:59 mast Exp $
+dnl $Id: testsuite.in,v 1.26 2003/03/29 03:52:15 mast Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -49,6 +49,11 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_true(Gmp.mpz(1))
   test_eq(Gmp.mpz(17)->powm(12,4711),85)
   test_eq((string)Gmp.mpz(2)->powm(270,Gmp.mpz(10)->pow(39)),"428761855001222473056385648716020711424")
+]])
+
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
+  test_eq(Gmp.mpz(1) + 0x100000000, 0x100000001)
 ]])
 
 cond( [[ master()->resolv("Gmp")->mpq ]],
