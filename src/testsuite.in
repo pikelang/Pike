@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.649 2003/05/30 19:38:06 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.650 2003/05/30 23:19:26 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6717,6 +6717,12 @@ test_any([[
   foreach(m  ; int a ; int b) { m_delete(m,a); ret+=a*b; }
   return ret;
 ]],315)
+
+test_eval_error([[
+  int i;
+  foreach (class{}(); mixed a; mixed b) i++;
+  return i;
+]])
 
 // do-while
 test_any(int e;string t=""; e=0; do{ t+=e; }while(++e<6); return t,"012345";)
