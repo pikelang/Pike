@@ -103,9 +103,9 @@ struct object *clone(struct program *p, int args)
     o->refs++;
   }
 
-  apply(o,"__INIT",0);
+  apply_lfun(o,LFUN___INIT,0);
   pop_stack();
-  apply(o,"create",args);
+  apply_lfun(o,LFUN_CREATE,args);
   pop_stack();
 
   return o;
@@ -163,8 +163,11 @@ void destruct(struct object *o)
 
   o->refs++;
 
-  safe_apply(o, "destroy", 0);
-  pop_stack();
+  if(o->prog->lfuns[LFUN_DESTROY] != -1)
+  {
+    safe_apply_low(o, o->prog->lfuns[LFUN_DESTROY], 0);
+    pop_stack();
+  }
 
   /* destructed in destroy() */
   if(!o->prog)
