@@ -1,41 +1,9 @@
 /*
- * $Id: ia32.c,v 1.3 2001/07/20 16:27:27 grubba Exp $
+ * $Id: ia32.c,v 1.4 2001/07/20 18:47:01 grubba Exp $
  *
  * Machine code generator for IA32.
  *
  */
-
-void ins_pointer(INT32 ptr)
-{
-  ins_int(ptr, add_to_program);
-}
-
-INT32 read_pointer(INT32 off)
-{
-  return read_int(off);
-}
-
-void upd_pointer(INT32 off, INT32 ptr)
-{
-  upd_int(off, ptr);
-}
-
-void ins_align(INT32 align)
-{
-  while(Pike_compiler->new_program->num_program % align) {
-    add_to_program(0);
-  }
-}
-
-void ins_byte(INT32 val)
-{
-  add_to_program(val);
-}
-
-void ins_data(INT32 val)
-{
-  ins_int(val, add_to_program);
-}
 
 #define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
 #define PUSH_ADDR(X) PUSH_INT((X))
