@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.657 2003/06/05 12:50:01 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.658 2003/06/06 21:01:30 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2401,6 +2401,28 @@ test_compile_error_any([[
   }
 
 ]])
+
+test_program([[
+class A
+{
+  constant x = 1.0;
+}
+
+class B
+{
+  inherit A;
+  class C
+  {
+    constant y = x+2.0;
+  }
+}
+
+mixed a()
+{
+  return 3.0 == B()->C()->y;
+}
+]])
+
 
 dnl Come back when we decide that this should be possible
 dnl test_do([[
