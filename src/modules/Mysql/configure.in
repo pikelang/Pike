@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.21 2001/02/06 17:23:21 grubba Exp $
+# $Id: configure.in,v 1.22 2001/02/06 20:52:38 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -263,7 +263,7 @@ fi
 
         ], [
           void (*foo__)() = (void (*)())&$1;
-        ], [$AC_CV_NAME="yes"], [$AC_CV_NAME="no"])
+        ], [AC_CV_NAME="yes"], [AC_CV_NAME="no"])
       ])
       if test "$AC_CV_NAME" = "yes"; then
         AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
