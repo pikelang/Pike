@@ -76,7 +76,7 @@ desdata:	desdata.o
 
 # new rules  (note: tr|sed|tr is NOT necessary,  just there so .i is readable)
 .c.i:
-	$(CPP) $(CPPFLAGS) $< > $*.x
+	$(CPP) $(CFLAGS) $< > $*.x
 	@tr ';'\\012 \\012';' < $*.x |			\
 	 sed	-e 's/[ 	][ 	]*/ /g'		\
 		-e 's/^ //'				\
