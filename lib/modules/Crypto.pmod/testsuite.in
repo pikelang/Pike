@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.34 2004/02/28 14:57:24 nilsson Exp $
+// $Id: testsuite.in,v 1.35 2004/03/06 01:07:00 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -574,7 +574,8 @@ cond([[ Nettle["crypt_md5"] ]],[[
 ]])
 
 // pipe
-cond_resolv(Crypto.IDEA.name, [[
+cond([[ master()->resolv("Crypto.IDEA.name") && master()->resolv("Gmp.mpz") ]],
+[[
 test_eq(
  Crypto.Pipe( Crypto.DES, Crypto.AES, Crypto.IDEA,
   Crypto.CAST, Crypto.Arcfour )->name(),
