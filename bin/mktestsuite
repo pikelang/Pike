@@ -57,7 +57,13 @@ m4exit(1)
 
 changecom
 
-define(checkarg,[[dnl
+define(real_checkarg,[[dnl
+ifelse(index([[\$3]],format([[%c]],255)),-1,,[[dnl
+format([%c],255)
+errprint(__file__:__line__: [[
+Argument \$2 to \$1 contains the character ]]format([[%c]],255)[[,
+which is treated as EOF by some m4 implementations.
+]])m4exit(1)]])dnl
 ifelse(eval(len([[\$3]])>4096),0,,[[dnl
 errprint(__file__:__line__: [[
 Argument \$2 to \$1 has ]]len([[\$3]])[[ characters,
@@ -65,12 +71,18 @@ some m4 implementations only allow 4096.
 ]])m4exit(1)]])dnl
 ]])
 
+ifdef([[__gnu__]],
+[[define(checkarg,[[[[real_checkarg([[\$1]],\$2,[[\$\$2]])]]]])]],
+[[define(checkarg,)]]
+)
+
 define(SEPARATOR,[[....]])
 define(CONDITION,[[]])
 
-define(DOTEST,[[dnl
-dnl checkarg([[DOTEST]],1,[[\$1]])dnl
-dnl checkarg([[DOTEST]],2,[[\$2]])dnl
+define(DOTEST,dnl
+checkarg([[DOTEST]],1)dnl
+checkarg([[DOTEST]],2)dnl
+[[dnl
 divert(0)dnl
 define([[TESTNO]],incr(TESTNO))dnl
 CONDITION()__file__:__line__: test TESTNO, expected result: [[\$1]]
@@ -135,9 +147,10 @@ define(test_program, [[DOTEST(TRUE,dnl
 define(test_tests, [[DOTEST(RUNCT,dnl
 [[\$1]])]])
 
-define(cond,[[
-dnl checkarg([[cond]],1,[[\$1]])dnl
-dnl checkarg([[cond]],2,[[\$2]])dnl
+define(cond,dnl
+checkarg([[cond]],1)dnl
+checkarg([[cond]],2)dnl
+[[
 define([[CONDITION]],[[COND \$1
 ]])
 \$2
