@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.6 2001/08/14 17:29:56 js Exp $
+// $Id: PDF.pmod,v 1.7 2001/09/03 21:42:10 marcus Exp $
 
 // Filter for application/pdf
 
@@ -9,6 +9,12 @@ inherit Search.Filter.Base;
 
 constant contenttypes = ({ "application/pdf" });
 constant fields = ({ "body", "title", "keywords" });
+
+#if constant(PIKE_MODULE_RELOC)
+#define RELFILE(n) combine_path(getcwd(), master()->relocate_module(__FILE__), "../"n)
+#else
+#define RELFILE(n) combine_path(getcwd(), __FILE__, "../"n)
+#endif
 
 Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 {
@@ -26,7 +32,7 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 	  fn, r, sizeof(data));
   
   string text =
-    my_popen(({ combine_path(__FILE__,"../../../../bin/pdftotext"), fn, "-" }));
+    my_popen(({ RELFILE("../../../bin/pdftotext"), fn, "-" }));
   
   if(!rm(fn))
     werror("Search: Failed to remove temporary file: %s\n", fn);
