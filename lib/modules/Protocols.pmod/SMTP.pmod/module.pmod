@@ -532,11 +532,6 @@ class Connection {
    static MIME.Message low_message(string content)
    {
      datamode = 0;
-     if(sizeof(content) > maxsize)
-     {
-       outcode(552);
-       return 0;
-     }
      MIME.Message message;
      mixed err = catch (message = MIME.Message(content, 0, 0, 1));
      if(err)
@@ -559,6 +554,11 @@ class Connection {
    }
 
    void message(string content) {
+     if(sizeof(content) > maxsize)
+     {
+        outcode(552);
+        return 0;
+     }
      MIME.Message message = low_message(content);
      if(!message) return;
 
