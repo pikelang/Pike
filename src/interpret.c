@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.353 2004/09/18 20:50:50 nilsson Exp $
+|| $Id: interpret.c,v 1.354 2004/09/22 13:10:30 mast Exp $
 */
 
 #include "global.h"
@@ -2423,6 +2423,21 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
       Pike_fatal("Stack underflow!\n");
 #endif
   }
+}
+
+PMOD_EXPORT void safe_apply_svalue(struct svalue *s, int args, int handle_errors)
+{
+  JMP_BUF recovery;
+  free_svalue(& throw_value);
+  throw_value.type=T_INT;
+  if(SETJMP_SP(recovery, args))
+  {
+    if(handle_errors) call_handle_error();
+    push_int(0);
+  }else{
+    apply_svalue (s, args);
+  }
+  UNSETJMP(recovery);
 }
 
 /* Apply function @[fun] in parent @[depth] levels up with @[args] arguments.
