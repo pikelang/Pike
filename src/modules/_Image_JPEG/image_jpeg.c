@@ -1,6 +1,3 @@
-#include "global.h"
-RCSID("$id: $");
-
 #include "config.h"
 
 #if !defined(HAVE_LIBJPEG)
@@ -9,9 +6,19 @@ RCSID("$id: $");
 
 #ifdef HAVE_JPEGLIB_H
 
+#define FILE void
+#define size_t unsigned int
 #include <jpeglib.h>
+#undef size_t
+#undef FILE
 
 #endif /* HAVE_JPEGLIB_H */
+
+#ifdef HAVE_STDLIB_H
+#undef HAVE_STDLIB_H
+#endif
+#include "global.h"
+RCSID("$id: $");
 
 #include "pike_macros.h"
 #include "object.h"
