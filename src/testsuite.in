@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.703 2004/03/08 09:30:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.704 2004/03/08 09:30:46 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10649,7 +10649,7 @@ test_any([
   }
   if (pid->status() <= 0) {
     pid->kill(9);
-    return "Killed".
+    return "Killed";
   }
   return pid->wait();
 ], 0)
