@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.40 1999/02/26 01:11:13 grubba Exp $
+/* $Id: master.pike.in,v 1.41 1999/02/26 01:14:07 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -972,7 +972,7 @@ static mixed _charset_mod;
  */
 string decode_charset(string data, string charset)
 {
-  werror(sprintf("decode_charset(%O, %O)\n", data, charset));
+  // werror(sprintf("decode_charset(%O, %O)\n", data, charset));
 
   if (!_charset_mod) {
     mixed mod = resolv("Locale");
