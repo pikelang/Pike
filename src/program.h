@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.181 2003/04/02 19:22:44 mast Exp $
+|| $Id: program.h,v 1.182 2003/06/03 18:03:26 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -472,6 +472,7 @@ int override_identifier (struct reference *ref, struct pike_string *name);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
+			   int pass,
 			   struct pike_string *name,
 			   int flags,
 			   int *idp);
