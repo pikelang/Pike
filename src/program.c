@@ -18,6 +18,7 @@
 #include "docode.h"
 #include "interpret.h"
 #include "hashtable.h"
+#include "main.h"
 #include <stdio.h>
 #include <fcntl.h>
 
@@ -114,6 +115,12 @@ void start_new_program()
   name=make_shared_string("this");
   low_my_binary_strcat((char *)&name,sizeof(name),&inherit_names);
   num_parse_error=0;
+
+    local_variables=ALLOC_STRUCT(locals);
+  local_variables->next=0;
+  local_variables->current_number_of_locals=0;
+  local_variables->current_type=0;
+  local_variables->current_return_type=0;
 }
 
 static void low_free_program(struct program *p)
@@ -149,6 +156,40 @@ void really_free_program(struct program *p)
 
   free((char *)p);
 }
+
+#ifdef DEBUG
+void dump_program_desc(struct program *p)
+{
+  int e,d,q;
+/*  fprintf(stderr,"Program '%s':\n",p->name->str); */
+
+/*
+  fprintf(stderr,"All inherits:\n");
+  for(e=0;e<p->num_inherits;e++)
+  {
+    fprintf(stderr,"%3d:",e);
+    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"%s\n",p->inherits[e].prog->name->str);
+  }
+*/
+
+  fprintf(stderr,"All identifiers:\n");
+  for(e=0;e<(int)p->num_identifier_references;e++)
+  {
+    fprintf(stderr,"%3d:",e);
+    for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"%s;\n",ID_FROM_INT(p,e)->name->str);
+  }
+  fprintf(stderr,"All sorted identifiers:\n");
+  for(q=0;q<(int)p->num_identifier_indexes;q++)
+  {
+    e=p->identifier_index[q];
+    fprintf(stderr,"%3d (%3d):",e,q);
+    for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"%s;\n", ID_FROM_INT(p,e)->name->str);
+  }
+}
+#endif
 
 /*
  * Something went wrong.
@@ -425,13 +466,31 @@ struct program *end_program()
 
 #ifdef DEBUG
     check_program(prog,0);
+    if(l_flag)
+      dump_program_desc(prog);
 #endif
   }
 
-  if(current_file)
+  /* Clean up */
+  while(local_variables)
   {
-    free_string(current_file);
-    current_file=0;
+    int e;
+    struct locals *l;
+    for(e=0;e<local_variables->current_number_of_locals;e++)
+    {
+      free_string(local_variables->variable[e].name);
+      free_string(local_variables->variable[e].type);
+    }
+  
+    if(local_variables->current_type)
+      free_string(local_variables->current_type);
+
+    if(local_variables->current_return_type)
+      free_string(local_variables->current_return_type);
+
+    l=local_variables->next;
+    free((char *)local_variables);
+    local_variables=l;
   }
 
 #define PROGRAM_STATE
@@ -439,7 +498,7 @@ struct program *end_program()
 #include "compilation.h"
 #undef POP
 #undef PROGRAM_STATE
-  
+
   return prog;
 }
 
@@ -761,24 +820,19 @@ INT32 define_function(struct lpc_string *name,
     funp=ID_FROM_INT(&fake_program, i);
     ref=fake_program.identifier_references[i];
 
-    if((!func || func->offset == -1) || /* not defined */
-       ((funp->func.offset == -1) &&   /* not defined */
-	(ref.inherit_offset==0)         /* not inherited */
-	))
+    if(ref.inherit_offset == 0) /* not inherited */
     {
+      if(!(!func || func->offset == -1) && !(funp->func.offset == -1))
+      {
+	my_yyerror("Redeclaration of function %s.",name->str);
+	return i;
+      }
+
       /* match types against earlier prototype or vice versa */
       if(!match_types(type, funp->type))
       {
 	my_yyerror("Prototype doesn't match for function %s.",name->str);
       }
-    }
-
-    if(!(!func || func->offset == -1) &&
-       !(funp->func.offset == -1) &&
-       (ref.inherit_offset == 0)) /* not inherited */
-    {
-      my_yyerror("Redeclaration of function %s.",name->str);
-      return i;
     }
 
     /* it's just another prototype, don't define anything */
@@ -1135,17 +1189,16 @@ struct program *compile_file(struct lpc_string *file_name)
     error("Couldn't open file '%s'.\n",file_name->str);
 
 
-  start_new_program();
-
 #define FILE_STATE
 #define PUSH
 #include "compilation.h"
 #undef PUSH
 
   start_new_file(fd,file_name);
+  start_new_program();
   compile();
-  end_new_file();
   p=end_program();
+  end_new_file();
 
 #define POP
 #include "compilation.h"
@@ -1160,7 +1213,6 @@ struct program *compile_string(struct lpc_string *prog,
 			       struct lpc_string *name)
 {
   struct program *p;
-  start_new_program();
 
 #define FILE_STATE
 #define PUSH
@@ -1168,9 +1220,10 @@ struct program *compile_string(struct lpc_string *prog,
 #undef PUSH
 
   start_new_string(prog->str,prog->len,name);
+  start_new_program();
   compile();
-  end_new_file();
   p=end_program();
+  end_new_file();
 
 #define POP
 #include "compilation.h"

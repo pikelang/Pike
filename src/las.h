@@ -26,6 +26,7 @@ struct locals
   struct lpc_string *current_type;
   struct lpc_string *current_return_type;
   int current_number_of_locals;
+  int max_number_of_locals;
   struct local_variable variable[MAX_LOCAL];
 };
 

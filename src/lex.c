@@ -1933,12 +1933,6 @@ static void start_new()
 
   free_all_defines();
 
-  if(!local_variables)
-    local_variables=ALLOC_STRUCT(locals);
-  local_variables->next=0;
-  local_variables->current_number_of_locals=0;
-  local_variables->current_type=0;
-  local_variables->current_return_type=0;
   simple_add_define("__uLPC__", "1",0);
   
   for (tmpf=lpc_predefs; tmpf; tmpf=tmpf->next)
@@ -1978,25 +1972,10 @@ void start_new_string(char *s,INT32 len,struct lpc_string *name)
 
 void end_new_file()
 {
-  while(local_variables)
+  if(current_file)
   {
-    int e;
-    struct locals *l;
-    for(e=0;e<local_variables->current_number_of_locals;e++)
-    {
-      free_string(local_variables->variable[e].name);
-      free_string(local_variables->variable[e].type);
-    }
-  
-    if(local_variables->current_type)
-      free_string(local_variables->current_type);
-
-    if(local_variables->current_return_type)
-      free_string(local_variables->current_return_type);
-
-    l=local_variables->next;
-    free((char *)local_variables);
-    local_variables=l;
+    free_string(current_file);
+    current_file=0;
   }
 
   free_inputstate(istate);

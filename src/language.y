@@ -221,7 +221,7 @@ void fix_comp_stack(int sp)
 %type <n> lambda for_expr block  assoc_pair new_local_name
 %type <n> expr_list2 m_expr_list m_expr_list2 statement gauge sscanf
 %type <n> for do cond optional_else_part while statements
-%type <n> local_name_list
+%type <n> local_name_list class
 %type <n> unused2 foreach unused switch case return expr_list default
 %type <n> continue break block_or_semi
 %%
@@ -336,7 +336,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
        }else{
 	 vargs=0;
        }
-       ins_byte(local_variables->current_number_of_locals, A_PROGRAM);
+       ins_byte(local_variables->max_number_of_locals, A_PROGRAM);
        ins_byte(args, A_PROGRAM);
        dooptcode($4, $9, $6);
 
@@ -571,18 +571,15 @@ block:'{'
      {
        $<number>$=local_variables->current_number_of_locals;
      } 
-     statements '}'
+     statements
+     '}'
      {
-       int e;
-       for(e=($<number>2)+1;e<local_variables->current_number_of_locals;e++)
+       while(local_variables->current_number_of_locals > $<number>2)
        {
-	 if(local_variables->variable[e].name)
-	 {
-	   free_string(local_variables->variable[e].name);
-	   free_string(local_variables->variable[e].type);
-	 }
-	 local_variables->variable[e].name=0;
-	 local_variables->variable[e].type=0;
+	 int e;
+	 e=--(local_variables->current_number_of_locals);
+	 free_string(local_variables->variable[e].name);
+	 free_string(local_variables->variable[e].type);
        }
        $$=$3;
      } ;
@@ -677,7 +674,7 @@ lambda: F_LAMBDA
 	  }else{
 	    vargs=0;
 	  }
-	  ins_byte(local_variables->current_number_of_locals, A_PROGRAM);
+	  ins_byte(local_variables->max_number_of_locals, A_PROGRAM);
 	  ins_byte(args, A_PROGRAM);
 	  
 	  sprintf(buf,"__lambda_%ld",
@@ -695,6 +692,27 @@ lambda: F_LAMBDA
           $$=mkidentifiernode(f);
 	} ;
 
+class: F_CLASS '{'
+       {
+         start_new_program();
+       }
+       program
+       '}'
+       {
+         struct svalue s;
+         s.u.program=end_program();
+	 if(!s.u.program)
+	 {
+	   yyerror("Class definition failed.");
+           s.type=T_INT;
+           s.subtype=0;
+	 } else {
+           s.type=T_PROGRAM;
+           s.subtype=0;
+         }
+	 $$=mksvaluenode(&s);
+         free(&s);
+       } ;
 
 cond: F_IF '(' comma_expr ')' 
       statement
@@ -903,6 +921,7 @@ expr4: string
      | gauge
      | sscanf
      | lambda
+     | class
      | F_IDENTIFIER
      {
        int i;
@@ -960,11 +979,15 @@ expr4: string
        f=reference_inherited_identifier($1,$3);
        idp=fake_program.identifier_references+f;
        if (f<0 || ID_FROM_PTR(&fake_program,idp)->func.offset == -1)
+       {
 	 my_yyerror("Undefined identifier %s::%s", $1->str,$3->str);
+	 $$=mkintnode(0);
+       } else {
+	 $$=mkidentifiernode(f);
+       }
 
        free_string($1);
        free_string($3);
-       $$=mkidentifiernode(f);
      }
      | F_COLON_COLON F_IDENTIFIER
      {
@@ -1080,6 +1103,12 @@ void add_local_name(struct lpc_string *str,
     local_variables->variable[local_variables->current_number_of_locals].type = type;
     local_variables->variable[local_variables->current_number_of_locals].name = str;
     local_variables->current_number_of_locals++;
+    if(local_variables->current_number_of_locals > 
+       local_variables->max_number_of_locals)
+    {
+      local_variables->max_number_of_locals=
+	local_variables->current_number_of_locals;
+    }
   }
 }
 
@@ -1110,42 +1139,6 @@ void free_all_local_names()
   local_variables->current_number_of_locals = 0;
 }
 
-
-#ifdef DEBUG
-void dump_program_desc(struct program *p)
-{
-  int e,d,q;
-/*  fprintf(stderr,"Program '%s':\n",p->name->str); */
-
-/*
-  fprintf(stderr,"All inherits:\n");
-  for(e=0;e<p->num_inherits;e++)
-  {
-    fprintf(stderr,"%3d:",e);
-    for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
-    fprintf(stderr,"%s\n",p->inherits[e].prog->name->str);
-  }
-*/
-
-  fprintf(stderr,"All identifiers:\n");
-  for(e=0;e<(int)p->num_identifier_references;e++)
-  {
-    fprintf(stderr,"%3d:",e);
-    for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
-    fprintf(stderr,"%s;\n",ID_FROM_INT(p,e)->name->str);
-  }
-  fprintf(stderr,"All sorted identifiers:\n");
-  for(q=0;q<(int)p->num_identifier_indexes;q++)
-  {
-    e=p->identifier_index[q];
-    fprintf(stderr,"%3d (%3d):",e,q);
-    for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
-    fprintf(stderr,"%s;\n", ID_FROM_INT(p,e)->name->str);
-  }
-}
-#endif
-
-
 static void push_locals()
 {
   struct locals *l;
@@ -1153,8 +1146,9 @@ static void push_locals()
   l->current_type=0;
   l->current_return_type=0;
   l->next=local_variables;
+  l->current_number_of_locals=0;
+  l->max_number_of_locals=0;
   local_variables=l;
-  local_variables->current_number_of_locals=0;
 }
 
 static void pop_locals()

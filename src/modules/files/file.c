@@ -62,6 +62,9 @@ static int fd_references[MAX_OPEN_FILEDESCRIPTORS];
 static char open_mode[MAX_OPEN_FILEDESCRIPTORS];
 static struct program *file_program;
 
+static void file_read_callback(int fd, void *data);
+static void file_write_callback(int fd, void *data);
+
 static void reference_fd(int fd)
 {
   fd_references[fd]++;
@@ -309,7 +312,29 @@ static void do_close(struct file *f, int flags)
   if(f->fd == -1) return; /* already closed */
 
   flags &= open_mode[f->fd];
-  
+
+  if(flags & FILE_READ)
+  {
+    if(f->fd != -1 &&
+       query_read_callback(f->fd) == file_read_callback &&
+       query_read_callback_data(f->fd) == (void *) f &&
+       f->read_callback.type!=T_INT)
+    {
+      set_read_callback(f->fd,0,0);
+    }
+  }
+
+  if(flags & FILE_WRITE)
+  {
+    if(f->fd != -1 &&
+       query_write_callback(f->fd) == file_write_callback &&
+       query_write_callback_data(f->fd) == (void *) f &&
+       f->write_callback.type!=T_INT)
+    {
+      set_write_callback(f->fd,0,0);
+    }
+  }
+
   switch(flags & (FILE_READ | FILE_WRITE))
   {
   case 0:
@@ -317,8 +342,6 @@ static void do_close(struct file *f, int flags)
 
   case FILE_READ:
     open_mode[f->fd] &=~ FILE_READ;
-
-    set_read_callback(f->fd, 0, 0);
     if(open_mode[f->fd] & FILE_WRITE)
     {
       shutdown(f->fd, 0);
@@ -330,9 +353,6 @@ static void do_close(struct file *f, int flags)
 
   case FILE_WRITE:
     open_mode[f->fd] &=~ FILE_WRITE;
-
-    set_write_callback(f->fd, 0, 0);
-    
     if(open_mode[f->fd] & FILE_READ)
     {
       shutdown(f->fd, 1);
@@ -344,10 +364,6 @@ static void do_close(struct file *f, int flags)
 
   case FILE_READ | FILE_WRITE:
     open_mode[f->fd] &=~ (FILE_WRITE | FILE_WRITE);
-
-    set_read_callback(f->fd, 0, 0);
-    set_write_callback(f->fd, 0, 0);
-    
     close_fd(f->fd);
     f->fd=-1;
     break;
@@ -556,14 +572,18 @@ static void file_set_nonblocking(INT32 args)
   if(THIS->fd >= 0)
   {
     if(IS_ZERO(& THIS->read_callback))
+    {
       set_read_callback(THIS->fd, 0,0);
-    else
+    }else{
       set_read_callback(THIS->fd, file_read_callback, (void *)THIS);
+    }
 
     if(IS_ZERO(& THIS->write_callback))
+    {
       set_write_callback(THIS->fd, 0,0);
-    else
+    }else{
       set_write_callback(THIS->fd, file_write_callback, (void *)THIS);
+    }
     set_nonblocking(THIS->fd,1);
   }
 
@@ -837,19 +857,7 @@ static void exit_file_struct(char *foo, struct object *o)
 {
   struct file *f;
   f=(struct file *) foo;
-  if(f->fd != -1 &&
-     query_read_callback(f->fd) == file_read_callback &&
-     query_read_callback_data(f->fd) == (void *) f)
-  {
-    set_read_callback(f->fd,0,0);
-  }
 
-  if(f->fd != -1 &&
-     query_write_callback(f->fd) == file_write_callback &&
-     query_write_callback_data(f->fd) == (void *) f)
-  {
-    set_write_callback(f->fd,0,0);
-  }
   do_close(f,FILE_READ | FILE_WRITE);
   free_svalue(& f->id);
   free_svalue(& f->read_callback);
