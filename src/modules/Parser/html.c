@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.175 2004/10/15 14:55:37 grubba Exp $
+|| $Id: html.c,v 1.176 2004/10/15 14:57:04 grubba Exp $
 */
 
 #include "global.h"
@@ -4417,7 +4417,7 @@ static void html_tag_name(INT32 args)
        ptrdiff_t cbeg;
        if (THIS->flags & FLAG_WS_BEFORE_TAG_NAME)
 	 scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg,
-		       WS(THIS), -(ptrdif_t)N_WS(THIS));
+		       WS(THIS), -(ptrdiff_t)N_WS(THIS));
        else
 	 beg = THIS->start, cbeg = THIS->cstart + 1;
        quote_tag_lookup (THIS, beg, cbeg, &beg, &cbeg, 1, &v);
