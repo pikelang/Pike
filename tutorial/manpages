@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.15 1998/05/13 00:36:50 grubba Exp $
+// $Id: manpages,v 1.16 1998/05/13 00:46:29 grubba Exp $
 
 #include "types.h"
 inherit Stdio.File : out;
@@ -107,7 +107,7 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	case "link":
 	case "i": 
 	case "emboss":
-	case "ex_identifier":
+	  // case "ex_identifier":
 	  res+="\\f2"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
 	  continue;
 
