@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.41 1998/04/24 00:08:42 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.42 1998/04/28 07:47:17 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -712,13 +712,14 @@ char *low_describe_type(char *t)
     }
     
     case T_ARRAY:
+      my_strcat("array");
       if(EXTRACT_UCHAR(t)==T_MIXED)
       {
-	my_strcat("array");
 	t++;
       }else{
+	my_strcat("(");
 	t=low_describe_type(t);
-	my_strcat("*");
+	my_strcat(")");
       }
       break;
       
@@ -896,6 +897,7 @@ static struct pike_string *low_object_lfun_type(char *t, short lfun)
 #define A_EXACT 1
 #define B_EXACT 2
 #define NO_MAX_ARGS 4
+#define NO_SHORTCUTS 8
 
 /*
  * match two type strings, return zero if they don't match, and return
@@ -919,9 +921,15 @@ static char *low_match_types(char *a,char *b, int flags)
   case T_OR:
     a++;
     ret=low_match_types(a,b,flags);
-    if(ret) return ret;
+    if(ret && !(flags & NO_SHORTCUTS)) return ret;
     a+=type_length(a);
-    return low_match_types(a,b,flags);
+    if(ret)
+    {
+      low_match_types(a,b,flags);
+      return ret;
+    }else{
+      return low_match_types(a,b,flags);
+    }
 
   case T_NOT:
     if(low_match_types(a+1,b,(flags ^ B_EXACT ) | NO_MAX_ARGS))
@@ -963,9 +971,15 @@ static char *low_match_types(char *a,char *b, int flags)
   case T_OR:
     b++;
     ret=low_match_types(a,b,flags);
-    if(ret) return ret;
+    if(ret && !(flags & NO_SHORTCUTS)) return ret;
     b+=type_length(b);
-    return low_match_types(a,b,flags);
+    if(ret)
+    {
+      low_match_types(a,b,flags);
+      return ret;
+    }else{
+      return low_match_types(a,b,flags);
+    }
 
   case T_NOT:
     if(low_match_types(a,b+1, (flags ^ A_EXACT ) | NO_MAX_ARGS))
@@ -1193,7 +1207,7 @@ static int low_get_return_type(char *a,char *b)
     return 1;
   }
 
-  a=low_match_types(a,b,0);
+  a=low_match_types(a,b,NO_SHORTCUTS);
   if(a)
   {
     switch(EXTRACT_UCHAR(a))
