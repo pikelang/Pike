@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: initstuff.h,v 1.16 2002/10/11 01:39:42 nilsson Exp $
+|| $Id: initstuff.h,v 1.17 2003/04/08 17:05:23 nilsson Exp $
 */
 
 #ifndef IMAGE_INITER
@@ -27,9 +27,6 @@ IMAGE_CLASS("Layer",      init_image_layers,     exit_image_layers,
 
 IMAGE_CLASS("Font",       init_image_font,       exit_image_font,
 	    image_font_program )
-
-IMAGE_CLASS("Poly",       init_image_poly,       exit_image_poly,
-	    image_poly_program )
 
 IMAGE_SUBMODULE("Color", init_image_colors, exit_image_colors )
 
