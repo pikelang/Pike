@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.19 1999/05/13 07:20:54 hubbe Exp $
+ * $Id: sendfile.c,v 1.20 1999/06/23 19:50:28 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -318,13 +318,16 @@ TH_RETURN_TYPE worker(void *this_)
     struct iovec *iov;
     int iovcnt;
 
-#ifdef HAVE_FREEBSD_SENDFILE
-    struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
+#if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE)
     off_t sent = 0;
     int len = this->len;
+    int res;
 
+#ifdef HAVE_FREEBSD_SENDFILE
+    struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
     SF_DFPRINTF((stderr, "sendfile: Using FreeBSD-style sendfile()\n"));
 
+    struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
     if (this->hd_cnt) {
       hdtr.headers = this->hd_iov;
       hdtr.hdr_cnt = this->hd_cnt;
@@ -334,12 +337,38 @@ TH_RETURN_TYPE worker(void *this_)
       hdtr.trl_cnt = this->tr_cnt;
     }
 
+#else /* !HAVE_FREEBSD_SENDFILE */
+    struct iovec hdtr[2] = { NULL, 0, NULL, 0 };
+    SF_DFPRINTF((stderr, "sendfile: Using HP/UX-style sendfile()\n"));
+    struct sf_hdtr hdtr = { NULL, 0, NULL, 0 };
+
+    /* NOTE: hd_cnt/tr_cnt are always 0 or 1 since
+     * we've joined the headers/trailers in sf_create().
+     */
+    if (this->hd_cnt) {
+      hdtr[0].iov_base = this->hd_iov->iov_base;
+      hdtr[0].iov_len = this->hd_iov->iov_len;
+    }
+    if (this->tr_cnt) {
+      hdtr[1].iov_base = this->tr_iov->iov_base;
+      hdtr[1].iov_len = this->tr_iov->iov_len;
+    }
+
+#endif /* HAVE_FREEBSD_SENDFILE */
+
     if (len < 0) {
       len = 0;
     }
 
-    if (sendfile(this->from_fd, this->to_fd, len, this->offset,
-		 &hdtr, &sent, 0) < 0) {
+#ifdef HAVE_FREEBSD_SENDFILE
+    res = sendfile(this->from_fd, this->to_fd, len, this->offset,
+		   &hdtr, &sent, 0);
+#else /* !HAVE_FREEBSD_SENDFILE */
+    res = sendfile(this->to_fd, this->from_fd, this->offset, len,
+		   hdtr, 0);
+#endif /* HAVE_FREEBSD_SENDFILE */
+
+    if (res < 0) {
       switch(errno) {
       default:
       case ENOTSOCK:
@@ -349,7 +378,11 @@ TH_RETURN_TYPE worker(void *this_)
 	break;
       case EFAULT:
 	/* Bad arguments */
+#ifdef HAVE_FREEBSD_SENDFILE
 	fatal("FreeBSD style sendfile(): EFAULT\n");
+#else /* !HAVE_FREEBSD_SENDFILE */
+	fatal("HP/UX style sendfile(): EFAULT\n");
+#endif /* HAVE_FREEBSD_SENDFILE */
 	break;
       case EBADF:
       case ENOTCONN:
@@ -359,6 +392,10 @@ TH_RETURN_TYPE worker(void *this_)
 	/* Bad fd's or socket has been closed at other end. */
 	break;
       }
+#ifndef HAVE_FREEBSD_SENDFILE
+    } else {
+      sent = res;
+#endif /* !HAVE_FREEBSD_SENDFILE */
     }
     this->sent += sent;
 
@@ -703,15 +740,26 @@ static void sf_create(INT32 args)
 
   /* Set up the iovec's */
   if (iovcnt) {
+#ifdef HAVE_HPUX_SENDFILE
+    iovcnt = 2;
+#endif /* HAVE_HPUX_SENDFILE */
+
     sf.iovs = (struct iovec *)xalloc(sizeof(struct iovec) * iovcnt);
 
     sf.hd_iov = sf.iovs;
+#ifdef HAVE_HPUX_SENDFILE
+    sf.tr_iov = sf.iovs + 1;
+#else /* !HAVE_HPUX_SENDFILE */
     sf.tr_iov = sf.iovs + sf.hd_cnt;
+#endif /* HAVE_HPUX_SENDFILE */
 
     if (sf.headers) {
       int i;
       for (i = sf.hd_cnt; i--;) {
 	struct pike_string *s;
+#ifdef HAVE_HPUX_SENDFILE
+	ref_push_string(sf.headers->item[i].u.string);
+#else /* !HAVE_HPUX_SENDFILE */
 	if ((s = sf.headers->item[i].u.string)->len) {
 	  sf.hd_iov[i].iov_base = s->str;
 	  sf.hd_iov[i].iov_len = s->len;
@@ -719,12 +767,29 @@ static void sf_create(INT32 args)
 	  sf.hd_iov++;
 	  sf.hd_cnt--;
 	}
+#endif /* HAVE_HPUX_SENDFILE */
       }
+#ifdef HAVE_HPUX_SENDFILE
+      if (sf.hd_cnt) {
+	f_add(sf.hd_cnt);
+	free_string(sf.headers->item->u.string);
+	sf.headers->item->u.string = sp[-1].u.string;
+	sp--;
+	sf.hd_iov->iov_base = sf.headers->item->u.string->str;
+	sf.hd_iov->iov_len = sf.headers->item->u.string->len;
+      } else {
+	sf.hd_iov->iov_base = NULL;
+	sf.hd_iov->iov_len = 0;
+      }
+#endif /* HAVE_HPUX_SENDFILE */
     }
     if (sf.trailers) {
       int i;
       for (i = sf.tr_cnt; i--;) {
 	struct pike_string *s;
+#ifdef HAVE_HPUX_SENDFILE
+	ref_push_string(sf.trailers->item[i].u.string);
+#else /* !HAVE_HPUX_SENDFILE */
 	if ((s = sf.trailers->item[i].u.string)->len) {
 	  sf.tr_iov[i].iov_base = s->str;
 	  sf.tr_iov[i].iov_len = s->len;
@@ -732,7 +797,21 @@ static void sf_create(INT32 args)
 	  sf.tr_iov++;
 	  sf.tr_cnt--;
 	}
+#endif /* HAVE_HPUX_SENDFILE */
       }
+#ifdef HAVE_HPUX_SENDFILE
+      if (sf.tr_cnt) {
+	f_add(sf.tr_cnt);
+	free_string(sf.trailers->item->u.string);
+	sf.trailers->item->u.string = sp[-1].u.string;
+	sp--;
+	sf.tr_iov->iov_base = sf.trailers->item->u.string->str;
+	sf.tr_iov->iov_len = sf.trailers->item->u.string->len;
+      } else {
+	sf.tr_iov->iov_base = NULL;
+	sf.tr_iov->iov_len = 0;
+      }
+#endif /* HAVE_HPUX_SENDFILE */
     }
   }
 
