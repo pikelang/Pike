@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.23 1997/10/11 06:49:19 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.24 1997/10/29 11:20:41 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -541,7 +541,7 @@ static void mpzmod_invert(INT32 args)
   res = clone_object(mpzmod_program, 0);
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
-    really_free_object(res);
+    free_object(res);
     error("Gmp.mpz->invert: not invertible");
   }
   pop_n_elems(args);
