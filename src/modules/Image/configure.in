@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.28 2004/10/21 15:52:54 grubba Exp $
+# $Id: configure.in,v 1.29 2004/10/21 15:55:22 grubba Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -23,10 +23,12 @@ if test "x$with_machine_code" = "xno" ; then
   AC_MSG_RESULT(no)
 else
   if nasm -f elf -o assembly.o $srcdir/assembly.s ; then
-    # nasm/ia64 can compile ia32 code...
     if test "`uname -m`" = "ia64"; then
+      # nasm/ia64 can compile ia32 code...
       AC_MSG_RESULT([yes, but we are on an IA64 machine])
     elif test "`uname -m`" = "x86_64"; then
+      # nasm/x86_64 can also compile ia32 code.
+      # It can even link with it, but it's not a good idea...
       AC_MSG_RESULT([yes, but we are on an x86_64 machine])
     elif test "`uname -s`" = "OpenBSD"; then
       #nasm on OpenBSD is braindamaged
