@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.19 2003/03/20 16:29:09 mast Exp $
+|| $Id: ia32.h,v 1.20 2003/03/22 22:34:13 mast Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -127,7 +127,7 @@ void ia32_flush_code_generator(void);
   /* This code does not clobber %eax, %ecx & %edx, but			\
    * the code jumped to does.						\
    */									\
-  __asm__ __volatile__( "	sub $8,%%esp\n"				\
+  __asm__ __volatile__( "	sub $12,%%esp\n"			\
 			"	jmp *%0"				\
 			: "=m" (pc)					\
 			:						\
