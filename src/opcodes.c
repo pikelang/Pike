@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.20 1998/04/20 18:53:21 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.21 1998/04/26 11:44:24 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -255,29 +255,6 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 
 	default:
 	  error("Cannot cast that to a program.\n");
-      }
-
-	
-      case T_FUNCTION:
-      {
-	INT32 i;
-	if(fp->current_object->prog)
-	  error("Cast to function in destructed object.\n");
-	i=find_shared_string_identifier(sp[-1].u.string,fp->current_object->prog);
-	free_string(sp[-1].u.string);
-	/* FIXME, check that it is a indeed a function */
-	if(i==-1)
-	{
-	  sp[-1].type=T_FUNCTION;
-	  sp[-1].subtype=i;
-	  sp[-1].u.object=fp->current_object;
-	  add_ref(fp->current_object);
-	}else{
-	  sp[-1].type=T_INT;
-	  sp[-1].subtype=NUMBER_UNDEFINED;
-	  sp[-1].u.integer=0;
-	}
-	break;
       }
     }
   }
