@@ -33,7 +33,7 @@ array(string) features()
   a += ({ "profiling" });
 #endif
 
-  foreach(({ "_Crypto", "_Ffmpeg", "Dbm", "GL", "GLUT", "GTK", "Gdbm", "Gmp",
+  foreach(({ "_Crypto", "Dbm", "_Ffmpeg", "GL", "GLUT", "GTK", "Gdbm", "Gmp",
              "Gz", "_Image_FreeType", "_Image_GIF", "_Image_JPEG",
              "_Image_TIFF", "_Image_TTF", "_Image_XFace", "Image.PNG", "Java",
              "Mird", "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl",
