@@ -53,9 +53,12 @@ log_start build
 xenofarm_build
 log_end $?
 
-log_start post_build
-xenofarm_post_build
-log_end $?
+if [ $LASERR = 0 ]; then
+  log_start post_build
+  xenofarm_post_build
+  log_end $?
+  else :
+fi
 
 log_start response_assembly
   cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt
