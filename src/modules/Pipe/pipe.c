@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.1 1997/02/11 08:38:08 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.2 1997/02/20 01:35:52 grubba Exp $");
 
 #include "stralloc.h"
 #include "types.h"
@@ -697,10 +697,13 @@ static void pipe_output(INT32 args)
 	&& S_ISREG(s.st_mode)
 	&& (THIS->fd=dup(fd))!=-1 )
     {
+#if 0
+      /* This won't work if the spider-module is dynamically linked. */
       push_int(THIS->fd);
       push_string(make_shared_string("pipe.c: file buffer"));
       f_mark_fd(2);
       pop_stack();
+#endif /* 0 */
 
       THIS->living_outputs++;
 
