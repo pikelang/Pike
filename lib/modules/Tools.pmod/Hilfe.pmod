@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.37 2002/03/03 03:13:04 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.38 2002/03/08 03:07:03 mast Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -1063,20 +1063,13 @@ class Evaluator {
 			       replace(sres, "\n", "\n        ") );
 		      };
 
-  private object compile_handler = class {
+  private class HilfeCompileHandler {
+    mapping(string:mixed) hilfe_symbols;
 
-      mapping(string:mixed) hilfe_symbols;
+    mapping(string:mixed) get_default_module() {
+      return all_constants() + hilfe_symbols;
+    }
 
-      mapping(string:mixed) get_default_module() {
-	return all_constants() + hilfe_symbols;
-      }
-
-      string _sprintf(int type) {
-	if(type=='O' || type=='t') return "HilfeCompileHandler";
-      }
-    }();
-
-  private class ErrorContainer {
     string errors = "";
     string warnings = "";
 
@@ -1098,12 +1091,26 @@ class Evaluator {
       warnings += "Compiler Warning" + format(file, line, warn);
     }
 
+    int compile_exception (object|array trace)
+    {
+      if (!objectp (trace) ||
+	  !trace->is_cpp_error && !trace->is_compilation_error)
+	// Errors thrown directly by cpp() and compile() are normally not
+	// interesting; they've already been reported to compile_error.
+	errors += "Compiler Exception: " + describe_backtrace (trace);
+      return 1;
+    }
+
     void show_errors() {
       write(errors);
     }
 
     void show_warnings() {
       write(warnings);
+    }
+
+    string _sprintf(int type) {
+      if(type=='O' || type=='t') return "HilfeCompileHandler";
     }
   };
 
@@ -1164,23 +1171,22 @@ class Evaluator {
 
        "# 1\n" + f + "\n");
 
-    compile_handler->hilfe_symbols = symbols;
-    compile_handler->hilfe_symbols->___Hilfe = this_object();
-    compile_handler->hilfe_symbols->___hilfe = variables;
-    compile_handler->hilfe_symbols->write = write;
+    HilfeCompileHandler handler = HilfeCompileHandler();
+
+    handler->hilfe_symbols = symbols;
+    handler->hilfe_symbols->___Hilfe = this_object();
+    handler->hilfe_symbols->___hilfe = variables;
+    handler->hilfe_symbols->write = write;
 
     last_compiled_expr = prog;
     program p;
     mixed err;
 
-    ErrorContainer e = ErrorContainer();
-    master()->set_inhibit_compile_errors(e);
-    err = catch(p=compile_string(prog, "HilfeInput", compile_handler));
-    master()->set_inhibit_compile_errors(0);
+    err = catch(p=compile_string(prog, "HilfeInput", handler));
 
     if(err) {
-      e->show_warnings();
-      e->show_errors();
+      handler->show_warnings();
+      handler->show_errors();
       return 0;
     }
 
