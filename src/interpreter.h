@@ -1293,17 +1293,39 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_CAST); f_cast(); break;
 
       CASE(F_SOFT_CAST);
+      /* Stack: type_string, value */
 #ifdef PIKE_DEBUG
+      if (sp[-2].type != T_STRING) {
+	fatal("Argument 1 to soft_cast isn't a string!\n");
+      }
+#endif /* PIKE_DEBUG */
+      /* FIXME: Should probably be some other flag */
       if (d_flag) {
-	/* FIXME: Perform a type-check here */
-	/* Stack: type_string, value */
-	if (d_flag > 1) {
+	struct pike_string *sval_type = get_type_of_svalue(sp-1);
+	if (!pike_types_le(sval_type, sp[-2].u.string)) {
+	  struct pike_string *t;
+	  ONERROR tmp;
+
+	  free_string(sval_type);
+
+	  t = describe_type(sp[-2].u.string);
+	  SET_ONERRROR(tmp, free_string, t);
+	  bad_arg_error("soft_cast", sp-1, 1, 1, t->str, sp-1,
+			"Assertion failed in soft_cast(). Expected %s\n",
+			t->str);
+	  /* NOT_REACHED */
+	  UNSET_ONERROR(tmp);
+	  free_string(t);
+	}
+	free_string(sval_type);
+#ifdef PIKE_DEBUG
+	if (d_flag > 2) {
 	  struct pike_string *t = describe_type(sp[-2].u.string);
 	  fprintf(stderr, "Soft cast to %s\n", t->str);
 	  free_string(t);
 	}
-      }
 #endif /* PIKE_DEBUG */
+      }
       stack_swap();
       pop_stack();
       break;
