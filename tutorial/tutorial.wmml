@@ -3720,24 +3720,36 @@ written in C. What follows is a description of all the functions in
 <method name=create title="init file struct">
 <man_syntax>
 object(Stdio.File) Stdio.File();<br>
-object(Stdio.File) Stdio.File(string <I>fd</I>);<br>
+object(Stdio.File) Stdio.File(string <i>filename</i>);<br>
 object(Stdio.File) Stdio.File(string <i>filename</i>, string <i>mode</i>);<br>
 object(Stdio.File) Stdio.File(string <i>filename</i>, string <i>mode</i>, int <i>mask</i>);<br>
+object(Stdio.File) Stdio.File(string <I>fd</I>);<br>
+object(Stdio.File) Stdio.File(int <I>fd</I>);<br>
+object(Stdio.File) Stdio.File(int <I>fd</I>, string <i>mode</i>);<br>
 </man_syntax>
 <man_description>
-There are three different ways to clone a File.
+There are four different ways to clone a File.
 The first is to clone it without any arguments, in which case the you
 have to call open(), connect() or some other method which connects
 the File object with a stream.
 <p>
-However, instead of cloning and then calling open(), you can clone
-the File with a filename and open mode. This is the same thing as
-cloning and then calling open, except shorter and faster.
+However, instead of cloning and then calling open(), you can clone the
+File with a filename and open mode. This is the same thing as cloning
+and then calling open, except shorter and faster. Default open mode is
+<tt>"r"</tt> and default <i>mask</i> is <tt>0666</tt>.
 <p>
 Alternatively, you can clone a File with "stdin", "stdout" or
 "stderr" as argument. This will open the specified standard
 stream.
+<p>
+For the advanced users, you can use the file descriptors of the
+systems (note: emulated by pike on some systems - like NT). This is
+only useful for streaming purposes on unix systems. This is <b>not
+recommended at all</b> if you don't know what you're into. Default
+<i>mode</i> for this is <tt>"rw"</tt>.
 </man_description>
+<man_note>Open mode will be filtered through the system UMASK. You
+might need to use <link to=chmod>chmod</ref> later.</man_note>
 <man_see>clone, Stdio.File-&gt;open</man_see>
 </method>
 
