@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.284 2002/12/07 16:14:37 grubba Exp $
+|| $Id: interpret.c,v 1.285 2002/12/07 16:36:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.284 2002/12/07 16:14:37 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.285 2002/12/07 16:36:41 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1603,7 +1603,7 @@ PMOD_EXPORT void f_call_function(INT32 args)
  *!
  *!   Called by the Pike runtime if an exception isn't caught.
  *!
- *! @param
+ *! @param exception
  *!   Value that was @[throw()]'n.
  *!
  *! @seealso
