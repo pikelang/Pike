@@ -36,27 +36,372 @@ dnl get_all_active_fd
 dnl fd_info
 
 dnl XML
+
 test_do([[Parser.XML.Simple()->parse("<!DOCTYPE root [\n<!NOTATION JPGformat>\n]>\n", lambda(mixed ...args){} )]])
 test_do([[Parser.XML.Simple()->parse_dtd("%hej;\n", lambda(mixed ...  args){}, 1, 2, 3)]])
+
 test_any([[
-  int ret;
-  Parser.XML.Simple()->parse("<a></a><foo/>",
-    lambda(string type, mixed ... args) { if(type=="error") ret=1; });
-  return ret;
-]],[[1]])
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse("<a></a><foo/>",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "There can not be more than one element on the top level.")
 test_any([[
-  int ret;
+  string error;
   object o = Parser.XML.Simple();
   o->compat_allow_errors ("7.2");
   o->parse("<a></a><foo/>",
-    lambda(string type, mixed ... args) { if(type=="error") ret=1; });
-  return ret;
-]],[[0]])
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+
 test_any([[
-  int ret;
-  Parser.XML.Simple()->parse("<a></a><!-- gnurk -->",
-    lambda(string type, mixed ... args) { if(type=="error") ret=1; });
-  return ret;
-]],[[0]])
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse (" <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse (" <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
 
+test_any([[
+  string error;
+  int got_header;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml ?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	      if (type == "<?xml") got_header = 1;
+	    });
+  return error || got_header;
+]], "Required version attribute missing in XML header.")
+test_any([[
+  string error;
+  int got_header;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse ("<?xml ?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	      if (type == "<?xml") got_header = 1;
+	    });
+  return error || got_header;
+]], 1)
 
+test_any([[
+  string error;
+  int got_header;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse (" <?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	      if (type == "<?xml") got_header = 1;
+	    });
+  return error || got_header;
+]], 0)
+test_any([[
+  string error;
+  int got_header;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse (" <?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	      if (type == "<?xml") got_header = 1;
+	    });
+  return error || got_header;
+]], 1)
+
+test_any([[
+  string error;
+  int got_header;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse (" <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	      if (type == "<?xml") got_header = 1;
+	    });
+  return error || got_header;
+]], 0)
+test_any([[
+  string error;
+  int got_header;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse (" <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	      if (type == "<?xml") got_header = 1;
+	    });
+  return error || got_header;
+]], 1)
+
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "Multiple DOCTYPE declarations are not allowed.")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "DOCTYPE must occur before the root element.")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.2");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo/> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo><!DOCTYPE foo SYSTEM 'blurk.dtd'></foo> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "DOCTYPE must occur before the root element.")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo><!DOCTYPE foo SYSTEM 'blurk.dtd'></foo> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "Root element missing.")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<!DOCTYPE foo SYSTEM 'blurk.dtd'> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> "
+	    "<![CDATA[gnork]""]> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "All data must be inside tags")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> "
+	    "<![CDATA[gnork]""]> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "All data must be inside tags")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.2");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> "
+	    "<![CDATA[gnork]""]> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<![CDATA[gnork]""]> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "All data must be inside tags")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<![CDATA[gnork]""]> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.2");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<![CDATA[gnork]""]> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], 0)
+
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors (0);
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> "
+	    "gnork <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "All data must be inside tags")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.6");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> "
+	    "gnork <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "All data must be inside tags")
+test_any([[
+  string error;
+  object o = Parser.XML.Simple();
+  o->compat_allow_errors ("7.2");
+  o->parse ("<?xml version='1.0'?> <?herk?> <!-- herk --> "
+	    "<foo>mupp</foo> <?herk?> <!-- herk --> "
+	    "gnork <?herk?> <!-- herk --> ",
+	    lambda (string type, string name, mapping attrs, string data) {
+	      if (type == "error") error = data;
+	    });
+  return error;
+]], "All data must be inside tags")
