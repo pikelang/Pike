@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.4 2003/01/03 23:19:44 nilsson Exp $
+// $Id: Struct.pike,v 1.5 2003/05/04 21:31:19 nilsson Exp $
 //
 
 //! Implements a struct which can be used for serialization and
@@ -15,7 +15,7 @@
 //!     Item album = Chars(30);
 //!     Item year = Chars(4);
 //!     Item genre = Byte();
-//!     Item Comment = Chars(30);
+//!     Item comment = Chars(30);
 //!   }
 //!
 //!   Stdio.File f = Stdio.File("foo.mp3");
