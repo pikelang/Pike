@@ -89,7 +89,7 @@ if [ X$V = Xyes ]; then
   OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
 fi
 
-if [ $M$P = "" ]; then :; else
+if [ "$M$P" = "" ]; then :; else
   # Workaround for XP64 DWIMing PROCESSOR_ARCHITECTURE...
   PROCESSOR_ARCHITECTURE="`getntenv PROCESSOR_IDENTIFIER|cut '-d ' -f1`"
 
@@ -98,11 +98,11 @@ if [ $M$P = "" ]; then :; else
   # or
   #   "x86 Family 6 Model 7 Stepping 3, GenuineIntel"
 
-  if [ $M = yes ]; then
+  if [ "$M" = yes ]; then
     OUTPUT="$OUTPUT $PROCESSOR_ARCHITECTURE"
   fi
   
-  if [ $P = yes ]; then
+  if [ "$P" = yes ]; then
     OUTPUT="$OUTPUT $PROCESSOR_ARCHITECTURE"
   fi
 fi
