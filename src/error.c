@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.96 2002/11/28 23:45:39 marcus Exp $
+|| $Id: error.c,v 1.97 2002/12/07 15:44:15 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.96 2002/11/28 23:45:39 marcus Exp $");
+RCSID("$Id: error.c,v 1.97 2002/12/07 15:44:15 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -406,6 +406,38 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
 }
 
 #if 1
+
+/*! @class MasterObject
+ */
+
+/*! @decl string describe_backtrace(mixed exception)
+ *!
+ *!   Called by various routines to format a readable
+ *!   description of an exception.
+ *!
+ *! @param exception
+ *!   Something that was thrown. Usually an @[Error] object, or
+ *!   an array with the following content:
+ *!   @array
+ *!     @elem string msg
+ *!       Error message.
+ *!     @elem array(backtrace_frame|array(mixed)) backtrace
+ *!       Backtrace to the point where the exception occurred.
+ *!   @endarray
+ *!
+ *! @returns
+ *!   Returns a string describing the exeception.
+ *!
+ *! @note
+ *!   Usually added by the initialization code the global name space
+ *!   with @[add_constant()].
+ *!
+ *! @seealso
+ *!   @[predef::describe_backtrace()]
+ */
+
+/*! @endclass
+ */
 
 /*! @class Error
  */
