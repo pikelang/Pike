@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.153 2002/05/31 22:41:25 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.154 2002/06/17 16:44:31 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1937,7 +1937,8 @@ PMOD_EXPORT void o_lsh(void)
     return;
   }
 #ifdef AUTO_BIGNUM
-  if(INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+  if ((sp[-1].type == T_INT) && (sp[-2].type == T_INT) &&
+      INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     convert_stack_top_to_bignum();
 #endif /* AUTO_BIGNUM */
   
