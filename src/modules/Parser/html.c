@@ -187,7 +187,7 @@ struct parser_html_storage
    /* current range (ie, current tag/entity/whatever) */
    /* start is also used to flag callback recursion */
    struct piece *start,*end;
-   int cstart,cend;
+   ptrdiff_t cstart,cend;
 
    /* the type of the current thing being parsed */
    enum types type;
@@ -311,7 +311,10 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
 	 fprintf(stderr,"%c",ch);
    }
 
-   sprintf(buf,"(%ld) %p:%d/%ld    ^",i0,feed,c,feed->s->len);
+   sprintf(buf,"(%ld) %p:%d/%ld    ^",
+	   DO_NOT_WARN((long)i0),
+	   feed,c,
+	   DO_NOT_WARN((long)feed->s->len));
    fprintf(stderr,"»\n%*s\n",DO_NOT_WARN((int)l+c-i0+3),buf);
    
 }
@@ -1353,8 +1356,8 @@ static INLINE int n_pos_forward (struct piece *feed, ptrdiff_t c,
 /* ------------------------- */
 /* compare positions in feed */
 
-static INLINE int cmp_feed_pos(struct piece *piece_a, int pos_a,
-			       struct piece *piece_b, int pos_b)
+static INLINE int cmp_feed_pos(struct piece *piece_a, ptrdiff_t pos_a,
+			       struct piece *piece_b, ptrdiff_t pos_b)
 {
   struct piece *a_save = piece_a;
 
@@ -2316,9 +2319,9 @@ static void do_callback(struct parser_html_storage *this,
 			struct object *thisobj,
 			struct svalue *callback_function,
 			struct piece *start,
-			int cstart,
+			ptrdiff_t cstart,
 			struct piece *end,
-			int cend)
+			ptrdiff_t cend)
 {
    ONERROR uwp;
 

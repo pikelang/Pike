@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.14 2000/07/28 07:13:32 hubbe Exp $ */
+/* $Id: math_matrix.c,v 1.15 2000/08/09 19:04:07 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -249,8 +249,8 @@ done_made:
       else if (sp[-args].u.string==s_rotate)
       {
 	 float r;
-	 float x,y,z;
-	 float c,s;
+	 double x,y,z;
+	 double c,s;
 	 struct matrix_storage *mx=NULL;
 
 	 /* "rotate",size,degrees,x,y,z */
@@ -262,9 +262,9 @@ done_made:
 	    if (mx->xsize*mx->ysize!=3)
 	       SIMPLE_BAD_ARG_ERROR("matrix",4,"Matrix of size 1x3 or 3x1");
 	    
-	    x=mx->m[0];
-	    y=mx->m[1];
-	    z=mx->m[2];
+	    x = mx->m[0];
+	    y = mx->m[1];
+	    z = mx->m[2];
 
 	    get_all_args("matrix",args,"%s%i%F",&dummy,&side,&r);
 	 }
@@ -283,8 +283,8 @@ done_made:
 	 while (n--) *(m++)=0.0;
 	 for (n=3; i<side; i++)
 	    THIS->m[i*(side+1)]=1.0;
-	 c=cos(r);
-	 s=sin(r);
+	 c = cos(r);
+	 s = sin(r);
 
 	 THIS->m[0+0*side]=x*x*(1-c)+c;
 	 THIS->m[1+0*side]=x*y*(1-c)-z*s;
