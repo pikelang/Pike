@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.135 1999/09/06 12:03:57 grubba Exp $");
+RCSID("$Id: program.c,v 1.136 1999/09/06 12:24:59 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1239,14 +1239,12 @@ void low_inherit(struct program *p,
     {
       yyerror("Parent pointer lost, cannot inherit!");
       /* We inherit it anyway, to avoid causing more errors */
-      /* FIXME: Should parent_offset be decreased below in this case too?
-       * /grubba 1999-09-06.
-       */
     }
   }
 
  /* parent offset was increased by one for above test.. */
-  parent_offset--;
+  if(parent_offset)
+    parent_offset--;
 
 
   if(!(p->flags & (PROGRAM_FINISHED | PROGRAM_PASS_1_DONE)))
