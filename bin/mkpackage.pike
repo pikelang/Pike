@@ -34,6 +34,7 @@ class Package(string my_name,
 	      string pike_filename, 
 	      string install_filename, 
 	      string extra_help, 
+	      string extra_advanced_help, 
 	      string extra_flags)
 {
   static private mapping(array(string):string) options =
@@ -42,12 +43,30 @@ class Package(string my_name,
      "echo \n"
      "echo 'Options:'\n"
      "echo '  -h, --help              Display this help and exit.'\n"
-     "echo '  -l, --list              Display the contents of the package and exit.'\n"
+     "echo '  -l, --list              Display included packages and exit.'\n"
      "echo '  -v, --version           Display version information and exit.'\n"
      "echo '  --features              Display feature information and exit.'\n"
-     "echo '  -a, --add=<package>     Add <package> and exit.'\n"
+     "echo '  --advanced-help         Display information about advanced features.'\n"
      "echo \"$EXTRA_HELP\"\n"
      "EXIT=yes",
+
+     ({ "--advanced-help" }):
+     "echo \"Usage: $MY_NAME [options]\"\n"
+     "echo \n"
+     "echo 'Options:'\n"
+     "echo '  -h, --help              Display this help and exit.'\n"
+     "echo '  -l, --list              Display included packages and exit.'\n"
+     "echo '  -v, --version           Display version information and exit.'\n"
+     "echo '  --features              Display feature information and exit.'\n"
+     "echo '  --advanced-help         Display information about advanced features.'\n"
+     "echo \"$EXTRA_HELP\"\n"
+     "echo '  -a, --add=<package>     Add <package> and exit. <package> must be a .tar.gz'\n"
+     "echo '                          file. Some tars have problem with this operation,'\n"
+     "echo '                          but system tar may work (add /usr/bin to the'\n"
+     "echo '                          beginning of your PATH).'\n"
+     "echo \"$EXTRA_ADVANCED_HELP\"\n"
+     "EXIT=yes",
+
      ({ "-v", "--version" }):
      "echo 'Package version unknown.'\n"
      "EXIT=yes",
@@ -114,6 +133,7 @@ class Package(string my_name,
 		    "  EXIT=no\n"
 		    // FIXME: Apply proper quotes.
 		    "  EXTRA_HELP='"+extra_help+"'\n"
+		    "  EXTRA_ADVANCED_HELP='"+extra_advanced_help+"'\n"
 		    "  case \"$1\" in\n"
 		    +Array.map(sort(indices(options)),
 			       lambda(array(string) flags)
@@ -213,12 +233,14 @@ int main(int argc, array(string) argv)
     write("Usage: make-package.pike <name> <pike binary> <install script> [packages ...]\n\n"
 	  "Environment variables:\n"
 	  "  EXTRA_PACKAGE_HELP\n"
+	  "  EXTRA_PACKAGE_ADVANCED_HELP\n"
 	  "  EXTRA_PACKAGE_FLAGS\n");
     return 1;
   }
   
   Package(argv[1], argv[2], argv[3],
 	  getenv("EXTRA_PACKAGE_HELP") || "",
+	  getenv("EXTRA_PACKAGE_ADVANCED_HELP") || "",
 	  getenv("EXTRA_PACKAGE_FLAGS") || "")->
     add_packages(@argv[4..])->make(argv[1]);
   
