@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.66 2003/10/29 10:28:53 grubba Exp $
+|| $Id: backend.cmod,v 1.67 2003/10/29 13:31:27 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.66 2003/10/29 10:28:53 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.67 2003/10/29 13:31:27 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2396,25 +2396,27 @@ PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new)
   }
 }
 
-#define WRAP(CB)							    \
-void PIKE_CONCAT(set_,CB)(int fd,file_callback cb,void *data)		    \
-{									    \
-  PIKE_CONCAT(backend_set_,CB)(really_get_backend_for_fd(fd),fd,cb, data);  \
-}									    \
-									    \
-file_callback PIKE_CONCAT(query_,CB)(int fd)				    \
-{									    \
-  struct Backend_struct *b=get_backend_for_fd(fd);			    \
-  if(!b) return 0;							    \
-  return PIKE_CONCAT(backend_query_,CB)(b, fd);				    \
-}									    \
-									    \
-void * PIKE_CONCAT3(query_,CB,_data)(int fd)				    \
-{									    \
-  struct Backend_struct *b=get_backend_for_fd(fd);			    \
-  if(!b) return 0;							    \
-  return PIKE_CONCAT3(backend_query_,CB,_data)(b, fd);			    \
-}
+#define WRAP(CB)							\
+  void PIKE_CONCAT(set_,CB)(int fd, file_callback cb, void *data)	\
+  {									\
+    if (cb || data || get_backend_for_fd(fd))				\
+      PIKE_CONCAT(backend_set_,CB)(really_get_backend_for_fd(fd),	\
+				   fd, cb, data);			\
+  }									\
+  									\
+  file_callback PIKE_CONCAT(query_,CB)(int fd)				\
+  {									\
+    struct Backend_struct *b=get_backend_for_fd(fd);			\
+    if(!b) return 0;							\
+    return PIKE_CONCAT(backend_query_,CB)(b, fd);			\
+  }									\
+  									\
+  void * PIKE_CONCAT3(query_,CB,_data)(int fd)				\
+  {									\
+    struct Backend_struct *b=get_backend_for_fd(fd);			\
+    if(!b) return 0;							\
+    return PIKE_CONCAT3(backend_query_,CB,_data)(b, fd);		\
+  }
 
 WRAP(read_callback);
 WRAP(write_callback);
