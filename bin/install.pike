@@ -265,6 +265,7 @@ void do_export()
   Stdio.write_file(tmpname+".x",
 		   "#!/bin/sh\n"
 #"TARFILE=\"$1\"; shift
+ARGS=''
 
 while [ $# != 0 ]
 do
@@ -282,6 +283,7 @@ COPYING and DISCLAIMER in the Pike distribution for more details.
           --help) echo \"" + helptext + #"\"
                   exit 0 ;;
     esac
+    ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\"
     shift
 done
 "
@@ -290,7 +292,7 @@ done
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
 		   "( cd "+export_base_name+".dir\n"
-		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike "
+		   "  eval \"build/pike -DNOT_INSTALLED -mbuild/master.pike "
 		                "-Mbuild/lib/modules "
 		                "-Mlib/modules "
 		                "bin/install.pike \\\n"
@@ -300,7 +302,7 @@ done
 		   "  TMP_BINDIR=\"bin\"\\\n"
 		   "  TMP_BUILDDIR=\"build\"\\\n"
 		   "  MANDIR_SRC=\"man\"\\\n"
-		   "  \"$@\"\n"
+		   "  $ARGS\"\n"
 		   ")\n"
 		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
     );
@@ -452,14 +454,14 @@ class ReadInteractive
     array(string) files =
       glob(path[-1]+"*",
 	   get_dir(sizeof(path)>1? path[..sizeof(path)-2]*"/"+"/":".")||({}));
-    
 
     if(match_directories_only)
       files = Array.filter(files, lambda(string f, string p)
 				  { return (file_stat(p+f)||({0,0}))[1]==-2; },
 			   path[..sizeof(path)-2]*"/"+"/");
     
-    switch(sizeof(files)) {
+    switch(sizeof(files))
+    {
     case 0:
       get_output_controller()->beep();
       break;
