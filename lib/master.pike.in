@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.28 1998/05/13 07:36:56 hubbe Exp $
+/* $Id: master.pike.in,v 1.29 1998/05/19 20:39:20 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -211,13 +211,16 @@ static program low_findprog(string pname, string ext)
     {
     case "":
     case ".pike":
-      if( (s=master_file_stat(fname+".o"))  && s[1]>=0 )
-      {
-	mixed err=catch {
-	  return decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
-	};
-	if(want_warnings)
-	  werror("Failed to decode %s.o\n",fname);
+      if(array s2=master_file_stat(fname+".o"))
+      {	
+	if(s2[1]>=0 && s2[2]>=s[2])
+	{
+	  mixed err=catch {
+	    return decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
+	  };
+	  if(want_warnings)
+	    werror("Failed to decode %s.o\n",fname);
+	}
       }
       if ( mixed e=catch { ret=compile_file(fname); } )
       {
