@@ -1,5 +1,5 @@
 // Compatibility module
-// $Id: __default.pmod,v 1.6 2002/11/28 23:21:05 grubba Exp $
+// $Id: __default.pmod,v 1.7 2002/11/28 23:46:12 nilsson Exp $
 
 #pike 7.3
 
@@ -83,13 +83,42 @@ object new(string|program prog, mixed ... args)
 
 function(string|program, mixed ... : object) clone = new;
 
+// spider
+#define SPIDER(X) constant X = spider.##X
+SPIDER(_low_program_name);
+SPIDER(set_start_quote);
+SPIDER(set_end_quote);
+SPIDER(parse_accessed_database);
+SPIDER(_dump_obj_table);
+SPIDER(parse_html);
+SPIDER(parse_html_lines);
+SPIDER(discdate);
+SPIDER(stardate);
+SPIDER(get_all_active_fd);
+SPIDER(fd_info);
+
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret=predef::all_constants()+([]);
-  ret->all_constants=all_constants;
-  ret->dirname=dirname;
-  ret->default_yp_domain=default_yp_domain;
-  ret->new=new;
-  ret->clone=clone;
+
+#define ADD(X) ret->##X=X
+
+  ADD(all_constants);
+  ADD(dirname);
+  ADD(default_yp_domain);
+  ADD(new);
+  ADD(clone);
+  ADD(_low_program_name);
+  ADD(set_start_quote);
+  ADD(set_end_quote);
+  ADD(parse_accessed_database);
+  ADD(_dump_obj_table);
+  ADD(parse_html);
+  ADD(parse_html_lines);
+  ADD(discdate);
+  ADD(stardate);
+  ADD(get_all_active_fd);
+  ADD(fd_info);
+
   return ret;
 }
