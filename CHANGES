@@ -33,6 +33,7 @@ o Fixed Stdio.exist.
 o Ensure that errno() is relevant if recurse_rm returns with an error.
 o Fixed a type parser bug in Hilfe.
 o rdf:ID and rdf:about now takes xml:base into account in Web.RDF.
+o Fix for Protocols.DNS on MacOS X.
 
 Changes in C code:
 
@@ -56,12 +57,17 @@ o Mysql module support Mysql 4.1.3.
 o Bugfix in dbdate_cast() in the Oracle module.
 o Several bugfixes in Shuffler.
 o Added Stdio.Port()->bind_unix().
+o Several bugfixes for rare array probles.
+o Several cpp fixes to ensure that #if constant never interrupts
+  compiliation. Use --show-all-cpp-warnings to see such failures.
+o cpp expressions are now short-circuited.
 
 Other chages:
 
 o Several fixes in the Pike package generation to make them work with
   GNU tar 1.14.
 o Preliminary support for local variable extraction in unbug.
+o New installer system for Microsoft Windows.
 
 
 Changes since Pike 7.4:
