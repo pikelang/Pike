@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.35 2000/12/05 21:08:28 per Exp $");
+RCSID("$Id: xcf.c,v 1.36 2001/03/17 20:39:34 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -77,7 +77,7 @@ static void f_substring_cast( INT32 args )
 
 static void f_substring_index( INT32 args )
 {
-  int i = sp[-1].u.integer;
+  ptrdiff_t i = sp[-1].u.integer;
   struct substring *s = SS(fp->current_object);
   pop_n_elems( args );
 
@@ -112,8 +112,8 @@ static void f_substring__sprintf( INT32 args )
      push_constant_text("SubString( %O /* [+%d .. %d] */ )" );
      push_text("string"); f_substring_cast( 1 );
 
-     push_int( s->len );
-     push_int( s->offset );
+     push_int64( s->len );
+     push_int64( s->offset );
      f_sprintf( 4 );
      return;
    default: 

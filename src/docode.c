@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.109 2001/03/09 17:13:29 grubba Exp $");
+RCSID("$Id: docode.c,v 1.110 2001/03/17 20:55:55 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -259,7 +259,7 @@ void do_pop_mark(void)
   emit0(F_POP_MARK);
 }
 
-void do_pop_to_mark(void)
+void do_pop_to_mark(void *ignored)
 {
   emit0(F_POP_TO_MARK);
 }

@@ -1043,7 +1043,7 @@ class ParseBlock
 		 sprintf("((struct %s *)(o->storage+%s_storage_offset)",
 			 structname, base))+
 	    ({
-	      sprintf("static int %s_storage_offset;\n",base),
+	      sprintf("static ptrdiff_t %s_storage_offset;\n",base),
 		sprintf("struct %s {\n",structname),
 		})+thestruct+({
 		  "};\n",

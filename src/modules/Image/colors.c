@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.46 2001/03/04 19:27:19 mirar Exp $
+**!	$Id: colors.c,v 1.47 2001/03/17 20:42:46 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.46 2001/03/04 19:27:19 mirar Exp $");
+RCSID("$Id: colors.c,v 1.47 2001/03/17 20:42:46 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1374,7 +1374,7 @@ static void image_get_color(INT32 args)
 	    f = sp[-1].u.array->item[0].u.float_number;
 	    pop_stack();
 	    pop_stack();
-	    push_int( (int)(255*f/100) ); 
+	    push_int( DO_NOT_WARN((int)(255*f/100)) ); 
                  /* grey100 is white, grey0 is black */
 	    stack_dup();
 	    stack_dup();

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.27 2000/12/05 21:08:27 per Exp $");
+RCSID("$Id: psd.c,v 1.28 2001/03/17 20:42:06 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -665,13 +665,13 @@ static void decode_resources( struct buffer *b )
 	  }
 	  for (i=0; i<num_guides; i++)
 	  {
-	    int p = psd_read_int( &data );
+	    ptrdiff_t p = psd_read_int( &data );
 	    int h = psd_read_uchar( &data );
 	    if( h )
-	      p = (int)((((double)p) * (magic4>>8)) / ((double)(magic4&255)));
+	      p = (ptrdiff_t)((((double)p) * (magic4>>8)) / ((double)(magic4&255)));
 	    else
-	      p = (int)((((double)p) * (magic6>>8)) / ((double)(magic6&255)));
-	    push_constant_text( "pos" );      push_int( p );
+	      p = (ptrdiff_t)((((double)p) * (magic6>>8)) / ((double)(magic6&255)));
+	    push_constant_text( "pos" );      push_int64( p );
 	    push_constant_text( "vertical" ); push_int( !h );
 	    f_aggregate_mapping( 4 );
 	  }
@@ -697,7 +697,7 @@ static void decode_resources( struct buffer *b )
 	break;
     }
   }
-  f_aggregate_mapping( sp-osp );
+  f_aggregate_mapping( DO_NOT_WARN((int)(sp-osp)) );
 }
 
 static void image_f_psd___decode( INT32 args )

@@ -20,7 +20,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.42 2001/03/14 20:43:29 mast Exp $");
+RCSID("$Id: port.c,v 1.43 2001/03/17 20:58:48 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -203,9 +203,9 @@ int STRNCMP(const char *a, const char *b, size_t maxlen)
 {
   size_t alen=STRNLEN(a,maxlen);
   size_t blen=STRNLEN(b,maxlen);
-  int ret=MEMCMP(a,b, a < b ? a : b);
+  int ret=MEMCMP(a,b, alen < blen ? alen : blen);
   if(ret) return ret;
-  return alen - blen;
+  return DO_NOT_WARN((int)(alen - blen));
 }
 #endif
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.353 2001/03/17 16:37:41 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.354 2001/03/17 21:09:06 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -136,7 +136,8 @@ void f_compat_hash( INT32 args )
     return;
   }
 
-  i = hashstr( (unsigned char *)s->str, MINIMUM(100,s->len));
+  i = DO_NOT_WARN((unsigned int)hashstr( (unsigned char *)s->str,
+					 MINIMUM(100,s->len)));
   if(args > 1)
   {
     if(Pike_sp[1-args].type != T_INT)
@@ -1950,10 +1951,8 @@ static void f_parse_pike_type( INT32 args )
   t = parse_type( (char *)STR0(Pike_sp[-1].u.string) );
   pop_stack();
 
-  /* FIXME: */
-  /* Pike_error("Not supported yet!\n"); */
-  /* FIXME: Convert t to a string */
-  push_string( res = t );
+  push_string(type_to_string(t));
+  free_type(t);
 }
 
 /*! @decl mapping (string:mixed) all_constant()
@@ -7191,7 +7190,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 
 struct  buffer_str
 {
-  unsigned int len, size, initial;
+  size_t len, size, initial;
   unsigned char *data;
   int shift;
 };
@@ -7253,8 +7252,8 @@ static void f_buf__sprintf( INT32 args )
       push_text( "Buffer(%d /* %d */)" );
       if( str->size )
       {
-	push_int(  (str->len-sizeof(struct pike_string))>>str->shift );
-	push_int( (str->size-sizeof(struct pike_string))>>str->shift );
+	push_int64(  (str->len-sizeof(struct pike_string))>>str->shift );
+	push_int64( (str->size-sizeof(struct pike_string))>>str->shift );
       }
       else
       {
@@ -7291,14 +7290,14 @@ static void f_buf_add( INT32 args )
 {
   struct buffer_str *str = THB;
   struct pike_string *a;
-  unsigned int l;
+  size_t l;
 
   if( args != 1 || Pike_sp[-args].type != PIKE_T_STRING )
     Pike_error("Illegal argument\n");
 
   a = Pike_sp[-args].u.string;
 
-  if(!(l = (unsigned)a->len) )
+  if(!(l = (size_t)a->len) )
     return;
 
   
@@ -7371,7 +7370,7 @@ static void f_buf_get( INT32 args )
  */
 {
   struct buffer_str *str = THB;
-  int len = str->len-(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
+  ptrdiff_t len = str->len-(sizeof(struct pike_string)-PIKE_STRING_STR_SIZE);
   if( len <= 0 )
   {    
     push_text("");

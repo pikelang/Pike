@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.6 2001/02/07 07:52:55 mirar Exp $
+ * $Id: memory.c,v 1.7 2001/03/17 20:50:14 grubba Exp $
  */
 
 //! module system
@@ -14,7 +14,7 @@
 //!	Don't blame Pike if you shoot your foot off.
 
 #include "global.h"
-RCSID("$Id: memory.c,v 1.6 2001/02/07 07:52:55 mirar Exp $");
+RCSID("$Id: memory.c,v 1.7 2001/03/17 20:50:14 grubba Exp $");
 
 #include "system_machine.h"
 
@@ -83,6 +83,11 @@ static void memory__mmap(INT32 args,int complain,int private);
 static void memory_allocate(INT32 args);
 
 /*** Memory object *******************************************************/
+
+/* MicroSoft defines this macro. */
+#ifdef THIS
+#undef THIS
+#endif /* THIS */
 
 #define THISOBJ (Pike_fp->current_object)
 #define THIS ((struct memory_storage *)(Pike_fp->current_storage))
@@ -653,7 +658,7 @@ static void pwrite_n(INT32 args,int shift,int reverse,char *func)
       }
 
    pop_n_elems(args);
-   push_int(rlen);
+   push_int64(rlen);
 }
 
 #define PWRITEN(CFUNC,FUNC,SHIFT,REV)					\
@@ -688,10 +693,10 @@ static void memory_index(INT32 args)
       size_t rpos;
       get_all_args("Memory.`[]",args,"%i",&pos);
       if (pos<0) 
-	 if ((off_t)-pos>=(off_t)THIS->size)
+	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
 	    Pike_error("Memory.`[]: Index is out of range\n");
 	 else
-	    rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
+	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
       else 
       {
 	 rpos=(size_t)pos;
@@ -741,10 +746,10 @@ static void memory_index_write(INT32 args)
       size_t rpos;
       get_all_args("Memory.`[]=",args,"%i%i",&pos,&ch);
       if (pos<0) 
-	 if ((off_t)-pos>=(off_t)THIS->size)
+	 if ((off_t)-pos>=DO_NOT_WARN((off_t)THIS->size))
 	    Pike_error("Memory.`[]=: Index is out of range\n");
 	 else
-	    rpos=(size_t)((off_t)(THIS->size)+(off_t)pos);
+	    rpos=(size_t)(DO_NOT_WARN((off_t)(THIS->size))+(off_t)pos);
       else 
       {
 	 rpos=(size_t)pos;
@@ -775,8 +780,8 @@ static void memory_index_write(INT32 args)
 	 if (pos2<pos1 ||
 	     ps->len != pos2-pos1+1)
 	    Pike_error("Memory.`[]=: source and destination "
-		       "not equally long (%d v/s %d; can't resize memory)\n",
-		       (int)ps->len,(int)pos2-(int)pos1);
+		       "not equally long (%ld v/s %ld; can't resize memory)\n",
+		       DO_NOT_WARN((long)ps->len),(long)pos2-(long)pos1);
 	 else
 	    MEMCPY(THIS->p+pos1,ps->str,ps->len);
 
