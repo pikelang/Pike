@@ -156,6 +156,7 @@ testfont binary
 /src/modules/_Crypto/test_crypto.pike foreign_ident
 /src/modules/call_out/call_out.c foreign_ident
 /src/modules/call_out/test_co.pike foreign_ident
+/src/modules/dynamic_module_makefile.in foreign_ident
 /src/modules/files/acconfig.h foreign_ident
 /src/modules/files/file.c foreign_ident
 /src/modules/files/socktest.pike foreign_ident
@@ -163,6 +164,7 @@ testfont binary
 /src/modules/spider/accesseddb.h foreign_ident
 /src/modules/spider/dumudp.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
+/src/modules/static_module_makefile.in foreign_ident
 /src/modules/system/acconfig.h foreign_ident
 /src/modules/system/passwords.c foreign_ident
 /src/modules/system/syslog.c foreign_ident

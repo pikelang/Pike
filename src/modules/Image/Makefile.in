@@ -12,10 +12,10 @@ MODULE_LDFLAGS=@LDFLAGS@
 @dynamic_module_makefile@
 
 pike: all
-	cd ../..; $(MAKE)
+	cd ../..; $(MAKE) "AR=$(AR)"
 
 pure: all
-	cd ../..; $(MAKE) pure
+	cd ../..; $(MAKE) "AR=$(AR)" pure
 
 
 @dependencies@

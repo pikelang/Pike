@@ -3,6 +3,7 @@
 CC=@CC@
 CPP=@CPP@
 RANLIB=@RANLIB@
+AR=ar
 
 # Reset VPATH
 SRCDIR=@srcdir@
@@ -65,7 +66,7 @@ clean:
 depend:
 
 desCore.a:	$O
-		ar cru $@ $O
+		$(AR) cru $@ $O
 		$(RANLIB) $@
 
 desdata.o:	desinfo.h $(SRCDIR)/../include/des.h
@@ -140,5 +141,5 @@ OBJS = idea.o sha.o md5.o rc4.o cast.o $(O)
 
 algorithms.a: $(OBJS)
 	rm -f algorithms.a
-	ar cq algorithms.a $(OBJS)
+	$(AR) cq algorithms.a $(OBJS)
 	$(RANLIB) algorithms.a

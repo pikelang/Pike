@@ -1,16 +1,21 @@
+#
+# $Id: static_module_makefile.in,v 1.18 1997/11/04 22:46:28 grubba Exp $
+#
+
 
 CC=@CC@
 CPP=@CPP@
+AR=@AR@
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" $(MODULE_MAKE_FLAGS)
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" $(MODULE_MAKE_FLAGS)
 
 all: subdirs dummy
 
 subdirs:
-	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; fi ; done
+	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making $$a ; ( cd $$a && $(MAKE) $(MAKE_FLAGS) ) || exit $$? ; fi ; done
 
 dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 	tmp="$(INSTALL_NAME)" ;\
@@ -41,7 +46,7 @@ module.pmod: Makefile
 
 module.a: $(OBJS)
 	-rm -f module.a
-	ar cq module.a $(OBJS)
+	$(AR) cq module.a $(OBJS)
 	-@RANLIB@ module.a
 	if test -f linker_options ; then touch linker_options ; fi
 

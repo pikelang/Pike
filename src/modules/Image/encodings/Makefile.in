@@ -8,6 +8,7 @@ OBJS=gif.a pnm.a
 
 CC=@CC@
 CPP=@CPP@
+AR=ar
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../../.. -I$(SRCDIR)/.. -I../../.. -I.. -I. $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS) #@CCSHARED@ 
@@ -16,11 +17,11 @@ all: $(OBJS)
 
 gif.a : $(GIF_OBJS)
 	rm -f gif.a
-	ar cq gif.a $(GIF_OBJS)
+	$(AR) cq gif.a $(GIF_OBJS)
 
 pnm.a : $(PNM_OBJS)
 	rm -f pnm.a
-	ar cq pnm.a $(PNM_OBJS)
+	$(AR) cq pnm.a $(PNM_OBJS)
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
