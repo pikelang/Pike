@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.292 2003/08/11 15:47:59 grubba Exp $
+// $Id: master.pike.in,v 1.293 2003/08/18 13:30:59 tomas Exp $
 
 #pike __REAL_VERSION__
 
@@ -160,7 +160,7 @@ string unrelocate_module(string s)
   foreach(pike_module_path, string path) {
     path = combine_path(path, "..", "");
     if(has_prefix (s, path))
-      return "/${PIKE_MODULE_PATH}/../"+x[sizeof(path)..];
+      return "/${PIKE_MODULE_PATH}/../"+s[sizeof(path)..];
   }
 
   return s;
