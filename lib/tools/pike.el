@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.33 2001/05/20 23:42:06 mast Exp $
+;;; $Id: pike.el,v 1.34 2001/06/08 19:00:21 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -175,7 +175,9 @@ Otherwise t is returned."
 
 (defun pike-font-lock-forward-syntactic-ws ()
   (let ((start (point)))
-    (forward-comment 134217727)
+    ;; If forward-comment in at least XEmacs 21 is given a large
+    ;; positive value, it'll loop all the way through if it hits eob.
+    (while (and (forward-comment 5) (not (eobp))))
     (while (cond ((looking-at "\\\\$")
 		  (forward-char)
 		  t)
@@ -194,7 +196,7 @@ Otherwise t is returned."
 		 ((looking-at "@[\n\r]\\s *//[.!|]")
 		  (goto-char (match-end 0))
 		  t))
-      (forward-comment 134217727))))
+      (while (and (forward-comment 5) (not (eobp)))))))
 
 (defun pike-font-lock-backward-syntactic-ws ()
   (save-match-data
