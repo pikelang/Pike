@@ -1,1 +1,9 @@
+config.h.in
+configure
+dependencies
+language.c
+language.h
 lib
+machine.h.in
+peep_engine.c
+stamp-h.in
