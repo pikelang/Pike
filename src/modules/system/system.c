@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.40 1998/01/30 06:21:37 hubbe Exp $
+ * $Id: system.c,v 1.41 1998/02/11 01:12:54 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,9 +14,9 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.40 1998/01/30 06:21:37 hubbe Exp $");
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
+RCSID("$Id: system.c,v 1.41 1998/02/11 01:12:54 hubbe Exp $");
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
 #endif
 
 #ifdef HAVE_WINDOWS_H

@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.32 1998/01/25 08:28:24 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.33 1998/02/11 01:10:57 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -32,8 +32,8 @@ RCSID("$Id: dumudp.c,v 1.32 1998/01/25 08:28:24 hubbe Exp $");
 #include <sys/socket.h>
 #endif
 
-#ifdef HAVE_WINSOCK2_H
-#include <winsock2.h>
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
 #endif
 
 #if ! defined(EWOULDBLOCK) && defined(WSAEWOULDBLOCK)
