@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.21 2003/12/05 07:00:23 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.22 2003/12/06 10:45:25 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -206,6 +206,27 @@ PIKEFUN string crypt_md5(string pw, string salt)
 				      salt->len, salt->str));
 }
 
+
+static const char *crypto_functions[] = {
+  "block_size",
+  "key_size",
+  "set_encrypt_key",
+  "set_decrypt_key",
+  "crypt",
+  0
+};
+
+static char * assert_is_crypto_object(struct program *p,
+				    const char **required) {
+  while (*required) {
+    if (find_identifier( (char *) *required, p) < 0)
+      return *required;
+    required++;
+  }
+  return 0;
+}
+
+
 /*! @class CBC
  *! Implementation of the cipher block chaining mode (CBC).
  */
@@ -215,16 +236,6 @@ PIKECLASS CBC
   CVAR unsigned INT8 *iv;
   CVAR INT32 block_size;
   CVAR INT32 mode;
-
-  static const char *crypto_functions[] = {
-    "block_size",
-    "key_size",
-    "set_encrypt_key",
-    "set_decrypt_key",
-    "crypt",
-  NULL
-  };
-
 
   INIT
   {
@@ -242,17 +253,6 @@ PIKECLASS CBC
       free(THIS->iv);
     }
     THIS->iv = 0;
-  }
-
-  INLINE static void assert_is_crypto_object(struct program *p,
-					     const char **required) {
-    while (*required) {
-      if (find_identifier( (char *) *required, p) < 0) {
-	Pike_error("Object is missing identifier \"%s\"\n",
-		   *required);
-      }
-      required++;
-    }
   }
 
   INLINE static void cbc_encrypt_step(const unsigned INT8 *source,
@@ -307,6 +307,7 @@ PIKECLASS CBC
    */
   PIKEFUN void create(program|object|function algorithm, mixed ... more) {
     ptrdiff_t fun;
+    char *missing;
 
     switch(algorithm->type)
     {
@@ -325,7 +326,11 @@ PIKECLASS CBC
       break;
 
     case T_OBJECT:
-      fun = FIND_LFUN(algorithm->u.object->prog, LFUN_CALL);
+      fun = -1;
+      missing = assert_is_crypto_object(algorithm->u.object->prog,
+					crypto_functions);
+      if(missing)
+	fun = FIND_LFUN(algorithm->u.object->prog, LFUN_CALL);
       if(fun!=-1) {
 	apply_low(algorithm->u.object, fun, args-1);
 	stack_swap();
@@ -342,7 +347,9 @@ PIKECLASS CBC
 
     pop_stack(); /* Just one element left on the stack in all cases */
 
-    assert_is_crypto_object(THIS->object->prog, crypto_functions);
+    missing = assert_is_crypto_object(THIS->object->prog, crypto_functions);
+    if(missing)
+      Pike_error("Object is missing identifier \"%s\"\n", missing);
 
     safe_apply(THIS->object, "block_size", 0);
 
