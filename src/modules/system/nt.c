@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.21 2000/08/10 09:51:55 per Exp $
+ * $Id: nt.c,v 1.22 2000/08/18 22:03:50 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -96,17 +96,38 @@ static void push_regvalue(DWORD type, char* buffer, DWORD len)
   }
 }
 
+/* Known hkeys.
+ *
+ * This table is used to avoid passing pointers to the pike level.
+ * (On W2k/IA64 HKEY is typedefed to struct HKEY__ *).
+ *
+ * NOTE: Order must match the values specified with
+ * ADD_GLOBAL_INTEGER_CONSTANT() in init_pike_module() below.
+ */
+static const HKEY hkeys[] = {
+  HKEY_CLASSES_ROOT,
+  HKEY_LOCAL_MACHINE,
+  HKEY_CURRENT_USER,
+  HKEY_USERS,
+};
+
 void f_RegGetValue(INT32 args)
 {
   long ret;
-  INT32 hkey;
+  INT_TYPE hkey_num;
   HKEY new_key;
   char *key, *ind;
   DWORD len,type;
   char buffer[8192];
   len=sizeof(buffer)-1;
-  get_all_args("RegQueryValue",args,"%d%s%s",&hkey,&key,&ind);
-  ret=RegOpenKeyEx((HKEY)hkey, (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  get_all_args("RegQueryValue", args, "%d%s%s",
+	       &hkey_num, &key, &ind);
+
+  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+    error("Unknown hkey: %d\n", hkey_num);
+  }
+
+  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
   if(ret != ERROR_SUCCESS)
     error("RegOpenKeyEx failed with error %d\n",ret);
 
@@ -129,13 +150,19 @@ static void do_regclosekey(HKEY key)
 
 void f_RegGetKeyNames(INT32 args)
 {
-  INT_TYPE hkey;
+  INT_TYPE hkey_num;
   char *key;
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
-  get_all_args("RegGetKeyNames",args,"%d%s",&hkey,&key);
-  ret=RegOpenKeyEx((HKEY)hkey, (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  get_all_args("RegGetKeyNames", args, "%d%s",
+	       &hkey_num, &key);
+
+  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+    error("Unknown hkey: %d\n", hkey_num);
+  }
+
+  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
   if(ret != ERROR_SUCCESS)
     error("RegOpenKeyEx failed with error %d\n",ret);
 
@@ -172,14 +199,21 @@ void f_RegGetKeyNames(INT32 args)
 
 void f_RegGetValues(INT32 args)
 {
-  INT_TYPE hkey;
+  INT_TYPE hkey_num;
   char *key;
   int i,ret;
   HKEY new_key;
   ONERROR tmp;
 
-  get_all_args("RegGetValues",args,"%d%s",&hkey,&key);
-  ret=RegOpenKeyEx((HKEY)hkey, (LPCTSTR)key, 0, KEY_READ,  &new_key);
+  get_all_args("RegGetValues", args, "%d%s",
+	       &hkey_num, &key);
+
+  if ((hkey_num < 0) || (hkey_num >= NELEM(hkeys))) {
+    error("Unknown hkey: %d\n", hkey_num);
+  }
+
+  ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
+
   if(ret != ERROR_SUCCESS)
     error("RegOpenKeyEx failed with error %d\n",ret);
 
@@ -388,13 +422,13 @@ void f_LogonUser(INT32 args)
 
 static void init_token(struct object *o)
 {
-  THIS_TOKEN=INVALID_HANDLE_VALUE;
+  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
 }
 
 static void exit_token(struct object *o)
 {
   CloseHandle(THIS_TOKEN);
-  THIS_TOKEN=INVALID_HANDLE_VALUE;
+  THIS_TOKEN = DO_NOT_WARN(INVALID_HANDLE_VALUE);
 }
 
 static void low_encode_user_info_0(USER_INFO_0 *tmp)
@@ -2239,10 +2273,12 @@ void init_nt_system_calls(void)
   
   ADD_FUNCTION("cp",f_cp,tFunc(tStr tStr,tInt), 0);
 
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE",HKEY_LOCAL_MACHINE);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER",HKEY_CURRENT_USER);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS",HKEY_USERS);
-  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT",HKEY_CLASSES_ROOT);
+  /* See array hkeys[] above. */
+
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CLASSES_ROOT", 0);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_LOCAL_MACHINE", 1);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_CURRENT_USER", 2);
+  ADD_GLOBAL_INTEGER_CONSTANT("HKEY_USERS", 3);
   
 /* function(int,string,string:string|int|string*) */
   ADD_EFUN("RegGetValue",f_RegGetValue,tFunc(tInt tStr tStr,tOr3(tStr,tInt,tArr(tStr))),OPT_EXTERNAL_DEPEND);
