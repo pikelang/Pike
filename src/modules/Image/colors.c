@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.28 1999/10/21 14:54:34 mirar Exp $
+**!	$Id: colors.c,v 1.29 1999/12/06 21:06:46 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.28 1999/10/21 14:54:34 mirar Exp $");
+RCSID("$Id: colors.c,v 1.29 1999/12/06 21:06:46 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -766,6 +766,9 @@ static void image_color__sprintf(INT32 args)
 	 }
 	 else
 	    image_color_hex(0);
+	 push_int(1);
+	 push_int(0x7ffff); /* a lot */
+	 f_index(3); /* remove the '#' */
 	 return;
       default:
 	 push_int(0);
