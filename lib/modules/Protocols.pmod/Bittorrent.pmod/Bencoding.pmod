@@ -136,6 +136,7 @@ array(int) string2arr(string s)
    array w=indices(v);
    sort(v,w);
    int i=search(v,1);
+   if (i==-1) return last2arrarr=({});
    return last2arrarr=w[i..];
 }
 
