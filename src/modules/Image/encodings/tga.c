@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.20 2000/08/10 16:30:04 grubba Exp $
+ * $Id: tga.c,v 1.21 2000/08/11 18:29:53 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.20 2000/08/10 16:30:04 grubba Exp $");
+RCSID("$Id: tga.c,v 1.21 2000/08/11 18:29:53 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -360,8 +360,8 @@ static size_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
 */
 
 /* RunLength Encode a bufferful of file. */
-static int rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
-                       struct buffer *fp)
+static ptrdiff_t rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
+			     struct buffer *fp)
 {
   /* Now runlength-encode the whole buffer. */
   ptrdiff_t count, j, buflen;
@@ -392,8 +392,8 @@ static int rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
          or close to the end of the buffer. */
 
       /* Write out the run. */
-      if (std_fputc ((count - 1) | RLE_PACKETSIZE, fp) == EOF ||
-          std_fwrite (begin, datasize, 1, fp) != 1)
+      if (std_fputc(DO_NOT_WARN((int)(count - 1))|RLE_PACKETSIZE, fp) == EOF ||
+	  std_fwrite(begin, datasize, 1, fp) != 1)
         return 0;
 
     }
@@ -416,8 +416,8 @@ static int rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
          or at the end of the buffer. */
 
       /* Write out the raw packet. */
-      if (std_fputc (count - 1, fp) == EOF ||
-          std_fwrite (begin, datasize, count, fp) != count)
+      if (std_fputc(DO_NOT_WARN((int)(count - 1)), fp) == EOF ||
+          std_fwrite(begin, datasize, count, fp) != count)
         return 0;
     }
 
@@ -486,10 +486,11 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 {
   int width, height, bpp, abpp, pbpp, bypp;
   int i, j, k;
-  int pelbytes=0, npels, pels, read_so_far=0, rle=0;
+  int pelbytes=0, npels, read_so_far=0, rle=0;
   unsigned char *cmap=NULL, *data;
   int itype=0;
   int really_no_alpha = 0;
+  ptrdiff_t pels;
   ptrdiff_t (*myfread)(unsigned char *, size_t, size_t, struct buffer *);
 
   /* Find out whether the image is horizontally or vertically reversed.
@@ -749,7 +750,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   int pelbytes, bsize;
   int transparent, status;
   struct tga_header hdr;
-  ptrdiff_t (*myfwrite)(unsigned char *, ptrdiff_t, ptrdiff_t,
+  ptrdiff_t (*myfwrite)(unsigned char *, size_t, size_t,
 			struct buffer *);
 
   unsigned char *data;
