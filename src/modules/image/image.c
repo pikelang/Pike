@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.38 1997/01/28 04:33:30 per Exp $ */
+/* $Id: image.c,v 1.39 1997/01/31 16:41:57 grubba Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.38 1997/01/28 04:33:30 per Exp $");
+RCSID("$Id: image.c,v 1.39 1997/01/31 16:41:57 grubba Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1721,7 +1721,7 @@ void init_image_programs()
 		"function(int,int:object)",0);
 
    add_function("apply_matrix",image_apply_matrix,
-                "function(array,void|int ...:object)",0);
+                "function(array(array(int|array(int))), void|int ...:object)",0);
    add_function("modify_by_intensity",image_modify_by_intensity,
                 "function(int,int,int,int,int:object)",0);
 
