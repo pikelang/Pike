@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.73 2000/08/10 08:52:09 grubba Exp $
+ * $Id: cpp.c,v 1.74 2000/08/10 15:02:07 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -986,7 +986,8 @@ static void check_constant(struct cpp *this,
   struct svalue *save_stack=sp;
   struct svalue *sv;
   PCHARP data=args[0].arg;
-  int res,dlen,len=args[0].len;
+  int res;
+  ptrdiff_t dlen,len=args[0].len;
   struct pike_string *s;
   int c;
 
