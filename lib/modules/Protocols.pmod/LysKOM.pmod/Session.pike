@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.27 2001/11/03 17:48:08 jhs Exp $
+//  $Id: Session.pike,v 1.28 2002/01/15 18:51:33 bash-peter Exp $
 
 import ".";
 
@@ -522,6 +522,30 @@ class AuxItems
   mixed `->(string what) { return `[](what); }
 }
 
+//! @decl prefetch_text
+//! @decl prefetch_stat
+//! @decl error
+//! @decl lines
+//! @decl characters
+//! @decl clear_stat
+//! @decl aux_items
+//! @decl mark_as_read
+//!   @fixme Undocumented.
+//! @decl int no
+//!   The text number, as spicified to @[create].
+//! @decl string text
+//!   The actual text (or body if you wish).
+//! @decl string subject
+//!   The message subject.
+//! @decl string author
+//!   The author of the text.
+//! @decl misc
+//!   Misc info, including what conferences the message is posted to.
+//!   @fixme Needs a more complete description.
+//! @decl int marks
+//!   The number of marks on this text.
+//! @decl creation_time
+//!   The time the text was created on the server.
 class Text
 {
    int no;
@@ -533,6 +557,8 @@ class Text
 
    object _author;
 
+  //! @decl void create(string textnumber)
+  //!	Initializes a Text object.
    void create(int _no)
    {
       no=_no;
