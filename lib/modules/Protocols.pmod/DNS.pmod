@@ -541,7 +541,7 @@ class async_client
 	{
 #if constant(thread_create)
 	  // We need to unlock the lock for the remove operation...
-	  key=0;
+	  destruct(key);
 #endif /* constant(thread_create) */
 	  remove(requests[lid]);
 #if constant(thread_create)
