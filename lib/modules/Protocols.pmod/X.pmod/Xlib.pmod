@@ -896,8 +896,11 @@ class Display
     return req;
   }
 
+  mapping (string:object) fonts = ([]);
+
   object OpenFont(string name)
   {
+    if(fonts[name]) return fonts[name];
     object req = OpenFont_req(name);
     send_request(req);
     return Types.Font(this_object(), req->fid);
