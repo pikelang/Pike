@@ -51,6 +51,7 @@ testfont binary
 /lib/modules/ADT.pmod/Stack.pike foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
 /lib/modules/Audio.pmod/AU.pmod foreign_ident
+/lib/modules/Audio.pmod/Codec.pmod foreign_ident
 /lib/modules/Audio.pmod/MP3.pmod foreign_ident
 /lib/modules/Audio.pmod/RIFF.pmod foreign_ident
 /lib/modules/Audio.pmod/vbuffer.pike foreign_ident
@@ -558,6 +559,9 @@ testfont binary
 /src/modules/_Crypto/rsa.c foreign_ident
 /src/modules/_Crypto/sha.c foreign_ident
 /src/modules/_Crypto/test_crypto.pike foreign_ident
+/src/modules/_Ffmpeg/Makefile.in foreign_ident
+/src/modules/_Ffmpeg/configure.in foreign_ident
+/src/modules/_Ffmpeg/ffmpeg.c foreign_ident
 /src/modules/_Image_FreeType/Makefile.in foreign_ident
 /src/modules/_Image_FreeType/acconfig.h foreign_ident
 /src/modules/_Image_FreeType/freetype.c foreign_ident

@@ -1,0 +1,9 @@
+# $Id: Makefile.in,v 1.1 2002/07/18 21:31:59 hop Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=ffmpeg.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+@dependencies@

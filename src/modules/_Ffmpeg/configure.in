@@ -1,0 +1,16 @@
+#
+# $Id: configure.in,v 1.1 2002/07/18 21:31:59 hop Exp $
+#
+AC_INIT(ffmpeg.c)
+AC_CONFIG_HEADER(config.h)
+
+AC_ARG_WITH(ffmpeg,     [  --with(out)-ffmpeg       Support FFMpeg],[],[with_ffmpeg=yes])
+
+AC_MODULE_INIT()
+if test x$with_ffmpeg = xyes ; then
+  AC_CHECK_HEADERS(avcodec.h)
+  AC_CHECK_HEADERS(libffmpeg/avcodec.h)
+fi
+AC_CHECK_LIB( ffmpeg, avcodec_init )
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
