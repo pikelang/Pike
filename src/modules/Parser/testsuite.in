@@ -539,6 +539,21 @@ test_any([[{
   p->add_container ("foo", "");
   return p->finish ("<foo></foobar</foo>")->read();
 }]], "");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("foo", lambda (object p, mapping a, string s)
+			     {return ({"[",s,"]"});});
+  p->add_quote_tag ("?", "y", "?");
+  p->debug_mode(1);
+  return p->finish ("<foo><? sadf </foo>z")->read();
+}]], "[<? sadf </foo>z]");
+test_any([[{
+  object p = Parser.HTML();
+  p->add_container ("foo", lambda (object p, mapping a, string s)
+			     {return ({"[",s,"]"});});
+  p->add_quote_tag ("?", "y", "?");
+  return p->finish ("<t><foo><? sadf </foo>z")->read();
+}]], "<t>[<? sadf </foo>z]");
 
 // Redefinition during parsing
 test_any([[

@@ -22,10 +22,8 @@
 
 extern struct program *parser_html_program;
 
-/*
-#define SCAN_DEBUG
-#define DEBUG
-*/
+/* #define SCAN_DEBUG */
+/* #define DEBUG */
 
 #ifdef DEBUG
 #undef DEBUG
@@ -2700,6 +2698,9 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 				      struct piece **e1,int *ce1,
 				      struct piece **e2,int *ce2,
 				      int finished)
+/* e1/ce1 is set to the first position of the end tag. e2/ce2 is set
+ * to the first position after the end tag. Both are set to the end of
+ * the feed if finished is set and an end tag wasn't found. */
 {
    struct piece *s1,*s2,*s3;
    int c1,c2,c3;
@@ -2748,7 +2749,16 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	if (v) {
 	  DEBUG_MARK_SPOT("find_end_of_cont : quote tag",s2,c2);
 	  if (!scan_for_string(this,s3,c3,&s3,&c3,v[2].u.string)) {
-	    return finished ? STATE_DONE : STATE_WAIT;
+	    if (finished) {
+	      DEBUG_MARK_SPOT("find_end_of_cont : forced end in quote tag",s1,c1);
+	      *e1 = *e2 = s3;
+	      *ce1 = *ce2 = c3;
+	      return STATE_DONE;
+	    }
+	    else {
+	      DEBUG_MARK_SPOT("find_end_of_cont : wait in quote tag",s1,c1);
+	      return STATE_WAIT;
+	    }
 	  }
 	  n_pos_forward(s3,c3+v[2].u.string->len,&feed,&c);
 	  DEBUG_MARK_SPOT("find_end_of_cont : quote tag end",feed,c);
