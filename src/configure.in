@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.839 2004/09/12 22:50:51 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.840 2004/09/26 12:30:43 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3389,7 +3389,7 @@ if test "x$pike_cv_thread_t_type" = "xpointer"; then
   AC_DEFINE(PIKE_THREAD_T_IS_POINTER)
 fi
 
-if test "x$pike_cv_sys_os" = "xWindows_NT" ; then :; else
+if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; then :; else
   AC_MSG_CHECKING(Initial stack limit)
   AC_CACHE_VAL(pike_cv_initial_stack_size,[
     AC_TRY_RUN([
