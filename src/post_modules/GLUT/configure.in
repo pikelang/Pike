@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.8 2002/03/06 17:53:47 grubba Exp $
+# $Id: configure.in,v 1.9 2003/08/17 13:51:03 marcus Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -62,6 +62,17 @@ else
     AC_MSG_RESULT(no)
     AUTO=""
   fi
+
+  # Check for availability of some functions that aren't present in
+  # all versions of GLUT (they are missing in eg AIX 4.3).
+  AC_CHECK_FUNCS([glutEnterGameMode glutForceJoystickFunc glutGameModeGet \
+    glutGameModeString glutIgnoreKeyRepeat glutInitDisplayString \
+    glutJoystickFunc glutKeyboardUpFunc glutLeaveGameMode \
+    glutPostWindowOverlayRedisplay glutPostWindowRedisplay glutReportErrors \
+    glutSetKeyRepeat glutSpecialUpFunc], [], [
+      ac_tr_func=`echo $ac_tr_func|sed -e 's/HAVE_/MISSING_/'`
+      AC_DEFINE_UNQUOTED($ac_tr_func)
+  ])
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
