@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.219 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: encode.c,v 1.220 2004/10/15 15:24:51 grubba Exp $
 */
 
 #include "global.h"
@@ -2191,9 +2191,9 @@ static void cleanup_new_program_decode (int *orig_compilation_depth)
   compilation_depth = *orig_compilation_depth;
 }
 
-static void set_lex_pragmas(INT32 old_pragmas)
+static void set_lex_pragmas(ptrdiff_t old_pragmas)
 {
-  lex.pragmas = old_pragmas;
+  lex.pragmas = DO_NOT_WARN((INT32)old_pragmas);
 }
 
 static DECLSPEC(noreturn) void decode_error (struct svalue *decoding,
@@ -3361,7 +3361,7 @@ static void decode_value2(struct decode_data *data)
 	  int entry_type;
 	  INT16 id_flags;
 	  INT16 p_flags;
-	  INT32 old_pragmas = lex.pragmas;
+	  ptrdiff_t old_pragmas = lex.pragmas;
 #define FOO(NUMTYPE,Y,ARGTYPE,NAME) \
           NUMTYPE PIKE_CONCAT(local_num_, NAME) = 0;
 #include "program_areas.h"
@@ -4238,39 +4238,22 @@ static void free_decode_data(struct decode_data *data)
 
 static void low_do_decode (struct decode_data *data)
 {
-  int e;
-  struct keypair *k;
-  ONERROR err;
-  SET_ONERROR(err, free_decode_data, data);
-  current_decode = data;
-
-  decode_value2(data);
+  decode_value2(current_decode = data);
 
   while (data->ptr < data->len) {
     decode_value2 (data);
     pop_stack();
   }
-
-#ifdef PIKE_DEBUG
-  NEW_MAPPING_LOOP (data->decoded->data) {
-    if (k->val.type == T_PROGRAM &&
-	!(k->val.u.program->flags & PROGRAM_FINISHED)) {
-      decode_error (NULL, &k->val,
-		    "Got unfinished program <%"PRINTPIKEINT"d> after decode: ",
-		    k->ind.u.integer);
-    }
-  }
-#endif
-
-  UNSET_ONERROR(err);
-  free_decode_data(data);
 }
 
 /* Run pass2 */
 int re_decode(struct decode_data *data, int ignored)
 {
+  ONERROR err;
+  SET_ONERROR(err, free_decode_data, data);
   data->next = current_decode;
   low_do_decode (data);
+  CALL_AND_UNSET_ONERROR(err);
   return 1;
 }
 
@@ -4282,6 +4265,9 @@ static INT32 my_decode(struct pike_string *tmp,
 		      )
 {
   struct decode_data *data;
+  int e;
+  struct keypair *k;
+  ONERROR err;
 
   /* Attempt to avoid infinite recursion on circular structures. */
   for (data = current_decode; data; data=data->next) {
@@ -4342,12 +4328,27 @@ static INT32 my_decode(struct pike_string *tmp,
 
   data->decoded=allocate_mapping(128);
 
+  SET_ONERROR(err, free_decode_data, data);
+
   init_supporter(& data->supporter,
 		 (supporter_callback *) re_decode,
 		 (void *)data);
 
   low_do_decode (data);
 
+#ifdef PIKE_DEBUG
+  NEW_MAPPING_LOOP (data->decoded->data) {
+    if (k->val.type == T_PROGRAM &&
+	!(k->val.u.program->flags & PROGRAM_FINISHED)) {
+      decode_error (Pike_sp-1, &k->val,
+		    "Got unfinished program <k:%"PRINTPIKEINT"d> "
+		    "after decode: ",
+		    k->ind.u.integer);
+    }
+  }
+#endif
+
+  CALL_AND_UNSET_ONERROR(err);
   return 1;
 }
 

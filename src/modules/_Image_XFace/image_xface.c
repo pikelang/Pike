@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_xface.c,v 1.22 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: image_xface.c,v 1.23 2004/10/15 15:10:14 grubba Exp $
 */
 
 #include "global.h"
@@ -432,7 +432,7 @@ static void image_xface_decode(INT32 args)
 
 static void image_xface_encode(INT32 args)
 {
-  struct image *img;
+  struct image *img=NULL;
   struct pike_string *res;
 
   if (args<1 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.330 2004/10/13 16:45:36 nilsson Exp $
+|| $Id: file.c,v 1.331 2004/10/15 15:12:38 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1981,10 +1981,10 @@ static void file_tell(INT32 args)
  */
 static void file_truncate(INT32 args)
 {
-#if defined (INT64) || defined (HAVE_FTRUNCATE64)
-  INT64 len;
+#if defined(INT64)
+  INT64 len = 0;
 #else
-  off_t len;
+  off_t len = 0;
 #endif
   int res;
 

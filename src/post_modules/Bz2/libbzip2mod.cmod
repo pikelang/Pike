@@ -482,7 +482,7 @@ PIKECLASS Deflate
   
   PIKEFUN string deflate(string data, int|void mode){
     struct pike_string *data;
-    int flush_mode;
+    int flush_mode = 0;
     
     switch (args){
     case 0:

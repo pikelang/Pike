@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.148 2004/10/04 08:13:32 grubba Exp $
+|| $Id: efuns.c,v 1.149 2004/10/15 15:13:41 grubba Exp $
 */
 
 #include "global.h"
@@ -216,10 +216,10 @@ void f_file_stat(INT32 args)
  */
 void f_file_truncate(INT32 args)
 {
-#if defined (INT64) || defined (HAVE_TRUNCATE64)
-  INT64 len;
+#if defined(INT64)
+  INT64 len = 0;
 #else
-  off_t len;
+  off_t len = 0;
 #endif
   struct pike_string *str;
   int res;

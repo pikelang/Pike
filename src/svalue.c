@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.201 2004/09/25 19:27:19 grubba Exp $
+|| $Id: svalue.c,v 1.202 2004/10/15 15:29:56 grubba Exp $
 */
 
 #include "global.h"
@@ -1366,7 +1366,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  int fun=FIND_LFUN(prog, LFUN__SPRINTF);
 	  debug_malloc_touch(prog);
 	  if(fun != -1) {
-	    if (!BEGIN_CYCLIC(obj, fun)) {
+	    if (!BEGIN_CYCLIC(obj, (ptrdiff_t)fun)) {
 	      /* We require some tricky coding to make this work
 	       * with tracing...
 	       */
@@ -1634,7 +1634,8 @@ PMOD_EXPORT void print_svalue_compact (FILE *out, const struct svalue *s)
 	sval.u.string = string_slice (s->u.string, 0, 80);
 	print_svalue (out, &sval);
 	free_string (sval.u.string);
-	fprintf (out, "... (%d chars more)", s->u.string->len - 80);
+	fprintf (out, "... (%" PRINTPTRDIFFT "d chars more)",
+		 s->u.string->len - 80);
 	break;
       }
       /* Fall through. */
