@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.35 2003/01/30 16:49:02 grubba Exp $
+|| $Id: backend.cmod,v 1.36 2003/02/02 00:32:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.35 2003/01/30 16:49:02 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.36 2003/02/02 00:32:57 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -900,7 +900,7 @@ PIKECLASS Backend
       }
 #endif
 
-      if(d_flag>3) do_gc(NULL, 0);
+      if(d_flag>3) do_gc(NULL, 1);
     }
 #endif
 
