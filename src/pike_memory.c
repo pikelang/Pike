@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.148 2004/03/16 18:35:13 mast Exp $
+|| $Id: pike_memory.c,v 1.149 2004/03/24 20:05:34 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.148 2004/03/16 18:35:13 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.149 2004/03/24 20:05:34 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -42,13 +42,13 @@ long pcharp_strlen(PCHARP a)
 }
 
 /* NOTE: Second arg is a p_char2 to avoid warnings on some compilers. */
-INLINE p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)
+p_wchar1 *MEMCHR1(p_wchar1 *p, p_wchar2 c, ptrdiff_t e)
 {
   while(--e >= 0) if(*(p++) == (p_wchar1)c) return p-1;
   return (p_wchar1 *)NULL;
 }
 
-INLINE p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
+p_wchar2 *MEMCHR2(p_wchar2 *p, p_wchar2 c, ptrdiff_t e)
 {
   while(--e >= 0) if(*(p++) == (p_wchar2)c) return p-1;
   return (p_wchar2 *)NULL;
