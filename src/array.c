@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.176 2004/10/18 00:42:36 bill Exp $
+|| $Id: array.c,v 1.177 2004/10/21 17:29:21 nilsson Exp $
 */
 
 #include "global.h"
@@ -2025,7 +2025,7 @@ void describe_array(struct array *a,struct processing *p,int indent)
 /**
  * Pops a number of arguments off of the stack an puts them in an array.
  * The 'top' of the stack will be the last element in the array.
- * @argument args The number of arguments to aggregate.
+ * @param args The number of arguments to aggregate.
  */
 PMOD_EXPORT struct array *aggregate_array(INT32 args)
 {
