@@ -2,7 +2,7 @@
 // This file is part of Pike. For copyright information see COPYRIGHT.
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
-// $Id: treeopt.in,v 1.76 2004/11/27 22:48:11 mast Exp $
+// $Id: treeopt.in,v 1.77 2004/11/28 16:47:47 grubba Exp $
 //
 // The tree optimizer
 //
@@ -726,24 +726,30 @@ F_LAND(0 = +[node_is_false($$)], *):
 F_NOT(-, *):
   1;
 
-// The following only work on total orders. We can't assume that.
-//
-// F_NOT(F_LT(0, 1), *):
-//   F_GE($0, $1);
-// 
-// F_NOT(F_GT(0, 1), *):
-//   F_LE($0, $1);
-// 
-// F_NOT(F_LE(0, 1), *):
-//   F_GT($0, $1);
-// 
-// F_NOT(F_GE(0, 1), *):
-//   F_LT($0, $1);
+// The following only work on total orders. We can't assume that,
+// since it's not true for floats, and might not be true for objects.
+F_NOT(F_LT(0 [pike_types_le($$->type, int_type_string)],
+	   1 [pike_types_le($$->type, int_type_string)]), *):
+  F_GE($0, $1);
+ 
+F_NOT(F_GT(0 [pike_types_le($$->type, int_type_string)],
+	   1 [pike_types_le($$->type, int_type_string)]), *):
+  F_LE($0, $1);
+ 
+F_NOT(F_LE(0 [pike_types_le($$->type, int_type_string)],
+	   1 [pike_types_le($$->type, int_type_string)]), *):
+  F_GT($0, $1);
 
-F_NOT(F_EQ(0, 1), *):
+F_NOT(F_GE(0 [pike_types_le($$->type, int_type_string)],
+	   1 [pike_types_le($$->type, int_type_string)]), *):
+  F_LT($0, $1);
+
+F_NOT(F_EQ(0 [pike_types_le($$->type, int_type_string)],
+	   1 [pike_types_le($$->type, int_type_string)]), *):
   F_NE($0, $1);
 
-F_NOT(F_NE(0, 1), *):
+F_NOT(F_NE(0 [pike_types_le($$->type, int_type_string)],
+	   1 [pike_types_le($$->type, int_type_string)]), *):
   F_EQ($0, $1);
 
 
@@ -1237,13 +1243,34 @@ F_INC_LOOP(F_VAL_LVAL(0,
     $$ = mknode(F_COMMA_EXPR,
 		mknode(F_LOOP,
 		       mkefuncallnode("`+",
-				      mknode(F_ARG_LIST, mkintnode(-1),
+				      mknode(F_ARG_LIST,
+					     mkefuncallnode("`-", $1),
 					     mknode(F_ARG_LIST,
-						    mkefuncallnode("`-", $1),
+						    mkintnode(-1),
 						    $0))), $2),
 		mkcastnode(void_type_string, mknode(F_ASSIGN, $0, $1)));
   }
   ;
+
+
+// // If the loop variable is unused, we can throw it away.
+// F_DEC_LOOP(F_VAL_LVAL(0,
+// 		      1 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+// 						OPT_CASE|OPT_CONTINUE|
+// 						OPT_BREAK|OPT_RETURN)) ]),
+// 	   2 = +[ !($$->tree_info & (OPT_BREAK|OPT_CONTINUE)) ]
+// 	   [ !depend2_p($$, $1) ]):
+//   {
+//     $$ = mknode(F_COMMA_EXPR,
+// 		mknode(F_LOOP,
+// 		       mkefuncallnode("`-",
+// 				      mknode(F_ARG_LIST,
+// 					     $1,
+// 					     $0)), $2),
+// 		mkcastnode(void_type_string, mknode(F_ASSIGN, $0, $1)));
+//   }
+//   ;
+
 
 // No need for the pop_value.
 F_LOOP(0, F_POP_VALUE(1, -)):
