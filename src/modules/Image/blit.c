@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.19 1997/11/23 05:28:27 per Exp $ */
+/* $Id: blit.c,v 1.20 1997/11/23 06:03:48 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.19 1997/11/23 05:28:27 per Exp $
+**!	$Id: blit.c,v 1.20 1997/11/23 06:03:48 per Exp $
 **! class image
 */
 
@@ -133,19 +133,27 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
    struct image *this;
 
    this=THIS;
-   
-   THREADS_ALLOW();
+   rgb=this->rgb;
    mod=this->xsize-(x2-x1)-1;
    foo=this->img+x1+y1*this->xsize;
    end=this->img+x1+y2*this->xsize;
-   rgb=this->rgb;
 
-
-   if (!this->alpha)
-      for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++) *(foo++)=rgb;
-   else
-      for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
-	 set_rgb_group_alpha(*foo,rgb,this->alpha);
+   THREADS_ALLOW();
+   if(!this->alpha)
+   {
+     if(!mod)
+       img_clear(foo,rgb,end-foo);
+     else {
+       int length = x2-x1+1, xs=this->xsize, y=y2-y1+1;
+       rgb_group *from = foo;
+       if(!length) return;
+       for(x=0; x<length; x++)  *(foo+x) = rgb;
+       while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
+     }
+   } else {
+     for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
+       set_rgb_group_alpha(*foo,rgb,this->alpha);
+   }
    THREADS_DISALLOW();
 }
 
@@ -158,12 +166,15 @@ void img_blit(rgb_group *dest,rgb_group *src,INT32 width,
 CHRONO("image_blit begin");
 
    THREADS_ALLOW();
-   while (lines--)
-   {
-      MEMCPY(dest,src,sizeof(rgb_group)*width);
-      dest+=moddest;
-      src+=modsrc;
-   }
+   if(!moddest && !modsrc)
+     MEMCPY(dest,src,sizeof(rgb_group*width*lines));
+   else
+     while (lines--)
+     {
+       MEMCPY(dest,src,sizeof(rgb_group)*width);
+       dest+=moddest;
+       src+=modsrc;
+     }
    THREADS_DISALLOW();
 CHRONO("image_blit end");
 

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.65 1997/11/23 05:28:28 per Exp $ */
+/* $Id: image.c,v 1.66 1997/11/23 06:03:49 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.65 1997/11/23 05:28:28 per Exp $
+**!	$Id: image.c,v 1.66 1997/11/23 06:03:49 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.65 1997/11/23 05:28:28 per Exp $");
+RCSID("$Id: image.c,v 1.66 1997/11/23 06:03:49 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -722,7 +722,7 @@ static void image_change_color(INT32 args)
    d=img->img;
    while (left--)
    {
-      if (s->r==from.r && s->g==from.g && s->b==from.b)
+      if (color_equal(*s,from))
          *d=to;
       else
          *d=*s;
@@ -1519,9 +1519,9 @@ void image_color(INT32 args)
    THREADS_ALLOW();
    while (x--)
    {
-      d->r=testrange( (((long)rgb.r*s->r)/255) );
-      d->g=testrange( (((long)rgb.g*s->g)/255) );
-      d->b=testrange( (((long)rgb.b*s->b)/255) );
+      d->r=( (((long)rgb.r*s->r)/255) );
+      d->g=( (((long)rgb.g*s->g)/255) );
+      d->b=( (((long)rgb.b*s->b)/255) );
       d++;
       s++;
    }
@@ -1574,9 +1574,9 @@ void image_invert(INT32 args)
    THREADS_ALLOW();
    while (x--)
    {
-      d->r=testrange( 255-s->r );
-      d->g=testrange( 255-s->g );
-      d->b=testrange( 255-s->b );
+      d->r=( 255-s->r );
+      d->g=( 255-s->g );
+      d->b=( 255-s->b );
       d++;
       s++;
    }
