@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
+/* $Id: cipher.cmod,v 1.33 2004/10/07 22:19:10 nilsson Exp $ */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.32 2004/10/07 22:08:51 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"

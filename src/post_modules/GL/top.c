@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: top.c,v 1.22 2003/05/12 12:38:22 grubba Exp $
+|| $Id: top.c,v 1.23 2004/10/07 22:19:09 nilsson Exp $
 */
 
 #include "global.h"
@@ -39,7 +39,6 @@
 
 #endif /* HAVE_GL */
 
-RCSID("$Id: top.c,v 1.22 2003/05/12 12:38:22 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"

@@ -2,14 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.47 2003/12/12 17:50:51 nilsson Exp $
+|| $Id: auto.c.in,v 1.48 2004/10/07 22:19:08 nilsson Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.47 2003/12/12 17:50:51 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"

@@ -16,8 +16,6 @@ class GTK.GladeXML;
 #include "builtin_functions.h"
 #include <glade/glade.h>
 
-RCSID("$Id: gladexml.pre,v 1.15 2003/10/13 17:24:06 grubba Exp $");
-
 /* This function is used by signal_autoconnect to handle signal
    connection Basically it uses a mapping and data from the stack to
    do signal callbacks exactly in the same way as normal signals in

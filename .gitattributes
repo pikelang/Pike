@@ -770,7 +770,6 @@ testfont binary
 /src/post_modules/Bz2/Makefile.in foreign_ident
 /src/post_modules/Bz2/acconfig.h foreign_ident
 /src/post_modules/Bz2/configure.in foreign_ident
-/src/post_modules/Bz2/libbzip2mod.cmod foreign_ident
 /src/post_modules/COM/Makefile.in foreign_ident
 /src/post_modules/COM/acconfig.h foreign_ident
 /src/post_modules/COM/com.c foreign_ident
@@ -792,7 +791,6 @@ testfont binary
 /src/post_modules/GTK/module.pmod.in foreign_ident
 /src/post_modules/GTK/pgtk.h foreign_ident
 /src/post_modules/GTK/source/encode_truecolor.c foreign_ident
-/src/post_modules/GTK/source/gladexml.pre foreign_ident
 /src/post_modules/GTK/source/support.c foreign_ident
 /src/post_modules/GTK/testsuite.in foreign_ident
 /src/post_modules/Makefile.in foreign_ident

@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
+/* $Id: nettle.cmod,v 1.38 2004/10/07 22:19:11 nilsson Exp $ */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.37 2004/05/19 00:04:08 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */

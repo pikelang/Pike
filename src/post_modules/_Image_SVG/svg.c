@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svg.c,v 1.9 2004/02/06 22:10:24 nilsson Exp $
+|| $Id: svg.c,v 1.10 2004/10/07 22:19:12 nilsson Exp $
 */
 
 #include "config.h"
@@ -12,7 +12,6 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: svg.c,v 1.9 2004/02/06 22:10:24 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
