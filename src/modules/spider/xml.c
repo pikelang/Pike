@@ -884,53 +884,82 @@ static int gobble(struct xmldata *data, char *s)
    }while(0)
 
 
-#define PARSE_REF(PARSE_RECURSIVELY) do {\
-    /* Entity reference */						    \
-    /* lookup entry in mapping and parse it recursively */		    \
-    /* Generate error if entity is not defined */			    \
-    if(THIS->entities)							    \
-    {									    \
-      struct pike_string *name=0;					    \
-      ONERROR tmp3;							    \
-      map_delete_no_free(THIS->entities, sp-1, sp);			    \
-      name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	    \
-      sp[-1]=*sp;							    \
-      SET_ONERROR(tmp3, do_free_string, name);				    \
-									    \
-      if(IS_ZERO(sp-1))							    \
-      {									    \
-	XMLERROR("No such entity.");					    \
-	pop_stack();							    \
-      }else{								    \
-        if(sp[-1].type!=T_STRING)					    \
-	{								    \
-	  XMLERROR("XML->__entities value is not a string!");		    \
-	}else{								    \
-          struct pike_string *s=sp[-1].u.string;			    \
-	  struct xmldata my_tmp=*data;					    \
-	  ONERROR tmp2;							    \
-	  debug_malloc_touch(s);					    \
-	  sp--;								    \
-          IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str));    \
-	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			    \
-	  check_stack(10);						    \
-          my_tmp.input.to_free=s;					    \
-	  my_tmp.input.datap=MKPCHARP_STR(s);				    \
-	  my_tmp.input.len=s->len;					    \
-	  my_tmp.input.pos=0;						    \
-	  my_tmp.input.next=0;						    \
-	  PARSE_RECURSIVELY;						    \
-	  if(THIS->entities)						    \
-	    mapping_string_insert_string(THIS->entities, name, s);	    \
-	  UNSET_ONERROR(tmp2);						    \
-	  free_string(s);						    \
-        }								    \
-      }									    \
-      CALL_AND_UNSET_ONERROR(tmp3);					    \
-    }									    \
+#define PARSE_REF(ATTR,PARSE_RECURSIVELY) do {				 \
+    /* Entity reference */						 \
+    /* lookup entry in mapping and parse it recursively */		 \
+    /* Generate error if entity is not defined */			 \
+    if(THIS->entities)							 \
+    {									 \
+      struct pike_string *name=0;					 \
+      ONERROR tmp3;							 \
+      map_delete_no_free(THIS->entities, sp-1, sp);			 \
+      name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	 \
+      sp[-1]=*sp;							 \
+      SET_ONERROR(tmp3, do_free_string, name);				 \
+									 \
+      do {								 \
+									 \
+	if(IS_ZERO(sp-1))						 \
+	{								 \
+	  pop_stack();							 \
+          if(index_shared_string(name,0)=='%')				 \
+          { 								 \
+	    push_constant_text("%");					 \
+	    ref_push_string(name);					 \
+	    push_int(1);						 \
+	    push_int(0x7fffffff);					 \
+	    o_range();							 \
+	  }else{							 \
+	    push_constant_text("&");					 \
+	    ref_push_string(name);					 \
+	  }								 \
+	  push_constant_text("in_attribute");				 \
+	  push_int(ATTR);						 \
+	  f_aggregate_mapping(2); /* attributes */			 \
+	  push_int(0); /* no data */					 \
+	  SYS();							 \
+	  if(sp[-1].type != T_STRING)					 \
+	  {								 \
+	    pop_stack();						 \
+	    XMLERROR("No such entity.");				 \
+	    break;							 \
+	  }								 \
+	}								 \
+	else								 \
+	{								 \
+	  if(sp[-1].type!=T_STRING)					 \
+	  {								 \
+	    XMLERROR("XML->__entities value is not a string!");		 \
+	  }								 \
+	}								 \
+									 \
+	{								 \
+	  struct pike_string *s=sp[-1].u.string;			 \
+	  struct xmldata my_tmp=*data;					 \
+	  ONERROR tmp2;							 \
+	  debug_malloc_touch(s);					 \
+	  sp--;								 \
+	  IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str)); \
+	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
+	  check_stack(10);						 \
+	  my_tmp.input.to_free=s;					 \
+	  my_tmp.input.datap=MKPCHARP_STR(s);				 \
+	  my_tmp.input.len=s->len;					 \
+	  my_tmp.input.pos=0;						 \
+	  my_tmp.input.next=0;						 \
+	  PARSE_RECURSIVELY;						 \
+	  if(THIS->entities)						 \
+	    mapping_string_insert_string(THIS->entities, name, s);	 \
+	  UNSET_ONERROR(tmp2);						 \
+	  free_string(s);						 \
+	}								 \
+      }while(0);							 \
+      CALL_AND_UNSET_ONERROR(tmp3);					 \
+    }									 \
   }while(0)
 
-#define READ_REFERENCE(X,PARSE_RECURSIVELY) do {			    \
+
+#define READ_REFERENCE(ATTR,X,PARSE_RECURSIVELY) do {			    \
   READ(1); /* Assume '&' for now */					    \
   if(PEEK(0)=='#')							    \
   {									    \
@@ -954,13 +983,13 @@ static int gobble(struct xmldata *data, char *s)
       POKE(X, ';');                                                         \
       pop_stack();                                                          \
     } else                                                                  \
-      PARSE_REF(PARSE_RECURSIVELY);                                         \
+      PARSE_REF(ATTR,PARSE_RECURSIVELY);                                     \
   }									    \
   IF_XMLDEBUG(fprintf(stderr,"Read reference at %d done.\n",__LINE__));	    \
 }while(0)
 
 
-#define READ_PEREFERENCE(X,PARSE_RECURSIVELY) do {		\
+#define READ_PEREFERENCE(ATTR,X,PARSE_RECURSIVELY) do {		\
   READ(1); /* Assume '%'  */					\
   push_constant_text("%");					\
   SIMPLE_READNAME();						\
@@ -968,7 +997,7 @@ static int gobble(struct xmldata *data, char *s)
   if(PEEK(0)!=';')						\
     XMLERROR("Missing ';' after parsed entity reference.");	\
   READ(1);							\
-  PARSE_REF(PARSE_RECURSIVELY);					\
+  PARSE_REF(ATTR,PARSE_RECURSIVELY);					\
 }while(0)
 
 
@@ -1094,37 +1123,61 @@ static int read_smeg_pereference(struct xmldata *data)
   if(!THIS->entities)
   {
     XMLERROR("XML->__entities is not a mapping");
-    f_aggregate_mapping(0);
   }else{
-    ref_push_mapping(THIS->entities);
-  }
-  push_constant_text("%");
-  SIMPLE_READNAME();
-  f_add(2);
-  if(PEEK(0)!=';')
-    XMLERROR("Missing ';' after parsed entity reference.");
-  READ(1);
-  /* lookup entry in mapping and parse it recursively */
-  /* Generate error if entity is not defined */
-  f_index(2);
-  if(IS_ZERO(sp-1))
-  {
-    XMLERROR("No such entity in pereference.");
-    pop_stack();
-  }else{
-    if(sp[-1].type!=T_STRING)
-    {
-      XMLERROR("XML->__entities value is not a string!");
-    }else{
-      struct pike_string *s=sp[-1].u.string;
-      IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
-			  data->input.datap.ptr, data->input.len,
-			  data->input.pos, data->input.to_free));
-      PUSH(s);
-      READ(0); /* autopop empty strings */
-      pop_stack();
-      return 1;
-    }
+    struct pike_string *name=0;
+    ONERROR tmp3;			
+
+    push_constant_text("%");
+    SIMPLE_READNAME();
+    add_ref(name=sp[-1].u.string);
+    SET_ONERROR(tmp3, do_free_string, name);
+
+    f_add(2);
+    if(PEEK(0)!=';')
+      XMLERROR("Missing ';' after parsed entity reference.");
+    READ(1);
+    /* lookup entry in mapping and parse it recursively */
+    /* Generate error if entity is not defined */
+
+    map_delete_no_free(THIS->entities, sp-1, sp);
+    free_svalue(sp-1);
+    sp[-1]=*sp;
+
+    do {
+      if(IS_ZERO(sp-1))
+      {
+	pop_stack();
+	push_constant_text("%");
+	ref_push_string(name);
+	f_aggregate_mapping(0);
+	push_int(0); /* no data */
+	SYS();					
+	if(sp[-1].type != T_STRING)	
+	{				
+	  pop_stack();
+	  XMLERROR("No such entity in pereference.");
+	  
+	  break;				
+	}					
+      }
+
+      if(sp[-1].type!=T_STRING)
+      {
+	XMLERROR("XML->__entities value is not a string!");
+      }else{
+	struct pike_string *s=sp[-1].u.string;
+	IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
+			    data->input.datap.ptr, data->input.len,
+			    data->input.pos, data->input.to_free));
+	PUSH(s);
+	READ(0); /* autopop empty strings */
+	pop_stack();
+	CALL_AND_UNSET_ONERROR(tmp3);
+	return 1;
+      }
+
+    }while(0);
+    CALL_AND_UNSET_ONERROR(tmp3);
   }
   return 0;
 }
@@ -1150,7 +1203,7 @@ static void read_attvalue(struct xmldata *data,
     switch(PEEK(0))
     {
       case '&':
-	READ_REFERENCE((*X), read_attvalue(&my_tmp, X, 0,1));
+	READ_REFERENCE(1,(*X), read_attvalue(&my_tmp, X, 0,1));
 	break;
 	
       case 0x0d:
@@ -1231,7 +1284,7 @@ static void read_entityvalue(struct xmldata *data,
 	
 
       case '%':
-	READ_PEREFERENCE((*X), read_entityvalue(&my_tmp, X, 0));
+	READ_PEREFERENCE(1,(*X), read_entityvalue(&my_tmp, X, 0));
 	break;
 
       case 0x0d: if(PEEK(1)==0x0a) READ(1);
@@ -1246,7 +1299,7 @@ static void read_entityvalue(struct xmldata *data,
 	
 #if 0
       case '&':
-	READ_REFERENCE((*X), read_entityvalue(&my_tmp, X, 0));
+	READ_REFERENCE(1,(*X), read_entityvalue(&my_tmp, X, 0));
 	break;
 #else
       case '&':
@@ -1440,7 +1493,7 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
       f_aggregate(num);
       if(!GOBBLE("*") && num>1)
 	XMLERROR("Expected \"*\" at the end of #PCDATA");
-      
+      seq = '#'; /* special #PCDATA marker */
     }else{
       push_int(0); /* allocate a little room */
       num++;
@@ -1513,27 +1566,28 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
   }
 
   IF_XMLDEBUG( READ(0) );
-  switch(PEEK(0))
-  {
-    case '?':
-      READ(1);
-      push_constant_text("?");
-      stack_swap();
-      f_aggregate(2);
-      break;
-    case '*':
-      READ(1);
-      push_constant_text("*");
-      stack_swap();
-      f_aggregate(2);
-      break;
-    case '+':
-      READ(1);
-      push_constant_text("+");
-      stack_swap();
-      f_aggregate(2);
-      break;
-  }
+  if(seq != '#')
+    switch(PEEK(0))
+    {
+      case '?':
+        READ(1);
+        push_constant_text("?");
+        stack_swap();
+        f_aggregate(2);
+        break;
+      case '*':
+        READ(1);
+	push_constant_text("*");
+	stack_swap();
+	f_aggregate(2);
+	break;
+      case '+':
+	READ(1);
+	push_constant_text("+");
+	stack_swap();
+	f_aggregate(2);
+	break;
+    }
 
 #ifdef PIKE_DEBUG
   if(sp != save_sp2+1)
@@ -1572,7 +1626,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 	break;
 
       case '%': /* PEReference */
-	READ_PEREFERENCE(guggel, really_low_parse_dtd(&my_tmp));
+	READ_PEREFERENCE(0,guggel, really_low_parse_dtd(&my_tmp));
 	break;
 
       case '<':
@@ -2237,7 +2291,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	continue;
 
       case '&':
-	READ_REFERENCE(*text,very_low_parse_xml(&my_tmp, end, toplevel, text, 1));
+	READ_REFERENCE(0,*text,very_low_parse_xml(&my_tmp, end, toplevel, text, 1));
 	continue;
 
       case '<':
@@ -2560,9 +2614,13 @@ static void parse_xml(INT32 args)
   struct xmldata data;
   ONERROR e;
 
-  s=sp[-args].u.string;
   if(args<2)
     Pike_error("Too few arguments to XML->parse()\n");
+
+  if (sp[-args].type != PIKE_T_STRING) {
+    Pike_error("Bad argument 1 to XML->parse()\n");
+  }
+  s=sp[-args].u.string;
 
 #if 0
   if(!s->size_shift)
@@ -2767,17 +2825,97 @@ static void autoconvert(INT32 args)
       case 0x003c003f: /* UTF-16, big-endian, no byte order mark */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, bit-endian, no byte order mark detected.\n"));
 	f_unicode_to_string(1);
-	break;
+	return;
 
       case 0x3c003f00: /* UTF-16, little endian, no byte order mark */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, little-endian, no byte order mark detected.\n"));
 	Pike_error("XML: Little endian byte order not supported yet.\n");
 
       case 0x3c3f786d: /* ASCII? UTF-8? ISO-8859? */
-	IF_XMLDEBUG(fprintf(stderr,"Extended ASCII detected (assuming UTF8).\n"));
-	/* Assume utf8 for now */
-	f_utf8_to_string(1);
-	break;
+	{
+	  int pos,e,encstart,encend;
+
+	  IF_XMLDEBUG(fprintf(stderr,"Extended ASCII detected (assuming UTF8).\n"));
+	  pos=5;
+	   /* <?xml. version */
+	  while(isSpace(STR0(s)[pos])) pos++;
+
+	  /* "autoconvert: <?xml .version */
+	  if(MEMCMP(STR0(s)+pos,"version",7)) break;
+	  pos+=7;
+
+	  /* <?xml version.  = "1.0" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+
+	  /* <?xml version .= "1.0" */
+	  if(STR0(s)[pos]!='=') break;
+	  pos++;
+
+	  /* <?xml version =. "1.0" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = ."1.0" */
+	  if(STR0(s)[pos]=='\'')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\'') pos++;
+	    pos++;
+	  }
+	  else if(STR0(s)[pos]=='"')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\"') pos++;
+	    pos++;
+	  }else{
+	    break; /* No encoding detected */
+	  }
+	  
+	  /* <?xml version = "1.0". encoding="encname" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = "1.0" .encoding="encname" */
+	  if(MEMCMP("encoding",STR0(s)+pos,8)) break;
+	  pos+=8;
+	  
+	  /* <?xml version = "1.0" encoding. ="encname" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = "1.0" encoding .="encname" */
+	  if(STR0(s)[pos]!='=') break;
+	  pos++;
+	  
+	  /* <?xml version = "1.0" encoding =. "encname" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = "1.0" encoding = ."encname" */
+	  encstart=pos+1;
+	  if(STR0(s)[pos]=='\'')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\'') pos++;
+	  }
+	  else if(STR0(s)[pos]=='"')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\"') pos++;
+	  }else{
+	    break; /* No encoding detected */
+	  }
+	  /* <?xml version = "1.0" encoding = "encname." */
+
+	  push_constant_text("Locale.Charset.decoder");
+	  APPLY_MASTER("resolv",1);
+	  push_string(make_shared_binary_string(STR0(s)+encstart,pos-encstart));
+	  f_call_function(2);
+	  push_constant_text("feed");
+	  f_index(2);
+	  stack_swap();
+	  f_call_function(2);
+	  push_constant_text("drain");
+	  f_index(2);
+	  f_call_function(1);
+	  return;
+	}
 	
       case 0x4c6fa794: /* EBCDIC */
 	IF_XMLDEBUG(fprintf(stderr,"EBCDIC detected.\n"));
