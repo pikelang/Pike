@@ -4,66 +4,30 @@
 
 #include "types.h"
 
+class Document
+{
+  //! The placeholder for document metadata.
+  
+  string title;
+  string description;
+  int last_changed;
+  int size;
+  string content_type;
+}
+
 private mapping filters=([]);
 
 void create()
 {
-  // Load filters
-  werror("Load filters\n");
-  array tmp=__FILE__/"/";
-  tmp=tmp[0..sizeof(tmp)-2];
-  string path=tmp*"/"+"/filters/";
-  //  catch {
-    array(string) f=get_dir( path );
-    foreach(glob("*.pike",f), string file) {
-      //      mixed error = catch {
-	werror("Try with %s\n", path+file);
-	object l=(object)(path+file);
-	array(string) mimes = l->contenttypes;
-	foreach(mimes, string mime)
-	  filters[mime]=l;
-	//      };
-	//      if(error) werror("Failed to load filters/%s\n",file);
-    }
-    //  };
+  werror("Loading filters\n");
+  foreach(values(Search.Filter), Search.Filter filter)
+    foreach(filter->contenttypes || ({ }), string mime)
+      filters[mime]=filter;
+  
   if(!sizeof(filters))
     werror("No filters loaded\n");
   else
     werror("Loaded %d filters\n", sizeof(filters));
-}
-
-private constant rank_list = ([
-  T_TITLE    : 1,
-  T_KEYWORDS : 2,
-  T_EXT_A    : 3,
-  T_H1       : 4,
-  T_H2       : 5,
-  T_H3       : 6,
-  T_DESC     : 7,
-  T_H4       : 8,
-  T_TH       : 9,
-  T_B        : 10,
-  T_I        : 11,
-  T_A        : 12,
-  T_NONE     : 13,
-  T_H5       : 14,
-  T_H6       : 15 ]);
-
-int rank(mapping word)
-{
-  return rank_list[word->type];
-}
-
-class Filter
-{
-  void set_content(string);
-  array(array(string)) get_anchors();
-  void add_content(string, int);
-  array(array) get_filtered_content();
-  string get_title();
-  string get_keywords();
-  string get_description();
-  // string normalization(string);
 }
 
 Filter get_filter(string mime_type)
@@ -130,6 +94,29 @@ float entropy(array(string) page_words) {
   foreach(page_words, string word)
     words[word]=1;
   return (float)sizeof(words)/(float)sizeof(page_words);
+}
+
+
+private constant rank_list = ([
+  T_TITLE    : 1,
+  T_KEYWORDS : 2,
+  T_EXT_A    : 3,
+  T_H1       : 4,
+  T_H2       : 5,
+  T_H3       : 6,
+  T_DESC     : 7,
+  T_H4       : 8,
+  T_TH       : 9,
+  T_B        : 10,
+  T_I        : 11,
+  T_A        : 12,
+  T_NONE     : 13,
+  T_H5       : 14,
+  T_H6       : 15 ]);
+
+int rank(mapping word)
+{
+  return rank_list[word->type];
 }
 
 // A normal page has an entropy value around 0.5, so the result x should probably be

@@ -1,6 +1,7 @@
 // SQL index database without fragments
 // Copyright © 2000, Roxen IS.
 
+inherit Search.Database.Base;
 
 // Creates the SQL tables we need.
 void create_tables()
@@ -170,7 +171,13 @@ void garbage_collect()
   db->query("OPTIMIZE TABLE document");
 }
 
-array lookup_word(string word) {
+void optimize()
+{
+  garbage_collect();
+}
+
+mapping(string:Search.Document) lookup_word(string word)
+{
   array documents=db->query("SELECT * FROM occurance WHERE word_id=%s",
 			    hash_word(word));
   if(sizeof(documents)) return 0;
@@ -180,7 +187,8 @@ array lookup_word(string word) {
   return documents;
 }
 
-array lookup_words_or(array(string) words) {
+mapping(string:Search.Document) lookup_words_or(array(string) words)
+{
   string sql="SELECT * FROM occurance WHERE ";
   words=map(words, lambda(string in) {
 		   return "word_id="+hash_word(in);
@@ -195,7 +203,7 @@ array lookup_words_or(array(string) words) {
   return documents;
 }
 
-array lookup_words_and(array(string) words)
+mapping(string:Search.Document) lookup_words_and(array(string) words)
 {
   array first_result=({});
   array rest_results=({});
