@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.313 2002/11/24 21:46:47 grubba Exp $
+|| $Id: las.c,v 1.314 2002/11/24 21:57:16 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.313 2002/11/24 21:46:47 grubba Exp $");
+RCSID("$Id: las.c,v 1.314 2002/11/24 21:57:16 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -5291,7 +5291,7 @@ static void check_evaluation_time(struct callback *cb,void *tmp,void *ignored)
 ptrdiff_t eval_low(node *n,int print_error)
 {
   unsigned INT16 num_strings, num_constants;
-  INT32 jump;
+  size_t jump;
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t ret;
 #ifdef PIKE_USE_MACHINE_CODE
@@ -5314,7 +5314,7 @@ ptrdiff_t eval_low(node *n,int print_error)
   num_relocations = Pike_compiler->new_program->num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  jump = DO_NOT_WARN((INT32)PIKE_PC);
+  jump = PIKE_PC;
 
 #ifdef INS_ENTRY
   INS_ENTRY();
@@ -5404,8 +5404,9 @@ ptrdiff_t eval_low(node *n,int print_error)
 
 #ifdef VALGRIND_DISCARD_TRANSLATIONS
   /* We won't use this machine code any more... */
-  VALGRIND_DISCARD_TRANSLATIONS(jump,
-				(p->num_program - jump)*sizeof(p->program[0]));
+  VALGRIND_DISCARD_TRANSLATIONS(Pike_compiler->new_program->program + jump,
+				(Pike_compiler->new_program->
+				 num_program - jump)*sizeof(PIKE_OPCODE_T));
 #endif /* VALGRIND_DISCARD_TRANSLATIONS */
 #endif /* PIKE_USE_MACHINE_CODE */
 
