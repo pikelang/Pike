@@ -3,7 +3,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.27 2004/08/19 13:08:48 noring Exp $
+// $Id: Query.pmod,v 1.28 2004/08/19 13:13:24 noring Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db,
                                               array words)
@@ -233,7 +233,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 	    case "<>":
 	    case "!=":
 	      restriction =
-		global_dateset->not_between(t_low-1, t_high+1)->finalize();
+		global_dateset->not_between(t_low, t_high)->finalize();
 	      break;
 	    case "<=":
 	      restriction = global_dateset->before(t_high+1)->finalize();
