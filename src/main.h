@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: main.h,v 1.8 1998/03/31 21:52:22 hubbe Exp $
+ * $Id: main.h,v 1.9 1998/04/13 14:30:52 grubba Exp $
  */
 #ifndef MAIN_H
 #define MAIN_H
@@ -13,6 +13,7 @@
 #include "callback.h"
 
 extern int d_flag, t_flag, a_flag, l_flag, c_flag, p_flag, debug_options;
+extern int default_t_flag;
 
 #define DEBUG_SIGNALS 1
 #define NO_TAILRECURSION 2
