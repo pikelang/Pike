@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.63 2000/04/14 17:56:20 mast Exp $");
+RCSID("$Id: gc.c,v 1.64 2000/04/15 01:04:01 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -800,7 +800,9 @@ void do_gc(void)
   INT32 tmp2;
   double multiplier;
 #ifdef PIKE_DEBUG
+#ifdef HAVE_GETHRTIME
   hrtime_t gcstarttime;
+#endif
 #endif
 
   if(Pike_in_gc) return;
@@ -817,7 +819,9 @@ void do_gc(void)
 #ifdef PIKE_DEBUG
   if(t_flag) {
     fprintf(stderr,"Garbage collecting ... ");
+#ifdef HAVE_GETHRTIME
     gcstarttime = gethrtime();
+#endif
   }
   if(num_objects < 0)
     fatal("Panic, less than zero objects!\n");
@@ -917,7 +921,12 @@ void do_gc(void)
   if(t_flag)
     fprintf(stderr,"done (freed %ld of %ld objects), %ld ms.\n",
 	    (long)(tmp2-num_objects),(long)tmp2,
-	    (long)((gethrtime() - gcstarttime)/1000000));
+#ifdef HAVE_GETHRTIME
+	    (long)((gethrtime() - gcstarttime)/1000000)
+#else
+	    0l
+#endif
+	   );
 #endif
 
 #ifdef ALWAYS_GC
