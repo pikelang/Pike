@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.105 2000/03/23 20:09:41 mast Exp $
+ * $Id: master.pike.in,v 1.106 2000/03/25 21:25:31 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -117,10 +117,18 @@ program compile_string(string data, void|string name, object|void handler)
   return compile(cpp(data,name||"-", 0, handler), handler);
 }
 
+string master_read_file(string file)
+{
+  object o=_static_modules.files()->Fd();
+  if(o->open(file,"r"))
+    return o->read();
+  return 0;
+}
+
 program compile_file(string file, object|void handler)
 {
   AUTORELOAD_CHECK_FILE(file);
-  return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),
+  return compile(cpp(master_read_file(file),
 		     file, 1, handler), handler);
 }
 
@@ -314,7 +322,7 @@ static program low_findprog(string pname, string ext, object|void handler)
 	    mixed err=catch {
 	      AUTORELOAD_CHECK_FILE(oname);
 	      return programs[fname] =
-		decode_value(_static_modules.files()->Fd(oname,"r")->read(),
+		decode_value(master_read_file(oname),
 			     Codec());
 	    };
 	    if (handler) {
@@ -561,7 +569,8 @@ object cast_to_object(string oname, string current_file)
 {
   if(object o=low_cast_to_object(oname, current_file))
     return o;
-  error("Cast to object failed\n");
+  error(sprintf("Cast '%s' to object failed%s.\n",file,
+	current_file?sprintf("for '%s'",current_file),""));
 }
 
 class dirnode
@@ -1033,7 +1042,8 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(0);
 
       case "preprocess":
-	_static_modules.files()->_stdout->write(cpp(_static_modules.files()->Fd(opts[1],"r")->read(),opts[1]));
+	_static_modules.files()->_stdout->write(cpp(master_read_file(opts[1]),
+						    opts[1]));
 	exit(0);
       }
     }
@@ -1262,9 +1272,7 @@ string handle_include(string f,
 string read_include(string f)
 {
   AUTORELOAD_CHECK_FILE(f)
-  object o=_static_modules.files()->Fd();
-  if(o->open(f,"r"))
-    return o->read();
+  return master_read_file(f);
 }
 
 int clipped=0;
