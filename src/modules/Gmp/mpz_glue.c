@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.22 1997/09/07 15:04:08 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.23 1997/10/11 06:49:19 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -398,6 +398,24 @@ static void mpzmod_sub(INT32 args)
   push_object(res);
 }
 
+static void mpzmod_rsub(INT32 args)
+{
+  INT32 e;
+  struct object *res;
+  MP_INT *a;
+  
+  if(args!=1)
+    error("Gmp.mpz->``- called with more or less than one argument.\n");
+  
+  a=get_mpz(sp-1,1);
+  
+  res = clone_object(mpzmod_program, 0);
+
+  mpz_sub(OBTOMPZ(res), a, THIS);
+  pop_n_elems(args);
+  push_object(res);
+}
+
 static void mpzmod_div(INT32 args)
 {
   INT32 e;
@@ -412,6 +430,24 @@ static void mpzmod_div(INT32 args)
   for(e=0;e<args;e++)	
     mpz_fdiv_q(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
 
+  pop_n_elems(args);
+  push_object(res);
+}
+
+static void mpzmod_rdiv(INT32 args)
+{
+  MP_INT *a;
+  struct object *res;
+  if(!mpz_sgn(THIS))
+    error("Division by zero.\n");
+
+  if(args!=1)
+    error("Gmp.mpz->``/() called with more than one argument.\n");
+
+  a=get_mpz(sp-1,1);
+  
+  res=clone_object(mpzmod_program,0);
+  mpz_fdiv_q(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
   push_object(res);
 }
@@ -433,6 +469,25 @@ static void mpzmod_mod(INT32 args)
   pop_n_elems(args);
   push_object(res);
 }
+
+static void mpzmod_rmod(INT32 args)
+{
+  MP_INT *a;
+  struct object *res;
+  if(!mpz_sgn(THIS))
+    error("Modulo by zero.\n");
+
+  if(args!=1)
+    error("Gmp.mpz->``%%() called with more than one argument.\n");
+
+  a=get_mpz(sp-1,1);
+  
+  res=clone_object(mpzmod_program,0);
+  mpz_fdiv_r(OBTOMPZ(res), a, THIS);
+  pop_n_elems(args);
+  push_object(res);
+}
+
 
 static void mpzmod_gcdext(INT32 args)
 {
@@ -631,9 +686,8 @@ static void mpzmod_lsh(INT32 args)
 {
   struct object *res;
   if (args != 1)
-    error("Wrong number of arguments to Gmp.mpz->rsh.\n");
-  push_string(int_type_string);
-  int_type_string->refs++;
+    error("Wrong number of arguments to Gmp.mpz->`<<.\n");
+  ref_push_string(int_type_string);
   f_cast();
   if(sp[-1].u.integer < 0)
     error("mpz->lsh on negative number.\n");
@@ -647,14 +701,46 @@ static void mpzmod_rsh(INT32 args)
 {
   struct object *res;
   if (args != 1)
-    error("Wrong number of arguments to Gmp.mpz->rsh.\n");
-  push_string(int_type_string);
-  int_type_string->refs++;
+    error("Wrong number of arguments to Gmp.mpz->`>>.\n");
+  ref_push_string(int_type_string);
   f_cast();
   if (sp[-1].u.integer < 0)
     error("Gmp.mpz->rsh: Shift count must be positive.\n");
   res = clone_object(mpzmod_program, 0);
   mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
+  pop_n_elems(args);
+  push_object(res);
+}
+
+static void mpzmod_rlsh(INT32 args)
+{
+  struct object *res;
+  INT32 i;
+  if (args != 1)
+    error("Wrong number of arguments to Gmp.mpz->``<<.\n");
+  get_mpz(sp-1,1);
+  i=mpz_get_si(THIS);
+  if(i < 0)
+    error("mpz->``<< on negative number.\n");
+
+  res = clone_object(mpzmod_program, 0);
+  mpz_mul_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
+  pop_n_elems(args);
+  push_object(res);
+}
+
+static void mpzmod_rrsh(INT32 args)
+{
+  struct object *res;
+  INT32 i;
+  if (args != 1)
+    error("Wrong number of arguments to Gmp.mpz->``>>.\n");
+  get_mpz(sp-1,1);
+  i=mpz_get_si(THIS);
+  if(i < 0)
+    error("mpz->``>> on negative number.\n");
+  res = clone_object(mpzmod_program, 0);
+  mpz_fdiv_q_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
   pop_n_elems(args);
   push_object(res);
 }
@@ -759,17 +845,26 @@ void pike_module_init(void)
 #define MPZ_BINOP_TYPE ("function(" MPZ_ARG_TYPE "...:object)")
 
   add_function("`+",mpzmod_add,MPZ_BINOP_TYPE,0);
+  add_function("``+",mpzmod_add,MPZ_BINOP_TYPE,0);
   add_function("`-",mpzmod_sub,MPZ_BINOP_TYPE,0);
+  add_function("``-",mpzmod_rsub,MPZ_BINOP_TYPE,0);
   add_function("`*",mpzmod_mul,MPZ_BINOP_TYPE,0);
+  add_function("``*",mpzmod_mul,MPZ_BINOP_TYPE,0);
   add_function("`/",mpzmod_div,MPZ_BINOP_TYPE,0);
+  add_function("``/",mpzmod_rdiv,MPZ_BINOP_TYPE,0);
   add_function("`%",mpzmod_mod,MPZ_BINOP_TYPE,0);
+  add_function("``%",mpzmod_rmod,MPZ_BINOP_TYPE,0);
   add_function("`&",mpzmod_and,MPZ_BINOP_TYPE,0);
+  add_function("``&",mpzmod_and,MPZ_BINOP_TYPE,0);
   add_function("`|",mpzmod_or,MPZ_BINOP_TYPE,0);
+  add_function("``|",mpzmod_or,MPZ_BINOP_TYPE,0);
   add_function("`~",mpzmod_compl,"function(:object)",0);
 
 #define MPZ_SHIFT_TYPE "function(int|float|object:object)"
   add_function("`<<",mpzmod_lsh,MPZ_SHIFT_TYPE,0);
   add_function("`>>",mpzmod_rsh,MPZ_SHIFT_TYPE,0);
+  add_function("``<<",mpzmod_rlsh,MPZ_SHIFT_TYPE,0);
+  add_function("``>>",mpzmod_rrsh,MPZ_SHIFT_TYPE,0);
 
 #define MPZ_CMPOP_TYPE ("function(" MPZ_ARG_TYPE ":int)")
 

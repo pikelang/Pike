@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.19 1997/10/10 20:19:58 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.20 1997/10/11 06:48:24 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -68,18 +68,55 @@ void f_add(INT32 args)
   switch(types)
   {
   default:
-    if(args)
+    if(!args)
     {
-      switch(sp[-args].type)
+      error("Too few arguments to `+()\n");
+    }else{
+      if(types & BIT_OBJECT)
       {
-      case T_OBJECT:
-	CALL_OPERATOR(LFUN_ADD,args);
-	return;
+	if(sp[-args].type == T_OBJECT &&
+	  sp[-args].u.object->prog &&
+	  sp[-args].u.object->prog->lfuns[LFUN_ADD] != -1)
+	{
+	  apply_lfun(sp[-args].u.object, LFUN_ADD, args-1);
+	  free_svalue(sp-2);
+	  sp[-2]=sp[-1];
+	  sp--;
+	  return;
+	}
+	for(e=1;e<args;e++)
+	{
+	  if(sp[e-args].type == T_OBJECT &&
+	     sp[e-args].u.object->prog &&
+	     sp[e-args].u.object->prog->lfuns[LFUN_RADD] != -1)
+	  {
+	    struct svalue *tmp=sp+e-args;
+	    check_stack(e);
+	    assign_svalues_no_free(sp, sp-args, e, -1);
+	    sp+=e;
+	    apply_lfun(tmp->u.object, LFUN_RADD, e);
+	    if(args - e > 2)
+	    {
+	      assign_svalue(tmp, sp-1);
+	      pop_stack();
+	      f_add(args - e);
+	      assign_svalue(sp-e-1,sp-1);
+	      pop_n_elems(e);
+	    }else{
+	      assign_svalue(sp-args-1,sp-1);
+	      pop_n_elems(args);
+	    }
+	    return;
+	  }
+	}
+      }
+    }
 
+    switch(sp[-args].type)
+    {
       case T_PROGRAM:
       case T_FUNCTION:
 	error("Bad argument 1 to summation\n");
-      }
     }
     error("Incompatible types to sum() or +\n");
     return; /* compiler hint */
@@ -335,27 +372,58 @@ static int generate_comparison(node *n)
 
 static int float_promote(void)
 {
-  if(sp[-2].type==T_INT)
+  if(sp[-2].type==T_INT && sp[-1].type==T_FLOAT)
   {
     sp[-2].u.float_number=(FLOAT_TYPE)sp[-2].u.integer;
     sp[-2].type=T_FLOAT;
+    return 1;
   }
-
-  if(sp[-1].type==T_INT)
+  else if(sp[-1].type==T_INT && sp[-2].type==T_FLOAT)
   {
     sp[-1].u.float_number=(FLOAT_TYPE)sp[-1].u.integer;
     sp[-1].type=T_FLOAT;
+    return 1;
+  }
+  return 0;
+}
+
+static int call_lfun(int left, int right)
+{
+  if(sp[-2].type == T_OBJECT &&
+     sp[-2].u.object->prog &&
+     sp[-2].u.object->prog->lfuns[left] != -1)
+  {
+    apply_lfun(sp[-2].u.object, left, 1);
+    free_svalue(sp-2);
+    sp[-2]=sp[-1];
+    sp--;
+    return 1;
   }
 
-  return sp[-2].type == sp[-1].type;
+  if(sp[-1].type == T_OBJECT &&
+     sp[-1].u.object->prog &&
+     sp[-1].u.object->prog->lfuns[right] != -1)
+  {
+    push_svalue(sp-2);
+    apply_lfun(sp[-2].u.object, right, 1);
+    free_svalue(sp-3);
+    sp[-3]=sp[-1];
+    sp--;
+    pop_stack();
+    return 1;
+  }
+
+  return 0;
 }
 
 void o_subtract(void)
 {
-  if (sp[-2].type != sp[-1].type &&
-      !float_promote() &&
-      sp[-2].type != T_OBJECT)
+  if (sp[-2].type != sp[-1].type && !float_promote())
+  {
+    if(call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
+      return;
     error("Subtract on different types.\n");
+  }
 
   switch(sp[-2].type)
   {
@@ -451,9 +519,13 @@ static int generate_minus(node *n)
 
 void o_and(void)
 {
-  if(sp[-1].type != sp[-2].type &&
-     sp[-2].type != T_OBJECT)
+  if(sp[-1].type != sp[-2].type)
+  {
+    if(call_lfun(LFUN_AND, LFUN_RAND))
+      return;
+
     error("Bitwise and on different types.\n");
+  }
 
   switch(sp[-2].type)
   {
@@ -587,9 +659,13 @@ static int generate_and(node *n)
 
 void o_or(void)
 {
-  if(sp[-1].type != sp[-2].type &&
-     sp[-2].type != T_OBJECT)
+  if(sp[-1].type != sp[-2].type)
+  {
+    if(call_lfun(LFUN_OR, LFUN_ROR))
+      return;
+
     error("Bitwise or on different types.\n");
+  }
 
   switch(sp[-2].type)
   {
@@ -688,9 +764,12 @@ static int generate_or(node *n)
 
 void o_xor(void)
 {
-  if(sp[-1].type != sp[-2].type &&
-     sp[-2].type != T_OBJECT)
+  if(sp[-1].type != sp[-2].type)
+  {
+    if(call_lfun(LFUN_XOR, LFUN_RXOR))
+      return;
     error("Bitwise xor on different types.\n");
+  }
 
   switch(sp[-2].type)
   {
@@ -788,17 +867,15 @@ static int generate_xor(node *n)
 
 void o_lsh(void)
 {
-  if(sp[-2].type != T_INT)
+  if(sp[-1].type != T_INT || sp[-2].type != T_INT)
   {
-    if(sp[-2].type == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_LSH,2);
+    if(call_lfun(LFUN_LSH, LFUN_RLSH))
       return;
-    }
 
-    error("Bad argument 1 to <<\n");
+    if(sp[-2].type != T_INT)
+      error("Bad argument 1 to <<\n");
+    error("Bad argument 2 to <<\n");
   }
-  if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
   sp--;
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
 }
@@ -823,16 +900,14 @@ static int generate_lsh(node *n)
 
 void o_rsh(void)
 {
-  if(sp[-2].type != T_INT)
+  if(sp[-2].type != T_INT || sp[-1].type != T_INT)
   {
-    if(sp[-2].type == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_RSH,2);
+    if(call_lfun(LFUN_RSH, LFUN_RRSH))
       return;
-    }
-    error("Bad argument 1 to >>\n");
+    if(sp[-2].type != T_INT)
+      error("Bad argument 1 to >>\n");
+    error("Bad argument 2 to >>\n");
   }
-  if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
   sp--;
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
 }
@@ -905,11 +980,8 @@ void o_multiply(void)
     return;
 
   default:
-    if(sp[-2].type == T_OBJECT)
-    {
-      CALL_OPERATOR(LFUN_MULTIPLY,2);
+    if(call_lfun(LFUN_MULTIPLY, LFUN_RMULTIPLY))
       return;
-    }
 
     error("Bad arguments to multiply.\n");
   }
@@ -952,10 +1024,12 @@ static int generate_multiply(node *n)
 
 void o_divide(void)
 {
-  if(sp[-2].type!=sp[-1].type &&
-     !float_promote() &&
-     sp[-2].type != T_OBJECT)
+  if(sp[-2].type!=sp[-1].type && !float_promote())
+  {
+    if(call_lfun(LFUN_DIVIDE, LFUN_RDIVIDE))
+      return;
     error("Division on different types.\n");
+  }
 
   switch(sp[-2].type)
   {
@@ -1030,10 +1104,13 @@ static int generate_divide(node *n)
 
 void o_mod(void)
 {
-  if(sp[-2].type != sp[-1].type &&
-     !float_promote() &&
-     sp[-2].type != T_OBJECT)
+  if(sp[-2].type != sp[-1].type && !float_promote())
+  {
+    if(call_lfun(LFUN_MOD, LFUN_RMOD))
+      return;
+
     error("Modulo on different types.\n");
+  }
 
   switch(sp[-2].type)
   {
@@ -1357,11 +1434,11 @@ void init_operators(void)
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
-  add_efun2("`+",f_add,"function(object,mixed...:mixed)|function(int...:int)|!function(int...:mixed)&function(int|float...:float)|!function(int|float...:mixed)&function(string|int|float...:string)|function(array...:array)|function(mapping...:mapping)|function(multiset...:multiset)",OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
+  add_efun2("`+",f_add,"!function(!object...:mixed)&function(mixed...:mixed)|function(int...:int)|!function(int...:mixed)&function(int|float...:float)|!function(int|float...:mixed)&function(string|int|float...:string)|function(array...:array)|function(mapping...:mapping)|function(multiset...:multiset)",OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
-  add_efun2("`-",f_minus,"function(object,mixed...:mixed)|function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(multiset,multiset:multiset)|function(float|int,float:float)|function(float,int:float)|function(int,int:int)|function(string,string:string)",OPT_TRY_OPTIMIZE,0,generate_minus);
+  add_efun2("`-",f_minus,"!function(!object...:mixed)&function(mixed...:mixed)|function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(multiset,multiset:multiset)|function(float|int,float:float)|function(float,int:float)|function(int,int:int)|function(string,string:string)",OPT_TRY_OPTIMIZE,0,generate_minus);
 
-#define LOG_TYPE "function(object,mixed...:mixed)|function(int...:int)|function(mapping...:mapping)|function(multiset...:multiset)|function(array...:array)|function(string...:string)"
+#define LOG_TYPE "function(mixed,object...:mixed)|function(object,mixed...:mixed)|function(int...:int)|function(mapping...:mapping)|function(multiset...:multiset)|function(array...:array)|function(string...:string)"
 
   add_efun2("`&",f_and,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
@@ -1370,16 +1447,16 @@ void init_operators(void)
   add_efun2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
 
-#define SHIFT_TYPE "function(object,mixed:mixed)|function(int,int:int)"
+#define SHIFT_TYPE "function(object,mixed:mixed)|function(mixed,object:mixed)|function(int,int:int)"
 
   add_efun2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
   add_efun2("`>>",f_rsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_rsh);
 
-  add_efun2("`*",f_multiply,"function(array(array),array:array)|function(object,mixed...:mixed)|function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
+  add_efun2("`*",f_multiply,"!function(!object...:mixed)&function(mixed...:mixed)|function(array(array),array:array)|function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
-  add_efun2("`/",f_divide,"function(array,array:array(array))|function(object,mixed:mixed)|function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",OPT_TRY_OPTIMIZE,0,generate_divide);
+  add_efun2("`/",f_divide,"function(mixed,object:mixed)|function(array,array:array(array))|function(object,mixed:mixed)|function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",OPT_TRY_OPTIMIZE,0,generate_divide);
 
-  add_efun2("`%",f_mod,"function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
+  add_efun2("`%",f_mod,"function(mixed,object:mixed)|function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
 
   add_efun2("`~",f_compl,"function(object:mixed)|function(int:int)|function(float:float)|function(string:string)",OPT_TRY_OPTIMIZE,0,generate_compl);
   add_efun2("sizeof", f_sizeof, "function(string|multiset|array|mapping|object:int)",0,0,generate_sizeof);

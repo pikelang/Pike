@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.48 1997/10/10 20:22:01 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.49 1997/10/11 06:48:23 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1164,27 +1164,8 @@ static void eval_instruction(unsigned char *pc)
       }
       break;
 
-      CASE(F_LSH);
-      if(sp[-2].type != T_INT)
-      {
-	o_lsh();
-      }else{
-	if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
-	sp--;
-	sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
-      }
-      break;
-
-      CASE(F_RSH);
-      if(sp[-2].type != T_INT)
-      {
-	o_rsh();
-      }else{
-	if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
-	sp--;
-	sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
-      }
-      break;
+      CASE(F_LSH); o_lsh(); break;
+      CASE(F_RSH); o_rsh(); break;
 
       COMPARISMENT(F_EQ, is_eq(sp-2,sp-1));
       COMPARISMENT(F_NE,!is_eq(sp-2,sp-1));

@@ -37,8 +37,18 @@
 #define LFUN__INDICES 25
 #define LFUN__VALUES 26
 #define LFUN_CALL 27
+#define LFUN_RADD 28
+#define LFUN_RSUBTRACT 29
+#define LFUN_RAND 30
+#define LFUN_ROR 31
+#define LFUN_RXOR 32
+#define LFUN_RLSH 33
+#define LFUN_RRSH 34
+#define LFUN_RMULTIPLY 35
+#define LFUN_RDIVIDE 36
+#define LFUN_RMOD 37
 
-#define NUM_LFUNS 28
+#define NUM_LFUNS 38
 
 extern char *lfun_names[];
 

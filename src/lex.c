@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.27 1997/09/08 01:03:24 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.28 1997/10/11 06:48:23 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1673,78 +1673,82 @@ static int do_lex2(int literal, YYSTYPE *yylval)
     case '`':
     {
       char *tmp;
+      int offset=2;
+      if(GOBBLE('`')) offset--;
+      if(GOBBLE('`')) offset--;
+      
       switch(GETC())
       {
-      case '+': tmp="`+"; break;
-      case '/': tmp="`/"; break;
-      case '%': tmp="`%"; break;
-      case '*': tmp="`*"; break;
-      case '&': tmp="`&"; break;
-      case '|': tmp="`|"; break;
-      case '^': tmp="`^"; break;
-      case '~': tmp="`~"; break;
+      case '+': tmp="```+"; break;
+      case '/': tmp="```/"; break;
+      case '%': tmp="```%"; break;
+      case '*': tmp="```*"; break;
+      case '&': tmp="```&"; break;
+      case '|': tmp="```|"; break;
+      case '^': tmp="```^"; break;
+      case '~': tmp="```~"; break;
       case '<':
-	if(GOBBLE('<')) { tmp="`<<"; break; }
-	if(GOBBLE('=')) { tmp="`<="; break; }
-	tmp="`<";
+	if(GOBBLE('<')) { tmp="```<<"; break; }
+	if(GOBBLE('=')) { tmp="```<="; break; }
+	tmp="```<";
 	break;
 
       case '>':
-	if(GOBBLE('>')) { tmp="`>>"; break; }
-	if(GOBBLE('=')) { tmp="`>="; break; }
-	tmp="`>";
+	if(GOBBLE('>')) { tmp="```>>"; break; }
+	if(GOBBLE('=')) { tmp="```>="; break; }
+	tmp="```>";
 	break;
 
       case '!':
-	if(GOBBLE('=')) { tmp="`!="; break; }
-	tmp="`!";
+	if(GOBBLE('=')) { tmp="```!="; break; }
+	tmp="```!";
 	break;
 
       case '=':
-	if(GOBBLE('=')) { tmp="`=="; break; }
-	tmp="`=";
+	if(GOBBLE('=')) { tmp="```=="; break; }
+	tmp="```=";
 	break;
 
       case '(':
 	if(GOBBLE(')')) 
 	{
-	  tmp="`()";
+	  tmp="```()";
 	  break;
 	}
 	yyerror("Illegal ` identifier.");
-	tmp="";
+	tmp="``";
 	break;
 	
       case '-':
 	if(GOBBLE('>'))
 	{
-	  tmp="`->";
-	  if(GOBBLE('=')) tmp="`->=";
+	  tmp="```->";
+	  if(GOBBLE('=')) tmp="```->=";
 	}else{
-	  tmp="`-";
+	  tmp="```-";
 	}
 	break;
 
       case '[':
 	if(GOBBLE(']'))
 	{
-	  tmp="`[]";
-	  if(GOBBLE('=')) tmp="`[]=";
+	  tmp="```[]";
+	  if(GOBBLE('=')) tmp="```[]=";
 	  break;
 	}
 
       default:
 	yyerror("Illegal ` identifier.");
-	tmp="";
+	tmp="``";
 	break;
 
       }
 
       if(literal)
       {
-	yylval->str=buf;
+	yylval->str=tmp+offset;
       }else{
-	yylval->string=make_shared_string(tmp);
+	yylval->string=make_shared_string(tmp+offset);
       }
       return F_IDENTIFIER;
     }

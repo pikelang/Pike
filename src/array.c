@@ -966,7 +966,9 @@ int array_equal_p(struct array *a, struct array *b, struct processing *p)
    * the type fields didn't contain types that
    * really aren't in the array
    */
-  if(!(a->type_field & b->type_field)) return 0;
+  if(!(a->type_field & b->type_field) &&
+     !( (a->type_field | b->type_field) & BIT_OBJECT ))
+    return 0;
 
   curr.pointer_a = a;
   curr.pointer_b = b;
