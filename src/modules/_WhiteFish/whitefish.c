@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.22 2001/05/28 20:46:59 js Exp $");
+RCSID("$Id: whitefish.c,v 1.23 2001/05/29 11:20:57 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -536,11 +536,11 @@ static void f_do_query_and( INT32 args )
   push_object( res );
 }
 
-static void f_do_query_merge( INT32 args )
-/*! @decl ResultSet do_query_merge( array(int) words,          @
- *!                          array(int) field_coefficients,       @
- *!                          array(int) proximity_coefficients,   @
- *!                          function(int:string) blobfeeder)   
+static void f_do_query_or( INT32 args )
+/*! @decl ResultSet do_query_or( array(int) words,          @
+ *!                              array(int) field_coefficients,       @
+ *!                              array(int) proximity_coefficients,   @
+ *!                              function(int:string) blobfeeder)   
  *!       @[words]
  *!       
  *!          Arrays of word ids. Note that the order is significant
@@ -637,7 +637,7 @@ void pike_module_init(void)
   init_blobs_program();
   init_linkfarm_program();
 
-  add_function( "do_query_merge", f_do_query_merge,
+  add_function( "do_query_or", f_do_query_or,
 		"function(array(int),array(int),array(int),int"
 		",function(int:string):object)",
 		0 );
