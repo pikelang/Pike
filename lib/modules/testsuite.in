@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.13 2003/02/06 21:23:55 nilsson Exp $
+dnl $Id: testsuite.in,v 1.14 2003/02/26 19:43:03 mast Exp $
 
 dnl - Array
 
@@ -560,6 +560,15 @@ test_any_equal([[
     ({ "z", Getopt.HAS_ARG, "--x" }) }) );
   return x;
 ]],[[ ({ "", 0, 0, 0, 0 }) ]])
+test_any_equal([[
+  array x = ({"program", "-M", ".", "-e", "x"});
+  Getopt.find_all_options(
+    x, ({
+      ({"M", Getopt.HAS_ARG, "-M", 0, 0}),
+      ({"e", Getopt.HAS_ARG, "-e", 0, 0}),
+    }), 1);
+  return x;
+]], ({"program", 0, 0, 0, 0}))
 
 test_equal( opt( ({}), ({ "a", Getopt.MAY_HAVE_ARG, "-a", 0, "e" }) ),
  ({ }) )
