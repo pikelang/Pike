@@ -623,6 +623,7 @@ string parse_doc(Node n, void|int no_text) {
 	lay->fixmebody + parse_text(c->get_first_element("text")) + lay->_fixmebody;
       break;
 
+    case "deprecated":
     case "bugs":
     case "note":
     case "returns":
