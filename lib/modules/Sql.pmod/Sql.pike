@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.75 2004/01/09 14:11:23 nilsson Exp $
+ * $Id: Sql.pike,v 1.76 2004/04/16 12:12:02 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -136,6 +136,8 @@ function(string:int) decode_datetime;
 //!       loads the @tt{/etc/my.cnf@} config file to find the SSL
 //!       parameters. The same function can be achieved using the
 //!       @expr{"mysql"@} dbtype.
+//!     @type int(0..0)
+//!       Access through a UNIX-domain socket or similar.
 //!   @endmixed
 //!
 //! @param db
