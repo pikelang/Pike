@@ -1,0 +1,101 @@
+
+test_do( add_constant("TESTDIR", M4_TESTDIR); )
+test_true( Image.NEO.decode(Stdio.read_file(TESTDIR+"/AAFALL.NEO")) ==
+  Image.PNG.decode(Stdio.read_file(TESTDIR+"/aafall.png")) )
+test_any_equal([[
+  mapping m=Image.NEO._decode(Stdio.read_file(TESTDIR+"/AAFALL.NEO"));
+  m_delete(m,"image");
+  m_delete(m,"images");
+  return m;
+]],[[
+([ /* 6 elements */
+              "direction": "right",
+              "filename": "        .   ",
+              "left_limit": 8,
+              "palette": ({ /* 16 elements */
+                    ({ /* 3 elements */
+                        0,
+                        0,
+                        0
+                    }),
+                    ({ /* 3 elements */
+                        36,
+                        216,
+                        0
+                    }),
+                    ({ /* 3 elements */
+                        36,
+                        180,
+                        0
+                    }),
+                    ({ /* 3 elements */
+                        36,
+                        144,
+                        0
+                    }),
+                    ({ /* 3 elements */
+                        36,
+                        108,
+                        0
+                    }),
+                    ({ /* 3 elements */
+                        36,
+                        72,
+                        0
+                    }),
+                    ({ /* 3 elements */
+                        108,
+                        108,
+                        0
+                    }),
+                    ({ /* 3 elements */
+                        0,
+                        0,
+                        108
+                    }),
+                    ({ /* 3 elements */
+                        180,
+                        252,
+                        252
+                    }),
+                    ({ /* 3 elements */
+                        144,
+                        216,
+                        252
+                    }),
+                    ({ /* 3 elements */
+                        108,
+                        180,
+                        252
+                    }),
+                    ({ /* 3 elements */
+                        36,
+                        108,
+                        252
+                    }),
+                    ({ /* 3 elements */
+                        0,
+                        36,
+                        216
+                    }),
+                    ({ /* 3 elements */
+                        0,
+                        0,
+                        180
+                    }),
+                    ({ /* 3 elements */
+                        108,
+                        108,
+                        252
+                    }),
+                    ({ /* 3 elements */
+                        108,
+                        180,
+                        252
+                    })
+                }),
+              "right_limit": 15,
+              "speed": 6
+])
+]])
+test_do( add_constant("TESTDIR") )
