@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.764 2004/02/04 13:08:15 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.765 2004/02/04 14:16:26 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1289,6 +1289,8 @@ AC_ARG_WITH(thread_c_stack,
 	    [AC_DEFINE_UNQUOTED(PIKE_THREAD_C_STACK_SIZE,($withval))],
 	    [AC_DEFINE(PIKE_THREAD_C_STACK_SIZE,(256 * 1024))])
 
+AC_ARG_WITH(epoll, MY_DESCR([--with-epoll],
+			    [enable support for /dev/epoll (EXPERIMENTAL)]))
 AC_ARG_WITH(gdbm, MY_DESCR([--without-gdbm],[no GNU database manager support]))
 AC_ARG_WITH(gmp, MY_DESCR([--without-gmp],[no support for Gmp bignums]))
 AC_ARG_WITH(zlib, MY_DESCR([--without-zlib],[disable gz compression support]),
@@ -1430,6 +1432,11 @@ dnl else :; fi
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)
+else :; fi
+
+if test "x$with_epoll" = "xyes"; then
+  PIKE_MSG_WARN([Enabling experimental support for /dev/epoll.])
+  AC_DEFINE(WITH_EPOLL)
 else :; fi
 
 if test "x$with_valgrind" = "xno"; then
