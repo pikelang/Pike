@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.46 1999/04/09 04:46:16 hubbe Exp $
+/* $Id: master.pike.in,v 1.47 1999/04/30 06:53:54 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -461,7 +461,7 @@ class dirnode
       if(mixed tmp=o->_module_value) o=tmp;
       return o;
     }
-    return (program) index;
+    return cast_to_program(index,0);
   }
 
   object|program `[](string index)
@@ -1206,14 +1206,14 @@ class Codec
   object objectof(string x)
     {
       if(sscanf(x,"efun:%s",x)) return f[x];
-      return (object)x;
+      return cast_to_object(x,0);
     }
   
   program programof(string x)
     {
       if(sscanf(x,"efun:%s",x)) return f[x];
 
-      return (program)x;
+      return cast_to_program(x,0);
     }
   
   mixed encode_object(object x)
