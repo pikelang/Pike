@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: module.pmod.in,v 1.6 2004/02/15 19:34:28 nilsson Exp $
+// $Id: module.pmod.in,v 1.7 2004/02/15 22:43:14 nilsson Exp $
 // original author: mirar
 
 #pike __REAL_VERSION__
@@ -333,13 +333,10 @@ class StudiedWidestring
    }
 }
 
-#endif // buildconfig_UTF8
-
-#if constant(UTF8_SUPPORTED)
 #define GOOD StudiedWidestring
 #else
 #define GOOD Studied
-#endif
+#endif // buildconfig_UTF8
 
 GOOD `()(string pattern,void|int options,void|object table)
 //! Convenience function to create a suitable PCRE Regexp object;
