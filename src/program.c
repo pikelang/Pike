@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.433 2002/06/10 20:49:50 mast Exp $");
+RCSID("$Id: program.c,v 1.434 2002/06/11 17:41:36 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1319,9 +1319,9 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
 }
 #endif
 
-int override_identifier (struct reference *ref, struct pike_string *name, int cur_id)
+int override_identifier (struct reference *ref, struct pike_string *name)
 {
-  int id = -1;
+  int id = -1, cur_id = 0;
   /* This loop could possibly be optimized by looping over
    * each inherit and looking up 'name' in each inherit
    * and then see if should be overwritten
@@ -1889,6 +1889,8 @@ void dump_program_desc(struct program *p)
   int e,d,q;
 /*  fprintf(stderr,"Program '%s':\n",p->name->str); */
 
+  fprintf(stderr,"$$$$$ dump_program_desc for %p\n", p);
+
   fprintf(stderr,"All inherits:\n");
   for(e=0;e<p->num_inherits;e++)
   {
@@ -1932,12 +1934,21 @@ void dump_program_desc(struct program *p)
     }
   }
 
-  fprintf(stderr,"All identifiers:\n");
+  fprintf(stderr,"All identifier references:\n");
   for(e=0;e<(int)p->num_identifier_references;e++)
   {
-    fprintf(stderr,"%3d:",e);
-    for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
-    fprintf(stderr,"%s;\n",ID_FROM_INT(p,e)->name->str);
+    struct inherit *inh = INHERIT_FROM_INT(p,e);
+    fprintf(stderr,"%3d: ",e);
+    for(d=0;d<inh->inherit_level;d++) fprintf(stderr,"  ");
+    fprintf(stderr,"%-40s  flags 0x%x",ID_FROM_INT(p,e)->name->str,
+	    p->identifier_references[e].id_flags);
+    for (q = 0; q < p->num_inherits; q++)
+      if (p->inherits + q == inh) {
+	fprintf (stderr, "  inherit %d\n", q);
+	goto inherit_found;
+      }
+    fprintf (stderr, "  inherit not found!\n");
+  inherit_found:;
   }
   fprintf(stderr,"All sorted identifiers:\n");
   for(q=0;q<(int)p->num_identifier_index;q++)
@@ -1947,6 +1958,8 @@ void dump_program_desc(struct program *p)
     for(d=0;d<INHERIT_FROM_INT(p,e)->inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"%s;\n", ID_FROM_INT(p,e)->name->str);
   }
+
+  fprintf(stderr,"$$$$$ dump_program_desc for %p done\n", p);
 }
 #endif
 
@@ -3795,7 +3808,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     }
 
     /* override */
-    if ((overridden = override_identifier (&ref, name, 0)) >= 0) {
+    if ((overridden = override_identifier (&ref, name)) >= 0) {
 #ifdef PIKE_DEBUG
       if(MEMCMP(Pike_compiler->new_program->identifier_references+n, &ref,sizeof(ref)))
 	fatal("New constant overriding algorithm failed!\n");
@@ -3992,6 +4005,8 @@ INT32 define_function(struct pike_string *name,
 
   if(i >= 0)
   {
+    int overridden;
+
     /* already defined */
 
 #ifdef PROGRAM_BUILD_DEBUG
@@ -4092,12 +4107,13 @@ INT32 define_function(struct pike_string *name,
 
     ref.inherit_offset = 0;
     ref.id_flags = flags;
-    override_identifier (&ref, name, 0);
+    if ((overridden = override_identifier (&ref, name)) >= 0) {
 #ifdef PIKE_DEBUG
-    if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
-      fatal("New function overloading algorithm failed!\n");
+      if(MEMCMP(Pike_compiler->new_program->identifier_references+i, &ref,sizeof(ref)))
+	fatal("New function overloading algorithm failed!\n");
 #endif
-    return i;
+      return overridden;
+    }
   }
 make_a_new_def:
 

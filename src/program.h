@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.161 2002/05/31 22:41:26 nilsson Exp $
+ * $Id: program.h,v 1.162 2002/06/11 17:41:36 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -464,7 +464,7 @@ struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
 int program_function_index_compare(const void *a,const void *b);
 struct pike_string *find_program_name(struct program *p, INT32 *line);
-int override_identifier (struct reference *ref, struct pike_string *name, int cur_id);
+int override_identifier (struct reference *ref, struct pike_string *name);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,

@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.147 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: encode.c,v 1.148 2002/06/11 17:41:36 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3517,7 +3517,7 @@ static void decode_value2(struct decode_data *data)
 		 * identifiers, identifier_references
 		 */
 
-		if (n < 0 || (n = override_identifier (&ref, id.name, 0)) < 0) {
+		if (n < 0 || (n = override_identifier (&ref, id.name)) < 0) {
 		  n = p->num_identifier_references;
 		  add_to_identifier_references(ref);
 		}
