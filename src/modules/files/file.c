@@ -53,7 +53,7 @@
 #define SEEK_SET 0
 #endif
 
-#ifndef SEEK_SET
+#ifndef SEEK_CUR
 #define SEEK_CUR 1
 #endif
 

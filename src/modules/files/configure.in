@@ -14,7 +14,7 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_HAVE_FUNCS(socketpair getwd strerror)
 
 AC_MSG_CHECKING(for working (and failsafe) strerror)
-AC_CACHE_VAL(pike_cv_failsafe_strerror)
+AC_CACHE_VAL(pike_cv_failsafe_strerror,
 [
 AC_TRY_RUN([
 #include <stdio.h>
