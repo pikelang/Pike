@@ -142,7 +142,7 @@ class Linker
 		    0, /* virtual address */
 		    virtual_data_size(s->data),
 		    stringp(s->data) ? (base + strlen(sectiondata)) : 0,
-		    s->relocs && (base + strlen(sectiondata) + file_data_sizes->data),
+		    s->relocs && (base + strlen(sectiondata) + file_data_size(s->data)),
 		    0, /* no linenums yet */
 		    s->relocs && sizeof(s->relocs),
 		    0,
@@ -776,7 +776,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.3 2000/12/28 01:01:11 hubbe Exp $\n"
+	 "$Id: pntld,v 1.4 2000/12/28 01:17:04 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
