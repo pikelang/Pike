@@ -227,7 +227,7 @@ class client
     }
 
     [int rc, Headers h] = do_request(REQ_PUT, (extra_headers||([]))|
-				     ([HI_COUNT:sizeof(sdata)]));
+				     ([HI_LENGTH:sizeof(sdata)]));
     while(rc == 100) {
       Headers h2;
       if(sizeof(sdata)+6 > max_pkt_length) {
