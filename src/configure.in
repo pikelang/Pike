@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.678 2003/01/21 17:10:36 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.679 2003/01/27 15:57:17 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3664,20 +3664,20 @@ define(MY_CHECK_HEADERS,
  AC_CACHE_VAL(pike_cv_decl_$1,
  [
    OLD_CPPFLAGS="$CPPFLAGS"
-   pike_cv_decl_$1=nonexistant
+   pike_cv_decl_$1=nonexistent
    for a in $2
    do
-     AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existant; break ])
+     AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existent; break ])
      
      # Kludge for MacOS X. Retry with the traditional cpp...
      CPPFLAGS="$CPPFLAGS -traditional-cpp"
-     AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existant; break ])
+     AC_EGREP_HEADER($1,$a,[ pike_cv_decl_$1=existent; break ])
      CPPFLAGS="$OLD_CPPFLAGS"
    done
    CPPFLAGS="$OLD_CPPFLAGS"
  ])
  AC_MSG_RESULT($pike_cv_decl_$1)
- if test "$pike_cv_decl_$1" = nonexistant; then
+ if test "$pike_cv_decl_$1" = nonexistent -o "$pike_cv_decl_$1" = nonexistant; then
    AC_DEFINE(translit($1,[a-z],[A-Z])[]_DECL_MISSING)
  fi
 ])
