@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.69 1999/03/22 18:39:31 grubba Exp $
+ * $Id: requests.pmod,v 1.70 1999/03/22 19:34:50 grubba Exp $
  */
 
 import .types;
@@ -572,25 +572,13 @@ class fetch
 
     string wanted = lower_case(atom->atom);
     mapping res = ([ "wanted" : wanted ]);
-    string section;
-    string origin;
+    string section = atom->options && atom->options[0]->raw;
 
-    /* Hmm... Isn't this supposed to be decoded by get_atom()?
-     * No, but by get_atom_options().
-     */
-    if (sscanf(wanted, "%[^[][%[^]]]%s", wanted, section, origin) > 1) {
-      if (origin == "") {
-	origin = 0;
-      }
-      atom->options = ({ ([ "type":"atom", "atom":section ]) });
+    res->raw_wanted = atom->raw || atom->atom;
 
-      res->raw_wanted = upper_case(atom->atom);
-      res->wanted = wanted;
-
-      werror("Options specified. "
-	     "wanted: %O, section:%O, origin:%O, atom: %O\n",
-	     wanted, section, origin, atom);
-    }
+    werror("Options specified. "
+	   "wanted: %O, section:%O, atom: %O, raw: %O\n",
+	   wanted, section, origin, atom, raw_wanted);
 
     /* Should requesting any part of the body really count as reading it? */
     if ( (< "body", "rfc822", "rfc822.text" >) [wanted])
