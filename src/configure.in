@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.521 2001/05/28 18:15:06 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.522 2001/05/31 22:51:21 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -29,7 +29,8 @@ If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.
     CONFIG_SHELL="$ac_cv_path_bash_prog"
     export CONFIG_SHELL
     echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
-    exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
+    eval exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
+    exit 17
   fi
 else :; fi
 
