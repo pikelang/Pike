@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.23 1999/06/30 11:02:56 mirar Exp $
+**!	$Id: layers.c,v 1.24 1999/06/30 21:54:19 mirar Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -152,7 +152,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.23 1999/06/30 11:02:56 mirar Exp $");
+RCSID("$Id: layers.c,v 1.24 1999/06/30 21:54:19 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -489,11 +489,7 @@ overlay
 
 #define ALPHA_ADD_V(L,S,D,LA,SA,DA,V,C)			   \
             do {							   \
-	       if (!(LA)->C)						   \
-	       {							   \
-		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,0,V);	   \
-		  (DA)->C=COMBINE_ALPHA_SUM_V(0,(SA)->C,V);		   \
-	       }							   \
+ 	       if (!(LA)->C) (D)->C=(S)->C,(DA)->C=(SA)->C;		   \
 	       else if (!(SA)->C)					   \
 	       {							   \
 		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,0,(LA)->C,V);	   \
@@ -733,6 +729,8 @@ static void image_layer_set_alpha_value(INT32 args)
    if (f<0.0 || f>1.0)
       SIMPLE_BAD_ARG_ERROR("Image.Layer->set_alpha_value",1,"float(0..1)");
    THIS->alpha_value=f;
+   pop_n_elems(args);
+   ref_push_object(THISOBJ);
 }
 
 static void image_layer_alpha_value(INT32 args)
