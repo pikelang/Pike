@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.10 1997/10/27 22:41:28 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.11 1997/11/05 03:29:17 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -29,7 +29,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.10 1997/10/27 22:41:28 mirar Exp $
+**!	$Id: polyfill.c,v 1.11 1997/11/05 03:29:17 mirar Exp $
 **! class image
 */
 
@@ -302,9 +302,15 @@ static int polygone_row_vertices(float *buf,
 
       if (xmin!=xmax && v->xmin<xmax && v->xmax>xmin) 
       {
+#ifdef POLYDEBUG
 #define CALC_AREA(FILL,X,Y1,Y2,YP) \
-	    ((FILL)*(X)*( 1.0-0.5*((Y1)+(Y2))+(YP) ))
-	/*	    (fprintf(stderr," [area: %d*%g*%g y1=%g y2=%g yp=%g]\n", FILL,X,( 1-0.5*(Y1+Y2)+YP ),Y1,Y2,YP), \*/
+	      (fprintf(stderr," [area: %d*%g*%g y1=%g y2=%g yp=%g]\n", FILL,X,( 1-0.5*(Y1+Y2)+YP ),Y1,Y2,YP), \
+		    ((FILL)*(X)*( 1.0-0.5*((Y1)+(Y2))+(YP) )))
+#else
+#define CALC_AREA(FILL,X,Y1,Y2,YP) \
+		    ((FILL)*(X)*( 1.0-0.5*((Y1)+(Y2))+(YP) ))
+#endif
+
 
 			 
 	 if (xmin_i == xmax_i)
@@ -348,6 +354,41 @@ static int polygone_row_vertices(float *buf,
    if (fill<0) fprintf(stderr,"aa fill is on\n");
 #endif
    return fill<0;
+}
+
+static int toggle_fill(struct vertex_list *v1,
+		       float xmin,float xmax,
+		       float yp,int fill)
+{
+   struct vertex_list *v;
+   v=v1;
+#ifdef POLYDEBUG
+   fprintf(stderr,"try toggle %g..%g\n",xmin,xmax);
+#endif
+   while (v) 
+   {
+      if (v->above->y<yp-1e-10 && 
+	  ( (v->xmin==xmin && v->yxmin<=yp+1e-10) 
+	    || (v->xmax==xmin && v->yxmax<=yp+1e-10)
+	    || (v->xmax==xmax && v->xmin<=xmin && v->yxmax<=yp+1e-10)))
+      {
+	 fill=!fill;
+#ifdef POLYDEBUG
+	 fprintf(stderr," toggle fill %d=>%d on %g,%g-%g,%g\n",
+		 !fill,fill,v->xmin,v->yxmin,v->xmax,v->yxmax);
+#endif
+      }
+      
+#ifdef POLYDEBUG
+      else fprintf(stderr," dont toggle fill %d=>%d on %g,%g-%g,%g (%g<%g) (%d%d%d)\n",
+		   fill,fill,v->xmin,v->yxmin,v->xmax,v->yxmax,
+		   v->above->y,yp-1e-10,
+		   v->xmax==xmax,v->yxmax==yp+1,v->above->y<yp-1e-10);
+#endif
+
+      v=v->next;
+   }
+   return fill;
 }
 
 static void polygone_row(struct image *img,
