@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.102 1999/08/17 17:20:18 grubba Exp $");
+RCSID("$Id: threads.c,v 1.103 1999/08/30 06:23:50 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -24,6 +24,37 @@ int live_threads = 0;
 COND_T live_threads_change;
 COND_T threads_disabled_change;
 size_t thread_stack_size=1024 * 1204;
+
+#ifndef HAVE_PTHREAD_ATFORK
+#include "callback.h"
+
+static struct callback_list atfork_prepare_callback;
+static struct callback_list atfork_parent_callback;
+static struct callback_list atfork_child_callback;
+
+int th_atfork(void (*prepare)(void),void (*parent)(void),void (*child)(void))
+{
+  if(prepare)
+    add_to_callback(&atfork_prepare_callback, (callback_func) prepare, 0, 0);
+  if(parent)
+    add_to_callback(&atfork_parent_callback, (callback_func) parent, 0, 0);
+  if(child)
+    add_to_callback(&atfork_child_callback, (callback_func) child, 0, 0);
+  return 0;
+}
+void th_atfork_prepare(void)
+{
+  call_callback(& atfork_prepare_callback, 0);
+}
+void th_atfork_parent(void)
+{
+  call_callback(& atfork_parent_callback, 0);
+}
+void th_atfork_child(void)
+{
+  call_callback(& atfork_child_callback, 0);
+}
+#endif
 
 #ifdef __NT__
 

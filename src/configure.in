@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.316 1999/08/28 04:05:45 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.317 1999/08/30 06:23:47 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1289,6 +1289,8 @@ int main()
     AC_DEFINE(_MIT_POSIX_THREADS,1)
     AC_DEFINE(PIKE_THREADS)
 
+##########################################################################
+
     AC_MSG_CHECKING(for pthread_attr_setstacksize)
     AC_CACHE_VAL(pike_cv_have_pthread_attr_setstacksize,[
       AC_TRY_LINK([#include <pthread.h>
@@ -1305,6 +1307,27 @@ int main()
     else
       :
     fi
+
+##########################################################################
+
+    AC_MSG_CHECKING(for pthread_atfork)
+    AC_CACHE_VAL(pike_cv_have_pthread_atfork,[
+      AC_TRY_LINK([#include <pthread.h>
+        void foo(void) { pthread_atfork(0,0,0); }
+      ],[],[
+        pike_cv_have_pthread_atfork=yes
+      ],[
+        pike_cv_have_pthread_atfork=no
+      ])
+    ])
+    if test x$pike_cv_have_pthread_attr_setstacksize = xyes ; then
+      AC_MSG_RESULT(yes)
+      AC_DEFINE(HAVE_PTHREAD_ATFORK)
+    else
+      AC_MSG_RESULT([no - FreeBSD?])
+    fi
+
+##########################################################################
 
     AC_MSG_CHECKING(for pthread_yield)
     AC_CACHE_VAL(pike_cv_have_pthread_yield,[
@@ -1323,6 +1346,8 @@ int main()
       :
     fi
 
+##########################################################################
+
     AC_MSG_CHECKING(for pthread_cond_init)
     AC_CACHE_VAL(pike_cv_have_pthread_cond_init,[
       AC_TRY_LINK([#include <pthread.h>
@@ -1339,6 +1364,8 @@ int main()
     else
       :
     fi
+
+##########################################################################
 
     AC_MSG_CHECKING(if pthread_condattr_default is defined)
     AC_CACHE_VAL(pike_cv_have_pthread_condattr_default,[
@@ -1383,6 +1410,7 @@ int main()
       :
     fi
 
+##########################################################################
 
     AC_MSG_CHECKING(for __pthread_initial_thread_bos)
     AC_CACHE_VAL(pike_cv_have_pthread_initial_thread_bos,[

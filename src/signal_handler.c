@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.149 1999/08/28 00:39:01 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.150 1999/08/30 06:23:48 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1014,7 +1014,7 @@ static void do_bi_do_da_lock(void)
 
 static TH_RETURN_TYPE wait_thread(void *data)
 {
-  if(pthread_atfork(do_da_lock,do_bi_do_da_lock,0))
+  if(th_atfork(do_da_lock,do_bi_do_da_lock,0))
   {
     perror("pthread atfork");
     exit(1);
@@ -2342,6 +2342,7 @@ void f_create_process(INT32 args)
     storage.disabled = 1;
 #endif
 
+    th_atfork_prepare();
     do
     {
 #ifdef PROC_DEBUG
@@ -2353,6 +2354,14 @@ void f_create_process(INT32 args)
       pid=fork();
 #endif
     }while(pid==-1 && errno==EINTR);
+
+    if(pid!=-1)
+    {
+      if(pid)
+	th_atfork_parent();
+      else
+	th_atfork_child();
+    }
 
     UNSET_ONERROR(err);
 
@@ -2704,6 +2713,7 @@ void f_fork(INT32 args)
     error("fork: permission denied.\n");
 #endif
 
+  th_atfork_prepare();
 /*   THREADS_ALLOW_UID(); */
 #if 0 && defined(HAVE_FORK1) && defined(_REENTRANT)
   /* This section is disabled, since fork1() isn't usefull if
@@ -2717,6 +2727,13 @@ void f_fork(INT32 args)
   pid=fork();
 #endif
 /*  THREADS_DISALLOW_UID(); */
+  if(pid!=-1)
+  {
+    if(pid)
+      th_atfork_parent();
+    else
+      th_atfork_child();
+  }
 
   if(pid==-1) {
     error("Fork failed\n"

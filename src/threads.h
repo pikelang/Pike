@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.68 1999/08/10 00:19:00 mast Exp $
+ * $Id: threads.h,v 1.69 1999/08/30 06:23:51 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -57,6 +57,19 @@ extern struct object *thread_id;
 
 
 #ifdef POSIX_THREADS
+
+#ifdef HAVE_PTHREAD_ATFORK
+#define th_atfork(X,Y,Z) pthread_atfork((X),(Y),(Z))
+#define th_atfork_prepare()
+#define th_atfork_parent()
+#define th_atfork_child()
+#else
+int th_atfork(void (*)(void),void (*)(void),void (*)(void));
+void th_atfork_prepare(void);
+void th_atfork_parent(void);
+void th_atfork_child(void);
+#endif
+
 #define THREAD_T pthread_t
 #define MUTEX_T pthread_mutex_t
 #define mt_init(X) pthread_mutex_init((X),0)

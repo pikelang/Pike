@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.47 1999/08/11 22:13:18 hubbe Exp $
+ * $Id: acconfig.h,v 1.48 1999/08/30 06:23:46 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -237,6 +237,9 @@
 
 /* Define if you have the pthread_attr_setstacksize function.  */
 #undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+
+/* Define if you have the pthread_atfork function.  */
+#undef HAVE_PTHREAD_ATFORK
 
 /* Define if you have the pthread_cond_init function.  */
 #undef HAVE_PTHREAD_COND_INIT
