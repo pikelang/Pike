@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.114 1999/03/05 02:15:04 hubbe Exp $");
+RCSID("$Id: program.c,v 1.115 1999/03/07 18:34:28 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2017,6 +2017,13 @@ static struct ff_hash cache[FIND_FUNCTION_HASHSIZE];
 int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog)
 {
+#ifdef PIKE_DEBUG
+  if (!prog) {
+    fatal("find_shared_string_identifier(): No program!\n"
+	  "Identifier: %s%s%s\n",
+	  name?"\"":"", name?name->str:"NULL", name?"\"":"");
+  }
+#endif /* PIKE_DEBUG */
 #ifdef FIND_FUNCTION_HASHSIZE
   if(prog -> flags & PROGRAM_FIXED)
   {
