@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.35 1999/12/16 22:18:22 grubba Exp $
+// $Id: treeopt.in,v 1.36 2000/03/31 02:06:48 hubbe Exp $
 //
 // The tree optimizer
 //
@@ -582,9 +582,9 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
   tmp1 = *last;
 
   /* We're not interested in casts to void */
-  while(tmp1 && 
-	tmp1->token == F_CAST &&
-	tmp1->type == void_type_string)
+  while(tmp1 &&
+	( (tmp1->token == F_CAST && tmp1->type == void_type_string) ||
+	  tmp1->token == F_POP_VALUE))
   {
     last = &_CAR(tmp1);
     tmp1 = *last;
