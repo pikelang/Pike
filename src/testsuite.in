@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.167 1999/04/09 04:47:16 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.168 1999/05/03 18:16:54 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -3155,6 +3155,14 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+  
+  test_any([[
+    object o=Process.create_process(({"/bin/cat","/dev/null"}));
+    if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return 99;
+    sleep(1);
+    return kill(o->pid(), 9);
+  ]],0);
+
   test_any([[ int e; for(e=0;e<1000;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;]],-1)
 ]])
 
