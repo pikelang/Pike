@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.131 1997/11/02 18:45:10 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.132 1997/11/02 21:24:40 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -195,9 +195,11 @@ if test $cflags_is_set = no; then
   AC_SYS_OS_COMPILER_FLAG(Solaris,-fd,fd)
   AC_SYS_OS_COMPILER_FLAG(Solaris,-mt,mt)
   AC_SYS_OS_COMPILER_FLAG(Solaris,-native,native)
-  AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc)
   AC_SYS_OS_COMPILER_FLAG(Solaris,-xdepend,xdepend)
   AC_SYS_OS_COMPILER_FLAG(Solaris,-xtransition,xtransition)
+  # Causes __STDC__ to be 1 which causes several headerfiles to behave
+  # differently.
+  # AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc)
 
   # HP-UX
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch)
