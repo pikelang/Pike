@@ -24,7 +24,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.18 1999/08/05 19:23:48 per Exp $");
+RCSID("$Id: math.c,v 1.19 1999/08/06 12:01:12 hedda Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -309,9 +309,6 @@ void pike_module_init(void)
 
 /* function(float:float) */
   ADD_EFUN("round",f_round,tFunc(tFlt,tFlt),0);
-
-/* function(float:float) */
-  ADD_EFUN("rint",f_round,tFunc(tFlt,tFlt),0);
 
 #define CMP_TYPE \
   "!function(!object...:mixed)&function(mixed...:mixed)|" \
