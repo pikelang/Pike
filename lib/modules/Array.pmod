@@ -546,3 +546,10 @@ int lyskom_sort_func(string a,string b)
    if (a0==b0) return 0;
    return lyskom_sort_func(a0,b0);
 }
+
+array flatten(array a)
+{
+  array ret=({});
+  foreach(a, a) ret+=arrayp(a)?flatten(a):({a});
+  return ret;
+}
