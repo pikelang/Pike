@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.35 2000/08/16 10:17:52 grubba Exp $");
+RCSID("$Id: peep.c,v 1.36 2000/08/17 19:15:59 grubba Exp $");
 
 struct p_instr_s
 {
@@ -395,7 +395,8 @@ void assemble(void)
     {
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
-	fatal("Hyperspace error: unknown jump point %d at %d (pc=%x).\n",e,labels[e],jumps[e]);
+	fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
+	      PTRDIFF_T_TO_LONG(e), labels[e], jumps[e]);
 #endif
       tmp=read_int(jumps[e]);
       upd_int(jumps[e], tmp2 - jumps[e]);

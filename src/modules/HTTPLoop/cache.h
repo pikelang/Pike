@@ -6,7 +6,7 @@ struct cache_entry *aap_cache_lookup(char *s, ptrdiff_t len,
 
 
 void aap_free_cache_entry(struct cache *c, struct cache_entry *e,
-		      struct cache_entry *prev, int b);
+		      struct cache_entry *prev, size_t b);
 
 void simple_aap_free_cache_entry(struct cache *c, struct cache_entry *e);
 

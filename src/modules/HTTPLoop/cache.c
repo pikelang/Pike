@@ -168,7 +168,7 @@ static void really_free_cache_entry(struct cache  *c, struct cache_entry *e,
 
 
 void aap_free_cache_entry(struct cache *c, struct cache_entry *e,
-			  struct cache_entry *prev, int b)
+			  struct cache_entry *prev, size_t b)
 {
 #ifdef DEBUG
   if(e->refs<=0)
@@ -205,7 +205,7 @@ void aap_cache_insert(struct cache_entry *ce, struct cache *c)
 {
   struct cache_entry *head, *p;
   char *t;
-  int hv;
+  size_t hv;
 #ifdef DEBUG
   extern int d_flag;
   if((d_flag > 2) && !mt_trylock( & c->mutex ))

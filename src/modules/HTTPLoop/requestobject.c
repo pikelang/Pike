@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.13 2000/08/14 14:19:12 grubba Exp $
+ * $Id: requestobject.c,v 1.14 2000/08/17 19:21:41 grubba Exp $
  */
 
 #include "global.h"
@@ -870,7 +870,8 @@ void actually_send(struct send_args *a)
        goto normal;
      default:
        if(fail != a->len)
-         fprintf(stderr, "sendfile returned %d; len=%d\n", fail, a->len);
+         fprintf(stderr, "sendfile returned %ld; len=%ld\n",
+		 PTRDIFF_T_TO_LONG(fail), PTRDIFF_T_TO_LONG(a->len));
     }
     goto end;
   }

@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.27 2000/08/16 19:53:24 grubba Exp $ */
+/* $Id: bmp.c,v 1.28 2000/08/17 19:22:29 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.27 2000/08/16 19:53:24 grubba Exp $
+**!	$Id: bmp.c,v 1.28 2000/08/17 19:22:29 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.27 2000/08/16 19:53:24 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.28 2000/08/17 19:22:29 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -540,8 +540,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
       case 68: /* fuji jpeg mode */
 
 	 if (len<54)
-	    error("Image.BMP.decode: unexpected EOF in header (at byte %d)\n",
-		  DO_NOT_WARN((long)len));
+	    error("Image.BMP.decode: unexpected EOF in header (at byte %ld)\n",
+		  PTRDIFF_T_TO_LONG(len));
 
 	 push_text("xsize");
 	 push_int(xsize=int_from_32bit(s+14+4*1));

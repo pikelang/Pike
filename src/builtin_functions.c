@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.298 2000/08/16 10:19:22 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.299 2000/08/17 19:15:16 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1096,12 +1096,14 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
 	    /* 0xfffe: Byte-order detection illegal character.
 	     * 0xffff: Illegal character.
 	     */
-	    error("string_to_unicode(): Illegal character 0x%04x (index %d) "
-		  "is not a Unicode character.", str2[i], i);
+	    error("string_to_unicode(): Illegal character 0x%04x (index %ld) "
+		  "is not a Unicode character.",
+		  str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  if (str2[i] > 0x10ffff) {
-	    error("string_to_unicode(): Character 0x%08x (index %d) "
-		  "is out of range (0x00000000 - 0x0010ffff).", str2[i], i);
+	    error("string_to_unicode(): Character 0x%08x (index %ld) "
+		  "is out of range (0x00000000 - 0x0010ffff).",
+		  str2[i], PTRDIFF_T_TO_LONG(i));
 	  }
 	  /* Extra wide characters take two unicode characters in space.
 	   * ie One unicode character extra.
@@ -1131,7 +1133,8 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       }
 #ifdef PIKE_DEBUG
       if (j) {
-	fatal("string_to_unicode(): Indexing error: len:%d, j:%d.\n", len, j);
+	fatal("string_to_unicode(): Indexing error: len:%ld, j:%ld.\n",
+	      PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
       }
 #endif /* PIKE_DEBUG */
       out = end_shared_string(out);
@@ -1192,7 +1195,7 @@ void f_string_to_utf8(INT32 args)
   ptrdiff_t len;
   struct pike_string *in;
   struct pike_string *out;
-  int i,j;
+  ptrdiff_t i,j;
   int extended = 0;
 
   get_all_args("string_to_utf8", args, "%W", &in);
@@ -1295,8 +1298,9 @@ void f_string_to_utf8(INT32 args)
   }
 #ifdef PIKE_DEBUG
   if (len != j) {
-    fatal("string_to_utf8(): Calculated and actual lengths differ: %d != %d\n",
-	  len, j);
+    fatal("string_to_utf8(): Calculated and actual lengths differ: "
+	  "%ld != %ld\n",
+	  PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
   }
 #endif /* PIKE_DEBUG */
   out = end_shared_string(out);
@@ -3060,8 +3064,8 @@ static void f_parse_format(INT32 args)
 
   len = low_parse_format(STR0(s), s->len);
   if (len != s->len) {
-    error("parse_format(): Unexpected %%} in format string at offset %d\n",
-	  len);
+    error("parse_format(): Unexpected %%} in format string at offset %ld\n",
+	  PTRDIFF_T_TO_LONG(len));
   }
 #ifdef PIKE_DEBUG
   if (Pike_sp[-1].type != T_ARRAY) {

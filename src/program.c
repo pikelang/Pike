@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.263 2000/08/17 19:08:11 grubba Exp $");
+RCSID("$Id: program.c,v 1.264 2000/08/17 19:11:34 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1397,7 +1397,8 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
 
 #ifdef PIKE_DEBUG
   if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
-    fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %d\n",alignment);
+    fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %ld\n",
+	  PTRDIFF_T_TO_LONG(alignment));
 #endif
   modulo=( modulo_orig /* +OFFSETOF(object,storage) */ ) % alignment;
 
