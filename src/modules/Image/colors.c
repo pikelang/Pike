@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.42 2000/12/05 21:08:24 per Exp $
+**!	$Id: colors.c,v 1.43 2001/01/03 18:08:07 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.42 2000/12/05 21:08:24 per Exp $");
+RCSID("$Id: colors.c,v 1.43 2001/01/03 18:08:07 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1366,10 +1366,13 @@ static void image_get_color(INT32 args)
 	 if (sp[-1].type==T_ARRAY &&
 	     sp[-1].u.array->size==1)
 	 {
-	    double f;	/* FIXME: What is f used for? */
+	    double f;	
 	    f = sp[-1].u.array->item[0].u.float_number;
 	    pop_stack();
-	    sp--;
+	    push_int( (int)(255*f/99) );
+	    stack_dup();
+	    stack_dup();
+	    image_make_rgb_color(3);
 	       
 	    return;
 	 }
