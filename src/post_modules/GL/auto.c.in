@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.31 2003/07/03 12:42:51 nilsson Exp $
+|| $Id: auto.c.in,v 1.32 2003/07/03 16:47:03 grubba Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.31 2003/07/03 12:42:51 nilsson Exp $");
+RCSID("$Id: auto.c.in,v 1.32 2003/07/03 16:47:03 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -416,15 +416,9 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 
 void my_glFrustum(INT32 args) {
   float right,left,bottom,top,near,far;
-  if(args<6)
-    SIMPLE_TOO_FEW_ARGS_ERROR("glFrustum", 6);
 
-  right = Pike_sp[-args];
-  left = Pike_sp[-args+1];
-  bottom = Pike_sp[-args+2];
-  top = Pike_sp[-args+3];
-  near = Pike_sp[-args+4];
-  far = Pike_sp[-args+5];
+  get_all_args("glFrustum", args, "%F%F%F%F%F%F",
+	       &right, &left, &bottom, &top, &near, &far);
   pop_n_elems(args);
 
   /* row 1 */
