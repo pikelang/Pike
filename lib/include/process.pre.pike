@@ -16,7 +16,7 @@ varargs int exec(string file,string ... foo)
   return 69;
 }
 
-void int spawn(string s,object stdin,object stdout,object stderr)
+varargs int spawn(string s,object stdin,object stdout,object stderr)
 {
   object p;
   int pid;
