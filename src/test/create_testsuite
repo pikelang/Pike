@@ -550,6 +550,8 @@ test_any(int e;string t=""; e=0; while(++e<6) t+=e; return t,"12345";)
 test_any(int e=1;string t=""; while(e<20){t+=e;e*=2;} return t,"124816";)
 
 // Switch
+test_any(switch("") { case -1: case "gazonk": return 0; } return 1,1)
+test_any(switch("") { case -2: case "gazonk": return 0; } return 1,1)
 test_any(switch("") { case 0: case "gazonk": return 0; } return 1,1)
 test_any(switch("") { case "gazonk": case 0: return 0; } return 1,1)
 test_any(switch(0) { case 0: case "gazonk": return 0; } return 1,0)
