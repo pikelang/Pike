@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.37 2002/01/17 10:25:53 grubba Exp $
+// $Id: Query.pike,v 1.38 2002/06/03 20:52:20 mast Exp $
 
 /*
 **! module Protocols
@@ -215,7 +215,9 @@ static void connect(string server,int port,int blocking)
 #ifdef HTTP_QUERY_DEBUG
       werror("<- (error %d)\n",errno);
 #endif
-      destruct(con);
+      catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
+      catch (con->close());
+      //destruct(con);
       con=0;
       ok=0;
       return;
@@ -319,8 +321,9 @@ static void async_timeout()
    errno=110; // timeout
    if (con)
    {
+      catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
       catch { con->close(); };
-      destruct(con);
+      //destruct(con);
    }
    con=0;
    async_failed();
@@ -331,7 +334,9 @@ void async_got_host(string server,int port)
   if (!server)
    {
       async_failed();
-      catch { destruct(con); }; //  we may be destructed here
+      catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
+      catch (con->close());	//  we may be destructed here
+      //catch { destruct(con); };
       return;
    }
    if (catch
@@ -372,7 +377,9 @@ void async_got_host(string server,int port)
    })
      {
        if (!(errno=con->errno())) errno=22; /* EINVAL */
-       destruct(con);
+       catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
+       catch (con->close());
+       //destruct(con);
        con=0;
        ok=0;
        async_failed();
@@ -393,7 +400,8 @@ void async_fetch_close()
    werror("-> close\n");
 #endif
    con->set_blocking();
-   destruct(con);
+   catch (con->close());
+   //destruct(con);
    con=0;
    if (request_ok) (request_ok)(@extra_args);
 }
@@ -788,7 +796,9 @@ object datafile()
 
 void destroy()
 {
-   catch { con->close(); destruct(con); };
+   catch (con->set_blocking()); // Only to remove callbacks to avoid cycles.
+   catch { con->close(); };
+   //catch { destruct(con); };
 }
 
 void async_fetch(function callback,mixed ... extra)
