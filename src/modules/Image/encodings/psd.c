@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.28 2001/03/17 20:42:06 grubba Exp $");
+RCSID("$Id: psd.c,v 1.29 2001/03/18 18:33:58 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -24,6 +24,7 @@ RCSID("$Id: psd.c,v 1.28 2001/03/17 20:42:06 grubba Exp $");
 
 #include "image.h"
 #include "colortable.h"
+#include "bignum.h"
 
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
