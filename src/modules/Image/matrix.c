@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix.c,v 1.43 2002/10/21 17:06:14 marcus Exp $
+|| $Id: matrix.c,v 1.44 2003/03/21 13:23:23 jhs Exp $
 */
 
 /*
@@ -257,7 +257,10 @@ void img_scale2(struct image *dest, struct image *source)
    newy = source->ysize >> 1;
 
    if (dest->img) { free(dest->img); dest->img=NULL; }
-   if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
+   if (!THIS->img || newx<0 || newy<0) return; /* no way */
+
+   if (!newx) newx = 1;
+   if (!newy) newy = 1;
 
    new=malloc(newx*newy*sizeof(rgb_group) +1);
    if (!new) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
