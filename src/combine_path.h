@@ -1,5 +1,5 @@
 /*
- * $Id: combine_path.h,v 1.8 2001/09/24 16:51:28 grubba Exp $
+ * $Id: combine_path.h,v 1.9 2001/09/25 03:13:23 hubbe Exp $
  *
  * Combine path template.
  *
@@ -35,7 +35,7 @@ static int find_absolute(PCHARP s)
   if(IS_SEP(c0) && IS_SEP(c1))
   {
     int l;
-    for(l=2;isalpha(INDEX_PCHARP(s,l));l++);
+    for(l=2;INDEX_PCHARP(s,l) && !IS_SEP(INDEX_PCHARP(s,l));l++);
     return l;
   }
 
