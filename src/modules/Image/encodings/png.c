@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.12 1998/04/08 03:43:55 mirar Exp $");
+RCSID("$Id: png.c,v 1.13 1998/04/08 03:46:11 mirar Exp $");
 
 #include "config.h"
 
@@ -1336,8 +1336,13 @@ static void image_png__decode(INT32 args)
 **!	normal options:
 **!	    "alpha":image object
 **!		Use this image as alpha channel 
-**!		(Note that PNG alpha channel is grey.
-**!		 The values are calculated by (r+2g+b)/3.)
+**!		(Note: PNG alpha channel is grey.
+**!		 The values are calculated by (r+2g+b)/4.)
+**!
+**!	    "palette":colortable object
+**!		Use this as palette for pseudocolor encoding
+**!		(Note: encoding with alpha channel and pseudocolor
+**!		 at the same time are not supported)
 **!
 **!	</pre>
 **!
