@@ -21,7 +21,7 @@
   <subsection title="test_compile" />
   <subsection title="test_compile_any" />
   <subsection title="test_compile_error" />
-  <subsection title="test_compile_error_low" />
+  <subsection title="test_compile_error_any" />
   <subsection title="test_eval_error" />
   <subsection title="test_define_program" />
   <subsection title="test_program" />

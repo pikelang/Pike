@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.492 2002/04/09 19:47:23 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.493 2002/04/11 20:48:27 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -196,8 +196,8 @@ test_any([[{
 
 define(test_type_error, [[
    test_compile_error([[ $1 x; x=$3; ]])
-   test_compile_error_low([[ class ErrBa { $1 x() { return $3; } } ]])
-   test_compile_error_low([[ class ErrBa { $1 x() { $2 a=$3; return a; } } ]])
+   test_compile_error_any([[ class ErrBa { $1 x() { return $3; } } ]])
+   test_compile_error_any([[ class ErrBa { $1 x() { $2 a=$3; return a; } } ]])
 ]])
 
 test_type_error(int,float,17.23)
@@ -1420,13 +1420,13 @@ test_eval_error([[ return 0.0[0]; ]])
 test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 
-test_compile_error_low([[
+test_compile_error_any([[
  mixed foo;
  mapping query_variables() { return ([]); };
  mixed foo(mixed bar) { return 1/foo; }
 ]])
 
-test_compile_error_low([[
+test_compile_error_any([[
   class A {int wrong = "bogus"; void create() {}}
   class B {inherit A;}
 ]])
@@ -1517,7 +1517,7 @@ test_any([[
   return d->a + d->b + d->c;
 ]], 7)
 
-test_compile_error_low([[
+test_compile_error_any([[
   class AScope
   {
      int gurka;
@@ -2707,7 +2707,7 @@ test_any([[int e; return e--;]],0)
 test_any([[int e; return --e;]],-1)
 test_any([[int e; if(e--) return 0; return e;]],-1)
 
-test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
+test_compile_error_any(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
 test_any([[function f=random_seed; int t; foreach(allocate(1),t) f(t); return 1;]],1)
 test_compile([[while(0)if(0)continue;else;]])
@@ -5275,9 +5275,9 @@ test_compile_error([[} void foo() { return 1]]);
 test_compile([[mapping a; int b; a = b = 0;]]);
 test_compile_error([[mapping a; int b; a = b = 1;]]);
 test_compile_any([[void a(int q){} void b(function(int:void) f){} void c(){b(a);}]]);
-test_compile_error_low([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
+test_compile_error_any([[void a(int i){} void b(function(:void) f){} void c(){b(a);}]]);
 test_compile_any([[void a(){} function(int:void) b = a;]]);
-test_compile_error_low([[void a(int i){} function(:void) b = a;]]);
+test_compile_error_any([[void a(int i){} function(:void) b = a;]]);
 
 // Duplicate local variable
 test_compile_error([[void f() {int i; int i;}]]);
@@ -8815,22 +8815,22 @@ int a()
 // - modifiers, compile time type checks
 
 test_compile_any(class A {int v;} class B {inherit A; int v;})
-test_compile_error_low(class A {int v;} class B {inherit A; float v;})
-dnl test_compile_error_low(class A {int v;} class B {inherit A; mixed v;})
-dnl test_compile_error_low(class A {mixed v;} class B {inherit A; int v;})
-dnl test_compile_error_low(class A {public int v;} class B {inherit A; mixed v;})
-dnl test_compile_error_low(class A { public { int v; } } class B {inherit A; mixed v;})
-dnl test_compile_error_low(class A {public mixed v;} class B {inherit A; int v;})
-test_compile_error_low(class A {static int v;} class B {inherit A; float v;})
-dnl test_compile_error_low(class A {static int v;} class B {inherit A; mixed v;})
-dnl test_compile_error_low(class A {static mixed v;} class B {inherit A; int v;})
+test_compile_error_any(class A {int v;} class B {inherit A; float v;})
+dnl test_compile_error_any(class A {int v;} class B {inherit A; mixed v;})
+dnl test_compile_error_any(class A {mixed v;} class B {inherit A; int v;})
+dnl test_compile_error_any(class A {public int v;} class B {inherit A; mixed v;})
+dnl test_compile_error_any(class A { public { int v; } } class B {inherit A; mixed v;})
+dnl test_compile_error_any(class A {public mixed v;} class B {inherit A; int v;})
+test_compile_error_any(class A {static int v;} class B {inherit A; float v;})
+dnl test_compile_error_any(class A {static int v;} class B {inherit A; mixed v;})
+dnl test_compile_error_any(class A {static mixed v;} class B {inherit A; int v;})
 test_compile_any(class A {private int v;} class B {inherit A; float v;})
 dnl test_compile_any(class A {private int v;} class B {inherit A; mixed v;})
 dnl test_compile_any(class A {private mixed v;} class B {inherit A; int v;})
-test_compile_error_low(class A {final int v;} class B {inherit A; int v;})
-test_compile_error_low(class A {final int v;} class B {inherit A; final int v;})
-test_compile_error_low(class A {nomask int v;} class B {inherit A; int v;})
-test_compile_error_low(class A {nomask int v;} class B {inherit A; nomask int v;})
+test_compile_error_any(class A {final int v;} class B {inherit A; int v;})
+test_compile_error_any(class A {final int v;} class B {inherit A; final int v;})
+test_compile_error_any(class A {nomask int v;} class B {inherit A; int v;})
+test_compile_error_any(class A {nomask int v;} class B {inherit A; nomask int v;})
 test_compile_any(class A {local int v;} class B {inherit A; float v;})
 test_compile_any(class A {local int v;} class B {inherit A; mixed v;})
 test_compile_any(class A {local mixed v;} class B {inherit A; int v;})
@@ -8846,36 +8846,36 @@ test_compile_any(class A {void f(){}} class B {inherit A; void f(int a){}})
 test_compile_any(class A {void f(int a){}} class B {inherit A; void f(float a){}})
 test_compile_any(class A {void f(int a){}} class B {inherit A; void f(mixed a){}})
 test_compile_any(class A {void f(mixed a){}} class B {inherit A; void f(int a){}})
-test_compile_error_low(class A {final int f(){}} class B {inherit A; int f(){}})
-test_compile_error_low(class A {final int f(){}} class B {inherit A; final int f(){}})
-test_compile_error_low(class A {nomask int f(){}} class B {inherit A; int f(){}})
-test_compile_error_low(class A {nomask int f(){}} class B {inherit A; nomask int f(){}})
+test_compile_error_any(class A {final int f(){}} class B {inherit A; int f(){}})
+test_compile_error_any(class A {final int f(){}} class B {inherit A; final int f(){}})
+test_compile_error_any(class A {nomask int f(){}} class B {inherit A; int f(){}})
+test_compile_error_any(class A {nomask int f(){}} class B {inherit A; nomask int f(){}})
 
 test_compile(class A {int v;}; class B {inherit A; int v(){}})
 test_compile(class A {public int v;}; class B {inherit A; int v(){}})
 test_compile(class A {static int v;}; class B {inherit A; int v(){}})
 test_compile_any(class A {private int v;} class B {inherit A; int v(){}})
-test_compile_error_low(class A {final int v;} class B {inherit A; int v(){}})
-test_compile_error_low(class A {nomask int v;} class B {inherit A; int v(){}})
+test_compile_error_any(class A {final int v;} class B {inherit A; int v(){}})
+test_compile_error_any(class A {nomask int v;} class B {inherit A; int v(){}})
 test_compile_any(class A {local int v;} class B {inherit A; int v(){}})
 test_compile_any(class A {inline int v;} class B {inherit A; int v(){}})
 
-test_compile_error_low(class A {int f(){}} class B {inherit A; int f;})
-test_compile_error_low(class A {public int f(){}} class B {inherit A; int f;})
-test_compile_error_low(class A {static int f(){}} class B {inherit A; int f;})
+test_compile_error_any(class A {int f(){}} class B {inherit A; int f;})
+test_compile_error_any(class A {public int f(){}} class B {inherit A; int f;})
+test_compile_error_any(class A {static int f(){}} class B {inherit A; int f;})
 test_compile_any(class A {private int f(){}} class B {inherit A; int f;})
-test_compile_error_low(class A {final int f(){}} class B {inherit A; int f;})
-test_compile_error_low(class A {nomask int f(){}} class B {inherit A; int f;})
+test_compile_error_any(class A {final int f(){}} class B {inherit A; int f;})
+test_compile_error_any(class A {nomask int f(){}} class B {inherit A; int f;})
 test_compile_any(class A {local int f(){}} class B {inherit A; int f;})
 test_compile_any(class A {inline int f(){}} class B {inherit A; int f;})
 
 // - modifiers, compile time access properties
 
-test_compile_error_low(class A {} class B {inherit A; int q; void g(){q=v;}})
+test_compile_error_any(class A {} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=v;}})
-test_compile_error_low(class A {private int v;} class B {inherit A; int q; void g(){q=v;}})
+test_compile_error_any(class A {private int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {nomask int v;} class B {inherit A; int q; void g(){q=v;}})
 test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=v;}})
@@ -8883,7 +8883,7 @@ test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=v
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {public int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {static int f(){}} class B {inherit A; void g(){f();}})
-test_compile_error_low(class A {private int f(){}} class B {inherit A; void g(){f();}})
+test_compile_error_any(class A {private int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {final int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {nomask int f(){}} class B {inherit A; void g(){f();}})
 test_compile_any(class A {local int f(){}} class B {inherit A; void g(){f();}})
@@ -8904,11 +8904,11 @@ test_compile_any(class A {int f(){}} class B {nomask inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {local inherit A; void g(){f();}})
 test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){f();}})
 
-test_compile_error_low(class A {} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_error_any(class A {} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {public int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {static int v;} class B {inherit A; int q; void g(){q=A::v;}})
-test_compile_error_low(class A {private int v;} class B {inherit A; int q; void g(){q=A::v;}})
+test_compile_error_any(class A {private int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {final int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {nomask int v;} class B {inherit A; int q; void g(){q=A::v;}})
 test_compile_any(class A {local int v;} class B {inherit A; int q; void g(){q=A::v;}})
@@ -8916,7 +8916,7 @@ test_compile_any(class A {inline int v;} class B {inherit A; int q; void g(){q=A
 test_compile_any(class A {int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {public int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {static int f(){}} class B {inherit A; void g(){A::f();}})
-test_compile_error_low(class A {private int f(){}} class B {inherit A; void g(){A::f();}})
+test_compile_error_any(class A {private int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {final int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {nomask int f(){}} class B {inherit A; void g(){A::f();}})
 test_compile_any(class A {local int f(){}} class B {inherit A; void g(){A::f();}})
@@ -8937,11 +8937,11 @@ test_compile_any(class A {int f(){}} class B {nomask inherit A; void g(){A::f();
 test_compile_any(class A {int f(){}} class B {local inherit A; void g(){A::f();}})
 test_compile_any(class A {int f(){}} class B {inline inherit A; void g(){A::f();}})
 
-test_compile_error_low(class A {} class B {inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_error_any(class A {} class B {inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {public inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {static inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
-test_compile_error_low(class A {int v;} class B {private inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
+test_compile_error_any(class A {int v;} class B {private inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {final inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {nomask inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
 test_compile_any(class A {int v;} class B {local inherit A;} class C {inherit B; int q; void g(){q=B::v;}})
@@ -8949,7 +8949,7 @@ test_compile_any(class A {int v;} class B {inline inherit A;} class C {inherit B
 test_compile_any(class A {int f(){}} class B {inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {public inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {static inherit A;} class C {inherit B; void g(){B::f();}})
-test_compile_error_low(class A {int f(){}} class B {private inherit A;} class C {inherit B; void g(){B::f();}})
+test_compile_error_any(class A {int f(){}} class B {private inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {final inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {nomask inherit A;} class C {inherit B; void g(){B::f();}})
 test_compile_any(class A {int f(){}} class B {local inherit A;} class C {inherit B; void g(){B::f();}})
@@ -9050,31 +9050,31 @@ test_any(class A {int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; r
 test_any(class A {public int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {static int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {private int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
-test_compile_error_low(class A {final int v=1;}; class B {inherit A; int v=2;};)
-test_compile_error_low(class A {nomask int v=1;}; class B {inherit A; int v=2;};)
+test_compile_error_any(class A {final int v=1;}; class B {inherit A; int v=2;};)
+test_compile_error_any(class A {nomask int v=1;}; class B {inherit A; int v=2;};)
 test_any(class A {local int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {inline int v=1;}; class B {inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {public int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {static int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {private int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
-test_compile_error_low(class A {final int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
-test_compile_error_low(class A {nomask int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
+test_compile_error_any(class A {final int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
+test_compile_error_any(class A {nomask int f(){return 1;}}; class B {inherit A; int f(){return 2;}};)
 test_any(class A {local int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {inline int f(){return 1;}}; class B {inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 
 test_any(class A {int v=1;}; class B {public inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {static inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {private inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
-test_compile_error_low(class A {int v=1;}; class B {final inherit A; int v=2;};)
-test_compile_error_low(class A {int v=1;}; class B {nomask inherit A; int v=2;};)
+test_compile_error_any(class A {int v=1;}; class B {final inherit A; int v=2;};)
+test_compile_error_any(class A {int v=1;}; class B {nomask inherit A; int v=2;};)
 test_any(class A {int v=1;}; class B {local inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int v=1;}; class B {inline inherit A; int v=2; int t(){return v;}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {public inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {static inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {private inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
-test_compile_error_low(class A {int f(){return 1;}}; class B {final inherit A; int f(){return 2;}};)
-test_compile_error_low(class A {int f(){return 1;}}; class B {nomask inherit A; int f(){return 2;}};)
+test_compile_error_any(class A {int f(){return 1;}}; class B {final inherit A; int f(){return 2;}};)
+test_compile_error_any(class A {int f(){return 1;}}; class B {nomask inherit A; int f(){return 2;}};)
 test_any(class A {int f(){return 1;}}; class B {local inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 test_any(class A {int f(){return 1;}}; class B {inline inherit A; int f(){return 2;} int t(){return f();}}; return B()->t(), 2)
 

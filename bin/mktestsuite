@@ -102,7 +102,7 @@ define(test_compile_any,[[DOTEST(COMPILE,dnl
 define(test_compile_error,[[DOTEST(COMPILE_ERROR,dnl
 mixed a() { [[$1]];})]])
 
-define(test_compile_error_low,[[DOTEST(COMPILE_ERROR,dnl
+define(test_compile_error_any,[[DOTEST(COMPILE_ERROR,dnl
 [[$1]])]])
 
 define(test_eval_error,[[DOTEST(EVAL_ERROR,dnl
