@@ -56,18 +56,21 @@ string get_atom(int|void with_options)
   string atom;
 
   werror("get_atom: buffer = '%s'\n", buffer);
-      
+
   sscanf(buffer,
 	 (with_options
 	  ? "%*[ \t]%[^][(){ \0-\037\177%*\"\\]%s"
 	  : "%*[ \t]%[^(){ \0-\037\177%*\"\\]%s"),
 	 atom, buffer);
-      
+
+#if 0	/* FIXME: This code is broken */
   if (strlen(buffer))
     switch(buffer[0])
     {
     case ' ':
     case '\t':
+    case ')':
+    case ']':
       break;
     case '[':
       if (with_options)
@@ -77,7 +80,8 @@ string get_atom(int|void with_options)
       werror("=> atom: 0\n");
       return 0;
     }
-      
+#endif /* 0 */
+  
   werror(sprintf("=> atom: %O\n", atom));
   return strlen(atom) && atom;
 }
