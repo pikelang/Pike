@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.80 2004/04/14 19:05:26 grubba Exp $
+|| $Id: dynamic_load.c,v 1.81 2004/04/14 19:45:15 mast Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "lex.h"
 #  include "object.h"
 
-RCSID("$Id: dynamic_load.c,v 1.80 2004/04/14 19:05:26 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.81 2004/04/14 19:45:15 mast Exp $");
 
 #else /* TESTING */
 
@@ -510,25 +510,32 @@ void f_load_module(INT32 args)
   init = CAST_TO_FUN(dlsym(module, "pike_module_init"));
   if (!init) {
     init = CAST_TO_FUN(dlsym(module, "_pike_module_init"));
+    if (!init) {
+      dlclose(module);
+      if (!module_name->size_shift && module_name->len < 1024) {
+	Pike_error("pike_module_init missing in dynamic module \"%s\".\n",
+		   module_name->str);
+      } else {
+	Pike_error("pike_module_init missing in dynamic module.\n");
+      }
+    }
   }
+
   exit = CAST_TO_FUN(dlsym(module, "pike_module_exit"));
   if (!exit) {
     exit = CAST_TO_FUN(dlsym(module, "_pike_module_exit"));
-  }
-
-  if(!init || !exit)
-  {
-    dlclose(module);
-
-    if (strlen(module_name->str) < 1024) {
-      Pike_error("Failed to initialize dynamic module \"%s\".\n",
-		 module_name->str);
-    } else {
-      Pike_error("Failed to initialize dynamic module.\n");
+    if (!exit) {
+      dlclose(module);
+      if (!module_name->size_shift && module_name->len < 1024) {
+	Pike_error("pike_module_exit missing in dynamic module \"%s\".\n",
+		   module_name->str);
+      } else {
+	Pike_error("pike_module_exit missing in dynamic module.\n");
+      }
     }
   }
+
 #if defined(__NT__) && defined(_M_IA64)
-  else
   {
     fprintf(stderr, "pike_module_init: 0x%p\n"
 	    "  func: 0x%p\n"
