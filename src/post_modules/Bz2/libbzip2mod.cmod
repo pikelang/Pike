@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.5 2003/01/24 10:04:48 finnman Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.6 2003/01/24 10:24:26 finnman Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -45,6 +45,7 @@ RCSID("$Id: libbzip2mod.cmod,v 1.5 2003/01/24 10:04:48 finnman Exp $");
 #define DEFL_BUF_SIZE 500000
 #define INFL_BUF_SIZE 500000
 
+
 /* Why use double prefixes? */
 #ifdef HAVE_BZ2_BZCOMPRESSINIT
 #define bzCompressInit		BZ2_bzCompressInit
@@ -59,8 +60,6 @@ RCSID("$Id: libbzip2mod.cmod,v 1.5 2003/01/24 10:04:48 finnman Exp $");
 #define bzWriteOpen		BZ2_bzWriteOpen
 #define bzWrite			BZ2_bzWrite
 #define bzWriteClose		BZ2_bzWriteClose
-/* use 64bit count struct */
-#define s->total_out (s->total_out_lo_32 + ((s->total_out_hi_32)<<32))
 #endif /* HAVE_BZ2_BZCOMPRESSINIT */
 
 /*! @module Bz2
