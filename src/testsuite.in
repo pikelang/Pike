@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.694 2003/11/25 22:15:35 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.695 2004/01/15 17:48:59 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -411,6 +411,13 @@ test_compile_error([[class F {inherit master()->dirnode;};]]);
 test_compile_warning([[ int *a ]])
 test_compile_warning([[ int|float *a ]])
 test_compile_warning([[ [mixed]1 ]])
+test_compile_warning([[
+ class A { int a = 6; };
+ class B {
+   constant a = 5;
+   inherit A;
+ };
+]])
 
 //
 
@@ -2962,7 +2969,12 @@ test_program([[
       mixed f() {return X::s + X::A::s + Y::s + Y::A::s + A::s;}
     }
   }
-  int a() {return X()->Y()->f() == "XAYBB";}
+
+  int a() {
+    // Ignore the warning we get from overloading a constant with a string.
+    master()->get_inhibit_compile_errors()->warning=0;
+    return X()->Y()->f() == "XAYBB";
+  }
 ]])
 
 test_program([[
@@ -10045,9 +10057,9 @@ test_compile_error_any(class A {final int f(){}} class B {inherit A; final int f
 test_compile_error_any(class A {nomask int f(){}} class B {inherit A; int f(){}})
 test_compile_error_any(class A {nomask int f(){}} class B {inherit A; nomask int f(){}})
 
-test_compile(class A {int v;}; class B {inherit A; int v(){}})
-test_compile(class A {public int v;}; class B {inherit A; int v(){}})
-test_compile(class A {static int v;}; class B {inherit A; int v(){}})
+test_compile_warning(class A {int v;}; class B {inherit A; int v(){}})
+test_compile_warning(class A {public int v;}; class B {inherit A; int v(){}})
+test_compile_warning(class A {static int v;}; class B {inherit A; int v(){}})
 test_compile_any(class A {private int v;} class B {inherit A; int v(){}})
 test_compile_error_any(class A {final int v;} class B {inherit A; int v(){}})
 test_compile_error_any(class A {nomask int v;} class B {inherit A; int v(){}})
