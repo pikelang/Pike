@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.18 2004/02/21 18:36:06 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.19 2004/04/28 18:17:25 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
@@ -91,6 +91,44 @@ PIKECLASS HashInfo
 
       push_int(THIS->meta->block_size);
     }
+
+
+  /*! @decl string hash(string data)
+   *!
+   *!  Works as a (faster) shortcut for
+   *!  @expr{obj->update(data)->digest()@}.
+   *!
+   *! @seealso
+   *!   @[HashState()->update()] and @[HashState()->digest()].
+   */
+  PIKEFUN string hash(string in)
+    optflags OPT_TRY_OPTIMIZE;
+  {
+    void *ctx;
+    struct pike_string *out;
+    unsigned digest_length;
+
+    if (!THIS->meta)
+      Pike_error("HashInfo not properly initialized.\n");
+    NO_WIDE_STRING(in);
+
+    ctx = (void *)alloca(THIS->meta->context_size);
+    if(!ctx)
+      Pike_error("Out of memory or karma.\n");
+
+    THREADS_ALLOW();
+    THIS->meta->init(ctx);
+    THIS->meta->update(ctx, in->len, in->str);
+
+    digest_length = THIS->meta->digest_size;
+    out = begin_shared_string(digest_length);
+    THIS->meta->digest(ctx, digest_length, out->str);
+    THREADS_DISALLOW();
+
+    pop_n_elems(args);
+    push_string(end_shared_string(out));
+  }
+
   INIT
     {
       werror("HashInfo->INIT\n");
