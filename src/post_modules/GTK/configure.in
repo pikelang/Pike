@@ -412,6 +412,17 @@ if test "x$WITH_GTK" = x1 ; then
  oCFLAG="$CFLAGS"
  CFLAGS="$GNOME_CFLAGS"
 
+ # Who came up with the XXX-config stupidity?
+ if echo X "$GNOME_LIBS" | grep lpng10 >/dev/null 2>&1; then
+   # Check if we actually have -lpng10...
+   AC_CHECK_LIB(png10, png_read_png)
+   AC_CHECK_LIB(png, png_read_png)
+   if test "x$ac_cv_lib_png10_png_read_png$ac_cv_lib_png_png_read_png" = "xnoyes"; then
+     AC_MSG_WARN([Adjusting LIBS to use -lpng instead of -lpng10.])
+     GNOME_LIBS=`echo "$GNOME_LIBS"|sed -e 's/-lpng10/-lpng/g'`
+   else :; fi
+ fi
+
  # Do some extra effort to check for the header files, since some
  # Gnome packagings doesn't include them all (e.g. applet-widget.h on
  # Debian systems). Can't use AC_CHECK_HEADERS here since it doesn't
