@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: polyfill.c,v 1.43 2003/11/03 14:30:49 nilsson Exp $
+|| $Id: polyfill.c,v 1.44 2003/11/03 16:23:20 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.43 2003/11/03 14:30:49 nilsson Exp $");
+RCSID("$Id: polyfill.c,v 1.44 2003/11/03 16:23:20 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -60,6 +60,16 @@ extern double floor(double);
 **!
 **!	If any given curve is inside another, it
 **!	will make a hole.
+**!
+**! <pre>
+**! Image.Image(100,100)->setcolor(255,0,0,128)->
+**!   polyfill( ({ 20,20, 80,20, 80,80 }) );
+**! </pre>
+**! <illustration>
+**! return Image.Image(100,100)->setcolor(255,0,0,128)->
+**!   polyfill( ({ 20,20, 80,20, 80,80 }) );
+**! </illustration>
+**!
 **!
 **! note
 **!	Lines in the polygon may <i>not</i> be crossed without
