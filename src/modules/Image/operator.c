@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.27 2000/06/02 05:03:32 per Exp $ */
+/* $Id: operator.c,v 1.28 2000/06/03 21:01:16 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.27 2000/06/02 05:03:32 per Exp $
+**!	$Id: operator.c,v 1.28 2000/06/03 21:01:16 per Exp $
 **! class Image
 */
 
@@ -26,10 +26,7 @@
 
 #include "image.h"
 #include "image_machine.h"
-
-#ifdef ASSEMBLY_OK
 #include "assembly.h"
-#endif
 
 extern struct program *image_program;
 #ifdef THIS
@@ -188,7 +185,6 @@ STANDARD_OPERATOR_HEADER("`+")
    else
    {
 #ifdef ASSEMBLY_OK
-#define MCcol( A, B, C, D )   ((A<<24) | (B<<16) | (C<<8) | D)
      if( image_cpuid & IMAGE_MMX )
      {
        if( (rgb.r >= 0) && (rgb.g >= 0) && (rgb.b >= 0) )
@@ -196,10 +192,7 @@ STANDARD_OPERATOR_HEADER("`+")
          if( rgb.r > 255 )   rgb.r = 255;
          if( rgb.g > 255 )   rgb.g = 255;
          if( rgb.b > 255 )   rgb.b = 255;
-         image_add_buffer_mmx_x86asm( d,s1,i/4,
-                                      MCcol( rgb.r, rgb.b, rgb.g, rgb.r ),
-                                      MCcol( rgb.g, rgb.r, rgb.b, rgb.g ),  
-                                      MCcol( rgb.b, rgb.g, rgb.r, rgb.b ) ); 
+         image_add_buffer_mmx_x86asm( d,s1,i/4,RGB2ASMCOL(rgb) );
        } else  if( (rgb.r < 0) && (rgb.g < 0) && (rgb.b < 0) ) {
          rgb.r = -rgb.r;
          rgb.g = -rgb.g;
@@ -207,16 +200,12 @@ STANDARD_OPERATOR_HEADER("`+")
          if( rgb.r > 255 )   rgb.r = 255;
          if( rgb.g > 255 )   rgb.g = 255;
          if( rgb.b > 255 )   rgb.b = 255;
-         image_sub_buffer_mmx_x86asm( d,s1,i/4,
-                                      MCcol( rgb.r, rgb.b, rgb.g, rgb.r ),
-                                      MCcol( rgb.g, rgb.r, rgb.b, rgb.g ),  
-                                      MCcol( rgb.b, rgb.g, rgb.r, rgb.b ) ); 
+         image_sub_buffer_mmx_x86asm( d,s1,i/4,RGB2ASMCOL(rgb) );
        }
        d += i;  s1 += i;
        i = i%4;
        d -= i;  s1 -= i;
      }
-#undef MCcol
 #endif
      while (i--)
      {
@@ -286,18 +275,13 @@ STANDARD_OPERATOR_HEADER("`*")
             (rgb.b < 256) )
    {
 #ifdef ASSEMBLY_OK
-#define MCcol( A, B, C, D )   ((A<<24) | (B<<16) | (C<<8) | D)
      if( image_cpuid & IMAGE_MMX )
      {
-       image_mult_buffer_mmx_x86asm( d,s1,i/4,
-                                     MCcol( rgb.r, rgb.b, rgb.g, rgb.r ),
-                                     MCcol( rgb.g, rgb.r, rgb.b, rgb.g ),  
-                                     MCcol( rgb.b, rgb.g, rgb.r, rgb.b ) ); 
+       image_mult_buffer_mmx_x86asm( d,s1,i/4,RGB2ASMCOL(rgb) );
        d += i;  s1 += i;
        i = i%4;
        d -= i;  s1 -= i;
      }
-#undef MCcol
 #endif
      while (i--)
      {

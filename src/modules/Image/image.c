@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.161 2000/06/02 05:01:44 per Exp $ */
+/* $Id: image.c,v 1.162 2000/06/03 21:01:02 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.161 2000/06/02 05:01:44 per Exp $
+**!	$Id: image.c,v 1.162 2000/06/03 21:01:02 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.161 2000/06/02 05:01:44 per Exp $");
+RCSID("$Id: image.c,v 1.162 2000/06/03 21:01:02 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2266,19 +2266,14 @@ void image_color(INT32 args)
    THREADS_ALLOW();
    {
 #ifdef ASSEMBLY_OK
-#define MCcol( A, B, C, D )   ((A<<24) | (B<<16) | (C<<8) | D)
      if( image_cpuid & IMAGE_MMX )
      {
-       image_mult_buffer_mmx_x86asm( d,s,x/4,
-                                     MCcol(rgb.r,rgb.b,rgb.g, rgb.r ),
-                                     MCcol(rgb.g,rgb.r,rgb.b, rgb.g ),  
-                                     MCcol(rgb.b,rgb.g,rgb.r, rgb.b ) ); 
+       image_mult_buffer_mmx_x86asm( d,s,x/4, RGB2ASMCOL( rgb )  ); 
        s += x;
        x = x%4;
        s -= x;
      }
    }
-#undef MCcol
 #endif
    while (x--)
    {
