@@ -161,6 +161,7 @@ testfont binary
 /src/modules/call_out/test_co.pike foreign_ident
 /src/modules/dynamic_module_makefile.in foreign_ident
 /src/modules/files/acconfig.h foreign_ident
+/src/modules/files/configure.in foreign_ident
 /src/modules/files/file.c foreign_ident
 /src/modules/files/socktest.pike foreign_ident
 /src/modules/readline/acconfig.h foreign_ident
