@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.80 2000/06/22 13:13:33 noring Exp $
+// $Id: module.pmod,v 1.81 2000/08/02 20:13:33 mast Exp $
 
 import String;
 
@@ -647,7 +647,7 @@ string read_file(string filename,void|int start,void|int len)
     ret=buf->get_buffer();
     destruct(buf);
   }
-  destruct(f);
+  f->close();
 
   return ret;
 }
