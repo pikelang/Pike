@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.30 1999/03/19 11:39:09 hubbe Exp $
+ * $Id: error.h,v 1.31 1999/03/20 22:24:31 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -207,6 +207,16 @@ void bad_arg_error(
   char *expected_type,
   struct svalue *got,
   char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
+void math_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)));
+void resource_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  char *resource_type,
+  long howmuch,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
 void init_error(void);
 void cleanup_error(void);
 /* Prototypes end here */

@@ -18,7 +18,7 @@
 #include "operators.h"
 #include "module_support.h"
 
-RCSID("$Id: error.c,v 1.26 1999/03/19 11:39:08 hubbe Exp $");
+RCSID("$Id: error.c,v 1.27 1999/03/20 22:24:30 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -437,6 +437,27 @@ void bad_arg_error(
   ERROR_DONE(generic);
 }
 
+void math_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
+{
+  INIT_ERROR(math);
+  ERROR_DONE(generic);
+}
+
+void resource_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  char *resource_type,
+  long howmuch,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
+{
+  INIT_ERROR(resource);
+  ERROR_COPY(resource,howmuch);
+  ERROR_STRUCT(resource,o)->resource_type=make_shared_string(resource_type);
+  ERROR_DONE(generic);
+}
 
 void init_error(void)
 {

@@ -81,6 +81,16 @@ DECLARE_ERROR(bad_arg,
   ERR_VAR(struct svalue, mixed, T_MIXED, got)
 )
 
+DECLARE_ERROR(math,
+	      ERR_INHERIT(generic),
+)
+
+DECLARE_ERROR(resource,
+	      ERR_INHERIT(generic),
+  ERR_VAR(struct pike_string *,string,T_STRING,resource_type)
+  ERR_VAR(INT_TYPE, int, T_INT, howmuch)
+)
+
 #undef DECLARE_ERROR
 #undef ERR_INHERIT
 #undef ERR_VAR
