@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.30 1998/01/25 08:27:14 hubbe Exp $ */
+/* $Id: gif.c,v 1.31 1998/02/10 13:27:57 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.30 1998/01/25 08:27:14 hubbe Exp $
+**!	$Id: gif.c,v 1.31 1998/02/10 13:27:57 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.30 1998/01/25 08:27:14 hubbe Exp $");
+RCSID("$Id: gif.c,v 1.31 1998/02/10 13:27:57 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -67,47 +67,6 @@ enum
    GIF_ERROR_UNKNOWN_DATA,
    GIF_ERROR_TOO_MUCH_DATA
 };
-
-/*
-
-goal:
-
-object decode(string data);
-   Decode GIF data to one (!) image object.
-
-object decode_alpha(string data);
-   Decode GIF alpha channel to an image object.
-   black marks transparent, white marks full opaque.
-
-advanced:
-
-string netscape_loop_block(void|int number_of_loops);
-
-string _function_block(int function,string data);
-
-array __decode(string data);
-:  int xsize, int ysize, int numcol, void|string colortable, 
-:  ({ int aspectx, int aspecty, int background }),
-:
-:  (n of these:)
-:  ({ GIF.EXTENSION, int extension, string data })
-:  ({ GIF.RENDER, int x, int y, int xsize, int ysize, int bpp, 
-:     int interlace, void|string colortable, int lzwmin, string lzwdata })
-
-array _decode(string data);
-:  int xsize, int ysize, int numcol, 0|object colortable, 
-:  ({ int aspectx, int aspecty, array(int) background }),
-:
-:  (n of these:)
-:  ({ GIF.RENDER, int x, int y, 
-:     object image, 0|object alpha, object colortable, 
-:     int transparency, int transparency_index,
-:     int user_input, int disposal, int delay })
-:  ({ GIF.NETSCAPE_LOOP, int n })
-
-string _encode(array data);
-
- */
 
 #if 0
 #include <sys/resource.h>
@@ -247,7 +206,7 @@ void image_gif_header_block(INT32 args)
       if (sp[7-args].type!=T_INT ||
 	  sp[8-args].type!=T_INT ||
 	  sp[9-args].type!=T_INT)
-	 error("Image.GIF.render_block(): illegal argument 8..10 (expected int)\n");
+	 error("Image.GIF.header_block(): illegal argument 8..10 (expected int)\n");
       alphacolor.r=(unsigned char)(sp[7-args].u.integer);
       alphacolor.g=(unsigned char)(sp[8-args].u.integer);
       alphacolor.b=(unsigned char)(sp[9-args].u.integer);
@@ -536,10 +495,15 @@ CHRONO("gif _render_block begun");
 CHRONO("gif _render_block push of packed data begin");
 
    for (i=0;;)
-      if (lzw.outpos-i>=255)
+      if (lzw.outpos-i==0)
+      {
+	 push_string(make_shared_binary_string("\0",1));
+	 numstrings++;
+      }
+      else if (lzw.outpos-i>=255)
       {
 	 ps=begin_shared_string(256);
-	 ps->str[0]=255;
+	 *((unsigned char*)(ps->str))=255;
 	 MEMCPY(ps->str+1,lzw.out+i,255);
 	 push_string(end_shared_string(ps));
 	 numstrings++;
@@ -812,9 +776,12 @@ CHRONO("gif render_block begin");
 	          alphaidx=sp[n-args].u.integer;
 	          alpha=0;
 	          alphaentry=0;
-	          transparency=1;
-	          if (alphaidx!=-1 && numcolors<=alphaidx)
-		     error("Image.GIF.render_block(): illegal index to transparent color\n");
+	          if (alphaidx!=-1)
+		  {
+		     transparency=1;
+		     if (numcolors<=alphaidx || alphaidx<0)
+			error("Image.GIF.render_block(): illegal index to transparent color\n");
+		  }
 	          n=6;
 	       }
 	    }
@@ -1372,6 +1339,7 @@ static void _decode_get_render(unsigned char **s,
 	 push_int(0);
 	 push_int(0);
 	 push_int(0);
+	 push_int(0);
 	 *len=0;
 	 f_aggregate(10);
 	 return;
@@ -1508,6 +1476,7 @@ static void image_gif___decode(INT32 args)
 	 f_aggregate(1);
 	 s+=len;
 	 len=0;
+	 n++;
 	 break;
       }
       if (*s==0x3b && len==1) break;
@@ -1549,7 +1518,7 @@ static void image_gif___decode(INT32 args)
 **!	
 **!     <pre>
 **!	({int xsize,int ysize,    // 0: size of image drawing area
-**!	  void|string colortable, // 2: opt. global colortable 
+**!	  void|object colortable, // 2: opt. global colortable 
 **!	  ({ int aspx, int aspy,  // 3 0: aspect ratio or 0, 0 if not set
 **!	     int background }),   //   2: index of background color
 **!	</pre>
@@ -1899,8 +1868,8 @@ static void image_gif__decode(INT32 args)
 
 	       if (b->item[6].type==T_STRING)
 	       {
-		  push_svalue(a->item+6);
-		  push_object(lcto=clone_object(image_colortable_program,1));
+		  push_svalue(b->item+6);
+		  lcto=clone_object(image_colortable_program,1);
 	       }
 	       else
 	       {
@@ -2098,6 +2067,215 @@ void image_gif_decode(INT32 args)
    push_object(o);
 }
 
+/*
+**! method _encode(array data)
+**!	Encodes GIF data; reverses _decode.
+**!
+**! arg array data
+**!	data as returned from _encode
+**!
+**! note
+**!	Some given values in the array are ignored.
+**!	This function does not give the _exact_ data back!
+*/
+
+void image_gif__encode_render(INT32 args)
+{
+   struct array *a;
+   int localp;
+
+   if (args<2 ||
+       sp[-args].type!=T_ARRAY ||
+       sp[1-args].type!=T_INT)
+      error("Image.GIF._encode_render: Illegal argument(s) (expected array, int)\n");
+
+   localp=sp[1-args].u.integer;
+   (a=sp[-args].u.array)->refs++;
+   pop_n_elems(args);
+
+   if (a->size<11)
+      error("Image.GIF._encode_render: Illegal size of array\n");
+
+   push_svalue(a->item+3); /* img */
+   push_svalue(a->item+5); /* colortable */
+   push_svalue(a->item+1); /* x */
+   push_svalue(a->item+2); /* y */
+   
+   push_int(localp);
+
+   if (a->item[4].type==T_OBJECT)
+   {
+      struct neo_colortable *nct;
+
+      nct=(struct neo_colortable*)
+	 get_storage(a->item[4].u.object,image_colortable_program);
+      if (!nct)
+	 error("Image.GIF._encode_render: Passed object is not colortable\n");
+      
+      if (nct->type!=NCT_FLAT)
+	 error("Image.GIF._encode_render: Passed colortable is not flat (sorry9\n");
+      push_svalue(a->item+4);
+      if (a->item[7].type==T_INT 
+	  && a->item[7].u.integer>=0 
+	  && a->item[7].u.integer<nct->u.flat.numentries)
+      {
+	 push_int(nct->u.flat.entries[a->item[7].u.integer].color.r);
+	 push_int(nct->u.flat.entries[a->item[7].u.integer].color.g);
+	 push_int(nct->u.flat.entries[a->item[7].u.integer].color.b);
+      }
+      else
+      {
+	 push_int(0);
+	 push_int(0);
+	 push_int(0);
+      }
+      
+   }
+
+   push_svalue(a->item+8); /* delay */
+
+   if (a->item[4].type!=T_OBJECT)
+      push_int(-1);
+
+   push_svalue(a->item+6); /* interlace */
+   push_svalue(a->item+9); /* user_input */
+   push_svalue(a->item+10); /* disposal */
+
+   image_gif_render_block( (a->item[4].type==T_OBJECT) ? 13 : 10 );
+
+   free_array(a);
+}
+
+void image_gif__encode_extension(INT32 args)
+{
+   struct array *a;
+   char buf[2];
+   int n,i;
+   struct pike_string *s,*d;
+
+   if (args<1 ||
+       sp[-args].type!=T_ARRAY)
+      error("Image.GIF._encode_extension: Illegal argument(s) (expected array)\n");
+
+   (a=sp[-args].u.array)->refs++;
+   pop_n_elems(args);
+
+   if (a->size<3)
+      error("Image.GIF._encode_extension: Illegal size of array\n");
+   if (a->item[1].type!=T_INT ||
+       a->item[2].type!=T_STRING)
+      error("Image.GIF._encode_extension: Illegal type in indices 1 or 2\n");
+
+   sprintf(buf,"%c%c",0x21,a->item[1].u.integer);
+   push_string(make_shared_binary_string(buf,2));
+
+   n=1;
+   s=a->item[2].u.string;
+   for (i=0;;)
+      if (s->len-i==0)
+      {
+	 push_string(make_shared_binary_string("\0",1));
+	 n++;
+      }
+      else if (s->len-i>=255)
+      {
+   	 d=begin_shared_string(256);
+	 *((unsigned char*)(d->str))=255;
+	 MEMCPY(d->str+1,s->str+i,255);
+	 push_string(end_shared_string(d));
+	 n++;
+	 if (n>32) /* shrink stack */
+	 {
+	    f_add(n);
+	    n=1;
+	 }
+	 i+=255;
+      }
+      else
+      {
+	 d=begin_shared_string(s->len-i+2);
+	 d->str[0]=s->len-i;
+	 MEMCPY(d->str+1,s->str+i,d->len-i);
+	 d->str[d->len-i+1]=0;
+	 push_string(end_shared_string(d));
+	 n++;
+	 break;
+      }
+
+   f_add(n);
+
+   free_array(a);
+}
+
+void image_gif__encode(INT32 args)
+{
+   struct array *a,*b;
+   INT32 pos;
+   int n;
+
+   if (args<1 ||
+       sp[-args].type!=T_ARRAY)
+      error("Image.GIF._encode: Illegal argument (expected array)");
+
+   (a=sp[-args].u.array)->refs++;
+   pos=0;
+   n=0;
+   pop_n_elems(args);
+
+   if (a->size<4) 
+      error("Image.GIF._encode: Given array too small\n");
+   
+   push_svalue(a->item+0); /* xsize */
+   push_svalue(a->item+1); /* ysize */
+   push_svalue(a->item+2); /* colortable or void */
+
+   if (a->item[3].type!=T_ARRAY 
+      || a->item[3].u.array->size<3)
+      error("Image.GIF._encode: Illegal type on array index 3 (expected array)\n");
+
+   push_svalue(a->item[3].u.array->item+2); /* bkgi */
+   push_int(0); /* GIF87a-flag */
+   push_svalue(a->item[3].u.array->item+0); /* aspectx */
+   push_svalue(a->item[3].u.array->item+1); /* aspecty */
+
+   image_gif_header_block(7); n++;
+
+   pos=4;
+
+   while (pos<a->size)
+   {
+      if (a->item[pos].type!=T_ARRAY)
+	 error("Image.GIF._encode: Illegal type on array index %d (expected array)\n",pos);
+      b=a->item[pos].u.array;
+
+      if (b->size<1
+	  || b->item[0].type!=T_INT)
+	 error("Image.GIF._encode: Illegal array on array index %d\n",pos);
+      
+      if (b->item[0].u.integer==GIF_RENDER)
+      {
+	 push_svalue(a->item+pos);
+	 push_int(is_equal(b->item+6,a->item+2));
+	 image_gif__encode_render(2);
+	 n++;
+      }
+      else if (b->item[0].u.integer==GIF_EXTENSION)
+      {
+	 push_svalue(a->item+pos);
+	 image_gif__encode_extension(1);
+	 n++;
+      }
+      else break; /* unknown, bail! */
+      pos++;
+   }
+
+   image_gif_end_block(0); n++;
+
+   free_array(a);
+
+   f_add(n); /* add the strings */
+}
+
 /** module *******************************************/
 
 struct program *image_gif_module_program=NULL;
@@ -2132,6 +2310,13 @@ void init_image_gif(void)
 		"function(string|array:array)",0);
    add_function("decode",image_gif_decode,
 		"function(string|array:object)",0);
+
+   add_function("_encode",image_gif__encode,
+		"function(array:string)",0);
+   add_function("_encode_render",image_gif__encode_render,
+		"function(array:string)",0);
+   add_function("_encode_extension",image_gif__encode_extension,
+		"function(array:string)",0);
 
    /** constants **/
 
