@@ -32,7 +32,7 @@
 #include <ieeefp.h>
 #endif
 
-RCSID("$Id: svalue.c,v 1.93 2001/01/24 22:37:52 marcus Exp $");
+RCSID("$Id: svalue.c,v 1.94 2001/05/28 13:39:59 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1091,6 +1091,9 @@ PMOD_EXPORT void describe_svalue(struct svalue *s,int indent,struct processing *
 	  t_flag=save_t_flag;
 	  pop_stack();
 	}
+      } else {
+	my_strcat("0");
+	break;
       }
       
       my_strcat("object");
