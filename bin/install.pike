@@ -839,6 +839,7 @@ string prefix;
 string exec_prefix;
 string lib_prefix;
 string include_prefix;
+string doc_prefix;
 string man_prefix;
 string lnk;
 string old_exec_prefix;
@@ -874,6 +875,7 @@ int pre_install(array(string) argv)
       exec_prefix=vars->exec_prefix||(prefix+"/bin/");
       lib_prefix=vars->lib_prefix||(prefix+"/lib/pike/");
       include_prefix=combine_path(prefix,"include","pike");
+      doc_prefix=combine_path(prefix, "doc", "pike");
       man_prefix=vars->man_prefix||(prefix+"/man/");
       break;
 
@@ -1024,6 +1026,7 @@ int pre_install(array(string) argv)
 			    replace(version()-"Pike v"," release ","."));
       exec_prefix=combine_path(prefix,"bin");
       lib_prefix=combine_path(prefix,"lib");
+      doc_prefix=combine_path(prefix,"doc");
       include_prefix=combine_path(prefix,"include","pike");
       man_prefix=combine_path(prefix,"man");
       break;
@@ -1325,6 +1328,13 @@ void do_install()
 		 combine_path(include_prefix,"run_autoconfig"));
     install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
 		 combine_path(include_prefix,"precompile.sh"));
+
+    // install the core extracted autodocs
+    install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
+		 combine_path(doc_prefix, "src", "core_autodoc.xml"));
+
+    // create a directory for extracted module documentation
+    mkdirhier(combine_path(doc_prefix, "src", "extracted"));
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
