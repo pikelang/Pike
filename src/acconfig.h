@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.115 2003/02/10 17:10:39 mast Exp $
+|| $Id: acconfig.h,v 1.116 2003/02/11 20:03:41 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -247,6 +247,9 @@
 
 /* Define if gettimeofday takes to arguments */
 #undef GETTIMEOFDAY_TAKES_TWO_ARGS
+
+/* Define if gethrvtime works (i.e. even without ptime). */
+#undef HAVE_WORKING_GETHRVTIME
 
 /* Define if you have gethrtime */
 #undef HAVE_GETHRTIME

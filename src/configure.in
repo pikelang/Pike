@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.686 2003/02/11 19:27:19 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.687 2003/02/11 20:03:41 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3491,6 +3491,39 @@ fi
 
 AC_MSG_RESULT($pike_cv_func_gettimeofday_has_two_args)
 
+if test "x$ac_cv_func_gethrvtime" = xyes; then
+  AC_MSG_CHECKING(if gethrvtime really works)
+  AC_CACHE_VAL(pike_cv_func_gethrvtime_works, [
+    AC_TRY_RUN([
+#define CONFIGURE_TEST
+
+#include "port.c"
+
+int main()
+{
+  time_t start = TIME (0), now;
+  hrtime_t vt = gethrvtime(), next_vt;
+  if (start == (time_t) -1) return 1; /* Normal time doesn't work. */
+  do { /* Take some cpu time. */
+    now = TIME (0);
+    next_vt = gethrvtime();
+    if (next_vt < vt) return 2; /* Shouldn't go backward. */
+    vt = next_vt;
+  } while (now != (time_t) -1 && now < start + 1);
+  if (now == (time_t) -1) return 3; /* Normal time doesn't work. */
+  if (vt <= 0) return 4; /* Should have accounted for some cpu time. */
+  return 0;
+}
+    ], pike_cv_func_gethrvtime_works=yes,
+       pike_cv_func_gethrvtime_works=no,
+       pike_cv_func_gethrvtime_works=no)
+  ])
+  AC_MSG_RESULT($pike_cv_func_gethrvtime_works)
+  if test "x$pike_cv_func_gethrvtime_works" = xyes; then
+    AC_DEFINE(HAVE_WORKING_GETHRVTIME)
+  fi
+fi
+
 #   if test "x$ac_cv_func_gethrtime" != "xyes"; then
 #     AC_MSG_CHECKING(if we can make gethrtime by the RDTSC instruction)
 #     AC_CACHE_VAL(pike_cv_own_gethrtime_rdtsc, [
@@ -5726,7 +5759,7 @@ fi
 
 AC_MSG_CHECKING(if cpu time is thread local)
 AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
-  rm -f conftest.out.2 2>/dev/null
+  rm -f confdefs.out.2 2>/dev/null
   AC_TRY_RUN([
 #include <stdio.h>
 
@@ -5767,7 +5800,7 @@ int main()
 {
   cpu_time_t start;
   THREAD_T worker;
-  FILE *res = fopen ("conftest.out.2", "w");
+  FILE *res = fopen ("confdefs.out.2", "w"); /* weird name to circumvent configure cleanups */
   if (!res) return 2;
 
   really_low_th_init();
@@ -5809,7 +5842,7 @@ int main()
 #else
 int main()
 {
-  FILE *res = fopen ("conftest.out.2", "w");
+  FILE *res = fopen ("confdefs.out.2", "w"); /* weird name to circumvent configure cleanups */
   if (!res) return 6;
   fputs ("no", res);
   fclose (res);
@@ -5819,9 +5852,8 @@ int main()
     ], [
       pike_cv_thread_local_cpu_time=yes
     ], [
-      if test -f conftest.out.2; then
-        pike_cv_thread_local_cpu_time=`cat conftest.out.2`
-        rm -f conftest.out.2 2>/dev/null
+      if test -f confdefs.out.2; then
+        pike_cv_thread_local_cpu_time=`cat confdefs.out.2`
       else
         AC_MSG_WARN([
 Test failed to compile.
@@ -5832,6 +5864,7 @@ Problems in rusage.c or threads.c with CONFIGURE_TEST is defined?
     ], [
       pike_cv_thread_local_cpu_time="unknown (cross compilation)"
     ])
+  rm -f confdefs.out.2 2>/dev/null
 ])
 AC_MSG_RESULT($pike_cv_thread_local_cpu_time)
 if test "$pike_cv_thread_local_cpu_time" = yes; then

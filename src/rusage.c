@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.33 2003/02/09 17:43:12 grubba Exp $
+|| $Id: rusage.c,v 1.34 2003/02/11 20:03:41 mast Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.33 2003/02/09 17:43:12 grubba Exp $");
+RCSID("$Id: rusage.c,v 1.34 2003/02/11 20:03:41 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -294,7 +294,7 @@ cpu_time_t get_cpu_time (void)
     return (cpu_time_t) -1;
 }
 
-#elif defined (HAVE_GETHRVTIME)
+#elif defined (HAVE_WORKING_GETHRVTIME)
 
 cpu_time_t get_cpu_time (void)
 {
