@@ -25,6 +25,7 @@ cond( [[ master()->programs["/precompiled/mpz"] ]],
   test_eq((int)clone(MPZ,17),17)
   test_false(clone(MPZ,0))
   test_true(clone(MPZ,1))
+  test_eq(clone(MPZ,17)->powm(2,4711),290)
 
   define([[mpz_test_cmp]],[[
     test_cmp(clone(MPZ,$1), $2)

@@ -359,7 +359,7 @@ static void mpzmod_powm(INT32 args)
     error("Too few arguments to mpzmod->powm()\n");
 
   tmp=get_tmp();
-  mpz_powm(tmp, tmp, get_mpz(sp-args), get_mpz(sp+1-args));
+  mpz_powm(tmp, THIS, get_mpz(sp-args), get_mpz(sp+1-args));
   return_temporary(args);
 }
 
