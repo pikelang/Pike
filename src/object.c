@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.201 2002/05/31 22:41:25 nilsson Exp $");
+RCSID("$Id: object.c,v 1.202 2002/08/07 15:08:35 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1753,7 +1753,10 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
  * current class and any inherited classes. If @[type] is 1 then
  * locally accessible identifiers are indexed too. If @[type] is 2
  * then all externally accessible identifiers in the object, i.e. also
- * those in inheriting classes, are indexed. */
+ * those in inheriting classes, are indexed. And if @[type] is 3
+ * then all locally accessible identifiers in the object, i.e. also
+ * those in inheriting classes, are indexed.
+ */
 
 
 /*! @decl mixed ::`->(string index)
@@ -1806,8 +1809,12 @@ static void f_magic_index(INT32 args)
       inherit = o->prog->inherits + 0;
       f = find_shared_string_identifier (s, inherit->prog);
       break;
+    case 3:
+      inherit = o->prog->inherits + 0;
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      break;
     default:
-      Pike_error("Unknown indexing type.\n");
+      Pike_error("Unknown indexing type: %d.\n", type);
   }
 
   pop_n_elems(args);
@@ -1878,6 +1885,10 @@ static void f_magic_set_index(INT32 args)
       inherit = o->prog->inherits + 0;
       f = find_shared_string_identifier (s, inherit->prog);
       break;
+    case 3:
+      inherit = o->prog->inherits + 0;
+      f = really_low_find_shared_string_identifier (s, inherit->prog, SEE_STATIC);
+      break;
     default:
       Pike_error("Unknown indexing type.\n");
   }
@@ -1926,7 +1937,12 @@ static void f_magic_indices (INT32 args)
       prog = MAGIC_THIS->inherit->prog;
       break;
     case 1:
-      prog = MAGIC_THIS->inherit->prog;
+    case 3:
+      if (type == 1) {
+	prog = MAGIC_THIS->inherit->prog;
+      } else {
+	prog = obj->prog;
+      }
       pop_n_elems (args);
       push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
       for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
@@ -1991,8 +2007,14 @@ static void f_magic_values (INT32 args)
       prog = inherit->prog;
       break;
     case 1:
-      inherit = MAGIC_THIS->inherit;
-      prog = inherit->prog;
+    case 3:
+      if (type == 1) {
+	inherit = MAGIC_THIS->inherit;
+	prog = inherit->prog;
+      } else {
+	prog = obj->prog;
+	inherit = prog->inherits + 0;
+      }
       pop_n_elems (args);
       push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
       for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
