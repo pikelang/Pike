@@ -211,6 +211,14 @@ int compare_files(string a,string b)
   return 0;
 }
 
+int compare_to_file(string data,string a)
+{
+  mixed sa=file_stat(a);
+  if(sa && sa[1]==sizeof(data))
+    return Stdio.read_file(a) == data;
+  return 0;
+}
+
 int low_install_file(string from,
 		     string to,
 		     void|int mode)
@@ -1027,7 +1035,11 @@ void make_master(string dest, string master, string lib_prefix,
   if((vars->PIKE_MODULE_RELOC||"") != "")
     master_data = replace(master_data, "#undef PIKE_MODULE_RELOC",
 			  "#define PIKE_MODULE_RELOC 1");
-  Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
+  if(compare_to_file(master_data, dest)) {
+    status("Finalizing",dest,"Already finalized");
+    return;
+  }
+  Stdio.write_file(dest,master_data);
   status("Finalizing",master,"done");
 }
 
@@ -1038,6 +1050,10 @@ void make_aclocal(string src, string dest, string include_prefix)
   string aclocal_data=Stdio.read_file(src);
   aclocal_data =
     "define(PIKE_INCLUDE_PATH,"+include_prefix+")\n" + aclocal_data;
+  if(compare_to_file(aclocal_data, dest)) {
+    status("Finalizing",dest,"Already finalized");
+    return;
+  }
   Stdio.write_file(dest,aclocal_data);
   status("Finalizing",dest,"done");
 }
@@ -1054,6 +1070,10 @@ void fix_smartlink(string src, string dest, string include_prefix)
 			  else
 			    return s;
 			})*"\n";
+  if(compare_to_file(data, dest)) {
+    status("Finalizing",dest,"Already finalized");
+    return;
+  }
   Stdio.write_file(dest,data);
   status("Finalizing",dest,"done");
 }
