@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.11 2001/07/25 23:13:44 nilsson Exp $
+ * $Id: Tree.pmod,v 1.12 2001/08/11 22:02:23 nilsson Exp $
  *
  */
 
@@ -480,9 +480,40 @@ class Node {
     }
   }
 
+  //! Returns the first element child to this node. If a @[name]
+  //! is provided, the first element child with that name is
+  //! returned. Returns 0 if no matching node was found.
+  AbstractNode get_first_element(void|string name) {
+    foreach(get_children(), AbstractNode c)
+      if(c->get_node_type()==XML_ELEMENT &&
+	 (!name || c->get_tag_name()==name))
+	return c;
+    return 0;
+  }
+
+  //! Returns all element children to this node. If a @[name]
+  //! is provided, only elements with that name is returned.
+  array(AbstractNode) get_elements(void|string name) {
+    if(name)
+      return filter(get_children(), lambda(Node n) {
+				      return n->get_node_type()==XML_ELEMENT &&
+					n->get_tag_name()==name;
+				    } );
+    return filter(get_children(), lambda(Node n) {
+				    return n->get_node_type()==XML_ELEMENT;
+				  } );
+  }
 
   // It doesn't produce html, and not of the node only.
   string html_of_node() { return render_xml(); }
+
+  //! It is possible to cast a node to a string, which will return
+  //! @[render_xml()] for that node.
+  mixed cast(string to) {
+    if(to=="object") return this_object();
+    if(to=="string") return render_xml();
+    throw( ({ "Can not case Node to "+to+".\n", backtrace() }) );
+  }
 
   //! Creates an XML representation of the nodes sub tree.
   string render_xml()
@@ -701,7 +732,8 @@ Node parse_input(string data, void|int(0..1) no_fallback, void|int(0..1) force_l
     return mRoot;
 }
   
-//!
+//! Loads the XML file @[path], creates a node tree representation and
+//! returns the root node.
 Node parse_file(string path)
 {
   Stdio.File  file = Stdio.File(path, "r");
