@@ -1,6 +1,6 @@
 
 // Test suite for Hilfe.
-// $Id: testhilfe.pike,v 1.2 2002/04/16 23:27:48 nilsson Exp $
+// $Id: testhilfe.pike,v 1.3 2002/04/17 22:24:30 mikael%brandstrom.org Exp $
 
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -124,6 +124,10 @@ int main(int num, array(string) args) {
   test("_*_;", "16");
   test("_==__[-1];", "1");
   test("__[1]+__[2]+__[-1];", "7");
+
+  // Test for bug with undefined variable [bug 3023]
+  test("int n=0; foreach(({1,2,3}), int m){n+=m;}","Ok.\n");
+  test("n;","5");
 
   werror("Did %d tests, %d failed.\n", tests, fails);
 }
