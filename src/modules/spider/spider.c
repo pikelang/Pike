@@ -269,7 +269,7 @@ void f_set_start_quote(INT32 args)
 
 
 #define PUSH() do{\
-     if(i>j){\
+     if(i>=j){\
        push_string(make_shared_binary_string(s+j,i-j));\
        strs++;\
        j=i;\
