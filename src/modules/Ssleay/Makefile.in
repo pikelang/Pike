@@ -1,6 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_CLAGS=@DEFS@ @CPPFLAGS@
+MODULE_CFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=ssleay.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
