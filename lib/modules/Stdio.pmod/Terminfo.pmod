@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.16 2003/06/02 18:15:05 mast Exp $
+// $Id: Terminfo.pmod,v 1.17 2003/06/26 23:28:51 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -151,7 +151,7 @@ class Termcap {
   //!
   array(string) aliases;
 
-  static object(Termcap) parent;
+  static Termcap parent;
 
   //! Put termcap string
   string tputs(string s)
@@ -250,7 +250,7 @@ class Termcap {
   }
 
   //!
-  void create(string cap, object(TermcapDB)|void tcdb, int|void maxrecurse)
+  void create(string cap, TermcapDB|void tcdb, int|void maxrecurse)
   {
     int i=0;
     while((i=search(cap, "\\\n", i))>=0) {
@@ -337,7 +337,7 @@ class Terminfo {
     return Array.map(s/2, reverse)*"";
   }
 
-  static private int load_cap(object(Stdio.File) f, int|void bug_compat)
+  static private int load_cap(.File f, int|void bug_compat)
   {
     int magic, sname, nbool, nnum, nstr, sstr;
 
@@ -397,7 +397,7 @@ class Terminfo {
   //!
   void create(string filename)
   {
-    object(Stdio.File) f = Stdio.File();
+    .File f = .File();
     if (!f->open(filename, "r"))
 	error("Terminfo: unable to open terminfo file \"%s\"\n", filename);
     int r = load_cap(f);
@@ -411,10 +411,10 @@ class TermcapDB {
 
   MUTEX
 
-  static private inherit Stdio.File;
+  static private inherit .File;
 
   static private string buf="";
-  static private mapping(string:int|object(Termcap)) cache=([]);
+  static private mapping(string:int|Termcap) cache=([]);
   static private int complete_index=0;
 
   void create(string|void filename)
@@ -528,14 +528,14 @@ class TermcapDB {
     return sort(indices(cache));
   }
 
-  array(object(Termcap)) _values()
+  array(Termcap) _values()
   {
     array(object|int) res = ({});
     mapping(int:string) extra = ([]);
     LOCK;
     if (complete_index)
       res = Array.map(sort(indices(cache)),
-		      [function(string,mapping(int:string):object(Termcap))]
+		      [function(string,mapping(int:string):Termcap)]
 		      lambda(string name, mapping(int:string) extra) {
 			if (!objectp(cache[name]) && !extra[cache[name]])
 			  extra[cache[name]] = readat(cache[name]);
@@ -561,14 +561,14 @@ class TermcapDB {
       complete_index = 1;
     }
     UNLOCK;
-    return [array(object(Termcap))]
+    return [array(Termcap)]
       Array.map(res,
-		lambda(int|object(Termcap) x, mapping(int:object(Termcap)) y) {
+		lambda(int|Termcap x, mapping(int:Termcap) y) {
 		  return objectp(x)? x : y[x];
 		},
 		mkmapping(indices(extra),
 			  Array.map(values(extra),
-				    Termcap, this_object())));
+				    Termcap, this)));
   }
 
   static private string read_next(string find) // quick search
@@ -604,9 +604,9 @@ class TermcapDB {
     }
   }
 
-  object(Termcap) load(string term, int|void maxrecurse)
+  Termcap load(string term, int|void maxrecurse)
   {
-    int|string|object(Termcap) cap;
+    int|string|Termcap cap;
 
     LOCK;
     if (zero_type(cache[term]))
@@ -627,7 +627,7 @@ class TermcapDB {
     if (stringp(cap))
     {
       array(string) names = get_names(cap);
-      if ((cap = Termcap(cap, this_object(), maxrecurse)))
+      if ((cap = Termcap(cap, this, maxrecurse)))
       {
 	LOCK;
 	foreach(names, string name)
@@ -638,7 +638,7 @@ class TermcapDB {
     return objectp(cap) && [object(Termcap)]cap;
   }
 
-  object(Termcap) `[](string name)
+  Termcap `[](string name)
   {
     return load(name);
   }
@@ -650,7 +650,7 @@ class TerminfoDB {
   MUTEX
 
   static private string dir;
-  static private mapping(string:object(Terminfo)) cache = ([]);
+  static private mapping(string:Terminfo) cache = ([]);
   static private int complete_index=0;
 
   void create(string|void dirname)
@@ -668,7 +668,7 @@ class TerminfoDB {
 	}
       }
       if (!dirname) {
-	destruct(this_object());
+	destruct(this);
 	return;
       }
     }
@@ -706,9 +706,9 @@ class TerminfoDB {
 		     });
   }
 
-  object(Terminfo) load(string term)
+  Terminfo load(string term)
   {
-    object(Terminfo) ti;
+    Terminfo ti;
 
     if (!sizeof(term))
       return 0;
@@ -724,28 +724,28 @@ class TerminfoDB {
     return ti;
   }
 
-  object(Terminfo) `[](string name)
+  Terminfo `[](string name)
   {
     return load(name);
   }
 }
 
-static private object(Termcap) defterm;
-static private object(TermcapDB) deftermcap;
-static private object(TerminfoDB) defterminfo;
+static private Termcap defterm;
+static private TermcapDB deftermcap;
+static private TerminfoDB defterminfo;
 
-object(TermcapDB) defaultTermcapDB()
+TermcapDB defaultTermcapDB()
 {
-  object(TermcapDB) tcdb;
+  TermcapDB tcdb;
   LOCK;
   catch { tcdb = deftermcap || (deftermcap = TermcapDB()); };
   UNLOCK;
   return tcdb;
 }
 
-object(TerminfoDB) defaultTerminfoDB()
+TerminfoDB defaultTerminfoDB()
 {
-  object(TerminfoDB) tidb;
+  TerminfoDB tidb;
   LOCK;
   catch { tidb = defterminfo || (defterminfo = TerminfoDB()); };
   UNLOCK;
@@ -757,9 +757,9 @@ object(TerminfoDB) defaultTerminfoDB()
 //!
 //! @seealso
 //!  Stdio.Terminfo.getTerm, Stdio.Terminfo.getTerminfo
-object(Termcap) getTermcap(string term)
+Termcap getTermcap(string term)
 {
-  object(TermcapDB) tcdb = defaultTermcapDB();
+  TermcapDB tcdb = defaultTermcapDB();
   return tcdb && tcdb[term];
 }
 
@@ -768,9 +768,9 @@ object(Termcap) getTermcap(string term)
 //!
 //! @seealso
 //!  Stdio.Terminfo.getTerm, Stdio.Terminfo.getTermcap
-object(Terminfo) getTerminfo(string term)
+Terminfo getTerminfo(string term)
 {
-  object(TerminfoDB) tidb = defaultTerminfoDB();
+  TerminfoDB tidb = defaultTerminfoDB();
   return tidb && tidb[term];
 }
 
@@ -783,10 +783,10 @@ object(Terminfo) getTerminfo(string term)
 //!
 //! @seealso
 //!  Stdio.Terminfo.getTerminfo, Stdio.Terminfo.getTermcap, Stdio.getFallbackTerm
-object(Termcap) getTerm(string|void term)
+Termcap getTerm(string|void term)
 {
   if (!term) {
-    object(Termcap) t = defterm;
+    Termcap t = defterm;
     if (!t)
     {
       string tc = [string]getenv("TERMCAP");
@@ -811,7 +811,7 @@ object(Termcap) getTerm(string|void term)
 //!
 //! @seealso
 //!  Stdio.Terminfo.getTerm
-static object(Termcap) getFallbackTerm(string term)
+static Termcap getFallbackTerm(string term)
 {
   return (term=="dumb"? Termcap("dumb:\\\n\t:am:co#80:do=^J:") :
 	  getTerm("dumb"));
@@ -829,7 +829,7 @@ int is_tty()
 #ifdef __NT__
     is_tty_cache=1;
 #else
-    is_tty_cache=!!Stdio.stdin->tcgetattr();
+    is_tty_cache=!!.stdin->tcgetattr();
 #endif
     if(!is_tty_cache)
     {
