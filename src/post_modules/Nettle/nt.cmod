@@ -18,7 +18,18 @@
 
 #include "nettle.h"
 
+#include <winerror.h>
 #include <wincrypt.h>
+
+#ifndef NTE_EXISTS
+#define NTE_EXISTS		0x8009000FL
+#endif
+#ifndef NTE_BAD_KEYSET
+#define NTE_BAD_KEYSET		0x80090016
+#endif
+#ifndef NTE_KEYSET_NOT_DEF
+#define NTE_KEYSET_NOT_DEF	0x80090019
+#endif
 
 DECLARATIONS
 
@@ -58,13 +69,13 @@ PIKECLASS CryptContext
       INT32 errcode = GetLastError();
 
       switch(errcode) {
-      case 0x8009000F:
+      case NTE_EXISTS:
 	Pike_error("CryptContext->create(): Key container already exists.\n");
 	break;
-      case 0x80090016:
+      case NTE_BAD_KEYSET:
 	Pike_error("CryptContext->create(): No default key container.\n");
 	break;
-      case 0x80090019:
+      case NTE_KEYSET_NOT_DEF:
 	Pike_error("CryptContext->create(): Crypto Service Provider not set up correctly.\n");
 	break;
       else
