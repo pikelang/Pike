@@ -53,6 +53,8 @@ INT32 *low_rusage(void)
     if(errno != EINTR) return 0;
   }
 
+  set_close_on_exec(proc_fd, 1);
+
   while(ioctl(proc_fd, PIOCUSAGE, &pru) < 0)
   {
     if(errno == EINTR)
