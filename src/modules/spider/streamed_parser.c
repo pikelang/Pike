@@ -417,10 +417,12 @@ void streamed_parser_parse( INT32 args )
       {
        case WS:
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
+	f_lower_case( 1 );
 	state = TAG_POST_ARG_NAME;
 	break;
        case '=':
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
+	f_lower_case( 1 );
 	state = TAG_PRE_ARG_VALUE;
 	break;
       }
@@ -504,7 +506,6 @@ void streamed_parser_parse( INT32 args )
       {
        case '"':
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
-	f_lower_case( 1 );
 	add_arg();
 	state = TAG_WS;
 	break;
@@ -515,7 +516,6 @@ void streamed_parser_parse( INT32 args )
       {
        case '\'':
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
-	f_lower_case( 1 );
 	add_arg();
 	state = TAG_WS;
 	break;
@@ -527,13 +527,11 @@ void streamed_parser_parse( INT32 args )
       {
        case WS:
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
-	f_lower_case( 1 );
 	add_arg();
 	state = TAG_WS;
 	break;
        case '>':
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
-	f_lower_case( 1 );
 	add_arg();
 	state = TAG_WS;
 	if (handle_tag())
