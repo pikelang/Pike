@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.119 2003/11/14 04:10:32 mast Exp $
+|| $Id: error.c,v 1.120 2004/02/09 18:49:16 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.119 2003/11/14 04:10:32 mast Exp $");
+RCSID("$Id: error.c,v 1.120 2004/02/09 18:49:16 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -410,10 +410,24 @@ PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE(
   if(Pike_sp && Pike_interpreter.evaluator_stack &&
      master_object && master_object->prog)
   {
-    push_error("Backtrace at time of fatal:\n");
-    APPLY_MASTER("describe_backtrace",1);
-    if(Pike_sp[-1].type==PIKE_T_STRING)
-      write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
+    JMP_BUF jmp;
+    struct callback_list saved_eval_cbs = evaluator_callbacks;
+    /* Don't want thread switches or any other evaluator stuff while
+     * we let the master describe the backtrace below. */
+    low_init_threads_disable();
+    MEMSET (&evaluator_callbacks, 0, sizeof (evaluator_callbacks));
+    if (SETJMP (jmp))
+      fprintf(stderr,"Got exception when trying to describe backtrace.\n");
+    else {
+      jmp.severity = THROW_EXIT; /* Don't want normal exit code to run here. */
+      push_error("Backtrace at time of fatal:\n");
+      APPLY_MASTER("describe_backtrace",1);
+      if(Pike_sp[-1].type==PIKE_T_STRING)
+	write_to_stderr(Pike_sp[-1].u.string->str, Pike_sp[-1].u.string->len);
+    }
+    UNSETJMP (jmp);
+    exit_threads_disable (NULL);
+    evaluator_callbacks = saved_eval_cbs;
   }else{
     fprintf(stderr,"No stack - no backtrace.\n");
   }
