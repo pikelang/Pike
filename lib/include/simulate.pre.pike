@@ -109,7 +109,7 @@ void create()
   add_constant("file_size",file_size);
   add_constant("all_efuns",all_constants);
 
-  add_constant("filter",filter);
+  add_constant("filter_array",filter);
   add_constant("map_array",map);
 
   add_constant("get_function",get_function);
