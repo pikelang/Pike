@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.222 1999/12/11 23:36:46 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.223 1999/12/12 22:41:33 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1274,7 +1274,8 @@ node *fix_this_object_type(node *n)
   free_string(n->type);
   type_stack_mark();
   push_type_int(new_program->id);
-  push_type(1);		/* We are rather sure that we contain ourselves... */
+  /*  push_type(1);   We are rather sure that we contain ourselves... */
+  push_type(0);		/* But it did not work yet, so... */
   push_type(T_OBJECT);
   n->type = pop_unfinished_type();
   if (n->parent) {
