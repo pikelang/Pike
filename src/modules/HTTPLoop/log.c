@@ -39,6 +39,20 @@
 #include "requestobject.h"
 #include "util.h"
 
+int num_log_entries;
+void free_log_entry( struct log_entry *le )
+{
+  num_log_entries--;
+  aap_free( le );
+}
+
+struct log_entry *new_log_entry( int extra )
+{
+  num_log_entries++;
+  return aap_malloc( sizeof( struct log_entry )+extra );
+}
+
+
 struct program *aap_log_object_program;
 struct log *aap_first_log;
 
@@ -77,7 +91,7 @@ void f_aap_log_as_array(INT32 args)
     n++;
     push_log_entry(le);
     l = le->next;
-    free(le);
+    free_log_entry(le);
     le = l;
   }
   {
@@ -190,7 +204,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 	    le->raw.str, /* request line */
 	    le->reply, /* reply code */
 	    le->sent_bytes); /* bytes transfered */
-    free(le);
+    free_log_entry( le );
     n++;
     le = l;
   }
@@ -204,11 +218,9 @@ void aap_log_append(int sent, struct args *arg, int reply)
 {
   struct log *l = arg->log;
   /* we do not incude the body, only the headers et al.. */
-  struct log_entry *le=malloc(sizeof(struct log_entry)+arg->res.body_start-3);
+  struct log_entry *le=new_log_entry(arg->res.body_start-3);
   char *data_to=((char *)le)+sizeof(struct log_entry);
 
-fprintf(stderr, "log_append()\n");
-  
   le->t = aap_get_time();
   le->sent_bytes = sent;
   le->reply = reply;

@@ -72,6 +72,58 @@ struct program *accept_loop_program;
 static MUTEX_T queue_mutex;
 static struct args *request, *last;
 
+static MUTEX_T arg_lock;
+static int next_free_arg, num_args;
+static struct args *free_arg_list[100];
+
+int aap_total_bytes;
+void *debug_aap_malloc(int nbytes)
+{
+  int *data;
+  aap_total_bytes += nbytes;
+  data = malloc( nbytes+16 );
+  data[0] = nbytes;
+  return ((char *)data)+16; /* keep it aligned.. */
+}
+
+void debug_aap_free( void *what )
+{
+  int *data = (void *)(((char *)what-16));
+  aap_total_bytes -= data[0];
+  fprintf( stderr, "%d Kbytes\n", aap_total_bytes/1024 );
+  free( data );
+}
+
+
+void free_args( struct args *arg )
+{
+  num_args--;
+
+  if( arg->res.data ) aap_free( arg->res.data );
+  if( arg->fd )       close( arg->fd );
+
+  mt_lock( &arg_lock );
+  if( next_free_arg < 100 )
+    free_arg_list[ next_free_arg++ ] = arg;
+  else
+    aap_free(arg);
+  mt_unlock( &arg_lock );
+}
+
+struct args *new_args( )
+{
+  struct args *res;
+  mt_lock( &arg_lock );
+  num_args++;
+  if( next_free_arg )
+    res = free_arg_list[--next_free_arg];
+  else
+    res = aap_malloc( sizeof( struct args ) );
+  mt_unlock( &arg_lock );
+  return res;
+}
+
+
 /* This should probably be improved to include the reason for the 
  * failure. Currently, all failed requests get the same (hardcoded) 
  * error message.
@@ -85,10 +137,7 @@ static void failed(struct args *arg)
 #ifdef AAP_DEBUG
   fprintf(stderr, "AAP: Failed\n");
 #endif /* AAP_DEBUG */
-  close(arg->fd);
-  if(arg->res.data)
-    free(arg->res.data); 
-  free(arg);
+  free_args( arg ); 
 }
 
 
@@ -223,9 +272,7 @@ static int parse(struct args *arg)
 #ifdef AAP_DEBUG
 	  fprintf(stderr, "Closing connection...\n");
 #endif /* AAP_DEBUG */
-	  close(arg->fd); 
-	  free(arg->res.data);
-	  free(arg);
+          free_args( arg );
 	  return 0;
 	}
     }
@@ -251,7 +298,7 @@ void aap_handle_connection(struct args *arg)
     arg->res.data=0;
   }
   else 
-    p = buffer = malloc(8192);
+    p = buffer = aap_malloc(8192);
 
   if(arg->res.leftovers && arg->res.leftovers_len)
   {
@@ -277,8 +324,9 @@ void aap_handle_connection(struct args *arg)
     return;
   }
 #ifdef HAVE_TIMEOUTS
-  timeout = aap_add_timeout_thr(th_self(), arg->timeout);
-  while( !(*timeout) )
+  if( arg->timeout )
+    timeout = aap_add_timeout_thr(th_self(), arg->timeout);
+  while( !timeout  || !(*timeout) )
 #else
   while(1)
 #endif /* HAVE_TIMEOUTS */
@@ -286,14 +334,17 @@ void aap_handle_connection(struct args *arg)
     int data_read = fd_read(arg->fd, p, buffer_len-pos);
     if(data_read <= 0)
     {
-      free(buffer);
 #ifdef AAP_DEBUG
       fprintf(stderr, "AAP: Read error/eof.\n");
 #endif /* AAP_DEBUG */
-      close(arg->fd);
-      free(arg);
+      arg->res.data = buffer;
+      free_args( arg );
 #ifdef HAVE_TIMEOUTS
-      aap_remove_timeout_thr( timeout );
+      if( timeout )
+      {
+        aap_remove_timeout_thr( timeout );
+        timeout=NULL;
+      }
 #endif
       return;
     }
@@ -321,14 +372,20 @@ void aap_handle_connection(struct args *arg)
   arg->res.data = buffer;
   failed( arg );
 #ifdef HAVE_TIMEOUTS
-  aap_remove_timeout_thr( timeout );
+  if( timeout )
+  {
+    aap_remove_timeout_thr( timeout );
+    timeout=NULL;
+  }
 #endif
   return;
 
  ok:
 #ifdef HAVE_TIMEOUTS
-  if (timeout) {
+  if (timeout)
+  {
     aap_remove_timeout_thr( timeout );
+    timeout=NULL;
   }
 #endif /* HAVE_TIMEOUTS */
   arg->res.body_start = (tmp+4)-buffer;
@@ -385,25 +442,16 @@ void aap_handle_connection(struct args *arg)
 
 static void low_accept_loop(struct args *arg)
 {
-  struct args *arg2 = malloc(sizeof(struct args));
+  struct args *arg2 = new_args();
   ACCEPT_SIZE_T len = sizeof(arg->from);
-#if 0 && defined(SOLARIS) && defined(HAVE_POLL)
-  struct pollfd fds[1];
-  fds[0].fd = arg->fd;
-  fds[0].events = POLLIN|POLLRDBAND;
-#endif
   while(1)
   {
     MEMCPY(arg2, arg, sizeof(struct args));
-#if 0 && defined(SOLARIS) && defined(HAVE_POLL)
-    while(poll(fds,1,-1)==-1)   /* this makes it possible to close the fd. */
-      ;
-#endif
     arg2->fd = fd_accept(arg->fd, (struct sockaddr *)&arg2->from, &len);
     if(arg2->fd != -1)
     {
       th_farm((void (*)(void *))aap_handle_connection, arg2);
-      arg2 = malloc(sizeof(struct args));
+      arg2 = new_args();
       arg2->res.leftovers = 0;
     } else {
       if(errno == EBADF)
@@ -423,15 +471,14 @@ static void low_accept_loop(struct args *arg)
 	    e = e->next;
 	    t->next = 0;
 	    free_string(t->data);
-	    free(t->url);
-	    free(t->host);
-	    free(t);
+	    aap_free(t->url);
+	    aap_free(t);
 	  }
 	}
 	while(arg->log->log_head)
 	{
 	  struct log_entry *l = arg->log->log_head->next;
-	  free(arg->log->log_head);
+	  aap_free(arg->log->log_head);
 	  arg->log->log_head = l;
 	}
 
@@ -444,7 +491,7 @@ static void low_accept_loop(struct args *arg)
 	  else
 	    first_cache = c->next;
 	  c->gone = 1;
-	  free(c);
+	  aap_free(c);
 	}
 
 
@@ -454,11 +501,11 @@ static void low_accept_loop(struct args *arg)
 	{
 	  if(n)    n->next = l->next;
 	  else     aap_first_log = l->next;
-	  free(l);
+	  aap_free(l);
 	}
 	mt_unlock( &interpreter_lock );
-	free(arg2);
-	free(arg);
+	aap_free(arg2);
+	aap_free(arg);
 	return; /* No more accept here.. */
       }
     }
@@ -468,35 +515,47 @@ static void low_accept_loop(struct args *arg)
 
 static void finished_p(struct callback *foo, void *b, void *c)
 {
+  extern void f_aap_reqo__init( INT32 );
+
   aap_clean_cache();
+
   while(request)
   {
     struct args *arg;
     struct object *o;
     struct c_request_object *obj;
+
     mt_lock(&queue_mutex);
     arg = request;
     request = arg->next;
     mt_unlock(&queue_mutex);
-#if defined(DEBUG) || defined(PIKE_DEBUG)
-    if(!arg->res.url) /* not parsed!? */
-      fatal("AAP: Very odd request.\n");
-#endif
 
     o = clone_object( request_program, 0 ); /* see requestobject.c */
     obj = (struct c_request_object *)get_storage(o, c_request_program );
     MEMSET(obj, 0, sizeof(struct c_request_object));
     obj->request = arg;
-    obj->done_headers = allocate_mapping( 20 );
+    obj->done_headers   = allocate_mapping( 20 );
     obj->misc_variables = allocate_mapping( 40 );
 
-    apply(o, "__init", 0); pop_stack();
+    f_low_aap_reqo__init( obj );
 
     push_object( o );
     assign_svalue_no_free(sp++, &arg->args);
 
-    /*  CATCH?  */
-    apply_svalue(&arg->cb, 2);
+/*     { */
+/*       JMP_BUF recovery; */
+
+/*       free_svalue(& throw_value); */
+/*       throw_value.type=T_INT; */
+
+/*       if(SETJMP(recovery)) */
+/*       { */
+/*       } */
+/*       else */
+/*       { */
+        apply_svalue(&arg->cb, 2);
+/*       } */
+/*     } */
     pop_stack();
   }
 }
@@ -522,13 +581,13 @@ static void f_accept_with_http_parse(INT32 nargs)
   MEMSET(args, 0, sizeof(struct args));
   if(dolog)
   {
-    struct log *log = malloc(sizeof(struct log));
+    struct log *log = aap_malloc(sizeof(struct log));
     MEMSET(log, 0, sizeof(struct log));
     args->log = log;
     log->next = aap_first_log;
     aap_first_log = log;
   }
-  c = malloc(sizeof(struct cache));
+  c = aap_malloc(sizeof(struct cache));
   c->next = first_cache;
   first_cache = c;
   MEMSET(c, 0, sizeof(struct cache));
@@ -545,7 +604,7 @@ static void f_accept_with_http_parse(INT32 nargs)
   request_program = program_from_svalue( program );
   if(!request_program)
   {
-    free(args);
+    free_args(args);
     error("Invalid request program\n");
   }
   if(!my_callback)
@@ -691,7 +750,6 @@ void pike_module_init()
   add_function("send", f_aap_output, "function(string:void)", 0);
   add_function("reply", f_aap_reply,
 	       "function(string|void,object|void,int|void:void)", 0);
-  add_function("__init", f_aap_reqo__init, "function(void:void)", 0);
   add_function("reply_with_cache", f_aap_reply_with_cache, 
 	       "function(string,int:void)", 0);
   set_init_callback( aap_init_request_object );
@@ -744,7 +802,7 @@ void pike_module_exit()
       while(log_head)
       {
 	struct log_entry *l = log_head->next;
-	free(log_head);
+	aap_free(log_head);
 	log_head = l;
       }
       log->next = NULL;
@@ -769,10 +827,9 @@ void pike_module_exit()
 	t = e;
 	e = e->next;
 	t->next = 0;
-	free_string(t->data);
-	free(t->url);
-	free(t->host);
-	free(t);
+	aap_free_string(t->data);
+	aap_free(t->url);
+	aap_free(t);
       }
       first_cache->htable[i]=0;
     }

@@ -54,10 +54,7 @@ struct file_ret *aap_find_file( char *s, int len,
       fd = open( fname, O_RDONLY, 0 );
       if(fd != -1)            /* and it can be opened... */
       {
-        struct file_ret *r = malloc(sizeof(struct file_ret));
-        r->fd = fd;
-        r->size = s.st_size;
-        r->mtime = s.st_mtime;
+        struct file_ret *r = new_file_ret(fd, s.st_size, s.st_mtime);
 #ifdef FS_STATS
         fs->hits++;
 #endif

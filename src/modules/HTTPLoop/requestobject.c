@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.4 1999/12/09 00:49:16 grubba Exp $
+ * $Id: requestobject.c,v 1.5 1999/12/11 20:37:28 per Exp $
  */
 
 #include "global.h"
@@ -179,7 +179,7 @@ void f_aap_scan_for_query(INT32 args)
   }
 
   /*  [http://host:port]/(pre,states)/[url[?query]] */
-  work_area = malloc(len);
+  work_area = aap_malloc(len);
   
   /* find '?' if any */
   for(j=i=0;i<len;i++)
@@ -233,7 +233,7 @@ void f_aap_scan_for_query(INT32 args)
   sp--; pop_stack();
 
   TINSERT(THIS->misc_variables, s_not_query, work_area+begin, j-begin+1);
-  free(work_area);
+  aap_free(work_area);
   
   if(i < len)
     TINSERT(THIS->misc_variables, s_query, s+i+1, (len-i)-1);
@@ -314,14 +314,14 @@ static void parse_query(void)
 
   if(q->type == T_STRING) 
   {
-    char *dec = malloc(q->u.string->len*2+1);
+    char *dec = aap_malloc(q->u.string->len*2+1);
     char *rest_query = dec+q->u.string->len+1, *rp=rest_query;
     decode_x_url_mixed(q->u.string->str,q->u.string->len,v,dec,rest_query,&rp);
     push_string(make_shared_binary_string(rest_query,rp-rest_query));
     push_string(s_rest_query);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
     sp--; pop_stack();
-    free(dec);
+    aap_free(dec);
   } else {
     push_int(0); push_string(s_rest_query);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
@@ -340,11 +340,11 @@ static void parse_query(void)
     }
     if(!nope)
     {
-      char *tmp = malloc(THIS->request->res.content_len);
+      char *tmp = aap_malloc(THIS->request->res.content_len);
       decode_x_url_mixed(THIS->request->res.data+
 			 THIS->request->res.body_start,
 			 THIS->request->res.content_len,v,tmp,0,0);
-      free(tmp);
+      aap_free(tmp);
     }
   }
   push_mapping(v); push_string(s_variables);
@@ -672,6 +672,21 @@ struct send_args
   char buffer[BUFFER];
 };
 
+static int num_send_args;
+struct send_args *new_send_args()
+{
+  num_send_args++;
+  return aap_malloc( sizeof( struct send_args ) );
+}
+
+void free_send_args(struct send_args *s)
+{
+  num_send_args--;
+  if( s->data )    aap_enqueue_string_to_free( s->data );
+  if( s->from_fd ) close( s->from_fd );
+  aap_free( s );
+}
+
 /* WARNING! This function is running _without_ any stack etc. */
 void actually_send(struct send_args *a)
 {
@@ -901,9 +916,7 @@ void actually_send(struct send_args *a)
   {
     struct args *arg = a->to;
     LOG(a->sent, a->to, atoi(foo));
-    if(a->from_fd) close(a->from_fd);
-    if(a->data) aap_enqueue_string_to_free( a->data );
-    free(a);
+    free_send_args( a );
 
     if(!fail && 
        ((arg->res.protocol==s_http_11)||
@@ -916,9 +929,7 @@ void actually_send(struct send_args *a)
 #ifdef AAP_DEBUG
       fprintf(stderr, "no keep alive, closing fd.. \n");
 #endif
-      close(arg->fd);
-      if( arg->res.data ) free( arg->res.data );
-      free(arg);
+      free_args( arg );
     }
   }
 }
@@ -943,7 +954,7 @@ void f_aap_reply(INT32 args)
     reply_object = 1;
   }
 
-  q = malloc(sizeof(struct send_args));
+  q = new_send_args();
   q->to = THIS->request;
   THIS->request = 0;
 
@@ -953,7 +964,7 @@ void f_aap_reply(INT32 args)
     safe_apply(sp[-2].u.object, "query_fd", 0);
     if((sp[-1].type != T_INT) || (sp[-1].u.integer <= 0))
     {
-      free(q);
+      aap_free(q);
       error("Bad fileobject to request_object->reply()\n");
     }
     if((q->from_fd = dup(sp[-1].u.integer)) == -1)
@@ -997,10 +1008,7 @@ void f_aap_reply_with_cache(INT32 args)
     struct args *tr = THIS->request;
     if(rc->gone) /* freed..*/
     {
-      close(tr->fd);
-      if(tr->res.data)
-	free(tr->res.data);
-      free(tr);
+      free_args( tr );
       THIS->request = 0;
       return;
     }
@@ -1035,7 +1043,7 @@ void f_aap_reply_with_cache(INT32 args)
 	  break;
       }
     }
-    ce = malloc(sizeof(struct cache_entry));
+    ce = new_cache_entry();
     MEMSET(ce, 0, sizeof(struct cache_entry));
     ce->stale_at = t+time_to_keep;
 
@@ -1055,13 +1063,13 @@ void f_aap_reply_with_cache(INT32 args)
   f_aap_reply(1);
 }
 
-void f_aap_reqo__init(INT32 args)
+void f_low_aap_reqo__init(struct c_request_object *o)
 {
-  if(THIS->request->res.protocol)
-    SINSERT(THIS->misc_variables, s_prot, THIS->request->res.protocol);
-  IINSERT(THIS->misc_variables, s_time, aap_get_time());
-  TINSERT(THIS->misc_variables, s_rawurl, 
-	  THIS->request->res.url, THIS->request->res.url_len);
+  if(o->request->res.protocol)
+    SINSERT(o->misc_variables, s_prot, o->request->res.protocol);
+  IINSERT(o->misc_variables, s_time, aap_get_time());
+  TINSERT(o->misc_variables, s_rawurl, 
+	  o->request->res.url, o->request->res.url_len);
 }
 
 void aap_init_request_object(struct object *o)
@@ -1072,11 +1080,7 @@ void aap_init_request_object(struct object *o)
 void aap_exit_request_object(struct object *o)
 {
   if(THIS->request)
-  {
-    close(THIS->request->fd);
-    if(THIS->request->res.data) free(THIS->request->res.data);
-    free(THIS->request);
-  }
+    free_args( THIS->request );
   if(THIS->misc_variables)
     free_mapping(THIS->misc_variables);
   if(THIS->done_headers)

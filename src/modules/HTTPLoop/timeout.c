@@ -41,109 +41,84 @@
 
 MUTEX_T aap_timeout_mutex;
 
-struct timeout {
+struct timeout 
+{
   int raised;
-  struct timeout *next, *prev;
-  THREAD_T thr;
   int when;
-} *first_timeout, *last_timeout;
+  struct timeout *next;
+  THREAD_T thr;
+} *first_timeout;
 
-struct timeout *next_free_timeout;
 
-
-
-/*
- * Debug code, since I for some reason always manage
- * to mess up my double linked lists (this time I had forgot a mt_lock()..
- */
-#ifdef DEBUG
-extern int d_flag;
-/*
- * If I call the 'fatal' in pike, I run out of stack space. This is
- * not a good idea, since you cannot debug this program with gdb
- * if this happends.  Thus this macro... 
- */
 #define FATAL(X) do{fprintf(stderr,"%s:%d: %s",__FILE__,__LINE__,X);abort();}while(0)
 
-static void debug_tchain(void)
+
+#define CHUNK 100
+int num_timeouts;
+
+static struct timeout *new_timeout(THREAD_T thr, int secs) /* running locked */
 {
-  if(first_timeout)
-  {
-    struct timeout *t = first_timeout, *p=NULL;
-    if(!last_timeout)
-      FATAL("First timeout, but no last timeout.\n");
-    if(last_timeout->next)
-      FATAL("Impossible timeout list: lt->next != NULL\n");
-    
-    while( t )
-    {
-      p = t;
-      t = t->next;
-      if(p == t)
-	FATAL("Impossible timeout list: t->next==t\n");
-      if(t->prev != p)
-	FATAL("Impossible timeout list: t->prev!=p\n");
-    }
-    if(p != last_timeout)
-      FATAL("End of to list != lt\n");
-  }
-}
-#endif
-
-
-#define CHUNK 1000
-
-static struct timeout *new_timeout(THREAD_T thr, int secs)
-{
-  struct timeout *t;
-  if(next_free_timeout)
-  {
-    t = next_free_timeout;
-    next_free_timeout = t->next;
-  } else {
-    int i;
-    char *foo = malloc(sizeof(struct timeout) * CHUNK);
-    for(i = 1; i<CHUNK; i++)
-    {
-      struct timeout *c = (struct timeout *)(foo+(i*sizeof(struct timeout)));
-      c->next = next_free_timeout;
-      next_free_timeout = c;
-    }
-    t = (struct timeout *)foo;
-  }
-  t->next = NULL;
-  t->prev = NULL;
+  struct timeout *t = aap_malloc(sizeof(struct timeout));
+  num_timeouts++;
   t->thr = thr;
-  t->raised = 0;
-  t->when = aap_get_time() + secs;
+  t->raised = 0;   
+  t->next = NULL;
+  t->when = aap_get_time()+secs;
+
+  if( !first_timeout )
+  {
+    first_timeout = t;
+  }
+  else
+  {
+    struct timeout *p = first_timeout;
+    while( p->next )
+      p = p->next;
+    p->next = t;
+  }
   return t;
 }
 
-static void free_timeout( struct timeout *t )
+static void free_timeout( struct timeout *t ) /* running locked */
 {
-  t->next = next_free_timeout;
-  next_free_timeout = t;
+  num_timeouts--;
+  aap_free( t );
 }
 
-int  *aap_add_timeout_thr(THREAD_T thr, int secs)
+int *aap_add_timeout_thr(THREAD_T thr, int secs)
 {
   struct timeout *to;
   mt_lock( &aap_timeout_mutex );
   to = new_timeout( thr, secs );
-  if(last_timeout)
-  {
-    last_timeout->next = to;
-    to->prev = last_timeout;
-    last_timeout = to;
-  } else
-    last_timeout = first_timeout = to;
-#ifdef DEBUG
-  if(d_flag>2) debug_tchain();
-#endif
   mt_unlock( &aap_timeout_mutex );
   return &to->raised;
 }
 
+void debug_print_timeout_queue( struct timeout *target )
+{
+  struct timeout *p = first_timeout;
+  int found=0, actual_size=0;
+  fprintf( stderr, "\n\nTimeout list, searching for <%p>, num=%d:\n",
+           target, num_timeouts);
+  while( p )
+  {
+    actual_size++;
+    if( p == target )
+      fprintf( stderr, "> %p < [%d]\n", target, ++found );
+    else
+      fprintf( stderr, "  %p  \n", target );
+    p = p->next;
+  }
+  if( actual_size != num_timeouts )
+  {
+    fprintf( stderr, "There should be %d timeouts, only %d found\n",
+             num_timeouts, actual_size );
+  }
+  if( !found )
+    FATAL( "Timeout not found in chain\n");
+  if( found > 1 )
+    FATAL( "Timeout found more than once in chain\n");
+}
 
 #ifndef OFFSETOF
 #define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
@@ -159,22 +134,23 @@ void aap_remove_timeout_thr(int *to)
      */
     struct timeout *t=(struct timeout *)(((char *)to)
 					 -OFFSETOF(timeout,raised));
+
     if(t)
     {
-      if(t->next) 
-	t->next->prev = t->prev;
-      else
-	last_timeout = t->prev;
-      if(t->prev) 
-	t->prev->next = t->next;
-      else
-	first_timeout = t->next;
+      debug_print_timeout_queue( t );
+      if( t == first_timeout )
+      {
+        first_timeout = t->next;
+      } else {
+        struct timeout *p = first_timeout;
+        while( p && p != t && p->next != t )
+          p = p->next;
+        if( p && (p->next == t) )
+          p->next = t->next;
+      }
       free_timeout( t );
     }
   }
-#ifdef DEBUG
-  if(d_flag>2) debug_tchain();
-#endif
   mt_unlock( &aap_timeout_mutex );
 }
 
@@ -184,36 +160,21 @@ static void *handle_timeouts(void *ignored)
 {
   while(!aap_time_to_die)
   {
-    if(first_timeout)
+    struct timeout *t;
+    mt_lock( &aap_timeout_mutex );
+    t = first_timeout;
+    while(t)
     {
-      mt_lock( &aap_timeout_mutex );
+      if(t->when < aap_get_time())
       {
-	struct timeout *t = first_timeout;
-	if(t)
-	{
-	  if(t->when < aap_get_time())
-	  {
-	    t->raised++;
-	    th_kill( t->thr, SIGCHLD );
-	  }
-	  if(last_timeout != first_timeout)
-	  {
-	    first_timeout = t->next;
-            first_timeout->prev = NULL;
-	    t->next=NULL;
-	    last_timeout->next = t;
-            t->prev = last_timeout;
-	    last_timeout = t;
-	  }
-	}
+        t->raised++;
+        th_kill( t->thr, SIGCHLD );
       }
-      mt_unlock( &aap_timeout_mutex );
+      t = t->next;
     }
-#ifdef DEBUG
-    if(d_flag>2) debug_tchain();
-#endif
+    mt_unlock( &aap_timeout_mutex );
 #ifdef HAVE_POLL
-    poll(0,0,300);
+    poll(0,0,1000);
 #else
     sleep(1);
 #endif
@@ -244,7 +205,6 @@ void aap_init_timeouts(void)
 void aap_exit_timeouts(void)
 {
   void *res;
-
 #ifdef AAP_DEBUG
   fprintf(stderr, "AAP: aap_exit_timeouts.\n");
 #endif /* AAP_DEBUG */
@@ -260,6 +220,5 @@ void aap_exit_timeouts(void)
   fprintf(stderr, "AAP: aap_exit_timeouts done.\n");
 #endif /* AAP_DEBUG */
 }
-
 #endif
 #endif
