@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.31 1998/06/06 03:03:23 hubbe Exp $
+/* $Id: master.pike.in,v 1.32 1998/10/16 17:32:11 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -471,6 +471,53 @@ class dirnode
   }
 };
 
+class joinnode
+{
+  class ZERO_TYPE {};
+  array(object|mapping) joined_modules;
+  mapping cache=([]);
+
+  void create(array(object|mapping) _joined_modules)
+  {
+    joined_modules = _joined_modules;
+  }
+
+  object|mapping ind(string index)
+  {
+    array(mixed) res = ({});
+    foreach(joined_modules, object|mapping o) {
+      mixed ret;
+      if (!zero_type(ret = o[index])) {
+	res += ({ ret });
+      }
+    }
+    if (sizeof(res) > 1) {
+      return joinnode(res);
+    } else if (sizeof(res)) {
+      return res[0];
+    }
+    return UNDEFINED;
+  }
+
+  object|mapping `[](string index)
+  {
+    object|mapping ret;
+    if (!zero_type(ret = cache[index])) {
+      if (ret != ZERO_TYPE) {
+	return ret;
+      }
+      return UNDEFINED;
+    }
+    ret = ind(index);
+    if (zero_type(ret)) {
+      cache[index] = ZERO_TYPE;
+    } else {
+      cache[index] = ret;
+    }
+    return ret;
+  }
+};
+
 // Variables mustn't be static to allow for replace_master().
 //	/grubba 1998-04-10
 mapping(string:mixed) fc=([]);
@@ -515,22 +562,22 @@ mixed handle_import(string what, string|void current_file)
 
 mixed resolv(string identifier, string|void current_file)
 {
-  mixed ret;
-  string *tmp,path;
-
-  if(!ret)
+  array(mixed) tmp = ({});
+  foreach(pike_module_path, string path)
   {
-    foreach(pike_module_path, path)
-      {
-	string file=combine_path(path,identifier);
-	if(ret=findmodule(file)) break;
+    string file=combine_path(path,identifier);
+    if(mixed ret=findmodule(file)) {
+      if (mixed new_ret = ret->_module_value) {
+	ret = new_ret;
       }
+      tmp += ({ ret });
+    }
   }
-
-  if(ret)
-  {
-    if(mixed tmp=ret->_module_value) ret=tmp;
-    return ret;
+  if (sizeof(tmp)) {
+    if (sizeof(tmp) == 1) {
+      return(tmp[0]);
+    }
+    return joinnode(tmp);
   }
   return UNDEFINED;
 }
