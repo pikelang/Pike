@@ -1,9 +1,15 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.25 2003/01/20 17:44:00 nilsson Exp $
+ * $Id: Tree.pmod,v 1.26 2003/03/11 16:26:09 grubba Exp $
  *
  */
+
+//! XML parser that generates a node-tree.
+//!
+//! Has some support for XML namespaces
+//! @url{http://www.w3.org/TR/REC-xml-names/@}
+//! RFC 2518 23.4.
 
 //!
 constant STOP_WALK = -1;
@@ -98,9 +104,76 @@ void throw_error(mixed ...args)
   //  Put message in debug log and throw exception
   args[0] = "Parser.XML.Tree: " + args[0];
   if (sizeof(args) == 1)
-	throw(args[0]);
+	error(args[0]);
   else
-	throw(sprintf(@args));
+	error(sprintf(@args));
+}
+
+class XMLNSParser {
+  ADT.Stack namespace_stack = ADT.Stack();
+
+  void create()
+  {
+    namespace_stack->push(([]));	// Sentinel.
+  }
+
+  void Enter(mapping(string:string) attrs)
+  {
+    mapping(string:string) namespaces = namespace_stack->top() + ([]);
+    foreach(attrs; string attr; string val) {
+      if (attr == "xmlns") {
+	namespaces[0] = val;
+      } else if (has_prefix(attr, "xmlns:")) {
+	namespaces[attr[6..]] = val;
+      }
+    }
+    namespace_stack->push(namespaces);
+  }
+
+  string Decode(string name)
+  {
+    int i = search(name, ":");
+    string key;
+    if (i >= 0) {
+      key = name[..i-1];
+      name = name[i+1..];
+    }
+    string prefix = namespace_stack->top()[key];
+    if (!prefix) {
+      if (key) {
+	error("Unknown namespace %O for tag %O\n",
+	      key, name);
+      } else {
+	error("No default namespace, and tag without namespace: %O\n",
+	      name);
+      }
+    }
+    return prefix + name;
+  }
+
+  string Encode(string name)
+  {
+    string longest;
+    string best;
+    foreach(namespace_stack->top(); string ns; string prefix) {
+      if (has_prefix(name, prefix) &&
+	  (!longest || sizeof(prefix) > sizeof(longest))) {
+	longest = prefix;
+	best = ns;
+      }
+    }
+    if (!longest) {
+      error("No namespace containing tag %O found.\n", name);
+    }
+    name = name[sizeof(longest)..];
+    if (best) return best + ":" + name;
+    return name;
+  }
+
+  void Leave()
+  {
+    namespace_stack->pop();
+  }
 }
 
 //!
@@ -444,6 +517,7 @@ class Node {
   //  Member variables for this node type
   static int            mNodeType;
   static string         mTagName;
+  static string		mFullName;	// Fully qualified tag name
 //   private int            mTagCode;
   static mapping        mAttributes;
   static array(Node) mAttrNodes;   //  created on demand
@@ -512,6 +586,13 @@ class Node {
   {
     return (mTagName);
   }
+
+  //! Return fully qualified name of the element node if available,
+  //! otherwise the ordinary tag name.
+  string get_full_name()
+  {
+    return mFullName;
+  }
   
   //! Returns the name of the attribute node.
   string get_attr_name()
@@ -521,10 +602,12 @@ class Node {
   }
   
   //!
-  void create(int type, string name, mapping attr, string text)
+  void create(int type, string name, mapping attr, string text,
+	      string|void full_name)
   {
     mNodeType = type;
     mTagName = name;
+    mFullName = full_name || name;
 //     mTagCode = kTagMapping[name] || kUnsupportedTagMapping[name];
     mAttributes = attr;
     mText = text;
@@ -554,28 +637,64 @@ class Node {
     }
   }
 
-  //! Returns the first element child to this node. If a @[name]
-  //! is provided, the first element child with that name is
-  //! returned. Returns 0 if no matching node was found.
-  AbstractNode get_first_element(void|string name) {
-    foreach(get_children(), AbstractNode c)
-      if(c->get_node_type()==XML_ELEMENT &&
-	 (!name || c->get_tag_name()==name))
-	return c;
+  //! Returns the first element child to this node.
+  //!
+  //! @param name
+  //!   If provided, the first element child with that name is returned.
+  //!
+  //! @param full
+  //!   If specified, name matching will be done against the full name.
+  //!
+  //! @returns
+  //!   Returns the first matching node, and 0 if no such node was found.
+  AbstractNode get_first_element(string|void name, int(0..1)|void full) {
+    if (!name) {
+      foreach(get_children(), AbstractNode c)
+	if(c->get_node_type()==XML_ELEMENT)
+	  return c;
+    } else if (!full) {
+      foreach(get_children(), AbstractNode c)
+	if(c->get_node_type()==XML_ELEMENT &&
+	   c->get_tag_name()==name)
+	  return c;
+    } else {
+      foreach(get_children(), AbstractNode c)
+	if(c->get_node_type()==XML_ELEMENT &&
+	   c->get_full_name()==name)
+	  return c;
+    }
     return 0;
   }
 
-  //! Returns all element children to this node. If a @[name]
-  //! is provided, only elements with that name is returned.
-  array(AbstractNode) get_elements(void|string name) {
-    if(name)
-      return filter(get_children(), lambda(Node n) {
-				      return n->get_node_type()==XML_ELEMENT &&
-					n->get_tag_name()==name;
-				    } );
-    return filter(get_children(), lambda(Node n) {
-				    return n->get_node_type()==XML_ELEMENT;
-				  } );
+  //! Returns all element children to this node.
+  //!
+  //! @param name
+  //!   If provided, only elements with that name is returned.
+  //!
+  //! @param full
+  //!   If specified, name matching will be done against the full name.
+  //!
+  //! @returns
+  //!   Returns an array with matching nodes.
+  array(AbstractNode) get_elements(string|void name, int(0..1)|void full) {
+    if (!name) {
+      return filter(get_children(),
+		    lambda(Node n) {
+		      return n->get_node_type()==XML_ELEMENT;
+		    } );
+    } else if (!full) {
+      return filter(get_children(),
+		    lambda(Node n) {
+		      return n->get_node_type()==XML_ELEMENT &&
+			n->get_tag_name()==name;
+		    } );
+    } else {
+      return filter(get_children(),
+		    lambda(Node n) {
+		      return n->get_node_type()==XML_ELEMENT &&
+			n->get_full_name()==name;
+		    } );
+    }
   }
 
   // It doesn't produce html, and not of the node only.
@@ -595,15 +714,16 @@ class Node {
   static void low_render_xml(String.Buffer data, Node n,
 			     function(string:string) textq,
 			     function(string:string) attrq) {
+    string tagname;
     switch(n->get_node_type()) {
     case XML_TEXT:
       data->add(textq(n->get_text()));
       break;
 
     case XML_ELEMENT:
-      if (!sizeof(n->get_tag_name()))
+      if (!sizeof(tagname = n->get_tag_name()))
 	break;
-      data->add("<", n->get_tag_name());
+      data->add("<", tagname);
       if (mapping attr = n->get_attributes()) {
 	foreach(indices(attr), string a)
 	  data->add(" ", a, "='", attrq(attr[a]), "'");
@@ -616,7 +736,14 @@ class Node {
 			
     case XML_HEADER:
       data->add("<?xml");
-      if (mapping attr = n->get_attributes()) {
+      if (mapping attr = n->get_attributes() + ([])) {
+	// version and encoding must come in the correct order.
+	if (attr->version)
+	  data->add(" version='", attrq(attr->version), "'");
+	m_delete(attr, "version");
+	if (attr->encoding)
+	  data->add(" encoding='", attrq(attr->encoding), "'");
+	m_delete(attr, "encoding");
 	foreach(indices(attr), string a)
 	  data->add(" ", a, "='", attrq(attr[a]), "'");
       }
@@ -643,9 +770,36 @@ class Node {
 
     if (n->get_node_type() == XML_ELEMENT) {
       if (n->count_children())
-	if (sizeof(n->get_tag_name()))
-	  data->add("</", n->get_tag_name(), ">");
+	if (sizeof(tagname))
+	  data->add("</", tagname, ">");
     }
+  }
+
+  // Get the encoding from the XML-header (if any).
+  //
+  // Create a new XML-header if there's none.
+  //
+  // Add an encoding attribute if there is none.
+  static string get_encoding(string|void default_encoding)
+  {
+    Node xml_header;
+    default_encoding = default_encoding || "utf-8";
+    if (sizeof(get_children()) &&
+	(xml_header = get_children()[0])->get_node_type()==XML_HEADER) {
+      string encoding;
+      if (encoding = xml_header->get_attributes()->encoding) {
+	return encoding;
+      }
+      xml_header->get_attributes()->encoding = default_encoding;
+    } else {
+      // Create a new <?xml?>-header.
+      xml_header = Node(XML_HEADER, "",
+			([ "version":"1.0",
+			   "encoding":default_encoding ]), "");
+      mChildren = ({ xml_header }) + mChildren;
+      xml_header->mParent = this_object();
+    }
+    return default_encoding;
   }
 
   //! Creates an XML representation of the node sub tree. If the
@@ -654,12 +808,13 @@ class Node {
   string render_xml(void|int(0..1) preserve_roxen_entities)
   {
     String.Buffer data = String.Buffer();
+    string encoding = get_encoding("utf-8");
     if(preserve_roxen_entities)
       low_render_xml(data, this_object(), roxen_text_quote,
 		     roxen_attribute_quote);
     else
       low_render_xml(data, this_object(), text_quote, attribute_quote);
-    return (string)data;
+    return Locale.Charset.encoder(encoding)->feed((string)data)->drain();
   }
 
   //! Creates an XML representation fo the node sub tree and streams
@@ -667,11 +822,12 @@ class Node {
   //! is set, entities on the form @tt{&foo.bar;@} will not be escaped.
   void render_to_file(Stdio.File f,
 		      void|int(0..1) preserve_roxen_entities) {
-    object data = class (Stdio.File f) {
+    object data = class (Stdio.File f, object encoder) {
       void add(string ... args) {
-	f->write(args[*]);
+	encoder->feed(args[*]);
+	f->write(encoder->drain());
       }
-    } (f);
+    } (f, Locale.Charset.encoder(get_encoding("utf-8")));
     if(preserve_roxen_entities)
       low_render_xml(data, this_object(), roxen_text_quote,
 		     roxen_attribute_quote);
@@ -731,7 +887,7 @@ class Node {
 
   string _sprintf(int t) {
     return t=='O' && sprintf("%O(#%d:%d,%s)", this_program, mDocOrder,
-			     get_node_type(), get_any_name());
+			     get_node_type(), get_full_name());
   }
 };
 
@@ -742,6 +898,7 @@ private Node|int(0..0)
 		     mixed location, mixed ...extra)
 {
   Node   node;
+  string full_name = name;
 
   switch (type) {
   case "":
@@ -762,24 +919,42 @@ private Node|int(0..0)
     return (Node(XML_PI, name, attr, contents));
 
   case "<>":
-    //  Create new tag node. Convert tag and attribute names to lowercase
-    //  if requested.
+    //  Create new tag node.
     if (arrayp(extra) && sizeof(extra) &&
-	mappingp(extra[0]) && extra[0]->force_lc) {
-      name = lower_case(name);
-      attr = mkmapping(map(indices(attr), lower_case), values(attr));
+	mappingp(extra[0])) {
+      //  Convert tag and attribute names to lowercase
+      //  if requested.
+      if (extra[0]->force_lc) {
+	name = lower_case(name);
+	attr = mkmapping(map(indices(attr), lower_case), values(attr));
+      }
+      //  Parse namespace information of available.
+      if (extra[0]->xmlns) {
+	XMLNSParser xmlns = extra[0]->xmlns;
+	xmlns->Enter(attr);
+	full_name = xmlns->Decode(full_name);
+	xmlns->Leave();
+      }
     }
-    return (Node(XML_ELEMENT, name, attr, ""));
+    return (Node(XML_ELEMENT, name, attr, "", full_name));
 
   case ">":
-    //  Create tree node for this container. Convert tag and attribute
-    //  names to lowercase if requested.
-    if (arrayp(extra) && sizeof(extra) &&
-	mappingp(extra[0]) && extra[0]->force_lc) {
-      name = lower_case(name);
-      attr = mkmapping(map(indices(attr), lower_case), values(attr));
+    //  Create tree node for this container
+    if (arrayp(extra) && sizeof(extra) && mappingp(extra[0])) {
+      //  Convert tag and attribute names to lowercase
+      //  if requested.
+      if (extra[0]->force_lc) {
+	name = lower_case(name);
+	attr = mkmapping(map(indices(attr), lower_case), values(attr));
+      }
+      //  Parse namespace information of available.
+      if (extra[0]->xmlns) {
+	XMLNSParser xmlns = extra[0]->xmlns;
+	full_name = xmlns->Decode(full_name);
+	xmlns->Leave();
+      }
     }
-    node = Node(XML_ELEMENT, name, attr, "");
+    node = Node(XML_ELEMENT, name, attr, "", full_name);
 	
     //  Add children to our tree node. We need to merge consecutive text
     //  children since two text elements can't be neighbors according to
@@ -806,12 +981,21 @@ private Node|int(0..0)
     //  Error message present in contents. If "location" is present in the
     //  "extra" mapping we encode that value in the message string so the
     //  handler for this throw() can display the proper error context.
+    if (name) {
+      // We append the name of the tag that caused the error to be triggered.
+      contents += sprintf(" [Tag: %O]", name);
+    }
     if (location && mappingp(location))
       throw_error(contents + " [Offset: " + location->location + "]\n");
     else
       throw_error(contents + "\n");
 
   case "<":
+    if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
+	extra[0]->xmlns) {
+      XMLNSParser xmlns = extra[0]->xmlns;
+      xmlns->Enter(attr);
+    }
   case "<!DOCTYPE":
   default:
     return 0;
@@ -831,7 +1015,8 @@ string report_error_context(string data, int ofs)
 //! Takes a XML string and produces a node tree.
 Node parse_input(string data, void|int(0..1) no_fallback,
 		 void|int(0..1) force_lowercase,
-		 void|mapping(string:string) predefined_entities)
+		 void|mapping(string:string) predefined_entities,
+		 void|int(0..1) parse_namespaces)
 {
   object xp = spider.XML();
   Node mRoot;
@@ -846,9 +1031,16 @@ Node parse_input(string data, void|int(0..1) no_fallback,
   // Construct tree from string
   mixed err = catch
   {
+    mapping(string:mixed) extras = ([]);
+    if (force_lowercase) {
+      extras->force_lc = 1;
+    }
+    if (parse_namespaces) {
+      extras->xmlns = XMLNSParser();
+    }
     mRoot = Node(XML_ROOT, "", ([ ]), "");
-    foreach(xp->parse(data, parse_xml_callback,
-		      force_lowercase && ([ "force_lc" : 1 ]) ),
+    foreach(xp->parse(xp->autoconvert(data), parse_xml_callback,
+		      sizeof(extras) && extras),
 	    Node child)
       mRoot->add_child(child);
   };
@@ -870,7 +1062,7 @@ Node parse_input(string data, void|int(0..1) no_fallback,
   
 //! Loads the XML file @[path], creates a node tree representation and
 //! returns the root node.
-Node parse_file(string path)
+Node parse_file(string path, int(0..1)|void parse_namespaces)
 {
   Stdio.File  file = Stdio.File(path, "r");
   string      data;
@@ -882,5 +1074,5 @@ Node parse_file(string path)
   })
     throw_error("Could not read XML file %O.\n", path);
   else
-    return parse_input(data);
+    return parse_input(data, 0, 0, 0, parse_namespaces);
 }
