@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.12 1997/02/07 01:11:43 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.13 1997/02/17 20:47:13 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -22,7 +22,7 @@ RCSID("$Id: mapping.c,v 1.12 1997/02/07 01:11:43 hubbe Exp $");
 
 #define AVG_LINK_LENGTH 4
 #define MIN_LINK_LENGTH 1
-#define MAP_SLOTS(X) ((X)+((X)>>4)+8)
+#define MAP_SLOTS(X) ((X)?((X)+((X)>>4)+8):0)
 #define LOOP(m) for(e=0;e<m->hashsize;e++) for(k=m->hash[e];k;k=k->next)
 
 struct keypair
@@ -46,14 +46,11 @@ static void check_mapping_type_fields(struct mapping *m)
 
   ind_types=val_types=0;
 
-  for(e=0;e<m->hashsize;e++)
-  {
-    for(k=m->hash[e];k;k=k->next)
+  LOOP(m) 
     {
       val_types |= 1 << k->val.type;
       ind_types |= 1 << k->ind.type;
     }
-  }
 
   if(val_types & ~(m->val_types))
     fatal("Mapping value types out of order!\n");
@@ -77,26 +74,30 @@ static void init_mapping(struct mapping *m, INT32 size)
 #ifdef DEBUG
   if(size < 0) fatal("init_mapping with negative value.\n");
 #endif
-  if(size<3) size=3;
-
-  hashsize=size / AVG_LINK_LENGTH + 1;
-  if(!(hashsize & 1)) hashsize++;
-  hashspace=hashsize+1;
-  e=sizeof(struct keypair)*size+ sizeof(struct keypair *)*hashspace;
-  tmp=(char *)xalloc(e);
-
-  m->hash=(struct keypair **) tmp;
-  m->hashsize=hashsize;
-
-  tmp+=sizeof(struct keypair *)*hashspace;
-  
-  MEMSET((char *)m->hash, 0, sizeof(struct keypair *) * m->hashsize);
-
-  m->free_list=(struct keypair *) tmp;
-  for(e=1;e<size;e++)
-    m->free_list[e-1].next = m->free_list + e;
-  m->free_list[e-1].next=0;
-
+  if(size)
+  {
+    hashsize=size / AVG_LINK_LENGTH + 1;
+    if(!(hashsize & 1)) hashsize++;
+    hashspace=hashsize+1;
+    e=sizeof(struct keypair)*size+ sizeof(struct keypair *)*hashspace;
+    tmp=(char *)xalloc(e);
+    
+    m->hash=(struct keypair **) tmp;
+    m->hashsize=hashsize;
+    
+    tmp+=sizeof(struct keypair *)*hashspace;
+    
+    MEMSET((char *)m->hash, 0, sizeof(struct keypair *) * m->hashsize);
+    
+    m->free_list=(struct keypair *) tmp;
+    for(e=1;e<size;e++)
+      m->free_list[e-1].next = m->free_list + e;
+    m->free_list[e-1].next=0;
+  }else{
+    m->hashsize=0;
+    m->hash=0;
+    m->free_list=0;
+  }
   m->ind_types = 0;
   m->val_types = 0;
   m->size = 0;
@@ -149,7 +150,8 @@ void really_free_mapping(struct mapping *m)
 
   if(m->next) m->next->prev = m->prev;
 
-  free((char *)m->hash);
+  if(m->hash)
+    free((char *)m->hash);
   free((char *)m);
 
   GC_FREE();
@@ -195,16 +197,19 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 
   init_mapping(m, new_size);
 
-  for(e=0;e<hashsize;e++)
-    mapping_rehash_backwards(m, hash[e]);
+  if(hash)
+  {
+    for(e=0;e<hashsize;e++)
+      mapping_rehash_backwards(m, hash[e]);
+    
+    free((char *)hash);
+  }
 
 #ifdef DEBUG
-  if(m->size != tmp)
-    fatal("Rehash failed, size not same any more.\n");
+    if(m->size != tmp)
+      fatal("Rehash failed, size not same any more.\n");
 #endif
-
-  free((char *)hash);
-
+    
 #ifdef DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
@@ -224,14 +229,11 @@ void mapping_fix_type_field(struct mapping *m)
 
   val_types = ind_types = 0;
 
-  for(e=0;e<m->hashsize;e++)
-  {
-    for(k=m->hash[e];k;k=k->next)
+  LOOP(m)
     {
       val_types |= 1 << k->val.type;
       ind_types |= 1 << k->ind.type;
     }
-  }
 
 #ifdef DEBUG
   if(val_types & ~(m->val_types))
@@ -251,39 +253,45 @@ void mapping_insert(struct mapping *m,
 		    struct svalue *key,
 		    struct svalue *val)
 {
-  unsigned INT32 h;
+  unsigned INT32 h,h2;
   struct keypair *k, **prev;
 
-  h=hash_svalue(key) % m->hashsize;
+  h2=hash_svalue(key);
+  if(m->hashsize)
+  {
+    h=h2 % m->hashsize;
   
 #ifdef DEBUG
-  if(d_flag > 1) check_mapping_type_fields(m);
+    if(d_flag > 1) check_mapping_type_fields(m);
 #endif
-  if(m->ind_types & (1 << key->type))
-  {
-    for(prev= m->hash + h;k=*prev;prev=&k->next)
+    if(m->ind_types & (1 << key->type))
     {
-      if(is_eq(& k->ind, key))
+      for(prev= m->hash + h;k=*prev;prev=&k->next)
       {
-	*prev=k->next;
-	k->next=m->hash[h];
-	m->hash[h]=k;
-	
-	m->val_types |= 1 << val->type;
-	assign_svalue(& k->val, val);
-
+	if(is_eq(& k->ind, key))
+	{
+	  *prev=k->next;
+	  k->next=m->hash[h];
+	  m->hash[h]=k;
+	  
+	  m->val_types |= 1 << val->type;
+	  assign_svalue(& k->val, val);
+	  
 #ifdef DEBUG
-	if(d_flag > 1) check_mapping_type_fields(m);
+	  if(d_flag > 1) check_mapping_type_fields(m);
 #endif
-	return;
+	  return;
+	}
       }
     }
+  }else{
+    h=0;
   }
-
+    
   if(!(k=m->free_list))
   {
-    rehash(m, m->size * 2 + 1);
-    h=hash_svalue(key) % m->hashsize;
+    rehash(m, m->size * 2 + 2);
+    h=h2 % m->hashsize;
     k=m->free_list;
   }
 
@@ -305,37 +313,44 @@ union anything *mapping_get_item_ptr(struct mapping *m,
 				     struct svalue *key,
 				     TYPE_T t)
 {
-  unsigned INT32 h;
+  unsigned INT32 h, h2;
   struct keypair *k, **prev;
 
-  h=hash_svalue(key) % m->hashsize;
+  h2=hash_svalue(key);
+
+  if(m->hashsize)
+  {
+    h=h2 % m->hashsize;
 
 #ifdef DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
-  
-  for(prev= m->hash + h;k=*prev;prev=&k->next)
-  {
-    if(is_eq(& k->ind, key))
+
+    for(prev= m->hash + h;k=*prev;prev=&k->next)
     {
-      *prev=k->next;
-      k->next=m->hash[h];
-      m->hash[h]=k;
-
-      if(k->val.type == t) return & ( k->val.u );
-
+      if(is_eq(& k->ind, key))
+      {
+	*prev=k->next;
+	k->next=m->hash[h];
+	m->hash[h]=k;
+	
+	if(k->val.type == t) return & ( k->val.u );
+	
 #ifdef DEBUG
-      if(d_flag > 1) check_mapping_type_fields(m);
+	if(d_flag > 1) check_mapping_type_fields(m);
 #endif
-
-      return 0;
+	
+	return 0;
+      }
     }
+  }else{
+    h=0;
   }
-
+  
   if(!(k=m->free_list))
   {
-    rehash(m, m->size * 2 + 1);
-    h=hash_svalue(key) % m->hashsize;
+    rehash(m, m->size * 2 + 2);
+    h=h2 % m->hashsize;
     k=m->free_list;
   }
 
@@ -364,6 +379,8 @@ void map_delete(struct mapping *m,
 {
   unsigned INT32 h;
   struct keypair *k, **prev;
+
+  if(!m->size) return;
 
   h=hash_svalue(key) % m->hashsize;
   
@@ -398,6 +415,8 @@ void check_mapping_for_destruct(struct mapping *m)
 #ifdef DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
+
+  if(!m->size) return;
 
   if((m->ind_types | m->val_types) & (BIT_OBJECT | BIT_FUNCTION))
   {
@@ -445,6 +464,7 @@ struct svalue *low_mapping_lookup(struct mapping *m,
 #ifdef DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
+  if(!m->size) return 0;
 
   if((1 << key->type) & m->ind_types)
   {
@@ -832,37 +852,40 @@ void mapping_search_no_free(struct svalue *to,
   unsigned INT32 h;
   struct keypair *k;
 
-  h=0;
-  k=m->hash[h];
-  if(start)
+  if(m->size)
   {
-    h=hash_svalue(start) % m->hashsize;
-    for(k=m->hash[h];k;k=k->next)
-      if(is_eq(&k->ind, start))
-	break;
-
-    if(!k)
+    h=0;
+    k=m->hash[h];
+    if(start)
     {
-      to->type=T_INT;
-      to->subtype=NUMBER_UNDEFINED;
-      to->u.integer=0;
-      return;
-    }
-    k=k->next;
-  }
-
-  while(h < (unsigned INT32)m->hashsize)
-  {
-    while(k)
-    {
-      if(is_eq(look_for, &k->val))
+      h=hash_svalue(start) % m->hashsize;
+      for(k=m->hash[h];k;k=k->next)
+	if(is_eq(&k->ind, start))
+	  break;
+      
+      if(!k)
       {
-	assign_svalue_no_free(to,&k->ind);
+	to->type=T_INT;
+	to->subtype=NUMBER_UNDEFINED;
+	to->u.integer=0;
 	return;
       }
       k=k->next;
     }
-    k=m->hash[++h];
+    
+    while(h < (unsigned INT32)m->hashsize)
+    {
+      while(k)
+      {
+	if(is_eq(look_for, &k->val))
+	{
+	  assign_svalue_no_free(to,&k->ind);
+	  return;
+	}
+	k=k->next;
+      }
+      k=m->hash[++h];
+  }
   }
 
   to->type=T_INT;
@@ -905,7 +928,7 @@ void check_mapping(struct mapping *m)
   if(m->size > 0 && (!m->ind_types || !m->val_types))
     fatal("Mapping type fields are... wrong.\n");
 
-  if(!m->hash)
+  if(!m->hash && m->size)
     fatal("Hey! where did my hashtable go??\n");
   
 }

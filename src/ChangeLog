@@ -1,3 +1,10 @@
+Sun Feb 16 21:08:28 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* mapping.c: empty mappings are now allocated without an hashtable,
+	  should save a noticable amount of memory.
+	* casting a string to an object or program now searches relative to
+	  where the casting program is loaded from.
+
 Sat Feb 15 08:30:15 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* stralloc.c (string_replace): optimized replace when to and
