@@ -21,11 +21,18 @@
 
 /* #define DEBUG */
 
+
 mapping variables=([]);
 string *functions=({});
 string *function_names=({});
 mapping query_variables() { return variables; }
 /* do nothing */
+
+void my_write(mixed x)
+{
+  write(sprintf("%O",x));
+}
+
 
 object eval(string f)
 {
@@ -176,14 +183,14 @@ void cut_buffer(int where)
   pos-=old-new; if(pos<0) pos=0;
   eq_pos-=old-new; if(eq_pos<0) eq_pos=-1;
 #ifdef DEBUG
-  write("CUT input = "+code_value(input,1)+"  pos="+pos+"\n");
+  write("CUT input = "+my_write(input)+"  pos="+pos+"\n");
 #endif
 }
 
 void print_version()
 {
   write(version()+
-	" Running Hilfe v1.4 (Incremental Pike Frontend)\n");
+	" Running Hilfe v1.5 (Incremental Pike Frontend)\n");
 }
 
 
@@ -214,8 +221,8 @@ int do_parse()
       {
 	first_word=input[0..pos-1];
 #ifdef DEBUG
-	write("First = "+code_value(first_word)+"  pos="+pos+"\n");
-	write("input = "+code_value(input)+"\n");
+	write("First = "+my_write(first_word)+"  pos="+pos+"\n");
+	write("input = "+my_write(input)+"\n");
 #endif
 	switch(first_word)
 	{
@@ -370,6 +377,7 @@ mixed parse_function(string fun)
   case "mixed":
   case "program":
   case "function":
+  case "class":
     /* parse function */
     if(eq_pos!=-1) break;  /* it's a variable */
     sscanf(fun,first_word+"%s",name);
@@ -378,25 +386,20 @@ mixed parse_function(string fun)
     name=c[0];
     c=c[1];
 
-    if(c[0]=='(')
+    int i;
+    if((i=member_array(name,function_names))!=-1)
     {
-      int i;
-      if((i=member_array(name,function_names))!=-1)
-      {
-	b=functions[i];
-	functions[i]=fun;
-	if(!eval(""))  functions[i]=b;
-      }else{
-	if(eval(fun))
-	{
-	  functions+=({fun});
-	  function_names+=({name});
-	}
-      }
-      return 1;
+      b=functions[i];
+      functions[i]=fun;
+      if(!eval(""))  functions[i]=b;
     }else{
-      write("Syntax error.\n");
+      if(eval(fun))
+      {
+	functions+=({fun});
+	function_names+=({name});
+      }
     }
+    return 1;
   }
 }
 
@@ -482,6 +485,7 @@ mixed parse_statement(string ex)
     return 1;
 
   default:
+    if(ex==";") return 1;
     /* parse expressions */
     a="mixed ___Foo4711() { return (mixed)("+ex[0..strlen(ex)-2]+"); }\n";
     if(foo=eval(a))
@@ -505,7 +509,7 @@ void stdin(string s)
   object foo;
 
 #ifdef DEBUG
-  write("input: '"+code_value(s,1)+"'\n");
+  write("input: '"+my_write(s)+"'\n");
 #endif
   s=skipwhite(s);
 
@@ -517,11 +521,6 @@ void stdin(string s)
   }
   add_buffer(s);
 //  if(!strlen(input))  write("> ");
-}
-
-void my_write(mixed x)
-{
-  write(sprintf("%O",x));
 }
 
 void signal_trap(int s)
