@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.136 2001/04/14 02:28:12 mast Exp $ */
+/* $Id: html.c,v 1.137 2001/04/14 13:49:24 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -271,7 +271,7 @@ static const p_wchar2 tag_start = DEF_TAG_START, tag_end = DEF_TAG_END,
  * o  this->flags & FLAG_LAZY_END_ARG_QUOTE
  * o  this->flags & FLAG_IGNORE_COMMENTS
  */
-static struct calc_chars char_variants[1 << 3];
+static struct calc_chars char_variants[8];	/* 1<<3 */
 
 #define ARG_BREAK_CHARS(this) (this->cc->arg_break_chars)
 #define N_ARG_BREAK_CHARS(this) (this->cc->n_arg_break_chars)
