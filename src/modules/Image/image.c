@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.78 1998/01/25 10:44:44 mirar Exp $ */
+/* $Id: image.c,v 1.79 1998/02/10 23:51:49 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.78 1998/01/25 10:44:44 mirar Exp $
+**!	$Id: image.c,v 1.79 1998/02/10 23:51:49 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.78 1998/01/25 10:44:44 mirar Exp $");
+RCSID("$Id: image.c,v 1.79 1998/02/10 23:51:49 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1178,7 +1178,7 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
 			  const int length, const int maxlength,  
 			  const int xsize,  const int height)
 {
-  int x, y=height, w;
+  int x, y=height;
   rgb_group *from = dest;
   if(!xsize || !height) return;
   for(x=0; x<maxlength; x++)
@@ -1245,12 +1245,11 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
 void image_tuned_box(INT32 args)
 {
   INT32 x1,y1,x2,y2,xw,yw,x,y;
-  rgba_group topleft,topright,bottomleft,bottomright,sum,sumzero={0,0,0,0};
+  rgba_group topleft,topright,bottomleft,bottomright,sum;
   rgb_group *img;
   INT32 ymax;
   struct image *this;
   float dxw, dyw;
-  rgb_group *rows, *cols;
 
   if (args<5||
       sp[-args].type!=T_INT||
@@ -2327,8 +2326,7 @@ CHRONO("apply_matrix");
    width=-1;
    for (i=0; i<height; i++)
    {
-      struct svalue s;
-      array_index_no_free(&s,sp[-args].u.array,i);
+      struct svalue s=sp[-args].u.array->item[i];
       if (s.type!=T_ARRAY) 
 	 error("Illegal contents of (root) array (Image.image->apply_matrix)\n");
       if (width==-1)
@@ -2336,7 +2334,6 @@ CHRONO("apply_matrix");
       else
 	 if (width!=s.u.array->size)
 	    error("Arrays has different size (Image.image->apply_matrix)\n");
-      free_svalue(&s);
    }
    if (width==-1) width=0;
 
@@ -2345,26 +2342,24 @@ CHRONO("apply_matrix");
    
    for (i=0; i<height; i++)
    {
-      struct svalue s,s2;
-      array_index_no_free(&s,sp[-args].u.array,i);
+      struct svalue s=sp[-args].u.array->item[i];
       for (j=0; j<width; j++)
       {
-	 array_index_no_free(&s2,s.u.array,j);
+	 struct svalue s2=s.u.array->item[j];
 	 if (s2.type==T_ARRAY && s2.u.array->size == 3)
 	 {
 	    struct svalue s3;
-	    array_index_no_free(&s3,s2.u.array,0);
+	    s3=s2.u.array->item[0];
 	    if (s3.type==T_INT) matrix[j+i*width].r=s3.u.integer; 
 	    else matrix[j+i*width].r=0;
-	    free_svalue(&s3);
-	    array_index_no_free(&s3,s2.u.array,1);
+
+	    s3=s2.u.array->item[1];
 	    if (s3.type==T_INT) matrix[j+i*width].g=s3.u.integer;
 	    else matrix[j+i*width].g=0;
-	    free_svalue(&s3);
-	    array_index_no_free(&s3,s2.u.array,2);
+
+	    s3=s2.u.array->item[2];
 	    if (s3.type==T_INT) matrix[j+i*width].b=s3.u.integer; 
 	    else matrix[j+i*width].b=0;
-	    free_svalue(&s3);
 	 }
 	 else if (s2.type==T_INT)
 	    matrix[j+i*width].r=matrix[j+i*width].g=
@@ -2372,9 +2367,7 @@ CHRONO("apply_matrix");
 	 else
 	    matrix[j+i*width].r=matrix[j+i*width].g=
 	       matrix[j+i*width].b=0;
-	 free_svalue(&s2);
       }
-      free_svalue(&s2);
    }
 
    o=clone_object(image_program,0);
@@ -2546,10 +2539,7 @@ void _image_map_compat(INT32 args,int fs) /* compat function */
   struct neo_colortable *nct;
   struct object *o,*co;
   struct image *this = THIS;
-  struct pike_string *res = begin_shared_string((this->xsize*this->ysize));
   rgb_group *d;
-
-  if(!res) error("Out of memory\n");
 
   co=clone_object(image_colortable_program,args);
   nct=(struct neo_colortable*)get_storage(co,image_colortable_program);
