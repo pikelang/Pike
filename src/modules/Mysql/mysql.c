@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.10 1997/11/05 20:06:01 hedda Exp $
+ * $Id: mysql.c,v 1.11 1998/01/24 23:09:46 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,9 +73,18 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.10 1997/11/05 20:06:01 hedda Exp $");
+RCSID("$Id: mysql.c,v 1.11 1998/01/24 23:09:46 grubba Exp $");
 
 struct program *mysql_program = NULL;
+
+#ifdef HAVE_MYSQL_PORT
+static MUTEX_T stupid_port_lock;
+extern unsigned int mysql_port;
+#define STUPID_PORT_INIT()	mt_init(&stupid_port_lock)
+#define STUPID_PORT_LOCK()	mt_lock(&stupid_port_lock)
+#define STUPID_PORT_UNLOCK()	mt_unlock(&stupid_port_lock)
+#define STUPID_PORT_DESTROY()	mt_destroy(&stupid_port_lock)
+#endif /* HAVE_MYSQL_PORT */
 
 /*
  * Functions
@@ -136,9 +145,20 @@ static void pike_mysql_reconnect(void)
   char *database = NULL;
   char *user = NULL;
   char *password = NULL;
+  char *portptr = NULL;
+  unsigned int port = 0;
+  unsigned int saved_port = 0;
 
   if (PIKE_MYSQL->host) {
-    host = PIKE_MYSQL->host->str;
+    host = strdup(PIKE_MYSQL->host->str);
+    if (!host) {
+      error("Mysql.mysql(): Out of memory!\n");
+    }
+    if ((portptr = strchr(host, ':')) && (*portptr == ':')) {
+      *portptr = 0;
+      portptr++;
+      port = (unsigned int) atoi(portptr);
+    }
   }
   if (PIKE_MYSQL->database) {
     database = PIKE_MYSQL->database->str;
@@ -155,15 +175,37 @@ static void pike_mysql_reconnect(void)
 
   THREADS_ALLOW();
 
+#ifdef HAVE_MYSQL_PORT
+  STUPID_PORT_LOCK();
+#endif /* HAVE_MYSQL_PORT */
+
   if (socket) {
     /* Disconnect the old connection */
     mysql_close(socket);
   }
 
+#ifdef HAVE_MYSQL_PORT
+  if (port) {
+    saved_port = mysql_port;
+    mysql_port = port;
+  }
+#endif /* HAVE_MYSQL_PORT */
+
   socket = mysql_connect(mysql, host, user, password);
+
+#ifdef HAVE_MYSQL_PORT
+  mysql_port = saved_port;
+
+  STUPID_PORT_UNLOCK();
+#endif /* HAVE_MYSQL_PORT */
 
   THREADS_DISALLOW();
 
+  if (host) {
+    /* No longer needed */
+    free(host);
+  }
+  
   if (!(PIKE_MYSQL->socket = socket)) {
     error("Mysql.mysql(): Couldn't reconnect to SQL-server\n");
   }
@@ -916,6 +958,10 @@ void pike_module_init(void)
   mysql_program = end_program();
   add_program_constant("mysql", mysql_program, 0);
 
+#ifdef HAVE_MYSQL_PORT
+  STUPID_PORT_INIT();
+#endif /* HAVE_MYSQL_PORT */
+
   init_mysql_res_programs();
 #endif /* HAVE_MYSQL */
 }
@@ -924,6 +970,10 @@ void pike_module_exit(void)
 {
 #ifdef HAVE_MYSQL
   exit_mysql_res();
+
+#ifdef HAVE_MYSQL_PORT
+  STUPID_PORT_DESTROY();
+#endif /* HAVE_MYSQL_PORT */
 
   if (mysql_program) {
     free_program(mysql_program);
