@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.536 2003/11/18 13:08:33 grubba Exp $
+|| $Id: program.c,v 1.537 2003/11/19 20:23:03 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.536 2003/11/18 13:08:33 grubba Exp $");
+RCSID("$Id: program.c,v 1.537 2003/11/19 20:23:03 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2350,6 +2350,18 @@ static void exit_program_struct(struct program *p)
   {
     for(e=0; e<p->num_identifiers; e++)
     {
+#ifdef PIKE_PORTABLE_BYTECODE
+      if (p->program &&
+	  IDENTIFIER_IS_PIKE_FUNCTION(p->identifiers[e].identifier_flags) &&
+	  p->identifiers[e].func.offset != -1) {
+	/* FIXME: What about LP64? */
+	struct pike_tripple *tripples =
+	  ((void **)(p->program+p->identifiers[e].func.offset))[-1];
+	fprintf(stderr, "Freeing tripples at 0x%08p.\n", tripples);
+	if (tripples)
+	  free(tripples);
+      }
+#endif /* PIKE_PORTABLE_BYTECODE */
       if(p->identifiers[e].name)
 	free_string(p->identifiers[e].name);
       if(p->identifiers[e].type)
@@ -7601,7 +7613,7 @@ static int low_is_compatible(struct program *a, struct program *b)
       continue;		/* It's ok... */
     }
 
-    /* Note: Use weaker check for constant integers. */
+    /* Note: Uses weaker check for constant integers. */
     if(((bid->run_time_type != PIKE_T_INT) ||
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
@@ -7708,7 +7720,7 @@ int yyexplain_not_compatible(struct program *a, struct program *b, int flags)
       continue;		/* It's ok... */
     }
 
-    /* Note: Use weaker check for constant integers. */
+    /* Note: Uses weaker check for constant integers. */
     if(((bid->run_time_type != PIKE_T_INT) ||
 	(ID_FROM_INT(a, i)->run_time_type != PIKE_T_INT)) &&
        !match_types(ID_FROM_INT(a,i)->type, bid->type)) {
@@ -7750,22 +7762,15 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
     }
 
     if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
-      struct pike_string *s1,*s2;
-      s1=describe_type(ID_FROM_INT(a,i)->type);
-      s2=describe_type(bid->type);
       if(!match_types(ID_FROM_INT(a,i)->type, bid->type)) {
 	my_yyerror("Type of identifier \"%s\" does not match.",
 		   bid->name->str);
-	my_yyerror("Expected: %s",s1->str);
-	my_yyerror("Got     : %s",s2->str);
+	yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, 0);
       } else {
 	yywarning("Type of identifier \"%s\" is not strictly compatible.",
 		  bid->name->str);
-	yywarning("Expected: %s",s1->str);
-	yywarning("Got     : %s",s2->str);
+	yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, YYTE_IS_WARNING);
       }
-      free_string(s1);
-      free_string(s2);
       return 0;
     }
   }
