@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.28 2003/02/08 02:30:11 mast Exp $
+|| $Id: pike_threadlib.h,v 1.29 2003/02/08 03:40:00 mast Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -15,7 +15,9 @@
  */
 
 
+#ifndef CONFIGURE_TEST
 #include "machine.h"
+#endif
 
 /* Needed for the sigset_t typedef, which is needed for
  * the pthread_sigsetmask() prototype on Solaris 2.x.

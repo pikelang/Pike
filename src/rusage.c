@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.27 2003/01/13 16:11:32 mast Exp $
+|| $Id: rusage.c,v 1.28 2003/02/08 03:40:00 mast Exp $
 */
 
 #include "global.h"
@@ -13,12 +13,11 @@
 #include <windows.h>
 #endif
 #include <sys/stat.h>
-#include "time_stuff.h"
 #include <fcntl.h>
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.27 2003/01/13 16:11:32 mast Exp $");
+RCSID("$Id: rusage.c,v 1.28 2003/02/08 03:40:00 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -33,7 +32,10 @@ RCSID("$Id: rusage.c,v 1.27 2003/01/13 16:11:32 mast Exp $");
 #include <time.h>
 #endif
 
+#ifndef CONFIGURE_TEST
+#include "time_stuff.h"
 #include "fd_control.h"
+#endif
 
 /*
  * Here comes a long blob with stuff to see how to find out about
