@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.286 1999/05/15 16:02:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.287 1999/05/26 07:07:04 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -636,9 +636,8 @@ fi
 
 if test "$pike_cv_sys_os" = "Solaris" ; then
   AC_DEFINE(SOLARIS)
-  AC_DEFINE(USE_WAIT_THREAD)
 else
-  AC_DEFINE(USE_SIGCHILD)
+  :
 fi
 
 if test ! -d modules/. ; then
@@ -3004,6 +3003,18 @@ case "x$LD" in
   ;;
 esac
 
+case "x$pike_cv_sys_os" in
+  xSolaris | xAIX)
+    AC_DEFINE(USE_WAIT_THREAD)
+  ;;
+
+  Windows_NT)
+  ;;
+
+  *)
+    AC_DEFINE(USE_SIGCHILD)
+  ;;
+esac
 
 
 #############################################################################
