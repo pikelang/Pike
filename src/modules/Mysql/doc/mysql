@@ -1,10 +1,10 @@
 NAME
-	/precompiled/sql/mysql - Interface to the Mysql database (ALPHA)
+	Mysql.mysql - Interface to the Mysql database (ALPHA)
 
 DESCRIPTION
-	/precompiled/sql/mysql is a pre-compiled Pike program. It enables
-	access to the Mysql database from within Pike. /precompiled/sql/mysql
-	is a part of the mysql module.
+	Mysql.mysql is a pre-compiled Pike program. It enables
+	access to the Mysql database from within Pike. Mysql.mysql
+	is a part of the Mysql module.
 
 	Mysql is available from	http://www.tcx.se/ .
 
@@ -19,20 +19,20 @@ NAME
 SYNTAX
 	#include <mysql.h>
 
-	object(Mysql) Mysql();
+	object(mysql) mysql();
 	or
-	object(Mysql) Mysql(string hostname);
+	object(mysql) mysql(string hostname);
 	or
-	object(Mysql) Mysql(string hostname, string database);
+	object(mysql) mysql(string hostname, string database);
 	or
-	object(Mysql) Mysql(string hostname, string database, string user);
+	object(mysql) mysql(string hostname, string database, string user);
 	or
-	object(Mysql) Mysql(string hostname, string database, string user,
+	object(mysql) mysql(string hostname, string database, string user,
 	                    string password);
 
 DESCRIPTION
 	To access the Mysql database, you must first connect to it. This is
-	done with the function Mysql().
+	done with the function mysql().
 
 	If you give no argument, or give "" as hostname it will connect with
 	a UNIX-domain socket, which is a big performance gain.
@@ -106,12 +106,12 @@ SYNTAX
 
 DESCRIPTION
 	This function sends an SQL query to the Mysql-server. The result
-	of the query is returned as a /precompiled/sql/mysql_result object.
+	of the query is returned as a Mysql.mysql_result object.
 	Returns 0 if the query didn't return any result (e.g. INSERT or
 	similar).
 
 SEE ALSO
-	/precompiled/sql/mysql_result
+	Mysql.mysql_result
 
 
 ============================================================================
@@ -261,9 +261,9 @@ NAME
 SYNTAX
 	#include <mysql.h>
 
-	object(Mysql_result) mysql->list_dbs();
+	object(mysql_result) mysql->list_dbs();
 	or
-	object(Mysql_result) mysql->list_dbs(string wild);
+	object(mysql_result) mysql->list_dbs(string wild);
 
 DESCRIPTION
 	Returns a table containing the names of all databases in the
@@ -272,7 +272,7 @@ DESCRIPTION
 
 SEE ALSO
 	mysql->list_tables, mysql->list_fields, mysql->list_processes,
-	/precompiled/sql/mysql_result
+	Mysql.mysql_result
 
 
 ============================================================================
@@ -282,9 +282,9 @@ NAME
 SYNTAX
 	#include <mysql.h>
 
-	object(Mysql_result) mysql->list_tables();
+	object(mysql_result) mysql->list_tables();
 	or
-	object(Mysql_result) mysql->list_tables(string wild);
+	object(mysql_result) mysql->list_tables(string wild);
 
 DESCRIPTION
 	Returns a table containing the names of all tables in the current
@@ -293,7 +293,7 @@ DESCRIPTION
 
 SEE ALSO
 	mysql->list_dbs, mysql->list_fields, mysql->list_processes,
-	/precompiled/sql/mysql_result
+	Mysql.mysql_result
 
 
 ============================================================================
@@ -349,7 +349,7 @@ NAME
 SYNTAX
 	#include <mysql.h>
 
-	object(Mysql_result) mysql->list_processes();
+	object(mysql_result) mysql->list_processes();
 
 DESCRIPTION
 	Returns a table containing the names of all processes in the
@@ -357,7 +357,7 @@ DESCRIPTION
 
 SEE ALSO
 	mysql->list_dbs, mysql->list_tables, mysql->list_fields,
-	/precompiled/sql/mysql_result
+	Mysql.mysql_result
 
 
 ============================================================================

@@ -1,19 +1,19 @@
 NAME
-	/precompiled/sql - Generic interface to SQL databases (ALPHA)
+	Sql.sql - Generic interface to SQL databases (ALPHA)
 
 DESCRIPTION
-	/precompiled/sql is a precompiled Pike program. It enables access
+	Sql.sql is a program in the Sql module. It enables access
 	to SQL databases from within Pike.
 
 NOTA BENE
 	To use this module you need at least one specific SQL-module e.g.
-	/precompiled/sql/mysql or /precompiled/sql/msql.
+	Mysql.mysql or Msql.msql.
 
 KEYWORDS
 	sql, database
 
 SEE ALSO
-	/precompiled/sql/mysql, /precompiled/sql/msql
+	Mysql.mysql, Msql.msql
 
 
 ============================================================================
@@ -23,24 +23,24 @@ NAME
 SYNTAX
 	#include <sql.h>
 
-	object(Sql) Sql();
+	object(sql) sql();
 	or
-	object(Sql) Sql(object obj);
+	object(sql) sql(object obj);
 	or
-	object(Sql) Sql(object obj, string database);
+	object(sql) sql(object obj, string database);
 	or
-	object(Sql) Sql(string hostname);
+	object(sql) sql(string hostname);
 	or
-	object(Sql) Sql(string hostname, string database);
+	object(sql) sql(string hostname, string database);
 	or
-	object(Sql) Sql(string hostname, string database, string user);
+	object(sql) sql(string hostname, string database, string user);
 	or
-	object(Sql) Sql(string hostname,string database,
+	object(sql) sql(string hostname,string database,
 	                string user, string password);
 
 DESCRIPTION
 	To access a database, you must first connect to it. This is
-	done with the function Sql().
+	done with the function sql().
 	
 	If the first argument is an object, access to the SQL-database will
 	go through that object.
@@ -66,14 +66,16 @@ EXAMPLE
 	{
 	  /* First: Do it with the first available SQL-server */
 
-	  object(Sql) sql = Sql(0, "test");
+	  object(sql) sql_connection = sql(0, "test");
 
-	  write(sprintf("Sql: %O\n", sql->query("select * from db")));
+	  write(sprintf("sql: %O\n",
+                        sql_connection->query("select * from db")));
 
 	  /* Second: Use the Mysql-server */
-	  sql = Sql(Mysql(), "test");
+	  sql_connection = sql(mysql(), "test");
 
-	  write(sprintf("Mysql: %O\n", sql->query("select * from db")));
+	  write(sprintf("mysql: %O\n",
+                        sql_connection->query("select * from db")));
 	}
 
 SEE ALSO
@@ -137,7 +139,7 @@ NAME
 SYNTAX
 	#include <sql.h>
 
-	object(Sql_result) sql->big_query(string q);
+	object(sql_result) sql->big_query(string q);
 
 DESCRIPTION
 	This function sends an SQL query to the underlying SQL-server. The
@@ -147,7 +149,7 @@ DESCRIPTION
 	result (e.g. INSERT or similar).
 
 SEE ALSO
-	sql->query, /precompiled/sql_result
+	sql->query, Sql.sql_result
 
 
 ============================================================================
@@ -329,3 +331,4 @@ NOTA BENE
 SEE ALSO
 	sql->list_dbs, sql->list_tables,
 	sql_result->fetch_fields
+
