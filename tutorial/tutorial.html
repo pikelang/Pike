@@ -12351,6 +12351,96 @@ Pike better and thus make you a better Pike programmer. From this point on
 I will assume that the reader knows C or C++.
 <p>
 <h2>The master object</h2>
+Pike is a very dynamic language. Sometimes that is not enough, sometimes you
+want to change the way Pike handles errors, loads modules or start scripts.
+All this and much more can be changed by modifying the <b>master object</b>.
+The <b>master object</b> is a Pike object like any other object, but it is
+loaded before anything else and is expected to preform certain things for
+the Pike executable. The Pike executable cannot function without a master
+object to take care of these things. Here is a list of the methods needed
+in the <b>master object</b>:
+<dl>
+<dt> <tt>program cast_to_program(string <i>program_name<i>, string <i>current_file</i>)</tt>
+<dd> This function s called whenever somoene performs a cast from a string
+     to a program.
+<dt> <tt>program handle_inherit(string <i>program_name<i>, string <i>current_file</i>)</tt>
+<dd> This is called whenever a pike program which uses inherit with a string
+     argument is called. It is expected to return the program to inherit.
+<dt> <tt>void handle_error(mixed *<i>trace</i>)</tt>
+<dd> This function is expected to write the error messages when a
+     run time error occurs. The argument is on the form
+     <tt>({"<i>error_description</i>", backtrace() })</tt>. If any error
+     occurs in this routine Pike will dump core.
+<dt> <tt>program cast_to_program(string <i>program_name<i>, string <i>current_file</i>)</tt>
+<dd> This function is called whenever someone performas a cast from a string
+     to an object.
+<dt> <tt>mixed resolv(string <i>identifier</i>, string <i>current_file</i>)</tt>
+<dd> This function is called whenever the compiler finds an unknown identifier
+     in a program. It is normally used for loading modules.
+     It is supposed to return <tt>([])[0]</tt> if the master doesn't know what
+     the value should be, and the value in question otherwise.
+<dt> <tt>void _main(string *<i>argv</i>, string *<i>env</i>)</tt>
+<dd> This function is supposed to start a Pike script. It receives all
+     the command line arguments in the first array. And all environment
+     variables on the form <tt>"<i>var</i>=<i>value</i>"</tt>.
+     _main is called as soon as all modules and setup is done.
+<dt> <tt>void compile_error(string <i>file</i>, int <i>line</i>, string <i>err</i>)</t>
+<dd> This function is called whenever a compile error is encountered. Normally
+     it just writes a message to stderr.
+<dt> <tt>string handle_include(string <i>file</i>, string <i>current_file</i>, int <i>local_include</i>)</tt>
+<dd> This function is used to locate include files. <i>file</i> is the file
+     name the user wants to include, and <i>local_include</i> is 1 if
+     the user used doublequotes rather than lesser-than, greather-than to
+     quote the file name. Othewise it is zero.
+</dl>
+<p>
+Aside from the above functions, which are expected from the Pike binary,
+the master object is also exepcted to provide functions used by Pike
+scripts. The current master add the following global functions:
+<dl><dd>
+	add_include_path, remove_include_path, add_module_path,
+	remove_module_path, master, describe_backtrace, mkmultiset,
+	strlen, new, clone, UNDEFINED, write, getenv and putenv.
+	<!-- FIXME, make sure these functions are documented!! -->
+</dl>
+<p>
+There are at least two ways to change the behaviour of the master object.
+(Except for editing it directly, which would cause other Pike scripts not
+ to run in most cases.) You can either copy the master object, modify it
+and use the command line option <tt>-m</tt> to load your file instead of
+the default master object. However, since there might be more functionality
+added to the master object in the future I do not recommend this.
+<p>
+A better way is to write an object that inherits the master and then calls
+replace_master with the new object as argument. This should be far more
+future-safe. Although I can not guarantee that the interface between Pike
+and the master object will not change in the future, so be careful if you
+do this.
+<p>
+Let's look an example:
+<pre>
+	#!/usr/local/bin/pike
+
+	class new_master {
+	  inherit "/master";
+
+	  void handle_error(mixed *trace)
+	  {
+	    Stdio.write_file("errorlog",describe_backtrace(trace));
+	  }
+	};
+
+	int main(int argc, string *argv)
+	{
+	  replace_master(new_master());
+	  /* Run rest of program */
+	  exit(0);
+	}
+</pre>
+This example installs a master object which logs run time errors to file
+instead of writing them to stderr.
+<p>
+
 
 <h2> Functional overview </h2>
 
