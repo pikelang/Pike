@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.35 1998/03/02 16:06:59 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.36 1998/03/26 00:51:37 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -247,22 +247,37 @@ void push_unfinished_type(char *s)
 
 static void push_unfinished_type_with_markers(char *s, struct pike_string **am)
 {
-  int e;
-  e=type_length(s);
-  for(e--;e>=0;e--)
+  int e,c,len=type_length(s);
+  type_stack_mark();
+  for(e=0;e<len;e++)
   {
-    if(s[e]>='0' && s[e]<='9')
+    switch(c=EXTRACT_UCHAR(s+e))
     {
-      if(am[s[e]-'0'])
-      {
-	push_finished_type(am[s[e]-'0']);
-      }else{
-	push_type(T_MIXED);
-      }
-    }else{
-      push_type(s[e]);
+#if 1
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+	if(am[c-'0'])
+	{
+	  push_finished_type_backwards(am[c-'0']);
+	}else{
+	  push_type(T_MIXED);
+	}
+	break;
+#endif
+	
+      case T_OBJECT:
+	push_type(c);
+	push_type(EXTRACT_UCHAR(s+ ++e));
+	push_type(EXTRACT_UCHAR(s+ ++e));
+	push_type(EXTRACT_UCHAR(s+ ++e));
+	push_type(EXTRACT_UCHAR(s+ ++e));
+	break;
+	
+      default:
+	push_type(c);
     }
   }
+  type_stack_reverse();
 }
 
 void push_finished_type(struct pike_string *type)
@@ -270,6 +285,14 @@ void push_finished_type(struct pike_string *type)
   int e;
   CHECK_TYPE(type);
   for(e=type->len-1;e>=0;e--) push_type(type->str[e]);
+}
+
+void push_finished_type_backwards(struct pike_string *type)
+{
+  int e;
+  CHECK_TYPE(type);
+  MEMCPY(type_stackp, type->str, type->len);
+  type_stackp+=type->len;
 }
 
 struct pike_string *debug_pop_unfinished_type(void)

@@ -69,6 +69,7 @@ void type_stack_reverse(void);
 void push_type_int(unsigned INT32 i);
 void push_unfinished_type(char *s);
 void push_finished_type(struct pike_string *type);
+void push_finished_type_backwards(struct pike_string *type);
 struct pike_string *debug_pop_unfinished_type(void);
 struct pike_string *debug_pop_type(void);
 struct pike_string *parse_type(char *s);
