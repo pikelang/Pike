@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.4 1997/03/30 19:07:40 grubba Exp $
+ * $Id: sql.pike,v 1.5 1997/04/23 00:29:03 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.4 1997/03/30 19:07:40 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.5 1997/04/23 00:29:03 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -55,11 +55,11 @@ void create(void|string|object host, void|string db,
   } else {
     foreach(get_dir(Sql->dirname), string program_name) {
       if ((sizeof(program_name / "_result") == 1) &&
-	  (program_name != "sql.pike") &&
-	  (program_name != "CVS")) {
+	  (sizeof(program_name / ".pike") > 1) &&
+	  (program_name != "sql.pike")) {
 	/* Don't call ourselves... */
 	array(mixed) err;
-	
+	werror("Trying "+program_name+"...\n");
 	err = catch {
 	  program p = Sql[program_name];
 
@@ -76,6 +76,7 @@ void create(void|string|object host, void|string db,
 	  }
 	  return;
 	};
+	werror(describe_backtrace(err)+"\n");
       }
     }
   }
@@ -119,13 +120,28 @@ void select_db(string db)
   master_sql->select_db(db);
 }
 
+//. - compile_query
+//.   Compiles the query (if possible). Otherwise returns it as is.
+//.   The resulting object can be used multiple times in query() and
+//.   big_query().
+//. > q
+//.   SQL-query to compile.
+string|object compile_query(string q)
+{
+  if (functionp(master_sql->compile_query)) {
+    return(master_sql->compile_query(q));
+  }
+  return(q);
+}
+
 //. - query
 //.   Send an SQL query to the underlying SQL-server. The result is returned
 //.   as an array of mappings indexed on the name of the columns.
 //.   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
 //. > q
-//.   Query to send to the SQL-server.
-array(mapping(string:mixed)) query(string q)
+//.   Query to send to the SQL-server. This can either be a string with the
+//.   query, or a previously compiled query (see compile_query()).
+array(mapping(string:mixed)) query(object|string q)
 {
   object res_obj;
 
@@ -141,8 +157,9 @@ array(mapping(string:mixed)) query(string q)
 //.   the available memory, and returning some more info on the result.
 //.   Returns 0 if the query didn't return any result (e.g. INSERT or similar).
 //. > q
-//.   Query to send to the SQL-server.
-object big_query(string q)
+//.   Query to send to the SQL-server. This can either be a string with the
+//.   query, or a previously compiled query (see compile_query()).
+object big_query(object|string q)
 {
   if (functionp(master_sql->big_query)) {
     return(Sql.sql_result(master_sql->big_query(q)));
