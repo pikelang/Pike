@@ -185,7 +185,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.32 2002/08/15 14:49:20 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.33 2002/09/24 11:09:05 marcus Exp $");
 
 #endif
 
@@ -1927,6 +1927,7 @@ static void init_dlopen(void)
     EXPORT(fopen);
     EXPORT(fseek);
     EXPORT(fread);
+    EXPORT(strtol);
   }
 
 #define EXPORT_AS(X,Y) \
