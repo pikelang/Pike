@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.118 2003/04/02 19:22:44 mast Exp $
+|| $Id: svalue.h,v 1.119 2003/04/27 23:34:14 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -98,7 +98,7 @@ struct svalue
 #define PIKE_T_FLOAT 9
 
 #define PIKE_T_ZERO  14	/* Can return 0, but nothing else */
-#define T_UNFINISHED 15	/* Reserved for the garbage-collector */
+#define T_UNFINISHED 15
 
 #define T_VOID       16
 /* Can't return any value. Also used on stack to fill out the second
@@ -227,8 +227,8 @@ struct svalue
 
 #define BIT_ZERO (1<<PIKE_T_ZERO)
 
-/* Used to signify that this array might not be finished yet */
-/* garbage collect uses this */
+/* Used to signify that the type field hasn't been set according to
+ * reality. */
 #define BIT_UNFINISHED (1 << T_UNFINISHED)
 
 /* This is only used in typechecking to signify that this 
@@ -246,6 +246,7 @@ struct svalue
 #define BIT_BASIC (BIT_INT|BIT_FLOAT|BIT_STRING|BIT_TYPE)
 #define BIT_COMPLEX (BIT_ARRAY|BIT_MULTISET|BIT_OBJECT|BIT_PROGRAM|BIT_MAPPING|BIT_FUNCTION)
 #define BIT_CALLABLE (BIT_FUNCTION|BIT_PROGRAM|BIT_ARRAY|BIT_OBJECT)
+#define BIT_REF_TYPES (BIT_STRING|BIT_TYPE|BIT_COMPLEX)
 
 /* Max type which contains svalues */
 #define MAX_COMPLEX PIKE_T_PROGRAM
@@ -346,6 +347,9 @@ if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
  Pike_fatal(msg_ssval_obj_wo_refs); \
 } }while(0)
 
+#define check_type_hint(SVALS, NUM, TYPE_HINT)				\
+  debug_check_type_hint ((SVALS), (NUM), (TYPE_HINT))
+
 #ifdef DEBUG_MALLOC
 static inline struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
 {
@@ -385,16 +389,17 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
 
 #endif
 
-#else
+#else  /* !PIKE_DEBUG */
 
 #define check_svalue(S)
 #define check_type(T)
 #define check_refs(S)
 #define check_refs2(S,T)
+#define check_type_hint(SVALS, NUM, TYPE_HINT)
 #define dmalloc_check_svalue(S,L) (S)
 #define dmalloc_check_union(U,T,L) (U)
 
-#endif
+#endif	/* !PIKE_DEBUG */
 
 
 /* This define
@@ -516,14 +521,14 @@ PMOD_EXPORT void really_free_svalue(struct svalue *s);
 PMOD_EXPORT void do_free_svalue(struct svalue *s);
 PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
 PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
-PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
-			    const struct svalue *from,
-			    size_t num,
-			    TYPE_FIELD type_hint);
-PMOD_EXPORT void assign_svalues(struct svalue *to,
-		    const struct svalue *from,
-		    size_t num,
-		    TYPE_FIELD types);
+PMOD_EXPORT TYPE_FIELD assign_svalues_no_free(struct svalue *to,
+					      const struct svalue *from,
+					      size_t num,
+					      TYPE_FIELD type_hint);
+PMOD_EXPORT TYPE_FIELD assign_svalues(struct svalue *to,
+				      const struct svalue *from,
+				      size_t num,
+				      TYPE_FIELD type_hint);
 PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    const struct svalue *s);

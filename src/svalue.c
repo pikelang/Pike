@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.164 2003/04/26 16:11:25 mast Exp $
+|| $Id: svalue.c,v 1.165 2003/04/27 23:34:14 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.164 2003/04/26 16:11:25 mast Exp $");
+RCSID("$Id: svalue.c,v 1.165 2003/04/27 23:34:14 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -332,53 +332,47 @@ PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 ty
 }
 
 
-PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
-			    const struct svalue *from,
-			    size_t num,
-			    TYPE_FIELD type_hint)
+PMOD_EXPORT TYPE_FIELD assign_svalues_no_free(struct svalue *to,
+					      const struct svalue *from,
+					      size_t num,
+					      TYPE_FIELD type_hint)
 {
   TYPE_FIELD masked_type;
 
-#ifdef PIKE_DEBUG
-  if(d_flag)
-  {
-    size_t e;
-    for(e=0;e<num;e++)
-      if(!(type_hint & (1<<from[e].type)))
-	 Pike_fatal("Type hint lies (%ld %ld %d)!\n",
-	       DO_NOT_WARN((long)e),
-	       (long)type_hint, from[e].type);
-  }
-#endif
+  check_type_hint (from, num, type_hint);
   MEMCPY((char *)to, (char *)from, sizeof(struct svalue) * num);
 
-  if (!(masked_type = (type_hint & ((2<<MAX_REF_TYPE)-1))))
-    return;
+  if (!(masked_type = (type_hint & BIT_REF_TYPES)))
+    return type_hint;
 
   if(masked_type == type_hint)
   {
     while(num--) {
-      add_ref(from->u.array);
+      add_ref(from->u.dummy);
       from++;
     }
-    return;
+    return type_hint;
   }
 
+  type_hint = 0;
   while(num--) {
+    type_hint |= 1 << from->type;
     if (from->type <= MAX_REF_TYPE) {
-      add_ref(from->u.array);
+      add_ref(from->u.dummy);
     }
     from++;
   }
+  return type_hint;
 }
 
-PMOD_EXPORT void assign_svalues(struct svalue *to,
-		    const struct svalue *from,
-		    size_t num,
-		    TYPE_FIELD types)
+PMOD_EXPORT TYPE_FIELD assign_svalues(struct svalue *to,
+				      const struct svalue *from,
+				      size_t num,
+				      TYPE_FIELD type_hint)
 {
-  free_mixed_svalues(to,num);
-  assign_svalues_no_free(to,from,num,types);
+  check_type_hint (from, num, type_hint);
+  if (type_hint & BIT_REF_TYPES) free_mixed_svalues(to,num);
+  return assign_svalues_no_free(to,from,num,type_hint);
 }
 
 PMOD_EXPORT void assign_to_short_svalue(union anything *u,
@@ -1677,7 +1671,9 @@ static void low_check_short_svalue(const union anything *u, TYPE_T type)
       case T_ARRAY: check_array(u->array); break;
       case T_PROGRAM: check_program(u->program); break;
       case T_OBJECT: check_object(u->object); break;
-/*      case T_MULTISET: check_multiset(u->multiset); break; */
+#ifdef PIKE_NEW_MULTISETS
+      case T_MULTISET: check_multiset(u->multiset, 0); break;
+#endif
       }
       inside=0;
     }
@@ -1705,9 +1701,18 @@ void debug_check_svalue(const struct svalue *s)
   low_check_short_svalue(& s->u, s->type);
 }
 
-#endif
+void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint)
+{
+  if(d_flag)
+  {
+    size_t e;
+    for(e=0;e<num;e++)
+      if(!(type_hint & (1<<svals[e].type)))
+	Pike_fatal("Type hint lies (%"PRINTSIZET"d %ld %d)!\n",
+		   e, (long)type_hint, svals[e].type);
+  }
+}
 
-#ifdef PIKE_DEBUG
 /* NOTE: Must handle num being negative. */
 PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num)
 {
@@ -2148,6 +2153,7 @@ int svalues_are_constant(struct svalue *s,
 			 TYPE_FIELD hint,
 			 struct processing *p)
 {
+  check_type_hint (s, num, hint);
   if(hint & ~(BIT_STRING | BIT_INT | BIT_FLOAT))
   {
     INT32 e;
