@@ -3,7 +3,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.53 2003/05/12 09:07:19 tomas Exp $");
+RCSID("$Id: fdlib.c,v 1.54 2003/09/16 16:45:30 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -728,9 +728,9 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
     case FD_FILE:
     case FD_PIPE:
       ret=0;
-      if(!ReadFile(handle, to,
-		   DO_NOT_WARN((DWORD)len),
-		   &ret,0) && ret<=0)
+      if(len && !ReadFile(handle, to,
+			  DO_NOT_WARN((DWORD)len),
+			  &ret,0) && ret<=0)
       {
 	errno=GetLastError();
 	switch(errno)
