@@ -404,110 +404,113 @@ GimpImage __decode( string|mapping what )
 }
 
 
-#define PASTE_ALPHA(X,Y)                                                \
-        if(Y)                                                           \
-          img->paste_mask( X, Y, l->xoffset, l->yoffset );              \
-        else                                                            \
-          img->paste( X, l->xoffset, l->yoffset );                      \
-        if(Y&&alpha&&++alpha_used)                                      \
-          alpha->paste_alpha_color(Y,255,255,255,l->xoffset, l->yoffset ); \
-        else if(alpha)                                                 \
-         alpha->box(l->xoffset,l->yoffset,l->xoffset+l->width-1,l->yoffset+l->height-1,255,255,255)
+string translate_mode( int mode )
+{
+  switch( mode )
+  {
+   case NORMAL_MODE:      return "normal";
+   case MULTIPLY_MODE:    return "multiply";
+   case ADDITION_MODE:    return "add";
+   case DIFFERENCE_MODE:  return "difference";
+   case SUBTRACT_MODE:    return "subtract";
+   case DIVIDE_MODE:      return "divide";
+   case DISSOLVE_MODE:    return "dissolve";
+   case DARKEN_ONLY_MODE: return "min";
+   case LIGHTEN_ONLY_MODE:return "max";
+   case HUE_MODE:         return "hue";
+   case SATURATION_MODE:  return "saturation";
+   case COLOR_MODE:       return "color";
+   case VALUE_MODE:       return "value";
+   case SCREEN_MODE:      return "screen";
+   case OVERLAY_MODE:     return "overlay";
 
-#define IMG_SLICE(l,h) img->copy(l->xoffset,l->yoffset,l->xoffset+h->width-1,l->yoffset+h->height-1)
+   default:
+     werror("WARNING: XCF: Unsupported mode: "+mode+"\n");
+     return "normal";
+  }
+}
 
 mapping _decode( string|mapping what, mapping|void opts )
 {
+#ifdef DEBUG
+  mixed e = catch {
+#endif
   if(!opts) opts = ([]);
-// array e=
-//   catch {
-  int alpha_used;
-  GimpImage data = __decode( what );
-  object img = Image.image(data->width, data->height, 
-                           @((opts->background&&(array)opts->background)
-                             ||({255,255,255})));
-  object alpha;
 
-  if( !opts->background )
-    alpha = Image.image(data->width, data->height);
+  GimpImage data = __decode( what );
+  what = 0;
+  array layers = ({});
+  
+  mapping lopts = ([ "tiled":1, ]);
+  if( opts->background )
+  {
+    lopts->image = Image.Image( 32, 32, opts->background );
+    lopts->alpha = Image.Image( 32,32, Image.Color.white );
+    lopts->alpha_value = 1.0;
+  } else {
+    lopts->image = Image.Image( 32, 32, Image.Color.black );
+    lopts->alpha = Image.Image( 32,32, Image.Color.black );
+    lopts->alpha_value = 0.0;
+  }
+  layers = ({ Image.Layer( lopts ) });
 
   foreach(data->layers, object l)
   {
     if(l->flags->visible || opts->draw_all_layers)
     {
-      Hierarchy h = l->image->get_opaqued( l->opacity );
+      Hierarchy   h   = l->image;
+      Image.Layer lay = Image.Layer( h->img,
+                                     h->alpha,
+                                     translate_mode( l->mode ) );
+      h->img = 0; h->alpha = 0;
+
+      lay->set_alpha_value( l->opacity / 255.0 );
+      lay->set_offset( l->xoffset, l->yoffset );
+
       if(l->mask && l->flags->apply_mask)
       {
-        if(l->image->alpha)
-          l->image->alpha *= l->mask->image;
+        l->mask = 0;
+        object a = l->alpha();
+        if(a)
+          a *= l->mask->image;
         else
-          l->image->alpha = l->mask->image;
+          a = l->mask->image;
+        if( a->xsize() != l->image->img->xsize() ||
+            a->ysize() != l->image->img->ysize() )
+          a = a->copy( 0,0, l->image->image->xsize(), 
+                       l->image->image->ysize(), 255,255,255 );
+        lay->set_alpha( a );
       }
-
-
-      switch( l->mode )
-      {
-      case NORMAL_MODE:
-        PASTE_ALPHA(h->img,h->alpha);
-        break;
-
-
-      case MULTIPLY_MODE:
-        object oi = IMG_SLICE(l,h);
-        oi *= h->img;
-        PASTE_ALPHA(oi,h->alpha);
-        break;
-
-      case ADDITION_MODE:
-        object oi = IMG_SLICE(l,h);
-        oi += h->img;
-        PASTE_ALPHA(oi,h->alpha);
-        break;
-
-      case DIFFERENCE_MODE:
-        object oi = IMG_SLICE(l,h);
-        oi -= h->img;
-        PASTE_ALPHA(oi,h->alpha);
-        break;
-
-      case SUBTRACT_MODE:
-      case DIVIDE_MODE:
-      case DISSOLVE_MODE:
-      case SCREEN_MODE:
-      case OVERLAY_MODE:
-      case DARKEN_ONLY_MODE:
-      case LIGHTEN_ONLY_MODE:
-      case HUE_MODE:
-      case SATURATION_MODE:
-      case COLOR_MODE:
-      case VALUE_MODE:
-       default:
-        if(!opts->ignore_unknown_layer_modes)
-        {
-          werror("Layer mode "+l->mode+" not yet implemented,  "
-               " asuming 'normal'\n");
-          PASTE_ALPHA(h->img,h->alpha);
-        }
-        break;
-      }
+      layers += ({ lay });
     }
   }
+
+  Image.Layer res = Image.lay( layers );
+  layers = 0;
+  Image.Image img = res->image();
+  Image.Image alpha = res->alpha();
+  res = 0;
 
   if(opts->draw_guides)
     foreach( data->guides, Guide g )
       if(g->vertical)
+      {
         img->line( g->pos, 0, g->pos, img->ysize(), 0,155,0 );
+        if( alpha )
+          alpha->line(  g->pos, 0, g->pos, img->ysize(), 255,255,255 );
+      }
       else
-        img->line( 0,g->pos,  img->xsize(),g->pos, 0,155,0 );
+      {
+        img->line( 0,g->pos,  img->xsize(), g->pos, 0,155,0 );
+        if( alpha )
+          alpha->line(  0,g->pos, img->xsize(),g->pos, 255,255,255 );
+      }
 
   if(opts->draw_selection)
-  {
     if(data->selection)
       img->paste_alpha_color( data->selection->image_data->img*0.25,
-                              data->selection->r,
-                              data->selection->g,
+                              data->selection->r, data->selection->g,
                               data->selection->b );
-  }
 
   if(opts->mark_layers)
   {
@@ -524,6 +527,14 @@ mapping _decode( string|mapping what, mapping|void opts )
         img->line( x2,y1,x2,y2 );
         img->line( x2,y2,x1,y2 );
         img->line( x1,y2,x1,y1 );
+        if(alpha) 
+        {
+          alpha->setcolor(0,0,255,100);
+          alpha->line( x1,y1,x2,y1 );
+          alpha->line( x2,y1,x2,y2 );
+          alpha->line( x2,y2,x1,y2 );
+          alpha->line( x1,y2,x1,y1 );
+        }
       }
     }
   }
@@ -534,13 +545,18 @@ mapping _decode( string|mapping what, mapping|void opts )
     {
       if(l->flags->visible || opts->draw_all_layers)
       {
+        int x, y;
         int x1 = l->xoffset;
         int y1 = l->yoffset+3;
-        object a = opts->mark_layer_names->write( l->name )->scale(0.5);
-        object i = Image.image( a->xsize(),a->ysize(), 100,0,0 );
-        img->paste_mask( a, i, x1, y1 );
-        if(alpha && ++alpha_used)                                      
-          alpha->paste_alpha_color(a,255,255,255, x1,y1 );
+        object a = opts->mark_layer_names->write( l->name );
+        for( x=-1; x<2; x++ )
+          for( y=-1; y<2; y++ )
+          {
+            img->paste_alpha_color( a, 0,0,0, x1+x, y1+y );
+            if(alpha)
+              alpha->paste_alpha_color(a,255,255,255, x1+x,y1+y );
+          }
+        img->paste_alpha_color( a, 255,255,255, x1, y1 );
       }
     }
   }
@@ -558,16 +574,31 @@ mapping _decode( string|mapping what, mapping|void opts )
       img->line( x2,y1,x2,y2 );
       img->line( x2,y2,x1,y2 );
       img->line( x1,y2,x1,y1 );
+      if(alpha) 
+      {
+        alpha->setcolor(0,0,255,100);
+        alpha->line( x1,y1,x2,y1 );
+        alpha->line( x2,y1,x2,y2 );
+        alpha->line( x2,y2,x1,y2 );
+        alpha->line( x1,y2,x1,y1 );
+      }
     }
   }
-  if(alpha && !alpha_used)
-    alpha=0;
-  return ([
+
+  Array.map( data->layers, destruct );
+
+  destruct( data );
+
+  return 
+  ([
     "image":img,
     "alpha":alpha,
   ]);
-//   };
-//  werror(describe_backtrace(e)); 
+#ifdef DEBUG
+  };
+  werror(describe_backtrace( e ) );
+  throw(e);
+#endif
 }
 
 
