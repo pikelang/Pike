@@ -1201,6 +1201,9 @@ void do_install()
 	// Failed to read bin file, most likely Cygwin.
 
 	status("Finalizing",pike_bin_file,"FAILED");
+	if (!istty()) {
+	  werror("Finalizing of %O failed!\n", pike_bin_file);
+	}
 	exit(1);
       }
 
