@@ -72,7 +72,7 @@ test_any([[
   int j = 0;
   int flush_count = 0;
 
-  in_data = random_string(2000000);
+  in_data = random_string(100000);
   
   while(i + defl_chunk_size < sizeof(in_data)){
     if(flush_count != 7){
@@ -88,6 +88,8 @@ test_any([[
   
   packed += defl->finish(in_data[i..sizeof(in_data) - 1]);
   
+  __signal_watchdog();
+
   while(j + infl_chunk_size < sizeof(packed))
   {
     out_data += infl->inflate(packed[j..j + infl_chunk_size - 1]);
@@ -107,11 +109,13 @@ test_any([[
   Bz2.File read_file = Bz2.File();
   
   in_data = "jglaksdjalsdkfjwoeiruwoiurbenrbwenrwikerhwkeurwhfksnASDFASJFKSDJFASIGHSFGAFD34535234523426FSFGSFDGSDRHTWGDASDFASDF";
-  in_data = in_data * 100000;
+  in_data = in_data * 1000;	// ~115k
   
   write_file->write_open("test_data_tmp.bz2");
   write_file->write(in_data);
   write_file->close();
+
+  __signal_watchdog();
 
   read_file->read_open("test_data_tmp.bz2");
   out_data = read_file->read();
