@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.29 2004/12/17 16:25:03 mast Exp $
+|| $Id: errors.h,v 1.30 2004/12/30 13:25:44 grubba Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -81,12 +81,12 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 DECLARE_ERROR(generic, Generic, EMPTY ,
   ERR_VAR(struct pike_string *,string,PIKE_T_STRING,error_message)
   ERR_VAR(struct array *,array,PIKE_T_ARRAY,error_backtrace)
-  ERR_FUNC("cast",f_error_cast,tFunc(tString,tMixed),0)
-  ERR_FUNC("`[]",f_error_index,tFunc(tString,tMixed),0)
+  ERR_FUNC("cast",f_error_cast,tFunc(tString,tMixed),ID_STATIC)
+  ERR_FUNC("`[]",f_error_index,tFunc(tString,tMixed),ID_STATIC)
   ERR_FUNC("describe",f_error_describe,tFunc(tVoid,tString),0)
   ERR_FUNC("message", f_error_message, tFunc(tVoid,tString), 0)
   ERR_FUNC("backtrace",f_error_backtrace,tFunc(tVoid,tArr(tMixed)),0)
-  ERR_FUNC("_sprintf",f_error__sprintf,tFunc(tNone,tString),0)
+  ERR_FUNC("_sprintf",f_error__sprintf,tFunc(tNone,tString),ID_STATIC)
   ERR_FUNC("create",f_error_create,tFunc(tStr tOr(tVoid,tArr(tMixed)),tVoid),ID_STATIC)
 )
 
