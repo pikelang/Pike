@@ -4288,8 +4288,8 @@ object(Stdio.Terminfo.Termcap) Termcap(string <I>cap</I>, object <I>tcdb</I>, in
 <class name="Terminfo">
 Terminfo terminal description object.
 
-</section>
 </class>
+</section>
 
 <hr noshade size=1>
 
@@ -4965,8 +4965,8 @@ However, it is very fast if you only want a couple of web pages and have
 a slow machine available for the server.
 <p>
 </section>
-</chapter>
 </module>
+</chapter>
 
 <module name=Thread>
 <chapter title="Threads">
