@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.2 2003/03/18 11:36:20 peta Exp $
+|| $Id: sequence.cmod,v 1.3 2003/04/03 14:40:15 grubba Exp $
 */
 
 #include "global.h"
@@ -40,6 +40,18 @@ PIKECLASS Sequence
   CVAR struct array **aptr;
 
   
+  //if there is more than one reference to this array copy it.
+
+  static inline void should_copy()
+  {
+    if (THIS->a->refs > 1)
+    {
+      free_array(THIS->a);
+      THIS->a = copy_array(THIS->a);
+    }
+  }    
+
+
 /*! @decl mixed `[](int index)
  *! Index operator
  *! 
@@ -547,18 +559,6 @@ PIKECLASS Sequence
   {
     free_array(THIS->a);
   }
-
-  //if there is more than one reference to this array copy it.
-
-  inline void should_copy()
-  {
-    if (THIS->a->refs > 1)
-    {
-      free_array(THIS->a);
-      THIS->a = copy_array(THIS->a);
-    }
-  }    
-
 
   /*! @class SequenceIterator
    *!    This is the iterator for the Sequence. It implements the 
