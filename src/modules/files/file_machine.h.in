@@ -34,5 +34,11 @@
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
 
+/* Define if you have getwd.  */
+#undef HAVE_GETWD
+
+/* Define if you have a working getcwd */
+#undef HAVE_WORKING_GETCWD
+
 #endif
 

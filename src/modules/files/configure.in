@@ -10,7 +10,7 @@ AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h netinet/in.h \
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
 
-AC_HAVE_FUNCS(socketpair)
+AC_HAVE_FUNCS(socketpair getwd)
 
 AC_MSG_CHECKING(size of socket buffers)
 AC_CACHE_VAL(lpc_cv_socket_buffer_max,
@@ -57,6 +57,54 @@ lpc_cv_socket_buffer_max=0
 
 AC_DEFINE_UNQUOTED(SOCKET_BUFFER_MAX,$lpc_cv_socket_buffer_max)
 AC_MSG_RESULT($lpc_cv_socket_buffer_max)
+
+
+AC_MSG_CHECKING(for working getcwd)
+AC_CACHE_VAL(lpc_cv_func_working_getcwd,
+[
+AC_TRY_RUN([
+#include <unistd.h>
+#include <signal.h>
+
+int sig_child(int arg)
+{
+#ifdef HAVE_WAITPID
+  waitpid(-1,0,WNOHANG);
+#else
+#ifdef HAVE_WAIT3
+  wait3(-1,0,WNOHANG);
+#else
+
+  /* Leave'em hanging */
+
+#endif /* HAVE_WAIT3 */
+#endif /* HAVE_WAITPID */
+
+#ifdef SIGNAL_ONESHOT
+  my_signal(SIGCHLD, sig_child);
+#endif
+}
+
+int sig_alarm() { exit(1); }
+
+int main()
+{
+  char *tmp;
+  signal(SIGCHLD,sig_child);
+  signal(SIGALRM,sig_alarm);
+  alarm(4);
+  tmp=getcwd(0,10000);
+  if(tmp && strlen(tmp) <10000) exit(0);
+  exit(1);
+}
+],lpc_cv_func_working_getcwd=yes,lpc_cv_func_working_getcwd=no)])
+
+if test "$lpc_cv_func_working_getcwd" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_WORKING_GETCWD)
+else
+  AC_MSG_RESULT(no)
+fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
