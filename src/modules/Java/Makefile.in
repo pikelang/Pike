@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.1 1999/03/02 22:07:10 marcus Exp $
+# $Id: Makefile.in,v 1.2 1999/03/05 00:05:29 marcus Exp $
 #
 
 SRCDIR=@srcdir@
@@ -7,6 +7,7 @@ VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=jvm.o
 MODULE_LDFLAGS=@LDFLAGS@ @JAVA_LIBS@
+LINKER_OPTIONS=@LINKER_OPTIONS@
 
 DUMMY=module.pmod.in
 

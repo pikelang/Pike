@@ -9,6 +9,7 @@ OLD_CPPFLAGS=$CPPFLAGS
 JAVA_LIBS=""
 JAVA_LIBPATH=""
 JAVA_AVAILABLE=0
+LINKER_OPTIONS=""
 
 AC_ARG_WITH(java,  [  --without-java       no support for Java],[],[with_java=yes])
 
@@ -94,6 +95,7 @@ if test "x$with_java" = xyes; then
     echo Adding $pike_cv_java_lib_dir to the library search path.
     for i in $pike_cv_java_lib_dir; do
       LDFLAGS="-L$i -R$i ${LDFLAGS}"
+      LINKER_OPTIONS="-L$i -R$i ${LINKER_OPTIONS}"
       JAVA_LIBPATH="${JAVA_LIBPATH}${JAVA_LIBPATH:+:}$i"
     done
   fi
@@ -165,10 +167,43 @@ if test "x$with_java" = xyes; then
       AC_CHECK_LIB(thread, thr_create, [
         LIBS="$LIBS -lthread"
         JAVA_LIBS="${JAVA_LIBS} -lthread"
+	LINKER_OPTIONS="${LINKER_OPTIONS} -lthread"
       ], [])
 
     else
       :
+    fi
+  else
+    :
+  fi
+
+  if test "$pike_cv_java" = yes; then
+    AC_MSG_CHECKING(if the JVM really works)
+    AC_CACHE_VAL(pike_cv_java_working, [
+      AC_TRY_RUN([#ifdef HAVE_JNI_H
+#include <jni.h>
+#endif
+        int main(int argc, char *argv[])
+        {
+          JavaVM *jvm;
+          JNIEnv *env;
+          JavaVMInitArgs vm_args;
+          JavaVMOption vm_options[2];
+          vm_args.version = 0x00010002;
+          vm_args.nOptions = 1;
+          vm_args.options = vm_options;
+          vm_args.ignoreUnrecognized = JNI_TRUE;
+          vm_options[0].optionString = "-Djava.library.path=$JAVA_LIBPATH";
+          vm_options[0].extraInfo = NULL;
+          if(JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args))
+            exit(1);
+	  return 0;
+        };
+      ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
+    ])
+    AC_MSG_RESULT($pike_cv_java_working)
+    if test "$pike_cv_java_working" = no; then
+      pike_cv_java=no;
     fi
   else
     :
@@ -179,6 +214,7 @@ if test "x$with_java" = xyes; then
     CPPFLAGS="$OLD_CPPFLAGS"
     LDFLAGS="$OLD_LDFLAGS"
     JAVA_LIBS=""
+    LINKER_OPTIONS=""
   else
     AC_DEFINE(HAVE_JAVA)
     JAVA_AVAILABLE=1
@@ -210,6 +246,7 @@ else
   :
 fi
 
+AC_SUBST(LINKER_OPTIONS)
 AC_SUBST(JAVA_LIBS)
 AC_SUBST(JAVA_AVAILABLE)
 
