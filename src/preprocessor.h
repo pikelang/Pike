@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.43 2001/07/02 20:09:18 mast Exp $
+ * $Id: preprocessor.h,v 1.44 2001/08/16 00:36:47 mast Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -750,22 +750,18 @@ static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   if (SETJMP(recovery))
   {
+    struct svalue s;
+    assign_svalue_no_free(&s, &throw_value);
+
+    yyerror("Error calculating expression.");
+
+    push_svalue(&s);
+    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+    if (IS_ZERO(sp-1)) yy_describe_exception(&s);
+    pop_stack();
+    free_svalue(&s);
+
     pos=tmp;
-    if(throw_value.type == PIKE_T_ARRAY && throw_value.u.array->size)
-    {
-      union anything *a;
-      a=low_array_get_item_ptr(throw_value.u.array, 0, PIKE_T_STRING);
-      if(a)
-      {
-	cpp_error(this, a->string->str);
-      }else{
-	cpp_error(this, "Nonstandard error format.");
-      }
-    }else{
-      cpp_error(this, "Nonstandard error format.");
-    }
-    free_svalue(&throw_value);
-    throw_value.type = T_INT;
     FIND_EOL();
     push_int(0);
   }else{

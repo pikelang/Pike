@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.263 2001/08/15 20:58:44 mast Exp $");
+RCSID("$Id: las.c,v 1.264 2001/08/16 00:36:47 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1746,25 +1746,27 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	pop_stack();
 	push_int(0);
       }else{
+	struct svalue thrown = {PIKE_T_UNKNOWN, 0,
+#ifdef HAVE_UNION_INIT
+				{0} /* Only to avoid warnings. */
+#endif
+			       };
+
 	SET_CYCLIC_RET(c+1);
 	ref_push_string(id);
 	{
 	  struct svalue *save_sp = Pike_sp-2;
 	  JMP_BUF recovery;
 	  if (SETJMP(recovery)) {
-	    /* f_index() threw an error!
-	     *
-	     * FIXME: Report the error thrown.
-	     */
-	    free_svalue(&throw_value);
-	    throw_value.type = T_INT;
+	    /* f_index() threw an error! */
 	    if (Pike_sp > save_sp) {
 	      pop_n_elems(Pike_sp - save_sp);
 	    } else if (Pike_sp != save_sp) {
 	      fatal("f_index() munged stack!\n");
 	    }
-	    push_int(0);
-	    Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+	    push_undefined();
+	    thrown = throw_value;
+	    throw_value.type = T_INT;
 	  } else {
 	    f_index(2);
 	  }
@@ -1780,6 +1782,14 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 		       id->str, node_name);
 	  } else {
 	    my_yyerror("Index '%s' not present in module.", id->str);
+	  }
+
+	  if (thrown.type != PIKE_T_UNKNOWN) {
+	    push_svalue(&thrown);
+	    safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+	    if (IS_ZERO(sp-1)) yy_describe_exception(&thrown);
+	    pop_stack();
+	    free_svalue(&thrown);
 	  }
 	}
       }
