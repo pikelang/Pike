@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.34 2001/07/02 20:32:57 mast Exp $
+ * $Id: jvm.c,v 1.35 2001/08/29 21:30:10 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.34 2001/07/02 20:32:57 mast Exp $");
+RCSID("$Id: jvm.c,v 1.35 2001/08/29 21:30:10 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1870,6 +1870,11 @@ static void build_native_entry(JNIEnv *env, jclass cls,
   int statc, args=0;
   char *p = sig->str;
 
+  con->name = name;
+  con->sig = sig;
+  name->refs++;
+  sig->refs++;
+
   if((*env)->GetMethodID(env, cls, name->str, sig->str))
     statc = 0;
   else {
@@ -1882,10 +1887,6 @@ static void build_native_entry(JNIEnv *env, jclass cls,
     }
   }
 
-  con->name = name;
-  con->sig = sig;
-  name->refs++;
-  sig->refs++;
   jnm->name = name->str;
   jnm->signature = sig->str;
   jnm->fnPtr = (void*)&con->cpu;
