@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.26 2000/11/27 09:29:07 per Exp $
+/* $Id: sslfile.pike,v 1.27 2001/03/01 20:39:51 per Exp $
  *
  */
 
@@ -45,10 +45,15 @@ void die(int status)
 #endif
   }
   is_closed = 1;
-  if (socket) {
+  if (socket)
+  {
+    mixed id;
+    catch(id = socket->query_id());
     catch(socket->close());
+    socket = 0;
+    // Avoid recursive calls if the close callback closes the socket.
     if(close_callback)
-      close_callback(socket->query_id());
+      close_callback( id );
   }
 }
 
