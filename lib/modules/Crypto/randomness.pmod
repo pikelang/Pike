@@ -14,11 +14,18 @@
 /* Collect somewhat random data from the environment. Unfortunately,
  * this is quite system dependent */
 #define PATH  "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin"
-#define SYSTEM_COMMANDS "last -256 & " \
-                        "netstat -anv & netstat -mv & netstat -sv & " \
-                        "uptime & ps -fel & ps aux & " \
-			"vmstat -s & vmstat -M & " \
-			"iostat & iostat -cdDItx &"
+
+#ifndef __NT__
+#define SYSTEM_COMMANDS ({ "last -256", \
+                        "netstat -anv","netstat -mv","netstat -sv", \
+                        "uptime","ps -fel","ps aux", \
+			"vmstat -s","vmstat -M", \
+			"iostat","iostat -cdDItx"})
+#else
+#define SYSTEM_COMMANDS ({ "mem /c", "arp -a", "vol", "dir", "net view", \
+    "net statistics workstation","net statistics server", "net view" \
+    "net user" })
+#endif
 			
 #define PRIVATE
 			
@@ -26,39 +33,36 @@ PRIVATE object global_rc4;
 
 PRIVATE string some_entropy()
 {
+  string res;
   object parent_pipe, child_pipe;
+  mapping env=getenv();
 
   parent_pipe = Stdio.File();
   child_pipe = parent_pipe->pipe();
   if (!child_pipe)
     throw( ({ "Crypto.random->popen: couldn't create pipe\n", backtrace() }) );
 
-  if (!fork())
-  { /* Child */
-    catch {
-      object stderr = Stdio.File();
-      object stdin = Stdio.File();
-      
-      destruct(parent_pipe);
-      
-      stderr->open("/dev/null", "w");
-      stderr->dup2(Stdio.File("stderr"));
-      
-      stdin->open("/dev/null", "r");
-      stdin->dup2(Stdio.File("stdin"));
-    
-      child_pipe->dup2(Stdio.File("stdout"));
-      catch(exece("/bin/sh", ({ "-c", SYSTEM_COMMANDS }), ([ "PATH" : PATH ]) ));
-    };
-    exit(17);
-  } else {
-    /* Parent */
-    string res;
-    destruct(child_pipe);
-    res = parent_pipe->read(0x7fffffff);
-    return res;
-  }
+
+#ifndef __NT__
+  object null=Stdio.File("/dev/null","rw");
+  env["PATH"]=PATH;
+#else
+  object null=Stdio.File("nul:","rw");
+#endif
+  
+  foreach(SYSTEM_COMMANDS, string cmd)
+    {
+      catch {
+	Process.create_process(Process.split_quoted_string(cmd),
+			       (["stdin":null,"stdout":child_pipe,"stderr":null]));
+      };
+    }
+
+  destruct(child_pipe);
+  
+  return parent_pipe->read();
 }
+
 
 class pike_random {
   string read(int len)
@@ -123,3 +127,4 @@ object really_random(int|void may_block)
     
   throw( ({ "Crypto.randomness.really_random: No source found\n", backtrace() }) );
 }
+
