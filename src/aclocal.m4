@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.90 2004/02/26 15:28:20 grubba Exp $
+dnl $Id: aclocal.m4,v 1.91 2004/03/07 16:39:35 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -356,7 +356,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.90 2004/02/26 15:28:20 grubba Exp $
+  # $Id: aclocal.m4,v 1.91 2004/03/07 16:39:35 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -752,6 +752,7 @@ define(PIKE_ENABLE_BUNDLE, [
   test -f [$1].bundle && rm -f [$1].bundle
   if test "$pike_bundle_dir" = ""; then
     # Bundles not available.
+    echo "Bundles not available."
     ifelse([$3], , :, [ AC_MSG_ERROR([$3]) ])
   else
     for f in "$pike_bundle_dir/[$1]"*.tar.gz no; do
@@ -767,6 +768,7 @@ define(PIKE_ENABLE_BUNDLE, [
     ifelse([$3], , , [
       if test "$f" = "no"; then      
 	# Bundle not available.
+        echo "Bundle [$1] not available in $pike_bundle_dir."
 	AC_MSG_ERROR([$3])
       fi
     ])
