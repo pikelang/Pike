@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.31 2001/10/28 13:38:46 nilsson Exp $
+# $Id: Makefile,v 1.32 2001/11/01 18:59:08 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -28,7 +28,7 @@ traditional: traditional_manual build/traditional.xml
 	@$(PIKE) presentation/make_html.pike --img=images/ build/traditional.xml
 
 build/autodoc.xml: recursive_join
-	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml not_extracted/*.xml`" \
+	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml`" \
 	  autodoc.xml
 
 recursive_join: images
