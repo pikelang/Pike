@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.100 2000/07/30 07:27:51 hubbe Exp $
+ * $Id: threads.h,v 1.101 2000/08/06 08:44:59 neotron Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -601,7 +601,7 @@ void low_th_init(void);
 void th_init(void);
 void th_cleanup(void);
 int th_num_idle_farmers(void);
-int th_num_farmers();
+int th_num_farmers(void);
 void th_farm(void (*fun)(void *), void *here);
 /* Prototypes end here */
 
