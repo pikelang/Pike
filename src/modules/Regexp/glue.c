@@ -19,7 +19,7 @@
 #include "threads.h"
 #include "module_support.h"
 
-RCSID("$Id: glue.c,v 1.15 1999/11/30 23:04:41 hubbe Exp $");
+RCSID("$Id: glue.c,v 1.16 2000/04/13 18:43:26 grubba Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -104,9 +104,9 @@ static void regexp_match(INT32 args)
   get_all_args("Regexp.regexp->match", args, "%s", &str);
   
 #ifdef USE_SYSTEM_REGEXP
-  ALLOW_THREADS();
+  THREADS_ALLOW();
   i = !regexec(regexp, str, 0, NULL, 0);
-  DISALLOW_THREADS();
+  THREADS_DISALLOW();
 #else
   i=pike_regexec(regexp, str);
 #endif /* USE_SYSTEM_REGEXP */
