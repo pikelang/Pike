@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.42 2001/11/18 02:00:22 nilsson Exp $");
+RCSID("$Id: zlibmod.c,v 1.43 2002/01/16 03:02:33 nilsson Exp $");
 
 #include "zlib_machine.h"
 

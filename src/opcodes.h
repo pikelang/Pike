@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: opcodes.h,v 1.24 2001/09/28 00:01:45 hubbe Exp $
+ * $Id: opcodes.h,v 1.25 2002/01/16 02:54:16 nilsson Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H

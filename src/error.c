@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.81 2001/12/19 22:01:01 mast Exp $");
+RCSID("$Id: error.c,v 1.82 2002/01/16 02:54:11 nilsson Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)

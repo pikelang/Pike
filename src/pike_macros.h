@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.28 2001/11/10 19:44:48 mast Exp $
+ * $Id: pike_macros.h,v 1.29 2002/01/16 02:54:17 nilsson Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H

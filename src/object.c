@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.194 2002/01/11 17:55:01 mast Exp $");
+RCSID("$Id: object.c,v 1.195 2002/01/16 02:54:15 nilsson Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"

@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: file.h,v 1.19 2000/08/27 18:29:27 mirar Exp $
+ * $Id: file.h,v 1.20 2002/01/16 02:57:29 nilsson Exp $
  */
 
 #ifndef FILE_H

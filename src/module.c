@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -22,7 +22,7 @@
 #include "post_modules/modlist_headers.h"
 #endif
 
-RCSID("$Id: module.c,v 1.14 2001/02/23 14:31:53 grubba Exp $");
+RCSID("$Id: module.c,v 1.15 2002/01/16 02:54:15 nilsson Exp $");
 
 typedef void (*modfun)(void);
 

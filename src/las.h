@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: las.h,v 1.54 2001/12/16 18:51:57 mast Exp $
+ * $Id: las.h,v 1.55 2002/01/16 02:54:14 nilsson Exp $
  */
 #ifndef LAS_H
 #define LAS_H

@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.132 2001/12/17 04:50:07 mast Exp $");
+RCSID("$Id: svalue.c,v 1.133 2002/01/16 02:54:20 nilsson Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,

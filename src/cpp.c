@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: cpp.c,v 1.97 2001/12/19 23:51:19 mast Exp $
+ * $Id: cpp.c,v 1.98 2002/01/16 02:54:09 nilsson Exp $
  */
 #include "global.h"
 #include "stralloc.h"

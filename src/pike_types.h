@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: pike_types.h,v 1.74 2001/12/14 04:09:39 nilsson Exp $
+ * $Id: pike_types.h,v 1.75 2002/01/16 02:54:18 nilsson Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H

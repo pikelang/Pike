@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.14 2000/12/18 09:58:21 mirar Exp $");
+RCSID("$Id: ssleay.c,v 1.15 2002/01/16 03:02:34 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"

@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -7,7 +7,7 @@
 #ifndef REGEXP_H
 #define REGEXP_H
 /*
- * $Id: pike_regexp.h,v 1.4 2000/08/11 13:04:32 grubba Exp $
+ * $Id: pike_regexp.h,v 1.5 2002/01/16 03:02:34 nilsson Exp $
  *
  * Definitions etc. for regexp(3) routines.
  *

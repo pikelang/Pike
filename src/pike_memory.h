@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.30 2001/10/03 18:18:51 mast Exp $
+ * $Id: pike_memory.h,v 1.31 2002/01/16 02:54:17 nilsson Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H

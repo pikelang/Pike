@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: module.h,v 1.4 1998/03/28 15:10:31 grubba Exp $
+ * $Id: module.h,v 1.5 2002/01/16 02:54:15 nilsson Exp $
  */
 #ifndef MODULE_H
 #define MODULE_H

@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.13 2000/12/01 08:09:45 hubbe Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.14 2002/01/16 02:54:10 nilsson Exp $");
 
 static dynamic_buffer buff;
 

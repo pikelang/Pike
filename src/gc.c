@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.179 2001/12/16 18:51:47 mast Exp $");
+RCSID("$Id: gc.c,v 1.180 2002/01/16 02:54:12 nilsson Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is

@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -22,7 +22,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.49 2001/12/18 17:57:42 mast Exp $");
+RCSID("$Id: port.c,v 1.50 2002/01/16 02:54:18 nilsson Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));

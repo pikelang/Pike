@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: signal_handler.h,v 1.11 2000/12/16 05:24:41 marcus Exp $
+ * $Id: signal_handler.h,v 1.12 2002/01/16 02:54:19 nilsson Exp $
  */
 #ifndef SIGNAL_H
 #define SIGNAL_H

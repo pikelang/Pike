@@ -1,12 +1,35 @@
 Pike is protected by international copyright laws.
-Copyright (c) 1994-1996 Fredrik Hübinette
-Copyright (c) 1996-1997 Informationsvävarna AB
-Copyright (c) 1997-2000 Idonex AB
-Copyright (c) 2000-2002 Roxen Internet Software AB
+Copyright © 1994-1996 Fredrik Hübinette
+Copyright © 1996-1997 Informationsvävarna AB
+Copyright © 1997-2000 Idonex AB
+Copyright © 2000-2002 Roxen Internet Software AB
 
 Pike refers to the source code, and any executables
-created from the same source code.
+created from the same source code. Parts of other
+copyrighted works are included in Pike, in accordance
+with their respective conditions for distribution.
 
-This source is distributed under GPL, see the file
+The Unicode Character Database is
+Copyright © 1991-2001 Unicode, Inc.
+
+The TrueVision Targa code is
+Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit
+
+DES encryption and decryption code is 
+Copyright © 1992 Dana L. How
+
+Rijndael encryption and decryption code is
+Copyright © 2000 Joan Daemen
+
+Secure Hash Algorithm code is
+Copyright © 1995, A.M. Kuchling
+
+Regular expression matching code is
+Copyright © 1986 by University of Toronto.
+
+Zlib detection and verification code is
+Copyright © 1995-1998 Jean-loup Gailly and Mark Adler
+
+The Pike source is distributed under GPL, see the file
 COPYING for more details.
 

@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -7,7 +7,7 @@
 
 #include "global.h"
 
-RCSID("$Id: datagram.c,v 1.3 2001/04/27 13:46:07 grubba Exp $");
+RCSID("$Id: datagram.c,v 1.4 2002/01/16 02:57:28 nilsson Exp $");
 
 struct datagram
 {

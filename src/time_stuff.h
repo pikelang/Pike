@@ -1,10 +1,10 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /*
- * $Id: time_stuff.h,v 1.8 1998/03/28 14:57:08 grubba Exp $
+ * $Id: time_stuff.h,v 1.9 2002/01/16 02:54:21 nilsson Exp $
  */
 #ifndef TIME_STUFF_H
 #define TIME_STUFF_H

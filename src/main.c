@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.144 2002/01/08 17:59:11 grubba Exp $");
+RCSID("$Id: main.c,v 1.145 2002/01/16 02:54:14 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"

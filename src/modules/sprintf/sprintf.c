@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.87 2002/01/02 02:19:13 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.88 2002/01/16 03:02:35 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"

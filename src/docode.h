@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: docode.h,v 1.13 2001/07/24 01:16:10 hubbe Exp $
+ * $Id: docode.h,v 1.14 2002/01/16 02:54:10 nilsson Exp $
  */
 #ifndef DOCODE_H
 #define DOCODE_H

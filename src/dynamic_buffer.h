@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: dynamic_buffer.h,v 1.11 2000/12/16 04:58:18 marcus Exp $
+ * $Id: dynamic_buffer.h,v 1.12 2002/01/16 02:54:10 nilsson Exp $
  */
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H

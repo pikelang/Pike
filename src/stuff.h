@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: stuff.h,v 1.12 2001/09/01 01:45:52 hubbe Exp $
+ * $Id: stuff.h,v 1.13 2002/01/16 02:54:20 nilsson Exp $
  */
 #ifndef STUFF_H
 #define STUFF_H

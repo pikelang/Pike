@@ -1,5 +1,5 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.122 2001/12/16 20:28:08 mast Exp $");
+RCSID("$Id: array.c,v 1.123 2002/01/16 02:54:07 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {

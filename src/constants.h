@@ -1,11 +1,11 @@
 /*\
-||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
 /*
- * $Id: constants.h,v 1.19 2001/08/02 22:24:54 hubbe Exp $
+ * $Id: constants.h,v 1.20 2002/01/16 02:54:09 nilsson Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
