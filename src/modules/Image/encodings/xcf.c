@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.3 1999/04/11 07:21:23 per Exp $");
+RCSID("$Id: xcf.c,v 1.4 1999/04/12 01:53:42 per Exp $");
 
 #include "config.h"
 
@@ -33,6 +33,10 @@ extern struct program *image_program;
 **!
 */
 
+#define TILE_WIDTH 64
+#define TILE_HEIGHT 64
+
+#define MIN(X,Y) ((X)<(Y)?(X):(Y))
 #define STRING(X) static struct pike_string *s_##X;
 #include "xcf_constant_strings.h"
 #undef STRING
@@ -382,6 +386,8 @@ static struct level read_level( struct buffer *buff,
       ob.len = all_tiles_eq;
     else if(offset2)
       ob.len = offset2-offset;
+    else
+      ob.len = MIN((TILE_WIDTH*TILE_HEIGHT*5),ob.len);
     tile->data = ob;
     tile->next = NULL;
 /* fprintf(stderr, "tile, o=%d; o2=%d; l=%d\n", offset, offset2,ob.len); */
@@ -726,7 +732,6 @@ static void push_image( struct gimp_image *i )
     l = l->next;
   }
   f_aggregate( nitems );
-  f_reverse(1);
 
   ref_push_string( s_channels );
   nitems=0;
@@ -738,7 +743,6 @@ static void push_image( struct gimp_image *i )
     c = c->next;
   }
   f_aggregate( nitems );
-  f_reverse(1);
   f_aggregate_mapping( sp-osp );
 }
 
@@ -763,9 +767,6 @@ static void image_xcf____decode( INT32 args )
   pop_stack();
 }
 
-
-#define TILE_WIDTH 64
-#define TILE_HEIGHT 64
 
 unsigned char read_char( struct buffer *from )
 {
@@ -857,20 +858,45 @@ void image_xcf_f__rle_decode( INT32 args )
 
 
 /*
-**! method mapping _decode(string|object data)
+**! method mapping _decode(string|object data,mapping|void options)
 **! 	Decodes a XCF image to a mapping, with at least an 
-**!   'image' and an 'alpha' object. Data is either a XCF image, or 
+**!   'image' and possibly an 'alpha' object. Data is either a XCF image, or 
 **!    a XCF.GimpImage object structure (as received from __decode)
+**!
+**!   <pre> Supported options
+**!    ([
+**!       "background":({r,g,b})||Image.color object
+**!       "draw_all_layers":1,
+**!            Draw invisible layers as well
+**!
+**!       "draw_guides":1,
+**!            Draw the guides
+**!
+**!       "draw_selection":1,
+**!             Mark the selection using an overlay
+**!
+**!       "ignore_unknown_layer_modes":1
+**!             Do not asume 'Normal' for unknown layer modes.
+**!
+**!       "mark_layers":1,
+**!            Draw an outline around all (drawn) layers
+**!
+**!       "mark_layer_names":Image.font object,
+**!            Write the name of all layers using the font object,
+**!
+**!       "mark_active_layer":1,
+**!            Draw an outline around the active layer
+**!     ])</pre>
 **!
 **! note
 **!	Throws upon error in data. For more information, see Image.XCF.__decode
 */
 
 /*
-**! method object __decode(string|mapping data)
+**! method object __decode(string|mapping data, mapping|void options)
 **! 	Decodes a XCF image to a Image.XCF.GimpImage object.
 **!
-**!     <pre>Structure reference 
+**!     <pre>Returned structure reference 
 **!    
 **!    class GimpImage
 **!    {
@@ -889,7 +915,7 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      array(Guide) guides = ({});
 **!      array(Parasite) parasites = ({});
 **!      array(Path) paths = ({});
-**!    
+**!
 **!      Layer active_layer;
 **!      Channel active_channel;
 **!      Channel selection;
@@ -939,7 +965,6 @@ void image_xcf_f__rle_decode( INT32 args )
 **!      int flags;
 **!      string data;
 **!    }
-**!    
 **!    
 **!    class Guide
 **!    {
@@ -1056,22 +1081,21 @@ void image_xcf_f__rle_decode( INT32 args )
 **!</pre>
 */
 
-#define MIN(X,Y) ((X)<(Y)?(X):(Y))
 void image_xcf_f__decode_tiles( INT32 args )
 {
   extern void check_signals();
   struct object *io,*ao, *cmapo;
   struct array *tiles;
-  struct image *i, *a;
+  struct image *i, *a=NULL;
   struct neo_colortable *cmap = NULL;
   rgb_group *colortable=NULL;
   int rle, bpp, span;
   unsigned int l, x=0, y=0, cx, cy;
-  get_all_args( "_decode_tiles", args, "%o%o%a%i%i%O",
+  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O",
                 &io, &ao, &tiles, &rle, &bpp, &cmapo);
   if( !(i = (struct image *)get_storage( io, image_program )))
     error("Wrong type object argument 1 (image)\n");
-  if( !(a = (struct image *)get_storage( ao, image_program )))
+  if(ao && !(a = (struct image *)get_storage( ao, image_program )))
     error("Wrong type object argument 2 (image)\n");
   if( cmapo && 
       !(cmap=(struct neo_colortable *)get_storage(cmapo,
@@ -1080,7 +1104,7 @@ void image_xcf_f__decode_tiles( INT32 args )
   for(l=0; l<(unsigned int)tiles->size; l++)
     if(tiles->item[l].type != T_STRING)
       error("Wrong type array argument 3 (tiles)\n");
-  if(i->xsize != a->xsize ||i->ysize != a->ysize)
+  if(a && (i->xsize != a->xsize ||i->ysize != a->ysize))
     error("Image and alpha objects are not identically sized.\n");
 
   if(cmap)
@@ -1089,6 +1113,19 @@ void image_xcf_f__decode_tiles( INT32 args )
     image_colortable_write_rgb( cmap, (unsigned char *)colortable );
   }
 
+
+/*   switch(bpp) */
+/*   { */
+/*    case 1: */
+/*    case 3: */
+/*      if(ao) */
+/*      { */
+/*        destruct( ao ); */
+/*        a=0; */
+/*        ao=0; */
+/*      } */
+/*      break; */
+/*   } */
 
   x=y=0;
   for(l=0; l<(unsigned)tiles->size; l++)
@@ -1129,7 +1166,7 @@ void image_xcf_f__decode_tiles( INT32 args )
       for(cx=0; cx<ewidth; cx++)
       {
         rgb_group pix;
-        rgb_group apix = {255,255,255};
+        rgb_group apix;
         int ind = (cx+cy*ewidth);
 
         if(rle)
@@ -1168,7 +1205,7 @@ void image_xcf_f__decode_tiles( INT32 args )
         }
         ind = i->xsize*(cy+y)+(cx+x);
         i->img[ind] = pix;
-        a->img[ind] = apix;
+        if(a) a->img[ind] = apix;
       }
     }
     x += TILE_WIDTH;
