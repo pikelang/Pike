@@ -1,4 +1,4 @@
-/* $Id: constants.pike,v 1.3 1997/05/31 22:03:53 grubba Exp $
+/* $Id: constants.pike,v 1.4 1998/08/26 07:08:20 nisse Exp $
  *
  */
 
@@ -117,10 +117,10 @@ constant SSL_dh_anon_with_3des_ede_cbc_sha	= 0x001b;
 constant SSL_fortezza_dms_with_null_sha		= 0x001c;
 constant SSL_fortezza_dms_with_fortezza_cbc_sha	= 0x001d;
 constant SSL_fortezza_dms_with_rc4_128_sha	= 0x001e;
-
+ 
 constant CIPHER_SUITES =
 ([ SSL_null_with_null_null :    	({ 0, 0, 0 }),
-   SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }),			   
+   SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 
    SSL_rsa_with_null_sha :      	({ KE_rsa, 0, HASH_sha }),
    SSL_rsa_export_with_rc4_40_md5 :	({ KE_rsa, CIPHER_rc4_40, HASH_md5 }),
    SSL_rsa_with_rc4_128_sha :   	({ KE_rsa, CIPHER_rc4, HASH_sha }),
