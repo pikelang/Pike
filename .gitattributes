@@ -456,6 +456,10 @@ testfont binary
 /src/modules/Java/jvm.c foreign_ident
 /src/modules/Java/ntdl.c foreign_ident
 /src/modules/Java/testsuite.in foreign_ident
+/src/modules/Kerberos/Makefile.in foreign_ident
+/src/modules/Kerberos/acconfig.h foreign_ident
+/src/modules/Kerberos/configure.in foreign_ident
+/src/modules/Kerberos/kerberos.cmod foreign_ident
 /src/modules/MIME/Makefile.in foreign_ident
 /src/modules/MIME/acconfig.h foreign_ident
 /src/modules/MIME/configure.in foreign_ident
