@@ -1,13 +1,22 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: RankingProfile.pike,v 1.16 2001/07/31 15:29:47 js Exp $
+// $Id: RankingProfile.pike,v 1.17 2001/08/08 19:30:09 nilsson Exp $
 
+//!
 array(int) field_ranking;
+
+//!
 array(int) proximity_ranking;
+
+//!
 int cutoff;
 
-
+//! @decl void create(void|int cutoff, void|array(int) proximity_ranking,@
+//!       void|Search.Database.Base db, void|array(int)|mapping(string:int) field_ranking)
+//! @[cutoff] defaults to 8, @[proximity_ranking] defaults to @code{({ 8, 7, 6, 5, 4, 3, 2, 1, })@}
+//! and @[field_ranking] defaults to @code{({ 17, 0, 147 }) + allocate(62)@}. @[db] is only
+//! needed if @[field_ranking] is provided as a mapping.
 void create(void|int _cutoff, void|array(int) _proximity_ranking,
             void|Search.Database.Base db, void|array(int)|mapping(string:int) _field_ranking)
 {
@@ -42,6 +51,7 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
   }
 }
 
+//! Returns a copy of this object.
 this_program copy() {
   return this_program(cutoff, proximity_ranking, 0, field_ranking);
 }

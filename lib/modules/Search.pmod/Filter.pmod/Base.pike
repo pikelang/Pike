@@ -1,26 +1,32 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.10 2001/08/08 15:08:09 noring Exp $
+// $Id: Base.pike,v 1.11 2001/08/08 19:30:25 nilsson Exp $
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
 
+//!
 class Output
 {
   // Wide strings here
 
+  //!
   mapping(string:string) fields=([]);
   // body, title, description, keywords
 
+  //!
   int document_size;
-  
+
+  //!
   mapping(string:string) uri_anchors=([]);
   // Maps un-normalized URLs to raw text
   // ([ "http://www.roxen.com": "the Roxen web-server" ])
 
+  //!
   array(Standards.URI|string) links=({});
 
+  //!
   void fix_relative_links(Standards.URI base_uri)
   {
     for(int i=0; i<sizeof(links); i++)
@@ -32,6 +38,7 @@ class Output
   }
 }
 
+//!
 Output filter(Standards.URI uri, string|Stdio.File data,
 	      string content_type, mixed ... more);
 

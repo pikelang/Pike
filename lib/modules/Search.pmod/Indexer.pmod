@@ -1,8 +1,9 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Indexer.pmod,v 1.13 2001/06/26 04:06:36 js Exp $
+// $Id: Indexer.pmod,v 1.14 2001/08/08 19:29:56 nilsson Exp $
 
+//!
 void index_document(Search.Database.Base db,
 		    string|Standards.URI uri,
 		    void|string language,
@@ -32,6 +33,7 @@ void index_document(Search.Database.Base db,
 }
 
 
+//!
 array(Standards.URI) filter_and_extract_links(Search.Database.Base db,
 					      string|Standards.URI uri,
 					      void|string language,
@@ -51,6 +53,7 @@ array(Standards.URI) filter_and_extract_links(Search.Database.Base db,
   return filteroutput->links;
 }
 
+//!
 void remove_document(Search.Database.Base db,
 		     string|Standards.URI|string uri,
 		     void|string language)
