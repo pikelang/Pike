@@ -580,6 +580,11 @@ files COPYING and COPYRIGHT in the Pike distribution for more details.
 		  rm -f "+tmpname+#".x
                   exit 0 ;;
 
+    --list-files) tar xf \"$TARFILE\" "+tmpname+#".tar.gz
+                  tar tfz "+tmpname+#".tar.gz
+                  rm -f "+tmpname+".x "+tmpname+#".tar.gz
+                  exit 0 ;;
+
               -s|\\
         --script) shift
                   INSTALL_SCRIPT=\"$1\" ;;
@@ -602,7 +607,7 @@ done
 		   "  TMP_BINDIR=\\\"bin\\\"\\\n"
 		   "  TMP_BUILDDIR=\\\"build\\\"\\\n"
 		   "  MANDIR_SRC=\\\"man\\\"\\\n"
-		   "  DOCDIR_SRC=\\\"doc\\\"\\\n"
+		   "  DOCDIR_SRC=\\\"refdoc\\\"\\\n"
 		   "  PIKE_MODULE_RELOC=\\\"" + vars->PIKE_MODULE_RELOC +
 		                       "\\\"\\\n"
 		   "  $ARGS\"\n"
@@ -1341,10 +1346,17 @@ void do_install()
 		 combine_path(doc_prefix, "src", "core_autodoc.xml"));
 
     // create a directory for extracted module documentation
-    mkdirhier(combine_path(doc_prefix, "src", "extracted"));
+    if(!export)
+      mkdirhier(combine_path(doc_prefix, "src", "extracted"));
 
-    // copy the documentation source
-    install_dir(vars->DOCDIR_SRC, combine_path(doc_prefix, "src"), 0);
+    install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
+		combine_path(doc_prefix, "src", "images"), 0);
+    install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
+		combine_path(doc_prefix, "src", "presentation"), 0);
+    install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
+		combine_path(doc_prefix, "src", "src_images"), 0);
+    install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
+		combine_path(doc_prefix, "src", "structure"), 0);
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
