@@ -1302,7 +1302,7 @@ Operators and functions usable with arrays:
      <tt><i>arr</i> [ <i>c</i> ] = <i>new_value</i></tt>
 
 <dt> range ( <tt><i>arr</i> [ <i>from</i> .. <i>to</i> ]</tt> )
-<dd> The range copies the elements <i>from</i>, <i>from</i>+1, , <i>from</i>+2 ... <i>to</i> into a new array. The new array will have the size <i>to</i>-<i>from</i>-1.
+<dd> The range copies the elements <i>from</i>, <i>from</i>+1, , <i>from</i>+2 ... <i>to</i> into a new array. The new array will have the size <i>to</i>-<i>from</i>+1.
 
 <dt> comparing (<tt><i>a</i> == <i>b</i></tt> and <tt><i>a</i> != <i>b</i></tt>)
 <dd> The equal operator returns 1 if <i>a</i> and <i>b</i> are the <b>same</b> arrays. It is not enough that they have the same size and same data. They must
@@ -2605,6 +2605,8 @@ without operator overloading.
 <tr><td>values(a)</td><td>a-&gt;_values()</td></tr>
 <tr><td>a(b)</td><td>a-&gt;`()(b)</td></tr>
 </table>
+</center>
+<p>
 
 Here is a really silly example of a program that will write 10
 to stdout when executed.
@@ -2627,7 +2629,6 @@ and multiply your object with one, you should not be surprised if the
 multiplication operator is never called. This might not always be what you
 expect, in which case you are better off not using operator overloading.
 
-</center>
 <p>
 <table cellpadding=10 width="100%" border=1 cellspacing=0>
 <tr><td>
@@ -2831,16 +2832,26 @@ written in C. What follows is a description of all the functions in
 <tt>object Stdio.File();<br>
 or<br>
 object Stdio.File(string <I>fd</I>);<br>
+or
+object(Stdio.File) Stdio.File(string <i>file</i>, string <i>mode</i>);</br>
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-When cloning a file, you can specify that you want to clone
-stdin, stdout or stderr, by giving "stdin", "stdout" or "stderr" to
-clone as a second argument. If no second argument is given,
-an unitialized file will be cloned.
+When cloning a File you can choose between three different ways. The
+first is to clone it without any arguments, in which case the you
+have to call open(), connect() or some other method which connects
+the File object with a stream.
+<p>
+However, instead of cloning and then calling open(), you can clone
+the File with a filename and open mode, this is the same thing as
+cloning and then calling open, except shorter and faster.
+<p>
+Alternatively, you can clone a File with "stdin", "stdout" or
+"stderr" as argument. This will open the specified standard
+stream.
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=#clone>clone</a>
+<a href=#clone>clone</a> and <a href=#Stdio.File.open>Stdio.File-&gt;open</a>
 <p>
 </dl>
 </a>
@@ -3631,12 +3642,19 @@ out what went wrong, so it is only applicable to IO errors.
 <tt>Stdio.read_bytes</tt> - read a number of bytes into a string from a file
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>string read_bytes(string <I>file</I>,int <I>start</I>,int <I>len</I>);<br>
+<tt>
+string read_bytes(string <I>file</I>,int <I>start</I>,int <I>len</I>);<br>
+or<br>
+string read_bytes(string <I>file</I>,int <I>start</I>);<br>
+or<br>
+string read_bytes(string <I>file</I>);<br>
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
 Read len number of bytes from file file staring at byte start and
-return it as a string.
+return it as a string. If <i>len</i> is omitted, the rest of the file
+will be returned. If <i>start</i> is also omitted, the entire file will
+be returned.
 <p>
 <dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
 <a href=index.html#file>file</a>
@@ -3654,7 +3672,10 @@ return it as a string.
 <tt>Stdio.read_file</tt> - read a number of lines into a string from file
 <p>
 <dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>string read_file(string <I>file</I>, int <I>start</I>, int <I>len</I>);<br>
+<tt>
+string read_file(string <I>file</I>, int <I>start</I>, int <I>len</I>);<br>
+or<br>
+string read_file(string <I>file</I>);<br>
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
@@ -3742,7 +3763,7 @@ Append the string str onto the file file. Returns number of bytes written.
 <hr noshade size=1>
 
 <a name=Stdio.Port>
-<tt>Listening to sockets</tt>
+<h2>Listening to sockets</h2>
 Stdio.File can handle connections to any TCP socket, but it can not listen
 to a local TCP port. For this purpose there is a special class called
 <tt>Stdio.Port</tt>. <tt>Stdio.Port</tt> cannot read or write any data, but
@@ -3925,15 +3946,16 @@ Stdio.File. The new file is by default set to blocking.
 
 <HR NEWPAGE>
 
+<a name=threads>
 <h1>Threads</h2>
 Threads used to run several Pike functions at the same time without having to start
 several Pike processes. It often simplifies coding to use threads and because the
 threads are within the same process, data can be shared or sent to other threads
 very fast. Threads are not supported on all systems, you may test if you have
-thread support with the preprocessor constructoin <tt>#if efun(thread_create</tt>.
+thread support with the preprocessor constructoin <tt>#if efun(thread_create)</tt>.
 Pike needs POSIX or UNIX thread support when compiled to support threads.
 <p>
-<a href=thread_create>
+
 <h2>Starting a thread</h2>
 Starting a thread is very easy. You simply call <tt>thread_create</tt> with a function
 pointer and any arguments it needs and that function will be executed in a
@@ -3985,28 +4007,498 @@ These type of bugs can be extremely hard to debug.
      of bugs are generally easier to find, but may require a lot of work to fix.
 </dl>
 
-The above problems can all be solved with the help of Mutexes and Conditions.
+The above problems can all be solved with the help of Mutexes and Condition
+variables. Mutexes are basically a way to keep other threads out while a task
+is being performed. Conditions, or <b>condition variables</b>, are used to inform
+other threads that they don't have to wait any longer. Pike also provides
+two different kinds of pipelines to send data from one thread to another, which
+makes it very simple to write threaded programs. Let's look at an example:
+<pre>
+	#!/usr/local/bin/pike
+	import Thread;			// We need fifos
+	inherit Fifo;			// Fifo used to supply workers
+	inherit Fifo : ended;		// Fifo used to wait for workers
+
+	void worker(string lookfor)
+	{
+	  while(string file=Fifo::read())
+	  {
+	    int linenum=1;
+	    object o=Stdio.FILE(file,"r");
+	    while(string line=o-&gt;gets())
+	    {
+	      if(search(line, lookfor) &gt;=0)
+		write(sprintf("%s:%d: %s\n",file, lineno, line));
+
+	      linenum++;
+	    }
+	  }
+	  ended::write(0);
+	}
+
+	int main(int argc, string *argv)
+	{
+	  for(int e=0;e&lt;4;e++)          // Start workers
+	    thread_create(worker,argv[1]);
+	  for(int e=2;e&lt;argc;e++)       // Feed workers
+	    Fifo::write(argv[1]);
+	  for(int e=0;e&lt;4;e++)          // Tell workers to die
+	    Fifo::write(0);
+	  for(int e=0;e&lt;4;e++)          // Wait for workers to die
+	     ended::read();
+	  exit(0);
+	}
+</pre>
+
+This is an example of a simple grep-like program. It looks for the string
+given as first argument to the program in the files given as the rest
+of the arguments. Don't worry if you do not understand it yet. Read the
+descriptions of the functions and classes below and come back and read
+this example again.
+<p>
+
+<h2>Threads reference section</h2>
+This section describes all thread-related functions and classes.
+
+<hr noshade size=1>
+<a name=Thread.thread_create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.thread_create</tt> - create a thread
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object thread_create(function <I>f</I>, mixed ... <I>args</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function creates a new thread which will run simultaneously
+to the rest of the program. The new thread will call the function
+<i>f</i> with the arguments <i>args</i>. When f returns the thread will cease
+to exist. All Pike functions are 'thread safe' meaning that running
+a function at the same time from different threads will not corrupt
+any internal data in the Pike process. The returned value will be
+the same as the return value of this_thread() for the new thread.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This function is only available on systems with POSIX or UNIX threads support.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Thread.Mutex>Thread.Mutex</a>, <a href=#Thread.Condition>Thread.Condition</a> and <a href=#Thread.this_thread>Thread.this_thread</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+
+<a name=Thread.this_thread>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.this_thread</tt> - return thread id
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object thread_id();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns the object that identifies this thread.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Thread.thread_create>Thread.thread_create</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Mutex>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Mutex</tt> - mutex locks
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Thread.Mutex is a precompiled Pike program that implements
+mutal exclusion locks. Mutex locks are used to prevent multiple
+threads from simultaneously execute sections of code which accesses
+or changes shared data. The basic operations for a mutex is locking
+and unlocking, if a thread attempts to lock an already locked mutex
+the thread will sleep until the mutex is unlocked.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+Mutex locks are only available on systems with POSIX or UNIX threads support.
+<p>
+In POSIX threads, mutex locks can only be unlocked by the same thread
+locked them. In Pike any thread can unlock a locked mutex.
+<p>
+
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+This simple program can be used to exchange data between two
+programs. It is similar to Thread.Fifo, but can only hold one
+element of data.
+<pre>
+inherit Thread.Mutex : r_mutex;
+inherit Thread.Mutex : w_mutex;
+object r_lock=r_mutex::lock();
+object w_lock;
+mixed storage;
+
+void write(mixed data)
+{
+  w_lock=w_mutex::lock();
+  storage=data;
+  destruct(r_lock);
+}
+
+mixed read()
+{
+  mixed tmp;
+  r_lock=r_mutex::lock();
+  tmp=storage;
+  storage=0;
+  destruct(w_lock);
+  return tmp;
+}
+</pre>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Mutex.lock>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Mutex-&gtlock</tt> - lock the mutex
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object lock();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function attempts to lock the mutex, if the mutex is already
+locked current thread will sleep until the lock is unlocked by some
+other thread. The value returned is the 'key' to the lock, which the
+key is destructed or has no more references the lock will automatically
+be unlocked.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Mutex.trylock>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Mutex-&gttrylock</tt> - try to lock the mutex
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object trylock();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function preforms the same operation as lock(), but if the mutex
+is already locked zero will be returned instead of sleeping until the
+lock is unlocked.
+<p>
+</dl>
+
+<hr newpage noshade size=1>
+<a name=Thread.Condition>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Condition</tt> - condition variables
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Thread.Condition is a precompiled Pike program that implements
+condition variables. Condition variables are used by threaded programs
+to wait for events happening in other threads.
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+Mutex locks are only available on systems with POSIX or UNIX threads support.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<tt>// This program implements a fifo that can be used to send<br>
+// data between two threads.<br>
+inherit Thread.Condition : r_cond;<br>
+inherit Thread.Condition: w_cond;<br>
+inherit Thread.Mutex: lock;<br>
+
+<p>mixed *buffer = allocate(128);<br>
+int r_ptr, w_ptr;<br>
+
+<p>int query_messages()    {  return w_ptr - r_ptr;  }<br>
+
+<p>// This function reads one mixed value from the fifo.<br>
+// If no values are available it blocks until a write has been done.<br>
+mixed read()<br>
+{<br>
+<dl><dt><dd>mixed tmp;<br>
+// We use this mutex lock to make sure no write() is executed<br>
+// between the query_messages and the wait() call. If it did<br>
+// we would wind up in a deadlock.<br>
+object key=lock::lock();<br>
+while(!query_messages()) r_cond::wait(key);<br>
+tmp=buffer[r_ptr++ % sizeof(buffer)];<br>
+w_cond::signal();<br>
+return tmp;<br>
+</dl>}<br>
+
+<p>// This function pushes one mixed value on the fifo.<br>
+// If the fifo is full it blocks until a value has been read.<br>
+void write(mixed v)<br>
+{<br>
+<dl><dt><dd>object key=lock::lock();<br>
+while(query_messages() == sizeof(buffer)) w_cond::wait(key);<br>
+buffer[w_ptr++ % sizeof(buffer)]=v;<br>
+r_cond::signal();<br>
+</dl>}<br>
+</tt>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Tread.Mutex>Thread.Mutex</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Condition.wait>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Condition-&gt;wait</tt> - wait for condition
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void wait();<br>
+or<br>
+void wait(object <I>mutex_key</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function makes the current thread sleep until the condition
+variable is signalled. The optional argument should be the 'key'
+to a mutex lock. If present the mutex lock will be unlocked before
+waiting for the condition in one atomical operation. After waiting
+for the condition the mutex referenced by mutex_key will be re-locked.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Thread.Mutex.lock>Thread.Mutex-&gt;lock</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Mutex.signal>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Mutex-&gt;signal</tt> - signal a condition variable
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void signal();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Signal wakes up one of the threads currently waiting for the
+condition.
+<p>
+<dt><b> <font size=+1>B</font><font size=-1>UGS</font></b><dd>
+It sometimes wakes up more than one thread.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Mutex.broadcast>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Mutex-&gt;broadcast</tt> - signal all waiting threads
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void broadcast();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function wakes up all threads currently waiting for this
+condition.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Fifo>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Fifo</tt> - first in, first out object
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Thread.Fifo implements a fixed length fifo. A fifo is a queue
+of values and is often used as a stream of data between two threads.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Thread.Queue>Thread.Queue</a>
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+Fifos are only available on systems with POSIX threads support.
+<p>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Fifo.create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Fifo-&gtcreate</tt> - initialize the fifo
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void create(int <I>size</I>);<br>
+or<br>
+object(Thread.Fifo) Thread.Fifo();<br>
+or<br>
+object(Thread.Fifo) Thread.Fifo(int <i>size</i>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+The function create() is called when the fifo is cloned, if the
+optional size argument is present it sets how many values can be
+written to the fifo without blocking. The default size is 128.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Fifo.write>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Fifo-&gt;write</tt> - queue a value
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void write(mixed <I>value</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function puts a value last in the fifo. If there is no more
+room in the fifo the current thread will sleep until space is
+available.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Fifo.read>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Fifo-&gt;read</tt> - read a value from the fifo
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed read();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function retreives a value from the fifo. Values will be
+returned in the order they were written. If there are no values
+present in the fifo the current thread will sleep until some other
+thread writes a value to the fifo.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Fifo.size>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Fifo-&gt;size</tt> - return number of values in fifo
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int size();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns how many values are currently in the fifo.
+<p>
+</dl>
+
+</a>
 
 
 
-<ul>
-  <li> thread_create
-  <li> this_thread
-  <li> Mutex
-  <li> Condition
-  <li> Fifo
-  <li> Queue
-</ul>
+</a>
+<hr noshade size=1>
+<a name=Thread.Queue>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Queue</tt> - a queue of values
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Thread.Queue implements a queue, or a pipeline. The main differance
+between Thread.Queue and Thread.Fifo is that queues
+will never block in write(), only allocate more memory.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=Thread.Fifo>Thread.Fifo</a>
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+Queues are only available on systems with POSIX or UNIX threads support.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Queue.write>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Queue-&gtwrite</tt> - queue a value
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>>void write(mixed <I>value</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function puts a value last in the queue. If the queue is
+to small to hold the value the queue will be expanded to make
+room for it.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Queue.read>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Queue-&gtread</tt> - read a value from the queue
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>mixed read();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function retreives a value from the queue. Values will be
+returned in the order they were written. If there are no values
+present in the queue the current thread will sleep until some other
+thread writes a value to the queue.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Thread.Queue.size>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Thread.Queue-&gtsize</tt> - return number of values in queue
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int queue-&gt;size();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns how many values are currently in the queue.
+<p>
+</dl>
+
+</a>
+</a>
+
 <HR NEWPAGE>
 
-<H1>9. Builtin Programs</h2>
+<H1>Minor modules</H1>
 (the rest of them)
-<!-- FIXME, finish module interface before writing this chapter -->
 <ul>
   <li>Gdbm
   <li>Mpz
   <li>regexp
-  <li>string_buffer
   <li>heap
   <li>priority_queue
   <li>Other available modules: image, curses
@@ -7135,78 +7627,6 @@ Result: 94<br>
 </dl>
 </a>
 
-<HR NEWPAGE>
-<a name=read_bytes>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>read_bytes</tt> - read a number of bytes into a string from a file
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>string read_bytes(string <I>file</I>,int <I>start</I>,int <I>len</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Read len number of bytes from file file staring at byte start and
-return it as a string.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_write_file.html>write_file</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=read_file>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>read_file</tt> - read a number of lines into a string from file
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>string read_file(string <I>file</I>, int <I>start</I>, int <I>len</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Read 'len' lines from the file 'file' after skipping 'start' lines
-and return those lines as a string. If start and len are omitted
-the whole file is read.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_read_bytes.html>read_bytes</a> and <a href=simulated_write_file.html>write_file</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
-<a name=readline>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>readline</tt> - read a line from stdin
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>string readline(string <I>prompt</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function writes the string 'prompt' and then waits until the
-user has entered a line from the keyboard. If the readline library
-was available when Pike was compiled the user will have history and
-line edithing at his/her disposal when entering the line.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=index.html#file>file</a>
-<p>
-</dl>
-</a>
 
 <HR NEWPAGE>
 <a name=regexp>
@@ -8304,54 +8724,6 @@ This function returns the object we are curently evaluating in.
 </a>
 
 <HR NEWPAGE>
-<a name=this_thread>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>this_thread</tt> - return thread id
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>object thread_id();<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function returns the object that identifies this thread.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=builtin_thread_create.html>thread_create</a>
-<p>
-</dl>
-
-</a>
-
-<HR NEWPAGE>
-<a name=thread_create>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>thread_create</tt> - create a thread
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>object thread_create(function <I>f</I>, mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function creates a new thread which will run simultaneously
-to the rest of the program. The new thread will call the function
-f with the arguments args. When f returns the thread will cease
-to exist. All Pike functions are 'thread safe' meanting that running
-a function at the same time from different threads will not corrupt
-any internal data in the Pike process. The returned value will be
-the same as the return value of this_thread() for the new thread.
-<p>
-<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
-This function is only available on systems with POSIX threads support.
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=precompiled_mutex.html>/precompiled/mutex</a>, <a href=precompiled_condition.html>/precompiled/condition</a> and <a href=builtin_this_thread.html>this_thread</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=throw>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -8613,30 +8985,6 @@ Added by the master, it directly calls write in a clone of
 </a>
 
 <HR NEWPAGE>
-<a name=write_file>
-<dl>
-<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
-<tt>write_file</tt> - append a string to a file
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
-<tt>#include &lt;stdio.h&gt;<br>
-
-<p>int write_file(string file, string str)<br>
-</tt>
-<p>
-<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-Append the string str onto the file file. Returns number of bytes written.
-<p>
-<dt><b> <font size=+1>K</font><font size=-1>EYWORDS</font></b><dd>
-<a href=index.html#file>file</a>
-<p>
-<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
-<a href=simulated_read_bytes.html>read_bytes</a>
-<p>
-</dl>
-</a>
-
-<HR NEWPAGE>
 <a name=zero_type>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
@@ -8697,6 +9045,7 @@ returned. Otherwize zero_type will return zero.
   <li>mktime
   <li>socket->query_address()
   <li> scope for class {}
+  <li>optimzation
 </ul>
 <HR NEWPAGE>
 <HR NEWPAGE>
