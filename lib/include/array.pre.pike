@@ -108,8 +108,7 @@ varargs mixed *sort_array(array foo,function cmp, mixed ... args)
   {
     foo+=({});
     sort(foo);
-    reverse(foo);
-    return foo;
+    return reverse(foo);
   }
 
   length=sizeof(foo);
