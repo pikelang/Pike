@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.1 1997/01/13 19:18:29 per Exp $");
+RCSID("$Id: dumudp.c,v 1.2 1997/01/23 19:32:32 grubba Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -92,7 +92,7 @@ static void udp_bind(INT32 args)
     return;
   }
 
-//set_close_on_exec(fd,1);
+  /* set_close_on_exec(fd,1); */
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
