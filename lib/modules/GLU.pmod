@@ -1,5 +1,5 @@
 /*
- * $Id: GLU.pmod,v 1.12 2003/04/01 17:42:02 nilsson Exp $
+ * $Id: GLU.pmod,v 1.13 2004/04/14 19:28:32 nilsson Exp $
  *
  * GL Utilities module.
  */
@@ -13,7 +13,7 @@
 //! the GLU library (Mesa was used last time), tweak it so that
 //! it compiles as Pike code and then check it in into the CVS.
 
-#if constant(GL.glGet)
+#if constant(GL)
 import GL;
 
 #ifndef M_PI
@@ -240,4 +240,6 @@ array(float) gluProject(float objx, float objy,
 //   return ({ out[0]/out[3], out[1]/out[3], out[2]/out[3] });
 // }
 
-#endif /* constant(GL) */
+#else /* constant(GL) */
+constant this_program_does_not_exist=1;
+#endif

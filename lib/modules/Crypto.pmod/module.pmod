@@ -14,7 +14,7 @@
 //! CipherState. Also conforming to the API are the helper programs
 //! @[Buffer], @[CBC] and @[Pipe].
 
-#if constant(Nettle.HashInfo)
+#if constant(Nettle)
 
 class HashState {
   inherit Nettle.HashState;
@@ -131,4 +131,4 @@ PHASER(sha,SHA1);
 //! @endignore
 
 
-#endif /* constant(Nettle.HashInfo) */
+#endif /* constant(Nettle) */

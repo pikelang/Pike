@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.13 2004/03/30 12:26:36 vida Exp $
+// $Id: Random.pmod,v 1.14 2004/04/14 19:27:01 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
 
-#if constant(Nettle.Yarrow)
+#if constant(Nettle) && constant(Nettle.Yarrow)
 
 #if constant(Nettle.NT)
 
@@ -199,4 +199,6 @@ void add_entropy(string data, int entropy) {
     rnd_block_obj->update(data, 2, entropy);
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

@@ -6,7 +6,7 @@
 //! use it with anything but the maximum key size, smaller keys are
 //! just padded to larger ones.
 
-#if constant(Nettle.Serpent_Info)
+#if constant(Nettle) && constant(Nettle.Serpent_Info)
 
 // NOTE: Depends on the order of INIT invocations.
 inherit Nettle.Serpent_Info;
@@ -14,4 +14,6 @@ inherit .Cipher;
 
 .CipherState `()() { return Nettle.Serpent_State(); }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

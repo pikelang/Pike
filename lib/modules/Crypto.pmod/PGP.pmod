@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.10 2004/03/01 19:10:58 nilsson Exp $
+// $Id: PGP.pmod,v 1.11 2004/04/14 19:27:01 nilsson Exp $
 
 //! PGP stuff. See RFC 2440.
 
@@ -354,4 +354,6 @@ mapping(string:mixed) decode_radix64(string data) {
   return ret;
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

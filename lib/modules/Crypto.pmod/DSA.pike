@@ -4,7 +4,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-#if constant(Gmp.mpz) && constant(Crypto.Random.random_string)
+#if constant(Gmp) && constant(Gmp.mpz) && constant(Crypto.Random)
 
 static Gmp.mpz p; // Modulo
 static Gmp.mpz q; // Group order
@@ -276,4 +276,6 @@ int(0..1) public_key_equal (.DSA dsa)
 //! Returns the string @expr{"DSA"@}.
 string name() { return "DSA"; }
 
+#else
+constant this_program_does_not_exist=1;
 #endif

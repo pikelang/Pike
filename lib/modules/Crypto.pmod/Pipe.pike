@@ -1,7 +1,7 @@
 
 #pike __REAL_VERSION__
 
-#if constant(Gmp.mpz)
+#if constant(Gmp) && constant(Gmp.mpz)
 
 //! A wrapper class that connects several cipher algorithms into one
 //! algorithm. E.g. triple DES can be emulated with
@@ -100,5 +100,7 @@ string crypt(string data) {
   return data;
 }
 
+#else
+constant this_program_does_not_exist=1;
 #endif
 

@@ -11,7 +11,7 @@
 //! bits (16, 24 and 32 octets) being the allowed key sizes. It does
 //! not have any weak keys.
 
-#if constant(Nettle.AES_Info)
+#if constant(Nettle) && constant(Nettle.AES_Info)
 
 // NOTE: Depends on the order of INIT invocations.
 inherit Nettle.AES_Info;
@@ -19,4 +19,6 @@ inherit .Cipher;
 
 .CipherState `()() { return Nettle.AES_State(); }
 
+#else
+constant this_program_does_not_exist=1;
 #endif
