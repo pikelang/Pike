@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.24 2003/04/07 17:25:04 nilsson Exp $
+|| $Id: gdbmmod.c,v 1.25 2003/05/25 02:58:06 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.24 2003/04/07 17:25:04 nilsson Exp $");
+RCSID("$Id: gdbmmod.c,v 1.25 2003/05/25 02:58:06 nilsson Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -168,10 +168,10 @@ static void gdbmmod_create(INT32 args)
       if(tmp) gdbm_close(tmp);
       Pike_error("Object destructed in gdbm->open()n");
     }
-    THIS->dbf=tmp;
+    this->dbf=tmp;
 
     pop_n_elems(args);
-    if(!THIS->dbf)
+    if(!this->dbf)
       Pike_error("Failed to open GDBM database.\n");
   }
 }
@@ -218,10 +218,11 @@ static void gdbmmod_fetch(INT32 args)
   }
 }
 
-/*! @decl int delete(string key)
+/*! @decl int(0..1) delete(string key)
  *!
- *! Remove a key from the database. Note that no error will be generated
- *! if the key does not exist.
+ *! Remove a key from the database. Returns 1 if successful,
+ *! otherwise 0, e.g. when the item is not present or the
+ *! database is read only.
  */
 
 static void gdbmmod_delete(INT32 args)
@@ -247,7 +248,7 @@ static void gdbmmod_delete(INT32 args)
   THREADS_DISALLOW();
   
   pop_n_elems(args);
-  push_int(0);
+  push_int( ret==0 );
 }
 
 /*! @decl string firstkey()
@@ -480,7 +481,7 @@ PIKE_MODULE_INIT
   /* function(string:string) */
   ADD_FUNCTION("`[]",gdbmmod_fetch,tFunc(tStr,tStr),0);
   /* function(string:int) */
-  ADD_FUNCTION("delete",gdbmmod_delete,tFunc(tStr,tInt),0);
+  ADD_FUNCTION("delete",gdbmmod_delete,tFunc(tStr,tInt01),0);
   /* function(:string) */
   ADD_FUNCTION("firstkey",gdbmmod_firstkey,tFunc(tNone,tStr),0);
   /* function(string:string) */

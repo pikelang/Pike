@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.15 2003/04/07 17:27:41 nilsson Exp $
+|| $Id: gettext.c,v 1.16 2003/05/25 02:58:40 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.15 2003/04/07 17:27:41 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.16 2003/05/25 02:58:40 nilsson Exp $");
 
 /*! @module Locale
  */
@@ -284,7 +284,7 @@ void f_setlocale(INT32 args)
   free_string(valstr); \
   } while(0)
 #define MAPINT(key, value) do {\
-  struct svalue val; struct pike_string *valstr; \
+  struct svalue val; \
   val.type = T_INT; \
   val.u.integer = (int)locale->value; \
   mapping_string_insert(map, make_shared_string(key), &val);\
@@ -400,7 +400,9 @@ void f_localeconv(INT32 args)
   map = allocate_mapping(18);
   locale = localeconv();
 
-  MAPSTR("decimal_point", decimal_point);  
+  pop_n_elems(args);
+
+  MAPSTR("decimal_point", decimal_point);
   MAPSTR("thousands_sep", thousands_sep);
   MAPSTR("int_curr_symbol", int_curr_symbol);
   MAPSTR("currency_symbol", currency_symbol);
