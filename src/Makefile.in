@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.70 1998/04/09 02:49:17 hubbe Exp $
+# $Id: Makefile.in,v 1.71 1998/04/09 03:07:00 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -302,16 +302,10 @@ TAGS:
 verify_modules:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) verify )
 
-verbose_verify_modules:
-	( cd modules ; $(MAKE) $(MAKE_FLAGS) verbose_verify )
-
 module_testsuites:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
 
-extra_module_tests:
-	( cd modules ; $(MAKE) $(MAKE_FLAGS) extra_tests )
-
-verify: module_testsuites testsuite  extra_module_tests
+verify: module_testsuites testsuite
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
 
 check: verify
@@ -319,7 +313,7 @@ check: verify
 sure: verify
 
 # verify / debug verbose
-verbose_verify: module_testsuites testsuite extra_module_tests
+verbose_verify: module_testsuites testsuite
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose modules/*/module_testsuite testsuite 
 
 # verify & debug VERBOSE
