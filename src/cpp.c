@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.143 2004/06/30 09:23:29 grubba Exp $
+|| $Id: cpp.c,v 1.144 2004/06/30 09:34:33 grubba Exp $
 */
 
 #include "global.h"
@@ -1275,7 +1275,6 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 			     2, BIT_STRING)) {
       cpp_handle_exception (this, "Error decoding with charset %S", new_str);
       free_string (new_str);
-      pop_stack();
       return data;
     }
     free_string (new_str);
