@@ -178,6 +178,11 @@ testfont binary
 /lib/modules/String.pmod/HTML.pmod foreign_ident
 /lib/modules/System.pmod foreign_ident
 /lib/modules/Tools.pmod/Hilfe.pmod foreign_ident
+/lib/modules/Tools.pmod/Legal.pmod/Copyright.pmod foreign_ident
+/lib/modules/Tools.pmod/Legal.pmod/License.pmod/GPL.pmod foreign_ident
+/lib/modules/Tools.pmod/Legal.pmod/License.pmod/LGPL.pmod foreign_ident
+/lib/modules/Tools.pmod/Legal.pmod/License.pmod/MPL.pmod foreign_ident
+/lib/modules/Tools.pmod/Legal.pmod/License.pmod/module.pmod foreign_ident
 /lib/modules/Tools.pmod/X509.pmod foreign_ident
 /lib/modules/Tools.pmod/testhilfe.pike foreign_ident
 /lib/modules/Web.pmod/Crawler.pmod foreign_ident
