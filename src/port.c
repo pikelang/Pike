@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.73 2003/08/04 16:13:23 mast Exp $
+|| $Id: port.c,v 1.74 2003/08/04 16:34:04 mast Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.73 2003/08/04 16:13:23 mast Exp $");
+RCSID("$Id: port.c,v 1.74 2003/08/04 16:34:04 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -687,6 +687,20 @@ PMOD_EXPORT int VSNPRINTF(char *buf, size_t size, const char *fmt, va_list args)
   buf[size - 1] = 0;
   res = VSPRINTF (buf, fmt, args);
   if (buf[size - 1]) Pike_fatal ("Buffer overflow in VSPRINTF.\n");
+  return res;
+}
+#endif
+
+#ifndef HAVE_SNPRINTF
+/* Warning: It's possible to trick this with something like
+ * snprintf("...%c...", 0). */
+PMOD_EXPORT int SNPRINTF(char *buf, size_t size, const char *fmt, ...)
+{
+  int res;
+  va_list args;
+  va_start (args, fmt);
+  res = VSNPRINTF (buf, size, fmt, args);
+  va_end (args);
   return res;
 }
 #endif

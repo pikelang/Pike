@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.726 2003/08/04 13:37:42 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.727 2003/08/04 16:34:04 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3192,6 +3192,7 @@ AC_CHECK_FUNCS( \
  tzset \
  vfprintf \
  vsprintf \
+ snprintf \
  vsnprintf \
  wait3 \
  wait4 \
