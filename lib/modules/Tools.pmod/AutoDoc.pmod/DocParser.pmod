@@ -47,7 +47,9 @@ mapping(string : int) keywordtype =
 
   "example" : DELIMITERKEYWORD,
   "note" : DELIMITERKEYWORD,
+  "bugs" : DELIMITERKEYWORD,
   "returns" : DELIMITERKEYWORD,
+  "throws" : DELIMITERKEYWORD,
   "param" : DELIMITERKEYWORD,
   "seealso" : DELIMITERKEYWORD,
 
@@ -78,11 +80,13 @@ mapping(string : array(string)) attributenames =
   "constant" : ({ "name" }),
 ]);
 
-static constant standard = (< "note", "example", "seealso", "deprecated" >);
+static constant standard = (<
+  "note", "bugs", "example", "seealso", "deprecated"
+>);
 
 mapping(string : multiset(string)) allowedChildren =
 (["_general" : standard,
-  "_method" : (< "param", "returns" >) + standard,
+  "_method" : (< "param", "returns", "throws" >) + standard,
   "_variable": standard,
   "_inherit" : standard,
   "_class" : standard,
@@ -110,6 +114,7 @@ mapping(string : multiset(string)) allowGrouping =
 multiset(string) allowOnlyOne =
 (< "seealso",
    "returns",
+   "throws",
    "deprecated",
 >);
 
