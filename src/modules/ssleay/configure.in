@@ -25,6 +25,15 @@ if test x$with_ssleay = xyes; then
   if test x$pike_cv_ssleay = xyes; then
     SSLEAY_FLAGS="-DHAVE_SSLEAY -I/usr/local/ssl/include -L/usr/local/ssl/lib"
   fi
+
+  if test -d /usr/local/ssl/lib ; then
+    echo Added /usr/local/ssl/lib to the library search path.
+    LDFLAGS="-L/usr/local/ssl/lib ${LDFLAGS}"
+    echo "LDFLAGS now:$LDFLAGS"
+  fi
+
+  AC_CHECK_LIB(crypto, MD5_Init)
+  AC_CHECK_LIB(ssl, SSL_write)
 fi
 
 AC_SUBST(SSLEAY_FLAGS)
