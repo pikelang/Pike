@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.377 2001/06/09 13:57:23 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.378 2001/06/19 14:45:52 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -958,7 +958,7 @@ PMOD_EXPORT void f_has_value(INT32 args)
 }
 
 /* Old backtrace */
-
+#if 0
 /*! @decl array(array) backtrace()
  *!
  *!   Get a description of the current call stack.
@@ -1072,6 +1072,7 @@ PMOD_EXPORT void f_backtrace(INT32 args)
   }
   a->type_field = BIT_ARRAY | BIT_INT;
 }
+#endif /* 0 */
 
 /*! @decl void add_constant(string name, mixed value)
  *! @decl void add_constant(string name)
@@ -7509,11 +7510,12 @@ void init_builtin_efuns(void)
   
 /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt),0);
-  
+
+#if 0  
 /* function(:array(array)) */
   ADD_EFUN("backtrace",f_backtrace,
 	   tFunc(tNone,tArr(tArray)),OPT_EXTERNAL_DEPEND);
-
+#endif /* 0 */
   
 /* function(string...:string) */
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
