@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.231 2000/01/24 14:00:30 noring Exp $");
+RCSID("$Id: builtin_functions.c,v 1.232 2000/01/27 23:07:41 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2291,6 +2291,17 @@ void f_mkmapping(INT32 args)
   push_mapping(m);
 }
 
+void f_mkmultiset(INT32 args)
+{
+  struct multiset *m;
+  struct array *a;
+  get_all_args("mkmultiset",args,"%a",&a);
+
+  m=mkmultiset(sp[-args].u.array);
+  pop_n_elems(args);
+  push_multiset(m);
+}
+
 #define SETFLAG(FLAGS,FLAG,ONOFF) \
   FLAGS = (FLAGS & ~FLAG) | ( ONOFF ? FLAG : 0 )
 void f_set_weak_flag(INT32 args)
@@ -3159,7 +3170,7 @@ static void f_interleave_array(INT32 args)
       INT32 e;
       struct keypair *k;
 
-      if (!(m = ITEM(arr)[j].u.mapping)->size) {
+      if (! m_sizeof(m = ITEM(arr)[j].u.mapping)) {
 	/* Not available */
 	ITEM(min)[i].u.integer = -1;
 	continue;
@@ -5626,6 +5637,10 @@ void init_builtin_efuns(void)
   ADD_EFUN("mkmapping",f_mkmapping,
 	   tFunc(tArr(tSetvar(1,tMix)) tArr(tSetvar(2,tMix)),
 		 tMap(tVar(1),tVar(2))),OPT_TRY_OPTIMIZE);
+
+  ADD_EFUN("mkmultiset",f_mkmultiset,
+	   tFunc(tArr(tSetvar(1,tMix)), tSet(tVar(1))),
+	   OPT_TRY_OPTIMIZE);
   
 /* function(1=mixed,int:1) */
   ADD_EFUN("set_weak_flag",f_set_weak_flag,

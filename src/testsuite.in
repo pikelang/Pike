@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.264 2000/01/26 13:45:55 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.265 2000/01/27 23:07:41 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -971,6 +971,7 @@ test_any_equal([[
   o->a += ({2});
   return o->a;
 ]], ({1,2}))
+
 test_any_equal([[
   class A {
     array a = ({1});
@@ -981,6 +982,67 @@ test_any_equal([[
   };
   object o = B();
   o->a += ({2});
+  return o->a;
+]], ({1,2}))
+
+test_any_equal([[
+  class A {
+    array a = ({1});
+//    void `->= (string var, mixed val) {::`->= (var, val);}
+  };
+  class B {
+    int z;
+    inherit A;
+    void `->= (string var, mixed val) { A::`->= (var, val);}
+  };
+  object o = B();
+  o->a += ({2});
+  return o->a;
+]], ({1,2}))
+
+test_any_equal([[
+  class FOO
+  {
+    int q,w,z;
+  };
+  class A {
+    array a = ({1});
+  };
+  class B {
+    inherit FOO;
+    int b,c,d,e,f,g;
+    inherit A;
+    void `->= (string var, mixed val) { A::`->= (var, val);}
+  };
+  object o = B();
+  o->a += ({2});
+  return o->a;
+]], ({1,2}))
+
+
+test_any_equal([[
+  class A {
+    array a = ({1});
+  };
+  class B {
+    int z;
+    inherit A : FNORD;
+
+    class Q
+    {
+	mixed `-> (string var)
+	{
+	  return FNORD::`-> (var);
+	}
+      void `->= (string var, mixed val)
+	{
+	  FNORD::`->= (var, val);
+	}
+    }
+  };
+  object o = B();
+  object o2=o->Q();
+  o2->a += ({2});
   return o->a;
 ]], ({1,2}))
 
@@ -2442,6 +2504,7 @@ test_true([[(array(array))([]) ]])
 test_true([[(array(array))([1:2]) ]])
 test_true([[(array(array))([1:2,3:4]) ]])
 test_true([[(array(array))([1:2,3:4,5:6]) ]])
+test_equal( [[ (multiset) ({1})]], [[ (< 1 >) ]] )
 test_eval_error([[return (mapping)""]])
 
 // testing @

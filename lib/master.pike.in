@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.95 2000/01/16 05:19:20 hubbe Exp $
+ * $Id: master.pike.in,v 1.96 2000/01/27 23:07:27 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -427,11 +427,6 @@ object new(mixed prog, mixed ... args)
   return prog(@args);
 }
 
-multiset mkmultiset(array a)
-{
-  return aggregate_multiset(@a);
-}
-
 function clone = new;
 
 /* This array contains the names of the functions
@@ -453,7 +448,6 @@ constant master_efuns = ({
   "remove_program_path",
   "describe_backtrace",
   "describe_error",
-  "mkmultiset",
   "new",
   "clone",
 
