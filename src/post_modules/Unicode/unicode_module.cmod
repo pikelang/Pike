@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.9 2003/08/08 19:56:15 jhs Exp $
+|| $Id: unicode_module.cmod,v 1.10 2004/02/23 18:21:04 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.9 2003/08/08 19:56:15 jhs Exp $");
+RCSID("$Id: unicode_module.cmod,v 1.10 2004/02/23 18:21:04 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -50,6 +50,7 @@ static void push_words( int *d, struct words *w )
  *! thrown away.
  */
 PIKEFUN array(string) split_words( string input )
+     optflags OPT_TRY_OPTIMIZE;
 {
   struct words *res;
   struct buffer * data;
@@ -64,6 +65,7 @@ PIKEFUN array(string) split_words( string input )
  *! A less wasteful equivalent of @[split_words](@[normalize](@[input])).
  */
 PIKEFUN array(string) split_words_and_normalize( string input )
+     optflags OPT_TRY_OPTIMIZE;
 {
   struct words *res;
   struct buffer *data;
@@ -132,6 +134,7 @@ PIKEFUN array(string) split_words_and_normalize( string input )
  *!
  */
 PIKEFUN string normalize( string s, string flags )
+     optflags OPT_TRY_OPTIMIZE;
 {
   int _flags=0, i;
 
@@ -159,6 +162,7 @@ PIKEFUN string normalize( string s, string flags )
  *!   @endint
  */
 PIKEFUN int is_wordchar( int c )
+     optflags OPT_TRY_OPTIMIZE;
 {
   RETURN unicode_is_wordchar( c );
 }
