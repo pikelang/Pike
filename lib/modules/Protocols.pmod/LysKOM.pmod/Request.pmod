@@ -1,4 +1,4 @@
-//  $Id: Request.pmod,v 1.1 1999/06/12 23:01:50 mirar Exp $
+//  $Id: Request.pmod,v 1.2 1999/06/14 19:23:14 mirar Exp $
 //! module Protocols
 //! submodule LysKOM
 //! submodule Request
@@ -66,8 +66,13 @@ class _Request
    
    mixed _sync(int call,mixed ... data)
    {
+#if constant(thread_create)
+      _async(call,@data);
+      return `()();
+#else
       mixed res=raw->send_sync(encode(call,@data),_reply);
       return _reply(res);
+#endif
    }
 
    mixed _reply(object|array what)

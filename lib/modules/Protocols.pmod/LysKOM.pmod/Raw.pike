@@ -94,6 +94,7 @@ void flush_queue()
    }
 }
 
+#if ! constant(thread_create)
 mixed send_sync(string request)
 {
    return sync_do(++ref,request);
@@ -154,6 +155,7 @@ mixed sync_do(int ref,string|void request)
 
    return res;
 }
+#endif
 
 void|array|object recv(mixed x,string what,void|int syn)
 {
@@ -178,9 +180,11 @@ void|array|object recv(mixed x,string what,void|int syn)
 	    if (res)
 	    {
 	       buf=buf[len+1..];
+#if ! constant(thread_create)
 	       if (ref)
 		  call_out(got_async_message,0,res);
 	       else
+#endif
 		  got_async_message(res);
 	       break;
 	    }
@@ -197,9 +201,11 @@ void|array|object recv(mixed x,string what,void|int syn)
 		  out_req--;
 		  break;
 	       }
+#if ! constant(thread_create)
 	       if (ref)
 		  call_out(got_reply,0,(int)res[0],res[1..]);
 	       else
+#endif
 		  got_reply((int)res[0],res[1..]);
 	       out_req--;
 	       flush_queue();
@@ -218,9 +224,11 @@ void|array|object recv(mixed x,string what,void|int syn)
 		  out_req--;
 		  break;
 	       }
+#if ! constant(thread_create)
 	       if (ref)
 		  call_out(got_reply,0,ref,lyskom_error(no,status));
 	       else
+#endif
 		  got_reply(ref,lyskom_error(no,status));
 	       out_req--;
 	       flush_queue();
@@ -240,6 +248,31 @@ void|array|object recv(mixed x,string what,void|int syn)
    return ires;
 }
 
+void read_thread()
+{
+   string s;
+   while ((s=con->read(8192,1)))
+   {
+      if (s=="")
+      {
+	 connection_lost();
+	 return;
+      }
+      recv(0,s);
+   }
+}
+
+#if constant(thread_create)
+Thread.Fifo call_fifo=Thread.Fifo();
+
+void call_thread()
+{
+   array a;
+   while ( (a=call_fifo->read()) )
+      a[0](a[1]);
+}
+#endif
+
 void connection_lost()
 {
    werror("CONNECTION LOST\n");
@@ -247,8 +280,14 @@ void connection_lost()
    con=0;
    // send error to all outstanding requests
    foreach (values(async),function f)
+#if constant(thread_create)
+      if (f) call_fifo->write( ({f,lyskom_error(CONNECTION_CLOSED)}) );
+   call_fifo->write(0);
+#else
       if (f) f(lyskom_error(CONNECTION_CLOSED));
+#endif
 }
+
 
 void create(string server,void|int port,void|string whoami)
 {
@@ -299,7 +338,12 @@ void create(string server,void|int port,void|string whoami)
       con=0;
       return;
    }
+#if constant(thread_create)
+   thread_create(read_thread);
+   thread_create(call_thread);
+#else
    con->set_nonblocking(recv,0,0);
+#endif
    return;
 }
 
@@ -444,7 +488,11 @@ void got_reply(int ref,object|array what)
       return;
    }
    m_delete(async,ref);
+#if constant(thread_create)
+   call_fifo->write( ({call,what}) );
+#else
    call_out(call,0,what);
+#endif
 }
 
 void delete_async(int ref)
