@@ -239,18 +239,17 @@ int mklink(string from, string to)
 }
 
 string helptext=#"Usage: $TARFILE [options] [variables]
-	  
-Options:
 
+Options:
   -h, --help            Display this help and exit.
   -v, --version         Display version information and exit.
-  --interactive         Interactive installation  (default)
-  --new-style           Install in <prefix>/pike/<ver>/{lib,include,bin}
-  --traditional         Install in <prefix>/{lib/pike,include/pike,bin}
+  --interactive         Interactive installation (default).
+  --new-style           Install in <prefix>/pike/<ver>/{lib,include,bin}.
+  --traditional         Install in <prefix>/{lib/pike,include/pike,bin}.
 
 Variables:
-  prefix=<path>         Install pike files here  (/usr/local)
-  pike_name=<path>      Create a symlink to pike here. (<prefix>/bin/pike)
+  prefix=<path>         Install pike files here (/usr/local).
+  pike_name=<path>      Create a symlink to pike here (<prefix>/bin/pike).
 ";
 
 void do_export()
@@ -276,11 +275,12 @@ do
 #" Copyright (C) 1994-1997 Fredrik Hübinette
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are
 welcome to redistribute it under certain conditions; Read the files
-COPYING and DISCLAIMER in the Pike distribution for more details.\";
+COPYING and DISCLAIMER in the Pike distribution for more details.
+\";
                   exit 0 ;;
 
               -h|\\
-          --help) echo \" + helptext + \"
+          --help) echo \"" + helptext + #"\"
                   exit 0 ;;
     esac
     shift
@@ -291,7 +291,11 @@ done
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
 		   "( cd "+export_base_name+".dir\n"
-		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike -Mbuild/lib/modules -Mlib/modules bin/install.pike --interactive \\\n"
+		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike "
+		                "-Mbuild/lib/modules "
+		                "-Mlib/modules "
+		                "bin/install.pike "
+		                "--interactive \\\n"
 		   "  TMP_LIBDIR=\"build/lib\"\\\n"
 		   "  LIBDIR_SRC=\"lib\"\\\n"
 		   "  SRCDIR=\"src\"\\\n"
@@ -387,6 +391,8 @@ class ReadInteractive
 {
   inherit Stdio.Readline;
 
+  int match_directories_only;
+
   void trap_signal(int n)
   {
     destruct(this_object());
@@ -399,16 +405,44 @@ class ReadInteractive
     signal(signum("SIGINT"));
   }
 
-  string edit(mixed ... args)
+  static private string low_edit(mixed ... args)
   {
     string r = ::edit(@args);
     if(!r)
     {
       // ^D?
+      werror("\nExiting, please wait...\n");
       destruct(this_object());
       exit(0);
     }
     return r;
+  }
+  
+  string edit(mixed ... args)
+  {
+    return low_edit(@args);
+  }
+  
+  string edit_filename(mixed ... args)
+  {
+    match_directories_only = 0;
+
+    get_input_controller()->bind("^I", file_completion);
+    string s = low_edit(@args);
+    get_input_controller()->unbind("^I");
+    
+    return s;
+  }
+  
+  string edit_directory(mixed ... args)
+  {
+    match_directories_only = 1;
+    
+    get_input_controller()->bind("^I", file_completion);
+    string s = low_edit(@args);
+    get_input_controller()->unbind("^I");
+    
+    return s;
   }
   
   static private string file_completion(string tab)
@@ -420,6 +454,13 @@ class ReadInteractive
     array(string) files =
       glob(path[-1]+"*",
 	   get_dir(sizeof(path)>1? path[..sizeof(path)-2]*"/"+"/":".")||({}));
+    
+
+    if(match_directories_only)
+      files = Array.filter(files, lambda(string f, string p)
+				  { return (file_stat(p+f)||({0,0}))[1]==-2; },
+			   path[..sizeof(path)-2]*"/"+"/");
+    
     switch(sizeof(files)) {
     case 0:
       get_output_controller()->beep();
@@ -432,9 +473,14 @@ class ReadInteractive
     default:
       string pre = String.common_prefix(files)[sizeof(path[-1])..];
       if(sizeof(pre))
+      {
 	insert(pre, pos);
-      else
-	list_completions(files);
+      } else {
+	if(!sizeof(path[-1]))
+	  files = Array.filter(files, lambda(string f)
+				      { return !(sizeof(f) && f[0] == '.'); });
+	list_completions(sort(files));
+      }
       break;
     }
   }
@@ -443,8 +489,6 @@ class ReadInteractive
   {
     signal(signum("SIGINT"), trap_signal);
     ::create(@args);
-
-    get_input_controller()->bind("^I", file_completion);
   }
 }
 
@@ -525,11 +569,11 @@ int main(int argc, string *argv)
 	write("\n");
 	
 	if(!vars->prefix)
-	  prefix=interactive->edit(prefix,"Install prefix: ");
+	  prefix=interactive->edit_directory(prefix,"Install prefix: ");
 	prefix = make_absolute_path(prefix);
 	
 	if(!vars->pike_name)
-	  bin_path=interactive->edit
+	  bin_path=interactive->edit_filename
 		   (combine_path(vars->exec_prefix ||
 				 combine_path(prefix, "bin"),
 				 "pike"), "Pike binary name: ");
