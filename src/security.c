@@ -279,17 +279,17 @@ static void creds_get_data_bits(INT32 args)
  */
 static void creds_apply(INT32 args)
 {
-  if(args < 0 || sp[-args].type > MAX_COMPLEX)
+  if(args < 0 || Pike_sp[-args].type > MAX_COMPLEX)
     Pike_error("Bad argument 1 to creds->apply()\n");
 
   if( CHECK_SECURITY(SECURITY_BIT_SECURITY) ||
-      (sp[-args].u.array->prot &&
+      (Pike_sp[-args].u.array->prot &&
        (OBJ2CREDS(current_creds)->user == THIS->user) &&
-       (OBJ2CREDS(sp[-args].u.array->prot)->user == THIS->user)))
+       (OBJ2CREDS(Pike_sp[-args].u.array->prot)->user == THIS->user)))
   {
-    if(sp[-args].u.array->prot)
-      free_object(sp[-args].u.array->prot);
-    add_ref( sp[-args].u.array->prot=Pike_fp->current_object );
+    if(Pike_sp[-args].u.array->prot)
+      free_object(Pike_sp[-args].u.array->prot);
+    add_ref( Pike_sp[-args].u.array->prot=Pike_fp->current_object );
   }else{
     Pike_error("creds->apply(): permission denied.\n");
   }
@@ -309,9 +309,9 @@ static void creds_apply(INT32 args)
 static void f_get_object_creds(INT32 args)
 {
   struct object *o;
-  if(args < 0 || sp[-args].type > MAX_COMPLEX)
+  if(args < 0 || Pike_sp[-args].type > MAX_COMPLEX)
     Pike_error("Bad argument 1 to get_object_creds\n");
-  if((o=sp[-args].u.array->prot))
+  if((o=Pike_sp[-args].u.array->prot))
   {
     add_ref(o);
     pop_n_elems(args);
