@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.79 2004/08/19 11:35:21 noring Exp $
+// $Id: MySQL.pike,v 1.80 2004/08/24 19:48:03 js Exp $
 
 inherit .Base;
 
@@ -675,6 +675,7 @@ static void store_to_db( void|string mergedfilename )
       [word, blob] = blobs->read();
       if(!word)
 	break;
+      word = string_to_utf8(word);
     }
 
     q++;
