@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.21 2004/03/15 16:33:07 nilsson Exp $
+// $Id: EXIF.pmod,v 1.22 2004/03/15 22:47:22 nilsson Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -625,6 +625,7 @@ static mapping TAG_INFO = ([
   0x0131:	({"Software",	    	    	}),
   0x0132:	({"DateTime",	    	    	}),
   0x013b:	({"Artist",  	    	    	}),
+  0x013c:       ({"HostComputer",               }),
   0x013e:       ({"WhitePoint",                 }),
   0x013f:       ({"PrimaryChromaticities",      }),
   0x0142:	({"TileWidth",	    	    	}),
@@ -844,15 +845,6 @@ static int short_value(string str, string order)
     return (str[1]<<8)|str[0];
 }
 
-static int short_swap(int i) {
-  return ((i&255)<<8) | ((i&65280)>>8);
-}
-
-static int long_swap(int i) {
-  return ((i&255)<<24) | ((i&65280)<<8) |
-    ((i&(255<<16))>>8) | ((i&(255<<24))>>24);
-}
-
 static int long_value(string str, string order)
 {
   if(order=="MM")
@@ -880,9 +872,9 @@ static mapping parse_tag(Stdio.File file, mapping tags, mapping exif_info,
   string make,model;
 
   if(!TAG_TYPE_INFO[tag_type]) {
-    tag_id = short_swap(tag_id);
-    tag_type = short_swap(tag_type);
-    tag_count = long_swap(tag_count);
+    tag_id = Int.swap_word(tag_id);
+    tag_type = Int.swap_word(tag_type);
+    tag_count = Int.swap_long(tag_count);
   }
 
   string tag_name, tag_format;
