@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.526 2003/09/29 19:35:48 mast Exp $
+|| $Id: program.c,v 1.527 2003/09/30 13:18:15 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.526 2003/09/29 19:35:48 mast Exp $");
+RCSID("$Id: program.c,v 1.527 2003/09/30 13:18:15 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4563,47 +4563,53 @@ INT32 define_function(struct pike_string *name,
 #endif
       return overridden;
     }
-  }
-make_a_new_def:
+    /* NOTE: At this point we already have the identifier in the
+     *       new program, and just need to add the reference.
+     */
+  } else {
+  make_a_new_def:
 
 #ifdef PIKE_DEBUG
-  if(Pike_compiler->compiler_pass==2)
-    Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
+    if(Pike_compiler->compiler_pass==2)
+      Pike_fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
-  /* define a new function */
+    /* Define a new function */
 
-  copy_shared_string(fun.name, name);
-  copy_pike_type(fun.type, type);
+    copy_shared_string(fun.name, name);
+    copy_pike_type(fun.type, type);
 
-  fun.identifier_flags=function_flags;
-  fun.run_time_type=T_FUNCTION;
+    fun.identifier_flags=function_flags;
+    fun.run_time_type=T_FUNCTION;
 
-  if(func)
-    fun.func = *func;
-  else
-    fun.func.offset = -1;
+    if(func)
+      fun.func = *func;
+    else
+      fun.func.offset = -1;
 
-  fun.opt_flags = opt_flags;
+    fun.opt_flags = opt_flags;
 
 #ifdef PIKE_DEBUG
-  if (a_flag > 5) {
-    fprintf(stderr, 
-	    "Adding new function #%d: '%s'\n"
-	    "  identifier_flags:0x%02x opt_flags:0x%04x\n",
-	    Pike_compiler->new_program->num_identifiers,
-	    fun.name->str,
-	    fun.identifier_flags, fun.opt_flags);
-  }
+    if (a_flag > 5) {
+      fprintf(stderr, 
+	      "Adding new function #%d: '%s'\n"
+	      "  identifier_flags:0x%02x opt_flags:0x%04x\n",
+	      Pike_compiler->new_program->num_identifiers,
+	      fun.name->str,
+	      fun.identifier_flags, fun.opt_flags);
+    }
 #endif /* PIKE_DEBUG */
 
-  i=Pike_compiler->new_program->num_identifiers;
+    i=Pike_compiler->new_program->num_identifiers;
 
-  debug_add_to_identifiers(fun);
+    debug_add_to_identifiers(fun);
 
-  ref.id_flags = flags;
-  ref.identifier_offset = i;
-  ref.inherit_offset = 0;
+    ref.id_flags = flags;
+    ref.identifier_offset = i;
+    ref.inherit_offset = 0;
+  }
+
+  /* Add the reference. */
 
   i=Pike_compiler->new_program->num_identifier_references;
   add_to_identifier_references(ref);
