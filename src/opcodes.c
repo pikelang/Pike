@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.54 1999/10/29 08:21:48 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.55 1999/10/31 20:52:09 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -762,556 +762,603 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 
 #endif
 
-static INT32 really_low_sscanf(char *input,
-			       long input_len,
-			       char *match,
-			       long match_len,
-			       long *chars_matched,
-			       int *success)
-{
-  struct svalue sval;
-  int e,cnt,matches,eye,arg;
-  int no_assign = 0, field_length = 0, minus_flag = 0;
-  char set[256];
-  struct svalue *argp;
-  
-  success[0]=0;
-
-  arg=eye=matches=0;
-
-  for(cnt=0;cnt<match_len;cnt++)
-  {
-    for(;cnt<match_len;cnt++)
-    {
-      if(match[cnt]=='%')
-      {
-        if(match[cnt+1]=='%')
-        {
-          cnt++;
-        }else{
-          break;
-        }
-      }
-      if(eye>=input_len || input[eye]!=match[cnt])
-      {
-	chars_matched[0]=eye;
-	return matches;
-      }
-      eye++;
-    }
-    if(cnt>=match_len)
-    {
-      chars_matched[0]=eye;
-      return matches;
-    }
-
 #ifdef PIKE_DEBUG
-    if(match[cnt]!='%' || match[cnt+1]=='%')
-    {
-      fatal("Error in sscanf.\n");
-    }
-#endif
+#define DO_IF_DEBUG(X)		X
+#else /* !PIKE_DEBUG */
+#define DO_IF_DEBUG(X)
+#endif /* PIKE_DEBUG */
 
-    no_assign=0;
-    field_length=-1;
-    minus_flag=0;
-
-    cnt++;
-    if(cnt>=match_len)
-      error("Error in sscanf format string.\n");
-
-    while(1)
-    {
-      switch(match[cnt])
-      {
-	case '*':
-	  no_assign=1;
-	  cnt++;
-	  if(cnt>=match_len)
-	    error("Error in sscanf format string.\n");
-	  continue;
-
-	case '0': case '1': case '2': case '3': case '4':
-	case '5': case '6': case '7': case '8': case '9':
-	{
-	  char *t;
-	  field_length=STRTOL(match+cnt,&t,10);
-	  cnt=t-match;
-	  continue;
-	}
-
-        case '-':
-	  minus_flag=1;
-	  cnt++;
-	  continue;
-
-	case '{':
-	{
-	  ONERROR err;
-	  long tmp;
-	  for(e=cnt+1,tmp=1;tmp;e++)
-	  {
-	    if(!match[e])
-	    {
-	      error("Missing %%} in format string.\n");
-	      break;		/* UNREACHED */
-	    }
-	    if(match[e]=='%')
-	    {
-	      switch(match[e+1])
-	      {
-		case '%': e++; break;
-		case '}': tmp--; break;
-		case '{': tmp++; break;
-	      }
-	    }
-	  }
-	  sval.type=T_ARRAY;
-	  sval.u.array=allocate_array(0);
-	  SET_ONERROR(err, do_free_array, sval.u.array);
-
-	  while(input_len-eye)
-	  {
-	    int yes;
-	    struct svalue *save_sp=sp;
-	    really_low_sscanf(input+eye,
-			      input_len-eye,
-			      match+cnt+1,
-			      e-cnt-2,
-			      &tmp,
-			      &yes);
-	    if(yes && tmp)
-	    {
-	      f_aggregate(sp-save_sp);
-	      sval.u.array=append_array(sval.u.array,sp-1);
-	      pop_stack();
-	      eye+=tmp;
-	    }else{
-	      pop_n_elems(sp-save_sp);
-	      break;
-	    }
-	  }
-	  cnt=e;
-	  UNSET_ONERROR(err);
-	  break;
-	}
-
-	case 'c':
-	  if(field_length == -1) field_length = 1;
-	  if(eye+field_length > input_len)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  sval.type=T_INT;
-	  sval.subtype=NUMBER_NUMBER;
-	  sval.u.integer=0;
-	  if (minus_flag)
-	  {
-	     int x, pos=0;
-	     
-	     while(--field_length >= 0)
-	     {
-	       x = EXTRACT_UCHAR(input+eye);
-	       
 #ifdef AUTO_BIGNUM
-	       if(INT_TYPE_LSH_OVERFLOW(x, pos))
-	       {
-		 int lshfun, orfun;
-		 push_int(sval.u.integer);
-		 convert_stack_top_to_bignum();
-		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);
-		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);
-
-		 while(field_length-- >= 0)
-		 {
-		   push_int(EXTRACT_UCHAR(input+eye));
-		   convert_stack_top_to_bignum();
-		   push_int(pos);
-		   apply_low(sp[-2].u.object, lshfun, 1);
-		   stack_swap();
-		   pop_stack();
-		   apply_low(sp[-2].u.object, orfun, 1);
-		   stack_swap();
-		   pop_stack();
-		   pos+=8;
-		   eye++;
-		 }
-		 sval=*--sp;
-		 break;
-	       }
-	       else
+#define DO_IF_BIGNUM(X)		X
+#else /* !AUTO_BIGNUM */
+#define DO_IF_BIGNUM(X)
 #endif /* AUTO_BIGNUM */
-		 sval.u.integer|=x<<pos;
-	       
-		pos+=8;
-		eye++;
-	     }
-	  }
-	  else
-	     while(--field_length >= 0)
-	     {
-#ifdef AUTO_BIGNUM
-	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))
-	       {
-		 int lshfun, orfun;
-		 push_int(sval.u.integer);
-		 convert_stack_top_to_bignum();
-		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);
-		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);
-		 
-		 while(field_length-- >= 0)
-		 {
-		   push_int(8);
-		   apply_low(sp[-2].u.object, lshfun, 1);
-		   stack_swap();
-		   pop_stack();
-		   push_int(EXTRACT_UCHAR(input+eye));
-		   apply_low(sp[-2].u.object, orfun, 1);
-		   stack_swap();
-		   pop_stack();
-		   eye++;
-		 }
-		 sval=*--sp;
-		 break;
-	       }
-	       else
-#endif /* AUTO_BIGNUM */
-		 sval.u.integer<<=8;
-	       sval.u.integer|=EXTRACT_UCHAR(input+eye);
-	       eye++;
-	     }
-	  break;
 
-        case 'b':
-        case 'o':
-        case 'd':
-        case 'x':
-        case 'D':
-        case 'i':
-	{
-	  char * t;
-	  int base = 0;
-
-	  if(eye>=input_len)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-
-	  switch(match[cnt])
-	  {
-	  case 'b': base =  2; break;
-	  case 'o': base =  8; break;
-	  case 'd': base = 10; break;
-	  case 'x': base = 16; break;
-	  }
-	  
-	  string_to_svalue_inumber(&sval, input+eye, &t, base, field_length);
-
-	  if(input + eye == t)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  eye=t-input;
-	  break;
-	}
-
-	case 'f':
-	{
-	  char * t;
-
-	  if(eye>=input_len)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  sval.u.float_number=STRTOD(input+eye,&t);
-	  if(input + eye == t)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  eye=t-input;
-	  sval.type=T_FLOAT;
 #ifdef __CHECKER__
-	  sval.subtype=0;
-#endif
-	  break;
-	}
+#define DO_IF_CHECKER(X)	X
+#else /* !__CHECKER__ */
+#define DO_IF_CHECKER(X)
+#endif /* __CHECKER__ */
 
-	case 'F':
-	  if(field_length == -1) field_length = 4;
-	  if(field_length != 4 && field_length != 8)
-	    error("Invalid IEEE width %d in sscanf format string.\n",
-		  field_length);
-	  if(eye+field_length > input_len)
-	  {
-	    chars_matched[0]=eye;
-	    return matches;
-	  }
-	  sval.type=T_FLOAT;
-#ifdef __CHECKER__
-	  sval.subtype=0;
-#endif
-	  switch(field_length) {
-	    case 4:
 #ifdef FLOAT_IS_IEEE_BIG
-	    {
-	      float f;
-	      ((char *)&f)[0] = *(input+eye);
-	      ((char *)&f)[1] = *(input+eye+1);
-	      ((char *)&f)[2] = *(input+eye+2);
-	      ((char *)&f)[3] = *(input+eye+3);
-	      sval.u.float_number = f;
+#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
+	    {						\
+	      float f;					\
+	      ((char *)&f)[0] = *((INPUT));		\
+	      ((char *)&f)[1] = *((INPUT)+1);		\
+	      ((char *)&f)[2] = *((INPUT)+2);		\
+	      ((char *)&f)[3] = *((INPUT)+3);		\
+	      (SVAL).u.float_number = f;		\
 	    }
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
-	    {
-	      float f;
-	      ((char *)&f)[3] = *(input+eye);
-	      ((char *)&f)[2] = *(input+eye+1);
-	      ((char *)&f)[1] = *(input+eye+2);
-	      ((char *)&f)[0] = *(input+eye+3);
-	      sval.u.float_number = f;
+#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)		\
+	    {						\
+	      float f;					\
+	      ((char *)&f)[3] = *((INPUT));		\
+	      ((char *)&f)[2] = *((INPUT)+1);		\
+	      ((char *)&f)[1] = *((INPUT)+2);		\
+	      ((char *)&f)[0] = *((INPUT)+3);		\
+	      (SVAL).u.float_number = f;		\
 	    }
 #else
-	    sval.u.float_number = low_parse_IEEE_float(input+eye, 4);
+#define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)				\
+	    /* FIXME! */						\
+	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 4);
 #endif
 #endif
-	    eye += 4;
-	    break;
-	    case 8:
+
 #ifdef DOUBLE_IS_IEEE_BIG
-	    {
-	      double d;
-	      ((char *)&d)[0] = *(input+eye);
-	      ((char *)&d)[1] = *(input+eye+1);
-	      ((char *)&d)[2] = *(input+eye+2);
-	      ((char *)&d)[3] = *(input+eye+3);
-	      ((char *)&d)[4] = *(input+eye+4);
-	      ((char *)&d)[5] = *(input+eye+5);
-	      ((char *)&d)[6] = *(input+eye+6);
-	      ((char *)&d)[7] = *(input+eye+7);
-	      sval.u.float_number = (float)d;
+#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
+	    {						\
+	      double d;					\
+	      ((char *)&d)[0] = *((INPUT));		\
+	      ((char *)&d)[1] = *((INPUT)+1);		\
+	      ((char *)&d)[2] = *((INPUT)+2);		\
+	      ((char *)&d)[3] = *((INPUT)+3);		\
+	      ((char *)&d)[4] = *((INPUT)+4);		\
+	      ((char *)&d)[5] = *((INPUT)+5);		\
+	      ((char *)&d)[6] = *((INPUT)+6);		\
+	      ((char *)&d)[7] = *((INPUT)+7);		\
+	      (SVAL).u.float_number = (float)d;		\
 	    }
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
-	    {
-	      double d;
-	      ((char *)&d)[7] = *(input+eye);
-	      ((char *)&d)[6] = *(input+eye+1);
-	      ((char *)&d)[5] = *(input+eye+2);
-	      ((char *)&d)[4] = *(input+eye+3);
-	      ((char *)&d)[3] = *(input+eye+4);
-	      ((char *)&d)[2] = *(input+eye+5);
-	      ((char *)&d)[1] = *(input+eye+6);
-	      ((char *)&d)[0] = *(input+eye+7);
-	      sval.u.float_number = (float)d;
+#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)		\
+	    {						\
+	      double d;					\
+	      ((char *)&d)[7] = *((INPUT));		\
+	      ((char *)&d)[6] = *((INPUT)+1);		\
+	      ((char *)&d)[5] = *((INPUT)+2);		\
+	      ((char *)&d)[4] = *((INPUT)+3);		\
+	      ((char *)&d)[3] = *((INPUT)+4);		\
+	      ((char *)&d)[2] = *((INPUT)+5);		\
+	      ((char *)&d)[1] = *((INPUT)+6);		\
+	      ((char *)&d)[0] = *((INPUT)+7);		\
+	      (SVAL).u.float_number = (float)d;		\
 	    }
 #else
-	    sval.u.float_number = low_parse_IEEE_float(input+eye, 8);
+#define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)				\
+	    /* FIXME! */						\
+	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 8);
 #endif
 #endif
-	    eye += 8;
-	    break;
-	  }
-	  break;
 
-	case 's':
-	  if(field_length != -1)
-	  {
-	    if(input_len - eye < field_length)
-	    {
-	      chars_matched[0]=eye;
-	      return matches;
-	    }
+#define make_shared_binary_string0(X,Y) make_shared_binary_string(X,Y)
 
-	    sval.type=T_STRING;
-#ifdef __CHECKER__
-	    sval.subtype=0;
-#endif
-	    sval.u.string=make_shared_binary_string(input+eye,field_length);
-	    eye+=field_length;
-	    break;
-	  }
-
-	  if(cnt+1>=match_len)
-	  {
-	    sval.type=T_STRING;
-#ifdef __CHECKER__
-	    sval.subtype=0;
-#endif
-	    sval.u.string=make_shared_binary_string(input+eye,input_len-eye);
-	    eye=input_len;
-	    break;
-	  }else{
-	    char *end_str_start;
-	    char *end_str_end;
-	    char *s=0;		/* make gcc happy */
-	    char *p=0;		/* make gcc happy */
-	    int start,contains_percent_percent, new_eye;
-
-	    start=eye;
-	    end_str_start=match+cnt+1;
-          
-	    s=match+cnt+1;
-      test_again:
-	    if(*s=='%')
-	    {
-	      s++;
-	      if(*s=='*') s++;
-	      switch(*s)
-	      {
-		case 'n':
-		  s++;
-		  goto test_again;
-	      
-		case 's':
-		  error("Illegal to have two adjecent %%s.\n");
-		  return 0;		/* make gcc happy */
-	      
-		  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */
-		case 'd':
-		  for(e=0;e<256;e++) set[e]=1;
-		  for(e='0';e<='9';e++) set[e]=0;
-		  set['-']=0;
-		  goto match_set;
-
-		case 'o':
-		  for(e=0;e<256;e++) set[e]=1;
-		  for(e='0';e<='7';e++) set[e]=0;
-		  goto match_set;
-
-		case 'x':
-		  for(e=0;e<256;e++) set[e]=1;
-		  for(e='0';e<='9';e++) set[e]=0;
-		  for(e='a';e<='f';e++) set[e]=0;
-		  goto match_set;
-
-		case 'D':
-		  for(e=0;e<256;e++) set[e]=1;
-		  for(e='0';e<='9';e++) set[e]=0;
-		  set['-']=0;
-		  set['x']=0;
-		  goto match_set;
-
-		case 'f':
-		  for(e=0;e<256;e++) set[e]=1;
-		  for(e='0';e<='9';e++) set[e]=0;
-		  set['.']=set['-']=0;
-		  goto match_set;
-
-		case '[':		/* oh dear */
-		  read_set((unsigned char *)match,s-match+1,set,match_len);
-		  for(e=0;e<256;e++) set[e]=!set[e];
-		  goto match_set;
-	      }
-	    }
-
-	    contains_percent_percent=0;
-
-	    for(e=cnt;e<match_len;e++)
-	    {
-	      if(match[e]=='%')
-	      {
-		if(match[e+1]=='%')
-		{
-		  contains_percent_percent=1;
-		  e++;
-		}else{
-		  break;
-		}
-	      }
-	    }
-	   
-	    end_str_end=match+e;
-
-	    if(!contains_percent_percent)
-	    {
-	      s=my_memmem(end_str_start,
-			  end_str_end-end_str_start,
-			  input+eye,
-			  input_len-eye);
-	      if(!s)
-	      {
-		chars_matched[0]=eye;
-		return matches;
-	      }
-	      eye=s-input;
-	      new_eye=eye+end_str_end-end_str_start;
-	    }else{
-	      for(;eye<input_len;eye++)
-	      {
-		p=input+eye;
-		for(s=end_str_start;s<end_str_end;s++,p++)
-		{
-		  if(*s!=*p) break;
-		  if(*s=='%') s++;
-		}
-		if(s==end_str_end)
-		  break;
-	      }
-	      if(eye==input_len)
-	      {
-		chars_matched[0]=eye;
-		return matches;
-	      }
-	      new_eye=p-input;
-	    }
-
-	    sval.type=T_STRING;
-#ifdef __CHECKER__
-	    sval.subtype=0;
-#endif
-	    sval.u.string=make_shared_binary_string(input+start,eye-start);
-
-	    cnt=end_str_end-match-1;
-	    eye=new_eye;
-	    break;
-	  }
-
-	case '[':
-	  cnt=read_set((unsigned char *)match,cnt+1,set,match_len);
-
-  match_set:
-	  for(e=eye;eye<input_len && set[EXTRACT_UCHAR(input+eye)];eye++);
-	  sval.type=T_STRING;
-#ifdef __CHECKER__
-	  sval.subtype=0;
-#endif
-	  sval.u.string=make_shared_binary_string(input+e,eye-e);
-	  break;
-
-	case 'n':
-	  sval.type=T_INT;
-	  sval.subtype=NUMBER_NUMBER;
-	  sval.u.integer=eye;
-	  break;
-    
-	default:
-	  error("Unknown sscanf token %%%c\n",match[cnt]);
-      }
-      break;
-    }
-    matches++;
-
-    if(no_assign)
-    {
-      free_svalue(&sval);
-    }else{
-      check_stack(1);
-      *sp++=sval;
-#ifdef PIKE_DEBUG
-      sval.type=99;
-#endif
-    }
-  }
-  chars_matched[0]=eye;
-  success[0]=1;
-  return matches;
+#define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			\
+static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	\
+                         PIKE_CONCAT(p_wchar, INPUT_SHIFT) *input,	\
+			 long input_len,				\
+			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	\
+			 long match_len,				\
+			 long *chars_matched,				\
+			 int *success)					\
+{									\
+  struct svalue sval;							\
+  int e,cnt,matches,eye,arg;						\
+  int no_assign = 0, field_length = 0, minus_flag = 0;			\
+  char set[256];							\
+  struct svalue *argp;							\
+  									\
+  success[0]=0;								\
+									\
+  arg=eye=matches=0;							\
+									\
+  for(cnt = 0; cnt < match_len; cnt++)					\
+  {									\
+    for(;cnt<match_len;cnt++)						\
+    {									\
+      if(match[cnt]=='%')						\
+      {									\
+        if(match[cnt+1]=='%')						\
+        {								\
+          cnt++;							\
+        }else{								\
+          break;							\
+        }								\
+      }									\
+      if(eye>=input_len || input[eye]!=match[cnt])			\
+      {									\
+	chars_matched[0]=eye;						\
+	return matches;							\
+      }									\
+      eye++;								\
+    }									\
+    if(cnt>=match_len)							\
+    {									\
+      chars_matched[0]=eye;						\
+      return matches;							\
+    }									\
+									\
+    DO_IF_DEBUG(							\
+    if(match[cnt]!='%' || match[cnt+1]=='%')				\
+    {									\
+      fatal("Error in sscanf.\n");					\
+    }									\
+    );									\
+									\
+    no_assign=0;							\
+    field_length=-1;							\
+    minus_flag=0;							\
+									\
+    cnt++;								\
+    if(cnt>=match_len)							\
+      error("Error in sscanf format string.\n");			\
+									\
+    while(1)								\
+    {									\
+      switch(match[cnt])						\
+      {									\
+	case '*':							\
+	  no_assign=1;							\
+	  cnt++;							\
+	  if(cnt>=match_len)						\
+	    error("Error in sscanf format string.\n");			\
+	  continue;							\
+									\
+	case '0': case '1': case '2': case '3': case '4':		\
+	case '5': case '6': case '7': case '8': case '9':		\
+	{								\
+	  PCHARP t;							\
+	  field_length = STRTOL_PCHARP(MKPCHARP(match+cnt, MATCH_SHIFT),\
+				       &t,10);				\
+	  cnt = SUBTRACT_PCHARP(t, MKPCHARP(match, MATCH_SHIFT));	\
+	  continue;							\
+	}								\
+									\
+        case '-':							\
+	  minus_flag=1;							\
+	  cnt++;							\
+	  continue;							\
+									\
+	case '{':							\
+	{								\
+	  ONERROR err;							\
+	  long tmp;							\
+	  for(e=cnt+1,tmp=1;tmp;e++)					\
+	  {								\
+	    if(!match[e])						\
+	    {								\
+	      error("Missing %%} in format string.\n");			\
+	      break;		/* UNREACHED */				\
+	    }								\
+	    if(match[e]=='%')						\
+	    {								\
+	      switch(match[e+1])					\
+	      {								\
+		case '%': e++; break;					\
+		case '}': tmp--; break;					\
+		case '{': tmp++; break;					\
+	      }								\
+	    }								\
+	  }								\
+	  sval.type=T_ARRAY;						\
+	  sval.u.array=allocate_array(0);				\
+	  SET_ONERROR(err, do_free_array, sval.u.array);		\
+									\
+	  while(input_len-eye)						\
+	  {								\
+	    int yes;							\
+	    struct svalue *save_sp=sp;					\
+	    PIKE_CONCAT4(very_low_sscanf_, INPUT_SHIFT, _, MATCH_SHIFT)(\
+                         input+eye,					\
+			 input_len-eye,					\
+			 match+cnt+1,					\
+			 e-cnt-2,					\
+			 &tmp,						\
+			 &yes);						\
+	    if(yes && tmp)						\
+	    {								\
+	      f_aggregate(sp-save_sp);					\
+	      sval.u.array=append_array(sval.u.array,sp-1);		\
+	      pop_stack();						\
+	      eye+=tmp;							\
+	    }else{							\
+	      pop_n_elems(sp-save_sp);					\
+	      break;							\
+	    }								\
+	  }								\
+	  cnt=e;							\
+	  UNSET_ONERROR(err);						\
+	  break;							\
+	}								\
+									\
+	case 'c':							\
+	  if(field_length == -1) field_length = 1;			\
+	  if(eye+field_length > input_len)				\
+	  {								\
+	    chars_matched[0]=eye;					\
+	    return matches;						\
+	  }								\
+	  sval.type=T_INT;						\
+	  sval.subtype=NUMBER_NUMBER;					\
+	  sval.u.integer=0;						\
+	  if (minus_flag)						\
+	  {								\
+	     int x, pos=0;						\
+	     								\
+	     while(--field_length >= 0)					\
+	     {								\
+	       int lshfun, orfun;					\
+	       x = input[eye];						\
+	       								\
+               DO_IF_BIGNUM(						\
+	       if(INT_TYPE_LSH_OVERFLOW(x, pos))			\
+	       {							\
+		 push_int(sval.u.integer);				\
+		 convert_stack_top_to_bignum();				\
+		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	\
+		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	\
+									\
+		 while(field_length-- >= 0)				\
+		 {							\
+		   push_int(input[eye]);				\
+		   convert_stack_top_to_bignum();			\
+		   push_int(pos);					\
+		   apply_low(sp[-2].u.object, lshfun, 1);		\
+		   stack_swap();					\
+		   pop_stack();						\
+		   apply_low(sp[-2].u.object, orfun, 1);		\
+		   stack_swap();					\
+		   pop_stack();						\
+		   pos+=8;						\
+		   eye++;						\
+		 }							\
+		 sval=*--sp;						\
+		 break;							\
+	       }							\
+               );							\
+	       sval.u.integer|=x<<pos;					\
+	       								\
+	       pos+=8;							\
+	       eye++;							\
+	     }								\
+	  }								\
+	  else								\
+	     while(--field_length >= 0)					\
+	     {								\
+	       int lshfun, orfun;					\
+               DO_IF_BIGNUM(						\
+	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		\
+	       {							\
+		 push_int(sval.u.integer);				\
+		 convert_stack_top_to_bignum();				\
+		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	\
+		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	\
+		 							\
+		 while(field_length-- >= 0)				\
+		 {							\
+		   push_int(8);						\
+		   apply_low(sp[-2].u.object, lshfun, 1);		\
+		   stack_swap();					\
+		   pop_stack();						\
+		   push_int(input[eye]);				\
+		   apply_low(sp[-2].u.object, orfun, 1);		\
+		   stack_swap();					\
+		   pop_stack();						\
+		   eye++;						\
+		 }							\
+		 sval=*--sp;						\
+		 break;							\
+	       }							\
+	       );							\
+	       sval.u.integer<<=8;					\
+	       sval.u.integer |= input[eye];				\
+	       eye++;							\
+	     }								\
+	  break;							\
+									\
+        case 'b':							\
+        case 'o':							\
+        case 'd':							\
+        case 'x':							\
+        case 'D':							\
+        case 'i':							\
+	{								\
+	  int base = 0;							\
+	  PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;				\
+									\
+	  if(eye>=input_len)						\
+	  {								\
+	    chars_matched[0]=eye;					\
+	    return matches;						\
+	  }								\
+									\
+	  switch(match[cnt])						\
+	  {								\
+	  case 'b': base =  2; break;					\
+	  case 'o': base =  8; break;					\
+	  case 'd': base = 10; break;					\
+	  case 'x': base = 16; break;					\
+	  }								\
+	  								\
+	  /* FIXME! */							\
+	  string_to_svalue_inumber(&sval, input+eye, &t,		\
+				   base, field_length);			\
+									\
+	  if(input + eye == t)						\
+	  {								\
+	    chars_matched[0]=eye;					\
+	    return matches;						\
+	  }								\
+	  eye=t-input;							\
+	  break;							\
+	}								\
+									\
+        case 'f':			       				\
+	{								\
+	  PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;				\
+									\
+	  if(eye>=input_len)						\
+	  {								\
+	    chars_matched[0]=eye;					\
+	    return matches;						\
+	  }								\
+	  /* FIXME! */							\
+	  sval.u.float_number=STRTOD(input+eye,&t);			\
+	  if(input + eye == t)						\
+	  {								\
+	    chars_matched[0]=eye;					\
+	    return matches;						\
+	  }								\
+	  eye=t-input;							\
+	  sval.type=T_FLOAT;						\
+	  DO_IF_CHECKER(sval.subtype=0);				\
+	  break;							\
+	}								\
+									\
+	case 'F':							\
+	  if(field_length == -1) field_length = 4;			\
+	  if(field_length != 4 && field_length != 8)			\
+	    error("Invalid IEEE width %d in sscanf format string.\n",	\
+		  field_length);					\
+	  if(eye+field_length > input_len)				\
+	  {								\
+	    chars_matched[0]=eye;					\
+	    return matches;						\
+	  }								\
+	  sval.type=T_FLOAT;						\
+	  DO_IF_CHECKER(sval.subtype=0);				\
+	  switch(field_length) {					\
+	    case 4:							\
+	      EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT);		\
+	      eye += 4;							\
+	      break;							\
+	    case 8:							\
+	      EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT);		\
+	      eye += 8;							\
+	      break;							\
+	  }								\
+	  break;							\
+									\
+	case 's':							\
+	  if(field_length != -1)					\
+	  {								\
+	    if(input_len - eye < field_length)				\
+	    {								\
+	      chars_matched[0]=eye;					\
+	      return matches;						\
+	    }								\
+									\
+	    sval.type=T_STRING;						\
+	    DO_IF_CHECKER(sval.subtype=0);				\
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
+                                      INPUT_SHIFT)(input+eye,		\
+						   field_length);	\
+	    eye+=field_length;						\
+	    break;							\
+	  }								\
+									\
+	  if(cnt+1>=match_len)						\
+	  {								\
+	    sval.type=T_STRING;						\
+	    DO_IF_CHECKER(sval.subtype=0);				\
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
+				      INPUT_SHIFT)(input+eye,		\
+						   input_len-eye);	\
+	    eye=input_len;						\
+	    break;							\
+	  }else{							\
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_start;		\
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_end;		\
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *s=0;			\
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *p=0;			\
+	    int start,contains_percent_percent, new_eye;		\
+									\
+	    start=eye;							\
+	    end_str_start=match+cnt+1;					\
+          								\
+	    s=match+cnt+1;						\
+      test_again:							\
+	    if(*s=='%')							\
+	    {								\
+	      s++;							\
+	      if(*s=='*') s++;						\
+	      switch(*s)						\
+	      {								\
+		case 'n':						\
+		  s++;							\
+	          goto test_again;					\
+	      								\
+		case 's':						\
+		  error("Illegal to have two adjecent %%s.\n");		\
+		  return 0;		/* make gcc happy */		\
+	      								\
+	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	\
+		case 'd':						\
+		  for(e=0;e<256;e++) set[e]=1;				\
+		  for(e='0';e<='9';e++) set[e]=0;			\
+		  set['-']=0;						\
+		  goto match_set;					\
+									\
+		case 'o':						\
+		  for(e=0;e<256;e++) set[e]=1;				\
+		  for(e='0';e<='7';e++) set[e]=0;			\
+		  goto match_set;					\
+									\
+		case 'x':						\
+		  for(e=0;e<256;e++) set[e]=1;				\
+		  for(e='0';e<='9';e++) set[e]=0;			\
+		  for(e='a';e<='f';e++) set[e]=0;			\
+		  goto match_set;					\
+									\
+		case 'D':						\
+		  for(e=0;e<256;e++) set[e]=1;				\
+		  for(e='0';e<='9';e++) set[e]=0;			\
+		  set['-']=0;						\
+		  set['x']=0;						\
+		  goto match_set;					\
+									\
+		case 'f':						\
+		  for(e=0;e<256;e++) set[e]=1;				\
+		  for(e='0';e<='9';e++) set[e]=0;			\
+		  set['.']=set['-']=0;					\
+		  goto match_set;					\
+									\
+		case '[':		/* oh dear */			\
+		  /* FIXME! */						\
+		  read_set(match,s-match+1,set,match_len);		\
+		  for(e=0;e<256;e++) set[e]=!set[e];			\
+		  goto match_set;					\
+	      }								\
+	    }								\
+									\
+	    contains_percent_percent=0;					\
+									\
+	    for(e=cnt;e<match_len;e++)					\
+	    {								\
+	      if(match[e]=='%')						\
+	      {								\
+		if(match[e+1]=='%')					\
+		{							\
+		  contains_percent_percent=1;				\
+		  e++;							\
+		}else{							\
+		  break;						\
+		}							\
+	      }								\
+	    }								\
+	   								\
+	    end_str_end=match+e;					\
+									\
+	    if(!contains_percent_percent)				\
+	    {								\
+	      /* FIXME! */						\
+	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			\
+      	      s2=my_memmem(end_str_start,				\
+			   end_str_end-end_str_start,			\
+			   input+eye,					\
+			   input_len-eye);				\
+	      if(!s2)							\
+	      {								\
+		chars_matched[0]=eye;					\
+		return matches;						\
+	      }								\
+	      eye=s2-input;						\
+	      new_eye=eye+end_str_end-end_str_start;			\
+	    }else{							\
+	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *p2 = NULL;		\
+	      for(;eye<input_len;eye++)					\
+	      {								\
+		p2=input+eye;						\
+		for(s=end_str_start;s<end_str_end;s++,p2++)		\
+		{							\
+		  if(*s!=*p2) break;					\
+		  if(*s=='%') s++;					\
+		}							\
+		if(s==end_str_end)					\
+		  break;						\
+	      }								\
+	      if(eye==input_len)					\
+	      {								\
+		chars_matched[0]=eye;					\
+		return matches;						\
+	      }								\
+	      new_eye=p2-input;						\
+	    }								\
+									\
+	    sval.type=T_STRING;						\
+	    DO_IF_CHECKER(sval.subtype=0);				\
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
+				      INPUT_SHIFT)(input+start,		\
+						   eye-start);		\
+									\
+	    cnt=end_str_end-match-1;					\
+	    eye=new_eye;						\
+	    break;							\
+	  }								\
+									\
+	case '[':							\
+	  /* FIXME! */							\
+	  cnt=read_set(match,cnt+1,set,match_len);			\
+									\
+  match_set:								\
+	  /* FIXME! */							\
+	  for(e=eye;eye<input_len && !(input[eye]&~0xff) &&		\
+		    set[input[eye]];eye++);				\
+	  sval.type=T_STRING;						\
+	  DO_IF_CHECKER(sval.subtype=0);				\
+	  sval.u.string=make_shared_binary_string(input+e,eye-e);	\
+	  break;							\
+									\
+	case 'n':							\
+	  sval.type=T_INT;						\
+	  sval.subtype=NUMBER_NUMBER;					\
+	  sval.u.integer=eye;						\
+	  break;							\
+    									\
+	default:							\
+	  error("Unknown sscanf token %%%c(0x%02x)\n",			\
+		match[cnt], match[cnt]);				\
+      }									\
+      break;								\
+    }									\
+    matches++;								\
+									\
+    if(no_assign)							\
+    {									\
+      free_svalue(&sval);						\
+    }else{								\
+      check_stack(1);							\
+      *sp++=sval;							\
+      DO_IF_DEBUG(sval.type=99);					\
+    }									\
+  }									\
+  chars_matched[0]=eye;							\
+  success[0]=1;								\
+  return matches;							\
 }
+
+MK_VERY_LOW_SSCANF(0,0)
+MK_VERY_LOW_SSCANF(0,1)
+MK_VERY_LOW_SSCANF(0,2)
+MK_VERY_LOW_SSCANF(1,0)
+MK_VERY_LOW_SSCANF(1,1)
+MK_VERY_LOW_SSCANF(1,2)
+MK_VERY_LOW_SSCANF(2,0)
+MK_VERY_LOW_SSCANF(2,1)
+MK_VERY_LOW_SSCANF(2,2)
 
 void o_sscanf(INT32 args)
 {
@@ -1329,12 +1376,94 @@ void o_sscanf(INT32 args)
   if(sp[1-args].type != T_STRING)
     error("Bad argument 1 to sscanf().\n");
 
-  i=really_low_sscanf(sp[-args].u.string->str,
-		      sp[-args].u.string->len,
-		      sp[1-args].u.string->str,
-		      sp[1-args].u.string->len,
-		      &matched_chars,
-		      &x);
+  switch(sp[-args].u.string->size_shift*3 + sp[1-args].u.string->size_shift) {
+    /* input_shift : match_shift */
+  case 0:
+    /*      0      :      0 */
+    i=very_low_sscanf_0_0(STR0(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR0(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 1:
+    /*      0      :      1 */
+    i=very_low_sscanf_0_1(STR0(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR1(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 2:
+    /*      0      :      2 */
+    i=very_low_sscanf_0_2(STR0(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR2(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 3:
+    /*      1      :      0 */
+    i=very_low_sscanf_1_0(STR1(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR0(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 4:
+    /*      1      :      1 */
+    i=very_low_sscanf_1_1(STR1(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR1(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 5:
+    /*      1      :      2 */
+    i=very_low_sscanf_1_2(STR1(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR2(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 6:
+    /*      2      :      0 */
+    i=very_low_sscanf_2_0(STR2(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR0(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 7:
+    /*      2      :      1 */
+    i=very_low_sscanf_2_1(STR2(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR1(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 8:
+    /*      2      :      2 */
+    i=very_low_sscanf_2_2(STR2(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR2(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  default:
+    error("Unsupported shift-combination to sscanf(): %d:%d\n",
+	  sp[-args].u.string->size_shift, sp[1-args].u.string->size_shift);
+    break;
+  }
 
   if(sp-save_sp > args/2-1)
     error("Too few arguments for sscanf format.\n");
@@ -1371,12 +1500,94 @@ void f_sscanf(INT32 args)
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  i=really_low_sscanf(sp[-args].u.string->str,
-		      sp[-args].u.string->len,
-		      sp[1-args].u.string->str,
-		      sp[1-args].u.string->len,
-		      &matched_chars,
-		      &x);
+  switch(sp[-args].u.string->size_shift*3 + sp[1-args].u.string->size_shift) {
+    /* input_shift : match_shift */
+  case 0:
+    /*      0      :      0 */
+    i=very_low_sscanf_0_0(STR0(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR0(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 1:
+    /*      0      :      1 */
+    i=very_low_sscanf_0_1(STR0(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR1(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 2:
+    /*      0      :      2 */
+    i=very_low_sscanf_0_2(STR0(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR2(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 3:
+    /*      1      :      0 */
+    i=very_low_sscanf_1_0(STR1(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR0(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 4:
+    /*      1      :      1 */
+    i=very_low_sscanf_1_1(STR1(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR1(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 5:
+    /*      1      :      2 */
+    i=very_low_sscanf_1_2(STR1(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR2(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 6:
+    /*      2      :      0 */
+    i=very_low_sscanf_2_0(STR2(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR0(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 7:
+    /*      2      :      1 */
+    i=very_low_sscanf_2_1(STR2(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR1(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  case 8:
+    /*      2      :      2 */
+    i=very_low_sscanf_2_2(STR2(sp[-args].u.string),
+			  sp[-args].u.string->len,
+			  STR2(sp[1-args].u.string),
+			  sp[1-args].u.string->len,
+			  &matched_chars,
+			  &x);
+    break;
+  default:
+    error("Unsupported shift-combination to sscanf(): %d:%d\n",
+	  sp[-args].u.string->size_shift, sp[1-args].u.string->size_shift);
+    break;
+  }
 
   a=aggregate_array(sp-save_sp);
   pop_n_elems(args);
