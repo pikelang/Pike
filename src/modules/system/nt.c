@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.46 2001/10/04 14:21:24 nilsson Exp $
+ * $Id: nt.c,v 1.47 2001/10/05 13:17:11 tomas Exp $
  *
  * NT system calls for Pike
  *
@@ -2480,7 +2480,7 @@ static void f_normalize_path(INT32 args)
      * well as removing all trailing slashes (even for files), but it
      * has the benefit that we don't get the cwd when the input is
      * e.g. "c:\\". */
-    file = xalloc(str->len + 1);
+    file = xalloc(str->len + 2);
     MEMCPY(file, str->str, str->len);
     file[str->len] = '.';
     file[str->len + 1] = 0;
