@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.59 2004/03/09 02:29:49 nilsson Exp $ */
+/* $Id: export.pike,v 1.60 2004/03/12 11:19:35 grubba Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -159,6 +159,7 @@ int main(int argc, array(string) argv)
   string export_list, filename;
   object cvs;
   int tag, snapshot, t;
+  int snapshot;
 
   foreach(Getopt.find_all_options(argv, ({
     ({ "srcdir",    Getopt.HAS_ARG, "--srcdir"     }),
@@ -169,6 +170,7 @@ int main(int argc, array(string) argv)
     ({ "filename",  Getopt.HAS_ARG, "--name"       }),
     ({ "force",     Getopt.NO_ARG,  "--force"      }),
     ({ "timestamp", Getopt.HAS_ARG, "--timestamp"  }),
+    ({ "snapshot",  Getopt.NO_ARG,  "--snapshot"   }),
   }) ),array opt)
     {
       switch(opt[0])
@@ -209,6 +211,10 @@ int main(int argc, array(string) argv)
         case "timestamp":
 	  t=(int)opt[1];
 	  break;
+
+	case "snapshot":
+	  snapshot=1;
+	  break,
       }
     }
 
@@ -260,7 +266,13 @@ int main(int argc, array(string) argv)
     "%t":(string)t,
   ]);
 
-  vpath=replace(filename,symbols);
+  filename = replace(filename,symbols);
+
+  if (snapshot) {
+    vpath = sprintf("Pike-v%d.%d-snapshot", @version);
+  } else {
+    vpath = filename;
+  }
 
   fix_configure(pike_base_name+"/src");
 
@@ -278,7 +290,7 @@ int main(int argc, array(string) argv)
   Stdio.write_file("buildid.txt", replace(stamp, symbols));
   files += ({ vpath+"/buildid.txt" });
 
-  werror("Creating "+vpath+".tar.gz:\n");
+  werror("Creating "+filename+".tar.gz:\n");
 
   int first = 1;
   foreach(files/25.0, files)
@@ -286,7 +298,7 @@ int main(int argc, array(string) argv)
       if(Process.create_process
 	 ( ({"tar",
 	     first?"cvf":"rvf",
-	     pike_base_name+"/"+vpath+".tar" }) +
+	     pike_base_name+"/"+filename+".tar" }) +
 	   files)->wait())
       {
 	werror("Tar file creation failed!\n");
@@ -307,12 +319,12 @@ int main(int argc, array(string) argv)
     mkdir(vpath+"/refdoc");
     Stdio.cp(build+"/autodoc.xml", vpath+"/refdoc/autodoc.xml");
     if(Process.create_process
-       ( ({"tar", "rvf", pike_base_name+"/"+vpath+".tar",
+       ( ({"tar", "rvf", pike_base_name+"/"+filename+".tar",
 	   vpath+"/refdoc/autodoc.xml" }) )->wait())
       {
 	werror("Tar file creation failed!\n");
 	if(cvs) cvs->wait();
-	rm(vpath);
+	Stdio.recursive_rm(vpath);
 	exit(1);
       }
     Stdio.recursive_rm(vpath);
@@ -321,20 +333,18 @@ int main(int argc, array(string) argv)
   if(Process.create_process
      ( ({"gzip",
 	 "-9",
-	 pike_base_name+"/"+vpath+".tar"
+	 pike_base_name+"/"+filename+".tar"
      }) )->wait())
     {
       werror("Gzip failed!\n");
       if(cvs) cvs->wait();
-      rm(vpath);
       exit(1);
     }
 
-  rm(vpath);
   rm("buildid.txt");
   werror("Done.\n");
 
-  if(cvs && tag)
+  if(cvs)
   {
     cvs->wait();
     bump_version();
@@ -366,5 +376,9 @@ Optional arguments:
 --tag	Bump the Pike build version and tag the CVS tree.
 --force
 	Force export, ignore missing files.
+--snapshot
+	Use the generic name \"Pike-%maj.%min-snapshot\" for the
+	base directory, instead of the same as the one specified
+	with --name.
 --help  Show this text.
 ";
