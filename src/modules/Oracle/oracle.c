@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.17 1999/06/19 20:25:09 hubbe Exp $
+ * $Id: oracle.c,v 1.18 1999/11/05 23:43:28 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -36,7 +36,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.17 1999/06/19 20:25:09 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.18 1999/11/05 23:43:28 marcus Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -69,7 +69,7 @@ struct dbresult {
 };
 
 
-static void error_handler(struct dbcon *dbcon, sword rc)
+static void ora_error_handler(struct dbcon *dbcon, sword rc)
 {
   static text msgbuf[512];
   oerhms(&dbcon->lda, rc, msgbuf, sizeof(msgbuf));
@@ -147,7 +147,7 @@ static void f_num_fields(INT32 args)
     THREADS_DISALLOW();    
 
     if(r->cda->rc != 1007)
-      error_handler(r->dbcon, r->cda->rc);
+      ora_error_handler(r->dbcon, r->cda->rc);
 
     THIS->cols = i-1;
   }
@@ -191,7 +191,7 @@ static void f_fetch_fields(INT32 args)
       if(r->cda->rc == 1007)
 	break;
       free(nambuf);
-      error_handler(r->dbcon, r->cda->rc);
+      ora_error_handler(r->dbcon, r->cda->rc);
     }
 
     push_text("name");
@@ -278,7 +278,7 @@ static void f_fetch_row(INT32 args)
 	slots=s->next;
 	free(s);
       }
-      error_handler(r->dbcon, r->cda->rc);
+      ora_error_handler(r->dbcon, r->cda->rc);
     }
     
     s = (struct fetchslot *)xalloc(sizeof(struct fetchslot)+dsiz+4);
@@ -304,7 +304,7 @@ static void f_fetch_row(INT32 args)
 	slots=s->next;
 	free(s);
       }
-      error_handler(r->dbcon, r->cda->rc);
+      ora_error_handler(r->dbcon, r->cda->rc);
     }
   }
 
@@ -333,7 +333,7 @@ static void f_fetch_row(INT32 args)
     if(r->cda->rc == 1403) {
       push_int(0);
       return;
-    } else error_handler(r->dbcon, r->cda->rc);
+    } else ora_error_handler(r->dbcon, r->cda->rc);
   }
 
   for(s=slots, i=0; i<r->cols; i++) {
@@ -405,7 +405,7 @@ static struct dbcurs *make_cda(struct dbcon *dbcon)
   if(rc) {
     rc = curs->cda.rc;
     free(curs);
-    error_handler(dbcon, rc);
+    ora_error_handler(dbcon, rc);
   } else {
     curs->next = dbcon->cdas;
     dbcon->cdas = curs;
@@ -441,7 +441,7 @@ static void f_create(INT32 args)
   THREADS_DISALLOW();
 
   if(rc)
-    error_handler(dbcon, dbcon->lda.rc);
+    ora_error_handler(dbcon, dbcon->lda.rc);
 
   make_cda(dbcon);
 
@@ -480,7 +480,7 @@ static void f_big_query(INT32 args)
   if(rc) {
     curs->next = THIS->cdas;
     THIS->cdas = curs;
-    error_handler(THIS, curs->cda.rc);
+    ora_error_handler(THIS, curs->cda.rc);
   } else if(bnds != NULL) {
     INT32 e;
     struct keypair *k;
@@ -537,7 +537,7 @@ static void f_big_query(INT32 args)
 	  ocan(&curs->cda);
 	  curs->next = THIS->cdas;
 	  THIS->cdas = curs;
-	  error_handler(THIS, rc);
+	  ora_error_handler(THIS, rc);
 	}
       }
   }
@@ -553,7 +553,7 @@ static void f_big_query(INT32 args)
     ocan(&curs->cda);
     curs->next = THIS->cdas;
     THIS->cdas = curs;
-    error_handler(THIS, rc);
+    ora_error_handler(THIS, rc);
   }
 
   pop_n_elems(args);
@@ -588,7 +588,7 @@ static void f_big_query(INT32 args)
       ocan(&curs->cda);
       curs->next = THIS->cdas;
       THIS->cdas = curs;
-      error_handler(THIS, rc);
+      ora_error_handler(THIS, rc);
     }
     push_string(make_shared_binary_string(cbuf, cbufl));
     push_int(typ);
@@ -653,7 +653,7 @@ static void f_list_tables(INT32 args)
   if(rc) {
     curs->next = THIS->cdas;
     THIS->cdas = curs;
-    error_handler(THIS, curs->cda.rc);
+    ora_error_handler(THIS, curs->cda.rc);
   }
 
   THREADS_ALLOW();
@@ -667,7 +667,7 @@ static void f_list_tables(INT32 args)
     ocan(&curs->cda);
     curs->next = THIS->cdas;
     THIS->cdas = curs;
-    error_handler(THIS, rc);
+    ora_error_handler(THIS, rc);
   }
 
   pop_n_elems(args);
