@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.3 1997/06/10 03:21:41 grubba Exp $
+ * $Id: odbc.c,v 1.4 1997/08/15 20:20:10 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -15,7 +15,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: odbc.c,v 1.3 1997/06/10 03:21:41 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.4 1997/08/15 20:20:10 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -87,8 +87,18 @@ volatile void odbc_error(const char *fun, const char *msg,
   case SQL_SUCCESS_WITH_INFO:
     error("%s():%s: %d:%s:%s\n", fun, msg, code, errcode, errmsg);
     break;
+  case SQL_ERROR:
+    error("%s():%s: SQLError failed (%d:SQL_ERROR)\n", fun, msg, code);
+    break;
+  case SQL_NO_DATA_FOUND:
+    error("%s():%s: SQLError failed (%d:SQL_NO_DATA_FOUND)\n", fun, msg, code);
+    break;
+  case SQL_INVALID_HANDLE:
+    error("%s():%s: SQLError failed (%d:SQL_INVALID_HANDLE)\n", fun, msg, code);
+    break;
   default:
     error("%s():%s: SQLError failed (%d:%d)\n", fun, msg, code, _code);
+    break;
   }
 }
 
@@ -231,6 +241,7 @@ static void f_big_query(INT32 args)
 
   odbc_check_error("odbc->big_query", "Statement allocation failed",
 		   SQLAllocStmt(PIKE_ODBC->hdbc, &hstmt), NULL);
+  PIKE_ODBC->hstmt = hstmt;
   odbc_check_error("odbc->big_query", "Query failed",
 		   SQLExecDirect(hstmt, q->str, q->len), NULL);
   pop_n_elems(args);
@@ -241,10 +252,8 @@ static void f_big_query(INT32 args)
   odbc_check_error("odbc->big_query", "Couldn't get the number of rows",
 		   SQLRowCount(hstmt, &(PIKE_ODBC->affected_rows)), NULL);
 
-  pop_n_elems(args);
-
   if (PIKE_ODBC->num_fields) {
-    PIKE_ODBC->hstmt=hstmt;
+    /* PIKE_ODBC->hstmt=hstmt; */
     push_object(fp->current_object);
     fp->current_object->refs++;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.3 1997/06/10 03:21:42 grubba Exp $
+ * $Id: odbc_result.c,v 1.4 1997/08/15 20:20:11 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -17,7 +17,7 @@
 #ifdef HAVE_ODBC
 
 #include "global.h"
-RCSID("$Id: odbc_result.c,v 1.3 1997/06/10 03:21:42 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.4 1997/08/15 20:20:11 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -155,7 +155,7 @@ static void odbc_fix_fields(void)
       break;
     case SQL_DATE:
       push_text("date");
-      odbc_fields[i].size = 7;
+       odbc_fields[i].size = 7;
       break;
     case SQL_DECIMAL:
       push_text("decimal");
@@ -163,13 +163,13 @@ static void odbc_fix_fields(void)
       break;
     case SQL_DOUBLE:
       push_text("double");
-      odbc_fields[i].size = 8;
-      odbc_fields[i].type = T_FLOAT;
+      /* odbc_fields[i].size = 8; */
+      /* odbc_fields[i].type = T_FLOAT; */
       break;
     case SQL_INTEGER:
       push_text("integer");
-      odbc_fields[i].size = 4;
-      odbc_fields[i].type = T_INT;
+      /* odbc_fields[i].size = 4; */
+      /* odbc_fields[i].type = T_INT; */
       break;
     case SQL_LONGVARBINARY:
       push_text("long blob");
@@ -179,13 +179,13 @@ static void odbc_fix_fields(void)
       break;
     case SQL_REAL:
       push_text("float");
-      odbc_fields[i].size = 4;
-      odbc_fields[i].type = T_FLOAT;
+      /* odbc_fields[i].size = 4; */
+      /* odbc_fields[i].type = T_FLOAT; */
       break;
     case SQL_SMALLINT:
       push_text("short");
-      odbc_fields[i].size = 4;
-      odbc_fields[i].type = T_INT;
+      /* odbc_fields[i].size = 4; */
+      /* odbc_fields[i].type = T_INT; */
       break;
     case SQL_TIMESTAMP:
       push_text("time");
@@ -215,9 +215,9 @@ static void odbc_fix_fields(void)
 
     f_aggregate_mapping(5*2);
 
-    /* Align to long-word size */
-    odbc_fields[i].size += 3;
-    odbc_fields[i].size &= ~3;
+    /* Align to longlong-word size */
+    odbc_fields[i].size += 7;
+    odbc_fields[i].size &= ~7;
 
     membuf_size += odbc_fields[i].size;
   }
@@ -280,13 +280,14 @@ static void f_create(INT32 args)
     error("Too few arguments to odbc_result()\n");
   }
   if ((sp[-args].type != T_OBJECT) ||
-      (sp[-args].u.object->prog != odbc_program)) {
+      (!(PIKE_ODBC_RES->odbc =
+	 (struct precompiled_odbc *)get_storage(sp[-args].u.object,
+						odbc_program)))) {
     error("Bad argument 1 to odbc_result()\n");
   }
  
   PIKE_ODBC_RES->obj = sp[-args].u.object;
   PIKE_ODBC_RES->obj->refs++;
-  PIKE_ODBC_RES->odbc = ((struct precompiled_odbc *)sp[-args].u.object->storage);
   PIKE_ODBC_RES->hstmt = PIKE_ODBC_RES->odbc->hstmt;
   PIKE_ODBC_RES->odbc->hstmt = SQL_NULL_HSTMT;
   
