@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.20 2001/09/06 12:20:57 grubba Exp $
+ * $Id: result.c,v 1.21 2001/09/06 13:10:26 grubba Exp $
  *
  * mysql query result
  *
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.20 2001/09/06 12:20:57 grubba Exp $");
+RCSID("$Id: result.c,v 1.21 2001/09/06 13:10:26 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -246,9 +246,21 @@ static void f_create(INT32 args)
   if (!args) {
     Pike_error("Too few arguments to mysql_result()\n");
   }
+  if (sp[-args].type != T_OBJECT) {
+    Pike_error("Bad argument 1 to mysql_result()\n");
+  }
+
+  if (PIKE_MYSQL_RES->result) {
+    mysql_free_result(PIKE_MYSQL_RES->result);
+  }
+
+  PIKE_MYSQL_RES->result = NULL;
+
+  if (PIKE_MYSQL_RES->connection) {
+    free_object(PIKE_MYSQL_RES->connection);
+  }
 
   add_ref(PIKE_MYSQL_RES->connection = sp[-args].u.object);
-  PIKE_MYSQL_RES->result = NULL;
   
   pop_n_elems(args);
 }
