@@ -89,3 +89,188 @@ gnome_dock get_dock();
 // retrieved the Gnome.Dock widget contained in the App
 
 gnome_dock_item get_dock_item_by_name( string name );
+
+
+gnome_dialog message( string message );
+// A simple message, in an OK dialog or the status bar. Requires
+// confirmation from the user before it goes away.
+// Returns 0 or a dialog widget. If 0, the message is displayed in the
+// status bar.
+
+void flash( string flash );
+// Flash the message in the statusbar for a few moments; if no
+// statusbar, do nothing. For trivial little status messages,
+// e.g. "Auto saving..."
+
+gnome_dialog error( string error );
+// An important fatal error; if it appears in the statusbar, it might
+// gdk_beep() and require acknowledgement.
+
+gnome_dialog warning( string warning );
+// A not-so-important error, but still marked better than a flash
+
+%{
+static void replyfunc(int reply, struct signal_data *d)
+{
+  push_int( reply );
+  push_svalue( &d->args );
+  apply_svalue( &d->cb, 2 );
+  pop_stack();
+  free( d );
+}
+
+static void sreplyfunc(char *reply, struct signal_data *d)
+{
+  push_text( reply );
+  push_svalue( &d->args );
+  apply_svalue( &d->cb, 2 );
+  pop_stack();
+  free( d );
+  g_free( reply ); // should we?
+}
+
+static gdouble progressfunc(struct signal_data *d)
+{
+  gdouble res;
+  push_svalue( &d->args );
+  apply_svalue( &d->cb, 1 );
+  res = (gdouble)sp[-1].u.float_number;
+  pop_stack();
+/*   free( d ); */
+  return res;
+}
+
+static void progresscancelfunc( struct signal_data *d )
+{
+  free( d );
+}
+%}
+
+FUNCTION(question, "function(string,function(int,mixed:void),mixed:object)");
+NAME_ARGS( question, reply_callback );
+// Ask a yes or no question, and call the callback when it's answered.
+{
+  struct signal_data * d  = malloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "question", args, "%s%*%*", &message, &d->cb, &d->args );
+  gnome_app_question( GNOME_APP(THIS->obj), message, (void *)replyfunc, d );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+FUNCTION(question_modal, "function(string,function(int,mixed:void),mixed:object)");
+NAME_ARGS( question, reply_callback );
+// Ask a yes or no question, block the application while it is asked,
+// and call the callback when it's answered.
+{
+  struct signal_data * d  = malloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "question_modal", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_question_modal(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+FUNCTION(ok_cancel, "function(string,function(int,mixed:void),mixed:object)");
+NAME_ARGS( question, reply_callback );
+// Ask a ok or cancel question
+// and call the callback when it's answered.
+{
+  struct signal_data * d  = malloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "ok_cancel", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_ok_cancel(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+FUNCTION(ok_cancel_modal, "function(string,function(int,mixed:void),mixed:object)");
+NAME_ARGS( question, reply_callback );
+// Ask a ok or cancel question, block the application while it is asked,
+// and call the callback when it's answered.
+{
+  struct signal_data * d  = malloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "ok_cancel_modal", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_ok_cancel_modal(GNOME_APP(THIS->obj),message,(void *)replyfunc,d );
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+FUNCTION(request_string, "function(string,function(string,mixed:void),mixed:object)");
+NAME_ARGS( prompt, reply_callback );
+// Request a string, and call the callback when it's answered.
+{
+  struct signal_data * d  = malloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "request_string", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_request_string(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+FUNCTION(request_password, "function(string,function(string,mixed:void),mixed:object)");
+NAME_ARGS( prompt, reply_callback );
+// As request string, but do not show the string
+{
+  struct signal_data * d  = malloc( sizeof(struct signal_data) );
+  char *message;
+  get_all_args( "request_password", args, "%s%*%*", &message,&d->cb, &d->args );
+  gnome_app_request_password(GNOME_APP(THIS->obj),message,(void *)sreplyfunc,d);
+  pop_n_elems( args );
+  RETURN_THIS();
+}
+
+FUNCTION(progress_timeout, "function(string,int,function(void:float),mixed:object)");
+NAME_ARGS(prompt, reply_callback );
+RETURNS(Gnome.AppProgressKey);
+{
+  struct signal_data * d  = malloc( sizeof(struct signal_data) );
+  char *message;
+  int interval;
+  GnomeAppProgressKey k;
+  struct object *res;
+  get_all_args( "progress_timeout", args, "%s%d%*%*",
+                &message, &interval, &d->cb, &d->args );
+  k = gnome_app_progress_timeout(GNOME_APP(THIS->obj), message, interval,
+                                 (void *)progressfunc,
+                                 (void *)progresscancelfunc,d);
+  pop_n_elems( args );
+  push_pgdkobject( k, gnome_app_progress_key_program );
+}
+
+FUNCTION(progress_manual, "function(string:object)");
+NAME_ARGS( prompt, reply_callback );
+RETURNS(Gnome.AppProgressKey);
+{
+  char *message;
+  GnomeAppProgressKey k;
+  get_all_args( "progress_manual", args, "%s", &message );
+  k = gnome_app_progress_manual(GNOME_APP(THIS->obj), message, 0, 0 );
+  pop_n_elems( args );
+  push_pgdkobject( k, gnome_app_progress_key_program );
+}
+
+
+class gnome_app_progress_key;
+// Wrapper for the opaque GnomeAppProgressKey type
+FUNCTION(set, "function(float:object)");
+NAME_ARGS(percent);
+RETURNS(Gnome.AppProgressKey);
+{
+  if(args!=1 || sp[-1].type != T_FLOAT )
+    error("Bad argument 1 to set\n");
+  gnome_app_set_progress( (GnomeAppProgressKey)THIS->obj,
+                          (gdouble)sp[-1].u.float_number );
+  RETURN_THIS();
+}
+
+FUNCTION(destroy, "function(void:void)");
+{
+  gnome_app_progress_done( (GnomeAppProgressKey)THIS->obj );
+}
+
+FUNCTION(done, "function(void:void)");
+{
+  destruct( fp->current_object );
+}
