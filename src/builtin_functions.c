@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.404 2001/08/30 23:48:30 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.405 2001/09/04 19:26:54 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5536,7 +5536,7 @@ PMOD_EXPORT void f__next(INT32 args)
   case T_MAPPING: tmp.u.mapping=tmp.u.mapping->next; break;
   case T_MULTISET:tmp.u.multiset=tmp.u.multiset->next; break;
   case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
-  case T_STRING:  tmp.u.string=tmp.u.string->next; break;
+  case T_STRING:  tmp.u.string=next_pike_string(tmp.u.string); break;
   default:
     SIMPLE_BAD_ARG_ERROR("_next", 1,
 			 "object|array|mapping|multiset|program|string");

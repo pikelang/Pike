@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.131 2001/08/29 11:51:59 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.132 2001/09/04 19:26:54 mast Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -1882,6 +1882,22 @@ void gc_mark_all_strings(void)
     struct pike_string *p;
     for(p=base_table[e];p;p=p->next) gc_is_referenced(p);
   }
+}
+
+struct pike_string *next_pike_string (struct pike_string *s)
+{
+  struct pike_string *next = s->next;
+  if (!next) {
+    size_t h = s->hval;
+    do {
+      h++;
+      LOCK_BUCKET(h);
+      h %= htable_size;
+      next = base_table[h];
+      UNLOCK_BUCKET(h);
+    } while (!next);
+  }
+  return next;
 }
 
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
