@@ -1,5 +1,5 @@
 /*
- * $Id: smartlink.c,v 1.4 2000/01/30 17:13:28 grubba Exp $
+ * $Id: smartlink.c,v 1.5 2000/02/20 00:08:47 hubbe Exp $
  *
  * smartlink - A smarter linker.
  * Based on the /bin/sh script smartlink 1.23.
@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
   if (!strcmp(argv[1], "-v")) {
     fprintf(stdout,
-	    "$Id: smartlink.c,v 1.4 2000/01/30 17:13:28 grubba Exp $\n"
+	    "$Id: smartlink.c,v 1.5 2000/02/20 00:08:47 hubbe Exp $\n"
 	    "Usage:\n"
 	    "\t%s binary [args]\n",
 	    argv[0]);
@@ -199,6 +199,27 @@ int main(int argc, char **argv)
     }
     new_argv[new_argc++] = argv[i];
   }
+
+#ifndef USE_Wl
+  /* This code strips '-Wl,' from arguments if the 
+   * linker is '*ld'
+   */
+  if(linking)
+  {
+    int len=strlen(argv[1]);
+    if(strchr(argv[1],' ')) len=strchr(argv[1],' ') - argv[1];
+    if(len > 1 && argv[1][len-2]=='l' && argv[1][len-1]=='d')
+    {
+      for(i=2; i<argc; i++) {
+	if (new_argv[i][0] == '-' && new_argv[i][1]=='W' &&
+	    new_argv[i][2]=='l' && new_argv[i][3]==',')
+	{
+	  new_argv[i]=new_argv[i]+4;
+	}
+      }
+    }
+  }
+#endif
 
   if (n32) {
     i = new_argc++;

@@ -21,6 +21,15 @@ export SGI_API
 
 SET_N32=""
 
+case "/$LINKER " in
+  */ld\ *)
+    LINKER_IS_LD=yes
+  ;;
+  *)
+    LINKER_IS_LD=no
+  ;;
+esac
+
 while test "$#" != 0; do
   case $1 in
     -R*)
@@ -56,6 +65,17 @@ while test "$#" != 0; do
 
     -n32)
      SET_N32="-n32"
+    ;;
+
+
+    -Wl,*)
+      # Strip '-Wl,' if the linker is ld
+
+      if test $LINKER_IS_LD = yes; then
+        LDOPTS="$LDOPTS `echo $1|sed -e 's/^-Wl,//'`"
+      else
+        LDOPTS="$LDOPTS $1"
+      fi
     ;;
     *)
     LDOPTS="$LDOPTS $1"
