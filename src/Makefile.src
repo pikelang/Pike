@@ -155,9 +155,10 @@ verbose_verify: $(SRCDIR)/test/testsuite
 
 # verify & debug VERBOSE
 gdb_verify: $(SRCDIR)/test/testsuite
-	echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	echo >>.gdbinit run -m $(TMP_LIBDIR)/master.lpc $(SRCDIR)/test/test_lpc.lpc $(SRCDIR)/test/testsuite -v -v -f
+	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	@echo >>.gdbinit run -m $(TMP_LIBDIR)/master.lpc $(LPCOPTS) $(SRCDIR)/test/test_lpc.lpc $(SRCDIR)/test/testsuite -v -v -f
 	gdb ./ulpc
+	@rm .gdbinit
 
 # run hilfe, for interactive testing
 run_hilfe:
