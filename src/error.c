@@ -22,7 +22,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.76 2001/09/24 14:29:42 grubba Exp $");
+RCSID("$Id: error.c,v 1.77 2001/09/28 00:02:50 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -281,12 +281,13 @@ PMOD_EXPORT void exit_on_error(void *msg)
 
 #ifdef __NT__
 /* Wrapper around abort() to avoid interactive requesters on NT. */
+int fnordel=0;
 static void do_abort()
 {
   if (!d_flag && !getenv("PIKE_DEBUG")) {
     exit(-6);	/* -SIGIOT */
   }
-  abort();
+  fnordel=999/fnordel;
 }
 #else /* !__NT__ */
 #define do_abort()	abort()
