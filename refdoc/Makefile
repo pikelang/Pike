@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.33 2001/11/05 00:51:40 nilsson Exp $
+# $Id: Makefile,v 1.34 2001/11/13 18:28:30 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -12,9 +12,10 @@ all: modref traditional
 
 modref: build/modref.xml
 	rm -rf modref || /bin/true
+	@mkdir modref
+	@cp tree-split-style.css modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
 	  build/modref.xml tree-split-template.html modref
-	@cp tree-split-style.css modref/style.css
 	@mkdir modref/images
 	cp build/images/* modref/images
 	@cp src_images/next.gif src_images/prev.gif modref/images
@@ -101,6 +102,12 @@ build/src/post_modules/GTK/refdoc/images: build/src
 	  mkdir build/src/post_modules/GTK/refdoc
 	@test -d build/src/post_modules/GTK/refdoc/images || \
 	  mkdir build/src/post_modules/GTK/refdoc/images
+
+touch-mirardoc:
+	@touch `grep -r \\*\\*\! ../src/modules/* | cut -d: -f1 | \
+	  uniq`
+	@touch `grep -r "//\! module" ../lib/modules/* | cut -d: -f1 | \
+	  uniq`
 
 # Cleanup
 
