@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.123 2003/11/05 02:06:55 nilsson Exp $
+# $Id: Makefile,v 1.124 2003/12/25 08:41:45 mirar Exp $
 #
 # Meta Makefile
 #
@@ -269,7 +269,7 @@ xenofarm:
 	-rm -rf xenofarm_result
 	mkdir xenofarm_result
 	-CCACHE_LOGFILE="`pwd`/xenofarm_result/ccache.log.txt" \
-	  MAKE="$(MAKE_CMD)" /bin/sh bin/xenofarm.sh
+	  MAKE="$(MAKE_CMD)" BUILDDIR="$(BUILDDIR)" /bin/sh bin/xenofarm.sh
 	cd xenofarm_result && tar cf - . > ../xenofarm_result.tar
 	gzip -f9 xenofarm_result.tar
 
