@@ -15,7 +15,7 @@ typedef p_wchar1 UNICHAR;
 #define MODE_9696 3
 
 struct charset_def {
-  char *name;
-  UNICHAR *table;
+  char const *name;
+  UNICHAR const *table;
   int mode;
 };
