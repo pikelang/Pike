@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.109 2001/06/08 01:38:09 hubbe Exp $");
+RCSID("$Id: array.c,v 1.110 2001/06/08 10:59:19 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1211,6 +1211,51 @@ PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
   for(size=e=0;e<args;e++)
     size+=argp[e].u.array->size;
 
+#if 1
+  {
+    INT32 tmp=0;
+    for(e=0;e<args;e++)
+    {
+      v=argp[e].u.array;
+      if(v->refs == 1 &&
+	 (v->item - v->real_item) >= tmp &&
+	 v->malloced_size >= size - tmp)
+      {
+	debug_malloc_touch(v);
+	argp[e].type=T_INT;
+	for(tmp=e-1;tmp>=0;tmp--)
+	{
+	  debug_malloc_touch(argp[tmp].u.array);
+	  v->type_field|=argp[tmp].u.array->type_field;
+	  assign_svalues_no_free(ITEM(v) - argp[tmp].u.array->size,
+				 ITEM(argp[tmp].u.array),
+				 argp[tmp].u.array->size,
+				 argp[tmp].u.array->type_field);
+	  v->item-=argp[tmp].u.array->size;
+	  v->malloced_size+=argp[tmp].u.array->size;
+	}
+
+	for(tmp=e+1;tmp<args;tmp++)
+	{
+	  debug_malloc_touch(argp[tmp].u.array);
+	  v->type_field|=argp[tmp].u.array->type_field;
+	  assign_svalues_no_free(ITEM(v) + v->size,
+				 ITEM(argp[tmp].u.array),
+				 argp[tmp].u.array->size,
+				 argp[tmp].u.array->type_field);
+	  v->size+=argp[tmp].u.array->size;
+	}
+#ifdef PIKE_DEBUG
+	if(d_flag>1)
+	  check_array(v);
+#endif
+	return v;
+      }
+      tmp+=v->size;
+    }
+  }
+#endif
+
   if(args && argp[0].u.array->refs==1)
   {
     e=argp[0].u.array->size;
@@ -1981,8 +2026,23 @@ PMOD_EXPORT void check_array(struct array *a)
   if(a->size > a->malloced_size)
     fatal("Array is larger than malloced block!\n");
 
+  if(a->size < 0)
+    fatal("Array size is negative!\n");
+
+  if(a->malloced_size < 0)
+    fatal("Array malloced size is negative!\n");
+
+  if(a->item < a->real_item)
+  {
+#ifdef DEBUG_MALLOC
+    describe(a);
+#endif
+    fatal("Array item pointer is too small!\n");
+  }
+
   if(a->refs <=0 )
     fatal("Array has zero refs.\n");
+
 
   for(e=0;e<a->size;e++)
   {
