@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.128 1997/10/08 22:43:36 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.129 1997/10/15 04:17:48 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -78,14 +78,15 @@ esac
 
 
 AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
-AC_ARG_WITH(gdbm,    [  --without-gdbm         no GNU database manager support ])
-AC_ARG_WITH(gmp,     [  --without-gmp          no Support bignums])
-AC_ARG_WITH(readline,[  --without-readline     no support for command line editing])
-AC_ARG_WITH(debug,   [  --without-debug        disable run time self tests],[],[with_debug=yes])
-AC_ARG_WITH(threads, [  --without-threads      no threads support],[],[with_threads=yes])
-AC_ARG_WITH(zlib,    [  --without-zlib         no gz compression support],[],[with_zlib=yes])
-AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
-AC_ARG_WITH(mysql,   [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(gdbm,      [  --without-gdbm         no GNU database manager support ])
+AC_ARG_WITH(gmp,       [  --without-gmp          no Support bignums])
+AC_ARG_WITH(readline,  [  --without-readline     no support for command line editing])
+AC_ARG_WITH(debug,     [  --without-debug        disable run time self tests],[],[with_debug=yes])
+AC_ARG_WITH(threads,   [  --without-threads      no threads support],[],[with_threads=yes])
+AC_ARG_WITH(zlib,      [  --without-zlib         no gz compression support],[],[with_zlib=yes])
+AC_ARG_WITH(ssleay,    [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
+AC_ARG_WITH(mysql,     [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
+AC_ARG_WITH(profiling, [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
 
 if test x$with_debug = xyes ; then
   AC_DEFINE(DEBUG)
@@ -1600,6 +1601,11 @@ then
            LDSHARED="ld -G -bexpall"
          else
            # Dynamic linking turned off for AIX-cc
+	   #
+	   # In addition, the dynamic loading test seems to
+	   # cause our RS/6000 to hang, which causes the
+	   # watchdog-timer to PANIC.
+	   pike_cv_sys_dynamic_loading=no
            LDSHARED="ld"
          fi
 	;;
