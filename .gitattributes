@@ -700,5 +700,3 @@ testfont binary
 /src/treeopt.in foreign_ident
 /src/version.c foreign_ident
 /src/version.h foreign_ident
-/tutorial/manpages foreign_ident
-/tutorial/xml2prc.pike foreign_ident
