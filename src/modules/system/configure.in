@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.29 1999/05/26 17:40:05 grubba Exp $
+# $Id: configure.in,v 1.30 1999/05/27 18:23:33 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -32,6 +32,7 @@ AC_CACHE_VAL(pike_cv_have_solaris_gethostbyname_r,
 [
 AC_TRY_LINK([
 #define _REENTRANT
+#define _THREAD_SAFE
 #include <netdb.h>
 ],[
   char data[2000];
@@ -54,6 +55,7 @@ AC_MSG_CHECKING(for OSF1 style gethostbyname_r)
 AC_CACHE_VAL(pike_cv_have_osf1_gethostbyname_r,
 [
 AC_TRY_LINK([
+#define _REENTRANT
 #define _THREAD_SAFE
 #include <netdb.h>
 ],[
@@ -71,6 +73,46 @@ if test $pike_cv_have_osf1_gethostbyname_r = yes; then
   AC_DEFINE(HAVE_OSF1_GETHOSTBYNAME_R)
 fi
 
+if test "$ac_cv_func_getspnam_r" = "yes"; then
+  AC_MSG_CHECKING([if getspnam_r takes 4 (Solaris) or 5 (Linux) arguments])
+  AC_CACHE_VAL(pike_cv_have_solaris_getspnam_r, [
+    AC_TRY_LINK([
+#define _REENTRANT
+#define _THREAD_SAFE
+#ifdef HAVE_PASSWD_H
+# include <passwd.h>
+# include <group.h>
+#endif /* HAVE_PASSWD_H */
+
+#ifdef HAVE_PWD_H
+# include <pwd.h>
+#endif /* HAVE_PWD_H */
+
+#ifdef HAVE_GRP_H
+# include <grp.h>
+#endif /* HAVE_GRP_H */
+
+#ifdef HAVE_SHADOW_H
+# include <shadow.h>
+#endif /* HAVE_SHADOW_H */
+    ], [
+      struct spwd sbuf;
+      char buf[2048];
+      char *foo = getspnam_r("root", &sbuf, buf, sizeof(buf))->sp_pwdp;
+      return 0;
+    ], [
+      pike_cv_have_solaris_getspnam_r="yes"
+    ], [
+      pike_cv_have_solaris_getspnam_r="no"
+    ])
+  ])
+  if test "$pike_cv_have_solaris_getspnam_r" = "yes"; then
+    AC_MSG_RESULT([4 - Solaris])
+    AC_DEFINE(HAVE_SOLARIS_GETSPNAM_R)
+  else
+    AC_MSG_RESULT([5 - Linux])
+  fi
+else :; fi
 
 AC_MSG_CHECKING(for h_addr_list)
 AC_CACHE_VAL(pike_cv_struct_has_h_addr_list,
