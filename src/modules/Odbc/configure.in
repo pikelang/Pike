@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.16 1999/03/23 02:31:52 marcus Exp $
+# $Id: configure.in,v 1.17 1999/03/28 17:50:00 marcus Exp $
 #
 # Configure script for the odbc-module
 #
@@ -85,6 +85,8 @@ EOF
 
   AC_CACHE_VAL(pike_cv_odbc_lib_dir, [
 
+    pike_cv_odbc_lib_dir=''
+
     # ${INFORMIXDIR:+$INFORMIXDIR/cli/dlls} does not work with stupid sh
     # /Hubbe
 
@@ -94,13 +96,13 @@ EOF
       foodir=$INFORMIXDIR/cli/dlls
     fi
 
-    for pike_cv_odbc_lib_dir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
+    for bardir in $foodir /opt/*odbc/*/lib /usr/opt/*odbc/*/lib \
         /opt/*odbc/lib /usr/opt/*odbc/lib /usr/local/lib /usr/local/odbc/lib \
         /usr/local/lib/odbc /usr/odbc/lib /usr/lib/odbc /usr/lib \
-        /lib/odbc /lib no; do
-      if test -d $pike_cv_odbc_lib_dir/.; then
-        if ls $pike_cv_odbc_lib_dir/*odbc* >/dev/null 2>&1 ; then
-          break
+        /lib/odbc /lib; do
+      if test -d $bardir/.; then
+        if ls $bardir/*odbc* >/dev/null 2>&1 ; then
+	  pike_cv_odbc_lib_dir="$bardir $pike_cv_odbc_lib_dir"
 	else
 	  :
 	fi
@@ -112,9 +114,11 @@ EOF
 
   AC_MSG_RESULT($pike_cv_odbc_lib_dir)
 
-  if test x$pike_cv_odbc_lib_dir = xno; then :; else
-    echo Adding $pike_cv_odbc_lib_dir to the library search path.
-    LDFLAGS="-L$pike_cv_odbc_lib_dir -R$pike_cv_odbc_lib_dir ${LDFLAGS}"
+  if test "x$pike_cv_odbc_lib_dir" = x; then :; else
+    for bardir in $pike_cv_odbc_lib_dir; do
+      echo Adding $bardir to the library search path.
+      LDFLAGS="-L$bardir -R$bardir ${LDFLAGS}"
+    done
   fi
 
   AC_CHECK_HEADERS(isql.h isqlext.h)

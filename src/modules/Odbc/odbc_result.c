@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.17 1999/02/10 21:49:45 hubbe Exp $
+ * $Id: odbc_result.c,v 1.18 1999/03/28 17:50:03 marcus Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,12 +16,11 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.17 1999/02/10 21:49:45 hubbe Exp $");
+RCSID("$Id: odbc_result.c,v 1.18 1999/03/28 17:50:03 marcus Exp $");
 
 #include "interpret.h"
 #include "object.h"
 #include "threads.h"
-#include "svalue.h"
 #include "stralloc.h"
 #include "mapping.h"
 #include "array.h"
@@ -121,14 +120,11 @@ static void exit_res_struct(struct object *o)
 static void odbc_fix_fields(void)
 {
   int i;
-  unsigned long *odbc_field_sizes = alloca(sizeof(unsigned long) *
-					   PIKE_ODBC_RES->num_fields);
+  SWORD *odbc_field_types = alloca(sizeof(SWORD) * PIKE_ODBC_RES->num_fields);
   size_t buf_size = 1024;
   unsigned char *buf = alloca(buf_size);
-  int membuf_size = 0;
-  char *membuf = NULL;
 
-  if ((!buf)||(!odbc_field_sizes)) {
+  if ((!buf)||(!odbc_field_types)) {
     error("odbc_fix_fields(): Out of memory\n");
   }
 
@@ -168,11 +164,11 @@ static void odbc_fix_fields(void)
 	    "nullable:%d\n",
 	    buf, sql_type, precision, scale, nullable);
 #endif /* ODBC_DEBUG */
-    odbc_field_sizes[i] = precision+1;
     /* Create the mapping */
     push_text("name");
     push_string(make_shared_binary_string((char *)buf, name_len));
     push_text("type");
+    odbc_field_types[i] = SQL_C_CHAR;
     switch(sql_type) {
     case SQL_CHAR:
       push_text("char");
@@ -182,7 +178,6 @@ static void odbc_fix_fields(void)
       break;
     case SQL_DECIMAL:
       push_text("decimal");
-      odbc_field_sizes[i] += 2;
       break;
     case SQL_INTEGER:
       push_text("integer");
@@ -192,7 +187,6 @@ static void odbc_fix_fields(void)
       break;
     case SQL_FLOAT:
       push_text("float");
-      odbc_field_sizes[i] += 2;	/* Paranoia */
       break;
     case SQL_REAL:
       push_text("real");
@@ -202,29 +196,29 @@ static void odbc_fix_fields(void)
       break;
     case SQL_VARCHAR:
       push_text("var string");
-      odbc_field_sizes[i] = 0;
+      odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_DATE:
       push_text("date");
-      odbc_field_sizes[i] = 12;
       break;
     case SQL_TIMESTAMP:
       push_text("time");
-      odbc_field_sizes[i] = 22 + scale;
       break;
     case SQL_LONGVARCHAR:
       push_text("var string");
-      odbc_field_sizes[i] = 0;
+      odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_BINARY:
       push_text("binary");
+      odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_VARBINARY:
       push_text("blob");
+      odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_LONGVARBINARY:
       push_text("long blob");
-      odbc_field_sizes[i] = 0;
+      odbc_field_types[i] = SQL_C_BINARY;
       break;
     case SQL_BIGINT:
       push_text("long integer");
@@ -237,7 +231,7 @@ static void odbc_fix_fields(void)
       break;
     default:
       push_text("unknown");
-      odbc_field_sizes[i] = 0;
+      odbc_field_types[i] = SQL_C_BINARY;
       break;
     }
     push_text("length"); push_int(precision);
@@ -257,13 +251,6 @@ static void odbc_fix_fields(void)
 
     f_aggregate_mapping(5*2);
 
-    if (odbc_field_sizes[i]) {
-      /* Align to longlong-word size */
-      odbc_field_sizes[i] += 7;
-      odbc_field_sizes[i] &= ~7;
-    }
-
-    membuf_size += odbc_field_sizes[i];
   }
   f_aggregate(PIKE_ODBC_RES->num_fields);
 
@@ -271,31 +258,13 @@ static void odbc_fix_fields(void)
   pop_stack();
 
   PIKE_ODBC_RES->field_info = (struct field_info *)
-    xalloc(sizeof(struct field_info) * PIKE_ODBC_RES->num_fields +
-	   membuf_size);
-  membuf = ((char *) PIKE_ODBC_RES->field_info) +
-    sizeof(struct field_info) * PIKE_ODBC_RES->num_fields;
+    xalloc(sizeof(struct field_info) * PIKE_ODBC_RES->num_fields);
 
   /*
    * Now it's time to bind the columns
    */
-  for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-    if ((PIKE_ODBC_RES->field_info[i].size = odbc_field_sizes[i])) {
-      PIKE_ODBC_RES->field_info[i].buf = membuf;
-    
-      odbc_check_error("odbc_fix_fields", "Couldn't bind field",
-		       SQLBindCol(PIKE_ODBC_RES->hstmt, i+1,
-				  SQL_C_CHAR, membuf, odbc_field_sizes[i],
-				  &PIKE_ODBC_RES->field_info[i].len), NULL);
-      membuf += odbc_field_sizes[i];
-    } else {
-      PIKE_ODBC_RES->field_info[i].buf = NULL;
-#ifdef ODBC_DEBUG
-      fprintf(stderr, "ODBC:odbc_fix_fields(): Column field %d is a BLOB\n",
-	      i+1);
-#endif /* ODBC_DEBUG */
-    }
-  }
+  for (i=0; i < PIKE_ODBC_RES->num_fields; i++)
+    PIKE_ODBC_RES->field_info[i].type = odbc_field_types[i];
 }
 
 /*
@@ -393,14 +362,14 @@ static void f_fetch_row(INT32 args)
 		     code, NULL);
  
     for (i=0; i < PIKE_ODBC_RES->num_fields; i++) {
-      if (!PIKE_ODBC_RES->field_info[i].size) {
 	/* BLOB */
 	int num_strings = 0;
 	char buf[BLOB_BUFSIZ+1];
 	SDWORD len = 0;
 
 	while(1) {
-	  code = SQLGetData(PIKE_ODBC_RES->hstmt, i+1, SQL_C_BINARY,
+	  code = SQLGetData(PIKE_ODBC_RES->hstmt, i+1,
+			    PIKE_ODBC_RES->field_info[i].type,
 			    buf, BLOB_BUFSIZ, &len);
 	  if (code == SQL_NO_DATA_FOUND) {
 #ifdef ODBC_DEBUG
@@ -443,13 +412,6 @@ static void f_fetch_row(INT32 args)
 #endif /* ODBC_DEBUG */
 	  f_add(num_strings);
 	}
-      } else if (PIKE_ODBC_RES->field_info[i].len != SQL_NULL_DATA) {
-	push_string(make_shared_binary_string(PIKE_ODBC_RES->field_info[i].buf,
-					      PIKE_ODBC_RES->field_info[i].len));
-      } else {
-	/* NULL */
-	push_int(0);
-      }
     }
     f_aggregate(PIKE_ODBC_RES->num_fields);
   }
@@ -541,4 +503,3 @@ void exit_odbc_res(void)
 #else
 static int place_holder;	/* Keep the compiler happy */
 #endif /* HAVE_ODBC */
-
