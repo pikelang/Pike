@@ -1,9 +1,9 @@
-/* $Id: image_gif.c,v 1.4 2000/12/13 21:16:48 hubbe Exp $ */
+/* $Id: image_gif.c,v 1.5 2001/07/17 03:27:58 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image_gif.c,v 1.4 2000/12/13 21:16:48 hubbe Exp $
+**!	$Id: image_gif.c,v 1.5 2001/07/17 03:27:58 nilsson Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.4 2000/12/13 21:16:48 hubbe Exp $");
+RCSID("$Id: image_gif.c,v 1.5 2001/07/17 03:27:58 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -336,16 +336,16 @@ void image_gif_end_block(INT32 args)
 **! arg int disposal
 **!	Disposal method number;
 **!	<dl compact>
-**!	<dt>0<dd>No disposal specified. The decoder is
-**!	         not required to take any action.
-**!	<dt>1<dd>Do not dispose. The graphic is to be left
-**!	         in place.
-**!     <dt>2<dd>Restore to background color. The area used by the
-**!              graphic must be restored to the background color.
-**!     <dt>3<dd>Restore to previous. The decoder is required to
+**!	<dt>0</dt><dd>No disposal specified. The decoder is
+**!	         not required to take any action.</dd>
+**!	<dt>1</dt><dd>Do not dispose. The graphic is to be left
+**!	         in place.</dd>
+**!     <dt>2</dt><dd>Restore to background color. The area used by the
+**!              graphic must be restored to the background color.</dd>
+**!     <dt>3</dt><dd>Restore to previous. The decoder is required to
 **!              restore the area overwritten by the graphic with
-**!              what was there prior to rendering the graphic.
-**!     <dt compact>4-7<dd>To be defined.
+**!              what was there prior to rendering the graphic.</dd>
+**!     <dt compact>4-7</dt><dd>To be defined.</dd>
 **!     </dl>
 **!
 **! see also: _render_block, render_block
@@ -679,16 +679,16 @@ CHRONO("gif _render_block end");
 **! arg int disposal
 **!	Disposal method number;
 **!	<dl compact>
-**!	<dt>0<dd>No disposal specified. The decoder is
-**!	         not required to take any action. (default)
-**!	<dt>1<dd>Do not dispose. The graphic is to be left
-**!	         in place.
-**!     <dt>2<dd>Restore to background color. The area used by the
-**!              graphic must be restored to the background color.
-**!     <dt>3<dd>Restore to previous. The decoder is required to
+**!	<dt>0</dt><dd>No disposal specified. The decoder is
+**!	         not required to take any action. (default)</dd>
+**!	<dt>1</dt><dd>Do not dispose. The graphic is to be left
+**!	         in place.</dd>
+**!     <dt>2</dt><dd>Restore to background color. The area used by the
+**!              graphic must be restored to the background color.</dd>
+**!     <dt>3</dt><dd>Restore to previous. The decoder is required to
 **!              restore the area overwritten by the graphic with
-**!              what was there prior to rendering the graphic.
-**!     <dt compact>4-7<dd>To be defined.
+**!              what was there prior to rendering the graphic.</dd>
+**!     <dt compact>4-7</dt><dd>To be defined.</dd>
 **!     </dl>
 **!
 **! see also: encode, header_block, end_block
