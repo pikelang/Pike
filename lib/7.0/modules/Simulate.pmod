@@ -91,10 +91,15 @@ GS(trim_all_whites);
 // used to be "inherit Process;" in Pike 7.0 Simulate.pmod:
 #define GP(X) constant X = Process.X
 
+GP(exec);
+
+#ifndef __NT__
 GP(exece);
 GP(fork);
+GP(Spawn);
+#endif /* !__NT__ */
+
 GP(create_process);
-GP(exec);
 GP(search_path);
 GP(sh_quote);
 GP(split_quoted_string);
