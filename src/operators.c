@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.202 2004/12/18 19:04:04 grubba Exp $
+|| $Id: operators.c,v 1.203 2005/01/14 10:00:54 nilsson Exp $
 */
 
 #include "global.h"
@@ -947,7 +947,8 @@ PMOD_EXPORT void f_ne(INT32 args)
  *!   successful iff all comparisons are successful.
  *!
  *!   If the first argument is an object with an @[lfun::`==()], that
- *!   function is called with the second as argument, and the test is
+ *!   function is called with the second as argument, unless the
+ *!   second argument is the same as the first argument. The test is
  *!   successful iff its result is nonzero (according to @[`!]).
  *!
  *!   Otherwise, if the second argument is an object with an
