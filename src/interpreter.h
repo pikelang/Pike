@@ -861,6 +861,7 @@ static int eval_instruction(unsigned char *pc)
       }
       pop_stack();
       break;
+
       
       CASE(F_BRANCH_WHEN_NON_ZERO);
       if(IS_ZERO(sp-1))
@@ -1064,6 +1065,11 @@ static int eval_instruction(unsigned char *pc)
       }
       print_return_value();
       goto do_return;
+
+      CASE(F_RETURN_IF_TRUE);
+      if(!IS_ZERO(sp-1))
+	goto do_return;
+      break;
 
       CASE(F_RETURN_1);
       push_int(1);

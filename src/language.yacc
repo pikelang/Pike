@@ -56,7 +56,7 @@
 %token F_INC_LOCAL F_INC_LOCAL_AND_POP F_POST_INC_LOCAL
 %token F_DEC_LOCAL F_DEC_LOCAL_AND_POP F_POST_DEC_LOCAL
 %token F_RETURN F_DUMB_RETURN F_RETURN_0 F_RETURN_1 F_RETURN_LOCAL
-%token F_THROW_ZERO
+%token F_RETURN_IF_TRUE F_THROW_ZERO
 
 %token F_ASSIGN F_ASSIGN_AND_POP
 %token F_ASSIGN_LOCAL F_ASSIGN_LOCAL_AND_POP
@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.137 1999/11/25 00:56:22 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.138 1999/11/30 07:50:16 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

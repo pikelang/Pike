@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.175 1999/11/22 19:06:21 grubba Exp $");
+RCSID("$Id: program.c,v 1.176 1999/11/30 07:50:20 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2739,7 +2739,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 struct program *compile(struct pike_string *prog, struct object *handler)
 {
 #ifdef PIKE_DEBUG
-  JMP_BUF tmp;
+  ONERROR tmp;
 #endif
   struct program *p;
   struct lex save_lex;
@@ -2759,8 +2759,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   saved_threads_disabled = threads_disabled;
 
 #ifdef PIKE_DEBUG
-  if(SETJMP(tmp))
-    fatal("Compiler exited with longjump!\n");
+  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
 #endif
 
   num_used_modules=0;
@@ -2868,7 +2867,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   error_handler = saved_handler;
 
 #ifdef PIKE_DEBUG
-  UNSETJMP(tmp);
+  UNSET_ONERROR(tmp);
 #endif
 
   if(!p) error("Compilation failed.\n");
