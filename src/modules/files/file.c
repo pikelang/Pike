@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.162 1999/11/04 20:05:46 hubbe Exp $");
+RCSID("$Id: file.c,v 1.163 1999/12/14 17:40:04 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -28,6 +28,7 @@ RCSID("$Id: file.c,v 1.162 1999/11/04 20:05:46 hubbe Exp $");
 #include "signal_handler.h"
 #include "pike_types.h"
 #include "threads.h"
+#include "program_id.h"
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -2662,7 +2663,7 @@ void pike_module_init(void)
 
   init_files_efuns();
 
-  start_new_program();
+  START_NEW_PROGRAM_ID(STDIO_FD);
   ADD_STORAGE(struct my_file);
 
 #define FILE_FUNC(X,Y,Z) PIKE_CONCAT(Y,_function_number)=add_function(X,Y,Z,0);

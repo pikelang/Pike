@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.184 1999/12/14 13:06:54 hubbe Exp $");
+RCSID("$Id: program.c,v 1.185 1999/12/14 17:39:58 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -107,7 +107,7 @@ char *lfun_names[] = {
 };
 
 struct program *first_program = 0;
-static int current_program_id=0;
+static int current_program_id=0x10000;
 
 struct program *new_program=0;
 struct object *fake_object=0;

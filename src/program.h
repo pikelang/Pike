@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.69 1999/12/13 12:08:13 mast Exp $
+ * $Id: program.h,v 1.70 1999/12/14 17:40:00 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -480,6 +480,12 @@ int implements(struct program *a, struct program *b);
 #define add_function pike_add_function
 #endif
 
+#define START_NEW_PROGRAM_ID(ID) do { \
+  start_new_program();  \
+  new_program->id=PIKE_CONCAT3(PROG_,ID,_ID); \
+ }while(0)
+
+
 #endif /* PROGRAM_H */
 
 #ifdef DEBUG_MALLOC
@@ -496,3 +502,4 @@ int implements(struct program *a, struct program *b);
 #else
 #define start_new_program() debug_start_new_program()
 #endif
+

@@ -14,11 +14,12 @@
 #include "backend.h"
 #include "fd_control.h"
 #include "threads.h"
+#include "program_id.h"
 
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.43 1999/06/19 20:26:30 hubbe Exp $");
+RCSID("$Id: socket.c,v 1.44 1999/12/14 17:40:05 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -411,7 +412,7 @@ void port_setup_program(void)
   /* function(:int) */
   ADD_FUNCTION("errno",port_errno,tFunc(tNone,tInt),0);
   /* function(:object) */
-  ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObj),0);
+  ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObj_STDIO_FD),0);
   /* function(void|string|int,void|mixed,void|string:void) */
   ADD_FUNCTION("create",port_create,tFunc(tOr3(tVoid,tStr,tInt) tOr(tVoid,tMix) tOr(tVoid,tStr),tVoid),0);
 
