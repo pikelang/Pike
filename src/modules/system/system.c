@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.109 2001/04/09 16:51:12 jonasw Exp $
+ * $Id: system.c,v 1.110 2001/04/18 15:43:56 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.109 2001/04/09 16:51:12 jonasw Exp $");
+RCSID("$Id: system.c,v 1.110 2001/04/18 15:43:56 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2262,7 +2262,7 @@ void f_system_getitimer(INT32 args)
 #endif
 
 #ifdef HAVE_NETINFO_NI_H
-/*! @decl array(string) get_netinfo_property(string domain, string path,
+/*! @decl array(string) get_netinfo_property(string domain, string path, @
  *!                                          string property)
  *!
  *! Queries a NetInfo server for property values at the given path.
@@ -2271,7 +2271,7 @@ void f_system_getitimer(INT32 args)
  *!  NetInfo domain. Use "." for the local domain.
  *! @param path
  *!  NetInfo path for the property.
- *! @property
+ *! @param property
  *!  Name of the property to return.
  *! @returns
  *!  An array holding all property values. If the @[path] or @[property]
@@ -2283,7 +2283,6 @@ void f_system_getitimer(INT32 args)
  *!   ({ 
  *!      "idonex.se"
  *!   })
- *! @endexample
  *!
  *! @note
  *!  Only available on operating systems which have NetInfo libraries
