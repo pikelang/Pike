@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.174 2004/11/06 13:41:38 grubba Exp $
+|| $Id: stralloc.c,v 1.175 2004/11/06 13:52:18 grubba Exp $
 */
 
 #include "global.h"
@@ -2269,57 +2269,60 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
   while (*fmt) {
     if (*fmt == '%') {
       fmt++;
-      switch (*fmt) {
-      case '%':
-	string_builder_putchar(s, '%');
-	break;
-      case 'O':
-	{
-	  dynamic_buffer old_buf;
-	  init_buf(&old_buf);
-	  describe_svalue(va_arg(args, struct svalue *), 0, NULL);
-	  string_builder_binary_strcat(s, pike_global_buffer.s.str,
-				       pike_global_buffer.s.len);
-	  toss_buffer(&pike_global_buffer);
-	  restore_buffer(&old_buf);
+      while (1) {
+	switch (*(fmt++)) {
+	case '%':
+	  string_builder_putchar(s, '%');
+	  break;
+	case 'O':
+	  {
+	    dynamic_buffer old_buf;
+	    init_buf(&old_buf);
+	    describe_svalue(va_arg(args, struct svalue *), 0, NULL);
+	    string_builder_binary_strcat(s, pike_global_buffer.s.str,
+					 pike_global_buffer.s.len);
+	    toss_buffer(&pike_global_buffer);
+	    restore_buffer(&old_buf);
+	  }
+	  break;
+	case 'S':
+	  string_builder_shared_strcat(s, va_arg(args, struct pike_string *));
+	  break;
+	case 's':
+	  {
+	    const char *str = va_arg(args, char *);
+	    string_builder_binary_strcat(s, str, strlen(str));
+	  }
+	  break;
+	case 'c':
+	  string_builder_putchar(s, va_arg(args, INT32));
+	  break;
+	case 'b':
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 2, 0);
+	  break;
+	case 'o':
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 8, 0);
+	  break;
+	case 'x':
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 16, 0);
+	  break;
+	case 'X':
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 16,
+					APPEND_UPPER_CASE);
+	  break;
+	case 'u':
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 10, 0);
+	  break;
+	case 'd':
+	  string_builder_append_integer(s, va_arg(args, int), 10,
+					APPEND_SIGNED);
+	  break;
+	default:
+	  Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
+		     "'%c' 0x%x.\n", fmt[-1], fmt[-1]);
 	}
 	break;
-      case 'S':
-	string_builder_shared_strcat(s, va_arg(args, struct pike_string *));
-	break;
-      case 's':
-	{
-	  const char *str = va_arg(args, char *);
-	  string_builder_binary_strcat(s, str, strlen(str));
-	}
-	break;
-      case 'c':
-	string_builder_putchar(s, va_arg(args, INT32));
-	break;
-      case 'b':
-	string_builder_append_integer(s, va_arg(args, unsigned int), 2, 0);
-	break;
-      case 'o':
-	string_builder_append_integer(s, va_arg(args, unsigned int), 8, 0);
-	break;
-      case 'x':
-	string_builder_append_integer(s, va_arg(args, unsigned int), 16, 0);
-	break;
-      case 'X':
-	string_builder_append_integer(s, va_arg(args, unsigned int), 16,
-				      APPEND_UPPER_CASE);
-	break;
-      case 'u':
-	string_builder_append_integer(s, va_arg(args, unsigned int), 10, 0);
-	break;
-      case 'd':
-	string_builder_append_integer(s, va_arg(args, int), 10, APPEND_SIGNED);
-	break;	
-      default:
-	Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
-		   "'%c' 0x%x.\n", *fmt, *fmt);
       }
-      fmt++;
     } else {
       const char *start = fmt;
       while (*fmt && (*fmt != '%'))
