@@ -3,10 +3,10 @@
  * For conditions of distribution and use, see copyright notice in zlib.h 
  */
 
-/* @(#) $Id: gz_test.c,v 1.2 1999/10/05 05:48:32 hubbe Exp $ */
+/* @(#) $Id: gz_test.c,v 1.3 2000/01/30 00:07:22 hubbe Exp $ */
 
 #include <stdio.h>
-#include "zlib.h"
+#include <zlib.h>
 
 #ifdef STDC
 #  include <string.h>
