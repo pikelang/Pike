@@ -279,6 +279,7 @@ o Increased weakness granularity
     the kind of weakness its first argument should have; Pike.WEAK,
     Pike.WEAK_VALUES or Pike.WEAK_INDICES. No second argument implies
     Pike.WEAK, which is both Pike.WEAK_VALUES and Pike.WEAK_INDICES.
+    (This feature has been added to later 7.2 releases too.)
 
 
 New modules / classes / methods added:
