@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.31 1998/03/28 13:58:31 grubba Exp $");
+RCSID("$Id: socket.c,v 1.32 1998/04/02 22:30:30 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -405,7 +405,7 @@ void port_setup_program(void)
   add_function("query_address",socket_query_address,"function(:string)",0);
   add_function("errno",port_errno,"function(:int)",0);
   add_function("accept",port_accept,"function(:object)",0);
-  add_function("create",port_create,"function(void|string|int,void|mixed:void)",0);
+  add_function("create",port_create,"function(void|string|int,void|mixed,void|string:void)",0);
 
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
