@@ -1,0 +1,14 @@
+NAME
+	uniq - return one of each element
+
+SYNTAX
+	#include <array.h>
+
+	array uniq(array a);
+
+DESCRIPTION
+	This function returns an copy of the array a with all duplicate
+	values removed. The order of the values in the result is undefined.
+
+KEYWORDS
+	array

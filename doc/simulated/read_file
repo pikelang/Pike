@@ -1,5 +1,5 @@
 NAME
-	read_bytes - read a number of lines into a string from file
+	read_file - read a number of lines into a string from file
 
 SYNTAX
 	#include <stdio.h>
