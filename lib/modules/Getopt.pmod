@@ -33,18 +33,23 @@
 //!   the second argument to your @tt{main()@} function.
 //!
 //! @param shortform
-//!   The second is a string with the short form of your option.
-//!   The short form must be only one character long.
+//!   The second is a string with the short form of your option. The
+//!   short form must be only one character long. It can also be an
+//!   array of strings, in which case any of the options in the array
+//!   will be accepted.
 //!
 //! @param longform
-//!   This is an alternative and maybe more readable way to
-//!   give the same option. If you give @tt{"foo"@} as @[longform] your program
-//!   will accept @tt{--foo@} as argument.
+//!   This is an alternative and maybe more readable way to give the
+//!   same option. If you give @tt{"foo"@} as @[longform] your program
+//!   will accept @tt{--foo@} as argument. This argument can also be
+//!   an array of strings, in which case any of the options in the
+//!   array will be accepted.
 //!
 //! @param envvars
-//!   This argument specifies the environment variables that can be
-//!   used to specify the same option. This option exists to make it easier
-//!   to customize program usage.
+//!   This argument specifies an environment variable that can be used
+//!   to specify the same option, to make it easier to customize
+//!   program usage. It can also be an array of strings, in which case
+//!   any of the mentioned variables in the array may be used.
 //!
 //! @param def
 //!   This argument has two functions: It specifies if the option takes an
@@ -55,11 +60,8 @@
 //! @param throw_errors
 //!   If @[throw_errors] has been specified @[find_option] will throw errors
 //!   on failure. If it has been left out, or is @tt{0@} (zero), it will
-//!   instead print an error message and exit the program on failure.
-//!
-//!   Also, as an extra bonus: @[shortform], @[longform] and @[envvars] can
-//!   all be arrays, in which case any of the options in the array will be
-//!   accepted.
+//!   instead print an error message on @[Stdio.stderr] and exit the
+//!   program with result code 1 on failure.
 //!
 //! @returns
 //!   Returns the value the option has been set to if any.
@@ -263,7 +265,8 @@ constant MAY_HAVE_ARG=3;
 //! @param throw_errors
 //!   If @[throw_errors] has been specified @[find_all_options()] will throw
 //!   errors on failure. If it has been left out, or is @tt{0@} (zero), it will
-//!   instead print an error message and exit the program on failure.
+//!   instead print an error message on @[Stdio.stderr] and exit the
+//!   program with result code 1 on failure.
 //!
 //! @returns
 //!   The good news is that the output from this function is a lot simpler.
@@ -426,7 +429,8 @@ array find_all_options(array(string) argv,
 //!
 //! If @[throw_errors] has been specified @[get_args()] will throw errors
 //! on failure. If it has been left out, or is @tt{0@} (zero), it will
-//! instead print an error message and exit the program on failure.
+//! instead print an error message on @[Stdio.stderr] and exit the
+//! program with result code 1 on failure.
 //!
 //! @returns
 //! On success a new @[argv] array without the parsed options is
