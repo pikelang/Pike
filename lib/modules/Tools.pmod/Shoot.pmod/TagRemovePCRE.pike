@@ -1,4 +1,5 @@
 #pike __REAL_VERSION__
+#if constant(Regexp.PCRE)
 inherit Tools.Shoot.TagRemoveSscanf;
 
 constant name="Tag removal u. Regexp.PCRE";
@@ -11,3 +12,11 @@ string tagremove(string line)
    return pcre->replace(line,"");
 }
 
+#else /* !constant(regexp.PCRE) */
+
+void perform()
+{
+  exit(1);
+}
+
+#endif /* constant(Regexp.PCRE) */
