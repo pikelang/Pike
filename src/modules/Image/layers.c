@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.84 2003/01/27 11:59:14 mirar Exp $
+|| $Id: layers.c,v 1.85 2003/02/01 18:42:03 mirar Exp $
 */
 
 /*
@@ -201,7 +201,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.84 2003/01/27 11:59:14 mirar Exp $");
+RCSID("$Id: layers.c,v 1.85 2003/02/01 18:42:03 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1291,9 +1291,9 @@ static void image_layer_ysize(INT32 args)
 
 static void image_layer_set_tiled(INT32 args)
 {
-   get_all_args("Image.Layer->set_offset",args,"%i",
-		&(THIS->tiled));
-   THIS->tiled=!!THIS->tiled;
+   INT_TYPE tiled;
+   get_all_args("Image.Layer->set_offset",args,"%i",&tiled);
+   THIS->tiled=!!tiled;
    THIS->really_optimize_alpha=really_optimize_p(THIS);
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -2593,6 +2593,7 @@ static INLINE void img_lay_stroke(struct layer *ly,
 				  int len)
 {
    if (len<0) Pike_error("internal error: stroke len < 0\n");
+   if (!ly->row_func) Pike_error("internal error: row_func=NULL\n");
 
    if (ly->row_func==(lm_row_func*)lm_spec_burn_alpha)
    {
