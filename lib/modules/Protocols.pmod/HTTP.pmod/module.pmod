@@ -89,8 +89,7 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
     url=Standards.URI(url);
 
   if( (< "httpu", "httpmu" >)[url->scheme] ) {
-    do_udp_method(method, url, query_variables, request_headers, data);
-    return 0;
+    return do_udp_method(method, url, query_variables, request_headers, data);
   }
 
   if(!con)
@@ -146,11 +145,11 @@ constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
   return con;
 }
 
-static void do_udp_method(string method, Standards.URI url,
-			  void|mapping(string:int|string) query_variables,
-			  void|mapping(string:string|array(string))
-			    request_headers, void|Stdio.UDP udp,
-			  void|string data)
+static .Query do_udp_method(string method, Standards.URI url,
+			       void|mapping(string:int|string) query_variables,
+			       void|mapping(string:string|array(string))
+			       request_headers, void|Stdio.UDP udp,
+			       void|string data)
 {
   if(!request_headers)
     request_headers = ([]);
@@ -166,14 +165,27 @@ static void do_udp_method(string method, Standards.URI url,
   if(!udp) {
     udp = Stdio.UDP();
     int port = 10000 + random(1000);
-    while( catch( udp->bind(port++) ) );
+    int i;
+    while(1) {
+      if( !catch( udp->bind(port++) ) ) break;
+      if( i++ > 1000 ) error("Could not open a UDP port.\n");
+    }
     if(url->method=="httpmu") {
-      udp->enable_multicast("130.236.182.86");
+      mapping ifs = Stdio.gethostip();
+      if(!sizeof(ifs)) error("No Internet interface found.\n");
+      foreach(ifs; string i; mapping data)
+	if(sizeof(data->ips)) {
+	  udp->enable_multicast(data->ips[0]);
+	  break;
+	}
       udp->add_membership(url->host, 0, 0);
     }
     udp->set_multicast_ttl(4);
   }
   udp->send(url->host, url->port, msg);
+  .Query q=.Query();
+  q->con = udp;
+  return q;
 }
 
 //! Sends a HTTP GET request to the server in the URL and returns the
