@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.171 2001/10/14 19:25:41 mast Exp $
+ * $Id: master.pike.in,v 1.172 2001/10/26 15:21:09 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -516,7 +516,7 @@ static program low_findprog(string pname,
 #if constant(load_module)
     case ".so":
       if (fname == "") {
-	werror(sprintf("low_find_prog(\"%s\", \"%s\") => load_module(\"\")\n"
+	werror(sprintf("low_findprog(\"%s\", \"%s\") => load_module(\"\")\n"
 		       "%s\n", pname, ext, describe_backtrace(backtrace())));
       }
 
@@ -2034,10 +2034,11 @@ class Describer
       ident[m] = "@" + identcount++;
 
     string res, typ;
-    if (catch (typ=sprintf("%t",m)))
-      typ = "object";		// Object with a broken _sprintf(), probably.
-    switch(typ)
-    {
+    catch {
+      if (catch (typ=sprintf("%t",m)))
+	typ = "object";		// Object with a broken _sprintf(), probably.
+      switch(typ)
+      {
       case "int":
       case "float":
 	return (string)m;
@@ -2067,8 +2068,12 @@ class Describer
 	    break;
 	  }
 	res = typ;
+      }
+    };
+    if (!res) {
+      // Extra paranoia case.
+      res = sprintf("Instance of %O", _typeof(m));
     }
-
     if (stringp (ident[m]))
       return ident[m] + "=" + res;
     return res;
