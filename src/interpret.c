@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.273 2002/10/28 13:02:02 nilsson Exp $
+|| $Id: interpret.c,v 1.274 2002/10/30 17:02:40 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.273 2002/10/28 13:02:02 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.274 2002/10/30 17:02:40 nilsson Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -874,7 +874,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #ifdef PIKE_DEBUG
   if (t_flag) {
     int i;
-    fprintf(stderr, "Calling code at 0x%p:\n", pc);
+    fprintf(stderr, "Calling code at %p:\n", pc);
 #ifdef PIKE_OPCODE_ALIGN
     if (((INT32)pc) % PIKE_OPCODE_ALIGN) {
       Pike_fatal("Odd offset!\n");
