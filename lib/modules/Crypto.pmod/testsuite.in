@@ -1,8 +1,8 @@
-dnl $Id: testsuite.in,v 1.21 2003/12/03 05:07:27 nilsson Exp $
+dnl $Id: testsuite.in,v 1.22 2003/12/03 09:57:04 nilsson Exp $
 
 dnl Nettle.Yarrow
 
-cond([[ master()->resolv("Nettle") && master()->resolv("Nettle")["Yarrow"] ]], [[
+cond_resolv( Nettle.Yarrow, [[
   test_eq( Nettle.Yarrow()->min_seed_size(), 32)
   test_eval_error( Nettle.Yarrow()->get_seed() )
   test_eq( Nettle.Yarrow()->seed("\0"*32)->get_seed(),
@@ -32,7 +32,7 @@ cond([[ master()->resolv("Nettle") && master()->resolv("Nettle")["Yarrow"] ]], [
 ]])  
 
 dnl Crypto.Random
-cond([[ master()->resolv("Nettle")["Yarrow"] ]], [[
+cond_resolv( Nettle.Yarrow, [[
   test_eq( sizeof( Crypto.Random.random_string(1) ), 1)
   test_eq( sizeof( Crypto.Random.random_string(31) ), 31)
   test_eq( sizeof( Crypto.Random.random_string(128) ), 128)
@@ -64,7 +64,7 @@ test_true(
 
 
 dnl Crypto.MD5
-cond([[ Crypto["MD5"] ]], [[
+cond_resolv( Nettle.MD5, [[
   test_eq(Crypto.MD5()->update("")->digest(),
           String.hex2string("d41d8cd98f00b204e9800998ecf8427e"))
   test_eq(Crypto.MD5()->update("a")->digest(),
@@ -89,7 +89,7 @@ cond([[ Crypto["MD5"] ]], [[
 
 
 dnl Crypto.MD4
-cond([[ Crypto["MD4"] ]], [[
+cond_resolv( Nettle.MD4, [[
   test_eq(Crypto.MD4()->update("")->digest(),
           String.hex2string("31d6cfe0d16ae931b73c59d7e0c089c0"))
   test_eq(Crypto.MD4()->update("a")->digest(),
@@ -114,7 +114,7 @@ cond([[ Crypto["MD4"] ]], [[
 
 
 dnl Crypto.SHA
-cond([[ Crypto["SHA"] ]], [[
+cond_resolv( Nettle.SHA, [[
   test_eq(Crypto.SHA()->update("")->digest(),
           String.hex2string("da39a3ee5e6b4b0d3255bfef95601890afd80709"))
   test_eq(Crypto.SHA()->update("abc")->digest(),
@@ -135,7 +135,7 @@ cond([[ Crypto["SHA"] ]], [[
 
 
 dnl Crypto.SHA256
-cond([[ Crypto["SHA256"] ]], [[
+cond_resolv( Nettle.SHA256, [[
   test_eq(Crypto.SHA256()->update("")->digest(),
           String.hex2string("e3b0c44298fc1c149afbf4c8996fb92427"
             "ae41e4649b934ca495991b7852b855"))
@@ -160,7 +160,7 @@ cond([[ Crypto["SHA256"] ]], [[
 
 
 dnl Crypto.DES
-cond([[ Crypto["DES"] ]], [[
+cond_resolv( Nettle.DES, [[
   test_eq( Crypto.DES.fix_parity("\xff"*8), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("\xff"*9), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("12345678"), "12244778" )
@@ -187,7 +187,7 @@ test_eq([[
 
 
 dnl Crypto.DES3
-cond([[ Crypto["DES3"] ]], [[
+cond_resolv( Nettle.DES3, [[
   test_eq( Crypto.DES3.fix_parity("\xff"*8*3), "\xfe"*8*3 )
   test_eq( Crypto.DES3.fix_parity("\xff"*(8*3+1)), "\xfe"*8*3 )
   test_eq( Crypto.DES3.fix_parity("12345678"*3), "12244778"*3 )
@@ -204,7 +204,7 @@ dnl  test_eq( Crypto.DES3()->set_encrypt_key( "12345678qwertyui" )->crypt("AAAAA
 ]])
 
 define(test_cipher,[[
-cond([[ Crypto["$1"] ]],[[
+cond_resolv( Nettle.$1,[[
   test_eq( Crypto.$1->name(), "$2" )
   test_eq( Crypto.$1()->block_size(), Crypto.$1->block_size() )
   test_eq( sizeof(Crypto.$1()->make_key()), Crypto.$1->key_size() )
