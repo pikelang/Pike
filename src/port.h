@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.28 2000/06/29 18:16:01 grubba Exp $
+ * $Id: port.h,v 1.29 2000/06/30 09:46:14 grubba Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -76,7 +76,7 @@ int STRCASECMP(const char *a,const char *b);
 #endif
 
 #ifndef HAVE_MEMSET
-char *MEMSET (char *s,int c,size_t n);
+void *MEMSET (void *s,int c,size_t n);
 #else
 #  define MEMSET memset
 #endif
@@ -111,9 +111,9 @@ int MEMCMP(const void *b,const void *a,size_t s);
 #endif
 
 #ifndef HAVE_MEMCHR
-char *MEMCHR(char *p,char c,size_t e);
+void *MEMCHR(void *p,char c,size_t e);
 #else
-#  define MEMCHR(X,Y,Z) ((char *)memchr(X,Y,Z))
+#  define MEMCHR(X,Y,Z) ((void *)memchr(X,Y,Z))
 #endif
 
 #ifndef HAVE_STRCHR
