@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.551 2001/09/18 22:55:14 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.552 2001/09/22 12:14:13 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -634,7 +634,7 @@ case "$pike_cv_sys_os" in
   ;;
   BSD/OS*)
     case "`uname -r`" in
-      4.*) ;;
+      [4-9].*) ;;
       *) LD="$BINDIR/smartlink shlicc";;
     esac
   ;;
@@ -5327,7 +5327,7 @@ if test -z "$LDSHARED" ; then
     OpenBSD*) LDSHARED="ld -Bshareable";;
     BSD/OS*)
       case "`uname -r`" in
-       4.*) LDSHARED="$CC -shared";;
+       [4-9].*) LDSHARED="$CC -shared";;
         *) LDSHARED="shlicc -r";;
       esac
     ;;
