@@ -47,7 +47,7 @@ INT32 hashprimes[32] =
 
 int my_log2(unsigned INT32 x)
 {
-  static char bit[256] =
+  static signed char bit[256] =
   {
     -1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 
      4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 
