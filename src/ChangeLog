@@ -1,3 +1,8 @@
+Sun Dec  1 22:15:12 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* array.c: ({ destructed_object }) - ({ 0 }) should now work properly
+	* builtin_efuns.c: glob fixed
+
 Wed Nov 27 10:15:59 1996  Niels Möller  <nisse@morpheus.infovav.se>
 
 	* dynamic_load.c (f_load_module): Fixed bugs when building file
