@@ -1,3 +1,8 @@
+1999-03-13  Marcus Comstedt  <marcus@idonex.se>
+
+	* modules/readline/: Obsolete module removed.  Replaced with new
+	pike module Stdio.Readline.
+
 Thu Mar 11 16:41:11 1999    <nisse@idonex.se>
 
 	* modules/Gmp/next_prime.c (mpz_next_prime): Fixed off-by-one
