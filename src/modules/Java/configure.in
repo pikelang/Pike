@@ -436,7 +436,7 @@ else
   :
 fi
 
-if test x"$pike_cv_sys_os" = xWindows_NT ; then
+if test x"${pike_cv_java}${pike_cv_sys_os}" = xyesWindows_NT ; then
   JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32 $JAVA_LIBS"
   PIKE_FEATURE(Java,[yes ($JAVA_LIBS)])
 fi
