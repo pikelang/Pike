@@ -116,7 +116,7 @@ void grab(object w)
   exit(0);
 }
 
-void got_event( int q, object w, mapping  e )
+void got_event( mixed a, mixed b, object e )
 {
   if(e->type == "expose" )
     call_out(grab, 0.01, w );
@@ -129,9 +129,9 @@ void show_recursively(object w)
   w->show();
 }
 
+object w;
 int main(int argc, array (string) argv)
 {
-  object w;
   werror("IMAGE ["+argv[1]+"]\n");
   if(!write) write = Stdio.stdout->write;
   source = argv[1];
@@ -154,10 +154,11 @@ int main(int argc, array (string) argv)
     w->add( ex=get_widget_from( argv[1] ) );
     w->set_border_width(20);
   } else {
-    w = get_widget_from( argv[1] );
+    ex = w = get_widget_from( argv[1] );
     w->set_border_width( 20 );
   }
+  w->signal_connect( "event", got_event, w );
+  w->signal_connect( "destroy", _exit, 1 );
   show_recursively( w );
-  w->signal_connect( "event", got_event );
   return -1;
 }
