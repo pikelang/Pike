@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.709 2004/03/18 14:53:18 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.710 2004/04/01 17:05:29 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -10135,7 +10135,10 @@ void test_dir(string dir, int|void base_size, object|void handler)
       test_dir(file, base_size, handler);
     }
     else if(stat[1]>=0){
-      // werror("Testing file %O\n", file);
+      // DEBUG
+      if (lower_case(uname()->sysname||"") == "osf1") {
+        werror("Testing file %O...\n", file);
+      }
       if(has_suffix(file, ".pike") || has_suffix(file, ".pmod") ||
 	 has_suffix(file, ".so"))
       {
@@ -10167,6 +10170,7 @@ void test_dir(string dir, int|void base_size, object|void handler)
 	  } else
 #endif /* constant(load_module) */
 	  {
+	    // "XX" pads suffix to 4 characters.
 	    test_resolv(file+"XX", base_size, handler);
 	  }
 	} else {
@@ -10179,7 +10183,8 @@ void test_dir(string dir, int|void base_size, object|void handler)
 int a()
 {
   Array.map(master()->pike_module_path,test_dir);
-  foreach(({"0.6","7.0","7.2"}),string ver) {
+  // FIXME: Forward compatibility?
+  foreach(({"0.6","7.0","7.2","7.4"}),string ver) {
     object handler = master()->get_compilation_handler(@(array(int))(ver/"."));
     Array.map(handler->pike_module_path,test_dir,0,handler);
   }
