@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.109 2001/03/10 22:11:43 mirar Exp $
+// $Id: module.pmod,v 1.110 2001/04/07 08:49:49 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -1057,7 +1057,10 @@ class FILE
     if( !get_data() )
     {
       if( sizeof( cached_lines ) > lp && cached_lines[lp] != "" )
-	return cached_lines[lp++];
+      {
+	 string r = cached_lines[ lp++ ];
+	 return (bpos += sizeof( r  )+1),r;
+      }
       cached_lines = ({});
       lp = 0;
       return 0;
@@ -1107,14 +1110,14 @@ class FILE
 
     while (sizeof(res)<n)
     {
-      if (!get_data()) 
-	if (string s=gets()) return res+({s});
-	else if (!sizeof(res)) return 0;
-	else return res;
+       if (!get_data()) 
+	  if (string s=gets()) return res+({s});
+	  else if (!sizeof(res)) return 0;
+	  else return res;
 
-      array a=b[bpos..]/"\n";
-      bpos=strlen(b)-strlen(a[-1]);
-      res+=a[..sizeof(a)-2];
+       array a=b[bpos..]/"\n";
+       bpos=strlen(b)-strlen(a[-1]);
+       res+=a[..sizeof(a)-2];
     }
     if (sizeof(res)>n)
     {
