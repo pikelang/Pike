@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.203 2003/07/23 18:29:32 nilsson Exp $
+|| $Id: image.c,v 1.204 2003/07/26 20:19:08 mirar Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.203 2003/07/23 18:29:32 nilsson Exp $");
+RCSID("$Id: image.c,v 1.204 2003/07/26 20:19:08 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3507,6 +3507,7 @@ static void _image_outline(INT32 args,int mask)
 	 }
       d+=width;
    }
+   free(tmp);
 
    if (matrix!=defaultmatrix) free(matrix);
 
