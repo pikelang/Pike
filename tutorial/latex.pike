@@ -195,16 +195,21 @@ string convert_table(TAG table)
 
 string convert_gfx(Sgml.Tag tag)
 {
-  string file=Gfx.convert( tag->params,
-			   "eps",
-			   300.0,
-			   tag->data && Sgml.get_text(tag->data));
+  string file;
+  float dpi;
+  [file,dpi]=Gfx.convert( tag->params,
+			  "eepic|eps",
+			  300.0,
+			  tag->data && Sgml.get_text(tag->data));
 
   switch( (file/".")[-1] )
   {
     case "tex": return "\\input{"+file+"}";
-    case "eps": return "\\epsfbox{"+file+"}";
-    default: return "\\epsfbox{error.eps}";
+    default: file="error.eps";
+
+    case "eps":
+//      return "\\epsfbox{"+file+"}";
+      return "\\includegraphics{"+file+"}";
   }
 }
 
@@ -638,11 +643,13 @@ string package(string x)
 {
   return #"
 \\documentclass[twoside,a4paper]{book}
+\\usepackage{epic}
+\\usepackage{eepic}
 \\usepackage{isolatin1}
 \\usepackage{latexsym}  % For $\Box$
 \\usepackage{amsmath}
 \\usepackage{longtable}
-\\usepackage{epsfig}
+\\usepackage{graphicx}
 \\begin{document}
 \\author{html2latex}\n
 \\setlength{\\unitlength}{1mm}\n

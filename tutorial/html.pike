@@ -822,12 +822,19 @@ SGML convert(SGML data)
 
 	 case "illustration":
 	 case "image":
-	    ret+=({ mkimgtag(Gfx.convert(data->params,
+	   {
+	     string file;
+	     float dpi;
+	     [file,dpi]=Gfx.convert(data->params,
 					 "jpg|gif",
-					 75.0,
-					 data->data && Sgml.get_text(data->data)),data->params)
-			     });
+					 110.0,
+					 data->data && Sgml.get_text(data->data));
+	     // FIXME: what do we do if the returned file
+	     // is in 300 dpi or something??
+
+	    ret+=({ mkimgtag(file,data->params) });
 	    continue;
+	   }
 
 	 case "box":
 	    ret+=({

@@ -68,8 +68,13 @@ tutorial.ps.gz: tutorial.ps
 tutorial.ps.bz: tutorial.ps
 	bzip -9 <tutorial.ps >tutorial.ps.gz
 
-tutorial.pdf: tutorial.tex
-	pdflatex tutorial.tex
+tutorial.pdftex: .DUMMY $(SRCFILES)
+	$(pike) ./wmmltohtml2 tutorial.wmml pdflatex tutorial
+
+tutorial.pdf: tutorial.pdftex
+	-@rm tutorial.aux
+	pdflatex tutorial.pdftex
+	pdflatex tutorial.pdftex
 
 tut.html: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml sitebuilder tut
@@ -87,7 +92,7 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
 
 clean:
-	-rm -f *.html *.md illustration_cache illustration*.* $(MADEFILES) 
+	-rm -f *.html *.md illustration_cache gfx/* $(MADEFILES) 
 	-rm -f tutorial.dvi tutorial.tex tutorial.aux
 	-rm -f tutorial.log tutorial.toc
 

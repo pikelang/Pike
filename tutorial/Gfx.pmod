@@ -4,7 +4,7 @@
 
 int image_num;
 mapping(string:array(string)) image_cache=([]);
-mapping(string:string) illustration_cache=([]);
+mapping(string:array) illustration_cache=([]);
 
 
 void save_image_cache()
@@ -46,7 +46,7 @@ string cached_write(string data, string ext)
     }
 
   image_num++;
-  string filename="illustration"+image_num+"."+ext;
+  string filename="gfx/i"+image_num+"."+ext;
   rm(filename);
   werror("Writing "+filename+".\n");
   Stdio.write_file(filename,data);
@@ -64,6 +64,7 @@ string cached_write(string data, string ext)
 
 string mkgif(mixed o,void|mapping options)
 {
+  random_seed(0);
 //  werror(master()->describe_backtrace(({"FOO\n",backtrace()})));
   if(!options) options=([]);
   string g=
@@ -81,6 +82,7 @@ string mkjpg(mixed o,void|mapping options)
    return cached_write(g,"jpg");
 }
 
+#define PAPER_COLOUR 255,255,255
 
 string mkeps(mixed o,void|mapping options)
 {
@@ -103,7 +105,15 @@ string mkeps(mixed o,void|mapping options)
 
 string mkpng(mixed o,void|mapping options)
 {
+  random_seed(0);
   if(!options) options=([]);
+  if(options->alpha)
+  {
+//    werror("\nFLALKAJF:LAKJF\n\n");
+    object x=Image.Image( o->xsize(), o->ysize(), 255,255,255);
+    x->paste_mask(o,options->alpha);
+    o=x;
+  }
   string g=Image.PNG.encode(o,options);
   return cached_write(g,"png");
 }
@@ -111,7 +121,7 @@ string mkpng(mixed o,void|mapping options)
 mapping(string:mapping) srccache=([]);
 Image.Image errimg=Image.image(10,10)->test();
 
-mapping read_image(string file)
+mapping read_image(string file, float|void wanted_dpi)
 {
   if(!file) return 0;
 
@@ -126,16 +136,49 @@ mapping read_image(string file)
   {
     Process.create_process(({"fig2dev","-L","ps",file,"___tmp.ps"}))->wait();
     Stdio.File("___tmp.ps","aw")->write("showpage\n");
-//    Process.system("/bin/sh -c 'gs -q -sDEVICE=pbmraw -r225 -g2500x2500 -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null'");
+    
+    int res;
+    int scale;
+    switch(wanted_dpi)
+    {
+      case 0:
+      case 0.0..: scale=3; wanted_dpi=75.0; break;
+      case 10.0..:  scale=5; break;
+      case 50.0..:  scale=3; break;
+      case 150.0..: scale=2; break;
+      case 300.0..: scale=1; break;
+    }
 
-    Process.create_process(({"gs","-q","-sDEVICE=pbmraw","-r225","-g2500x2500","-sOutputFile=___tmp.ppm","___tmp.ps"}),(["stdin":Stdio.File("/dev/null","r"),"stdout":Stdio.File("/dev/null","w")]))->wait();
-    object o=read_image("___tmp.ppm")->autocrop()->scale(1.0/3); //->rotate(-90);
-    o=Image.image(o->xsize()+40, o->ysize()+40, 255,255,255)->paste(o,20,20);
+    res=(int)(scale * wanted_dpi);
+    int maxsize=11*res; // Max size = 11x11 inch
+
+    rm("___tmp.ppm");
+    werror("[rendering at %dx%d dpi] ",(int)wanted_dpi,scale);
+#if 0
+    Process.system("/bin/sh -c 'gs -q -sDEVICE=pbmraw -r"+res+" -g"+maxsize+"x"+maxsize+" -sOutputFile=___tmp.ppm ___tmp.ps </dev/null >/dev/null'");
+#else
+    int r=Process.create_process(({"gs","-q","-sDEVICE=pbmraw",
+				   "-r"+res,sprintf("-g%dx%d",maxsize,maxsize),
+				   "-sOutputFile=___tmp.ppm","___tmp.ps"}),
+				 (["stdin":Stdio.File("/dev/null","r"),
+				  "stdout":Stdio.File("/dev/null","w")]))->wait();
+
+    if(r)
+    {
+      werror("Gs exited with return code %d.\n",r);
+      exit(1);
+    }
+#endif
+    object o=read_image("___tmp.ppm")->image;
+    m_delete(srccache,"___tmp.ppm");
+    o=o->autocrop()->scale(2.0/3/scale); //->rotate(-90);
+    o=Image.image(o->xsize()+40, o->ysize()+40, PAPER_COLOUR)->paste(o,20,20);
     rm("___tmp.ps");
     rm("___tmp.ppm");
-    mapping tmp=(["image":o,"dpi":75.0]);
-    if(o!=errimg) srccache[file]=tmp;
-    return tmp;
+    // Not cached, too big..
+    return (["image":o,"dpi":wanted_dpi]);
+//    if(o!=errimg) srccache[file]=tmp;
+//    return tmp;
   }
 
   string data=Stdio.read_file(file);
@@ -178,12 +221,21 @@ string gettext(string s)
 }
 
 
-string convert(mapping params,
-	       string wanted_formats,
-	       void|float wanted_dpi,
-	       void|string filter)
+array convret(string key,
+	      string ret,
+	      float dpi)
 {
-  if(params->__from__) werror("[%s]",params->__from__);
+  array tmp=({ret, dpi});
+  illustration_cache[key]=tmp;
+  save_image_cache();
+  return tmp;
+}
+
+array convert(mapping params,
+	     string wanted_formats,
+	     void|float wanted_dpi,
+	     void|string filter)
+{
   if(!wanted_dpi) wanted_dpi=75.0;
   string input=params->src;
   array(string) tmp=input/"|";
@@ -193,17 +245,16 @@ string convert(mapping params,
 
   array(float) dpi = (array(float)) ( (params->dpi || "75.0" )/"|" );
   if(sizeof(dpi) < sizeof(tmp))
-    tmp+=({ tmp[-1] }) * ( sizeof(tmp) - sizeof(dpi) );
+    dpi+=({ dpi[-1] }) * ( sizeof(tmp) - sizeof(dpi) );
 
   mapping(string:string) ext_to_input=mkmapping(Array.map(tmp,gettext),tmp);
   mapping(string:float) ext_to_dpi=mkmapping(Array.map(tmp,gettext),dpi);
-
-//  werror("GNAPP: %O\n",params);
 
   if(!filter)
   {
     string best;
     float badness=100000.0;
+    float best_dpi=0.0;
     
     foreach(wanted_formats/"|", string fmt)
       {
@@ -214,17 +265,20 @@ string convert(mapping params,
 	  if(tmp < badness)
 	  {
 	    best=ext_to_input[fmt];
+	    best_dpi=ext_to_dpi[fmt];
 	    badness=tmp;
 	  }
 	}
       }
     if(best)
     {
-      werror("convert not required: %s\n",best);
-      return best;
+//      werror("convert not required: %s\n",best);
+      return ({ best, best_dpi });
     }
   }
 
+  werror("GFX: ");
+  if(params->__from__) werror("[%s] ",params->__from__);
   array(int) mtimes=column(Array.map(tmp, file_stat)-({0}), 3);
 
   string key=encode_value( aggregate (
@@ -236,39 +290,58 @@ string convert(mapping params,
     filter));
 
   if(illustration_cache[key])
-    return illustration_cache[key];
-
-
-  string primary_format=(wanted_formats/"|")[0];
-
-
-  // FIXME: check dpi!
-  switch(primary_format)
   {
-    case "eps":
-      if(ext_to_input->fig)
-      {
-	Process.create_process( ({"fig2dev","-L","ps","-m","0.6666666666",ext_to_input->fig,"___tmp.eps" }))->wait();
-	return illustration_cache[key]=
-	  cached_write(Stdio.read_file("___tmp.eps"),"eps");
-      }
-      break;
-
-    case "tex":
-      if(ext_to_input->fig)
-      {
-	Process.create_process( ({"fig2dev","-L","latex",ext_to_input->fig,"___tmp.tex" }))->wait();
-	return illustration_cache[key]=
-	  cached_write(Stdio.read_file("___tmp.tex"),"tex");
-      }
+    werror("(cached) %O\n",illustration_cache[key][0]||"Error");
+    return illustration_cache[key];
   }
+
+
+  foreach(wanted_formats/"|", string primary_format)
+    {
+      // FIXME: check dpi???
+      switch(primary_format)
+      {
+	case "eps":
+	  if(ext_to_input->fig)
+	  {
+	    werror("fig->eps ");
+	    Process.create_process( ({"fig2dev","-L","ps","-m","0.6666666666",ext_to_input->fig,"___tmp.eps" }))->wait();
+	    return convret(key, 
+			   cached_write(Stdio.read_file("___tmp.eps"),"eps"),
+			   0.0);
+	  }
+	  break;
+	  
+	case "tex":
+	  if(ext_to_input->fig)
+	  {
+	    werror("fig->tex ");
+	    Process.create_process( ({"fig2dev","-L","latex",ext_to_input->fig,"___tmp.tex" }))->wait();
+	    return convret(key, 
+			   cached_write(Stdio.read_file("___tmp.tex"),"tex"), 
+			   0.0);
+	  }
+	  
+	case "eepic":
+	  if(ext_to_input->fig)
+	  {
+	    werror("fig->eepic ");
+	    Process.create_process( ({"fig2dev","-L","eepic","-m","0.66666666666",ext_to_input->fig,"___tmp.tex" }))->wait();
+	    
+	    return convret(key, 
+			   cached_write(Stdio.read_file("___tmp.tex"),"tex"),
+			   0.0);
+	  }
+      }
+    }
 
   mapping o;
   for(int e=0;e<sizeof(tmp);e++)
   {
     if(dpi[e]<wanted_dpi) continue;
-    if(o=read_image(tmp[e]))
+    if(o=read_image(tmp[e], wanted_dpi))
     {
+      write("%s -> ",tmp[e]);
       if(!o->dpi) o->dpi=dpi[e];
       break;
     }
@@ -282,8 +355,9 @@ string convert(mapping params,
 
     for(int e=0;e<sizeof(tmp);e++)
     {
-      if(o=read_image(tmp[e]))
+      if(o=read_image(tmp[e], wanted_dpi))
       {
+	write("%s -> ",tmp[e]);
 	if(!o->dpi) o->dpi=dpi[e];
 	break;
       }
@@ -296,8 +370,10 @@ string convert(mapping params,
   }
 
 
+  random_seed(0);
   if(filter)
   {
+    werror("running..");
     mixed err=catch {
       o=(["image":compile_string("import Image;\n"
 		       "mixed `()(object src) { "+filter+" ;}")()(o->image)]);
@@ -324,10 +400,8 @@ string convert(mapping params,
       if(err) werror(master()->describe_backtrace(err));
       if(ret) break;
     }
-  illustration_cache[key]=ret;
-  save_image_cache();
-//  werror("--> %s\n",ret);
-  return ret;
+
+  return convret(key, ret, o->dpi);
 }
 
 

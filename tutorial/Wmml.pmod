@@ -1058,6 +1058,7 @@ SGML unlink_unknown_links(SGML data, mapping known_links)
 
 array execute_contents(Tag tag)
 {
+  random_seed(0);
    string data=get_text(tag->data);
 
    data=replace(data,"\n<p>","\n");
