@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.52 1999/02/12 03:29:45 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.53 1999/02/28 17:07:43 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
