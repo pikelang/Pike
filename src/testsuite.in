@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.385 2001/05/30 16:01:16 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.386 2001/06/06 02:22:36 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2260,6 +2260,27 @@ test_any([[
   m_delete (m, 1);
   return get_weak_flag (([]));
 ]], 0);
+test_any([[
+  array a = ({});
+  array b = set_weak_flag (({}), 1);
+  return get_weak_flag (a);
+]], 0)
+test_any([[
+  array a = set_weak_flag (({}), 1);
+  array b = set_weak_flag (({}), 0);
+  return !get_weak_flag (a);
+]], 0)
+test_false(set_weak_flag (({}), 0) == set_weak_flag (({}), 1))
+test_any([[
+  multiset a = (<>);
+  multiset b = set_weak_flag ((<>), 1);
+  return get_weak_flag (a);
+]], 0)
+test_any([[
+  multiset a = set_weak_flag ((<>), 1);
+  multiset b = set_weak_flag ((<>), 0);
+  return !get_weak_flag (a);
+]], 0)
 
 test_equal([[lambda(mapping x){return ({x[17]++,x[17]++,x[17]++});}(([]))]],
 		[[({0,1,2})]])
