@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.278 2003/05/15 13:54:07 grubba Exp $
+// $Id: master.pike.in,v 1.279 2003/05/19 12:09:37 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1804,8 +1804,7 @@ void _main(array(string) orig_argv, array(string) env)
     foreach(syms[1..], string sym)
       if(v) v = v[sym];
     if(!v)
-      _error("Could not resolv %s\n"
-	     "Is your PIKE_MODULE_PATH environment variable set correctly?\n",
+      _error("Could not resolv %s. (Perhaps the installed pike tree has been moved.)\n",
 	     syms*".");
     return v;
   };
