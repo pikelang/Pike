@@ -93,24 +93,16 @@ int test_unicode() {
 
 int test_realpike() {
   int status = 1;
-  foreach(Filesystem.Traversion("lib"); string path; string file)
-    if(has_suffix(file, ".pike") || has_suffix(file, ".pmod"))
-      if(!has_value(Stdio.read_file(path+file),"#pike")) {
-	write("%s%s is missing a #pike directive.\n", path,file);
-	status = 0;
-      }
-  foreach(Filesystem.Traversion("bin"); string path; string file)
-    if(has_suffix(file, ".pike"))
-      if(!has_value(Stdio.read_file(path+file),"#pike")) {
-	write("%s%s is missing a #pike directive.\n", path,file);
-	status = 0;
-      }
-  foreach(Filesystem.Traversion("tools"); string path; string file)
-    if(has_suffix(file, ".pike"))
-      if(!has_value(Stdio.read_file(path+file),"#pike")) {
-	write("%s%s is missing a #pike directive.\n", path,file);
-	status = 0;
-      }
+
+  // bin and tools shouldn't really be #pike-ified, since they
+  // should run with the pike it is bundled with.
+  foreach( ({ "lib", /* "bin", "tools" */ }), string dir)
+    foreach(Filesystem.Traversion(dir); string path; string file)
+      if(has_suffix(file, ".pike") || has_suffix(file, ".pmod"))
+	if(!has_value(Stdio.read_file(path+file),"#pike")) {
+	  write("%s%s is missing a #pike directive.\n", path,file);
+	  status = 0;
+	}
   foreach(Filesystem.Traversion("src"); string path; string file)
     if(file=="module.pmod.in" &&
        !has_value(Stdio.read_file(path+file),"#pike")) {
