@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.19 1999/03/01 05:32:08 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.20 1999/03/06 04:13:13 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -217,17 +217,28 @@ int main(int argc, string *argv)
 	      break;
 	    
 	    default:
-	      o=clone(compile_string(test + widener,fname));
+	      mixed err;
+	      if (err = catch{
+		o=clone(compile_string(test + widener,fname));
 	    
-	      if(check > 1) _verify_internals();
+		if(check > 1) _verify_internals();
 	    
-	      a=b=0;
-	      if(t) trace(t);
-	      if(functionp(o->a)) a=o->a();
-	      if(functionp(o->b)) b=o->b();
-	      if(t) trace(0);
+		a=b=0;
+		if(t) trace(t);
+		if(functionp(o->a)) a=o->a();
+		if(functionp(o->b)) b=o->b();
+		if(t) trace(0);
 	    
-	      if(check > 1) _verify_internals();
+		if(check > 1) _verify_internals();
+	      }) {
+		werror(fname + " failed.\n");
+		werror(test + "\n");
+		if (arrayp(err) && sizeof(err) && stringp(err[0])) {
+		  werror("Error: " + err[0]);
+		}
+		errors++;
+		break;
+	      }
 	    
 	      switch(type)
 	      {
