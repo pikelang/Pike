@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.91 1998/05/22 16:47:41 grubba Exp $
+# $Id: Makefile.in,v 1.92 1998/05/22 16:49:17 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -494,9 +494,9 @@ $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
 	echo foo > $(SRCDIR)/stamp-h.in
 
 machine.h: stamp-h
-	@if test -f stamp-h; then \
+	@if test -f machine.h; then :; else \
 	  rm stamp-h; $(MAKE) stamp-h; \
-	else :; fi
+	fi
 stamp-h: $(SRCDIR)/machine.h.in config.status
 	CONFIG_FILES="" CONFIG_HEADERS=machine.h ./config.status
 
