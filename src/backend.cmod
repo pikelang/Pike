@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.89 2004/02/08 16:54:24 grubba Exp $
+|| $Id: backend.cmod,v 1.90 2004/02/08 17:35:13 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.89 2004/02/08 16:54:24 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.90 2004/02/08 17:35:13 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -447,9 +447,17 @@ static void MY_FD_CLR(int *pfd, int fd, int sub)
   IF_PD(fprintf(stderr, "BACKEND: Fd %d events now 0x%04x\n",
 		fd, poll_state[1].events));
 
-  while (((e = write(*pfd, poll_state, sizeof(poll_state))) < 0) &&
-	 (errno == EINTR))
-    ;
+  if (poll_state[1].events) {
+    /* We're still interrested in the fd. */
+    while (((e = write(*pfd, poll_state, sizeof(poll_state))) < 0) &&
+	   (errno == EINTR))
+      ;
+  } else {
+    /* Remove the fd. */
+    while (((e = write(*pfd, poll_state, sizeof(poll_state[0]))) < 0) &&
+	   (errno == EINTR))
+      ;
+  }
   if (e < 0) {
     Pike_fatal("Failed to set state for fd %d in /dev/poll (errno:%d).\n",
 	       fd, errno);
