@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.26 2003/01/13 17:44:08 nilsson Exp $ */
+/* $Id: mkpeep.pike,v 1.27 2003/01/13 21:05:14 nilsson Exp $ */
 
 #define JUMPBACK 3
 
@@ -282,7 +282,7 @@ string treat(string expr)
 /* Dump C co(d|r)e */
 void dump2(array(array(array(string))) data,int ind)
 {
-  int e,i,max,maxe;
+  int e,i,maxv;
   mixed tmp;
   string test;
   mapping(string:mapping(string:array(array(array(string))))) foo;
@@ -315,26 +315,20 @@ void dump2(array(array(array(string))) data,int ind)
     }
 
     /* Check what variable has most values */
-    max=maxe=e=0; 
-    foreach(values(foo), mapping(string:array(array(array(string)))) d)
-    {
-      if(sizeof(d)>max)
-      {
-	max=sizeof(d);
-	maxe=e;
+    maxv = 0;
+    foreach(sort(indices(foo)), string ptest)
+      if(sizeof(foo[ptest])>maxv) {
+	test = ptest;
+	maxv = sizeof(foo[ptest]);
       }
-      e++;
-    }
 
     /* If zero, done */
-    if(max <= 1) break;
+    if(maxv <= 1) break;
 
-    test=indices(foo)[maxe];
-    
     write(sprintf("%*nswitch(%s)\n",ind,treat(test)));
     write(sprintf("%*n{\n",ind));
 
-    mapping(string:array(array(array(string)))) d = values(foo)[maxe];
+    mapping(string:array(array(array(string)))) d = foo[test];
     array(string) a = indices(d);
     array(array(array(array(string)))) b = values(d);
     sort(a,b);
