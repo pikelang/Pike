@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.19 2000/12/01 08:10:08 hubbe Exp $ */
+/* $Id: xwd.c,v 1.20 2001/04/07 00:38:35 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.19 2000/12/01 08:10:08 hubbe Exp $
+**!	$Id: xwd.c,v 1.20 2001/04/07 00:38:35 nilsson Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.19 2000/12/01 08:10:08 hubbe Exp $");
+RCSID("$Id: xwd.c,v 1.20 2001/04/07 00:38:35 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -62,7 +62,7 @@ void image_x_decode_pseudocolor(INT32 args);
 **!		PseudoColor / ZPixmap
 **!
 **!	If someone sends me files of other formats, these formats
-**!	may be implemented. <tt>:)</tt> /<tt>mirar@idonex.se</tt>
+**!	may be implemented. <tt>:)</tt> /<tt>mirar@roxen.com</tt>
 **!
 **! see also: decode
 **!

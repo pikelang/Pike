@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.145 2001/03/26 16:51:15 grubba Exp $
+ * $Id: master.pike.in,v 1.146 2001/04/07 00:31:00 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -1451,7 +1451,7 @@ void _main(array(string) orig_argv, array(string) env)
 	function w=_static_modules.files()->_stdout->write;
 	w("Software......Pike\n"
 	  "Version......."+version()+"\n"
-	  "WWW...........http://pike.idonex.se/\n"
+	  "WWW...........http://pike.roxen.com/\n"
 	  "Main author...Fredrik Hübinette\n"
 	  "\n");
 

@@ -2,7 +2,7 @@
  *
  * Kludge for pike-0.5
  *
- * $Id: _Types.pmod,v 1.5 2000/09/28 03:39:06 hubbe Exp $
+ * $Id: _Types.pmod,v 1.6 2001/04/07 00:34:28 nilsson Exp $
  */
 
 /*
@@ -27,7 +27,7 @@
  */
 
 /* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
+ * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
  * email addresses. */
 
 #pike __REAL_VERSION__
