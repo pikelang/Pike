@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.3 2003/02/07 12:16:59 jhs Exp $
+dnl $Id: testsuite.in,v 1.4 2004/02/22 17:13:51 nilsson Exp $
 
 dnl Tests from ITU-T Rec.X690 (07/2002)
 
@@ -12,9 +12,8 @@ test_any([[
 ]], "0\n\26\5Smith\1\1\xff")
 
 dnl §8.19
-dnl BUG?
-dnl test_eq(Standards.ASN1.Types.Identifier(2,100,3)->get_der(),
-dnl   "\6\3\201""4\3")
+test_eq(Standards.ASN1.Types.Identifier(2,100,3)->get_der(),
+  String.hex2string("0603813403"))
 
 dnl §8.21
 test_eq( Standards.ASN1.Types.VisibleString("Jones")->get_der(),
