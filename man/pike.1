@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.21 2003/05/21 19:57:36 mast Exp $
+.\" $Id: pike.1,v 1.22 2003/05/22 08:49:27 mast Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2003/05/21 19:57:36 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2003/05/21 19:57:36 $"
+.TH pike 1 "$Date: 2003/05/22 08:49:27 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2003/05/22 08:49:27 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2003/05/21 19:57:36 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2003/05/22 08:49:27 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
 .nr mj 7
 .nr mn 5
@@ -204,6 +204,16 @@ Everything on the commandline after the script is passed as arguments
 to the script.
 .LP
 If no script is specified, pike will start in interactive- (Hilfe) mode.
+.SH REGISTRY KEYS
+On NT, Pike is affected by the following keys in the registry:
+
+.B HKEY_CURRENT_USER\eSoftware\ePike\e\n(mj.\n(mn\ePIKE_MASTER
+.B HKEY_LOCAL_MACHINE\eSoftware\ePike\e\n(mj.\n(mn\ePIKE_MASTER
+.RS
+Specifies the name of the master program (overridden by
+.BI \-m master_program
+).
+.RE
 .SH ENVIRONMENT
 Pike is affected by the following environment variables:
 .TP
