@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.35 1998/10/21 22:13:54 grubba Exp $
+// $Id: Stdio.pmod,v 1.36 1998/10/22 02:13:18 grubba Exp $
 
 #include <string.h>
 
@@ -202,7 +202,9 @@ class File
       ___read_callback(___id, s);
     }else{
       ::set_read_callback(0);
-      ___close_callback(___id);
+      if (___close_callback) {
+	___close_callback(___id);
+      }
     }
   }
 
@@ -216,7 +218,10 @@ class File
     {
       ___read_oob_callback(___id, s);
     }else{
-      ___close_callback(___id);
+      ::set_read_oob_callback(0);
+      if (___close_callback) {
+	___close_callback(___id);
+      }
     }
   }
 
