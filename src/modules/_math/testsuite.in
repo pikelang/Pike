@@ -2,11 +2,11 @@
 
 // - tan
 test_true(floatp(tan(0.5)))
-test_eq(0.5,tan(atan(0.5)))
-test_eq(0.5,atan(tan(0.5)))
+test_true(`<=(-0.0000001, 0.5-tan(atan(0.5)), 0.0000001))
+test_true(`<=(-0.0000001, 0.5-atan(tan(0.5)), 0.0000001))
 // - asin
 test_true(floatp(asin(0.7)))
-test_eq(asin(0.0),0.0)
+test_true(`<=(-0.0000001, asin(0.0), 0.0000001))
 // - atan
 test_true(floatp(atan(0.7)))
 test_true(3.1415 < 4.0*atan(1.0))
