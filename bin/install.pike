@@ -1,5 +1,7 @@
 #!/usr/local/bin/pike
 
+#define USE_GTK
+
 int last_len;
 int redump_all;
 string pike;
@@ -9,14 +11,6 @@ array(string) to_export=({});
 int export;
 
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
-
-void fail(string fmt, mixed ... args)
-{
-  if(last_len) write("\n");
-  Stdio.perror(sprintf(fmt,@args));
-  werror("**Installation failed.\n");
-  exit(1);
-}
 
 int istty_cache;
 int istty()
@@ -33,13 +27,69 @@ int istty()
 #endif
 }
 
-void status(string doing, string file, string|void msg)
+
+void status1(string fmt, mixed ... args)
 {
+  status_clear();
+#if defined(USE_GTK) && constant(GTK.parse_rc)
+  if(label1)
+  {
+    label7->set_text(sprintf(fmt,@args)-"\n");
+    GTK.flush();
+    return;
+  }
+#endif
+
+  write("%s\n",sprintf(fmt,@args));
+}
+
+
+void fail(string fmt, mixed ... args)
+{
+#if defined(USE_GTK) && constant(GTK.parse_rc)
+  if(label1)
+  {
+    status1(fmt,@args);
+    hbuttonbox1->add(button1=GTK.Button("Exit")->show());
+    button1->signal_connect("pressed",do_exit,0);
+
+    label6->set_text("Click Exit to exit installation program.");
+
+    // UGLY!!! -Hubbe
+    while(1) { sleep(0.1); GTK.flush(); }
+  }
+#endif
+
+
+  if(last_len) write("\n");
+  Stdio.perror(sprintf(fmt,@args));
+  werror("**Installation failed.\n");
+  exit(1);
+}
+
+
+void status(string doing, void|string file, string|void msg)
+{
+  if(!file) file="";
+#if defined(USE_GTK) && constant(GTK.parse_rc)
+  if(label1)
+  {
+    last_len=1;
+    label1->set_text(doing || "");
+    label2->set_text(dirname(file) || "");
+    label5->set_text(basename(file) || "");
+    label6->set_text(msg || "");
+    GTK.flush();
+    return;
+  }
+#endif
+
+
   if(!istty()) return;
 
   file=replace(file,"\n","\\n");
-  if(strlen(file)>50)
-    file="..."+file[strlen(file)-48..];
+  if(strlen(file)>49)
+    file="..."+file[strlen(file)-47..];
 
   if(msg) file+=" "+msg;
   if(doing) file=doing+" "+file;
@@ -50,13 +100,22 @@ void status(string doing, string file, string|void msg)
   write(s);
 }
 
+void status_clear()
+{
+  if(last_len)
+  {
+    status(0,"");
+    status(0,"");
+  }
+}
+
 int mkdirhier(string dir)
 {
   int tomove;
   if(export) return 1;
 
-  if(dir=="") return 1;
-  status("creating",dir);
+  if(dir=="" || (strlen(dir)==2 && dir[-1]==':')) return 1;
+  status("creating",dir+"/");
   mixed s=file_stat(dir);
   if(s)
   {
@@ -69,6 +128,7 @@ int mkdirhier(string dir)
 	fail("mv(%s,%s)",dir,dir+".tmp");
       tomove=1;
     }else{
+      // FIXME: ask user if he wants to override
       werror("Warning: Directory '%s' already exists as a file.\n",dir);
       if(!mv(dir,dir+".old"))
 	fail("mv(%s,%s)",dir,dir+".old");
@@ -179,6 +239,7 @@ void install_dir(string from, string to,int dump)
   to=stripslash(to);
 
   mkdirhier(to);
+//  werror("\nFOO (from=%s, cwd=%s)\n",from,getcwd());
   foreach(get_dir(from),string file)
   {
     if(file=="CVS") continue;
@@ -216,33 +277,6 @@ void install_header_files(string from, string to)
     }
 }
 
-void dumpmodules(string dir)
-{
-  dir=stripslash(dir);
-
-  foreach(get_dir(dir),string file)
-    {
-      string f=combine_path(dir,file);
-      mixed stat=file_stat(f);
-      if(stat[1]==-2)
-      {
-	dumpmodules(f);
-      }else{
-	switch(reverse(file)[..4])
-	{
-	  case "domp.":
-	  case "ekip.":
-	    mixed stat2=file_stat(f+".o");
-
-	    if(stat2 && stat2[3]>=stat[3])
-	      continue;
-	    
-	    Process.create_process( ({pike,combine_path(vars->SRCDIR,"dumpmodule.pike"),f}) )->wait();
-	}
-      }
-    }
-}
-
 mapping vars=([]);
 
 string export_base_name;
@@ -272,8 +306,101 @@ Variables:
   pike_name=<path>      Create a symlink to pike here (<prefix>/bin/pike).
 ";
 
+string translate(string filename, mapping translator)
+{
+  return translator[filename] ||
+    combine_path(translate(dirname(filename),translator),basename(filename));
+};
+
+
 void do_export()
 {
+#ifdef __NT__
+  status("Creating",export_base_name+".burk");
+  Stdio.File p=Stdio.File(export_base_name+".burk","wc");
+  string msg="Loading installation script, please wait...";
+  p->write("w%4c%s",strlen(msg),msg);
+
+#define TRANSLATE(X,Y) combine_path(".",X) : Y
+  string tmpdir="~piketmp";
+
+  mapping translator = ([
+    TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
+    TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
+    TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
+    TRANSLATE(vars->MANDIR_SRC,tmpdir+"/man"),
+    TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
+    "":tmpdir+"/build",
+    ]);
+    
+  
+  array(string) translated_names = Array.map(to_export, translate, translator);
+  array(string) dirs=Array.uniq(Array.map(translated_names, dirname));
+  while(1)
+  {
+    array(string) d2=Array.map(dirs, dirname) - dirs;
+    if(!sizeof(d2)) break;
+    dirs+=Array.uniq(d2);
+  }
+  dirs-=({""});
+  sort(dirs);
+
+  foreach(dirs, string dir) p->write("d%4c%s",strlen(dir),dir);
+  foreach(Array.transpose(  ({ to_export, translated_names }) ), [ string file, string file_name ])
+    {
+      status("Adding",file);
+      string f=Stdio.read_file(file);
+      p->write("f%4c%s%4c",strlen(file_name),file_name,strlen(f));
+      p->write(f);
+    }
+
+  /* FIXME, support $INSTALL_SCRIPT (or similar) */
+
+#define TRVAR(X) translate(combine_path(vars->X,"."), translator)
+
+  array(string) env=({
+    "PIKE_MODULE_PATH="+TRVAR(TMP_LIBDIR)+"/modules:"+TRVAR(LIBDIR_SRC)+"/modules",
+    "PIKE_PROGRAM_PATH=",
+    "PIKE_INCLUDE_PATH="+TRVAR(LIBDIR_SRC)+"/include",
+    });
+
+    
+  foreach(env, string e)
+    p->write("e%4c%s",strlen(e),e);
+
+#define RELAY(X) " " #X "=" + TRVAR(X)+
+
+  string cmd=
+    replace(translate("pike.exe", translator),"/","\\")+
+    " -m"+translate("master.pike", translator)+
+    " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator)+
+    RELAY(TMP_LIBDIR)
+    RELAY(LIBDIR_SRC)
+    RELAY(SRCDIR)
+    RELAY(TMP_BINDIR)
+    RELAY(MANDIR_SRC)
+    " TMP_BUILDDIR="+translate("", translator)
+    ;
+  
+  p->write("s%4c%s",strlen(cmd),cmd);
+
+  array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
+  to_delete=Array.uniq(to_delete);
+  to_delete+=reverse(dirs);
+  /* Generate cleanup */
+  foreach(to_delete, string del)
+    p->write("D%4c%s",strlen(del),del);
+
+  p->write("q\0\0\0\0");
+  p->close("rw");
+
+  if(last_len)
+  {
+    status(0,"");
+    status(0,"");
+  }
+
+#else
   export=0;
 
   cd("..");
@@ -294,7 +421,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-1997 Fredrik Hübinette
+#" Copyright (C) 1994-2000 Fredrik Hübinette and Idonex AB
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are
 welcome to redistribute it under certain conditions; Read the files
 COPYING and DISCLAIMER in the Pike distribution for more details.
@@ -318,10 +445,12 @@ done
 		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
+		   "PIKE_MODULE_PATH=pike/build/lib/modules:pike/lib/modules\n"
+		   "PIKE_PROGRAM_PATH=\n"
+		   "PIKE_INCLUDE_PATH=pike/lib/include\n"
+		   "export PIKE_MODULE_PATH PIKE_INCLUDE_PATH PIKE_PROGRAM_PATH\n"
 		   "( cd "+export_base_name+".dir\n"
-		   "  eval \"build/pike -DNOT_INSTALLED -mbuild/master.pike "
-		                "-Mbuild/lib/modules "
-		                "-Mlib/modules "
+		   "  eval \"build/pike -mbuild/master.pike "
 		                "\"$INSTALL_SCRIPT\" \\\n"
 		   "  TMP_LIBDIR=\"build/lib\"\\\n"
 		   "  LIBDIR_SRC=\"lib\"\\\n"
@@ -380,11 +509,8 @@ done
 			       }) ) ->wait();
 
 
-  if(last_len)
-  {
-    status(0,"");
-    status(0,"");
-  }
+#endif
+  status1("Export done");
 
   exit(0);
 }
@@ -519,49 +645,186 @@ class ReadInteractive
   }
 }
 
-int main(int argc, string *argv)
+
+#if defined(USE_GTK) && constant(GTK.parse_rc)
+object window1;
+object vbox1;
+object label4;
+object frame1;
+object hbox1;
+object pixmap1;
+object vbox2;
+object label3;
+object table1;
+object entry1;
+object entry2;
+object label1;
+object label2;
+object button4;
+object button5;
+object hbuttonbox1;
+object button1;
+object button2;
+object label5;
+object label6;
+object label7;
+object vbox3;
+
+#define PS pack_start
+#define AT attach
+
+void do_abort()
 {
-  int traditional;
-  string prefix;
-  string exec_prefix;
-  string lib_prefix;
-  string include_prefix;
-  string man_prefix;
-  string lnk;
-  string old_exec_prefix;
-  object interactive;
+  // FIXME
+  werror("Installation aborted.\n");
+  exit(1);
+}
+
+void update_entry2()
+{
+  entry2->set_text( combine_path( entry1 -> get_text(), "bin/pike") );
+}
+
+void set_filename(array ob, object button)
+{
+  object selector=ob[0];
+  object entry=ob[1];
+  entry->set_text(selector->get_filename());
+  if(entry == entry1)
+    update_entry2();
+  destruct(selector);
+}
+
+void selectfile(object entry, object button)
+{
+  object selector;
+  selector=GTK.FileSelection("Pike installation prefix");
+  selector->set_filename(entry->get_text());
+  selector->ok_button()->signal_connect("clicked",set_filename, ({selector, entry}) );
+  selector->cancel_button()->signal_connect("clicked",destruct,selector);
+  selector->show();
+}
+
+void do_exit()
+{
+  exit(0);
+}
+
+void cancel()
+{
+  werror("See you another time!\n");
+  exit(0);
+}
+
+void proceed()
+{
+  pre_install(({}));
+  label6->set_text("Click Ok to exit installation program.");
+  hbuttonbox1->add(button1=GTK.Button("Ok")->show());
+  button1->signal_connect("pressed",do_exit,0);
+}
+
+int next()
+{
+  vars->prefix = entry1->get_text();
+  vars->pike_name = entry2->get_text();
+  install_type="--new_style";
+
+  destruct(table1);
+  
+  vbox2->PS(vbox3=GTK.Vbox(0,0)->show(),1,1,0);
+
+  vbox3->PS(label7=GTK.Label("---head---")->show(),0,0,0);
+  vbox3->PS(label1=GTK.Label("---action---")->show(),0,0,0);
+  vbox3->PS(label2=GTK.Label("----dir-----")->show(),0,0,0);
+  vbox3->PS(label5=GTK.Label("----file----")->show(),0,0,0);
+  vbox3->PS(label6=GTK.Label("----msg----")->show(),0,0,0);
+  destruct(button1);
+  destruct(button2);
+
+  call_out(proceed, 0);
+  return 1;
+}
+
+void begin_wizard(string *argv)
+{
+  // FIXME:
+  // We should display the GPL licence and make the user
+  // click 'agree' first
+  //
+  GTK.setup_gtk(argv);
+  window1=GTK.Window(GTK.WINDOW_TOPLEVEL)
+    ->set_title(version()+" installer")
+    ->add(vbox1=GTK.Vbox(0,0)
+	  ->PS(label4=GTK.Label(version()+" installer")
+	       ->set_justify(GTK.JUSTIFY_CENTER),0,0,10)
+	  ->PS(frame1=GTK.Frame()
+	       ->set_shadow_type(GTK.SHADOW_IN)
+	       ->set_border_width(11)
+	       ->add(hbox1=GTK.Hbox(0,0)
+		     ->PS(pixmap1=GTK.Pixmap(GDK.Pixmap(Image.GIF.decode(Stdio.read_bytes("/home/hubbe/gfx/pike/Welcome.GIF")))),0,0,0)
+		     ->PS(vbox2=GTK.Vbox(0,0),1,1,0)
+		       ),1,1,0)
+	  ->PS(hbuttonbox1=GTK.HbuttonBox()
+	       ->set_border_width(15)
+	       ->add(button1=GTK.Button("Cancel"))
+	       ->add(button2=GTK.Button("Install Pike >>"))
+	       ,0,1,0));
+
+	  
+  vbox2->PS(label3=GTK.Label("Welcome to the interactive "+version()+" installer.")
+	    ->set_justify(GTK.JUSTIFY_CENTER),1,1,0)
+    ->PS(table1=GTK.Table(3,2,0)
+	 ->set_border_width(19)
+	 ->AT(entry1=GTK.Entry(),
+	      1,2,0,1,GTK.Fill | GTK.Expand,0,0,0)
+	 ->AT(entry2=GTK.Entry(),
+	      1,2,1,2,GTK.Fill | GTK.Expand,0,0,0)
+	 ->AT(label1=GTK.Label("Install prefix: ")
+	      ->set_justify(GTK.JUSTIFY_RIGHT),
+	      0,1,0,1,GTK.Expand,0,0,0)
+	 ->AT(label2=GTK.Label("Pike binary name: ")
+	      ->set_justify(GTK.JUSTIFY_RIGHT),
+	      0,1,1,2,GTK.Expand,0,0,0)
+	 ->AT(button4=GTK.Button("Browse"),
+	      2,3,1,2,0,0,0,0)
+	 ->AT(button5=GTK.Button("Browse"),
+	      2,3,0,1,0,0,0,0),0,0,0);
+
+  vbox2->show_all();
+
+  entry1->set_text(prefix);
+  entry2->set_text(vars->pike_name ||
+		   combine_path(vars->exec_prefix||combine_path(prefix, "bin"),"pike"));
+
+  entry1->signal_connect("focus_out_event",update_entry2,0);
+  button1->signal_connect("pressed",cancel,0);
+  button2->signal_connect("pressed",next,0);
+  button4->signal_connect("pressed",selectfile,entry2);
+  button5->signal_connect("pressed",selectfile,entry1);
+
+  window1->show_all();
+}
+#endif
 
 
-  string install_type="--interactive";
+int traditional;
+string prefix;
+string exec_prefix;
+string lib_prefix;
+string include_prefix;
+string man_prefix;
+string lnk;
+string old_exec_prefix;
+object interactive;
+string install_type="--interactive";
 
-  foreach(Getopt.find_all_options(argv,aggregate(
-    ({"help",Getopt.NO_ARG,({"-h","--help"})}),
-    ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
-    ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
-    ({"--export",Getopt.NO_ARG,({"--export"})}),
-    ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
-    )),array opt)
-    {
-      switch(opt[0])
-      {
-	case "help":
-	  werror(helptext);
-	  exit(0);
 
-	default:
-	  install_type=opt[0];
-      }
-    }
-
-  argv=Getopt.get_args(argv);
-      
-
-  foreach(argv[1..], string foo)
-    if(sscanf(foo,"%s=%s",string var, string value)==2)
-      vars[var]=value;
-
+int pre_install(string *argv)
+{
+  
   prefix=vars->prefix || "/usr/local";
-
+  
   if(!vars->TMP_BINDIR)
     vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
 
@@ -579,6 +842,19 @@ int main(int argc, string *argv)
       break;
 
     case "--interactive":
+
+#if constant(GTK.parse_rc) && defined(USE_GTK)
+//      catch  {
+	begin_wizard(argv);
+	return -1; 
+//      };
+#endif
+
+	// FIXME: 
+	// The following introduction is not quite true on NT
+	// and other platforms where Readline falls back on 
+	// 'dummy' mode.
+
       write("\n"
 	    "   Welcome to the interactive "+version()+
 	    " installation script.\n"
@@ -595,15 +871,19 @@ int main(int argc, string *argv)
       do {
 	write("\n");
 	
-	if(!vars->prefix)
-	  prefix=interactive->edit_directory(prefix,"Install prefix: ");
+//	werror("PREFIX: %O\n",prefix);
+//	if(!vars->prefix)
+	prefix=interactive->edit_directory(prefix,"Install prefix: ");
 	prefix = make_absolute_path(prefix);
 	
 	if(!vars->pike_name)
+	{
 	  bin_path=interactive->edit_filename
 		   (combine_path(vars->exec_prefix ||
 				 combine_path(prefix, "bin"),
 				 "pike"), "Pike binary name: ");
+	}
+
 	bin_path = make_absolute_path(bin_path);
 	
 	write("\n");
@@ -649,7 +929,9 @@ int main(int argc, string *argv)
       export_base_name=ver;
 #endif
 
+      status1("Building export %s\n",export_base_name);
 
+#ifndef __NT__
       mkdirhier(export_base_name+".dir");
 
       mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
@@ -657,7 +939,7 @@ int main(int argc, string *argv)
       mklink(getcwd(),export_base_name+".dir/build");
       mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
       mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
-      
+
       cd(export_base_name+".dir");
 
       vars->TMP_LIBDIR="build/lib";
@@ -666,6 +948,8 @@ int main(int argc, string *argv)
       vars->TMP_BINDIR="bin";
       vars->MANDIR_SRC="man";
       vars->TMP_BUILDDIR="build";
+
+#endif
 
       export=1;
       to_export+=({ combine_path(vars->TMP_BINDIR,"install.pike") });
@@ -688,29 +972,45 @@ int main(int argc, string *argv)
   break;
   }
 
+  do_install();
+  return 0;
+}
+
+// Create a master.pike with the correct lib_prefix
+void make_master(string dest, string master, string lib_prefix)
+{
+  status("Finalizing",master);
+  string master_data=Stdio.read_file(master);
+  master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
+  Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
+  status("Finalizing",master,"done");
+}
+
+void do_install()
+{
   pike=combine_path(exec_prefix,"pike");
+  if(!export)
+  {
+    status1("Installing Pike in %s...\n",prefix);
+  }
 
   mixed err=catch {
+      
+    string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
+    if(Stdio.file_size(pike_bin_file) < 10000 &&
+       file_stat(pike_bin_file+".exe"))
+    {
+      pike_bin_file+=".exe";
+      pike+=".exe";
+    }
+
     if(export)
     {
-      to_export+=({combine_path(vars->TMP_BUILDDIR,"pike")});
+      to_export+=({pike_bin_file});
     }else{
-      write("\nInstalling Pike in %s...\n\n",prefix);
-      
-      string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
       status("Finalizing",pike_bin_file);
       string pike_bin=Stdio.read_file(pike_bin_file);
       int pos=search(pike_bin,MASTER_COOKIE);
-      
-      if(pos<=0 && strlen(pike_bin) < 10000 && 
-	 file_stat(combine_path(vars->TMP_BUILDDIR,"pike.exe")))
-      {
-	pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.exe");
-	status("Finalizing",pike_bin_file);
-	pike_bin=Stdio.read_file(pike_bin_file);
-	pos=search(pike_bin,MASTER_COOKIE);
-	pike+=".exe";
-      }
       
       if(pos>=0)
       {
@@ -722,7 +1022,7 @@ int main(int argc, string *argv)
 	f->close();
 	status("Finalizing",pike_bin_file,"done");
       }else{
-	write("Warning! Failed to finalize master location!\n");
+	werror("Warning! Failed to finalize master location!\n");
       }
       if(install_file(pike_bin_file,pike)) redump_all=1;
     }
@@ -734,16 +1034,13 @@ int main(int argc, string *argv)
     {
       to_export+=({master,
 		   combine_path(vars->TMP_BUILDDIR,"master.pike"),
+		   combine_path(vars->SRCDIR,"COPYING"),
 		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
 		   combine_path(vars->SRCDIR,"dumpmodule.pike")
       });
     }else{
-//    werror("Making master with libdir=%s\n",lib_prefix);
-      status("Finalizing",master);
-      string master_data=Stdio.read_file(master);
-      master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
-      Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
-      status("Finalizing",master,"done");
+      make_master(combine_path(vars->TMP_LIBDIR,"master.pike"), master, 
+		  lib_prefix);
     }
     
     install_dir(vars->TMP_LIBDIR,lib_prefix,1);
@@ -759,15 +1056,14 @@ int main(int argc, string *argv)
     
     if(file_stat(vars->MANDIR_SRC))
     {
+//      trace(9);
+//      _debug(5);
       install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
     }
   };
 
-  if(last_len)
-  {
-    status(0,"");
-    status(0,"");
-  }
+
+  status_clear();
 
   if(err) throw(err);
 
@@ -784,18 +1080,23 @@ int main(int argc, string *argv)
       Process.create_process( ({pike,"-m",combine_path(vars->SRCDIR,"dumpmaster.pike"),master}))->wait();
     }
     
-//    dumpmodules(combine_path(vars->lib_prefix,"modules"));
     if(sizeof(to_dump))
     {
+      status("Dumping modules, please wait... ");
       foreach(to_dump, string mod) rm(mod+".o");
       Process.create_process( ({pike,
 				  combine_path(vars->SRCDIR,"dumpmodule.pike"),
-				  "--quiet"}) + to_dump)->wait();
+#if defined(USE_GTK) && constant(GTK.parse_rc)
+				  label1?"--distquiet":
+#endif
+				  "--quiet"
+				  }) + to_dump)->wait();
     }
     
 #if constant(symlink)
     if(lnk)
     {
+      status("creating",lnk);
       mixed s=file_stat(lnk,1);
       if(s)
       {
@@ -810,10 +1111,40 @@ int main(int argc, string *argv)
       }
       mkdirhier(dirname(lnk));
       symlink(pike,lnk);
+      status("creating",lnk,"done");
     }
 #endif
   }
-  write("\nDone\n");
-    
-  return 0;
+  status1("Installation completed successfully.");
+}
+
+int main(int argc, string *argv)
+{
+  foreach(Getopt.find_all_options(argv,aggregate(
+    ({"help",Getopt.NO_ARG,({"-h","--help"})}),
+    ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
+    ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
+    ({"--export",Getopt.NO_ARG,({"--export"})}),
+    ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
+    )),array opt)
+    {
+      switch(opt[0])
+      {
+	case "help":
+	  werror(helptext);
+	  exit(0);
+
+	default:
+	  install_type=opt[0];
+      }
+    }
+
+  argv=Getopt.get_args(argv);
+      
+
+  foreach(argv[1..], string foo)
+    if(sscanf(foo,"%s=%s",string var, string value)==2)
+      vars[var]=value;
+
+  return pre_install(argv);
 }
