@@ -22,8 +22,9 @@
 #include "security.h"
 #include "stuff.h"
 #include "bignum.h"
+#include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.125 2002/05/10 23:35:06 nilsson Exp $");
+RCSID("$Id: array.c,v 1.126 2002/05/28 15:23:03 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -72,7 +73,7 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
   struct array *v;
   ptrdiff_t e;
 
-  if(size == 0)
+  if(size+extra_space == 0)
   {
     add_ref(&empty_array);
     return &empty_array;
@@ -1935,24 +1936,33 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
   INT32 e;
   struct svalue *argp = Pike_sp-args;
   TYPE_FIELD new_types = 0;
+  struct array *cycl;
+  DECLARE_CYCLIC();
 
   check_array_for_destruct(a);
   check_stack(120 + args + 1);
 
-  BEGIN_AGGREGATE_ARRAY(a->size) {
-    for (e=0;e<a->size;e++) {
-      assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
-      Pike_sp+=args;
-      apply_svalue(ITEM(a)+e,args);
-      new_types |= 1 << Pike_sp[-1].type;
-      DO_AGGREGATE_ARRAY(120);
-    }
-  } END_AGGREGATE_ARRAY;
+  /* FIXME: Ought to use a better key on the arguments below. */
+  if (!(cycl = (struct array *)BEGIN_CYCLIC(a, args))) {
+    BEGIN_AGGREGATE_ARRAY(a->size) {
+      SET_CYCLIC_RET(Pike_sp[-1].u.array);
+      for (e=0;e<a->size;e++) {
+	assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
+	Pike_sp+=args;
+	apply_svalue(ITEM(a)+e,args);
+	new_types |= 1 << Pike_sp[-1].type;
+	DO_AGGREGATE_ARRAY(120);
+      }
+    } END_AGGREGATE_ARRAY;
 
-  Pike_sp[-1].u.array->type_field = new_types;
+    Pike_sp[-1].u.array->type_field = new_types;
 #ifdef PIKE_DEBUG
-  array_check_type_field(Pike_sp[-1].u.array);
+    array_check_type_field(Pike_sp[-1].u.array);
 #endif
+  } else {
+    ref_push_array(cycl);
+  }
+  END_CYCLIC();
   stack_pop_n_elems_keep_top(args);
 }
 
