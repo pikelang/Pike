@@ -100,7 +100,7 @@ esac
 # $SCRIPT work with older versions of Pike - Hubbe
 #
 
-case "$SCRIPT"; in
+case "$SCRIPT" in
   /*)
     if test -f "$SCRIPT"; then :; else
       echo Script "$SCRIPT" not found.
