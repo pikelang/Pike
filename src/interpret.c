@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.203 2001/06/08 21:06:06 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.204 2001/06/10 00:23:24 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -463,7 +463,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2)
 {
   struct program *p;
-  INT32 e,off;
+
   TRACE((4, "-find_external_context(%d, inherit=%ld)\n", arg2,
 	 DO_NOT_WARN((long)(loc->o->prog ? loc->inherit - loc->o->prog->inherits : 0))));
 

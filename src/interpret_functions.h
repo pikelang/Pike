@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.57 2001/06/07 21:46:13 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.58 2001/06/10 00:24:17 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -670,7 +670,7 @@ BREAK;
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,"apply, assign local and pop")
   apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
-	       DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   free_svalue(Pike_fp->locals+arg2);
   Pike_fp->locals[arg2]=Pike_sp[-1];
   Pike_sp--;
@@ -678,7 +678,7 @@ BREAK;
 
 OPCODE2(F_APPLY_ASSIGN_LOCAL,"apply, assign local")
   apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
-	       DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   assign_svalue(Pike_fp->locals+arg2, Pike_sp-1);
 BREAK;
 
@@ -954,7 +954,7 @@ OPCODE1(F_SWITCH, "switch")
   INT32 tmp;
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
-  pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
+  pc=(unsigned char *)DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32)));
   pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc+=*(INT32*)pc;
@@ -972,7 +972,7 @@ OPCODE1(F_SWITCH_ON_INDEX, "switch on index")
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
   pop_n_elems(3);
-  pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
+  pc=(unsigned char *)DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32)));
   pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc+=*(INT32*)pc;
@@ -984,7 +984,7 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local")
   INT32 tmp;
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg2].sval.u.array,Pike_fp->locals + arg1);
-  pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
+  pc=(unsigned char *)DO_ALIGN(pc,((ptrdiff_t)sizeof(INT32)));
   pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
   if(*(INT32*)pc < 0) fast_check_threads_etc(7);
   pc+=*(INT32*)pc;
@@ -1388,7 +1388,7 @@ BREAK;
       goto do_index;
 
       CASE(F_NEG_INT_INDEX);
-      push_int(-GET_ARG());
+      push_int(-(ptrdiff_t)GET_ARG());
       print_return_value();
 
       CASE(F_INDEX);
@@ -1528,7 +1528,7 @@ BREAK;
 
 OPCODE1(F_CALL_LFUN,"call lfun")
   if(low_mega_apply(APPLY_LOW,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    Pike_fp->current_object,
 		    (void *)(arg1+Pike_fp->context.identifier_level)))
   {
@@ -1546,7 +1546,7 @@ OPCODE1(F_CALL_LFUN_AND_POP,"call lfun & pop")
   pop_stack();
 #else
   if(low_mega_apply(APPLY_LOW,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    Pike_fp->current_object,
 		    (void *)(arg1+Pike_fp->context.identifier_level)))
   {
@@ -1585,7 +1585,7 @@ BREAK;
 
 OPCODE1(F_APPLY,"apply")
   if(low_mega_apply(APPLY_SVALUE_STRICT,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
   {
     Pike_fp->next->pc=pc;
@@ -1597,7 +1597,7 @@ BREAK;
 
 OPCODE1(F_APPLY_AND_POP,"apply")
   if(low_mega_apply(APPLY_SVALUE_STRICT,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
   {
     Pike_fp->next->pc=pc;
@@ -1611,7 +1611,7 @@ BREAK;
 
 OPCODE0(F_CALL_FUNCTION,"call function")
   if(low_mega_apply(APPLY_STACK,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    0,0))
   {
     Pike_fp->next->pc=pc;
@@ -1623,7 +1623,7 @@ BREAK;
 
 OPCODE0(F_CALL_FUNCTION_AND_POP,"call function & pop")
   if(low_mega_apply(APPLY_STACK,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    0,0))
   {
     Pike_fp->next->pc=pc;
@@ -1637,7 +1637,7 @@ BREAK;
 OPCODE1(F_APPLY_AND_RETURN,"apply & return")
 {
   if(low_mega_apply(APPLY_SVALUE,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
   {
 #ifdef PIKE_DEBUG
@@ -1654,7 +1654,7 @@ BREAK;
 OPCODE1(F_CALL_LFUN_AND_RETURN,"call lfun & return")
 {
   if(low_mega_apply(APPLY_LOW,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    Pike_fp->current_object,
 		    (void *)(arg1+Pike_fp->context.identifier_level)))
   {
@@ -1672,7 +1672,7 @@ BREAK
 OPCODE0(F_CALL_FUNCTION_AND_RETURN, "call function & return")
 {
   if(low_mega_apply(APPLY_STACK,
-		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		    0,0))
   {
 #ifdef PIKE_DEBUG
@@ -1698,7 +1698,7 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
   {
     pc+=sizeof(INT32);
     if(low_mega_apply(APPLY_LOW,
-		      DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		      DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
 		      Pike_fp->current_object,
 		      (void *)(arg1+Pike_fp->context.identifier_level)))
     {
@@ -1731,7 +1731,8 @@ OPCODE0_TAILJUMP(F_RECUR_AND_POP,"recur & pop")
   new_frame->next=Pike_fp;
 
   new_frame->save_sp = new_frame->expendible = new_frame->locals = *--Pike_mark_sp;
-  new_frame->num_args = new_frame->args = DO_NOT_WARN(Pike_sp - new_frame->locals);
+  new_frame->num_args = new_frame->args =
+    DO_NOT_WARN((INT32)(Pike_sp - new_frame->locals));
   new_frame->save_mark_sp = Pike_mark_sp;
   new_frame->mark_sp_base = Pike_mark_sp;
 
@@ -1772,7 +1773,7 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
   int x;
   INT32 num_locals;
   unsigned char *addr;
-  int args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
+  INT32 args = DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
 
   fast_check_threads_etc(6);
 
