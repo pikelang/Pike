@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.5 2001/09/18 22:56:55 hubbe Exp $
+ * $Id: pike_threadlib.h,v 1.6 2001/09/20 19:07:57 hubbe Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -89,17 +89,10 @@ PMOD_EXPORT extern size_t thread_stack_size;
 #define th_atfork_parent()
 #define th_atfork_child()
 #else
-#ifdef __NT__
-#define th_atfork(X,Y,Z)
-#define th_atfork_prepare()
-#define th_atfork_parent()
-#define th_atfork_child()
-#else
 int th_atfork(void (*)(void),void (*)(void),void (*)(void));
 void th_atfork_prepare(void);
 void th_atfork_parent(void);
 void th_atfork_child(void);
-#endif
 #endif
 
 #define THREAD_T pthread_t
@@ -278,6 +271,12 @@ extern pthread_attr_t small_pattr;
 #define event_signal(X) SetEvent(CheckValidHandle(*(X)))
 #define event_destroy(X) CloseHandle(CheckValidHandle(*(X)))
 #define event_wait(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
+
+/* No fork -- no atfork */
+#define th_atfork(X,Y,Z)
+#define th_atfork_prepare()
+#define th_atfork_parent()
+#define th_atfork_child()
 
 #endif
 
