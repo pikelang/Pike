@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.16 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: backend.h,v 1.17 2005/03/22 11:46:37 jonasw Exp $
 */
 
 #ifndef BACKEND_H
@@ -20,6 +20,8 @@ PMOD_EXPORT extern int fds_size;
 
 /* Prototypes begin here */
 struct selectors;
+struct Backend_struct *get_backend_for_fd(int fd);
+PMOD_EXPORT void set_backend_for_fd(int fd, struct Backend_struct *b);
 PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 				      void *arg,
 				      callback_func free_func);
