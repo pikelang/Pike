@@ -7809,7 +7809,8 @@ Result: ({ /* 3 elements */
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>string encode(string <i>data</i>, string <i>encoding</i>,
- void|string <i>filename</i>);<br>
+ void|string <i>filename</i>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void|int <i>no_linebreaks</i>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -7824,7 +7825,9 @@ The encoding can be any of
 <li>x-uue
 </ul></tt><br>
 The encoding string is not case sensitive.  For the <tt>x-uue</tt> encoding,
-an optional filename string may be supplied.
+an optional filename string may be supplied.  If a nonzero value is passed
+as <i>no_linebreaks</i>, the result string will not contain any linebreaks
+(base64 and quoted-printable only).
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#MIME.decode>MIME.decode</a>
@@ -7839,11 +7842,13 @@ an optional filename string may be supplied.
 <tt>MIME.encode_base64</tt> - Encode string using <tt>base64</tt> transfer encoding
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode_base64(string <i>data</i>);<br>
+<tt>string encode_base64(string <i>data</i>, void|int <i>no_linebreaks</i>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function encodes data using the <tt>base64</tt> transfer encoding.
+If a nonzero value is passed as <i>no_linebreaks</i>, the result string
+will not contain any linebreaks.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#MIME.decode_base64>MIME.decode_base64</a>
@@ -7858,13 +7863,14 @@ This function encodes data using the <tt>base64</tt> transfer encoding.
 <tt>MIME.encode_qp</tt> - Encode string using <tt>quoted-printable</tt> transfer encoding
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode_qp(string <i>data</i>);<br>
+<tt>string encode_qp(string <i>data</i>, void|int <i>no_linebreaks</i>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function encodes data using the <tt>quoted-printable</tt>
-(a.k.a. quoted-unreadable) transfer encoding.  <strong>Please do not use
-this function.  QP is evil, and there's no excuse for using it.</strong>
+(a.k.a. quoted-unreadable) transfer encoding.  If a nonzero value is passed as <i>no_linebreaks</i>, the result string will not contain any linebreaks.
+<strong>Please do not use this function.  QP is evil, and there's no
+excuse for using it.</strong>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#MIME.decode_qp>MIME.decode_qp</a>
