@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.74 1999/08/11 22:13:21 hubbe Exp $");
+RCSID("$Id: main.c,v 1.75 1999/08/14 09:03:35 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -440,7 +440,6 @@ int dbm_main(int argc, char **argv)
   init_lex();
   init_program();
   init_object();
-  init_error();
 
   low_th_init();
 
@@ -518,6 +517,7 @@ void do_exit(int num) ATTRIBUTE((noreturn))
 
 void low_init_main(void)
 {
+  init_error();
   init_pike_security();
   th_init();
   init_operators();

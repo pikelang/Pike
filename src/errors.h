@@ -23,6 +23,7 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
   add_integer_constant("is_" #NAME "_error",1,0); \
   DECL \
   PIKE_CONCAT(NAME,_error_program)=end_program(); \
+  add_program_constant( #NAME "_error",PIKE_CONCAT(NAME,_error_program),0); \
 }while(0);
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
