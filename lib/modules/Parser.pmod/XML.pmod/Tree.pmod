@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.26 2003/06/17 12:38:34 grubba Exp $
+ * $Id: Tree.pmod,v 1.27 2004/03/15 16:40:19 jonasw Exp $
  *
  */
 
@@ -67,7 +67,7 @@ string roxen_text_quote(string data) {
   string out = "";
   int pos, opos;
   while ((pos = search(data, "&", pos)) >= 0) {
-    if ((sscanf(data[pos..], "&%[^ <>;&];", string entity) == 1) &&
+    if ((sscanf(data[pos..], "&%[^\n\r\t <>;&];%*s", string entity) == 2) &&
 	search(entity, ".") >= 0) {
       out += text_quote(data[opos..pos - 1]) + "&" + entity + ";";
       pos += sizeof(entity) + 2;
