@@ -1,1 +1,5 @@
 test_tests([[inherit "]]SRCDIR[[/test.pike";]])
+
+test_eq( Unicode.is_wordchar(0), 0 )
+test_eq( Unicode.is_wordchar(65), 1 )
+test_eq( Unicode.is_wordchar(-1), 0 )
