@@ -1,4 +1,4 @@
-/* $Id: mkdoc.pike,v 1.14 1997/11/03 02:06:19 mirar Exp $ */
+/* $Id: mkdoc.pike,v 1.15 1997/11/07 06:12:12 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -157,17 +157,15 @@ string make_nice_reference(string refto,string my_prefix)
    if (sscanf(my_prefix,"%s.%s",my_module,my_class)==1)
       my_class=0;
 
-   switch ((search(refto,"::")!=-1)+(search(refto,".")!=-1)*2)
+   switch ((search(refto,"->")!=-1)+(search(refto,".")!=-1)*2)
    {
-      case 0: if (refto!=my_module) link=my_prefix+"::"+refto; 
+      case 0: if (refto!=my_module) link=my_prefix+"->"+refto; 
               else link=refto; 
               break;
-      case 1: link=my_module+"."+refto; break;
+      case 1: if (refto) link=my_module+"."+refto; else link=my_module; break;
       case 2: 
       case 3: link=refto; break;
    }
-
-   write(link+" -> ");
 
    s=0; t=0;
    sscanf(link,"%s.%s",link,s);
@@ -175,12 +173,12 @@ string make_nice_reference(string refto,string my_prefix)
    if (s) link+="."+s;
    if (t) link=link+".html#"+t;
    else
-      if (search(link,"::")!=-1)
-	 link=replace(link,"::",".html#");
+      if (search(link,"->")!=-1)
+	 link=replace(link,"->",".html#");
       else 
 	 link+=".html";
-   
-   write(link+"\n");
+
+   link=replace(link,"..",".");
 
    return "<tt><a href="+urlify(link)+">"+refto+"</a></tt>";
 }
