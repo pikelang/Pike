@@ -59,11 +59,11 @@ void f_load_module(INT32 args)
       {
 	strcpy(buf1, foo);
 	foo=buf1;
-      
-	while((*foo >= 'a' && *foo <= 'z' ) || (*foo >= 'A' && *foo <= 'Z' ))
-	  foo++;
 
-	*foo=0;
+	/* Strip extension, if any */
+	foo = STRCHR(foo, '.');
+	if (foo)
+	  *foo=0;
       
 	strcpy(buf2,"init_");
 	strcat(buf2,buf1);
