@@ -141,7 +141,7 @@ install:
 	if [ ! -d "$(lib_prefix)" ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; else : ; fi
 	if [ ! -d "$(prefix)/include" ]; then mkdir "$(prefix)/include"; chmod 755 "$(prefix)/include"; fi
 	if [ ! -d "$(prefix)/include/pike" ]; then mkdir "$(prefix)/include/pike"; chmod 755 "$(prefix)/include/pike"; fi
-	$(INSTALL) $(SRCDIR)/*.h *.h $(prefix)/include/pike
+	for a in $(SRCDIR)/*.h *.h ; do $(INSTALL) $$a $(prefix)/include/pike ; done
 	cp -r $(TMP_LIBDIR)/* $(lib_prefix)
 
 # tidy up a bit
