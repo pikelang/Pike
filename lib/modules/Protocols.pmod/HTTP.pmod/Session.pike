@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.12 2003/06/08 21:56:02 mirar Exp $
+// $Id: Session.pike,v 1.13 2003/10/22 19:18:24 jhs Exp $
 
 import Protocols.HTTP;
 
@@ -154,9 +154,11 @@ class Request
       {
 	 if(!con) con=give_me_connection(url_requested);
 	 con->sync_request(@args);
-	 if (con->ok) 
+	 if (con->ok)
 	 {
 	    check_for_cookies();
+	    while( con->status == 100 )
+	       con->ponder_answer( con->datapos );
 	    if (con->status>=300 && con->status<400 &&
 		con->headers->location && follow_redirects)
 	    {

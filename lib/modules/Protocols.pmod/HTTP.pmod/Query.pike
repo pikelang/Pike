@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.61 2003/08/07 14:23:22 nilsson Exp $
+// $Id: Query.pike,v 1.62 2003/10/22 19:18:23 jhs Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -73,11 +73,11 @@ array extra_args;
 
 /****** internal stuff *********************************************/
 
-static void ponder_answer()
+void ponder_answer( int|void start_position )
 {
    // read until we have all headers
 
-   int i = 0, j = 0;
+   int i = start_position, j = 0;
    for(;;)
    {
       string s;
@@ -97,7 +97,7 @@ static void ponder_answer()
       buf+=s;
    }
 
-   headerbuf=buf[..i-1]-"\n";
+   headerbuf = buf[start_position..i-1]-"\n";
 
    if (buf[i..i+1]=="\n\n") datapos=i+2;
    else datapos=i+4;
