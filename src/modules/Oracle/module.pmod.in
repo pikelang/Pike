@@ -1,3 +1,5 @@
+#if consant(@module@.oracle)
+
 inherit @module@ : M;
 
 class oracle
@@ -31,3 +33,5 @@ class oracle
       }
     }
 }
+
+#endif
