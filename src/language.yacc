@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.336 2004/03/23 15:14:00 mast Exp $
+|| $Id: language.yacc,v 1.337 2004/08/16 16:22:11 mast Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.336 2004/03/23 15:14:00 mast Exp $");
+RCSID("$Id: language.yacc,v 1.337 2004/08/16 16:22:11 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1261,7 +1261,7 @@ identifier_type: idents
 	    Pike_sp[-1].type=T_FUNCTION;
 	  }else{
 	    extern void f_object_program(INT32);
-	    if (Pike_compiler->compiler_pass == 2) {
+	    if (Pike_compiler->compiler_pass == 2 && !TEST_COMPAT (7, 4)) {
 	      yywarning("Using object as program identifier.");
 	    }
 	    f_object_program(1);
