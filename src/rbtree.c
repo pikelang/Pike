@@ -2,7 +2,7 @@
  *
  * Created 2001-04-27 by Martin Stjernholm
  *
- * $Id: rbtree.c,v 1.7 2001/05/02 14:50:37 grubba Exp $
+ * $Id: rbtree.c,v 1.8 2001/06/10 14:03:47 grubba Exp $
  */
 
 #include "global.h"
@@ -1587,6 +1587,7 @@ static void debug_dump_rb_tree (struct rb_node_hdr *tree, dump_data_fn *dump_dat
     }, {			/* Pop. */
       fputc (')', stderr);
     skip_node:
+      ;
     });
     fputc ('\n', stderr);
   }
