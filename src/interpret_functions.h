@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.126 2003/01/09 15:21:26 grubba Exp $
+|| $Id: interpret_functions.h,v 1.127 2003/01/12 16:00:14 mast Exp $
 */
 
 /*
@@ -172,7 +172,7 @@
 #define DO_RETURN DO_DUMB_RETURN
 #else
 #define DO_RETURN {				\
-  if(d_flag>3) do_gc();				\
+  if(d_flag>3) do_gc(NULL, 0);			\
   if(d_flag>4) do_debug();			\
   DO_DUMB_RETURN;				\
 }
@@ -1365,7 +1365,7 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local",0,{
      * call return -1, so we must call the callbacks here to
      * prevent false alarms! /Hubbe
      */
-    if(d_flag>3) do_gc();
+    if(d_flag>3) do_gc(NULL, 0);
     if(d_flag>4) do_debug();
     );
   if(Pike_fp->expendible <= Pike_fp->locals + arg1)

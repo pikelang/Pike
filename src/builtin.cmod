@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.105 2003/01/09 15:21:26 grubba Exp $
+|| $Id: builtin.cmod,v 1.106 2003/01/12 16:00:13 mast Exp $
 */
 
 #include "global.h"
@@ -31,6 +31,7 @@
 #include "builtin_functions.h"
 #include "fsort.h"
 #include "port.h"
+#include "gc.h"
 
 /*! @decl array(array(int|string)) describe_program(program p)
  *! @belongs Debug
@@ -355,6 +356,108 @@ PIKEFUN int trace(int t, void|int all_threads)
 #else
   Pike_interpreter.trace_level=t;
 #endif
+}
+
+/*! @decl mapping(string:float) gc_parameters (void|mapping(string:mixed) params)
+ *! @belongs Pike
+ *!
+ *! Set and get various parameters that control the operation of the
+ *! garbage collector. The passed mapping contains the parameters to
+ *! set. If a parameter is missing from the mapping, the current value
+ *! will be filled in instead. The same mapping is returned. Thus an
+ *! empty mapping, or no argument at all, causes a mapping with all
+ *! current settings to be returned.
+ *!
+ *! The following parameters are recognized:
+ *!
+ *! @mapping
+ *! @member int "enabled"
+ *!   All automatically scheduled gc runs are disabled if this is zero
+ *!   and the parameters below have no effect. Explicit runs through
+ *!   the @[gc] function still works as usual.
+ *! @member float "garbage_ratio_low"
+ *!   As long as the gc time is less than gc_time_ratio, aim to run
+ *!   the gc approximately every time the ratio between the garbage
+ *!   and the total amount of allocated things is this.
+ *! @member float "time_ratio"
+ *!   When more than this fraction of the cpu time is spent in the gc,
+ *!   aim for gc_garbage_ratio_high instead of gc_garbage_ratio_low.
+ *! @member float "garbage_ratio_high"
+ *!   Upper limit for the garbage ratio - run the gc as often as it
+ *!   takes to keep it below this.
+ *! @member float "average_slowness"
+ *!   When predicting the next gc interval, use a decaying average
+ *!   with this slowness factor. It should be a value between 0.0 and
+ *!   1.0 that specifies the weight to give to the old average value.
+ *!   The remaining weight up to 1.0 is given to the last reading.
+ *! @endmapping
+ *!
+ *! @seealso
+ *!   @[gc], @[Debug.gc_status]
+ */
+PIKEFUN mapping(string:mixed) gc_parameters (void|mapping(string:mixed) params)
+  errname Pike.gc_parameters;
+  optflags OPT_SIDE_EFFECT;
+{
+  struct pike_string *str;
+  struct svalue *set;
+  struct svalue get;
+
+  if (!params) {
+    push_mapping (allocate_mapping (5));
+    params = Pike_sp - 1;
+  }
+  else if (params->type != T_MAPPING)
+    SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1, "void|mapping");
+
+#define HANDLE_PARAM(NAME, CHECK_AND_SET, GET) do {			\
+    MAKE_CONSTANT_SHARED_STRING (str, NAME);				\
+    free_string (str); /* Got a ref above anyway. */			\
+    if ((set = low_mapping_string_lookup (params->u.mapping, str))) {	\
+      CHECK_AND_SET;							\
+    }									\
+    else {								\
+      GET;								\
+      mapping_string_insert (params->u.mapping, str, &get);		\
+    }									\
+  } while (0)
+
+#define HANDLE_FLOAT_FACTOR(NAME, VAR)					\
+  HANDLE_PARAM (NAME, {							\
+      if (set->type != T_FLOAT ||					\
+	  set->u.float_number < 0.0 || set->u.float_number > 1.0)	\
+	SIMPLE_BAD_ARG_ERROR ("Pike.gc_parameters", 1,			\
+			      "float value between 0.0 and 1.0 for " NAME); \
+      VAR = set->u.float_number;					\
+    }, {								\
+      get.type = T_FLOAT;						\
+      get.u.float_number = VAR;						\
+    });
+
+  HANDLE_PARAM ("enabled", {
+      if (gc_enabled != !UNSAFE_IS_ZERO (set)) {
+	if (gc_enabled) {
+	  gc_enabled = 0;
+	  alloc_threshold = GC_MAX_ALLOC_THRESHOLD;
+	}
+	else {
+	  gc_enabled = 1;
+	  alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
+	}
+      }
+    }, {
+      get.type = T_INT;
+      get.u.integer = gc_enabled;
+    });
+  HANDLE_FLOAT_FACTOR ("garbage_ratio_low", gc_garbage_ratio_low);
+  HANDLE_FLOAT_FACTOR ("time_ratio", gc_time_ratio);
+  HANDLE_FLOAT_FACTOR ("garbage_ratio_high", gc_garbage_ratio_high);
+  HANDLE_FLOAT_FACTOR ("average_slowness", gc_average_slowness);
+
+#undef HANDLE_PARAM
+#undef HANDLE_FLOAT_FACTOR
+
+  REF_RETURN params->u.mapping;
 }
 
 /*! @decl string ctime(int timestamp)
@@ -768,7 +871,7 @@ PIKEFUN string function_name(program|function func)
  *! @seealso
  *!   @[function_name()], @[function_program()]
  */
-PIKEFUN object|program function_object(function|program func)
+PIKEFUN object function_object(function|program func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
   type function(function:object);
@@ -2142,8 +2245,11 @@ PIKECLASS Time
     extern struct timeval current_time;
     struct pike_string *usec;
     struct pike_string *sec;
-    MAKE_CONSTANT_SHARED_STRING( sec, "sec" ); 
-    MAKE_CONSTANT_SHARED_STRING( usec, "usec" ); 
+
+    MAKE_CONSTANT_SHARED_STRING( sec, "sec" );
+    free_string (sec);
+    MAKE_CONSTANT_SHARED_STRING( usec, "usec" );
+    free_string (usec);
 
     if( !x )
       RETURN 0;

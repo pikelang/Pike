@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.194 2003/01/11 03:06:54 mast Exp $
+|| $Id: gc.c,v 1.195 2003/01/12 16:00:14 mast Exp $
 */
 
 #include "global.h"
@@ -19,6 +19,7 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_error.h"
 #include "pike_memory.h"
 #include "pike_macros.h"
+#include "pike_rusage.h"
 #include "pike_types.h"
 #include "time_stuff.h"
 #include "constants.h"
@@ -31,25 +32,18 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.194 2003/01/11 03:06:54 mast Exp $");
+RCSID("$Id: gc.c,v 1.195 2003/01/12 16:00:14 mast Exp $");
 
-/* Run garbage collect approximately every time
- * 20 percent of all arrays, objects and programs is
- * garbage.
- */
-#define GC_CONST 20
+int gc_enabled = 1;
 
-/* Use a decaying average where the slowness factor approximately
- * corresponds to the average over the last ten gc rounds.
- * (0.9 == 1 - 1/10) */
-#define MULTIPLIER 0.9
+/* These defaults are only guesses and hardly tested at all. Please improve. */
+double gc_garbage_ratio_low = 0.2;
+double gc_time_ratio = 0.05;
+double gc_garbage_ratio_high = 0.5;
 
-/* The above are used to calculate the threshold on the number of
- * allocations since the last gc round before another is scheduled.
- * Put a cap on that threshold to avoid very small and large
- * intervals. */
-#define MIN_ALLOC_THRESHOLD 1000
-#define MAX_ALLOC_THRESHOLD 10000000
+/* This slowness factor approximately corresponds to the average over
+ * the last ten gc rounds. (0.9 == 1 - 1/10) */
+double gc_average_slowness = 0.9;
 
 #define GC_LINK_CHUNK_SIZE 64
 
@@ -106,11 +100,10 @@ RCSID("$Id: gc.c,v 1.194 2003/01/11 03:06:54 mast Exp $");
 
 int num_objects = 3;		/* Account for *_empty_array. */
 int num_allocs =0;
-ptrdiff_t alloc_threshold = MIN_ALLOC_THRESHOLD;
+ptrdiff_t alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
 struct pike_queue gc_mark_queue;
-time_t last_gc;
 
 struct gc_frame
 {
@@ -199,6 +192,14 @@ size_t gc_ext_weak_refs;
 
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
+static double gc_time = 0.0, non_gc_time = 0.0;
+static INT32 last_gc_end_time = 0;
+
+/* These are only collected for the sake of gc_status. */
+static double last_garbage_ratio = 0.0;
+static enum {
+  GARBAGE_RATIO_LOW, GARBAGE_RATIO_HIGH
+} last_garbage_strategy = GARBAGE_RATIO_LOW;
 
 struct callback_list gc_callbacks;
 
@@ -253,22 +254,6 @@ static unsigned max_tot_gc_frames = 0;
 static unsigned tot_cycle_checked = 0, tot_live_rec = 0, tot_frame_rot = 0;
 
 static int gc_is_watching = 0;
-
-void dump_gc_info(void)
-{
-  fprintf(stderr,"Current number of objects: %d\n",num_objects);
-  fprintf(stderr,"Objects allocated total  : %d\n",num_allocs);
-  fprintf(stderr," threshold for next gc() : %"PRINTPTRDIFFT"d\n",alloc_threshold);
-  fprintf(stderr,"Average allocs per gc()  : %f\n",objects_alloced);
-  fprintf(stderr,"Average frees per gc()   : %f\n",objects_freed);
-  fprintf(stderr,"Second since last gc()   : %ld\n",
-	  DO_NOT_WARN((long)TIME(0) - (long)last_gc));
-  fprintf(stderr,"Projected garbage        : %f\n", objects_freed * (double) num_allocs / (double) alloc_threshold);
-  fprintf(stderr,"Max used gc frames       : %u\n", max_tot_gc_frames);
-  fprintf(stderr,"Live recursed ratio      : %g\n", (double) tot_live_rec / tot_cycle_checked);
-  fprintf(stderr,"Frame rotation ratio     : %g\n", (double) tot_frame_rot / tot_cycle_checked);
-  fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
-}
 
 int attempt_to_identify(void *something, void **inblock)
 {
@@ -2128,7 +2113,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 
   else
     if (!(m->flags & GC_CYCLE_CHECKED)) {
-      struct gc_frame *l, *prev_rec_last = gc_rec_last;
+      struct gc_frame *l;
 #ifdef PIKE_DEBUG
       cycle_checked++;
       if (m->frame)
@@ -2435,12 +2420,11 @@ static void warn_bad_cycles()
   CALL_AND_UNSET_ONERROR(tmp);
 }
 
-size_t do_gc(void)
+size_t do_gc(void *ignored, int explicit_call)
 {
-  double tmp;
-  size_t num_objs, allocs, unreferenced;
+  size_t start_num_objs, start_allocs, unreferenced;
+  INT32 gc_start_time;
   ptrdiff_t objs, pre_kill_objs;
-  double multiplier;
 #ifdef PIKE_DEBUG
 #ifdef HAVE_GETHRTIME
   hrtime_t gcstarttime = 0;
@@ -2450,6 +2434,16 @@ size_t do_gc(void)
 #endif
 
   if(Pike_in_gc) return 0;
+
+  if (!gc_enabled && !explicit_call) {
+    num_allocs = 0;
+    if (gc_evaluator_callback) {
+      remove_callback (gc_evaluator_callback);
+      gc_evaluator_callback = NULL;
+    }
+    return 0;
+  }
+
 #ifdef DEBUG_MALLOC
   if(debug_options & GC_RESET_DMALLOC)
     reset_debug_malloc();
@@ -2457,6 +2451,7 @@ size_t do_gc(void)
   init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
+  gc_start_time = internal_rusage();
 #ifdef PIKE_DEBUG
   gc_debug = d_flag;
   SET_ONERROR(uwp, fatal_on_error, "Shouldn't get an exception inside the gc.\n");
@@ -2475,32 +2470,18 @@ size_t do_gc(void)
   objs=num_objects;
   last_cycle = 0;
 
-#ifdef PIKE_DEBUG
   if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level) {
     fprintf(stderr,"Garbage collecting ... ");
     GC_VERBOSE_DO(fprintf(stderr, "\n"));
-#ifdef HAVE_GETHRTIME
-    gcstarttime = gethrtime();
-#endif
   }
+#ifdef PIKE_DEBUG
   if(num_objects < 0)
     Pike_fatal("Panic, less than zero objects!\n");
 #endif
 
-  last_gc=TIME(0);
-  num_objs = num_objects;
-  allocs = num_allocs;
+  start_num_objs = num_objects;
+  start_allocs = num_allocs;
   num_allocs = 0;
-
-  /* If we're at an automatic and timely gc then allocs ==
-   * alloc_threshold and we're using MULTIPLIER in the decaying
-   * average calculation. Otherwise this is either an explicit call
-   * (allocs < alloc_threshold) or the gc has been delayed past its
-   * due time (allocs > alloc_threshold), and in those cases we adjust
-   * the multiplier to appropriately weight this last instance. */
-  multiplier=pow(MULTIPLIER, (double) allocs / (double) alloc_threshold);
-
-  objects_alloced = objects_alloced * multiplier + allocs * (1.0 - multiplier);
 
   /* Thread switches, object alloc/free and any reference changes are
    * disallowed now. */
@@ -2548,9 +2529,9 @@ size_t do_gc(void)
    */
   call_callback(& gc_callbacks, (void *)0);
 
-  GC_VERBOSE_DO(fprintf(stderr, "| check: %u references checked, "
+  GC_VERBOSE_DO(fprintf(stderr, "| check: %u references in %d things, "
 			"counted %"PRINTSIZET"u weak refs\n",
-			checked, gc_ext_weak_refs));
+			checked, num_objects, gc_ext_weak_refs));
 
   Pike_in_gc=GC_PASS_MARK;
 
@@ -2818,54 +2799,99 @@ size_t do_gc(void)
   Pike_in_gc=0;
   exit_gc();
 
-  /* At this point, unreferenced contains the number of things that
-   * were without external references during the check and mark
-   * passes. In the process of freeing them, destroy functions might
-   * have been called which means anything might have happened.
-   * Therefore we use that figure instead of the difference between
-   * the number of allocated things to measure the amount of
-   * garbage. */
+  /* Calculate the next alloc_threshold. */
+  {
+    double multiplier, new_threshold;
+    INT32 last_non_gc_time, last_gc_time;
 
-  objects_freed = objects_freed * multiplier + unreferenced * (1.0 - multiplier);
+    /* If we're at an automatic and timely gc then start_allocs ==
+     * alloc_threshold and we're using gc_average_slowness in the
+     * decaying average calculation. Otherwise this is either an
+     * explicit call (start_allocs < alloc_threshold) or the gc has
+     * been delayed past its due time (start_allocs >
+     * alloc_threshold), and in those cases we adjust the multiplier
+     * to appropriately weight this last instance. */
+    multiplier=pow(gc_average_slowness,
+		   (double) start_allocs / (double) alloc_threshold);
 
-  /* Calculate the new threshold by adjusting the average threshold
-   * (objects_alloced) with the ratio between the wanted garbage at
-   * the next gc (GC_CONST/100.0 * num_objs) and the actual average
-   * garbage (objects_freed). (Where the +1.0's come from I don't
-   * know. Perhaps they're to avoid division by zero. /mast) */
-  tmp = (objects_alloced+1.0) * (GC_CONST/100.0 * num_objs) / (objects_freed+1.0);
+    /* Comparisons to avoid that overflows mess up the statistics. */
+    if (gc_start_time > last_gc_end_time) {
+      last_non_gc_time = gc_start_time - last_gc_end_time;
+      non_gc_time = non_gc_time * multiplier +
+	last_non_gc_time * (1.0 - multiplier);
+    }
+    else last_non_gc_time = 0;
+    last_gc_end_time = internal_rusage();
+    if (last_gc_end_time > gc_start_time) {
+      last_gc_time = last_gc_end_time - gc_start_time;
+      gc_time = gc_time * multiplier +
+	last_gc_time * (1.0 - multiplier);
+    }
+    else last_gc_time = 0;
+
+    /* At this point, unreferenced contains the number of things that
+     * were without external references during the check and mark
+     * passes. In the process of freeing them, destroy functions might
+     * have been called which means anything might have happened.
+     * Therefore we use that figure instead of the difference between
+     * the number of allocated things to measure the amount of
+     * garbage. */
+    last_garbage_ratio = (double) unreferenced / start_num_objs;
+
+    objects_alloced = objects_alloced * multiplier +
+      start_allocs * (1.0 - multiplier);
+    objects_freed = objects_freed * multiplier +
+      unreferenced * (1.0 - multiplier);
+
+    if (!last_non_gc_time || gc_time / non_gc_time <= gc_time_ratio) {
+      /* Calculate the new threshold by adjusting the average
+       * threshold (objects_alloced) with the ratio between the wanted
+       * garbage at the next gc (gc_garbage_ratio_low *
+       * start_num_objs) and the actual average garbage
+       * (objects_freed). (Where the +1.0's come from I don't know.
+       * Perhaps they're to avoid division by zero. /mast) */
+      new_threshold = (objects_alloced+1.0) *
+	(gc_garbage_ratio_low * start_num_objs) / (objects_freed+1.0);
+      last_garbage_strategy = GARBAGE_RATIO_LOW;
+    }
+    else {
+      new_threshold = (objects_alloced+1.0) *
+	(gc_garbage_ratio_high * start_num_objs) / (objects_freed+1.0);
+      last_garbage_strategy = GARBAGE_RATIO_HIGH;
+    }
 
 #if 0
-  /* Afaics this was to limit the growth of the threshold to avoid
-   * that a single sudden allocation spike causes a very long gc
-   * interval the next time. Now when the bug in the decaying average
-   * calculation is fixed there should be no risk for that, at least
-   * not any case when this would help. /mast */
-  if(alloc_threshold + allocs < tmp)
-    tmp = (double)(alloc_threshold + allocs);
+    /* Afaics this is to limit the growth of the threshold to avoid
+     * that a single sudden allocation spike causes a very long gc
+     * interval the next time. Now when the bug in the decaying
+     * average calculation is fixed there should be no risk for that,
+     * at least not in any case when this would help. /mast */
+    if(alloc_threshold + start_allocs < new_threshold)
+      new_threshold = (double)(alloc_threshold + start_allocs);
 #endif
 
-  if(tmp < MIN_ALLOC_THRESHOLD)
-    tmp = (double)MIN_ALLOC_THRESHOLD;
-  else if(tmp > MAX_ALLOC_THRESHOLD)
-    tmp = (double)MAX_ALLOC_THRESHOLD;
+    if(new_threshold < GC_MIN_ALLOC_THRESHOLD)
+      new_threshold = (double) GC_MIN_ALLOC_THRESHOLD;
+    else if(new_threshold > GC_MAX_ALLOC_THRESHOLD)
+      new_threshold = (double) GC_MAX_ALLOC_THRESHOLD;
 
-  alloc_threshold = (ptrdiff_t)tmp;
+    alloc_threshold = (ptrdiff_t)new_threshold;
+
+    if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level)
+    {
+      if (last_gc_time)
+	fprintf(stderr, "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d "
+		"was unreferenced), %d ms.\n",
+		unreferenced, start_num_objs, last_gc_time);
+      else
+	fprintf(stderr, "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d "
+		"was unreferenced)\n",
+		unreferenced, start_num_objs);
+    }
+  }
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR (uwp);
-  if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level)
-  {
-#ifdef HAVE_GETHRTIME
-    fprintf(stderr,
-	    "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d was unreferenced), %ld ms.\n",
-	    unreferenced, num_objs, (long)((gethrtime() - gcstarttime)/1000000));
-#else
-    fprintf(stderr,
-	    "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d was unreferenced)\n",
-	    unreferenced, num_objs);
-#endif
-  }
   if (max_gc_frames > max_tot_gc_frames) max_tot_gc_frames = max_gc_frames;
   tot_cycle_checked += cycle_checked;
   tot_live_rec += live_rec, tot_frame_rot += frame_rot;
@@ -2894,18 +2920,27 @@ size_t do_gc(void)
  *!       Number of memory allocations.
  *!     @member int "alloc_threshold"
  *!       Threshold where the garbage-collector starts.
- *!     @member int "objects_alloced"
- *!       Number of allocated objects.
- *!     @member int "objects_freed"
- *!       Number of freed objects.
- *!     @member int "last_gc"
- *!       Time when the garbage-collector last ran.
  *!     @member float "projected_garbage"
- *!       Heuristic for the amount of garbage in the system.
+ *!       Estimation of the current amount of garbage.
+ *!     @member int "objects_alloced"
+ *!       Average number of allocated objects between gc runs.
+ *!     @member int "objects_freed"
+ *!       Average number of freed objects in each gc run.
+ *!     @member float "last_garbage_ratio"
+ *!       Garbage ratio in the last gc run.
+ *!     @member int "non_gc_time"
+ *!       Average CPU milliseconds spent outside the garbage collector.
+ *!     @member int "gc_time"
+ *!       Average CPU milliseconds spent inside the garbage collector.
+ *!     @member string "last_garbage_strategy"
+ *!       The garbage accumulation goal that the gc aimed for in the
+ *!       last run. The value is either "garbage_ratio_low" or
+ *!       "garbage_ratio_high", which corresponds to the gc parameters
+ *!       with the same names in @[Pike.gc_parameters].
  *!   @endmapping
  *!
  *! @seealso
- *!   @[gc()]
+ *!   @[gc()], @[Pike.gc_parameters()]
  */
 void f__gc_status(INT32 args)
 {
@@ -2925,6 +2960,11 @@ void f__gc_status(INT32 args)
   push_int64(alloc_threshold);
   size++;
 
+  push_constant_text("projected_garbage");
+  push_float(DO_NOT_WARN((FLOAT_TYPE)(objects_freed * (double) num_allocs /
+				      (double) alloc_threshold)));
+  size++;
+
   push_constant_text("objects_alloced");
   push_int64(DO_NOT_WARN((INT64)objects_alloced));
   size++;
@@ -2933,16 +2973,61 @@ void f__gc_status(INT32 args)
   push_int64(DO_NOT_WARN((INT64)objects_freed));
   size++;
 
-  push_constant_text("last_gc");
-  push_int64(last_gc);
+  push_constant_text("last_garbage_ratio");
+  push_float(DO_NOT_WARN((FLOAT_TYPE) last_garbage_ratio));
   size++;
 
-  push_constant_text("projected_garbage");
-  push_float(DO_NOT_WARN((FLOAT_TYPE)(objects_freed * (double) num_allocs /
-				      (double) alloc_threshold)));
+  push_constant_text("non_gc_time");
+  push_int64(DO_NOT_WARN((INT64) non_gc_time));
+  size++;
+
+  push_constant_text("gc_time");
+  push_int64(DO_NOT_WARN((INT64) gc_time));
+  size++;
+
+  push_constant_text ("last_garbage_strategy");
+  switch (last_garbage_strategy) {
+    case GARBAGE_RATIO_LOW: push_constant_text ("garbage_ratio_low"); break;
+    case GARBAGE_RATIO_HIGH: push_constant_text ("garbage_ratio_high"); break;
+#ifdef PIKE_DEBUG
+    default: Pike_fatal ("Unknown last_garbage_strategy %d\n", last_garbage_strategy);
+#endif
+  }
   size++;
 
   f_aggregate_mapping(size * 2);
+}
+
+void dump_gc_info(void)
+{
+  fprintf(stderr,"Current number of things   : %d\n",num_objects);
+  fprintf(stderr,"Allocations since last gc  : %d\n",num_allocs);
+  fprintf(stderr,"Threshold for next gc      : %"PRINTPTRDIFFT"d\n",alloc_threshold);
+  fprintf(stderr,"Projected current garbage  : %f\n",
+	  objects_freed * (double) num_allocs / (double) alloc_threshold);
+
+  fprintf(stderr,"Avg allocs between gc      : %f\n",objects_alloced);
+  fprintf(stderr,"Avg frees per gc           : %f\n",objects_freed);
+  fprintf(stderr,"Garbage ratio in last gc   : %f\n", last_garbage_ratio);
+					     
+  fprintf(stderr,"Avg cpu ms between gc      : %f\n", non_gc_time);
+  fprintf(stderr,"Avg cpu ms in gc           : %f\n", gc_time);
+  fprintf(stderr,"Avg time ratio in gc       : %f\n", gc_time / non_gc_time);
+
+  fprintf(stderr,"Garbage strategy in last gc: %s\n",
+	  last_garbage_strategy == GARBAGE_RATIO_LOW ? "garbage_ratio_low" :
+	  last_garbage_strategy == GARBAGE_RATIO_HIGH ? "garbage_ratio_high" :
+	  "???");
+
+#ifdef PIKE_DEBUG
+  fprintf(stderr,"Max used gc frames         : %u\n", max_tot_gc_frames);
+  fprintf(stderr,"Live recursed ratio        : %g\n",
+	  (double) tot_live_rec / tot_cycle_checked);
+  fprintf(stderr,"Frame rotation ratio       : %g\n",
+	  (double) tot_frame_rot / tot_cycle_checked);
+#endif
+
+  fprintf(stderr,"in_gc                      : %d\n", Pike_in_gc);
 }
 
 void cleanup_gc(void)

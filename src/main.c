@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.164 2003/01/11 01:52:55 mast Exp $
+|| $Id: main.c,v 1.165 2003/01/12 16:00:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.164 2003/01/11 01:52:55 mast Exp $");
+RCSID("$Id: main.c,v 1.165 2003/01/12 16:00:14 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -850,7 +850,7 @@ void low_exit_main(void)
   {
     while(1) {
       int tmp=num_objects;
-      do_gc();
+      do_gc(NULL, 1);
       if(num_objects >= tmp) break;
     }
   }
@@ -905,7 +905,7 @@ void low_exit_main(void)
     {
 
       fprintf(stderr,"Garbage collecting..\n");
-      do_gc();
+      do_gc(NULL, 1);
       
       count_memory_in_arrays(&num, &size);
       fprintf(stderr,"Arrays left: %d (%d bytes)\n",num,size);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.94 2003/01/11 01:30:21 mast Exp $
+|| $Id: gc.h,v 1.95 2003/01/12 16:00:14 mast Exp $
 */
 
 #ifndef GC_H
@@ -13,6 +13,37 @@
 #include "queue.h"
 #include "threads.h"
 #include "interpret.h"
+
+/* Set to zero to disable automatic gc runs. */
+extern int gc_enabled;
+
+/* As long as the gc time is less than gc_time_ratio, aim to run the
+ * gc approximately every time the ratio between the garbage and the
+ * total amount of allocated things is this. */
+extern double gc_garbage_ratio_low;
+
+/* When more than this fraction of the cpu time is spent in the gc,
+ * aim to minimize it as long as the garbage ratio is less than
+ * gc_garbage_ratio_high. */
+extern double gc_time_ratio;
+
+/* If the garbage ratio gets up to this value, disregard gc_time_ratio
+ * and start running the gc as often as it takes so that it doesn't
+ * get any higher. */
+extern double gc_garbage_ratio_high;
+
+/* When predicting the next gc interval, use a decaying average with
+ * this slowness factor. It should be a value less than 1.0 that
+ * specifies the weight to give to the old average value. The
+ * remaining weight up to 1.0 is given to the last reading. */
+extern double gc_average_slowness;
+
+/* The above are used to calculate the threshold on the number of
+ * allocations since the last gc round before another is scheduled.
+ * Put a cap on that threshold to avoid very small and large
+ * intervals. */
+#define GC_MIN_ALLOC_THRESHOLD 1000
+#define GC_MAX_ALLOC_THRESHOLD 10000000
 
 extern struct pike_queue gc_mark_queue;
 extern INT32 num_objects;
@@ -45,12 +76,12 @@ extern void *gc_svalue_location;
 #ifdef ALWAYS_GC
 #define GC_ALLOC(OBJ) do{						\
   LOW_GC_ALLOC(OBJ);							\
-  ADD_GC_CALLBACK();				\
+  ADD_GC_CALLBACK();							\
 } while(0)
 #else
 #define GC_ALLOC(OBJ)  do{						\
   LOW_GC_ALLOC(OBJ);							\
-  if(num_allocs == alloc_threshold)		\
+  if(num_allocs >= alloc_threshold)					\
     ADD_GC_CALLBACK();							\
 } while(0)
 #endif
@@ -63,7 +94,7 @@ extern void *gc_svalue_location;
   extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   if (Pike_in_gc == GC_PASS_CHECK || Pike_in_gc == GC_PASS_LOCATE)	\
-    Pike_fatal("No free is allowed in this gc pass.\n");			\
+    Pike_fatal("No free is allowed in this gc pass.\n");		\
   else									\
     remove_marker(PTR);							\
 } while (0)
@@ -254,7 +285,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, int type);
 int gc_do_free(void *a);
-size_t do_gc(void);
+size_t do_gc(void *ignored, int explicit_call);
 void f__gc_status(INT32 args);
 void cleanup_gc(void);
 /* Prototypes end here */
@@ -269,13 +300,13 @@ void cleanup_gc(void);
 } while (0)
 #define gc_assert_checked_as_weak(X) do {				\
   if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
-    Pike_fatal("A thing was checked as nonweak but "				\
-	  "marked or cycle checked as weak.\n");			\
+    Pike_fatal("A thing was checked as nonweak but "			\
+	       "marked or cycle checked as weak.\n");			\
 } while (0)
 #define gc_assert_checked_as_nonweak(X) do {				\
   if (find_marker(X)->flags & GC_CHECKED_AS_WEAK)			\
-    Pike_fatal("A thing was checked as weak but "				\
-	  "marked or cycle checked as nonweak.\n");			\
+    Pike_fatal("A thing was checked as weak but "			\
+	       "marked or cycle checked as nonweak.\n");		\
 } while (0)
 #else
 #define gc_checked_as_weak(X) do {} while (0)
@@ -396,7 +427,7 @@ extern int gc_in_cycle_check;
   if (!(_m_->flags & GC_MARKED)) {					\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
-	Pike_fatal("Recursing immediately in gc cycle check.\n");		\
+	Pike_fatal("Recursing immediately in gc cycle check.\n");	\
       gc_in_cycle_check = 1;						\
     );									\
     if (gc_cycle_push(_thing_, _m_, (WEAK))) {
@@ -409,7 +440,7 @@ extern int gc_in_cycle_check;
       _m_->flags |= GC_LIVE|GC_LIVE_OBJ;				\
     DO_IF_DEBUG(							\
       if (gc_in_cycle_check)						\
-	Pike_fatal("Recursing immediately in gc cycle check.\n");		\
+	Pike_fatal("Recursing immediately in gc cycle check.\n");	\
       gc_in_cycle_check = 1;						\
     );									\
     if (gc_cycle_push(_thing_, _m_, (WEAK))) {
