@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.248 2001/06/08 19:32:16 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.249 2001/06/10 00:21:40 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -143,6 +143,7 @@ RCSID("$Id: language.yacc,v 1.248 2001/06/08 19:32:16 grubba Exp $");
 #endif /* YYDEBUG */
 #endif
 
+/* #define LAMBDA_DEBUG	1 */
 
 int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
@@ -2341,7 +2342,6 @@ class: modifiers TOK_CLASS optional_identifier
       }
     }else{
       int i;
-      struct program *p;
       struct identifier *id;
       int tmp=Pike_compiler->compiler_pass;
       i=isidentifier($3->u.sval.u.string);
@@ -2926,21 +2926,22 @@ optional_block: ';' /* EMPTY */ { $$=0; }
 
     /* block code */
     $<number>1=Pike_compiler->num_used_modules;
-    $<number>3=Pike_compiler->compiler_frame->current_number_of_locals;
+    $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
   statements end_block
   {
     struct pike_type *type;
     char buf[40];
-    int f,e;
+    int f/*, e */;
     struct pike_string *name;
 
     /* block code */
     unuse_modules(Pike_compiler->num_used_modules - $<number>1);
     pop_local_variables($<number>3);
-    
+
     debug_malloc_touch($4);
     $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
+
     type=find_return_type($4);
 
     if(type) {
@@ -3205,7 +3206,7 @@ inherit_specifier: TOK_IDENTIFIER TOK_COLON_COLON
 low_idents: TOK_IDENTIFIER
   {
     int i;
-    struct efun *f;
+
     if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
     copy_shared_string(Pike_compiler->last_identifier, $1->u.sval.u.string);
 
