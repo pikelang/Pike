@@ -9,9 +9,13 @@ static class extension
   int init(object d)
   {
     dpy = d;
-    mapping reply = 
+
+    array a =
       d->blocking_request( Requests.QueryExtension( this_object()->name ) );
-    if(!reply) return 0;
+
+    if(!a[0]) return 0;
+
+    mapping reply = a[1];
     major = reply->major;
     error = reply->error;
     event = reply->event;
