@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.344 2004/10/22 23:23:20 nilsson Exp $
+|| $Id: language.yacc,v 1.345 2004/10/23 02:25:11 nilsson Exp $
 */
 
 %pure_parser
@@ -436,7 +436,7 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
     struct object *o;
     if (Pike_compiler->compiler_pass == 1) {
       if (Pike_compiler->new_program->facet_class == PROGRAM_IS_FACET_CLASS) {
-	yyerror("A class can only belong to one facet");
+	yyerror("A class can only belong to one facet.");
       }
       else {
 	resolv_constant($4);
@@ -446,7 +446,7 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
 	  push_int(Pike_compiler->new_program->id);
 	  push_int(Pike_compiler->new_program->facet_class);
 	  safe_apply_low3(o, find_identifier("add_facet_class",o->prog), 3,
-			  "Failed to add facet class to system");
+			  "Failed to add facet class to system.");
 	  if (Pike_sp[-1].type == T_INT &&
 	      Pike_sp[-1].u.integer >= 0) {
 	    Pike_compiler->new_program->facet_class = PROGRAM_IS_FACET_CLASS;
@@ -3859,98 +3859,98 @@ string: TOK_STRING
 /* FIXME: Should probably set Pike_compiler->last_identifier. */
 bad_identifier: bad_expr_ident
   | TOK_ARRAY_ID
-  { yyerror("array is a reserved word."); }
+  { yyerror_reserved("array"); }
   | TOK_CLASS
-  { yyerror("class is a reserved word."); }
+  { yyerror_reserved("class"); }
   | TOK_ENUM
-  { yyerror("enum is a reserved word."); }
+  { yyerror_reserved("enum"); }
   | TOK_FLOAT_ID
-  { yyerror("float is a reserved word.");}
+  { yyerror_reserved("float");}
   | TOK_FUNCTION_ID
-  { yyerror("function is a reserved word.");}
+  { yyerror_reserved("function");}
   | TOK_INT_ID
-  { yyerror("int is a reserved word."); }
+  { yyerror_reserved("int"); }
   | TOK_MAPPING_ID
-  { yyerror("mapping is a reserved word."); }
+  { yyerror_reserved("mapping"); }
   | TOK_MIXED_ID
-  { yyerror("mixed is a reserved word."); }
+  { yyerror_reserved("mixed"); }
   | TOK_MULTISET_ID
-  { yyerror("multiset is a reserved word."); }
+  { yyerror_reserved("multiset"); }
   | TOK_OBJECT_ID
-  { yyerror("object is a reserved word."); }
+  { yyerror_reserved("object"); }
   | TOK_PROGRAM_ID
-  { yyerror("program is a reserved word."); }
+  { yyerror_reserved("program"); }
   | TOK_STRING_ID
-  { yyerror("string is a reserved word."); }
+  { yyerror_reserved("string"); }
   | TOK_TYPEDEF
-  { yyerror("typedef is a reserved word."); }
+  { yyerror_reserved("typedef"); }
   | TOK_VOID_ID
-  { yyerror("void is a reserved word."); }
+  { yyerror_reserved("void"); }
   ;
 
 bad_expr_ident:
     TOK_INLINE
-  { yyerror("inline is a reserved word."); }
+  { yyerror_reserved("inline"); }
   | TOK_LOCAL_ID
-  { yyerror("local is a reserved word."); }
+  { yyerror_reserved("local"); }
   | TOK_NO_MASK
-  { yyerror("nomask is a reserved word."); }
+  { yyerror_reserved("nomask"); }
   | TOK_PREDEF
-  { yyerror("predef is a reserved word."); }
+  { yyerror_reserved("predef"); }
   | TOK_PRIVATE
-  { yyerror("private is a reserved word."); }
+  { yyerror_reserved("private"); }
   | TOK_PROTECTED
-  { yyerror("protected is a reserved word."); }
+  { yyerror_reserved("protected"); }
   | TOK_PUBLIC
-  { yyerror("public is a reserved word."); }
+  { yyerror_reserved("public"); }
   | TOK_OPTIONAL
-  { yyerror("optional is a reserved word."); }
+  { yyerror_reserved("optional"); }
   | TOK_VARIANT
-  { yyerror("variant is a reserved word."); }
+  { yyerror_reserved("variant"); }
   | TOK_STATIC
-  { yyerror("static is a reserved word."); }
+  { yyerror_reserved("static"); }
   | TOK_EXTERN
-  { yyerror("extern is a reserved word."); }
+  { yyerror_reserved("extern"); }
   | TOK_FINAL_ID
-  { yyerror("final is a reserved word.");}
+  { yyerror_reserved("final");}
   | TOK_DO
-  { yyerror("do is a reserved word."); }
+  { yyerror_reserved("do"); }
   | TOK_ELSE
   { yyerror("else without if."); }
   | TOK_RETURN
-  { yyerror("return is a reserved word."); }
+  { yyerror_reserved("return"); }
   | TOK_IMPORT
-  { yyerror("import is a reserved word."); }
+  { yyerror_reserved("import"); }
   | TOK_FACET
-  { yyerror("facet is a reserved word."); }
+  { yyerror_reserved("facet"); }
   | TOK_INHERIT
-  { yyerror("inherit is a reserved word."); }
+  { yyerror_reserved("inherit"); }
   | TOK_CATCH
-  { yyerror("catch is a reserved word."); }
+  { yyerror_reserved("catch"); }
   | TOK_GAUGE
-  { yyerror("gauge is a reserved word."); }
+  { yyerror_reserved("gauge"); }
   | TOK_LAMBDA
-  { yyerror("lambda is a reserved word."); }
+  { yyerror_reserved("lambda"); }
   | TOK_SSCANF
-  { yyerror("sscanf is a reserved word."); }
+  { yyerror_reserved("sscanf"); }
   | TOK_SWITCH
-  { yyerror("switch is a reserved word."); }
+  { yyerror_reserved("switch"); }
   | TOK_TYPEOF
-  { yyerror("typeof is a reserved word."); }
+  { yyerror_reserved("typeof"); }
   | TOK_BREAK
-  { yyerror("break is a reserved word."); }
+  { yyerror_reserved("break"); }
   | TOK_CASE
-  { yyerror("case is a reserved word."); }
+  { yyerror_reserved("case"); }
   | TOK_CONTINUE
-  { yyerror("continue is a reserved word."); }
+  { yyerror_reserved("continue"); }
   | TOK_DEFAULT
-  { yyerror("default is a reserved word."); }
+  { yyerror_reserved("default"); }
   | TOK_FOR
-  { yyerror("for is a reserved word."); }
+  { yyerror_reserved("for"); }
   | TOK_FOREACH
-  { yyerror("foreach is a reserved word."); }
+  { yyerror_reserved("foreach"); }
   | TOK_IF
-  { yyerror("if is a reserved word."); }
+  { yyerror_reserved("if"); }
   ;
 
 /*
@@ -4009,6 +4009,13 @@ void yyerror(char *str)
   }
 
   STACK_LEVEL_DONE(0);
+}
+
+static void yyerror_reserved(char *keyword)
+{
+  char fmt[100];
+  snprintf(fmt, sizeof(fmt), "%s is a reserved word.", keyword);
+  yyerror(fmt);
 }
 
 static int low_islocal(struct compiler_frame *f,

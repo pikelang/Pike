@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.h,v 1.65 2004/08/25 14:14:14 grubba Exp $
+|| $Id: las.h,v 1.66 2004/10/23 02:25:11 nilsson Exp $
 */
 
 #ifndef LAS_H
@@ -22,6 +22,7 @@ typedef void (*c_fun)(INT32);
 void yytype_error(char *msg, struct pike_type *expected_t,
 		  struct pike_type *got_t, unsigned int flags);
 void yyerror(char *s);
+static void yyerror_reserved(char *keyword);
 int islocal(struct pike_string *str);
 int verify_declared(struct pike_string *str);
 void cleanup_compiler(void);
