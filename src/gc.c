@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.77 2000/04/21 23:07:10 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.78 2000/04/22 02:23:56 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -590,8 +590,12 @@ INT32 real_gc_check(void *a)
 	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
 	describe(a);
 	locate_references(a);
+#if 1
+	fatal("Reference to object to free in referenced object!\n");
+#else
 	fprintf(stderr,"##### Continuing search for more bugs....\n");
 	fatal_after_gc="Reference to object to free in referenced object!\n";
+#endif
       }
     }
     return 0;
@@ -790,8 +794,12 @@ int gc_external_mark3(void *a, void *in, char *where)
 	if(where) describe_location(0,T_UNKNOWN,where,4,1,0);
 	describe(a);
 	locate_references(a);
+#if 1
+	fatal("EXTERNAL Reference to object to free.\n");
+#else
 	fprintf(stderr,"##### Continuing search for more bugs....\n");
 	fatal_after_gc="EXTERNAL Reference to object to free.\n";
+#endif
       }
     }
 
