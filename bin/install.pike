@@ -1301,7 +1301,10 @@ int pre_install(array(string) argv)
 
 #ifndef __NT__
       if (export == 1) {
-	mkdirhier(export_base_name+".dir");
+	if (mkdir(export_base_name+".dir")) {
+	  error("Failed to create directory %O: %s\n",
+		export_base_name+".dir", strerror(errno()));
+	}
 
 	mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
 	mklink(vars->SRCDIR,export_base_name+".dir/src");
