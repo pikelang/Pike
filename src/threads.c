@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.81 1998/08/17 04:37:51 per Exp $");
+RCSID("$Id: threads.c,v 1.82 1998/08/24 20:58:38 marcus Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -7,6 +7,7 @@ int threads_disabled = 0;
 #ifdef _REENTRANT
 #include "threads.h"
 #include "array.h"
+#include "mapping.h"
 #include "object.h"
 #include "pike_macros.h"
 #include "callback.h"
@@ -146,6 +147,7 @@ int thread_id_result_variable;
 MUTEX_T interpreter_lock, thread_table_lock, interleave_lock;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
+struct program *thread_local_prog = 0;
 #ifdef POSIX_THREADS
 pthread_attr_t pattr;
 pthread_attr_t small_pattr;
@@ -155,6 +157,11 @@ struct thread_starter
 {
   struct object *id;
   struct array *args;
+};
+
+struct thread_local
+{
+  INT32 id;
 };
 
 static volatile IMUTEX_T *interleave_list = NULL;
@@ -486,6 +493,11 @@ void *new_thread_func(void * data)
 			 thread_id_result_variable,
 			 sp-1);
     pop_stack();
+  }
+
+  if(((struct thread_state *)(thread_id->storage))->thread_local != NULL) {
+    free_mapping(((struct thread_state *)(thread_id->storage))->thread_local);
+    ((struct thread_state *)(thread_id->storage))->thread_local = NULL;
   }
 
    ((struct thread_state *)(thread_id->storage))->status=THREAD_EXITED;
@@ -838,25 +850,88 @@ void init_thread_obj(struct object *o)
   MEMSET(o->storage, 0, sizeof(struct thread_state));
   THIS_THREAD->status=THREAD_NOT_STARTED;
   co_init(& THIS_THREAD->status_change);
+  THIS_THREAD->thread_local=NULL;
 }
 
 
 void exit_thread_obj(struct object *o)
 {
+  if(THIS_THREAD->thread_local != NULL) {
+    free_mapping(THIS_THREAD->thread_local);
+    THIS_THREAD->thread_local = NULL;
+  }
   co_destroy(& THIS_THREAD->status_change);
   th_destroy(& THIS_THREAD->id);
 }
 
-#ifdef DEBUG
 static void thread_was_marked(struct object *o)
 {
   struct thread_state *tmp=(struct thread_state *)(o->storage);
+  if(tmp->thread_local != NULL)
+    gc_mark_mapping_as_referenced(tmp->thread_local);
+#ifdef DEBUG
   if(tmp->swapped)
   {
     debug_gc_xmark_svalues(tmp->evaluator_stack,tmp->sp-tmp->evaluator_stack-1,"idle thread stack");
   }
-}
 #endif
+}
+
+static void thread_was_checked(struct object *o)
+{
+  struct thread_state *tmp=(struct thread_state *)(o->storage);
+  if(tmp->thread_local != NULL)
+    gc_check(tmp->thread_local);  
+}
+
+void f_thread_local(INT32 args)
+{
+  static INT32 thread_local_id = 0;
+
+  struct object *loc = clone_object(thread_local_prog,0);
+  ((struct thread_local *)loc->storage)->id = thread_local_id++;
+  pop_n_elems(args);
+  push_object(loc);
+}
+
+void f_thread_local_get(INT32 args)
+{
+  struct svalue key;
+  struct mapping *m;
+  key.u.integer = ((struct thread_local *)fp->current_storage)->id;
+  key.type = T_INT;
+  key.subtype = NUMBER_NUMBER;
+  pop_n_elems(args);
+  if(thread_id != NULL &&
+     (m = ((struct thread_state *)thread_id->storage)->thread_local) != NULL)
+    mapping_index_no_free(sp++, m, &key);
+  else {
+    push_int(0);
+    sp[-1].subtype=NUMBER_UNDEFINED;
+  }
+}
+
+void f_thread_local_set(INT32 args)
+{
+  struct svalue key;
+  struct mapping *m;
+  key.u.integer = ((struct thread_local *)fp->current_storage)->id;
+  key.type = T_INT;
+  key.subtype = NUMBER_NUMBER;
+  if(args>1)
+    pop_n_elems(args-1);
+  else if(args<1)
+    error("Too few arguments to thread_local->set()\n");
+
+  if(thread_id == NULL)
+    error("Trying to set thread_local without thread!\n");
+
+  if((m = ((struct thread_state *)thread_id->storage)->thread_local) == NULL)
+    m = ((struct thread_state *)thread_id->storage)->thread_local =
+      allocate_mapping(4);
+
+  mapping_insert(m, &key, &sp[-1]);
+}
 
 void low_th_init(void)
 {
@@ -912,6 +987,8 @@ void th_init(void)
   add_efun("all_threads",f_all_threads,"function(:array(object))",
 	   OPT_EXTERNAL_DEPEND);
 
+  add_efun("thread_local",f_thread_local,"function(:object)",OPT_SIDE_EFFECT);
+
   start_new_program();
   add_storage(sizeof(struct mutex_storage));
   add_function("lock",f_mutex_lock,"function(int|void:object)",0);
@@ -957,14 +1034,21 @@ void th_init(void)
   }
 
   start_new_program();
+  add_storage(sizeof(struct thread_local));
+  add_function("get",f_thread_local_get,"function(:mixed)",0);
+  add_function("set",f_thread_local_set,"function(mixed:mixed)",0);
+  thread_local_prog=end_program();
+  if(!thread_local_prog)
+    fatal("Failed to initialize thread_local program!\n");
+
+  start_new_program();
   add_storage(sizeof(struct thread_state));
   thread_id_result_variable=simple_add_variable("result","mixed",0);
   add_function("backtrace",f_thread_backtrace,"function(:array)",0);
   add_function("wait",f_thread_id_result,"function(:mixed)",0);
   add_function("status",f_thread_id_status,"function(:int)",0);
-#ifdef DEBUG
   set_gc_mark_callback(thread_was_marked);
-#endif
+  set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);
   thread_id_prog=end_program();
@@ -984,6 +1068,12 @@ void th_cleanup(void)
   {
     free_program(mutex_key);
     mutex_key=0;
+  }
+
+  if(thread_local_prog)
+  {
+    free_program(thread_local_prog);
+    thread_local_prog=0;
   }
 
   if(thread_id_prog)

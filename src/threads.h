@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.49 1998/08/17 04:36:57 per Exp $
+ * $Id: threads.h,v 1.50 1998/08/24 20:58:41 marcus Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -274,6 +274,7 @@ struct thread_state {
   COND_T status_change;
   THREAD_T id;
   struct thread_state *hashlink, **backlink;
+  struct mapping *thread_local;
 
   /* Swapped variables */
   struct svalue *sp,*evaluator_stack;
