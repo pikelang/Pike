@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.152 2003/02/26 22:42:29 mast Exp $
+|| $Id: stralloc.c,v 1.153 2004/05/14 09:01:13 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.152 2003/02/26 22:42:29 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.153 2004/05/14 09:01:13 grubba Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1287,7 +1287,7 @@ PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
   return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
 }
 
-#ifndef HAVE_STRCOLL
+#if !defined(HAVE_STRCOLL) && defined(DONT_USE_SYSTEM_LOCALE)
 /* No locale function available */
 static int low_binary_strcmp(char *a, ptrdiff_t alen,
 			     char *b, ptrdiff_t blen)
@@ -1346,7 +1346,7 @@ PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 	INT32 ac=index_shared_string(a,e);
 	INT32 bc=index_shared_string(b,e);
 
-#ifdef HAVE_STRCOLL
+#if defined(HAVE_STRCOLL) && !defined(DONT_USE_SYSTEM_LOCALE)
 	if(ac < 256 && bc < 256)
 	{
 	  char atmp[2],btmp[2];
