@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.172 2004/09/30 13:20:00 mast Exp $
+|| $Id: interpret_functions.h,v 1.173 2004/10/01 08:55:16 grubba Exp $
 */
 
 /*
@@ -1813,7 +1813,7 @@ OPCODE0(F_INDIRECT, "indirect", I_UPDATE_SP, {
     Pike_sp++;
   }else{
     LOCAL_VAR(struct object *o);
-    LOCAL_VAR(struct string_assignment_storage *s);
+    struct string_assignment_storage *s;
     o=low_clone(string_assignment_program);
     s = (struct string_assignment_storage *)o->storage;
     move_svalue (s->lval, Pike_sp - 2);
