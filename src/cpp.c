@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.145 2004/07/01 21:42:08 nilsson Exp $
+|| $Id: cpp.c,v 1.146 2004/09/30 17:33:43 mast Exp $
 */
 
 #include "global.h"
@@ -1668,7 +1668,7 @@ void f_cpp(INT32 args)
   ONERROR tmp;
 #endif /* PIKE_DEBUG */
 
-  get_all_args("cpp", args, "%t.%T%*%O%i%i%i", &data, &current_file,
+  get_all_args("cpp", args, "%t.%T%*%O%d%d%d", &data, &current_file,
 	       &charset_sv, &handler, &compat_major, &compat_minor,
 	       &wicit);
 
