@@ -1,6 +1,7 @@
 #include "global.h"
 #include "pike_macros.h"
 #include "queue.h"
+#include "error.h"
 
 struct queue_entry
 {
@@ -20,6 +21,12 @@ struct queue_block
 void run_queue(struct pike_queue *q)
 {
   struct queue_block *b;
+
+#ifdef PIKE_DEBUG
+  if (q->first && q->last == (struct queue_block *) 1)
+    fatal("This looks like a lifo queue.\n");
+#endif
+
   while((b=q->first))
   {
     int e;
@@ -37,7 +44,15 @@ void run_queue(struct pike_queue *q)
 
 void enqueue(struct pike_queue *q, queue_call call, void *data)
 {
-  struct queue_block *b=q->last;
+  struct queue_block *b;
+
+#ifdef PIKE_DEBUG
+  if (!q->first) q->last = 0;
+  else if (q->last == (struct queue_block *) 1)
+    fatal("This looks like a lifo queue.\n");
+#endif
+
+  b=q->last;
   if(!b || b->used >= QUEUE_ENTRIES)
   {
     b=ALLOC_STRUCT(queue_block);
@@ -53,4 +68,78 @@ void enqueue(struct pike_queue *q, queue_call call, void *data)
   b->entries[b->used].call=call;
   b->entries[b->used].data=debug_malloc_pass(data);
   b->used++;
+}
+
+/* LIFO queue, commonly known as a stack.. */
+
+void run_lifo_queue(struct pike_queue *q)
+{
+  struct queue_block *b;
+
+#ifdef PIKE_DEBUG
+  if (q->first && q->last != (struct queue_block *) 1)
+    fatal("This does not look like a lifo queue.\n");
+#endif
+
+  while((b=q->first))
+  {
+    if (b->used > 0) {
+      int e = --b->used;
+      debug_malloc_touch(b->entries[e].data);
+      b->entries[e].call(b->entries[e].data);
+    }
+    else {
+      q->first=b->next;
+      free((char *)b);
+    }
+  }
+}
+
+void enqueue_lifo(struct pike_queue *q, queue_call call, void *data)
+{
+  struct queue_block *b=q->first;
+
+#ifdef PIKE_DEBUG
+  if (!q->first) q->last = (struct queue_block *) 1;
+  else if (q->last != (struct queue_block *) 1)
+    fatal("This does not look like a lifo queue.\n");
+#endif
+
+  if(!b || b->used >= QUEUE_ENTRIES)
+  {
+    b=ALLOC_STRUCT(queue_block);
+    b->used=0;
+    b->next=q->first;
+    q->first=b;
+  }
+
+  b->entries[b->used].call=call;
+  b->entries[b->used].data=debug_malloc_pass(data);
+  b->used++;
+}
+
+void *dequeue_lifo(struct pike_queue *q, queue_call call)
+{
+  struct queue_block *b;
+
+#ifdef PIKE_DEBUG
+  if (q->first && q->last != (struct queue_block *) 1)
+    fatal("This does not look like a lifo queue.\n");
+#endif
+
+  while((b=q->first))
+  {
+    if (b->used > 0) {
+      int e = --b->used;
+      debug_malloc_touch(b->entries[e].data);
+      if (b->entries[e].call == call)
+	return b->entries[e].data;
+    }
+    else {
+      q->first=b->next;
+      free((char *)b);
+    }
+  }
+
+  return 0;
 }
