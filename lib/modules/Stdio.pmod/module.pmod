@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.193 2004/04/04 23:53:44 mast Exp $
+// $Id: module.pmod,v 1.194 2004/04/04 23:56:57 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -940,12 +940,13 @@ class File
   //!   Callbacks are also set by @[set_nonblocking()].
   //!
   //! @note
-  //! The callbacks are disabled until they have accessed the stream,
-  //! i.e. the @[write_cb] callback is disabled until something has
-  //! been written with @[write], and the @[write_oob_cb] callback is
-  //! disabled until something has been written with @[write_oob].
-  //! Since the read callbacks get the data right away, this effect is
-  //! not noticeable for them.
+  //! After a callback has been called, it's disabled until it has
+  //! accessed the stream accordingly, i.e. the @[write_cb] callback
+  //! is disabled after it's been called until something has been
+  //! written with @[write], and the @[write_oob_cb] callback is
+  //! likewise disabled until something has been written with
+  //! @[write_oob]. Since the data already has been read when the read
+  //! callbacks are called, this effect is not noticeable for them.
   //!
   //! @note
   //! Installing callbacks means that you will start doing I/O on the
