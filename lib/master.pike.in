@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.136 2000/12/02 16:21:36 mast Exp $
+ * $Id: master.pike.in,v 1.137 2001/01/14 21:12:44 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -26,7 +26,7 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
 
 #ifndef PIKE_WARNINGS
-#define PIKE_WARNINGS 0
+#define PIKE_WARNINGS 1
 #endif /* PIKE_WARNINGS */
 
 /*
@@ -50,7 +50,11 @@ string fakeroot(string s)
 #endif
 
 
-
+//! @global
+//! Check if a path @[p] is fully qualified (ie not relative).
+//!
+//! @returns
+//! Returns 1 if the path is absolute, 0 otherwise.
 int is_absolute_path(string p)
 {
 #ifdef __NT__
@@ -64,6 +68,13 @@ int is_absolute_path(string p)
   return p[0]=='/';
 }
 
+//! @global
+//! Split a path @[p] into its components.
+//!
+//! This function divides a path into its components. This might seem like
+//! it could be done by dividing the string on <tt>"/"</tt>, but that will
+//! not work on some operating systems.
+//!
 array(string) explode_path(string p)
 {
 #ifdef __NT__
@@ -75,12 +86,22 @@ array(string) explode_path(string p)
   return p/"/";
 }
 
+//! @global
+//! Returns all but the last segment of a path.
+//!
+//! @seealso
+//! @[basename()], @[explode_path()]
 string dirname(string x)
 {
   array(string) tmp=EXPLODE_PATH(x);
   return tmp[..sizeof(tmp)-2]*"/";
 }
 
+//! @global
+//! Returns the last segment of a path.
+//!
+//! @seealso
+//! @[dirname()], @[explode_path()]
 string basename(string x)
 {
   array(string) tmp=EXPLODE_PATH(x);
@@ -132,9 +153,20 @@ mapping(string:int) load_time=([]);
 int compat_major=-1;
 int compat_minor=-1;
 
-program compile_string(string data, void|string name, object|void handler)
+//! @global
+//! Compile the Pike code in the string @[data] into a program.
+//! If @[filename] is not specified, it will default to @tt{"-"@}.
+//!
+//! Functionally equal to @code{@[compile](@[cpp](@[source], @[filename]))@}.
+//!
+//! @seealso
+//! @[compile()], @[cpp()], @[compile_file()]
+//!
+program compile_string(string source, void|string filename,
+		       object|void handler)
 {
-  return compile(cpp(data,name||"-", 0, handler, compat_major, compat_minor),
+  return compile(cpp(source, filename||"-", 0, handler,
+		     compat_major, compat_minor),
 		 handler,
 		 compat_major,
 		 compat_minor);
@@ -149,12 +181,22 @@ string master_read_file(string file)
   return 0;
 }
 
-program compile_file(string file, object|void handler)
+//! @global
+//! Compile the Pike code contained in the file @[filename] into a program.
+//!
+//! This function will compile the file @[filename] to a Pike program that can
+//! later be instantiated. It is the same as doing
+//! @code{@[compile_string](@[Stdio.read_file](@[filename]), @[filename])@}.
+//!
+//! @seealso
+//! @[compile()], @[compile_string()], @[cpp()]
+//!
+program compile_file(string filename, object|void handler)
 {
-  AUTORELOAD_CHECK_FILE(file);
-  return compile(cpp(master_read_file(file),
-		     file, 1, handler, compat_major, compat_minor), handler,
-		 compat_major, compat_minor );
+  AUTORELOAD_CHECK_FILE(filename);
+  return compile(cpp(master_read_file(filename),
+		     filename, 1, handler, compat_major, compat_minor),
+		 handler, compat_major, compat_minor);
 }
 
 
@@ -219,6 +261,17 @@ Stat master_file_stat(string x)
 mapping (string:string) environment=([]);
 
 
+//! @global
+//! @decl string getenv(string varname)
+//! @decl mapping(string:string) getenv()
+//!
+//! When called with no arguments, a mapping with all current envrionment
+//! variables will be returned.
+//!
+//! If the @[varname] argument has been given, the value of the environment
+//! variable with the name @[varname] will be returned. If no such
+//! environment variable exists, @tt{0@} (zero) will be returned.
+//!
 string|mapping(string:string) getenv(string|void s)
 {
   if(!s) return environment + ([]);
@@ -250,11 +303,18 @@ string getenv(string s)
 }
 #endif /* 0 */
 
-void putenv(string var, string val)
+//! @global
+//! Sets the environment variable @[varname] to @[value].
+//!
+//! @seealso
+//! @[getenv()]
+//!
+void putenv(string varname, string value)
 {
-  environment[var]=val;
+  environment[varname] = value;
 }
 
+//! @global
 string normalize_path( string X )
 {
 #ifndef __NT__
@@ -481,7 +541,25 @@ void handle_error(array(mixed)|object trace)
   }
 }
 
-object new(mixed prog, mixed ... args)
+//! @global
+//! @decl object new(string|program prog, mixed ... args)
+//! @decl object clone(string|program prog, mixed ... args)
+//!
+//! Instantiate a program.
+//!
+//! A new instance of the class @[prog] will be created.
+//! All global variables in the new object be initialized, and
+//! then @[create()] will be called with @[args] as arguments.
+//!
+//! @note
+//! These two functions are considered obsolete, use
+//! @code{((program)@[prog])(@@@[args])@}
+//! instead.
+//!
+//! @seealso
+//! @[destruct()], @[compile_string()], @[compile_file()]
+//!
+object new(string|program prog, mixed ... args)
 {
   if(stringp(prog))
   {
@@ -832,7 +910,6 @@ mapping(string:mixed) fc=([]);
 
 object findmodule(string fullname)
 {
-  array stat;
   object o;
   if(!zero_type(o=fc[fullname]))
   {
@@ -885,19 +962,47 @@ class CompatResolver
       ver=(string)v;
     }
 
+  //! @global
+  //! Add a directory to search for include files.
+  //!
+  //! This is the same as the command line option @tt{-I@}.
+  //!
+  //! @note
+  //! Note that the added directory will only be searched when using
+  //! < > to quote the included file.
+  //!
+  //! @seealso
+  //! @[remove_include_path()]
+  //!
   void add_include_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
       pike_include_path-=({tmp});
       pike_include_path=({tmp})+pike_include_path;
     }
-  
+
+  //! @global
+  //! Remove a directory to search for include files.
+  //!
+  //! This function performs the reverse operation of @[add_include_path()].
+  //!
+  //! @seealso
+  //! @[add_include_path()]
+  //!
   void remove_include_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
       pike_include_path-=({tmp});
     }
   
+  //! @global
+  //! Add a directory to search for modules.
+  //!
+  //! This is the same as the command line option @tt{-M@}.
+  //!
+  //! @seealso
+  //! @[remove_module_path()]
+  //!
   void add_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
@@ -906,6 +1011,14 @@ class CompatResolver
     }
   
   
+  //! @global
+  //! Remove a directory to search for modules.
+  //!
+  //! This function performs the reverse operation of @[add_module_path()].
+  //!
+  //! @seealso
+  //! @[add_module_path()]
+  //!
   void remove_module_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
@@ -913,6 +1026,14 @@ class CompatResolver
     }
   
   
+  //! @global
+  //! Add a directory to search for programs.
+  //!
+  //! This is the same as the command line option @tt{-P@}.
+  //!
+  //! @seealso
+  //! @[remove_program_path()]
+  //!
   void add_program_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
@@ -921,6 +1042,14 @@ class CompatResolver
     }
   
   
+  //! @global
+  //! Remove a directory to search for programs.
+  //!
+  //! This function performs the reverse operation of @[add_program_path()].
+  //!
+  //! @seealso
+  //! @[add_program_path()]
+  //!
   void remove_program_path(string tmp)
     {
       tmp=normalize_path(combine_path_with_cwd(tmp));
@@ -1138,6 +1267,7 @@ void _main(array(string) orig_argv, array(string) env)
 #endif
       ({"master",tmp->HAS_ARG,"-m"}),
       ({"compiler_trace",tmp->NO_ARG,"--compiler-trace"}),
+      ({"assembler_debug",tmp->MAY_HAVE_ARG,"--assembler-debug"}),
       ({"optimizer_debug",tmp->MAY_HAVE_ARG,"--optimizer-debug"}),
       ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
       ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
@@ -1192,6 +1322,12 @@ void _main(array(string) orig_argv, array(string) env)
 	_compiler_trace(1);
 	break;
 #endif /* constant(_compiler_trace) */
+
+#if constant(_assembler_debug)
+      case "assembler_debug":
+	_assembler_debug((int)q[i][1]);
+	break;
+#endif /* constant(_assembler_debug) */
 
 #if constant(_optimizer_debug)
       case "optimizer_debug":
@@ -1774,6 +1910,17 @@ string describe_function (function f)
  * it is currently used by handle_error to convert a backtrace to a
  * readable message.
  */
+
+//! @global
+//! Returns a string containing a readable message that describes where
+//! the backtrace was made.
+//!
+//! The argument @[trace] should normally be the return value from a call
+//! to @[backtrace()], or a caught error.
+//!
+//! @seealso
+//! @[backtrace()], @[describe_error()], @[catch()], @[throw()]
+//!
 string describe_backtrace(mixed trace, void|int linewidth)
 {
   int e;
@@ -1949,8 +2096,15 @@ string describe_backtrace(mixed trace, void|int linewidth)
   return ret;
 }
 
-// Returns a short description of a backtrace, containing only the
-// error message.
+//! @global
+//! Returns only the error message from a backtrace.
+//!
+//! If there is no error message in the backtrace, a fallback message
+//! will be returned.
+//!
+//! @seealso
+//! @[backtrace()], @[describe_backtrace()]
+//!
 string describe_error (mixed trace)
 {
   if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
