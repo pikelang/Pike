@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.7 1997/05/29 22:45:07 mirar Exp $ */
+/* $Id: matrix.c,v 1.8 1997/09/01 14:17:11 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.7 1997/05/29 22:45:07 mirar Exp $<br>
+**!	$Id: matrix.c,v 1.8 1997/09/01 14:17:11 per Exp $<br>
 **! class image
 */
 
@@ -169,9 +169,9 @@ CHRONO("scale begin");
 
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
 
-   THREADS_ALLOW();
    new=malloc(newx*newy*sizeof(rgbd_group) +1);
    if (!new) error("Out of memory!\n");
+   THREADS_ALLOW();
 
    for (y=0; y<newx*newy; y++)
       new[y].r=new[y].g=new[y].b=0.0;
@@ -234,9 +234,9 @@ void img_scale2(struct image *dest, struct image *source)
    if (dest->img) { free(dest->img); dest->img=NULL; }
    if (!THIS->img || newx<=0 || newy<=0) return; /* no way */
 
-   THREADS_ALLOW();
    new=malloc(newx*newy*sizeof(rgb_group) +1);
    if (!new) error("Out of memory\n");
+   THREADS_ALLOW();
    MEMSET(new,0,newx*newy*sizeof(rgb_group));
 
    dest->img=new;
