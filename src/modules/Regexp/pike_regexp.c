@@ -1,5 +1,5 @@
 /* 
- * $Id: pike_regexp.c,v 1.18 2000/09/11 18:31:07 grubba Exp $
+ * $Id: pike_regexp.c,v 1.19 2000/09/14 12:08:03 grubba Exp $
  *
  * regexp.c - regular expression matching
  *
@@ -254,7 +254,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     register regexp *r;
     register char  *scan;
     register char  *longest;
-    register size_t len;
+    register ptrdiff_t len;
     int             flags;
     short	   *exp2,*dest,c;
 
@@ -357,7 +357,7 @@ regexp *pike_regcomp(char *exp,int excompat)
 	    len = 0;
 	    for (; scan != NULL; scan = regnext(scan))
 		if (OP(scan) == EXACTLY &&
-		    strlen(OPERAND(scan)) >= len) {
+		    strlen(OPERAND(scan)) >= (size_t)len) {
 		    longest = OPERAND(scan);
 		    len = strlen(OPERAND(scan));
 		}
@@ -763,9 +763,9 @@ static char   **regendp;	/* Ditto for endp. */
 /*
  * Forwards.
  */
-STATIC int      regtry(regexp *, char *);
-STATIC int      regmatch(char *);
-STATIC size_t   regrepeat(char *);
+STATIC int      	regtry(regexp *, char *);
+STATIC int      	regmatch(char *);
+STATIC ptrdiff_t	regrepeat(char *);
 
 #ifdef PIKE_DEBUG
 int             regnarrate = 0;
@@ -932,7 +932,7 @@ char           *prog;
 		return (0);
 	    break;
 	case EXACTLY:{
-		register size_t len;
+		register ptrdiff_t len;
 		register char  *opnd;
 
 		opnd = OPERAND(scan);
@@ -982,9 +982,9 @@ char           *prog;
 	    break;
 	case STAR:{
 		register char   nextch;
-		register size_t no;
+		register ptrdiff_t no;
 		register char  *save;
-		register size_t minimum;
+		register ptrdiff_t minimum;
 
 		/*
 		 * Lookahead to avoid useless match attempts when we know
@@ -1072,16 +1072,16 @@ char           *prog;
  */
 #ifdef __STDC__
 
-static size_t regrepeat(char *p)
+static ptrdiff_t regrepeat(char *p)
 
 #else
 
-static size_t regrepeat(p)
+static ptrdiff_t regrepeat(p)
 char           *p;
 
 #endif
 {
-    register size_t count = 0;
+    register ptrdiff_t count = 0;
     register char  *scan;
     register char  *opnd;
 
