@@ -8,8 +8,7 @@ all:
 
 low_all: tutorial.html tutorial_onepage.html
 
-MADEFILES=Image.wmml Mysql.wmml ProtocolsLysKOM.wmml \
-	ProtocolsHTTP.wmml Parser.wmml Calendar.wmml \
+MADEFILES=Image.wmml Mysql.wmml Parser.wmml Calendar.wmml Protocols.wmml
 
 SRCFILES=tutorial.wmml $(MADEFILES)
 
@@ -20,24 +19,30 @@ DESTINATION=/usr/local/share/pike/tutorial/
 
 # ----------------------------------------------------------------------
 
+PROTOCOLS_MKWMML_DIRS=HTTP LysKOM IRC DNS
+
+MKWMML=$(pike) ../bin/mkwmml.pike
+
 Image.wmml : 
 	(cd ../src/modules/Image; make wmml pike="$(pike)")
 
 Mysql.wmml : 
-	$(pike) ../bin/mkwmml.pike ../src/modules/Mysql/mysql.c >Mysql.wmml
+	$(MKWMML) ../src/modules/Mysql/mysql.c >Mysql.wmml
 
 Parser.wmml : 
-	$(pike) ../bin/mkwmml.pike ../src/modules/Parser/*.pmod.in ../src/modules/Parser/*.c  >Parser.wmml
+	$(MKWMML) ../src/modules/Parser/*.pmod.in ../src/modules/Parser/*.c  >Parser.wmml
 
-ProtocolsHTTP.wmml :
-	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Protocols.pmod/HTTP.pmod/*.p???` >ProtocolsHTTP.wmml
-
-ProtocolsLysKOM.wmml :
-	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Protocols.pmod/LysKOM.pmod/*.p???` >ProtocolsLysKOM.wmml
-
+Protocols.wmml :
+	for a in $(PROTOCOLS_MKWMML_DIRS) ; do \
+		if test -d ../lib/modules/Protocols.pmod/$$a.pmod; then \
+			$(MKWMML) `/bin/ls -1 ../lib/modules/Protocols.pmod/$$a.pmod/*.p* | egrep -v '~$$'`; \
+		else \
+			$(MKWMML) ../lib/modules/Protocols.pmod/$$a.pmod; \
+		fi		\
+	done > Protocols.wmml
 
 Calendar.wmml :
-	$(pike) ../bin/mkwmml.pike `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$$'` >Calendar.wmml
+	$(MKWMML) `/bin/ls -1 ../lib/modules/Calendar.pmod/*.p* | egrep -v '~$$'` >Calendar.wmml
 
 
 # ----------------------------------------------------------------------
