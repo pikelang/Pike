@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.146 2001/06/11 19:58:24 mast Exp $");
+RCSID("$Id: gc.c,v 1.147 2001/07/01 20:07:47 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1551,32 +1551,29 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     }
 
     else {
-      /* Nothing more to do. Unwind the live recursion. */
+      /* We'll get here eventually in the normal recursion. Pop off
+       * the remaining live recurse frames for the last thing. */
       int flags;
-      CYCLE_DEBUG_MSG(m, "gc_cycle_push, live rec done");
-      do {
-	last->flags &= ~GC_LIVE_RECURSE;
-#ifdef GC_CYCLE_DEBUG
-	gc_cycle_indent -= 2;
-	CYCLE_DEBUG_MSG(find_marker(gc_rec_last->data),
-			"> gc_cycle_push, unwinding live");
-#endif
-	while (1) {
-	  struct gc_frame *l = gc_rec_top;
+      CYCLE_DEBUG_MSG(m, "gc_cycle_push, no live recurse");
+      last->flags &= ~GC_LIVE_RECURSE;
+      while (1) {
+	struct gc_frame *l = gc_rec_top;
 #ifdef PIKE_DEBUG
-	  if (!gc_rec_top)
-	    fatal("Expected a gc_cycle_pop entry in gc_rec_top.\n");
+	if (!gc_rec_top)
+	  fatal("Expected a gc_cycle_pop entry in gc_rec_top.\n");
 #endif
-	  gc_rec_top = l->back;
-	  if (l->frameflags & GC_POP_FRAME) {
-	    gc_rec_last = PREV(l);
-	    debug_really_free_gc_frame(l);
-	    break;
-	  }
+	gc_rec_top = l->back;
+	if (l->frameflags & GC_POP_FRAME) {
+	  gc_rec_last = PREV(l);
 	  debug_really_free_gc_frame(l);
+	  break;
 	}
-	last = find_marker(gc_rec_last->data);
-      } while (last->flags & GC_LIVE_RECURSE);
+	debug_really_free_gc_frame(l);
+      }
+#ifdef GC_CYCLE_DEBUG
+      gc_cycle_indent -= 2;
+      CYCLE_DEBUG_MSG(m, "> gc_cycle_push, unwound live rec");
+#endif
     }
 
     return 0;
