@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.28 2002/10/05 09:06:27 jonasw Exp $
+// $Id: HTML.pmod,v 1.29 2002/10/08 11:15:07 wellhard Exp $
 
 // Filter for text/html
 
@@ -60,7 +60,9 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 	  Parser.parse_html_entities(m->contents||m->content||m->data||"");
 	break;
       case "robots":
-	res->fields->robots = m->contents||m->content||m->data||"";
+	res->fields->robots =
+	  (stringp(res->fields->robots)? res->fields->robots+",": "")+
+	  (m->contents||m->content||m->data||"");
 	break;
     }
     return ({ "" });
