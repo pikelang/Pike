@@ -94,14 +94,13 @@ string|int find_option(array(string) argv,
 		       int|void throw_errors)
 {
   string|int value;
-  int i,hasarg;
 
-  hasarg=query_num_arg() > 4;
-  if(!arrayp(longform)) longform=({[string]longform});
-  if(!arrayp(shortform)) shortform=({[string]shortform});
-  if(!arrayp(envvars)) envvars=({[string]envvars});
+  int(0..1) hasarg = query_num_arg() > 4;
+  if(!arrayp(longform)) longform = ({ [string]longform });
+  if(!arrayp(shortform)) shortform = ({ [string]shortform });
+  if(!arrayp(envvars)) envvars = ({ [string]envvars });
 
-  for(i=1; i<sizeof(argv); i++)
+  for(int i=1; i<sizeof(argv); i++)
   {
     if(argv[i] && strlen(argv[i]) > 1)
     {
@@ -194,10 +193,6 @@ string|int find_option(array(string) argv,
   return def;
 }
 
-/*
- * ({ "name", type, ({aliases}), env_var, default })
- */
-
 //!
 constant HAS_ARG=1;
 
@@ -207,11 +202,16 @@ constant NO_ARG=2;
 //!
 constant MAY_HAVE_ARG=3;
 
+
+// ({ "name", type, "alias"|({"aliases"}), "env_var", default })
+
 #define NAME 0
 #define TYPE 1
 #define ALIASES 2
 #define ENV 3
 #define DEF 4
+
+#define SIZE 5
 
 //!   This function does the job of several calls to @[find_option()].
 //!   The main advantage of this is that it allows it to handle the
@@ -251,9 +251,8 @@ constant MAY_HAVE_ARG=3;
 //!   	  environment variables that can be used instead of the
 //!   	  command line option.
 //!   	@elem void|mixed default
-//!   	  This is the default value the option will have in the output
-//!   	  from this function. Options without defaults will be omitted
-//!   	  from the output if they are not found in argv.
+//!   	  This is the default value a @[MAY_HAVE_ARG] option will have in the
+//!       output if it was set but not assign any value.
 //!   @endarray
 //!
 //!   Only the first three elements need to be included.
@@ -288,31 +287,28 @@ constant MAY_HAVE_ARG=3;
 //! @seealso
 //!   @[Getopt.get_args()], @[Getopt.find_option()]
 //!
-array find_all_options(array(string) argv,
+array(array) find_all_options(array(string) argv,
 		       array(array(array(string)|string)) options,
 		       void|int posix_me_harder, void|int throw_errors)
 {
   mapping(string:array(string|array(string))) quick=([]);
-  foreach(options, array(array(string)|string) opt)
-    {
-      array(string)|string aliases=[array(string)|string]opt[ALIASES];
-      if(!arrayp(aliases)) aliases=({[string]aliases});
-      foreach([array(string)]aliases, string optname)
-	{
-	  if(optname[0..1]=="--")
-	  {
-	    quick[optname]=opt;
-	  }else{
-	    foreach(optname[1..]/"",string optletter)
-	      {
-		quick["-"+optletter]=opt;
-	      }
-	  }
-	}
-    }
 
-  array ret=({});
-  for(int e=1;e<sizeof(argv);e++)
+  for(int i; i<sizeof(options); i++) {
+    options[i] = options[i] + allocate(SIZE-sizeof(options[i]));
+    array(array(string)|string) opt = options[i];
+    array(string)|string aliases=[array(string)|string]opt[ALIASES];
+    if(!arrayp(aliases)) aliases=({[string]aliases});
+
+    foreach([array(string)]aliases, string optname)
+      if(optname[0..1]=="--")
+	quick[optname]=opt;
+      else
+	foreach(optname[1..]/1,string optletter)
+	  quick["-"+optletter]=opt;
+  }
+
+  array(array) ret=({});
+  for(int e=1; e<sizeof(argv); e++)
   {
     if(!argv[e]) continue;
 
@@ -342,9 +338,10 @@ array find_all_options(array(string) argv,
 	    arg=argv[e+1];
 	    argv[e+1]=0;
 	  }
-	  ret+=({ ({ option[0], arg || 1 }) });
+	  ret+=({ ({ option[0], arg || option[DEF] || 1 }) });
 	}
-      }else{
+      }
+      else {
 	array(string) foo=argv[e]/"";
 	for(int j=1;j<strlen(foo);j++)
 	{
@@ -370,19 +367,20 @@ array find_all_options(array(string) argv,
 		}
 		arg=argv[e+1];
 		argv[e+1]=0;
-	      }else{
-		foo=foo[..j];
 	      }
+	      else
+		foo=foo[..j];
 	    }
 
 	    if (arg == "") arg = 0;
-	    ret+=({ ({ option[0], arg || 1 }) });
+	    ret+=({ ({ option[0], arg || option[DEF] || 1 }) });
 	  }
 	}
 	argv[e]=foo*"";
 	if(argv[e]=="-") argv[e]=0;
       }
-    }else{
+    }
+    else{
       if(posix_me_harder != -1)
 	if(posix_me_harder || getenv("POSIX_ME_HARDER"))
 	  break;
@@ -394,28 +392,29 @@ array find_all_options(array(string) argv,
     {
       string name=[string]option[NAME];
       if(done[name]) continue;
-      if(sizeof(option) > ENV)
+      if(option[ENV])
       {
 	array(string)|string foo=option[ENV];
 	if(!foo) continue;
-	if(stringp(foo)) foo=({[string]foo});
+	if(stringp(foo)) foo = ({ [string]foo });
 	foreach([array(string)]foo, foo)
 	  {
 	    if(foo=[string]getenv([string]foo))
 	    {
-	      ret+=({ ({name, foo}) });
-	      done[name]=1;
+	      ret += ({ ({name, foo}) });
+	      done[name] = 1;
 	      break;
 	    }
 	  }
 
-	if(!done && sizeof(option)>3 && option[3])
+	if(!done && option[ENV])
 	{
-	  ret+=({ ({name, option[3]}) });
-	  done[name]=1;
+	  ret += ({ ({name, option[ENV]}) });
+	  done[name] = 1;
 	}
       }
     }
+
   return ret;
 }
 
@@ -486,4 +485,3 @@ array(string) get_args(array(string) argv, void|int posix_me_harder,
 
   return argv;
 }
-
