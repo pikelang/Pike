@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.275 2002/11/02 15:25:57 grubba Exp $
+|| $Id: interpret.c,v 1.276 2002/11/04 17:02:44 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.275 2002/11/02 15:25:57 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.276 2002/11/04 17:02:44 marcus Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -866,8 +866,8 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
     return branch_taken; \
   }
 
-#define DO_BRANCH	(branch_taken = -1)
-#define DONT_BRANCH	(branch_taken = 0)
+#define DO_BRANCH()	(branch_taken = -1)
+#define DONT_BRANCH()	(branch_taken = 0)
 #else /* !OPCODE_INLINE_BRANCH */
 #define TEST_OPCODE0	OPCODE0
 #define TEST_OPCODE1	OPCODE1
