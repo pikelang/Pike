@@ -1,9 +1,10 @@
 #! /usr/bin/env pike
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.16 2003/01/19 01:51:14 nilsson Exp $
+// $Id: extract_locale.pike,v 1.17 2004/01/21 18:53:58 grubba Exp $
 //
 
+constant description = "Pike locale extractor utility";
 
 // The arguments given to the program
 mapping args = ([]);
@@ -1047,9 +1048,9 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) &&
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.16 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.17 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
-    werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
+    werror("  Syntax: pike -x extract_locale [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
     werror("             --config=file   default: [project].xml\n");
     werror("             --out=file      default: [project]_eng.xml\n");
