@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.272 2003/04/15 18:47:02 nilsson Exp $
+// $Id: master.pike.in,v 1.273 2003/04/29 00:46:52 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2852,33 +2852,32 @@ string describe_backtrace(mixed trace, void|int linewidth)
       mixed tmp;
       string row;
       if (array err=[array]catch {
-	tmp = trace[e];
+	tmp = ([array]trace)[e];
 	if(stringp(tmp))
 	{
-	  row=tmp;
+	  row=[string]tmp;
 	}
 	else if(arrayp(tmp))
 	{
+	  array tmp = [array]tmp;
 	  string pos;
 	  if(sizeof(tmp)>=2 && stringp(tmp[0])) {
 	    if (intp(tmp[1])) {
-
-	      string exact_pos = tmp[0] + ":" + tmp[1];
-
-	      pos=trim_file_name(tmp[0])+":"+tmp[1];
+	      pos=trim_file_name([string]tmp[0])+":"+(string)tmp[1];
 	    } else {
-	      pos = sprintf("%s:Bad line %t", trim_file_name(tmp[0]), tmp[1]);
+	      pos = sprintf("%s:Bad line %t",
+			    trim_file_name([string]tmp[0]), tmp[1]);
 	    }
 	  }else{
-	    mixed desc="Unknown program";
+	    string desc="Unknown program";
 	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
 	    {
 	      catch 
               {
-		if(mixed tmp=function_object(tmp[2]))
+		if(mixed tmp=function_object([function]tmp[2]))
 		  if(tmp=object_program(tmp))
-		    if(tmp=describe_program(tmp))
-		      desc=tmp;
+		    if(tmp=describe_program([program]tmp))
+		      desc=[string]tmp;
 	      };
 	    }
 	    pos=desc;
@@ -2889,10 +2888,10 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  if(sizeof(tmp)>=3)
 	  {
 	    if(functionp(tmp[2])) {
-	      data = describe_function (tmp[2]);
+	      data = describe_function ([function]tmp[2]);
 	    }
 	    else if (stringp(tmp[2])) {
-	      data= tmp[2];
+	      data = [string]tmp[2];
 	    } else
 	      data ="unknown function";
 	    
@@ -3028,7 +3027,7 @@ class Codec (void|string fname, void|int mkobj)
 	  return s;
 
 	if(int tmp=search(values(_static_modules), x))
-	  return "_static_modules."+(indices(_static_modules)[tmp]);
+	  return "_static_modules."+[string](indices(_static_modules)[tmp]);
       }
       else if (objectp(x))
 	if(program p=search(objects,x))
@@ -3078,7 +3077,7 @@ class Codec (void|string fname, void|int mkobj)
   
   void decode_object(object o, mixed data)
   {
-    o->_decode(data);
+    ([function(mixed:void)]o->_decode)(data);
   }
 }
 
