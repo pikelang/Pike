@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.206 1999/10/24 14:10:24 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.207 1999/10/24 14:54:13 grubba Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1378,10 +1378,14 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("2147483649", [[ (string)(0x7fffffff + 2) ]])
   test_eq("2684354560", [[ (string)(0x50000000 + 0x50000000) ]])
   test_eq("-2684354560", [[ (string)((-0x50000000) + (-0x50000000)) ]])
+  test_eq("-2147483648", [[ (string)((-0x80000001) + 1) ]])
+  test_false([[ objectp((-0x80000001) + 1) ]])
 
   // - Sub.
   test_eq("-2147483648", [[ (string)(-0x7fffffff - 1) ]])
   test_eq("-2147483649", [[ (string)(-0x80000000 - 1) ]])
+  test_eq("2147483647", [[ (string)(0x80000000 - 1) ]])
+  test_false([[ objectp(0x80000000 - 1) ]])
 
   // - Multiplication.
   test_eq("6442450941", [[ (string)(0x7fffffff * 3) ]])
