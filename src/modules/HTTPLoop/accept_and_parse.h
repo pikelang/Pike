@@ -160,8 +160,8 @@ struct c_request_object
 
 #define WRITE(X,Y,Z) aap_swrite(X,Y,Z)
 #undef THIS
-#define THIS ((struct c_request_object *)fp->current_storage)
-#define LTHIS ((struct args *)fp->current_storage)
+#define THIS ((struct c_request_object *)Pike_fp->current_storage)
+#define LTHIS ((struct args *)Pike_fp->current_storage)
 
 void aap_handle_connection(struct args *arg);
 void free_args( struct args *arg );

@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.10 1999/12/08 15:39:24 grubba Exp $
+ * $Id: udp.c,v 1.11 2000/07/07 13:58:29 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.10 1999/12/08 15:39:24 grubba Exp $");
+RCSID("$Id: udp.c,v 1.11 2000/07/07 13:58:29 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -134,8 +134,8 @@ struct udp_storage {
 };
 
 #undef THIS
-#define THIS ((struct udp_storage *)fp->current_storage)
-#define THISOBJ (fp->current_object)
+#define THIS ((struct udp_storage *)Pike_fp->current_storage)
+#define THISOBJ (Pike_fp->current_object)
 #define FD (THIS->fd)
 
 extern void get_inet_addr(struct sockaddr_in *addr,char *name);

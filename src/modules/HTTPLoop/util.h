@@ -1,5 +1,5 @@
 int aap_get_time(void);
-int aap_swrite(int to, char *buf, int towrite);
+int aap_swrite(int to, char *buf, size_t towrite);
 
 #define H_EXISTS 0
 #define H_INT    1

@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.38 2000/04/19 16:03:35 mast Exp $
+ * $Id: sendfile.c,v 1.39 2000/07/07 13:58:29 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -102,7 +102,7 @@
 #ifdef _REENTRANT
 
 #undef THIS
-#define THIS	((struct pike_sendfile *)(fp->current_storage))
+#define THIS	((struct pike_sendfile *)(Pike_fp->current_storage))
 
 /*
  * Disable any use of sendfile(2) if HAVE_BROKEN_SENDFILE is defined.
@@ -229,13 +229,11 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
 
   remove_callback(cb);
 
-#ifdef _REENTRANT
   if (this->self) {
     /* Make sure we get freed in case of error */
     push_object(this->self);
     this->self = NULL;
   }
-#endif /* _REENTRANT */
 
   sf_call_callback(this);
 
@@ -916,7 +914,7 @@ static void sf_create(INT32 args)
     /* Note: we hold a reference to ourselves.
      * The gc() won't find it, so be carefull.
      */
-    add_ref(THIS->self = fp->current_object);
+    add_ref(THIS->self = Pike_fp->current_object);
 
     /*
      * Make sure the user can't modify the fd's under us.

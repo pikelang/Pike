@@ -31,7 +31,7 @@ int aap_get_time(void)
   return last_time;
 }
 
-int aap_swrite(int to, char *buf, int towrite)
+int aap_swrite(int to, char *buf, size_t towrite)
 {
   int res=0;
   int sent = 0;

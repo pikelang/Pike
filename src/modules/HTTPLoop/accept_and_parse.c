@@ -101,7 +101,7 @@ void free_args( struct args *arg )
   num_args--;
 
   if( arg->res.data ) aap_free( arg->res.data );
-  if( arg->fd )       close( arg->fd );
+  if( arg->fd )       fd_close( arg->fd );
 
   mt_lock( &arg_lock );
   if( next_free_arg < 100 )

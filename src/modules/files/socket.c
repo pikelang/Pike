@@ -19,7 +19,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.48 2000/05/20 02:22:58 per Exp $");
+RCSID("$Id: socket.c,v 1.49 2000/07/07 13:58:29 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -71,7 +71,7 @@ struct port
 };
 
 #undef THIS
-#define THIS ((struct port *)(fp->current_storage))
+#define THIS ((struct port *)(Pike_fp->current_storage))
 static void port_accept_callback(int fd,void *data);
 
 static void do_close(struct port *p, struct object *o)
@@ -132,7 +132,7 @@ static void port_accept_callback(int fd,void *data)
 static void port_listen_fd(INT32 args)
 {
   int fd;
-  do_close(THIS,fp->current_object);
+  do_close(THIS,Pike_fp->current_object);
 
   if(args < 1)
     error("Too few arguments to port->bind_fd()\n");
@@ -164,7 +164,7 @@ static void port_listen_fd(INT32 args)
     set_nonblocking(fd,1);
     if(!IS_ZERO(& THIS->accept_callback))
     {
-      add_ref(fp->current_object);
+      add_ref(Pike_fp->current_object);
       set_read_callback(fd, port_accept_callback, (void *)THIS);
     }
   }
@@ -181,7 +181,7 @@ static void port_bind(INT32 args)
   int o;
   int fd,tmp;
 
-  do_close(THIS,fp->current_object);
+  do_close(THIS,Pike_fp->current_object);
 
   if(args < 1)
     error("Too few arguments to port->bind()\n");
@@ -243,7 +243,7 @@ static void port_bind(INT32 args)
     assign_svalue(& THIS->accept_callback, sp+1-args);
     if(!IS_ZERO(& THIS->accept_callback))
     {
-      add_ref(fp->current_object);
+      add_ref(Pike_fp->current_object);
       set_read_callback(fd, port_accept_callback, (void *)THIS);
       set_nonblocking(fd,1);
     }
@@ -270,7 +270,7 @@ static void port_create(INT32 args)
       if(strcmp("stdin",sp[-args].u.string->str))
 	error("port->create() called with string other than 'stdin'\n");
 
-      do_close(THIS,fp->current_object);
+      do_close(THIS,Pike_fp->current_object);
       THIS->fd=0;
 
       if(fd_listen(THIS->fd, 16384) < 0)
@@ -282,7 +282,7 @@ static void port_create(INT32 args)
 	  assign_svalue(& THIS->accept_callback, sp+1-args);
 	  if(!IS_ZERO(& THIS->accept_callback))
 	  {
-	    add_ref(fp->current_object);
+	    add_ref(Pike_fp->current_object);
 	    set_read_callback(THIS->fd, port_accept_callback, (void *)THIS);
 	    set_nonblocking(THIS->fd,1);
 	  }

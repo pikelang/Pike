@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.8 2000/03/26 14:58:50 grubba Exp $
+ * $Id: requestobject.c,v 1.9 2000/07/07 14:00:55 grubba Exp $
  */
 
 #include "global.h"
@@ -416,7 +416,7 @@ void f_aap_index_op(INT32 args)
   if(!THIS->misc_variables) 
   {
     struct svalue s;
-    object_index_no_free2(&s, fp->current_object, sp-1);
+    object_index_no_free2(&s, Pike_fp->current_object, sp-1);
     pop_stack();
     *sp=s;
     sp++;
@@ -447,7 +447,7 @@ void f_aap_index_op(INT32 args)
      * FILE_READ|FILE_WRITE|FILE_SET_CLOSE_ON_EXEC
      */
     push_object(file_make_object_from_fd
-		(dup(THIS->request->fd),0x3800,
+		(fd_dup(THIS->request->fd),0x3800,
 		 SOCKET_CAPABILITIES|PIPE_CAPABILITIES));
     push_string(s_my_fd);
     mapping_insert(THIS->misc_variables, sp-1, sp-2);
@@ -655,7 +655,7 @@ void f_aap_index_op(INT32 args)
   }
   {
     struct svalue s;
-    object_index_no_free2(&s, fp->current_object, sp-1);
+    object_index_no_free2(&s, Pike_fp->current_object, sp-1);
     pop_stack();
     *sp=s;
     sp++;
@@ -702,7 +702,7 @@ void free_send_args(struct send_args *s)
 {
   num_send_args--;
   if( s->data )    aap_enqueue_string_to_free( s->data );
-  if( s->from_fd ) close( s->from_fd );
+  if( s->from_fd ) fd_close( s->from_fd );
   aap_free( s );
 }
 
@@ -986,7 +986,7 @@ void f_aap_reply(INT32 args)
       aap_free(q);
       error("Bad fileobject to request_object->reply()\n");
     }
-    if((q->from_fd = dup(sp[-1].u.integer)) == -1)
+    if((q->from_fd = fd_dup(sp[-1].u.integer)) == -1)
       error("Bad file object to request_object->reply()\n");
     pop_stack();
 
@@ -1021,7 +1021,7 @@ void f_aap_reply_with_cache(INT32 args)
 
   get_all_args("reply_with_cache", args, "%S%d", &reply, &time_to_keep);
 
-  if((unsigned)reply->len < (unsigned)THIS->request->cache->max_size/2)
+  if((size_t)reply->len < (size_t)THIS->request->cache->max_size/2)
   {
     struct cache *rc = THIS->request->cache;
     struct args *tr = THIS->request;
@@ -1037,9 +1037,8 @@ void f_aap_reply_with_cache(INT32 args)
     if(rc->size > rc->max_size)
     {
       struct cache_entry *p,*pp=0,*ppp=0;
-      int target = (rc->max_size-
-                    rc->max_size/3);
-      while((unsigned)rc->size > (unsigned)target)
+      ptrdiff_t target = rc->max_size - rc->max_size/3;
+      while((size_t)rc->size > (size_t)target)
       {
 	int i;
 	freed=0;
@@ -1055,7 +1054,7 @@ void f_aap_reply_with_cache(INT32 args)
 	  }
 	  if(pp) aap_free_cache_entry(rc,pp,ppp,i);
 	  freed++;
-	  if((unsigned)rc->size < (unsigned)target)
+	  if((size_t)rc->size < (size_t)target)
 	    break;
 	}
 	if(!freed)  /* no way.. */

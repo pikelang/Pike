@@ -143,7 +143,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
 
   pop_n_elems(args);
   apply(f, "query_fd", 0);
-  mfd = dup(sp[-1].u.integer);
+  mfd = fd_dup(sp[-1].u.integer);
   if(mfd < 1)error("Bad fileobject to ->log_as_commonlog_to_file\n");
   pop_stack();
 
@@ -209,7 +209,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
     le = l;
   }
   fclose(foo);
-  close(mfd);
+  fd_close(mfd);
   THREADS_DISALLOW();
   push_int(n);
 }
@@ -228,7 +228,7 @@ void aap_log_append(int sent, struct args *arg, int reply)
   MEMCPY(data_to, arg->res.data, arg->res.body_start-4);
   le->raw.str = data_to;
   le->raw.len = arg->res.body_start-4;
-  le->url.str = (data_to + (int)(arg->res.url-arg->res.data));
+  le->url.str = (data_to + (size_t)(arg->res.url-arg->res.data));
   le->url.len = arg->res.url_len;
   le->from = arg->from;
   le->method.str = data_to;
