@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.55 2003/11/03 20:36:53 mast Exp $
+|| $Id: udp.c,v 1.56 2003/11/03 21:04:36 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.55 2003/11/03 20:36:53 mast Exp $");
+RCSID("$Id: udp.c,v 1.56 2003/11/03 21:04:36 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -140,6 +140,10 @@ struct udp_storage {
 
   struct svalue read_callback;
 };
+
+// FIXME: This class does not keep an extra ref while the read
+// callback is registered. It'll probably segfault in
+// udp_read_callback if the object has run out of refs. /mast
 
 void zero_udp(struct object *ignored);
 void exit_udp(struct object *ignored);
@@ -616,6 +620,7 @@ void exit_udp(struct object *ignored)
     THREADS_DISALLOW();
   }
   free_svalue(& THIS->read_callback );
+  THIS->read_callback.type = PIKE_T_INT; /* Avoid uncertainty. */
 }
 
 #define THIS_DATA ((struct udp_storage *)data)
@@ -647,16 +652,18 @@ static void udp_set_read_callback(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR("UDP->set_read_callback", 1);
   if(args > 1)
     pop_n_elems(args-1);
-  
-  if(UNSAFE_IS_ZERO(& THIS->read_callback))
-    assign_svalue(& THIS->read_callback, Pike_sp-1);
-  else
-    assign_svalue_no_free(& THIS->read_callback, Pike_sp-1);
 
-  if(UNSAFE_IS_ZERO(& THIS->read_callback))
-    set_read_callback(FD, 0, 0);
-  else
+  if (UNSAFE_IS_ZERO (Pike_sp - 1)) {
+    free_svalue (&THIS->read_callback);
+    THIS->read_callback.type = PIKE_T_INT;
+    THIS->read_callback.u.integer = 0;
+    set_read_callback (FD, 0, 0);
+  }
+  else {
+    assign_svalue(& THIS->read_callback, Pike_sp-1);
     set_read_callback(FD, udp_read_callback, THIS);
+  }
+
   pop_stack();
   ref_push_object(THISOBJ);
 }
