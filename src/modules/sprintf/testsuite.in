@@ -186,7 +186,10 @@ dnl Make sure that _sprintf is called and that the argument list isn't screwed.
 test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
 	@allocate(14, (class { string _sprintf(int t)
 	                        { mixed x = "not a number";
-                                  catch { sprintf("%d%d%d%d", 1, 2, x, 3); };
+				  string s;
+                                  catch {
+				    s = sprintf("%d%d%d%d", 1, 2, x, 3);
+				  };
 				  return sprintf("[%c%c%c]", 'a', t, 'b'); }
                              })()), 42),
 	"4711[acb][asb][atb][aob][adb][aub][axb][aXb]"

@@ -200,7 +200,7 @@ test_true(stringp(getcwd()))
 // strerror
 cond([[all_constants()->strerror]],
 [[
-test_do(strerror(1))
+test_do(return strerror(1))
 test_true(stringp(strerror(2)||""))
 ]])
 
