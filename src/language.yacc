@@ -84,6 +84,7 @@
 %token TOK_STRING_ID
 %token TOK_SUB_EQ
 %token TOK_TYPEOF
+%token TOK_VARIANT
 %token TOK_VOID_ID
 %token TOK_WHILE
 %token TOK_XOR_EQ
@@ -109,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.201 2000/07/12 12:38:41 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.202 2000/07/12 16:10:13 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -628,6 +629,11 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     }
     push_type(T_FUNCTION);
 
+    if ($1 & ID_VARIANT) {
+      /* FIXME: Lookup the type of any existing variant */
+      /* Or the types. */
+    }
+
     {
       struct pike_string *s=compiler_pop_type();
       $<n>$=mkstrnode(s);
@@ -672,26 +678,31 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	{
 	  my_yyerror("Missing name for argument %d.",e);
 	} else {
-	  /* FIXME: Should probably use some other flag. */
-	  if ((runtime_options & RUNTIME_CHECK_TYPES) &&
-	      (Pike_compiler->compiler_pass == 2) &&
-	      (Pike_compiler->compiler_frame->variable[e].type != mixed_type_string)) {
-	    node *local_node;
+	  if ($1 & ID_VARIANT) {
+	    /* FIXME: Generate code that checks the arguments. */
+	    /* If there is a bad argument, call the fallback, and return. */
+	  } else {
+	    /* FIXME: Should probably use some other flag. */
+	    if ((runtime_options & RUNTIME_CHECK_TYPES) &&
+		(Pike_compiler->compiler_pass == 2) &&
+		(Pike_compiler->compiler_frame->variable[e].type != mixed_type_string)) {
+	      node *local_node;
 
-	    /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
+	      /* fprintf(stderr, "Creating soft cast node for local #%d\n", e);*/
 
-	    local_node = mklocalnode(e, 0);
+	      local_node = mklocalnode(e, 0);
 
-	    /* The following is needed to go around the optimization in
-	     * mksoftcastnode().
-	     */
-	    free_string(local_node->type);
-	    copy_shared_string(local_node->type, mixed_type_string);
+	      /* The following is needed to go around the optimization in
+	       * mksoftcastnode().
+	       */
+	      free_string(local_node->type);
+	      copy_shared_string(local_node->type, mixed_type_string);
 
-	    check_args =
-	      mknode(F_COMMA_EXPR, check_args,
-		     mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
-				    local_node));
+	      check_args =
+		mknode(F_COMMA_EXPR, check_args,
+		       mksoftcastnode(Pike_compiler->compiler_frame->variable[e].type,
+				      local_node));
+	    }
 	  }
 	}
       }
@@ -846,6 +857,7 @@ modifier:
   | TOK_PUBLIC     { $$ = ID_PUBLIC; }
   | TOK_PROTECTED  { $$ = ID_PROTECTED; }
   | TOK_INLINE     { $$ = ID_INLINE; }
+  | TOK_VARIANT    { $$ = ID_VARIANT; }
   ;
 
 magic_identifiers1:
@@ -859,6 +871,7 @@ magic_identifiers1:
   | TOK_PROTECTED  { $$ = "protected"; }
   | TOK_INLINE     { $$ = "inline"; }
   | TOK_OPTIONAL   { $$ = "optional"; }
+  | TOK_VARIANT    { $$ = "variant"; }
   ;
 
 magic_identifiers2:
@@ -2949,6 +2962,8 @@ bad_expr_ident:
   { yyerror("public is a reserved word."); }
   | TOK_OPTIONAL
   { yyerror("optional is a reserved word."); }
+  | TOK_VARIANT
+  { yyerror("variant is a reserved word."); }
   | TOK_STATIC
   { yyerror("static is a reserved word."); }
   | TOK_EXTERN
