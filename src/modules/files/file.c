@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.318 2004/04/14 11:34:02 grubba Exp $
+|| $Id: file.c,v 1.319 2004/05/13 22:15:12 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.318 2004/04/14 11:34:02 grubba Exp $");
+RCSID("$Id: file.c,v 1.319 2004/05/13 22:15:12 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1060,28 +1060,28 @@ static void file_write(INT32 args)
   ptrdiff_t written, i;
   struct pike_string *str;
 
-  if(args<1 || ((Pike_sp[-args].type != PIKE_T_STRING) && (Pike_sp[-args].type != PIKE_T_ARRAY)))
-    Pike_error("Bad argument 1 to file->write().\n"
-	  "Type is %s. Expected string or array(string)\n",
-	  get_name_of_type(Pike_sp[-args].type));
+  if(args<1 || ((Pike_sp[-args].type != PIKE_T_STRING) &&
+		(Pike_sp[-args].type != PIKE_T_ARRAY)))
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
 
   if(FD < 0)
     Pike_error("File not open for write.\n");
 
   if (Pike_sp[-args].type == PIKE_T_ARRAY) {
     struct array *a = Pike_sp[-args].u.array;
-    i = a->size;
-    while(i--) {
-      if (a->item[i].type != PIKE_T_STRING) {
-	Pike_error("Bad argument 1 to file->write().\n"
-	      "Element %ld is not a string.\n",
-	      DO_NOT_WARN((long)i));
-      } else if (a->item[i].u.string->size_shift) {
-	Pike_error("Bad argument 1 to file->write().\n"
-	      "Element %ld is a wide string.\n",
-	      DO_NOT_WARN((long)i));
-      }
+
+    if(a->type_field & ~BIT_STRING) {
+      array_fix_type_field(a);
+      if(a->type_field & ~BIT_STRING)
+	SIMPLE_BAD_ARG_ERROR("Stdio.File->write()", 1, "string|array(string)");
     }
+
+    i = a->size;
+    while(i--)
+      if (a->item[i].u.string->size_shift)
+	Pike_error("Bad argument 1 to file->write().\n"
+		   "Element %ld is a wide string.\n",
+		   DO_NOT_WARN((long)i));
 
 #ifdef HAVE_WRITEV
     if (args > 1) {
@@ -1308,7 +1308,7 @@ static void file_write_oob(INT32 args)
   struct pike_string *str;
 
   if(args<1 || Pike_sp[-args].type != PIKE_T_STRING)
-    Pike_error("Bad argument 1 to file->write().\n");
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->write_oob()",1,"string");
 
   if(args > 1)
   {
