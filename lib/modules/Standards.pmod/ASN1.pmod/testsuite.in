@@ -1,0 +1,21 @@
+dnl $Id: testsuite.in,v 1.1 2003/01/28 22:59:30 nilsson Exp $
+
+dnl Tests from ITU-T Rec.X690 (07/2002)
+
+dnl §8.8
+test_eq( Standards.ASN1.Types.Null()->get_der(), "\5\0" )
+
+dnl §8.9
+test_any([[
+  import Standards.ASN1.Types;
+  return Sequence( ({ IA5String("Smith"), Boolean(17) }) )->get_der();
+]], "0\n\26\5Smith\1\1ÿ")
+
+dnl §8.19
+dnl BUG?
+dnl test_eq(Standards.ASN1.Types.Identifier(2,100,3)->get_der(),
+dnl   "\6\3\201""4\3")
+
+dnl §8.21
+test_eq( Standards.ASN1.Types.VisibleString("Jones")->get_der(),
+  "\32\5Jones" )

@@ -190,6 +190,7 @@ testfont binary
 /lib/modules/Sql.pmod/sybase.pike foreign_ident
 /lib/modules/Standards.pmod/ASN1.pmod/Decode.pmod foreign_ident
 /lib/modules/Standards.pmod/ASN1.pmod/Types.pmod foreign_ident
+/lib/modules/Standards.pmod/ASN1.pmod/testsuite.in foreign_ident
 /lib/modules/Standards.pmod/EXIF.pmod foreign_ident
 /lib/modules/Standards.pmod/FIPS10_4.pmod foreign_ident
 /lib/modules/Standards.pmod/ID3.pmod foreign_ident
