@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.194 2004/03/16 14:27:34 mast Exp $
+|| $Id: main.c,v 1.195 2004/03/16 18:33:45 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.194 2004/03/16 14:27:34 mast Exp $");
+RCSID("$Id: main.c,v 1.195 2004/03/16 18:33:45 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -903,19 +903,28 @@ void low_init_main(void)
 void exit_main(void)
 {
 #ifdef DO_PIKE_CLEANUP
-#ifdef DEBUG_MALLOC
-  gc_keep_markers = verbose_debug_exit;
+  size_t count;
+
+#ifdef PIKE_DEBUG
   if (verbose_debug_exit)
     fprintf(stderr,"Exited normally, counting bytes.\n");
 #endif
 
-  /* Destruct all remaining objects before modules are shut down, so
-   * that they don't get calls to object exit callbacks after their
-   * module exit callback. The downside is that the leak report below
-   * will always report destructed objects. We use the gc in a special
-   * mode for this to get a reasonably sane destruct order. */
+  /* Destruct all remaining objects while we have a proper execution
+   * environment. The downside is that the leak report below will
+   * always report destructed objects. We use the gc in a special mode
+   * for this to get a reasonably sane destruct order. */
   gc_destruct_everything = 1;
-  do_gc (NULL, 1);
+  count = do_gc (NULL, 1);
+  while (count) {
+    size_t new_count = do_gc (NULL, 1);
+    if (new_count >= count) {
+      fprintf (stderr, "Some destroy function is creating new objects "
+	       "during final cleanup - can't exit cleanly.\n");
+      break;
+    }
+    count = new_count;
+  }
   gc_destruct_everything = 0;
 
   /* Unload dynamic modules before static ones. */
@@ -968,10 +977,9 @@ void low_exit_main(void)
 
   do_gc(NULL, 1);
 
-#ifdef DEBUG_MALLOC
+#ifdef PIKE_DEBUG
   if(verbose_debug_exit)
   {
-
 #ifdef _REENTRANT
     if(count_pike_threads()>1)
     {
@@ -981,7 +989,16 @@ void low_exit_main(void)
     }
 #endif
 
+#ifdef DEBUG_MALLOC
     search_all_memheaders_for_references();
+#endif
+
+    /* The use of markers below only works after a gc run where it
+     * hasn't freed anything. Since we've destructed all objects in
+     * exit_main, nothing should be left after the run above, so only
+     * one more run is necessary. */
+    gc_keep_markers = 1;
+    do_gc (NULL, 1);
 
 #define STATIC_ARRAYS {&empty_array, &weak_empty_array, &weak_shrink_empty_array}
 
@@ -991,8 +1008,10 @@ void low_exit_main(void)
       for (x = START; x; x = x->next) {					\
 	struct marker *m = find_marker (x);				\
 	if (!m) {							\
-	  fprintf (stderr, "Didn't find gc marker as expected for:\n");	\
-	  describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
+	  DO_IF_DEBUG (							\
+	    fprintf (stderr, "Didn't find gc marker as expected for:\n"); \
+	    describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
+	  );								\
 	}								\
 	else {								\
 	  int is_static = 0;						\
@@ -1004,7 +1023,7 @@ void low_exit_main(void)
 	  if (x->refs != m->refs + is_static) {				\
 	    num++;							\
 	    fprintf (stderr, NAME " got %d unaccounted references:\n",	\
-		     x->refs - m->refs);				\
+		     x->refs - (m->refs + is_static));			\
 	    describe_something (x, T_TYPE, 2, 2, 0, NULL);		\
 	  }								\
 	}								\
@@ -1057,6 +1076,7 @@ void low_exit_main(void)
     gc_keep_markers = 0;
     do_gc (NULL, 1);
 
+#ifdef DEBUG_MALLOC
     {
       INT32 num, size;
       count_memory_in_pike_types(&num, &size);
@@ -1064,6 +1084,7 @@ void low_exit_main(void)
 	fprintf(stderr, "Types left: %d (%d bytes)\n", num, size);
       describe_all_types();
     }
+#endif
   }
 #endif
 
