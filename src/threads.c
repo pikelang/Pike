@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.104 1999/10/14 20:29:19 grubba Exp $");
+RCSID("$Id: threads.c,v 1.105 1999/12/13 12:27:39 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -17,6 +17,7 @@ int threads_disabled = 0;
 #include "gc.h"
 #include "main.h"
 #include "module_support.h"
+#include "pike_types.h"
 
 #include <errno.h>
 
@@ -1147,36 +1148,11 @@ void th_init(void)
   struct program *tmp;
   INT32 mutex_key_offset;
 
-  
-/* function(mixed ...:object) */
-  ADD_EFUN("thread_create",f_thread_create,tFuncV(tNone,tMix,tObj),
-           OPT_SIDE_EFFECT);
 #ifdef UNIX_THREADS
   
 /* function(int:void) */
   ADD_EFUN("thread_set_concurrency",f_thread_set_concurrency,tFunc(tInt,tVoid), OPT_SIDE_EFFECT);
 #endif
-  
-/* function(:object) */
-  ADD_EFUN("this_thread",f_this_thread,tFunc(tNone,tObj),
-           OPT_EXTERNAL_DEPEND);
-  
-/* function(:array(object)) */
-  ADD_EFUN("all_threads",f_all_threads,tFunc(tNone,tArr(tObj)),
-	   OPT_EXTERNAL_DEPEND);
-
-  
-/* function(:object) */
-  ADD_EFUN("thread_local",f_thread_local,tFunc(tNone,tObj),OPT_SIDE_EFFECT);
-
-  start_new_program();
-  ADD_STORAGE(struct mutex_storage);
-  add_function("lock",f_mutex_lock,"function(int(0..2)|void:object)",0);
-  /* function(int|void:object) */
-  ADD_FUNCTION("trylock",f_mutex_trylock,tFunc(tOr(tInt,tVoid),tObj),0);
-  set_init_callback(init_mutex_obj);
-  set_exit_callback(exit_mutex_obj);
-  end_class("mutex", 0);
 
   start_new_program();
   mutex_key_offset = ADD_STORAGE(struct key_storage);
@@ -1195,9 +1171,22 @@ void th_init(void)
 #endif
 
   start_new_program();
+  ADD_STORAGE(struct mutex_storage);
+  /* function(int(0..2)|void:object(mutex_key)) */
+  ADD_FUNCTION_DTYPE("lock",f_mutex_lock,
+		     dtFunc(dtOr(dtIntRange(0,2),dtVoid),dtObjInher(mutex_key)),0);
+  /* function(int(0..2)|void:object(mutex_key)) */
+  ADD_FUNCTION_DTYPE("trylock",f_mutex_trylock,
+		     dtFunc(dtOr(dtIntRange(0,2),dtVoid),dtObjInher(mutex_key)),0);
+  set_init_callback(init_mutex_obj);
+  set_exit_callback(exit_mutex_obj);
+  end_class("mutex", 0);
+
+  start_new_program();
   ADD_STORAGE(COND_T);
-  /* function(void|object:void) */
-  ADD_FUNCTION("wait",f_cond_wait,tFunc(tOr(tVoid,tObj),tVoid),0);
+  /* function(void|object(mutex_key):void) */
+  ADD_FUNCTION_DTYPE("wait",f_cond_wait,
+		     dtFunc(dtOr(dtVoid,dtObjInher(mutex_key)),dtVoid),0);
   /* function(:void) */
   ADD_FUNCTION("signal",f_cond_signal,tFunc(tNone,tVoid),0);
   /* function(:void) */
@@ -1226,6 +1215,10 @@ void th_init(void)
   thread_local_prog=end_program();
   if(!thread_local_prog)
     fatal("Failed to initialize thread_local program!\n");
+  /* function(:object(thread_local_prog)) */
+  ADD_EFUN_DTYPE("thread_local",f_thread_local,
+		 dtFunc(dtNone,dtObjInher(thread_local_prog)),
+		 OPT_SIDE_EFFECT);
 
   start_new_program();
   thread_storage_offset=ADD_STORAGE(struct thread_state);
@@ -1241,6 +1234,21 @@ void th_init(void)
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);
   thread_id_prog=end_program();
+
+  /* function(mixed ...:object(thread_id_prog)) */
+  ADD_EFUN_DTYPE("thread_create",f_thread_create,
+		 dtFuncV(dtNone,dtMixed,dtObjInher(thread_id_prog)),
+		 OPT_SIDE_EFFECT);
+
+  /* function(:object(thread_id_prog)) */
+  ADD_EFUN_DTYPE("this_thread",f_this_thread,
+		 dtFunc(dtNone,dtObjInher(thread_id_prog)),
+		 OPT_EXTERNAL_DEPEND);
+
+  /* function(:array(object(thread_id_prog))) */
+  ADD_EFUN_DTYPE("all_threads",f_all_threads,
+		 dtFunc(dtNone,dtArr(dtObjInher(thread_id_prog))),
+		 OPT_EXTERNAL_DEPEND);
 
   /* Some constants... */
   add_integer_constant("THREAD_NOT_STARTED", THREAD_NOT_STARTED, 0);
