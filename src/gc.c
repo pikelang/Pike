@@ -209,8 +209,11 @@ void do_gc()
   if(in_gc) return;
   in_gc=1;
 
-  remove_callback(gc_evaluator_callback);
-  gc_evaluator_callback=0;
+  if(gc_evaluator_callback)
+  {
+    remove_callback(gc_evaluator_callback);
+    gc_evaluator_callback=0;
+  }
 
   tmp2=num_objects;
 

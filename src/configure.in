@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.22 1996/11/19 10:04:30 neotron Exp $
+# $Id: configure.in,v 1.23 1996/11/22 06:13:43 hubbe Exp $
 
 AC_INIT(interpret.c)
 
@@ -314,8 +314,6 @@ AC_CHECK_TYPE(time_t,INT32)
 
 dnl AC_CHECK_LIB(PW, alloca)
 
-dnl AC_CHECK_LIB(crypt, crypt)
-
 AC_CHECK_LIB(m, floor)
 AC_CHECK_LIB(dl, dlopen)
 
@@ -323,9 +321,6 @@ if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then
   AC_MSG_WARN(I will compensate for this by adding -lc -lm)
   LIBS="${LIBS} -lc -lm"
 fi
-
-AC_CHECK_LIB(crypt, crypt)
-
 
 ########################################################################
 
@@ -433,6 +428,12 @@ AC_CHECK_FUNCS(
  dlopen \
  dlsym \
 )
+
+if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
+  AC_CHECK_LIB(crypt,crypt,[LIBS="${LIBS} -lcrypt" ; AC_DEFINE(HAVE_CRYPT);])
+fi
+
+
 
 AC_STRUCT_TM
 
