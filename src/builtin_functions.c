@@ -133,8 +133,8 @@ void f_lower_case(INT32 args)
   MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
 
   for (i = sp[-args].u.string->len-1; i>=0; i--)
-    if (isupper(ret->str[i]))
-      ret->str[i] = tolower(ret->str[i]);
+    if (isupper(EXTRACT_UCHAR( ret->str + i)))
+      ret->str[i] = tolower(EXTRACT_UCHAR(ret->str+i));
 
   pop_n_elems(args);
   push_string(end_shared_string(ret));
@@ -153,8 +153,8 @@ void f_upper_case(INT32 args)
   MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
 
   for (i = sp[-args].u.string->len-1; i>=0; i--)
-    if (islower(ret->str[i]))
-      ret->str[i] = toupper(ret->str[i]);
+    if (islower(EXTRACT_UCHAR(ret->str+i)))
+      ret->str[i] = toupper(EXTRACT_UCHAR(ret->str+i));
 
   pop_n_elems(args);
   push_string(end_shared_string(ret));
