@@ -193,7 +193,7 @@ install:
 	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old; \
 	    else : ; fi && \
 	    ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
-	      >./hilfe && chmod 755 ./hilfe && $(INSTALL) ./hilfe $(exec_prefix)) || exit 1 ; \
+	      >./hilfe && chmod 755 ./hilfe && $(INSTALL) ./hilfe $(exec_prefix) ) || exit 1\
 	  else \
 	    $(INSTALL) $(TMP_BINDIR)/hilfe $(exec_prefix) || exit 1; \
 	  fi; \
@@ -283,7 +283,7 @@ feature_list:
 
 lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)/include
 	cp -r $(LIBDIR_SRC) .
-	-cvs_dirs="`find lib -type d -name CVS`"; if test "x$cvs_dirs" = "x" ; then : ; else rm -r $cvs_dirs; fi
+	-cvs_dirs="`find lib -type d -name CVS`"; if test "x$$cvs_dirs" = "x" ; then : ; else rm -r $$cvs_dirs; fi
 	-files="`find lib -type f -name '*~'` `find lib -type f -name '.#*'` `find lib -type f -name '#*#'`"; if test "x$files" = "x" ; then : ; else rm $files; fi
 	-touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
 
