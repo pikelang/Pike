@@ -1,5 +1,5 @@
 /*
- * $Id: dsn.pike,v 1.1 2005/01/26 18:57:45 grubba Exp $
+ * $Id: dsn.pike,v 1.2 2005/01/26 19:26:29 grubba Exp $
  *
  * Glue for the ODBC-module
  *
@@ -14,6 +14,7 @@ inherit Odbc.odbc;
 void create(string|void host, string|void db, string|void user,
 	    string|void password, mapping(string:int|string)|void options)
 {
+  // FIXME: Quoting?
   string connectstring="";
   if(user)
     connectstring+="uid="+user+";";
