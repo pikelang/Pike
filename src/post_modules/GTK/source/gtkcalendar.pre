@@ -44,6 +44,7 @@ mapping get_date()
   push_int( m );
   push_text("day");
   push_int( d );
+  f_aggregate_mapping( 6 );
 }
 
 void freeze();
