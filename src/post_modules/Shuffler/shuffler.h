@@ -11,7 +11,7 @@ struct source
 
   /* Must be implemented by all sources */
   struct data (*get_data)(struct source *s,int len);
-  void (*free)(struct source *s);
+  void (*free_source)(struct source *s);
 
   /* These can be defined in any source, however, they are mostly
    * useful for nonblocking sources.

@@ -13,7 +13,7 @@
 
 #define CHUNK 8192
 
-/* $Id: b_source_normal_file.c,v 1.1 2002/05/29 07:40:11 per Exp $ */
+/* $Id: b_source_normal_file.c,v 1.2 2002/05/29 09:33:13 per Exp $ */
 
 
 /* Source: Normal file
@@ -100,7 +100,7 @@ struct source *source_normal_file_make( struct svalue *s,
     goto fail;
 
   res->s.get_data = get_data;
-  res->s.free = free_source;
+  res->s.free_source = free_source;
   res->obj = s->u.object;
   res->obj->refs++;
   return (struct source *)res;

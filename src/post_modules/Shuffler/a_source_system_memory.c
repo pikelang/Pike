@@ -5,7 +5,7 @@
 
 #include <shuffler.h>
 
-/* $Id: a_source_system_memory.c,v 1.3 2002/05/29 07:39:51 per Exp $ */
+/* $Id: a_source_system_memory.c,v 1.4 2002/05/29 09:33:13 per Exp $ */
 
 /* Source: System.Memory
  * Argument: An initialized instance of the System.Memory class
@@ -77,7 +77,7 @@ struct source *source_system_memory_make( struct svalue *s,
     return 0;
   }
   
-  res->s.free = free_source;
+  res->s.free_source = free_source;
   res->s.get_data = get_data;
   res->obj = s->u.object;
   res->obj->refs++;
