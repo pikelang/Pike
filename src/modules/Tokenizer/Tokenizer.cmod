@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.4 2003/01/18 15:07:52 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.5 2003/04/12 13:02:08 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -628,20 +628,28 @@ PIKECLASS Token
   PIKEFUN string _sprintf(int format, mapping(string:string|int) options)
     flags ID_STATIC;
   {
-    push_text("%O:%s:%s:%O");
-    push_svalue(&THIS->pos);
-    if (THIS->symbol) {
-      ref_push_string(THIS->symbol);
+    if (format == 's') {
+      if (THIS->symbol) {
+	ref_push_string(THIS->symbol);
+      } else {
+	push_text("NONE");
+      }
     } else {
-      push_text("NONE");
+      push_text("%O:%s:%s:%O");
+      push_svalue(&THIS->pos);
+      if (THIS->symbol) {
+	ref_push_string(THIS->symbol);
+      } else {
+	push_text("NONE");
+      }
+      if (THIS->token) {
+	ref_push_string(THIS->token);
+      } else {
+	push_text("NONE");
+      }
+      push_svalue(&THIS->value);
+      f_sprintf(5);
     }
-    if (THIS->token) {
-      ref_push_string(THIS->token);
-    } else {
-      push_text("NONE");
-    }
-    push_svalue(&THIS->value);
-    f_sprintf(5);
     stack_pop_n_elems_keep_top(args);
     return;
   }
