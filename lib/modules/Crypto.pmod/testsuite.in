@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.36 2004/03/08 16:35:27 nilsson Exp $
+// $Id: testsuite.in,v 1.37 2004/04/28 19:36:56 nilsson Exp $
 
 // Nettle.Yarrow
 
@@ -68,6 +68,8 @@ dnl  test_eq( sizeof( Crypto.Random.blocking_random_string(3) ), 3)
   test_do( Crypto.Random.add_entropy("xy", 16) )
 ]])
 
+test_do([[ Stdio.write_file("hash_me", "foo"*1000) ]])
+
 // Crypto.MD5
 cond_resolv( Nettle.MD5_Info, [[
   test_eq(S(Crypto.MD5()->update("")->digest()),
@@ -88,6 +90,8 @@ cond_resolv( Nettle.MD5_Info, [[
           "57edf4a22be3c955ac49da2e2107b67a")
   test_eq(S(Crypto.MD5.hash("foo")),
 	  "acbd18db4cc2f85cedef654fccc4a4d8")
+  test_eq(S(Crypto.MD5.hash(Stdio.File("hash_me"))),
+	  "3aee29ca9ce057ebe49629afcc3fb51f")
   test_eq(S(Crypto.MD5()->update("f")->update("oo")->digest()),
 	  "acbd18db4cc2f85cedef654fccc4a4d8")
 ]])
@@ -113,6 +117,8 @@ cond_resolv( Nettle.MD4_Info, [[
           "e33b4ddc9c38f2199c3e7b164fcc0536")
   test_eq(S(Crypto.MD4.hash("foo")),
 	  "0ac6700c491d70fb8650940b1ca1e4b2")
+  test_eq(S(Crypto.MD4.hash(Stdio.File("hash_me"))),
+	  "5e45f623f3fdbdccc5c18280b8bf7c09")
   test_eq(S(Crypto.MD4()->update("f")->update("oo")->digest()),
 	  "0ac6700c491d70fb8650940b1ca1e4b2")
 ]])
@@ -134,6 +140,8 @@ cond_resolv( Nettle.SHA1_Info, [[
           "0796067748b6b0c2af864656a399f7722ef9283a")
   test_eq(S(Crypto.SHA1.hash("foo")),
 	  "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
+  test_eq(S(Crypto.SHA1.hash(Stdio.File("hash_me"))),
+	  "392f13661282d7d986722e8928391a99a007ab9a")
   test_eq(S(Crypto.SHA1()->update("f")->update("oo")->digest()),
 	  "0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33")
 ]])
@@ -155,10 +163,13 @@ cond_resolv( Nettle.SHA256_Info, [[
           "15eb95a462ee20bd91a415ae2d4aed341288186ddaa2b37908f7d592f0c3f85f")
   test_eq(S(Crypto.SHA256.hash("foo")),
 	  "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+  test_eq(S(Crypto.SHA256.hash(Stdio.File("hash_me"))),
+	  "8db466bdfc3265dd1347843b31ed34af0a0c2e6ff0fd4d6a5853755f0e68b8a0")
   test_eq(S(Crypto.SHA256()->update("f")->update("oo")->digest()),
 	  "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
 ]])
 
+test_do([[ rm("hash_me") ]])
 
 // Crypto.DES
 cond_resolv( Nettle.DES_Info, [[
