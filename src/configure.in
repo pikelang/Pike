@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.485 2001/02/15 09:49:15 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.486 2001/02/16 16:56:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5134,42 +5134,6 @@ EOF
 $CPP -I. -I$srcdir conftest.c > conftest.cpp
 sed <conftest.cpp >conftypes.txt '1,/^--$/d'
 
-rm config.info 2>/dev/null
-
-echo "=========================================================" >>config.info
-
-echo "$PIKE_VERSION_LONG configuration summary" >>config.info
-
-echo >>config.info
-echo "install information:" >>config.info
-echo "prefix........ $prefix" >>config.info
-echo "pike binary... $prefix/bin/pike" >>config.info
-echo "pike library.. $prefix/lib/${PIKE_VERSION}/" >>config.info
-
-echo >>config.info
-echo "build information:" >>config.info
-echo "system........ $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`" >>config.info
-uname -a >/dev/null 2>/dev/null && echo "   `uname -a`" >>config.info
-hostname >/dev/null 2>/dev/null && echo "hostname...... `hostname`" >>config.info
-echo "user.......... `whoami 2>/dev/null || echo '?'`" >>config.info
-echo >>config.info
-echo "source path... $srcdir" >>config.info
-echo "build path.... $BUILDDIR" >>config.info
-echo "cpp........... $CPP" >>config.info
-echo "cc............ $CC" >>config.info
-echo "ld............ $LD" >>config.info
-echo "cc shared..... $CCSHARED" >>config.info
-echo "ld shared..... $LINKFORSHARED" >>config.info
-echo "pike.......... $PIKE" >>config.info
-echo "install....... $INSTALL" >>config.info
-echo "shared object. .$SO" >>config.info
-echo "libs.......... $LIBS" >>config.info
-echo "optimize...... $OPTIMIZE" >>config.info
-
-echo >>config.info
-echo "features:" >>config.info
-echo "PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading" >>config.info
-echo "PAD_FEATURE([threads])$using_threads" >>config.info
 if test "x$with_debug" = x; then
   with_debug=no
 fi
@@ -5179,9 +5143,48 @@ fi
 if test "x$with_dmalloc" = x; then
   with_dmalloc=no
 fi
-echo "PAD_FEATURE([debug])$with_debug" >>config.info
-echo "PAD_FEATURE([dmalloc])$with_dmalloc" >>config.info
-echo "PAD_FEATURE([rtldebug])$with_rtldebug" >>config.info
+
+rm config.info 2>/dev/null
+
+cat >>config.info <<EOF
+=========================================================
+$PIKE_VERSION_LONG configuration summary
+
+install information:" >>config.info
+prefix........ $prefix
+pike binary... $prefix/bin/pike
+pike library.. $prefix/lib/${PIKE_VERSION}/
+
+system........ $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`
+EOF
+
+uname -a >/dev/null 2>/dev/null && echo "   `uname -a`" >>config.info
+hostname >/dev/null 2>/dev/null && echo "hostname...... `hostname`" >>config.info
+
+cat >>config.info <<EOF
+user.......... `whoami 2>/dev/null || echo '?'`
+
+PAD_FEATURE([source path]) $srcdir
+PAD_FEATURE([build path]) $BUILDDIR
+PAD_FEATURE([cpp]) $CPP
+PAD_FEATURE([cc]) $CC
+PAD_FEATURE([ld]) $LD
+PAD_FEATURE([cc shared]) $CCSHARED
+PAD_FEATURE([ld shared]) $LINKFORSHARED
+PAD_FEATURE([pike]) $PIKE
+PAD_FEATURE([install]) $INSTALL
+PAD_FEATURE([shared object]) .$SO
+PAD_FEATURE([libs]) $LIBS
+PAD_FEATURE([optimize]) $OPTIMIZE
+PAD_FEATURE([cross-compiled]) $cross_compiling
+
+features:
+PAD_FEATURE([dynamic loading]) $pike_cv_sys_dynamic_loading
+PAD_FEATURE([threads]) $using_threads
+PAD_FEATURE([debug]) $with_debug
+PAD_FEATURE([dmalloc]) $with_dmalloc
+PAD_FEATURE([rtldebug]) $with_rtldebug
+EOF
 
 touch confdefs.h 2>/dev/null
 
@@ -5191,34 +5194,34 @@ AC_TRY_RUN([
 
 int main()
 {
-   FILE *fp,*out;
-   char float_type[80]="?";
-   char int_type[80]="?";
+   FILE *fp, *out;
+   char float_type[80] = "?";
+   char int_type[80] = "?";
    char *s;
    struct svalue sval;
 
-   out=fopen("config.info","a");
+   out=fopen("config.info", "a");
    if (!out) return 1;
 
-   fp=fopen("conftypes.txt","r");
+   fp=fopen("conftypes.txt", "r");
    if (out && fp)
    {
-      fgets(float_type,79,fp);
-      fgets(int_type,79,fp);
+      fgets(float_type, 79, fp);
+      fgets(int_type, 79, fp);
       s=float_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
       s=int_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
       
-      fprintf(out,"float type............%s (%d bytes)\n",
-   	      float_type,sizeof(FLOAT_TYPE));
-      fprintf(out,"int type..............%s (%d bytes)\n",
-   	      int_type,sizeof(INT_TYPE));
+      fprintf(out, "]PAD_FEATURE([float type])[ %s (%d bytes)\n",
+   	      float_type, sizeof(FLOAT_TYPE));
+      fprintf(out, "]PAD_FEATURE([int type])[ %s (%d bytes)\n",
+   	      int_type, sizeof(INT_TYPE));
    
       fclose(fp);
    }
 
-   fprintf(out,"pointer size..........%d bytes\n",
+   fprintf(out, "]PAD_FEATURE([pointer size])[ %d bytes\n",
 	   sizeof(void*));
-   fprintf(out,"svalue size...........%d bytes (%d+%d+%d)\n",
+   fprintf(out, "]PAD_FEATURE([svalue size])[ %d bytes (%d+%d+%d)\n",
 	   sizeof(sval),
 	   sizeof(sval.type),
 	   sizeof(sval.subtype),
@@ -5228,7 +5231,7 @@ int main()
 
    return 0;
 }
-],[],[],[])
+],[],[],[:])
 rm conftypes.txt 2>/dev/null
 
 echo >>config.info
