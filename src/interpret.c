@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.167 2000/08/24 09:56:29 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.168 2000/08/24 13:55:23 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -408,8 +408,10 @@ void my_describe_inherit_structure(struct program *p)
     while(last < in)
     {
       last++;
-      fprintf(stderr,"[%d]%*s parent{ offset=%d ident=%d id=%d } id{ level=%d } prog=%d\n",
-	      last - p->inherits,
+      fprintf(stderr,
+	      "[%ld]%*s parent{ offset=%d ident=%d id=%d } "
+	      "id{ level=%d } prog=%d\n",
+	      DO_NOT_WARN((long)(last - p->inherits)),
 	      last->inherit_level*2,"",
 	      last->parent_offset,
 	      last->parent_identifier,
