@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.263 2003/04/14 14:31:33 grubba Exp $
+|| $Id: signal_handler.c,v 1.264 2003/04/30 01:05:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.263 2003/04/14 14:31:33 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.264 2003/04/30 01:05:58 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3908,12 +3908,13 @@ void f_create_process(INT32 args)
 }
 
 #ifdef HAVE_FORK
-/*! @decl int fork()
+/*! @decl object fork()
  *!
  *! Fork the process in two.
  *!
- *! Fork splits the process in two, and for the parent it returns the
- *! pid of the child. Refer to your Unix manual for further details.
+ *! Fork splits the process in two, and for the parent it returns a
+ *! pid object for the child. Refer to your Unix manual for further
+ *! details.
  *!
  *! @note
  *!   This function can cause endless bugs if used without proper care.
