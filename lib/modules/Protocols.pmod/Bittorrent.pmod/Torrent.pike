@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.28 2004/02/21 05:07:57 jhs Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.29 2004/04/01 21:07:50 nilsson Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -758,7 +758,6 @@ int download_one_more()
    if (!sizeof(from_peers)) 
    {
       werror("NO SOURCE!!\n");
-      exit(1);
       return 0; // no source
    }
 
@@ -1077,8 +1076,6 @@ class PieceDownload
 		this,downloads,handovers);
 
 	 werror("%s\n",master()->describe_backtrace(backtrace()));
-
-	 exit(1);
       }
 
       more_peers->cancel_requests(0);
