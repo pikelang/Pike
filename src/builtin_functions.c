@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.464 2003/01/26 11:09:00 mirar Exp $
+|| $Id: builtin_functions.c,v 1.465 2003/01/28 13:18:18 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.464 2003/01/26 11:09:00 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.465 2003/01/28 13:18:18 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2512,6 +2512,9 @@ PMOD_EXPORT void f_values(INT32 args)
 PMOD_EXPORT void f_next_object(INT32 args)
 {
   struct object *o;
+
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("next_object: permission denied.\n"));
+
   if(args < 1)
   {
     o = first_object;
@@ -3787,9 +3790,8 @@ PMOD_EXPORT void f__verify_internals(INT32 args)
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_verify_internals: permission denied.\n"));
   d_flag=0x7fffffff;
-  do_debug();
+  do_debug();			/* Runs gc too since d_flag > 3. */
   d_flag=tmp;
-  do_gc(NULL, 1);
   pop_n_elems(args);
 }
 
