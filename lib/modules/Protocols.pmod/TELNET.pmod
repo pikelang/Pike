@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.21 2003/08/07 14:22:58 nilsson Exp $
+// $Id: TELNET.pmod,v 1.22 2003/11/07 17:19:50 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -23,29 +23,28 @@
 
 //! Table of IAC-codes.
 class TelnetCodes {
+  constant IAC = 255;		//! interpret as command.
+  constant DONT = 254;		//! you are not to use option
+  constant DO = 253;		//! please, you use option
+  constant WONT = 252;		//! I won't use option
+  constant WILL = 251;		//! I will use option
+  constant SB = 250;		//! interpret as subnegotiation
+  constant GA = 249;		//! you may reverse the line
+  constant EL = 248;		//! erase the current line
+  constant EC = 247;		//! erase the current character
+  constant AYT = 246;		//! are you there
+  constant AO = 245;		//! abort output--but let prog finish
+  constant IP = 244;		//! interrupt process--permanently
+  constant BREAK = 243;		//! break
+  constant DM = 242;		//! data mark--for connect. cleaning
+  constant NOP = 241;		//! nop
+  constant SE = 240;		//! end sub negotiation
+  constant EOR = 239;           //! end of record (transparent mode)
+  constant ABORT = 238;		//! Abort process
+  constant SUSP = 237;		//! Suspend process
+  constant xEOF = 236;		//! End of file: EOF is already used...
 
-constant IAC = 255;		/* interpret as command: */
-constant DONT = 254;		/* you are not to use option */
-constant DO = 253;		/* please, you use option */
-constant WONT = 252;		/* I won't use option */
-constant WILL = 251;		/* I will use option */
-constant SB = 250;		/* interpret as subnegotiation */
-constant GA = 249;		/* you may reverse the line */
-constant EL = 248;		/* erase the current line */
-constant EC = 247;		/* erase the current character */
-constant AYT = 246;		/* are you there */
-constant AO = 245;		/* abort output--but let prog finish */
-constant IP = 244;		/* interrupt process--permanently */
-constant BREAK = 243;		/* break */
-constant DM = 242;		/* data mark--for connect. cleaning */
-constant NOP = 241;		/* nop */
-constant SE = 240;		/* end sub negotiation */
-constant EOR = 239;             /* end of record (transparent mode) */
-constant ABORT = 238;		/* Abort process */
-constant SUSP = 237;		/* Suspend process */
-constant xEOF = 236;		/* End of file: EOF is already used... */
-
-constant SYNCH = 242;		/* for telfunc calls */
+  constant SYNCH = 242;		//! for telfunc calls
 };
 
 inherit TelnetCodes;
@@ -53,49 +52,47 @@ inherit TelnetCodes;
 
 //! Table of TELNET options.
 class Telopts {
-
-constant TELOPT_BINARY = 0;	/* 8-bit data path */
-constant TELOPT_ECHO = 1;	/* echo */
-constant TELOPT_RCP = 2;	/* prepare to reconnect */
-constant TELOPT_SGA = 3;        /* suppress go ahead */
-constant TELOPT_NAMS = 4;       /* approximate message size */
-constant TELOPT_STATUS = 5;     /* give status */
-constant TELOPT_TM = 6;         /* timing mark */
-constant TELOPT_RCTE = 7;	/* remote controlled transmission and echo */
-constant TELOPT_NAOL = 8;	/* negotiate about output line width */
-constant TELOPT_NAOP = 9;	/* negotiate about output page size */
-constant TELOPT_NAOCRD = 10;	/* negotiate about CR disposition */
-constant TELOPT_NAOHTS = 11;	/* negotiate about horizontal tabstops */
-constant TELOPT_NAOHTD = 12;	/* negotiate about horizontal tab disposition */
-constant TELOPT_NAOFFD = 13;	/* negotiate about formfeed disposition */
-constant TELOPT_NAOVTS = 14;	/* negotiate about vertical tab stops */
-constant TELOPT_NAOVTD = 15;	/* negotiate about vertical tab disposition */
-constant TELOPT_NAOLFD = 16;	/* negotiate about output LF disposition */
-constant TELOPT_XASCII = 17;	/* extended ascic character set */
-constant TELOPT_LOGOUT = 18;	/* force logout */
-constant TELOPT_BM = 19;	/* byte macro */
-constant TELOPT_DET = 20;	/* data entry terminal */
-constant TELOPT_SUPDUP = 21;	/* supdup protocol */
-constant TELOPT_SUPDUPOUTPUT = 22;	/* supdup output */
-constant TELOPT_SNDLOC = 23;	/* send location */
-constant TELOPT_TTYPE = 24;	/* terminal type */
-constant TELOPT_EOR = 25;	/* end or record */
-constant TELOPT_TUID = 26;	/* TACACS user identification */
-constant TELOPT_OUTMRK = 27;	/* output marking */
-constant TELOPT_TTYLOC = 28;	/* terminal location number */
-constant TELOPT_3270REGIME = 29;	/* 3270 regime */
-constant TELOPT_X3PAD = 30;	/* X.3 PAD */
-constant TELOPT_NAWS = 31;	/* window size */
-constant TELOPT_TSPEED = 32;	/* terminal speed */
-constant TELOPT_LFLOW = 33;	/* remote flow control */
-constant TELOPT_LINEMODE = 34;	/* Linemode option */
-constant TELOPT_XDISPLOC = 35;	/* X Display Location */
-constant TELOPT_OLD_ENVIRON = 36;	/* Old - Environment variables */
-constant TELOPT_AUTHENTICATION = 37; /* Authenticate */
-constant TELOPT_ENCRYPT = 38;	/* Encryption option */
-constant TELOPT_NEW_ENVIRON = 39;	/* New - Environment variables */
-constant TELOPT_EXOPL = 255;	/* extended-options-list */
-
+  constant TELOPT_BINARY = 0;	//! 8-bit data path
+  constant TELOPT_ECHO = 1;	//! echo
+  constant TELOPT_RCP = 2;	//! prepare to reconnect
+  constant TELOPT_SGA = 3;	//! suppress go ahead
+  constant TELOPT_NAMS = 4;	//! approximate message size
+  constant TELOPT_STATUS = 5;	//! give status
+  constant TELOPT_TM = 6;	//! timing mark
+  constant TELOPT_RCTE = 7;	//! remote controlled transmission and echo
+  constant TELOPT_NAOL = 8;	//! negotiate about output line width
+  constant TELOPT_NAOP = 9;	//! negotiate about output page size
+  constant TELOPT_NAOCRD = 10;	//! negotiate about CR disposition
+  constant TELOPT_NAOHTS = 11;	//! negotiate about horizontal tabstops
+  constant TELOPT_NAOHTD = 12;	//! negotiate about horizontal tab disposition
+  constant TELOPT_NAOFFD = 13;	//! negotiate about formfeed disposition
+  constant TELOPT_NAOVTS = 14;	//! negotiate about vertical tab stops
+  constant TELOPT_NAOVTD = 15;	//! negotiate about vertical tab disposition
+  constant TELOPT_NAOLFD = 16;	//! negotiate about output LF disposition
+  constant TELOPT_XASCII = 17;	//! extended ascic character set
+  constant TELOPT_LOGOUT = 18;	//! force logout
+  constant TELOPT_BM = 19;	//! byte macro
+  constant TELOPT_DET = 20;	//! data entry terminal
+  constant TELOPT_SUPDUP = 21;	//! supdup protocol
+  constant TELOPT_SUPDUPOUTPUT = 22;	//! supdup output
+  constant TELOPT_SNDLOC = 23;		//! send location
+  constant TELOPT_TTYPE = 24;		//! terminal type
+  constant TELOPT_EOR = 25;		//! end or record
+  constant TELOPT_TUID = 26;		//! TACACS user identification
+  constant TELOPT_OUTMRK = 27;		//! output marking
+  constant TELOPT_TTYLOC = 28;		//! terminal location number
+  constant TELOPT_3270REGIME = 29;	//! 3270 regime
+  constant TELOPT_X3PAD = 30;		//! X.3 PAD
+  constant TELOPT_NAWS = 31;		//! window size
+  constant TELOPT_TSPEED = 32;		//! terminal speed
+  constant TELOPT_LFLOW = 33;		//! remote flow control
+  constant TELOPT_LINEMODE = 34;	//! Linemode option
+  constant TELOPT_XDISPLOC = 35;	//! X Display Location
+  constant TELOPT_OLD_ENVIRON = 36;	//! Old - Environment variables
+  constant TELOPT_AUTHENTICATION = 37;	//! Authenticate
+  constant TELOPT_ENCRYPT = 38;		//! Encryption option
+  constant TELOPT_NEW_ENVIRON = 39;	//! New - Environment variables
+  constant TELOPT_EXOPL = 255;		//! extended-options-list
 };
 
 inherit Telopts;
@@ -105,16 +102,16 @@ mapping lookup_telnetcodes=mkmapping(values(TelnetCodes()),indices(TelnetCodes()
 
 
 /* sub-option qualifiers */
-constant TELQUAL_IS=	0;	/* option is... */
-constant TELQUAL_SEND=	1;	/* send option */
-constant TELQUAL_INFO=	2;	/* ENVIRON: informational version of IS */
-constant TELQUAL_REPLY=	2;	/* AUTHENTICATION: client version of IS */
-constant TELQUAL_NAME=	3;	/* AUTHENTICATION: client version of IS */
+constant TELQUAL_IS=	0;	//! option is...
+constant TELQUAL_SEND=	1;	//! send option
+constant TELQUAL_INFO=	2;	//! ENVIRON: informational version of IS
+constant TELQUAL_REPLY=	2;	//! AUTHENTICATION: client version of IS
+constant TELQUAL_NAME=	3;	//! AUTHENTICATION: client version of IS
 
-constant LFLOW_OFF=		0;	/* Disable remote flow control */
-constant LFLOW_ON=		1;	/* Enable remote flow control */
-constant LFLOW_RESTART_ANY=	2;	/* Restart output on any char */
-constant LFLOW_RESTART_XON=	3;	/* Restart output only on XON */
+constant LFLOW_OFF=		0;	//! Disable remote flow control
+constant LFLOW_ON=		1;	//! Enable remote flow control
+constant LFLOW_RESTART_ANY=	2;	//! Restart output on any char
+constant LFLOW_RESTART_XON=	3;	//! Restart output only on XON
 
 
 constant	LM_MODE	= 1;
@@ -185,8 +182,8 @@ constant	ENV_USERVAR=	3;
 /*
  * Who is authenticating who ...
  */
-constant	AUTH_WHO_CLIENT= 0;	/* Client authenticating server */
-constant	AUTH_WHO_SERVER= 1;	/* Server authenticating client */
+constant	AUTH_WHO_CLIENT= 0;	//! Client authenticating server
+constant	AUTH_WHO_SERVER= 1;	//! Server authenticating client
 constant	AUTH_WHO_MASK=	 1;
 
 /*
