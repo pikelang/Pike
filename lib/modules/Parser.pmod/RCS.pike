@@ -1,7 +1,7 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.2 2002/02/23 00:54:23 jhs Exp $
+// $Id: RCS.pike,v 1.3 2002/02/23 01:14:00 jhs Exp $
 
-//! A RCS file parser that eats a RCS *,v files and presents nice pike
+//! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
 
 #ifdef PARSER_RCS_DEBUG
@@ -64,43 +64,9 @@ string _sprintf(int type)
 		 revisions && sizeof(revisions));
 }
 
-//! Data for all revisions of the file. The indices of the mapping
-//! are the revision numbers, whereas the values are mappings of the
-//! following format:
-//! @mapping
-//!   @member string "revision"
-//!     the revision number (i e revisions["1.1"]->revision == "1.1")
-//!   @member string "branch"
-//!     the branch name on which this revision was committed (calculated
-//!     according to how cvs manages branches)
-//!   @member Calendar.ISO.Second "time"
-//!     the date and time when the revision was committed
-//!   @member string "author"
-//!     the name of the user that committed the revision
-//!   @member string "log"
-//!     the log message associated with the revision
-//!   @member string "state"
-//!     the state of the revision - typically "Exp" or "dead"
-//!   @member array(string) "branches"
-//!     when there are branches from this revision, an array of the revisions
-//!     where each branch starts, otherwise 0
-//!   @member int "lines"
-//!     the number of lines this revision contained, altogether (not of
-//!     particular interest for binary files)
-//!   @member int "added"
-//!     the number of lines that were added from the previous revision to make
-//!     this revision (for the initial revision too)
-//!   @member int "removed"
-//!     the number of lines that were removed from the previous revision to
-//!     make this revision
-//!   @member string "ancestor"
-//!     the revision of the ancestor of this revision or zero, if this was the
-//!     initial revision
-//!   @member string "next"
-//!     the revision that succeeds this revision or 0, if none exists
-//!   @member string "rcs_next"
-//!     the revision stored next in the rcs file or 0, if none exists
-//! @endmapping
+//! Data for all revisions of the file. The indices of the mapping are
+//! the revision numbers, whereas the values are the data from the
+//! corresponding revision.
 mapping(string:Revision) revisions;
 
 //! Data for all revisions on the trunk, sorted in the same order as the
@@ -308,26 +274,58 @@ void parse(string raw)
   revisions = revs;
 }
 
-//!
+//! All data tied to a particular revision of the file.
 class Revision
 {
-  int added, removed, lines, bytes;
-
+  //! the name of the user that committed the revision
   string author;
-  string log;
-  string branch;
 
-  string revision;
-  string ancestor;
-  string next;
-  string rcs_next;
-  string text;
-  string rcs_text;
-
+  //! when there are branches from this revision, an array of the
+  //! revisions where each branch starts, otherwise 0
   array(string) branches;
 
+  //! the state of the revision - typically "Exp" or "dead"
   string state;
+
+  //! the date and time when the revision was committed
   Calendar.ISO.Second time;
+
+  //! the branch name on which this revision was committed (calculated
+  //! according to how cvs manages branches)
+  string branch;
+
+  //! the revision number (i e revisions["1.1"]->revision == "1.1")
+  string revision;
+
+  //! the revision stored next in the rcs file, or 0 if none exists
+  string rcs_next;
+
+
+  //! the revision of the ancestor of this revision, or 0 if this was
+  //! the initial revision
+  string ancestor;
+
+  //! the revision that succeeds this revision, or 0 if none exists
+  string next;
+
+  //! the log message associated with the revision
+  string log;
+
+  //! the number of lines this revision contained, altogether (not of
+  //! particular interest for binary files)
+  int lines;
+
+  //! the number of lines that were added from the previous revision
+  //! to make this revision (for the initial revision too)
+  int added;
+
+  //! the number of lines that were removed from the previous revision
+  //! to make this revision
+  int removed;
+
+  string rcs_text; // the diff as stored in the rcs file
+
+  string text; // when parsed once, the text as it was checked in
 
   string _sprintf(int|void type)
   {
