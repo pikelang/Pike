@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.13 1998/02/08 16:53:45 grubba Exp $
+ * $Id: mysql.c,v 1.14 1998/03/08 13:16:53 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.13 1998/02/08 16:53:45 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.14 1998/03/08 13:16:53 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -218,7 +218,9 @@ static void pike_mysql_reconnect(void)
   socket = mysql_connect(mysql, host, user, password);
 
 #ifdef HAVE_MYSQL_PORT
-  mysql_port = saved_port;
+  if (port) {
+    mysql_port = saved_port;
+  }
 
   STUPID_PORT_UNLOCK();
 #endif /* HAVE_MYSQL_PORT */
