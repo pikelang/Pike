@@ -1,5 +1,5 @@
 /*
- * $Id: make_ci.pike,v 1.6 2001/06/21 12:29:40 grubba Exp $
+ * $Id: make_ci.pike,v 1.7 2001/06/21 13:24:49 grubba Exp $
  *
  * Creates the file case_info.h
  *
@@ -16,6 +16,7 @@ int main(int argc, array(string) argv)
 {
   int lineno;
   array(array(int)) ci = ({({ 0, CIM_NONE, 0 })});
+  int prevchar = 0;
 
   string data = Stdio.stdin.read();
 
@@ -65,15 +66,22 @@ int main(int argc, array(string) argv)
       d = delta;
     }
 
+    if ((char > prevchar+1) && (ci[-1][1] != CIM_NONE)) {
+      // Add a NONE-range.
+      ci += ({({ prevchar+1, CIM_NONE, 0 })});
+    }
+
     if ((ci[-1][1] != mode) || (ci[-1][2] != d)) {
       // New range.
       ci += ({({ char, mode, d })});
     }
+
+    prevchar = char;
   }
 
   write(sprintf("/*\n"
 		" * Created by\n"
-		" * $Id: make_ci.pike,v 1.6 2001/06/21 12:29:40 grubba Exp $\n"
+		" * $Id: make_ci.pike,v 1.7 2001/06/21 13:24:49 grubba Exp $\n"
 		" * on %s"
 		" *\n"
 		" * Table used for looking up the case of\n"
