@@ -46,7 +46,7 @@
       flexible, is to create a directory named as the module with the
       extension <expr>.pmod</expr> and place all program definitions
       (<expr>.pike</expr>-files) within this directory. If a file called
-      <expr>module.pmod</expr> is placed in the directory de function and
+      <expr>module.pmod</expr> is placed in the directory the function and
       program definitions within it will be merged with the programs
       found in the directory. This file could, as an example, be used
       to specify functions residing in the module, while programs in
@@ -73,7 +73,7 @@
       <p>
 	If <expr>_module_value</expr> is non-zero it will be used as
 	the value of the module. <expr>_module_value</expr> has to be of
-	a type which is indicable, ie. an object, mapping och
+	a type which is indicable, ie. an object, mapping or
 	multiset.
       </p>
     </subsection>
