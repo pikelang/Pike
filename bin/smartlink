@@ -58,12 +58,24 @@ if test x$# != x0 ; then
     shift
   done
 
-  if test -f /usr/bin/uname && /usr/bin/uname -sr | grep "SunOS 5" >/dev/null 2>&1 ; then
-    LDOPTS="$LDOPTS -R$RPATH"
-  else
+  if test -f /usr/bin/uname ; then
+    UNAME=`/usr/bin/uname -sr`
+   else
+    UNAME=unknown
+   fi
+
+  case "$UNAME" in
+   OSF1\ V4.*)
+     LDOPTS="$LDOPTS -rpath $RPATH"
+   ;;
+   SunOS\ 5.*)
+     LDOPTS="$LDOPTS -R$RPATH"
+   ;;
+   *)
     LD_LIBRARY_PATH="$RPATH"
     export LD_LIBRARY_PATH
-  fi
+   ;;
+  esac
 fi
 
 # Used to be exec, but Digital-Unix's stupid sh has buggy variable-expansion.
