@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.332 2003/03/20 21:27:55 grubba Exp $
+|| $Id: las.c,v 1.333 2003/03/27 02:19:01 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.332 2003/03/20 21:27:55 grubba Exp $");
+RCSID("$Id: las.c,v 1.333 2003/03/27 02:19:01 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1878,7 +1878,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  {
 	    pop_stack();
 #if 0
-	    fprintf(stderr, "Placeholder deployed for %p\n", p);
+	    fprintf(stderr, "Placeholder deployed for %p when indexing ", p);
+	    print_tree(n);
+	    fprintf(stderr, "with %s\n", id->str);
 #endif
 	    ref_push_object(placeholder_object);
 	    break;
