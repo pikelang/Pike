@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.84 2004/02/07 18:23:05 grubba Exp $
+|| $Id: backend.cmod,v 1.85 2004/02/08 15:22:45 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.84 2004/02/07 18:23:05 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.85 2004/02/08 15:22:45 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -251,23 +251,23 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 
     /* The /dev/epoll interface exposes kernel implementation details...
      */
-    IF_PD(fprintf(stderr, "epoll_ctl(%d, %d, EPOLL_CTL_MOD, { 0x%08x, %d })\n",
+    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_MOD, %d, { 0x%08x, %d })\n",
 		  pfd, fd, events, fd));
-    while (((e = epoll_ctl(pfd, fd, EPOLL_CTL_MOD, &ev)) < 0)  &&
+    while (((e = epoll_ctl(pfd, EPOLL_CTL_MOD, fd, &ev)) < 0)  &&
 	   (errno == EINTR))
       ;
     if ((e < 0) && (errno == ENOENT)) {
       IF_PD(fprintf(stderr,
-		    "epoll_ctl(%d, %d, EPOLL_CTL_ADD, { 0x%08x, %d })\n",
+		    "epoll_ctl(%d, EPOLL_CTL_ADD, %d, { 0x%08x, %d })\n",
 		    pfd, fd, events, fd));
-      while (((e = epoll_ctl(pfd, fd, EPOLL_CTL_ADD, &ev)) < 0)  &&
+      while (((e = epoll_ctl(pfd, EPOLL_CTL_ADD, fd, &ev)) < 0)  &&
 	     (errno == EINTR))
 	;
     }
   } else {
-    IF_PD(fprintf(stderr, "epoll_ctl(%d, %d, EPOLL_CTL_DEL, NULL)\n",
+    IF_PD(fprintf(stderr, "epoll_ctl(%d, EPOLL_CTL_DEL, %d, NULL)\n",
 		  pfd, fd));
-    while (((e = epoll_ctl(pfd, fd, EPOLL_CTL_DEL, NULL)) < 0) &&
+    while (((e = epoll_ctl(pfd, EPOLL_CTL_DEL, fd, NULL)) < 0) &&
 	   (errno == EINTR))
       ;
     if ((e < 0) && (errno == ENOENT)) return 0;
@@ -2626,7 +2626,7 @@ PIKECLASS Backend
 	   (errno = ENODEV, -1)		/* Error */
 #endif /* USE_DEVPOLL || USE_EPOLL */
 	   ) < 0) {
-	Pike_error("Failed to open /dev/poll (errno:%d)\n", errno);
+	Pike_error("Failed to open poll device (errno:%d)\n", errno);
       }
       set_close_on_exec(me->set, 1);
 #else /* !USE_POLL_DEVICE */
