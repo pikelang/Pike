@@ -2,7 +2,7 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.3 1998/07/15 18:50:36 grubba Exp $
+ * $Id: postgres.pike,v 1.4 1998/08/25 13:28:34 grubba Exp $
  *
  */
 
@@ -31,7 +31,7 @@ void create(void|string host, void|string database, void|string user,
 		if (sscanf(host,"%s:%d",real_host,port)!=2)
 			ERROR("Error in parsing the hostname argument.\n");
 	
-	mo::create(real_host||"",real_db||"",port);
+	mo::create(real_host||"",real_db||"",user||"",pass||"",port);
 }
 
 static void poll (int delay)
