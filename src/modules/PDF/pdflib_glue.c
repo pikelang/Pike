@@ -1,5 +1,5 @@
 /*
- * $Id: pdflib_glue.c,v 1.2 2001/01/13 22:55:29 mirar Exp $
+ * $Id: pdflib_glue.c,v 1.3 2001/01/14 08:59:02 mirar Exp $
  */
 
 #include "global.h"
@@ -268,7 +268,7 @@ static void pdf_findfont(INT32 args)
       if (sp[2-args].type==T_INT)
 	 embed=(int)sp[2-args].u.integer;
       else
-	 SIMPLE_BAD_ARG_ERROR("findfont",3,"int");
+	 SIMPLE_BAD_ARG_ERROR("findfont",3,"int or void");
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -359,15 +359,21 @@ static void pdf_continue_text(INT32 args)
    ref_push_object(THISOBJ);
 }
 
+//! method int show_boxed(string text,float x,float y,float width,float height,string mode)
 //! method int show_boxed(string text,float x,float y,float width,float height,string mode,string feature)
 
 static void pdf_show_boxed(INT32 args)
 {
    struct pdf_storage *this=THIS;
-   char *text=NULL,*mode=NULL,*feature=NULL;
+   char *text=NULL,*mode=NULL,*feature="";
    FLOAT_TYPE x=0.0,y=0.0,width=0.0,height=0.0;
    INT_TYPE res=0;
-   get_all_args("show_boxed",args,"%s%F%F%F%F%s%s",&text,&x,&y,&width,&height,&mode,&feature);
+   if (args>=7)
+      get_all_args("show_boxed",args,"%s%F%F%F%F%s%s",
+		   &text,&x,&y,&width,&height,&mode,&feature);
+   else
+      get_all_args("show_boxed",args,"%s%F%F%F%F%s",
+		   &text,&x,&y,&width,&height,&mode);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_show_boxed(this->pdf,text,(float)x,(float)y,(float)width,(float)height,mode,feature);
@@ -383,29 +389,15 @@ static void pdf_stringwidth(INT32 args)
 {
    struct pdf_storage *this=THIS;
    FLOAT_TYPE res=0.0,size=0.0;
-   INT_TYPE len=0,font=0;
-   char *text=NULL;
-   get_all_args("stringwidth2",args,"%s%i%i%F",&text,&len,&font,&size);
+   INT_TYPE font=0;
+   struct pike_string *ps=NULL;
+   get_all_args("stringwidth2",args,"%W%i%F",&ps,&font,&size);
+   if (ps->size_shift)
+      Pike_error("wide strings not supported yet\n");
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
-   res=PDF_stringwidth2(this->pdf,text,(int)len,(int)font,(float)size);
-   THREADS_DISALLOW();
-   push_float((FLOAT_TYPE)res);
-   stack_pop_n_elems_keep_top(args);
-}
-
-//! method float stringwidth2(string text,int len,int font,float size)
-
-static void pdf_stringwidth2(INT32 args)
-{
-   struct pdf_storage *this=THIS;
-   FLOAT_TYPE res=0.0,size=0.0;
-   INT_TYPE len=0,font=0;
-   char *text=NULL;
-   get_all_args("stringwidth2",args,"%s%i%i%F",&text,&len,&font,&size);
-   if (!this->pdf) Pike_error("PDF not initiated\n");
-   THREADS_ALLOW();
-   res=PDF_stringwidth2(this->pdf,text,(int)len,(int)font,(float)size);
+   res=PDF_stringwidth2(this->pdf,(char*)ps->str,(int)ps->len,
+			(int)font,(float)size);
    THREADS_DISALLOW();
    push_float((FLOAT_TYPE)res);
    stack_pop_n_elems_keep_top(args);
@@ -796,14 +788,26 @@ static void pdf_setrgbcolor(INT32 args)
 }
 
 
-//! method int open_image_file(string type,string filename,string stringparam,int intparam)
+//! method int open_image_file(string type,string filename)
+//! method int open_image_file(string type,string filename,void|string stringparam,void|int intparam)
 
 static void pdf_open_image_file(INT32 args)
 {
    struct pdf_storage *this=THIS;
    INT_TYPE res=0,intparam=0;
-   char *type=NULL,*filename=NULL,*stringparam=NULL;
-   get_all_args("open_image_file",args,"%s%s%s%i",&type,&filename,&stringparam,&intparam);
+   char *type=NULL,*filename=NULL,*stringparam="";
+   get_all_args("open_image_file",args,"%s%s",&type,&filename);
+   if (args>=3)
+      if (sp[2-args].type==T_STRING && 
+	  !sp[2-args].u.string->size_shift)
+	 stringparam=sp[2-args].u.string->str;
+      else if (sp[2-args].type!=T_INT || sp[-args].u.integer)
+	 SIMPLE_BAD_ARG_ERROR("open_image_file",3,"8 bit string or void");
+   if (args>=4)
+      if (sp[3-args].type==T_INT)
+	 intparam=(int)sp[3-args].u.integer;
+      else
+	 SIMPLE_BAD_ARG_ERROR("findfont",4,"int or void");
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_open_image_file(this->pdf,type,filename,stringparam,(int)intparam);
@@ -820,27 +824,36 @@ static void pdf_open_CCITT(INT32 args)
    struct pdf_storage *this=THIS;
    INT_TYPE res=0,width=0,height=0,BitReverse=0,K=0,BlackIs1=0;
    char *filename=NULL;
-   get_all_args("open_CCITT",args,"%s%i%i%i%i%i",&filename,&width,&height,&BitReverse,&K,&BlackIs1);
+   get_all_args("open_CCITT",args,"%s%i%i%i%i%i",
+		&filename,&width,&height,&BitReverse,&K,&BlackIs1);
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
-   res=PDF_open_CCITT(this->pdf,filename,(int)width,(int)height,(int)BitReverse,(int)K,(int)BlackIs1);
+   res=PDF_open_CCITT(this->pdf,filename,(int)width,(int)height,
+		      (int)BitReverse,(int)K,(int)BlackIs1);
    THREADS_DISALLOW();
    push_int((INT_TYPE)res);
    stack_pop_n_elems_keep_top(args);
 }
 
 
-//! method int open_image(string type,string source,string data,int length,int width,int height,int components,int bpc,string params)
+//! method int open_image(string type,string source,string data,int width,int height,int components,int bpc,string params)
 
 static void pdf_open_image(INT32 args)
 {
    struct pdf_storage *this=THIS;
-   char *type=NULL,*source=NULL,*data=NULL,*params=NULL;
+   char *type=NULL,*source=NULL,*params=NULL;
+   struct pike_string *ps;
    INT_TYPE res=0,length=0,width=0,height=0,components=0,bpc=0;
-   get_all_args("open_image",args,"%s%s%s%i%i%i%i%i%s",&type,&source,&data,&length,&width,&height,&components,&bpc,&params);
+   get_all_args("open_image",args,"%s%s%W%i%i%i%i%s",
+		&type,&source,&ps,&width,&height,
+		&components,&bpc,&params);
+   if (ps->size_shift)
+      Pike_error("wide string image data\n");
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
-   res=PDF_open_image(this->pdf,type,source,data,(long)length,(int)width,(int)height,(int)components,(int)bpc,params);
+   res=PDF_open_image(this->pdf,type,source,
+		      (char*)ps->str,(long)ps->len,
+		      (int)width,(int)height,(int)components,(int)bpc,params);
    THREADS_DISALLOW();
    push_int((INT_TYPE)res);
    stack_pop_n_elems_keep_top(args);
@@ -1083,8 +1096,6 @@ void pike_module_init(void)
                 tFunc(tStr tIoF tIoF tIoF tIoF tStr tStr,tInt),0);
    ADD_FUNCTION("stringwidth",pdf_stringwidth,
                 tFunc(tStr tInt tIoF,tIoF),0);
-   ADD_FUNCTION("stringwidth2",pdf_stringwidth2,
-                tFunc(tStr tInt tInt tIoF,tIoF),0);
    ADD_FUNCTION("set_text_pos",pdf_set_text_pos,tFunc(tIoF tIoF,tObj),0);
    ADD_FUNCTION("setdash",pdf_setdash,tFunc(tIoF tIoF,tObj),0);
    ADD_FUNCTION("setflat",pdf_setflat,tFunc(tIoF,tObj),0);
@@ -1115,7 +1126,7 @@ void pike_module_init(void)
    ADD_FUNCTION("setrgbcolor",pdf_setrgbcolor,
                 tFunc(tIoF tIoF tIoF,tObj),0);
    ADD_FUNCTION("open_image_file",pdf_open_image_file,
-                tFunc(tStr tStr tStr tInt,tInt),0);
+                tFunc(tStr tStr tOr(tStr,tVoid) tOr(tInt,tVoid),tInt),0);
    ADD_FUNCTION("open_CCITT",pdf_open_CCITT,
                 tFunc(tStr tInt tInt tInt tInt tInt,tInt),0);
    ADD_FUNCTION("open_image",pdf_open_image,
