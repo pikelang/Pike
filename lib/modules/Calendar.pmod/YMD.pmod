@@ -749,11 +749,10 @@ class YMD
    }
 
    cDay day(int ... mp) 
-   { 
-      if (!sizeof(mp))
-	 return Day("ymd_yd",rules,y,yjd,jd,yd,1);
-
-      int m=mp[0];
+   {
+      int m;
+      if (sizeof(mp)) m=mp[0];
+      else m=1;
 
       if (m==-1 && !n)
 	 return Day("ymd_yd",rules,y,yjd,jd,yd,1);
