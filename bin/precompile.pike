@@ -452,7 +452,8 @@ class PikeType
 
 	case "object":  return "tObj";
 	default:
-	  return "tObjImpl_"+upper_case(ret);
+	  return sprintf("tName(%O, tObjImpl_%s)",
+			 ret, upper_case(ret));
       }
     }
 
