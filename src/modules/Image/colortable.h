@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.15 1999/04/09 17:56:51 marcus Exp $
+**!	$Id: colortable.h,v 1.16 1999/04/10 02:02:05 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -153,7 +153,7 @@ typedef void nct_dither_line_function(struct nct_dither *dith,
 				      rgb_group **drgb,
 				      unsigned char **d8bit,
 				      unsigned short **d16bit,
-				      long **d32bit,
+				      unsigned INT32 **d32bit,
 				      int *cd);
 
 struct nct_dither

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.9 1999/02/10 21:48:24 hubbe Exp $
+**!	$Id: colors.c,v 1.10 1999/04/10 02:02:01 mirar Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.9 1999/02/10 21:48:24 hubbe Exp $");
+RCSID("$Id: colors.c,v 1.10 1999/04/10 02:02:01 mirar Exp $");
 
 #include "config.h"
 
@@ -137,21 +137,15 @@ static struct pike_string *str_h;
 static struct pike_string *str_s;
 static struct pike_string *str_v;
 
-struct color_struct
-{
-   rgb_group rgb;
-   rgbl_group rgbl;
-   struct pike_string *name;
-};
+static struct pike_string *no_name;
 
 /* forward */
-static void image_make_rgb_color(INT32 args); 
-static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b); 
 static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b); 
 static void _image_make_rgbf_color(float r,float g,float b);
 static void image_make_hsv_color(INT32 args); 
 static void image_make_cmyk_color(INT32 args);
 static void image_make_color(INT32 args);
+static void image_make_rgb_color(INT32 args);
 
 struct html_color
 {
@@ -215,10 +209,12 @@ static void make_colors(void)
    }
    f_aggregate(n);
    colortable=clone_object(image_colortable_program,1);
+   if (!colortable)
+      fatal("couldn't create colortable\n");
 
-   push_int(5);
-   push_int(5);
-   push_int(5);
+   push_int(12);
+   push_int(12);
+   push_int(12);
    push_int(1);
    safe_apply(colortable,"cubicles",4);
    pop_stack();
@@ -252,26 +248,38 @@ static void exit_color_struct(struct object *dummy)
    }
 }
 
+void _img_nct_map_to_flat_cubicles(rgb_group *s,
+				   rgb_group *d,
+				   int n,
+				   struct neo_colortable *nct,
+				   struct nct_dither *dith,
+				   int rowlen);
+
 static void try_find_name(struct color_struct *this)
 {
    rgb_group d;
+   static struct nct_dither dith = { NCTD_NONE,NULL,NULL,NULL,NULL };
 
    if (!colors)
+   {
+      fprintf(stderr,"make colors\n");
       make_colors();
+   }
 
    if (this->name) 
-   {
-      free_string(this->name);
-      this->name=NULL;
-   }
+      fatal("try_find_name called twice\n");
 
    if (this->rgbl.r!=COLOR_TO_COLORL(this->rgb.r) ||
        this->rgbl.g!=COLOR_TO_COLORL(this->rgb.g) ||
        this->rgbl.b!=COLOR_TO_COLORL(this->rgb.b))
+   {
+      copy_shared_string(this->name,no_name);
       return; 
+   }
 
-   image_colortable_map_image((struct neo_colortable*)colortable->storage,
-			      &(this->rgb),&d,1,1);
+   _img_nct_map_to_flat_cubicles(&(this->rgb),&d,1,
+				 (struct neo_colortable*)colortable->storage,
+				 &dith,1);
    
    if (d.r==this->rgb.r &&
        d.g==this->rgb.g &&
@@ -286,8 +294,10 @@ static void try_find_name(struct color_struct *this)
       {
 	 copy_shared_string(this->name,
 			    colornames->item[d2].u.string);
+	 return;
       }
    }
+   copy_shared_string(this->name,no_name);
 }
 
 /*
@@ -326,6 +336,15 @@ static void image_color_rgb(INT32 args)
    push_int(THIS->rgb.r);
    push_int(THIS->rgb.g);
    push_int(THIS->rgb.b);
+   f_aggregate(3);
+}
+
+static void image_color_rgbf(INT32 args)
+{
+   pop_n_elems(args);
+   push_float(COLORL_TO_FLOAT(THIS->rgbl.r));
+   push_float(COLORL_TO_FLOAT(THIS->rgbl.g));
+   push_float(COLORL_TO_FLOAT(THIS->rgbl.b));
    f_aggregate(3);
 }
 
@@ -554,10 +573,12 @@ static void image_color_html(INT32 args)
 static void image_color_name(INT32 args)
 {
    pop_n_elems(args);
-   if (THIS->name)
-      ref_push_string(THIS->name);
-   else
+   if (!THIS->name) try_find_name(THIS);
+
+   if (THIS->name==no_name)
       image_color_hex(0);
+   else
+      ref_push_string(THIS->name);
 }
 
 /*
@@ -718,7 +739,9 @@ static void image_color_equal(INT32 args)
    }
    else if (sp[-1].type==T_STRING)
    {
-      if (sp[-1].u.string==THIS->name)
+      if (!THIS->name)
+	 try_find_name(THIS);
+      if (sp[-1].u.string==THIS->name && THIS->name!=no_name)
       {
 	 pop_stack();
 	 push_int(1);
@@ -873,13 +896,12 @@ static void image_color_mult(INT32 args)
 			 (int)(THIS->rgb.b*x));
 }
 
-static int image_color_arg(INT32 args,rgb_group *rgb)
+int image_color_svalue(struct svalue *v,rgb_group *rgb)
 {
-   if (!args) return 0;
-   if (sp[-args].type==T_OBJECT)
+   if (v->type==T_OBJECT)
    {
       struct color_struct *cs=(struct color_struct*)
-	 get_storage(sp[-args].u.object,image_color_program);
+	 get_storage(v->u.object,image_color_program);
 
       if (cs) 
       {
@@ -887,30 +909,27 @@ static int image_color_arg(INT32 args,rgb_group *rgb)
 	 return 1;
       }
    }
-   else if (sp[-args].type==T_ARRAY)
+   else if (v->type==T_ARRAY)
    {
-      int n=sp[-args].u.array->size;
-      add_ref(sp[-args].u.array);
-      push_array_items(sp[-args].u.array);
-      image_make_color(n);
-      if (sp[-1].type==T_OBJECT)
+      if (v->u.array->size==3 &&
+	  v->u.array->item[0].type==T_INT &&
+	  v->u.array->item[1].type==T_INT &&
+	  v->u.array->item[2].type==T_INT)
       {
-	 struct color_struct *cs=(struct color_struct*)
-	    get_storage(sp[-args].u.object,image_color_program);
-	 *rgb=cs->rgb;
-	 pop_stack();
+	 rgb->r=(COLORTYPE)(v->u.array->item[0].u.integer);
+	 rgb->g=(COLORTYPE)(v->u.array->item[1].u.integer);
+	 rgb->b=(COLORTYPE)(v->u.array->item[2].u.integer);
 	 return 1;
       }
-      pop_stack();
    }
-   else if (sp[-args].type==T_STRING)
+   else if (v->type==T_STRING)
    {
-      push_svalue(sp-args);
+      push_svalue(v);
       image_make_color(1);
       if (sp[-1].type==T_OBJECT)
       {
 	 struct color_struct *cs=(struct color_struct*)
-	    get_storage(sp[-args].u.object,image_color_program);
+	    get_storage(v->u.object,image_color_program);
 	 *rgb=cs->rgb;
 	 pop_stack();
 	 return 1;
@@ -919,6 +938,13 @@ static int image_color_arg(INT32 args,rgb_group *rgb)
    }
    return 0;
 }
+
+int image_color_arg(INT32 args,rgb_group *rgb)
+{
+   if (args<=0) return 0;
+   return image_color_svalue(sp-args,rgb);
+}
+
 
 static void image_color_add(INT32 args)
 {
@@ -1193,8 +1219,6 @@ static void _image_make_rgbl_color(INT32 r,INT32 g,INT32 b)
    cs->rgbl.g=(INT32)g;
    cs->rgbl.b=(INT32)b;
    RGBL_TO_RGB(cs->rgb,cs->rgbl);
-
-   try_find_name(cs);
 }
 
 static void _image_make_rgbf_color(float r,float g,float b)
@@ -1204,7 +1228,7 @@ static void _image_make_rgbf_color(float r,float g,float b)
 #undef FOO
 }
 
-static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
+void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 {
    struct color_struct *cs;
 
@@ -1221,8 +1245,6 @@ static void _image_make_rgb_color(INT32 r,INT32 g,INT32 b)
    cs->rgb.g=(COLORTYPE)g;
    cs->rgb.b=(COLORTYPE)b;
    RGB_TO_RGBL(cs->rgbl,cs->rgb);
-
-   try_find_name(cs);
 }
 
 static void image_make_rgb_color(INT32 args)
@@ -1390,6 +1412,8 @@ void init_image_colors(void)
    str_s=make_shared_string("s");
    str_v=make_shared_string("v");
 
+   no_name=make_shared_string("");
+
    start_new_program();
 
    ADD_STORAGE(struct color_struct);
@@ -1414,15 +1438,11 @@ void init_image_colors(void)
    /* function(:string) */
   ADD_FUNCTION("html",image_color_html,tFunc(,tStr),/* opt */0);
 
-   /* function(:array(int)) */
   ADD_FUNCTION("rgb",image_color_rgb,tFunc(,tArr(tInt)),/* opt */0);
-   /* function(:array(int)) */
+  ADD_FUNCTION("rgbf",image_color_rgbf,tFunc(,tArr(tFlt)),/* opt */0);
   ADD_FUNCTION("hsv",image_color_hsv,tFunc(,tArr(tInt)),/* opt */0);
-   /* function(:array(float)) */
   ADD_FUNCTION("hsvf",image_color_hsvf,tFunc(,tArr(tFlt)),/* opt */0);
-   /* function(:array(float)) */
   ADD_FUNCTION("cmyk",image_color_cmyk,tFunc(,tArr(tFlt)),/* opt */0);
-   /* function(:int)|function(int,int,int:int) */
   ADD_FUNCTION("greylevel",image_color_greylevel,tOr(tFunc(,tInt),tFunc(tInt tInt tInt,tInt)),/* opt */0);
 
    /* color conversion methods */
@@ -1515,4 +1535,5 @@ void exit_image_colors(void)
    free_string(str_s);
    free_string(str_v);
 
+   free_string(no_name);
 }

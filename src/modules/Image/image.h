@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.25 1999/03/03 04:49:34 mirar Exp $
+**!	$Id: image.h,v 1.26 1999/04/10 02:02:08 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -23,7 +23,7 @@
 #define COLORBITS 8
 
 #define COLORL_TO_COLOR(X) ((COLORTYPE)((X)>>23))
-#define COLOR_TO_COLORL(X) (((INT32)(X))*0x00808080)
+#define COLOR_TO_COLORL(X) ((((INT32)(X))*0x0808080)+((X)>>1))
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
 #define COLORL_TO_FLOAT(X) (((float)(X))/(float)COLORLMAX)
 #define FLOAT_TO_COLOR(X) ((COLORTYPE)((X)*((float)COLORMAX+0.4)))
@@ -68,6 +68,13 @@ struct image
    INT_TYPE xsize,ysize;
    rgb_group rgb;
    unsigned char alpha;
+};
+
+struct color_struct
+{
+   rgb_group rgb;
+   rgbl_group rgbl;
+   struct pike_string *name;
 };
 
 /* COMPAT: encoding of a gif - from togif */
@@ -182,6 +189,12 @@ void image_polyfill(INT32 args);
 void image_orient(INT32 args);
 void image_orient4(INT32 args);
 
+/* color.c */
+
+int image_color_svalue(struct svalue *v,rgb_group *rgb_dest);
+int image_color_arg(int arg,rgb_group *rgb_dest);
+void _image_make_rgb_color(INT32 r,INT32 g,INT32 b); 
+
 /* search.c */
 
 void image_match_phase(INT32 args);
@@ -196,3 +209,4 @@ void image_phasevh(INT32 args);
 void image_apply_max(INT32 args);
 
 void image_make_ascii(INT32 args);
+

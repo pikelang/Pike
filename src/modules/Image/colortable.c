@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.57 1999/04/09 16:17:34 mirar Exp $ */
+/* $Id: colortable.c,v 1.58 1999/04/10 02:02:03 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.57 1999/04/09 16:17:34 mirar Exp $
+**!	$Id: colortable.c,v 1.58 1999/04/10 02:02:03 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.57 1999/04/09 16:17:34 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.58 1999/04/10 02:02:03 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -34,6 +34,7 @@ RCSID("$Id: colortable.c,v 1.57 1999/04/09 16:17:34 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "array.h"
+#include "mapping.h"
 #include "threads.h"
 #include "builtin_functions.h"
 #include "../../error.h"
@@ -83,6 +84,10 @@ static INLINE int sq(int x) { return x*x; }
 #endif
 #define THIS ((struct neo_colortable *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
+
+static struct pike_string *s_array;
+static struct pike_string *s_string;
+static struct pike_string *s_mapping;
 
 /***************** init & exit *********************************/
 
@@ -873,7 +878,7 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
 {
    struct svalue s,s2;
    struct nct_flat flat;
-   int i;
+   int i,n=0;
 
    flat.numentries=arr->size;
    flat.entries=(struct nct_flat_entry*)
@@ -882,32 +887,20 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
    s2.type=s.type=T_INT;
    for (i=0; i<arr->size; i++)
    {
-      array_index(&s,arr,i);
-      if (s.type==T_INT && !s.u.integer)
-      {
-	 flat.entries[i].weight=0;
-	 flat.entries[i].no=-1;
-	 flat.entries[i].color.r=
-	 flat.entries[i].color.g=
-	 flat.entries[i].color.b=0;
+      if (arr->item[i].type==T_INT && !arr->item[i].u.integer)
 	 continue;
-      }
-      if (s.type!=T_ARRAY || s.u.array->size<3)
-      {
-	 free(flat.entries);
-	 error("Illegal type in colorlist, element %d\n",i);
-      }
-      array_index(&s2,s.u.array,0);
-      if (s2.type!=T_INT) flat.entries[i].color.r=0; else flat.entries[i].color.r=s2.u.integer;
-      array_index(&s2,s.u.array,1);
-      if (s2.type!=T_INT) flat.entries[i].color.g=0; else flat.entries[i].color.g=s2.u.integer;
-      array_index(&s2,s.u.array,2);
-      if (s2.type!=T_INT) flat.entries[i].color.b=0; else flat.entries[i].color.b=s2.u.integer;
-      flat.entries[i].weight=1;
-      flat.entries[i].no=i;
+
+      if (!image_color_svalue(arr->item+i,
+			      &(flat.entries[i].color)))
+	 bad_arg_error("colortable", 
+		       0,0, 1, "array of colors or 0", 0,
+		       "colortable(): bad element %d of colorlist\n",i);
+
+      flat.entries[n].weight=1;
+      flat.entries[n].no=i;
+      n++;
    }
-   free_svalue(&s);
-   free_svalue(&s2);
+   flat.numentries=n;
 
    return flat;
 }
@@ -1053,30 +1046,12 @@ static struct nct_cube _img_get_cube_from_args(INT32 args)
       int mdist;
       int c;
 
-      if (sp[ap-args].type!=T_ARRAY ||
-	  sp[1+ap-args].type!=T_ARRAY ||
-	  sp[2+ap-args].type!=T_INT)
+      if (!image_color_arg(-args,&low))
+	 SIMPLE_BAD_ARG_ERROR("colortable",1,"color");
+      if (!image_color_arg(1-args,&high))
+	 SIMPLE_BAD_ARG_ERROR("colortable",2,"color");
+      if (sp[2+ap-args].type!=T_INT)
 	 error("illegal argument(s) %d, %d or %d\n",ap,ap+1,ap+2);
-
-      if (sp[ap-args].u.array->size==3
-	  && sp[ap-args].u.array->item[0].type==T_INT
-	  && sp[ap-args].u.array->item[1].type==T_INT
-	  && sp[ap-args].u.array->item[2].type==T_INT)
-	 low.r=sp[ap-args].u.array->item[0].u.integer,
-	 low.g=sp[ap-args].u.array->item[1].u.integer,
-	 low.b=sp[ap-args].u.array->item[2].u.integer;
-      else
-	 low.r=low.g=low.b=0;
-
-      if (sp[1+ap-args].u.array->size==3
-	  && sp[1+ap-args].u.array->item[0].type==T_INT
-	  && sp[1+ap-args].u.array->item[1].type==T_INT
-	  && sp[1+ap-args].u.array->item[2].type==T_INT)
-	 high.r=sp[1+ap-args].u.array->item[0].u.integer,
-	 high.g=sp[1+ap-args].u.array->item[1].u.integer,
-	 high.b=sp[1+ap-args].u.array->item[2].u.integer;
-      else
-	 high.r=high.g=high.b=0;
 
       steps=isteps=sp[2+ap-args].u.integer;
       ap+=3;
@@ -1641,7 +1616,7 @@ static void dither_floyd_steinberg_newline(struct nct_dither *dith,
 					   rgb_group **drgb,
 					   unsigned char **d8bit,
 					   unsigned short **d16bit,
-					   long **d32bit,
+					   unsigned INT32 **d32bit,
 					   int *cd)
 {
    rgbd_group *er;
@@ -1703,7 +1678,7 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 					     rgb_group **drgb,
 					     unsigned char **d8bit,
 					     unsigned short **d16bit,
-					     long **d32bit,
+					     unsigned INT32 **d32bit,
 					     int *cd)
 {
    rgbd_group *er;
@@ -1774,7 +1749,7 @@ static void dither_ordered_newline(struct nct_dither *dith,
 				   rgb_group **drgb,
 				   unsigned char **d8bit,
 				   unsigned short **d16bit,
-				   long **d32bit,
+				   unsigned INT32 **d32bit,
 				   int *cd)
 {
    dith->u.ordered.row++;
@@ -1788,6 +1763,8 @@ static rgbl_group dither_ordered_encode(struct nct_dither *dith,
    int i;
    int xs=dith->u.ordered.xs;
    int ys=dith->u.ordered.ys;
+
+   fprintf(stderr,"newline\n");
 
    i=(int)(s.r+dith->u.ordered.rdiff
 	          [((rowpos+dith->u.ordered.rx)%xs)+
@@ -1808,7 +1785,7 @@ static rgbl_group dither_ordered_encode_same(struct nct_dither *dith,
                                              int rowpos,
                                              rgb_group s)
 {
-   rgbl_group rgb={1,2,3};
+   rgbl_group rgb;
    int i;
 
    i=(int)(dith->u.ordered.rdiff
@@ -1826,7 +1803,6 @@ static rgbl_group dither_ordered_encode_same(struct nct_dither *dith,
      rgb.g=s.g+i; rgb.g=rgb.g>255?255:rgb.g;
      rgb.b=s.b+i; rgb.b=rgb.b>255?255:rgb.b;
    }
-   return rgb;
    return rgb;
 }
 
@@ -1883,6 +1859,7 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 return 1;
 
       case NCTD_ORDERED:
+	 fprintf(stderr,"init ordered\n");
 	 /* copy it all */
 	 dith->u.ordered=nct->du.ordered;
 
@@ -1962,6 +1939,9 @@ void image_colortable_free_dither(struct nct_dither *dith)
 **! method object add(object(Image.image) image,int number,array(array(int)) needed)
 **! method object add(int r,int g,int b)
 **! method object add(int r,int g,int b, array(int) from1,array(int) to1,int steps1, ..., array(int) fromn,array(int) ton,int stepsn)
+**
+**  developers note:
+**  method object add|create(string "rgbrgbrgb...")
 **!
 **!	<ref>create</ref> initiates a colortable object. 
 **!	Default is that no colors are in the colortable. 
@@ -2349,6 +2329,7 @@ void image_colortable_cast_to_array(struct neo_colortable *nct)
 {
    struct nct_flat flat;
    int i;
+   int n=0;
    
    if (nct->type==NCT_NONE)
    {
@@ -2364,18 +2345,46 @@ void image_colortable_cast_to_array(struct neo_colortable *nct)
    /* sort in number order? */
 
    for (i=0; i<flat.numentries; i++)
-      if (flat.entries[i].no==-1)
+      if (flat.entries[i].no!=-1)
       {
-	 push_int(0);
+	 _image_make_rgb_color(flat.entries[i].color.r,
+			       flat.entries[i].color.g,
+			       flat.entries[i].color.b);
+	 n++;
       }
-      else
+   f_aggregate(n);
+
+   if (nct->type==NCT_CUBE)
+      free(flat.entries);
+}
+
+void image_colortable_cast_to_mapping(struct neo_colortable *nct)
+{
+   struct nct_flat flat;
+   int i,n=0;
+   
+   if (nct->type==NCT_NONE)
+   {
+      f_aggregate(0);
+      return;
+   }
+
+   if (nct->type==NCT_CUBE)
+      flat=_img_nct_cube_to_flat(nct->u.cube);
+   else
+      flat=nct->u.flat;
+
+   for (i=0; i<flat.numentries; i++)
+      if (flat.entries[i].no!=-1)
       {
-	 push_int(flat.entries[i].color.r);
-	 push_int(flat.entries[i].color.g);
-	 push_int(flat.entries[i].color.b);
-	 f_aggregate(3);
+	 push_int(flat.entries[i].no);
+	 _image_make_rgb_color(flat.entries[i].color.r,
+			       flat.entries[i].color.g,
+			       flat.entries[i].color.b);
+	 n++;
       }
-   f_aggregate(flat.numentries);
+
+   f_aggregate_mapping(n*2);
 
    if (nct->type==NCT_CUBE)
       free(flat.entries);
@@ -2489,16 +2498,16 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
 
 /*
 **! method object cast(string to)
-**!	cast the colortable to an array
+**!	cast the colortable to an array or mapping,
+**!	the array consists of <ref>Image.color</ref> objects
+**!	and are not in index order. The mapping consists of
+**!	index:<ref>Image.color</ref> pairs, where index is 
+**!	the index (int) of that color.
 **!
-**!	example: <tt>(array)Image.colortable(img)</tt>
-**! returns the resulting array
+**!	example: <tt>(mapping)Image.colortable(img)</tt>
 **!
 **! arg string to
-**!	must be "array".
-**!
-**! bugs
-**!	ignores argument (ie <tt>(string)colortable</tt> gives an array)
+**!	must be "string", "array" or "mapping".
 **/
 
 void image_colortable_cast(INT32 args)
@@ -2507,15 +2516,20 @@ void image_colortable_cast(INT32 args)
        sp[-args].type!=T_STRING) 
       error("Illegal argument 1 to Image.colortable->cast\n");
 
-   if (sp[-args].u.string==make_shared_string("array"))
+   if (sp[-args].u.string==s_array)
    {
       pop_n_elems(args);
       image_colortable_cast_to_array(THIS);
    }
-   else if (sp[-args].u.string==make_shared_string("string"))
+   else if (sp[-args].u.string==s_string)
    {
       pop_n_elems(args);
       image_colortable_cast_to_string(THIS);
+   }
+   else if (sp[-args].u.string==s_mapping)
+   {
+      pop_n_elems(args);
+      image_colortable_cast_to_mapping(THIS);
    }
    else
    {
@@ -2717,6 +2731,8 @@ void image_colortable_cubicles(INT32 args)
       THIS->lu.cubicles.b=CUBICLE_DEFAULT_B;
       THIS->lu.cubicles.accur=CUBICLE_DEFAULT_ACCUR;
    }
+
+   THIS->lookup_mode=NCT_CUBICLES;
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -3326,13 +3342,11 @@ void build_rigid(struct neo_colortable *nct)
 #define NCTLU_FLAT_FULL_NAME _img_nct_index_32bit_flat_full
 #define NCTLU_CUBE_NAME _img_nct_index_32bit_cube
 #define NCTLU_FLAT_RIGID_NAME _img_nct_index_32bit_flat_rigid
-#define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,&d,NULL,&cd)
+#define NCTLU_LINE_ARGS (dith,&rowpos,&s,NULL,NULL,NULL,&d,&cd)
 #define NCTLU_RIGID_WRITE (d[0]=(unsigned INT32)(feprim[i].no))
 #define NCTLU_DITHER_RIGID_GOT (feprim[i].color)
 #define NCTLU_SELECT_FUNCTION image_colortable_index_32bit_function
 #define NCTLU_EXECUTE_FUNCTION image_colortable_index_32bit_image
-#define NCTLU_EXECUTE image_colortable_index_32bit
-#define NCTLU_EXECUTE_NAME "index"
 
 #define NCTLU_CUBE_FAST_WRITE(SRC) \
    *d=(unsigned INT32) \
@@ -3366,8 +3380,6 @@ void build_rigid(struct neo_colortable *nct)
 #undef NCTLU_DITHER_RIGID_GOT
 #undef NCTLU_SELECT_FUNCTION
 #undef NCTLU_EXECUTE_FUNCTION
-#undef NCTLU_EXECUTE
-#undef NCTLU_EXECUTE_NAME
 
 /* done instantiating from colortable_lookup.h */
 
@@ -3479,6 +3491,36 @@ void image_colortable_map(INT32 args)
    push_object(o);
 }
 
+void image_colortable_index_32bit(INT32 args)
+{
+   struct image *src=NULL;
+   struct pike_string *ps;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("Colortable.index",1);
+   if (sp[-args].type!=T_OBJECT ||
+       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
+      SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"image object");
+
+   if (!src->img) 
+      SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
+
+   ps=begin_shared_string(src->xsize*src->ysize*4);
+   ps->size_shift=2;
+   ps->len/=4;
+
+   if (!image_colortable_index_32bit_image(THIS,src->img,
+					   (unsigned short *)ps->str,
+					   src->xsize*src->ysize,src->xsize))
+   {
+      free_string(end_shared_string(ps));
+      SIMPLE_BAD_ARG_ERROR("Colortable.index",1,"non-empty image object");
+   }
+
+   pop_n_elems(args);
+
+   push_string(ps);
+}
 
 /*
 **! method object spacefactors(int r,int g,int b)
@@ -4150,6 +4192,10 @@ void image_colortable_image(INT32 args)
 
 void init_colortable_programs(void)
 {
+   s_array=make_shared_string("array");
+   s_string=make_shared_string("string");
+   s_mapping=make_shared_string("mapping");
+
    start_new_program();
    ADD_STORAGE(struct neo_colortable);
 
@@ -4223,10 +4269,14 @@ void init_colortable_programs(void)
 
 void exit_colortable(void) 
 {
-  if(image_colortable_program)
-  {
-    free_program(image_colortable_program);
-    image_colortable_program=0;
-  }
+   free_string(s_array);
+   free_string(s_mapping);
+   free_string(s_string);
+
+   if(image_colortable_program)
+   {
+      free_program(image_colortable_program);
+      image_colortable_program=0;
+   }
 }
 

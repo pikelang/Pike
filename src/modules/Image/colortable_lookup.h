@@ -1,21 +1,21 @@
-/* $Id: colortable_lookup.h,v 1.8 1999/04/09 16:17:37 mirar Exp $ */
+/* $Id: colortable_lookup.h,v 1.9 1999/04/10 02:02:07 mirar Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.8 1999/04/09 16:17:37 mirar Exp $
+**!	$Id: colortable_lookup.h,v 1.9 1999/04/10 02:02:07 mirar Exp $
 **! class colortable
 */
 
 
 
-static void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
-				     NCTLU_DESTINATION *d,
-				     int n,
-				     struct neo_colortable *nct,
-				     struct nct_dither *dith,
-				     int rowlen)
+void NCTLU_FLAT_CUBICLES_NAME(rgb_group *s,
+			      NCTLU_DESTINATION *d,
+			      int n,
+			      struct neo_colortable *nct,
+			      struct nct_dither *dith,
+			      int rowlen)
 {
    struct nctlu_cubicles *cubs;
    struct nctlu_cubicle *cub;
@@ -62,32 +62,28 @@ CHRONO("begin flat/cubicles");
 
    while (n--)
    {
-      int rgbr,rgbg,rgbb;
       int r,g,b;
       struct lookupcache *lc;
       int m;
       int *ci;
+      rgbl_group val;
 
       if (dither_encode)
       {
-	 rgbl_group val;
 	 val=(dither_encode)(dith,rowpos,*s);
-	 rgbr=val.r;
-	 rgbg=val.g;
-	 rgbb=val.b;
       }
       else
       {
-	 rgbr=s->r;
-	 rgbg=s->g;
-	 rgbb=s->b;
+	 val.r=s->r;
+	 val.g=s->g;
+	 val.b=s->b;
       }
 
-      lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
+      lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(val.r,val.g,val.b);
       if (lc->index!=-1 &&
-	  lc->src.r==rgbr &&
-	  lc->src.g==rgbg &&
-	  lc->src.b==rgbb)
+	  lc->src.r==val.r &&
+	  lc->src.g==val.g &&
+	  lc->src.b==val.b)
       {
 	 NCTLU_CACHE_HIT_WRITE;
 	 goto done_pixel;
@@ -95,9 +91,9 @@ CHRONO("begin flat/cubicles");
 
       lc->src=*s;
       
-      r=((rgbr*red+hred)>>8);
-      g=((rgbg*green+hgreen)>>8);
-      b=((rgbb*blue+hblue)>>8);
+      r=((val.r*red+hred)>>8);
+      g=((val.g*green+hgreen)>>8);
+      b=((val.b*blue+hblue)>>8);
 
       cub=cubs->cubicles+r+g*red+b*redgreen;
       
@@ -113,9 +109,9 @@ CHRONO("begin flat/cubicles");
       
       while (m--)
       {
-	 int dist=sf.r*SQ(fe[*ci].color.r-rgbr)+
-	          sf.g*SQ(fe[*ci].color.g-rgbg)+
-	          sf.b*SQ(fe[*ci].color.b-rgbb);
+	 int dist=sf.r*SQ(fe[*ci].color.r-val.r)+
+	          sf.g*SQ(fe[*ci].color.g-val.g)+
+	          sf.b*SQ(fe[*ci].color.b-val.b);
 	 
 	 if (dist<mindist)
 	 {
@@ -151,12 +147,12 @@ done_pixel:
 CHRONO("end flat/cubicles");
 }
 
-static void NCTLU_FLAT_FULL_NAME(rgb_group *s,
-				 NCTLU_DESTINATION *d,
-				 int n,
-				 struct neo_colortable *nct,
-				 struct nct_dither *dith,
-				 int rowlen)
+void NCTLU_FLAT_FULL_NAME(rgb_group *s,
+			  NCTLU_DESTINATION *d,
+			  int n,
+			  struct neo_colortable *nct,
+			  struct nct_dither *dith,
+			  int rowlen)
 {
    /* no need to build any data, we're using full scan */
 
@@ -258,12 +254,12 @@ done_pixel:
    CHRONO("end flat/full map");
 }
 
-static void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
-				  NCTLU_DESTINATION *d,
-				  int n,
-				  struct neo_colortable *nct,
-				  struct nct_dither *dith,
-				  int rowlen)
+void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
+			   NCTLU_DESTINATION *d,
+			   int n,
+			   struct neo_colortable *nct,
+			   struct nct_dither *dith,
+			   int rowlen)
 {
    rgbl_group sf=nct->spacefactor;
    int mprim=nct->u.flat.numentries;
@@ -338,12 +334,12 @@ static void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
    CHRONO("end flat/rigid map");
 }
 
-static void NCTLU_CUBE_NAME(rgb_group *s,
-			    NCTLU_DESTINATION *d,
-			    int n,
-			    struct neo_colortable *nct,
-			    struct nct_dither *dith,
-			    int rowlen)
+void NCTLU_CUBE_NAME(rgb_group *s,
+		     NCTLU_DESTINATION *d,
+		     int n,
+		     struct neo_colortable *nct,
+		     struct nct_dither *dith,
+		     int rowlen)
 {
    int red,green,blue;
    int hred,hgreen,hblue;
@@ -384,7 +380,8 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 	 {
 	    rgb=dither_encode(dith,rowpos,*s);
 	    NCTLU_CUBE_FAST_WRITE(&rgb);
-	    NCTLU_CUBE_FAST_WRITE_DITHER_GOT(&rgb);
+	    if (dither_got)
+	       NCTLU_CUBE_FAST_WRITE_DITHER_GOT(&rgb);
 	    s+=cd; d+=cd; rowpos+=cd;
 	    if (++rowcount==rowlen)
 	    {
@@ -406,29 +403,25 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 	 int mindist;
 	 int i;
 	 int nc;
-	 int rgbr,rgbg,rgbb;
 	 struct lookupcache *lc;
+	 rgbl_group val;
 
 	 if (dither_encode)
 	 {
-	    rgbl_group val;
 	    val=dither_encode(dith,rowpos,*s);
-	    rgbr=val.r;
-	    rgbg=val.g;
-	    rgbb=val.b;
 	 }
 	 else
 	 {
-	    rgbr=s->r;
-	    rgbg=s->g;
-	    rgbb=s->b;
+	    val.r=s->r;
+	    val.g=s->g;
+	    val.b=s->b;
 	 }
 
-	 lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(rgbr,rgbg,rgbb);
+	 lc=nct->lookupcachehash+COLORLOOKUPCACHEHASHVALUE(val.r,val.g,val.b);
 	 if (lc->index!=-1 &&
-	     lc->src.r==rgbr &&
-	     lc->src.g==rgbg &&
-	     lc->src.b==rgbb)
+	     lc->src.r==val.r &&
+	     lc->src.g==val.g &&
+	     lc->src.b==val.b)
 	 {
 	    NCTLU_CACHE_HIT_WRITE;
 	    goto done_pixel;
@@ -438,21 +431,21 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 
 	 if (red && green && blue)
 	 {
-	    lc->dest.r=((int)(((rgbr*red+hred)>>8)*redf));
-	    lc->dest.g=((int)(((rgbg*green+hgreen)>>8)*greenf));
-	    lc->dest.b=((int)(((rgbb*blue+hblue)>>8)*bluef));
+	    lc->dest.r=((int)(((val.r*red+hred)>>8)*redf));
+	    lc->dest.g=((int)(((val.g*green+hgreen)>>8)*greenf));
+	    lc->dest.b=((int)(((val.b*blue+hblue)>>8)*bluef));
 
 	    lc->index=i=
-	       ((rgbr*red+hred)>>8)+
-	       (((rgbg*green+hgreen)>>8)+
-		((rgbb*blue+hblue)>>8)*green)*red;
+	       ((val.r*red+hred)>>8)+
+	       (((val.g*green+hgreen)>>8)+
+		((val.b*blue+hblue)>>8)*green)*red;
 
 	    NCTLU_CACHE_HIT_WRITE;
 
 	    mindist=
-	       sf.r*SQ(rgbr-lc->dest.r)+
-	       sf.g*SQ(rgbg-lc->dest.g)+
-	       sf.b*SQ(rgbb-lc->dest.b);
+	       sf.r*SQ(val.r-lc->dest.r)+
+	       sf.g*SQ(val.g-lc->dest.g)+
+	       sf.b*SQ(val.b-lc->dest.b);
 	 }
 	 else
 	 {
@@ -472,9 +465,9 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 
 	       i=(int)
 		  (( sc->steps *
-		     ( ((int)rgbr-(int)sc->low.r)*sc->vector.r +
-		       ((int)rgbg-(int)sc->low.g)*sc->vector.g +
-		       ((int)rgbb-(int)sc->low.b)*sc->vector.b ) ) *
+		     ( ((int)val.r-(int)sc->low.r)*sc->vector.r +
+		       ((int)val.g-(int)sc->low.g)*sc->vector.g +
+		       ((int)val.b-(int)sc->low.b)*sc->vector.b ) ) *
 		   sc->invsqvector);
 
 	       if (i<0) i=0; else if (i>=sc->steps) i=sc->steps-1;
@@ -485,8 +478,8 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 		  int drgbg=sc->low.g+(int)(sc->vector.g*f);
 		  int drgbb=sc->low.b+(int)(sc->vector.b*f);
 
-		  int ldist=sf.r*SQ(rgbr-drgbr)+
-		     sf.g*SQ(rgbg-drgbg)+sf.b*SQ(rgbb-drgbb);
+		  int ldist=sf.r*SQ(val.r-drgbr)+
+		     sf.g*SQ(val.g-drgbg)+sf.b*SQ(val.b-drgbb);
 
 		  if (ldist<mindist)
 		  {
@@ -508,7 +501,7 @@ done_pixel:
          if (dither_encode)
          {
             if (dither_got)
-               dither_got(dith,rowpos,*s,NCTLU_DITHER_GOT);
+	       dither_got(dith,rowpos,*s,NCTLU_DITHER_GOT);
 	    s+=cd; d+=cd; rowpos+=cd;
 	    if (++rowcount==rowlen)
 	    {
@@ -571,39 +564,3 @@ int NCTLU_EXECUTE_FUNCTION(struct neo_colortable *nct,
 
    return 1;
 }
-
-#ifdef NCTLU_EXECUTE
-
-void NCTLU_EXECUTE(INT32 args)
-{
-   struct image *src=NULL;
-   struct pike_string *ps;
-
-   if (args<1)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Colortable."NCTLU_EXECUTE_NAME,1);
-   if (sp[-args].type!=T_OBJECT ||
-       ! (src=(struct image*)get_storage(sp[-args].u.object,image_program)))
-      SIMPLE_BAD_ARG_ERROR("Colortable."NCTLU_EXECUTE_NAME,1,"image object");
-
-   if (!src->img) 
-      SIMPLE_BAD_ARG_ERROR("Colortable."NCTLU_EXECUTE_NAME,1,"non-empty image object");
-
-   ps=begin_shared_string(src->xsize*src->ysize*sizeof(NCTLU_DESTINATION));
-   while ((1<<ps->size_shift)<sizeof(NCTLU_DESTINATION))
-      ps->size_shift++;
-   ps->len>>=ps->size_shift;
-
-   if (!NCTLU_EXECUTE_FUNCTION(THIS,src->img,
-			       (unsigned short *)ps->str,
-			       src->xsize*src->ysize,src->xsize))
-   {
-      free_string(end_shared_string(ps));
-      error("colortable->index_16bit(): called colortable is not initiated\n");
-   }
-
-   pop_n_elems(args);
-
-   push_string(ps);
-}
-
-#endif /* NCTLU_EXECUTE */
