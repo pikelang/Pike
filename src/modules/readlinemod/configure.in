@@ -7,23 +7,38 @@ AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 
 if test x$with_readline = xyes ; then
-  AC_MSG_CHECKING(Checking for GNU-include directory)
+  AC_MSG_CHECKING(Checking for GNU directory)
 
-  AC_CACHE_VAL(pike_cv_gnu_include_dir, [
-    for pike_cv_gnu_include_dir in /usr/gnu/include /opt/gnu/include /usr/local/gnu/include /sw/gnu/include no; do
-      if test -d $pike_cv_gnu_include_dir/. ; then
+  AC_CACHE_VAL(pike_cv_gnu_dir, [
+    for pike_cv_gnu_dir in /usr/gnu /opt/gnu /usr/local/gnu /sw/gnu no; do
+      if test -d $pike_cv_gnu_dir/. ; then
 	break
       else
 	:
       fi
     done
   ])
-  AC_MSG_RESULT($pike_cv_gnu_include_dir)
+  AC_MSG_RESULT($pike_cv_gnu_dir)
 
-  if test x$pike_cv_gnu_include_dir != xno; then
-    echo Adding $pike_cv_gnu_include_dir to the include path
-    CPPFLAGS="$CPPFLAGS -I$pike_cv_gnu_include_dir"
+  if test x$pike_cv_gnu_dir != xno; then
+    if test -d $pike_cv_gnu_dir/include/. ; then
+      echo Adding $pike_cv_gnu_dir/include to the include path
+      CPPFLAGS="$CPPFLAGS -I$pike_cv_gnu_dir/include"
+    else
+      :
+    fi
+    if test -d $pike_cv_gnu_dir/lib/. ; then
+      echo Adding $pike_cv_gnu_dir/lib to the runtime link path
+      echo $pike_cv_gnu_dir/lib >lib_dirs
+    elif test -f lib_dirs ; then
+      rm lib_dirs
+    else
+      :
+    fi
+  else
+    :
   fi
+
   AC_CHECK_HEADERS(readline.h history.h readline/readline.h history/history.h readline/history.h)
 
   if test $ac_cv_header_readline_h = yes -o $ac_cv_header_readline_readline_h = yes ; then
