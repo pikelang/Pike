@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.626 2002/09/13 15:34:08 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.627 2002/09/24 14:59:57 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1455,7 +1455,8 @@ if test "$cflags_is_set" = "no"; then
   # Yikes! We're using the TenDRA compiler!
 
   # Make sure we can use the system headerfiles...
-  AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CPPFLAGS)
+  # Already done by the CC test in aclocal.m4.
+  # AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CPPFLAGS)
 
   # Use lenient ANSI compliance...
   #AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
@@ -2052,18 +2053,20 @@ fi
 
 #############################################################################
 
-AC_MSG_CHECKING(for the type of the last argument to __yy_memcpy)
+AC_MSG_CHECKING(for the type of __yy_memcpy)
 AC_CACHE_VAL(pike_cv___yy_memcpy_count_type, [
+  pike_cv___yy_memcpy_from_const=
   pike_cv___yy_memcpy_count_type=unknown
   for count_type in "unsigned int" "size_t" "unsigned long" "int"; do
-    cat >conftest.y <<EOF
+    for from_const in "const" ""; do
+      cat >conftest.y <<EOF
 %pure_parser
 %{
 #include <stdio.h>
 
 #ifndef __GNUC__
 #ifndef __cplusplus
-static void __yy_memcpy(char *to, char *from, $count_type count);
+static void __yy_memcpy(char *to, $from_const char *from, $count_type count);
 #endif /* !__cplusplus */
 #endif /* !__GNUC__ */
 
@@ -2078,29 +2081,38 @@ bar: 'b' 'a' 'r' ;
 int yylex(void *yylval) { return 'f'; }
 void yyerror(char *err) { fprintf(stderr, "ERR: %s\\n", err); }
 EOF
-    echo conftest.y: 1>&5
-    cat conftest.y 1>&5
-    if $YACC -d conftest.y 1>&5 2>&5; then
-      AC_TRY_LINK([
+      echo conftest.y: 1>&5
+      cat conftest.y 1>&5
+      if $YACC -d conftest.y 1>&5 2>&5; then
+        AC_TRY_LINK([
 #include "y.tab.c"
-      ], [
+        ], [
   yyparse();
   exit(0);
-      ], [
-        pike_cv___yy_memcpy_count_type=$count_type
-        break
-      ])
+        ], [
+          pike_cv___yy_memcpy_count_type=$count_type
+	  pike_cv___yy_memcpy_from_const="$from_const"
+          break
+        ])
+      fi
+    done
+    if test "x$pike_cv___yy_memcpy_count_type" = "xunknown"; then :; else
+      break
     fi
   done
 ])
-AC_MSG_RESULT($pike_cv___yy_memcpy_count_type)
 if test "x$pike_cv___yy_memcpy_count_type" = "xunknown"; then
+  AC_MSG_RESULT($pike_cv___yy_memcpy_count_type)
   AC_MSG_WARN([Defaulting to unsigned int.])
   YY_COUNT_TYPE="unsigned int"
+  YY_FROM_CONST=""
 else
+  AC_MSG_RESULT(void __yy_memcpy(char *, $pike_cv___yy_memcpy_from_const char *, $pike_cv___yy_memcpy_count_type))
   YY_COUNT_TYPE="$pike_cv___yy_memcpy_count_type"
+  YY_FROM_CONST="$pike_cv___yy_memcpy_from_const"
 fi
 AC_SUBST(YY_COUNT_TYPE)
+AC_SUBST(YY_FROM_CONST)
 
 #############################################################################
 
