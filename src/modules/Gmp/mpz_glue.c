@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.76 2000/04/25 23:30:39 marcus Exp $");
+RCSID("$Id: mpz_glue.c,v 1.77 2000/06/09 16:57:19 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -91,31 +91,37 @@ static void get_mpz_from_digits(MP_INT *tmp,
   if(!base || ((base >= 2) && (base <= 36)))
   {
     int offset = 0;
-    
-    /* We need to fix the case with binary 0b101... and -0b101... numbers. */
-    if(base == 0 && digits->len > 2)
+    int neg = 0;
+
+    if(digits->len > 1)
     {
-      if(INDEX_CHARP(digits->str, 0, digits->size_shift) == '-')
+      if(INDEX_CHARP(digits->str, 0, digits->size_shift) == '+')
 	offset += 1;
-      if((INDEX_CHARP(digits->str, offset, digits->size_shift) == '0') &&
-	 ((INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'b') ||
-	  (INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'B')))
+      else if(INDEX_CHARP(digits->str, 0, digits->size_shift) == '-')
       {
-	offset += 2;
-	base = 2;
+	offset += 1;
+	neg = 1;
       }
-      else
-	offset = 0;
+
+      /* We need to fix the case with binary
+	 0b101... and -0b101... numbers. */
+      if(!base && digits->len > 2)
+      {
+	if((INDEX_CHARP(digits->str, offset, digits->size_shift) == '0') &&
+	   ((INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'b') ||
+	    (INDEX_CHARP(digits->str, offset+1, digits->size_shift) == 'B')))
+	{
+	  offset += 2;
+	  base = 2;
+	}
+      }
     }
 
     if (mpz_set_str(tmp, digits->str + offset, base))
       error("invalid digits, cannot convert to mpz\n");
 
-    if(offset == 3)
-    {
-      /* This means a negative binary number. */
+    if(neg)
       mpz_neg(tmp, tmp);
-    }
   }
   else if(base == 256)
   {
