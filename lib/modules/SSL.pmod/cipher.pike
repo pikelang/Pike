@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.13 2000/03/02 03:21:14 nilsson Exp $
+/* $Id: cipher.pike,v 1.14 2000/03/28 13:02:47 grubba Exp $
  *
  */
 
@@ -281,7 +281,11 @@ array lookup(int suite)
   switch(algorithms[1])
   {
   case CIPHER_rc4_40:
+#if constant(Crypto.arcfour)
+    res->bulk_cipher_algorithm = Crypto.arcfour;
+#else /* !constant(Crypto.arcfour) */
     res->bulk_cipher_algorithm = Crypto.rc4;
+#endif /* constant(Crypto.arcfour) */
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 1;
     res->key_material = 16;
@@ -306,7 +310,11 @@ array lookup(int suite)
     break;
 #ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
+#if constant(Crypto.arcfour)
+    res->bulk_cipher_algorithm = Crypto.arcfour;
+#else /* !constant(Crypto.arcfour) */
     res->bulk_cipher_algorithm = Crypto.rc4;
+#endif /* constant(Crypto.arcfour) */
     res->cipher_type = CIPHER_stream;
     res->is_exportable = 0;
     res->key_material = 16;
