@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.46 2001/09/24 14:18:09 grubba Exp $
+ * $Id: preprocessor.h,v 1.47 2001/11/30 13:04:49 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1261,6 +1261,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	  SKIPSPACE();
 	  
 	  check_stack(3);
+
+	  /* FIXME: Ought to macro-expand (Bug 2440). */
 	  
 	  switch(data[pos++])
 	  {
