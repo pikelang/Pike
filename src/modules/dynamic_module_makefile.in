@@ -55,5 +55,5 @@ gdb_verify: module_testsuite
 	@rm .gdbinit
 
 
-install:
+install: $(MODULE_INSTALL)
 	$(INSTALL) module.so @prefix@/lib/pike/modules/$(MODNAME).so
