@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.59 1999/10/29 00:07:58 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.60 1999/10/31 15:33:41 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1826,6 +1826,10 @@ struct pike_string *zzap_function_return(char *a, INT32 id)
       push_type(T_FUNCTION);
       return pop_unfinished_type();
   }
+  fatal("zzap_function_return() called with unexpected value: %d\n",
+	EXTRACT_UCHAR(a));
+  /* NOT_REACHED */
+  return NULL;
 }
 
 struct pike_string *get_type_of_svalue(struct svalue *s)
