@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.56 2003/02/21 15:44:00 marcus Exp $
+|| $Id: jvm.c,v 1.57 2003/02/22 21:51:10 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.56 2003/02/21 15:44:00 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.57 2003/02/22 21:51:10 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1478,7 +1478,8 @@ struct cpu_context {
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
-			   void (*dispatch)(), int args)
+			   void (*dispatch)(), int args,
+			   int flt_args, int dbl_args)
 {
   unsigned INT32 *p = ctx->code;
 
@@ -1527,7 +1528,8 @@ struct cpu_context {
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
-			   void (*dispatch)(), int args)
+			   void (*dispatch)(), int args,
+			   int flt_args, int dbl_args)
 {
   unsigned char *p = ctx->code;
 
@@ -1570,7 +1572,8 @@ struct cpu_context {
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
-			   void (*dispatch)(), int args)
+			   void (*dispatch)(), int args,
+			   int flt_args, int dbl_args)
 {
   unsigned INT32 *p = ctx->code;
 
@@ -1622,29 +1625,61 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 
 /* NB: Assumes that pointers are 64bit! */
 
+#define GET_NATIVE_ARG(ty) (((args)=((void**)(args))+1),*(ty *)(((void**)(args))-1))
+
 struct cpu_context {
   void *code[10];
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
-			   void (*dispatch)(), int args)
+			   void (*dispatch)(), int args,
+			   int flt_args, int dbl_args)
 {
-  unsigned INT32 *p = (unsigned INT32 *)&ctx->code[2];
+  unsigned INT32 *p = (unsigned INT32 *)ctx->code;
 
   /* lda sp,-48(sp) */
   *p++ = 0x23deffd0;
   /* stq ra,0(sp) */
   *p++ = 0xb75e0000;
-  /* stq a1,8(sp) */
-  *p++ = 0xb63e0008;
-  /* stq a2,16(sp) */
-  *p++ = 0xb65e0010;
-  /* stq a3,24(sp) */
-  *p++ = 0xb67e0018;
-  /* stq a4,32(sp) */
-  *p++ = 0xb69e0020;
-  /* stq a5,40(sp) */
-  *p++ = 0xb6be0028;
+  if(!statc)
+    /* stq a1,8(sp) */
+    *p++ = 0xb63e0008;
+  if(dbl_args & (1<<0))
+    /* stt $f18,16(sp) */
+    *p++ = 0x9e5e0010;
+  else if(flt_args & (1<<0))
+    /* sts $f18,16(sp) */
+    *p++ = 0x9a5e0010;
+  else
+    /* stq a2,16(sp) */
+    *p++ = 0xb65e0010;
+  if(dbl_args & (1<<1))
+    /* stt $f19,24(sp) */
+    *p++ = 0x9e7e0018;
+  else if(flt_args & (1<<1))
+    /* sts $f19,24(sp) */
+    *p++ = 0x9a7e0018;
+  else
+    /* stq a3,24(sp) */
+    *p++ = 0xb67e0018;
+  if(dbl_args & (1<<2))
+    /* stt $f20,32(sp) */
+    *p++ = 0x9e9e0020;
+  else if(flt_args & (1<<2))
+    /* sts $f20,32(sp) */
+    *p++ = 0x9a9e0020;
+  else
+    /* stq a4,32(sp) */
+    *p++ = 0xb69e0020;
+  if(dbl_args & (1<<3))
+    /* stt $f21,40(sp) */
+    *p++ = 0x9ebe0028;
+  else if(flt_args & (1<<3))
+    /* sts $f21,40(sp) */
+    *p++ = 0x9abe0028;
+  else
+    /* stq a5,40(sp) */
+    *p++ = 0xb6be0028;
   if(statc) { 
     /* mov a1,a2 */
     *p++ = 0x46310412;
@@ -1671,7 +1706,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   /* ret zero,(ra) */
   *p++ = 0x6bfa8001;
 
-  ctx->code[8] = ctx;
+  ctx->code[8] = data;
   ctx->code[9] = dispatch;
 
   return ctx->code;
@@ -1726,7 +1761,9 @@ static void make_java_exception(struct object *jvm, JNIEnv *env,
   }
 }
 
+#ifndef GET_NATIVE_ARG
 #define GET_NATIVE_ARG(ty) (((args)=((ty *)(args))+1),(((ty *)(args))[-1]))
+#endif
 
 static void do_native_dispatch(struct native_method_context *ctx,
 			       JNIEnv *env, jclass cls, void *args_,
@@ -1946,8 +1983,8 @@ static void JNICALL native_dispatch_v(struct native_method_context *ctx,
   native_dispatch(ctx, env, obj, args, &v);
 }
 
-static void make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
-		      int args)
+static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
+		       int args, int flt_args, int dbl_args)
 {
   void *disp = native_dispatch_v;
 
@@ -1966,7 +2003,7 @@ static void make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
     disp = native_dispatch_v;
   }
 
-  low_make_stub(ctx, data, statc, disp, args);
+  return low_make_stub(ctx, data, statc, disp, args, flt_args, dbl_args);
 }
 
 static void build_native_entry(JNIEnv *env, jclass cls,
@@ -1975,7 +2012,7 @@ static void build_native_entry(JNIEnv *env, jclass cls,
 			       struct pike_string *name,
 			       struct pike_string *sig)
 {
-  int statc, args=0;
+  int statc, args=0, wargs=0, flt_args=0, dbl_args=0;
   char *p = sig->str;
 
   con->name = name;
@@ -1997,13 +2034,19 @@ static void build_native_entry(JNIEnv *env, jclass cls,
 
   jnm->name = name->str;
   jnm->signature = sig->str;
-  jnm->fnPtr = (void*)&con->cpu;
   while(*p && *p != ')')
     switch(*p++) {
     case '(':
       break;
-    case 'J': case 'D':
-      args += 2;
+    case 'D':
+      dbl_args |= 1<<args;
+    case 'J':
+      args ++;
+      wargs ++;
+      break;
+    case 'F':
+      flt_args |= 1<<args;
+      args ++;
       break;
     case '[':
       if(!*p)
@@ -2015,7 +2058,8 @@ static void build_native_entry(JNIEnv *env, jclass cls,
       args++;
     }
   if(*p) p++;
-  make_stub(&con->cpu, con, statc, *p, args+2);
+  jnm->fnPtr = make_stub(&con->cpu, con, statc, *p, args+wargs+2,
+			 flt_args, dbl_args);
 }
 
 static void init_natives_struct(struct object *o)
