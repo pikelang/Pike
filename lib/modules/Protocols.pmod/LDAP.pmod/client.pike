@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.25 2001/08/15 18:10:54 hop Exp $
+// $Id: client.pike,v 1.26 2001/09/14 08:38:01 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -74,6 +74,8 @@
 
 #include "ldap_errors.h"
 
+import SSL.constants;
+
 #ifdef LDAP_PROTOCOL_PROFILE
 int _prof_gtim;
 #endif
@@ -91,6 +93,15 @@ int _prof_gtim;
 #define ASN1_GET_ATTR_ARRAY(X)		(array)((X)->elements[1]->elements)
 #define ASN1_GET_ATTR_NAME(X)		((X)->elements[0]->value)
 
+ //! module Protocols
+ //! submodule LDAP
+ //!
+ //! class client
+ //!
+ //! Contains the client implementation of the LDAP protocol.
+ //! All of the version 2 protocol features are implemented
+ //! but only the base parts of the version 3. 
+
   inherit .protocol;
 
     private int binded = 0;	// flag for v2 operations
@@ -103,6 +114,11 @@ int _prof_gtim;
 
 
 
+  //! Contains the result of a LDAP search.
+  //!
+  //! @seealso
+  //! @[LDAP.client.search, LDAP.client.result.fetch]
+  //!
   class result // ------------------
   {
 
@@ -112,17 +128,6 @@ int _prof_gtim;
     private int actnum = 0;
     private array(mapping(string:array(string))) entry = ({});
     array(string) referrals;
-
-    int error_number() { return(resultcode); }
-
-    string error_string() {
-      return((stringp(resultstring) && sizeof(resultstring)) ? 
-		resultstring : ldap_errlist[resultcode]);
-    }
-
-    int num_entries() { return(entrycnt); }
-
-    int count_entries() { return(entrycnt - actnum); }
 
     private array _get_attr_values(int ver, object x) {
 
@@ -159,6 +164,9 @@ int _prof_gtim;
       return (res);
     } // _New_decode
 
+    //!
+    //! You can't create instances of this object yourself.
+    //! The only way to create it is via a search of a LDAP server.
     object|int create(array rawres, int|void stuff) {
     // rawres: array of result in raw format, but WITHOUT LDAP PDU !!!
     // stuff: 1=bind result; ...
@@ -204,23 +212,81 @@ int _prof_gtim;
 
       return(this_object());
 
-    } // create
+    }
 
-    int|mapping(string:array(string)) fetch(int|void ix) {
+    //!
+    //! Returns error number of search result.
+    //!
+    //! @seealso
+    //! @[LDAP.client.result.error_string]
+    int error_number() { return(resultcode); }
 
-      if (!ix)
-	ix = actnum + 1;
-      if ((ix <= num_entries()) && (ix > 0)) {
-	actnum = ix - 1;
+    //!
+    //! Returns error description of search result.
+    //!
+    //! @seealso
+    //! @[LDAP.client.result.error_number]
+    string error_string() {
+      return((stringp(resultstring) && sizeof(resultstring)) ? 
+		resultstring : ldap_errlist[resultcode]);
+    }
+
+    //!
+    //! Returns the number of entries.
+    //!
+    //! @seealso
+    //! @[LDAP.client.result.count_entries]
+    int num_entries() { return(entrycnt); }
+
+    //!
+    //! Returns the number of entries from current cursor
+    //! possition till end of the list.
+    //!
+    //! @seealso
+    //! @[LDAP.client.result.first, LDAP.client.result.next]
+    int count_entries() { return(entrycnt - actnum); }
+
+    //! @decl mapping(string:array(string)) fetch()
+    //! @decl mapping(string:array(string)) fetch(int)
+    //!
+    //! Returns a mapping with an entry for each attribute.
+    //! Each entry is an array of values of the attribute.
+    //!
+    //! @param idx
+    //!  Optional argument can be used for direct access
+    //!  to the entry other then currently pointed by cursor.
+    int|mapping(string:array(string)) fetch(int|void idx) {
+
+      if (!idx)
+	idx = actnum + 1;
+      if ((idx <= num_entries()) && (idx > 0)) {
+	actnum = idx - 1;
         return(entry[actnum]);
       }
       return(0);
     }
 
+    //!
+    //! Returns distinguished name (DN) of the current entry
+    //! in the result list. Notice that this is the same
+    //! as fetch()->dn[0].
     string get_dn() { return(fetch()["dn"][0]); }
 
+    //!
+    //! Initialized the result cursor to the first entry
+    //! in the result list.
+    //!
+    //! @seealso
+    //! @[LDAP.client.result.next]
     void first() { actnum = 0; }
 
+    //!
+    //! Moves the result cursor to the next entry
+    //! in the result list. Returns number of remained entries
+    //! in the result list. Returns 0 at the end.
+    //!
+    //! @seealso
+    //! @[LDAP.client.result.next]
     int next() {
       if (actnum < (num_entries()-1)) {
 	actnum++;
@@ -228,7 +294,7 @@ int _prof_gtim;
       }
       return(0);
     }
-    
+
   } // end of class 'result' ---------------
 
   // helper functions
@@ -266,32 +332,78 @@ int _prof_gtim;
     return(0);
   }
 
-  // API function (ldap_open)
-  //
-  // create(string|void server)
-  //
-  //	server:		server URL in form "ldap://hostname/basedn???!bindname=
-  void create(string|void server)
+  mapping info;
+
+  //! @decl void create()
+  //! @decl void create(string)
+  //! @decl void create(string, object)
+  //!
+  //! Create object. The first optional argument can be used later
+  //! for subsequence operations. The second one can specify
+  //! TLS context of connection.
+  //!
+  //! @param url
+  //!  LDAP server URL in form
+  //!    @tt{"ldap://hostname/basedn?attrlist?scope?ext"@}
+  //!
+  //! @param context
+  //!  TLS context of connection
+  //!
+  //! @seealso
+  //! @[LDAP.client.bind, LDAP.client.search]
+  void create(string|void url, object|void context)
   {
 
-    if(!server || !sizeof(server))
-      server = LDAP_DEFAULT_URL;
+    info = ([]);
 
-    lauth = parse_url(server);
+    if(!url || !sizeof(url))
+      url = LDAP_DEFAULT_URL;
 
-    if(!stringp(lauth->scheme) || (lauth->scheme != "ldap")) {
+    lauth = parse_url(url);
+
+    if(!stringp(lauth->scheme) ||
+       ((lauth->scheme != "ldap") && (lauth->scheme != "ldaps"))) {
       THROW(({"Unknown scheme in server URL.\n",backtrace()}));
     }
 
     if(!lauth->host)
-      lauth += ([ "host" : parse_url(LDAP_DEFAULT_URL)->host ]);
+      lauth += ([ "host" : LDAP_DEFAULT_HOST ]);
     if(!lauth->port)
-      lauth += ([ "port" : parse_url(LDAP_DEFAULT_URL)->port ]);
-      
-    ::create(lauth->host, lauth->port);
-    if(!::connected) {
+      lauth += ([ "port" : lauth->scheme == "ldap" ? LDAP_DEFAULT_PORT : LDAPS_DEFAULT_PORT ]);
+
+    if(lauth->scheme == "ldaps" && !context) {
+      context = SSL.context();
+      // Allow only strong crypto
+      context->preferred_suites = ({
+	SSL_rsa_with_idea_cbc_sha,
+	SSL_rsa_with_rc4_128_sha,
+	SSL_rsa_with_rc4_128_md5,
+	SSL_rsa_with_3des_ede_cbc_sha,
+      });
+    }
+ 
+    if(!(::connect(lauth->host, lauth->port))) {
+      //errno = ldapfd->errno();
+      seterr (LDAP_SERVER_DOWN);
+      DWRITE("client.create: ERROR: can't open socket.\n");
+      //ldapfd->destroy();
+      //ldap=0;
+      //ok = 0;
+      //if(con_fail)
+      //  con_fail(this_object(), @extra_args);
       THROW(({"Failed to connect to LDAP server.\n",backtrace()}));
     }
+
+    if(lauth->scheme == "ldaps") {
+      context->random = Crypto.randomness.reasonably_random()->read;
+      ::create(SSL.sslfile(::_fd, context, 1,1));
+      info->tls_version = ldapfd->version;
+    } else
+      ::create(::_fd);
+ 
+    connected = 1;
+    DWRITE("client.create: connected!\n");
+
     DWRITE(sprintf("client.create: remote = %s\n", query_address()));
     DWRITE_HI("client.OPEN: " + lauth->host + ":" + (string)(lauth->port) + " - OK\n");
 
@@ -319,33 +431,51 @@ int _prof_gtim;
     return (do_op(msgval));
   }
 
-  // API function (ldap_bind)
-  //
-  // bind(string|void name, string|void password, int|void proto)
-  //
-  //	name:
-  //	password:
-  //	proto:		protocol version, supported 2 and 3
-  int bind (string|void name, string|void password, int|void proto) {
+  //! @decl int bind()
+  //! @decl int bind(string, string)
+  //! @decl int bind(string, string, version)
+  //!
+  //! Authenticates connection to the direcory.
+  //!
+  //! First form uses default value previously entered in create.
+  //!
+  //! Second form uses value from parameters:
+  //!
+  //! @param dn
+  //!  The distinguished name (DN) of an entry aginst which will
+  //!  be made authentication.
+  //! @param password
+  //!  Password used for authentication.
+  //!
+  //! Third form allows specify the version of LDAP protocol used
+  //! by connection to the LDAP server.
+  //!
+  //! @param version
+  //!  Only @tt{2@} or @tt{3@} can be entered.
+  //!
+  //! @note
+  //!  Only simple authentication type is implemented. So be warned
+  //!  clear text passwords are sent to the directory server.
+  int bind (string|void dn, string|void password, int|void version) {
 
     int id;
     mixed raw;
     object rv;
 
-    if (!proto)
-      proto = LDAP_DEFAULT_VERSION;
+    if (!version)
+      version = LDAP_DEFAULT_VERSION;
     if (chk_ver())
       return(-ldap_errno);
-    if (!stringp(name))
-      name = mappingp(lauth->ext) ? lauth->ext->bindname||"" : "";
+    if (!stringp(dn))
+      dn = mappingp(lauth->ext) ? lauth->ext->bindname||"" : "";
     if (!stringp(password))
       password = "";
-    ldap_version = proto;
+    ldap_version = version;
     if(ldap_version == 3) {
-      name = string_to_utf8(name);
+      dn = string_to_utf8(dn);
       password = string_to_utf8(password);
     }
-    if(intp(raw = send_bind_op(name, password))) {
+    if(intp(raw = send_bind_op(dn, password))) {
       THROW(({error_string()+"\n",backtrace()}));
       return(-ldap_errno);
     }
@@ -374,10 +504,9 @@ int _prof_gtim;
     destruct(this_object());
   }
 
-  // API function (ldap_unbind)
-  //
-  // unbind()
-  //
+  //! @decl int unbind()
+  //!
+  //! Unbinds from the directory and close the connection.
   int unbind () {
 
     if (send_unbind_op() < 1) {
@@ -396,11 +525,12 @@ int _prof_gtim;
 
   }
 
-  // API function (ldap_delete)
-  //
-  // delete(string dn)
-  //
-  //	dn:		DN of deleted object
+  //! @decl int delete(string)
+  //!
+  //! Deletes entry from the LDAP server.
+  //!
+  //! @param dn
+  //!  The distinguished name of deleted entry.
   int delete (string dn) {
 
     int id;
@@ -451,6 +581,10 @@ int _prof_gtim;
   //
   //	dn:		DN of compared object
   //	aval:		attribute value
+
+  //! @decl int compare(string, array)
+  //!
+  //! Compares given attribute value with one in the directory.
   int compare (string dn, array(string) aval) {
 
     int id;
@@ -1048,6 +1182,5 @@ int _prof_gtim;
     return (res);
 
   } //parse_uri
-
 
 #endif
