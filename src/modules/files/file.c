@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.339 2005/01/22 01:19:40 nilsson Exp $
+|| $Id: file.c,v 1.340 2005/01/22 01:32:29 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3948,6 +3948,21 @@ static void fd__sprintf(INT32 args)
   push_int( 0 );
   Pike_sp[-1].subtype = 1;
 }
+
+
+/*! @decl mapping(string:mapping) gethostip()
+ *!
+ *! Returns the IP addresses of the host.
+ *!
+ *! @returns
+ *!   Returns a mapping that maps interface name to a mapping with
+ *!   more information about that interface. That information mapping
+ *!   looks as follows.
+ *!   @mapping
+ *!     @member array(string) "ips"
+ *!       A list of all IP addresses bound to this interface.
+ *!   @endmapping
+ */
 
 #define INTERFACES 256
 
