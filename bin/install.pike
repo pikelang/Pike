@@ -118,21 +118,20 @@ void status(string doing, void|string file, string|void msg)
     file="..."+file[strlen(file)-47..];
 
   if(msg) file+=" "+msg;
-  if(doing) file=doing+" "+file;
-  string s="\r"+file;
+  if(doing) file=doing+": "+file;
+  string s="\r   "+file;
   int t=strlen(s);
   if(t<last_len) s+=" "*(last_len-t);
   last_len=t;
   write(s);
 }
 
-void status_clear()
+void status_clear(void|int all)
 {
-  if(last_len)
-  {
+    if(all)
+	last_len = 75;
     status(0,"");
     status(0,"");
-  }
 }
 
 
@@ -147,7 +146,7 @@ int mkdirhier(string orig_dir)
   if(dir=="" || (strlen(dir)==2 && dir[-1]==':')) return 1;
   dir=fakeroot(dir);
 
-  status("creating",dir+"/");
+  status("Creating",dir+"/");
 
   mixed s=file_stat(dir);
   if(s)
@@ -203,11 +202,11 @@ int low_install_file(string from,
   
   to=fakeroot(to);
 
-  status("installing",to);
+  status("Installing",to);
 
   if(compare_files(from,to))
   {
-    status("installing",to,"Already installed");
+    status("Installing",to,"Already installed");
     return 0;
   }
   mkdirhier(dirname(to));
@@ -407,7 +406,7 @@ void do_export()
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
   Stdio.File p=Stdio.File(export_base_name+".burk","wc");
-  string msg="Loading installation script, please wait...";
+  string msg="   Loading Pike installation script, please wait...";
   p->write("w%4c%s",strlen(msg),msg);
 
 #define TRANSLATE(X,Y) combine_path(".",X) : Y
@@ -511,7 +510,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2000 Fredrik Hübinette and Idonex AB
+#" Copyright (C) 1994-2000 Fredrik Hübinette and Roxen Internet Software AB
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are
 welcome to redistribute it under certain conditions; Read the files
 COPYING and DISCLAIMER in the Pike distribution for more details.
@@ -531,7 +530,7 @@ COPYING and DISCLAIMER in the Pike distribution for more details.
     shift
 done
 "
-		   "echo \"Loading installation script, please wait...\"\n"
+		   "echo \"   Loading Pike installation script, please wait...\"\n"
 		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
@@ -949,13 +948,14 @@ int pre_install(array(string) argv)
       };
 #endif
 
+      status1("");
+  
 	// FIXME: 
 	// The following introduction is not quite true on NT
 	// and other platforms where Readline falls back on 
 	// 'dummy' mode.
 
-      write("\n"
-	    "   Welcome to the interactive "+version()+
+      write("   Welcome to the interactive "+version()+
 	    " installation script.\n"
 	    "\n"
 #ifndef __NT__
@@ -967,7 +967,7 @@ int pre_install(array(string) argv)
 #else
 
 	    "   The script will guide you through the installation process by asking\n"
-	    "   a few questions.  You will be able to confirm your settings before\n"
+	    "   a few questions. You will be able to confirm your settings before\n"
 	    "   the installation begin.\n"
 #endif
 	    );
@@ -1012,6 +1012,8 @@ int pre_install(array(string) argv)
 
       } while(!(confirm == "" || confirm == "y"));
 
+      write("\n");
+      
       vars->pike_name = bin_path;
       
       destruct(interactive);
@@ -1104,7 +1106,7 @@ void do_install()
   pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
-    status1("Installing Pike in %s...\n",fakeroot(prefix));
+    status1("Please wait, installing Pike in %s...\n", fakeroot(prefix));
   }
 
   mixed err=catch {
@@ -1210,10 +1212,11 @@ void do_install()
     if(sizeof(to_dump))
     {
       rm("dumpmodule.log");
-      status("Dumping modules, please ignore any errors at this point..");
-      foreach(to_dump, string mod) rm(mod+".o");
+      
+      foreach(to_dump, string mod)
+	  rm(mod+".o");
+      
       /* Dump 50 modules at a time */
-      write("\n");
 
       array cmd=({fakeroot(pike) });
 
@@ -1242,11 +1245,20 @@ void do_install()
 
 //      werror("%O\n",cmd);
 
-      foreach(to_dump/50.0,to_dump)
+      int offset = 1;
+      foreach(to_dump/50.0, array delta_dump)
 	{
-	  write("    ");
-	  Process.create_process(cmd+ to_dump, options)->wait();
+	  Process.create_process(cmd +
+				 ({
+				     "--progress-bar",
+				     sprintf("%d,%d", offset, sizeof(to_dump))
+				 }) +
+				 delta_dump, options)->wait();
+
+	  offset += sizeof(delta_dump);
 	}
+      
+      status_clear(1);
     }
 
     // Delete any .pmod files that would shadow the .so
@@ -1257,7 +1269,7 @@ void do_install()
 #if constant(symlink)
     if(lnk)
     {
-      status("creating",lnk);
+      status("Creating",lnk);
       mixed s=file_stat(fakeroot(lnk),1);
       if(s)
       {
@@ -1272,7 +1284,7 @@ void do_install()
       }
       mkdirhier(fakeroot(dirname(lnk)));
       symlink(pike,fakeroot(lnk));
-      status("creating",lnk,"done");
+      status("Creating",lnk,"done");
     }
 #endif
   }

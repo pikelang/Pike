@@ -143,6 +143,12 @@ class Codec
 
 int quiet=0;
 
+constant progress_width = 45;
+
+int progress_bar    = 0;
+int progress_offset = 0;
+int progress_max    = 0;
+
 Stdio.File logfile;
 
 class Handler
@@ -232,6 +238,22 @@ void dumpit(string file)
   }
 }
 
+void update_progress(string name, int cur, int max)
+{
+    float ratio = (float)cur/(float)max;
+    int bar = (int)(ratio * (float)progress_width);
+
+    int is_full = bar == progress_width;
+    
+    werror("\r   %s: |%s%c%s%s %4.1f %%  ",
+	   name,
+	   "="*bar,
+	   is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
+	   is_full ? "" : " "*(progress_width-bar-1),
+	   is_full ? "" : "|",
+	   100.0 * ratio);
+}
+
 int main(int argc, string *argv)
 {
   foreach( (array)all_constants(), [string name, mixed func])
@@ -242,7 +264,10 @@ int main(int argc, string *argv)
   function_names[Stdio.stderr]="resolv:Stdio.stderr";
   function_names[_static_modules.Builtin]="resolv:_";
 
-  if(argv[1]=="--quiet")
+  // Remove the name of the program.
+  argv = argv[1..];
+  
+  if(argv[0]=="--quiet")
   {
     quiet=1;
     argv=argv[1..];
@@ -254,15 +279,31 @@ int main(int argc, string *argv)
 //    werror("Dumping modules ");
   }
 
-  if(argv[1]=="--distquiet")
+  if(argv[0]=="--distquiet")
   {
     quiet=2;
     argv=argv[1..];
     logfile=0;
   }
 
-  foreach(argv[1..],string file)
+  if(argv[0] == "--progress-bar")
+  {
+      quiet = 2;
+      logfile = Stdio.File("dumpmodule.log","caw");
+      
+      progress_bar = 1;
+      sscanf(argv[1], "%d,%d", progress_offset, progress_max);
+      
+      argv = argv[2..];
+  }
+
+  foreach(argv, string file)
+  {
+    if(progress_bar)
+      update_progress("Precompiling", progress_offset++, progress_max);
+      
     dumpit(file);
+  }
 
   if(quiet==1)
     werror("\n");
