@@ -1,7 +1,7 @@
 //
-// Creates testssuit files form the testsuit.in files
+// Creates testsuit files form the testsuit.in files
 // found in the lib directory.
-// $Id: mklibtests.pike,v 1.1 2002/08/02 20:24:34 nilsson Exp $
+// $Id: mklibtests.pike,v 1.2 2002/08/03 12:23:10 nilsson Exp $
 //
 
 string src_dir;
@@ -16,8 +16,14 @@ void recurse(string path) {
     Stdio.Stat ds = file_stat(dest_dir+path+fn);
 
     if(ls->isdir) {
+      if(!ds) {
+	if(!Stdio.mkdirhier(dest_dir+path+fn)) {
+	  werror("Could not create %s\n", dest_dir+path+fn);
+	  continue;
+	}
+      }
+
       recurse(path+fn+"/");
-      if(!ds) Stdio.mkdirhier(dest_dir+path+fn);
       continue;
     }
 
@@ -25,7 +31,11 @@ void recurse(string path) {
 
     ds = file_stat(dest_dir+path+"testsuite");
     if(!ds || ds->mtime<ls->mtime) {
-      object f=Stdio.File(dest_dir+path+"testsuite", "cwt");
+      object f;
+      if(catch(Stdio.File(dest_dir+path+"testsuite", "cwt"))) {
+	werror("Could not create %s\n", dest_dir+path+"testsuite");
+	continue;
+      }
       Process.create_process( ({ combine_path(bin_dir,
 					      "mktestsuite"),
 				 src_dir+path+fn }),
@@ -53,7 +63,7 @@ void init_make_vars() {
 
 int main(int n, array(string) args) {
 
-  init_make_vars();
+  //  init_make_vars();
 
   foreach(args, string arg) {
     sscanf(arg, "--srcdir=%s", src_dir);
