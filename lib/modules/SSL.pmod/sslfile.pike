@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.75 2004/08/17 17:17:14 mast Exp $
+/* $Id: sslfile.pike,v 1.76 2004/08/18 15:02:32 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -48,8 +48,15 @@ static string stream_descr;
 #define SSL3_DEBUG_MSG(X...)						\
   werror ("[thr:" + this_thread()->id_number() +			\
 	  "," + (stream ? "" : "ex ") + stream_descr + "] " + X)
+#ifdef SSL3_DEBUG_MORE
+#define SSL3_DEBUG_MORE_MSG(X...) SSL3_DEBUG_MSG (X)
+#endif
 #else
 #define SSL3_DEBUG_MSG(X...) 0
+#endif
+
+#ifndef SSL3_DEBUG_MORE_MSG
+#define SSL3_DEBUG_MORE_MSG(X...) 0
 #endif
 
 static Stdio.File stream;
@@ -248,13 +255,27 @@ static THREAD_T op_thread;
 		      NONBLOCKING_MODE ? "nonblocking" : "blocking");	\
 									\
       while (1) {							\
-	stream->set_read_callback ((ENABLE_READS) && ssl_read_callback); \
 	stream->set_write_callback (sizeof (write_buffer) && ssl_write_callback); \
 									\
-	/* If we've received a close message then the other end can	\
-	 * legitimately close the stream, so don't install our close	\
-	 * callback. (Might still have to write our close message.) */	\
-	stream->set_close_callback (conn->closing < 2 && ssl_close_callback); \
+	if (ENABLE_READS) {						\
+	  stream->set_read_callback (ssl_read_callback);		\
+	  /* If we've received a close message then the other end can	\
+	   * legitimately close the stream, so don't install our close	\
+	   * callback. (Might still have to write our close		\
+	   * message.) */						\
+	  stream->set_close_callback (conn->closing < 2 && ssl_close_callback); \
+	}								\
+	else {								\
+	  stream->set_read_callback (0);				\
+	  /* Installing a close callback without a read callback	\
+	   * currently doesn't work well in Stdio.File. */		\
+	  stream->set_close_callback (0);				\
+	}								\
+									\
+	SSL3_DEBUG_MORE_MSG ("Running local backend [%O %O %O]\n",	\
+			     stream->query_read_callback(),		\
+			     stream->query_write_callback(),		\
+			     stream->query_close_callback());		\
 									\
 	float|int(0..0) action =					\
 	  local_backend (NONBLOCKING_MODE ? 0.0 : 0);			\
@@ -369,8 +390,8 @@ int close (void|string how, void|int clean_close)
 //! default is to send a close message and then close the stream
 //! without waiting for a response.
 //!
-//! Returns zero if the connection already is closed or if there are
-//! any I/O errors. @[errno] will give the details.
+//! Returns zero and sets the errno to @[System.EBADF] if the
+//! connection already is closed. Other I/O errors are thrown.
 //!
 //! @note
 //! In nonblocking mode the stream isn't closed right away and the
@@ -512,7 +533,10 @@ static void destroy()
   // happen if somebody has destructed this object explicitly
   // though, and in that case he can have all that's coming.
   ENTER (0, 0) {
-    if (stream && !explicitly_closed) {
+    if (stream && !explicitly_closed &&
+	// Don't bother with closing nicely if there's an error from
+	// an earlier operation. close() will throw an error for it.
+	!cb_errno) {
       // Have to do the close in blocking mode since this object will
       // go away as soon as we return.
       set_blocking();
@@ -893,7 +917,7 @@ function(void|mixed:void) query_write_callback()
 
 void set_close_callback (function(void|mixed:void) close)
 //! Install a function to be called when the connection is closed,
-//! either normally or due to an error.
+//! either normally or due to an error (use @[errno] to retrieve it).
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_close_callback (%O)\n", close);
   ENTER (0, 0) {
@@ -1025,14 +1049,12 @@ static void update_internal_state()
       else
 	stream->set_write_callback (0);
 
-#ifdef SSL3_DEBUG_MORE
-      SSL3_DEBUG_MSG ("update_internal_state: "
-		      "After handshake, callback mode [%O %O %O %O]\n",
-		      stream->query_read_callback(),
-		      stream->query_write_callback(),
-		      stream->query_close_callback(),
-		      got_extra_read_call_out);
-#endif
+      SSL3_DEBUG_MORE_MSG ("update_internal_state: "
+			   "After handshake, callback mode [%O %O %O %O]\n",
+			   stream->query_read_callback(),
+			   stream->query_write_callback(),
+			   stream->query_close_callback(),
+			   got_extra_read_call_out);
       return;
     }
 
@@ -1047,10 +1069,8 @@ static void update_internal_state()
       got_extra_read_call_out = -1;
     }
 
-#ifdef SSL3_DEBUG_MORE
-    SSL3_DEBUG_MSG ("update_internal_state: Not in callback mode [0 0 0 %O]\n",
-		    got_extra_read_call_out);
-#endif
+    SSL3_DEBUG_MORE_MSG ("update_internal_state: Not in callback mode [0 0 0 %O]\n",
+			 got_extra_read_call_out);
   }
 }
 
@@ -1249,6 +1269,7 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 
       // Make sure the local backend exits after this, so that the
       // error isn't clobbered by later I/O.
+      RESTORE;
       return -1;
     }
   } LEAVE;
