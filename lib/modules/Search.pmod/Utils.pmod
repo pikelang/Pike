@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.22 2001/08/08 10:59:50 per Exp $
+// $Id: Utils.pmod,v 1.23 2001/08/09 09:21:14 per Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -224,7 +224,7 @@ class ProfileCache (string db_name) {
   int(-1..1) up_to_datep(int profile_id) {
     //    werror("Called up-to-date...\n");
     array(mapping(string:string)) res;
-    res = get_db()->query("SELECT altered, parent FROM wf_profile WHERE id=%d", profile_id);
+    res = get_db()->query("SELECT altered,type FROM wf_profile WHERE id=%d", profile_id);
 
     // The profile is deleted. In such a rare event we take the
     // trouble to review all our cached values.
@@ -255,16 +255,15 @@ class ProfileCache (string db_name) {
     profile_stat[profile_id] = (int)res[0]->altered;
 
     // Search profile
-    if((int)res[0]->parent) {
+    if((int)res[0]->type == 2) 
+    {
       m_delete(value_cache, profile_id);
       m_delete(entry_cache, profile_id);
       return 0;
     }
 
     m_delete(value_cache, profile_id);
-    foreach((array(int))get_db()->query("SELECT id FROM wf_profile WHERE parent=%d", profile_id)->id,
-	    int id)
-      m_delete(entry_cache, id);
+    m_delete(entry_cache, profile_id);
     return 0;
   }
 
@@ -275,8 +274,7 @@ class ProfileCache (string db_name) {
       return db_profile;
 
     array res = get_db()->
-      query("SELECT id FROM wf_profile WHERE name=%s AND parent=0",
-	    name);
+      query("SELECT id FROM wf_profile WHERE name=%s AND type=2", name);
     if(!sizeof(res))
       THROW("No database profile " + name + " found.\n");
 
@@ -284,18 +282,18 @@ class ProfileCache (string db_name) {
   }
 
   //! Returns the profile number for the given search profile.
-  int get_srh_profile_number(string name, int db_profile) {
+  int get_srh_profile_number(string name)
+  {
     int srh_profile;
-    if(srh_profile=srh_profile_names[(string)db_profile+"\n"+name])
+    if( srh_profile=srh_profile_names[name] )
       return srh_profile;
 
     array res = get_db()->
-      query("SELECT id FROM wf_profile WHERE name=%s AND parent=%d",
-	    name, db_profile);
+      query("SELECT id FROM wf_profile WHERE name=%s AND type=1", name);
     if(!sizeof(res))
       THROW("No search profile " + name + " found.\n");
 
-    return srh_profile_names[(string)db_profile+"\n"+name] = (int)res[0]->id;
+    return srh_profile_names[name] = (int)res[0]->id;
   }
 
   private int last_db_prof_stat = 0;  // 1970
@@ -304,7 +302,7 @@ class ProfileCache (string db_name) {
   array(string) list_db_profiles() {
     if (time(1) - last_db_prof_stat < 5*60)
       return indices(db_profile_names);
-    array res = get_db()->query("SELECT name, id FROM wf_profile WHERE parent=0");
+    array res = get_db()->query("SELECT name, id FROM wf_profile WHERE type=2");
     db_profile_names = mkmapping(
       res->name,
       map(res->id, lambda(string s) { return (int) s; } ));
@@ -314,18 +312,15 @@ class ProfileCache (string db_name) {
 
   private int last_srh_prof_stat = 0;  // 1970
 
-  //! Returns a list of available search profiles for the given database profile @[db_profile].
-  array(string) list_srh_profiles(int db_profile) {
+  //! Returns a list of available search profiles.
+  array(string) list_srh_profiles()
+  {
     if (time(1) - last_srh_prof_stat >= 5*60) {
-      array res = get_db()->query("SELECT name, id, parent FROM wf_profile WHERE parent<>0");
-      srh_profile_names = mkmapping(
-        map(res, lambda(mapping m) { return (string) m->parent + "\n" + m->name; } ),
-        (array(int)) res->id
-      );
+      array res = get_db()->query("SELECT name, id FROM wf_profile WHERE type=1");
+      srh_profile_names = mkmapping( res->name, (array(int)) res->id );
       last_srh_prof_stat = time(1) - 2;
     }
-    return map(filter(indices(srh_profile_names), has_prefix, (string) db_profile + "\n"),
-               lambda(string s) { return (s / "\n")[1]; } );
+    return indices(srh_profile_names);
   }
 
   // Used when decoding text encoded pike data types.
@@ -374,7 +369,7 @@ class ProfileCache (string db_name) {
     //    werror("Stat : %O\n", profile_stat);
 
     int db = get_db_profile_number(db_name);
-    int srh = get_srh_profile_number(srh_name||"Default", db);
+    int srh = get_srh_profile_number(srh_name);
 
     ProfileEntry entry;
     if(entry=entry_cache[srh])
