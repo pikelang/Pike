@@ -4,6 +4,9 @@ int last_len;
 int redump_all;
 string pike;
 array(string) to_dump=({});
+array(string) to_export=({});
+
+int export;
 
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
 
@@ -32,6 +35,7 @@ string status(string doing, string file, string|void msg)
 int mkdirhier(string dir)
 {
   int tomove;
+  if(export) return 1;
 
   if(dir=="") return 1;
   status("creating",dir);
@@ -79,6 +83,13 @@ int low_install_file(string from,
 		     string to,
 		     void|int mode)
 {
+  if(export)
+  {
+//    werror("FROM: %O\n",from);
+    to_export+=({ from });
+    return 1;
+  }
+
   status("installing",to);
 
   if(compare_files(from,to))
@@ -213,6 +224,71 @@ void dumpmodules(string dir)
 
 mapping vars=([]);
 
+string export_base_name;
+
+int mklink(string from, string to)
+{
+#if constant(symlink)
+  catch  {
+    symlink(from, to);
+    return 1;
+  };
+#endif
+  return 0;
+}
+
+void do_export()
+{
+  export=0;
+  cd("..");
+  Stdio.write_file(export_base_name+".x",
+		   "#!/bin/sh\n"
+		   "( cd "+export_base_name+".dir\n"+
+		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike -Mbuild/lib/modules -Mlib/modules bin/install.pike --interactive \\\n"+
+		   "  TMP_LIBDIR=\"build/lib\"\\\n"+
+		   "  LIBDIR_SRC=\"lib\"\\\n"+
+		   "  SRCDIR=\"src\"\\\n"+
+		   "  TMP_BINDIR=\"bin\"\\\n"+
+		   "  TMP_BUILDDIR=\"build\"\\\n"+
+		   "  MANDIR_SRC=\"man\"\n"+
+		   ")\n"+
+		   "rm -rf '#!' "+export_base_name+".dir "+export_base_name+".x\n"
+    );
+  chmod(export_base_name+".x",0755);
+  string script="#!/bin/sh\ntar xf $0\nexec "+export_base_name+".x\n";
+  if(strlen(script) > 100)
+  {
+    werror("Script too long!!\n");
+    exit(1);
+  }
+
+  string *parts=(script/"/");
+  mkdirhier( parts[..sizeof(parts)-2]*"/");
+  Stdio.write_file(script,"");
+
+  to_export=({script,export_base_name+".x"})+
+    Array.map(to_export,
+	      lambda(string s)
+	      {
+		werror("FOO: %O\n",s);
+		return combine_path(export_base_name+".dir",s);
+	      });
+
+  werror("To export_base_name = %O\n",export_base_name);
+  werror("To export = %O\n",to_export);
+
+  Process.create_process( ({ "tar","cvf", export_base_name})+ to_export)
+    ->wait();
+
+  chmod(export_base_name,0755);
+
+  Process.create_process( ({ "rm","-rf",
+			       export_base_name+".dir",
+			       export_base_name+".x"
+			       }) ) ->wait();
+
+  exit(0);
+}
 
 int main(int argc, string *argv)
 {
@@ -224,81 +300,154 @@ int main(int argc, string *argv)
   string man_prefix;
   string lnk;
   string old_exec_prefix;
+  object interactive;
+
   foreach(argv[1..], string foo)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
 
-  prefix=vars->prefix;
-  if(argc>1 && argv[1]=="--traditional")
-  {
-    exec_prefix=vars->exec_prefix;
-    lib_prefix=vars->lib_prefix;
-    include_prefix=combine_path(prefix,"include","pike");
-    man_prefix=vars->man_prefix;
-  }else{
+  prefix=vars->prefix || "/usr/local";
 
-    if(!(lnk=vars->pike_name) || !strlen(lnk)) {
-      lnk=combine_path(vars->exec_prefix,"pike");
-      old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
-    }
-    prefix=combine_path("/",getcwd(),prefix,"pike",replace(version()-"Pike v"," release ","."));
-    exec_prefix=combine_path(prefix);
-    lib_prefix=combine_path(prefix,"lib");
-    include_prefix=combine_path(prefix,"include","pike");
-    man_prefix=combine_path(prefix,"man");
+  string install_type="";
+  if(argc > 1) install_type=argv[1];
+
+  if(!vars->TMP_BINDIR)
+    vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
+
+
+  if(!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR=".";
+
+  while(1)
+  {
+  switch(install_type)
+  {
+    case "--traditional":
+      exec_prefix=vars->exec_prefix;
+      lib_prefix=vars->lib_prefix;
+      include_prefix=combine_path(prefix,"include","pike");
+      man_prefix=vars->man_prefix;
+      break;
+
+    case "--interactive":
+      interactive=Stdio.Readline();
+      prefix=interactive->edit(prefix,"Install prefix: ");
+      vars->pike_name=interactive->edit(
+	vars->pike_name || 
+	combine_path(vars->exec_prefix || combine_path(prefix, "bin"),"pike"), "Pike binary name: ");
+      destruct(interactive);
+      install_type="--new-style";
+//      trace(2);
+      continue;
+
+    default:
+    case "--export":
+      string ver=replace(replace(version()," ","-"),"-release-",".");
+      export_base_name=sprintf("%s-%s",ver,uname()->sysname);
+
+      mkdirhier(export_base_name+".dir");
+
+      mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
+      mklink(vars->SRCDIR,export_base_name+".dir/src");
+      mklink(getcwd(),export_base_name+".dir/build");
+      mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
+      mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
+      
+      cd(export_base_name+".dir");
+
+      vars->TMP_LIBDIR="build/lib";
+      vars->LIBDIR_SRC="lib";
+      vars->SRCDIR="src";
+      vars->TMP_BINDIR="bin";
+      vars->MANDIR_SRC="man";
+      vars->TMP_BUILDDIR="build";
+
+      export=1;
+      to_export+=({ combine_path(vars->TMP_BINDIR,"install.pike") });
+      
+    case "":
+    case "--new-style":
+      if(!(lnk=vars->pike_name) || !strlen(lnk)) {
+	lnk=combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),"pike");
+	old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
+      }
+      prefix=combine_path("/",getcwd(),prefix,"pike",
+			  replace(version()-"Pike v"," release ","."));
+      exec_prefix=combine_path(prefix,"bin");
+      lib_prefix=combine_path(prefix,"lib");
+      include_prefix=combine_path(prefix,"include","pike");
+      man_prefix=combine_path(prefix,"man");
+      break;
   }
+  break;
+  }
+
   pike=combine_path(exec_prefix,"pike");
 
   mixed err=catch {
-    write("\nInstalling Pike in %s...\n\n",prefix);
-
-    string pike_bin_file="pike";
-    status("Finalizing",pike_bin_file);
-    string pike_bin=Stdio.read_file(pike_bin_file);
-    int pos=search(pike_bin,MASTER_COOKIE);
-
-    if(pos<=0 && strlen(pike_bin) < 10000 && file_stat("pike.exe"))
+    if(export)
     {
-      pike_bin_file="pike.exe";
-      status("Finalizing",pike_bin_file);
-      pike_bin=Stdio.read_file(pike_bin_file);
-      pos=search(pike_bin,MASTER_COOKIE);
-      pike+=".exe";
-    }
-
-    if(pos>=0)
-    {
-      status("Finalizing",pike_bin_file,"...");
-      Stdio.write_file(pike_bin_file="pike.tmp",pike_bin);
-      Stdio.File f=Stdio.File(pike_bin_file,"rw");
-      f->seek(pos+strlen(MASTER_COOKIE));
-      f->write(combine_path(lib_prefix,"master.pike"));
-      f->close();
-      status("Finalizing",pike_bin_file,"done");
+      to_export+=({combine_path(vars->TMP_BUILDDIR,"pike")});
     }else{
-      write("Warning! Failed to finalize master location!\n");
+      write("\nInstalling Pike in %s...\n\n",prefix);
+      
+      string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
+      status("Finalizing",pike_bin_file);
+      string pike_bin=Stdio.read_file(pike_bin_file);
+      int pos=search(pike_bin,MASTER_COOKIE);
+      
+      if(pos<=0 && strlen(pike_bin) < 10000 && 
+	 file_stat(combine_path(vars->TMP_BUILDDIR,"pike.exe")))
+      {
+	pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.exe");
+	status("Finalizing",pike_bin_file);
+	pike_bin=Stdio.read_file(pike_bin_file);
+	pos=search(pike_bin,MASTER_COOKIE);
+	pike+=".exe";
+      }
+      
+      if(pos>=0)
+      {
+	status("Finalizing",pike_bin_file,"...");
+	Stdio.write_file(pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp"),pike_bin);
+	Stdio.File f=Stdio.File(pike_bin_file,"rw");
+	f->seek(pos+strlen(MASTER_COOKIE));
+	f->write(combine_path(lib_prefix,"master.pike"));
+	f->close();
+	status("Finalizing",pike_bin_file,"done");
+      }else{
+	write("Warning! Failed to finalize master location!\n");
+      }
+      if(install_file(pike_bin_file,pike)) redump_all=1;
     }
-    if(install_file(pike_bin_file,pike)) redump_all=1;
 
-    install_file("hilfe",combine_path(exec_prefix,"hilfe"));
+    install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),combine_path(exec_prefix,"hilfe"));
     string master=combine_path(vars->LIBDIR_SRC,"master.pike.in");
-
+    
+    if(export)
+    {
+      to_export+=({master,
+		   combine_path(vars->TMP_BUILDDIR,"master.pike"),
+		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
+		   combine_path(vars->SRCDIR,"dumpmodule.pike")
+      });
+    }else{
 //    werror("Making master with libdir=%s\n",lib_prefix);
-    status("Finalizing",master);
-    string master_data=Stdio.read_file(master);
-    master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
-    Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
-    status("Finalizing",master,"done");
-		    
+      status("Finalizing",master);
+      string master_data=Stdio.read_file(master);
+      master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
+      Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
+      status("Finalizing",master,"done");
+    }
+    
     install_dir(vars->TMP_LIBDIR,lib_prefix,1);
     install_dir(vars->LIBDIR_SRC,lib_prefix,1);
     
     install_header_files(vars->SRCDIR,include_prefix);
-    install_header_files(".",include_prefix);
+    install_header_files(vars->TMP_BUILDDIR,include_prefix);
     
-    install_file("modules/dynamic_module_makefile",
+    install_file(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
 		 combine_path(include_prefix,"dynamic_module_makefile"));
-    install_file("./aclocal",
+    install_file(combine_path(vars->TMP_BUILDDIR,"aclocal"),
 		 combine_path(include_prefix,"aclocal.m4"));
     
     if(file_stat(vars->MANDIR_SRC))
@@ -315,40 +464,47 @@ int main(int argc, string *argv)
 
   if(err) throw(err);
 
-  string master=combine_path(lib_prefix,"master.pike");
-  mixed s1=file_stat(master);
-  mixed s2=file_stat(master+".o");
-  if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
-  {
-    Process.create_process( ({pike,"-m",combine_path(vars->SRCDIR,"dumpmaster.pike"),master}))->wait();
-  }
-  
-//    dumpmodules(combine_path(vars->lib_prefix,"modules"));
-  if(sizeof(to_dump))
-  {
-    foreach(to_dump, string mod) rm(mod+".o");
-    Process.create_process( ({pike,combine_path(vars->SRCDIR,"dumpmodule.pike")}) + to_dump)->wait();
-  }
 
-#if constant(symlink)
-  if(lnk)
+  if(export)
   {
-    mixed s=file_stat(lnk,1);
-    if(s)
+    do_export();
+  }else{
+    string master=combine_path(lib_prefix,"master.pike");
+    mixed s1=file_stat(master);
+    mixed s2=file_stat(master+".o");
+    if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
     {
-      if(!mv(lnk,lnk+".old"))
+      Process.create_process( ({pike,"-m",combine_path(vars->SRCDIR,"dumpmaster.pike"),master}))->wait();
+    }
+    
+//    dumpmodules(combine_path(vars->lib_prefix,"modules"));
+    if(sizeof(to_dump))
+    {
+      foreach(to_dump, string mod) rm(mod+".o");
+      Process.create_process( ({pike,combine_path(vars->SRCDIR,"dumpmodule.pike")}) + to_dump)->wait();
+    }
+    
+#if constant(symlink)
+    if(lnk)
+    {
+      mixed s=file_stat(lnk,1);
+      if(s)
       {
-	werror("Failed to move %s\n",lnk);
-	exit(1);
+	if(!mv(lnk,lnk+".old"))
+	{
+	  werror("Failed to move %s\n",lnk);
+	  exit(1);
+	}
       }
+      if (old_exec_prefix) {
+	mkdirhier(old_exec_prefix);
+      }
+      mkdirhier(dirname(lnk));
+      symlink(pike,lnk);
     }
-    if (old_exec_prefix) {
-      mkdirhier(old_exec_prefix);
-    }
-    symlink(pike,lnk);
-  }
 #endif
+  }
   write("\nDone\n");
-
+    
   return 0;
 }

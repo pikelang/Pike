@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.143 1999/06/01 13:33:22 mirar Exp $
+# $Id: Makefile.in,v 1.144 1999/06/10 00:12:08 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -492,8 +492,11 @@ all_exports: full_export
 	( cd .. ; $(TMP_BINDIR)/makedists )
 
 bin_export:
-	PATH=$(TMP_BINDIR)/fakes:$$PATH INSTALL_LOG=`pwd`/log make old-install INSTALL=install
-	$(RUNPIKE) $(TMP_BINDIR)/parse_install_log <log $(SRCDIR) $(prefix)
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --export \
+	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
+	man_prefix="$(man_prefix)" pike_name=$(pike_name)
 
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
