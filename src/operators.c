@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.34 1998/05/25 16:42:07 grubba Exp $");
+RCSID("$Id: operators.c,v 1.35 1998/06/06 03:22:15 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -305,6 +305,71 @@ static int generate_sum(node *n)
     return 0;
   }
 }
+
+static node *optimize_eq(node *n)
+{
+  node **first_arg, **second_arg, *ret;
+  if(count_args(CDR(n))==2)
+  {
+    first_arg=my_get_arg(&CDR(n), 0);
+    second_arg=my_get_arg(&CDR(n), 1);
+
+#ifdef DEBUG
+    if(!first_arg || !second_arg)
+      fatal("Couldn't find argument!\n");
+#endif
+    if(node_is_false(*first_arg) && !node_may_overload(*second_arg,LFUN_EQ))
+    {
+      ret=*second_arg;
+      *second_arg=0;
+      return mkopernode("`!",ret,0);
+    }
+
+    if(node_is_false(*second_arg)  && !node_may_overload(*first_arg,LFUN_EQ))
+    {
+      ret=*first_arg;
+      *first_arg=0;
+      return mkopernode("`!",ret,0);
+    }
+  }
+  return 0;
+}
+
+static node *optimize_not(node *n)
+{
+  node **first_arg, **more_args;
+  int e;
+
+  if(count_args(CDR(n))==1)
+  {
+    first_arg=my_get_arg(&CDR(n), 0);
+#ifdef DEBUG
+    if(!first_arg)
+      fatal("Couldn't find argument!\n");
+#endif
+    if(node_is_true(*first_arg))  return mkintnode(0);
+    if(node_is_false(*first_arg)) return mkintnode(1);
+
+#define TMP_OPT(X,Y) do {			\
+    if((more_args=is_call_to(*first_arg, X)))	\
+    {						\
+      node *tmp=*more_args;			\
+      *more_args=0;				\
+      return mkopernode(Y,tmp,0);		\
+    } } while(0)
+
+    TMP_OPT(f_eq, "`!=");
+    TMP_OPT(f_ne, "`==");
+    TMP_OPT(f_lt, "`>=");
+    TMP_OPT(f_gt, "`<=");
+    TMP_OPT(f_le, "`>");
+    TMP_OPT(f_ge, "`<");
+#undef TMP_OPT
+  }
+
+  return 0;
+}
+
 
 static node *optimize_binary(node *n)
 {
@@ -1800,9 +1865,9 @@ void init_operators(void)
   add_efun2("`->",f_arrow,
 	    "function(array(object|mapping|multiset|array),string:array(mixed))|function(object|mapping|multiset|program,string:mixed)",OPT_TRY_OPTIMIZE,0,0);
 
-  add_efun2("`==",f_eq,"function(mixed...:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`==",f_eq,"function(mixed...:int)",OPT_TRY_OPTIMIZE,optimize_eq,generate_comparison);
   add_efun2("`!=",f_ne,"function(mixed...:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`!",f_not,"function(mixed:int)",OPT_TRY_OPTIMIZE,0,generate_not);
+  add_efun2("`!",f_not,"function(mixed:int)",OPT_TRY_OPTIMIZE,optimize_not,generate_not);
 
 #define CMP_TYPE "!function(!object...:mixed)&function(mixed...:int)|function(int|float...:int)|function(string...:int)"
   add_efun2("`<", f_lt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
