@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.h,v 1.7 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: cpp.h,v 1.8 2004/03/23 13:41:56 grubba Exp $
 */
 
 #ifndef CPP_H
@@ -19,6 +19,11 @@ struct define_argument;
 struct define;
 struct cpp;
 void cpp_error(struct cpp *this,char *err);
+void cpp_error_vsprintf (struct cpp *this, const char *fmt, va_list args);
+void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
+  ATTRIBUTE((format(printf,2,3)));
+void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
+  ATTRIBUTE((format(printf,2,3)));
 void PUSH_STRING(char *str,
 		 INT32 len,
 		 dynamic_buffer *buf);

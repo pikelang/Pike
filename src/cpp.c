@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.109 2004/03/22 22:25:43 mast Exp $
+|| $Id: cpp.c,v 1.110 2004/03/23 13:41:56 grubba Exp $
 */
 
 #include "global.h"
@@ -135,23 +135,58 @@ void cpp_error(struct cpp *this,char *err)
   }
 }
 
-void cpp_error_sprintf(struct cpp *this, char *fmt, ...)  ATTRIBUTE((format(printf,2,3)))
+void cpp_error_vsprintf(struct cpp *this, const char *fmt, va_list args)
 {
-  va_list args;
   char buf[8192];
 
-  va_start(args,fmt);
 #ifdef HAVE_VSNPRINTF
   vsnprintf(buf, 8190, fmt, args);
 #else /* !HAVE_VSNPRINTF */
   VSPRINTF(buf, fmt, args);
 #endif /* HAVE_VSNPRINTF */
-  va_end(args);
-
   if((size_t)strlen(buf) >= (size_t)sizeof(buf))
     Pike_fatal("Buffer overflow in cpp_error.\n");
 
   cpp_error(this, buf);
+}
+
+void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
+     ATTRIBUTE((format(printf,2,3)))
+{
+  va_list args;
+  va_start(args, fmt);
+  cpp_error_vsprintf(this, fmt, args);
+  va_end(args);
+}
+
+void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
+     ATTRIBUTE((format(printf,2,3)))
+{
+  struct svalue thrown;
+  move_svalue (&thrown, &throw_value);
+  throw_value.type = T_INT;
+
+  if (cpp_error_fmt) {
+    va_list args;
+    va_start (args, cpp_error_fmt);
+    cpp_error_vsprintf (this, cpp_error_fmt, args);
+    va_end (args);
+  }
+
+  push_svalue(&thrown);
+  low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
+
+  if (SAFE_IS_ZERO(sp-1)) {
+    /* FIXME: Doesn't handle wide string error messages. */
+    struct pike_string *s = format_exception_for_error_msg (&thrown);
+    if (s) {
+      if (!s->size_shift) cpp_error (this, s->str);
+      free_string (s);
+    }
+  }
+
+  pop_stack();
+  free_svalue(&thrown);
 }
 
 void cpp_describe_exception(struct cpp *this, struct svalue *thrown)

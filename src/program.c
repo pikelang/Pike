@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.486 2004/03/18 19:31:38 grubba Exp $
+|| $Id: program.c,v 1.487 2004/03/23 13:41:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.486 2004/03/18 19:31:38 grubba Exp $");
+RCSID("$Id: program.c,v 1.487 2004/03/23 13:41:56 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5184,6 +5184,26 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 
   yyerror(buf);
   va_end(args);
+}
+
+struct pike_string *format_exception_for_error_msg (struct svalue *thrown)
+{
+  struct pike_string *s = NULL;
+
+  push_svalue (thrown);
+  SAFE_APPLY_MASTER ("describe_error", 1);
+
+  if (sp[-1].type == T_STRING) {
+    f_string_trim_all_whites(1);
+    push_constant_text("\n");
+    push_constant_text(" ");
+    f_replace(3);
+    return (--sp)->u.string;
+  }
+  else {
+    pop_stack();
+    return NULL;
+  }
 }
 
 void yy_describe_exception(struct svalue *thrown)
