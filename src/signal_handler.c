@@ -618,12 +618,14 @@ static HANDLE get_inheritable_handle(struct mapping *optional,
  *
  * only on UNIX:
  *
- *   uid	int
- *   gid	int
- *   nice	int
+ *   uid		int
+ *   gid		int
+ *   nice		int
+ *   noinitgroups	int
+ *   setgroups		array(int)
  *
  * FIXME:
- *   Support for setresuid() and setresgid().
+ *   Support for setresgid().
  */
 
 #ifdef HAVE_GETPWENT
@@ -886,7 +888,11 @@ void f_create_process(INT32 args)
 
 #ifdef HAVE_SETEUID
       seteuid(0);
-#endif
+#else /* !HAVE_SETEUID */
+#ifdef HAVE_SETRESUID
+      setresuid(0,0,-1);
+#endif /* HAVE_SETRESUID */
+#endif /* HAVE_SETEUID */
 
       if(optional)
       {
@@ -1126,7 +1132,11 @@ void f_create_process(INT32 args)
 
 #ifdef HAVE_SETEUID
       seteuid(wanted_uid);
-#endif
+#else /* !HAVE_SETEUID */
+#ifdef HAVE_SETRESUID
+      setresuid(wanted_uid, wanted_uid, -1);
+#endif /* HAVE_SETRESUID */
+#endif /* HAVE_SETEUID */
 	
       my_set_close_on_exec(0,0);
       my_set_close_on_exec(1,0);
