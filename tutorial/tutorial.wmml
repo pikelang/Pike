@@ -11868,16 +11868,17 @@ time, localtime, mktime, gmtime
 
 
 
-<function name=decode_value title="code a value into a string">
+<function name=decode_value title="decode a value from a string">
 <man_syntax>
 mixed decode_value(string <I>coded_value</I>);
 </man_syntax>
 <man_description>
-This function takes a string created with encode_value() and converts
-it back to the value that was coded. 
+This function takes a string created with encode_value() or
+encode_value_canonic() and converts it back to the value that was
+coded.
 </man_description>
 <man_see>
-encode_value
+encode_value, encode_value_canonic
 </man_see>
 </function>
 
@@ -11961,9 +11962,29 @@ structures etc. At present, objects, programs and functions cannot be
 saved in this way. This is being worked on.
 </man_description>
 <man_see>
-decode_value, sprintf
+decode_value, sprintf, encode_value_canonic
 </man_see>
 </function>
+
+
+<function name=encode_value_canonic title="code a value into a string on canonical form">
+<man_syntax>
+string encode_value_canonic(mixed <i>value</i>)
+</man_syntax>
+<man_description>
+Takes a value and converts it to a string on canonical form, much like
+encode_value(). The canonical form means that if an identical value is
+encoded, it will produce exactly the same string again, even if it's
+done at a later time and/or in another Pike process. The produced
+string is compatible with decode_value().
+<p>
+Note that this function is more restrictive than encode_value() with
+respect to the types of values it can encode. It will throw an error
+if it can't encode to a canonical form.
+</man_description>
+<man_see>
+encode_value, decode_value
+</man_see>
 
 
 <function name=enumerate title="create an array with an enumeration">
