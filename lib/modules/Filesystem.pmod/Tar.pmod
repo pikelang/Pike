@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.7 2000/09/18 17:50:27 grubba Exp $
+ * $Id: Tar.pmod,v 1.8 2001/08/23 14:31:43 grubba Exp $
  */
 
 class _Tar  // filesystem
@@ -18,8 +18,10 @@ class _Tar  // filesystem
       if(p<0)
 	if((p += len)<0)
 	  p = 0;
-      if(p>=len)
+      if(p>=len) {
 	p = len-1;
+	if (!len) p = 0;
+      }
       return ::seek((pos = p)+start);
     }
 
