@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.17 2004/02/29 02:56:04 nilsson Exp $
+/* $Id: https.pike,v 1.18 2004/04/19 22:59:06 nilsson Exp $
  *
  * dummy https server
  */
@@ -13,7 +13,7 @@
 
 import Stdio;
 
-inherit "sslport";
+inherit SSL.sslport;
 
 string my_certificate = MIME.decode_base64(
   "MIIBxDCCAW4CAQAwDQYJKoZIhvcNAQEEBQAwbTELMAkGA1UEBhMCREUxEzARBgNV\n"
