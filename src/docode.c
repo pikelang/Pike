@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.90 2001/01/10 20:00:23 mast Exp $");
+RCSID("$Id: docode.c,v 1.91 2001/01/10 23:31:55 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -42,27 +42,32 @@ struct statement_label
   struct statement_label_name *name;
   INT16 emit_break_label;
   INT32 break_label, continue_label;
-  unsigned catch_depth;
+  void (*cleanup)(void *);
+  void *cleanup_arg;
 };
 static struct statement_label *current_label = 0;
-
-static unsigned catch_depth = 0;
 
 #define PUSH_STATEMENT_LABEL do {					\
   struct statement_label new_label__;					\
   new_label__.prev = current_label;					\
+  new_label__.cleanup = 0;						\
   if (!current_label || current_label->break_label != -2) {		\
     /* Only cover the current label if it's in use by a statement. */	\
     new_label__.name = 0;						\
     new_label__.break_label = new_label__.continue_label = -1;		\
-    new_label__.catch_depth = catch_depth;				\
     current_label = &new_label__;					\
   }									\
+  DO_IF_DEBUG(								\
+  else if (current_label && current_label->cleanup)			\
+    fatal("Cleanup callback taken in unused statement label.\n");	\
+  )									\
   do
 
 #define POP_STATEMENT_LABEL						\
   while (0);								\
   current_label = new_label__.prev;					\
+  if (new_label__.cleanup)						\
+    new_label__.cleanup(new_label__.cleanup_arg);			\
 } while (0)
 
 static INT32 current_switch_case;
@@ -100,7 +105,7 @@ int do_jump(int token,INT32 lbl)
 
 static int lbl_cache[LBLCACHESIZE];
 
-int do_branch(INT32 lbl, int catch_escapes)
+int do_branch(INT32 lbl)
 {
   if(lbl==-1)
   {
@@ -127,8 +132,6 @@ int do_branch(INT32 lbl, int catch_escapes)
     }
 
   }
-  while (catch_escapes--)
-    emit0(F_ESCAPE_CATCH);
   emit1(F_BRANCH, lbl);
   return lbl;
 }
@@ -154,6 +157,11 @@ void do_pop(int x)
   case 1: emit0(F_POP_VALUE); break;
   default: emit1(F_POP_N_ELEMS,x); break;
   }
+}
+
+void do_escape_catch()
+{
+  emit0(F_ESCAPE_CATCH);
 }
 
 #define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP | DO_DEFER_POP))
@@ -201,7 +209,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
     f=!!node_is_false(n);
     if(t || f)
     {
-      if(t == iftrue) do_branch( label, 0);
+      if(t == iftrue) do_branch( label);
       return;
     }
   }
@@ -468,7 +476,7 @@ static int do_docode2(node *n, INT16 flags)
     tmp3=emit1(F_POP_N_ELEMS,0);
 
     /* Else */
-    tmp2=do_branch(-1, 0);
+    tmp2=do_branch(-1);
     low_insert_label( DO_NOT_WARN((INT32)tmp1));
 
     bdroppings=do_docode(CDDR(n), flags);
@@ -760,6 +768,8 @@ static int do_docode2(node *n, INT16 flags)
     emit0(F_CONST0);
 
   foreach_arg_pushed:
+    current_label->cleanup = (void (*)(void *)) do_pop;
+    current_label->cleanup_arg = (void *) 4;
 #ifdef PIKE_DEBUG
     /* This is really ugly because there is always a chance that the bug
      * will disappear when new instructions are added to the code, but
@@ -768,7 +778,7 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
-    tmp3=do_branch(-1, 0);
+    tmp3=do_branch(-1);
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_label->continue_label);
@@ -783,7 +793,6 @@ static int do_docode2(node *n, INT16 flags)
 
     current_switch_jumptable = prev_switch_jumptable;
     } POP_STATEMENT_LABEL;
-    do_pop(4);
     return 0;
   }
 
@@ -800,6 +809,8 @@ static int do_docode2(node *n, INT16 flags)
     current_label->continue_label=alloc_label();
 
     tmp2=do_docode(CAR(n),0);
+    current_label->cleanup = (void (*)(void *)) do_pop;
+    current_label->cleanup_arg = (void *) 3;
 #ifdef PIKE_DEBUG
     /* This is really ugly because there is always a chance that the bug
      * will disappear when new instructions are added to the code, but
@@ -808,7 +819,7 @@ static int do_docode2(node *n, INT16 flags)
     if(d_flag)
       emit0(F_MARK);
 #endif
-    tmp3=do_branch(-1, 0);
+    tmp3=do_branch(-1);
     tmp1=ins_label(-1);
 
     DO_CODE_BLOCK(CDR(n));
@@ -823,7 +834,6 @@ static int do_docode2(node *n, INT16 flags)
 
     current_switch_jumptable = prev_switch_jumptable;
     } POP_STATEMENT_LABEL;
-    do_pop(3);
     return 0;
   }
 
@@ -1193,10 +1203,11 @@ static int do_docode2(node *n, INT16 flags)
     return 0;
 
   case F_BREAK:
-  case F_CONTINUE:
+  case F_CONTINUE: {
+    struct statement_label *label, *p;
+
     if (CAR(n)) {
       struct pike_string *name = CAR(n)->u.sval.u.string;
-      struct statement_label *label;
       struct statement_label_name *lbl_name;
       for (label = current_label; label; label = label->prev)
 	for (lbl_name = label->name; lbl_name; lbl_name = lbl_name->next)
@@ -1206,45 +1217,47 @@ static int do_docode2(node *n, INT16 flags)
       return 0;
 
     label_found:
-      if (n->token == F_BREAK) {
-	if (label->break_label < 0) label->emit_break_label = 1;
-	label->break_label =
-	  do_branch(label->break_label, catch_depth - label->catch_depth);
-      }
-      else {
-	if (label->continue_label < 0)
-	  my_yyerror("Cannot continue the non-loop statement on line %d.",
-		     lbl_name->line_number);
-	else
-	  do_branch(label->continue_label, catch_depth - label->catch_depth);
+      if (n->token == F_CONTINUE && label->continue_label < 0) {
+	my_yyerror("Cannot continue the non-loop statement on line %d.",
+		   lbl_name->line_number);
+	return 0;
       }
     }
 
     else
       if (n->token == F_BREAK) {
-	if(!current_label || current_label->break_label < 0)
+	label = current_label;
+	if(!label || label->break_label < 0)
 	{
 	  yyerror("Break outside loop or switch.");
-	}else{
-	  do_branch( current_label->break_label,
-		     catch_depth - current_label->catch_depth);
+	  return 0;
 	}
       }
       else {
-	struct statement_label *label;
 	for (label = current_label; label; label = label->prev)
-	  if (label->continue_label >= 0) {
-	    do_branch( label->continue_label,
-		       catch_depth - label->catch_depth);
-	    return 0;
-	  }
+	  if (label->continue_label >= 0)
+	    goto continue_label_found;
 	yyerror("Continue outside loop.");
+	return 0;
+      continue_label_found:
       }
+
+    for (p = current_label; p != label; p = p->prev)
+      if (p->cleanup)
+	p->cleanup(p->cleanup_arg);
+
+    if (n->token == F_BREAK) {
+      if (label->break_label < 0) label->emit_break_label = 1;
+      label->break_label = do_branch(label->break_label);
+    }
+    else
+      do_branch(label->continue_label);
+
     return 0;
+  }
 
   case F_NORMAL_STMT_LABEL:
   case F_CUSTOM_STMT_LABEL:
-  {
     PUSH_STATEMENT_LABEL {
       struct statement_label *label;
       struct statement_label_name name;
@@ -1282,7 +1295,6 @@ static int do_docode2(node *n, INT16 flags)
 	low_insert_label(current_label->break_label);
     } POP_STATEMENT_LABEL;
     return 0;
-  }
 
   case F_RETURN:
     do_docode(CAR(n),0);
@@ -1296,7 +1308,6 @@ static int do_docode2(node *n, INT16 flags)
     return 1;
 
   case F_CATCH:
-  {
     PUSH_STATEMENT_LABEL {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
 
@@ -1304,11 +1315,10 @@ static int do_docode2(node *n, INT16 flags)
     current_label->break_label=alloc_label();
     if (TEST_COMPAT(7,0))
       current_label->continue_label=alloc_label();
+    current_label->cleanup = (void (*)(void *)) do_escape_catch;
 
-    catch_depth++;
     tmp1=do_jump(F_CATCH,-1);
     DO_CODE_BLOCK(CAR(n));
-    catch_depth--;
 
     if (TEST_COMPAT(7,0))
       ins_label(current_label->continue_label);
@@ -1317,9 +1327,9 @@ static int do_docode2(node *n, INT16 flags)
     ins_label(DO_NOT_WARN((INT32)tmp1));
 
     current_switch_jumptable = prev_switch_jumptable;
+    current_label->cleanup = 0;
     } POP_STATEMENT_LABEL;
     return 1;
-  }
 
   case F_LVALUE_LIST:
     return do_docode(CAR(n),DO_LVALUE)+do_docode(CDR(n),DO_LVALUE);
@@ -1516,7 +1526,7 @@ static int do_docode2(node *n, INT16 flags)
       do_docode(CDR(n), (INT16)(flags | DO_LVALUE));
     
   default:
-    fatal("Infernal compiler error (unknown parse-tree-token).\n");
+    fatal("Infernal compiler error (unknown parse-tree-token %d).\n", n->token);
     return 0;			/* make gcc happy */
   }
 }
