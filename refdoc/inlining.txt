@@ -133,24 +133,23 @@ the code, without intervening blank lines. Examples:
   int very_short() { return 4711; }
   int even_shorter() { return 0; }
 
-
 In Pike files, you can not use @class or @module to tell which module
 or class you are in. To document a class, you simply write:
 
-//! Doc for the class
-class CheeseMaker
-{
-  //! You can even document inherits!
-  inherit Earth : earth;
-
-  //! Doc for CheeseMaker->a()
-  int a()
+  //! Doc for the class
+  class CheeseMaker
   {
-    ...
+    //! You can even document inherits!
+    inherit Earth : earth;
+  
+    //! Doc for CheeseMaker->a()
+    int a()
+    {
+      ...
+    }
+  
+    void create(string s) { ... }
   }
-
-  void create(string s) { ... }
-}
 
 The parser will automatically identify a() as a member method of the
 class CheeseMaker, and will detect that Earth is inherited by
@@ -158,11 +157,28 @@ CheeseMaker. If a class has no documentation comment, it's internals
 will not be examined, thus it is an error if a class contains
 documentation comments but is itself undocumented:
 
-class a()
-{
-  //! @decl foo
-  //!    ... doc for foo ...
-}
+  class a()
+  {
+    //! @decl foo
+    //!    ... doc for foo ...
+  }
+  
+A special inlining case is that of functions and classes. When documenting
+these, the doc comment can be put between the head of the function/class,
+and the opening "{", like this:
+
+  class Roy
+  //! Documentation for Roy
+  {
+    ....
+  }
+  
+  int un_randomize(int x)
+  //! This function takes a random number, and transforms it into
+  //! a predictable number.
+  {
+    return x = 4711;
+  }
 
 If a doc block is the first in a file, and it has no target, then it
 is treated as doc for the file (or rather: the module/class that the
