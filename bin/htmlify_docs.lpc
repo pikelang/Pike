@@ -45,9 +45,15 @@ string smallcaps(string foo)
 string fippel_path(string path)
 {
   sscanf(path,"./%s",path);
-  return replace(path,"/","_")+".html";
+  path=replace(path,"/","_");
+  if(path[strlen(path)-5..]!=".html") path+=".html";
+
+  return path;
 }
 
+/*
+ * Three step conversion process...
+ */
 string even_more_magic(string block, int indent)
 {
   if(-1==search(block,"\t"))
@@ -157,6 +163,10 @@ string magic(string s, int quote)
   return implode(ret,"\n<p>");
 }
 
+
+/*
+ * Magic to convert SYNTAX sections
+ */
 inherit "/precompiled/regexp" : lastident;
 inherit "/precompiled/regexp" : megamagic;
 
@@ -195,6 +205,9 @@ string syntax_magic(string s)
   return "<tt>"+magic(s,1)+"</tt>";
 }
 
+
+/* HTML quoting / unquoting */
+
 string html_quote(string s)
 {
   return replace(s,({"&","<",">"}),({"&amp;","&lt;","&gt;"}));
@@ -217,6 +230,9 @@ string mkdocument(string s,string title)
 	  "</html>");
 }
 
+inherit "/precompiled/regexp":is_example;
+
+/* Convert a page */
 string convert_page(string path, string fname)
 {
   string output, short;
@@ -227,13 +243,12 @@ string convert_page(string path, string fname)
 
   cont=read_bytes(path);
 
-  cont=html_quote(cont);
-
   if(sscanf(cont,"NAME\n\t%s - %s\n",name,short))
   {
     int partno;
 
-    short_descs[name]=short;
+    cont=html_quote(cont);
+    short_descs[html_quote(name)]=short;
 
     string *parts=explode(cont,"============================================================================\n");
     for(partno=0;partno<sizeof(parts);partno++)
@@ -346,8 +361,59 @@ string convert_page(string path, string fname)
     }
     output=mkdocument(implode(parts,"<hr noshade size=1>\n"),"uLPC: "+name);
   }
+  else if(path[strlen(path)-5..]==".html")
+  {
+    if(sscanf(cont,"<title>%s</title>",part))
+      short_descs[(path/"/")[-1]]=part;
+    output=cont;
+  }
+  else if(is_example::match(cont))
+  {
+    /** Hmm, this looks like an example file to me... */
+    string line,tmp;
+    int pre,p;
+
+    if(sscanf(cont,"%*[0-9.] %s\n",part)==2)
+      short_descs[(path/"/")[-1]]=part;
+
+    tmp="";
+    pre=2;
+    cont=html_quote(cont);
+    foreach(cont/"\n"+({"."}),line)
+    {
+      if(strlen(line))
+      {
+	switch(line[0])
+	{
+	case ' ': p=0; sscanf(line,"  %s",line); break;
+	case '\t': p=1; sscanf(line,"\t",line); break;
+	default: p=2; break;
+	}
+	
+	if(p!=pre)
+	{
+	  switch(pre)
+	  {
+	  case 2: output+="<h2>"+tmp+"</h2>"; break;
+	  case 1:
+	    if(tmp[-1]=='\n' && tmp[-2]=='\n')
+	      tmp=tmp[..strlen(tmp)-2];
+	    output+="<pre>\n"+tmp+"</pre>\n";
+	    break;
+	  case 0: output+=replace(tmp,"\n\n","\n<p>\n"); break;
+	  }
+	  pre=p;
+	  tmp="";
+	}
+      }
+      tmp+=line+"\n";
+    }
+    output=mkdocument(output,"uLPC: "+
+		      replace(explode(fname,"/")[-1],"_"," "));
+  }
   return output;
 }
+
 
 void scanfiles(string path, string fname)
 {
@@ -357,13 +423,16 @@ void scanfiles(string path, string fname)
   if(nf && strlen(nf))
   {
     np=combine_path(new_path,fippel_path(path));
-    write("Writing "+np+".\n");
+//    write("Writing "+np+".\n");
     if(file_size(np)>=0)
       rm (np);
     write_file(np,nf);
   }
 }
 
+/*
+ * Pre-read all files and sort out where to link it to
+ */
 void scanlinks(string path, string fname)
 {
   string cont,name;
@@ -385,11 +454,48 @@ void scanlinks(string path, string fname)
 	subpages[fname+"-&gt;"+part_name]=path+"#"+part_name;
       }
     }
-  }else{
+  }
+  else if(path[strlen(path)-5..]==".html")
+  {
+    pages[(path[..strlen(path)-6]/"/")[-1]]=fippel_path(path);
+  }
+  else if(is_example::match(cont))
+  {
+    pages[(path/"/")[-1]]=fippel_path(path);
+  }
+  else
+  {
+    string tmp;
+    int l, i;
+
+    foreach(cont/"\n", tmp)
+    {
+      if(is_example::match(tmp+"\n"))
+      {
+	l++;
+      }else{
+	i++;
+      }
+    }
+
+    if(l > i*2)
+    {
+      l=0;
+      foreach(cont/"\n", tmp)
+      {
+	l++;
+	if(!is_example::match(tmp+"\n"))
+	{
+	  perror(path+":"+l+": not on example form.\n");
+	}
+      }
+    }
     perror("Warning: not converting "+path+".\n");
   }
 }
 
+
+/** Traverse directory **/
 void traversedir(string path,function fun)
 {
   string file;
@@ -411,6 +517,11 @@ void traversedir(string path,function fun)
   }
 }
 
+string short(string s)
+{
+  return short_descs[s] ? " - "+short_descs[s] : "";
+}
+/** Create an index for our newly created stuff **/
 string mkindex()
 {
   string ret;
@@ -426,12 +537,13 @@ string mkindex()
   {
     ret+="<a name="+b+">";
     ret+="<dt><h2>"+capitalize(b);
-    if(short_descs[b]) ret+=" - "+short_descs[b];
+    ret+=short(b);
     ret+="</h2><dd>\n";
     ret+="<ul>\n";
     foreach(keywords[b],a)
     {
-      ret+="<li><a href="+pages[a]+">"+a+"</a> - "+short_descs[a]+"\n";
+      a=html_quote(a);
+      ret+="<li><a href="+pages[a]+">"+a+"</a>"+ short(a) +"\n";
       m_delete(tmp,a);
     }
     ret+="</ul></a>\n";
@@ -445,7 +557,7 @@ string mkindex()
     a=html_quote(a);
     if(pages[a])
     {
-      ret+="<li><a href="+pages[a]+">"+a+"</a> - "+short_descs[a]+"\n";
+      ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     }else{
       perror("Warning: no page for function: "+a+".\n");
     }
@@ -458,7 +570,7 @@ string mkindex()
   {
     if(-1 == search(a,"/")) continue;
 
-    ret+="<li><a href="+pages[a]+">"+a+"</a> - "+short_descs[a]+"\n";
+    ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
     m_delete(tmp,a);
   }
   
@@ -467,7 +579,7 @@ string mkindex()
   ret+="<H1>Other pages</H1>\n<ul>\n";
   foreach(sort_array(m_indices(tmp)),a)
   {
-    ret+="<li><a href="+pages[a]+">"+a+"</a> - "+short_descs[a]+"\n";
+    ret+="<li><a href="+pages[a]+">"+a+"</a>"+short(a)+"\n";
   }
   
   ret+="</ul>\n";
@@ -478,8 +590,16 @@ int main(int argc, string *argv)
 {
   string np;
 
-  megamagic::create("^(.*)&lt;([a-z_0-9][a-z_0-9]*)&gt;(.*)$");
-  lastident::create("^(.*[^<>a-z_0-9])([a-z_0-9][a-z_0-9]*)([^<>a-z_0-9]*)$");
+  megamagic::create("^(.*)&lt;([a-z_0-9]+)&gt;(.*)$");
+  lastident::create("^(.*[^<>a-z_0-9])([a-z_0-9]+)([^<>a-z_0-9]*)$");
+
+#define BEGIN1 "[0-9]+(\\.[0-9]+)*(\\.|) "
+#define BEGIN2 "\t"
+#define BEGIN3 "  "
+#define LEND "[^\n]*"
+#define LINE "(" BEGIN1 LEND ")|(" BEGIN2 LEND ")|(" BEGIN3 LEND ")|()\n"
+
+  is_example::create("^(" LINE ")+$");
 
   write("Scanning links.\n");
   new_path=combine_path(getcwd(),argv[2]);
