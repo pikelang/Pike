@@ -176,6 +176,7 @@ testfont binary
 /src/modules/Image/configure.in foreign_ident
 /src/modules/Image/dct.c foreign_ident
 /src/modules/Image/encodings/Makefile.in foreign_ident
+/src/modules/Image/encodings/_xpm.c foreign_ident
 /src/modules/Image/encodings/any.c foreign_ident
 /src/modules/Image/encodings/bmp.c foreign_ident
 /src/modules/Image/encodings/configure.in foreign_ident
