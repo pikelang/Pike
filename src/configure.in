@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.369 2000/05/01 16:34:59 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.370 2000/05/01 18:16:46 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -503,9 +503,9 @@ AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing inste
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
-AC_ARG_WITH(c_profiling, [  --with-pg              Use the gcc -pg option],
+AC_ARG_WITH(pg,          [  --with-pg              Use the gcc -pg option],
 [
-  if "x$with_c_profiling" = xyes; then
+  if test "x$with_pg" = xyes; then
     PROFIL=-pg
   else
     PROFIL=
