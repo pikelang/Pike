@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.27 2004/03/15 16:40:19 jonasw Exp $
+ * $Id: Tree.pmod,v 1.28 2004/04/20 20:51:04 mast Exp $
  *
  */
 
@@ -109,6 +109,7 @@ void throw_error(mixed ...args)
 	error(sprintf(@args));
 }
 
+//! Namespace aware parser.
 class XMLNSParser {
   ADT.Stack namespace_stack = ADT.Stack();
 
@@ -117,17 +118,42 @@ class XMLNSParser {
     namespace_stack->push(([]));	// Sentinel.
   }
 
-  void Enter(mapping(string:string) attrs)
+  //! Check @[attrs] for namespaces.
+  //!
+  //! @returns
+  //!   Returns the namespace expanded version of @[attrs].
+  mapping(string:string) Enter(mapping(string:string) attrs)
   {
     mapping(string:string) namespaces = namespace_stack->top() + ([]);
     foreach(attrs; string attr; string val) {
       if (attr == "xmlns") {
+	if (val == "") error("Bad namespace specification (%O=\"\")\n", attr);
 	namespaces[0] = val;
       } else if (has_prefix(attr, "xmlns:")) {
+	if (val == "") error("Bad namespace specification (%O=\"\")\n", attr);
 	namespaces[attr[6..]] = val;
       }
     }
     namespace_stack->push(namespaces);
+    // Now that we know what the namespaces are, we
+    // can expand the namespaces in the other attributes.
+    mapping(string:string) result = ([]);
+    foreach(attrs; string attr; string val) {
+      int i;
+      if (!has_prefix(attr, "xmlns:") &&
+	  (i = search(attr, ":")) >= 0) {
+	string key = attr[..i-1];
+	attr = attr[i+1..];
+	string prefix = namespaces[key];
+	if (!prefix) {
+	  error("Unknown namespace %O for attribute %O\n",
+		key, attr);
+	}
+	attr = prefix+attr;
+      }
+      result[attr] = val;
+    }
+    return result;
   }
 
   string Decode(string name)
@@ -213,7 +239,7 @@ class AbstractNode {
   {
     AbstractNode  parent, node;
     
-    parent = this_object();
+    parent = this;
     while (node = parent->mParent)
       parent = node;
     return (parent);
@@ -253,7 +279,7 @@ class AbstractNode {
   AbstractNode add_child(AbstractNode c)
   {
     mChildren += ({ c });
-    c->mParent = this_object();
+    c->mParent = this;
 	
     //  Let caller get the new node back for easy chaining of calls
     return (c);
@@ -269,7 +295,7 @@ class AbstractNode {
 
   //! Removes this node from its parent. The parent reference is set to null.
   void remove_node() {
-    mParent->remove_child(this_object());
+    mParent->remove_child(this);
   }
 
   //! Replaces the nodes children with the provided ones. All parent
@@ -279,7 +305,7 @@ class AbstractNode {
       c->mParent = 0;
     mChildren = children;
     foreach(mChildren, AbstractNode c)
-      c->mParent = this_object();
+      c->mParent = this;
   }
 
 
@@ -293,7 +319,7 @@ class AbstractNode {
     if (index < 0)
       return 0;
     mChildren[index] = new;
-    new->mParent = this_object();
+    new->mParent = this;
     old->mParent = 0;
     return new;
   }
@@ -302,7 +328,7 @@ class AbstractNode {
   //! @returns
   //!   Returns the new node.
   AbstractNode replace_node(AbstractNode new) {
-    mParent->replace_child(this_object(), new);
+    mParent->replace_child(this, new);
     return new;
   }
 
@@ -313,7 +339,7 @@ class AbstractNode {
   int walk_preorder(function(AbstractNode, mixed ...:int|void) callback,
 		    mixed ... args)
   {
-    if (callback(this_object(), @args) == STOP_WALK)
+    if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
     foreach(mChildren, AbstractNode c)
       if (c->walk_preorder(callback, @args) == STOP_WALK)
@@ -333,11 +359,11 @@ class AbstractNode {
   {
     int  res;
 	
-    res = callback_1(this_object(), @args);
+    res = callback_1(this, @args);
     if (!res)
       foreach(mChildren, AbstractNode c)
 	res = res || c->walk_preorder_2(callback_1, callback_2, @args);
-    return (callback_2(this_object(), @args) || res);
+    return (callback_2(this, @args) || res);
   }
 
   //! Traverse the node subtree in inorder, left subtree first, then
@@ -351,7 +377,7 @@ class AbstractNode {
     if (sizeof(mChildren) > 0)
       if (mChildren[0]->walk_inorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
-    if (callback(this_object(), @args) == STOP_WALK)
+    if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
     foreach(mChildren[1..], AbstractNode c)
       if (c->walk_inorder(callback, @args) == STOP_WALK)
@@ -368,7 +394,7 @@ class AbstractNode {
     foreach(mChildren, AbstractNode c)
       if (c->walk_postorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
-    if (callback(this_object(), @args) == STOP_WALK)
+    if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
   }
 
@@ -394,7 +420,7 @@ class AbstractNode {
     if (!mParent)
       return ({ });
     siblings = mParent->get_children();
-    pos = search(siblings, this_object());
+    pos = search(siblings, this);
 
     //  Return array in reverse order not including self
     return (reverse(siblings[..(pos - 1)]));
@@ -411,7 +437,7 @@ class AbstractNode {
     if (!mParent)
       return ({ });
     siblings = mParent->get_children();
-    pos = search(siblings, this_object());
+    pos = search(siblings, this);
 
     //  Select array range
     return (siblings[(pos + 1)..]);
@@ -422,7 +448,7 @@ class AbstractNode {
   {
     //  If not found we return ourself only
     if (!mParent)
-      return ({ this_object() });
+      return ({ this });
     return (mParent->get_children());
   }
 
@@ -434,8 +460,8 @@ class AbstractNode {
     AbstractNode  node;
 	
     //  Repeat until we reach the top
-    res = include_self ? ({ this_object() }) : ({ });
-    node = this_object();
+    res = include_self ? ({ this }) : ({ });
+    node = this;
     while (node = node->get_parent())
       res += ({ node });
     return (res);
@@ -448,7 +474,7 @@ class AbstractNode {
     array   res;
 	
     //  Walk subtrees in document order and add to resulting list
-    res = include_self ? ({ this_object() }) : ({ });
+    res = include_self ? ({ this }) : ({ });
     foreach(mChildren, AbstractNode child) {
       res += child->get_descendants(1);
     }
@@ -463,7 +489,7 @@ class AbstractNode {
 	
     //  Walk tree from root until we find ourselves and add all preceding
     //  nodes. We should return the nodes in reverse document order.
-    self = this_object();
+    self = this;
     root = get_root();
     root->walk_preorder(
 			lambda(AbstractNode n) {
@@ -475,7 +501,7 @@ class AbstractNode {
 			});
 	
     //  Finally remove all of our ancestors
-    root = this_object();
+    root = this;
     while (node = root->get_parent()) {
       root = node;
       res -= ({ node });
@@ -492,7 +518,7 @@ class AbstractNode {
 	
     //  Add subtrees from right-hand siblings and keep walking towards
     //  the root of the tree.
-    node = this_object();
+    node = this;
     do {
       siblings = node->get_following_siblings();
       foreach(siblings, AbstractNode n) {
@@ -516,11 +542,12 @@ class Node {
 
   //  Member variables for this node type
   static int            mNodeType;
-  static string		mShortNamespace;	// Namespace prefix
+  static string		mShortNamespace = "";	// Namespace prefix
   static string		mNamespace;	// Resolved namespace
   static string         mTagName;
 //   private int            mTagCode;
-  static mapping        mAttributes;
+  static mapping        mAttributes;		// Resolved attributes
+  static mapping	mShortAttributes;	// Shortened attributes
   static array(Node) mAttrNodes;   //  created on demand
   static string         mText;
   static int            mDocOrder;
@@ -560,6 +587,13 @@ class Node {
   //! Returns this nodes attributes, which can be altered
   //! destructivly to alter the nodes attributes.
   mapping get_attributes()   { return (mAttributes); }
+
+  //! Returns this nodes name-space adjusted attributes.
+  //!
+  //! @note
+  //!   @[set_short_namespaces()] must have been called before
+  //!   calling this function.
+  mapping get_short_attributes()   { return (mShortAttributes); }
 
   //! Returns the node type. See defined node type constants.
   int get_node_type()        { return (mNodeType); }
@@ -719,7 +753,7 @@ class Node {
   //! It is possible to cast a node to a string, which will return
   //! @[render_xml()] for that node.
   mixed cast(string to) {
-    if(to=="object") return this_object();
+    if(to=="object") return this;
     if(to=="string") return render_xml();
     error( "Can not case Node to "+to+".\n" );
   }
@@ -740,9 +774,10 @@ class Node {
 	break;
       
       data->add("<", tagname);
-      if (mapping attr = n->get_attributes()) {
-	foreach(indices(attr), string a)
+      if (mapping attr = n->get_short_attributes()) {
+	foreach(indices(attr), string a) {
 	  data->add(" ", a, "='", attrq(attr[a]), "'");
+	}
       }
       if (n->count_children())
 	data->add(">");
@@ -827,6 +862,7 @@ class Node {
     }
     // First check if any namespaces are defined by this tag.
     mapping attrs = get_attributes() || ([]);
+    mapping short_attrs = attrs + ([]);
     foreach(indices(attrs), string attr_name) {
       if (has_prefix(attr_name, "xmlns")) {
 	string short_prefix = "";
@@ -853,8 +889,55 @@ class Node {
 	backward_lookup[mShortNamespace] = mNamespace;
 	forward_lookup[mNamespace] = mShortNamespace;
 	attrs["xmlns:NS"+i] = mNamespace;
+	short_attrs["xmlns:NS"+i] = mNamespace;
       }
     }
+    // Then set the short namespaces for any attributes.
+    foreach(indices(attrs), string attr_name) {
+      if (!has_prefix(attr_name, "xmlns:")) {
+	int i = -1;
+	int j;
+	while ((j = search(attr_name, ":", i + 1)) >= 0) {
+	  i = j;
+	}
+	while ((j = search(attr_name, "/", i + 1)) >= 0) {
+	  i = j;
+	}
+	if (i >= 0) {
+	  string ns = attr_name[..i];
+	  string prefix;
+
+	  // Check if we already have some namespace that is a longer
+	  // prefix of this attribute than ns. This isn't only for
+	  // looks; there are broken XML parsers that require the
+	  // break between the namespace and the attribute name to be
+	  // at a specific spot, e.g. the one used in the WebDAV
+	  // client in MS XP Pro.
+	  foreach (forward_lookup; string long;)
+	    if (sizeof (long) > sizeof (ns) && has_prefix (attr_name, long)) {
+	      ns = long;
+	      i = sizeof (long) - 1;
+	      break;
+	    }
+
+	  if (!(prefix = forward_lookup[ns])) {
+	    // We need to allocate a short namespace symbol.
+	    // FIXME: This is O(n²).
+	    int i;
+	    while(backward_lookup[prefix = ("NS"+i+":")]) {
+	      i++;
+	    }
+	    backward_lookup[mShortNamespace] = ns;
+	    forward_lookup[mNamespace] = prefix;
+	    attrs["xmlns:NS"+i] = ns;
+	    short_attrs["xmlns:NS"+i] = ns;
+	  }
+	  m_delete(short_attrs, attr_name);
+	  short_attrs[prefix + attr_name[i+1..]] = attrs[attr_name];
+	}
+      }
+    }
+    mShortAttributes = short_attrs;
     // And then do it for all the children.
     get_children()->set_short_namespaces(forward_lookup, backward_lookup);
   }
@@ -871,10 +954,10 @@ class Node {
     string encoding = get_encoding();
     set_short_namespaces();
     if(preserve_roxen_entities)
-      low_render_xml(data, this_object(), roxen_text_quote,
+      low_render_xml(data, this, roxen_text_quote,
 		     roxen_attribute_quote);
     else
-      low_render_xml(data, this_object(), text_quote, attribute_quote);
+      low_render_xml(data, this, text_quote, attribute_quote);
     return Locale.Charset.encoder(encoding)->feed((string)data)->drain();
   }
 
@@ -891,10 +974,10 @@ class Node {
     } (f, Locale.Charset.encoder(get_encoding()));
     set_short_namespaces();
     if(preserve_roxen_entities)
-      low_render_xml(data, this_object(), roxen_text_quote,
+      low_render_xml(data, this, roxen_text_quote,
 		     roxen_attribute_quote);
     else
-      low_render_xml(data, this_object(), text_quote, attribute_quote);
+      low_render_xml(data, this, text_quote, attribute_quote);
   }
 
   //  Override AbstractNode::`[]
@@ -940,7 +1023,7 @@ class Node {
     node_num = get_doc_order() + 1;
     foreach(indices(mAttributes), string attr) {
       node = AttributeNode(attr, mAttributes[attr]);
-      node->set_parent(this_object());
+      node->set_parent(this);
       node->set_doc_order(node_num++);
       mAttrNodes += ({ node });
     }
@@ -1083,7 +1166,7 @@ private Node|int(0..0)
       //  Parse namespace information of available.
       if (extra[0]->xmlns) {
 	XMLNSParser xmlns = extra[0]->xmlns;
-	xmlns->Enter(attr);
+	attr = xmlns->Enter(attr);
 	name = xmlns->Decode(name);
 	xmlns->Leave();
       }
@@ -1146,7 +1229,7 @@ private Node|int(0..0)
     if (arrayp(extra) && sizeof(extra) && mappingp(extra[0]) &&
 	extra[0]->xmlns) {
       XMLNSParser xmlns = extra[0]->xmlns;
-      xmlns->Enter(attr);
+      attr = xmlns->Enter(attr);
     }
   case "<!DOCTYPE":
   default:
