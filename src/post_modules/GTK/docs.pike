@@ -106,7 +106,6 @@ void print_inherited_functions( string cl, object fd )
 {
   foreach(sort(indices(struct[cl]))-({"inherit"}), string fun)
   {
-    string a,b;
     string a = true_types[cl+fun][1],b=true_types[cl+fun][0];
     if( (a-" ") == "void"  )
       a = "";

@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.128 2000/08/29 21:54:01 mast Exp $
+ * $Id: master.pike.in,v 1.129 2000/09/05 02:15:53 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -974,7 +974,6 @@ void _main(array(string) orig_argv, array(string) env)
 {
   array(string) argv=copy_value(orig_argv);
   int i,debug,trace;
-  object script;
   object tmp;
   string a,b;
   array q;
@@ -1174,10 +1173,10 @@ void _main(array(string) orig_argv, array(string) env)
 
   argv[0]=combine_path_with_cwd(argv[0]);
 
-  program tmp;
+  program prog;
 
   mixed err = catch {
-    tmp=(program)argv[0];
+    prog=(program)argv[0];
   };
 
   if (err) {
@@ -1187,13 +1186,13 @@ void _main(array(string) orig_argv, array(string) env)
   }
 
   // FIXME: Isn't the following code dead?
-  if(!tmp)
+  if(!prog)
   {
     werror("Pike: Couldn't find script to execute\n(%O)\n",argv[0]);
     exit(1);
   }
 
-  object script=tmp();
+  object script=prog();
 
 #if constant(_debug)
   if(debug) _debug(debug);

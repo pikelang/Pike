@@ -100,7 +100,7 @@ array cmap_t;
 
 string encode( object what, mapping|void options )
 {
-  int x,y, q;
+  int x,y,q;
   array lcmapt;
   TI("Encode init");
   if(!options) options = ([]);
@@ -164,7 +164,7 @@ string encode( object what, mapping|void options )
     res += "\""+c+"\",\n";
   TD(sprintf("Encode %d rows", sizeof(rows)));
 
-  int q = sizeof(rows);
+  q = sizeof(rows);
   foreach(rows, string row)
   {
     string r = "";
