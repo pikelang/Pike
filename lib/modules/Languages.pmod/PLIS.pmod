@@ -18,6 +18,7 @@ object Lempty = Nil();
 object Lfalse = Boolean("#f");
 object Ltrue = Boolean("#t");
 
+object readline;
 
 /* Lisp types */
 
@@ -837,7 +838,8 @@ object f_readline(object arglist, object env, object globals)
 {
   if (!arglist->car->is_string)
     return 0;
-  string s = Stdio.Readline.readline(arglist->car->to_string());
+  readline->set_prompt(arglist->car->to_string());
+  string s = readline->read();
   return s ? String(s) : Lfalse;
 }
 
@@ -942,6 +944,8 @@ void main()
 {
   object e = default_environment();
   // e->extend(make_symbol("global-environment"), e);
+  readline = Stdio.Readline();
+  readline->enable_history(512);
   e->extend(make_symbol("read-line"), Builtin(f_readline));
   e->extend(make_symbol("display"), Builtin(f_display));
 
