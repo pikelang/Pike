@@ -145,17 +145,27 @@ string sh_quote(string s)
 }
 
 //!
-array(string) split_quoted_string(string s)
+array(string) split_quoted_string(string s, int(0..1)|void nt_mode)
 {
+  // Remove initial white-space.
   sscanf(s,"%*[ \n\t]%s",s);
+
+  // Prefix interresting characters with NUL,
+  // and split on NUL.
   s=replace(s,
-	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n"}),
-	    ({"\0\"","\0'","\0\\","\0 ","\0\t","\0\n"}));
+	    ({"\"",  "'",  "\\",  " ",  "\t",  "\n", "\0"}),
+	    ({"\0\"","\0'","\0\\","\0 ","\0\t","\0\n", "\0\0"}));
   array(string) x=s/"\0";
   array(string) ret=({x[0]});
 
   for(int e=1;e<sizeof(x);e++)
   {
+    if (!sizeof(x[e])) {
+      // Escaped NUL.
+      ret[-1] += "\0";
+      e++;
+      continue;
+    }
     switch(x[e][0])
     {
       case '"':
@@ -177,8 +187,15 @@ array(string) split_quoted_string(string s)
       case '\\':
       if(sizeof(x[e])>1)
       {
-	ret[-1]+=x[e][1..];
+	if (nt_mode) {
+	  // On NT we only escape special characters with \;
+	  // other \'s we keep verbatim.
+	  ret[-1]+=x[e];
+	} else {
+	  ret[-1]+=x[e][1..];
+	}
       }else{
+	// Escaped special character.
 	ret[-1]+=x[++e];
       }
       break;
