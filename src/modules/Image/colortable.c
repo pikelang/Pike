@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colortable.c,v 1.120 2004/05/19 00:10:10 nilsson Exp $
+|| $Id: colortable.c,v 1.121 2004/09/19 00:19:01 nilsson Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.120 2004/05/19 00:10:10 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.121 2004/09/19 00:19:01 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -746,13 +746,13 @@ static INLINE struct color_hash_entry *insert_in_hash_mask(rgb_group rgb,
 
 static INLINE rgb_group get_mask_of_level(int level)
 {
-   static unsigned char strip_r[24]=
+   static const unsigned char strip_r[24]=
    { 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 0xf0,
      0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
-   static unsigned char strip_g[24]=
+   static const unsigned char strip_g[24]=
    { 0xff, 0xff, 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 
      0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
-   static unsigned char strip_b[24]=
+   static const unsigned char strip_b[24]=
    { 0xfe, 0xfe, 0xfe, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8, 0xf8, 0xf0, 0xf0, 
      0xf0, 0xe0, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80 };
 
@@ -4032,13 +4032,14 @@ static int* ordered_calculate_errors(int dxs,int dys)
    int *src,*dest;
    int sxs,sys;
 
-   static int errors2x1[2]={0,1};
-   static int errors2x2[4]={0,2,3,1};
-   static int errors3x1[3]={1,0,2};
-   static int errors3x2[6]={4,0,2,1,5,3};
-   static int errors3x3[9]={6,8,4,1,0,3,5,2,7};
+   static const int errors2x1[2]={0,1};
+   static const int errors2x2[4]={0,2,3,1};
+   static const int errors3x1[3]={1,0,2};
+   static const int errors3x2[6]={4,0,2,1,5,3};
+   static const int errors3x3[9]={6,8,4,1,0,3,5,2,7};
 
-   int szx,szy,*errs,sz,*d,*s;
+   const int *errs;
+   int szx,szy,sz,*d,*s;
    int xf,yf;
    int x,y;
    
@@ -4090,13 +4091,13 @@ static int* ordered_calculate_errors(int dxs,int dys)
 
       for (y=0; y<sys; y++)
       {
-	 int *errq=errs;
+	 const int *errq=errs;
 	 for (yf=0; yf<szy; yf++)
 	 {
 	    int *sd=s;
 	    for (x=0; x<sxs; x++)
 	    {
-	       int *errp=errq;
+	       const int *errp=errq;
 	       for (xf=0; xf<szx; xf++)
 		  *(d++)=*sd+sz**(errp++);
 	       sd++;
@@ -4110,10 +4111,11 @@ static int* ordered_calculate_errors(int dxs,int dys)
       sys*=szy;
 
       /* ok, rotate... */
-
-      errs=src;
-      src=dest;
-      dest=errs;
+      {
+	int *tmp=src;
+	src=dest;
+	dest=tmp;
+      }
    }
 
 #if 0

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.171 2004/09/18 20:50:57 nilsson Exp $
+|| $Id: system.c,v 1.172 2004/09/19 00:51:36 nilsson Exp $
 */
 
 /*
@@ -603,7 +603,7 @@ void f_initgroups(INT32 args)
  */
 void f_cleargroups(INT32 args)
 {
-  static gid_t gids[1] = { 65534 };	/* To safeguard against stupid OS's */
+  static const gid_t gids[1]={ 65534 }; /* To safeguard against stupid OS's */
   int err;
 
 #ifdef PIKE_SECURITY
@@ -633,7 +633,7 @@ void f_cleargroups(INT32 args)
  */
 void f_setgroups(INT32 args)
 {
-  static gid_t safeguard[1] = { 65534 };
+  static const gid_t safeguard[1] = { 65534 };
   struct array *arr = NULL;
   gid_t *gids = NULL;
   INT32 i;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.56 2004/05/10 21:45:13 agehall Exp $
+|| $Id: port.h,v 1.57 2004/09/19 00:36:39 nilsson Exp $
 */
 
 #ifndef PORT_H
@@ -348,33 +348,33 @@ long long gethrtime(void);
 #endif
 
 #ifdef DOUBLE_IS_IEEE_BIG
-#define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
+#define DECLARE_INF static const struct { unsigned char c[8]; double d[1]; } \
 	inf_ = { { 0x7f, 0xf0, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
+#define DECLARE_NAN static const struct { unsigned char c[8]; double d[1]; } \
 	nan_ = { { 0x7f, 0xf8, 0, 0, 0, 0, 0, 0 }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.d[-1])
 #define MAKE_NAN() (nan_.d[-1])
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
-#define DECLARE_INF static struct { unsigned char c[8]; double d[1]; } \
+#define DECLARE_INF static const struct { unsigned char c[8]; double d[1]; } \
 	inf_ = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[8]; double d[1]; } \
+#define DECLARE_NAN static const struct { unsigned char c[8]; double d[1]; } \
 	nan_ = { { 0, 0, 0, 0, 0, 0, 0xf8, 0x7f }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.d[-1])
 #define MAKE_NAN() (nan_.d[-1])
 #else
 #ifdef FLOAT_IS_IEEE_BIG
-#define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
+#define DECLARE_INF static const struct { unsigned char c[4]; float f[1]; } \
 	inf_ = { { 0x7f, 0x80, 0, 0 }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
+#define DECLARE_NAN static const struct { unsigned char c[4]; float f[1]; } \
 	nan_ = { { 0x7f, 0xc0, 0, 0 }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.f[-1])
 #define MAKE_NAN() (nan_.f[-1])
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
-#define DECLARE_INF static struct { unsigned char c[4]; float f[1]; } \
+#define DECLARE_INF static const struct { unsigned char c[4]; float f[1]; } \
 	inf_ = { { 0, 0, 0x80, 0x7f }, { 0.0 } };
-#define DECLARE_NAN static struct { unsigned char c[4]; float f[1]; } \
+#define DECLARE_NAN static const struct { unsigned char c[4]; float f[1]; } \
 	nan_ = { { 0, 0, 0xc0, 0x7f }, { 0.0 } };
 #define MAKE_INF(s) ((s)*inf_.f[-1])
 #define MAKE_NAN() (nan_.f[-1])

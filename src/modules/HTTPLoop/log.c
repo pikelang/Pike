@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: log.c,v 1.17 2004/03/10 16:31:41 nilsson Exp $
+|| $Id: log.c,v 1.18 2004/09/19 00:31:00 nilsson Exp $
 */
 
 #include "config.h"
@@ -145,7 +145,7 @@ void f_aap_log_as_commonlog_to_file(INT32 args)
   struct object *f;
   struct tm tm;
   FILE *foo;
-  static char *month[] = {
+  static const char *month[] = {
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Oct", "Sep", "Nov", "Dec",
   };

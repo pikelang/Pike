@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math_module.c,v 1.13 2003/11/07 23:48:15 nilsson Exp $
+|| $Id: math_module.c,v 1.14 2004/09/19 00:36:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@ struct program *math_lmatrix_program;
 #endif /* INT64 */
 struct program *math_transforms_program;
 
-static struct math_class
+static const struct math_class
 {
    char *name;
    void (*func)(void);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.67 2004/07/01 08:06:24 mirar Exp $
+|| $Id: image_jpeg.c,v 1.68 2004/09/19 00:11:31 nilsson Exp $
 */
 
 #include "global.h"
@@ -59,7 +59,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.67 2004/07/01 08:06:24 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.68 2004/09/19 00:11:31 nilsson Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -118,7 +118,7 @@ static struct pike_string *param_marker;
 static struct pike_string *param_comment;
 static struct pike_string *param_transform;
 
-static int reverse_quality[101]=
+static const int reverse_quality[101]=
 {
    3400,3400,1700,1133,850,680,566,486,425,377,340,309,283,261,243,
    226,212,200,188,179,170,162,154,148,141,136,131,126,121,117,113,109,
@@ -490,7 +490,7 @@ static void my_init_source(struct jpeg_decompress_struct *cinfo)
 
 static boolean my_fill_input_buffer(struct jpeg_decompress_struct *cinfo)
 {
-   static unsigned char my_eoi[2]={0xff,JPEG_EOI};
+   static const unsigned char my_eoi[2]={0xff,JPEG_EOI};
 
    struct my_source_mgr *sm=(struct my_source_mgr *)cinfo->src;
 

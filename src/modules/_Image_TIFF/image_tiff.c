@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_tiff.c,v 1.41 2004/03/21 06:11:42 nilsson Exp $
+|| $Id: image_tiff.c,v 1.42 2004/09/19 00:50:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -16,7 +16,7 @@
  */
 
 #ifdef HAVE_WORKING_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.41 2004/03/21 06:11:42 nilsson Exp $");
+RCSID("$Id: image_tiff.c,v 1.42 2004/09/19 00:50:42 nilsson Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -243,7 +243,7 @@ struct options
 };
 
 static int default_tiff_compression = 0;	/* Undefined value */
-static int default_tiff_compressions[] = {
+static const int default_tiff_compressions[] = {
 #ifdef COMPRESSION_LZW
   COMPRESSION_LZW,
 #endif

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.173 2004/06/23 09:47:34 mirar Exp $
+|| $Id: html.c,v 1.174 2004/09/19 00:50:12 nilsson Exp $
 */
 
 #include "global.h"
@@ -81,7 +81,7 @@ struct location
    int linestart;  /* byte current line started at */
 };
 
-static struct location init_pos = {0, 1, 0};
+static const struct location init_pos = {0, 1, 0};
 
 struct piece
 {
@@ -1903,7 +1903,7 @@ retryloop:
 	 {
 	    if (next_character(*destp,*d_p)=='-')
 	    {
-	       static p_wchar2 minus='-';
+	       static const p_wchar2 minus='-';
 
 	       if (what == SCAN_ARG_PUSH) 
 		  push_feed_range(feed,c,*destp,*d_p),n++;
