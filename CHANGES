@@ -30,7 +30,7 @@ o Unicode 3.2.0
     All charts have been updated to Unicode 3.2.0. This applies both to
     the Unicode module as well as to Pike-global functionality such as
     upper_case/lower_case. unicode_to_string() also has support for
-    surrogate and byteorder make handling.
+    surrogate and byteorder mark handling.
 
 o Extended random()
     random() now works on floats, arrays, multisets, mappings and
@@ -565,9 +565,14 @@ o dirname
     Now correctly returns a directory instead of just stripping the
     part after the nearest directory separator.
 
+o default_yp_domain
+    The EFUN default_yp_domain is now only available as
+    Yp.default_domain.
+
 o LR
-    LR has been moved to Parser.LR and the API has been changed.
-    FIXME: More about this?
+    LR has been moved to Parser.LR and the API has been changed
+    slightly to conform to current API practice, e.g. regarding casing
+    of symbols.
 
 o wmml documentation removed
     Use the documentation in the refdoc directory instead.
