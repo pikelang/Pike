@@ -1,3 +1,20 @@
+Sun Jun  9 16:33:16 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* second argument to file->read() added
+	* 2 new mapping implementations, the default one is an open
+	  hashtable implementation.
+	* new efuns: sort, rows, column, _verify_internals
+	* lpc_signal.c: signal calling is now blocked when inside
+	  a signal call.
+	* soon available: glob, localtime, strerror
+
+Thu May 30 03:12:15 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* file->read() now takes a second argument which can tell it
+	  that it sould only make one read()
+	* new efun: sort()
+	* new mapping implementation (hashed mappings)
+
 Mon May 27 03:39:20 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
 
 	* uLPC v1.0E-8 released
