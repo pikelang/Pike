@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.158 2000/02/03 19:02:22 grubba Exp $ */
+/* $Id: image.c,v 1.159 2000/03/14 00:28:05 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.158 2000/02/03 19:02:22 grubba Exp $
+**!	$Id: image.c,v 1.159 2000/03/14 00:28:05 mast Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.158 2000/02/03 19:02:22 grubba Exp $");
+RCSID("$Id: image.c,v 1.159 2000/03/14 00:28:05 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3998,7 +3998,7 @@ void init_image_image(void)
    ADD_FUNCTION("autocrop",image_autocrop,
 		tFuncV(tNone,tOr(tVoid,tArr(tInt)),tObj),0);
    ADD_FUNCTION("find_autocrop",image_find_autocrop,
-		tFuncV(tNone,tOr(tVoid,tArr(tInt)),tObj),0);
+		tFuncV(tNone,tOr(tVoid,tArr(tInt)),tArr(tInt)),0);
    ADD_FUNCTION("scale",image_scale,
 		tFunc(tOr(tInt,tFlt) tOr3(tInt,tFlt,tVoid),tObj),0);
    ADD_FUNCTION("translate",image_translate,
