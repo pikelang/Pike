@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.96 2000/12/10 00:23:31 per Exp $
+// $Id: module.pmod,v 1.97 2000/12/10 01:23:14 per Exp $
 #pike __REAL_VERSION__
 
 
@@ -594,17 +594,20 @@ class FILE
 
   inline private static nomask int get_data()
   {
-    if( lp == (sizeof( cached_lines )-1) )
-      b = cached_lines[-1];
-    else if( strlen( b ) > bpos )
+    if( bpos )
+    {
       b = b[ bpos .. ];
-    bpos=0;
+      bpos=0;
+    }
     string s = file::read(BUFSIZE,1);
     if(!s || !strlen(s))
       return 0;
+    b+=s;
     if( do_lines )
-      cached_lines = (b+=s)/"\n";
-    lp = 0;
+    {
+      cached_lines = b/"\n";
+      lp = 0;
+    }
     return 1;
   }
 
