@@ -2,12 +2,12 @@
 
 static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 		    rgb_group *sa,rgb_group *la,rgb_group *da,
-		    int len,float alpha)
+		    int len,double alpha)
 {
    if (alpha==0.0)
    {
-      MEMCPY(s,d,sizeof(rgb_group)*len);
-      MEMCPY(sa,da,sizeof(rgb_group)*len);
+      MEMCPY(d,s,sizeof(rgb_group)*len);
+      MEMCPY(da,sa,sizeof(rgb_group)*len);
       return; 
    }
    else if (alpha==1.0)

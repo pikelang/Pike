@@ -1,14 +1,16 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.6 1999/04/21 23:42:01 mirar Exp $
+**!	$Id: layers.c,v 1.7 1999/04/23 01:20:38 mirar Exp $
 **! class Layer
 */
 
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: layers.c,v 1.6 1999/04/21 23:42:01 mirar Exp $");
+#include <math.h> /* floor */
+
+RCSID("$Id: layers.c,v 1.7 1999/04/23 01:20:38 mirar Exp $");
 
 #include "config.h"
 
@@ -49,7 +51,7 @@ typedef void lm_row_func(rgb_group *s,
 			 rgb_group *la, /* may be NULL */
 			 rgb_group *da,
 			 int len,
-			 float alpha);
+			 double alpha);
                     
 
 #define SNUMPIXS 64 /* pixels in short-stroke buffer */
@@ -67,7 +69,7 @@ struct layer
    struct image *img;    /* image object storage */
    struct image *alp;    /* alpha object storage */
 
-   float alpha_value;    /* overall alpha value (1.0=opaque) */
+   double alpha_value;    /* overall alpha value (1.0=opaque) */
 
    rgb_group fill;       /* fill color ("outside" the layer) */
    rgb_group fill_alpha; /* fill alpha */ 
@@ -87,7 +89,7 @@ struct layer
 #define LMFUNC(X) \
    static void X(rgb_group *s,rgb_group *l,rgb_group *d, \
                  rgb_group *sa,rgb_group *la,rgb_group *da, \
-	         int len,float alpha)
+	         int len,double alpha)
 
 LMFUNC(lm_normal);
 LMFUNC(lm_add);
@@ -98,7 +100,20 @@ LMFUNC(lm_modulo);
 LMFUNC(lm_invsubtract);
 LMFUNC(lm_invdivide);
 LMFUNC(lm_invmodulo);
+
 LMFUNC(lm_dissolve);
+
+LMFUNC(lm_replace);
+LMFUNC(lm_red);
+LMFUNC(lm_green);
+LMFUNC(lm_blue);
+
+LMFUNC(lm_replace_hsv);
+LMFUNC(lm_hue);
+LMFUNC(lm_saturation);
+LMFUNC(lm_value);
+LMFUNC(lm_color); 
+
 LMFUNC(lm_behind);
 LMFUNC(lm_screen);
 LMFUNC(lm_overlay);
@@ -110,7 +125,6 @@ LMFUNC(lm_saturation);
 LMFUNC(lm_color);
 LMFUNC(lm_value);
 LMFUNC(lm_erase);
-LMFUNC(lm_replace);
 
 struct layer_mode_desc
 {
@@ -131,16 +145,24 @@ struct layer_mode_desc
    {"invmodulo",     lm_invmodulo,     1, NULL            }, 
 
    {"dissolve",      lm_dissolve,      1, NULL            }, 
+
+   {"replace",       lm_replace,       1, NULL            },
+   {"red",           lm_red,           1, NULL            },
+   {"green",         lm_green,         1, NULL            },
+   {"blue",          lm_blue,          1, NULL            },
+
+   {"replace_hsv",   lm_replace_hsv,   1, NULL            },
+   {"hue",           lm_hue,           1, NULL            },
+   {"saturation",    lm_saturation,    1, NULL            },
+   {"value",         lm_value,         1, NULL            },
+   {"color",         lm_color,         1, NULL            }, /* h+s */
+   
 /* {"behind",        lm_behind,        1, NULL            }, */
 /* {"screen",        lm_screen,        1, NULL            }, */
 /* {"overlay",       lm_overlay,       1, NULL            }, */
 /* {"difference",    lm_difference,    1, NULL            }, */
 /* {"darken",        lm_darken,        1, NULL            }, */
 /* {"lighten",       lm_lighten,       1, NULL            }, */
-/* {"hue",           lm_hue,           1, NULL            }, */
-/* {"saturation",    lm_saturation,    1, NULL            }, */
-/* {"color",         lm_color,         1, NULL            }, */
-/* {"value",         lm_value,         1, NULL            }, */
 /* {"erase",         lm_erase,         1, NULL            }, */
 /* {"replace",       lm_replace,       1, NULL            }, */
 } ;
@@ -204,10 +226,172 @@ replace
 
 /*** layer helpers ****************************************/
 
+#define COMBINE_METHOD_INT
+#define CCUT_METHOD_INT
+
+#define qMAX (1.0/COLORMAX)
+#define C2F(Z) (qMAX*(Z))
+
+#ifdef CCUT_METHOD_FLOAT
+#define CCUT(Z) ((COLORTYPE)(qMAX*Z))
+#else /* CCUT_METHOD_INT */
+#define CCUT(Z) ((COLORTYPE)((Z)/COLORMAX))
+#endif
+
+#ifdef COMBINE_METHOD_INT
+
+
+#define COMBINE_ALPHA_SUM(aS,aL) \
+    CCUT((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))
+#define COMBINE_ALPHA_SUM_V(aS,aL,V) \
+    COMBINE_ALPHA_SUM(aS,(aL)*(V))
+
+#define COMBINE_ALPHA(S,L,aS,aL) \
+    ( (COLORTYPE)((((S)*((int)(COLORMAX-(aL)))*(aS))+ \
+	           ((L)*((int)(aL))*COLORMAX))/ \
+    	          (((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))) ) )
+
+#define COMBINE_ALPHA_V(S,L,aS,aL,V) \
+    COMBINE_ALPHA(S,(int)((L)*(V)),aS,aL)
+
+#else 
+#ifdef COMBINE_METHOD_FLOAT
+
+#define COMBINE_ALPHA(S,L,aS,aL) \
+    ( (COLORTYPE)( ( (S)*(1.0-C2F(aL))*C2F(aS) + (L)*C2F(aL) ) / \
+	       ( (C2F(aL)+(1-C2F(aL))*C2F(aS))) ) )
+
+#define COMBINE_ALPHA_V(S,L,aS,aL,V) \
+    COMBINE_ALPHA(S,(L)*(V),aS,aL)
+
+#define COMBINE_ALPHA_SUM(aS,aL) \
+    ((COLORTYPE)(COLORMAX*(C2F(aL)+(1.0-C2F(aL))*C2F(aS))))
+#define COMBINE_ALPHA_SUM_V(aS,aL,V) \
+    COMBINE_ALPHA_SUM(aS,(aL)*(V))
+
+#else /* unknown COMBINE_METHOD */
+#error unknown COMBINE_METHOD
+#endif /* COMBINE_METHOD_FLOAT  */
+
+#endif 
+
+#define COMBINE(P,A) CCUT(((int)(P))*(A))
+#define COMBINE_A(P,A) ((COLORTYPE)((P)*(A)))
+#define COMBINE_V(P,V,A) CCUT((V)*(P)*(A))
+
+#define F2C(Z) ((COLORTYPE)(COLORMAX*(Z)))
+
+#define ALPHA_ADD(S,L,D,SA,LA,DA,C)					\
+	    if (!LA->C) d->C=S->C,DA->C=SA->C;				\
+	    else if (!SA->C) D->C=l->C,DA->C=LA->C;			\
+	    else if (LA->C==COLORMAX) D->C=l->C,DA->C=LA->C;		\
+	    else							\
+	       D->C=COMBINE_ALPHA(S->C,l->C,SA->C,LA->C),		\
+		  DA->C=COMBINE_ALPHA_SUM(SA->C,LA->C);
+
+#define ALPHA_ADD_V_NOLA(L,S,D,SA,DA,V,C)				\
+            do {							\
+               if (!SA->C) D->C=l->C,DA->C=0;				\
+               else							\
+               {							\
+                 if (SA->C==COLORMAX)					\
+		 	D->C=COMBINE_ALPHA_V(S->C,l->C,COLORMAX,255,V);	\
+  	         else D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,255,V);	\
+     	         DA->C=COMBINE_ALPHA_SUM_V(SA->C,255,V);		\
+               }							\
+	    } while(0)
+
+#define ALPHA_ADD_V(L,S,D,LA,SA,DA,V,C) 				\
+            do { 							\
+	       if (!LA->C) 						\
+	       {							\
+		  D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,0,V); 		\
+		  DA->C=COMBINE_ALPHA_SUM_V(0,SA->C,V);  		\
+	       }							\
+	       else if (!SA->C) 					\
+	       {							\
+		  D->C=COMBINE_ALPHA_V(S->C,l->C,0,LA->C,V); 		\
+		  DA->C=COMBINE_ALPHA_SUM_V(LA->C,0,V);  		\
+	       }							\
+	       else 							\
+	       {							\
+		  D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,LA->C,V); 	\
+		  DA->C=COMBINE_ALPHA_SUM_V(LA->C,SA->C,V);  		\
+	       }							\
+	    } while (0) 
+
+
 static INLINE void smear_color(rgb_group *d,rgb_group s,int len)
 {
    while (len--)
       *(d++)=s;
+}
+
+#define MAX3(X,Y,Z) MAXIMUM(MAXIMUM(X,Y),Z)
+#define MIN3(X,Y,Z) MINIMUM(MINIMUM(X,Y),Z)
+
+static INLINE void rgb_to_hsv(rgb_group color,double *hp,double *sp,double *vp)
+{
+   double max,min,delta;
+   double r,g,b;
+
+   if (color.r==color.g && color.g==color.b)
+   {
+      *hp=*sp=0.0;
+      *vp=C2F(color.r);
+      return;
+   }
+
+   r=C2F(color.r);
+   g=C2F(color.g);
+   b=C2F(color.b);
+
+   max = MAX3(r,g,b);
+   min = MIN3(r,g,b);
+
+   *vp = max;
+
+   *sp = (max - min)/max;
+
+   delta = max-min;
+
+   if(r==max) *hp = 6+(g-b)/delta;
+   else if(g==max) *hp = 2+(b-r)/delta;
+   else /*if(b==max)*/ *hp = 4+(r-g)/delta;
+}
+
+static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
+{
+   if (s==0.0)
+   {
+      colorp->r=colorp->g=colorp->b=F2C(v);
+      return;
+   }
+
+#define i floor(h)
+#define f (h-i)
+#define p F2C(v * (1 - s))
+#define q F2C(v * (1 - (s * f)))
+#define t F2C(v * (1 - (s * (1 -f))))
+#define V F2C(v)
+   switch((int)i)
+   {
+      case 6: 
+      case 0: 	colorp->r = V;	colorp->g = t;	colorp->b = p;	 break;
+      case 7:
+      case 1: 	colorp->r = q;	colorp->g = V;	colorp->b = p;	 break;
+      case 2: 	colorp->r = p;	colorp->g = V;	colorp->b = t;	 break;
+      case 3: 	colorp->r = p;	colorp->g = q;	colorp->b = V;	 break;
+      case 4: 	colorp->r = t;	colorp->g = p;	colorp->b = V;	 break;
+      case 5: 	colorp->r = V;	colorp->g = p;	colorp->b = q;	 break;
+      default: fatal("unhandled case\n");
+   }
+#undef V
+#undef i
+#undef f
+#undef p
+#undef q
+#undef t
 }
 
 /*** layer object : init and exit *************************/
@@ -350,7 +534,7 @@ static void image_layer_alpha(INT32 args)
 
 /*
 **! method object set_alpha_value(float value)
-**! method float alpha_value()
+**! method double alpha_value()
 **!	Set/get the general alpha value of this layer.
 **!	This is a float value between 0 and 1,
 **!	and is multiplied with the alpha channel.
@@ -858,75 +1042,18 @@ static void image_layer_cast(INT32 args)
 
 }
 
-/*** layer helpers ************************************/
-
-#define COMBINE_METHOD_INT
-#define CCUT_METHOD_INT
-
-#define qMAX (1.0/COLORMAX)
-#define C2F(Z) (qMAX*(Z))
-
-#ifdef CCUT_METHOD_FLOAT
-#define CCUT(Z) ((COLORTYPE)(qMAX*Z))
-#else /* CCUT_METHOD_INT */
-#define CCUT(Z) ((COLORTYPE)((Z)/COLORMAX))
-#endif
-
-#ifdef COMBINE_METHOD_INT
-
-
-#define COMBINE_ALPHA_SUM(aS,aL) \
-    CCUT((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))
-#define COMBINE_ALPHA_SUM_V(aS,aL,V) \
-    COMBINE_ALPHA_SUM(aS,(aL)*(V))
-
-#define COMBINE_ALPHA(S,L,aS,aL) \
-    ( (COLORTYPE)((((S)*((int)(COLORMAX-(aL)))*(aS))+ \
-	           ((L)*((int)(aL))*COLORMAX))/ \
-    	          (((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))) ) )
-
-#define COMBINE_ALPHA_V(S,L,aS,aL,V) \
-    COMBINE_ALPHA(S,(int)((L)*(V)),aS,aL)
-
-#else 
-#ifdef COMBINE_METHOD_FLOAT
-
-#define COMBINE_ALPHA(S,L,aS,aL) \
-    ( (COLORTYPE)( ( (S)*(1.0-C2F(aL))*C2F(aS) + (L)*C2F(aL) ) / \
-	       ( (C2F(aL)+(1-C2F(aL))*C2F(aS))) ) )
-
-#define COMBINE_ALPHA_V(S,L,aS,aL,V) \
-    COMBINE_ALPHA(S,(L)*(V),aS,aL)
-
-#define COMBINE_ALPHA_SUM(aS,aL) \
-    ((COLORTYPE)(COLORMAX*(C2F(aL)+(1.0-C2F(aL))*C2F(aS))))
-#define COMBINE_ALPHA_SUM_V(aS,aL,V) \
-    COMBINE_ALPHA_SUM(aS,(aL)*(V))
-
-#else /* unknown COMBINE_METHOD */
-#error unknown COMBINE_METHOD
-#endif /* COMBINE_METHOD_FLOAT  */
-
-#endif 
-
-#define COMBINE(P,A) CCUT(((int)(P))*(A))
-#define COMBINE_A(P,A) ((COLORTYPE)((P)*(A)))
-#define COMBINE_V(P,V,A) CCUT((V)*(P)*(A))
-
-#define CRAISE(Z) ((COLORTYPE)(COLORMAX*(Z)))
-
 /*** layer mode definitions ***************************/
 
 static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 		      rgb_group *sa,rgb_group *la,rgb_group *da,
-		      int len,float alpha)
+		      int len,double alpha)
 {
    /* la may be NULL, no other */
 
    if (alpha==0.0) /* optimized */
    {
-      MEMCPY(s,d,sizeof(rgb_group)*len);
-      MEMCPY(sa,da,sizeof(rgb_group)*len);
+      MEMCPY(d,s,sizeof(rgb_group)*len);
+      MEMCPY(da,sa,sizeof(rgb_group)*len);
       return; 
    }
    else if (alpha==1.0)
@@ -939,14 +1066,6 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-#define ALPHA_ADD(S,L,D,SA,LA,DA,C)					\
-	    if (!LA->C) d->C=S->C,DA->C=SA->C;				\
-	    else if (!SA->C) D->C=l->C,DA->C=LA->C;			\
-	    else if (LA->C==COLORMAX) D->C=l->C,DA->C=LA->C;		\
-	    else							\
-	       D->C=COMBINE_ALPHA(S->C,l->C,SA->C,LA->C),		\
-		  DA->C=COMBINE_ALPHA_SUM(SA->C,LA->C);
-
 	    if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
 	    {
 	       *d=*l;
@@ -963,7 +1082,6 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 	       ALPHA_ADD(s,l,d,sa,la,da,g);
 	       ALPHA_ADD(s,l,d,sa,la,da,b);
 	    }
-#undef ALPHA_ADD
 	    l++; s++; la++; sa++; d++; da++;
 	 }
    }
@@ -972,52 +1090,19 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
       if (!la)  /* no layer alpha => alpha value opaque */
 	 while (len--)
 	 {
-#define ALPHA_ADD_V_NOLA(L,S,D,SA,DA,V,C)				\
-            do {							\
-               if (!SA->C) D->C=l->C,DA->C=0;				\
-               else							\
-               {							\
-                 if (SA->C==COLORMAX)					\
-		 	D->C=COMBINE_ALPHA_V(S->C,l->C,COLORMAX,255,V);	\
-  	         else D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,255,V);	\
-     	         DA->C=COMBINE_ALPHA_SUM_V(SA->C,255,V);		\
-               }							\
-	    } while(0)
-
 	    ALPHA_ADD_V_NOLA(s,l,d,sa,da,alpha,r);
 	    ALPHA_ADD_V_NOLA(s,l,d,sa,da,alpha,g);
 	    ALPHA_ADD_V_NOLA(s,l,d,sa,da,alpha,b);
 
-#undef ALPHA_ADD_V_NOLA
 	    l++; s++; la++; sa++; da++; d++;
 	 }
       else
 	 while (len--)
 	 {
-#define ALPHA_ADD_V(L,S,D,LA,SA,DA,V,C) 				\
-            do { 							\
-	       if (!LA->C) 						\
-	       {							\
-		  D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,0,V); 		\
-		  DA->C=COMBINE_ALPHA_SUM_V(0,SA->C,V);  		\
-	       }							\
-	       else if (!SA->C) 					\
-	       {							\
-		  D->C=COMBINE_ALPHA_V(S->C,l->C,0,LA->C,V); 		\
-		  DA->C=COMBINE_ALPHA_SUM_V(LA->C,0,V);  		\
-	       }							\
-	       else 							\
-	       {							\
-		  D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,LA->C,V); 	\
-		  DA->C=COMBINE_ALPHA_SUM_V(LA->C,SA->C,V);  		\
-	       }							\
-	    } while (0) 
-
 	    ALPHA_ADD_V(s,l,d,sa,la,da,alpha,r);
 	    ALPHA_ADD_V(s,l,d,sa,la,da,alpha,g);
 	    ALPHA_ADD_V(s,l,d,sa,la,da,alpha,b);
 
-#undef ALPHA_ADD_V
 	    l++; s++; la++; sa++; da++; d++;
 	 }
       return;
@@ -1090,14 +1175,165 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+/* channels from template */
+
+/* replace rgb by alpha channel */
+
+#define LM_FUNC lm_replace
+#define L_CHANNEL_DO(S,L,D,A) 						\
+  ((D).r=COMBINE_ALPHA((S).r,(L).r,COLORMAX,(A).r),			\
+   (D).g=COMBINE_ALPHA((S).g,(L).g,COLORMAX,(A).g),			\
+   (D).b=COMBINE_ALPHA((S).b,(L).b,COLORMAX,(A).b))
+#define L_CHANNEL_DO_V(S,L,D,A,V) 					\
+  ((D).r=COMBINE_ALPHA_V((S).r,(L).r,COLORMAX,(A).r,(V)),		\
+   (D).g=COMBINE_ALPHA_V((S).g,(L).g,COLORMAX,(A).g,(V)),		\
+   (D).b=COMBINE_ALPHA_V((S).b,(L).b,COLORMAX,(A).b,(V)))
+#include "layer_channel.h"
+#undef L_CHANNEL_DO
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+/* replace r, g or b (by alpha channel, only that color counts) */
+
+#define LM_FUNC lm_red
+#define L_CHANNEL_DO(S,L,D,A) 						\
+  ((D).r=COMBINE_ALPHA((S).r,(L).r,COLORMAX,(A).r),			\
+   (D).g=(S).g,(D).b=(S).b)
+#define L_CHANNEL_DO_V(S,L,D,A,V) 					\
+  ((D).r=COMBINE_ALPHA_V((S).r,(L).r,COLORMAX,(A).r,(V)),		\
+   (D).g=(S).g,(D).b=(S).b)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+#define LM_FUNC lm_green
+#define L_CHANNEL_DO(S,L,D,A) 						\
+  ((D).g=COMBINE_ALPHA((S).g,(L).g,COLORMAX,(A).g),			\
+   (D).r=(S).r,(D).b=(S).b)
+#define L_CHANNEL_DO_V(S,L,D,A,V) 					\
+  ((D).g=COMBINE_ALPHA_V((S).g,(L).g,COLORMAX,(A).g,(V)),		\
+   (D).r=(S).r,(D).b=(S).b)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+#define LM_FUNC lm_blue
+#define L_CHANNEL_DO(S,L,D,A) 						\
+  ((D).b=COMBINE_ALPHA((S).b,(L).b,COLORMAX,(A).b),			\
+   (D).g=(S).g,(D).r=(S).r)
+#define L_CHANNEL_DO_V(S,L,D,A,V) 					\
+  ((D).b=COMBINE_ALPHA_V((S).b,(L).b,COLORMAX,(A).b,(V)),		\
+   (D).g=(S).g,(D).r=(S).r)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+/* replace hsv by alpha channel (r=h, g=s, b=v) */
+
+#define L_CHANNEL_DO(S,L,D,A) L_CHANNEL_DO_V(S,L,D,A,1.0)
+
+#define LM_FUNC lm_replace_hsv
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
+      ds=ls*(V)*C2F((A).g)+ss*(1-(V)*C2F((A).g));			\
+      dv=lv*(V)*C2F((A).b)+sv*(1-(V)*C2F((A).b));			\
+      hsv_to_rgb(dh,ds,dv,&(D));					\
+   } while (0)
+
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+/* replace h, s or v (by alpha channel (r=h, g=s, b=v), only that one used) */
+
+#define LM_FUNC lm_hue
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
+      hsv_to_rgb(dh,ss,sv,&(D));					\
+   } while (0)
+
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+#define LM_FUNC lm_saturation
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      ds=ls*(V)*C2F((A).g)+ss*(1-(V)*C2F((A).g));			\
+      hsv_to_rgb(sh,ds,sv,&(D));					\
+   } while (0)
+
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+#define LM_FUNC lm_value
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      dv=lv*(V)*C2F((A).b)+sv*(1-(V)*C2F((A).b));			\
+      hsv_to_rgb(sh,ss,dv,&(D));					\
+   } while (0)
+
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+/* h, s */
+
+#define LM_FUNC lm_color
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
+      ds=ls*(V)*C2F((A).g)+ss*(1-(V)*C2F((A).g));			\
+      hsv_to_rgb(dh,ds,sv,&(D));					\
+   } while (0)
+
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+#undef L_CHANNEL_DO
+
+/* special modes */
+
 static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
 			rgb_group *sa,rgb_group *la,rgb_group *da,
-			int len,float alpha)
+			int len,double alpha)
 {
    if (alpha==0.0)
    {
-      MEMCPY(s,d,sizeof(rgb_group)*len);
-      MEMCPY(sa,da,sizeof(rgb_group)*len);
+      MEMCPY(d,s,sizeof(rgb_group)*len);
+      MEMCPY(da,sa,sizeof(rgb_group)*len);
       return; 
    }
    else if (alpha==1.0)
