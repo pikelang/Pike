@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.94 2001/07/20 22:45:13 grubba Exp $
+ * $Id: interpret.h,v 1.95 2001/08/13 23:31:03 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -180,6 +180,7 @@ extern const char *Pike_check_c_stack_errmsg;
 
 #define push_program(P) do{ struct program *_=(P); debug_malloc_touch(_); Pike_sp->u.program=_; Pike_sp++->type=PIKE_T_PROGRAM; }while(0)
 #define push_int(I) do{ INT_TYPE _=(I); Pike_sp->u.integer=_;Pike_sp->type=PIKE_T_INT;Pike_sp++->subtype=NUMBER_NUMBER; }while(0)
+#define push_undefined() do{  Pike_sp->u.integer=0; Pike_sp->type=PIKE_T_INT; Pike_sp++->subtype=NUMBER_UNDEFINED; }while(0)
 #define push_mapping(M) do{ struct mapping *_=(M); debug_malloc_touch(_); Pike_sp->u.mapping=_; Pike_sp++->type=PIKE_T_MAPPING; }while(0)
 #define push_array(A) do{ struct array *_=(A); debug_malloc_touch(_); Pike_sp->u.array=_ ;Pike_sp++->type=PIKE_T_ARRAY; }while(0)
 #define push_multiset(L) do{ struct multiset *_=(L); debug_malloc_touch(_); Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
