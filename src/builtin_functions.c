@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.115 1998/07/15 20:16:47 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.116 1998/07/17 06:19:50 neotron Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2864,8 +2864,8 @@ void f_everynth(INT32 args)
   for(k=0; start<size; start+=n)
     assign_svalue_no_free(a->item+(k++), ina->item+start);
 
-  pop_n_elems(args);
   a->type_field=ina->type_field;
+  pop_n_elems(args);
   push_array(a);
   return;
 }
