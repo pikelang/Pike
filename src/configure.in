@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.658 2002/12/11 10:47:13 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.659 2002/12/11 10:57:11 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -78,6 +78,7 @@ if test "x$enable_make_conf" = x"yes" -a -f /etc/make.conf; then
   echo Using settings from /etc/make.conf...
   source /etc/make.conf
   set | diff -u conftest.tmp -  | grep '^+C'
+  PIKE_MSG_WARN([Using settings from /etc/make.conf.])
 fi
 
 AC_ARG_WITH(cflags, MY_DESCR([--with-cflags=cflags],
@@ -5990,6 +5991,8 @@ esac
 # OPTIMIZE flags from the regular CFLAGS...
 
 OPT_GOT_OFLAG=no
+OPT_GOT_MCPU=no
+OPT_GOT_MARCH=no
 NEW_CFLAGS=
 OPT_NOT_USED=
 for opt in ${CFLAGS-}
@@ -6012,6 +6015,18 @@ do
           -pipe) 
 	    OPTIMIZE="${OPTIMIZE-} $opt" 
 	    ;;
+	  -mcpu*)
+            if test "x$OPT_GOT_MCPU" = xno; then 
+ 	      NEW_CFLAGS="$NEW_CFLAGS $opt"  
+	      OPT_GOT_MCPU=yes
+	    fi
+            ;;
+	  -march*)
+            if test "x$OPT_GOT_MARCH" = xno; then 
+ 	      NEW_CFLAGS="$NEW_CFLAGS $opt"  
+	      OPT_GOT_MARCH=yes
+	    fi
+            ;;
           *)  
 	    NEW_CFLAGS="$NEW_CFLAGS $opt" 
 	    ;;
@@ -6023,6 +6038,8 @@ CFLAGS="$NEW_CFLAGS"
 
 unset NEW_CFLAGS
 unset OPT_GOT_OFLAG
+unset OPT_GOT_MCPU
+unset OPT_GOT_ARCH
 
 #############################################################################
 dnl handled above in the CFLAGS/OPTIMIZE split
