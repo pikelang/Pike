@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.522 2002/06/11 14:15:27 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.523 2002/06/12 19:31:48 jhs Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9164,7 +9164,7 @@ test_true([[
 
 // - LR
 test_program([[ Parser.LR.Parser p = 
-  Parser.LR.Grammar_parser.make_parser("foo : bar;foo : foo bar;bar : \"a\";");
+  Parser.LR.GrammarParser.make_parser("foo : bar;foo : foo bar;bar : \"a\";");
   int pos;
   array(string) data="aaaaaaaaa"/"";
   string scan() { if (pos < sizeof(data)) return(data[pos++]); else return ""; }
