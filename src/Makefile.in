@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.337 2002/11/23 16:43:43 mast Exp $
+# $Id: Makefile.in,v 1.338 2002/11/27 11:58:28 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -213,7 +213,7 @@ all: module_objects tools
 	  echo; \
 	fi
 
-documentation: pike dump_modules
+documentation: pike
 	cd $(SRCDIR)/../refdoc && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" $(DOCTARGET)
 
 # Backward compat.
