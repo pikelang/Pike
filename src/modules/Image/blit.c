@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blit.c,v 1.55 2003/03/31 14:42:21 grubba Exp $
+|| $Id: blit.c,v 1.56 2003/03/31 14:43:57 grubba Exp $
 */
 
 #include "global.h"
@@ -173,9 +173,9 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 	   break;	/* Break to the while(0). */
 	 for(x=0; x<length; x++)  *(foo+x) = rgb;
 	 while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
-       }
-     } while(0);
-     THREADS_DISALLOW();
+       } while(0);
+       THREADS_DISALLOW();
+     }
    } 
    else 
    {
