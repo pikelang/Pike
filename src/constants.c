@@ -147,9 +147,10 @@ void count_memory_in_constants(INT32 *num_, INT32 *size_)
   INT32 size=0, num=0;
   if(efun_hash)
   {
-    size+=sizeof(struct hash_table) +
+    size=sizeof(struct hash_table) +
       efun_hash->mask*sizeof(struct hash_entry)+
     efun_hash->entries*sizeof(struct efun);
+    num=efun_hash->entries;
   }
   *num_=num;
   *size_=size;
