@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.239 2003/01/11 17:54:30 per Exp $
+|| $Id: signal_handler.c,v 1.240 2003/03/19 14:22:46 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.239 2003/01/11 17:54:30 per Exp $");
+RCSID("$Id: signal_handler.c,v 1.240 2003/03/19 14:22:46 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -928,7 +928,7 @@ static void f_signame(int args)
 #define MY_WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
 #else
 #ifdef HAVE_WAIT4
-#define MY_WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
+#define MY_WAIT_ANY(STATUS,OPT) wait4(0,(STATUS),(OPT),0 )
 #else
 #define MY_WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
 #endif
