@@ -1,5 +1,5 @@
 // -*- Pike -*-
-// $Id: manpages,v 1.19 1998/07/28 09:16:59 neotron Exp $
+// $Id: manpages,v 1.20 2001/04/06 14:27:26 grubba Exp $
 
 #include "types.h"
 
@@ -9,7 +9,7 @@ import ".";
 
 inherit Stdio.File : out;
 
-int verbose = 0;
+int verbose = 1;
 
 string globalbase;
 object windex;
@@ -25,8 +25,7 @@ object whatis;
 
 string quote_text(string s)
 {
-  s=replace(s,({"&gt;","&amp;","&lt;"}),
-	    ({">","&","<"}));
+  s = replace(s,({"&gt;","&amp;","&lt;"}), ({">","&","<"}));
   return(replace(s, ({ "*", "\\", "()", " - ", "..." }),
 		 ({ "\\(**", "\\e", "(\\|)", " \\- ", "\&.\|.\|." })));
 }
@@ -81,6 +80,13 @@ string make_manpage(string base, SGML data, string ind, string fbase)
 	  werror(sprintf("tag:%O, params:%O\n", tag->tag, tag->params));
 	}
 	switch (tag->tag) {
+	case "chapter":
+	  if (tag->params->mansuffix) {
+	    base += tag->params->mansuffix;
+	    fbase = (tag->params->title/",")[0];
+	    werror(sprintf("Chapter: base:%s, fbase:%s\n", base, fbase));
+	  }
+	  break;
 	case "method":
 	case "function":
 	case "constant":
@@ -242,9 +248,12 @@ void output(string base, WMML data)
    globalbase="man/man3";
    //   mkdirhier("man/man3p");
    mkdirhier("man/man3");
+   catch { symlink("man3", "man/man3p"); };
+   catch { symlink("man3", "man/man3pe"); };
+   catch { symlink("man3", "man/man3pi"); };
+   catch { symlink("man3", "man/man3pii"); };
    windex=Stdio.File("man/windex", "wtc");
    whatis=Stdio.File("man/whatis", "wtc");
-   //   make_pages("3p", data->data, "", "");
    make_pages("3p", data->data, "", "");
    werror("\n");
    // Used by Xman.
@@ -256,6 +265,7 @@ void output(string base, WMML data)
    // The latter is the only one usable for us.
    object mandesc = Stdio.File("man/mandesc", "wtc");
    mandesc->write("3p\t(3P) Pike Library Functions\n"
+		  "3pe\t(3PE) Extending Pike\n"
 		  "3pi\t(3PI) Pike Image Module\n"
 		  "3pii\t(3PII) Pike Image.image Class\n");
    mandesc->close();
