@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.79 2002/11/02 14:58:08 grubba Exp $
+|| $Id: peep.c,v 1.80 2002/11/04 09:41:48 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.79 2002/11/02 14:58:08 grubba Exp $");
+RCSID("$Id: peep.c,v 1.80 2002/11/04 09:41:48 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -476,7 +476,7 @@ void assemble(void)
 	Pike_fatal("Expected instruction %s to be followed by a pointer.\n"
 		   "Got %s\n.",
 		   instrs[c->opcode - F_OFFSET].name,
-		   (e+1 < length)?instrs[c[1]->opcode - F_OFFSET].name:"EOI");
+		   (e+1 < length)?instrs[c[1].opcode - F_OFFSET].name:"EOI");
       }
     }
 #endif /* PIKE_DEBUG */
