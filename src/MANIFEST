@@ -414,17 +414,19 @@ Build system
     most apropriate Pike binary and execute the script given in its
     argument with that binary.
 
+  precompile2.sh
+    A script that works like the generated precompile.sh, but
+    preconfigured to work with installed Pikes. Used by pike -x module.
+
 FIXME: Document these.
 
   acconfig.h
   aclocal.m4
   install-sh
   make_variables.in
-  precompile2.sh
   run_autoconfig
   smartlink.c
   strip_opcodes
-  specs.in
   uncompressor.c
 
 Testsuite
@@ -445,6 +447,11 @@ Miscellaneous
 
   program_id.h
     Statically allocated program id numbers.
+
+  specs.in
+    Template for the specs file, describing the build environment of
+    the Pike. Used by pike -x module to build new binary modules with
+    the same build options.
 
   version.c
   version.h
