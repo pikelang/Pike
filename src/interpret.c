@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.293 2003/08/18 15:11:38 mast Exp $
+|| $Id: interpret.c,v 1.294 2003/08/19 15:14:14 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.293 2003/08/18 15:11:38 mast Exp $");
+RCSID("$Id: interpret.c,v 1.294 2003/08/19 15:14:14 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -571,7 +571,7 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 #endif
 	  while(loc->inherit->inherit_level >= my_level)
 	  {
-	    TRACE((5,"-   inherit-- (%d >= %d)\n",tmp.inherit->inherit_level, my_level));
+	    TRACE((5,"-   inherit-- (%d >= %d)\n",loc->inherit->inherit_level, my_level));
 	    loc->inherit--;
 	  }
 
