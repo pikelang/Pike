@@ -209,44 +209,216 @@ void optimize()
   garbage_collect();
 }
 
-array(mapping) lookup_word(string word)
+
+class Node
 {
-  return db->query("SELECT SUM(ranking) AS score, COUNT(id) AS hits, "
-		   "document.*, document.uri_first+document.uri_rest as document.uri "
-                   "FROM document, occurance "
-                   "WHERE word_id=%s and "
-		   "occurance.document_id=document.id GROUP BY id",
-		   hash_word(word));
+  mapping build_sql_components(mapping(string:int) ref);
 }
 
-array(mapping) lookup_words_or(array(string) words)
+class GroupNode
 {
-  string sql="SELECT * FROM occurance WHERE "; //FIXME
-  words=map(words, lambda(string in) {
-		   return "word_id="+hash_word(in);
-		 } );
-  sql += words*" || ";
+  inherit Node;
 
-  return db->query(sql);
+  string build_sql(void|int limit, void|mapping(string:array(string)) extra_select_items)
+  {
+    mapping ref=(["ref":0]);
+    mapping sub_res=build_sql_components(ref);
+    if(!sizeof(sub_res->ranking))
+      sub_res->ranking=({"0.0"});
+    string res="";
+    res+="select distinct t0.doc_id as doc_id,\n       "+
+      sub_res->ranking*" +\n       "+" as ranking\n";
+
+    int has_extra_comma=0;
+    if(extra_select_items)
+    {
+      foreach(indices(extra_select_items), string tablename)
+      {
+	if(sizeof(extra_select_items[tablename]))
+	{
+	  res+=
+	    "       "+
+	    map(extra_select_items[tablename],
+		lambda(string field){return tablename+"."+field;})*", "+
+	    ",\n";
+	  has_extra_comma=1;
+	}
+      }
+      if(has_extra_comma)
+	res=res[..sizeof(res)-3]+"\n";
+    }
+    res+="from   ";
+
+    if(extra_select_items)
+      res+=indices(extra_select_items)*", ";
+
+    res+=sub_res->from*", " + "\n";
+
+    res+="where  "+sub_res->where;
+    if(ref->ref>1)
+      res+=" and";
+    res+="\n";
+
+    if(ref->ref>1)
+    {
+      array tmp=allocate(ref->ref-1);
+      for(int i=1;i<ref->ref; i++)
+	tmp[i-1]=sprintf("t0.doc_id=t%d.doc_id",i);
+      res+="       "+tmp*" and ";
+      res+="\n";
+    }
+
+    res+="group by t0.doc_id order by ranking desc";
+
+    if(limit)
+      res+=sprintf(" limit %d",limit);
+    return res+"\n";
+  }
 }
 
-array(mapping) lookup_words_and(array(string) words)
+class LeafNode
 {
-//   array first_result=({});
-//   array rest_results=({});
+  inherit Node;
+}
+
+class And
+{
+  inherit GroupNode;
   
-//   first_result = lookup_word(words[0]);
-//   foreach(words[1..], string word)
-//   {
-//     rest_results += ({ lookup_word(word) });
-//     if(rest_results[-1]==({ 0 }))
-//       return 0;
-//     rest_results[-1]=(multiset)rest_results[-1]->uri;
-//   }
+  array(Node) children;
+  void create(Node ... _children)
+  {
+    children=_children;
+  }
   
-//   array results=({});
-//   foreach(first_result, mapping hit)
-//     if(!has_value(rest_results[hit->uri], 0))
-//       results += ({ hit });
-//   return make_document_mapping(documents);
+  mapping build_sql_components(mapping(string:int) ref)
+  {
+    array(mapping) children_tmp=children->build_sql_components(ref);
+    return ([ "from": Array.flatten(children_tmp->from),
+	      "ranking": Array.flatten(children_tmp->ranking),
+	      "where": "("+children_tmp->where*" AND\n       "+")"]);
+  }
 }
+
+class Or
+{
+  inherit GroupNode;
+
+  array(Node) children;
+  void create(Node ... _children)
+  {
+    children=_children;
+  }
+  
+  mapping build_sql_components(mapping(string:int) ref)
+  {
+    array(mapping) children_tmp=children->build_sql_components(ref);
+    return ([ "from": Array.flatten(children_tmp->from),
+	      "ranking": Array.flatten(children_tmp->ranking),
+	      "where": "("+children_tmp->where*" OR\n       "+")"]);
+  }
+}
+
+class Not(Node child)
+{
+  inherit GroupNode;
+
+  mapping build_sql_components(mapping(string:int) ref)
+  {
+    mapping child_tmp=child->build_sql_components(ref);
+    child_tmp->where="not "+child_tmp->where;
+    return child_tmp;
+  }
+}
+
+class Contains(string field, string word)
+{
+  inherit LeafNode;
+
+  mapping build_sql_components(mapping(string:int) ref)
+  {
+    return (["from": ({sprintf("occurance_%s t%d",field,ref->ref)}),
+	     "ranking": ({/*sprintf("sum((t%d.tf * t%d.idf * t%d.idf)/document.length)",
+			    ref->ref,ref->ref,ref->ref)*/}),
+	     "where":  sprintf("t%d.word='%s'",ref->ref++,word /*FIXME: quote*/) ]);
+  }
+}
+
+class Phrase
+{
+  inherit LeafNode;
+
+  string field;
+  array(string) words;
+  void create(string _field, string ... _words)
+  {
+    field=_field;
+    words=_words;
+  }
+  
+  mapping build_sql_components(mapping(string:int) ref, void|int window_size)
+  {
+    int real_window_size=window_size||1;
+    if(sizeof(words)<2)
+      return Contains(field, @words)->build_sql_components(ref);
+    
+    array(string) from=({}), where=({}), ranking=({});
+    int i=0;
+    foreach(words, string word)
+    {
+//       ranking+=({sprintf("sum((document.tf * t%d.idf * t%d.idf)/document.length)",
+// 			 ref->ref,ref->ref)});
+      from+=({ sprintf("occurance_%s t%d",field,ref->ref) });
+      where+= ({ sprintf("t%d.word='%s'",ref->ref,word) });  /*FIXME: quote*/
+      if(i++<sizeof(words)-1)
+	where+=({ sprintf("t%d.offset-t%d.offset = "+real_window_size,
+			  ref->ref+1, ref->ref) });
+      ref->ref++;
+    }
+    return ([ "from": from,
+              "ranking":ranking,
+	      "where": "("+where*" and\n       "+")" ]);
+  }
+}
+
+class Near
+{
+  inherit LeafNode;
+  
+  string field;
+  array(string) words;
+  int window_size;
+  void create(string _field, int _window_size, string ... _words)
+  {
+    window_size=_window_size,
+    field=_field;
+    words=_words;
+  }
+
+  mapping build_sql_components(mapping(string:int) ref)
+  {
+    return Phrase(field,@words)->build_sql_components(ref,window_size);
+  }
+}
+
+class FloatOP(string field, string op, float value)
+{
+  inherit LeafNode;
+}
+
+class IntegerOP(string field, string op, float value)
+{
+  inherit LeafNode;
+}
+
+class DateOP(string field, string op, string date)
+{
+  inherit LeafNode;
+}
+
+
+// int main()
+// {
+//   write(And(Or(Contains("body","foo"), Contains("body","bar"),Phrase("title","tjo","hej")),
+// 	    Phrase("title","roxen","internet","software"))->build_sql());
+// }
