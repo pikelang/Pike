@@ -4,7 +4,7 @@
 
 CYCLIC *cyclic_hash[CYCLIC_HASH_SIZE];
 
-void unlink_cyclic(CYCLIC *c)
+static void low_unlink_cyclic(CYCLIC *c)
 {
   unsigned int h;
   CYCLIC **p;
@@ -23,11 +23,16 @@ void unlink_cyclic(CYCLIC *c)
     if(c == *p)
     {
       *p=c->next;
-      UNSET_ONERROR(c->onerr);
       return;
     }
   }
   fatal("Unlink cyclic on lost cyclic struct.\n");
+}
+
+void unlink_cyclic(CYCLIC *c)
+{
+  UNSET_ONERROR(c->onerr);
+  low_unlink_cyclic(c);
 }
 
 void *begin_cyclic(CYCLIC *c,
@@ -60,6 +65,6 @@ void *begin_cyclic(CYCLIC *c,
   c->th=th;
   c->next=cyclic_hash[h];
   cyclic_hash[h]=c;
-  SET_ONERROR(c->onerr, unlink_cyclic, &c);
+  SET_ONERROR(c->onerr, low_unlink_cyclic, c);
   return 0;
 }
