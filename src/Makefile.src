@@ -141,7 +141,7 @@ install:
 
 # tidy up a bit
 tidy:
-	-rm -f *.o core $(MUD_LIB)/core y.output y.tab.c y.tab.h
+	-rm -f *.o core y.output y.tab.c y.tab.h
 	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~
 
 # make clean

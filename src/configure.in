@@ -230,7 +230,9 @@ AC_TYPE_SIGNAL
 AC_CHECK_TYPE(time_t,INT32)
 
 AC_CHECK_LIB(PW, alloca)
-AC_CHECK_LIB(crypt, crypt)
+
+dnl AC_CHECK_LIB(crypt, crypt)
+
 AC_CHECK_LIB(m, floor)
 if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
   AC_MSG_WARN(I will compensate for this by adding -lc -lm)
