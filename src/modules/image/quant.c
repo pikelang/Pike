@@ -648,7 +648,7 @@ fprintf(stderr,"%lx %d,%d,%d ",me,ct->clut[me->cl].r,ct->clut[me->cl].g,ct->clut
       eme=&(me->next);
       me=me->next;
    }
-   if (!mindistance && beme) /* exact match, place first */
+   if (!mindistance && beme && *beme) /* exact match, place first */
    {
       struct map_entry e;
       e=*feme;
