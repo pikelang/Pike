@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.53 2003/02/15 20:34:28 grubba Exp $
+|| $Id: jvm.c,v 1.54 2003/02/16 03:53:25 mast Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.53 2003/02/15 20:34:28 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.54 2003/02/16 03:53:25 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1846,17 +1846,15 @@ static void native_dispatch(struct native_method_context *ctx,
     Pike_interpreter.stack_top=((char *)&state)+ (thread_stack_size-16384) * STACK_DIRECTION;
     Pike_interpreter.recoveries = NULL;
     Pike_interpreter.thread_obj = fast_clone_object(thread_id_prog);
-    Pike_interpreter.thread_state =
-      (struct thread_state *)Pike_interpreter.thread_obj->storage;
-    SWAP_OUT_THREAD(Pike_interpreter.thread_state);
-    Pike_interpreter.thread_state->swapped=0;
-    Pike_interpreter.thread_state->id=th_self();
+    INIT_THREAD_STATE((struct thread_state *)(Pike_interpreter.thread_obj->storage +
+					      thread_storage_offset));
     num_threads++;
     thread_table_insert(Pike_interpreter.thread_state);
     do_native_dispatch(ctx, env, cls, args, rc);
     Pike_interpreter.thread_state->status=THREAD_EXITED;
     co_signal(&Pike_interpreter.thread_state->status_change);
     thread_table_delete(Pike_interpreter.thread_state);
+    EXIT_THREAD_STATE(Pike_interpreter.thread_state);
     Pike_interpreter.thread_state=NULL;
     free_object(Pike_interpreter.thread_obj);
     Pike_interpreter.thread_obj=NULL;
