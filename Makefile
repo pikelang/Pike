@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.46 2001/12/02 17:44:42 mast Exp $
+# $Id: Makefile,v 1.47 2001/12/18 15:16:22 mast Exp $
 #
 # Meta Makefile
 #
@@ -76,8 +76,9 @@ configure: src/configure builddir
 	      echo "$$configureargs" > .configureargs; \
 	    if test "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	    else \
-	      echo Configure arguments have changed - doing make clean; \
+	      echo Configure arguments have changed - doing make clean and depend; \
 	      $(MAKE) "MAKE=$(MAKE)" clean; \
+	      $(MAKE) "MAKE=$(MAKE)" depend; \
 	    fi; \
 	  fi; \
 	}
