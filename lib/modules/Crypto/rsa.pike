@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.9 1997/05/31 22:03:49 grubba Exp $
+/* $Id: rsa.pike,v 1.10 1997/08/26 08:22:03 nisse Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  * However, PKCS#1 style signing (involving ISO Object Identifiers) is
@@ -74,6 +74,17 @@ string rsa_unpad(bignum block, int type)
   if ((i < 9) || (strlen(s) != (size - 1)) || (s[0] != type))
     return 0;
   return s[i+1..];
+}
+
+object sign(string message, program h, mixed|void r)
+{
+  return rsa_pad(pkcs.build_digestinfo(message, h()), 1, r)->powm(d, n);
+}
+
+int verify(string msg, program h, object sign)
+{
+  string s = pkcs.build_digestinfo(msg, h());
+  return s == rsa_unpad(sign->powm(e, n), 1);
 }
 
 string sha_sign(string message, mixed|void r)
