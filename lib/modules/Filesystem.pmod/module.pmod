@@ -258,21 +258,33 @@ class Traversion {
   array(string) files;
   object current;
   int(0..) pos;
+  int(0..1) symlink;
   constant is_traversion = 1;
 
-  //! @decl void create(string path)
-  void create(string _path) {
+  //! @decl void create(string path, void|int(0..1) symlink)
+  //! @param
+  //! The root path from which to traverse.
+  //! @param
+  //! Don't traverse symlink directories.
+  void create(string _path, void|int(0..1) _symlink) {
     path = _path;
     if(path[-1]!='/') path+="/";
     files = get_dir(path);
+    symlink = _symlink;
     if(sizeof(files)) set_current();
   }
 
   static void set_current() {
     current = file_stat(path + files[pos]);
     if(!current->isdir) return;
+    if(symlink && file_stat(path + files[pos],1)->islnk) {
+      pos++;
+      if(pos < sizeof(files))
+	set_current();
+      return;
+    }
 
-    current = Traversion(path + files[pos]);
+    current = Traversion(path + files[pos], symlink);
     if(Traversion) return;
     current = 0;
     pos++;
