@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.78 2004/01/25 19:38:08 grubba Exp $
+|| $Id: backend.cmod,v 1.79 2004/01/26 09:50:11 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.78 2004/01/25 19:38:08 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.79 2004/01/26 09:50:11 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1371,14 +1371,12 @@ PIKECLASS Backend
 #endif
 	if(!was_set)
 	{
-	  MY_FD_SET(&me->set, fd,
-		    MY_POLLIN
+	  MY_FD_SET(&me->set, fd, MY_POLLIN);
 #ifndef HAVE_POLL
 		    /* Got to enable the exception set to get errors
 		     * (at least according to POSIX). */
-		    | MY_POLLEXCEPT
+	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
 #endif
-		    );
 	  backend_wake_up_backend(me);
 	}
       }else{
@@ -1428,13 +1426,12 @@ PIKECLASS Backend
 #endif
 	if(!was_set)
 	{
-	  MY_FD_SET(&me->set, fd, MY_POLLOUT
+	  MY_FD_SET(&me->set, fd, MY_POLLOUT);
 #ifndef HAVE_POLL
 		    /* Got to enable the exception set to get errors
 		     * (at least according to POSIX). */
-		    | MY_POLLEXCEPT
+	  MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
 #endif
-		    );
 	  backend_wake_up_backend(me);
 	}
       } else {
