@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.19 2000/02/20 10:22:48 hubbe Exp $ */
+/* $Id: mkwmml.pike,v 1.20 2000/02/29 20:36:21 neotron Exp $ */
 
 import Stdio;
 import Array;
@@ -56,10 +56,16 @@ mapping focM(mapping dest,string name,string line)
 
 string stripws(string s)
 {
-   sscanf(s,"%*[ \t\n\r]%s",s);
-   s=reverse(s);
-   sscanf(s,"%*[ \t\n\r]%s",s);
-   return reverse(s);
+  array lines = s / "\n";
+  return String.trim_all_whites(lines * "\n");
+}
+
+string desc_stripws(string s)
+{
+  array lines = s / "\n";
+  for(int i = 0; i < sizeof(lines); i++) 
+    lines[i] =  String.trim_all_whites(lines[i]);
+  return String.trim_all_whites(lines * "\n");
 }
 
 mapping lower_nowM()
@@ -235,7 +241,7 @@ string make_nice_reference(string what,string prefix)
 
 string fixdesc(string s,string prefix,string where)
 {
-   s=stripws(s);
+   s=desc_stripws(s);
 
    string t,u,v,q;
 
@@ -368,7 +374,7 @@ void document(string enttype,
 		     +fixdesc(rarg+"\t\t<aarg>"
 			      +arg->args*"</aarg>\n\t\t<aarg>"
 			      +"</aarg>",prefix,arg->_line)
-		     +"\n\t\t<adesc>"
+		     +"\n<adesc>"
 		     +fixdesc(arg->desc,prefix,arg->_line)
 		     +"</adesc></aargdesc>\n\n");
 	    rarg="";
