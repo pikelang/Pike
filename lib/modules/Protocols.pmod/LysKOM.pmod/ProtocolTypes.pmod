@@ -30,7 +30,7 @@ class LysKOMTime
      return res;
    }
   
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       seconds=(int)args[0];                        // INT32
       minutes=(int)args[1];                        // INT32
@@ -71,7 +71,7 @@ class TextStatOld
 
   string _sprintf(){ return "TextStatOld()"; }
 
-   void create(string|array ...args)
+   void create(string|int|array ... args)
    {
       creation_time=LysKOMTime(@args[0..8]);       // Time
       author=(int)args[9];                         // Pers-No
@@ -101,7 +101,7 @@ class TextNumberPair
    int              local_number;                  // Local-Text-No
    int              global_number;                 // Text-No
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       local_number=(int)args[0];                   // Local-Text-No
       global_number=(int)args[1];                  // Text-No
@@ -149,7 +149,7 @@ class TextMapping
    int(0..1)        later_texts_exists;            // BOOL
    mixed            block;                         // Local-To-Global-Block
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       range_begin=(int)args[0];                    // Local-Text-No
       range_end=(int)args[1];                      // Local-Text-No
@@ -194,7 +194,7 @@ class DynamicSessionInfo
    multiset(string) flags;                         // Session-Flags
    string           what_am_i_doing;               // HOLLERITH
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       session=(int)args[0];                        // Session-No
       person=(int)args[1];                         // Pers-No
@@ -212,7 +212,7 @@ class DynamicSessionInfo
             person,                                // Pers-No
             working_conference,                    // Conf-No
             idle_time,                             // INT32
-            @B(@rows(flags,sessionflagsnames)),    // Session-Flags
+            B(@rows(flags, sessionflagsnames)),    // Session-Flags
             H(what_am_i_doing),                    // HOLLERITH
          });
    }
@@ -230,7 +230,7 @@ class SessionInfo
    int              idle_time;                     // INT32
    LysKOMTime       connection_time;               // Time
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -266,7 +266,7 @@ class WhoInfo
    string           what_am_i_doing;               // HOLLERITH
    string           username;                      // HOLLERITH
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -326,7 +326,7 @@ class AuxItem
    int              inherit_limit;                 // INT32
    string           data;                          // HOLLERITH
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       aux_no=(int)args[0];                         // Aux-No
       tag=(int)args[1];                            // INT32
@@ -345,7 +345,7 @@ class AuxItem
             tag,                                   // INT32
             creator,                               // Pers-No
             @created_at->encode(),                 // Time
-            @B(@rows(flags,auxitemflagsnames)),    // Aux-Item-Flags
+            B(@rows(flags, auxitemflagsnames)),    // Aux-Item-Flags
             inherit_limit,                         // INT32
             H(data),                               // HOLLERITH
          });
@@ -364,7 +364,7 @@ class TextStat
    array(int)       misc_info;                     // ARRAY Misc-Info
    array(AuxItem)   aux_items;                     // ARRAY Aux-Item
 
-   void create(string|array ...args)
+   void create(string|int|array ... args)
    {
       creation_time=LysKOMTime(@args[0..8]);       // Time
       author=(int)args[9];                         // Pers-No
@@ -407,7 +407,7 @@ class InfoOld
    int(0..65535)    kom_news_conf;                 // Conf-No
    int              motd_of_lyskom;                // Text-No
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       version=(int)args[0];                        // INT32
       conf_pres_conf=(int)args[1];                 // Conf-No
@@ -458,7 +458,7 @@ class Membership
    LysKOMTime       added_at;                      // Time
    multiset(string) type;                          // Membership-Type
 
-   void create(string|array ...args)
+   void create(string|int|array ... args)
    {
       position=(int)args[0];                       // INT32
       last_time_read=LysKOMTime(@args[1..9]);      // Time
@@ -484,7 +484,7 @@ class Membership
             @A((array(string))read_texts),         // ARRAY Local-Text-No
             added_by,                              // Pers-No
             @added_at->encode(),                   // Time
-            @B(@rows(type,membershiptypenames)),   // Membership-Type
+            B(@rows(type, membershiptypenames)),   // Membership-Type
          });
    }
 
@@ -498,7 +498,7 @@ class Member
    LysKOMTime       added_at;                      // Time
    multiset(string) type;                          // Membership-Type
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       member=(int)args[0];                         // Pers-No
       added_by=(int)args[1];                       // Pers-No
@@ -513,7 +513,7 @@ class Member
             member,                                // Pers-No
             added_by,                              // Pers-No
             @added_at->encode(),                   // Time
-            @B(@rows(type,membershiptypenames)),   // Membership-Type
+            B(@rows(type, membershiptypenames)),   // Membership-Type
          });
    }
 
@@ -528,7 +528,7 @@ class MembershipOld
    int              last_text_read;                // Local-Text-No
    array(int)       read_texts;                    // ARRAY Local-Text-No
 
-   void create(string|array ...args)
+   void create(string|int|array ... args)
    {
       last_time_read=LysKOMTime(@args[0..8]);      // Time
       conf_no=(int)args[9];                     // Conf-No
@@ -563,7 +563,7 @@ class Info
    int              motd_of_lyskom;                // Text-No
    array(AuxItem)   aux_item_list;                 // ARRAY Aux-Item
 
-   void create(string|array ...args)
+   void create(string|int|array ... args)
    {
       version=(int)args[0];                        // INT32
       conf_pres_conf=(int)args[1];                 // Conf-No
@@ -603,7 +603,7 @@ class StaticSessionInfo
    string           ident_user;                    // HOLLERITH
    LysKOMTime       connection_time;               // Time
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       username=args[0];                            // HOLLERITH
       hostname=args[1];                            // HOLLERITH
@@ -644,7 +644,7 @@ class TextList
    int              first_local_no;                // Local-Text-No
    array(int)       texts;                         // ARRAY Text-No
 
-   void create(string|array ...args)
+   void create(string|int|array ... args)
    {
       first_local_no=(int)args[0];                 // Local-Text-No
       // --- skip array size: args[1]
@@ -670,7 +670,7 @@ class AuxItemInput
    int              inherit_limit;                 // INT32
    string           data;                          // HOLLERITH
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       tag=(int)args[0];                            // INT32
       flags=AuxItemFlags(args[1]);                 // Aux-Item-Flags
@@ -683,7 +683,7 @@ class AuxItemInput
       return
          ({
             tag,                                   // INT32
-            @B(@rows(flags,auxitemflagsnames)),    // Aux-Item-Flags
+            B(@rows(flags, auxitemflagsnames)),    // Aux-Item-Flags
             inherit_limit,                         // INT32
             H(data),                               // HOLLERITH
          });
@@ -702,7 +702,7 @@ class WhoInfoIdent
    string           hostname;                      // HOLLERITH
    string           ident_user;                    // HOLLERITH
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -748,7 +748,7 @@ class ConfZInfo
    multiset(string) type;                          // Conf-Type
    int(0..65535)    conf_no;                       // Conf-No
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ConfType(args[1]);                      // Conf-Type
@@ -760,7 +760,7 @@ class ConfZInfo
       return
          ({
             H(name),                               // HOLLERITH
-            @B(@rows(type,conftypenames)),         // Conf-Type
+            B(@rows(type, conftypenames)),         // Conf-Type
             conf_no,                               // Conf-No
          });
    }
@@ -774,7 +774,7 @@ class WhoInfoOld
    int(0..65535)    working_conference;            // Conf-No
    string           what_am_i_doing;               // HOLLERITH
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -800,7 +800,7 @@ class Mark
    int              text_no;                       // Text-No
    int(0..255)      type;                          // INT8
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       text_no=(int)args[0];                        // Text-No
       type=(int)args[1];                           // INT8
@@ -838,7 +838,7 @@ class Conference
    int              expire;                        // Garb-Nice
    array(AuxItem)   aux_items;                     // ARRAY Aux-Item
 
-   void create(string|array ...args)
+   void create(string|int|array ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ExtendedConfType(args[1]);              // Extended-Conf-Type
@@ -867,7 +867,7 @@ class Conference
       return
          ({
             H(name),                               // HOLLERITH
-            @B(@rows(type,extendedconftypenames)), // Extended-Conf-Type
+            B(@rows(type, extendedconftypenames)), // Extended-Conf-Type
             @creation_time->encode(),              // Time
             @last_written->encode(),               // Time
             creator,                               // Pers-No
@@ -908,7 +908,7 @@ class ConferenceOld
    int              first_local_no;                // Local-Text-No
    int              no_of_texts;                   // INT32
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ConfType(args[1]);                      // Conf-Type
@@ -931,7 +931,7 @@ class ConferenceOld
       return
          ({
             H(name),                               // HOLLERITH
-            @B(@rows(type,conftypenames)),         // Conf-Type
+            B(@rows(type, conftypenames)),         // Conf-Type
             @creation_time->encode(),              // Time
             @last_written->encode(),               // Time
             creator,                               // Pers-No
@@ -962,7 +962,7 @@ class SessionInfoIdent
    int              idle_time;                     // INT32
    LysKOMTime       connection_time;               // Time
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       person=(int)args[0];                         // Pers-No
       working_conference=(int)args[1];             // Conf-No
@@ -1000,7 +1000,7 @@ class VersionInfo
    string           server_software;               // HOLLERITH
    string           software_version;              // HOLLERITH
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       protocol_version=(int)args[0];               // INT32
       server_software=args[1];                     // HOLLERITH
@@ -1075,7 +1075,7 @@ class UConference
    int              highest_local_no;              // Local-Text-No
    int              nice;                          // Garb-Nice
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       name=args[0];                                // HOLLERITH
       type=ExtendedConfType(args[1]);              // Extended-Conf-Type
@@ -1088,7 +1088,7 @@ class UConference
       return
          ({
             H(name),                               // HOLLERITH
-            @B(@rows(type,extendedconftypenames)), // Extended-Conf-Type
+            B(@rows(type, extendedconftypenames)), // Extended-Conf-Type
             highest_local_no,                      // Local-Text-No
             nice,                                  // Garb-Nice
          });
@@ -1117,7 +1117,7 @@ class Person
    int(0..65535)    no_of_marks;                   // INT16
    int(0..65535)    no_of_confs;                   // INT16
 
-   void create(string|array ...args)
+   void create(string|int ... args)
    {
       username=args[0];                            // HOLLERITH
       privileges=PrivBits(args[1]);                // Priv-Bits
@@ -1143,8 +1143,8 @@ class Person
       return
          ({
             H(username),                           // HOLLERITH
-            @B(@rows(privileges,privbitsnames)),   // Priv-Bits
-            @B(@rows(flags,personalflagsnames)),   // Personal-Flags
+            B(@rows(privileges, privbitsnames)),   // Priv-Bits
+            B(@rows(flags, personalflagsnames)),   // Personal-Flags
             @last_login->encode(),                 // Time
             user_area,                             // Text-No
             total_time_present,                    // INT32
