@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.179 1999/07/28 21:02:07 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.180 1999/08/03 00:43:57 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2098,11 +2098,27 @@ void f_rows(INT32 args)
 
   get_all_args("rows", args, "%*%a", &val, &tmp);
 
-  push_array(a=allocate_array(tmp->size));
+  /* Optimization */
+  if(tmp->refs == 1)
+  {
+    struct svalue sval;
+    tmp->type_field = BIT_MIXED | BIT_UNFINISHED;
+    for(e=0;e<tmp->size;e++)
+    {
+      index_no_free(&sval, val, ITEM(tmp)+e);
+      free_svalue(ITEM(tmp)+e);
+      ITEM(tmp)[e]=sval;
+    }
+    stack_swap();
+    pop_stack();
+    return;
+  }
 
+  push_array(a=allocate_array(tmp->size));
+  
   for(e=0;e<a->size;e++)
     index_no_free(ITEM(a)+e, val, ITEM(tmp)+e);
-
+  
   sp--;
   pop_n_elems(args);
   push_array(a);
@@ -2117,6 +2133,22 @@ void f_column(INT32 args)
   DECLARE_CYCLIC();
 
   get_all_args("column", args, "%a%*", &tmp, &val);
+
+  /* Optimization */
+  if(tmp->refs == 1)
+  {
+    /* An array with one ref cannot possibly be cyclic */
+    struct svalue sval;
+    tmp->type_field = BIT_MIXED | BIT_UNFINISHED;
+    for(e=0;e<tmp->size;e++)
+    {
+      index_no_free(&sval, ITEM(tmp)+e, val);
+      free_svalue(ITEM(tmp)+e);
+      ITEM(tmp)[e]=sval;
+    }
+    pop_stack();
+    return;
+  }
 
   if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
   {
