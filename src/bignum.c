@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.27 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: bignum.c,v 1.28 2003/02/14 19:19:57 mast Exp $
 */
 
 #include "global.h"
@@ -179,8 +179,10 @@ PMOD_EXPORT void push_int64(INT64 i)
     apply_svalue(&auto_bignum_program, 2);
 
 
-    if(neg)
+    if(neg) {
       apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_COMPL),0);
+      stack_pop_n_elems_keep_top(1);
+    }
   }
 }
 
