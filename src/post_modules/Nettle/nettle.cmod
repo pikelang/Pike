@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.17 2003/08/25 03:34:23 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.18 2003/11/09 22:02:19 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -40,7 +40,7 @@ DECLARATIONS
  */
 PIKECLASS Yarrow
 {
-  CVAR struct yarrow256_ctx *ctx;
+  CVAR struct yarrow256_ctx ctx;
   CVAR struct yarrow_source *sources;
 
   /*! @decl void create(void|int sources)
@@ -52,7 +52,6 @@ PIKECLASS Yarrow
    */
   PIKEFUN void create(void|int arg) {
     INT32 num = 0;
-    THIS->sources = NULL;
 
     if(arg) {
       if (arg->type != PIKE_T_INT)
@@ -60,10 +59,15 @@ PIKECLASS Yarrow
       num = arg->u.integer;
       if(num < 0)
 	Pike_error("Invalid number of sources.\n");
+      free (THIS->sources);
       THIS->sources = xalloc(sizeof(struct yarrow_source)*num);
     }
-
-    yarrow256_init(THIS->ctx, num, THIS->sources);
+    else
+    {
+      free (THIS->sources);
+      THIS->sources = NULL;
+    }
+    yarrow256_init(&THIS->ctx, num, THIS->sources);
   }
 
   /*! @decl Yarrow seed(string data)
@@ -83,7 +87,7 @@ PIKECLASS Yarrow
       Pike_error( "Seed must be at least 32 characters.\n" );
 
     NO_WIDE_STRING(data);
-    yarrow256_seed(THIS->ctx, data->len, data->str);
+    yarrow256_seed(&THIS->ctx, data->len, data->str);
     RETURN this_object();
   }
 
@@ -106,7 +110,7 @@ PIKECLASS Yarrow
    */
   PIKEFUN string get_seed()
   {
-    RETURN make_shared_string(THIS->ctx->seed_file);
+    RETURN make_shared_binary_string(THIS->ctx.seed_file, YARROW256_SEED_FILE_SIZE);
   }
 
   /*! @decl int(0..1) is_seeded()
@@ -117,7 +121,7 @@ PIKECLASS Yarrow
    */
   PIKEFUN int(0..1) is_seeded()
   {
-    RETURN yarrow256_is_seeded(THIS->ctx);
+    RETURN yarrow256_is_seeded(&THIS->ctx);
   }
 
   /*! @decl void force_reseed()
@@ -127,7 +131,7 @@ PIKECLASS Yarrow
    */
   PIKEFUN void force_reseed()
   {
-    yarrow256_force_reseed(THIS->ctx);
+    yarrow256_force_reseed(&THIS->ctx);
   }
 
   /*! @decl int(0..1) update(string data, int source, int entropy)
@@ -138,21 +142,22 @@ PIKECLASS Yarrow
    */
   PIKEFUN int(0..1) update(string data, int source, int entropy)
   {
+    /* FIXME: Wide strings could actually be supported here */
     NO_WIDE_STRING(data);
-    if( !THIS->ctx->nsources )
+    if( !THIS->sources )
       Pike_error("This random generator has no sources.\n");
-    if( source<0 || source>=THIS->ctx->nsources )
+    if( source<0 || source>=THIS->ctx.nsources )
       Pike_error("Invalid random source.\n");
     if( entropy<0 )
       Pike_error("Entropy must be positive.\n");
     if( entropy>(data->len*8) )
       Pike_error("Impossibly large entropy value.\n");
-    RETURN yarrow256_update(THIS->ctx, source, entropy, data->len, data->str);
+    RETURN yarrow256_update(&THIS->ctx, source, entropy, data->len, data->str);
   }
 
   PIKEFUN int(0..) needed_sources()
   {
-    RETURN yarrow256_needed_sources(THIS->ctx);
+    RETURN yarrow256_needed_sources(&THIS->ctx);
   }
 
   /*! @decl string random_string(int length)
@@ -163,22 +168,22 @@ PIKECLASS Yarrow
     struct pike_string *rnd;
     if(length < 0)
       Pike_error("Invalid length, must be positive.\n");
-    if( !yarrow256_is_seeded(THIS->ctx) )
+    if( !yarrow256_is_seeded(&THIS->ctx) )
       Pike_error("Random generator not seeded.\n");
     rnd = begin_shared_string(length);
-    yarrow256_random(THIS->ctx, length, rnd->str);
+    yarrow256_random(&THIS->ctx, length, rnd->str);
     RETURN end_shared_string(rnd);
   }
 
   INIT
   {
-    THIS->ctx = xalloc(sizeof(struct yarrow256_ctx));
-    THIS->ctx->nsources = 0;
+    THIS->sources = NULL;
+    yarrow256_init(&THIS->ctx, 0, NULL);
   }
   EXIT
   {
-    if(THIS->ctx->nsources) free(THIS->sources);
-    free(THIS->ctx);
+    /* It's ok to call free(NULL); */
+    free(THIS->sources);
   }
 }
 
