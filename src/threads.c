@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.80 1998/08/10 23:33:31 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.81 1998/08/17 04:37:51 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1059,7 +1059,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
   me->harvest = fun;
   co_init( &me->harvest_moon );
 #ifdef UNIX_THREADS
-  thr_create(NULL,8192,farm,(void *)me,THR_DAEMON|THR_DETACHED|THR_BOUND,0);
+  thr_create(NULL,65536,farm,(void *)me,THR_DAEMON|THR_DETACHED,0);
 #else
   th_create_small(&me->me, farm, me);
 #endif
