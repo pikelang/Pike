@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.142 2004/09/16 17:41:03 grubba Exp $
+|| $Id: array.c,v 1.143 2004/10/25 14:42:09 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.142 2004/09/16 17:41:03 grubba Exp $");
+RCSID("$Id: array.c,v 1.143 2004/10/25 14:42:09 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -900,7 +900,7 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
     if(a->type!=T_OBJECT && b->type!=T_OBJECT)
       return a->type - b->type;
   }
-  return is_gt(a,b);
+  return is_gt(a,b) ? 1 : is_gt(b,a) ? -1 : 0;
 }
 
 #define CMP(X,Y) alpha_svalue_cmpfun(X,Y)
