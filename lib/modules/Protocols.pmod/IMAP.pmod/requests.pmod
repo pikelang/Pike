@@ -74,12 +74,19 @@ class request
 
       case "astring":
 	return parser->get_astring(append_arg);
+
       case "set":
 	return parser->get_set(append_arg);
+
       case "any":
 	/* A single atom or string or a list of atoms (with
 	 * options), lists. Used for fetch. */
 	return parser->get_any(arg_info[argc][1], 0, append_arg, );
+
+      case "varargs":
+	/* Like any, but with an implicit list at top-level */
+	return parser->get_varargs(arg_info[argc][1], 
+
       default:
 	throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
 			  arg_info[argc]), backtrace() }) );
@@ -385,3 +392,8 @@ class fetch
 	&& res;
     }
 }
+
+class search
+{
+  inherit request;
+  constant arg_info = ({ ({ "varargs", 17 }) })
