@@ -16,7 +16,7 @@ private array managers_list=({});
 private mapping oid_get_callbacks=([]);
 private mapping oid_set_callbacks=([]);
 private int managers_security_mode=0;
-
+private int thread_running=0;
 
 private void request_received(mapping rdata) {
 
@@ -127,31 +127,32 @@ private void request_received(mapping rdata) {
 //!   the port number to listen for requests on
 //! @param addr
 //!   the address to bind to for listening
-//! @param usethreads
-//!   use threads for handler loop (if available)
 //!
 //! @note
 //!    only one agent may be bound to a port at one time
 //!    the agent does not currently support SMUX or AGENTX or other
 //!    agent multiplexing protocols.
-void create(int|void port, string|void addr, int|void usethread) {
+void create(int|void port, string|void addr) {
   int p=port||SNMP_DEFAULT_PORT;
 
   if(addr)
     ::create(0, 0, p, addr);
   else
     ::create(0, 0, p);
-#if constant(thread_create)
-  if(usethread)
-  {
-    run_handler_thread();
-  }
-  else
-  {
-#endif
-    ::set_read_callback(request_received);
-    ::set_nonblocking();
+
+  ::set_read_callback(request_received);
+  ::set_nonblocking();
+}
+
+//! Run the agent event loop in a thread, if available.
+void set_threaded()
+{
 #if constant (thread_create)
+  if(!thread_running)
+  {
+    ::set_blocking();
+    thread_running=1;
+    run_handler_thread();
   }
 #endif
 }
