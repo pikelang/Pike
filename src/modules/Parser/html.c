@@ -1688,7 +1688,7 @@ static int scan_forward(struct piece *feed,
 		  p_wchar2*s=((p_wchar2*)feed->s->str)+c;
 		  while (ce--)
 		  {
-		     for (n=2; n<num_look_for; n++)
+		     for (n=0; n<num_look_for; n++)
 			if (((p_wchar2)*s)==look_for[n])
 			{
 			   c=feed->s->len-ce;
