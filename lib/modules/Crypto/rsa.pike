@@ -15,7 +15,7 @@ int size;
 
 int encrypt_mode; /* For block cipher compatible functions */
 
-void set_public_key(bignum modulo, bignum pub)
+object set_public_key(bignum modulo, bignum pub)
 {
   n = modulo;
   e = pub;
@@ -23,11 +23,13 @@ void set_public_key(bignum modulo, bignum pub)
   if (size < 12)
     throw( ({ "Crypto.rsa->set_public_key: Too small modulo.\n",
 		backtrace() }) );
+  return this_object();
 }
 
-void set_private_key(bignum priv)
+object set_private_key(bignum priv)
 {
   d = priv;
+  return this_object();
 }
 
 int query_blocksize() { return size - 3; }
