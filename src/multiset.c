@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.75 2003/07/01 15:09:11 mast Exp $
+|| $Id: multiset.c,v 1.76 2003/08/20 12:06:33 grubba Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.75 2003/07/01 15:09:11 mast Exp $");
+RCSID("$Id: multiset.c,v 1.76 2003/08/20 12:06:33 grubba Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -3370,13 +3370,15 @@ PMOD_EXPORT int multiset_equal_p (struct multiset *a, struct multiset *b,
   debug_malloc_touch (b);
   debug_malloc_touch (b->msd);
 
+  if (a->msd == b->msd) return 1;
+
   check_multiset_for_destruct (a);
   check_multiset_for_destruct (b);
 
   rd.a_msd = a->msd, rd.b_msd = b->msd;
 
   if (multiset_sizeof (a) != multiset_sizeof (b) ||
-      (rd.a_msd->flags & MULTISET_INDVAL) != (rd.b_msd->flags & MULTISET_INDVAL) ||
+      rd.a_msd->flags || rd.b_msd->flags ||
       !SAME_CMP_LESS (rd.a_msd, rd.b_msd))
     return 0;
 
@@ -5292,7 +5294,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.75 2003/07/01 15:09:11 mast Exp $");
+RCSID("$Id: multiset.c,v 1.76 2003/08/20 12:06:33 grubba Exp $");
 
 struct multiset *first_multiset;
 
