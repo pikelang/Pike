@@ -261,6 +261,7 @@ AC_CHECK_FUNCS(
  getenv \
  getrlimit \
  getrusage \
+ gettimeofday \
  index \
  memchr \
  memcpy \
@@ -283,7 +284,51 @@ AC_CHECK_FUNCS(
  wait3 \
  wait4 \
  waitpid \
+ localtime \
 )
+
+AC_STRUCT_TM
+
+AC_MSG_CHECKING(extern int timezone)
+
+AC_CACHE_VAL(lpc_cv_has_external_timezone,[
+AC_TRY_LINK([
+#include <time.h>
+],[
+  int _tz;
+  _tz=timezone;
+],lpc_cv_has_external_timezone=yes,lpc_cv_has_external_timezone=no)
+])
+
+if test "$lpc_cv_has_external_timezone" = "yes"; then
+  AC_DEFINE(HAVE_EXTERNAL_TIMEZONE)
+fi
+
+AC_MSG_RESULT($lpc_cv_has_external_timezone)
+
+
+AC_MSG_CHECKING(if struct tm has tm_gmtoff)
+
+AC_CACHE_VAL(lpc_cv_struct_tm_has_gmtoff,[
+AC_TRY_LINK([
+#ifdef TM_IN_SYS_TIME
+#include <sys/time.h>
+#endif
+#include <time.h>
+#else
+],[
+  int _tz;
+  struct tm foo;
+  _tz=foo->tm_gmtoff;
+],lpc_cv_struct_tm_has_gmtoff=yes,lpc_cv_struct_tm_has_gmtoff=no)
+])
+
+if test "$lpc_cv_struct_tm_has_gmtoff" = "yes"; then
+  AC_DEFINE(STRUCT_TM_HAS_GMTOFF)
+fi
+
+AC_MSG_RESULT($lpc_cv_struct_tm_has_gmtoff)
+
 
 define(MY_CHECK_HEADERS,
 [
@@ -308,6 +353,9 @@ MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h)
 MY_CHECK_HEADERS(popen,stdio.h unistd.h)
 MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
 MY_CHECK_HEADERS(gethostname,unistd.h)
+
+# No test for this yet...
+AC_DEFINE(HAVE_STRUCT_TIMEVAL)
 
 AC_MSG_CHECKING(return type of free)
 AC_CACHE_VAL(lpc_cv_sys_free_return,
@@ -792,30 +840,14 @@ fi
 
 rm -f core
 
-
-dirs=
-MODULE_OBJS=
-module_names=
-for a in `(cd $srcdir/modules ; echo *)`
-do
-  if test "$a" != "CVS" -a "$a" != "RCS" ; then
-    if test -d "$srcdir/modules/$a" ; then
-      dirs="$dirs modules/$a"
-      MODULE_OBJS="$MODULE_OBJS modules/$a/$a.a"
-      module_names="$module_names $a"
-    fi
-  fi
-done
-
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
 DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
 
-AC_CONFIG_SUBDIRS($dirs)
+AC_CONFIG_SUBDIRS(modules)
 
 AC_SUBST(YACC)
-AC_SUBST(MODULE_OBJS)
 AC_SUBST(INSTALL)
 AC_SUBST(WARN)
 AC_SUBST(OPTIMIZE)
@@ -826,36 +858,6 @@ AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
 AC_SUBST(DOCDIR)
 
-AC_OUTPUT(Makefile,
-[
-echo "FOO" >stamp-h
-if test ! -d ./modules ; then
-  mkdir modules
-fi
-
-echo creating modlist.h
-echo "void init_main_efuns(void);" >modlist.h
-echo "void init_main_programs(void);" >>modlist.h
-echo "void exit_main(void);" >>modlist.h
-
-for a in $dirs
-do
-  echo "void init_"$a"_efuns(void);" >>modlist.h
-  echo "void init_"$a"_programs(void);" >>modlist.h
-  echo "void exit_"$a"(void);" >>modlist.h
-done
-echo "" >>modlist.h
-echo "struct module module_list UGLY_WORKAROUND={" >>modlist.h
-
-echo "  { \"main\", init_main_efuns, init_main_programs, exit_main, 0 }" >>modlist.h
-for a in $dirs
-do
-  echo " ,{ \"$a\", init_"$a"_efuns, init_"$a"_programs, exit_$a, 0 }" >>modlist.h
-done
-echo "};" >>modlist.h
-]
-,
-dirs="$module_names"
-)
+AC_OUTPUT(Makefile,[echo foo >stamp-h])
 
 
