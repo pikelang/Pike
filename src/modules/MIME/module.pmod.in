@@ -1,9 +1,9 @@
 /*
- * $Id: module.pmod.in,v 1.16 1999/03/07 18:01:22 marcus Exp $
+ * $Id: module.pmod.in,v 1.17 1999/03/09 22:18:33 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
- * Marcus Comstedt 1996-1997
+ * Marcus Comstedt 1996-1999
  */
 
 class support {
@@ -78,8 +78,10 @@ class support {
       return ({ word, 0 });
   }
   
-  string encode_word( array(string) word, string encoding )
+  string encode_word( string|array(string) word, string encoding )
   {
+    if (stringp(word))
+      return word;
     if (!encoding || !word[1])
       return word[0];
     switch (lower_case(encoding)) {
@@ -149,7 +151,8 @@ class support {
 		     });
   }
 
-  array(array(string|int)) decode_words_tokenized_labled( string phrase )
+  array(array(string|int|array(array(string))))
+    decode_words_tokenized_labled( string phrase )
   {
     return Array.map( tokenize_labled( phrase ),
 		      lambda(array(string|int) item) {
@@ -166,7 +169,8 @@ class support {
 		      });
   }
 
-  array(array(string|int)) decode_words_tokenized_labled_remapped(string phrase)
+  array(array(string|int))
+    decode_words_tokenized_labled_remapped(string phrase)
   {
     return Array.map(decode_words_tokenized_labled(phrase),
 		     lambda(array(string|int) item) {
@@ -181,7 +185,7 @@ class support {
 		     });
   }
 
-  string encode_words_text( array(array(string)) phrase, string encoding )
+  string encode_words_text(array(string|array(string)) phrase, string encoding)
   {
     return Array.map(phrase, encode_word, encoding)*" ";
   }
@@ -192,6 +196,29 @@ class support {
 				     return intp(item)? item :
 				       encode_word(item, encoding);
 				   }));
+  }
+
+  string encode_words_quoted_labled(array(array(string|int|array(string|array(string)))) phrase, string encoding)
+  {
+    return
+      quote_labled(Array.map(phrase,
+			     lambda(array(string|int|array(string)) item) {
+			       switch(item[0]) {
+			       case "word":
+				 if(sizeof(item)>2 && item[2])
+				   return ({
+				     "encoded-word",
+				     encode_word(item[1..], encoding) });
+				 else
+				   return item;
+			       case "comment":
+				 return ({
+				   "comment",
+				   encode_words_text(item[1], encoding) });
+			       default:
+				 return item;
+			       }
+			     }));
   }
 
   string guess_subtype( string typ )

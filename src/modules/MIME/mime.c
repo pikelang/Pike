@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.16 1999/03/07 17:47:32 marcus Exp $
+ * $Id: mime.c,v 1.17 1999/03/09 22:18:31 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.16 1999/03/07 17:47:32 marcus Exp $");
+RCSID("$Id: mime.c,v 1.17 1999/03/09 22:18:31 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -38,6 +38,7 @@ static void f_encode_uue( INT32 args );
 static void f_tokenize( INT32 args );
 static void f_tokenize_labled( INT32 args );
 static void f_quote( INT32 args );
+static void f_quote_labled( INT32 args );
 
 
 /** Global tables **/
@@ -120,6 +121,9 @@ void pike_module_init( void )
 			 OPT_TRY_OPTIMIZE );
   add_function_constant( "quote", f_quote,
 			 "function(array(string|int):string)",
+			 OPT_TRY_OPTIMIZE );
+  add_function_constant( "quote_labled", f_quote_labled,
+			 "function(array(array(string|int)):string)",
 			 OPT_TRY_OPTIMIZE );
 }
 
@@ -934,6 +938,157 @@ static void f_quote( INT32 args )
       prev_atom = 1;
 
     }
+  }
+
+  /* Return the result */
+  pop_n_elems( 1 );
+  push_string( low_free_buf( &buf ) );
+}
+
+static void f_quote_labled( INT32 args )
+{
+  struct svalue *item;
+  INT32 cnt;
+  dynamic_buffer buf;
+  int prev_atom = 0;
+
+  if (args != 1)
+    error( "Wrong number of arguments to MIME.quote_labled()\n" );
+  else if (sp[-1].type != T_ARRAY)
+    error( "Wrong type of argument to MIME.quote_labled()\n" );
+
+  /* Quote array in sp[-1].u.array.  Once again we'll rely on a
+     dynamic_buffer to collect the output string. */
+
+  buf.s.str = NULL;
+  initialize_buf( &buf );
+
+  for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
+
+    if (item->type != T_ARRAY || item->u.array->size<2 ||
+	item->u.array->item[0].type != T_STRING) {
+      toss_buffer( &buf );
+      error( "Wrong type of argument to MIME.quote_labled()\n" );
+    }
+
+    if (c_compare_string( item->u.array->item[0].u.string, "special", 7 )) {
+
+      if(item->u.array->item[1].type != T_INT) {
+	toss_buffer( &buf );
+	error( "Wrong type of argument to MIME.quote_labled()\n" );
+      }
+
+      /* Single special character */
+      low_my_putchar( item->u.array->item[1].u.integer, &buf );
+      prev_atom = 0;
+
+    } else if(item->u.array->item[1].type != T_STRING) {
+
+      /* All the remaining lexical items require item[1] to be a string */
+      toss_buffer( &buf );
+      error( "Wrong type of argument to MIME.quote_labled()\n" );
+
+    } else if (c_compare_string( item->u.array->item[0].u.string, "word", 4 )){
+
+      /* It's a word, so we'll store it either as an atom, or
+	 as a quoted-string */
+      struct pike_string *str = item->u.array->item[1].u.string;
+
+      /* In case the previous item was also a string, we'll add a single
+	 whitespace as a delimiter */
+      if (prev_atom)
+	low_my_putchar( ' ', &buf );
+
+      if ((str->len>5 && str->str[0]=='=' && str->str[1]=='?' &&
+	   check_encword((unsigned char *)str->str, str->len)) ||
+	  check_atom_chars((unsigned char *)str->str, str->len)) {
+
+	/* Valid atom without quotes... */
+	low_my_binary_strcat( str->str, str->len, &buf );
+
+      } else {
+
+	/* Have to use quoted-string */
+	INT32 len = str->len;
+	char *src = str->str;
+	low_my_putchar( '"', &buf );
+	while(len--) {
+	  if(*src=='"' || *src=='\\' || *src=='\r')
+	    /* Some characters have to be escaped even within quotes... */
+	    low_my_putchar( '\\', &buf );
+	  low_my_putchar( *src++, &buf );
+	}
+	low_my_putchar( '"', &buf );
+
+      }
+
+      prev_atom = 1;
+
+    } else if (c_compare_string( item->u.array->item[0].u.string,
+				 "encoded-word", 12 )) {
+
+      struct pike_string *str = item->u.array->item[1].u.string;
+
+      /* Insert 'as is'. */
+      low_my_binary_strcat( str->str, str->len, &buf );
+
+      prev_atom = 1;
+
+    } else if (c_compare_string( item->u.array->item[0].u.string,
+				 "comment", 7 )) {
+
+      struct pike_string *str = item->u.array->item[1].u.string;
+
+      /* Encode comment */
+      INT32 len = str->len;
+      char *src = str->str;
+      low_my_putchar( '(', &buf );
+      while(len--) {
+	if(*src=='(' || *src==')' || *src=='\\' || *src=='\r')
+	  /* Some characters have to be escaped even within comments... */
+	  low_my_putchar( '\\', &buf );
+	low_my_putchar( *src++, &buf );
+      }
+      low_my_putchar( ')', &buf );
+
+      prev_atom = 0;
+      
+    } else if (c_compare_string( item->u.array->item[0].u.string,
+				 "domain-literal", 14 )) {
+
+      struct pike_string *str = item->u.array->item[1].u.string;
+
+      /* Encode domain-literal */
+      INT32 len = str->len;
+      char *src = str->str;
+
+      if (len<2 || src[0] != '[' || src[len-1] != ']') {
+	toss_buffer( &buf );
+	error( "Illegal domain-literal passed to MIME.quote_labled()\n" );
+      }
+
+      len -= 2;
+      src++;
+
+      low_my_putchar( '[', &buf );
+      while(len--) {
+	if(*src=='[' || *src==']' || *src=='\\' || *src=='\r')
+	  /* Some characters have to be escaped within domain-literals... */
+	  low_my_putchar( '\\', &buf );
+	low_my_putchar( *src++, &buf );
+      }
+      low_my_putchar( ']', &buf );
+
+      prev_atom = 0;
+
+    } else {
+
+      /* Unknown label.  Too bad... */
+      toss_buffer( &buf );
+      error( "Unknown label passed to MIME.quote_labled()\n" );
+
+    }
+
   }
 
   /* Return the result */
