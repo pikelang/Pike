@@ -7,9 +7,16 @@
 #  include "stralloc.h"
 #  include "pike_macros.h"
 
-RCSID("$Id: dynamic_load.c,v 1.28 1998/05/15 19:01:05 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.29 1998/07/09 12:45:35 grubba Exp $");
 
-#endif
+#endif /* !TESTING */
+
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif /* HAVE_ERRNO_H */
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif /* HAVE_STRING_H */
 
 #if !defined(HAVE_DLOPEN)
 
@@ -18,11 +25,17 @@ RCSID("$Id: dynamic_load.c,v 1.28 1998/05/15 19:01:05 grubba Exp $");
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
 #else
+#if defined(HAVE_SHL_LOAD) && defined(HAVE_DL_H)
+#define USE_HPUX_DL
+#define HAVE_SOME_DLOPEN
+#define EMULATE_DLOPEN
+#else
 #if defined(HAVE_LOADLIBRARY) && defined(HAVE_FREELIBRARY) && \
     defined(HAVE_GETPROCADDRESS) && defined(HAVE_WINBASE_H)
 #define USE_LOADLIBRARY
 #define HAVE_SOME_DLOPEN
 #define EMULATE_DLOPEN
+#endif
 #endif
 #endif
 #else
@@ -76,11 +89,12 @@ static void dlclose(void *module)
 
 #define dlinit()
 
-#endif
+#endif /* USE_LOADLIBRARY */
+
 
 #ifdef USE_DLD
 #include <dld.h>
-static void *dlopen(char *foo, int how)
+static void *dlopen(char *module_name, int how)
 {
   dld_create_reference("pike_module_init");
   if(dld_link(module_name))
@@ -118,8 +132,60 @@ static void dlinit(void)
   }
 }
 
+#endif /* USE_DLD */
 
+
+#ifdef USE_HPUX_DL
+
+#include <dl.h>
+
+#if defined(TESTING) && defined(BIND_VERBOSE)
+#define RTLD_NOW	BIND_IMMEDIATE | BIND_VERBOSE
+#else
+#define RTLD_NOW	BIND_IMMEDIATE
+#endif /* TESTING && BIND_VERBOSE */
+
+extern int errno;
+
+static void *dlopen(char *libname, int how)
+{
+  shl_t lib;
+
+  lib = shl_load(libname, how, 0L);
+
+  return (void *)lib;
+}
+
+static char *dlerror(void)
+{
+#ifdef HAVE_STRERROR
+  return strerror(errno);
+#else
+  return ""; /* I hope it's better than null..*/
 #endif
+}
+
+static void *dlsym(void *module, char *function)
+{
+  void *func;
+  int result;
+  shl_t mod = (shl_t)module;
+
+  result = shl_findsym(&mod, function, TYPE_UNDEFINED, &func);
+  if (result == -1)
+    return NULL;
+  return func;
+}
+
+static void dlclose(void *module)
+{
+  shl_unload((shl_t)module);
+}
+
+#define dlinit()
+
+#endif /* USE_HPUX_DL */
+
 
 #ifndef EMULATE_DLOPEN
 
@@ -128,18 +194,19 @@ static void dlinit(void)
 #endif
 
 #define dlinit()
-#endif
+#endif  /* !EMULATE_DLOPEN */
+
 
 #ifndef RTLD_NOW
 #define RTLD_NOW 0
 #endif
 
+#endif
 
-#endif /* !EMULATE_DLOPEN */
 
 #ifndef TESTING
 
-#if defined(HAVE_DLOPEN) || defined(USE_DLD)
+#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
 
 struct module_list
 {
@@ -210,12 +277,12 @@ void f_load_module(INT32 args)
   push_program(end_program());
 }
 
+#endif /* HAVE_DLOPEN || USE_DLD || USE_HPUX_DL */
 
-#endif /* HAVE_DLOPEN || USE_DLD */
 
 void init_dynamic_load(void)
 {
-#if defined(HAVE_DLOPEN) || defined(USE_DLD)
+#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
   dlinit();
 
   add_efun("load_module",f_load_module,"function(string:program)",OPT_EXTERNAL_DEPEND);
@@ -224,7 +291,7 @@ void init_dynamic_load(void)
 
 void exit_dynamic_load(void)
 {
-#if defined(HAVE_DLOPEN) || defined(USE_DLD)
+#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
   while(dynamic_module_list)
   {
     struct module_list *tmp=dynamic_module_list;
