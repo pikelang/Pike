@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.66 2000/12/01 08:10:00 hubbe Exp $ */
+/* $Id: font.c,v 1.67 2002/10/17 21:06:47 anders Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -9,7 +9,7 @@ extern unsigned char * image_default_font;
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.66 2000/12/01 08:10:00 hubbe Exp $
+**!	$Id: font.c,v 1.67 2002/10/17 21:06:47 anders Exp $
 **! class Font
 **!
 **! note
@@ -785,8 +785,8 @@ void font_text_extents(INT32 args)
      p_wchar2 *to_write2;
      ptrdiff_t to_write_len;
      if (sp[j-args].type!=T_STRING)
-	bad_arg_error("font->write",sp-args,args,0,"",sp-args,
-		"Bad arguments to font->write()\n");
+	bad_arg_error("font->text_extents",sp-args,args,0,"",sp-args,
+		"Bad arguments to font->text_extents()\n");
      
      xsize = max = 1;
      to_write_len = sp[j-args].u.string->len;
