@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.36 1999/01/07 13:59:56 hubbe Exp $
+ * $Id: acconfig.h,v 1.37 1999/02/06 19:00:44 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -14,6 +14,9 @@
 
 /* Define this if you want run time self tests */
 #undef PIKE_DEBUG
+
+/* Define this if you are going to use a memory access checker (like Purify) */
+#undef __CHECKER__
 
 /* Define this if you want malloc debugging */
 #undef DEBUG_MALLOC
