@@ -306,9 +306,6 @@ static void recurseAppears(Node root, Node current) {
       array(string) a = splitRef(attrRef);
       t->belongsRef = a;
     }
-    else if (string globalRef = attr["global"]) {
-      t->belongsRef = ({});
-    }
     t->n = current;
     tasks += ({ t });
   }
@@ -365,7 +362,18 @@ void handleAppears(Node root) {
 // "Module.Class->funct(int i)" ==> ({"Module","Class","func"})
 static array(string) splitRef(string ref) {
   array(string) a = Parser.Pike.split(ref);
+  string scope = "";
   array result = ({});
+  if (sizeof(a) && (a[0] == "lfun" || a[0] == "predef")) {
+    scope += a[0];
+    a = a[1..];
+  }
+  if (sizeof(a) && a[0] == "::") {
+    scope += a[0];
+    a = a[1..];
+  }
+  if (strlen(scope))
+    result = ({ scope });
   for (;;) {
     if (!sizeof(a))
       return result;
@@ -376,7 +384,7 @@ static array(string) splitRef(string ref) {
     else
       return result;
     token = sizeof(a) ? a[0] : "";
-    if ((<".", "->", "::">)[token])
+    if ((<".", "->">)[token])
       a = a[1..];
     else
       return result;
