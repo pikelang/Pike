@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.61 2002/04/06 19:41:22 mikael%unix.pp.se Exp $
+// $Id: Hilfe.pmod,v 1.62 2002/04/06 21:17:35 mikael%unix.pp.se Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -472,13 +472,17 @@ private class CommandNew {
 //
 private class SubSysBackend {
   int(0..1) is_running;
+  int(0..1) once;
 
   void create(){
     is_running=0;
   }
 
   void start(Evaluator e, array(string) words){
-    add_constant("backend_thread",thread_create(backend_loop));
+    if(sizeof(words)>=2 && words[1]=="once")
+      add_constant("backend_thread",thread_create(backend_loop,e->write,1));
+    else
+      add_constant("backend_thread",thread_create(backend_loop,e->write,0));
   }
 
   void stop(Evaluator e, array(string) words){
@@ -487,12 +491,18 @@ private class SubSysBackend {
 
   int(0..1) runningp(){ return is_running; }
 
-  private void backend_loop(){
+  private void backend_loop(function write_err, int(0..1) once){
     is_running=1;
-    catch{
-      while(1)
-	Pike.DefaultBackend(3600.0);
-    };
+    mixed err;
+    do{
+      err=catch{
+	while(1)
+	  Pike.DefaultBackend(3600.0);
+      };
+      if(err)
+	write_err(describe_backtrace(err));
+     }while(!once && err);
+    write_err("Backend done.\n");
     is_running=0;
   }
 
@@ -556,7 +566,9 @@ private class CommandStartStop {
   
   string doc(string what, string with) { 
     switch(what){
-    case "start": return "start backend\n\tstart the backend thread.\n"; 
+    case "start": return "start backend [once]\n\tstart the backend thread. If \"once\" is "
+		         "specified execution\n\twill end at first exception. Can be restarted "
+		         "with \"start backend\".\n"; 
     case "stop":  return "stop backend\n\tstop the backend thread.\n"; 
     }
   }
