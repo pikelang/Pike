@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.44 2004/05/06 16:20:10 mast Exp $
+ * $Id: Tree.pmod,v 1.45 2004/05/06 19:21:16 grubba Exp $
  *
  */
 
@@ -202,51 +202,34 @@ class XMLNSParser {
   }
 }
 
-//!
-class AbstractNode {
+//! Base class for nodes.
+static class AbstractSimpleNode {
   //  Private member variables
-  /* static */ AbstractNode           mParent = 0;
   /* static */ array(AbstractNode)    mChildren = ({ });
   
-  //  Public methods
-
-  //! Sets the parent node to @[parent].
-  void set_parent(AbstractNode parent)    { mParent = parent; }
-
-  //! Returns the parent node.
-  AbstractNode get_parent()          { return (mParent); }
-
   //! Returns all the nodes children.
   array(AbstractNode) get_children() { return (mChildren); }
 
   //! Returns the number of children of the node.
   int count_children()           { return (sizeof(mChildren)); }
- 
-  //! Returns the corresponding node in a clone of the tree.
-  AbstractNode clone(void|int(-1..1) direction) {
-    AbstractNode n = AbstractNode();
-    if(mParent && direction!=1)
-      n->set_parent( mParent->clone(-1) );
-    if(direction!=-1)
-      foreach(mChildren, AbstractNode child)
-	n->add_child( child->clone(1) );
+
+  //! Returns an initialized copy of the node.
+  //! @note
+  //!   The returned node has no children.
+  AbstractSimpleNode low_clone() {
+    return AbstractSimpleNode();
+  }
+
+  //! Returns a clone of the sub-tree rooted in the node.
+  AbstractSimpleNode clone() {
+    AbstractSimpleNode n = low_clone();
+    foreach(mChildren, AbstractNode child)
+      n->add_child( child->clone() );
     return n;
   }
 
-
-  //! Follows all parent pointers and returns the root node.
-  AbstractNode get_root()
-  {
-    AbstractNode  parent, node;
-    
-    parent = this;
-    while (node = parent->mParent)
-      parent = node;
-    return (parent);
-  }
-
   //! Returns the last childe node or zero.
-  AbstractNode get_last_child()
+  AbstractSimpleNode get_last_child()
   {
     if (!sizeof(mChildren))
       return 0;
@@ -259,7 +242,7 @@ class AbstractNode {
   //! @note
   //!   The [] operator will select a node from all the nodes children,
   //!   not just its element children.
-  AbstractNode `[](mixed pos)
+  AbstractSimpleNode `[](mixed pos)
   {
     if (intp(pos)) {
       //  Treat pos as index into array
@@ -272,17 +255,20 @@ class AbstractNode {
   }
 
   //! Adds a child node to this node. The child node is
-  //! added last in the child list and its parent reference
-  //! is updated.
+  //! added last in the child list.
+  //!
+  //! @note
+  //!   The return value differs from the one returned
+  //!   by @[Node()->add_child()].
+  //!
   //! @returns
-  //! The updated child node is returned.
-  AbstractNode add_child(AbstractNode c)
+  //!   The current node.
+  AbstractSimpleNode add_child(AbstractSimpleNode c)
   {
     mChildren += ({ c });
-    c->mParent = this;
 	
-    //  Let caller get the new node back for easy chaining of calls
-    return (c);
+    //  Let caller get the node back for easy chaining of calls
+    return this;
   }
 
   //! Variant of @[add_child] that doesn't set the parent pointer in
@@ -312,50 +298,34 @@ class AbstractNode {
   }
 
   //! Removes all occurrences of the provided node from the called nodes
-  //! list of children. The removed nodes parent reference is set to null.
-  void remove_child(AbstractNode c)
+  //! list of children.
+  void remove_child(AbstractSimpleNode c)
   {
     mChildren -= ({ c });
-    c->mParent = 0;
   }
 
-  //! Removes this node from its parent. The parent reference is set to null.
-  void remove_node() {
-    mParent->remove_child(this);
-  }
-
-  //! Replaces the nodes children with the provided ones. All parent
-  //! references are updated.
-  void replace_children(array(AbstractNode) children) {
-    foreach(mChildren, AbstractNode c)
-      c->mParent = 0;
+  //! Replaces the nodes children with the provided ones.
+  void replace_children(array(AbstractSimpleNode) children) {
     mChildren = children;
-    foreach(mChildren, AbstractNode c)
-      c->mParent = this;
   }
 
 
   //! Replaces the first occurrence of the old node child with
-  //! the new node child. All parent references are updated.
+  //! the new node child.
+  //! @note
+  //!   The return value differs from the one returned
+  //!   by @[Node()->replace_child()].
   //! @returns
-  //!   Returns the new child node.
-  AbstractNode replace_child(AbstractNode old, AbstractNode new)
+  //!   Returns the current node on success, and @expr{0@0 (zero)
+  //!   if the node @[old] wasn't found.
+  AbstractSimpleNode replace_child(AbstractSimpleNode old,
+				   AbstractSimpleNode new)
   {
     int index = search(mChildren, old);
     if (index < 0)
       return 0;
     mChildren[index] = new;
-    new->mParent = this;
-    old->mParent = 0;
-    return new;
-  }
-
-  //! Replaces this node with the provided one.
-  //! @returns
-  //!   Returns the new node.
-  AbstractNode replace_node(AbstractNode new) {
-    mParent->replace_child(this, new);
-    return new;
+    return this;
   }
 
   //! Destruct the tree recursively. To avoid frequent garbage
@@ -372,42 +342,42 @@ class AbstractNode {
   //! subtrees from left to right, calling the callback function
   //! for every node. If the callback function returns @[STOP_WALK]
   //! the traverse is promptly aborted and @[STOP_WALK] is returned.
-  int walk_preorder(function(AbstractNode, mixed ...:int|void) callback,
+  int walk_preorder(function(AbstractSimpleNode, mixed ...:int|void) callback,
 		    mixed ... args)
   {
     if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
-    foreach(mChildren, AbstractNode c)
+    foreach(mChildren, AbstractSimpleNode c)
       if (c->walk_preorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
   }
   
   //! Traverse the node subtree in preorder, root node first, then
-  //! subtrees from left to right. For each node we call callback_1
-  //! before iterating through children, and then callback_2
+  //! subtrees from left to right. For each node we call @[cb_1]
+  //! before iterating through children, and then @[cb_2]
   //! (which always gets called even if the walk is aborted earlier).
   //! If the callback function returns @[STOP_WALK] the traverse
   //! decend is aborted and @[STOP_WALK] is returned once all waiting
-  //! callback_2 functions has been called.
-  int walk_preorder_2(function(AbstractNode, mixed ...:int|void) callback_1,
-		      function(AbstractNode, mixed ...:int|void) callback_2,
+  //! @[cb_2] functions have been called.
+  int walk_preorder_2(function(AbstractSimpleNode, mixed ...:int|void) cb_1,
+		      function(AbstractSimpleNode, mixed ...:int|void) cb_2,
 		      mixed ... args)
   {
     int  res;
 	
-    res = callback_1(this, @args);
+    res = cb_1(this, @args);
     if (!res)
-      foreach(mChildren, AbstractNode c)
-	res = res || c->walk_preorder_2(callback_1, callback_2, @args);
-    return (callback_2(this, @args) || res);
+      foreach(mChildren, AbstractSimpleNode c)
+	res = res || c->walk_preorder_2(cb_1, cb_2, @args);
+    return (cb_2(this, @args) || res);
   }
 
   //! Traverse the node subtree in inorder, left subtree first, then
-  //! root node, and finally the remaining subtrees, calling the callback
-  //! function for every node. If the callback function returns
+  //! root node, and finally the remaining subtrees, calling the function
+  //! @[callback] for every node. If the function @[callback] returns
   //! @[STOP_WALK] the traverse is promptly aborted and @[STOP_WALK]
   //! is returned.
-  int walk_inorder(function(AbstractNode, mixed ...:int|void) callback,
+  int walk_inorder(function(AbstractSimpleNode, mixed ...:int|void) callback,
 		   mixed ... args)
   {
     if (sizeof(mChildren) > 0)
@@ -415,38 +385,163 @@ class AbstractNode {
 	return STOP_WALK;
     if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
-    foreach(mChildren[1..], AbstractNode c)
+    foreach(mChildren[1..], AbstractSimpleNode c)
       if (c->walk_inorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
   }
 
   //! Traverse the node subtree in postorder, first subtrees from left to
-  //! right, then the root node, calling the callback function for every
-  //! node. If the callback function returns @[STOP_WALK] the traverse
+  //! right, then the root node, calling the function @[callback] for every
+  //! node. If the function @[callback] returns @[STOP_WALK] the traverse
   //! is promptly aborted and @[STOP_WALK] is returned.
-  int walk_postorder(function(AbstractNode, mixed ...:int|void) callback,
+  int walk_postorder(function(AbstractSimpleNode, mixed ...:int|void) callback,
 		     mixed ... args)
   {
-    foreach(mChildren, AbstractNode c)
+    foreach(mChildren, AbstractSimpleNode c)
       if (c->walk_postorder(callback, @args) == STOP_WALK)
 	return STOP_WALK;
     if (callback(this, @args) == STOP_WALK)
       return STOP_WALK;
   }
 
-  //! Iterates over the nodes children from left to right, calling the callback
-  //! function for every node. If the callback function returns @[STOP_WALK]
+  //! Iterates over the nodes children from left to right, calling the function
+  //! @[callback] for every node. If the callback function returns @[STOP_WALK]
   //! the iteration is promptly aborted and @[STOP_WALK] is returned.
-  int iterate_children(function(AbstractNode, mixed ...:int|void) callback,
+  int iterate_children(function(AbstractSimpleNode, mixed ...:int|void) callback,
 		       mixed ... args)
   {
-    foreach(mChildren, AbstractNode c)
+    foreach(mChildren, AbstractSimpleNode c)
       if (callback(c, @args) == STOP_WALK)
 	return STOP_WALK;
   }
 
-  //! Returns all preceding siblings, i.e. all siblings present before this node
-  //! in the parents children list.
+  //! Returns a list of all descendants in document order. Includes
+  //! this node if @[include_self] is set.
+  array(AbstractSimpleNode) get_descendants(int(0..1) include_self)
+  {
+    array   res;
+	
+    //  Walk subtrees in document order and add to resulting list
+    res = include_self ? ({ this }) : ({ });
+    foreach(mChildren, AbstractSimpleNode child) {
+      res += child->get_descendants(1);
+    }
+    return (res);
+  }
+}
+
+//! Base class for nodes with parent pointers.
+class AbstractNode {
+  inherit AbstractSimpleNode;
+  //  Private member variables
+  /* static */ AbstractNode           mParent = 0;
+
+  //  Public methods
+
+  //! Sets the parent node to @[parent].
+  void set_parent(AbstractNode parent)    { mParent = parent; }
+
+  //! Returns the parent node.
+  AbstractNode get_parent()          { return (mParent); }
+
+  //! Returns an initialized copy of the node.
+  //! @note
+  //!   The returned node has no children, and no parent.
+  AbstractNode low_clone()
+  {
+    return AbstractNode();
+  }
+
+  //! Clones the node, optionally connected to parts of the tree.
+  //! If direction is -1 the cloned nodes parent will be set, if
+  //! direction is 1 the clone nodes childen will be set.
+  AbstractNode clone(void|int(-1..1) direction) {
+    AbstractNode n = low_clone();
+    if(mParent && direction!=1)
+      n->set_parent( mParent->clone(-1) );
+    if(direction!=-1)
+      foreach(mChildren, AbstractNode child)
+	n->add_child( child->clone(1) );
+    return n;
+  }
+
+  //! Follows all parent pointers and returns the root node.
+  AbstractNode get_root()
+  {
+    AbstractNode  parent, node;
+    
+    parent = this;
+    while (node = parent->mParent)
+      parent = node;
+    return (parent);
+  }
+
+  //! Adds a child node to this node. The child node is
+  //! added last in the child list and its parent reference
+  //! is updated.
+  //!
+  //! @note
+  //!   Returns the child node, NOT the current node.
+  //!
+  //! @returns
+  //! The updated child node is returned.
+  AbstractNode add_child(AbstractNode c)
+  {
+    c->mParent = ::add_child(c);
+	
+    //  Let caller get the new node back for easy chaining of calls
+    return (c);
+  }
+
+  //! Removes all occurrences of the provided node from the called nodes
+  //! list of children. The removed nodes parent reference is set to null.
+  void remove_child(AbstractNode c)
+  {
+    ::remove_child(c);
+    c->mParent = 0;
+  }
+
+  //! Removes this node from its parent. The parent reference is set to null.
+  void remove_node() {
+    mParent->remove_child(this);
+  }
+
+  //! Replaces the nodes children with the provided ones. All parent
+  //! references are updated.
+  void replace_children(array(AbstractNode) children) {
+    foreach(mChildren, AbstractNode c)
+      c->mParent = 0;
+    ::replace_children(children);
+    foreach(mChildren, AbstractNode c)
+      c->mParent = this;
+  }
+
+
+  //! Replaces the first occurrence of the old node child with
+  //! the new node child. All parent references are updated.
+  //! @note
+  //!   The returned value is NOT the current node.
+  //! @returns
+  //!   Returns the new child node.
+  AbstractNode replace_child(AbstractNode old,
+			     AbstractNode new)
+  {
+    if (!::replace_child(old, new)) return 0;
+    new->mParent = this;
+    old->mParent = 0;
+    return new;
+  }
+
+  //! Replaces this node with the provided one.
+  //! @returns
+  //!   Returns the new node.
+  AbstractNode replace_node(AbstractNode new) {
+    mParent->replace_child(this, new);
+    return new;
+  }
+
+  //! Returns all preceding siblings, i.e. all siblings present before
+  //! this node in the parents children list.
   array(AbstractNode) get_preceding_siblings()
   {
     array  siblings;
@@ -503,20 +598,6 @@ class AbstractNode {
     return (res);
   }
 
-  //! Returns a list of all descendants in document order. Includes
-  //! this node if @[include_self] is set.
-  array(AbstractNode) get_descendants(int(0..1) include_self)
-  {
-    array   res;
-	
-    //  Walk subtrees in document order and add to resulting list
-    res = include_self ? ({ this }) : ({ });
-    foreach(mChildren, AbstractNode child) {
-      res += child->get_descendants(1);
-    }
-    return (res);
-  }
-
   //! Returns all preceding nodes, excluding this nodes ancestors.
   array(AbstractNode) get_preceding()
   {
@@ -569,13 +650,10 @@ class AbstractNode {
     } while (node);
     return (res);
   }
-};
-
+}
 
 //!  Node in XML tree
-class Node {
-  inherit AbstractNode;
-
+static class VirtualNode {
   //  Member variables for this node type
   static int            mNodeType;
   static string		mShortNamespace = "";	// Namespace prefix
@@ -588,30 +666,15 @@ class Node {
   static string         mText;
   static int            mDocOrder;
 
-  static Node low_clone()
+  // Functions implemented via multiple inheritance.
+  array(AbstractNode) get_children();
+  int walk_preorder(function(AbstractSimpleNode, mixed ...:int|void) callback,
+		    mixed ... args);
+
+  static VirtualNode low_clone()
   {
-    return Node(get_node_type(), get_full_name(),
-		get_attributes(), get_text());
-  }
-
-  //! Clones the node, optionally connected to parts of the tree.
-  //! If direction is -1 the cloned nodes parent will be set, if
-  //! direction is 1 the clone nodes childen will be set.
-  Node clone(void|int(-1..1) direction)
-  {
-    Node n = low_clone();
-
-    if(direction!=1) {
-      Node p = get_parent();
-      if(p)
-	n->set_parent( p->clone(-1) );
-    }
-
-    if(direction!=-1)
-      foreach(get_children(), Node child)
-	n->add_child( child->clone(1) );
-
-    return n;
+    return this_program(get_node_type(), get_full_name(),
+			get_attributes(), get_text());
   }
 
   //  This can be accessed directly by various methods to cache parsing
@@ -643,19 +706,11 @@ class Node {
   //!
   void set_doc_order(int o)  { mDocOrder = o; }
   
-//   int get_tag_code()
-//   {
-//     //  Fake ATTR nodes query their parent
-//     return ((mNodeType == XML_ATTR) ? get_parent()->get_tag_code() : mTagCode);
-//   }
-  
-
   //! Returns the name of the element node, or the nearest element above if
   //! an attribute node.
   string get_tag_name()
   {
-    //  Fake ATTR nodes query their parent
-    return ((mNodeType == XML_ATTR) ? get_parent()->get_tag_name() : mTagName);
+    return mTagName;
   }
 
   //! Return name of tag or name of attribute node.
@@ -675,13 +730,6 @@ class Node {
     return mShortNamespace + mTagName;
   }
 
-  //! Returns the name of the attribute node.
-  string get_attr_name()
-  {
-    //  Only works for fake ATTR nodes
-    return ((mNodeType == XML_ATTR) ? mTagName : "");
-  }
-  
   //!
   static void create(int type, string name, mapping attr, string text)
   {
@@ -1016,22 +1064,51 @@ class Node {
       low_render_xml(data, this, text_quote, attribute_quote);
   }
 
-  //  Override AbstractNode::`[]
-  Node `[](mixed pos)
+  /*static*/ void _add_to_text (string str)
+  // Only to be used internally from the parse callback.
   {
-    //  If string indexing we find attributes which match the string
-    if (stringp(pos)) {
-      //  Make sure attribute node list is instantiated
-      array(Node) attr = get_attribute_nodes();
-	  
-      //  Find attribute name
-      foreach(attr, Node n)
-	if (n->get_attr_name() == pos)
-	  return (n);
-      return (0);
-    } else
-      //  Call inherited method
-      return (AbstractNode::`[](pos));
+    mText += str;
+  }
+
+  string _sprintf(int t) {
+    return t=='O' && sprintf("%O(#%d:%d,%s)", this_program, mDocOrder,
+			     get_node_type(), get_full_name()||"NULL");
+  }
+}
+
+//! XML node without parent pointers.
+class SimpleNode
+{
+  inherit AbstractSimpleNode;
+  inherit VirtualNode;
+}
+
+//! XML node with parent pointers.
+class Node
+{
+  inherit AbstractNode;
+  inherit VirtualNode;
+
+//   int get_tag_code()
+//   {
+//     //  Fake ATTR nodes query their parent
+//     return ((mNodeType == XML_ATTR) ? get_parent()->get_tag_code() : mTagCode);
+//   }
+  
+
+  //! Returns the name of the element node, or the nearest element above if
+  //! an attribute node.
+  string get_tag_name()
+  {
+    //  Fake ATTR nodes query their parent
+    return ((mNodeType == XML_ATTR) ? get_parent()->get_tag_name() : mTagName);
+  }
+
+  //! Returns the name of the attribute node.
+  string get_attr_name()
+  {
+    //  Only works for fake ATTR nodes
+    return ((mNodeType == XML_ATTR) ? mTagName : "");
   }
 
   //! Creates and returns an array of new nodes; they will not be
@@ -1064,19 +1141,26 @@ class Node {
       mAttrNodes += ({ node });
     }
     return (mAttrNodes);
-  }
+  }  
 
-  /*static*/ void _add_to_text (string str)
-  // Only to be used internally from the parse callback.
+  //  Override AbstractNode::`[]
+  Node `[](mixed pos)
   {
-    mText += str;
+    //  If string indexing we find attributes which match the string
+    if (stringp(pos)) {
+      //  Make sure attribute node list is instantiated
+      array(Node) attr = get_attribute_nodes();
+	  
+      //  Find attribute name
+      foreach(attr, Node n)
+	if (n->get_attr_name() == pos)
+	  return (n);
+      return (0);
+    } else
+      //  Call inherited method
+      return (AbstractNode::`[](pos));
   }
-
-  string _sprintf(int t) {
-    return t=='O' && sprintf("%O(#%d:%d,%s)", this_program, mDocOrder,
-			     get_node_type(), get_full_name()||"NULL");
-  }
-};
+}
 
 class RootNode
 {
