@@ -11,7 +11,7 @@ array(Node) chapters = ({});
 
 Node void_node = Node(XML_ELEMENT, "void", ([]), 0);
 
-// array( array(name,file,(subchapters)) )
+// array( array(name,file,chapter_no,(subchapters)) )
 array toc = ({});
 class TocNode {
   inherit Node;
@@ -20,24 +20,26 @@ class TocNode {
 
   int|void walk_preorder_2(mixed ... args) {
     mChildren = ({});
-    int chapter;
     foreach(toc, array ent) {
       string file = ent[1][sizeof(String.common_prefix( ({ path, ent[1] }) ))..];
       if(file[0]=='/') file = file[1..];
 
       Node dt = Node( XML_ELEMENT, "dt", ([]), 0 );
       Node link = Node( XML_ELEMENT, "url", ([ "href" : file ]), 0 );
-      link->add_child( Node( XML_TEXT, 0, 0, (++chapter)+". "+ent[0] ) );
+      if(ent[2])
+	link->add_child( Node( XML_TEXT, 0, 0, ent[2]+". "+ent[0] ) );
+      else
+	link->add_child( Node( XML_TEXT, 0, 0, ent[0] ) );
       dt->add_child( link );
       add_child( dt );
       add_child( Node( XML_TEXT, 0, 0, "\n" ) );
 
       int sub;
-      if(sizeof(ent)>2 && depth>1)
-	foreach(ent[2..], string subtit) {
+      if(sizeof(ent)>3 && depth>1)
+	foreach(ent[3..], string subtit) {
 	  Node dd = Node( XML_ELEMENT, "dd", ([]), 0 );
 	  Node link = Node( XML_ELEMENT, "url", ([ "href" : file ]), 0 );
-	  link->add_child( Node( XML_TEXT, 0, 0, chapter+"."+(++sub)+". "+subtit ) );
+	  link->add_child( Node( XML_TEXT, 0, 0, ent[2]+"."+(++sub)+". "+subtit ) );
 	  dd->add_child( link );
 	  add_child( dd );
 	  add_child( Node( XML_TEXT, 0, 0, "\n" ) );
@@ -249,9 +251,10 @@ void ref_expansion(Node n, string dir, void|string file) {
 			   get_first_element("chapter") );
       // fallthrough
     case "chapter":
-      if(c->get_attributes()->unnumbered!="1")
-	c->get_attributes()->number = (string)++chapter;
-      toc += ({ ({ c->get_attributes()->title, file }) });
+      mapping m = c->get_attributes();
+      if(m->unnumbered!="1")
+	m->number = (string)++chapter;
+      toc += ({ ({ m->title, file, m->number }) });
       chapters += ({ c });
       chapter_ref_expansion(c, dir);
       break;
@@ -263,6 +266,10 @@ void ref_expansion(Node n, string dir, void|string file) {
 	Entry e = mvEntry(c);
 	e->args = ([ "number": (string)++appendix ]);
 	appendix_queue[c->get_attributes()->name] = e;
+
+	// No more than 26 appendicies...
+	toc += ({ ({ c->get_attributes()->name, file,
+		     ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
 	break;
       }
       if(!c->get_attributes()->file)
@@ -272,7 +279,10 @@ void ref_expansion(Node n, string dir, void|string file) {
       // fallthrough
     case "appendix":
       c->get_attributes()->number = (string)++appendix;
-      toc += ({ ({ c->get_attributes()->name, file }) });
+
+      // No more than 26 appendicies...
+      toc += ({ ({ c->get_attributes()->name, file,
+		   ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
       break;
 
     case "void":
