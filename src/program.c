@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.117 1999/03/15 08:24:01 hubbe Exp $");
+RCSID("$Id: program.c,v 1.118 1999/03/17 21:51:57 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -614,15 +614,20 @@ void low_start_new_program(struct program *p,
   add_ref(compiler_frame->current_return_type=void_type_string);
 
 #ifdef PIKE_DEBUG
-  if(lex.current_file)
-    store_linenumber(last_pc, lex.current_file);
 #endif
 }
 
-void start_new_program(void)
+void debug_start_new_program(PROGRAM_LINE_ARGS)
 {
   /* fprintf(stderr, "start_new_program(): threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
   low_start_new_program(0,0,0);
+#ifdef PIKE_DEBUG
+  {
+    struct pike_string *s=make_shared_string(file);
+    store_linenumber(line,s);
+    free_string(s);
+  }
+#endif
 }
 
 
@@ -1229,6 +1234,7 @@ void low_inherit(struct program *p,
 	}
       }else{
 	inherit.parent_offset+=parent_offset;
+	inherit.parent_identifier=parent_identifier;
       }
     }else{
       if(parent && parent->next != parent && inherit.parent_offset)
@@ -1258,7 +1264,6 @@ void low_inherit(struct program *p,
 	}
 
 	inherit.parent=par;
-	inherit.parent_identifier=pid;
 	inherit.parent_offset=0;
       }else{
 	inherit.parent_offset+=parent_offset;
@@ -1376,7 +1381,7 @@ void compiler_do_inherit(node *n,
 
       low_inherit(p,
 		  0,
-		  0,
+		  numid,
 		  n->u.integer.a,
 		  flags,
 		  name);
@@ -2380,7 +2385,9 @@ struct program *compile(struct pike_string *prog)
   lex.current_file=make_shared_string("-");
   lex.pragmas=0;
 
-  start_new_program();
+  low_start_new_program(0,0,0);
+  if(lex.current_file)
+    store_linenumber(last_pc, lex.current_file);
   compilation_depth=0;
 
 /*  start_line_numbering(); */

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.52 1999/03/11 22:59:21 grubba Exp $
+ * $Id: program.h,v 1.53 1999/03/17 21:51:59 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -16,6 +16,12 @@
 #include "pike_macros.h"
 #include "svalue.h"
 #include "time_stuff.h"
+
+#ifdef PIKE_DEBUG
+#define PROGRAM_LINE_ARGS int line, char *file
+#else
+#define PROGRAM_LINE_ARGS void
+#endif
 
 #define LFUN___INIT 0
 #define LFUN_CREATE 1
@@ -273,7 +279,7 @@ struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
 			   struct pike_string *name,
 			   int flags);
-void start_new_program(void);
+void debug_start_new_program(PROGRAM_LINE_ARGS);
 void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
@@ -421,4 +427,11 @@ int implements(struct program *a, struct program *b);
 #else
 #define end_class(NAME,FLAGS) debug_end_class(NAME, CONSTANT_STRLEN(NAME), FLAGS)
 #define end_program debug_end_program
+#endif
+
+
+#ifdef PIKE_DEBUG
+#define start_new_program() debug_start_new_program(__LINE__,__FILE__)
+#else
+#define start_new_program() debug_start_new_program()
 #endif
