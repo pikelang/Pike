@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.43 2003/07/08 22:31:12 agehall Exp $
+|| $Id: auto.c.in,v 1.44 2003/08/17 19:01:04 marcus Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.43 2003/07/08 22:31:12 agehall Exp $");
+RCSID("$Id: auto.c.in,v 1.44 2003/08/17 19:01:04 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -612,9 +612,9 @@ static void my_glFrustum(INT32 args)
   m[5] = 2*close/(top-bottom);
   m[8] = (right+left)/(right-left);
   m[9] = (top+bottom)/(top-bottom);
-  m[10] = (away+close)/(away-close);
+  m[10] = -(away+close)/(away-close);
   m[11] = -1.0;
-  m[14] = 2*away*close/(away-close);
+  m[14] = -2*away*close/(away-close);
 
   glMultMatrixd( m );
   pop_n_elems(args);
