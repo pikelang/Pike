@@ -1463,7 +1463,7 @@ class ParseBlock
 		subclass->exitfuncs+
 	    ({
 	      sprintf("  if(%s) {\n", program_var),
-	      PC.token(sprintf("    free_program(%s);\n", program_var),
+	      PC.Token(sprintf("    free_program(%s);\n", program_var),
 		       proto[0]->line),
 	      sprintf("    %s=0;\n"
 		      "  }\n",
