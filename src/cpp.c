@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.90 2001/07/02 20:09:16 mast Exp $
+ * $Id: cpp.c,v 1.91 2001/07/28 14:08:23 nilsson Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1237,6 +1237,127 @@ static int do_safe_index_call(struct pike_string *s)
   return res;
 }
 
+/*! @decl constant __VERSION__
+ *!
+ *! This define contains the current Pike version as a float. If
+ *! another Pike version is emulated, this define is updated
+ *! accordingly.
+ *!
+ *! @seealso
+ *!   @[__REAL_VERSION__]
+ */
+
+/*! @decl constant __REAL_VERSION__
+ *!
+ *! This define always contains the version of the current Pike,
+ *! represented as a float.
+ *!
+ *! @seealso
+ *!   @[__VERSION__]
+ */
+
+/*! @decl constant __MAJOR__
+ *!
+ *! This define contains the major part of the current Pike version,
+ *! represented as an integer. If another Pike version is emulated,
+ *! this define is updated accordingly.
+ *!
+ *! @seealso
+ *!   @[__REAL_MAJOR__]
+ */
+
+/*! @decl constant __REAL_MAJOR__
+ *!
+ *! This define always contains the major part of the version of the
+ *! current Pike, represented as an integer.
+ *!
+ *! @seealso
+ *!   @[__MAJOR__]
+ */
+
+/*! @decl constant __MINOR__
+ *! This define contains the minor part of the current Pike version,
+ *! represented as an integer. If another Pike version is emulated,
+ *! this define is updated accordingly.
+ *!
+ *! @seealso
+ *!   @[__REAL_MINOR__]
+ */
+
+/*! @decl constant __REAL_MINOR__
+ *!
+ *! This define always contains the minor part of the version of the
+ *! current Pike, represented as an integer.
+ *!
+ *! @seealso
+ *!   @[__MINOR__]
+ */
+
+/*! @decl constant __BUILD__
+ *! This constant contains the build number of the current Pike version,
+ *! represented as an integer. If another Pike version is emulated,
+ *! this constant remains unaltered.
+ *!
+ *! @seealso
+ *!   @[__REAL_MINOR__]
+ */
+
+/*! @decl constant __REAL_BUILD__
+ *!
+ *! This define always contains the minor part of the version of the
+ *! current Pike, represented as an integer.
+ *!
+ *! @seealso
+ *!   @[__BUILD__]
+ */
+
+/*! @decl constant __LINE__
+ *!
+ *! This define contains the current line number, represented as an
+ *! integer, in the source file.
+ */
+
+/*! @decl constant __FILE__
+ *!
+ *! This define contains the file path and name of the source file.
+ */
+
+/*! @decl constant __DATE__
+ *!
+ *! This define contains the current date at the time of compilation,
+ *! e.g. "Jul 28 2001".
+ */
+
+/*! @decl constant __TIME__
+ *!
+ *! This define contains the current time at the time of compilation,
+ *! e.g. "12:20:51".
+ */
+
+/*! @decl constant __PIKE__
+ *!
+ *! This define is always true.
+ */
+
+/*! @decl constant __AUTO_BIGNUM__
+ *!
+ *! This define is defined when automatic bignum conversion is enabled.
+ *! When enabled all integers will automatically be converted to
+ *! bignums when they get bigger than what can be represented by
+ *! an integer, hampering performance slightly instead of crashing
+ *! the program.
+ */
+
+/*! @decl constant __NT__
+ *!
+ *! This define is defined when the Pike is running on a Microsoft Windows OS,
+ *! not just Microsoft Windows NT, as the name implies.
+ */
+
+/*! @decl constant __amigaos__
+ *!
+ *! This define is defined when the Pike is running on Amiga OS.
+ */
 
 /*! @decl string cpp(string data, string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
