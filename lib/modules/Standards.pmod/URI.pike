@@ -4,7 +4,7 @@
 //! absolute form, as defined in RFC 2396
 
 // Implemented by Johan Sundström and Johan Schön.
-// $Id: URI.pike,v 1.14 2002/12/11 22:18:02 anders Exp $
+// $Id: URI.pike,v 1.15 2002/12/11 23:10:36 anders Exp $
 
 #pragma strict_types
 
@@ -367,6 +367,7 @@ string|mapping cast(string to)
   }
 }
 
+//! Returns path and query part of the URI if present.
 string get_path_query()
 {
   return (path||"") + (query ? "?" + query : "");
