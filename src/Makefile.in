@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.303 2002/04/27 22:03:17 mast Exp $
+# $Id: Makefile.in,v 1.304 2002/04/30 19:38:49 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -165,6 +165,7 @@ SRC_TARGETS= \
  $(SRCDIR)/language.c \
  $(SRCDIR)/language.h \
  $(SRCDIR)/interpret_protos.h \
+ $(SRCDIR)/interpret_functions_fixed.h \
  @PMOD_TARGETS@
 
 TPIKE_TARGETS= \
@@ -654,7 +655,7 @@ lexer2.h: lexer.h
 interpreter_debug.h: interpreter.h
 	cp "$(SRCDIR)/interpreter.h" "$@"
 
-interpret.o: interpreter_debug.h interpret_functions_fixed.h
+interpret.o: interpreter_debug.h $(SRCDIR)/interpret_functions_fixed.h
 
 # All the $(POBJ) dependencies, except tpike. See blurb at pike target.
 stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike builtin_functions.c $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike las.c
@@ -741,8 +742,7 @@ $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	 sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' <y.tab.c >language.c &&\
 	 mv y.tab.h language.h_src && rm y.tab.c)
 
-
-interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
+$(SRCDIR)/interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h precompile.sh-stamp
 	./precompile.sh --cache make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
 
 # UnixWare make needs help to find the source file...
