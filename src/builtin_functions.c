@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.267 2000/04/22 02:23:25 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.268 2000/04/28 17:14:47 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -523,7 +523,7 @@ void f_has_prefix(INT32 args)
     CASE_SHIFT(2,0);
     CASE_SHIFT(2,1);
   default:
-    error("has_index(): Unexpected string shift combination: a:%d, b:%d!\n",
+    error("has_prefix(): Unexpected string shift combination: a:%d, b:%d!\n",
 	  a->size_shift, b->size_shift);
     break;
   }
