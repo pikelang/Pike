@@ -2709,7 +2709,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
    for (;;)
    {
-      int found;
+      int found, got_fin;
 
       DEBUG_MARK_SPOT("find_end_of_cont : loop",feed,c);
       if (!scan_forward(feed,c,&s1,&c1,&(this->tag_start),1))
@@ -2811,7 +2811,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       pop_stack();
 
       if (!scan_for_end_of_tag(this,s3,c3,&s2,&c2,finished,
-			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG, NULL))
+			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG,
+			       &got_fin))
       {
 	DEBUG_MARK_SPOT("find_end_of_cont : wait at tag end",s2,c2);
 	 return STATE_WAIT;
@@ -2819,6 +2820,13 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
       switch (found) {
 	case 't': /* push a new level */
+	 if (got_fin && this->flags & FLAG_XML_TAGS) {
+	   DEBUG_MARK_SPOT("find_end_of_cont : skipping empty element tag",s2,c2+1);
+	   feed = s2;
+	   c = c2+1;
+	   break;
+	 }
+
 	 DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2+1);
 	 res=find_end_of_container(this,tagname,
 				   s2,++c2,e1,ce1,&feed,&c,finished);
