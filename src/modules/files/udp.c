@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.65 2004/05/07 21:07:03 grubba Exp $
+|| $Id: udp.c,v 1.66 2004/05/11 15:59:15 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.65 2004/05/07 21:07:03 grubba Exp $");
+RCSID("$Id: udp.c,v 1.66 2004/05/11 15:59:15 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -300,13 +300,6 @@ void udp_enable_broadcast(INT32 args)
 #endif /* SO_BROADCAST */
 }
 
-/* NOTE: Some versions of AIX seem to have a
- *         #define events reqevents
- *       in one of the poll headerfiles. This will break
- *       the fd_box event handling.
- */
-#undef events
-
 /*! @decl int(0..1) wait(int|float timeout)
  *!
  *! Check for data and wait max. @[timeout] seconds.
@@ -392,6 +385,13 @@ void udp_wait(INT32 args)
 
   push_int(res);
 }
+
+/* NOTE: Some versions of AIX seem to have a
+ *         #define events reqevents
+ *       in one of the poll headerfiles. This will break
+ *       the fd_box event handling.
+ */
+#undef events
 
 #define UDP_BUFFSIZE 65536
 
