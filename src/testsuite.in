@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.748 2004/11/16 22:17:04 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.749 2004/12/15 02:44:41 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9492,7 +9492,11 @@ cond([[all_constants()->mktime]],
 		       599612900,725843300,852073700,978304100,1104534500,
 		       1230764900,1356995300,1483225700,1609456100,1735686500,
 		       1861916900,1988147300,2114377700
-		      }),int t) if(mktime(gmtime(t))!=t) return t; return 0;]], 0)
+		      }),int t) {
+	       int res = mktime (gmtime (t));
+	       if(res!=t) return ({t, res});
+	     }
+	     return 0;]], 0)
 
 ]])
 
