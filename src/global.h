@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.31 1999/04/25 20:18:53 grubba Exp $
+ * $Id: global.h,v 1.32 1999/04/25 20:30:56 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -20,6 +20,9 @@
 #undef __STDC__
 #define __STDC__ 0
 #endif /* __STDC__ != 0 */
+#ifdef _NO_LONGLONG
+#undef _NO_LONGLONG
+#endif /* _NO_LONGLONG */
 #endif /* __TenDRA__ */
 
 #ifndef _LARGEFILE_SOURCE
