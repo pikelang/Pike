@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.805 2004/03/09 13:42:22 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.806 2004/03/09 17:26:07 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -181,6 +181,14 @@ AC_ARG_WITH(cppflags, MY_DESCR([--with-cppflags=cppflags],
 AC_ARG_WITH(ldflags, MY_DESCR([--with-ldflags=ldflags],
 			      [specify extra linker flags]),
 	    [ LDFLAGS="$with_ldflags $LDFLAGS" ])
+
+# Force use of thread libs LIBS
+AC_ARG_WITH(named-thread-libs,MY_DESCR([--with-named-thread-lib=lib],
+			               [specify named thread libraries
+					instead of those automatically found
+					by configure]),
+	    [ with_named_thread=$withval ],
+	    [ with_named_thread=no ])
 
 for ac_site_file in $CONFIG_SITE; do
   if test -r "$ac_site_file"; then
@@ -2859,9 +2867,14 @@ int main(int argc, char **argv)
 
         AC_PATH_PROG(PTHREAD_CONFIG,${ac_tool_prefix}pthread-config,no)
         if test "x$PTHREAD_CONFIG" = xno ; then
-          AC_SYS_COMPILER_FLAG(-pthread, pthread, CFLAGS, LIBS="$LIBS -lc_r")
-          LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
-
+	  if test "$with_named_thread" = "no"; then
+          	AC_SYS_COMPILER_FLAG(-pthread, pthread, CFLAGS, LIBS="$LIBS -lc_r")
+          	LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
+	  else
+		echo "Using --with-named-thread=$with_named_thread"
+		LIBS="$LIBS $with_named_thread"
+		LDFLAGS="$LDFLAGS $with_named_thread"
+	  fi
           AC_MSG_CHECKING(Initial stack limit)
           AC_CACHE_VAL(pike_cv_initial_stack_size,[
           AC_TRY_RUN([
