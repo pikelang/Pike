@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.538 2004/04/12 00:27:38 per Exp $
+|| $Id: builtin_functions.c,v 1.539 2004/04/13 06:43:24 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.538 2004/04/12 00:27:38 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.539 2004/04/13 06:43:24 jonasw Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -406,8 +406,8 @@ static struct case_info *find_ci_shift0(INT32 c)
 
 #define DO_LOWER_CASE(C) do {\
     INT32 c = C; \
-    struct case_info *ci = find_ci(c); \
     if(c<128){if(c >= 'A' && c <= 'Z' ) C=c+0x20;}else {\
+    struct case_info *ci = find_ci(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_LOWERDELTA: break; \
