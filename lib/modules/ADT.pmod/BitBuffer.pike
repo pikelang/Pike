@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.2 2004/02/24 07:46:36 nilsson Exp $
+// $Id: BitBuffer.pike,v 1.3 2004/03/24 00:10:03 nilsson Exp $
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way
@@ -84,6 +84,9 @@ static int in_buffer, bob;
 
 //! Put @[bits] number of bits with the value @[value] into the
 //! buffer.
+//! @note
+//!   @[value] must not be larger than what can be stored with the
+//!   number of bits given in @[bits].
 this_program put( int value, int bits ) {
   //  werror("\n%O %O %O\n", bob, bib, bits);
   if(!bits) return this;
