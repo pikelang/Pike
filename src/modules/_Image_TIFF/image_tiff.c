@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.24 2000/12/20 13:45:08 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.25 2000/12/20 14:03:41 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -68,7 +68,7 @@ struct imagealpha
 
 #define INITIAL_WRITE_BUFFER_SIZE 8192
 
-#if 1
+#if 0
 # define TRACE(X,Y,Z,Q) fprintf(stderr, X,Y,Z,Q)
 #else
 # define TRACE(X,Y,Z,Q)
