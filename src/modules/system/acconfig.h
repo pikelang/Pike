@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.13 2002/10/11 01:39:56 nilsson Exp $
+|| $Id: acconfig.h,v 1.14 2003/05/20 15:12:40 mast Exp $
 */
 
 /*
@@ -58,5 +58,8 @@
 
 /* Define if you have the RDTSC instruction */
 #undef HAVE_RDTSC
+
+/* Define if syslog() might have races which makes it unsafe to run unlocked. */
+#undef MIGHT_HAVE_SYSLOG_RACES
 
 #endif /* SYSTEM_MACHINE_H */

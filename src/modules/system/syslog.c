@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: syslog.c,v 1.18 2002/10/11 01:39:56 nilsson Exp $
+|| $Id: syslog.c,v 1.19 2003/05/20 15:12:40 mast Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.18 2002/10/11 01:39:56 nilsson Exp $");
+RCSID("$Id: syslog.c,v 1.19 2003/05/20 15:12:40 mast Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -254,12 +254,26 @@ void f_syslog(INT32 args)
   if(i & (1<<5)) pri |= LOG_NOTICE;
   if(i & (1<<6)) pri |= LOG_INFO;
   if(i & (1<<6)) pri |= LOG_DEBUG;
-  
+
+#ifndef MIGHT_HAVE_SYSLOG_RACES
+  /* glibc/linuxthreads has a race in syslog(2) that can make write,
+   * writev etc crash with the instruction pointer set to 0x1 when
+   * signals are delivered. Not releasing the interpreter lock here
+   * avoids that race most of the time but it's still not a 100%
+   * solution.
+   *
+   * C.f. the report "bug in thread support" filed by Balazs Scheidler
+   * in Oct 22, 2001 (http://sources.redhat.com/ml/libc-hacker/
+   * 2001-10/msg00020.html). It's verified to still exist in glibc
+   * 2.2.93 (RedHat 8.0) and 2.3.2 (RedHat 9). */
   THREADS_ALLOW();
- 
+#endif
+
   syslog(pri, "%s", s->str);
 
+#ifndef MIGHT_HAVE_SYSLOG_RACES
   THREADS_DISALLOW();
+#endif
 
   pop_n_elems(args);
 }
