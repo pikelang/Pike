@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.807 2004/03/09 18:40:50 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.808 2004/03/09 18:46:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -36,17 +36,17 @@ sleep 1
 if touch "$srcdir/configure~"; then
   # Check that the system time is reasonably correct.
   if test `cd "$srcdir" && ls -1t configure configure~ | head -n 1` = "configure"; then
+    echo "Current system time is `date`."
     AC_MSG_ERROR([
 $srcdir/configure has modification time in the future.
 Check and set your system time.
-Current system time is `date`.
 ])
   fi
 else
+  ls -ld "$srcdir"
   AC_MSG_ERROR([
 Failed to write in source directory.
 Fix your permissions.
-`ls -ld $srcdir`
 ])
 fi
 
