@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.53 1998/02/27 08:39:20 hubbe Exp $");
+RCSID("$Id: las.c,v 1.54 1998/03/01 03:39:37 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1401,7 +1401,7 @@ void fix_type_field(node *n)
     if(CAR(n) && CDR(n) && 
        !match_types(CDR(n)->type,CAR(n)->type))
       my_yyerror("Bad type in assignment.");
-    copy_shared_string(n->type, CDR(n)->type);
+    copy_shared_string(n->type, CAR(n)->type);
     break;
 
   case F_INDEX:
