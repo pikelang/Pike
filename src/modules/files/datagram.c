@@ -3,6 +3,11 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+
+#include "global.h"
+
+RCSID("$Id: datagram.c,v 1.2 1998/03/28 14:00:23 grubba Exp $");
+
 struct datagram
 {
   int fd;
