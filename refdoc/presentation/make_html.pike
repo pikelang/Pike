@@ -814,8 +814,6 @@ string parse_not_doc(Node n) {
 	  ret += parse_not_doc( c->get_first_element("arguments") );
 	  ret += "<b>)</b></tt>";
 	  break;
-	case "delete":
-	  break;
 	default:
 	  ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
 	  ret += " ";
