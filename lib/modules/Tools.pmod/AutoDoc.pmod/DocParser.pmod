@@ -494,8 +494,8 @@ static class DocParserClass {
     }
   }
 
-  static void create(string s) {
-    tokens = split(s) + ({ 0 });  // end sentinel
+  static void create(string | array(string|array(string)) s) {
+    tokens = (arrayp(s) ? s : split(s)) + ({ 0 }); // end sentinel
   }
 
   MetaData getMetaData() {
@@ -636,6 +636,26 @@ static class DocParserClass {
   }
 }
 
+// Each of the arrays in the returned array can be fed to
+// Parse::create()
+array(array(string|array(string))) splitDocBlock(string block) {
+  array(string|array(string)) tokens = split(block);
+  array(string|array(string)) current = ({ });
+  array(array(string|array(string))) result = ({ });
+  int prevMeta = 0;
+  foreach (tokens, string|array(string) token) {
+    int meta = arrayp(token) && getKeywordType(token[0]) == METAKEYWORD;
+    if (meta && !prevMeta && sizeof(current)) {
+      result += ({ current });
+      current = ({ });
+    }
+    prevMeta = meta;
+    current += ({ token });
+  }
+  result += ({ current });
+  return result;
+}
+
 // This is a class, because you need to examine the meta lines
 // _before_ you can determine which context to parse the
 // actual doc lines in.
@@ -646,7 +666,7 @@ class Parse {
   static string mDoc = 0;
   static string mContext = 0;
   SourcePosition sourcePos = 0;
-  void create(string s, SourcePosition|void sp) {
+  void create(string | array(string|array(string)) s, SourcePosition|void sp) {
     ::create(s);
     state = 0;
     sourcePos = sp;

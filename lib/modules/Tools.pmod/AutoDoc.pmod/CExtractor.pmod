@@ -79,8 +79,9 @@ static private class Extractor {
     }
 
     foreach(a, [SourcePosition sp, string doc]) {
-      .DocParser.Parse p = .DocParser.Parse(doc, sp);
-      tokens += ({ p });
+      array(array(string|array(string))) s = .DocParser.splitDocBlock(doc);
+      foreach(s, array(string|array(string)) a)
+        tokens += ({ .DocParser.Parse(a, sp) });
     }
     tokens += ({ 0 });
   }
