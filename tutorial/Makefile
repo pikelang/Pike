@@ -11,6 +11,13 @@ tutorial_onepage.html: tutorial.wmml
 clean:
 	rm *.html illustration_cache illustration*.gif
 
+export:
+	(cd .. ; tar czvf tutorial.tar.gz \
+	tutorial/tutorial*.html \
+	tutorial/left.gif tutorial/right.gif tutorial/up.gif \
+	tutorial/multipart.gif \
+	tutorial/illustration*.gif
+
 # tutorial.html: tutorial.wmml wmml_to_html
 #	./wmml_to_html <tutorial.wmml >tutorial.html
 
