@@ -4,6 +4,7 @@ AC_SET_MAKE
 
 sinclude(../../module_configure.in)
 
+AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 AC_SUBST(CCSHARED)
 
