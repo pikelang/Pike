@@ -13,7 +13,7 @@ int main(int argc, array(string) argv)
     argv[0]=find_next_in_path(argv[0],"mv");
     if(file_stat(argv[1]+".exe"))
     {
-       string *cmd=({argv[0],argv[1]+".exe",argv[-1]});
+       array(string) cmd=({argv[0],argv[1]+".exe",argv[-1]});
        mixed s=file_stat(cmd[-1]);
        if(!s || s[1]!=-2) cmd[-1]+=".exe";
 
