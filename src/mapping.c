@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.38 1999/01/21 09:15:05 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.39 1999/02/05 01:03:53 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -76,6 +76,7 @@ static void init_mapping(struct mapping *m, INT32 size)
     e=sizeof(struct keypair)*size+ sizeof(struct keypair *)*hashspace;
     tmp=(char *)xalloc(e);
     
+    m->flags=0;
     m->hash=(struct keypair **) tmp;
     m->hashsize=hashsize;
     
@@ -867,6 +868,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
   }
 
   ret=allocate_mapping(MAP_SLOTS(m->size));
+  ret->flags=m->flags;
   doing.pointer_b=ret;
 
   check_stack(2);
@@ -1006,7 +1008,7 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
   INT32 e;
   struct keypair *k;
 
-  if(gc_mark(m))
+  if(gc_mark(m) && !( m->flags & MAPPING_FLAG_WEAK))
   {
     if((m->ind_types | m->val_types) & BIT_COMPLEX)
     {
@@ -1068,7 +1070,7 @@ void gc_mark_all_mappings(void)
 void gc_free_all_unreferenced_mappings(void)
 {
   INT32 e;
-  struct keypair *k;
+  struct keypair *k,**prev;
   struct mapping *m,*next;
 
   for(m=first_mapping;m;m=next)
@@ -1102,7 +1104,35 @@ void gc_free_all_unreferenced_mappings(void)
       next=m->next;
 
       free_mapping(m);
-    }else{
+    }
+    else if(m->flags & MAPPING_FLAG_WEAK)
+    {
+      add_ref(m);
+      for(e=0;e<m->hashsize;e++)
+      {
+	for(prev= m->hash + e;(k=*prev);)
+	{
+	  if((k->val.type <= MAX_COMPLEX && gc_do_free(k->val.u.refs)) ||
+	     (k->ind.type <= MAX_COMPLEX && gc_do_free(k->ind.u.refs)))
+	  {
+	    *prev=k->next;
+	    free_svalue(& k->ind);
+	    free_svalue(& k->val);
+	    k->next=m->free_list;
+	    m->free_list=k;
+	    m->size--;
+	  }else{
+	    prev=&k->next;
+	  }
+	}
+      }
+      if(MAP_SLOTS(m->size) < m->hashsize * MIN_LINK_LENGTH)
+	rehash(m, MAP_SLOTS(m->size));
+      next=m->next;
+      free_mapping(m);
+    }
+    else
+    {
       next=m->next;
     }
   }

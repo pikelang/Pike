@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.142 1999/01/31 09:02:03 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.143 1999/02/05 01:03:55 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -146,6 +146,7 @@ test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[int t=gauge { string foo; };]])
 test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
 test_eq([[compile_string("#define A(X) (X)\nint x() { return A \n\t(1); }")()->x()]],1)
+
 test_any([[class G { mapping t=([]);
  class tO { void init(string name) { t[name]=this_object(); }}
  class W { inherit tO; void create() { init("foo"); }}
@@ -862,6 +863,7 @@ ifefun(gc,
   test_any([[object o=class c {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
   test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
   test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
+  test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);
 ]])
 
 cond([[all_constants()->_verify_internals]],

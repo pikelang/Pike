@@ -5,12 +5,14 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.13 1999/01/21 09:15:06 hubbe Exp $
+ * $Id: mapping.h,v 1.14 1999/02/05 01:03:54 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
 
 #include "las.h"
+
+#define MAPPING_FLAG_WEAK 1
 
 struct keypair
 {
@@ -25,6 +27,7 @@ struct mapping
   struct object *prot;
 #endif
   INT32 size, hashsize;
+  INT16 flags;
   TYPE_FIELD ind_types, val_types;
   struct mapping *next, *prev;
   struct keypair **hash;

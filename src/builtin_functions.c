@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.146 1999/01/31 09:01:40 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.147 1999/02/05 01:03:52 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1715,6 +1715,25 @@ void f_mkmapping(INT32 args)
   pop_n_elems(args);
   push_mapping(m);
 }
+
+void f_set_weak_flag(INT32 args)
+{
+  int ret;
+  struct mapping *m;
+  get_all_args("make_weak",args,"%m%i",&m,&ret);
+  if(ret)
+  {
+    ret=m->flags & MAPPING_FLAG_WEAK;
+    m->flags|=MAPPING_FLAG_WEAK;
+  }else{
+    ret=m->flags & MAPPING_FLAG_WEAK;
+    m->flags&=~MAPPING_FLAG_WEAK;
+  }
+  pop_n_elems(args);
+  push_int(!!ret);
+}
+
+
 
 void f_objectp(INT32 args)
 {
@@ -3766,6 +3785,7 @@ void init_builtin_efuns(void)
   add_efun("m_delete",f_m_delete,"function(0=mapping,mixed:0)",0);
   add_efun("mappingp",f_mappingp,"function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("mkmapping",f_mkmapping,"function(array(1=mixed),array(2=mixed):mapping(1:2))",OPT_TRY_OPTIMIZE);
+  add_efun("set_weak_flag",f_set_weak_flag,"function(mapping,int:int)",OPT_SIDE_EFFECT);
   add_efun("next_object",f_next_object,"function(void|object:object)",OPT_EXTERNAL_DEPEND);
   add_efun("_next",f__next,"function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
   add_efun("_prev",f__prev,"function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
