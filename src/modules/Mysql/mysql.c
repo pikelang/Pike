@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.82 2004/06/13 21:45:26 mast Exp $
+|| $Id: mysql.c,v 1.83 2004/07/13 16:53:39 grubba Exp $
 */
 
 /*
@@ -97,7 +97,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.82 2004/06/13 21:45:26 mast Exp $");
+RCSID("$Id: mysql.c,v 1.83 2004/07/13 16:53:39 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -1098,7 +1098,12 @@ static void f_shutdown(INT32 args)
   if (socket) {
     MYSQL_ALLOW();
   
+#ifdef SHUTDOWN_DEFAULT
+    /* Mysql 4.1.3 added an extra shutdown_level argument. */
+    tmp = mysql_shutdown(socket, SHUTDOWN_DEFAULT);
+#else
     tmp = mysql_shutdown(socket);
+#endif /* SHUTDOWN_DEFAULT */
 
     MYSQL_DISALLOW();
   }
