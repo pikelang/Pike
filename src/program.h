@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.154 2002/04/07 19:30:08 mast Exp $
+ * $Id: program.h,v 1.155 2002/04/08 00:18:57 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -101,6 +101,13 @@ struct node_s;
 #define STRUCT_OBJECT_DECLARED
 struct object;
 #endif
+
+/* Byte-code method identification. */
+#define PIKE_BYTECODE_DEFAULT	0
+#define PIKE_BYTECODE_GOTO	1
+#define PIKE_BYTECODE_SPARC	2
+#define PIKE_BYTECODE_IA32	3
+#define PIKE_BYTECODE_PPC32     4
 
 #if PIKE_BYTECODE_METHOD == PIKE_BYTECODE_IA32
 #define PIKE_OPCODE_T unsigned INT8
