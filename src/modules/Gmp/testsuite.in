@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.22 2002/11/26 16:28:23 nilsson Exp $
+dnl $Id: testsuite.in,v 1.23 2003/03/18 03:44:02 nilsson Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -134,80 +134,38 @@ cond( [[ master()->resolv("Gmp")->mpf ]],
   test_true(Gmp.mpf(1))
 ]])
 
-  define([[mpz_test_cmp]],[[
-    cond( [[ master()->resolv("Gmp")->mpz ]],
-    [[
-    test_cmp3(Gmp.mpz($1), $2, $3)
-    test_cmp3($1, Gmp.mpz($2), $3)
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpz ]],
-    [[
-    test_cmp3(Gmp.mpz($1), Gmp.mpz($2), $3)
-    test_cmp3(Gmp.mpz($1), $2, Gmp.mpz($3))
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpz ]],
-    [[
-    test_cmp3($1, Gmp.mpz($2), Gmp.mpz($3))
-    test_cmp3(Gmp.mpz($1), Gmp.mpz($2), Gmp.mpz($3))
+  define([[mpx_test_cmp]],[[
+    cond( [[ master()->resolv("Gmp")->mpz ]],[[
+      test_cmp3($1, Gmp.mpz($2), $3)
+      test_cmp3(Gmp.mpz($1), Gmp.mpz($2), Gmp.mpz($3))
     ]])
 
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpq($1), $2, $3)
-    test_cmp3($1, Gmp.mpq($2), $3)
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpq($1), Gmp.mpq($2), $3)
-    test_cmp3(Gmp.mpq($1), $2, Gmp.mpq($3))
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3($1, Gmp.mpq($2), Gmp.mpq($3))
-    test_cmp3(Gmp.mpq($1), Gmp.mpq($2), Gmp.mpq($3))
+    cond( [[ master()->resolv("Gmp")->mpq ]],[[
+      test_cmp3($1, Gmp.mpq($2), $3)
+      test_cmp3(Gmp.mpq($1), Gmp.mpq($2), Gmp.mpq($3))
     ]])
 
 
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpf($1), $2, $3)
-    test_cmp3($1, Gmp.mpf($2), $3)
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3(Gmp.mpf($1), Gmp.mpf($2), $3)
-    test_cmp3(Gmp.mpf($1), $2, Gmp.mpf($3))
-    ]])
-    cond( [[ master()->resolv("Gmp")->mpq ]],
-    [[
-    test_cmp3($1, Gmp.mpf($2), Gmp.mpf($3))
-    test_cmp3(Gmp.mpf($1), Gmp.mpf($2), Gmp.mpf($3))
+    cond( [[ master()->resolv("Gmp")->mpf ]],[[
+      test_cmp3($1, Gmp.mpf($2), $3)
+      test_cmp3(Gmp.mpf($1), Gmp.mpf($2), Gmp.mpf($3))
     ]])
   ]])
 
-  define([[mpz_test_type1]],[[
-    mpz_test_cmp($1,$2,$3)
-    mpz_test_cmp($1.0,$2,$3)
+  define([[mpx_test]],[[
+    mpx_test_cmp($1.0,$2,$4($3))
+    mpx_test_cmp($1,$2.0,$4($3.0))
   ]])
 
-  define([[mpz_test_type2]],[[
-    mpz_test_type1($1,$2,$3)
-    mpz_test_type1($1,$2.0,$3)
+  define([[mpx_mega_test]],[[
+    mpx_test($1,$2,$3,)
+    mpx_test($1,$2,$3,Gmp.mpz)
+dnl    mpx_test($1,$2,$3,Gmp.mpq)
+dnl    mpx_test($1,$2,$3,Gmp.mpf)
   ]])
 
-  define([[mpz_test_type3]],[[
-    mpz_test_type2($1,$2,$3)
-    mpz_test_type2($1,$2,$3.0)
-  ]])
-
-  define([[mpz_test_type4]],[[
-    mpz_test_type2($1,$2,$3)
-    mpz_test_type2($1,$2,Gmp.mpz($3))
-  ]])
-
-  mpz_test_type4(1,2,3)
-  mpz_test_type4(-2,1,4)
-  mpz_test_type4(-2,-1,4)
+  mpx_mega_test(1,2,3)
+  mpx_mega_test(-2,-1,4)
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -261,5 +219,27 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000000")), 1)
   test_eq(Gmp.mpz(-1)->pow(Gmp.mpz("100000000000001")), -1)
   test_eval_error(Gmp.mpz(2)->pow(Gmp.mpz("100000000000000")))
+
+  test_do(random(Gmp.mpz(17)))
+  test_eq(Gmp.mpz(64)->sqrt(), 8)
+  test_eq(sqrt(Gmp.mpz(64)), 8)
+  test_eq(sqrt(Gmp.mpz(2)->pow(34)), 131072)
+  test_equal(Gmp.mpz(3)->pow(35)->sqrtrem(), ({223677323,274553378}) )
+  test_eq(Gmp.mpz(9)->cast_to_int(), 9)
+  test_eq(Gmp.mpz(8)->cast_to_float(), 8.0)
+  test_eq(Gmp.mpz(7)->cast_to_string(), "7")
+  test_false(Gmp.mpz(0)->probably_prime_p())
+  test_false(Gmp.mpz(1)->probably_prime_p(), 0)
+  test_true(Gmp.mpz(2)->probably_prime_p(), 0)
+  test_true(Gmp.mpz(3)->probably_prime_p(), 0)
+  test_false(Gmp.mpz(4)->probably_prime_p(), 0)
+  test_false(Gmp.mpz(100000000000000000)->probably_prime_p(), 0)
+  test_eq(Gmp.mpz(100000000000000000)->next_prime(), 100000000000000003);
+  test_eq(Gmp.mpz(0)->small_factor(),0)
+  test_eq(Gmp.mpz(1)->small_factor(),0)
+  test_eq(Gmp.mpz(2)->small_factor(),0)
+  test_eq(Gmp.mpz(10)->small_factor(),2)
+  test_eq(Gmp.mpz(15)->small_factor(),3)
+  test_eq(Gmp.mpz(10403)->small_factor(),101)
 ]]);
 
