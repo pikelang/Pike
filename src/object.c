@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.159 2001/01/19 15:18:37 mast Exp $");
+RCSID("$Id: object.c,v 1.160 2001/01/22 15:06:09 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -635,7 +635,6 @@ PMOD_EXPORT void destruct(struct object *o)
 
 struct object *objects_to_destruct = 0;
 static struct callback *destruct_object_evaluator_callback =0;
-static struct object *in_destruct_objects_to_destruct = 0;
 
 /* This function destructs the objects that are scheduled to be
  * destructed by schedule_really_free_object. It links the object back into the
@@ -643,37 +642,41 @@ static struct object *in_destruct_objects_to_destruct = 0;
  */
 PMOD_EXPORT void destruct_objects_to_destruct(void)
 {
-  struct object *o, *next, *end = in_destruct_objects_to_destruct;
+  struct object *o, *next;
 
 #ifdef PIKE_DEBUG
+  ONERROR uwp;
   if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
+  SET_ONERROR(uwp, fatal_on_error,
+	      "Shouldn't get an exception in destruct_objects_to_destruct.\n");
 #endif
 
-  /* Only process the list down to the first item that was on it
-   * already in an earlier call to destruct_objects_to_destruct. This
-   * way we avoid excessive recursion in this function and also avoid
-   * destructing the objects arbitrarily late. */
-  while((o=objects_to_destruct) != end)
-  {
+  /* We unlink the list from objects_to_destruct before processing it,
+   * to avoid that reentrant calls to this function go through all
+   * objects instead of just the newly added ones. This way we avoid
+   * extensive recursion in this function and also avoid destructing
+   * the objects arbitrarily late. */
+  while (objects_to_destruct) {
+    o = objects_to_destruct, objects_to_destruct = 0;
+    do {
 #ifdef GC_VERBOSE
-    if (Pike_in_gc > GC_PASS_PREPARE)
-      fprintf(stderr, "|   Destructing %p on objects_to_destruct.\n", o);
+      if (Pike_in_gc > GC_PASS_PREPARE)
+	fprintf(stderr, "|   Destructing %p on objects_to_destruct.\n", o);
 #endif
 
-    /* Link object back to list of objects */
-    DOUBLEUNLINK(objects_to_destruct,o);
-    in_destruct_objects_to_destruct = objects_to_destruct;
-    
-    /* link */
-    DOUBLELINK(first_object,o);
+      next = o->next;
 
-    /* call destroy, keep one ref */
-    add_ref(o);
-    call_destroy(o,0);
+      /* Link object back to list of objects */
+      DOUBLELINK(first_object,o);
 
-    destruct(o);
-    free_object(o);
+      /* call destroy, keep one ref */
+      add_ref(o);
+      call_destroy(o,0);
+
+      destruct(o);
+      free_object(o);
+    } while ((o = next));
   }
 
   if(destruct_object_evaluator_callback)
@@ -681,6 +684,10 @@ PMOD_EXPORT void destruct_objects_to_destruct(void)
     remove_callback(destruct_object_evaluator_callback);
     destruct_object_evaluator_callback=0;
   }
+
+#ifdef PIKE_DEBUG
+  UNSET_ONERROR(uwp);
+#endif
 }
 
 
@@ -728,7 +735,9 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 
   if(o->prog)
   {
-    DOUBLELINK(objects_to_destruct,o);
+    o->next = objects_to_destruct;
+    DO_IF_DMALLOC(o->prev = (void *) -1);
+    objects_to_destruct = o;
 
 #ifdef GC_VERBOSE
     if (Pike_in_gc > GC_PASS_PREPARE)
@@ -1433,11 +1442,7 @@ unsigned gc_touch_all_objects(void)
     if (o->next && o->next->prev != o)
       fatal("Error in object link list.\n");
   }
-  for (o = objects_to_destruct; o; o = o->next) {
-    n++;
-    if (o->next && o->next->prev != o)
-      fatal("Error in object link list.\n");
-  }
+  for (o = objects_to_destruct; o; o = o->next) n++;
   return n;
 }
 #endif
@@ -1738,12 +1743,9 @@ void check_all_objects(void)
     SET_NEXT_AND_FREE(o,free_object);
   }
 
-#if 0
   for(o=objects_to_destruct;o;o=o->next)
     if(o->refs)
       fatal("Object to be destructed has references.\n");
-#endif
-
 }
 
 #endif
