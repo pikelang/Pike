@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.103 1998/04/29 00:29:53 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.104 1998/05/06 00:37:09 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -36,6 +36,7 @@ RCSID("$Id: builtin_functions.c,v 1.103 1998/04/29 00:29:53 grubba Exp $");
 #include "module.h"
 #include "opcodes.h"
 #include "cyclic.h"
+#include "signal_handler.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -1195,38 +1196,17 @@ void f_functionp(INT32 args)
   }
 }
 
+#ifndef HAVE_AND_USE_POLL
+#undef HAVE_POLL
+#endif
+
 void f_sleep(INT32 args)
 {
-#ifdef HAVE_POLL
-  int ms;
-
-  if(!args)
-    PIKE_ERROR("sleep", "Too few arguments.\n", sp, args);
-
-  switch(sp[-args].type) {
-  case T_INT:
-    ms = sp[-args].u.integer * 1000;
-    break;
-  case T_FLOAT:
-    ms = (int)(sp[-args].u.float_number * 1000.0);
-    break;
-  default:
-    PIKE_ERROR("sleep", "Bad argument 1.\n", sp, args);
-    break;
-  }
-
-  THREADS_ALLOW();
-  poll(NULL, 0, ms);
-  THREADS_DISALLOW();
-
-#else /* !HAVE_POLL */
   struct timeval t1,t2,t3;
   INT32 a,b;
 
   if(!args)
     PIKE_ERROR("sleep", "Too few arguments.\n", sp, args);
-
-  GETTIMEOFDAY(&t1);
 
   switch(sp[-args].type)
   {
@@ -1247,29 +1227,45 @@ void f_sleep(INT32 args)
   default:
     PIKE_ERROR("sleep", "Bad argument 1.\n", sp, args);
   }
-
-  my_add_timeval(&t1, &t2);
-  
   pop_n_elems(args);
 
-#if 0
-  while(1)
+
+  if( args >1 && !IS_ZERO(sp-args+1))
   {
-#endif /* 0 */
-    GETTIMEOFDAY(&t2);
-    if(my_timercmp(&t1, <= , &t2))
-      return;
-
-    t3=t1;
-    my_subtract_timeval(&t3, &t2);
-
     THREADS_ALLOW();
-    select(0,0,0,0,&t3);
+#ifdef __NT__
+    Sleep(t2.tv_sec * 1000 + t2.tv_usec / 1000);
+#elif defined(HAVE_POLL)
+    poll(NULL, 0, t2.tv_sec * 1000 + t2.tv_usec / 1000);
+#else
+    select(0,0,0,0,&t2);
+#endif
     THREADS_DISALLOW();
-#if 0
+  }else{
+    GETTIMEOFDAY(&t1);
+    my_add_timeval(&t1, &t2);
+    
+    while(1)
+    {
+      GETTIMEOFDAY(&t2);
+      if(my_timercmp(&t1, <= , &t2))
+	return;
+      
+      t3=t1;
+      my_subtract_timeval(&t3, &t2);
+      
+      THREADS_ALLOW();
+#ifdef __NT__
+      Sleep(t3.tv_sec * 1000 + t3.tv_usec / 1000);
+#elif defined(HAVE_POLL)
+      poll(NULL, 0, t3.tv_sec * 1000 + t3.tv_usec / 1000);
+#else
+      select(0,0,0,0,&t3);
+#endif
+      THREADS_DISALLOW();
+      check_signals(0,0,0);
+    }
   }
-#endif /* 0 */
-#endif /* HAVE_POLL */
 }
 
 void f_gc(INT32 args)
@@ -2755,7 +2751,7 @@ void init_builtin_efuns(void)
   add_efun("rows",f_rows,"function(mixed,array:array)",0);
   add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
   add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
-  add_efun("sleep", f_sleep, "function(float|int:void)",OPT_SIDE_EFFECT);
+  add_efun("sleep", f_sleep, "function(float|int,int|void:void)",OPT_SIDE_EFFECT);
   add_efun("sort",f_sort,"function(array(0=mixed),array(mixed)...:array(0))",OPT_SIDE_EFFECT);
   add_function("splice",f_splice,"function(array(0=mixed)...:array(0))", 0);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
