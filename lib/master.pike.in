@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.155 2002/10/15 17:26:49 mast Exp $
+ * $Id: master.pike.in,v 1.156 2003/04/01 10:53:02 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1437,7 +1437,7 @@ void _main(array(string) orig_argv, array(string) env)
       switch(opts[0])
       {
       case "version":
-	werror(version() + " Copyright © 1994-2001 Roxen Internet Software\n"
+	werror(version() + " Copyright © 1994-2003 Roxen Internet Software\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
 	       "welcome to redistribute it under certain conditions; Read the files\n"
 	       "COPYING and DISCLAIMER in the Pike distribution for more details.\n");
