@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.149 2000/04/27 02:12:30 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.150 2000/05/01 10:28:26 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1223,9 +1223,15 @@ static int o_catch(unsigned char *pc)
     fp->expendible=expendible;
     return 0;
   }else{
+    struct svalue **save_mark_sp=mark_sp;
     int x;
     fp->expendible=fp->locals + fp->num_locals;
     x=eval_instruction(pc);
+#ifdef PIKE_DEBUG
+    if(mark_sp < save_mark_sp)
+      fatal("mark sp underflow in catch.\n");
+#endif
+    mark_sp=save_mark_sp;
     fp->expendible=expendible;
     if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
     UNSETJMP(tmp);

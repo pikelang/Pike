@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.22 2000/05/01 10:09:58 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.23 2000/05/01 10:28:27 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1538,6 +1538,10 @@ OPCODE0_JUMP(F_RECUR,"recur")
   sp += num_locals - args;
 
   x=eval_instruction(addr);
+#ifdef PIKE_DEBUG
+  if(mark_sp < save_mark_sp)
+    fatal("mark sp underflow in F_RECUR.\n");
+#endif
   mark_sp=save_mark_sp;
   if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
   pc+=sizeof(INT32);
@@ -1598,6 +1602,10 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
     sp += num_locals - args;
     
     x=eval_instruction(addr);
+#ifdef PIKE_DEBUG
+  if(mark_sp < save_mark_sp)
+    fatal("mark sp underflow in F_RECUR.\n");
+#endif
     mark_sp=save_mark_sp;
     if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
     pc+=sizeof(INT32);
@@ -1618,6 +1626,7 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
 BREAK
 
 /* Assume that the number of arguments is correct */
+/* FIXME: adjust mark_sp */
 OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 {
   int x,num_locals;
