@@ -260,8 +260,7 @@ array(array(array)) diff3 (array a, array b, array c)
   int ai = 0, bi = 0, ci = 0;
   int prevodd = -2;
 
-  int i = 10;
-  while (i-- && !(aeq[ai] & beq[bi] & ceq[ci] & 4)) {
+  while (!(aeq[ai] & beq[bi] & ceq[ci] & 4)) {
     array empty = ({}), apart = empty, bpart = empty, cpart = empty;
 
     if (aeq[ai] == 2 && beq[bi] == 1) { // a and b are equal.
