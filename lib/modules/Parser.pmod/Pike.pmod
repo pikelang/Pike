@@ -1,4 +1,10 @@
-#pike __REAL_VERSION__
+//
+// This file needs to support old pikes that e.g. don't understand
+// "#pike". Some of them fail when they see an unknown cpp directive.
+//
+// #pike __REAL_VERSION__
+//
+// $Id: Pike.pmod,v 1.18 2002/03/20 16:59:01 nilsson Exp $
 
 inherit "C.pmod";
 
