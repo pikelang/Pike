@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.50 2003/04/27 20:10:57 mast Exp $
+|| $Id: array.h,v 1.51 2003/04/28 00:40:49 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -10,8 +10,8 @@
 
 #include "las.h"
 
-/* This debug tool writes out messages whenever arrays with bad type
- * fields (i.e. BIT_MIXED) are encountered. */
+/* This debug tool writes out messages whenever arrays with unfinished
+ * type fields are encountered. */
 /* #define TRACE_UNFINISHED_TYPE_FIELDS */
 
 struct array
@@ -23,10 +23,11 @@ struct array
 			 * when freeing arrays */
   INT32 size;		/* number of items in this array */
   INT32 malloced_size;	/* number of elements that can fit in this array */
-  TYPE_FIELD type_field;/* A bitfield with one bit for each type.
-			 * Bits can be set that don't exist in the array
-			 * though.
-			 */
+  TYPE_FIELD type_field;/* A bitfield with one bit for each type. */
+  /* Bits can be set that don't exist in the array. type_field is
+   * initialized to BIT_MIXED|BIT_UNFINISHED for newly allocated
+   * arrays so that they can be modified without having to update
+   * this. It should be set accurately when that's done, though. */
   INT16 flags;          /* ARRAY_* flags */
   struct svalue *item;
   struct svalue real_item[1];
