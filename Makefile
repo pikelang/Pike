@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.5 1999/02/08 05:03:04 mast Exp $
+# $Id: Makefile,v 1.6 1999/03/09 14:41:38 mast Exp $
 #
 # Meta Makefile
 #
@@ -20,6 +20,9 @@ all: bin/pike compile
 src/configure: src/configure.in
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
 	-@(cd "$(BUILDDIR)" && rm -f Makefile .prefix-h)
+
+force_configure:
+	cd src && ./run_autoconfig . 2>&1 | grep -v warning
 
 configure: src/configure
 	@builddir="$(BUILDDIR)"; \
