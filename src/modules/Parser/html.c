@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.158 2002/10/25 18:35:01 mast Exp $
+|| $Id: html.c,v 1.159 2002/12/16 14:33:07 grubba Exp $
 */
 
 #include "global.h"
@@ -103,9 +103,9 @@ struct out_piece
 };
 
 #undef INIT_BLOCK
-#define INIT_BLOCK(p) p->next = NULL;
+#define INIT_BLOCK(p) p->next = NULL
 #undef EXIT_BLOCK
-#define EXIT_BLOCK(p) free_svalue (&p->v);
+#define EXIT_BLOCK(p) free_svalue (&p->v)
 
 BLOCK_ALLOC (out_piece, 211);
 
