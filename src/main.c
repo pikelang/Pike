@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.45 1998/04/01 14:26:51 grubba Exp $");
+RCSID("$Id: main.c,v 1.46 1998/04/06 04:27:06 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -50,6 +50,16 @@ int t_flag=0;
 int a_flag=0;
 int l_flag=0;
 int p_flag=0;
+static long instructions_left;
+
+static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
+{
+  if(instructions_left-- < 0)
+  {
+    push_int(0);
+    f_exit(1);
+  }
+}
 
 static struct callback_list post_master_callbacks;
 
@@ -185,6 +195,25 @@ int dbm_main(int argc, char **argv)
 	    fprintf(stderr,"Stack size must at least be 256.\n");
 	    exit(1);
 	  }
+	  break;
+
+	case 'q':
+	  if(!p[1])
+	  {
+	    e++;
+	    if(e >= argc)
+	    {
+	      fprintf(stderr,"Missing argument to -q\n");
+	      exit(1);
+	    }
+	    p=argv[e];
+	  }
+	  instructions_left=STRTOL(p+1,&p,0);
+	  p+=strlen(p);
+	  add_to_callback(&evaluator_callbacks,
+			  time_to_exit,
+			  0,0);
+	  
 	  break;
 
 	case 'd':
@@ -442,7 +471,7 @@ void low_exit_main(void)
       struct program *p;
       for(p=first_program;p;p=p->next)
       {
-	describe_something(p, T_PROGRAM);
+	describe_something(p, T_PROGRAM, 1);
       }
     }
 
