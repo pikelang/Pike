@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.582 2002/04/16 23:34:44 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.583 2002/04/27 21:29:08 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1085,17 +1085,20 @@ AC_ARG_WITH(security, MY_DESCR([--with-security],
 AC_ARG_WITH(bignums, MY_DESCR([--without-bignums],
 			      [disable internal conversion to bignums]),
 	    [],[with_bignums=yes])
-AC_ARG_WITH(shared-nodes,
-	    MY_DESCR([--without-shared-nodes],
-		     [disable the SHARED_NODES mode of the optimizer]),
-	    [],[with_shared_nodes=yes])
+dnl Shared nodes has been disabled in an ugly way. To enable it you
+dnl need to remove the line that sets the OPT_NOT_SHARED flag at the
+dnl top of freeze_node in src/las.c. /mast
+dnl AC_ARG_WITH(shared-nodes,
+dnl 		MY_DESCR([--without-shared-nodes],
+dnl 			 [disable the SHARED_NODES mode of the optimizer]),
+dnl 		[],[with_shared_nodes=yes])
 AC_ARG_WITH(computed-goto,
 	    MY_DESCR([--with-computed-goto],
 		     [enable use of gcc-style computed goto (EXPERIMENTAL).]),
 	    [], [with_computed_goto=no])
 AC_ARG_WITH(machine-code,
-	MY_DESCR([--with-machine-code],
-		 [enable use of machine code.]))
+	MY_DESCR([--without-machine-code],
+		 [don't try to use of machine code on supported architectures.]))
 
 MY_AC_ARG_WITH(keypair-loop,
 	MY_DESCR([--with-keypair-loop],
