@@ -983,6 +983,20 @@ class TimeofDay
 
 // --------
 
+//! method void call_out(function fun,mixed ...args)
+//!	Creates a call_out to this point in time.
+   void call_out(function fun,mixed ...args)
+   {
+      if (ux-time(1)>10000)
+	 predef::call_out(call_out,ux-time(1)-100,fun,@args);
+      else if (ux-time(1)<0)
+	 predef::call_out(fun,0,@args); // already
+      else
+	 predef::call_out(fun,-time(ux),@args);
+   }
+
+// --------
+
 //  #define TIME_OPERATOR_DEBUG
 #ifdef TIME_OPERATOR_DEBUG
 #define DEBUG_OVERLOAD_OPERATOR(OP,NAME,IND)				\
@@ -1563,9 +1577,11 @@ class cFraction
 //! method void create()
 //! method void create("unixtime",int|float unixtime)
 //! method void create("unixtime",int|float unixtime,int|float len)
-//!	It is possible to create a Fraction in two ways,
+//! method void create(int y,int m,int d,int h,int m,int s,int ns)
+//!	It is possible to create a Fraction in three ways,
 //!	either "now" with no arguments or
-//!	from a unix time (as from <tt>time(2)</tt>).
+//!	from a unix time (as from <tt>time(2)</tt>),
+//!	or the convenience way from ymd-hms integers.
 //!
 //!	If created from unix time, both the start of the period
 //!	and the size of the period can be given in floats,
@@ -1985,6 +2001,16 @@ class cFraction
    float fraction_no()
    {
       return ns / 1e9;
+   }
+
+   void call_out(function fun,mixed ...args)
+   {
+      if (ux-time(1)>10000)
+	 predef::call_out(call_out,ux-time(1)-100,fun,@args);
+      else if (ux-time(1)<0)
+	 predef::call_out(fun,0,@args); // already
+      else 
+	 predef::call_out(fun,-time(ux)+ns*1e-9,@args);
    }
 }
 
