@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.408 2000/08/28 13:56:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.409 2000/08/28 17:53:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2519,8 +2519,25 @@ MY_CHECK_FUNCTION(memset,
 [
 #include <string.h>
 char foo[23];
+
+struct pike_string {
+  int refs;
+  int size_shift;
+  ptrdiff_t len;
+  size_t hval;
+  struct pike_string *next;
+  char str[1];
+};
+
+struct pike_string *begin_shared_string(int len)
+{
+  return malloc(sizeof(pike_string) + len);
+}
+
 ], [
   int i;
+  struct pike_string *str;
+
   memset(foo, 0, 11);
   memset(foo, 'a', 10);
   memset(foo, 'b', 5);
@@ -2557,6 +2574,20 @@ char foo[23];
   for (i=6; i--;) {
     if (foo[i+7] != 1) exit(1);
   }
+
+  len = 6;
+  str = begin_shared_string(len);
+
+  if (!str) exit(1);
+
+  for (i=len; i--;) {
+    str->str[i] = ~0;
+  }
+  memset(str, 0, len);
+  for (i = len; i--;) {
+    if (str->str[i]) exit(1);
+  }
+  free(str);
   exit(0);
 ])
 
