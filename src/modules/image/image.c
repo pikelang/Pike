@@ -631,10 +631,8 @@ void image_create(INT32 args)
 
    THIS->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize +1);
    if (!THIS->img)
-   {
-     free_object(o);
      error("out of memory\n");
-   }
+
 
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
    pop_n_elems(args);
