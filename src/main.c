@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.150 2002/08/15 14:49:22 marcus Exp $");
+RCSID("$Id: main.c,v 1.151 2002/09/07 21:14:37 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -256,6 +256,10 @@ int dbm_main(int argc, char **argv)
   MEMSET(node_hash.table, 0, sizeof(node *)*32831);
   node_hash.size = 32831;
 #endif /* SHARED_NODES */
+
+#ifdef HAVE_TZSET
+  tzset();
+#endif /* HAVE_TZSET */
 
 #ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
