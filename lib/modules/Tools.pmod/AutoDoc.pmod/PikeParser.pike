@@ -571,6 +571,10 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
     if (peekToken() == ":") {
       readToken();
       i->name = eatIdentifier();
+    } else {
+      i->name = (replace(i->classname,
+			 ({ "::", "->", "()" }),
+			 ({ ".", ".", "" }))/".")[-1];
     }
     return i;
   }
