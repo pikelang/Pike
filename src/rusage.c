@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.39 2004/05/19 20:56:30 grubba Exp $
+|| $Id: rusage.c,v 1.40 2004/06/29 12:05:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.39 2004/05/19 20:56:30 grubba Exp $");
+RCSID("$Id: rusage.c,v 1.40 2004/06/29 12:05:04 nilsson Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -95,7 +95,7 @@ static INLINE long get_time_int(timestruc_t * val)
   return val->tv_sec * 1000L + val->tv_nsec / 1000000;
 }
 
-int proc_fd = -1;
+static int proc_fd = -1;
 
 static int open_proc_fd()
 {

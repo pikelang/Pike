@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_search.c,v 1.21 2004/03/08 18:16:32 grubba Exp $
+|| $Id: pike_search.c,v 1.22 2004/06/29 12:04:36 nilsson Exp $
 */
 
 /* New memory searcher functions */
@@ -25,12 +25,12 @@ ptrdiff_t pike_search_struct_offset;
 #define THIS_MSEARCH ((struct pike_mem_searcher *)(Pike_fp->current_storage))
 
 static struct mapping *memsearch_cache;
-struct program *pike_search_program;
+static struct program *pike_search_program;
 
 
-void *nil_search(void *no_data,
-		 void *haystack,
-		 ptrdiff_t haystacklen)
+static void *nil_search(void *no_data,
+			void *haystack,
+			ptrdiff_t haystacklen)
 {
   return haystack;
 }
@@ -38,14 +38,14 @@ void *nil_search(void *no_data,
 /* Needed on architectures where struct returns have
  * incompatible calling conventions (sparc v8).
  */
-PCHARP nil_searchN(void *no_data,
-		   PCHARP haystack,
-		   ptrdiff_t haystacklen)
+static PCHARP nil_searchN(void *no_data,
+			  PCHARP haystack,
+			  ptrdiff_t haystacklen)
 {
   return haystack;
 }
 
-void nil_search_free(void *data) {}
+static void nil_search_free(void *data) {}
 #define memchr_memcmp2_free nil_search_free
 #define memchr_memcmp3_free nil_search_free
 #define memchr_memcmp4_free nil_search_free
@@ -54,7 +54,7 @@ void nil_search_free(void *data) {}
 #define memchr_search_free nil_search_free
 
 
-struct SearchMojtVtable nil_search_vtable = {
+static struct SearchMojtVtable nil_search_vtable = {
   (SearchMojtFunc0) nil_search,
   (SearchMojtFunc1) nil_search,
   (SearchMojtFunc2) nil_search,
@@ -63,7 +63,7 @@ struct SearchMojtVtable nil_search_vtable = {
 };
 
 
-void free_mem_searcher(void *m)
+static void free_mem_searcher(void *m)
 {
   free_object(*(struct object **)m);
 }
