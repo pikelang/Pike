@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.59 1999/10/28 22:27:34 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.60 1999/10/29 03:38:39 mast Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1325,6 +1325,7 @@ void pike_module_init(void)
     MPZ_DEFS();
 
     id=add_program_constant("bignum", bignum_program=end_program(), 0);
+    bignum_program->flags |= PROGRAM_NO_WEAK_DESTRUCT|PROGRAM_NO_EXPLICIT_DESTRUCT;
     
     /* Alert bignum.c that we have been loaded /Hubbe */
     gmp_library_loaded=1;
