@@ -14,6 +14,7 @@ testfont binary
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
+/Makefile foreign_ident
 /NT/tools/install-sh foreign_ident
 /bin/export.pike foreign_ident
 /bin/htmlify_docs.pike foreign_ident
