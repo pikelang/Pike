@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.4 1999/09/28 02:07:43 js Exp $
+//  $Id: Connection.pike,v 1.5 2000/08/03 03:32:42 jhs Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -8,20 +8,20 @@
 //! submodule LysKOM
 //! class Connection
 //!	This class contains nice abstraction for calls into the
-//!	server. They are named "<i>call</i>", 
-//!	"<tt>async_</tt><i>call</i>" or 
-//!	"<tt>async_cb_</tt><i>call</i>", depending on 
-//!	how you want the call to be done. 
+//!	server. They are named "<i>call</i>",
+//!	"<tt>async_</tt><i>call</i>" or
+//!	"<tt>async_cb_</tt><i>call</i>", depending on
+//!	how you want the call to be done.
 //!
 //! method mixed /call/(mixed ...args)
 //! method object async_/call/(mixed ...args)
 //! method object async_cb_/call/(function callback,mixed ...args)
-//!	Do a call to the server. This really 
+//!	Do a call to the server. This really
 //!	clones a <link to=Protocols.LysKOM.Request>request</link> object,
-//!	and initialises it. /call/ is to be read as 
+//!	and initialises it. /call/ is to be read as
 //!	one of the calls in the lyskom protocol. ('-' is replaced
 //!	with '_'.) (ie, logout, async_login or async_cb_get_conf_stat.)
-//!	
+//!
 //!	The first method is a synchronous call. This will
 //!	send the command, wait for the server to execute it,
 //!	and then return the result.
@@ -104,7 +104,7 @@ class SyncRequest
 {
    program prog;
    object ret;
-	 
+
    void create(program p,object _ret)
    {
       prog=p;
@@ -128,12 +128,14 @@ class SyncRequest
       if (!m) return ret;
       else return m;
    }
+
+  string _sprintf(){ return "SyncRequest()"; }
 }
-      
+
 class AsyncRequest
 {
    program prog;
-	 
+
    void create(program p)
    {
       prog=p;
@@ -145,6 +147,8 @@ class AsyncRequest
       req->async(@args);
       return req;
    }
+
+  string _sprintf(){ return "AsyncRequest()"; }
 }
 
 class AsyncCBRequest
@@ -163,6 +167,8 @@ class AsyncCBRequest
       req->async(@args);
       return req;
    }
+
+  string _sprintf(){ return "AsyncCBRequest()"; }
 }
 
 mixed `->(string request)
@@ -181,3 +187,5 @@ mixed `->(string request)
 }
 
 mixed `[](string request) { return `->(request); }
+
+string _sprintf(){ return "Connection()"; }

@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.17 2000/04/10 11:48:13 js Exp $
+//  $Id: Session.pike,v 1.18 2000/08/03 03:32:42 jhs Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -8,11 +8,11 @@ import ".";
 Connection con;
 
 //! variable user
-//!	This variable contains the 
+//!	This variable contains the
 //!	<link to=Protocols.LysKOM.Session.Person>person</link>
 //!	that are logged in.
 
-object user; // logged in as this Person 
+object user; // logged in as this Person
 
 string server;
 
@@ -26,7 +26,7 @@ mapping(int:object) _conference=([]);
 //! method void create(string server,mapping options)
 //!	Initializes the session object, and opens
 //!	a connection to that server.
-//!	
+//!
 //!	options is a mapping of options,
 //!	<data_description type=mapping>
 //!	<elem name=login type="int|string">login as this person number<br>(get number from name)</elem>
@@ -126,6 +126,8 @@ void async_new_text_old()
 
 class MiscInfo
 {
+   string _sprintf(){ return "MiscInfo()"; }
+
    class Recpt
    {
       object conf;
@@ -133,6 +135,7 @@ class MiscInfo
       object received_at;
       object sent_by;
       object sent_at;
+      string _sprintf(){ return "Recpt()"; }
    }
    array(Recpt) recpt=({});
    array(Recpt) ccrecpt=({});
@@ -176,21 +179,21 @@ class MiscInfo
 	 switch (a[i++])
 	 {
 	    case  0: recpt+=({r=Recpt()}); r->conf=conference(a[i++]); break;
-	    case  1: ccrecpt+=({r=Recpt()}); 
+	    case  1: ccrecpt+=({r=Recpt()});
 	             r->conf=conference(a[i++]); break;
-	    case 15: bccrecpt+=({r=Recpt()}); 
+	    case 15: bccrecpt+=({r=Recpt()});
 	             r->conf=conference(a[i++]); break;
 
 	    case  2: comm_to+=({text(a[i++])}); break;
 	    case  3: comm_in+=({text(a[i++])}); break;
 	    case  4: foot_to+=({text(a[i++])}); break;
 	    case  5: foot_in+=({text(a[i++])}); break;
-	       
+
 	    case  6: r->local_no=a[i++]; break;
-	    case  7: r->received_at=ProtocolTypes.LysKOMTime(@a[i..i+8]); 
+	    case  7: r->received_at=ProtocolTypes.LysKOMTime(@a[i..i+8]);
 	             i+=9; break;
 	    case  8: r->sent_by=person(a[i++]); break;
-	    case  9: r->sent_at=ProtocolTypes.LysKOMTime(@a[i..i+8]); 
+	    case  9: r->sent_at=ProtocolTypes.LysKOMTime(@a[i..i+8]);
 	             i+=9; break;
 	    default:
 	       error("unexpected selection in misc_info: %d\n",a[i-1]);
@@ -399,6 +402,11 @@ class MiscInfo
 
 class AuxItems
 {
+  string _sprintf()
+  {
+    return "AuxItems()";
+  }
+
   mapping(string:int) name_to_tag= ([ "content-type": 1,
 				      "fast-reply": 2,
 				      "cross-reference": 3,
@@ -434,11 +442,11 @@ class AuxItems
 				      "mx-envelope-sender": 10103,
 				      "mx-mime-file-name": 10104,
   ]);
-				      
+
   mapping(int:array(ProtocolTypes.AuxItem)) tag_to_items=([]);
 
   array(ProtocolTypes.AuxItem) aux_items;
-  
+
   void create(array(ProtocolTypes.AuxItem) _aux_items)
   {
     aux_items=_aux_items;
@@ -462,9 +470,9 @@ class AuxItems
       return tag_to_items[name_to_tag[replace(what,"_","-")]] || ({ });
     }
   }
-  
+
 //   mixed `->(string what) { return `[](what); }
-  
+
 }
 
 class Text
@@ -505,6 +513,11 @@ class Text
        error */
   }
 
+  string _sprintf()
+  {
+    return sprintf("Text(%d)", no);
+  }
+
    mixed `[](string what)
    {
       switch (what)
@@ -522,17 +535,17 @@ class Text
 	 case "error":
 	    return err;
 
-	 case "text": 
+	 case "text":
 	    waitfor_text();
 	    return _text[1];
 
-	 case "subject": 
+	 case "subject":
 	    waitfor_text();
 	    return _text[0];
 
 	 case "author":
 	    waitfor_stat();
-	    return _author 
+	    return _author
 	       || (_author=person(_stat->author));
 
 	 case "misc":
@@ -580,17 +593,17 @@ class Membership
 {
   int              person;
   int              newtype;
-  object           last_time_read;             
-  int(0..255)      priority;                   
-  int              last_text_read;             
-  array(int)       read_texts;                 
+  object           last_time_read;
+  int(0..255)      priority;
+  int              last_text_read;
+  array(int)       read_texts;
   int(0..65535)    added_by;   // new
   object           added_at;   // new
   multiset(string) type;       // new
   int              position;   // new
 
   object conf;
-  
+
   object err;
 
   void setup(object mb)
@@ -600,7 +613,7 @@ class Membership
     last_text_read=mb->last_text_read;
     priority=mb->priority;
     conf=Conference(mb->conf_no);
-	 
+
     if (mb->type)
     {
       added_at=mb->added_at;
@@ -620,7 +633,7 @@ class Membership
   //  FETCHER(unread,ProtocolTypes.TextMapping,_unread,local_to_global,@({conf->no,1,255}))
 
   int number_unread()
-  { 
+  {
     return (conf->no_of_texts+conf->first_local_no-1)
       -last_text_read -sizeof(read_texts);
   }
@@ -632,19 +645,19 @@ class Membership
     setup(con->query_read_texts(person,conf->no));
 //     werror("read_texts: %O\n",read_texts);
   }
-  
+
   array(object) get_unread_texts_blocking()
   {
 #ifdef LYSKOM_DEBUG
     werror("get_unread_texts_blocking()\n");
-#endif    
+#endif
     int i=last_text_read+1;
     mapping(int:int) local_to_global = ([]);
 
 #ifdef LYSKOM_DEBUG
     werror("i: %d  last_text_read: %d\n",i,last_text_read);
     werror("conf: %d  conf->no_of_texts: %d\n",conf->no, conf->no_of_texts);
-#endif    
+#endif
     if(i > con->get_uconf_stat(conf->no)->highest_local_no)
       return ({ }) ;
 
@@ -666,7 +679,7 @@ class Membership
 	foreach(block->sparse, ProtocolTypes.TextNumberPair pair)
 	  local_to_global[pair->local_number]=pair->global_number;
       }
-      
+
       if(!textmapping->later_texts_exists)
 	break;
       i=textmapping->range_end;
@@ -679,7 +692,7 @@ class Membership
     return map( sort(values(unread_numbers)), text );
   }
 
-  
+
   mixed `[](string what)
   {
     switch (what)
@@ -703,13 +716,27 @@ class Membership
 
   mixed `->(string what) { return `[](what); }
 
+  string _sprintf()
+  {
+    return sprintf("Membership(%d)", person);
+  }
+
+  array(string) _indices()
+  {
+    return ({ "unread_texts", "last_time_read",
+	      "read_texts",   "last_text_read",
+	      "priority",     "conf",
+	      "added_at",     "position",
+	      "type",         "number_unread",
+	      "query_read_texts" });
+  }
 }
 
 
 class Person
 {
    int no;
-   
+
    object conf;
 
    object err;
@@ -780,6 +807,29 @@ class Person
    }
 
    mixed `->(string what) { return `[](what); }
+
+  string _sprintf()
+  {
+    return sprintf("Person(%d)", no);
+  }
+
+  array(string) _indices()
+  {
+    return ({ "prefetch_stat",		"create",
+	      "prefetch_conf",		"no",
+	      "prefetch_membership",	"error",
+	      "user_area",		"privileges",
+	      "username",		"flags",
+	      "last_login",		"total_time_present",
+	      "created_lines",		"sessions",
+	      "created_bytes",		"read_texts",
+	      "created_persons",	"no_of_text_fetches",
+	      "created_confs",		"first_created_local_no",
+	      "no_of_created_texts",	"unread",
+	      "no_of_marks",		"membership"
+	      "no_of_confs",		"clear_membership", })
+      | indices(conf);
+  }
 }
 
 object person(int no)
@@ -791,18 +841,18 @@ class Conference
 {
   int no;
   AuxItems _aux_items;
-  
+
   private object err;
-  
+
   FETCHER2(stat,ProtocolTypes.Conference,_conf,
 	   ProtocolTypes.ConferenceOld,_confold,
 	   get_conf_stat,get_conf_stat_old,no)
-    
+
   void create(int _no)
   {
     no=_no;
   }
-  
+
   mixed `[](string what)
   {
     switch (what)
@@ -811,12 +861,12 @@ class Conference
       return create;
     case "prefetch_stat":
       return prefetch_stat;
-      
+
     case "no":
       return no;
     case "error":
       return err;
-      
+
       //	 case "presentation":
     case "msg_of_day":
       waitfor_stat();
@@ -847,6 +897,23 @@ class Conference
    }
 
    mixed `->(string what) { return `[](what); }
+
+  array(string) _indices()
+  {
+    return ({ "create",	"aux_items",	"prefetch_stat",
+	      "no",	"super_conf",	"no_of_members",
+	      "error",	"supervisor",	"first_local_no",
+	      "name",	"msg_of_day",	//"presentation",
+	      "type",	"no_of_texts",
+	      "creator","last_written",
+	      "nice",	"creation_time",
+	      "permitted_submitters", });
+  }
+
+  string _sprintf()
+  {
+    return sprintf("Conference(%d)", no);
+  }
 }
 
 object conference(int no)
@@ -894,17 +961,17 @@ object create_person(string name,string password)
 
 object logout()
 {
-   if (con) 
+   if (con)
       con->logout();
    return this_object();
 }
 
 //! method object create_text(string subject,string body,mapping options)
 //! method object create_text(string subject,string body,mapping options,function callback,mixed ...extra)
-//! 	Creates a new text. 
+//! 	Creates a new text.
 //!
-//! 	if "callback" are given, this function will be called when the text 
-//! 	is created, with the text as first argument. 
+//! 	if "callback" are given, this function will be called when the text
+//! 	is created, with the text as first argument.
 //!	Otherwise, the new text is returned.
 //!
 //!	options is a mapping that may contain:
@@ -918,7 +985,7 @@ object logout()
 //!	<elem></elem>
 //!	<elem name=anonymous type="int(0..1)">send text anonymously</elem>
 //!	</data_description>
-//!		
+//!
 //! note:
 //!	The above marked with a '*' is only available on a protocol 10
 //!	server. A LysKOM error will be thrown if the call fails.
@@ -934,7 +1001,7 @@ object|void create_text(string subject,string body,
    MiscInfo misc=MiscInfo(options);
 
    if (!options) options=([]);
-   
+
    return _create_text(text,misc,
 		       options->aux_info,
 		       options->anonymous,
@@ -950,9 +1017,9 @@ object|void _create_text(string textstring,
 {
    int|object res;
    string call;
-   if (anonymous) 
+   if (anonymous)
       call="create_anonymous_text";
-   else 
+   else
       call="create_text";
 
    if (aux_info)
@@ -990,14 +1057,14 @@ object|void send_message(string textstring, mapping options)
 {
   int|object res;
   string call;
-  
+
   if(!options) options = ([]);
-  
+
   if(!options->recpt)
     res = con["broadcast"](textstring);
   else
     res = con["send_message"](options->recpt->no, textstring);
-  
+
   if (objectp(res)) return res;
   return text(res);
 }
@@ -1006,3 +1073,9 @@ void register_async_message_callback(function(int,int,string:void) cb)
 {
   con->con->add_async_callback("async-send-message", cb);
 }
+
+string _sprintf()
+{
+  return sprintf("Session(%s)", server);
+}
+
