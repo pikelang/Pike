@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.140 2003/04/26 16:22:26 mast Exp $
+|| $Id: array.c,v 1.141 2003/04/27 16:17:33 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.140 2003/04/26 16:22:26 mast Exp $");
+RCSID("$Id: array.c,v 1.141 2003/04/27 16:17:33 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -190,6 +190,53 @@ PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
   free_array(v);
 }
 
+/* Is destructive on data if it only has one ref. */
+PMOD_EXPORT struct array *array_column (struct array *data, struct svalue *index)
+{
+  int e;
+  struct array *a;
+  TYPE_FIELD types = 0;
+
+  DECLARE_CYCLIC();
+
+  /* Optimization */
+  if(data->refs == 1)
+  {
+    /* An array with one ref cannot possibly be cyclic */
+    struct svalue sval;
+    data->type_field = BIT_MIXED | BIT_UNFINISHED;
+    for(e=0;e<data->size;e++)
+    {
+      index_no_free(&sval, ITEM(data)+e, index);
+      types |= 1 << sval.type;
+      free_svalue(ITEM(data)+e);
+      move_svalue (ITEM(data) + e, &sval);
+    }
+    data->type_field = types;
+    return data;
+  }
+
+  if((a=(struct array *)BEGIN_CYCLIC(data,0)))
+  {
+    add_ref(a);
+  }else{
+    push_array(a=allocate_array(data->size));
+    SET_CYCLIC_RET(a);
+
+    for(e=0;e<a->size;e++) {
+      index_no_free(ITEM(a)+e, ITEM(data)+e, index);
+      types |= 1 << ITEM(a)[e].type;
+    }
+    a->type_field = types;
+
+    dmalloc_touch_svalue(Pike_sp-1);
+    Pike_sp--;
+  }
+  END_CYCLIC();
+
+  return a;
+}
+
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind)
 {
@@ -214,13 +261,8 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 
     case T_STRING:
     {
-      check_stack(4);
-      ref_push_array(a);
-      assign_svalue_no_free(Pike_sp++,ind);
-      f_column(2);
-      Pike_sp--;
-      *s = *Pike_sp;
-      dmalloc_touch_svalue(Pike_sp);
+      s->type = T_ARRAY;
+      s->u.array = array_column (a, ind);
       break;
     }
 	
@@ -1861,10 +1903,12 @@ PMOD_EXPORT struct array *aggregate_array(INT32 args)
   struct array *a;
 
   a=allocate_array_no_init(args,0);
-  MEMCPY((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
-  a->type_field=BIT_MIXED;
-  Pike_sp-=args;
-  DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));
+  if (args) {
+    MEMCPY((char *)ITEM(a),(char *)(Pike_sp-args),args*sizeof(struct svalue));
+    array_fix_type_field (a);
+    Pike_sp-=args;
+    DO_IF_DMALLOC(while(args--) dmalloc_touch_svalue(Pike_sp + args));
+  }
   return a;
 }
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.132 2003/04/10 17:08:16 nilsson Exp $
+|| $Id: builtin.cmod,v 1.133 2003/04/27 16:17:33 mast Exp $
 */
 
 #include "global.h"
@@ -273,42 +273,7 @@ PIKEFUN array column(array data, mixed index)
   efun;
   optflags OPT_TRY_OPTIMIZE;
 {
-  INT32 e;
-  struct array *a;
-
-  DECLARE_CYCLIC();
-
-  /* Optimization */
-  if(data->refs == 1)
-  {
-    /* An array with one ref cannot possibly be cyclic */
-    struct svalue sval;
-    data->type_field = BIT_MIXED | BIT_UNFINISHED;
-    for(e=0;e<data->size;e++)
-    {
-      index_no_free(&sval, ITEM(data)+e, index);
-      free_svalue(ITEM(data)+e);
-      ITEM(data)[e]=sval;
-    }
-    pop_stack();
-    return;
-  }
-
-  if((a=(struct array *)BEGIN_CYCLIC(data,0)))
-  {
-    add_ref(a);
-  }else{
-    push_array(a=allocate_array(data->size));
-    SET_CYCLIC_RET(a);
-
-    for(e=0;e<a->size;e++)
-      index_no_free(ITEM(a)+e, ITEM(data)+e, index);
-
-    dmalloc_touch_svalue(Pike_sp-1);
-    Pike_sp--;
-  }
-  END_CYCLIC();
-  RETURN a;
+  RETURN array_column (data, index);
 }
 
 /*! @decl multiset mkmultiset(array a)
