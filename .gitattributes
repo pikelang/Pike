@@ -160,6 +160,8 @@ testfont binary
 /src/modules/_Crypto/pipe.c foreign_ident
 /src/modules/_Crypto/rc4.c foreign_ident
 /src/modules/_Crypto/test_crypto.pike foreign_ident
+/src/modules/_Image_JPEG/acconfig.h foreign_ident
+/src/modules/_Image_JPEG/config.h.in foreign_ident
 /src/modules/call_out/call_out.c foreign_ident
 /src/modules/call_out/test_co.pike foreign_ident
 /src/modules/dynamic_module_makefile.in foreign_ident

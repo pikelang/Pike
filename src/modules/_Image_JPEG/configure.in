@@ -1,0 +1,20 @@
+AC_INIT(image_jpeg.c)
+AC_CONFIG_HEADER(config.h)
+AC_ARG_WITH(jpeglib,     [  --with(out)-jpeglib       Support JPEG (Image.JPEG)],[],[with_jpeglib=yes])
+
+sinclude(../module_configure.in)
+
+if test x$with_jpeglib = xyes ; then
+  AC_CHECK_HEADERS(jpeglib.h)
+  if test $ac_cv_header_jpeglib_h = yes ; then
+    AC_CHECK_LIB(jpeg, jpeg_destroy, [
+      AC_DEFINE(HAVE_LIBJPEG) 
+      LIBS="${LIBS-} -lz"
+      ], 
+      AC_CHECK_LIB(jpeg, jpeg_destroy))
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+
