@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.182 2000/07/29 06:31:14 hubbe Exp $");
+RCSID("$Id: file.c,v 1.183 2000/08/03 18:57:55 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2619,7 +2619,7 @@ void init_files_efuns(void);
 #define REF (*((struct object **)(Pike_fp->current_storage)))
 
 #define FILE_FUNC(X,Y,Z) \
-static int PIKE_CONCAT(Y,_function_number);
+static ptrdiff_t PIKE_CONCAT(Y,_function_number);
 
 #include "file_functions.h"
 
