@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.668 2002/12/19 15:47:44 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.669 2003/01/02 17:04:51 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -433,11 +433,13 @@ fi
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
 MANDIR=`(cd $srcdir/../man ; pwd)`
+DOCDIR=`(cd $srcdir/../refdoc ; pwd)`
 BASEDIR=`(cd $srcdir/.. ; pwd)`
 BUILDDIR=`pwd`
 AC_SUBST(LIBDIR)
 AC_SUBST(BINDIR)
 AC_SUBST(MANDIR)
+AC_SUBST(DOCDIR)
 AC_SUBST(BASEDIR)
 AC_SUBST(BUILDDIR)
 
@@ -1796,6 +1798,7 @@ if test "$cflags_is_set" = "no"; then
     # AC_SYS_COMPILER_FLAG(-n32,n32,CFLAGS)
     AC_SYS_COMPILER_FLAG(-fullwarn,fullwarn,WARN)
     AC_SYS_COMPILER_FLAG(-woff 1209,woff_1209,WARN)
+    AC_SYS_COMPILER_FLAG(-OPT:Olimit_opt=on,OPT_Olimit_opt_on,OPTIMIZE)
     if test x$with_cdebug = xyes ; then
       AC_SYS_COMPILER_FLAG(-g3,g3,CFLAGS)
     fi
