@@ -20,52 +20,14 @@ INHERIT(misc);
 // IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()) )
 // IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()), GDK.Bitmap(Image.image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
 
-FUNCTION(create, "function(object,object|void:void)");
-ARGS(GDK.Pixmap,GDK.Bitmap);
+COMPLEX_FUNCTION(create, GdkPixmap, ?GdkBitmap);
 NAME_ARGS(pixmap,mask);
-// Create a new pixmap object.
-{
-  struct object *a, *b;
-  GdkPixmap *img;
-  GdkBitmap *mask = NULL;
-  if(args == 2)
-    get_all_args("GDK.Pixmap", args, "%o%o", &a, &b);
-  else
-  {
-    get_all_args("GDK.Pixmap", args, "%o", &a);
-    b = 0;
-  }
-  img = get_gdkobject( a, Pixmap );
-  if(b)
-    mask = get_gdkobject( b, Bitmap );
-  THIS->obj = GTK_OBJECT( gtk_pixmap_new( img, mask ) );
-  pgtk__init_this_object();
-  my_pop_n_elems(args);
-}
+// Create a new pixmap object, and sets the image and the mask.
 
-FUNCTION(set, "function(object,object|void:object)")
+COMPLEX_FUNCTION(set, GdkPixmap, ?GdkBitmap);
 ARGS(GDK.Pixmap,GDK.Bitmap);
 NAME_ARGS(pixmap,mask);
 // Sets the GDK.Pixmap image and the optinal GDK.Bitmap mask
-{
-  struct object *a, *b;
-  GdkPixmap *img;
-  GdkBitmap *mask = NULL;
-  if(args == 2)
-    get_all_args("GDK.Pixmap->set", args, "%o%o", &a, &b);
-  else
-  {
-    get_all_args("GDK.Pixmap->set", args, "%o", &a);
-    b = 0;
-  }
-  img = get_gdkobject( a, Pixmap );
-  if(b)
-    mask = get_gdkobject( b, Bitmap );
-  /* TODO: Free refs for pixmap & mask! */
-  gtk_pixmap_set( GTK_PIXMAP(THIS->obj), img, mask );
-
-  RETURN_THIS();
-}
 
 CLASSMEMBER(build_insensitive, int);
 

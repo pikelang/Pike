@@ -5,40 +5,15 @@ PROGRAM(image);
 //<p>
 // IMG: GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );
 INHERIT(misc);
-FUNCTION(create, "function(object,object|void:void)");
-ARGS(GDK.Image,GDK.Bitmap|void);
+
+COMPLEX_FUNCTION(create, GdkImage, ?GdkBitmap);
 NAME_ARGS(image,mask);
 // You can skip the mask. The mask is used to mask the drawing of the image
 // on it's background. It will not make the container transparent, though.
 // Use shape_combine_mask on the container with the mask for that.
-{
-  struct object *a, *b;
-  GdkImage *img;
-  GdkBitmap *mask = NULL;
-  if(THIS->obj) error("GTK.Image->create() can only be called once.\n");
-  if(args == 2)
-    get_all_args("GDK.Image", args, "%o%o", &a, &b);
-  else
-  {
-    get_all_args("GDK.Image", args, "%o", &a);
-    b = 0;
-  }
- add_ref(a);
-  img = get_gdkobject( a,Image );
-  if(b)
-  {
-    mask = get_gdkobject( b,Bitmap );
- add_ref(b);
-  }
-  THIS->obj = GTK_OBJECT( gtk_image_new( img, mask ) );
-  pgtk__init_this_object();
-  my_pop_n_elems(args);
-}
 
-FUNCTION(set, "function(object,object|void:object)")
-ARGS(GDK.Image,GDK.Bitmap|void);
+COMPLEX_FUNCTION(set, GdkImage, ?GdkBitmap);
 NAME_ARGS(image,mask);
-RETURNS(GTK.Image);
 // Args: GDK.Image and GDK.Bitmap, respectively.
 // You can skip the mask. The mask is used to mask the drawing of the image
 // on it's background. It will not make the container transparent, though.
@@ -46,29 +21,11 @@ RETURNS(GTK.Image);
 // <p>
 // There is no need to call 'set' with the same GDK.Image again if
 // you have modified the image. You must, however, use -&gt;queue_draw()
-// to redraw the image. Otherwise the old contens would be show until
-// it an refresh is done for any other reason.
-{
-  struct object *a, *b;
-  GdkImage *img;
-  GdkBitmap *mask = NULL;
-  if(args == 2)
-    get_all_args("GDK.Image", args, "%o%o", &a, &b);
-  else
-  {
-    get_all_args("GDK.Image", args, "%o", &a);
-    b = 0;
-  }
-  
-  img = get_gdkobject( a,Image );
-  if(mask)
-    mask = get_gdkobject( a,Bitmap );
-  gtk_image_set( GTK_IMAGE( THIS->obj ), img, mask );
-  RETURN_THIS();
-}
+// to redraw the image. Otherwise the old contens will be shown until
+// an refresh of the widget is done for any other reason.
 
 FUNCTION(get, "function(void:mapping)");
-// returns ([ "image":GDK.Image img, "mask":GDK.Bitmap m ])
+// returns ([ "image":GDK.Image img, "mask":GDK.Bitmap mask ])
 {
   GdkImage *v;
   GdkBitmap *m;
