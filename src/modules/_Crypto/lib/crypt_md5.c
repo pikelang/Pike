@@ -1,5 +1,5 @@
 /*
- * $Id: crypt_md5.c,v 1.1 2001/04/30 00:33:42 lange Exp $
+ * $Id: crypt_md5.c,v 1.2 2001/04/30 22:07:04 lange Exp $
  *
  *  crypt-md5.c :  Implementation of the MD5 password hash function
  *
@@ -100,7 +100,6 @@ char *crypt_md5(const char *pw, const char *salt)
 	md5_final(&ctx);
 	md5_digest(&ctx, final);
 
-        /* And now, just to make sure things don't run too fast... */
 	for(i=0;i<1000;i++) {
 		md5_init(&ctx1);
 		if(i & 1)
