@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.141 2004/11/14 17:44:05 mast Exp $
+|| $Id: error.c,v 1.142 2004/12/17 16:25:03 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -755,15 +755,28 @@ static void f_error__sprintf(INT32 args)
 static void f_error_create(INT32 args)
 {
   struct pike_string *msg;
-  get_all_args("create", args, "%W", &msg);
+  struct array *bt = NULL;
+
+  get_all_args("create", args, "%W.%A", &msg, &bt);
+
   do_free_string(GENERIC_ERROR_THIS->error_message);
   copy_shared_string(GENERIC_ERROR_THIS->error_message, msg);
-  f_backtrace(0);
-  push_int (1);
-  o_range2 (RANGE_LOW_OPEN|RANGE_HIGH_FROM_END);
-  assign_to_short_svalue ((union anything *)&GENERIC_ERROR_THIS->error_backtrace,
-			  PIKE_T_ARRAY, Pike_sp-1);
-  pop_n_elems(args+1);
+
+  if (bt) {
+    if (GENERIC_ERROR_THIS->error_backtrace)
+      free_array (GENERIC_ERROR_THIS->error_backtrace);
+    add_ref (GENERIC_ERROR_THIS->error_backtrace = bt);
+  }
+  else {
+    f_backtrace(0);
+    push_int (1);
+    o_range2 (RANGE_LOW_OPEN|RANGE_HIGH_FROM_END);
+    assign_to_short_svalue ((union anything *)&GENERIC_ERROR_THIS->error_backtrace,
+			    PIKE_T_ARRAY, Pike_sp-1);
+    pop_stack();
+  }
+
+  pop_n_elems(args);
 }
 
 /*! @endclass
