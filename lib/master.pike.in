@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.93 2000/01/10 00:39:55 hubbe Exp $
+ * $Id: master.pike.in,v 1.94 2000/01/11 19:16:42 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -452,6 +452,7 @@ constant master_efuns = ({
   "add_program_path",
   "remove_program_path",
   "describe_backtrace",
+  "describe_error",
   "mkmultiset",
   "new",
   "clone",
@@ -1557,6 +1558,22 @@ string describe_backtrace(mixed trace, void|int linewidth)
   }
 
   return ret;
+}
+
+// Returns a short description of a backtrace, containing only the
+// error message.
+string describe_error (mixed trace)
+{
+  if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
+     (objectp(trace) && trace->is_generic_error))
+  {
+    if (catch {
+      return trace[0] || "No error message!\n";
+    }) {
+      return "Error indexing backtrace!\n";
+    }
+  }
+  return sprintf ("Backtrace is of unknown type %t!\n", trace);
 }
 
 
