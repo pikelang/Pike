@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.150 1999/03/01 21:30:17 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.151 1999/03/02 03:13:31 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -901,16 +901,16 @@ cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 ]])
 
 // typeof
-test_eq(typeof(1),"int")
+test_eq(typeof(1),"int(1..1)")
 test_eq(typeof(""),"string")
 test_eq(typeof(""[0]),"int")
 test_eq(typeof(0.0),"float")
 test_eq(typeof(all_constants()["all_constants"]),"mixed")
 
 // _typeof
-test_eq(_typeof(1),"int")
+test_eq(_typeof(1),"int(1..1)")
 test_eq(_typeof(""),"string")
-test_eq(_typeof("x"[0]),"int")
+test_eq(_typeof("x"[0]),"int(120..120)")
 test_eq(_typeof(0.0),"float")
 test_eq(_typeof(this_object)-" ","function(:object)")
 
@@ -2891,7 +2891,7 @@ void test_dir(string dir)
     {
       test_dir(file);
     }else if(stat[1]>=0){
-      if(glob(file,"*.pike") || glob(file,"*.pmod"))
+      if(glob("*.pike",file) || glob("*.pmod",file))
         (program)file;
     }
   }

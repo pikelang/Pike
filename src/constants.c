@@ -15,7 +15,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.14 1999/02/10 21:46:39 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.15 1999/03/02 03:13:13 hubbe Exp $");
 
 static INT32 num_callable=0;
 static struct mapping *builtin_constants = 0;
@@ -158,6 +158,7 @@ void cleanup_added_efuns(void)
     free_mapping(builtin_constants);
     builtin_constants=0;
   }
+  free_all_callable_blocks();
 }
 void count_memory_in_callables(INT32 *num_, INT32 *size_)
 {

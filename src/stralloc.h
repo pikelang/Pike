@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.32 1999/03/01 05:32:37 hubbe Exp $
+ * $Id: stralloc.h,v 1.33 1999/03/02 03:13:28 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -38,7 +38,7 @@ struct string_builder
 struct pike_string *debug_findstring(const struct pike_string *foo);
 #endif
 
-#define free_string(s) do{ struct pike_string *_=(s); if(--_->refs<=0) really_free_string(_); }while(0)
+#define free_string(s) do{ struct pike_string *_=(s); debug_malloc_touch(_); if(--_->refs<=0) really_free_string(_); }while(0)
 
 #define my_hash_string(X) ((unsigned long)(X))
 #define my_order_strcmp(X,Y) ((char *)(X)-(char *)(Y))

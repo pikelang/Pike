@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.63 1999/02/20 17:44:04 grubba Exp $");
+RCSID("$Id: main.c,v 1.64 1999/03/02 03:13:22 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -584,5 +584,6 @@ void low_exit_main(void)
   cleanup_shared_string_table();
 #endif
   cleanup_callbacks();
+  really_clean_up_interpret();
 }
 

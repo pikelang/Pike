@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.27 1999/02/27 17:19:12 grubba Exp $
+ * $Id: global.h,v 1.28 1999/03/02 03:13:14 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -142,6 +142,9 @@ char *alloca ();
 #define INT32 long
 #endif
 #endif
+
+#define MAX_INT32 2147483647
+#define MIN_INT32 -2147483648
 
 #define INT16 short
 #define INT8 char

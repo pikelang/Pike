@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.26 1999/01/31 09:01:49 hubbe Exp $
+ * $Id: interpret.h,v 1.27 1999/03/02 03:13:17 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -194,6 +194,7 @@ void apply(struct object *o, char *fun, int args);
 void apply_svalue(struct svalue *s, INT32 args);
 void slow_check_stack(void);
 void cleanup_interpret(void);
+void really_clean_up_interpret(void);
 /* Prototypes end here */
 
 extern struct svalue *sp;

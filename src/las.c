@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.74 1999/02/01 06:13:15 hubbe Exp $");
+RCSID("$Id: las.c,v 1.75 1999/03/02 03:13:21 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -454,14 +454,11 @@ node *mkintnode(int nr)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
-  if(nr)
-    copy_shared_string(res->type, int_type_string);
-  else
-    copy_shared_string(res->type, mixed_type_string);
   res->node_info = 0; 
   res->u.sval.type = T_INT;
   res->u.sval.subtype = NUMBER_NUMBER;
   res->u.sval.u.integer = nr;
+  res->type=get_type_of_svalue( & res->u.sval);
   return res;
 }
 

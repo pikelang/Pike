@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.21 1999/02/10 21:46:56 hubbe Exp $
+ * $Id: svalue.h,v 1.22 1999/03/02 03:13:30 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -119,7 +119,7 @@ struct svalue
 #define tString "\006"
 #define tFlt "\007"
 #define tFloat "\007"
-#define tInt "\010"
+#define tInt "\010\200\000\000\000\177\377\377\377"
 
 #define tVoid "\020"
 #define tVar(X) #X

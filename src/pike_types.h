@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.17 1999/02/10 21:46:49 hubbe Exp $
+ * $Id: pike_types.h,v 1.18 1999/03/02 03:13:27 hubbe Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -104,7 +104,8 @@ INT32 pop_stack_mark(void);
 void pop_type_stack(void);
 void type_stack_pop_to_mark(void);
 void type_stack_reverse(void);
-void push_type_int(unsigned INT32 i);
+void push_type_int(INT32 i);
+INT32 extract_type_int(char *p);
 void push_unfinished_type(char *s);
 void push_finished_type(struct pike_string *type);
 void push_finished_type_backwards(struct pike_string *type);

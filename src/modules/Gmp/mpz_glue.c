@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.39 1999/02/10 21:47:33 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.40 1999/03/02 03:13:35 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -305,7 +305,7 @@ static void mpzmod_cast(INT32 args)
   switch(s->str[0])
   {
   case 'i':
-    if(!strcmp(s->str, "int"))
+    if(!strncmp(s->str, "int", 3))
     {
       free_string(s);
       mpzmod_get_int(0);

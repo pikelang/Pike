@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.53 1999/02/28 17:07:43 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.54 1999/03/02 03:13:25 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -158,13 +158,16 @@ one_more_type:
     case '7':
     case '8':
     case '9':
-    case T_INT:
     case T_FLOAT:
     case T_STRING:
     case T_PROGRAM:
     case T_MIXED:
     case T_VOID:
     case T_UNKNOWN:
+      break;
+
+    case T_INT:
+      t+=sizeof(INT32)*2;
       break;
       
     case T_OBJECT:
@@ -214,11 +217,20 @@ void type_stack_reverse(void)
   reverse((char *)(type_stackp-a),a,1);
 }
 
-void push_type_int(unsigned INT32 i)
+void push_type_int(INT32 i)
 {
   int e;
-  for(e=sizeof(i)-1;e>=0;e--)
-    push_type(((unsigned char *)&i)[e]);
+  for(e=0;e<(int)sizeof(i);e++)
+    push_type( (i>>(e*8)) & 0xff );
+}
+
+INT32 extract_type_int(char *p)
+{
+  int e;
+  INT32 ret=0;
+  for(e=0;e<(int)sizeof(INT32);e++)
+    ret=(ret<<8) | EXTRACT_UCHAR(p+e);
+  return ret;
 }
 
 void push_unfinished_type(char *s)
@@ -230,7 +242,7 @@ void push_unfinished_type(char *s)
 
 static void push_unfinished_type_with_markers(char *s, struct pike_string **am)
 {
-  int e,c,len=type_length(s);
+  int d,e,c,len=type_length(s);
   type_stack_mark();
   for(e=0;e<len;e++)
   {
@@ -247,14 +259,16 @@ static void push_unfinished_type_with_markers(char *s, struct pike_string **am)
 	}
 	break;
 #endif
+
+      case T_INT:
+	push_type(c);
+	for(d=0;d<(int)sizeof(INT32)*2;d++)
+	  push_type(EXTRACT_UCHAR(s+ ++e));
+	break;
 	
       case T_OBJECT:
 	push_type(c);
-	push_type(EXTRACT_UCHAR(s+ ++e));
-	push_type(EXTRACT_UCHAR(s+ ++e));
-	push_type(EXTRACT_UCHAR(s+ ++e));
-	push_type(EXTRACT_UCHAR(s+ ++e));
-	push_type(EXTRACT_UCHAR(s+ ++e));
+	for(d=0;d<(int)sizeof(INT32)+1;d++) push_type(EXTRACT_UCHAR(s+ ++e));
 	break;
 	
       default:
@@ -342,7 +356,36 @@ static void internal_parse_typeA(char **_s)
   switch(buf[0])
   {
     case 'i':
-      if(!strcmp(buf,"int")) { push_type(T_INT); break; }
+      if(!strcmp(buf,"int"))
+      {
+	while(ISSPACE(**s)) ++*s;
+	if(**s=='(')
+	{
+	  INT32 min,max;
+	  ++*s;
+	  while(ISSPACE(**s)) ++*s;
+	  min=STRTOL(*s,(char **)s,0);
+	  while(ISSPACE(**s)) ++*s;
+	  if(s[0][0]=='.' && s[0][1]=='.')
+	    s[0]+=2;
+	  else
+	    error("Missing .. in integer type.\n");
+	  
+	  while(ISSPACE(**s)) ++*s;
+	  max=STRTOL(*s,(char **)s,0);
+	  while(ISSPACE(**s)) ++*s;
+
+	  if(**s != ')') error("Missing ')' in integer range.\n");
+	  ++*s;
+	  push_type_int(max);
+	  push_type_int(min);
+	}else{
+	  push_type_int(MAX_INT32);
+	  push_type_int(MIN_INT32);
+	}
+	push_type(T_INT);
+	break;
+      }
       goto bad_type;
 
     case 'f':
@@ -646,14 +689,23 @@ void stupid_describe_type(char *a,INT32 len)
 	break;
 	
       case T_ASSIGN: printf("="); break;
-      case T_INT: printf("int"); break;
+      case T_INT:
+	{
+	  INT32 min=extract_type_int(a+e+1);
+	  INT32 max=extract_type_int(a+e+1+sizeof(INT32));
+	  printf("int");
+	  if(min!=MIN_INT32 || max!=MAX_INT32)
+	    printf("(%ld..%ld)",(long)min,(long)max);
+	  e+=sizeof(INT32)*2;
+	  break;
+	}
       case T_FLOAT: printf("float"); break;
       case T_STRING: printf("string"); break;
       case T_PROGRAM: printf("program"); break;
       case T_OBJECT:
 	printf("object(%s %ld)",
 	       EXTRACT_UCHAR(a+e+1)?"clone of":"inherits",
-	       (long)EXTRACT_INT(a+e+2));
+	       (long)extract_type_int(a+e+2));
 	e+=sizeof(INT32)+1;
 	break;
       case T_FUNCTION: printf("function"); break;
@@ -701,14 +753,29 @@ char *low_describe_type(char *t)
     case T_VOID: my_strcat("void"); break;
     case T_MIXED: my_strcat("mixed"); break;
     case T_UNKNOWN: my_strcat("unknown"); break;
-    case T_INT: my_strcat("int"); break;
+    case T_INT:
+    {
+      INT32 min=extract_type_int(t);
+      INT32 max=extract_type_int(t+sizeof(INT32));
+      my_strcat("int");
+      
+      if(min!=MIN_INT32 || max!=MAX_INT32)
+      {
+	char buffer[100];
+	sprintf(buffer,"(%ld..%ld)",(long)min,(long)max);
+	my_strcat(buffer);
+      }
+      t+=sizeof(INT32)*2;
+      
+      break;
+    }
     case T_FLOAT: my_strcat("float"); break;
     case T_PROGRAM: my_strcat("program"); break;
     case T_OBJECT:
-      if(EXTRACT_INT(t+1))
+      if(extract_type_int(t+1))
       {
 	char buffer[100];
-	sprintf(buffer,"object(%s %ld)",*t?"is":"implements",(long)EXTRACT_INT(t+1));
+	sprintf(buffer,"object(%s %ld)",*t?"is":"implements",(long)extract_type_int(t+1));
 	my_strcat(buffer);
       }else{
 	my_strcat("object");
@@ -804,6 +871,7 @@ char *low_describe_type(char *t)
 
 struct pike_string *describe_type(struct pike_string *type)
 {
+  check_type_string(type);
   if(!type) return make_shared_string("mixed");
   init_buf();
   low_describe_type(type->str);
@@ -895,6 +963,19 @@ static void low_or_pike_types(char *t1, char *t2)
   {
     push_type(T_MIXED);
   }
+  else if(EXTRACT_UCHAR(t1)==T_INT && EXTRACT_UCHAR(t2)==T_INT)
+  {
+    INT32 i1,i2;
+    i1=extract_type_int(t1+1+sizeof(INT32));
+    i2=extract_type_int(t2+1+sizeof(INT32));
+    push_type_int(MAXIMUM(i1,i2));
+
+    i1=extract_type_int(t1+1);
+    i2=extract_type_int(t2+1);
+    push_type_int(MINIMUM(i1,i2));
+
+    push_type(T_INT);
+  }
   else
   {
     push_unfinished_type(t1);
@@ -920,7 +1001,7 @@ static struct pike_string *low_object_lfun_type(char *t, short lfun)
 {
   struct program *p;
   int i;
-  p=id_to_program(EXTRACT_INT(t+2));
+  p=id_to_program(extract_type_int(t+2));
   if(!p) return 0;
   i=FIND_LFUN(p, lfun);
   if(i==-1) return 0;
@@ -1125,7 +1206,7 @@ static char *low_match_types(char *a,char *b, int flags)
 
   case T_OBJECT:
 #if 0
-    if(EXTRACT_INT(a+2) || EXTRACT_INT(b+2))
+    if(extract_type_int(a+2) || extract_type_int(b+2))
     {
       fprintf(stderr,"Type match1: ");
       stupid_describe_type(a,type_length(a));
@@ -1135,7 +1216,7 @@ static char *low_match_types(char *a,char *b, int flags)
 #endif
 
     /* object(* 0) matches any object */
-    if(!EXTRACT_INT(a+2) || !EXTRACT_INT(b+2)) break;
+    if(!extract_type_int(a+2) || !extract_type_int(b+2)) break;
 
     /* object(x *) =? object(x *) */
     if(EXTRACT_UCHAR(a+1) == EXTRACT_UCHAR(b+1))
@@ -1144,7 +1225,7 @@ static char *low_match_types(char *a,char *b, int flags)
       if(EXTRACT_UCHAR(a+1))
       {
 	/* object(1 x) =? object(1 x) */
-	if(EXTRACT_INT(a+2) != EXTRACT_INT(b+2)) return 0;
+	if(extract_type_int(a+2) != extract_type_int(b+2)) return 0;
       }else{
 	/* object(0 *) =? object(0 *) */
 	break;
@@ -1153,8 +1234,8 @@ static char *low_match_types(char *a,char *b, int flags)
 
     {
       struct program *ap,*bp;
-      ap=id_to_program(EXTRACT_INT(a+2));
-      bp=id_to_program(EXTRACT_INT(b+2));
+      ap=id_to_program(extract_type_int(a+2));
+      bp=id_to_program(extract_type_int(b+2));
 
       if(!ap || !bp) break;
 
@@ -1170,11 +1251,23 @@ static char *low_match_types(char *a,char *b, int flags)
     
     break;
 
+  case T_INT:
+  {
+    INT32 amin=extract_type_int(a+1);
+    INT32 amax=extract_type_int(a+1+sizeof(INT32));
+
+    INT32 bmin=extract_type_int(b+1);
+    INT32 bmax=extract_type_int(b+1+sizeof(INT32));
+    
+    if(amin > bmax || bmin > amax) return 0;
+    break;
+  }
+    
+
   case T_MULTISET:
   case T_ARRAY:
     if(!low_match_types(++a,++b,flags)) return 0;
 
-  case T_INT:
   case T_FLOAT:
   case T_STRING:
   case T_PROGRAM:
@@ -1290,7 +1383,7 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
   {
   case T_OBJECT:
   {
-    struct program *p=id_to_program(EXTRACT_INT(t+1));
+    struct program *p=id_to_program(extract_type_int(t+1));
     if(p && n)
     {
       if(n->token == F_ARROW)
@@ -1423,7 +1516,7 @@ static int low_check_indexing(char *type, char *index_type, node *n)
 
   case T_OBJECT:
   {
-    struct program *p=id_to_program(EXTRACT_INT(type+1));
+    struct program *p=id_to_program(extract_type_int(type+1));
     if(p)
     {
       if(n->token == F_ARROW)
@@ -1442,7 +1535,12 @@ static int low_check_indexing(char *type, char *index_type, node *n)
 
   case T_MULTISET:
   case T_MAPPING:
+#if 0
     return !!low_match_types(type,index_type,0);
+#else
+    /* FIXME: Compiler warning here!!!! */
+    return 1;
+#endif
 
   case T_PROGRAM:
     /* FIXME: Should check that the index is a string. */
@@ -1602,7 +1700,12 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   case T_INT:
     if(s->u.integer)
     {
-      ret=int_type_string;
+      type_stack_mark();
+      /* Fixme, check that the integer is in range of MIN_INT32 .. MAX_INT32!*/
+      push_type_int(s->u.integer);
+      push_type_int(s->u.integer);
+      push_type(T_INT);
+      return pop_unfinished_type();
     }else{
       ret=mixed_type_string;
     }
@@ -1720,7 +1823,7 @@ int type_may_overload(char *type, int lfun)
       
     case T_OBJECT:
     {
-      struct program *p=id_to_program(EXTRACT_INT(type+1));
+      struct program *p=id_to_program(extract_type_int(type+1));
       if(!p) return 1;
       return FIND_LFUN(p, lfun)!=-1;
     }

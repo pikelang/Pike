@@ -181,7 +181,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.110 1999/02/20 17:43:39 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.111 1999/03/02 03:13:19 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -298,7 +298,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
-%type <number> opt_string_type
 %type <number> optional_dot_dot_dot
 %type <number> optional_stars
 
@@ -827,12 +826,12 @@ type2: type2 '|' type3 { push_type(T_OR); }
   | type3 
   ;
 
-type3: F_INT_ID      { push_type(T_INT); }
+type3: F_INT_ID  opt_int_range    { push_type(T_INT); }
   | F_FLOAT_ID    { push_type(T_FLOAT); }
   | F_PROGRAM_ID  { push_type(T_PROGRAM); }
   | F_VOID_ID     { push_type(T_VOID); }
   | F_MIXED_ID    { push_type(T_MIXED); }
-  | F_STRING_ID opt_string_type { push_type(T_STRING); }
+  | F_STRING_ID { push_type(T_STRING); }
   | F_OBJECT_ID   opt_object_type { push_type(T_OBJECT); }
   | F_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
   | F_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
@@ -840,11 +839,11 @@ type3: F_INT_ID      { push_type(T_INT); }
   | F_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
   ;
 
-opt_string_type:  /* Empty */ { $$=1; }
-  | '(' F_NUMBER ')'
+opt_int_range:  { push_type_int(MAX_INT32); push_type_int(MIN_INT32);  }
+  | '(' F_NUMBER F_DOT_DOT F_NUMBER ')'
   {
-    if ($2 != 1) yyerror("Wide strings are not supported.");
-    $$=1;
+    push_type_int($4);
+    push_type_int($2);
   }
   ;
 
@@ -1804,7 +1803,7 @@ typeof: F_TYPEOF '(' expr0 ')'
     node *tmp;
     tmp=mknode(F_ARG_LIST,$3,0);
 
-    s=describe_type( $3 && $3->type ? $3->type : mixed_type_string);
+    s=describe_type( tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
     $$=mkstrnode(s);
     free_string(s);
     free_node(tmp);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.115 1999/02/28 17:07:42 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.116 1999/03/02 03:13:16 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1322,4 +1322,9 @@ void cleanup_interpret(void)
   evaluator_stack=0;
   mark_stack_malloced=0;
   evaluator_stack_malloced=0;
+}
+
+void really_clean_up_interpret(void)
+{
+  free_all_pike_frame_blocks();
 }
