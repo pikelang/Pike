@@ -1,6 +1,6 @@
 //!
 //! module Calendar
-//! submodule Gregorian
+//! submodule Islamic
 //!
 //! 	This is the islamic calendar. Due to some sources,
 //!	they decide the first day of the new months on a 

@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.13 2001/01/10 23:44:13 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.14 2001/07/18 10:03:38 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -498,7 +498,7 @@ class TimeRange
 //!      |-------A-------|    A preceeds B,  A succeeds B,
 //!          |---B---|        A overlaps B, A contains B, A touches B
 //!
-//!         |----A----|       A overlaps B, A touches B
+//!         |----A----|       A overlaps B, A touches B, A contains B
 //!         |----B----|       A equals B, A starts with B, A ends with B
 //!
 //!      |-------A-------|    A succeeds B, A starts with B
@@ -514,6 +514,15 @@ class TimeRange
 //!  |----B----|              A succeeds B
 //!
 //!  </pre>
+//!
+//! note:
+//!	These methods only check the range of the first to the 
+//!	last time in the period;
+//!	use of combined time periods (<ref>SuperTimeRange</ref>s)
+//!	might not give you the result you want. 
+//!
+//! see also: `&
+
 
 //- internal method 
 //- returns [-1,0,1] for comparison between
@@ -934,6 +943,20 @@ class TimeRange
    {
       return calendar_object;
    }
+
+
+   string _sprintf(int t,mapping m)
+   {
+      switch (t)
+      {
+	 case 'O':
+	    return "TimeRange()";
+	 case 't':
+	    return "Calendar."+calendar_name()+".TimeRange";
+	 default:
+	    return 0;
+      }
+   }
 }
 
 // ----------------------------------------------------------------
@@ -1116,15 +1139,18 @@ class cSuperTimeRange
       return predef::`+(@map(parts,"__hash"));
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
 	 case 'O':
 	    return "SuperTimeRange("+
 	       map(parts,"_sprintf",'O')*", "+")";
+	 case 't':
+	    return "SuperTimeRange("+
+	       map(parts,"_sprintf",'t')*", "+")";
       }
-      return 0;
+      return ::_sprintf(t,m);
    }
 
    TimeRange set_timezone(string|Timezone tz)
@@ -1233,12 +1259,13 @@ static class cNullTimeRange
       return 1;
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
 	 case 'O': return "NullTimeRange";
-	 default: return 0;
+	 case 't': return "Calendar."+calendar_name()+".NullTimeRange";
+	 default: return ::_sprintf(t,m);
       }
    }
 }

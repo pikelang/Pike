@@ -19,6 +19,8 @@ inherit Gregorian:Gregorian;
 
 string calendar_name() { return "ISO"; }
 
+#define WEEK_MAJORITY 4   
+
 private static mixed __initstuff=lambda()
 {
    f_week_day_shortname_from_number="week_day_shortname_from_number";
@@ -40,29 +42,54 @@ static string year_name_from_number(int y)
 
 static array(int) week_from_julian_day(int jd)
 {
-// [year,week,day-of-week,ndays,week-julian-day]
+// [week-year,week,day-of-week,ndays,week-julian-day]
 
    [int y,int yjd]=year_from_julian_day(jd);
    int yday=jd-yjd+1;
-
-   int k=3+(yjd-3)%7;
-   int w=(yday+k-1)/7;
    int wjd=jd-jd%7;
+
+#if 1
+   int k=WEEK_MAJORITY+(yjd-WEEK_MAJORITY)%7;
+   int w=(yday+k-1)/7;
+
+//     werror("wjd %d: %O %O %O, %O %O %O\n",jd,y,yjd,yday,k,w,wjd);
 
    if (!w) 
    {
 // handle the case that the day is in the previous year;
 // years previous to years staring on saturday,
 //              ...  and leap years starting on sunday
+
       y--;
-      w=52+( (k==3) || ( (k==4) && year_leap_year(y) ) );
+      w=52+( (k==WEEK_MAJORITY) || 
+	     ( (k==WEEK_MAJORITY+1) && year_leap_year(y) ) );
    }
-   else if (w==53 && k>=5-year_leap_year(y) && k<9-year_leap_year(y))
+   else if (w==53 && k>=5-year_leap_year(y) && k<10-year_leap_year(y))
    {
 // handle the case that the week is in the next year
       y++;
       w=1;
    }
+
+#else
+
+// Calendar FAQ algorithm (Stefan Potthast):
+// not used, does not calculate the week-year
+
+   int d4 = (jd+31741 - (jd %7))%146097 %36524 %1461;
+   int L  = d4/1460;
+   int d1 = ((d4-L) % 365) + L; 
+
+   int w = d1/7 + 1;
+
+//     werror("wjd %d: %O %O %O, %O\n",jd,y,yjd,yday,wjd,w);
+
+
+
+#endif
+
+//     werror("wjd %d: = %d, %d, %d, %d, %d\n",
+//  	  jd,@({y,w,1+(yjd+yday-1)%7,7,wjd}));
 
    return ({y,w,1+(yjd+yday-1)%7,7,wjd});
 }
@@ -72,7 +99,9 @@ static array(int) week_from_week(int y,int w)
 // [year,week,1 (wd),ndays,week-julian-day]
 
    int yjd=julian_day_from_year(y);
-   int wjd=-3+yjd-(yjd+4)%7;
+   int wjd=-WEEK_MAJORITY+yjd-(yjd+WEEK_MAJORITY-1)%7;
+
+//     werror("bip %O %O: %O %O\n",y,w,yjd,wjd);
 
    if (w<1 || w>52) // may or may not be out of this year
       return week_from_julian_day(wjd+w*7);

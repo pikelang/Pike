@@ -149,7 +149,7 @@ class NullEvent
 //!	julian day (&gt;<i>jd</i>) when the event occurs,
 //!	or the constant <tt>NODAY</tt> if it doesn't.
 //!
-//!	<i>direction</I> <tt>1</tt> is forward (next), 
+//!	<i>direction</i> <tt>1</tt> is forward (next),
 //!	<tt>-1</tt> is backward (previous).
 
 class Day_Event

@@ -155,8 +155,8 @@ class TimeofDay
 // 1970-01-01 is julian day 2440588
       jd-=2440588;
       float fjd=(jd-(int)jd)-0.5;
-      ux=((int)jd)*86400+(int)(fjd*86400);
       ls=CALUNKNOWN;
+      create_unixtime_default(((int)jd)*86400+(int)(fjd*86400));
    }
 
 // make base
@@ -193,6 +193,9 @@ class TimeofDay
    array(int(-1..1)) _compare(TimeRange with)
    {
 #define CMP(A,B) ( ((A)<(B))?-1:((A)>(B))?1:0 )
+
+      if (!objectp(with))
+	 error("_compare: illegal argument 1, expected TimeRange: %O\n",with);
 
       if (with->is_timeofday_f)
       {
@@ -292,7 +295,7 @@ class TimeofDay
 
    TimeRange _move(int n,int m);
 
-   TimeRange _add(int n,TimeRange step)
+   TimeRange _add(float|int n,TimeRange step)
    {
       if (step->is_timeofday_f)
 	 return Fraction("timeofday_f",rules,ux,0,len,0)
@@ -698,6 +701,7 @@ class TimeofDay
 //! method string format_iso_time();
 //! method string format_time();
 //! method string format_time_short();
+//! method string format_iso_short();
 //! method string format_time_xshort();
 //! method string format_mtime();
 //! method string format_xtime();
@@ -726,6 +730,7 @@ class TimeofDay
 //!     time           "2000-06-02 20:53:14" 
 //!	time_short     "20000602 20:53:14"
 //!	time_xshort    "000602 20:53:14"
+//!	iso_short      "20000602T20:53:14"
 //!     mtime          "2000-06-02 20:53" 
 //!     xtime          "2000-06-02 20:53:14.000000" 
 //!     todz           "20:53:14 CET"
@@ -781,6 +786,11 @@ class TimeofDay
    string format_time_short()
    {
       return this_object()->format_ymd_short()+" "+format_tod();
+   }
+
+   string format_iso_short()
+   {
+      return this_object()->format_ymd_short()+"T"+format_tod();
    }
 
    string format_time_xshort()
@@ -937,6 +947,19 @@ class TimeofDay
 	 (u<0)
 	 ?sprintf("UTC+%d:%02d:%02d",-u/3600,(-u/60)%60,(-u)%60)
 	 :sprintf("UTC-%d:%02d:%02d",u/3600,(u/60)%60,u%60);
+   }
+
+
+   
+// -----------------------------------------------------------------
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (!base) make_base();
+      if (what->is_ymd)
+	 return base->place(what,force);
+
+      error("place: Incompatible type %O\n",what);
    }
 
 // --------
@@ -1135,6 +1158,13 @@ class cSuperTimeRange
       foreach (parts,TimeRange y) z+=y;
       return parts[0]->distance(z)->format_elapsed();
    }
+
+   string sprintf(int t,mapping m)
+   {
+      if (t=='t') 
+	 return "Calendar."+calendar_name()+".TimeofDay";
+      return ::sprintf(t,m);
+   }
 }
 
 class cNullTimeRange
@@ -1179,6 +1209,13 @@ class cHour
       create_unixtime(time(),3600);
    }
 
+   static void create_unixtime(int _ux,int _len)
+   {
+      ::create_unixtime(_ux,_len);
+      if (ls==CALUNKNOWN) make_local();
+      if (ls%3600) ux-=ls%3600,ls=CALUNKNOWN;
+   }
+
    static void create_julian_day(int|float jd)
    {
       ::create_julian_day(jd);
@@ -1200,7 +1237,7 @@ class cHour
    }
 
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       if (catch {
       switch (t)
@@ -1213,8 +1250,10 @@ class cHour
 	    return sprintf("Hour(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Hour";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
       })
 	 return "error";
@@ -1232,6 +1271,29 @@ class cHour
       if (!base) make_base();
       return base->format_nice()+" "+sprintf("%d:00",ls/3600);
    }
+
+// -----------------------------------------------------------------
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (what->is_hour)
+	 return Hour("timeofday",rules,ux,what->len);
+      if (what->is_minute)
+	 return minute()+(what->hour()->distance(what))->number_of_minutes();
+      if (what->is_fraction)
+      {
+	 TimeRange t=what->hour()->distance(what);
+	 int s=t->len_s;
+	 int ns=t->len_ns;
+	 return 
+	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
+	    ->_move(1,s,ns);
+      }
+      if (what->is_second)
+	 return second()+(what->hour()->distance(what))->number_of_seconds();
+
+      ::place(what,force);
+   }
 }
 
 //------------------------------------------------------------------------
@@ -1246,6 +1308,13 @@ class cMinute
 //! inherits TimeofDay
 
    inherit TimeofDay;
+
+   static void create_unixtime(int _ux,int _len)
+   {
+      ::create_unixtime(_ux,_len);
+      if (ls==CALUNKNOWN) make_local();
+      ux-=ls%60;
+   }
 
    void create_unixtime_default(int unixtime)
    {
@@ -1278,7 +1347,7 @@ class cMinute
       return Minute("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1290,8 +1359,10 @@ class cMinute
 	    return sprintf("Minute(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Minute";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1306,6 +1377,27 @@ class cMinute
       if (ls==CALUNKNOWN) make_local();
       if (!base) make_base();
       return base->format_nice()+" "+sprintf("%d:%02d",ls/3600,(ls/60)%60);
+   }
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (what->is_hour)
+	 return hour()->place(what);
+      if (what->is_minute)
+	 return Minute("timeofday",rules,ux,what->len);
+      if (what->is_fraction)
+      {
+	 TimeRange t=what->minute()->distance(what);
+	 int s=t->len_s;
+	 int ns=t->len_ns;
+	 return 
+	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
+	    ->_move(1,s,ns);
+      }
+      if (what->is_second)
+	 return second()+(what->minute()->distance(what))->number_of_seconds();
+
+      ::place(what,force);
    }
 }
 
@@ -1352,7 +1444,7 @@ class cSecond
       return Second("timeofday",rules,ux+n*m,len)->autopromote(); 
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1364,8 +1456,10 @@ class cSecond
 	    return sprintf("Second(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Second";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1388,6 +1482,28 @@ class cSecond
    { return this_object()->format_ymd()+" T"+format_tod(); }
    string iso_short_name() 
    { return this_object()->format_ymd_short()+" T"+(format_tod()-":"); }
+
+
+   TimeRange place(TimeRange what,void|int force)
+   {
+      if (what->is_hour)
+	 return hour()->place(what);
+      if (what->is_minute)
+	 return minute()->place(what);
+      if (what->is_fraction)
+      {
+	 TimeRange t=what->second()->distance(what);
+	 int s=t->len_s;
+	 int ns=t->len_ns;
+	 return 
+	    Fraction("timeofday_f",rules,ux,0,what->len_s,what->len_s)
+	    ->_move(1,s,ns);
+      }
+      if (what->is_second)
+	 return second()+(what->second()->distance(what))->number_of_seconds();
+
+      ::place(what,force);
+   }
 }
 
 //------------------------------------------------------------------------
@@ -1577,7 +1693,7 @@ class cFraction
       ls=CALUNKNOWN;
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1589,8 +1705,10 @@ class cFraction
 	    return sprintf("Fraction(%s %s)",
 			   base->nice_print(),
 			   nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Fraction";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 

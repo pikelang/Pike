@@ -87,7 +87,7 @@ Event.Event make_event(string source)
 	    m=(m%12)+1;
 	    Event.Event e=
 	       Event.Monthday_Weekday_Relative(
-		  id,s,1,month2n[mn],wd2n[wd],-1,0);
+		  id,s,1,m,wd2n[wd],-1,0);
 	    e->nd=days;
 	    return e;
 	 }

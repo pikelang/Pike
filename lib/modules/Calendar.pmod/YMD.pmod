@@ -375,6 +375,7 @@ class YMD
 //!     time           "2000-06-02 00:00:00" 
 //!	time_short     "20000602 00:00:00"
 //!	time_xshort    "000602 00:00:00"
+//!	iso_short      "2000-06-02T00:00:00"
 //!     mtime          "2000-06-02 00:00" 
 //!     xtime          "2000-06-02 00:00:00.000000" 
 //!     tod            "00:00:00"
@@ -501,6 +502,11 @@ class YMD
    string format_time_short()
    {
       return format_ymd_short()+" 00:00:00";
+   }
+
+   string format_iso_short()
+   {
+      return format_ymd_short()+"T00:00:00";
    }
 
    string format_time_xshort()
@@ -997,7 +1003,16 @@ class YMD
 // ----------------------------------------
 
    string nice_print();
-   string _sprintf(int t);
+   string _sprintf(int t,mapping m)
+   {
+      switch (t)
+      {
+	 case 't':
+	    return "Calendar."+calendar_name()+".YMD";
+	 default:
+	    return ::_sprintf(t,m);
+      }
+   }
 
    void create_julian_day(int|float jd);
    static TimeRange _move(int n,YMD step);
@@ -1114,7 +1129,7 @@ class cYear
    
 // ----------------
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -1122,8 +1137,10 @@ class cYear
 	    if (n!=1) 
 	       return sprintf("Year(%s)",nice_print_period());
 	    return sprintf("Year(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Year";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1191,6 +1208,15 @@ class cYear
 	 if (!force && week->y!=y) return 0; // not this year
 	 return week;
       }
+
+      if (what->is_year)
+	 return Year("ymd_yn",rules,y,what->number_of_years());
+
+      if (what->is_month)
+	 return month(what->month_name());
+
+      if (what->is_timeofday)
+	 return place(what->day(),force)->place(what,force);
 
       error("place: Incompatible type %O\n",what);
    }
@@ -1387,7 +1413,7 @@ class cMonth
       }
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    { 
 //        return sprintf("month y=%d yjd=%d m=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,m,jd,yd,n,number_of_days());
@@ -1397,8 +1423,10 @@ class cMonth
 	    if (n!=1) 
 	       return sprintf("Month(%s)",nice_print_period());
 	    return sprintf("Month(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Month";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1502,6 +1530,16 @@ class cMonth
       if (what->is_day)
 	 return place_day(what->month_day(),what->n,force);
 
+      if (what->is_month)
+	 return Month("ymd_ym",rules,y,m,what->number_of_months())
+	    ->autopromote();
+
+      if (what->is_week)
+	 return place(what->day(),force)->week();
+
+      if (what->is_timeofday)
+	 return place(what->day(),force)->place(what,force);
+      
       error("place: Incompatible type %O\n",what);
    }
 
@@ -1671,7 +1709,7 @@ class cWeek
       }
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    { 
 //        return sprintf("week y=%d yjd=%d w=%d jd=%d yd=%d n=%d nd=%d",
 //  		     y,yjd,w,jd,yd,n,number_of_days());
@@ -1681,8 +1719,10 @@ class cWeek
 	    if (n!=1) 
 	       return sprintf("Week(%s)",nice_print_period());
 	    return sprintf("Week(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Week";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -1800,7 +1840,12 @@ class cWeek
 
       if (what->is_year) 
 	 return year()->place(what,force); // just fallback
+      if (what->is_month) 
+	 return month()->place(what,force); // just fallback
       
+      if (what->is_week)
+	 return Week("ymd_yw",rules,y,w,what->number_of_weeks());
+
       if (what->is_day)
 	 return place_day(what->week_day(),what->n,force);
 
@@ -2020,7 +2065,7 @@ class cDay
       }	 
    }
 
-   string _sprintf(int t)
+   string _sprintf(int t,mapping m)
    {
       switch (t)
       {
@@ -2028,8 +2073,10 @@ class cDay
 	    if (n!=1) 
 	       return sprintf("Day(%s)",nice_print_period());
 	    return sprintf("Day(%s)",nice_print());
+	 case 't':
+	    return "Calendar."+calendar_name()+".Day";
 	 default:
-	    return 0;
+	    return ::_sprintf(t,m);
       }
    }
 
@@ -2105,7 +2152,7 @@ class cDay
       error("_move: Incompatible type %O\n",step);
    }
 
-   TimeRange place(TimeRange what)
+   TimeRange place(TimeRange what,int|void force)
    {
       if (what->is_timeofday)
       {
@@ -2113,17 +2160,50 @@ class cDay
 	    what->ux-
 	    Day("unix_r",what->unix_time(),what->ruleset())
 	    ->unix_time();
+	 TimeRange res;
 
 	 if (what->is_timeofday_f)
-	    return 
+	    res=
 	       Fraction("timeofday_f",rules,
-			lux+unix_time(),what->ns,what->s_len,what->ns_len)
-	       ->autopromote();
+			lux+unix_time(),what->ns,what->s_len,what->ns_len);
+	 else
+	    res=Second("timeofday",rules,unix_time()+lux,what->len);
 
-	 return Second("timeofday",rules,unix_time()+lux,what->len)
-	    ->autopromote();
+	 if (what->rules->timezone->is_dst_timezone ||
+	     rules->timezone->is_dst_timezone)
+	 {
+	    int u0=what->utc_offset()-what->day()->utc_offset();
+	    int u1=res->utc_offset()-utc_offset();
+//  	    werror("%O %O\n",u0,u1);
+	    if (u1-u0) 
+	       res=res->add(u1-u0,Second);
+	    else
+	       res=res->autopromote();
+
+	    if (!force)
+	    {
+	       if (res->hour_no()!=what->hour_no())
+		  error("place: no such time of "
+			"day (DST shift)\n",what,this_object());
+	    }
+	 }
+	 else
+	    res=res->autopromote();
+
+	 return res;
       }
 
+      if (what->is_year) 
+	 return year()->place(what,force); // just fallback
+      if (what->is_month) 
+	 return month()->place(what,force); // just fallback
+      if (what->is_week) 
+	 return week()->place(what,force); // just fallback
+
+      if (what->is_day) 
+	 return Day("ymd_jd",rules,jd,what->number_of_days())
+	    ->autopromote();
+	 
       error("place: Incompatible type %O\n",what);
    }
 
@@ -2476,7 +2556,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
    {
 //        nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
 #define ALNU "%[^- -,./:-?[-`{-¿]"
-#define AMPM "%[ampAMP]"
+#define AMPM "%[ampAMP.]"
 #define NUME "%[0-9]"
 #define ZONE "%[-+0-9A-Za-z/]"
       nfmt=replace(fmt,
@@ -2642,7 +2722,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 
       if (!zero_type(m->p))
       {
-	 switch (lower_case(m->p))
+	 switch (lower_case(m->p)-".")
 	 {
 	    case "am": 
 	       if (h==12) h=0;
@@ -2730,6 +2810,7 @@ Calendar.dwim_day("1");
 Calendar.dwim_day("today");
 Calendar.dwim_day("last monday");
 Calendar.dwim_day("next monday");
+Calendar.dwim_day("Sat Jun  2");
 
 */
 
@@ -2751,6 +2832,8 @@ static constant dwim_day_strings=
   "%M%*[- /]%D",
   "%M-%D-%y",
   "%D-%M-%y",
+  "%e%*[- /]%D%*[- /]%M",
+  "%e%*[- /]%M%*[- /]%D",
   "%e%*[- /wv]%W%*[ -/]%y",
   "%e%*[- /wv]%W", 
   "%d"
@@ -2842,8 +2925,8 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 	 }
 	 else
 	 {
-	    if ( (t=parse(dayformat+"%*[ ,]"+todformat,what,cx)) ) return t;
-	    if ( (t=parse(todformat+"%*[ ,]"+dayformat,what,cx)) ) return t;
+	    if ( (t=parse(dayformat+"%*[ ,:]"+todformat,what,cx)) ) return t;
+	    if ( (t=parse(todformat+"%*[ ,:]"+dayformat,what,cx)) ) return t;
 	 }
       }
 
