@@ -1,3 +1,14 @@
+Thu Feb 19 14:40:54 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* opcodes.c (o_cast): recursive casting implemented
+	  (array(int)) ({"1"}) now return ({1})
+	* operators.c: arrays and strings can now be divided
+	  by integers and floats.
+	* operators.c: arrays and strings can now me multiplied
+	  by integers
+	* cpp.c: #"foo" - a way to write strings with newlines in it
+	* cpp.c: #string "foo" a way to include a file as a string
+
 Thu Feb 12 02:27:50 1998  Henrik Grubbström  <grubba@idonex.se>
 
 	* builtin_functions.c (f_diff, f_diff_compare_table,
