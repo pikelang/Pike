@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.199 2000/07/10 15:36:35 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.200 2000/07/10 18:21:33 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -145,7 +145,6 @@ int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *,struct pike_string *,node *);
 static node *lexical_islocal(struct pike_string *);
 
-static struct pike_string *last_identifier=0;
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
 
@@ -385,9 +384,9 @@ low_program_ref: string_constant
   }
   | idents
   {
-    if(last_identifier)
+    if(Pike_compiler->last_identifier)
     {
-      ref_push_string(last_identifier);
+      ref_push_string(Pike_compiler->last_identifier);
     }else{
       push_constant_text("");
     }
@@ -2439,12 +2438,12 @@ idents2: idents
   {
     int i;
 
-    if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $3->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
 
-    if (((i = find_shared_string_identifier(last_identifier,
+    if (((i = find_shared_string_identifier(Pike_compiler->last_identifier,
 					    Pike_compiler->new_program)) >= 0) ||
-	((i = really_low_find_shared_string_identifier(last_identifier,
+	((i = really_low_find_shared_string_identifier(Pike_compiler->last_identifier,
 						       Pike_compiler->new_program,
 						       SEE_STATIC|
 						       SEE_PRIVATE)) >= 0)) {
@@ -2472,7 +2471,7 @@ idents2: idents
     } else {
       if (!Pike_compiler->num_parse_error) {
 	if (Pike_compiler->compiler_pass == 2) {
-	  my_yyerror("'%s' not defined in local scope.", last_identifier->str);
+	  my_yyerror("'%s' not defined in local scope.", Pike_compiler->last_identifier->str);
 	  $$ = 0;
 	} else {
 	  $$ = mknode(F_UNDEFINED, 0, 0);
@@ -2493,11 +2492,11 @@ idents2: idents
 idents: low_idents
   | idents '.' TOK_IDENTIFIER
   {
-    $$=index_node($1, last_identifier?last_identifier->str:NULL,
+    $$=index_node($1, Pike_compiler->last_identifier?Pike_compiler->last_identifier->str:NULL,
 		  $3->u.sval.u.string);
     free_node($1);
-    if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $3->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
     free_node($3);
   }
   | '.' TOK_IDENTIFIER
@@ -2515,8 +2514,8 @@ idents: low_idents
     pop_stack();
     $$=index_node(tmp, ".", $2->u.sval.u.string);
     free_node(tmp);
-    if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $2->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
     free_node($2);
   }
   | idents '.' bad_identifier {}
@@ -2576,20 +2575,20 @@ low_idents: TOK_IDENTIFIER
   {
     int i;
     struct efun *f;
-    if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $1->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $1->u.sval.u.string);
 
-    if(($$=lexical_islocal(last_identifier)))
+    if(($$=lexical_islocal(Pike_compiler->last_identifier)))
     {
       /* done, nothing to do here */
-    }else if((i=isidentifier(last_identifier))>=0){
+    }else if((i=isidentifier(Pike_compiler->last_identifier))>=0){
       $$=mkidentifiernode(i);
-    }else if(!($$=find_module_identifier(last_identifier,1))){
+    }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1))){
       if(!Pike_compiler->num_parse_error)
       {
 	if(Pike_compiler->compiler_pass==2)
 	{
-	  my_yyerror("'%s' undefined.", last_identifier->str);
+	  my_yyerror("'%s' undefined.", Pike_compiler->last_identifier->str);
 	  $$=0;
 	}else{
 	  $$=mknode(F_UNDEFINED,0,0);
@@ -2608,8 +2607,8 @@ low_idents: TOK_IDENTIFIER
 #ifdef __CHECKER__
     tmp.subtype=0;
 #endif /* __CHECKER__ */
-    if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $3->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $3->u.sval.u.string);
     tmp.u.mapping=get_builtin_constants();
     tmp2=mkconstantsvaluenode(&tmp);
     $$=index_node(tmp2, "predef", $3->u.sval.u.string);
@@ -2627,12 +2626,12 @@ low_idents: TOK_IDENTIFIER
     if ($1) {
       int id;
 
-      if(last_identifier) free_string(last_identifier);
-      copy_shared_string(last_identifier, $2->u.sval.u.string);
+      if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+      copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
       id = low_reference_inherited_identifier(inherit_state,
 					      $1,
-					      last_identifier,
+					      Pike_compiler->last_identifier,
 					      SEE_STATIC);
 
       if (id != -1) {
@@ -2642,21 +2641,21 @@ low_idents: TOK_IDENTIFIER
 	} else {
 	  $$ = mkidentifiernode(id);
 	}
-      } else if(ISCONSTSTR(last_identifier, "`->") ||
-		ISCONSTSTR(last_identifier, "`[]")) {
+      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "`->") ||
+		ISCONSTSTR(Pike_compiler->last_identifier, "`[]")) {
 	$$ = mknode(F_MAGIC_INDEX, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
-      } else if(ISCONSTSTR(last_identifier, "`->=") ||
-		ISCONSTSTR(last_identifier, "`[]=")) {
+      } else if(ISCONSTSTR(Pike_compiler->last_identifier, "`->=") ||
+		ISCONSTSTR(Pike_compiler->last_identifier, "`[]=")) {
 	$$ = mknode(F_MAGIC_SET_INDEX, mknewintnode($1),
 		    mknewintnode(inherit_depth+1));
       } else {
 	if (inherit_state->new_program->inherits[$1].name) {
 	  my_yyerror("Undefined identifier %s::%s.",
 		     inherit_state->new_program->inherits[$1].name->str,
-		     last_identifier->str);
+		     Pike_compiler->last_identifier->str);
 	} else {
-	  my_yyerror("Undefined identifier %s.", last_identifier->str);
+	  my_yyerror("Undefined identifier %s.", Pike_compiler->last_identifier->str);
 	}
 	$$=0;
       }
@@ -2672,8 +2671,8 @@ low_idents: TOK_IDENTIFIER
   {
     int e,i;
 
-    if(last_identifier) free_string(last_identifier);
-    copy_shared_string(last_identifier, $2->u.sval.u.string);
+    if(Pike_compiler->last_identifier) free_string(Pike_compiler->last_identifier);
+    copy_shared_string(Pike_compiler->last_identifier, $2->u.sval.u.string);
 
     $$=0;
     for(e=1;e<(int)Pike_compiler->new_program->num_inherits;e++)
@@ -2898,7 +2897,7 @@ string: TOK_STRING
  * Some error-handling
  */
 
-/* FIXME: Should probably set last_identifier. */
+/* FIXME: Should probably set Pike_compiler->last_identifier. */
 bad_identifier: bad_expr_ident
   | TOK_CLASS
   { yyerror("class is a reserved word."); }
@@ -3140,9 +3139,4 @@ static node *lexical_islocal(struct pike_string *str)
 
 void cleanup_compiler(void)
 {
-  if(last_identifier)
-  {
-    free_string(last_identifier);
-    last_identifier=0;
-  }
 }

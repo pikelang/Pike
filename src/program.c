@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.247 2000/07/07 01:48:08 hubbe Exp $");
+RCSID("$Id: program.c,v 1.248 2000/07/10 18:21:32 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1062,6 +1062,12 @@ static void toss_compilation_resources(void)
   while(Pike_compiler->compiler_frame)
     pop_compiler_frame();
 
+  if(Pike_compiler->last_identifier)
+  {
+    free_string(Pike_compiler->last_identifier);
+    Pike_compiler->last_identifier=0;
+  }
+
   if(Pike_compiler->last_file)
   {
     free_string(Pike_compiler->last_file);
@@ -1378,7 +1384,7 @@ struct program *debug_end_program(void)
  * Allocate needed for this program in the object structure.
  * An offset to the data is returned.
  */
-SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
+size_t low_add_storage(size_t size, size_t alignment, int modulo_orig)
 {
   long offset;
   int modulo;
@@ -1946,7 +1952,7 @@ int isidentifier(struct pike_string *s)
 int low_define_variable(struct pike_string *name,
 			struct pike_string *type,
 			INT32 flags,
-			INT32 offset,
+			size_t offset,
 			INT32 run_time_type)
 {
   int n;
@@ -1991,7 +1997,7 @@ int low_define_variable(struct pike_string *name,
 int map_variable(char *name,
 		 char *type,
 		 INT32 flags,
-		 INT32 offset,
+		 size_t offset,
 		 INT32 run_time_type)
 {
   int ret;
@@ -2012,7 +2018,7 @@ int map_variable(char *name,
 
 int quick_map_variable(char *name,
 		       int name_length,
-		       INT32 offset,
+		       size_t offset,
 		       char *type,
 		       int type_length,
 		       INT32 run_time_type,

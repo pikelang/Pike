@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.93 2000/06/26 16:43:09 grubba Exp $
+ * $Id: program.h,v 1.94 2000/07/10 18:21:33 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -279,7 +279,7 @@ struct program
   unsigned INT32 num_clones;
 #endif /* PROFILING */
 
-  SIZE_T total_size;
+  size_t total_size;
 
 #define FOO(NUMTYPE,TYPE,NAME) TYPE * NAME ;
 #include "program_areas.h"
@@ -346,7 +346,7 @@ int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 struct program *debug_end_program(void);
-SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig);
+size_t low_add_storage(size_t size, size_t alignment, int modulo_orig);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
 void set_gc_recurse_callback(void (*m)(struct object *));
@@ -378,16 +378,16 @@ int isidentifier(struct pike_string *s);
 int low_define_variable(struct pike_string *name,
 			struct pike_string *type,
 			INT32 flags,
-			INT32 offset,
+			size_t offset,
 			INT32 run_time_type);
 int map_variable(char *name,
 		 char *type,
 		 INT32 flags,
-		 INT32 offset,
+		 size_t offset,
 		 INT32 run_time_type);
 int quick_map_variable(char *name,
 		       int name_length,
-		       INT32 offset,
+		       size_t offset,
 		       char *type,
 		       int type_length,
 		       INT32 run_time_type,

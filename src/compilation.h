@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.17 2000/07/10 14:32:05 grubba Exp $
+ * $Id: compilation.h,v 1.18 2000/07/10 18:21:33 grubba Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -111,17 +111,17 @@
 
 
 #ifdef PIKE_DEBUG
-#define STRMEMBER(X,Y,Z) \
-  PCODE(if(Pike_compiler->X) fatal("Variable %s not deallocated properly.\n",Y);) \
-  ZMEMBER(struct pike_string *,X,Z)
+#define STRMEMBER(X,Y) \
+  PCODE(if(Pike_compiler->X) fatal("Variable " #X " not deallocated properly.\n");) \
+  ZMEMBER(struct pike_string *,X,Y)
 #else
-#define STRMEMBER(X,Y,Z) \
-  ZMEMBER(struct pike_string *,X,Z)
+#define STRMEMBER(X,Y) \
+  ZMEMBER(struct pike_string *,X,Y)
 #endif
 
   SNAME(program_state,Pike_compiler)
   ZMEMBER(INT32,last_line,0)
-  STRMEMBER(last_file,"last_file",0)
+  STRMEMBER(last_file,0)
   ZMEMBER(struct object *,fake_object,0)
   ZMEMBER(struct program *,new_program,0)
   ZMEMBER(struct program *,malloc_size_program,0)
@@ -135,6 +135,7 @@
   ZMEMBER(int,catch_level,0)
   ZMEMBER(INT32,current_modifiers,0)
   ZMEMBER(int,varargs,0)
+  STRMEMBER(last_identifier,0)
   ZMEMBER(struct mapping *,module_index_cache,0)
   STACKMEMBER(unsigned char *,type_stackp,type_stack)
   STACKMEMBER(unsigned char **,pike_type_mark_stackp,pike_type_mark_stack)
