@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.18 2000/06/13 19:22:31 grubba Exp $
+ * $Id: rsa.c,v 1.19 2000/06/13 19:33:01 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -31,7 +31,7 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.18 2000/06/13 19:22:31 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.19 2000/06/13 19:33:01 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -327,7 +327,7 @@ static void f_cooked_get_e(INT32 args)
 /* string cooked_get_d() */
 static void f_cooked_get_d(INT32 args)
 {
-  A_PKCS_RSA_PRIVATE_KEY *rsa_private_key = NULL;
+  A_RSA_KEY *rsa_private_key = NULL;
   int code;
 
   if (!THIS->n) {
@@ -335,15 +335,15 @@ static void f_cooked_get_d(INT32 args)
   }
 
   if ((code = B_GetKeyInfo((POINTER *)&rsa_private_key, THIS->private_key,
-			   KI_PKCS_RSAPrivate))) {
+			   KI_RSAPrivate))) {
     error("Crypto rsa.cooked_get_d(): "
 	  "Failed to get private key: %04x\n", code);
   }
 
   pop_n_elems(args);
 
-  push_string(make_shared_binary_string(rsa_private_key->privateExponent.data,
-					rsa_private_key->privateExponent.len));
+  push_string(make_shared_binary_string(rsa_private_key->exponent.data,
+					rsa_private_key->exponent.len));
 }
 
 /* string cooked_get_p() */
