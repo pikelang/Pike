@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.6 1996/11/14 01:36:31 hubbe Exp $");
+RCSID("$Id: program.c,v 1.7 1996/11/16 05:17:10 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -133,8 +133,8 @@ void start_new_program()
 #undef PUSH
 #undef PROGRAM_STATE
 
-  for(e=0; e<NUM_AREAS; e++) low_init_buf(areas + e);
-  low_init_buf(& inherit_names);
+  for(e=0; e<NUM_AREAS; e++) low_reinit_buf(areas + e);
+  low_reinit_buf(& inherit_names);
   fake_program.id = ++current_program_id;
 
   inherit.prog=&fake_program;
@@ -842,7 +842,7 @@ int add_constant(struct pike_string *name,
 
 #ifdef DEBUG
   if(name!=debug_findstring(name))
-    fatal("define_variable on nonshared string.\n");
+    fatal("define_constant on nonshared string.\n");
 #endif
 
   setup_fake_program();
@@ -884,6 +884,23 @@ int add_constant(struct pike_string *name,
 
   return n;
 }
+
+int add_integer_constant(char *name,
+			 INT32 i,
+			 INT32 flags)
+{
+  struct svalue tmp;
+  struct pike_string *id;
+  int ret;
+  tmp.u.integer=i;
+  tmp.type=T_INT;
+  tmp.subtype=NUMBER_NUMBER;
+  id=make_shared_string(name);
+  ret=add_constant(id,&tmp, flags);
+  free_string(id);
+  return ret;
+}
+
 
 /*
  * define a new function

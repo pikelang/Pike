@@ -1,4 +1,4 @@
-/* $Id: togif.c,v 1.11 1996/11/14 12:35:05 law Exp $ */
+/* $Id: togif.c,v 1.12 1996/11/16 05:17:12 hubbe Exp $ */
 /*
 
 togif 
@@ -160,7 +160,7 @@ struct pike_string *
    struct lzw lzw;
 
    buf.s.str=NULL;
-   low_init_buf(&buf);
+   initialize_buf(&buf);
 
    low_my_binary_strcat(transparent?"GIF89a":"GIF87a",6,&buf);
    buf_word((unsigned short)img->xsize,&buf);
@@ -473,7 +473,7 @@ void image_gif_begin(INT32 args)
    pop_n_elems(args);
 
    buf.s.str=NULL;
-   low_init_buf(&buf);
+   initialize_buf(&buf);
 
    low_my_binary_strcat("GIF89a",6,&buf);
    buf_word((unsigned short)THIS->xsize,&buf);
@@ -521,7 +521,7 @@ static void img_gif_add(INT32 args,int fs)
    dynamic_buffer buf;
 
    buf.s.str=NULL;
-   low_init_buf(&buf);
+   initialize_buf(&buf);
 
    if (args==0) x=y=0;
    else if (sp[-args].type!=T_INT

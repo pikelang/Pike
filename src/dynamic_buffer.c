@@ -54,14 +54,22 @@ void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
   MEMCPY(low_make_buf_space(l,buf),b,l);
 }
 
-void low_init_buf(dynamic_buffer *buf)
+void initialize_buf(dynamic_buffer *buf)
 {
-  if(!buf->s.str)
-    buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
-  if(!buf->s.str)
-    error("Out of memory.\n");
+  buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
   *(buf->s.str)=0;
   buf->s.len=0;
+}
+
+void low_reinit_buf(dynamic_buffer *buf)
+{
+  if(!buf->s.str)
+  {
+    initialize_buf(buf);
+  }else{
+    *(buf->s.str)=0;
+    buf->s.len=0;
+  }
 }
 
 void low_init_buf_with_string(string s,dynamic_buffer *buf)
@@ -114,7 +122,7 @@ char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
 void my_putchar(char b) { low_my_putchar(b,&buff); }
 void my_binary_strcat(const char *b,INT32 l) { low_my_binary_strcat(b,l,&buff); }
 void my_strcat(const char *b) { my_binary_strcat(b,strlen(b)); }
-void init_buf(void) { low_init_buf(&buff); }
+void init_buf(void) { low_reinit_buf(&buff); }
 void init_buf_with_string(string s) { low_init_buf_with_string(s,&buff); }
 char *return_buf(void)
 {

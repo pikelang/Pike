@@ -1,0 +1,2 @@
+test_true(Gz_deflate())
+test_true(Gz_inflate())

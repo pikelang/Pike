@@ -6,7 +6,7 @@
 #define READ_BUFFER 16384
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.11 1996/11/14 01:36:33 hubbe Exp $");
+RCSID("$Id: file.c,v 1.12 1996/11/16 05:17:11 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -302,7 +302,7 @@ static void file_read(INT32 args)
     dynamic_buffer b;
 
     b.s.str=0;
-    low_init_buf(&b);
+    initialize_buf(&b);
     SET_ONERROR(ebuf, free_dynamic_buffer, &b);
     do{
       int fd=FD;

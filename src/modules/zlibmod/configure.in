@@ -1,0 +1,19 @@
+AC_INIT(zlibmod.c)
+AC_CONFIG_HEADER(zlib_machine.h)
+AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_SUBST(RANLIB)
+
+if test x$with_zlib = xyes ; then
+  AC_CHECK_HEADERS(zlib.h)
+  if test $ac_cv_header_zlib_h = yes ; then
+    AC_CHECK_LIB(z, compress, [[LIBS="${LIBS-} -lz"]],
+      AC_CHECK_LIB(gz, compress))
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

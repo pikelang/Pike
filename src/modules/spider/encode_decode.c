@@ -190,11 +190,7 @@ void f_encode_value(INT32 args)
 {
   dynamic_buffer buff;
 
-  buff.s.str = NULL;
-  buff.s.len = 0;
-  buff.bufsize = 0;
-
-  low_init_buf(&buff);
+  initialize_buf(&buff);
 
   rec_save_value(sp-args, &buff, NULL);
 

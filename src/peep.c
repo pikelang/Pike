@@ -95,7 +95,7 @@ static int hasarg(int opcode)
 
 void init_bytecode()
 {
-  low_init_buf(&instrbuf);
+  low_reinit_buf(&instrbuf);
 }
 
 void exit_bytecode()

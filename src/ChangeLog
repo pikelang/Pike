@@ -1,3 +1,7 @@
+Fri Nov 15 21:09:10 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* support for zlib added
+
 Thu Nov  7 20:49:42 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* 'constant foo=<value>;' implemented on top level

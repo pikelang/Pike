@@ -193,6 +193,9 @@ int define_variable(struct pike_string *name,
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags);
+int add_integer_constant(char *name,
+			 INT32 i,
+			 INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
 		      INT16 flags,
