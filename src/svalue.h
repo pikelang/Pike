@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.96 2001/08/20 18:06:55 mast Exp $
+ * $Id: svalue.h,v 1.97 2001/09/25 05:55:13 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -468,6 +468,7 @@ PMOD_EXPORT void really_free_short_svalue(union anything *s, TYPE_T type);
 PMOD_EXPORT void really_free_svalue(struct svalue *s);
 PMOD_EXPORT void do_free_svalue(struct svalue *s);
 PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
+PMOD_EXPORT void debug_free_mixed_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
 PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
 			    const struct svalue *from,
 			    size_t num,
@@ -527,12 +528,17 @@ PMOD_EXPORT TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
 TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num);
 PMOD_EXPORT int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type);
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
-#define gc_cycle_check_without_recurse gc_mark_without_recurse
-#define gc_cycle_check_weak_without_recurse gc_mark_without_recurse
 void real_gc_free_svalue(struct svalue *s);
 void real_gc_free_short_svalue(union anything *u, TYPE_T type);
 PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s);
+int svalues_are_constant(struct svalue *s,
+			 INT32 num,
+			 TYPE_FIELD hint,
+			 struct processing *p);
 /* Prototypes end here */
+
+#define gc_cycle_check_without_recurse gc_mark_without_recurse
+#define gc_cycle_check_weak_without_recurse gc_mark_without_recurse
 
 #define gc_xmark_svalues(S,N) real_gc_xmark_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)
 #define gc_check_svalues(S,N) real_gc_check_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)

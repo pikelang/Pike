@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.372 2001/09/24 16:42:48 grubba Exp $");
+RCSID("$Id: program.c,v 1.373 2001/09/25 05:55:12 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3151,20 +3151,49 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     fatal("define_constant on nonshared string.\n");
 #endif
 
-  n = isidentifier(name);
+  do {
+    if(c &&
+       c->type == T_FUNCTION &&
+       c->subtype != FUNCTION_BUILTIN &&
+       c->u.object->prog)
+    {
+      struct identifier *id=ID_FROM_INT(c->u.object->prog, c->subtype);
+      if(c->u.object->prog == Pike_compiler->new_program)
+      {
+	if(id->identifier_flags & IDENTIFIER_FUNCTION)
+	{
+	  return define_function(name,
+				 id->type,
+				 flags,
+				 id->identifier_flags | IDENTIFIER_ALIAS,
+				 & id->func,
+				 id->opt_flags);
+	  
+	}
+	else if(id->identifier_flags & IDENTIFIER_CONSTANT &&
+		id->func.offset != -1)
+	{
+	  c=& Pike_compiler->new_program->constants[id->func.offset].sval;
+	}
+      }
+      else
+      {
+	if(id->identifier_flags & IDENTIFIER_CONSTANT)
+	{
+	  /* In this one case we allow fake objects to enter the
+	   * mainstream...
+	   */
+	  break;
+	}
+      }
+    }
+    
+    if(c && !svalues_are_constant(c,1,BIT_MIXED,0))
+      yyerror("Constant values may not references this_object()");
+    
+  }while(0);
 
-  /*
-   * FIXME:
-   * No constants should be allowed to contain
-   * any fake objects. (Fake objects can be
-   * detected thus: fake_ob->next == fake_ob
-   *
-   * I would prefer to find a way to detect
-   * this without recursing through arrays,
-   * mapping etc. etc.
-   *
-   * /Hubbe
-   */
+  n = isidentifier(name);
 
   if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
   {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.37 2001/08/31 06:53:36 hubbe Exp $
+ * $Id: array.h,v 1.38 2001/09/25 05:55:10 hubbe Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -96,7 +96,6 @@ PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index);
 PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind);
 PMOD_EXPORT void array_free_index(struct array *v,INT32 index);
-PMOD_EXPORT void array_set_index(struct array *v,INT32 index, struct svalue *s);
 PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s);
 PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 index);
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
@@ -113,7 +112,7 @@ PMOD_EXPORT struct array *copy_array(struct array *v);
 PMOD_EXPORT void check_array_for_destruct(struct array *v);
 PMOD_EXPORT INT32 array_find_destructed_object(struct array *v);
 INT32 *get_order(struct array *v, cmpfun fun);
-int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b);
+INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT void sort_array_destructively(struct array *v);
 PMOD_EXPORT INT32 *get_set_order(struct array *a);
 PMOD_EXPORT INT32 *get_switch_order(struct array *a);
@@ -135,14 +134,16 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode);
 PMOD_EXPORT struct array *array_zip(struct array *a, struct array *b,INT32 *zipper);
 PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args);
 PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processing *p);
-PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op);
+PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
+						 struct array *b, INT32 op);
 PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op);
 PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 					struct array *b,
 					INT32 op);
 PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b);
 PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b);
-int check_that_array_is_constant(struct array *a);
+int array_is_constant(struct array *a,
+		      struct processing *p);
 node *make_node_from_array(struct array *a);
 PMOD_EXPORT void push_array_items(struct array *a);
 void describe_array_low(struct array *a, struct processing *p, int indent);
@@ -160,7 +161,7 @@ PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del)
 PMOD_EXPORT struct array *copy_array_recursively(struct array *a,struct processing *p);
 PMOD_EXPORT void apply_array(struct array *a, INT32 args);
 PMOD_EXPORT struct array *reverse_array(struct array *a);
-PMOD_EXPORT void array_replace(struct array *a,
+void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to);
 PMOD_EXPORT void check_array(struct array *a);

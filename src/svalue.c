@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.124 2001/09/24 16:49:20 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.125 2001/09/25 05:55:13 hubbe Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -546,7 +546,7 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
     if(!s->u.object->prog) return 0;
     if (s->u.object->prog == pike_trampoline_program) {
       /* Trampoline */
-      struct pike_trampoline *tramp =
+      struct pike_trampoline *tramp = (struct pike_trampoline *)
 	get_storage(s->u.object, pike_trampoline_program);
       if (!tramp || !tramp->frame || !tramp->frame->current_object ||
 	  !tramp->frame->current_object->prog) {
@@ -1841,4 +1841,66 @@ PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
     Pike_error("Bad argument 1 to sizeof().\n");
     return 0; /* make apcc happy */
   }
+}
+
+int svalues_are_constant(struct svalue *s,
+			 INT32 num,
+			 TYPE_FIELD hint,
+			 struct processing *p)
+{
+  if(hint & ~(BIT_STRING | BIT_INT | BIT_FLOAT))
+  {
+    INT32 e;
+    for(e=0;e<num;e++)
+    {
+      switch(s->type)
+      {
+	case T_ARRAY:
+	case T_MAPPING:
+	case T_MULTISET:
+	{
+	  struct processing curr;
+	  curr.pointer_a = s->u.refs;
+	  curr.next = p;
+
+	  for( ;p ;p=p->next)
+	    if(p->pointer_a == (void *)s->u.refs)
+	      return 1;
+	  
+	  switch(s->type)
+	  {
+	    case T_ARRAY:
+	      if(!array_is_constant(s->u.array,&curr))
+		return 0;
+	      break;
+
+	    case T_MAPPING:
+	      if(!mapping_is_constant(s->u.mapping,&curr))
+		return 0;
+	      break;
+
+	    case T_MULTISET:
+	      if(!multiset_is_constant(s->u.multiset,&curr))
+		return 0;
+	      break;
+	  }
+	}
+	  
+	case T_FUNCTION:
+	  if(s->subtype == FUNCTION_BUILTIN) continue;
+	  /* Fall through */
+	  
+	case T_OBJECT:
+	  if(s->u.object -> next == s->u.object)
+	  {
+	    /* This is a fake object used during the
+	     * compilation!
+	     */
+	    return 0;
+	  }
+      }
+      s++;
+    }
+  }
+  return 1;
 }
