@@ -117,6 +117,21 @@ Examples:
 
 ________________________________________________________________________________
 
+Keyword:      @endnamespace
+Description:  Leave the namespace entered by @namespace.
+	      Symbols defined outside a namespace will be defined in
+	      the default namespace "predef::".
+Arguments:    [name]
+              Where:
+                [name] if present, must be the same as the argument to
+		@namespace.
+Children:     -
+Groups with:  -
+Examples:
+              /*! @endnamespace lfun:: */
+
+________________________________________________________________________________
+
 Keyword:      @module
 Description:  Declare and enter a new scope for a module. Only in C mode. Until
               an @endmodule is found, all declarations will be regarded as
@@ -130,6 +145,23 @@ Groups with:  -
 Examples:
               /*! @module Kenny
                *!  A module with a Norwegian name. */
+
+________________________________________________________________________________
+
+Keyword:      @namespace
+Description:  Declare and enter a new namespace. Only in C mode. Until
+              an @endnamespace is found, all declarations will be regarded
+	      as living in this namespace.
+Arguments:    <name>[::]
+              Where:
+                <name> is a valid Pike identifier. Not the "absolute" name
+                  with dots.
+Children:     Documentation for symbols in the namespace, or empty.
+Groups with:  -
+Examples:
+              /*! @namespace lfun::
+               *!   The operator callback API.
+	       */
 
 ________________________________________________________________________________
 ================================================================================
