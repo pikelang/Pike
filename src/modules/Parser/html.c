@@ -1771,7 +1771,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 			    enum scan_arg_do what,
 			    int finished,
 			    int *quote)
-/* Returns 1 if end is found, 2 if breaked for entity, 0 otherwise. If
+/* Returns 1 if end is found, 2 if broken for entity, 0 otherwise. If
  * 2 is returned, *quote is set to the index in this->argq_start for
  * the current quote we're in, or -1 if outside quotes. *quote is also
  * read on entry to continue inside quotes. */
