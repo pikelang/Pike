@@ -13,7 +13,7 @@ object cipher_spec;
 int ke_method;
 string master_secret; /* 48 byte secret shared between client and server */
 
-constant Struct = (program) "struct";
+constant Struct = ADT.struct;
 constant State = (program) "state";
 
 void set_cipher_suite(int suite)
@@ -22,6 +22,8 @@ void set_cipher_suite(int suite)
   cipher_suite = suite;
   ke_method = res[0];
   cipher_spec = res[1];
+  werror(sprintf("SSL.session: cipher_spec %O\n",
+		 mkmapping(indices(cipher_spec), values(cipher_spec))));
 }
 
 void set_compression_method(int compr)
@@ -34,9 +36,11 @@ void set_compression_method(int compr)
 
 string generate_key_block(string client_random, string server_random)
 {
-  int required = 2 * (cipher_spec->key_material +
-		       cipher_spec->hash_size +
-		       cipher_spec->iv_size);
+  int required = 2 * (cipher_spec->is_exportable
+		      ? (5 + cipher_spec->hash_size)
+		      : ( cipher_spec->key_material +
+			  cipher_spec->hash_size +
+			  cipher_spec->iv_size));
   object sha = mac_sha();
   object md5 = mac_md5();
   int i = 0;
@@ -54,61 +58,94 @@ string generate_key_block(string client_random, string server_random)
   return key;
 }
 
-array new_server_states(string client_random, string server_random)
+array generate_keys(string client_random, string server_random)
 {
   object key_data = Struct(generate_key_block(client_random, server_random));
-  object write_state = State(this_object());
-  object read_state = State(this_object());
+  array keys = allocate(6);
 
   write(sprintf("client_random: '%s'\nserver_random: '%s'\n",
 		client_random, server_random));
-  read_state->mac = cipher_spec->
-    mac_algorithm(key_data->get_fix_string(cipher_spec->hash_size));
-  write_state->mac = cipher_spec->
-    mac_algorithm(key_data->get_fix_string(cipher_spec->hash_size));
-  read_state->crypt = cipher_spec->bulk_cipher_algorithm();
-  read_state->crypt->
-    set_decrypt_key(key_data->get_fix_string(cipher_spec->key_material));
 
-  write_state->crypt = cipher_spec->bulk_cipher_algorithm();
-  write_state->crypt->
-    set_encrypt_key(key_data->get_fix_string(cipher_spec->key_material));
+  /* client_write_MAC_secret */
+  keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
+  /* server_write_MAC_secret */
+  keys[1] = key_data->get_fix_string(cipher_spec->hash_size);
 
-  if (cipher_spec->iv_size)
+  if (cipher_spec->is_exportable)
   {
-    read_state->crypt->
-      set_iv(key_data->get_fix_string(cipher_spec->iv_size));
-    write_state->crypt->
-      set_iv(key_data->get_fix_string(cipher_spec->iv_size));
+    object md5 = mac_md5()->hash_raw;
+    
+    keys[2] = md5(key_data->get_fix_string(5) +
+		 client_random + server_random)
+      [..cipher_spec->key_material-1];
+    keys[3] = md5(key_data->get_fix_string(5) +
+		 server_random + client_random)
+      [..cipher_spec->key_material-1];
+    if (cipher_spec->iv_size)
+    {
+      keys[4] = md5(client_random + server_random)[..cipher_spec->iv_size-1];
+      keys[5] = md5(server_random + client_random)[..cipher_spec->iv_size-1];
+    }
+  } else {
+    keys[2] = key_data->get_fix_string(cipher_spec->key_material);
+    keys[3] = key_data->get_fix_string(cipher_spec->key_material);
+    if (cipher_spec->iv_size)
+    {
+      keys[4] = key_data->get_fix_string(cipher_spec->iv_size);
+      keys[5] = key_data->get_fix_string(cipher_spec->iv_size);
+    }
+  }
+  return keys;
+}
+
+array new_server_states(string client_random, string server_random)
+{
+  object write_state = State(this_object());
+  object read_state = State(this_object());
+  array keys = generate_keys(client_random, server_random);
+
+  if (cipher_spec->mac_algorithm)
+  {
+    read_state->mac = cipher_spec->mac_algorithm(keys[0]);
+    write_state->mac = cipher_spec->mac_algorithm(keys[1]);
+  }
+  if (cipher_spec->bulk_cipher_algorithm)
+  {
+    read_state->crypt = cipher_spec->bulk_cipher_algorithm();
+    read_state->crypt->set_decrypt_key(keys[2]);
+    write_state->crypt = cipher_spec->bulk_cipher_algorithm();
+    write_state->crypt->set_encrypt_key(keys[3]);
+    if (cipher_spec->iv_size)
+    {
+      read_state->crypt->set_iv(keys[4]);
+      write_state->crypt->set_iv(keys[5]);
+    }
   }
   return ({ read_state, write_state });
 }
 
 array new_client_states(string client_random, string server_random)
 {
-  object key_data = Struct(generate_key_block(client_random, server_random));
   object write_state = State(this_object());
   object read_state = State(this_object());
-
-  write_state->mac = cipher_spec->
-    mac_algorithm(key_data->get_fix_string(cipher_spec->hash_size));
-  read_state->mac = cipher_spec->
-    mac_algorithm(key_data->get_fix_string(cipher_spec->hash_size));
-
-  write_state->crypt = cipher_spec->bulk_cipher_algorithm();
-  write_state->crypt->
-    set_encrypt_key(key_data->get_fix_string(cipher_spec->key_material));
-
-  read_state->crypt = cipher_spec->bulk_cipher_algorithm();
-  read_state->crypt->
-    set_decrypt_key(key_data->get_fix_string(cipher_spec->key_material));
-
-  if (cipher_spec->iv_size)
+  array keys = generate_keys(client_random, server_random);
+  
+  if (cipher_spec->mac_algorithm)
   {
-    write_state->crypt->
-      set_iv(key_data->get_fix_string(cipher_spec->iv_size));
-    read_state->crypt->
-      set_iv(key_data->get_fix_string(cipher_spec->iv_size));
+    read_state->mac = cipher_spec->mac_algorithm(keys[1]);
+    write_state->mac = cipher_spec->mac_algorithm(keys[0]);
+  }
+  if (cipher_spec->bulk_cipher_algorithm)
+  {
+    read_state->crypt = cipher_spec->bulk_cipher_algorithm();
+    read_state->crypt->set_decrypt_key(keys[3]);
+    write_state->crypt = cipher_spec->bulk_cipher_algorithm();
+    write_state->crypt->set_encrypt_key(keys[2]);
+    if (cipher_spec->iv_size)
+    {
+      read_state->crypt->set_iv(keys[5]);
+      write_state->crypt->set_iv(keys[4]);
+    }
   }
   return ({ read_state, write_state });
 }
