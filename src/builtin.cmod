@@ -205,7 +205,7 @@ PIKEFUN int get_weak_flag(mixed m)
       flag = !!(m->u.array->flags & ARRAY_WEAK_FLAG);
       break;
     case T_MAPPING:
-      flag = !!(m->u.mapping->flags & MAPPING_FLAG_WEAK);
+      flag = !!(mapping_get_flags(m->u.mapping) & MAPPING_FLAG_WEAK);
       break;
     case T_MULTISET:
       flag = !!(m->u.multiset->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK));

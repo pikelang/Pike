@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.309 2000/09/01 19:12:04 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.310 2000/09/03 23:21:13 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2462,9 +2462,12 @@ void f_set_weak_flag(INT32 args)
     case T_ARRAY:
       SETFLAG(s->u.array->flags,ARRAY_WEAK_FLAG,ret);
       break;
-    case T_MAPPING:
-      SETFLAG(s->u.mapping->flags,MAPPING_FLAG_WEAK,ret);
+    case T_MAPPING: {
+      int flags = mapping_get_flags(s->u.mapping);
+      SETFLAG(flags,MAPPING_FLAG_WEAK,ret);
+      mapping_set_flags(s->u.mapping, flags);
       break;
+    }
     case T_MULTISET:
       SETFLAG(s->u.multiset->ind->flags,(ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK),ret);
       break;
