@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.15 2003/03/12 09:23:37 agehall Exp $
+// $Id: Terminfo.pmod,v 1.16 2003/06/02 18:15:05 mast Exp $
 #pike __REAL_VERSION__
 
 
@@ -815,4 +815,33 @@ static object(Termcap) getFallbackTerm(string term)
 {
   return (term=="dumb"? Termcap("dumb:\\\n\t:am:co#80:do=^J:") :
 	  getTerm("dumb"));
+}
+
+static int is_tty_cache;
+
+int is_tty()
+//! Returns 1 if @[Stdio.stdin] is connected to an interactive
+//! terminal that can handle backspacing, carriage return without
+//! linefeed, and the like.
+{
+  if(!is_tty_cache)
+  {
+#ifdef __NT__
+    is_tty_cache=1;
+#else
+    is_tty_cache=!!Stdio.stdin->tcgetattr();
+#endif
+    if(!is_tty_cache)
+    {
+      is_tty_cache=-1;
+    }else{
+      switch(getenv("TERM"))
+      {
+        case "dumb":
+        case "emacs":
+          is_tty_cache=-1;
+      }
+    }
+  }
+  return is_tty_cache>0;
 }

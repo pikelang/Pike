@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.84 2003/06/01 21:30:06 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.85 2003/06/02 18:15:05 mast Exp $ */
 
 import Stdio;
 
@@ -18,30 +18,7 @@ int foo(string opt)
   return (int)opt;
 }
 
-int istty_cache;
-int istty()
-{
-  if(!istty_cache)
-  {
-#ifdef __NT__
-    istty_cache=1;
-#else
-    istty_cache=!!Stdio.stdin->tcgetattr();
-#endif
-    if(!istty_cache)
-    {
-      istty_cache=-1;
-    }else{
-      switch(getenv("TERM"))
-      {
-	case "dumb":
-	case "emacs":
-	  istty_cache=-1;
-      }
-    }
-  }
-  return istty_cache>0;
-}
+int maybe_tty = 1;
 
 mapping(string:int) cond_cache=([]);
 
@@ -295,7 +272,7 @@ int main(int argc, array(string) argv)
 	  break;
 	
 	case "notty":
-	  istty_cache=-1;
+	  maybe_tty = 0;
 	  break;
 
 	case "help":
@@ -471,7 +448,7 @@ int main(int argc, array(string) argv)
 	}
 
 	string pad_on_error = "\n";
-	if(istty())
+	if(maybe_tty && Terminfo.is_tty())
         {
 	  if(verbose<2) {
 	    werror("test %d, line %d\r", e+1, testline);
@@ -831,7 +808,7 @@ int main(int argc, array(string) argv)
 	a=b=0;
       }
 
-      if(istty())
+      if(maybe_tty && Terminfo.is_tty())
       {
 	werror("                                        \r");
       }
