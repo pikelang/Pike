@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.16 2002/06/28 17:29:41 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.17 2002/07/14 23:24:33 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -28,6 +28,9 @@
   </file>
   <file>
     <chapter-ref file="chapters/special_functions.xml"/>
+  </file>
+  <file>
+    <chapter-ref file="chapters/hilfe.xml"/>
   </file>
   <file>
     <chapter title="LFUN">
