@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.108 2000/03/26 15:11:34 mast Exp $
+ * $Id: master.pike.in,v 1.109 2000/03/27 01:17:23 per Exp $
  * 
  * Master-file for Pike.
  *
@@ -1157,11 +1157,7 @@ string trim_file_name(string s)
 void compile_error(string file,int line,string err)
 {
   mixed val;
-  if(! (val = inhibit_compile_errors
-#if constant(thread_local)
-	->get()
-#endif /* constant(thread_local) */
-	))
+  if(! (val = get_inhibit_compile_errors() ))
   {
     werror(sprintf("%s:%s:%s\n",trim_file_name(file),
 		   line?(string)line:"-",err));
@@ -1173,7 +1169,7 @@ void compile_error(string file,int line,string err)
     if (objectp(val) && val->compile_error) {
       val->compile_error(file, line, err);
     } else {
-      inhibit_compile_errors(file, line, err);
+      val(file, line, err);
     }
   }
 }
@@ -1188,11 +1184,7 @@ void compile_warning(string file,int line,string err)
 {
   mixed val;
 
-  if(!(val = inhibit_compile_errors
-#if constant(thread_local)
-       ->get()
-#endif /* constant(thread_local) */
-       ))
+  if(!(val = get_inhibit_compile_errors() ))
   {
     if(want_warnings)
       werror(sprintf("%s:%s: Warning: %s\n",trim_file_name(file),
