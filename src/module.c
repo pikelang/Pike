@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.31 2004/12/29 10:08:15 grubba Exp $
+|| $Id: module.c,v 1.32 2004/12/29 10:16:15 grubba Exp $
 */
 
 #include "global.h"
@@ -19,6 +19,12 @@
 #include "program_id.h"
 #include "lex.h"
 #include "pike_security.h"
+#include "cpp.h"
+#include "backend.h"
+#include "threads.h"
+#include "operators.h"
+#include "signal_handler.h"
+#include "dynamic_load.h"
 
 #include "modules/modlist_headers.h"
 #include "post_modules/modlist_headers.h"
