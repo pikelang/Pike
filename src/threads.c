@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.119 2000/11/06 17:05:00 grubba Exp $");
+RCSID("$Id: threads.c,v 1.120 2001/10/22 23:54:43 mast Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -555,7 +555,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   JMP_BUF back;
   INT32 tmp;
 
-  THREADS_FPRINTF(0, (stderr,"THREADS_DISALLOW() Thread %08x created...\n",
+  THREADS_FPRINTF(0, (stderr,"new_thread_func(): Thread %08x created...\n",
 		      (unsigned int)arg.id));
   
   if((tmp=mt_lock( & interpreter_lock)))
@@ -566,6 +566,13 @@ TH_RETURN_TYPE new_thread_func(void * data)
 	  errno
 #endif
 	  );
+
+  while (threads_disabled) {
+    THREADS_FPRINTF(1, (stderr,
+			"new_thread_func(): Threads disabled\n"));
+    co_wait(&threads_disabled_change, &interpreter_lock);
+  }
+
   init_interpreter();
   thread_id=arg.id;
   stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION;
@@ -804,6 +811,11 @@ void f_mutex_lock(INT32 args)
     {
       THREADS_FPRINTF(1, (stderr,"WAITING TO LOCK m:%08x\n",(unsigned int)m));
       co_wait(& m->condition, & interpreter_lock);
+      while (threads_disabled) {
+	THREADS_FPRINTF(1, (stderr,
+			    "f_mutex_lock(): Threads disabled\n"));
+	co_wait(&threads_disabled_change, &interpreter_lock);
+      }
     }while(m->key);
     SWAP_IN_CURRENT_THREAD();
   }
@@ -972,8 +984,14 @@ void f_cond_wait(INT32 args)
       co_wait(c, &interpreter_lock);
     
       /* Lock mutex */
-      while(mut->key)
+      while(mut->key) {
 	co_wait(& mut->condition, &interpreter_lock);
+	while (threads_disabled) {
+	  THREADS_FPRINTF(1, (stderr,
+			      "f_cond_wait(): Threads disabled\n"));
+	  co_wait(&threads_disabled_change, &interpreter_lock);
+	}
+      }
       mut->key=key;
       OB2KEY(key)->mut=mut;
       
@@ -985,6 +1003,11 @@ void f_cond_wait(INT32 args)
 
   SWAP_OUT_CURRENT_THREAD();
   co_wait(c, &interpreter_lock);
+  while (threads_disabled) {
+    THREADS_FPRINTF(1, (stderr,
+			"f_cond_wait(): Threads disabled\n"));
+    co_wait(&threads_disabled_change, &interpreter_lock);
+  }
   SWAP_IN_CURRENT_THREAD();
 
   pop_n_elems(args);
@@ -1039,8 +1062,14 @@ static void f_thread_id_result(INT32 args)
 
   SWAP_OUT_CURRENT_THREAD();
 
-  while(th->status != THREAD_EXITED)
+  while(th->status != THREAD_EXITED) {
     co_wait(&th->status_change, &interpreter_lock);
+    while (threads_disabled) {
+      THREADS_FPRINTF(1, (stderr,
+			  "f_thread_id_result(): Threads disabled\n"));
+      co_wait(&threads_disabled_change, &interpreter_lock);
+    }
+  }
 
   SWAP_IN_CURRENT_THREAD();
 
@@ -1234,7 +1263,7 @@ void low_th_init(void)
   us_cookie = usinit("");
 #endif /* SGI_SPROC_THREADS */
 
-  THREADS_FPRINTF(0, (stderr, "THREADS_DISALLOW() Initializing threads.\n"));
+  THREADS_FPRINTF(0, (stderr, "low_th_init() Initializing threads.\n"));
 
 #ifdef POSIX_THREADS
 #ifdef HAVE_PTHREAD_INIT
