@@ -610,12 +610,6 @@ class Day
 	 y=1900+t->year;
 	 d=t->yday;
       }
-      else if (sizeof(arg)==1)
-      {
-	 mapping t=localtime(arg[0]);
-	 y=1900+t->year;
-	 d=t->yday;
-      }
       else
       {
 	 y=arg[0];
@@ -1172,6 +1166,12 @@ class Second
 	 mapping t=localtime(time());
 	 m=vMinute();
 	 s=t->sec;
+      }
+      else if (sizeof(arg)==1)
+      {
+	 mapping t=localtime(arg[0]);
+	 y=1900+t->year;
+	 d=t->yday;
       }
       else 
       {
