@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.338 2003/08/03 00:58:06 mast Exp $
+|| $Id: las.c,v 1.339 2003/08/03 02:42:03 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.338 2003/08/03 00:58:06 mast Exp $");
+RCSID("$Id: las.c,v 1.339 2003/08/03 02:42:03 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -5402,6 +5402,7 @@ ptrdiff_t eval_low(node *n,int print_error)
   size_t jump;
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t ret;
+  struct program *prog = Pike_compiler->new_program;
 #ifdef PIKE_USE_MACHINE_CODE
   size_t num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
@@ -5416,10 +5417,10 @@ ptrdiff_t eval_low(node *n,int print_error)
 
   if(Pike_compiler->num_parse_error) return -1; 
 
-  num_strings=Pike_compiler->new_program->num_strings;
-  num_constants=Pike_compiler->new_program->num_constants;
+  num_strings=prog->num_strings;
+  num_constants=prog->num_constants;
 #ifdef PIKE_USE_MACHINE_CODE
-  num_relocations = Pike_compiler->new_program->num_relocations;
+  num_relocations = prog->num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
 
   jump = PIKE_PC;
@@ -5443,7 +5444,7 @@ ptrdiff_t eval_low(node *n,int print_error)
     foo.counter=10000;
     foo.yes=0;
 
-    make_program_executable(Pike_compiler->new_program);
+    make_program_executable(prog);
 
     tmp_callback=add_to_callback(&evaluator_callbacks,
 				 check_evaluation_time,
@@ -5486,19 +5487,19 @@ ptrdiff_t eval_low(node *n,int print_error)
     remove_callback(tmp_callback);
   }
 
-  while(Pike_compiler->new_program->num_strings > num_strings)
+  while(prog->num_strings > num_strings)
   {
-    Pike_compiler->new_program->num_strings--;
-    free_string(Pike_compiler->new_program->strings[Pike_compiler->new_program->num_strings]);
+    prog->num_strings--;
+    free_string(prog->strings[prog->num_strings]);
   }
 
-  while(Pike_compiler->new_program->num_constants > num_constants)
+  while(prog->num_constants > num_constants)
   {
     struct program_constant *p_const;
 
-    Pike_compiler->new_program->num_constants--;
+    prog->num_constants--;
 
-    p_const = Pike_compiler->new_program->constants + Pike_compiler->new_program->num_constants;
+    p_const = prog->constants + prog->num_constants;
 
     free_svalue(&p_const->sval);
     if (p_const->name) {
@@ -5508,17 +5509,16 @@ ptrdiff_t eval_low(node *n,int print_error)
   }
 
 #ifdef PIKE_USE_MACHINE_CODE
-  Pike_compiler->new_program->num_relocations = num_relocations;
+  prog->num_relocations = num_relocations;
 
 #ifdef VALGRIND_DISCARD_TRANSLATIONS
   /* We won't use this machine code any more... */
-  VALGRIND_DISCARD_TRANSLATIONS(Pike_compiler->new_program->program + jump,
-				(Pike_compiler->new_program->
-				 num_program - jump)*sizeof(PIKE_OPCODE_T));
+  VALGRIND_DISCARD_TRANSLATIONS(prog->program + jump,
+				(prog->num_program - jump)*sizeof(PIKE_OPCODE_T));
 #endif /* VALGRIND_DISCARD_TRANSLATIONS */
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  Pike_compiler->new_program->num_program=jump;
+  prog->num_program=jump;
 
   return ret;
 }
