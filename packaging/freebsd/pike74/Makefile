@@ -17,7 +17,9 @@ MASTER_SITES=	ftp://pike.ida.liu.se/pub/pike/all/${PORTVERSION}/ \
 		http://grendel.firewall.com/caudium-pkg/ 
 DISTNAME=	Pike-v${PORTVERSION}
 
-MAINTAINER=	kiwi@caudium.net
+MAINTAINER=	kiwi@oav.net
+
+MAN1=		pike.1
 
 BUILD_DEPENDS=	bison:${PORTSDIR}/devel/bison/
 .if (${MACHINE} == "i386")
@@ -327,11 +329,13 @@ pre-configure:
 post-install:
 	${INSTALL_PROGRAM} ${WRKSRC}pike ${PREFIX}/bin
 	${INSTALL_SCRIPT} ${WRKSRC}hilfe ${PREFIX}/bin
+	${INSTALL_MAN} ${WRKSRC}../man/pike.1 ${MAN1PREFIX}/man/man1
 
 verify:
 	@(cd ${WRKSRC}; make verify)
 
-doc:
-	@(cd ${WRKSRC}; make documentation)
+# Autodocs is currently b0rken.... :/
+#doc:
+#	@(cd ${WRKSRC}; make documentation)
 
 .include <bsd.port.post.mk>
