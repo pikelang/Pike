@@ -1,26 +1,29 @@
-This document describes the keywords recognized by the AutoDoc parser, and their
-intended use.
+This document describes the keywords recognized by the AutoDoc parser,
+and their intended use.
 
-================================================================================
+===============================================================================
 
   META KEYWORDS
 
-================================================================================
+===============================================================================
 
 Keyword:      @appears
 Description:  Tell where the documentation for an item should be shown.
-              Gives the full new name of the item. Must be placed first in
-              the block, or immediately after any @module, @class, or @decl's.
+              Gives the full new name of the item. Must be placed
+              first in the block, or immediately after any @module,
+              @class, or @decl's.
 Arguments:    <name> [, type]
               Where:
-                <name> is an "absolute" name with identifiers separated by dots.
-                  It can also be prefixed by 'scope::' where scope is one of
-                  the valid scope modules.
-                [type] is either "class" or "module" depending on whether the
-                  target item should appear as a class or a module. When not
-                  present, the choice will be governed by the item's type, as
-                  detected by the extractor. Overriding this is only needed for
-                  odd special cases such as a module.pmod containing e g:
+                <name> is an "absolute" name with identifiers
+                  separated by dots. It can also be prefixed by
+                  'scope::' where scope is one of the valid scope
+                  modules.
+                [type] is either "class" or "module" depending on
+                  whether the target item should appear as a class or
+                  a module. When not present, the choice will be
+                  governed by the item's type, as detected by the
+                  extractor. Overriding this is only needed for odd
+                  special cases such as a module.pmod containing e g:
                     static class _Foo {...};
                     _Foo Foo = _Foo();
 Children:     -
@@ -31,54 +34,61 @@ Examples:     //! @appears predef::stat
                 // function body
               }
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @belongs
-Description:  Tell where the documentation for an item should be shown. Gives
-              the name of the new parent module or parent class.
+Description:  Tell where the documentation for an item should be
+              shown. Gives the name of the new parent module or parent
+              class.
 Arguments:    <name>
               Where:
-                <name> is an "absolute" name with identifiers separated by dots.
-                  It can also be prefixed by 'scope::' where scope is one of
-                  the valid scope modules.
+                <name> is an "absolute" name with identifiers
+                  separated by dots.  It can also be prefixed by
+                  'scope::' where scope is one of the valid scope
+                  modules.
 Children:     -
 Groups with:  -
 Examples:
               //! @decl int func()
               //! @belongs AnotherModule
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @class
-Description:  Declare and enter a new scope for a class. Only in C mode. Until
-              an @endclass is found, all declarations will be regarded as
-              children of the class.
+Description:  Declare and enter a new scope for a class. Only in C
+              mode. Until an @endclass is found, all declarations will
+              be regarded as children of the class.
+
 Arguments:    <name>
               Where:
-                <name> is a valid Pike identifier. Not the "absolute" name
-                  with dots.
+                <name> is a valid Pike identifier. Not the "absolute"
+                  name with dots.
+
 Children:     Documentation for the class, or empty.
 Groups with:  -
 Examples:
               /*! @class Arne
                *!  A class with a Swedish name. */
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @decl
-Description:  Declare a Pike entity and state that the current documentation
-              block "is about" that entity. If the documentation block is bound
-              to a Pike entity by adjacency (if it is a Pike file being
-              extracted), then @decl is allowed iff:
+
+Description:  Declare a Pike entity and state that the current
+              documentation block "is about" that entity. If the
+              documentation block is bound to a Pike entity by
+              adjacency (if it is a Pike file being extracted), then
+              @decl is allowed iff:
                 1. The Pike entity in the adjacent code is one method.
-                2. All @decl's in the block are methods with the same name as
-                   that method. (look at the last example below)
+                2. All @decl's in the block are methods with the same
+                   name as that method. (look at the last example
+                   below)
 Arguments:    <declaration>
               Where:
-                <declaration> is a valid Pike declaration. A trailing ";" is
-                  optional.
-Children:     Documentation for the entity. After all @decl's may follow one of
-              @appears or @belongs.
+                <declaration> is a valid Pike declaration. A trailing
+                  ";" is optional.
+Children:     Documentation for the entity. After all @decl's may follow
+              one of @appears or @belongs.
 Groups with:  @decl
 Examples:
               //! @decl void explode(string victim);
@@ -91,71 +101,73 @@ Examples:
               //!  This is how to document a "polymorph" function.
               float|int cube(float|int x) { /* body */ }
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @endclass
 Description:  Leave the class scope entered by @class.
 Arguments:    [name]
               Where:
-                [name] if present, must be the same as the argument to @class.
+                [name] if present, must be the same as the argument to
+                  @class.
 Children:
 Groups with:  -
 Examples:
               /*! @endclass Reinhold */
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @endmodule
 Description:  Leave the module scope entered by @module
 Arguments:    [name]
               Where:
-                [name] if present, must be the same as the argument to @module.
+                [name] if present, must be the same as the argument to
+                  @module.
 Children:     -
 Groups with:  -
 Examples:
               /*! @endmodule Roine */
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @endnamespace
-Description:  Leave the namespace entered by @namespace.
-	      Symbols defined outside a namespace will be defined in
-	      the default namespace "predef::".
+Description:  Leave the namespace entered by @namespace.  Symbols
+	      defined outside a namespace will be defined in the
+	      default namespace "predef::".
 Arguments:    [name]
               Where:
                 [name] if present, must be the same as the argument to
-		@namespace.
+		  @namespace.
 Children:     -
 Groups with:  -
 Examples:
               /*! @endnamespace lfun:: */
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @module
-Description:  Declare and enter a new scope for a module. Only in C mode. Until
-              an @endmodule is found, all declarations will be regarded as
-              children of the module.
+Description:  Declare and enter a new scope for a module. Only in C
+              mode. Until an @endmodule is found, all declarations
+              will be regarded as children of the module.
 Arguments:    <name>
               Where:
-                <name> is a valid Pike identifier. Not the "absolute" name
-                  with dots.
+                <name> is a valid Pike identifier. Not the "absolute"
+                  name with dots.
 Children:     Documentation for the module, or empty.
 Groups with:  -
 Examples:
               /*! @module Kenny
                *!  A module with a Norwegian name. */
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @namespace
 Description:  Declare and enter a new namespace. Only in C mode. Until
-              an @endnamespace is found, all declarations will be regarded
-	      as living in this namespace.
+              an @endnamespace is found, all declarations will be
+              regarded as living in this namespace.
 Arguments:    <name>[::]
               Where:
-                <name> is a valid Pike identifier. Not the "absolute" name
-                  with dots.
+                <name> is a valid Pike identifier. Not the "absolute"
+                  name with dots.
 Children:     Documentation for symbols in the namespace, or empty.
 Groups with:  -
 Examples:
@@ -163,33 +175,34 @@ Examples:
                *!   The operator callback API.
 	       */
 
-________________________________________________________________________________
-================================================================================
+_______________________________________________________________________________
+===============================================================================
 
   DELIMITER KEYWORDS AT THE TOP LEVEL
 
-================================================================================
+===============================================================================
 
 Keyword:      @bugs
-Description:  Document shortcomings of the current block module/class/function
+Description:  Document shortcomings of the current block
+              module/class/function
 Arguments:    -
 Children:     Text (with markup).
 Groups with:  -
 Examples:
               @bugs
-                Converted images with bigger size than 512x512 pixels will be
-                distorted in the corners.
+                Converted images with bigger size than 512x512 pixels
+                will be distorted in the corners.
 
 XML:          <bugs/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @deprecated
-Description:  Documents the fact that the entity is deprecated by one or
-              several other classes/modules/methods/variables.
+Description:  Documents the fact that the entity is deprecated by one
+              or several other classes/modules/methods/variables.
 Arguments:    [item_1 [, item_2 [, item_3 ... ]]]
                 Where:
-                  [item_n] is an "absolute" name pointing to a Pike entity. It
-                    may use the 'scope::' prefix.
+                  [item_n] is an "absolute" name pointing to a Pike
+                    entity. It may use the 'scope::' prefix.
 Children:     -
 Groups with:  @deprecated
 Examples:
@@ -201,7 +214,7 @@ XML:          `@deprecated Foo, Bar' =>
                 <name>Foo</name>
                 <name>Bar</name>
               </deprecated>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @example
 Description:  Example code for the documented item.
@@ -215,7 +228,7 @@ Examples:
                   exit(1);
 
 XML:          <example/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @fixme
 Description:  Note about something that needs fixing in the manual.
@@ -224,10 +237,10 @@ Children:     Text (with markup).
 Groups with:  -
 Examples:
               @fixme
-                The return values of this function is not correctly documented.
-
+                The return values of this function is not correctly
+                documented.
 XML:          <fixme/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @note
 Description:  Important information about the documented item.
@@ -236,11 +249,12 @@ Children:     Text (with markup).
 Groups with:  -
 Examples:
               @note
-                Do not call this function unless you know what you are doing.
-                No bounds/sanity checking on arguments is performed!
+                Do not call this function unless you know what you are
+                doing.  No bounds/sanity checking on arguments is
+                performed!
 
 XML:          <note/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @param
 Description:  Documentation for a method parameter. Only allowed when
@@ -259,23 +273,25 @@ Examples:
 
 XML:          `@param Foo' => 
               <param name="Foo"/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @returns
-Description:  Documentation for the return value of a method. The type of the
-              return value is deduced from the declaration.
+Description:  Documentation for the return value of a method. The type
+              of the return value is deduced from the declaration.
 Arguments:    -
 Children:     The doc.
 Groups with:  -
 Examples:
               @returns
-                The square root of the sum of the cubes of the inverse numbers.
+                The square root of the sum of the cubes of the inverse
+                numbers.
 
 XML:          <returns/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @seealso
-Description:  Refer to other stuff that is related to the entity in question.
+Description:  Refer to other stuff that is related to the entity in
+              question.
 Arguments:    -
 Children:     Text (with markup).
 Groups with:  -
@@ -283,11 +299,11 @@ Examples:     //! @seealso
               //!  @[calc_checksum_w()] is used for wide strings.
 
 XML:          <seealso/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @throws
-Description:  Describes the conditions for an exception to be thrown from the
-              function.
+Description:  Describes the conditions for an exception to be thrown
+              from the function.
 Arguments:    -
 Children:     Text (with markup).
 Groups with:  -
@@ -295,12 +311,12 @@ Examples:     //! @throws
               //!   Throws an exception if the file could not be created.
 
 XML:          <throws/>
-________________________________________________________________________________
-================================================================================
+_______________________________________________________________________________
+===============================================================================
 
   TEXT MARKUP KEYWORDS
 
-================================================================================
+===============================================================================
 
 Keyword:      @array - @endarray
 Description:  Documentation of the layout of an array.
@@ -314,7 +330,7 @@ Examples:     @array
 
 XML:          `@array Foo' =>
               <array name="Foo">
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @b{ ... @}
 Description:  Bold.
@@ -322,7 +338,7 @@ Children:     Text that will be rendered in bold.
 Examples:     You really look @b{bold@}! - You mean @b{bald@}, don't you?
 
 XML:          <b>...</b>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @code{ ... @}
 Description:  Encapsulates a code block.
@@ -335,7 +351,7 @@ Examples:     @code{
               @}
 
 XML:          <code>...</code>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @dl - @enddl
 Description:  Render a definition list.
@@ -350,11 +366,11 @@ Examples:     @dl
               @enddl
 
 XML:          <dl>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @elem
-Description:  Documentation for an array element or a range of array elements.
-              Only inside @array - @endarray.
+Description:  Documentation for an array element or a range of array
+              elements. Only inside @array - @endarray.
 Arguments:    <type> <index range>
               Where:
                 <type> is the Pike type of the element at the index.
@@ -381,15 +397,16 @@ XML:          `@elem string 1..2' =>
                 <minindex>1</minindex>
                 <maxindex>2</maxindex>
               </elem>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @i{ ... @}
 Description:  Italics.
 Children:     Text that will be rendered in italics.
-Examples:     You really look @i{italic@}! - You mean @i{Italian@}, don't you?
+Examples:     You really look @i{italic@}! - You mean @i{Italian@},
+              don't you?
 
 XML:          <i>...</i>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @image{ ... @}
 Description:  Insert the specified image.
@@ -397,10 +414,11 @@ Children:     The filename of the image file.
 Examples:     @image{chart2.png@}
 
 XML:          <image>...</image>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @int - @endint
-Description:  Documentation of the different values an integer may have.
+Description:  Documentation of the different values an integer may
+              have.
 Arguments:    [name]
 Children:     @value
 Examples:     @int
@@ -416,7 +434,7 @@ Examples:     @int
                   Do something else.
               @endit
 
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @item
 Description:  A definition term inside @dl
@@ -428,7 +446,7 @@ Groups with:  @item
 Examples:
 
 XML:          <item name="..."/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @mapping - @endmapping
 Description:  Documentation of the layout of a mapping.
@@ -442,7 +460,7 @@ Examples:     @mapping
               @endmapping
 
 XML:          <mapping name="..."/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @member
 Description:  Documentation for a member of a mapping.
@@ -463,7 +481,7 @@ XML:          `@member float "foo"' =>
                 <type><float/></type>
                 <index>"foo"</index>
               </member>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @multiset - @endmultiset
 Description:  Documentation of the layout of a multiset.
@@ -477,24 +495,25 @@ Examples:     @multiset
               @endmultiset
 
 XML:          <multiset name="..."/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @index
 Description:  Documentation for a index in a multiset.
               Only inside @multiset - @endmultiset.
 Arguments:    <index_value>
               Where:
-                <index_value> is the index value. Can be a string or integer
-                  literal, or an identifier.
+                <index_value> is the index value. Can be a string or
+                  integer literal, or an identifier.
 Children:     -
 Groups with:  -
 Examples:     @index "cat"
               @index "dog"
-                If present, these symbols signifies that it is raining animals.
+                If present, these symbols signifies that it is raining
+                animals.
 
 XML:          `@index "foo"' =>
                 <index>"foo"</index>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @ol - @endol
 Description:  Creates an ordered list.
@@ -510,7 +529,7 @@ Examples:     @ol
               @endol
 
 XML:          <ol>...</ol>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @pre{ ... @}
 Description:  Preformatted text.
@@ -522,18 +541,20 @@ Examples:     @pre{
               @}
 
 XML:          <pre>...</pre>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @ref{ ... @}
-Description:  A reference to a Pike entity. There is also a shortcut for this
-              keyword, since it is expected to be so common: @[ ... ]
+Description:  A reference to a Pike entity. There is also a shortcut
+              for this keyword, since it is expected to be so common:
+              @[ ... ]
 Children:     Text that will be interpreted as a Pike name.
 Groups with:  -
-Examples:     My favourite class is @ref{Vanilla.Ice.Cream@}, it tastes much
-              better than @[Nougat.Glass] or @[`+].
+
+Examples:     My favourite class is @ref{Vanilla.Ice.Cream@}, it
+              tastes much better than @[Nougat.Glass] or @[`+].
 
 XML:          <ref>...</ref>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @section - @endsection
 Description:  Begin a new section in the text.
@@ -551,7 +572,7 @@ Examples:
               @endsection
 
 XML:          <section name=" ... ">
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @string - @endstring
 Description:  Documentation of the layout of a mapping.
@@ -565,7 +586,7 @@ Examples:     @string
               @endstring
 
 XML:          <string name=" ... "/>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @tt{ ... @}
 Description:  Teletype.
@@ -573,7 +594,7 @@ Children:     Text that will be rendered in teletype.
 Examples:     Type @tt{rm -rf *@} to erase several days of work.
 
 XML:          <tt> ... </tt>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @ul - @endul
 Description:  Creates an unordered list.
@@ -589,30 +610,31 @@ Examples:     @ul
               @endul
 
 XML:          <ul>...</ul>
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @url{ ... @}
 Children:     Text with markup.
 Note:         Might be deprecated, since it isn't used...
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @xml{ ... @}
-Description:  XML escape. Inside this tag the characters <>& are not quoted and
-              this makes it possible to insert raw XML. Note that the usual
-              rules apply to @ and that @i{...@}-style tags can be used inside.
+Description:  XML escape. Inside this tag the characters <>& are not
+              quoted and this makes it possible to insert raw
+              XML. Note that the usual rules apply to @ and that
+              @i{...@}-style tags can be used inside.
 Children:     Text with markup.
 Examples:     @xml{<b>Bold</b> and @i{italic@}@}
 
 XML:          No representation.
-________________________________________________________________________________
+_______________________________________________________________________________
 
 Keyword:      @ignore - @endignore
-Description:  Ignores the block of code enclosed between the two keywords. Useful
-              for code that the AutoDoc parser cannot understand.
+Description:  Ignores the block of code enclosed between the two
+              keywords. Useful for code that the AutoDoc parser cannot
+              understand.
 Children:     -
 Examples:     @ignore
                 array PROXY(_indices, ::_indices());
                 array PROXY(_values, ::_values());
               @endignore
-________________________________________________________________________________
-
+_______________________________________________________________________________
