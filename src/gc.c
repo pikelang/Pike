@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.251 2004/04/06 15:37:55 nilsson Exp $
+|| $Id: gc.c,v 1.252 2004/04/17 23:35:53 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.251 2004/04/06 15:37:55 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.252 2004/04/17 23:35:53 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -788,7 +788,7 @@ again:
 		  indent,"");
       }
 
-      if (p) {
+      if (((struct object *) a)->refs > 0 && p) {
 	size_t inh_idx, var_idx, var_count = 0;
 
 	fprintf (stderr, "%*s**Object variables:\n", indent, "");
@@ -892,7 +892,7 @@ again:
 	free (tmp);
       }
 
-      if (!(flags & DESCRIBE_SHORT)) {
+      if (!(flags & DESCRIBE_SHORT) && p->refs > 0) {
 	fprintf (stderr, "%*s**Identifiers:\n", indent, "");
 
 	for (id_idx = 0; id_idx < p->num_identifier_references; id_idx++) {
@@ -1021,11 +1021,13 @@ again:
     }
 
     case T_MULTISET:
-      debug_dump_multiset((struct multiset *) a);
+      if (((struct multiset *) a)->refs > 0)
+	debug_dump_multiset((struct multiset *) a);
       break;
 
     case T_ARRAY:
-      debug_dump_array((struct array *)a);
+      if (((struct array *) a)->refs > 0)
+	debug_dump_array((struct array *)a);
       break;
 
     case T_MAPPING_DATA:
@@ -1047,7 +1049,8 @@ again:
     }
     
     case T_MAPPING:
-      debug_dump_mapping((struct mapping *)a);
+      if (((struct mapping *) a)->refs > 0)
+	debug_dump_mapping((struct mapping *)a);
       break;
 
     case T_STRING:
@@ -1055,7 +1058,7 @@ again:
       struct pike_string *s=(struct pike_string *)a;
       fprintf(stderr,"%*s**size_shift: %d, len: %"PRINTPTRDIFFT"d, hash: %"PRINTSIZET"x\n",
 	      indent,"", s->len, s->size_shift, s->hval);
-      if (!s->size_shift) {
+      if (!s->size_shift && s->refs > 0) {
 	if(s->len>77)
 	{
 	  fprintf(stderr,"%*s** \"%60s\"...\n",indent,"",s->str);
@@ -1069,6 +1072,7 @@ again:
     case T_PIKE_FRAME: {
       struct pike_frame *f = (struct pike_frame *) a;
       do {
+	if (f->refs <= 0) break;
 	if (f->current_object) {
 	  struct program *p = f->current_object->prog;
 	  if (p) {
