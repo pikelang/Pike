@@ -3,6 +3,8 @@ AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
+MODULE_PMOD_IN=module.pmod.in
+
 OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
@@ -46,8 +48,10 @@ if test "x$with_java" = xyes; then
   AC_CACHE_VAL(pike_cv_java_arch, [
     if test "x$pike_cv_java_sysos" = xwindows_nt; then
       uname=uname
-    else
+    elif test -f "/usr/bin/uname"; then
       uname=/usr/bin/uname
+    else
+      uname=/bin/uname
     fi
     if test aix = "$pike_cv_java_sysos" && aix_cputype=`/usr/sbin/lsattr -El proc0 | awk '$1=="type" { print $2; ok=1; exit } END { exit !ok }'`; then
       case "$aix_cputype" in
@@ -56,15 +60,17 @@ if test "x$with_java" = xyes; then
 	*) pike_cv_java_arch="`echo $aix_cputype | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`";;
       esac
     else
-      if pike_cv_java_arch="`$uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
+      if pike_cv_java_arch="`$uname -p || uname -p 2>/dev/null`"; then :;
+      else pike_cv_java_arch=no; fi
     fi
 
     dnl Linux kluge
 
     if test x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xunknown:linux -o \
 	    x"$pike_cv_java_arch":"$pike_cv_java_sysos" = xno:linux; then
-      [pike_cv_java_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
+      pike_cv_java_arch="`uname -m`"
     fi
+    pike_cv_java_arch="`echo $pike_cv_java_arch|sed -e 's/^i[[4-9]]86/i386/'`"
   ])
   AC_MSG_RESULT($pike_cv_java_arch)
 
@@ -112,23 +118,21 @@ if test "x$with_java" = xyes; then
 
   AC_MSG_CHECKING(for JAVA_HOME)
 
-  AC_CACHE_VAL(pike_cv_java_java_home, [[
+  changequote({,})AC_CACHE_VAL(pike_cv_java_java_home, {
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
 
-      # balance brackets: [ 
-      #
-      # I know this is bloody ugly, bug in modern (>2.13) 
-      # autoconf's changequote doesn't work (and this is 
-      # the only thing that breaks so far) /Mirar
-
-      java_home_guess="`java -verbose 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e d | sed -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
+      java_home_guess="`java -verbose fnord.fnord.fnord 2>&1 | sed -e 's:^\[[^]/]*\(/.*\)/[^/]*\.jar[] ].*$:\1:' -e t -e 's:^\[[^]/]*\(/.*\)/[^/]*\.zip[] ].*$:\1:' -e t -e d | sed -e 's:^.* from /:/:' -e 's:/[Cc]lasses$::' -e 's:/lib$::' -e 1q`"
       for tmp_java_home in /usr/java /usr/local/java /usr/local/jdk* /usr/java*/jre /usr/java/jdk*/jre /usr/local/java*/jre /usr/local/jdk*/jre /usr/local/jre* /usr/local/j2sdk*/jre /usr/local/j2re* "$java_home_guess" "$pike_java_user_lib_directory"/..; do
         if test -d $tmp_java_home/.; then
           if "$LS" "$tmp_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type"/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/classic/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/bin"/classic/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/client/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/bin"/client/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/lib/$pike_cv_java_arch"/server/libjvm* >/dev/null 2>&1 || \
+	    "$LS" "$tmp_java_home/bin"/server/libjvm* >/dev/null 2>&1 || \
 	    "$LS" "$tmp_java_home/Libraries"/libjvm* >/dev/null 2>&1; then
 	      pike_cv_java_java_home="$tmp_java_home"
 	  else
@@ -145,7 +149,7 @@ if test "x$with_java" = xyes; then
         pike_cv_java_java_home="$JAVA_HOME"
       fi
     fi
-  ]])
+  })changequote([,])
   AC_MSG_RESULT($pike_cv_java_java_home)
 
   AC_MSG_CHECKING(for Java libraries)
@@ -158,7 +162,9 @@ if test "x$with_java" = xyes; then
     fi
     for i in "$pike_cv_java_arch/$pike_cv_java_threads_type" \
              "$pike_cv_java_arch/classic" "$pike_cv_java_arch" \
-	     "." "../bin" "../bin/classic"; do
+	     "." "../bin" "../bin/classic" \
+	     "$pike_cv_java_arch/server" "../bin/server" \
+	     "$pike_cv_java_arch/client" "../bin/client" ; do
       if test -d "$tmp_java_lib_dir/$i/." && "$LS" $tmp_java_lib_dir/$i/lib* >/dev/null 2>&1; then
         pike_cv_java_lib_dir="$pike_cv_java_lib_dir$tmp_java_lib_dir/$i "
       else
@@ -312,6 +318,10 @@ if test "x$with_java" = xyes; then
 	LINKER_OPTIONS="${LINKER_OPTIONS} -lthread"
       ], [])
 
+      # Java/AIX has this. For debug...
+      AC_CHECK_LIB(java, ibmFindDLL, [
+        AC_DEFINE(HAVE_IBMFINDDLL)
+      ])
     else
       :
     fi
@@ -376,6 +386,13 @@ if test "x$with_java" = xyes; then
 	  }
 	  if(!setjmp(jbuf))
 	    longjmp(jbuf,1);
+#ifdef HAVE_IBMFINDDLL
+	  {
+	    /* Debug... */
+	    extern char *ibmFindDLL(void);
+	    fprintf(stderr, "ibmFindDLL: \"%s\"\n", ibmFindDLL());
+	  }
+#endif
 	  return 0;
         };
       ], [pike_cv_java_working=yes], [pike_cv_java_working=no])
