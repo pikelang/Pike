@@ -197,6 +197,10 @@ static void perlmod_create(INT32 args)
     int env_block_size=0;
     char *env_blockp;
 
+#ifdef DECLARE_ENVIRON
+    extern char **environ;
+#endif
+
     for(d=0;environ[d];d++)
       env_block_size+=strlen(environ[d])+1;
 
@@ -208,7 +212,7 @@ static void perlmod_create(INT32 args)
     for(d=0;environ[d];d++)
     {
       int l=strlen(environ[d]);
-      THIS->env[d++]=env_blockp;
+      THIS->env[d]=env_blockp;
       MEMCPY(env_blockp,environ[d],l+1);
       env_blockp+=l+1;
     }
