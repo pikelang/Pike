@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.47 2002/04/08 21:46:08 mikael%unix.pp.se Exp $ */
+/* $Id: export.pike,v 1.48 2002/04/13 16:57:23 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -109,7 +109,7 @@ void bump_version()
 array(string) build_file_list(string vpath, string list_file)
 {
   array(string) ret=({ });
-  foreach(Stdio.FILE(list_file)->line_iterator(1);;mixed line)
+  foreach(Stdio.FILE(list_file)->line_iterator(1);; string line)
     {
       werror("%O\n",line);
       string name=vpath+line;
@@ -121,6 +121,17 @@ array(string) build_file_list(string vpath, string list_file)
   return ret;
 }  
 
+constant stamp=#"Pike export stamp
+major:%maj
+minor:%min
+build:%bld
+year:%Y
+month:%M
+day:%D
+hour:%h
+minute:%m
+second:%s
+";
 
 string pike_base_name;
 string srcdir;
@@ -231,7 +242,9 @@ int main(int argc, array(string) argv)
 
   symlink(".", vpath);
 
-  files=build_file_list(vpath,export_list);
+  files = build_file_list(vpath,export_list);
+  Stdio.write_file("export.stamp", replace(stamp, symbols));
+  files += ({ vpath+"/export.stamp" });
 
   werror("Creating "+vpath+".tar.gz:\n");
 
@@ -265,6 +278,7 @@ int main(int argc, array(string) argv)
     }
 
   rm(vpath);
+  rm("export.stamp");
   werror("Done.\n");
 
   if(cvs && tag)
@@ -277,15 +291,19 @@ int main(int argc, array(string) argv)
 }
 
 constant documentation = #"
-Usage: export.pike --srcdir=<src> --name=<filename> 
-                   --exportlist=<exportlistfile> <except modules>
+Usage: export.pike <arguments> <except modules>
 
-Creates a pike distribution. Optional arguments:
+Creates a pike distribution. Needs one tar and one gzip binary int the path.
+Mandatory arguments:
 
- rebuild    not implemented
- tag        bump the version and tag the tree
- name       name of exported file (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
+ name       Name of export archive (%maj, %min, %bld, %Y, %M, %D, %h, %m, %s
             are replaced with apropiate values).
- exportlist file with list of files and directories to export.
- help       show this text
+ exportlist A file which lists all the files and directories to be exported.
+ srcdir     The path to the source directory.
+
+Optional arguments:
+
+ rebuild    Not implemented.
+ tag        Bump the Pike build version and tag the CVS tree.
+ help       Show this text.
 ";
