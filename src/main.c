@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.30 1998/07/11 18:11:46 grubba Exp $");
+RCSID("$Id: main.c,v 1.31 1998/07/11 18:22:11 grubba Exp $");
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -262,6 +262,10 @@ int dbm_main(int argc, char **argv, char **env)
 
   push_int(0);
   f_exit(1);
+
+  /* NOT_REACHED */
+
+  return(1);	/* Keep compiler happy */
 }
 
 
