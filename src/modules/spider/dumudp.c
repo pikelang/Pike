@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.11 1997/08/21 13:59:25 per Exp $");
+RCSID("$Id: dumudp.c,v 1.12 1997/08/26 11:09:40 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -158,7 +158,9 @@ void udp_read(INT32 args)
      case EIO:
       error("I/O error\n");
      case ENOMEM:
+#ifdef ENOSR
      case ENOSR:
+#endif /* ENOSR */
       error("Out of memory\n");
      case ENOTSOCK:
       fatal("reading from non-socket fd!!!\n");
@@ -225,7 +227,9 @@ void udp_sendto(INT32 args)
      case EBADF:
       error("Socket closed\n");
      case ENOMEM:
+#ifdef ENOSR
      case ENOSR:
+#endif /* ENOSR */
       error("Out of memory\n");
      case EINVAL:
      case ENOTSOCK:
