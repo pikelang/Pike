@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.309 2003/07/18 09:58:42 grubba Exp $
+|| $Id: interpret.c,v 1.310 2003/07/30 18:51:15 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.309 2003/07/18 09:58:42 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.310 2003/07/30 18:51:15 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1516,16 +1516,20 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     break;
   }
 
-  call_lfun:
+  call_lfun: {
+    int lfun;
 #ifdef PIKE_DEBUG
     if(fun < 0 || fun >= NUM_LFUNS)
       Pike_fatal("Apply lfun on illegal value!\n");
 #endif
     if(!o->prog)
       PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
-    fun = FIND_LFUN(o->prog, fun);
+    lfun = FIND_LFUN(o->prog, fun);
+    if (lfun < 0)
+      Pike_error ("Cannot call undefined lfun %s.\n", lfun_names[fun]);
+    fun = lfun;
     goto apply_low;
-  
+  }
 
   case APPLY_LOW:
     o = (struct object *)arg1;
@@ -2043,12 +2047,23 @@ PMOD_EXPORT void apply_shared(struct object *o,
 		  struct pike_string *fun,
 		  int args)
 {
-  apply_low(o, find_shared_string_identifier(fun, o->prog), args);
+  int id = find_shared_string_identifier(fun, o->prog);
+  if (id >= 0)
+    apply_low(o, id, args);
+  else
+    if (fun->size_shift)
+      Pike_error ("Cannot call unknown function.\n");
+    else
+      Pike_error ("Cannot call unknown function \"%s\".\n", fun->str);
 }
 
 PMOD_EXPORT void apply(struct object *o, const char *fun, int args)
 {
-  apply_low(o, find_identifier(fun, o->prog), args);
+  int id = find_identifier(fun, o->prog);
+  if (id >= 0)
+    apply_low(o, id, args);
+  else
+    Pike_error ("Cannot call unknown function \"%s\".\n", fun);
 }
 
 
