@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.202 2004/06/22 13:08:17 grubba Exp $
+// $Id: module.pmod,v 1.203 2004/06/23 10:58:03 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -2068,9 +2068,9 @@ int exist(string path)
   // NOTE: file_stat() may fail with eg EFBIG if the file exists,
   //       but the filesystem, doesn't support the file size.
   return !!file_stat(path) || !(<
-#ifdef __NT__
+#if constant(System.WSAENOTSUPP)
     System.WSAENOTSUPP,
-#endif /* __NT__ */
+#endif /* constant(System.WSAENOTSUPP) */
     System.ENOENT,
   >)[errno()];
 }
