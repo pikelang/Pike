@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.390 2001/07/02 20:09:16 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.391 2001/07/05 00:09:41 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6245,10 +6245,24 @@ PMOD_EXPORT void f__describe(INT32 args)
   struct svalue *s;
 
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
-			  ("_optimizer_debug: permission denied.\n"));
+			  ("_describe: permission denied.\n"));
   get_all_args("_describe", args, "%*", &s);
   debug_describe_svalue(debug_malloc_pass(s));
   pop_n_elems(args-1);
+}
+
+/*! @decl void _gc_set_watch(array|multiset|mapping|object|function|program|string x)
+ */
+PMOD_EXPORT void f__gc_set_watch(INT32 args)
+{
+  CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
+			  ("_gc_set_watch: permission denied.\n"));
+  if (args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("_gc_set_watch", 1);
+  if (Pike_sp[-args].type > MAX_REF_TYPE)
+    SIMPLE_BAD_ARG_ERROR("_gc_set_watch", 1, "reference type");
+  gc_watch(Pike_sp[-args].u.refs);
+  pop_n_elems(args);
 }
 
 #endif
@@ -7799,6 +7813,8 @@ void init_builtin_efuns(void)
 	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
   ADD_EFUN("_describe",f__describe,
 	   tFunc(tSetvar(1,tMix),tVar(1)),OPT_SIDE_EFFECT);
+  ADD_EFUN("_gc_set_watch", f__gc_set_watch,
+	   tFunc(tComplex,tVoid), OPT_SIDE_EFFECT);
 #endif
 
   ADD_EFUN("_gc_status",f__gc_status,

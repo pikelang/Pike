@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.165 2001/07/02 01:02:56 mast Exp $");
+RCSID("$Id: gc.c,v 1.166 2001/07/05 00:09:41 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -198,6 +198,7 @@ struct callback *debug_add_gc_callback(callback_func call,
   return add_to_callback(&gc_callbacks, call, arg, free_func);
 }
 
+static void init_gc(void);
 static void gc_cycle_pop(void *a);
 
 
@@ -239,6 +240,8 @@ static unsigned gc_extra_refs = 0;
 
 static unsigned max_tot_gc_frames = 0;
 static unsigned tot_cycle_checked = 0, tot_live_rec = 0, tot_frame_rot = 0;
+
+static int gc_is_watching = 0;
 
 void dump_gc_info(void)
 {
@@ -544,9 +547,9 @@ static void describe_gc_frame(struct gc_frame *l)
 static void describe_marker(struct marker *m)
 {
   if (m) {
-    fprintf(stderr, "marker at %p: flags=0x%04x, refs=%d, weak=%d, "
+    fprintf(stderr, "marker at %p: flags=0x%05lx, refs=%d, weak=%d, "
 	    "xrefs=%d, saved=%d, frame=%p",
-	    m, m->flags, m->refs, m->weak_refs,
+	    m, (long) m->flags, m->refs, m->weak_refs,
 	    m->xrefs, m->saved_refs, m->frame);
 #ifdef PIKE_DEBUG
     if (m->frame) {
@@ -957,15 +960,36 @@ void debug_describe_svalue(struct svalue *s)
   describe_something(s->u.refs,s->type,0,2,0);
 }
 
+void gc_watch(void *a)
+{
+  struct marker *m;
+  init_gc();
+  m = get_marker(a);
+  if (!(m->flags & GC_WATCHED)) {
+    m->flags |= GC_WATCHED;
+    fprintf(stderr, "## Watching thing %p.\n", a);
+    gc_is_watching++;
+  }
+  else
+    fprintf(stderr, "## Already watching thing %p.\n", a);
+}
+
 void debug_gc_touch(void *a)
 {
   struct marker *m;
+
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_touch() in pass %d.\n", a, Pike_in_gc);
+  }
+
   if (!a) fatal("Got null pointer.\n");
 
   switch (Pike_in_gc) {
     case GC_PASS_PRETOUCH:
       m = find_marker(a);
-      if (m && !(m->flags & GC_PRETOUCHED))
+      if (m && !(m->flags & (GC_PRETOUCHED|GC_WATCHED)))
 	gc_fatal(a, 1, "Thing got an existing but untouched marker.\n");
       m = get_marker(a);
       m->flags |= GC_PRETOUCHED;
@@ -1076,6 +1100,11 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
   INT32 ret;
 
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_check() in pass %d.\n", a, Pike_in_gc);
+  }
   if (!(m = gc_check_debug(a, 0))) return 0;
 #else
   m = get_marker(a);
@@ -1094,6 +1123,11 @@ INT32 real_gc_check_weak(void *a)
   INT32 ret;
 
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_check_weak() in pass %d.\n", a, Pike_in_gc);
+  }
   if (!(m = gc_check_debug(a, 1))) return 0;
   if (m->weak_refs < 0)
     gc_fatal(a, 1, "Thing has already reached threshold for weak free.\n");
@@ -1119,8 +1153,14 @@ INT32 real_gc_check_weak(void *a)
 
 static void init_gc(void)
 {
-  init_marker_hash();
-  get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
+#ifdef PIKE_DEBUG
+  if (!gc_is_watching) {
+#endif
+    init_marker_hash();
+    get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
+#ifdef PIKE_DEBUG
+  }
+#endif
 }
 
 static void exit_gc(void)
@@ -1131,6 +1171,13 @@ static void exit_gc(void)
   for(e=0;e<marker_hash_table_size;e++)
     while(marker_hash_table[e])
       remove_marker(marker_hash_table[e]->data);
+#endif
+#ifdef PIKE_DEBUG
+  if (gc_is_watching) {
+    fprintf(stderr, "## Exiting gc and resetting watches for %d things.\n",
+	    gc_is_watching);
+    gc_is_watching = 0;
+  }
 #endif
   exit_marker_hash();
   free_all_gc_frame_blocks();
@@ -1214,6 +1261,12 @@ void debug_gc_add_extra_ref(void *a)
 {
   struct marker *m;
 
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_add_extra_ref() in pass %d.\n", a, Pike_in_gc);
+  }
+
   if (gc_debug) {
     m = find_marker(a);
     if ((!m || !(m->flags & GC_PRETOUCHED)) &&
@@ -1234,6 +1287,12 @@ void debug_gc_free_extra_ref(void *a)
 {
   struct marker *m;
 
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_free_extra_ref() in pass %d.\n", a, Pike_in_gc);
+  }
+
   if (gc_debug) {
     m = find_marker(a);
     if ((!m || !(m->flags & GC_PRETOUCHED)) &&
@@ -1253,6 +1312,13 @@ void debug_gc_free_extra_ref(void *a)
 int debug_gc_is_referenced(void *a)
 {
   struct marker *m;
+
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_is_referenced() in pass %d.\n", a, Pike_in_gc);
+  }
+
   if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK)
     fatal("gc_is_referenced() called in invalid gc pass.\n");
@@ -1276,6 +1342,13 @@ int debug_gc_is_referenced(void *a)
 int gc_external_mark3(void *a, void *in, char *where)
 {
   struct marker *m;
+
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_external_mark3() in pass %d.\n", a, Pike_in_gc);
+  }
+
   if (!a) fatal("Got null pointer.\n");
 
   if(Pike_in_gc == GC_PASS_LOCATE)
@@ -1332,6 +1405,11 @@ int gc_do_weak_free(void *a)
   struct marker *m;
 
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_do_weak_free() in pass %d.\n", a, Pike_in_gc);
+  }
   if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
     fatal("gc_do_weak_free() called in invalid gc pass.\n");
@@ -1390,6 +1468,11 @@ void gc_delayed_free(void *a)
   struct marker *m;
 
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_delayed_free() in pass %d.\n", a, Pike_in_gc);
+  }
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
       Pike_in_gc != GC_PASS_ZAP_WEAK)
     fatal("gc_delayed_free() called in invalid gc pass.\n");
@@ -1412,11 +1495,29 @@ void gc_delayed_free(void *a)
   m->flags |= GC_GOT_DEAD_REF;
 }
 
+#ifdef PIKE_DEBUG
+void gc_mark_enqueue(queue_call call, void *data)
+{
+  struct marker *m;
+  if (gc_is_watching && (m = find_marker(data)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_mark_enqueue() in pass %d.\n", data, Pike_in_gc);
+  }
+  enqueue(&gc_mark_queue, call, data);
+}
+#endif
+
 int gc_mark(void *a)
 {
   struct marker *m = get_marker(debug_malloc_pass(a));
 
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && m && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_mark() in pass %d.\n", a, Pike_in_gc);
+  }
   if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_ZAP_WEAK)
     fatal("gc mark attempted in invalid pass.\n");
@@ -1466,6 +1567,14 @@ PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int we
 {
   struct gc_frame *l = alloc_gc_frame();
 #ifdef PIKE_DEBUG
+  {
+    struct marker *m;
+    if (gc_is_watching && (m = find_marker(data)) && m->flags & GC_WATCHED) {
+      /* This is useful to set breakpoints on. */
+      fprintf(stderr, "## Watched thing %p found in "
+	      "gc_cycle_enqueue() in pass %d.\n", data, Pike_in_gc);
+    }
+  }
   if (Pike_in_gc != GC_PASS_CYCLE)
     gc_fatal(data, 0, "Use of the gc frame stack outside the cycle check pass.\n");
 #endif
@@ -1649,6 +1758,11 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
   struct marker *last = find_marker(gc_rec_last->data);
 
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && m && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_cycle_push() in pass %d.\n", x, Pike_in_gc);
+  }
 
   debug_malloc_touch(x);
 
@@ -1924,6 +2038,11 @@ static void gc_cycle_pop(void *a)
   struct gc_frame *here, *base, *p;
 
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && m && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_cycle_pop() in pass %d.\n", a, Pike_in_gc);
+  }
   if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_CYCLE)
     fatal("GC cycle pop attempted in invalid pass.\n");
@@ -2034,6 +2153,11 @@ int gc_do_free(void *a)
 {
   struct marker *m;
 #ifdef PIKE_DEBUG
+  if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
+    /* This is useful to set breakpoints on. */
+    fprintf(stderr, "## Watched thing %p found in "
+	    "gc_do_free() in pass %d.\n", a, Pike_in_gc);
+  }
   if (!a) fatal("Got null pointer.\n");
   if (Pike_in_gc != GC_PASS_FREE)
     fatal("gc free attempted in invalid pass.\n");
@@ -2141,6 +2265,8 @@ int do_gc(void)
 #ifdef PIKE_DEBUG
   gc_debug = d_flag;
   SET_ONERROR(uwp, fatal_on_error, "Shouldn't get an exception inside the gc.\n");
+  if (gc_is_watching)
+    fprintf(stderr, "## Doing gc while watching for %d things.\n", gc_is_watching);
 #endif
 
   destruct_objects_to_destruct();

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.81 2001/07/01 23:07:55 mast Exp $
+ * $Id: gc.h,v 1.82 2001/07/05 00:09:41 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -108,8 +108,10 @@ struct marker
   INT32 saved_refs;
   /* References at beginning of gc. Set by pretouch and check passes.
    * Decreased by gc_do_weak_free() as weak references are removed. */
-#endif
+  unsigned INT32 flags;
+#else
   unsigned INT16 flags;
+#endif
 };
 
 #define GC_MARKED		0x0001
@@ -164,6 +166,8 @@ struct marker
  * freed. Set in the mark and zap weak passes. */
 #define GC_CHECKED_AS_WEAK	0x8000
 /* The thing has been visited by gc_checked_as_weak(). */
+#define GC_WATCHED		0x10000
+/* The thing has been set under watch by gc_watch(). */
 #endif
 
 #ifdef PIKE_DEBUG
@@ -217,6 +221,7 @@ void low_describe_something(void *a,
 void describe_something(void *a, int t, int indent, int depth, int flags);
 PMOD_EXPORT void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
+void gc_watch(void *a);
 void debug_gc_touch(void *a);
 PMOD_EXPORT INT32 real_gc_check(void *a);
 INT32 real_gc_check_weak(void *a);
@@ -228,6 +233,7 @@ int gc_external_mark3(void *a, void *in, char *where);
 void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
 void gc_delayed_free(void *a);
+void debug_gc_mark_enqueue(queue_call call, void *data);
 int gc_mark(void *a);
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue();
