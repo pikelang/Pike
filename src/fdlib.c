@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.43 2000/08/20 15:59:10 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.44 2000/08/20 16:15:25 grubba Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -340,37 +340,42 @@ PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addr
 
 
 #define SOCKFUN(NAME,X1,X2) \
-PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { SOCKET ret; \
+PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { \
+  SOCKET s; \
+  int ret; \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%ld)\n", \
 		  fd, PTRDIFF_T_TO_LONG((ptrdiff_t)da_handle[fd]))); \
   mt_lock(&fd_mutex); \
   if(fd_type[fd] != FD_SOCKET) { \
      mt_unlock(&fd_mutex); \
-     errno=ENOTSUPP; \
+     errno = ENOTSUPP; \
      return -1; \
    } \
-  ret=(SOCKET)da_handle[fd]; \
+  s = (SOCKET)da_handle[fd]; \
   mt_unlock(&fd_mutex); \
-   ret=NAME X2; \
-   if(ret == SOCKET_ERROR) errno=WSAGetLastError(); \
-   FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n",ret,errno)); \
-   return (int)ret; \
+  ret = NAME X2; \
+  if(ret == SOCKET_ERROR) { \
+    errno = WSAGetLastError(); \
+    ret = -1; \
+  } \
+  FDDEBUG(fprintf(stderr, #NAME " returned %d (%d)\n", ret, errno)); \
+  return ret; \
 }
 
 #define SOCKFUN1(NAME,T1) \
-   SOCKFUN(NAME, (FD fd, T1 a), (ret, a) )
+   SOCKFUN(NAME, (FD fd, T1 a), (s, a) )
 
 #define SOCKFUN2(NAME,T1,T2) \
-   SOCKFUN(NAME, (FD fd, T1 a, T2 b), (ret, a, b) )
+   SOCKFUN(NAME, (FD fd, T1 a, T2 b), (s, a, b) )
 
 #define SOCKFUN3(NAME,T1,T2,T3) \
-   SOCKFUN(NAME, (FD fd, T1 a, T2 b, T3 c), (ret, a, b, c) )
+   SOCKFUN(NAME, (FD fd, T1 a, T2 b, T3 c), (s, a, b, c) )
 
 #define SOCKFUN4(NAME,T1,T2,T3,T4) \
-   SOCKFUN(NAME, (FD fd,T1 a,T2 b,T3 c,T4 d), (ret,a,b,c,d) )
+   SOCKFUN(NAME, (FD fd, T1 a, T2 b, T3 c, T4 d), (s, a, b, c, d) )
 
 #define SOCKFUN5(NAME,T1,T2,T3,T4,T5) \
-   SOCKFUN(NAME, (FD fd,T1 a,T2 b,T3 c,T4 d,T5 e), (ret,a,b,c,d,e))
+   SOCKFUN(NAME, (FD fd, T1 a, T2 b, T3 c, T4 d, T5 e), (s, a, b, c, d, e))
 
 
 SOCKFUN2(bind, struct sockaddr *, int)
@@ -468,7 +473,9 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
   {
     case FD_SOCKET:
       {
-	ptrdiff_t ret = send((SOCKET)handle, buf, len, 0);
+	ptrdiff_t ret = send((SOCKET)handle, buf,
+			     DO_NOT_WARN((int)len),
+			     0);
 	if(ret<0)
 	{
 	  errno = WSAGetLastError();
@@ -488,7 +495,9 @@ PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len)
     case FD_PIPE:
       {
 	DWORD ret = 0;
-	if(!WriteFile(handle, buf, len, &ret,0) && ret<=0)
+	if(!WriteFile(handle, buf,
+		      DO_NOT_WARN((DWORD)len),
+		      &ret,0) && ret<=0)
 	{
 	  errno = GetLastError();
 	  FDDEBUG(fprintf(stderr, "Write on %d failed (%d)\n", fd, errno));
