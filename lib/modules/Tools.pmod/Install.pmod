@@ -32,7 +32,7 @@ array(string) features()
 	     "_Image_JPEG", "_Image_GIF", "_Image_TIFF", "_Image_TTF", 
 	     "Image.PNG", "Java", "Mird",
 	     "Msql", "Mysql", "Odbc", "Oracle", "Perl", "Postgres", "Ssleay",
-	     "sybase", "X"  }),
+	     "sybase", "_WhiteFish", "X"  }),
 	  string modname)
   {
     catch
