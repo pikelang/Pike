@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.90 1998/03/23 20:29:32 mirar Exp $ */
+/* $Id: image.c,v 1.91 1998/03/23 22:52:19 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.90 1998/03/23 20:29:32 mirar Exp $
+**!	$Id: image.c,v 1.91 1998/03/23 22:52:19 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.90 1998/03/23 20:29:32 mirar Exp $");
+RCSID("$Id: image.c,v 1.91 1998/03/23 22:52:19 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -338,7 +338,7 @@ void img_apply_matrix(struct image *dest,
 {
    rgb_group *d,*ip,*dp;
    rgbd_group *mp;
-   int i,j,x,y,bx,by,ex,ey,yp;
+   int i,x,y,bx,by,ex,ey,yp;
    int widthheight;
    double sumr,sumg,sumb;
    double qr,qg,qb;

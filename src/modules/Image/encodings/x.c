@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.11 1998/03/23 20:29:34 mirar Exp $ */
+/* $Id: x.c,v 1.12 1998/03/23 22:52:23 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.11 1998/03/23 20:29:34 mirar Exp $
+**!	$Id: x.c,v 1.12 1998/03/23 22:52:23 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.11 1998/03/23 20:29:34 mirar Exp $");
+RCSID("$Id: x.c,v 1.12 1998/03/23 22:52:23 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -444,8 +444,8 @@ static void image_x_encode_truecolor_masks(INT32 args)
 }
 
 /*
-**! method string encode_pseudo(object image,int bpp,int alignbits,int vbpp,object colortable)
-**! method string encode_pseudo(object image,int bpp,int alignbits,int vbpp,object colortable,string translate)
+**! method string encode_pseudocolor(object image,int bpp,int alignbits,int vbpp,object colortable)
+**! method string encode_pseudocolor(object image,int bpp,int alignbits,int vbpp,object colortable,string translate)
 **!
 **! arg object image
 **!	the image object to encode
@@ -753,15 +753,15 @@ static void image_x_encode_pseudocolor(INT32 args)
 }
 
 /*
-**! method object decode_zpixmap(string data,int width,int height,int bpp,int alignbits,int swapbytes,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift)
-**! method object decode_zpixmap_masks(string data,int width,int height,int bpp,int alignbits,int swapbytes,int rmask,int gmask,int bmask)
-**!    lazy support for ZPixmaps 
+**! method object decode_truecolor(string data,int width,int height,int bpp,int alignbits,int swapbytes,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift)
+**! method object decode_truecolor_masks(string data,int width,int height,int bpp,int alignbits,int swapbytes,int rmask,int gmask,int bmask)
+**!    lazy support for truecolor ZPixmaps 
 **!
 **! note:
-**!    currently, only full-byte masks and width are supported
+**!    currently, only byte-aligned masks are supported
 */
 
-static void image_x_decode_zpixmap(INT32 args)
+static void image_x_decode_truecolor(INT32 args)
 {
    struct pike_string *ps;
    unsigned char *s;
@@ -773,11 +773,11 @@ static void image_x_decode_zpixmap(INT32 args)
    rgb_group *d;
 
    if (args<12) 
-      error("Image.X.decode_zpixmap: too few arguments\n");
-   if (sp[-args].type!=T_STRING) error("Image.X.decode_zpixmap: illegal argument 1\n");
+      error("Image.X.decode_truecolor: too few arguments\n");
+   if (sp[-args].type!=T_STRING) error("Image.X.decode_truecolor: illegal argument 1\n");
    for (i=1; i<12; i++)
       if (sp[i-args].type!=T_INT) 
-	 error("Image.X.decode_zpixmap: illegal argument %d\n",i+1);
+	 error("Image.X.decode_truecolor: illegal argument %d\n",i+1);
 
    (ps=sp[-args].u.string)->refs++;
    s=(unsigned char*)ps->str;
@@ -809,7 +809,7 @@ static void image_x_decode_zpixmap(INT32 args)
       if (rpos>=Bpp || rpos<0 ||
 	  gpos>=Bpp || gpos<0 ||
 	  bpos>=Bpp || bpos<0)
-	 error("Image.X.decode_zpixmap: illegal colorshifts\n");
+	 error("Image.X.decode_truecolor: illegal colorshifts\n");
       
       if (swapbytes)
 	 rpos=Bpp-1-rpos,
@@ -819,7 +819,7 @@ static void image_x_decode_zpixmap(INT32 args)
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
-      img=get_storage(o,image_program);
+      img=(struct image*)get_storage(o,image_program);
 
       d=img->img;
       n=width*height;
@@ -830,7 +830,7 @@ static void image_x_decode_zpixmap(INT32 args)
 	 d->b=s[bpos];
 	 d++;
 
-	 if (n && Bpp>len) 
+	 if (n && Bpp>=len) 
 	    break;
 	 len-=Bpp;
 	 s+=Bpp;
@@ -842,32 +842,32 @@ static void image_x_decode_zpixmap(INT32 args)
    else
    {
       free_string(ps);
-      error("Image.X.decode_zpixmap: currently not supported non-byte ranges\n");
+      error("Image.X.decode_truecolor: currently not supported non-byte ranges\n");
    }
 }
 
-void image_x_decode_zpixmap_masks(INT32 args)
+void image_x_decode_truecolor_masks(INT32 args)
 {
    struct object *ct=NULL;
    int rbits,rshift,gbits,gshift,bbits,bshift;
 
    if (args<9) 
-      error("Image.X.decode_zpixmap_masks: too few arguments (expected 7 arguments)\n");
+      error("Image.X.decode_truecolor_masks: too few arguments (expected 7 arguments)\n");
    if (sp[-args].type!=T_STRING)
-      error("Image.X.decode_zpixmap_masks: illegal argument 1 (expected image object)\n");
+      error("Image.X.decode_truecolor_masks: illegal argument 1 (expected image object)\n");
 
    if (args>9)
       if (sp[9-args].type!=T_OBJECT ||
 	  !get_storage(ct=sp[9-args].u.object,image_colortable_program))
-	 error("Image.X.decode_zpixmap_masks: illegal argument 8 (expected colortable object)\n");
+	 error("Image.X.decode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
  
    if (sp[6-args].type!=T_INT)
-      error("Image.X.decode_zpixmap_masks: illegal argument 7 (expected integer)\n");
+      error("Image.X.decode_truecolor_masks: illegal argument 7 (expected integer)\n");
    if (sp[7-args].type!=T_INT)
-      error("Image.X.decode_zpixmap_masks: illegal argument 8 (expected integer)\n");
+      error("Image.X.decode_truecolor_masks: illegal argument 8 (expected integer)\n");
 
    if (sp[8-args].type!=T_INT)
-      error("Image.X.decode_zpixmap_masks: illegal argument 9 (expected integer)\n");
+      error("Image.X.decode_truecolor_masks: illegal argument 9 (expected integer)\n");
 
    image_x_examine_mask(sp+6-args,"argument 7 (red mask)",&rbits,&rshift);
    image_x_examine_mask(sp+7-args,"argument 8 (blue mask)",&gbits,&gshift);
@@ -884,10 +884,96 @@ void image_x_decode_zpixmap_masks(INT32 args)
    if (ct)
    {
       push_object(ct);
-      image_x_decode_zpixmap(13);
+      image_x_decode_truecolor(13);
    }
    else
-     image_x_decode_zpixmap(12);
+     image_x_decode_truecolor(12);
+}
+
+/*
+**! method object decode_pseudocolor(string data,int width,int height,int bpp,int alignbits,int swapbytes,object colortable)
+**!    lazy support for pseudocolor ZPixmaps 
+**!
+**! note:
+**!    currently, only byte-aligned pixmaps are supported
+*/
+
+void image_x_decode_pseudocolor(INT32 args)
+{
+   struct pike_string *ps;
+   unsigned char *s;
+   unsigned long len;
+   INT32 width,height,bpp,alignbits,swapbytes;
+   int i;
+   INT32 n;
+   rgb_group *d;
+   struct neo_colortable *nct;
+   struct object *ncto;
+
+   if (args<7) 
+      error("Image.X.decode_pseudocolor: too few arguments\n");
+   if (sp[-args].type!=T_STRING) error("Image.X.decode_pseudocolor: illegal argument 1\n");
+   for (i=1; i<6; i++)
+      if (sp[i-args].type!=T_INT) 
+	 error("Image.X.decode_pseudocolor: illegal argument %d\n",i+1);
+   if (sp[6-args].type!=T_OBJECT ||
+       !(nct=(struct neo_colortable*)
+	 get_storage(ncto=sp[6-args].u.object,image_colortable_program)))
+      error("Image.X.decode_pseudocolor: illegal argument 7\n");
+
+   if (nct->type!=NCT_FLAT)
+      /* fix me some other day */ 
+      error("Image.X.decode_pseudocolor: argument 7, colortable, needs to be a flat colortable\n");
+
+   (ps=sp[-args].u.string)->refs++;
+   s=(unsigned char*)ps->str;
+   len=ps->len;
+   width=sp[1-args].u.integer;
+   height=sp[2-args].u.integer;
+   bpp=sp[3-args].u.integer;
+   alignbits=sp[4-args].u.integer;
+   swapbytes=sp[5-args].u.integer;
+
+   ncto->refs++;
+
+   pop_n_elems(args);
+
+   if (bpp==8)
+   {
+      struct object *o;
+      struct image *img;
+
+      push_int(width);
+      push_int(height);
+      o=clone_object(image_program,2);
+      img=(struct image*)get_storage(o,image_program);
+
+      d=img->img;
+      n=width*height;
+      while (n--)
+      {
+	 if (*s>=nct->u.flat.numentries)
+	    *d=nct->u.flat.entries[0].color;
+	 else
+	    *d=nct->u.flat.entries[*s].color;
+	 d++;
+
+	 if (n && len<=1) 
+	    break;
+	 len--;
+	 s++;
+      }
+      
+      free_string(ps);
+      free_object(ncto);
+      push_object(o);
+   }
+   else
+   {
+      free_object(ncto);
+      free_string(ps);
+      error("Image.X.decode_pseudocolor: currently not supported non-byte ranges\n");
+   }
 }
 
 /**** init module ********************************************/
