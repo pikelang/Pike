@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.159 2000/08/02 20:31:51 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.160 2000/08/08 19:40:41 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -75,7 +75,7 @@ void push_sp_mark(void)
     error("No more mark stack!\n");
   *Pike_mark_sp++=Pike_sp;
 }
-int pop_sp_mark(void)
+ptrdiff_t pop_sp_mark(void)
 {
 #ifdef PIKE_DEBUG
   if(Pike_mark_sp < Pike_interpreter.mark_stack)
@@ -89,7 +89,9 @@ int pop_sp_mark(void)
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
   struct pike_frame *f;
-  debug_gc_xmark_svalues(Pike_interpreter.evaluator_stack,Pike_sp-Pike_interpreter.evaluator_stack-1," on current interpreter stack");
+  debug_gc_xmark_svalues(Pike_interpreter.evaluator_stack,
+			 Pike_sp-Pike_interpreter.evaluator_stack-1,
+			 " on current interpreter stack");
 
   for(f=Pike_fp;f;f=f->next)
   {
@@ -379,7 +381,7 @@ void print_return_value(void)
     init_buf();
     describe_svalue(Pike_sp-1,0,0);
     s=simple_free_buf();
-    if((long)strlen(s) > (long)TRACE_LEN)
+    if((size_t)strlen(s) > (size_t)TRACE_LEN)
     {
       s[TRACE_LEN]=0;
       s[TRACE_LEN-1]='.';
@@ -482,8 +484,8 @@ struct backlog
 #ifdef _REENTRANT
   struct object *thread_id;
 #endif
-  int stack;
-  int mark_stack;
+  ptrdiff_t stack;
+  ptrdiff_t mark_stack;
 };
 
 struct backlog backlog[BACKLOG];
@@ -585,7 +587,7 @@ static void trace_return_value(void)
   my_strcat("Return: ");
   describe_svalue(Pike_sp-1,0,0);
   s=simple_free_buf();
-  if((long)strlen(s) > (long)TRACE_LEN)
+  if((size_t)strlen(s) > (size_t)TRACE_LEN)
   {
     s[TRACE_LEN]=0;
     s[TRACE_LEN-1]='.';
@@ -608,7 +610,7 @@ static void do_trace_call(INT32 args)
   }
   my_strcat(")"); 
   s=simple_free_buf();
-  if((long)strlen(s) > (long)TRACE_LEN)
+  if((size_t)strlen(s) > (size_t)TRACE_LEN)
   {
     s[TRACE_LEN]=0;
     s[TRACE_LEN-1]='.';
@@ -680,6 +682,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
   long long children_base = Pike_interpreter.accounted_time;
   long long start_time = gethrtime() - Pike_interpreter.time_base;
   unsigned INT32 self_time_base;
+#if 0
+#ifdef PIKE_DEBUG
   if(start_time < 0)
   {
     fatal("gethrtime() shrunk\n start_time=%ld\n gethrtime()=%ld\n Pike_interpreter.time_base=%ld\n",
@@ -687,6 +691,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	  (long)(gethrtime()/100000), 
 	  (long)(Pike_interpreter.time_base/100000));
   }
+#endif
+#endif
 #endif
 #endif
 
@@ -960,7 +966,8 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	char buf[50];
 
 	init_buf();
-	sprintf(buf,"%lx->",(long)o);
+	sprintf(buf, "%lx->",
+		DO_NOT_WARN((long)o));
 	my_strcat(buf);
 	my_strcat(function->name->str);
 	do_trace_call(args);
@@ -1110,6 +1117,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	time_passed = gethrtime() - Pike_interpreter.time_base - start_time;
 	self_time=time_passed - time_in_children;
 	Pike_interpreter.accounted_time+=self_time;
+#if 0
 #ifdef PIKE_DEBUG
 	if(self_time < 0 || children_base <0 || Pike_interpreter.accounted_time <0)
 	  fatal("Time is negative\n  self_time=%ld\n  time_passed=%ld\n  time_in_children=%ld\n  children_base=%ld\n  Pike_interpreter.accounted_time=%ld!\n  Pike_interpreter.time_base=%ld\n  start_time=%ld\n",
@@ -1121,6 +1129,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 		(long)(Pike_interpreter.time_base/100000),
 		(long)(start_time/100000)
 		);
+#endif
 #endif
 	function->total_time=self_time_base + (INT32)(time_passed /1000);
 	function->self_time+=(INT32)( self_time /1000);
@@ -1312,7 +1321,7 @@ PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
     Pike_sp->type = T_INT;
     Pike_sp++;
   }else{
-    INT32 expected_stack = Pike_sp - Pike_interpreter.evaluator_stack + 1;
+    ptrdiff_t expected_stack = Pike_sp - Pike_interpreter.evaluator_stack + 1;
     Pike_sp+=args;
     apply_low(o,fun,args);
     if(Pike_sp - Pike_interpreter.evaluator_stack > expected_stack)
@@ -1369,7 +1378,7 @@ PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
     pop_n_elems(args);
     push_int(0);
   }else{
-    INT32 expected_stack=Pike_sp-args+1 - Pike_interpreter.evaluator_stack;
+    ptrdiff_t expected_stack=Pike_sp-args+1 - Pike_interpreter.evaluator_stack;
 
     strict_apply_svalue(s,args);
     if(Pike_sp > (expected_stack + Pike_interpreter.evaluator_stack))
