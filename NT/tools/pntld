@@ -703,6 +703,10 @@ class dumpfile
 	write("[%5d] Num Aux syms  : %x\n",e,aux=i1(pos+17));
 #endif
 #endif
+	switch(i1(pos+16))
+	{
+	  case 103: continue; /* file */
+	}		
 	string name=getCOFFstring(pos);
 	int cls=i1(pos+16);
 	int sect=i2(pos+12);
@@ -713,6 +717,7 @@ class dumpfile
 	Symbol s=Symbol();
 	s->name=name;
 	s->value=value;
+//	werror("SECT: %O %O\n",sect,file_sections);
 	if(sect > 0)
 	  s->section=file_sections[sect-1];
 	s->type=type;
@@ -971,7 +976,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.6 2001/01/04 02:15:44 hubbe Exp $\n"
+	 "$Id: pntld,v 1.7 2001/01/11 23:21:24 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
