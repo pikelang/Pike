@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.29 2004/09/04 19:10:35 grubba Exp $
+// $Id: module.pmod.in,v 1.30 2004/09/07 16:15:12 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -1722,6 +1722,39 @@ class PikeCompiler
     static {
       // Symbol ==> TokenClass
       mapping(string:program(Token)) Pike_0_1_Tokens = ([
+	"!":Token,
+	"%":Token,
+	"&":Token,
+	"&&":Token,
+	"(":Token,
+	")":Token,
+	"*":Token,
+	"+":Token,
+	",":Token,
+	"-":Token,
+	".":Token,
+	"/":Token,
+	":":Token,
+	":":Token,
+	"::":Token,
+	";":Token,
+	"<":Token,
+	"<<":Token,
+	"<=":Token,
+	"=":Token,
+	"==":Token,
+	">":Token,
+	">=":Token,
+	">>":Token,
+	"?":Token,
+	"[":Token,
+	"]":Token,
+	"^":Token,
+	"{":Token,
+	"|":Token,
+	"||":Token,
+	"}":Token,
+	"~":Token,
 	"array":ArrayType,
 	"break":BreakNoLabel,
 	//"case":Case,
