@@ -49,7 +49,7 @@ class Magic_Index
 
 mapping(string:SuperEvent) made_countries=([]);
 
-Event country(string name)
+SuperEvent country(string name)
 {
    if (made_countries[name]) return made_countries[name];
 
@@ -120,6 +120,8 @@ Event country(string name)
 #define J_FIX_M(NAME,MD,MN,N) \
 	({Julian_Fixed,NAME,MD,MN,N})
 
+#define DUMMY ({NullEvent})
+
 constant events=([
 // ----------------------------------------------------------------
 // standard
@@ -136,11 +138,13 @@ constant events=([
 // ----------------------------------------------------------------------
 
    "new year":		FIXED("New Year's Day",     1, 1),
+   "new year 2d":	FIX_M("New Year",           1, 1, 2),
    "unity":             FIXED("Unity Day",         22, 2),
    "womens":		FIXED("Int. Women's Day",   8, 3),
    "arab league":       FIXED("Arab League Day",   22, 3),
    "anzac":             FIXED("ANZAC Day",         25, 4),
    "labor":		FIXED("Labor Day", 	    1, 5),
+   "labor 2":		FIXED("2nd day of Labor",   2, 5),
    "may day":           FIXED("May Day",            1, 5),
    "africa":            FIXED("Africa Day",        25, 5),
    "perseid meteor shower":FIXED("Perseid Meteor Shower",11,8),
@@ -153,6 +157,7 @@ constant events=([
    "new years eve":	FIXED("New Year's Eve",    31,12),
 
    "mardi gras":        EASTER_REL("Mardi Gras",-47),
+   "mardi gras 2":      EASTER_REL("Mardi Gras",-46),
 
    "mothers":          	DWDRI("Mother's Day",	1,5,7,2),
    "fathers":          	DWDRI("Father's Day",	1,6,7,3),
@@ -223,7 +228,8 @@ constant events=([
 // orthodox
 
 // I don't know which of these are/will be needed:
-   "orhodox/circumcision":    	J_FIXED("Feast of the Circumcision",1,1),
+   "orthodox/new year":         J_FIXED("Orthodox New Year",1,1),
+   "orthodox/circumcision":    	J_FIXED("Feast of the Circumcision",1,1),
    "orthodox/epiphany":		J_FIXED("Epiphany",        6, 1),
    "orthodox/presentation":	J_FIXED("Presentation",    2, 2),
    "orthodox/candlemas":       	J_FIXED("Candlemas",       2, 2),
@@ -269,12 +275,16 @@ constant events=([
 
 // temporary
    "saints/basil":      FIXED("St. Basil",1,1),
+   "saints/mary mother":FIXED("Mary, Mother of God",1,1),
    "saints/devote":     FIXED("St. Devote",27,1),
    "saints/blaise":     FIXED("St. Blaise",3,2),
    "saints/valentine":	FIXED("St. Valentine",14,2),
+   "saints/joseph":	FIXED("St. Joseph",19,3),
+   "saints/joseph the worker":FIXED("St. Joseph the Worker",1,5),
    "saints/john the baptist": FIXED("St. John the Baptist",24,6),
    "saints/peter":	FIXED("St. Peter",29,6),
    "saints/paul":	FIXED("St. Paul",29,6),
+   "saints/cyril & methodius":FIXED("St Cyril & Methodius",5,7),
    "saints/demetrios":  FIXED("St. Demetrios",26,10),
    "saints/lucy": 	FIXED("St. Lucy",13,12),
    "saints/stephen":	FIXED("St. Stephen",26,12), // aka boxing day
@@ -344,6 +354,10 @@ constant events=([
    "caribbean/caricom":          DWDRI("CARICOM Day",1,7,1,1),
    "caribbean/emancipation":     DWDRI("Emancipation Day",1,8,1,1),
    "caribbean/schoelcher":       FIXED("Schoelcher Day",21,7),
+
+// chinese calendar
+
+   "chinese/new year":	         DUMMY,
 
 // ----------------------------------------------------------------
 // verified
@@ -420,6 +434,7 @@ constant events=([
    "angola/victory":          	 FIXED("Victory Day",27,3),
    "angola/workers":          	 FIXED("Workers' Day",1,5),
    "angola/youth":            	 FIXED("Youth Day",14,4),
+   "angola/martyrs":FIXED("Day of Martyrs of the Colonial Repression",4,1),
 
    "anguilla/anguilla":          FIXED("Anguilla Day",1,6),
 
@@ -659,9 +674,6 @@ constant events=([
    "czech republic/introduction of christianity":
                                  FIXED("Introduction of Christianity",5,7),
 
-   "czechoslovakia/resistance movement":FIXED("Resistance Movement Day",11,4),
-// "czechoslovakia/teachers":    ,
-
    "denmark/birthday of queen margrethe ii":
                                  FIXED("Birthday of Queen Margrethe II",16,4),
    "denmark/common prayer":      EASTER_REL("Common Prayer Day",26),
@@ -744,7 +756,6 @@ constant events=([
 // "finland/midsummers eve":     WDREL("Midsummer's Eve","midsummers",5,-1),
    "finland/runebergs":          FIXED("Runeberg's Day",5,2),
    "finland/snellman":           FIXED("Snellman Day",12,5),
-   "finland/vappu":              FIXED("Vappu Day",1,5),
    "finland/all saints":         DWDRI("All Saints Day",1,11,6,1),
    "finland/midsummers eve":     DWDRI("Midsummer's Eve",24,6,5,0),
    "finland/midsummer":          DWDRI("Midsummer's Day",25,6,6,0),
@@ -838,6 +849,16 @@ constant events=([
    "guyana/independence":        FIXED("Independence Day",26,5),
    "guyana/republic":            FIXED("Republic Day",23,2),
 
+   "haiti/independence":	 FIXED("Independence Day",1,1),
+   "haiti/ancestry":		 FIXED("Ancestry Day",2,1),
+   "haiti/toussaint":		 FIXED("Toussain L'Ouverture Day",7,4),
+   "haiti/pan american":	 FIXED("Pan-American Day",14,4),
+   "haiti/labor":		 FIXED("Agriculture and Labor Day",1,5),
+   "haiti/flag":		 FIXED("Flag & University Day",18,5),
+   "haiti/sovereignty":		 FIXED("National Sovereignty",22,5),
+   "haiti/agwe":		 FIXED("Day of Agwe",4,7),
+   "haiti/papa ogou":		 FIXED("Day of Papa Ogou",25,7),
+   "haiti/dessalines":           FIXED("Dessalines Day",17,10),
    "haiti/discovery":            FIXED("Discovery Day",5,12),
    "haiti/vertieres":            FIXED("Verti\350res Day",18,11),
 
@@ -954,6 +975,14 @@ constant events=([
    "jordan/independence":        FIXED("Independence Day",25,5),
    "jordan/king hussein":        FIXED("King Hussein Day",14,11),
 
+   "kazakhstan/nauryz meyrami":	 FIXED("Nauryz Meyrami",22,3),
+   "kazakhstan/peoples unity":	 FIXED("People's Unity Day",1,5),
+   "kazakhstan/victory":	 FIXED("Victory Day",9,5),
+   "kazakhstan/national flag":	 FIXED("National Flag",24,8),
+   "kazakhstan/constitution":	 FIXED("Constitution Day",30,8),
+   "kazakhstan/republic":	 FIXED("Republic Day",25,10),
+   "kazakhstan/independence":	 FIXED("Independence Day",16,12),
+
    "kenya/independence":         FIXED("Independence Day",12,12),
    "kenya/kenyatta":             FIXED("Kenyatta Day",20,10),
    "kenya/madaraka":             FIXED("Madaraka Day",1,6),
@@ -961,7 +990,21 @@ constant events=([
    "kiribati/independence":      FIXED("Independence Day",12,7),
    "kiribati/youth":             FIXED("Youth Day",4,8),
 
-   "korea/independence movement":FIXED("Independence Movement Day",1,3),
+   "south korea/folklore":       FIXED("Folklore Day",3,2),
+   "south korea/taeborum":	 FIX_M("Taeborum",20,2,3),
+   "south korea/independence":	 FIXED("Independence Movement Day",1,3),
+   "south korea/labor":		 FIXED("Labor Day",10,3),
+   "south korea/arbor":		 FIXED("Arbor Day",5,4),
+   "south korea/childrens":	 FIXED("Children's Day",5,5),
+   "south korea/buddha":	 FIXED("Buddha's Birthday",22,5),
+   "south korea/memorial":	 FIXED("Memorial Day",6,6),
+   "south korea/constitution":	 FIXED("Constitution Day",17,7),
+   "south korea/liberation":	 FIXED("Liberation Day",15,8),
+   "south korea/republic":	 FIXED("Republic Day",15,8),
+   "south korea/thanksgiving":	 FIX_M("Thanksgiving",20,9,3),
+   "south korea/armed forces":	 FIXED("Armed Forces Day",1,10),
+   "south korea/foundation":     FIXED("Foundation Day",3,10),
+   "south korea/alphabet":       FIXED("Alphabet Day",9,10),
 
    "kuwait/independence":        FIXED("Independence Day",19,6),
    "kuwait/national":            FIXED("National Day",25,2),
@@ -1017,6 +1060,7 @@ constant events=([
    "liechtenstein/birthday of prince franz-josef ii":
                                FIXED("Birthday of Prince Franz-Josef II",16,8),
    "liechtenstein/national":     FIXED("National Day",15,8),
+   "liechtenstein/bank holiday": FIXED("Bank Holiday",2,1),
 
    "lithuania/coronation":       FIXED("Coronation Day",6,7),
    "lithuania/independence":     FIXED("Independence Day",16,2),
@@ -1157,6 +1201,8 @@ constant events=([
    "netherlands antilles/saba":  FIXED("Saba Day",6,12),
    "netherlands antilles/saint eustatius":FIXED("St Eustatius Day",16,11),
    "netherlands antilles/saint maarten":FIXED("St Maarten Day",11,11),
+   
+   "new caledonia/bridge":	 FIXED("Bridge Day",2,1),
 
    "new zealand/labor":          DWDR("Labor Day",1,11,1,-1),
    "new zealand/queens":         FIXED("Queen's Birthday",4,6),
@@ -1181,6 +1227,15 @@ constant events=([
 
    "northern mariana islands/commonwealth":FIXED("Commonwealth Day",3,1),
    "northern mariana islands/presidents":FIXED("Presidents Day",13,2),
+
+   "north korea/kim jong-il":	 FIXED("Kim Jong-il's Birthday",16,2),
+   "north korea/kim il-sun":     FIXED("Kim Il-Sun's Birthday",15,4),
+   "north korea/armed forces":   FIXED("Armed Forces Day",25,4),
+   "north korea/chilsok":        FIXED("Ch'ilsok",28,7),
+   "north korea/liberation":     FIXED("Anniversary of Liberation",15,8),
+   "north korea/independence":   FIXED("Independence Day",9,9),
+   "north korea/party foundation":FIXED("Party Foundation Day",10,10),
+   "north kroea/constutution":  FIXED("Anniversary of the Constitution",27,12),
 
    "norway/constitution":        FIXED("Constitution Day",17,5),
    "norway/olsok eve festival":  FIXED("Olsok Eve Festival",29,7),
@@ -1281,7 +1336,7 @@ constant events=([
    "rwanda/kamarampaka":         FIXED("Kamarampaka Day",25,9),
    "rwanda/peace and unity":     FIXED("Peace and Unity Day",5,7),
 
-   "saint kitts and nevis/carnival":FIXED("Carnival",31,12),
+   "saint kitts and nevis/carnival":FIX_M("Carnival",31,12,3),
    "saint kitts and nevis/independence":FIXED("Independence Day",19,9),
    "saint kitts and nevis/prince of wales":
                                  FIXED("Prince of Wales' Birthday",14,11),
@@ -1334,11 +1389,21 @@ constant events=([
    "singapore/national holiday": FIXED("National Holiday",9,8),
 // "singapore/vesak":            occurs in May,
 
+   "slovakia/independence":	 FIXED("Independence Day",1,1),
+   "slovakia/constitution":      FIXED("Constitution Day",1,9),
    "slovakia/day of the slav apostles":FIXED("Day of the Slav Apostles",5,7),
    "slovakia/liberation":        FIXED("Liberation Day",8,5),
    "slovakia/reconciliation":    FIXED("Reconciliation Day",1,11),
    "slovakia/slovak national uprising":
                                  FIXED("Slovak National Uprising Day",29,8),
+
+   "slovenia/culture":		 FIXED("Culture Day",8,2),
+   "slovenia/national resistance":FIXED("National Resistance Day",27,4),
+   "slovenia/national":		 FIXED("National Day",25,6),
+   "slovenia/peoples uprising":  FIXED("People's Uprising",25,7),
+   "slovenia/reformation":	 FIXED("Reformation Day",31,10),
+   "slovenia/remembrance":	 FIXED("Remembrance Day",1,11),
+   "slovenia/independence":	 FIXED("Independence Day",26,12),
 
    "solomon islands/independence":FIXED("Independence Day",7,7),
 
@@ -1359,6 +1424,7 @@ constant events=([
                FIX_M("Anniversary of the October Socialist Revolution",7,11,2),
    "soviet union/victory":       FIXED("Victory Day",9,5),
 
+   "spain/dia de la toma": FIXED("Dia de la Toma",5,1),
    "spain/constitution":         FIXED("Constitution Day",6,12),
    "spain/fiesta de san fermin": FIXED("Fiesta de San Fermin",7,7),
    "spain/fiesta del arbol":     FIXED("Fiesta del Arbol",26,3),
@@ -1528,6 +1594,7 @@ constant events=([
                               FIXED("Accession of the Ruler of Abu Dhabi",6,8),
    "united arab emirates/national":FIXED("National Day",2,12),
 
+   "uruguay/childrens":          FIXED("Chilren's Day",5,1),
    "uruguay/artigas":            FIXED("Artigas Day",19,6),
    "uruguay/battle of las piedras":FIXED("Battle of Las Piedras",18,5),
    "uruguay/blessing of the waters":FIXED("Blessing of the Waters",8,12),
@@ -1584,6 +1651,8 @@ constant events=([
    "us/patriots":                DWDRI("Patriot's Day",1,4,1,3),
    "us/robert e lee":            FIXED("Robert E. Lee Day",19,1),
    "us/thomas jeffersons":       FIXED("Thomas Jefferson's Birthday",13,4),
+   "us/twelfth night":	         FIXED("Twelfth Night",5,1),
+   "us/trivia":                  FIXED("Trivia Day",4,1),
    "us/veterans":                FIXED("Veteran's Day",11,11),
    "us/vietnam":                 FIXED("Vietnam Day",27,1),
    "us/washingtons":             DWDRI("Washington's Birthday",1,2,1,3),
@@ -1814,7 +1883,8 @@ constant events=([
    "us/virginia/royalist fast":     FIXED("Royalist Fast Day",30,1),
    "us/virginia/virginia ratification":FIXED("Virginia Ratification Day",25,6),
 
-   "us/washington/washington admission":FIXED("Washington Admission Day",11,11),
+   "us/washington/washington admission":
+   	                               FIXED("Washington Admission Day",11,11),
 
    "us/washington dc/arbor":        DWDRI("Arbor Day",1,4,5,3),
 
@@ -1831,6 +1901,13 @@ constant events=([
    "vanuatu/constitution":       FIXED("Constitution Day",5,10),
    "vanuatu/independence":       FIXED("Independence Day",30,7),
 
+   "vatican city/world peace":   FIXED("World Peace Day",1,1),
+   "vatican city/lateranensi pacts":
+	FIXED("Anniversary of Lateranensi Pacts",11,2),
+   "vatican city/pope election":    
+        FIXED("Anniversary of the Pope's election",16,10),
+
+   
    "vatican city/anniversary of the beginning of the john paul ii pontificate":
    FIXED("Anniversary of the Beginning of the John Paul II Pontificate",22,10),
    "vatican city/john paul ii namesday":FIXED("John Paul II Namesday",4,11),
@@ -1871,6 +1948,15 @@ constant events=([
 
    "yemen/corrective movement":  FIXED("Corrective Movement Anniversary",13,6),
    "yemen/national":             FIXED("National Day",14,10),
+
+   "yugoslavia/constitution":    FIXED("Constitution Day (Serbia)",28,3),
+   "yugoslavia/national":	 FIXED("National Day",27,4),
+   "yugoslavia/victory":	 FIXED("Victory Day",9,5),
+   "yugoslavia/freedom fighters":FIXED("Freedom Fighters' Day",4,7),
+   "yugoslavia/freedom serbia":  FIXED("Freedom Rising Day (Serbia)",7,7),
+   "yugoslavia/freedom montenegro":
+                            FIXED("Freedom Rising Day (Montenegro)",14,7),
+   "yugoslavia/republic":	 FIXED("Republic Day",29,11),
 
    "zaire/armed forces":         FIXED("Armed Forces Day",17,11),
    "zaire/constitution":         FIXED("Constitution Day",24,6),
@@ -2065,7 +2151,7 @@ mapping country_events=
       "albania/independence",
       "albania/liberation",
       "albania/proclamation of the republic",
-      "new year",
+      "new year 2d",
       "womens" }),
 
    "algeria":
@@ -2096,6 +2182,7 @@ mapping country_events=
    ({ "andorra/national feast",
       "c/boxing",
       "c/christmas",
+      "c/epiphany",
       "c/easter monday",
       "c/good friday",
       "new year" }),
@@ -2114,6 +2201,7 @@ mapping country_events=
       "angola/victory",
       "angola/workers",
       "angola/youth",
+      "angola/martyrs",
       "family",
       "new year" }),
 
@@ -2442,7 +2530,7 @@ mapping country_events=
       "bulgaria/viticulturists",
       "c/christmas",
       "labor",
-      "new year" }),
+      "new year 2d" }),
 
    "burkina faso":
  // "id al-adha" ?
@@ -2620,7 +2708,7 @@ mapping country_events=
       "china/tree planting",
       "china/youth",
       "labor",
-      "new year",
+      "new year 2d",
       "womens" }),
 
    "columbia":
@@ -2739,10 +2827,6 @@ mapping country_events=
       "labor",
       "new year" }),
 
-   "czechoslovakia":
- // "czechoslovakia/teachers" ?
-   ({ "czechoslovakia/resistance movement" }),
-
    "denmark":
  // "denmark/public holidays" ?
    ({ "denmark/birthday of queen margrethe ii",
@@ -2769,6 +2853,7 @@ mapping country_events=
       "c/easter monday",
       "c/good friday",
       "c/whitmonday",
+      "c/epiphany",
       "dominica/community service",
       "dominica/emancipation",
       "dominica/independence",
@@ -2912,7 +2997,6 @@ mapping country_events=
       "finland/midsummers eve",
       "finland/runebergs",
       "finland/snellman",
-      "finland/vappu",
       "finland/all saints",
       "finland/midsummer",
       "may day",
@@ -2996,6 +3080,7 @@ mapping country_events=
       "c/easter monday",
       "c/good friday",
       "c/whitmonday",
+      "c/epiphany",
       "germany/day of repentance",
       "germany/day of the workers",
       "germany/foundation",
@@ -3161,8 +3246,27 @@ mapping country_events=
       "new year" }),
 
    "haiti":
-   ({ "haiti/discovery",
-      "haiti/vertieres" }),
+   ({ "haiti/independence",
+      "haiti/ancestry",
+      "mardi gras",
+      "mardi gras 2",
+      "haiti/toussaint",
+      "haiti/pan american",
+      "c/good friday",
+      "haiti/labor",
+      "haiti/flag",
+      "haiti/sovereignty",
+      "c/corpus christi",
+      "haiti/agwe",
+      "haiti/papa ogou",
+      "c/assumption",
+      "haiti/dessalines",
+      "un",
+      "c/all saints",
+      "c/all souls",
+      "haiti/discovery",
+      "haiti/vertieres",
+      "c/christmas" }),
 
    "honduras":
    ({ "c/christmas",
@@ -3266,6 +3370,7 @@ mapping country_events=
    "italy":
  // "italy/saint marks" ?
    ({ "c/christmas",
+      "c/epiphany",
       "italy/anniversary of the republic",
       "italy/befana",
       "italy/day of conciliation",
@@ -3354,6 +3459,17 @@ mapping country_events=
       "jordan/independence",
       "jordan/king hussein" }),
 
+   "kazakhstan":
+   ({ "new year 2d",
+      "womens",
+      "kazakhstan/nauryz meyrami",
+      "kazakhstan/peoples unity",
+      "kazakhstan/victory",
+      "kazakhstan/national flag",
+      "kazakhstan/constitution",
+      "kazakhstan/republic",
+      "kazakhstan/independence"}),
+
    "kenya":
  // "id al-fitr" ?
    ({ "c/boxing",
@@ -3372,9 +3488,6 @@ mapping country_events=
       "kiribati/independence",
       "kiribati/youth",
       "new year" }),
-
-   "korea":
-   ({ "korea/independence movement" }),
 
    "kuwait":
  // "id al-adha" ?
@@ -3496,6 +3609,7 @@ mapping country_events=
       "c/whitmonday",
       "c/epiphany",
       "labor",
+      "liechtenstein/bank holiday",
       "liechtenstein/birthday of prince franz-josef ii",
       "liechtenstein/national",
       "new year" }),
@@ -3517,7 +3631,7 @@ mapping country_events=
       "luxembourg/grand duchess",
       "luxembourg/liberation",
       "luxembourg/national",
-      "new year" }),
+      "new year 2d" }),
 
    "macao":
  // "chinese mid-autumn festival" ?
@@ -3670,7 +3784,7 @@ mapping country_events=
       "c/good friday",
       "labor",
       "mauritius/independence",
-      "new year" }),
+      "new year 2d" }),
 
    "mexico":
  // "birthday of benito juarez easter" ?
@@ -3864,7 +3978,9 @@ mapping country_events=
       "c/easter monday",
       "c/whitmonday",
       "labor",
-      "new year" }),
+      "new year",
+      "new caledonia/bridge",
+   }),
 
    "new zealand":
    ({ "anzac",
@@ -3873,7 +3989,7 @@ mapping country_events=
       "c/easter monday",
       "c/good friday",
       "labor",
-      "new year",
+      "new year 2d",
       "new zealand/labor",
       "new zealand/queens",
       "new zealand/waitangi" }),
@@ -3931,6 +4047,20 @@ mapping country_events=
       "northern mariana islands/commonwealth",
       "northern mariana islands/presidents" }),
 
+   "north korea":
+   ({"new year 2d",
+//       "north korea/lunar new year",
+     "north korea/kim jong-il",
+     "womens",
+     "north korea/kim il-sun",
+     "north korea/armed forces",
+     "may day",
+     "north korea/chilsok",
+     "north korea/liberation",
+     "north korea/independence",
+     "north korea/party foundation",
+     "north kroea/constutution"}),
+	
    "norway":
    ({ "c/ascension",
       "c/christmas",
@@ -4123,7 +4253,7 @@ mapping country_events=
       "c/easter monday",
       "c/good friday",
       "labor",
-      "new year",
+      "new year 2d",
       "romania/liberation",
       "romania/national",
       "romania/public holiday" }),
@@ -4168,10 +4298,14 @@ mapping country_events=
       "c/good friday",
       "c/whitmonday",
       "labor",
-      "new year",
+      "new year 2d",
       "saint lucia/discovery",
       "saint lucia/independence",
       "saint lucia/thanksgiving" }),
+
+   "saint pierre and miquelon":
+   ({ "new year 2d",
+      "mardi gras" }),
 
    "saint vincent and the grenadines":
  // "carnival" ?
@@ -4251,7 +4385,7 @@ mapping country_events=
       "c/easter",
       "c/immaculate conception",
       "labor",
-      "new year",
+      "new year 2d",
       "seychelles/independence",
       "seychelles/liberation" }),
 
@@ -4285,17 +4419,39 @@ mapping country_events=
       "singapore/national holiday" }),
 
    "slovakia":
-   ({ "c/christmas",
+   ({ "c/christmas eve",
+      "c/christmas2d",
       "c/easter monday",
+      "c/all saints",
+      "c/good friday",
+      "c/epiphany",
+      "saints/cyril & methodius",
       "may day",
       "new year",
+      "slovakia/independence",
+      "slovakia/constitution",
       "slovakia/day of the slav apostles",
       "slovakia/liberation",
       "slovakia/reconciliation",
       "slovakia/slovak national uprising" }),
 
    "slovenia":
-   ({  }),
+   ({ "new year 2d",
+      "slovenia/culture",
+      "c/easter",
+      "c/easter monday",
+      "slovenia/national resistance",
+      "labor",
+      "labor 2",
+      "c/pentecost",
+      "slovenia/national",
+      "slovenia/peoples uprising",
+      "c/assumption",
+      "slovenia/reformation",
+      "c/all saints",
+      "slovenia/remembrance",
+      "c/christmas",
+      "slovenia/independence",}),
 
    "solomon islands":
    ({ "british commonwealth/queens",
@@ -4334,6 +4490,26 @@ mapping country_events=
       "south africa/van riebeeck",
       "south africa/workers" }),
 
+   "south korea":
+   ({ "new year 2d",
+      "south korea/folklore",
+      "chinese/new year",
+      "south korea/taeborum",
+      "south korea/independence",
+      "south korea/labor",
+      "south korea/arbor",
+      "south korea/childrens",
+      "south korea/buddha",
+      "south korea/memorial",
+      "south korea/constitution",
+      "south korea/liberation",
+      "south korea/republic",
+      "south korea/thanksgiving",
+      "south korea/armed forces",
+      "south korea/foundation",
+      "south korea/alphabet",
+      "c/christmas" }),
+
    "soviet union":
    ({ "soviet union/anniversary of the october socialist revolution",
       "soviet union/victory" }),
@@ -4357,6 +4533,7 @@ mapping country_events=
       "c/maundy thursday",
       "c/epiphany",
       "new year",
+      "spain/dia de la toma",
       "spain/constitution",
       "spain/fiesta de san fermin",
       "spain/fiesta del arbol",
@@ -4442,6 +4619,7 @@ mapping country_events=
       "c/easter monday",
       "c/good friday",
       "c/whitmonday",
+      "c/epiphany",
       "labor",
       "new year",
       "switzerland/berchtolds",
@@ -4683,7 +4861,8 @@ mapping country_events=
       "uruguay/blessing of the waters",
       "uruguay/constitution",
       "uruguay/independence",
-      "uruguay/landing of the 33 patriots" }),
+      "uruguay/landing of the 33 patriots",
+      "uruguay/childrens"}),
 
    "united kingdom":
    ({ "new year|h",
@@ -4755,6 +4934,8 @@ mapping country_events=
       "us/robert e lee",
       "us/thanksgiving",
       "us/thomas jeffersons",
+      "us/trivia",
+      "us/twelfth night",
       "us/veterans|h",
       "us/vietnam",
       "us/washingtons|h",
@@ -5289,8 +5470,28 @@ mapping country_events=
       "vanuatu/independence" }),
 
    "vatican city":
-   ({ "vatican city/anniversary of the beginning of the john paul ii pontificate",
-      "vatican city/john paul ii namesday" }),
+   ({ "saints/mary mother",
+      "new year",
+      "vatican city/world peace",
+      "c/epiphany",
+      "vatican city/lateranensi pacts",
+      "saints/joseph",
+      "c/holy thursday",
+      "c/good friday",
+      "c/easter",
+      "saints/joseph the worker",
+      "c/ascension",
+      "c/pentecost",
+      "c/corpus christi",
+      "saints/peter",
+      "saints/paul",
+      "c/assumption",
+      "vatican city/pope election",
+      "c/all saints",
+      "c/all souls",
+      "c/immaculate conception",
+      "c/christmas",
+      "saints/stephen" }),
 
    "venezuela":
  // "carnival" ?
@@ -5356,7 +5557,7 @@ mapping country_events=
       "c/christmas",
       "c/easter",
       "c/whitmonday",
-      "new year",
+      "new year 2d",
       "western samoa/arbor",
       "western samoa/independence",
       "western samoa/independence2",
@@ -5375,6 +5576,19 @@ mapping country_events=
       "womens",
       "yemen/corrective movement",
       "yemen/national" }),
+
+   "yugoslavia":
+   ({ "new year 2d",
+      "orthodox/christmas",
+      "orthodox/new year",
+      "yugoslavia/constitution", // serbia
+      "yugoslavia/national",
+      "labor",
+      "yugoslavia/victory",
+      "yugoslavia/freedom fighters",
+      "yugoslavia/freedom serbia", // serbia
+      "yugoslavia/freedom montenegro", // montenegro
+      "yugoslavia/republic" }),
 
    "zaire":
    ({ "c/christmas",
