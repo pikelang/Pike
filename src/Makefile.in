@@ -190,16 +190,6 @@ language.c: language.h
 
 module.c: modlist.h
 
-configure: configure.in
-	cd $(SRCDIR) && autoconf
-
-config.status: configure
-	./config.status --recheck
-	
-
-Makefile: Makefile.in config.status
-	./config.status
-
 machine.h: stamp-h
 
 stamp-h: machine.h.in config.status
