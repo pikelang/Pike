@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.41 2002/12/16 14:30:29 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.42 2002/12/20 19:09:08 grubba Exp $
  *
  */
 
@@ -38,7 +38,8 @@ string cquote(string n)
 string create_reference(string from, string to, string text) {
   return "<font face='courier'><a href='" +
     "../"*max(sizeof(from/"/") - 2, 0) +
-    map(replace(to, "::", "::.")/".", cquote)*"/" + ".html'>" + text +
+    map(replace(to, "::", "::.")/"." - ({ "" }), cquote)*"/" + ".html'>" +
+    text +
     "</a></font>";
 }
 
