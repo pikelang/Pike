@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.39 1999/05/13 07:25:43 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.40 1999/06/19 09:37:08 mirar Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -21,9 +21,7 @@ char *strdup(const char *str)
     int len = strlen(str)+1;
 
     res = xalloc(len);
-    if (res) {
-      MEMCPY(res, str, len);
-    }
+    MEMCPY(res, str, len);
   }
   return(res);
 }
@@ -596,7 +594,8 @@ void memfill(char *to,
 char *debug_xalloc(long size)
 {
   char *ret;
-  if(!size) return 0;
+  if(!size) 
+     error("Allocating zero bytes.\n");
 
   ret=(char *)malloc(size);
   if(ret) return ret;
