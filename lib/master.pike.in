@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.330 2004/01/12 23:17:02 nilsson Exp $
+// $Id: master.pike.in,v 1.331 2004/01/12 23:37:07 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -303,7 +303,6 @@ int newest;
 #define AUTORELOAD_BEGIN() \
     int ___newest=newest;  \
     newest=0
-    
 
 #define AUTORELOAD_FINISH(VAR, CACHE, FILE)				\
   if(autoreload_on) {							\
@@ -409,7 +408,7 @@ Stat master_file_stat(string x)
     else
       dir_cache[dir]=0;
   }
-  
+
 #ifdef __NT__
   file = lower_case(file);
 #endif
@@ -792,7 +791,7 @@ static program low_findprog(string pname,
 	  }
 	}
       }
-      
+
       resolv_debug ("low_findprog %s: compiling, mkobj: %O\n", fname, mkobj);
       INC_RESOLV_MSG_DEPTH();
       programs[fname]=ret=__empty_program(0, fname);
@@ -1729,7 +1728,7 @@ program|object findmodule(string fullname, object|void handler)
     resolv_debug ("findmodule(%O) => got object %O\n", fullname, o);
     return fc[fullname]=o;
   }
-    
+
 #if constant(load_module)
   if(master_file_stat(fakeroot(fullname+".so"))) {
     o = fc[fullname] = low_cast_to_object(fullname, "/.", handler);
@@ -1884,7 +1883,7 @@ class CompatResolver
       tmp=normalize_path(combine_path_with_cwd(tmp));
       pike_include_path-=({tmp});
     }
-  
+
   //! Add a directory to search for modules.
   //!
   //! This is the same as the command line option @tt{-M@}.
@@ -1898,7 +1897,7 @@ class CompatResolver
       root_module->add_path(tmp);
       pike_module_path = ({ tmp }) + (pike_module_path - ({ tmp }));
     }
-  
+
   //! Remove a directory to search for modules.
   //!
   //! This function performs the reverse operation of @[add_module_path()].
@@ -1912,7 +1911,7 @@ class CompatResolver
       root_module->rem_path(tmp);
       pike_module_path -= ({ tmp });
     }
-  
+
   //! Add a directory to search for programs.
   //!
   //! This is the same as the command line option @tt{-P@}.
@@ -1926,7 +1925,7 @@ class CompatResolver
       pike_program_path-=({tmp});
       pike_program_path=({tmp})+pike_program_path;
     }
-  
+
   //! Remove a directory to search for programs.
   //!
   //! This function performs the reverse operation of @[add_program_path()].
@@ -2285,7 +2284,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"ignore",         HAS_ARG, ({"-s"}), 0, 0}),
       ({"run_tool",       NO_ARG,  ({"-x"}), 0, 0}),
     }), 1);
-    
+
     /* Parse -M and -I backwards */
     for(int i=sizeof(q)-1; i>=0; i--)
     {
@@ -2358,11 +2357,11 @@ void _main(array(string) orig_argv, array(string) env)
       case "modpath":
 	add_module_path(q[i][1]);
 	break;
-	
+
       case "ipath":
 	add_include_path(q[i][1]);
 	break;
-	
+
       case "ppath":
 	add_program_path(q[i][1]);
 	break;
@@ -2384,7 +2383,7 @@ void _main(array(string) orig_argv, array(string) env)
 	break;
       }
     }
-    
+
     foreach(q, array opts)
     {
       switch(opts[0])
@@ -2399,11 +2398,11 @@ void _main(array(string) orig_argv, array(string) env)
 	       "welcome to redistribute it under certain conditions; Read the files\n"
 	       "COPYING and COPYRIGHT in the Pike distribution for more details.\n");
 	exit(0);
-	
+
       case "help":
 	werror( main_resolv("Tools","MasterHelp")->do_help(opts[1]) );
 	exit(0);
-	
+
       case "features":
 	postparseaction="features";
 	break;
@@ -2415,7 +2414,7 @@ void _main(array(string) orig_argv, array(string) env)
       case "showpaths":
 	werror(format_paths());
 	exit(0);
-	
+
       case "execute":
 #ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp", "bignum" );
@@ -2587,7 +2586,7 @@ void _main(array(string) orig_argv, array(string) env)
   }
   if(ret >=0) exit([int]ret);
   _async=1;
-  
+
   while(1)
   {
     mixed err=catch 
@@ -2761,8 +2760,6 @@ static object _charset_mod;
 //! character code conversion.
 string decode_charset(string data, string charset)
 {
-  // werror("decode_charset(%O, %O)\n", data, charset);
-
   if (!_charset_mod) {
     object mod = [object]resolv("Locale");
 
@@ -2771,7 +2768,6 @@ string decode_charset(string data, string charset)
       compile_cb_error ("Cannot handle charset - no Locale.Charset module found.");
   }
 
-
   if (mixed err = catch {
       object decoder = ([function(string:object)]_charset_mod->decoder)(charset);
       return ([function(void:string)]([function(string:object)]decoder->
@@ -2779,7 +2775,6 @@ string decode_charset(string data, string charset)
     })
     compile_cb_rethrow (err);
 }
-
 
 
 class Describer
@@ -2812,7 +2807,6 @@ class Describer
 	if (!ident[stuff]++)
 	  identify_stack += indices([mapping]stuff) + values([mapping]stuff);
       }
-      
     }
   }
 
@@ -2822,18 +2816,15 @@ class Describer
     if(sizeof(m) < maxlen)
     {
       string t = sprintf("%O", m);
-      if (sizeof(t) < (maxlen + 2)) {
+      if (sizeof(t) < (maxlen + 2))
 	return t;
-      }
       t = 0;
     }
     clipped++;
     if(maxlen>10)
-    {
       return sprintf("%O+[%d]",m[..maxlen-5],sizeof(m)-(maxlen-5));
-    }else{
-      return "string["+sizeof(m)+"]";
-    }
+
+    return "string["+sizeof(m)+"]";
   }
 
   string describe_array (array m, int maxlen)
@@ -2971,9 +2962,9 @@ class Describer
 
 	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
 	  }
-	
+
 	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
-	
+
 	  if(newlen<8 || newlen >= last_newlen) break;
 	  last_newlen=newlen;
 	}
@@ -3381,7 +3372,7 @@ string describe_backtrace(array|object trace, void|int linewidth)
 	  }
 
 	  string data;
-	  
+
 	  if(sizeof(tmp)>=3)
 	  {
 	    if(functionp(tmp[2])) {
@@ -3391,7 +3382,7 @@ string describe_backtrace(array|object trace, void|int linewidth)
 	      data = [string]tmp[2];
 	    } else
 	      data ="unknown function";
-	    
+
 	    data+="("+
 	      desc->describe_comma_list(tmp[3..], backtrace_len)+
 	    ")";
@@ -3924,8 +3915,8 @@ class Encoder
 
     ENC_MSG ("  encoding recursively\n");
     return ([])[0];
-  } 
-  
+  }
+
   mixed encode_object(object x)
   {
     DEC_MSG ("encode_object (%O)\n", x);
@@ -4165,7 +4156,7 @@ class Version
   }
 
 #define CMP(X)  ((major - ([object]X)->major) || (minor - ([object]X)->minor))
-  
+
   //! Methods define so that version objects
   //! can be compared and ordered.
   int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
@@ -4205,9 +4196,9 @@ CompatResolver get_compilation_handler(int major, int minor)
     /* do we want to make an error if major.minor > __MAJOR__.__MINOR ? */
     return 0;
   }
-  
+
   CompatResolver ret;
-  
+
   if(!zero_type(ret=compat_handler_cache[v])) return ret;
 
   array(string) files;
