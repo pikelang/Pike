@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.97 2000/12/06 12:37:42 mirar Exp $
+ * $Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.97 2000/12/06 12:37:42 mirar Exp $");
+RCSID("$Id: system.c,v 1.98 2000/12/06 14:50:06 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1456,6 +1456,7 @@ static struct pike_string *s_nproc=NULL;
 static struct pike_string *s_nofile=NULL;
 static struct pike_string *s_memlock=NULL;
 static struct pike_string *s_as=NULL;
+static struct pike_string *s_vmem=NULL;
 
 static void make_rlimit_strings()
 {
@@ -1469,6 +1470,7 @@ static void make_rlimit_strings()
    MAKE_CONSTANT_SHARED_STRING(s_nofile,"nofile");
    MAKE_CONSTANT_SHARED_STRING(s_memlock,"memlock");
    MAKE_CONSTANT_SHARED_STRING(s_as,"as");
+   MAKE_CONSTANT_SHARED_STRING(s_vmem,"vmem");
 }
 #endif
 
@@ -1526,6 +1528,10 @@ static void f_getrlimit(INT32 args)
    else if (sp[-args].u.string==s_as)
       res=getrlimit(RLIMIT_AS,&rl);
 #endif
+#ifdef RLIMIT_VMEM
+   else if (sp[-args].u.string==s_vmem)
+      res=getrlimit(RLIMIT_VMEM,&rl);
+#endif
 /* NOFILE is called OFILE on some systems */
 #ifdef RLIMIT_OFILE
    else if (sp[-args].u.string==s_nofile)
@@ -1540,6 +1546,7 @@ static void f_getrlimit(INT32 args)
 	    sp[-args].u.string==s_nproc    ||
 	    sp[-args].u.string==s_nofile   ||
 	    sp[-args].u.string==s_memlock  ||
+	    sp[-args].u.string==s_vmem     ||
 	    sp[-args].u.string==s_as)
    {
 /* no such resource on this system */
@@ -1658,6 +1665,16 @@ static void f_getrlimits(INT32 args)
    n+=2;
 #endif
    
+#ifdef RLIMIT_VMEM
+#if RLIMIT_VMEM != RLIMIT_AS
+/* they are alias on some systems, OSF1 for one */
+   ref_push_string(s_vmem);
+   ref_push_string(s_vmem);
+   f_getrlimit(1);
+   n+=2;
+#endif
+#endif
+   
    f_aggregate_mapping(n);
 }
 
@@ -1737,6 +1754,10 @@ static void f_setrlimit(INT32 args)
    else if (sp[-args].u.string==s_as)
       res=setrlimit(RLIMIT_AS,&rl);
 #endif
+#ifdef RLIMIT_VMEM
+   else if (sp[-args].u.string==s_vmem)
+      res=setrlimit(RLIMIT_VMEM,&rl);
+#endif
 /* NOFILE is called OFILE on some systems */
 #ifdef RLIMIT_OFILE
    else if (sp[-args].u.string==s_nofile)
@@ -1751,6 +1772,7 @@ static void f_setrlimit(INT32 args)
 	    sp[-args].u.string==s_nproc    ||
 	    sp[-args].u.string==s_nofile   ||
 	    sp[-args].u.string==s_memlock  ||
+	    sp[-args].u.string==s_vmem     ||
 	    sp[-args].u.string==s_as)
       Pike_error("setrlimit: no %s resource on this system\n",
 		 sp[-args].u.string->str);
