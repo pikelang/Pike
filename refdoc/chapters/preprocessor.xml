@@ -123,7 +123,7 @@ cleaner looking code and to write less.</p>
 </example>
 
 <ul>
-<li>A macro can have up to 255 arguments.</li>
+<li>A macro can have up to 254 arguments.</li>
 <li>It can be wise to put extra parentheses around the arguments
 expanded since it is a purely textual expansion. I.e. if the macro
 DOUBLE(X) is defined as X*2, then DOUBLE(2+3) will produce 2+3*2,
@@ -303,6 +303,15 @@ file.</p>
 </subsection>
 
 <subsection title="#pragma save_parent and #pragma dont_save_parent">
+</subsection>
+
+<subsection title="#warning">
+<p>Generates a warning during compilation.</p>
+<example>
+#if !constant(Crypto.SHA1.hash)
+#warning SHA1 hash not available.
+#endif
+</example>
 </subsection>
 
 </section>
