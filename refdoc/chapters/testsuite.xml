@@ -100,6 +100,7 @@ make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
   <r><c>4</c><c>Time spent in individual tests are printed out.</c></r>
   <r><c>10</c><c>The actual pike code compiled, including wrappers, is
                  printed. Note that the code will be quoted.</c></r>
+  </matrix>
 
 <example>
 $ pike bin/test_pike.pike -v1 testsuite 
