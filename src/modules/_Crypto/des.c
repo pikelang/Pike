@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.2 1996/11/07 20:30:48 grubba Exp $
+ * $Id: des.c,v 1.3 1996/11/07 20:47:32 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -79,14 +79,14 @@ static void exit_pike_des(struct object *o)
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
-  push_integer(8);
+  push_int(8);
 }
 
 /* int query_key_length(void) */
 static void f_query_key_length(INT32 args)
 {
   pop_n_elems(args);
-  push_integer(8);
+  push_int(8);
 }
 
 /* void set_key(string) */
