@@ -110,7 +110,7 @@ import Getopt;
 	  c[1]=c[1][sizeof(backtrace())..];
 	  write(describe_backtrace(c));
 	}else{
-	  write(sprintf("Error in evalutation: %O\n",c));
+	  write(sprintf("Error in evaluation: %O\n",c));
 	}
       }else{
 	if(show_result)
