@@ -132,12 +132,12 @@ pike: $(OBJ) compile_interpret modules/linker_options
 # purify
 pure: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) compile_interpret module_objects
