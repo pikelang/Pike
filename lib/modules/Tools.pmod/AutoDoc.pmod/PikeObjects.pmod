@@ -215,6 +215,21 @@ class DocGroup {
     if (appears) m->appears = appears;
     if (belongs) m->belongs = belongs;
     if (global)  m->global = "predef";
+
+    // Check if homogeneous
+    mapping (string:int) types = ([]);
+    mapping (string:int) names = ([]);
+    foreach(objects, PikeObject obj) {
+      types[obj->objtype] = 1;
+      if (obj->name)
+        names[obj->name] = 1;
+    }
+    if (sizeof(types) == 1) {
+      m["homogen-type"] = indices(types)[0];
+      if (sizeof(names) == 1)
+        m["homogen-name"] = objects[0]->name;
+    }
+
     string res = opentag("docgroup", m);
     foreach(objects, PikeObject obj)
       res += obj->xml() + "\n";
