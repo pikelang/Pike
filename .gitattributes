@@ -34,6 +34,15 @@ testfont binary
 /lib/master.pike.in foreign_ident
 /lib/modules/ADT.pmod/Queue.pike foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
+/lib/modules/Cache.pmod/Policy.pmod/Base.pike foreign_ident
+/lib/modules/Cache.pmod/Policy.pmod/Multiple.pike foreign_ident
+/lib/modules/Cache.pmod/Policy.pmod/Sized.pike foreign_ident
+/lib/modules/Cache.pmod/Policy.pmod/Timed.pike foreign_ident
+/lib/modules/Cache.pmod/Storage.pmod/Base.pike foreign_ident
+/lib/modules/Cache.pmod/Storage.pmod/Gdbm.pike foreign_ident
+/lib/modules/Cache.pmod/Storage.pmod/Memory.pike foreign_ident
+/lib/modules/Cache.pmod/Storage.pmod/Yabu.pike foreign_ident
+/lib/modules/Cache.pmod/cache.pike foreign_ident
 /lib/modules/Crypto/_rsa.pike foreign_ident
 /lib/modules/Crypto/des3.pike foreign_ident
 /lib/modules/Crypto/des3_cbc.pike foreign_ident
