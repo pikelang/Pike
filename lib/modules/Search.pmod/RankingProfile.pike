@@ -1,6 +1,6 @@
-array(int) field_ranking;
-array(int) proximity_ranking;
-int cutoff;
+static array(int) field_ranking;
+static array(int) proximity_ranking;
+static int cutoff;
 
 void create(void|int _cutoff, void|array(int) _proximity_ranking,
 	    void|Search.Database.Base db, void|mapping(string:int) _field_ranking)

@@ -93,7 +93,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   return res;
 }
 
-mapping num =
+static mapping num =
   mkmapping( map(Array.enumerate(255),
 		 lambda(int in){ return "&#"+in+";"; }),
 	     map(Array.enumerate(255),
@@ -107,7 +107,7 @@ mapping num =
 	     map(Array.enumerate(255),
 		 lambda(int in){ return sprintf("%c", in); }) );
 
-constant iso88591
+static constant iso88591
 =([ "&nbsp;":   " ",
     "&iexcl;":  "¡",
     "&cent;":   "¢",
@@ -206,7 +206,7 @@ constant iso88591
     "&yuml;":   "ÿ",
 ]);
 
-constant international
+static constant international
 =([ "&OElig;":  "\x0152",
     "&oelig;":  "\x0153",
     "&Scaron;": "\x0160",
@@ -237,7 +237,7 @@ constant international
     "&euro;":   "\x20AC",
 ]);
 
-constant symbols
+static constant symbols
 =([ "&fnof;":     "\x0192",
     "&thetasym;": "\x03D1",
     "&upsih;":    "\x03D2",
@@ -315,7 +315,7 @@ constant symbols
     "&diams;":    "\x2666",
 ]);
 
-constant greek
+static constant greek
 = ([ "&Alpha;":   "\x391",
      "&Beta;":    "\x392",
      "&Gamma;":   "\x393",
@@ -367,9 +367,9 @@ constant greek
      "&omega;":   "\x3C9",
 ]);
 
-array replace_entities = indices( iso88591 )+indices( international )+
+static array replace_entities = indices( iso88591 )+indices( international )+
   indices( symbols )+indices( greek )+indices( num )+
   ({"&lt;","&gt;","&amp;","&quot;","&apos;"});
 
-array replace_values = values( iso88591 )+values( international )+
+static array replace_values = values( iso88591 )+values( international )+
   values( symbols )+values( greek )+values( num )+({"<",">","&","\"","\'"});
