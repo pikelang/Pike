@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.72 1998/04/09 21:11:03 hubbe Exp $
+# $Id: Makefile.in,v 1.73 1998/04/10 04:36:52 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -358,7 +358,7 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 # and thus has to follow the rules stated in that code.
 export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
-	$(RUNPIKE) $(TMP_BINDIR)/export.pike Odbc Oracle _Crypto
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike Odbc Oracle _Crypto Postgres
 
 full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
