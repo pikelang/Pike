@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.1 2001/09/05 05:41:11 hubbe Exp $");
+RCSID("$Id: mpf.cmod,v 1.2 2001/09/24 11:09:21 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -59,7 +60,6 @@ PIKECLASS mpf
 				  struct pike_string *digits,
 				  int base)
     {
-      int exp;
       char *str;
   
       if(digits->size_shift)
@@ -80,7 +80,7 @@ PIKECLASS mpf
 	}
 	  
 	case T_INT:
-	  mpf_set_si(tmp, (double) s->u.integer);
+	  mpf_set_si(tmp, (signed long int) s->u.integer);
 	  break;
 	  
 	case T_OBJECT:
@@ -259,7 +259,6 @@ PIKECLASS mpf
       INT_TYPE precision, width, base = 0, mask_shift = 0;
       struct pike_string *s = 0;
       INT_TYPE flag_left;
-      struct svalue *sv;
 
       precision=lookup("Gmp.Mpf->_sprintf",flags,"precision",7);
       width=lookup("Gmp.Mpf->_sprintf",flags,"width",-1);
@@ -290,11 +289,12 @@ PIKECLASS mpf
     }
   
   PIKEFUN void cast(string s)
-    {
-      add_ref(s);
+  {
+    add_ref(s);
       
-      pop_n_elems(args);
+    pop_n_elems(args);
       
+    if (s->len) {
       switch(s->str[0])
       {
 	case 's':
@@ -336,15 +336,14 @@ PIKECLASS mpf
 	  {
 	    push_object(this_object());
 	  }
-	  break;
-	  
+	  break;	  
       }
+    }  
+    free_string(s);
       
-      free_string(s);
-      
-      Pike_error("mpf->cast() to \"%s\" is other type than int, string or float.\n",
-		 s->str);
-    }
+    Pike_error("mpf->cast() to \"%s\" is other type than int, string or float.\n",
+	       s->str);
+  }
 
 #ifdef DEBUG_MALLOC
 #define get_mpf(X,Y,Z) \
@@ -458,7 +457,6 @@ PIKECLASS mpf
 
   PIKEFUN object `+(int|float|object ... a)
     {
-      INT32 e;
       struct object *res;
 
       res = get_mpf_with_prec( add_convert_args(args) );
@@ -470,7 +468,6 @@ PIKECLASS mpf
   
   PIKEFUN object ``+(int|float|object ... a)
     {
-      INT32 e;
       struct object *res;
 
       res = get_mpf_with_prec( add_convert_args(args) );
@@ -484,7 +481,6 @@ PIKECLASS mpf
 
   PIKEFUN object `+=(int|float|object ... a)
   {
-    INT32 e;
     unsigned long int prec;
     prec=add_convert_args(args);
     if(prec > mpf_get_prec(THISMPF))
@@ -564,7 +560,6 @@ PIKECLASS mpf
 
   PIKEFUN object `-(int|float|object ... a)
     {
-      INT32 e;
       struct object *res;
       
       res = get_mpf_with_prec( add_convert_args(args) );

@@ -118,7 +118,7 @@ static void matrixX(_create)(INT32 args)
    }
    else if (sp[-args].type==T_INT)
    {
-      FTYPE z=0.0;
+      FTYPE z = DO_NOT_WARN((FTYPE)0.0);
 
       if (args<2)
 	 SIMPLE_TOO_FEW_ARGS_ERROR("matrix",2);
@@ -169,7 +169,7 @@ static void matrixX(_create)(INT32 args)
       {
 	 xs=THIS->xsize;
 	 for (i=0; i<xs && i<ys; i++)
-	    THIS->m[i*(xs+1)]=1.0;
+	    THIS->m[i*(xs+1)] = DO_NOT_WARN((FTYPE)1.0);
       }
 
 done_made:
@@ -189,10 +189,10 @@ done_made:
 	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR("Matrix",sizeof(FTYPE)*side*side);
 
   	 n=side*side;
-	 while (n--) *(m++)=0.0; 
+	 while (n--) *(m++) = DO_NOT_WARN((FTYPE)0.0); 
 	 n=side*side;
 	 for (i=0; i<n; i+=side+1)
-	    THIS->m[i]=1.0;
+	    THIS->m[i] = DO_NOT_WARN((FTYPE)1.0);
       }
       else if (sp[-args].u.string==s_rotate)
       {
@@ -228,23 +228,23 @@ done_made:
 	 if (!m) SIMPLE_OUT_OF_MEMORY_ERROR("Matrix",sizeof(FTYPE)*side*side);
 
 	 n=side*side;
-	 while (n--) *(m++)=0.0;
+	 while (n--) *(m++) = DO_NOT_WARN((FTYPE)0.0);
 	 for (n=3; i<side; i++)
-	    THIS->m[i*(side+1)]=1.0;
+	    THIS->m[i*(side+1)] = DO_NOT_WARN((FTYPE)1.0);
 	 c = cos(r);
 	 s = sin(r);
 
-	 THIS->m[0+0*side]=x*x*(1-c)+c;
-	 THIS->m[1+0*side]=x*y*(1-c)-z*s;
-	 THIS->m[0+1*side]=y*x*(1-c)+z*s;
-	 THIS->m[1+1*side]=y*y*(1-c)+c;
+	 THIS->m[0+0*side] = DO_NOT_WARN((FTYPE)(x*x*(1-c)+c));
+	 THIS->m[1+0*side] = DO_NOT_WARN((FTYPE)(x*y*(1-c)-z*s));
+	 THIS->m[0+1*side] = DO_NOT_WARN((FTYPE)(y*x*(1-c)+z*s));
+	 THIS->m[1+1*side] = DO_NOT_WARN((FTYPE)(y*y*(1-c)+c));
 	 if (side>2)
 	 {
-	    THIS->m[2+0*side]=x*z*(1-c)+y*s;
-	    THIS->m[2+1*side]=y*z*(1-c)-x*s;
-	    THIS->m[0+2*side]=z*x*(1-c)-y*s;
-	    THIS->m[1+2*side]=z*y*(1-c)+x*s;
-	    THIS->m[2+2*side]=z*z*(1-c)+c;
+	    THIS->m[2+0*side] = DO_NOT_WARN((FTYPE)(x*z*(1-c)+y*s));
+	    THIS->m[2+1*side] = DO_NOT_WARN((FTYPE)(y*z*(1-c)-x*s));
+	    THIS->m[0+2*side] = DO_NOT_WARN((FTYPE)(z*x*(1-c)-y*s));
+	    THIS->m[1+2*side] = DO_NOT_WARN((FTYPE)(z*y*(1-c)+x*s));
+	    THIS->m[2+2*side] = DO_NOT_WARN((FTYPE)(z*z*(1-c)+c));
 	 }
       }
       else
@@ -416,7 +416,7 @@ static void matrixX(_norm)(INT32 args)
    while (n--)
       z+=*s**s,s++;
 
-   push_float(sqrt(z));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)sqrt(z)));
 }
 
 static void matrixX(_norm2)(INT32 args)
@@ -436,7 +436,7 @@ static void matrixX(_norm2)(INT32 args)
    while (n--)
       z+=*s**s,s++;
 
-   push_float(z);
+   push_float(DO_NOT_WARN((FLOAT_TYPE)z));
 }
 
 static void matrixX(_normv)(INT32 args)
@@ -450,7 +450,8 @@ static void matrixX(_normv)(INT32 args)
    }
    else
    {
-      sp[-1].u.float_number=1.0/sp[-1].u.float_number;
+      sp[-1].u.float_number =
+	DO_NOT_WARN((FLOAT_TYPE)(1.0/sp[-1].u.float_number));
       matrixX(_mult)(1);
    }
 }

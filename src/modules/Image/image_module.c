@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.11 2001/03/29 02:54:12 per Exp $");
+RCSID("$Id: image_module.c,v 1.12 2001/09/24 11:11:57 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -104,7 +104,6 @@ static inline long TO_LONG(ptrdiff_t x)
 
 static void image_magic_index(INT32 args)
 {
-   struct svalue tmp;
    int i;
 
    if (args!=1) 

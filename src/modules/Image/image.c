@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.191 2001/07/19 21:10:40 nilsson Exp $ */
+/* $Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.191 2001/07/19 21:10:40 nilsson Exp $
+**!	$Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.191 2001/07/19 21:10:40 nilsson Exp $");
+RCSID("$Id: image.c,v 1.192 2001/09/24 11:13:36 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1843,7 +1843,7 @@ static void image_tuned_box(INT32 args)
 					     (tfy=tune_factor(yw-y,dyw))*tfx1);
 		add_to_rgbda_sum_with_factor(&sum, bottomright, tfy*tfx2);
 
-		sum.alpha*=(1.0/255.0);
+		sum.alpha *= DO_NOT_WARN((float)(1.0/255.0));
 
 		rgb.r = DO_NOT_WARN((float)(sum.r*(1.0-sum.alpha)+img->r*sum.alpha));
 		rgb.g = DO_NOT_WARN((float)(sum.g*(1.0-sum.alpha)+img->g*sum.alpha));
@@ -4271,7 +4271,8 @@ static void image__sprintf( INT32 args )
      push_constant_text( "Image.Image( %d x %d /* %.1fKb */)" );
      push_int( THIS->xsize );
      push_int( THIS->ysize );
-     push_float( (THIS->xsize * THIS->ysize) / 1024.0 * 3.0 ); 
+     push_float( DO_NOT_WARN((FLOAT_TYPE)((THIS->xsize * THIS->ysize) /
+					  1024.0 * 3.0)) ); 
      f_sprintf( 4 );
      return;
    default:

@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.97 2001/09/20 19:37:32 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.98 2001/09/24 11:04:51 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -831,7 +832,7 @@ static void name(INT32 args)						\
 	  ret = ret OP double_from_sval(sp-args);		        \
 									\
 	pop_n_elems(args);						\
-	push_float( ret );						\
+	push_float( (FLOAT_TYPE)ret );					\
 	return;								\
  STRINGCONV(                                                            \
        case T_STRING:                                                   \
@@ -880,7 +881,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
 	  ret = ret OP double_from_sval(sp-args);		        \
 									\
 	pop_n_elems(args);						\
-	push_float( ret );						\
+	push_float( (FLOAT_TYPE)ret );					\
 	return;								\
        case T_STRING:                                                   \
         push_string(low_get_mpz_digits(THIS, 10));                      \
@@ -923,7 +924,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
 	  ret = ret OP double_from_sval(sp-args);	        	\
 									\
 	pop_n_elems(args);						\
-	push_float( ret );						\
+	push_float( (FLOAT_TYPE)ret );					\
 	return;								\
        case T_STRING:                                                   \
         MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
@@ -1525,8 +1526,8 @@ void pike_module_exit(void)
 #define MPZ_DEFS()							\
   ADD_STORAGE(MP_INT);							\
   									\
-  /* function(void|string|int|float|object:void)"			\
-  "|function(string,int:void) */					\
+  /* function(void|string|int|float|object:void)" */			\
+  /* "|function(string,int:void) */					\
   ADD_FUNCTION("create", mpzmod_create,					\
 	       tOr(tFunc(tOr5(tVoid,tStr,tInt,tFlt,			\
 			      tObj),tVoid),				\

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.47 2001/03/04 15:27:55 mirar Exp $
+**!	$Id: image.h,v 1.48 2001/09/24 11:22:57 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -32,7 +32,7 @@ extern int image_cpuid;
 #define COLORL_TO_COLOR(X) ((COLORTYPE)((X)>>23))
 #define COLOR_TO_COLORL(X) ((((INT32)(X))*0x0808080)+((X)>>1))
 #define COLOR_TO_FLOAT(X) (((float)(X))/(float)COLORMAX)
-#define COLORL_TO_FLOAT(X) ((((float)(X))/(float)(COLORLMAX>>8))/256.0)
+#define COLORL_TO_FLOAT(X) ((float)((((float)(X))/(float)(COLORLMAX>>8))/256.0))
 
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.73 2001/07/27 15:20:45 nilsson Exp $
+**!	$Id: layers.c,v 1.74 2001/09/24 11:35:00 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -217,7 +217,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.73 2001/07/27 15:20:45 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.74 2001/09/24 11:35:00 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -776,9 +776,9 @@ static INLINE void hls_to_rgb(double h,double l,double s,rgb_group *rgb)
    if (s == 0)
    {
 /*  achromatic case  */
-      rgb->r = l;
-      rgb->g = l;
-      rgb->b = l;
+      rgb->r = (COLORTYPE)l;
+      rgb->g = (COLORTYPE)l;
+      rgb->b = (COLORTYPE)l;
    }
    else
    {
@@ -2408,7 +2408,6 @@ static void lm_spec_burn_alpha(struct layer *ly,
 	     ly->fill.g!=0 ||
 	     ly->fill.b!=0)
 	 {
-	    rgb_group fill=ly->fill;
 	    while (len--)
 	    {
 	       d->r=MINIMUM(s->r+la->r,COLORMAX);
@@ -2635,8 +2634,6 @@ static INLINE void img_lay_stroke(struct layer *ly,
    }
    else
    {
-      int i;
-
 /* fprintf(stderr,"ly=%p len=%d\n",ly,len); */
 
       while (len>SNUMPIXS)
@@ -2831,8 +2828,6 @@ void img_lay(struct layer **layer,
 		(layer[z]->yoffs<=y+dest->yoffs &&
 		 y+dest->yoffs<layer[z]->yoffs+layer[z]->ysize))
 	    {
-	       rgb_group *tmp;
-
 /* 	       if (!layer[z]->really_optimize_alpha) */
 /* 		  fprintf(stderr,"huh %d\n",z); */
 /* 	       if (!(layer[z]->yoffs>=y+dest->yoffs &&  */
@@ -3275,8 +3270,6 @@ static void image_layer__sprintf( INT32 args )
 
 void init_image_layers(void)
 {
-   char buf[100];
-   char buf2[sizeof(INT32)];
    int i;
 
    for (i=0; i<LAYER_MODES; i++)

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.56 2001/09/17 19:06:21 nilsson Exp $
+**!	$Id: colors.c,v 1.57 2001/09/24 11:30:25 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -188,7 +188,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.56 2001/09/17 19:06:21 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.57 2001/09/24 11:30:25 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -507,9 +507,9 @@ static void image_color_hsvf(INT32 args)
    h *= 60; /* now in degrees. */
    if(h<0) h+=360;
 
-   push_float(h);
-   push_float(s);
-   push_float(v);
+   push_float(DO_NOT_WARN((FLOAT_TYPE)h));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)s));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)v));
    f_aggregate(3);
 }
 
@@ -544,10 +544,10 @@ static void image_color_cmyk(INT32 args)
    m=1.0-g-k;
    y=1.0-b-k;
 
-   push_float(c*100.0);
-   push_float(m*100.0);
-   push_float(y*100.0);
-   push_float(k*100.0);
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(c*100.0)));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(m*100.0)));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(y*100.0)));
+   push_float(DO_NOT_WARN((FLOAT_TYPE)(k*100.0)));
    f_aggregate(4);
 }
 
@@ -1070,9 +1070,10 @@ static void image_color_light(INT32 args)
    sp--;
    dmalloc_touch_svalue(sp);
    push_array_items(sp->u.array); /* frees */
-   sp[-1].u.float_number+=+0.2;
-   if (sp[-1].u.float_number>=1.0)
-      sp[-2].u.float_number-=sp[-1].u.float_number-1.0;
+   sp[-1].u.float_number += DO_NOT_WARN((FLOAT_TYPE)0.2);
+   if (((double)sp[-1].u.float_number) >= 1.0)
+      sp[-2].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)(sp[-1].u.float_number -
+							1.0));
 
    image_make_hsv_color(3);
 }
@@ -1125,12 +1126,12 @@ static void image_color_dull(INT32 args)
 
    if (sp[-2].u.float_number==0.0)
    {
-      sp[-1].u.float_number-=0.2;
+      sp[-1].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)0.2);
    }
    else
    {
-      sp[-2].u.float_number-=0.2;
-      sp[-1].u.float_number-=0.2;
+      sp[-2].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)0.2);
+      sp[-1].u.float_number -= DO_NOT_WARN((FLOAT_TYPE)0.2);
    }
    image_make_hsv_color(3);
 }
@@ -1579,9 +1580,9 @@ static void image_make_hsv_color(INT32 args)
    } else {
 #define i floor(h)
 #define f (h-i)
-#define p (v * (1 - s))
-#define q (v * (1 - (s * f)))
-#define t (v * (1 - (s * (1 -f))))
+#define p ((FLOAT_TYPE)(v * (1 - s)))
+#define q ((FLOAT_TYPE)(v * (1 - (s * f))))
+#define t ((FLOAT_TYPE)(v * (1 - (s * (1 -f)))))
       switch(DOUBLE_TO_INT(i))
       {
          case 6: /* 360 degrees. Same as 0.. */

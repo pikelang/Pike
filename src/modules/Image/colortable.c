@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.105 2001/07/19 21:09:56 nilsson Exp $ */
+/* $Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.105 2001/07/19 21:09:56 nilsson Exp $
+**!	$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.105 2001/07/19 21:09:56 nilsson Exp $");
+RCSID("$Id: colortable.c,v 1.106 2001/09/24 11:21:16 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3867,10 +3867,10 @@ void image_colortable_floyd_steinberg(INT32 args)
    if (fabs(sum)<1e-10) sum=1.0;
    sum/=factor;
 
-   THIS->du.floyd_steinberg.forward = DO_NOT_WARN(forward/sum);
-   THIS->du.floyd_steinberg.downforward = DO_NOT_WARN(downforward/sum);
-   THIS->du.floyd_steinberg.down = DO_NOT_WARN(down/sum);
-   THIS->du.floyd_steinberg.downback = DO_NOT_WARN(downback/sum);
+   THIS->du.floyd_steinberg.forward = DO_NOT_WARN((float)(forward/sum));
+   THIS->du.floyd_steinberg.downforward = DO_NOT_WARN((float)(downforward/sum));
+   THIS->du.floyd_steinberg.down = DO_NOT_WARN((float)(down/sum));
+   THIS->du.floyd_steinberg.downback = DO_NOT_WARN((float)(downback/sum));
 
    THIS->dither_type = NCTD_FLOYD_STEINBERG;
 
@@ -3881,10 +3881,10 @@ void image_colortable_floyd_steinberg(INT32 args)
 /* called by GIF encoder */
 void image_colortable_internal_floyd_steinberg(struct neo_colortable *nct)
 {
-   nct->du.floyd_steinberg.forward=0.95*(7.0/16);
-   nct->du.floyd_steinberg.downforward=0.95*(1.0/16);
-   nct->du.floyd_steinberg.down=0.95*(5.0/16);
-   nct->du.floyd_steinberg.downback=0.95*(3.0/16);
+   nct->du.floyd_steinberg.forward = DO_NOT_WARN((float)(0.95*(7.0/16)));
+   nct->du.floyd_steinberg.downforward = DO_NOT_WARN((float)(0.95*(1.0/16)));
+   nct->du.floyd_steinberg.down = DO_NOT_WARN((float)(0.95*(5.0/16)));
+   nct->du.floyd_steinberg.downback = DO_NOT_WARN((float)(0.95*(3.0/16)));
 
    nct->dither_type=NCTD_FLOYD_STEINBERG;
 }

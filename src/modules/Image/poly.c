@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: poly.c,v 1.12 2000/12/05 21:08:26 per Exp $
+**!	$Id: poly.c,v 1.13 2001/09/24 11:36:06 grubba Exp $
 **! class Poly
 **!
 */
@@ -18,7 +18,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.12 2000/12/05 21:08:26 per Exp $");
+RCSID("$Id: poly.c,v 1.13 2001/09/24 11:36:06 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -698,8 +698,8 @@ static void image_poly_cast(INT32 args)
 	       down=1;
 	       for (;;)
 	       {
-		  push_float(v->x);
-		  push_float(v->y);
+		  push_float(DO_NOT_WARN((FLOAT_TYPE)(v->x)));
+		  push_float(DO_NOT_WARN((FLOAT_TYPE)(v->y)));
 		  n++;
 		  ni++;
 		  mark[l-THIS->line]=1;

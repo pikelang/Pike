@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.18 2001/07/12 13:29:50 grubba Exp $ */
+/* $Id: dct.c,v 1.19 2001/09/24 11:15:45 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.18 2001/07/12 13:29:50 grubba Exp $
+**!	$Id: dct.c,v 1.19 2001/09/24 11:15:45 grubba Exp $
 **! class Image
 */
 
@@ -184,9 +184,9 @@ void image_dct(INT32 args)
 	    {
 	       double z;
 	       z = (u?1:c0) * costbl[u] * z0; 
-	       sum.r += (float)val->r*z;
-	       sum.g += (float)val->g*z;
-	       sum.b += (float)val->b*z;
+	       sum.r += DO_NOT_WARN((float)(val->r*z));
+	       sum.g += DO_NOT_WARN((float)(val->g*z));
+	       sum.b += DO_NOT_WARN((float)(val->b*z));
 	       val++;
 	    }
 	 }

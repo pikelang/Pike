@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.16 2001/07/12 13:50:27 grubba Exp $ */
+/* $Id: colortable_lookup.h,v 1.17 2001/09/24 11:19:06 grubba Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.16 2001/07/12 13:50:27 grubba Exp $
+**!	$Id: colortable_lookup.h,v 1.17 2001/09/24 11:19:06 grubba Exp $
 **! class colortable
 */
 
@@ -352,9 +352,9 @@ void NCTLU_CUBE_NAME(rgb_group *s,
    green=cube->g;	hgreen=green/2;  greenm=green-1;
    blue=cube->b; 	hblue=blue/2;    bluem=blue-1;
 
-   redf = DO_NOT_WARN(255.0/redm);
-   greenf = DO_NOT_WARN(255.0/greenm);
-   bluef = DO_NOT_WARN(255.0/bluem);
+   redf = DO_NOT_WARN((float)(255.0/redm));
+   greenf = DO_NOT_WARN((float)(255.0/greenm));
+   bluef = DO_NOT_WARN((float)(255.0/bluem));
 
    CHRONO("begin cube map");
 
