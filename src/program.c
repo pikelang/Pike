@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.197 2000/01/02 23:40:25 mast Exp $");
+RCSID("$Id: program.c,v 1.198 2000/01/13 23:21:22 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3609,6 +3609,14 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
 {
   char buf[4711];
   va_list args;
+
+  /* If we have parse errors we might get erroneous warnings,
+   * so don't print them.
+   * This has the additional benefit of making it easier to
+   * visually locate the actual error message.
+   */
+  if (num_parse_error) return;
+
   va_start(args,fmt);
   VSPRINTF(buf, fmt, args);
   va_end(args);
