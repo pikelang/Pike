@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.25 1997/03/07 05:21:47 hubbe Exp $");
+RCSID("$Id: program.c,v 1.26 1997/03/11 03:36:42 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -966,6 +966,8 @@ int add_constant(struct pike_string *name,
 		 INT32 flags)
 {
   int n;
+  struct identifier dummy;
+  struct reference ref;
 
 #ifdef DEBUG
   if(name!=debug_findstring(name))
@@ -975,38 +977,34 @@ int add_constant(struct pike_string *name,
   setup_fake_program();
   n = isidentifier(name);
 
+  copy_shared_string(dummy.name, name);
+  dummy.type = get_type_of_svalue(c);
+  
+  dummy.flags = IDENTIFIER_CONSTANT;
+  dummy.run_time_type=c->type;
+  
+  dummy.func.offset=store_constant(c, 0);
+
+  ref.flags=flags;
+  ref.identifier_offset=fake_program.num_identifiers;
+  ref.inherit_offset=0;
+
+  add_to_mem_block(A_IDENTIFIERS, (char *)&dummy, sizeof dummy);
+  fake_program.num_identifiers ++;
+
   if(n != -1)
   {
-    setup_fake_program();
-
     if (IDENTIFIERP(n)->flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
     if(PROG_FROM_INT(& fake_program, n) == &fake_program)
       my_yyerror("Identifier '%s' defined twice.",name->str);
+
+    fake_program.identifier_references[n]=ref;
   } else {
-    struct identifier dummy;
-    struct reference ref;
-
-    copy_shared_string(dummy.name, name);
-    dummy.type = get_type_of_svalue(c);
-    
-    dummy.flags = IDENTIFIER_CONSTANT;
-    dummy.run_time_type=c->type;
-    
-    dummy.func.offset=store_constant(c, 0);
-
-    ref.flags=flags;
-    ref.identifier_offset=areas[A_IDENTIFIERS].s.len / sizeof dummy;
-    ref.inherit_offset=0;
-
-    add_to_mem_block(A_IDENTIFIERS, (char *)&dummy, sizeof dummy);
-    fake_program.num_identifiers ++;
-
     n=areas[A_IDENTIFIER_REFERENCES].s.len / sizeof ref;
     add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&ref, sizeof ref);
     fake_program.num_identifier_references ++;
-
   }
 
   return n;

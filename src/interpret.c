@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.30 1997/03/09 09:11:11 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.31 1997/03/11 03:36:39 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -882,13 +882,25 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_EQ_OR);
-      if(is_eq(sp-2,sp-1))
+      if(!is_eq(sp-2,sp-1))
       {
 	pop_n_elems(2);
 	pc+=sizeof(INT32);
       }else{
 	pop_n_elems(2);
 	push_int(1);
+	DOJUMP();
+      }
+      break;
+
+      CASE(F_EQ_AND);
+      if(is_eq(sp-2,sp-1))
+      {
+	pop_n_elems(2);
+	pc+=sizeof(INT32);
+      }else{
+	pop_n_elems(2);
+	push_int(0);
 	DOJUMP();
       }
       break;

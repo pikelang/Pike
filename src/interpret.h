@@ -33,6 +33,7 @@ struct frame
 #endif
 
 #define pop_stack() do{ free_svalue(--sp); debug_check_stack(); }while(0)
+
 #define push_program(P) do{ struct program *_=(P); sp->u.program=_; sp++->type=T_PROGRAM; }while(0)
 #define push_int(I) do{ INT32 _=(I); sp->u.integer=_;sp->type=T_INT;sp++->subtype=NUMBER_NUMBER; }while(0)
 #define push_mapping(M) do{ struct mapping *_=(M); sp->u.mapping=_; sp++->type=T_MAPPING; }while(0)
@@ -42,6 +43,14 @@ struct frame
 #define push_object(O) do{ struct object  *_=(O); sp->u.object=_; sp++->type=T_OBJECT; }while(0)
 #define push_float(F) do{ float _=(F); sp->u.float_number=_; sp++->type=T_FLOAT; }while(0)
 #define push_text(T) push_string(make_shared_string((T)))
+
+#define ref_push_program(P) do{ struct program *_=(P); _->refs++; sp->u.program=_; sp++->type=T_PROGRAM; }while(0)
+#define ref_push_mapping(M) do{ struct mapping *_=(M); _->refs++; sp->u.mapping=_; sp++->type=T_MAPPING; }while(0)
+#define ref_push_array(A) do{ struct array *_=(A); _->refs++; sp->u.array=_ ;sp++->type=T_ARRAY; }while(0)
+#define ref_push_multiset(L) do{ struct multiset *_=(L); _->refs++; sp->u.multiset=_; sp++->type=T_MULTISET; }while(0)
+#define ref_push_string(S) do{ struct pike_string *_=(S); _->refs++; sp->subtype=0; sp->u.string=_; sp++->type=T_STRING; }while(0)
+#define ref_push_object(O) do{ struct object  *_=(O); _->refs++; sp->u.object=_; sp++->type=T_OBJECT; }while(0)
+
 #define push_svalue(S) do { struct svalue *_=(S); assign_svalue_no_free(sp,_); sp++; }while(0)
 
 #define APPLY_MASTER(FUN,ARGS) \

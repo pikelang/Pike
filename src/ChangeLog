@@ -1,3 +1,13 @@
+Mon Mar 10 16:58:06 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* docode.c (do_cond_jump): optimized || and &&
+	* program.c (add_constant): constants are now redefinable
+	* interpret.c: F_EQ_OR now works, added F_EQ_AND
+
+Sun Mar  9 01:44:03 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* peephole optimized fixed and improved
+
 Sat Mar  8 04:31:29 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* added new efuns `[] and `->

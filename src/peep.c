@@ -24,7 +24,10 @@ static void asm_opt(void);
 
 dynamic_buffer instrbuf;
 
-static int hasarg(int opcode) { return instrs[opcode-F_OFFSET].hasarg; }
+static int hasarg(int opcode)
+{
+  return instrs[opcode-F_OFFSET].flags & I_HASARG;
+}
 
 void init_bytecode()
 {
@@ -138,27 +141,6 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
   ins_byte(b, A_PROGRAM);
 }
 
-#define BRANCH_CASES \
-         F_BRANCH_WHEN_EQ: \
-    case F_BRANCH_WHEN_NE: \
-    case F_BRANCH_WHEN_LT: \
-    case F_BRANCH_WHEN_LE: \
-    case F_BRANCH_WHEN_GT: \
-    case F_BRANCH_WHEN_GE: \
-    case F_BRANCH_WHEN_ZERO: \
-    case F_BRANCH_WHEN_NON_ZERO: \
-    case F_BRANCH: \
-    case F_INC_LOOP: \
-    case F_DEC_LOOP: \
-    case F_INC_NEQ_LOOP: \
-    case F_DEC_NEQ_LOOP: \
-    case F_LAND: \
-    case F_LOR: \
-    case F_EQ_OR: \
-    case F_CATCH: \
-    case F_FOREACH
-
-
 void assemble(void)
 {
   INT32 e,d,length,max_label,tmp;
@@ -193,10 +175,8 @@ void assemble(void)
 
   for(e=0;e<length;e++)
   {
-    switch(c[e].opcode)
+    if(instrs[c[e].opcode-F_OFFSET].flags & I_POINTER)
     {
-    case BRANCH_CASES:
-    case F_POINTER:
       while(1)
       {
 	int tmp,tmp2;
@@ -282,24 +262,33 @@ void assemble(void)
       labels[c->arg]=PC;
       break;
 
-    case BRANCH_CASES:
-      ins_f_byte(c->opcode);
-
-    case F_POINTER:
-#ifdef DEBUG
-      if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
-#endif
-      tmp=PC;
-      ins_int(jumps[c->arg],A_PROGRAM);
-      jumps[c->arg]=tmp;
-      break;
-
     default:
-      if(hasarg(c->opcode))
-	ins_f_byte_with_arg(c->opcode, c->arg);
-      else
+      switch(instrs[c->opcode - F_OFFSET].flags)
+      {
+      case I_ISJUMP:
 	ins_f_byte(c->opcode);
-      break;
+      case I_ISPOINTER:
+#ifdef DEBUG
+	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
+#endif
+	tmp=PC;
+	ins_int(jumps[c->arg],A_PROGRAM);
+	jumps[c->arg]=tmp;
+	break;
+
+      case I_HASARG:
+	ins_f_byte_with_arg(c->opcode, c->arg);
+	break;
+
+      case 0:
+	ins_f_byte(c->opcode);
+	break;
+
+#ifdef DEBUG
+      default:
+	fatal("Unknown instruction type.\n");
+#endif
+      }
     }
     
     c++;

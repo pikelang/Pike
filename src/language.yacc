@@ -56,7 +56,7 @@
 %token F_AND F_OR F_XOR
 %token F_LSH F_RSH
 %token F_LAND F_LOR
-%token F_EQ_OR
+%token F_EQ_OR F_EQ_AND
 
 %token F_SWITCH F_SSCANF F_CATCH
 %token F_CAST
@@ -158,7 +158,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.29 1997/03/09 09:11:11 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.30 1997/03/11 03:36:40 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

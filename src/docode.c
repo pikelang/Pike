@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.13 1997/03/09 09:11:10 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.14 1997/03/11 03:36:39 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -158,8 +158,6 @@ int do_docode(node *n,INT16 flags)
 }
 
 
-void do_jump_when_zero(node *n,int j);
-
 static int is_efun(node *n, c_fun fun)
 {
   return n && n->token == F_CONSTANT &&
@@ -167,101 +165,65 @@ static int is_efun(node *n, c_fun fun)
     n->u.sval.u.efun->function == fun;
 }
 
-void do_jump_when_non_zero(node *n,int j)
+void do_cond_jump(node *n, int label, int iftrue, int flags)
 {
-  if(!node_is_tossable(n))
+  iftrue=!!iftrue;
+  if((flags & DO_POP) && node_is_tossable(n))
   {
-    if(node_is_true(n))
+    int t,f;
+    t=!!node_is_true(n);
+    f=!!node_is_false(n);
+    if(t || f)
     {
-      do_jump(F_BRANCH,j);
+      if(t == iftrue) do_jump(F_BRANCH, label);
       return;
     }
-
-    if(node_is_false(n))
-      return;
   }
 
   switch(n->token)
   {
-  case F_APPLY:
-    if(is_efun(CAR(n), f_not))
-    {
-      do_jump_when_zero(CDR(n), j);
-      return;
-    }
-    break;
-      
-  case F_NOT:
-    do_jump_when_zero(CAR(n), j);
-    return;
-
   case F_LAND:
-  {
-    int tmp=alloc_label();
-    do_jump_when_zero(CAR(n), tmp);
-    do_jump_when_non_zero(CDR(n), j);
-    emit(F_LABEL,tmp);
+  case F_LOR:
+    if(iftrue == (n->token==F_LAND))
+    {
+      int tmp=alloc_label();
+      do_cond_jump(CAR(n), tmp, !iftrue, flags | DO_POP);
+      do_cond_jump(CDR(n), label, iftrue, flags);
+      emit(F_LABEL,tmp);
+    }else{
+      do_cond_jump(CAR(n), label, iftrue, flags);
+      do_cond_jump(CDR(n), label, iftrue, flags);
+    }
     return;
-  }
     
-  case F_LOR:
-    do_jump_when_non_zero(CAR(n), j);
-    do_jump_when_non_zero(CDR(n), j);
-    return;
-  }
-
-  if(do_docode(n, DO_NOT_COPY)!=1)
-    fatal("Infernal compiler skiterror.\n");
-  do_jump(F_BRANCH_WHEN_NON_ZERO,j);
-}
-
-void do_jump_when_zero(node *n,int j)
-{
-  if(!node_is_tossable(n))
-  {
-    if(node_is_true(n))
-      return;
-
-    if(node_is_false(n))
-    {
-      do_jump(F_BRANCH,j);
-      return;
-    }
-  }
-
-  switch(n->token)
-  {
   case F_APPLY:
-    if(is_efun(CAR(n), f_not))
-    {
-      do_jump_when_non_zero(CDR(n), j);
-      return;
-    }
-    break;
+    if(!is_efun(CAR(n), f_not)) break;
 
   case F_NOT:
-    do_jump_when_non_zero(CAR(n), j);
-    return;
-
-  case F_LOR:
-  {
-    int tmp=alloc_label();
-    do_jump_when_non_zero(CAR(n), tmp);
-    do_jump_when_zero(CDR(n), j);
-    emit(F_LABEL,tmp);
+    if(!(flags & DO_POP)) break;
+    do_cond_jump(CDR(n), label , !iftrue, flags | DO_NOT_COPY);
     return;
   }
 
-  case F_LAND:
-    do_jump_when_zero(CAR(n), j);
-    do_jump_when_zero(CDR(n), j);
-    return;
-  }
-
-  if(do_docode(n, DO_NOT_COPY)!=1)
+  if(do_docode(n, flags&DO_NOT_COPY)!=1)
     fatal("Infernal compiler skiterror.\n");
-  do_jump(F_BRANCH_WHEN_ZERO,j);
+  
+  if(flags & DO_POP)
+  {
+    if(iftrue)
+      do_jump(F_BRANCH_WHEN_NON_ZERO, label);
+    else
+      do_jump(F_BRANCH_WHEN_ZERO, label);
+  }else{
+    if(iftrue)
+      do_jump(F_LOR, label);
+    else
+      do_jump(F_LAND, label);
+  }
 }
+
+#define do_jump_when_zero(N,L) do_cond_jump(N,L,0,DO_POP|DO_NOT_COPY)
+#define do_jump_when_non_zero(N,L) do_cond_jump(N,L,1,DO_POP|DO_NOT_COPY)
 
 static INT32 count_cases(node *n)
 {
@@ -503,11 +465,9 @@ static int do_docode2(node *n,int flags)
 
   case F_LAND:
   case F_LOR:
-    if(do_docode(CAR(n),0)!=1)
-      fatal("Compiler internal error.\n");
-    tmp1=do_jump(n->token,-1);
-    if(do_docode(CDR(n),0)!=1)
-      fatal("Compiler internal error.\n");
+    tmp1=alloc_label();
+    do_cond_jump(CAR(n), tmp1, n->token == F_LOR, 0);
+    if(do_docode(CDR(n),0)!=1) fatal("Compiler internal error.\n");
     emit(F_LABEL,tmp1);
     return 1;
 
