@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.16 2000/12/01 08:10:28 hubbe Exp $
+ * $Id: idea.c,v 1.17 2001/02/12 22:33:00 grubba Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -55,7 +55,18 @@ void exit_pike_crypto_idea(struct object *o)
  * efuns and the like
  */
 
-/* string name(void) */
+/*! @module Crypto
+ */
+
+/*! @class idea
+ *!
+ *! Support for the IDEA block crypto.
+ */
+
+/*! @decl string name()
+ *!
+ *! Return the string @tt{"IDEA"@}.
+ */
 static void f_name(INT32 args)
 {
   if (args) {
@@ -64,7 +75,10 @@ static void f_name(INT32 args)
   push_string(make_shared_string("IDEA"));
 }
 
-/* int query_block_size(void) */
+/*! @decl int query_block_size()
+ *!
+ *! Return the block size for IDEA.
+ */
 static void f_query_block_size(INT32 args)
 {
   if (args) {
@@ -73,7 +87,10 @@ static void f_query_block_size(INT32 args)
   push_int(IDEA_BLOCKSIZE);
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ *!
+ *! Return the key length for IDEA.
+ */
 static void f_query_key_length(INT32 args)
 {
   if (args) {
@@ -82,7 +99,10 @@ static void f_query_key_length(INT32 args)
   push_int(IDEA_KEYSIZE);
 }
 
-/* void set_encrypt_key(string) */
+/*! @decl void set_encrypt_key(string key)
+ *!
+ *! Set the encryption key to @[key].
+ */
 static void f_set_encrypt_key(INT32 args)
 {
   if (args != 1) {
@@ -100,14 +120,20 @@ static void f_set_encrypt_key(INT32 args)
   push_object(this_object());
 }
 
-/* void set_decrypt_key(string) */
+/*! @decl void set_decrypt_key(string key)
+ *!
+ *! Set the decryption key to @[key].
+ */
 static void f_set_decrypt_key(INT32 args)
 {
   f_set_encrypt_key(args);
   idea_invert(THIS, THIS);
 }
 
-/* string crypt_block(string) */
+/*! @decl string crypt_block(string data)
+ *!
+ *! De/encrypt @[data] with IDEA.
+ */
 static void f_crypt_block(INT32 args)
 {
   ptrdiff_t len;
@@ -137,6 +163,12 @@ static void f_crypt_block(INT32 args)
   push_string(end_shared_string(s));
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 /*
  * Module linkage
  */
@@ -164,17 +196,17 @@ void pike_idea_init(void)
   low_add_storage(sizeof(INT16[IDEA_KEYLEN]),ALIGNOF(INT16),0);
 
   /* function(void:string) */
-  ADD_FUNCTION("name", f_name,tFunc(tVoid,tStr), 0);
+  ADD_FUNCTION("name", f_name, tFunc(tNone, tStr), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_block_size", f_query_block_size,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_block_size", f_query_block_size, tFunc(tNone, tInt), 0);
   /* function(void:int) */
-  ADD_FUNCTION("query_key_length", f_query_key_length,tFunc(tVoid,tInt), 0);
+  ADD_FUNCTION("query_key_length", f_query_key_length, tFunc(tNone, tInt), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_encrypt_key", f_set_encrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:object) */
-  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key,tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("set_decrypt_key", f_set_decrypt_key, tFunc(tStr, tObj), 0);
   /* function(string:string) */
-  ADD_FUNCTION("crypt_block", f_crypt_block,tFunc(tStr,tStr), 0);
+  ADD_FUNCTION("crypt_block", f_crypt_block, tFunc(tStr, tStr), 0);
 
   set_init_callback(init_pike_crypto_idea);
   set_exit_callback(exit_pike_crypto_idea);
