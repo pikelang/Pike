@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.202 2004/04/23 19:35:28 grubba Exp $
+|| $Id: threads.c,v 1.203 2004/04/23 19:40:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.202 2004/04/23 19:35:28 grubba Exp $");
+RCSID("$Id: threads.c,v 1.203 2004/04/23 19:40:14 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1262,13 +1262,14 @@ void init_mutex_obj(struct object *o)
 void exit_mutex_obj(struct object *o)
 {
   struct mutex_storage *m = THIS_MUTEX;
+  struct object *key = m->key;
 
   THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%08x\n",
 		      (unsigned int)m));
 
-  if(m->key) {
-    destruct(m->key);
+  if(key) {
     m->key=0;
+    destruct(key);
     if(m->num_waiting)
     {
       THREADS_FPRINTF(1, (stderr, "DESTRUCTED MUTEX IS BEING WAITED ON\n"));
@@ -1312,6 +1313,7 @@ void exit_mutex_key_obj(struct object *o)
   if(THIS_KEY->mut)
   {
     struct mutex_storage *mut = THIS_KEY->mut;
+    struct object *mutex_obj;
 
 #ifdef PIKE_DEBUG
     /* Note: mut->key can be NULL if our corresponding mutex
@@ -1327,14 +1329,15 @@ void exit_mutex_key_obj(struct object *o)
     }
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
+    mutex_obj = THIS_KEY->mutex_obj;
+    THIS_KEY->mutex_obj = NULL;
     if (mut->num_waiting)
-      co_signal(& mut->condition);
+      co_signal(&mut->condition);
 #ifndef PICKY_MUTEX
-    else if (!THIS_KEY->mutex_obj->prog)
+    else if (!mutex_obj->prog)
       co_destroy (&mut->condition);
 #endif
-    free_object (THIS_KEY->mutex_obj);
-    THIS_KEY->mutex_obj = NULL;
+    free_object(mutex_obj);
   }
 }
 
@@ -1382,7 +1385,7 @@ void exit_mutex_key_obj(struct object *o)
  */
 void f_cond_wait(INT32 args)
 {
-  struct object *key;
+  struct object *key, *mutex_obj;
   struct mutex_storage *mut;
   COND_T *c;
 
@@ -1405,9 +1408,10 @@ void f_cond_wait(INT32 args)
   c = THIS_COND;
 
   /* Unlock mutex */
+  mutex_obj = OB2KEY(key)->mutex_obj;
   mut->key=0;
   OB2KEY(key)->mut=0;
-  mut->num_waiting++;
+  OB2KEY(key)->mutex_obj = NULL;
   co_signal(& mut->condition);
     
   /* Wait and allow mutex operations */
@@ -1416,6 +1420,7 @@ void f_cond_wait(INT32 args)
   SWAP_IN_CURRENT_THREAD();
     
   /* Lock mutex */
+  mut->num_waiting++;
   while(mut->key) {
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter(& mut->condition);
@@ -1424,7 +1429,16 @@ void f_cond_wait(INT32 args)
   }
   mut->key=key;
   OB2KEY(key)->mut=mut;
+  OB2KEY(key)->mutex_obj = mutex_obj;
   mut->num_waiting--;
+
+#ifdef PICKY_MUTEX
+  if (!mutex_obj->prog) {
+    if (!m->num_waiting)
+      co_destroy (&m->condition);
+    Pike_error ("Mutex was destructed while waiting for lock.\n");
+  }
+#endif
       
   pop_stack();
   return;
