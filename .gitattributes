@@ -190,7 +190,6 @@ testfont binary
 /lib/modules/Standards.pmod/testsuite.in foreign_ident
 /lib/modules/Stdio.pmod foreign_ident
 /lib/modules/Stdio.pmod/FakeFile.pike foreign_ident
-/lib/modules/Stdio.pmod/GZipFile.pike foreign_ident
 /lib/modules/Stdio.pmod/Readline.pike foreign_ident
 /lib/modules/Stdio.pmod/Terminfo.pmod foreign_ident
 /lib/modules/Stdio.pmod/module.pmod foreign_ident
