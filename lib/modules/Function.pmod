@@ -110,5 +110,7 @@ void call_callback(function f,mixed ... args)
 {
    if (!f) return;
    mixed err=catch { f(@args); return; };
-   master()->handle_error(err);
+   handle_error(err);
 }
+
+function handle_error = master()->handle_error;
