@@ -24,7 +24,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.126 2002/05/28 15:23:03 grubba Exp $");
+RCSID("$Id: array.c,v 1.127 2002/05/28 15:37:17 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1953,7 +1953,8 @@ PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 	new_types |= 1 << Pike_sp[-1].type;
 	DO_AGGREGATE_ARRAY(120);
       }
-    } END_AGGREGATE_ARRAY;
+    }
+    END_AGGREGATE_ARRAY;
 
     Pike_sp[-1].u.array->type_field = new_types;
 #ifdef PIKE_DEBUG
