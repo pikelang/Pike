@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.204 2004/09/06 13:12:59 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.205 2004/09/13 11:59:33 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2171,9 +2171,9 @@ void f_create_process(INT32 args)
 		      &proc);
     err=GetLastError();
     
-    UNLOCK_IMUTEX(&handle_protection_mutex);
-
     THREADS_DISALLOW_UID();
+
+    UNLOCK_IMUTEX(&handle_protection_mutex);
 
     if(env) pop_stack();
     if(command_line) free(command_line);
