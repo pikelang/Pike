@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.31 1998/02/20 00:55:23 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.32 1998/02/23 23:24:04 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -645,6 +645,7 @@ TYPE_T compile_type_to_runtime_type(struct pike_string *s)
 
 #define A_EXACT 1
 #define B_EXACT 2
+#define NO_MAX_ARGS 4
 
 /*
  * match two type strings, return zero if they don't match, and return
@@ -673,7 +674,7 @@ static char *low_match_types(char *a,char *b, int flags)
     return low_match_types(a,b,flags);
 
   case T_NOT:
-    if(low_match_types(a+1,b,flags | B_EXACT))
+    if(low_match_types(a+1,b,flags | B_EXACT | NO_MAX_ARGS))
       return 0;
     return a;
   }
@@ -695,7 +696,7 @@ static char *low_match_types(char *a,char *b, int flags)
     return low_match_types(a,b,flags);
 
   case T_NOT:
-    if(low_match_types(a,b+1, flags | A_EXACT))
+    if(low_match_types(a,b+1, flags | A_EXACT | NO_MAX_ARGS))
       return 0;
     return a;
   }
@@ -763,9 +764,10 @@ static char *low_match_types(char *a,char *b, int flags)
 	b+=type_length(b);
       }
 
-      if(!low_match_types(a_tmp, b_tmp, flags)) return 0;
+      if(!low_match_types(a_tmp, b_tmp, flags | NO_MAX_ARGS)) return 0;
       if(++correct_args > max_correct_args)
-	max_correct_args=correct_args;
+	if(!(flags & NO_MAX_ARGS))
+	  max_correct_args=correct_args;
     }
     /* check the 'many' type */
     a++;
@@ -775,8 +777,10 @@ static char *low_match_types(char *a,char *b, int flags)
       a+=type_length(a);
       b+=type_length(b);
     }else{
-      if(!low_match_types(a,b,flags)) return 0;
+      if(!low_match_types(a,b,flags | NO_MAX_ARGS)) return 0;
     }
+    if(!(flags & NO_MAX_ARGS))
+       max_correct_args=0x7fffffff;
     /* check the returntype */
     if(!low_match_types(a,b,flags)) return 0;
     break;
@@ -1087,29 +1091,52 @@ int check_indexing(struct pike_string *type,
   return low_check_indexing(type->str, index_type->str, n);
 }
 
+static int low_count_arguments(char *q)
+{
+  int num,num2;
+  
+  switch(EXTRACT_UCHAR(q++))
+  {
+    case T_OR:
+      num=low_count_arguments(q);
+      num2=low_count_arguments(q+type_length(q));
+      if(num<0 && num2>0) return num;
+      if(num2<0 && num>0) return num2;
+      if(num2<0 && num<0) return ~num>~num2?num:num2;
+      return num>num2?num:num2;
+
+    case T_AND:
+      num=low_count_arguments(q);
+      num2=low_count_arguments(q+type_length(q));
+      if(num<0 && num2>0) return num2;
+      if(num2<0 && num>0) return num;
+      if(num2<0 && num<0) return ~num<~num2?num:num2;
+      return num<num2?num:num2;
+
+    default: return MAX_LOCAL;
+
+    case T_FUNCTION:
+      num=0;
+      while(EXTRACT_UCHAR(q)!=T_MANY)
+      {
+	num++;
+	q+=type_length(q);
+      }
+      q++;
+      if(EXTRACT_UCHAR(q)!=T_VOID) return ~num;
+      return num;
+  }
+}
+
 /* Count the number of arguments for a funciton type.
  * return -1-n if the function can take number of arguments
  * >= n  (varargs)
  */
 int count_arguments(struct pike_string *s)
 {
-  int num;
-  char *q;
-
   CHECK_TYPE(s);
 
-  q=s->str;
-  if(EXTRACT_UCHAR(q) != T_FUNCTION) return MAX_LOCAL;
-  q++;
-  num=0;
-  while(EXTRACT_UCHAR(q)!=T_MANY)
-  {
-    num++;
-    q+=type_length(q);
-  }
-  q++;
-  if(EXTRACT_UCHAR(q)!=T_VOID) return ~num;
-  return num;
+  return low_count_arguments(s->str);
 }
 
 struct pike_string *check_call(struct pike_string *args,
@@ -1127,6 +1154,17 @@ struct pike_string *check_call(struct pike_string *args,
     pop_stack_mark();
     return 0;
   }
+}
+
+INT32 get_max_args(struct pike_string *type)
+{
+  INT32 ret,tmp=max_correct_args;
+  CHECK_TYPE(type);
+  type=check_call(function_type_string, type);
+  if(type) free_string(type);
+  ret=max_correct_args;
+  max_correct_args=tmp;
+  return tmp;
 }
 
 struct pike_string *get_type_of_svalue(struct svalue *s)

@@ -85,6 +85,7 @@ int check_indexing(struct pike_string *type,
 int count_arguments(struct pike_string *s);
 struct pike_string *check_call(struct pike_string *args,
 			       struct pike_string *type);
+INT32 get_max_args(struct pike_string *type);
 struct pike_string *get_type_of_svalue(struct svalue *s);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.24 1998/02/20 01:00:42 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.25 1998/02/23 23:24:03 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -25,25 +25,39 @@ RCSID("$Id: operators.c,v 1.24 1998/02/20 01:00:42 hubbe Exp $");
 #include "object.h"
 #include "pike_types.h"
 
-#define COMPARISON(ID,NAME,EXPR) \
-void ID(INT32 args) \
-{ \
-  int i; \
-  if(args > 2) \
-    pop_n_elems(args-2); \
-  else if(args < 2) \
-    error("Too few arguments to %s\n",NAME); \
-  i=EXPR; \
-  pop_n_elems(2); \
-  push_int(i); \
+#define COMPARISON(ID,NAME,FUN)			\
+void ID(INT32 args)				\
+{						\
+  int i;					\
+  switch(args)					\
+  {						\
+    case 0: case 1:				\
+      error("Too few arguments to %s\n",NAME);	\
+    case 2:					\
+      i=FUN (sp-2,sp-1);			\
+      pop_n_elems(2);				\
+      push_int(i);				\
+      break;					\
+    default:					\
+      for(i=1;i<args;i++)			\
+        if(! ( FUN (sp-args+i-1, sp-args+i)))	\
+          break;				\
+      pop_n_elems(args);			\
+      push_int(i==args);			\
+  }						\
 }
 
-COMPARISON(f_eq,"`==", is_eq(sp-2,sp-1))
-COMPARISON(f_ne,"`!=",!is_eq(sp-2,sp-1))
-COMPARISON(f_lt,"`<" , is_lt(sp-2,sp-1))
-COMPARISON(f_le,"`<=",!is_gt(sp-2,sp-1))
-COMPARISON(f_gt,"`>" , is_gt(sp-2,sp-1))
-COMPARISON(f_ge,"`>=",!is_lt(sp-2,sp-1))
+void f_ne(INT32 args)
+{
+  f_eq(args);
+  o_not();
+}
+
+COMPARISON(f_eq,"`==", is_eq)
+COMPARISON(f_lt,"`<" , is_lt)
+COMPARISON(f_le,"`<=",!is_gt)
+COMPARISON(f_gt,"`>" , is_gt)
+COMPARISON(f_ge,"`>=",!is_lt)
 
 
 #define CALL_OPERATOR(OP, args) \
@@ -493,10 +507,22 @@ void f_minus(INT32 args)
 {
   switch(args)
   {
-  case 0: error("Too few arguments to `-\n");
-  case 1: o_negate(); break;
-  case 2: o_subtract(); break;
-  default: error("Too many arguments to `-\n");
+    case 0: error("Too few arguments to `-\n");
+    case 1: o_negate(); break;
+    case 2: o_subtract(); break;
+    default:
+    {
+      INT32 e;
+      struct svalue *s=sp-args;
+      push_svalue(s);
+      for(e=1;e<args;e++)
+      {
+	push_svalue(s+e);
+	o_subtract();
+      }
+      assign_svalue(s,sp-1);
+      pop_n_elems(sp-s-1);
+    }
   }
 }
 
@@ -1287,9 +1313,25 @@ void o_divide(void)
 
 void f_divide(INT32 args)
 {
-  if(args != 2)
-    error("Bad number of args to `/\n");
-  o_divide();
+  switch(args)
+  {
+    case 0: 
+    case 1: error("Too few arguments to `/\n");
+    case 2: o_divide(); break;
+    default:
+    {
+      INT32 e;
+      struct svalue *s=sp-args;
+      push_svalue(s);
+      for(e=1;e<args;e++)
+      {
+	push_svalue(s+e);
+	o_divide();
+      }
+      assign_svalue(s,sp-1);
+      pop_n_elems(sp-s-1);
+    }
+  }
 }
 
 static int generate_divide(node *n)
@@ -1669,11 +1711,11 @@ void init_operators(void)
   add_efun2("`->",f_arrow,
 	    "function(array(object|mapping|multiset|array)|object|mapping|multiset,string:mixed)",OPT_TRY_OPTIMIZE,0,0);
 
-  add_efun2("`==",f_eq,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
-  add_efun2("`!=",f_ne,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`==",f_eq,"function(mixed...:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`!=",f_ne,"function(mixed...:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`!",f_not,"function(mixed:int)",OPT_TRY_OPTIMIZE,0,generate_not);
 
-#define CMP_TYPE "function(object,mixed:int)|function(mixed,object:int)|function(int|float,int|float:int)|function(string,string:int)"
+#define CMP_TYPE "!function(!object...:mixed)&function(mixed...:int)|function(int|float...:int)|function(string...:int)"
   add_efun2("`<", f_lt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`<=",f_le,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
@@ -1708,13 +1750,11 @@ void init_operators(void)
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
   add_efun2("`/",f_divide,
-	    "function(mixed,object:mixed)|"
-	    "function(array,array|int|float:array(array))|"
-	    "function(object,mixed:mixed)|"
-	    "function(int,int:int)|"
-	    "function(float|int,float:float)|"
-	    "function(float,int:float)|"
-	    "function(string,string|int|float:string*)",
+	    "!function(!object...:mixed)&function(mixed...:mixed)|"
+	    "function(int,int...:int)|"
+	    "!function(int...:mixed)&function(float|int...:float)|"
+	    "function(array,array|int|float...:array(array))|"
+	    "function(string,string|int|float...:array(string))",
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
   add_efun2("`%",f_mod,"function(mixed,object:mixed)|function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);

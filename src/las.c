@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.50 1998/02/01 04:01:34 hubbe Exp $");
+RCSID("$Id: las.c,v 1.51 1998/02/23 23:24:02 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1424,6 +1424,7 @@ void fix_type_field(node *n)
   {
     struct pike_string *s;
     struct pike_string *f;
+    INT32 max_args,args;
     push_type(T_MIXED); /* match any return type, even void */
     push_type(T_VOID); /* not varargs */
     push_type(T_MANY);
@@ -1432,6 +1433,8 @@ void fix_type_field(node *n)
     s=pop_type();
     f=CAR(n)->type?CAR(n)->type:mixed_type_string;
     n->type=check_call(s,f);
+    args=count_arguments(s);
+    max_args=get_max_args(f);
 
     if(!n->type)
     {
@@ -1447,8 +1450,13 @@ void fix_type_field(node *n)
 	switch(CAR(n)->u.sval.type)
 	{
 	  case T_FUNCTION:
-	    name=ID_FROM_INT(CAR(n)->u.sval.u.object->prog,
-			     CAR(n)->u.sval.subtype)->name->str;
+	    if(CAR(n)->u.sval.subtype == FUNCTION_BUILTIN)
+	    {
+	      name=CAR(n)->u.sval.u.efun->name->str;
+	    }else{
+	      name=ID_FROM_INT(CAR(n)->u.sval.u.object->prog,
+			       CAR(n)->u.sval.subtype)->name->str;
+	    }
 	    break;
 
 	  case T_ARRAY:
@@ -1463,12 +1471,17 @@ void fix_type_field(node *n)
 	    name="`() (function call)";
 	    break;
 	}
+	break;
 
       default:
 	name="unknown function";
       }
 
-      if(max_correct_args == count_arguments(s))
+      if(max_args < args)
+      {
+	my_yyerror("To many arguments to %s.\n",name);
+      }
+      else if(max_correct_args == args)
       {
 	my_yyerror("To few arguments to %s.\n",name);
       }else{

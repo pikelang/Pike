@@ -141,16 +141,21 @@ void f_ceil(INT32 args)
 
 void f_min(INT32 args)
 {
-  check_all_args("min",args,BIT_MIXED,BIT_MIXED,0);
-  if(args<2) error("Too few arguments to min()\n");
-  if(is_gt(sp-args,sp-args+1)) assign_svalue(sp-args,sp-args+1);
+  INT32 i;
+  if(!args) error("Too few arguments to min()\n");
+  for(i=args-2;i>=0;i--)
+    if(is_gt(sp-args+i,sp-args+1+i))
+      assign_svalue(sp-args+i,sp-args+1+i);
   pop_n_elems(args-1);
 }
 
 void f_max(INT32 args)
 {
-  check_all_args("max",args,BIT_MIXED,BIT_MIXED,0);
-  if(is_lt(sp-args,sp-args+1)) assign_svalue(sp-args,sp-args+1);
+  INT32 i;
+  if(!args) error("Too few arguments to max()\n");
+  for(i=args-2;i>=0;i--)
+    if(is_lt(sp-args+i,sp-args+1+i))
+      assign_svalue(sp-args+i,sp-args+1+i);
   pop_n_elems(args-1);
 }
 
@@ -206,8 +211,15 @@ void pike_module_init(void)
   add_efun("floor",f_floor,"function(float:float)",0);
   add_efun("ceil",f_ceil,"function(float:float)",0);
 
-  add_efun("max",f_max,"function(mixed,mixed:mixed)",0);
-  add_efun("min",f_min,"function(mixed,mixed:mixed)",0);
+#define CMP_TYPE \
+  "!function(!object...:mixed)&function(mixed...:mixed)|" \
+  "function(int...:int)|" \
+  "function(float...:float)|" \
+  "function(string...:string)|"  \
+  "!function(int...:mixed)&!function(float...:mixed)&function(int|float...:int|float)"
+    
+  add_efun("max",f_max,CMP_TYPE,0);
+  add_efun("min",f_min,CMP_TYPE,0);
   add_efun("abs",f_abs,"function(float|int|object:float|int|object)",0);
   add_efun("sgn",f_sgn,"function(mixed,mixed|void:int)",0);
 }
