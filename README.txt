@@ -4,7 +4,7 @@ Permission to copy, modify, and distribute this source for any legal
 purpose granted as long as my name is still attached to it.  More
 specifically the GPL license applies to this software.
 
-New releases can be found on ftp://ftp.roxen.com/pub/pike/
+New releases can be found on ftp://pike.ida.liu.se/pub/pike/
 Report bugs at http://community.roxen.com/crunch/
 There is also a mailing list, to subscribe to it mail:
 pike-request@roxen.com
