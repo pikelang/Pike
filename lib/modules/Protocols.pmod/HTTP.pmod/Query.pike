@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.71 2004/04/11 21:41:29 nilsson Exp $
+// $Id: Query.pike,v 1.72 2004/09/05 15:21:33 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -772,6 +772,25 @@ string data(int|void max_length)
 				       ..min(sizeof(buf), datapos+len)]);
 #endif
    return buf[datapos..datapos+len];
+}
+
+static Locale.Charset.Decoder charset_decoder;
+
+//! Gives back data, but decoded according to the content-type
+//! character set.
+//! @seealso
+//!   @[data]
+string unicode_data() {
+  if(!charset_decoder) {
+    string charset;
+    if(headers["content-type"])
+      sscanf(headers["content-type"], "%*scharset=%s", charset);
+    if(!charset)
+      charset_decoder = Locale.Charset.decoder("ascii");
+    else
+      charset_decoder = Locale.Charset.decoder(charset);
+  }
+  return charset_decoder->feed(data())->drain();
 }
 
 void discard_bytes(int n)
