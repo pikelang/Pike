@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.21 2005/01/06 15:35:41 mirar Exp $
+### $Id: regional,v 1.22 2005/01/06 16:02:17 mirar Exp $
 
 ### =====================================================================
 ###
@@ -155,6 +155,7 @@ Region "caribbean"
 # western (catholic, protestantic) christian church
 Region "christianity"
   Event "c/circumcision"                    - "Feast of the Circumcision"      Fixed Jan  1
+  Event "c/epiphany eve"                    - "Epiphany Eve"                   Fixed Jan  5
   Event "c/epiphany"                        - "Epiphany"                       Fixed Jan  6
   Event "c/candlemas"                       - "Candlemas"                      Fixed Feb  2
   Event "c/presentation"                    - "Presentation"                   Fixed Feb  2
@@ -1190,9 +1191,13 @@ Region "cz"
 Region "dk"
   Add   "sunday"                      h # "Sun"                            Weekday ---
   Add   "new year"                    h # "New Year's Day"                 (1-Jan 2000)
+  Add   "c/epiphany eve"              - # "Hellig trekongers aften"	    Fixed Jan 5
+# day not celebrated?
+# Add   "c/epiphany"                  - # "Hellig trekongers dag"	    Fixed Jan 5
   Event "dk/birthday of queen"        -   "Birthday of Queen Margrethe II" Fixed Apr 16
 
-  Event "dk/fastelavn"		      -   "Carnival"                       Easter -50
+# shrove sunday?
+  Event "dk/fastelavn"		      -   "Carnival"                       Easter -49
   Add   "c/palm sunday"               h # "Palm Sunday"                    (14-Apr 2000)
   Add   "c/holy thursday"             h # "Holy Thursday"                  (20-Apr 2000)
   Add   "c/good friday"               h # "Good Friday "                   (21-Apr 2000)
@@ -1218,6 +1223,15 @@ Region "dk"
   Add   "c/christmas"                 h # "Christmas"                      (25-Dec 2000)
   Event "dk/2nd of christmas"         h   "2nd day of Christmas"           Fixed Dec 26
   Add   "new years eve"               - # "New Year's Eve"                 (31-Dec 2000)
+
+  Event "dk/princess marys birthday"  - "Kronprinsesse Marys fødselsdag"    Fixed Feb 5
+  Event "dk/olivers birthday"         - "Olivers fødselsdag"	            Fixed Feb 25
+  Event "dk/princess benediktes birthday" - "Prinsesse Benediktes fødselsdag" Fixed Apr 29
+  Event "dk/prince joakim birthday"    - "Prins Joakims fødselsdag"	    Fixed Jun 7
+  Event "dk/prince henrik birthday"    - "Prins Henriks fødselsdag"	    Fixed Jun 11
+  Event "dk/prince alexandra birthday" - "Prinsesse Alexandras fødselsdag"  Fixed Jun 30
+  Event "dk/prince felix birthday"     - "Prins Felix' fødselsdag"	    Fixed Jul 22
+  Event "dk/prince nikolais birthday"  - "Prins Nikolais fødselsdag"	    Fixed Aug 28
 
 
 #--------------------------------------------------------------
