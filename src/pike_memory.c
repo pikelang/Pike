@@ -858,11 +858,11 @@ void cleanup_memhdrs(void)
   mt_destroy(&debug_malloc_mutex);
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char *argv[], char **env)
 {
-  extern int dbm_main(int, char **);
+  extern int dbm_main(int, char **, char**);
   mt_init(&debug_malloc_mutex);
-  return dbm_main(argc, argv);
+  return dbm_main(argc, argv, env);
 }
 
 void * debug_malloc_update_location(void *p,const char *fn, int line)

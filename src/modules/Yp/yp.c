@@ -216,7 +216,7 @@ void pike_module_init(void)
   add_function("map", f_map, "function(string,function|array(function):void)", 0);
   add_function("order", f_order, "function(string:int)", 0);
 
-  add_program_constant("Domain", end_program(), 0);
+  end_class("Domain",0);
 }
 
 void pike_module_exit(void)

@@ -623,6 +623,9 @@ void cleanup_shared_string_table(void)
   unsigned INT32 e;
   struct pike_string *s,*next;
 
+  if(!base_table) return;
+
+
 #if defined(DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
   {
@@ -635,8 +638,6 @@ void cleanup_shared_string_table(void)
     }
   }
 #endif
-
-  if(!base_table) return;
 
   for(e=0;e<htable_size;e++)
   {
