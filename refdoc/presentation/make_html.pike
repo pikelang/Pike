@@ -588,7 +588,7 @@ string parse_text(Node n, void|String.Buffer ret) {
   }
 
   if(cast)
-    return (string)ret;
+    return ret->get();
 }
 
 string parse_doc(Node n, void|int no_text) {
