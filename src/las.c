@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.318 2003/02/24 21:00:44 mast Exp $
+|| $Id: las.c,v 1.319 2003/03/20 21:26:51 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.318 2003/02/24 21:00:44 mast Exp $");
+RCSID("$Id: las.c,v 1.319 2003/03/20 21:26:51 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3039,6 +3039,8 @@ static void find_written_vars(node *n,
     if(n->tree_info & OPT_SIDE_EFFECT) {
       p->ext_flags = VAR_USED;
     }
+    find_written_vars(CAR(n), p, 0);
+    find_written_vars(CDR(n), p, 0);
     break;
 
   case F_AUTO_MAP_MARKER:
