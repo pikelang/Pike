@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.69 2000/12/01 08:09:48 hubbe Exp $
+ * $Id: interpret.h,v 1.70 2000/12/04 19:39:46 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -74,7 +74,7 @@ struct external_variable_context
 };
 
 #ifdef PIKE_DEBUG
-#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal("Stack Pike_error.\n");}while(0)
+#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal("Stack error.\n");}while(0)
 #define check__positive(X,Y) if((X)<0) fatal Y
 #include "pike_error.h"
 #else
@@ -82,20 +82,28 @@ struct external_variable_context
 #define debug_check_stack() 
 #endif
 
+#define low_stack_check(X) \
+  (Pike_sp - Pike_interpreter.evaluator_stack + \
+   Pike_interpreter.svalue_stack_margin + (X) >= Pike_stack_size)
+
+PMOD_EXPORT const char *Pike_check_stack_errmsg;
+
 #define check_stack(X) do { \
-  if(Pike_sp - Pike_interpreter.evaluator_stack + \
-     Pike_interpreter.svalue_stack_margin + (X) >= Pike_stack_size) \
-    Pike_error("Svalue stack overflow. " \
-	  "(%ld of %ld entries on stack, needed %ld more entries)\n", \
-	  PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack), \
-          PTRDIFF_T_TO_LONG(Pike_stack_size), \
-          PTRDIFF_T_TO_LONG(X)); \
+  if(low_stack_check(X)) \
+    Pike_error(Pike_check_stack_errmsg, \
+	       PTRDIFF_T_TO_LONG(Pike_sp - Pike_interpreter.evaluator_stack), \
+	       PTRDIFF_T_TO_LONG(Pike_stack_size), \
+	       PTRDIFF_T_TO_LONG(X)); \
   }while(0)
+
+PMOD_EXPORT const char *Pike_check_mark_stack_errmsg;
 
 #define check_mark_stack(X) do {		\
   if(Pike_mark_sp - Pike_interpreter.mark_stack + (X) >= Pike_stack_size)	\
-    Pike_error("Mark stack overflow.\n");		\
+    Pike_error(Pike_check_mark_stack_errmsg);		\
   }while(0)
+
+PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
 
 #define check_c_stack(X) do {						\
   ptrdiff_t x_= ((char *)&x_) +						\
@@ -103,7 +111,7 @@ struct external_variable_context
     Pike_interpreter.stack_top ;					\
   x_*=STACK_DIRECTION;							\
   if(x_>0)								\
-    low_error("C stack overflow.\n");					\
+    low_error(Pike_check_c_stack_errmsg);				\
   }while(0)
 
 #define fatal_check_c_stack(X) do { 			\
@@ -111,7 +119,7 @@ struct external_variable_context
       ((char *)&x_) + STACK_DIRECTION * (X) - Pike_interpreter.stack_top ; \
     x_*=STACK_DIRECTION;						\
     if(x_>0) {								\
-      fatal("C stack overflow.\n");					\
+      fatal(Pike_check_c_stack_errmsg);					\
     }									\
   }while(0)
 
@@ -263,6 +271,8 @@ PMOD_EXPORT void apply_shared(struct object *o,
 PMOD_EXPORT void apply(struct object *o, char *fun, int args);
 PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
 PMOD_EXPORT void slow_check_stack(void);
+PMOD_EXPORT void custom_check_stack(size_t amount, const char *fmt, ...)
+  ATTRIBUTE((format (printf, 2, 3)));
 void cleanup_interpret(void);
 void really_clean_up_interpret(void);
 /* Prototypes end here */
