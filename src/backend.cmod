@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.44 2003/07/23 15:11:24 grubba Exp $
+|| $Id: backend.cmod,v 1.45 2003/07/23 15:30:45 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.44 2003/07/23 15:11:24 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.45 2003/07/23 15:30:45 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2104,7 +2104,7 @@ PIKECLASS Backend
  *!   @[Pike.DefaultBackend].
  *!
  *! @seealso
-/*!   @[Pike.Backend()->call_out()], @[Pike.Backend()->_do_call_outs()],
+ *!   @[Pike.Backend()->call_out()], @[Pike.Backend()->_do_call_outs()],
  *!   @[Pike.Backend()->find_call_out()], @[Pike.Backend()->remove_call_out()],
  *!   @[Pike.Backend()->call_out_info()]
  */
