@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.33 1998/05/25 21:24:02 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.34 1998/05/25 21:38:35 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -311,21 +311,23 @@ void assign_to_short_svalue_no_free(union anything *u,
 
 
 void assign_from_short_svalue_no_free(struct svalue *s,
-					     union anything *u,
-					     TYPE_T type)
+				      union anything *u,
+				      TYPE_T type)
 {
   check_type(type);
   check_refs2(u,type);
 
+  s->type = type;
+  s->subtype = 0;
+
   switch(type)
   {
-    case T_FLOAT: s->type=T_FLOAT; s->u.float_number=u->float_number; break;
-    case T_INT: s->type=T_INT; s->u.integer=u->integer; break;
+    case T_FLOAT: s->u.float_number=u->float_number; break;
+    case T_INT: s->u.integer=u->integer; break;
     default:
       if((s->u.refs=u->refs))
       {
 	u->refs[0]++;
-	s->type=type;
       }else{
 	s->type=T_INT;
 	s->subtype=NUMBER_NUMBER;
