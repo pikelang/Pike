@@ -162,12 +162,12 @@ class Connection
 
   static void cmd_shutdown()
   {
-    return sqlobj->shutdown();
+    sqlobj->shutdown();
   }
 
   static void cmd_reload()
   {
-    return sqlobj->reload();
+    sqlobj->reload();
   }
 
   static array(string) cmd_listdbs(string wild)
