@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.156 2002/09/27 11:51:01 jhs Exp $
+// $Id: module.pmod,v 1.157 2002/10/12 02:58:50 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1603,13 +1603,12 @@ string read_file(string filename,void|int start,void|int len)
     len=0x7fffffff;
   case 3:
     while(start-- && f->gets());
-    object(String.String_buffer) buf=String.String_buffer();
+    String.Buffer buf=String.Buffer();
     while(len-- && (tmp=f->gets()))
     {
-      buf->append(tmp);
-      buf->append("\n");
+      buf->add(tmp, "\n");
     }
-    ret=buf->get_buffer();
+    ret=buf->get();
     destruct(buf);
   }
   f->close();
