@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.97 2000/12/01 08:09:43 hubbe Exp $");
+RCSID("$Id: array.c,v 1.98 2000/12/07 23:05:44 noring Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1867,7 +1867,24 @@ PMOD_EXPORT struct array *reverse_array(struct array *a)
   INT32 e;
   struct array *ret;
 
-  /* FIXME: Check refs so we might optimize */
+  if(a->refs == 1)
+    /* Reverse in-place. */
+  {
+    struct svalue *tmp0, *tmp1, swap;
+    
+    tmp0 = ITEM(a);
+    tmp1 = ITEM(a) + a->size;
+    for(e = a->size>>1; 0 < e; e--)
+    {
+      swap = *tmp0;
+      *(tmp0++) = *(--tmp1);
+      *tmp1 = swap;
+    }
+    
+    add_ref(a);
+    return a;
+  }
+  
   ret=allocate_array_no_init(a->size,0);
   for(e=0;e<a->size;e++)
     assign_svalue_no_free(ITEM(ret)+e,ITEM(a)+a->size+~e);
