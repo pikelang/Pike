@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.10 2005/03/29 17:40:42 mast Exp $
+// $Id: module.pmod,v 1.11 2005/03/29 17:57:19 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -164,8 +164,10 @@ string encode_dn_value (string str)
 string canonicalize_dn (string dn, void|int strict)
 //! Returns the given distinguished name on a canonical form, so it
 //! reliably can be used in comparisons for equality. This means
-//! removing surplus whitespace, lowercasing attributes, writing
-//! attribute values on and sorting the RDN parts separated by "+".
+//! removing surplus whitespace, lowercasing attributes, normalizing
+//! quoting in string attribute values, lowercasing the hex digits in
+//! binary attribute values, and sorting the RDN parts separated by
+//! "+".
 //!
 //! The returned string follows RFC 2253. The input string may
 //! use legacy LDAPv2 syntax and is treated according to section 4 in
@@ -211,7 +213,7 @@ parse_loop:
       if (strict && val == "")
 	break parse_loop;
       // Slightly lenient: We don't check for an even number of hex chars.
-      last_rdn += ({attr + "=#" + val});
+      last_rdn += ({attr + "=#" + lower_case (val)});
       rest = tmp_rest;
     }
 
@@ -267,19 +269,22 @@ parse_loop:
       rest = tmp_rest;
     }
 
-    if (!has_prefix (tmp_rest, "+")) {
-      // Finish this rdn and prepare for another.
+    // Prepare for the next attribute/value pair.
 
+    string sep = tmp_rest[..0];
+
+    if (sep == "," || sep == ";") {
+      // Finish this rdn and start another.
       if (sizeof (last_rdn)) {
 	sort (last_rdn);
 	if (res != "") res += "," + (last_rdn * "+");
 	else res = last_rdn * "+";
 	last_rdn = ({});
       }
-
-      if (!has_prefix (tmp_rest, ",") && !has_prefix (tmp_rest, ";"))
-	break parse_loop;
     }
+
+    else if (sep != "+")
+      break;
 
     tmp_rest = tmp_rest[1..];
   }
