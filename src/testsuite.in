@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.305 2000/06/13 22:06:23 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.306 2000/06/21 15:02:27 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -754,6 +754,21 @@ class blorg
 return blorg()->goo();
 ]],1)
 
+// testing 'local::'
+test_any([[
+class fnord
+{
+  int ber() { return 1; }
+  int goo() { return local::ber(); }
+};
+
+class blorg
+{
+  inherit fnord;
+  int ber() { return 2; }
+};
+return blorg()->goo();
+]],1)
 
 // Testing the 'inline' keyword
 test_program([[class foo { inline int c() { return time(); } int d() { return c(); } }; class bar { inherit foo; int c() { return 0; } } int a() { return bar()->d(); }]],0)
