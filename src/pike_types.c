@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.118 2000/01/04 01:19:38 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.119 2000/01/16 05:56:03 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1464,7 +1464,7 @@ static char *low_match_types(char *a,char *b, int flags)
   char *s;
   static char *low_match_types2(char *a,char *b, int flags);
 
-  if (l_flag) {
+  if (l_flag>2) {
     init_buf();
     for(e=0;e<indent;e++) my_strcat("  ");
     my_strcat("low_match_types(");
@@ -1521,7 +1521,7 @@ static char *low_match_types(char *a,char *b, int flags)
 
   a=low_match_types2(a,b,flags);
 
-  if (l_flag) {
+  if (l_flag>2) {
     indent--;
     init_buf();
     for(e=0;e<indent;e++) my_strcat("  ");
@@ -1589,7 +1589,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 	a_markers[m]=pop_unfinished_type();
 
 #ifdef PIKE_TYPE_DEBUG
-	if (l_flag) {
+	if (l_flag>2) {
 	  char *s;
 	  int e;
 	  init_buf();
@@ -1673,7 +1673,7 @@ static char *low_match_types2(char *a,char *b, int flags)
 	free_string(tmp);
 	b_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-	if (l_flag) {
+	if (l_flag>2) {
 	  char *s;
 	  int e;
 	  init_buf();
@@ -1986,7 +1986,7 @@ static int low_pike_types_le(char *a, char *b,
   int res;
   char buf[50];
 
-  if (l_flag) {
+  if (l_flag>2) {
     init_buf();
     for(e=0;e<indent;e++) my_strcat("  ");
     my_strcat("low_pike_types_le(");
@@ -2022,7 +2022,7 @@ static int low_pike_types_le(char *a, char *b,
 
   res=low_pike_types_le2(a, b, array_cnt, flags);
 
-  if (l_flag) {
+  if (l_flag>2) {
     indent--;
 
     for(e=0;e<indent;e++) fprintf(stderr, "  ");
@@ -2103,7 +2103,7 @@ static int low_pike_types_le2(char *a, char *b,
       free_string(tmp);
       a_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-      if (l_flag) {
+      if (l_flag>2) {
 	char *s;
 	int e;
 	init_buf();
@@ -2178,7 +2178,7 @@ static int low_pike_types_le2(char *a, char *b,
       free_string(tmp);
       b_markers[m]=pop_unfinished_type();
 #ifdef PIKE_TYPE_DEBUG
-      if (l_flag) {
+      if (l_flag>2) {
 	char *s;
 	int e;
 	init_buf();
