@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.27 2000/08/09 13:27:43 grubba Exp $
+ * $Id: preprocessor.h,v 1.28 2000/08/09 22:23:25 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -736,7 +736,7 @@ static ptrdiff_t calc1(struct cpp *this, WCHAR *data, ptrdiff_t len,
   return pos;
 }
 
-static int calc(struct cpp *this, WCHAR *data, ptrdiff_t len, ptrdiff_t tmp)
+static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len, ptrdiff_t tmp)
 {
   JMP_BUF recovery;
   INT32 pos;
@@ -772,12 +772,12 @@ static int calc(struct cpp *this, WCHAR *data, ptrdiff_t len, ptrdiff_t tmp)
   return pos;
 }
 
-static INT32 lower_cpp(struct cpp *this,
-		       WCHAR *data,
-		       ptrdiff_t len,
-		       int flags,
-		       int auto_convert,
-		       struct pike_string *charset)
+static ptrdiff_t lower_cpp(struct cpp *this,
+			   WCHAR *data,
+			   ptrdiff_t len,
+			   int flags,
+			   int auto_convert,
+			   struct pike_string *charset)
 {
   ptrdiff_t pos, tmp, e;
   int tmp2;
