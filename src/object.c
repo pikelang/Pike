@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.54 1999/03/30 22:00:28 grubba Exp $");
+RCSID("$Id: object.c,v 1.55 1999/05/26 07:22:14 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -915,12 +915,16 @@ void cleanup_objects(void)
   struct object *o, *next;
   for(o=first_object;o;o=next)
   {
+    if(o==master_object) { next=o->next; continue; }
     add_ref(o);
     destruct(o);
     next=o->next;
     free_object(o);
   }
 
+  destruct_objects_to_destruct();
+
+  destruct(master_object);
   free_object(master_object);
   master_object=0;
   free_program(master_program);
