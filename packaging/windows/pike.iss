@@ -81,13 +81,10 @@ Name: gtk; Description: "GTK+"; Types: full custom;
 Name: sdl; Description: "SDL"; Types: full custom;
 Name: glu; Description: "GLU"; Types: full custom;
 Name: pike; Description: Pike; Types: full custom; Flags: fixed; ExtraDiskSpaceRequired: 40000000
-;Name: "dsinstaller"; Description: "DreamSNES installer"; Types: full;
 
 [Tasks]
 ;;Name: gtk; Description: "Install GTK+ support"
 ;Name: mysql; Description: "Install MySQL client support"
-;;Name: dsinstaller; Description: "Install DreamSNES installer"
-;Perform ASPI layer check
 Name: associate; Description: Associate .pike and .pmod extensions with Pike
 
 [Dirs]
@@ -108,10 +105,6 @@ Root: HKCR; Subkey: pike_module\Shell\Edit\Command; ValueType: string; ValueData
 
 [Icons]
 Name: {group}\Pike; Filename: {app}\bin\pike.exe
-;Name: "{group}\DreamSNES installer"; Filename: "{app}\apps\dsinstall\dreamsnesinstall.pike"; WorkingDir: "{app}\apps\dsinstall"; Flags: runminimized createonlyiffileexists
-;Name: "{userdesktop}\DreamSNES installer"; Filename: "{app}\apps\dsinstall\dreamsnesinstall.pike"; WorkingDir: "{app}\apps\dsinstall"; Flags: runminimized createonlyiffileexists
-;Name: "{group}\DreamSNES tutorial"; Filename: "{app}\apps\dsinstall\tutorial.url"; Flags: createonlyiffileexists
-;Name: "{userdesktop}\DreamSNES burning tutorial"; Filename: "{app}\apps\dsinstall\tutorial.url"; Flags: createonlyiffileexists
 
 [UninstallDelete]
 Type: filesandordirs; Name: {app}\bin
