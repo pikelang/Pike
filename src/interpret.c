@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.92 1998/07/17 19:53:16 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.93 1998/07/28 23:02:42 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1373,8 +1373,10 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_APPLY_AND_RETURN);
       {
 	INT32 args=sp - *--mark_sp;
+/*	fprintf(stderr,"%p >= %p\n",fp->expendible,sp-args); */
 	if(fp->expendible >= sp-args)
 	{
+/*	  fprintf(stderr,"NOT EXPENDIBLE!\n"); */
 	  MEMMOVE(sp-args+1,sp-args,args*sizeof(struct svalue));
 	  sp++;
 	  sp[-args-1].type=T_INT;
@@ -2128,10 +2130,12 @@ static int o_catch(unsigned char *pc)
     fp->expendible=expendible;
     return 0;
   }else{
-    int x=eval_instruction(pc);
+    int x;
+    fp->expendible=fp->locals + fp->num_locals;
+    x=eval_instruction(pc);
+    fp->expendible=expendible;
     if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
     UNSETJMP(tmp);
-    fp->expendible=expendible;
     return 1;
   }
 }
