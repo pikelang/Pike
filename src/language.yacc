@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.48 1997/09/11 19:53:44 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.49 1997/09/19 06:45:32 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -331,6 +331,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> m_expr_list
 %type <n> m_expr_list2
 %type <n> new_local_name
+%type <n> optional_comma_expr
 %type <n> optional_else_part
 %type <n> return
 %type <n> sscanf
@@ -1010,9 +1011,9 @@ case: F_CASE comma_expr ':'
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | F_CASE comma_expr F_DOT_DOT comma_expr ':'
+  | F_CASE comma_expr F_DOT_DOT optional_comma_expr ':'
   {
-    $$=mknode(F_CASE,$2,$4);
+    $$=mknode(F_CASE,$4?$2:0,$4?$4:$2);
   }
   ;
 
@@ -1036,6 +1037,10 @@ unused: { $$=0; }
   ;
 
 unused2: comma_expr { $$=mkcastnode(void_type_string,$1);  } ;
+
+optional_comma_expr: { $$=0; }
+  | comma_expr
+  ;
 
 comma_expr: comma_expr2
   | type2

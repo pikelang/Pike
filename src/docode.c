@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.21 1997/09/09 03:36:11 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.22 1997/09/19 06:45:31 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -802,11 +802,16 @@ static int do_docode2(node *n,int flags)
     /* Check for cases inside a range */
     for(e=0; e<cases-1; e++)
     {
-      if(current_switch_jumptable[ order[e]*2+2 ] != -1)
+      if(order[e] < cases-1)
       {
-	if(current_switch_jumptable[ order[e]*2+2 ] !=
-	   current_switch_jumptable[ order[e+1]*2+1 ])
-	  yyerror("Case inside range.");
+	int o1=order[e]+1;
+	if(current_switch_jumptable[o1]==current_switch_jumptable[o1+1] &&
+	   current_switch_jumptable[o1]==current_switch_jumptable[o1+2])
+	{
+	  if(order[e]+1 != order[e+1])
+	    yyerror("Case inside range.");
+          e++;
+	}
       }
     }
 
@@ -852,10 +857,13 @@ static int do_docode2(node *n,int flags)
     {
       yyerror("Case outside switch.");
     }else{
-      if(!is_const(CAR(n)))
+      node *lower=CAR(n);
+      if(!lower) lower=CDR(n);
+
+      if(!is_const(lower))
 	yyerror("Case label isn't constant.");
 
-      tmp1=eval_low(CAR(n));
+      tmp1=eval_low(lower);
       if(tmp1<1)
       {
 	yyerror("Error in case label.");
@@ -872,27 +880,36 @@ static int do_docode2(node *n,int flags)
 
       if(CDR(n))
       {
-	if(!is_const(CDR(n)))
-	  yyerror("Case label isn't constant.");
+	current_switch_jumptable[current_switch_case]=
+	  current_switch_jumptable[current_switch_case-1];
+	current_switch_case++;
 
-	current_switch_jumptable[current_switch_case+1]=
+	if(CAR(n))
+	{
+	  if(!is_const(CDR(n)))
+	    yyerror("Case label isn't constant.");
+	  
 	  current_switch_jumptable[current_switch_case]=
 	    current_switch_jumptable[current_switch_case-1];
-	current_switch_case+=2;
-	tmp1=eval_low(CDR(n));
-	if(tmp1<1)
-	{
-	  yyerror("Error in second half of case label.");
-	  push_int(0);
-	  tmp1=1;
+	  current_switch_case++;
+
+	  tmp1=eval_low(CDR(n));
+	  if(tmp1<1)
+	  {
+	    yyerror("Error in second half of case label.");
+	    push_int(0);
+	    tmp1=1;
+	  }
+	  pop_n_elems(tmp1-1);
+	  current_switch_values_on_stack++;
+	  for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
+	    if(is_equal(sp-tmp1, sp-1))
+	      yyerror("Duplicate case.");
+	  current_switch_jumptable[current_switch_case++]=-1;
 	}
-	pop_n_elems(tmp1-1);
-	current_switch_values_on_stack++;
-	for(tmp1=current_switch_values_on_stack; tmp1 > 1; tmp1--)
-	  if(is_equal(sp-tmp1, sp-1))
-	    yyerror("Duplicate case.");
+      }else{
+	current_switch_jumptable[current_switch_case++]=-1;
       }
-      current_switch_jumptable[current_switch_case++]=-1;
     }
     return 0;
   }
