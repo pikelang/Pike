@@ -1,0 +1,217 @@
+.\" $Id: pike.1,v 1.1 1998/05/12 20:03:16 grubba Exp $
+.TH pike 1 "11 May 1998" Pike "Pike Manual"
+.ds ]L $Id: pike.1,v 1.1 1998/05/12 20:03:16 grubba Exp $
+.SH NAME
+pike \- pike compiler and interpreter
+.SH SYNOPSIS
+.B pike
+[
+.B -driver options
+] [
+.IR script
+[
+.B script arguments
+] ]
+.SH DESCRIPTION
+Compiler and interpreter for the Pike programming language.
+.SH OPTIONS
+The following options are supported by the loader:
+.TP
+.B \-a
+Increase the debug level of the peep-hole optimizer with 1 (debug).
+.TP
+.BI \-a num
+Set the debug level of the peep-hole optimizer to
+.I num
+(debug).
+.TP
+.BI \-D symbol
+Define the preprocessor symbol
+.I symbol
+to 1.
+.TP
+.BI \-D symbol=value
+Define the preprocessor symbol
+.I symbol
+to
+.I value.
+.TP
+.B \-d
+Increase the debug level with 1 (debug).
+.TP
+.BI \-d num
+Set the debug level to
+.I num
+(debug).
+.TP
+.B \-dc
+Increase the debug level of the Pike compiler (debug).
+.TP
+.B \-ds
+Debug signals (debug).
+.TP
+.B \-dt
+Turn off tail recursion optimization (debug).
+.TP
+.B \-l
+Increase the debug level of the global optimizer with 1 (debug).
+.TP
+.BI \-l num
+Set the debug level of the global optimizer to
+.I num
+(debug).
+.TP
+.BI \-m master_program
+Use
+.I master_program
+instead of the ordinary master program.
+.TP
+.BI \-q num
+End execution after executing
+.I num
+Pike instructions.
+.TP
+.BI \-s num
+Set Pike stack size to
+.I num
+(minimum is 256).
+.TP
+.B \-t
+Increase the level of runtime trace with 1 (debug).
+.TP
+.BI \-t num
+Set the level of runtime trace to
+.I num
+(debug).
+.TP
+.B \-p
+Increase the level of profiling with 1 (debug).
+.TP
+.BI \-p num
+Set the level of profiling to
+.I num
+(debug).
+.LP
+The following options are supported by the default master program:
+.TP
+.B \-h, \-\-help,
+Print help message and exit.
+.TP
+.BI \-e expr, \-\-execute =expr
+Execute
+.I expr
+and exit.
+.TP
+.B \-E, \-\-preprocess
+Just run the preprocessor.
+.TP
+.BI \-I dir, \-\-include\-path =dir
+Append
+.I dir
+to the include path.
+.TP
+.BI \-M dir, \-\-modue\-path =dir
+Append
+.I dir
+to the module path.
+.TP
+.BI \-P dir, \-\-program\-path =dir
+Append
+.I dir
+to the program path.
+.TP
+.B \-v, \-\-version
+Print version of Pike and exit.
+.TP
+.B \-w, \-\-warnings
+Enable warnings.
+.TP
+.B \-\-compiler\-trace
+Turn on tracing of the Pike compiler (debug).
+.TP
+.B \-\-debug
+Increase or set the debug level (debug).
+.TP
+.B \-\-show\-paths
+Show the paths pike will use and exit (debug).
+.TP
+.B \-\-trace
+Increase or set the trace level (debug).
+.SH OPERANDS
+The following operand is supported:
+.TP
+.I script
+A path to a script written in Pike to be compiled and then executed.
+Everything on the commandline after the script is passed as arguments
+to the script.
+.LP
+If no script is specified, pike will start in interactive- (Hilfe) mode.
+.SH REGISTRY KEYS
+On NT, Pike is affected by the following keys in the registry:
+
+.nr
+.B HKEY_CURRENT_USER\eSoftware\eIdonex\ePike\e0.6\ePIKE_MASTER
+.B HKEY_LOCAL_MACHINE\eSoftware\eIdonex\ePike\e0.6\ePIKE_MASTER
+.RS
+Specifies the name of the master program (overridden by
+.BI -m master_program
+).
+.RE
+.SH ENVIRONMENT
+Pike is affected by the following environment variables:
+.TP
+.B PIKE_MASTER
+Specifies the name of the master program (overridden by
+.BI -mmaster_program
+).
+.LP
+Depending on operating system Pike may be affected by the following
+environment variables:
+.TP
+.B LC_ALL
+Overrides the other LC_* variables.
+.TP
+.B LC_COLLATE
+Specifies the character collation sequence.
+.TP
+.B LC_CTYPE
+Specifies the character classification.
+.TP
+.B LC_MESSAGES
+Specifies the language of the system messagedatabase.
+.TP
+.B LC_NUMERIC
+Specifies the decimal and thousand delimiters.
+.TP
+.B LC_TIME
+Specifies the date and time formats.
+.LP
+The default master program is affected by the following environment variables:
+.TP
+.B PIKE_INCLUDE_PATH
+List of directories separated with colon (:), to search for include-files.
+.TP
+.B PIKE_PROGRAM_PATH
+List of directories separated with colon (:), to search for program-files.
+.TP
+.B PIKE_MODULE_PATH
+List of directories separated with colon (:), to search for modules.
+.LP
+Note that the above environment variables have effect before the default
+master program attempts to load the
+.BR Getopt (3P)
+module, which occurrs before the master program arguments are parsed.
+.SH EXIT STATUS
+The following exit values are returned:
+.TP
+.B 0
+Successfull completion.
+.TP
+.B >0
+An error occurred. See output on stderr (fd #2) for reason.
+.SH SEE ALSO
+.BR hilfe (1),
+.BR Getopt (3P),
+.BR environ (5)
+.LP
+.I Pike Programming Tutorial
