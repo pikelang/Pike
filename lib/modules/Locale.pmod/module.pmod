@@ -11,6 +11,7 @@
 static mapping(string:string) projects = ([]);
 // language:(project_name:project)
 static mapping(string:mapping(string:object)) locales = ([]);
+static string default_project;
 
 static void create()
 {
@@ -39,6 +40,15 @@ void register_project(string name, string path, void|string path_base)
 #endif
   }
   projects[name]=path;
+}
+
+void set_default_project_path(string path)
+  //! In the event that a translation is requested in an
+  //! unregistered project, this path will be used as the
+  //! project path. %P will be replaced with the requested
+  //! projects name.
+{
+  default_project = path;
 }
 
 static class LanguageListObject( array(string) languages )
@@ -165,8 +175,12 @@ class LocaleObject
 object get_object(string project, string lang) {
 
   // Is there such a project?
-  if(!projects[project])
+  int guess_project;
+  if(!projects[project]) {
+    if(default_project)
+      projects[project] = replace(default_project, "%P", project);
     return 0;
+  }
 
   // Any language?
   if(!lang)
@@ -191,8 +205,10 @@ object get_object(string project, string lang) {
 			  ({ "%L", "%%" }),
 			  ({ lang, "%" }) );
   Stdio.File file=Stdio.FILE();
-  if(!(file->open(filename, "r")))
+  if(!(file->open(filename, "r"))) {
+    if(guess_project) m_delete(projects, project);
     return 0;
+  }
   string line = file->gets();  // First line should be <?xml ?>
   string data = file->read();
   file->close();
