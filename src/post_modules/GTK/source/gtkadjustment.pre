@@ -41,8 +41,6 @@ void create(void|float value, void|float lower, void|float upper,
 
   if(THIS->obj) Pike_error("GTK.Adjustment->create() can only be called once.\n");
   THIS->obj = GTK_OBJECT( gtk_adjustment_new( l, u, v, si, pi, ps ) );
-  if(!THIS->obj)
-    Pike_error("Failed to initiate adjustment\n");
   pgtk__init_this_object();
   my_pop_n_elems(args);
   push_int( 0 );
