@@ -38,6 +38,10 @@ o INT64
     before resorting to Gmp.mpz objects for large numbers.
 
 o IPv6
+    Networking code in Pike has been updated to work with IPv6. This
+    includes both low level fixes in the socket handling as well as
+    high level changes such as IP parsing and protocol additions such
+    as AAAA records in Protocol.DNS.
 
 o mysqls
     The Mysql glue can operate over SSL. Use the "mysqls://" protocol
@@ -65,14 +69,6 @@ o Module system.
     be a constant, thus preventing the program from being
     automatically cloned.
 
-o Calendar
-
-  The %S format is added to Calendar.parse() to parse seconds since
-  the Epoch. The TimeRange class is extended with a format method
-  format_commonlog(), a tzname_utc_offset (+HHMM) and
-  tzname_location(), which, when available, returns zone names like
-  "Europe/Stockholm". The database has been updated with Swedish
-  pre-1901 namedays and Finnish namedays.
 
 Master:
 -------
@@ -274,7 +270,6 @@ o Image.NEO
     handler can be used to implement other atari image formats.
 
 o GLUE
-
     The GL Universal Environment is a GL toolkit that makes
     implementing GL applications in Pike really simple. GLUE has
     several orthogonal components like object orientation
@@ -304,16 +299,24 @@ o Protocols.HTTP.Session
     Handles an HTTP connection as a session, with cookies and stuff.
 
 o Bz2
-
-    Support for the compression format used by the bzip2 program.
+    Support for the compression format used by the bzip2 program. The
+    module interface is identical with the Gz module.
 
 o Process.Process
 o Error
 o Float
 o Protocols.Bittorrent
-o Protocols.LMTP
-o Web.RDF/RDFS/OWL/RSS
 
+o Protocols.LMTP
+    Implements the Local Mail Transfer Protocol, LMTP, as specified in
+    RFC2033. This module has been well tested against Postfix clients.
+
+o Protocols.OBEX
+    An implementation of the IrDA(R) Object Exchange Protocol. OBEX is
+    a protocol for sending and receiving binary objects to mobile
+    devices using transports such as IR and Bluetooth.
+
+o Web.RDF/RDFS/OWL/RSS
     Pike now has support for the W3C semantic web formats OWL, RDF
     and RDFS, which are used for expressing structure and metadata
     information. There is also some support for the syndication
@@ -351,13 +354,29 @@ o Function.Y
 o Function.curry
 
 o Thread
-date: 2003/04/14 18:59:37;  author: mast;  state: Exp;  lines: +366 -58
-Added try_* varieties of all functions that can block in Thread.Fifo
-and Thread.Queue. Added functions to make Thread.Fifo and Thread.Queue
-implement the same interface. Let write and try_write return the
-number of elements in the fifo/queue. Added fallbacks for Thread.Fifo
-and Thread.Queue in nonthreaded mode since it's now possible to use
-them in a meaningful way then.
+    Thread.Fifo and Thread.Queue has been extended with try_*
+    varieties of all functions that can block and with functions that
+    makes them both implement the same interface. Both also have
+    fallbacks for running in nonthreaded mode.
+
+o Filesystem.Traversion
+
+    The Filesystem.Traversion iterator is a handy way to descend into
+    a directory structure (depth first) and perform actions on all or
+    some of the files.
+
+    Example:
+
+      foreach(Filesystem.Traversion("."); string dir; string file)
+        if(file[-1]=='~' || file=="core") rm(dir+file);
+
+o Calendar module
+    The %S format is added to Calendar.parse() to parse seconds since
+    the Epoch. The TimeRange class is extended with a format method
+    format_commonlog(), a tzname_utc_offset (+HHMM) and
+    tzname_location(), which, when available, returns zone names like
+    "Europe/Stockholm". The database has been updated with Swedish
+    pre-1901 namedays and Finnish namedays.
 
 
 Optimizations:
