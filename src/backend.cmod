@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.167 2005/01/27 17:45:34 grubba Exp $
+ * $Id: backend.cmod,v 1.168 2005/01/27 18:19:53 mast Exp $
  *
  * Backend object.
  */
@@ -2574,7 +2574,8 @@ PIKECLASS Backend
 
 #ifdef POLL_DEBUG
 #ifdef USE_KQUEUE
-	  fprintf(stderr, "fd:%d filter:%d flags:0x%08x\n",
+	  fprintf(stderr, "[%d]BACKEND[%d]: fd:%d filter:%d flags:0x%08x",
+		  THR_NO, me->id,
 		  GET_FD(ACTIVE_POLLSET[i]),
 		  GET_EVENTS(ACTIVE_POLLSET[i]),
 		  ACTIVE_POLLSET[i].flags);
@@ -2593,7 +2594,8 @@ PIKECLASS Backend
 	  }
 	  fprintf(stderr, "(%d)\n", ACTIVE_POLLSET[i].data);
 #else /* !USE_KQUEUE */
-	  fprintf(stderr, "fd:%d events:0x%04x\n",
+	  fprintf(stderr, "[%d]BACKEND[%d]: fd:%d events:0x%04x",
+		  THR_NO, me->id,
 		  GET_FD(ACTIVE_POLLSET[i]),
 		  GET_EVENTS(ACTIVE_POLLSET[i]));
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLNVAL)) {
