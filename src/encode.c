@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.168 2004/05/11 11:03:00 grubba Exp $
+|| $Id: encode.c,v 1.169 2004/05/11 11:07:12 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.168 2004/05/11 11:03:00 grubba Exp $");
+RCSID("$Id: encode.c,v 1.169 2004/05/11 11:07:12 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -514,15 +514,33 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   switch(val->type)
   {
     case T_INT:
-      /* FIXME:
-       * if INT_TYPE is larger than 32 bits (not currently happening)
-       * then this must be fixed to encode numbers over 32 bits as
-       * Gmp.mpz objects
-       *
-       * (Is too, --with-long-long-int. /Mirar)
-       */
       /* FIXME: Doesn't encode NUMBER_UNDEFINED et al. */
+      /* But that's a feature; NUMBER_UNDEFINED is an inherently
+       * transient value. It would lose its usefulness otherwise.
+       * /mast */
+
+#if SIZEOF_INT_TYPE > 4
+    {
+      INT_TYPE i=val->u.integer;
+      if (i != (INT32)i)
+      {
+#ifdef AUTO_BIGNUM
+	 push_int(i);
+	 convert_stack_top_to_bignum();
+	 encode_value2(Pike_sp-1,data, 0);
+	 pop_stack();
+#else
+	 Pike_error ("Cannot encode integers with more than 32 bits "
+		     "without bignum support.\n");
+#endif
+	 goto encode_done;
+      }
+      else
+	 code_entry(TAG_INT, i,data);
+    }
+#else       
       code_entry(TAG_INT, val->u.integer,data);
+#endif
       break;
 
     case T_STRING:
