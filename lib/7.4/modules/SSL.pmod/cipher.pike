@@ -1,8 +1,6 @@
 #pike __REAL_VERSION__
 
-//! @deprecated SSL.Cipher
-
-/* $Id: cipher.pike,v 1.1 2003/02/07 03:13:14 nilsson Exp $
+/* $Id: cipher.pike,v 1.2 2003/02/08 02:04:07 nilsson Exp $
  *
  */
 
@@ -12,6 +10,7 @@
 // should probably be a pmod instead. /mast
 
 //! Encryption and MAC algorithms used in SSL.
+//! @deprecated SSL.Cipher
 
 inherit "constants";
 
