@@ -42,7 +42,6 @@ lambda()
 
 //! The test call/result class.
 //! Instantiated with a test id and the test object itself.
-
 class ExecTest(string id,Test test)
 {
    float useconds;
@@ -50,10 +49,10 @@ class ExecTest(string id,Test test)
    int nruns;
    int memusage;
 
-//! This function runs the actual test, by spawning off
-//! a new pike and call it until at least one of these conditions:
-//! maximum_seconds has passed, or
-//! the number of runs is at least maximum_runs.
+   //! This function runs the actual test, by spawning off
+   //! a new pike and call it until at least one of these conditions:
+   //! maximum_seconds has passed, or
+   //! the number of runs is at least maximum_runs.
    void run(int maximum_seconds,
 	    int maximum_runs,
 	    void|int silent)
@@ -108,8 +107,7 @@ class ExecTest(string id,Test test)
 
 //! This function is called in the spawned pike,
 //! to perform the test but also to write some important 
-//! data to stdout.
-
+//! data to stdout. @[id] is the current test.
 void _shoot(string id)
 {
    float tg=gauge { Tools.Shoot[id]()->perform(); };
