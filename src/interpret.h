@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.91 2001/07/02 20:09:17 mast Exp $
+ * $Id: interpret.h,v 1.92 2001/07/08 18:54:53 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -14,11 +14,16 @@
 #include "program.h"
 #include "pike_error.h"
 
+#ifdef HAVE_COMPUTED_GOTO
+#define PIKE_OPCODE_T	void *
+extern PIKE_OPCODE_T *fcode_to_opcode;
+#else /* !HAVE_COMPUTED_GOTO */
 #ifdef SHORT_PIKE_OPCODE
 #define PIKE_OPCODE_T	unsigned INT16
 #else /* !SHORT_PIKE_OPCODE */
 #define PIKE_OPCODE_T	unsigned INT8
 #endif /* SHORT_PIKE_OPCODE */
+#endif /* HAVE_COMPUTED_GOTO */
 
 struct Pike_interpreter {
   /* Swapped variables */

@@ -14,49 +14,66 @@
 #ifdef PIKE_DEBUG
 #define DONE		continue
 #else /* !PIKE_DEBUG */
-#define DONE		goto **(pc++)
+#define DONE		do {	\
+    Pike_fp->pc = pc;		\
+    instr = (pc++)[0];		\
+    goto *instr;		\
+  } while(0)
+    
 #endif /* PIKE_DEBUG */
-#define GET_ARG()	((INT32)*(pc++))
-#define GET_ARG2()	((INT32)*(pc++))
-#define GET_JUMP()	((INT32)*(pc++))
-#define SKIPJUMP()	(pc++)
+
+#define LOW_GET_ARG()	((INT32)*(pc++))
+#define LOW_GET_JUMP()	((INT32)*(pc))
+#define LOW_SKIPJUMP()	(pc++)
+
 #else /* !HAVE_COMPUTED_GOTO */
 
-#define CASE(X) case (X)-F_OFFSET:
-#define DONE break
+#define CASE(X)		case (X)-F_OFFSET:
+#define DONE		break
+
+#define LOW_GET_ARG()	((pc++)[0])
+#define LOW_GET_JUMP()	EXTRACT_INT(pc)
+#define LOW_SKIP_JUMP()	(pc += sizeof(INT32))
+
+#endif /* HAVE_COMPUTED_GOTO */
 
 #ifdef PIKE_DEBUG
 
 #define GET_ARG() (backlog[backlogp].arg=(\
   instr=prefix,\
   prefix=0,\
-  instr += (pc++)[0],\
-  (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
+  instr += LOW_GET_ARG(),\
+  (t_flag>3 ? sprintf(trace_buffer, "-    Arg = %ld\n", \
+                     (long)instr), \
+              write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
 #define GET_ARG2() (backlog[backlogp].arg2=(\
   instr=prefix2,\
   prefix2=0,\
-  instr += (pc++)[0],\
-  (t_flag>3 ? sprintf(trace_buffer,"-    Arg2 = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
+  instr += LOW_GET_ARG(),\
+  (t_flag>3 ? sprintf(trace_buffer, "-    Arg2 = %ld\n", \
+                      (long)instr), \
+              write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
 
 #define GET_JUMP() (backlog[backlogp].arg=(\
-  (t_flag>3 ? sprintf(trace_buffer,"-    Target = %+ld\n",(long)EXTRACT_INT(pc)),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
-  EXTRACT_INT(pc)))
+  (t_flag>3 ? sprintf(trace_buffer, "-    Target = %+ld\n", \
+                      (long)LOW_GET_JUMP()), \
+              write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0), \
+  LOW_GET_JUMP()))
 
-#define SKIPJUMP() (GET_JUMP(), pc+=sizeof(INT32))
+#define SKIPJUMP() (GET_JUMP(), LOW_SKIP_JUMP())
 
-#else
+#else /* !PIKE_DEBUG */
 
-#define GET_ARG() (instr=prefix,prefix=0,instr+(pc++)[0])
-#define GET_ARG2() (instr=prefix2,prefix2=0,instr+(pc++)[0])
-#define GET_JUMP() EXTRACT_INT(pc)
-#define SKIPJUMP() pc+=sizeof(INT32)
+#define GET_ARG() (instr=prefix,prefix=0,instr+LOW_GET_ARG())
+#define GET_ARG2() (instr=prefix2,prefix2=0,instr+LOW_GET_ARG())
 
-#endif
+#define GET_JUMP() LOW_GET_JUMP()
+#define SKIPJUMP() LOW_SKIP_JUMP()
 
-#endif /* HAVE_COMPUTED_GOTO */
+#endif /* PIKE_DEBUG */
 
 #define DOJUMP() do { \
     INT32 tmp; \
@@ -74,9 +91,15 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 {
   unsigned INT32 prefix2=0,prefix=0;
 #ifdef HAVE_COMPUTED_GOTO
+  static void *strap = &&init_strap;
   void *instr;
 #else /* !HAVE_COMPUTED_GOTO */
   unsigned INT32 instr;
+#endif /* HAVE_COMPUTED_GOTO */
+
+#ifdef HAVE_COMPUTED_GOTO
+  goto *strap;
+ normal_strap:
 #endif /* HAVE_COMPUTED_GOTO */
 
   debug_malloc_touch(Pike_fp);
@@ -269,8 +292,6 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #define OPCODE1_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
 #define OPCODE2_TAILJUMP(OP, DESC, CODE) CASE(OP); CODE
 
-#define BREAK		DONE; }
-
 #include "interpret_functions.h"
 
 #ifndef HAVE_COMPUTED_GOTO      
@@ -279,5 +300,83 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     }
 #endif /* !HAVE_COMPUTED_GOTO */
   }
-}
 
+  /* NOT_REACHED */
+
+#ifdef HAVE_COMPUTED_GOTO
+
+#undef OPCODE0
+#undef OPCODE1
+#undef OPCODE2
+#undef OPCODE0_TAIL
+#undef OPCODE1_TAIL
+#undef OPCODE2_TAIL
+#undef OPCODE0_JUMP
+#undef OPCODE1_JUMP
+#undef OPCODE2_JUMP
+#undef OPCODE0_TAILJUMP
+#undef OPCODE1_TAILJUMP
+#undef OPCODE2_TAILJUMP
+#undef LABEL
+#define LABEL(OP)	&&PIKE_CONCAT(LABEL_,OP)
+#define OPCODE0(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE1(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE2(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE0_TAIL(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE1_TAIL(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE2_TAIL(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE0_JUMP(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE1_JUMP(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE2_JUMP(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE0_TAILJUMP(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE1_TAILJUMP(OP,DESC,CODE)	LABEL(OP),
+#define OPCODE2_TAILJUMP(OP,DESC,CODE)	LABEL(OP),
+
+ init_strap:
+  strap = &&normal_strap;
+  {
+    static void *table[] = {
+      LABEL(F_PREFIX_256),
+      LABEL(F_PREFIX_512),
+      LABEL(F_PREFIX_768),
+      LABEL(F_PREFIX_1024),
+      LABEL(F_PREFIX_CHARX256),
+      LABEL(F_PREFIX_WORDX256),
+      LABEL(F_PREFIX_24BITX256),
+
+      LABEL(F_PREFIX2_256),
+      LABEL(F_PREFIX2_512),
+      LABEL(F_PREFIX2_768),
+      LABEL(F_PREFIX2_1024),
+      LABEL(F_PREFIX2_CHARX256),
+      LABEL(F_PREFIX2_WORDX256),
+      LABEL(F_PREFIX2_24BITX256),
+
+      LABEL(F_INDEX),
+      LABEL(F_POS_INT_INDEX),
+      LABEL(F_NEG_INT_INDEX),
+
+      LABEL(F_RETURN),
+      LABEL(F_DUMB_RETURN),
+      LABEL(F_RETURN_0),
+      LABEL(F_RETURN_1),
+      LABEL(F_RETURN_LOCAL),
+      LABEL(F_RETURN_IF_TRUE),
+
+      LABEL(F_FOREACH),
+      LABEL(F_NEW_FOREACH),
+
+#include "interpret_protos.h"
+    };
+
+#ifdef PIKE_DEBUG
+    if (sizeof(table) != (F_MAX_OPCODE-(F_OFFSET+1))*sizeof(void *))
+      fatal("opcode_to_label out of sync: 0x%08lx != 0x%08lx\n",
+	    DO_NOT_WARN((long)sizeof(table)),
+	    DO_NOT_WARN((long)((F_MAX_OPCODE-(F_OFFSET+1))*sizeof(void *))));
+#endif /* PIKE_DEBUG */
+    fcode_to_opcode = table;
+    return 0;
+  }
+#endif /* HAVE_COMPUTED_GOTO */
+}

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.213 2001/07/06 22:56:56 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.214 2001/07/08 18:54:52 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -64,6 +64,9 @@ RCSID("$Id: interpret.c,v 1.213 2001/07/06 22:56:56 grubba Exp $");
 #define SVALUE_STACK_MARGIN 100	/* Tested in 7.1: 40 was enough, 30 wasn't. */
 #define C_STACK_MARGIN 8000	/* Tested in 7.1: 3000 was enough, 2600 wasn't. */
 
+#ifdef HAVE_COMPUTED_GOTO
+PIKE_OPCODE_T *fcode_to_opcode = NULL;
+#endif /* HAVE_COMPUTED_GOTO */
 
 PMOD_EXPORT const char *Pike_check_stack_errmsg =
   "Svalue stack overflow. "
@@ -725,7 +728,10 @@ static int o_catch(unsigned char *pc);
 #define EVAL_INSTR_RET_CHECK(x)
 #endif
 
-#ifdef PIKE_DEBUG
+/* NOTE: Due to the implementation of computed goto,
+ *       interpreter.h may only be included once.
+ */
+#if defined(PIKE_DEBUG) && !defined(HAVE_COMPUTED_GOTO)
 #define eval_instruction eval_instruction_with_debug
 #include "interpreter_debug.h"
 
