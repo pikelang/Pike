@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.h,v 1.23 2003/11/25 22:13:58 mast Exp $
+|| $Id: ia32.h,v 1.24 2005/01/04 17:56:56 grubba Exp $
 */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -10,13 +10,13 @@
 #define OPCODE_INLINE_BRANCH
 #define OPCODE_RETURN_JUMPADDR
 
-#ifdef _M_IX86
+#if defined(_M_IX86) && !defined(__GNUC__)
 
 #define DEF_PROG_COUNTER void *ia32_pc; \
                          _asm { _asm mov ia32_pc,ebp }
 #define PROG_COUNTER  (((unsigned char **)ia32_pc)[1])
 
-#else  /* _M_IX86 */
+#else  /* _M_IX86 && !__GNUC__ */
 
 #ifdef OPCODE_RETURN_JUMPADDR
 /* Don't need an lvalue in this case. */
