@@ -1,13 +1,7 @@
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
-AC_PROG_CC
-AC_PROG_RANLIB
-AC_SUBST(RANLIB)
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
-AC_SUBST_FILE(module_makefile)
-module_makefile=$srcdir/../module_makefile
+sinclude(../module_configure.in)
 
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)

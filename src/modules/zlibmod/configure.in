@@ -2,14 +2,7 @@ AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
 
-AC_PROG_CC
-AC_PROG_RANLIB
-AC_SUBST(RANLIB)
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
-
-AC_SUBST_FILE(module_makefile)
-module_makefile=$srcdir/../module_makefile
+sinclude(../module_configure.in)
 
 if test x$with_zlib = xyes ; then
   AC_CHECK_HEADERS(zlib.h)

@@ -1,17 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_LDFLAGS=@LIBS@
+OBJS=mpz_glue.o
 
-FILES=mpz_glue.o
-LIB=gmpmod.a
-
-all: $(LIB)
-
-@module_makefile@
-
-$(LIB): $(FILES)
-	-rm -f $(LIB)
-	ar cq $(LIB) $(FILES)
-	-@RANLIB@ $(LIB)
-	echo >linker_options @LIBS@
-
+@static_module_makefile@
 @dependencies@

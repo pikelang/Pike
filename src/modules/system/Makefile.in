@@ -1,15 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-FILES=system.o syslog.o passwords.o
+OBJS=system.o syslog.o passwords.o
+MODULE_LDFLAGS=@LIBS@
 
-all: system.a
-
-@module_makefile@
-
-system.a: $(FILES)
-	-rm -f system.a
-	ar cq system.a $(FILES)
-	-@RANLIB@ system.a
-	echo >linker_options @LIBS@
-
+@static_module_makefile@
 @dependencies@

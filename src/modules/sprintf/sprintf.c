@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.8 1996/12/07 03:13:27 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.9 1997/02/07 00:45:06 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -852,14 +852,13 @@ static void f_sprintf(INT32 num_arg)
   push_string(ret);
 }
 
-void init_sprintf_efuns(void)
+void pike_module_init(void)
 {
   add_efun("sprintf", f_sprintf,"function(string, mixed ... : string)",
 	   OPT_TRY_OPTIMIZE);
 }
-void init_sprintf_programs(void) {}
 
-void exit_sprintf(void)
+void pike_module_exit(void)
 {
   free_sprintf_strings();
 }

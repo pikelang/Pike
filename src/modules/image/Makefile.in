@@ -1,22 +1,15 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-
-all: image.a
-
-@module_makefile@
-
-FILES =	image.o font.o quant.o lzw.o togif.o matrix.o pnm.o blit.o \
+OBJS = image.o font.o quant.o lzw.o togif.o matrix.o pnm.o blit.o \
 	pattern.o dct.o operator.o
+MODNAME=image
 
-image.a: $(FILES)
-	-rm -f image.a
-	ar cq image.a $(FILES)
-	-@RANLIB@ image.a
+@dynamic_module_makefile@
 
-pike: image.a
+pike: all
 	cd ../..; make
 
-pure: image.a
+pure: all
 	cd ../..; make pure
 
 

@@ -2,13 +2,7 @@ AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
 
-AC_PROG_CC
-AC_PROG_RANLIB
-AC_SUBST(RANLIB)
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
-AC_SUBST_FILE(module_makefile)
-module_makefile=$srcdir/../module_makefile
+sinclude(../module_configure.in)
 
 if test x$with_gmp = xyes ; then
   AC_CHECK_HEADERS(gmp.h)

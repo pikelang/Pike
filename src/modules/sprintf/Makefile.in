@@ -1,14 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-FILES=sprintf.o
+OBJS=sprintf.o
 
-all: sprintf.a
-
-@module_makefile@
-
-sprintf.a: $(FILES)
-	-rm -f sprintf.a
-	ar cq sprintf.a $(FILES)
-	-@RANLIB@ sprintf.a
-
+@static_module_makefile@
 @dependencies@

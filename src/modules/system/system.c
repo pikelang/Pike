@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.10 1997/02/05 01:22:55 neotron Exp $
+ * $Id: system.c,v 1.11 1997/02/07 00:46:26 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.10 1997/02/05 01:22:55 neotron Exp $");
+RCSID("$Id: system.c,v 1.11 1997/02/07 00:46:26 hubbe Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -691,7 +691,7 @@ void f_gethostbyname(INT32 args)
  * Module linkage
  */
 
-void init_system_efuns(void)
+void pike_module_init(void)
 {
   /*
    * From this file:
@@ -776,10 +776,6 @@ void init_system_efuns(void)
 
 }
 
-void init_system_programs(void)
-{
-}
-
-void exit_system(void)
+void pike_module_exit(void)
 {
 }

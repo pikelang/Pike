@@ -1,11 +1,6 @@
 AC_INIT(ssleay.c)
 
-AC_PROG_CC
-AC_PROG_RANLIB
-AC_SUBST(RANLIB)
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
-
+sinclude(../module_configure.in)
 
 AC_ARG_WITH(ssleay,  [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 

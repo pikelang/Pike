@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.8 1996/12/15 17:40:00 nisse Exp $");
+RCSID("$Id: ssleay.c,v 1.9 1997/02/07 00:45:45 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -260,19 +260,17 @@ void exit_connection(struct object *o)
 
 #endif /* HAVE_SSLEAY */
 
-void init_ssleay_efuns(void)
-{
-}
-
-void exit_ssleay()
+void pike_module_exit()
 {
 #ifdef HAVE_SSLEAY
   free_program(ssleay_connection_program);
   free_program(ssleay_program);
+  ssleay_connection_program=0;
+  ssleay_program=0;
 #endif
 }
 
-void init_ssleay_programs(void)
+void pike_module_init(void)
 {
 #ifdef HAVE_SSLEAY
   ERR_load_ERR_strings();
@@ -292,8 +290,8 @@ void init_ssleay_programs(void)
   set_init_callback(init_context);
   set_exit_callback(exit_context);
 
-  ssleay_program=end_c_program("/precompiled/ssleay");
-  ssleay_program->refs++;
+  ssleay_program=end_program();
+  add_program_constant("ssleay",ssleay_program);
   
   start_new_program();
   add_storage(sizeof(struct ssleay_connection));
@@ -307,8 +305,8 @@ void init_ssleay_programs(void)
   set_init_callback(init_connection);
   set_exit_callback(exit_connection);
 
-  ssleay_connection_program=end_c_program("/precompiled/ssleay_connection");
-  ssleay_connection_program->refs++;
+  ssleay_connection_program=end_program();
+  add_program_constant("connection",ssleay_program);
 #endif /* HAVE_SSLEAY */
 }
 

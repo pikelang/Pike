@@ -1,14 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-FILES=call_out.o
+OBJS=call_out.o
+MODULE_LDFLAGS=@LIBS@
 
-all: call_out.a
-
-@module_makefile@
-
-call_out.a: $(FILES)
-	-rm -f call_out.a
-	ar cq call_out.a $(FILES)
-	-@RANLIB@ call_out.a
-
+@static_module_makefile@
 @dependencies@

@@ -103,12 +103,10 @@ static void exit_regexp_glue(struct object *o)
 }
 
 
-void init_regexp_efuns(void) {}
-void exit_regexp(void) {}
+void pike_module_exit(void) {}
 
-void init_regexp_programs(void)
+void pike_module_init(void)
 {
-  start_new_program();
   add_storage(sizeof(struct regexp_glue));
   
   add_function("create",regexp_create,"function(void|string:void)",0);
@@ -117,6 +115,4 @@ void init_regexp_programs(void)
 
   set_init_callback(init_regexp_glue);
   set_exit_callback(exit_regexp_glue);
-
-  end_c_program("/precompiled/regexp");
 }

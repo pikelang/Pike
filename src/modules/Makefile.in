@@ -1,22 +1,27 @@
 @SET_MAKE@
 
 MODULES=@subdirs@
-MODULE_OBJS=@MODULE_OBJS@
+MODULE_SEGMENTS=@MODULE_SEGMENTS@
+MODULE_LINKOPTS=@MODULE_LINKOPTS@
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "DEFINES=$(DEFINES)"
 
 all: modules
 
 modules:
-	for a in $(MODULES) ; do ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; done
-	$(MAKE) linker_options lib_dirs
+	for a in $(MODULES) ; do ( cd $$a ; $(MAKE) $(MAKE_FLAGS) MODNAME=$$a) ; done
+	$(MAKE) linker_options lib_dirs modlist.h modlist_headers.h
 
-linker_options: $(MODULE_OBJS)
-	( for a in $(MODULES) ; do echo modules/$$a/$$a.a ; \
-	if test -f $$a/linker_options ; then cat $$a/linker_options ; else : ; fi ; \
-	done ; ) >linker_options
+modlist.h: $(MODULE_SEGMENTS)
+	( for a in $(MODULES) ; do cat $$a/modlist_segment ; done ; ) >modlist.h
 
-lib_dirs: $(MODULE_OBJS)
+modlist_headers.h: $(MODULE_SEGMENTS)
+	( for a in $(MODULES) ; do cat $$a/modlist_segment; done ) | sed -e 's/^.*{.*,\(.*\),\(.*\).*}.*$$/void \1(void),\2(void);/' >modlist_headers.h
+
+linker_options: $(MODULE_LINKOPTS)
+	( for a in $(MODULES) ; do cat $$a/linker_options ; done ; ) >linker_options
+
+lib_dirs: $(MODULE_LINKOPTS)
 	( ( if test -f master_lib_dirs; then cat master_lib_dirs; else :; fi; \
             for a in $(MODULES) ; do \
 	      if test -f $$a/lib_dirs ; then cat $$a/lib_dirs ; else : ; fi ; \
@@ -24,15 +29,18 @@ lib_dirs: $(MODULE_OBJS)
 	sed -e 's/:$$//' -e 's/^/-R/' -e 's/^-R$$//' >lib_dirs
 
 depend:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; done
+
+install:
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; done
 
 clean:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; done
 
 verify:
-	for a in $(MODULES) ; do ( cd $$a ; echo verifying $$a ; ${MAKE} $(MAKE_FLAGS) verify ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; echo verifying $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify ) ; done
 
 verbose_verify:
-	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) verbose_verify ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify ) ; done
 
 @dependencies@

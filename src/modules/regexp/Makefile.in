@@ -1,15 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=regexp.o glue.o
 
-FILES=regexp.o glue.o
-
-all: regexp.a
-
-@module_makefile@
-
-regexp.a: $(FILES)
-	-rm -f regexp.a
-	ar cq regexp.a $(FILES)
-	-@RANLIB@ regexp.a
-
+@dynamic_module_makefile@
 @dependencies@

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.2 1996/11/23 00:09:58 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.3 1997/02/07 00:46:53 hubbe Exp $");
 
 #include "zlib_machine.h"
 #include "types.h"
@@ -332,10 +332,9 @@ static void exit_gz_inflate(struct object *o)
 
 #endif
 
-void init_zlibmod_efuns(void) {}
-void exit_zlibmod(void) { }
+void pike_module_exit(void) {}
 
-void init_zlibmod_programs(void)
+void pike_module_init(void)
 {
 #ifdef HAVE_ZLIB_H
   start_new_program();
@@ -352,7 +351,7 @@ void init_zlibmod_programs(void)
   set_init_callback(init_gz_deflate);
   set_exit_callback(exit_gz_deflate);
 
-  end_c_program("/precompiled/gz_deflate");
+  end_class("deflate");
 
   start_new_program();
   add_storage(sizeof(struct zipper));
@@ -368,7 +367,7 @@ void init_zlibmod_programs(void)
   set_init_callback(init_gz_inflate);
   set_exit_callback(exit_gz_inflate);
 
-  end_c_program("/precompiled/gz_inflate");
+  end_class("inflate");
 #endif
 }
 

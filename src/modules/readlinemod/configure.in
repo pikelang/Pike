@@ -2,12 +2,7 @@ AC_INIT(readlinemod.c)
 AC_CONFIG_HEADER(readline_machine.h)
 AC_ARG_WITH(readline,[  --with(out)-readline   support command line editing],[],[with_readline=yes])
 
-AC_PROG_CC
-AC_PROG_RANLIB
-AC_SUBST(RANLIB)
-
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
+sinclude(../module_configure.in)
 
 if test x$with_readline = xyes ; then
   AC_MSG_CHECKING(Checking for GNU directory)

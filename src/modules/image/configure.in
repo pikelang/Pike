@@ -1,13 +1,9 @@
 AC_INIT(image.c)
 AC_CONFIG_HEADER(config.h)
 
-AC_PROG_CC
-AC_PROG_RANLIB
+sinclude(../module_configure.in)
+
 AC_FUNC_MMAP
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
-AC_SUBST_FILE(module_makefile)
-module_makefile=$srcdir/../module_makefile
 
 AC_CHECK_HEADERS(sys/fcntl.h fcntl.h stdlib.h)
 

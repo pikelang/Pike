@@ -1,16 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
+MODULE_LDFLAGS=@LIBS@
+OBJS=math.o
 
-FILES=math.o
-
-all: math.a
-
-@module_makefile@
-
-math.a: $(FILES)
-	-rm -f math.a
-	ar cq math.a $(FILES)
-	-@RANLIB@ math.a
-	echo >linker_options @LIBS@
-
+@static_module_makefile@
 @dependencies@

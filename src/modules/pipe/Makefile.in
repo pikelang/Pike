@@ -1,15 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=pipe.o
 
-FILES=pipe.o
-
-all: pipe.a
-
-@module_makefile@
-
-pipe.a: $(FILES)
-	-rm -f pipe.a
-	ar cq pipe.a $(FILES)
-	-@RANLIB@ pipe.a
-
+@dynamic_module_makefile@
 @dependencies@
