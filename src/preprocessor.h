@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.6 1999/03/01 20:59:46 grubba Exp $
+ * $Id: preprocessor.h,v 1.7 1999/03/01 21:03:33 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -394,7 +394,7 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
     if(!GOBBLE(']'))
       error("Missing ']'");
   }
-  D/* UMPPOS("after calcC"); */
+  /* DUMPPOS("after calcC"); */
   return pos;
 }
 
