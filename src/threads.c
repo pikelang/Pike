@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.167 2001/09/25 14:03:57 grubba Exp $");
+RCSID("$Id: threads.c,v 1.168 2001/09/25 14:17:47 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1296,6 +1296,9 @@ void f_thread_id__sprintf (INT32 args)
 /*! @decl static int id_number()
  *!
  *! Returns an id number identifying the thread.
+ *!
+ *! @note
+ *!   This function was added in Pike 7.2.204.
  */
 void f_thread_id_id_number(INT32 args)
 {
