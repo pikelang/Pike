@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.416 2001/12/10 02:08:12 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.417 2001/12/12 22:51:32 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3081,7 +3081,8 @@ node *optimize_replace(node *n)
 }
 
 /*! @decl program compile(string source, object|void handler, @
- *!                       int|void major, int|void minor)
+ *!                       int|void major, int|void minor,@
+ *!                       program|void target, object|void placeholder)
  *!
  *!   Compile a string to a program.
  *!
