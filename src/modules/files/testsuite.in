@@ -286,12 +286,27 @@ cond([[ all_constants()->testdir ]],
   test_do(add_constant("testdir"));
 ]])
 
-test_false(Process.system(RUNPIKE+" SRCDIR/socktest.pike"))
+define(run_sub_test, [[
+  test_any([[
+    array(string) args = $1;
+    Process.Process proc = Process.create_process(RUNPIKE_ARRAY + args);
+    int code = proc->wait();
+    if (!code) return 0;
+    if (code == -1) {
+      return sprintf("Test program %O died of signal %d.",
+		     args, proc->last_signal());
+    }
+    return sprintf("Test program %O exited with code %d.",
+		   args, code);
+  ]], 0)
+]])
 
-test_false(Process.system(RUNPIKE+" SRCDIR/sendfiletest.pike"))
+run_sub_test(({"SRCDIR/socktest.pike"}))
 
-test_false(Process.system(RUNPIKE+" -DTEST_NORMAL SRCDIR/connecttest.pike"))
-test_false(Process.system(RUNPIKE+" SRCDIR/connecttest.pike"))
+run_sub_test(({"SRCDIR/sendfiletest.pike"}))
+
+run_sub_test(({"-DTEST_NORMAL", "SRCDIR/connecttest.pike"}))
+run_sub_test(({"SRCDIR/connecttest.pike"}))
 
 dnl Stdio.Stat
 
