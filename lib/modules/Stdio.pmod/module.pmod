@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.175 2003/06/26 23:26:31 nilsson Exp $
+// $Id: module.pmod,v 1.176 2003/06/26 23:29:09 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -693,7 +693,7 @@ class File
   this_program set_peek_file_before_read_callback(int(0..1) to)
   {      
      peek_file_before_read_callback=to;
-     return this_object();
+     return this;
   }
 
   // FIXME: No way to specify the maximum to read.
@@ -1395,7 +1395,7 @@ class FILE
   FILE dup()
   {
     FILE o=FILE();
-    o->assign(this_object());
+    o->assign(this);
     return o;
   }
 
@@ -2082,7 +2082,7 @@ static class nb_sendfile
      case 't':
        return "Stdio.Sendfile";
      case 'O':
-       return sprintf( "%t()", this_object() );
+       return sprintf( "%t()", this );
     }
   }
 
@@ -2534,7 +2534,7 @@ class UDP
     extra=ext;
     callback=f;
     _set_read_callback(_read_callback);
-    return this_object();
+    return this;
   }
    
   private static void _read_callback()
