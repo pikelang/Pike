@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.51 2002/01/27 00:53:58 mast Exp $
+# $Id: Makefile,v 1.52 2002/01/27 18:55:54 mast Exp $
 #
 # Meta Makefile
 #
@@ -61,9 +61,11 @@ configure: src/configure builddir
 	  else \
 	    configureargs="$(CONFIGUREARGS)"; \
 	  fi; \
-	  echo; \
 	  MAKE=$(MAKE) ; export MAKE ;\
+	  echo; \
 	  echo Configure arguments: $$configureargs; \
+	  echo 'Use `make CONFIGUREARGS="..."' "...'" 'to change them.'; \
+	  echo 'They will be retained in the build directory.'; \
 	  echo; \
 	  if test -f Makefile -a -f config.status -a -f .configureargs -a \
 		  "x$$oldconfigureargs" = "x$$configureargs"; then :; \
