@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.3 1998/09/28 01:17:07 per Exp $
+ * $Id: Line.pmod,v 1.4 1998/10/10 00:54:32 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -161,6 +161,7 @@ class simple
     if (handle_data || sizeof(read_buffer) || sizeof(multi_line_buffer)) {
       werror("close_callback(): Unexpected close!\n");
     }
+    con->set_nonblocking(0,0,0);
     con->close();
     con = 0;
   }
