@@ -54,17 +54,20 @@ OPTIMIZE=@OPTIMIZE@
 # Preprocessor flags.
 PREFLAGS=-I. -I$(SRCDIR) $(DEFINES)
 OTHERFLAGS=@CFLAGS@ @CPPFLAGS@ $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
+NOOPTFLAGS=@CFLAGS@ @CPPFLAGS@ $(OSFLAGS) $(WARN) $(PROFIL)
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 CC=@CC@
 CPP=@CPP@
+
+AR=@AR@
 
 LD=$(CC)
 LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
 
-MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)"
+MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "NOOPTFLAGS=$(NOOPTFLAGS)" "AR=$(AR)"
 MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)" 
 
 # Add alloca.o if you don't have alloca() on your machine.
@@ -140,7 +143,7 @@ quant: $(OBJ) compile_interpret module_objects
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
 compile_interpret : force
-	$(MAKE) $(MAKE_FLAGS) interpret.o || NO_ULIMIT=yes $(MAKE) $(MOST_MAKE_FLAGS) "OPTIMIZE=" interpret.o
+	$(MAKE) $(MAKE_FLAGS) interpret.o || NO_ULIMIT=yes $(MAKE) $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(NOOPTFLAGS)" interpret.o
 
 force :
 
@@ -270,7 +273,7 @@ html_docs: docs
 #
 # Pike internal targets
 #
-module_objects: machine.h global.h $(SRCDIR)/language.h lib
+module_objects: machine.h global.h modules/static_module_makefile modules/dynamic_module_makefile $(SRCDIR)/language.h lib
 	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
@@ -300,6 +303,12 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in
 
 config.status: $(SRCDIR)/configure
 	./config.status --recheck
+
+modules/static_module_makefile: $(SRCDIR)/modules/static_module_makefile.in config.status
+	CONFIG_FILES=modules/static_module_makefile CONFIG_HEADERS="" ./config.status
+
+modules/dynamic_module_makefile: $(SRCDIR)/@dmmsrc@ config.status
+	CONFIG_FILES=modules/dynamic_module_makefile:@dmmsrc@ CONFIG_HEADERS="" ./config.status
 
 Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
