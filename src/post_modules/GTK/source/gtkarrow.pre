@@ -14,7 +14,7 @@ void set( int arrow_type, int shadow_type);
 member int arrow_type;
 //! Return the arrow type. One of CONST(GTK_ARROW).
 member int shadow_type;
-//! Return the arrow type. One of CONST(GTK_SHADOW).
+//! Return the shadow type. One of CONST(GTK_SHADOW).
 
 
 
