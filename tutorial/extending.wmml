@@ -571,7 +571,7 @@ A <tt>struct array</tt> has these members:
 <dt><tt>TYPE_FIELD type_field;</tt>
 <dd>This bit field contains one bit for each type present in the array.
     Note that bits may be set that are not present in the array, but not
-    vice versa. See <link to=TYPE_FIELD> for more information. 
+    vice versa. See <ref to=TYPE_FIELD> for more information. 
 <dt><tt>INT16 flags;</tt>
 <dd>ARRAY_* flags, you may set one or more of:
 	<dl>
