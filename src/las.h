@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.48 2001/03/17 06:25:58 hubbe Exp $
+ * $Id: las.h,v 1.49 2001/04/15 18:03:56 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -212,8 +212,8 @@ void resolv_program(node *n);
 #define _CDDR(n) _CDR(_CDR(n))
 
 #ifdef SHARED_NODES
-#define ADD_NODE_REF(n)	(n?add_ref(n):0)
-#define ADD_NODE_REF2(n, code)	do { n?add_ref(n):0; code; } while(0)
+#define ADD_NODE_REF(n)	do { if (n) add_ref(n); } while(0)
+#define ADD_NODE_REF2(n, code)	do { ADD_NODE_REF(n); code; } while(0)
 #else /* !SHARED_NODES */
 #define defrost_node(n) (n)
 #define ADD_NODE_REF(n)	(n = 0)
