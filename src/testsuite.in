@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.284 2000/03/09 16:46:03 jhs Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.285 2000/03/09 21:11:37 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -222,7 +222,7 @@ dnl this_program
 dnl
 test_true(this_program)
 test_any([[int this_program; return this_program;]], 0)
-test_true(class A { int a() { return this_program == A; }}; return A()->a();)
+test_any([[class A { int a() { return this_program == A; }}; return A()->a();]], 1)
 
 dnl test_compile_error(0())
 test_compile_error(1())
