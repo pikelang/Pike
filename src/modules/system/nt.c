@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.55 2003/06/18 12:10:05 tomas Exp $
+|| $Id: nt.c,v 1.56 2003/06/23 12:27:44 tomas Exp $
 */
 
 /*
@@ -3115,6 +3115,27 @@ static void f_nt_uname(INT32 args)
 /**************************/
 /* start Security context */
 
+typedef SECURITY_STATUS (WINAPI *querysecuritypackageinfotype)(SEC_CHAR*,PSecPkgInfo*);
+typedef SECURITY_STATUS (WINAPI *acquirecredentialshandletype)(SEC_CHAR*,SEC_CHAR*,ULONG,PLUID,PVOID,SEC_GET_KEY_FN,PVOID,PCredHandle,PTimeStamp);
+typedef SECURITY_STATUS (WINAPI *freecredentialshandletype)(PCredHandle);
+typedef SECURITY_STATUS (WINAPI *acceptsecuritycontexttype)(PCredHandle,PCtxtHandle,PSecBufferDesc,ULONG,ULONG,PCtxtHandle,PSecBufferDesc,PULONG,PTimeStamp);
+typedef SECURITY_STATUS (WINAPI *completeauthtokentype)(PCtxtHandle,PSecBufferDesc);
+typedef SECURITY_STATUS (WINAPI *deletesecuritycontexttype)(PCtxtHandle);
+typedef SECURITY_STATUS (WINAPI *freecontextbuffertype)(PVOID);
+typedef SECURITY_STATUS (WINAPI *querycontextattributestype)(PCtxtHandle,ULONG,PVOID);
+
+
+static querysecuritypackageinfotype querysecuritypackageinfo;
+static acquirecredentialshandletype acquirecredentialshandle;
+static freecredentialshandletype freecredentialshandle;
+static acceptsecuritycontexttype acceptsecuritycontext;
+static completeauthtokentype completeauthtoken;
+static deletesecuritycontexttype deletesecuritycontext;
+static freecontextbuffertype freecontextbuffer;
+static querycontextattributestype querycontextattributes;
+
+HINSTANCE securlib;
+
 struct sctx_storage {
   CredHandle hcred;
   int        hcred_alloced;
@@ -3142,11 +3163,11 @@ static void exit_sctx(struct object *o)
   struct sctx_storage *sctx = THIS_SCTX;
 
   if (sctx->hctxt_alloced) {
-    DeleteSecurityContext (&sctx->hctxt);
+    deletesecuritycontext (&sctx->hctxt);
     sctx->hctxt_alloced = 0;
   }
   if (sctx->hcred_alloced) {
-    FreeCredentialHandle (&sctx->hcred);
+    freecredentialshandle (&sctx->hcred);
     sctx->hcred_alloced = 0;
   }
   if (sctx->buf) {
@@ -3167,7 +3188,7 @@ static void f_sctx_create(INT32 args)
   get_all_args("system.SecurityContext->create",args,"%s",&pkgName);
 
   lstrcpy(sctx->lpPackageName, pkgName);
-  ss = QuerySecurityPackageInfo ( sctx->lpPackageName, &pkgInfo);
+  ss = querysecuritypackageinfo ( sctx->lpPackageName, &pkgInfo);
   
   if (!SEC_SUCCESS(ss)) 
   {
@@ -3180,11 +3201,11 @@ static void f_sctx_create(INT32 args)
     free(sctx->buf);
   sctx->buf = (PBYTE)malloc(sctx->cbMaxMessage);
 
-  FreeContextBuffer(pkgInfo);
+  freecontextbuffer(pkgInfo);
 
   if (sctx->hcred_alloced)
-    FreeCredentialHandle (&sctx->hcred);
-  ss = AcquireCredentialsHandle (
+    freecredentialshandle (&sctx->hcred);
+  ss = acquirecredentialshandle (
                                  NULL, 
                                  sctx->lpPackageName,
                                  SECPKG_CRED_INBOUND,
@@ -3245,7 +3266,7 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   *pcbOut = 0;
   *pfDone = 0;
 
-  ss = AcceptSecurityContext (&sctx->hcred,
+  ss = acceptsecuritycontext (&sctx->hcred,
                               fNewConversation ? NULL : &sctx->hctxt,
                               &InBuffDesc,
                               Attribs, 
@@ -3269,7 +3290,7 @@ BOOL GenServerContext (BYTE *pIn, DWORD cbIn, BYTE *pOut, DWORD *pcbOut,
   if ((SEC_I_COMPLETE_NEEDED == ss) 
       || (SEC_I_COMPLETE_AND_CONTINUE == ss))  
   {
-    ss = CompleteAuthToken (&sctx->hctxt, &OutBuffDesc);
+    ss = completeauthtoken (&sctx->hctxt, &OutBuffDesc);
     if (!SEC_SUCCESS(ss))  
     {
       sctx->lastError = ss;
@@ -3374,7 +3395,7 @@ static void f_sctx_getusername(INT32 args)
     return;
   }
 
-  ss = QueryContextAttributes(&sctx->hctxt, SECPKG_ATTR_NAMES, &name);
+  ss = querycontextattributes(&sctx->hctxt, SECPKG_ATTR_NAMES, &name);
   if (ss != SEC_E_OK)
   {
     push_int(0);
@@ -3383,7 +3404,7 @@ static void f_sctx_getusername(INT32 args)
 
   push_string(make_shared_string(name.sUserName));
 
-  FreeContextBuffer(name.sUserName);
+  freecontextbuffer(name.sUserName);
 }
 
 
@@ -3714,19 +3735,47 @@ void init_nt_system_calls(void)
     }
   }
 
+  /* secur32.dll is named security.dll on NT4, link it dynamically */
+  securlib=LoadLibrary("secur32");
+  if (!securlib)
+    securlib=LoadLibrary("security");
+
+  if (securlib)
   {
-    start_new_program();
-    set_init_callback(init_sctx);
-    set_exit_callback(exit_sctx);
-    ADD_STORAGE(struct sctx_storage);
-    add_function("create",f_sctx_create,"function(string:void)",0);
-    add_function("gen_context",f_sctx_gencontext,"function(string:array(string|int))",0);
-    add_function("get_last_context",f_sctx_getlastcontext,"function(void:array(string|int))",0);
-    add_function("is_done",f_sctx_isdone,"function(void:int)",0);
-    add_function("type",f_sctx_type,"function(void:string)",0);
-    add_function("get_username",f_sctx_getusername,"function(void:string)",0);
-    add_function("get_last_error",f_sctx_getlasterror,"function(void:int)",0);
-    add_program_constant("SecurityContext",sctx_program=end_program(),0);
+    FARPROC proc;
+
+#define LOAD_SECUR_FN(VAR, FN) do { VAR=0; \
+                                    if(proc=GetProcAddress(securlib, #FN)) \
+                                      VAR=(PIKE_CONCAT(VAR,type))proc; \
+                               } while(0)
+
+    LOAD_SECUR_FN(querysecuritypackageinfo, QuerySecurityPackageInfoA);
+    LOAD_SECUR_FN(acquirecredentialshandle, AcquireCredentialsHandleA);
+    LOAD_SECUR_FN(freecredentialshandle, FreeCredentialsHandle);
+    LOAD_SECUR_FN(acceptsecuritycontext, AcceptSecurityContext);
+    LOAD_SECUR_FN(completeauthtoken, CompleteAuthToken);
+    LOAD_SECUR_FN(deletesecuritycontext, DeleteSecurityContext);
+    LOAD_SECUR_FN(freecontextbuffer, FreeContextBuffer);
+    LOAD_SECUR_FN(querycontextattributes, QueryContextAttributesA);
+
+    if( querysecuritypackageinfo && acquirecredentialshandle &&
+        freecredentialshandle && acceptsecuritycontext &&
+        completeauthtoken && deletesecuritycontext &&
+        freecontextbuffer && querycontextattributes )
+    {
+      start_new_program();
+      set_init_callback(init_sctx);
+      set_exit_callback(exit_sctx);
+      ADD_STORAGE(struct sctx_storage);
+      add_function("create",f_sctx_create,"function(string:void)",0);
+      add_function("gen_context",f_sctx_gencontext,"function(string:array(string|int))",0);
+      add_function("get_last_context",f_sctx_getlastcontext,"function(void:array(string|int))",0);
+      add_function("is_done",f_sctx_isdone,"function(void:int)",0);
+      add_function("type",f_sctx_type,"function(void:string)",0);
+      add_function("get_username",f_sctx_getusername,"function(void:string)",0);
+      add_function("get_last_error",f_sctx_getlasterror,"function(void:int)",0);
+      add_program_constant("SecurityContext",sctx_program=end_program(),0);
+    }
   }
 
   ADD_FUNCTION("GetComputerName",f_GetComputerName,tFunc(tVoid, tStr), 0);
@@ -3784,6 +3833,20 @@ void exit_nt_system_calls(void)
   {
     free_program(sctx_program);
     sctx_program=0;
+  }
+  if(securlib)
+  {
+    if(FreeLibrary(securlib))
+    {
+      querysecuritypackageinfo=0;
+      acquirecredentialshandle=0;
+      freecredentialshandle=0;
+      acceptsecuritycontext=0;
+      completeauthtoken=0;
+      deletesecuritycontext=0;
+      freecontextbuffer=0;
+      querycontextattributes=0;
+    }
   }
 }
 
