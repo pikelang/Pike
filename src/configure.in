@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.82 1997/04/15 08:59:12 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.83 1997/04/15 11:31:14 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -42,13 +42,13 @@ rm ./config.cache ; CONFIG_SITE=x ./configure ; make])
   fi
 done
 
-
-if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
+if test ! -z "$pike_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$pike_cv_prog_CC"
 then
   AC_MSG_WARN([CC is different than last time Pike was compiled,
 It is probably best to delete ./config.cache before proceeding])
 fi
 
+pike_cv_prog_CC="$CC"
 
 AC_PROG_CC
 AC_ISC_POSIX
@@ -169,14 +169,16 @@ if test $cflags_is_set = no; then
 dnl
 dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
 dnl  
-AC_SYS_COMPILER_FLAG(-native,native)
+dnl AC_SYS_COMPILER_FLAG(-native,native)
 dnl
+
 dnl ### Ok. This is for apcc...
-dnl
-dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
-dnl  
-AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt)
-AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2)
+case "$CC" in
+  *apcc)
+    AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt)
+    AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2)
+  ;;
+esac
 
 
   AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc)
