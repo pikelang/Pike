@@ -7,6 +7,10 @@ REMOTE_METHOD=sprsh
 # (Make sure VC++ is before Watcom in your path!)
 CC=${CC-rntcl}
 
+# Important!
+# Please be sure that you have the line 'veto oplock files = /*/' in your
+# smb.conf if NTDRIVE is a samba file system.
+
 # Edit
 NTHOST=${NTHOST-10.0.5.13}
 NTDRIVE=${NTDRIVE-k:}
