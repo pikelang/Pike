@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.36 2004/10/25 09:29:07 distmaker Exp $
+# $Id: run_autoconfig,v 1.37 2004/10/25 12:05:07 grubba Exp $
 #
 # Bootstrap script
 
@@ -126,7 +126,9 @@ IFS=''
     (cd $dir ; automake )
   fi
 
-  if [ -f $dir/configure.in ] && grep AC_CONFIG_HEADER $dir/configure.in >/dev/null; then
+  if [ -f $dir/configure.in ] && \
+     grep AC_CONFIG_HEADER $dir/configure.in >/dev/null && \
+     [ -f $dir/acconfig.h ]; then
     echo "Running $autoheader in $dir"
     ( cd $dir ; "$autoheader" $ah_args && echo foo >stamp-h.in )
   fi
