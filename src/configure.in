@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.833 2004/05/11 08:49:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.834 2004/05/11 15:52:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1511,8 +1511,9 @@ MY_AC_ARG_WITH(keypair-loop,
 	       [AC_DEFINE(PIKE_MAPPING_KEYPAIR_LOOP)])
 
 MY_AC_ARG_WITH(portable-bytecode,
-	MY_DESCR([--with-portable-bytecode],
-		 [enable portable bytecode support (EXPERIMENTAL).]),
+	MY_DESCR([--without-portable-bytecode],
+		 [disable portable bytecode support.]),
+	       [AC_DEFINE(PIKE_PORTABLE_BYTECODE)],[],
 	       [AC_DEFINE(PIKE_PORTABLE_BYTECODE)])
 
 MY_AC_ARG_WITH(lock,
