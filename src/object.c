@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.188 2001/10/28 18:01:44 nilsson Exp $");
+RCSID("$Id: object.c,v 1.189 2001/11/08 23:34:29 nilsson Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -294,7 +294,7 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
   if(p->flags & PROGRAM_NEEDS_PARENT)
     Pike_error("Parent lost, cannot clone program.\n");
 
-  if(!(p->flags & PROGRAM_FINISHED))
+  if(!(p->flags & PROGRAM_PASS_1_DONE))
     Pike_error("Attempting to clone an unfinished program\n");
 
   o=low_clone(p);
@@ -332,7 +332,7 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
 
-  if(!(p->flags & PROGRAM_FINISHED))
+  if(!(p->flags & PROGRAM_PASS_1_DONE))
     Pike_error("Attempting to clone an unfinished program\n");
 
   if(p->flags & PROGRAM_USES_PARENT)
@@ -461,7 +461,7 @@ PMOD_EXPORT struct object *get_master(void)
 	ts2 = stat_buf.st_mtime;
       }
 
-      if (ts1 > ts2) {
+      if (ts1 >= ts2) {
 	s = low_read_file(tmp);
       }
     }
@@ -595,7 +595,7 @@ static void call_destroy(struct object *o, int foo)
 #ifdef DO_PIKE_CLEANUP
      && Pike_interpreter.evaluator_stack
 #endif
-    )
+    && (o->prog->flags & PROGRAM_FINISHED))
   {
 #ifdef PIKE_DEBUG
     if(Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE)
