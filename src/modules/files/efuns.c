@@ -194,12 +194,14 @@ void f_getcwd(INT32 args)
   char *e;
   pop_n_elems(args);
 
-#ifdef HAVE_GETCWD
-  e=(char *)getcwd(0,1000); 
-#else
+#ifdef HAVE_GETWD
   e=(char *)getwd((char *)malloc(MAXPATHLEN+1));
   if(!e)
     fatal("Couldn't fetch current path.\n");
+#else
+#ifdef HAVE_GETCWD
+  e=(char *)getcwd(0,1000); 
+#endif
 #endif
   push_string(make_shared_string(e));
   free(e);

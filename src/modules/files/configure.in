@@ -9,7 +9,7 @@ AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h netinet/in.h)
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
 
-AC_HAVE_FUNCS(socketpair)
+AC_HAVE_FUNCS(socketpair getwd getcwd)
 
 AC_MSG_CHECKING(size of socket buffers)
 AC_CACHE_VAL(lpc_cv_socket_buffer_max,
