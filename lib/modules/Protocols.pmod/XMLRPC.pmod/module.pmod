@@ -97,7 +97,7 @@ array|Fault decode_response(string xml_input)
   return Fault(r->faultCode, r->faultString);
 }
 
-//! Encodes a function call with the name @[name] and the arguments
+//! Encodes a function call with the name @[method_name] and the arguments
 //! @[params] and returns the XML-RPC string representation.
 string encode_call(string method_name, array params)
 {

@@ -31,7 +31,7 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: yp.c,v 1.23 2001/12/08 01:52:34 nilsson Exp $");
+RCSID("$Id: yp.c,v 1.24 2002/02/14 01:43:26 nilsson Exp $");
 
 #ifdef HAVE_YPERR_STRING
 #define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
@@ -178,7 +178,7 @@ static void f_all(INT32 args)
  *!
  *! For each entry in @[map], call the function specified by @[fun].
  *!
- *! @[fun()] will get two arguments, the first being the key, and the
+ *! @[fun] will get two arguments, the first being the key, and the
  *! second the value.
  *!
  *! @[map] is the YP-map to search in. This must be the full map name.
