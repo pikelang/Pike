@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: top.c,v 1.18 2002/10/21 17:06:54 marcus Exp $
+|| $Id: top.c,v 1.19 2003/01/01 12:29:09 peter Exp $
 */
 
 #include "config.h"
@@ -10,6 +10,7 @@
 #ifdef HAVE_GL
 
 #ifdef HAVE_WINDEF_H
+#include <windows.h>
 #include <windef.h>
 #endif /* HAVE_WINDEF_H */
 #ifdef HAVE_WINGDI_H
@@ -26,7 +27,7 @@
 
 #include "global.h"
 
-RCSID("$Id: top.c,v 1.18 2002/10/21 17:06:54 marcus Exp $");
+RCSID("$Id: top.c,v 1.19 2003/01/01 12:29:09 peter Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
