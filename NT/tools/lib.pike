@@ -62,6 +62,14 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
     case 0:
     case "sprsh":
     case "SPRSH":
+      if(string tmp=getenv("REMOTE_VARIABLES"))
+      {
+	array vars=({});
+	foreach(tmp/"\n",string var)
+	  if(search(var,"=")!=-1)
+	    vars+=({var});
+	cmd=vars+cmd;
+      }
       string tmp=getcwd();
       string mnt=getenv("NTMOUNT");
       if(mnt && strlen(mnt)) tmp=replace(tmp,mnt,"");
