@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.356 2005/02/18 18:17:57 grubba Exp $
+|| $Id: language.yacc,v 1.357 2005/02/28 12:55:46 grubba Exp $
 */
 
 %pure_parser
@@ -3286,6 +3286,7 @@ expr4: string
     }
   | open_paren_with_line_info '{' expr_list close_brace_or_missing ')'
     {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
       $$=mkefuncallnode("aggregate",$3);
       COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
@@ -3294,6 +3295,7 @@ expr4: string
     open_bracket_with_line_info	/* Only to avoid shift/reduce conflicts. */
     m_expr_list close_bracket_or_missing ')'
     {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
       $$=mkefuncallnode("aggregate_mapping",$3);
       COPY_LINE_NUMBER_INFO($$, $1);
       free_node ($1);
@@ -3301,6 +3303,7 @@ expr4: string
     }
   | TOK_MULTISET_START line_number_info expr_list TOK_MULTISET_END
     {
+      /* FIXME: May eat lots of stack; cf Standards.FIPS10_4.divisions */
       $$=mkefuncallnode("aggregate_multiset",$3);
       COPY_LINE_NUMBER_INFO($$, $2);
       free_node ($2);
