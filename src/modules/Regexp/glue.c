@@ -21,7 +21,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.27 2002/05/31 22:31:40 nilsson Exp $");
+RCSID("$Id: glue.c,v 1.28 2002/08/26 15:21:18 grubba Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -156,10 +156,17 @@ int regexp_match_low(regex_t *regexp, char *str)
  *!
  *! @decl array(string) match(array(string) strs)
  *!
- *! Returns an array containing strings in @[strs] that matches the
+ *! Returns an array containing strings in @[strs] that match the
  *! regexp bound to the regexp object.
  *!
-*/
+ *! @bugs
+ *!   The current implementation (Pike 7.3.51) doesn't support
+ *!   searching in strings containing the NUL character or any
+ *!   wide character.
+ *!
+ *! @seealso
+ *!   @[split]
+ */
 static void regexp_match(INT32 args)
 {
   int i;
@@ -218,7 +225,15 @@ static void regexp_match(INT32 args)
  *! If the total regexp didn't match, zero is returned.
  *!
  *! @bugs
- *! You can only have 39 subregexps.
+ *!   You can currently only have 39 subregexps.
+ *!
+ *! @bugs
+ *!   The current implementation (Pike 7.3.51) doesn't support
+ *!   searching in strings containing the NUL character or any
+ *!   wide character.
+ *!
+ *! @seealso
+ *!   @[match]
  */
 static void regexp_split(INT32 args)
 {
