@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2004/02/26 21:26:32 nilsson Exp $
+# $Id: configure.in,v 1.15 2004/02/27 12:05:25 grubba Exp $
 AC_INIT(nettle.cmod)
 AC_CONFIG_HEADER(nettle_config.h)
 
@@ -6,51 +6,56 @@ AC_SET_MAKE
 
 AC_MODULE_INIT()
 
-AC_CHECK_LIB(gmp, mpz_init)
-AC_CHECK_LIB(gmp, __mpz_init)
-AC_CHECK_LIB(gmp, __gmpz_init)
-AC_CHECK_LIB(nettle, nettle_md5_init)
-AC_CHECK_LIB(nettle, md5_init)
+if test "$with_nettle" = "no"; then
+  PIKE_FEATURE_WITHOUT(nettle)
+else
+  AC_CHECK_LIB(gmp, mpz_init)
+  AC_CHECK_LIB(gmp, __mpz_init)
+  AC_CHECK_LIB(gmp, __gmpz_init)
+  AC_CHECK_LIB(nettle, nettle_md5_init)
+  AC_CHECK_LIB(nettle, md5_init)
 
-AC_SUBST(IDEA_OBJ)
+  AC_SUBST(IDEA_OBJ)
 
-if test "x$ac_cv_lib_nettle_nettle_md5_init" = "xyes" -o \
-        "x$ac_cv_lib_nettle_md5_init" = "xyes"; then
-   PIKE_FEATURE_OK(Nettle)
+  if test "x$ac_cv_lib_nettle_nettle_md5_init" = "xyes" -o \
+          "x$ac_cv_lib_nettle_md5_init" = "xyes"; then
+    PIKE_FEATURE_OK(Nettle)
 
-   # md4 is available in later versions of nettle
-   AC_CHECK_FUNCS(nettle_md4_init)
+    # md4 is available in later versions of nettle
+    AC_CHECK_FUNCS(nettle_md4_init)
 
-   AC_MSG_CHECKING([for idea.c])
-   # Have the patent-encumbered idea files been purged?
-   if test -f "$srcdir/idea.c" ; then
+    AC_MSG_CHECKING([for idea.c])
+    # Have the patent-encumbered idea files been purged?
+    if test -f "$srcdir/idea.c" ; then
       AC_MSG_RESULT([found])
       AC_DEFINE([WITH_IDEA], 1, [idea.c available])
       IDEA_OBJ=idea.o
-   else
+    else
       AC_MSG_RESULT([no])
       IDEA_OBJ=""
-   fi
-else
-   if test "$ac_cv_lib_gmp_mpz_init:$ac_cv_lib_gmp___mpz_init:$ac_cv_lib_gmp___gmpz_init" = "no:no:no"; then
+    fi
+  else
+    if test "$ac_cv_lib_gmp_mpz_init:$ac_cv_lib_gmp___mpz_init:$ac_cv_lib_gmp___gmpz_init" = "no:no:no"; then
+      # No gmp found; enable it if possible.
       PIKE_ENABLE_BUNDLE(gmp, [
-         ac_cv_lib_gmp_mpz_init
-         ac_cv_lib_gmp___mpz_init
-         ac_cv_lib_gmp___gmpz_init
+	ac_cv_lib_gmp_mpz_init
+	ac_cv_lib_gmp___mpz_init
+	ac_cv_lib_gmp___gmpz_init
       ])
-   fi
-   PIKE_ENABLE_BUNDLE(nettle, [
+    fi
+    PIKE_ENABLE_BUNDLE(nettle, [
       ac_cv_lib_nettle_nettle_md5_init
       ac_cv_lib_nettle_md5_init
-   ], [Cannot compile --with--nettle without the Nettle library.
+    ], [Cannot compile --with--nettle without the Nettle library.
 It is highly recommended that you install a working Nettle
 library on your system as that will add features to Pike
 required by many applications. These features include ciphers,
 hash algorithms and random generators. If you know that you do
-not need cryptographic functions, you may re-ru configure
+not need cryptographic functions, you can re-run configure
 with the option --without-nettle instead.
-  ])
-   PIKE_FEATURE_NODEP(Nettle)
+    ])
+    PIKE_FEATURE_NODEP(Nettle)
+  fi
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
