@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.632 2002/10/04 17:49:28 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.633 2002/10/05 17:16:02 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -311,11 +311,7 @@ else
     AC_CACHE_VAL(pike_cv_pragma_tendra_longlong, [
       AC_TRY_COMPILE([
 #pragma TenDRA longlong type allow
-int main(int argc, char **argv)
-{
-  exit(0);
-}
-      ], [ pike_cv_pragma_tendra_longlong=yes
+      ], [], [ pike_cv_pragma_tendra_longlong=yes
       ], [ pike_cv_pragma_tendra_longlong=no ])
     ])
     if test "x$pike_cv_pragma_tendra_longlong" = "xyes"; then
@@ -334,12 +330,7 @@ int main(int argc, char **argv)
 #pragma TenDRA set longlong type : long long
 
 long long foo;
-
-int main(int argc, char **argv)
-{
-  exit(0);
-}
-      ], [ pike_cv_pragma_tendra_set_longlong_type=yes
+      ], [], [ pike_cv_pragma_tendra_set_longlong_type=yes
       ], [ pike_cv_pragma_tendra_set_longlong_type=no ])
     ])
     if test "x$pike_cv_pragma_tendra_set_longlong_type" = "xyes"; then
