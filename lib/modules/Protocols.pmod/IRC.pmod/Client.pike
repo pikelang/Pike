@@ -196,7 +196,8 @@ void got_notify(string from,string type,
 	 break;
 
       case "401": // no such nick
-	 werror("%O\n",({from,type,to,message,extra}));
+// 	 werror("%O\n",({from,type,to,message,extra}));
+// 	 werror("(got 401 %O %O)\n",message,extra*" ");
 	 break;
 
       case "367": // mode b line
@@ -258,14 +259,19 @@ void got_notify(string from,string type,
 
       case "QUIT":
 	 forget_person(originator);
-	 foreach (values(channels),c)
-	    if (c && c->not_part) c->not_part(originator,message,originator);
+
 	 if (options->quit_notify)
 	 {
 	    // who, why
 	    options->quit_notify(originator,to);
 	    return;
 	 }
+
+	 foreach (values(channels),c)
+	    if (c)
+	       if (c->not_quit || c->not_part) 
+		  (c->not_quit||c->not_part)(originator,message,originator);
+
 	 break;
 
       case "PRIVMSG":
