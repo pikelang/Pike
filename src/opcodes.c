@@ -569,6 +569,7 @@ static INT32 low_sscanf(INT32 num_arg)
       }
 
       case 'D':
+      case 'i':
       {
 	char * t;
 
