@@ -211,7 +211,7 @@ object(ascii) decoder(string name)
   if(o)
     return o;
 
-  throw(({"Unknown character encoding "+name+"\n", backtrace()}));
+  error("Unknown character encoding "+name+"\n");
 }
 
 class _encoder
@@ -231,7 +231,7 @@ class _encoder
 	else if(r)
 	  s=s[..i-1]+low_convert(r)+s[i+1..];
 	else
-	  throw(({"Character unsupported by encoding.\n", backtrace()}));
+	  error("Character unsupported by encoding.\n");
     return s;
   }
   object(this_program) feed(string ss)
@@ -275,7 +275,7 @@ private class UTF16enc {
 	else if(r)
 	  s=s[..i-1]+low_convert(r)+s[i+1..];
 	else
-	  throw(({"Character unsupported by encoding.\n", backtrace()}));
+	  error("Character unsupported by encoding.\n");
     return s;
   }
   object(this_program) feed(string ss) {
