@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.287 2002/03/08 04:15:26 mast Exp $
+# $Id: Makefile.in,v 1.288 2002/03/09 16:17:00 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -672,11 +672,6 @@ depend: $(SRC_TARGETS)
 	      { test -f remake && $(MAKE) $(MAKE_FLAGS) depend; }; \
 	  }); \
 	done
-
-# Lobotomization...
-
-lobotomize_crypto:
-	(cd $(SRCDIR)/../ && ./.build_lobotomized_crypto)
 
 #
 # Pike internal targets
