@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.359 2005/02/18 15:20:20 grubba Exp $
+|| $Id: las.c,v 1.360 2005/03/20 12:32:57 grubba Exp $
 */
 
 #include "global.h"
@@ -3581,6 +3581,22 @@ void fix_type_field(node *n)
 			   low->token == F_RANGE_OPEN ? NULL : CAR (low)->type,
 			   high->token == F_RANGE_OPEN ? NULL : CAR (high)->type);
     }
+    break;
+
+  case F_PUSH_ARRAY:
+    if (CAR(n)) {
+      struct pike_type *array_type;
+      MAKE_CONSTANT_TYPE(array_type, tArr(tZero));
+      if (!pike_types_le(array_type, CAR(n)->type)) {
+	yytype_error("Bad argument to splice operator.",
+		     array_type, CAR(n)->type, 0);
+      }
+    }
+    /* FIXME: The type field of the splice operator is not yet utilized.
+     *
+     * It probably ought to be something similar to MANY(..., VOID).
+     */
+    copy_pike_type(n->type, mixed_type_string);
     break;
 
   case F_AUTO_MAP_MARKER:
