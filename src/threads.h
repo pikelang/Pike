@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.73 2000/02/17 00:31:16 hubbe Exp $
+ * $Id: threads.h,v 1.74 2000/02/20 10:23:21 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -446,8 +446,7 @@ struct thread_state {
    int Pike_sp = 0, Pike_evaluator_stack = 0, Pike_mark_sp = 0, Pike_mark_stack = 0, Pike_fp = 0; \
    void *evaluator_stack_malloced = NULL, *mark_stack_malloced = NULL; \
    int recoveries = 0, thread_id = 0; \
-   int error = 0, xalloc = 0, low_my_putchar = 0, low_my_binary_strcat = 0; \
-   int low_make_buf_space = 0, pop_n_elems = 0; \
+   int pop_n_elems = 0; \
    int push_sp_mark = 0, pop_sp_mark = 0, threads_disabled = 1
 
 /* Note that the semi-colon below is needed to add an empty statement
