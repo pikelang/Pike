@@ -39,7 +39,8 @@ class Package(string my_name,
 	      string extra_help, 
 	      string extra_advanced_help, 
 	      string extra_flags,
-	      string extra_license)
+	      string extra_license,
+	      string extra_version)
 {
   static private mapping(array(string):string) options =
   ([ ({ "-h", "--help" }):
@@ -72,7 +73,7 @@ class Package(string my_name,
      "EXIT=yes",
 
      ({ "-v", "--version" }):
-     "echo 'Package version unknown.'\n"
+     "echo '"+extra_version+"'\n"
      "EXIT=yes",
      
      // We actually have two versions here, with and without =.
@@ -241,7 +242,8 @@ int main(int argc, array(string) argv)
 	  "  EXTRA_PACKAGE_HELP\n"
 	  "  EXTRA_PACKAGE_ADVANCED_HELP\n"
 	  "  EXTRA_PACKAGE_FLAGS\n"
-	  "  EXTRA_PACKAGE_LICENSE\n");
+	  "  EXTRA_PACKAGE_LICENSE\n"
+	  "  EXTRA_PACKAGE_VERSION\n");
     return 1;
   }
   
@@ -249,7 +251,8 @@ int main(int argc, array(string) argv)
 	  getenv("EXTRA_PACKAGE_HELP") || "",
 	  getenv("EXTRA_PACKAGE_ADVANCED_HELP") || "",
 	  getenv("EXTRA_PACKAGE_FLAGS") || "",
-	  getenv("EXTRA_PACKAGE_LICENSE") || "")->
+	  getenv("EXTRA_PACKAGE_LICENSE") || "",
+	  getenv("EXTRA_PACKAGE_VERSION") || "Package version unknown.")->
     add_packages(@argv[4..])->make(argv[1]);
   
   return 0;
