@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.167 2003/02/24 18:57:16 mast Exp $
+|| $Id: encode.c,v 1.168 2003/02/24 19:03:03 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.167 2003/02/24 18:57:16 mast Exp $");
+RCSID("$Id: encode.c,v 1.168 2003/02/24 19:03:03 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2915,6 +2915,11 @@ static void decode_value2(struct decode_data *data)
 		  
 		  if(d == pp->num_inherits)
 		  {
+		    fsort_program_identifier_index(pp->identifier_index,
+						   pp->identifier_index +
+						   pp->num_identifier_index - 1,
+						   pp);
+
 		    pp->flags &=~ PROGRAM_AVOID_CHECK;
 		    pp->flags |= PROGRAM_FINISHED;
 		    
