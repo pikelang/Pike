@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.80 2000/08/06 14:39:33 grubba Exp $
+ * $Id: threads.h,v 1.81 2001/10/22 23:54:43 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -623,6 +623,7 @@ void th_farm(void (*fun)(void *), void *here);
 #define th_cleanup()
 #define th_init_programs()
 #define th_self() ((void*)0)
+#define co_wait(X,Y)
 #define co_signal(X)
 #define co_broadcast(X)
 
