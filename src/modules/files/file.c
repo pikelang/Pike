@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.281 2003/07/03 11:39:49 grubba Exp $
+|| $Id: file.c,v 1.282 2003/07/03 16:07:08 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.281 2003/07/03 11:39:49 grubba Exp $");
+RCSID("$Id: file.c,v 1.282 2003/07/03 16:07:08 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -1476,36 +1476,44 @@ static int do_close(int flags)
  */
 static void file_grantpt( INT32 args )
 {
-#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD)
+#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD) || defined(USE_CHGPT)
   pop_n_elems(args);
-#if defined(USE_PT_CHMOD)
+#if defined(USE_PT_CHMOD) || defined(USE_CHGPT)
   push_constant_text("Process.Process");
   APPLY_MASTER("resolv", 1);
 
+#ifdef USE_PT_CHMOD
+  /* pt_chmod wants to get the fd number as the first argument. */
   push_constant_text(USE_PT_CHMOD);
   push_constant_text("4");
   f_aggregate(2);
 
+  /* Send the pty as both fd 3 and fd 4. */
   push_constant_text("fds");
   ref_push_object(Pike_fp->current_object);
   ref_push_object(Pike_fp->current_object);
   f_aggregate(2);
+  f_aggregate_mapping(2);
+#else /* USE_CHGPT */
+  /* chgpt on HPUX doesn't like getting any arguments... */
+  push_constant_text(USE_CHGPT);
+  f_aggregatew(1);
 
-  /* /usr/lbin/chgpt on HPUX 10.20 wants to get the pty on fd 0. */
+  /* chgpt wants to get the pty on fd 0. */
   push_constant_text("stdin");
   ref_push_object(Pike_fp->current_object);
-
-  f_aggregate_mapping(4);
+  f_aggregate_mapping(2);
+#endif /* USE_PT_CHMOD */
 
   apply_svalue(Pike_sp-3, 2);
   apply(Pike_sp[-1].u.object, "wait", 0);
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
     Pike_error(USE_PT_CHMOD " returned error %d.\n", Pike_sp[-1].u.integer);
   pop_n_elems(3);
-#else
+#else /* HAVE_GRANTPT */
   if( grantpt( FD ) )
     Pike_error("grantpt failed: %s\n", strerror(errno));
-#endif
+#endif /* USE_PT_CHMOD || USE_CHGPT */
   push_text( ptsname( FD ) );
 #if defined(HAVE_UNLOCKPT)
   if( unlockpt( FD ) )
