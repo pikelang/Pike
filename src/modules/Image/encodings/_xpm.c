@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.26 2003/10/13 18:46:56 grubba Exp $
+|| $Id: _xpm.c,v 1.27 2003/10/13 18:52:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.26 2003/10/13 18:46:56 grubba Exp $");
+RCSID("$Id: _xpm.c,v 1.27 2003/10/13 18:52:00 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -249,19 +249,21 @@ void f__xpm_write_rows( INT32 args )
   }
 
   for(y = 0; y < pixels->size; y++) {
-    if (pixels->item[y].type != T_STRING) {
+    if ((pixels->item[y].type != T_STRING) ||
+	(pixels->item[y].u.string->size_shift)) {
       SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
-		       "pixel array contains elements other than strings.");
+		       "Pixel array contains elements other than 8bit strings.");
     }
     if (y < colors->size) {
-      if (colors->item[y].type != T_STRING) {
+      if ((colors->item[y].type != T_STRING) ||
+	  (pixels->item[y].u.string->size_shift)) {
 	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
-			 "color array contains elements other than strings.");
+			 "Color array contains elements other than 8bit strings.");
       }
     } else {
       if (pixels->item[y].u.string->len < iimg->xsize*bpc) {
 	SIMPLE_ARG_ERROR("_xpm_write_rows", 5,
-			 "pixel array contains too short string (bad bpc?).");
+			 "Pixel array contains too short string (bad bpc?).");
       }
     }
   }
