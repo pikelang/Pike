@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.132 2001/07/01 22:29:40 mast Exp $
+ * $Id: program.h,v 1.133 2001/07/03 17:01:48 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -138,13 +138,15 @@ union idptr
 #define IDENTIFIER_PROTOTYPED 16
 #define IDENTIFIER_SCOPED 32   /* This is used for local functions only */
 #define IDENTIFIER_SCOPE_USED 64 /* contains scoped local functions */
+#define IDENTIFIER_ALIAS 128   /* This identifier is an alias. */
 
 #define IDENTIFIER_IS_FUNCTION(X) ((X) & IDENTIFIER_FUNCTION)
 #define IDENTIFIER_IS_PIKE_FUNCTION(X) ((X) & IDENTIFIER_PIKE_FUNCTION)
 #define IDENTIFIER_IS_CONSTANT(X) ((X) & IDENTIFIER_CONSTANT)
 #define IDENTIFIER_IS_VARIABLE(X) (!((X) & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
+#define IDENTIFIER_IS_ALIAS(X)	((X) & IDENTIFIER_ALIAS)
 
-#define IDENTIFIER_MASK 127
+#define IDENTIFIER_MASK 255
 
 struct identifier
 {
@@ -185,8 +187,9 @@ struct program_constant
 #define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
 #define ID_EXTERN         0x200	/* Symbol is defined later */
 #define ID_VARIANT	  0x400 /* Function is overloaded by argument. */
+#define ID_ALIAS	  0x800 /* Variable is an overloaded alias. */
 
-#define ID_MODIFIER_MASK 0x07ff
+#define ID_MODIFIER_MASK 0x0fff
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 #define ID_SAVE_PARENT 0x10000 /* pragma save_parent */

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.346 2001/07/03 04:30:21 hubbe Exp $");
+RCSID("$Id: program.c,v 1.347 2001/07/03 17:01:48 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2776,7 +2776,11 @@ int low_define_variable(struct pike_string *name,
 
   copy_shared_string(dummy.name, name);
   copy_pike_type(dummy.type, type);
-  dummy.identifier_flags = 0;
+  if (flags & ID_ALIAS) {
+    dummy.identifier_flags = IDENTIFIER_ALIAS;
+  } else {
+    dummy.identifier_flags = 0;
+  }
   dummy.run_time_type=run_time_type;
   dummy.func.offset=offset - Pike_compiler->new_program->inherits[0].storage_offset;
 #ifdef PROFILING
@@ -2885,8 +2889,7 @@ int define_variable(struct pike_string *name,
     if(n==-1)
       yyerror("Pass2: Variable disappeared!");
     else {
-      struct identifier *id;
-      id=ID_FROM_INT(Pike_compiler->new_program,n);
+      struct identifier *id=ID_FROM_INT(Pike_compiler->new_program,n);
       free_type(id->type);
       copy_pike_type(id->type, type);
       return n;
@@ -2920,10 +2923,21 @@ int define_variable(struct pike_string *name,
 
       if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || Pike_compiler->compiler_pass!=1)
       {
- 	if(!match_types(ID_FROM_INT(Pike_compiler->new_program, n)->type, type))
- 	  my_yyerror("Illegal to redefine inherited variable "
- 		     "with different type.");
+	int n2;
 
+ 	if(ID_FROM_INT(Pike_compiler->new_program, n)->type != type &&
+	   !pike_types_le(type,
+			  ID_FROM_INT(Pike_compiler->new_program, n)->type)) {
+	  if (!match_types(ID_FROM_INT(Pike_compiler->new_program, n)->type,
+			   type)) {
+	    my_yyerror("Illegal to redefine inherited variable '%s' "
+		       "with different type.", name->str);
+	    return n;
+	  } else {
+	    yywarning("Redefining inherited variable '%s' "
+		      "with different type.", name->str);
+	  }
+	}
 	
 
 	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program, n)->
@@ -2931,10 +2945,29 @@ int define_variable(struct pike_string *name,
 	{
 	  my_yyerror("Illegal to redefine inherited variable "
 		     "with different type.");
+	  return n;
 	}
 
-	IDENTIFIERP(n)->id_flags = flags & ~ID_EXTERN;
-	return n;
+	if ((ID_FROM_INT(Pike_compiler->new_program, n)->run_time_type !=
+	     PIKE_T_MIXED) &&
+	    (ID_FROM_INT(Pike_compiler->new_program, n)->run_time_type !=
+	     compile_type_to_runtime_type(type))) {
+	  my_yyerror("Illegal to redefine inherited variable "
+		     "with different type.");
+	  return n;
+	}
+
+	/* Copy the variable reference, so that we can change the
+	 * compile-time type. */
+	n2 = low_define_variable(name, type,
+				 (flags | ID_ALIAS) & ~ID_EXTERN,
+				 ID_FROM_INT(Pike_compiler->new_program, n)->
+				 func.offset +
+				 INHERIT_FROM_INT(Pike_compiler->new_program,
+						  n)->storage_offset,
+				 ID_FROM_INT(Pike_compiler->new_program, n)->
+				 run_time_type);
+	return n2;
       }
     }
   }

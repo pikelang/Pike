@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.176 2001/07/02 20:09:18 mast Exp $");
+RCSID("$Id: object.c,v 1.177 2001/07/03 17:01:49 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -360,6 +360,8 @@ PMOD_EXPORT struct object *get_master(void)
 
   inside = 1;
 
+  /* fprintf(stderr, "Need a new master object...\n"); */
+
   if(!master_program)
   {
     struct pike_string *s;
@@ -372,6 +374,8 @@ PMOD_EXPORT struct object *get_master(void)
       fprintf(stderr,"Cannot load master object yet!\n");
       return 0; /* crash? */
     }
+
+    /* fprintf(stderr, "Master file: \"%s\"\n", master_file); */
 
     tmp=xalloc(strlen(master_file)+3);
 
@@ -395,6 +399,10 @@ PMOD_EXPORT struct object *get_master(void)
     if(s)
     {
       JMP_BUF tmp;
+
+      /* fprintf(stderr, "Trying precompiled file \"%s.o\"...\n",
+       *         master_file);
+       */
 
       /* Moved here to avoid gcc warning: "might be clobbered". */
       push_string(s);
@@ -426,12 +434,21 @@ PMOD_EXPORT struct object *get_master(void)
 #endif
 
     }
+
+    /* fprintf(stderr, "Reading master: \"%s\"...\n", master_file); */
+
     s=low_read_file(master_file);
     if(s)
     {
       push_string(s);
       push_text(master_file);
+
+      /* fprintf(stderr, "Calling cpp()...\n"); */
+
       f_cpp(2);
+
+      /* fprintf(stderr, "Calling compile()...\n"); */
+
       f_compile(1);
 
     compiled:
@@ -447,13 +464,20 @@ PMOD_EXPORT struct object *get_master(void)
       Pike_error("Couldn't load master program. (%s)\n",master_file);
     }
   }
+
+  /* fprintf(stderr, "Cloning master...\n"); */
+
   master_object=low_clone(master_program);
   debug_malloc_touch(master_object);
   debug_malloc_touch(master_object->storage);
 
+  /* fprintf(stderr, "Initializing master...\n"); */
+
   call_c_initializers(master_object);
   call_pike_initializers(master_object,0);
   
+  /* fprintf(stderr, "Master loaded.\n"); */
+
   inside = 0;
   return master_object;
 }
@@ -604,6 +628,10 @@ void destruct(struct object *o)
     for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
     {
       int d=pike_frame->context.prog->variable_index[q];
+
+      if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
+			      identifier_flags))
+	continue;
       
       if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
       {
@@ -1290,6 +1318,10 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
 	int d=pike_frame->context.prog->variable_index[q];
+
+	if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
+				identifier_flags))
+	  continue;
 	
 	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
 	{
@@ -1346,6 +1378,10 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
 	  int d=pike_frame->context.prog->variable_index[q];
+	
+	  if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
+				  identifier_flags))
+	    continue;
 	
 	  if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
 	  {
@@ -1407,6 +1443,10 @@ static inline void gc_check_object(struct object *o)
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
 	int d=pike_frame->context.prog->variable_index[q];
+	
+	if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
+				identifier_flags))
+	  continue;
 	
 	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
 	{
@@ -1721,14 +1761,27 @@ void check_object(struct object *o)
 
   if(o == Pike_compiler->fake_object) return;
 
-  if(o->next && o->next->prev !=o)
+  if(o->next)
   {
-    describe(o);
-    fatal("Object check: o->next->prev != o\n");
+    if (o->next == o)
+    {
+      describe(o);
+      fatal("Object check: o->next == o\n");
+    }
+    if (o->next->prev !=o)
+    {
+      describe(o);
+      fatal("Object check: o->next->prev != o\n");
+    }
   }
-  
+
   if(o->prev)
   {
+    if (o->prev == o)
+    {
+      describe(o);
+      fatal("Object check: o->prev == o\n");
+    }
     if(o->prev->next != o)
     {
       describe(o);
