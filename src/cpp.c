@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.135 2004/04/15 22:07:48 mast Exp $
+|| $Id: cpp.c,v 1.136 2004/05/22 12:14:48 nilsson Exp $
 */
 
 #include "global.h"
@@ -110,6 +110,7 @@ struct cpp
   struct object *compat_handler;
   int compat_major;
   int compat_minor;
+  struct pike_string *data;
 };
 
 struct define *defined_macro =0;
@@ -1699,96 +1700,111 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
  *! @seealso
  *!   @[compile()]
  */
+
+/* Doesn't free string_builder buf! */
+static void free_cpp(struct cpp *this)
+{
+  if(this->defines)
+    free_hashtable(this->defines, free_one_define);
+
+  if(this->current_file)
+    free_string(this->current_file);
+
+  if(this->handler) {
+    free_object(this->handler);
+    this->handler = 0;
+  }
+
+  if(this->compat_handler) {
+    free_object(this->compat_handler);
+    this->compat_handler=0;
+  }
+
+  if(this->data)
+    free_string(this->data);
+}
+
 void f_cpp(INT32 args)
 {
-  struct pike_string *data;
-  struct mapping *predefs = NULL;
-  struct svalue *save_sp = sp - args;
   struct cpp this;
+  struct svalue *save_sp = sp - args;
+  struct mapping *predefs = NULL;
+
+  struct pike_string *data;
+
+  struct pike_string *current_file = 0;
+
+  struct svalue *charset_sv = 0;
   int auto_convert = 0;
   struct pike_string *charset = NULL;
 
+  struct object *handler = 0;
+
+  int compat_major, compat_minor;
+
+  ONERROR err;
 #ifdef PIKE_DEBUG
   ONERROR tmp;
 #endif /* PIKE_DEBUG */
 
-  if(args<1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("cpp", 1);
+  get_all_args("cpp", args, "%t.%T%*%O%i%i", &data, &current_file,
+	       &charset_sv, &handler, &compat_major, &compat_minor);
 
-  if(sp[-args].type != T_STRING)
-    SIMPLE_BAD_ARG_ERROR("cpp", 1, "string");
+  this.current_line=1;
+  this.compile_errors=0;
+  this.defines=0;
 
-  data = sp[-args].u.string;
-
+  this.data = data;
   add_ref(data);
 
-  this.handler = NULL;
-  this.compat_handler = NULL;
-
-  if(args>1)
-  {
-    if(args > 5)
-    {
-      if(sp[4-args].type != T_INT)
-	SIMPLE_BAD_ARG_ERROR("cpp", 5, "int");
-      if(sp[5-args].type != T_INT)
-	SIMPLE_BAD_ARG_ERROR("cpp", 6, "int");
-    }
-    if(sp[1-args].type != T_STRING) {
-      free_string(data);
-      SIMPLE_BAD_ARG_ERROR("cpp", 2, "string");
-    }
-    copy_shared_string(this.current_file, sp[1-args].u.string);
-
-    if (args > 2) {
-      if (sp[2-args].type == T_STRING) {
-	charset = sp[2 - args].u.string;
-	push_string(data);
-	ref_push_string(charset);
-	if (!safe_apply_handler ("decode_charset", this.handler, this.compat_handler,
-				 2, BIT_STRING)) {
-	  free_string(this.current_file);
-	  cpp_handle_exception (&this, "Error decoding with charset '%s'",
-				charset->str);
-	  Pike_error("Unknown charset.\n");
-	}
-	data = sp[-1].u.string;
-	sp--;
-	dmalloc_touch_svalue(sp);
-      } else if (sp[2-args].type == T_INT) {
-	auto_convert = sp[2-args].u.integer;
-      } else {
-	free_string(data);
-	SIMPLE_BAD_ARG_ERROR("cpp", 3, "string|int");
-      }
-      if (args > 3) {
-	if (sp[3-args].type == T_OBJECT) {
-	  if ((this.handler = sp[3-args].u.object)) {
-	    add_ref(this.handler);
-	  }
-	} else if (sp[3-args].type != T_INT) {
-	  free_string(data);
-	  free_string(this.current_file);
-	  SIMPLE_BAD_ARG_ERROR("cpp", 4, "object");
-	}
-      }
-    }
-  }else{
-    this.current_file=make_shared_string("-");
-  }
+  if(current_file)
+    add_ref(current_file);
+  else
+    current_file = make_shared_string("-");
+  this.current_file = current_file;
 
   this.compat_major=PIKE_MAJOR_VERSION;
   this.compat_minor=PIKE_MINOR_VERSION;
-  if(args > 5)
-  {
-    cpp_change_compat(&this, sp[4-args].u.integer, sp[5-args].u.integer);
+  this.compat_handler = 0;
+  this.handler = handler;
+  if(handler)
+    add_ref(handler);
+
+  /* Don't call free_cpp before all variables are cleared or set. */
+  SET_ONERROR(err, free_cpp, &this);
+
+  if(charset_sv) {
+    if(charset_sv->type == T_STRING) {
+      charset = charset_sv->u.string;
+      push_string(data);
+      ref_push_string(charset);
+      if (!safe_apply_handler ("decode_charset", this.handler,
+			       this.compat_handler, 2, BIT_STRING)) {
+	cpp_handle_exception (&this, "Error decoding with charset '%s'",
+			      charset->str);
+	Pike_error("Unknown charset.\n");
+      }
+      free(data);
+      this.data = data = sp[-1].u.string;
+      sp--;
+      dmalloc_touch_svalue(sp);
+    }
+    else if(charset_sv->type == T_INT)
+      auto_convert = charset_sv->u.integer;
+    else {
+      SIMPLE_BAD_ARG_ERROR("cpp", 3, "string|int");
+    }
   }
+
+  if(args > 5)
+    cpp_change_compat(&this, compat_major, compat_minor);
 
   if (use_initial_predefs)
     /* Typically compiling the master here. */
     predefs = initial_predefs_mapping();
   else {
-    low_unsafe_apply_handler ("get_predefines", this.handler, this.compat_handler, 0);
+    low_unsafe_apply_handler ("get_predefines", this.handler,
+			      this.compat_handler, 0);
     if (!UNSAFE_IS_ZERO (sp - 1)) {
       struct keypair *k;
       int e, sprintf_args = 0;
@@ -1824,10 +1840,6 @@ void f_cpp(INT32 args)
       }
       if (!predefs) {
       predef_map_error:
-	free_string (data);
-	free_string (this.current_file);
-	if (this.handler) free_object (this.handler);
-	if (this.compat_handler) free_object (this.compat_handler);
 	f_sprintf (sprintf_args);
 	if (!sp[-1].u.string->size_shift)
 	  Pike_error ("%s", sp[-1].u.string->str);
@@ -1842,19 +1854,16 @@ void f_cpp(INT32 args)
     /* Try to determine if we need to recode the string */
     struct pike_string *new_data = recode_string(&this, data);
     free_string(data);
-    data = new_data;
+    this.data = data = new_data;
   }
   if (data->size_shift) {
     /* Get rid of any byte order marks (0xfeff) */
     struct pike_string *new_data = filter_bom(data);
     free_string(data);
-    data = new_data;
+    this.data = data = new_data;
   }
 
   init_string_builder(&this.buf, 0);
-  this.current_line=1;
-  this.compile_errors=0;
-  this.defines=0;
 
   do_magic_define(&this,"__LINE__",insert_current_line);
   do_magic_define(&this,"__FILE__",insert_current_file_as_string);
@@ -1922,24 +1931,8 @@ void f_cpp(INT32 args)
   UNSET_ONERROR(tmp);
 #endif /* PIKE_DEBUG */
 
-  if(this.defines)
-    free_hashtable(this.defines, free_one_define);
-
-  if(this.compat_handler)
-  {
-    free_object(this.compat_handler);
-    this.compat_handler=0;
-  }
-
-  if (this.handler)
-  {
-    free_object(this.handler);
-    this.handler = 0;
-  }
-
-  free_string(this.current_file);
-
-  free_string(data);
+  UNSET_ONERROR(err);
+  free_cpp(&this);
 
   if(this.compile_errors)
   {
