@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.46 2004/09/18 21:34:44 nilsson Exp $
+|| $Id: charsetmod.c,v 1.47 2004/09/27 21:45:35 nilsson Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -30,12 +30,6 @@
 #endif
 
 p_wchar1 *misc_charset_lookup(const char *name, int *rlo, int *rhi);
-
-struct multichar_table {
-  const unsigned int lo;
-  const unsigned int hi;
-  UNICHAR const *table;
-};
 
 extern const struct multichar_table GBK[];
 extern const struct multichar_table cp949[];

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.21 2004/09/18 21:35:23 nilsson Exp $
+|| $Id: tables.c,v 1.22 2004/09/27 21:45:35 nilsson Exp $
 */
 
 #include "iso2022.h"
@@ -13801,11 +13801,6 @@ static const UNICHAR map_GBK_FD[] = {
 static const UNICHAR map_GBK_FE[] = {
   0xfa0c, 0xfa0d, 0xfa0e, 0xfa0f, 0xfa11, 0xfa13, 0xfa14, 0xfa18,
   0xfa1f, 0xfa20, 0xfa21, 0xfa23, 0xfa24, 0xfa27, 0xfa28, 0xfa29,
-};
-struct multichar_table {
-  const unsigned int lo;
-  const unsigned int hi;
-  UNICHAR const *table;
 };
 const struct multichar_table GBK[] = {
   { 64, sizeof(map_GBK_81)/sizeof(UNICHAR)+63, map_GBK_81 },
