@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.63 1998/03/12 13:34:28 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.64 2001/12/03 13:29:10 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
