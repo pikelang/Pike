@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.13 2001/07/28 16:16:01 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.14 2001/08/11 22:11:40 nilsson Exp $
  *
  */
 
@@ -36,7 +36,9 @@ class Node
     type = _type;
     name = _name;
     parent = _parent;
+    PROFILE();
     data = get_parser()->finish( _data )->read();
+    ENDPROFILE("Parsing");
 
     string path = replace(make_class_path(), "()->", ".");
     if(has_suffix(path, "()"))
@@ -172,13 +174,13 @@ class Node
 	map(vars->resolved/".", cquote)*"/" + ".html'>" + vars->resolved +
 	"</a></font>";
 
-    werror("Missed reference: %O\n", _reference);
+    werror("Missed reference %O in %s\n", _reference, make_class_path());
     unresolved++;
     return "<font face='courier'>" + _reference + "</font>";
   }
 
   string _make_class_path;
-  string make_class_path()
+  string make_class_path(void|int(0..1) header)
   {
     if(_make_class_path) return _make_class_path;
     PROFILE();
@@ -355,8 +357,6 @@ class Node
 
   void make_html(string template, string path)
   {
-    werror("Layouting...%s\n", make_class_path());
-
     class_children->make_html(template, path);
     module_children->make_html(template, path);
     method_children->make_html(template, path);
@@ -385,7 +385,7 @@ class Node
 	"$next_url$": next_url,
 	"$next_title$": next_title,
 	"$type$": String.capitalize(type),
-	"$title$": make_class_path(),
+	"$title$": make_class_path(1),
 	"$style$": style,
 	"$imagedir$":image_prefix(),
       ]));
@@ -422,11 +422,14 @@ class TopNode {
   array(Node) get_ancestors() { return ({ }); }
   int(0..0) find_prev_node() { return 0; }
   int(0..0) find_next_node() { return 0; }
-  string make_class_path() { return ""; }
+  string make_class_path(void|int(0..1) header) {
+    if(!header) return "";
+    return "Top level methods";
+  }
 
   string make_content() {
     resolve_reference = my_resolve_reference;
-    string contents = "<h1>Top level methods</h1><table class='sidebar'><tr>";
+    string contents = "<table class='sidebar'><tr>";
     foreach(method_children/( sizeof(method_children)/4.0 ),
             array(Node) children)
       contents += "<td>" + make_navbar_really_low(children, 1) + "</td>";
