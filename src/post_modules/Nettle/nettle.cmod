@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.1 2003/03/12 17:07:10 nisse Exp $");
+RCSID("$Id: nettle.cmod,v 1.2 2003/03/12 20:33:33 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -9,6 +9,8 @@ RCSID("$Id: nettle.cmod,v 1.1 2003/03/12 17:07:10 nisse Exp $");
 #include "object.h"
 
 #include "module_support.h"
+
+#ifdef HAVE_LIBNETTLE
 
 #include "nettle.h"
 
@@ -84,7 +86,7 @@ PIKECLASS hash_state
   INHERIT nettle_hash;
   
   /* FIXME: The ctx pointer isn't strictly needed, as the ctx is in
-   * the storage area just after the poitner. But this seems like the
+   * the storage area just after the pointer. But this seems like the
    * simplest and most portable way to get to it. */
   CVAR void *ctx;
   
@@ -358,3 +360,5 @@ PIKECLASS aes
       memset(&THIS->ctx, 0, sizeof(THIS->ctx));
     }
 }
+
+#endif /* HAVE_LIBNETTLE */
