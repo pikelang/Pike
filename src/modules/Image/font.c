@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.30 1998/02/11 00:45:57 hubbe Exp $ */
+/* $Id: font.c,v 1.31 1998/02/18 18:31:18 per Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.30 1998/02/11 00:45:57 hubbe Exp $
+**!	$Id: font.c,v 1.31 1998/02/18 18:31:18 per Exp $
 **! class font
 **!
 **! note
@@ -169,7 +169,7 @@ struct font
 
 /***************** init & exit *********************************/
 
-static inline void free_font_struct(struct font *font)
+static INLINE void free_font_struct(struct font *font)
 {
    if (font)
    {
