@@ -112,6 +112,9 @@
 /* define if declaration of getenv is missing */
 #undef GETENV_DECL_MISSING
 
+/* Define if we can declare 'extern char **environ' */
+#undef DECLARE_ENVIRON
+
 /* What byteorder does your machie use most machines use 4321, PC use 1234 */
 #define BYTEORDER 0
 
