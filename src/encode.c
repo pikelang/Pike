@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.52 1999/12/19 15:52:32 grubba Exp $");
+RCSID("$Id: encode.c,v 1.53 2000/02/09 16:21:46 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -812,7 +812,8 @@ static void low_decode_type(struct decode_data *data)
   SET_ONERROR(err2, restore_type_mark, pike_type_mark_stackp);
 
 one_more_type:
-  push_type(tmp=GETC());
+  tmp = GETC();
+  push_type(tmp);
   switch(tmp)
   {
     default:
