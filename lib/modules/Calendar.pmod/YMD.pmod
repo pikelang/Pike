@@ -2411,7 +2411,7 @@ TimeRange parse(string fmt,string arg)
    nfmt=replace(nfmt,
 		({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s","%p",
 		  "%t","%f","%d","%z","%n"}),
-		({ALNU,ALNU,ALNU,"%d","%d","%d",ALNU,"%d","%d","%d",AMPM,
+		({ALNU,ALNU,ALNU,"%d",NUME,"%d",ALNU,"%d","%d","%d",AMPM,
 		  NUME,NUME,NUME,"%[-+0-9A-Za-z/]","%s"}));
    array q=Array.map(replace(fmt,({"%*","%%"}),({"",""}))/"%",
 		     lambda(string s){ return s[..0];})-({""});
@@ -2439,7 +2439,7 @@ TimeRange parse(string fmt,string arg)
 	 m->Y=default_rules->language[f_year_number_from_name](m->Y);
 
       if (!zero_type(m->Y) && m->D && (int)m->M)
-	 low=m->day=cal->Day(m->Y,(int)m->M,m->D);
+	 low=m->day=cal->Day(m->Y,(int)m->M,(int)m->D);
 
       if (m->d)
       {
@@ -2479,8 +2479,7 @@ TimeRange parse(string fmt,string arg)
 	    m->week=low=m->year->week("w"+m->W);
 
 	 if (!zero_type(m->D))
-	    if (stringp(m->D)) return 0;
-	    else m->day=low=(m->month||cal->Month())->day(m->D);
+	    m->day=low=(m->month||cal->Month())->day((int)m->D);
 	 else if (!zero_type(m->a))
 	    m->day=low=m->year->day(m->a);
 	 else if (!zero_type(m->e))
@@ -2573,6 +2572,7 @@ TimeRange parse(string fmt,string arg)
 //!	<pre>
 //!     <ref>parse</ref> format                  as in
 //!	"%y-%M-%D (%M) -W%W-%e (%e)"  "2000-03-20 (Mar) -W12-1 (Mon)"
+//!	"%M%/%D/%y"	              "3/20/2000" 
 //!	"%D%*[ /]%M%*[ /-,]%y"	      "20/3/2000" "20 mar 2000" "20/3 -00"
 //!	"%e%*[ ]%D%*[ /]%M%*[ /-,]%y" "Mon 20 Mar 2000" "Mon 20/3 2000"
 //!	"%y-%M-%D"		      "2000-03-20", "00-03-20"
@@ -2633,16 +2633,19 @@ Calendar.dwim_day("next monday");
 array dwim_day_strings=
 ({"%y-%M-%D (%*s) -W%W-%e (%e)",
   "%e%*[, ]%M%*[ ,]%D%*[ ,]%y",
+  "%y-%M-%D",
+  "%M/%D/%y",
   "%D%*[ /]%M%*[- /,]%y",
   "%M %D%*[- /,]%y",
   "%e%*[, ]%D%*[a-z:]%*[ /]%M%*[-/ ,]%y",
-  "%y-%M-%D",
   "-%y%*[ /]%D%*[ /]%M",
   "-%y%*[ /]%M%*[ /]%D",
   "%y%*[ /]%M%*[ /]%D",
   "%y%*[ /]%D%*[ /]%M",
   "%D%*[- /]%M",
   "%M%*[- /]%D",
+  "%M-%D-%y",
+  "%D-%M-%y",
   "%e%*[- /wv]%W%*[ -/]%y",
   "%e%*[- /wv]%W", 
   "%d"});
@@ -2653,7 +2656,8 @@ cDay dwim_day(string day)
 
    foreach ( dwim_day_strings, 
 	     string dayformat)
-      if ( (d=parse(dayformat,day)) ) return d;
+      if ( (d=parse(dayformat+"%n",day)) ) 
+	 return d;
 
    cDay t=Day();
    if ( (d=parse("%e",day)) )
