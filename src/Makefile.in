@@ -212,7 +212,7 @@ full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
-$(SRCDIR)/peep_engine.c: peep.in
+$(SRCDIR)/peep_engine.c: $(SRCDIR)/peep.in
 	echo "" >$(SRCDIR)/peep_engine.c
 	-$(RUNPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
@@ -234,20 +234,20 @@ html_docs: docs
 module_objects:
 	( cd modules ; ${MAKE} $(MAKE_FLAGS) )
 
-language.o: $(SRCDIR)/language.c object.h interpret.h program.h
+language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
-$(SRCDIR)/language.h: language.yacc
+$(SRCDIR)/language.h: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
 	$(YACC) $(YFLAGS) $(SRCDIR)/language.yacc
 	mv y.tab.c $(SRCDIR)/language.c
 	mv y.tab.h $(SRCDIR)/language.h
 
-$(SRCDIR)/language.c: language.h
+$(SRCDIR)/language.c: $(SRCDIR)/language.h
 	touch $(SRCDIR)/language.c
 
-module.c: modlist.h
+$(SRCDIR)/module.c: modlist.h
 
-$(SRCDIR)/configure: configure.in
+$(SRCDIR)/configure: $(SRCDIR)/configure.in
 	cd $(SRCDIR) && autoconf
 
 config.status: $(SRCDIR)/configure
@@ -258,13 +258,13 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	@echo "Run make again"
 	@exit 1
 
-machine.h.in: stamp-h.in
-stamp-h.in: configure.in acconfig.h
+$(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
+$(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
 	cd $(SRCDIR) && autoheader
 	echo foo > $(SRCDIR)/stamp-h.in
 
 machine.h: stamp-h
-stamp-h: machine.h.in config.status
+stamp-h: $(SRCDIR)/machine.h.in config.status
 	CONFIG_FILES= CONFIG_HEADERS=machine.h ./config.status
 
 testsuite: $(SRCDIR)/testsuite.in
