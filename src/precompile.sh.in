@@ -109,7 +109,7 @@ if $RUNPIKE ./$SCRIPT "$@" >"$TARGET" ; then
 cat > "$TMP_BUILDDIR/precompile-method" <<EOF
 LAST_PIKE="$LAST_PIKE"
 method="$method"
-retries="$retries"
+#retries="$retries"
 EOF
 
 exit 0
