@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: RCS.pike,v 1.10 2002/03/12 13:48:29 jhs Exp $
+// $Id: RCS.pike,v 1.11 2002/03/12 14:11:05 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -94,45 +94,53 @@ static mapping parse_mapping(string data)
 
 static array(string) parse_string(string data, string|void leader)
 {
-  string segment, result, original = data;
+  string segment, original = data;
+  String.String_buffer result = String.String_buffer();
   if(leader)
     sscanf(data, SWS + (leader||"") + SWS "%s", data);
-  if(2 != sscanf(data, "@%s@%s", result, data))
+  if(2 != sscanf(data, "@%s@%s", segment, data))
     return ({ 0, original }); // "no leading @" or "@not terminated"
   if(!has_prefix(data, "@"))
-    return ({ result, data });
-  data = data[1..]; result += "@";
+    return ({ segment, data });
+  result->append(segment);
+  result->append("@");
+  data = data[1..];
   int started_parsing;
   while(sscanf(data, "%s@\n%s", segment, data))
   {
     started_parsing = 1;
-    result += replace(segment, "@@", "@");
+    result->append(replace(segment, "@@", "@"));
     if(has_suffix(segment, "@"))
     {
       int trailing = sizeof(array_sscanf(reverse(segment), "%[@]")[0]);
       if(trailing & 1) // e g "...a line ends in a @@\nbut the string continues"
       {
 	sscanf(data, "%[^@]%s", segment, data);
-	result += "\n" + segment;
+	result->append("\n");
+	result->append(segment);
 	continue;
       }
     }
-    return ({ result, data });
+    return ({ (string)result, data });
   }
   if(started_parsing)
   {
     if(!sscanf(data, "%s@%s", segment, data))
       return ({ 0, original }); // "@one or more @@\n:s but not @@ terminated"
-    return ({ result + segment, data });
+    result->append(segment);
+    return ({ (string)result, data });
   }
   // perhaps the non-mandatory trailing newline in the file was somehow lost
   sscanf(data, "%s@%s", segment, data);
-  result += segment;
+  result->append(segment);
   while(sscanf(data, "@%s@%s", segment, data))
-    result += "@" + segment;
+  {
+    result->append("@");
+    result->append(segment);
+  }
   if(has_prefix(data, "@"))
     return ({ 0, original }); // "@not @@ terminated"
-  return ({ result, data });
+  return ({ (string)result, data });
 }
 
 function symbol_is_branch = Regexp("\\.0\\.[0-9]*[02468]$")->match;
@@ -377,7 +385,8 @@ class Revision
     if(text)
       return text;
     Revision parent = revisions[sizeof(revision/".")==2 ? next : ancestor];
-    string old = parent->get_contents(), new = "", diff = rcs_text, op;
+    string old = parent->get_contents(), diff = rcs_text, op;
+    String.String_buffer new = String.String_buffer();
     int of, ot, dt, at, cnt, from, lines;
     while(sizeof(diff))
     {
@@ -397,7 +406,7 @@ class Revision
 	      break;
 	    }
 	  }
-	  new += old[of..ot++]; // ...that remained intact since last rev...
+	  new->append(old[of..ot++]); // ...who were intact since last rev...
 	  of = ot;
 	}
 	at = from + lines - 1; // ...to the [lines] lines from line [at]...
@@ -427,7 +436,7 @@ class Revision
 	      break;
 	    }
 	  }
-	  new += old[of..ot++]; // ...that remained intact since last rev...
+	  new->append(old[of..ot++]); // ...who were intact since last rev...
 	  of = ot;
 	}
 	at = from; // ...to the line...
@@ -441,11 +450,12 @@ class Revision
 	    break;
 	  }
 	}
-	new += diff[..dt++]; // ...where we should add [lines] new rows.
+	new->append(diff[..dt++]); // ...where we should add [lines] new rows.
 	diff = diff[dt..];
       }
     }
-    return text = new += old[of..];
+    new->append(old[of..]);
+    return text = (string)new;
   }
 
   static string kwchars = Array.uniq(sort("Author" "Date" "Header" "Id" "Name"
