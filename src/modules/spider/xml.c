@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.64 2003/10/02 11:07:38 nilsson Exp $
+|| $Id: xml.c,v 1.65 2003/10/02 12:48:29 grubba Exp $
 */
 
 #include "global.h"
@@ -693,6 +693,16 @@ ISWRAP(isHexChar)
                      data->input.pos, data->input.to_free));		\
 } while(0)
 
+#ifdef PIKE_DEBUG
+#define CHECK_INPUT(INPUT) do {					\
+    if ((INPUT).len < 0) {					\
+      Pike_fatal("Negative input length: %d\n", (INPUT).len);	\
+    }								\
+  } while(0)
+#else /* !PIKE_DEBUG */
+#define CHECK_INPUT(INPUT)
+#endif /* PIKE_DEBUG */
+
 static inline int xmlread(int z,struct xmldata *data, int line)
 {
   int popped=0;
@@ -742,10 +752,10 @@ static void xmlerror(char *desc, struct xmldata *data,
     }while(0);
 
 #define SKIPSPACE() \
-  do { while(SMEG(), isSpace(PEEK(0))) READ(1); }while(0)
+  do { while((!XMLEOF()) && (SMEG(), isSpace(PEEK(0)))) READ(1); }while(0)
 
 #define SKIPSPACE_NO_SMEG() \
-  do { while(isSpace(PEEK(0))) READ(1); }while(0)
+  do { while((!XMLEOF()) && isSpace(PEEK(0))) READ(1); }while(0)
 
 #define SKIPTO(X) \
   do { while( (!XMLEOF()) && (PEEK(0) != (X))) READ(1); }while(0)
@@ -954,6 +964,7 @@ static int gobble(struct xmldata *data, char *s)
 	  my_tmp.input.len=s->len;					 \
 	  my_tmp.input.pos=0;						 \
 	  my_tmp.input.next=0;						 \
+	  CHECK_INPUT(my_tmp.input);					 \
 	  add_ref(my_tmp.input.callbackinfo=callbackinfo);		 \
 	  PARSE_RECURSIVELY;						 \
 	  if(THIS->entities)						 \
@@ -1225,6 +1236,7 @@ static int read_smeg_pereference(struct xmldata *data)
 	  data->input.pos=0;
 	  data->input.datap=MKPCHARP_STR(s);
 	  data->input.len=(s)->len;
+	  CHECK_INPUT(data->input);
 	  free_mapping(data->input.callbackinfo);
 	  data->input.callbackinfo=callbackinfo;
 	  copy_shared_string(data->input.to_free,s);
@@ -2496,10 +2508,11 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  push_constant_text("<!DOCTYPE");
 		  SIMPLE_READNAME(); /* NAME */
 		  SKIPSPACE();
-		  switch(PEEK(0))
+		  switch(SAFE_PEEK(0))
 		  {
 		    case 'P':
-		      if(PEEK(1)=='U' &&
+		      if((data->input.len > 5) &&
+			 PEEK(1)=='U' &&
 			 PEEK(2)=='B' &&
 			 PEEK(3)=='L' &&
 			 PEEK(4)=='I' &&
@@ -2518,7 +2531,8 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		      break;
 
 		    case 'S':
-		      if(PEEK(1)=='Y' &&
+		      if((data->input.len > 5) &&
+			 PEEK(1)=='Y' &&
 			 PEEK(2)=='S' &&
 			 PEEK(3)=='T' &&
 			 PEEK(4)=='E' &&
@@ -2538,7 +2552,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		      f_aggregate_mapping(0);
 		  }
 
-		  if(PEEK(0)=='[')
+		  if(SAFE_PEEK(0)=='[')
 		  {
 		    READ(1);
 		    low_parse_dtd(data);
@@ -2546,14 +2560,14 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		    fprintf(stderr,"FOO: %c%c%c%c\n",SAFE_PEEK(0),
 			    SAFE_PEEK(1),SAFE_PEEK(2),SAFE_PEEK(3));
 #endif
-		    if(PEEK(0) != ']')
+		    if(SAFE_PEEK(0) != ']')
 		      XMLERROR("Missing ] in DOCTYPE tag.");
 		    READ(1);
 		    SKIPSPACE();
 		  }else{
 		    push_int(0);
 		  }
-		  if(PEEK(0)!='>')
+		  if(SAFE_PEEK(0)!='>')
 		    XMLERROR("Missing '>' in DOCTYPE tag.");
 		  READ(1);
 		  SYS();
@@ -2734,6 +2748,7 @@ static void parse_xml(INT32 args)
   data.input.entity=0;
   data.input.callbackinfo=allocate_mapping(0);
   data.input.next=0;
+  CHECK_INPUT(data.input);
   data.func=sp+1-args;
   data.extra_args=sp+2-args;
   data.num_extra_args=args-2;
@@ -2809,6 +2824,7 @@ static void define_entity(INT32 args)
   data.input.to_free=0;
   data.input.entity=0;
   data.input.callbackinfo=allocate_mapping(0);
+  CHECK_INPUT(data.input);
   data.func=sp+2-args;
   data.extra_args=sp+3-args;
   data.num_extra_args=args-3;
@@ -2856,6 +2872,7 @@ static void parse_dtd(INT32 args)
   data.input.to_free=0;
   data.input.entity=0;
   data.input.callbackinfo=allocate_mapping(0);
+  CHECK_INPUT(data.input);
   data.func=sp+1-args;
   data.extra_args=sp+2-args;
   data.num_extra_args=args-2;
