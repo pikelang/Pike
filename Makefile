@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.25 2000/02/14 23:42:03 mast Exp $
+# $Id: Makefile,v 1.26 2000/07/03 19:28:24 mast Exp $
 #
 # Meta Makefile
 #
@@ -103,6 +103,9 @@ pike: force
 
 install:
 	@$(MAKE) "METATARGET=install"
+
+install_interactive:
+	@$(MAKE) "METATARGET=install_interactive"
 
 just_verify:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=just_verify"
