@@ -229,14 +229,6 @@ array(array) columns(array x, array ind)
   return ret;
 }
 
-array transpose_old(array(array|string) x)
-{
-   if (!sizeof(x)) return x;
-   array ret=allocate(sizeof([array|string]x[0]));
-   for(int e=0;e<sizeof([array|string]x[0]);e++) ret[e]=column(x,e);
-   return ret;
-}
-
 // diff3, complement to diff
 
 //! Return the three-way difference between the arrays.
