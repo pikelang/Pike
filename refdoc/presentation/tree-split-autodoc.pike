@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.36 2002/12/11 12:15:50 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.37 2002/12/11 12:47:35 grubba Exp $
  *
  */
 
@@ -337,21 +337,28 @@ class Node
     _raw_class_path = "";
     foreach(a, Node n)
     {
-      // FIXME: Hide predef::?
-      _make_class_path += n->name;
       _raw_class_path += n->name + ".";
-      if(n->type=="class")
-	_make_class_path += "()->";
-      else if(n->type=="module")
-	_make_class_path += ".";
-      else if(n->type=="namespace")
-	_make_class_path += "::";
+      // Hide most namepaces from the class path.
+      if (n->type == "namespace") {
+	if ((<"","lfun">)[n->name]) {
+	  _make_class_path += n->name + "::";
+	}
+      } else {
+	_make_class_path += n->name;
+	if(n->type=="class")
+	  _make_class_path += "()->";
+	else if(n->type=="module")
+	  _make_class_path += ".";
+      }
     }
     _make_class_path += name;
     _raw_class_path += name;
 
-    if(type=="method")
-      _make_class_path +="()";
+    if(type=="method") {
+      _make_class_path += "()";
+    } else if (type == "namespace") {
+      _make_class_path += "::";
+    }
 
     ENDPROFILE("make_class_path");
     return _make_class_path;
