@@ -97,6 +97,7 @@ static int close_fd(int fd)
 	fatal("Closing a non-active file descriptor.\n");
        
       case EINTR:
+	break;
       }
     }
 
