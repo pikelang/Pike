@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.574 2004/11/14 03:42:21 aldem Exp $
+|| $Id: builtin_functions.c,v 1.575 2004/11/14 11:43:53 mast Exp $
 */
 
 #include "global.h"
@@ -1988,6 +1988,8 @@ PMOD_EXPORT void f_allocate(INT32 args)
   struct svalue *init;
 
   get_all_args("allocate", args, "%+.%*", &size, &init);
+  if (size > MAX_INT32)
+    SIMPLE_ARG_ERROR ("allocate", 1, "Integer too large to use as array size.");
 
   a=allocate_array(size);
   if(args>1)
