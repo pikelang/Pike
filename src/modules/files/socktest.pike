@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.12 1998/10/21 22:46:32 grubba Exp $ */
+/* $Id: socktest.pike,v 1.13 1999/08/06 22:15:40 hubbe Exp $ */
 
 
 import Stdio;
@@ -44,10 +44,11 @@ class Socket {
 
   void close_callback()
   {
+    int err=errno();
     daemon->got_callback();
     if(input_buffer != expected_data)
     {
-      werror("Failed to read complete data.\n");
+      werror("Failed to read complete data, errno=%d.\n",err);
       if(strlen(input_buffer) < 100)
       {
 	werror(num+":Input buffer: "+input_buffer+"\n");
@@ -255,6 +256,7 @@ mixed keeper;
 
 void finish()
 {
+  gc();
   num_running--;
   if(!num_running)
   {

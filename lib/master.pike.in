@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.53 1999/06/22 17:38:09 mirar Exp $
+/* $Id: master.pike.in,v 1.54 1999/08/06 22:06:36 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -718,7 +718,9 @@ void _main(string *orig_argv, string *env)
 	  a="="+a;
 	}
 	environment[a]=b;
-      }
+      }else{
+	werror("Broken environment var %s\n",a);
+      }		
     }
 
 
