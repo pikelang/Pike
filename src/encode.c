@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.45 1999/11/03 23:53:15 grubba Exp $");
+RCSID("$Id: encode.c,v 1.46 1999/11/04 20:03:20 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1147,7 +1147,7 @@ static void decode_value2(struct decode_data *data)
 	    stack_swap();
 	    f_index(2);
 	  }
-	  if(data->pickyness && sp[-1].type != T_PROGRAM) {
+	  if(data->pickyness && !program_from_svalue(sp-1)) {
 	    if ((prog_code->type == T_STRING) &&
 		(prog_code->u.string->len < 128) &&
 		(!prog_code->u.string->size_shift)) {
