@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.56 1997/09/23 00:26:44 grubba Exp $");
+RCSID("$Id: file.c,v 1.57 1997/10/08 15:39:36 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -974,7 +974,10 @@ static void file_set_buffer(INT32 args)
  */
 #define socketpair socketpair_ultra
 
+/* Protected since errno may expand to a function call. */
+#ifndef errno
 extern int errno;
+#endif /* !errno */
 int socketpair(int family, int type, int protocol, int sv[2])
 {
   static int fd=-1;
