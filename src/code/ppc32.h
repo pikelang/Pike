@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.22 2003/08/07 20:48:18 marcus Exp $
+|| $Id: ppc32.h,v 1.23 2003/08/12 13:46:15 marcus Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -43,8 +43,8 @@
 #define BL(LI) PPC_INSTR_I_FORM(18,LI,0,1)
 #define BLA(LI) PPC_INSTR_I_FORM(18,LI,1,1)
 
-#define LOW_GET_JUMP()	(PROG_COUNTER[0])
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
+#define LOW_GET_JUMP()	(PROG_COUNTER[JUMP_EPILOGUE_SIZE])
+#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + 1))
 
 #define SET_REG(REG, X) do {						  \
     INT32 val_ = X;							  \
