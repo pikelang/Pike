@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.573 2002/11/29 23:01:31 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.574 2002/12/01 01:33:31 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7946,7 +7946,7 @@ test_false(crypt("hej","buf8/Z7taE6qst"))
 test_false(crypt("hej","buf8/Z7taE6q"))
 
 // - ctime
-test_eq(ctime(0)[0],'\n')
+test_eq(ctime(0)[-1],'\n')
 
 // - destruct
 test_do(add_constant("PROG",compile_string("int foo() { return 1; }")));
