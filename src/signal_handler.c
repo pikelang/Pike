@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.56 1998/04/29 22:20:15 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.57 1998/04/30 16:29:56 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -859,8 +859,8 @@ void f_create_process(INT32 args)
     struct passwd *pw=0;
     struct perishables storage;
     int do_initgroups=1;
-    int wanted_uid;
-    int wanted_gid;
+    uid_t wanted_uid;
+    gid_t wanted_gid;
     int gid_request=0;
     int keep_signals = 0;
     pid_t pid;
