@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.12 2003/01/15 14:47:47 nilsson Exp $
+dnl $Id: testsuite.in,v 1.13 2003/02/06 21:23:55 nilsson Exp $
 
 dnl - Array
 
@@ -309,6 +309,49 @@ test_equal(Array.common_prefix(({ "labyrinth"/1, "diatom"/1 })), ({}))
 test_equal(Array.common_prefix(({ "abc"/1, "abc"/1, "abc"/1 })), "abc"/1)
 test_equal(Array.common_prefix(({})), ({}))
 
+dnl - Colors
+
+define(test_rgb,[[
+  test_equal(Colors.$1($2),({$3}))
+  test_equal(Colors.$1(({$2})),({$3}))
+]])
+
+test_rgb(rgb_to_hsv,[[0,0,0]],[[0,0,0]])
+test_rgb(rgb_to_hsv,[[255,255,255]],[[0,0,255]])
+test_rgb(rgb_to_hsv,[[17,42,112]],[[159,216,112]])
+test_rgb(hsv_to_rgb,[[0,0,0]],[[0,0,0]])
+test_rgb(hsv_to_rgb,[[255,255,255]],[[255,0,0]])
+test_rgb(hsv_to_rgb,[[17,42,112]],[[112,101,93]])
+test_rgb(rgb_to_cmyk,[[0,0,0]],[[0,0,0,100]])
+test_rgb(rgb_to_cmyk,[[255,255,255]],[[0,0,0,0]])
+test_rgb(rgb_to_cmyk,[[17,41,112]],[[37,28,0,56]])
+test_rgb(cmyk_to_rgb,[[0,0,0,0]],[[255,255,255]])
+test_rgb(cmyk_to_rgb,[[100,100,100,100]],[[0,0,0]])
+test_rgb(cmyk_to_rgb,[[17,42,100,2]],[[207,143,0]])
+
+test_equal(Colors.parse_color(0),({0,0,0}))
+test_equal(Colors.parse_color(""),({0,0,0}))
+test_equal(Colors.parse_color("gazonk"),({0,0,0}))
+test_equal(Colors.parse_color(0, ({1,2,3})),({1,2,3}))
+test_equal(Colors.parse_color("", ({1,2,3})),({1,2,3}))
+test_equal(Colors.parse_color("gazonk", ({1,2,3})),({1,2,3}))
+test_equal(Colors.parse_color("red"),({255,0,0}))
+test_equal(Colors.parse_color("red", ({1,2,3})),({255,0,0}))
+test_equal(Colors.parse_color("RED"),({255,0,0}))
+test_equal(Colors.parse_color("lightred"),({255,61,61}))
+test_equal(Colors.parse_color("LIGHT RED"),({255,61,61}))
+test_equal(Colors.parse_color("dimgray"),({105,105,105}))
+test_equal(Colors.parse_color("#ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
+test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
+
+test_eq(Colors.color_name(0),"-")
+test_eq(Colors.color_name( ({0,0}) ), "-")
+test_eq(Colors.color_name( ({255,0,0}) ), "red")
+test_eq(Colors.color_name( ({255,61,61}) ), "#ff3d3d")
+test_eq(Colors.color_name( ({105,105,105}) ), "dimgrey")
+
 
 dnl - Getopt
 dnl setup
@@ -557,22 +600,6 @@ dnl cleanup
 test_do( master()->environment=getopt_env; )
 test_do( add_constant("getopt_env"); )
 test_do( add_constant("opt"); )
-
-
-dnl - Colors
-test_equal(Colors.parse_color(""),({0,0,0}))
-test_equal(Colors.parse_color("red"),({255,0,0}))
-test_equal(Colors.parse_color("RED"),({255,0,0}))
-test_equal(Colors.parse_color("lightred"),({255,61,61}))
-test_equal(Colors.parse_color("LIGHT RED"),({255,61,61}))
-test_equal(Colors.parse_color("#ff0000"),({255,0,0}))
-test_equal(Colors.parse_color("ff0000"),({255,0,0}))
-test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
-test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
-test_equal(Colors.rgb_to_hsv(255,0,0),({0,255,255}))
-test_equal(Colors.hsv_to_rgb(0,255,255),({255,0,0}))
-test_equal(Colors.rgb_to_cmyk(255,0,0),({0,100,100,0}))
-test_equal(Colors.cmyk_to_rgb(0,100,100,0),({255,0,0}))
 
 dnl - Mapping
 dnl Mapping.delete
