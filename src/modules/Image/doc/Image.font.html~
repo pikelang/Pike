@@ -1,0 +1,186 @@
+<title>Pike documentation: Image.font</title>
+<h2>Image.font</h2>
+
+
+<h4>NOTE</h4>
+<blockquote>
+Short technical documentation on a font file:
+     This object adds the text-drawing and -creation
+     capabilities of the <tt><a href=Image.html>Image</a></tt> module.
+
+<p>     For simple usage, see
+     <tt><a href=Image.font.html#write>write</a></tt> and <tt><a href=Image.font.html#load>load</a></tt>.
+
+<p>     other methods: <tt><a href=Image.font.html#baseline>baseline</a></tt>,
+     <tt><a href=Image.font.html#height>height</a></tt>,
+     <tt><a href=Image.font.html#set_xspacing_scale>set_xspacing_scale</a></tt>,
+     <tt><a href=Image.font.html#set_yspacing_scale>set_yspacing_scale</a></tt>,
+     <tt><a href=Image.font.html#text_extents>text_extents</a></tt>
+     
+     <pre>
+            struct file_head 
+            {
+               unsigned INT32 cookie;   - 0x464f4e54 
+               unsigned INT32 version;  - 1 
+               unsigned INT32 chars;    - number of chars
+               unsigned INT32 height;   - height of font
+               unsigned INT32 baseline; - font baseline
+               unsigned INT32 o[1];     - position of char_head's
+            } *fh;
+            struct char_head
+            {
+               unsigned INT32 width;    - width of this character
+               unsigned INT32 spacing;  - spacing to next character
+               unsigned char data[1];   - pixmap data (1byte/pixel)
+            } *ch;
+     </pre>
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.html>Image</a></tt>,
+     <tt><a href=Image.image.html>Image.image</a></tt>
+</blockquote>
+
+<hr>
+<a name=baseline> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>int <b>baseline</b>()</tt>
+</blockquote>
+
+<h4>RETURNS</h4>
+
+
+<blockquote>
+font baseline (pixels from top)
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.font.html#height>height</a></tt>,
+     <tt><a href=Image.font.html#text_extents>text_extents</a></tt>
+</blockquote>
+
+<hr>
+<a name=height> </a>
+<a name=text_extents> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>int <b>height</b>()<br>
+array(int) <b>text_extents</b>(string&nbsp;text, ...)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Calculate extents of a text-image,
+     that would be created by calling <tt><a href=Image.font.html#write>write</a></tt>
+     with the same arguments.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>string text, ...</tt>
+  <dd>One or more lines of text.
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+an array of width and height
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.font.html#write>write</a></tt>,
+     <tt><a href=Image.font.html#height>height</a></tt>,
+     <tt><a href=Image.font.html#baseline>baseline</a></tt>
+</blockquote>
+
+<hr>
+<a name=load> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object|int <b>load</b>(string&nbsp;filename)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Loads a font file to this font object.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>string filename</tt>
+  <dd>Font file
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+zero upon failure, font object upon success
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.font.html#write>write</a></tt>
+</blockquote>
+
+<hr>
+<a name=set_xspacing_scale> </a>
+<a name=set_yspacing_scale> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>void <b>set_xspacing_scale</b>(float&nbsp;scale)<br>
+void <b>set_yspacing_scale</b>(float&nbsp;scale)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Set spacing scale to write characters closer
+     or more far away. This does not change scale
+     of character, only the space between them.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>float scale</tt>
+  <dd>what scale to use
+</dl></blockquote>
+
+<hr>
+<a name=write> </a>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>object <b>write</b>(string&nbsp;text, ...)</tt>
+</blockquote>
+
+<h4>DESCRIPTION</h4>
+
+
+<blockquote>
+Writes some text; thus creating an image object
+     that can be used as mask or as a complete picture.
+</blockquote>
+<h4>ARGUMENTS</h4>
+<blockquote><dl>
+<dt><tt>string text, ...</tt>
+  <dd>One or more lines of text.
+</dl></blockquote>
+<h4>RETURNS</h4>
+
+
+<blockquote>
+an <ref>Image::image</ref> object
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.font.html#text_extents>text_extents</a></tt>,
+     <tt><a href=Image.font.html#load>load</a></tt>,
+     <tt><a href=Image.image.html#paste_mask>image::paste_mask</a></tt>,
+     <tt><a href=Image.image.html#paste_alpha_color>image::paste_alpha_color</a></tt>
+</blockquote>

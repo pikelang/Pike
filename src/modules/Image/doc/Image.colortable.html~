@@ -1,0 +1,15 @@
+<title>Pike documentation: Image.colortable</title>
+<h2>Image.colortable</h2>
+
+
+<blockquote>
+This object keeps colortable information,
+     mostly for image re-coloring (quantization).
+</blockquote>
+
+
+<h4>SEE ALSO</h4>
+<blockquote>     <tt><a href=Image.html>Image</a></tt>,
+     <tt><a href=Image.image.html>Image.image</a></tt>,
+     <tt><a href=Image.font.html>Image.font</a></tt>
+</blockquote>
