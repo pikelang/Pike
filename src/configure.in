@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.857 2004/12/16 14:17:33 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.858 2004/12/16 16:23:25 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -257,9 +257,9 @@ AC_PROG_CPP
 
 AC_MSG_CHECKING([whether we are using Intel C])
 AC_CACHE_VAL(pike_cv_prog_icc, [
-  AC_EGREP_CPP([ yes ], [
+  AC_EGREP_CPP([ oui ], [
 #if defined(__ECC) || defined(__ICC) || defined(__INTEL_COMPILER)
-  yes;
+  oui;
 #endif
   ], pike_cv_prog_icc=yes, pike_cv_prog_icc=no)
 ])
