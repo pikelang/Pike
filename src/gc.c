@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.115 2000/08/10 13:34:36 grubba Exp $");
+RCSID("$Id: gc.c,v 1.116 2000/08/11 13:08:02 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -229,7 +229,8 @@ void dump_gc_info(void)
   fprintf(stderr," threshold for next gc() : %ld\n",(long)alloc_threshold);
   fprintf(stderr,"Average allocs per gc()  : %f\n",objects_alloced);
   fprintf(stderr,"Average frees per gc()   : %f\n",objects_freed);
-  fprintf(stderr,"Second since last gc()   : %ld\n", (long)TIME(0) - (long)last_gc);
+  fprintf(stderr,"Second since last gc()   : %ld\n",
+	  DO_NOT_WARN((long)TIME(0) - (long)last_gc));
   fprintf(stderr,"Projected garbage        : %f\n", objects_freed * (double) num_allocs / (double) alloc_threshold);
   fprintf(stderr,"in_gc                    : %d\n", Pike_in_gc);
 }
@@ -318,7 +319,7 @@ void describe_location(void *real_memblock,
 	    indent,"",
 	    get_name_of_type(type),
 	    memblock,
-	    (long)((char *)location - (char *)memblock));
+	    DO_NOT_WARN((long)((char *)location - (char *)memblock)));
   else
     fprintf(stderr,"%*s-> at location %p in unknown memblock (mmaped?)\n",
 	    indent,"",
@@ -364,7 +365,7 @@ void describe_location(void *real_memblock,
       {
 	e=((char *)ptr - (char *)(p->inherits)) / sizeof(struct inherit);
 	fprintf(stderr,"%*s  **In p->inherits[%ld] (%s)\n",indent,"",
-		e,
+		DO_NOT_WARN((long)e),
 		p->inherits[e].name ? p->inherits[e].name->str : "no name");
 	break;
       }
@@ -376,7 +377,7 @@ void describe_location(void *real_memblock,
 	e = ((char *)ptr - (char *)(p->constants)) /
 	  sizeof(struct program_constant);
 	fprintf(stderr,"%*s  **In p->constants[%ld] (%s)\n",indent,"",
-		e,
+		DO_NOT_WARN((long)e),
 		p->constants[e].name ? p->constants[e].name->str : "no name");
 	break;
       }
@@ -389,7 +390,7 @@ void describe_location(void *real_memblock,
 	e = ((char *)ptr - (char *)(p->identifiers)) /
 	  sizeof(struct identifier);
 	fprintf(stderr,"%*s  **In p->identifiers[%ld] (%s)\n",indent,"",
-		e,
+		DO_NOT_WARN((long)e),
 		p->identifiers[e].name ? p->identifiers[e].name->str : "no name");
 	break;
       }

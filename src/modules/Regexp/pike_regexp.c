@@ -1,5 +1,5 @@
 /* 
- * $Id: pike_regexp.c,v 1.14 2000/07/28 07:14:40 hubbe Exp $
+ * $Id: pike_regexp.c,v 1.15 2000/08/11 13:04:22 grubba Exp $
  *
  * regexp.c - regular expression matching
  *
@@ -254,7 +254,7 @@ regexp *pike_regcomp(char *exp,int excompat)
     register regexp *r;
     register char  *scan;
     register char  *longest;
-    register int    len;
+    register size_t len;
     int             flags;
     short	   *exp2,*dest,c;
 
@@ -357,7 +357,7 @@ regexp *pike_regcomp(char *exp,int excompat)
 	    len = 0;
 	    for (; scan != NULL; scan = regnext(scan))
 		if (OP(scan) == EXACTLY &&
-		    (int)strlen(OPERAND(scan)) >= len) {
+		    strlen(OPERAND(scan)) >= len) {
 		    longest = OPERAND(scan);
 		    len = strlen(OPERAND(scan));
 		}
@@ -713,9 +713,9 @@ static void reginsert(char op, char *opnd)
  */
 static void regtail(char *p, char *val)
 {
-    register char  *scan;
-    register char  *temp;
-    register int    offset;
+    register char      *scan;
+    register char      *temp;
+    register ptrdiff_t  offset;
 
     if (p == &regdummy)
 	return;
@@ -733,8 +733,8 @@ static void regtail(char *p, char *val)
 	offset = scan - val;
     else
 	offset = val - scan;
-    *(scan + 1) = (offset >> 8) & 0377;
-    *(scan + 2) = offset & 0377;
+    *(scan + 1) = DO_NOT_WARN((offset >> 8) & 0377);
+    *(scan + 2) = DO_NOT_WARN(offset & 0377);
 }
 
 /*
@@ -765,7 +765,7 @@ static char   **regendp;	/* Ditto for endp. */
  */
 STATIC int      regtry(regexp *, char *);
 STATIC int      regmatch(char *);
-STATIC int      regrepeat(char *);
+STATIC size_t   regrepeat(char *);
 
 #ifdef PIKE_DEBUG
 int             regnarrate = 0;
@@ -932,7 +932,7 @@ char           *prog;
 		return (0);
 	    break;
 	case EXACTLY:{
-		register int    len;
+		register size_t len;
 		register char  *opnd;
 
 		opnd = OPERAND(scan);
@@ -982,7 +982,7 @@ char           *prog;
 	    break;
 	case STAR:{
 		register char   nextch;
-		register int    no;
+		register size_t no;
 		register char  *save;
 		register int    minimum;
 
@@ -995,8 +995,8 @@ char           *prog;
 		    nextch = *OPERAND(nxt);
 		minimum = (OP(scan) == STAR) ? 0 : 1;
 		save = reginput;
-		no = regrepeat(OPERAND(scan));
-		while (no >= minimum) {
+		no = regrepeat(OPERAND(scan)) + (minimum == 0);
+		while (no) {
 		    /* If it could work, try it. */
 		    if (nextch == '\0' || *reginput == nextch)
 			if (regmatch(nxt))
@@ -1072,16 +1072,16 @@ char           *prog;
  */
 #ifdef __STDC__
 
-static int regrepeat(char *p)
+static size_t regrepeat(char *p)
 
 #else
 
-static int regrepeat(p)
+static size_t regrepeat(p)
 char           *p;
 
 #endif
 {
-    register int    count = 0;
+    register size_t count = 0;
     register char  *scan;
     register char  *opnd;
 
@@ -1175,12 +1175,15 @@ regexp         *r;
     s = r->program + 1;
     while (op != END) {		/* While that wasn't END last time... */
 	op = OP(s);
-	printf("%2ld%s", (long)(s - r->program), regprop(s));	/* Where, what. */
+	printf("%2ld%s",	/* Where, what. */
+	       DO_NOT_WARN((long)(s - r->program)),
+	       regprop(s));
 	nxt = regnext(s);
 	if (nxt == (char *)NULL)	/* nxt ptr. */
 	    printf("(0)");
 	else
-	    printf("(%ld)", (long)( (s - r->program) + (nxt - s)));
+	    printf("(%ld)",
+		   DO_NOT_WARN((long)( (s - r->program) + (nxt - s))));
 	s += 3;
 	if (op == ANYOF || op == ANYBUT || op == EXACTLY) {
 	    /* Literal string, where present. */
@@ -1291,7 +1294,7 @@ char *pike_regsub(regexp *prog, char *source, char *dest, int n)
     register char  *dst;
     register char   c;
     register int    no;
-    register int    len;
+    register ptrdiff_t len;
 
     if (prog == (regexp *)NULL || 
 	source == (char *)NULL || dest == (char *)NULL) {
