@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.830 2004/06/21 10:57:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.831 2004/08/23 14:33:55 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1472,8 +1472,17 @@ AC_ARG_WITH(machine-code,
 	MY_DESCR([--without-machine-code],
 		 [do not try to use of machine code on supported architectures.]),
 	[], [
-	  # Further tests later on.
-	  with_machine_code="yes"
+	case "x$pike_cv_sys_os" in
+		xOpenBSD*)
+			PIKE_MSG_WARN([OpenBSD detected, disabling machine code.
+Use --with-machine-code to force usage of machine code support.])
+			with_machine_code="yes"
+	;;
+	esac
+	
+	if test "x${with_machine_code-}" = x; thne
+		with_machine_code="yes"
+	fi
 	])
 
 MY_AC_ARG_WITH(keypair-loop,
