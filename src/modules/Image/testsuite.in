@@ -1,4 +1,4 @@
-cond([[ master()->resolv("Image") ]],
+cond([[ master()->resolv("Image")->image ]],
 [[
   test_true(programp(Image.image))
   test_true(objectp(clone(Image.image)))

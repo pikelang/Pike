@@ -1,5 +1,5 @@
 // mpz
-cond( [[ master()->resolv("Gmp") ]],
+cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
   test_true(programp(Gmp.mpz))
   test_false(clone(Gmp.mpz))

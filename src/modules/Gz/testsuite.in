@@ -1,4 +1,4 @@
-cond([[ master()->resolv("Gz") ]],
+cond([[ master()->resolv("Gz")->deflate ]],
 [[
   test_true(Gz.deflate())
   test_true(Gz.deflate()->deflate)

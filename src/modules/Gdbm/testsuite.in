@@ -1,5 +1,5 @@
 // gdbm
-cond( [[ master()->resolv("Gdbm") ]],
+cond( [[ master()->resolv("Gdbm")->gdbm ]],
 [[
   define([[GDBM]],[[ Gdbm.gdbm ]])
   test_true(programp(GDBM))
