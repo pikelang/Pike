@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.62 2001/03/05 21:32:52 grubba Exp $
+ * $Id: pike_types.h,v 1.63 2001/03/18 00:59:34 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -289,6 +289,7 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 				 struct pike_type *type_b,
 				 int flags);
 struct pike_type *make_pike_type(const char *t);
+struct pike_string *type_to_string(struct pike_type *t);
 int pike_type_allow_premature_toss(struct pike_type *type);
 /* Prototypes end here */
 

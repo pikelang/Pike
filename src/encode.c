@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.92 2001/03/17 16:37:42 grubba Exp $");
+RCSID("$Id: encode.c,v 1.93 2001/03/18 00:59:33 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -289,7 +289,10 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
       goto one_more_type;
     
     case T_ASSIGN:
-      addchar((ptrdiff_t)t->car);
+      if (((ptrdiff_t)t->car < 0) || ((ptrdiff_t)t->car > 9)) {
+	fatal("Bad assign marker: %ld\n", (long)(ptrdiff_t)t->car);
+      }
+      addchar('0' + (ptrdiff_t)t->car);
       t = t->cdr;
       goto one_more_type;
 
@@ -1140,18 +1143,22 @@ one_more_type:
   switch(tmp)
   {
     default:
-      fatal("error in type string (%d).\n", tmp);
+      Pike_error("decode_value(): Error in type string (%d).\n", tmp);
       /*NOTREACHED*/
       break;
 
     case T_ASSIGN:
+      tmp = GETC();
+      if ((tmp < '0') || (tmp > '9')) {
+	Pike_error("decode_value(): Bad marker in type string (%d).\n", tmp);
+      }
 #ifdef USE_PIKE_TYPE
       low_decode_type(data);
-      push_assign_type(GETC());
+      push_assign_type(tmp);	/* Actually reverse, but they're the same */
       break;
 #else /* !USE_PIKE_TYPE */
+      push_type(T_ASSIGN);
       push_type(tmp);
-      push_type(GETC());
       goto one_more_type;
 #endif /* USE_PIKE_TYPE */
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.162 2001/03/17 16:37:43 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.163 2001/03/18 00:59:34 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -416,11 +416,13 @@ void push_scope_type(int level)
 
 void push_assign_type(int marker)
 {
-#ifdef PIKE_DEBUG
-  if ((marker < '0') || (marker > '9')) {
-    fatal("Bad assign marker: %d\n", marker);
+  marker -= '0';
+#ifdef PIKE_DEBUG */
+  if ((marker < 0) || (marker > 9)) {
+    fatal("Bad assign marker: %ld\n", marker);
   }
 #endif /* PIKE_DEBUG */
+
   *Pike_compiler->type_stackp = mk_type(T_ASSIGN,
 					(void *)(ptrdiff_t)marker,
 					*Pike_compiler->type_stackp,
@@ -482,7 +484,7 @@ void push_type(unsigned INT16 type)
   case PIKE_T_NAME:
   default:
     /* Should not occurr. */
-    fatal("");
+    fatal("Unsupported argument to push_type().\n");
     break;
 
   case T_FLOAT:
@@ -636,7 +638,7 @@ void push_finished_type_with_markers(struct pike_type *type,
   if (type->type == T_ASSIGN) {
     /* Strip assign */
 #if 0
-    fprintf(stderr, "Assign to marker %d.\n", ((ptrdiff_t)type->car)-'0');
+    fprintf(stderr, "Assign to marker %d.\n", ((ptrdiff_t)type->car));
 #endif /* 0 */
     type = type->cdr;
     goto recurse;
@@ -1223,7 +1225,7 @@ static void low_describe_type(struct pike_type *t)
       
     case T_ASSIGN:
       my_putchar('(');
-      my_putchar((ptrdiff_t)t->car);
+      my_putchar('0' + (ptrdiff_t)t->car);
       my_putchar('=');
       my_describe_type(t->cdr);
       my_putchar(')');
@@ -1939,8 +1941,15 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a->cdr, b, flags);
       if(ret && (b->type != T_VOID))
       {
-	int m = ((ptrdiff_t)a->car)-'0';
+	int m = (ptrdiff_t)a->car;
 	struct pike_type *tmp;
+
+#ifdef PIKE_DEBUG
+	if ((m < 0) || (m > 9)) {
+	  fatal("marker out of range: %d\n", m);
+	}
+#endif /* PIKE_DEBUG */
+
 	type_stack_mark();
 	push_finished_type_with_markers(b, b_markers);
 	tmp = pop_unfinished_type();
@@ -2023,7 +2032,7 @@ static struct pike_type *low_match_types2(struct pike_type *a,
       ret = low_match_types(a, b->cdr, flags);
       if(ret && (a->type != T_VOID))
       {
-	int m = ((ptrdiff_t)b->car)-'0';
+	int m = (ptrdiff_t)b->car;
 	struct pike_type *tmp;
 	type_stack_mark();
 	push_finished_type_with_markers(a, a_markers);
@@ -2464,7 +2473,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ret = low_pike_types_le(a->cdr, b, array_cnt, flags);
     if(ret && (b->type != T_VOID))
     {
-      int m = ((ptrdiff_t)a->car)-'0';
+      int m = (ptrdiff_t)a->car;
       struct pike_type *tmp;
       int i;
       type_stack_mark();
@@ -2544,7 +2553,7 @@ static int low_pike_types_le2(struct pike_type *a, struct pike_type *b,
     ret = low_pike_types_le(a, b->cdr, array_cnt, flags);
     if(ret && (a->type != T_VOID))
     {
-      int m = ((ptrdiff_t)b->car)-'0';
+      int m = (ptrdiff_t)b->car;
       struct pike_type *tmp;
       int i;
       type_stack_mark();
@@ -3919,7 +3928,10 @@ static struct pike_type *low_make_pike_type(unsigned char *type_string,
   switch(type = *type_string) {
   case T_SCOPE:
   case T_ASSIGN:
-    return mk_type(type, (void *)(ptrdiff_t)(type_string[1]),
+    if ((type_string[1] < '0') || (type_string[1] > '9')) {
+      fatal("low_make_pike_type(): Bad marker: %d\n", type_string[1]);
+    }
+    return mk_type(type, (void *)(ptrdiff_t)(type_string[1] - '0'),
 		   low_make_pike_type(type_string+2, cont), PT_COPY_CDR);
   case T_FUNCTION:
     /* Multiple ordered values. */
@@ -4044,6 +4056,84 @@ int pike_type_allow_premature_toss(struct pike_type *type)
 	  ((unsigned char *)type)[-1]);
     /* NOT_REACHED */
     return 0;
+  }
+}
+
+static void low_type_to_string(struct pike_type *t)
+{
+ recurse:
+  switch(t->type) {
+  case T_ARRAY:
+  case T_MULTISET:
+  case T_TYPE:
+  case T_NOT:
+    my_putchar(t->type);
+    /* FALL_THROUGH */
+  case PIKE_T_NAME:
+    t = t->car;
+    goto recurse;
+
+  case T_TUPLE:
+  case T_MAPPING:
+  case T_OR:
+  case T_AND:
+    my_putchar(t->type);
+    low_type_to_string(t->car);
+    t = t->cdr;
+    goto recurse;
+
+  case T_PROGRAM:
+  case T_STRING:
+  case T_FLOAT:
+  case T_ZERO:
+  case T_VOID:
+  case T_MIXED:
+    my_putchar(t->type);
+    break;
+
+  case T_OBJECT:
+    if (t->car || t->cdr) {
+      Pike_error("Not supported yet!\n");
+    } else {
+      my_strcat(tObj);
+    }
+    break;
+
+  case T_INT:
+    {
+      INT32 i;
+      my_putchar(T_INT);
+      i = (INT32)(ptrdiff_t)t->car;
+      my_putchar((i >> 24) & 0xff);
+      my_putchar((i >> 16) & 0xff);
+      my_putchar((i >> 8) & 0xff);
+      my_putchar(i & 0xff);
+      i = (INT32)(ptrdiff_t)t->cdr;
+      my_putchar((i >> 24) & 0xff);
+      my_putchar((i >> 16) & 0xff);
+      my_putchar((i >> 8) & 0xff);
+      my_putchar(i & 0xff);
+    }
+    break;
+
+  case T_FUNCTION:
+  case T_MANY:
+    my_putchar(T_FUNCTION);
+    while(t->type == T_FUNCTION) {
+      low_type_to_string(t->car);
+      t = t->cdr;
+    }
+    my_putchar(T_MANY);
+    low_type_to_string(t->car);
+    t = t->cdr;
+    goto recurse;
+
+  case T_SCOPE:
+  case T_ASSIGN:
+    my_putchar(t->type);
+    my_putchar('0' + (ptrdiff_t)t->car);
+    t = t->cdr;
+    goto recurse;
   }
 }
 
@@ -7466,6 +7556,18 @@ int pike_type_allow_premature_toss(struct pike_type *type)
 }
 
 #endif /* USE_PIKE_TYPE */
+
+struct pike_string *type_to_string(struct pike_type *t)
+{
+#ifdef USE_PIKE_TYPE
+  init_buf();
+  low_type_to_string(t);
+  return free_buf();
+#else /* !USE_PIKE_TYPE */
+  add_ref(t);
+  return t;
+#endif /* USE_PIKE_TYPE */
+}
 
 void init_types(void)
 {
