@@ -1,0 +1,1297 @@
+<chapter title='Pike AutoDoc markup'>
+
+<section title='Syntax'>
+
+<subsection title="Line orientation">
+
+<p>The markup is line oriented. If you need to write a line which is very
+long, it can be broken into several lines. A trailing @ on the line
+indicates that it continues on the next line. The @ and the newline
+character will be discarded, and the lines merged. Thus:</p>
+
+<example>
+  //! @variable thisVariableNameIsSoLong@
+  //!YouJustCantBelieveIt
+</example>
+
+<p>will appear to the parser as:</p>
+
+<example>
+  //! @variable thisVariableNameIsSoLongYouJustCantBelieveIt
+</example>
+
+<p>This is sometimes necessary because keywords that take parameters
+expect all the parameters to appear on the same line and treat the end
+of the line as the end of the parameter list.</p>
+
+<p>The character '\r' is also discarded. The same applies to all other
+non-printable and control characters except for '\n' and '\t'.</p>
+
+<p>In text (see the nonterminal 'text' in the grammar at the end of this
+file), a blank line with surrounding non-blank lines will give a
+paragraph break. Thus:</p>
+
+<example>
+  //! - I love you, said Danny.
+  //!
+  //! - You have no right to come here after what you did to
+  //! my little dog, screamed Penny in despair.
+</example>
+
+<p>will generate the following XML:</p>
+
+<p><pre>
+  &lt;p&gt; - I love you, said Danny.&lt;/p&gt;
+  &lt;p&gt; - You have no right to come here after what you did to
+    my little dog, screamed Penny in despair.&lt;/p&gt;
+</pre></p>
+
+</subsection>
+
+<subsection title="Keywords">
+
+<p>Keywords always begin with an at-sign: @. A @ is quoted by writing two
+of them: @@. There are four types of keywords (the keywords in []'s
+are examples of keywords of the different types):</p>
+
+<ol>
+<li><p> Meta keywords [@decl, @class, @endclass, @module and @endmodule]
+ Must stand alone on one line, preceded only by whitespace. These are
+ not really part of the markup. They must come before any text or
+ other keywords in the doc block. They provide information about what
+ is being documented etc. and do not result in any text in the
+ documentation. Meta keywords have keyword specific parameter
+ syntaxes.</p></li>
+
+<li><p> Delimiter keywords [@param, @member, @item, @note, ...]
+ Must stand alone on one line, preceded only by whitespace. These are
+ keywords that begin a section inside their block. They have no end
+ marker, but rather the section ends when the next delimiter keyword
+ on the same level is found. Can have parameters.</p></li>
+
+<li><p> Block/endblock keywords [@dl - @enddl, @mapping - @endmapping, ...]
+ Must stand alone on one line, preceded only by whitespace. These open
+ or close a block. If a block is started with @foo, it must end with a
+ matching @endfoo. The lines inside the block can be divided into
+ sections by using delimiter keywords. The start keyword can have
+ parameters, but the corresponding end keyword can not.</p></li>
+
+<li><p> Short markup keywords [@ref{..@}, @i{..@}, ...]
+ These are used in the text to perform cosmetic tasks, for example
+ changing text to italic (@i), teletype(@tt) or marking a word as a
+ reference to a pike entity (@ref). They can be nested, but a short
+ markup keyword can not contain a keyword of types 1-3. They begin
+ with @keyword{ and end with @}.</p></li>
+
+<li><p> The magic keyword @xml{ ... @}
+ This is a special keyword that provides an escape to XML. All ordinary
+ text inside it is passed unquoted to the output. However, the short
+ markup keywords are still valid and may be used inside it, and thus
+ @ must still be quoted with @@. &lt; and &gt; must also be quoted unless
+ the intention really is to write XML. For example:</p>
+
+ <example>
+   //! He is so @xml{&lt;i&gt;italic&lt;/i&gt; and @b{bold@}!@}!!
+ </example>
+
+ <p>will generate the following XML:</p>
+
+ <p><pre>
+   He is so &lt;i&gt;italic&lt;/i&gt; and &lt;b&gt;bold&lt;/b&gt;!!!
+ </pre></p></li>
+</ol>
+
+<p>NOTA BENE: Delimiter keywords (2) and block keywords (3) must stand
+alone (with their parameters, if any) on one line.</p>
+</subsection>
+
+<subsection title="Delimiter keyword grouping">
+
+<p>Delimiter keywords that indicate a new section inside the block can be
+grouped together in the interest of not writing the same docstring for
+multiple parameters etc. Delimiters are grouped if they appear on
+consecutive lines. For example, when documenting a method:</p>
+
+<example>
+  //! @decl int dist(int x, int y)
+  //!   Calculates the distance.
+  //! @param x
+  //! @param y
+  //!   The coordinates of the vector.
+</example>
+
+<p>Above, the two @param's x and y are grouped together and share the
+same docstring: "The coordinates of the vector.". It is an error to
+try to group together different keywords:</p>
+
+<example>
+  //!   Error, can't group @note and @param:
+  //! @param x
+  //! @note
+  //!   Don't use this function. At all. Ever.
+</example>
+
+</subsection>
+
+<subsection title="Keyword parameters">
+
+<p>After the leading @keyword (that may be preceded only by whitespace)
+on the line, the rest of the line is interpreted as a parameter list.
+The syntax of this parameter list can be different depending on the
+keyword:</p>
+
+<ol>
+<li><p> Special keyword parameter list syntax
+ Here the parameters can be parsed according to Pike syntax or in
+ some other way. Examples of keywords that use these kinds of special
+ syntaxes are all the meta keywords, @member and @elem.</p></li>
+
+<li><p> Default parameter list syntax
+ The meaning of parameters is determined by the order in which they
+ appear, much like the arguments in a unix shell command line - hence
+ they are not named as in HTML or XML. Parameters are separated by
+ whitespace. If you wish to have a parameter string with whitespace in
+ it, you must surround the string with a pair of ' or ". When the
+ quoting character itself is in the string, a duplication is used to
+ quote it:</p>
+
+<example>
+   //! @question "He is a ""swapper""?!"
+</example>
+
+ <p>However, if your parameter contains only one of ' and ", then it is
+ smarter to choose the other one as the quouting character:</p>
+
+<example>
+   //! @question 'He is a "swapper"?!'
+</example>
+
+ <p>It is an error not to end a quote before the end of the line:</p>
+
+<example>
+   //! @wrong "Aww, come on now, this worked fine in C64 basic!
+</example>
+
+ <p>If a quoted parameter is too long to fit in one line, use the @ at
+ the end of the line to merge it with the following:</p>
+
+<example>
+   //! @right "Oh, joy! Now I can make my parameters just as@
+   //! long as I want them!"
+</example>
+
+ <p>The parameters are not parsed so you can not have markup inside
+ them. Pike style quoting is not used either, which means that if
+ you write:</p>
+
+<example>
+   //! @look "\n"
+</example>
+
+ <p>The parameter will be a string with two characters, a backslash
+ followed by the letter n.</p></li>
+</ol>
+
+</subsection>
+
+
+<subsection title="Grammar">
+
+<p>Here comes a BNF-ish grammar for documentation blocks. Note that
+before the parsing of the block, all lines ending with a @ will be
+merged with the next line (see (a) above)</p>
+
+<p><pre>
+docblock:
+  metaline*, blockbody
+
+metaline:
+  start_of_line, white_space*, metakeyword, any_char_but_newline,
+  end_of_line
+
+blockbody:
+  section?, (delimiter+, section)*, delimiter?
+
+delimiter:
+  start_of_line, white_space*, delimiterkeyword, parameterlist,
+  end_of_line
+
+section:
+  (text|block)+
+
+block:
+  blockbegin, blockbody, blockend
+
+blockbegin:
+  start_of_line, white_space*, blockkeyword, parameterlist,
+  end_of_line
+
+blockend:
+  start_of_line, white_space*, blockkeyword, white_space*, end_of_line
+
+parameterlist:
+  white_space*, (parameter, white_space+)*
+
+parameter:
+  qoutedparameter | any_char_but_white_space+
+
+quotedparameter:
+  ('"', (any_char_but_new_line_or_" | '""'), '"')
+  | ('\'', (any_char_but_new_line_or_' | '\'\''), '\'')
+
+text:
+  (character|shortmarkup|xmlescape)+
+
+xmlescape:
+  '@xml{', any_char_sequence_not_containing_@}, '@}'
+
+character:
+  any_char_but_@ | '@@'
+
+shortmarkup:
+  shortmarkupkeyword, '{', text, '@}'
+
+metakeyword, blockkeyword, delimiterkeyword, shortmarkupkeyword:
+  keyword
+
+keyword:
+  '@', alpha_char+
+
+endblockkeyword:
+  '@end', alpha_char+
+
+white_space:
+  ' ' | '\t'
+</pre></p>
+
+</subsection>
+</section>
+
+<section title="Pike autodoc inlining">
+
+<p>The autodoc extractor works either in C mode or in Pike mode. The
+reason why the two modes are not the same is that they perform two
+very different tasks. The C mode only has to find comments in the
+file, and ignores the surrounding code totally, while the Pike mode on
+the other hand is supposed to be smarter and distill a lot of
+information from the Pike code that surrounds the comments.</p>
+
+<p>Both work at the file level. That makes it easy to use for example
+"make" to generate documentation for the source tree. Another benefit
+is that the generation will not have to reparse all of the tree if
+only one source file is changed.</p>
+
+<p>For Pike module trees, the extractor can recurse through the file tree
+on its own, but for C files, where the directory structure gives
+insufficient cues about what is what, there must be make targets set
+up manually. All generated XML files can then be merged together into
+the final Pike namespace.</p>
+
+<subsection title="C files">
+
+<p>In C files, the doc comments look like:</p>
+
+<example>
+  /*! yadda yadda
+   *! yadda yadda yadda
+   */
+</example>
+
+<p>Note that only lines that start with *! count, so above are only two
+doc lines. Any whitespace before the leading *! is skipped, so that
+the lines can be indented freely.</p>
+
+<p>In the C files, no parsing of the surrounding code is done. The
+context lies completely in the doc comments themselves, and the target
+of the doc comment is determined by special meta keywords that are not
+really part of the doc blocks, but rather modifiers that tell which
+Pike entity the doc is about.</p>
+
+<example>
+  /*! @module Foo
+   *!   ... doc for the Foo module ...
+   *!           ...                 */
+
+    /*! @decl int a()
+     *!   ... doc for the method Foo.a() ...
+     *!    ....                      */
+
+    /*! @class Bar
+     *!   ... doc for the class Foo.Bar  ...
+     *!           ...                 */
+
+      /*! @decl mapping(string:string) userprefs()
+       *!   ... doc for the method Foo.Bar-&gt;userprefs() ...
+       *!           ...                 */
+
+      /*! @decl int a
+       *! @decl int b
+       *!   ... doc for the variables Foo.Bar-&gt;a and Foo.Bar-&gt;b ...
+       *!      ...                      */
+
+    /*! @endclass */
+
+  /*! @endmodule */
+</example>
+
+<p>The @module and @class too keywords are to work like segment
+directives in assembler source files. That is, you can have "@module
+foo" in several C files, if the module source is spread over multiple
+files. However, if you write doc for the module itself in several
+places, an error will be triggered.</p>
+
+</subsection>
+
+<subsection title="Pike files">
+
+<p>Doc comments look like:</p>
+
+<example>
+  //! yadda yadda yadda
+  //! yadda yadda
+</example>
+
+<p>To be considered one doc block, the comments must be separated only by
+whitespace and _one_ "\n", that is they have to be on adjacent lines
+in the code. Each doc block in the Pike code has one or more targets;
+the Pike entities (modules, classes, variables etc.) that the doc
+block is documenting. The target of a doc comment is the coherent
+block of declarations adjacent to (immediately before or after) it in
+the code, without intervening blank lines. Examples:</p>
+
+<example>
+  //! Doc for alpha
+  int alpha()
+  {
+    return 4711;
+  }
+
+  static int undocumented;
+
+  //! Error! This doc block has no destination!
+
+  int beta;
+  //! Doc for beta
+
+  //! Doc for gamma, delta, and epsilon
+  int gamma, delta;
+  float epsilon;
+
+  //! Error here!
+  int zeta;
+  //! ambiguous which doc to associate with zeta.
+
+  int eta;
+  //! Error here too! ambiguous which variable is documented.
+  int theta;
+
+  //! Doc for two methods. This is so UGLY! We strongly recommend
+  //! using the decl keywords instead to accomplish this effect.
+  int methodOne()
+  {
+    ...
+  }
+  int methodTwo()
+  {
+    ...
+  }
+
+  //! However, it can be useful sometimes, for really short methods:
+  int very_short() { return 4711; }
+  int even_shorter() { return 0; }
+</example>
+
+<p>In Pike files, you can not use @class or @module to tell which module
+or class you are in. To document a class, you simply write:</p>
+
+<example>
+  //! Doc for the class
+  class CheeseMaker
+  {
+    //! You can even document inherits!
+    inherit Earth : earth;
+  
+    //! Doc for CheeseMaker-&gt;a()
+    int a()
+    {
+      ...
+    }
+  
+    void create(string s) { ... }
+  }
+</example>
+
+<p>The parser will automatically identify a() as a member method of the
+class CheeseMaker, and will detect that Earth is inherited by
+CheeseMaker. If a class has no documentation comment, it's internals
+will not be examined, thus it is an error if a class contains
+documentation comments but is itself undocumented:</p>
+
+<example>
+  class a()
+  {
+    //! @decl foo
+    //!    ... doc for foo ...
+  }
+</example>
+
+<p>A special inlining case is that of functions and classes. When documenting
+these, the doc comment can be put between the head of the function/class,
+and the opening "{", like this:</p>
+
+<example>
+  class Roy
+  //! Documentation for Roy
+  {
+    ....
+  }
+  
+  int un_randomize(int x)
+  //! This function takes a random number, and transforms it into
+  //! a predictable number.
+  {
+    return x = 4711;
+  }
+</example>
+
+<p>If a doc block is the first in a file, and it has no target, then it
+is treated as doc for the file (or rather: the module/class that the
+file compiles into) itself. In any other case it is an error to have a
+targetless doc block. A target can also be set with the @decl meta
+keyword. If a doc comment begins with some @decl keywords, these
+@decl's act just like real declarations standing next to the doc.
+Thus:</p>
+
+<example>
+  //! @decl int a(int x)
+  //! @decl int b(int x)
+  //! 	Here is some doc for these functions....
+</example>
+
+<p>is autodocwise equivalent to:</p>
+
+<example>
+  //! Here is some doc for these functions....
+  int a(int x)
+  {
+     .....
+  }
+  int b(int x)
+  {
+     .....
+  }
+</example>
+
+<p>In _one_ case it is legal to have both an adjacent declaration and
+the @decl keyword at the block beginning. That is when you document
+"polymorph" methods. Then the adjacent declaration must be a method,
+and all @decl's must be methods that have the same name as the real
+method:</p>
+
+<example>
+  //! @decl float cube(float x)
+  //! @decl int cube(int x)
+  //! 	Gives x**3.
+  //! @param x
+  //! 	The number to cube.
+  int|float cube(int|float x)
+  {
+     ....
+  }
+</example>
+
+<p>The real method prototype is discarded in favour to the @decl'ed
+variants, who will be shown in the documentation instead.</p>
+
+<p>One problem that is unsolved so far is how to handle #if .. #else ..
+#endif constructions. The approach so far has been to ignore
+preprocessor directives totally. For example, the parser does not
+handle:</p>
+
+<example>
+  #ifdef MALE
+    int bertil()
+  #else
+    int berit()
+  #endif
+  {
+    ... body ...
+  }
+</example>
+
+<p>It a portion of the code is unextractable because it contains too much
+preprocessor macros and stuff, you can make the extractor skip it by using
+@ignore:</p>
+
+<example>
+  //! @ignore
+  
+  HERE_ARE_SOME_STRANGE_THINGS
+  #ifdef A
+  A
+  #endif
+  
+  //! @endignore
+</example>
+
+<p>All @ignore-@endignore sections of the file are removed before any extraction
+is done, so they can cross class boundaries and the like. You can nest @ignore
+inside eachother. Another application for @ignore is to hide actual class
+boundaries from the extractor:</p>
+
+<example>
+  //! @ignore
+  class C {
+  //! @endignore
+
+    //! To the parser, this function appears to be on the top level
+    int f() { ... }
+
+  //! @ignore
+  }
+  //! @endignore
+</example>
+
+</subsection>
+</section>
+
+<section title="Pike autodoc tags">
+
+<p>We have defined some different categories of markup, each with its own
+semantics. Seen from the parser, there are two main construct levels:</p>
+
+<ul>
+<li><p> The "what-are-we-documenting level" constructs; @decl for Pike files
+  and @module, @endmodule, @class and @endclass on top of that for C
+  files. These are the meta level tags covered in section a).</p></li>
+
+<li><p> Inside-of-comment level constructs for documentation markup,
+  covered in sections b), c) and d).</p></li>
+</ul>
+
+<p>All markup can also be divided into categories based on their look
+and semantics; there are three categories here (with examples):</p>
+
+<ul>
+<li><p> Grouping constructs that mark the opening/closing of a section of
+  some sort (@mapping/@endmapping, @dl/@enddl, @module/@endmodule).
+  Most of these not already covered by secion a) appear in b).</p></li>
+
+<li><p> subdividers that break up an outer grouping construct into
+  subsections (@member, @item, @param)</p></li>
+
+<li><p> short text markup constructs that basically map to XML containers
+  (@i{...@}, @ref{...@})</p></li>
+</ul>
+
+<subsection title="Meta level tags">
+
+<p>These tags all serve the purpose of denoting what pike entities your
+comments should be tied to. This is particularly needed in (and in
+part only applies to) C files, where the autodoc extractor does not
+try to interpret and parse class and method definitions.</p>
+
+<p><pre>
+Keyword:   @module
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the module name (ie no "." allowed)
+</pre></p>
+
+<p>Example: To document the module Parser.XML module, you need two
+consecutive module tags:</p>
+
+<example>
+  /*! @module Parser */
+  /*! @module XML */
+</example>
+
+<p>A @module keyword sets the scope of documentation comments following
+it. @module tags nest, as shown in the example above, and must be
+ended with a matching number of @endmodule tags, as in:</p>
+
+<example>
+  /*! @endmodule XML */
+  /*! @endmodule Parser */
+</example>
+
+<p>A @module keyword may also have a text child documenting the module
+itself:</p>
+
+<example>
+  /*! @module Parser
+   *!
+   *! The common roof under which parsers of various kinds, such as
+   *! @[Parser.XML], @[Parser.Pike] and @[Parser.C] are housed.
+   */
+</example>
+
+<p>There are two special @module targets available; the "predef::" module
+and the "lfun::" module. The predef:: module, although more of a scope
+than a module, contains the definitions for all methods in Pike's
+predef:: scope, as in:</p>
+
+<example>
+/*! @module predef::
+ *!   @decl int equal(mixed a, mixed b)
+ *!   	This function checks if the values @[a] and @[b] are equal.
+ *! @endmodule
+ */
+</example>
+
+<p>The "lfun::" module scope does not legally exist in Pike, but it
+houses the docs for all lfuns (the virtual methods for fulfilling the
+Pike object API). An example:</p>
+
+<example>
+/*! @module lfun::
+ *!   @decl int(0..1) `!=(mixed arg1, mixed arg2, mixed ... extras)
+ *!     The inequality operator.
+ *! @endmodule
+ */
+</example>
+
+<p>This also means that referencing (via @ref{...@} or @[...]) the lfun
+documentation strings can be done using @[lfun::`!=] and the like, as
+can predefs via @[predef::sort()] et cetera.</p>
+
+<p><pre>
+Keyword:   @endmodule
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the module name (optional)
+</pre>></p>
+
+<p>When the optional argument to @endmodule is given (for code clarity),
+the extractor will verify that the module scope you close was indeed
+the one you opened, as in the @module example above. The following
+would trigger an error:</p>
+
+<example>
+  /*! @module Parser
+   *! @module XML */
+
+  /*! ... some autodoc comments ... */
+
+  /*! @endmodule Parser
+   *! @endmodule XML */
+</example>
+
+<p>while the same example, ending in</p>
+
+<example>
+  /*! @endmodule
+   *! @endmodule */
+</example>
+
+<p>would be considered legal.</p>
+
+<p><pre>
+Keyword:   @class
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the class name (ie no "." allowed)
+</pre></p>
+
+<p>Example: to document the Process.create_process class, you would use:</p>
+
+<example>
+  /*! @module Process
+   *! @class create_process */
+</example>
+
+<p>And end the scope similar to @module:</p>
+
+<example>
+  /*! @endclass create_process
+   *! @endmodule Process */
+</example>
+
+<p>Like @module tags, @class tags may be nested any number of levels
+(when documenting subclasses to subclasses to subclasses to ...).</p>
+
+<p><pre>
+Keyword:   @endclass
+Legal for: C files only (neither needed nor legal for Pike files)
+Arguments: (the last segment of) the class name (optional)
+</pre></p>
+
+<p>When the optional argument to @endclass is given (for code clarity),
+the extractor will verify that the class scope you close was indeed
+the one you opened, just as with @endmodule above.</p>
+
+<p><pre>
+Keyword:   @decl
+Legal for: All source code (C and Pike files)
+Arguments: (the last segment of) the identifier name (ie "." illegal)
+</pre></p>
+
+<p>The @decl keyword is used to target a specific (...more to come! :-)</p>
+
+</subsection>
+</section>
+
+<p><pre>
+
+
+
+                 +--------------------------------------+
+                 | Pike autodoc markup - the XML format |
+                 +--------------------------------------+
+
+======================================================================
+a) Introduction
+----------------------------------------------------------------------
+
+When a piece of documentation is viewed in human-readable format, it 
+has gone through the following states:
+
+  1. Doc written in comments in source code (C or Pike).
+
+  2. A lot of smaller XML files, one for each source code file.
+
+  3. A big chunk of XML, describing the whole hierarchy.
+
+  4. A repository of smaller and more manageable XML files.
+
+  5. A HTML page rendered from one such file. 
+     (Or a PDF file, or whatever).
+
+The transition from state 1 to state 2 is the extraction of 
+documentation from source files. There are several (well, at
+least two) markup formats, and there are occasions where it is
+handy to generate documentation automatically &amp;c. This document 
+describes how a file in state 2 should be structured in order to
+be handled correctly by subsequent passes and presented in a
+consistent manner.
+
+======================================================================
+b) Overall structure
+----------------------------------------------------------------------
+
+Each source file adds some number of entities to the whole hierarchy.
+It can contain a class or a module. It can contain an empty module, 
+that has its methods and members defined in some other source file,
+and so on. Suppose we have a file containing documentation for the
+class Class in the module Module. The XML skeleton of the file 
+would then be:
+
+  &lt;module name=""&gt;
+      &lt;module name="Module"&gt;
+          &lt;class name="Class"&gt;
+              ... perhaps some info on inherits, members &amp;c ...
+              &lt;doc&gt;
+                  ... the documentation of the class Module.Class ...
+              &lt;/doc&gt;
+          &lt;/class&gt;
+      &lt;/module&gt;
+  &lt;/module&gt;
+
+The &lt;module name=""&gt; refers to the top module. That element, and its 
+child &lt;module name="Module"&gt;, exist only to put the &lt;class name="Class"&gt; 
+in its correct position in the hierarchy. So we can divide the elements
+in the XML file into two groups: skeletal elements and content elements. 
+
+Each actual module/class/whatever in the Pike hierarchy maps to at most
+one content element, however it can map to any number of skeletal elements. 
+For example, the top module is mapped to a skeletal element in each XML
+file extracted from a single source file. To get from state 2 to state 3 
+in the list above, all XML files are merged into one big. All the elements
+that a module or class map to are merged into one, and if one of those 
+elements contains documentation (=is a content element), then that
+documentation becomes a child of the merger of the elements.
+
+======================================================================
+c) Grouping
+----------------------------------------------------------------------
+
+Classes and modules always appear as &lt;module&gt; and &lt;class&gt; elements. 
+Methods, variables, constants &amp;c, however, can be grouped in the 
+source code:
+
+  //! Two variables:
+  int a;
+  int b;
+  
+Even a single variable is considered as a group with one member. 
+Continuing the example in the previous section, suppose that Module.Class
+has two member variables, a and b, that are documented as a group:
+
+  &lt;module name=""&gt;
+    &lt;module name="Module"&gt;
+      &lt;class name="Class"&gt;
+          ... perhaps some info on inherits, members &amp;c ...
+
+        &lt;docgroup homogen-type="variable"&gt;
+          &lt;variable name="a"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
+          &lt;variable name="b"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
+          &lt;doc&gt; 
+            ... documentation for Module.Class.a and Module.Class.b ...
+          &lt;/doc&gt;
+        &lt;/docgroup&gt;
+
+        &lt;doc&gt;
+           ... the documentation of the class Module.Class ...
+        &lt;/doc&gt;
+      &lt;/class&gt;
+    &lt;/module&gt;
+  &lt;/module&gt;
+
+If all the children of a &lt;docgroup&gt; are of the same type, e.g. all are 
+&lt;method&gt; elements, then the &lt;docgroup&gt; has the attribute homogen-type 
+(="method" in the example). If all the children have identical name="..." 
+attributes, then the &lt;docgroup&gt; gets a homogen-name="..." attribute aswell.
+
+The &lt;docgroup&gt; has a &lt;doc&gt; child containing the docmentation for the other 
+children of the &lt;docgroup&gt;. An entity that cannot be grouped (class, module,
+enum), has a &lt;doc&gt; child of its own instead.
+
+======================================================================
+d) Pike entities
+----------------------------------------------------------------------
+
+Pike entities - classes, modules, methods, variables, constants, &amp;c, have some
+things in common, and many parts of the xml format are the same for all of
+these entities. All entities are represented with an XML element, namely one 
+of:
+
+  &lt;class&gt;
+  &lt;constant&gt;
+  &lt;enum&gt;
+  &lt;inherit&gt;
+  &lt;method&gt;
+  &lt;modifier&gt;    
+  &lt;module&gt;
+  &lt;typedef&gt;
+  &lt;variable&gt; 
+
+The names speak for themselves, except: &lt;modifier&gt; which is used for modifier 
+ranges: 
+
+  //! Some variables:
+  static nomask { 
+    int x, y; 
+
+    string n;  
+  }
+
+A Pike entity may also have the following properties:
+
+  Name - Given as a name="..." attribute:
+    &lt;variable name="i"&gt; ... &lt;/variable&gt;
+
+  Modifiers - Given as a child element &lt;modifiers&gt;:
+    &lt;variable name="i"&gt;
+      &lt;modifiers&gt;
+        &lt;optional/&gt;&lt;static/&gt;&lt;private/&gt;
+      &lt;/modifiers&gt;
+      ...
+    &lt;/variable&gt;
+  If there are no modifiers before the declaration of the entity, the
+  &lt;modifiers&gt; element can be omitted.
+
+  Source position - Given as a child element &lt;source-position&gt;:
+    &lt;variable name="i"&gt;
+      &lt;source-position file="/home/rolf/hejhopp.pike" first-line="12"/&gt;
+      &lt;modifiers&gt;
+        &lt;optional/&gt;&lt;static/&gt;&lt;private/&gt;
+      &lt;/modifiers&gt;
+      ...
+    &lt;/variable&gt;
+  The source position is the place in the code tree where the entity is 
+  declared or defined. For a method, the attribute last-line="..." can be
+  added to &lt;source-position&gt; to give the range of lines that the method 
+  body spans in the source code.
+
+And then there are some things that are specific to each of the types of
+entities:
+
+&lt;class&gt;
+   All inherits of the class are given as child elements &lt;inherit&gt;. If there
+   is doc for the inherits, the &lt;inherit&gt; is repeated inside the appropriate 
+   &lt;docgroup&gt;:
+
+     class Bosse { 
+       inherit "arne.pike" : Arne; 
+       inherit Benny;   
+
+       //! Documented inherit
+       inherit Sven;
+     }
+
+     &lt;class name="Bosse"&gt;
+       &lt;inherit name="Arne"&gt;&lt;source-position ... /&gt;
+                            &lt;classname&gt;"arne.pike"&lt;/classname&gt;&lt;/inherit&gt;
+       &lt;inherit&gt;&lt;source-position ... /&gt;
+                &lt;classname&gt;Benny&lt;/classname&gt;&lt;/inherit&gt;
+       &lt;inherit&gt;&lt;source-position ... /&gt;
+                &lt;classname&gt;Sven&lt;/classname&gt;&lt;/inherit&gt;
+       &lt;docgroup homogen-type="inherit"&gt;
+         &lt;doc&gt;
+           &lt;text&gt;&lt;p&gt;Documented inherit&lt;/p&gt;&lt;/text&gt;
+         &lt;/doc&gt;
+         &lt;inherit&gt;&lt;source-position ... /&gt;
+                  &lt;classname&gt;Sven&lt;/classname&gt;&lt;/inherit&gt;
+       &lt;/docgroup&gt;
+       ...
+     &lt;/class&gt;
+ 
+&lt;constant&gt;
+   Only has a name. The element is empty (or has a &lt;source-position&gt; child.)
+
+&lt;enum&gt;
+   Works as a container. Has a &lt;doc&gt; child element with the documentation of
+   the enum itself, and &lt;docgroup&gt; elements with a &lt;constant&gt; for each enum
+   constant. So:
+
+     enum E
+     //! enum E
+     {
+       //! Three constants:
+       a, b, c,
+     
+       //! One more:
+       d
+     }
+
+   becomes:
+
+     &lt;enum name="E"&gt;
+         &lt;doc&gt;&lt;text&gt;&lt;p&gt;enum E&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+         &lt;docgroup homogen-type="constant"&gt;
+             &lt;doc&gt;&lt;text&gt;&lt;p&gt;Three constants:&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+             &lt;constant name="a"/&gt;
+             &lt;constant name="b"/&gt;
+             &lt;constant name="c"/&gt;
+         &lt;/docgroup&gt;
+         &lt;docgroup homogen-name="d" homogen-type="constant"&gt;
+             &lt;doc&gt;&lt;text&gt;&lt;p&gt;One more:&lt;/p&gt;&lt;/text&gt;&lt;/doc&gt;
+             &lt;constant name="d"/&gt;
+         &lt;/docgroup&gt;
+     &lt;/enum&gt;
+     
+   Both the &lt;enum&gt; element and the &lt;constant&gt; elements could have 
+   &lt;source-position&gt; children, of course.
+
+&lt;inherit&gt; 
+   The name="..." attribute gives the name after the colon, if any. The name
+   of the inherited class is given in a &lt;classname&gt; child. If a file name is
+   used, the class name is the file name surrounded by quotes (see &lt;class&gt;).
+
+&lt;method&gt;
+   The arguments are given inside an &lt;arguments&gt; child. Each argument is 
+   given as an &lt;argument name="..."&gt; element. Each &lt;argument&gt; has a &lt;type&gt;
+   child, with the type of the argument. The return type of the method is 
+   given inside a &lt;returntype&gt; container:
+
+     int a(int x, int y);
+  
+     &lt;method name="a"&gt;
+       &lt;arguments&gt;
+         &lt;argument name="x"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/argument&gt;
+         &lt;argument name="y"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/argument&gt;
+       &lt;/arguments&gt;
+       &lt;returntype&gt;&lt;int/&gt;&lt;/returntype&gt;
+     &lt;/method&gt;
+                 
+&lt;modifier&gt;
+   Works as a container ... ???
+
+&lt;module&gt;
+   Works just like &lt;class&gt;.
+
+&lt;typedef&gt;
+   The type is given in a &lt;type&gt; child:
+
+     typedef float Boat;
+     
+     &lt;typedef name="Boat"&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;/typedef&gt;
+
+&lt;variable&gt;
+   The type of the variable is given in a &lt;type&gt; child:
+     
+     int x;
+
+     &lt;variable name="x"&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;/variable&gt;
+
+======================================================================
+e) Pike types
+----------------------------------------------------------------------
+
+Above we have seen the types int and float represented as &lt;int/&gt; and &lt;float/&gt;.
+Some of the types are complex, some are simple. The simpler types are just on
+the form &lt;foo/&gt;:
+
+  &lt;float/&gt;
+  &lt;mixed/&gt;
+  &lt;program/&gt;
+  &lt;string/&gt;
+  &lt;void/&gt;
+
+The same goes for mapping, array, function, object, multiset, &amp;c that have 
+no narrowing type qualification: &lt;mapping/&gt;, &lt;array/&gt;, &lt;function/&gt; ...
+
+The complex types are represented as follows:
+
+array
+   If the type of the elements of the array is specified it is given in a
+   &lt;valuetype&gt; child element:
+
+     array(int) 
+ 
+     &lt;array&gt;&lt;valuetype&gt;&lt;int/&gt;&lt;/valuetype&gt;&lt;/array&gt;
+
+function
+   The types of the arguments and the return type are given (the order 
+   of the &lt;argtype&gt; elements is significant, of course):
+
+     function(int, string: mixed)
+
+     &lt;function&gt;
+       &lt;argtype&gt;&lt;int/&gt;&lt;/argtype&gt;
+       &lt;argtype&gt;&lt;string/&gt;&lt;/argtype&gt;
+       &lt;returntype&gt;&lt;mixed/&gt;&lt;/returntype&gt;
+     &lt;/function&gt;
+   
+int
+   An int type can have a min and/or max value. The values can be numbers or
+   identifiers:
+
+     int(0..MAX)
+   
+     &lt;int&gt;&lt;min&gt;0&lt;/min&gt;&lt;max&gt;MAX&lt;/max&gt;&lt;/int&gt;
+
+mapping
+   The types of the indices and values are given:
+
+     mapping(int:int)
+
+     &lt;mapping&gt;
+       &lt;indextype&gt;&lt;int/&gt;&lt;/indextype&gt;
+       &lt;valuetype&gt;&lt;int/&gt;&lt;/valuetype&gt;
+
+multiset
+   The type of the indices is given:
+  
+     multiset(string)
+
+     &lt;multiset&gt;
+       &lt;indextype&gt;&lt;string/&gt;&lt;/indextype&gt;
+     &lt;/multiset&gt;
+
+object 
+   If the program/class is specified, it is given as the text child of 
+   the &lt;object&gt; element:
+
+     object(Foo.Bar.Ippa)
+
+     &lt;object&gt;Foo.Bar.Ippa&lt;/object&gt;
+
+Then there are two special type constructions. A disjunct type is written
+with the &lt;or&gt; element:
+
+  string|int
+
+  &lt;or&gt;&lt;string/&gt;&lt;int/&gt;&lt;/or&gt;
+
+An argument to a method can be of the varargs type:
+
+  function(string, mixed ... : void)
+
+  &lt;function&gt;
+    &lt;argtype&gt;&lt;string/&gt;&lt;/argtype&gt;
+    &lt;argtype&gt;&lt;varargs&gt;&lt;mixed/&gt;&lt;/varargs&gt;&lt;/argtype&gt;
+    &lt;returntype&gt;&lt;void/&gt;&lt;/returntype&gt;
+  &lt;/function&gt;
+
+======================================================================
+f) Other XML tags
+----------------------------------------------------------------------
+
+p
+   Paragraph.
+
+i
+   Italic.
+
+b
+   Bold.
+
+tt
+   Terminal Type.
+
+pre
+   Preformatted text.
+
+code
+   Program code.
+
+image
+   An image object. Contains the original file path to the image. Has the
+   optional attributes width, height and file, where file is the path to
+   the normalized-filename file.
+
+======================================================================
+g) XML generated from the doc markup
+----------------------------------------------------------------------
+
+The documentation for an entity is put in a &lt;doc&gt; element. The &lt;doc&gt; element 
+is either a child of the element representing the entity (in the case of 
+&lt;class&gt;, &lt;module&gt;, &lt;enum&gt;, or &lt;modifiers&gt;) or a child of the &lt;docgroup&gt; that
+contains the element representing the entity.
+
+The doc markup has two main types of keywords. Those that create a container
+and those that create a new subsection within a container, implicitly closing
+the previous subsection. Consider e.g.:
+
+  //! @mapping
+  //!   @member int "ip"
+  //!     The IP# of the host.
+  //!   @member string "address"
+  //!     The name of the host.
+  //!   @member float "latitude"
+  //!   @member float "longitude"
+  //!     The coordinates of its physical location.
+  //! @endmapping
+
+Here @mapping and @endmapping create a container, and each @member start a 
+new subsection. The two latter @member are grouped together and thus they
+form ONE new subsection together. Each subsection is a &lt;group&gt;, and the 
+&lt;group&gt; has one or more &lt;member&gt; children, and a &lt;text&gt; child that contains
+the text that describes the &lt;member&gt;s:
+
+  &lt;mapping&gt; 
+      &lt;group&gt;
+          &lt;member&gt;&lt;type&gt;&lt;int/&gt;&lt;/type&gt;&lt;index&gt;"ip"&lt;/index&gt;&lt;/member&gt;
+          &lt;text&gt;
+            &lt;p&gt;The IP# of the host.&lt;/p&gt;
+          &lt;/text&gt;
+      &lt;/group&gt;
+      &lt;group&gt;
+          &lt;member&gt;&lt;type&gt;&lt;string/&gt;&lt;/type&gt;&lt;index&gt;"address"&lt;/index&gt;&lt;/member&gt;
+          &lt;text&gt;
+              &lt;p&gt;The name of the host.&lt;/p&gt;
+          &lt;/text&gt;
+      &lt;/group&gt;
+      &lt;group&gt;
+          &lt;member&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;index&gt;"latitude"&lt;/index&gt;&lt;/member&gt;
+          &lt;member&gt;&lt;type&gt;&lt;float/&gt;&lt;/type&gt;&lt;index&gt;"longitude"&lt;/index&gt;&lt;/member&gt;
+          &lt;text&gt;
+              &lt;p&gt;The coordinates of its physical location.&lt;/p&gt;
+          &lt;/text&gt;
+      &lt;/group&gt;
+  &lt;/mapping&gt;
+
+Inside a &lt;text&gt; element, there can not only be text, but also a nested level
+of, say @mapping - @endmapping. In that case, the &lt;mapping&gt; element is put in 
+the document order place as a sibling of the &lt;p&gt; that contain the text:
+
+  //! @mapping
+  //!   @member mapping "nested-mapping"
+  //!     A mapping inside the mapping:
+  //!     @mapping
+  //!       @member string "zip-code"
+  //!         The zip code.
+  //!     @endmapping
+  //!     And some more text ... 
+  //! @endmapping
+    
+  becomes:
+
+  &lt;mapping&gt;
+    &lt;group&gt;
+      &lt;member&gt;&lt;type&gt;&lt;mapping/&gt;&lt;/type&gt;&lt;index&gt;"nested-mapping"&lt;/index&gt;&lt;/member&gt;
+        &lt;text&gt;
+          &lt;p&gt;A mapping inside the mapping:&lt;/p&gt;
+          &lt;mapping&gt;
+            &lt;group&gt;
+              &lt;member&gt;&lt;type&gt;&lt;string/&gt;&lt;/type&gt;&lt;index&gt;"zip-code"&lt;/index&gt;&lt;/member&gt;
+              &lt;text&gt;
+                &lt;p&gt;The zip code.&lt;/p&gt;
+              &lt;/text&gt;
+            &lt;/group&gt;
+          &lt;/mapping&gt;
+          &lt;p&gt;And some more text ...&lt;/p&gt;
+        &lt;/text&gt;
+      &lt;/group&gt;
+  &lt;/mapping&gt;
+
+Inside the &lt;p&gt; elements, there may also be some more "layout-ish" tags like 
+&lt;b&gt;, &lt;code&gt;, &lt;tt&gt;, &lt;i&gt;, needed to make the text more readable. Those tags are
+expressed as @i{ ... @} in the doc markup. However there are no &lt;br&gt;. A 
+paragraph break is done by ending the &lt;p&gt; and beginning a new. A &lt;/p&gt;&lt;p&gt; is 
+inserted for each sequence of blank lines in the doc markup:
+
+  //! First paragraph.
+  //! 
+  //! Second paragraph.
+  //! 
+  //! 
+
+  becomes:
+
+  &lt;p&gt;First paragraph.&lt;/p&gt;&lt;p&gt;Second paragraph.&lt;/p&gt;
+
+Note that the text is trimmed from leading and ending whitespaces, and there 
+are never any empty &lt;p&gt; elements.
+
+In the example above the keyword `@mapping' translated into &lt;mapping&gt;, whereas
+the keyword `@member string "zip-code"' translated into:
+  &lt;member&gt;&lt;type&gt;&lt;string/&gt;&lt;/type&gt;&lt;index&gt;"zip-code"&lt;/index&gt;&lt;/member&gt;
+
+The translation of keyword-&gt;XML is done differently for each keyword. How it
+is done can be seen in lib/modules/Tools.pmod/AutoDoc.pmod/DocParser.pmod. Most
+keywords just interpret the arguments as a space-separated list, and put their
+values in attributes to the element. In some cases (such as @member) though, 
+some more intricate parsing must be done, and the arguments may be complex 
+(like Pike types) and are represented as child elements of the element. 
+
+======================================================================
+h) Top level sections of different Pike entities.
+----------------------------------------------------------------------
+
+In every doc comment there is an implicit "top container", and subsections can
+be opened in it. E.g.:
+
+  //! A method.
+  //! @param x
+  //!   The horizontal coordinate.
+  //! @param y 
+  //!   The vertical coordinate.
+  //! @returns
+  //!   Nothing :)
+  void foo(int x, int y)
+
+becomes:
+
+  &lt;docgroup homogen-name="foo" homogen-type="method"&gt;
+      &lt;doc&gt;
+          &lt;text&gt;&lt;p&gt;A method.&lt;/p&gt;&lt;/text&gt;
+          &lt;group&gt;
+              &lt;param name="x"/&gt;
+              &lt;text&gt;&lt;p&gt;The horizontal coordinate.&lt;/p&gt;&lt;/text&gt;
+          &lt;/group&gt;
+          &lt;group&gt;
+              &lt;param name="y"/&gt;
+              &lt;text&gt;&lt;p&gt;The vertical coordinate.&lt;/p&gt;&lt;/text&gt;
+          &lt;/group&gt;
+          &lt;group&gt;
+              &lt;returns/&gt;
+              &lt;text&gt;&lt;p&gt;Nothing :)&lt;/p&gt;&lt;/text&gt;
+          &lt;/group&gt;
+      &lt;/doc&gt;
+      &lt;method name="foo"&gt;
+         ......
+      &lt;/method&gt;
+  &lt;/docgroup&gt;
+  
+Which "top container" subsections are allowed depends on what type of entity is
+documented:
+
+ALL      -  &lt;bugs/&gt;
+            &lt;deprecated&gt; ... &lt;/deprecated&gt;
+            &lt;example/&gt;
+            &lt;note/&gt;
+            &lt;seealso/&gt;
+
+&lt;method&gt; -  &lt;param name="..."/&gt;
+            &lt;returns/&gt;
+            &lt;throws/&gt;
+</pre></p></chapter>
