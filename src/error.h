@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.29 1999/03/17 18:13:13 grubba Exp $
+ * $Id: error.h,v 1.30 1999/03/19 11:39:09 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -180,13 +180,48 @@ void exit_on_error(void *msg);
 void fatal_on_error(void *msg);
 void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
-struct mapping va_generic_error(const char *fmt, va_list args);
-struct generic_error;
-void init_error();
+void f_error_cast(INT32 args);
+void f_error_index(INT32 args);
+void f_error_describe(INT32 args);
+void f_error_backtrace(INT32 args);
+void generic_error_va(struct object *o,
+		      char *func,
+		      struct svalue *base_sp,  int args,
+		      char *fmt,
+		      va_list foo)
+  ATTRIBUTE((noreturn));
+void generic_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)));
+void index_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  struct svalue *val,
+  struct svalue *ind,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
+void bad_arg_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  int which_arg,
+  char *expected_type,
+  struct svalue *got,
+  char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
+void init_error(void);
+void cleanup_error(void);
 /* Prototypes end here */
 
 #define fatal \
  fprintf(stderr,"Fatal error at %s:%d\n",__FILE__,__LINE__),debug_fatal
+
+#define SIMPLE_BAD_ARG_ERROR(FUNC,ARG,EXPECT) \
+   bad_arg_error(FUNC, sp-args, args, ARG, EXPECT, sp+ARG-1-args,\
+                 "Bad argument %d to %s(). Expected %s\n", \
+                  ARG, FUNC, EXPECT)
+
+#define SIMPLE_TOO_FEW_ARGS_ERROR(FUNC,ARG) \
+   bad_arg_error(FUNC, sp-args, args, ARG, "void", 0,\
+                 "Too few arguments to %s().\n",FUNC)
 
 #endif
 

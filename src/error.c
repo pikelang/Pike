@@ -16,8 +16,9 @@
 #include "builtin_functions.h"
 #include "backend.h"
 #include "operators.h"
+#include "module_support.h"
 
-RCSID("$Id: error.c,v 1.25 1999/03/16 23:37:22 hubbe Exp $");
+RCSID("$Id: error.c,v 1.26 1999/03/19 11:39:08 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -265,58 +266,187 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
   abort();
 }
 
-#if 0
+#if 1
 
-struct mapping va_generic_error(const char *fmt, va_list args)
+#define ERR_DECLARE
+#include "errors.h"
+
+
+void f_error_cast(INT32 args)
+{
+  char *s;
+  get_all_args("error->cast",args,"%s",&s);
+  if(!strncmp(s,"array",5))
+  {
+    pop_n_elems(args);
+    ref_push_string(GENERIC_ERROR_THIS->desc);
+    ref_push_array(GENERIC_ERROR_THIS->backtrace);
+    f_aggregate(2);
+  }else{
+    /* do an error here! */
+  }
+}
+
+void f_error_index(INT32 args)
+{
+  int ind;
+  get_all_args("error->`[]",args,"%i",&ind);
+
+  pop_n_elems(args);
+
+  switch(ind)
+  {
+    case 0: ref_push_string(GENERIC_ERROR_THIS->desc); break;
+    case 1: ref_push_array(GENERIC_ERROR_THIS->backtrace); break;
+    default:
+    /* do an index out of range error here! */
+  }
+}
+
+
+void f_error_describe(INT32 args)
+{
+  pop_n_elems(args);
+  ref_push_object(fp->current_object);
+  APPLY_MASTER("describe_backtrace",1);
+}
+
+void f_error_backtrace(INT32 args)
+{
+  pop_n_elems(args);
+  ref_push_array(GENERIC_ERROR_THIS->backtrace);
+}
+
+#define INIT_ERROR(FEL)\
+  va_list foo; \
+  struct object *o=low_clone(PIKE_CONCAT(FEL,_error_program)); \
+  va_start(foo,desc);
+
+#define ERROR_DONE(FOO) \
+  PIKE_CONCAT(FOO,_error_va(o,func, \
+			      base_sp,  args, \
+			      desc,foo)); \
+  va_end(foo)
+
+#define ERROR_STRUCT(STRUCT,O) \
+ ((struct PIKE_CONCAT(STRUCT,_error_struct) *)((O)->storage + PIKE_CONCAT(STRUCT,_error_offset)))
+
+#define ERROR_COPY(STRUCT,X) \
+  ERROR_STRUCT(STRUCT,o)->X=X
+
+#define ERROR_COPY_SVALUE(STRUCT,X) \
+  assign_svalue_no_free( & ERROR_STRUCT(STRUCT,o)->X, X)
+
+
+#define ERROR_COPY_REF(STRUCT,X) \
+  add_ref( ERROR_STRUCT(STRUCT,o)->X=X )
+
+
+void generic_error_va(struct object *o,
+		      char *func,
+		      struct svalue *base_sp,  int args,
+		      char *fmt,
+		      va_list foo)
+  ATTRIBUTE((noreturn))
 {
   char buf[8192];
+  struct pike_string *desc;
+  struct array *backtrace;
+  int i;
 
 #ifdef HAVE_VSNPRINTF
-  vsnprintf(buf, sizeof(buf)-1, fmt, args);
+  vsnprintf(buf, sizeof(buf)-1, fmt, foo);
 #else /* !HAVE_VSNPRINTF */
-  VSPRINTF(buf, fmt, args);
+  VSPRINTF(buf, fmt, foo);
 
   if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in error()\n");
 #endif /* HAVE_VSNPRINTF */
+  in_error=buf;
 
-  push_error(buf);
+  ERROR_STRUCT(generic,o)->desc=make_shared_string(buf);
+  f_backtrace(0);
+
+  if(func)
+  {
+    push_int(0);
+    push_int(0);
+    push_text(func);
+
+    for (i=-args; i; i++)
+      push_svalue(base_sp + i);
+    f_aggregate(args + 3);
+    f_aggregate(1);
+    f_add(2);
+  }
+
+  if(sp[-1].type!=T_ARRAY)
+    fatal("Error failed to generate a backtrace!\n");
+
+  ERROR_STRUCT(generic,o)->backtrace=sp[-1].u.array;
+  sp--;
+
   free_svalue(& throw_value);
-  throw_value = *--sp;
-  throw_severity=THROW_ERROR;
-
+  throw_value.type=T_OBJECT;
+  throw_value.u.object=o;
   in_error=0;
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
-  
 }
 
-struct generic_error
+void generic_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
 {
-  struct pike_string *s;
-  struct array *backtrace;
+  INIT_ERROR(generic);
+  ERROR_DONE(generic);
 }
 
-struct program *generic_error_program;
-
-void init_error()
+void index_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  struct svalue *val,
+  struct svalue *ind,
+  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
 {
-  start_new_program();
-  ADD_STORAGE(struct generic_error);
-  ADD_FUNCTION("describe",f_error_backtrace,tFunc(tVoid,tString),0);
-  ADD_FUNCTION("backtrace",f_error_backtrace,tFunc(tVoid,tArr(tMixed)),0);
-  add_integer_constant("is_generic_error",1,0);
-  add_string_constant("error_type","generic_error",0);
-  generic_error_program=end_program();
-  
-  start_new_program();
-  do_inherit(generic_error, 0, 0, 0, 0, 0);
-  add_integer_constant("is_index_error",1,0);
-  add_string_constant("error_type", "index_error",0);
-  index_error_program=end_program();
+  INIT_ERROR(index);
+  ERROR_COPY_SVALUE(index, val);
+  ERROR_COPY_SVALUE(index, ind);
+  ERROR_DONE(generic);
+}
+
+void bad_arg_error(
+  char *func,
+  struct svalue *base_sp,  int args,
+  int which_arg,
+  char *expected_type,
+  struct svalue *got,
+  char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)))
+{
+  INIT_ERROR(bad_arg);
+  ERROR_COPY(bad_arg, which_arg);
+  ERROR_STRUCT(bad_arg,o)->expected_type=make_shared_string(expected_type);
+  if(got)
+  {
+    ERROR_COPY_SVALUE(bad_arg, got);
+  }else{
+    ERROR_STRUCT(bad_arg,o)->got.type=T_INT;
+    ERROR_STRUCT(bad_arg,o)->got.subtype=NUMBER_UNDEFINED;
+    ERROR_STRUCT(bad_arg,o)->got.u.integer=0;
+  }
+  ERROR_DONE(generic);
+}
 
 
+void init_error(void)
+{
+#define ERR_SETUP
+#include "errors.h"
+}
 
-  start_new_program();
-  end_new_program();
+void cleanup_error(void)
+{
+#define ERR_CLEANUP
+#include "errors.h"
 }
 #endif
