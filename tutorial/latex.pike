@@ -29,11 +29,11 @@ string low_latex_quote(string text)
 		     "\\{","\\}",
 		     "$\\mu$","\\&",
 		     "\\verb+ +","$\\backslash$",
-		     "\\verb+[+","\\verb+]+",
+		     "\\symbol{91}","\\symbol{93}",
 
 		     "\\#","\\%",
-		     "\\$","\\verb+~+",
-		     "\\verb+^+","\\_",
+		     "\\$","\\symbol{126}",
+		     "\\symbol{94}","\\_",
 		     }) );
 }
 
@@ -45,7 +45,7 @@ string latex_quote(string text)
 string quote_label(string s)
 {
   string ret="";
-  while(sscanf(s,"%[_a-zA-Z0-9.:]%c%s",string safe, int char, s)==3)
+  while(sscanf(s,"%[a-zA-Z0-9.:]%c%s",string safe, int char, s)==3)
     ret+=sprintf("%s-%02x",safe,char);
   ret+=s;
   return ret;
@@ -392,18 +392,22 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 
 	  case "section":
+	    int olddepth=depth;
 	    string tmp="";
 	    switch(depth)
 	    {
+	      // For sections outside chapters
+	      case 0: depth++; break;
+                
 	      default:
+	      case 3: tmp+="sub";
 	      case 2: tmp+="sub";
-	      case 1: tmp+="sub";
-	      case 0:
+	      case 1:
 	    }
 	    depth++;
 	    ret+="\\"+tmp+"section{"+latex_quote(tag->params->title)+"}"+
 	      convert_to_latex(tag->data);
-	    depth--;
+	    depth=olddepth;
 	    break;
 
 	  case "center":
@@ -416,6 +420,36 @@ string convert_to_latex(SGML data, void|int flags)
 	  case "constant":
 	  case "method":
 	  case "function":
+#if 1
+	  if(depth)
+	  {
+	    string tmp="";
+	    switch(depth)
+	    {
+	      // For sections outside chapters
+	      case 0: depth++; break;
+                
+	      default:
+	      case 3: tmp+="sub";
+	      case 2: tmp+="sub";
+	      case 1:
+	    }
+
+	    if(tag->params->name)
+	    {
+	      foreach(tag->params->name/",", string name)
+		{
+		  sscanf(name," %s",name);
+		  ret+="\n\\addcontentsline{toc}{"+tmp+"section}{"+
+		    latex_quote(name)+
+		"}\n";
+		}
+	    }
+	  }
+#endif
+	  ret+=convert_to_latex(tag->data);
+	  break;
+
 	  case "class":
 	  case "module":
             // FIXME: but how?

@@ -55,9 +55,14 @@ tutorial.tex: .DUMMY $(SRCFILES)
 # latex has to be run twice to work with labels and stuff
 # but there are no labels yet...
 tutorial.dvi: tutorial.tex
-	-@rm tutorial.aux
+	-@rm tutorial.aux tutorial.toc
 	latex tutorial.tex
 	latex tutorial.tex
+
+tutorial.pdf: tutorial.pdftex
+	-@rm tutorial.aux tutorial.toc
+	pdflatex tutorial.pdftex
+	pdflatex tutorial.pdftex
 
 tutorial.ps: tutorial.dvi
 	dvips -Z tutorial.dvi -o tutorial.ps
@@ -71,10 +76,6 @@ tutorial.ps.bz2: tutorial.ps
 tutorial.pdftex: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml pdflatex tutorial
 
-tutorial.pdf: tutorial.pdftex
-	-@rm tutorial.aux
-	pdflatex tutorial.pdftex
-	pdflatex tutorial.pdftex
 
 tut.html: .DUMMY $(SRCFILES)
 	$(pike) ./wmmltohtml2 tutorial.wmml sitebuilder tut
