@@ -1,4 +1,5 @@
 #define NEWLINE() do { while( pos<len && data[pos]!='\n' )pos++; } while(0)
+#define SKIPWHT() do {while(data[pos]==' '||data[pos]=='\t')pos++; } while(0)
 
 static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 {
@@ -218,6 +219,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	
       case '#':
 	pos++;
+	SKIPWHT();
 	if (data[pos] == '\"') {
 	  /* Support for #"" */
 	  for (pos++; pos < len; pos++) {
@@ -233,13 +235,21 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	    data[pos+2] == 'r' &&
 	    data[pos+3] == 'i' &&
 	    data[pos+4] == 'n' &&
-	    data[pos+5] == 'g' &&
-	    data[pos+6] == '\"' ) {
+	    data[pos+5] == 'g' ) {
 	  pos += 6;
-	  for (pos++; pos < len; pos++) {
-	    if (data[pos] == '\"') break;
-	    if (data[pos] == '\\') pos++;
+	  SKIPWHT();
+	  if(data[pos]=='\"') {
+	    for (pos++; pos < len; pos++) {
+	      if (data[pos] == '\"') break;
+	      if (data[pos] == '\\') pos++;
+	    }
 	  }
+	  else if(data[pos]=='<') {
+	    for(pos++; pos<len; pos++)
+	      if(data[pos]=='>') break;
+	  }
+	  else
+	    Pike_error("Illegal character after #string\n");
 	  if (pos >= len)
 	    goto failed_to_find_end;
 	  break;
