@@ -2514,6 +2514,10 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
    if (zonename[0]=='"') sscanf(zonename,"\"%s\"",zonename);
    sscanf(zonename,"%*[ \t]%s",zonename);
 
+   // Ugly fix for synonyms. This suppport should of course be
+   // added in a lower layer when the next refactoring occurs.
+   zonename = ([ "MEST":"CET", "MESZ":"CET" ])[zonename] || zonename;
+
    if (origin->rules->abbr2zone[zonename])
       zonename=origin->rules->abbr2zone[zonename];
 
@@ -2884,11 +2888,12 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 
 // #define COLON "$*[ :]" 
 #define COLON ":" 
+#define SPACED(X) replace(X," ","%*[ ]")
 
    sscanf(what,"%*[ \t]%s",what);
 
-   if (t=parse("%e %M %D %h:%m:%s %Y",what,cx)) return t; // ctime
-   if (t=parse("%e %M %D %h:%m:%s %z %Y",what,cx)) return t;
+   if (t=parse(SPACED("%e %M %D %h:%m:%s %Y"),what,cx)) return t; // ctime
+   if (t=parse(SPACED("%e %M %D %h:%m:%s %z %Y"),what,cx)) return t;
 
    foreach ( dwim_day_strings +
 	     ({""}),
