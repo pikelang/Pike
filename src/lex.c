@@ -30,7 +30,7 @@
 #include "time_stuff.h"
 
 #define LEXDEBUG 0
-#define EXPANDMAX 50000
+#define EXPANDMAX 500000
 
 struct lpc_string *current_file;
 
