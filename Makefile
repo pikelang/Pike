@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.16 1999/08/15 13:58:22 mast Exp $
+# $Id: Makefile,v 1.17 1999/10/06 11:16:33 mast Exp $
 #
 # Meta Makefile
 #
@@ -121,10 +121,10 @@ feature_list:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
 
 clean:
-	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" clean
+	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean
 
 spotless:
-	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" spotless
+	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" spotless
 
 distclean:
 	-rm -rf build bin/pike
@@ -132,5 +132,5 @@ distclean:
 cvsclean: distclean
 	for d in `find src -type d -print`; do if test -f "$$d/.cvsignore"; then (cd "$$d" && rm -f `cat ".cvsignore"`); else :; fi; done
 
-depend:
+depend: configure
 	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" depend
