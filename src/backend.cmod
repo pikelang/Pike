@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.60 2003/10/27 12:51:35 grubba Exp $
+|| $Id: backend.cmod,v 1.61 2003/10/28 00:00:25 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.60 2003/10/27 12:51:35 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.61 2003/10/28 00:00:25 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -180,10 +180,9 @@ struct timeval next_timeout;
 /*
  * Stuff to map fds to the proper Backend
  */
-struct Backend_struct;
 static struct Backend_struct **fd_map=0;
 static int fd_map_size=0;
-static struct Backend_struct *default_backend = NULL;
+struct Backend_struct *default_backend = NULL;
 
 static int backend_do_call_outs(struct Backend_struct *me);
 static void backend_verify_call_outs(struct Backend_struct *me);
