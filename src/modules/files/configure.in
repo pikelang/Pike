@@ -1,10 +1,12 @@
-# $Id: configure.in,v 1.73 2000/03/21 23:27:14 grubba Exp $
+# $Id: configure.in,v 1.74 2000/06/21 20:38:25 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
 AC_MODULE_INIT()
 
 AC_DEFINE(WITH_TERMIOS)
+
+AC_ARG_WITH(sendfile,   [  --with-sendfile        Enable the use of sendfile(2) if available.],[],[with_sendfile=no])
 
 AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h \
  poll.h sys/poll.h sys/uio.h sys/mman.h linux/mman.h sys/time.h \
@@ -105,7 +107,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
 	  # Assume we have a broken sendfile(2).
           pike_cv_freebsd_sendfile_threadsafe="no"
 	  if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
-	    # Wee! They have actually added a wrapper for sendfile(2)!
+	    # Whee! They have actually added a wrapper for sendfile(2)!
 	    pike_cv_freebsd_sendfile_threadsafe="yes"
 	  else :; fi
 	else :; fi
@@ -116,7 +118,7 @@ if test "$ac_cv_func_sendfile" = "yes"; then
       AC_MSG_RESULT(yes)
     else
       AC_MSG_RESULT(no - disabling use of sendfile)
-      AC_DEFINE(HAVE_BROKEN_SENDFILE)
+      with_sendfile=no
     fi
   else
     if test "$pike_cv_sendfile_args" = "6"; then
@@ -128,6 +130,13 @@ if test "$ac_cv_func_sendfile" = "yes"; then
   fi
 else
   :
+fi
+
+if test "x$with_sendfile" = "xyes"; then
+  AC_MSG_WARN([Support for sendfile(2) enabled.])
+else
+  # sendfile(2) is broken on most OS's, so disable it by default.
+  AC_DEFINE(HAVE_BROKEN_SENDFILE)
 fi
 
 AC_MSG_CHECKING(if mkdir takes 1 or 2 arguments)
