@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.346 2004/04/03 21:59:37 mast Exp $
+|| $Id: interpret.c,v 1.347 2004/04/05 17:31:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.346 2004/04/03 21:59:37 mast Exp $");
+RCSID("$Id: interpret.c,v 1.347 2004/04/05 17:31:00 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1417,9 +1417,9 @@ static void do_trace_call(INT32 args, dynamic_buffer *old_buf)
   {
     char buf[40];
     if (linep)
-      snprintf (buf, sizeof (buf), "%s:%ld:", file, (long)linep);
+      SNPRINTF(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
     else
-      snprintf (buf, sizeof (buf), "%s:", file);
+      SNPRINTF(buf, sizeof (buf), "%s:", file);
     fprintf(stderr,"- %-20s %s\n",buf,s);
   }
 
@@ -1492,9 +1492,9 @@ static void do_trace_return (int got_retval, dynamic_buffer *old_buf)
   {
     char buf[40];
     if (linep)
-      snprintf (buf, sizeof (buf), "%s:%ld:", file, (long)linep);
+      SNPRINTF(buf, sizeof (buf), "%s:%ld:", file, (long)linep);
     else
-      snprintf (buf, sizeof (buf), "%s:", file);
+      SNPRINTF(buf, sizeof (buf), "%s:", file);
     fprintf(stderr,"- %-20s %s\n",buf,s);
   }
 
