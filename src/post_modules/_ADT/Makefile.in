@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.2 2003/03/18 11:25:28 peta Exp $
+# $Id: Makefile.in,v 1.3 2003/04/04 15:18:39 peta Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=adt.o sequence.o 
+OBJS=adt.o sequence.o circular_list.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
@@ -11,5 +11,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 # Compatibility with stupid makes..
 adt.o: $(SRCDIR)/adt.c
 sequence.o: $(SRCDIR)/sequence.c
+circular_list.o: $(SRCDIR)/circular_list.c
 
 @dependencies@

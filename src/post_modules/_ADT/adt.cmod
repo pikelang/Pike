@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: adt.cmod,v 1.4 2003/03/19 12:52:19 grubba Exp $
+|| $Id: adt.cmod,v 1.5 2003/04/04 15:18:47 peta Exp $
 */
 #include "global.h"
 
@@ -15,12 +15,12 @@ PIKE_MODULE_INIT
 {
   INIT;
   pike_init_Sequence_module();
-  //pike_init_CircularList_module();
+  pike_init_CircularList_module();
 }
 
 PIKE_MODULE_EXIT
 {
-  //pike_exit_CircularList_module();
   pike_exit_Sequence_module();  
+  pike_exit_CircularList_module();  
   EXIT;
 } 
