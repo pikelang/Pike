@@ -25,7 +25,7 @@ int exec(string file,string ... foo)
   if (sizeof(file)) {
     string path;
 
-    if(search(file,"/") >= 0)
+    if(has_value(file,"/"))
       return exece(combine_path(getcwd(),file),foo,getenv());
 
     path=getenv("PATH");
@@ -290,6 +290,7 @@ class Spawn
       return pid;
    }
 
+  //!
    void create(string cmd,
 	       void|array(string) args,
 	       void|mapping(string:string) env,
@@ -316,12 +317,14 @@ class Spawn
    }
 
 #if constant(kill)
-   int kill(int signal) 
+   //!
+   int kill(int signal)
    { 
       return predef::kill(pid,signal); 
    }
 #endif
 
+   //!
    int wait()
    {
      return pid->wait();
