@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.42 2004/02/19 13:54:12 nilsson Exp $
+ * $Id: extract_autodoc.pike,v 1.43 2004/02/19 17:05:23 vida Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -107,41 +107,44 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     return;
   }
 
-  foreach(get_dir(srcdir), string fn) {
-    if(fn=="CVS") continue;
-    if(fn[0]=='.') continue;
-    if(fn[-1]=='~') continue;
-    if(fn[0]=='#' && fn[-1]=='#') continue;
+  // do not recurse into the build dir directory to avoid infinite loop
+  // by building the autodoc of the autodoc and so on
+  if(search(builddir, srcdir) == -1)
+    foreach(get_dir(srcdir), string fn) {
+      if(fn=="CVS") continue;
+      if(fn[0]=='.') continue;
+      if(fn[-1]=='~') continue;
+      if(fn[0]=='#' && fn[-1]=='#') continue;
 
-    Stdio.Stat stat = file_stat(srcdir+fn, 1);
+      Stdio.Stat stat = file_stat(srcdir+fn, 1);
 
-    if (!stat) continue;
+      if (!stat) continue;
 
-    if(stat->isdir) {
-      if(!file_stat(builddir+fn)) mkdir(builddir+fn);
-      string mod_name = fn;
-      sscanf(mod_name, "%s.pmod", mod_name);
-      recurse(srcdir+fn+"/", builddir+fn+"/", root_ts, root + ({mod_name}));
-      continue;
+      if(stat->isdir) {
+	if(!file_stat(builddir+fn)) mkdir(builddir+fn);
+	string mod_name = fn;
+	sscanf(mod_name, "%s.pmod", mod_name);
+	recurse(srcdir+fn+"/", builddir+fn+"/", root_ts, root + ({mod_name}));
+	continue;
+      }
+
+      if(stat->size<1) continue;
+
+      if(!has_suffix(fn, ".pike") && !has_suffix(fn, ".pike.in") &&
+	 !has_suffix(fn, ".pmod") && !has_suffix(fn, ".pmod.in") &&
+	 //       !has_suffix(fn, ".cmod") && !has_suffix(fn, ".cmod.in") &&
+	 !has_suffix(fn, ".c")) continue;
+
+      Stdio.Stat dstat = file_stat(builddir+fn+".xml");
+
+      // Build the xml file if it doesn't exist, if it is older than the
+      // source file, or if the root has changed since the previous build.
+      if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
+	string res = extract(srcdir+fn, imgdir, builddir, root);
+	if(!res) exit(1);
+	Stdio.write_file(builddir+fn+".xml", res);
+      }
     }
-
-    if(stat->size<1) continue;
-
-    if(!has_suffix(fn, ".pike") && !has_suffix(fn, ".pike.in") &&
-       !has_suffix(fn, ".pmod") && !has_suffix(fn, ".pmod.in") &&
-       //       !has_suffix(fn, ".cmod") && !has_suffix(fn, ".cmod.in") &&
-       !has_suffix(fn, ".c")) continue;
-
-    Stdio.Stat dstat = file_stat(builddir+fn+".xml");
-
-    // Build the xml file if it doesn't exist, if it is older than the
-    // source file, or if the root has changed since the previous build.
-    if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
-      string res = extract(srcdir+fn, imgdir, builddir, root);
-      if(!res) exit(1);
-      Stdio.write_file(builddir+fn+".xml", res);
-    }
-  }
 }
 
 string extract(string filename, string imgdest,
