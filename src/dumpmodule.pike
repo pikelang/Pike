@@ -1,4 +1,10 @@
 #!/usr/local/bin/pike
+/*\
+||| This file is part of Pike. For copyright information see COPYRIGHT.
+||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+||| for more information.
+\*/
+/* $Id: dumpmodule.pike,v 1.31 2002/10/08 18:21:20 nilsson Exp $ */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
 
