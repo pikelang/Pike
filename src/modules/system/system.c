@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.101 2001/01/30 20:42:10 jhs Exp $
+ * $Id: system.c,v 1.102 2001/01/30 20:42:50 jhs Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.101 2001/01/30 20:42:10 jhs Exp $");
+RCSID("$Id: system.c,v 1.102 2001/01/30 20:42:50 jhs Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2189,3 +2189,5 @@ void pike_module_exit(void)
   }
 #endif
 }
+
+/*! @endmodule */
