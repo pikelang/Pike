@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.158 2002/11/23 20:05:14 mast Exp $
+|| $Id: encode.c,v 1.159 2002/12/07 14:50:57 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.158 2002/11/23 20:05:14 mast Exp $");
+RCSID("$Id: encode.c,v 1.159 2002/12/07 14:50:57 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -750,7 +750,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       {
 	code_entry(TAG_OBJECT, 2, data);
 	/* 256 would be better, but then negative numbers
-	 * doesn't work... /Hubbe
+	 * won't work... /Hubbe
 	 */
 	push_int(36);
 	apply(val->u.object,"digits",1);
@@ -3768,6 +3768,123 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
   if(j & 8) return -i;
   return i;
 }
+
+/*! @class MasterObject
+ */
+
+/*! @decl inherit Codec
+ *!
+ *!   The master object is used as a fallback codec by @[encode_value()]
+ *!   and @[decode_value()] if no codec was given.
+ *!
+ *!   It will also be used as a codec if @[decode_value()] encounters
+ *!   old-style @[encode_value()]'ed data.
+ */
+
+/*! @endclass
+ */
+
+/*! @class Codec
+ *!
+ *!   Codec objects are used by @[encode_value()] and @[decode_value()]
+ *!   to encode and decode objects, functions and programs.
+ *!
+ *! @note
+ *!   @[encode_value()] and @[decode_value()] will use the current
+ *!   master object as fallback codec object if no codec was specified.
+ */
+
+/*! @decl mixed nameof(object|function|program x)
+ *!
+ *!   Called by @[encode_value()] to encode objects, functions and programs.
+ *!
+ *! @returns
+ *!   Returns something encodable on success, typically a string.
+ *!   The returned value will be passed to the corresponding
+ *!   @[objectof()], @[functionof()] or @[programof()] by
+ *!   @[decode_value()].
+ *!
+ *!   Returns @[UNDEFINED] on failure.
+ *!
+ *! @note
+ *!   @[encode_value()] has fallbacks for some classes of objects,
+ *!   functions and programs.
+ *!
+ *! @seealso
+ *!   @[objectof()], @[functionof()], @[objectof()]
+ */
+
+/*! @decl object objectof(string data)
+ *!
+ *!   Decode object encoded in @[data].
+ *!
+ *!   This function is called by @[decode_value()] when it encounters
+ *!   encoded objects.
+ *!
+ *! @param data
+ *!   Encoding of some object as specified by @[nameof()].
+ *!
+ *! @param minor
+ *!   Minor version.
+ *!
+ *! @returns
+ *!   Returns the decoded object.
+ *!
+ *! @seealso
+ *!   @[functionof()], @[programof()]
+ */
+
+/*! @decl function functionof(string data)
+ *!
+ *!   Decode function encoded in @[data].
+ *!
+ *!   This function is called by @[decode_value()] when it encounters
+ *!   encoded functions.
+ *!
+ *! @param data
+ *!   Encoding of some function as specified by @[nameof()].
+ *!
+ *! @param minor
+ *!   Minor version.
+ *!
+ *! @returns
+ *!   Returns the decoded function.
+ *!
+ *! @seealso
+ *!   @[objectof()], @[programof()]
+ */
+
+/*! @decl program programof(string data)
+ *!
+ *!   Decode program encoded in @[data].
+ *!
+ *!   This function is called by @[decode_value()] when it encounters
+ *!   encoded programs.
+ *!
+ *! @param data
+ *!   Encoding of some program as specified by @[nameof()].
+ *!
+ *! @param minor
+ *!   Minor version.
+ *!
+ *! @returns
+ *!   Returns the decoded program.
+ *!
+ *! @seealso
+ *!   @[functionof()], @[objectof()]
+ */
+
+/*! @decl program __register_new_program(program p)
+ *!
+ *!   Called by @[decode_value()] to register a program that is
+ *!   being decoded.
+ *!
+ *! @returns
+ *!   Returns a program os a place-holder program.
+ */
+
+/*! @endclass
+ */
 
 static void rec_restore_value(char **v, ptrdiff_t *l)
 {
