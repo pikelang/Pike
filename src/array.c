@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.139 2003/03/30 16:15:09 mast Exp $
+|| $Id: array.c,v 1.140 2003/04/26 16:22:26 mast Exp $
 */
 
 #include "global.h"
@@ -24,8 +24,9 @@
 #include "stuff.h"
 #include "bignum.h"
 #include "cyclic.h"
+#include "multiset.h"
 
-RCSID("$Id: array.c,v 1.139 2003/03/30 16:15:09 mast Exp $");
+RCSID("$Id: array.c,v 1.140 2003/04/26 16:22:26 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -654,7 +655,10 @@ static int internal_cmpfun(INT32 *a,
 			   cmpfun current_cmpfun,
 			   struct svalue *current_array_p)
 {
-  return current_cmpfun(current_array_p + *a, current_array_p + *b);
+  int res = current_cmpfun(current_array_p + *a, current_array_p + *b);
+  /* If the comparison considers the elements equal we compare their
+   * positions. Thus we get a stable sort function. */
+  return res ? res : *a - *b;
 }
 
 #define CMP(X,Y) internal_cmpfun((X),(Y),current_cmpfun, current_array_p)
@@ -669,6 +673,7 @@ static int internal_cmpfun(INT32 *a,
 #undef EXTRA_ARGS
 #undef XARGS
 
+/* The sort is stable. */
 INT32 *get_order(struct array *v, cmpfun fun)
 {
   INT32 e, *current_order;
@@ -689,10 +694,87 @@ INT32 *get_order(struct array *v, cmpfun fun)
   return current_order;
 }
 
+/* Returns 2 if no relation is established through lfun calls. */
+static INLINE int lfun_cmp (const struct svalue *a, const struct svalue *b)
+{
+  int fun;
+
+  if (a->type == T_OBJECT && a->u.object->prog) {
+    if ((fun = FIND_LFUN(a->u.object->prog,LFUN_LT)) != -1) {
+      push_svalue(b);
+      apply_low (a->u.object, fun, 1);
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return -1;
+      }
+      pop_stack();
+    }
+
+    if ((fun = FIND_LFUN(a->u.object->prog,LFUN_GT)) != -1) {
+      push_svalue(b);
+      apply_low (a->u.object, fun, 1);
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return 1;
+      }
+      pop_stack();
+    }
+
+    if ((fun = FIND_LFUN(a->u.object->prog,LFUN_EQ)) != -1) {
+      push_svalue(b);
+      apply_low (a->u.object, fun, 1);
+      if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+	pop_stack();
+	return 0;
+      }
+      pop_stack();
+    }
+  }
+
+  if(b->type == T_OBJECT && b->u.object->prog) {
+    if ((fun = FIND_LFUN(b->u.object->prog,LFUN_LT)) != -1) {
+      push_svalue(a);
+      apply_low (b->u.object, fun, 1);
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return 1;
+      }
+      pop_stack();
+    }
+
+    if ((fun = FIND_LFUN(b->u.object->prog,LFUN_GT)) != -1) {
+      push_svalue(a);
+      apply_low (b->u.object, fun, 1);
+      if(!UNSAFE_IS_ZERO(Pike_sp-1))
+      {
+	pop_stack();
+	return -1;
+      }
+      pop_stack();
+    }
+
+    if ((fun = FIND_LFUN(b->u.object->prog,LFUN_EQ)) != -1) {
+      push_svalue(a);
+      apply_low (b->u.object, fun, 1);
+      if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
+	pop_stack();
+	return 0;
+      }
+      pop_stack();
+    }
+  }
+
+  return 2;
+}
+
 INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  INT32 def;
-  if(a->type == b->type)
+  int res, typediff = a->type - b->type;
+
+  if (!typediff)
   {
     switch(a->type)
     {
@@ -710,7 +792,7 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	if(a->u.integer < b->u.integer) return -1;
 	if(a->u.integer > b->u.integer) return 1;
 	return 0;
-	
+
       default:
 	if(a->u.refs < b->u.refs) return -1;
 	if(a->u.refs > b->u.refs) return 1;
@@ -718,95 +800,38 @@ INLINE int set_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 
       case T_OBJECT:
 	if(a->u.object == b->u.object) return 0;
-	if(a->u.object->prog == b->u.object->prog) {
-	  if (a->u.object->prog) {
-	    if(a->u.object < b->u.object) {
-	      def = -1;
-	    } else {
-	      def = 1;
-	    }
-	  } else {
-	    /* Destructed objects are considered equal. */
-	    return 0;
-	  }
-	} else {
-	  /* Attempt to group objects cloned from the same program */
-	  if (a->u.object->prog < b->u.object->prog) {
-	    def = -1;
-	  } else {
-	    def = 1;
-	  }
-	}
 	break;
     }
-  }else{
-    def=a->type - b->type;
   }
 
-  if (a->type == T_OBJECT && a->u.object->prog) {
-    if (FIND_LFUN(a->u.object->prog,LFUN_LT) != -1) {
-      push_svalue(b);
-      apply_lfun(a->u.object,LFUN_LT,1);
-      if(!UNSAFE_IS_ZERO(Pike_sp-1))
-      {
-	pop_stack();
-	return -1;
-      }
-      pop_stack();
-    }
-    if (FIND_LFUN(a->u.object->prog,LFUN_GT) != -1) {
-      push_svalue(b);
-      apply_lfun(a->u.object,LFUN_GT,1);
-      if(!UNSAFE_IS_ZERO(Pike_sp-1))
-      {
-	pop_stack();
-	return 1;
-      }
-      pop_stack();
-    }
-    if (FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1) {
-      push_svalue(b);
-      apply_lfun(a->u.object,LFUN_EQ,1);
-      if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
-	pop_stack();
-	return 0;
-      }
-      pop_stack();
-    }
-  }
-  if(b->type == T_OBJECT && b->u.object->prog) {
-    if (FIND_LFUN(b->u.object->prog,LFUN_LT) != -1) {
-      push_svalue(a);
-      apply_lfun(b->u.object,LFUN_LT,1);
-      if(!UNSAFE_IS_ZERO(Pike_sp-1))
-      {
-	pop_stack();
-	return 1;
-      }
-      pop_stack();
-    }
-    if (FIND_LFUN(b->u.object->prog,LFUN_GT) != -1) {
-      push_svalue(a);
-      apply_lfun(b->u.object,LFUN_GT,1);
-      if(!UNSAFE_IS_ZERO(Pike_sp-1))
-      {
-	pop_stack();
-	return -1;
-      }
-      pop_stack();
-    }
-    if (FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1) {
-      push_svalue(a);
-      apply_lfun(b->u.object,LFUN_EQ,1);
-      if (!UNSAFE_IS_ZERO(Pike_sp-1)) {
-	pop_stack();
-	return 0;
-      }
-      pop_stack();
-    }
-  }
+  res = lfun_cmp (a, b);
+  if (res != 2) return res;
 
-  return def;
+  if (typediff) return typediff;
+
+#ifdef PIKE_DEBUG
+  if (a->type != T_OBJECT)
+    Pike_fatal ("Expected objects when both types are the same.\n");
+#endif
+  if(a->u.object->prog == b->u.object->prog) {
+    if (a->u.object->prog) {
+      if(a->u.object < b->u.object) {
+	return -1;
+      } else {
+	return 1;
+      }
+    } else {
+      /* Destructed objects are considered equal. */
+      return 0;
+    }
+  } else {
+    /* Attempt to group objects cloned from the same program */
+    if (a->u.object->prog < b->u.object->prog) {
+      return -1;
+    } else {
+      return 1;
+    }
+  }
 }
 
 static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
@@ -838,7 +863,9 @@ static int switch_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 
 static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 {
-  if(a->type == b->type)
+  int res, typediff = a->type - b->type;
+
+  if (!typediff)
   {
     switch(a->type)
     {
@@ -857,21 +884,57 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 	
       case T_ARRAY:
 	if(a==b) return 0;
-	if(!a->u.array->size) return -1;
-	if(!b->u.array->size) return  1;
+	if (!a->u.array->size)
+	  if (!b->u.array->size) /* There are several different empty arrays. */
+	    return 0;
+	  else
+	    return -1;
+	else
+	  if (!b->u.array->size)
+	    return 1;
 	return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
+
+      case T_MULTISET:
+	if (a == b) return 0;
+	if (multiset_is_empty (a->u.multiset))
+	  if (multiset_is_empty (b->u.multiset))
+	    return 0;
+	  else
+	    return -1;
+	else
+	  if (multiset_is_empty (b->u.multiset))
+	    return 1;
+#ifdef PIKE_NEW_MULTISETS
+	{
+	  struct svalue ind_a, ind_b;
+	  return alpha_svalue_cmpfun (
+	    use_multiset_index (a->u.multiset, multiset_first (a->u.multiset), ind_a),
+	    use_multiset_index (b->u.multiset, multiset_first (b->u.multiset), ind_b));
+	}
+#else
+	return alpha_svalue_cmpfun (ITEM (a->u.multiset->ind), ITEM (b->u.multiset->ind));
+#endif
+
+      case T_OBJECT:
+	if(a->u.object == b->u.object) return 0;
+	break;
 	
       default:
-	return set_svalue_cmpfun(a,b);
-	
-      case T_OBJECT:
-	break;
+#if 1
+	/* I think it would be better to leave the order undefined in
+	 * these cases since the addresses aren't observable
+	 * properties in pike. /mast */
+	if(a->u.refs < b->u.refs) return -1;
+	if(a->u.refs > b->u.refs) return 1;
+#endif
+	return 0;
     }
-  }else{
-    if(a->type!=T_OBJECT && b->type!=T_OBJECT)
-      return a->type - b->type;
   }
-  return is_gt(a,b);
+
+  res = lfun_cmp (a, b);
+  if (res != 2) return res;
+
+  return typediff;
 }
 
 #define CMP(X,Y) alpha_svalue_cmpfun(X,Y)
@@ -882,13 +945,54 @@ static int alpha_svalue_cmpfun(const struct svalue *a, const struct svalue *b)
 #undef TYPE
 #undef ID
 
-
+/* This sort is unstable. */
 PMOD_EXPORT void sort_array_destructively(struct array *v)
 {
   if(!v->size) return;
   low_sort_svalues(ITEM(v), ITEM(v)+v->size-1);
 }
 
+#define SORT_BY_INDEX
+#define EXTRA_LOCALS int cmpfun_res;
+#define CMP(X,Y) ((cmpfun_res = alpha_svalue_cmpfun(svals + X, svals + Y)) ? \
+		  cmpfun_res : pos[X] - pos[Y])
+#define SWAP(X,Y) {							\
+  {struct svalue tmp = svals[X]; svals[X] = svals[Y]; svals[Y] = tmp;}	\
+  {int tmp = pos[X]; pos[X] = pos[Y]; pos[Y] = tmp;}			\
+}
+#define TYPE struct svalue
+#define ID low_stable_sort_svalues
+#define EXTRA_ARGS , struct svalue *svals, INT32 *pos, int size
+#define XARGS , svals, pos, size
+#include "fsort_template.h"
+#undef SORT_BY_INDEX
+#undef EXTRA_LOCALS
+#undef CMP
+#undef SWAP
+#undef TYPE
+#undef ID
+#undef EXTRA_ARGS
+#undef XARGS
+
+/* This sort is stable. The return value is like the one from
+ * get_alpha_order. */
+PMOD_EXPORT INT32 *stable_sort_array_destructively(struct array *v)
+{
+  INT32 *current_order;
+  ONERROR tmp;
+  int e;
+
+  if(!v->size) return NULL;
+
+  current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
+  SET_ONERROR(tmp, free, current_order);
+  for(e=0; e<v->size; e++) current_order[e]=e;
+
+  low_stable_sort_svalues (0, v->size - 1, ITEM (v), current_order, v->size);
+
+  UNSET_ONERROR (tmp);
+  return current_order;
+}
 
 
 /*
@@ -989,7 +1093,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 
 
 /*
- * reorganize an array in the order specifyed by 'order'
+ * reorganize an array in the order specified by 'order'
  */
 PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
 {
@@ -1409,11 +1513,6 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
 #undef ID
 
 
-/*
- * merge two arrays and retain their order, this is done by arranging them
- * into ordered sets, merging them as sets and then rearranging the zipper
- * before zipping the sets together. 
- */
 PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op)
 {
   ONERROR r1,r2,r3,r4,r5;
