@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.91 2000/06/12 03:21:11 mast Exp $");
+RCSID("$Id: gc.c,v 1.92 2000/06/12 13:51:58 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -922,6 +922,20 @@ void locate_references(void *a)
 #endif
 
 #ifdef PIKE_DEBUG
+
+void debug_gc_check_count_free(void *a)
+{
+  struct marker *m;
+  if (Pike_in_gc == GC_PASS_CHECK && (m = find_marker(a))) {
+   if(m->saved_refs == -1)
+     m->saved_refs = *(INT32 *)a - 1;
+   else {
+     if (m->saved_refs != *(INT32 *)a)
+       gc_fatal(a, 1, "Refs changed in gc.\n");
+     m->saved_refs--;
+   }
+  }
+}
 
 void gc_add_extra_ref(void *a)
 {

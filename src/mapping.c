@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.84 2000/06/09 22:43:05 mast Exp $");
+RCSID("$Id: mapping.c,v 1.85 2000/06/12 13:51:59 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -863,6 +863,8 @@ void check_mapping_for_destruct(struct mapping *m)
 	  debug_malloc_touch(m);
 	  PREPARE_FOR_INDEX_CHANGE2();
 	  *prev=k->next;
+	  debug_gc_check_count_free(k->ind.u.refs);
+	  debug_gc_check_count_free(k->val.u.refs);
 	  free_svalue(& k->ind);
 	  free_svalue(& k->val);
 	  k->next=md->free_list;
