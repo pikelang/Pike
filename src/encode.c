@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.112 2001/07/15 21:45:31 mast Exp $");
+RCSID("$Id: encode.c,v 1.113 2001/07/16 21:55:33 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1808,6 +1808,8 @@ static void decode_value2(struct decode_data *data)
 	      {
 		apply_lfun(o, LFUN___INIT, 0);
 		pop_stack();
+		/* FIXME: Should call LFUN_CREATE here in <= 7.2
+		 * compatibility mode. */
 	      }else{
 		struct unfinished_obj_link *ol=ALLOC_STRUCT(unfinished_obj_link);
 		ol->o=o;
@@ -2301,6 +2303,8 @@ static void decode_value2(struct decode_data *data)
 		  {
 		    apply_lfun(o, LFUN___INIT, 0);
 		    pop_stack();
+		    /* FIXME: Should call LFUN_CREATE here in <= 7.2
+		     * compatibility mode. */
 		  }else{
 		    ptr=&l->next;
 		    continue;
