@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.204 2001/09/28 11:54:11 tomas Exp $");
+RCSID("$Id: signal_handler.c,v 1.205 2001/10/08 08:43:29 jhs Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1920,6 +1920,19 @@ static void internal_add_limit( struct perishables *storage,
  *! @example
  *! Process.create_process(({ "/usr/bin/env" }),
  *!                        (["env" : getenv() + (["TERM":"vt100"]) ]));
+ *!
+ *! @example
+ *! //! Spawn a new process with the args @[args] and optionally a standard input
+ *! //! if you provide such a Stdio.File object. Returns that process and a pipe
+ *! //! from which you can read its output.
+ *! array(Process.Process|Stdio.File) spawn(Stdio.File|void stdin, string ... args)
+ *! {
+ *!   Stdio.File stdout = Stdio.File();
+ *!   mapping opts = ([ "stdout" : stdout->pipe() ]);
+ *!   if( stdin )
+ *!    opts->stdin = stdin;
+ *!   return ({ Process.create_process( args, opts ), stdout });
+ *! }
  *!
  *! @note
  *! All parameters that accept both string or int input can be
