@@ -20,6 +20,9 @@
 #include <sys/stat.h>
 #include <assert.h>
 
+static char *dlerr=0;
+
+
 /* Todo:
  *  Make image debugable if possible
  *  Support Win64
@@ -76,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.7 2001/01/04 02:15:44 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.8 2001/01/18 02:19:24 hubbe Exp $");
 
 #endif
 
@@ -393,6 +396,11 @@ static int append_dlllist(struct DLLList **l,
   tmp=LoadLibrary(name);
   if(!tmp) return 0;
   n=(struct DLLList *)malloc(sizeof(struct DLLList));
+  if(!n)
+  {
+    dlerr="Out of memory";
+    return 0;
+  }
   n->dll=tmp;
 #ifdef DLDEBUG
   fprintf(stderr,"append_dlllist(%s)->%p\n",name,n->dll);
@@ -504,8 +512,6 @@ struct DLObjectTempData
   char **section_addresses;
 };
 
-
-static char *dlerr=0;
 
 static void *low_dlsym(struct DLHandle *handle,
 		       char *name,
@@ -772,10 +778,12 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
   if(!ret->memory)
   {
+    static char buf[300];
+    sprintf(buf,"Failed to allocate %d bytes RWX-memory.\n",ret->memsize);
 #ifdef DLDEBUG
-    fprintf(stderr,"Failed to allocate %d bytes RWX-memory.\n",ret->memsize);
+    fprintf(stderr,buf);
 #endif
-    dlerr="Failed to allocate memory";
+    dlerr=buf;
     return -1;
   }
 
@@ -1173,6 +1181,11 @@ static int dl_loadarchive(struct DLHandle *ret,
 
 
   tmp=(struct DLObjectTempData *)malloc(sizeof(struct DLObjectTempData) * object_files);
+  if(!tmp)
+  {
+    dlerr="Failed to allocate temporary storage";
+    return -1;
+  }
   o=0;
 
   /* Initialize data objects for these */
