@@ -21,20 +21,11 @@ Pike development environment you must do the following steps:
 	This updates all the Makefile.in files in the source dir to
 	contain the correct dependencies
 
-5) run configure again
-	This updates your Makefiles to include the dependencies.
-	The config.cache file will make this a lot faster.
+5) If needed, modify your Makefile
+	(Normally never needed)
 
-6) If needed, modify your Makefile
-
-7) 'make'
+6) 'make'
 	This builds pike.
-
-8) 'make new_peep_engine'
-	This creates the peephole optimizer
-
-9) 'make'
-	This builds a new pike with the peephole optimizer
 
 After doing this, DO NOT, commit the generated files. They are placed in
 .cvsignore files so you shouldn't have to bother with them.
