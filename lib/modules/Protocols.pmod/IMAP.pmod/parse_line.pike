@@ -253,7 +253,7 @@ array(string) get_flag_list()
   skip_whitespace();	// This one shouldn't be needed, but...
 
   if (!strlen(buffer))
-    return NULL;
+    return 0;
 
   if (buffer[0] = ')')
   {
