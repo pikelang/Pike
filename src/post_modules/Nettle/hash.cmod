@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.2 2003/03/18 13:35:31 nisse Exp $");
+RCSID("$Id: hash.cmod,v 1.3 2003/03/18 15:29:56 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -36,6 +36,8 @@ werror(const char *format, ...)
 #else
 #define werror(x)
 #endif
+
+/*! @module Nettle */
 
 /*! @class HashInfo
  *!
@@ -87,6 +89,8 @@ PIKECLASS HashInfo
       THIS->meta = NULL;
     }
 }
+
+/*! @endclass HashInfo */
 
 #define GET_META(o) \
 ( ((struct HashInfo_struct *) get_storage((o), HashInfo_program)) \
@@ -182,6 +186,8 @@ PIKECLASS HashState
     }
 }
 
+/*! @endclass HashState */
+
 /*! @class MD5_Info
  *!
  *! Internal mixin class, intended to be multiply inherited
@@ -197,7 +203,7 @@ PIKECLASS MD5_Info
 
       werror("MD5_Info->INIT\n");
       
-      if (HashInfo || !HashInfo->meta)
+      if (HashInfo && !HashInfo->meta)
 	HashInfo->meta = &nettle_md5;
       else
 	/* Can't call Pike_error here. 
@@ -205,6 +211,8 @@ PIKECLASS MD5_Info
 	werror("MD5_Info->INIT failed\n");
     }
 }
+
+/*! @endclass MD5_Info */
 
 /*! @class MD5_State
  *!
@@ -229,6 +237,7 @@ PIKECLASS MD5_State
       instance->ctx = &THIS->md5;
     }
 }
+/*! @endclass MD5_State */
 
 /*! @class SHA1_Info
  *!
@@ -245,7 +254,7 @@ PIKECLASS SHA1_Info
 
       werror("SHA1_Info->INIT\n");
       
-      if (HashInfo || !HashInfo->meta)
+      if (HashInfo && !HashInfo->meta)
 	HashInfo->meta = &nettle_sha1;
       else
 	/* Can't call Pike_error here. 
@@ -253,6 +262,8 @@ PIKECLASS SHA1_Info
 	werror("SHA1_Info->INIT failed\n");
     }
 }
+
+/*! @endclass SHA1_Info */
 
 /*! @class SHA1_State
  *!
@@ -278,7 +289,9 @@ PIKECLASS SHA1_State
       instance->ctx = &THIS->sha1;
     }
 }
+/*! @endclass SHA1_State */
 
+/*! @endmodule Nettle */
 
 void
 hash_init(void)
