@@ -7,3 +7,4 @@ configure
 dependencies
 linker_options
 stamp-h
+stamp-h.in
