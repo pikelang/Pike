@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.269 2001/07/18 11:36:00 grubba Exp $
+# $Id: Makefile.in,v 1.270 2001/07/20 12:44:50 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -135,6 +135,7 @@ OBJ= \
  mapping.o \
  pike_memory.o \
  module_support.o \
+ pikecode.o \
  object.o \
  opcodes.o \
  operators.o \

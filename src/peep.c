@@ -17,8 +17,9 @@
 #include "builtin_functions.h"
 #include "constants.h"
 #include "interpret.h"
+#include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.61 2001/07/19 16:20:26 grubba Exp $");
+RCSID("$Id: peep.c,v 1.62 2001/07/20 12:44:49 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -135,239 +136,6 @@ void update_arg(int instr,INT32 arg)
 
 
 /**** Bytecode Generator *****/
-
-#ifdef PIKE_USE_MACHINE_CODE
-/* FIXME: Move this to pike_cpulib.h */
-#ifdef __GNUC__
-
-#ifdef __i386__
-
-#define PUSH_INT(X) ins_int((INT32)(X), add_to_program)
-#define PUSH_ADDR(X) PUSH_INT((X))
-
-/* This is ugly, but since the code may be moved we cannot use
- * relative addressing :(
- */
-#define CALL_ABSOLUTE(X) do{			\
-  add_to_program(0xb8);	/* mov $xxx,%eax */	\
-  PUSH_INT(X);					\
-  add_to_program(0xff);	/* jsr *(%eax) */	\
-  add_to_program(0xd0);				\
-}while(0)
-
-#define UPDATE_PC() do {						\
-    INT32 tmp=PC;							\
-    add_to_program(0xa1 /* mov $xxxxx, %eax */);			\
-    ins_int((INT32)(&Pike_interpreter.frame_pointer), add_to_program);	\
-									\
-    add_to_program(0xc7); /* movl $xxxxx, yy%(eax) */			\
-    add_to_program(0x40);						\
-    add_to_program(OFFSETOF(pike_frame, pc));				\
-    ins_int((INT32)tmp, add_to_program);				\
-}while(0)
-
-#elif defined(sparc)
-
-#define REG_O0	8
-#define REG_O1	9
-#define REG_O2	10
-#define REG_O3	11
-#define REG_O4	12
-#define REG_O5	13
-#define REG_O6	14
-#define REG_O7	15
-
-#define SET_REG(REG, X) do {						\
-    INT32 val_ = X;							\
-    INT32 reg_ = REG;							\
-    if ((-4096 <= val_) && (val_ <= 4095)) {				\
-      /* or %g0, val_, reg */						\
-      add_to_program(0x80102000|(reg_<<25)|(val_ & 0x1fff));		\
-    } else {								\
-      /* sethi %hi(val_), reg */					\
-      add_to_program(0x01000000|(reg_<<25)|((val_ >> 10)&0x3fffff));	\
-      if (val_ & 0x3ff) {						\
-	/* or reg, %lo(val_), reg */					\
-	add_to_program(0x80102000|(reg_<<25)|(reg_<<14)|(val_ & 0x3ff)); \
-      }									\
-      if (val_ < 0) {							\
-	/* sra reg, %g0, reg */						\
-	add_to_program(0x81380000|(reg_<<25)|(reg_<<14));		\
-      }									\
-    }									\
-  } while(0)
-
-#define CALL_ABSOLUTE(X) do {						\
-    INT32 delta_;							\
-    struct program *p_ = Pike_compiler->new_program;			\
-    INT32 off_ = p_->num_program;					\
-    /* call X	*/							\
-    add_to_program(0); /* Placeholder... */				\
-    delta_ = ((PIKE_OPCODE_T *)(X)) - (p_->program + off_);		\
-    p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
-    add_to_relocations(off_);						\
-    /* noop		*/						\
-    add_to_program(0x01000000);						\
-  } while(0)
-
-#if 1
-#define UPDATE_PC() do {						\
-    INT32 tmp = PC;							\
-    SET_REG(REG_O3, ((INT32)(&Pike_interpreter.frame_pointer)));	\
-    /* lduw %o3, %o3 */							\
-    add_to_program(0xc0000000|(REG_O3<<25)|(REG_O3<<14));		\
-    SET_REG(REG_O4, tmp);						\
-    /* stw %o4, yy(%o3) */						\
-    add_to_program(0xc0202000|(REG_O4<<25)|(REG_O3<<14)|		\
-		   OFFSETOF(pike_frame, pc));				\
-  } while(0)
-#else
-#define UPDATE_PC()
-#endif
-#endif /* __i386__ || sparc */
-#endif /* __GNUC__ */
-
-#else /* !PIKE_USE_MACHINE_CODE */
-#undef UPDATE_PC
-#define UPDATE_PC()
-#endif /* PIKE_USE_MACHINE_CODE */
-
-void ins_f_byte(unsigned int b)
-{
-#ifdef PIKE_DEBUG
-  if(store_linenumbers && b<F_MAX_OPCODE)
-    ADD_COMPILED(b);
-#endif /* PIKE_DEBUG */
-
-  b-=F_OFFSET;
-#ifdef PIKE_DEBUG
-  if(b>255)
-    Pike_error("Instruction too big %d\n",b);
-#endif
-    
-#ifdef PIKE_USE_MACHINE_CODE
-  do{
-    static int last_prog_id=-1;
-    static int last_num_linenumbers=-1;
-    if(last_prog_id != Pike_compiler->new_program->id ||
-       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
-    {
-      last_prog_id=Pike_compiler->new_program->id;
-      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
-      UPDATE_PC();
-    }
-  }while(0);
-  
-  CALL_ABSOLUTE(instrs[b].address);
-  return;
-#endif
-
-#ifdef HAVE_COMPUTED_GOTO
-  add_to_program(fcode_to_opcode[b]);
-#else /* !HAVE_COMPUTED_GOTO */
-  add_to_program((unsigned char)b);
-#endif /* HAVE_COMPUTED_GOTO */
-}
-
-static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
-{
-#ifdef PIKE_USE_MACHINE_CODE
-#ifdef __GNUC__
-#ifdef __i386__
-  add_to_program(0xc7);  /* movl $xxxx, (%esp) */
-  add_to_program(0x04); 
-  add_to_program(0x24); 
-  PUSH_INT(b);
-#elif defined(sparc)
-  SET_REG(REG_O0, b);
-#endif /* __i386__ || sparc */
-  ins_f_byte(a);
-  return;
-#endif /* __GNUC__ */
-#endif
-
-#ifndef HAVE_COMPUTED_GOTO
-  switch(b >> 8)
-  {
-  case 0 : break;
-  case 1 : ins_f_byte(F_PREFIX_256); break;
-  case 2 : ins_f_byte(F_PREFIX_512); break;
-  case 3 : ins_f_byte(F_PREFIX_768); break;
-  case 4 : ins_f_byte(F_PREFIX_1024); break;
-  default:
-    if( b < 256*256)
-    {
-      ins_f_byte(F_PREFIX_CHARX256);
-      add_to_program((unsigned char)(b>>8));
-    }else if(b < 256*256*256) {
-      ins_f_byte(F_PREFIX_WORDX256);
-      add_to_program((unsigned char)(b>>16));
-      add_to_program((unsigned char)(b>>8));
-    }else{
-      ins_f_byte(F_PREFIX_24BITX256);
-      add_to_program((unsigned char)(b>>24));
-      add_to_program((unsigned char)(b>>16));
-      add_to_program((unsigned char)(b>>8));
-    }
-  }
-#endif /* !HAVE_COMPUTED_GOTO */
-  ins_f_byte(a);
-  add_to_program((PIKE_OPCODE_T)b);
-}
-
-static void ins_f_byte_with_2_args(unsigned int a,
-				   unsigned INT32 c,
-				   unsigned INT32 b)
-{
-#ifdef PIKE_USE_MACHINE_CODE
-#ifdef __GNUC__
-#ifdef __i386__
-  add_to_program(0xc7);  /* movl $xxxx, (%esp) */
-  add_to_program(0x04); 
-  add_to_program(0x24); 
-  PUSH_INT(c);
-  add_to_program(0xc7);  /* movl $xxxx, 4(%esp) */
-  add_to_program(0x44);
-  add_to_program(0x24);
-  add_to_program(0x04);
-  PUSH_INT(b);
-#elif defined(sparc)
-  SET_REG(REG_O0, c);
-  SET_REG(REG_O1, b);
-#endif /* __i386__ || sparc */
-  ins_f_byte(a);
-  return;
-#endif /* __GNUC__ */
-#endif
-
-#ifdef HAVE_COMPUTED_GOTO
-  switch(b >> 8)
-  {
-  case 0 : break;
-  case 1 : ins_f_byte(F_PREFIX2_256); break;
-  case 2 : ins_f_byte(F_PREFIX2_512); break;
-  case 3 : ins_f_byte(F_PREFIX2_768); break;
-  case 4 : ins_f_byte(F_PREFIX2_1024); break;
-  default:
-    if( b < 256*256)
-    {
-      ins_f_byte(F_PREFIX2_CHARX256);
-      add_to_program((unsigned char)(b>>8));
-    }else if(b < 256*256*256) {
-      ins_f_byte(F_PREFIX2_WORDX256);
-      add_to_program((unsigned char)(b>>16));
-      add_to_program((unsigned char)(b>>8));
-    }else{
-      ins_f_byte(F_PREFIX2_24BITX256);
-      add_to_program((unsigned char)(b>>24));
-      add_to_program((unsigned char)(b>>16));
-      add_to_program((unsigned char)(b>>8));
-    }
-  }
-#endif /* !HAVE_COMPUTED_GOTO */
-  ins_f_byte_with_arg(a,c);
-  add_to_program((PIKE_OPCODE_T)b);
-}
 
 void assemble(void)
 {
@@ -512,31 +280,15 @@ void assemble(void)
     case F_START_FUNCTION:
       break;
     case F_ALIGN:
-#ifndef HAVE_COMPUTED_GOTO
-#if !(defined(PIKE_USE_MACHINE_CODE) && defined(sparc))
-      while(PC % c->arg) add_to_program(0);
-#endif /* !(PIKE_USE_MACHINE_CODE && sparc) */
-#endif /* HAVE_COMPUTED_GOTO */
+      ins_align(c->arg);
       break;
 
     case F_BYTE:
-#ifdef HAVE_COMPUTED_GOTO
-      add_to_program((void *)(ptrdiff_t)(unsigned char)(c->arg));
-#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
-      add_to_program(c->arg);
-#else /* !HAVE_COMPUTED_GOTO */
-      add_to_program((unsigned char)(c->arg));
-#endif /* HAVE_COMPUTED_GOTO */
+      ins_byte((unsigned char)(c->arg));
       break;
 
     case F_DATA:
-#ifdef HAVE_COMPUTED_GOTO
-      add_to_program((void *)(ptrdiff_t)c->arg);
-#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
-      add_to_program(c->arg);
-#else /* !HAVE_COMPUTED_GOTO */
-      ins_int(c->arg, (void(*)(char))add_to_program);
-#endif /* HAVE_COMPUTED_GOTO */
+      ins_data(c->arg);
       break;
 
     case F_LABEL:
@@ -567,23 +319,17 @@ void assemble(void)
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
 	tmp = DO_NOT_WARN((INT32)PC);
-#ifdef HAVE_COMPUTED_GOTO
-	add_to_program(jumps[c->arg]);
-#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
-	add_to_program(jumps[c->arg]);
-#else /* !HAVE_COMPUTED_GOTO */
-	ins_int(jumps[c->arg], (void(*)(char))add_to_program);
-#endif /* HAVE_COMPUTED_GOTO */
+	ins_pointer(jumps[c->arg]);
 	jumps[c->arg]=tmp;
 	break;
 
-	case I_TWO_ARGS:
-	  ins_f_byte_with_2_args(c->opcode, c->arg, c->arg2);
-	  break;
+      case I_TWO_ARGS:
+	ins_f_byte_with_2_args(c->opcode, c->arg, c->arg2);
+	break;
 	  
-	case I_HASARG:
-	  ins_f_byte_with_arg(c->opcode, c->arg);
-	  break;
+      case I_HASARG:
+	ins_f_byte_with_arg(c->opcode, c->arg);
+	break;
 
       case 0:
 	ins_f_byte(c->opcode);
@@ -610,20 +356,9 @@ void assemble(void)
 	fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
 	      PTRDIFF_T_TO_LONG(e), labels[e], jumps[e]);
 #endif
-#ifdef HAVE_COMPUTED_GOTO
-      tmp = (int)(ptrdiff_t)(Pike_compiler->new_program->program[jumps[e]]);
-      Pike_compiler->new_program->program[jumps[e]] =
-	(PIKE_OPCODE_T)(ptrdiff_t)(tmp2 - jumps[e]);
-      jumps[e] = tmp;
-#elif defined(PIKE_USE_MACHINE_CODE) && defined(sparc)
-      tmp = Pike_compiler->new_program->program[jumps[e]];
-      Pike_compiler->new_program->program[jumps[e]] = tmp2 - jumps[e];
-      jumps[e] = tmp;      
-#else /* !HAVE_COMPUTED_GOTO */
-      tmp=read_int(jumps[e]);
-      upd_int(jumps[e], tmp2 - jumps[e]);
+      tmp = read_pointer(jumps[e]);
+      upd_pointer(jumps[e], tmp2 - jumps[e]);
       jumps[e]=tmp;
-#endif /* HAVE_COMPUTED_GOTO */
     }
   }
 

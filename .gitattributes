@@ -176,6 +176,14 @@ testfont binary
 /src/builtin_functions_t.c foreign_ident
 /src/callback.c foreign_ident
 /src/callback.h foreign_ident
+/src/code/bytecode.c foreign_ident
+/src/code/bytecode.h foreign_ident
+/src/code/computedgoto.c foreign_ident
+/src/code/computedgoto.h foreign_ident
+/src/code/ia32.c foreign_ident
+/src/code/ia32.h foreign_ident
+/src/code/sparc.c foreign_ident
+/src/code/sparc.h foreign_ident
 /src/combine_path.h foreign_ident
 /src/compilation.h foreign_ident
 /src/configure.in foreign_ident
@@ -600,6 +608,8 @@ testfont binary
 /src/pike_threadlib.h foreign_ident
 /src/pike_types.c foreign_ident
 /src/pike_types.h foreign_ident
+/src/pikecode.c foreign_ident
+/src/pikecode.h foreign_ident
 /src/port.c foreign_ident
 /src/port.h foreign_ident
 /src/post_modules/GL/Makefile.in foreign_ident
