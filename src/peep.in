@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.19 1998/06/06 03:18:09 hubbe Exp $
+// $Id: peep.in,v 1.20 1998/06/06 03:49:22 hubbe Exp $
 //
 
 NOP :
@@ -96,10 +96,10 @@ CONST0 BRANCH_WHEN_ZERO: BRANCH($2a)
 CONST1 BRANCH_WHEN_NON_ZERO: BRANCH($2a)
 CONST0 BRANCH_WHEN_NON_ZERO: 
 
-# These optimizations are now handled in optimize_eq
-# CONST0 BRANCH_WHEN_EQ: BRANCH_WHEN_ZERO($2a)
-# CONST0 BRANCH_WHEN_NE: BRANCH_WHEN_NON_ZERO($2a)
-# CONST0 EQ: NOT
+// These optimizations are now handled in optimize_eq
+// CONST0 BRANCH_WHEN_EQ: BRANCH_WHEN_ZERO($2a)
+// CONST0 BRANCH_WHEN_NE: BRANCH_WHEN_NON_ZERO($2a)
+// CONST0 EQ: NOT
 
 EQ BRANCH_WHEN_NON_ZERO: BRANCH_WHEN_EQ ($2a)
 NE BRANCH_WHEN_NON_ZERO: BRANCH_WHEN_NE ($2a)
