@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.19 1999/02/02 22:20:57 grubba Exp $
+ * $Id: requests.pmod,v 1.20 1999/02/02 22:57:54 grubba Exp $
  */
 
 import .types;
@@ -337,6 +337,8 @@ class fetch
 
   mapping process_fetch_attr(mapping atom)
   {
+    werror("fetch->process_fetch_attr(%O)\n", atom);
+
     if (atom->type != atom)
       return 0;
 
@@ -392,7 +394,7 @@ class fetch
       /* Handle below */
     }
 
-    /* No commands except BODY[.PEEK] accepts any options */
+    /* No commands except BODY[.PEEK] accept any options */
     if (atom->options)
       return 0;
 
