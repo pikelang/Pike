@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.5 2002/09/06 12:38:10 hop Exp $
+//  $Id: ID3.pmod,v 1.6 2002/11/25 01:25:24 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -400,7 +400,11 @@ class Frame {
       error( "Encrypted frames not supported.\n" );
 
     if(flag_compression)
-      _data = Gz->inflate()->inflate(_data);
+#if constant(Gz.inflate)
+      _data = Gz.inflate()->inflate(_data);
+#else
+    error( "Frame is Gz compress, but Pike lacks Gz support.\n" );
+#endif
 
     if(flag_grouping)
       group_id = hd_data[0..0];
@@ -420,7 +424,11 @@ class Frame {
     mixed block = data;
 
     if(flag_compression)
-      block = Gz->deflate()->deflate(block);
+#if constant(Gz.deflate)
+      block = Gz.deflate()->deflate(block);
+#else
+      error( "Pike lacks Gz support.\n" );
+#endif
 
     // FIXME: Encryption goes here
 
