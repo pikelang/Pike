@@ -1,3 +1,9 @@
+Mon Nov 17 04:11:14 1997  Niels Möller  <nisse@infovav.se>
+
+	* modules/_Crypto/.build_lobotomized_crypto: Script to build a
+	lobotomized version of the crypto module, with no strong crypto
+	algorithms included.
+
 Mon Nov  3 01:38:32 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* smartlink: Now sets ulimit for the data segment to 48MB unless
