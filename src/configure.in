@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.758 2003/12/19 13:16:13 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.759 2004/01/09 15:25:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1311,6 +1311,8 @@ AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
 ], [with_valgrind=no])
 AC_ARG_WITH(checker, MY_DESCR([--with-checker],
 			      [add extra memory checking overhead (Purify)]))
+AC_ARG_WITH(gcov, MY_DESCR([--with-gcov],
+			   [compile with support for gcov (gcc-only)]))
 MY_AC_ARG_WITH(profiling, MY_DESCR([--with-profiling],
 				   [add code used to profile pike code]),
 	       [AC_DEFINE(PROFILING)])
@@ -1419,7 +1421,7 @@ else
  sleep 10
 fi
 
-dnl Pike currently breaks miserably if SHARED_NODES isn't defined.
+dnl Pike currently breaks miserably if SHARED_NODES is not defined.
 dnl Shared nodes are still disabled bluntly. (See note above.)
 dnl if test "x$with_shared_nodes" != xno; then
 dnl  echo 'Enabling the SHARED_NODES mode of the optimizer.'
@@ -1548,6 +1550,12 @@ if test "$cflags_is_set" = "no"; then
     else
       :
     fi
+
+    if test "x$with_gcov" = "xyes"; then
+      # Support for gcov
+      AC_SYS_COMPILER_FLAG(-fprofile-arcs, fprofile_arcs, CFLAGS)
+      AC_SYS_COMPILER_FLAG(-ftest-coverage, ftest_coverage, CFLAGS)
+    else :; fi
 
     ##
     ## -fomit-frame-pointer does not work with egcs 1.1.1
