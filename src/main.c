@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.110 2001/01/24 08:17:28 hubbe Exp $");
+RCSID("$Id: main.c,v 1.111 2001/03/10 22:25:29 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -118,7 +118,7 @@ static void get_master_key(HKEY cat)
   DWORD len=sizeof(buffer)-1,type=REG_SZ;
   long ret;
   if(RegOpenKeyEx(cat,
-		  (LPCTSTR)"SOFTWARE\\Idonex\\Pike\\0.7",
+		  (LPCTSTR)"SOFTWARE\\Idonex\\Pike\\7.2",
 		  0,KEY_READ,&k)==ERROR_SUCCESS)
   {
     if(RegQueryValueEx(k,
