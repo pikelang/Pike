@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.h,v 1.9 2003/07/11 22:09:30 per Exp $
+|| $Id: system.h,v 1.10 2003/10/10 19:28:21 nilsson Exp $
 */
 
 /*
@@ -52,6 +52,10 @@ void f_closelog(INT32 args);
  * memory.c
  */
 
+#ifdef HAVE_WINDOWS_H
+#define WIN32SHM
+#endif
+
 struct memory_storage
 {
    unsigned char *p;
@@ -63,5 +67,7 @@ struct memory_storage
 #define MEM_FREE_MUNMAP 0x20   
 #define MEM_FREE_SHMDEL 0x40
    unsigned long flags;
+#ifdef WIN32SHM
    void *extra;
+#endif
 };
