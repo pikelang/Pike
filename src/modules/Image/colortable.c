@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.92 2000/08/12 23:06:53 grubba Exp $ */
+/* $Id: colortable.c,v 1.93 2000/08/15 12:43:02 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.92 2000/08/12 23:06:53 grubba Exp $
+**!	$Id: colortable.c,v 1.93 2000/08/15 12:43:02 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.92 2000/08/12 23:06:53 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.93 2000/08/15 12:43:02 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2326,7 +2326,7 @@ void image_colortable_corners(INT32 args);
 
 void image_colortable_reduce_fs(INT32 args)
 {
-   int numcolors;
+   int numcolors = 1293791;	/* a lot */
    int i;
    struct object *o;
    struct neo_colortable *nct;
@@ -2336,8 +2336,6 @@ void image_colortable_reduce_fs(INT32 args)
 	SIMPLE_BAD_ARG_ERROR("Image.Colortable->reduce",1,"int");
      else
 	numcolors=sp[-args].u.integer;
-   else
-      numcolors=1293791; /* a lot */
 
    if (numcolors<2)
       SIMPLE_BAD_ARG_ERROR("Image.Colortable->reduce",1,"int(2..)");

@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.33 2000/08/12 23:06:54 grubba Exp $
+ * $Id: image_jpeg.c,v 1.34 2000/08/15 13:03:15 grubba Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.33 2000/08/12 23:06:54 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.34 2000/08/15 13:03:15 grubba Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -414,7 +414,7 @@ static void image_jpeg_encode(INT32 args)
    struct my_destination_mgr destmgr;
    struct jpeg_compress_struct cinfo;
 
-   struct image *img;
+   struct image *img = NULL;
 
    unsigned char *tmp;
    INT32 y;

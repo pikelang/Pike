@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.8 2000/08/03 21:25:32 grubba Exp $");
+RCSID("$Id: tim.c,v 1.9 2000/08/15 12:54:05 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -174,7 +174,7 @@ void img_tim_decode(INT32 args, int header_only)
   int n=0, hasalpha=0, bitpp=0, bsize=0;
   ptrdiff_t len;
   INT32 attr;
-  unsigned int h, w, i;
+  unsigned int h=0, w=0, i;
   
   get_all_args("Image.TIM._decode", args, "%S", &str);
   clut=s=(unsigned char *)str->str;

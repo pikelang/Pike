@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.54 2000/08/12 23:06:54 grubba Exp $
+**!	$Id: layers.c,v 1.55 2000/08/15 12:44:50 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.54 2000/08/12 23:06:54 grubba Exp $");
+RCSID("$Id: layers.c,v 1.55 2000/08/15 12:44:50 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -2735,7 +2735,7 @@ static void image_layer_crop(INT32 args)
    struct layer *l;
    INT_TYPE x,y,xz,yz,xi,yi;
    int zot=0;
-   struct image *img;
+   struct image *img = NULL;
 
    get_all_args("Image.Layer->crop",args,"%d%d%d%d",&x,&y,&xz,&yz);
 

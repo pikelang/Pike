@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.185 2000/08/11 11:01:04 grubba Exp $");
+RCSID("$Id: file.c,v 1.186 2000/08/15 13:05:15 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1398,9 +1398,9 @@ static void file_open(INT32 args)
 static void file_seek(INT32 args)
 {
 #ifdef HAVE_LSEEK64
-  INT64 to;
+  INT64 to = 0;
 #else
-  INT32 to;
+  INT32 to = 0;
 #endif
 
 #ifdef HAVE_LSEEK64

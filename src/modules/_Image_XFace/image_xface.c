@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.9 2000/07/28 07:15:41 hubbe Exp $");
+RCSID("$Id: image_xface.c,v 1.10 2000/08/15 13:04:18 grubba Exp $");
 
 #include "config.h"
 
@@ -415,7 +415,7 @@ static void image_xface_decode(INT32 args)
 
 static void image_xface_encode(INT32 args)
 {
-  struct image *img;
+  struct image *img = NULL;
   struct pike_string *res;
 
   if (args<1 

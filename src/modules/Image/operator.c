@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.32 2000/08/09 17:04:19 grubba Exp $ */
+/* $Id: operator.c,v 1.33 2000/08/15 12:41:59 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.32 2000/08/09 17:04:19 grubba Exp $
+**!	$Id: operator.c,v 1.33 2000/08/15 12:41:59 grubba Exp $
 **! class Image
 */
 
@@ -516,7 +516,7 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 
 void image_operator_equal(INT32 args)
 {
-   struct image *oper;
+   struct image *oper = NULL;
    rgb_group *s1,*s2,rgb;
    INT32 i;
    int res=1;
@@ -605,7 +605,7 @@ fprintf(stderr,"ok 1\n");
 
 void image_operator_lesser(INT32 args)
 {
-   struct image *oper;
+   struct image *oper = NULL;
    rgb_group *s1,*s2,rgb;
    INT32 i;
    int res=1;
@@ -677,7 +677,7 @@ void image_operator_lesser(INT32 args)
 
 void image_operator_greater(INT32 args)
 {
-   struct image *oper;
+   struct image *oper = NULL;
    rgb_group *s1,*s2,rgb;
    INT32 i;
    int res=1;

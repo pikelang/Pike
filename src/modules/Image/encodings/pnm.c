@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $ */
+/* $Id: pnm.c,v 1.23 2000/08/15 12:49:59 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $
+**!	$Id: pnm.c,v 1.23 2000/08/15 12:49:59 grubba Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.22 2000/07/28 07:13:06 hubbe Exp $");
+RCSID("$Id: pnm.c,v 1.23 2000/08/15 12:49:59 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -267,7 +267,7 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
 {
    char buf[80];
    struct pike_string *a,*b;
-   struct image *img;
+   struct image *img = NULL;
    unsigned char *c;
    int x,y;
    rgb_group *s;
@@ -309,11 +309,11 @@ void img_pnm_encode_P1(INT32 args) /* ascii PBM */
 void img_pnm_encode_P2(INT32 args) /* ascii PGM */
 {
    char buf[80];
-   struct image *img;
+   struct image *img = NULL;
    int y,x;
    rgb_group *s;
    int n;
-   struct object *o;
+   struct object *o = NULL;
 
    if (args<1 ||
        sp[-args].type!=T_OBJECT ||
@@ -350,11 +350,11 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
 void img_pnm_encode_P3(INT32 args) /* ascii PPM */
 {
    char buf[80];
-   struct image *img;
+   struct image *img = NULL;
    int y,x;
    rgb_group *s;
    int n;
-   struct object *o;
+   struct object *o = NULL;
 
    if (args<1 ||
        sp[-args].type!=T_OBJECT ||

@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.18 2000/08/10 07:43:14 grubba Exp $");
+RCSID("$Id: iso2022.c,v 1.19 2000/08/15 13:00:30 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -506,7 +506,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	} else {
 	  /* Need to switch to another map */
 
-	  int mode, index=0, ch, ch2;
+	  int mode=0, index=0, ch, ch2;
 	  UNICHAR *ttab = NULL, *ttt;
 	  p_wchar1 *rmap = NULL;
 

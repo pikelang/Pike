@@ -316,8 +316,9 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
 	   DO_NOT_WARN((long)i0),
 	   feed,c,
 	   DO_NOT_WARN((long)feed->s->len));
-   fprintf(stderr,"»\n%*s\n",DO_NOT_WARN((int)l+c-i0+3),buf);
-   
+   fprintf(stderr,"»\n%*s\n",
+	   DO_NOT_WARN((int)(l+c-i0+3)),
+	   buf);
 }
 #endif
 
@@ -3798,15 +3799,15 @@ static void html_finish(INT32 args)
 
 static void html_read(INT32 args)
 {
-   int n;
+   int n = 0x7fffffff;	/* a lot */
    int m=0; /* items on stack */
 
-   if (!args) 
-      n=0x7fffffff; /* a lot */
-   else  if (sp[-args].type==T_INT)
-      n=sp[-args].u.integer;
-   else
-      error("read: illegal argument\n");
+   if (args) {
+      if (sp[-args].type==T_INT)
+         n=sp[-args].u.integer;
+      else
+         error("read: illegal argument\n");
+   }
 
    pop_n_elems(args);
 

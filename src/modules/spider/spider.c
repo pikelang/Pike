@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.98 2000/08/12 06:17:18 per Exp $");
+RCSID("$Id: spider.c,v 1.99 2000/08/15 13:12:11 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -403,8 +403,11 @@ INLINE int tagsequal(char *s, char *t, ptrdiff_t len, char *end)
 {
   if(s+len >= end)  return 0;
 
-  while(len--) if(tolower(*(t++)) != tolower(*(s++)))
-    return 0;
+  while(len--) {
+    if(tolower(*((unsigned char *)(t++))) !=
+       tolower(*((unsigned char *)(s++))))
+      return 0;
+  }
 
   switch(*s) {
   case '>':

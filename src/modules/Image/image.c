@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.174 2000/08/12 23:06:53 grubba Exp $ */
+/* $Id: image.c,v 1.175 2000/08/15 12:39:58 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.174 2000/08/12 23:06:53 grubba Exp $
+**!	$Id: image.c,v 1.175 2000/08/15 12:39:58 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.174 2000/08/12 23:06:53 grubba Exp $");
+RCSID("$Id: image.c,v 1.175 2000/08/15 12:39:58 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1958,7 +1958,7 @@ static void image_gradients(INT32 args)
 
    while (args--)
    {
-      struct array *a;
+      struct array *a = NULL;
       if (sp[-1].type!=T_ARRAY ||
 	  (a=sp[-1].u.array)->size!=5 ||
 	  a->item[0].type!=T_INT ||
@@ -3885,7 +3885,7 @@ void image_gamma(INT32 args)
    struct object *o;
    struct image *img;
    COLORTYPE _newg[256],_newb[256],*newg,*newb;
-   double gammar,gammab,gammag;
+   double gammar=0.0, gammab=0.0, gammag=0.0;
    COLORTYPE newr[256];
 
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;

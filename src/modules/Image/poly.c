@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: poly.c,v 1.6 2000/08/12 23:06:54 grubba Exp $
+**!	$Id: poly.c,v 1.7 2000/08/15 12:48:17 grubba Exp $
 **! class Poly
 **!
 */
@@ -18,7 +18,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.6 2000/08/12 23:06:54 grubba Exp $");
+RCSID("$Id: poly.c,v 1.7 2000/08/15 12:48:17 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -214,10 +214,10 @@ void vertices_dump(struct poly *this,char *desc)
 	 fprintf(stderr,", down");
 	 while (l)
 	 {
-	    fprintf(stderr," %d:%g,%g",
+	    fprintf(stderr," %p:%g,%g",
 		    l->down-this->vertex,l->down->x,l->down->y);
 	    if (l->up!=this->vertex+i)
-	       fprintf(stderr,"(wrong up: %d)",
+	       fprintf(stderr,"(wrong up: %p)",
 		       l->up-this->vertex+i);
 	    l=l->nextdown;
 	 }
@@ -227,9 +227,10 @@ void vertices_dump(struct poly *this,char *desc)
 	 fprintf(stderr,", up");
 	 while (l)
 	 {
-	    fprintf(stderr," %d:%g,%g",l->up-this->vertex,l->up->x,l->up->y);
+	    fprintf(stderr, " %p:%g,%g",
+		    l->up-this->vertex, l->up->x, l->up->y);
 	    if (l->down!=this->vertex+i)
-	       fprintf(stderr,"(wrong down: %d)",
+	       fprintf(stderr,"(wrong down: %p)",
 		       l->down-this->vertex+i);
 	    l=l->nextup;
 	 }
@@ -705,7 +706,7 @@ static void image_poly_cast(INT32 args)
 		  {
 		     struct line *lk;
 
-		     fprintf(stderr," %d %d:%g,%g - ",
+		     fprintf(stderr," %p %p:%g,%g - ",
 			     l-THIS->line,
 			     v-THIS->vertex,
 			     v->x,v->y);
@@ -714,7 +715,7 @@ static void image_poly_cast(INT32 args)
 		     v=down?l->down:l->up;
 
 #if 1
-		     fprintf(stderr,"%d:%g,%g: ",
+		     fprintf(stderr,"%p:%g,%g: ",
 			     v-THIS->vertex,
 			     v->x,v->y);
 
@@ -723,8 +724,8 @@ static void image_poly_cast(INT32 args)
 			fprintf(stderr,", down");
 			while (lk)
 			{
-			   fprintf(stderr," %d[%c]:%g,%g",
-				   lk-THIS->line,mark[lk-THIS->line]?'x':' ',
+			   fprintf(stderr," %p[%c]:%g,%g",
+				   lk-THIS->line, mark[lk-THIS->line]?'x':' ',
 				   lk->down->x,lk->down->y);
 			   lk=lk->nextdown;
 			}
@@ -734,7 +735,7 @@ static void image_poly_cast(INT32 args)
 			fprintf(stderr,", up");
 			while (lk)
 			{
-			   fprintf(stderr," %d[%c]:%g,%g",
+			   fprintf(stderr," %p[%c]:%g,%g",
 				   lk-THIS->line,mark[lk-THIS->line]?'x':' ',
 				   lk->up->x,l->up->y);
 			   lk=lk->nextup;

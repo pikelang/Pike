@@ -34,7 +34,7 @@ void INAME(INT32 args)
   int xs,ys, y, x; /* for this & img */
   int nxs,nys, ny, nx; /* for neddle */
   int foo=0;
-  double scale;
+  double scale = 1.0;
   int needle_average=0;
   int needle_size=0;
   
