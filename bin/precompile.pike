@@ -1231,6 +1231,7 @@ class ParseBlock
 	array body=func[p];
 	array rest=func[p+1..];
 	string name=(string)proto[0];
+	string lname = mkname(base, name);
 	mapping attributes=parse_attributes(proto[1..]);
 
 	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],
@@ -1249,19 +1250,19 @@ class ParseBlock
 	addfuncs+=
 	  IFDEF(define,
 		({
-		  IFDEF("PROG_"+upper_case(name)+"_ID",
+		  IFDEF("PROG_"+upper_case(lname)+"_ID",
 			({
 			  sprintf("  START_NEW_PROGRAM_ID(%s);\n",
-				  upper_case(name)),
+				  upper_case(lname)),
 			  "#else\n",
 			  "  start_new_program();\n"
 			})),
-		  IFDEF("tObjImpl_"+upper_case(name),
+		  IFDEF("tObjImpl_"+upper_case(lname),
 			0,
-			DEFINE("tObjImpl_"+upper_case(name), "tObj")),
+			DEFINE("tObjImpl_"+upper_case(lname), "tObj")),
 		})+
-		IFDEF("THIS_"+upper_case(name),
-		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
+		IFDEF("THIS_"+upper_case(lname),
+		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",lname,lname) }) )+
 		subclass->addfuncs+
 		({
 		  attributes->program_flags?
