@@ -18,7 +18,7 @@
 #include "operators.h"
 #include "module_support.h"
 
-RCSID("$Id: error.c,v 1.27 1999/03/20 22:24:30 hubbe Exp $");
+RCSID("$Id: error.c,v 1.28 1999/03/23 02:51:07 marcus Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -300,6 +300,7 @@ void f_error_index(INT32 args)
     case 1: ref_push_array(GENERIC_ERROR_THIS->backtrace); break;
     default:
     /* do an index out of range error here! */
+      ;
   }
 }
 
