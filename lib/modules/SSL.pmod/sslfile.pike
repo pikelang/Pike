@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.54 2003/12/01 20:12:45 mast Exp $
+/* $Id: sslfile.pike,v 1.55 2004/03/15 15:29:09 mast Exp $
  *
  */
 
@@ -144,16 +144,7 @@ private int queue_write()
 #endif
 #endif
 
-  if(sizeof(write_buffer) && CALLBACK_MODE) {
-    if (mixed err = catch {
-      socket->set_write_callback(ssl_write_callback);
-    }) {
-#ifdef DEBUG
-      master()->handle_error (err);
-#endif
-      return(0);
-    }
-  }
+  if (socket) update_callbacks();
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->queue_write: end\n");
 #endif
