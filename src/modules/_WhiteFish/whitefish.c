@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.21 2001/05/28 18:17:07 per Exp $");
+RCSID("$Id: whitefish.c,v 1.22 2001/05/28 20:46:59 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -166,13 +166,13 @@ static struct object *low_do_query_merge( Blob **blobs,
     /* Main loop: Find the smallest element in the blob array. */
     while( 1 )
     {
-      unsigned int min = 0x7ffffff;
+      unsigned int min = 0x7fffffff;
     
       for( i = 0; i<nblobs; i++ )
 	if( !blobs[i]->eof && ((unsigned int)blobs[i]->docid) < min )
 	  min = blobs[i]->docid;
 
-      if( min == 0x7ffffff )
+      if( min == 0x7fffffff )
 	break;
 
       for( j = 0, i = 0; i < nblobs; i++ )
@@ -278,7 +278,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
     /* Main loop: Find the smallest element in the blob array. */
     while( 1 )
     {
-      unsigned int min = 0x7ffffff;
+      unsigned int min = 0x7fffffff;
     
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->eof )
@@ -286,7 +286,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
 	else if( ((unsigned int)blobs[i]->docid) < min )
 	  min = blobs[i]->docid;
 
-      if( min == 0x7ffffff )
+      if( min == 0x7fffffff )
 	goto end;
 
       for( j = 0, i = 0; i < nblobs; i++ )
@@ -344,7 +344,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
     /* Main loop: Find the smallest element in the blob array. */
     while( 1 )
     {
-      unsigned int min = 0x7ffffff;
+      unsigned int min = 0x7fffffff;
     
       for( i = 0; i<nblobs; i++ )
 	if( blobs[i]->eof )
@@ -352,7 +352,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
 	else if( ((unsigned int)blobs[i]->docid) < min )
 	  min = blobs[i]->docid;
 
-      if( min == 0x7ffffff )
+      if( min == 0x7fffffff )
 	goto end;
 
       for( j = 0, i = 0; i < nblobs; i++ )
