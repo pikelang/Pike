@@ -80,6 +80,96 @@ string extractXML(string filename, int|void pikeMode, string|void type,
 }
 
 //========================================================================
+// IMAGES MOVED TO CANONICAL FILES
+//========================================================================
+
+// middot
+#define CONCAT_CHAR "·"
+
+//!   Copy all images to canonical files in a flat directory.
+//! @param docXMLFile
+//!   The contents of the XML file.
+//! @param imageSourceDir
+//!   The directory that is the base of the relative paths to images. This
+//!   should be the directory of the source file that was the input to
+//!   extract the XML file.
+//! @param imageDestDir
+//!   The directory where the images should be copied.
+//! @returns
+//!   The XML file contents (with decorated <image>-tags)
+string moveImages(string docXMLFile,
+                  string imageSourceDir,
+                  string imageDestDir)
+{
+  array(string) parents = ({});
+  int counter = 0;
+  string cwd = getcwd();
+  Node n = parse_input(docXMLFile)[0];
+  n->walk_preorder_2(
+    lambda(Node n) {
+      if (n->get_node_type() == XML_ELEMENT) {
+        mapping(string : string) attr = n->get_attributes();
+        switch (n->get_any_name()) {
+          case "docgroup":
+            if (attr["homogen-name"])
+              parents += ({ attr["homogen-name"] });
+            else {
+              string name = 0;
+              foreach (n->get_children(), Node c) {
+                if (c->get_node_type() == XML_ELEMENT)
+                  if (name = c->get_attributes()["name"])
+                    break;
+              }
+              if (!name)
+                processError("<docgroup> had no child "
+                               "with a name=\"...\" attribute");
+              parents += ({ name });
+            }
+            counter = 0;
+            break;
+          case "class":
+          case "module":
+            if (attr["name"] != "")
+              parents += ({ attr["name"] });
+            counter = 0;
+            break;
+          case "image":
+            array(Node) children = n->get_children();
+            if (sizeof(children || ({})) != 1
+                || children[0]->get_node_type() != XML_TEXT)
+              processError("bad image tag: %s\n", n->html_of_node());
+            string imageFilename = children[0]->get_text();
+            imageFilename = combine_path(imageSourceDir, imageFilename);
+            imageFilename = combine_path(cwd, imageFilename);
+            string formatExt = (basename(imageFilename) / ".")[-1];
+            string canonicalName =
+              (parents + ({ (string) ++counter })) * CONCAT_CHAR;
+            string destFilename = imageDestDir + "/" + canonicalName
+              + "." + formatExt;
+            werror("copying from [%s] to [%s]\n", imageFilename, destFilename);
+            Stdio.File(destFilename, "cwt")
+              ->write(Stdio.read_file(imageFilename));
+            n->get_attributes()["file"] = canonicalName + "." + formatExt;
+            break;
+        }
+      }
+    },
+    lambda(Node n) {
+      if (n->get_node_type() == XML_ELEMENT) {
+        switch (n->get_any_name()) {
+          case "docgroup":
+          case "class":
+          case "module":
+            parents = parents[0 .. sizeof(parents) - 2];
+            break;
+        }
+      }
+    }
+  );
+  return n->html_of_node();
+}
+
+//========================================================================
 // BUILDING OF THE BIG TREE
 //========================================================================
 

@@ -42,6 +42,7 @@ mapping(string : int) keywordtype =
   "i" : BRACEKEYWORD,
   "tt" : BRACEKEYWORD,
   "ref" : BRACEKEYWORD,
+  "image" : BRACEKEYWORD,
 
   "deprecated" : SINGLEKEYWORD,
 
