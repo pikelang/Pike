@@ -2761,9 +2761,9 @@ cDay dwim_day(string day,void|TimeRange context)
 
    if (strlen(day)==4) catch { return parse("%M/%D",day/2*"/",context); };
 
-   if (day=="today") return context?context->day():t;
-   if (day=="tomorrow") return (context?context->day():t)+1;
-   if (day=="yesterday") return (context?context->day():t)-1;
+   if (day=="today") return t;
+   if (day=="tomorrow") return t+1;
+   if (day=="yesterday") return t-1;
    if (sscanf(day,"last %s",day))
    {
       cDay d=dwim_day(day);
