@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.214 2002/08/10 22:41:25 per Exp $
+// $Id: master.pike.in,v 1.215 2002/08/10 23:56:52 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1600,7 +1600,7 @@ void _main(array(string) orig_argv, array(string) env)
       }		
     }
 
-  void _error(string a, void|mixed ... b) {
+  void _error(string a, mixed ... b) {
     werror(a, @b);
     exit(1);
   };
@@ -1615,7 +1615,8 @@ void _main(array(string) orig_argv, array(string) env)
   q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
 #endif
-  
+
+  // Some configure scripts depends on this format.
   string format_paths() {
     return  ("master.pike...: " + (_master_file_name || __FILE__) + "\n"
 	     "Module path...: " + pike_module_path*"\n"
