@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.290 2003/04/27 14:16:51 mast Exp $
+|| $Id: interpret.c,v 1.291 2003/07/16 14:11:17 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.290 2003/04/27 14:16:51 mast Exp $");
+RCSID("$Id: interpret.c,v 1.291 2003/07/16 14:11:17 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1780,22 +1780,37 @@ PMOD_EXPORT void f_call_function(INT32 args)
 PMOD_EXPORT void call_handle_error(void)
 {
   dmalloc_touch_svalue(&throw_value);
+
   if (Pike_interpreter.svalue_stack_margin) {
-    ONERROR tmp;
     int old_t_flag = t_flag;
     t_flag = 0;
     Pike_interpreter.svalue_stack_margin = 0;
     Pike_interpreter.c_stack_margin = 0;
-    SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
     *(Pike_sp++) = throw_value;
     throw_value.type=T_INT;
-    APPLY_MASTER("handle_error", 1);
+
+    if (get_master()) {
+      ONERROR tmp;
+      SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
+      APPLY_MASTER("handle_error", 1);
+      UNSET_ONERROR(tmp);
+    }
+    else {
+      fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
+      char *s;
+      init_buf();
+      describe_svalue (Pike_sp - 1, 0, 0);
+      s=simple_free_buf();
+      fprintf(stderr,"%s\n",s);
+      free(s);
+    }
+
     pop_stack();
-    UNSET_ONERROR(tmp);
     Pike_interpreter.svalue_stack_margin = SVALUE_STACK_MARGIN;
     Pike_interpreter.c_stack_margin = C_STACK_MARGIN;
     t_flag = old_t_flag;
   }
+
   else {
     free_svalue(&throw_value);
     throw_value.type=T_INT;
