@@ -258,7 +258,7 @@ static private class _Elite
       ({"picture","pic"}),
       ({" pornography"," pr0n"}),
       ({" porn"," pr0n"}),
-      ({" cool"," kewl"}),
+      ({"cool","kewl"}),
       ({" elite "," 1337 "}),
    });
 
@@ -377,7 +377,9 @@ static private class _Elite
 	 {
 	    res+=d[random(sizeof(d))];
 	 }
-	 else 
+	 else if (leetp>50) // add random caps
+	    res+=(random(2)?upper_case:lower_case)(in[i..i]);
+	 else
 	    res+=in[i..i];
 
       return res;
