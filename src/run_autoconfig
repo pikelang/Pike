@@ -6,7 +6,7 @@ need_to_make_depend=no
 
 
 find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
-  if [ -f $dir/acconfig.h ]; then
+  if [ -f $dir/acconfig.h -a $dir/configure.in ]; then
     echo "Running autoheader in $dir"
     ( cd $dir ; autoheader && echo foo >stamp-h.in )
   fi
