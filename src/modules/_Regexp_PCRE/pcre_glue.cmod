@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.8 2003/09/24 12:46:47 mirar Exp $
+|| $Id: pcre_glue.cmod,v 1.9 2003/09/30 23:42:25 nilsson Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.8 2003/09/24 12:46:47 mirar Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.9 2003/09/30 23:42:25 nilsson Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -364,8 +364,9 @@ PIKECLASS _pcre
 
 #endif /* HAVE_LIBPCRE */
 
-/*!
- *! convenience function: 
+/*! @decl array(string) split_subject(string subject, @
+ *!                        array(int) previous_result)
+ *! Convenience function that
  *! splits a subject string on the result from _pcre->exec()
  *! 
  *! equal to
