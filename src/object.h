@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.53 2000/08/10 14:55:53 grubba Exp $
+ * $Id: object.h,v 1.54 2000/08/10 14:58:05 grubba Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -73,8 +73,8 @@ PMOD_EXPORT void destruct(struct object *o);
 PMOD_EXPORT void destruct_objects_to_destruct(void);
 void schedule_really_free_object(struct object *o);
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
-			      struct object *o,
-			      INT32 f);
+					  struct object *o,
+					  ptrdiff_t f);
 PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 			  struct object *o,
 			  struct svalue *index);

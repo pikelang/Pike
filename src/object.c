@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.140 2000/08/10 14:56:23 grubba Exp $");
+RCSID("$Id: object.c,v 1.141 2000/08/10 14:57:41 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -757,8 +757,8 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 
 
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
-			      struct object *o,
-			      INT32 f)
+					  struct object *o,
+					  ptrdiff_t f)
 {
   struct identifier *i;
   struct program *p=o->prog;
@@ -783,7 +783,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
   case IDENTIFIER_FUNCTION:
   case IDENTIFIER_C_FUNCTION:
     to->type=T_FUNCTION;
-    to->subtype=f;
+    to->subtype = DO_NOT_WARN(f);
     to->u.object=o;
     add_ref(o);
     break;
@@ -795,7 +795,7 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
       if(s->type==T_PROGRAM)
       {
 	to->type=T_FUNCTION;
-	to->subtype=f;
+	to->subtype = DO_NOT_WARN(f);
 	to->u.object=o;
 	add_ref(o);
       }else{

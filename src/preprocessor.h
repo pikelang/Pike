@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.30 2000/08/10 08:50:56 grubba Exp $
+ * $Id: preprocessor.h,v 1.31 2000/08/10 15:00:20 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -982,7 +982,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    for(e=0;e<d->num_parts;e++)
 	    {
 	      WCHAR *a;
-	      INT32 l;
+	      ptrdiff_t l;
 	      
 	      if((d->parts[e].argument & DEF_ARG_MASK) < 0 || 
 		 (d->parts[e].argument & DEF_ARG_MASK) >= arg)
