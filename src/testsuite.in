@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.105 1998/05/12 23:51:27 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.106 1998/05/13 07:45:31 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1267,6 +1267,9 @@ test_equal([[(array(int)) ({"1","4711",2.0,4})]],[[({1,4711,2,4})]])
 
 test_equal([[(array)"foo"]],[[ values("foo") ]])
 test_equal([[(array)(<1,2,3>)]],[[ indices( (<1,2,3>) )]])
+test_equal([[sort(column((array)([1:2,3:4]),0))]],[[ sort(indices(([1:2,3:4])) )]])
+test_equal([[sort(column((array)([1:2,3:4]),1))]],[[ sort(values(([1:2,3:4])))]])
+test_true([[(array(array))([1:2,3:4,5:6]) ]])
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
