@@ -147,10 +147,19 @@ string moveImages(string docXMLFile,
               (parents + ({ (string) ++counter })) * CONCAT_CHAR;
             string destFilename = imageDestDir + "/" + canonicalName
               + "." + formatExt;
+
+	    mapping args = n->get_attributes();
             werror("copying from [%s] to [%s]\n", imageFilename, destFilename);
-            Stdio.File(destFilename, "cwt")
-              ->write(Stdio.read_file(imageFilename));
-            n->get_attributes()["file"] = canonicalName + "." + formatExt;
+	    if(!Stdio.cp(imageFilename, destFilename))
+	      werror("Error: Could not move %s to %s.\n", imageFilename, destFilename);
+	    else {
+	      Image.Image o = Image.load(imageFilename);
+	      if(o && o->xsize() && o->ysize()) {
+		args->width = (string)o->xsize();
+		args->height = (string)o->ysize();
+	      }
+	    }
+            args->file = canonicalName + "." + formatExt;
             break;
         }
       }
@@ -300,7 +309,7 @@ static void recurseAppears(Node root, Node current) {
         recurseAppears(root, child);
 }
 
-// Tke care of all the @appears and @belongs directives everywhere,
+// Take care of all the @appears and @belongs directives everywhere,
 // and rearrange the nodes in the tree accordingly
 void handleAppears(Node root) {
   tasks = ({ });
@@ -316,8 +325,10 @@ void handleAppears(Node root) {
     array(string) belongsRef = task->belongsRef;
     string newName = task->newName;
     Node belongsNode = findNode(root, belongsRef);
-    if (!belongsNode)
+    if (!belongsNode) {
       werror("couldn't find the node: %O\n", belongsRef);
+      continue;
+    }
     if (type == "docgroup") {
       if (newName)
         foreach (n->get_children(), Node child)
@@ -332,6 +343,9 @@ void handleAppears(Node root) {
       if (newName)
         n->get_attributes()["name"] = newName;
     }
+
+    m_delete(n->get_attributes(), "belongs");
+
     Node parent = n->get_parent();
     if (parent)
       parent->remove_child(n);
@@ -523,10 +537,16 @@ static void resolveFun(ScopeStack scopes, Node node) {
                                 lambda (Node n) {
                                   return n->get_any_name() == "arguments";
                                 }), Node m)
-                  foreach (m->get_children(), Node argnode)
+                  foreach (m->get_children(), Node argnode) {
+		    if(argnode->get_node_type() != XML_ELEMENT)
+		      continue;
                     scopes->addName(argnode->get_attributes()["name"]);
+		  }
               }
-            fixupRefs(scopes, doc);
+	    if(doc)
+	      fixupRefs(scopes, doc);
+	    else
+	      werror("No doc element found\n%s\n\n", child->render_xml());
           }
           scopes->leave();
           break;
@@ -552,7 +572,7 @@ void resolveRefs(Node tree) {
 // Call this method after the extraction and merge of the tree.
 void postProcess(Node tree) {
   handleAppears(tree);
-  resolveRefs(tree);
+  //  resolveRefs(tree);
 }
 
 
