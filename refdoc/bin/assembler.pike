@@ -193,7 +193,7 @@ void chapter_ref_expansion(Node n, string dir) {
 
     case "section":
       c->get_attributes()->number = (string)++section;
-      toc[chapter-1] += ({ c->get_attributes()->title });
+      toc[chapter] += ({ c->get_attributes()->title });
       section_ref_expansion(c);
       break;
 
