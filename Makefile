@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.109 2002/12/15 19:17:36 grubba Exp $
+# $Id: Makefile,v 1.110 2003/01/25 23:35:14 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -284,6 +284,9 @@ xenofarm:
 	  BUILDDIR="$(BUILDDIR)" /bin/sh bin/xenofarm.sh
 	cd build/xenofarm && tar cf - . > ../../xenofarm_result.tar
 	gzip -f9 xenofarm_result.tar
+
+benchmark:
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=run_bench"
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(DO_MAKE) clean || { \
