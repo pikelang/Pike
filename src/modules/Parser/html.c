@@ -1180,7 +1180,7 @@ static INLINE void skip_piece_range(struct location *loc,
    {
       case 0:
       {
-	 p_wchar0 *s=p->s->str;
+	 p_wchar0 *s=(p_wchar0 *)p->s->str;
 	 for (;start<stop;start++)
 	 {
 	    if (*(s++)=='\n') 
