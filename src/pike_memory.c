@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.57 2000/03/20 22:02:08 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.58 2000/03/22 00:56:54 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -993,6 +993,28 @@ static int find_location(struct memhdr *mh, LOCATION location)
   return 0;
 }
 
+#ifdef DMALLOC_AD_HOC
+void merge_location_list(struct memhdr *mh)
+{
+  struct memloc *ml,*ml2,**prev;
+  for(ml=mh->locations;ml;ml=ml->next)
+  {
+    prev=&ml->next;
+    while((ml2=*prev))
+    {
+      if(ml->location == ml2->location)
+      {
+	ml->times+=ml2->times;
+	*prev=ml2->next;
+	really_free_memloc(ml2);
+      }else{
+	prev=&ml2->next;
+      }
+    }
+  }
+}
+#endif
+
 static void add_location(struct memhdr *mh, LOCATION location)
 {
   struct memloc *ml;
@@ -1032,10 +1054,35 @@ static void add_location(struct memhdr *mh, LOCATION location)
 #ifdef DMALLOC_PROFILE
       add_location_seek++;
 #endif
-      if(ml->location == location)
-	goto old_ml;
-
       l2=lhash(mh, ml->location);
+
+      if(ml->location == location)
+      {
+	ml->times++;
+	mlhash[l]=ml;
+	prev=&ml->next;
+
+	while((ml=*prev))
+	{
+	  l2=lhash(mh, ml->location);
+
+	  if(mlhash[l2] &&
+	     mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
+	  {
+	    /* We found a duplicate */
+#ifdef DMALLOC_PROFILE
+	    add_location_duplicate++;
+#endif
+	    mlhash[l2]->times+=ml->times;
+	    *prev=ml->next;
+	    really_free_memloc(ml);
+	  }else{
+	    prev=&ml->next;
+	  }
+	}
+	mh->misses=0;
+	return;
+      }
 
       if(mlhash[l2] && mlhash[l2]!=ml &&
 	 mlhash[l2]->mh == mh && mlhash[l2]->location == ml->location)
@@ -1316,12 +1363,16 @@ void dump_memhdr_locations(struct memhdr *from,
 {
   struct memloc *l;
   if(!from) return;
+#ifdef DMALLOC_AD_HOC
+  merge_location_list(from);
+#endif
+
   for(l=from->locations;l;l=l->next)
   {
     if(notfrom && find_location(notfrom, l->location))
       continue;
 
-    fprintf(stderr," %s %s (%d times) %s\n",
+    fprintf(stderr,"   %s %s (%d times) %s\n",
 	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
 	    LOCATION_NAME(l->location),
 	    l->times,
@@ -1379,15 +1430,7 @@ void list_open_fds(void)
 	{
 	  fprintf(stderr,"Filedescriptor %ld\n",PTR2FD(p));
 
-	  for(l=m->locations;l;l=l->next)
-	  {
-	    fprintf(stderr,"   %s %s (%d times) %s\n",
-		    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
-		    LOCATION_NAME(l->location),
-		    l->times,
-		    find_location(&no_leak_memlocs, l->location) ? "" : "*"
-		    );
-	  }
+	  dump_memhdr_locations(m, 0);
 	}
       }
     }
@@ -1511,14 +1554,7 @@ void cleanup_memhdrs(void)
 	  break;
 	}
 	
-	for(l=m->locations;l;l=l->next)
-	{
-	  fprintf(stderr,"  %s %s (%d times) %s\n",
-		  LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
-		  LOCATION_NAME(l->location),
-		  l->times,
-		  find_location(&no_leak_memlocs, l->location) ? "" : "*");
-	}
+	dump_memhdr_locations(m, 0);
       }
     }
 
