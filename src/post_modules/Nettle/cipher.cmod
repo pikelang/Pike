@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.9 2003/08/04 18:59:14 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.10 2003/08/05 18:15:23 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -64,7 +64,7 @@ PIKECLASS CipherInfo
   PIKEFUN string name()
     {
       if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.");
+	Pike_error("CipherInfo not properly initialized.\n");
 
       push_string(make_shared_string(THIS->meta->name));
     }
@@ -77,7 +77,7 @@ PIKECLASS CipherInfo
   PIKEFUN int key_size()
     {
       if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.");
+	Pike_error("CipherInfo not properly initialized.\n");
 
       push_int(THIS->meta->key_size);
     }
@@ -91,7 +91,7 @@ PIKECLASS CipherInfo
   PIKEFUN int check_key_size(int size)
     {
       if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.");
+	Pike_error("CipherInfo not properly initialized.\n");
 
       push_int(THIS->check_key(size, NULL));
     }
@@ -104,7 +104,7 @@ PIKECLASS CipherInfo
   PIKEFUN int block_size()
     {
       if (!THIS->meta)
-	Pike_error("CipherInfo not properly initialized.");
+	Pike_error("CipherInfo not properly initialized.\n");
 
       push_int(THIS->meta->block_size);
     }
@@ -143,11 +143,11 @@ PIKECLASS CipherState
       assert(info);
       
       if (!THIS->ctx || !info->meta)
-	Pike_error("CipherState not properly initialized.");
+	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
       if (!info->check_key(key->len, key->str))
-	Pike_error("Invalid key.");
+	Pike_error("Invalid key.\n");
       
       info->meta->set_encrypt_key(THIS->ctx, key->len, key->str);
       THIS->crypt = info->meta->encrypt;
@@ -165,11 +165,11 @@ PIKECLASS CipherState
       assert(info);
       
       if (!THIS->ctx || !info->meta)
-	Pike_error("CipherState not properly initialized.");
+	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(key);
       if (!info->check_key(key->len, key->str))
-	Pike_error("Invalid key.");
+	Pike_error("Invalid key.\n");
       
       info->meta->set_decrypt_key(THIS->ctx, key->len, key->str);
       THIS->crypt = info->meta->decrypt;
@@ -195,13 +195,13 @@ PIKECLASS CipherState
       assert(info);
       
       if (!THIS->ctx || !THIS->crypt|| !info->meta)
-	Pike_error("CipherState not properly initialized.");
+	Pike_error("CipherState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
 
       if (info->meta->block_size
 	  && (data->len % info->meta->block_size))
-	Pike_error("Data must be an integral number of blocks.");
+	Pike_error("Data must be an integral number of blocks.\n");
 
       s = begin_shared_string(data->len);
 

@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.11 2003/08/01 20:23:05 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.12 2003/08/05 18:15:41 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -58,7 +58,7 @@ PIKECLASS HashInfo
   PIKEFUN string name()
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.");
+	Pike_error("HashInfo not properly initialized.\n");
 
       push_string(make_shared_string(THIS->meta->name));
     }
@@ -70,19 +70,19 @@ PIKECLASS HashInfo
   PIKEFUN int digest_size()
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.");
+	Pike_error("HashInfo not properly initialized.\n");
 
       push_int(THIS->meta->digest_size);
     }
 
   /*! @decl string block_size(void)
    *!
-   *! REturns the internal block size of the hash algorithm.
+   *! Returns the internal block size of the hash algorithm.
    */
   PIKEFUN int block_size()
     {
       if (!THIS->meta)
-	Pike_error("HashInfo not properly initialized.");
+	Pike_error("HashInfo not properly initialized.\n");
 
       push_int(THIS->meta->block_size);
     }
@@ -123,7 +123,7 @@ PIKECLASS HashState
 	GET_META(Pike_fp->current_object);
 
       if (!THIS->ctx || !meta)
-	Pike_error("hash_state not properly initialized.");
+	Pike_error("HashState not properly initialized.\n");
 
       NO_WIDE_STRING(data);
       meta->update(THIS->ctx, data->len, data->str);
@@ -149,7 +149,7 @@ PIKECLASS HashState
       unsigned length;
 
       if (! THIS->ctx)
-	Pike_error("hash_state not properly initialized.");
+	Pike_error("HashState not properly initialized.\n");
 
       meta = GET_META(Pike_fp->current_object);
       assert(meta);
@@ -159,11 +159,11 @@ PIKECLASS HashState
       else
 	{
 	  if (arg->type != PIKE_T_INT)
-	    Pike_error("Bad argument type");
-	  if (arg->u.integer <= 0)
-	    Pike_error("Invalid argument, must be positive.\n");
+	    Pike_error("Bad argument type.\n");
+	  if (arg->u.integer < 0)
+	    Pike_error("Invalid length, must be positive.\n");
 	  if (arg->u.integer > meta->digest_size)
-	    Pike_error("Unsupported digest length");
+	    Pike_error("Unsupported digest length.\n");
 
 	  length = arg->u.integer;
 	}
