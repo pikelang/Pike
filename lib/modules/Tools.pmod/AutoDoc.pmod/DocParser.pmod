@@ -752,6 +752,7 @@ static class DocParserClass {
           string s = nameparser->readToken();
           if (!isIdent(s)) {
 	    if ((keyword == "namespace") && (s == "::")) {
+	      s = "";
 	    } else {
 	      parseError("@%s: expected %s name, got %O", keyword, keyword, s);
 	    }
