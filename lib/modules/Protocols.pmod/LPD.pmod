@@ -3,7 +3,7 @@
 // This is a module for pike.
 // 3 July 1998 <hww3@riverweb.com> Bill Welliver
 //
-// $Id: LPD.pmod,v 1.8 2002/06/17 10:54:29 mast Exp $
+// $Id: LPD.pmod,v 1.9 2002/06/17 11:46:58 grubba Exp $
 //
 
 #pike __REAL_VERSION__
@@ -229,7 +229,7 @@ werror("job file:\n\n" + control  + "\n\n");
 //! Contains the hostname or ipaddress of the print host.
 //! if not provided, defaults to @i{localhost@}.
 //! @param portnum
-//! Cntains the port the print host is listening on.
+//! Contains the port the print host is listening on.
 //! if not provided, defaults to port @i{515@}, the RFC 1179 standard.
   void create(string|void hostname, int|void portnum)
   {
