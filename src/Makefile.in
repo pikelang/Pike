@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.104 1998/08/01 19:58:44 grubba Exp $
+# $Id: Makefile.in,v 1.105 1998/08/02 12:00:56 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -291,13 +291,14 @@ clean: tidy
 	-( cd modules; ${MAKE} $(MAKE_FLAGS) clean )
 	-rm -f TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
+	-find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
 
 # make _really_ clean
 spotless: clean
 	rm -f Makefile machine.h
 	find . -type f '(' -name '*~' -o -name '.*~' -o -name core -o -name '.nfs*' -name '#*#' ')' -print | xargs rm -f
 	-rm -f lexical.c mon.out *.ln config.status
-	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/#*#
+	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/\#*\#
 	-rm -f pike pike.old l.outa*
 	-rm -f modules/*/testsuite
 	-rm -rf lib

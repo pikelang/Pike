@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.35 1998/07/09 01:40:02 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.36 1998/08/02 11:53:28 grubba Exp $
 #
 
 
@@ -72,7 +72,7 @@ module.a: $(OBJS)
 	if test -f linker_options ; then touch linker_options ; else :; fi
 
 clean:
-	-rm -f *.o *.a *.so module.so module.pmod
+	-rm -f *.o *.a *.so module.so module.pmod linker_options modlist_headers modlist_segment module_testsuite
 	for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 depend:
