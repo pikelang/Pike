@@ -157,7 +157,6 @@ void assemble(void)
 	max_label = c->arg;
 
 
-
   labels=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
   jumps=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
   uses=(INT32 *)xalloc(sizeof(INT32) * (max_label+1));
@@ -182,9 +181,12 @@ void assemble(void)
 	int tmp,tmp2;
 	tmp=labels[c[e].arg];
 	
-	while(c[tmp].opcode == F_LABEL ||
-	      c[tmp].opcode == F_NOP) tmp++;
+	while(tmp<length &&
+	      (c[tmp].opcode == F_LABEL ||
+	       c[tmp].opcode == F_NOP)) tmp++;
 	
+	if(tmp>=length) break;
+
 	if(c[tmp].opcode==F_BRANCH)
 	{
 	  c[e].arg=c[tmp].arg;
