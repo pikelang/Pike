@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.489 2002/03/08 18:54:44 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.490 2002/03/13 15:05:44 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -445,6 +445,12 @@ test_any([[
   }
   return 1;
 ]], 1);
+
+test_any( [[
+// bug [2845] ------------------------------------------------------------
+// http://community/crunch/show_bug.cgi?id=2845
+return !catch{ String.Buffer()->add("x",0); };
+]], 0)
 
 test_any( [[
 // bug [2830] ------------------------------------------------------------
