@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.111 2002/12/08 15:55:56 grubba Exp $
+|| $Id: cpp.c,v 1.112 2002/12/08 19:19:20 grubba Exp $
 */
 
 #include "global.h"
@@ -224,6 +224,9 @@ void cpp_describe_exception(struct cpp *this, struct svalue *thrown)
  *!
  *! @returns
  *!   @[raw] decoded to UNICODE, or @tt{0@} (zero) if the decoding failed.
+ *!
+ *! @seealso
+ *!   @[Locale.Charset]
  */
 
 /*! @endclass
