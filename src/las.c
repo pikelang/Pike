@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.24 1997/02/27 10:39:42 hubbe Exp $");
+RCSID("$Id: las.c,v 1.25 1997/02/27 11:18:13 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -514,6 +514,13 @@ node *index_node(node *n, struct pike_string * id)
       push_string(id);
       reference_shared_string(id);
       f_index(2);
+
+      if(sp[-1].type == T_INT &&
+	 !sp[-1].u.number &&
+	 sp[-1].subtype)
+      {
+	yyerror("Index not present in module.");
+      }
     }
   }
   UNSETJMP(tmp);
