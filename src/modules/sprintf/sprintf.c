@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.32 1999/02/10 21:55:07 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.33 1999/06/17 12:20:44 mirar Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -126,6 +126,8 @@ RCSID("$Id: sprintf.c,v 1.32 1999/02/10 21:55:07 hubbe Exp $");
 
 #define FORMAT_INFO_STACK_SIZE 200
 #define RETURN_SHARED_STRING
+
+#define SPRINTF_UNDECIDED -1027
 
 struct format_info
 {
@@ -354,7 +356,7 @@ INLINE static void fix_field(struct string_builder *r,
 			     char pos_pad)
 {
   int e,d;
-  if(!width)
+  if(!width || width==SPRINTF_UNDECIDED)
   {
     if(pos_pad && EXTRACT_PCHARP(b)!='-') string_builder_putchar(r,pos_pad);
     string_builder_append(r,b,len);
@@ -493,7 +495,7 @@ INLINE static int do_one(struct string_builder *r,
   rest.ptr=0;
   if(f->flags & (LINEBREAK|ROUGH_LINEBREAK))
   {
-    if(!f->width)
+    if(f->width==SPRINTF_UNDECIDED)
       sprintf_error("Must have field width for linebreak.\n");
     lastspace=-1;
     for(e=0;e<f->len && e<=f->width;e++)
@@ -535,7 +537,7 @@ INLINE static int do_one(struct string_builder *r,
   }
   else if(f->flags & INVERSE_COLUMN_MODE)
   {
-    if(!f->width)
+    if(f->width==SPRINTF_UNDECIDED)
       sprintf_error("Must have field width for column mode.\n");
     e=f->width/(f->column_width+1);
     if(!f->column_width || e<1) e=1;
@@ -571,7 +573,7 @@ INLINE static int do_one(struct string_builder *r,
     int mod,col;
     PCHARP end;
 
-    if(!f->width)
+    if(f->width==SPRINTF_UNDECIDED)
       sprintf_error("Must have field width for column mode.\n");
     mod=f->column_modulo;
     col=f->width/(f->column_width+1);
@@ -623,7 +625,8 @@ INLINE static int do_one(struct string_builder *r,
   }
   else
   {
-    fix_field(r,f->b,f->len,f->flags,f->width,f->pad_string,f->pad_length,f->pos_pad);
+    fix_field(r,f->b,f->len,f->flags,f->width,
+	      f->pad_string,f->pad_length,f->pos_pad);
   }
 
   if(f->flags & REPEAT) return 0;
@@ -695,7 +698,8 @@ INLINE static int do_one(struct string_builder *r,
      fsp->pad_string=MKPCHARP(" ",0); \
      fsp->pad_length=1; \
      fsp->column_width=0; \
-     fsp->pos_pad=fsp->flags=fsp->width=fsp->precision=0; \
+     fsp->pos_pad=fsp->flags=0; \
+     fsp->width=fsp->precision=SPRINTF_UNDECIDED; \
      UNSET_ONERROR(_e); \
      break; \
    }
@@ -740,7 +744,8 @@ static void low_pike_sprintf(struct string_builder *r,
     fsp->pad_length=1;
     fsp->fi_free_string=0;
     fsp->column_width=0;
-    fsp->pos_pad=fsp->flags=fsp->width=fsp->precision=0;
+    fsp->pos_pad=fsp->flags=0;
+    fsp->width=fsp->precision=SPRINTF_UNDECIDED;
 
     if(EXTRACT_PCHARP(a)!='%')
     {
@@ -774,7 +779,12 @@ static void low_pike_sprintf(struct string_builder *r,
 
         /* First the modifiers */
 
-      case '0': fsp->flags|=ZERO_PAD; continue;
+      case '0': 
+	 if (setwhat<2) 
+	 { 
+	    fsp->flags|=ZERO_PAD; 
+	    continue; 
+	 }
       case '1': case '2': case '3':
       case '4': case '5': case '6':
       case '7': case '8': case '9':
@@ -786,8 +796,6 @@ static void low_pike_sprintf(struct string_builder *r,
 	GET_INT(tmp);
 
       got_arg:
-	if(tmp<1)
-	  sprintf_error("Illegal width.\n");
 	switch(setwhat)
 	{
 	case 0: fsp->width=tmp; break;
@@ -795,6 +803,8 @@ static void low_pike_sprintf(struct string_builder *r,
 	case 2: fsp->precision=tmp; break;
 	case 3: fsp->column_width=tmp; break;
 	}
+	if(fsp->width!=SPRINTF_UNDECIDED && fsp->width<1)
+	  sprintf_error("Illegal width.\n");
 	continue;
 
       case ';': setwhat=3; continue;
@@ -989,14 +999,17 @@ static void low_pike_sprintf(struct string_builder *r,
       {
 	char *x;
 	DO_OP();
+	if (fsp->width==SPRINTF_UNDECIDED) fsp->width=1;
+	if (fsp->precision==SPRINTF_UNDECIDED) fsp->precision=3;
+
 	x=(char *)xalloc(100+MAXIMUM(fsp->width,8)+
 			      MAXIMUM(fsp->precision,3));
 	fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
 	sprintf(x,buffer,
-		fsp->width?fsp->width:8,
-		fsp->precision?fsp->precision:3,tf);
+		fsp->width,
+		fsp->precision,tf);
 	fsp->len=strlen(x);
 	fsp->fi_free_string=x;
 	break;

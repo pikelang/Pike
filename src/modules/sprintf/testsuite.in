@@ -47,6 +47,8 @@ test_eq(sprintf("%-$20s","foo\nbar\ngazonk"),"foo    bar    \ngazonk ")
 test_eq(sprintf("%-#79s","foo\nbar\ngazonk"),"foo    bar    gazonk ")
 test_eq(sprintf("%-#20s","foo\nbar\ngazonk"),"foo    gazonk \nbar    ")
 
+test_eq(sprintf("%.0f",17.23456),"17")
+
 test_eq(sprintf("%*d",3,3),"  3")
 test_eq(sprintf("%'FOO'10s","BAR"),"FOOFOOFBAR")
 test_eq(sprintf("%d %<d %<d",2),"2 2 2")
