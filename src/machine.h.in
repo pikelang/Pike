@@ -37,6 +37,9 @@
 /* Define if you have the <sys/time.h> header file.  */
 #undef HAVE_SYS_TIME_H
 
+/* Define if you have the <time.h> header file.  */
+#undef HAVE_TIME_H
+
 /* Define if you have the <sys/select.h> header file. */
 #undef HAVE_SYS_SELECT_H
 
@@ -196,6 +199,15 @@
 
 /* Define if you have strcoll.  */
 #undef HAVE_STRCOLL
+
+/* Define if you have sigaction */
+#undef HAVE_SIGACTION
+
+/* Define if you have sigvec */
+#undef HAVE_SIGVEC
+
+/* Define if you have sigvec */
+#undef SIGNAL_ONESHOT
 
 /* Define if you have setrlimit */
 #undef HAVE_SETRLIMIT

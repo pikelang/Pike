@@ -3,7 +3,7 @@ NAME
 
 SYNTAX
 	string sprintf(string format,mixed arg,....);
-	
+
 DESCRIPTION
 	The format string is a string containing a description of how to
 	output the data in the rest of the arguments. This string should
@@ -13,15 +13,15 @@ DESCRIPTION
 	Modifyers:
 	  0  Zero pad numbers (implies right justification)
 	  !  Toggle truncation
-             pad positive integers with a space
+	     pad positive integers with a space
 	  +  pad positive integers with a plus sign
 	  -  left adjusted within field size (default is right)
 	  |  centered within field size
 	  =  column mode if strings are greater than field size
 	  /  Rough linebreak (break at exactly fieldsize instead of
-             between words)
+	     between words)
 	  #  table mode, print a list of '\n' separated word
-             (top-to-bottom order)
+	     (top-to-bottom order)
 	  $  Inverse table mode (left-to-right order)
 	  n  (where n is a number or *) a number specifies field size
 	 .n  set precision

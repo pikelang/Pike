@@ -204,7 +204,7 @@ void fix_comp_stack(int sp)
 %type <number> assign F_NUMBER F_LOCAL arguments arguments2
 %type <number> optional_stars modifier_list
 %type <string> F_IDENTIFIER F_STRING string_constant low_string
-%type <string> type_or_error optional_identifier cast simple_type
+%type <string> optional_identifier cast simple_type
 %type <string> optional_rename_inherit
 
 %type <number> F_ARRAY_ID F_BREAK F_CASE F_CATCH F_CONTINUE F_DEFAULT F_DO
@@ -221,7 +221,7 @@ void fix_comp_stack(int sp)
 %type <n> lambda for_expr block  assoc_pair new_local_name
 %type <n> expr_list2 m_expr_list m_expr_list2 statement gauge sscanf
 %type <n> for do cond optional_else_part while statements
-%type <n> local_name_list class
+%type <n> local_name_list class catch_arg
 %type <n> unused2 foreach unused switch case return expr_list default
 %type <n> continue break block_or_semi
 %%
@@ -265,7 +265,8 @@ type_or_error: simple_type
              | /* empty */
              {
 	       yyerror("Missing type.");
-	       copy_shared_string($$, mixed_type_string);
+	       copy_shared_string(local_variables->current_type,
+				  mixed_type_string);
 	     }
   
 
@@ -932,7 +933,7 @@ expr4: string
        }else if((i=isidentifier($1))>=0){
          $$=mkidentifiernode(i);
        }else if((f=lookup_efun($1))){
-	 $$=mksvaluenode(&f->function);
+	 $$=mkconstantsvaluenode(&f->function);
        }else{
 	 my_yyerror("'%s' undefined.",$1->str);
          $$=0;
@@ -1028,9 +1029,14 @@ gauge: F_GAUGE '(' unused ')'
 				   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
   } ;
 
-catch: F_CATCH '(' unused ')'
+
+catch_arg: '(' unused ')'  { $$=$2; }
+         | block
+         ; 
+
+catch: F_CATCH catch_arg
      {
-       $$=mknode(F_CATCH,$3,NULL);
+       $$=mknode(F_CATCH,$2,NULL);
      } ;
 
 sscanf: F_SSCANF '(' expr0 ',' expr0 lvalue_list ')'

@@ -14,6 +14,7 @@
 #include "memory.h"
 #include "error.h"
 #include "main.h"
+#include "array.h"
 
 struct object *master_object = 0;
 struct object *first_object;
@@ -144,7 +145,6 @@ struct object *master()
   return o;
 }
 
-
 void destruct(struct object *o)
 {
   int e;
@@ -152,16 +152,27 @@ void destruct(struct object *o)
   struct program *p;
 
   if(!o || !(p=o->prog)) return; /* Object already destructed */
+
+  o->refs++;
+
+  safe_apply(o, "destroy", 0);
+  pop_stack();
+
+  /* destructed in destroy() */
+  if(!o->prog)
+  {
+    free_object(o);
+    return;
+  }
+
   o->prog=0;
 
   frame.parent_frame=fp;
-  frame.current_object=o;
+  frame.current_object=o;  /* refs already updated */
   frame.locals=0;
   frame.fun=-1;
   frame.pc=0;
   fp= & frame;
-
-  frame.current_object->refs++;
 
   /* free globals and call C de-initializers */
   for(e=p->num_inherits-1; e>=0; e--)
@@ -276,6 +287,40 @@ void object_index_no_free(struct svalue *to,
   }
 }
 
+static void low_object_index(struct svalue *to,struct object *o, INT32 f)
+{
+  struct identifier *i;
+  struct program *p=o->prog;
+
+  i=ID_FROM_INT(p, f);
+
+  if(i->flags & IDENTIFIER_FUNCTION)
+  {
+    to->type=T_FUNCTION;
+    to->subtype=f;
+    to->u.object=o;
+    o->refs++;
+  }
+  else if(i->run_time_type == T_MIXED)
+  {
+    struct svalue *s;
+    s=(struct svalue *)(o->storage+
+			INHERIT_FROM_INT(p, f)->storage_offset +
+			i->func.offset);
+    check_destructed(s);
+    assign_svalue_no_free(to, s);
+  }
+  else
+  {
+    union anything *u;
+    u=(union anything *)(o->storage+
+			 INHERIT_FROM_INT(p, f)->storage_offset +
+			 i->func.offset);
+    check_short_destructed(u,i->run_time_type);
+    assign_from_short_svalue_no_free(to, u, i->run_time_type);
+  }
+}
+
 void object_index(struct svalue *to,
 		  struct object *o,
 		  struct svalue *index)
@@ -300,37 +345,8 @@ void object_index(struct svalue *to,
     to->subtype=NUMBER_UNDEFINED;
     to->u.integer=0;
   }else{
-    struct identifier *i;
-    i=ID_FROM_INT(p, f);
-
-    if(i->flags & IDENTIFIER_FUNCTION)
-    {
-      free_svalue(to);
-      to->type=T_FUNCTION;
-      to->subtype=f;
-      to->u.object=o;
-      o->refs++;
-    }
-    else if(i->run_time_type == T_MIXED)
-    {
-      struct svalue *s;
-      s=(struct svalue *)(o->storage+
-			  INHERIT_FROM_INT(p, f)->storage_offset +
-			  i->func.offset);
-      check_destructed(s);
-
-      assign_svalue(to, s);
-    }
-    else
-    {
-      union anything *u;
-      u=(union anything *)(o->storage+
-			   INHERIT_FROM_INT(p, f)->storage_offset +
-			   i->func.offset);
-      check_short_destructed(u,i->run_time_type);
-      free_svalue(to);
-      assign_from_short_svalue_no_free(to, u, i->run_time_type);
-    }
+    free_svalue(to);
+    low_object_index(to, o, f);
   }
 }
 
@@ -627,4 +643,41 @@ void cleanup_objects()
 
   free_object(master_object);
   master_object=0;
+}
+
+struct array *object_indices(struct object *o)
+{
+  struct program *p;
+  struct array *a;
+  int e;
+
+  p=o->prog;
+  if(!p)
+    error("indices() on destructed object.\n");
+
+  a=allocate_array_no_init(p->num_identifier_indexes,0, T_STRING);
+  for(e=0;e<(int)p->num_identifier_indexes;e++)
+  {
+    copy_shared_string(SHORT_ITEM(a)[e].string,
+		       ID_FROM_INT(p,p->identifier_index[e])->name);
+  }
+  return a;
+}
+
+struct array *object_values(struct object *o)
+{
+  struct program *p;
+  struct array *a;
+  int e;
+  
+  p=o->prog;
+  if(!p)
+    error("values() on destructed object.\n");
+
+  a=allocate_array_no_init(p->num_identifier_indexes,0, T_MIXED);
+  for(e=0;e<(int)p->num_identifier_indexes;e++)
+  {
+    low_object_index(ITEM(a)+e, o, p->identifier_index[e]);
+  }
+  return a;
 }

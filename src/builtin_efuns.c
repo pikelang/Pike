@@ -22,7 +22,9 @@
 #include "fsort.h"
 #include "call_out.h"
 #include "callback.h"
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
 #endif
@@ -828,6 +830,10 @@ void f_indices(INT32 args)
     a=copy_array(sp[-args].u.list->ind);
     break;
 
+  case T_OBJECT:
+    a=object_indices(sp[-args].u.object);
+    break;
+
   default:
     error("Bad argument 1 to indices()\n");
     return; /* make apcc happy */
@@ -865,6 +871,10 @@ void f_values(INT32 args)
     a=allocate_array_no_init(size,0,T_INT);
     while(size>0)
       SHORT_ITEM(a)[--size].integer=1;
+    break;
+
+  case T_OBJECT:
+    a=object_values(sp[-args].u.object);
     break;
 
   default:
@@ -1294,7 +1304,7 @@ void init_builtin_efuns()
   add_efun("functionp",  f_functionp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("hash",f_hash,"function(string,int|void:int)",OPT_TRY_OPTIMIZE);
   add_efun("implode",f_implode,"function(array,string|void:string)",OPT_TRY_OPTIMIZE);
-  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping|list:mixed*)",0);
+  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping|list:mixed*)|function(object:string*)",0);
   add_efun("intp",   f_intp,    "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("listp",   f_listp,   "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("lower_case",f_lower_case,"function(string:string)",OPT_TRY_OPTIMIZE);
@@ -1323,7 +1333,7 @@ void init_builtin_efuns()
   add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);
   add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
-  add_efun("values",f_values,"function(string|list:int*)|function(array|mapping:mixed*)",0);
+  add_efun("values",f_values,"function(string|list:int*)|function(array|mapping|object:mixed*)",0);
   add_efun("zero_type",f_zero_type,"function(int:int)",0);
 }
 

@@ -155,6 +155,39 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
   }
 }
 
+#ifdef DEBUG
+void print_return_value()
+{
+  if(t_flag>3)
+  {
+    char *s;
+    int nonblock;
+	
+    if((nonblock=query_nonblocking(2)))
+      set_nonblocking(2,0);
+	
+    init_buf();
+    describe_svalue(sp-1,0,0);
+    s=simple_free_buf();
+    if((long)strlen(s) > (long)TRACE_LEN)
+    {
+      s[TRACE_LEN]=0;
+      s[TRACE_LEN-1]='.';
+      s[TRACE_LEN-2]='.';
+      s[TRACE_LEN-2]='.';
+    }
+    fprintf(stderr,"-    value: %s\n",s);
+    free(s);
+	
+    if(nonblock)
+      set_nonblocking(2,1);
+  }
+}
+#else
+#define print_return_type()
+#endif
+
+
 void pop_n_elems(INT32 x)
 {
 #ifdef DEBUG
@@ -397,10 +430,12 @@ static void eval_instruction(unsigned char *pc)
       copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
       sp->type=T_STRING;
       sp++;
+      print_return_value();
       break;
 
       CASE(F_CONSTANT);
       assign_svalue_no_free(sp++,fp->context.prog->constants+GET_ARG());
+      print_return_value();
       break;
 
       CASE(F_FLOAT);
@@ -442,11 +477,13 @@ static void eval_instruction(unsigned char *pc)
 	  assign_from_short_svalue_no_free(sp,u, i->run_time_type);
 	}
 	sp++;
+	print_return_value();
 	break;
       }
 
       CASE(F_LOCAL);
       assign_svalue_no_free(sp++,fp->locals+GET_ARG());
+      print_return_value();
       break;
 
       CASE(F_LOCAL_LVALUE);
@@ -529,10 +566,10 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_ASSIGN_LOCAL_AND_POP);
-      sp--;
       instr=GET_ARG();
       free_svalue(fp->locals+instr);
-      fp->locals[instr]=*sp;
+      fp->locals[instr]=sp[-1];
+      sp--;
       break;
 
       CASE(F_ASSIGN_GLOBAL)
@@ -661,15 +698,17 @@ static void eval_instruction(unsigned char *pc)
       LOOP(F_INC_NEQ_LOOP, ++, !=);
       LOOP(F_DEC_NEQ_LOOP, --, !=);
 
-      CASE(F_FOREACH) /* lvalue, array, i */
+      CASE(F_FOREACH) /* array, lvalue , i */
       {
 	if(sp[-4].type != T_ARRAY) error("Bad argument 1 to foreach()\n");
 	if(sp[-1].u.integer < sp[-4].u.array->size)
 	{
 	  check_signals();
 	  index_no_free(sp,sp-4,sp-1);
-	  assign_lvalue(sp-3, sp);
-	  free_svalue(sp);
+	  sp++;
+	  assign_lvalue(sp-4, sp-1);
+	  free_svalue(sp-1);
+	  sp--;
 	  pc+=EXTRACT_INT(pc);
 	  sp[-1].u.integer++;
 	}else{
@@ -772,14 +811,20 @@ static void eval_instruction(unsigned char *pc)
       push_array_items(sp->u.array);
       break;
 
-      CASE(F_INDEX); f_index(); break;
+      CASE(F_INDEX);
+      f_index();
+      print_return_value();
+      break;
+
       CASE(F_CAST); f_cast(); break;
 
       CASE(F_RANGE); f_range(); break;
       CASE(F_COPY_VALUE);
       copy_svalues_recursively_no_free(sp,sp-1,1,0);
-      free_svalue(sp-1);
-      sp[-1]=*sp;
+      sp++;
+      free_svalue(sp-2);
+      sp[-2]=sp[-1];
+      sp--;
       break;
 
       CASE(F_SSCANF); f_sscanf(GET_ARG()); break;
@@ -1047,7 +1092,12 @@ void safe_apply_low(struct object *o,int fun,int args)
   sp-=args;
   if(SETJMP(recovery))
   {
-    /* Should probably generate an error message here. */
+    automatic_fatal="Error in handle_error in master object!\nPrevious error:";
+    assign_svalue_no_free(sp++, & throw_value);
+    APPLY_MASTER("handle_error", 1);
+    pop_stack();
+    automatic_fatal=0;
+
     sp->u.integer = 0;
     sp->subtype=NUMBER_NUMBER;
     sp->type = T_INT;
@@ -1069,6 +1119,14 @@ void safe_apply_low(struct object *o,int fun,int args)
   }
   UNSETJMP(recovery);
 
+}
+
+void safe_apply(struct object *o, char *fun ,INT32 args)
+{
+#ifdef DEBUG
+  if(!o->prog) fatal("Apply safe on destructed object.\n");
+#endif
+  safe_apply_low(o, find_identifier(fun, o->prog), args);
 }
 
 void apply_shared(struct object *o,

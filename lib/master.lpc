@@ -19,6 +19,7 @@ void create()
   /* make ourselves known */
   add_efun("describe_backtrace",describe_backtrace);
   add_efun("master",lambda() { return this_object(); });
+  random_seed(time() + (getpid() * 0x11111111));
 }
 
 mapping (string:program) programs=([]);

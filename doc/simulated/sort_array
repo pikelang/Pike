@@ -4,7 +4,6 @@ NAME
 SYNTAX
 	mixed *sort_array(mixed *arr,function fun,mixed ... args);
 
-
 DESCRIPTION
 	The first syntax sorts an array after a compare-function fun
 	which takes two arguments and should return 1 if the first argument

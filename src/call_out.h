@@ -8,6 +8,12 @@
 
 #include "types.h"
 
+#ifdef HAVE_TIME_H
+/* Needed for time_t */
+#include <time.h>
+#undef HAVE_TIME_H
+#endif
+
 struct call_out_s
 {
   time_t time;

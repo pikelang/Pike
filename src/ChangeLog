@@ -1,3 +1,48 @@
+Mon Nov  6 00:26:48 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* indices and values now works on objects
+
+        * v1.0E-12 released
+
+	* master.lpc: now seeds random generator
+	* simulate.lpc: call_other removed
+	* arrays, mappings, objects and lists added as efuns can now
+          be modified. (That is, their contents can be modified.)
+	* language.y: catch can now take a block as argument
+	* modules/file/file.c: low level fd handling rewritten,
+          will behave differently when more than one /precompiled/file
+          points to the same fd. No more fatals for select()ing the wrong
+          filedescriptors I hope.
+	* object.c: added a destructor called destroy. destroy will be
+          called in all objects when it is destructed. It can not stop
+          the destruction though.
+	* interpret.c: added more trace information to -t4
+	* moved the testsuite to src/tests/
+	* created a testsuite that verifies the doc/ directory
+          (test/verifymanual.lpc)
+        * lpc_signals.c: fixed to use sigvec/sigaction if possible
+          also added checks for EINTR all over the place.
+
+Sat Nov  4 04:08:46 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* modules/file/file.c: Reorganized, changed the underlying
+          data structures to work better.
+
+Fri Nov  3 23:26:12 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* language.y: fixed a coredumping bug when the first function
+          was missing type.
+
+Thu Nov  2 00:13:20 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* fixed various #include to compile with A/UX
+	* fixed signal handling to use sigaction/sigvec/signal
+
+Tue Oct 31 18:57:49 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.in, config.h: moved DEBUG to Makefile
+	* lpc_signals.c: fixed a warning
+
 Sun Oct 29 04:02:03 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
         * v1.0E-13 released

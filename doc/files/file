@@ -47,6 +47,8 @@ DESCRIPTION
 
 	How should _always_ contain at least one of 'r' or 'w'.
 
+	Returns 1 on success, 0 otherwise.
+
 SEE ALSO
 	file->close
 
@@ -161,7 +163,6 @@ SYNTAX
 	or
 	void file->set_buffer(int bufsize);
 
-
 DESCRIPTION
 	This function sets the internal buffer size of a socket or stream,
 	the second argument allows you to set the read or write buffer by
@@ -217,8 +218,8 @@ SYNTAX
 DESCRIPTION
 	This function sets the id of this file. The id is mainly used as an
 	identifier that is sent as the first arguments to all callbacks. The
-	default id is this_object(). Another possible use of the id is to hold
-	all data related to this file in a mapping or array.
+	default id is 0. Another possible use of the id is to hold all data
+	related to this file in a mapping or array.
 
 SEE ALSO
 	file->query_id

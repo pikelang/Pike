@@ -114,7 +114,7 @@ AC_DEFINE_UNQUOTED(F_OFFSET,$lpc_cv_yacc_first)
 
 rm -rf conftest.y y.tab.c y.tab.h conftest.out
 
-AC_HAVE_HEADERS(sys/rusage.h sys/time.h unistd.h stdlib.h memory.h values.h \
+AC_HAVE_HEADERS(sys/rusage.h time.h sys/time.h unistd.h stdlib.h memory.h values.h \
  string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h sys/resource.h \
  sys/select.h netdb.h)
 AC_STDC_HEADERS
@@ -170,6 +170,8 @@ AC_HAVE_FUNCS(
  rindex \
  setlocale \
  setrlimit \
+ sigaction \
+ sigvec \
  strcasecmp \
  strchr \
  strcspn \
@@ -448,6 +450,65 @@ else
   AC_MSG_RESULT(not by cast)
 fi
 
+
+AC_MSG_CHECKING(if signals are oneshot or not)
+AC_CACHE_VAL(lpc_sys_signal_oneshot,
+[
+AC_TRY_RUN([
+#include <signal.h>
+char sigrun=0;
+RETSIGTYPE func(int sig) { sigrun=1; }
+
+int main()
+{
+#define sig SIGSEGV
+
+#ifdef HAVE_SIGACTION
+  {
+    struct sigaction action;
+    action.sa_handler= func;
+    sigfillset(&action.sa_mask);
+#ifdef SA_INTERRUPT
+    action.sa_flags=SA_INTERRUPT;
+#endif
+    sigaction(sig,&action,0);
+  }
+#else
+#ifdef HAVE_SIGVEC
+  {
+    struct sigvec action;
+    action.sv_handler= func;
+    action.sv_mask=-1;
+#ifdef SV_INTERRUPT
+    action.sv_flags=SV_INTERRUPT;
+#endif
+    sigvec(sig,&action,0);
+  }
+#else
+  signal(sig, func);
+#endif
+#endif
+
+  kill(getpid(), sig);
+  while(!sigrun) sleep(1);
+  sigrun=0;
+  kill(getpid(), sig);
+  while(!sigrun) sleep(1);
+  sigrun=0;
+  exit(0);
+}
+],lpc_sys_signal_oneshot=no,
+lpc_sys_signal_oneshot=yes)])
+
+if test "$lpc_sys_signal_oneshot" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(SIGNAL_ONESHOT)
+else
+  AC_MSG_RESULT(no)
+fi
+
+
+
 AC_MSG_CHECKING(available file descriptors)
 AC_CACHE_VAL(lpc_cv_max_open_fd,
 [
@@ -670,6 +731,7 @@ done
 
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
+DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
 
 AC_CONFIG_SUBDIRS($dirs)
@@ -683,6 +745,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(LIBDIR)
 AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
+AC_SUBST(DOCDIR)
 
 AC_OUTPUT(Makefile,
 [

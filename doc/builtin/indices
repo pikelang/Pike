@@ -2,13 +2,13 @@ NAME
 	indices - return an array of all index possible for a value
 
 SYNTAX
-	mixed *indices(string|array|mapping|list foo);
+	mixed *indices(string|array|mapping|list|object foo);
 
 DESCRIPTION
 	Indices returns an array of all values you can use as index when
 	indexing foo. For strings and arrays this is simply an array of the
 	ascending numbers. For mappings and lists, the array may contain any
-	kind of value.
+	kind of value. For objects, the result is an array of strings.
 
 SEE ALSO
 	values

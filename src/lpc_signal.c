@@ -148,20 +148,78 @@ static struct sigdesc signal_desc []={
   { -1, "END" } /* Notused */
 };
 
+typedef RETSIGTYPE (*sigfunctype) (int);
+
+static int my_signal(int sig, sigfunctype fun)
+{
+#ifdef HAVE_SIGACTION
+  {
+    struct sigaction action;
+    action.sa_handler=fun;
+    sigfillset(&action.sa_mask);
+#ifdef SA_INTERRUPT
+    if(fun != SIG_IGN)
+      action.sa_flags=SA_INTERRUPT;
+#endif
+    sigaction(sig,&action,0);
+  }
+#else
+#ifdef HAVE_SIGVEC
+  {
+    struct sigvec action;
+    action.sv_handler= fun;
+    action.sv_mask=-1;
+#ifdef SA_INTERRUPT
+    if(fun != SIG_IGN)
+      action.sv_flags=SV_INTERRUPT;
+#endif
+    sigvec(sig,&action,0);
+  }
+#else
+  signal(sig, func);
+#endif
+#endif
+}
+
+static RETSIGTYPE sig_child(int arg)
+{
+#ifdef HAVE_WAITPID
+  waitpid(-1,0,WNOHANG);
+#else
+#ifdef HAVE_WAIT3
+  wait3(-1,0,WNOHANG);
+#else
+
+  /* Leave'em hanging */
+
+#endif /* HAVE_WAIT3 */
+#endif /* HAVE_WAITPID */
+
+#ifdef SIGNAL_ONESHOT
+  my_signal(SIGCHLD, sig_child);
+#endif
+}
+
 static RETSIGTYPE receive_signal(int signum)
 {
   int tmp;
+
   tmp=firstsig+1;
   if(tmp == SIGNAL_BUFFER) tmp=0;
   if(tmp != lastsig)
     sigbuf[firstsig=tmp]=signum;
-  signal(signum, receive_signal);
+
+  if(signum==SIGCHLD) sig_child(signum);
+
+#ifndef SIGNAL_ONESHOT
+  my_signal(signum, receive_signal);
+#endif
 }
 
 void check_signals()
 {
-  extern int d_flag;
 #ifdef DEBUG
+  extern int d_flag;
   if(d_flag>5) do_debug(0);
 #endif
 
@@ -208,6 +266,7 @@ static int signum(char *name)
 static void f_signal(int args)
 {
   int signum;
+  sigfunctype func;
 
   if(args < 1)
     error("Too few arguments to signal()\n");
@@ -232,11 +291,23 @@ static void f_signal(int args)
   assign_svalue(signal_callbacks + signum, sp+1-args);
   if(IS_ZERO(sp+1-args))
   {
-    /* Not good enough, we need the uLPC default */
-    signal(signum,SIG_DFL);
+    switch(signum)
+    {
+    case SIGCHLD:
+      func=sig_child;
+      break;
+
+    case SIGPIPE:
+      func=(sigfunctype) SIG_IGN;
+      break;
+
+    default:
+      func=(sigfunctype) SIG_DFL;
+    }
   }else{
-    signal(signum,receive_signal);
+    func=receive_signal;
   }
+  my_signal(signum, func);
   pop_n_elems(args);
 }
 
@@ -293,6 +364,9 @@ static void f_getpid(INT32 args)
 void init_signals()
 {
   int e;
+
+  my_signal(SIGCHLD, sig_child);
+  my_signal(SIGPIPE, SIG_IGN);
 
   for(e=0;e<MAX_SIGNALS;e++)
     signal_callbacks[e].type=T_INT;

@@ -1,5 +1,6 @@
 NAME
 	allocate - allocate an array
+
 SYNTAX
 	mixed *allocate(int size, [ string type ]);
 

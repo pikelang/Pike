@@ -3,17 +3,7 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#define READ_BUFFER 10000
-
-/*
-   string file->read(int len);
-   string file->write(string str);
-   int file->open(string filename,string read_write_append);
-   int file->close(void| string read_write)
-   int file->seek(int pos);
-   int file->tell();
-   void file->set_callback(function(int fd) callback,string read_write_close);
- */
+#define READ_BUFFER 16384
 
 #include "global.h"
 #include "types.h"
@@ -56,30 +46,75 @@
 #include <netdb.h>
 #endif
 
-#define THIS ((struct file *)(fp->current_storage))
+#define FD (*(int*)(fp->current_storage))
+#define THIS (files + FD)
 
-static int fd_references[MAX_OPEN_FILEDESCRIPTORS];
-static char open_mode[MAX_OPEN_FILEDESCRIPTORS];
+static struct file files[MAX_OPEN_FILEDESCRIPTORS];
 static struct program *file_program;
 
 static void file_read_callback(int fd, void *data);
 static void file_write_callback(int fd, void *data);
 
-static void reference_fd(int fd)
+static void init_fd(int fd, int open_mode)
 {
-  fd_references[fd]++;
+  files[fd].refs=1;
+  files[fd].fd=fd;
+  files[fd].open_mode=open_mode;
+  files[fd].id.type=T_INT;
+  files[fd].id.u.integer=0;
+  files[fd].read_callback.type=T_INT;
+  files[fd].read_callback.u.integer=0;
+  files[fd].write_callback.type=T_INT;
+  files[fd].write_callback.u.integer=0;
+  files[fd].close_callback.type=T_INT;
+  files[fd].close_callback.u.integer=0;
+  files[fd].errno=0;
 }
 
 static int close_fd(int fd)
 {
-  if(--fd_references[fd])
+#ifdef DEBUG
+  if(fd < 0)
+    fatal("Bad argument to close_fd()\n");
+
+  if(files[fd].refs<0)
+    fatal("Wrong ref count in file struct\n");
+#endif
+
+  files[fd].refs--;
+  if(!files[fd].refs)
   {
-    return 0;
-  }else{
-    return close(fd);
+    while(1)
+    {
+      if(close(fd) >= 0) break;
+      switch(errno)
+      {
+      default:
+	fatal("Unknown error in close().\n");
+	
+      case EBADF:
+	fatal("Closing a non-active file descriptor.\n");
+       
+      case EINTR:
+      }
+    }
+
+    set_read_callback(fd,0,0);
+    set_write_callback(fd,0,0);
+
+    free_svalue(& files[fd].id);
+    free_svalue(& files[fd].read_callback);
+    free_svalue(& files[fd].write_callback);
+    free_svalue(& files[fd].close_callback);
+    files[fd].id.type=T_INT;
+    files[fd].read_callback.type=T_INT;
+    files[fd].write_callback.type=T_INT;
+    files[fd].close_callback.type=T_INT;
   }
+  return 0;
 }
 
+/* Parse "rw" to internal flags */
 static int parse(char *a)
 {
   int ret;
@@ -124,6 +159,7 @@ static int parse(char *a)
   }
 }
 
+/* Translate internal flags to open(2) modes */
 static int map(int flags)
 {
   int ret;
@@ -149,11 +185,11 @@ static void file_read(INT32 args)
   INT32 i, r, bytes_read;
   ONERROR ebuf;
 
-  if(THIS->fd < 0)
-    error("File not open.\n");
-
   if(args<1 || sp[-args].type != T_INT)
     error("Bad argument 1 to file->read().\n");
+
+  if(FD < 0)
+    error("File not open.\n");
 
   r=sp[-args].u.integer;
 
@@ -170,7 +206,7 @@ static void file_read(INT32 args)
     SET_ONERROR(ebuf, call_free, str);
 
     do{
-      i=read(THIS->fd, str->str+bytes_read, r);
+      i=read(FD, str->str+bytes_read, r);
 
       check_signals();
 
@@ -217,7 +253,7 @@ static void file_read(INT32 args)
     do{
       try_read=MINIMUM(CHUNK,r);
       
-      i=read(THIS->fd, low_make_buf_space(try_read, &b), try_read);
+      i=read(FD, low_make_buf_space(try_read, &b), try_read);
 
       check_signals();
       
@@ -260,26 +296,23 @@ static void file_read(INT32 args)
 
 static void file_write_callback(int fd, void *data)
 {
-  struct file *f;
-  f=(struct file *)data;
-
   set_write_callback(fd, 0, 0);
 
-  assign_svalue_no_free(sp++, &f->id);
-  apply_svalue(& f->write_callback, 1);
+  assign_svalue_no_free(sp++, & files[fd].id);
+  apply_svalue(& files[fd].write_callback, 1);
   pop_stack();
 }
 
 static void file_write(INT32 args)
 {
   INT32 i;
-  if(THIS->fd < 0)
-    error("File not open for write.\n");
-
   if(args<1 || sp[-args].type != T_STRING)
     error("Bad argument 1 to file->write().\n");
 
-  i=write(THIS->fd, sp[-args].u.string->str, sp[-args].u.string->len);
+  if(FD < 0)
+    error("File not open for write.\n");
+
+  i=write(FD, sp[-args].u.string->str, sp[-args].u.string->len);
 
   if(i<0)
   {
@@ -298,42 +331,19 @@ static void file_write(INT32 args)
   }
 
   if(!IS_ZERO(& THIS->write_callback))
-    set_write_callback(THIS->fd, file_write_callback, (void *)THIS);
+    set_write_callback(FD, file_write_callback, 0);
   THIS->errno=0;
 
   pop_n_elems(args);
   push_int(i);
 }
 
-static void do_close(struct file *f, int flags)
+static void do_close(int fd, int flags)
 {
-  f->errno=0;
+  if(fd == -1) return; /* already closed */
 
-  if(f->fd == -1) return; /* already closed */
-
-  flags &= open_mode[f->fd];
-
-  if(flags & FILE_READ)
-  {
-    if(f->fd != -1 &&
-       query_read_callback(f->fd) == file_read_callback &&
-       query_read_callback_data(f->fd) == (void *) f &&
-       f->read_callback.type!=T_INT)
-    {
-      set_read_callback(f->fd,0,0);
-    }
-  }
-
-  if(flags & FILE_WRITE)
-  {
-    if(f->fd != -1 &&
-       query_write_callback(f->fd) == file_write_callback &&
-       query_write_callback_data(f->fd) == (void *) f &&
-       f->write_callback.type!=T_INT)
-    {
-      set_write_callback(f->fd,0,0);
-    }
-  }
+  files[fd].errno=0;
+  flags &= files[fd].open_mode;
 
   switch(flags & (FILE_READ | FILE_WRITE))
   {
@@ -341,31 +351,30 @@ static void do_close(struct file *f, int flags)
     return;
 
   case FILE_READ:
-    open_mode[f->fd] &=~ FILE_READ;
-    if(open_mode[f->fd] & FILE_WRITE)
+    files[fd].open_mode &=~ FILE_READ;
+    if(files[fd].open_mode & FILE_WRITE)
     {
-      shutdown(f->fd, 0);
+      set_read_callback(fd,0,0);
+      shutdown(fd, 0);
     }else{
-      close_fd(f->fd);
-      f->fd=-1;
+      close_fd(fd);
     }
     break;
 
   case FILE_WRITE:
-    open_mode[f->fd] &=~ FILE_WRITE;
-    if(open_mode[f->fd] & FILE_READ)
+    files[fd].open_mode &=~ FILE_WRITE;
+    if(files[fd].open_mode & FILE_READ)
     {
-      shutdown(f->fd, 1);
+      set_write_callback(fd,0,0);
+      shutdown(fd, 1);
     }else{
-      close_fd(f->fd);
-      f->fd=-1;
+      close_fd(fd);
     }
     break;
 
   case FILE_READ | FILE_WRITE:
-    open_mode[f->fd] &=~ (FILE_WRITE | FILE_WRITE);
-    close_fd(f->fd);
-    f->fd=-1;
+    files[fd].open_mode &=~ (FILE_WRITE | FILE_WRITE);
+    close_fd(fd);
     break;
   }
 }
@@ -382,7 +391,8 @@ static void file_close(INT32 args)
     flags=FILE_READ | FILE_WRITE;
   }
 
-  do_close(THIS,flags);
+  do_close(FD,flags);
+  FD=-1;
   pop_n_elems(args);
   push_int(1);
 }
@@ -390,8 +400,9 @@ static void file_close(INT32 args)
 static void file_open(INT32 args)
 {
   int flags,fd;
-  do_close(THIS,FILE_READ | FILE_WRITE);
-
+  do_close(FD, FILE_READ | FILE_WRITE);
+  FD=-1;
+  
   if(args < 2)
     error("Too few arguments to file->open()\n");
 
@@ -408,6 +419,7 @@ static void file_open(INT32 args)
 
   THIS->errno = 0;
 
+ retry:
   fd=open(sp[-args].u.string->str,map(flags), 00666);
 
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
@@ -418,14 +430,16 @@ static void file_open(INT32 args)
   }
   else if(fd < 0)
   {
+    if(errno == EINTR)
+      goto retry;
+
     THIS->errno=errno;
   }
   else
   {
     set_close_on_exec(fd,1);
-    reference_fd(fd);
-    open_mode[fd]=flags;
-    THIS->fd=fd;
+    init_fd(fd,flags);
+    FD=fd;
   }
 
   pop_n_elems(args);
@@ -440,14 +454,14 @@ static void file_seek(INT32 args)
   if(args<1 || sp[-args].type != T_INT)
     error("Bad argument 1 to file->seek().\n");
 
-  if(THIS->fd < 0)
+  if(FD < 0)
     error("File not open.\n");
   
   to=sp[-args].u.integer;
 
   THIS->errno=0;
 
-  to=lseek(THIS->fd,to,to<0 ? SEEK_END : SEEK_SET);
+  to=lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
 
   if(to<0) THIS->errno=errno;
 
@@ -459,11 +473,11 @@ static void file_tell(INT32 args)
 {
   INT32 to;
 
-  if(THIS->fd < 0)
+  if(FD < 0)
     error("File not open.\n");
   
   THIS->errno=0;
-  to=lseek(THIS->fd, 0L, SEEK_CUR);
+  to=lseek(FD, 0L, SEEK_CUR);
 
   if(to<0) THIS->errno=errno;
 
@@ -477,13 +491,15 @@ static void file_stat(INT32 args)
 {
   struct stat s;
 
-  if(THIS->fd < 0)
+  if(FD < 0)
     error("File not open.\n");
   
   pop_n_elems(args);
 
-  if(fstat(THIS->fd, &s) < 0)
+ retry:
+  if(fstat(FD, &s) < 0)
   {
+    if(errno == EINTR) goto retry;
     THIS->errno=errno;
     push_int(0);
   }else{
@@ -494,6 +510,9 @@ static void file_stat(INT32 args)
 
 static void file_errno(INT32 args)
 {
+  if(FD < 0)
+    error("File not open.\n");
+
   pop_n_elems(args);
   push_int(THIS->errno);
 }
@@ -515,32 +534,28 @@ static void file_read_callback(int fd, void *data)
 {
   struct lpc_string *s;
   INT32 i;
-  struct file *f;
-  f=(struct file *)data;
-  f->errno=0;
 
 #ifdef DEBUG
-  if(f->fd == -1)
+  if(fd == -1 || fd >= MAX_OPEN_FILEDESCRIPTORS)
     fatal("Error in file::read_callback()\n");
-
-  if(fd != f->fd)
-    fatal("Error in file::read_callback() (2)\n");
 #endif
 
-  s=do_read(&i,f->fd);
+  files[fd].errno=0;
+
+  s=do_read(&i, fd);
 
   if(i>0)
   {
-    assign_svalue_no_free(sp++, &f->id);
+    assign_svalue_no_free(sp++, &files[fd].id);
     push_string(s);
-    apply_svalue(& f->read_callback, 2);
+    apply_svalue(& files[fd].read_callback, 2);
     pop_stack();
     return;
   }
   
   if(i < 0)
   {
-    f->errno=errno;
+    files[fd].errno=errno;
     switch(errno)
     {
     case EINTR:
@@ -551,13 +566,9 @@ static void file_read_callback(int fd, void *data)
 
   set_read_callback(fd, 0, 0);
 
-  if(f->close_callback.type == T_INT)
-  {
-    do_close(f, FILE_READ | FILE_WRITE);
-  }else{
-    assign_svalue_no_free(sp++, &f->id);
-    apply_svalue(& f->close_callback, 1);
-  }
+  /* We _used_ to close the file here, not possible anymore though... */
+  assign_svalue_no_free(sp++, &files[fd].id);
+  apply_svalue(& files[fd].close_callback, 1);
 }
 
 static void file_set_nonblocking(INT32 args)
@@ -565,26 +576,29 @@ static void file_set_nonblocking(INT32 args)
   if(args < 3)
     error("Too few arguments to file->set_nonblocking()\n");
 
+  if(FD < 0)
+    error("File not open.\n");
+
   assign_svalue(& THIS->read_callback, sp-args);
   assign_svalue(& THIS->write_callback, sp+1-args);
   assign_svalue(& THIS->close_callback, sp+2-args);
 
-  if(THIS->fd >= 0)
+  if(FD >= 0)
   {
     if(IS_ZERO(& THIS->read_callback))
     {
-      set_read_callback(THIS->fd, 0,0);
+      set_read_callback(FD, 0,0);
     }else{
-      set_read_callback(THIS->fd, file_read_callback, (void *)THIS);
+      set_read_callback(FD, file_read_callback, 0);
     }
 
     if(IS_ZERO(& THIS->write_callback))
     {
-      set_write_callback(THIS->fd, 0,0);
+      set_write_callback(FD, 0,0);
     }else{
-      set_write_callback(THIS->fd, file_write_callback, (void *)THIS);
+      set_write_callback(FD, file_write_callback, 0);
     }
-    set_nonblocking(THIS->fd,1);
+    set_nonblocking(FD,1);
   }
 
   pop_n_elems(args);
@@ -594,30 +608,33 @@ static void file_set_blocking(INT32 args)
 {
   free_svalue(& THIS->read_callback);
   THIS->read_callback.type=T_INT;
+  THIS->read_callback.u.integer=0;
   free_svalue(& THIS->write_callback);
   THIS->write_callback.type=T_INT;
+  THIS->write_callback.u.integer=0;
   free_svalue(& THIS->close_callback);
   THIS->close_callback.type=T_INT;
+  THIS->close_callback.u.integer=0;
 
-  if(THIS->fd >= 0)
+  if(FD >= 0)
   {
-    set_read_callback(THIS->fd, 0, 0);
-    set_write_callback(THIS->fd, 0, 0);
-    set_nonblocking(THIS->fd,0);
+    set_read_callback(FD, 0, 0);
+    set_write_callback(FD, 0, 0);
+    set_nonblocking(FD,0);
   }
   pop_n_elems(args);
 }
 
 static void file_set_close_on_exec(INT32 args)
 {
-  if(THIS->fd <0)
+  if(FD <0)
     error("File not open.\n");
 
   if(IS_ZERO(sp-args))
   {
-    set_close_on_exec(THIS->fd,0);
+    set_close_on_exec(FD,0);
   }else{
-    set_close_on_exec(THIS->fd,1);
+    set_close_on_exec(FD,1);
   }
   pop_n_elems(args-1);
 }
@@ -627,36 +644,54 @@ static void file_set_id(INT32 args)
   if(args < 1)
     error("Too few arguments to file->set_id()\n");
 
+  if(FD < 0)
+    error("File not open.\n");
+
   assign_svalue(& THIS->id, sp-args);
   pop_n_elems(args-1);
 }
 
 static void file_query_id(INT32 args)
 {
+  if(FD < 0)
+    error("File not open.\n");
+
   pop_n_elems(args);
   assign_svalue_no_free(sp++,& THIS->id);
 }
 
 static void file_query_fd(INT32 args)
 {
+  if(FD < 0)
+    error("File not open.\n");
+
   pop_n_elems(args);
-  push_int(THIS->fd);
+  push_int(FD);
 }
 
 static void file_query_read_callback(INT32 args)
 {
+  if(FD < 0)
+    error("File not open.\n");
+
   pop_n_elems(args);
   assign_svalue_no_free(sp++,& THIS->read_callback);
 }
 
 static void file_query_write_callback(INT32 args)
 {
+  if(FD < 0)
+    error("File not open.\n");
+
   pop_n_elems(args);
   assign_svalue_no_free(sp++,& THIS->write_callback);
 }
 
 static void file_query_close_callback(INT32 args)
 {
+  if(FD < 0)
+    error("File not open.\n");
+
   pop_n_elems(args);
   assign_svalue_no_free(sp++,& THIS->close_callback);
 }
@@ -664,14 +699,10 @@ static void file_query_close_callback(INT32 args)
 struct object *file_make_object_from_fd(int fd, int mode)
 {
   struct object *o;
-  struct file *f;
 
-  reference_fd(fd);
-  open_mode[fd]=mode;
-
+  init_fd(fd, mode);
   o=clone(file_program,0);
-  f=(struct file *)o->storage;
-  f->fd=fd;
+  *(int *)(o->storage)=fd;
   return o;
 }
 
@@ -680,7 +711,7 @@ static void file_set_buffer(INT32 args)
   INT32 bufsize;
   int flags;
 
-  if(THIS->fd==-1)
+  if(FD==-1)
     error("file->set_buffer() on closed file.\n");
   if(!args)
     error("Too few arguments to file->set_buffer()\n");
@@ -704,17 +735,17 @@ static void file_set_buffer(INT32 args)
 #if SOCKET_BUFFER_MAX
   if(bufsize>SOCKET_BUFFER_MAX) bufsize=SOCKET_BUFFER_MAX;
 #endif
-  flags &= open_mode[THIS->fd];
+  flags &= files[FD].open_mode;
   if(flags & FILE_READ)
   {
     int tmp=bufsize;
-    setsockopt(THIS->fd,SOL_SOCKET, SO_RCVBUF, (char *)&tmp, sizeof(tmp));
+    setsockopt(FD,SOL_SOCKET, SO_RCVBUF, (char *)&tmp, sizeof(tmp));
   }
 
   if(flags & FILE_WRITE)
   {
     int tmp=bufsize;
-    setsockopt(THIS->fd,SOL_SOCKET, SO_SNDBUF, (char *)&tmp, sizeof(tmp));
+    setsockopt(FD,SOL_SOCKET, SO_SNDBUF, (char *)&tmp, sizeof(tmp));
   }
 #endif
 }
@@ -810,7 +841,8 @@ int socketpair(int family, int type, int protocol, int sv[2])
 static void file_pipe(INT32 args)
 {
   int inout[2],i;
-  do_close(THIS,FILE_READ | FILE_WRITE);
+  do_close(FD,FILE_READ | FILE_WRITE);
+  FD=-1;
   pop_n_elems(args);
   THIS->errno=0;
 
@@ -828,74 +860,46 @@ static void file_pipe(INT32 args)
   }
   else
   {
-    reference_fd(inout[0]);
-    open_mode[inout[0]]=FILE_READ | FILE_WRITE;
+    init_fd(inout[0],FILE_READ | FILE_WRITE);
 
     set_close_on_exec(inout[0],1);
     set_close_on_exec(inout[1],1);
-    THIS->fd=inout[0];
+    FD=inout[0];
 
     push_object(file_make_object_from_fd(inout[1],FILE_READ | FILE_WRITE));
   }
 }
 
+
 static void init_file_struct(char *foo, struct object *o)
 {
-  struct file *f;
-  f=(struct file *) foo;
-  f->fd=-1;
-  f->id.type=T_OBJECT;
-  f->id.u.object=o;
-  o->refs++;
-  f->read_callback.type=T_INT;
-  f->write_callback.type=T_INT;
-  f->close_callback.type=T_INT;
-  f->errno=0;
+  *(int *)foo = -1;
 }
 
 static void exit_file_struct(char *foo, struct object *o)
 {
-  struct file *f;
-  f=(struct file *) foo;
-
-  do_close(f,FILE_READ | FILE_WRITE);
-  free_svalue(& f->id);
-  free_svalue(& f->read_callback);
-  free_svalue(& f->write_callback);
-  free_svalue(& f->close_callback);
-  f->id.type=T_INT;
-  f->read_callback.type=T_INT;
-  f->write_callback.type=T_INT;
-  f->close_callback.type=T_INT;
-
+  do_close(*(int *) foo,FILE_READ | FILE_WRITE);
+  *(int *)foo=-1;
 }
 
 static void file_dup(INT32 args)
 {
   struct object *o;
-  struct file *f;
 
-  if(THIS->fd < 0)
+  if(FD < 0)
     error("File not open.\n");
 
   pop_n_elems(args);
-  reference_fd(THIS->fd);
 
   o=clone(file_program,0);
-  f=(struct file *)o->storage;
-  f->fd=THIS->fd;
-  assign_svalue(& f->read_callback, & THIS->read_callback);
-  assign_svalue(& f->write_callback, & THIS->write_callback);
-  assign_svalue(& f->close_callback, & THIS->close_callback);
-  assign_svalue(& f->id, & THIS->id);
-  pop_n_elems(args);
+  (*(int *)o->storage)=FD;
+  files[FD].refs++;
   push_object(o);
 }
 
 static void file_assign(INT32 args)
 {
   struct object *o;
-  struct file *f;
 
   if(args < 1)
     error("Too few arguments to file->assign()\n");
@@ -910,20 +914,12 @@ static void file_assign(INT32 args)
    */
   if(!o->prog || o->prog->inherits[0].prog != file_program)
     error("Argument 1 to file->assign() must be a clone of /precompiled/file\n");
-  do_close(THIS, FILE_READ | FILE_WRITE);
+  do_close(FD, FILE_READ | FILE_WRITE);
 
-  f=(struct file *)o->storage;
+  FD=*(int *)o->storage;
+  if(FD >=0) files[FD].refs++;
 
-  if(f->fd < 0)
-    error("File given to assign is not open.\n");
-
-  THIS->fd=f->fd;
-  reference_fd(f->fd);
-  assign_svalue(& THIS->read_callback, & f->read_callback);
-  assign_svalue(& THIS->write_callback, & f->write_callback);
-  assign_svalue(& THIS->close_callback, & f->close_callback);
-  assign_svalue(& THIS->id, & f->id);
-
+  pop_n_elems(args);
   push_int(1);
 }
 
@@ -931,12 +927,11 @@ static void file_dup2(INT32 args)
 {
   int fd;
   struct object *o;
-  struct file *f;
 
   if(args < 1)
     error("Too few arguments to file->dup2()\n");
 
-  if(THIS->fd < 0)
+  if(FD < 0)
     error("File not open.\n");
 
   if(sp[-args].type != T_OBJECT)
@@ -950,31 +945,43 @@ static void file_dup2(INT32 args)
   if(!o->prog || o->prog->inherits[0].prog != file_program)
     error("Argument 1 to file->assign() must be a clone of /precompiled/file\n");
 
-  f=(struct file *)o->storage;
+  fd=*(int *)(o->storage);
 
-  if(f->fd < 0)
+  if(fd < 0)
     error("File given to dup2 not open.\n");
 
-  fd=f->fd;
-  do_close(f, FILE_READ | FILE_WRITE);
-
-  
-  if(dup2(THIS->fd,fd) < 0)
+  if(dup2(FD,fd) < 0)
   {
     THIS->errno=errno;
+    *(int *)o->storage=-1;
     pop_n_elems(args);
     push_int(0);
     return;
   }
+  THIS->errno=0;
+  set_close_on_exec(fd, fd > 2);
+  files[fd].open_mode=files[FD].open_mode;
 
-  f->fd=fd;
-  open_mode[fd]=open_mode[THIS->fd];
-  reference_fd(fd);
-  assign_svalue(& THIS->read_callback, & f->read_callback);
-  assign_svalue(& THIS->write_callback, & f->write_callback);
-  assign_svalue(& THIS->close_callback, & f->close_callback);
-  assign_svalue(& THIS->id, & f->id);
+  assign_svalue_no_free(& files[fd].read_callback, & THIS->read_callback);
+  assign_svalue_no_free(& files[fd].write_callback, & THIS->write_callback);
+  assign_svalue_no_free(& files[fd].close_callback, & THIS->close_callback);
+  assign_svalue_no_free(& files[fd].id, & THIS->id);
 
+  if(IS_ZERO(& THIS->read_callback))
+  {
+    set_read_callback(fd, 0,0);
+  }else{
+    set_read_callback(fd, file_read_callback, 0);
+  }
+  
+  if(IS_ZERO(& THIS->write_callback))
+  {
+    set_write_callback(fd, 0,0);
+  }else{
+    set_write_callback(fd, file_write_callback, 0);
+  }
+  
+  pop_n_elems(args);
   push_int(1);
 }
 
@@ -982,7 +989,8 @@ static void file_open_socket(INT32 args)
 {
   int fd,tmp;
 
-  do_close(THIS, FILE_READ | FILE_WRITE);
+  do_close(FD, FILE_READ | FILE_WRITE);
+  FD=-1;
   fd=socket(AF_INET, SOCK_STREAM, 0);
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
@@ -1001,10 +1009,9 @@ static void file_open_socket(INT32 args)
 
   tmp=1;
   setsockopt(fd,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
-  reference_fd(fd);
+  init_fd(fd, FILE_READ | FILE_WRITE);
   set_close_on_exec(fd,1);
-  open_mode[fd]=FILE_READ | FILE_WRITE;
-  THIS->fd = fd;
+  FD = fd;
   THIS->errno=0;
 
   pop_n_elems(args);
@@ -1023,14 +1030,14 @@ static void file_connect(INT32 args)
   if(sp[1-args].type != T_INT)
     error("Bad argument 2 to file->connect()\n");
 
-  if(THIS->fd < 0)
+  if(FD < 0)
     error("file->connect(): File not open for connect()\n");
 
 
   get_inet_addr(&addr, sp[-args].u.string->str);
   addr.sin_port = htons(((u_short)sp[1-args].u.integer));
 
-  if(connect(THIS->fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+  if(connect(FD, (struct sockaddr *)&addr, sizeof(addr)) < 0)
   {
     /* something went wrong */
     THIS->errno=errno;
@@ -1079,18 +1086,15 @@ static void file_query_address(INT32 args)
   int i,len;
   char buffer[496],*q;
 
+  if(FD <0)
+    error("file->query_address(): Connection not open.\n");
+
   len=sizeof(addr);
   if(args > 0 && !IS_ZERO(sp-args))
   {
-    if(THIS->fd <0)
-      error("file->query_address(): Connection not open.\n");
-    
-    i=getsockname(THIS->fd,(struct sockaddr *)&addr,&len);
+    i=getsockname(FD,(struct sockaddr *)&addr,&len);
   }else{
-    if(THIS->fd <0)
-      error("file->query_address(): Connection not open.\n");
-
-    i=getpeername(THIS->fd,(struct sockaddr *)&addr,&len);
+    i=getpeername(FD,(struct sockaddr *)&addr,&len);
   }
   pop_n_elems(args);
   if(i < 0 || len < sizeof(addr))
@@ -1114,25 +1118,23 @@ static void file_create(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to file->create()\n");
 
-  do_close(THIS, FILE_READ | FILE_WRITE);
+  do_close(FD, FILE_READ | FILE_WRITE);
+  FD=-1;
   s=sp[-args].u.string->str;
   if(!strcmp(s,"stdin"))
   {
-    THIS->fd=0;
-    reference_fd(0);
-    open_mode[0]=FILE_READ;
+    FD=0;
+    files[0].refs++;
   }
   else if(!strcmp(s,"stdout"))
   {
-    THIS->fd=1;
-    reference_fd(1);
-    open_mode[1]=FILE_WRITE;
+    FD=1;
+    files[1].refs++;
   }
   else if(!strcmp(s,"stderr"))
   {
-    THIS->fd=2;
-    reference_fd(2);
-    open_mode[2]=FILE_WRITE;
+    FD=2;
+    files[2].refs++;
   }
   else
   {
@@ -1145,42 +1147,15 @@ void exit_files()
   free_program(file_program);
 }
 
-static RETSIGTYPE sig_child(int arg)
-{
-#ifdef HAVE_WAITPID
-  waitpid(-1,0,WNOHANG);
-  signal(SIGCHLD,sig_child);
-#else
-#ifdef HAVE_WAIT3
-  wait3(-1,0,WNOHANG);
-  signal(SIGCHLD,sig_child);
-#else
-
-  /* Leave'em hanging */
-
-#endif /* HAVE_WAIT3 */
-#endif /* HAVE_WAITPID */
-}
 
 void init_files_programs()
 {
-  int i;
-  for(i=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
-  {
-    open_mode[i] = 0;
-    fd_references[i] = 0;
-  }
-
-  reference_fd(0);
-  reference_fd(1);
-  reference_fd(2);
-
-  signal(SIGCHLD,sig_child);
-  signal(SIGPIPE,SIG_IGN);
+  init_fd(0, FILE_READ);
+  init_fd(1, FILE_WRITE);
+  init_fd(2, FILE_WRITE);
 
   start_new_program();
   add_storage(sizeof(struct file));
-
 
   add_function("open",file_open,"function(string,string:int)",0);
   add_function("close",file_close,"function(string|void:void)",0);
@@ -1222,6 +1197,5 @@ void init_files_programs()
   file_program->refs++;
 
   port_setup_program();
-
 }
 

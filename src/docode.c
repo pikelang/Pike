@@ -883,7 +883,8 @@ static int do_docode2(node *n,int flags)
       {
 	ins_f_byte_with_numerical_arg(F_CALL_LFUN, CAR(n)->u.sval.subtype);
       }else{
-	tmp1=store_constant(& CAR(n)->u.sval);
+	tmp1=store_constant(& CAR(n)->u.sval,
+			    !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND));
 	ins_f_byte(F_MAX_OPCODE + tmp1);
 	if(n->type == void_type_string) return 0;
       }
@@ -909,7 +910,7 @@ static int do_docode2(node *n,int flags)
 
       do_docode(CAR(n),0);
       do_docode(CDR(n),0);
-      tmp1=store_constant(& fun->function);
+      tmp1=store_constant(& fun->function, 1);
       ins_f_byte(tmp1 + F_MAX_OPCODE);
       return 1;
     }
@@ -1000,7 +1001,7 @@ static int do_docode2(node *n,int flags)
     for(e=0; e<cases*2+1; e++)
       low_set_branch(jumptable[e], current_switch_jumptable[e],tmp2);
 
-    e=store_constant(sp-1);
+    e=store_constant(sp-1,1);
     upd_short(tmp1,e);
 
     pop_stack();
@@ -1159,7 +1160,7 @@ static int do_docode2(node *n,int flags)
       if(!(flags & DO_NOT_COPY))
       {
 	while(n && n->token==F_INDEX) n=CAR(n);
-	if(n->token==F_CONSTANT)
+	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
 	  ins_f_byte(F_COPY_VALUE);
       }
     }
@@ -1192,16 +1193,18 @@ static int do_docode2(node *n,int flags)
       }
 
     default:
-      tmp1=store_constant(&(n->u.sval));
+      tmp1=store_constant(&(n->u.sval),!(n->tree_info & OPT_EXTERNAL_DEPEND));
       ins_f_byte_with_numerical_arg(F_CONSTANT,tmp1);
       return 1;
 
     case T_ARRAY:
     case T_MAPPING:
     case T_LIST:
-      tmp1=store_constant(&(n->u.sval));
+      tmp1=store_constant(&(n->u.sval),!(n->tree_info & OPT_EXTERNAL_DEPEND));
       ins_f_byte_with_numerical_arg(F_CONSTANT,tmp1);
-      if(!(flags & DO_NOT_COPY))	/* copy later */
+      
+      /* copy now or later ? */
+      if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))
 	ins_f_byte(F_COPY_VALUE);
       return 1;
 

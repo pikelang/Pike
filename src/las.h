@@ -90,6 +90,7 @@ node *mkidentifiernode(int i);
 node *mkcastnode(struct lpc_string *type,node *n);
 int node_is_eq(node *a,node *b);
 node *mkconstantsvaluenode(struct svalue *s);
+node *mkliteralsvaluenode(struct svalue *s);
 node *mksvaluenode(struct svalue *s);
 node *copy_node(node *n);
 int is_const(node *n);

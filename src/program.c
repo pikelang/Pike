@@ -1027,13 +1027,14 @@ int store_prog_string(struct lpc_string *str)
   return i;
 }
 
-int store_constant(struct svalue *foo)
+int store_constant(struct svalue *foo, int equal)
 {
   struct svalue *s,tmp;
   unsigned int e;
   s=(struct svalue *)areas[A_CONSTANTS].s.str;
+
   for(e=0;e<areas[A_CONSTANTS].s.len / sizeof(struct svalue);e++)
-    if(is_equal(s+e,foo))
+    if(equal ? is_equal(s+e,foo) : is_eq(s+e,foo))
       return e;
 
   assign_svalue_no_free(&tmp,foo);
@@ -1116,7 +1117,7 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
   INT32 off,line,offset;
   char *cnt;
 
-  if (prog == 0) return "Uknown program";
+  if (prog == 0) return "Unkown program";
   offset = pc - prog->program;
 
   if(prog == & fake_program)

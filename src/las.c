@@ -354,6 +354,16 @@ node *mkconstantsvaluenode(struct svalue *s)
   return res;
 }
 
+node *mkliteralsvaluenode(struct svalue *s)
+{
+  node *res = mkconstantsvaluenode(s);
+
+  if(s->type!=T_STRING && s->type!=T_INT && s->type!=T_FLOAT)
+    res->node_info|=OPT_EXTERNAL_DEPEND;
+
+  return res;
+}
+
 node *mksvaluenode(struct svalue *s)
 {
   switch(s->type)

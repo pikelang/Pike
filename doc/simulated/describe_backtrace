@@ -1,5 +1,5 @@
 NAME
-	describe_bactrace - make a backtrace readable
+	describe_backtrace - make a backtrace readable
 
 SYNTAX
 	string describe_backtrace(mixed **backtrace);

@@ -67,8 +67,10 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 void f_index()
 {
   index_no_free(sp,sp-2,sp-1);
-  free_svalue(sp-2);
-  sp[-2]=sp[0];
+  sp++;
+  free_svalue(sp-3);
+  sp[-3]=sp[-1];
+  sp--;
   pop_stack();
 }
 

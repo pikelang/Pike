@@ -12,7 +12,6 @@ DESCRIPTION
 
 	mixed *aggregate(mixed ... elems) { return elems; }
 
-
 NOTA BENE
 	Arrays are dynamically allocated there is no need to declare them
 	like int a[10]=allocate(10); (and it isn't possible either) like

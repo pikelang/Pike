@@ -6,6 +6,13 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
+#include "global.h"
+
+#ifdef HAVE_TIME_H
+#include <time.h>
+#undef HAVE_TIME_H
+#endif
+
 extern time_t current_time;
 typedef void (*callback)(int,void *);
 

@@ -56,9 +56,13 @@ struct port
 
 static void do_close(struct port *p)
 {
+ retry:
   if(p->fd >= 0)
   {
-    close(p->fd);
+    if(close(p->fd) < 0)
+      if(errno == EINTR)
+	goto retry;
+
     set_read_callback(p->fd,0,0);
   }
   
@@ -185,7 +189,6 @@ static void port_bind(INT32 args)
   }
 
   set_close_on_exec(fd,1);
-
 
   if(args > 2 && sp[2-args].type==T_STRING)
   {

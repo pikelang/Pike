@@ -1,5 +1,5 @@
 NAME
-	aggregate - construct a list
+	aggregate_list - construct a list
 
 SYNTAX
 	list aggregate_list(mixed ... elems);
