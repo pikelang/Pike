@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.74 2001/01/18 09:11:28 mast Exp $
+ * $Id: gc.h,v 1.75 2001/07/05 01:54:57 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -178,7 +178,7 @@ int debug_gc_is_referenced(void *a);
 int gc_external_mark3(void *a, void *in, char *where);
 void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
-void gc_delayed_free(void *a);
+void gc_delayed_free(void *a, TYPE_T type);
 int gc_mark(void *a);
 PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue();
