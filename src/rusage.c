@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.32 2003/02/09 15:30:57 mast Exp $
+|| $Id: rusage.c,v 1.33 2003/02/09 17:43:12 grubba Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.32 2003/02/09 15:30:57 mast Exp $");
+RCSID("$Id: rusage.c,v 1.33 2003/02/09 17:43:12 grubba Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -101,7 +101,7 @@ static int open_proc_fd()
     proc_fd = open(proc_name, O_RDONLY);
     if(proc_fd >= 0) break;
     if(errno != EINTR) return 0;
-  } while(proc_fd < 0)
+  } while(proc_fd < 0);
 
 #ifndef CONFIGURE_TEST
   set_close_on_exec(proc_fd, 1);
