@@ -8,7 +8,6 @@
  */
 
 #include "global.h"
-
 #include "pgres_config.h"
 #ifdef HAVE_POSTGRES
 
@@ -63,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.7 1998/07/15 18:45:52 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.8 1998/08/25 13:27:18 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -107,14 +106,20 @@ static void pgres_destroy (struct object * o)
 	}
 }
 
+/* create (host,database,username,password,port) */
 static void f_create (INT32 args)
 {
-	char * host=NULL, *db=NULL, *port=NULL;
+        /*port will be used as a string with a sprintf()*/
+	char * host=NULL, *db=NULL, *user=NULL, *pass=NULL, *port=NULL;
 	PGconn * conn;
 
 	check_all_args("postgres->create",args,
-			BIT_STRING|BIT_VOID,BIT_STRING|BIT_VOID,
-			BIT_INT|BIT_VOID,0);
+			BIT_STRING|BIT_VOID,
+		        BIT_STRING|BIT_VOID,
+			BIT_STRING|BIT_VOID,
+		        BIT_STRING|BIT_VOID,
+			BIT_INT|BIT_VOID,
+		        0);
 
 	if (THIS->dblink) {
 		conn=THIS->dblink;
@@ -124,6 +129,35 @@ static void f_create (INT32 args)
 		PQ_UNLOCK();
 		THREADS_DISALLOW();
 	}
+
+	/*no break;'s here, it's intentional*/
+	switch(args) {
+		default:
+		case 5:
+			if (sp[2-args].type==T_INT &&  /*this check is maybe redundant*/
+					sp[2-args].u.integer <=65535 && 
+			    		sp[2-args].u.integer >= 0) {
+				if (sp[2-args].u.integer>0) {
+					port=xalloc(10*sizeof(char)); /*we only need 6, we just checked.*/
+					sprintf(port,"%d",sp[2-args].u.integer);
+				}
+			}
+		case 4:
+			if (sp[3-args].type==T_STRING && sp[3-args].u.string->len)
+				pass=sp[3-args].u.string->str;
+		case 3:
+			if (sp[2-args].type==T_STRING && sp[2-args].u.string->len)
+				user=sp[2-args].u.string->str;
+		case 2:
+			if (sp[1-args].type==T_STRING && sp[1-args].u.string->len)
+				db=sp[1-args].u.string->str;
+		case 1:
+			if(sp[-args].type==T_STRING && sp[-args].u.string->len)
+				host=sp[-args].u.string->str;
+		case 0:
+	}
+#if 0
+	/* Old arguments-checking code */
 	if (args>=1)
 		if(sp[-args].type==T_STRING && sp[-args].u.string->len)
 			host=sp[-args].u.string->str;
@@ -144,11 +178,18 @@ static void f_create (INT32 args)
 			}
 		}
 		else
-			error ("You must specify a TCP/IP port number as argument 5 to Sql.postgres->create().\n");
+			error ("You must specify a TCP/IP port number as argument 5 "
+					"to Sql.postgres->create().\n");
+#endif
+	pgdebug("f_create(host=%s, port=%s, db=%s, user=%s, pass=%s).\n",
+			host,port,db,user,pass);
 	THREADS_ALLOW();
 	PQ_LOCK();
-	pgdebug("f_create(host: %s, port: %s, db: %s).\n",host,port,db);
+#ifdef HAVE_PQSETDBLOGIN
+	conn=PQsetdbLogin(host,port,NULL,NULL,db,user,pass);
+#else
 	conn=PQsetdb(host,port,NULL,NULL,db);
+#endif
 	PQ_UNLOCK();
 	THREADS_DISALLOW();
 	if (!conn)
@@ -372,7 +413,12 @@ static void f_host_info (INT32 args)
 
 	if (PQstatus(THIS->dblink)!=CONNECTION_BAD) {
 		push_text("TCP/IP connection to ");
-		push_text(PQhost(THIS->dblink));
+		pgdebug("adding reason\n");
+		if(PQhost(THIS->dblink))
+			push_text(PQhost(THIS->dblink));
+		else
+			push_text("<unknown>");
+		pgdebug("done\n");
 		f_add(2);
 		return;
 	}
@@ -389,7 +435,7 @@ void pike_module_init (void)
 
 	/* sql-interface compliant functions */
 	add_function ("create",f_create,
-		"function(void|string,void|string,int|void:void)",
+		"function(void|string,void|string,void|string,void|string,int|void:void)",
 		OPT_EXTERNAL_DEPEND);
 	/* That is: create(hostname,database,port)
 	 * It depends on the environment variables:
@@ -423,7 +469,7 @@ void pike_module_init (void)
 
 	postgres_program = end_program();
 	add_program_constant("postgres",postgres_program,0);
-	postgres_program->refs++;
+	add_ref(postgres_program);
 
 	add_string_constant("version",PGSQL_VERSION,0);
 

@@ -130,7 +130,12 @@ testfont binary
 /src/modules/Pipe/pipe.c foreign_ident
 /src/modules/Postgres/Makefile.in foreign_ident
 /src/modules/Postgres/configure.in foreign_ident
+/src/modules/Postgres/extras/test_notify.pike foreign_ident
+/src/modules/Postgres/extras/test_schema.pike foreign_ident
+/src/modules/Postgres/pg_types.h foreign_ident
 /src/modules/Postgres/pgres_config.h.in foreign_ident
+/src/modules/Postgres/pgresult.c foreign_ident
+/src/modules/Postgres/pgresult.h foreign_ident
 /src/modules/Postgres/postgres.c foreign_ident
 /src/modules/Postgres/version.h foreign_ident
 /src/modules/Regexp/acconfig.h foreign_ident

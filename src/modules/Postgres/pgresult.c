@@ -1,4 +1,6 @@
 /*
+ * $Id: pgresult.c,v 1.6 1998/08/25 13:27:16 grubba Exp $
+ *
  * Postgres95 support for pike/0.5 and up
  *
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
@@ -32,7 +34,6 @@
  */
 
 #include "global.h"
-
 #include "pgres_config.h"
 #ifdef HAVE_POSTGRES
 
@@ -61,6 +62,8 @@
 #include "mapping.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+
+RCSID("$Id: pgresult.c,v 1.6 1998/08/25 13:27:16 grubba Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex;
@@ -230,7 +233,11 @@ void pgresult_init (void)
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	pgresult_program=end_program();
 	add_program_constant("postgres_result",pgresult_program,0);
-	pgresult_program->refs++;
+	add_ref(pgresult_program);
 }
+
+#else
+
+static int place_holder;	/* Keep the compiler happy */
 
 #endif
