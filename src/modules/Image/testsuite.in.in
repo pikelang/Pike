@@ -1,5 +1,5 @@
 // -*- pike -*-
-// $Id: testsuite.in.in,v 1.22 1999/08/25 05:08:46 hubbe Exp $
+// $Id: testsuite.in.in,v 1.23 1999/10/16 08:10:00 mirar Exp $
 #module Image.Image
 {
 //-----------------------------------------------------------------------
@@ -41,10 +41,15 @@
    ok();
 
 #test Image.Image() too big
-   int x=1; while ((x<<1)>0) x=(x<<1)+1;
-   if (!catch { Image.Image(x,2); }) fail(x+"x2 permitted");
-   if (!catch { Image.Image(x/32768,65537); }) fail((x/32768)+"x65537 permitted");
-   if (!catch { Image.Image(x/(32768*3),65537); }) fail((x/(32768*3))+"x65537 permitted");
+   foreach ( ({0x3fffffff,0x1fffffff,0x10000000,0x7fffffff,0x7ffffffff,
+	       0x7ffffffff,0x7fffffffff,0x7ffffffffff}),
+	     int x)
+      if (x>0)
+      {
+	 if (!catch { Image.Image(x,2); }) fail(x+"x2 permitted (This might be correct - do you have "+x+" *2*4 bytes of memory?)");
+	 if (!catch { Image.Image(x/32768,65537); }) fail((x/32768)+"x65537 permitted");
+	 if (!catch { Image.Image(x/(32768*3),65537); }) fail((x/(32768*3))+"x65537 permitted");
+      }
    ok();
 
 #test Image.Image() color
