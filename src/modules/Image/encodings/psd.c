@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.1 1999/04/15 02:40:09 per Exp $");
+RCSID("$Id: psd.c,v 1.2 1999/04/15 12:46:11 mirar Exp $");
 
 #include "config.h"
 
@@ -517,8 +517,8 @@ void init_image_psd()
                 "function(string:mapping)", 0);
   add_function( "___decode_image_channel", f_decode_image_channel, 
                 "mixed", 0);
-  add_function( "___decode_image_data", f_decode_image_data, 
-                "mixed", 0);
+/*   add_function( "___decode_image_data", f_decode_image_data,  */
+/*                 "mixed", 0); */
 
   add_integer_constant("Bitmap" , Bitmap, 0 );
   add_integer_constant("Greyscale" , Greyscale, 0 );
