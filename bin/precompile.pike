@@ -29,6 +29,7 @@
  *   optflags; OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
  *   type;     tInt, tMix etc. use this type instead of automatically
  *             generating type from the prototype
+ *             FIXME: this doesn't quite work
  *   errname;  The name used when throwing errors.
  *   name;     The name used when doing add_function.
  *
@@ -66,39 +67,84 @@ int has_prefix(string s, string p)
 }
 #endif /* !constant(has_prefix) || OLD */
 
-int parse_type(array x, int pos)
+/*
+ * This function takes an array of tokens containing a type
+ * written in the 'array(int)' format. It returns position of
+ * the first token that is not a part of the type.
+ */
+int parse_type(array t, int p)
 {
   while(1)
   {
-    while(x[pos]=="!") pos++;
-    pos++;
-    if(arrayp(x[pos])) pos++;
-    switch((string)x[pos])
+    while(1)
     {
-      default:
-	return pos;
-
-      case "&":
-      case "|":
-	pos++;
+      if(arrayp(t[p]))
+      {
+	p++;
+      }else{
+	switch( (string) t[p++])
+	{
+	  case "CTYPE":
+	    p=sizeof(t)-2;
+	    break;
+	  case "0": case "1": case "2": case "3": case "4":
+	  case "5": case "6": case "7": case "8": case "9":
+	    if("=" != t[p]) break;
+	  case "!":
+	    continue;
+	    
+	  case "object":
+	  case "program":
+	  case "function":
+	  case "mapping":
+	  case "array":
+	  case "multiset":
+	  case "int":
+	    if(arrayp(t[p])) p++;
+	  case "string":
+	  case "float":
+	    break;
+	}
+      }
+      break;
     }
+    switch( (string) t[p])
+    {
+      case "|":
+      case "&":
+	p++;
+	continue;
+    }
+    break;
   }
+  return p;
 }
 
+/*
+ * This function takes an array of tokens and
+ * reconstructs the string they came from. It does
+ * not insert linenumbers.
+ */
 string merge(array x)
 {
   return PC.simple_reconstitute(x);
 }
 
+/*
+ * Trim whitespaces from the beginning and end of 's'
+ */
 string trim(string s)
 {
   sscanf(s,"%*[ \t]%s",s);
-  s=reverse(s);
-  sscanf(s,"%*[ \t]%s",s);
-  s=reverse(s);
+  if(sscanf(reverse(s),"%*[ \t]%s",s))  s=reverse(s);
   return s;
 }
 
+/*
+ * make a C identifier representation of 'n'
+ * This is a 1:1 mapping, but there is no function
+ * to demangle the identifier as of yet.
+ */
 string cquote(string n)
 {
   string ret="";
@@ -116,82 +162,18 @@ string cquote(string n)
   return ret+n;
 }
 
-string cname(mixed type)
-{
-  mixed btype;
-  if(arrayp(type))
-    btype=type[0];
-  else
-    btype=type;
 
-  // werror("type:%O\n" "btype: %O\n", type, btype);
-
-  if (arrayp(type) && (sizeof(type / ({"|"})) > 1)) {
-    // werror("Found '|'.\n");
-    btype = "mixed";
-  } else {
-    // werror("Not found.\n");
-  }
-
-  switch(objectp(btype) ? btype->text : btype)
-  {
-    case "void": return "void";
-    case "int": return "INT_TYPE";
-    case "float": return "FLOAT_NUMBER";
-    case "string": return "struct pike_string *";
-
-    case "array":
-    case "multiset":
-    case "mapping":
-
-    case "object":
-    case "program": return "struct "+btype+" *";
-
-    case "function":
-
-    case "0": case "1": case "2": case "3": case "4":
-    case "5": case "6": case "7": case "8": case "9":
-    case "mixed":  return "struct svalue *";
-
-    default:
-      werror("Unknown type %s\n",objectp(btype) ? btype->text : btype);
-      exit(1);
-  }
-}
-
-string uname(mixed type)
-{
-  switch(objectp(type) ? type->text : type)
-  {
-    case "int": return "integer";
-    case "float":
-    case "string":
-
-    case "array":
-    case "multiset":
-    case "mapping":
-
-    case "object":
-    case "program": return "struct "+type+" *";
-
-    case "function":
-    case "0": case "1": case "2": case "3": case "4":
-    case "5": case "6": case "7": case "8": case "9":
-    case "mixed":  return "struct svalue *";
-
-    default:
-      werror("Unknown type %s\n",type);
-      exit(1);
-  }
-}
-
-array convert_ctype(array tokens)
+/*
+ * This function maps C types to the approperiate
+ * pike type. Input and outputs are arrays of tokens
+ */
+PikeType convert_ctype(array tokens)
 {
   switch((string)tokens[0])
   {
     case "char": /* char* */
       if(sizeof(tokens) >1 && "*" == (string)tokens[1])
-	return ({ PC.Token("string") });
+	return PikeType("string");
 
     case "short":
     case "int":
@@ -199,11 +181,11 @@ array convert_ctype(array tokens)
     case "size_t":
     case "ptrdiff_t":
     case "INT32":
-      return ({ PC.Token("int") });
+      return PikeType("int");
 
     case "double":
     case "float":
-      return ({ PC.Token("float") });
+      return PikeType("float");
 
     default:
       werror("Unknown C type.\n");
@@ -211,250 +193,522 @@ array convert_ctype(array tokens)
   }
 }
 
-string basetype(array x)
+string stringify(string s)
 {
-  multiset(string) subtypes = (<>);
-  int i = 0;
-  do {
-    subtypes[(string)x[i++]] = 1;
-
-    if (sizeof(x) > i) {
-      if (arrayp(x[i])) {
-	i++;
-      }
-      if (sizeof(x) > i) {
-	if (((string)x[i]) == "|") {
-	  i++;
-	  continue;
-	}
-      }
-    }
-    break;
-  } while(1);
-
-  subtypes->zero = 0;
-
-  if (sizeof(subtypes) <= 1) {
-    return (string)x[0];
-  } else {
-    // werror(sprintf("type: %O\nsubtypes: %O\n", x, subtypes));
-
-    return "mixed";
-  }
+  return sprintf("\"%{\\%o%}\"",(array)s);
+//  return sprintf("%O",s);
 }
 
-mapping(string:string) parse_arg(array x)
+class PikeType
 {
-  mapping ret=(["name":x[-1]]);
-  ret->type=x[..sizeof(x)-2];
-  ret->basetype = x[0];
-  if(ret->basetype == PC.Token("CTYPE"))
-  {
-    // werror("Is CTYPE\n");
-    ret->cname = merge(ret->type[1..]);
-    ret->type = convert_ctype(ret->type[1..]);
-    ret->is_c_type=1;
-  }else{
-    array ored_types=ret->type/({"|"});
-    if(sizeof(ored_types)>1)
-      ret->basetype="mixed";
+  PC.Token t;
+  array(PikeType|string|int) args=({});
 
-    // werror("sizeof(ored_types): %d\n", sizeof(ored_types));
-    
-    if(search(ored_types,PC.Token("void"))!=-1)
-      ret->optional=1;
-    
-    ret->ctype=cname(ret->type);
-
-    // werror("ctype: %O\n", ret->ctype);
-  }
-  ret->typename=trim(merge(recursive(strip_type_assignments,ret->type)));
-  ret->line=ret->name->line;
-  return ret;
-}
-
-/* FIXME: this is not finished yet */
-
-array(string|int) convert_basic_type(array s, int pos)
-{
-  string res;
-
-  switch(objectp(s[pos])?s[pos]->text:s[pos])
-  {
-    case "0": case "1": case "2": case "3": case "4":
-    case "5": case "6": case "7": case "8": case "9":
-      if(sizeof(s)>(pos+1) && s[pos+1]=="=")
+  static string fiddle(string name, array(string) tmp)
+    {
+      while(sizeof(tmp) > 7)
       {
-	res = sprintf("tSetvar(%s,%s)",s[pos],convert_type(s[pos+2..]));
-	pos += 3;
-      }else{
-	res = sprintf("tVar(%s)",s[pos]);
-	pos++;
+	int p=sizeof(tmp)-7;
+	string z=name + "7(" + tmp[p..]*"," +")";
+	tmp=tmp[..p];
+	tmp[-1]=z;
       }
-      break;
-
-    case "int":
-      if ((sizeof(s) < pos + 2) || !arrayp(s[pos+1])) {
-	res = "tInt";
-	pos++;
-      } else {
-	array tmp = s[pos + 1];
-	pos += 2;
-
-	int pos2 = 1;
-	int low = -0x20000000;
-	if (tmp[pos2] != "..") {
-	  low = (int)(tmp[pos2]->text);
-	  pos2++;
-	  // The second is a workaround for a bug in Parser.Pike.
-	  if ((tmp[pos2] != "..") && (tmp[pos2] != ".. ")) {
-	    error(sprintf("Syntax error in int range got %O, "
-			  "expected \"..\".\n",
-			  tmp));
-	  }
-	}
-	pos2++;
-	int high = 0x1fffffff;
-	if (tmp[pos2] != ")") {
-	  high = (int)(tmp[pos2]->text);
-	  pos2++;
-	  if (tmp[pos2] != ")") {
-	    error(sprintf("Syntax error in int range got %O, "
-			  "expected \")\".\n",
-			  tmp));
-	  }
-	}
-	// NOTE! This piece of code KNOWS that PIKE_T_INT is 8!
-	res = sprintf("%O", sprintf("\010%4c%4c", low, high));
+      switch(sizeof(tmp))
+      {
+	default:
+	  return sprintf("%s%d(%s)",name,sizeof(tmp),tmp*",");
+	case 2: return sprintf("%s(%s,%s)",name,tmp[0],tmp[1]);
+	case 1: return tmp[0];
+	case 0: return "";
       }
-      break;
-
-    case "float":
-      res = "tFlt";
-      pos++;
-      break;
-
-    case "void":
-      res = "tVoid";
-      pos++;
-      break;
-
-    case "string":
-      res = "tStr";
-      pos++;
-      break;
-
-    case "array": 
-      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
-	res = "tArray";
-	pos++;
-      } else {
-	res = "tArr("+convert_type(s[pos+1][1..sizeof(s[pos+1])-2])+")";
-	pos += 2;
-      }
-      break;
-
-    case "multiset": 
-      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
-	res = "tMultiset";
-	pos++;
-      } else {
-	res = "tSet("+convert_type(s[pos+1][1..sizeof(s[pos+1])-2])+")";
-	pos += 2;
-      }
-      break;
-
-    case "mapping": 
-      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
-	res = "tMapping";
-	pos ++;
-      } else {
-	mixed tmp=s[pos + 1][1..sizeof(s[pos + 1])-2];
-	res = "tMap("+
-	  convert_type((tmp/({":"}))[0])+","+
-	  convert_type((tmp/({":"}))[1])+")";
-	pos += 2;
-      }
-      break;
-    
-    case "object": /* FIXME: support object is/implements */
-      res =  "tObj";
-      pos++;
-      break;
-
-    case "program": 
-      res = "tProgram";
-      pos++;
-      break;
-
-    case "function": 
-      if((sizeof(s) < pos + 2) || !arrayp(s[pos + 1])) {
-	res = "tFunction";
-	pos++;
-      } else {
-	array args=s[pos + 1][1..sizeof(s[pos + 1])-2];
-	[ args, array ret ] = args / PC.Token(":");
-	if(args[-1]=="...")
-	{
-	  res = sprintf("tFunc(%s,%s)",
-			map(convert_type,args)*" ",
-			convert_type(ret));
-	}else{
-	  res = sprintf("tFuncV(%s,,%s)",
-			map(convert_type,args[..sizeof(args)-2])*" ",
-			convert_type(args[-1]),
-			convert_type(ret));
-	}
-	pos += 2;
-      }
-      break;
-
-    case "mixed": 
-      res = "tMix";
-      pos++;
-      break;
-
-    default:
-      res = sprintf("ERR%O",s);
-      pos++;
-      break;
-  }  
-  return ({ res, pos });
-}
-
-array(string|int) low_convert_type(array s, int pos)
-{
-  [string res, pos] = convert_basic_type(s, pos);
-  while (pos < sizeof(s)) {
-    if (s[pos] == "|") {
-      [string res2, pos] = low_convert_type(s, ++pos);
-      res = "tOr(" + res + "," + res2 + ")";
-    } else if (s[pos] == "&") {
-      [string res2, pos] = convert_basic_type(s, ++pos);
-      res = "tAnd(" + res + "," + res2 + ")";
     }
-  }
-  return ({ res, pos });
-}
 
-string convert_type(array s)
+  /*
+   * return the 'one-word' description of this type
+   */
+  string basetype()
+    {
+      string ret=(string)t;
+      switch(ret)
+      {
+	case "CTYPE":
+	  return args[1]->basetype();
+
+	case "|":
+	  array(string) tmp=args->basetype();
+	  if(`==(@tmp)) return tmp[0];
+	  return "mixed";
+
+	case "=":
+	case "&":
+	  return args[-1]->basetype();
+
+	case "!":
+	case "any":
+	case "0":
+	case "1":
+	case "2":
+	case "3":
+	case "4":
+	case "5":
+	case "6":
+	case "7":
+	case "8":
+	case "9": return "mixed";
+
+	default:  return ret;
+      }
+    }
+
+
+  /*
+   * PIKE_T_INT, PIKE_T_STRING etc.
+   */
+  string type_number()
+    {
+      string btype=basetype();
+      return "PIKE_T_"+upper_case(btype);
+    }
+
+  /*
+   * Return 1 if this type is or matches 'void'
+   */
+  int may_be_void()
+    {
+      switch((string)t)
+      {
+	case "void": return 1;
+	case "|":
+	  for(int e=0;e<sizeof(args);e++)
+	    if(args[e]->may_be_void())
+	      return 1;
+	  return 0;
+
+	case "=":
+	case "&":
+	  return args[-1]->may_be_void();
+      }
+    }
+
+  string c_storage_type()
+    {
+      switch(string btype=basetype())
+      {
+	case "void": return "void";
+	case "int": return "INT_TYPE";
+	case "float": return "FLOAT_NUMBER";
+	case "string": return "struct pike_string *";
+	  
+	case "array":
+	case "multiset":
+	case "mapping":
+	  
+	case "object":
+	case "program": return "struct "+btype+" *";
+	  
+	case "function":
+	case "mixed":  return "struct svalue *";
+	  
+	default:
+	  werror("Unknown type %s\n",btype);
+	  exit(1);
+      }
+    }
+
+  /*
+   * Make a C representation, like 'tInt'
+   */
+  string output_c_type()
+    {
+      string ret=(string)t;
+//      werror("FOO: %O %O\n",t,args);
+      switch(ret)
+      {
+	case "CTYPE":
+	  return (string)args[0]->t;
+
+	case "&":
+	  return fiddle("tAnd",args->output_c_type());
+	  
+	case "|":
+	  return fiddle("tOr",args->output_c_type());
+
+	case "!":
+	  return sprintf("tNot(%s)",args[0]->output_c_type());
+
+	case "mapping":
+	  ret=sprintf("tMap(%s)",args->output_c_type()*",");
+	  if(ret=="tMap(tMix,tMix)") return "tMapping";
+	  return ret;
+
+	case "multiset":
+	  ret=sprintf("tSet(%s)",args[0]->output_c_type());
+	  if(ret=="tSet(tMix)") return "tMultiset";
+	  return ret;
+
+	case "array":
+	  ret=sprintf("tArr(%s)",args[0]->output_c_type());
+	  if(ret=="tArr(tMix)") return "tArray";
+	  return ret;
+
+	case "function":
+	  if(args[-2]->output_pike_type(0) == "void")
+	  {
+	    return sprintf("tFunc(%s,%s)",
+			   args[..sizeof(args)-3]->output_c_type()*" ",
+			   args[-1]->output_c_type());
+	  }else{
+	    return sprintf("tFunc(%s,%s,%s)",
+			   args[..sizeof(args)-3]->output_c_type(),
+			   args[-2]->output_c_type(),
+			   args[-1]->output_c_type());
+	  }
+
+	case "=":
+	  return sprintf("tSetvar(%s,%s)",
+			 (string)args[0]->t,
+			 args[1]->output_c_type());
+
+	case "0":
+	case "1":
+	case "2":
+	case "3":
+	case "4":
+	case "5":
+	case "6":
+	case "7":
+	case "8":
+	case "9":       return sprintf("tVar(%s)",ret);
+
+	case "zero":    return "tZero";
+	case "void":    return "tVoid";
+	case "float":   return "tFloat";
+	case "string":  return "tString";
+	case "object":  return "tObj";
+	case "program": return "tProgram";
+	case "any":     return "tAny";
+	case "mixed":   return "tMix";
+	case "int":
+	  // NOTE! This piece of code KNOWS that PIKE_T_INT is 8!
+	  return stringify(sprintf("\010%4c%4c",
+				   (int)(string)(args[0]->t),
+				   (int)(string)(args[1]->t)));
+
+	default:
+	  error("Don't know how to convert %O to C type.\n",t);
+      }
+    }
+
+
+  /*
+   * Output pike type, such as array(int)
+   */
+  string output_pike_type(int pri)
+    {
+      string ret=(string)t;
+      switch(ret)
+      {
+	case "CTYPE":
+	  return args[1]->output_pike_type(pri);
+
+	case "&":
+	case "|":
+	  ret=args->output_pike_type(1)*ret;
+	  if(pri) ret="("+ret+")";
+	  return ret;
+
+	case "!":
+	  return "!"+args[0]->output_pike_type(1);
+
+	case "mapping":
+	  ret=sprintf("mapping(%s:%s)",
+		      args[0]->output_pike_type(0),
+		      args[1]->output_pike_type(0));
+	  if(ret=="mapping(mixed:mixed")
+	    return "mapping";
+	  return ret;
+
+	case "multiset":
+	case "array":
+	{
+	  string tmp=args[0]->output_pike_type(0);
+	  if(tmp=="mixed") return ret;
+	  return sprintf("%s(%s)",ret,tmp);
+	}
+
+	case "function":
+	  array(string) tmp=args->output_pike_type(0);
+	  ret=sprintf("function(%s:%s)",
+		      tmp[..sizeof(tmp)-3]*","+
+		      (tmp[-2]=="void"?"":tmp[-2] + "..."),
+		      tmp[-1]);
+	  if(ret=="function(mixed...:any)")
+	    return "function";
+	  return ret;
+
+	case "=":
+	  return sprintf("%s=%s",
+			 args[0]->output_pike_type(0),
+			 args[1]->output_pike_type(0));
+
+	case "int":
+	  ret=sprintf("int(%s..%s)",
+		      args[0]->t == "-536870912" ? "" : args[0]->t,
+		      args[1]->t ==  "536870911" ? "" : args[1]->t);
+	  if(ret=="int(..)") return "int";
+	  return ret;
+
+	default:
+	  return ret;
+      }
+    }
+
+
+  /* Make a copy of this type */
+  PikeType copy()
+    {
+      return PikeType(t, args->copy());
+    }
+
+  /* 
+   * Copy and remove type assignments
+   */
+  PikeType copy_and_strip_type_assignments()
+    {
+      if("=" == (string)t)
+	return args[1]->copy_and_strip_type_assignments();
+      return PikeType(t, args && args->copy_and_strip_type_assignments());
+    }
+
+  string _sprintf(int how)
+    {
+      switch(how)
+      {
+	case 'O':
+	  catch {
+	    return sprintf("PikeType(%O)",output_pike_type(0));
+	  };
+	  return sprintf("PikeType(%O)",t);
+
+	case 's':
+	  return output_pike_type(0);
+      }
+    }
+
+  /*
+   * Possible ways to initialize a PikeType:
+   * PikeType("array(array(int))")
+   * PikeType("CTYPE char *")
+   * PikeType( ({ PC.Token("array"), ({ PC.Token("("),PC.Token("int"),PC.Token(")"), }) }) )
+   *
+   * And this way is for internal use only:
+   * PikeType( PC.Token("array"), ({ PikeType("int") }) )
+   */
+  void create(string|array(PC.Token)|PC.Token|array(array) tok, void|array(PikeType) a)
+    {
+      switch(sprintf("%t",tok))
+      {
+	case "object":
+	  t=tok;
+	  args=a;
+	  break;
+
+	case "string":
+	  tok=PC.tokenize(convert_comments(PC.split(tok)),"piketype");
+	  tok=PC.group(PC.hide_whitespaces(tok));
+	  
+	case "array":
+	  /* strip parenthesis */
+	  while(sizeof(tok) == 1 && arrayp(tok[0]))
+	    tok=tok[0][1..sizeof(tok[0])-2];
+
+	  array(array(PC.Token|array(PC.Token|array))) tmp;
+	  tmp=tok/({"|"});
+	  if(sizeof(tmp) >1)
+	  {
+	    t=PC.Token("|");
+	    args=map(tmp,PikeType);
+	    return;
+	  }
+
+	  tmp=tok/({"&"});
+	  if(sizeof(tmp) >1)
+	  {
+	    t=PC.Token("&");
+	    args=map(tmp,PikeType);
+	    return;
+	  }
+
+	  tmp=tok/({"="});
+	  if(sizeof(tmp) >1)
+	  {
+	    t=PC.Token("=");
+	    args=map(tmp,PikeType);
+	    return;
+	  }
+
+	  t=tok[0];
+
+	  if(sizeof(tok) == 1)
+	  {
+	    switch((string)t)
+	    {
+	      case "CTYPE":
+		args=({ PikeType(PC.Token(merge(tok[1..]))),
+			  convert_ctype(tok[1..]) });
+		break;
+
+	      case "mapping":
+		args=({PikeType("mixed"), PikeType("mixed")});
+		break;
+	      case "multiset":
+	      case "array":
+		args=({PikeType("mixed")});
+		break;
+	      case "int":
+		string low = (string)(int)-0x20000000;
+		string high = (string)0x1fffffff;
+		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});
+		break;
+
+	      case "function":
+		args=({ PikeType("mixed"), PikeType("any") });
+		break;
+	    }
+	  }else{
+	    array q;
+	    switch((string)t)
+	    {
+	      case "!":
+		args=({ PikeType(tok[1..]) });
+		break;
+
+	      case "array":
+	      case "multiset":
+		args=({ PikeType(tok[1..]) });
+		break;
+
+	      case "mapping":
+		if(arrayp(q=tok[1]))
+		{
+		  tmp=q[1..sizeof(q)-2]/({":"});
+		  args=map(tmp,PikeType);
+		}else{
+		  args=({PikeType("mixed"),PikeType("mixed")});
+		}
+		break;
+		
+	      case "function":
+		if(arrayp(q=tok[1]))
+		{
+		  tmp=q[1..sizeof(q)-2]/({":"});
+		  int end=sizeof(tmp)-2;
+		  PikeType repeater;
+		  if(sizeof(tmp[0]) &&
+		     sizeof(tmp[0][-1]) &&
+		     tmp[0][-1][-1]=="...")
+		  {
+		    repeater=PikeType(tmp[0][-1][..sizeof(tmp[0][-1])-2]);
+		    end--;
+		  }else{
+		    repeater=PikeType("void");
+		  }
+		  args=map(tmp[0][..end],PikeType)+
+		    ({repeater, PikeType(tmp[1]) });
+		}else{
+		  args=({PikeType("mixed"),PikeType("any")});
+		}
+		return;
+		
+	      case "int":
+		string low = (string)(int)-0x20000000;
+		string high = (string)0x1fffffff;
+
+		if(arrayp(q=tok[1]))
+		{
+		  tmp=q[1..sizeof(q)-2]/({".."});
+		  /* Workaround for buggy Parser.Pike */
+		  if(sizeof(tmp)==1) tmp=tok/".. ";
+		  if(sizeof(tmp[0])) low=(string)tmp[0][0];
+		  if(sizeof(tmp[1])) high=(string)tmp[1][0];
+		}
+		args=({PikeType(PC.Token(low)),PikeType(PC.Token(high))});
+		break;
+	    }
+	  }
+      }
+    }
+};
+
+/*
+ * This class is used to represe one function argument
+ */
+class Argument
 {
-  // werror("%O\n",s);
+  /* internal */
+  string _name;
+  PikeType _type;
+  string _c_type;
+  string _basetype;
+  int _is_c_type;
+  int _line;
+  string _file;
+  string _typename;
 
-  [string ret, int pos] = low_convert_type(s, 0);
-  if (pos != sizeof(s)) {
-    error(sprintf("Failed to convert type: %{%O, %}, pos: %O, partial:%O\n",
-		  s, pos, ret));
-  }
-  return ret;
-}
+  int is_c_type() { return _is_c_type; }
+  int may_be_void() { return type()->may_be_void(); }
+  int line() { return _line; }
+  string name() { return _name; }
+  PikeType type() { return _type; }
 
+  string basetype()
+    {
+      if(_basetype) return _basetype;
+      return _basetype = type()->basetype();
+    }
+
+  string c_type()
+    {
+      if(_c_type) return _c_type;
+      return _c_type = type()->c_storage_type();
+    }
+
+  string typename()
+    {
+      if(_typename) return _typename;
+      return _typename=
+	type()->copy_and_strip_type_assignments()->output_pike_type(0);
+    }
+
+  void create(array x)
+    {
+      _name=(string)x[-1];
+      _file=x[-1]->file;
+      _line=x[-1]->line;
+      _type=PikeType(x[..sizeof(x)-2]);
+    }
+
+  string _sprintf(int how)
+    {
+      return type()->output_pike_type(0)+" "+name();
+    }
+};
+
+
+/*
+ * This function takes a bunch of strings an makes
+ * a C identifier with underscores in between.
+ */
 string mkname(string ... parts)
 {
   return map(parts - ({"",0}), cquote) * "_";
 }
 
 
+/*
+ * Create C code for popping 'howmany' arguments from
+ * the stack. 'howmany' may be a constant or an expression.
+ */
 string make_pop(mixed howmany)
 {
   switch(howmany)
@@ -473,15 +727,17 @@ string make_pop(mixed howmany)
  * However, I need a *simple* way of doing it first...
  * -Hubbe
  */
-array fix_return(array body, string rettype, string ctype, mixed args)
+array fix_return(array body, PikeType rettype, mixed args)
 {
   int pos=0;
   
   while( (pos=search(body,PC.Token("RETURN",0),pos)) != -1)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
-    body[pos]=sprintf("do { %s ret_=(",ctype);
-    body[pos2]=sprintf("); %s push_%s(ret_); return; }while(0);",make_pop(args),rettype);
+    body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
+    body[pos2]=sprintf("); %s push_%s(ret_); return; }while(0);",
+		       make_pop(args),
+		       rettype->basetype());
     pos=pos2+1;
   }
 
@@ -489,23 +745,17 @@ array fix_return(array body, string rettype, string ctype, mixed args)
   while( (pos=search(body,PC.Token("REF_RETURN",0),pos)) != -1)
   {
     int pos2=search(body,PC.Token(";",0),pos+1);
-    body[pos]=sprintf("do { %s ret_=(",ctype);
-    body[pos2]=sprintf("); add_ref(ret_); %s push_%s(ret_); return; }while(0);",make_pop(args),rettype);
+    body[pos]=sprintf("do { %s ret_=(",rettype->c_storage_type());
+    body[pos2]=sprintf("); add_ref(ret_); %s push_%s(ret_); return; }while(0);",
+		       make_pop(args),
+		       rettype->basetype());
     pos=pos2+1;
   }
   return body;
 }
 
-array strip_type_assignments(array data)
-{
-  int pos;
 
-  while( (pos=search(data,PC.Token("=",0))) != -1)
-    data=data[..pos-2]+data[pos+1..];
-  return data;
-}
-
-// Workaround for bug in F_RECUR in some sub-versions of Pike 7.1.34.
+// Workaround for bug in F_RECUR in some sub-versions of Pike7.1.34.
 function(mixed,array,mixed ...:array) low_recursive = recursive;
 
 array recursive(mixed func, array data, mixed ... args)
@@ -525,6 +775,17 @@ array recursive(mixed func, array data, mixed ... args)
   return func(ret, @args);
 }
 
+/*
+ * This function takes a list of tokens, containing attributes on the form:
+ *   attributename foo bar gazonk ;
+ *   attributename2 foo2 bar2 gazonk2 ;
+ *
+ * Returns a mapping like:
+ * ([
+ *   "attributename":"foo bar gazonk",
+ *   "attributename2":"foo2 bar2 gazonk2",
+ * ])
+ */
 mapping parse_attributes(array attr)
 {
   mapping attributes=([]);
@@ -549,6 +810,9 @@ mapping parse_attributes(array attr)
 
 string file;
 
+/*
+ * Generate an #ifdef/#else/#endif
+ */
 array IFDEF(string define,
 	    array yes,
 	    void|array no)
@@ -572,6 +836,9 @@ array IFDEF(string define,
   return ret;
 }
 
+/*
+ * Generate a #define
+ */
 array DEFINE(string define, void|string as)
 {
   return ({
@@ -580,165 +847,175 @@ array DEFINE(string define, void|string as)
       });
 }
 
-array convert(array x, string base)
+/*
+ * Parse a block of code
+ */
+class ParseBlock
 {
+  array code=({});
   array addfuncs=({});
   array exitfuncs=({});
   array declarations=({});
-  array ret=x;
 
-  x=ret/({"PIKECLASS"});
-  ret=x[0];
+  void create(array x, string base)
+    {
+      array ret=x;
 
-  for(int f=1;f<sizeof(x);f++)
-  {
-    array func=x[f];
-    int p;
-    for(p=0;p<sizeof(func);p++)
-      if(arrayp(func[p]) && func[p][0]=="{")
-	break;
-    array proto=func[..p-1];
-    array body=func[p];
-    string name=proto[-1]->text;
-    mapping attributes=parse_attributes(proto[p+2..]);
+      x=ret/({"PIKECLASS"});
+      ret=x[0];
 
-    [ array classcode, array classaddfuncs, array classexitfuncs,
-      array classdeclarations ]=
-      convert(body[1..sizeof(body)-2],name);
+      for(int f=1;f<sizeof(x);f++)
+      {
+	array func=x[f];
+	int p;
+	for(p=0;p<sizeof(func);p++)
+	  if(arrayp(func[p]) && func[p][0]=="{")
+	    break;
+	array proto=func[..p-1];
+	array body=func[p];
+	string name=proto[-1]->text;
+	mapping attributes=parse_attributes(proto[p+2..]);
 
-    string define=mkname("class",name,"defined");
+	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],name);
 
-    ret+=DEFINE(define);
-    ret+=classcode;
+	string define=mkname("class",name,"defined");
 
-    addfuncs+=
-      IFDEF(define,
-	    ({"  start_new_program();\n"})+
-	    IFDEF("THIS_"+upper_case(name),
-		  ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
-	    classaddfuncs+
-	    ({sprintf("  end_class(%O,%s);\n",name, attributes->flags||"0")}));
+	ret+=DEFINE(define);
+	ret+=subclass->code;
 
-    exitfuncs+=
-      IFDEF(define,
-	    classdeclarations+
-	    classexitfuncs);
-  }
+	addfuncs+=
+	  IFDEF(define,
+		({"  start_new_program();\n"})+
+		IFDEF("THIS_"+upper_case(name),
+		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
+		subclass->addfuncs+
+		({sprintf("  end_class(%O,%s);\n",name, attributes->flags||"0")}));
+
+	exitfuncs+=
+	  IFDEF(define,
+		subclass->declarations+
+		subclass->exitfuncs);
+      }
 
 
 #if 1
-  array thestruct=({});
-  x=ret/({"PIKEVAR"});
-  ret=x[0];
-  for(int f=1;f<sizeof(x);f++)
-  {
-    array var=x[f];
-    int pos=search(var,PC.Token(";",0),);
-    mixed name=var[pos-1];
-    array type=var[..pos-2];
-    array rest=var[pos+1..];
+      array thestruct=({});
+      x=ret/({"PIKEVAR"});
+      ret=x[0];
+      for(int f=1;f<sizeof(x);f++)
+      {
+	array var=x[f];
+	int pos=search(var,PC.Token(";",0),);
+	mixed name=var[pos-1];
+	PikeType type=PikeType(var[..pos-2]);
+	array rest=var[pos+1..];
     
 //    werror("type: %O\n",type);
 
-    thestruct+=({
-      sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
-      sprintf("  %s %s;\n",cname(type[0]),name),
-      "\n#endif\n",
-    });
-    addfuncs+=({
-      sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
-      sprintf("  map_variable(%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), T_%s)",
-	      name,
-	      merge(type),
-	      base,
-	      base,
-	      name,
-	      upper_case(basetype(type))),
-      "\n#endif\n",
-    });
-    ret+=
-      ({
-	sprintf("\n#define var_%s_%s_defined\n",name,base),
-      })+
-      rest;
-  }
+	thestruct+=({
+	  sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
+	    sprintf("  %s %s;\n",type->c_storage_type(),name),
+	    "\n#endif\n",
+	    });
+	addfuncs+=({
+	  sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
+	    sprintf("  map_variable(%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), T_%s)",
+		    name,
+		    type->output_pike_type(0),
+		    base,
+		    base,
+		    name,
+		    type->type_number()),
+	    "\n#endif\n",
+	    });
+	ret+=
+	  ({
+	    sprintf("\n#define var_%s_%s_defined\n",name,base),
+	      })+
+	  rest;
+      }
 
-  x=ret/({"CVAR"});
-  ret=x[0];
-  for(int f=1;f<sizeof(x);f++)
-  {
-    array var=x[f];
-    int pos=search(var,PC.Token(";",0),);
-    int npos=pos-1;
-    while(arrayp(var[pos])) pos--;
-    mixed name=var[npos];
+      x=ret/({"CVAR"});
+      ret=x[0];
+      for(int f=1;f<sizeof(x);f++)
+      {
+	array var=x[f];
+	int pos=search(var,PC.Token(";",0),);
+	int npos=pos-1;
+	while(arrayp(var[pos])) pos--;
+	mixed name=var[npos];
     
-    thestruct+=({
-      sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
-    })+var[..pos-1]+({
-      ";\n#endif\n",
-    });
-    ret+=
-      ({
-	sprintf("#define var_%s_%s_defined\n",name,base),
-      })+
-      var[pos+1..];
-  }
+	thestruct+=({
+	  sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
+	    })+var[..pos-1]+({
+	      ";\n#endif\n",
+		});
+	ret+=
+	  ({
+	    sprintf("#define var_%s_%s_defined\n",name,base),
+	      })+
+	  var[pos+1..];
+      }
 
 
-  x=ret/({"PIKEFUN"});
-  ret=x[0];
+      x=ret/({"PIKEFUN"});
+      ret=x[0];
 //  werror("%O\n",x);
 
-  if(sizeof(thestruct))
-  {
+      if(sizeof(thestruct))
+      {
 //    werror("%O\n",thestruct);
-    ret+=
-      ({
-	/* FIXME:
-	 * Add runtime debug to these defines...
-	 */
-	sprintf("\n"),
-	sprintf("#undef THIS\n"), // FIXME: must remember previous def
-	sprintf("#define THIS ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",base),
-	sprintf("#define THIS_%s ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",upper_case(base),base),
-	sprintf("static int %s_storage_offset;\n",base),
-	sprintf("struct %s_struct {\n",base),
-      })+thestruct+({
-	"};\n",
-      });
-  }
+	ret+=
+	  ({
+	    /* FIXME:
+	     * Add runtime debug to these defines...
+	     */
+	    sprintf("\n"),
+	      sprintf("#undef THIS\n"), // FIXME: must remember previous def
+	      sprintf("#define THIS ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",base),
+	      sprintf("#define THIS_%s ((struct %s_struct *)(Pike_interpreter.frame_pointer->current_storage))\n",upper_case(base),base),
+	      sprintf("static int %s_storage_offset;\n",base),
+	      sprintf("struct %s_struct {\n",base),
+	      })+thestruct+({
+		"};\n",
+		  });
+      }
 
 #else
-  x=ret/({"PIKEFUN"});
-  ret=x[0];
+      x=ret/({"PIKEFUN"});
+      ret=x[0];
 #endif
 
 
-  for(int f=1;f<sizeof(x);f++)
-  {
-    array func=x[f];
-    int p;
-    for(p=0;p<sizeof(func);p++)
-      if(arrayp(func[p]) && func[p][0]=="{")
-	break;
+      for(int f=1;f<sizeof(x);f++)
+      {
+	array func=x[f];
+	int p;
+	for(p=0;p<sizeof(func);p++)
+	  if(arrayp(func[p]) && func[p][0]=="{")
+	    break;
 
-    array proto=func[..p-1];
-    array body=func[p];
-    array rest=func[p+1..];
+	array proto=func[..p-1];
+	array body=func[p];
+	array rest=func[p+1..];
 
-    p=parse_type(proto,0);
-    array rettype=proto[..p-1];
-    string name=proto[p]->text;
-    array args=proto[p+1];
+	p=parse_type(proto,0);
+	PikeType rettype=PikeType(proto[..p-1]);
 
-    mapping attributes=parse_attributes(proto[p+2..]);
+	string name=proto[p]->text;
+	array args_tmp=proto[p+1];
 
-    args=args[1..sizeof(args)-2]/({","});
-    if(equal(args , ({ ({}) }))) args=({});
+	mapping attributes=parse_attributes(proto[p+2..]);
+	args_tmp=args_tmp[1..sizeof(args_tmp)-2];
+	if(sizeof(args_tmp))
+	{
+	  args_tmp/=({","});
+	}else{
+	  args_tmp=({});
+	}
 
-    string funcname=mkname("f",base,name);
-    string define=mkname("f",base,name,"defined");
+	string funcname=mkname("f",base,name);
+	string define=mkname("f",base,name,"defined");
 
 //    werror("FIX RETURN: %O\n",body);
     
@@ -746,232 +1023,244 @@ array convert(array x, string base)
 //    werror("  rettype=%O\n",rettype);
 //    werror("  args=%O\n",args);
 
-    ret+=({
-      sprintf("#define %s\n",define),
-      sprintf("PMOD_EXPORT void %s(INT32 args) ",funcname),
-      "{","\n",
-    });
-
-    // werror("%O %O\n",proto,args);
-    args=map(args,parse_arg);
-    // werror("parsed args: %O\n", args);
-    int min_args=sizeof(args);
-    int max_args=sizeof(args); /* FIXME: check for ... */
-
-    while(min_args>0 && args[min_args-1]->optional)
-      min_args--;
-
-    foreach(args, mapping arg)
-      ret+=({
-	PC.Token(sprintf("%s %s;\n",arg->ctype, arg->name),arg->line),
-      });
-
-
-    if (attributes->efun) {
-      addfuncs+=({
-	sprintf("\n#ifdef %s\n",define),
-	PC.Token(sprintf("  ADD_EFUN(%O, %s, tFunc(%s, %s), %s);\n",
-			 attributes->name || name,
-			 funcname,
-			 attributes->type ? attributes->type :
-			 Array.map(args->type,convert_type)*" ",
-			 convert_type(rettype),
-			 (attributes->efun ? attributes->optflags : 
-			  attributes->flags )|| "0" ,
-			 ),proto[0]->line),
-	sprintf("#endif\n",name),
-      });
-    } else {
-      addfuncs+=({
-	sprintf("\n#ifdef %s\n",define),
-	PC.Token(sprintf("  ADD_FUNCTION2(%O, %s, tFunc(%s, %s), %s, %s);\n",
-			 attributes->name || name,
-			 funcname,
-			 attributes->type ? attributes->type :
-			 Array.map(args->type,convert_type)*" ",
-			 convert_type(rettype),
-			 attributes->flags || "0" ,
-			 attributes->optflags ||
-			 "OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT"
-			 ),proto[0]->line),
-	sprintf("#endif\n",name),
-      });
-    }
-    int argnum;
-
-    argnum=0;
-    string argbase;
-    string num_arguments;
-    if(min_args == max_args)
-    {
-      ret+=({
-	PC.Token(sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
-			 sizeof(args),
-			 name,
-			 sizeof(args)), proto[0]->line)
-	  });
-      argbase=(string) (-sizeof(args));
-      num_arguments=(string)sizeof(args);
-    }else{
-      argbase="-args";
-      num_arguments="args";
-      if(min_args > 0) {
 	ret+=({
-	  PC.Token(sprintf("if(args < %d) wrong_number_of_args_error(%O,args,%d);\n",
-			   min_args,
-			   name,
-			   min_args), proto[0]->line)
+	  sprintf("#define %s\n",define),
+	    sprintf("PMOD_EXPORT void %s(INT32 args) ",funcname),
+	    "{","\n",
 	    });
-      }
 
-      if(max_args != -1) {
-	ret+=({
-	  PC.Token(sprintf("if(args > %d) wrong_number_of_args_error(%O,args,%d);\n",
-			   max_args,
-			   name,
-			   max_args), proto[0]->line)
-	    });
-      }
-    }
+	// werror("%O %O\n",proto,args);
+	array(Argument) args=map(args_tmp,Argument);
+	// werror("%O %O\n",proto,args);
+//	werror("parsed args: %O\n", args);
 
-    foreach(args, mapping arg)
-      {
-	if(arg->optional && "mixed" != (string)arg->basetype)
-	{
+	// FIXME: support ... types
+	PikeType type;
+
+	if(attributes->type)
+	  type=PikeType(attributes->type);
+	else
+	  type = PikeType(PC.Token("function"),
+			  args->type() + ({ PikeType("void"), rettype }) );
+
+//	werror("NAME: %O\n",name);
+//	werror("type: %O\n", type);
+//	werror("C type: %O\n", type->output_c_type());
+
+	int min_args=sizeof(args);
+	int max_args=sizeof(args); /* FIXME: check for ... */
+
+	while(min_args>0 && args[min_args-1]->may_be_void())
+	  min_args--;
+
+	foreach(args, Argument arg)
 	  ret+=({
-	    PC.Token(sprintf("if(args >= %s) ",argnum)),
+	    PC.Token(sprintf("%s %s;\n",arg->c_type(), arg->name()),arg->line()),
 	      });
+
+
+	if (attributes->efun) {
+	  addfuncs+=
+	    IFDEF(define,({
+	      PC.Token(sprintf("  ADD_EFUN(%O, %s, %s, %s);\n",
+			       attributes->name || name,
+			       funcname,
+			       type->output_c_type(),
+			       (attributes->efun ? attributes->optflags : 
+				attributes->flags )|| "0" ,
+			       ),proto[0]->line),
+		}));
+	} else {
+	  addfuncs+=IFDEF(define, ({
+	    PC.Token(sprintf("  ADD_FUNCTION2(%O, %s, %s, %s, %s);\n",
+			     attributes->name || name,
+			     funcname,
+			     type->output_c_type(),
+			     attributes->flags || "0" ,
+			     attributes->optflags ||
+			     "OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT"
+	      ),proto[0]->line),
+	      }));
 	}
-	if(arg->is_c_type && arg->basetype == "string")
-	{
-	  /* Special case for 'char *' */
-	  /* This will have to be amended when we want to support
-	   * wide strings
-	   */
-	  ret+=({
-	      PC.Token(sprintf("if(sp[%d%s].type != PIKE_T_STRING || sp[%d%s].ustring -> width)",
-			       argnum,argbase,
-			       argnum,argbase,
-			       upper_case(arg->basetype->text)),arg->line)
-	    });
-	}else
+	int argnum;
 
-	switch((string)arg->basetype)
-	{
-	  default:
-	    ret+=({
-	      PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_%s)",
-			       argnum,argbase,
-			       upper_case(arg->basetype->text)),arg->line)
-	    });
-	    break;
-
-	  case "program":
-	    ret+=({
-	      PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d%s)))",
-			       arg->name,argnum,argbase),arg->line)
-	    });
-	    break;
-
-	  case "mixed":
-	}
-	switch((string)arg->basetype)
-	{
-	  default:
-	    ret+=({
-	      PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
-			       attributes->errname || attributes->name || name,
-			       argnum+1,
-			       arg->typename),arg->line),
-	    });
-
-	  case "mixed":
-	}
-
-	if(arg->optional)
+	argnum=0;
+	string argbase;
+	string num_arguments;
+	if(min_args == max_args)
 	{
 	  ret+=({
-	    PC.Token(sprintf("if(args >= %s) { ",argnum)),
+	    PC.Token(sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
+			     sizeof(args),
+			     name,
+			     sizeof(args)), proto[0]->line)
 	      });
+	  argbase=(string) (-sizeof(args));
+	  num_arguments=(string)sizeof(args);
+	}else{
+	  argbase="-args";
+	  num_arguments="args";
+	  if(min_args > 0) {
+	    ret+=({
+	      PC.Token(sprintf("if(args < %d) wrong_number_of_args_error(%O,args,%d);\n",
+			       min_args,
+			       name,
+			       min_args), proto[0]->line)
+		});
+	  }
+
+	  if(max_args != -1) {
+	    ret+=({
+	      PC.Token(sprintf("if(args > %d) wrong_number_of_args_error(%O,args,%d);\n",
+			       max_args,
+			       name,
+			       max_args), proto[0]->line)
+		});
+	  }
 	}
 
-	switch(objectp(arg->basetype) ? arg->basetype->text : arg->basetype )
-	{
-	  case "int":
-	    ret+=({
-	      sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name,argnum,argbase)
-	    });
-	    break;
-
-	  case "float":
-	    ret+=({
-	      sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
-		      arg->name,
-		      argnum,argbase)
-	    });
-	    break;
-
-
-	  case "mixed":
-	    ret+=({
-	      PC.Token(sprintf("%s=sp%+d%s; dmalloc_touch_svalue(sp%+d%s);\n",
-			       arg->name,
-			       argnum,argbase,argnum,argbase),arg->line),
-	    });
-	    break;
-
-	  default:
-	    if(arg->is_c_type && arg->basetype == "string")
+	foreach(args, Argument arg)
+	  {
+	    if(arg->may_be_void() && "mixed" != (string)arg->basetype())
 	    {
-	      /* some sort of 'char *' */
+	      ret+=({
+		PC.Token(sprintf("if(args >= %s) ",argnum)),
+		  });
+	    }
+	    if(arg->is_c_type() && arg->basetype() == "string")
+	    {
+	      /* Special case for 'char *' */
 	      /* This will have to be amended when we want to support
 	       * wide strings
 	       */
 	      ret+=({
-		PC.Token(sprintf("%s=Pike_sp[%d%s].u.string->str; debug_malloc_touch(Pike_sp[%d%s].u.string)\n",
-				 arg->name,
+		PC.Token(sprintf("if(sp[%d%s].type != PIKE_T_STRING || sp[%d%s].ustring -> width)",
 				 argnum,argbase,
-				 argnum,argbase),arg->line)
+				 argnum,argbase,
+				 upper_case(arg->basetype())),arg->line())
 		  });
-	      
-	    }else{
+	    }else
+
+	      switch(arg->basetype())
+	      {
+		default:
+		  ret+=({
+		    PC.Token(sprintf("if(Pike_sp[%d%s].type != PIKE_T_%s)",
+				     argnum,argbase,
+				     upper_case(arg->basetype())),arg->line())
+		      });
+		  break;
+
+		case "program":
+		  ret+=({
+		    PC.Token(sprintf("if(!( %s=program_from_svalue(sp%+d%s)))",
+				     arg->name(),argnum,argbase),arg->line())
+		      });
+		  break;
+
+		case "mixed":
+	      }
+	    switch(arg->basetype())
+	    {
+	      default:
+		ret+=({
+		  PC.Token(sprintf(" SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
+				   attributes->errname || attributes->name || name,
+				   argnum+1,
+				   arg->typename()),arg->line()),
+		    });
+
+	      case "mixed":
+	    }
+
+	    if(arg->may_be_void())
+	    {
 	      ret+=({
-		PC.Token(sprintf("debug_malloc_pass(%s=sp[%d%s].u.%s);\n",
-				 arg->name,
-				 argnum,argbase,
-				 arg->basetype),arg->line)
+		PC.Token(sprintf("if(args >= %s) { ",argnum)),
 		  });
 	    }
 
-	  case "program":
-	}
+	    switch(arg->basetype())
+	    {
+	      case "int":
+		ret+=({
+		  sprintf("%s=Pike_sp[%d%s].u.integer;\n",arg->name(),
+			  argnum,argbase)
+		    });
+		break;
 
-	if(arg->optional)
-	{
-	  ret+=({
-	    PC.Token(sprintf("}",argnum)),
-	      });
-	}
+	      case "float":
+		ret+=({
+		  sprintf("%s=Pike_sp[%d%s].u.float_number;\n",
+			  arg->name(),
+			  argnum,argbase)
+		    });
+		break;
 
-        argnum++;
-      }
+
+	      case "mixed":
+		ret+=({
+		  PC.Token(sprintf("%s=sp%+d%s; dmalloc_touch_svalue(sp%+d%s);\n",
+				   arg->name(),
+				   argnum,argbase,argnum,argbase),arg->line()),
+		    });
+		break;
+
+	      default:
+		if(arg->is_c_type() && arg->basetype() == "string")
+		{
+		  /* some sort of 'char *' */
+		  /* This will have to be amended when we want to support
+		   * wide strings
+		   */
+		  ret+=({
+		    PC.Token(sprintf("%s=Pike_sp[%d%s].u.string->str; debug_malloc_touch(Pike_sp[%d%s].u.string)\n",
+				     arg->name(),
+				     argnum,argbase,
+				     argnum,argbase),arg->line())
+		      });
+	      
+		}else{
+		  ret+=({
+		    PC.Token(sprintf("debug_malloc_pass(%s=sp[%d%s].u.%s);\n",
+				     arg->name(),
+				     argnum,argbase,
+				     arg->basetype()),arg->line())
+		      });
+		}
+
+	      case "program":
+	    }
+
+	    if(arg->may_be_void())
+	    {
+	      ret+=({  PC.Token("}") });
+	    }
+
+	    argnum++;
+	  }
     
-    body=recursive(fix_return, body, basetype(rettype), cname(basetype(rettype)), num_arguments); 
-    if(sizeof(body))
-      ret+=({body});
-    ret+=({ "}\n" });
+	body=recursive(fix_return,body,rettype, num_arguments); 
+	if(sizeof(body))
+	  ret+=({body});
+	ret+=({ "}\n" });
 
-    ret+=rest;
-  }
+	ret+=rest;
+      }
 
 
-  return ({ ret, addfuncs, exitfuncs, declarations });
+      code=ret;
+    }
 }
 
 array(string) convert_comments(array(string) tokens)
 {
-  // Convert C++ comments to C-style.
-  return map(tokens,
+  // Filter AutoDoc mk II, and convert other C++ comments to C-style.
+  return map(filter(tokens,
+		    lambda(string token) {
+		      return !(has_prefix(token, "//!") ||
+			       has_prefix(token, "/*!"));
+		    }),
 	     lambda(string token) {
 	       if (has_prefix(token, "//")) {
 		 return ("/*" + token[2..] + " */");
@@ -993,13 +1282,13 @@ int main(int argc, array(string) argv)
   x=PC.hide_whitespaces(x);
   x=PC.group(x);
 
-  array tmp=convert(x,"");
-  x=tmp[0];
-  x=recursive(replace,x,PC.Token("INIT",0),tmp[1]);
-  x=recursive(replace,x,PC.Token("EXIT",0),tmp[2]);
-  x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp[3]);
+  ParseBlock tmp=ParseBlock(x,"");
+  x=tmp->code;
+  x=recursive(replace,x,PC.Token("INIT",0),tmp->addfuncs);
+  x=recursive(replace,x,PC.Token("EXIT",0),tmp->exitfuncs);
+  x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp->declarations);
 
-  if(equal(x,tmp[0]))
+  if(equal(x,tmp->code))
   {
     // No INIT / EXIT, add our own stuff..
     // NOTA BENE: DECLARATIONS are not handled automatically
@@ -1007,10 +1296,10 @@ int main(int argc, array(string) argv)
 
     x+=({
       "void pike_module_init(void) {\n",
-      tmp[1],
+      tmp->addfuncs,
       "}\n",
       "void pike_module_exit(void) {\n",
-      tmp[2],
+      tmp->exitfuncs,
       "}\n",
     });
   }
