@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.195 1999/12/31 14:51:42 grubba Exp $");
+RCSID("$Id: program.c,v 1.196 1999/12/31 15:40:47 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3740,7 +3740,7 @@ static struct implements_cache_s is_compatible_cache[IMPLEMENTS_CACHE_SIZE];
 /* Returns 1 if a is compatible with b
  * ie it's possible to write a hypothetical c that implements both.
  */
-int is_compatible(struct program *a, struct program b)
+int is_compatible(struct program *a, struct program *b)
 {
   unsigned long hval;
   unsigned long rhval;
