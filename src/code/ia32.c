@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.2 2001/07/20 15:19:46 grubba Exp $
+ * $Id: ia32.c,v 1.3 2001/07/20 16:27:27 grubba Exp $
  *
  * Machine code generator for IA32.
  *
@@ -90,7 +90,7 @@ void ins_f_byte(unsigned int b)
   return;
 }
 
-static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
+void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
   add_to_program(0xc7);  /* movl $xxxx, (%esp) */
   add_to_program(0x04); 
@@ -100,9 +100,9 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
   return;
 }
 
-static void ins_f_byte_with_2_args(unsigned int a,
-				   unsigned INT32 c,
-				   unsigned INT32 b)
+void ins_f_byte_with_2_args(unsigned int a,
+			    unsigned INT32 c,
+			    unsigned INT32 b)
 {
   add_to_program(0xc7);  /* movl $xxxx, (%esp) */
   add_to_program(0x04); 
