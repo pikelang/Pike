@@ -125,7 +125,8 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       ret += "</dd>\n<dt><a name='" + section + "'></a>\n"
 	"<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
 	"<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + chapter + "." + section +
-	". " + c->get_attributes()->title + "</font></td></tr></table><br />\n"
+	". " + quote(c->get_attributes()->title) +
+	"</font></td></tr></table><br />\n"
 	"</dt>\n<dd>";
       ret += low_parse_chapter(c, chapter, section);
       section = 0;
@@ -140,7 +141,8 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       ret += "</dd><dt>"
 	"<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
 	"<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; " + chapter + "." + section + "." + subsection +
-	". " + c->get_attributes()->title + "</font></td></tr></table><br />\n"
+	". " + quote(c->get_attributes()->title) +
+	"</font></td></tr></table><br />\n"
 	"</dt><dd>";
       ret += low_parse_chapter(c, chapter, section, subsection);
       subsection = 0;
@@ -184,7 +186,8 @@ string parse_chapter(Node n, void|int noheader) {
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; ";
     if(n->get_attributes()->number)
       ret += n->get_attributes()->number + ". ";
-    ret += n->get_attributes()->title + "</font></td></tr></table><br />\n"
+    ret += quote(n->get_attributes()->title) +
+      "</font></td></tr></table><br />\n"
       "</dt><dd>";
   }
 
@@ -1101,7 +1104,7 @@ string parse_children(Node n, string tag, function cb, mixed ... args) {
 string manual_title = "Pike Reference Manual";
 string frame_html(string res, void|string title) {
   title = title || manual_title;
-  return "<html><head><title>" + title + "</title></head>\n"
+  return "<html><head><title>" + quote(title) + "</title></head>\n"
     "<body bgcolor='white' text='black'>\n" + res +
     "</body></html>";
 }
