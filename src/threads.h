@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.115 2002/09/14 02:58:49 mast Exp $
+ * $Id: threads.h,v 1.116 2002/09/14 03:03:05 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -406,7 +406,12 @@ struct thread_state {
 #endif
 
 #ifndef th_yield
-#define th_yield()
+#ifdef HAVE_THR_YIELD
+#define th_yield() thr_yield()
+#else
+#define th_yield() 0
+#define HAVE_NO_YIELD
+#endif
 #endif
 
 #ifndef th_equal

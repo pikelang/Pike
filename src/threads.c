@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.163 2002/09/14 02:58:49 mast Exp $");
+RCSID("$Id: threads.c,v 1.164 2002/09/14 03:03:04 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -547,6 +547,10 @@ PMOD_EXPORT int count_pike_threads(void)
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
+#ifndef HAVE_NO_YIELD
+  /* If we have no yield we can't cut calls here since it's possible
+   * that a thread switch will take place only occasionally in the
+   * window below. */
   static int div_;
   if(div_++ & 255)
     return;
@@ -562,6 +566,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
   if (clock() - thread_start_clock < (clock_t) (CLOCKS_PER_SEC / 20))
     return;
 #endif
+#endif
 
 #ifdef DEBUG
   if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
@@ -573,9 +578,7 @@ static void check_threads(struct callback *cb, void *arg, void * arg2)
 
   THREADS_ALLOW();
   /* Allow other threads to run */
-#ifdef HAVE_THR_YIELD
-  thr_yield();
-#endif
+  th_yield();
   THREADS_DISALLOW();
 
 #ifdef USE_CLOCK_FOR_SLICES
