@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.6 2001/05/22 12:10:45 per Exp $");
+RCSID("$Id: resultset.c,v 1.7 2001/05/22 12:23:36 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -371,8 +371,85 @@ static void f_resultset_or( INT32 args )
 }
 
 static void f_resultset_sub( INT32 args )
+/*
+ *! @decl sub( ResultSet a )
+ *! @decl `-( ResultSet a )
+ *!
+ *!
+ *! Return a new resultset with all entries in a removed from the
+ *! current ResultSet.
+ *!
+ *! Only the document_id is checked, the ranking is irrelevalt.
+ */
 {
+  struct object *res = wf_resultset_new();
+  struct object *left = Pike_fp->current_object;
+  struct object *right;
+  int lp=-1, rp=-1;
+
+  int left_used=1, right_used=1;
+  int left_left=1, right_left=1;
+  int right_size, left_size;
+
+  int left_doc=0, left_rank=0, right_doc=0, last=-1;
+  get_all_args( "or", args, "%o", &right );
+
+  right = WF_RESULTSET( right );
+
+  left_size = T(left)->d->num_docs;
+  right_size = T(right)->d->num_docs;
   
+  while( left_left )
+  {
+    if( left_left && left_used ) /* New from left */
+    {
+      if( ++lp == left_size )
+      {
+	left_left = 0;
+	continue;
+      }
+      else
+      {
+	left_doc = T(left)->d->hits[lp].doc_id;
+	left_rank = T(left)->d->hits[lp].ranking;
+	left_used = 0;
+      }
+    }
+
+    if( right_left && right_used ) /* New from right */
+    {
+      if( ++rp == right_size )
+      {
+	right_left = 0;
+	if( !left_left )
+	  continue;
+      }
+      else
+      {
+	right_doc = T(right)->d->hits[rp].doc_id;
+	right_used = 0;
+      }
+    }
+
+
+    if(!right_left || (left_doc <= right_doc))
+    {
+      if( left_doc != right_doc )
+      {	
+	if(left_doc>last)
+	  wf_resultset_add( res, (last = left_doc), left_rank );
+      }
+      left_used=1;
+    }
+
+    if( right_doc <= left_doc )
+      right_used=1;
+  }
+  if( !left_used )
+    if(left_doc!=last)
+      wf_resultset_add( res, (last = left_doc), left_rank );
+  pop_n_elems( args );
+  push_object( res );
 }
 
 void exit_resultset_program(void)
