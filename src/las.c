@@ -101,8 +101,8 @@ INT32 count_args(node *n)
   case '?':
   {
     int tmp1,tmp2;
-    tmp1=count_args(CDAR(n));
-    tmp2=count_args(CDAR(n));
+    tmp1=count_args(CADR(n));
+    tmp2=count_args(CDDR(n));
     if(tmp1==-1 || tmp2==-2) return -1;
     if(tmp1 < tmp2) return tmp1;
     return tmp2;
@@ -164,7 +164,14 @@ node *mknode(short token,node *a,node *b)
     break;
 
   case F_APPLY:
-    res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
+    if(a && a->token==F_CONSTANT &&
+       a->u.sval.type==T_FUNCTION &&
+       a->u.sval.subtype==-1)
+    {
+      res->node_info |= a->u.sval.u.efun->flags;
+    }else{
+      res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
+    }
     break;
 
   case F_RETURN:
