@@ -46,12 +46,17 @@
  *    
  */
 
-#define PC Parser.C
-
 #ifdef OLD
 import ".";
 #define PC .C
-#endif
+#else /* !OLD */
+#if constant(Parser.Pike)
+#define PC Parser.Pike
+#else /* !constant(Parser.Pike) */
+#define PC Parser.C
+#endif /* constant(Parser.Pike) */
+#endif /* OLD */
+
 
 int parse_type(array x, int pos)
 {
@@ -839,12 +844,30 @@ array convert(array x, string base)
   return ({ ret, addfuncs, exitfuncs, declarations });
 }
 
+array(string) convert_comments(array(string) tokens)
+{
+  // Filter AutoDoc mk II, and convert other C++ comments to C-style.
+  return map(filter(tokens,
+		    lambda(string token) {
+		      return !(has_prefix(token, "//!") ||
+			       has_prefix(token, "/*!"));
+		    }),
+	     lambda(string token) {
+	       if (has_prefix(token, "//")) {
+		 return ("/*" + token[2..] + " */");
+	       } else {
+		 return token;
+	       }
+	     });
+}
+
 int main(int argc, array(string) argv)
 {
   mixed x;
   file=argv[1];
   x=Stdio.read_file(file);
   x=PC.split(x);
+  x = convert_comments(x);
   x=PC.tokenize(x,file);
   x=PC.hide_whitespaces(x);
   x=PC.group(x);
