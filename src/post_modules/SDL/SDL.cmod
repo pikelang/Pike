@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.14 2003/03/18 15:16:19 nilsson Exp $
+|| $Id: SDL.cmod,v 1.15 2003/03/18 15:46:19 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.14 2003/03/18 15:16:19 nilsson Exp $");
+RCSID("$Id: SDL.cmod,v 1.15 2003/03/18 15:46:19 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -2212,7 +2212,7 @@ PIKECLASS CD {
     RETURN SDL_CDStop(THIS->cd);
   }
 
-  /*! @int eject()
+  /*! @decl int eject()
    *!
    *! @fixme
    *!   Document this function
