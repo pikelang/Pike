@@ -4,5 +4,5 @@ constant contenttypes = ({ });
 
 string tmp_filename()
 {
-  return sprintf("../var/tmp/search.tmp.%s.%d", tmp_unique, tmp_sequence++);
+  return sprintf("../var/search/search.tmp.%s.%d", tmp_unique, tmp_sequence++);
 }
