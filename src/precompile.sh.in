@@ -61,9 +61,6 @@ case "$SCRIPT" in
   ;;
 esac
 
-INPUT="`eval echo \"\\$$#\"`"
-TMPOUTPUT="${INPUT}.compiled"
-
 if [ $CACHE_OUTPUT = yes ]; then
   for arg
   do
@@ -77,6 +74,8 @@ if [ $CACHE_OUTPUT = yes ]; then
       exit 0
     fi
   fi
+else
+  TMPOUTPUT=x
 fi
 
 test $CACHE_OUTPUT = yes && trap 'rm -rf "$TMPOUTPUT" ; exit 1' 1 2 15
