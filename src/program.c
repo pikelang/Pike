@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.490 2003/03/27 02:20:24 mast Exp $
+|| $Id: program.c,v 1.491 2003/03/29 21:23:11 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.490 2003/03/27 02:20:24 mast Exp $");
+RCSID("$Id: program.c,v 1.491 2003/03/29 21:23:11 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1504,8 +1504,19 @@ struct pike_string *find_program_name(struct program *p, INT32 *line)
 #ifdef DEBUG_MALLOC
   {
     char *tmp=dmalloc_find_name(p);
-    *line=0;
-    if(tmp) return make_shared_string(tmp);
+    if (tmp) {
+      char *p = strchr (tmp, ':');
+      if (p) {
+	char *pp;
+	while ((pp = strchr (p + 1, ':'))) p = pp;
+	*line = atoi (p + 1);
+	return make_shared_binary_string (tmp, p - tmp);
+      }
+      else {
+	*line=0;
+	return make_shared_string(tmp);
+      }
+    }
   }
 #endif
 
