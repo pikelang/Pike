@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.96 1999/01/08 09:05:46 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.97 1999/01/16 00:27:17 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -586,7 +586,7 @@ static void f_pid_status_wait(INT32 args)
 	key.type=T_INT;
 	key.u.integer=pid;
 	s=low_mapping_lookup(pid_mapping, &key);
-	if(s && s->type == T_OBJECT || s->u.object == fp->current_object)
+	if(s && s->type == T_OBJECT && s->u.object == fp->current_object)
 	{
 	  errorcount++;
 	  if(errorcount==50)
