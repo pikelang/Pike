@@ -77,6 +77,15 @@ string merge(array x)
   return PC.simple_reconstitute(x);
 }
 
+string trim(string s)
+{
+  sscanf(s,"%*[ \t]%s",s);
+  s=reverse(s);
+  sscanf(s,"%*[ \t]%s",s);
+  s=reverse(s);
+  return s;
+}
+
 string cname(mixed type)
 {
   mixed btype;
@@ -144,7 +153,7 @@ mapping(string:string) parse_arg(array x)
   if(sizeof(ret->type/({"|"}))>1)
     ret->basetype="mixed";
   ret->ctype=cname(ret->basetype);
-  ret->typename=merge(recursive(strip_type_assignments,ret->type));
+  ret->typename=trim(merge(recursive(strip_type_assignments,ret->type)));
   ret->line=ret->name->line;
   return ret;
 }
@@ -292,9 +301,11 @@ array convert(array x, string base)
 {
   array addfuncs=({});
   array exitfuncs=({});
+  array declarations=({});
+  array ret=x;
 
-  array x=x/({"PIKECLASS"});
-  array ret=x[0];
+  array x=ret/({"PIKECLASS"});
+  ret=x[0];
 
   for(int f=1;f<sizeof(x);f++)
   {
@@ -308,27 +319,32 @@ array convert(array x, string base)
     string name=proto[p]->text;
     mapping attributes=parse_attributes(proto[p+2..]);
 
-    [ array classcode, array classaddfuncs, array classexitfuncs ]=
+    [ array classcode, array classaddfuncs, array classexitfuncs,
+      array classdeclarations ]=
       convert(body[1..sizeof(body)-2],name+"_");
-    ret+=({ sprintf("#define class_%s_defined\n",name), });
+    ret+=({ sprintf("\n#define class_%s_defined\n",name), });
     ret+=classcode;
 
     addfuncs+=({
-      sprintf("#ifdef class_%s_defined\n",name),
+      sprintf("\n#ifdef class_%s_defined\n",name),
       "  start_new_program();\n",
+      sprintf("\n#ifdef THIS_%s\n",upper_case(base)),
+      sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",base,base),
+      sprintf("\n#endif\n"),
     })+
       classaddfuncs+
 	({
 	  sprintf("  end_class(%O,%d);\n",name, attributes->flags || "0"),
-	  sprintf("#iendif\n"),
+	  sprintf("\n#endif\n"),
 	});
 
     exitfuncs+=({
-      sprintf("#ifdef class_%s_defined\n",name),
+      sprintf("\n#ifdef class_%s_defined\n",name),
     })+
+      classdeclarations+
       classexitfuncs+
 	({
-	  sprintf("#iendif\n"),
+	  sprintf("\n#endif\n"),
 	});
   }
 
@@ -345,12 +361,75 @@ array convert(array x, string base)
     array type=var[..pos-2];
     array rest=var[pos+1..];
     
+    thestruct+=({
+      sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
+      sprint("  %s %s;\n",ctype(type),name),
+      "\n#endif\n",
+    });
+    addfuncs+=({
+      sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
+      sprintf("  map_variable(%O,%O,%s_storage_offset + OFFSETOF(%s_struct, %s), T_%s)",
+	      name,
+	      merge(type),
+	      base,
+	      base,
+	      name,
+	      upper_case(basetype(type))),
+      "\n#endif\n",
+    });
+    ret+=
+      ({
+	sprintf("\n#define var_%s_%s_defined\n",name,base),
+      })+
+      rest;
   }
-#endif
+
+  x=ret/({"CVAR"});
+  ret=x[0];
+  for(int f=1;f<sizeof(x);f++)
+  {
+    array var=x[f];
+    int pos=search(var,PC.Token(";",0),);
+    int npos=pos-1;
+    while(arrayp(var[pos])) pos--;
+    mixed name=var[npos];
+    
+    thestruct+=({
+      sprintf("\n#ifdef var_%s_%s_defined\n",name,base),
+    })+var[..pos-1]+({
+      "\n#endif\n",
+    });
+    ret+=
+      ({
+	sprintf("\n#define var_%s_%s_defined\n",name,base),
+      })+
+      var[pos+1..];
+  }
 
 
   x=ret/({"PIKEFUN"});
   ret=x[0];
+
+  if(sizeof(thestruct))
+  {
+    x[0]+=
+      ({
+	/* FIXME:
+	 * Add runtime debug to this define...
+	 */
+	sprintf("#define THIS_%s ((struct %s_struct *)(Pike_fp->current_storage)\n",upper_case(base),base);
+	sprintf("static int %s_storage_offset;\n",base),
+	sprintf("struct %s_struct {\n",base),
+      })+thestruct+({
+	"};\n",
+      });
+  }
+#else
+  x=ret/({"PIKEFUN"});
+  ret=x[0];
+#endif
+
+
   for(int f=1;f<sizeof(x);f++)
   {
     array func=x[f];
@@ -381,7 +460,8 @@ array convert(array x, string base)
 
     ret+=({
       sprintf("#define f_%s_defined\n",name),
-      sprintf("void f_%s(INT32 args) {\n",name),
+      sprintf("void f_%s(INT32 args) ",name),
+      "{","\n",
     });
 
     args=map(args,parse_arg);
@@ -393,7 +473,7 @@ array convert(array x, string base)
 
 
     addfuncs+=({
-      sprintf("#ifdef f_%s_defined\n",name),
+      sprintf("\n#ifdef f_%s_defined\n",name),
       PC.Token(sprintf("  %s(%O,f_%s,tFunc(%s,%s),%s);\n",
 		       attributes->efun ? "ADD_EFUN" : "ADD_FUNCTION",
 		       attributes->name || name,
@@ -499,7 +579,7 @@ array convert(array x, string base)
   }
 
 
-  return ({ ret, addfuncs, exitfuncs });
+  return ({ ret, addfuncs, exitfuncs, declarations });
 }
 
 int main(int argc, array(string) argv)
@@ -516,10 +596,13 @@ int main(int argc, array(string) argv)
   x=tmp[0];
   x=recursive(replace,x,PC.Token("INIT",0),tmp[1]);
   x=recursive(replace,x,PC.Token("EXIT",0),tmp[2]);
+  x=recursive(replace,x,PC.Token("DECLARATIONS",0),tmp[3]);
 
   if(equal(x,tmp[0]))
   {
     // No INIT / EXIT, add our own stuff..
+    // NOTA BENE: DECLARATIONS are not handled automatically
+    //            on the file level
 
     x+=({
       "void pike_module_init(void) {\n",
