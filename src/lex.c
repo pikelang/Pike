@@ -343,7 +343,7 @@ char *get_f_name(int n)
     if(fp && fp->context.prog &&
        (int)fp->context.prog->num_constants > (int)(n-F_MAX_OPCODE) &&
        fp->context.prog->constants[n-F_MAX_OPCODE].type==T_FUNCTION &&
-       fp->context.prog->constants[n-F_MAX_OPCODE].subtype == -1 &&
+       (short)fp->context.prog->constants[n-F_MAX_OPCODE].subtype == -1 &&
        fp->context.prog->constants[n-F_MAX_OPCODE].u.efun)
     {
       return fp->context.prog->constants[n-F_MAX_OPCODE].u.efun->name->str;
