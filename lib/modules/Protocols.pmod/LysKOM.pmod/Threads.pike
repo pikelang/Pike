@@ -17,6 +17,23 @@ class Thread
   
     array(Node) children = ({ });
 
+    string get_aux_item_author(object text)
+    {
+      string name, email;
+      if(sizeof(text->aux_items["mx-author"]))
+	name=text->aux_items["mx-author"][0]->data;
+      if(sizeof(text->aux_items["mx-from"]))
+	email=text->aux_items["mx-from"][0]->data;
+      if(name && email)
+	return sprintf("%s <%s>",name,email);
+      if(name)
+	return name;
+      if(email)
+	return email;
+      return 0;
+    }
+
+
     array(mapping) flatten(int depth)
     {
       string author_name;
@@ -27,7 +44,7 @@ class Thread
 	author_name="Deleted person";
       return ({ ([ "no":         (string)text->no,
 		   "author_no":  (string)text->author->no,
-		   "author_name":author_name,
+		   "author_name":get_aux_item_author(text)||author_name,
 		   "subject":    text->subject,
 		   "unread":     (unread?"un":""),
 		   "depth":      (string)depth ]),
