@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.130 2001/06/06 01:15:55 mast Exp $ */
+/* $Id: html.c,v 1.131 2002/01/11 17:57:50 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -4666,7 +4666,8 @@ static void html_clone(INT32 args)
    DEBUG((stderr,"parse_html_clone object %p\n",THISOBJ));
 
    /* clone the current object, same class (!) */
-   push_object(o=clone_object(THISOBJ->prog,args));
+   push_object(o=parent_clone_object(THISOBJ->prog,THISOBJ->parent,
+				     THISOBJ->parent_identifier,args));
 
    p=(struct parser_html_storage*)get_storage(o,parser_html_program);
 
