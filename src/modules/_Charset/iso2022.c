@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.7 1999/04/27 01:45:04 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.8 1999/04/27 20:24:26 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -333,8 +333,28 @@ static void eat_string(struct pike_string *str, struct iso2022_stor *s)
     free_string(tmpstr);
 }
 
+static int call_repcb(struct svalue *repcb, p_wchar2 ch)
+{
+  push_string(make_shared_binary_string2(&ch, 1));
+  apply_svalue(repcb, 1);
+  if(sp[-1].type == T_STRING)
+    return 1;
+  pop_stack();
+  return 0;
+}
+
+#define REPLACE_CHAR(ch) \
+          if(repcb != NULL && call_repcb(repcb, ch)) { \
+	    eat_enc_string(sp[-1].u.string, s, rep, NULL); \
+            pop_stack(); \
+	  } else if(rep != NULL) \
+            eat_enc_string(rep, s, NULL, NULL); \
+	  else \
+	    error("Character unsupported by encoding.\n");
+
+
 static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
-			   struct pike_string *rep)
+			   struct pike_string *rep, struct svalue *repcb)
 {
   extern UNICHAR map_ANSI_X3_4_1968[];
   extern UNICHAR map_ISO_8859_1_1987[];
@@ -414,10 +434,7 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	  string_builder_putchar(&s->strbuild,c);
 	} else if(c==0xfffd) {
 	  /* Substitution character... */
-	  if(rep != NULL)
-	    eat_enc_string(rep, s, NULL);
-	  else
-	    error("Character unsupported by encoding.\n");
+	  REPLACE_CHAR(0xfffd);
 	} else if(c>=0x3000) {
 	  /* CJK */
 	  error("Not implemented.\n");
@@ -459,17 +476,14 @@ static void eat_enc_string(struct pike_string *str, struct iso2022enc_stor *s,
 	    }
 	  }
 	  if(ttab == NULL)
-	    if(rep != NULL)
-	      eat_enc_string(rep, s, NULL);
-	    else
-	      error("Character unsupported by encoding.\n");
+	    REPLACE_CHAR(c);
 	}
     }
     break;
   case 2:
     {
       /* Quick exit, no characters beyond 0xffe6 are supported anyway :) */
-      if(rep == NULL)
+      if(repcb == NULL && rep == NULL)
 	error("Character unsupported by encoding.\n");
 
       error("Not implemented.\n");
@@ -543,7 +557,11 @@ static void f_enc_feed(INT32 args)
   get_all_args(PRGM_NAME"Dec->feed()", args, "%W", &str);
 
   eat_enc_string(str, (struct iso2022enc_stor *)fp->current_storage,
-		 ((struct iso2022enc_stor *)fp->current_storage)->replace);
+		 ((struct iso2022enc_stor *)fp->current_storage)->replace,
+		 (((struct iso2022enc_stor *)fp->current_storage)->repcb.type
+		  == T_FUNCTION?
+		  &((struct iso2022enc_stor *)fp->current_storage)->repcb :
+		  NULL));
 
   pop_n_elems(args);
   push_object(this_object());
@@ -609,6 +627,8 @@ static void f_set_repcb(INT32 args)
 
   if(args>0)
     assign_svalue(&s->repcb, &sp[-args]);
+
+  pop_n_elems(args);
 }
 
 static void init_stor(struct object *o)
