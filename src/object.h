@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.h,v 1.86 2004/09/26 22:07:02 mast Exp $
+|| $Id: object.h,v 1.87 2004/09/27 21:37:23 mast Exp $
 */
 
 #ifndef OBJECT_H
@@ -47,7 +47,7 @@ void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
     struct object *o_=(O);						\
     debug_malloc_touch(o_);						\
     debug_malloc_touch(o_->storage);					\
-    DO_IF_PIKE_CLEANUP (						\
+    DO_IF_DEBUG (							\
       if (gc_external_refs_zapped)					\
 	gc_check_zapped (o_, PIKE_T_OBJECT, __FILE__, __LINE__);	\
     );									\

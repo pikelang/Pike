@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.36 2004/09/26 22:07:02 mast Exp $
+|| $Id: multiset.h,v 1.37 2004/09/27 21:37:23 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -226,7 +226,7 @@ PMOD_PROTO void really_free_multiset (struct multiset *l);
 #define free_multiset(L) do {						\
     struct multiset *_ms_ = (L);					\
     debug_malloc_touch (_ms_);						\
-    DO_IF_PIKE_CLEANUP (						\
+    DO_IF_DEBUG (							\
       if (gc_external_refs_zapped)					\
 	gc_check_zapped (_ms_, PIKE_T_MULTISET, __FILE__, __LINE__);	\
     );									\

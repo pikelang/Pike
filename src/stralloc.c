@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.167 2004/09/18 22:02:45 nilsson Exp $
+|| $Id: stralloc.c,v 1.168 2004/09/27 21:37:23 mast Exp $
 */
 
 #include "global.h"
@@ -1818,7 +1818,7 @@ void init_shared_string_table(void)
   empty_pike_string = make_shared_string("");
 }
 
-#ifdef DEBUG_MALLOC
+#ifdef DO_PIKE_CLEANUP
 struct shared_string_location *all_shared_string_locations;
 #endif
 
@@ -1833,7 +1833,7 @@ void cleanup_shared_string_table(void)
     empty_pike_string = 0;
   }
 
-#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
+#ifdef DO_PIKE_CLEANUP
   while(all_shared_string_locations)
   {
     struct shared_string_location *x=all_shared_string_locations;
@@ -1842,14 +1842,16 @@ void cleanup_shared_string_table(void)
     x->s=0;
   }
 
-  if(verbose_debug_exit)
+  if (exit_with_cleanup)
   {
     INT32 num,size;
     count_memory_in_strings(&num,&size);
     if(num)
     {
       fprintf(stderr,"Strings left: %d (%d bytes) (zapped)\n",num,size);
+#ifdef PIKE_DEBUG
       dump_stralloc_strings();
+#endif
     }
   }
 #endif

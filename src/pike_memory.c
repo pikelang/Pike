@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.155 2004/09/18 20:50:53 nilsson Exp $
+|| $Id: pike_memory.c,v 1.156 2004/09/27 21:37:23 mast Exp $
 */
 
 #include "global.h"
@@ -370,8 +370,8 @@ int dmalloc_print_trace;
 #define DMALLOC_TRACE_LOG(X)
 #endif
 
-#if defined (PIKE_DEBUG) && defined (DO_PIKE_CLEANUP)
-int verbose_debug_exit = 1;
+#ifdef DO_PIKE_CLEANUP
+int exit_with_cleanup = 1;
 #endif
 
 #ifdef DEBUG_MALLOC
@@ -2119,7 +2119,7 @@ void cleanup_memhdrs(void)
   }
   exiting=1;
 
-  if(verbose_debug_exit)
+  if (exit_with_cleanup)
   {
     int first=1;
     low_search_all_memheaders_for_references();

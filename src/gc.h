@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.115 2004/06/02 00:07:35 nilsson Exp $
+|| $Id: gc.h,v 1.116 2004/09/27 21:37:23 mast Exp $
 */
 
 #ifndef GC_H
@@ -81,13 +81,9 @@ extern void *gc_svalue_location;
 
 #ifdef DO_PIKE_CLEANUP
 extern int gc_destruct_everything;
-#else
-#define gc_destruct_everything 0
-#endif
-
-#if defined (DO_PIKE_CLEANUP)
 extern int gc_keep_markers;
 #else
+#define gc_destruct_everything 0
 #define gc_keep_markers 0
 #endif
 

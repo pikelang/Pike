@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.258 2004/09/22 18:08:13 mast Exp $
+|| $Id: gc.c,v 1.259 2004/09/27 21:37:22 mast Exp $
 */
 
 #include "global.h"
@@ -1539,9 +1539,14 @@ static void cleanup_markers (void)
     for(e=0;e<marker_hash_table_size;e++) {
       struct marker *m;
       for (m = marker_hash_table[e]; m; m = m->next) {
+#ifdef PIKE_DEBUG
 	m->flags &= GC_CLEANUP_FREED;
-	m->refs = m->weak_refs = m->xrefs = 0;
+	m->xrefs = 0;
 	m->saved_refs = -1;
+#else
+	m->flags = 0;
+#endif
+	m->refs = m->weak_refs = 0;
 	m->frame = 0;
       }
     }
@@ -1559,12 +1564,14 @@ static void init_gc(void)
 {
 #ifdef PIKE_DEBUG
   if (!gc_is_watching) {
+#endif
+#if defined (PIKE_DEBUG) || defined (DO_PIKE_CLEANUP)
     /* The marker hash table is left around after a previous gc if
      * gc_keep_markers is set. */
     if (marker_hash_table) cleanup_markers();
     if (!marker_hash_table)
-#endif
       low_init_marker_hash(num_objects);
+#endif
     get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
 #ifdef PIKE_DEBUG
   }
@@ -1595,7 +1602,7 @@ void exit_gc(void)
 #endif
 }
 
-#ifdef DO_PIKE_CLEANUP
+#ifdef PIKE_DEBUG
 void gc_check_zapped (void *a, TYPE_T type, const char *file, int line)
 {
   struct marker *m = find_marker (a);

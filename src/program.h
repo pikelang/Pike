@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.209 2004/09/26 22:07:03 mast Exp $
+|| $Id: program.h,v 1.210 2004/09/27 21:37:23 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -574,7 +574,7 @@ void gc_check_zapped (void *a, TYPE_T type, const char *file, int line);
 #define free_program(p) do{						\
     struct program *_=(p);						\
     debug_malloc_touch(_);						\
-    DO_IF_PIKE_CLEANUP (						\
+    DO_IF_DEBUG (							\
       if (gc_external_refs_zapped)					\
 	gc_check_zapped (_, PIKE_T_PROGRAM, __FILE__, __LINE__);	\
     );									\
