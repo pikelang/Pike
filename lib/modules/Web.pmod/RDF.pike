@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.31 2004/01/16 04:35:36 nilsson Exp $
+// $Id: RDF.pike,v 1.32 2004/01/16 04:52:35 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -821,28 +821,35 @@ static class XML {
 
   void low_add_Description( mapping(Resource:array(Resource)) rel ) {
     ind++;
-    if(sizeof(rel)>1) buf->add("\n");
+    array group = ({});
     foreach(rel; Resource left; array(Resource) rights) {
       add_ns(left);
       foreach(rights, Resource right) {
-	if(ind) buf->add("  "*ind);
-	buf->add("<", left->get_qname());
-	if(right->is_literal_resource)
-	  buf->add(">", right->get_xml(), "</", left->get_qname(), ">\n");
-	else if(right->is_uri_resource)
-	  buf->add(" rdf:resource='", right->get_uri(), "'/>\n");
-	else {
-	  buf->add(">\n");
-	  ind++;
-	  add_Description(right, m_delete(subjects, right)||([]));
-	  ind--;
+	if(right->is_literal_resource) {
 	  if(ind) buf->add("  "*ind);
-	  buf->add("</", left->get_qname(), ">\n");
+	  buf->add("<", left->get_qname());
+	  buf->add(">", right->get_xml(), "</", left->get_qname(), ">\n");
 	}
-	if(sizeof(rel)>1) buf->add("\n");
+	else if(right->is_uri_resource) {
+	  if(ind) buf->add("  "*ind);
+	  buf->add("<", left->get_qname());
+	  buf->add(" rdf:resource='", right->get_uri(), "'/>\n");
+	}
+	else
+	  group += ({ right });
+      }
+      if(sizeof(group)) {
+	if(ind) buf->add("  "*ind);
+	buf->add("<", left->get_qname(), ">\n");
+	ind++;
+	foreach(group, Resource right)
+	  add_Description(right, m_delete(subjects, right)||([]));
+	ind--;
+	if(ind) buf->add("  "*ind);
+	buf->add("</", left->get_qname(), ">\n");
       }
     }
-    ind--;
+  ind--;
   }
 
   void add_Description(Resource n,
@@ -860,7 +867,7 @@ static class XML {
 	m_delete(rel, rdf_type);
       if(ind) buf->add("  "*ind);
       add_ns(c);
-      buf->add("<", c->get_qname(), " rdf:about='", n->get_uri(), "'>");
+      buf->add("<", c->get_qname(), " rdf:about='", n->get_uri(), "'>\n");
       low_add_Description(rel);
       if(ind) buf->add("  "*ind);
       buf->add("</", c->get_qname(), ">\n");
