@@ -172,7 +172,7 @@ echo "precompile: $RUNPIKE $SCRIPT $@ (method=$method)"
 if [ $CACHE_OUTPUT = yes ]; then
   $RUNPIKE $SCRIPT "$@" >"$TMPOUTPUT"
 else
-  $RUNPIKE $SCRIPT "$@"
+  $RUNPIKE $SCRIPT "$@" >&5
 fi
 
 if [ $? = 0 ]; then
