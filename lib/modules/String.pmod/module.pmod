@@ -113,10 +113,14 @@ string common_prefix(array(string) strs)
   return strs0[0..n-1];
 }
 
-class String_buffer {
+//! A helper class to optimize iterative string build-up for speed. Can help up
+//! performance noticably when dealing with buildup of huge strings by reducing
+//! the time needed for rehashing the string every time it grows.
+class String_buffer
+{
   array(string) buffer=allocate(BEGIN);
   int ptr=0;
-  
+
   static void fix()
     {
       string tmp=buffer*"";
@@ -124,25 +128,29 @@ class String_buffer {
       buffer[0]=tmp;
       ptr=1;
     }
-  
+
+  //! Get the contents of the buffer.
   string get_buffer()
     {
       if(ptr != 1) fix();
       return buffer[0];
     }
-  
+
+  //! Append the string @[s] to the buffer.
   void append(string s)
     {
       if(ptr==sizeof(buffer)) fix();
       buffer[ptr++]=s;
     }
-  
+
+  //!
   mixed cast(string to)
     {
       if(to=="string") return get_buffer();
       return 0;
     }
-  
+
+  //! Clear the buffer.
   void flush()
     {
       buffer=allocate(BEGIN);
