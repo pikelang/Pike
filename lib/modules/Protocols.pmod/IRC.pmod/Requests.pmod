@@ -6,7 +6,7 @@ NICK Mirar^
 USER mirar mistel.idonex.se irc.starchat.net :Mirar is testing
 */
 
-string __cvs_id="$Id: Requests.pmod,v 1.4 2000/11/12 23:41:50 mirar Exp $";
+string __cvs_id="$Id: Requests.pmod,v 1.5 2000/11/18 10:39:00 mirar Exp $";
 
 import ".";
 
@@ -102,6 +102,7 @@ object ping=NoReply("PING","text");
 object privmsg=NoReply("PRIVMSG","string","text");
 object notice=NoReply("NOTICE","string","text");
 object join=NoReply("JOIN","string");
+object part=NoReply("PART","string");
 object names=NoReply("NAMES","string");
 object who=NoReply("WHO","string");
 object kick=NoReply("KICK","string","string","text");

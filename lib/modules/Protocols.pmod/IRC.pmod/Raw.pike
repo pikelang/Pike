@@ -4,7 +4,7 @@ import ".";
 
 object con;
 
-//  #define IRC_DEBUG
+// #define IRC_DEBUG
 
 function(string,string ...:void) command_callback;
 function(string,string ...:void) notify_callback;

@@ -186,7 +186,14 @@ void got_notify(string from,string type,
 	    return;
 	 }
 	 break;
-	 
+
+      case "474": // "cannot join channel"
+	 if ((c=channels[lower_case(message||"")]))
+	 {
+	    if (c->not_join_fail) c->not_join_fail(extra*" ");
+	    return;
+	 }
+	 break;
 
       case "401": // no such nick
 	 werror("%O\n",({from,type,to,message,extra}));
@@ -195,7 +202,7 @@ void got_notify(string from,string type,
       case "367": // mode b line
 	 if ((c=channels[lower_case(message||"")]))
 	 {
-	    if (c->not_mode_b) c->not_mode_b(to,extra*" ");
+	    if (c->not_mode_b) c->not_mode_b(extra*" ");
 	    return;
 	 }
 	 break;
@@ -252,7 +259,7 @@ void got_notify(string from,string type,
       case "QUIT":
 	 forget_person(originator);
 	 foreach (values(channels),c)
-	    c->not_part(originator,message,originator);
+	    if (c && c->not_part) c->not_part(originator,message,originator);
 	 if (options->quit_notify)
 	 {
 	    // who, why
