@@ -65,7 +65,7 @@ array(string) get_url_nice(string url,void|mapping query_variables)
    return c && ({c->headers["content-type"],c->data()});
 }
 
-array(string) get_url_data(string url,void|mapping query_variables)
+string get_url_data(string url,void|mapping query_variables)
 {
    object z=get_url(url,query_variables);
    return z && z->data();
@@ -107,7 +107,7 @@ array(string) post_url_nice(string url,mapping query_variables)
    return c && ({c->headers["content-type"],c->data()});
 }
 
-array(string) post_url_data(string url,mapping query_variables)
+string post_url_data(string url,mapping query_variables)
 {
    object z=post_url(url,query_variables);
    return z && z->data();
