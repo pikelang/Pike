@@ -35,7 +35,7 @@ PRIVATE string some_entropy()
 {
   string res;
   object parent_pipe, child_pipe;
-  mapping env=getenv();
+  mapping env=getenv()+([]);
 
   parent_pipe = Stdio.File();
   child_pipe = parent_pipe->pipe();
