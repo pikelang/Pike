@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.253 2004/02/19 23:53:41 nilsson Exp $
+// $Id: master.pike.in,v 1.254 2004/03/16 14:14:49 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -50,6 +50,12 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 #endif /* OUT_OF_DATE_WARNING */
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
 
+#ifdef __NT__
+#define PATH_SEPARATOR ";"
+#else
+#define PATH_SEPARATOR ":"
+#endif
+
 //! @decl constant out_of_date_warning = 1
 //! Should Pike complain about out of date compiled files.
 //! 1 means yes and 0 means no. Controlled by the OUT_OF_DATE_WARNING
@@ -69,10 +75,42 @@ int compat_minor=-1;
 
 #define Stat _static_modules.files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
+#define write(X ...) _static_modules.files()->_stdout->write(X)
+
+#ifdef RESOLV_DEBUG
+
+#if constant (thread_local)
+static object resolv_msg_depth = thread_local();
+#define GET_RESOLV_MSG_DEPTH (resolv_msg_depth->get())
+#define INC_RESOLV_MSG_DEPTH() (resolv_msg_depth->set (resolv_msg_depth->get() + 1))
+#define DEC_RESOLV_MSG_DEPTH() (resolv_msg_depth->set (resolv_msg_depth->get() - 1))
+#else
+static int resolv_msg_depth;
+#define GET_RESOLV_MSG_DEPTH resolv_msg_depth
+#define INC_RESOLV_MSG_DEPTH() (++resolv_msg_depth)
+#define DEC_RESOLV_MSG_DEPTH() (--resolv_msg_depth)
+#endif
+
+void resolv_debug (string fmt, mixed... args)
+{
+  string pad = "  " * GET_RESOLV_MSG_DEPTH;
+  if (sizeof (args)) fmt = sprintf (fmt, @args);
+  if (fmt[-1] == '\n')
+    fmt = pad + replace (fmt[..sizeof (fmt) - 2], "\n", "\n" + pad) + "\n";
+  else
+    fmt = pad + replace (fmt, "\n", "\n" + pad);
+  werror (fmt);
+}
+
+#else  // !RESOLV_DEBUG
+#define INC_RESOLV_MSG_DEPTH() 0
+#define DEC_RESOLV_MSG_DEPTH() 0
+#define resolv_debug(X...) do {} while (0)
+#endif	// !RESOLV_DEBUG
 
 //! @appears error
 //! Throws an error. A more readable version of the code
-//! @tt{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
+//! @expr{throw( ({ sprintf(f, @@args), backtrace() }) )@}.
 void error(string f, mixed ... args) {
   array b = backtrace();
   if (sizeof(args)) f = sprintf(f, @args);
@@ -86,7 +124,7 @@ string fakeroot(string s)
 {
   string tmp1=combine_path_with_cwd(s);
 #ifdef PIKE_FAKEROOT_OMIT
-  foreach(PIKE_FAKEROOT_OMIT/":", string x)
+  foreach(PIKE_FAKEROOT_OMIT/PATH_SEPARATOR, string x)
     if(glob(x,tmp1))
       return s;
 #endif
@@ -99,7 +137,7 @@ string fakeroot(string s)
 #ifdef PIKE_MODULE_RELOC
 string relocate_module(string s)
 {
-  if(s[..1]=="/$" && (s+"/")[..20] == "/${PIKE_MODULE_PATH}/") {
+  if(s == "/${PIKE_MODULE_PATH}" || has_prefix (s, "/${PIKE_MODULE_PATH}/")) {
     string tmp = s[21..];
     foreach(pike_module_path, string path) {
       string s2 = fakeroot(sizeof(tmp)? combine_path(path, tmp) : path);
@@ -112,19 +150,28 @@ string relocate_module(string s)
 
 string unrelocate_module(string s)
 {
-  if(s[..1]=="/$" && (s+"/")[..20] == "/${PIKE_MODULE_PATH}/")
+  if(s == "/${PIKE_MODULE_PATH}" || has_prefix (s, "/${PIKE_MODULE_PATH}/"))
     return s;
 
   foreach(pike_module_path, string path)
     if(s == path)
       return "/${PIKE_MODULE_PATH}";
     else {
-      string s2 = combine_path(path, "");
-      if(s[..sizeof(s2)-1] == s2)
-	return "/${PIKE_MODULE_PATH}/"+s[sizeof(s2)..];
+      path = combine_path(path, "");
+      if(has_prefix (s, path))
+	return "/${PIKE_MODULE_PATH}/"+s[sizeof(path)..];
     }
+
+  /* This is necessary to find compat modules... */
+  foreach(pike_module_path, string path) {
+    path = combine_path(path, "..", "");
+    if(has_prefix (s, path))
+      return "/${PIKE_MODULE_PATH}/../"+s[sizeof(path)..];
+  }
+
   return s;
 }
+
 #ifdef fakeroot
 #undef fakeroot
 #endif
@@ -216,14 +263,15 @@ int newest;
     newest=0
     
 
-#define AUTORELOAD_FINISH(VAR, CACHE, FILE)		\
-   if(autoreload_on) {                                  \
-     if(CACHE [ FILE ] && newest <= load_time[FILE]) {	\
-        VAR = CACHE [ FILE ]; 				\
-      }                                                 \
-    }                                                   \
-    load_time[FILE]=time();				\
-    if(___newest > newest) newest=___newest;
+#define AUTORELOAD_FINISH(VAR, CACHE, FILE)				\
+  if(autoreload_on) {							\
+    mixed val = CACHE[FILE];						\
+    if(!zero_type (val) && val != no_value && newest <= load_time[FILE]) { \
+      VAR = val;							\
+    }									\
+  }									\
+  load_time[FILE]=time();						\
+  if(___newest > newest) newest=___newest;
 
 
 mapping(string:int) load_time=([]);
@@ -237,9 +285,9 @@ mapping(string:int) load_time=([]);
 
 //! @appears compile_string
 //! Compile the Pike code in the string @[source] into a program.
-//! If @[filename] is not specified, it will default to @tt{"-"@}.
+//! If @[filename] is not specified, it will default to @expr{"-"@}.
 //!
-//! Functionally equal to @code{@[compile](@[cpp](@[source], @[filename]))@}.
+//! Functionally equal to @expr{@[compile](@[cpp](@[source], @[filename]))@}.
 //!
 //! @seealso
 //! @[compile()], @[cpp()], @[compile_file()]
@@ -264,7 +312,7 @@ string master_read_file(string file)
 }
 
 #ifdef GETCWD_CACHE
-string current_path;
+static string current_path;
 int cd(string s)
 {
   current_path=0;
@@ -327,7 +375,29 @@ Stat master_file_stat(string x)
 #define master_file_stat file_stat
 #endif // FILE_STAT_CACHE
 
-mapping (string:array(string)) environment=([]);
+//! Mapping containing the environment variables.
+//!
+//! The mapping currently has the following structure:
+//! @mapping
+//!   @member array(string) index
+//!      Note that the index is @[lower_case()]'d on NT.
+//!      @array
+//!         @elem string varname
+//!            Variable name with case intact.
+//!         @elem string value
+//!            Variable value.
+//!      @endarray
+//! @endmapping
+//!
+//! @note
+//!   This mapping should not be accessed directly; use @[getenv()]
+//!   and @[putenv()] instead.
+//!
+//! @note
+//!   This mapping is not compatible with @[Process.create_process()];
+//!   use the mapping returned from calling @[getenv()] without arguments
+//!   instead.
+mapping(string:array(string)) environment=([]);
 
 
 //! @decl string getenv(string varname)
@@ -340,7 +410,7 @@ mapping (string:array(string)) environment=([]);
 //!
 //! If the @[varname] argument has been given, the value of the environment
 //! variable with the name @[varname] will be returned. If no such
-//! environment variable exists, @tt{0@} (zero) will be returned.
+//! environment variable exists, @expr{0@} (zero) will be returned.
 //!
 //! On NT the environment variable name is case insensitive.
 //!
@@ -359,7 +429,7 @@ string|mapping(string:string) getenv(string|void s)
 //!
 //! This function will compile the file @[filename] to a Pike program that can
 //! later be instantiated. It is the same as doing
-//! @code{@[compile_string](@[Stdio.read_file](@[filename]), @[filename])@}.
+//! @expr{@[compile_string](@[Stdio.read_file](@[filename]), @[filename])@}.
 //!
 //! @seealso
 //! @[compile()], @[compile_string()], @[cpp()]
@@ -441,7 +511,76 @@ string normalize_path( string path )
 #endif
 }
 
-mapping (string:program) programs=(["/master":object_program(this_object())]);
+//! Mapping containing the cache of currently compiled files.
+//!
+//! This mapping currently has the following structure:
+//! @mapping
+//!    @member program filename
+//! @endmapping
+//!
+//! @note
+//!   As a special case the current master program is available
+//!   under the name @expr{"/master"@}.
+mapping(string:program|NoValue) programs=(["/master":object_program(this_object())]);
+
+mapping (program:object|NoValue) objects=([
+  object_program(this_object()):this_object(),
+  object_program(_static_modules): _static_modules
+]);
+
+mapping(string:object|NoValue) fc=([]);
+
+// Note: It's assumed that the mappings above never decrease in size
+// except in *_reverse_lookup(). no_value is used for entries that
+// should be considered removed.
+
+constant no_value = (<>);
+constant NoValue = typeof (no_value);
+
+// The reverse mapping for objects isn't only for speed; search()
+// doesn't work reliably there since it calls `==.
+static mapping(program:string) rev_programs = ([]);
+static mapping(object:program) rev_objects = ([]);
+static mapping(mixed:string) rev_fc = ([]);
+
+string programs_reverse_lookup (program prog)
+//! Returns the path for @[prog] in @[programs], if it got any.
+{
+  if (sizeof (rev_programs) < sizeof (programs)) {
+    foreach (programs; string path; program|NoValue prog)
+      if (prog == no_value)
+	m_delete (programs, path);
+      else
+	rev_programs[prog] = path;
+  }
+  return rev_programs[prog];
+}
+
+program objects_reverse_lookup (object obj)
+//! Returns the program for @[obj] in @[objects], if it got any.
+{
+  if (sizeof (rev_objects) < sizeof (objects)) {
+    foreach (objects; program prog; object|NoValue obj)
+      if (obj == no_value)
+	m_delete (objects, obj);
+      else
+	rev_objects[obj] = prog;
+  }
+  return rev_objects[obj];
+}
+
+string fc_reverse_lookup (object obj)
+//! Returns the path for @[obj] in @[fc], if it got any.
+{
+  if (sizeof (rev_fc) < sizeof (fc)) {
+    foreach (fc; string path; mixed obj)
+      if (obj == no_value)
+	m_delete (fc, obj);
+      else
+	rev_fc[obj] = path;
+  }
+  return rev_fc[obj];
+}
 
 array(string) query_precompiled_names(string fname)
 {
@@ -496,10 +635,8 @@ static program low_findprog(string pname,
   if(!autoreload_on || load_time[fname]>=time())
 #endif
   {
-    if(!zero_type (ret=programs[fname])) {
-#ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s returning cached (no autoreload)\n", fname);
-#endif
+    if(!zero_type (ret=programs[fname]) && ret != no_value) {
+      resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
       return ret;
     }
   }
@@ -519,16 +656,14 @@ static program low_findprog(string pname,
   }
 #endif
 
-  if( (s=master_file_stat(fakeroot(fname)))  && s[1]>=0 )
+  if( (s=master_file_stat(fakeroot(fname))) && s->isreg )
   {
     AUTORELOAD_BEGIN();
 
 #ifdef PIKE_AUTORELOAD
-    if (load_time[fname] > s[3])
-      if (!zero_type (ret=programs[fname])) {
-#ifdef RESOLV_DEBUG
-	werror ("low_findprog: %s returning cached (autoreload)\n", fname);
-#endif
+    if (load_time[fname] > s->mtime)
+      if (!zero_type (ret=programs[fname]) && ret != no_value) {
+	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
 	return ret;
       }
 #endif
@@ -539,20 +674,24 @@ static program low_findprog(string pname,
     case ".pike":
       foreach(query_precompiled_names(fname), string oname) {
 	if(Stat s2=master_file_stat(fakeroot(oname)))
-	{	
-	  if(s2[1]>=0 && s2[3]>=s[3])
+	{
+	  if(s2->isreg && s2->mtime >= s->mtime)
 	  {
 	    mixed err=catch {
 	      AUTORELOAD_CHECK_FILE(oname);
+	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
+	      INC_RESOLV_MSG_DEPTH();
 	      ret = decode_value(master_read_file(oname),
-				 Codec(fname, mkobj));
-#ifdef RESOLV_DEBUG
-	      werror ("low_findprog: %s returning decoded dump\n", fname);
-#endif
+				 (handler && handler->get_codec ||
+				  get_codec)(fname, mkobj));
+	      DEC_RESOLV_MSG_DEPTH();
+	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
 	      return programs[fname] = ret;
 
 	    };
-	    m_delete(programs, fname);
+	    DEC_RESOLV_MSG_DEPTH();
+	    resolv_debug ("low_findprog %s: dump decode failed\n", fname);
+	    programs[fname] = no_value;
 	    if (handler && handler->compile_warning) {
 	      handler->compile_warning(oname, 0,
 				       sprintf("Decode failed:\n"
@@ -573,9 +712,8 @@ static program low_findprog(string pname,
 	}
       }
       
-#ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s compiling\n", fname);
-#endif
+      resolv_debug ("low_findprog %s: compiling, mkobj: %O\n", fname, mkobj);
+      INC_RESOLV_MSG_DEPTH();
       programs[fname]=ret=__empty_program(0, fname);
       if ( mixed e=catch {
 	ret=compile_file(fname,
@@ -584,9 +722,14 @@ static program low_findprog(string pname,
 			 mkobj? (objects[ret]=__null_program()) : 0);
       } )
       {
-	ret=programs[fname]=0;
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("low_findprog %s: compilation failed\n", fname);
+	objects[ret] = no_value;
+	ret=programs[fname]=0;	// Negative cache.
         throw(e);
       }
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("low_findprog %s: compilation ok\n", fname);
       break;
 #if constant(load_module)
     case ".so":
@@ -596,19 +739,17 @@ static program low_findprog(string pname,
       }
 
       ret=load_module(fakeroot(fname));
-#ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s loaded binary\n", fname);
-#endif
+      resolv_debug ("low_findprog %s: loaded binary\n", fname);
 #endif /* load_module */
     }
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
+    resolv_debug("low_findprog %s: returning %O\n", fname, ret);
+
     return programs[fname]=ret;
   }
-#ifdef RESOLV_DEBUG
-  werror ("low_findprog: %s file not found\n", fname);
-#endif
+  resolv_debug ("low_findprog %s: file not found\n", fname);
   return 0;
 }
 
@@ -620,20 +761,21 @@ static program low_findprog(string pname,
 void unregister(program p)
 {
   if(string fname=search(programs,p)) {
-    m_delete(programs, fname);
+    resolv_debug("unregister %s\n", fname);
+    programs[fname] = no_value;
     // FIXME: The following assumes that programs are always stored
     // with '/' as path separators, even on NT. Haven't checked if
     // that always is the case.
     fname = dirname (fname);
     object n;
-    if ( fname!="" && (n = fc[fname]) )
+    if ( fname!="" && objectp (n = fc[fname]) )
       if (n->is_resolv_dirnode || n->is_resolv_joinnode)
 	n->delete_value (p);
   }
-  m_delete(objects, p);
+  if (objectp (objects[p])) objects[p] = no_value;
   foreach (fc; string name; mixed mod)
     if (objectp(mod) && object_program(mod) == p)
-      m_delete(fc, name);
+      fc[name] = no_value;
 }
 
 static program findprog(string pname,
@@ -680,8 +822,8 @@ program low_cast_to_program(string pname,
 
   if(IS_ABSOLUTE_PATH(pname))
   {
-    if (programs[pname])
-      return programs[pname];
+    program|NoValue prog = programs[pname];
+    if (programp (prog)) return prog;
     pname=combine_path("/",pname);
     return findprog(pname,ext,handler,mkobj);
   }
@@ -715,7 +857,12 @@ program cast_to_program(string pname,
 			string current_file, 
 			object|void handler)
 {
-  return low_cast_to_program(pname, current_file, handler);
+  resolv_debug ("cast_to_program(%O, %O)\n", pname, current_file);
+  INC_RESOLV_MSG_DEPTH();
+  program ret = low_cast_to_program(pname, current_file, handler);
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("cast_to_program(%O, %O) => %O\n", pname, current_file, ret);
+  return ret;
 }
 
 
@@ -780,6 +927,17 @@ constant master_efuns = ({
 
 string include_prefix;
 
+
+//! @decl int strlen(string|multiset|array|mapping|object thing)
+//! @appears strlen
+//! Alias for @[sizeof].
+//! @deprecated sizeof
+
+//! @decl int write(string fmt, mixed ... args)
+//! @appears write
+//! Writes a string on stdout. Works just like @[Stdio.File.write]
+//! on @[Stdio.stdout].
+
 /* Note that create is called before add_precompiled_program
  */
 void create()
@@ -803,7 +961,7 @@ void create()
   CO(call_out_info);
 
 #if "¤share_prefix¤"[0]!='¤'
-  // add path for architecture-dependant files
+  // add path for architecture-independant files
   add_include_path("¤share_prefix¤/include");
   add_module_path("¤share_prefix¤/modules");
 #endif
@@ -830,10 +988,13 @@ void create()
 //! is called from the compiler.
 program handle_inherit(string pname, string current_file, object|void handler)
 {
-  return cast_to_program(pname, current_file, handler);
+  resolv_debug ("handle_inherit(%O, %O)\n", pname, current_file);
+  INC_RESOLV_MSG_DEPTH();
+  program ret = low_cast_to_program(pname, current_file, handler);
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("handle_inherit(%O, %O) => %O\n", pname, current_file, ret);
+  return ret;
 }
-
-mapping (program:object) objects=([object_program(this_object()):this_object()]);
 
 object low_cast_to_object(string oname, string current_file,
 			  object|void current_handler)
@@ -843,6 +1004,7 @@ object low_cast_to_object(string oname, string current_file,
 
   p = low_cast_to_program(oname, current_file, current_handler, 1);
   if(!p) return 0;
+  // NB: p might be a function in a fake_object...
   if(!objectp (o=objects[p])) o=objects[p]=p();
   return o;
 }
@@ -852,7 +1014,11 @@ object low_cast_to_object(string oname, string current_file,
 //! may also receive more arguments in the future.
 object cast_to_object(string oname, string current_file)
 {
+  resolv_debug ("cast_to_object(%O, %O)\n", oname, current_file);
+  INC_RESOLV_MSG_DEPTH();
   object o = low_cast_to_object(oname, current_file);
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("cast_to_object(%O, %O) => %O\n", oname, current_file, o);
   if (objectp (o)) return o;
   error("Cast '"+oname+"' to object failed"+
 	((current_file && current_file!="-")?sprintf(" for '%s'",current_file):"")+".\n");
@@ -872,10 +1038,7 @@ class dirnode
 
   void create(string d, object|void h)
     {
-#ifdef MODULE_TRACE
-      werror("%*ndirnode(%O,%O);\n",sizeof(backtrace())-1,d,h);
-//      werror(describe_backtrace( ({"HERE\n",backtrace()})));
-#endif
+      resolv_debug ("dirnode(%O,%O) created\n",d,h);
       dirname=d;
       handler=h;
       fc[dirname]=this_object();
@@ -883,35 +1046,58 @@ class dirnode
 	fc[dirname[..sizeof(dirname)-6]]=this_object();
     }
 
+  void get_files() {
+    if (!(files = get_dir(fakeroot(dirname)))) {
+      werror ("Error listing module directory %O: %s\n",
+	      dirname, strerror (errno()));
+      files = ({});
+    }
+  }
+
   class module_checker
   {
     int `!()
     {
-#ifdef MODULE_TRACE
-      werror("%*ndirnode(%O)->module_checker()->`!()\n",sizeof(backtrace()),dirname);
-#endif
-      if(module=findmodule(dirname+"/module", handler))
-      {
-	if(mixed tmp=module->_module_value)
-	  module=tmp;
+      resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
+      INC_RESOLV_MSG_DEPTH();
+      if (mixed err = catch {
+	if(module=findmodule(dirname+"/module", handler))
+	{
+	  if(mixed tmp=module->_module_value)
+	    module=tmp;
 
-	/* This allows for `[] to have side effects first time
-	 * it is called. (Specifically, the Calendar module uses
-	 * this
-	 */
-	cache=([]);
-	_cache_full=0;
+	  /* This allows for `[] to have side effects first time
+	   * it is called. (Specifically, the Calendar module uses
+	   * this
+	   */
+	  cache=([]);
+	  _cache_full=0;
+	}
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("dirnode(%O)->module_checker()->`!() => %s\n",
+		      dirname, !module ? "doesn't exist" : "exists");
+	return !module;
+      }) {
+	//werror ("findmodule error: " + describe_backtrace (err));
+
+	// findmodule() failed. This can occur due to circularities
+	// between encode_value()'ed programs.
+	// The error will then typically be:
+	// "Cannot call functions in unfinished objects."
+
+	// Pretend not to exist for now...
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("dirnode(%O)->module_checker()->`!() => failure, doesn't exist\n",
+		      dirname);
+	return 1;
       }
-
-      return !module;
     }
 
     mixed `[](string index)
       {
-#ifdef MODULE_TRACE
-	werror("%*ndirnode(%O)->module_checker()[%O]\n",sizeof(backtrace()),dirname,index);
-#endif
-	if(module) return module[index];
+	resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
+		      dirname, index, module && module[index]);
+	return module && module[index];
       }
     array(string) _indices() { if(module) return indices(module); }
     array _values() { if(module) return values(module); }
@@ -919,59 +1105,60 @@ class dirnode
 
   static mixed ind(string index)
   {
-#ifdef MODULE_TRACE
-    werror("%*nDirnode(%O) ind[%O] -> ???\n",sizeof(backtrace()),dirname,index);
-#endif
-    if(module) 
+    resolv_debug ("dirnode(%O)->ind(%O)\n", dirname, index);
+    INC_RESOLV_MSG_DEPTH();
+
+    if(module)
     {
-#ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) module[%O] -> ???\n",sizeof(backtrace()),dirname,index);
-#endif
       mixed o;
 //      _describe(module);
       if(!zero_type(o=module[index]))
       {
-#ifdef MODULE_TRACE
-	werror("%*nDirnode(%O) module[%O] -> %O\n",sizeof(backtrace()),dirname,index, o);
-#endif
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("dirnode(%O)->ind(%O) => found %O\n",
+		      dirname, index, o);
 	return o;
       }
+      resolv_debug ("dirnode(%O)->ind(%O) => not found in module\n", dirname, index);
     }
+    else
+      resolv_debug ("dirnode(%O)->ind(%O) => no module\n", dirname, index);
 
-    if( !files )
-      if (!(files = get_dir(fakeroot(dirname)))) {
-	werror ("Error listing module directory %O: %s\n",
-		dirname, strerror (errno()));
-	files = ({});
-      }
+    if(!files) get_files();
 
-    int ret;
+    int(0..1) ret;
     foreach( files, string s )
-    {
       if( has_value(s, index) || has_value(index,s) )
       {
         ret=1;
         break;
       }
-    }
-    if(!ret)
+    if(!ret) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("dirnode(%O)->ind(%O) => no file match\n", dirname, index);
       return UNDEFINED;
-    index = dirname+"/"+index;
-#ifdef MODULE_TRACE
-    werror("%*nDirnode(%O) findmodule(%O)\n",
-	   sizeof(backtrace()), dirname, dirname+"/"+index);
-#endif
-    if(object o=findmodule(index, handler))
+    }
+
+    string fullname = dirname+"/"+index;
+    object o;
+    if(objectp(o=findmodule(fullname, handler)))
     {
       if(mixed tmp=o->_module_value) o=tmp;
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("dirnode(%O)->ind(%O) => found submodule %O\n",
+		    dirname, index, o);
       return o;
     }
-    if (program p=cast_to_program( index, 0, handler ))
+    if (program p=cast_to_program( fullname, 0, handler ))
     {
-//      werror("dirnode(%O)[%O] -> %O\n",dirname,index,p);
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("dirnode(%O)->ind(%O) => found subprogram %O\n",
+		    dirname, index, p);
       return p;
     }
-//    werror("Returning UNDEFINED for %s\n",ind);
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("dirnode(%O)->ind(%O) => not found\n",
+		  dirname, index);
     return UNDEFINED;
   }
 
@@ -979,34 +1166,47 @@ class dirnode
   {
     mixed ret;
 #ifdef MODULE_TRACE
-    werror("%*nDirnode(%O) cache[%O] ?????\n",sizeof(backtrace()),dirname,index);
+    werror("%*nDirnode(%O) cache[%O] ?????\n",
+	   sizeof(backtrace()),dirname,index);
 #endif
     if(!zero_type(ret=cache[index]))
     {
 #ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) cache[%O] -> %O\n",sizeof(backtrace()),dirname,index, ret);
+      werror("%*nDirnode(%O) cache[%O] => %O%s\n",
+	     sizeof(backtrace()),dirname,index, ret,
+	     (ret != ZERO_TYPE)?"":" (zero_type)");
 #endif
       if (ret != ZERO_TYPE) return ret;
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) ZERO_TYPE!\n",
+	     sizeof(backtrace()),dirname);
+#endif
       return UNDEFINED;
     }
     ret=ind(index);
 
     // We might have gotten placeholder objects in the first pass
     // which must not be cached to the second.
-    if(ret == predef::__placeholder_object) return ret;
+    if(ret == predef::__placeholder_object) {
+#ifdef MODULE_TRACE
+      werror("%*nDirnode(%O) PLACE_HOLDER.\n",
+	     sizeof(backtrace()),dirname);
+#endif
+      return ret;
+    }
 
     cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
     return ret;
   }
 
-  static int _cache_full;
+  static int(0..1) _cache_full;
   void fill_cache()
   {
-#ifdef RESOLV_DEBUG
+#if 0
     werror(describe_backtrace(({ sprintf("Filling cache in dirnode %O\n",
 					 dirname),
 				 backtrace() })));
-#endif /* RESOLV_DEBUG */
+#endif
     if (_cache_full) {
       return;
     }
@@ -1017,12 +1217,7 @@ class dirnode
       }
     }
 
-    if( !files )
-      if (!(files = get_dir(fakeroot(dirname)))) {
-	werror ("Error listing module directory %O: %s\n",
-		dirname, strerror (errno()));
-	files = ({});
-      }
+    if(!files) get_files();
 
     foreach(files, string fname) {
       mixed err = catch {
@@ -1043,15 +1238,19 @@ class dirnode
     }
     _cache_full = 1;
   }
-  array(string) _indices()
+
+  static array(string) _indices()
   {
-    // werror("indices(%O) called\n", dirname);
     fill_cache();
-    return indices(filter(cache, lambda(mixed x) {return x != ZERO_TYPE;}));
+    // Note: Cannot index cache at all here to filter out the
+    // ZERO_TYPE values since that can change the order in the
+    // mapping, and _indices() has to return the elements in the same
+    // order as a nearby _values() call.
+    return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
-  array(mixed) _values()
+
+  static array(mixed) _values()
   {
-    // werror("values(%O) called\n", dirname);
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
   }
@@ -1062,12 +1261,15 @@ class dirnode
       m_delete (cache, name);
   }
 
-  string _sprintf(int as)
-    {
-      return as=='O' && sprintf("master()->dirnode(%O)",dirname);
-    }
-  
-};
+  static int(0..) _sizeof() {
+    return sizeof(_values());
+  }
+
+  static string _sprintf(int as)
+  {
+    return as=='O' && sprintf("master()->dirnode(%O)",dirname);
+  }
+}
 
 static class ZERO_TYPE {};
 
@@ -1085,10 +1287,14 @@ class joinnode
   void create(array(object|mapping) _joined_modules)
   {
     joined_modules = _joined_modules;
+    resolv_debug ("joinnode(%O) created\n", joined_modules);
   }
 
   static mixed ind(string index)
   {
+    resolv_debug ("joinnode(%O)->ind(%O)\n", joined_modules, index);
+    INC_RESOLV_MSG_DEPTH();
+
     array(mixed) res = ({});
     foreach(joined_modules, object|mapping o) 
     {
@@ -1099,8 +1305,14 @@ class joinnode
 	    (ret->is_resolv_dirnode || ret->is_resolv_joinnode))
         {
 	  // Only join directorynodes (or joinnodes).
-	  res += ({ ret });
+	  if (ret->is_resolv_joinnode)
+	    res += ret->joined_modules;
+	  else
+	    res += ({ ret });
 	} else if ( !zero_type(ret) ) {
+	  DEC_RESOLV_MSG_DEPTH();
+	  resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
+			joined_modules, index, ret);
 	  return (ret);
 	} else {
 	  // Ignore
@@ -1108,10 +1320,23 @@ class joinnode
 	}
       }
     }
-    if (sizeof(res) > 1)
-      return joinnode(res); 
-    else if (sizeof(res))
+
+    if (sizeof(res) > 1) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("joinnode(%O)->ind(%O) => new joinnode\n",
+		    joined_modules, index);
+      return joinnode(res);
+    }
+
+    else if (sizeof(res)) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
+		    joined_modules, index, res[0]);
       return res[0];
+    }
+
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("joinnode(%O)->ind(%O) => not found\n", joined_modules, index);
     return UNDEFINED;
   }
 
@@ -1137,13 +1362,15 @@ class joinnode
     }
     return ret;
   }
+
   static int _cache_full;
+
   void fill_cache()
   {
-#ifdef RESOLV_DEBUG
+#if 0
     werror(describe_backtrace(({ "Filling cache in joinnode\n",
 				 backtrace() })));
-#endif /* RESOLV_DEBUG */
+#endif
     if (_cache_full) {
       return;
     }
@@ -1156,11 +1383,17 @@ class joinnode
     }
     _cache_full = 1;
   }
+
   array(string) _indices()
   {
     fill_cache();
-    return indices(filter(cache, lambda(mixed x){ return x != ZERO_TYPE; }));
+    // Note: Cannot index cache at all here to filter out the
+    // ZERO_TYPE values since that can change the order in the
+    // mapping, and _indices() has to return the elements in the same
+    // order as a nearby _values() call.
+    return filter (indices (cache), map (values (cache), `!=, ZERO_TYPE));
   }
+
   array(mixed) _values()
   {
     fill_cache();
@@ -1183,39 +1416,73 @@ class joinnode
 	m_delete (o, name);
     }
   }
+
+  int `== (mixed other)
+  {
+    return objectp (other) && other->is_resolv_joinnode &&
+      equal (mkmultiset (joined_modules), mkmultiset (other->joined_modules));
+  }
+
+  array(object) _encode()
+  {
+    return joined_modules;
+  }
+
+  void _decode (array(object) joined_modules)
+  {
+    this_program::joined_modules = joined_modules;
+  }
 };
 
-// Variables mustn't be static to allow for replace_master().
-//	/grubba 1998-04-10
-mapping(string:mixed) fc=([]);
-
-object findmodule(string fullname, object|void handler)
+program|object findmodule(string fullname, object|void handler)
 {
-  object o;
-#ifdef MODULE_TRACE
-  werror("%*nfindmodule(%O)\n",sizeof(backtrace()),fullname);
-#endif
-  if(!zero_type(o=fc[fullname]))
+  program|object o;
+
+  resolv_debug ("findmodule(%O)\n", fullname);
+  if(!zero_type(o=fc[fullname]) && o != no_value)
   {
-//    werror("fc[%O] -> %O\n",fullname, o);
-    if (o == 0) return UNDEFINED;
-    return o;
+    if (objectp(o) || programp(o) || o != 0) {
+      resolv_debug ("findmodule(%O) => found %O (cached)\n", fullname, o);
+      return o;
+    }
+    resolv_debug ("findmodule(%O) => not found (cached)\n", fullname);
+    return UNDEFINED;
   }
 
   if(Stat stat=master_file_stat(fakeroot(fullname+".pmod")))
   {
-    if(stat[1]==-2)
+    if(stat->isdir)
+    {
+      resolv_debug ("findmodule(%O) => new dirnode\n", fullname);
       return fc[fullname] = dirnode(fullname+".pmod", handler);
+    }
   }
 
-  if(objectp (o = low_cast_to_object(fullname+".pmod", "/.", handler)))
+  INC_RESOLV_MSG_DEPTH();
+
+  if(objectp (o = low_cast_to_object(fullname+".pmod", "/.", handler))) {
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("findmodule(%O) => got object %O\n", fullname, o);
     return fc[fullname]=o;
+  }
     
 #if constant(load_module)
-  if(master_file_stat(fakeroot(fullname+".so")))
-    return fc[fullname] = low_cast_to_object(fullname, "/.", handler);
+  if(master_file_stat(fakeroot(fullname+".so"))) {
+    o = fc[fullname] = low_cast_to_object(fullname, "/.", handler);
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("findmodule(%O) => got .so object %O\n", fullname, o);
+    return o;
+  }
 #endif
 
+  if (programp (o = cast_to_program(fullname, "/.", handler))) {
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("findmodule(%O) => got .pike program %O\n", fullname, o);
+    return fc[fullname] = o;
+  }
+
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("findmodule(%O) => not found\n", fullname);
   return fc[fullname] = 0;
 }
 
@@ -1231,37 +1498,45 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   } else {
     path = combine_path_with_cwd(what);
   }
-#ifdef MODULE_TRACE
-  werror("%*nhandle_import(%O, %O, %O)\n",
-	 sizeof(backtrace()), what, current_file, handler);
-#endif /* MODULE_TRACE */
-  if (!handler && fc[path]) return fc[path];
-#ifdef PIKE_MODULE_RELOC
-  if (has_prefix(path+"/", "/${PIKE_MODULE_PATH}/")) {
-    string tmp = path[21..];
-    array(mixed) dirnodes = ({});
-    foreach(pike_module_path, string path) {
-      string s2 = fakeroot(sizeof(tmp)? combine_path(path, tmp) : path);
-      if(master_file_stat(s2)) {
-        dirnodes += ({ handler?dirnode(s2, handler):dirnode(s2) });
-      }
-    }
-    if (sizeof(dirnodes) > 1) {
-      if (!handler) return fc[path] = joinnode(dirnodes);
-      return joinnode(dirnodes);
-    }
-    if (sizeof(dirnodes)) {
-      if (!handler) return fc[path] = dirnodes[0];
-      return dirnodes[0];
-    }
-    return UNDEFINED;
+
+#if 0
+  // If we can't cache the dirnode when we got a handler, then
+  // findmodule has to be broken too. Good caching is necessary for
+  // module dumping. /mast
+  if (handler) {
+    resolv_debug ("handle_import(%O, %O, %O) => new dirnode with handler\n",
+		  what, current_file, handler);
+    return dirnode(path, handler);
   }
 #endif
-  if (handler) {
-    return dirnode(fakeroot(path), handler);
+
+  if(objectp (fc[path])) {
+    resolv_debug ("handle_import(%O, %O) => found %O (cached)\n",
+		  what, current_file, fc[path]);
+    return fc[path];
   }
-  if(fc[path]) return fc[path];
-  return dirnode(fakeroot(path));
+  resolv_debug ("handle_import(%O, %O) => new dirnode\n", what, current_file);
+#ifdef PIKE_MODULE_RELOC
+  // If we have PIKE_MODULE_RELOC enabled, 
+  // we might need to map to a join node.
+  // FIXME: Ought to use the non-relocate_module() fakeroot().
+  if(path == "/${PIKE_MODULE_PATH}" ||
+     has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
+    string tmp = path[21..];
+    array(dirnode) dirnodes = ({});
+    foreach(pike_module_path, string prefix) {
+      string s2 = fakeroot(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
+      if(master_file_stat(s2))
+	dirnodes += ({ dirnode(s2, handler) });
+    }
+    resolv_debug("handle_import(%O, %O) => Found %d dirnodes\n",
+		 what, current_file, sizeof(dirnodes));
+    if (sizeof(dirnodes) > 1) return fc[path] = joinnode(dirnodes);
+    if (sizeof(dirnodes)) return fc[path] = dirnodes[0];
+    return UNDEFINED;
+  }
+#endif /* PIKE_MODULE_RELOC */
+  return fc[path] = dirnode(fakeroot(path), handler);
 }
 
 
@@ -1276,6 +1551,12 @@ class CompatResolver
   array(string) pike_program_path=({});
   mapping(string:string) predefines = ([]);
   string ver;
+
+  //! If we fail to resolv, try our parent.
+  //!
+  //! Typical configuration:
+  //! @pre{0.6->7.0->7.2->7.4->master@}
+  CompatResolver parent_resolver;
 
   //! The CompatResolver is initialized with a value that can be
   //! casted into a "%d.%d" string, e.g. a version object.
@@ -1420,19 +1701,41 @@ class CompatResolver
 		    object|void current_handler)
     {
 //      werror("Resolv_base(%O)\n",identifier);
+      mapping(string:mixed)|object static_modules = _static_modules;
+      if (current_handler && current_handler->get_default_module) {
+	mapping(string:mixed) default_module =
+	  current_handler->get_default_module();
+	if (default_module) {
+	  static_modules = (default_module->_static_modules || ([]));
+	}
+      }
       array(mixed) tmp = ({});
+
+#if 0
+      if (static_modules[identifier]) {
+	tmp += ({ static_modules[identifier] });
+      }
+#endif
+      if (identifier == "_static_modules") {
+	tmp += ({ static_modules });
+      }
+
       string dir=current_file ? dirname(current_file) : "/";
 
       foreach(pike_module_path, string path)
 	{
 	  string file=combine_path(dir, path, identifier);
 	  mixed ret = findmodule(file, current_handler);
-	  if(objectp (ret)) {	// ret is either zero or an object here.
+	  if(objectp (ret) || programp(ret)) {
+	    // ret is either zero or an object or a program here.
 	    if (ret->is_resolv_dirnode || ret->is_resolv_joinnode) {
 	      if (mixed new_ret = ret->_module_value) {
 		ret = new_ret;
 	      }
-	      tmp += ({ ret });
+	      if (ret->is_resolv_joinnode)
+		tmp += ret->joined_modules;
+	      else
+		tmp += ({ ret });
 	    } else {
 	      if (mixed new_ret = ret->_module_value) {
 		ret = new_ret;
@@ -1441,8 +1744,10 @@ class CompatResolver
 		return ret;
 	      } else {
 		// Ignore
+#if 1
 		werror( "Ignoring file %O: %t for identifier %O\n",
 			file, ret, identifier );
+#endif
 		continue;
 	      }
 	    }
@@ -1450,9 +1755,13 @@ class CompatResolver
 	}
       if (sizeof(tmp)) {
 	if (sizeof(tmp) == 1) {
-	  return(tmp[0]);
+	  return tmp[0];
 	}
 	return joinnode(tmp);
+      }
+      if (parent_resolver) {
+	return parent_resolver->resolv(identifier, current_file,
+				       current_handler);
       }
       return UNDEFINED;
     }
@@ -1463,15 +1772,13 @@ class CompatResolver
   mixed resolv(string identifier, string|void current_file,
 	       object|void current_handler)
     {
-#ifdef RESOLV_DEBUG
-      werror("Resolv(%O, %O)\n",identifier, current_file);
-#endif /* RESOLV_DEBUG */
+      resolv_debug("resolv(%O, %O)\n",identifier, current_file);
+      INC_RESOLV_MSG_DEPTH();
 
       // FIXME: Support having the cache in the handler?
       if( no_resolv[ identifier ] ) {
-#ifdef RESOLV_DEBUG
-	werror("Resolv(%O, %O) => excluded\n",identifier, current_file);
-#endif /* RESOLV_DEBUG */
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug("resolv(%O, %O) => excluded\n",identifier, current_file);
 	return UNDEFINED;
       }
 
@@ -1485,12 +1792,12 @@ class CompatResolver
       string id=identifier+":"+(current_file ? dirname(current_file) : "-");
       if( zero_type (ret = resolv_cache[id]) != 1 )
       {
-//	werror("Resolv cached(%O) => %O (%d)\n",id,resolv_cache[id],zero_type(resolv_cache[id]));
 #ifdef RESOLV_DEBUG
+	DEC_RESOLV_MSG_DEPTH();
 	if (ret == ZERO_TYPE)
-	  werror("Resolv(%O, %O) => not found (cached)\n",identifier, current_file);
+	  resolv_debug("resolv(%O, %O) => not found (cached)\n",identifier, current_file);
 	else
-	  werror("Resolv(%O, %O) => found %O (cached)\n",identifier, current_file, ret);
+	  resolv_debug("resolv(%O, %O) => found %O (cached)\n",identifier, current_file, ret);
 #endif /* RESOLV_DEBUG */
 	return ret == ZERO_TYPE ? UNDEFINED : ret;
       }
@@ -1502,11 +1809,12 @@ class CompatResolver
 	ret=ret[index];
       }
       resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
+      DEC_RESOLV_MSG_DEPTH();
 #ifdef RESOLV_DEBUG
       if (zero_type (ret))
-	  werror("Resolv(%O, %O) => not found\n",identifier, current_file);
+	  resolv_debug("resolv(%O, %O) => not found\n",identifier, current_file);
 	else
-	  werror("Resolv(%O, %O) => found %O\n",identifier, current_file, ret);
+	  resolv_debug("resolv(%O, %O) => found %O\n",identifier, current_file, ret);
 #endif /* RESOLV_DEBUG */
       return ret;
     }
@@ -1518,29 +1826,27 @@ class CompatResolver
 			string current_file,
 			int local_include)
     {
-      array(string) tmp;
-      string path;
-      
       if(local_include)
       {
-	tmp=EXPLODE_PATH(current_file);
+	array(string) tmp=EXPLODE_PATH(current_file);
 	tmp[-1]=f;
-	path=combine_path_with_cwd(tmp*"/");
+	return combine_path_with_cwd(tmp*"/");
       }
       else
       {
-	foreach(pike_include_path, path)
-	  {
-	    path=combine_path(path,f);
-	    if(master_file_stat(fakeroot(path)))
-	      break;
-	    else
-	      path=0;
-	  }
-	
+	foreach(pike_include_path, string path)
+	{
+	  path=combine_path(path,f);
+	  if(master_file_stat(fakeroot(path)))
+	    return path;
+	}
+	if (parent_resolver) {
+	  return parent_resolver->handle_include(f, current_file,
+						 local_include);
+	}
       }
-      
-      return path;
+      // Failed.
+      return 0;
     }
 
   //!
@@ -1585,6 +1891,7 @@ object backend_thread()
 }
 #endif
 
+
 //! This function is called when all the driver is done with all setup
 //! of modules, efuns, tables etc. etc. and is ready to start executing
 //! _real_ programs. It receives the arguments not meant for the driver
@@ -1593,12 +1900,9 @@ object backend_thread()
 void _main(array(string) orig_argv, array(string) env)
 {
   array(string) argv=copy_value(orig_argv);
-  int i,debug,trace,run_tool;
+  int debug,trace,run_tool;
   object tmp;
-  string a,b;
-  array q;
   string postparseaction=0;
-  mixed v;
 
   predefines = _static_modules.Builtin()->_take_over_initial_predefines();
   _pike_file_name = orig_argv[0];
@@ -1606,20 +1910,18 @@ void _main(array(string) orig_argv, array(string) env)
   _backend_thread = this_thread();
 #endif
 
-  foreach(env,a)
-    {
-      if(sscanf(a,"%s=%s",a,b))
-      {
-	if(a=="") // Special hack for NT
-	{
-	  sscanf(b,"%s=%s",a,b);
-	  a="="+a;
-	}
-	putenv(a, b);
-      }else{
-	werror("Broken environment var %s\n",a);
-      } 
+  foreach(env, string a)
+    if( sscanf(a, "%s=%s", a, string b)==2 ) {
+#ifdef __NT__
+      if(a=="") {
+	sscanf(b, "%s=%s", a, b);
+	a="="+a;
+      }
+#endif
+      putenv(a, b);
     }
+    else
+      werror("Broken environment var %s\n",a);
 
   void _error(string a, mixed ... b) {
     werror(a, @b);
@@ -1627,14 +1929,19 @@ void _main(array(string) orig_argv, array(string) env)
   };
 
 #ifndef NOT_INSTALLED
-  q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
-  for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
+  {
+    array parts = (getenv("PIKE_INCLUDE_PATH")||"")/PATH_SEPARATOR-({""});
+    int i = sizeof(parts);
+    while(i) add_include_path(parts[--i]);
 
-  q=(getenv("PIKE_PROGRAM_PATH")||"")/":"-({""});
-  for(i=sizeof(q)-1;i>=0;i--) add_program_path(q[i]);
+    parts = (getenv("PIKE_PROGRAM_PATH")||"")/PATH_SEPARATOR-({""});
+    i = sizeof(parts);
+    while(i) add_program_path(parts[--i]);
 
-  q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
-  for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
+    parts = (getenv("PIKE_MODULE_PATH")||"")/PATH_SEPARATOR-({""});
+    i = sizeof(parts);
+    while(i) add_module_path(parts[--i]);
+  }
 #endif
 
   // Some configure scripts depends on this format.
@@ -1660,7 +1967,8 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
-    tmp = main_resolv("Getopt");
+    array q;
+    tmp = main_resolv( "Getopt" );
 
     int NO_ARG = tmp->NO_ARG;
     int MAY_HAVE_ARG = tmp->MAY_HAVE_ARG;
@@ -1669,7 +1977,8 @@ void _main(array(string) orig_argv, array(string) env)
     q=tmp->find_all_options(argv,({
       ({"compat_version", HAS_ARG, ({"-V", "--compat"}), 0, 0}),
       ({"version",        NO_ARG,  ({"-v", "--version"}), 0, 0}),
-      ({"help",           NO_ARG,  ({"-h", "--help"}), 0, 0}),
+      ({"dumpversion",    NO_ARG,  ({"--dumpversion"}), 0, 0}),
+      ({"help",           MAY_HAVE_ARG, ({"-h", "--help"}), 0, 0}),
       ({"features",       NO_ARG,  ({"--features"}), 0, 0}),
       ({"info",           NO_ARG,  ({"--info"}), 0, 0}),
       ({"execute",        HAS_ARG, ({"-e", "--execute"}), 0, 0}),
@@ -1692,9 +2001,9 @@ void _main(array(string) orig_argv, array(string) env)
       ({"ignore",         HAS_ARG, ({"-s"}), 0, 0}),
       ({"run_tool",       NO_ARG,  ({"-x"}), 0, 0}),
     }), 1);
-
+    
     /* Parse -M and -I backwards */
-    for(i=sizeof(q)-1; i>=0; i--)
+    for(int i=sizeof(q)-1; i>=0; i--)
     {
       switch(q[i][0])
       {
@@ -1705,9 +2014,11 @@ void _main(array(string) orig_argv, array(string) env)
 #ifdef PIKE_AUTORELOAD
       case "autoreload":
 	autoreload_on++;
+	break;
 #endif
 
       case "debug_without":
+	// FIXME: Disable loading of dumped modules?
         foreach( q[i][1]/",", string feature )
         {
           switch( feature )
@@ -1794,6 +2105,10 @@ void _main(array(string) orig_argv, array(string) env)
     {
       switch(opts[0])
       {
+      case "dumpversion":
+	write("%d.%d.%d\n", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);
+	exit(0);
+
       case "version":
 	werror(version() + " Copyright © 1994-2004 Linköping University\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
@@ -1802,22 +2117,7 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(0);
 	
       case "help":
-	werror("Usage: pike [-driver options] script [script arguments]\n"
-	       "Driver options include:\n"
-	       " -I --include-path=<p>: Add <p> to the include path\n"
-	       " -M --module-path=<p> : Add <p> to the module path\n"
-	       " -P --program-path=<p>: Add <p> to the program path\n"
-	       " -e --execute=<cmd>   : Run the given command instead of a script.\n"
-	       " -h --help            : see this message\n"
-	       " -v --version         : See what version of pike you have.\n"
-	       " --features           : List Pike features.\n"
-	       " --info               : List information about the Pike build and setup.\n"
-	       " --show-paths         : See the paths and master that pike uses.\n"
-	       " -s#                  : Set stack size\n"
-	       " -m <file>            : Use <file> as master object.\n"
-	       " -d -d#               : Increase debug (# is how much)\n"
-	       " -t -t#               : Increase trace level\n"
-	  );
+	werror( main_resolv("Tools","MasterHelp")->do_help(opts[1]) );
 	exit(0);
 	
       case "features":
@@ -1837,37 +2137,54 @@ void _main(array(string) orig_argv, array(string) env)
 	main_resolv( "Gmp", "bignum" );
 #endif /* __AUTO_BIGNUM__ */
 
-	random_seed(time() ^ (getpid()<<8));
+	random_seed((time() ^ (getpid()<<8)));
 	argv = tmp->get_args(argv,1);
 
-	program prog =
-	  compile_string("mixed create(int argc, array(string) argv,array(string) env){"+
-			 opts[1]+";}");
+	program prog;
+	if(Version(compat_major,compat_minor) <= Version(7,4))
+	  prog = compile_string(
+	    "mixed create(int argc, array(string) argv,array(string) env){"+
+	    opts[1]+";}");
+	else
+	  prog = compile_string(
+	    "#define NOT(X) !(X)\n"
+	    "#define CHAR(X) 'X'\n"
+	    "mixed run(int argc, array(string) argv,"
+	    "mapping(string:string) env){"+
+	    opts[1]+";}");
 
 #if constant(_debug)
 	if(debug) _debug(debug);
 #endif
 	if(trace) predef::trace(trace);
+	mixed ret;
 	mixed err = catch {
 	    // One reason for this catch is to get a new call to
 	    // eval_instruction in interpret.c so that the debug and
 	    // trace levels set above take effect in the bytecode
 	    // evaluator.
-	    prog(sizeof(argv),argv,env);
+	    if(currentversion <= Version(7,4))
+	      prog (sizeof(argv),argv,env);
+	    else
+	      ret = prog()->run(sizeof(argv),argv,getenv());
 	  };
 	if(trace) predef::trace(0);
 	if (err) {
 	  handle_error (err);
-	  exit (10);
+	  ret = 10;
 	}
-	exit(0);
+	if(stringp(ret)) {
+	  write(ret);
+	  if(ret[-1]!='\n') write("\n");
+	}
+	if(!intp(ret) || ret<0) ret=0;
+	exit(ret);
 
       case "preprocess":
 #ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp", "bignum" );
 #endif /* __AUTO_BIGNUM__ */
-	_static_modules.files()->_stdout->write(cpp(master_read_file(opts[1]),
-						    opts[1]));
+	write(cpp(master_read_file(opts[1]),opts[1]));
 	exit(0);
       }
     }
@@ -1875,40 +2192,50 @@ void _main(array(string) orig_argv, array(string) env)
     argv = tmp->get_args(argv,1);
   }
 
-#ifdef __AUTO_BIGNUM__
-  main_resolv( "Gmp", "bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
   switch (postparseaction)
   {
      case "features":
-	_static_modules.files()->_stdout->
-	  write( main_resolv("Tools", "Install", "features")()*"\n"+"\n" );
-	exit(0);
+       write( main_resolv( "Tools", "Install", "features" )()*"\n"+"\n" );
+       exit(0);
 
      case "info":
-	function w=_static_modules.files()->_stdout->write;
-	w("Software......Pike\n"
-	  "Version......."+version()+"\n"
-	  "WWW...........http://pike.ida.liu.se/\n"
-	  "\n");
-
-	w("pike binary..."+_pike_file_name+"\n");
-	w( format_paths() + "\n");
-
-	w("Features......"+
-	  main_resolv("Tools", "Install", "features")()*"\n              "+
-	  "\n");
+       write("Software......Pike\n"
+	     "Version......."+version()+"\n"
+	     "WWW...........http://pike.ida.liu.se/\n"
+	     "\n"
+	     "pike binary..."+_pike_file_name+"\n"+
+	      format_paths() + "\n"
+	     "Features......"+
+	     main_resolv( "Tools","Install","features" )()*"\n              "+
+	     "\n");
 	exit(0);
   }
+
+#ifdef __AUTO_BIGNUM__
+  main_resolv( "Gmp", "bignum" );
+#endif /* __AUTO_BIGNUM__ */
 
   random_seed(time() ^ (getpid()<<8));
 
   if(sizeof(argv)==1)
   {
-    if(run_tool)
-      _error( "Pike: -x specified without tool name.\n");
-    main_resolv("Tools", "Hilfe")->StdinHilfe();
+    if(run_tool) {
+      werror("Pike -x specificed without tool name.\n"
+	     "Available tools:\n");
+      mapping t = ([]);
+      int i;
+      object ts = main_resolv( "Tools", "Standalone" );
+      foreach(indices(ts)-indices(ts->module), string s) {
+	object o = ts[s]();
+	if(!o->main) continue;
+	t[s] = o->description || "";
+	i = max(i, sizeof(s));
+      }
+      foreach(sort(indices(t)), string s)
+	werror(" %-"+i+"s %s\n", s, t[s]);
+      exit(1);
+    }
+    main_resolv( "Tools", "Hilfe" )->StdinHilfe();
     exit(0);
   }
   else
@@ -1918,7 +2245,7 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(run_tool) {
     mixed err = catch {
-      prog=main_resolv("Tools", "Standalone", argv[0]);
+      prog=main_resolv( "Tools", "Standalone", argv[0] );
     };
 
     if (err)
@@ -1926,7 +2253,7 @@ void _main(array(string) orig_argv, array(string) env)
 	      "%s\n", argv[0],
 	      stringp(err[0])?err[0]:describe_backtrace(err) );
 
-    argv[0] = search(master()->programs, prog) || argv[0];
+    argv[0] = search(programs, prog) || argv[0];
   } else {
     argv[0]=combine_path_with_cwd(argv[0]);
 
@@ -1946,22 +2273,32 @@ void _main(array(string) orig_argv, array(string) env)
   if(debug) _debug(debug);
 #endif
   if(trace) predef::trace(trace);
-
+  mixed ret;
   mixed err = catch {
       // The main reason for this catch is actually to get a new call
       // to eval_instruction in interpret.c so that the debug and
       // trace levels set above take effect in the bytecode evaluator.
-      object script=prog();
+      object script;
+      if(Version(compat_major,compat_minor) <= Version(7,4)) {
+	script=prog();
+      }
+      else {
+	script=prog(argv);
+      }
       if(!script->main)
 	_error("Error: %s has no main().\n", argv[0]);
-      i=script->main(sizeof(argv),argv,env);
+      ret=script->main(sizeof(argv),argv,env);
     };
   if(trace) predef::trace(0);
   if (err) {
     handle_error (err);
-    i = 10;
+    ret = 10;
   }
-  if(i >=0) exit(i);
+  if(!intp(ret)) {
+    werror("Error: Non-integer value %O returned from main.\n", ret);
+    exit(10);
+  }
+  if(ret >=0) exit([int]ret);
   _async=1;
   
   while(1)
@@ -2020,7 +2357,7 @@ string trim_file_name(string s)
     if (sizeof(cwd) && (cwd[-1] != '/')) {
       cwd += "/";
     }
-    if(s[..sizeof(cwd)-1]==cwd) return s[sizeof(cwd)..];
+    if(has_prefix (s, cwd)) return s[sizeof(cwd)..];
   };
   return s;
 }
@@ -2073,7 +2410,8 @@ void compile_warning(string file,int line,string err)
 	      line?(string)line:"-",err );
   }
   else if (objectp(val) && val->compile_warning) {
-    val->compile_warning(file, line, err);
+    ([function(string,int,string:void)]([object]val)
+     ->compile_warning)(file, line, err);
   }
 }
 
@@ -2084,13 +2422,15 @@ void compile_warning(string file,int line,string err)
 int compile_exception (array|object trace)
 {
   if (objectp (trace) &&
-      (trace->is_cpp_error || trace->is_compilation_error))
+      ( ([object]trace)->is_cpp_error ||
+	([object]trace)->is_compilation_error))
     // Errors thrown directly by cpp() and compile() are normally not
     // interesting; they've already been reported to compile_error.
     return 1;
   if (mixed val = get_inhibit_compile_errors()) {
-    if (objectp (val) && val->compile_exception)
-      return val->compile_exception (trace);
+    if (objectp(val) && ([object]val)->compile_exception)
+      return ([function(object:int)]([object]val)
+	      ->compile_exception)([object]trace);
   }
   else {
     handle_error (trace);
@@ -2126,7 +2466,7 @@ void runtime_warning (string where, string what, mixed... args)
 }
 
 
-static mixed _charset_mod;
+static object _charset_mod;
 
 //! This function is called by cpp() when it wants to do
 //! character code conversion.
@@ -2135,9 +2475,9 @@ string decode_charset(string data, string charset)
   // werror(sprintf("decode_charset(%O, %O)\n", data, charset));
 
   if (!_charset_mod) {
-    mixed mod = resolv("Locale");
+    object mod = [object]resolv("Locale");
 
-    _charset_mod = mod && mod["Charset"];
+    _charset_mod = [object](mod && mod["Charset"]);
     if (!_charset_mod) {
       compile_warning("-", 0, "No Locale.Charset module!");
       return 0;
@@ -2147,14 +2487,15 @@ string decode_charset(string data, string charset)
   object decoder;
 
   catch {
-    decoder = _charset_mod->decoder(charset);
+    decoder = ([function(string:object)]_charset_mod->decoder)(charset);
   };
 
   if (!decoder) {
     compile_warning("-", 0, sprintf("Unknown charset %O!", charset));
     return 0;
   }
-  return decoder->feed(data)->drain();
+  return ([function(void:string)]([function(string:object)]decoder->
+				  feed)(data)->drain)();
 }
 
 
@@ -2183,11 +2524,11 @@ class Describer
       }
       else if (multisetp (stuff)) {
 	if (!ident[stuff]++)
-	  identify_stack += indices (stuff);
+	  identify_stack += indices([multiset]stuff);
       }
       else if (mappingp (stuff)) {
 	if (!ident[stuff]++)
-	  identify_stack += indices (stuff) + values (stuff);
+	  identify_stack += indices([mapping]stuff) + values([mapping]stuff);
       }
       
     }
@@ -2243,7 +2584,7 @@ class Describer
 
   string describe (mixed m, int maxlen)
   {
-    if (stringp (ident[m])) return ident[m];
+    if (stringp (ident[m])) return [string]ident[m];
     else if (intp (ident[m]) && ident[m] > 1)
       ident[m] = "@" + identcount++;
 
@@ -2256,21 +2597,21 @@ class Describer
     case "float":
       return (string)m;
     case "string":
-      return describe_string (m, maxlen);
+      return describe_string ([string]m, maxlen);
     case "array":
-      res = describe_array (m, maxlen);
+      res = describe_array ([array]m, maxlen);
       break;
     case "mapping":
-      res = describe_mapping (m, maxlen);
+      res = describe_mapping ([mapping]m, maxlen);
       break;
     case "multiset":
-      res = describe_multiset (m, maxlen);
+      res = describe_multiset ([multiset]m, maxlen);
       break;
     case "function":
-      if (string tmp=describe_function(m)) res = tmp;
+      if (string tmp=describe_function([function]m)) res = tmp;
       break;
     case "program":
-      if(string tmp=describe_program(m)) res = tmp;
+      if(string tmp=describe_program([program]m)) res = tmp;
       break;
     default:
       /* object or type. */
@@ -2298,11 +2639,8 @@ class Describer
     int len=maxlen;
     int done=0;
 
-    //  int loopcount=0;
-
     while(1)
     {
-      //    if(loopcount>10000) werror("len=%d\n",len);
       array(string) z=allocate(clip);
       array(int) isclipped=allocate(clip);
       array(int) clippable=allocate(clip);
@@ -2317,13 +2655,10 @@ class Describer
 
       while(1)
       {
-	//      if(loopcount>10000)  werror("clip=%d maxlen=%d\n",clip,maxlen);
 	string ret = z[..clip-1]*",";
-	//      if(loopcount>10000)  werror("sizeof(ret)=%d z=%O isclipped=%O done=%d\n",sizeof(ret),z[..clip-1],isclipped[..clip-1],done);
 	if(done || sizeof(ret)<=maxlen+1)
 	{
 	  int tmp=sizeof(x)-clip-1;
-	  //	if(loopcount>10000) werror("CLIPPED::::: %O\n",isclipped);
 	  clipped=`+(0,@isclipped);
 	  if(tmp>=0)
 	  {
@@ -2339,16 +2674,12 @@ class Describer
 	int clipsuggest;
 	while(1)
 	{
-	  //	if(loopcount++ > 20000) return "";
-	  //	if(!(loopcount & 0xfff)) werror("GNORK\n");
 	  int smallsize=0;
 	  int num_large=0;
 	  clipsuggest=0;
 
 	  for(int e=0;e<clip;e++)
 	  {
-	    //	    if(loopcount>10000) werror("sizeof(z[%d])=%d  len=%d\n",e,sizeof(z[e]),len);
-
 	    if((sizeof(z[e])>=last_newlen || isclipped[e]) && clippable[e])
 	      num_large++;
 	    else
@@ -2357,21 +2688,16 @@ class Describer
 	    if(num_large * 15 + smallsize < maxlen) clipsuggest=e+1;
 	  }
 	
-	  //	if(loopcount>10000) werror("num_large=%d  maxlen=%d  smallsize=%d clippsuggest=%d\n",num_large,maxlen,smallsize,clipsuggest);
 	  newlen=num_large ? (maxlen-smallsize)/num_large : 0;
 	
-	  //	if(loopcount>10000) werror("newlen=%d\n",newlen);
-
 	  if(newlen<8 || newlen >= last_newlen) break;
 	  last_newlen=newlen;
-	  //	if(loopcount>10000) werror("len decreased, retrying.\n");
 	}
 
 	if(newlen < 8 && clip)
 	{
 	  clip-= (clip/4) || 1;
 	  if(clip > clipsuggest) clip=clipsuggest;
-	  //	if(loopcount>10000) werror("clip decreased, retrying.\n");
 	}else{
 	  len=newlen;
 	  done++;
@@ -2385,46 +2711,63 @@ class Describer
 }
 
 
-static string get_clean_program_path ( program p, string pref1,
-				       string suff1, string suff2 )
+string program_path_to_name ( string path,
+			      void|string module_prefix, void|string module_suffix,
+			      void|string object_suffix )
+//! Converts a module path on the form @expr{"Foo.pmod/Bar.pmod"@} or
+//! @expr{"/path/to/pike/lib/modules/Foo.pmod/Bar.pmod"@} to a module
+//! identifier on the form @expr{"Foo.Bar"@}.
+//!
+//! If @[module_prefix] or @[module_suffix] are given, they are
+//! prepended and appended, respectively, to the returned string if
+//! it's a module file (i.e. ends with @expr{".pmod"@} or
+//! @expr{".so"@}). If @[object_suffix] is given, it's appended to the
+//! returned string if it's an object file (i.e. ends with
+//! @expr{".pike"@}).
 {
   array(string) sort_paths_by_length(array(string) paths)
   {
     sort(map(paths, sizeof), paths);
     return reverse(paths);
   };
-  string path = search(programs, p);
-  if (path) {
-    if (path == "/master") return "master"+suff2;
-    foreach(sort_paths_by_length(map(pike_module_path - ({""}),
-				     lambda(string s) {
-				       if (s[-1] == '/') return s;
-				       return s+"/";
-				     })),
-	    string prefix) {
-      if (has_prefix(path, prefix)) {
-	path = path[sizeof(prefix)..];
-	break;
-      }
+
+  if (path == "/master") return "master" + (object_suffix || "");
+
+  foreach(sort_paths_by_length(map(pike_module_path - ({""}),
+				   lambda(string s) {
+				     if (s[-1] == '/') return s;
+				     return s+"/";
+				   })),
+	  string prefix) {
+    if (has_prefix(path, prefix)) {
+      path = path[sizeof(prefix)..];
+      break;
     }
-    path = trim_file_name(path);
-    string modname = replace(path, ".pmod/", ".");
-    if(search(modname, "/")<0) path=modname;
-    if (has_suffix(path, ".module.pmod")) {
-      return pref1+path[..sizeof(path)-13]+suff1;
-    }
-    if (has_suffix(path, ".pmod")) {
-      return pref1+path[..sizeof(path)-6]+suff1;
-    }
-    if (has_suffix(path, ".so")) {
-      return pref1+path[..sizeof(path)-4]+suff1;
-    }
-    if (has_suffix(path, ".pike")) {
-      return path[..sizeof(path)-6]+suff2;
-    }
-    return path + suff2;
   }
-  return 0;
+
+#if 0
+  // This seems broken. Why should the current directory or the
+  // setting of SHORT_PIKE_ERRORS etc affect the module identifiers?
+  // /mast
+  path = trim_file_name(path);
+#endif
+
+  string modname = replace(path, ".pmod/", ".");
+  if(search(modname, "/")<0) path=modname;
+
+  if (has_suffix(path, ".module.pmod")) {
+    return (module_prefix || "") + path[..sizeof(path)-13] + (module_suffix || "");
+  }
+  if (has_suffix(path, ".pmod")) {
+    return (module_prefix || "") + path[..sizeof(path)-6] + (module_suffix || "");
+  }
+  if (has_suffix(path, ".so")) {
+    return (module_prefix || "") + path[..sizeof(path)-4] + (module_suffix || "");
+  }
+  if (has_suffix(path, ".pike")) {
+    return path[..sizeof(path)-6] + (object_suffix || "");
+  }
+  return path + (object_suffix || "");
 }
 
 
@@ -2436,14 +2779,14 @@ static string get_clean_program_path ( program p, string pref1,
 //!
 //! @param ret_obj
 //!   If an instance of @[mod] is found, it will be returned
-//!   by changing element @tt{0@} of @[ret_obj].
+//!   by changing element @expr{0@} of @[ret_obj].
 //!
 //! @returns
 //!   The a description of the path.
 //!
 //! @note
 //!   The returned description will end with a proper indexing method
-//!   currently either @tt{"."@} or @tt{"->"@}.
+//!   currently either @expr{"."@} or @expr{"->"@}.
 string describe_module(object|program mod, array(object)|void ret_obj)
 {
   // Note: mod might be a bignum object; objectp won't work right for
@@ -2469,8 +2812,8 @@ string describe_module(object|program mod, array(object)|void ret_obj)
   }
   if (!object_program(parent_fun)) {
     // We might be a top-level entity.
-    string path = get_clean_program_path(parent_fun, "", ".", "()->");
-    if(path) return path;
+    if (string path = programs_reverse_lookup (parent_fun))
+      return program_path_to_name(path, "", ".", "()->");
   }
   // Begin by describing our parent.
   array(object) parent_obj = ({ 0 });
@@ -2487,7 +2830,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
       // Check if we're an object in parent.
       int i = search(values(parent), mod);
       if (i >= 0) {
-	return res + indices(parent)[i] + ".";
+	return res + [string]indices(parent)[i] + ".";
       }
     };
   }
@@ -2504,7 +2847,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
       // Check if there's a clone of parent_fun in parent_obj.
       int i;
       array(mixed) val = values(parent);
-      array(string) ind = indices(parent);
+      array(string) ind = [array(string)]indices(parent);
       for (i=0; i < sizeof(val); i++) {
 	if (object_program(val[i]) && object_program(val[i]) == parent_fun) {
 	  return res + ind[i] + ".";
@@ -2518,13 +2861,14 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 }
 
 //!
-string describe_object(object|program o)
+string describe_object(object o)
 {
   string s;
   if(zero_type (o)) return 0;	// Destructed.
 
-  function parent_fun = object_program(o);
-  if(!parent_fun) return 0;
+  if (o == _static_modules) return "_static_modules";
+
+  program|function(mixed...:void|object) parent_fun = object_program(o);
 
   /* Constant object? */
   catch {
@@ -2537,24 +2881,16 @@ string describe_object(object|program o)
       if (objectp (tmp)) parent_obj = tmp;
 
       /* Try finding ourselves in parent_obj. */
-      int i;
-      if (object_program(o)) {
-	i = search(values(parent_obj), o);
-      } else {
-	i = search(map(values(parent_obj),
-		       lambda(mixed x) {
-			 if (program p = object_program(x)) return p;
-			 return 0;
-		       }), (mixed) o);
-      }
+      int i = search(values(parent_obj), o);
       if (i >= 0) {
-	s = indices(parent_obj)[i];
+	s = [string]indices(parent_obj)[i];
 	return describe_module(parent_obj) + s;
       }
     }
   };
   if(objectp (objects[parent_fun]))
-    if(s=get_clean_program_path(parent_fun, "", "", "()"))
+    if ((s = programs_reverse_lookup (parent_fun)) &&
+	(s=program_path_to_name(s, "", "", "()")))
       return s;
   /* Try identifying the program. */
   if(( s=describe_program(parent_fun) ))
@@ -2564,19 +2900,25 @@ string describe_object(object|program o)
 }
 
 //!
-string describe_program(program p)
+string describe_program(program|function p)
 {
   string s;
   if(!p) return 0;
 
-  if(s=get_clean_program_path(p, "object_program(", ")", ""))
+  if (p == object_program (_static_modules))
+    return "object_program(_static_modules)";
+
+  if(programp(p) &&
+     (s = programs_reverse_lookup ([program] p)) &&
+     (s=program_path_to_name(s, "object_program(", ")", "")))
     return s;
 
-  if(mixed tmp=(function_object(p) || function_program(p)))
+  if(object|program tmp=(function_object(p) || function_program(p))) {
     if(s = function_name(p))
-      {
-	return describe_module(tmp) + s;
-      }
+    {
+      return describe_module(tmp) + s;
+    }
+  }
 
   if(s=_static_modules.Builtin()->program_defined(p))
     return EXPLODE_PATH(s)[-1];
@@ -2591,7 +2933,7 @@ string describe_function (function f)
 
   string name;
 
-  if(string s=search(programs,f))
+  if(string s = programs_reverse_lookup (f))
   {
     if(has_suffix(s, ".pmod"))
       name = EXPLODE_PATH(s[..sizeof(s)-6])[-1];
@@ -2601,7 +2943,7 @@ string describe_function (function f)
   else
     if (catch (name = function_name (f))) name = "function";
 
-  object o = function_object(f);
+  object o = function_object([function(mixed...:void|mixed)]f);
   if(object_program (o)) { // Check if it's an object in a way that
 			   // (hopefully) doesn't call any functions
 			   // in it (neither `== nor `!).
@@ -2638,17 +2980,19 @@ string describe_backtrace(mixed trace, void|int linewidth)
     linewidth=99999;
     catch 
     {
-      linewidth=_static_modules.files()->_stdin->tcgetattr()->columns;
+      linewidth=[int]_static_modules.files()->_stdin->tcgetattr()->columns;
     };
     if(linewidth<10) linewidth=99999;
   }
 
-  if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
-     (objectp(trace) && trace->is_generic_error))
+  if((arrayp(trace) && sizeof([array]trace)==2 && stringp(([array]trace)[0]))||
+     (objectp(trace) && ([object]trace)->is_generic_error))
   {
     if (catch {
-      ret = trace[0] || "No error message!\n";
-      trace = trace[1];
+      ret = ([array(string)]trace)[0];
+      if(!stringp(ret))
+	ret = "No error message!\n";
+      trace = ([array]trace)[1];
     }) {
       return "Error indexing backtrace!\n";
     }
@@ -2661,12 +3005,13 @@ string describe_backtrace(mixed trace, void|int linewidth)
   {
     Describer desc = Describer();
     desc->identify_parts (trace);
+    array trace = [array]trace;
 
     int end = 0;
     if( (sizeof(trace)>1) &&
 	arrayp(trace[0]) &&
-	(sizeof(trace[0]) > 2) &&
-	(trace[0][2] == _main))
+	(sizeof([array]trace[0]) > 2) &&
+	(([array]trace[0])[2] == _main))
       end = 1;
 
     mapping(string:int) prev_pos = ([]);
@@ -2677,34 +3022,34 @@ string describe_backtrace(mixed trace, void|int linewidth)
     {
       mixed tmp;
       string row;
-      if (mixed err=catch {
+      if (array err=[array]catch {
 	tmp = trace[e];
 	if(stringp(tmp))
 	{
-	  row=tmp;
+	  row=[string]tmp;
 	}
 	else if(arrayp(tmp))
 	{
+	  array tmp = [array]tmp;
 	  string pos;
 	  if(sizeof(tmp)>=2 && stringp(tmp[0])) {
 	    if (intp(tmp[1])) {
-
-	      string exact_pos = tmp[0] + ":" + tmp[1];
-
-	      pos=trim_file_name(tmp[0])+":"+tmp[1];
+	      pos=trim_file_name([string]tmp[0])+":"+(string)tmp[1];
 	    } else {
-	      pos = sprintf("%s:Bad line %t", trim_file_name(tmp[0]), tmp[1]);
+	      pos = sprintf("%s:Bad line %t",
+			    trim_file_name([string]tmp[0]), tmp[1]);
 	    }
 	  }else{
-	    mixed desc="Unknown program";
+	    string desc="Unknown program";
 	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
 	    {
 	      catch 
               {
-		if(mixed tmp=function_object(tmp[2]))
+		if(mixed tmp=function_object([function(mixed...:
+						       void|mixed)]tmp[2]))
 		  if(tmp=object_program(tmp))
-		    if(tmp=describe_program(tmp))
-		      desc=tmp;
+		    if(tmp=describe_program([program]tmp))
+		      desc=[string]tmp;
 	      };
 	    }
 	    pos=desc;
@@ -2715,10 +3060,10 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  if(sizeof(tmp)>=3)
 	  {
 	    if(functionp(tmp[2])) {
-	      data = describe_function (tmp[2]);
+	      data = describe_function ([function]tmp[2]);
 	    }
 	    else if (stringp(tmp[2])) {
-	      data= tmp[2];
+	      data = [string]tmp[2];
 	    } else
 	      data ="unknown function";
 	    
@@ -2812,11 +3157,12 @@ string describe_backtrace(mixed trace, void|int linewidth)
 //!
 string describe_error (mixed trace)
 {
-  if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
-     (objectp(trace) && trace->is_generic_error))
+  if((arrayp(trace) && sizeof([array]trace)==2 &&
+      stringp(([array]trace)[0])) ||
+     (objectp(trace) && ([object]trace)->is_generic_error))
   {
     if (catch {
-      return trace[0] || "No error message.\n";
+      return ([array(string)]trace)[0] || "No error message.\n";
     }) {
       return "Error indexing backtrace!\n";
     }
@@ -2825,85 +3171,590 @@ string describe_error (mixed trace)
 }
 
 
-class Codec (void|string fname, void|int mkobj)
+#ifdef ENCODE_DEBUG
+#  define ENC_MSG(X...) do werror (X); while (0)
+#  define ENC_RETURN(val) do {						\
+  mixed _v__ = (val);							\
+  werror ("  returned %s\n",						\
+	  zero_type (_v__) ? "UNDEFINED" :				\
+	  sprintf ("%O", _v__));					\
+  return _v__;								\
+} while (0)
+#else
+#  define ENC_MSG(X...) do {} while (0)
+#  define ENC_RETURN(val) do return (val); while (0)
+#endif
+
+#ifdef DECODE_DEBUG
+#  define DEC_MSG(X...) do werror (X); while (0)
+#  define DEC_RETURN(val) do {						\
+  mixed _v__ = (val);							\
+  werror ("  returned %s\n",						\
+	  zero_type (_v__) ? "UNDEFINED" :				\
+	  sprintf ("%O", _v__));					\
+  return _v__;								\
+} while (0)
+#else
+#  define DEC_MSG(X...) do {} while (0)
+#  define DEC_RETURN(val) do return (val); while (0)
+#endif
+
+class Encoder
+//! Codec for use with @[encode_value]. It understands all the
+//! standard references to builtin functions and pike modules.
+//!
+//! The format of the produced identifiers are documented here to
+//! allow extension of this class:
+//!
+//! The produced names are either strings or arrays. The string
+//! variant specifies the thing to look up according to the first
+//! character:
+//!
+//! 'c'   Look up in all_constants().
+//! 's'   Look up in _static_modules.
+//! 'r'   Look up with resolv().
+//! 'p'   Look up in programs.
+//! 'o'   Look up in programs, then look up the result in objects.
+//! 'f'   Look up in fc.
+//!
+//! In the array format, the first element is a string as above and
+//! the rest specify a series of things to do with the result:
+//!
+//! A string   Look up this string in the result.
+//! 'm'        Get module object in dirnode.
+//! 'p'        Do object_program(result).
+//!
+//! All lowercase letters and the symbols ':', '/' and '.' are
+//! reserved for internal use in both cases where characters are used
+//! above.
 {
-  program prog_to_mkobj;
+  mixed encoded;
 
-  object __register_new_program(program p)
-    {
-      if(fname)
-      {
-	programs[fname]=prog_to_mkobj=p;
-	fname=0;
-	if (mkobj)
-	  return objectp (objects[p]) ? objects[p] : (objects[p]=__null_program());
+  static mapping(mixed:string) rev_constants = ([]);
+  static mapping(mixed:string) rev_static_modules = ([]);
+
+  static array find_index (object|program parent, mixed child,
+			   array(object) module_object)
+  {
+    array id;
+
+  find_id: {
+      array inds = indices (parent), vals = values (parent);
+      int i = search (vals, child);
+      if (i >= 0 && parent[inds[i]] == child) {
+	id = ({inds[i]});
+	ENC_MSG ("  found as parent value with index %O\n", id[0]);
       }
-      return 0;
+
+      else {
+	// Try again with the programs of the objects in parent, since
+	// it's common that only objects and not their programs are
+	// accessible in modules.
+	foreach (vals; i; mixed val)
+	  if (objectp (val) && child == object_program (val) &&
+	      val == parent[inds[i]]) {
+	    if (module_object) {
+	      module_object[0] = val;
+	      id = ({inds[i]});
+	    }
+	    else
+	      id = ({inds[i], 'p'});
+	    ENC_MSG ("  found as program of parent value object %O with index %O\n",
+		     val, id[0]);
+	    break find_id;
+	  }
+
+	error ("Cannot find %O in %O.\n", child, parent);
+      }
     }
 
-  mapping f=all_constants();
+    if (!stringp (id[0]))
+      error ("Got nonstring index %O for %O in %O.\n", id[0], child, parent);
 
-  string nameof(mixed x)
-    {
-      if(mixed tmp=search(f,x))
-	return "efun:"+tmp;
-      
-      if (programp(x)) {
-	if(mixed tmp=search(programs,x))
-	  return tmp;
+    return id;
+  }
 
-	if(mixed tmp=search(values(_static_modules), x))
-	  return "_static_modules."+(indices(_static_modules)[tmp]);
+  static string|array compare_resolved (string name, mixed what,
+					mixed resolved, array(object) module_object)
+  {
+    array append;
+
+  compare: {
+      if (resolved == what) {
+	ENC_MSG ("  compare_resolved: %O is %O\n", what, resolved);
+	break compare;
       }
-      else if (objectp(x))
-	if(mixed tmp=search(objects,x))
-	  if(tmp=search(programs,tmp))
-	    return tmp;
-      return UNDEFINED;
-    } 
-  
-  function functionof(string x)
-    {
-      if(sscanf(x,"efun:%s",x)) return f[x];
-      if(sscanf(x,"resolv:%s",x)) return resolv(x);
-      return 0;
-    }
-  
-  object objectof(string x)
-    {
-      if(sscanf(x,"efun:%s",x)) return f[x];
-      if(sscanf(x,"resolv:%s",x)) return resolv(x);
-      if(sscanf(x,"mpath:%s",x))
-	foreach(pike_module_path, string path) {
-	  object ret = low_cast_to_object(combine_path(path,x),0);
-	  if (objectp (ret)) return ret;
+
+      if (objectp (resolved)) {
+	if (object_program (resolved) == what) {
+	  ENC_MSG ("  compare_resolved: %O is program of %O\n", what, resolved);
+	  append = ({'p'});
+	  break compare;
 	}
-      return cast_to_object(x,0);
+
+	if (resolved->is_resolv_dirnode)
+	  if (resolved->module == what) {
+	    ENC_MSG ("  compare_resolved: %O is dirnode module of %O\n", what, resolved);
+	    append = ({'m'});
+	    resolved = resolved->module;
+	    break compare;
+	  }
+	  else if (object_program (resolved->module) == what) {
+	    ENC_MSG ("  compare_resolved: %O is program of dirnode module of %O\n",
+		     what, resolved);
+	    append = ({'m', 'p'});
+	    break compare;
+	  }
+	  else
+	    ENC_MSG ("  compare_resolved: %O is different from dirnode module %O\n",
+		     what, resolved->module);
+
+#if 0
+	// This is only safe if the joinnode modules don't conflict,
+	// and we don't know that.
+	if (resolved->is_resolv_joinnode) {
+	  ENC_MSG ("  compare_resolved: searching for %O in joinnode %O\n",
+		   what, resolved);
+	  foreach (resolved->joined_modules, mixed part)
+	    if (string|array name = compare_resolved (name, what, part,
+						      module_object)) {
+	      if (module_object) module_object[0] = resolved;
+	      return name;
+	    }
+	}
+#endif
+      }
+
+      ENC_MSG ("  compare_resolved: %O is different from %O\n", what, resolved);
+      return 0;
     }
-  
-  program programof(string x)
-    {
-      if(sscanf(x,"efun:%s",x)) return f[x];
-      if(sscanf(x,"resolv:%s",x)) return resolv(x);
-      if(sscanf(x,"mpath:%s",x))
-	foreach(pike_module_path, string path)
-	  if(program ret=cast_to_program(combine_path(path,x),0))
-	    return ret;
-      return cast_to_program(x,0);
+
+    name = "r" + name;
+    string|array res = has_value (name, ".") ? name / "." : name;
+
+    if (append)
+      if (module_object) {
+	// The caller is going to do subindexing. In both the 'p' and
+	// 'm' cases it's better to do that from the original
+	// object/dirnode, so just drop the suffixes.
+	module_object[0] = resolved;
+	return res;
+      }
+      else
+	return (arrayp (res) ? res : ({res})) + append;
+    else
+      return res;
+  }
+
+  string|array nameof (mixed what, void|array(object) module_object)
+  //! When @[module_object] is set and the name would end with an
+  //! @expr{object_program@} step (i.e. @expr{'p'@}), then drop that
+  //! step so that the name corresponds to the object instead.
+  //! @expr{@[module_object][0]@} will receive the found object.
+  {
+    ENC_MSG ("nameof (%t %O)\n", what, what);
+
+    if (what == encoded) {
+      ENC_MSG ("  got the thing to encode - encoding recursively\n");
+      return UNDEFINED;
     }
+
+    if (string id = rev_constants[what]) ENC_RETURN (id);
+    if (string id = rev_static_modules[what]) ENC_RETURN (id);
+
+    if (objectp (what)) {
+
+      if (what->is_resolv_dirnode) {
+	ENC_MSG ("  is a dirnode\n");
+	string name = program_path_to_name (what->dirname);
+	if (string|array ref = compare_resolved (name, what, resolv (name),
+						 module_object))
+	  ENC_RETURN (ref);
+      }
+
+      else if (what->is_resolv_joinnode) {
+	ENC_MSG ("  is a joinnode\n");
+	object modules = _static_modules.Builtin.array_iterator (what->joined_modules);
+	object|mapping value;
+      check_dirnode:
+	if (modules && objectp (value = modules->value()) &&
+	    value->is_resolv_dirnode) {
+	  string name = program_path_to_name (value->dirname);
+	  modules += 1;
+	  foreach (modules;; value)
+	    if (!objectp (value) || !value->is_resolv_dirnode ||
+		program_path_to_name (value->dirname) != name)
+	      break check_dirnode;
+	  ENC_MSG ("  joinnode has consistent name %O\n", name);
+	  if (string|array ref = compare_resolved (name, what, resolv (name),
+						   module_object))
+	    ENC_RETURN (ref);
+	}
+      }
+
+      program prog;
+      if ((prog = objects_reverse_lookup (what)))
+	ENC_MSG ("  found program in objects: %O\n", prog);
+#if 0
+      else if ((prog = object_program (what)))
+	ENC_MSG ("  got program of object: %O\n", prog);
+#endif
+
+      if (prog) {
+	if (prog == encoded) ENC_RETURN ("o");
+	if (string path = programs_reverse_lookup (prog)) {
+	  ENC_MSG ("  found path in programs: %O\n", path);
+	  string name = program_path_to_name (path);
+	  if (string|array ref = compare_resolved (name,
+						   what->_module_value || what,
+						   resolv (name), module_object))
+	    ENC_RETURN (ref);
+	  else {
+	    ENC_MSG ("  Warning: Failed to resolve; encoding path\n");
+#ifdef PIKE_MODULE_RELOC
+	    ENC_RETURN ("o" + unrelocate_module (path));
+#else
+	    ENC_RETURN ("o" + path);
+#endif
+	  }
+	}
+      }
+
+      if (string path = fc_reverse_lookup (what)) {
+	ENC_MSG ("  found path in fc: %O\n", path);
+	string name = program_path_to_name (path);
+	if (string|array ref = compare_resolved (name, what, resolv (name),
+						 module_object))
+	  ENC_RETURN (ref);
+	else {
+	    ENC_MSG ("  Warning: Failed to resolve; encoding path\n");
+#ifdef PIKE_MODULE_RELOC
+	  ENC_RETURN ("f" + unrelocate_module (path));
+#else
+	  ENC_RETURN ("f" + path);
+#endif
+	}
+      }
+
+      if (what->_encode) {
+	ENC_MSG ("  object got _encode function - encoding recursively\n");
+	return UNDEFINED;
+      }
+
+      if (function|program prog = object_program (what)) {
+	ENC_MSG ("  got program of object: %O\n", prog);
+	if (object|program parent = function_object (prog) || function_program (prog)) {
+	  ENC_MSG ("  got parent of program: %O\n", parent);
+	  // We're going to subindex the parent so we ask for the
+	  // module object and not the program. That since we'll
+	  // always be able to do a better job if we base the indexing
+	  // on objects.
+	  array parent_object = ({0});
+	  string|array parent_name = nameof (parent, parent_object);
+	  if (!parent_name) {
+	    ENC_MSG ("  inside the thing to encode - encoding recursively\n");
+	    return UNDEFINED;
+	  }
+	  else {
+	    if (objectp (parent_object[0])) parent = parent_object[0];
+	    array id = find_index (parent, what, module_object);
+	    if (equal (id, ({"_module_value"})))
+	      ENC_RETURN (parent_name);
+	    else
+	      ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
+	  }
+	}
+      }
+
+      error ("Failed to find name of unencodable object %O.\n", what);
+    }
+
+    if (programp (what) || functionp (what)) {
+      if (string path = programs_reverse_lookup (what)) {
+	ENC_MSG ("  found path in programs: %O\n", path);
+	string name = program_path_to_name (path);
+	if (string|array ref = compare_resolved (name, what, resolv (name),
+						 module_object))
+	  ENC_RETURN (ref);
+	else {
+	    ENC_MSG ("  Warning: Failed to resolve; encoding path\n");
+#ifdef PIKE_MODULE_RELOC
+	  ENC_RETURN ("p" + unrelocate_module (path));
+#else
+	  ENC_RETURN ("p" + path);
+#endif
+	}
+      }
+
+      if (object|program parent = function_object (what) || function_program (what)) {
+	ENC_MSG ("  got parent: %O\n", parent);
+	if (!objectp (parent)) {
+	  object parent_obj = objects[parent];
+	  if (objectp (parent_obj)) {
+	    ENC_MSG ("  found object for parent program in objects: %O\n", parent_obj);
+	    parent = parent_obj;
+	  }
+	}
+
+	array parent_object = ({0});
+	string|array parent_name = nameof (parent, parent_object);
+	if (!parent_name) {
+	  ENC_MSG ("  inside the thing to encode - encoding recursively\n");
+	  return UNDEFINED;
+	}
+
+	else {
+	  if (objectp (parent_object[0])) parent = parent_object[0];
+	  if (parent["_module_value"] == what && objects_reverse_lookup (parent)) {
+	    ENC_MSG ("  found as _module_value of parent module\n");
+	    ENC_RETURN (parent_name);
+	  }
+	  else {
+	    string|array id = function_name (what);
+	    if (stringp (id) && parent[id] == what) {
+	      ENC_MSG ("  found function name in parent: %O\n", id);
+	      id = ({id});
+	    }
+	    else
+	      id = find_index (parent, what, module_object);
+	    if (equal (id, ({"_module_value"})))
+	      ENC_RETURN (parent_name);
+	    else
+	      ENC_RETURN ((arrayp (parent_name) ? parent_name : ({parent_name})) + id);
+	  }
+	}
+      }
+
+      error ("Failed to find name of %t %O.\n", what, what);
+    }
+
+    // FIXME: Should have a reverse mapping of constants in modules;
+    // it can potentially be large mappings and stuff that we encode
+    // here. They can go stale too.
+
+    ENC_MSG ("  encoding recursively\n");
+    return ([])[0];
+  } 
   
   mixed encode_object(object x)
-    {
-      if(x->_encode) return x->_encode();
-      error("Cannot encode objects yet.\n");
-    }
-  
-  
-  void decode_object(object o, mixed data)
   {
-    o->_decode(data);
+    DEC_MSG ("encode_object (%O)\n", x);
+    if(!x->_encode)
+      error ("Cannot encode object %O without _encode function.\n", x);
+    DEC_RETURN (([function]x->_encode)());
+  }
+
+  void create (void|mixed encoded)
+  //! Creates an encoder instance. If @[encoded] is specified, it's
+  //! encoded instead of being reverse resolved to a name. That's
+  //! necessary to encode programs.
+  {
+    this_program::encoded = encoded;
+
+    foreach (all_constants(); string var; mixed val)
+      rev_constants[val] = "c" + var;
+
+    rev_static_modules =
+      mkmapping (values (_static_modules),
+		 map (indices (_static_modules),
+		      lambda (string name) {return "s" + name;}));
+
+#if 0
+    // This looks flawed; when the decoder looks it up, it'll get the
+    // module and not its program. /mast
+    foreach (rev_static_modules; mixed module; string name) {
+      if (objectp(module)) {
+	program p = object_program(module);
+	if (!rev_static_modules[p]) {
+	  // Some people inherit modules...
+	  rev_static_modules[p] = "s" + name;
+	}
+      }
+    }
+#endif
   }
 }
+
+class Decoder (void|string fname, void|int mkobj)
+//! Codec for use with @[decode_value]. This is the decoder
+//! corresponding to @[Encoder]. See that one for more details.
+{
+  static int unregistered = 1;
+
+  object __register_new_program(program p)
+  {
+    DEC_MSG ("__register_new_program (%O)\n", p);
+    if(unregistered && fname)
+    {
+      unregistered = 0;
+      resolv_debug("register %s\n", fname);
+      programs[fname]=p;
+      if (mkobj)
+	DEC_RETURN (objectp (objects[p]) ? objects[p] : (objects[p]=__null_program()));
+    }
+    DEC_RETURN (0);
+  }
+
+  static mixed thingof (string|array what)
+  {
+    mixed res;
+    array sublist;
+    if (arrayp (what)) sublist = what, what = sublist[0];
+
+    switch (what[0]) {
+      case 'c':
+	if (zero_type (res = all_constants()[what[1..]]))
+	  error ("Cannot find global constant %O.\n", what[1..]);
+	break;
+      case 's':
+	if (zero_type (res = _static_modules[what[1..]]))
+	  error ("Cannot find %O in _static_modules.\n", what[1..]);
+	break;
+      case 'r':
+	if (zero_type (res = resolv (what[1..])))
+	  error ("Cannot resolve %O.\n", what[1..]);
+	break;
+      case 'p':
+	if (!(res = low_cast_to_program (what[1..], fname, this)))
+	  error ("Cannot find program for %O.\n", what[1..]);
+	break;
+      case 'o':
+	if (!objectp (res = low_cast_to_object (what[1..], fname, this)))
+	  error ("Cannot find object for %O.\n", what[1..]);
+	break;
+      case 'f':
+	if (!objectp (res = findmodule (what[1..], this)))
+	  error ("Cannot find module for %O.\n", what[1..]);
+	break;
+    }
+
+    DEC_MSG ("  got %O\n", res);
+
+    if (sublist) {
+      mixed subres = res;
+      for (int i = 1; i < sizeof (sublist); i++) {
+	mixed op = sublist[i];
+	if (stringp (op)) {
+	  if (!programp (subres) && !objectp (subres) && !mappingp (subres))
+	    error ("Cannot subindex %O%{[%O]%} since it's a %t.\n",
+		   res, sublist[1..i-1], subres);
+	  if (zero_type (subres = subres[op]))
+	    error ("Cannot find %O in %O%{[%O]%}.\n",
+		   op, res, sublist[1..i-1]);
+	  DEC_MSG ("  indexed with %O: %O\n", op, subres);
+	}
+	else switch (op) {
+	  case 'm':
+	    if (objectp (subres) && subres->is_resolv_joinnode) {
+	      dirnode found;
+	      foreach (subres->joined_modules, object|mapping part)
+		if (objectp (part) && part->is_resolv_dirnode && part->module) {
+		  if (found)
+		    error ("There are ambiguous module objects in %O.\n",
+			   subres);
+		  else
+		    found = part;
+		}
+	      if (found) subres = found;
+	    }
+
+	    if (objectp (subres) && subres->is_resolv_dirnode) {
+	      if (subres->module) {
+		subres = subres->module;
+		DEC_MSG ("  got dirnode module %O\n", subres);
+	      }
+	      else
+		error ("Cannot find module object in dirnode %O.\n", subres);
+	    }
+	    else
+	      error ("Cannot get module object in thing that isn't "
+		     "a dirnode or unambiguous joinnode: %O\n", subres);
+
+	    break;
+
+	  case 'p':
+	    subres = object_program (subres);
+	    DEC_MSG ("  got object_program %O\n", subres);
+	    break;
+
+	  default:
+	    error ("Unknown sublist operation %O in %O\n", op, what);
+	}
+      }
+      res = subres;
+    }
+
+    return res;
+  }
+
+  object objectof (string|array what)
+  {
+    DEC_MSG ("objectof (%O)\n", what);
+    if (!what) {
+      // This is necessary for compatibility with 7.2 encoded values:
+      // If an object was fed to encode_value there and there was no
+      // codec then a zero would be encoded silently since the failed
+      // call to nameof was ignored. decode_value would likewise
+      // silently ignore the failed call objectof(0) and a zero would
+      // be decoded. Now we supply a fairly capable codec which is
+      // used by default and we therefore get these objectof(0) calls
+      // here. So if we throw an error we can't decode values which
+      // 7.2 would encode and decode without a codec (albeit partly
+      // incorrectly). So just print a sulky warning and continue.. :P
+      werror ("Warning: Decoded broken object identifier to zero.\n");
+      DEC_RETURN (0);
+    }
+    DEC_RETURN ([object] thingof (what));
+  }
+
+  function functionof (string|array what)
+  {
+    DEC_MSG ("functionof (%O)\n", what);
+    DEC_RETURN ([function] thingof (what));
+  }
+
+  program programof (string|array what)
+  {
+    DEC_MSG ("programof (%O)\n", what);
+    DEC_RETURN ([program] thingof (what));
+  }
+
+  void decode_object(object o, mixed data)
+  {
+    DEC_MSG ("decode_object (object(%O), %O)\n", object_program (o), data);
+    if(!o->_decode)
+      error ("Cannot decode object(%O) without _decode function.\n",
+	     object_program (o));
+    ([function(mixed:void)]o->_decode)(data);
+  }
+}
+
+mapping(string:Codec) codecs = set_weak_flag(([]),1);
+Codec get_codec(string|void fname, int|void mkobj)
+{
+  string key = fname + "\0" + mkobj;
+  if (codecs[key]) return codecs[key];
+  return codecs[key] = Decoder(fname, mkobj);
+}
+
+class Codec
+//! @[Encoder] and @[Decoder] rolled into one. This is for mainly
+//! compatibility; there's typically no use combining encoding and
+//! decoding into the same object.
+{
+  inherit Encoder;
+  inherit Decoder;
+
+  void create (void|mixed encoded)
+  //! The optional argument is the thing to encode; it's passed on to
+  //! @[Encoder].
+  {
+    Encoder::create (encoded);
+  }
+}
+
+// The master acts as the default codec.
+inherit Codec;
 
 
 //! Contains version information about a Pike version.
@@ -2918,17 +3769,19 @@ class Version
   //! Set the version in the object.
   void create(int maj, int min)
   {
+    if(maj==-1) maj = __REAL_MAJOR__;
+    if(min==-1) min = __REAL_MINOR__;
     major = maj;
     minor = min;
   }
 
-#define CMP(X)  ((major - (X)->major) || (minor - (X)->minor))
+#define CMP(X)  ((major - ([object]X)->major) || (minor - ([object]X)->minor))
   
   //! Methods define so that version objects
   //! can be compared and ordered.
-  int `<(Version v) { return CMP(v) < 0; }
-  int `>(Version v) { return CMP(v) > 0; }
-  int `==(Version v) { return CMP(v)== 0; }
+  int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
+  int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
+  int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
   int _hash() { return major * 4711 + minor ; }
 
   string _sprintf(int t) {
@@ -2956,8 +3809,6 @@ mapping(Version:CompatResolver) compat_handler_cache=set_weak_flag( ([]), 1);
 
 CompatResolver get_compilation_handler(int major, int minor)
 {
-  CompatResolver ret;
-  
   Version v=Version(major,minor);
 
   if(v > currentversion)
@@ -2966,9 +3817,11 @@ CompatResolver get_compilation_handler(int major, int minor)
     return 0;
   }
   
+  CompatResolver ret;
+  
   if(!zero_type(ret=compat_handler_cache[v])) return ret;
 
-  array files;
+  array(string) files;
   array(Version) available=({});
 
 #if "¤share_prefix¤"[0]!='¤'
@@ -3026,35 +3879,42 @@ CompatResolver get_compilation_handler(int major, int minor)
     return compat_handler_cache[v]=ret;
 #endif
 
-  ret=CompatResolver(v);
-  /* Add default paths */
-  ret->pike_module_path=pike_module_path;
-  ret->pike_include_path=pike_include_path;
+  // The root resolver is this object.
+  ret = this_object();
 
   foreach(reverse(available), Version tmp)
     {
-      string base;
+      CompatResolver compat_handler = compat_handler_cache[tmp];
+      if (!compat_handler) {
+	compat_handler = CompatResolver(tmp);
+
+	// Fall back to the successor version.
+	compat_handler->parent_resolver = ret;
+
+	string base;
 #if "¤lib_prefix¤"[0]!='¤'
-      base=combine_path("¤lib_prefix¤",sprintf("%s",tmp));
-      ret->add_module_path(combine_path(base,"modules"));
-      ret->add_include_path(combine_path(base,"include"));
+	base=combine_path("¤lib_prefix¤",sprintf("%s",tmp));
+	compat_handler->add_module_path(combine_path(base,"modules"));
+	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
 
 #if "¤share_prefix¤"[0]!='¤'
-      base=combine_path("¤share_prefix¤",sprintf("%s",tmp));
-      ret->add_module_path(combine_path(base,"modules"));
-      ret->add_include_path(combine_path(base,"include"));
+	base=combine_path("¤share_prefix¤",sprintf("%s",tmp));
+	compat_handler->add_module_path(combine_path(base,"modules"));
+	compat_handler->add_include_path(combine_path(base,"include"));
 #endif
-    }
 
-  if( v <= Version(0,6))
-    ret->pike_module_path+=({"."});
-
-  compat_handler_cache[v] = ret;
+	if( tmp <= Version(0,6))
+	  ret->pike_module_path+=({"."});
 
 #ifndef RESOLVER_HACK
-  compat_handler_cache[available[0]] = ret; /* may be equal to 'v' */
+	ret = compat_handler_cache[tmp] = compat_handler;
 #endif
+      }
+    }
+
+  // Note: May duplicate the assignment above.
+  compat_handler_cache[v] = ret;
 
   return ret;
 }
