@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.445 2001/07/15 21:16:04 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.446 2001/07/28 07:12:18 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -35,6 +35,21 @@ test_eq(8, 0b1000);
 test_eq(-8, -0b1000);
 test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
+
+test_any([[
+class X
+{
+  int Ack(int M, int N) {
+    if (M == 0) return( N + 1 );
+    if (N == 0) return( Ack(M - 1, 1) );
+    return( Ack(M - 1, Ack(M, (N - 1))) );
+  }
+};
+
+class Y { inherit X; };
+
+return Y()->Ack(2,2);
+]],7)
 
 test_eval_error([[mixed x; return mkmapping(x,x)]]);
 
