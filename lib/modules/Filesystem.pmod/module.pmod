@@ -240,7 +240,19 @@ function `()(void|string path)
 }
 
 //! Iterator object that traverses a directory tree and returns
-//! files as values and paths as indices.
+//! files as values and paths as indices. Example that uses the
+//! iterator to create a really simple sort of make:
+//! @example
+//!   object i=Filesystem.Traversion(".");
+//!   foreach(i; string dir; string file) {
+//!   	if(!has_suffix(file, ".c")) continue;
+//!     file = dir+file;
+//!     string ofile = file;
+//!   	ofile[-1]='o';
+//!   	object s=file_stat(ofile);
+//!   	if(s && i->stat()->mtime<s->mtime) continue;
+//!   	// compile file
+//!   }
 class Traversion {
   string path;
   array(string) files;
