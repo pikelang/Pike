@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_threadlib.h,v 1.55 2004/07/16 12:44:56 grubba Exp $
+|| $Id: pike_threadlib.h,v 1.56 2004/09/06 13:05:39 grubba Exp $
 */
 
 #ifndef PIKE_THREADLIB_H
@@ -433,7 +433,10 @@ struct interleave_mutex
     } \
   } while(0)
 
-/* If threads are disabled, the lock will be released later. */
+/* If threads are disabled, the lock will be released later.
+ *
+ * NOTE: MUST be called in a THREADS_ALLOW() context.
+ */
 #define UNLOCK_IMUTEX(im) do { \
     if (!threads_disabled) { \
       THREADS_FPRINTF(0, (stderr, "Unlocking IMutex 0x%p...\n", (im))); \
