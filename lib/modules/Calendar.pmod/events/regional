@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.10 2000/11/28 09:50:19 mirar Exp $
+### $Id: regional,v 1.11 2001/02/02 08:42:07 mirar Exp $
 
 ### =====================================================================
 ###
@@ -3722,6 +3722,7 @@ Region "uy"
 Region "us"
   Event "us/columbus"             h   "Columbus Day"                WDRel Oct Mon 2nd
   Event "us/veterans"             h   "Veteran's Day"               Fixed Nov 11
+  Add   "saints/valentine"        - # "St. Valentine's Day"                     (14-Feb 2000)
   Event "us/washingtons"          h   "Washington's Birthday"       WDRel Feb Mon 3rd
   Add   "new year"                h # "New Year's Day"              Fixed Jan  1
   Event "us/independence"         h   "Independence Day"            Fixed Jul  4
