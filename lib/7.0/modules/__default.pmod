@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.4 2002/12/21 17:50:58 grubba Exp $
+// $Id: __default.pmod,v 1.5 2002/12/23 17:10:07 grubba Exp $
 
 #pike 7.1
 
@@ -18,12 +18,19 @@
 //!   Returns an array with the following content:
 //!   @array
 //!     @elem int mode
+//!       Access mode.
 //!     @elem int size
+//!       Size in bytes, or filetype indicator.
 //!     @elem int atime
+//!       Last access time.
 //!     @elem int mtime
+//!       Last modification time.
 //!     @elem int ctime
+//!       Last change time.
 //!     @elem int uid
+//!       User id.
 //!     @elem int gid
+//!       Group id.
 //!   @endarray
 //!
 //!   See @[predef::file_stat()] for a full description of the array.
