@@ -10,7 +10,7 @@
 **! method object thread_request(string server,int port,string query);
 **! method object thread_request(string server,int port,string query,mapping headers,void|string data);
 **!	Create a new query object and begin the query.
-**!	
+**!
 **!	The query is executed in a background thread;
 **!	call '() in this object to wait for the request
 **!	to complete.
@@ -73,13 +73,13 @@
 **!		     string protocol,int status,string status_desc});
 **!
 **! method mapping cast("mapping")
-**!	Gives back 
-**!	headers | 
+**!	Gives back
+**!	headers |
 **!	(["protocol":protocol,
 **!	  "status":status number,
 **!	  "status_desc":status description,
 **!	  "data":data]);
-**!		
+**!
 **! method string cast("string")
 **!	Gives back the answer as a string.
 **!
@@ -101,7 +101,7 @@
 **!	This could be used to copy the file to disc at
 **!	a proper tempo.
 **!
-**!	datafile() doesn't give the complete request, 
+**!	datafile() doesn't give the complete request,
 **!	just the data.
 **!
 **!	newheaders, removeheaders is applied as:
@@ -129,7 +129,7 @@ string status_desc;
 
 int timeout=120; // seconds
 
-// internal 
+// internal
 
 object con;
 string request;
@@ -150,21 +150,19 @@ static void ponder_answer()
 {
    // read until we have all headers
 
-   int i=0;
-   int j=0;
-
-   for (;;)
+   int i = 0, j = 0;
+   for(;;)
    {
       string s;
 
       if (i<0) i=0;
-      j=search(buf,"\r\n\r\n",i); if (j==-1) j=10000000;
-      i=search(buf,"\n\n",i);     if (i==-1) i=10000000;
+      j=search(buf, "\r\n\r\n", i); if(j==-1) j=10000000;
+      i=search(buf, "\n\n", i);     if(i==-1) i=10000000;
       if ((i=min(i,j))!=10000000)  break;
 
       s=con->read(8192,1);
       if (s=="") { i=strlen(buf); break; }
-      
+
       i=strlen(buf)-3;
       buf+=s;
    }
@@ -239,9 +237,9 @@ static void async_read(mixed dummy,string s)
 #ifdef HTTP_QUERY_DEBUG
    werror("-> %d bytes of data\n",strlen(s));
 #endif
-   
+
    buf+=s;
-   if (-1!=search(buf,"\r\n\r\n") || -1!=search(buf,"\n\n")) 
+   if (-1!=search(buf,"\r\n\r\n") || -1!=search(buf,"\n\n"))
    {
       con->set_blocking();
       ponder_answer();
@@ -284,7 +282,7 @@ static void async_timeout()
    if (con)
    {
       catch { con->close(); };
-      destruct(con); 
+      destruct(con);
    }
    con=0;
    async_failed();
@@ -303,7 +301,7 @@ void async_got_host(string server,int port)
       con=Stdio.File();
       if (!con->open_socket())
 	 error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
-   }) 
+   })
    {
       return; // got timeout already, we're destructed
    }
@@ -351,7 +349,7 @@ string headers_encode(mapping h)
 		     {
 			if (stringp(headers[hname]) ||
 			    intp(headers[hname]))
-			   return String.capitalize(replace(hname,"_","-")) + 
+			   return String.capitalize(replace(hname,"_","-")) +
 			      ": " + headers[hname];
 		     }, h )*"\r\n" + "\r\n";
 }
@@ -401,9 +399,9 @@ string dns_lookup(string hostname)
        (id=hostname_cache[hostname]))
       return id;
 
-   array hosts=((Protocols.DNS.client()->gethostbyname(hostname)||
-		 ({0,0}))[1]+({0}));
-   return hosts[random(sizeof(hosts))];
+   array hosts = (Protocols.DNS.client()->gethostbyname( hostname )||
+		  ({ 0, 0 }))[1];
+   return sizeof(hosts) && hosts[random(sizeof( hosts ))];
 }
 
 
@@ -425,7 +423,7 @@ object thread_request(string server,int port,string query,
 		      void|mapping|string headers,void|string data)
 {
    // start open the connection
-   
+
    con=Stdio.File();
    if (!con->open_socket())
       error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
@@ -448,7 +446,7 @@ object thread_request(string server,int port,string query,
 
       headers=headers_encode(headers);
    }
-   
+
    request=query+"\r\n"+headers+"\r\n"+data;
 
    conthread=thread_create(connect,server,port);
@@ -458,46 +456,70 @@ object thread_request(string server,int port,string query,
 
 #endif
 
-object sync_request(string server,int port,string query,
-		    void|mapping|string headers,void|string data)
+object sync_request(string server, int port, string query,
+		    void|mapping|string http_headers,
+		    void|string data)
 {
-   // start open the connection
-   
-   con=Stdio.File();
-   if (!con->open_socket())
+  int kept_alive;
+  string ip = dns_lookup( server );
+  if(ip) server = ip; // cheaty, if host doesn't exist
+
+  // start open the connection
+
+  if(con && con->_fd &&
+     con->query_address() == server + " " + port &&
+     lower_case( headers->connection ) != "close")
+  {
+#ifdef HTTP_QUERY_DEBUG
+    werror("** Connection kept alive!\n");
+#endif
+    kept_alive = 1;
+  }
+  else
+  {
+    con = Stdio.File();
+    if(!con->open_socket())
       error("HTTP.Query(): can't open socket; "+strerror(con->errno)+"\n");
+  }
 
-   string server1=dns_lookup(server);
+  // prepare the request
 
-   if (server1) server=server1; // cheaty, if host doesn't exist
+  errno = ok = protocol = headers = status_desc = status = datapos = 0;
+  buf = "";
 
-   // prepare the request
+  if(!data)
+    data = "";
 
-   if (!data) data="";
+  if(!http_headers)
+    http_headers = "";
+  else if(mappingp( http_headers ))
+  {
+    http_headers = mkmapping(map(indices( http_headers ), lower_case),
+			     values( http_headers ));
 
-   if (!headers) headers="";
-   else if (mappingp(headers))
-   {
-      headers=mkmapping(Array.map(indices(headers),lower_case),
-			values(headers));
+    if(data != "")
+      http_headers->content_length = strlen( data );
 
-      if (data!="") headers->content_length=strlen(data);
+    http_headers = headers_encode( http_headers );
+  }
 
-      headers=headers_encode(headers);
-   }
-   
-   request=query+"\r\n"+headers+"\r\n"+data;
+  request = query + "\r\n" + http_headers + "\r\n" + data;
 
-   connect(server,port);
+  if(kept_alive)
+  {
+    con->write( request );
+    ponder_answer();
+  } else
+    connect(server, port);
 
-   return this_object();
+  return this_object();
 }
 
 object async_request(string server,int port,string query,
 		     void|mapping|string headers,void|string data)
 {
    // start open the connection
-   
+
    call_out(async_timeout,timeout);
 
    // prepare the request
@@ -514,9 +536,9 @@ object async_request(string server,int port,string query,
 
       headers=headers_encode(headers);
    }
-   
+
    request=query+"\r\n"+headers+"\r\n"+data;
-   
+
    dns_lookup_async(server,async_got_host,port);
 
    return this_object();
@@ -540,7 +562,7 @@ string data()
 #endif
    int len=(int)headers["content-length"];
    int l;
-   if (zero_type(len)) 
+   if (zero_type(len))
       l=0x7fffffff;
    else
       l=len-strlen(buf)+datapos;
@@ -555,8 +577,13 @@ string data()
      else
        buf += con->read(l);
    }
-   // note! this can't handle keep-alive × HEAD requests.
-   return buf[datapos..];
+#ifdef HTTP_QUERY_NOISE
+   werror("buf[datapos..]     : %O\n", buf[datapos
+				       ..min(sizeof(buf), datapos+19)]);
+   werror("buf[..datapos+len] : %O\n", buf[max(0, datapos+len-19)
+				       ..min(sizeof(buf), datapos+len)]);
+#endif
+   return buf[datapos..datapos+len];
 }
 
 int downloaded_bytes()
@@ -615,7 +642,7 @@ class PseudoFile
    string read(int n)
    {
       string s;
-      
+
       if (len && p+n>len) n=len-p;
 
       if (strlen(buf)<n && con)
@@ -650,7 +677,7 @@ object file(void|mapping newheader,void|mapping removeheader)
       if (hbuf=="") hbuf="\r\n";
       if (zero_type(headers["content-length"]))
 	 len=0x7fffffff;
-      else 
+      else
 	 len=strlen(protocol+" "+status+" "+status_desc)+2+
 	    strlen(hbuf)+2+(int)headers["content-length"];
       return PseudoFile(con,
@@ -659,7 +686,7 @@ object file(void|mapping newheader,void|mapping removeheader)
    }
    if (zero_type(headers["content-length"]))
       len=0x7fffffff;
-   else 
+   else
       len=strlen(headerbuf)+4+(int)h["content-length"];
    return PseudoFile(con,buf,len);
 }
@@ -682,7 +709,7 @@ void async_fetch(function callback,mixed ... extra)
    if (!con)
    {
       callback(@extra); // nothing to do, stupid...
-      return; 
+      return;
    }
    extra_args=extra;
    request_ok=callback;
@@ -691,7 +718,8 @@ void async_fetch(function callback,mixed ... extra)
 
 string _sprintf()
 {
-  return sprintf("Query(%d %s)", status, status_desc);
+  return status ? sprintf("Query(%d %s)", status, status_desc)
+		: "Query()";
 }
 
 /************************ example *****************************/
