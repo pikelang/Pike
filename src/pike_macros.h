@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.17 2000/07/28 17:16:55 hubbe Exp $
+ * $Id: pike_macros.h,v 1.18 2000/08/03 13:02:13 grubba Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -18,7 +18,7 @@
 
 #include "pike_memory.h"
 
-#define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
+#define OFFSETOF(str_type, field) ((size_t)& (((struct str_type *)0)->field))
 #define BASEOF(ptr, str_type, field)  \
 ((struct str_type *)((char*)ptr - (char*)& (((struct str_type *)0)->field)))
 
@@ -57,9 +57,9 @@
  * #define ALIGNOF(X) (sizeof(X)>ALIGN_BOUND?ALIGN_BOUND:( 1<<my_log2(sizeof(X))))
  */
 
-#define ALIGNOF(X) ((int)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
+#define ALIGNOF(X) ((size_t)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
 
-#define DO_ALIGN(X,Y) (((long)(X)+((Y)-1)) & -(Y))
+#define DO_ALIGN(X,Y) (((size_t)(X)+((Y)-1)) & -(Y))
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
 
 #define SET_NEXT_AND_FREE(p,free_item) do{	\
