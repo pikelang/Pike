@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.506 2003/06/06 14:31:11 grubba Exp $
+|| $Id: program.c,v 1.507 2003/06/06 14:35:48 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.506 2003/06/06 14:31:11 grubba Exp $");
+RCSID("$Id: program.c,v 1.507 2003/06/06 14:35:48 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1594,8 +1594,9 @@ int override_identifier (struct reference *ref, struct pike_string *name)
     if (!new_is_variable &&
 	IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
 					   cur_id)->identifier_flags)) {
-      // Overloading a variable with a constant or a function.
-      // This is generally a bad idea.
+      /* Overloading a variable with a constant or a function.
+       * This is generally a bad idea.
+       */
       Pike_compiler->new_program->identifier_references[cur_id].id_flags |=
 	ID_INLINE|ID_HIDDEN;
       yywarning("Attempt to override a non local variable %s%s%swith a non variable.",
