@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.73 1998/07/16 20:34:20 grubba Exp $");
+RCSID("$Id: spider.c,v 1.74 1998/07/17 14:02:50 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -944,15 +944,36 @@ void do_html_parse_lines(struct pike_string *ss,
 	
       if (sval1.type==T_STRING)
       {
+	int quote = 0;
 	/* A simple string ... */
+	if (last < i-1)
+	{ 
+	  push_string(make_shared_binary_string(s+last, i-last-1)); 
+	  (*strings)++; 
+	}
+
 	*(sp++)=sval1;
 #ifdef DEBUG
 	sval1.type=99;
 #endif
 	(*strings)++;
-/* 	find_endtag(sval2.u.string ,s+j, len-j, &l); * bug /law 960805 */
 	free_svalue(&sval2);
-	j+=l;
+
+	/* Scan ahead to the end of the tag... */
+	for (; j<len; j++) {
+	  if (quote) {
+	    if (s[j] == quote) {
+	      quote = 0;
+	    }
+	  } else if (s[j] == '>') {
+	    break;
+	  } else if ((s[j] == '\'') || (s[j] == '\"')) {
+	    quote = s[j];
+	  }
+	}
+	if (j < len) {
+	  j++;
+	}
 	i=last=j;
 	continue;
       }
