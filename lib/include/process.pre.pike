@@ -22,7 +22,12 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
   int pid;
   string t;
 
-  if(pid=fork())
+  pid=fork();
+  
+  if(pid==-1)
+    error("No more processes.\n");
+
+  if(pid)
   {
     return pid;
   }else{
