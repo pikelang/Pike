@@ -342,7 +342,7 @@ int main()
  
   if(!FD_ISSET(fds[1], &tmp))
   {
-    fprintf(stderr,"select() modify read set properly on shutdown()\n");
+    fprintf(stderr,"select() does not modify read set properly on shutdown()\n");
     exit(8);
   }
 
