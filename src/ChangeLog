@@ -1,5 +1,6 @@
 Fri Mar  1 00:35:40 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
+	* language.y: Added support for a[..n] and a[n..]
 	* configure.in: added test for %pure_parser
 
 Sun Feb 25 22:42:48 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
@@ -11,15 +12,13 @@ Sat Feb 24 04:12:52 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* program.c, array.c, object.c, gc.c: 
 	  Added routines to remove cyclic structures.
+	* sprintf: added support for %2c
+	* removed compact arrays
 
 Fri Feb 23 02:39:11 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
         * version 1.7E-12 released
 	* file->close() fixed to handle unknown errors
-
-Sat Feb 17 23:05:24 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
-
-	* sprintf: added support for %2c
 
 Sun Feb 11 01:04:38 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
