@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.9 1997/07/19 20:29:59 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.10 1997/08/31 22:25:33 per Exp $");
 
 #include "zlib_machine.h"
 
@@ -46,9 +46,9 @@ static void gz_deflate_create(INT32 args)
 
   if(THIS->gz.state)
   {
-    mt_lock(& THIS->lock);
+/*     mt_lock(& THIS->lock); */
     deflateEnd(&THIS->gz);
-    mt_unlock(& THIS->lock);
+/*     mt_unlock(& THIS->lock); */
   }
 
   if(args)
@@ -68,9 +68,9 @@ static void gz_deflate_create(INT32 args)
   THIS->gz.opaque=THIS;
 
   pop_n_elems(args);
-  mt_lock(& THIS->lock);
+/*   mt_lock(& THIS->lock); */
   level=deflateInit(&THIS->gz, level);
-  mt_unlock(& THIS->lock);
+/*   mt_unlock(& THIS->lock); */
   switch(level)
   {
   case Z_OK:
@@ -101,20 +101,20 @@ static int do_deflate(dynamic_buffer *buf,
     fail=Z_STREAM_ERROR;
   }else{
     do
+    {
+      char *loc;
+      int ret;
+      loc=low_make_buf_space(BUF,buf);
+      this->gz.next_out=(Bytef *)loc;
+      this->gz.avail_out=BUF;
+      ret=deflate(& this->gz, flush);
+      low_make_buf_space(-this->gz.avail_out,buf);
+      if(ret != Z_OK)
       {
-	char *loc;
-	int ret;
-	loc=low_make_buf_space(BUF,buf);
-	this->gz.next_out=(Bytef *)loc;
-	this->gz.avail_out=BUF;
-	ret=deflate(& this->gz, flush);
-	low_make_buf_space(-this->gz.avail_out,buf);
-	if(ret != Z_OK)
-	  {
-	    fail=ret;
-	    break;
-	  }
-      } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
+	fail=ret;
+	break;
+      }
+    } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
   }
 
   mt_unlock(& this->lock);
@@ -195,9 +195,9 @@ static void init_gz_deflate(struct object *o)
 
 static void exit_gz_deflate(struct object *o)
 {
-  mt_lock(& THIS->lock);
+/*   mt_lock(& THIS->lock); */
   deflateEnd(&THIS->gz);
-  mt_unlock(& THIS->lock);
+/*   mt_unlock(& THIS->lock); */
 }
 
 /*******************************************************************/
@@ -208,9 +208,9 @@ static void gz_inflate_create(INT32 args)
   int tmp;
   if(THIS->gz.state)
   {
-    mt_lock(& THIS->lock);
+/*     mt_lock(& THIS->lock); */
     inflateEnd(&THIS->gz);
-    mt_unlock(& THIS->lock);
+/*     mt_unlock(& THIS->lock); */
   }
 
 
@@ -219,9 +219,9 @@ static void gz_inflate_create(INT32 args)
   THIS->gz.opaque=THIS;
 
   pop_n_elems(args);
-  mt_lock(& THIS->lock);
+/*    mt_lock(& THIS->lock);  */
   tmp=inflateInit(& THIS->gz);
-  mt_unlock(& THIS->lock);
+/*    mt_unlock(& THIS->lock); */
   switch(tmp)
   {
   case Z_OK:
@@ -244,9 +244,8 @@ static int do_inflate(dynamic_buffer *buf,
 		      int flush)
 {
   int fail=0;
-
   THREADS_ALLOW();
-  mt_lock(& THIS->lock);
+  mt_lock(& this->lock);
   if(!this->gz.state)
   {
     fail=Z_STREAM_ERROR;
@@ -261,13 +260,13 @@ static int do_inflate(dynamic_buffer *buf,
       ret=inflate(& this->gz, flush);
       low_make_buf_space(-this->gz.avail_out,buf);
       if(ret != Z_OK)
-	{
-	  fail=ret;
-	  break;
-	}
+      {
+	fail=ret;
+	break;
+      }
     } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
   }
-  mt_unlock(& THIS->lock);
+  mt_unlock(& this->lock);
   THREADS_DISALLOW();
   return fail;
 }
@@ -327,9 +326,9 @@ static void init_gz_inflate(struct object *o)
 
 static void exit_gz_inflate(struct object *o)
 {
-  mt_lock(& THIS->lock);
+/*   mt_lock(& THIS->lock); */
   inflateEnd(& THIS->gz);
-  mt_unlock(& THIS->lock);
+/*   mt_unlock(& THIS->lock); */
 }
 
 #endif
