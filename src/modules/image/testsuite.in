@@ -45,7 +45,8 @@ dnl tuned_box
   test_do(clone(Font)->load("SRCDIR/testfont"))
   test_any(object o=clone(Font); o->load("SRCDIR/testfont"); return o->height(),19)
   test_any(object o=clone(Font); o->load("SRCDIR/testfont"); return o->write("foo")->xsize(),23)
-  test_any(object o=clone(Font); o->load("SRCDIR/testfont"); return o->write("foo")->ysize(),19)
+  test_any(object o=clone(Font); o->load("SRCDIR/testfont"); return
+o->write("foo")->ysize(),20)
 dnl  test_any(object o=clone(Font); o->load("SRCDIR/testfont"); o->write("foo"); clone(Image,100,100)->paste_alpha(o); return 1,1)
 ]])
 
