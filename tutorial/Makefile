@@ -1,4 +1,4 @@
-all: tutorial.html
+# all: tutorial.html
 # lenna.gif lenna-mirrorx.gif lenna-mirrory.gif lenna-rotate.gif lenna-skewx.gif lenna-skewy.gif
 
 all:
@@ -7,7 +7,7 @@ all:
 tutorial_onepage.html:
 	./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
 
-#tutorial.html: tutorial.wmml wmml_to_html
+# tutorial.html: tutorial.wmml wmml_to_html
 #	./wmml_to_html <tutorial.wmml >tutorial.html
 
 BG_R=A0
