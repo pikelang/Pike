@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.318 2000/08/13 19:37:46 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.319 2000/08/14 13:56:46 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3132,7 +3132,7 @@ test_equal([[ array_sscanf("02 00 DC 00 0B","%{%x%*[\0-/:-@]%}")[0] ]],
     [[ ({ ({2}), ({0}), ({220}),({0}), ({11}) }) ]])
 
 test_equal([[ array_sscanf("\51726\30212\66610\30131", "%*[ \t]%s")[0] ]],
-    [[ ({ "\51726\30212\66610\30131" }) ]])
+    [[ "\51726\30212\66610\30131" ]])
 	
 test_any([[
 class Bar {
