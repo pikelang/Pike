@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: freetype.c,v 1.15 2003/01/17 15:34:08 marcus Exp $
+|| $Id: freetype.c,v 1.16 2003/01/17 16:15:17 marcus Exp $
 */
 
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.15 2003/01/17 15:34:08 marcus Exp $");
+RCSID("$Id: freetype.c,v 1.16 2003/01/17 16:15:17 marcus Exp $");
 #include "module.h"
 #include "pike_error.h"
 
@@ -30,6 +30,11 @@ RCSID("$Id: freetype.c,v 1.15 2003/01/17 15:34:08 marcus Exp $");
 
 
 #ifdef HAVE_LIBFT2
+
+#if !defined(FT_ENC_TAG) && defined(FT_MAKE_TAG)
+#define FT_ENC_TAG( value, _x1, _x2, _x3, _x4) \
+	value = FT_MAKE_TAG( _x1, _x2, _x3, _x4 )
+#endif /* !defined(FT_ENC_TAG) && defined(FT_MAKE_TAG) */
 
 #define sp Pike_sp
 #define fp Pike_fp
