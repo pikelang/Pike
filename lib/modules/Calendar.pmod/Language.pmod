@@ -345,12 +345,19 @@ static class _ymd_base
 		   enumerate(7,1,1))					\
 	 | mkmapping(map(week_day_names,flat),enumerate(7,1,1))
 
-// ----------------------------------------------------------------
+
+
+
+// ========================================================================
+
+
+
 // now the real classes:
 
 // this should probably be called UK_en or something:
 
 constant cENGLISH=cISO;
+constant cEN=cISO;
 class cISO
 {
    inherit _ymd_base;
@@ -390,6 +397,7 @@ class cISO
 // swedish (note: all name as cLANG where LANG is in caps)
 
 constant cSE_SV=cSWEDISH;
+constant cSV=cSWEDISH;
 class cSWEDISH
 {
    inherit _ymd_base;
@@ -486,6 +494,7 @@ class cSWEDISH
 // austrian
 // Martin Baehr <mbaehr@email.archlab.tuwien.ac.at>
 
+// what's the language code for austrian?
 class cAUSTRIAN
 {
    inherit _ymd_base;
@@ -506,6 +515,7 @@ class cAUSTRIAN
 
 // Welsh
 
+constant cCY=cWELSH;
 class cWELSH
 {
    inherit _ymd_base;
@@ -537,6 +547,7 @@ class cWELSH
 // Spanish
 // Julio César Gázquez <jgazquez@dld.net>
 
+constant cES=cSPANISH;
 class cSPANISH
 {
    inherit _ymd_base;
@@ -582,6 +593,7 @@ class cSPANISH
 // portugese
 // source: Sérgio Araújo <sergio@projecto-oasis.cx>
 
+constant cPT=cPORTUGESE;
 class cPORTUGESE
 {
    inherit _ymd_base;
@@ -639,6 +651,7 @@ class cPORTUGESE
 // Hungarian
 // Csongor Fagyal <concept@conceptonline.hu>
 
+constant cHU=cHUNGARIAN;
 class cHUNGARIAN
 {
    inherit _ymd_base;
@@ -673,6 +686,7 @@ class cHUNGARIAN
 
 // Modern Latin
 
+constant cLA=cLATIN;
 class cLATIN
 {
    inherit _ymd_base;
@@ -768,3 +782,151 @@ Ruleset.Language `[](string lang)
    
    return l;
 }
+
+/*
+ ISO 639:1988 language codes
+
+ aa Afar 
+ ab Abkhazian 
+ af Afrikaans 
+ am Amharic 
+ ar Arabic 
+ as Assamese 
+ ay Aymara 
+ az Azerbaijani 
+ ba Bashkir 
+ be Byelorussian 
+ bg Bulgarian 
+ bh Bihari 
+ bi Bislama 
+ bn Bengali; Bangla 
+ bo Tibetan 
+ br Breton 
+ ca Catalan 
+ co Corsican 
+ cs Czech 
+ cy Welsh 
+ da Danish 
+ de German 
+ dz Bhutani 
+ el Greek 
+ en English 
+ eo Esperanto 
+ es Spanish 
+ et Estonian 
+ eu Basque 
+ fa Persian 
+ fi Finnish 
+ fj Fiji 
+ fo Faroese 
+ fr French 
+ fy Frisian 
+ ga Irish (recte Irish Gaelic) 
+ gd Scots Gaelic (recte Scottish Gaelic) 
+ gl Galician 
+ gn Guarani 
+ gu Gujarati 
+ gv Manx Gaelic  
+ ha Hausa 
+ he Hebrew (formerly iw) 
+ hi Hindi 
+ hr Croatian 
+ hu Hungarian 
+ hy Armenian 
+ ia Interlingua 
+ id Indonesian (formerly in) 
+ ie Interlingue 
+ ik Inupiak 
+ is Icelandic 
+ it Italian 
+ iu Inuktitut 
+ ja Japanese 
+ jw Javanese 
+ ka Georgian 
+ kk Kazakh 
+ kl Greenlandic 
+ km Cambodian 
+ kn Kannada 
+ ko Korean 
+ ks Kashmiri 
+ ku Kurdish 
+ kw Cornish  
+ ky Kirghiz 
+ la Latin 
+ lb Luxemburgish  
+ ln Lingala 
+ lo Laothian (recte Laotian) 
+ lt Lithuanian 
+ lv Latvian; Lettish 
+ mg Malagasy 
+ mi Maori 
+ mk Macedonian 
+ ml Malayalam 
+ mn Mongolian 
+ mo Moldavian 
+ mr Marathi 
+ ms Malay 
+ mt Maltese 
+ my Burmese 
+ na Nauru 
+ ne Nepali 
+ nl Dutch 
+ no Norwegian 
+ oc Occitan 
+ om (Afan) Oromo 
+ or Oriya 
+ pa Punjabi 
+ pl Polish 
+ ps Pashto, Pushto 
+ pt Portuguese 
+ qu Quechua 
+ rm Rhaeto-Romance 
+ rn Kirundi 
+ ro Romanian 
+ ru Russian 
+ rw Kinyarwanda 
+ sa Sanskrit 
+ sd Sindhi 
+ se Northern Sámi  
+ sg Sangho 
+ sh Serbo-Croatian 
+ si Singhalese 
+ sk Slovak 
+ sl Slovenian 
+ sm Samoan 
+ sn Shona 
+ so Somali 
+ sq Albanian 
+ sr Serbian 
+ ss Siswati 
+ st Sesotho 
+ su Sundanese 
+ sv Swedish 
+ sw Swahili 
+ ta Tamil 
+ te Telugu 
+ tg Tajik 
+ th Thai 
+ ti Tigrinya 
+ tk Turkmen 
+ tl Tagalog 
+ tn Setswana 
+ to Tonga 
+ tr Turkish 
+ ts Tsonga 
+ tt Tatar 
+ tw Twi 
+ ug Uigur 
+ uk Ukrainian 
+ ur Urdu 
+ uz Uzbek 
+ vi Vietnamese 
+ vo Volapük 
+ wo Wolof 
+ xh Xhosa 
+ yi Yiddish (formerly ji) 
+ yo Yoruba 
+ za Zhuang 
+ zh Chinese 
+ zu Zulu
+*/
