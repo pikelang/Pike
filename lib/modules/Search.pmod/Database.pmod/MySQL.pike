@@ -4,6 +4,8 @@
 inherit Search.Database.Base;
 
 // Creates the SQL tables we need.
+// FIXME: last_changed and last_indexed should be in the same format. (fix here or in query?)
+// FIXME: last changed and last_indexed should be named modified and indexed.
 void create_tables()
 {
   catch(db->query("drop table document"));
@@ -191,43 +193,27 @@ void optimize()
   garbage_collect();
 }
 
-
-mapping(string:Search.Document) make_document_mapping(array(mapping) mysql_result)
+array(mapping) lookup_word(string word)
 {
-  array a= map(mysql_result,
-	       lambda(mapping m)
-	       {
-		 Search.Document tmp=Search.Document();
-		 tmp->title=m->title;
-		 tmp->description=m->description;
-		 tmp->last_changed=(int)m->last_changed;
-		 tmp->uri=m->uri;
-		 return tmp;
-	       });
-  return mkmapping(a->uri,a);
+  return db->query("SELECT SUM(ranking) AS score, COUNT(id) AS hits, "
+		   "document.* FROM document, "
+		   "occurance WHERE word_id=%s and "
+		   "occurance.document_id=document.id GROUP BY id",
+		   hash_word(word));
 }
 
-mapping(string:Search.Document) lookup_word(string word)
+array(mapping) lookup_words_or(array(string) words)
 {
-  array documents=db->query("SELECT document.* FROM document, occurance WHERE word_id=%s"
-			    " and occurance.document_id=document.id",
-			    hash_word(word));
-  return make_document_mapping(documents);
-}
-
-mapping(string:Search.Document) lookup_words_or(array(string) words)
-{
-  string sql="SELECT * FROM occurance WHERE ";
+  string sql="SELECT * FROM occurance WHERE "; //FIXME
   words=map(words, lambda(string in) {
 		   return "word_id="+hash_word(in);
 		 } );
   sql += words*" || ";
 
-  array documents=db->query(sql);
-  return make_document_mapping(documents);
+  return db->query(sql);
 }
 
-mapping(string:Search.Document) lookup_words_and(array(string) words)
+array(mapping) lookup_words_and(array(string) words)
 {
 //   array first_result=({});
 //   array rest_results=({});
