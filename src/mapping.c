@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.113 2000/12/14 07:37:23 mast Exp $");
+RCSID("$Id: mapping.c,v 1.114 2001/01/18 02:18:57 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1569,7 +1569,16 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     
       describe_svalue(ITEM(a)+e, indent+2, &doing);
       my_putchar(':');
-      if((tmp=low_mapping_lookup(m, ITEM(a)+e)))
+      
+      {
+	int save_t_flag=t_flag;
+	t_flag=0;
+	
+	tmp=low_mapping_lookup(m, ITEM(a)+e);
+	
+	t_flag=save_t_flag;
+      }
+      if(tmp)
 	describe_svalue(tmp, indent+2, &doing);
       else
 	my_strcat("** gone **");
