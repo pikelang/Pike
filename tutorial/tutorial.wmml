@@ -6334,6 +6334,23 @@ Array.permute
 
 
 
+<function name=Array.sort_array title="sort an array">
+<man_syntax>
+array sort_array(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
+This function sorts an array after a compare-function <i>fun</i>
+which takes two arguments and should return 1 if the first argument
+is larger then the second. The rest of the arguments <i>args</i> will be
+sent as 3rd, 4th etc. argument to <i>fun</i>. If <i>fun</i> is omitted, `&lt; is used
+instead.
+</man_description>
+<man_see>
+Array.map, sort
+</man_see>
+</function>
+
+
 
 <function name=Array.splice title="splice two or more arrays">
 <man_syntax>
@@ -6402,25 +6419,6 @@ array sum_arrays(function fun,array arr1,...)
 Array.map, Array.filter, Array.search_array
 </man_see>
 </function>
-
-
-
-<function name=Array.sort_array title="sort an array">
-<man_syntax>
-array sort_array(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);
-</man_syntax>
-<man_description>
-This function sorts an array after a compare-function <i>fun</i>
-which takes two arguments and should return 1 if the first argument
-is larger then the second. The rest of the arguments <i>args</i> will be
-sent as 3rd, 4th etc. argument to <i>fun</i>. If <i>fun</i> is omitted, `&lt; is used
-instead.
-</man_description>
-<man_see>
-Array.map, sort
-</man_see>
-</function>
-
 
 
 <function name=Array.uniq title="remove elements that are duplicates">
