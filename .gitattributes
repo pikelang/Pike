@@ -122,6 +122,7 @@ testfont binary
 /src/build_modlist_h foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/builtin_functions.h foreign_ident
+/src/builtin_functions_t.c foreign_ident
 /src/callback.c foreign_ident
 /src/callback.h foreign_ident
 /src/compilation.h foreign_ident
@@ -164,6 +165,7 @@ testfont binary
 /src/language.yacc foreign_ident
 /src/las.c foreign_ident
 /src/las.h foreign_ident
+/src/las_t.c foreign_ident
 /src/lex.c foreign_ident
 /src/lex.h foreign_ident
 /src/lexer.h foreign_ident
@@ -450,6 +452,7 @@ testfont binary
 /src/peep.c foreign_ident
 /src/peep.h foreign_ident
 /src/peep.in foreign_ident
+/src/peep_t.c foreign_ident
 /src/pike_macros.h foreign_ident
 /src/pike_memory.c foreign_ident
 /src/pike_memory.h foreign_ident
