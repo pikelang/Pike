@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.11 1998/04/11 11:53:35 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.12 1998/04/16 01:10:40 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -13,6 +13,9 @@ int foo(string opt)
   if(opt=="" || !opt) return 1;
   return (int)opt;
 }
+
+mapping(string:int) cond_cache=([]);
+
 int main(int argc, string *argv)
 {
   int e, verbose, successes, errors, t, check;
@@ -96,7 +99,15 @@ int main(int argc, string *argv)
 	test=tests[e];	
 	if(sscanf(test,"COND %s\n%s",condition,test)==2)
 	{
-	  if(!clone(compile_string("mixed c() { return "+condition+"; }","Cond "+(e+1)))->c())
+	  int tmp;
+	  if(!(tmp=cond_cache[condition]))
+	  {
+	    tmp=!!(clone(compile_string("mixed c() { return "+condition+"; }","Cond "+(e+1)))->c());
+	    if(!tmp) tmp=-1;
+	    cond_cache[condition]=tmp;
+	  }
+	  
+	  if(tmp==-1)
 	  {
 	    if(verbose)
 	      werror("Not doing test "+(e+1)+"\n");
