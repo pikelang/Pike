@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.28 2004/04/17 16:00:41 marcus Exp $
+# $Id: common_module_makefile.in,v 1.29 2004/05/10 15:58:42 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -215,7 +215,7 @@ gdb_verify: testsuite $(PIKE_EXTERNAL_MODULE)
 
 extract_autodoc: $(PIKE_EXTERNAL_MODULE) plib/refdoc plib/doc_build/images
 	$(RUNPIKE) -x extract_autodoc --builddir=plib/refdoc --srcdir=plib/modules
-	if test "X$(AUTODOC_SRC_IN)" -ne "X"; then \
+	if test "X$(AUTODOC_SRC_IN)" != "X"; then \
 	$(RUNPIKE) -x extract_autodoc --builddir=plib/refdoc $(AUTODOC_SRC_IN); \
 	fi
 
