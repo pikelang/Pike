@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.124 2001/03/30 16:45:42 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.125 2001/04/13 13:35:30 mast Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -887,7 +887,7 @@ PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
   propagate_shared_string(s,h);
 #ifdef PIKE_DEBUG
   if (base_table[h] != s) {
-    fatal("propagate_shared_string() failed!\n");
+    fatal("propagate_shared_string() failed. Probably got bogus pike_string.\n");
   }
 #endif /* PIKE_DEBUG */
   base_table[h]=s->next;
