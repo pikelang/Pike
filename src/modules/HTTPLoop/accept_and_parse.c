@@ -114,7 +114,7 @@ void free_args( struct args *arg )
   mt_unlock( &arg_lock );
 }
 
-struct args *new_args( )
+struct args *new_args(void)
 {
   struct args *res;
   mt_lock( &arg_lock );
@@ -673,7 +673,7 @@ void f_aap_add_filesystem( INT32 args )
 #define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))
 #endif
 
-void pike_module_init()
+void pike_module_init(void)
 {
 #ifdef _REENTRANT
   ptrdiff_t offset;
@@ -766,7 +766,7 @@ void pike_module_init()
 #endif /* _REENTRANT */
 }
 
-void pike_module_exit() 
+void pike_module_exit(void) 
 {
 #ifdef _REENTRANT
   struct log *log = aap_first_log;
