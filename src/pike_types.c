@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.125 2000/03/10 00:53:49 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.126 2000/03/10 00:58:59 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2750,17 +2750,17 @@ static struct pike_string *debug_low_index_type(char *t,
       if(low_pike_types_le(tString, index_type, 0, 0) &&
 	 (a = low_index_type(t, tString, n))) {
 	/* Possible to index the array with a string. */
+	type_stack_mark();
+	push_finished_type(a);
+	free_string(a);
+	push_type(T_ARRAY);
+
 	if (low_match_types(tInt, index_type, 0)) {
 	  /* Also possible to index the array with an int. */
-	  type_stack_mark();
-	  push_finished_type(a);
-	  free_string(a);
-	  push_type(T_ARRAY);
 	  push_unfinished_type(t);
 	  push_type(T_OR);
-	  return pop_unfinished_type();
 	}
-	return a;
+	return pop_unfinished_type();
       }
       if (low_match_types(tInt, index_type, 0)) {
 	/* Possible to index the array with an int. */
