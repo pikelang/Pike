@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.190 1999/10/21 21:34:31 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.191 1999/10/21 22:15:05 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -148,6 +148,7 @@ void f_copy_value(INT32 args)
   copy_svalues_recursively_no_free(sp,sp-1,1,0);
   free_svalue(sp-1);
   sp[-1]=sp[0];
+  dmalloc_touch_svalue(sp-1);
 }
 
 void f_ctime(INT32 args)
@@ -431,6 +432,7 @@ void f_search(INT32 args)
       mapping_search_no_free(sp,sp[-args].u.mapping,sp+1-args,0);
     free_svalue(sp-args);
     sp[-args]=*sp;
+    dmalloc_touch_svalue(sp);
     pop_n_elems(args-1);
     return;
 
@@ -524,6 +526,7 @@ void f_add_constant(INT32 args)
 
   if(args>1)
   {
+    dmalloc_touch_svalue(sp-args+1);
     low_add_efun(sp[-args].u.string, sp-args+1);
   }else{
     low_add_efun(sp[-args].u.string, 0);
@@ -1229,10 +1232,7 @@ void f_this_object(INT32 args)
   pop_n_elems(args);
   if(fp)
   {
-    sp->u.object=fp->current_object;
-    sp->type=T_OBJECT;
-    add_ref(fp->current_object);
-    sp++;
+    ref_push_object(fp->current_object);
   }else{
     push_int(0);
   }
@@ -1982,7 +1982,7 @@ void f_sleep(INT32 args)
   }
   pop_n_elems(args);
 
-  if (t2.tv_sec==0)
+  if (t2.tv_sec==0) {
      if (t2.tv_usec<1000) /* very short sleep */
      {
 #ifdef HAVE_NANOSLEEP
@@ -1999,7 +1999,7 @@ void f_sleep(INT32 args)
 	return; /* don't care about signals... */
      }
 #endif
-
+  }
 
   if( args >1 && !IS_ZERO(sp-args+1))
   {
@@ -2089,6 +2089,7 @@ void ID(INT32 args) \
   push_int(t); \
 }
 #endif /* AUTO_BIGNUM */
+
 
 void f_programp(INT32 args)
 {
@@ -2189,6 +2190,7 @@ void f_rows(INT32 args)
     index_no_free(ITEM(a)+e, val, ITEM(tmp)+e);
   
   sp--;
+  dmalloc_touch_svalue(sp);
   pop_n_elems(args);
   push_array(a);
 }
@@ -2232,6 +2234,7 @@ void f_column(INT32 args)
 
     END_CYCLIC();
     sp--;
+    dmalloc_touch_svalue(sp);
     pop_n_elems(args);
     push_array(a);
   }
@@ -2382,6 +2385,7 @@ static void f_mktime (INT32 args)
     f_aggregate(8);
     f_rows(2);
     sp--;
+    dmalloc_touch_svalue(sp);
     push_array_items(sp->u.array);
 
     args=8;
@@ -2511,6 +2515,7 @@ void f_glob(INT32 args)
     f_aggregate(matches);
     tmp=sp[-1];
     sp--;
+    dmalloc_touch_svalue(sp);
     pop_n_elems(2);
     sp[0]=tmp;
     sp++;
@@ -4059,6 +4064,11 @@ void f__locate_references(INT32 args)
 
 void f__describe(INT32 args)
 {
+  if (!args) {
+    push_int(0);
+  } else {
+    pop_n_elems(args-1);
+  }
   debug_describe_svalue(sp-1);
 }
 
@@ -4089,6 +4099,7 @@ void f_map_array(INT32 args)
     sp+=args-2;
     apply_svalue(fun,args-1);
     ret->item[e]=*(--sp);
+    dmalloc_touch_svalue(sp);
   }
   pop_n_elems(args);
   UNSET_ONERROR(tmp);
@@ -4181,10 +4192,12 @@ void f_map(INT32 args)
 	 free_svalue(sp-args-1);    /* move it to top of stack */
 	 sp[-args-1].type=T_INT;    
 	 f_indices(1);              /* call f_indices */
-	 sp--;                       
+	 sp--;
+	 dmalloc_touch_svalue(sp);
 	 sp[-args]=sp[0];           /* move it back */
 	 f_map(args);               
 	 sp--;                      /* allocate_multiset is destructive */
+	 dmalloc_touch_svalue(sp);
 	 push_multiset(allocate_multiset(sp->u.array));
 	 return;
 
@@ -4196,6 +4209,7 @@ void f_map(INT32 args)
 	 sp[-args-1].type=T_INT;    
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
 	 sp--;                       
+	 dmalloc_touch_svalue(sp);
 	 sp[-args]=sp[0];           /* move it back */
 	 f_map(args);               
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
@@ -4222,6 +4236,7 @@ void f_map(INT32 args)
 	    {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--sp);
+	       dmalloc_touch_svalue(sp);
 	       f_map(args);
 	       return;
 	    }
@@ -4233,6 +4248,7 @@ void f_map(INT32 args)
 	    {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--sp);
+	       dmalloc_touch_svalue(sp);
 	       f_map(args);
 	       return;
 	    }
@@ -4244,6 +4260,7 @@ void f_map(INT32 args)
 	    {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--sp);
+	       dmalloc_touch_svalue(sp);
 	       f_map(args);
 	       return;
 	    }
@@ -4280,10 +4297,12 @@ void f_map(INT32 args)
 	       push_int(i);
 	       f_call_function(2);
 	       d->item[i]=*(--sp);
+	       dmalloc_touch_svalue(sp);
 	    }
 	    pop_stack();
 	    free_svalue(mysp-3);
 	    mysp[-3]=*(--sp);
+	    dmalloc_touch_svalue(sp);
 	    f_map(args);
 	    return;
 	 }
@@ -4329,6 +4348,7 @@ void f_map(INT32 args)
 	       apply_svalue(mysp-2,1);
 	    }
 	    d->item[i]=*--sp;
+	    dmalloc_touch_svalue(sp);
 	 }
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
@@ -4359,6 +4379,7 @@ void f_map(INT32 args)
 	    push_array_items(mysp[-1].u.array);
 	    f_call_function(splice+1);
 	    d->item[i]=*--sp;
+	    dmalloc_touch_svalue(sp);
 	 }
 	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
 	 return;
@@ -4370,6 +4391,7 @@ void f_map(INT32 args)
 	    stack_swap(); /* arr fun extra -> arr extra fun */
 	    pop_stack();  /* arr extra */
 	    sp--;
+	    dmalloc_touch_svalue(sp);
 	    push_array_items(sp->u.array);
 	    f_call_function(1+splice);
 	    return;
@@ -4428,6 +4450,7 @@ void f_filter(INT32 args)
 	 }
 	 else {
 	   MEMMOVE(sp-args+1,sp-args,args*sizeof(*sp));
+	   dmalloc_touch_svalue(sp);
 	   sp++;
 	   add_ref_svalue(sp-args);
 	   f_map(args);
@@ -4472,9 +4495,11 @@ void f_filter(INT32 args)
 	 push_svalue(sp-args);
 	 f_indices(1);
 	 sp[-args-3]=*--sp;
+	 dmalloc_touch_svalue(sp);
 	 push_svalue(sp-args);
 	 f_values(1);
 	 sp[-args-2]=*--sp;
+	 dmalloc_touch_svalue(sp);
 
 	 assign_svalue(sp-args,sp-args-1); /* loop values only */
 	 f_map(args);
@@ -4502,9 +4527,11 @@ void f_filter(INT32 args)
 	 sp[-args-1].type=T_INT;    
 	 f_indices(1);              /* call f_indices */
 	 sp--;                       
+	 dmalloc_touch_svalue(sp);
 	 sp[-args]=sp[0];           /* move it back */
 	 f_filter(args);               
 	 sp--;                      /* allocate_multiset is destructive */
+	 dmalloc_touch_svalue(sp);
 	 push_multiset(allocate_multiset(sp->u.array));
 	 return;
 
@@ -4514,6 +4541,7 @@ void f_filter(INT32 args)
 	 sp[-args-1].type=T_INT;    
 	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
 	 sp--;                       
+	 dmalloc_touch_svalue(sp);
 	 sp[-args]=sp[0];           /* move it back */
 	 f_filter(args);               
 	 o_cast(NULL,T_STRING);     /* cast the array to a string */
@@ -4535,6 +4563,7 @@ void f_filter(INT32 args)
 	    {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--sp);
+	       dmalloc_touch_svalue(sp);
 	       f_filter(args);
 	       return;
 	    }
@@ -4546,6 +4575,7 @@ void f_filter(INT32 args)
 	    {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--sp);
+	       dmalloc_touch_svalue(sp);
 	       f_filter(args);
 	       return;
 	    }
@@ -4557,6 +4587,7 @@ void f_filter(INT32 args)
 	    {
 	       free_svalue(mysp-3);
 	       mysp[-3]=*(--sp);
+	       dmalloc_touch_svalue(sp);
 	       f_filter(args);
 	       return;
 	    }
