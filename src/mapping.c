@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.60 2000/02/04 19:25:10 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.61 2000/02/04 20:16:16 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -29,6 +29,13 @@ RCSID("$Id: mapping.c,v 1.60 2000/02/04 19:25:10 hubbe Exp $");
 
 struct mapping *first_mapping;
 
+#define unlink_mapping_data(M) do{				\
+ struct mapping_data *md_=(M);					\
+ if(md_->hardlinks) { md_->hardlinks--; md_->valrefs--; }	\
+ free_mapping_data(M);						\
+}while(0)
+
+
 #define MD_KEYPAIRS(MD, HSIZE) \
    ( (struct keypair *)DO_ALIGN( (long) (((struct mapping_data *)(MD))->hash + HSIZE), ALIGNOF(struct keypair)) )
 
@@ -47,12 +54,7 @@ DO_IF_DEBUG(								\
 									\
   FREE_PROT(m);								\
 									\
-  if(m->data->hardlinks)						\
-  {									\
-    m->data->hardlinks--;						\
-    m->data->valrefs--;							\
-  }									\
-  free_mapping_data(m->data);						\
+  unlink_mapping_data(m->data);						\
 									\
   if(m->prev)								\
     m->prev->next = m->next;						\
@@ -305,12 +307,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
     for(e=0;e<md->hashsize;e++)
       mapping_rehash_backwards_good(new_md, md->hash[e]);
 
-    if(md->hardlinks)
-    {
-      md->hardlinks--;
-      md->valrefs--;
-    }
-    free_mapping_data(md);
+    unlink_mapping_data(md);
   }else{
     /* evil */
     for(e=0;e<md->hashsize;e++)
@@ -1851,34 +1848,9 @@ void gc_free_all_unreferenced_mappings(void)
     if(gc_do_free(m))
     {
       add_ref(m);
-      md=m->data;
-
-      /* no locking required
-       *
-       * FIXME: is it possible that md->refs might not be zero here?
-       *        for now I will assume it is not possible...
-       */
-      for(e=0;e<md->hashsize;e++)
-      {
-	k=md->hash[e];
-	while(k)
-	{
-	  free_svalue(&k->ind);
-	  free_svalue(&k->val);
-
-	  if(k->next)
-	  {
-	    k = k->next;
-	  } else {
-	    k->next=md->free_list;
-	    md->free_list=md->hash[e];
-	    md->hash[e]=0;
-	    break;
-	  }
-	}
-      }
-      md->size=0;
-
+      unlink_mapping_data(m->data);
+      m->data=&empty_data;
+      m->data->refs++;
       next=m->next;
 
       free_mapping(m);
