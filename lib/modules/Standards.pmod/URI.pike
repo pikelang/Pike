@@ -3,7 +3,7 @@
 
 // Implemented by Johan Sundström and Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.3 2001/01/12 23:52:23 grubba Exp $
+// $Id: URI.pike,v 1.4 2001/01/13 00:09:52 grubba Exp $
 
 #pragma strict_types
 
@@ -227,20 +227,23 @@ void reparse_uri(object(this_program)|string|void base_uri)
   path = uri;						
   debug("Found path %O", path);
 
-  if(authority)
-    parse_authority();
-
   // 3) If the scheme component is defined, indicating that the reference
   //    starts with a scheme name, then the reference is interpreted as an
   //    absolute URI and we are done.  Otherwise, the reference URI's
   //    scheme is inherited from the base URI's scheme component.
   if(scheme)
   {					
+    if(authority)
+      parse_authority();
+
     debug("Scheme found! RFC 2396, §5.2, step 3 says we're absolute. Done!", 0);
     return;		
   }
   scheme = local::base_uri->scheme;			
   debug("Inherited scheme %O from base URI", scheme);
+
+  if(authority)
+    parse_authority();
 
   
   // 4) If the authority component is defined, then the reference is a
