@@ -2,8 +2,9 @@
 #include "fdlib.h"
 #include "pike_error.h"
 #include <math.h>
+#include <tchar.h>
 
-RCSID("$Id: fdlib.c,v 1.48 2002/03/15 09:31:51 tomas Exp $");
+RCSID("$Id: fdlib.c,v 1.49 2002/10/03 11:15:49 tomas Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -24,6 +25,120 @@ int first_free_handle;
 #else
 #define FDDEBUG(X)
 #endif
+
+#ifdef _M_IX86
+/*
+ * 386/486
+ */
+#define REG1    register
+#define REG2    register
+#define REG3    register
+#define REG4
+#define REG5
+#define REG6
+#define REG7
+#define REG8
+#define REG9
+
+#elif (defined (_M_MRX000) || defined (_M_ALPHA) || defined (_M_PPC))
+/*
+ * MIPS, ALPHA, or PPC
+ */
+#define REG1    register
+#define REG2    register
+#define REG3    register
+#define REG4    register
+#define REG5    register
+#define REG6    register
+#define REG7    register
+#define REG8    register
+#define REG9    register
+
+#elif (defined (_M_M68K) || defined (_M_MPPC))
+/*
+ * Macros defining the calling type of a function
+ */
+
+#define _CALLTYPE1      __cdecl    /* old -- check source user visible functions */
+#define _CALLTYPE2      __cdecl    /* old -- check source user visible functions */
+#define _CALLTYPE3      illegal    /* old -- check source should not used*/
+#define _CALLTYPE4      __cdecl    /* old -- check source internal (static) functions */
+
+/*
+ * Macros for defining the naming of a public variable
+ */
+
+#define _VARTYPE1
+
+/*
+ * Macros for register variable declarations
+ */
+
+#define REG1
+#define REG2
+#define REG3
+#define REG4
+#define REG5
+#define REG6
+#define REG7
+#define REG8
+#define REG9
+
+#else  /* (defined (_M_M68K) || defined (_M_MPPC)) */
+
+#pragma message ("Machine register set not defined")
+
+/*
+ * Unknown machine
+ */
+
+#define REG1
+#define REG2
+#define REG3
+#define REG4
+#define REG5
+#define REG6
+#define REG7
+#define REG8
+#define REG9
+
+#endif  /* (defined (_M_M68K) || defined (_M_MPPC)) */
+
+/* DOS errno values for setting __doserrno in C routines */
+
+#define E_ifunc         1       /* invalid function code */
+#define E_nofile        2       /* file not found */
+#define E_nopath        3       /* path not found */
+#define E_toomany       4       /* too many open files */
+#define E_access        5       /* access denied */
+#define E_ihandle       6       /* invalid handle */
+#define E_arena         7       /* arena trashed */
+#define E_nomem         8       /* not enough memory */
+#define E_iblock        9       /* invalid block */
+#define E_badenv        10      /* bad environment */
+#define E_badfmt        11      /* bad format */
+#define E_iaccess       12      /* invalid access code */
+#define E_idata         13      /* invalid data */
+#define E_unknown       14      /* ??? unknown error ??? */
+#define E_idrive        15      /* invalid drive */
+#define E_curdir        16      /* current directory */
+#define E_difdev        17      /* not same device */
+#define E_nomore        18      /* no more files */
+#define E_maxerr2       19      /* unknown error - Version 2.0 */
+#define E_sharerr       32      /* sharing violation */
+#define E_lockerr       33      /* locking violation */
+#define E_maxerr3       34      /* unknown error - Version 3.0 */
+
+/* DOS file attributes */
+
+#define A_RO            0x1     /* read only */
+#define A_H             0x2     /* hidden */
+#define A_S             0x4     /* system */
+#define A_V             0x8     /* volume id */
+#define A_D             0x10    /* directory */
+#define A_A             0x20    /* archive */
+
+#define A_MOD   (A_RO+A_H+A_S+A_A)      /* changeable attributes */
 
 PMOD_EXPORT char *debug_fd_info(int fd)
 {
@@ -92,6 +207,223 @@ void fd_exit()
   mt_destroy(&fd_mutex);
 }
 
+
+#define ISSLASH(a)  ((a) == _T('\\') || (a) == _T('/'))
+
+
+#ifdef _UNICODE
+#define __tdtoxmode __wdtoxmode
+#else  /* _UNICODE */
+#define __tdtoxmode __dtoxmode
+#endif  /* _UNICODE */
+
+/*
+ * IsRootUNCName - returns TRUE if the argument is a UNC name specifying
+ *      a root share.  That is, if it is of the form \\server\share\.
+ *      This routine will also return true if the argument is of the
+ *      form \\server\share (no trailing slash) but Win32 currently
+ *      does not like that form.
+ *
+ *      Forward slashes ('/') may be used instead of backslashes ('\').
+ */
+
+static int IsRootUNCName(const _TSCHAR *path)
+{
+        /*
+         * If a root UNC name, path will start with 2 (but not 3) slashes
+         */
+
+        if ( ( _tcslen ( path ) >= 5 ) /* minimum string is "//x/y" */
+             && ISSLASH(path[0]) && ISSLASH(path[1]))
+        {
+            const _TSCHAR * p = path + 2 ;
+
+            /*
+             * find the slash between the server name and share name
+             */
+            while ( * ++ p )
+                if ( ISSLASH(*p) )
+                    break ;
+
+            if ( *p && p[1] )
+            {
+                /*
+                 * is there a further slash?
+                 */
+                while ( * ++ p )
+                    if ( ISSLASH(*p) )
+                        break ;
+
+                /*
+                 * just final slash (or no final slash)
+                 */
+                if ( !*p || !p[1])
+                    return 1;
+            }
+        }
+
+        return 0 ;
+}
+
+static int __cdecl low_stat (
+        REG1 const _TSCHAR *name,
+        REG2 struct stat *buf
+        )
+{
+        _TSCHAR *  path;
+        _TSCHAR    pathbuf[ _MAX_PATH ];
+        int drive;          /* A: = 1, B: = 2, etc. */
+        HANDLE findhandle;
+        WIN32_FIND_DATA findbuf;
+
+        /* Don't allow wildcards to be interpreted by system */
+
+#ifdef _UNICODE
+        if (wcspbrk(name, L"?*")) {
+#else  /* _UNICODE */
+        if (_mbspbrk(name, "?*")) {
+#endif  /* _UNICODE */
+            errno = ENOENT;
+            _doserrno = E_nofile;
+            return(-1);
+        }
+
+        /* Try to get disk from name.  If none, get current disk.  */
+
+        if (name[1] == _T(':')){
+            if ( *name && !name[2] ){
+                errno = ENOENT;             /* return an error if name is   */
+                _doserrno = E_nofile;       /* just drive letter then colon */
+                return( -1 );
+            }
+            drive = _totlower(*name) - _T('a') + 1;
+        }
+        else
+            drive = _getdrive();
+
+        /* Call Find Match File */
+        findhandle = FindFirstFile((_TSCHAR *)name, &findbuf);
+        if ( findhandle == INVALID_HANDLE_VALUE ) {
+#ifdef _UNICODE
+            if ( !( wcspbrk(name, L"./\\") &&
+#else  /* _UNICODE */
+            if ( !( _mbspbrk(name, "./\\") &&
+#endif  /* _UNICODE */
+                 (path = _tfullpath( pathbuf, name, _MAX_PATH )) &&
+                 /* root dir. ('C:\') or UNC root dir. ('\\server\share\') */
+                 ((_tcslen( path ) == 3) || IsRootUNCName(path)) &&
+                 (GetDriveType( path ) > 1) ) )
+            {
+                errno = ENOENT;
+                _doserrno = E_nofile;
+                return( -1 );
+            }
+
+            /*
+             * Root directories (such as C:\ or \\server\share\ are fabricated.
+             */
+
+            findbuf.dwFileAttributes = A_D;
+            findbuf.nFileSizeHigh = 0;
+            findbuf.nFileSizeLow = 0;
+            findbuf.cFileName[0] = _T('\0');
+
+            buf->st_mtime = __loctotime_t(1980,1,1,0,0,0, -1);
+            buf->st_atime = buf->st_mtime;
+            buf->st_ctime = buf->st_mtime;
+        }
+        else {
+            SYSTEMTIME SystemTime;
+            SYSTEMTIME UtcSTime;
+
+            if ( !FileTimeToSystemTime( &findbuf.ftLastWriteTime,
+                                        &UtcSTime )                    ||
+                 !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
+                                                  &SystemTime) )
+            {
+                _dosmaperr( GetLastError() );
+                FindClose( findhandle );
+                return( -1 );
+            }
+
+            buf->st_mtime = __loctotime_t( SystemTime.wYear,
+                                           SystemTime.wMonth,
+                                           SystemTime.wDay,
+                                           SystemTime.wHour,
+                                           SystemTime.wMinute,
+                                           SystemTime.wSecond,
+                                           -1 );
+
+            if ( findbuf.ftLastAccessTime.dwLowDateTime ||
+                 findbuf.ftLastAccessTime.dwHighDateTime )
+            {
+                if ( !FileTimeToSystemTime( &findbuf.ftLastAccessTime,
+                                            &UtcSTime )                    ||
+                     !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
+                                                      &SystemTime) )
+                {
+                    _dosmaperr( GetLastError() );
+                    FindClose( findhandle );
+                    return( -1 );
+                }
+
+                buf->st_atime = __loctotime_t( SystemTime.wYear,
+                                               SystemTime.wMonth,
+                                               SystemTime.wDay,
+                                               SystemTime.wHour,
+                                               SystemTime.wMinute,
+                                               SystemTime.wSecond,
+                                               -1 );
+            } else
+                buf->st_atime = buf->st_mtime ;
+
+            if ( findbuf.ftCreationTime.dwLowDateTime ||
+                 findbuf.ftCreationTime.dwHighDateTime )
+            {
+                if ( !FileTimeToSystemTime( &findbuf.ftCreationTime,
+                                            &UtcSTime )                    ||
+                     !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
+                                                      &SystemTime) )
+                {
+                    _dosmaperr( GetLastError() );
+                    FindClose( findhandle );
+                    return( -1 );
+                }
+
+                buf->st_ctime = __loctotime_t( SystemTime.wYear,
+                                               SystemTime.wMonth,
+                                               SystemTime.wDay,
+                                               SystemTime.wHour,
+                                               SystemTime.wMinute,
+                                               SystemTime.wSecond,
+                                               -1 );
+            } else
+                buf->st_ctime = buf->st_mtime ;
+
+            FindClose(findhandle);
+        }
+
+        /* Fill in buf */
+
+        buf->st_mode = __tdtoxmode(findbuf.dwFileAttributes, name);
+        buf->st_nlink = 1;
+
+#ifdef _USE_INT64
+        buf->st_size = ((__int64)(findbuf.nFileSizeHigh)) * (0x100000000i64) +
+                        (__int64)(findbuf.nFileSizeLow);
+#else  /* _USE_INT64 */
+        buf->st_size = findbuf.nFileSizeLow;
+#endif  /* _USE_INT64 */
+
+        /* now set the common fields */
+
+        buf->st_uid = buf->st_gid = buf->st_ino = 0;
+
+        buf->st_rdev = buf->st_dev = (_dev_t)(drive - 1); /* A=0, B=1, etc. */
+
+        return(0);
+}
+
 int debug_fd_stat(char *file, struct stat *buf)
 {
   ptrdiff_t l = strlen(file);
@@ -111,7 +443,7 @@ int debug_fd_stat(char *file, struct stat *buf)
     fname[l]=0;
     file=fname;
   }
-  return stat(file, buf);
+  return low_stat(file, buf);
 }
 
 PMOD_EXPORT FD debug_fd_open(char *file, int open_mode, int create_mode)
