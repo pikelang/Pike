@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.32 2001/09/07 22:16:28 hubbe Exp $ */
+/* $Id: math_matrix.c,v 1.33 2002/06/19 02:22:11 per Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -239,17 +239,17 @@ extern struct program *math_lmatrix_program;
 **!	Matrix multiplication.
 */
 /*
+**! method Matrix cross(object with)
 **! method Matrix `×(object with)
 **! method Matrix ``×(object with)
-**! method Matrix cross(object with)
 **!	Matrix cross-multiplication.
 */
 
 
 /*
+**! method float dot_product(object with)
 **! method float `·(object with)
 **! method float ``·(object with)
-**! method float dot(object with)
 **!	Matrix dot product.
 */
 
