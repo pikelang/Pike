@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc_h.h,v 1.19 2003/02/24 17:06:54 grubba Exp $
+|| $Id: block_alloc_h.h,v 1.20 2003/06/30 17:05:56 mast Exp $
 */
 
 #undef BLOCK_ALLOC
@@ -13,7 +13,7 @@
 #undef PTR_HASH_ALLOC_FIXED_FILL_PAGES
 
 #ifndef PIKE_HASH_T
-#define PIKE_HASH_T	unsigned INT32
+#define PIKE_HASH_T	size_t
 #endif /* !PIKE_HASH_T */
 
 #define BLOCK_ALLOC(DATA,SIZE)						\
