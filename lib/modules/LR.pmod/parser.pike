@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.6 1998/11/12 19:45:44 grubba Exp $
+ * $Id: parser.pike,v 1.7 1998/11/13 02:35:05 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.6 1998/11/12 19:45:44 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.7 1998/11/13 02:35:05 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -394,6 +394,13 @@ void add_rule(object(rule) r)
 	}
       }
     }
+  } else {
+    /* Check if it's an operator */
+    foreach(r->symbols, symbol) {
+      if (operator_priority[symbol]) {
+	r->pri = operator_priority[symbol];
+      }
+    }
   }
 
   /* The info calculated from this point is not at the moment used
@@ -698,7 +705,7 @@ static private void handle_follow_conflicts()
   for (int index = 0; index < s_q->tail; index++) {
     foreach (s_q->arr[index]->items, object(item) i) {
       if (!i->number) {
-	traverse_items(i, shift_conflict);
+	traverse_items(i, follow_conflict);
       }
     }
   }
@@ -786,15 +793,14 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 	if (i->direct_lookahead[symbol]) {
 	  /* Reduction */
 	  reduce_count++;
-	  /* ******************* BUGGY! *********************
-	  if (i->r->priority) {
-	    reduce_pri = i->r->pri;
+	  if (pri = i->r->pri) {
+	    if (!reduce_pri || (pri->value > reduce_pri->value)) {
+	      reduce_pri = pri;
+	    }
 	  } else {
-	  */
 	    only_operators = 0;
-	    /*
 	  }
-	  */
+
 	  if ((!min_rule) || (i->r->number < min_rule->number)) {
 	    min_rule = i->r;
 	  }
@@ -823,21 +829,21 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
       foreach (state->items, object(item) i) {
 	if (i->offset == sizeof(i->r->symbols)) {
 	  if (i->direct_lookahead[symbol]) {
-	    /* *************************** BUGGY PRIORITY HANDLING ******
-	    if (i->r->pri->value < pri->value) {
+	    object(priority) new_pri;
+	    if ((new_pri = i->r->pri)->value < pri->value) {
 	      if (verbose) {
 		werror(sprintf("Ignoring reduction of item\n%s\n"
 			       "on lookahead %s (Priority %d < %d)\n",
 			       item_to_string(i),
 			       symbol_to_string(symbol),
-			       i->r->pri->value, pri->value));
+			       new_pri->value, pri->value));
 	      }
 	      i->direct_lookahead[symbol] = 0;
 	      if (!sizeof(indices(i->direct_lookahead))) {
 		i->direct_lookahead = (<>);
 	      }
-	    } else */ if ((pri->assoc >= 0) &&
-		       (shift_pri->value == pri->value)) {
+	    } else if ((pri->assoc >= 0) &&
+			    (shift_pri->value == pri->value)) {
 	      if (verbose) {
 		werror(sprintf("Ignoring reduction of item\n%s\n"
 			       "on lookahead %s (Right associative)\n",
@@ -860,7 +866,6 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 	  } else if (i->r->symbols[i->offset] == symbol) {
 	    /* Shift */
 	    if (shift_pri->value < pri->value) {
-	      /************* BUGGY PRIORITY HANDLING ***********
 	      if (verbose) {
 		werror(sprintf("Ignoring shift on item\n%s\n"
 			       "on lookahead %s (Priority %d < %d)\n",
@@ -868,7 +873,6 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
 			       symbol_to_string(symbol),
 			       i->r->pri->value, pri->value));
 	      }
-	      */
 	      i->direct_lookahead = (<>);
 	    } else if ((pri->assoc <= 0) &&
 		       (reduce_pri->value == pri->value)) {
@@ -982,16 +986,20 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
       if (reduce_count > 1) {
 	if (shift_count) {
 	  if (only_operators) {
-	    werror(sprintf("Repaired Shift-Reduce-Reduce conflict on %s\n",
-			   symbol_to_string(symbol)));
+	    if (verbose) {
+	      werror(sprintf("Repaired Shift-Reduce-Reduce conflict on %s\n",
+			     symbol_to_string(symbol)));
+	    }
 	  } else {
 	    werror(sprintf("Warning: Repaired Shift-Reduce-Reduce conflict on %s\n",
 			   symbol_to_string(symbol)));
 	  }
 	} else {
 	  if (only_operators) {
-	    werror(sprintf("Repaired Reduce-Reduce conflict on %s\n",
-			   symbol_to_string(symbol)));
+	    if (verbose) {
+	      werror(sprintf("Repaired Reduce-Reduce conflict on %s\n",
+			     symbol_to_string(symbol)));
+	    }
 	  } else {
 	    werror(sprintf("Warning: Repaired Reduce-Reduce conflict on %s\n",
 			   symbol_to_string(symbol)));
@@ -1000,21 +1008,27 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
       } else if (reduce_count) {
 	if (shift_count) {
 	  if (only_operators) {
-	    werror(sprintf("Repaired Shift-Reduce conflict on %s\n",
-			   symbol_to_string(symbol)));
+	    if (verbose) {
+	      werror(sprintf("Repaired Shift-Reduce conflict on %s\n",
+			     symbol_to_string(symbol)));
+	    }
 	  } else {
 	    werror(sprintf("Warning: Repaired Shift-Reduce conflict on %s\n",
 			   symbol_to_string(symbol)));
 	  }
 	} else {
 	  /* No conflict */
-	  werror(sprintf("No conflict on symbol %s (Plain REDUCE)\n",
-			 symbol_to_string(symbol)));
+	  if (verbose) {
+	    werror(sprintf("No conflict on symbol %s (Plain REDUCE)\n",
+			   symbol_to_string(symbol)));
+	  }
 	}
       } else {
 	/* No conflict */
-	werror(sprintf("No conflict on symbol %s (SHIFT)\n",
-		       symbol_to_string(symbol)));
+	if (verbose) {
+	  werror(sprintf("No conflict on symbol %s (SHIFT)\n",
+			 symbol_to_string(symbol)));
+	}
       }
 	      
     } else {
@@ -1051,6 +1065,8 @@ int compile()
 
   /* First make LR(0) states */
 
+  werror(sprintf("LR0: %d\n", gauge {
+
   while (state = s_q->next()) {
 
     if (verbose) {
@@ -1064,12 +1080,16 @@ int compile()
     }
   }
 
+  }));
+
   /* Compute nullables */
   /* Done during add_rule */
   if (verbose) {
     werror(sprintf("Nullable nonterminals: (< %s >)\n",
 		   map(indices(nullable), symbol_to_string) * ", "));
   }
+
+  werror(sprintf("Master items: %d\n", gauge {
 
   /* Mark Transition and Reduction master items */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1087,7 +1107,11 @@ int compile()
     }
   }
 
+  }));
+
   /* Probably OK so far */
+
+  werror(sprintf("LA sets: %d\n", gauge {
 
   /* Calculate look-ahead sets (DR and relation) */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1117,8 +1141,16 @@ int compile()
     }
   }
 
+  }));
+
+  werror(sprintf("Handle shift: %d\n", gauge {
+
   /* Handle SHIFT-conflicts */
   handle_shift_conflicts();
+
+  }));
+
+  werror(sprintf("Check shift: %d\n", gauge {
 
   /* Check the shift sets */
   /* (Is this needed?)
@@ -1133,6 +1165,10 @@ int compile()
       }
     }
   }
+
+  }));
+
+  werror(sprintf("Lookback sets: %d\n", gauge {
 
   /* Compute lookback-sets */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1174,8 +1210,16 @@ int compile()
     }
   }
 
+  }));
+
+  werror(sprintf("Handle follow: %d\n", gauge {
+
   /* Handle follow-conflicts */
   handle_follow_conflicts();
+
+  }));
+
+  werror(sprintf("Compute LA: %d\n", gauge {
 
   /* Compute the lookahead (LA) */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1194,7 +1238,11 @@ int compile()
     }
   }
 
+  }));
+
   /* Probably OK from this point onward */
+
+  werror(sprintf("Check conflicts: %d\n", gauge {
 
   /* Check for conflicts */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1225,12 +1273,19 @@ int compile()
     }
     if (sizeof(conflicts)) {
       /* Repair conflicts */
+      // int ov = verbose;
+      // verbose = 1;
       error = repair(state, conflicts);
+      // verbose = ov;
     } else if (verbose) {
       werror(sprintf("No conflicts in state:\n%s\n",
 		     state_to_string(s_q->arr[index])));
     }
   }
+
+  }));
+
+  werror(sprintf("Compile actions: %d\n", gauge {
 
   /* Compile action tables */
   for (int index = 0; index < s_q->tail; index++) {
@@ -1250,6 +1305,10 @@ int compile()
     }
   }
   start_state = s_q->arr[0];
+
+  }));
+
+  werror("DONE\n");
 
   return (error);
 }
