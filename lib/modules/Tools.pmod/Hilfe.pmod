@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.115 2004/04/25 15:26:24 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.116 2004/05/13 09:56:23 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -907,9 +907,9 @@ private class Expression {
 	  if( t=="(" ) plevel++;
 	  if( t==")" ) plevel--;
 	  if( !plevel ) {
-	    position++;
-	    t = `[](position);
-	    break;
+	    if( `[](position+1)=="|" )
+	      return endoftype(position+2);
+	    return position;
 	  }
 	  // We will not index outside the array,
 	  // since "|" can't be the last entry.
