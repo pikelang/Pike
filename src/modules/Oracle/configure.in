@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.19 2000/04/05 22:29:33 hubbe Exp $
+# $Id: configure.in,v 1.20 2001/01/04 23:42:51 hubbe Exp $
 #
 # Configure script for the oracle module
 #
@@ -14,6 +14,14 @@ ORACLE_LIBS=""
 AC_ARG_WITH(oracle,  [  --without-oracle       no support for the Oracle databases],[],[with_oracle=yes])
 
 if test x$with_oracle = xyes; then
+
+  AC_MSG_CHECKING(if this is HP-UX)
+  if test "x$pike_cv_sys_os" = "xHP-UX"; then
+    AC_MSG_RESULT(yes - disabling dynamic loading for this module)
+    dynamic_module_makefile="$static_module_makefile"
+  else
+    AC_MSG_RESULT(no)
+  fi
 
   AC_MSG_CHECKING(if \$ORACLE_HOME is set)
 
@@ -69,33 +77,39 @@ if test x$with_oracle = xyes; then
 
   echo no > conftest
       
-  if test x"$pike_cv_oracle_oracle_home" != xno && \
-      test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
-            -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a"; then
-
-    echo "$pike_cv_oracle_oracle_home/lib" > conftest
-
+  if test "x$pike_cv_sys_os" = "xWindows_NT"; then
+    if test x"$pike_cv_oracle_oracle_home" = xno; then :; else
+      echo "$pike_cv_oracle_oracle_home/oci/lib/msvc" > conftest
+    fi
   else
-    if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
+    if test x"$pike_cv_oracle_oracle_home" != xno && \
+  	test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
+  	      -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a"; then
 
-      sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-        if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o -f "$dir/lib/libcommon8.a"; then
-	  if test x"$pike_cv_oracle_oracle_home" = xno; then
-            AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
-	  else
-	    :
-	  fi
-	  if test x"$pike_cv_oracle_oracle_sid" = xno; then
-            AC_DEFINE_UNQUOTED(ORACLE_SID, "${sid}")
-	  else
-	    :
-	  fi
- 	  echo "$dir/lib" > conftest
-	  break
-        else
-	  :
-        fi
-      done
+      echo "$pike_cv_oracle_oracle_home/lib" > conftest
+
+    else
+      if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
+
+        sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
+          if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o -f "$dir/lib/libcommon8.a"; then
+  	    if test x"$pike_cv_oracle_oracle_home" = xno; then
+  	      AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
+  	    else
+  	      :
+  	    fi
+  	    if test x"$pike_cv_oracle_oracle_sid" = xno; then
+  	      AC_DEFINE_UNQUOTED(ORACLE_SID, "${sid}")
+  	    else
+  	      :
+  	    fi
+  	    echo "$dir/lib" > conftest
+  	    break
+  	  else
+  	    :
+  	  fi
+  	done
+      fi
     fi
   fi
 
@@ -107,21 +121,28 @@ if test x$with_oracle = xyes; then
 
   echo no > conftest
 
-  if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/rdbms/demo/ocidfn.h"; then
-
-    echo "$pike_cv_oracle_oracle_home" > conftest
-
+  if test "x$pike_cv_sys_os" = "xWindows_NT"; then
+    if test x"$pike_cv_oracle_oracle_home" = xno; then :; else
+      echo "$pike_cv_oracle_oracle_home" > conftest
+    fi
   else
-    if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
-      
-      sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-        if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
-	  echo "$dir" > conftest
-	  break
-        else
-	  :
-        fi
-      done
+    if test x"$pike_cv_oracle_oracle_home" != xno -a \
+      -f "$pike_cv_oracle_oracle_home/rdbms/demo/ocidfn.h"; then
+
+      echo "$pike_cv_oracle_oracle_home" > conftest
+
+    else
+      if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
+  	
+  	sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
+  	  if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
+  	    echo "$dir" > conftest
+  	    break
+  	  else
+  	    :
+  	  fi
+  	done
+      fi
     fi
   fi
 
@@ -135,7 +156,8 @@ if test x$with_oracle = xyes; then
 
     echo no > conftest
 
-    if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist"; then
+    if test x"$pike_cv_oracle_oracle_home" != xno -a \
+        -f "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist"; then
 
       echo "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist" > conftest
 
@@ -167,6 +189,54 @@ if test x$with_oracle = xyes; then
   rm -f conftest
   AC_CHECK_LIB(aio, aioread, [oracle_aio=-laio], [oracle_aio=""])
 
+  if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :;
+  else
+
+    CPPFLAGS="-I$oracle_include_dir/oci/include -I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/rdbms/public/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public ${CPPFLAGS}"
+    LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
+
+    if test "x$pike_cv_sys_os" = "xWindows_NT"; then
+      ORACLE_LIBS="-loci"
+    else
+      if test -f "$oracle_lib_dir/libcommon8.a"; then
+        ORACLE_LIBS="-lclntsh"
+      else
+        if test -f "$oracle_lib_dir/libcore4.a"; then
+          ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
+        else
+          ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+	fi
+      fi
+    fi
+
+    AC_CHECK_HEADERS(oci.h ocidfn.h ociapr.h)
+
+    OLDLIBS=LIBS
+    LIBS="$ORACLE_LIBS $LIBS"
+
+    AC_MSG_CHECKING(for working Oracle libs)
+    AC_CACHE_VAL(pike_cv_working_oracle,[
+      AC_TRY_COMPILE([
+#ifdef HAVE_OCI_H
+#include <oci.h>
+#else /* !HAVE_OCI_H */
+#include <ocidfn.h>
+#include <ociapr.h>
+#endif /* HAVE_OCI_H */
+],[
+  OCIInitialize(OCI_DEFAULT,0,0,0,0);
+],pike_cv_working_oracle=yes,pike_cv_working_oracle=no)
+    ])
+    AC_MSG_RESULT($pike_cv_working_oracle)
+    if test x$pike_cv_working_oracle = xyes ; then
+      AC_DEFINE(HAVE_ORACLE)
+      LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
+    else
+      ORACLE_LIBS=""
+      LIBS="$OLDLIBS"
+    fi
+  fi
+
   EXTRALDFLAGS=""
 
   AC_MSG_CHECKING(if ld supports -Bsymbolic)
@@ -176,7 +246,7 @@ if test x$with_oracle = xyes; then
 int foo(){ return 0; }
 EOF
     if AC_TRY_EVAL(ac_compile); then
-      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -Bsymbolic]); then
+      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -Bsymbolic $LIBS]); then
         if test -f conftest2.o; then
           pike_cv_oracle_ld_bsymbolic=yes
 	else
@@ -210,11 +280,11 @@ EOF
       dnl  Some ld:s interpret -znodefs as "-z -n -o defs".
       dnl  Check for such ld:s.
 
-      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -zoconftest3.o]) && \
+      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -zoconftest3.o $LIBS]) && \
 	  test -f conftest3.o; then
 	:
       else
-        if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -znodefs]); then
+        if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -znodefs $LIBS]); then
           if test -f conftest2.o; then
             pike_cv_oracle_ld_znodefs=yes
 	  else
@@ -236,41 +306,6 @@ EOF
     EXTRALDFLAGS="$EXTRALDFLAGS -znodefs"
   else
     :
-  fi
-
-  if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
-
-    CPPFLAGS="-I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public -I ${CPPFLAGS}"
-    LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
-
-    if test -f "$oracle_lib_dir/libcommon8.a"; then
-      ORACLE_LIBS="-lclntsh"
-    else
-      if test -f "$oracle_lib_dir/libcore4.a"; then
-        ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
-      else
-        ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
-      fi
-    fi
-
-    OLDLIBS=LIBS
-    LIBS="$LIBS $ORACLE_LIBS"
-
-    AC_MSG_CHECKING(for working Oracle libs)
-    AC_CACHE_VAL(pike_cv_working_oracle,[
-      AC_TRY_COMPILE([
-#include <oci.h>
-],[
-  OCIInitialize(OCI_DEFAULT,0,0,0,0);
-],pike_cv_working_oracle=yes,pike_cv_working_oracle=no)
-    ])
-    AC_MSG_RESULT($pike_cv_working_oracle)
-    if test x$pike_cv_working_oracle = xyes ; then
-      AC_DEFINE(HAVE_ORACLE)
-      LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
-    else
-      ORACLE_LIBS=""
-    fi
   fi
 
 else
