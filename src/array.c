@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.80 2000/08/10 17:41:09 grubba Exp $");
+RCSID("$Id: array.c,v 1.81 2000/08/15 11:09:06 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -443,9 +443,11 @@ PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
  * Search for in svalue in an array.
  * return the index if found, -1 otherwise
  */
-PMOD_EXPORT INT32 array_search(struct array *v, struct svalue *s,INT32 start)
+PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
+				   ptrdiff_t start)
 {
-  INT32 e;
+  ptrdiff_t e;
+
 #ifdef PIKE_DEBUG
   if(start<0)
     fatal("Start of find_index is less than zero.\n");

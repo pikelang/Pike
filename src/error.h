@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.46 2000/07/28 17:16:54 hubbe Exp $
+ * $Id: error.h,v 1.47 2000/08/15 11:05:19 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -217,7 +217,7 @@ void resource_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *resource_type,
-  long howmuch,
+  size_t howmuch,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
 void permission_error(
   char *func,

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.102 2000/08/14 20:19:20 grubba Exp $
+ * $Id: program.h,v 1.103 2000/08/15 11:14:37 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -485,7 +485,7 @@ void count_memory_in_programs(INT32 *num_, INT32 *size_);
 void push_compiler_frame(int lexical_scope);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
-int low_get_storage(struct program *o, struct program *p);
+ptrdiff_t low_get_storage(struct program *o, struct program *p);
 char *get_storage(struct object *o, struct program *p);
 struct program *low_program_from_function(struct program *p,
 					  INT32 i);

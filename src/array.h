@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.25 2000/08/10 17:41:48 grubba Exp $
+ * $Id: array.h,v 1.26 2000/08/15 11:09:37 grubba Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -103,7 +103,8 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
 PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size);
 PMOD_EXPORT struct array *array_shrink(struct array *v,INT32 size);
 PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index);
-PMOD_EXPORT INT32 array_search(struct array *v, struct svalue *s,INT32 start);
+PMOD_EXPORT ptrdiff_t array_search(struct array *v, struct svalue *s,
+				   ptrdiff_t start);
 PMOD_EXPORT struct array *slice_array(struct array *v,INT32 start,INT32 end);
 PMOD_EXPORT struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end);
 PMOD_EXPORT struct array *copy_array(struct array *v);

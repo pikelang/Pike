@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.296 2000/08/14 17:41:10 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.297 2000/08/15 11:07:32 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1700,7 +1700,7 @@ PMOD_EXPORT void f_indices(INT32 args)
     {
       ITEM(a)[size].type=T_INT;
       ITEM(a)[size].subtype=NUMBER_NUMBER;
-      ITEM(a)[size].u.integer=size;
+      ITEM(a)[size].u.integer = DO_NOT_WARN((INT_TYPE)size);
     }
     break;
 

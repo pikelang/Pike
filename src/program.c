@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.259 2000/08/14 20:19:20 grubba Exp $");
+RCSID("$Id: program.c,v 1.260 2000/08/15 11:14:20 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1002,7 +1002,8 @@ void dump_program_desc(struct program *p)
     fprintf(stderr,"parent_offset: %d\n",p->inherits[e].parent_offset);
 
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
-    fprintf(stderr,"storage_offset: %d\n",p->inherits[e].storage_offset);
+    fprintf(stderr,"storage_offset: %ld\n",
+	    DO_NOT_WARN((long)p->inherits[e].storage_offset));
 
     for(d=0;d<p->inherits[e].inherit_level;d++) fprintf(stderr,"  ");
     fprintf(stderr,"parent: %p\n",p->inherits[e].parent);
@@ -1226,12 +1227,12 @@ void check_program(struct program *p)
 
     if( !(i->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT)))
     {
-      unsigned int q, size;
+      size_t q, size;
       /* Variable */
-      int offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
+      ptrdiff_t offset = INHERIT_FROM_INT(p, e)->storage_offset+i->func.offset;
       size=sizeof_variable(i->run_time_type);
 
-      if((offset+size > (unsigned int)p->storage_needed) || offset<0)
+      if((offset+size > (size_t)p->storage_needed) || offset<0)
 	fatal("Variable outside storage! (%s)\n",i->name->str);
 
       for(q=0;q<size;q++)
@@ -1434,7 +1435,7 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
     fatal("add_storage failed horribly(2) %ld %ld %ld %ld!\n",
 	  DO_NOT_WARN((long)offset),
 	  (long)0 /* + OFFSETOF(object,storage) */,
-	  (long)modulo_orig,
+	  DO_NOT_WARN((long)modulo_orig),
 	  DO_NOT_WARN((long)alignment));
 
 #endif
@@ -3863,10 +3864,12 @@ static struct get_storage_cache
   INT32 oid, pid, offset;
 } get_storage_cache[GET_STORAGE_CACHE_SIZE];
 
-int low_get_storage(struct program *o, struct program *p)
+ptrdiff_t low_get_storage(struct program *o, struct program *p)
 {
-  INT32 oid,pid, offset;
+  INT32 oid, pid;
+  ptrdiff_t offset;
   unsigned INT32 hval;
+
   if(!o) return 0;
   oid=o->id;
   pid=p->id;
