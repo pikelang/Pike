@@ -1,5 +1,5 @@
 /*
- * $Id: pikecode.h,v 1.6 2002/04/08 00:18:56 mast Exp $
+ * $Id: pikecode.h,v 1.7 2002/05/10 15:43:33 grubba Exp $
  *
  * Generic headerfile for the code-generator.
  *
@@ -37,5 +37,9 @@ void ins_f_byte_with_2_args(unsigned int a,
 #else
 #include "code/bytecode.h"
 #endif
+
+#ifndef CHECK_RELOC
+#define CHECK_RELOC(REL, PROG_SIZE)
+#endif /* !CHECK_RELOC */
 
 #endif /* CODE_PIKECODE_H */
