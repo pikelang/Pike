@@ -1,5 +1,5 @@
 /*
- * $Id: Types.pmod,v 1.18 2002/03/17 18:23:58 nilsson Exp $
+ * $Id: Types.pmod,v 1.19 2002/10/15 15:33:19 grubba Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
@@ -262,7 +262,7 @@ class asn1_integer
       
       if (value < 0)
       {
-	object n = value + Gmp.pow(256, (- value)->size(256));
+	object n = value + pow(256, (- value)->size(256));
 	s = n->digits(256);
 	if (!(s[0] & 0x80))
 	  s = "\377" + s;
@@ -279,7 +279,7 @@ class asn1_integer
       record_der_contents(contents);
       value = Gmp.mpz(contents, 256);
       if (contents[0] & 0x80)  /* Negative */
-	value -= Gmp.pow(256, strlen(contents));
+	value -= pow(256, strlen(contents));
       return this_object();
     }
   
