@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.128 1999/04/13 12:32:22 mirar Exp $ */
+/* $Id: image.c,v 1.129 1999/04/15 02:40:47 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.128 1999/04/13 12:32:22 mirar Exp $
+**!	$Id: image.c,v 1.129 1999/04/15 02:40:47 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.128 1999/04/13 12:32:22 mirar Exp $");
+RCSID("$Id: image.c,v 1.129 1999/04/15 02:40:47 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3540,6 +3540,8 @@ extern void exit_image_ilbm(void);
 extern void init_image_ilbm(void);
 extern void init_image_xcf(void);
 extern void exit_image_xcf(void);
+extern void init_image_psd(void);
+extern void exit_image_psd(void);
 extern void init_image_hrz(void);
 extern void exit_image_hrz(void);
 extern void init_image_avs(void);
@@ -3555,6 +3557,7 @@ static struct pike_string
    *magic_XFace,
    *magic_XPM,
    *magic_XCF,
+   *magic_PSD,
    *magic_TIFF,
    *magic_PNG,
    *magic_PS,
@@ -3597,6 +3600,14 @@ static void image_index_magic(INT32 args)
    {
       pop_stack();
       push_string(make_shared_string("_Image_XCF"));
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      return;
+   }
+   else if (sp[-1].u.string==magic_PSD)
+   {
+      pop_stack();
+      push_string(make_shared_string("_Image_PSD"));
       push_int(0);
       SAFE_APPLY_MASTER("resolv",2);
       return;
@@ -3650,6 +3661,7 @@ void pike_module_init(void)
    magic_XFace=make_shared_string("XFace");
    magic_XPM=make_shared_string("XPM");
    magic_XCF=make_shared_string("XCF");
+   magic_PSD=make_shared_string("PSD");
    magic_TIFF=make_shared_string("TIFF");
 
    image_noise_init();
@@ -3984,6 +3996,7 @@ void pike_module_init(void)
    init_image__xpm();
    init_image_ilbm();
    init_image_xcf();
+   init_image_psd();
    init_image_x();
    init_image_hrz();
    init_image_avs();
@@ -4011,6 +4024,7 @@ void pike_module_exit(void)
    exit_image_xbm();
    exit_image_ilbm();
    exit_image_xcf();
+   exit_image_psd();
    exit_image_hrz();
    exit_image_avs();
    if (png_object) 
@@ -4026,6 +4040,7 @@ void pike_module_exit(void)
    free_string(magic_XFace);
    free_string(magic_XPM);
    free_string(magic_XCF);
+   free_string(magic_PSD);
    free_string(magic_TIFF);
    free_string(magic_TTF);
    free_string(magic_PS);
