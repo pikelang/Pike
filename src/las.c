@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.162 2000/02/09 23:49:16 hubbe Exp $");
+RCSID("$Id: las.c,v 1.163 2000/02/15 02:41:26 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1496,6 +1496,7 @@ int is_const(node *n)
   if(!n) return 1;
   return !(n->tree_info & (OPT_SIDE_EFFECT |
 			   OPT_NOT_CONST |
+			   OPT_EXTERNAL_DEPEND |
 			   OPT_ASSIGNMENT |
 			   OPT_CASE |
 			   OPT_CONTINUE |
