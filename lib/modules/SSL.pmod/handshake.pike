@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.5 1997/05/31 22:03:56 grubba Exp $
+/* $Id: handshake.pike,v 1.6 1998/02/11 05:19:05 nisse Exp $
  *
  */
 
@@ -172,6 +172,10 @@ object finished_packet(string sender)
 string server_derive_master_secret(string data)
 {
   string res = "";
+#ifdef SSL3_DEBUG
+  werror(sprintf("server_derive_master_secret: ke_method %d\n",
+		 session->ke_method));
+#endif
   switch(session->ke_method)
   {
   default:
@@ -181,9 +185,13 @@ string server_derive_master_secret(string data)
   case KE_rsa:
    {
      /* Decrypt the pre_master_secret */
+#ifdef SSL3_DEBUG
+     werror(sprintf("encrypted premaster_secret: '%s'\n", data));
+#endif
+     // trace(1);
      string s = context->rsa->decrypt(data);
 #ifdef SSL3_DEBUG
-//     werror(sprintf("premaster_secret: '%s'\n", s));
+     werror(sprintf("premaster_secret: '%O'\n", s));
 #endif
      if (!s || (strlen(s) != 48) || (s[0] != 3))
        return 0;
@@ -399,7 +407,7 @@ int handle_handshake(int type, string data, string raw)
       return -1;
     case HANDSHAKE_client_key_exchange:
 #ifdef SSL3_DEBUG
-//      werror("client_key_exchange\n");
+      werror("client_key_exchange\n");
 #endif
       if (certificate_state == CERT_requested)
       { /* Certificate should be sent before key exchange message */
@@ -410,17 +418,21 @@ int handle_handshake(int type, string data, string raw)
       }
       if (!(session->master_secret = server_derive_master_secret(data)))
       {
+#ifdef SSL3_DEBUG
+	werror("server_derive_master_secret failed!\n");
+#endif
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
 			  "SSL.session->handle_handshake: unexpected message\n",
 			  backtrace()));
 	return -1;
       }
+      // trace(1);
       array res = session->new_server_states(other_random, my_random);
       pending_read_state = res[0];
       pending_write_state = res[1];
 
 #ifdef SSL3_DEBUG
-//      werror(sprintf("certificate_state: %d\n", certificate_state));
+      werror(sprintf("certificate_state: %d\n", certificate_state));
 #endif
       if (certificate_state != CERT_received)
       {

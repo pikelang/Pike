@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.7 1998/01/20 16:11:53 nisse Exp $
+/* $Id: cipher.pike,v 1.8 1998/02/11 05:19:04 nisse Exp $
  *
  */
 
@@ -35,9 +35,17 @@ class mac_sha
 
   string hash_raw(string data)
   {
+#ifdef SSL3_DEBUG
+    werror(sprintf("SSL.cipher: hash_raw('%s')\n", data));
+#endif
+    
     object h = algorithm();
-    h->update(data);
-    return h->digest();
+    string res = h->update(data)->digest();
+#ifdef SSL3_DEBUG
+    werror(sprintf("SSL.cipher: hash_raw->'%s'\n",res));
+#endif
+    
+    return res;
   }
   
   string hash(object packet, object seq_num)
