@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.35 2000/02/28 04:20:18 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.36 2000/03/01 20:30:10 hubbe Exp $ */
 
 import Stdio;
 
@@ -136,6 +136,7 @@ int main(int argc, string *argv)
 	  int cnt=0;
 	  int pid=(int)opt[1];
 	  int last_time=time();
+	  int exit_quietly;
 #ifdef WATCHDOG_PIPE
 	  thread_create(lambda() {
 	    object o=Stdio.File("stdin");
@@ -145,7 +146,7 @@ int main(int argc, string *argv)
                 last_time=time();
               }
 //	    werror("[WATCHDOG] exiting.\n");
-	    exit(1);
+	    exit_quietly=1;
 	  });
 #endif
 
@@ -166,8 +167,9 @@ int main(int argc, string *argv)
 
 	  while(1)
 	  {
-	    sleep(30);
-#ifdef WATCHDOG_SIGNAL
+	    sleep(10);
+	    if(exit_quietly) exit(0);
+#ifndef __NT__
 	    if(!kill(pid, 0)) exit(0);
 #endif
 //	    werror("[WATCHDOG] t=%d\n",time()-last_time);
