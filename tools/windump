@@ -1,0 +1,683 @@
+#!/usr/local/bin/pike
+
+mapping machine_table = ([
+  0:"Unknown",
+  0x14c:"Intel x86",
+  ]);
+
+class Bitfield
+{
+  array(string) names;
+
+  string desc(int num)
+  {
+    int x;
+    array(string) ret=({});
+    while(num && x<sizeof(names))
+    {
+      if(1 & num)
+	ret+=({ names[x] });
+      x++;
+      num>>=1;
+      num&=0x7fffffff;
+    }
+    if(!sizeof(ret) || num)
+      ret+=({ sprintf("%x",num << x) });
+
+    return ret*" | ";
+  }
+  void create(string ... n)
+    {
+      names=n;
+    }
+}
+
+Bitfield character_descriptor=Bitfield(
+  "RELOCS_STRIPPED",
+  "EXECUTABLE_IMAGE",
+  "LINE_NUMS_STRIPPED",
+  "LOCAL_SYMS_STRIPPED",
+  "AGGRESSIVE_WS_TRIM",
+  "LARGE_ADDRESS_AWARE",
+  "16BIT_MACHINE",
+  "BYTES_REVERSED_LO",
+  "32BIT_MACHINE",
+  "DEBUG_STRIPPED",
+  "REMOVABLE_RUN_FROM_SWAP",
+  "FILE_SYSTEM",
+  "DLL",
+  "UP_SYSTE_MONLY",
+  "BYTES_REVERSED_HI" );
+
+Bitfield section_character_descriptor=Bitfield(
+  "DSECT",
+  "NOLOAD",
+  "GROUP",
+  "TYPE_NO_PAD",
+  "*COPY",
+  "*CODE",
+  "INITED_DATA",
+  "UNINITED_DATA",
+  "LNK_OTHER",
+  "LNK_INFO",
+  "TYPE_OVER",
+  "LNK_REMOVE",
+  "LNK_COMDAT",
+  "-",
+  "-",
+  "MEM_FARDATA",
+  "*MEM_PURGEABLE",
+  "*MEM_16BIT",
+  "*MEM_LOCKED",
+  "*MEM_PRELOAD",
+  "ALIGN_1",
+  "ALIGN_2",
+  "ALIGN_4",
+  "ALIGN_8",
+  "LNK_NRELOC_OVFL",
+  "MEM_DISCARDABLE",
+  "MEM_NOT_CACHED",
+  "MEM_NOT_PAGED",
+  "MEM_SHARED",
+  "MEM_EXECUTE",
+  "MEM_READ",
+  "MEM_WRITE",
+);
+
+class dumpfile
+{
+  string data;
+  int base;
+
+  int stringtable;
+  int symboltable, numsymbols;
+  int sections, numsections;
+
+  void hexdump(int pos, int len)
+    {
+      string x=range(pos,len);
+      foreach(x/8,string line)
+	{
+	  write("%06x: %{%02x %} %O\n",pos,values(line),line);
+	  pos+=strlen(x);
+	}
+      string line=x%8;
+      write("%06x: %{%02x %} %s %O\n",
+	    pos,
+	    values(line),
+	    "   "*(8-strlen(line)),
+	    line);
+    }
+
+  int i4(int pos)
+    {
+      pos+=base;
+      return data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24);
+    }
+
+  int i8(int pos)
+    {
+      pos+=base;
+      return data[pos] | (data[pos+1]<<8) | (data[pos+2]<<16) | (data[pos+3]<<24) |
+	(data[pos+4]<<32) | (data[pos+5]<<40) | (data[pos+6]<<48) | (data[pos+7]<<56);
+    
+    }
+
+  int i1(int pos)
+    {
+      pos+=base;
+      return data[pos];
+    }
+
+  int i2(int pos)
+    {
+      pos+=base;
+      return data[pos] | (data[pos+1]<<8);
+    }
+
+  string nulltermstring(int p)
+    {
+      p+=base;
+      int end=search(data,"\0",p);
+      return data[p..end-1];
+    }
+
+  string range(int from, int len)
+    {
+      from+=base;
+      if(from > sizeof(data)) return "";
+      return data[from..from+len-1];
+    }
+
+  string getCOFFstring(int pos)
+    {
+      if(!i4(pos)) 
+      {
+	return nulltermstring(stringtable + i4(pos+4));
+      }
+      return ( range(pos,8)/"\0" )[0];
+    }
+
+  string decodeRelocType(int t)
+    {
+      switch(t)
+      {
+	case 0: return "absolute";
+	case 1: return "dir16";
+	case 2: return "rel16";
+	case 6: return "dir32";
+	case 7: return "dir32nb";
+	case 9: return "seg12";
+	case 10: return "sect";
+	case 11: return "secrel";
+	case 20: return "rel32";
+	default: return sprintf("<%d>",t);
+      }
+    }
+
+
+  void dumpRelocs(int pos, int num_relocs)
+    {
+      for(int e=0;e<num_relocs;e++)
+      {
+	write("  [ %08x = symbol(%5d, %8s) = %s]\n",
+	      i4(pos),
+	      i4(pos+4),
+	      decodeRelocType(i2(pos+8)),
+	      getsymbolname(i4(pos+4)));
+	pos+=10;
+      }
+    }
+
+  int translatevaddr(int addr)
+    {
+      int pos=sections;
+      for(int e=0;e<numsections;e++)
+      {
+	int start=i4(pos+12);
+	if(addr >= start && addr < start + i4(pos+8))
+	{
+//	  write("--start=%d-%d-sect=%d--\n",start,i4(pos+20),e);
+	  return addr - start + i4(pos+20);
+	}
+	pos+=40;
+      }
+      return -1;
+    }
+
+
+  void dumpSECTS()
+    {
+      int pos=sections;
+      write("\n-=SECTIONS=-\n");
+      for(int e=0;e<numsections;e++)
+      {
+	string caracter;
+	write("\n");
+	write("Section number     : %d\n",e);
+	write("Name               : %s\n",getCOFFstring(pos));
+	write("Virtual Size       : %x\n",i4(pos+8));
+	write("Virtual Addres     : %x\n",i4(pos+12));
+	write("RAW data size      : %x\n",i4(pos+16));
+	write("Ptr2RawData        : %x\n",i4(pos+20));
+	write("Ptr2Relocs         : %x\n",i4(pos+24));
+	write("Ptr2Linenums       : %x\n",i4(pos+28));
+	write("num relocs         : %x\n",i2(pos+32));
+	write("num linenums       : %x\n",i2(pos+34));
+	write("characteristics    : %s\n",
+	      caracter=section_character_descriptor->desc(i4(pos+36)));
+
+	if(i4(pos+24))
+	  dumpRelocs(i4(pos+24), i2(pos+32));
+
+	if(search(caracter,"LNK_INFO")!=-1)
+	  write("%O\n",range(i4(pos+20),i4(pos+16)));
+	else
+	  hexdump(i4(pos+20),min(i4(pos+16),64));
+	pos+=40;
+      }
+    }
+
+  void dump_import_address_table(int x, int len, int addr)
+    {
+      while(len>0)
+      {
+	write("ADDR:             : %x\n",addr);
+	write("Attributes        : %x\n",i4(x));
+	write("PTR2NAME          : %x\n",translatevaddr(i4(x+4)));
+	write("PTR2NAME          : %x\n",i4(x+4));
+	write("PTR2NAME          : %O\n",getvirtualname(i4(x+4)));
+//	write("NAME: %O\n",
+//	      nulltermstring( translatevaddr( addr+i4(x+4) ) ));
+
+	write("Module handle     : %x\n",i4(x+8));
+	write("Delay-import addr : %x\n",i4(x+12));
+	write("Delay-import name : %x\n",i4(x+16));
+	write("Bound DIT         : %x\n",i4(x+20));
+	write("Unload DIT        : %x\n",i4(x+24));
+	write("Timestamp         : %x\n",i4(x+28));
+	write("\n");
+	
+	len-=32;
+	x+=32;
+	addr+=32;
+      }
+    }
+
+  void dumpOPT(int pos, int len)
+    {
+      if(!len) return;
+      write("\n-=OPT header=- (%d)\n",pos);
+      int rva,rvabase;
+      write("Magic               : %x\n",i2(pos));
+      write("MajorLinkerVersion  : %x\n",i1(pos+2));
+      write("MinorLinkerVersion  : %x\n",i1(pos+3));
+      write("Size of Code        : %x\n",i4(pos+4));
+      write("Size of init data   : %x\n",i4(pos+8));
+      write("Size of uninit data : %x\n",i4(pos+12));
+      write("Entry point         : %x\n",i4(pos+16));
+      write("Base of Code        : %x\n",i4(pos+20));
+      if(i2(pos) == 0x10b)
+      {
+	write("Base of Data        : %x\n",i4(pos+24));
+	write("ImageBase           : %x\n",i4(pos+28));
+      }else{
+	write("ImageBase           : %x\n",i8(pos+24));
+      }
+      if(len <= 24) return;
+      write("\n");
+      write("SectionAlignment    : %x\n",i4(pos+32));
+      write("FileAlignment       : %x\n",i4(pos+36));
+      write("OPmajor             : %x\n",i2(pos+40));
+      write("OPminor             : %x\n",i2(pos+42));
+      write("image major         : %x\n",i2(pos+44));
+      write("image minor         : %x\n",i2(pos+46));
+      write("subsys major        : %x\n",i2(pos+48));
+      write("sybsys minor        : %x\n",i2(pos+50));
+      write("ImageSize           : %x\n",i4(pos+56));
+      write("SizeofHeaders       : %x\n",i4(pos+60));
+      write("CheckSum            : %x\n",i4(pos+64));
+      write("Subsys              : %x\n",i2(pos+68));
+      write("DLL character       : %x\n",i2(pos+70));
+
+      switch(i2(pos))
+      {
+	case 0x10b:
+	  write("Stack Reserve       : %x\n",i4(pos+72));
+	  write("Stack Commit        : %x\n",i4(pos+76));
+	  write("Heap Reserve        : %x\n",i4(pos+80));
+	  write("Heap Commit         : %x\n",i4(pos+84));
+	  write("Loader flags        : %x\n",i4(pos+88));
+	  write("Num RVA             : %x\n",rva=i4(pos+92));
+	  
+	  rvabase=96;
+	  break;
+	  
+	case 0x20b:
+	  write("Cannod decode OPT PE32+ completely yet.\n");
+	  rvabase=112;
+	  break;
+
+	default:
+	  write("Odd PE32 header!.\n");
+      }
+
+      write("\n");
+      rvabase+=pos;
+      for(int e=0;e<rva;e++)
+      {
+	write("RVA[%02d=%s] = { %8x, %8x }\n",
+	      e,
+	      ({
+		"export        ",
+		  "import        ",
+		  "resource      ",
+		  "exception     ",
+		  "certificate   ",
+		  "base reloc    ",
+		  "debug         ",
+		  "architechture ",
+		  "global ptr    ",
+		  "TLS table     ",
+		  "Load Config   ",
+		  "Bound Import  ",
+		  "IAT           ",
+		  "Delay Import  ",
+		  "COM+ RT header",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  "reserved      ",
+		  })[e],i4(rvabase),i4(rvabase+4));
+
+	switch(e)
+	{
+	  case 0: /* export */
+	  {
+	    int len=i4(rvabase+4);
+	    int x=translatevaddr(i4(rvabase));
+	    write(" -= Exports =-\n");
+	    if(len)
+	    {
+
+	      write("   Flags                   : %x\n", i4(x));
+	      write("   Time / Date             : %s", ctime(i4(x+4)));
+	      write("   Major Version           : %x\n", i2(x+8));
+	      write("   Minor Version           : %x\n", i2(x+10));
+	      write("   Ordinal Base            : %x\n", i4(x+16));
+	      write("   Address Table Entries   : %x\n", i4(x+20));
+	      write("   Number of Name Pointers : %x\n", i4(x+24));
+	      write("   Export Address Table RVA: %x\n", i4(x+28));
+	      write("   Name Pointer RVA        : %x\n", i4(x+32));
+	      write("   Ordinal Table RVA       : %x\n", i4(x+36));
+	      write("\n");
+
+	      int eat=translatevaddr(i4(x+28));
+	      int enpt=translatevaddr(i4(x+32));
+	      for(int q=0;q<i4(x+20);q++)
+	      {
+		/* FIXME: eat has two formats!! */
+		write("   -->  %08x  : %s\n",
+		      i4(eat + e*4),
+		      getvirtualname(i4(enpt + q*4)));
+	      }
+	    }
+	    break;
+	  }
+	  case 1: /* import */
+	  {
+	    int len=i4(rvabase+4);
+	    int x=translatevaddr(i4(rvabase));
+
+	    write(" -= Imports =- (%d/%d=%d)\n",len,20,len/20);
+	    while(len>0)
+	    {
+	      write("   Import Lookup Table RVA : %x\n", i4(x));
+	      write("   Time / Date             : %x\n", i4(x+4));
+	      write("   Forwarder chain         : %x\n", i4(x+8));
+	      write("   Name RVA                : %s\n", getvirtualname(i4(x+12)));
+	      write("   Import Address Table    : %x\n", i4(x+16));
+	      x+=20;
+	      len-=20;
+	      write("\n");
+	    }
+	    break;
+	  }
+
+	  case 13: /* delay import */
+	  {
+	    int len=i4(rvabase+4);
+	    int x=translatevaddr(i4(rvabase));
+
+	    write(" -= Delayed Imports =-\n");
+
+	    dump_import_address_table(x, len, i4(rvabase));
+	    break;
+	  }
+
+	}
+	rvabase+=8;
+      }
+    }
+
+  string getvirtualname(int vaddr)
+    {
+      int x=translatevaddr(vaddr);
+      if(x==-1) return sprintf("<out of bounds %x>",vaddr);
+      return nulltermstring(x);
+    }
+
+  /* Symbol table stuff */
+  string decodeCOFFtypeLSB(int t)
+    {
+      switch(t)
+      {
+	case 0: return "null";
+	case 1: return "void";
+	case 2: return "char";
+	case 3: return "short";
+	case 4: return "int";
+	case 5: return "long";
+	case 6: return "float";
+	case 7: return "double";
+	case 8: return "struct";
+	case 9: return "union";
+	case 10: return "enum";
+	case 11: return "MOE";
+	case 12: return "byte";
+	case 13: return "word";
+	case 14: return "uint";
+	case 15: return "dword";
+	default: return sprintf("<%x>",t);
+      }
+    }
+
+  string decodeCOFFtype(int t)
+    {
+      switch(t >> 4)
+      {
+	case 0: return decodeCOFFtypeLSB(t);
+	case 1: return decodeCOFFtypeLSB(t & 15) + "*";
+	case 2: return decodeCOFFtypeLSB(t & 15) + "()";
+	case 3: return decodeCOFFtypeLSB(t & 15) + "[]";
+	default: return sprintf("<%x>",t);
+      }
+    }
+
+  string decodeCOFFstorageclass(int t)
+    {
+      switch(t)
+      {
+	case -1: case 255: return "End of function";
+	case 0: return "null";
+	case 1: return "automatic";
+	case 2: return "external";
+	case 3: return "static";
+	case 4: return "register";
+	case 5: return "external def";
+	case 6: return "label";
+	case 7: return "undef label";
+	case 8: return "member of struct";
+	case 9: return "argument";
+	case 10: return "struct tag";
+	case 11: return "member of union";
+	case 12: return "union tag";
+	case 13: return "type def";
+	case 14: return "undef static";
+	case 15: return "enum tag";
+	case 16: return "member of enum";
+	case 17: return "register param";
+	case 18: return "bit field";
+	case 100: return "block";
+	case 101: return "function";
+	case 102: return "end of struct";
+	case 103: return "file";
+	case 104: return "section";
+	case 105: return "weak external";
+	default: return sprintf("<%x>",t);
+      }
+    }
+
+  string getsymbolname(int x)
+    {
+      if(x >= numsymbols) return sprintf("Out of bound (%d)",x);
+      return getCOFFstring(symboltable + x * 18);
+    }
+
+  void dumpSymTable()
+    {
+      if(!symboltable) return;
+      int pos=symboltable;
+      for(int e=0;e<numsymbols;e++)
+      {
+	int aux;
+#if 1
+	write("[%5d] %08x sec:%2x  %-9s %-9s  %s (%d)\n",
+	      e,
+	      i4(pos+8),
+	      i2(pos+12),
+	      decodeCOFFtype(i2(pos+14)),
+	      decodeCOFFstorageclass(i1(pos+16)),
+	      getCOFFstring(pos),
+	      aux=i1(pos+17),
+	);
+	      
+#else
+	write("[%5d] name          : %s\n",e,getCOFFstring(pos));
+	write("[%5d] value         : %x\n",e,i4(pos+8));
+	write("[%5d] secnum        : %d\n",e,i2(pos+12));
+	write("[%5d] type          : %s\n",e,decodeCOFFtype(i2(pos+14)));
+	write("[%5d] Storage class : %s\n",e,decodeCOFFstorageclass(i1(pos+16)));
+	write("[%5d] Num Aux syms  : %x\n",e,aux=i1(pos+17));
+#endif
+	pos+=18;
+	for(int a=0;a<aux;a++)
+	{
+	  pos+=18;
+	  e++;
+	}
+      }
+    }
+
+  void dumpCOFF(int pos)
+    {
+      write("-=COFF HEADER=-\n");
+      sscanf(reverse(range(pos,20)),
+	     "%2c%2c%4c%4c%4c%2c%2c",
+	     int characteristics,
+	     int sizeofoptheader,
+	     numsymbols,
+	     symboltable,
+	     int timestamp,
+	     numsections,
+	     int machine);
+
+      write("Machine     : %s\n",machine_table[machine] || sprintf("%x",machine));
+      write("Sections    : %x\n",numsections);
+      write("Timesamp    : %s",ctime(timestamp));
+      write("Symbol Table: %x\n",symboltable);
+      write("Symbols     : %d\n",numsymbols);
+      write("Optheadsize : %x\n",sizeofoptheader);
+      write("Character   : %s\n",character_descriptor->desc(characteristics));
+
+      stringtable = symboltable + numsymbols*18;
+      sections=pos+20+sizeofoptheader;
+
+      dumpOPT(pos+20, sizeofoptheader);
+      dumpSECTS();
+      dumpSymTable();
+    }
+
+  int dumpPE(int pos)
+    {
+      write("Potential PE identifier at 0x%x ... ",pos);
+      if(range(pos,4)!="PE\0\0")
+      {
+	write("No.\n");
+	return 0;
+      } else {
+	write("Yes.\n");
+      }
+      dumpCOFF(pos+4);
+      return 1;
+    }
+
+  void dumpArchive(int pos)
+    {
+      string name;
+      int num;
+      int longnames;
+      while(pos < strlen(data))
+      {
+	num++;
+	int size = (int) range(pos+48,10);
+	name=range(pos,16);
+	if(name[0]=='/')
+	{
+	  if(num == 3)
+	  {
+	    longnames=pos+60;
+	  }
+	  else if(longnames && sscanf(name,"/%d",int longnamenum))
+	  {
+	    name=nulltermstring(longnames + longnamenum);
+	  }
+	}
+	write("\n");
+	write("# name: %s\n",name);
+	write("# date: %s",ctime( (int) range(pos+16,12) ) );
+	write("# uid : %s\n",range(pos+28,6));
+	write("# gid : %s\n",range(pos+34,6));
+	write("# mode: %s\n",range(pos+40,8));
+	write("# size: %s\n",range(pos+48,10));
+	if(name[0]!='/')
+	{
+	  write("\n");
+	  dumpfile(data, pos+60);
+	}
+	pos+=60;
+	pos+=(size+1)&~1;
+      }
+    }
+
+  void dumpImportLib()
+    {
+      sscanf(range(0,20),
+	     "%-2c%-2c%-2c%-2c%-4c%-4c%-2c%-2c",
+	     int sig1,
+	     int sig2,
+	     int version,
+	     int machine,
+	     int timestamp,
+	     int size_of_data,
+	     int ordinal,
+	     int type);
+      write("Sig1      : %x\n",sig1);
+      write("Sig2      : %x\n",sig2);
+      write("version   : %x\n",version);
+      write("Machine   : %x\n", machine);
+      write("Time      : %s",ctime(timestamp));
+      write("Ordinal   : %x\n",ordinal);
+      write("Type:     : %x\n",type);
+      write("Name      : %s\n",nulltermstring(20));
+	     
+    }
+
+  void create(string d, void|int p, void|int len)
+    {
+      base=p;
+      data=d;
+      if(!len) len=strlen(d)-base;
+
+      if(range(0,8) == "!<arch>\n")
+      {
+	write("Archive!\n");
+	dumpArchive(8);
+      }else{
+	if(!(len >= 0x40 && dumpPE(i4(0x3c))))
+	{
+	  if(i2(0) == 0 && i2(2) == 0xffff)
+	  {
+	    dumpImportLib();
+	  }else{
+	    dumpCOFF(0);
+	  }
+	}   
+      }
+    }
+}
+
+int main(int argc, array(string) argv)
+{
+  foreach(argv[1..],string file)
+    dumpfile(Stdio.read_file(file));
+  exit(0);
+}
