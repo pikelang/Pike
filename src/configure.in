@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.635 2002/10/09 10:03:16 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.636 2002/10/13 16:04:42 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -618,9 +618,11 @@ else
   :
 fi
 
-# Workaround for compiling Pike on Cygwin
+# Workaround for compiling Pike on some OS that have some clues
 case "$pike_cv_sys_os" in
    CYGWIN*)
+      # Cygwin have both Windows includes and Unix ones.
+      # Hiding them make it a somewhat Unix compliant OS.
       echo 'Cygwin host detected. Enabling workarounds...'
       # winsock.h, winbase.h, winsock2.h, windows.h, wingdi.h, windef.h
       # are part of VC api but given as headers in cygwin. We
@@ -631,6 +633,15 @@ case "$pike_cv_sys_os" in
       ac_cv_header_winsock2_h="no"
       ac_cv_header_winbase_h="no"
       ac_cv_header_windows_h="no"
+   ;;
+  FreeBSD*)
+      # FreeBSD have other naming convention for gtk-config and sdl-config
+      if test "x${GTK_CONFIG}" == "x"; then
+         GTK_CONFIG=`which gtk12-config`
+      fi
+      if test "x${SDL_CONFIG}" == "x"; then
+         SDL_CONFIG=`which sdl11-config`
+      fi
    ;;
 esac
 
@@ -3876,8 +3887,12 @@ MY_CHECK_FUNCTION(frexp,
 #############################################################################
 MY_CHECK_FUNCTION(GetSystemTimeAsFileTime,
 [
+#ifdef HAVE_WINDOWS_H
 #include <windows.h>
+#endif
+#ifdef HAVE_WINBASE_H
 #include <winbase.h>
+#endif
 ], [
   FILETIME f;
   GetSystemTimeAsFileTime(&f);
