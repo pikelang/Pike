@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.30 1998/04/06 15:48:06 nisse Exp $
+ * $Id: Xlib.pmod,v 1.31 1998/04/18 01:09:05 cardeci Exp $
  */
 
 /*
@@ -292,8 +292,8 @@ class Display
     else
       if (misc_event_handler)
 	misc_event_handler(event,this_object());
-      else
-	werror(sprintf("Ignored event %s\n", event->type));
+//       else
+// 	werror(sprintf("Ignored event %s\n", event->type));
   }
   
   mapping reply;  /* Partially read reply or event */
@@ -627,8 +627,8 @@ class Display
 		    break;
 
 		  default:  /* Any other event */
-		    werror("Unimplemented event: "+
-			   _Xlib.event_types[msg[0] & 0x3f]+"\n");
+// 		    werror("Unimplemented event: "+
+// 			   _Xlib.event_types[msg[0] & 0x3f]+"\n");
 		    event = ([ "type" :type,
 				      "raw" : msg ]);
 		    break;
@@ -745,10 +745,10 @@ class Display
       {
 	if(File::open("/tmp/.X11-pipe/X"+((int)display_number), "rw"))
 	  {
-	    werror("Using local transport\n");
+// 	    werror("Using local transport\n");
 	    is_local = 1;
 	  } else {
-	    werror("Failed to use local transport.\n");
+// 	    werror("Failed to use local transport.\n");
 	    host = "localhost";
 	  }
       }
@@ -777,13 +777,13 @@ class Display
     if(!is_local)
       {
 	int port =  XPORT + (int)fields[1];
-	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
+// 	werror(sprintf("Xlib: Connecting to %s:%d\n", host, port));
 	if (!connect(host, port))
 	{
-  	  werror(sprintf("Xlib: Connecting to %s:%d failed\n", host, port));
+//   	  werror(sprintf("Xlib: Connecting to %s:%d failed\n", host, port));
 	  return 0;
-	}
-	werror(sprintf("Xlib: Connected to %s:%d\n", host, port));
+ 	}
+// 	werror(sprintf("Xlib: Connected to %s:%d\n", host, port));
       }
 
     set_buffer( 65536 );
@@ -834,7 +834,7 @@ class Display
 	      set_nonblocking(read_callback, write_callback, close_callback);
 	      return 1;
 	    case ACTION_CONNECT_FAILED:
-	      werror("Connection failed: "+a[1]+"\n");
+ 	      werror("Connection failed: "+a[1]+"\n");
 	      return 0;
 	      break;
 	    default:
@@ -897,9 +897,7 @@ class Display
     if (!pending_actions->is_empty())
       call_out(process_pending_actions, 0);
     else
-    {
-       set_nonblocking(read_callback,write_callback,close_callback);
-    }
+      set_nonblocking(read_callback,write_callback,close_callback);
 
     return ({ success, result });
   }
