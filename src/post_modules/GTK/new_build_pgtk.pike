@@ -778,7 +778,7 @@ class Type
 
      case "float":
        declare = "  gfloat a%[0]d = 0;\n";
-       fetch = "  a%[0]d = (gint)PGTK_GETFLT(&Pike_sp[%[0]d-args]);\n";
+       fetch = "  a%[0]d = (gfloat)PGTK_GETFLT(&Pike_sp[%[0]d-args]);\n";
        pass =  "a%[0]d";
        break;
 
