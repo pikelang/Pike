@@ -1,5 +1,5 @@
 /*
- * $Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $
+ * $Id: syslog.c,v 1.11 2001/11/17 23:36:01 nilsson Exp $
  *
  * Access to syslog from Pike.
  *
@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SYSLOG
 
-RCSID("$Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $");
+RCSID("$Id: syslog.c,v 1.11 2001/11/17 23:36:01 nilsson Exp $");
 
 #include "interpret.h"
 #include "svalue.h"
@@ -103,6 +103,76 @@ RCSID("$Id: syslog.c,v 1.10 2000/12/01 08:10:39 hubbe Exp $");
 #endif
 
 /* openlog(string ident, int option, int facility) */
+/*! @decl void openlog(string ident, int options, facility)
+ *!
+ *! Initializes the connection to syslogd.
+ *!
+ *! @param ident.
+ *! The @[ident] argument specifies an identifier to tag all logentries
+ *! with.
+ *!
+ *! @param options
+ *! A bitfield specifying the behaviour of the message
+ *! logging. Valid options are:
+ *!
+ *! @int
+ *!   @value LOG_PID
+ *!     Log the process ID with each message.
+ *!   @value LOG_CONS
+ *!     Write messages to the console if they can't be sent to syslogd.
+ *!   @value LOG_NDELAY
+ *!     Open the connection to syslogd now and not later.
+ *!   @value LOG_NOWAIT
+ *!     Do not wait for subprocesses talking to syslogd.
+ *! @endint
+ *!
+ *! @param facility
+ *! Specifies what subsystem you want to log as. Valid
+ *! facilities are:
+ *!
+ *! @int
+ *!   @value LOG_AUTH
+ *!     Authorization subsystem
+ *!   @value LOG_AUTHPRIV
+ *!
+ *!   @value LOG_CRON
+ *!     Crontab subsystem
+ *!   @value LOG_DAEMON
+ *!     System daemons
+ *!   @value LOG_KERN
+ *!     Kernel subsystem (NOT USABLE)
+ *!   @value LOG_LOCAL
+ *!   @value LOG_LOCAL1
+ *!   @value LOG_LOCAL2
+ *!   @value LOG_LOCAL3
+ *!   @value LOG_LOCAL4
+ *!   @value LOG_LOCAL5
+ *!   @value LOG_LOCAL6
+ *!   @value LOG_LOCAL7
+ *!     For local use
+ *!   @value LOG_LPR
+ *!     Line printer spooling system
+ *!   @value LOG_MAIL
+ *!     Mail subsystem
+ *!   @value LOG_NEWS
+ *!     Network news subsystem
+ *!   @value LOG_SYSLOG
+ *!
+ *!   @value LOG_USER
+ *!
+ *!   @value LOG_UUCP
+ *!     UUCP subsystem
+ *! @endint
+ *!
+ *! @note
+ *! Only available on systems with syslog(3).
+ *!
+ *! @bugs
+ *! LOG_NOWAIT should probably always be specified.
+ *!
+ *! @seealso
+ *!   @[syslog], @[closelog], @[setlogmask]
+ */
 void f_openlog(INT32 args)
 {
   char *ident;
@@ -150,6 +220,11 @@ void f_openlog(INT32 args)
   pop_n_elems(args);
 }
  
+/*! @decl void syslog(int a, string b)
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_syslog(INT32 args)
 {
   struct pike_string *s;
@@ -181,7 +256,12 @@ void f_syslog(INT32 args)
 
   pop_n_elems(args);
 }
- 
+
+/*! @decl void closelog()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 void f_closelog(INT32 args)
 {
   closelog();
