@@ -12,7 +12,7 @@
 #include "peep.h"
 #include "dmalloc.h"
 
-RCSID("$Id: peep.c,v 1.19 1998/03/28 15:11:56 grubba Exp $");
+RCSID("$Id: peep.c,v 1.20 1998/03/31 21:52:23 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -258,6 +258,10 @@ void assemble(void)
       add_to_program(c->arg);
       break;
 
+    case F_DATA:
+      ins_int(c->arg, (void(*)(char))add_to_program);
+      break;
+
     case F_LABEL:
 #ifdef DEBUG
       if(c->arg > max_label || c->arg < 0)
@@ -283,9 +287,9 @@ void assemble(void)
 	jumps[c->arg]=tmp;
 	break;
 
-      case I_HASARG:
-	ins_f_byte_with_arg(c->opcode, c->arg);
-	break;
+	case I_HASARG:
+	  ins_f_byte_with_arg(c->opcode, c->arg);
+	  break;
 
       case 0:
 	ins_f_byte(c->opcode);
@@ -345,7 +349,6 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
   {
     MEMMOVE(p-fifo_len+1,p-fifo_len,fifo_len*sizeof(p_instr));
     p-=fifo_len;
-    fifo_len++;
   }
 
 #ifdef DEBUG
@@ -367,7 +370,7 @@ int insopt2(int f, int cl, struct pike_string *cf)
   if(hasarg(f))
     fatal("hasarg() is wrong!\n");
 #endif
-  return insert_opcode(f,0,cl, cf);
+  return insopt(f,0,cl, cf);
 }
 
 

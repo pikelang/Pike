@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: lex.h,v 1.10 1998/03/28 15:13:07 grubba Exp $
+ * $Id: lex.h,v 1.11 1998/03/31 21:52:21 hubbe Exp $
  */
 #ifndef LEX_H
 #define LEX_H
@@ -24,10 +24,22 @@ struct keyword
 #define I_JUMP 4
 #define I_ISPOINTER 3
 #define I_ISJUMP 7
+#define I_DATA 9
+
+#ifdef DEBUG
+#define INSTR_PROFILING
+#endif
+
+#ifdef INSTR_PROFILING
+extern int last_instruction;
+#endif
 
 struct instr
 {
 #ifdef DEBUG
+#ifdef INSTR_PROFILING
+  long reruns[256];
+#endif
   long runs;
   long compiles;
 #endif
@@ -37,7 +49,11 @@ struct instr
 
 #ifdef DEBUG
 #define ADD_COMPILED(X) instrs[(X)-F_OFFSET].compiles++
+#ifdef INSTR_PROFILING
+#define ADD_RUNNED(X) do { int _x=(X)-F_OFFSET; instrs[last_instruction].reruns[_x]++; instrs[last_instruction=_x].runs++; } while(0)
+#else
 #define ADD_RUNNED(X) instrs[(X)-F_OFFSET].runs++
+#endif
 #else
 #define ADD_COMPILED(X)
 #define ADD_RUNNED(X)

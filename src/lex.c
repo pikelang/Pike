@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.45 1998/03/22 06:19:37 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.46 1998/03/31 21:52:20 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -38,6 +38,10 @@ RCSID("$Id: lex.c,v 1.45 1998/03/22 06:19:37 hubbe Exp $");
 
 #define LEXDEBUG 0
 
+#ifdef INSTR_PROFILING
+int last_instruction=0;
+#endif
+
 void exit_lex(void)
 {
 #ifdef DEBUG
@@ -52,6 +56,16 @@ void exit_lex(void)
 	      (long)instrs[e].runs,
 	      (long)instrs[e].compiles);
     }
+
+#ifdef INSTR_PROFILING
+    for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
+    {
+      int d;
+      for(d=0;d<256;d++)
+	if(instrs[e].reruns[d])
+	  fprintf(stderr,"%010ld::%s - %s\n",instrs[e].reruns[d],low_get_f_name(e+F_OFFSET,0),low_get_f_name(d+F_OFFSET,0));
+    }
+#endif
   }
 #endif
 }
@@ -115,13 +129,16 @@ struct keyword instr_names[]=
 { "for",		F_FOR },
 { "global",		F_GLOBAL, I_HASARG },
 { "index",              F_INDEX },
-{ "->",                 F_ARROW, I_HASARG },
+{ "->x",                F_ARROW, I_HASARG },
+{ "object(const)->func",      F_STRICT_ARROW, I_HASARG },
+{ "object(const)->var",      F_STRICT_ARROW_VARIABLE, I_HASARG },
 { "clear string subtype", F_CLEAR_STRING_SUBTYPE },
 { "arrow string",       F_ARROW_STRING, I_HASARG },
 { "indirect",		F_INDIRECT },
 
 { "branch",             F_BRANCH, I_ISJUMP },
 { "branch non zero",	F_BRANCH_WHEN_NON_ZERO, I_ISJUMP },	
+{ "branch if local",	F_BRANCH_IF_LOCAL, I_HASARG },	
 { "branch when zero",	F_BRANCH_WHEN_ZERO, I_ISJUMP },	
 { "branch if <",	F_BRANCH_WHEN_LT, I_ISJUMP },
 { "branch if >",	F_BRANCH_WHEN_GT, I_ISJUMP },
@@ -139,7 +156,8 @@ struct keyword instr_names[]=
 { "==&&",               F_EQ_AND, I_ISJUMP },
 { "catch",		F_CATCH, I_ISJUMP },
 { "foreach",		F_FOREACH, I_ISJUMP },
-{ "data",		F_POINTER, I_ISPOINTER },
+{ "pointer",		F_POINTER, I_ISPOINTER },
+{ "data",		F_DATA, I_DATA },
 
 { "local function call",F_CALL_LFUN, I_HASARG },
 { "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
@@ -153,6 +171,7 @@ struct keyword instr_names[]=
 { "lvalue to svalue",	F_LTOSVAL },	
 { "lvalue_list",	F_LVALUE_LIST },	
 { "[ lvalues ]",	F_ARRAY_LVALUE, I_HASARG },	
+{ "mark sp-X",          F_MARK_X, I_HASARG },
 { "mark",               F_MARK },
 { "mark mark",          F_MARK2 },
 { "negative number",	F_NEG_NUMBER, I_HASARG },
@@ -166,6 +185,7 @@ struct keyword instr_names[]=
 { "return",		F_RETURN },
 { "return 0",		F_RETURN_0 },
 { "return 1",		F_RETURN_1 },
+{ "return local",	F_RETURN_LOCAL, I_HASARG },
 { "sscanf",		F_SSCANF, I_HASARG },	
 { "string",             F_STRING, I_HASARG },
 { "switch",		F_SWITCH, I_HASARG },
@@ -183,6 +203,7 @@ struct keyword instr_names[]=
 { "call",		F_APPLY, I_HASARG },
 { "clear local",	F_CLEAR_LOCAL, I_HASARG },
 { "clear 2 local",	F_CLEAR_2_LOCAL, I_HASARG },
+{ "clear 4 local",	F_CLEAR_4_LOCAL, I_HASARG },
 { "++local",		F_INC_LOCAL, I_HASARG },
 { "++local and pop",	F_INC_LOCAL_AND_POP, I_HASARG },
 { "local++",		F_POST_INC_LOCAL, I_HASARG },
@@ -194,6 +215,7 @@ struct keyword instr_names[]=
 { "throw(0)",		F_THROW_ZERO },
 { "string index",       F_STRING_INDEX, I_HASARG },
 { "local index",        F_LOCAL_INDEX, I_HASARG },
+{ "local local index",  F_LOCAL_LOCAL_INDEX, I_HASARG },
 { "int index",          F_POS_INT_INDEX, I_HASARG },
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },
@@ -202,9 +224,12 @@ struct keyword instr_names[]=
 { "nop",                F_NOP },
 { "add integer",        F_ADD_INT, I_HASARG },
 { "add -integer",       F_ADD_NEG_INT, I_HASARG },
+{ "mark & string",      F_MARK_AND_STRING, I_HASARG },
 { "mark & call",        F_MARK_APPLY, I_HASARG },
 { "mark, call & pop",   F_MARK_APPLY_POP, I_HASARG },
 { "apply and return",   F_APPLY_AND_RETURN, I_HASARG },
+{ "apply, assign local and pop",   F_APPLY_ASSIGN_LOCAL_AND_POP, I_HASARG },
+{ "apply & assign local",   F_APPLY_ASSIGN_LOCAL, I_HASARG },
 { "call lfun & return", F_CALL_LFUN_AND_RETURN, I_HASARG },
 { "call function",      F_CALL_FUNCTION, 0 },
 { "call function & return", F_CALL_FUNCTION_AND_RETURN, 0 },

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.71 1998/03/26 05:37:50 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.72 1998/03/31 21:52:17 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -580,6 +580,8 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_NEG_NUMBER); push_int(-GET_ARG()); break;
 
       /* The rest of the basic 'push value' instructions */	
+
+      CASE(F_MARK_AND_STRING); *(mark_sp++)=sp;
       CASE(F_STRING);
       copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
       sp->type=T_STRING;
@@ -756,6 +758,20 @@ static int eval_instruction(unsigned char *pc)
       fp->locals[instr+1].subtype=0;
       fp->locals[instr+1].u.integer=0;
       break;
+
+      CASE(F_CLEAR_4_LOCAL);
+      {
+	int e;
+	instr=GET_ARG();
+	free_svalues(fp->locals + instr, 4, -1);
+	for(e=0;e<4;e++)
+	{
+	  fp->locals[instr+e].type=T_INT;
+	  fp->locals[instr+e].subtype=0;
+	  fp->locals[instr+e].u.integer=0;
+	}
+	break;
+      }
 
       CASE(F_CLEAR_LOCAL);
       instr=GET_ARG();
@@ -1038,9 +1054,17 @@ static int eval_instruction(unsigned char *pc)
       pop_n_elems(3);
       break;
 
+    CASE(F_APPLY_ASSIGN_LOCAL);
+      strict_apply_svalue(fp->context.prog->constants + GET_ARG(), sp - *--mark_sp );
+      /* Fall through */
+
       CASE(F_ASSIGN_LOCAL);
       assign_svalue(fp->locals+GET_ARG(),sp-1);
       break;
+
+    CASE(F_APPLY_ASSIGN_LOCAL_AND_POP);
+      strict_apply_svalue(fp->context.prog->constants + GET_ARG(), sp - *--mark_sp );
+      /* Fall through */
 
       CASE(F_ASSIGN_LOCAL_AND_POP);
       instr=GET_ARG();
@@ -1101,6 +1125,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_POP_N_ELEMS); pop_n_elems(GET_ARG()); break;
       CASE(F_MARK2); *(mark_sp++)=sp;
       CASE(F_MARK); *(mark_sp++)=sp; break;
+      CASE(F_MARK_X); *(mark_sp++)=sp-GET_ARG(); break;
 
       CASE(F_CLEAR_STRING_SUBTYPE);
       if(sp[-1].type==T_STRING) sp[-1].subtype=0;
@@ -1129,6 +1154,16 @@ static int eval_instruction(unsigned char *pc)
 	DOJUMP();
       }
       pop_stack();
+      break;
+
+      CASE(F_BRANCH_IF_LOCAL);
+      instr=GET_ARG();
+      if(IS_ZERO(fp->locals + instr))
+      {
+	pc+=sizeof(INT32);
+      }else{
+	DOJUMP();
+      }
       break;
 
       CJUMP(F_BRANCH_WHEN_EQ, is_eq);
@@ -1265,6 +1300,12 @@ static int eval_instruction(unsigned char *pc)
 	return args+1;
       }
 
+      CASE(F_RETURN_LOCAL);
+      instr=GET_ARG();
+      pop_n_elems(sp-1 - (fp->locals+instr));
+      print_return_value();
+      goto do_return;
+
       CASE(F_RETURN_1);
       push_int(1);
       goto do_return;
@@ -1353,12 +1394,50 @@ static int eval_instruction(unsigned char *pc)
       push_array_items(sp->u.array);
       break;
 
+      CASE(F_STRICT_ARROW);
+      if(sp[-1].type != T_OBJECT)
+	error("Expected object for first argument to `->\n");
+      if(!sp[-1].u.object->prog)
+	error("`-> on destructed object.\n");
+      sp[-1].subtype=GET_ARG();
+      if(sp[-1].u.object->prog->id != EXTRACT_INT(pc))
+	error("`->: Object not of specified type.\n");
+      sp[-1].type=T_FUNCTION;
+      pc+=sizeof(INT32);
+      break;
+
+      CASE(F_STRICT_ARROW_VARIABLE);
+      if(sp[-1].type != T_OBJECT)
+	error("Expected object for first argument to `->\n");
+      if(!sp[-1].u.object->prog)
+	error("`-> on destructed object.\n");
+      instr=GET_ARG();
+      if(sp[-1].u.object->prog->id != EXTRACT_INT(pc))
+	error("`->: Object not of specified type.\n");
+      pc+=sizeof(INT32);
+      low_object_index_no_free(sp,sp[-1].u.object,instr);
+      free_object(sp[-1].u.object);
+      sp[-1]=*sp;
+      break;
+
+      CASE(F_LOCAL_LOCAL_INDEX);
+      {
+	struct svalue *s=fp->locals+GET_ARG();
+	if(s->type == T_STRING) s->subtype=0;
+	sp++->type=T_INT;
+	index_no_free(sp-1,fp->locals+GET_ARG(),s);
+	break;
+      }
+
       CASE(F_LOCAL_INDEX);
-      assign_svalue_no_free(sp++,fp->locals+GET_ARG());
-      if(sp[-1].type == T_STRING)
-	sp[-1].subtype=0;
-      print_return_value();
-      goto do_index;
+      {
+	struct svalue tmp,*s=fp->locals+GET_ARG();
+	if(s->type == T_STRING) s->subtype=0;
+	index_no_free(&tmp,sp-1,s);
+	free_svalue(sp-1);
+	sp[-1]=tmp;
+	break;
+      }
 
       CASE(F_POS_INT_INDEX);
       push_int(GET_ARG());

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.43 1998/03/22 06:20:44 hubbe Exp $");
+RCSID("$Id: main.c,v 1.44 1998/03/31 21:52:21 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -199,9 +199,14 @@ int dbm_main(int argc, char **argv)
 	    case 's':
 	      debug_options|=DEBUG_SIGNALS;
 	      p++;
-	      if(p[1]) goto more_d_flags;
+	      d_flag--;
+	      goto more_d_flags;
+
+	    case 't':
+	      debug_options|=NO_TAILRECURSION;
 	      p++;
-	      break;
+	      d_flag--;
+	      goto more_d_flags;
 
 	    default:
 	      d_flag++,p++;
