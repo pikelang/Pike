@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.161 2001/02/03 01:24:38 mast Exp $");
+RCSID("$Id: object.c,v 1.162 2001/02/06 21:36:14 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1552,6 +1552,16 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   push_object(magic);
 }
 
+/*! @decl mixed ::`->(string index)
+ *!
+ *! Builtin arrow operator.
+ *!
+ *! This function indexes the current object with the string @[index].
+ *! This is useful when the arrow operator has been overloaded.
+ *!
+ *! @seealso
+ *!   @[::`->=()]
+ */
 static void f_magic_index(INT32 args)
 {
   struct inherit *inherit;
@@ -1586,6 +1596,17 @@ static void f_magic_index(INT32 args)
   }
 }
 
+/*! @decl void ::`->=(string index, mixed value)
+ *!
+ *! Builtin arrow set operator.
+ *!
+ *! This function indexes the current object with the string @[index],
+ *! and sets it to @[value].
+ *! This is useful when the arrow set operator has been overloaded.
+ *!
+ *! @seealso
+ *!   @[::`->()]
+ */
 static void f_magic_set_index(INT32 args)
 {
   int f;
