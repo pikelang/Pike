@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.11 2004/04/04 01:02:01 nilsson Exp $
+|| $Id: b_source_normal_file.c,v 1.12 2004/08/25 23:04:24 vida Exp $
 */
 
 #include "global.h"
@@ -25,14 +25,6 @@
 /* Source: Normal file
  * Argument: Stdio.File instance pointing to a normal file
  */
-
-#ifndef S_ISREG
-#ifdef S_IFREG
-#define S_ISREG(mode)	(((mode) & (S_IFMT)) == (S_IFREG))
-#else /* !S_IFREG */
-#define S_ISREG(mode)	(((mode) & (_S_IFMT)) == (_S_IFREG))
-#endif /* S_IFREG */
-#endif /* !S_ISREG */
 
 static struct program *Fd_ref_program = NULL;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: c_source_stream.c,v 1.9 2004/04/04 01:02:01 nilsson Exp $
+|| $Id: c_source_stream.c,v 1.10 2004/08/25 23:04:24 vida Exp $
 */
 
 #include "global.h"
@@ -41,7 +41,7 @@ struct fd_source
 
   void (*when_data_cb)( void *a );
   void *when_data_cb_arg;
-  size_t len, skip;
+  INT64 len, skip;
 };
 
 

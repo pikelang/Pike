@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.29 2004/04/04 15:03:37 grubba Exp $
+|| $Id: Shuffler.cmod,v 1.30 2004/08/25 23:04:24 vida Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.29 2004/04/04 15:03:37 grubba Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.30 2004/08/25 23:04:24 vida Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -81,6 +81,8 @@ extern struct program *Shuffler_program;
 
 PIKECLASS Shuffle
 {
+  CVAR struct fd_callback_box box;
+
   PIKEVAR object shuffler;
   /*! @decl Shuffler shuffler;
    *! The @[Shuffler] that owns this @[Shuffle] object
@@ -99,43 +101,39 @@ PIKECLASS Shuffle
 
   CVAR struct source *current_source;
   CVAR struct source *last_source;
-  CVAR struct object *this_obj; /* callbacks only have the struct */
   CVAR struct object *file_obj; 
   CVAR int callback;
   CVAR int write_callback;
   
-  CVAR int fd;
   CVAR int sent;
   CVAR ShuffleState state;
 
   CVAR struct data leftovers;
   
 
-  static void _send_more( int fd, struct Shuffle_struct *t );
+  static void _send_more( struct Shuffle_struct *t );
   static void __set_callbacks( struct Shuffle_struct *t )
   {
-    SHUFFLE_DEBUG2("__set_calllbacks(%s)\n", t,(t->fd>0?"C":"Pike") );
-    if( t->fd >= 0 )
-      set_write_callback( t->fd, (void *)_send_more, t );
+    SHUFFLE_DEBUG2("__set_calllbacks(%s)\n", t,(t->box.fd>0?"C":"Pike") );
+    if( t->box.fd >= 0 )
+      set_fd_callback_events(&t->box, PIKE_BIT_FD_WRITE);
     else if( t->file_obj && t->file_obj->prog )
     {
-      ref_push_object( t->this_obj );
+      ref_push_object( t->box.ref_obj );
       Pike_sp[-1].type = PIKE_T_FUNCTION;
       Pike_sp[-1].subtype = t->write_callback;
       safe_apply( t->file_obj, "set_write_callback", 1 );
       pop_stack();
     }
     else
-    {
       SHUFFLE_DEBUG1("EEP: No destination! Cannot set callbacks\n",t);
-    }
   }
   
   static void __remove_callbacks( struct Shuffle_struct *t )
   {
-    SHUFFLE_DEBUG2("__remove_calllbacks(%s)\n", t, (t->fd>=0?"C":"Pike") );
-    if( t->fd >= 0 )
-      set_write_callback( t->fd, 0,0 );
+    SHUFFLE_DEBUG2("__remove_calllbacks(%s)\n", t, (t->box.fd>=0?"C":"Pike") );
+    if( t->box.fd >= 0 )
+      set_fd_callback_events(&t->box, 0);
     else if( t->file_obj && t->file_obj->prog )
     {
       push_int(0);
@@ -143,11 +141,18 @@ PIKECLASS Shuffle
       pop_stack();
     }
     else
-    {
       SHUFFLE_DEBUG1("EEP: No destination! Cannot remove callbacks\n",t);
-    }
   }
 
+  static int got_shuffler_event(struct fd_callback_box*box, int event) {
+#ifdef PIKE_DEBUG
+    if (event != PIKE_FD_WRITE)
+      Pike_fatal ("Got unexpected event %d.\n", event);
+#endif
+    _send_more((struct Shuffle_struct*)
+     ((char*)box-offsetof(struct Shuffle_struct,box)));
+  }
+  
   PIKEFUN void set_throttler( object t )
   /*! @decl void set_throttler(Throttler t)
    *! Calling this function overrides the @[Shuffler] global throttler.
@@ -207,14 +212,15 @@ PIKECLASS Shuffle
     THIS->current_source = NULL;
     THIS->file_obj = NULL;
     THIS->state = INITIAL;
-    /* NOTE: this_obj is a weak reference. */
-    THIS->this_obj = Pike_fp->current_object;
-    debug_malloc_touch(THIS->this_obj);
     THIS->callback = 
       find_identifier("send_more_callback",Pike_fp->current_object->prog);
-    
+
     THIS->write_callback = 
       find_identifier("write_callback",Pike_fp->current_object->prog);
+    THIS->box.backend = NULL;
+    THIS->box.ref_obj = Pike_fp->current_object;
+    THIS->box.fd = -1;
+    debug_malloc_touch(THIS->box.ref_obj);
     
     SHUFFLE_DEBUG1("init()\n", THIS );
   }
@@ -222,7 +228,15 @@ PIKECLASS Shuffle
   EXIT
   {
     SHUFFLE_DEBUG1("exit()\n", THIS );
-    THIS->fd = -1;
+
+    if(THIS->box.fd >= 0) {
+      push_int( THIS->box.fd );
+      unhook_fd_callback_box(&THIS->box);
+      if(THIS->file_obj)
+        safe_apply( THIS->file_obj, "take_fd", 1 );
+      pop_stack();
+    }
+
     if( THIS->file_obj )
     {
       free_object( THIS->file_obj );
@@ -250,10 +264,10 @@ PIKECLASS Shuffle
     {
       __remove_callbacks( t );
       debug_malloc_touch( t->throttler );
-      debug_malloc_touch( t->this_obj );
-      ref_push_object( t->this_obj );
+      debug_malloc_touch( t->box.ref_obj );
+      ref_push_object( t->box.ref_obj );
       push_int( amount );
-      ref_push_object( t->this_obj );
+      ref_push_object( t->box.ref_obj );
       Pike_sp[-1].type = PIKE_T_FUNCTION;
       Pike_sp[-1].subtype = t->callback;
       push_svalue( &t->request_arg );
@@ -266,11 +280,11 @@ PIKECLASS Shuffle
       __send_more_callback( t, amount );
   }
   
-  static void _send_more( int fd, struct Shuffle_struct *t )
+  static void _send_more( struct Shuffle_struct *t )
   {
     int l = BLOCK;
-    SHUFFLE_DEBUG2("_send_more(%d)\n", t, fd );
-    if( t->leftovers.len )
+    SHUFFLE_DEBUG2("_send_more(%d)\n", t, t->box.fd );
+    if( t->leftovers.len > 0 )
       l = t->leftovers.len;
     _request( t, l );
   }
@@ -304,6 +318,21 @@ PIKECLASS Shuffle
       case 3: t->state = READ_ERROR; break;
     }
 
+    /* Remove our callbacks. */
+    _remove_callbacks( t );
+
+    if(t->box.fd >= 0) {
+      push_int( t->box.fd );
+      unhook_fd_callback_box(&t->box);
+      if(t->file_obj)
+        safe_apply(t->file_obj, "take_fd", 1 );
+      pop_stack();
+      THIS->box.fd = -1;
+    }
+    
+    debug_malloc_touch( t->box.ref_obj );
+    ref_push_object( t->box.ref_obj );
+
     /* If a callback exists, we call it before destroying
      * source and destination
      */
@@ -313,19 +342,13 @@ PIKECLASS Shuffle
 		    reason, t->done_callback.u.object);
       push_svalue( &t->done_callback );
       
-      ref_push_object( t->this_obj );
+      ref_push_object( t->box.ref_obj );
       push_int( reason );
 
       apply_svalue( Pike_sp-3, 2 );
       pop_stack();
       pop_stack();
     }
-
-    /* Remove our callbacks. */
-    _remove_callbacks( t );
-    
-    debug_malloc_touch( t->this_obj );
-    ref_push_object( t->this_obj );
 
     /* It might have been destroyed. */
     if( t->shuffler && t->shuffler->prog )
@@ -392,8 +415,8 @@ PIKECLASS Shuffle
     SHUFFLE_DEBUG2("_give_back(%d)\n", t, amount );
     if( t->throttler && t->throttler->prog )
     {
-      ref_push_object( t->this_obj );
-      debug_malloc_touch( t->this_obj );
+      ref_push_object( t->box.ref_obj );
+      debug_malloc_touch( t->box.ref_obj );
       debug_malloc_touch( t->throttler );
       push_int( amount );
       push_svalue( &t->request_arg );
@@ -454,10 +477,10 @@ PIKECLASS Shuffle
     SHUFFLE_DEBUG2("__send_more_callback(): sending(%d)\n", t,
 		  MINIMUM(amount,t->leftovers.len));
     sent = -1;
-    if( t->fd >= 0 )
+    if( t->box.fd >= 0 )
     {
       THREADS_ALLOW();
-      sent = fd_write( t->fd, t->leftovers.data+t->leftovers.off,
+      sent = fd_write( t->box.fd, t->leftovers.data+t->leftovers.off,
 		       MINIMUM(amount,t->leftovers.len) );
       THREADS_DISALLOW();
     }
@@ -525,9 +548,9 @@ PIKECLASS Shuffle
     optflags OPT_SIDE_EFFECT;
   {
     SHUFFLE_DEBUG1("write_callback()\n", THIS );
-    _send_more( 0,THIS );
+    _send_more( THIS );
   }
-  
+
   /*! @decl void create(object fd, object shuffler, mixed throttler,@
    *!                   mixed backend)
    */
@@ -537,6 +560,8 @@ PIKECLASS Shuffle
 		       mixed backend )
     flags ID_STATIC;
   {
+    struct Backend_struct*be = default_backend;
+
     if( (args != 4) || !shuffler || !get_storage( shuffler, Shuffler_program ) )
       Pike_error("This class cannot be instantiated directly\n");
 
@@ -552,21 +577,24 @@ PIKECLASS Shuffle
       add_ref(THIS->throttler);
     }
 
-    if (find_identifier("query_fd", fd->prog) < 0)
-      THIS->fd = -1;
+    if (find_identifier("release_fd", fd->prog) < 0)
+      change_fd_for_box(&THIS->box, -1);
     else {
-      safe_apply( fd, "query_fd", 0 );
-      THIS->fd = Pike_sp[-1].u.integer;
+      safe_apply( fd, "release_fd", 0 );
+      if(backend->type == PIKE_T_OBJECT && backend->u.object)
+        be = (struct Backend_struct*)backend->u.object;
+      change_fd_for_box(&THIS->box, Pike_sp[-1].u.integer);
       pop_stack();
     }
 
-    if( THIS->fd >= 0 )
+    if( THIS->box.fd >= 0 )
     {
-      set_nonblocking( THIS->fd, 1 );
-      set_read_callback( THIS->fd, 0, 0 );
-      set_write_callback( THIS->fd, 0, 0 );
-      set_read_oob_callback( THIS->fd, 0, 0 );
-      set_write_oob_callback( THIS->fd, 0, 0 );
+      set_nonblocking( THIS->box.fd, 1 );
+      if(THIS->box.backend)
+        set_fd_callback_events(&THIS->box, 0);
+      else
+        INIT_FD_CALLBACK_BOX(&THIS->box, be, THIS->box.ref_obj,
+         THIS->box.fd, 0, got_shuffler_event);
     }
     else
     {
@@ -577,12 +605,6 @@ PIKECLASS Shuffle
       pop_stack();
     }
 
-    if( (THIS->fd >= 0) && (backend->type == PIKE_T_OBJECT) )
-    {
-      ref_push_object( THIS->file_obj );
-      safe_apply( backend->u.object, "add_file", 1 );
-      pop_stack();
-    }
     pop_n_elems( args );
     push_int(0);
   }
