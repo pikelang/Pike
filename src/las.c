@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.269 2001/09/29 06:19:27 hubbe Exp $");
+RCSID("$Id: las.c,v 1.270 2001/09/29 11:31:40 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4896,7 +4896,8 @@ static void optimize(node *n)
 				OPT_ASSIGNMENT|
 				OPT_RETURN)) &&
 	 (CAR(n)->tree_info & OPT_TRY_OPTIMIZE) &&
-	 CAR(n)->token != ':')
+	 CAR(n)->token != ':' &&
+	 CAR(n)->token != F_VAL_LVAL)
       {
 #ifdef SHARED_NODES
 	sub_node(n);
