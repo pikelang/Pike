@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.15 2003/06/01 15:33:43 grubba Exp $
+// $Id: module.pmod.in,v 1.16 2003/07/03 14:57:47 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -1043,6 +1043,20 @@ class PikeCompiler
     return parse_comma_expression(tokens_left);
   }
 
+  // Called when the expression may contain a variable declaration.
+  // eg if and while.
+  // FIXME: What about multi-assign?
+  Expression parse_decl_comma_expr(Scope current_scope, Iterator tokens_left)
+  {
+    Expression type = parse_comma_expression(tokens_left);
+    Token token;
+
+    if (tokens_left && ((token = tokens_left->value())->is_identifier)) {
+      return parse_decl(current_scope, tokens_left, type);
+    }
+    return type;
+  }
+
   // Called for parsing of lvalues in eg foreach and sscanf.
   // FIXME: What about multi-assign?
   Expression parse_lvalue(Scope current_scope, Iterator tokens_left)
@@ -1245,6 +1259,21 @@ class PikeCompiler
   {
   }
 
+  class Else
+  {
+    inherit IdentifierToken;
+
+    // Called at
+    //   else · statement
+    // if it hasn't been eaten by an if.
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      Token token = tokens_left->value();
+      SYNTAX_ERROR("else without a corresponing if.");
+    }
+  }
+
   class Foreach
   {
     inherit IdentifierToken;
@@ -1307,6 +1336,63 @@ class PikeCompiler
       parse_foreach_list(token->contents);
       tokens_left->`+=(1);
       parse_statement(this_object(), tokens_left, current_modifiers);
+    }
+  }
+
+  class If
+  {
+    inherit IdentifierToken;
+    inherit Scope;
+
+    Expression expr;
+    Statement true_branch;
+    Statement false_branch;
+
+    void add_statement(Statement statement)
+    {
+      if (true_branch) {
+	false_branch = statement;
+      } else {
+	true_branch = statement;
+      }
+    }
+
+    void parse_if_expr(TokenList tokens)
+    {
+      werror("parse_param_list(%O)...\n", tokens);
+      Iterator tokens_left = get_iterator(tokens);
+
+      expr = parse_decl_comma_expr(this_object(), tokens_left);
+
+      if (tokens_left) {
+	Token token = tokens_left->value();
+	SYNTAX_ERROR("Junk left at end of if expression.");
+	return;
+      }
+    }
+
+    // Called at
+    //   if · '(' expr ')' statement
+    //   if · '(' expr ')' statement else statement
+    void parse_meta_program(Scope scope, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      Token token;
+      if (!tokens_left ||
+	  !((token = tokens_left->value())->group_start) ||
+	  (token->group_start->symbol != "(")) {
+	SYNTAX_ERROR("Expected expression to if().");
+	return;
+      }
+      parse_if_expr(token->contents);
+      tokens_left->`+=(1);
+      parse_statement(this_object(), tokens_left, current_modifiers);
+      if (!tokens_left ||
+	  token->symbol != "else") {
+	return;
+      }
+      tokens_left->`+=(1);
+      parse_statement(this_object(), tokens_left, current_modifiers);      
     }
   }
 
@@ -1532,6 +1618,21 @@ class PikeCompiler
 				  LiteralExpression(this));
     }
 
+    CodeBlock current_block;
+
+    // Generate code for the contants of the class.
+    void compile_statement(Class current_class)
+    {
+      
+    }
+
+    // Should emit code to current_class that assigns this class
+    // to a temporary, and returns the temporary.
+    Temporary compile_expression(Class current_class)
+    {
+      
+    }
+
     static string _sprintf()
     {
       array(string) s = map(indices(identifiers),
@@ -1567,13 +1668,13 @@ class PikeCompiler
 	//"default":Default,
 	//"do":Do,
 	//"predef":Predef,
-	//"else":Else,
+	"else":Else,
 	//"float":FloatType,
 	//"for":For,
 	"foreach":Foreach,
 	//"function":FunctionType,
 	//"gauge":Gauge,
-	//"if":If,
+	"if":If,
 	"inherit":NameSpace,
 	"inline":Modifier,
 	//"int":IntType,
@@ -1665,430 +1766,28 @@ class PikeCompiler
       }
     }
   }
-
 }
 
-#if 0
-
-//  //! Token-value pair.
-//  class TokenPair(string token, mixed value)
-//  {
-//    static string _sprintf() {
-//  	return sprintf("%s:%O", token||"", value);
-//    }
-//  };
-
-class TokenParser
+class Temporary
 {
-  Token handle(string symbol, Position pos, CompilerContext context);
 }
 
-class OldMetaProgram
+class Instruction
 {
-  Token handle_symbol(string symbol, Position pos, CompilerContext context);
 }
 
-//! Pike 7.2 and earlier token parser.
-class Pike72TokenParser_
+class CodeBlock
 {
-  static {
-    // Tokens that are keywords with their own productions.
-    constant symbol_is_token = (<
-      "array",
-      "break",
-      "case",
-      "catch",			// Could probably be a meta-program.
-      "class",
-      "constant",
-      "continue",
-      "default",
-      "do",
-      "else",
-      "enum",
-      "extern",
-      "float",
-      "for",
-      "foreach",
-      "function",
-      "gauge",			// Could probably be a meta program.
-      "if",
-      "int",
-      "lambda",
-      "mapping",
-      "mixed",
-      "object",
-      "program",
-      "return",
-      "sscanf",			// Could probably be a meta-program.
-      "string",
-      "switch",
-      "typedef",
-      "typeof",			// Could probably be a meta-program.
-      "void",
-      "while",
-      ")",
-      "{","}",
-      "[","]",
-      "(<",">)",
-      "<","<<","<=","<<=",
-      ">",">>",">=",">>=",
-      ".","..","...",
-      ":","::",
-      "-","--","->","-=",
-      "+","++","+=",
-      "&","&&","&=",
-      "|","||","|=",
-      "^","^=",
-      "*","*=",
-      "%","%=",
-      "=","==",
-      "!","!=",
-      "/","/=",
-      "?",",","~","@",";",
-    >);
+  array(Instruction) instructions = ({});
+  int next_label;
+  int next_reg;
+  mapping(int:int) label_lookup = ([]);
 
-    // Tokens that are grouped.
-    // Currently modifiers and namespace directives.
-    constant symbol_to_token = ([
-      "final":"modifier",
-      "import":"namespace",
-      "inherit":"namespace",
-      "inline":"modifier",
-      "local":"modifier",
-      "nomask":"modifier",
-      "optional":"modifier",
-      "predef":"modifier",
-      "private":"modifier",
-      "protected":"modifier",
-      "public":"modifier",
-      "static":"modifier",
-      "variant":"modifier",
-    ]);
-  }
-
-  static string previous_symbol;
-
-  Token handle(string symbol, Position pos, CompilerContext context)
+  void emit(Instruction instruction)
   {
-    string old_symbol = previous_symbol;
-    previous_symbol = symbol;
-
-    if (symbol_is_token[symbol]) {
-      return MKTOKEN(symbol, symbol);
+    if(instruction->is_label) {
+      label_lookup[instruction->label_no] = sizeof(instructions);
     }
-    if (symbol_to_token[symbol]) {
-      return MKTOKEN(symbol_to_token[symbol], symbol);
-    }
-
-    if (symbol == "(") {
-      if ((<"int", "mapping", "function", "object",
-	    "program", "array", "multiset">)[old_symbol]) {
-	return MKTOKEN("type_specifier", "(");
-      } else {
-	return MKTOKEN("(", "(");
-      }
-    }
-	
-    return 0;
+    instructions += ({ instruction });
   }
 }
-
-TokenParser Pike72TokenParser = Pike72TokenParser_();
-
-//! Pike 7.4 token parser.
-class Pike74TokenParser_
-{
-  Token handle(string symbol, Position pos, CompilerContext context)
-  {
-    if (symbol == "global") return MKTOKEN("modifier", "global");
-    return Pike72TokenParser->handle(symbol, pos, context);
-  }
-}
-
-TokenParser Pike73TokenParser = Pike73TokenParser_();
-
-//! Pike 7.5 token parser.
-class Pike75TokenParser_
-{
-  array(OldMetaProgram) meta_programs = ({});
-
-  Token handle(string symbol, Position pos, CompilerContext context)
-  {
-    foreach(meta_programs, OldMetaProgram meta) {
-      Token t = meta->handle_symbol(symbol, pos, context);
-      if (t) {
-	return t;
-      }
-    }
-    return Pike73TokenParser->handle(symbol, pos, context);
-  }
-}
-
-TokenParser Pike75TokenParser = Pike75TokenParser_();
-
-class Identifier(array(Token) tokens)
-{
-  string _sprintf(int c)
-  {
-    return sprintf("IDENTIFIER(%d)", sizeof(tokens));
-  }
-}
-
-#endif /* 0 */
-
-#if 0
-
-class MetaProgram(Group group)
-{
-  void parse();
-}
-
-class ClassMetaProgram
-{
-  inherit MetaProgram;
-
-  array(Group) statements;
-
-  void parse()
-  {
-    if (statements) return;
-
-    statements = ({});
-
-    int g_start;
-    int(0..1) is_expr;
-    int i;
-    object(Group)|Token tok;
-    foreach(group->tokens; i; tok) {
-      if ((tok->symbol == ";") ||
-	  (!is_expr && tok->group_start && tok->group_start->symbol == "{")) {
-	// ; always terminates a statement.
-	// {} terminates a statement if it isn't in an expression.
-	Group g = Group();
-	g->token_list = group->token_list[g_start..i];
-	statements += ({ g });
-	g_start = i+1;
-	is_expr = 0;
-	continue;
-      }
-      if (tok->symbol == "=") {
-	// Expressions with {}'s are always introduced with an assignment.
-	is_expr = 1;
-      }
-    }
-    if (g_start != i) {
-      if ((tok->symbol == ";") ||
-	  (!is_expr && tok->group_start && tok->group_start->symbol == "{")) {
-	// ; always terminates a statement.
-	// {} terminates a statement if it isn't in an expression.
-	Group g = Group();
-	g->token_list = group->token_list[g_start..i];
-	statements += ({ g });
-      }
-    }
-    foreach(statements; i; Group g) {
-      statements[i] = identify_meta(g);
-    }
-  }
-}
-
-MetaProgram identify_meta(Group g)
-{
-  foreach(g->tokens; int i; object(Group)|Token tok) {
-    if (tok->symbol) {
-    }      
-  }
-}
-
-class Parser
-{
-  Group g;
-  ADT.Stack workload = ADT.Stack();
-
-  int(0..1) parse_raw_stmts(Group g)
-  {
-    int i;
-    int start;
-    array(Token) new_tokens = ({});
-
-    for (i=0; i < sizeof(g->tokens); i++) {
-      if (g->tokens[i]->token == ";") {
-	new_tokens += ({ Group(g->tokens[i]) });
-	new_tokens[-1]->group_end = g->tokens[i];
-	new_tokens[-1]->tokens = g->tokens[start..i-1];
-	start = i+1;
-      }
-    }
-    if (start != i) {
-      new_tokens += ({ Group() });
-      new_tokens[-1]->tokens = g->tokens[start..i];
-    }
-    g->tokens = new_tokens;
-
-    return 0;
-  }
-
-  int(0..1) parse_identifiers(Group g)
-  {
-    // Identify identifiers.
-    array(Token) new_tokens = ({});
-    int i;
-    int start;
-    for (i=0; i < sizeof(g->tokens); i++) {
-      if ((< ".", "::", "identifier" >)[g->tokens[i]->token]) {
-	start = i;
-	if (g->tokens[i]->token != "identifier") {
-	  i++;
-	}
-	while (i < sizeof(g->tokens)) {
-	  if (g->tokens[i]->token != "identifier") {
-	    // error!
-	    break;
-	  }
-	  i++;
-	  if ((i == sizeof(g->tokens)) ||
-	      !(< ".", "::" >)[g->tokens[i]->token]) {
-	    // Done.
-	    break;
-	  }
-	  i++;
-	}
-	i--;
-	new_tokens += ({ Identifier(g->tokens[start..i]) });
-      } else {
-	new_tokens += ({ g->tokens[i] });
-      }
-    }
-    g->tokens = new_tokens;
-  }
-
-  constant left_pri = ([
-    ",":2,
-    "=":3,
-    ":":5, "?":5,
-    "||":8,
-    "&&":10,
-    "|":12,
-    "^":14,
-    "&":16,
-    "==":17, "!=":17,
-    ">":19, ">=":19, "<":19, "<=":19,
-    "<<":21, ">>":21,
-    "+":24, "-":24,
-    "*":26, "%":26, "/":26,
-    "!":27, "~":27,
-    "++":29, "--":29,
-  ]);
-
-  constant right_pri = ([
-    ",":1,
-    "=":3,
-    ":":5, "?":5,
-    "||":7,
-    "&&":9,
-    "|":11,
-    "^":13,
-    "&":15,
-    "==":17, "!=":17,
-    ">":19, ">=":19, "<":19, "<=":19,
-    "<<":21, ">>":21,
-    "+":23, "-":23,
-    "*":25, "%":25, "/":25,
-    "!":27, "~":27,
-    "++":29, "--":29,
-  ]);
-
-  constant un_op = ([]);
-
-  Group|Token parse_expression(ADT.Stack input)
-  {
-    ADT.Stack expr = ADT.Stack();
-    int top_pri;
-
-    while (sizeof(input)) {
-      // Get operand 1.
-      object(Group)|Token top = input->top();
-
-      if (top_pri <= right_pri[top->token]) {
-	/* SHIFT */
-	expr->push(input->pop());
-	top_pri = left_pri[top->token];
-      } else {
-	/* REDUCE */
-	array items = ({});
-      }
-
-#if 0
-      while (un_op[top->token]) {
-	break;
-      }
-#endif /* 0 */
-    }
-    
-  }
-
-  int(0..1) parse_class_block(Group g)
-  {
-    if (parse_raw_stmts(g)) return 1;
-
-    // For each statement
-    foreach(g->tokens; ; object(Group)|Token g) {
-      if (g->tokens) {
-	parse_identifiers(g);
-
-	// Initialize an input stack for the expression parser.
-	ADT.Stack stack = ADT.Stack();
-	stack->set_stack(reverse(g->tokens));
-
-	array(Group|Token) new_tokens = ({});
-
-	while(sizeof(stack)) {
-	  new_tokens += ({ parse_expression(stack) });
-	}
-
-	g->tokens = new_tokens;
-      } else {
-	// Error?
-      }
-    }
-    return 0;
-  }
-
-  static void create(Group g)
-  {
-    this_program::g = g;
-    g->parse_method = parse_class_block;
-    workload->push(g);
-  }
-
-  Group parse()
-  {
-    while (sizeof(workload)) {
-      Group tmp = workload->pop();
-      if (tmp->parse_method(tmp)) {
-	// Parse error.
-	return 0;
-      }
-    }
-    return g;
-  }
-}
-
-Group parse(Group g)
-{
-  return Parser(g)->parse();
-}
-
-class DEF_LIST
-{
-  inherit BinaryNode;
-  constant nodename="Tokenizer.DEF_LIST";
-}
-
-class MODIFIER_BLOCK
-{
-  inherit BinaryNode;
-  constant nodename="Tokenizer.MODIFIER_BLOCK";
-}
-
-#endif /* 0 */
