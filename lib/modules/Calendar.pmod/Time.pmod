@@ -39,6 +39,7 @@ string calendar_name() { return "Time"; }
 
 //------------------------------------------------------------------------
 //! class TimeofDay
+//!  Virtual class used by e.g. Hour.
 //------------------------------------------------------------------------
 
 class TimeofDay
