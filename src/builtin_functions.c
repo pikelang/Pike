@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.146 1999/05/08 00:57:56 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.147 2000/03/24 02:29:30 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2060,7 +2060,7 @@ void f_localtime(INT32 args)
 #endif
 
 #ifdef HAVE_MKTIME
-static void f_mktime (INT32 args)
+void f_mktime (INT32 args)
 {
   INT32 sec, min, hour, mday, mon, year, isdst;
   struct tm date;
