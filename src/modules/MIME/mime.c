@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.20 1999/08/07 21:23:11 marcus Exp $
+ * $Id: mime.c,v 1.21 1999/08/17 18:38:32 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.20 1999/08/07 21:23:11 marcus Exp $");
+RCSID("$Id: mime.c,v 1.21 1999/08/17 18:38:32 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -804,6 +804,11 @@ static void low_tokenize( INT32 args, int mode )
       break;
 
     default:
+      if(*src == '\0') {
+	/* Multiple occurance header.  Ignore all but first. */
+	cnt = 0;
+	break;
+      }
       error( "Invalid character in header field\n" );
     }
 
