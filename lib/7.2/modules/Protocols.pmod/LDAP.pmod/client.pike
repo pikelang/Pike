@@ -1,11 +1,11 @@
 /*
    Compatibility code for 7.2-
 
-   $Id: client.pike,v 1.2 2002/12/04 15:13:47 marcus Exp $
+   $Id: client.pike,v 1.3 2005/03/19 13:14:57 mast Exp $
 
  */
 
-#pike __REAL_VERSION__
+#pike 7.3
 
 inherit Protocols.LDAP.client;
 
