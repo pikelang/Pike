@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.7 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: matrix_code.h,v 1.8 2003/07/09 01:09:12 agehall Exp $
 */
 
 /*
@@ -204,7 +204,7 @@ done_made:
       else if (Pike_sp[-args].u.string==s_rotate)
       {
 	 float r;
-	 double x,y,z;
+	 float x,y,z;
 	 double c,s;
 	 struct matrixX(_storage) *mx=NULL;
 
@@ -236,8 +236,8 @@ done_made:
 
 	 n=side*side;
 	 while (n--) *(m++) = DO_NOT_WARN((FTYPE)0.0);
-	 for (n=3; i<side; i++)
-	    THIS->m[i*(side+1)] = DO_NOT_WARN((FTYPE)1.0);
+	 for (i=3; i<side; i++)
+	    THIS->m[i*(side) + i] = DO_NOT_WARN((FTYPE)1.0);
 	 c = cos(r);
 	 s = sin(r);
 
