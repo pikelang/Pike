@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.340 2005/01/22 01:32:29 nilsson Exp $
+|| $Id: file.c,v 1.341 2005/01/22 02:43:45 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3968,14 +3968,18 @@ static void fd__sprintf(INT32 args)
 
 static void f_gethostip(INT32 args) {
   int fd, i, j, up = 0;
+  struct mapping *m;
 
   pop_n_elems(args);
+
+  m = allocate_mapping(2);
 
 #if defined(HAVE_LINUX_IF_H) && defined(HAVE_SYS_IOCTL_H)
   {
     struct ifconf ifc;
     struct sockaddr_in addr;
     char buffer[ INTERFACES * sizeof( struct ifreq ) ];
+    struct svalue *sval;
 
     fd = fd_socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
     if( fd < 0 ) Pike_error("gethostip: Failed to open socket.\n");
@@ -3999,14 +4003,20 @@ static void f_gethostip(INT32 args) {
 	  (ifr->ifr_addr.sa_family != AF_INET ) )
 	continue;
 
-      push_text( ifr->ifr_name );
+      sval = simple_mapping_string_lookup( m, ifr->ifr_name );
+      if( !sval ) {
 
-      push_constant_text( "ips" );
-      memcpy( &addr, &ifr->ifr_addr, sizeof(ifr->ifr_addr) );
-      push_text( inet_ntoa( addr.sin_addr ) );
-      f_aggregate(1);
+	push_text( ifr->ifr_name );
 
-      f_aggregate_mapping(2);
+	push_constant_text( "ips" );
+	memcpy( &addr, &ifr->ifr_addr, sizeof(ifr->ifr_addr) );
+	push_text( inet_ntoa( addr.sin_addr ) );
+	f_aggregate(1);
+
+	f_aggregate_mapping(2);
+	mapping_insert(m, &Pike_sp[-2], &Pike_sp[-1]);
+	pop_n_elems(2);
+      }
 
       up++;
     }
@@ -4015,7 +4025,7 @@ static void f_gethostip(INT32 args) {
   }
 #endif /* defined(HAVE_LINUX_IF_H) && defined(HAVE_SYS_IOCTL_H) */
 
-  f_aggregate_mapping(up*2);
+  push_mapping(m);
 }
 
 #ifdef HAVE_OPENPTY
