@@ -133,11 +133,14 @@ string extractXML(string filename, int|void pikeMode, string|void type,
 //!   extract the XML file.
 //! @param imageDestDir
 //!   The directory where the images should be copied.
+//! @param quiet
+//!   Quiet operation.
 //! @returns
 //!   The XML file contents (with decorated <image>-tags)
 string moveImages(string docXMLFile,
                   string imageSourceDir,
-                  string imageDestDir)
+                  string imageDestDir,
+		  int|void quiet)
 {
   array(string) parents = ({});
   int counter = 0;
@@ -213,7 +216,9 @@ string moveImages(string docXMLFile,
               + "." + formatExt;
 
 	    mapping args = n->get_attributes();
-            werror("copying from [%s] to [%s]\n", imageFilename, destFilename);
+	    if (!quiet)
+	      werror("copying from [%s] to [%s]\n",
+		     imageFilename, destFilename);
 	    if(!Stdio.cp(imageFilename, destFilename)) {
 	      werror("Error: Could not move %s to %s.\n", imageFilename, destFilename);
 	      if(!Stdio.read_file(imageFilename))
