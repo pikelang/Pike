@@ -1,3 +1,8 @@
+Wed Jun  4 18:01:35 1997  Niels Möller  <nisse@infovav.se>
+
+	* modules/Gmp/mpz_glue.c (get_mpz_from_digits): Fixed small memory
+	leak.
+
 Sun Jun  1 00:05:00 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/files/efuns.c (f_filesystem_stat): Added function.
