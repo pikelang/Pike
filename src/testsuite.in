@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.302 2000/06/12 21:41:41 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.303 2000/06/12 23:00:32 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2332,6 +2332,16 @@ ifefun(gc,
 		      dead[0]->x = dead[0], dead[0]->y = dead_nested[0];
 		      dead[1]->x = dead[1], dead[1]->y = dead_nested[1];
 		      dead_nested[0]->y = live[0], dead_nested[0]->x = dead_nested[1];
+		    }}),
+      ({3, 0, 0, 0, lambda() {	// 62
+		      live[0]->x = live[1];
+		      live[1]->x = live[0], live[1]->y = live[2];
+		      live[2]->x = live[1];
+		    }}),
+      ({3, 0, 0, 0, lambda() {	// 63
+		      live[0]->x = live[1];
+		      live[1]->y = live[0], live[1]->x = live[2];
+		      live[2]->x = live[1];
 		    }}),
       //       ({3, 0, 0, 0, lambda() { // Not possible without weak refs directly in objects.
       // 		   live[0]->x = live[0], live[0]->v[0] = live[1];
