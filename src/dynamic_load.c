@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.39 2000/02/17 18:58:16 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.40 2001/09/26 23:17:59 hubbe Exp $");
 
 #endif /* !TESTING */
 
@@ -256,7 +256,7 @@ void f_load_module(INT32 args)
 
   /* Removing RTLD_GLOBAL breaks some PiGTK themes - Hubbe */
   module=dlopen(module_name, 
-                (d_flag ? RTLD_NOW : RTLD_LAZY) |RTLD_GLOBAL  );
+		RTLD_LAZY |RTLD_GLOBAL  );
 
   if(!module)
   {
