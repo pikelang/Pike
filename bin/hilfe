@@ -69,6 +69,30 @@ object eval(string f)
   return o;
 }
 
+mixed do_evaluate(string a, int show_result)
+{
+  mixed foo, c;
+  if(foo=eval(a))
+  {
+    if(c=catch(a=sprintf("%O",foo->___Foo4711())))
+    {
+      if(arrayp(c) && sizeof(c)==2 && arrayp(c[1]))
+      {
+	c[1]=c[1][sizeof(backtrace())..];
+	write(describe_backtrace(c));
+      }else{
+	write(sprintf("Error in evalutation: %O\n",c));
+      }
+    }else{
+      if(show_result)
+	write("Result: "+a+"\n");
+      else
+	write("Ok.\n");
+      variables=foo->query_variables();
+    }
+  }
+}
+
 string input="";
 
 string skipwhite(string f)
@@ -354,16 +378,7 @@ mixed parse_function(string fun)
   case "while":
   case "foreach":
     /* parse loop */
-    if(foo=eval("mixed ___Foo4711() { "+fun+" ; }\n"))
-    {
-      if(c=catch(foo->___Foo4711()))
-      {
-	write("error during evaluation: "+c);
-      }else{
-	write("Ok.\n");
-	variables=foo->query_variables();
-      }
-    }
+    do_evaluate("mixed ___Foo4711() { "+fun+" ; }\n",0);
     return 1;
 
   case "int":
@@ -420,16 +435,7 @@ mixed parse_statement(string ex)
   case "while":
   case "foreach":
     /* parse loop */
-    if(foo=eval("mixed ___Foo4711() { "+ex+" ; }\n"))
-    {
-      if(c=catch(foo->___Foo4711()))
-      {
-	write("error during evaluation: "+c);
-      }else{
-	write("Ok.\n");
-	variables=foo->query_variables();
-      }
-    }
+    do_evaluate("mixed ___Foo4711() { "+ex+" ; }\n",0);
     return 1;
 
   case "int":
@@ -487,17 +493,7 @@ mixed parse_statement(string ex)
   default:
     if(ex==";") return 1;
     /* parse expressions */
-    a="mixed ___Foo4711() { return (mixed)("+ex[0..strlen(ex)-2]+"); }\n";
-    if(foo=eval(a))
-    {
-      if(c=catch(a=sprintf("%O",foo->___Foo4711())))
-      {
-	write(sprintf("error during evaluation: %O",c));
-      }else{
-	write("Result: "+a+"\n");
-	variables=foo->query_variables();
-      }
-    }
+    do_evaluate("mixed ___Foo4711() { return (mixed)("+ex[0..strlen(ex)-2]+"); }\n",1);
     return 1;
   }
 }
