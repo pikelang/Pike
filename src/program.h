@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.151 2002/01/16 02:54:19 nilsson Exp $
+ * $Id: program.h,v 1.152 2002/02/06 17:23:24 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -202,7 +202,7 @@ struct program_constant
 #define ID_MODIFIER_MASK 0x0fff
 
 #define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
-#define ID_SAVE_PARENT 0x10000 /* pragma save_parent */
+#define ID_SAVE_PARENT  0x10000 /* #pragma save_parent */
 
 
 /*
@@ -281,7 +281,7 @@ struct pike_trampoline
 /* */
 #define PROGRAM_USES_PARENT 0x80
 
-/* Objects should not be destructed even when they only has weak
+/* Objects should not be destructed even when they only have weak
  * references left. */
 #define PROGRAM_NO_WEAK_FREE 0x100
 
@@ -536,7 +536,7 @@ PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * ty
 PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
-		      unsigned INT8 flags,
+		      unsigned INT16 flags,
 		      unsigned INT8 function_flags,
 		      union idptr *func,
 		      unsigned INT16 opt_flags);
