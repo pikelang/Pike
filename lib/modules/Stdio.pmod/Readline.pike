@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.44 2003/01/20 17:44:01 nilsson Exp $
+// $Id: Readline.pike,v 1.45 2003/05/04 21:27:09 nilsson Exp $
 #pike __REAL_VERSION__
 
 class OutputController
@@ -378,8 +378,8 @@ class OutputController
     outfd->write(term->put("bl")||"");
   }
 
-  void create(object(Stdio.File)|void _outfd,
-	      object(Stdio.Terminfo.Termcap)|string|void _term)
+  void create(Stdio.File|void _outfd,
+	      Stdio.Terminfo.Termcap|string|void _term)
   {
     outfd = _outfd || Stdio.File("stdout");
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
@@ -727,7 +727,8 @@ class InputController
 
 class DefaultEditKeys
 {
-  static private multiset word_break_chars = mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
+  static private multiset word_break_chars =
+    mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
   static object _readline;
 
   void self_insert_command(string str)
@@ -1081,15 +1082,15 @@ class History
 }
 
 
-static private object(OutputController) output_controller;
-static private object(InputController) input_controller;
+static private OutputController output_controller;
+static private InputController input_controller;
 static private string prompt="";
 static private array(string) prompt_attrs=0;
 static private string text="", readtext;
 static private function(string:void) newline_func;
 static private int cursorpos = 0;
 static private int mark = 0;
-/*static private */ object(History) historyobj = 0;
+/*static private */ History historyobj = 0;
 static private int hide = 0;
 
 static private array(string) kill_ring=({});
@@ -1098,7 +1099,7 @@ static private int kill_ring_size=30;
 //!  get current output control object
 //!  @returns
 //!    Terminal output controller object
-object(OutputController) get_output_controller()
+OutputController get_output_controller()
 {
   return output_controller;
 }
@@ -1106,7 +1107,7 @@ object(OutputController) get_output_controller()
 //!  get current input control object
 //!  @returns
 //!    Terminal input controller object
-object(InputController) get_input_controller()
+InputController get_input_controller()
 {
   return input_controller;
 }
@@ -1517,7 +1518,7 @@ string read(string|void prompt, array(string)|void attrs)
 
 //! @fixme
 //!   Document this function
-void enable_history(array(string)|object(History)|int hist)
+void enable_history(array(string)|History|int hist)
 {
   if (objectp(hist))
     historyobj = hist;
@@ -1538,16 +1539,6 @@ History get_history()
   return historyobj;
 }
 
-//! @fixme
-//!   Document this function
-void destroy()
-{
-  if(input_controller)
-    destruct(input_controller);
-  if(output_controller)
-    destruct(output_controller);
-}
-
 //! Creates a Readline object, that takes input from @[infd] and has output
 //! on @[outfd].
 //!
@@ -1566,7 +1557,6 @@ void destroy()
 void create(object|void infd, object|string|void interm,
 	    object|void outfd, object|string|void outterm)
 {
-  atexit(destroy);
   output_controller = OutputController(outfd || infd, outterm || interm);
   input_controller = InputController(infd, interm);
   DefaultEditKeys(this_object());
