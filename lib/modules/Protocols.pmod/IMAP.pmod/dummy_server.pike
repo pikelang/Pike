@@ -419,6 +419,7 @@ class backend
   /* HERE
    *
    * Next command for pine: A00003 FETCH 1:1 ALL
+   *                        A00004 SEARCH DELETED
    * Next command for netscape: 6 create "Trash"
    */
 }
