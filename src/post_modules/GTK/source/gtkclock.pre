@@ -14,12 +14,15 @@ inherit label;
 // <p>
 // Note, however, that the accuracy of the gtkclock widget is limited
 // to 1 second.
+// IMG: GTK.Clock( GTK.ClockRealtime );
+// IMG: GTK.Clock( GTK.ClockDecreasing )->set_seconds(10000)->start();
+
 constant int GTK_CLOCK_INCREASING;
 constant int GTK_CLOCK_DECREASING;
 constant int GTK_CLOCK_REALTIME;
 
 void create( int type );
-// type is one of CONST(GTK_CLOCK);
+// type is one of CONST(GTK_CLOCK_);
 void set_format( string fmt );
 // Set the format of a GtkClock widget. The syntax of the format
 // string is identical to that of the function strftime(3). Further
