@@ -572,7 +572,7 @@ struct mapping *copy_mapping(struct mapping *m)
 
   LOOP(m) mapping_insert(n, &k->ind, &k->val);
   
-  return m;
+  return n;
 }
 
 struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
@@ -704,9 +704,10 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 
   LOOP(m)
   {
-    if(!d)
+    if(d)
     {
       my_strcat(",\n");
+    } else {
       d=1;
     }
     for(d=0; d<indent; d++) my_putchar(' ');
