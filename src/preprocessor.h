@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.75 2004/10/15 15:40:10 nilsson Exp $
+|| $Id: preprocessor.h,v 1.76 2004/10/31 22:35:45 mast Exp $
 */
 
 /*
@@ -352,7 +352,7 @@ static INLINE ptrdiff_t find_end_brace(struct cpp *this,
 static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
 		       ptrdiff_t pos, int flags)
 {
-  FINDTOK();
+  SKIPWHITE();
 
   CALC_DUMPPOS("calcC");
 
@@ -360,7 +360,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
   {
   case '(':
     pos=calc1(this,data,len,pos+1,flags);
-    FINDTOK();
+    SKIPWHITE();
     if(!GOBBLE(')'))
       cpp_error(this, "Missing ')'");
     break;
@@ -528,7 +528,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
   }
   
 
-  FINDTOK();
+  SKIPWHITE();
 
   while(GOBBLE('['))
   {
@@ -537,7 +537,7 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
     if(OUTP())
       f_index(2);
 
-    FINDTOK();
+    SKIPWHITE();
     if(!GOBBLE(']'))
       cpp_error(this, "Missing ']'.");
   }
@@ -550,7 +550,7 @@ static ptrdiff_t calcB(struct cpp *this, WCHAR *data, ptrdiff_t len,
 {
   CALC_DUMPPOS("before calcB");
 
-  FINDTOK();
+  SKIPWHITE();
   switch(data[pos])
   {
     case '-': pos++; pos=calcB(this,data,len,pos,flags);
@@ -574,7 +574,7 @@ static ptrdiff_t calcA(struct cpp *this, WCHAR *data, ptrdiff_t len,
   while(1)
   {
     CALC_DUMPPOS("inside calcA");
-    FINDTOK();
+    SKIPWHITE();
     switch(data[pos])
     {
       case '/':
@@ -615,7 +615,7 @@ static ptrdiff_t calc9(struct cpp *this, WCHAR *data, ptrdiff_t len,
   while(1)
   {
     CALC_DUMPPOS("inside calc9");
-    FINDTOK();
+    SKIPWHITE();
     switch(data[pos])
     {
       case '+':
@@ -652,7 +652,7 @@ static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
     static const WCHAR rsh_[] = { '>', '>' };
 
     CALC_DUMPPOS("inside calc8");
-    FINDTOK();
+    SKIPWHITE();
     if(GOBBLEOP2(lsh_))
     {
       CALC_DUMPPOS("Found <<");
@@ -687,7 +687,7 @@ static ptrdiff_t calc7b(struct cpp *this, WCHAR *data, ptrdiff_t len,
   {
     CALC_DUMPPOS("inside calc7b");
 
-    FINDTOK();
+    SKIPWHITE();
     
     switch(data[pos])
     {
@@ -740,7 +740,7 @@ static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
     CALC_DUMPPOS("inside calc7");
 
-    FINDTOK();
+    SKIPWHITE();
     if(GOBBLEOP2(eq_))
     {
       pos=calc7b(this,data,len,pos,flags);
@@ -769,7 +769,7 @@ static ptrdiff_t calc6(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   pos=calc7(this,data,len,pos,flags);
 
-  FINDTOK();
+  SKIPWHITE();
   while(data[pos] == '&' && data[pos+1]!='&')
   {
     CALC_DUMPPOS("inside calc6");
@@ -789,7 +789,7 @@ static ptrdiff_t calc5(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   pos=calc6(this,data,len,pos,flags);
 
-  FINDTOK();
+  SKIPWHITE();
   while(GOBBLE('^'))
   {
     CALC_DUMPPOS("inside calc5");
@@ -808,7 +808,7 @@ static ptrdiff_t calc4(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   pos=calc5(this,data,len,pos,flags);
 
-  FINDTOK();
+  SKIPWHITE();
   while(data[pos] == '|' && data[pos+1]!='|')
   {
     CALC_DUMPPOS("inside calc4");
@@ -829,7 +829,7 @@ static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   pos=calc4(this,data,len,pos,flags);
 
-  FINDTOK();
+  SKIPWHITE();
   while(GOBBLEOP2(land_))
   {
     CALC_DUMPPOS("inside calc3");
@@ -858,7 +858,7 @@ static ptrdiff_t calc2(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   pos=calc3(this,data,len,pos,flags);
 
-  FINDTOK();
+  SKIPWHITE();
   while(GOBBLEOP2(lor_))
   {
     CALC_DUMPPOS("inside calc2");
@@ -885,7 +885,7 @@ static ptrdiff_t calc1(struct cpp *this, WCHAR *data, ptrdiff_t len,
 
   pos=calc2(this,data,len,pos,flags);
 
-  FINDTOK();
+  SKIPWHITE();
 
   if(GOBBLE('?'))
   {
@@ -973,6 +973,19 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       PUTC(' ');
       break;
+
+    case '\\':
+      if(data[pos]=='\n')
+	pos++;
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n'))
+	pos += 2;
+      else {
+	PUTC ('\\');
+	break;
+      }
+      this->current_line++;
+      PUTNL();
+      goto do_skipwhite;
 
     case '\t':
     case ' ':

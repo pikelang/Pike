@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.146 2004/09/30 17:33:43 mast Exp $
+|| $Id: cpp.c,v 1.147 2004/10/31 22:35:45 mast Exp $
 */
 
 #include "global.h"
@@ -1025,41 +1025,6 @@ while(1)					\
   pos++;					\
   break;					\
 }
-
-#define FINDTOK() 				\
-  do {						\
-  SKIPSPACE();					\
-  if(data[pos]=='/')				\
-  {						\
-    ptrdiff_t tmp;				\
-    switch(data[pos+1])				\
-    {						\
-    case '/':					\
-      FIND_EOL();				\
-      break;					\
-      						\
-    case '*':					\
-      tmp=pos+2;				\
-      while(1)					\
-      {						\
-        if(data[tmp]=='*')			\
-	{					\
-	  if(data[tmp+1] == '/')		\
-	  {					\
-	    pos=tmp+2;				\
-	    break;				\
-	  }					\
-	  break;				\
-	}					\
-						\
-	if(data[tmp]=='\n')			\
-	  break;				\
-        tmp++;					\
-      }						\
-    }						\
-  }						\
-  break;					\
-  }while(1)
 
 static struct pike_string *recode_string(struct cpp *this, struct pike_string *data)
 {

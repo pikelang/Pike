@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.741 2004/10/30 11:38:28 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.742 2004/10/31 22:35:45 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7628,6 +7628,8 @@ test_equal([[
     feed("#charset ebcdic-us\n"
 	 "constant val = \"abc\";\n")->drain())()->val;
 ]], "abc")
+test_eq([[cpp("\\\n")]], "# 1 \"-\"\n\n")
+test_eq([[cpp("#if 1\\\n-1\nfoo\n#endif\n")]], "# 1 \"-\"\n\n\n\n\n")
 
 // The following three tests are in triplicate to force testing in all shifts.
 test_do([[
