@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.19 1999/06/09 16:23:31 marcus Exp $
+// $Id: Readline.pike,v 1.20 1999/06/09 17:34:32 marcus Exp $
 
 class OutputController
 {
@@ -55,6 +55,8 @@ class OutputController
 	      ({
 		"\000","\001","\002","\003","\004","\005","\006","\007",
 		  "\010","\011","\012","\013","\014","\015","\016","\017",
+		  "\020","\021","\022","\023","\024","\025","\026","\027",
+		  "\030","\031","\032","\033","\034","\035","\036","\037",
 		  "\177",
 		  "\200","\201","\202","\203","\204","\205","\206","\207",
 		  "\210","\211","\212","\213","\214","\215","\216","\217",
@@ -64,6 +66,8 @@ class OutputController
 	      ({
 		"^@","^A","^B","^C","^D","^E","^F","^G",
 		  "^H","^I","^J","^K","^L","^M","^N","^O",
+		  "^P","^Q","^R","^S","^T","^U","^V","^W",
+		  "^X","^Y","^Z","^[","^\\","^]","^^","^_",
 		  "^?",
 		  "~@","~A","~B","~C","~D","~E","~F","~G",
 		  "~H","~I","~J","~K","~L","~M","~N","~O",
@@ -95,7 +99,7 @@ class OutputController
     return width(escapify(s));
   }
 
-  void low_write(string s, void|int opt, void|int word_break)
+  void low_write(string s, void|int word_break)
   {
     int n = width(s);
     if(!n)
@@ -138,17 +142,16 @@ class OutputController
       }
     }
     string le;
-    if(!opt && xpos==0 && term->tgetflag("am") && (le=term->put("le")))
-      outfd->write(" "+le);
     if(n>0) {
       outfd->write(s);
       xpos += n;
-    }
+    } else if(xpos==0 && term->tgetflag("am") && (le=term->put("le")))
+      outfd->write(" "+le);
   }
 
-  void write(string s,void|int opt, void|int word_break,void|int hide)
+  void write(string s,void|int word_break,void|int hide)
   {
-    low_write(escapify(s,hide),opt,word_break);
+    low_write(escapify(s,hide),word_break);
   }
 
   void low_move_downward(int n)
@@ -1048,12 +1051,12 @@ void insert(string s, int p)
   if (p>strlen(text))
     p = strlen(text);
   setcursorpos(p);
-  output_controller->write(s,0,0,hide);
+  output_controller->write(s,0,hide);
   cursorpos += strlen(s);
   string rest = text[p..];
   if (strlen(rest))
   {
-    output_controller->write(rest,0,0,hide);
+    output_controller->write(rest,0,hide);
     output_controller->move_backward(rest);
   }
   text = text[..p-1]+s+rest;
@@ -1070,7 +1073,7 @@ void delete(int p1, int p2)
   setcursorpos(p1);
   if (p1>=p2)
     return;
-  output_controller->write(text[p2..],0,0,hide);
+  output_controller->write(text[p2..],0,hide);
   output_controller->erase(text[p1..p2-1]);
   text = text[..p1-1]+text[p2..];
 
@@ -1151,7 +1154,7 @@ void redisplay(int clear, int|void nobackup)
 // This seems like a silly limitation
 //  if(newline_func == read_newline)
     output_controller->write(prompt);
-  output_controller->write(text,0,0,hide);
+  output_controller->write(text,0,hide);
   cursorpos = sizeof(text);
   setcursorpos(p);
 }
@@ -1208,10 +1211,10 @@ void write(string msg,void|int word_wrap)
   array(string) tmp=msg/"\n";
   foreach(tmp[..sizeof(tmp)-2],string l)
   {
-    output_controller->write(l,1,word_wrap);
+    output_controller->write(l,word_wrap);
     output_controller->newline();
   }
-  output_controller->write(tmp[-1],0,word_wrap);
+  output_controller->write(tmp[-1],word_wrap);
 
   cursorpos=strlen(text);
   redisplay(0, 1);
