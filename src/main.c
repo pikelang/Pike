@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.208 2004/09/22 13:40:27 mast Exp $
+|| $Id: main.c,v 1.209 2004/09/26 15:18:01 marcus Exp $
 */
 
 #include "global.h"
@@ -827,7 +827,7 @@ int dbm_main(int argc, char **argv)
     
 #ifdef __amigaos__
 #ifdef __amigaos4__
-    if(DOSBase->dl_lib.lib_Version >= 50) {
+    if(DOSBase->lib_Version >= 50) {
       struct svalue *mark = Pike_sp;
       IDOS->ScanVars(&scan_amigaos_environment_hook,
 		     GVF_BINARY_VAR|GVF_DONT_NULL_TERM,
