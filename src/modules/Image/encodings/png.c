@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.48 2003/01/06 13:49:00 nilsson Exp $
+|| $Id: png.c,v 1.49 2004/02/06 02:34:35 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.48 2003/01/06 13:49:00 nilsson Exp $");
+RCSID("$Id: png.c,v 1.49 2004/02/06 02:34:35 jhs Exp $");
 
 #include "image_machine.h"
 
@@ -469,7 +469,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	       a=(a+b)>>1;
 
 	       *d=*s+a;
-       
+
 	       d++;
 	       s++;
 	    }
@@ -874,7 +874,7 @@ static int _png_write_rgb(rgb_group *w1,
 	 switch (bpp)
 	 {
 	    case 8:
-	       if (n>len/3) n=len/3;
+	       if (n>len/2) n=len/2;
 	       while (n)
 	       {
 		  d1->r=d1->g=d1->b=*(s++);
@@ -885,7 +885,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       }
 	       break;
 	    case 16:
-	       if (n>len/6) n=len/6;
+	       if (n>len/4) n=len/4;
 	       while (n)
 	       {
 		  d1->r=d1->g=d1->b=*(s++);
@@ -1223,7 +1223,7 @@ static void img_png_decode(INT32 args,int header_only)
    {
       Pike_error("Image.PNG._decode: missing palette (PLTE chunk)\n");
    }
-   
+
    if (ihdr.compression==0)
    {
       png_decompress(ihdr.compression);
@@ -1234,7 +1234,7 @@ static void img_png_decode(INT32 args,int header_only)
       Pike_error("Image.PNG._decode: illegal compression type 0x%02x\n",
 	    ihdr.compression);
 
-   fs=sp[-1].u.string; 
+   fs=sp[-1].u.string;
    push_int(-1);
    mapping_insert(m,sp-1,sp-2);
 
