@@ -6459,7 +6459,7 @@ const UNICHAR map_JIS_X0212_1990[] = {
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
   0xfffd, 0xfffd, 0xfffd, 0xfffd, };
-const UNICHAR *iso2022_94[] = {
+const UNICHAR * const iso2022_94[] = {
   map_ISO_646_irv_1983, map_BS_4730, map_ANSI_X3_4_1968, map_NATS_SEFI, 
   map_NATS_SEFI_ADD, map_NATS_DANO, map_NATS_DANO_ADD, map_SEN_850200_B, 
   map_SEN_850200_C, map_JIS_C6220_1969_jp, map_JIS_C6220_1969_ro, map_DIN_66003, 
@@ -6476,7 +6476,7 @@ const UNICHAR *iso2022_94[] = {
   map_ANSI_X3_110_1983, map_T_61_7bit, map_T_61_8bit, map_CSA_Z243_4_1985_1, 
   map_CSA_Z243_4_1985_2, NULL, map_JUS_I_B1_002, map_JUS_I_B1_003_serb, 
   map_T_101_G2, map_JUS_I_B1_003_mac, NULL };
-const UNICHAR *iso2022_96[] = {
+const UNICHAR * const iso2022_96[] = {
   map_ECMA_cyrillic, map_ISO_8859_1_1998, map_ISO_8859_2_1999, map_ISO_8859_3_1999, 
   map_ISO_8859_4_1998, map_CSA_Z243_4_1985_gr, map_ISO_8859_7_1987, map_ISO_8859_6_1999, 
   map_ISO_8859_8_1999, map_CSN_369103, map_ISO_6937_2_add, map_IEC_P27_1, 
@@ -6493,7 +6493,7 @@ const UNICHAR *iso2022_96[] = {
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL };
-const UNICHAR *iso2022_9494[] = {
+const UNICHAR * const iso2022_9494[] = {
   map_JIS_C6226_1978, map_GB_2312_80, map_JIS_C6226_1983, map_KS_C_5601_1987, 
   map_JIS_X0212_1990, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
@@ -6502,7 +6502,7 @@ const UNICHAR *iso2022_9494[] = {
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL };
-const UNICHAR *iso2022_9696[] = {
+const UNICHAR * const iso2022_9696[] = {
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
   NULL, NULL, NULL, NULL, 
