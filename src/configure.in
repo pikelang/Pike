@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.571 2002/04/06 01:03:59 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.572 2002/04/06 15:26:22 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -124,6 +124,8 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   [
     OLD_CFLAGS="[$]CFLAGS"
     CFLAGS="[$]OLD_CFLAGS $1"
+    old_ac_link="[$]ac_link"
+    ac_link="[$]old_ac_link 2>conftezt.out.2"
     AC_TRY_RUN([
       int foo;
       int main(int argc, char **argv)
@@ -139,6 +141,11 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
       AC_TRY_LINK([], [], pike_cv_option_$2=yes, pike_cv_option_$2=no)
     ])
     CFLAGS="[$]OLD_CFLAGS"
+    ac_link="[$]old_ac_link"
+    if grep 'unrecognized option' <conftezt.out.2 >/dev/null; then
+      pike_cv_option_$2=no
+    else :; fi
+    rm conftezt.out.2
   ])
   
   if test x"[$]pike_cv_option_$2" = "xyes" ; then
