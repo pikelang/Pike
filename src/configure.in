@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.367 2000/05/10 01:00:02 neotron Exp $")
+AC_REVISION("$Id: configure.in,v 1.368 2000/05/19 16:57:30 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -62,7 +62,7 @@ AC_PROG_CPP
 # The purpose of this test is to check that there is no filesystem
 # caching preventing pike from compiling correctly.
 #
-AC_MSG_CHECKING([filesystem syncronization])
+AC_MSG_CHECKING([filesystem synchronization])
 
 AC_CACHE_VAL(pike_cv_filesystem_syncronization,
 [
@@ -217,7 +217,7 @@ export REALCC SMARTLINK
 
 AC_AIX
 AC_MINIX
-
+ 
 #############################################################################
 
 # option, cache_name, variable
@@ -1008,7 +1008,8 @@ done
 export EXTRA_PATH
 
 else
-  :   # We are running NT
+  # We are running NT
+  CPPFLAGS="${CPPFLAGS} -I$srcdir -I`pwd`"  
 fi
 
 #############################################################################
@@ -3197,27 +3198,27 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
     AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_FNDELAY
-#include "$srcdir/fd_control.c"
+#include "fd_control.c"
 ], pike_cv_sys_nonblock=USE_FCNTL_FNDELAY,
     AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_O_NDELAY
-#include "$srcdir/fd_control.c"
+#include "fd_control.c"
 ], pike_cv_sys_nonblock=USE_FCNTL_O_NDELAY,
     AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_O_NONBLOCK
-#include "$srcdir/fd_control.c"
+#include "fd_control.c"
 ], pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK,
     AC_TRY_RUN([
 #define TESTING
 #define USE_IOCTL_FIONBIO
-#include "$srcdir/fd_control.c"
+#include "fd_control.c"
 ], pike_cv_sys_nonblock=USE_IOCTL_FIONBIO,
     AC_TRY_RUN([
 #define TESTING
 #define USE_IOCTLSOCKET_FIONBIO
-#include "$srcdir/fd_control.c"
+#include "fd_control.c"
 ], pike_cv_sys_nonblock=USE_IOCTLSOCKET_FIONBIO,
 unset pike_cv_sys_nonblock,
 unset pike_cv_sys_nonblock),
@@ -3462,7 +3463,7 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
     esac
     AC_TRY_RUN([
 #define TESTING
-#include "$srcdir/dynamic_load.c"
+#include "dynamic_load.c"
 void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
