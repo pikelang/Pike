@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.300 1999/06/22 19:06:36 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.301 1999/06/24 22:07:29 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3161,6 +3161,8 @@ echo
 #############################################################################
 
 export LDFLAGS CFLAGS CPPFLAGS LIBS
+export prefix exec_prefix OTHERFLAGS
+export TMP_BINDIR DEFINES INSTALL
 
 AC_CONFIG_SUBDIRS(modules)
 
