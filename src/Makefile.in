@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.224 2000/12/02 01:36:07 hubbe Exp $
+# $Id: Makefile.in,v 1.225 2000/12/02 16:00:10 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -156,7 +156,7 @@ MODULE_REQUIREMENTS= \
   $(SRCDIR)/language.h \
   interpret_protos.h \
   lib \
-  master.pike @EXTRA_MODULE_REQUIREMENTS@
+  @EXTRA_MODULE_REQUIREMENTS@
 
 
 DEPEND= \
@@ -186,7 +186,7 @@ POBJ = las.o builtin_functions.o peep.o
 # static modules, and thus have to be linked into pike.
 # 
 # No rest for the wicked.
-all: module_objects hilfe
+all: module_objects hilfe master.pike
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
 	  if cmp $(SRCDIR)/peep_engine.c dummy_engine >/dev/null 2>&1; then \
@@ -236,7 +236,7 @@ $(TMP_BUILDDIR)/tpike:
 # the recursive make of tpike-real above, that one will never start to
 # make the $(OBJ)s concurrently with this one. stamp-tpike-predep
 # records the $(POBJ) dependencies without tpike.
-pike: $(OBJ) modules/linker_options stamp-tpike-predep
+pike: $(OBJ) master.pike modules/linker_options stamp-tpike-predep
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
@@ -244,17 +244,17 @@ pike: $(OBJ) modules/linker_options stamp-tpike-predep
 	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
-pure: $(OBJ) $(POBJ) module_objects
+pure: $(OBJ) $(POBJ) master.pike module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
-cover: $(OBJ) $(POBJ) module_objects
+cover: $(OBJ) $(POBJ) master.pike module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
-quant: $(OBJ) $(POBJ) module_objects
+quant: $(OBJ) $(POBJ) master.pike module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
 
@@ -450,7 +450,7 @@ run_hilfe:
 feature_list:
 	$(RUNPIKE) $(TMP_BINDIR)/feature_list
 
-lib: $(LIBDIR_SRC)/master.pike.in Makefile
+lib: Makefile
 	@for d in lib lib/modules lib/include; do \
 	  if [ -d $$d/. ]; then : ; else \
 	    echo "Creating $$d/."; \
