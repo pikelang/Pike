@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.4 2001/05/27 01:14:27 per Exp $
+// $Id: Crawler.pmod,v 1.5 2001/05/27 17:49:25 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -144,6 +144,16 @@ class Queue
   void put(string|array(string)|Standards.URI|array(Standards.URI) uri);
 
   void done(Standards.URI uri);
+
+  int check_link(Standards.URI link, RuleSet allow, RuleSet deny)
+  {
+    if(link->fragment)
+      link->fragment=0;
+//        werror("allow: %d  deny: %d (%s)\n",
+//  	     allow->check(link), deny->check(link),
+//  	     (string)link);
+    return !deny->check(link) || allow->check(link);
+  }
 }
 
 class Rule
@@ -205,20 +215,24 @@ class MySQLQueue
 {
   Stats stats;
   Policy policy;
+  RuleSet allow,deny;
 
   string host;
   string table;
   
   Sql.Sql db;
   
-//   inherit Queue;
+  inherit Queue;
 
-  void create( Stats _stats, Policy _policy, string _host, string _table )
+  void create( Stats _stats, Policy _policy, string _host, string _table,
+	       void|RuleSet _allow, void|RuleSet _deny)
   {
     stats = _stats;
     policy = _policy;
     host = _host;
     table = _table;
+    allow=_allow;
+    deny=_deny;
 
     db = Sql.Sql( host );
 
@@ -226,27 +240,28 @@ class MySQLQueue
     {
       db->query("create table "+table+" ("
 		"done int(2) unsigned not null, "
-		"url varchar(255) not null unique primary key)" );
+		"uri varchar(255) not null unique primary key)" );
     };
   }
 
-  static int done_url( string url )
+  static int done_uri( string|Standards.URI uri )
   {
     return sizeof(db->query("select done from "+
-			    table+" where done=2 and url=%s",
-			    url));
+			    table+" where done=2 and uri=%s",
+			    (string)uri));
   }
 
-  static int has_url( string url )
+  static int has_uri( string|Standards.URI uri )
   {
-    return sizeof(db->query("select done from "+table+" where url=%s",
-			    url));
+    return sizeof(db->query("select done from "+table+" where uri=%s",
+			    (string)uri));
   }
 
-  static void add_url( string url )
+  static void add_uri( Standards.URI uri )
   {
-    if( !has_url( url ) )
-      db->query( "insert into "+table+" (url) values (%s)", url );
+    if(((!allow && !deny) || check_link(uri, allow, deny))
+       && !has_uri(uri))
+      db->query( "insert into "+table+" (uri) values (%s)", (string)uri );
   }
 
   static int empty_count;
@@ -258,12 +273,12 @@ class MySQLQueue
 
     db->query( "select GET_LOCK('"+table+"_query',400)");
     array possible =
-      db->query( "select url from "+table+" where done=0 limit 1" );
+      db->query( "select uri from "+table+" where done=0 limit 1" );
     if( sizeof( possible ) )
     {
-      string u = possible[0]->url;
+      string u = possible[0]->uri;
       empty_count=0;
-      db->query( "UPDATE "+table+" SET done=1 WHERE url=%s", (string)u );
+      db->query( "UPDATE "+table+" SET done=1 WHERE uri=%s", (string)u );
       db->query( "select RELEASE_LOCK('"+table+"_query')");
       return Standards.URI(u);
     }
@@ -281,14 +296,20 @@ class MySQLQueue
   void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
   {
     if(arrayp(uri))
-      foreach(uri, uri) add_url((string)uri);
-    else
-      add_url((string)uri);
+    {
+      foreach(uri, string|object _uri)
+        put(_uri);
+      return;
+    }
+    if(!objectp(uri))
+      uri=Standards.URI(uri);
+    
+    add_uri(uri);
   }
 
   void done(Standards.URI uri)
   {
-    db->query( "UPDATE "+table+" SET done=2 WHERE url=%s", (string)uri );
+    db->query( "UPDATE "+table+" SET done=2 WHERE uri=%s", (string)uri );
   }
 }
 
@@ -567,7 +588,6 @@ class RobotExcluder
 
 class Crawler
 {
-  RuleSet allow,deny;
   Queue queue;
   function page_cb, done_cb;
 
@@ -582,15 +602,12 @@ class Crawler
     
     void got_data()
     {
-//        werror("status: %d\n", status);
-//        werror("status_desc: %O\n", status_desc);
-//        queue->stats->bytes_read_callback(uri, total_bytes());
       queue->stats->close_callback(uri);
       if(status==200)
-	check_links(page_cb(uri, data(), headers, @args));
+	add_links(page_cb(uri, data(), headers, @args));
 
       if(headers->location)
-	check_links(({ Standards.URI(headers->location) }));
+	add_links(({ Standards.URI(headers->location) }));
 
       queue->done(uri);
     }
@@ -623,18 +640,9 @@ class Crawler
     }
   }
 
-  void check_links(array(Standards.URI) links)
+  void add_links(array(Standards.URI) links)
   {
-    foreach(links, Standards.URI link)
-    {
-      if(link->fragment)
-	link->fragment=0;
-//        werror("allow: %d  deny: %d (%s)\n",
-//  	     allow->check(link), deny->check(link),
-//  	     (string)link);
-      if(!deny->check(link) || allow->check(link))
-	queue->put(link);
-    }
+    map(links,queue->put);
   }
   
   void get_next_uri()
@@ -672,13 +680,11 @@ class Crawler
     call_out(get_next_uri,0.025);
   }
   
-  void create(RuleSet _allow, RuleSet _deny, Queue _queue,
+  void create(Queue _queue,
 	      function _page_cb, function _done_cb,
 	      string|array(string)|Standards.URI|array(Standards.URI) start_uri,
 	      mixed ... _args)
   {
-    allow=_allow;
-    deny=_deny;
     queue=_queue;
     args=_args;
     page_cb=_page_cb;
