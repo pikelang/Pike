@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.9 2001/01/20 21:35:05 mast Exp $
+ * $Id: pike_error.h,v 1.10 2001/03/07 12:15:27 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -174,7 +174,7 @@ PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
 PMOD_EXPORT void push_error(const char *description);
 PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noreturn));
-void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
+void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
 PMOD_EXPORT void exit_on_error(void *msg);
