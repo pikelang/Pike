@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.87 1999/11/23 06:35:39 per Exp $");
+RCSID("$Id: spider.c,v 1.88 1999/12/14 23:54:00 mast Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1285,13 +1285,41 @@ void pike_module_init(void)
 	   OPT_EXTERNAL_DEPEND);
 
   
-/* function(string,mapping(string:string|function(string|void,mapping(string:string)|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,mixed ...:string)),mixed ...:string) */
-  ADD_EFUN("parse_html",f_parse_html,tFuncV(tStr tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid),tMix,tStr))) tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tStr,tVoid),tMix,tStr))),tMix,tStr),
+  ADD_EFUN("parse_html",f_parse_html,
+	   tFuncV(tStr
+		  tMap(tStr,tOr(tStr,
+				tFuncV(tOr(tStr,tVoid)
+				       tOr(tMap(tStr,tStr),tVoid),
+				       tMix,
+				       tOr(tStr,tArr(tStr)))))
+		  tMap(tStr,tOr(tStr,
+				tFuncV(tOr(tStr,tVoid)
+				       tOr(tMap(tStr,tStr),tVoid)
+				       tOr(tStr,tVoid),
+				       tMix,
+				       tOr(tStr,tArr(tStr))))),
+		  tMix,
+		  tStr),
 	   0);
 
   
-/* function(string,mapping(string:string|function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string) */
-  ADD_EFUN("parse_html_lines",f_parse_html_lines,tFuncV(tStr tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tInt,tVoid),tMix,tStr))) tMap(tStr,tOr(tStr,tFuncV(tOr(tStr,tVoid) tOr(tMap(tStr,tStr),tVoid) tOr(tStr,tVoid) tOr(tInt,tVoid),tMix,tStr))),tMix,tStr),
+  ADD_EFUN("parse_html_lines",f_parse_html_lines,
+	   tFuncV(tStr
+		  tMap(tStr,tOr(tStr,
+				tFuncV(tOr(tStr,tVoid)
+				       tOr(tMap(tStr,tStr),tVoid)
+				       tOr(tInt,tVoid),
+				       tMix,
+				       tOr(tStr,tArr(tStr)))))
+		  tMap(tStr,tOr(tStr,
+				tFuncV(tOr(tStr,tVoid)
+				       tOr(tMap(tStr,tStr),tVoid)
+				       tOr(tStr,tVoid)
+				       tOr(tInt,tVoid),
+				       tMix,
+				       tOr(tStr,tArr(tStr))))),
+		  tMix,
+		  tStr),
 	   0);
 
 /* function(int:array) */
