@@ -1,4 +1,4 @@
-#define Node Parser.XML.Tree.AbstractNode
+#define Node Parser.XML.Tree.Node
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
 #define DEBUG
@@ -14,6 +14,21 @@ Node get_tag(Node n, string name) {
     if(c->get_node_type()==XML_ELEMENT && c->get_any_name()==name)
       return c;
   return 0;
+}
+
+array(Node) get_tags(Node n, string name) {
+  array nodes = ({});
+  foreach(n->get_children(), Node c)
+    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()==name)
+      nodes += ({ c });
+  return nodes;
+}
+
+Node get_first_element(Node n) {
+  foreach(n->get_children(), Node c)
+    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()!="source-position")
+      return c;
+  throw( ({ "Node had no element child.\n", backtrace() }) );
 }
 
 string parse_module(Node n) {
@@ -39,7 +54,7 @@ string parse_module(Node n) {
 string parse_class(Node n) {
   string ret = "<dl><dt>"
     "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
-    "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; CLASS <b><font color='005080'>" +
+    "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; CLASS <b><font color='#005080'>" +
     quote(reverse(n->get_ancestors(1)->get_attributes()->name)[2..]*".") +
     "</font></b></font></td></tr></table><br />\n"
     "</dt><dd>";
@@ -183,7 +198,7 @@ string parse_doc(Node n, void|int no_text) {
 	ret += "<dd><font face='Helvetica'>" + parse_text(cc) + "</font></dd>\n";
       break;
     case "param":
-      ret += "<dt><font face='Helvetica'>Parameter <tt><font color='8000F0'>" +
+      ret += "<dt><font face='Helvetica'>Parameter <tt><font color='#8000F0'>" +
 	quote(c->get_attributes()->name) + "</font></tt></font></dt><dd></dd>";
       break;
     case "seealso":
@@ -205,29 +220,32 @@ string parse_doc(Node n, void|int no_text) {
   return ret;
 }
 
-string parse_type(Node n) {
+string parse_type(Node n, void|string debug) {
+  if(n->get_node_type()!=XML_ELEMENT)
+    return "";
+
   string ret = "";
   switch(n->get_any_name()) {
   case "object":
     if(n->count_children())
-      ret += "<font color='005080'>" + n[0]->get_text() + "</font>";
+      ret += "<font color='#005080'>" + n[0]->get_text() + "</font>";
     else
-      ret += "<font color='202020'>object</font>";
+      ret += "<font color='#202020'>object</font>";
     break;
   case "multiset":
-    ret += "<font color='202020'>multiset</font>";
+    ret += "<font color='#202020'>multiset</font>";
     // if(indextype)...
     break;
   case "array":
-    ret += "<font color='202020'>array</font>";
+    ret += "<font color='#202020'>array</font>";
     // if(valuetype)...
     break;
   case "mapping":
-    ret += "<font color='202020'>mapping</font>";
+    ret += "<font color='#202020'>mapping</font>";
     //if(indextype && valuetypes)
     break;
   case "function":
-    ret += "<font color='202020'>function</font>";
+    ret += "<font color='#202020'>function</font>";
     // if(argtype && returntype)
     break;
   case "varargs":
@@ -235,27 +253,101 @@ string parse_type(Node n) {
     if(!n->count_children())
       throw( ({ "varargs node must have child node.\n", backtrace() }) );
 #endif
-    ret += parse_type(n[0]) + " ... ";
+    ret += parse_type(get_first_element(n)) + " ... ";
     break;
   case "or":
     ret += map(n->get_children(), parse_type)*"|";
     break;
   case "string": case "void": case "program": case "mixed": case "float":
-    ret += "<font color='202020'>" + n->get_any_name() + "</font>";
+    ret += "<font color='#202020'>" + n->get_any_name() + "</font>";
     break;
   case "int":
-    ret += "<font color='202020'>int</font>";
+    ret += "<font color='#202020'>int</font>";
     // min/max ...
     break;
+
+  case "static":
+    // Not implemented yet.
+    break;
+
   default:
-    throw( ({ "Illegal element " + n->get_any_name() + ".\n", backtrace() }) );
+    throw( ({ "Illegal element " + n->get_any_name() + " in mode type.\n", backtrace() }) );
     break;
   }
   return ret;
 }
 
-string megaparse(Node n) {
-  return "";
+string parse_not_doc(Node n) {
+  string ret = "";
+  int method, argument, variable, const;
+
+  foreach(n->get_children(), Node c) {
+
+    if(c->get_node_type()!=XML_ELEMENT)
+      continue;
+
+    Node cc;
+    switch(c->get_any_name()) {
+    case "doc":
+    case "source-position":
+      continue;
+    case "method":
+      if(method++) ret += "<br />\n";
+#ifdef DEBUG
+      if(!get_tag(c, "returntype"))
+	continue;
+	//	throw( ({ "No returntype element in method element.\n", backtrace() }) );
+#endif
+      ret += "<tt>" + parse_type(get_first_element(get_tag(c, "returntype"))); // Check for more children
+      ret += " ";
+      // ret += class-path
+      ret += "<b><font color='#0000EE'>" + c->get_attributes()->name + "</font>(</b>";
+      ret += parse_not_doc( get_tag(c, "arguments") );
+      ret += "<b>)</b></tt>";
+      break;
+
+    case "argument":
+      if(argument++) ret += ", ";
+      cc = get_tag(c, "value");
+      if(cc) ret += "<font color='green'>" + cc[0]->get_text() + "</font>";
+      else if( !c->count_children() );
+      else if( get_first_element(c)->get_any_name()=="type" && c->get_attributes()->name) {
+	ret += parse_type(get_first_element(get_first_element(c))) + " <font color='#005080'>" +
+	  c->get_attributes()->name + "</font>";
+      }
+      else
+	throw( ({ "Malformed argument element.\n" + c->html_of_node() + "\n", backtrace() }) );
+      break;
+
+    case "variable":
+      if(variable++) ret += "<br />\n";
+      ret += "<tt>" + parse_type(get_first_element(get_first_element(c)), "variable") + " ";
+      // show-class-path
+      ret += "<b><font color='#F000F0'>" + c->get_attributes()->name + "</font></b></tt>";
+      break;
+
+    case "constant":
+      if(const++) ret += "<br />\n";
+      ret += "<tt>constant";
+      // show-class-path
+      ret += "<font color='#F000F0'>" + c->get_attributes()->name + "</font>";
+      cc = get_tag(c, "typevalue");
+      if(cc) ret += " = " + parse_type(get_first_element(cc));
+      ret += "</tt>";
+      break;
+
+    case "typedef":
+    case "inherit":
+      // Not implemented yet.
+      break;
+
+    default:
+      throw( ({ "Illegal element " + c->get_any_name() + " in !doc.\n", backtrace() }) );
+      break;
+    }
+  }
+
+  return ret;
 }
 
 string parse_docgroup(Node n) {
@@ -273,9 +365,7 @@ string parse_docgroup(Node n) {
 
   ret += "</dt>\n<dd><p>";
 
-  foreach(n->get_children(), Node c)
-    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()!="doc")
-      ret += megaparse(c);
+  ret += parse_not_doc(n);
 
   ret += "</p></dd>\n";
 
