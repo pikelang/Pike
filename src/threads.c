@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.217 2003/05/02 17:28:22 grubba Exp $
+|| $Id: threads.c,v 1.218 2003/06/26 08:28:17 tomas Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.217 2003/05/02 17:28:22 grubba Exp $");
+RCSID("$Id: threads.c,v 1.218 2003/06/26 08:28:17 tomas Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -42,10 +42,14 @@ PMOD_EXPORT int threads_disabled = 0;
 #include <sys/prctl.h>
 #endif /* HAVE_SYS_PRCTL_H */
 
+#ifndef PIKE_THREAD_C_STACK_SIZE
+#define PIKE_THREAD_C_STACK_SIZE (256 * 1024)
+#endif
+
 PMOD_EXPORT int live_threads = 0, disallow_live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
-PMOD_EXPORT size_t thread_stack_size=256 * 1204;
+PMOD_EXPORT size_t thread_stack_size=PIKE_THREAD_C_STACK_SIZE;
 
 #else
 #include "pike_threadlib.h"

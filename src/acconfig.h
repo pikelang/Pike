@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.124 2003/04/23 15:31:18 marcus Exp $
+|| $Id: acconfig.h,v 1.125 2003/06/26 08:28:17 tomas Exp $
 */
 
 #ifndef MACHINE_H
@@ -529,6 +529,9 @@
 #undef CPU_TIME_IS_THREAD_LOCAL
 
 @BOTTOM@
+
+/* Define to the size of the c-stack for new threads */
+#undef PIKE_THREAD_C_STACK_SIZE
 
 /* NT stuff */
 #undef HAVE_GETSYSTEMTIMEASFILETIME
