@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.544 2002/10/03 21:49:18 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.545 2002/10/09 02:08:06 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9326,9 +9326,6 @@ array start()
 return Fnord()->start()->wait()-({ -1 });
 ]],[[ ({}) ]])
 ]])
-
-// - Yabu
-test_true(!Yabu.test()->main(1,({"test"})))
 
 test_do([[
   string s;
