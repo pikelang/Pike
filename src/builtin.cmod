@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.95 2002/10/15 09:12:49 grubba Exp $
+|| $Id: builtin.cmod,v 1.96 2002/11/25 00:40:14 nilsson Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,8 @@
 #include "fsort.h"
 #include "port.h"
 
-/*! @decl array(array(int|string)) _describe_program(program p)
+/*! @decl array(array(int|string)) describe_program(program p)
+ *! @belongs Debug
  *!
  *! Debug function for showing the symbol table of a program.
  */
