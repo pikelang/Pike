@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.539 2001/07/20 10:00:04 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.540 2001/07/20 10:20:09 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5157,9 +5157,9 @@ AC_DEFINE_UNQUOTED(PRINTPIKEFLOAT,"$pike_cv_printf_float_type")
 
 AC_MSG_CHECKING(if union initialization works)
 AC_CACHE_VAL(pike_cv_have_union_init, [
-  AC_TRY_COMPILE([], [
-    struct foo {int a; char *b;};
-    struct bar {int c[2];};
+  AC_TRY_RUN([
+    struct foo {int a;};
+    struct bar {char b[2];};
     union anything
     {
       struct foo foo;
@@ -5171,8 +5171,14 @@ AC_CACHE_VAL(pike_cv_have_union_init, [
       unsigned subtype;
       union anything u;
     };
-    struct svalue my_svalue = {0, 0, {{17, "17"}}};
-  ], pike_cv_have_union_init=yes, pike_cv_have_union_init=no)])
+    struct svalue my_svalue = {0, 0, {{4711}}};
+    int main() {
+      return !(my_svalue.u.foo.a == 4711);
+    }
+  ],
+  pike_cv_have_union_init=yes,
+  pike_cv_have_union_init=no,
+  pike_cv_have_union_init=no)])
 AC_MSG_RESULT($pike_cv_have_union_init)
 if test "$pike_cv_have_union_init" = yes; then
   AC_DEFINE(HAVE_UNION_INIT)
