@@ -1,0 +1,9 @@
+CREDITS
+cbc.c
+configure.in
+crypto.c
+crypto.doc
+crypto.h
+crypto_submodule.doc
+invert.c
+pipe.c
