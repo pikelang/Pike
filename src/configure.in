@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.501 2001/03/19 11:22:22 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.502 2001/03/19 11:25:16 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1047,9 +1047,12 @@ if test "$cflags_is_set" = "no"; then
    i86pc)
      case "`isalist 2>/dev/null`" in 
         *pentium_pro*)
-        AC_SYS_COMPILER_FLAG(-mcpu=pentiumpro,pentiumpro,OPTIMIZE,[
-          AC_SYS_COMPILER_FLAG(-mcpu=pentium,pentium,OPTIMIZE)
-        ])
+	 AC_SYS_COMPILER_FLAG(-mcpu=i686,mcpu_i686,OPTIMIZE,[
+	 	 AC_SYS_COMPILER_FLAG(-mpentiumpro,pentiumpro,OPTIMIZE,[
+	 	     AC_SYS_COMPILER_FLAG(-mpentium,pentium,OPTIMIZE)
+	 	 ])
+	 ])
+         AC_SYS_COMPILER_FLAG(-march=i686,march_i686,OPTIMIZE)
 	;;
         *pentium*)
          AC_SYS_COMPILER_FLAG(-mcpu=pentium,pentium,OPTIMIZE,[
