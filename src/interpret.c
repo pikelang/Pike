@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.188 2001/03/04 19:27:18 mirar Exp $");
+RCSID("$Id: interpret.c,v 1.189 2001/03/09 02:28:22 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -236,7 +236,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
 #endif
   switch(lval->type)
   {
-    case T_ARRAY_LVALUE:
+   case T_ARRAY_LVALUE:
     {
       INT32 e;
       struct array *a;
@@ -276,11 +276,11 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       to->type=T_INT;
       if(multiset_member(lval->u.multiset,lval+1))
       {
-	to->u.integer=0;
-	to->subtype=NUMBER_UNDEFINED;
+	to->u.integer=1;
+	to->subtype=NUMBER_NUMBER;
       }else{
 	to->u.integer=0;
-	to->subtype=NUMBER_NUMBER;
+	to->subtype=NUMBER_UNDEFINED;
       }
       break;
       
