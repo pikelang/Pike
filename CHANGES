@@ -238,6 +238,11 @@ o sprintf("%O", foo) is more descriptive
     However, if an object contains an _sprintf function it will still
     be called in this case.
 
+o basetype(foo)
+  Returns a string with the basic type of foo as opposed to
+  typeof(foo) that returns the actual type. Also available as
+  sprintf("%t", foo).
+
 o Constant objects
     An object can now be constant, allowing for better
     performace. For example used for Gmp.Bignum, Math.Matrix and
@@ -663,7 +668,6 @@ itself.)
 
 Uncategorized misc changes:
 ---------------------------
-o basetype()
 o it is possible to change predefines without forking a new pike
 o #pragma save_parent
 o #pragma dont_save_parent (overrides constant __pragma_save_parent__)
