@@ -294,28 +294,30 @@ static string encode_params(array params)
   return r+"</params>\n";
 }
 
+//! This class implements an XML-RPC client that uses HTTP transport.
+//!
+//! @example
+//! @pre{
+//!   > Protocols.XMLRPC.Client client = Protocls.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
+//!   Result: Protocols.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
+//!   > client["system.listMethods"]();
+//!   Result: ({ /* 1 element */
+//!  		    ({ /* 9 elements */
+//!  			"meerkat.getChannels",
+//!  			"meerkat.getCategories",
+//!  			"meerkat.getCategoriesBySubstring",
+//!  			"meerkat.getChannelsByCategory",
+//!  			"meerkat.getChannelsBySubstring",
+//!  			"meerkat.getItems",
+//!  			"system.listMethods",
+//!  			"system.methodHelp",
+//!  			"system.methodSignature"
+//!  		    })
+//!  		})
+//! @}
 class Client(string|Standards.URI url)
 {
-  //! This class implements an XML-RPC client that uses HTTP transport.
-  //!
-  //! @example
-  //!   > Protocols.XMLRPC.Client client = Protocls.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
-  //!   Result: Protocols.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
-  //!   > client["system.listMethods"]();
-  //!   Result: ({ /* 1 element */
-  //!  		    ({ /* 9 elements */
-  //!  			"meerkat.getChannels",
-  //!  			"meerkat.getCategories",
-  //!  			"meerkat.getCategoriesBySubstring",
-  //!  			"meerkat.getChannelsByCategory",
-  //!  			"meerkat.getChannelsBySubstring",
-  //!  			"meerkat.getItems",
-  //!  			"system.listMethods",
-  //!  			"system.methodHelp",
-  //!  			"system.methodSignature"
-  //!  		    })
-  //!  		})
-  
+
   mixed `[](string call)
   {
     return lambda(mixed ... args)
