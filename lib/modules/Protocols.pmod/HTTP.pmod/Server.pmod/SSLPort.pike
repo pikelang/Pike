@@ -2,34 +2,30 @@
 
 import ".";
 
-object port;
+MySSLPort port;
 int portno;
 string|int(0..0) interface;
 function(Request:void) callback;
 
 program request_program=Request;
 
-//! module Protocols
-//! submodule HTTP
-//! submodule Server
-//! class SSLPort
-//!	The simplest SSL server possible. Binds a port and calls
-//!	a callback with <ref to=Request>Server.Request</ref> objects.
+//! The simplest SSL server possible. Binds a port and calls
+//! a callback with @[Request] objects.
 
 //! Create a HTTPS (HTTP over SSL) server.
 //!
 //! @param _callback
-//!   the function run when a request is received. 
-//!   takes one argument of type <ref to=Request>Server.Request</ref>.
+//!   The function run when a request is received.
+//!   takes one argument of type @[Request].
 //! @param _portno
-//!   the port number to bind to, defaults to 443
+//!   The port number to bind to, defaults to 443.
 //! @param _interface
-//!   the interface address to bind to
+//!   The interface address to bind to.
 //! @param key
-//!   an optional SSL secret key, provided in binary format, such as that created by <ref 
-//!   to=Standards.PKCS.RSA.private_key>Standards.PKCS.RSA.private_key()</ref>
+//!   An optional SSL secret key, provided in binary format, such
+//!   as that created by @[Standards.PKCS.RSA.private_key()].
 //! @param certificate
-//!   an optional SSL certificate, provided in binary format
+//!   An optional SSL certificate, provided in binary format.
 void create(function(Request:void) _callback,
 	    void|int _portno,
 	    void|string _interface, void|string key, void|string certificate)
@@ -40,7 +36,7 @@ void create(function(Request:void) _callback,
    callback=_callback;
    interface=_interface;
 
-   port=my_ssl_port();
+   port=MySSLPort();
    port->set_default_keycert();
    if(key)
      port->set_key(key);
@@ -53,7 +49,7 @@ void create(function(Request:void) _callback,
 	    portno,strerror(port->errno()));
 }
 
-//!	Closes the HTTP port. 
+//! Closes the HTTP port.
 void close()
 {
    destruct(port);
@@ -62,8 +58,7 @@ void close()
 
 void destroy() { close(); }
 
-// the port accept callback
-
+//! The port accept callback
 static void new_connection()
 {
    Stdio.File fd=port->accept();
@@ -71,7 +66,8 @@ static void new_connection()
    r->attach_fd(fd,this_object(),callback);
 }
 
-class my_ssl_port
+//!
+class MySSLPort
 {
 #pike __REAL_VERSION__
 
@@ -117,12 +113,14 @@ Version ::= INTEGER
 
 */
 
+//!
 void set_default_keycert()
 {
   set_key(my_key);
   set_certificate(my_certificate);
 }
 
+//!
 void set_key(string skey)
 {
 #if 0
@@ -143,6 +141,7 @@ void set_key(string skey)
 
   }
 
+//!
 void set_certificate(string certificate)
 {
     certificates = ({ certificate });
