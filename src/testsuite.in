@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.562 2002/11/14 18:09:20 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.563 2002/11/14 18:17:28 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -96,6 +96,9 @@ test_any([[
 
   return Y()->Ack(2,2);
 ]],7)
+
+dnl FIXME: Add test that local and local:: in combination
+dnl        with recursion works correctly.
 
 test_eval_error([[mixed x; return mkmapping(x,x)]]);
 
