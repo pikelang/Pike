@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.28 2001/01/20 19:28:56 marcus Exp $
+/* $Id: rsa.pike,v 1.29 2001/12/17 13:29:43 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -389,7 +389,11 @@ object generate_key(int bits, function|void r)
     bignum phi = Gmp.mpz(p-1)*Gmp.mpz(q-1);
 
     array gs; /* gcd(pub, phi), and pub^-1 mod phi */
-    bignum pub = Gmp.mpz(random(1 << 30) | 0x10001);
+    bignum pub = Gmp.mpz(
+#ifdef SSL3_32BIT_PUBLIC_EXPONENT
+			 random(1 << 30) |
+#endif /* SSL3_32BIT_PUBLIC_EXPONENT */
+			 0x10001);
 
     while ((gs = pub->gcdext2(phi))[0] != 1)
       pub += 1;
