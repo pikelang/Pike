@@ -21,6 +21,16 @@ o sort() is stable
     separate function since it could be done with virtually no extra
     overhead.
 
+o sort() is portable
+    Sort is now locale and platform independent. In other words,
+    strings are now compared only according to the unicode value of
+    every character.
+
+o Reworked codec
+
+    The codec for serialization of Pike data types has been updated
+    and has a significally improved successrate at encoding modules.
+
 
 Language additions:
 -------------------
