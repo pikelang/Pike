@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.1 2000/02/29 20:33:48 neotron Exp $
+ * $Id: acconfig.h,v 1.2 2000/03/12 11:36:31 hubbe Exp $
  */
 #ifndef GETTEXT_CONFIG_H
 #define GETTEXT_CONFIG_H
@@ -7,7 +7,7 @@
 @TOP@
 
 /* define if you have gettext */
-#define HAVE_GETTEXT
+#undef HAVE_GETTEXT
 
 @BOTTOM@
 
