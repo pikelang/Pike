@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.52 2000/08/09 12:49:28 grubba Exp $
+ * $Id: object.h,v 1.53 2000/08/10 14:55:53 grubba Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -60,9 +60,9 @@ PMOD_EXPORT void do_free_object(struct object *o);
 PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args);
 PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args);
 PMOD_EXPORT struct object *parent_clone_object(struct program *p,
-				   struct object *parent,
-				   int parent_identifier,
-				   int args);
+					       struct object *parent,
+					       ptrdiff_t parent_identifier,
+					       int args);
 PMOD_EXPORT struct object *get_master(void);
 PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.139 2000/08/03 04:17:56 mast Exp $");
+RCSID("$Id: object.c,v 1.140 2000/08/10 14:56:23 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -292,9 +292,9 @@ PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args)
 }
 
 PMOD_EXPORT struct object *parent_clone_object(struct program *p,
-				   struct object *parent,
-				   int parent_identifier,
-				   int args)
+					       struct object *parent,
+					       ptrdiff_t parent_identifier,
+					       int args)
 {
   ONERROR tmp;
   struct object *o=low_clone(p);
