@@ -1,8 +1,8 @@
 Changes since Pike 7.2:
 ----------------------------------------------------------------------
 
-New functionality:
-------------------
+New/improved functionality:
+---------------------------
 
 o New Hilfe
 
@@ -12,9 +12,23 @@ o pike -x
 
 o unbug
 
+o Unicode 3.2.0
+    All charts has been updated to Unicode 3.2.0. This applies both to
+    the Unicode module as well as Pike-global functionality such as
+    upper_case/lower_case. unicode_to_string() also has support for
+    surrogate and byteorder make handling.
 
-New concepts:
--------------
+o Extended random()
+    random() now works on float, array, multiset and mapping (and
+    int/object).
+
+o delay()/sleep()
+    sleep() no longer busywaits.
+
+o search(string, int)/has_value(string, int)
+
+Language additions:
+-------------------
 
 o foreach(X; Y; Z)
     The foreach statement has been extended to allow iterations over
@@ -106,16 +120,9 @@ o ::_indices(), ::_values().
    implementations. This is to complement the "magic" ::`->() and
    ::`->=() functions that exist in earlier releases.
 
-o 
+o UNDEFINED
 
-
-Other:
-------
-
-sp -> Pike_sp
-fp -> Pike_fp
-fatal -> Pike_fatal
-empty_string -> empty_pike_string
+o _m_delete
 
 
 New modules / classes / methods added:
@@ -136,11 +143,12 @@ o Calendar.verify
 o Debug.Tracer
 
 o Dvb.dvb
-    Digital sattelite handler (linux only).
+    Digital sattelite handler (Linux only).
 
 o Locale.Language
 
 o Parser.Python
+    Splits Python source code into text tokens.
 
 o Parser.RCS
     Extracts data from RCS or CVS repositories.
@@ -157,10 +165,12 @@ o Standards.FIPS10_4
 
 o Standards.ID3
     ID3 tags decoder/encoder. Supports versions: 1.0, 1.1,
-    2.2-2.4.
-    Uses frequently in MP3 files.
+    2.2-2.4. Frequently used in MP3 files.
 
 o Standards.RDF
+
+o System.Time
+o System.Timer
 
 o Stdio.FakeFile
 
@@ -174,8 +184,8 @@ o Tools.PV
     Also accessable via "pike -x pv"
 
 o Image.Dims
-    Can extract the dimensions of an image withóut loading the entire
-    image.
+    Can extract the dimensions of an image with a minimal amount of
+    data loading. Currently handles JPEG, GIF and PNG images.
 
 o Image.Fonts
     High level API for font handling. Should be used instead of
@@ -200,6 +210,12 @@ Optimizations:
 o Machine code used on some architectures.
 
 o Overall speed improvements.
+  Function calls
+  sprintf
+  arrays
+  replace
+
+o Deferred backtraces.
 
 o Improvement and bug tickets closed: 1499
 
@@ -297,6 +313,26 @@ o LR
     LR has been moved to Parser.LR and the API has been chnged.
     FIXME: More about this?
 
+o wmml documentation removed
+    Use the documentation in the refdoc directory instead.
+
+o .build_lobotomize_crypto removed
+    Use the Makefile target lobotomize_crypto to lobotomize Pike.
+    Should preferably be executed in unused tree right from CVS.
+
+C level/development changes:
+----------------------------
+
+o Some global defines has been renamed to avoid name clashes.
+    sp -> Pike_sp
+    fp -> Pike_fp
+    fatal -> Pike_fatal
+    empty_string -> empty_pike_string
+
+o --with-internal-profiling
+
+o Module symbols not available from other modules.
+
 
 Bugs fixed:
 -----------
@@ -308,3 +344,13 @@ o Reworked trampolines to cause less circular references. (solves 1937)
 http://community.roxen.com/crunch/ - or append the ticket id to
 "http://bugs.roxen.com/" for an address directly to the ticket
 itself.)
+
+
+Uncategorized:
+--------------
+
+o --with-new-multisets
+o PIKE_RUN_UNLOCKED
+o Works with Autoconf 2.50
+o Saved 8 bytes per object for objects not using their parent scope
+o constant objects (Gmp.Bignum, Math.Matrix, Image.Color)
