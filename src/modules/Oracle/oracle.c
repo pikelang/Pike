@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.37 2000/04/18 16:43:55 grubba Exp $
+ * $Id: oracle.c,v 1.38 2000/05/05 18:54:06 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -42,7 +42,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.37 2000/04/18 16:43:55 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.38 2000/05/05 18:54:06 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -143,35 +143,104 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #define THISOBJ (fp->current_object)
 #endif
 
-#define PARENTOF(X) ((X)->parent)
+
+#define PARENTOF(X) (X)->parent
+
+
+/* This will be moved to program.c - Hubbe */
+void *parent_storage(int depth)
+{
+  struct inherit *inherit;
+  struct program *p;
+  struct object *o;
+  INT32 i;
+
+  inherit=&fp->context;
+  o=fp->current_object;
+  
+  if(!o)
+    error("Current object is destructed\n");
+  
+  while(1)
+  {
+    if(inherit->parent_offset)
+    {
+      i=o->parent_identifier;
+      o=o->parent;
+      depth+=inherit->parent_offset-1;
+    }else{
+      i=inherit->parent_identifier;
+      o=inherit->parent;
+    }
+    
+    if(!o) return 0;
+    if(!(p=o->prog)) return 0;
+    
+#ifdef DEBUG_MALLOC
+    if (o->refs == 0x55555555) {
+      fprintf(stderr, "The object %p has been zapped!\n", o);
+      describe(p);
+      fatal("Object zapping detected.\n");
+    }
+    if (p->refs == 0x55555555) {
+      fprintf(stderr, "The program %p has been zapped!\n", p);
+      describe(p);
+      fprintf(stderr, "Which taken from the object %p\n", o);
+      describe(o);
+      fatal("Looks like the program %p has been zapped!\n", p);
+    }
+#endif /* DEBUG_MALLOC */
+    
+#ifdef PIKE_DEBUG
+    if(i < 0 || i > p->num_identifier_references)
+      fatal("Identifier out of range!\n");
+#endif
+    
+    inherit=INHERIT_FROM_INT(p, i);
+    
+#ifdef DEBUG_MALLOC
+    if (inherit->storage_offset == 0x55555555) {
+      fprintf(stderr, "The inherit %p has been zapped!\n", inherit);
+      debug_malloc_dump_references(inherit,0,2,0);
+      fprintf(stderr, "It was extracted from the program %p %d\n", p, i);
+      describe(p);
+      fprintf(stderr, "Which was in turn taken from the object %p\n", o);
+      describe(o);
+      fatal("Looks like the program %p has been zapped!\n", p);
+    }
+#endif /* DEBUG_MALLOC */
+    
+    if(!depth) break;
+    --depth;
+  }
+
+  return o->storage + inherit->storage_offset;
+}
 
 #ifdef PIKE_DEBUG
-static struct object *do_check_prog(struct object *o, struct program *p, char *prog)
+void *check_storage(void *storage, unsigned long magic, char *prog)
 {
-  if(get_storage(o,p) != o->storage) {
-    fprintf(stderr, "Wrong program, expected %s!\n", prog);
-    fprintf(stderr, "object:\n");
-    describe_something(o, PIKE_T_OBJECT, 2, 0, 0);
-    fprintf(stderr, "Expected program (%s):\n", prog);
-    describe_something(p, PIKE_T_PROGRAM, 2, 0, 0);
+  if( magic != *((unsigned long *)storage))
+  {
+    fprintf(stderr, "Wrong magic number! expected a %s\n",prog);
+    fprintf(stderr, "Expected %lx, got %lx\n",magic,*((unsigned long *)storage));
     fatal("Wrong program, expected %s!\n",prog);
   }
-  return o;
+  return storage;
 }
-#define check_prog(X,Y) do_check_prog((X),Y,#Y)
 #else
-#define check_prog(X,Y) (X)
+#define check_storage(X,Y,Z) (X)
 #endif
 
-#define THIS_DBCON ((struct dbcon *)(CURRENT_STORAGE))
-#define THIS_QUERY_DBCON ((struct dbcon *)(check_prog(PARENTOF(THISOBJ),oracle_program)->storage))
-#define THIS_RESULT_DBCON ((struct dbcon *)(check_prog(PARENTOF(PARENTOF( THISOBJ )),oracle_program)->storage))
-#define THIS_QUERY ((struct dbquery *)(CURRENT_STORAGE))
-#define THIS_RESULT_QUERY ((struct dbquery *)(check_prog(PARENTOF(THISOBJ ),compile_query_program)->storage))
-#define THIS_RESULT ((struct dbresult *)(CURRENT_STORAGE))
-#define THIS_RESULTINFO ((struct dbresultinfo *)(CURRENT_STORAGE))
-#define THIS_DBDATE ((struct dbdate *)(CURRENT_STORAGE))
-#define THIS_DBNULL ((struct dbnull *)(CURRENT_STORAGE))
+#define THIS_DBCON ((struct dbcon *)check_storage(CURRENT_STORAGE,0xdbc04711UL,"dbcon"))
+#define THIS_QUERY_DBCON ((struct dbcon *)check_storage(parent_storage(0),0xdbc04711UL,"dbcon"))
+#define THIS_RESULT_DBCON ((struct dbcon *)check_storage(parent_storage(1),0xdbc04711UL,"dbcon"))
+#define THIS_QUERY ((struct dbquery *)check_storage(CURRENT_STORAGE,0xdb994711UL,"dbquery"))
+#define THIS_RESULT_QUERY ((struct dbquery *)check_storage(parent_storage(0),0xdb994711UL,"dbquery"))
+#define THIS_RESULT ((struct dbresult *)check_storage(CURRENT_STORAGE,0xdbe04711UL,"dbresult"))
+#define THIS_RESULTINFO ((struct dbresultinfo *)check_storage(CURRENT_STORAGE,0xdbe14711UL,"dbresultinfo"))
+#define THIS_DBDATE ((struct dbdate *)check_storage(CURRENT_STORAGE,0xdbda4711UL,"dbdate"))
+#define THIS_DBNULL ((struct dbnull *)check_storage(CURRENT_STORAGE,0xdb004711UL,"dbnull"))
 
 static struct program *oracle_program = NULL;
 static struct program *compile_query_program = NULL;
@@ -232,6 +301,9 @@ static void init_inout(struct inout *i);
 /****** connection ******/
 struct dbcon
 {
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
   OCIError *error_handle;
   OCISvcCtx *context;
 
@@ -242,6 +314,9 @@ static void init_dbcon_struct(struct object *o)
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(fp->current_storage))[0]=0xdbc04711UL;
 #endif
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
@@ -262,6 +337,9 @@ static void exit_dbcon_struct(struct object *o)
 
 struct dbquery
 {
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
   OCIStmt *statement;
   INT_TYPE query_type;
   DEFINE_MUTEX(lock);
@@ -276,6 +354,9 @@ void init_dbquery_struct(struct object *o)
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(fp->current_storage))[0]=0xdb994711UL;
 #endif
   THIS_QUERY->cols=-2;
   THIS_QUERY->statement=0;
@@ -296,6 +377,9 @@ void exit_dbquery_struct(struct object *o)
 
 struct dbresult
 {
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
   char dbcon_lock;
   char dbquery_lock;
 };
@@ -306,27 +390,26 @@ static void init_dbresult_struct(struct object *o)
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(fp->current_storage))[0]=0xdbe04711UL;
+#endif
   THIS_RESULT->dbcon_lock=0;
   THIS_RESULT->dbquery_lock=0;
 }
 
 static void exit_dbresult_struct(struct object *o)
 {
+  struct dbquery *dbquery=THIS_RESULT_QUERY;
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
   /* Variables are freed automatically */
-  if(PARENTOF(THISOBJ) &&
-     PARENTOF(THISOBJ)->prog &&
-     THIS_RESULT->dbquery_lock)
+  if(THIS_RESULT->dbquery_lock && dbquery)
   {
-    struct dbquery *dbquery=THIS_RESULT_QUERY;
+    struct dbcon *dbcon=THIS_RESULT_DBCON;
     UNLOCK( dbquery->lock );
-    if(PARENTOF(PARENTOF(THISOBJ)) && 
-       PARENTOF(PARENTOF(THISOBJ)) -> prog  &&
-       THIS_RESULT->dbcon_lock)
+    if(THIS_RESULT->dbcon_lock && dbcon)
     {
-      struct dbcon *dbcon=THIS_RESULT_DBCON;
       UNLOCK( dbcon->lock );
     }
   }
@@ -344,6 +427,9 @@ static void exit_dbresult_struct(struct object *o)
 
 struct dbresultinfo
 {
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
   INT_TYPE length;
   INT_TYPE decimals;
   INT_TYPE real_type;
@@ -360,6 +446,9 @@ static void init_dbresultinfo_struct(struct object *o)
 {
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
+#endif
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(fp->current_storage))[0]=0xdbe14711UL;
 #endif
   THIS_RESULTINFO->define_handle=0;
   init_inout(& THIS_RESULTINFO->data);
@@ -383,20 +472,36 @@ static void protect_dbresultinfo(INT32 args)
 
 struct dbdate
 {
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
   OCIDate date;
 };
 
-static void init_dbdate_struct(struct object *o) {}
+static void init_dbdate_struct(struct object *o)
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(fp->current_storage))[0]=0xdbda4711UL;
+#endif
+}
 static void exit_dbdate_struct(struct object *o) {}
 
 /****** dbnull ******/
 
 struct dbnull
 {
+#ifdef PIKE_DEBUG
+  unsigned long magic;
+#endif
   struct svalue type;
 };
 
-static void init_dbnull_struct(struct object *o) {}
+static void init_dbnull_struct(struct object *o)
+{
+#ifdef PIKE_DEBUG
+  ((unsigned long *)(fp->current_storage))[0]=0xdb004711UL;
+#endif
+}
 static void exit_dbnull_struct(struct object *o) {}
 
 /************/
@@ -812,6 +917,7 @@ static void push_inout_value(struct inout *inout)
       case SQLT_DAT:
 	ref_push_object(nulldate_object);
 	push_object(low_clone(Date_program));
+	call_c_initializers(sp[-1].u.object);
 	((struct dbdate *)sp[-1].u.object->storage)->date = inout->u.date;
 	break;
 	
@@ -851,6 +957,7 @@ static void push_inout_value(struct inout *inout)
     case SQLT_ODT:
     case SQLT_DAT:
       push_object(low_clone(Date_program));
+      call_c_initializers(sp[-1].u.object);
       ((struct dbdate *)sp[-1].u.object->storage)->date = inout->u.date;
       break;
       
@@ -1235,9 +1342,10 @@ static void f_big_query_create(INT32 args)
   THREADS_DISALLOW();
 
   /* Time to re-parent if required */
-  if(new_parent && PARENTOF(PARENTOF(THISOBJ)) != new_parent)
+  if(new_parent &&
+     PARENTOF(PARENTOF(THISOBJ)) != new_parent)
   {
-    if(new_parent->prog != oracle_program)
+    if(new_parent->prog != PARENTOF(PARENTOF(THISOBJ))->parent)
       error("Bad argument 3 to big_query.\n");
 
     /* We might need to check that there are no locks held here
@@ -1693,6 +1801,7 @@ void pike_module_init(void)
   add_object_constant("NULLfloat",nullfloat_object=clone_object(NULL_program,1),0);
 
   push_object(low_clone(Date_program));
+  call_c_initializers(sp[-1].u.object);
   add_object_constant("NULLdate",nulldate_object=clone_object(NULL_program,1),0);
 }
 
