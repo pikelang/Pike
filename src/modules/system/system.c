@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.33 1997/12/28 09:30:05 hubbe Exp $
+ * $Id: system.c,v 1.34 1998/01/10 17:09:10 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.33 1997/12/28 09:30:05 hubbe Exp $");
+RCSID("$Id: system.c,v 1.34 1998/01/10 17:09:10 grubba Exp $");
 #include "module_support.h"
 #include "las.h"
 #include "interpret.h"
@@ -305,9 +305,78 @@ void f_cleargroups(INT32 args)
   }
 }
 
-/* int setgroup(array(int) gids) */
+/* void setgroup(array(int) gids) */
 /* NOT Implemented in Pike 0.5 */
+void f_setgroups(INT32 args)
+{
+  static gid_t safeguard[1] = { 65534 };
+  struct array *arr = NULL;
+  gid_t *gids = NULL;
+  INT32 i;
+  INT32 size;
+  int err;
+
+  get_all_args("setgroups", args, "%a", &arr);
+  if ((size = arr->size)) {
+    gids = xalloc(arr->size * sizeof(gid_t));
+  } else {
+    gids = safeguard;
+  }
+
+  for (i=0; i < size; i++) {
+    if (arr->item[i].type != T_INTEGER) {
+      /* Only reached if arr->size > 0
+       * so we always have an allocated gids here.
+       */
+      free(gids);
+      error("setgroups(): Bad element %d in array (expected int)\n", i);
+    }
+    gids[i] = arr->item[i].u.integer;
+  }
+
+  pop_n_elems(args);
+
+  err = setgroups(size, gids);
+  if (err < 0) {
+    if (size) {
+      free(gids);
+    }
+    report_error("cleargroups");
+  }
+}
 #endif /* HAVE_SETGROUPS */
+
+#ifdef HAVE_GETGROUPS
+/* array(int) getgroups() */
+void f_getgroups(INT32 args)
+{
+  gid_t *gids = NULL;
+  int numgrps;
+  int i;
+
+  pop_n_elems(args);
+
+  numgrps = getgroups(0, NULL);
+  if (numgrps <= 0) {
+    /* OS which doesn't understand this convention */
+    numgrps = NGROUPS_MAX;
+  }
+  gids = xalloc(sizeof(gid_t) * numgrps);
+
+  numgrps = getgroups(numgrps, gids);
+
+  for (i=0; i < numgrps; i++) {
+    push_int(gids[i]);
+  }
+  free(gids);
+
+  if (numgrps < 0) {
+    report_error("getgroups");
+  }
+
+  f_aggregate_array(numgrps);
+}
+#endif /* HAVE_GETGROUPS */
 
 #ifdef HAVE_SETUID 
 void f_setuid(INT32 args)
@@ -813,8 +882,11 @@ void pike_module_init(void)
 #ifdef HAVE_SETGROUPS
   add_efun("cleargroups", f_cleargroups, "function(:void)", OPT_SIDE_EFFECT);
   /* NOT Implemented in Pike 0.5 */
-  /* add_efun("setgroups", f_setgroups, "function(array(int):int)", OPT_SIDE_EFFECT); */
+  add_efun("setgroups", f_setgroups, "function(array(int):void)", OPT_SIDE_EFFECT);
 #endif /* HAVE_SETGROUPS */
+#ifdef HAVE_GETGROUPS
+  add_efun("getgroups", f_getgroups, "function(:array(int))", OPT_EXTERNAL_DEPEND);
+#endif /* HAVE_GETGROUPS */
 #ifdef HAVE_SETUID
   add_efun("setuid", f_setuid, "function(int:void)", OPT_SIDE_EFFECT);
 #endif

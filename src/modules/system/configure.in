@@ -12,7 +12,7 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 	sys/utsname.h pwd.h passwd.h shadow.h grp.h sys/stat.h winsock.h)
 
 AC_HAVE_FUNCS(syslog link symlink readlink chown \
-	initgroups setgroups seteuid setresuid setegid setresgid \
+	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid getuid getgid setuid setgid \
 	getpwnam getspnam getpwent setpwent endpwent \
 	chroot fchroot uname gethostname gethostbyname)
