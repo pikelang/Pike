@@ -8,4 +8,3 @@ pike7.3-perl
 pike7.3-pg
 pike7.3-sane
 pike7.3-sdl
-pike7.3-sybase
