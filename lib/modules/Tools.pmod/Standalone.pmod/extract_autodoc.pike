@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.36 2003/04/10 15:42:54 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.37 2003/04/10 18:17:19 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -16,12 +16,14 @@ int verbosity = 2;
 int main(int n, array(string) args) {
 
   string srcdir, builddir = "./";
+  array(string) root = ({"predef::"});
 
   foreach(Getopt.find_all_options(args, ({
     ({ "srcdir",     Getopt.HAS_ARG,      "--srcdir" }),
     ({ "imgsrc",     Getopt.HAS_ARG,      "--imgsrc" }),
     ({ "builddir",   Getopt.HAS_ARG,      "--builddir" }),
     ({ "imgdir",     Getopt.NO_ARG,       "--imgdir" }),
+    ({ "root",       Getopt.HAS_ARG,      "--root" }),
     ({ "quiet",      Getopt.NO_ARG,       "-q,--quiet"/"," }),
     ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt)
     switch(opt[0])
@@ -41,6 +43,9 @@ int main(int n, array(string) args) {
       imgdir = combine_path(getcwd(), opt[1]);
       if(imgdir[-1]!='/') imgdir += "/";
       break;
+    case "root":
+      root = opt[1]/".";
+      break;
     case "quiet":
       verbosity = 0;
       break;
@@ -48,18 +53,22 @@ int main(int n, array(string) args) {
       werror("Usage:\n"
 	     "\tpike -x extract_autodoc [-q] --srcdir=<srcdir> \n"
 	     "\t     [--imgsrcdir=<imgsrcdir>] [--builddir=<builddir>]\n"
-	     "\t     [--imgdir=<imgdir>]\n");
+	     "\t     [--imgdir=<imgdir>] [--root=<module>]\n");
       return 0;
     }
 
   args = args[1..] - ({0});
 
-  if(!srcdir) {
-    werror("No source directory given.\n");
+  if(srcdir)
+    recurse(srcdir, builddir, 0, root);
+  else if(sizeof(args)) {
+    foreach(args, string fn)
+      extract(fn, imgdir, builddir, root);
+  }
+  else {
+    werror("No source directory or input files given.\n");
     return 1;
   }
-
-  recurse(srcdir, builddir, 0, ({"predef::"}));
 }
 
 void recurse(string srcdir, string builddir, int root_ts, array(string) root)
@@ -108,14 +117,14 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
     // Build the xml file if it doesn't exist, if it is older than the
     // source file, or if the root has changed since the previous build.
     if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
-      string res = extract(srcdir+fn, imgdir, 0, builddir, root);
+      string res = extract(srcdir+fn, imgdir, builddir, root);
       if(!res) exit(1);
       Stdio.write_file(builddir+fn+".xml", res);
     }
   }
 }
 
-string extract(string filename, string imgdest, int(0..1) rootless,
+string extract(string filename, string imgdest,
 	       string builddir, array(string) root)
 {
   if (verbosity > 1)
