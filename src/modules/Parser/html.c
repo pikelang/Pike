@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.152 2002/08/15 14:50:26 marcus Exp $ */
+/* $Id: html.c,v 1.153 2002/09/11 22:42:13 neotron Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -408,8 +408,6 @@ typedef enum { STATE_DONE=0, STATE_WAIT, STATE_REREAD, STATE_REPARSE } newstate;
 
 #define THIS ((struct parser_html_storage*)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
-
-static struct pike_string *empty_string;
 
 static void tag_name(struct parser_html_storage *this,
 		     struct piece *feed, ptrdiff_t c, int skip_tag_start);
@@ -1474,7 +1472,7 @@ static INLINE void push_feed_range(struct piece *head,
    }
 
    if (!n)
-      ref_push_string(empty_string);
+      ref_push_string(empty_pike_string);
    else if (n>1)
       f_add(n);
    DEBUG((stderr,"push len=%d\n",sp[-1].u.string->len));
@@ -2062,7 +2060,7 @@ next:
    if (what == SCAN_ARG_PUSH)
    {
       if (n>1) f_add(n);
-      else if (!n) ref_push_string(empty_string);
+      else if (!n) ref_push_string(empty_pike_string);
    }
    return 1;
 }
@@ -5176,8 +5174,6 @@ void init_parser_html(void)
    init_out_piece_blocks();
    init_feed_stack_blocks();
 
-   empty_string = make_shared_binary_string("", 0);
-
    offset = ADD_STORAGE(struct parser_html_storage);
 
    PIKE_MAP_VARIABLE(" maptag", offset + OFFSETOF(parser_html_storage, maptag),
@@ -5355,7 +5351,6 @@ void init_parser_html(void)
 
 void exit_parser_html()
 {
-   free_string(empty_string);
    free_all_piece_blocks();
    free_all_out_piece_blocks();
    free_all_feed_stack_blocks();

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.102 2002/08/15 14:49:20 marcus Exp $
+ * $Id: cpp.c,v 1.103 2002/09/11 22:42:12 neotron Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1699,7 +1699,7 @@ void f_cpp(INT32 args)
       if (k->val.type == T_STRING)
 	add_define (&this, k->ind.u.string, k->val.u.string);
       else
-	add_define (&this, k->ind.u.string, empty_string);
+	add_define (&this, k->ind.u.string, empty_pike_string);
     }
     free_mapping (predefs);
   }
