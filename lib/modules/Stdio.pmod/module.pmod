@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.165 2003/02/17 11:29:44 mast Exp $
+// $Id: module.pmod,v 1.166 2003/03/08 19:28:33 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1293,10 +1293,14 @@ class FILE
     return file::open(file,mode);
   }
 
-  int open_socket()
+  int open_socket(int|void port, string|void address)
   {
     bpos=0;  b="";
-    return file::open_socket();
+    if(zero_type(port))
+      return file::open_socket();
+    if(!address)
+      return file::open_socket(port);
+    return file::open_socket(port, address);
   }
 
   array(string) ngets(void|int(1..) n)
