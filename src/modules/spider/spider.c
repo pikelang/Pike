@@ -40,6 +40,8 @@
 #include "threads.h"
 #include "operators.h"
 
+RCSID("$Id: spider.c,v 1.46 1997/12/05 22:49:18 grubba Exp $);
+
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #undef HAVE_PWD_H
