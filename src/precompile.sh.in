@@ -139,6 +139,7 @@ case $method in
   ;;
   QQQQQQ)
     RUNPIKE="$LAST_PIKE $OLD"
+    LAST_PIKE=pike
   ;;
   QQQQQQQ)
     ifs_save="${IFS- 	}"
