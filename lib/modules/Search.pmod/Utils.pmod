@@ -1,7 +1,11 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.15 2001/07/20 22:30:22 nilsson Exp $
+// $Id: Utils.pmod,v 1.16 2001/07/26 04:50:08 nilsson Exp $
+
+#if !constant(report_error)
+#define report_error werror
+#endif
 
 public array(string) tokenize_and_normalize( string what )
 //! This can be optimized quite significantly when compared to
@@ -86,7 +90,9 @@ class ProfileEntry {
 
   Search.Database.MySQL get_database() {
     if(!db) {
+#if constant(DBManager)
       db = Search.Database.MySQL( DBManager.db_url( get_database_value("db_name"), 1) );
+#endif
       if(!db)
 	THROW("Could not aquire the database URL to database " +
 	      get_database_value("db_name") + ".\n");
@@ -175,7 +181,10 @@ class ProfileCache (string db_name) {
   private mapping(int:int) profile_stat = ([]);
 
   private Sql.Sql get_db() {
-    Sql.Sql db = DBManager.cached_get(db_name);
+    Sql.Sql db;
+#if constant(DBManager)
+    db = DBManager.cached_get(db_name);
+#endif
     if(!db) THROW("Could not connect to database " + db_name + ".\n");
     return db;
   }
