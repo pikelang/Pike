@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.57 2004/03/17 15:20:35 grubba Exp $
+|| $Id: array.h,v 1.58 2004/03/17 15:27:26 grubba Exp $
 */
 
 #ifndef ARRAY_H
@@ -207,7 +207,7 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b);
   struct svalue *base__;						\
   push_array(allocate_array_no_init(0, (estimated_size)));		\
   base__ = Pike_sp;							\
-  base__[-1].u.array->type_field = (BIT_MIXED | BIT_UNFINISHED)
+  base__[-1].u.array->type_field = (BIT_MIXED | BIT_UNFINISHED);
 
 #define DO_AGGREGATE_ARRAY(max_keep_on_stack)				\
   do {									\
