@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.5 2002/11/29 00:28:24 nilsson Exp $
+// $Id: Binary.pike,v 1.6 2003/01/19 17:41:21 nilsson Exp $
 // An abstract data type for binary relations.
 
 private mapping val   = ([]);
@@ -147,8 +147,9 @@ mixed `&(mixed rel)
                        { return rel->contains(left, right);});
 }
 
-//! The expression `rel1 | rel2' returns a new relation which has
-//! all the relation entries present in rel1, or rel2, or both.
+//! The expression `rel1 | rel2' and `rel1 + rel2' returns a new
+//! relation which has all the relation entries present in rel1,
+//! or rel2, or both.
 mixed `|(mixed rel)
 {
   ADT.Relation.Binary res = ADT.Relation.Binary(id, rel);
@@ -157,7 +158,6 @@ mixed `|(mixed rel)
       res->add(left, right);
   return res;
 }
-
 mixed `+ = `|;
 
 //! The expression `rel1 - rel2' returns a new relation which has
