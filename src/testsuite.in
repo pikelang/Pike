@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.137 1998/12/21 09:38:32 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.138 1999/01/07 13:43:24 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2706,6 +2706,18 @@ test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_p
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_BIDIRECTIONAL); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o2])); o->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") ]],
+[[
+  test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+  test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+  test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+  test_any([[ int e; for(e=0;e<1000;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;]],-1)
+]])
+
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create]],
+[[
+  test_any([[return equal(allocate(10,thread_create)(lambda() { int e; for(e=0;e<500;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;})->wait(),allocate(10,-1)) ]],1)
+]])
 
 
 test_equal(Array.splice(({7,8,99}),({"h","h",99})),
