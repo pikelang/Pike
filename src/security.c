@@ -6,36 +6,45 @@
  * controls for threads
  */
 
-/*: <pikedoc>
- *: <section title="Internal security">
- *: Pike has an optional internal security system, which can be
- *: enabled with the configure-option <code language=sh>--with-security</code>.
- *: <p>
- *: The security system is based on attaching credential objects
- *: (<code language=pike>__builtin.security.Creds</code>) to objects,
- *: programs, arrays, mappings or multisets.
- *: <p>
- *: A credential object in essence holds three values:
- *: <ul>
- *: <li><code language=pike>user</code> -- The owner.
- *: <li><code language=pike>allow_bits</code> -- Run-time access permissions.
- *: <li><code language=pike>data_bits</code> -- Data access permissions.
- *: </ul>
- *: <p>
- *: The following security bits are currently defined:
- *: <ul>
- *: <li><code language=pike>BIT_INDEX</code> -- Allow indexing.
- *: <li><code language=pike>BIT_SET_INDEX</code> -- Allow setting of indices.
- *: <li><code language=pike>BIT_CALL</code> -- Allow calling of functions.
- *: <li><code language=pike>BIT_SECURITY</code> -- Allow usage of security
- *: related functions.
- *: <li><code language=pike>BIT_NOT_SETUID</code> -- Don't change active
- *: credentials on function call.
- *: <li><code language=pike>BIT_CONDITIONAL_IO</code> -- ??
- *: <li><code language=pike>BIT_DESTRUCT</code> -- Allow use of
- *: <code language=pike>destruct()</code>.
- *: </ul>
- *: </pikedoc>
+/*! @module __builtin
+ */
+
+/*! @module security
+ *!
+ *! Pike has an optional internal security system, which can be
+ *! enabled with the configure-option @tt{--with-security@}.
+ *! 
+ *! The security system is based on attaching credential objects
+ *! (@[__builtin.security.Creds]) to objects, programs, arrays,
+ *! mappings or multisets.
+ *!
+ *! A credential object in essence holds three values:
+ *! @dl
+ *!   @item
+ *!     @tt{user@} -- The owner.
+ *!   @item
+ *!     @tt{allow_bits@} -- Run-time access permissions.
+ *!   @item
+ *!     @tt{data_bits@} -- Data access permissions.
+ *! @enddl
+ *!
+ *! The following security bits are currently defined:
+ *! @int
+ *!   @value BIT_INDEX
+ *!     Allow indexing.
+ *!   @value BIT_SET_INDEX
+ *!     Allow setting of indices.
+ *!   @value BIT_CALL
+ *!     Allow calling of functions.
+ *!   @value BIT_SECURITY
+ *!     Allow usage of security related functions.
+ *!   @value BIT_NOT_SETUID
+ *!     Don't change active credentials on function call.
+ *!   @value BIT_CONDITIONAL_IO
+ *!     ??
+ *!   @value BIT_DESTRUCT
+ *!     Allow use of @[destruct()].
+ *! @endint
  */
 
 #ifdef PIKE_SECURITY
@@ -64,20 +73,19 @@ static int valid_creds_object(struct object *o)
     OBJ2CREDS(o)->user;
 }
 
-/*: <pikedoc type=txt>
- *: FUNCTION call_with_creds call with credentials
- *: SYNTAX
- *: 	mixed call_with_creds(object(Creds) creds, mixed func, mixed ... args); 
- *: DESCRIPTION
- *: 	Sets the current credentials to <arg>creds</arg>, and calls
- *: 	<code language=pike><arg>func</arg>(@<arg>args</arg>)</code>.
- *: 	If <arg>creds</arg> is 0, the credentials from the current object
- *: 	will be used.
- *: NOTE
- *: 	The current creds or the current object must have the allow bit
- *: 	<code language=pike>BIT_SECURITY</code> set to allow calling with
- *:	<arg>creds</arg> other than 0.
- *: </pikedoc>
+/*! @decl mixed call_with_creds(object(Creds) creds, mixed func, @
+ *!                             mixed ... args)
+ *!
+ *! Call with credentials.
+ *!
+ *! Sets the current credentials to @[creds], and calls
+ *! @code{@[func](@@@[args])@}. If @[creds] is @tt{0@} (zero), the
+ *! credentials from the current object will be used.
+ *!
+ *! @note
+ *!   The current creds or the current object must have the allow bit
+ *!   @tt{BIT_SECURITY@} set to allow calling with @[creds] other than
+ *!   @tt{0@} (zero).
  */
 static void f_call_with_creds(INT32 args)
 {
@@ -128,14 +136,15 @@ static void f_call_with_creds(INT32 args)
   dmalloc_touch_svalue(Pike_sp);
 }
 
-/*: <pikedoc type=txt>
- *: FUNCTION get_current_creds get the current credentials
- *: SYNTAX
- *: 	object(Creds) get_current_creds();
- *: DESCRIPTION
- *: 	Returns the credentials that are currently active.
- *: 	Returns 0 if no credentials are active.
- *: </pikedoc>
+/*! @decl object(Creds) get_current_creds()
+ *! 
+ *! Get the current credentials
+ *!
+ *! Returns the credentials that are currently active.
+ *! Returns @tt{0@} (zero) if no credentials are active.
+ *!
+ *! @seealso
+ *!   @[call_with_creds()]
  */
 static void f_get_current_creds(INT32 args)
 {
@@ -150,17 +159,19 @@ static void f_get_current_creds(INT32 args)
  * should say what we can do with it.
  */
 
-/*: <pikedoc>
- *: <class name=Creds>
- *: The credentials object.
- *: </pikedoc><pikedoc type=txt>
- *: METHOD get_default_creds get the default credentials
- *: SYNTAX
- *: 	object(Creds) get_default_creds();
- *: DESCRIPTION
- *: 	Returns the default credentials object if it has been set.
- *: 	Returns 0 if it has not been set.
- *: </pikedoc>
+/*! @class Creds
+ *! The credentials object.
+ */
+
+/*! @decl object(Creds) get_default_creds();
+ *!
+ *! Get the default credentials.
+ *!
+ *! Returns the default credentials object if it has been set.
+ *! Returns @tt{0@} (zero) if it has not been set.
+ *!
+ *! @seealso
+ *!   @[set_default_creds()]
  */
 static void get_default_creds(INT32 args)
 {
@@ -171,16 +182,16 @@ static void get_default_creds(INT32 args)
     push_int(0);
 }
 
-/*: <pikedoc type=txt>
- *: METHOD set_default_creds set the default credentials
- *: SYNTAX
- *: 	void set_default_creds(object(Creds) creds);
- *: DESCRIPTION
- *: 	Set the default credentials.
- *: NOTE
- *: 	The current creds must have the allow bit
- *: 	<code language=pike>BIT_SECURITY</code> set.
- *: </pikedoc>
+/*! @decl void set_default_creds(object(Creds) creds)
+ *!
+ *! Set the default credentials
+ *!
+ *! @note
+ *!   The current creds must have the allow bit
+ *!   @tt{BIT_SECURITY@} set.
+ *!
+ *! @seealso
+ *!   @[get_default_creds()]
  */
 static void set_default_creds(INT32 args)
 {
@@ -197,16 +208,13 @@ static void set_default_creds(INT32 args)
   pop_n_elems(args);
 }
 
-/*: <pikedoc type=txt>
- *: METHOD create initialize a new credentials object
- *: SYNTAX
- *: 	void create(object user, int allow_bits, int data_bits);
- *: DESCRIPTION
- *: 	Initialize a new credentials object.
- *: NOTE
- *: 	The current creds must have the allow bit
- *: 	<code language=pike>BIT_SECURITY</code> set.
- *: </pikedoc>
+/*! @decl void create(object user, int allow_bits, int data_bits)
+ *!
+ *! Initialize a new credentials object
+ *!
+ *! @note
+ *!   The current creds must have the allow bit
+ *!   @tt{BIT_SECURITY@} set.
  */
 static void creds_create(INT32 args)
 {
@@ -226,13 +234,9 @@ static void creds_create(INT32 args)
   pop_n_elems(args);
 }
 
-/*: <pikedoc type=txt>
- *: METHOD get_user get the user part
- *: SYNTAX
- *: 	object get_user();
- *: DESCRIPTION
- *: 	Returns the user part.
- *: </pikedoc>
+/*! @decl object get_user()
+ *!
+ *! Get the user part.
  */
 static void creds_get_user(INT32 args)
 {
@@ -243,13 +247,9 @@ static void creds_get_user(INT32 args)
     push_int(0);
 }
 
-/*: <pikedoc type=txt>
- *: METHOD get_allow_bits get the allow_bit part
- *: SYNTAX
- *: 	int get_allow_bits();
- *: DESCRIPTION
- *: 	Returns the allow_bit bitmask.
- *: </pikedoc>
+/*! @decl int get_allow_bits()
+ *!
+ *! Get the allow_bit bitmask.
  */
 static void creds_get_allow_bits(INT32 args)
 {
@@ -257,13 +257,9 @@ static void creds_get_allow_bits(INT32 args)
   push_int(THIS->may_always);
 }
 
-/*: <pikedoc type=txt>
- *: METHOD get_data_bits get the data_bits part
- *: SYNTAX
- *: 	int get_data_bits();
- *: DESCRIPTION
- *: 	Returns the data_bits bitmask.
- *: </pikedoc>
+/*! @decl int get_data_bits()
+ *!
+ *! Get the data_bits bitmask.
  */
 static void creds_get_data_bits(INT32 args)
 {
@@ -271,18 +267,14 @@ static void creds_get_data_bits(INT32 args)
   push_int(THIS->data_bits);
 }
 
-/*: <pikedoc type=txt>
- *: METHOD apply set the credentials for an object, program etc.
- *: SYNTAX
- *: 	void creds->apply(object|program|function|array|mapping|multiset o);
- *: DESCRIPTION
- *: 	Sets the credentials for <arg>o</arg>.
- *: NOTE
- *: 	To perform this operation the current credentials needs to have the bit
- *:	<code language=pike>BIT_SECURITY</code> set, or have the same user
- *: 	as the old credentials and not change the user by performing the
- *: 	operation.
- *: </pikedoc>
+/*! @decl void apply(object|program|function|array|mapping|multiset o)
+ *!
+ *! Set the credentials for @[o] to this credentials object.
+ *!
+ *! @note
+ *!   To perform this operation the current credentials needs to have the bit
+ *!   @tt{BIT_SECURITY@} set, or have the same user as the old credentials
+ *!   and not change the user by performing the operation.
  */
 static void creds_apply(INT32 args)
 {
@@ -303,19 +295,15 @@ static void creds_apply(INT32 args)
   pop_n_elems(args);
 }
 
-/*: <pikedoc>
- *: </class>
- *: </pikedoc>
+/*! @endclass
  */
 
-/*: <pikedoc type=txt>
- *: FUNCTION get_object_creds get the credentials from an object, program etc.
- *: SYNTAX
- *: 	object(Creds) get_object_creds(object|program|function|array|mapping|multiset o)
- *: DESCRIPTION
- *: 	Retuns the credentials from <arg>o</arg>.
- *: 	Returns 0 if <arg>o</arg> does not have any credentials.
- *: </pikedoc>
+/*! @decl object(Creds) @
+ *!          get_object_creds(object|program|function|array|mapping|multiset o)
+ *!
+ *! Get the credentials from @[o].
+ *!
+ *! Returns @tt{0@} if @[o] does not have any credentials.
  */
 static void f_get_object_creds(INT32 args)
 {
@@ -368,6 +356,12 @@ static void exit_creds_object(struct object *o)
     THIS->default_creds=0;
   }
 }
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 void init_pike_security(void)
 {
@@ -433,10 +427,5 @@ void exit_pike_security(void)
   }
 #endif
 }
-
-/*: <pikedoc>
- *: </section>
- *: </pikedoc>
- */
 
 #endif
