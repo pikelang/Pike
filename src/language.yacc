@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.83 1998/04/18 07:21:03 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.84 1998/04/19 00:13:18 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -616,10 +616,8 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
   }
   | error '}'
   {
-    YYSTYPE foo;
-    foo.number = 0;
     reset_type_stack();
-    YYBACKUP('}', foo);
+    yychar = '}';	/* Put the '}' back on the input stream */
   }
   ;
 
@@ -1004,11 +1002,9 @@ statement: unused2 ';' { $$=$1; }
   | error ';' { reset_type_stack(); $$=0; yyerrok; }
   | error '}'
   {
-    YYSTYPE foo;
-    foo.number = 0;
     reset_type_stack();
     yyerror("Missing ';'.");
-    YYBACKUP('}', foo);
+    yychar = '}';	/* Put the '}' back on the input stream. */
   }
   | ';' { $$=0; } 
   ;
