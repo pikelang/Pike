@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.243 2003/03/27 03:39:52 nilsson Exp $
+// $Id: master.pike.in,v 1.244 2003/04/02 12:22:59 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1047,7 +1047,7 @@ class dirnode
   {
     // werror("indices(%O) called\n", dirname);
     fill_cache();
-    return indices(filter(cache, lambda(mixed x) {return cache[x] != ZERO_TYPE;}));
+    return indices(filter(cache, lambda(mixed x) {return x != ZERO_TYPE;}));
   }
   array(mixed) _values()
   {
@@ -1159,7 +1159,7 @@ class joinnode
   array(string) _indices()
   {
     fill_cache();
-    return indices(filter(cache, lambda(mixed x){ return cache[x] != ZERO_TYPE; }));
+    return indices(filter(cache, lambda(mixed x){ return x != ZERO_TYPE; }));
   }
   array(mixed) _values()
   {
