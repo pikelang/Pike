@@ -12,7 +12,7 @@ inherit Web.Crawler.Queue;
 static string to_md5(string url)
 {
   object md5 = Crypto.md5();
-  md5->update(url);
+  md5->update(string_to_utf8(url));
   return Crypto.string_to_hex(md5->digest());
 }
 
@@ -83,7 +83,8 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   if( force || (check_link(uri, allow, deny) && !has_uri( r ) ))
     db->query( "insert into "+table+
 	       " (uri,uri_md5,recurse,template) values (%s,%s,%d,%s)",
-	       (string)r, to_md5((string)r), recurse, (template||"") );
+	       string_to_utf8((string)r),
+	       to_md5((string)r), recurse, (template||"") );
 }
 
 void set_md5( Standards.URI uri, string md5 )
@@ -122,8 +123,8 @@ int|Standards.URI get()
   {
     p_c = 0;
     possible = db->query( "select * from "+table+" where stage=0 limit 20" );
-    extra_data = mkmapping( possible->uri, possible );
-    possible = possible->uri;
+    extra_data = mkmapping( map(possible->uri,utf8_to_string), possible );
+    possible = map(possible->uri,utf8_to_string);
   }
 
   while( sizeof( possible ) > p_c )
