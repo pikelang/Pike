@@ -18,6 +18,8 @@ W(signal_block);   W(signal_unblock);
 W(text_width); W(set_background); W(add_accelerator); W(remove_accelerator);
 W(set_state); W(set_sensitive); 
 
+W(get_style); W(ensure_style);
+
 /* inherited: container */
 W(children); W(drag_dest_unset); W(drag_highlight); W(drag_unhighlight);
 W(drag_dest_set); W(drag_source_set); W(drag_source_unset); 
@@ -46,5 +48,4 @@ W(get_foreground); W(get_background); W(set_compare_func); W(get_selection);
 W(set_sort_type); W(set_sort_column); W(set_auto_sort); W(get_shadow_type); 
 W(get_selection_mode); W(get_drag_button); W(get_focus_row); W(get_sort_type); 
 W(get_sort_column); W(get_flags); W(get_rows); W(get_row_height); 
-W(get_row_center_offset); W(get_columns); 
-
+W(get_row_center_offset); W(get_columns);
