@@ -113,14 +113,16 @@ int find_next_comma(string s)
   return 0;
 }
 
-string get_name(string f)
+string *get_name(string f)
 {
   int e,d;
+  string rest;
   
   f=skipwhite(f);
   if(sscanf(f,"*%s",f)) f=skipwhite(f);
-  sscanf(f,"%[a-zA-Z0-9_]",f);
-  return f;
+  sscanf(f,"%[a-zA-Z0-9_]%s",f,rest);
+  rest=skipwhite(rest);
+  return ({f,rest});
 }
 
 string first_word=0;
@@ -331,17 +333,19 @@ mixed parse_function(string fun)
     /* parse function */
     if(eq_pos!=-1) break;  /* it's a variable */
     sscanf(fun,first_word+"%s",name);
-    name=get_name(name);
-    
-    if(sscanf(fun,"%s"+name+"%s(",c,c) && skipwhite(c)=="")
+
+    c=get_name(name);
+    name=c[0];
+    c=c[1];
+
+    if(c[0]=='(')
     {
       int i;
       if((i=member_array(name,function_names))!=-1)
       {
 	b=functions[i];
 	functions[i]=fun;
-	if(!eval(""))
-	  functions[i]=b;
+	if(!eval(""))  functions[i]=b;
       }else{
 	if(eval(fun))
 	{
@@ -350,6 +354,8 @@ mixed parse_function(string fun)
 	}
       }
       return 1;
+    }else{
+      write("Syntax error.\n");
     }
   }
 }
@@ -394,7 +400,9 @@ mixed parse_statement(string ex)
     /* parse variable def. */
     sscanf(ex,first_word+"%s",b);
     b=skipwhite(b);
-    name=get_name(b);
+    c=get_name(b);
+    name=c[0];
+    c=c[1];
 
 #ifdef DEBUG
     write("Variable def.\n");
@@ -406,24 +414,25 @@ mixed parse_statement(string ex)
       string f;
       variables[name]=0;
 
-      if(sscanf(ex,"%s"+name+"%s=%s",c,f,c)==3 && skipwhite(f)=="")
+      if(sscanf(c,"=%s",c))
       {
 #ifdef DEBUG
 	write("Variable def. with assign. ("+name+")\n");
 #endif
 	if(e=find_next_comma(c))
+	{
 	  return name+"="+c[0..e-1]+";\n"+
-		     first_word+" "+c[e+1..strlen(c)-1];
-	else
+	    first_word+" "+c[e+1..strlen(c)-1];
+	}else{
 	  return name+"="+c;
+	}
 #ifdef DEBUG
 	write("Input buffer = '"+input+"'\n");
 #endif
 
       }else{
-	sscanf(b,"%s"+name+"%s",b,b);
-	sscanf(b,",%s",b);
-	return first_word+" "+b;
+	sscanf(c,",%s",c);
+	return first_word+" "+c;
       }
     }
     
@@ -506,7 +515,7 @@ void main(int argc,string *argv)
   signal(signum("SIGINT"),signal_trap);
 
   write(version()+
-	" Running Hilfe v1.2 (Hubbe's Incremental LPC FrontEnd)\n");
+	" Running Hilfe v1.3 (Hubbe's Incremental LPC FrontEnd)\n");
   write("> ");
 
   read_input();

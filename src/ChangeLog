@@ -1,3 +1,7 @@
+Mon Mar  4 00:00:19 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* hilfe.lpc: fixed a bug when doing 'mapping m=([]);'
+
 Fri Mar  1 00:35:40 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* language.y: Added support for a[..n] and a[n..]
