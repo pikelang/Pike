@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.298 2003/09/09 17:04:06 mast Exp $
+// $Id: master.pike.in,v 1.299 2003/09/18 13:15:35 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1974,7 +1974,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"compat_version", HAS_ARG, ({"-V", "--compat"}), 0, 0}),
       ({"version",        NO_ARG,  ({"-v", "--version"}), 0, 0}),
       ({"dumpversion",    NO_ARG,  ({"--dumpversion"}), 0, 0}),
-      ({"help",           NO_ARG,  ({"-h", "--help"}), 0, 0}),
+      ({"help",           MAY_HAVE_ARG, ({"-h", "--help"}), 0, 0}),
       ({"features",       NO_ARG,  ({"--features"}), 0, 0}),
       ({"info",           NO_ARG,  ({"--info"}), 0, 0}),
       ({"execute",        HAS_ARG, ({"-e", "--execute"}), 0, 0}),
@@ -2113,22 +2113,7 @@ void _main(array(string) orig_argv, array(string) env)
 	exit(0);
 	
       case "help":
-	werror("Usage: pike [-driver options] script [script arguments]\n"
-	       "Driver options include:\n"
-	       " -I --include-path=<p>: Add <p> to the include path\n"
-	       " -M --module-path=<p> : Add <p> to the module path\n"
-	       " -P --program-path=<p>: Add <p> to the program path\n"
-	       " -e --execute=<cmd>   : Run the given command instead of a script.\n"
-	       " -h --help            : see this message\n"
-	       " -v --version         : See what version of pike you have.\n"
-	       " --features           : List Pike features.\n"
-	       " --info               : List information about the Pike build and setup.\n"
-	       " --show-paths         : See the paths and master that pike uses.\n"
-	       " -s#                  : Set stack size\n"
-	       " -m <file>            : Use <file> as master object.\n"
-	       " -d -d#               : Increase debug (# is how much)\n"
-	       " -t -t#               : Increase trace level\n"
-	  );
+	werror( main_resolv("Tools","MasterHelp")->do_help(opts[1]) );
 	exit(0);
 	
       case "features":
@@ -2236,7 +2221,7 @@ void _main(array(string) orig_argv, array(string) env)
       mapping t = ([]);
       int i;
       object ts = main_resolv( "Tools", "Standalone" );
-      foreach(indices(ts), string s) {
+      foreach(indices(ts)-indices(ts->module), string s) {
 	object o = ts[s]();
 	if(!o->main) continue;
 	t[s] = o->description || "";
