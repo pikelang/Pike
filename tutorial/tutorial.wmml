@@ -10563,20 +10563,15 @@ more information. (Note that all values may not be present though)
 </anchor>
 
 <HR NEWPAGE>
-<anchor name=search>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>search</tt> - search for a value in a string or array
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int search(string <I>haystack</I>, string <I>needle</I>, [ int <I>start</I> ]);<br>
+<function name=search title="search for a value in a string or array">
+<man_syntax>
+int search(string <I>haystack</I>, string <I>needle</I>, [ int <I>start</I> ]);<br>
 or<br>
 int search(mixed *<I>haystack</I>, mixed <I>needle</I>, [ int <I>start</I> ]);<br>
 or<br>
 mixed search(mapping <I>haystack</I>, mixed <I>needle</I>, [ mixed <I>start</I> ]);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 Search for <i>needle</i> in <i>haystack</i>. Return the position of <i>needle</i> in
 <i>haystack</i> or -1 if not found. If the optional argument <i>start</i> is present
 search is started at this position. Note that when <i>haystack</i> is a string
@@ -10588,12 +10583,9 @@ When the <i>haystack</i> is a mapping, <tt>search</tt> tries to find the index
 connected to the data <i>needle</i>. That is, it tries to lookup the mapping
 backwards. If <i>needle</i> isn't present in the mapping, zero is returned,
 and zero_type() will return 1 for this zero.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=indices>indices</link>, <link to=values>values</link> and <link to=zero_type>zero_type</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>indices, values, zero_type</man_see>
+</function>
 
 <HR NEWPAGE>
 <anchor name=signal>
