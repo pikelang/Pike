@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
@@ -21,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.52 2000/12/01 08:10:36 hubbe Exp $");
+RCSID("$Id: socket.c,v 1.53 2001/09/12 11:29:10 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -227,7 +228,8 @@ static void port_bind(INT32 args)
   addr.sin_family = AF_INET;
 
   THREADS_ALLOW_UID();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || fd_listen(fd, 16384) < 0;
+  tmp = fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
+    fd_listen(fd, 16384) < 0;
   THREADS_DISALLOW_UID();
 
   if(tmp)
