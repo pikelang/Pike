@@ -495,7 +495,7 @@ static INLINE int find_end_parenthesis(struct cpp *this,
 
     switch(data[pos++])
     {
-    case '\n': this->current_line++; break;
+    case '\n': PUTNL(); this->current_line++; break;
     case '\'': FIND_END_OF_CHAR();  break;
     case '"':  FIND_END_OF_STRING();  break;
     case '(':  pos=find_end_parenthesis(this, data, len, pos); break;
@@ -700,12 +700,14 @@ static INT32 low_cpp(struct cpp *this,
 		  low_my_binary_strcat(a, l, &tmp);
 		}else{
 		  dynamic_buffer save;
+		  INT32 line=this->current_line;
 		  save=this->buf;
 		  this->buf=tmp;
 		  low_cpp(this, a, l,
 			  flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
 		  tmp=this->buf;
 		  this->buf=save;
+		  this->current_line=line;
 		}
 	      }
 	      
