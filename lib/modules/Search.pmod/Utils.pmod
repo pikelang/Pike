@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.24 2001/08/13 11:56:44 anders Exp $
+// $Id: Utils.pmod,v 1.25 2001/08/14 19:46:19 nilsson Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -60,32 +60,17 @@ class ProfileEntry {
     search_profile_id = _search_profile_id;
     my_cache = _my_cache;
     int last_stat = time(1);
+
+    // Prefetch..
+    get_ranking();
   }
 
-  //! Checks with the parent @[ProfileCache] if any dependent
-  //! profile is updated. If so, the potentially stale cached
-  //! values are cleared. Checks against the parent @[ProfileCache]
-  //! are done with at least five minutes intervals, and never when
-  //! the object is unused, i.e. this method is called from
-  //! @[get_database], @[get_ranking] and @[get_stop_words].
-  void refresh() {
-    //    werror("Time since check: %d\n", time(1)-last_stat);
-    if(time(1)-last_stat < 5*60) return;
-    int check = my_cache->up_to_datep(database_profile_id);
-    if(check == -1) destruct();
-    if(!check) {
-      database_values = 0;
-      ranking = 0;
-      db = 0;
-    }
-    check = my_cache->up_to_datep(search_profile_id);
-    if(check == -1) destruct();
-    if(!check) {
-      search_values = 0;
-      ranking = 0;
-      stop_words = 0;
-    }
+  //! Checks if it is time to check if the profile values are
+  //! to old.
+  int(0..1) check_timeout() {
+    if(time(1)-last_stat < 5*60) return 0;
     last_stat = time(1);
+    return 1;
   }
 
   //! Returns the database profile value @[index].
@@ -104,7 +89,6 @@ class ProfileEntry {
 
   //! Returns a cached search database for the current database profile.
   Search.Database.MySQL get_database() {
-    refresh();
     if(!db) {
 #if constant(DBManager)
       db = Search.Database.MySQL( DBManager.db_url( get_database_value("db_name"), 1) );
@@ -119,7 +103,6 @@ class ProfileEntry {
   //! Returns a cached ranking profile for the current database and
   //! search profile.
   Search.RankingProfile get_ranking() {
-    refresh();
     if(!ranking)
       ranking = Search.RankingProfile(get_search_value("fi_cut"),
 				      get_search_value("px_rank"),
@@ -170,7 +153,6 @@ class ProfileEntry {
 
   //! Returns a cached array of stop words for the current search profile.
   array(string) get_stop_words() {
-    refresh();
     if(!stop_words) {
       ADTSet words = ADTSet();
       foreach(get_search_value("sw_lists"), string fn) {
@@ -196,7 +178,7 @@ class ProfileEntry {
 //!
 class ProfileCache (string db_name) {
 
-  private mapping(int:ProfileEntry) entry_cache = ([]);
+  private mapping(string:ProfileEntry) entry_cache = ([]);
   private mapping(int:mapping(string:mixed)) value_cache = ([]);
   private mapping(string:int) db_profile_names = ([]);
   private mapping(string:int) srh_profile_names = ([]);
@@ -218,8 +200,9 @@ class ProfileCache (string db_name) {
   //!   @value -1
   //!    The profile is deleted.
   //!   @value 0
-  //!    The profile is up to date.
+  //!    The profile is not up to date.
   //!   @value 1
+  //!    The profile is up to date.
   //!  @endint
   int(-1..1) up_to_datep(int profile_id) {
     //    werror("Called up-to-date...\n");
@@ -235,9 +218,14 @@ class ProfileCache (string db_name) {
 	if(!has_value(existing, id))
 	  m_delete(value_cache, id);
 
-      foreach(indices(entry_cache), int id)
-	if(!has_value(existing, id))
+      foreach(indices(entry_cache), string id) {
+	int dbp, srhp;
+	sscanf(id, "%d:%d", dbp, srhp);
+	if(!has_value(existing, dbp))
 	  m_delete(entry_cache, id);
+	if(!has_value(existing, srhp))
+	  m_delete(entry_cache, id);
+      }
 
       foreach(indices(db_profile_names), string name)
 	if(!has_value(existing, db_profile_names[name]))
@@ -258,12 +246,16 @@ class ProfileCache (string db_name) {
     if((int)res[0]->type == 2) 
     {
       m_delete(value_cache, profile_id);
-      m_delete(entry_cache, profile_id);
+      foreach(indices(entry_cache), string id)
+	if(array_sscanf(id, "%d:%d")[1]==profile_id)
+	  m_delete(entry_cache, id);
       return 0;
     }
 
     m_delete(value_cache, profile_id);
-    m_delete(entry_cache, profile_id);
+    foreach(indices(entry_cache), string id)
+      if(array_sscanf(id, "%d:%d")[0]==profile_id)
+	m_delete(entry_cache, id);
     return 0;
   }
 
@@ -372,11 +364,14 @@ class ProfileCache (string db_name) {
     int srh = get_srh_profile_number(srh_name);
 
     ProfileEntry entry;
-    if(entry=entry_cache[srh])
-      return entry;
+    if(entry=entry_cache[srh +":"+ db]) {
+      if(!entry->check_timeout()) return entry;
+      if(up_to_datep(db) &&
+	 up_to_datep(srh)) return entry;
+    }
 
     entry = ProfileEntry( db, srh, this_object() );
-    return entry_cache[srh] = entry;
+    return entry_cache[srh +":"+ db] = entry;
   }
 
   //! Flushes profile entry @[p] from the profile cache.
@@ -386,6 +381,11 @@ class ProfileCache (string db_name) {
       if(db_profile_names[name]==p)
 	m_delete(db_profile_names, name);
     m_delete(srh_profile_names, p);
+    foreach(indices(entry_cache), string id) {
+      array ids = array_sscanf(id, "%d:%d");
+      if(ids[0]==p || ids[1]==p)
+	m_delete(entry_cache, id);
+    }
   }
 
   //! Empty the whole cache.
@@ -395,6 +395,19 @@ class ProfileCache (string db_name) {
     srh_profile_names = ([]);
   }
 }
+
+private mapping(string:ProfileCache) profile_cache_cache = ([]);
+
+ProfileCache get_profile_cache(string db_name) {
+  if(profile_cache_cache[db_name])
+    return profile_cache_cache[db_name];
+  return profile_cache_cache[db_name] = ProfileCache(db_name);
+}
+
+void flush_profile(int p) {
+  values(profile_cache_cache)->flush_profile(p);
+}
+
 
 //!
 class Logger {
