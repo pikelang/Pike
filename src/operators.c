@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.137 2001/05/19 21:37:32 grubba Exp $");
+RCSID("$Id: operators.c,v 1.138 2001/06/11 21:18:20 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1188,6 +1188,11 @@ PMOD_EXPORT void o_and(void)
 	      pop_n_elems(2);
 	      push_mapping(m);
 	      return;
+	   }
+	   default:
+	   {
+	      int args = 2;
+	      SIMPLE_BAD_ARG_ERROR("`&", 2, "mapping");
 	   }
 	}
      else 
@@ -3387,7 +3392,7 @@ static node *optimize_sizeof(node *n)
 	(CDDDR(n)->u.sval.type == T_STRING) &&
 	(CDDDR(n)->u.sval.u.string->len == 1)) {
       p_wchar2 split = index_shared_string(CDDDR(n)->u.sval.u.string, 0);
-					   
+
       /* sizeof(`/(str, "x")) */
       ADD_NODE_REF2(CADDR(n),
         return mkefuncallnode("sizeof",
