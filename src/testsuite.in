@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.251 1999/12/09 17:23:45 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.252 1999/12/10 19:19:32 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -55,7 +55,8 @@ test_any([[int|string a;
 	   string s = typeof(aggregate(a));
 	   return (< "array(string | int)", "array(int | string)" >)[s];]], 1);
 test_any([[return typeof(aggregate());]], "array(zero)");
-test_any([[int i; return typeof(max(i,0));]], "int")
+test_any([[int i; return (< "int", "int | zero", "zero | int" >)
+                          [typeof(max(i,0))];]], 1)
 
 test_any([[array(string) a; return typeof(a[0]); ]], "string")
 
@@ -3675,7 +3676,7 @@ test_eq(search(({"foo"}),"foo"),0)
 test_eq(search("fo-obar|gazonk"/"|","fo-obar"),0)
 test_eq(search("fo-obar|gazonk"/"|","gazonk"),1)
 test_eq(search(([1:2,3:4,5:6,7:8]),4),3)
-test_true(zero_type(search(([1:2,3:4,5:6,7:8]),1)))
+test_true(zero_type(search(([1:2,3:4,5:6,7:8]),3)))
 test_eq(search(([1:2,3:4,5:6,7:8]),8),7)
 
 // test large searches (find string, size, pattern)
