@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.11 1997/05/19 23:33:22 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.12 1997/06/12 01:35:40 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -349,27 +349,37 @@ INLINE static int do_one(struct format_info *f)
     col=f->width/(f->column_width+1);
     if(!f->column_width || col<1) col=1;
     rest=f->b;
-    for(d=0;*rest && d<col;d++)
+    for(d=0;rest && d<col;d++)
     {
 #if 0
       if(rest != f->b)
 	fix_field(" ",1,0,1," ",1,0);
 #endif
 
+      /* Find end of entry */
       for(e=0;rest[e] && rest[e]!='\n';e++);
+
       fix_field(rest,e,f->flags,f->column_width,
 		f->pad_string,f->pad_length,f->pos_pad);
 
-      for(e=0;*rest && e<mod;e++)
-      {
-	char *s;
-	s=STRCHR(rest,'\n');
-	if(s)
-	  rest=s+1;
-	else
- 	  rest+=strlen(rest);
-      }
       f->column_entries--;
+
+      /* Advance to after entry */
+      rest+=e;
+      if(!*rest) break;
+      rest++;
+
+      for(e=1;e<mod;e++)
+      {
+	char *s=STRCHR(rest,'\n');
+	if(s)
+	{
+	  rest=s+1;
+	}else{
+	  rest=0;
+	  break;
+	}
+      }
     }
     if(f->column_entries>0)
     {
