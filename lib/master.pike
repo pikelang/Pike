@@ -1,7 +1,38 @@
-/* $Id: master.pike,v 1.59 1998/01/15 05:58:34 hubbe Exp $
+/* $Id: master.pike,v 1.60 1998/01/15 17:52:52 hubbe Exp $
  *
  * Master-file for Pike.
  */
+
+int is_absolute_path(string p)
+{
+#ifdef __NT__
+  p=replace(p,"\\","/");
+  if(sscanf(p,"%[a-zA-Z]:",string s) && strlen(s)==1)
+    return 1;
+#endif
+  return p[0]=='/';
+}
+
+string *explode_path(string p)
+{
+#ifdef __NT__
+  p=replace(p,"\\","/");
+#endif
+  return p/"/";
+}
+
+string dirname(string x)
+{
+  string *tmp=explode_path(x);
+  return tmp[..sizeof(tmp)-2]*"/";
+}
+
+string basename(string x)
+{
+  string *tmp=explode_path(x);
+  return tmp[-1];
+}
+
 
 #define GETCWD_CACHE
 #define FILE_STAT_CACHE
@@ -46,7 +77,7 @@ string getcwd()
 
 string combine_path_with_cwd(string path)
 {
-  return combine_path(path[0]=='/'?"/":getcwd(),path);
+  return combine_path(is_absolute_path(path)?"/":getcwd(),path);
 }
 
 #ifdef FILE_STAT_CACHE
@@ -58,12 +89,10 @@ mapping(string:multiset(string)) dir_cache = ([]);
 
 mixed *master_file_stat(string x)
 {
-  string file, dir=reverse(combine_path_with_cwd(x));
-  if(sscanf(dir,"%*[/]%s/%s", file, dir)!=3)
-    file=x;
+  string file, dir=combine_path_with_cwd(x);
 
-  file=reverse(file);
-  dir=reverse(dir);
+  file=basename(dir);
+  dir=dirname(dir);
 
   multiset(string) d;
   if(time() > invalidate_time)
@@ -209,14 +238,17 @@ program cast_to_program(string pname, string current_file)
 {
   string ext;
   string nname;
-  if(sscanf(reverse(pname),"%s.%s",ext, nname) && search(ext, "/") == -1)
+  array(string) tmp=explode_path(pname);
+
+  if(sscanf(reverse(tmp[-1]),"%s.%s",ext, nname))
   {
     ext="."+reverse(ext);
-    pname=reverse(nname);
+    tmp[-1]=reverse(nname);
+    pname=tmp*"/";
   }else{
     ext="";
   }
-  if(pname[0]=='/')
+  if(is_absolute_path(pname))
   {
     pname=combine_path("/",pname);
     return findprog(pname,ext);
@@ -224,8 +256,7 @@ program cast_to_program(string pname, string current_file)
     string cwd;
     if(current_file)
     {
-      string *tmp=current_file/"/";
-      cwd=tmp[..sizeof(tmp)-2]*"/";
+      cwd=dirname(current_file);
     }else{
       cwd=getcwd();
     }
@@ -263,6 +294,11 @@ object new(mixed prog, mixed ... args)
  */
 void create()
 {
+  add_constant("basename",basename);
+  add_constant("dirname",dirname);
+  add_constant("is_absolute_path",is_absolute_path);
+  add_constant("explode_path",explode_path);
+
   add_constant("compile_string",compile_string);
   add_constant("compile_file",compile_file);
   add_constant("add_include_path",add_include_path);
@@ -402,7 +438,7 @@ varargs mixed resolv(string identifier, string current_file)
 
   if(current_file)
   {
-    tmp=current_file/"/";
+    tmp=explode_path(current_file);
     tmp[-1]=identifier;
     path=combine_path_with_cwd( tmp*"/");
     ret=findmodule(path);
@@ -452,8 +488,8 @@ void _main(string *argv, string *env)
 
   add_constant("write",_static_modules.files()->file("stdout")->write);
 
-  _master_file_name=replace(backtrace()[-1][0],"\\","/");
-  q=_master_file_name/"/";
+  _master_file_name=backtrace()[-1][0];
+  q=explode_path(_master_file_name);
   pike_library_path = combine_path_with_cwd(q[0..sizeof(q)-2] * "/");
 
   add_include_path(pike_library_path+"/include");
@@ -550,7 +586,7 @@ void _main(string *argv, string *env)
 
   if(sizeof(argv)==1)
   {
-    argv=argv[0]/"/";
+    argv=explode_path(argv[0]);
     argv[-1]="hilfe";
     argv=({ argv*"/" });
     if(!master_file_stat(argv[0]))
@@ -598,8 +634,7 @@ void set_inhibit_compile_errors(mixed f)
 
 string trim_file_name(string s)
 {
-  if(getenv("SHORT_PIKE_ERRORS"))
-    return (s/"/")[-1];
+  if(getenv("SHORT_PIKE_ERRORS")) return basename(s);
   return s;
 }
 
@@ -651,7 +686,7 @@ string handle_include(string f,
 
   if(local_include)
   {
-    tmp=current_file/"/";
+    tmp=explode_path(current_file);
     tmp[-1]=f;
     path=combine_path_with_cwd(tmp*"/");
     if(!master_file_stat(path)) return 0;
