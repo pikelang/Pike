@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.7 1998/02/10 13:45:46 mirar Exp $ */
+/* $Id: x.c,v 1.8 1998/02/10 15:09:43 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.7 1998/02/10 13:45:46 mirar Exp $
+**!	$Id: x.c,v 1.8 1998/02/10 15:09:43 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.7 1998/02/10 13:45:46 mirar Exp $");
+RCSID("$Id: x.c,v 1.8 1998/02/10 15:09:43 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -123,7 +123,7 @@ static void x_encode_truecolor(INT32 args)
    if (args>10)
       if (sp[10-args].type!=T_OBJECT ||
 	  !(nct=(struct neo_colortable*)
-	    get_storage(sp[9-args].u.object,image_colortable_program)))
+	    get_storage(sp[10-args].u.object,image_colortable_program)))
 	 error("Image.X.encode_truecolor: illegal argument 10 (expected colortable object)\n");
 	 
    if (sp[1-args].type!=T_INT)
@@ -207,13 +207,6 @@ THREADS_ALLOW();
       INT32 gpos=-(gshift>>3)-1;
       INT32 bpos=-(bshift>>3)-1;
       INT32 linemod=(alignbits-((img->xsize*bpp+alignbits-1)%alignbits)-1)>>3;
-
-      if (swap_bytes)
-      {
-	 rpos=Bpp-rpos;
-	 gpos=Bpp-gpos;
-	 bpos=Bpp-bpos;
-      }
 
       if (!linemod && Bpp==4 && rpos!=gpos && gpos!=bpos) 
       {
@@ -300,18 +293,40 @@ THREADS_ALLOW();
 	 bit+=bp;
 	 if (bit==8) *(++d)=0,bit=0;
       }
+   }
 
-      if (swap_bytes)
+
+   if (swap_bytes)
+   {
+      d=(unsigned char*)dest->str;
+      x=dest->len;
+      switch (bpp)
       {
-	 d=dest->str;
-	 x=dest->len;
-	 while (x>=4)
-	 {
-	    d[0]^=d[3],d[3]^=d[0],d[0]^=d[3];
-	    d[1]^=d[2],d[2]^=d[1],d[1]^=d[2];
-	    d+=4;
-	    x-=4;
-	 }
+         case 32:
+	    while (x>=4)
+	    {
+	       d[0]^=d[3],d[3]^=d[0],d[0]^=d[3];
+	       d[1]^=d[2],d[2]^=d[1],d[1]^=d[2];
+	       d+=4;
+	       x-=4;
+	    }
+	    break;
+         case 24:
+	    while (x>=3)
+	    {
+	       d[0]^=d[2],d[2]^=d[0],d[0]^=d[2];
+	       d+=3;
+	       x-=3;
+	    }
+	    break;
+         case 16:
+	    while (x>=3)
+	    {
+	       d[0]^=d[1],d[1]^=d[0],d[0]^=d[1];
+	       d+=3;
+	       x-=3;
+	    }
+	    break;
       }
    }
 
@@ -345,6 +360,20 @@ static INLINE void x_examine_mask(struct svalue *mask,
       error("Image.X.encode_truecolor_masks: illegal %s (nonmassive bitfield)\n",what);
 }
 
+static void x_call_examine_mask(INT32 args)
+{
+    int bits,shift;
+    if (args<1 || sp[-args].type!=T_INT)
+       error("Image.X.examine_mask: illegal argument(s)\n");
+
+    x_examine_mask(sp-args,"argument 1",&bits,&shift);
+    pop_n_elems(args);
+    
+    push_int(bits);
+    push_int(shift);
+    f_aggregate(2);
+}
+
 static void x_encode_truecolor_masks(INT32 args)
 {
    struct object *ct=NULL;
@@ -358,7 +387,7 @@ static void x_encode_truecolor_masks(INT32 args)
 
    if (args>7)
       if (sp[7-args].type!=T_OBJECT ||
-	  !get_storage(ct=sp[6-args].u.object,image_colortable_program))
+	  !get_storage(ct=sp[7-args].u.object,image_colortable_program))
 	 error("Image.X.encode_truecolor_masks: illegal argument 8 (expected colortable object)\n");
  
    if (sp[1-args].type!=T_INT)
@@ -714,6 +743,9 @@ void init_image_x(void)
 		"function(object,int,int,int,int,int,int,void|object:string)",0);
    add_function("encode_pseudocolor",x_encode_pseudocolor,
 		"function(object,int,int,int,object,void|string:string)",0);
+
+   add_function("examine_mask",x_call_examine_mask,
+		"function(int:array(int))",0);
 
    image_x_module_program=end_program();
    push_object(clone_object(image_x_module_program,0));
