@@ -21,18 +21,6 @@ AC_ARG_WITH(java-lib-dir,
 
 if test "x$with_java" = xyes; then
 
-  AC_MSG_CHECKING(which architecture we're using)
-  AC_CACHE_VAL(pike_cv_java_arch, [
-    if pike_cv_java_arch="`/usr/bin/uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
-
-    dnl Linux kluge
-
-    if test x"$pike_cv_java_arch" = xunknown; then
-      [pike_cv_java_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
-    fi
-  ])
-  AC_MSG_RESULT($pike_cv_java_arch)
-
   AC_MSG_CHECKING(which operating system we're using)
   AC_CACHE_VAL(pike_cv_java_sysos, [
     pike_cv_java_sysos="`uname | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`"
@@ -45,6 +33,23 @@ if test "x$with_java" = xyes; then
     esac
   ])
   AC_MSG_RESULT($pike_cv_java_sysos)
+
+  AC_MSG_CHECKING(which architecture we're using)
+  AC_CACHE_VAL(pike_cv_java_arch, [
+    if test "x$pike_cv_java_sysos" = xwindows_nt; then
+      uname=uname
+    else
+      uname=/usr/bin/uname
+    fi
+    if pike_cv_java_arch="`$uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
+
+    dnl Linux kluge
+
+    if test x"$pike_cv_java_arch" = xunknown; then
+      [pike_cv_java_arch="`uname -m | sed -e 's/^i[4-9]86/i386/'`"]
+    fi
+  ])
+  AC_MSG_RESULT($pike_cv_java_arch)
 
   AC_MSG_CHECKING(what kind of threads to use)
   AC_CACHE_VAL(pike_cv_java_threads_type, [
