@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.75 1998/02/27 19:18:08 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.76 1998/03/01 03:34:48 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -442,7 +442,7 @@ test_true(intp(signum("SIGKILL")))
 
 // kill, signal, getpid
 test_true(intp(getpid()))
-cond([[all_constants()->kill]],
+cond([[all_constants()->kill && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
   test_do(signal(signum("SIGFPE"),lambda() { add_constant("AFJLLAF",17); }))
   test_do(kill(getpid(),signum("SIGFPE")))
