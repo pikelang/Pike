@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.1 2000/12/11 10:43:54 per Exp $");
+RCSID("$Id: freetype.c,v 1.2 2000/12/11 12:51:00 per Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -82,7 +82,7 @@ static void image_ft_face_write_char( INT32 args )
   push_text( "img" ); push_object( o );
   push_text( "x" )  ; push_int( slot->bitmap_left );
   push_text( "y" )  ; push_int( slot->bitmap_top );
-  push_text( "advance" )  ; push_int( slot->advance.x >> 6 );
+  push_text( "advance" )  ; push_int( (slot->advance.x+62) >> 6 );
   push_text( "descender" ); push_int( TFACE->size->metrics.descender>>6 );
   push_text( "ascender" ); push_int( TFACE->size->metrics.ascender>>6 );
   push_text( "height" ); push_int( TFACE->size->metrics.height>>6 );
