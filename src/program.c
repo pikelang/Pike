@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.173 1999/11/18 02:46:04 mast Exp $");
+RCSID("$Id: program.c,v 1.174 1999/11/18 04:14:50 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2875,7 +2875,7 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   return p;
 }
 
-int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
+int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 {
   int ret;
   struct pike_string *name_tmp,*type_tmp;

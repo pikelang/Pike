@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.37 1999/11/16 00:51:56 mast Exp $
+ * $Id: svalue.h,v 1.38 1999/11/18 04:14:54 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -79,15 +79,15 @@ struct svalue
   union anything u;
 };
 
-#define T_ARRAY 0
-#define T_MAPPING 1
-#define T_MULTISET 2
-#define T_OBJECT 3
-#define T_FUNCTION 4
-#define T_PROGRAM 5
-#define T_STRING 6
-#define T_FLOAT 7
-#define T_INT 8
+#define PIKE_T_ARRAY 0
+#define PIKE_T_MAPPING 1
+#define PIKE_T_MULTISET 2
+#define PIKE_T_OBJECT 3
+#define PIKE_T_FUNCTION 4
+#define PIKE_T_PROGRAM 5
+#define PIKE_T_STRING 6
+#define PIKE_T_FLOAT 7
+#define PIKE_T_INT 8
 
 #define T_VOID 16
 #define T_MANY 17
@@ -154,15 +154,15 @@ struct svalue
 #define tRef tOr(tString,tComplex)
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
 
-#define BIT_ARRAY (1<<T_ARRAY)
-#define BIT_MAPPING (1<<T_MAPPING)
-#define BIT_MULTISET (1<<T_MULTISET)
-#define BIT_OBJECT (1<<T_OBJECT)
-#define BIT_FUNCTION (1<<T_FUNCTION)
-#define BIT_PROGRAM (1<<T_PROGRAM)
-#define BIT_STRING (1<<T_STRING)
-#define BIT_INT (1<<T_INT)
-#define BIT_FLOAT (1<<T_FLOAT)
+#define BIT_ARRAY (1<<PIKE_T_ARRAY)
+#define BIT_MAPPING (1<<PIKE_T_MAPPING)
+#define BIT_MULTISET (1<<PIKE_T_MULTISET)
+#define BIT_OBJECT (1<<PIKE_T_OBJECT)
+#define BIT_FUNCTION (1<<PIKE_T_FUNCTION)
+#define BIT_PROGRAM (1<<PIKE_T_PROGRAM)
+#define BIT_STRING (1<<PIKE_T_STRING)
+#define BIT_INT (1<<PIKE_T_INT)
+#define BIT_FLOAT (1<<PIKE_T_FLOAT)
 
 /* Used to signify that this array might not be finished yet */
 /* garbage collect uses this */
@@ -185,11 +185,11 @@ struct svalue
 #define BIT_CALLABLE (BIT_FUNCTION|BIT_PROGRAM|BIT_ARRAY|BIT_OBJECT)
 
 /* Max type which contains svalues */
-#define MAX_COMPLEX T_PROGRAM
+#define MAX_COMPLEX PIKE_T_PROGRAM
 /* Max type with ref count */
-#define MAX_REF_TYPE T_STRING
+#define MAX_REF_TYPE PIKE_T_STRING
 /* Max type handled by svalue primitives */
-#define MAX_TYPE T_INT
+#define MAX_TYPE PIKE_T_INT
 
 #define NUMBER_NUMBER 0
 #define NUMBER_UNDEFINED 1
@@ -198,16 +198,16 @@ struct svalue
 #define FUNCTION_BUILTIN USHRT_MAX
 
 #define is_gt(a,b) is_lt(b,a)
-#define IS_ZERO(X) ((X)->type==T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
+#define IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
 
-#define IS_UNDEFINED(X) ((X)->type==T_INT&&!(X)->u.integer&&(X)->subtype==1)
+#define IS_UNDEFINED(X) ((X)->type==PIKE_T_INT&&!(X)->u.integer&&(X)->subtype==1)
 
 #define check_destructed(S) \
 do{ \
   struct svalue *_s=(S); \
-  if((_s->type == T_OBJECT || _s->type==T_FUNCTION) && !_s->u.object->prog) { \
+  if((_s->type == PIKE_T_OBJECT || _s->type==PIKE_T_FUNCTION) && !_s->u.object->prog) { \
     free_object(_s->u.object); \
-    _s->type = T_INT; \
+    _s->type = PIKE_T_INT; \
     _s->subtype = NUMBER_DESTRUCTED ; \
     _s->u.integer = 0; \
   } \
@@ -215,7 +215,7 @@ do{ \
 
 /* var MUST be a variable!!! */
 #define safe_check_destructed(var) do{ \
-  if((var->type == T_OBJECT || var->type==T_FUNCTION) && !var->u.object->prog) \
+  if((var->type == PIKE_T_OBJECT || var->type==PIKE_T_FUNCTION) && !var->u.object->prog) \
     var=&dest_ob_zero; \
 }while(0)
 
@@ -323,5 +323,20 @@ void gc_mark_svalues(struct svalue *s, int num);
 void gc_mark_short_svalue(union anything *u, TYPE_T type);
 INT32 pike_sizeof(struct svalue *s);
 /* Prototypes end here */
+
+#ifndef NO_PIKE_SHORTHAND
+
+#define T_ARRAY    PIKE_T_ARRAY
+#define T_MAPPING  PIKE_T_MAPPING
+#define T_MULTISET PIKE_T_MULTISET
+#define T_OBJECT   PIKE_T_OBJECT
+#define T_FUNCTION PIKE_T_FUNCTION
+#define T_PROGRAM  PIKE_T_PROGRAM
+#define T_STRING   PIKE_T_STRING
+#define T_FLOAT    PIKE_T_FLOAT
+#define T_INT      PIKE_T_INT
+
+#endif
+
 
 #endif

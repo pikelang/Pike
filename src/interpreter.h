@@ -143,7 +143,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_MARK_AND_STRING); *(mark_sp++)=sp;
       CASE(F_STRING);
       copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
-      sp->type=T_STRING;
+      sp->type=PIKE_T_STRING;
       sp->subtype=0;
       sp++;
       print_return_value();
@@ -151,7 +151,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_ARROW_STRING);
       copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
-      sp->type=T_STRING;
+      sp->type=PIKE_T_STRING;
       sp->subtype=1; /* Magic */
       sp++;
       print_return_value();
@@ -163,7 +163,7 @@ static int eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_FLOAT);
-      sp->type=T_FLOAT;
+      sp->type=PIKE_T_FLOAT;
       MEMCPY((void *)&sp->u.float_number, pc, sizeof(FLOAT_TYPE));
       pc+=sizeof(FLOAT_TYPE);
       sp++;
@@ -173,7 +173,7 @@ static int eval_instruction(unsigned char *pc)
       sp->u.object=fp->current_object;
       add_ref(fp->current_object);
       sp->subtype=GET_ARG()+fp->context.identifier_level;
-      sp->type=T_FUNCTION;
+      sp->type=PIKE_T_FUNCTION;
       sp++;
       print_return_value();
       break;
@@ -404,10 +404,10 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_CLEAR_2_LOCAL);
       instr=GET_ARG();
       free_svalues(fp->locals + instr, 2, -1);
-      fp->locals[instr].type=T_INT;
+      fp->locals[instr].type=PIKE_T_INT;
       fp->locals[instr].subtype=0;
       fp->locals[instr].u.integer=0;
-      fp->locals[instr+1].type=T_INT;
+      fp->locals[instr+1].type=PIKE_T_INT;
       fp->locals[instr+1].subtype=0;
       fp->locals[instr+1].u.integer=0;
       break;
@@ -419,7 +419,7 @@ static int eval_instruction(unsigned char *pc)
 	free_svalues(fp->locals + instr, 4, -1);
 	for(e=0;e<4;e++)
 	{
-	  fp->locals[instr+e].type=T_INT;
+	  fp->locals[instr+e].type=PIKE_T_INT;
 	  fp->locals[instr+e].subtype=0;
 	  fp->locals[instr+e].u.integer=0;
 	}
@@ -429,7 +429,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_CLEAR_LOCAL);
       instr=GET_ARG();
       free_svalue(fp->locals + instr);
-      fp->locals[instr].type=T_INT;
+      fp->locals[instr].type=PIKE_T_INT;
       fp->locals[instr].subtype=0;
       fp->locals[instr].u.integer=0;
       break;
@@ -437,10 +437,10 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_INC_LOCAL);
       instr=GET_ARG();
 #ifdef AUTO_BIGNUM
-      if(fp->locals[instr].type == T_INT &&
+      if(fp->locals[instr].type == PIKE_T_INT &&
          !INT_TYPE_ADD_OVERFLOW(fp->locals[instr].u.integer, 1))
 #else
-      if(fp->locals[instr].type == T_INT)
+      if(fp->locals[instr].type == PIKE_T_INT)
 #endif /* AUTO_BIGNUM */
       {
 	  fp->locals[instr].u.integer++;
@@ -464,10 +464,10 @@ static int eval_instruction(unsigned char *pc)
       instr=GET_ARG();
     inc_local_and_pop:
 #ifdef AUTO_BIGNUM
-      if(fp->locals[instr].type == T_INT &&
+      if(fp->locals[instr].type == PIKE_T_INT &&
          !INT_TYPE_ADD_OVERFLOW(fp->locals[instr].u.integer, 1))
 #else
-      if(fp->locals[instr].type == T_INT)
+      if(fp->locals[instr].type == PIKE_T_INT)
 #endif /* AUTO_BIGNUM */
       {
 	fp->locals[instr].u.integer++;
@@ -483,10 +483,10 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_DEC_LOCAL);
       instr=GET_ARG();
 #ifdef AUTO_BIGNUM
-      if(fp->locals[instr].type == T_INT &&
+      if(fp->locals[instr].type == PIKE_T_INT &&
          !INT_TYPE_SUB_OVERFLOW(fp->locals[instr].u.integer, 1))
 #else
-      if(fp->locals[instr].type == T_INT)
+      if(fp->locals[instr].type == PIKE_T_INT)
 #endif /* AUTO_BIGNUM */
       {
 	fp->locals[instr].u.integer--;
@@ -510,10 +510,10 @@ static int eval_instruction(unsigned char *pc)
       instr=GET_ARG();
     dec_local_and_pop:
 #ifdef AUTO_BIGNUM
-      if(fp->locals[instr].type == T_INT &&
+      if(fp->locals[instr].type == PIKE_T_INT &&
          !INT_TYPE_SUB_OVERFLOW(fp->locals[instr].u.integer, 1))
 #else
-      if(fp->locals[instr].type == T_INT)
+      if(fp->locals[instr].type == PIKE_T_INT)
 #endif /* AUTO_BIGNUM */
       {
 	fp->locals[instr].u.integer--;
@@ -533,7 +533,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_LTOSVAL2);
       sp[0]=sp[-1];
-      sp[-1].type=T_INT;
+      sp[-1].type=PIKE_T_INT;
       sp++;
       lvalue_to_svalue_no_free(sp-2,sp-4);
 
@@ -546,7 +546,7 @@ static int eval_instruction(unsigned char *pc)
       if( (1 << sp[-2].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
       {
 	struct svalue s;
-	s.type=T_INT;
+	s.type=PIKE_T_INT;
 	s.subtype=0;
 	s.u.integer=0;
 	assign_lvalue(sp-4,&s);
@@ -556,7 +556,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_ADD_TO_AND_POP);
       sp[0]=sp[-1];
-      sp[-1].type=T_INT;
+      sp[-1].type=PIKE_T_INT;
       sp++;
       lvalue_to_svalue_no_free(sp-2,sp-4);
 
@@ -569,7 +569,7 @@ static int eval_instruction(unsigned char *pc)
       if( (1 << sp[-2].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
       {
 	struct svalue s;
-	s.type=T_INT;
+	s.type=PIKE_T_INT;
 	s.subtype=0;
 	s.u.integer=0;
 	assign_lvalue(sp-4,&s);
@@ -608,7 +608,7 @@ static int eval_instruction(unsigned char *pc)
       
       CASE(F_INC);
       {
-	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	union anything *u=get_pointer_if_this_type(sp-2, PIKE_T_INT);
 	if(u
 #ifdef AUTO_BIGNUM
 	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
@@ -631,7 +631,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_DEC);
       {
-	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	union anything *u=get_pointer_if_this_type(sp-2, PIKE_T_INT);
 	if(u
 #ifdef AUTO_BIGNUM
 	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
@@ -654,7 +654,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_DEC_AND_POP);
       {
-	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	union anything *u=get_pointer_if_this_type(sp-2, PIKE_T_INT);
 	if(u
 #ifdef AUTO_BIGNUM
 	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
@@ -675,7 +675,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_INC_AND_POP);
       {
-	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	union anything *u=get_pointer_if_this_type(sp-2, PIKE_T_INT);
 	if(u
 #ifdef AUTO_BIGNUM
 	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
@@ -696,7 +696,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_POST_INC);
       {
-	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	union anything *u=get_pointer_if_this_type(sp-2, PIKE_T_INT);
 	if(u
 #ifdef AUTO_BIGNUM
 	   && !INT_TYPE_ADD_OVERFLOW(u->integer, 1)
@@ -720,7 +720,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_POST_DEC);
       {
-	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	union anything *u=get_pointer_if_this_type(sp-2, PIKE_T_INT);
 	if(u
 #ifdef AUTO_BIGNUM
 	   && !INT_TYPE_SUB_OVERFLOW(u->integer, 1)
@@ -830,7 +830,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_POP_MARK); --mark_sp; break;
 
       CASE(F_CLEAR_STRING_SUBTYPE);
-      if(sp[-1].type==T_STRING) sp[-1].subtype=0;
+      if(sp[-1].type==PIKE_T_STRING) sp[-1].subtype=0;
       break;
 
       /* Jumps */
@@ -841,10 +841,10 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_BRANCH_IF_NOT_LOCAL_ARROW);
       {
 	struct svalue tmp;
-	tmp.type=T_STRING;
+	tmp.type=PIKE_T_STRING;
 	tmp.u.string=fp->context.prog->strings[GET_ARG()];
 	tmp.subtype=1;
-	sp->type=T_INT;	
+	sp->type=PIKE_T_INT;	
 	sp++;
 	index_no_free(sp-1,fp->locals+GET_ARG2() , &tmp);
 	print_return_value();
@@ -996,7 +996,7 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_FOREACH) /* array, lvalue, X, i */
       {
-	if(sp[-4].type != T_ARRAY)
+	if(sp[-4].type != PIKE_T_ARRAY)
 	  PIKE_ERROR("foreach", "Bad argument 1.\n", sp-3, 1);
 	if(sp[-1].u.integer < sp[-4].u.array->size)
 	{
@@ -1023,7 +1023,7 @@ static int eval_instruction(unsigned char *pc)
 /*	  fprintf(stderr,"NOT EXPENDIBLE!\n"); */
 	  MEMMOVE(sp-args+1,sp-args,args*sizeof(struct svalue));
 	  sp++;
-	  sp[-args-1].type=T_INT;
+	  sp[-args-1].type=PIKE_T_INT;
 	}
 	/* We sabotage the stack here */
 	assign_svalue(sp-args-1,&fp->context.prog->constants[GET_ARG()].sval);
@@ -1037,7 +1037,7 @@ static int eval_instruction(unsigned char *pc)
 	{
 	  MEMMOVE(sp-args+1,sp-args,args*sizeof(struct svalue));
 	  sp++;
-	  sp[-args-1].type=T_INT;
+	  sp[-args-1].type=PIKE_T_INT;
 	}else{
 	  free_svalue(sp-args-1);
 	}
@@ -1048,7 +1048,7 @@ static int eval_instruction(unsigned char *pc)
 	if(t_flag > 9)
 	  fprintf(stderr,"-    IDENTIFIER_LEVEL: %d\n",fp->context.identifier_level);
 #endif
-	sp[-args-1].type=T_FUNCTION;
+	sp[-args-1].type=PIKE_T_FUNCTION;
 	add_ref(fp->current_object);
 
 	return args+1;
@@ -1087,7 +1087,7 @@ static int eval_instruction(unsigned char *pc)
       return -1;
 
       CASE(F_NEGATE); 
-      if(sp[-1].type == T_INT)
+      if(sp[-1].type == PIKE_T_INT)
       {
 #ifdef AUTO_BIGNUM
 	if(INT_TYPE_NEG_OVERFLOW(sp[-1].u.integer))
@@ -1099,7 +1099,7 @@ static int eval_instruction(unsigned char *pc)
 #endif /* AUTO_BIGNUM */
 	  sp[-1].u.integer =- sp[-1].u.integer;
       }
-      else if(sp[-1].type == T_FLOAT)
+      else if(sp[-1].type == PIKE_T_FLOAT)
       {
 	sp[-1].u.float_number =- sp[-1].u.float_number;
       }else{
@@ -1112,12 +1112,12 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_NOT);
       switch(sp[-1].type)
       {
-      case T_INT:
+      case PIKE_T_INT:
 	sp[-1].u.integer =! sp[-1].u.integer;
 	break;
 
-      case T_FUNCTION:
-      case T_OBJECT:
+      case PIKE_T_FUNCTION:
+      case PIKE_T_OBJECT:
 	if(IS_ZERO(sp-1))
 	{
 	  pop_stack();
@@ -1130,7 +1130,7 @@ static int eval_instruction(unsigned char *pc)
 
       default:
 	free_svalue(sp-1);
-	sp[-1].type=T_INT;
+	sp[-1].type=PIKE_T_INT;
 	sp[-1].u.integer=0;
       }
       break;
@@ -1163,19 +1163,19 @@ static int eval_instruction(unsigned char *pc)
 	default:
 	  PIKE_ERROR("@", "Bad argument.\n", sp, 1);
 
-	case T_OBJECT:
+	case PIKE_T_OBJECT:
 	  if(!sp[-1].u.object->prog || FIND_LFUN(sp[-1].u.object->prog,LFUN__VALUES) == -1)
 	    PIKE_ERROR("@", "Bad argument.\n", sp, 1);
 
 	  apply_lfun(sp[-1].u.object, LFUN__VALUES, 0);
-	  if(sp[-1].type != T_ARRAY)
+	  if(sp[-1].type != PIKE_T_ARRAY)
 	    error("Bad return type from o->_values() in @\n");
 	  free_svalue(sp-2);
 	  sp[-2]=sp[-1];
 	  sp--;
 	  break;
 
-	case T_ARRAY: break;
+	case PIKE_T_ARRAY: break;
       }
       sp--;
       push_array_items(sp->u.array);
@@ -1184,8 +1184,8 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_LOCAL_LOCAL_INDEX);
       {
 	struct svalue *s=fp->locals+GET_ARG();
-	if(s->type == T_STRING) s->subtype=0;
-	sp++->type=T_INT;
+	if(s->type == PIKE_T_STRING) s->subtype=0;
+	sp++->type=PIKE_T_INT;
 	index_no_free(sp-1,fp->locals+GET_ARG2(),s);
 	break;
       }
@@ -1193,7 +1193,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_LOCAL_INDEX);
       {
 	struct svalue tmp,*s=fp->locals+GET_ARG();
-	if(s->type == T_STRING) s->subtype=0;
+	if(s->type == PIKE_T_STRING) s->subtype=0;
 	index_no_free(&tmp,sp-1,s);
 	free_svalue(sp-1);
 	sp[-1]=tmp;
@@ -1208,7 +1208,7 @@ static int eval_instruction(unsigned char *pc)
 				 GET_ARG() + fp->context.identifier_level);
 	sp++;
 	s=fp->locals+GET_ARG2();
-	if(s->type == T_STRING) s->subtype=0;
+	if(s->type == PIKE_T_STRING) s->subtype=0;
 	index_no_free(&tmp,sp-1,s);
 	free_svalue(sp-1);
 	sp[-1]=tmp;
@@ -1218,10 +1218,10 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_LOCAL_ARROW);
       {
 	struct svalue tmp;
-	tmp.type=T_STRING;
+	tmp.type=PIKE_T_STRING;
 	tmp.u.string=fp->context.prog->strings[GET_ARG()];
 	tmp.subtype=1;
-	sp->type=T_INT;	
+	sp->type=PIKE_T_INT;	
 	sp++;
 	index_no_free(sp-1,fp->locals+GET_ARG2() , &tmp);
 	print_return_value();
@@ -1231,7 +1231,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_ARROW);
       {
 	struct svalue tmp,tmp2;
-	tmp.type=T_STRING;
+	tmp.type=PIKE_T_STRING;
 	tmp.u.string=fp->context.prog->strings[GET_ARG()];
 	tmp.subtype=1;
 	index_no_free(&tmp2, sp-1, &tmp);
@@ -1244,7 +1244,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_STRING_INDEX);
       {
 	struct svalue tmp,tmp2;
-	tmp.type=T_STRING;
+	tmp.type=PIKE_T_STRING;
 	tmp.u.string=fp->context.prog->strings[GET_ARG()];
 	tmp.subtype=0;
 	index_no_free(&tmp2, sp-1, &tmp);
@@ -1299,7 +1299,7 @@ static int eval_instruction(unsigned char *pc)
       {
 	struct svalue s;
 	lvalue_to_svalue_no_free(&s,sp-2);
-	if(s.type != T_STRING)
+	if(s.type != PIKE_T_STRING)
 	{
 	  pop_n_elems(2);
 	  *sp=s;
@@ -1372,14 +1372,14 @@ static int eval_instruction(unsigned char *pc)
 	PIKE_ERROR("`()", "Too few arguments.\n", sp, 0);
       switch(sp[-args].type)
       {
-	case T_INT:
+	case PIKE_T_INT:
 	  if (!sp[-args].u.integer) {
 	    PIKE_ERROR("`()", "Attempt to call the NULL-value\n", sp, args);
 	  }
-	case T_STRING:
-	case T_FLOAT:
-	case T_MAPPING:
-	case T_MULTISET:
+	case PIKE_T_STRING:
+	case PIKE_T_FLOAT:
+	case PIKE_T_MAPPING:
+	case PIKE_T_MULTISET:
 	  PIKE_ERROR("`()", "Attempt to call a non-function value.\n", sp, args);
       }
       return args;

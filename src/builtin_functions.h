@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: builtin_functions.h,v 1.9 1999/05/11 18:56:34 mirar Exp $
+ * $Id: builtin_functions.h,v 1.10 1999/11/18 04:14:44 hubbe Exp $
  */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
@@ -67,12 +67,12 @@ void f_functionp(INT32 args);
 void f_sleep(INT32 args);
 void f_gc(INT32 args);
 void f_programp(INT32 args);
-TYPEP(f_intp, "intpp", T_INT)
-TYPEP(f_mappingp, "mappingp", T_MAPPING)
-TYPEP(f_arrayp, "arrayp", T_ARRAY)
-TYPEP(f_multisetp, "multisetp", T_MULTISET)
-TYPEP(f_stringp, "stringp", T_STRING)
-TYPEP(f_floatp, "floatp", T_FLOAT)
+TYPEP(f_intp, "intpp", PIKE_T_INT)
+TYPEP(f_mappingp, "mappingp", PIKE_T_MAPPING)
+TYPEP(f_arrayp, "arrayp", PIKE_T_ARRAY)
+TYPEP(f_multisetp, "multisetp", PIKE_T_MULTISET)
+TYPEP(f_stringp, "stringp", PIKE_T_STRING)
+TYPEP(f_floatp, "floatp", PIKE_T_FLOAT)
 void f_sort(INT32 args);
 void f_rows(INT32 args);
 void f_column(INT32 args);

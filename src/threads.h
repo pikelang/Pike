@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.70 1999/09/06 11:13:23 hubbe Exp $
+ * $Id: threads.h,v 1.71 1999/11/18 04:14:55 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -53,7 +53,7 @@ struct object;
 extern size_t thread_stack_size;
 extern struct object *thread_id;
 
-#define DEFINE_MUTEX(X) MUTEX_T X
+#define DEFINE_MUTEX(X) PIKE_MUTEX_T X
 
 
 #ifdef POSIX_THREADS
@@ -71,7 +71,7 @@ void th_atfork_child(void);
 #endif
 
 #define THREAD_T pthread_t
-#define MUTEX_T pthread_mutex_t
+#define PIKE_MUTEX_T pthread_mutex_t
 #define mt_init(X) pthread_mutex_init((X),0)
 #define mt_lock(X) pthread_mutex_lock(X)
 #define mt_trylock(X) pthread_mutex_trylock(X)
@@ -129,7 +129,7 @@ extern pthread_attr_t small_pattr;
 #ifdef UNIX_THREADS
 #define THREAD_T thread_t
 #define PTHREAD_MUTEX_INITIALIZER DEFAULTMUTEX
-#define MUTEX_T mutex_t
+#define PIKE_MUTEX_T mutex_t
 #define mt_init(X) mutex_init((X),USYNC_THREAD,0)
 #define mt_lock(X) mutex_lock(X)
 #define mt_trylock(X) mutex_trylock(X)
@@ -163,7 +163,7 @@ extern pthread_attr_t small_pattr;
  */
 #define THREAD_T	int
 
-#define MUTEX_T		ulock_t
+#define PIKE_MUTEX_T		ulock_t
 #define mt_init(X)	(usinitlock(((*X) = usnewlock(/*********/))))
 #define mt_lock(X)	ussetlock(*X)
 #define mt_unlock(X)	usunsetlock(*X)
@@ -206,7 +206,7 @@ extern pthread_attr_t small_pattr;
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) (X)
 
-#define MUTEX_T HANDLE
+#define PIKE_MUTEX_T HANDLE
 #define mt_init(X) CheckValidHandle((*(X)=CreateMutex(NULL, 0, NULL)))
 #define mt_lock(X) WaitForSingleObject(CheckValidHandle(*(X)), INFINITE)
 #define mt_trylock(X) WaitForSingleObject(CheckValidHandle(*(X)), 0)
@@ -222,7 +222,7 @@ extern pthread_attr_t small_pattr;
 #endif
 
 
-#if !defined(COND_T) && defined(EVENT_T) && defined(MUTEX_T)
+#if !defined(COND_T) && defined(EVENT_T) && defined(PIKE_MUTEX_T)
 
 #define SIMULATE_COND_WITH_EVENT
 
@@ -234,7 +234,7 @@ struct cond_t_queue
 
 typedef struct cond_t_s
 {
-  MUTEX_T lock;
+  PIKE_MUTEX_T lock;
   struct cond_t_queue *head, *tail;
 } COND_T;
 
@@ -242,7 +242,7 @@ typedef struct cond_t_s
 
 #define co_init(X) do { mt_init(& (X)->lock), (X)->head=(X)->tail=0; }while(0)
 
-int co_wait(COND_T *c, MUTEX_T *m);
+int co_wait(COND_T *c, PIKE_MUTEX_T *m);
 int co_signal(COND_T *c);
 int co_broadcast(COND_T *c);
 int co_destroy(COND_T *c);
@@ -250,7 +250,7 @@ int co_destroy(COND_T *c);
 #endif
 
 
-extern MUTEX_T interpreter_lock;
+extern PIKE_MUTEX_T interpreter_lock;
 
 extern COND_T live_threads_change;		/* Used by _disable_threads */
 extern COND_T threads_disabled_change;		/* Used by _disable_threads */
@@ -258,13 +258,13 @@ extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 struct svalue;
 struct pike_frame;
 
-extern MUTEX_T interleave_lock;
+extern PIKE_MUTEX_T interleave_lock;
 
 struct interleave_mutex
 {
   struct interleave_mutex *next;
   struct interleave_mutex *prev;
-  MUTEX_T lock;
+  PIKE_MUTEX_T lock;
 };
 
 #define IMUTEX_T struct interleave_mutex
@@ -634,5 +634,9 @@ HANDLE CheckValidHandle(HANDLE h);
 
 extern int threads_disabled;
 extern int thread_storage_offset;
+
+#ifndef NO_PIKE_SHORTHAND
+#define MUTEX_T PIKE_MUTEX_T
+#endif
 
 #endif /* THREADS_H */

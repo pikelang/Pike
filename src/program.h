@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.65 1999/11/04 02:35:27 grubba Exp $
+ * $Id: program.h,v 1.66 1999/11/18 04:14:52 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -423,7 +423,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog, struct object *handler);
-int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
+int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
 int quick_add_function(char *name,
 		       int name_length,
 		       void (*cfun)(INT32),
@@ -461,7 +461,11 @@ int implements(struct program *a, struct program *b);
 #define ADD_INT_CONSTANT(NAME,CONST,FLAGS) \
   quick_add_integer_constant(NAME,CONSTANT_STRLEN(NAME),CONST,FLAGS)
 
+#ifndef NO_PIKE_SHORTHAND
+#define add_function pike_add_function
 #endif
+
+#endif /* PROGRAM_H */
 
 #ifdef DEBUG_MALLOC
 #define end_program() ((struct program *)debug_malloc_pass(debug_end_program()))

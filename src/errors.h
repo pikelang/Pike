@@ -60,8 +60,8 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #endif
 
 DECLARE_ERROR(generic, EMPTY ,
-  ERR_VAR(struct pike_string *,string,T_STRING,desc)
-  ERR_VAR(struct array *,array,T_ARRAY,backtrace)
+  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,desc)
+  ERR_VAR(struct array *,array,PIKE_T_ARRAY,backtrace)
   ERR_FUNC("cast",f_error_cast,tFunc(tString,tMixed),0)
   ERR_FUNC("`[]",f_error_index,tFunc(tString,tMixed),0)
   ERR_FUNC("describe",f_error_describe,tFunc(tVoid,tString),0)
@@ -78,8 +78,8 @@ DECLARE_ERROR(index,
 
 DECLARE_ERROR(bad_arg,
 	      ERR_INHERIT(generic),
-  ERR_VAR(INT_TYPE, int, T_INT, which_arg)
-  ERR_VAR(struct pike_string *,string,T_STRING,expected_type)
+  ERR_VAR(INT_TYPE, int, PIKE_T_INT, which_arg)
+  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,expected_type)
   ERR_VAR(struct svalue, mixed, T_MIXED, got)
 )
 
@@ -90,13 +90,13 @@ DECLARE_ERROR(math,
 
 DECLARE_ERROR(resource,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct pike_string *,string,T_STRING,resource_type)
-  ERR_VAR(INT_TYPE, int, T_INT, howmuch)
+  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,resource_type)
+  ERR_VAR(INT_TYPE, int, PIKE_T_INT, howmuch)
 )
 
 DECLARE_ERROR(permission,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct pike_string *,string,T_STRING,permission_type)
+  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,permission_type)
 )
 #undef DECLARE_ERROR
 #undef ERR_INHERIT

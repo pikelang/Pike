@@ -77,14 +77,14 @@ struct pike_creds
 									\
     switch(sp[-1].type)							\
     {									\
-      case T_ARRAY:							\
-      case T_OBJECT:							\
-      case T_MAPPING:							\
+      case PIKE_T_ARRAY:							\
+      case PIKE_T_OBJECT:							\
+      case PIKE_T_MAPPING:							\
 	assign_svalue(sp-args-1,sp-1);					\
 	pop_n_elems(args);						\
 	return;								\
 									\
-      case T_INT:							\
+      case PIKE_T_INT:							\
 	switch(sp[-1].u.integer)					\
 	{								\
 	  case 0: /* return 0 */					\
@@ -113,7 +113,7 @@ struct pike_creds
       default:								\
 	error("Error in user->valid_io, wrong return type.\n");		\
 									\
-      case T_STRING:							\
+      case PIKE_T_STRING:							\
 	assign_svalue(sp-args-1,sp-1);					\
         pop_stack();							\
     }									\

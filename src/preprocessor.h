@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.14 1999/11/16 03:30:53 mast Exp $
+ * $Id: preprocessor.h,v 1.15 1999/11/18 04:14:49 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -733,10 +733,10 @@ static int calc(struct cpp *this, WCHAR *data, INT32 len, INT32 tmp)
   if (SETJMP(recovery))
   {
     pos=tmp;
-    if(throw_value.type == T_ARRAY && throw_value.u.array->size)
+    if(throw_value.type == PIKE_T_ARRAY && throw_value.u.array->size)
     {
       union anything *a;
-      a=low_array_get_item_ptr(throw_value.u.array, 0, T_STRING);
+      a=low_array_get_item_ptr(throw_value.u.array, 0, PIKE_T_STRING);
       if(a)
       {
 	cpp_error(this, a->string->str);
@@ -1256,7 +1256,7 @@ static INT32 lower_cpp(struct cpp *this,
 
 	    SAFE_APPLY_MASTER("handle_include",3);
 	  
-	    if(sp[-1].type != T_STRING)
+	    if(sp[-1].type != PIKE_T_STRING)
 	    {
 	      cpp_error(this, "Couldn't include file.");
 	      pop_n_elems(sp-save_sp);
@@ -1271,7 +1271,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    
 	    SAFE_APPLY_MASTER("read_include",1);
 	    
-	    if(sp[-1].type != T_STRING)
+	    if(sp[-1].type != PIKE_T_STRING)
 	    {
 	      cpp_error(this, "Couldn't read include file.");
 	      pop_n_elems(sp-save_sp);
@@ -1307,7 +1307,7 @@ static INT32 lower_cpp(struct cpp *this,
 		} else if (charset) {
 		  ref_push_string(charset);
 		  SAFE_APPLY_MASTER("decode_charset", 2);
-		  if (sp[-1].type != T_STRING) {
+		  if (sp[-1].type != PIKE_T_STRING) {
 		    cpp_error(this,
 			      "Charset decoding failed for included file.");
 		    pop_n_elems(sp - save_sp);
@@ -1687,7 +1687,7 @@ static INT32 lower_cpp(struct cpp *this,
 		if(!str.s->len && sp-partbase>1)
 		{
 #ifdef PIKE_DEBUG
-		  if(sp[-1].type != T_INT)
+		  if(sp[-1].type != PIKE_T_INT)
 		    fatal("Internal error in CPP\n");
 #endif
 		  sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
@@ -1788,10 +1788,10 @@ static INT32 lower_cpp(struct cpp *this,
 	    for(e=0;e<def->num_parts;e++)
 	    {
 #if 1
-	      if(partbase[e*2+1].type != T_INT)
+	      if(partbase[e*2+1].type != PIKE_T_INT)
 		fatal("Cpp internal error, expected integer!\n");
 	      
-	      if(partbase[e*2+2].type != T_STRING)
+	      if(partbase[e*2+2].type != PIKE_T_STRING)
 		fatal("Cpp internal error, expected string!\n");
 #endif
 	      def->parts[e].argument=partbase[e*2+1].u.integer;
@@ -1890,7 +1890,7 @@ static INT32 lower_cpp(struct cpp *this,
 
 	  SAFE_APPLY_MASTER("decode_charset", 2);
 
-	  if (sp[-1].type != T_STRING) {
+	  if (sp[-1].type != PIKE_T_STRING) {
 	    pop_stack();
 	    cpp_error(this, "Unknown charset.");
 	  }
