@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.73 2001/09/29 06:19:28 hubbe Exp $
+ * $Id: pike_types.h,v 1.74 2001/12/14 04:09:39 nilsson Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -320,6 +320,7 @@ struct pike_type *get_type_of_svalue(struct svalue *s);
 struct pike_type *object_type_to_program_type(struct pike_type *obj_t);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);
+void cleanup_pike_type_table(void);
 int type_may_overload(struct pike_type *type, int lfun);
 void yyexplain_nonmatching_types(struct pike_type *type_a,
 				 struct pike_type *type_b,

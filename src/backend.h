@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: backend.h,v 1.11 2000/12/19 00:41:34 hubbe Exp $
+ * $Id: backend.h,v 1.12 2001/12/14 04:09:39 nilsson Exp $
  */
 #ifndef BACKEND_H
 #define BACKEND_H
@@ -47,6 +47,7 @@ PMOD_EXPORT void *query_write_oob_callback_data(int fd);
 #endif /* WITH_OOB */
 void do_debug(void);
 void backend(void);
+void exit_backend(void);
 PMOD_EXPORT int write_to_stderr(char *a, size_t len);
 /* Prototypes end here */
 
