@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.428 2000/10/03 19:12:57 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.429 2000/10/13 19:40:08 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2584,6 +2584,23 @@ MY_CHECK_FUNCTION(fork,
 ], [
   exit(fork()==-1);
 ])
+
+########################################################################
+MY_CHECK_FUNCTION(PTHREAD_MUTEX_RECURSIVE,
+[
+#include <pthread.h>
+], [
+  PTHREAD_MUTEX_RECURSIVE;
+  exit(0);
+])
+########################################################################
+MY_CHECK_FUNCTION(PTHREAD_MUTEX_RECURSIVE_NP,
+[
+#include <pthread.h>
+], [
+  PTHREAD_MUTEX_RECURSIVE_NP;
+  exit(0);
+])
 ########################################################################
 MY_CHECK_FUNCTION(fpsetmask,
 [
@@ -3368,10 +3385,18 @@ int main()
 #endif
 
   kill(getpid(), sig);
+#ifdef HAVE_POLL
+  while(!sigrun) poll(0,0,100);
+#else
   while(!sigrun) sleep(1);
+#endif
   sigrun=0;
   kill(getpid(), sig);
+#ifdef HAVE_POLL
+  while(!sigrun) poll(0,0,100);
+#else
   while(!sigrun) sleep(1);
+#endif
   sigrun=0;
   exit(0);
 }

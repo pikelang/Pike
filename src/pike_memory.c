@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.90 2000/10/10 00:02:51 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.91 2000/10/13 19:40:08 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -705,7 +705,16 @@ static MUTEX_T debug_malloc_mutex;
 #include <dlfcn.h>
 #endif
 
+#ifdef ENCAPSULATE_MALLOC
 #ifdef RTLD_NEXT
+
+#ifdef TH_KEY_T
+#define DMALLOC_REMEMBER_LAST_LOCATION
+
+TH_KEY_T dmalloc_last_seen_location;
+
+#endif
+
 
 #define dl_setup()  ( real_malloc ? 0 : real_dl_setup() )
 
@@ -713,10 +722,6 @@ void *(*real_malloc)(size_t);
 void (*real_free)(void *);
 void *(*real_realloc)(void *,size_t);
 void *(*real_calloc)(size_t,size_t);
-
-union fake_head {
-  size_t size;
-};
 
 union fake_body
 {
@@ -728,7 +733,7 @@ union fake_body
 
 struct fakemallocblock
 {
-  union fake_head head;
+  size_t size;
   union fake_body body;
 };
 
@@ -739,40 +744,35 @@ static struct fakemallocblock *fake_free_list;
   ( ((char *)(X)) >= ((char *)fakemallocarea) && ((char *)(X)) < (((char *)(fakemallocarea))+sizeof(fakemallocarea)))
 static void initialize_dmalloc(void);
 
-void *malloc(size_t x)
+void init_fake_malloc(void)
 {
-  static int inited=0;
+  fake_free_list=fakemallocarea;
+  fake_free_list->size=sizeof(fakemallocarea) - ALIGNMENT;
+  fake_free_list->body.next=0;
+}
+
+void *fake_malloc(size_t x)
+{
   struct fakemallocblock *block, **prev;
 
+  if(real_malloc) return real_malloc(x);
   if(!x) return 0;
 
-  if(real_malloc) return real_malloc(x);
-  if(!fake_free_list)
-  {
-    fake_free_list=fakemallocarea;
-    fake_free_list->head.size=sizeof(fakemallocarea) - ALIGNMENT;
-    fake_free_list->body.next=0;
+  if(!fake_free_list) init_fake_malloc();
     
-    initialize_dmalloc();
-    
-    real_free=dlsym(RTLD_NEXT,"free");
-    real_realloc=dlsym(RTLD_NEXT,"realloc");
-    real_malloc=dlsym(RTLD_NEXT,"malloc");
-    real_calloc=dlsym(RTLD_NEXT,"calloc");
-  }
   x+=ALIGNMENT-1;
   x&=-ALIGNMENT;
-  
+
   for(prev=&fake_free_list;(block=*prev);prev=& block->body.next)
   {
-    if(block->head.size >= x)
+    if(block->size >= x)
     {
-      if(block->head.size > x + ALIGNMENT)
+      if(block->size > x + ALIGNMENT)
       {
 	/* Split block */
-	block->head.size-=x+ALIGNMENT;
-	block=(struct fakemallocblock *)(block->body.block + block->head.size);
-	block->head.size=x;
+	block->size-=x+ALIGNMENT;
+	block=(struct fakemallocblock *)(block->body.block+block->size);
+	block->size=x;
       }else{
 	/* just return block */
 	*prev = block->body.next;
@@ -781,6 +781,28 @@ void *malloc(size_t x)
     }
   }
   return 0;
+}
+
+void *malloc(size_t x)
+{
+  if(!x) return 0;
+  if(real_malloc) return debug_malloc(x,DMALLOC_LOCATION());
+  return fake_malloc(x);
+}
+
+void fake_free(void *x)
+{
+  struct fakemallocblock * block;
+
+  if(!x) return;
+  if(FAKEMALLOCED(x))
+  {
+    block=BASEOF(x,fakemallocblock,body.block);
+    block->body.next=fake_free_list;
+    fake_free_list=block;
+  }else{
+    return real_free(x);
+  }
 }
 
 void free(void *x)
@@ -794,7 +816,7 @@ void free(void *x)
     block->body.next=fake_free_list;
     fake_free_list=block;
   }else{
-    real_free(x);
+    return debug_free(x, DMALLOC_LOCATION(), 0);
   }
 }
 
@@ -806,7 +828,7 @@ void *realloc(void *x,size_t y)
 
   if(FAKEMALLOCED(x) || !real_realloc)
   {
-    old_size = x?BASEOF(x,fakemallocblock,body.block)->head.size :0;
+    old_size = x?BASEOF(x,fakemallocblock,body.block)->size :0;
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
@@ -814,7 +836,27 @@ void *realloc(void *x,size_t y)
     if(x) free(x);
     return ret;
   }else{
-    return real_realloc(x, y);
+    return debug_realloc(x, y, DMALLOC_LOCATION());
+  }
+}
+
+void *fake_realloc(void *x,size_t y)
+{
+  void *ret;
+  size_t old_size;
+  struct fakemallocblock * block;
+
+  if(FAKEMALLOCED(x) || !real_realloc)
+  {
+    old_size = x?BASEOF(x,fakemallocblock,body.block)->size :0;
+    if(old_size >= y) return x;
+    ret=malloc(y);
+    if(!ret) return 0;
+    MEMCPY(ret, x, old_size);
+    if(x) free(x);
+    return ret;
+  }else{
+    return real_realloc(x,y);
   }
 }
 
@@ -826,15 +868,37 @@ void *calloc(size_t x, size_t y)
   return ret;
 }
 
-#if 0
-#define malloc(X)  (dl_setup(),real_malloc((X)))
-#define free(X)    (dl_setup(),real_free((X)))
-#define realloc(X,Y) (dl_setup(),real_realloc((X),(Y)))
-#define calloc(X,Y)  (dl_setup(),real_calloc((X),(Y)))
-#endif
+void *fake_calloc(size_t x, size_t y)
+{
+  void *ret;
+  ret=fake_malloc(x*y);
+  if(ret) MEMSET(ret,0,x*y);
+  return ret;
+}
+
+
+#define DMALLOC_USING_DLOPEN
 
 #endif /* RTLD_NEXT */
+#endif /* ENCAPSULATE_MALLOC */
 #endif /* HAVE_DLOPEN */
+
+#ifndef DMALLOC_USING_DLOPEN
+#define real_malloc malloc
+#define real_free free
+#define real_calloc calloc
+#define real_realloc realloc
+
+#define fake_malloc malloc
+#define fake_free free
+#define fake_calloc calloc
+#define fake_realloc realloc
+#else
+#define malloc fake_malloc
+#define free fake_free
+#define realloc fake_realloc
+#define calloc fake_calloc
+#endif
 
 
 #ifdef WRAP
@@ -1184,11 +1248,6 @@ static void add_location(struct memhdr *mh, LOCATION location)
   struct memloc *ml;
   unsigned long l;
 
-#ifndef __NT__
-  if(!mt_trylock(& debug_malloc_mutex))
-    fatal("add_location running unlocked!\n");
-#endif
-  
 #if DEBUG_MALLOC - 0 < 2
   if(find_location(&no_leak_memlocs, location)) return;
 #endif
@@ -1405,7 +1464,7 @@ void *debug_malloc(size_t s, LOCATION location)
 
   mt_lock(&debug_malloc_mutex);
 
-  m=(char *)malloc(s + DEBUG_MALLOC_PAD*2);
+  m=(char *)real_malloc(s + DEBUG_MALLOC_PAD*2);
   if(m)
   {
     m=do_pad(m, s);
@@ -1437,7 +1496,7 @@ void *debug_realloc(void *p, size_t s, LOCATION location)
   mt_lock(&debug_malloc_mutex);
 
   base=my_find_memhdr(p,0) ?  (void *)(((char *)p)-DEBUG_MALLOC_PAD): p;
-  m=realloc(base, s+DEBUG_MALLOC_PAD*2);
+  m=fake_realloc(base, s+DEBUG_MALLOC_PAD*2);
 
   if(m) {
     m=do_pad(m, s);
@@ -1499,7 +1558,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
   
   if(mh)
   {
-    free( ((char *)p) - DEBUG_MALLOC_PAD );
+    real_free( ((char *)p) - DEBUG_MALLOC_PAD );
     if(!low_dmalloc_unregister(p,1))
     {
       fprintf(stderr,"Lost track of a memory block (2): %p!\n",p);
@@ -1508,7 +1567,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
   }
   else
   {
-    free(p);
+    fake_free(p); /* may be a fakemalloc block */
   }
   mt_unlock(&debug_malloc_mutex);
 }
@@ -1789,8 +1848,12 @@ void cleanup_memhdrs(void)
     void *p;
     if((p=blocks_to_free[h]))
     {
-      if(low_dmalloc_unregister(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
-      free(p);
+      if(low_dmalloc_unregister(p,0))
+      {
+	real_free( ((char *)p) - DEBUG_MALLOC_PAD );
+      }else{
+	fake_free(p);
+      }
       blocks_to_free[h]=0;
     }
   }
@@ -1909,12 +1972,23 @@ static void initialize_dmalloc(void)
 #endif
     
 #ifdef _REENTRANT
+#ifdef mt_init_recursive
+    mt_init_recursive(&debug_malloc_mutex);
+#else
     mt_init(&debug_malloc_mutex);
+#endif
     th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
+#endif
+#ifdef DMALLOC_USING_DLOPEN
+    {
+      real_free=dlsym(RTLD_NEXT,"free");
+      real_realloc=dlsym(RTLD_NEXT,"realloc");
+      real_malloc=dlsym(RTLD_NEXT,"malloc");
+      real_calloc=dlsym(RTLD_NEXT,"calloc");
+    }
 #endif
   }
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -1929,6 +2003,9 @@ void * debug_malloc_update_location(void *p,LOCATION location)
   {
     struct memhdr *mh;
     mt_lock(&debug_malloc_mutex);
+#ifdef DMALLOC_REMEMBER_LAST_LOCATION
+    th_setspecific(dmalloc_last_seen_location, location);
+#endif
     if((mh=my_find_memhdr(p,0)))
       add_location(mh, location);
 

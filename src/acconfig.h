@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.65 2000/08/29 13:40:13 mirar Exp $
+ * $Id: acconfig.h,v 1.66 2000/10/13 19:40:07 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -285,6 +285,12 @@
 
 /* Define this if your pthreads have pthread_condattr_default */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT
+
+/* Define if your pthreads have PTHREAD_MUTEX_RECURSIVE */
+#undef HAVE_PTHREAD_MUTEX_RECURSIVE
+
+/* Define if your pthreads have PTHREAD_MUTEX_RECURSIVE_NP */
+#undef HAVE_PTHREAD_MUTEX_RECURSIVE_NP
 
 /* Define this if you need to use &pthread_condattr_default in cond_init() */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT_AIX
