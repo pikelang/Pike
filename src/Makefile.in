@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.383 2004/07/04 12:54:46 mast Exp $
+# $Id: Makefile.in,v 1.384 2004/09/18 20:28:10 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -680,7 +680,7 @@ feature_list:
 	$(RUNPIKE) $(TMP_BINDIR)/feature_list
 
 run_bench:
-	$(RUNPIKE) $(ARGS) -x benchmark
+	$(RUNPIKE) $(ARGS) -x benchmark $(BENCHARGS)
 
 lib: Makefile
 	@for d in lib lib/modules lib/include; do \
