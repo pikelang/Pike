@@ -1,5 +1,5 @@
 /*
- * $Id: rsa.c,v 1.11 2000/02/04 22:26:43 grubba Exp $
+ * $Id: rsa.c,v 1.12 2000/02/07 21:11:48 grubba Exp $
  *
  * Glue to RSA BSAFE's RSA implementation.
  *
@@ -13,6 +13,7 @@
 #include "object.h"
 #include "interpret.h"
 #include "error.h"
+#include "port.h"
 
 #include "module_support.h"
 
@@ -28,7 +29,7 @@
 
 #include <bsafe.h>
 
-RCSID("$Id: rsa.c,v 1.11 2000/02/04 22:26:43 grubba Exp $");
+RCSID("$Id: rsa.c,v 1.12 2000/02/07 21:11:48 grubba Exp $");
 
 struct pike_rsa_data
 {
@@ -392,9 +393,112 @@ static void f_generate_key(INT32 args)
 /* string encrypt(string s, mixed|void r) */
 static void f_encrypt(INT32 args)
 {
-  error("Not yet implemented.\n");
+  struct pike_string *s = NULL;
+  int err;
+  unsigned char *buffer;
+  unsigned int len;
+  unsigned int flen;
+  unsigned int i;
+
+  if (!THIS->private_key) {
+    error("Private key has not been set.\n");
+  }
+
+  get_all_args("encrypt", args, "%S", &s);
+
+  if ((err = B_EncryptInit(THIS->cipher, THIS->public_key, rsa_chooser,
+			   (A_SURRENDER_CTX *)NULL_PTR))) {
+    error("Failed to initialize encrypter: %04x\n", err);
+  }
+
+  /* rsa_pad(s, 2, r) inlined. */
+  len = THIS->n->len - 3 - s->len;
+  if (len < 8) {
+    error("Too large block.\n");
+  }
+  
+  buffer = (unsigned char *)xalloc(THIS->n->len+1);
+  buffer[THIS->n->len] = 0;	/* Ensure NUL-termination. */
+
+  buffer[0] = 0;	/* Ensure that it is less than n. */
+  buffer[1] = 2;	/* Padding type 2. */
+
+  if ((args > 1) && (sp[1-args].type != T_INT)) {
+    struct svalue *r = sp + 1 - args;
+    ONERROR tmp;
+
+    SET_ONERROR(tmp, free, buffer);
+    push_int(len);
+    apply_svalue(r, 1);
+    if ((sp[-1].type != T_STRING) || (sp[-1].u.string->size_shift) ||
+	((unsigned int)sp[-1].u.string->len != len)) {
+      error("Unexpected return value from the random function\n");
+    }      
+    MEMCPY(buffer + 2, sp[-1].u.string->str, len);
+    pop_stack();
+    UNSET_ONERROR(tmp);
+
+    /* Ensure no NUL's. */
+    for(i=0; i < len; i++) {
+      if (!buffer[i+2]) {
+	buffer[i+2] = 1;
+      }
+    }
+  } else {
+    for (i=0; i < len; i++) {
+      buffer[i+2] = 1 + (my_rand() % 255);
+    }
+  }
+
+  buffer[len+2] = 0;	/* End of pad marker. */
+
+  MEMCPY(buffer + len + 3, s->str, s->len);
+
+  /* End of rsa_pad */
+
+  s = begin_shared_string(THIS->n->len);
+
+  len = 0;
+  if ((err = B_EncryptUpdate(THIS->cipher, (POINTER)s->str, &len, THIS->n->len,
+			     buffer, THIS->n->len,
+			     (B_ALGORITHM_OBJ)NULL_PTR,
+			     (A_SURRENDER_CTX *)NULL_PTR))) {
+    free_string(s);
+    free(buffer);
+    error("Encrypt failed: %04x\n", err);
+  }
+
+#ifdef PIKE_RSA_DEBUG
+  fprintf(stderr, "RSA: Encrypt len: %d\n", len);
+#endif /* PIKE_RSA_DEBUG */
+
+  free(buffer);
+
+  flen = 0;
+  if ((err = B_EncryptFinal(THIS->cipher, (POINTER)s->str + len, &flen,
+			    THIS->n->len - len,
+			    (B_ALGORITHM_OBJ)NULL_PTR,
+			    (A_SURRENDER_CTX *)NULL_PTR))) {
+    free_string(s);
+    error("Encrypt failed: %04x\n", err);
+  }
+
+#ifdef PIKE_RSA_DEBUG
+  fprintf(stderr, "RSA: Encrypt flen: %d\n", flen);
+#endif /* PIKE_RSA_DEBUG */
+
+  len += flen;
+
+#if defined(PIKE_RSA_DEBUG) || defined(PIKE_DEBUG)
+  if (len != (unsigned int)THIS->n->len) {
+    free_string(s);
+    error("Encrypted string has bad length. Expected %d. Got %d\n",
+	  THIS->n->len, len);
+  }
+#endif /* PIKE_RSA_DEBUG || PIKE_DEBUG */
+
   pop_n_elems(args);
-  push_int(0);
+  push_string(end_shared_string(s));
 }
 
 /* string decrypt(string s) */
