@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.91 2000/08/09 18:46:10 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.92 2000/08/10 08:41:30 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -335,7 +335,7 @@ static struct pike_string *internal_findstring(const char *s,
   return 0; /* not found */
 }
 
-PMOD_EXPORT struct pike_string *binary_findstring(const char *foo, INT32 l)
+PMOD_EXPORT struct pike_string *binary_findstring(const char *foo, ptrdiff_t l)
 {
   return internal_findstring(foo, l, 0, StrHash(foo,l));
 }
