@@ -4,3 +4,6 @@ manual
 manual.xml
 html_manual
 manual-tree-split
+autodoc.xml
+traditional.xml
+traditional_manual
