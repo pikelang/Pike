@@ -570,9 +570,9 @@ void streamed_parser_parse( INT32 args )
     f_sum( sp - sp_save ); /* fix? this is what we return */
   if (last < length-1)
   {
-    DATA->last_buffer = malloc( length - last );
-    MEMCPY( DATA->last_buffer, str + last, length - last );
-    DATA->last_buffer_size = length - last;
+    DATA->last_buffer = malloc( length - (last + 1) );
+    MEMCPY( DATA->last_buffer, str + last + 1, length - (last + 1) );
+    DATA->last_buffer_size = length - (last + 1);
   }
 }
 
