@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.21 2002/12/05 16:51:48 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.22 2002/12/06 23:15:38 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -72,6 +72,11 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
 
   werror("Extracting file %O...\n", filename);
   string file = Stdio.read_file(filename);
+
+  if (!file) {
+    werror("WARNING: Failed to read file %O!\n", filename);
+    return "\n";
+  }
 
   int i;
   if (has_value(file, "**""!") ||
