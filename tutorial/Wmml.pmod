@@ -54,8 +54,10 @@ static private int verify_any(SGML data, string in)
       case "link":
 
 	case "man_nb":
+	case "module":
 	case "class":
 	case "method":
+	case "function":
 	case "man_description":
 	case "man_see":
 	case "man_syntax":
@@ -414,6 +416,7 @@ SGML make_concrete_wmml(SGML data)
 	  break;
 
 	case "class":
+	case "module":
 	{
 	  string tmp=classbase;
 	  if(!classbase || classbase=="")
@@ -423,7 +426,7 @@ SGML make_concrete_wmml(SGML data)
 	    classbase+="."+tag->params->name;
 	  }
 	  ret+=({
-	    Sgml.Tag("anchor",(["name":classbase,"type":"class"]),tag->pos,
+	    Sgml.Tag("anchor",(["name":classbase,"type":tag->tag]),tag->pos,
 		make_concrete_wmml(tag->data))
 	  });
 	  classbase=tmp;
@@ -479,15 +482,25 @@ SGML make_concrete_wmml(SGML data)
 	}
 
 	case "method":
+	case "function":
 	{
-	  string fullname=classbase+"->"+tag->params->name;
+	  string fullname;
+	  switch(tag->tag)
+	  {
+	    case "method":
+	      fullname=classbase+"->"+tag->params->name;
+	      break;
+	    case "function":
+	      fullname=classbase+"."+tag->params->name;
+	      break;
+	  }
 	  ret+=make_concrete_wmml(({
 	    Sgml.Tag("anchor",(["name":name_to_link(fullname),
 	    "type":"method",]),tag->pos,
 		     ({
 		       Sgml.Tag("dl",([]),tag->pos,
 				  ({
-				    Sgml.Tag("man_title",(["title":"METHOD"]),tag->pos,
+				    Sgml.Tag("man_title",(["title":upper_case(tag->tag)),tag->pos,
 					     ({
 					       Sgml.Tag("tt",([]),tag->pos,({fullname})),
 						 " - ",

@@ -3337,15 +3337,14 @@ or like this:
 
 
 
-
-<anchor name=Stdio>
+<module name=Stdio>
 <chapter title="File I/O" name=io>
 Programming without reading and writing data from files, sockets, keyboard
 etc. would be quite pointless. Luckily enough, Pike provides you with an
 object oriented interface to files, pipes and TCP sockets. All I/O functions
 and classes are collected in the module <tt>Stdio</tt>.
 
-<anchor name=Stdio.File>
+<class name=File>
 <section title="Stdio.File">
 This is the basic I/O object, it provides socket communication as well
 as file access. It does not buffer reads and writes or provide line-by-line
@@ -3353,7 +3352,6 @@ reading, that is done in the FILE object. <tt>Stdio.File</tt> is completely
 written in C. What follows is a description of all the functions in
 <tt>Stdio.File</tt>.
 
-<class name=Stdio.File>
 <method name=create title="init file struct">
 <man_syntax>
 object(Stdio.File) Stdio.File();<br>
@@ -3767,8 +3765,6 @@ except for stdin, stdout and stderr.
 <man_see>exece</man_see>
 </method>
 
-</class>
-
 
 <!-- FIX ME might be good to have a plain and simple example of Stdio.File here -->
 
@@ -3811,10 +3807,10 @@ necessary.
 
 
 </section>
-</anchor>
+</class>
 
 
-<anchor name=Stdio.FILE>
+<class name=FILE>
 <section title="Stdio.FILE">
 Stdio.FILE is a buffered version of Stdio.File, it inherits Stdio.File and
 has most of the functionality of Stdio.File. However, it has an input buffer
@@ -3823,91 +3819,55 @@ not buffered at this moment. The added functionality of Stdio.FILE is
 described here:
 
 <hr noshade size=1>
-<anchor name=Stdio.FILE.gets>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.FILE-&gt;gets</tt> - get one line
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string gets();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<method name=gets title="get one line">
+<man_syntax>
+string gets();<br>
+</man_syntax>
+<man_description>
 This function returns one line from the FILE, it returns zero if
 no more lines are available.
-<p>
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.FILE.printf>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.FILE-&gt;printf</tt> - formatted print
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string printf(string <I>format</I>, mixed ... <I>data</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=printf title="formatted print">
+<man_syntax>
+string printf(string <I>format</I>, mixed ... <I>data</I>);<br>
+</man_syntax>
+<man_description>
 This function does approximately the same as:
 write(sprintf(format,@data))
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sprintf>sprintf</link>
-<p>
-</dl>
+</man_description>
+<man_see>sprintf</man_see>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.FILE.ungets>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.FILE-&gt;ungets</tt> - put a string back in the buffer
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string ungets(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=ungets title="put a string back in the buffer">
+<man_syntax>
+string ungets(string <I>s</I>);<br>
+</man_syntax>
+<man_description>
 This function puts a string back in the input buffer. The string
 can then be read with read, gets or getchar.
-<p>
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.FILE.getchar>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.FILE-&gt;getchar</tt> - get one character from the input stream
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int getchar();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=getchar title="get one character from the input stream">
+<man_syntax>
+int getchar();<br>
+</man_syntax>
+<man_description>
 This function returns one character from the input stream. Note
 that the return value is the ascii value of the character, not
 a string containing one character.
-<p>
-</dl>
-</anchor>
+</man_description>
+</method>
 
 <!-- FIX ME, example of how to use Stdio.FILE here -->
 
-
-
-
-
-
-
-
-
 </section>
-</anchor>
+</class>
 
 
 <anchor name=Stdio.stdin>
@@ -3945,164 +3905,103 @@ The Stdio module also contains a collection of high level IO functions
 to make it easy to write short and readable Pike programs. Most of these
 functions are implemented using Stdio.File and Stdio.FILE.
 
-<anchor name=Stdio.file_size>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.file_size</tt> - return the size of a file in bytes
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int file_size(string <I>file</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<hr>
+
+<function name=file_size title="return the size of a file in bytes">
+<man_syntax>
+int file_size(string <I>file</I>);<br>
+</man_syntax>
+<man_description>
 Give the size of a file. Size -1 indicates that the file either
 does not exist, or that it is not readable by you. Size -2
 indicates that it is a directory.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.write_file>Stdio.write_file</link> and <link to=Stdio.read_bytes>Stdio.read_bytes</link>
-<p>
-</dl>
-</anchor>
+</man_description>
 
-<hr noshade size=1>
-<anchor name=Stdio.perror>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.perror</tt> - print error
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void perror(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<man_see>Stdio.write_file, Stdio.read_bytes</man_see>
+</function>
+
+
+<function name=perror title="print error">
+<man_syntax>
+void perror(string <I>s</I>);<br>
+</man_syntax>
+<man_description>
 This function prints a message to stderr along with a description
 of what went wrong if available. It uses the system errno to find
 out what went wrong, so it is only applicable to IO errors.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.werror>Stdio.werror</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.werror</man_see>
+</function>
 
-</anchor>
 
-<hr noshade size=1>
-
-<anchor name=Stdio.read_bytes>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.read_bytes</tt> - read a number of bytes into a string from a file
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>
+<function name=read_bytes title="read a number of bytes into a string from a file">
+<man_syntax>
 string read_bytes(string <I>file</I>,int <I>start</I>,int <I>len</I>);<br>
-or<br>
 string read_bytes(string <I>file</I>,int <I>start</I>);<br>
-or<br>
 string read_bytes(string <I>file</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
-Read len number of bytes from file file staring at byte start and
+</man_syntax>
+<man_description>
+Read <i>len</i> number of bytes from file <i>file</i> staring at byte <i>start</i> and
 return it as a string. If <i>len</i> is omitted, the rest of the file
 will be returned. If <i>start</i> is also omitted, the entire file will
 be returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.write_file>Stdio.write_file</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.write_file</man_see>
+</function>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.read_file>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.read_file</tt> - read a number of lines into a string from file
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>
+
+<function name=read_file title="read a number of lines into a string from file">
+<man_syntax>
 string read_file(string <I>file</I>, int <I>start</I>, int <I>len</I>);<br>
-or<br>
 string read_file(string <I>file</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 Read <i>len</i> lines from the file <i>file</i> after skipping <i>start</i> lines
 and return those lines as a string. If <i>start</i> and <i>len</i> are omitted
 the whole file is read.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.read_bytes>Stdio.read_bytes</link> and <link to=Stdio.write_file.html>Stdio.write_file</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.read_bytes, Stdio.write_file</man_see>
+</function>
 
-</anchor>
 
-<hr noshade size=1>
-
-<anchor name=Stdio.readline>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.readline</tt> - read a line from stdin
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string readline(string <I>prompt</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=readline title="read a line from stdin">
+<man_syntax>
+string readline(string <I>prompt</I>);<br>
+</man_syntax>
+<man_description>
 This function writes the string <i>prompt</i> and then waits until the
 user has entered a line from the keyboard. If the readline library
 was available when Pike was compiled the user will have history and
 line editing at his/her disposal when entering the line.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.File>Stdio.File</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.File</man_see>
+</function>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.werror>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.werror</tt> - write to stderr
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void werror(string <I>s</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=werror title="write to stderr">
+<man_syntax>
+void werror(string <I>s</I>);<br>
+</man_syntax>
+<man_description>
 Writes a message to stderr. Stderr is normally the console, even if
 the process output has been redirected to a file or pipe.
-<p>
-</dl>
+</man_description>
+</function>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.write_file>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.write_file</tt> - append a string to a file
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int write_file(string <i>file</i>, string <i>str</i>)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=write_file title="append a string to a file">
+<man_syntax>
+int write_file(string <i>file</i>, string <i>str</i>)<br>
+</man_syntax>
+<man_description>
 Append the string <i>str</i> onto the file <i>file</i>. Returns number of bytes written.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.read_bytes.html>Stdio.read_bytes</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.read_bytes</man_see>
+</function>
 
-</anchor>
-<hr noshade size=1>
 </section>
 
-<anchor name=Stdio.Port>
+<class name=Port>
 <section title="Listening to sockets">
 Stdio.File can handle connections to any TCP socket, but it can not listen
 to a local TCP port. For this purpose there is a special class called
@@ -4110,183 +4009,120 @@ to a local TCP port. For this purpose there is a special class called
 it can accept connections which will be returned as clones of Stdio.File.
 These are the methods available in <tt>Stdio.Port</tt>:
 
-<hr noshade size=1>
-<anchor name=Stdio.Port.bind>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.Port-&gt;bind</tt> - open socket and bind it to a port
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int bind(int <I>port</I>);<br>
-or<br>
+<hr>
+
+<method name=bind title="open socket and bind it to a port">
+<man_syntax>
+int bind(int <I>port</I>);<br>
 int bind(int <I>port</I>,function <I>accept_callback</I>);<br>
-or<br>
 int bind(int <I>port</I>,function <I>accept_callback</I>, string <I>IP</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 Bind opens a sockets and binds it to port number on the local machine.
 If the second argument is present, the socket is set to nonblocking
 and the callback function is called whenever something connects to
 the socket. The callback will receive the id for this port as argument.
 Bind returns 1 on success, and zero on failure.
-<p>If the optional argument 'IP' is given, bind will try to bind to
+<p>
+If the optional argument <i>IP</i> is given, bind will try to bind to
 this IP name (or number).
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.Port.accept>Stdio.Port-&gt;accept</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.Port-&gt;accept</man_see>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.Port.listen_fd>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.Port-&gt;listen_fd</tt> - listen to an already open port
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int listen_fd(int <I>fd</I>);<br>
-or<br>
+
+
+<method name=listen_fd title="listen to an already open port">
+<man_syntax>
+int listen_fd(int <I>fd</I>);<br>
 int listen_fd(int <I>fd</I>,function <I>accept_callback</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function does the same as Stdio.Port-&gt;bind, except that instead
 of creating a new socket and bind it to a port, it expects that
-the file descriptor 'fd' is an already open port.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+the file descriptor <i>fd</i> is an already open port.
+</man_description>
+<man_nb>
 This function is only for the advanced user, and is generally used
 when sockets are passed to Pike at exec time.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.Port.bind>Stdio.Port-&gt;bind</link> and <link to=Stdio.Port.accept>Stdio.Port-&gt;accept</link>
-<p>
-</dl>
+</man_nb>
+<man_see>Stdio.Port-&gt;bind, Stdio.Port-&gt;accept</man_see>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.Port.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.Port-&gt;create</tt> - create and/or setup a port
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object(Stdio.Port) Stdio.Port("stdin")<br>
+
+<method name=create title="create and/or setup a port">
+<man_syntax>
+object(Stdio.Port) Stdio.Port("stdin")<br>
 object(Stdio.Port) Stdio.Port("stdin",function <i>accept_callback</i>)<br>
 object(Stdio.Port) Stdio.Port("stdin",function <i>accept_callback</i>)<br>
 object(Stdio.Port) Stdio.Port(int <i>port</i>)<br>
 object(Stdio.Port) Stdio.Port(int <i>port</i>,function <i>accept_callback</i>)<br>
 object(Stdio.Port) Stdio.Port(int <i>port</i>,function <i>accept_callback</i>, string <i>ip</i>)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 When create is called with <tt>"stdin"</tt> as argument, a socket is created
 out of the file descriptor 0. This is only useful if that actually
 is a socket to begin with. When create is called with an int as first
 argument, it does the same as bind() would do with the same arguments.
 The second and third argument has the same function as in the bind()
 call.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link> and <link to=Stdio.Port.bind>Stdio.Port-&gt;bind</link>
-<p>
-</dl>
+</man_description>
+<man_see>clone, Stdio.Port-&gt;bind</man_see>
+</method>
 
 
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.Port.set_id>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.Port-&gt;set_id</tt> - set the id of a port
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void set_id(mixed <I>id</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<method name=set_id title="set the id of a port">
+<man_syntax>
+void set_id(mixed <I>id</I>);<br>
+</man_syntax>
+<man_description>
 This function sets the id used for accept_callback by this port.
 The default id is this_object().
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.Port.query_id>Stdio.Port-&gt;query_id</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.Port-&gt;query_id</man_see>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.Port.query_id>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.Port-&gt;query_id</tt> - Return the id for this port.
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed query_id();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=query_id title="Return the id for this port.">
+<man_syntax>
+mixed query_id();<br>
+</man_syntax>
+<man_description>
 This function returns the id for this port. The id is normally the
 first argument to accept_callback.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.Port.set_id>Stdio.Port-&gt;set_id</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.Port-&gt;set_id</man_see>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.Port.errno>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.Port-&gt;errno</tt> - return the last error
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int errno();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=errno title="return the last error">
+<man_syntax>
+int errno();<br>
+</man_syntax>
+<man_description>
 If the last call done on this port failed, errno will return an
 integer describing what went wrong. Refer to your Unix manual for
 further information.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.Port.errno>Stdio.Port-&gt;errno</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.Port-&gt;errno</man_see>
+</method>
 
-</anchor>
-<hr noshade size=1>
-<anchor name=Stdio.Port.accept>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Stdio.Port-&gt;accept</tt> - accept a connection
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object accept();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=accept title="accept a connection">
+<man_syntax>
+object accept();<br>
+</man_syntax>
+<man_description>
 This function completes a connection made from a remote machine to
 this port. It returns a two-way stream in the form of a copy of
 Stdio.File. The new file is by default set to blocking.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.File>Stdio.File</link>
-<p>
-</dl>
+</man_description>
+<man_see>Stdio.File</man_see>
+</method>
 
-</anchor>
 </section>
-</anchor>
-<hr noshade size=1>
-
-
-
-
-
+</class>
 
 <section title="A more complex example - a simple WWW server">
 
@@ -4642,7 +4478,7 @@ a slow machine available for the server.
 <p>
 </section>
 </chapter>
-</anchor>
+</module>
 
 <anchor name=Threads>
 <chapter title="Threads">
