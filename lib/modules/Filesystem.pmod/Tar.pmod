@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.5 1999/12/26 04:31:50 jhs Exp $
+ * $Id: Tar.pmod,v 1.6 2000/09/18 14:19:32 per Exp $
  */
 
 class _Tar  // filesystem
@@ -226,10 +226,8 @@ class _TarFS
   array(string) get_dir(void|string directory, void|string|array globs)
   {
     directory = combine_path(wd, (directory||""), "");
-
     array f = glob(root+directory+"?*", tar->filenames);
     f -= glob(root+directory+"*/*", f); // stay here
-
     return f;
   }
 
@@ -276,14 +274,17 @@ class `()
 
   void create(string filename, void|Filesystem.Base parent)
   {
-    if(!parent) parent = Filesystem.System();
+    Stdio.File fd;
 
-    Stdio.File fd = parent->open(filename, "r");
+    if(!parent) 
+      catch(fd = Stdio.File( filename, "r" ));
+    else
+      fd = parent->open(filename, "r");
+
     if(!fd)
       error("Not a Tar file\n");
 
     _Tar tar = _Tar(fd, filename, this_object());
-
     _TarFS::create(tar, "/", "", parent);
   }
 }
