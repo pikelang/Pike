@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.52 2003/10/28 21:12:21 mast Exp $
+/* $Id: sslfile.pike,v 1.53 2003/11/04 18:07:36 mast Exp $
  *
  */
 
@@ -48,10 +48,12 @@ static class MyLock
 	     describe_backtrace (old_cur_thread->backtrace()));		\
     lock = MyLock (old_cur_thread);					\
   }
+#define THREAD_UNLOCK lock = 0
 
 #else  // !THREAD_DEBUG
 
 #define THREAD_CHECK
+#define THREAD_UNLOCK
 
 #endif
 
@@ -113,6 +115,7 @@ void die(int status)
     if (close_callback) {
       function(mixed:void) f = close_callback;
       close_callback = 0;
+      THREAD_UNLOCK;
       f (id);
     }
   }
@@ -328,7 +331,7 @@ int write(string|array(string) s)
  
 void get_blocking_to_handshake_finished_state() {
   
-  while(!handshake_finished) {
+  while(socket && !handshake_finished) {
     write_blocking();
     string|int s=got_data(read_blocking_packet());
     if(s==1||s==-1) break;
@@ -385,23 +388,33 @@ private void ssl_read_callback(mixed id, string s)
 #endif
   THREAD_CHECK;
   string|int data = got_data(s);
+  if (socket) {
+    int res = queue_write();
+    if (res) {
+      die(res);
+      return;
+    }
+  }
   if (stringp(data))
   {
 #ifdef SSL3_DEBUG
     werror(sprintf("SSL.sslfile->ssl_read_callback: application_data: '%O'\n", data));
 #endif
+    read_buffer += data;
     if (!connected && handshake_finished)
       {
       connected = 1;
-      if (accept_callback)
+      if (accept_callback) {
+	THREAD_UNLOCK;
 	accept_callback(this_object());
+      }
     }
     
-    read_buffer += data;
     if (!blocking && read_callback && strlen(read_buffer))
       {
 	string received = read_buffer;
 	read_buffer = "";
+	THREAD_UNLOCK;
 	read_callback(id, received);
       }
   } else {
@@ -410,6 +423,7 @@ private void ssl_read_callback(mixed id, string s)
 	if (close_callback) {
 	  function f = close_callback;
 	  close_callback = 0;
+	  THREAD_UNLOCK;
 	  f(socket->query_id());
 	}
       }
@@ -422,11 +436,6 @@ private void ssl_read_callback(mixed id, string s)
 	  }
 	  return;
 	}
-  }
-  if (socket && this_object()) {
-    int res = queue_write();
-    if (res)
-      die(res);
   }
 }
 
@@ -474,21 +483,6 @@ private void ssl_write_callback(mixed id)
   if (strlen(write_buffer))
     return;
 
-  if ( !res && connected && !blocking && write_callback)
-  {
-#ifdef SSL3_DEBUG
-    werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
-#endif
-    write_callback(id);
-    if (!socket || !this_object()) {
-      // We've been closed or destructed.
-      return;
-    }
-    res = queue_write();
-
-    if (strlen(write_buffer))
-      return;
-  }
   if (socket)
   {
     socket->set_write_callback(0);
@@ -500,8 +494,29 @@ private void ssl_write_callback(mixed id)
       return;
     }
   }
-  if (res)
+  if (res) {
     die(res);
+    return;
+  }
+
+  if (connected && !blocking && write_callback && handshake_finished)
+  {
+#ifdef SSL3_DEBUG
+    werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
+#endif
+    THREAD_UNLOCK;
+    write_callback(id);
+#if 0
+    if (!socket || !this_object()) {
+      // We've been closed or destructed.
+      return;
+    }
+    res = queue_write();
+
+    if (strlen(write_buffer))
+      return;
+#endif
+  }
 }
 
 private void ssl_close_callback(mixed id)
@@ -513,6 +528,7 @@ private void ssl_close_callback(mixed id)
   if (close_callback && socket) {
     function f = close_callback;
     close_callback = 0;
+    THREAD_UNLOCK;
     f(socket->query_id());
   }
   if (this_object()) {
@@ -612,11 +628,15 @@ void set_nonblocking(function ...args)
   }
   blocking = 0;
   if (is_closed || !socket) return;
-  if (CALLBACK_MODE)
+  if (CALLBACK_MODE) {
+    THREAD_UNLOCK;
     socket->set_nonblocking(ssl_read_callback,ssl_write_callback,
 			    ssl_close_callback);
-  else
+  }
+  else {
+    THREAD_UNLOCK;
     socket->set_nonblocking();
+  }
 #if 0
   if (strlen(read_buffer))
     ssl_read_callback(socket->query_id(), "");
@@ -661,16 +681,16 @@ void create(object f, object c, int|void is_client, int|void is_blocking)
   context = c;
   read_buffer = write_buffer = "";
   socket = f;
+  connection::create(!is_client);
   blocking=is_blocking;
   if(blocking) {
     socket->set_blocking();
-    connection::create(!is_client);
     get_blocking_to_handshake_finished_state();
   } else {
+    THREAD_UNLOCK;
     socket->set_nonblocking(ssl_read_callback,
 			  ssl_write_callback,
 			  ssl_close_callback);
-    connection::create(!is_client);
   }
 }
 
