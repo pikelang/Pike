@@ -1,16 +1,14 @@
-# $Id: Makefile.in,v 1.9 2003/06/12 20:54:56 mast Exp $
+# $Id: Makefile.in,v 1.10 2003/11/13 00:38:59 mast Exp $
 
 @make_variables@
 VPATH=@srcdir@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=postgres.o pgresult.o
 POSTGRES_SUPPORTED=@POSTGRES_SUPPORTED@
+MODULE_SPOTLESS_EXTRA=pgres_config.h
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
 
 @dynamic_module_makefile@
-
-spotless: clean
-	-rm config.* pgres_config.h
 
 @dependencies@
