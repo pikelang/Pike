@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.514 2003/10/30 19:33:26 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.515 2003/10/31 15:09:24 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.514 2003/10/30 19:33:26 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.515 2003/10/31 15:09:24 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2163,8 +2163,12 @@ void f__exit(INT32 args)
  *!
  *!   This function returns the number of seconds since 00:00:00 UTC, 1 Jan 1970.
  *!
- *!   The second syntax does not call the system call @[time()] as often,
- *!   but is only updated in the backed (when Pike code isn't running).
+ *!   The second syntax does not query the system for the current
+ *!   time. Instead the latest done by the pike process is returned
+ *!   again. That's slightly faster but can be wildly inaccurate. Pike
+ *!   queries the time internally when a thread has waited for
+ *!   something, typically in @[sleep] or in a backend (see
+ *!   @[Pike.Backend]).
  *!
  *!   The third syntax can be used to measure time more preciely than one
  *!   second. It return how many seconds has passed since @[t]. The precision
@@ -3514,6 +3518,10 @@ PMOD_EXPORT void f_callablep(INT32 args)
  *!   @[abort_on_signal] is set. If more than one thread is running
  *!   the signal must be sent to the sleeping thread. Other callbacks
  *!   are not called during sleep.
+ *!
+ *!   If @[s] is zero then this thread will yield to other threads but
+ *!   not sleep otherwise. Note that Pike yields internally at regular
+ *!   intervals so it's normally not necessary to do this.
  *!
  *! @seealso
  *!   @[signal()], @[delay()]
