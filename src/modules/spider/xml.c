@@ -2811,17 +2811,97 @@ static void autoconvert(INT32 args)
       case 0x003c003f: /* UTF-16, big-endian, no byte order mark */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, bit-endian, no byte order mark detected.\n"));
 	f_unicode_to_string(1);
-	break;
+	return;
 
       case 0x3c003f00: /* UTF-16, little endian, no byte order mark */
 	IF_XMLDEBUG(fprintf(stderr,"UTF-16, little-endian, no byte order mark detected.\n"));
 	Pike_error("XML: Little endian byte order not supported yet.\n");
 
       case 0x3c3f786d: /* ASCII? UTF-8? ISO-8859? */
-	IF_XMLDEBUG(fprintf(stderr,"Extended ASCII detected (assuming UTF8).\n"));
-	/* Assume utf8 for now */
-	f_utf8_to_string(1);
-	break;
+	{
+	  int pos,e,encstart,encend;
+
+	  IF_XMLDEBUG(fprintf(stderr,"Extended ASCII detected (assuming UTF8).\n"));
+	  pos=5;
+	   /* <?xml. version */
+	  while(isSpace(STR0(s)[pos])) pos++;
+
+	  /* "autoconvert: <?xml .version */
+	  if(MEMCMP(STR0(s)+pos,"version",7)) break;
+	  pos+=7;
+
+	  /* <?xml version.  = "1.0" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+
+	  /* <?xml version .= "1.0" */
+	  if(STR0(s)[pos]!='=') break;
+	  pos++;
+
+	  /* <?xml version =. "1.0" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = ."1.0" */
+	  if(STR0(s)[pos]=='\'')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\'') pos++;
+	    pos++;
+	  }
+	  else if(STR0(s)[pos]=='"')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\"') pos++;
+	    pos++;
+	  }else{
+	    break; /* No encoding detected */
+	  }
+	  
+	  /* <?xml version = "1.0". encoding="encname" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = "1.0" .encoding="encname" */
+	  if(MEMCMP("encoding",STR0(s)+pos,8)) break;
+	  pos+=8;
+	  
+	  /* <?xml version = "1.0" encoding. ="encname" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = "1.0" encoding .="encname" */
+	  if(STR0(s)[pos]!='=') break;
+	  pos++;
+	  
+	  /* <?xml version = "1.0" encoding =. "encname" */
+	  while(isSpace(STR0(s)[pos])) pos++;
+	  
+	  /* <?xml version = "1.0" encoding = ."encname" */
+	  encstart=pos+1;
+	  if(STR0(s)[pos]=='\'')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\'') pos++;
+	  }
+	  else if(STR0(s)[pos]=='"')
+	  {
+	    pos++;
+	    while(STR0(s)[pos] && STR0(s)[pos]!='\"') pos++;
+	  }else{
+	    break; /* No encoding detected */
+	  }
+	  /* <?xml version = "1.0" encoding = "encname." */
+
+	  push_constant_text("Locale.Charset.decoder");
+	  APPLY_MASTER("resolv",1);
+	  push_string(make_shared_binary_string(STR0(s)+encstart,pos-encstart));
+	  f_call_function(2);
+	  push_constant_text("feed");
+	  f_index(2);
+	  stack_swap();
+	  f_call_function(2);
+	  push_constant_text("drain");
+	  f_index(2);
+	  f_call_function(1);
+	  return;
+	}
 	
       case 0x4c6fa794: /* EBCDIC */
 	IF_XMLDEBUG(fprintf(stderr,"EBCDIC detected.\n"));
