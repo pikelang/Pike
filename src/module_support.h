@@ -14,7 +14,7 @@ void check_all_args(const char *fnname, int args, int minargs, ... );
 int va_get_args(struct svalue *s,
 		INT32 num_args,
 		char *fmt,
-		va_list ptr);
+		va_list ap);
 int get_args(struct svalue *s,
 	     INT32 num_args,
 	     char *fmt, ...);
