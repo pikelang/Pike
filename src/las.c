@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.206 2000/09/12 14:02:42 grubba Exp $");
+RCSID("$Id: las.c,v 1.207 2000/09/12 14:24:29 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -148,17 +148,12 @@ void check_tree(node *n, int depth)
 
     if(d_flag<2) break;
 
-    if (!(depth & 63)) {
-      /* 512 bytes/stack frame should be enough... */
-      check_c_stack(32768);
-
-      if(!(depth & 1023))
-      {
-	node *q;
-	for(q=n->parent;q;q=q->parent)
-	  if(q->parent==n)
-	    fatal("Cyclic node structure found.\n");
-      }
+    if(!(depth & 1023))
+    {
+      node *q;
+      for(q=n->parent;q;q=q->parent)
+	if(q->parent==n)
+	  fatal("Cyclic node structure found.\n");
     }
 
     if(car_is_node(n))
