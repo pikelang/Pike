@@ -52,7 +52,7 @@ class client
     return r;
   }
 
-  void create(void|string server, int|void port)
+  void create(void|string|Stdio.File server, int|void port)
   {
     if(!server)
     {
@@ -61,12 +61,18 @@ class client
       server=dns->get_primary_mx(gethostname());
     }
 
-    if(!port)
-      port = 25;
-
-    if(!server || !connect(server, port))
+    werror("server=%O\n",server);
+    if (objectp(server))
+       assign(server);
+    else
     {
-      throw(({"Failed to connect to mail server.\n",backtrace()}));
+       if(!port)
+	  port = 25;
+
+       if(!server || !connect(server, port))
+       {
+	  throw(({"Failed to connect to mail server.\n",backtrace()}));
+       }
     }
 
     if(readreturncode()/100 != 2)
