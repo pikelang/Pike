@@ -163,6 +163,8 @@ Layer decode_layer(mapping layer, mapping i)
     }
     c->data = 0;
   }
+//   werror(" mode %s image %O alpha %O\n",
+// 	 l->mode, l->image, l->alpha );
 //   werror("alpha/mask took %4.5f seconds\n", (gethrtime()-st)/1000000.0 );
 //   werror("TOTAL took %4.5f seconds\n\n", (gethrtime()-stt)/1000000.0 );
   return l;
@@ -210,29 +212,31 @@ string translate_mode( string mode )
    case "diss":      return "dissolve";
    case "scrn":      return "screen";
    case "over":      return "overlay";
-
-
-   case "div ":      return "divide"; //?
-   case "idiv":      return "divide"; //?
    case "dark":      return "min";
    case "lite":      return "max";
-
    case "hue ":      return "hue";
-   case "sat ":      return "saturation";
-   case "colr":      return "color";
-   case "lum ":      return "value";
+   case "div ":      return "idivide";
+   case "hLit":      return "hardlight";
 
-   case "smud":     
-     werror("WARNING: Unsupported mode (smudge). Skipping layer\n");
-     return 0;
+   case "colr":      return "color"; // Not 100% like photoshop.
+   case "lum ":      return "value"; // Not 100% like photoshop.
+   case "sat ":      return "saturation";// Not 100% like photoshop.
 
-// WARNING: PSD: Unsupported mode: sLit
-// WARNING: PSD: Unsupported mode: hLit
+      // Colorburn, not really multiply, but the best aproximation soo far.
+    case "idiv":
+     return "multiply";
 
+     // Exclusion. Not really difference, but very close.
+    case "smud":     
+     return "difference";
+
+     // Soft light. Not really supported yet. For now, use hardlight with lower
+     // opacity. Gives a rather good aproximation.
+    case "sLit":     
+     return "hardlight";
 
    default:
      werror("WARNING: PSD: Unsupported mode: "+mode+". Skipping layer\n");
-//      werror("Skipping layer\n");
      return 0;
   }
 }
@@ -290,12 +294,14 @@ array decode_layers( string|mapping what, mapping|void opts )
         lay->set_misc_value( "visible", !(l->flags & LAYER_FLAG_INVISIBLE) );
         lay->set_misc_value( "name",      l->name );
         lay->set_misc_value( "image_guides", what->resources->guides );
+	if( l->mode == "sLit" )
+	  l->opacity /= 3;
 
 	l->image = 0; l->alpha = 0;
         
 	if( l->opacity != 255 )
         {
-	  float lo =  1.0 - l->opacity / 255.0;
+	  float lo =  l->opacity / 255.0;
           if( lay->alpha() )
             lay->set_image( lay->image(), lay->alpha()*lo );
           else
@@ -310,6 +316,7 @@ array decode_layers( string|mapping what, mapping|void opts )
       }
     }
   }
+//   werror("%O\n", layers );
   return layers;
 }
 
