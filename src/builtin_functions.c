@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.119 1998/07/26 10:28:41 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.120 1998/07/28 23:01:52 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3064,7 +3064,7 @@ void init_builtin_efuns(void)
 #ifdef HAVE_LOCALTIME
   add_efun("localtime",f_localtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 #endif
-#ifdef HAVE_LOCALTIME
+#ifdef HAVE_GMTIME
   add_efun("gmtime",f_gmtime,"function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 #endif
 
