@@ -1,11 +1,10 @@
-// $Id: testsuite.in,v 1.6 1999/03/07 01:37:11 marcus Exp $
+// $Id: testsuite.in,v 1.7 1999/08/07 21:59:27 marcus Exp $
 
 // MIME
 test_true([[objectp(MIME)]])
-test_true([[programp(MIME.support)]])
 test_true([[programp(MIME.Message)]])
 
-// MIME.support
+// Global functions
 test_eq([[MIME.decode_base64("Zm9vCg==")]],"foo\n")
 test_eq([[MIME.encode_base64("bar")]],"YmFy")
 test_eq([[MIME.encode_base64("bar ")]],"YmFyIA==")
@@ -123,10 +122,6 @@ test_eq([[MIME.guess_subtype("image")]], 0)
 
 // MIME.Message
 test_true([[objectp(MIME.Message())]])
-
-test_eq([[MIME.Message()->encode_base64("bar")]],"YmFy")
-test_equal([[MIME.Message()->decode_word("=?kOi8?Q?=2ax_y=5F?=")]],
-		({"*x y_","koi8"}))
 
 test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->type]], "text")
 test_eq([[MIME.Message("MIME-Version: 1.0\r\n\r\nfoo\r\n")->subtype]], "plain")
