@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.99 2004/04/23 16:38:45 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.100 2004/05/02 01:51:56 nilsson Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -69,6 +69,14 @@ array(string) read_tests( string fn ) {
     werror("Failed to read test file %O, errno=%d.\n",
 	   fn, errno());
     exit(1);
+  }
+
+  if(has_prefix(tests, "START")) {
+    tests = tests[6..];
+    if(!has_suffix(tests, "END\n"))
+      werror("%s: Missing end marker.\n", fn);
+    else
+      tests = tests[..sizeof(tests)-1-4];
   }
 
   tests = tests/"\n....\n";
