@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.36 2000/08/11 08:42:19 mirar Exp $
+**!	$Id: colors.c,v 1.37 2000/08/11 19:25:53 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.36 2000/08/11 08:42:19 mirar Exp $");
+RCSID("$Id: colors.c,v 1.37 2000/08/11 19:25:53 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -593,7 +593,7 @@ static void image_color_hex(INT32 args)
    }
    else if (i!=sizeof(COLORTYPE)*2)
    {
-      int sh;
+      ptrdiff_t sh;
       if (i>8) i=8;
 
       sh=4*(sizeof(COLORTYPE)*2-i);
@@ -1087,9 +1087,9 @@ static void image_color_mult(INT32 args)
    FLOAT_TYPE x=0.0;
    get_all_args("Image.Color.Color->`*",args,"%f",&x);
    pop_n_elems(args);
-   _image_make_rgb_color((int)(THIS->rgb.r*x),
-			 (int)(THIS->rgb.g*x),
-			 (int)(THIS->rgb.b*x));
+   _image_make_rgb_color(DOUBLE_TO_INT(THIS->rgb.r*x),
+			 DOUBLE_TO_INT(THIS->rgb.g*x),
+			 DOUBLE_TO_INT(THIS->rgb.b*x));
 }
 
 int image_color_svalue(struct svalue *v,rgb_group *rgb)
@@ -1195,7 +1195,8 @@ static void image_get_color(INT32 args)
       {
 	 /* #rgb, #rrggbb, #rrrgggbbb, etc */
 	 
-	 size_t i = sp[-1].u.string->len-1, j, k, rgb[3];
+	 size_t i = sp[-1].u.string->len-1, j, k;
+	 unsigned INT32 rgb[3];
 	 unsigned char *src=(unsigned char *)sp[-1].u.string->str+1;
 	 if (!(i%3))
 	 {
