@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.61 1999/03/11 22:48:41 grubba Exp $");
+RCSID("$Id: object.c,v 1.62 1999/03/12 04:30:10 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1238,6 +1238,10 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   magic=low_clone(type);
   add_ref(MAGIC_O2S(magic)->o=o);
   MAGIC_O2S(magic)->inherit = inherit + inherit_no;
+#ifdef DEBUG
+  if(inherit + inherit_no >= o->prog->inherits + o->prog->num_inherit)
+     fatal("Magic index blahonga!\n");
+#endif
   push_object(magic);
 }
 
@@ -1252,6 +1256,9 @@ static void f_magic_index(INT32 args)
 
   if(!(o=MAGIC_THIS->o))
     error("Magic index error\n");
+
+  if(!o->prog)
+    error("Magic index on destructed object!\n");
 
   inherit=MAGIC_THIS->inherit;
 
@@ -1284,6 +1291,9 @@ static void f_magic_set_index(INT32 args)
 
   if(!(o=MAGIC_THIS->o))
     error("Magic index error\n");
+
+  if(!o->prog)
+    error("Magic index on destructed object!\n");
 
   inherit=MAGIC_THIS->inherit;
 

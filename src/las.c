@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.76 1999/03/04 06:05:01 hubbe Exp $");
+RCSID("$Id: las.c,v 1.77 1999/03/12 04:30:09 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -373,6 +373,10 @@ node *mknode(short token,node *a,node *b)
       res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
     }
     break;
+
+  case F_MAGIC_INDEX:
+  case F_MAGIC_SET_INDEX:
+    res->node_info |= OPT_EXTERNAL_DEPEND;
 
   case F_UNDEFINED:
     res->node_info |= OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
