@@ -609,7 +609,11 @@ static void copy_selectors(struct active_selectors *to,
 #define MY_POLLOUT	EVFILT_WRITE
 
 #define MY_POLLERR	EV_ERROR
+#if 0
 #define MY_POLLHUP	EV_EOF
+#else /* !0 */
+#define MY_POLLHUP	0
+#endif /* 0 */
 
 /* FIXME: The kqueue API has no documented support for out of band data. */
 #define MY_POLLEXCEPT	EVFILT_READ
@@ -2654,12 +2658,7 @@ PIKECLASS Backend
 	      /* The following is temporary compat stuff. */
 	      else if (old_events & PIKE_BIT_FD_READ
 #ifdef USE_KQUEUE
-		       &&
-		       (
-			CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)
-			||
-			CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR)
-		       )
+		       && CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)
 #endif /* USE_KQUEUE */
 		       ) {
 		IF_PD(fprintf(stderr,
@@ -2669,12 +2668,7 @@ PIKECLASS Backend
 		  goto backend_round_done;
 	      } else if (old_events & PIKE_BIT_FD_WRITE
 #ifdef USE_KQUEUE
-			 &&
-			 (
-			  CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)
-			  ||
-			  CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR)
-			  )
+			 && CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)
 #endif /* USE_KQUEUE */
 		       ) {
 		IF_PD(fprintf(stderr,
@@ -2728,8 +2722,11 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 
-	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLWRBAND on %d\n",
+#ifdef WRBAND_IS_SPECIAL
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND) ||
+	      CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	    IF_PD(fprintf(stderr,
+			  "[%d]BACKEND[%d]: POLLWRBAND|POLLHUP on %d\n",
 			  getpid(), me->id, fd));
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    check_box (box, fd);
@@ -2744,86 +2741,41 @@ PIKECLASS Backend
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
+#endif /* WRBAND_IS_SPECIAL */
 
-	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
+	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT) ||
+	     CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
 	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	     *        the kqueue case.
 	     */
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT on %d\n",
-			  getpid(), me->id, fd));
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
 	    check_box (box, fd);
-	    if (WANT_EVENT (box, WRITE)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_WRITE) == -1)
-		goto backend_round_done;
+	    if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLHUP on %d\n",
+			    getpid(), me->id, fd));
+	    } else {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT on %d\n",
+			    getpid(), me->id, fd));
 	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
-	  }
-
-	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
-	    int old_events;
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLHUP on %d\n",
-			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-#ifdef USE_KQUEUE
-	    /* Note: For kqueue the callbacks have already been called above.
-	     *
-	     * Disables the appropriate callbacks, just like in the
-	     * poll case except for the order.
-	     *
-	     * Note: Due to the call order, the box may be NULL.
-	     *
-	     * FIXME: Consider moving this to the POLLIN/POLLOUT
-	     *        code above.
-	     */
-	    if (box) {
-	      if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
-		/* Disable any further write callbacks on this fd. */
-		set_fd_callback_events(box, box->events &
-				       ~(PIKE_FD_WRITE|PIKE_FD_WRITE_OOB));
-#if 0
-	      } else if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
-		/* Disable any further read callbacks on this fd. */
-		set_fd_callback_events(box, box->events &
-				       ~(PIKE_FD_READ|PIKE_FD_READ_OOB));
-#endif /* 0 */
-	      }
-	    }
-#else /* !USE_KQUEUE */
-	    /* poll-variants:
-	     *
-	     * A hangup has occurred on the stream. This event
-             * and POLLOUT (and probably POLLWRBAND) are mutually
-	     * exclusive; a stream can never be writable if a
-	     * hangup has occurred.
-	     */
-	    old_events = box->events;
-	    /* Disable any further write callbacks on this fd. */
-	    set_fd_callback_events(box, old_events &
-				   ~(PIKE_FD_WRITE|PIKE_FD_WRITE_OOB));
-	    if (old_events & PIKE_BIT_FD_WRITE) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_WRITE) == -1)
-		goto backend_round_done;
-	    } else if (old_events & PIKE_BIT_FD_WRITE_OOB) {
+#ifndef WRBAND_IS_SPECIAL
+	    if (WANT_EVENT(box, WRITE_OOB)) {
 	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
 			    getpid(), me->id, fd, box->ref_obj));
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_WRITE_OOB) == -1)
 		goto backend_round_done;
 	    }
+#endif /* !WRBAND_IS_SPECIAL */
+	    if (WANT_EVENT(box, WRITE)) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
+	      errno = 0;
+	      if (box->callback (box, PIKE_FD_WRITE) == -1)
+		goto backend_round_done;
+	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
-#endif /* USE_KQUEUE */
 	  }
 
 #ifdef PIKE_DEBUG
