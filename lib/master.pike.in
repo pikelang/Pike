@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.154 2001/11/13 15:46:28 tomas Exp $
+ * $Id: master.pike.in,v 1.155 2002/10/15 17:26:49 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -2115,28 +2115,6 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  string pos;
 	  if(sizeof(tmp)>=2 && stringp(tmp[0])) {
 	    if (intp(tmp[1])) {
-
-	      string exact_pos = tmp[0] + ":" + tmp[1];
-	      int dup_frame;
-	      if (!zero_type (dup_frame = prev_pos[exact_pos])) {
-		dup_frame -= sizeof (frames);
-		if (!loop_start) {
-		  loop_start = dup_frame;
-		  loop_next = dup_frame + 1;
-		  loops = 0;
-		  continue;
-		}
-		else {
-		  int new_loop = 0;
-		  if (!loop_next) loop_next = loop_start, new_loop = 1;
-		  if (dup_frame == loop_next++) {
-		    loops += new_loop;
-		    continue;
-		  }
-		}
-	      }
-	      prev_pos[exact_pos] = sizeof (frames);
-
 	      pos=trim_file_name(tmp[0])+":"+tmp[1];
 	    } else {
 	      pos = sprintf("%s:Bad line %t", trim_file_name(tmp[0]), tmp[1]);
@@ -2154,19 +2132,6 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	      };
 	    }
 	    pos=desc;
-	  }
-
-	  if (loop_start) {
-	    array(string) tail;
-	    if (!loop_next) tail = ({}), loops++;
-	    else tail = frames[loop_start + sizeof (frames) ..
-			       loop_next - 1 + sizeof (frames)];
-	    if (loops)
-	      frames += ({sprintf ("... last %d frames above repeated %d times ...\n",
-				   -loop_start, loops)});
-	    frames += tail;
-	    prev_pos = ([]);
-	    loop_start = 0;
 	  }
 
 	  string data;
@@ -2207,6 +2172,39 @@ string describe_backtrace(mixed trace, void|int linewidth)
 //       }) {
 //  	row = sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
 //       }
+
+      int dup_frame;
+      if (!zero_type(dup_frame = prev_pos[row])) {
+	dup_frame -= sizeof(frames);
+	if (!loop_start) {
+	  loop_start = dup_frame;
+	  loop_next = dup_frame + 1;
+	  loops = 0;
+	  continue;
+	} else {
+	  int new_loop = 0;
+	  if (!loop_next) loop_next = loop_start, new_loop = 1;
+	  if (dup_frame == loop_next++) {
+	    loops += new_loop;
+	    continue;
+	  }
+	}
+      }
+      prev_pos[row] = sizeof(frames);
+
+      if (loop_start) {
+	array(string) tail;
+	if (!loop_next) tail = ({}), loops++;
+	else tail = frames[loop_start + sizeof(frames) ..
+			   loop_next - 1 + sizeof(frames)];
+	if (loops)
+	  frames += ({sprintf ("... last %d frames above repeated %d times ...\n",
+			       -loop_start, loops)});
+	frames += tail;
+	prev_pos = ([]);
+	loop_start = 0;
+      }
+
       frames += ({row + "\n"});
     }
 
