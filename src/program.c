@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.419 2002/05/01 01:08:32 mast Exp $");
+RCSID("$Id: program.c,v 1.420 2002/05/01 15:08:21 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3949,7 +3949,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 {
   struct reference *funp;
   struct identifier *fun;
-  int id, i, depth;
+  int id, i, depth, last_inh;
 
 #if 0
   CDFPRINTF((stderr,"th(%ld) Trying to find %s flags=%d\n",
@@ -3965,6 +3965,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 
   id = -1;
   depth = 0;
+  last_inh = prog->num_inherits;
   i = (int)prog->num_identifier_references;
   while(i--)
   {
@@ -3981,6 +3982,25 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
       struct inherit *inh = INHERIT_FROM_PTR(prog, funp);
       if ((funp->id_flags & ID_PRIVATE) && !(flags & SEE_PRIVATE)) continue;
       if (!depth || (depth > inh->inherit_level)) {
+	if (id != -1) {
+	  int j;
+	  int min_level = depth;
+	  for (j=last_inh-1; j > funp->inherit_offset; j--) {
+	    struct inherit *inh2 = prog->inherits + j;
+	    if (inh2->inherit_level >= min_level) {
+	      /* Got deeper in the inherit graph */
+	      continue;
+	    }
+	    min_level = inh2->inherit_level;
+	  }
+	  if (!(inh->inherit_level < min_level)) {
+	    continue;
+	  }
+	  /* Found new identifier on the path from the old identifier to
+	   * the root.
+	   */
+	}
+	last_inh = funp->inherit_offset;
 	depth = inh->inherit_level;
 	id = i;
       }
