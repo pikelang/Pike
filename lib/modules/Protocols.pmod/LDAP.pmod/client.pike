@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.33 2001/11/05 11:52:03 hop Exp $
+// $Id: client.pike,v 1.34 2001/11/21 16:22:41 anders Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -349,7 +349,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.33 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.34 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -789,11 +789,11 @@ int _prof_gtim;
     int op ;
 
     DWRITE("client.make_filter: filter=["+filter+"]\n");
+
+    if (!sizeof(filter)) return make_simple_filter(filter);
+
     // strip leading and trailing spaces
-    while(filter[0] == ' ')
-      filter = filter[1..];
-    while(filter[-1] == ' ')
-      filter = reverse(reverse(filter)[1..]);
+    filter = String.trim_all_whites(filter);
 
     // strip leading and trailing brackets
 #if 1
