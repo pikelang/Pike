@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.33 2002/01/02 12:48:46 js Exp $");
+RCSID("$Id: whitefish.c,v 1.34 2003/02/18 10:35:38 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -12,6 +12,7 @@ RCSID("$Id: whitefish.c,v 1.33 2002/01/02 12:48:46 js Exp $");
 #include "operators.h"
 #include "array.h"
 #include "module_support.h"
+#include "module.h"
 
 #include "config.h"
 
@@ -21,8 +22,14 @@ RCSID("$Id: whitefish.c,v 1.33 2002/01/02 12:48:46 js Exp $");
 #include "blobs.h"
 #include "linkfarm.h"
 
+/* 7.2 compatibility stuff. */
+
+#ifndef PIKE_MODULE_INIT
 /* must be included last */
 #include "module_magic.h"
+#define PIKE_MODULE_INIT void pike_module_init(void)
+#define PIKE_MODULE_EXIT void pike_module_exit(void)
+#endif
 
 struct  tofree
 {
@@ -628,7 +635,7 @@ static void f_do_query_or( INT32 args )
 }
 
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   init_resultset_program();
   init_blob_program();
@@ -651,7 +658,7 @@ void pike_module_init(void)
 		0 );
 }
 
-void pike_module_exit(void)
+PIKE_MODULE_EXIT
 {
   exit_resultset_program();
   exit_blob_program();
