@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.40 2003/11/15 17:25:05 mast Exp $
+|| $Id: bignum.c,v 1.41 2004/12/30 13:23:20 grubba Exp $
 */
 
 #include "global.h"
@@ -82,6 +82,7 @@ int is_bignum_object(struct object *o)
 
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
 {
+  /* FIXME: object subtype? */
   return sv->type == T_OBJECT && is_bignum_object(sv->u.object);
 }
 
