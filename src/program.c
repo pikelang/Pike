@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.579 2004/12/15 02:22:13 nilsson Exp $
+|| $Id: program.c,v 1.580 2004/12/18 16:41:04 grubba Exp $
 */
 
 #include "global.h"
@@ -1587,6 +1587,13 @@ struct node_s *program_magic_identifier (struct program_state *state,
       /* We know this expression is constant. */
       n->node_info &= ~OPT_NOT_CONST;
       n->tree_info &= ~OPT_NOT_CONST;
+      return n;
+    }
+  } else if (inherit_num > 0) {
+    /* Handle this_program */
+    if (ident == this_program_string) {
+      /* Not very useful, but... */
+      node *n = mkprgnode(state->new_program->inherits[inherit_num].prog);
       return n;
     }
   }
