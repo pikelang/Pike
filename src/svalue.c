@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.128 2001/11/14 10:52:11 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.129 2001/12/16 02:44:23 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -390,7 +390,7 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 	u->refs = tmp = s->u.refs;
 	tmp[0]++;
     }
-  }else if(type<=MAX_REF_TYPE && IS_ZERO(s)){
+  }else if(type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(s)){
     if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
     u->refs=0;
   }else{
@@ -418,7 +418,7 @@ PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 	u->refs = tmp = s->u.refs;
 	tmp[0]++;
     }
-  }else if(type<=MAX_REF_TYPE && IS_ZERO(s)){
+  }else if(type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(s)){
     u->refs=0;
   }else{
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
@@ -578,6 +578,62 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 
     if(FIND_LFUN(s->u.object->prog,LFUN_NOT)!=-1)
     {
+      apply_lfun(s->u.object, LFUN_NOT , 1);
+      if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+      {
+	pop_stack();
+	return 1;
+      } else {
+	pop_stack();
+	return 0;
+      }
+    }
+
+  default:
+    return 1;
+  }
+    
+}
+
+PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
+{
+  check_type(s->type);
+  check_refs(s);
+
+  switch(s->type)
+  {
+  case T_INT:
+    if(s->u.integer) return 1;
+    return 0;
+
+  case T_FUNCTION:
+    if (s->subtype == FUNCTION_BUILTIN) return 1;
+    if(!s->u.object->prog) return 0;
+    if (s->u.object->prog == pike_trampoline_program) {
+      /* Trampoline */
+      struct pike_trampoline *tramp = (struct pike_trampoline *)
+	get_storage(s->u.object, pike_trampoline_program);
+      if (!tramp || !tramp->frame || !tramp->frame->current_object ||
+	  !tramp->frame->current_object->prog) {
+	/* Uninitialized trampoline, or trampoline to destructed object. */
+	return 0;
+      }
+    } else {
+      struct identifier *i = ID_FROM_INT(s->u.object->prog, s->subtype);
+      if (((i->identifier_flags & (IDENTIFIER_FUNCTION|IDENTIFIER_CONSTANT)) ==
+	   IDENTIFIER_PIKE_FUNCTION) &&
+	  (i->func.offset == -1)) {
+	/* Prototype. */
+	return 0;
+      }
+    }
+    return 1;
+
+  case T_OBJECT:
+    if(!s->u.object->prog) return 0;
+
+    if(FIND_LFUN(s->u.object->prog,LFUN_NOT)!=-1)
+    {
       safe_apply_low2(s->u.object,FIND_LFUN(s->u.object->prog,LFUN_NOT),0,1);
       if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
       {
@@ -662,7 +718,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	assign_svalue_no_free(sp, b);
 	sp++;
 	apply_lfun(a->u.object, LFUN_EQ, 1);
-	if(IS_ZERO(sp-1))
+	if(UNSAFE_IS_ZERO(sp-1))
 	{
 	  pop_stack();
 	  return 0;
@@ -687,7 +743,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 	assign_svalue_no_free(sp, a);
 	sp++;
 	apply_lfun(b->u.object, LFUN_EQ, 1);
-	if(IS_ZERO(sp-1))
+	if(UNSAFE_IS_ZERO(sp-1))
 	{
 	  pop_stack();
 	  return 0;
@@ -754,7 +810,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
   {
     push_svalue(b);
     apply_lfun(a->u.object, LFUN__EQUAL, 1);
-    if(IS_ZERO(sp-1)) 
+    if(UNSAFE_IS_ZERO(sp-1))
     {
       pop_stack();
       return 0;
@@ -769,7 +825,7 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
   {
     push_svalue(a);
     apply_lfun(b->u.object, LFUN__EQUAL, 1);
-    if(IS_ZERO(sp-1)) 
+    if(UNSAFE_IS_ZERO(sp-1))
     {
       pop_stack();
       return 0;
@@ -900,7 +956,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 	assign_svalue_no_free(sp, b);
 	sp++;
 	apply_lfun(a->u.object, LFUN_LT, 1);
-	if(IS_ZERO(sp-1))
+	if(UNSAFE_IS_ZERO(sp-1))
 	{
 	  if(!sp[-1].subtype)
 	  {
@@ -925,7 +981,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
       assign_svalue_no_free(sp, a);
       sp++;
       apply_lfun(b->u.object, LFUN_GT, 1);
-      if(IS_ZERO(sp-1))
+      if(UNSAFE_IS_ZERO(sp-1))
       {
 	if(!sp[-1].subtype)
 	{
@@ -1173,7 +1229,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 
 	  debug_malloc_touch(s->u.object);
 
-	  if(!IS_ZERO(sp-1))
+	  if(!SAFE_IS_ZERO(sp-1))
 	  {
 	    struct pike_string *str;
 	    int i;

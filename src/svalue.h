@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.99 2001/12/10 01:16:25 mast Exp $
+ * $Id: svalue.h,v 1.100 2001/12/16 02:44:23 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -242,7 +242,12 @@ struct svalue
 #define FUNCTION_BUILTIN USHRT_MAX
 
 #define is_gt(a,b) is_lt(b,a)
-#define IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
+
+/* SAFE_IS_ZERO is compatible with the old IS_ZERO, but you should
+ * consider using UNSAFE_IS_ZERO instead, since exceptions thrown from
+ * `! functions will be propagated correctly then. */
+#define UNSAFE_IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!svalue_is_true(X):0)
+#define SAFE_IS_ZERO(X) ((X)->type==PIKE_T_INT?(X)->u.integer==0:(1<<(X)->type)&(BIT_OBJECT|BIT_FUNCTION)?!safe_svalue_is_true(X):0)
 
 #define IS_UNDEFINED(X) ((X)->type==PIKE_T_INT&&!(X)->u.integer&&(X)->subtype==1)
 
@@ -499,6 +504,7 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
 			 TYPE_T type);
 PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s);
 PMOD_EXPORT int svalue_is_true(const struct svalue *s);
+PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s);
 PMOD_EXPORT int is_identical(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b);
 PMOD_EXPORT int low_is_equal(const struct svalue *a,
