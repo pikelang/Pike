@@ -99,6 +99,9 @@ string cname(mixed type)
     case "program": return "struct "+btype+" *";
 
     case "function":
+
+    case "0": case "1": case "2": case "3": case "4":
+    case "5": case "6": case "7": case "8": case "9":
     case "mixed":  return "struct svalue *";
 
     default:
@@ -123,6 +126,8 @@ string uname(mixed type)
     case "program": return "struct "+type+" *";
 
     case "function":
+    case "0": case "1": case "2": case "3": case "4":
+    case "5": case "6": case "7": case "8": case "9":
     case "mixed":  return "struct svalue *";
 
     default:
@@ -283,7 +288,7 @@ mapping parse_attributes(array attr)
 
 string file;
 
-array convert(array x)
+array convert(array x, string base)
 {
   array addfuncs=({});
   array exitfuncs=({});
@@ -304,7 +309,7 @@ array convert(array x)
     mapping attributes=parse_attributes(proto[p+2..]);
 
     [ array classcode, array classaddfuncs, array classexitfuncs ]=
-      convert(body[1..sizeof(body)-2]);
+      convert(body[1..sizeof(body)-2],name+"_");
     ret+=({ sprintf("#define class_%s_defined\n",name), });
     ret+=classcode;
 
@@ -326,6 +331,23 @@ array convert(array x)
 	  sprintf("#iendif\n"),
 	});
   }
+
+
+#if 0
+  array thestruct=({});
+  x=ret/({"PIKEVAR"});
+  ret=x[0];
+  for(int f=1;f<sizeof(x);f++)
+  {
+    array var=x[f];
+    int pos=search(var,PC.Token(";",0),);
+    mixed name=var[pos-1];
+    array type=var[..pos-2];
+    array rest=var[pos+1..];
+    
+  }
+#endif
+
 
   x=ret/({"PIKEFUN"});
   ret=x[0];
@@ -476,6 +498,7 @@ array convert(array x)
     ret+=rest;
   }
 
+
   return ({ ret, addfuncs, exitfuncs });
 }
 
@@ -489,7 +512,7 @@ int main(int argc, array(string) argv)
   x=PC.hide_whitespaces(x);
   x=PC.group(x);
 
-  array tmp=convert(x);
+  array tmp=convert(x,"");
   x=tmp[0];
   x=recursive(replace,x,PC.Token("INIT",0),tmp[1]);
   x=recursive(replace,x,PC.Token("EXIT",0),tmp[2]);
