@@ -7410,127 +7410,97 @@ MIME.quote
 </section>
 
 <section title="The MIME.Message class">
+<class name=MIME.Message title="The MIME.Message class">
 This class is used to hold a decoded MIME message.
 
 <section title="Public fields">
 
 <hr newpage>
-<anchor name=MIME.Message.body_parts>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;body_parts</tt> - Multipart sub-messages
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(object) msg-&gt;body_parts;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;body_parts title="Multipart sub-messages">
+<man_syntax>
+array(object) msg-&gt;body_parts;
+</man_syntax>
+<man_description>
 If the message is of type <tt>multipart</tt>, this is an array containing one
 Message object for each part of the message.  If the message is not a
 multipart, this field is <tt>0</tt>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>,
-<link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;type, MIME.Message-&gt;boundary
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.boundary>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.message-&gt;boundary</tt> - Boundary string for multipart messages
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string msg->boundary;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;boundary title="Boundary string for multipart messages">
+<man_syntax>
+string msg->boundary;
+</man_syntax>
+<man_description>
 For multipart messages, this <tt>Content-Type</tt> parameter gives a
 delimiter string for separating the individual messages.  As multiparts
 are handled internally by the module, you should not need to access this
 field.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;setboundary
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.charset>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;charset</tt> - Character encoding for text bodies
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string msg-&gt;charset;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;charset title="Character encoding for text bodies">
+<man_syntax>
+string msg-&gt;charset;
+</man_syntax>
+<man_description>
 One of the possible parameters of the <tt>Content-Type</tt> header is the
 charset attribute.  It determines the character encoding used in bodies of
 type text.  If there is no <tt>Content-Type</tt> header, the value of this
 field is <tt>"us-ascii"</tt>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;type
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.disposition>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;disposition</tt> - Multipart subpart disposition
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string msg-&gt;disposition;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;disposition title="Multipart subpart disposition">
+<man_syntax>
+string msg-&gt;disposition;
+</man_syntax>
+<man_description>
 The first part of the <tt>Content-Disposition</tt> header, hinting on how
 this part of a multipart message should be presented in an interactive
 application.  If there is no <tt>Content-Disposition</tt> header, this
 field is <tt>0</tt>.
-<p>
-</dl>
-</anchor>
+</man_description>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.disp_params>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;disp_params</tt> - Content-Disposition parameters
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping(string:string) msg-&gt;disp_params;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;disp_params title="Content-Disposition parameters">
+<man_syntax>
+mapping(string:string) msg-&gt;disp_params;
+</man_syntax>
+<man_description>
 A mapping containing all the additional parameters to the
 <tt>Content-Disposition</tt> header.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link>,
-<link to=MIME.Message.get_filename>MIME.Message-&gt;get_filename</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;setdisp_param, MIME.Message-&gt;get_filename
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.headers>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;headers</tt> - All header fields of the message
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt> mapping(string:string) msg-&gt;headers;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;headers title="All header fields of the message">
+<man_syntax>
+mapping(string:string) msg-&gt;headers;
+</man_syntax>
+<man_description>
 This mapping contains all the headers of the message.  The key is the
 header name (in lower case) and the value is the header value.
 Although the mapping contains all headers, some particular headers get
@@ -7544,116 +7514,84 @@ this mapping.  These fields are currently:
 </ul>
 The contents of these fields can be accessed and/or modified through a set
 of variables and methods available for this purpose.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>,
-<link to=MIME.Message.subtype>MIME.Message-&gt;subtype</link>,
-<link to=MIME.Message.charset>MIME.Message-&gt;charset</link>,
-<link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link>,
-<link to=MIME.Message.transfer_encoding>MIME.Message-&gt;transfer_encoding</link>,
-<link to=MIME.Message.params>MIME.Message-&gt;params</link>,
-<link to=MIME.Message.disposition>MIME.Message-&gt;disposition</link>,
-<link to=MIME.Message.disp_params>MIME.Message-&gt;disp_params</link>,
-<link to=MIME.Message.setencoding>MIME.Message-&gt;setencoding</link>,
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>,
-<link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link>,
-<link to=MIME.Message.setcharset>MIME.Message-&gt;setcharset</link>,
-<link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;type, MIME.Message-&gt;subtype, MIME.Message-&gt;charset,
+MIME.Message-&gt;boundary, MIME.Message-&gt;transfer_encoding,
+MIME.Message-&gt;params, MIME.Message-&gt;disposition,
+MIME.Message-&gt;disp_params, MIME.Message-&gt;setencoding,
+MIME.Message-&gt;setparam, MIME.Message-&gt;setdisp_param,
+MIME.Message-&gt;setcharset, MIME.Message-&gt;setboundary
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.params>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;params</tt> - Content-Type parameters
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mapping(string:string) msg-&gt;params;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;params title="Content-Type parameters">
+<man_syntax>
+mapping(string:string) msg-&gt;params;
+</man_syntax>
+<man_description>
 A mapping containing all the additional parameters to the
 <tt>Content-Type</tt> header.  Some of these parameters have fields of their
 own, which should be accessed instead of this mapping wherever applicable.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.charset>MIME.Message-&gt;charset</link>,
-<link to=MIME.Message.boundary>MIME.Message-&gt;boundary</link>,
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;charset, MIME.Message-&gt;boundary, MIME.Message-&gt;setparam
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.subtype>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;subtype</tt> - The subtype attribute of the Content-Type header
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string msg-&gt;subtype;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;subtype title="The subtype attribute of the Content-Type header">
+<man_syntax>
+string msg-&gt;subtype;
+</man_syntax>
+<man_description>
 The <tt>Content-Type</tt> header contains a type, a subtype, and optionally
 some parameters.  This field contains the subtype attribute extracted from the
 header.  If there is no <tt>Content-Type</tt> header, the value of this field
 is <tt>"plain"</tt>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.type>MIME.Message-&gt;type</link>,
-<link to=MIME.Message.params>MIME.Message-&gt;params</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;type, MIME.Message-&gt;params
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.transfer_encoding>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;transfer_encoding</tt> - Body encoding method
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string msg-&gt;transfer_encoding;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;transfer_encoding title="Body encoding method">
+<man_syntax>
+string msg-&gt;transfer_encoding;
+</man_syntax>
+<man_description>
 The contents of the <tt>Content-Transfer-Encoding</tt> header.  If no
 <tt>Content-Transfer-Encoding</tt> header is given, this field is <tt>0</tt>.
 Transfer encoding and decoding is done transparently by the module, so this
 field should be interesting only to applications wishing to do auto conversion
 of certain transfer encodings.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setencoding>MIME.Message-&gt;setencoding</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;setencoding
+</man_see>
+</variable>
 
 <hr newpage>
-<anchor name=MIME.Message.type>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;type</tt> - The type attribute of the Content-Type header
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string msg-&gt;type;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<variable name=MIME.Message-&gt;type title="The type attribute of the Content-Type header">
+<man_syntax>
+string msg-&gt;type;
+</man_syntax>
+<man_description>
 The <tt>Content-Type</tt> header contains a type, a subtype, and optionally
 some parameters.  This field contains the type attribute extracted from the
 header.  If there is no <tt>Content-Type</tt> header, the value of this field
 is <tt>"text"</tt>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.subtype>MIME.Message-&gt;subtype</link>,
-<link to=MIME.Message.params>MIME.Message-&gt;params</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;subtype, MIME.Message-&gt;params
+</man_see>
+</variable>
 
 <hr newpage>
 </section>
@@ -7661,24 +7599,20 @@ is <tt>"text"</tt>.
 <section title="Public methods">
 
 <hr newpage>
-<anchor name=MIME.Message.cast>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;cast</tt> - Encode message into byte stream
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string (string )<i>MIME.Message</i>;<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;cast title="Encode message into byte stream">
+<man_syntax>
+string (string )<i>MIME.Message</i>;
+</man_syntax>
+<man_description>
 Casting the message object to a string will yield a byte stream suitable
 for transmitting the message over protocols such as ESMTP and NNTP.
 The body will be encoded using the current transfer encoding, and subparts
 of a multipart will be collected recursively.  If the message is a multipart
 and no boundary string has been set, one is generated using
 <link to=MIME.generate_boundary>generate_boundary</link>.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
+</man_description>
+<man_example>
 <pre>
 > object msg = MIME.Message( "Hello, world!",
         ([ "MIME-Version" : "1.0",
@@ -7693,30 +7627,22 @@ MIME-Version: 1.0
  
 SGVsbG8sIHdvcmxkIQ==
 </pre>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.create>MIME.Message-&gt;create</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+MIME.Message-&gt;create
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;create</tt> - Create a Message object
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object MIME.Message(void | string <i>message</i>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-void | mapping(string:string) <i>headers</i>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+<method name=MIME.Message-&gt;create title="Create a Message object">
+<man_syntax>
+object MIME.Message(void | string <i>message</i>,<br>
+<dl><dt><dd>void | mapping(string:string) <i>headers</i>,<br>
 void | array(object) <i>parts</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</dl>
+</man_syntax>
+<man_description>
 There are several ways to call the constructor of the Message class;
 <ul>
 <li>With zero arguments, you will get a dummy message without either headers
@@ -7730,8 +7656,8 @@ this mapping are not case-sensitive.  If the given headers indicate that the
 message should be of type multipart, an array of Message objects constituting
 the subparts should be given as a third argument.
 </ul>
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
+</man_description>
+<man_example>
 <pre>
 > object msg = MIME.Message( "Hello, world!",
         ([ "MIME-Version" : "1.0",
@@ -7740,89 +7666,69 @@ Result: object
 > msg->charset;
 Result: iso-8859-1
 </pre>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.cast>MIME.Message-&gt;cast</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+MIME.Message-&gt;cast
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.getdata>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;getdata</tt> - Obtain raw body data
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string getdata();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;getdata title="Obtain raw body data">
+<man_syntax>
+string getdata();
+</man_syntax>
+<man_description>
 This method returns the raw data of the message body entity.  The
 <link to=MIME.Message.type>type</link> and <link to=MIME.Message.subtype>subtype</link> attributes
 indicate how this data should be interpreted.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getencoded>MIME.Message-&gt;getencoded</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;getencoded
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.getencoded>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;getencoded</tt> - Obtain encoded body data
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string getencoded();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;getencoded title="Obtain encoded body data">
+<man_syntax>
+string getencoded();
+</man_syntax>
+<man_description>
 This method returns the data of the message body entity, encoded using the
 current transfer encoding.  You should never have to call this function.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getdata>MIME.Message-&gt;getdata</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;getdata
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.get_filename>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;get_filename</tt> - Get supplied filename for body data
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string get_filename();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;get_filename title="Get supplied filename for body data">
+<man_syntax>
+string get_filename();
+</man_syntax>
+<man_description>
 This method tries to find a suitable filename should you want to save the
 body data to disk.  It will examine the <tt>filename</tt> attribute of the
 <tt>Content-Disposition</tt> header, and failing that the <tt>name</tt>
 attribute of the <tt>Content-Type</tt> header.  If neither attribute is set,
 the method returns 0.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 An interactive application should always query the user for the actual
 filename to use.  This method may provide a reasonable default though.
-<p>
-</dl>
-</anchor>
+</man_note>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.is_partial>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;is_partial</tt> - Identify <tt>message/partial</tt> message
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string|int) is_partial();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;is_partial title="Identify <tt>message/partial</tt> message">
+<man_syntax>
+array(string|int) is_partial();
+</man_syntax>
+<man_description>
 If this message is a part of a fragmented message (i.e. has a Content-Type
 of <tt>message/partial</tt>), an array with three elements is returned.
 The first element is an identifier string.  This string should be used to
@@ -7833,148 +7739,118 @@ The third element of the array is either the total number of fragments
 that the original message has been split into, or 0 of this information
 was not available.  If this method is called in a message that is not
 a part of a fragmented message, it will return 0.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.reconstruct_partial>MIME.reconstruct_partial</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.reconstruct_partial
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.setboundary>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;setboundary</tt> - Set boundary parameter
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setboundary(string <i>boundary</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;setboundary title="Set boundary parameter">
+<man_syntax>
+void setboundary(string <i>boundary</i>);
+</man_syntax>
+<man_description>
 Sets the <tt>boundary</tt> parameter of the <tt>Content-Type</tt> header.
 This is equivalent of calling
 <tt>msg-&gt;setparam("boundary", <i>boundary</i>)</tt>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;setparam
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.setcharset>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;setcharset</tt> - Set charset parameter
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setcharset(string <i>charset</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;setcharset title="Set charset parameter">
+<man_syntax>
+void setcharset(string <i>charset</i>);
+</man_syntax>
+<man_description>
 Sets the <tt>charset</tt> parameter of the <tt>Content-Type</tt> header.
 This is equivalent of calling
 <tt>msg->setparam("charset", <i>charset</i>)</tt>.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;setparam
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.setdata>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;setdata</tt> - Replace body data
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setdata(string <i>data</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;setdata title="Replace body data">
+<man_syntax>
+void setdata(string <i>data</i>);
+</man_syntax>
+<man_description>
 Replaces the body entity of the data with a new piece of raw data.
 The new data should comply to the format indicated by the
 <link to=MIME.Message.type>type</link> and <link to=MIME.Message.subtype>subtype</link> attributes.
 Do not use this method unless you know what you are doing.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getdata>MIME.Message-&gt;getdata</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;getdata
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.setdisp_param>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;setdisp_param</tt> - Set Content-Disposition parameters
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setdisp_param(string <i>param</i>, string <i>value</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;setdisp_param title="Set Content-Disposition parameters">
+<man_syntax>
+void setdisp_param(string <i>param</i>, string <i>value</i>);
+</man_syntax>
+<man_description>
 Set or modify the named parameter of the <tt>Content-Disposition</tt> header.
 A common parameters is e.g. <tt>filename</tt>.  It is not allowed to modify
 the <tt>Content-Disposition</tt> header directly, please use this
 function instead.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setparam>MIME.Message-&gt;setparam</link>,
-<link to=MIME.Message.get_filename>MIME.Message-&gt;get_filename</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;setparam, MIME.Message-&gt;get_filename
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.setencoding>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;setencoding</tt> - Set transfer encoding for message body
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setencoding(string <i>encoding</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;setencoding title="Set transfer encoding for message body">
+<man_syntax>
+void setencoding(string <i>encoding</i>);
+</man_syntax>
+<man_description>
 Select a new transfer encoding for this message.  The
 <tt>Content-Transfer-Encoding</tt> header will be modified accordingly,
 and subsequent calls to <tt>getencoded</tt> will produce data encoded using
 the new encoding.  See <link to=MIME.encode>encode</link> for a list of valid
 encodings.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.getencoded>MIME.Message-&gt;getencoded</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;getencoded
+</man_see>
+</method>
 
 <hr newpage>
-<anchor name=MIME.Message.setparam>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.Message-&gt;setparam</tt> - Set Content-Type parameters
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void setparam(string <i>param</i>, string <i>value</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=MIME.Message-&gt;setparam title="Set Content-Type parameters">
+<man_syntax>
+void setparam(string <i>param</i>, string <i>value</i>);
+</man_syntax>
+<man_description>
 Set or modify the named parameter of the <tt>Content-Type</tt> header.
 Common parameters include <tt>charset</tt> for text messages, and
 <tt>boundary</tt> for multipart messages.  It is not allowed to modify
 the <tt>Content-Type</tt> header directly, please use this function instead.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.setcharset>MIME.Message-&gt;setcharset</link>,
-<link to=MIME.Message.setboundary>MIME.Message-&gt;setboundary</link>,
-<link to=MIME.Message.setdisp_param>MIME.Message-&gt;setdisp_param</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;setcharset, MIME.Message-&gt;setboundary,
+MIME.Message-&gt;setdisp_param
+</man_see>
+</method>
+
 <hr newpage>
+
 </section>
+</class>
 </section>
 </section>
 </module>
