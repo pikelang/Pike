@@ -40,7 +40,7 @@ class conn {
   "<hr><it>/nisse</it></body></html>\n";
   int index = 0;
 
-  void do_write()
+  void write_callback()
   {
     if (index < strlen(message))
     {
@@ -57,20 +57,15 @@ class conn {
   void read_callback(mixed id, string data)
   {
 #ifdef SSL3_DEBUG
-    werror("Recieved: '" + data + "'\n");
+    werror("Received: '" + data + "'\n");
 #endif
-    do_write();
-  }
-
-  void write_callback(mixed id)
-  {
-    do_write();
+    sslfile->set_write_callback(write_callback);
   }
 
   void create(object f)
   {
     sslfile = f;
-    sslfile->set_nonblocking(read_callback, write_callback, 0);
+    sslfile->set_nonblocking(read_callback, 0, 0);
   }
 }
 
@@ -161,7 +156,7 @@ Version ::= INTEGER
 void my_accept_callback(object f)
 {
   werror("Accept!\n");
-  conn(f->accept());
+  conn(accept());
 }
 
 int main()
@@ -203,6 +198,6 @@ void create()
 {
 #ifdef SSL3_DEBUG
   werror("https->create\n");
-#ifdef SSL3_DEBUG
+#endif
   sslport::create();
 }
