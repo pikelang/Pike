@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.338 2000/01/10 00:48:44 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.339 2000/01/16 00:31:19 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -326,7 +326,7 @@ AC_SUBST(LD)
 
 # Some sanity checks.
 
-if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" -a "`uname -p`" = "sparc"; then
+if test "$GCC" = "yes" -a "$pike_cv_sys_os" = "Solaris" && test "`uname -p`" = "sparc"; then
   # Solaris/sparc:
   #   Check that gnu ld isn't used.
   #   It's usually hidden in $prefix/sparc-sun-solaris2.?/bin/.
