@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.370 2001/09/10 20:47:35 hubbe Exp $");
+RCSID("$Id: program.c,v 1.371 2001/09/20 19:09:37 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2132,8 +2132,10 @@ typedef void (*oldhandlertype)(struct object *);
 static void compat_event_handler(int e)
 {
   oldhandlertype handler;
+  debug_malloc_touch(Pike_fp->current_object);
   handler=((oldhandlertype *)Pike_fp->context.prog->program)[e];
   if(handler) handler(Pike_fp->current_object);
+  debug_malloc_touch(Pike_fp->current_object);
 }
 
 static void add_compat_event_handler(void)

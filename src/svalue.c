@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.122 2001/09/10 22:51:18 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.123 2001/09/20 19:10:24 hubbe Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1144,6 +1144,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
       if(s->u.object->prog)
       {
 	int fun=FIND_LFUN(s->u.object->prog, LFUN__SPRINTF);
+	debug_malloc_touch(s->u.object->prog);
 	if(fun != -1 && Pike_interpreter.evaluator_stack)
 	{
 	  /* We require some tricky coding to make this work
@@ -1153,13 +1154,16 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	  string save_buffer=complex_free_buf();
 
 	  t_flag=0;
-	  
+
+	  debug_malloc_touch(s->u.object);
 
 	  push_int('O');
 	  push_constant_text("indent");
 	  push_int(indent);
 	  f_aggregate_mapping(2);					      
 	  safe_apply_low2(s->u.object, fun ,2,1);
+
+	  debug_malloc_touch(s->u.object);
 
 	  if(!IS_ZERO(sp-1))
 	  {
@@ -1219,6 +1223,8 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	    pop_stack();
 	    break;
 	  }
+
+	  debug_malloc_touch(save_buffer.str);
 
 	  init_buf_with_string(save_buffer);
 	  t_flag=save_t_flag;
