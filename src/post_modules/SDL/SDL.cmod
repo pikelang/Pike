@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.22 2004/04/06 12:52:52 nilsson Exp $
+|| $Id: SDL.cmod,v 1.23 2004/04/17 19:30:51 marcus Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.22 2004/04/06 12:52:52 nilsson Exp $");
+RCSID("$Id: SDL.cmod,v 1.23 2004/04/17 19:30:51 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -58,9 +58,13 @@ struct svalue _image_color_program = {
 #endif
 };
 
+#ifdef DYNAMIC_MODULE
 struct program *image_program;
 struct program *image_color_program;
-
+#else
+extern struct program *image_program;
+extern struct program *image_color_program;
+#endif
 
 static struct object *image_make_rgb_color(INT32 r,INT32 g,INT32 b)
 {
@@ -2772,6 +2776,7 @@ PIKE_MODULE_INIT
   
   init_sdl_constants();
    
+#ifdef DYNAMIC_MODULE
   push_text("Image.Image");
   SAFE_APPLY_MASTER("resolv", 1);
 
@@ -2789,6 +2794,7 @@ PIKE_MODULE_INIT
   image_color_program = program_from_svalue(&_image_color_program);
 
   Pike_sp--;
+#endif
 }
 
 PIKE_MODULE_EXIT
