@@ -1,4 +1,4 @@
-/* $Id: pattern.c,v 1.3 1996/12/10 00:40:08 law Exp $ */
+/* $Id: pattern.c,v 1.4 1996/12/10 01:42:49 law Exp $ */
 
 #include "global.h"
 
@@ -39,7 +39,7 @@ static unsigned short noise_p1[NOISE_PTS],noise_p2[NOISE_PTS];
 
 #define FRAC(X) ((X)-floor(X))
 
-static double noise(double Vx,double Vy,unsigned short *noise_p)
+static INLINE double noise(double Vx,double Vy,unsigned short *noise_p)
 {
    int Ax[3],Ay[3];
    int n,i,j;
@@ -75,7 +75,7 @@ static double noise(double Vx,double Vy,unsigned short *noise_p)
    return sum;
 }
 
-static double turbulence(double x,double y,int octaves)
+static INLINE double turbulence(double x,double y,int octaves)
 {
    double t=0;
    double mul=1;

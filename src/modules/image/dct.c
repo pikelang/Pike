@@ -1,4 +1,4 @@
-/* $Id: dct.c,v 1.1 1996/12/03 21:58:35 law Exp $ */
+/* $Id: dct.c,v 1.2 1996/12/10 01:42:42 law Exp $ */
 
 #include "global.h"
 
@@ -116,8 +116,8 @@ void image_dct(INT32 args)
    }
    fprintf(stderr,"\n");
 
-   dx=((double)THIS->xsize)/img->xsize;
-   dy=((double)THIS->ysize)/img->ysize;
+   dx=((double)(THIS->xsize-1))/(img->xsize);
+   dy=((double)(THIS->ysize-1))/(img->ysize);
 
    pix=img->img;
    for (y=0,yp=0; y<img->ysize; y++,yp+=dy)

@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.33 1996/12/05 23:50:51 law Exp $ */
+/* $Id: image.c,v 1.34 1996/12/10 01:42:44 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.33 1996/12/05 23:50:51 law Exp $");
+RCSID("$Id: image.c,v 1.34 1996/12/10 01:42:44 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1679,15 +1679,15 @@ void init_image_programs()
 		"function(:object)",0);
 
    add_function("`-",image_operator_minus,
-		"function(object:object)",0);
+		"function(object|array(int):object)",0);
    add_function("`+",image_operator_plus,
-		"function(object:object)",0);
+		"function(object|array(int):object)",0);
    add_function("`*",image_operator_multiply,
-		"function(object:object)",0);
+		"function(object|array(int):object)",0);
    add_function("`&",image_operator_minimum,
-		"function(object:object)",0);
+		"function(object|array(int):object)",0);
    add_function("`|",image_operator_maximum,
-		"function(object:object)",0);
+		"function(object|array(int):object)",0);
 		
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
