@@ -639,7 +639,7 @@ static void html_add_tag(INT32 args)
 {
    struct svalue s;
    check_all_args("add_tag",args,BIT_STRING,
-		  BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
+		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (sp[1-args].type == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
      if (!a->size ||
@@ -647,6 +647,8 @@ static void html_add_tag(INT32 args)
 	  a->item[0].type != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_tag", 1, "array with function as first element");
    }
+   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (THIS->maptag->refs>1)
    {
@@ -671,7 +673,7 @@ static void html_add_container(INT32 args)
 {
    struct svalue s;
    check_all_args("add_container",args,BIT_STRING,
-		  BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
+		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (sp[1-args].type == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
      if (!a->size ||
@@ -679,6 +681,8 @@ static void html_add_container(INT32 args)
 	  a->item[0].type != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_container", 1, "array with function as first element");
    }
+   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (THIS->mapcont->refs>1)
    {
@@ -701,7 +705,7 @@ static void html_add_container(INT32 args)
 static void html_add_entity(INT32 args)
 {
    check_all_args("add_entity",args,BIT_STRING,
-		  BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
+		  BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
    if (sp[1-args].type == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
      if (!a->size ||
@@ -709,6 +713,8 @@ static void html_add_entity(INT32 args)
 	  a->item[0].type != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_entity", 1, "array with function as first element");
    }
+   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
    if (THIS->mapentity->refs>1)
    {
@@ -733,7 +739,7 @@ static void html_add_quote_tag(INT32 args)
   struct svalue cb;
 
   check_all_args("add_quote_tag",args,BIT_STRING,
-		 BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,
+		 BIT_INT|BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,
 		 BIT_STRING|BIT_VOID,0);
    if (sp[1-args].type == T_ARRAY) {
      struct array *a = sp[1-args].u.array;
@@ -742,6 +748,8 @@ static void html_add_quote_tag(INT32 args)
 	  a->item[0].type != T_PROGRAM))
        SIMPLE_BAD_ARG_ERROR("add_quote_tag", 1, "array with function as first element");
    }
+   else if (sp[1-args].type == T_INT && sp[1-args].u.integer)
+     SIMPLE_BAD_ARG_ERROR("add_tag", 1, "zero, string, array or function");
 
   remove = IS_ZERO (sp+1-args);
   if (!remove && args < 3)
