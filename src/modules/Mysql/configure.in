@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.2 1997/04/03 18:07:16 grubba Exp $
+# $Id: configure.in,v 1.3 1998/01/24 23:10:03 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -171,7 +171,8 @@ if test x$with_mysql = xyes; then
   else
     AC_DEFINE(HAVE_MYSQL)
 
-    AC_CHECK_FUNCS(mysql_real_query mysql_fetch_lengths)
+    # Note: mysql_port isn't a function, but that shouldn't matter
+    AC_CHECK_FUNCS(mysql_real_query mysql_fetch_lengths mysql_port)
   fi
 else
   :
