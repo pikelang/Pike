@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.13 1999/03/20 21:04:51 marcus Exp $
+# $Id: configure.in,v 1.14 1999/06/01 21:09:03 marcus Exp $
 #
 # Configure script for the oracle module
 #
@@ -165,6 +165,77 @@ if test x$with_oracle = xyes; then
   rm -f conftest
   AC_CHECK_LIB(aio, aioread, [oracle_aio=-laio], [oracle_aio=""])
 
+  EXTRALDFLAGS=""
+
+  AC_MSG_CHECKING(if ld supports -Bsymbolic)
+  AC_CACHE_VAL(pike_cv_oracle_ld_bsymbolic, [
+    pike_cv_oracle_ld_bsymbolic=no
+    cat > conftest.$ac_ext <<EOF
+int foo(){ return 0; }
+EOF
+    if AC_TRY_EVAL(ac_compile); then
+      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -Bsymbolic]); then
+        if test -f conftest2.o; then
+          pike_cv_oracle_ld_bsymbolic=yes
+	else
+	  :
+	fi
+      else
+        :
+      fi
+    else
+      echo "configure: failed program was:" >&AC_FD_CC
+      cat conftest.$ac_ext >&AC_FD_CC
+    fi
+    rm -f conftest*
+  ])
+  AC_MSG_RESULT($pike_cv_oracle_ld_bsymbolic)
+
+  if test "x$pike_cv_oracle_ld_bsymbolic" = xyes; then
+    EXTRALDFLAGS="$EXTRALDFLAGS -Bsymbolic"
+  else
+    :
+  fi
+
+  AC_MSG_CHECKING(if ld supports -znodefs)
+  AC_CACHE_VAL(pike_cv_oracle_ld_znodefs, [
+    pike_cv_oracle_ld_znodefs=no
+    cat > conftest.$ac_ext <<EOF
+int foo(){ return 0; }
+EOF
+    if AC_TRY_EVAL(ac_compile); then
+
+      dnl  Some ld:s interpret -znodefs as "-z -n -o defs".
+      dnl  Check for such ld:s.
+
+      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -zoconftest3.o]) && \
+	  test -f conftest3.o; then
+	:
+      else
+        if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -znodefs]); then
+          if test -f conftest2.o; then
+            pike_cv_oracle_ld_znodefs=yes
+	  else
+	    :
+	  fi
+        else
+          :
+        fi
+      fi
+    else
+      echo "configure: failed program was:" >&AC_FD_CC
+      cat conftest.$ac_ext >&AC_FD_CC
+    fi
+    rm -f conftest*
+  ])
+  AC_MSG_RESULT($pike_cv_oracle_ld_znodefs)
+
+  if test "x$pike_cv_oracle_ld_bsymbolic$pike_cv_oracle_ld_znodefs" = xyesyes; then
+    EXTRALDFLAGS="$EXTRALDFLAGS -znodefs"
+  else
+    :
+  fi
+
   if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
 
     CPPFLAGS="-I$oracle_include_dir ${CPPFLAGS}"
@@ -179,7 +250,7 @@ if test x$with_oracle = xyes; then
     OLDLIBS=LIBS
     LIBS="$LIBS $ORACLE_LIBS"
     AC_CHECK_LIB(client, oopen, [
-      LDFLAGS="-Bsymbolic -znodefs $LDFLAGS"
+      LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
       AC_DEFINE(HAVE_ORACLE)
     ], [
       ORACLE_LIBS=""
