@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.215 1998/07/11 15:49:27 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.216 1998/07/15 20:18:26 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -411,12 +411,18 @@ if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
     `echo /usr/X11*/include | sort -r`
   do
     AC_MSG_CHECKING($d)
-    if test -d "$d/." ; then
-      AC_MSG_RESULT(added)
-      CPPFLAGS="${CPPFLAGS} -I$d"
-    else
-      AC_MSG_RESULT(no)
-    fi
+    case x$d in
+      x/usr/include | x/usr//include)
+      ;;
+      *)
+        if test -d "$d/." ; then
+          AC_MSG_RESULT(added)
+          CPPFLAGS="${CPPFLAGS} -I$d"
+        else
+          AC_MSG_RESULT(no)
+        fi
+      ;;
+    esac
   done
 else
   :
