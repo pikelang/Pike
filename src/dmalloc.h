@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dmalloc.h,v 1.42 2002/12/01 05:35:15 mast Exp $
+|| $Id: dmalloc.h,v 1.43 2003/02/21 17:27:38 mast Exp $
 */
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
@@ -74,14 +74,14 @@ char *dmalloc_find_name(void *p);
 #define strdup(x) debug_strdup((x), DMALLOC_LOCATION())
 #define DO_IF_DMALLOC(X) X
 #define DO_IF_NOT_DMALLOC(X)
-#define debug_malloc_touch(X) debug_malloc_update_location((X),DMALLOC_LOCATION())
-#define debug_malloc_pass(X) debug_malloc_update_location((X),DMALLOC_LOCATION())
-#define dmalloc_touch_struct_ptr(TYPE,X,MEMBER) ((TYPE)debug_malloc_update_location_ptr((X), ((ptrdiff_t)& (((TYPE)0)->MEMBER)), DMALLOC_LOCATION()))
+#define debug_malloc_touch(X) debug_malloc_update_location((void *)(X),DMALLOC_LOCATION())
+#define debug_malloc_pass(X) debug_malloc_update_location((void *)(X),DMALLOC_LOCATION())
+#define dmalloc_touch_struct_ptr(TYPE,X,MEMBER) ((TYPE)debug_malloc_update_location_ptr((void *)(X), ((ptrdiff_t)& (((TYPE)0)->MEMBER)), DMALLOC_LOCATION()))
 
 #define xalloc(X) ((void *)debug_malloc_pass(debug_xalloc(X)))
 #define xfree(X) debug_xfree(debug_malloc_pass((X)))
 void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
-#define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_update_location((X),DMALLOC_LOCATION()))
+#define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_update_location((void *)(X),DMALLOC_LOCATION()))
 void debug_malloc_dump_fd(int fd);
 #define dmalloc_touch_svalue(X) do { struct svalue *_tmp = (X); if ((X)->type <= MAX_REF_TYPE) { debug_malloc_touch(_tmp->u.refs); } } while(0)
 
