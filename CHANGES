@@ -14,7 +14,7 @@ o AutoDoc
     The major parts of Pike now has some sort of documentation on
     class and function level thanks to the AutoDoc system which has
     been deployed during the last year. Manual dumps are published on
-    http://pike.ida.liu.se/docs/reference/
+    http://pike.ida.liu.se/docs/reference/.
 
 o pike -x
     When starting pike with the -x parameter, the pike process will
@@ -105,7 +105,7 @@ o Automap
     syntax for map(), that can make code more readable in some situations.
     Summing up two arrays element by element using automap looks like this:
 
-        a[*] + b[*]; // the result has as many elements as the shortest array
+        a[*] + b[*]; // the result has as many elements as the shortest array.
 
     Multiplying all elements in a by a constant:
 
@@ -137,7 +137,7 @@ o Implicit lambda
        void do_something()
        {
          PushPop() {
-           glTranslate( ((1.0-0.08)-pcs)/2, 0.0, 0.0 );
+           glTranslate( ((1.0-0.08))/2, 0.0, 0.0 );
            draw_stuff();
          };
        }
@@ -297,7 +297,7 @@ o Math.Matrix
     Methods sum(), max(), min(), convolve() and dot_product() added.
     
 o Math.Transforms
-    Added support for FFT and iFFT.
+    Glue for supporting FFT and iFFT via libfftw and librfftw.
 
 o Math
     Added inf and nan constants.
@@ -359,7 +359,9 @@ o Stdio
     Added methods to Stdio.File: sync(), line_iterator()
 
 o Gz.File
-    Pike can now compress and decompress the Gzip format.
+    Pike can now compress and decompress the Gzip format. This is
+    still a bit experimental but the basic functions should work 
+    just fine.
 
 o Stdio.expand_symlinks(string path)
     Expands all symlinks along a path (returns 0 for broken links).
@@ -374,7 +376,7 @@ o Tools.PV
       > object i=Image.Image(32,32)->random();
       > Tools.PV(i);
 
-    The Pike Viewer tool is also accessible via "pike -x pv"
+    The Pike Viewer tool is also accessible via "pike -x pv".
 
 o Image.Dims
     Can extract the dimensions of an image with a minimal amount of
@@ -401,10 +403,10 @@ o Image.SVG
     library. Requires Gnome 2.
 
 o Image.Image 
-    Added two new methods: blur() and grey_blur()
+    Added two new methods: blur() and grey_blur().
 
 o Image.PVR
-    VQ compression/decompression added
+    VQ compression/decompression added.
 
 o Shuffler
 
@@ -574,8 +576,7 @@ o enum and typedef have implicit local binding
     enums and typedefs now always have static binding. In 7.2 they
     could sometimes be dynamically bound.
 
-o Image.Layer modes modified
-
+o Image.Layer modes modified.
     Alpha channel handling for modes add, subtract, multiply, divide,
     modulo, invsubtract, invdivide, invmodulo, difference, max, min,
     bitwise_and, bitwise_or, bitwise_xor, screen and overlay modified so
