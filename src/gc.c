@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.210 2003/03/29 22:46:45 mast Exp $
+|| $Id: gc.c,v 1.211 2003/03/30 01:34:53 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.210 2003/03/29 22:46:45 mast Exp $");
+RCSID("$Id: gc.c,v 1.211 2003/03/30 01:34:53 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -2525,8 +2525,7 @@ size_t do_gc(void *ignored, int explicit_call)
   start_allocs = num_allocs;
   num_allocs = 0;
 
-  /* Thread switches, object alloc/free and any reference changes are
-   * disallowed now. */
+  /* Object alloc/free and any reference changes are disallowed now. */
 
 #ifdef PIKE_DEBUG
   delayed_freed = weak_freed = checked = marked = cycle_checked = live_ref = 0;
@@ -2718,8 +2717,7 @@ size_t do_gc(void *ignored, int explicit_call)
     GC_VERBOSE_DO(fprintf(stderr, "| middletouch\n"));
   }
 
-  /* Thread switches, object alloc/free and reference changes are
-   * allowed again now. */
+  /* Object alloc/free and reference changes are allowed again now. */
 
   Pike_in_gc=GC_PASS_FREE;
 #ifdef PIKE_DEBUG
@@ -2737,10 +2735,13 @@ size_t do_gc(void *ignored, int explicit_call)
     unreferenced += gc_free_all_unreferenced_multisets();
   if (gc_internal_mapping)
     unreferenced += gc_free_all_unreferenced_mappings();
-  if (gc_internal_program)
-    unreferenced += gc_free_all_unreferenced_programs();
   if (gc_internal_object)
     unreferenced += gc_free_all_unreferenced_objects();
+  /* Note: gc_free_all_unreferenced_objects needs to have the programs
+   * around to handle the free (even when they aren't live). So it's
+   * necessary to free the objects before the programs. */
+  if (gc_internal_program)
+    unreferenced += gc_free_all_unreferenced_programs();
 
   /* We might occasionally get things to gc_delayed_free that the free
    * calls above won't find. They're tracked in this list. */

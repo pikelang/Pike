@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.627 2003/03/29 18:38:28 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.628 2003/03/30 01:34:53 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4331,6 +4331,25 @@ test_any([[
 
 test_do(add_constant("kablutt");)
 test_do(add_constant("blatinka");)
+
+  test_any([[{
+#if constant (_debug)
+    // Temporarily disable debug so we don't get references to p in
+    // the intepreter backlog.
+    int old_debug = _debug (0);
+#endif
+    object o = class {program p; object o;}();
+    class Resolver (mixed x) {mixed resolv (string id) {return x;}};
+    program p = compile ("constant o = foo;", Resolver (o));
+    o->p = p;
+    o->o = p();
+    gc();
+    o = p = 0;
+#if constant (_debug)
+    _debug (old_debug);
+#endif
+    return gc() > 0;
+  }]], 1)
 
   test_any([[{
     class Dead {object o;};
