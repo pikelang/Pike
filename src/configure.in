@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.622 2002/09/07 21:14:10 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.623 2002/09/09 13:41:38 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5549,7 +5549,9 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	  CCSHARED="-fPIC"
 	;;
 	*)
-	  CCSHARED="-fPIC"
+	  AC_SYS_COMPILER_FLAG(-fPIC, fPIC, CCSHARED, [
+	    AC_SYS_COMPILER_FLAG(-fpic, fpic, CCSHARED)
+	  ])
 	;;
       esac
     else
