@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.220 1999/11/01 15:15:09 mirar Exp $"]])
+test_true([["$Id: testsuite.in,v 1.221 1999/11/01 16:57:43 grubba Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -34,16 +34,20 @@ test_eq(-16, -0b10000)
 
 test_eval_error([[mixed x; return mkmapping(x,x)]])
 
-test_any([[int a=2147483648; a=a+17;  return 1]], 1)
-test_any([[int a=2147483648; a=a-17;  return 1]], 1)
-test_any([[int a=2147483648; a=a*17;  return 1]], 1)
-test_any([[int a=2147483648; a=a/17;  return 1]], 1)
-test_any([[int a=2147483648; a=a%17;  return 1]], 1)
-test_any([[int a=2147483648; a=a^17;  return 1]], 1)
-test_any([[int a=2147483648; a=a&17;  return 1]], 1)
-test_any([[int a=2147483648; a=a|17;  return 1]], 1)
-test_any([[int a=2147483648; a=a<<17; return 1]], 1)
-test_any([[int a=2147483648; a=a>>17; return 1]], 1)
+test_any([[int a=0xffffffff; return a+17]], 0x100000010)
+test_any([[int a=0xffffffff; return a-17]], 0xffffffee)
+test_any([[int a=0xffffffff; return a*17]], 0x10ffffffef)
+test_any([[int a=0xffffffff; return a^17]], 0xffffffee)
+test_any([[int a=0xffffffff; return a&17]], 17)
+test_any([[int a=0xffffffff; return a|17]], 0xffffffff)
+test_any([[int a=0xffffffff; return a<<17]], 0x1fffffffe0000)
+
+test_any([[ int a=0xffffffff; return a/17 ]],
+	 [[ (0xffffffff == -1)?-1:0x0f0f0f0f ]])
+test_any([[ int a=0xffffffff; return a%17 ]],
+	 [[ (0xffffffff == -1)?16:0 ]])
+test_any([[ int a=0xffffffff; return a>>17 ]],
+	 [[ (0xffffffff == -1)?-1:0x7fff ]])
 
 test_any([[return class Z {
 string bonk() { return "oiff"; }
