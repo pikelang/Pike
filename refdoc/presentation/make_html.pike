@@ -1192,7 +1192,7 @@ int main(int num, array args) {
     Node file = Node(XML_ELEMENT, "file", (["name":fn]), 0);
     file->add_child( chap );
 
-    Node top = Node(XML_ELEMENT, "manual", (["manual":"something"]), 0);
+    Node top = Node(XML_ELEMENT, "manual", ([]), 0);
     top->add_child( file );
     n = top;
   }
