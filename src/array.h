@@ -20,27 +20,12 @@ struct array
 			 * Bits can be set that don't exist in the array
 			 * though.
 			 */
-  TYPE_T array_type;	/* This is T_MIXED for a mixed array, or the type for
-			 * an array that can only contain one type.
-			 */
-  INT8 flags;		/* flags, like gc_cycle */
-};
-
-struct array_of_svalues
-{
-  struct array array;
+  INT16 flags;		/* flags, like gc_cycle */
   struct svalue item[1];
 };
 
-struct array_of_short_svalues
-{
-  struct array array;
-  union anything item[1];
-};
 
-#define ITEM(X) (((struct array_of_svalues *)(X))->item)
-#define SHORT_ITEM(X) (((struct array_of_short_svalues *)(X))->item)
-
+#define ITEM(X) ((X)->item)
 
 /* These are arguments for the function 'merge' which merges two sorted
  * set stored in arrays in the way you specify

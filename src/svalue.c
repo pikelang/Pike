@@ -139,47 +139,40 @@ void free_svalue(struct svalue *s)
  * We put this routine here so the compiler can optimize the call
  * inside the loop if it wants to
  */
-void free_svalues(struct svalue *s,INT32 num)
+void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
 {
-  while(--num >= 0) free_svalue(s++);
-}
-
-void free_short_svalues(union anything *s,INT32 num,TYPE_T type)
-{
-  union anything tmp;
-#ifdef DEBUG
-  int e;
-  for(e=0;e<num;e++)
-    check_refs2(s+e,type);
-#endif
-
-#define PRE \
-  for(;--num >= 0;s++) { \
-    if(s->refs && --*(s->refs) <= 0) { \
-      tmp=*s; \
-      s->refs=0
-
-#define POST }}break
-
-
-
-  switch(type)
+  switch(type_hint)
   {
-    case T_ARRAY: PRE; really_free_array(tmp.array); POST;
-    case T_MAPPING: PRE; really_free_mapping(tmp.mapping); POST;
-    case T_LIST: PRE; really_free_list(tmp.list); POST;
-    case T_OBJECT: PRE; really_free_object(tmp.object); POST;
-    case T_PROGRAM: PRE; really_free_program(tmp.program); POST;
-    case T_STRING: PRE; really_free_string(tmp.string); POST;
+  case 0:
+  case BIT_INT:
+  case BIT_FLOAT:
+  case BIT_FLOAT | BIT_INT:
+    return;
 
-    case T_INT:
-    case T_FLOAT:
-      break;
+#define DOTYPE(X,Y,Z) case X:while(--num>=0)if(s->u.refs--==0) Y(s->u.Z); return
+    DOTYPE(BIT_STRING, really_free_string, string);
+    DOTYPE(BIT_ARRAY, really_free_array, array);
+    DOTYPE(BIT_MAPPING, really_free_mapping, mapping);
+    DOTYPE(BIT_LIST, really_free_list, list);
+    DOTYPE(BIT_OBJECT, really_free_object, object);
+    DOTYPE(BIT_PROGRAM, really_free_program, program);
 
-#ifdef DEBUG
-    default:
-      fatal("Bad type in free_short_svalues.\n");
-#endif
+  case BIT_FUNCTION:
+    while(--num>=0)
+    {
+      if(s->u.refs--==0)
+      {
+	if(s->subtype == -1)
+	  really_free_callable(s->u.efun);
+	else
+	  really_free_object(s->u.object);
+      }
+    }
+    return
+
+#undef DOTYPE
+  default:
+    while(--num >= 0) free_svalue(s++);
   }
 }
 
@@ -196,11 +189,29 @@ void assign_svalue_no_free(struct svalue *to,
 
 void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
-			    INT32 num)
+			    INT32 num,
+			    INT32 type_hint)
 {
+  if((type_hint & ~(BIT_INT | BIT_FLOAT))==0)
+  {
+    MEMCPY((char *)to, (char *)from, sizeof(svalue) * num);
+    return;
+  }
+
+  if((type_hint & (BIT_INT | BIT_FLOAT)==0))
+  {
+    while(--num > 0)
+    {
+      struct svalue tmp;
+      tmp=*(from++);
+      *(to++)=tmp;
+      tmp.u.refs++;
+    }
+    return;
+  }
+
   while(--num >= 0) assign_svalue_no_free(to++,from++);
 }
-
 
 void assign_svalue(struct svalue *to, struct svalue *from)
 {
@@ -259,14 +270,6 @@ void assign_to_short_svalue_no_free(union anything *u,
   }
 }
 
-void assign_to_short_svalues_no_free(union anything *u,
-				     TYPE_T type,
-				     struct svalue *s,
-				     INT32 num)
-{
-  while(--num >= 0) assign_to_short_svalue_no_free(u++,type,s++);
-}
-
 
 void assign_from_short_svalue_no_free(struct svalue *s,
 					     union anything *u,
@@ -289,44 +292,6 @@ void assign_from_short_svalue_no_free(struct svalue *s,
   }else{
     s->type=type;
     s->u=*u;
-  }
-}
-
-void assign_from_short_svalues_no_free(struct svalue *s,
-				       union anything *u,
-				       TYPE_T type,
-				       INT32 num)
-{
-  check_type(type);
-    
-  if(type <= MAX_REF_TYPE)
-  {
-    while(--num >= 0)
-    {
-      check_refs2(u,type);
-
-      s->u=*u;
-      if(u->refs)
-      {
-	s->type=type;
-	u->refs[0]++;
-      }else{
-	s->type=T_INT;
-	s->subtype=NUMBER_NUMBER;
-      }
-      s++;
-      u++;
-    }
-  }
-  else
-  {
-    while(--num >= 0)
-    {
-      s->type=type;
-      s->u=*u;
-      s++;
-      u++;
-    }
   }
 }
 
@@ -357,28 +322,6 @@ void assign_short_svalue(union anything *to,
     if(tmp.refs) tmp.refs[0]++;
   }else{
     *to = *from;
-  }
-}
-
-void assign_short_svalues_no_free(union anything *to,
-				 union anything *from,
-				 TYPE_T type,
-				 INT32 num)
-{
-  union anything tmp;
-  check_type(type);
-
-  if(type <= MAX_REF_TYPE)
-  {
-    while(--num >= 0)
-    {
-      check_refs2(from,type);
-
-      *(to++) = tmp = *(from++);
-      if(tmp.refs) tmp.refs[0]++;
-    }
-  }else{
-    MEMCPY((char *)to, (char *)from, num*sizeof(union anything *));
   }
 }
 
@@ -683,51 +626,6 @@ void copy_svalues_recursively_no_free(struct svalue *to,
     }
     to++;
     from++;
-  }
-}
-
-
-void copy_short_svalues_recursively_no_free(union anything *to,
-					    union anything *from,
-					    TYPE_T type,
-					    INT32 num,
-					    struct processing *p)
-{
-  check_type(type);
-  check_refs2(from,type);
-
-  switch(type)
-  {
-  default:
-    assign_short_svalues_no_free(to,from,type,num);
-    break;
-
-  case T_ARRAY:
-    while(--num >= 0)
-    {
-      to->array=from->array?copy_array_recursively(from->array,p):0;
-      from++;
-      to++;
-    }
-    break;
-
-  case T_MAPPING:
-    while(--num >= 0)
-    {
-      to->mapping=from->mapping?copy_mapping_recursively(from->mapping,p):0;
-      from++;
-      to++;
-    }
-    break;
-
-  case T_LIST:
-    while(--num >= 0)
-    {
-      to->list=from->list?copy_list_recursively(from->list,p):0;
-      from++;
-      to++;
-    }
-    break;
   }
 }
 

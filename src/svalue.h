@@ -124,42 +124,30 @@ do{ \
 /* Prototypes begin here */
 void free_short_svalue(union anything *s,TYPE_T type);
 void free_svalue(struct svalue *s);
-void free_svalues(struct svalue *s,INT32 num);
-void free_short_svalues(union anything *s,INT32 num,TYPE_T type);
+void free_svalues(struct svalue *s,INT32 num, INT32 type_hint);
 void assign_svalue_no_free(struct svalue *to,
 			   struct svalue *from);
 void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
-			    INT32 num);
+			    INT32 num,
+			    INT32 type_hint);
 void assign_svalue(struct svalue *to, struct svalue *from);
 void assign_svalues(struct svalue *to, struct svalue *from, INT32 num);
 void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    struct svalue *s);
 void assign_to_short_svalue_no_free(union anything *u,
-					   TYPE_T type,
-					   struct svalue *s);
-void assign_to_short_svalues_no_free(union anything *u,
-				     TYPE_T type,
-				     struct svalue *s,
-				     INT32 num);
+				    TYPE_T type,
+				    struct svalue *s);
 void assign_from_short_svalue_no_free(struct svalue *s,
 					     union anything *u,
 					     TYPE_T type);
-void assign_from_short_svalues_no_free(struct svalue *s,
-				       union anything *u,
-				       TYPE_T type,
-				       INT32 num);
 void assign_short_svalue_no_free(union anything *to,
 				 union anything *from,
 				 TYPE_T type);
 void assign_short_svalue(union anything *to,
 			 union anything *from,
 			 TYPE_T type);
-void assign_short_svalues_no_free(union anything *to,
-				 union anything *from,
-				 TYPE_T type,
-				 INT32 num);
 int is_eq(struct svalue *a, struct svalue *b);
 int low_is_equal(struct svalue *a,
 		 struct svalue *b,
@@ -177,11 +165,6 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct svalue *from,
 				      INT32 num,
 				      struct processing *p);
-void copy_short_svalues_recursively_no_free(union anything *to,
-					    union anything *from,
-					    TYPE_T type,
-					    INT32 num,
-					    struct processing *p);
 void check_short_svalue(union anything *u,TYPE_T type);
 void check_svalue(struct svalue *s);
 /* Prototypes end here */
