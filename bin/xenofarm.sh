@@ -27,17 +27,6 @@ xenofarm_build() {
   $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
-
-  log_start verify
-  $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
-    build/xenofarm/verifylog.txt 2>&1
-  log_end $?
-  [ $LASTERR = 0 ] || return 1
-
-  log_start export
-  $MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
-  log_end $?
-  [ $LASTERR = 0 ] || return 1
 }
 
 
@@ -49,6 +38,17 @@ log "FORMAT 2"
 log_start build
 xenofarm_build
 log_end $?
+
+log_start verify
+$MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
+  build/xenofarm/verifylog.txt 2>&1
+log_end $?
+[ $LASTERR = 0 ] || return 1
+
+log_start export
+$MAKE $MAKE_FLAGS bin_export > build/xenofarm/exportlog.txt 2>&1
+log_end $?
+[ $LASTERR = 0 ] || return 1
 
 log_start response_assembly
   cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt
