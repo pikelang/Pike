@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.609 2002/08/21 10:55:40 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.610 2002/08/21 11:53:04 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -610,7 +610,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
     ;;
   esac
 ])
-case "pike_cv_run_path_method" in
+case "$pike_cv_run_path_method" in
   rpath)
     AC_DEFINE(USE_RPATH)
     AC_MSG_RESULT([use -rpath])
