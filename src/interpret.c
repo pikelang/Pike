@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.174 2000/11/20 01:59:20 mast Exp $");
+RCSID("$Id: interpret.c,v 1.175 2000/12/01 01:14:58 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -114,7 +114,7 @@ static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazon
 }
 #endif
 
-void init_interpreter(void)
+PMOD_EXPORT void init_interpreter(void)
 {
 #ifdef USE_MMAP_FOR_STACK
   static int fd = -1;
@@ -1643,7 +1643,7 @@ void slow_check_stack(void)
 }
 #endif
 
-void cleanup_interpret(void)
+PMOD_EXPORT void cleanup_interpret(void)
 {
 #ifdef PIKE_DEBUG
   int e;

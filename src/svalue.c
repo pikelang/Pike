@@ -24,7 +24,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.87 2000/08/16 22:03:41 mast Exp $");
+RCSID("$Id: svalue.c,v 1.88 2000/12/01 01:15:01 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1238,7 +1238,7 @@ void debug_check_svalue(struct svalue *s)
 
 #ifdef PIKE_DEBUG
 /* NOTE: Must handle num being negative. */
-void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
+PMOD_EXPORT void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
 {
   ptrdiff_t e;
 
@@ -1312,7 +1312,7 @@ void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num)
 
 #define SET_SUB_SHORT_SVALUE(V)
 
-void real_gc_check_svalues(struct svalue *s, size_t num)
+PMOD_EXPORT void real_gc_check_svalues(struct svalue *s, size_t num)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
@@ -1354,7 +1354,7 @@ void gc_check_weak_svalues(struct svalue *s, size_t num)
 #endif
 }
 
-void real_gc_check_short_svalue(union anything *u, TYPE_T type)
+PMOD_EXPORT void real_gc_check_short_svalue(union anything *u, TYPE_T type)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
@@ -1459,7 +1459,7 @@ void gc_check_weak_short_svalue(union anything *u, TYPE_T type)
 #define DO_MARK_STRING(U)						\
       DO_IF_DEBUG(if (U.refs && d_flag) gc_mark(U.string))
 
-TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
+PMOD_EXPORT TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num)
 {
   TYPE_FIELD t = 0;
   int freed = 0;
@@ -1524,7 +1524,7 @@ int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
 #define GC_DO_CYCLE_CHECK(U, TN) PIKE_CONCAT(gc_cycle_check_, TN)(U.TN, 0)
 #define GC_DO_CYCLE_CHECK_WEAK(U, TN) PIKE_CONCAT(gc_cycle_check_, TN)(U.TN, 1)
 
-TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
+PMOD_EXPORT TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num)
 {
   TYPE_FIELD t = 0;
   int freed = 0;
@@ -1558,7 +1558,7 @@ TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
   return freed ? t : 0;
 }
 
-int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
+PMOD_EXPORT int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type)
 {
   int freed = 0;
   debug_malloc_touch(u);

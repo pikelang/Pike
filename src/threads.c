@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.145 2000/11/20 01:20:26 mast Exp $");
+RCSID("$Id: threads.c,v 1.146 2000/12/01 01:15:02 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -208,7 +208,7 @@ THREAD_T debug_locking_thread;
 PMOD_EXPORT MUTEX_T interpreter_lock;
 MUTEX_T thread_table_lock, interleave_lock;
 struct program *mutex_key = 0;
-struct program *thread_id_prog = 0;
+PMOD_EXPORT struct program *thread_id_prog = 0;
 struct program *thread_local_prog = 0;
 #ifdef POSIX_THREADS
 pthread_attr_t pattr;
@@ -414,7 +414,7 @@ static void dumpmem(char *desc, void *x, int size)
 #endif
 
 
-void thread_table_insert(struct object *o)
+PMOD_EXPORT void thread_table_insert(struct object *o)
 {
   struct thread_state *s = OBJ2THREAD(o);
   unsigned INT32 h = thread_table_hash(&s->id);
@@ -439,7 +439,7 @@ void thread_table_insert(struct object *o)
   mt_unlock( & thread_table_lock );  
 }
 
-void thread_table_delete(struct object *o)
+PMOD_EXPORT void thread_table_delete(struct object *o)
 {
   struct thread_state *s = OBJ2THREAD(o);
 /*  dumpmem("thread_table_delete",&s->id, sizeof(THREAD_T)); */
@@ -734,7 +734,7 @@ void f_thread_set_concurrency(INT32 args)
 }
 #endif
 
-void f_this_thread(INT32 args)
+PMOD_EXPORT void f_this_thread(INT32 args)
 {
   pop_n_elems(args);
   ref_push_object(Pike_interpreter.thread_id);
@@ -1124,7 +1124,7 @@ static void thread_was_checked(struct object *o)
 #endif
 }
 
-void f_thread_local(INT32 args)
+PMOD_EXPORT void f_thread_local(INT32 args)
 {
   static INT32 thread_local_id = 0;
 

@@ -419,6 +419,11 @@ else
   :
 fi
 
+if test x"$pike_cv_sys_os" = xWindows_NT ; then
+  JAVA_LIBS="-lkernel32 -lws2_32 -ladvapi32 $JAVA_LIBS"
+fi
+
+
 LIBPATH="$OLD_LIBPATH"
 
 AC_SUBST(LINKER_OPTIONS)

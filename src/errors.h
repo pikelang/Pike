@@ -2,7 +2,7 @@
 
 #ifdef ERR_DECLARE
 #define DECLARE_ERROR(NAME, INHERIT, DECL) \
-struct program *PIKE_CONCAT(NAME,_error_program); \
+PMOD_EXPORT struct program *PIKE_CONCAT(NAME,_error_program); \
 ptrdiff_t PIKE_CONCAT(NAME,_error_offset); 
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME) TYPE NAME ;

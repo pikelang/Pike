@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.95 2000/11/29 21:22:21 hubbe Exp $");
+RCSID("$Id: array.c,v 1.96 2000/12/01 01:14:56 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1013,7 +1013,7 @@ PMOD_EXPORT struct array *compact_array(struct array *v) { return v; }
  * Get a pointer to the 'union anything' specified IF it is of the specified
  * type. The 'union anything' may be changed, but not the type.
  */
-union anything *low_array_get_item_ptr(struct array *a,
+PMOD_EXPORT union anything *low_array_get_item_ptr(struct array *a,
 				       INT32 ind,
 				       TYPE_T t)
 {
@@ -1027,7 +1027,7 @@ union anything *low_array_get_item_ptr(struct array *a,
  * The differance between this routine and the one above is that this takes
  * the index as an svalue.
  */
-union anything *array_get_item_ptr(struct array *a,
+PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
 				   struct svalue *ind,
 				   TYPE_T t)
 {

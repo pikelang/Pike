@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.141 2000/10/12 01:00:41 mast Exp $");
+RCSID("$Id: gc.c,v 1.142 2000/12/01 01:14:57 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -948,7 +948,7 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
 
 #endif /* PIKE_DEBUG */
 
-INT32 real_gc_check(void *a)
+PMOD_EXPORT INT32 real_gc_check(void *a)
 {
   struct marker *m;
   INT32 ret;
@@ -1287,7 +1287,7 @@ int gc_mark(void *a)
   }
 }
 
-void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak)
+PMOD_EXPORT void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak)
 {
   struct gc_frame *l = alloc_gc_frame();
 #ifdef PIKE_DEBUG

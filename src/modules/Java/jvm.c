@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.28 2000/10/20 00:14:12 marcus Exp $
+ * $Id: jvm.c,v 1.29 2000/12/01 01:15:04 hubbe Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.28 2000/10/20 00:14:12 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.29 2000/12/01 01:15:04 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -136,6 +136,7 @@ struct att_storage {
 #define THIS_ATT ((struct att_storage *)(Pike_fp->current_storage))
 #endif /* _REENTRANT */
 
+#include "module_magic.h"
 
 /*
 
@@ -1716,7 +1717,6 @@ static void native_dispatch(struct native_method_context *ctx,
 			    JNIEnv *env, jclass cls, void *args,
 			    jvalue *rc)
 {
-  extern struct program *thread_id_prog;
   struct thread_state *state;
 
   if((state = thread_state_for_id(th_self()))!=NULL) {

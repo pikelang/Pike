@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.152 2000/11/01 23:31:28 grubba Exp $");
+RCSID("$Id: object.c,v 1.153 2000/12/01 01:15:00 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -89,7 +89,7 @@ static struct object *gc_mark_object_pos = 0;
 }while(0)
 BLOCK_ALLOC(object, 511)
 
-struct object *low_clone(struct program *p)
+PMOD_EXPORT struct object *low_clone(struct program *p)
 {
   int e;
   struct object *o;
@@ -205,7 +205,7 @@ struct object *low_clone(struct program *p)
 
 
 
-void call_c_initializers(struct object *o)
+PMOD_EXPORT void call_c_initializers(struct object *o)
 {
   int e;
   struct program *p=o->prog;
@@ -1227,7 +1227,7 @@ PMOD_EXPORT struct array *object_values(struct object *o)
 }
 
 
-void gc_mark_object_as_referenced(struct object *o)
+PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 {
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
@@ -1294,7 +1294,7 @@ void gc_mark_object_as_referenced(struct object *o)
   }
 }
 
-void real_gc_cycle_check_object(struct object *o, int weak)
+PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 {
   GC_CYCLE_ENTER_OBJECT(o, weak) {
     int e;

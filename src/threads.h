@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.105 2000/10/26 01:34:51 hubbe Exp $
+ * $Id: threads.h,v 1.106 2000/12/01 01:15:03 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -692,6 +692,7 @@ HANDLE CheckValidHandle(HANDLE h);
 
 extern int threads_disabled;
 extern ptrdiff_t thread_storage_offset;
+extern struct program *thread_id_prog;
 
 #ifndef NO_PIKE_SHORTHAND
 #define MUTEX_T PIKE_MUTEX_T
