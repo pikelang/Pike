@@ -4,6 +4,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef HAVE_SYS_FILE_H
+#include <sys/file.h>
+#endif /* HAVE_SYS_FILE_H */
+
 #include <errno.h>
 
 #ifdef HAVE_SYS_MMAN_H
@@ -22,7 +26,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.22 1998/05/17 18:37:12 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.23 1998/05/17 18:53:03 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -50,13 +54,25 @@ RCSID("$Id: pipe.c,v 1.22 1998/05/17 18:37:12 grubba Exp $");
 */
 
 #ifndef SEEK_SET
+#ifdef L_SET
+#define SEEK_SET	L_SET
+#else /* !L_SET */
 #define SEEK_SET	0
+#endif /* L_SET */
 #endif /* SEEK_SET */
 #ifndef SEEK_CUR
+#ifdef L_INCR
+#define SEEK_SET	L_INCR
+#else /* !L_INCR */
 #define SEEK_CUR	1
+#endif /* L_INCR */
 #endif /* SEEK_CUR */
 #ifndef SEEK_END
+#ifdef L_XTND
+#define SEEK_END	L_XTND
+#else /* !L_XTND */
 #define SEEK_END	2
+#endif /* L_XTND */
 #endif /* SEEK_END */
 
 
