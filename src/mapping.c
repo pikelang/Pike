@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.106 2000/09/17 19:33:33 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.107 2000/09/24 15:20:14 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1144,6 +1144,8 @@ PMOD_EXPORT struct array *mapping_indices(struct mapping *m)
     fatal("Zero refs in mapping->data\n");
 #endif
 
+  check_mapping_for_destruct(m);
+
   a=allocate_array(m->data->size);
   s=ITEM(a);
 
@@ -1170,6 +1172,8 @@ PMOD_EXPORT struct array *mapping_values(struct mapping *m)
   if(m->data->refs <=0)
     fatal("Zero refs in mapping->data\n");
 #endif
+
+  check_mapping_for_destruct(m);
 
   a=allocate_array(m->data->size);
   s=ITEM(a);
