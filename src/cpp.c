@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.120 2003/08/04 16:14:21 mast Exp $
+|| $Id: cpp.c,v 1.121 2003/09/19 23:54:47 nilsson Exp $
 */
 
 #include "global.h"
@@ -1815,6 +1815,10 @@ void f_cpp(INT32 args)
 #ifdef __amigaos__
     simple_add_define(&this, "__amigaos__", " 1 ");
 #endif
+    simple_add_define(&this, "SIZEOF_INT",
+		      " " DEFINETOSTR(SIZEOF_INT) " ");
+    simple_add_define(&this, "SIZEOF_FLOAT",
+		      " " DEFINETOSTR(SIZEOF_FLOAT) " ");
   }
 
   if (predefs) {
