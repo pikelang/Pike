@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.121 2003/02/18 17:33:07 marcus Exp $
+|| $Id: builtin.cmod,v 1.122 2003/02/18 23:01:41 marcus Exp $
 */
 
 #include "global.h"
@@ -2267,6 +2267,9 @@ PIKECLASS single_string_replace
  */
 
 /*! @class Bootstring
+ *!
+ *! This class implements the "Bootstring" string transcoder described in
+ *! @url{http://www.ietf.org/internet-drafts/draft-ietf-idn-punycode-03.txt@}.
  */
 PIKECLASS bootstring
 {
@@ -2306,6 +2309,11 @@ PIKECLASS bootstring
     return k + (a + 1)*delta / (delta + bs->skew);
   }
 
+  /*! @decl string decode(string s)
+   *!
+   *! Decodes a Bootstring encoded string of "basic" code points back
+   *! to the original string space.
+   */
   PIKEFUN string decode(string s)
   {
     struct bootstring_struct *bs = THIS;
@@ -2391,6 +2399,11 @@ PIKECLASS bootstring
     RETURN finish_string_builder( &output );
   }
 
+  /*! @decl string encode(string s)
+   *!
+   *! Encodes a string using Bootstring encoding into a string constisting
+   *! only of "basic" code points (< initial_n).
+   */
   PIKEFUN string encode(string s)
   {
     struct bootstring_struct *bs = THIS;
@@ -2453,12 +2466,54 @@ PIKECLASS bootstring
     RETURN finish_string_builder( &output );
   }
 
+  /*! @decl void create(int base, int tmin, int tmax, int skew,		@
+   *!                   int damp, int initial_bias, int initial_n,	@
+   *!			int delim, string digits)
+   *!
+   *! Creates a Bootstring transcoder instance using the specified parameters.
+   *!
+   *! @param base
+   *!   The base used by the variable-length integers.
+   *! @param tmin
+   *!   The minimum threshold digit value for the variable-length integers.
+   *!   Must be >=0 and <= tmax.
+   *! @param tmax
+   *!   The maximum threshold digit value for the variable-length integers.
+   *!   Must be <= base-1.
+   *! @param skew
+   *!   The skew term for the bias adapation.  Must be >= 1.
+   *! @param damp
+   *!   The damping factor for the bias adaption.  Bust be >= 2.
+   *! @param initial_bias
+   *!   The initial bias for the variable-length integer thresholding.
+   *!   initial_bias % base must be <= base - tmin.
+   *! @param initial_n
+   *!   The first code point outside the "basic" set of code points.
+   *! @param delim
+   *!   The "basic" code point used as the delimiter.
+   *! @param digits
+   *!   The "basic" code points used as digits.  The length of the string
+   *!   should be the same as the base parameter.
+   */
   PIKEFUN void create( int base, int tmin, int tmax,
 		       int skew, int damp, 
 		       int initial_bias, int initial_n,
 		       int delim, string digits )
+    flags ID_STATIC;
   {
     struct bootstring_struct *bs = THIS;
+    if (base<2)
+      Pike_error("Bogus base\n");
+    if (tmin<0 || tmax<tmin || base-1<tmax)
+      Pike_error("Parameters violate 0 <= tmin <= tmax <= base-1\n");
+    if (skew < 1)
+      Pike_error("Parameters violate skew >= 1\n");
+    if (damp < 2)
+      Pike_error("Parameters violate damp >= 2\n");
+    if (initial_bias%base > base-tmin)
+      Pike_error("Parameters violate initial_bias%%base <= base-tmin\n");
+    if (digits->len != base)
+      Pike_error("Length of digits string does not match base.\n");
     bs->base = base;  bs->tmin = tmin;  bs->tmax = tmax;
     bs->skew = skew;  bs->damp = damp;
     bs->initial_bias = initial_bias;  bs->initial_n = initial_n;
