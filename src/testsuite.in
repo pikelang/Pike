@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.413 2001/05/19 08:30:02 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.414 2001/05/22 13:42:48 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -837,6 +837,9 @@ string efoo(string e)
 
  // turn this on when the bug is found
  // master()->set_inhibit_compile_errors(lambda(){});
+
+ //_optimizer_debug(2);
+ //_assembler_debug(20);
 
  catch {
  compile_string("import \".\";\n"
@@ -4882,21 +4885,35 @@ test_any([[
 
 // String.SplitIterator
 test_any([[
-  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
   array res = ({});
   foreach(it; int i; string part) {
     res += ({ part });
   }
-  return equal(res, "  foobar gazonk gurka baz  "/" ");
+  return equal(res, "  foobar gazonk  gurka baz  "/" ");
 ]], 1)
 test_any([[
-  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ');
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ');
   return sizeof(it);
 ]], [[
-  sizeof("  foobar gazonk gurka baz  "/" ");
+  sizeof("  foobar gazonk  gurka baz  "/" ");
 ]])
 test_any([[
-  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ', 1);
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ');
+  array res = ({});
+  foreach(it; int i; string part) {
+    res += ({ part });
+  }
+  return equal(res, "foobar gazonk  gurka baz"/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ');
+  return sizeof(it);
+]], [[
+  sizeof("foobar gazonk  gurka baz"/" ");
+]])
+test_any([[
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ', 1);
   array res = ({});
   foreach(it; int i; string part) {
     res += ({ part });
@@ -4904,7 +4921,21 @@ test_any([[
   return equal(res, "foobar gazonk gurka baz"/" ");
 ]], 1)
 test_any([[
-  object it = String.SplitIterator("  foobar gazonk gurka baz  ", ' ', 1);
+  object it = String.SplitIterator("  foobar gazonk  gurka baz  ", ' ', 1);
+  return sizeof(it);
+]], [[
+  sizeof("foobar gazonk gurka baz"/" ");
+]])
+test_any([[
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ', 1);
+  array res = ({});
+  foreach(it; int i; string part) {
+    res += ({ part });
+  }
+  return equal(res, "foobar gazonk gurka baz"/" ");
+]], 1)
+test_any([[
+  object it = String.SplitIterator("foobar gazonk  gurka baz", ' ', 1);
   return sizeof(it);
 ]], [[
   sizeof("foobar gazonk gurka baz"/" ");
@@ -7313,7 +7344,7 @@ void test_dir(string dir, int|void base_size)
       }
       test_dir(file, base_size);
     }else if(stat[1]>=0){
-      werror("Testing file %O\n", file);
+      // werror("Testing file %O\n", file);
       if(!glob("*/my_struct.pmod",file))
       {
         if(glob("*.pike",file) || glob("*.pmod",file))
