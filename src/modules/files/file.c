@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.36 1997/04/16 03:12:41 hubbe Exp $");
+RCSID("$Id: file.c,v 1.37 1997/05/05 05:29:37 nisse Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -580,7 +580,7 @@ static void file_open(INT32 args)
   }
   else if(fd < 0)
   {
-    ERRNO=EBADF;
+    ERRNO=errno;
   }
   else
   {
