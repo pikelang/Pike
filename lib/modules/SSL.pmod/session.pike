@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.24 2003/01/27 15:29:56 nilsson Exp $
+// $Id: session.pike,v 1.25 2003/03/08 21:36:46 nilsson Exp $
 
 #pike __REAL_VERSION__
 // #pragma strict_types
@@ -16,6 +16,8 @@
 //! connection.
 
 import .Constants;
+static constant Struct = ADT.struct;
+static constant State = SSL.state;
 
 //! Identifies the session to the server
 string identity;
@@ -38,16 +40,15 @@ int ke_method;
 //! deriving the actual keys.
 string master_secret;
 
-constant Struct = ADT.struct;
-constant State = SSL.state;
 array(int) version;
 array(string) client_certificate_chain;
 array(string) server_certificate_chain;
 
-//!
-void set_cipher_suite(int suite,int version)
+//! Sets the proper authentication method and cipher specification
+//! for the given cipher @[suite] and @[verison].
+void set_cipher_suite(int suite, int version)
 {
-  array res = .Cipher.lookup(suite,version);
+  array res = .Cipher.lookup(suite, version);
   cipher_suite = suite;
   ke_method = [int]res[0];
   cipher_spec = [object(.Cipher.CipherSpec)]res[1];
@@ -57,7 +58,8 @@ void set_cipher_suite(int suite,int version)
 #endif
 }
 
-//!
+//! Sets the compression method. Currently only @[COMPRESSION_null] is
+//! supported.
 void set_compression_method(int compr)
 {
   if (compr != COMPRESSION_null)
@@ -65,8 +67,8 @@ void set_compression_method(int compr)
   compression_algorithm = compr;
 }
 
-//!
-string generate_key_block(string client_random, string server_random, array(int) version)
+static string generate_key_block(string client_random, string server_random,
+			  array(int) version)
 {
   int required = 2 * (
 #ifndef WEAK_CRYPTO_40BIT
@@ -79,12 +81,13 @@ string generate_key_block(string client_random, string server_random, array(int)
 	cipher_spec->iv_size)
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   );
-  .Cipher.MACsha sha = .Cipher.MACsha();
-  .Cipher.MACmd5 md5 = .Cipher.MACmd5();
-  int i = 0;
   string key = "";
 
   if(version[1]==0) {
+    .Cipher.MACsha sha = .Cipher.MACsha();
+    .Cipher.MACmd5 md5 = .Cipher.MACmd5();
+    int i = 0;
+
     while (sizeof(key) < required)
       {
 	i++;
@@ -96,9 +99,12 @@ string generate_key_block(string client_random, string server_random, array(int)
 			     sha->hash_raw(cookie + master_secret +
 					   server_random + client_random));
       }
-  } else if(version[1]==1) {
-    key=.Cipher.prf(master_secret,"key expansion",server_random+client_random,required);
   }
+  else if(version[1]==1) {
+    key = .Cipher.prf(master_secret, "key expansion",
+		      server_random+client_random, required);
+  }
+
 #ifdef SSL3_DEBUG
   werror("key_block: %O\n", key);
 #endif
@@ -106,7 +112,7 @@ string generate_key_block(string client_random, string server_random, array(int)
 }
 
 #ifdef SSL3_DEBUG
-void printKey(string name , string key) {
+static void printKey(string name, string key) {
 
   string res="";
   res+=sprintf("%s:  len:%d type:%d \t\t",name,sizeof(key),0); 
@@ -120,19 +126,37 @@ void printKey(string name , string key) {
 }
 #endif
 
-//!
-array generate_keys(string client_random, string server_random, array(int) version)
+//! Generates keys appropriate for the SSL version given in @[version],
+//! based on the @[client_random] and @[server_random].
+//! @returns
+//!   @array
+//!     @elem string 0
+//!       Client write MAC secret
+//!     @elem string 1
+//!       Server write MAC secret
+//!     @elem string 2
+//!       Client write key
+//!     @elem string 3
+//!       Server write key
+//!     @elem string 4
+//!       Client write IV
+//!     @elem string 5
+//!       Server write IV
+//!  @endarray
+array(string) generate_keys(string client_random, string server_random,
+			    array(int) version)
 {
-  Struct key_data = Struct(generate_key_block(client_random, server_random,version));
-  array keys = allocate(6);
+  Struct key_data = Struct(generate_key_block(client_random, server_random,
+					      version));
+  array(string) keys = allocate(6);
 
 #ifdef SSL3_DEBUG
   werror("client_random: %O\nserver_random: %O\n",
 	 client_random, server_random);
 #endif
-  /* client_write_MAC_secret */
+  // client_write_MAC_secret
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);
-  /* server_write_MAC_secret */
+  // server_write_MAC_secret
   keys[1] = key_data->get_fix_string(cipher_spec->hash_size);
 
 #ifndef WEAK_CRYPTO_40BIT
@@ -141,7 +165,7 @@ array generate_keys(string client_random, string server_random, array(int) versi
   {
     if(version[1]==0) {
       //SSL3.0
-      .Cipher.MACmd5 md5 = .Cipher.MACmd5()->hash_raw;
+      function(string:string) md5 = .Cipher.MACmd5()->hash_raw;
       
       keys[2] = md5(key_data->get_fix_string(5) +
 		    client_random + server_random)
@@ -151,20 +175,25 @@ array generate_keys(string client_random, string server_random, array(int) versi
 	[..cipher_spec->key_material-1];
       if (cipher_spec->iv_size)
 	{
-	  keys[4] = md5(client_random + server_random)[..cipher_spec->iv_size-1];
-	  keys[5] = md5(server_random + client_random)[..cipher_spec->iv_size-1];
+	  keys[4] = md5(client_random +
+			server_random)[..cipher_spec->iv_size-1];
+	  keys[5] = md5(server_random +
+			client_random)[..cipher_spec->iv_size-1];
 	}
 
     } if(version[1]==1) {
       //TLS1.0
-      string client_wkey= key_data->get_fix_string(5);
-      string server_wkey= key_data->get_fix_string(5);
+      string client_wkey = key_data->get_fix_string(5);
+      string server_wkey = key_data->get_fix_string(5);
       keys[2] = .Cipher.prf(client_wkey, "client write key",
-			    client_random+server_random, cipher_spec->key_material);
+			    client_random+server_random,
+			    cipher_spec->key_material);
       keys[3] = .Cipher.prf(server_wkey, "server write key",
-			    client_random+server_random, cipher_spec->key_material);
+			    client_random+server_random,
+			    cipher_spec->key_material);
       if(cipher_spec->iv_size) {
-	string iv_block = .Cipher.prf("", "IV block", client_random+server_random,
+	string iv_block = .Cipher.prf("", "IV block",
+				      client_random+server_random,
 				      2*cipher_spec->iv_size);
 	keys[4]=iv_block[..cipher_spec->iv_size-1];
 	keys[5]=iv_block[cipher_spec->iv_size..];
@@ -208,7 +237,7 @@ array generate_keys(string client_random, string server_random, array(int) versi
   return keys;
 }
 
-//! Computes a new set of encryption stetes, derived from the
+//! Computes a new set of encryption states, derived from the
 //! client_random, server_random and master_secret strings.
 //!
 //! @returns
@@ -218,11 +247,12 @@ array generate_keys(string client_random, string server_random, array(int) versi
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(State) new_server_states(string client_random, string server_random, array(int) version)
+array(State) new_server_states(string client_random, string server_random,
+			       array(int) version)
 {
   State write_state = State(this_object());
   State read_state = State(this_object());
-  array keys = generate_keys(client_random, server_random,version);
+  array(string) keys = generate_keys(client_random, server_random,version);
 
   if (cipher_spec->mac_algorithm)
   {
@@ -259,7 +289,8 @@ array(State) new_server_states(string client_random, string server_random, array
 //!     @elem SSL.state write_state
 //!       Write state
 //!   @endarray
-array(State) new_client_states(string client_random, string server_random,array(int) version)
+array(State) new_client_states(string client_random, string server_random,
+			       array(int) version)
 {
   State write_state = State(this_object());
   State read_state = State(this_object());
