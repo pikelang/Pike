@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.320 2000/12/10 02:30:13 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.321 2000/12/11 12:13:18 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -80,6 +80,35 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
   push_array(a); /* beware, macro */
 }
 
+void f_compat_hash( INT32 args )
+{
+  struct pike_string *s = Pike_sp[-args].u.string;
+  unsigned int i;
+  if(!args)
+    SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
+  if(Pike_sp[-args].type != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("hash", 1, "string");
+
+  if( s->size_shift )
+  {
+    f_hash( args );
+    return;
+  }
+
+  i = hashstr( (unsigned char *)s->str, MINIMUM(100,s->len));
+  if(args > 1)
+  {
+    if(Pike_sp[1-args].type != T_INT)
+      SIMPLE_BAD_ARG_ERROR("hash",2,"int");
+    
+    if(!Pike_sp[1-args].u.integer)
+      PIKE_ERROR("hash", "Modulo by zero.\n", Pike_sp, args);
+
+    i%=(unsigned INT32)Pike_sp[1-args].u.integer;
+  }
+  pop_n_elems(args);
+  push_int( i );
+}
 
 void f_hash(INT32 args)
 {
@@ -5853,7 +5882,10 @@ void init_builtin_efuns(void)
   
 /* function(string,int|void:int) */
   ADD_EFUN("hash",f_hash,tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
-  
+
+  ADD_EFUN("hash_7_0",f_compat_hash,
+           tFunc(tStr tOr(tInt,tVoid),tInt),OPT_TRY_OPTIMIZE);
+
 /* function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*) */
   ADD_EFUN2("indices",f_indices,
 	   tOr3(tFunc(tOr(tStr,tArray),tArr(tInt)),

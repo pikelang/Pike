@@ -33,6 +33,13 @@ mapping m_delete(mapping m, mixed x)
   return m;
 }
 
+int hash(string s, int|void f )
+{
+  if( f )
+    return hash_7_0( s, f );
+  return hash_7_0( s );
+}
+
 mapping(string:mixed) all_constants()
 {
   mapping(string:mixed) ret=predef::all_constants()+([]);
