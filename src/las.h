@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.15 1998/06/06 03:27:26 hubbe Exp $
+ * $Id: las.h,v 1.16 1998/08/29 22:15:18 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -86,7 +86,7 @@ node *mkexternalnode(int level,
 node *mkcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
 void resolv_program(node *n);
-node *index_node(node *n, struct pike_string * id);
+node *index_node(node *n, char *node_name, struct pike_string * id);
 int node_is_eq(node *a,node *b);
 node *mkconstantsvaluenode(struct svalue *s);
 node *mkliteralsvaluenode(struct svalue *s);

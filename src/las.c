@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.65 1998/08/05 22:48:01 hubbe Exp $");
+RCSID("$Id: las.c,v 1.66 1998/08/29 22:15:17 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -680,7 +680,7 @@ void resolv_program(node *n)
 
 
 
-node *index_node(node *n, struct pike_string * id)
+node *index_node(node *n, char *node_name, struct pike_string *id)
 {
   node *ret;
   JMP_BUF tmp;
@@ -695,23 +695,38 @@ node *index_node(node *n, struct pike_string * id)
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     UNSET_ONERROR(tmp);
-    
-    yyerror("Couldn't index module.");
+
+    if (node_name) {
+      my_yyerror("Couldn't index module '%s'.", node_name);
+    } else {
+      yyerror("Couldn't index module.");
+    }
     push_int(0);
   }else{
     resolv_constant(n);
     switch(sp[-1].type)
     {
     case T_INT:
-      if(!num_parse_error)
-	yyerror("Failed to index module (module doesn't exist?)");
+      if(!num_parse_error) {
+	if (node_name) {
+	  my_yyerror("Failed to index module '%s' (module doesn't exist?)",
+		     node_name);
+	} else {
+	  yyerror("Failed to index module (module doesn't exist?)");
+	}
+      }
       break;
 
     case T_PROGRAM:
     case T_FLOAT:
     case T_STRING:
     case T_ARRAY:
-      yyerror("Failed to index module (Not a module?)");
+      if (node_name) {
+	my_yyerror("Failed to index module '%s' (Not a module?)",
+		   node_name);
+      } else {
+	yyerror("Failed to index module (Not a module?)");
+      }
       pop_stack();
       push_int(0);
       break;
@@ -733,7 +748,12 @@ node *index_node(node *n, struct pike_string * id)
 	   !sp[-1].u.integer &&
 	   sp[-1].subtype==NUMBER_UNDEFINED)
 	{
-	  my_yyerror("Index '%s' not present in module.",id->str);
+	  if (node_name) {
+	    my_yyerror("Index '%s' not present in module '%s'.",
+		       id->str, node_name);
+	  } else {
+	    my_yyerror("Index '%s' not present in module.", id->str);
+	  }
 	}
 	END_CYCLIC();
       }

@@ -179,7 +179,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.101 1998/08/29 21:33:05 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.102 1998/08/29 22:15:15 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1614,7 +1614,8 @@ expr4: string
 idents: low_idents
   | idents '.' F_IDENTIFIER
   {
-    $$=index_node($1, $3->u.sval.u.string);
+    $$=index_node($1, last_identifier?last_identifier->str:NULL,
+		  $3->u.sval.u.string);
     free_node($1);
     if(last_identifier) free_string(last_identifier);
     copy_shared_string(last_identifier, $3->u.sval.u.string);
@@ -1628,7 +1629,7 @@ idents: low_idents
     SAFE_APPLY_MASTER("handle_import",2);
     tmp=mkconstantsvaluenode(sp-1);
     pop_stack();
-    $$=index_node(tmp, $2->u.sval.u.string);
+    $$=index_node(tmp, ".", $2->u.sval.u.string);
     free_node(tmp);
     if(last_identifier) free_string(last_identifier);
     copy_shared_string(last_identifier, $2->u.sval.u.string);
@@ -1673,9 +1674,11 @@ low_idents: F_IDENTIFIER
 #ifdef __CHECKER__
     tmp.subtype=0;
 #endif /* __CHECKER__ */
+    if(last_identifier) free_string(last_identifier);
+    copy_shared_string(last_identifier, $3->u.sval.u.string);
     tmp.u.mapping=get_builtin_constants();
     tmp2=mkconstantsvaluenode(&tmp);
-    $$=index_node(tmp2, $3->u.sval.u.string);
+    $$=index_node(tmp2, "predef", $3->u.sval.u.string);
     free_node(tmp2);
     free_node($3);
   }
@@ -1685,6 +1688,9 @@ low_idents: F_IDENTIFIER
   }
   | F_IDENTIFIER F_COLON_COLON F_IDENTIFIER
   {
+    if(last_identifier) free_string(last_identifier);
+    copy_shared_string(last_identifier, $3->u.sval.u.string);
+
     $$=reference_inherited_identifier($1->u.sval.u.string,
 				     $3->u.sval.u.string);
     if (!$$)
@@ -1703,6 +1709,9 @@ low_idents: F_IDENTIFIER
   | F_COLON_COLON F_IDENTIFIER
   {
     int e,i;
+
+    if(last_identifier) free_string(last_identifier);
+    copy_shared_string(last_identifier, $2->u.sval.u.string);
 
     $$=0;
     for(e=1;e<(int)new_program->num_inherits;e++)
