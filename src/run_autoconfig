@@ -10,6 +10,12 @@ fix()
 
   if [ ! -f $1/Makefile.in ]; then
     cp $1/Makefile.src $1/Makefile.in
+  else if cmp $1/Makefile.src $1/Makefile.in >/dev/null; then
+    :
+  else
+    # This might not be strictly necessary, but you
+    # need to run 'make depend' afterwards anyway.
+    cp $1/Makfile.src $1/Makefile.in
   fi
 }
 
