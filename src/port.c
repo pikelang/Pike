@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.68 2003/03/28 14:07:12 marcus Exp $
+|| $Id: port.c,v 1.69 2003/04/01 19:03:49 mast Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.68 2003/03/28 14:07:12 marcus Exp $");
+RCSID("$Id: port.c,v 1.69 2003/04/01 19:03:49 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -988,7 +988,9 @@ long long gethrtime()
    return now;
 }
 
-#endif
+#endif	/* OWN_GETHRTIME_RDTSC */
+
+#endif	/* OWN_GETHRTIME */
 
 #ifndef HAVE_LDEXP
 double LDEXP(double x, int exp)
@@ -1005,6 +1007,4 @@ double FREXP(double x, int *exp)
   ret = (x*pow(2.0,(double)-*exp));
   return ret;
 }
-#endif
-
 #endif
