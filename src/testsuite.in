@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.340 2000/10/13 17:20:46 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.341 2000/10/13 23:24:06 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1952,7 +1952,10 @@ ifefun(gc,
     gc();
     return sizeof(q);
   ]],2)
+]])
 
+ifefun(gc,
+[[
   test_eq([[
     int dummy;
     gc();
@@ -2014,6 +2017,12 @@ ifefun(gc,
     object o = Live(); o->o = Dead(); o->o->o = o;
     gc(); o = 0; return gc() > 0;
   }]], 1)
+
+
+]])
+
+ifefun(gc,
+[[
 
   test_any_equal([[{
     class Live {object o; void destroy() {}};
@@ -2080,6 +2089,11 @@ ifefun(gc,
     return all_constants()->blatinka;
   }]], ({0}));
 
+]])
+
+ifefun(gc,
+[[
+
   test_any([[{
     class Dead {object o;};
     object o = Dead(); o->o = Dead();
@@ -2132,6 +2146,12 @@ ifefun(gc,
     gc();
     return !sizeof (x);
   }]], 1);
+
+]])
+
+ifefun(gc,
+[[
+
   test_any([[{
     class Foo {
       Foo f = this_object();
@@ -2199,6 +2219,11 @@ ifefun(gc,
     return gc() + gc() >= 3;
   }]], 1);
 
+]])
+
+ifefun(gc,
+[[
+
   test_do([[{
     mapping a = ([1:({17}),2:3,4:5,6:7,8:9]), b = a + ([]);
     set_weak_flag (b, 1);
@@ -2251,6 +2276,11 @@ ifefun(gc,
     return gc() >= 2 && !sizeof (a);
   }]], 1);
 
+]])
+
+ifefun(gc,
+[[
+
   test_any([[{
     object o = class{}();
     mapping a = set_weak_flag ((["foo": o]), 1);
@@ -2289,6 +2319,11 @@ ifefun(gc,
     mapping a = set_weak_flag (([class{}(): class{}()]), 1);
     return gc() >= 2 && !sizeof (a);
   }]], 1);
+
+]])
+
+ifefun(gc,
+[[
 
 test_any([[{
     object o = class{}();
@@ -2337,6 +2372,11 @@ test_any([[{
     gc();
     return !sizeof (a);
   }]], 1);
+
+]])
+
+ifefun(gc,
+[[
 
   test_do([[{
     int got_error = 0;
@@ -2988,6 +3028,11 @@ test_any([[{
     if (test_failed) error ("GC destruct order test failed.\n");
     werror ("%60s\r", "");
   }]])
+
+]])
+
+ifefun(gc,
+[[
 
   test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);
 
