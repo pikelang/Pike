@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.5 2003/10/28 10:06:33 vida Exp $
+// $Id: LMTP.pmod,v 1.6 2003/12/10 17:53:04 vida Exp $
 //
 
 #pike __REAL_VERSION__
@@ -16,7 +16,16 @@ class Connection {
   // recipient and one outcode to display to the client per recipient
   // (that is LMTP specific)
   void message(string content) {
-    content = replace(content, "\r\n", "\n");
+    if(sizeof(content) > maxsize)
+    {
+      outcode(552);
+      return 0;
+    }
+    // LMTP as well as SMTP encode '.' by another '.' when it is the first
+    // character of a line so we have to decode it 
+    // We don't decode for SMTP since it can be usefull not to encode it for
+    // sending again the mail 
+    content = replace(replace(content, "\r\n", "\n"), "\n..", "\n.");
     MIME.Message message = low_message(content);
     if(!message) return;
 
@@ -61,7 +70,8 @@ class Server {
    //! @decl void create(array(string) _domains, void|int port,@
    //!        void|string ip, function _cb_mailfrom,@
    //!        function _cb_rcptto, function _cb_data)
-   //!  Create a receiving SMTP server. It implements RFC 2821, 2822 and 1854.
+   //!  Create a receiving LMTP server. It implements RFC 2821, 2822, 2033 and 
+   //!  1854.
    //! 
    //! @param domain
    //!   Domains name this server relay, you need to provide at least one
