@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.45 1999/03/11 13:44:27 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.46 1999/04/15 04:08:12 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -676,7 +676,9 @@ static int do_docode2(node *n,int flags)
 				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND));
 	    emit(F_APPLY,tmp1);
 	  }
-	  if(n->type == void_type_string) return 0;
+	  if(n->type == void_type_string)
+	    return 0;
+
 	  return 1;
 	}else{
 	  if(CAR(n)->u.sval.u.object == fake_object)

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.4 1999/04/09 23:18:21 per Exp $");
+RCSID("$Id: _xpm.c,v 1.5 1999/04/15 04:08:34 hubbe Exp $");
 
 #include "config.h"
 
@@ -400,6 +400,7 @@ void init_image__xpm( )
     add_constant(s,sp-1,0);
     free_string(s);
   }
+  pop_stack();
 }
 
 void exit_image__xpm(void)

@@ -15,7 +15,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.16 1999/04/08 23:54:26 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.17 1999/04/15 04:08:09 hubbe Exp $");
 
 static INT32 num_callable=0;
 static struct mapping *builtin_constants = 0;
@@ -90,6 +90,14 @@ struct callable *low_make_callable(c_fun fun,
   f->flags=flags;
   f->docode=docode;
   f->optimize=optimize;
+#ifdef PIKE_DEBUG
+  {
+    struct pike_string *z=check_call(function_type_string,type);
+    f->may_return_void= z == void_type_string;
+    if(!z) fatal("Gnapp!\n");
+    free_string(z);
+  }
+#endif
   return f;
 }
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.119 1999/04/08 23:54:28 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.120 1999/04/15 04:08:14 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -694,6 +694,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       if(s->subtype == FUNCTION_BUILTIN)
       {
 #ifdef PIKE_DEBUG
+	struct svalue *expected_stack = sp-args;
 	if(t_flag>1)
 	{
 	  init_buf();
@@ -702,6 +703,25 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	}
 #endif
 	(*(s->u.efun->function))(args);
+
+#ifdef PIKE_DEBUG
+	if(sp != expected_stack + !s->u.efun->may_return_void)
+	{
+	  if(sp < expected_stack)
+	    fatal("Function popped too many arguments: %s\n",
+		  s->u.efun->name->str);
+	  if(sp>expected_stack+1)
+	    fatal("Function left droppings on stack: %s\n",
+		  s->u.efun->name->str);
+	  if(sp == expected_stack && !s->u.efun->may_return_void)
+	    fatal("Non-void function returned without return value on stack: %s %d\n",
+		  s->u.efun->name->str,s->u.efun->may_return_void);
+	  if(sp==expected_stack+1 && s->u.efun->may_return_void)
+	    fatal("Void function returned with a value on the stack: %s %d\n",
+		  s->u.efun->name->str, s->u.efun->may_return_void);
+	}
+#endif
+
 	break;
       }else{
 	o=s->u.object;

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.6 1999/04/13 12:32:47 mirar Exp $");
+RCSID("$Id: xcf.c,v 1.7 1999/04/15 04:08:39 hubbe Exp $");
 
 #include "config.h"
 
@@ -1320,6 +1320,7 @@ void init_image_xcf()
     add_constant(s,sp-1,0);
     free_string(s);
   }
+  pop_stack();
 #define STRING(X) s_##X = make_shared_binary_string(#X,sizeof( #X )-sizeof(""));
 #include "xcf_constant_strings.h"
 #undef STRING

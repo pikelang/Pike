@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.36 1999/04/13 20:10:08 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.37 1999/04/15 04:08:15 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -527,6 +527,8 @@ void f_cast(void)
 {
 #ifdef PIKE_DEBUG
   struct svalue *save_sp=sp;
+  if(sp[-2].type != T_STRING)
+    fatal("Cast expression destroyed stack or left droppings!\n");
 #endif
   o_cast(sp[-2].u.string,
 	 compile_type_to_runtime_type(sp[-2].u.string));

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.4 1999/04/11 05:37:59 per Exp $");
+RCSID("$Id: pcx.c,v 1.5 1999/04/15 04:08:35 hubbe Exp $");
 
 #include "config.h"
 
@@ -599,6 +599,7 @@ void init_image_pcx( )
     add_constant(s,sp-1,0);
     free_string(s);
   }
+  pop_stack();
   opt_raw=make_shared_string("raw");
   opt_dpy=make_shared_string("dpy");
   opt_xdpy=make_shared_string("xdpy");

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.2 1999/04/12 11:41:14 mirar Exp $");
+RCSID("$Id: xbm.c,v 1.3 1999/04/15 04:08:38 hubbe Exp $");
 
 #include "config.h"
 
@@ -438,6 +438,7 @@ void init_image_xbm( )
     add_constant(s,sp-1,0);
     free_string(s);
   }
+  pop_stack();
   param_name=make_shared_string("name");
   param_fg=make_shared_string("fg");
   param_bg=make_shared_string("bg");

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.8 1999/02/10 21:46:40 hubbe Exp $
+ * $Id: constants.h,v 1.9 1999/04/15 04:08:10 hubbe Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -28,6 +28,9 @@ struct callable
   struct pike_string *type;
   struct pike_string *name;
   INT16 flags;
+#ifdef PIKE_DEBUG
+  INT8 may_return_void;
+#endif
   optimize_fun optimize;
   docode_fun docode;
   struct callable *next;
