@@ -1,6 +1,24 @@
 #include <version.h>
+/* Woho! Now I can include image.h. :-) */
+/* #include "../../modules/Image/image.h" */
 
-struct image;
+void pgtk_verify_setup()
+{
+  if( !pigtk_is_setup )
+    error("You must call GTK.setup_gtk( argv ) first\n");
+}
+
+void pgtk_verify_inited( )
+{
+  if(! THIS->obj )
+    error( "Calling function in unitialized object\n" );
+}
+
+void pgtk_verify_not_inited( )
+{
+  if( THIS->obj )
+    error( "Tried to initialize object twice\n" );
+}
 
 void my_pop_n_elems( int n ) /* anti-inline */
 {
@@ -12,41 +30,19 @@ void my_ref_push_object( struct object *o )
   ref_push_object( o );
 }
 
-void pgtk_encode_truecolor_masks(struct image *i,
-                                 int bitspp,
-                                 int pad,
-                                 int byteorder,
-                                 unsigned int red_mask,
-                                 unsigned int green_mask,
-                                 unsigned int blue_mask,
-                                 unsigned char *buffer, 
-                                 int debuglen);
-
-
-typedef struct 
+void pgtk_return_this( int n )
 {
-   unsigned char r,g,b;
-} p_rgb_group;
-
-typedef struct
-{
-   INT32 r,g,b;
-} p_rgbl_group;
-
-
-struct p_color_struct
-{
-   p_rgb_group rgb;
-   p_rgbl_group rgbl;
-   struct pike_string *name;
-};
+  pop_n_elems( n );
+  ref_push_object( fp->current_object );
+}
 
 void pgtk_get_image_module()
 {
   push_constant_text("Image"); 
   push_int(0);
   SAFE_APPLY_MASTER("resolv", 2);
-  if (sp[-1].type!=T_OBJECT) error("No Image module.\n");
+  if (sp[-1].type!=T_OBJECT) 
+    error("No Image module.\n");
 }
 
 void pgtk_index_stack( char *what )
@@ -59,10 +55,9 @@ void pgtk_index_stack( char *what )
 #endif
 }
 
-#define COLORLMAX 0x7fffffff
 int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
 {
-  struct p_color_struct *col;
+  struct color_struct *col;
   static struct program *pike_color_program;
   if(!pike_color_program)
   {
@@ -72,7 +67,7 @@ int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
     pike_color_program = program_from_svalue(--sp);
   }
   
-  col = (struct p_color_struct *)get_storage( o, pike_color_program );
+  col = (struct color_struct *)get_storage( o, pike_color_program );
   if(!col) return 0;
   *r = col->rgbl.r/(COLORLMAX/65535);
   *g = col->rgbl.g/(COLORLMAX/65535);
@@ -80,9 +75,6 @@ int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
   return 1;
 }
 
-
-
-void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl );
 
 void *get_swapped_string( struct pike_string *s,int force_wide )
 {
@@ -153,7 +145,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
   {
     if((i->width != x) || (i->height != y))
     {
-/*       fprintf(stderr, "New %s%dx%d image\n", (fast?"fast ":""), x, y); */
+/*    fprintf(stderr, "New %s%dx%d image\n", (fast?"fast ":""), x, y); */
       gdk_image_destroy((void *)i);
       i = NULL;
     }
@@ -274,7 +266,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
       pgtk_index_stack( "X" );
       pgtk_index_stack( "encode_pseudocolor" );
       /* on stack: function */
- add_ref(img);
+      add_ref(img);
       push_object( img );
       push_int( i->bpp*8 );
       {
@@ -288,7 +280,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
 	push_int( pad  ); /* extra padding.. */
       }
       push_int( i->depth );
- add_ref(pike_cmap);
+      add_ref(pike_cmap);
       push_object( pike_cmap );
       /* on stack: function img bpp linepad depth cmap*/
       /*             6       5    4  3       2     1 */
@@ -368,22 +360,21 @@ void *get_pgdkobject(struct object *from, struct program *type)
   return (void *)((struct object_wrapper *)f)->obj;
 }
 
+/* static void adjust_refs( GtkWidget *w, void *f, void *q) */
+/* { */
+/*   struct object *o; */
+/*   if( !(o=gtk_object_get_data(GTK_OBJECT(w), "pike_object")) ) */
+/*     return; */
 
-static void adjust_refs( GtkWidget *w, void *f, void *q)
-{
-  struct object *o;
-  if( !(o=gtk_object_get_data(GTK_OBJECT(w), "pike_object")) )
-    return;
-
-  if( w->parent )
-  {
-    o->refs++;
-  }
-  else
-  {
-    free_object( o ); 
-  }
-}
+/*   if( w->parent ) */
+/*   { */
+/*     o->refs++; */
+/*   } */
+/*   else */
+/*   { */
+/*     free_object( o );  */
+/*   } */
+/* } */
 
 void my_destruct( struct object *o )
 {
@@ -807,8 +798,8 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
        push_float( (float)GTK_VALUE_DOUBLE(params[i]) );
        break;
 
-     case GTK_TYPE_POINTER: /* These probably need fixing.. / Hubbe */
-     case GTK_TYPE_FOREIGN:
+     case GTK_TYPE_POINTER:
+     case GTK_TYPE_FOREIGN: /* These probably need fixing.. / Hubbe */
 
      case GTK_TYPE_STRING:
        if(GTK_VALUE_STRING( params[i] ))
