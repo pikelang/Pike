@@ -80,7 +80,8 @@ static private inherit @module@;
 //!   @item 918
 //!   @item 950
 //!   @item 1026
-//!     These may be prefixed with @expr{"cp"@} or @expr{"ibm"@}.
+//!     These may be prefixed with @expr{"cp"@}, @expr{"ibm"} or
+//!     @expr{"ms"@}.
 //!   @item 1250
 //!   @item 1251
 //!   @item 1252
@@ -90,8 +91,8 @@ static private inherit @module@;
 //!   @item 1256
 //!   @item 1257
 //!   @item 1258
-//!     These may be prefixed with @expr{"cp"@}, @expr{"ibm"@} or
-//!     @expr{"windows"@}.
+//!     These may be prefixed with @expr{"cp"@}, @expr{"ibm"@},
+//!     @expr{"ms"} or @expr{"windows"@}.
 //! @endul
 //!
 //! +359 more.
@@ -203,6 +204,8 @@ private string normalize(string in) {
   sscanf(out, "cs%s", out);
 
   if(sscanf(out, "cp%d", int cp))
+    return (string)cp;
+  if(sscanf(out, "ms%d", int cp))
     return (string)cp;
   if(sscanf(out, "ibm%d", int cp))
     return (string)cp;
