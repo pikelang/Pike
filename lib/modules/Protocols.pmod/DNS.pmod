@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.73 2003/04/22 17:39:01 nilsson Exp $
+// $Id: DNS.pmod,v 1.74 2003/04/22 20:55:42 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -376,7 +376,7 @@ class protocol
 	m->a=sprintf("%{.%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
 	break;
       case T_AAAA:
-	m->a=sprintf("%{:%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
+	m->a=sprintf("%{:%X%}",values(s[next[0]..next[0]+m->len-1]))[1..];
 	break;
       case T_SOA:
 	m->mname=decode_domain(s,next);
