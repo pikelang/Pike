@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.266 2000/04/19 22:26:00 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.267 2000/04/22 02:23:25 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4554,28 +4554,31 @@ void f_object_variablep(INT32 args)
 }
 
 /* uniqify an array while at the same time keeping the order intact */
-void f_uniq_array(INT32 args) {
+void f_uniq_array(INT32 args)
+{
   struct array *a, *b;
-  struct svalue s;
   struct mapping *m;
   struct svalue one;
-  int i, j=0;
+  int i, j=0,size=0;
+
   get_all_args("uniq", args, "%a", &a);
-  m = allocate_mapping(a->size);
+  push_mapping(m = allocate_mapping(a->size));
+  push_array(b = allocate_array(a->size));
+
   one.type = T_INT;
   one.u.integer = 1;
-  b = allocate_array(a->size);
   for(i =0; i< a->size; i++)
   {
-    s = ITEM(a)[i];
-    if(!low_mapping_lookup(m, &s)) {
-      mapping_insert(m, &s, &one);
-      assign_svalue(&(ITEM(b)[j++]), &s);
+    mapping_insert(m, ITEM(a)+i, &one);
+    if(m_sizeof(m) != size)
+    {
+      size=m_sizeof(m);
+      assign_svalue_no_free(ITEM(b)+ j++, ITEM(a)+i);
     }
   }
-  resize_array(b,  j);
-  free_mapping(m);
-  pop_n_elems(args);
+  sp--; /* keep the ref to 'b' */
+  b=resize_array(b,  j);
+  pop_n_elems(args-1); /* pop args and the mapping */
   push_array(b);
 }
 
