@@ -182,8 +182,8 @@ install:
 	  if [ -f "$(exec_prefix)/pike" ]; then \
 	    echo Renaming old "$(exec_prefix)/pike" to "$(exec_prefix)/pike.old"; \
 	    mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old"; \
-	  else : fi ; \
-          echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix) ; \
+	  else : ; fi ; \
+	  echo "$(exec_prefix)/pike"; $(INSTALL) ./pike $(exec_prefix) ; \
 	fi
 	@if [ -f $(SRCDIR)/../bin/hilfe ]; then \
 	  echo ; echo "Installing $(exec_prefix)/hilfe..."; \
