@@ -1,7 +1,7 @@
 #module Image.image
 {
 //-----------------------------------------------------------------------
-#chapter testuite
+#chapter testsuite
 
 #test Image.PNM.decode, ==
    object img1=Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0");
@@ -91,7 +91,7 @@
    ok();
 
 //-----------------------------------------------------------------------
-#chapter testuite III
+#chapter testsuite III
 
 #test equal, copy_value
    array a=({0,0,0});

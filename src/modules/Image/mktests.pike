@@ -5,6 +5,7 @@ array chapters=({});
 array tests=({});
 
 int mode=0;
+int n=0;
 
 void finish_test()
 {
@@ -33,10 +34,24 @@ void finish_test()
 	       "}\n\n");
 	 break;
       case 1:
-	 test=cpp("#define ok(S) return \"ok\"\n"
-		  "#define fail(S) return (S)\n"+
-		  replace(test,"ok()","ok(\"ok\")"));
+	 test=replace(cpp("#define ok(S) return \"ok\"\n"
+			  "#define fail(S) return (S)\n"+
+			  replace(test,({"#","ok()"}),({"½·½","ok(\"ok\")"})),
+			  ),"½·½","#");
 	 write("test_any([["+test+"]], \"ok\")\n");
+	 break;
+      case 2:
+	 test=replace(cpp("#define ok(S) return 1\n"
+			  "#define fail(S) do { werror(\"failure; "+module+"/"+chapter+"/"+name+": \"+(S)+\"\\n\"); return 0; } while (0)\n"+
+			  replace(test,({"#","ok()"}),({"½·½","ok(\"ok\")"})),
+			  ),"½·½","#");
+	 write("test "+(++n)+", expected result: EQ\n"
+	       "mixed a()"
+	       "{\n"+
+	       test+
+	       "}\n"
+	       "mixed b() { return 1; }\n"
+	       "\n....\n");
 	 break;
    }
    name=0;
@@ -112,7 +127,7 @@ int main(int ac,array am)
 {
    int n;
 
-   if (ac>=2 && am[1]=="-t") mode=1,am=am[..0]+am[2..];
+   if (ac>=2 && am[1]=="-t") mode=2,am=am[..0]+am[2..];
 
    if (ac<2) 
    {
