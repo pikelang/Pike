@@ -101,7 +101,7 @@ esac
 #
 
 case "$SCRIPT" in
-  /*)
+  /*|./*)
     if test -f "$SCRIPT"; then :; else
       echo Script "$SCRIPT" not found.
       exit 1
