@@ -48,3 +48,12 @@ void RELOCATE_program(struct program *p, PIKE_OPCODE_T *new);
 
 void FLUSH_INSTRUCTION_CACHE(void *addr, size_t len);
 	Flush the memory at 'addr' from the instruction cache.
+
+void ENCODE_PROGRAM(struct program *p, struct dynamic_buffer_s *buf);
+	Encode 'p'->program in a way accepted by DECODE_PROGRAM().
+	NOTE: The encoded data MUST have the length p->num_program *
+	      sizeof(PIKE_OPCODE_T).
+
+void DECODE_PROGRAM(struct program *p)
+	Decode 'p'->program as encoded by ENCODE_PROGRAM().
+	NOTE: 'p'->relocations is valid at this point.

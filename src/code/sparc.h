@@ -1,5 +1,5 @@
 /*
- * $Id: sparc.h,v 1.3 2001/07/20 15:49:00 grubba Exp $
+ * $Id: sparc.h,v 1.4 2001/07/20 16:21:32 grubba Exp $
  */
 
 #define REG_O0	8
@@ -84,3 +84,11 @@
       cnt_ += 8;					\
     } while (cnt_ < max_);				\
   } while(0)
+
+struct dynamic_buffer_s;
+
+void sparc_encode_program(struct program *p, struct dynamic_buffer_s *buf);
+void sparc_decode_program(struct program *p);
+
+#define ENCODE_PROGRAM(P, BUF)	sparc_encode_program(P, BUF)
+#define DECODE_PROGRAM(P)	sparc_decode_program(p)
