@@ -556,6 +556,7 @@ testfont binary
 /src/pike_types.h foreign_ident
 /src/port.c foreign_ident
 /src/port.h foreign_ident
+/src/post_module.c foreign_ident
 /src/post_modules/GL/Makefile.in foreign_ident
 /src/post_modules/GL/acconfig.h foreign_ident
 /src/post_modules/GL/auto.c.in foreign_ident

@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "module.h"
 #include "pike_macros.h"
@@ -17,8 +18,11 @@
 #include "program_id.h"
 
 #include "modules/modlist_headers.h"
-
-RCSID("$Id: module.c,v 1.12 2000/12/01 08:09:50 hubbe Exp $");
+#ifdef POST_MODULES
+#include "post_modules/modlist_headers.h"
+#else /* !POST_MODULES */
+RCSID("$Id: module.c,v 1.13 2001/08/20 16:45:26 grubba Exp $");
+#endif /* POST_MODULES */
 
 typedef void (*modfun)(void);
 
@@ -32,6 +36,9 @@ struct static_module
 static struct static_module module_list[] = {
   { "Builtin", low_init_main, low_exit_main }
 #include "modules/modlist.h"
+#ifdef POST_MODULES
+#include "post_modules/modlist.h"
+#endif /* POST_MODULES */
   ,{ "Builtin2", init_main, exit_main }
 };
 

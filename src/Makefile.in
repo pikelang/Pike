@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.247 2001/07/13 18:21:31 grubba Exp $
+# $Id: Makefile.in,v 1.248 2001/08/20 16:45:26 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -102,6 +102,9 @@ RUNTPIKE=$(@RUNTPIKE@)
 
 MAKE_FLAGS=
 
+# Changed to post_module.o after the post_module pass.
+MODULEOBJ=module.o
+
 # Add alloca.o if you don't have alloca() on your machine.
 #
 OBJ= \
@@ -133,7 +136,7 @@ OBJ= \
  main.o \
  mapping.o \
  pike_memory.o \
- module.o \
+ $(MODULEOBJ) \
  module_support.o \
  object.o \
  opcodes.o \
@@ -178,7 +181,7 @@ POBJ = las.o builtin_functions.o peep.o
 # to make sure they are linked in.
 all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) post_modules
-	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) MODULEOBJ=post_module.o pike
 
 post_modules: pike
 	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
@@ -230,7 +233,7 @@ pike: $(OBJ) master.pike modules/linker_options stamp-tpike-predep
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options 2>/dev/null` $(LIBS) -o pike
 
 # purify
 pure: $(OBJ) $(POBJ) master.pike module_objects
@@ -658,6 +661,8 @@ modules/modlist_headers.h: modules-stamp
 modules/linker_options: modules-stamp
 
 module.o:  modules/modlist_headers.h modules/modlist.h
+
+post_module.o:  modules/modlist_headers.h modules/modlist.h post_modules/modlist_headers.h post_modules/modlist.h
 
 $(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h
 	egrep '^OPCODE' <$(SRCDIR)/interpret_functions.h >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.3 2000/03/30 17:38:43 grubba Exp $
+# $Id: Makefile.in,v 1.4 2001/08/20 16:45:27 grubba Exp $
 
 @make_variables@
 
@@ -46,7 +46,7 @@ linker_options: $(MODULE_LINKOPTS)
 	      cat $$a/linker_options; \
 	    fi; \
 	  done \
-	) >linker_options
+	) | sed -e 's/^modules\//post_modules\//' >linker_options
 
 Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
