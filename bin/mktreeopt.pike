@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.18 1999/11/09 23:08:12 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.19 1999/11/10 00:31:40 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.18 1999/11/09 23:08:12 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.19 1999/11/10 00:31:40 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -207,9 +207,9 @@ class node
 
   array(string) extras = ({});
 
-  object(node) car, cdr;	// 0 == Ignored.
+  object(node)|string car, cdr;	// 0 == Ignored.
 
-  object(node) real_car, real_cdr;
+  object(node)|string real_car, real_cdr;
 
   object(node) parent;
 
@@ -227,15 +227,21 @@ class node
     n->tpos = tpos;
     n->token = token;
     n->extras = extras;
-    if (real_car) {
+    if (objectp(real_car)) {
       n->real_car = real_car->_copy();
       n->real_car->parent = n;
       n->car = car && n->real_car;
+    } else {
+      n->real_car = real_car;
+      n->car = car;
     }
-    if (real_cdr) {
+    if (objectp(real_cdr)) {
       n->real_cdr = real_cdr->_copy();
       n->real_cdr->parent = n;
       n->cdr = cdr && n->real_cdr;
+    } else {
+      n->real_cdr = real_cdr;
+      n->cdr = cdr;
     }
     n->action = action;
 
@@ -266,14 +272,18 @@ class node
     if (!(< "*", "-" >)[token]) {
       if (real_car || real_cdr) {
 	s += "(";
-	if (real_car) {
+	if (objectp(real_car)) {
 	  s += real_car->_sprintf();
+	} else if (real_car) {
+	  s += "$" + real_car + "$";
 	} else {
 	  s += "*";
 	}
 	s += ", ";
-	if (real_cdr) {
+	if (objectp(real_cdr)) {
 	  s += real_cdr->_sprintf();
+	} else if (real_cdr) {
+	  s += "$" + real_cdr + "$";
 	} else {
 	  s += "*";
 	}
@@ -289,10 +299,10 @@ class node
       return ({ sprintf("C%sR(n)", tpos) });
     }
     array(string) res = ({});
-    if (car) {
+    if (objectp(car)) {
       res += car->used_nodes();
     }
-    if (cdr) {
+    if (objectp(cdr)) {
       res += cdr->used_nodes();
     }
     return res;
@@ -345,7 +355,7 @@ string fix_extras(string s)
   return a * "";
 }
 
-object read_node()
+object|string read_node()
 {
   object res = node();
 
@@ -419,21 +429,49 @@ object read_node()
 	// Useful for common subexpression elimination.
 	pos++;
 	int tag = read_int();
-	if (!marks[tag]) {
+	string ntpos;
+	if (!(ntpos = marks[tag])) {
 	  fail("%s:%d: Tag $%d used before being defined.\n",
 	       fname, line, tag);
+	} else if (ntpos == "") {
+	  fail("%s:%d: Tag $%d is the root, and can't be used for "
+	       "exact matching.\n",
+	       fname, line, tag);
+	} else {	
+	  // FIXME: Ought to check that the tag isn't for one of our parents.
+	  res->car = res->real_car = sprintf("C%sR(n)", ntpos);
 	}
-	fail("%s:%d: Support for recurring nodes not implemented yet.\n",
-	     fname, line);
 	eat_whitespace();
       } else {
 	res->car = res->real_car = read_node();
       }
 
       expect(',');
+      eat_whitespace();
 
       tpos = "D"+otpos;
-      res->cdr = res->real_cdr = read_node();
+
+      if (data[pos] == '$') {
+	// FIXME: Support for recurring nodes.
+	// Useful for common subexpression elimination.
+	pos++;
+	int tag = read_int();
+	string ntpos;
+	if (!(ntpos = marks[tag])) {
+	  fail("%s:%d: Tag $%d used before being defined.\n",
+	       fname, line, tag);
+	} else if (ntpos == "") {
+	  fail("%s:%d: Tag $%d is the root, and can't be used for "
+	       "exact matching.\n",
+	       fname, line, tag);
+	} else {	
+	  // FIXME: Ought to check that the tag isn't for one of our parents.
+	  res->cdr = res->real_cdr = sprintf("C%sR(n)", ntpos);
+	}
+	eat_whitespace();
+      } else {
+	res->cdr = res->real_cdr = read_node();
+      }
 
       tpos = otpos;
       expect(')');
@@ -706,14 +744,16 @@ void zap_cdr(array(object(node)) node_set)
 }
 
 constant NULL_CAR = 0;
-constant NULL_CDR = 1;
-constant MATCH_CAR = 2;
-constant NOT_NULL_CAR = 3;
-constant MATCH_CDR = 4;
-constant NOT_NULL_CDR = 5;
-constant ANY = 6;
-constant ANY_CAR = 7;
-constant ANY_CDR = 8;
+constant EXACT_CAR = 1;
+constant NULL_CDR = 2;
+constant EXACT_CDR = 3;
+constant MATCH_CAR = 4;
+constant NOT_NULL_CAR = 5;
+constant MATCH_CDR = 6;
+constant NOT_NULL_CDR = 7;
+constant ANY = 8;
+constant ANY_CAR = 9;
+constant ANY_CDR = 10;
 
 static int label_cnt;
 
@@ -730,12 +770,15 @@ string generate_match(array(object(node)) rule_set, string indent)
 
   // Group the nodes by their class:
 
-  array(array(object(node))) node_classes = allocate(9, allocate)(0);
+  array(array(object(node))) node_classes = allocate(11, allocate)(0);
 
   foreach(rule_set, object(node) n) {
     int car_kind = ANY;
     if (n->car) {
-      if (n->car->token == "-") {
+      if (stringp(n->car)) {
+	// EXACT
+	car_kind = EXACT_CAR;
+      } else if (n->car->token == "-") {
 	// NULL
 	car_kind = NULL_CAR;
       } else if (n->car->token == "+") {
@@ -748,7 +791,10 @@ string generate_match(array(object(node)) rule_set, string indent)
     }
     int cdr_kind = ANY;
     if (n->cdr) {
-      if (n->cdr->token == "-") {
+      if (stringp(n->cdr)) {
+	// EXACT
+	cdr_kind = EXACT_CDR;
+      } else if (n->cdr->token == "-") {
 	// NULL
 	cdr_kind = NULL_CDR;
       } else if (n->cdr->token == "+") {
@@ -815,6 +861,34 @@ string generate_match(array(object(node)) rule_set, string indent)
     last_was_if = 1;
   }
 
+  if (sizeof(node_classes[EXACT_CAR])) {
+    if (last_was_if) {
+      res += " else ";
+    } else {
+      res += indent;
+    }
+    res += "{\n";
+    indent += "  ";
+    last_was_if = 0;
+    mapping(string:array(object(node))) exacts = ([]);
+    foreach(node_classes[EXACT_CAR], object(node) n) {
+      exacts[n->car] += ({ n });
+    }
+    zap_car(node_classes[EXACT_CAR]);
+    foreach(indices(exacts), string expr) {
+      if (last_was_if) {
+	res += " else ";
+      } else {
+	res += indent;
+      }
+      res += sprintf("if (CA%sR(n) == %s) {\n", tpos, expr);
+      res += generate_match(exacts[expr], indent + "  ");
+      res += indent + "}";
+    }
+    res += "\n";
+    last_was_if = 0;
+  }
+
   if (sizeof(node_classes[NULL_CDR]) ||
       sizeof(node_classes[MATCH_CDR]) ||
       sizeof(node_classes[NOT_NULL_CDR])) {
@@ -846,6 +920,35 @@ string generate_match(array(object(node)) rule_set, string indent)
     res += indent + "}";
     last_was_if = 1;
   }
+
+  if (sizeof(node_classes[EXACT_CDR])) {
+    if (last_was_if) {
+      res += " else ";
+    } else {
+      res += indent;
+    }
+    res += "{\n";
+    indent += "  ";
+    last_was_if = 0;
+    mapping(string:array(object(node))) exacts = ([]);
+    foreach(node_classes[EXACT_CDR], object(node) n) {
+      exacts[n->cdr] += ({ n });
+    }
+    zap_cdr(node_classes[EXACT_CDR]);
+    foreach(indices(exacts), string expr) {
+      if (last_was_if) {
+	res += " else ";
+      } else {
+	res += indent;
+      }
+      res += sprintf("if (CD%sR(n) == %s) {\n", tpos, expr);
+      res += generate_match(exacts[expr], indent + "  ");
+      res += indent + "}";
+    }
+    res += "\n";
+    last_was_if = 0;
+  }
+
   if (sizeof(node_classes[MATCH_CAR]) || sizeof(node_classes[NOT_NULL_CAR]) ||
       sizeof(node_classes[MATCH_CDR]) || sizeof(node_classes[NOT_NULL_CDR])) {
     if (last_was_if) {
@@ -914,6 +1017,14 @@ string generate_match(array(object(node)) rule_set, string indent)
   }
   if (last_was_if) {
     res += "\n";
+  }
+  if (sizeof(node_classes[EXACT_CDR])) {
+    indent = indent[2..];
+    res += indent + "}\n";
+  }
+  if (sizeof(node_classes[EXACT_CAR])) {
+    indent = indent[2..];
+    res += indent + "}\n";
   }
   if (sizeof(node_classes[ANY])) {
     array(object(node)) parent_set = ({});
@@ -996,10 +1107,10 @@ void generate_parent(object(node) n, object(node) parent, string tpos)
 {
   n->tpos = tpos;
   n->parent = parent;
-  if (n->car) {
+  if (objectp(n->car)) {
     generate_parent(n->car, n, "A"+tpos);
   }
-  if (n->cdr) {
+  if (objectp(n->cdr)) {
     generate_parent(n->cdr, n, "D"+tpos);
   }
 }
