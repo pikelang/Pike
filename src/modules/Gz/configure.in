@@ -7,11 +7,22 @@ sinclude(../module_configure.in)
 if test x$with_zlib = xyes ; then
   AC_CHECK_HEADERS(zlib.h)
   if test $ac_cv_header_zlib_h = yes ; then
-    AC_CHECK_LIB(z, compress, [
+    AC_MSG_CHECKING([if libz.h is new enough])
+    AC_TRY_LINK([
+#include <zlib.h>
+    ],[
+int main(int argc, char **argv)
+{
+  return((Z_NO_COMPRESSION|Z_VERSION_ERROR) & 0);
+}
+    ],[ AC_MSG_RESULT(yes) ],[ AC_MSG_RESULT(no); ac_cv_header_zlib_h=no ])
+    if test $ac_cv_header_zlib_h = yes ; then
+      AC_CHECK_LIB(z, compress, [
         AC_DEFINE(HAVE_LIBZ) 
         LIBS="${LIBS-} -lz"
       ] ,
       AC_CHECK_LIB(gz, compress))
+    fi
   fi
 fi
 

@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.37.2.1 1997/05/10 12:57:28 hubbe Exp $");
+RCSID("$Id: file.c,v 1.37.2.2 1997/05/19 09:07:32 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1511,3 +1511,8 @@ void pike_module_init()
   add_gc_callback(mark_ids, 0, 0);
 }
 
+/* Used from backend */
+int pike_make_pipe(int *fds)
+{
+  return socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+}

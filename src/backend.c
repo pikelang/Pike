@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.10.2.1 1997/05/10 12:56:54 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.10.2.2 1997/05/19 09:04:55 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -94,11 +94,13 @@ void wait_for_signal()
   wakeup_callback(wakeup_pipe[0], 0);
 }
 
+extern int pike_make_pipe(int *);
+
 void init_backend()
 {
   FD_ZERO(&selectors.read);
   FD_ZERO(&selectors.write);
-  if(pipe(wakeup_pipe) < 0)
+  if(pike_make_pipe(wakeup_pipe) < 0)
     fatal("Couldn't create backend wakup pipe, errno=%d.\n",errno);
   set_nonblocking(wakeup_pipe[0],1);
   set_nonblocking(wakeup_pipe[1],1);

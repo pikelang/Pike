@@ -58,6 +58,11 @@ class FILE {
       return file::seek(pos);
     }
 
+    int tell()
+    {
+      return bpos;
+    }
+
     int close(void|string mode)
     {
       bpos=0;

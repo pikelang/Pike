@@ -11,7 +11,7 @@ VPATH=$(SRCDIR):$(SRCDIR)/../include
 CRYPTO_INCLUDES=$(SRCDIR)/../include
 
 # Additional C preprocessor flags
-PREFLAGS=$(DEFINES) $(EXTRA_CPP_FLAGS) -I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR)
+PREFLAGS=$(EXTRA_CPP_FLAGS) -I$(CRYPTO_INCLUDES) -I. -I$(SRCDIR) $(DEFINES)
 
 # The flags to generate a shared library
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(EXTRA_CFLAGS)
@@ -67,11 +67,11 @@ desCore.a:	$O
 		ar cru $@ $O
 		$(RANLIB) $@
 
-desdata.o:	desinfo.h des.h
+desdata.o:	desinfo.h $(SRCDIR)/../include/des.h
 desUtil.o:	$(GH)
-$(SO):		des.h
-$(GI):		desCode.h des.h Makefile
-desTest.o:	des.h
+$(SO):		$(SRCDIR)/../include/des.h
+$(GI):		desCode.h $(SRCDIR)/../include/des.h Makefile
+desTest.o:	$(SRCDIR)/../include/des.h
 
 $(GH):		desdata
 		./desdata $@ > $@

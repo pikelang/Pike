@@ -14,6 +14,7 @@
 #include "callback.h"
 #include "mapping.h"
 #include "object.h"
+#include "threads.h"
 #include <signal.h>
 #include <sys/wait.h>
 
@@ -28,11 +29,21 @@
 #endif
 
 #define SIGNAL_BUFFER 16384
+#define WAIT_BUFFER 4096
+
+struct wait_data {
+  pid_t pid;
+  int status;
+};
 
 static struct svalue signal_callbacks[MAX_SIGNALS];
 
 static unsigned char sigbuf[SIGNAL_BUFFER];
-static int firstsig, lastsig;
+static int firstsig=0, lastsig=0;
+
+static struct wait_data wait_buf[WAIT_BUFFER];
+static int firstwait=0, lastwait=0;
+
 static struct callback *signal_evaluator_callback =0;
 static int sigchild_arrived=0;
 
@@ -202,10 +213,41 @@ static RETSIGTYPE receive_signal(int signum)
   tmp=firstsig+1;
   if(tmp == SIGNAL_BUFFER) tmp=0;
   if(tmp != lastsig)
-    sigbuf[firstsig=tmp]=signum;
+  {
+    sigbuf[tmp]=signum;
+    firstsig=tmp;
+  }
 
   if(signum==SIGCHLD)
-    sigchild_arrived++;
+  {
+    pid_t pid;
+    int status;
+    /* We carefully reap what we saw */
+#ifdef HAVE_WAITPID
+    pid=waitpid(-1,& status,WNOHANG);
+#else
+#ifdef HAVE_WAIT3
+    pid=wait3(&status,WNOHANG,0);
+#else
+#ifdef HAVE_WAIT4
+    pid=wait4(-1,&status,WNOHANG,0);
+#else
+    pid=-1;
+#endif
+#endif
+#endif
+    if(pid>0)
+    {
+      int tmp2=firstwait+1;
+      if(tmp2 == WAIT_BUFFER) tmp=0;
+      if(tmp2 != lastwait)
+      {
+	wait_buf[tmp2].pid=pid;
+	wait_buf[tmp2].status=status;
+	firstwait=tmp2;
+      }
+    }
+  }
 
   wake_up_backend();
 
@@ -214,47 +256,12 @@ static RETSIGTYPE receive_signal(int signum)
 #endif
 }
 
-static int signalling=0;
-
-static void unset_signalling(void *notused) { signalling=0; }
-
-void check_signals(struct callback *foo, void *bar, void *gazonk)
-{
-  ONERROR ebuf;
-#ifdef DEBUG
-  extern int d_flag;
-  if(d_flag>5) do_debug(0);
-#endif
-
-  if(firstsig != lastsig && !signalling)
-  {
-    int tmp=firstsig;
-    signalling=1;
-
-    SET_ONERROR(ebuf,unset_signalling,0);
-
-    while(lastsig != tmp)
-    {
-      if(++lastsig == SIGNAL_BUFFER) lastsig=0;
-
-      push_int(sigbuf[lastsig]);
-      apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
-      pop_stack();
-    }
-
-    UNSET_ONERROR(ebuf);
-
-    signalling=0;
-  }
-}
-
 #define PROCESS_UNKNOWN 0
 #define PROCESS_RUNNING 1
 #define PROCESS_EXITED 2
 
 #define THIS ((struct pid_status *)fp->current_storage)
 
-static struct callback *children_evaluator_callback =0;
 struct mapping *pid_mapping=0;;
 struct program *pid_status_program=0;
 
@@ -283,94 +290,103 @@ static void exit_pid_status(struct object *o)
   }
 }
 
-static RETSIGTYPE sig_child(int arg)
+static void report_child(int pid,
+			 int status)
 {
-  wake_up_backend();
-  sigchild_arrived++;
-
-#ifdef SIGNAL_ONESHOT
-  my_signal(SIGCHLD, sig_child);
-#endif
+  if(pid_mapping)
+  {
+    struct svalue *s, key;
+    key.type=T_INT;
+    key.u.integer=pid;
+    if((s=low_mapping_lookup(pid_mapping, &key)))
+    {
+      if(s->type == T_OBJECT)
+      {
+	struct pid_status *p;
+	if((p=(struct pid_status *)get_storage(s->u.object,
+					       pid_status_program)))
+	{
+	  p->state = PROCESS_EXITED;
+	  p->result = WEXITSTATUS(status);
+	}
+      }
+      map_delete(pid_mapping, &key);
+    }
+  }
 }
 
-static void check_children(struct callback *foo, void *bar, void *gazonk)
+static int signalling=0;
+
+static void unset_signalling(void *notused) { signalling=0; }
+
+void check_signals(struct callback *foo, void *bar, void *gazonk)
 {
-  if(sigchild_arrived)
+  ONERROR ebuf;
+#ifdef DEBUG
+  extern int d_flag;
+  if(d_flag>5) do_debug(0);
+#endif
+
+  if(firstsig != lastsig && !signalling)
   {
-#ifdef HAVE_SIGPROCMASK
-    sigset_t set, oset;
-    sigemptyset(&set);
-    sigaddset(&set, SIGCHLD);
-    sigprocmask(SIG_BLOCK, &set, &oset);
-#else
-#ifdef HAVE_SIGBLOCK
-    int oset;
-    oset=siggetmask();
-    sigblock(sigmask(SIGCHLD));
-#endif
-#endif
-    while(sigchild_arrived>0)
+    int tmp=firstsig;
+    signalling=1;
+
+    SET_ONERROR(ebuf,unset_signalling,0);
+
+    while(lastsig != tmp)
     {
-      sigchild_arrived--;
-      while(1)
+      if(++lastsig == SIGNAL_BUFFER) lastsig=0;
+
+      if(sigbuf[lastsig]==SIGCHLD)
       {
-	pid_t pid;
-	int status;
-      /* We carefully reap what we saw */
-#ifdef HAVE_WAITPID
-	pid=waitpid(-1,& status,WNOHANG);
-#else
-#ifdef HAVE_WAIT3
-	pid=wait3(&status,WNOHANG,0);
-#else
-#ifdef HAVE_WAIT4
-	pid=wait4(-1,&status,WNOHANG,0);
-#else
-	pid=-1;
-#endif
-#endif
-#endif
-	if(pid>0)
+	int tmp2 = firstwait;
+	while(lastwait != tmp2)
 	{
-	  if(pid_mapping)
-	  {
-	    struct svalue *s, key;
-	    key.type=T_INT;
-	    key.u.integer=pid;
-	    if((s=low_mapping_lookup(pid_mapping, &key)))
-	    {
-	      if(s->type == T_OBJECT)
-	      {
-		struct pid_status *p;
-		if((p=(struct pid_status *)get_storage(s->u.object,
-						      pid_status_program)))
-		{
-		  p->state = PROCESS_EXITED;
-		  p->result = WEXITSTATUS(status);
-		}
-	      }
-	      map_delete(pid_mapping, &key);
-	    }
-	  }
-	}else{
-	  break;
+	  if(++lastwait == WAIT_BUFFER) lastwait=0;
+	  report_child(wait_buf[lastwait].pid,
+		       wait_buf[lastwait].status);
 	}
+      }
+
+      if(signal_callbacks[sigbuf[lastsig]].type != T_INT)
+      {
+	push_int(sigbuf[lastsig]);
+	apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
+	pop_stack();
       }
     }
 
-#ifdef HAVE_SIGPROCMASK
-    sigprocmask(SIG_SETMASK, &oset, 0);
-#else
-#ifdef HAVE_SIGBLOCk
-    sigsetmask(oset);
-#endif
-#endif
+    UNSET_ONERROR(ebuf);
+
+    signalling=0;
   }
 }
 
 static void f_pid_status_wait(INT32 args)
 {
   pop_n_elems(args);
+#if 1
+  while(THIS->state == PROCESS_RUNNING)
+  {
+    int pid, status;
+    pid=THIS->pid;
+    THREADS_ALLOW();
+#ifdef HAVE_WAITPID
+    pid=waitpid(pid,& status,WNOHANG);
+#else
+#ifdef HAVE_WAIT4
+    pid=wait4(pid,&status,WNOHANG,0);
+#else
+    pid=-1;
+#endif
+#endif
+    THREADS_DISALLOW();
+    if(pid >= -1)
+      report_child(pid, status);
+    check_signals(0,0,0);
+  }
+#else
   init_signal_wait();
   while(THIS->state == PROCESS_RUNNING)
   {
@@ -378,6 +394,7 @@ static void f_pid_status_wait(INT32 args)
     check_threads_etc();
   }
   exit_signal_wait();
+#endif
   push_int(THIS->result);
 }
 
@@ -408,11 +425,11 @@ void f_fork(INT32 args)
   if(pid)
   {
     struct pid_status *p;
-    if(!children_evaluator_callback)
+    if(!signal_evaluator_callback)
     {
-      children_evaluator_callback=add_to_callback(&evaluator_callbacks,
-						  check_children,
-						  0,0);
+      signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
+						check_signals,
+						0,0);
     }
     o=clone_object(pid_status_program,0);
     p=(struct pid_status *)get_storage(o,pid_status_program);
@@ -489,7 +506,7 @@ static void f_signal(int args)
     switch(signum)
     {
     case SIGCHLD:
-      func=sig_child;
+      func=receive_signal;
       break;
 
     case SIGPIPE:
@@ -624,7 +641,7 @@ void init_signals()
 {
   int e;
 
-  my_signal(SIGCHLD, sig_child);
+  my_signal(SIGCHLD, receive_signal);
   my_signal(SIGPIPE, SIG_IGN);
 
   for(e=0;e<MAX_SIGNALS;e++)

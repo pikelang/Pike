@@ -25,8 +25,9 @@ like it does from this book. It also teaches you how to write your own
 extentions to Pike. I have been trying for years to get someone else to
 write this book, but since it seems impossible without paying a fortune for
 it I will have to do it myself. 
-A big thanks goes to Ian Carr-de Avelon for helping me iron out some
-of the rough spots. 
+A big thanks goes to
+<a href="http://www.emit.com.pl/ian.html">Ian Carr-de Avelon</a> for helping
+me iron out some of the rough spots. 
 
 The book assumes that
 you have programmed some other programming language before and that you
@@ -165,7 +166,7 @@ data type.
 <p>
 First you need to have pike installed on your computer. See <link to=install>
 "how to install Pike" if this is not already done. It is also vital
-for the following examples that the pike binary is in your UNIX search
+for the first of the following examples that the pike binary is in your UNIX search
 path. If you have problems with this, consult the manual for your shell
 or go buy a beginners book about UNIX.
 <p>
@@ -204,7 +205,7 @@ Now let's examine the body of <tt>main</tt>;
 	  return 0;
 	}
 </pre>
-Within the function body, programming instructions, statements, are grouped together in blocks. A block is as series of statements placed between curly brackets. Every statement has to end in a semicolon. This group of statements will
+Within the function body, programming instructions, statements, are grouped together in blocks. A block is a series of statements placed between curly brackets. Every statement has to end in a semicolon. This group of statements will
 be executed every time the function is called.
 <p>
 <pre>
@@ -396,7 +397,7 @@ modifiers. The <i>type </i> specifies what kind of data the function returns.
 For example, the word <tt>int</tt> would signify that the function returns
 an integer number. The <i>name </i> is used to identify the function when
 calling it. The names between the parenthesis are the arguments to the
-function. They will be defined as local variabels inside the function. Each
+function. They will be defined as local variables inside the function. Each
 variable will be declared to contain values of the preceeding type.
 The three dots signifies that you can have anything from zero to 256 arguments
 to a function. The <i> statements </i> between the brackets are the function
@@ -436,8 +437,8 @@ looking at this. The number 0 is false and everything else is true.
 As you saw in our first examples we have to indicate the type of value returned by a functions or contained in a variable. We used integers (<tt>int</tt>.), strings (<tt>string</tt>), and arrays (with the * notation).
 The others are <tt>mapping</tt>, <tt>mixed</tt>, <tt>void</tt>, <tt>float</tt>, <tt>multiset</tt>, <tt>function</tt>, <tt>object</tt> and <tt>program</tt>.
 Neither <tt>mixed</tt> nor <tt>void</tt> are really types, <tt>void</tt> signifies that no value should be returned and <tt>mixed</tt> that the return value can be of any type, or that the variable can contain any type of value.
-<tt>Function</tt>, <tt>object</tt> and <tt>program</tt> are all types related to object orientation. We will not discuss the last three in any great detail here, for more details,
-in this short Pike overview. You can, however, read more at <a href=http://pike.infovav.se/>the pike home page</a>. There you'll also find more details on the other data types and the possible operations that are possible to perform on each of them.
+<tt>Function</tt>, <tt>object</tt> and <tt>program</tt> are all types related to object orientation. We will not discuss the last three in any great detail here,
+in this short Pike overview. You can, however, read more at <a href=http://pike.infovav.se/>the pike home page</a>. There you'll also find more details on the other data types and the operations that it is possible to perform on each of them.
 
 <dl>
 <dt>Int
@@ -469,7 +470,7 @@ will declare one array of strings and one string. However, it's much clearer to 
 
 <dt>String
 <dd>A string contains a sequence of characters, a text, i.e. a word, a sentence, or a book. Note that this is not simply the letters A to Z; special characters, null characters, newlines and so on can all be stored in a string. Any 8-bit character is allowed. String is a basic type in Pike, as opposed to C where strings are represented by an array of char. This means that you cannot assign new values to individual characters in a string.
-Also, all strings are "shared", i.e. if the same string is used in several places, only one will be stored in memory.
+Also, all strings are "shared", i.e. if the same string is used in several places, it will be stored in memory only once.
 When writing a string in a program, you enclose it in doublequotes. To write special characters you need to use the following syntax;
 <table>
 <tr><td><li>\n</td><td>newline</td></tr>
@@ -642,25 +643,30 @@ If the command given is "quit" the <tt>exit(0)</tt> statement stops the executio
 
 <section title="Communicating with files">
 Now if we want to save the database and also be able to retrieve previously stored data we have to communicate with the environment, i.e. with files on disk.
-Now we have to introduce objects. To open a file, be it for writing or for reading, we need to use the builtin program <tt>Stdio.File</tt>.
-A program is a data type which contains code, function and variables.
-A program can be <i>cloned</i>, i.e. we can create an data area for the program and initialize it with the physical file in question. The methods and variables in the file object enables us to perform actions on the associated file.
+Now we will introduce you to programming with objects. To open a file, be it for writing or for reading, we will use one of the programs which is builtin in Pike, it is called <tt>Stdio.File</tt>.
+To Pike, a program is a data type which contans code, functions and variables.
+A program can be <i>cloned</i>, i.e. Pike can create an data area in memory for the program, place a reference to the program in the data area, and initialize it to act on the data file in question. The methods (ie. functions in the objct) and variables in the object Stdio.File enables us to perform actions on the associated data file.
 The methods we need to use are open, read, write and close. See <link to=io>
 for more details.
 <p>
 
 <section title="save()">
-First we clone a <tt>Stdio.File</tt> program to the object <tt>o</tt>. Then we use it to open the file named file for writing, using the fact that if there's an error during opening, o will return a false value which we can detect and act upon by exiting. The arrow operator is what you use to access methods and variables in an object.
-If there's no error we use yet another control structure, <tt>foreach</tt>, to go through the mapping records one record at a time. We precede record names with the string "Record: " and song names with "Song: ". We also put every entry, be it song or record, on its own line by adding a newline to everything we write to the file.<br>
+First we clone a <tt>Stdio.File</tt> program to the object <tt>o</tt>.
+Then we use it to open the file whose name is given in the string file_name for writing.
+We use the fact that if there is an error during opening, open() will return a false value which we can detect and act upon by exiting.
+The arrow operator (-&gt;) is what you use to access methods and variables in an object.
+If there is no error we use yet another control structure, <tt>foreach</tt>, to go through the mapping <tt>records</tt> one record at a time.
+We precede record names with the string "Record: " and song names with "Song: ".
+We also put every entry, be it song or record, on its own line by adding a newline to everything we write to the file.<br>
 Finally, remember to close the file.
 <pre>
-	void save(string file)
+	void save(string file_name)
 	{
 	  string name, song;
 	  object o;
 	  o=Stdio.File();
 
-	  if(!o-&gt;open(file,"wct"))
+	  if(!o-&gt;open(file_name,"wct"))
 	  {
 	    write("Failed to open file.\n");
 	    return;
@@ -686,14 +692,14 @@ When receiving data from the file we put it in the string <tt>file_contents</tt>
 The abscense of arguments to the method o-&gt;read means that the reading should not end until the end of the file.
 After having closed the file we initialise our database, i.e. the mapping records. Then we have to put <tt>file_contents</tt> into the mapping and we do this by splitting the string on newlines (cf. the split operator in Perl) using the division operator. Yes, that's right: by dividing one string with another we can obtain an array consisting of parts from the first. And by using a <tt>foreach</tt> statement we can take the string <tt>file_contents</tt> apart piece by piece, putting each piece back in its proper place in the mapping records.
 <pre>
-	void load(string file)
+	void load(string file_nae)
 	{
 	  object o;
 	  string name="ERROR";
 	  string file_contents,line;
 
 	  o=Stdio.File();
-	  if(!o-&gt;open(file,"r"))
+	  if(!o-&gt;open(file_name,"r"))
 	  {
 	    write("Failed to open file.\n");
 	    return;
@@ -1206,7 +1212,7 @@ Also note these functions:
 </section>
 
 <section title="float">
-Although most programs only use ingegers, they are unpractical when doing
+Although most programs only use integers, they are unpractical when doing
 trigonometric caluculations, transformations or anything else where you
 need decimals. For this purpose you use <tt>float</tt>. Floats are normally
 32 bit floating point numbers, which means that they can represent very large
@@ -1413,7 +1419,7 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
 <dd> As with strings, summation concatenates arrays. <tt>({1})+({2})</tt> returns <tt>({1,2})</tt>.
 
 <dt> Subtractions (<tt><i>a</i> - <i>b</i></tt>)
-<dd> Subtracting one array from another returns an array returns a copy of
+<dd> Subtracting one array from another returns a copy of
     <i>a</i> with all the elements that are also present in <i>b</i> removed.
     So <tt>({1,3,8,3,2}) - ({3,1})</tt> returns <tt>({8,2})</tt>.
 
@@ -2210,7 +2216,7 @@ used and the value of the environment variables <tt>LC_CTYPE</tt> and
 Logical operators are operators that operate with truth values. In Pike any value
 except zero is considered <b>true</b>. Logical operators are a very basic part
 of Pike. They can also decide which arguments to evaluate and which not to
-evaluate. Becuase of this the logical operators do not have any identifiers and
+evaluate. Because of this the logical operators do not have any identifiers and
 can not be called as normal functions. There are four logical operators:
 
 <center>
@@ -2445,9 +2451,8 @@ already seen many examples of this operator, although you might not have
 realized it was an operator at the time. The function call operator can
 do more than just calling functions though; if the 'function' is in fact
 an array, the operator will loop over the array and call each element in
-the array and return an array with the results. In fact,
-<tt>({ foo, bar, gaznonk }) (1, 2, 3)</tt> is the same as
-<tt>map(({ foo, bar, gaznonk }), call_function, 1, 2, 3)</tt>.
+the array and return an array with the results.
+<!-- In fact, <tt>({ foo, bar, gaznonk }) (1, 2, 3)</tt> is the same as <tt>map(({ foo, bar, gaznonk }), call_function, 1, 2, 3)</tt>. -->
 If on the other hand, the 'function' is a program, the operator will
 clone an object from the program and call create() in the new object
 with the arguments given. In fact, the function <tt>clone</tt> is
@@ -2463,13 +2468,13 @@ should always be an array. The splice operator sends each of the elements
 in the array as a separate argument to the function call. The splice operator
 can only be used in an argument list for a function call.
 <p>
-Then there is the increment and decrement operators. The increment and
+Then there are the increment and decrement operators. The increment and
 decrement operators are somwhat limited: they can only be used on
 integers. They provide a short and fast way to add or subtract one
-to an integer. If the operator is written before the lvalue
+to an integer. If the operator is written before the variable
 ((tt>++<i>a</i></tt>) the returned value will be what the variable
 is after the operator has added/subtracted one to it. If the operator
-is after the lvalue (<tt><i>a</i>++</tt>) it will instead return the
+is after the variable (<tt><i>a</i>++</tt>) it will instead return the
 value of the variable before it was incremented/decremented.
 <p>
 Casting is used to convert one type to another, not all casts are
@@ -2574,7 +2579,7 @@ it is identical to C++ in any way. Pike uses a less strict approach to
 object orientation which creates a more relaxed programming style. For you
 who have never come in contact with object oriented programming before, be
 warned that the ideas expressed in Pike and in this chapter are my own and
-does not nessecarily reflect what other people think about object
+do not nessecarily reflect what other people think about object
 orientated programming.
 
 <section title="The approach">
@@ -2738,7 +2743,7 @@ that works by just changing what an identifier is pointing at.
 </section>
 
 <sectrion title="Multiple inherit">
-You can inherit any amount of programs in one program, you can even inherit the
+You can inherit any number of programs in one program, you can even inherit the
 same thing more than once. If you do this you will a separate set of functions
 and variables for each inherit. To access a specific function you need to name
 your inherits. Here is an example of named inherits:
@@ -2761,7 +2766,7 @@ your inherits. Here is an example of named inherits:
 </pre>
 
 As you can see it would be impossible to separate the different read and
-main functions without using inherit names. If you would try to calling
+main functions without using inherit names. If you tried calling
 just <tt>read</tt> without any <tt>::</tt> or inherit name in front of it
 Pike will call the last read defined, in this case it will call read in
 the fourth inherit.
@@ -3158,12 +3163,12 @@ modules.
 
 <section title="The . operator">
 The period operator is not really an operator, as it is always evaluated
-during the compilation. It works similar to the index and arrow operators,
+during the compilation. It works similarly to the index and arrow operators,
 but can only be used on constant values such as modules. In most cases,
 modules are simply a clone of a program, in which case the identifiers in
 the module will be the same as those in the program. But some modules,
 like those created from directories, overload the index operator so that
-the identifiers in the module can be something else than those in the program.
+the identifiers in the module can be something other than those in the program.
 For directory modules, the index operator looks in the directory it was
 cloned for to find the identifiers.
 </section>
@@ -3722,7 +3727,7 @@ copied from this file. Note that all variables, even id, is copied.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function works similar to Stdio.File-&gt;assign, but instead of making
+This function works similarly to Stdio.File-&gt;assign, but instead of making
 the argument a reference to the same file, it creates a new file
 with the same properties and places it in the argument.
 <p>
@@ -3751,7 +3756,7 @@ o-&gt;dup2(Stdio.File("stdin"));<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function takes a clone of /precompiled/file and assigns all
-variables this file from it. It can be used together with file-&gt;dup
+variables of this file from it. It can be used together with file-&gt;dup
 to move files around.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -4528,7 +4533,7 @@ read only that many bytes will be returned.
 	      werror("Error: "+socket::errno()+".\n");
 	    }
 </pre>
- If something went wront during writing, or there was nothing left to read
+ If something went wrong during writing, or there was nothing left to read
  we destruct this instance of this class.
 <p>
 <pre>
@@ -4751,6 +4756,8 @@ instead. (like someone connecting)
 That's it, this simple program can be used as the basis for a simple
 WWW-server. Note that today most WWW servers are very complicated programs,
 and the above program can never replace a modern WWW server.
+However, it is very fast if you only want a couple of web pages and have
+a slow machine available for the server.
 <p>
 </section>
 </chapter>
@@ -4807,16 +4814,7 @@ both threads will discover that <tt>map[i]</tt> is zero and both threads will
 then do <tt>map[i]=({j});</tt> and one value of <tt>j</tt> will be lost.
 This type of bug can be extremely hard to debug.
 
-<dt> Deadlocks
-<dd> Deadlocks arise when two threads are waiting for each other to do something.
-     This bug can often arise when several threads needs access to a number of
-     resources such as files or other I/O devices. What may happen is that one
-     thread has locked device #1 and is trying to lock device #2 while another
-     thread has locked device #2 and is trying to lock device #1. This type
-     of bug is generally easier to find, but may require a lot of work to fix.
-</dl>
-
-The above problems can all be solved with the help of Mutexes and Condition
+The above problem can be solved with the help of Mutexes and Condition
 variables. Mutexes are basically a way to keep other threads out while a task
 is being performed. Conditions, or <b>condition variables</b>, are used to inform
 other threads that they don't have to wait any longer. Pike also provides
@@ -4864,6 +4862,16 @@ given as first argument to the program in the files given as the rest
 of the arguments. Don't worry if you do not understand it yet. Read the
 descriptions of the functions and classes below and come back and read
 this example again.
+
+<dt> Deadlocks
+<dd> Deadlocks arise when two threads are waiting for each other to do something.
+     This bug can often arise when several threads needs access to a number of
+     resources such as files or other I/O devices. What may happen is that one
+     thread has locked device #1 and is trying to lock device #2 while another
+     thread has locked device #2 and is trying to lock device #1. This type
+     of bug is generally easier to find, but may require a lot of work to fix.
+</dl>
+
 </section>
 
 
@@ -5258,7 +5266,7 @@ Queues are only available on systems with POSIX or UNIX threads support.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function puts a value last in the queue. If the queue is
-to small to hold the value the queue will be expanded to make
+too small to hold the value the queue will be expanded to make
 room for it.
 <p>
 </dl>
@@ -6481,7 +6489,7 @@ You can only have 40 subregexps.
 Gmp is short for GNU MultiPrecision library. It is a set of routines that
 can manipulate very large numbers. Although much slower than regular integers
 they are very useful when you need to handle extremly large numbers.
-Billions and billions as Mr Attenburrow would have said..
+Billions and billions as Mr Attenborough would have said..
 <p>
 The Gmp library can handle large integers, floats and rational numbers, but
 currently Pike only has support for large integers. The others will be added
@@ -6916,7 +6924,7 @@ The 'longform' is an alternative and maybe more readable way to
 give the same option. If you give "foo" as longform your program
 will accept --foo as argument. The envvar argument specifies what
 environment variable can be used to specify the same option. The
-envvar option exists to make it easier to custimizer program usage.
+envvar option exists to make it easier to customize program usage.
 The 'def' has two functions: It specifies that the option takes an
 argument and it tells find_option what to return if the option is
 not present. If 'def' is given and the option does not have an
@@ -6997,7 +7005,7 @@ Only the first three elements has to be included.
       This would make find_all_options look for <tt>-t</tt>,
       <tt>-T</tt> and <tt>--test</tt>.
 <dt> <i>env_var</i>
-<dd> This is a string or an array of strings containging names of
+<dd> This is a string or an array of strings containing names of
      environment variables that can be used instead of the
      command line option.
 <dt> <i>default</i>
@@ -7168,7 +7176,7 @@ so it can be re-used.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function performs gzip style compression on a string and
 returns the packed data. Streaming can be done by calling this
-functon several time and concatenating the returned data.
+functon several times and concatenating the returned data.
 The optional 'flush' argument should be one f the following:
 <p><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td> Gz.NO_FLUSH       </td><td> Only data that doesn't fit in the </td></tr>
@@ -11869,7 +11877,7 @@ quote the included file.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function adds another directory to the search for modules.
 This is the same as the command line option <tt>-M</tt>. For more
-more information about modules, see <link to=modules>.
+information about modules, see <link to=modules>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#remove_module_path>remove_module_path</a>
@@ -11890,7 +11898,7 @@ more information about modules, see <link to=modules>.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function adds another directory to the search for programs.
 This is the same as the command line option <tt>-P</tt>. For more
-more information about programs, see <link to=programs>.
+information about programs, see <link to=programs>.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#remove_program_path>remove_program_path</a>
@@ -12434,7 +12442,7 @@ Result: /foo/bar/sune.c<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function will compile the filename to an Pike program that can
+This function will compile the filename to a Pike program that can
 later be used for cloning.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
@@ -12457,7 +12465,7 @@ later be used for cloning.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Compile_string takes a complete Pike program as an argument in a the
+Compile_string takes a complete Pike program as an argument in the
 string prog and compiles it to clonable program. The second argument
 will be used as the file name of the program and will be used for
 error messages and such.
@@ -13125,7 +13133,7 @@ string *glob(string <I>glob</I>, string *<I>arr</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function matches "globs". A in the glob string a question sign
+This function matches "globs". A the the glob string a question sign
 matches any character and an asterisk matches any string. When
 given two strings as argument a true/false value is returned
 which reflects if the 'str' matches 'glob'. When given an array as
@@ -13954,7 +13962,7 @@ This function can do several kinds replacement operations, the
 different syntaxes do different things as follow:
 <p>string replace(string s, string from, string to);
 <p><dl><dt><dd>When given strings as second and third argument, a copy of<br>
-s with every occurance of 'from' return 'to' is returned.<br>
+s with every occurance of 'from' replaced with 'to' is returned.<br>
 </dl>
 <p>string replace(string s, string *from, string *to);
 <p><dl><dt><dd>When given arrays of strings as second and third argument,<br>
@@ -14700,7 +14708,7 @@ int time(1);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns the number of secons since 1 Jan 1970.
+This function returns the number of seconds since 1 Jan 1970.
 The function ctime() converts this integer to a readable string.
 <p>The second syntax does not call the system call time() as often,
 but is only updated in the backed. (when pike code isn't running)
@@ -14967,7 +14975,7 @@ in the <b>master object</b>:
      argument is called. It is expected to return the program to inherit.
 <dt> <tt>void handle_error(mixed *<i>trace</i>)</tt>
 <dd> This function is expected to write the error messages when a
-     run time error occurs. The argument is on the form
+     run time error occurs. The argument is of the form
      <tt>({"<i>error_description</i>", backtrace() })</tt>. If any error
      occurs in this routine Pike will dump core.
 <dt> <tt>program cast_to_program(string <i>program_name</i>, string <i>current_file</i>)</tt>
@@ -15101,9 +15109,9 @@ instead of writing them to stderr.
 <appendix title="Terms and jargon">
 <dl>
   <dt> HTTP <dd> HyperText Transfer Protocol, the protocol used by WWW to transfer HTML from the server to the client. Based on TCP.
-  <dt> WWW <dd> World Wide Web, popularly known as 'the internet' :)
+  <dt> WWW <dd> World Wide Web, popularly known as 'the Internet' :)
   <dt> TCP <dd> Transmission Control Protocol, the internet standard for computer communication
-  <dt> ASCII <dd> <!-- FIXME -->
+  <dt> ASCII <dd> American Standard Code for Information Interchange.  Standard set by the American Standards Authority for encoding English letters, numbers , some symbols and control characters in 7 bits. There are also some "semi-standard" systems which add other characters by using 8 bits, which are also loosly called ASCII.
   <dt> UNIX <dd> A group of operating systems. Some noteworthy unixes are: Solaris, Linux, HP-UX, Digital Unix, SunOs, BSD and Unixware.
   <dt> clone <dd> To create an object from a program. Or to use C++ jargon: to instanciate a class.
   <dt> command line <dd> The line you write to execute a program
@@ -15183,13 +15191,13 @@ void add_record()
   }
 }
 
-void save(string file)
+void save(string file_name)
 {
   string name, song;
   object o;
   o=Stdio.File();
 
-  if(!o-&gt;open(file,"wct"))
+  if(!o-&gt;open(file_name,"wct"))
   {
     write("Failed to open file.\n");
     return;
@@ -15205,14 +15213,14 @@ void save(string file)
   o-&gt;close();
 }
 
-void load(string file)
+void load(string file_name)
 {
   object o;
   string name="ERROR";
   string file_contents,line;
 
   o=Stdio.File();
-  if(!o-&gt;open(file,"r"))
+  if(!o-&gt;open(file_name,"r"))
   {
     write("Failed to open file.\n");
     return;

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.23.2.1 1997/05/10 12:56:57 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.23.2.2 1997/05/19 09:04:57 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -119,7 +119,6 @@ void *new_thread_func(void * data)
     arg.args=0;
     f_call_function(args);
 
-    fprintf(stderr,"Done ");
     /* copy return value to the thread_id here */
     object_low_set_index(thread_id,
 			 thread_id_result_variable,

@@ -28,16 +28,19 @@ varargs object spawn(string s,object stdin,object stdout,object stderr)
     if(stdin) {
       stdin->dup2(File("stdin"));
       stdin->close();
+      destruct(stdin);
     }
 
     if(stdout) {
       stdout->dup2(File("stdout"));
       stdout->close();
+      destruct(stdout);
     }
 
     if(stderr) {
       stderr->dup2(File("stderr"));
       stderr->close();
+      destruct(stderr);
     }
     ::close();
     exec("/bin/sh","-c",s);

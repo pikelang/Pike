@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.21 1997/04/16 03:09:12 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.21.2.1 1997/05/19 09:04:55 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1477,7 +1477,10 @@ static int do_lex2(int literal, YYSTYPE *yylval)
     case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
     {
-      char *p;
+      char *p, *p2;
+      int isfloat=0;
+      double d;
+
       UNGETC(c);
       READBUF(isdigit(C) || C=='.');
 
@@ -1495,12 +1498,38 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 	  UNGETSTR(p,strlen(p));
 	  *p=0;
 	}
+
 	if((p=STRCHR(buf,'.')))
 	{
-	  yylval->fnum=STRTOD(buf,NULL);
-	  return F_FLOAT;
+	  isfloat=1;
 	}
       }
+
+      d=STRTOD(buf, NULL);
+
+      if(GOBBLE('e') || GOBBLE('E'))
+      {
+	int neg;
+	if(GOBBLE('-'))
+	  neg=1;
+	else if(GOBBLE('+'))
+	  neg=0;
+	else
+	  neg=0;
+	
+	READBUF(isdigit(C));
+        if(neg)
+	  d /= pow(10.0,STRTOD(buf,NULL));
+        else
+	  d *= pow(10.0,STRTOD(buf,NULL));
+	isfloat=1;
+      }
+      if(isfloat)
+      {
+	yylval->fnum=(float)d;
+	return F_FLOAT;
+      }
+
       if(buf[0]=='0')
 	yylval->number=STRTOL(buf,NULL,8);
       else
