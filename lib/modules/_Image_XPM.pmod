@@ -1,16 +1,15 @@
 inherit Image._XPM;
 #if 0
 #define TE( X )  write("XPM profile: %-20s ... ", (X));
-
-int old_time = gethrtime();
-#define TI() old_time = gethrtime();
+int old_time,start_time;
+#define TI(X) start_time=old_time=gethrtime();TE(X)
 #define TD( X ) do{\
- write("%3.02f\n", (gethrtime()-old_time)/1000000.0);\
+ write("%3.02f (%3.02f)\n", (gethrtime()-old_time)/1000000.0,(gethrtime()-start_time)/1000000.0);\
  TE(X);  \
  old_time = gethrtime(); \
 } while(0);
 #else
-#define TI()
+#define TI(X)
 #define TD(X)
 #define TE(X)
 #endif
@@ -23,8 +22,7 @@ mapping _decode( string what, void|mapping opts )
   mapping retopts = ([ ]);
   if(!opts)
     opts = ([]);
-
-  TE("Scan for header");
+  TI("Scan for header");
   if(sscanf(what, "%*s/*%*[ \t]XPM%*[ \t]*/%*s{%s", what)  != 5)
     error("This is not a XPM image (1)\n");
 
@@ -50,11 +48,7 @@ mapping _decode( string what, void|mapping opts )
   int r, sp;
 
   TD("Trim");
-  for(int i = 0; i<len; i++)
-    if(strlen(data[i]) &&
-       data[i][0] != '/' && 
-       (sp=search(data[i], "\"")) != -1)
-      data[r++] = (data[i][sp+1..]/"\"")[0];
+  _xpm_trim_rows( data );
 
   array values = (array(int))(replace(data[0], "\t", " ")/" "-({""}));
   int width = values[0];
@@ -78,18 +72,18 @@ mapping _decode( string what, void|mapping opts )
   TD("Creating images");
   object i = Image.image( width, height );
   object a = Image.image( width, height,255,255,255 );
-  mixed cs = opts->colorspace;
-  array c;
   TD("Decoding image");
-  for(int y = 0; y<height && y<sizeof(data); y++)
-    _xpm_write_row( y, i, a, data[ncolors+y+1]/cpp, colors );
+//   for(int y = 0; y<height && y<sizeof(data); y++)
+  _xpm_write_rows( i,a,cpp,colors,data );
+//   _xpm_write_row( height, i, a, data[ncolors+y+1], cpp, colors );
   TD("Done");
+
   retopts->image = i;
   retopts->alpha = a;
   return retopts;
 }
 
-mapping decode( string what )
+object decode( string what )
 {
   return _decode(what)->image;
 }
