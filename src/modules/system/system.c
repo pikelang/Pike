@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.163 2003/10/17 15:40:35 mast Exp $
+|| $Id: system.c,v 1.164 2003/10/21 02:47:18 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.163 2003/10/17 15:40:35 mast Exp $");
+RCSID("$Id: system.c,v 1.164 2003/10/21 02:47:18 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -784,6 +784,8 @@ void f_setuid(INT32 args)
  
   if(id == -1) {
     struct passwd *pw = getpwnam("nobody");
+    if(pw==0)
+      Pike_error("No \"nobody\" user on this system.\n");
     id = pw->pw_uid;
   } else {
     id = sp[-args].u.integer;
