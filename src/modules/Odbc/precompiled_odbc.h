@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_odbc.h,v 1.13 2000/08/31 12:39:51 grubba Exp $
+ * $Id: precompiled_odbc.h,v 1.14 2000/09/14 13:05:38 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -58,6 +58,14 @@ extern struct program *odbc_result_program;
 /*
  * Typedefs
  */
+
+#ifndef HAVE_SQLINTEGER
+typedef SDWORD	SQLINTEGER;
+#endif /* !HAVE_SQLINTEGER */
+
+#ifndef HAVE_SQLUINTEGER
+typedef UDWORD	SQLUINTEGER;
+#endif /* !HAVE_SQLUINTEGER */
 
 #ifndef HAVE_SQLLEN
 typedef SQLINTEGER	SQLLEN;
