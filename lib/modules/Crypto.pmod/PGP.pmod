@@ -1,20 +1,7 @@
 //
-// $Id: PGP.pmod,v 1.1 2003/12/01 18:51:42 nilsson Exp $
+// $Id: PGP.pmod,v 1.2 2003/12/02 00:28:30 nilsson Exp $
 
 #pike __REAL_VERSION__
-
-constant pubkey_data = MIME.decode_base64(#"
-mQGiBDxoV3IRBAChUosVpfNWIqhh7g/VNZPv16x3+0WOIyBpLiDSNt1NnEyIP5MDveTwLO0a2SIL
-5ScC97gXJENNWSwVH9QpL6xepT7w6tmkgZZLP6s6NeoyC2vFk5fGDaGnvAb4XoPCO+XUEItNTAVy
-wqH7hZIXF4zTjZmUFz2CZYeTU/Ek/pkTVwCg8qYqy2hFVRMBOJFtqCpykiCYXR0D/iYxnMzSAotD
-yFRVpg0sbHZDTgWd+mojy/5Uslxp32KMX+RMrFhAhoOQsjdmbewVgLsqKlJR1wE8vIukZQ0Poug1
-AOn9Y52MLC4S0AvI/gZ67i95ulmxqzpHgUygtaDTOegGm2PzVcks+UIytskyboQs4bH79TYIxNGf
-ubl3QseaA/9zk6TJR84cbdeZDeAx6jtakyIiQ2ASfyV08Vizxi7lozrbNI9JMzQ0gnuSoU+20aBw
-r3dY4H/5XxNm7CtNC1f0YGOpZev1tplEg3aTPxPPTAyDFXz6zAV1NPyFjG1lQuT2r3FTIdyPpKWF
-vuDgXDaQqLvd85EnAKh1R3k5TBW26LQORHJlYW1TTkVTIFRlYW2IVwQTEQIAFwUCPGhXcgULBwoD
-BAMVAwIDFgIBAheAAAoJEHVpXtHTanZIQBsAn1FZlukRp6sCA21t0He3YpvakVs4AJ97YVTKFO4+
-0u6vsgawb8ANXC47iA==
-");
 
 //! Decodes a PGP public key.
 //! @returns
@@ -208,7 +195,7 @@ int(0..1) verify(Crypto.HashState hash, mapping sig, mapping key) {
 }
 
 
-static int verify_signature(string text, string sig)
+static int verify_signature(string text, string sig, string pubkey)
 {
   catch {
     mapping signt = decode(sig)->signature;
@@ -219,7 +206,7 @@ static int verify_signature(string text, string sig)
       hash = Crypto.MD5();
     hash->update(text);
     return verify(hash, signt,
-		  decode(pubkey_data)->public_key);
+		  decode(pubkey)->public_key);
   };
   return 0;
 }
