@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.103 2001/01/06 10:31:40 mirar Exp $
+// $Id: module.pmod,v 1.104 2001/01/06 10:34:11 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -562,6 +562,7 @@ class File
   this_program set_peek_file_before_read_callback(int(0..1) to)
   {      
      peek_file_before_read_callback=to;
+     return this_object();
   }
 
   // FIXME: No way to specify the maximum to read.
