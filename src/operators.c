@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.77 1999/12/15 00:52:31 grubba Exp $");
+RCSID("$Id: operators.c,v 1.78 1999/12/15 01:40:34 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1294,7 +1294,7 @@ void o_xor(void)
       SIMPLE_BAD_ARG_ERROR("`^", 2, "type");
     }
     type_stack_mark();
-    push_type_int(sp[-1].u.program->id);
+    push_type_int(p->id);
     push_type(0);
     push_type(T_OBJECT);
     pop_stack();
@@ -1310,7 +1310,7 @@ void o_xor(void)
       SIMPLE_BAD_ARG_ERROR("`^", 1, "type");
     }
     type_stack_mark();
-    push_type_int(sp[-1].u.program->id);
+    push_type_int(p->id);
     push_type(0);
     push_type(T_OBJECT);
     pop_stack();
