@@ -377,9 +377,6 @@ o Gz.File
     This is still a bit experimental but the basic functions
     should work just fine.
 
-o HTTP.Server
-    A simple HTTP Server.
-
 o Image.filled_circle() Image.filled_circle_layer()
     Return an Image/Layer object with a filled circle.
 
@@ -494,6 +491,16 @@ o Protocols.XMLRPC
 o Protocols.HTTP
     All methods in Protocols.HTTP that take a header mapping can now
     handle array values (signifying multiple headers of that type).
+
+o Protocols.HTTP.Server
+    A simple HTTP Server.
+
+o Protocols.SNMP
+    Extended to support both SNMP v1 and v2c. A simple SNMP agent with
+    support for Get requests has also been added.
+
+o Protocols.X
+    Support for the X11 XTEST extension has been added.
 
 o SDL
     Wrapper for a subset of Simple DirectMedia Layer
@@ -824,13 +831,6 @@ o Protocols.LDAP.client()
     The return code from all methods has been changed to follow Pike's
     logic better. 0 is now a failure. The old behavior is emulated in
     a compatibility layer.
-
-o Protocols.SNMP
-    Extended to support both SNMP v1 and v2c. A simple SNMP agent with
-    support for Get requests has also been added.
-
-o Protocols.X
-    Support for the X11 XTEST extension has been added.
 
 o dirname()
     Now correctly returns a directory instead of just stripping the
