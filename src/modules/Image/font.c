@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.68 2001/07/19 21:10:19 nilsson Exp $ */
+/* $Id: font.c,v 1.69 2001/11/18 02:54:21 nilsson Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -6,139 +6,86 @@
 extern unsigned char * image_default_font;
 #define IMAGE_DEFAULT_FONT_SIZE 30596
 
-/*
-**! module Image
-**! note
-**!	$Id: font.c,v 1.68 2001/07/19 21:10:19 nilsson Exp $
-**! class Font
-**!
-**! note
-**! 	Short technical documentation on a font file:
-**!	This object adds the text-drawing and -creation
-**!	capabilities of the <ref>Image</ref> module.
-**!
-**!	For simple usage, see
-**!	<ref>write</ref> and <ref>load</ref>.
-**!
-**!	other methods: <ref>baseline</ref>,
-**!	<ref>height</ref>,
-**!	<ref>set_xspacing_scale</ref>,
-**!	<ref>set_yspacing_scale</ref>,
-**!	<ref>text_extents</ref>
-**!	
-**!	<pre>
-**!	       struct file_head 
-**!	       {
-**!		  unsigned INT32 cookie;   - 0x464f4e54 
-**!		  unsigned INT32 version;  - 1 
-**!		  unsigned INT32 chars;    - number of chars
-**!		  unsigned INT32 height;   - height of font
-**!		  unsigned INT32 baseline; - font baseline
-**!		  unsigned INT32 o[1];     - position of char_head's
-**!	       } *fh;
-**!	       struct char_head
-**!	       {
-**!		  unsigned INT32 width;    - width of this character
-**!		  unsigned INT32 spacing;  - spacing to next character
-**!		  unsigned char data[1];   - pixmap data (1byte/pixel)
-**!	       } *ch;
-**!
-**!            version 2:
-**!
-**!
-**!            	  On-disk syntax (everything in N.B.O), int is 4 bytes, a byte is 8 bits:
-**!            
-**!            pos
-**!            	0   int cookie = 'FONT';     or 0x464f4e54
-**!            	4   int version = 2;         1 was the old version without the last four chars
-**!            	8   int numchars;            Always 256 in this version of the dump program
-**!            12   int height;              in (whole) pixels
-**!            16   int baseline;            in (whole) pixels
-**!            20   char direction;          1==right to left, 0 is left to right
-**!            21   char format;             Font format
-**!            22   char colortablep;        Colortable format
-**!            23   char kerningtablep;      Kerning table format
-**!            
-**!            24   int offsets[numchars];   pointers into the data, realative to &cookie.
-**!            	    [colortable]
-**!            	    [kerningtable]
-**!            
-**!            	  At each offset:
-**!            
-**!            
-**!            0   int width;               in pixels
-**!            4   int spacing;             in 1/1000:th of a pixels
-**!            8   char data[];             Enough data to plot width * font->height pixels
-**!            				    Please note that if width is 0, there is no data.
-**!            
-**!            Font formats:
-**!            	id type
-**!            	 0 Raw 8bit data
-**!            	 1 RLE encoded data,  char length, char data,   70% more compact than raw data
-**!            	 2 ZLib compressed data                         60% more compact than RLE
-**!            
-**!            Colortable types:
-**!            	 0 No colortable		 (the data is an alpha channel)
-**!            	 1 24bit RGB with alpha         (index->color, 256*4 bytes, rgba)
-**!            	 2 8bit Greyscale with alpha    (index->color, 256*2 bytes)
-**!            
-**!            Kerningtable types:
-**!            	 0 No kerning table
-**!            	 1 numchars*numchars entries, each a signed char with the kerning value
-**!            	 2 numchar entries, each with a list of kerning pairs, like this:
-**!            	    int len
-**!            	    len * (short char, short value)
-**!            **!	</pre>
-**!
-**! see also: Image, Image.Image
-*/
 
-/* Dump a font into a Roxen Font file (format version 2)
-
-   On-disk syntax (everything in N.B.O), int is 4 bytes, a byte is 8 bits:
-
-pos
- 0   int cookie = 'FONT';     or 0x464f4e54
- 4   int version = 2;         1 was the old version without the last four chars
- 8   int numchars;            Always 256 in this version of the dump program
-12   int height;              in (whole) pixels
-16   int baseline;            in (whole) pixels
-20   char direction;          1==right to left, 0 is left to right
-21   char format;             Font format
-22   char colortablep;        Colortable format
-23   char kerningtablep;      Kerning table format
-
-24   int offsets[numchars];   pointers into the data, realative to &cookie.
-     [colortable]
-     [kerningtable]
-
-   At each offset:
-
-
-0   int width;               in pixels
-4   int spacing;             in 1/1000:th of a pixels
-8   char data[];             Enough data to plot width * font->height pixels
-                             Please note that if width is 0, there is no data.
-
-Font formats:
- id type                                         efficiency with lucida 128
-  0 Raw 8bit data                                not really.. :-)
-  1 RLE encoded data,  char length, char data,   70% more compact than raw data
-  2 ZLib compressed RLE encoded data             60% more compact than RLE
-
-Colortable types:
-  0 No colortable
-  1 24bit RGB         (index->color, 256*3 bytes)
-  2 24bit Greyscale   (index->color, 256*3 bytes)
-
-Kerningtable types:
-  0 No kerning table
-  1 numchars*numchars entries, each a signed char with the kerning value
-  2 numchar entries, each with a list of kerning pairs, like this:
-     int len
-     len * (short char, short value)
+/*! @module Image
  */
 
+/*! @class Font
+ *!
+ *! Short technical documentation on a font file:
+ *! This object adds the text-drawing and -creation
+ *! capabilities of the <ref>Image</ref> module.
+ *!
+ *! For simple usage, see @[write] and @[load].
+ *!
+ *! @note
+ *!   @pre{
+ *!	       struct file_head 
+ *!	       {
+ *!		  unsigned INT32 cookie;   - 0x464f4e54 
+ *!		  unsigned INT32 version;  - 1 
+ *!		  unsigned INT32 chars;    - number of chars
+ *!		  unsigned INT32 height;   - height of font
+ *!		  unsigned INT32 baseline; - font baseline
+ *!		  unsigned INT32 o[1];     - position of char_head's
+ *!	       } *fh;
+ *!	       struct char_head
+ *!	       {
+ *!		  unsigned INT32 width;    - width of this character
+ *!		  unsigned INT32 spacing;  - spacing to next character
+ *!		  unsigned char data[1];   - pixmap data (1byte/pixel)
+ *!	       } *ch;
+ *!
+ *!            version 2:
+ *!
+ *!
+ *!            	  On-disk syntax (everything in N.B.O), int is 4 bytes, a byte is 8 bits:
+ *!            
+ *!            pos
+ *!            	0   int cookie = 'FONT';     or 0x464f4e54
+ *!            	4   int version = 2;         1 was the old version without the last four chars
+ *!            	8   int numchars;            Always 256 in this version of the dump program
+ *!            12   int height;              in (whole) pixels
+ *!            16   int baseline;            in (whole) pixels
+ *!            20   char direction;          1==right to left, 0 is left to right
+ *!            21   char format;             Font format
+ *!            22   char colortablep;        Colortable format
+ *!            23   char kerningtablep;      Kerning table format
+ *!            
+ *!            24   int offsets[numchars];   pointers into the data, realative to &cookie.
+ *!            	    [colortable]
+ *!            	    [kerningtable]
+ *!            
+ *!            	  At each offset:
+ *!            
+ *!            
+ *!            0   int width;               in pixels
+ *!            4   int spacing;             in 1/1000:th of a pixels
+ *!            8   char data[];             Enough data to plot width * font->height pixels
+ *!            				    Please note that if width is 0, there is no data.
+ *!            
+ *!            Font formats:
+ *!            	id type
+ *!            	 0 Raw 8bit data
+ *!            	 1 RLE encoded data,  char length, char data,   70% more compact than raw data
+ *!            	 2 ZLib compressed data                         60% more compact than RLE
+ *!            
+ *!            Colortable types:
+ *!            	 0 No colortable		 (the data is an alpha channel)
+ *!            	 1 24bit RGB with alpha         (index->color, 256*4 bytes, rgba)
+ *!            	 2 8bit Greyscale with alpha    (index->color, 256*2 bytes)
+ *!            
+ *!            Kerningtable types:
+ *!            	 0 No kerning table
+ *!            	 1 numchars*numchars entries, each a signed char with the kerning value
+ *!            	 2 numchar entries, each with a list of kerning pairs, like this:
+ *!            	    int len
+ *!            	    len * (short char, short value)
+ *! @}
+ *!
+ *! @seealso
+ *!  @[Image], @[Image.Image]
+ */
 
 #include "image_machine.h"
 
@@ -327,18 +274,20 @@ static INLINE void write_char(struct _char *ci,
 
 /***************** methods *************************************/
 
-/*
-**! method object|int load(string filename)
-**! 	Loads a font file to this font object.
-**! returns zero upon failure, font object upon success
-**! arg string filename
-**!	Font file
-**! see also: write
-**!
-**! method void create(string filename)
-**! 	Loads a font file to this font object.
-**!	Similar to <ref>load</ref>().
-*/
+/*! @decl Image.Font|int load(string filename)
+ *!  Loads a font file to this font object.
+ *! @returns
+ *!  Returns zero upon failure and a font object upon success.
+ *! @param filename
+ *!  The path to the font file.
+ *! @seealso
+ *!  @[write]
+ */
+
+/*! @decl void create(string filename)
+ *!  Loads a font file to this font object.
+ *!  Similar to @[load()].
+ */
 
 void font_load(INT32 args);
 
@@ -545,14 +494,13 @@ done:
    return;
 }
 
-/*
-**! method object write(string text, string ... more_text_lines)
-**! 	Writes some text; thus creating an image object
-**!	that can be used as mask or as a complete picture.
-**! returns an <ref>Image.Image</ref> object
-**! arg string text, ...
-**!	One or more lines of text.
-**! see also: text_extents, load, Image.Image->paste_mask, Image.Image->paste_alpha_color
+/*! @decl Image.Image write(string text, string ... more_text_lines)
+ *!  Writes some text; thus creating an image object
+ *!  that can be used as mask or as a complete picture.
+ *!  One or more text lines may be provided.
+ *!
+ *! @seealso
+ *!   @[text_extents], @[load], @[Image.Image->paste_mask], @[Image.Image->paste_alpha_color]
 */
 
 void font_write(INT32 args)
@@ -737,11 +685,12 @@ void font_write(INT32 args)
    push_object(o);
 }
 
-/*
-**! method int height()
-**! returns font height
-**! see also: baseline, text_extents
-*/
+/*! @decl int height()
+ *!  Returns the font height.
+ *!
+ *! @seealso
+ *!   @[baseline], @[text_extents]
+ */
 
 void font_height(INT32 args)
 {
@@ -752,16 +701,23 @@ void font_height(INT32 args)
       push_int(0);
 }
 
-/*
-**! method array(int) text_extents(string text, string ... more_text_lines)
-**!	Calculate extents of a text-image,
-**!	that would be created by calling <ref>write</ref>
-**!	with the same arguments.
-**! returns an array of width and height 
-**! arg string text, ...
-**!	One or more lines of text.
-**! see also: write, height, baseline
-*/
+
+/*! @decl array(int) text_extents(string text, string ... more_text_lines)
+ *!  Calculate extents of a text-image,
+ *!  that would be created by calling @[write]
+ *!  with the same arguments. One or more lines
+ *!  of text may be provided.
+ *!
+ *! @returns
+ *!   @array
+ *!     @elem int width
+ *!
+ *!     @elem int height
+ *!   @endarray
+ *!
+ *! @seealso
+ *!   @[write], @[height], @[baseline]
+ */
 
 void font_text_extents(INT32 args)
 {
@@ -835,16 +791,13 @@ void font_text_extents(INT32 args)
 }
 
 
-
-/*
-**! method void set_xspacing_scale(float scale)
-**! method void set_yspacing_scale(float scale)
-**! 	Set spacing scale to write characters closer
-**!	or more far away. This does not change scale
-**!	of character, only the space between them.
-**! arg float scale
-**!	what scale to use
-*/
+/*! @decl void set_xspacing_scale(float scale)
+ *! @decl void set_yspacing_scale(float scale)
+ *!
+ *!  Set spacing scale to write characters closer
+ *!  or more far away. This does not change scale
+ *!  of character, only the space between them.
+ */
 
 void font_set_xspacing_scale(INT32 args)
 {
@@ -876,11 +829,14 @@ void font_set_yspacing_scale(INT32 args)
 }
 
 
-/*
-**! method int baseline()
-**! returns font baseline (pixels from top)
-**! see also: height, text_extents
-*/
+/*! @decl int baseline()
+ *!
+ *! Returns font baseline (pixels from top)
+ *!
+ *! @seealso
+ *!   @[height], @[text_extents]
+ */
+
 void font_baseline(INT32 args)
 {
    pop_n_elems(args);
@@ -890,17 +846,35 @@ void font_baseline(INT32 args)
       push_int(0);
 }
 
+/*! @decl void center()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
+
 void font_set_center(INT32 args)
 {
   pop_n_elems(args);
   if(THIS) THIS->justification=J_CENTER;
 }
 
+/*! @decl void right()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
+
 void font_set_right(INT32 args)
 {
   pop_n_elems(args);
   if(THIS) THIS->justification=J_RIGHT;
 }
+
+/*! @decl void left()
+ *!
+ *! @fixme
+ *!   Document this function.
+ */
 
 void font_set_left(INT32 args)
 {
@@ -920,6 +894,12 @@ int baseline();             // font baseline
 
 */
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
 void init_image_font(void)
 {
    ADD_STORAGE(struct font*);
@@ -933,10 +913,10 @@ void init_image_font(void)
    /* function(string:object) */
    ADD_FUNCTION("write",font_write,tFuncV(tNone,tStr,tObj),0);
 
-   /* function(:int) */
+   /* function(void:int) */
    ADD_FUNCTION("height",font_height,tFunc(tNone,tInt),0);
 
-   /* function(:int) */
+   /* function(void:int) */
    ADD_FUNCTION("baseline",font_baseline,tFunc(tNone,tInt),0);
 		
    /* function(string ...:array(int)) */
@@ -953,12 +933,13 @@ void init_image_font(void)
 
    /* function(void:void) */
    ADD_FUNCTION("center", font_set_center,tFunc(tVoid,tVoid), 0);
+
    /* function(void:void) */
    ADD_FUNCTION("left", font_set_left,tFunc(tVoid,tVoid), 0);
+
    /* function(void:void) */
    ADD_FUNCTION("right", font_set_right,tFunc(tVoid,tVoid), 0);
 
-   
    set_init_callback(init_font_struct);
    set_exit_callback(exit_font_struct);
 }
