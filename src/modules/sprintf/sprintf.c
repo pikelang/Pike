@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.26 1998/07/31 07:51:35 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.27 1998/08/07 16:29:07 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -107,6 +107,10 @@ RCSID("$Id: sprintf.c,v 1.26 1998/07/31 07:51:35 hubbe Exp $");
 #include "interpret.h"
 #include "pike_memory.h"
 #include "pike_macros.h"
+
+#ifdef PC
+#undef PC
+#endif /* PC */
 
 #include <math.h>
 #ifdef HAVE_IEEEFP_H
