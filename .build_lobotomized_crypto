@@ -1,0 +1,4 @@
+#! /bin/sh
+
+(cd src/modules/_Crypto ; ./.build_lobotomized_crypto)
+

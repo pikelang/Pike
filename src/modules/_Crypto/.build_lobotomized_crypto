@@ -1,0 +1,29 @@
+#! /bin/sh
+
+# .build_lobotomized_crypto
+
+if [ -f cbc.c ]; then
+    echo ".build_lobotomized_crypto should be run in pike/src/modules/_Crypto"
+    exit 1
+fi
+
+echo "Creating _Lobotomized_Crypto directories..."
+mkdir -p ../_Lobotomized_Crypto
+mkdir -p ../_Lobotomized_Crypto/include
+mkdir -p ../_Lobotomized_Crypto/lib
+
+echo "Copying source files..."
+for d in . include lib; do
+    for f in `$d/.exportable_files`; do
+	echo $d/$f
+	cp $f ../_Lobotomized_Crypto/$d/$f
+    done
+done
+
+echo "Censoring sensitive files"
+for f in crypto.c Makefile.in lib/Makefile.in ; do
+    echo $f
+    sed '/BEGIN NATIONAL SECURITY/,/END NATIONAL SECURITY/d' \
+    < $f > ../_Lobotomized_Crypto/$f
+done
+
