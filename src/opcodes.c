@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.148 2003/07/30 20:30:33 mast Exp $
+|| $Id: opcodes.c,v 1.149 2003/08/05 12:58:42 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.148 2003/07/30 20:30:33 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.149 2003/08/05 12:58:42 mast Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -84,7 +84,7 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
   case T_MULTISET: {
     int i=multiset_member(what->u.multiset, ind);
     to->type=T_INT;
-    to->subtype=i ? NUMBER_UNDEFINED : 0;
+    to->subtype=i ? 0 : NUMBER_UNDEFINED;
     to->u.integer=i;
     break;
   }
