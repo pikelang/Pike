@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.281 2000/03/07 13:03:00 noring Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.282 2000/03/07 21:22:54 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -841,11 +841,11 @@ test_eq([[lambda(int x) { return lambda() { return x; };}(17)()]],17)
 test_eq([[lambda(int x) { return lambda() { return lambda() { return x; };};}(17)()()]],17)
 
 test_eq(120,
-        [[ int g()
+        [[ lambda()
            {
              int f(int i) { return i == 0 ? 1 : i*f(i-1); };
              return f(5);
-           }; return g(); ]])
+           }(); ]])
   
 test_eq([[function f;
 	for(int i = 0; i < 2; i++)
