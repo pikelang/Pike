@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.12 2004/07/17 23:03:39 srb Exp $
+// $Id: FakeFile.pike,v 1.13 2004/11/18 15:55:29 agehall Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -23,7 +23,7 @@ static function close_cb;
 //! @seealso
 //!   @[Stdio.File()->close()]
 int close(void|string direction) {
-  direction = lower_case(direction);
+  direction = lower_case(direction||"rw");
   int cr = has_value(direction, "r");
   int cw = has_value(direction, "w");
 
