@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.12 1999/02/15 20:43:42 grubba Exp $
+ * $Id: acconfig.h,v 1.13 1999/04/20 15:28:28 grubba Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -7,6 +7,12 @@
 
 @TOP@
 @BOTTOM@
+
+/* Define this if you have a FreeBSD-style (7 args) sendfile(). */
+#undef HAVE_FREEBSD_SENDFILE
+
+/* Define this if you have a struct iovec */
+#undef HAVE_STRUCT_IOVEC
 
 /* Define if your statfs() call takes 4 arguments */
 #undef HAVE_SYSV_STATFS
