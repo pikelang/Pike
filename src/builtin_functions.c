@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.13 1996/11/27 06:00:56 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.14 1996/12/02 07:02:25 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -1350,11 +1350,13 @@ void f_localtime(INT32 args)
 static int does_match(char *s, int len, char *m, int mlen)
 {
   int i,j;
-  for (i=j=0; i<mlen && j<len; i++,j++)
+  for (i=j=0; i<mlen; i++)
   {
     switch (m[i])
     {
-     case '?': break;
+     case '?':
+       if(j++>=len) return 0;
+       break;
 
      case '*': 
       i++;
@@ -1367,11 +1369,11 @@ static int does_match(char *s, int len, char *m, int mlen)
       return 0;
 
      default: 
-      if (m[i]!=s[j]) return 0;
+       if(j>=len || m[i]!=s[j]) return 0;
+       j++;
     }
   }
-  if (i==mlen && j==len) return 1;
-  return 0;
+  return j==len;
 }
 
 void f_glob(INT32 args)
