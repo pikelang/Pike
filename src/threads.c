@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.22 1997/04/18 01:29:28 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.23 1997/04/20 03:53:35 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -88,6 +88,8 @@ void *new_thread_func(void * data)
 /*  fprintf(stderr,"Done[%d]\n",dbt--);*/
   mt_unlock(& interpreter_lock);
   th_exit(0);
+  /* NOT_REACHED, but removes a warning */
+  return(NULL);
 }
 
 #ifdef UNIX_THREADS
