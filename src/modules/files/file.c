@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.205 2000/12/05 21:08:36 per Exp $");
+RCSID("$Id: file.c,v 1.206 2000/12/16 22:40:48 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -106,6 +106,11 @@ RCSID("$Id: file.c,v 1.205 2000/12/05 21:08:36 per Exp $");
 #define ERRNO (THIS->my_errno)
 
 #define READ_BUFFER 8192
+
+/* Don't try to use socketpair() on AmigaOS, socketpair_ultra works better */
+#ifdef __amigaos__
+#undef HAVE_SOCKETPAIR
+#endif
 
 /* #define SOCKETPAIR_DEBUG */
 
