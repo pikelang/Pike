@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.20 2000/10/25 11:26:21 stewa Exp $
+# $Id: configure.in,v 1.21 2000/10/27 14:05:08 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -167,6 +167,43 @@ if test x$with_oracle = xyes; then
   rm -f conftest
   AC_CHECK_LIB(aio, aioread, [oracle_aio=-laio], [oracle_aio=""])
 
+  if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :;
+  else
+
+    CPPFLAGS="-I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/rdbms/public/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public -I ${CPPFLAGS}"
+    LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
+
+    if test -f "$oracle_lib_dir/libcommon8.a"; then
+      ORACLE_LIBS="-lclntsh"
+    else
+      if test -f "$oracle_lib_dir/libcore4.a"; then
+        ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
+      else
+        ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
+      fi
+    fi
+
+    OLDLIBS=LIBS
+    LIBS="$ORACLE_LIBS $LIBS"
+
+    AC_MSG_CHECKING(for working Oracle libs)
+    AC_CACHE_VAL(pike_cv_working_oracle,[
+      AC_TRY_COMPILE([
+#include <oci.h>
+],[
+  OCIInitialize(OCI_DEFAULT,0,0,0,0);
+],pike_cv_working_oracle=yes,pike_cv_working_oracle=no)
+    ])
+    AC_MSG_RESULT($pike_cv_working_oracle)
+    if test x$pike_cv_working_oracle = xyes ; then
+      AC_DEFINE(HAVE_ORACLE)
+      LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
+    else
+      ORACLE_LIBS=""
+      LIBS="$OLDLIBS"
+    fi
+  fi
+
   EXTRALDFLAGS=""
 
   AC_MSG_CHECKING(if ld supports -Bsymbolic)
@@ -176,7 +213,7 @@ if test x$with_oracle = xyes; then
 int foo(){ return 0; }
 EOF
     if AC_TRY_EVAL(ac_compile); then
-      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -Bsymbolic]); then
+      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -Bsymbolic $LIBS]); then
         if test -f conftest2.o; then
           pike_cv_oracle_ld_bsymbolic=yes
 	else
@@ -210,11 +247,11 @@ EOF
       dnl  Some ld:s interpret -znodefs as "-z -n -o defs".
       dnl  Check for such ld:s.
 
-      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -zoconftest3.o]) && \
+      if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -zoconftest3.o $LIBS]) && \
 	  test -f conftest3.o; then
 	:
       else
-        if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -znodefs]); then
+        if AC_TRY_COMMAND([ld -r -o conftest2.o conftest.o $EXTRALDFLAGS -znodefs $LIBS]); then
           if test -f conftest2.o; then
             pike_cv_oracle_ld_znodefs=yes
 	  else
@@ -236,41 +273,6 @@ EOF
     EXTRALDFLAGS="$EXTRALDFLAGS -znodefs"
   else
     :
-  fi
-
-  if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
-
-    CPPFLAGS="-I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/rdbms/public/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public -I ${CPPFLAGS}"
-    LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
-
-    if test -f "$oracle_lib_dir/libcommon8.a"; then
-      ORACLE_LIBS="-lclntsh"
-    else
-      if test -f "$oracle_lib_dir/libcore4.a"; then
-        ORACLE_LIBS="-lclntsh -lcommon -lcore4 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore4"
-      else
-        ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
-      fi
-    fi
-
-    OLDLIBS=LIBS
-    LIBS="$LIBS $ORACLE_LIBS"
-
-    AC_MSG_CHECKING(for working Oracle libs)
-    AC_CACHE_VAL(pike_cv_working_oracle,[
-      AC_TRY_COMPILE([
-#include <oci.h>
-],[
-  OCIInitialize(OCI_DEFAULT,0,0,0,0);
-],pike_cv_working_oracle=yes,pike_cv_working_oracle=no)
-    ])
-    AC_MSG_RESULT($pike_cv_working_oracle)
-    if test x$pike_cv_working_oracle = xyes ; then
-      AC_DEFINE(HAVE_ORACLE)
-      LDFLAGS="$EXTRALDFLAGS $LDFLAGS"
-    else
-      ORACLE_LIBS=""
-    fi
   fi
 
 else
