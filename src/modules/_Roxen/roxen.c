@@ -43,6 +43,107 @@ struct  header_buf
   ptrdiff_t left;
 };
 
+
+#define THB ((struct buffer_str *)Pike_fp->current_object->storage)
+struct  buffer_str
+{
+  unsigned int len, size, initial;
+  unsigned char *data;
+  int shift;
+};
+
+#define INITIAL_BUF_LEN 4096
+
+static void f_buf_create( INT32 args )
+{
+  struct buffer_str *str = THB;
+  if( args && Pike_sp[-1].type == PIKE_T_INT )
+    str->initial = Pike_sp[-1].u.integer;
+  else
+    str->initial = INITIAL_BUF_LEN;
+}
+
+static void f_buf_add( INT32 args )
+{
+  struct buffer_str *str = THB;
+  struct pike_string *a;
+  if( args != 1 || Pike_sp[-args].type != PIKE_T_STRING )
+    Pike_error("Illegal argument\n");
+  a = Pike_sp[-args].u.string;
+
+  if( str->len && str->shift != a->size_shift )
+  {
+    /* do something */
+  }
+  str->shift = a->size_shift;
+
+  if( !str->size )
+  {
+    str->size = MAXIMUM( str->initial, (unsigned)a->len );
+    str->data = xalloc( str->size );
+  }
+
+  while( str->size-str->len < (unsigned)a->len )
+  {
+    str->data = realloc( str->data, str->size*2 );
+    str->size *= 2;
+  }
+  
+  MEMCPY( str->data + str->len,
+	  a->str, a->len<<a->size_shift );
+
+  str->len += a->len<<a->size_shift;
+  pop_stack();
+  push_int( str->len );
+}
+
+
+static void f_buf_get( INT32 args )
+{
+  struct buffer_str *str = THB;
+  if( !str->len )
+  {    
+    push_text("");
+    return;
+  }
+  switch( str->shift )
+  {
+    case 0:
+      push_string( make_shared_binary_string( str->data, str->len ) );
+      break;
+    case 1:
+      push_string( make_shared_binary_string1( (unsigned short*)str->data,
+					       str->len>>1 ) );
+      break;
+    case 2:
+      push_string( make_shared_binary_string2( (unsigned int*)str->data,
+					       str->len>>2 ) );
+      break;
+  }
+  xfree( str->data );
+  str->data = 0;
+  str->size = 0;
+  str->len = 0;
+  str->shift = 0;
+}
+
+
+static void f_buf_init()
+{
+  struct buffer_str *str = THB;
+  str->data = 0;
+  str->size = 0;
+  str->len = 0;
+  str->shift = 0;
+}
+
+static void f_buf_free()
+{
+  struct buffer_str *str = THB;
+  if( str->data ) xfree( str->data );
+}
+
+
 static void f_hp_feed( INT32 args )
 {
   struct pike_string *str = Pike_sp[-1].u.string;
@@ -276,6 +377,16 @@ void pike_module_init()
   pike_add_function( "feed", f_hp_feed, "function(string:array(string|mapping))",0 );
   pike_add_function( "create", f_hp_create, "function(void:void)", 0 );
   end_class( "HeaderParser", 0 );
+
+
+  start_new_program();
+  ADD_STORAGE( struct buffer_str  );
+  pike_add_function( "add", f_buf_add, "function(string:int)",0 );
+  pike_add_function( "get", f_buf_get, "function(void:string)", 0 );
+  pike_add_function( "create", f_buf_create, "function(int|void:void)", 0 );
+  set_init_callback( f_buf_init );
+  set_exit_callback( f_buf_free );
+  end_class( "Buffer", 0 );
 }
 
 void pike_module_exit()
