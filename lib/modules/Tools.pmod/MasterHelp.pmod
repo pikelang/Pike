@@ -36,6 +36,7 @@ Driver options:
  -m <file>            : Use <file> as master object.
  -d -d# -d<what>      : Increase debug.
  -t -t#               : Increase trace level.
+ -tg                  : Log the gc runs to stderr.
  -V <v> --compat=<v>  : Run with compatibility for version <v>.
  -x [<tool>]          : Execute a built in tool.
  --debug-without=<m>  : Prohibit the resolver to resolve mobule <m>.
