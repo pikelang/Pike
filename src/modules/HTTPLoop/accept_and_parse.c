@@ -679,7 +679,7 @@ void f_aap_add_filesystem( INT32 args )
 void pike_module_init()
 {
 #ifdef _REENTRANT
-  int offset;
+  ptrdiff_t offset;
 #define STRING(X,Y) X=make_shared_string(Y)
 #include "static_strings.h"
 #undef STRING

@@ -33,10 +33,10 @@ int aap_get_time(void)
   return last_time;
 }
 
-int aap_swrite(int to, char *buf, size_t towrite)
+ptrdiff_t aap_swrite(int to, char *buf, size_t towrite)
 {
-  int res=0;
-  int sent = 0;
+  ptrdiff_t res=0;
+  ptrdiff_t sent = 0;
   while(towrite)
   {
     while((res = fd_write(to, buf, towrite)) < 0)
@@ -63,7 +63,8 @@ int aap_swrite(int to, char *buf, size_t towrite)
 
 int aap_get_header(struct args *req, char *header, int operation, void *res)
 {
-  int os=0,i,hl=strlen(header),l=req->res.body_start-req->res.header_start;
+  int os=0;
+  ptrdiff_t i, hl=strlen(header), l=req->res.body_start-req->res.header_start;
   char *in = req->res.data + req->res.header_start;
   for(i=0; i<l; i++)
   {
@@ -73,7 +74,7 @@ int aap_get_header(struct args *req, char *header, int operation, void *res)
        /* in[os..i-1] == the header */
        if(i-os == hl)
        {
-	 int j;
+	 ptrdiff_t j;
 	 for(j=0;j<hl; j++)
 	   if((in[os+j]&95) != (header[j]&95))
 	     break; /* no match */

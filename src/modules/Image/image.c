@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.171 2000/08/08 16:57:26 grubba Exp $ */
+/* $Id: image.c,v 1.172 2000/08/09 11:07:11 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.171 2000/08/08 16:57:26 grubba Exp $
+**!	$Id: image.c,v 1.172 2000/08/09 11:07:11 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.171 2000/08/08 16:57:26 grubba Exp $");
+RCSID("$Id: image.c,v 1.172 2000/08/09 11:07:11 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1605,10 +1605,10 @@ static INLINE void
    *	This code MUST be MT-SAFE! (but also fast /per)
    */
 /*   HIDE_GLOBAL_VARIABLES(); */
-   sum->r=sum->r+rgba.r*factor;
-   sum->g=sum->g+rgba.g*factor;
-   sum->b=sum->b+rgba.b*factor;
-   sum->alpha=sum->alpha+rgba.alpha*factor;
+   sum->r = DO_NOT_WARN(sum->r + rgba.r*factor);
+   sum->g = DO_NOT_WARN(sum->g + rgba.g*factor);
+   sum->b = DO_NOT_WARN(sum->b + rgba.b*factor);
+   sum->alpha = DO_NOT_WARN(sum->alpha + rgba.alpha*factor);
 /*    REVEAL_GLOBAL_VARIABLES(); */
 }
 
@@ -1621,9 +1621,9 @@ static INLINE void
    *	This code MUST be MT-SAFE! (but also fast /per)
    */
 /*   HIDE_GLOBAL_VARIABLES(); */
-   sum->r=sum->r+rgba.r*factor;
-   sum->g=sum->g+rgba.g*factor;
-   sum->b=sum->b+rgba.b*factor;
+   sum->r = DO_NOT_WARN(sum->r+rgba.r*factor);
+   sum->g = DO_NOT_WARN(sum->g+rgba.g*factor);
+   sum->b = DO_NOT_WARN(sum->b+rgba.b*factor);
 /*    REVEAL_GLOBAL_VARIABLES(); */
 }
 

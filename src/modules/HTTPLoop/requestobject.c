@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.10 2000/07/28 07:12:28 hubbe Exp $
+ * $Id: requestobject.c,v 1.11 2000/08/09 11:04:18 grubba Exp $
  */
 
 #include "global.h"
@@ -187,7 +187,8 @@ void f_aap_scan_for_query(INT32 args)
 {
   struct pike_string *_s;
   char *s, *work_area;
-  int len, i,j, begin=0, c;
+  ptrdiff_t len, i,j, begin=0;
+  int c;
   if(args)
   {
     get_all_args("HTTP C object->scan_for_query(string f)", args, "%S", &_s);
@@ -226,7 +227,7 @@ void f_aap_scan_for_query(INT32 args)
   j--;
   if(j > 3 && work_area[1] == '(' && work_area[0]=='/')
   {
-    int k, n=0, last=2;
+    ptrdiff_t k, n=0, last=2;
     for(k = 2; k < j; k++)
     {
       switch(work_area[k])
@@ -240,11 +241,11 @@ void f_aap_scan_for_query(INT32 args)
 	 push_string(make_shared_binary_string(work_area+last,k-last));
 	 n++;
 	 begin = k+1;
-	 f_aggregate_multiset( n );
+	 f_aggregate_multiset(DO_NOT_WARN(n));
 	 goto done2;
       }
     }
-    pop_n_elems(n);
+    pop_n_elems(DO_NOT_WARN(n));
     f_aggregate_multiset( 0 );
   } else {
     f_aggregate_multiset( 0 );
@@ -283,10 +284,10 @@ void f_aap_scan_for_query(INT32 args)
 	 pop_n_elems(2)
 
 
-static void decode_x_url_mixed(char *in, int l, struct mapping *v, char *dec, 
-			       char *rest_query, char **rp)
+static void decode_x_url_mixed(char *in, ptrdiff_t l, struct mapping *v,
+			       char *dec, char *rest_query, char **rp)
 {
-  int pos = 0, lamp = 0, leq=0, dl;
+  ptrdiff_t pos = 0, lamp = 0, leq=0, dl;
 
   for(dl = pos = 0; pos<l; pos++, dl++)
   {
@@ -300,7 +301,7 @@ static void decode_x_url_mixed(char *in, int l, struct mapping *v, char *dec,
        {
 	 VAR_MAP_INSERT();
        } else if(rp) {
-	 int i;
+	 ptrdiff_t i;
 	 for(i=lamp-1;i<dl;i++) *((*rp)++)=dec[i];
        }
        leq = 0;
@@ -319,7 +320,7 @@ static void decode_x_url_mixed(char *in, int l, struct mapping *v, char *dec,
   {
     VAR_MAP_INSERT();
   } else if(rp) {
-    int i;
+    ptrdiff_t i;
     for(i=lamp-1;i<dl;i++) *((*rp)++)=dec[i];
   }
 }
@@ -711,10 +712,10 @@ void free_send_args(struct send_args *s)
 /* WARNING! This function is running _without_ any stack etc. */
 void actually_send(struct send_args *a)
 {
-  int fail, first=0;
+  int first=0;
   char foo[10];
   unsigned char *data = NULL;
-  int data_len = 0;
+  ptrdiff_t fail, data_len = 0;
   foo[9]=0; foo[6]=0;
   if( a->data )
   {
