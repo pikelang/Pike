@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.9 1999/10/26 17:52:47 noring Exp $
+ * $Id: lexer.h,v 1.10 1999/11/11 18:27:12 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -423,17 +423,21 @@ static int low_yylex(YYSTYPE *yylval)
       }
       else if(GOBBLE('x') || GOBBLE('X'))
       {
+	struct svalue sval;
 	base = 16;
       read_based_number:
-	debug_malloc_pass( yylval->n=mkintnode(0) );
-	wide_string_to_svalue_inumber(&yylval->n->u.sval,
+	sval.type = T_INT;
+	sval.subtype = NUMBER_NUMBER;
+	sval.u.integer = 0;
+	wide_string_to_svalue_inumber(&sval,
 				      lex.pos,
 				      (void **)&lex.pos,
 				      base,
 				      0,
 				      SHIFT);
-	free_string(yylval->n->type);
-	yylval->n->type=get_type_of_svalue(&yylval->n->u.sval);
+	dmalloc_touch_svalue(&sval);
+	yylval->n = mksvaluenode(&sval);
+	free_svalue(&sval);
 	return F_NUMBER;
       }
     }
@@ -444,6 +448,8 @@ static int low_yylex(YYSTYPE *yylval)
       char *p1, *p2;
       double f;
       long l;
+      struct svalue sval;
+
       lex.pos -= (1<<SHIFT);
       if(INDEX_CHARP(lex.pos, 0, SHIFT)=='0')
 	for(l=1;INDEX_CHARP(lex.pos, l, SHIFT)<='9' &&
@@ -453,16 +459,19 @@ static int low_yylex(YYSTYPE *yylval)
 
       f=lex_strtod(lex.pos, &p1);
 
-      debug_malloc_pass( yylval->n=mkintnode(0) );
-      wide_string_to_svalue_inumber(&yylval->n->u.sval,
+      sval.type = T_INT;
+      sval.subtype = NUMBER_NUMBER;
+      sval.u.integer = 0;      
+
+      wide_string_to_svalue_inumber(&sval,
 				    lex.pos,
 				    (void **)&p2,
 				    0,
 				    0,
 				    SHIFT);
-
-      free_string(yylval->n->type);
-      yylval->n->type=get_type_of_svalue(&yylval->n->u.sval);
+      dmalloc_touch_svalue(&sval);
+      yylval->n = mksvaluenode(&sval);
+      free_svalue(&sval);
 
       if(p1>p2)
       {
