@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.789 2004/02/28 23:24:25 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.790 2004/02/29 12:33:26 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -106,6 +106,10 @@ rm "$srcdir/conftest_VPATH.in" 2>/dev/null
 AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
    [do not use settings from /etc/make.conf]),
              [], [enable_make_conf=yes])
+
+initial_cflags="${CFLAGS}"
+initial_cppflags="${CPPFLAGS}"
+initial_ldflags="${LDFLAGS}"
 
 if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
@@ -6937,10 +6941,12 @@ $bundle_info])
 	    # to be able use them in dynamic modules.
 	    OLD_CFLAGS="$CFLAGS"
 	    CFLAGS="$CCSHARED $CFLAGS"
+	    export CFLAGS
 
 	    # Make sure stuff in /usr/ccs/bin and the like can be found.
 	    OLD_PATH="$PATH"
 	    PATH="$PATH:$EXTRA_PATH"
+	    export PATH
 
 	    extra_configure_args=""
 	    # Some libraries insist in using config.guess;
@@ -6993,11 +6999,12 @@ $bundle_info])
       fi
     done
     if test -r "$cache_file"; then
-      ed "$cache_file" >/dev/null 2>&1 <<EOF
-`cat $bundle_info|sed -e 's/^[[ 	]]*//'|sort|uniq|sed -e '/^$/d' -e 's/\(.*\)/\/^\1=\/d/'`
-w
-q
-EOF
+      for varname in `cat $bundle_info|sed -e 's/^[[ 	]]*//'|sort|uniq` no; do
+        if test "$varname" = "no"; then :; else
+          sed -e '/^'"$varname"'=/d' <"$cache_file" >"$cachefile.new" && \
+            mv -f "$cachefile.new" "$cachefile" || exit 1
+        fi
+      done
     fi
     # Rerun configure
     cat <<EOF
@@ -7007,6 +7014,26 @@ Rerunning configure with the bundles `echo $bundles` enabled.
 
 
 EOF
+    # Restore CFLAGS, CPPFLAGS and LDFLAGS to what they were
+    # when configure was started.
+    if test "$cflags_is_set" = "no"; then
+      unset CFLAGS
+    else
+      CFLAGS="${initial_cflags}"
+      export CFLAGS
+    fi
+    if test "$cppflags_is_set" = "no"; then
+      unset CPPFLAGS
+    else
+      CPPFLAGS="${initial_cppflags}"
+      export CPPFLAGS
+    fi
+    if test "$ldflags_is_set" = "no"; then
+      unset LDFLAGS
+    else
+      LDFLAGS="${initial_ldflags}"
+      export LDFLAGS
+    fi
     echo ${CONFIG_SHELL-/bin/sh} "$srcdir/configure" $ac_configure_args --without-bundles
     eval exec ${CONFIG_SHELL-/bin/sh} "$srcdir/configure" $ac_configure_args --without-bundles
     exit 17
