@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.122 2003/03/28 01:28:52 mast Exp $
+|| $Id: efuns.c,v 1.123 2003/03/28 07:26:30 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.122 2003/03/28 01:28:52 mast Exp $");
+RCSID("$Id: efuns.c,v 1.123 2003/03/28 07:26:30 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -82,6 +82,8 @@ RCSID("$Id: efuns.c,v 1.122 2003/03/28 01:28:52 mast Exp $");
 /* #define READDIR_DEBUG */
 
 #ifdef __NT__
+
+#include <winbase.h>
 
 /* Dynamic load of functions that doesn't exist in all Windows versions. */
 
