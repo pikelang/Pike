@@ -22,7 +22,7 @@ class line_buffer
     {
       sscanf(buffer, "%*[ \t]%s", buffer);
     }
-  
+
   // Returns -1 on error. All valid numbers ar non-negative.
   int get_number()
     {
@@ -44,18 +44,32 @@ class line_buffer
       buffer = buffer[i..];
       return res;
     }
-  
-  string get_atom()
+
+  string get_atom(int|void with_options)
     {
       string atom;
 
       werror("get_atom: buffer = '%s'\n", buffer);
-      sscanf(buffer, "%*[ \t]%[^(){ \0-\037\177%*\"\\]%s", atom, buffer);
-
-      if (strlen(buffer)
-	  && (buffer[0] != ' ')
-	  && (buffer[0] != '\t'))
-	return 0;
+      
+      sscanf(buffer,
+	     (with_options
+	      ? "%*[ \t]%[^][(){ \0-\037\177%*\"\\]%s"
+	      : "%*[ \t]%[^(){ \0-\037\177%*\"\\]%s"),
+	     atom, buffer);
+      
+      if (strlen(buffer))
+	switch(buffer[0])
+	{
+	case ' ':
+	case '\t':
+	  break;
+	case '[':
+	  if (with_options)
+	    break;
+	  /* Fall through */
+	default:
+	  return 0;
+	}
       
       return strlen(atom) && atom;
     }
@@ -123,9 +137,128 @@ class line_buffer
 	return get_atom();
       }
     }
+  
+  /* Returns a set object. */
+  object get_set()
+    {
+      string atom = get_atom();
+      if (!atom)
+	return 0;
+      
+      return .types.imap_set()->init(atom);
+    }
 
+  /* Parses an object that (recursivly) can contain atoms (possible
+   * with options in brackets) or lists. Note that strings are not
+   * accepted, as it is a little difficult to wait for the
+   * continuation of the request.
+   *
+   * FXME: This function is used to read fetch commands. This breaks
+   * rfc-2060 compliance, as the names of headers can be represented
+   * as string literals.
+   */
+  
+  mapping get_simple_list(int max_depth)
+    {
+      skip_whitespace();
+      if (!strlen(buffer))
+	return 0;
+
+      if (buffer[0] == '(')
+      {
+	/* Recurse */
+	if (max_depth > 0)
+	{
+	  array a = do_parse_simple_list(max_depth - 1, ')');
+	  return a && ([ "type": "list",
+			 "list": a ]);
+	}
+	else
+	  return 0;
+      }
+      return get_atom_options(max_depth);
+    }
+
+  array do_parse_simple_list(int max_depth, int terminator)
+    {
+      array a = ({ });
+      
+      while(1)
+      {
+	buffer = buffer[1..];
+	skip_whitespace();
+	
+	if (!strlen(buffer))
+	  return 0;
+	
+	if (buffer[0] == terminator)
+	  {
+	    buffer = buffer[1..];
+	    return a;
+	  }
+	array|string o = get_simple_list(max_depth);
+	if (!o)
+	  return 0;
+      }
+    }
+
+  /* Reads an atom, optionally followd by a list enclosed in square
+   * brackets. Naturally, the atom itself cannot contain any brackets. */
+  mapping get_atom_options(int max_depth)
+    {
+      string atom = get_atom(1);
+      if (!atom)
+	return 0;
+
+      mapping res = ([ "type" : "atom",
+		       "atom" : atom ]);
+      if (!strlen(buffer) || (buffer[0] != '['))
+	return res;
+
+      /* Parse options */ 
+      array options = do_get_simple_list(max_depth - 1, ']');
+      if (!options)
+	return 0;
+
+      res->options = options;
+      
+      if (!strlen[buffer] || (buffer[0] != '<'))
+	retun res;
+
+      /* Parse <start.size> suffix */
+      buffer = buffer[1..];
+
+      start = get_number();
+      if ((start < 0) || !strlen(buffer) || (buffer[0] != '.'))
+	return 0;
+
+      buffer = buffer[1..];
+      
+      int size = get_number();
+      if ((size < 0) || !strlen(buffer) || (buffer[0] != '>'))
+	return 0;
+      
+      buffer = buffer[1..];
+
+      res->range = ({ start, size });
+
+      return res;
+    }
+  
 #if 0
-  array get_list()
+  /* Parsing general list requires some variation of continuation
+   * passing style.
+   *
+   * If the entire list can be read immediately, it is returned. On
+   * errors, 0 is returned. If only part of the list can be read, a
+   * read handler is returned, and the passed callback function will
+   * be called when the list is complete, or an error is detected.
+   *
+   * Could perhaps besimplified a little by *always* using the
+   * callback function, using a call_out if the list can be read
+   * immediately. */
+
+  array get_list(function(array:mixed))
     {
     }
 #endif
