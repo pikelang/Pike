@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.24 1999/11/17 22:33:47 grubba Exp $
+// $Id: treeopt.in,v 1.25 1999/11/18 04:15:31 hubbe Exp $
 //
 // The tree optimizer
 //
@@ -32,12 +32,12 @@ F_CAST[$$->type == void_type_string](F_CAST(0, *), *):
 ;
 
 // void can't be casted to anything else.
-F_CAST(0 = +[$$->type == void_type_string], *):
-  $0;
+// F_CAST(0 = +[$$->type == void_type_string], *):
+//  $0;
 
 // This one is probably not needed, since it's handled by mkcastnode()
-0 = F_CAST(1 = +[$$->type == $0->type](*, *), *):
-  $1;
+// 0 = F_CAST(1 = +[$$->type == $0->type](*, *), *):
+//  $1;
 
 // Casting variables to void
 F_CAST[$$->type == void_type_string](F_LOCAL, *):
