@@ -1,4 +1,4 @@
-// $Id: Queue.pike,v 1.7 2002/10/25 20:00:27 nilsson Exp $
+// $Id: Queue.pike,v 1.8 2002/11/29 00:29:08 nilsson Exp $
 
 //! A simple FIFO queue.
 
@@ -83,15 +83,11 @@ void flush()
 mixed cast(string to) {
   switch(to) {
   case "object": return this_object();
-  case "array":  return l[tail..head];
+  case "array": return l[tail..head-1];
   }
   error("Can not cast ADT.Queue to %s.\n", to);
 }
 
 string _sprintf(int t) {
-  switch(t) {
-  case 't': return "ADT.Queue";
-  case 'O': return sprintf("ADT.Queue(%O)", cast("array"));
-  }
-  error("Can not print ADT.Queue as %c.\n", t);
+  return t=='O' && sprintf("%O%O", this_program, cast("array"));
 }
