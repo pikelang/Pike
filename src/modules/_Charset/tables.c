@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tables.c,v 1.13 2002/10/11 01:39:49 nilsson Exp $
+|| $Id: tables.c,v 1.14 2003/04/06 14:37:30 nilsson Exp $
 */
 
 #include "iso2022.h"
@@ -10776,6 +10776,8 @@ const struct charset_def charset_map[] = {
   { "367", map_ANSI_X3_4_1968, MODE_94 },                             /* :: ibm367 */
   { "819", map_ISO_8859_1_1998, MODE_96 },                            /* :: ibm819 */
   { "950", map_CP950, MODE_BIG5 },                                    /* :: cp950 */
+  { "a71", map_CSA_Z243_4_1985_1, MODE_94 },                          /* :: csa7-1 */
+  { "a72", map_CSA_Z243_4_1985_2, MODE_94 },                          /* :: csa7-2 */
   { "ansix341968", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1968 */
   { "ansix341986", map_ANSI_X3_4_1968, MODE_94 },                     /* :: ansi_x3.4-1986 */
   { "arabic", map_ISO_8859_6_1999, MODE_96 },                         /* :: arabic */
@@ -10783,6 +10785,9 @@ const struct charset_def charset_map[] = {
   { "ascii", map_ANSI_X3_4_1968, MODE_94 },                           /* :: ascii */
   { "asmo449", map_ASMO_449, MODE_94 },                               /* :: asmo_449 */
   { "asmo708", map_ISO_8859_6_1999, MODE_96 },                        /* :: asmo-708 */
+  { "az243419851", map_CSA_Z243_4_1985_1, MODE_94 },                  /* :: csa_z243.4-1985-1 */
+  { "az243419852", map_CSA_Z243_4_1985_2, MODE_94 },                  /* :: csa_z243.4-1985-2 */
+  { "az24341985gr", map_CSA_Z243_4_1985_gr, MODE_96 },                /* :: csa_z243.4-1985-gr */
   { "big5", map_BIG5, MODE_BIG5 },                                    /* :: big5 */
   { "bs4730", map_BS_4730, MODE_94 },                                 /* :: bs_4730 */
   { "bsviewdata", map_BS_viewdata, MODE_94 },                         /* :: bs_viewdata */
@@ -10790,12 +10795,6 @@ const struct charset_def charset_map[] = {
   { "celtic", map_ISO_8859_14_1998, MODE_96 },                        /* :: celtic */
   { "chinese", map_GB_2312_80, MODE_9494 },                           /* :: chinese */
   { "cn", map_GB_1988_80, MODE_94 },                                  /* :: cn */
-  { "csa71", map_CSA_Z243_4_1985_1, MODE_94 },                        /* :: csa7-1 */
-  { "csa72", map_CSA_Z243_4_1985_2, MODE_94 },                        /* :: csa7-2 */
-  { "csaz243419851", map_CSA_Z243_4_1985_1, MODE_94 },                /* :: csa_z243.4-1985-1 */
-  { "csaz243419852", map_CSA_Z243_4_1985_2, MODE_94 },                /* :: csa_z243.4-1985-2 */
-  { "csaz24341985gr", map_CSA_Z243_4_1985_gr, MODE_96 },              /* :: csa_z243.4-1985-gr */
-  { "csn369103", map_CSN_369103, MODE_96 },                           /* :: csn_369103 */
   { "cyrillic", map_ISO_8859_5_1999, MODE_96 },                       /* :: cyrillic */
   { "de", map_DIN_66003, MODE_94 },                                   /* :: de */
   { "din66003", map_DIN_66003, MODE_94 },                             /* :: din_66003 */
@@ -10810,6 +10809,7 @@ const struct charset_def charset_map[] = {
   { "fr", map_NF_Z_62_010, MODE_94 },                                 /* :: fr */
   { "gb", map_BS_4730, MODE_94 },                                     /* :: gb */
   { "gb198880", map_GB_1988_80, MODE_94 },                            /* :: gb_1988-80 */
+  { "gb2312", map_GB_2312_80, MODE_9494 },
   { "gb231280", map_GB_2312_80, MODE_9494 },                          /* :: gb_2312-80 */
   { "gost1976874", map_GOST_19768_74, MODE_96 },                      /* :: gost_19768-74 */
   { "greek", map_ISO_8859_7_1987, MODE_96 },                          /* :: greek */
@@ -10823,11 +10823,52 @@ const struct charset_def charset_map[] = {
   { "inis8", map_INIS_8, MODE_94 },                                   /* :: inis-8 */
   { "iniscyrillic", map_INIS_cyrillic, MODE_94 },                     /* :: inis-cyrillic */
   { "irv", map_ISO_646_irv_1983, MODE_94 },                           /* :: irv */
+  { "iso102t617bit", map_T_61_7bit, MODE_94 },
   { "iso10367box", map_ISO_10367_box, MODE_96 },                      /* :: iso_10367-box */
+  { "iso10swedish", map_SEN_850200_B, MODE_94 },
+  { "iso111ecmacyrillic", map_ECMA_cyrillic, MODE_96 },
+  { "iso11swedishfornames", map_SEN_850200_C, MODE_94 },
+  { "iso121canadian1", map_CSA_Z243_4_1985_1, MODE_94 },
+  { "iso122canadian2", map_CSA_Z243_4_1985_2, MODE_94 },
+  { "iso123csaz24341985gr", map_CSA_Z243_4_1985_gr, MODE_96 },
+  { "iso139csn369103", map_CSN_369103, MODE_96 },
+  { "iso13jisc6220jp", map_JIS_C6220_1969_jp, MODE_94 },
+  { "iso141jusib1002", map_JUS_I_B1_002, MODE_94 },
+  { "iso143iecp271", map_IEC_P27_1, MODE_96 },
+  { "iso146serbian", map_JUS_I_B1_003_serb, MODE_94 },
+  { "iso147macedonian", map_JUS_I_B1_003_mac, MODE_94 },
+  { "iso14jisc6220ro", map_JIS_C6220_1969_ro, MODE_94 },
+  { "iso153gost1976874", map_GOST_19768_74, MODE_96 },
+  { "iso158lap", map_latin_lap, MODE_96 },
+  { "iso159jisx02121990", map_JIS_X0212_1990, MODE_9494 },
+  { "iso15italian", map_IT, MODE_94 },
+  { "iso16portuguese", map_PT, MODE_94 },
+  { "iso17spanish", map_ES, MODE_94 },
+  { "iso18greek7old", map_greek7_old, MODE_94 },
+  { "iso19latingreek", map_latin_greek, MODE_94 },
+  { "iso2033", map_ISO_2033_1983, MODE_94 },
   { "iso20331983", map_ISO_2033_1983, MODE_94 },                      /* :: iso_2033-1983 */
+  { "iso21german", map_DIN_66003, MODE_94 },
+  { "iso25french", map_NF_Z_62_010_1973, MODE_94 },
+  { "iso27latingreek1", map_Latin_greek_1, MODE_94 },
+  { "iso2intlrefversion", map_ISO_646_irv_1983, MODE_94 },
+  { "iso42jisc62261978", map_JIS_C6226_1978, MODE_9494 },
+  { "iso47bsviewdata", map_BS_viewdata, MODE_94 },
+  { "iso49inis", map_INIS, MODE_94 },
+  { "iso4unitedkingdom", map_BS_4730, MODE_94 },
+  { "iso50inis8", map_INIS_8, MODE_94 },
+  { "iso51iniscyrillic", map_INIS_cyrillic, MODE_94 },
   { "iso5427", map_ISO_5427, MODE_94 },                               /* :: iso_5427 */
   { "iso54271981", map_ISO_5427_1981, MODE_94 },                      /* :: iso_5427:1981 */
+  { "iso5427cyrillic", map_ISO_5427, MODE_94 },
+  { "iso5427cyrillic1981", map_ISO_5427_1981, MODE_94 },
   { "iso54281980", map_ISO_5428_1980, MODE_94 },                      /* :: iso_5428:1980 */
+  { "iso5428greek", map_ISO_5428_1980, MODE_94 },
+  { "iso57gb1988", map_GB_1988_80, MODE_94 },
+  { "iso58gb231280", map_GB_2312_80, MODE_9494 },
+  { "iso60danishnorwegian", map_NS_4551_1, MODE_94 },
+  { "iso60norwegian1", map_NS_4551_1, MODE_94 },
+  { "iso61norwegian2", map_NS_4551_2, MODE_94 },
   { "iso646ca", map_CSA_Z243_4_1985_1, MODE_94 },                     /* :: iso646-ca */
   { "iso646ca2", map_CSA_Z243_4_1985_2, MODE_94 },                    /* :: iso646-ca2 */
   { "iso646cn", map_GB_1988_80, MODE_94 },                            /* :: iso646-cn */
@@ -10854,8 +10895,15 @@ const struct charset_def charset_map[] = {
   { "iso646yu", map_JUS_I_B1_002, MODE_94 },                          /* :: iso646-yu */
   { "iso6937225", map_ISO_6937_2_25, MODE_96 },                       /* :: iso_6937-2-25 */
   { "iso69372add", map_ISO_6937_2_add, MODE_96 },                     /* :: iso_6937-2-add */
+  { "iso6937add", map_ISO_6937_2_25, MODE_96 },
+  { "iso69french", map_NF_Z_62_010, MODE_94 },
+  { "iso84portuguese2", map_PT2, MODE_94 },
+  { "iso85spanish2", map_ES2, MODE_94 },
+  { "iso86hungarian", map_MSZ_7795_3, MODE_94 },
+  { "iso87jisx0208", map_JIS_C6226_1983, MODE_9494 },
   { "iso88591", map_ISO_8859_1_1998, MODE_96 },                       /* :: iso_8859-1 */
   { "iso885910", map_ISO_8859_10_1998, MODE_96 },                     /* :: iso_8859-10 */
+  { "iso8859101992", map_ISO_8859_10_1998, MODE_96 },
   { "iso8859101998", map_ISO_8859_10_1998, MODE_96 },                 /* :: iso_8859-10:1998 */
   { "iso885911987", map_ISO_8859_1_1998, MODE_96 },                   /* :: iso_8859-1:1987 */
   { "iso885911998", map_ISO_8859_1_1998, MODE_96 },                   /* :: iso_8859-1:1998 */
@@ -10872,6 +10920,7 @@ const struct charset_def charset_map[] = {
   { "iso885931988", map_ISO_8859_3_1999, MODE_96 },                   /* :: iso_8859-3:1988 */
   { "iso885931999", map_ISO_8859_3_1999, MODE_96 },                   /* :: iso_8859-3:1999 */
   { "iso88594", map_ISO_8859_4_1998, MODE_96 },                       /* :: iso_8859-4 */
+  { "iso885941988", map_ISO_8859_4_1998, MODE_96 },
   { "iso885941998", map_ISO_8859_4_1998, MODE_96 },                   /* :: iso_8859-4:1998 */
   { "iso88595", map_ISO_8859_5_1999, MODE_96 },                       /* :: iso_8859-5 */
   { "iso885951988", map_ISO_8859_5_1999, MODE_96 },                   /* :: iso_8859-5:1988 */
@@ -10882,11 +10931,22 @@ const struct charset_def charset_map[] = {
   { "iso88597", map_ISO_8859_7_1987, MODE_96 },                       /* :: iso_8859-7 */
   { "iso885971987", map_ISO_8859_7_1987, MODE_96 },                   /* :: iso_8859-7:1987 */
   { "iso88598", map_ISO_8859_8_1999, MODE_96 },                       /* :: iso_8859-8 */
+  { "iso885981988", map_ISO_8859_8_1999, MODE_96 },
   { "iso885981999", map_ISO_8859_8_1999, MODE_96 },                   /* :: iso_8859-8:1999 */
   { "iso88599", map_ISO_8859_9_1999, MODE_96 },                       /* :: iso_8859-9 */
+  { "iso885991989", map_ISO_8859_9_1999, MODE_96 },
   { "iso885991999", map_ISO_8859_9_1999, MODE_96 },                   /* :: iso_8859-9:1999 */
   { "iso8859supp", map_ISO_8859_supp, MODE_96 },                      /* :: iso_8859-supp */
+  { "iso88greek7", map_greek7, MODE_94 },
+  { "iso89asmo449", map_ASMO_449, MODE_94 },
   { "iso9036", map_ASMO_449, MODE_94 },                               /* :: iso_9036 */
+  { "iso91jisc62291984a", map_JIS_C6229_1984_a, MODE_94 },
+  { "iso92jisc62291984b", map_JIS_C6229_1984_b, MODE_94 },
+  { "iso93jis62291984badd", map_JIS_C6229_1984_b_add, MODE_94 },
+  { "iso94jis62291984hand", map_JIS_C6229_1984_hand, MODE_94 },
+  { "iso95jis62291984handadd", map_JIS_C6229_1984_hand_add, MODE_94 },
+  { "iso96jisc62291984kana", map_JIS_C6229_1984_kana, MODE_94 },
+  { "isoceltic", map_ISO_8859_14_1998, MODE_96 },                        /* :: latin8 */
   { "isoir10", map_SEN_850200_B, MODE_94 },                           /* :: iso-ir-10 */
   { "isoir100", map_ISO_8859_1_1998, MODE_96 },                       /* :: iso-ir-100 */
   { "isoir101", map_ISO_8859_2_1999, MODE_96 },                       /* :: iso-ir-101 */
@@ -10936,7 +10996,7 @@ const struct charset_def charset_map[] = {
   { "isoir42", map_JIS_C6226_1978, MODE_9494 },                       /* :: iso-ir-42 */
   { "isoir47", map_BS_viewdata, MODE_94 },                            /* :: iso-ir-47 */
   { "isoir49", map_INIS, MODE_94 },                                   /* :: iso-ir-49 */
-  { "isoir50", map_INIS_8, MODE_94 },                                 /* :: iso-ir-50 */
+  { "isoir50", map_INIS_8, MODE_94 },
   { "isoir51", map_INIS_cyrillic, MODE_94 },                          /* :: iso-ir-51 */
   { "isoir54", map_ISO_5427_1981, MODE_94 },                          /* :: iso-ir-54 */
   { "isoir55", map_ISO_5428_1980, MODE_94 },                          /* :: iso-ir-55 */
@@ -10963,6 +11023,16 @@ const struct charset_def charset_map[] = {
   { "isoir95", map_JIS_C6229_1984_hand_add, MODE_94 },                /* :: iso-ir-95 */
   { "isoir96", map_JIS_C6229_1984_kana, MODE_94 },                    /* :: iso-ir-96 */
   { "isoir98", map_ISO_2033_1983, MODE_94 },                          /* :: iso-ir-98 */
+  { "isolatin2", map_ISO_8859_2_1999, MODE_96 },
+  { "isolatin3", map_ISO_8859_3_1999, MODE_96 },
+  { "isolatin4", map_ISO_8859_4_1998, MODE_96 },
+  { "isolatin5", map_ISO_8859_9_1999, MODE_96 },
+  { "isolatin6", map_ISO_8859_10_1998, MODE_96 },
+  { "isolatinarabic", map_ISO_8859_6_1999, MODE_96 },
+  { "isolatincyrillic", map_ISO_8859_5_1999, MODE_96 },
+  { "isolatingreek", map_ISO_8859_7_1987, MODE_96 },
+  { "isolatinhebrew", map_ISO_8859_8_1999, MODE_96 },
+  { "isotextcomm", map_ISO_6937_2_add, MODE_96 },
   { "it", map_IT, MODE_94 },                                          /* :: it */
   { "jisc62201969", map_JIS_C6220_1969_jp, MODE_94 },                 /* :: jis_c6220-1969 */
   { "jisc62201969jp", map_JIS_C6220_1969_jp, MODE_94 },               /* :: jis_c6220-1969-jp */
@@ -11014,8 +11084,10 @@ const struct charset_def charset_map[] = {
   { "latin9", map_ISO_8859_15_1999, MODE_96 },                        /* :: latin9 */
   { "latingreek", map_latin_greek, MODE_94 },                         /* :: latin-greek */
   { "latingreek1", map_Latin_greek_1, MODE_94 },                      /* :: latin-greek-1 */
+  { "latinlap", map_latin_lap, MODE_96 },
   { "macedonian", map_JUS_I_B1_003_mac, MODE_94 },                    /* :: macedonian */
   { "msz77953", map_MSZ_7795_3, MODE_94 },                            /* :: msz_7795.3 */
+  { "n369103", map_CSN_369103, MODE_96 },                             /* :: csn_369103 */
   { "natsdano", map_NATS_DANO, MODE_94 },                             /* :: nats-dano */
   { "natsdanoadd", map_NATS_DANO_ADD, MODE_94 },                      /* :: nats-dano-add */
   { "natssefi", map_NATS_SEFI, MODE_94 },                             /* :: nats-sefi */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: misc.c,v 1.12 2002/10/11 01:39:49 nilsson Exp $
+|| $Id: misc.c,v 1.13 2003/04/06 14:37:31 nilsson Exp $
 */
 
 #include "global.h"
@@ -1899,8 +1899,6 @@ static const struct {
   p_wchar1 const * table;
   int lo, hi;
 } charset_map[] = {
-  { "037", map_IBM037, 32, 255 },                                     /* :: ibm037 */
-  { "038", map_IBM038, 32, 255 },                                     /* :: ibm038 */
   { "1026", map_IBM1026, 32, 255 },                                   /* :: ibm1026 */
   { "1250", map_windows_1250, 128, 255 },                             /* :: cp1250 */
   { "1251", map_windows_1251, 128, 255 },                             /* :: cp1251 */
@@ -1922,6 +1920,8 @@ static const struct {
   { "285", map_IBM285, 32, 255 },                                     /* :: ibm285 */
   { "290", map_IBM290, 32, 255 },                                     /* :: ibm290 */
   { "297", map_IBM297, 32, 255 },                                     /* :: ibm297 */
+  { "37", map_IBM037, 32, 255 },                                     /* :: ibm037 */
+  { "38", map_IBM038, 32, 255 },                                     /* :: ibm038 */
   { "420", map_IBM420, 32, 255 },                                     /* :: ibm420 */
   { "423", map_IBM423, 32, 255 },                                     /* :: ibm423 */
   { "424", map_IBM424, 32, 255 },                                     /* :: ibm424 */
@@ -1950,10 +1950,10 @@ static const struct {
   { "905", map_IBM905, 32, 255 },                                     /* :: ibm905 */
   { "918", map_IBM918, 32, 255 },                                     /* :: ibm918 */
   { "ansix31101983", map_ANSI_X3_110_1983, 33, 255 },                 /* :: ansi_x3.110-1983 */
+  { "at5001983", map_ANSI_X3_110_1983, 33, 255 },                     /* :: csa_t500-1983 */
   { "cpar", map_IBM868, 128, 255 },                                   /* :: cp-ar */
   { "cpgr", map_IBM869, 128, 255 },                                   /* :: cp-gr */
   { "cpis", map_IBM861, 128, 255 },                                   /* :: cp-is */
-  { "csat5001983", map_ANSI_X3_110_1983, 33, 255 },                   /* :: csa_t500-1983 */
   { "cuba", map_NC_NC00_10_81, 36, 127 },                             /* :: cuba */
   { "dec", map_DEC_MCS, 160, 255 },                                   /* :: dec */
   { "decmcs", map_DEC_MCS, 160, 255 },                                /* :: dec-mcs */
@@ -2003,12 +2003,23 @@ static const struct {
   { "ebcdicuk", map_EBCDIC_UK, 32, 255 },                             /* :: ebcdic-uk */
   { "ebcdicus", map_EBCDIC_US, 32, 255 },                             /* :: ebcdic-us */
   { "greekccitt", map_greek_ccitt, 36, 127 },                         /* :: greek-ccitt */
+  { "halfwidthkatakana", map_JIS_X0201, 92, 255 },
   { "hproman8", map_hp_roman8, 161, 255 },                            /* :: hp-roman8 */
+  { "ibmebcdicatde", map_EBCDIC_AT_DE, 32, 255 },
   { "invariant", map_INVARIANT, 35, 127 },                            /* :: invariant */
+  { "iso103t618bit", map_T_61_8bit, 33, 255 },
+  { "iso128t101g2", map_T_101_G2, 33, 255 },
+  { "iso150", map_greek_ccitt, 36, 127 },
+  { "iso150greekccitt", map_greek_ccitt, 36, 127 },
+  { "iso151cuba", map_NC_NC00_10_81, 36, 127 },
   { "iso646basic1983", map_ISO_646_basic_1983, 35, 122 },             /* :: iso_646.basic:1983 */
   { "iso646cu", map_NC_NC00_10_81, 36, 127 },                         /* :: iso646-cu */
+  { "iso646danish", map_DS_2089, 91, 127 },
   { "iso646dk", map_DS_2089, 91, 127 },                               /* :: iso646-dk */
   { "iso646kr", map_KSC5636, 92, 127 },                               /* :: iso646-kr */
+  { "iso70videotexsuppl", map_videotex_suppl, 33, 255 },
+  { "iso90", map_iso_ir_90, 33, 255 },
+  { "iso99naplps", map_ANSI_X3_110_1983, 33, 255 },
   { "isoir103", map_T_61_8bit, 33, 255 },                             /* :: iso-ir-103 */
   { "isoir128", map_T_101_G2, 33, 255 },                              /* :: iso-ir-128 */
   { "isoir150", map_greek_ccitt, 36, 127 },                           /* :: iso-ir-150 */
@@ -2027,6 +2038,10 @@ static const struct {
   { "msansi", map_windows_1252, 128, 255 },                           /* :: ms-ansi */
   { "naplps", map_ANSI_X3_110_1983, 33, 255 },                        /* :: naplps */
   { "ncnc001081", map_NC_NC00_10_81, 36, 127 },                       /* :: nc_nc00-10:81 */
+  { "pc850multilingual", map_IBM850, 128, 255 },
+  { "pc862latinhebrew", map_IBM862, 128, 255 },
+  { "pc8codepage437", map_IBM437, 128, 255 },
+  { "pcp852", map_IBM852, 128, 255 },
   { "r8", map_hp_roman8, 161, 255 },                                  /* :: r8 */
   { "ref", map_ISO_646_basic_1983, 35, 122 },                         /* :: ref */
   { "roman8", map_hp_roman8, 161, 255 },                              /* :: roman8 */
