@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: History.pike,v 1.5 2002/10/19 13:42:30 nilsson Exp $
+// $Id: History.pike,v 1.6 2002/10/19 14:21:12 nilsson Exp $
 
 //! A history is a stack where you can only push entries. When the stack has
 //! reached a certain size the oldest entries are removed on every push.
@@ -12,17 +12,20 @@
 private array stack;
 
 // A pointer to the top of the stack.
-private int top;
+private int(0..) top;
 
 // The number of elements currently in the history.
-private int size;
+private int(0..) size;
 
 // The maximum number of entries in the history at one time.
-private int maxsize;
+private int(0..) maxsize;
 
 // The sequence number of the latest entry to be pused on
 // the history stack.
-private int latest_entry_num;
+private int(0..) latest_entry_num;
+
+// Should we allow identical values to be stored next to each other?
+private int(0..1) no_adjacent_duplicates;
 
 //! @decl void create(int max_size)
 //! @[max_size] is the maximum number of entries that can reside in the
@@ -37,9 +40,29 @@ void create(int _maxsize) {
   */
 }
 
+//! Change how the History object should treat two
+//! identical values in a row. If 1 than only unique
+//! values are allowed after each other.
+//! @seealso
+//!   @[query_no_adjacent_duplicates]
+void set_no_adjacent_duplicates(int(0..1) i) {
+  no_adjacent_duplicates = i;
+}
+
+//! Tells if the History object allows adjacent equal
+//! values. 1 means that only uniqe values are allowed
+//! adter each other.
+//! @seealso
+//!   @[set_no_adjacent_duplicates]
+int(0..1) query_no_adjacent_duplicates() {
+  return no_adjacent_duplicates;
+}
+
 //! Push a new value into the history.
 void push(mixed value) {
   if(!maxsize) return;
+  if(size && no_adjacent_duplicates && `[](-1)==value)
+    return;
   stack[top++] = value;
   if(top==maxsize)
     top = 0;
@@ -54,6 +77,8 @@ void push(mixed value) {
 int _sizeof() { return size; }
 
 //! Returns the maximum number of values in the history
+//! @seealso
+//!   @[set_maxsize]
 int get_maxsize() { return maxsize; }
 
 //! Returns the absolute sequence number of the latest
@@ -70,19 +95,11 @@ int get_first_entry_num() {
   return latest_entry_num - size + 1;
 }
 
-int remap(int i) {
-  return (i+top)%maxsize;
-}
-
-//! Get a value from the history as if it was an array, e.g.
-//! both positive and negative numbers may be used. The positive
-//! numbers are however offset with 1, so [1] is the first entry
-//! in the history and [-1] is the last.
-mixed `[](int i) {
+private int(0..) find_pos(int i) {
   if(i<0) {
     if(i<-size)
       error("Only %d entries in history.\n", size);
-    return stack[(i+top)%maxsize];
+    return (i+top)%maxsize;
   }
   if(i>latest_entry_num)
     error("Only %d entries in history.\n", size);
@@ -90,11 +107,27 @@ mixed `[](int i) {
     error("The oldest history entry is %d.\n", get_first_entry_num());
 
   // ( (i-latest_entry_num+size-1) + (top + (maxsize - size)) )%maxsize
-  return stack[(i-latest_entry_num-1+top)%maxsize];
+  return (i-latest_entry_num-1+top)%maxsize;
+}
+
+//! Get a value from the history as if it was an array, e.g.
+//! both positive and negative numbers may be used. The positive
+//! numbers are however offset with 1, so [1] is the first entry
+//! in the history and [-1] is the last.
+mixed `[](int i) {
+  return stack[find_pos(i)];
+}
+
+//! Overwrite one value in the history. The history position may be
+//! identified either by positive or negative offset, like @[`[]].
+void `[]=(int i, mixed value) {
+  stack[find_pos(i)]=value;
 }
 
 //! Set the maximume number of entries that can be
 //! stored in the history simultaneous.
+//! @seealso
+//!   @[get_maxsize]
 void set_maxsize(int _maxsize) {
   if(_maxsize==maxsize)
     return;
@@ -124,6 +157,17 @@ void flush() {
   stack = allocate(maxsize);
   top = 0;
   size = 0;
+}
+
+//! Returns the index numbers of the history entries
+//! available.
+array(int) _indices() {
+  return enumerate(size, 1, get_first_entry_num());
+}
+
+//! Returns the values of the available history entries.
+array _values() {
+  return map(_indices(), `[]);
 }
 
 string _sprintf(int t) {
