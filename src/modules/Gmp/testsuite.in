@@ -47,23 +47,32 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(clone(Gmp.mpz,17)->powm(12,4711),85)
 
   define([[mpz_test_cmp]],[[
-    test_cmp(clone(Gmp.mpz,$1), $2)
-    test_cmp($1, clone(Gmp.mpz,$2))
-    test_cmp(clone(Gmp.mpz, $1), clone(Gmp.mpz, $2))
+    test_cmp3(clone(Gmp.mpz,$1), $2, $3)
+    test_cmp3($1, clone(Gmp.mpz,$2), $3)
+    test_cmp3(clone(Gmp.mpz, $1), clone(Gmp.mpz, $2), $3)
+    test_cmp3(clone(Gmp.mpz,$1), $2, clone(Gmp.mpz, $3))
+    test_cmp3($1, clone(Gmp.mpz,$2), clone(Gmp.mpz, $3))
+    test_cmp3(clone(Gmp.mpz, $1), clone(Gmp.mpz, $2), clone(Gmp.mpz, $3))
   ]])
 
   define([[mpz_test_type1]],[[
-    mpz_test_cmp($1,$2)
-    mpz_test_cmp($1.0,$2)
+    mpz_test_cmp($1,$2,$3)
+    mpz_test_cmp($1.0,$2,$3)
   ]])
 
   define([[mpz_test_type2]],[[
-    mpz_test_type1($1,$2)
-    mpz_test_type1($1,$2.0)
+    mpz_test_type1($1,$2,$3)
+    mpz_test_type1($1,$2.0,$3)
   ]])
 
-  mpz_test_type2(1,2)
-  mpz_test_type2(-2,1)
+  define([[mpz_test_type3]],[[
+    mpz_test_type1($1,$2,$3)
+    mpz_test_type1($1,$2,$3.0)
+  ]])
+
+  mpz_test_type3(1,2,3)
+  mpz_test_type3(-2,1,4)
+  mpz_test_type3(-2,-1,4)
 
   test_true(catch(Gmp.mpz("abcd", 47)))
   test_true(catch(Gmp.mpz(-17)->digits(256)))
