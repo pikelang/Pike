@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.5 2000/08/28 11:05:38 grubba Exp $
+ * $Id: stat.c,v 1.6 2000/08/28 16:10:46 grubba Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.5 2000/08/28 11:05:38 grubba Exp $");
+RCSID("$Id: stat.c,v 1.6 2000/08/28 16:10:46 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -60,9 +60,9 @@ enum stat_query
 #ifndef S_IWGRP
 #define S_IWGRP 020
 #endif /* !S_IWGRP */
-#ifndef S_IXOTH
-#define S_IXOTH 010
-#endif /* !S_IXOTH */
+#ifndef S_IXGRP
+#define S_IXGRP 010
+#endif /* !S_IXGRP */
 #ifndef S_IROTH
 #define S_IROTH 04
 #endif /* !S_IROTH */
