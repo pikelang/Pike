@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.55 2002/03/09 13:43:55 mast Exp $
+# $Id: Makefile,v 1.56 2002/03/09 14:45:57 mast Exp $
 #
 # Meta Makefile
 #
@@ -53,14 +53,15 @@ configure: src/configure builddir
 	@builddir="$(BUILDDIR)"; \
 	srcdir=`pwd`/src; \
 	cd "$$builddir" && { \
-	  if test "x$(CONFIGUREARGS)" = x; then \
-	    configureargs="$$oldconfigureargs"; \
-	  else \
+	  if test "x$(CONFIGUREARGS)" = x; then :; else \
 	    configureargs="$(CONFIGUREARGS)"; \
 	    oldconfigureargs="$(CONFIGUREARGS)"; \
 	  fi; \
 	  if test -f .configureargs; then \
 	    oldconfigureargs="`cat .configureargs`"; \
+	  else :; fi; \
+	  if test "x$(CONFIGUREARGS)" = x; then \
+	    configureargs="$$oldconfigureargs"; \
 	  else :; fi; \
 	  MAKE=$(MAKE) ; export MAKE ;\
 	  echo; \
