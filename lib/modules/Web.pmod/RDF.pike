@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.20 2003/11/07 15:26:48 nilsson Exp $
+// $Id: RDF.pike,v 1.21 2003/11/07 18:55:04 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -675,7 +675,8 @@ static Node add_xml_children(Node p, string rdfns) {
   return subj;
 }
 
-//! @decl Standards.RDF parse_xml(string|Parser.XML.NSTree.NSNode in)
+//! @decl Web.RDF parse_xml(string|Parser.XML.NSTree.NSNode in, @
+//!                         void|string base)
 //! Adds the statements represented by the string or tree @[in] to the
 //! RDF domain. If @[in] is a tree the in-node should be the @tt{RDF@}
 //! node of the XML serialization. RDF documents take its default
@@ -794,7 +795,7 @@ string _sprintf(int t) {
   return t=='O' && sprintf("%O(%d)", this_program, _sizeof());
 }
 
-//! @decl Standards.RDF `|(Standards.RDF x)
+//! @decl Web.RDF `|(Web.RDF x)
 //! Modifies the current object to create a union of the current object
 //! and the object @[x].
 this_program `|(mixed data) {

@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.16 2003/11/07 17:50:55 nilsson Exp $
+// $Id: Crawler.pmod,v 1.17 2003/11/07 18:55:25 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -217,8 +217,10 @@ class Queue
   }
 }
 
+//! Abstract rule class.
 class Rule
 {
+  //!
   int check(string|Standards.URI uri);
 }
 
