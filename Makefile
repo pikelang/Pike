@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.142 2004/05/01 14:20:36 mast Exp $
+# $Id: Makefile,v 1.143 2004/05/01 14:47:46 mast Exp $
 #
 # Meta Makefile
 #
@@ -37,8 +37,8 @@ DO_MAKE=MAKE="$(MAKE_CMD)" export MAKE && \
 # Used to avoid make compatibility problems.
 BIN_TRUE=":"
 
-all: bin/pike
-	$(DO_MAKE) compile
+all: bin/pike compile
+	-@$(BIN_TRUE)
 
 force:
 	-@$(BIN_TRUE)
@@ -55,6 +55,9 @@ force_configure:
 
 configure_help: src/configure
 	cd src && ./configure --help
+
+compile:
+	@$(DO_MAKE) _make_in_builddir
 
 builddir:
 	@builddir="$(BUILDDIR)"; \
@@ -136,7 +139,7 @@ configure: src/configure builddir
 	} || exit $$?
 
 # This target should always be executed indirectly through a $(DO_MAKE).
-compile: configure
+_make_in_builddir: configure
 	@builddir="$(BUILDDIR)"; \
 	cd "$$builddir" && { \
 	  metatarget="$(METATARGET)"; \
@@ -166,7 +169,7 @@ compile: configure
 # FIXME: The refdoc stuff ought to use $(BUILDDIR) too.
 
 documentation:
-	@$(DO_MAKE) "METATARGET=documentation"
+	@$(DO_MAKE) "METATARGET=documentation" _make_in_builddir
 
 doc: documentation
 
@@ -191,38 +194,38 @@ bin/pike: force
 
 # This skips the modules.
 pike: bin/pike
-	@$(DO_MAKE) "METATARGET=pike"
+	@$(DO_MAKE) "METATARGET=pike" _make_in_builddir
 
 install: bin/pike
-	@$(DO_MAKE) "METATARGET=install"
+	@$(DO_MAKE) "METATARGET=install" _make_in_builddir
 
 install_nodoc: bin/pike
-	@$(DO_MAKE) "METATARGET=install_nodoc"
+	@$(DO_MAKE) "METATARGET=install_nodoc" _make_in_builddir
 
 install_interactive: bin/pike
-	@$(DO_MAKE) "METATARGET=install_interactive"
+	@$(DO_MAKE) "METATARGET=install_interactive" _make_in_builddir
 
 install_interactive_nodoc: bin/pike
-	@$(DO_MAKE) "METATARGET=install_interactive_nodoc"
+	@$(DO_MAKE) "METATARGET=install_interactive_nodoc" _make_in_builddir
 
 tinstall: bin/pike
-	@$(DO_MAKE) "METATARGET=tinstall"
+	@$(DO_MAKE) "METATARGET=tinstall" _make_in_builddir
 
 testsuites:
-	@$(DO_MAKE) "METATARGET=testsuites"
-	@$(DO_MAKE) "METATARGET=testsuite"
+	@$(DO_MAKE) "METATARGET=testsuites" _make_in_builddir
+	@$(DO_MAKE) "METATARGET=testsuite" _make_in_builddir
 
 just_verify:
-	@$(DO_MAKE) "METATARGET=just_verify"
+	@$(DO_MAKE) "METATARGET=just_verify" _make_in_builddir
 
 valgrind_verify:
-	@$(DO_MAKE) "METATARGET=valgrind_verify"
+	@$(DO_MAKE) "METATARGET=valgrind_verify" _make_in_builddir
 
 verify:
-	@$(DO_MAKE) "METATARGET=verify"
+	@$(DO_MAKE) "METATARGET=verify" _make_in_builddir
 
 verify_installed:
-	@$(DO_MAKE) "METATARGET=verify_installed"
+	@$(DO_MAKE) "METATARGET=verify_installed" _make_in_builddir
 
 check: verify
 	-@$(BIN_TRUE)
@@ -231,38 +234,38 @@ sure: verify
 	-@$(BIN_TRUE)
 
 verbose_verify:
-	@$(DO_MAKE) "METATARGET=verbose_verify"
+	@$(DO_MAKE) "METATARGET=verbose_verify" _make_in_builddir
 
 gdb_verify:
-	@$(DO_MAKE) "METATARGET=gdb_verify"
+	@$(DO_MAKE) "METATARGET=gdb_verify" _make_in_builddir
 
 dump_modules:
-	@$(DO_MAKE) "METATARGET=dump_modules"
+	@$(DO_MAKE) "METATARGET=dump_modules" _make_in_builddir
 
 force_dump_modules:
-	@$(DO_MAKE) "METATARGET=force_dump_modules"
+	@$(DO_MAKE) "METATARGET=force_dump_modules" _make_in_builddir
 
 delete_dumped_modules:
-	@$(DO_MAKE) "METATARGET=delete_dumped_modules"
+	@$(DO_MAKE) "METATARGET=delete_dumped_modules" _make_in_builddir
 
 undump_modules:
-	@$(DO_MAKE) "METATARGET=undump_modules"
+	@$(DO_MAKE) "METATARGET=undump_modules" _make_in_builddir
 
 run_hilfe:
-	@$(DO_MAKE) "METATARGET=run_hilfe"
+	@$(DO_MAKE) "METATARGET=run_hilfe" _make_in_builddir
 
 source:
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=source" compile
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=source" _make_in_builddir
 
 export:
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
-	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" compile
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" _make_in_builddir
 
 snapshot_export:
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
-	  "EXPORT_NAME=Pike-v%maj.%min-snapshot-%Y%M%D" compile
+	  "EXPORT_NAME=Pike-v%maj.%min-snapshot-%Y%M%D" _make_in_builddir
 
 snapshot: snapshot_export
 
@@ -280,18 +283,18 @@ xenofarm_export:
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
 	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" \
 	  "EXPORTARGS=--snapshot $(EXPORTARGS)" \
-	  compile >>export_result.txt 2>&1
+	  _make_in_builddir >>export_result.txt 2>&1
 	@echo Export done
 
 bin_export:
-	@$(DO_MAKE) "METATARGET=bin_export"
+	@$(DO_MAKE) "METATARGET=bin_export" _make_in_builddir
 
 feature_list:
-	@$(DO_MAKE) "METATARGET=feature_list"
+	@$(DO_MAKE) "METATARGET=feature_list" _make_in_builddir
 
 solaris_pkg_configure:
 	@$(DO_MAKE) "CONFIGUREARGS=--prefix=/opt $(CONFIGUREARGS)" \
-	  "METATARGET=configure"
+	  "METATARGET=configure" _make_in_builddir
 
 solaris_pkg: solaris_pkg_configure bin/pike
 	@test -d "${BUILDDIR}/solaris_pkg_build" || mkdir "${BUILDDIR}/solaris_pkg_build"
@@ -316,7 +319,7 @@ xenofarm:
 	gzip -f9 xenofarm_result.tar
 
 benchmark:
-	@$(DO_MAKE) "METATARGET=run_bench"
+	@$(DO_MAKE) "METATARGET=run_bench" _make_in_builddir
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(DO_MAKE) clean || { \
