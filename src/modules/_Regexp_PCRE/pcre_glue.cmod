@@ -1,0 +1,384 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: pcre_glue.cmod,v 1.1 2003/09/20 16:16:05 mirar Exp $
+|| (original author: mirar)
+*/
+
+#include "global.h"
+RCSID("$Id: pcre_glue.cmod,v 1.1 2003/09/20 16:16:05 mirar Exp $");
+#include "pcre_machine.h"
+
+#include "pike_macros.h"
+#include "object.h"
+#include "constants.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "threads.h"
+#include "array.h"
+#include "mapping.h"
+#include "pike_error.h"
+#include "stralloc.h"
+#include "threads.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+#include "operators.h"
+
+/*! @module Regexp
+ */
+
+/*! @module PCRE
+ */
+
+#ifdef HAVE_LIBPCRE
+
+#include <pcre.h>
+
+/*** _pcre the regexp object ***********************************/
+
+/*! @class _pcre
+ */
+
+PIKECLASS _pcre
+{
+   CVAR pcre *re;
+   CVAR pcre_extra *extra;
+   PIKEVAR string pattern;
+
+/*!
+ *! the option bits are:
+ *!    OPTION.ANCHORED         Force pattern anchoring
+ *!    OPTION.CASELESS         Do caseless matching
+ *!    OPTION.DOLLAR_ENDONLY   $ not to match newline at end
+ *!    OPTION.DOTALL           . matches anything including NL
+ *!    OPTION.EXTENDED         Ignore whitespace and # comments
+ *!    OPTION.EXTRA            PCRE extra features
+ *!                              (not much use currently)
+ *!    OPTION.MULTILINE        ^ and $ match newlines within data
+ *!    OPTION.NO_AUTO_CAPTURE  Disable numbered capturing paren-
+ *!                              theses (named ones available)
+ *!    OPTION.UNGREEDY         Invert greediness of quantifiers
+ *!    OPTION.UTF8             Run in UTF-8 mode
+ */
+
+   PIKEFUN void create(string pattern,
+		       void|int options,
+		       void|object table)
+      {
+	 int options=0;
+	 struct object *table=NULL;
+	 const char *errptr;
+	 int erroffset;
+
+	 if (THIS->pattern) free_string(THIS->pattern);
+
+	 switch (args)
+	 {
+	    default:
+	       get_all_args("pcre->create",args,"%S%d%o",
+			    &THIS->pattern,&options,&table);
+	       break;
+	    case 2:
+	       get_all_args("pcre->create",args,"%S%d",
+			    &THIS->pattern,&options);
+	       break;
+	    case 1:
+	    case 0:
+	       get_all_args("pcre->create",args,"%S",&THIS->pattern);
+	       break;
+	 }
+
+	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
+	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
+	 THIS->extra=NULL;
+
+	 THIS->re=pcre_compile(
+	    THIS->pattern->str,options,
+	    &errptr,&erroffset,
+	    NULL /* table */ );
+
+	 if (!THIS->re)
+	    Pike_error("error calling pcre_compile [%d]: %s\n",
+		       erroffset,errptr);
+      }
+
+/*!
+ *!  (from the pcreapi man-page)
+ *!  "When  a pattern is going to be used several times, it is worth spending
+ *!  more time analyzing it in order to speed up the time taken  for  match-
+ *!  ing."
+ */
+
+   PIKEFUN object study()
+      {
+	 const char *errmsg=NULL;
+	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
+
+         THIS->extra=pcre_study(THIS->re,0,&errmsg);
+
+	 if (errmsg)
+	    Pike_error("error calling pcre_study: %s\n",errmsg);
+
+	 RETURN this_object();
+      }
+
+/*! @decl static string _sprintf(int c, mapping flags)
+ */
+  PIKEFUN string _sprintf(int c, mapping flags)
+    flags ID_STATIC;
+    {
+      switch(c)
+      {
+	 default:
+	    push_undefined();
+	    return;
+
+	 case 'O':
+	    push_constant_text ("Regexp.PCRE(%O)");
+	    push_string(THIS->pattern);
+	    f_sprintf(2);
+	    return;
+
+	 case 's':
+	    push_string(THIS->pattern);
+	    return;
+      }
+    }
+
+   INIT
+      {
+	 THIS->re=NULL;
+	 THIS->extra=NULL;
+      }
+
+   EXIT
+      {
+	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
+	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
+	 THIS->re=NULL;
+	 THIS->extra=NULL;
+      }
+}
+
+/*! @endclass
+ */
+
+#endif /* HAVE_LIBPCRE */
+
+/*** module init & exit & stuff *****************************************/
+
+PIKE_MODULE_EXIT
+{
+   EXIT
+}
+
+PIKE_MODULE_INIT
+{
+#ifdef HAVE_LIBPCRE
+
+/*! @decl constant buildconfig_UTF8
+ *!	(from the pcreapi man-page)
+ *!     "The output is an integer that is set to one if UTF-8 support
+ *!     is available; otherwise it is set to zero."
+ *!	This constant is calculated when the module is initiated
+ *!	by using pcre_config(3).
+ *!
+ *! @decl constant buildconfig_NEWLINE
+ *!	(from the pcreapi man-page)
+ *!     "The output is an integer that is set to  the  value  of  the
+ *!     code  that  is  used for the newline character. It is either
+ *!     linefeed (10) or carriage return (13), and  should  normally
+ *!     be the standard character for your operating system."
+ *!	This constant is calculated when the module is initiated
+ *!	by using pcre_config(3).
+ *!
+ *! @decl constant buildconfig_LINK_SIZE
+ *!	(from the pcreapi man-page)
+ *!     "The output is an integer that contains the number  of  bytes
+ *!     used  for  internal linkage in compiled regular expressions.
+ *!     The value is 2, 3, or 4. Larger values allow larger  regular
+ *!     expressions  to be compiled, at the expense of slower match-
+ *!     ing. The default value of 2 is sufficient for  all  but  the
+ *!     most  massive patterns, since it allows the compiled pattern
+ *!     to be up to 64K in size."
+ *!	This constant is calculated when the module is initiated
+ *!	by using pcre_config(3).
+ *!
+ *! @decl constant buildconfig_POSIX_MALLOC_THRESHOLD
+ *!	(from the pcreapi man-page)
+ *!     "The output is an integer that contains the  threshold  above
+ *!     which  the POSIX interface uses malloc() for output vectors.
+ *!     Further details are given in the pcreposix documentation."
+ *!	This constant is calculated when the module is initiated
+ *!	by using pcre_config(3).
+ *!
+ *! @decl constant buildconfig_MATCH_LIMIT
+ *!	(from the pcreapi man-page)
+ *!     "The output is an integer that gives the  default  limit  for
+ *!     the   number  of  internal  matching  function  calls  in  a
+ *!     pcre_exec()  execution.  Further  details  are  given   with
+ *!     pcre_exec() below."
+ *!	This constant is calculated when the module is initiated
+ *!	by using pcre_config(3).
+ *!
+ */
+
+#define FIGURE_BUILD_TIME_OPTION(X)					\
+   do									\
+   {									\
+      int outcome;							\
+      if (pcre_config(PCRE_CONFIG_##X,&outcome)!=0)			\
+	 error("error while calling pcre_config("#X")\n");		\
+      add_integer_constant("buildconfig_"#X,outcome,0);			\
+   }									\
+   while (0)
+
+   FIGURE_BUILD_TIME_OPTION(UTF8);
+   FIGURE_BUILD_TIME_OPTION(NEWLINE);
+   FIGURE_BUILD_TIME_OPTION(LINK_SIZE);
+   FIGURE_BUILD_TIME_OPTION(POSIX_MALLOC_THRESHOLD);
+   FIGURE_BUILD_TIME_OPTION(MATCH_LIMIT);
+
+/*! @module CONFIG
+ *!  contains all option constants
+ */
+
+   start_new_program();
+
+/*! @decl constant ANCHORED
+ *!  (from the pcreapi manpage)
+ *!  If this bit is set, the pattern is forced to be "anchored", that is, it
+ *!  is constrained to match only at the first matching point in the  string
+ *!  which is being searched (the "subject string"). This effect can also be
+ *!  achieved by appropriate constructs in the pattern itself, which is  the
+ *!  only way to do it in Perl.
+ */
+   add_integer_constant("ANCHORED",PCRE_ANCHORED,0);
+
+/*! @decl constant CASELESS
+ *!  (from the pcreapi manpage)
+ *!  If  this  bit is set, letters in the pattern match both upper and lower
+ *!  case letters. It is equivalent to Perl's  /i  option,  and  it  can  be
+ *!  changed within a pattern by a (?i) option setting.
+ */
+   add_integer_constant("CASELESS",PCRE_CASELESS,0);
+
+/*! @decl constant DOLLAR_ENDONLY
+ *!  (from the pcreapi manpage)
+ *!  If  this bit is set, a dollar metacharacter in the pattern matches only
+ *!  at the end of the subject string. Without this option,  a  dollar  also
+ *!  matches  immediately before the final character if it is a newline (but
+ *!  not before any  other  newlines).  The  PCRE_DOLLAR_ENDONLY  option  is
+ *!  ignored if PCRE_MULTILINE is set. There is no equivalent to this option
+ *!  in Perl, and no way to set it within a pattern.
+ */
+   add_integer_constant("DOLLAR_ENDONLY",PCRE_DOLLAR_ENDONLY,0);
+
+/*! @decl constant DOTALL
+ *!  (from the pcreapi manpage)
+ *!  If this bit is set, a dot  metacharater  in  the  pattern  matches  all
+ *!  characters, including newlines. Without it, newlines are excluded. This
+ *!  option is equivalent to Perl's /s option, and it can be changed  within
+ *!  a  pattern  by  a  (?s)  option  setting. A negative class such as [^a]
+ *!  always matches a newline character, independent of the setting of  this
+ *!  option.
+ */
+   add_integer_constant("DOTALL",PCRE_DOTALL,0);
+
+/*! @decl constant EXTENDED
+ *!  (from the pcreapi manpage)
+ *!  If  this  bit  is  set,  whitespace  data characters in the pattern are
+ *!  totally ignored except  when  escaped  or  inside  a  character  class.
+ *!  Whitespace  does  not  include the VT character (code 11). In addition,
+ *!  characters between an unescaped # outside a  character  class  and  the
+ *!  next newline character, inclusive, are also ignored. This is equivalent
+ *!  to Perl's /x option, and it can be changed within a pattern by  a  (?x)
+ *!  option setting.
+ *!
+ *!  This  option  makes  it possible to include comments inside complicated
+ *!  patterns.  Note, however, that this applies only  to  data  characters.
+ *!  Whitespace   characters  may  never  appear  within  special  character
+ *!  sequences in a pattern, for  example  within  the  sequence  (?(  which
+ *!  introduces a conditional subpattern.
+ */
+   add_integer_constant("EXTENDED",PCRE_EXTENDED,0);
+
+/*! @decl constant EXTRA
+ *!  (from the pcreapi manpage)
+ *!  This  option  was invented in order to turn on additional functionality
+ *!  of PCRE that is incompatible with Perl, but it  is  currently  of  very
+ *!  little  use. When set, any backslash in a pattern that is followed by a
+ *!  letter that has no special meaning  causes  an  error,  thus  reserving
+ *!  these  combinations  for  future  expansion.  By default, as in Perl, a
+ *!  backslash followed by a letter with no special meaning is treated as  a
+ *!  literal.  There  are  at  present  no other features controlled by this
+ *!  option. It can also be set by a (?X) option setting within a pattern.
+ */
+   add_integer_constant("EXTRA",PCRE_EXTRA,0);
+
+/*! @decl constant MULTILINE
+ *!  (from the pcreapi manpage)
+ *!  By default, PCRE treats the subject string as consisting  of  a  single
+ *!  "line"  of  characters (even if it actually contains several newlines).
+ *!  The "start of line" metacharacter (^) matches only at the start of  the
+ *!  string,  while  the "end of line" metacharacter ($) matches only at the
+ *!  end of the string, or before a terminating  newline  (unless  PCRE_DOL-
+ *!  LAR_ENDONLY is set). This is the same as Perl.
+ *!
+ *!  When  PCRE_MULTILINE  it  is set, the "start of line" and "end of line"
+ *!  constructs match immediately following or immediately before  any  new-
+ *!  line  in the subject string, respectively, as well as at the very start
+ *!  and end. This is equivalent to Perl's /m option, and it can be  changed
+ *!  within a pattern by a (?m) option setting. If there are no "\n" charac-
+ *!  ters in a subject string, or no occurrences of ^ or  $  in  a  pattern,
+ *!  setting PCRE_MULTILINE has no effect.
+ *!
+ */
+   add_integer_constant("MULTILINE",PCRE_MULTILINE,0);
+
+/*! @decl constant NO_AUTO_CAPTURE
+ *!  (from the pcreapi manpage)
+ *!  If this option is set, it disables the use of numbered capturing paren-
+ *!  theses in the pattern. Any opening parenthesis that is not followed  by
+ *!  ?  behaves as if it were followed by ?: but named parentheses can still
+ *!  be used for capturing (and they acquire  numbers  in  the  usual  way).
+ *!  There is no equivalent of this option in Perl.
+ */
+   add_integer_constant("NO_AUTO_CAPTURE",PCRE_NO_AUTO_CAPTURE,0);
+
+/*! @decl constant UNGREEDY
+ *!  (from the pcreapi manpage)
+ *!  This  option  inverts  the "greediness" of the quantifiers so that they
+ *!  are not greedy by default, but become greedy if followed by "?". It  is
+ *!  not  compatible  with Perl. It can also be set by a (?U) option setting
+ *!  within the pattern.
+ */
+   add_integer_constant("UNGREEDY",PCRE_UNGREEDY,0);
+
+/*! @decl constant UTF8
+ *!  (from the pcreapi manpage)
+ *!  This option causes PCRE to regard both the pattern and the  subject  as
+ *!  strings  of  UTF-8 characters instead of single-byte character strings.
+ *!  However, it is available only if PCRE has been built to  include  UTF-8
+ *!  support.  If  not, the use of this option provokes an error. Details of
+ *!  how this option changes the behaviour of PCRE are given in the  section
+ *!  on UTF-8 support in the main pcre page.
+ */
+   add_integer_constant("UTF8",PCRE_UTF8,0);
+
+   { /* keep this structure if we want to make a macro later */
+      struct program *p=end_program();
+      struct object *obj=clone_object(p,0);
+      add_object_constant("OPTION",obj,0);
+      free_object(obj);
+      free_program(p);
+   }
+
+/*! @endmodule
+ */
+
+   INIT
+
+#endif /* HAVE_LIBPCRE */
+}

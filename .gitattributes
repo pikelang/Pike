@@ -690,6 +690,10 @@ testfont binary
 /src/modules/_Image_XFace/configure.in foreign_ident
 /src/modules/_Image_XFace/image_xface.c foreign_ident
 /src/modules/_Image_XFace/testsuite.in foreign_ident
+/src/modules/_Regexp_PCRE/Makefile.in foreign_ident
+/src/modules/_Regexp_PCRE/acconfig.h foreign_ident
+/src/modules/_Regexp_PCRE/configure.in foreign_ident
+/src/modules/_Regexp_PCRE/pcre_glue.cmod foreign_ident
 /src/modules/_Roxen/Makefile.in foreign_ident
 /src/modules/_Roxen/acconfig.h foreign_ident
 /src/modules/_Roxen/configure.in foreign_ident

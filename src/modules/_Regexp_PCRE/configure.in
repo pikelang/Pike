@@ -1,0 +1,26 @@
+#
+# $Id: configure.in,v 1.1 2003/09/20 16:17:53 mirar Exp $
+#
+AC_INIT(pcre_glue.c)
+AC_CONFIG_HEADER(pcre_machine.h)
+AC_ARG_WITH(libpcre,     [  --with(out)-libpcre       Support JPEG (Image.JPEG)],[],[with_libpcre=yes])
+
+AC_MODULE_INIT()
+
+PIKE_FEATURE_WITHOUT(Regexp.PCRE)
+
+if test x$with_libpcre = xyes ; then
+  PIKE_FEATURE_NODEP(Regexp.PCRE)
+  AC_CHECK_HEADERS(pcre.h)
+  if test $ac_cv_header_pcre_h = yes ; then
+    AC_CHECK_LIB(pcre, pcre_compile, [
+      AC_DEFINE(HAVE_LIBPCRE) 
+      LIBS="${LIBS-} -lpcre"
+      PIKE_FEATURE_OK(Regexp.PCRE)
+    ])
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+
