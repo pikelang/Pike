@@ -19,7 +19,7 @@ fi
 # Paths starting with `pwd` ==> empty
 # Rules for object files are duplicated for protos files (if needed).
 # Remaining absolute paths are removed.
-# Local files are filtered with respect to existance.
+# Local files are filtered with respect to existence.
 # Lines with only white-space and a terminating backslash are removed.
 # Backslashes that precede empty lines with only white-space are removed.
 
@@ -44,15 +44,20 @@ else
       -e '/^[ 	]*\\$/d'
 fi >"$1/dependencies"
 
-# Perform filtering. This step is needed due to gcc 3.4.
+# Perform filtering. This step is needed due to gcc 3.3. The reason is
+# that it tells system and user includes apart by where they are found
+# and not by the #include syntax. Thus missing system includes remain
+# in the dependency lists. We can get missing system includes when
+# --disable-binary is used.
 for f in `sed <"$1/dependencies" \
 	    -e 's@^.*:@@' -e 's/\\\\$//' \
-	    -e 's@\\([ 	]\\)\\$([A-Za-z_]*)/[-a-zA-Z0-9.,_/]*@@' \
+	    -e 's@\\([ 	]\\)\\$([A-Za-z_]*)/[-a-zA-Z0-9.,_/]*@@g' \
 	    -e 's/[ 	]*$//' -e 's/^[ 	]*//' | sort | uniq`; do
   if [ ! -f "$f" ]; then
     echo "WARNING: Missing local header file $f." >&2
+    # Buglet: $f is not regexp escaped in the regexps below.
     sed <"$1/dependencies" -e "s@[ 	]$f[ 	]@ @g" \
-	>"$1/dependencies.tmp" && \
+      -e "s@[ 	]$f\$@@g" >"$1/dependencies.tmp" && \
       mv "$1/dependencies.tmp" "$1/dependencies"
   fi
 done
