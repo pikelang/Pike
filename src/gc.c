@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.226 2003/08/20 17:38:37 mast Exp $
+|| $Id: gc.c,v 1.227 2003/08/26 18:46:04 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.226 2003/08/20 17:38:37 mast Exp $");
+RCSID("$Id: gc.c,v 1.227 2003/08/26 18:46:04 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -945,38 +945,40 @@ again:
 
 #ifdef PIKE_NEW_MULTISETS
     case T_MULTISET_DATA: {
+      int found = 0;
       struct multiset *l;
       for (l = first_multiset; l; l = l->next) {
 	if (l->msd == (struct multiset_data *) a) {
-	  fprintf(stderr, "%*s**Describing multiset for this data block:\n", indent, "");
+	  fprintf(stderr, "%*s**Describing multiset %p for this data block:\n",
+		  indent, "", l);
 	  debug_dump_multiset(l);
+	  found = 1;
 	}
       }
+      if (!found)
+	fprintf (stderr, "%*s**Didn't find multiset for this data block!\n", indent, "");
       break;
     }
 
     case T_MULTISET:
-      fprintf(stderr, "%*s**Describing multiset:\n", indent, "");
       debug_dump_multiset((struct multiset *) a);
-      fprintf(stderr, "%*s**Describing multiset data block:\n", indent, "");
-      describe_something(((struct multiset *) a)->msd, T_MULTISET_DATA,
-			 indent + 2, -1, flags, 0);
       break;
 
 #else  /* PIKE_NEW_MULTISETS */
     case T_MULTISET:
-      fprintf(stderr,"%*s**Describing array of multiset:\n",indent,"");
+      fprintf(stderr,"%*s**Describing array %p of multiset:\n",
+	      indent,"", ((struct multiset *)a)->ind);
       debug_dump_array(((struct multiset *)a)->ind);
       break;
 #endif
 
     case T_ARRAY:
-      fprintf(stderr,"%*s**Describing array:\n",indent,"");
       debug_dump_array((struct array *)a);
       break;
 
     case T_MAPPING_DATA:
     {
+      int found = 0;
       struct mapping *m;
       for(m=first_mapping;m;m=m->next)
       {
@@ -984,29 +986,30 @@ again:
 	{
 	  fprintf(stderr,"%*s**Describing mapping for this data block:\n",indent,"");
 	  debug_dump_mapping((struct mapping *)m);
+	  found = 1;
 	}
       }
+      if (!found)
+	fprintf (stderr, "%*s**Didn't find mapping for this data block!\n", indent, "");
       break;
     }
     
     case T_MAPPING:
-      fprintf(stderr,"%*s**Describing mapping:\n",indent,"");
       debug_dump_mapping((struct mapping *)a);
-      fprintf(stderr,"%*s**Describing mapping data block:\n",indent,"");
-      describe_something( ((struct mapping *)a)->data, T_MAPPING_DATA,
-			  indent+2,-1,flags, 0);
       break;
 
     case T_STRING:
     {
       struct pike_string *s=(struct pike_string *)a;
-      fprintf(stderr, "%*s**String length is %"PRINTPTRDIFFT"d:\n",
-	      indent, "", s->len);
-      if(s->len>77)
-      {
-	fprintf(stderr,"%*s** \"%60s\"...\n",indent,"",s->str);
-      }else{
-	fprintf(stderr,"%*s** \"%s\"\n",indent,"",s->str);
+      fprintf(stderr,"%*s**size_shift: %d, len: %"PRINTPTRDIFFT"d, hash: %"PRINTSIZET"x\n",
+	      indent,"", s->len, s->size_shift, s->hval);
+      if (!s->size_shift) {
+	if(s->len>77)
+	{
+	  fprintf(stderr,"%*s** \"%60s\"...\n",indent,"",s->str);
+	}else{
+	  fprintf(stderr,"%*s** \"%s\"\n",indent,"",s->str);
+	}
       }
       break;
     }
