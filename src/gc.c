@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.130 2000/09/03 23:56:17 mast Exp $");
+RCSID("$Id: gc.c,v 1.131 2000/09/04 14:28:08 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1115,6 +1115,7 @@ int debug_gc_is_referenced(void *a)
   if (Pike_in_gc != GC_PASS_MARK)
     fatal("gc_is_referenced() called in invalid gc pass.\n");
 
+#ifdef PIKE_DEBUG
   if (gc_debug) {
     m = find_marker(a);
     if ((!m || !(m->flags & GC_PRETOUCHED)) &&
@@ -1122,7 +1123,9 @@ int debug_gc_is_referenced(void *a)
       gc_fatal(a, 0, "Doing gc_is_referenced() on invalid object.\n");
     if (!m) m = get_marker(a);
   }
-  else m = get_marker(a);
+  else
+#endif /* PIKE_DEBUG */
+    m = get_marker(a);
 
   if (m->flags & GC_IS_REFERENCED)
     gc_fatal(a, 0, "gc_is_referenced() called twice for thing.\n");
@@ -2017,7 +2020,9 @@ int do_gc(void)
   run_queue(&gc_mark_queue);
   gc_mark_all_objects();
   run_queue(&gc_mark_queue);
+#ifdef PIKE_DEBUG
   if(gc_debug) gc_mark_all_strings();
+#endif /* PIKE_DEBUG */
 
   GC_VERBOSE_DO(fprintf(stderr,
 			"| mark: %u markers referenced,\n"
