@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.52 2002/01/27 18:55:54 mast Exp $
+# $Id: Makefile,v 1.53 2002/02/03 22:38:30 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -171,6 +171,11 @@ export:
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" compile
 
+
+small_export:
+	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=small_export" compile
+
 bin_export:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
 
@@ -179,13 +184,17 @@ feature_list:
 
 autobuild:
 	@test -d build || mkdir build
-	@test -d build/autobuild || mkdir build/autobuild
+	@rm -rf build/autobuild || /bin/true
+	@mkdir build/autobuild
 	@$(MAKE) $(MAKE_FLAGS) autobuild_low || /bin/true
 	@echo Begin response assembly | tee -a build/autobuild/autobuildlog.txt
 	@date >> build/autobuild/autobuildlog.txt
-# AIX:
-# grep -v "-fpic ignored for AIX" makelog.txt | grep -v "-fPIC ignored for AIX" | grep -v "0711-327" > tmp
-# mv tmp makelog.txt
+# AIX (hactar) FIXME: Better recognition needed.
+#	@if test "$OS" = "aix-3-005370164c00" ; then \
+#	  grep -v "-fpic ignored for AIX" makelog.txt | grep -v "-fPIC ignored for AIX" | grep -v "0711-327" > tmp ; \
+#	  mv tmp makelog.txt ; \
+#	else : ; \
+#	fi;
 	@cp "$(BUILDDIR)/config.info" build/autobuild/configinfo.txt || /bin/true
 # Add all config.log and config.cache?
 	@cp "$(BUILDDIR)/testsuite" build/autobuild/testsuite.txt || /bin/true
