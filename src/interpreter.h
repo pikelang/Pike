@@ -76,8 +76,21 @@ static int eval_instruction(unsigned char *pc)
       backlog[backlogp].pc=pc;
 
       debug_malloc_touch(fp->current_object);
-      if(d_flag>1)
-	check_object(fp->current_object);
+      switch(d_flag)
+      {
+	default:
+	case 3:
+	  check_object(fp->current_object);
+	  break;
+
+	case 2:
+	  check_object_context(fp->current_object,
+			       fp->context.prog,
+			       fp->current_storage);
+	case 1:
+	case 0:
+	  break;
+      }
     }
 
     if(t_flag > 2)

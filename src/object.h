@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.27 1999/09/14 19:38:50 hubbe Exp $
+ * $Id: object.h,v 1.28 1999/09/14 22:51:05 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -97,6 +97,7 @@ void init_object(void);
 void exit_object(void);
 void check_object(struct object *o);
 void check_all_objects(void);
+void check_context(struct object *o, struct program *p, char *storage);
 /* Prototypes end here */
 
 #ifdef MALLOC_DEBUG

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.78 1999/09/14 19:38:48 hubbe Exp $");
+RCSID("$Id: object.c,v 1.79 1999/09/14 22:51:04 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1411,6 +1411,35 @@ void exit_object(void)
 }
 
 #ifdef PIKE_DEBUG
+void check_object_context(struct object *o,
+			  struct program *context_prog,
+			  char *current_storage)
+{
+  int q;
+  if(o == fake_object) return;
+
+  for(q=0;q<(int)context_prog->num_variable_index;q++)
+  {
+    int d=context_prog->variable_index[q];
+    if(d<0 || d>=context_prog->num_identifiers)
+      fatal("Illegal index in variable_index!\n");
+
+    if(context_prog->identifiers[d].run_time_type == T_MIXED)
+    {
+      struct svalue *s;
+      s=(struct svalue *)(current_storage +
+			  context_prog->identifiers[d].func.offset);
+      check_svalue(s);
+    }else{
+      union anything *u;
+      u=(union anything *)(current_storage +
+			   context_prog->identifiers[d].func.offset);
+      check_short_svalue(u, 
+			 context_prog->identifiers[d].run_time_type);
+    }
+  }
+}
+
 void check_object(struct object *o)
 {
   int e;
@@ -1418,39 +1447,15 @@ void check_object(struct object *o)
   debug_malloc_touch(o);
 
   if(o == fake_object) return;
-
-  p=o->prog;
-  PUSH_FRAME(o);
+  if(!(p=o->prog)) return;
 
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
-    int q;
-    SET_FRAME_CONTEXT(p->inherits[e]);
-
-    for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
-    {
-      int d=pike_frame->context.prog->variable_index[q];
-      if(d<0 || d>=pike_frame->context.prog->num_identifiers)
-	fatal("Illegal index in variable_index!\n");
-
-      if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
-      {
-	struct svalue *s;
-	s=(struct svalue *)(pike_frame->current_storage +
-			    pike_frame->context.prog->identifiers[d].func.offset);
-	check_svalue(s);
-      }else{
-	union anything *u;
-	u=(union anything *)(pike_frame->current_storage +
-			     pike_frame->context.prog->identifiers[d].func.offset);
-	check_short_svalue(u, 
-			   pike_frame->context.prog->identifiers[d].run_time_type);
-      }
-    }
+    check_object_context(o,
+			 p->inherits[e].prog,
+			 o->storage + p->inherits[e].storage_offset);
   }
-
-  POP_FRAME();
 }
 
 void check_all_objects(void)
