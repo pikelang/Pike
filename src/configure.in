@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.334 1999/11/29 16:08:50 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.335 1999/11/29 22:27:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -421,8 +421,20 @@ AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager suppo
 AC_ARG_WITH(gmp,         [  --without-gmp          no Support bignums])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
 AC_ARG_WITH(rtldebug,    [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
-AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[with_cdebug=])
-AC_ARG_WITH(cdebug,      [  --without-copt         disable -O2],[],[with_copt=])
+AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[
+  case "$pike_cv_sys_os:$GCC" in
+    Solaris:no)
+      # Solaris/cc has problems with combining optimizations and debuginfo.
+      AC_MSG_WARN([Defaulting to --without-cdebug since the OS is Solaris,
+and gcc isn't being used.])
+      with_cdebug=no
+    ;;
+    *)
+      with_cdebug=
+    ;;
+  esac
+])
+AC_ARG_WITH(copt,        [  --without-copt         disable -O2],[],[with_copt=])
 AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_threads=yes])
 AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
