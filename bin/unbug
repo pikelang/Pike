@@ -1,0 +1,2622 @@
+#!/usr/local/bin/pike
+
+/* UNBUG - Pike debugger
+ * Written by Fredrik Hübinette
+ *
+ * GDB frontend for debugging pike code.
+ * This program was written using the 'al dente' method.
+ * I basically threw a lot of code at the screen to see what stuck.
+ *  -Hubbe
+ *
+ * TODO:
+ *   watchpoints (hardware watchpoints?)
+ *   integrate with Emacs GUD mode
+ *   lots and lots of testing
+ *   allow 'run' to re-start program with new arguments
+ *   fix all bugs
+ *   Support Pike 7.2, 7.0? 0.6???
+ *   Allow it to run without X
+ *   Allow it to run on Win32
+ *   (Add your own wishes here)
+ */
+
+#define DEBUG 0
+int failsafe;
+
+#define error(X) throw(({X,backtrace()}))
+
+mapping revsyms=([]);
+mapping syms=
+([ /* 437 elements */
+          "ARRAY_CYCLIC":2,
+          "ARRAY_LVALUE":4,
+          "ARRAY_WEAK_FLAG":1,
+          "ARRAY_WEAK_SHRINK":8,
+          "AUTO_BIGNUM":1,
+          "AVERAGE_HASH_LENGTH":16,
+          "BIT_MIXED":32767,
+          "BIT_NOTHING":0,
+          "BMLEN":768,
+          "BUFFER_BEGIN_SIZE":4080,
+          "CASE_INFO_SHIFT0_HIGH":15,
+          "CHARS":256,
+          "COMPILER_IN_CATCH":1,
+          "DEBUG_SIGNALS":1,
+          "DECLARE_ENVIRON":1,
+          "DMALLOC_TRACELOGSIZE":131072,
+          "DO_INDIRECT":8,
+          "DO_LVALUE":1,
+          "DO_LVALUE_IF_POSSIBLE":16,
+          "DO_NOT_COPY":2,
+          "DO_NOT_COPY_TOPLEVEL":32,
+          "DO_POP":4,
+          "DOUBLE_IS_IEEE_LITTLE":1,
+          "EFUN_CONST":1,
+          "EFUN_GLOBAL_SIDE_EFFECT":4,
+          "EFUN_LOCAL_SIDE_EFFECT":2,
+          "EFUN_OTHER_SIDE_EFFECT":8,
+          "ENCAPSULATE_MALLOC":1,
+          "EXTRACT_CHAR_BY_CAST":1,
+          "EXTRACT_UCHAR_BY_CAST":1,
+          "fd_APPEND":4,
+          "fd_BIDIRECTIONAL":16,
+          "fd_BINARY":0,
+          "fd_BUFFERED":8,
+          "fd_CAN_NONBLOCK":2,
+          "fd_CAN_SHUTDOWN":4,
+          "fd_CREAT":8,
+          "fd_EXCL":32,
+          "fd_INTERPROCESSABLE":1,
+          "fd_LOCK_EX":2,
+          "fd_LOCK_NB":8,
+          "fd_LOCK_SH":1,
+          "fd_LOCK_UN":4,
+          "fd_RDONLY":1,
+          "fd_RDWR":3,
+          "fd_shutdown_both":2,
+          "fd_shutdown_read":0,
+          "fd_shutdown_write":1,
+          "fd_TRUNC":16,
+          "fd_WRONLY":2,
+          "_FILE_OFFSET_BITS":64,
+          "FLOAT_IS_IEEE_LITTLE":1,
+          "GAUGE_RUSAGE_INDEX":0,
+          "GETTIMEOFDAY_TAKES_TWO_ARGS":1,
+          "HAVE_ALARM":1,
+          "HAVE_ALLOCA":1,
+          "HAVE_ALLOCA_H":1,
+          "HAVE_AND_USE_POLL":1,
+          "HAVE_ANSI_CONCAT":1,
+          "HAVE_BCOPY":1,
+          "HAVE_BROKEN_LINUX_THREAD_EUID":1,
+          "HAVE_BZERO":1,
+          "HAVE_CLOCK":1,
+          "HAVE_CRYPT":1,
+          "HAVE_CRYPT_H":1,
+          "HAVE_DLFCN_H":1,
+          "HAVE_DLOPEN":1,
+          "HAVE_ERRNO_H":1,
+          "HAVE_EXTERNAL_TIMEZONE":1,
+          "HAVE_FCHMOD":1,
+          "HAVE_FCNTL_H":1,
+          "HAVE_FINITE":1,
+          "HAVE_FLOCK":1,
+          "HAVE_FORK":1,
+          "HAVE_FREXP":1,
+          "HAVE_FUNCTION_ATTRIBUTES":1,
+          "HAVE_GETEGID":1,
+          "HAVE_GETENV":1,
+          "HAVE_GETEUID":1,
+          "HAVE_GETGID":1,
+          "HAVE_GETGRENT":1,
+          "HAVE_GETGRNAM":1,
+          "HAVE_GETHOSTNAME":1,
+          "HAVE_GETHRTIME":1,
+          "HAVE_GETPAGESIZE":1,
+          "HAVE_GETPGID":1,
+          "HAVE_GETPGRP":1,
+          "HAVE_GETPWENT":1,
+          "HAVE_GETPWNAM":1,
+          "HAVE_GETPWUID":1,
+          "HAVE_GETRLIMIT":1,
+          "HAVE_GETRUSAGE":1,
+          "HAVE_GETTIMEOFDAY":1,
+          "HAVE_GETUID":1,
+          "HAVE_GMTIME":1,
+          "HAVE_GRP_H":1,
+          "HAVE_INDEX":1,
+          "HAVE_INITGROUPS":1,
+          "HAVE_ISGRAPH":1,
+          "HAVE_ISINF":1,
+          "HAVE_ISNAN":1,
+          "HAVE_ISSPACE":1,
+          "HAVE_KILL":1,
+          "HAVE_LDEXP":1,
+          "HAVE_LIBDL":1,
+          "HAVE_LIBM":1,
+          "HAVE_LIBNSL":1,
+          "HAVE_LIBRT":1,
+          "HAVE_LIMITS_H":1,
+          "HAVE_LOCALE_H":1,
+          "HAVE_LOCALTIME":1,
+          "HAVE_LOCKF":1,
+          "HAVE_MALLOC_H":1,
+          "HAVE_MEMCHR":1,
+          "HAVE_MEMCMP":1,
+          "HAVE_MEMCPY":1,
+          "HAVE_MEMMOVE":1,
+          "HAVE_MEMORY_H":1,
+          "HAVE_MEMSET":1,
+          "HAVE_MKTIME":1,
+          "HAVE_MMAP":1,
+          "HAVE_MMX_H":1,
+          "HAVE_MUNMAP":1,
+          "HAVE_NANOSLEEP":1,
+          "HAVE_NETINET_IN_H":1,
+          "HAVE_NICE":1,
+          "HAVE_PERROR":1,
+          "HAVE_PIPE":1,
+          "HAVE_POLL":1,
+          "HAVE_POLL_H":1,
+          "HAVE_PTHREAD_ATFORK":1,
+          "HAVE_PTHREAD_ATTR_SETSTACKSIZE":1,
+          "HAVE_PTHREAD_COND_INIT":1,
+          "HAVE_PTHREAD_H":1,
+          "HAVE_PTHREAD_KILL":1,
+          "HAVE_PTHREAD_MUTEXATTR_INIT":1,
+          "HAVE_PTHREAD_MUTEX_RECURSIVE_NP":1,
+          "HAVE_PWD_H":1,
+          "HAVE_RINDEX":1,
+          "HAVE_RINT":1,
+          "HAVE_SCHED_H":1,
+          "HAVE_SCHED_SETSCHEDULER":1,
+          "HAVE_SETBUF":1,
+          "HAVE_SETEGID":1,
+          "HAVE_SETEUID":1,
+          "HAVE_SETGID":1,
+          "HAVE_SETGROUPS":1,
+          "HAVE_SETITIMER":1,
+          "HAVE_SETJMP_H":1,
+          "HAVE_SETLOCALE":1,
+          "HAVE_SETPGID":1,
+          "HAVE_SETPGRP":1,
+          "HAVE_SETPRIORITY":1,
+          "HAVE_SETRESUID":1,
+          "HAVE_SETRLIMIT":1,
+          "HAVE_SETSID":1,
+          "HAVE_SETUID":1,
+          "HAVE_SETVBUF":1,
+          "HAVE_SIGACTION":1,
+          "HAVE_SIGBLOCK":1,
+          "HAVE_SIGNAL_H":1,
+          "HAVE_SIGPROCMASK":1,
+          "HAVE_SIGVEC":1,
+          "HAVE_SOCKETPAIR":1,
+          "HAVE_STDDEF_H":1,
+          "HAVE_STDLIB_H":1,
+          "HAVE_STRCASECMP":1,
+          "HAVE_STRCHR":1,
+          "HAVE_STRCOLL":1,
+          "HAVE_STRCSPN":1,
+          "HAVE_STRDUP":1,
+          "HAVE_STRERROR":1,
+          "HAVE_STRING_H":1,
+          "HAVE_STRINGS_H":1,
+          "HAVE_STRNCMP":1,
+          "HAVE_STRNLEN":1,
+          "HAVE_STRRCHR":1,
+          "HAVE_STRSTR":1,
+          "HAVE_STRTOD":1,
+          "HAVE_STRTOK":1,
+          "HAVE_STRTOL":1,
+          "HAVE_STRUCT_TIMEVAL":1,
+          "HAVE_SYS_ERRNO_H":1,
+          "HAVE_SYS_FILE_H":1,
+          "HAVE_SYS_MMAN_H":1,
+          "HAVE_SYS_PARAM_H":1,
+          "HAVE_SYS_POLL_H":1,
+          "HAVE_SYS_PROCFS_H":1,
+          "HAVE_SYS_RESOURCE_H":1,
+          "HAVE_SYS_SELECT_H":1,
+          "HAVE_SYS_SOCKET_H":1,
+          "HAVE_SYS_STAT_H":1,
+          "HAVE_SYS_TIME_H":1,
+          "HAVE_SYS_TIMES_H":1,
+          "HAVE_SYS_TYPES_H":1,
+          "HAVE_SYS_WAIT_H":1,
+          "HAVE_TIME":1,
+          "HAVE_TIME_H":1,
+          "HAVE_TIMES":1,
+          "HAVE_UALARM":1,
+          "HAVE_UNISTD_H":1,
+          "HAVE_USLEEP":1,
+          "HAVE_VALUES_H":1,
+          "HAVE_VFPRINTF":1,
+          "HAVE_VSNPRINTF":1,
+          "HAVE_VSPRINTF":1,
+          "HAVE_WAIT3":1,
+          "HAVE_WAIT4":1,
+          "HAVE_WAITPID":1,
+          "HAVE_WORKING___FUNC__":1,
+          "HAVE_WORKING___FUNCTION__":1,
+          "I_DATA":9,
+          "IDENTIFIER_C_FUNCTION":2,
+          "IDENTIFIER_CONSTANT":4,
+          "IDENTIFIER_FUNCTION":3,
+          "IDENTIFIER_MASK":127,
+          "IDENTIFIER_PIKE_FUNCTION":1,
+          "IDENTIFIER_PROTOTYPED":16,
+          "IDENTIFIER_SCOPED":32,
+          "IDENTIFIER_SCOPE_USED":64,
+          "IDENTIFIER_VARARGS":8,
+          "ID_EXTERN":512,
+          "ID_HIDDEN":64,
+          "ID_INHERITED":128,
+          "ID_INLINE":32,
+          "ID_MODIFIER_MASK":2047,
+          "ID_NOMASK":4,
+          "ID_OPTIONAL":256,
+          "ID_PRIVATE":2,
+          "ID_PROTECTED":16,
+          "ID_PUBLIC":8,
+          "ID_STATIC":1,
+          "ID_STRICT_TYPES":32768,
+          "I_HASARG":1,
+          "I_HASARG2":16,
+          "I_ISJUMP":7,
+          "I_ISPOINTER":3,
+          "I_JUMP":4,
+          "I_POINTER":2,
+          "I_TWO_ARGS":17,
+          "_LARGEFILE64_SOURCE":1,
+          "LFUN_ADD":3,
+          "LFUN_ADD_EQ":38,
+          "LFUN_AND":5,
+          "LFUN_ARROW":22,
+          "LFUN_ASSIGN_ARROW":23,
+          "LFUN_ASSIGN_INDEX":21,
+          "LFUN_CALL":27,
+          "LFUN_CAST":18,
+          "LFUN_COMPL":13,
+          "LFUN_CREATE":1,
+          "LFUN_DESTROY":2,
+          "LFUN_DIVIDE":11,
+          "LFUN_EQ":14,
+          "LFUN__EQUAL":41,
+          "LFUN__GET_ITERATOR":43,
+          "LFUN_GT":16,
+          "LFUN___HASH":17,
+          "LFUN_INDEX":20,
+          "LFUN__INDICES":25,
+          "LFUN___INIT":0,
+          "LFUN__IS_TYPE":39,
+          "LFUN_LSH":8,
+          "LFUN_LT":15,
+          "LFUN__M_DELETE":42,
+          "LFUN_MOD":12,
+          "LFUN_MULTIPLY":10,
+          "LFUN_NOT":19,
+          "LFUN_OR":6,
+          "LFUN_RADD":28,
+          "LFUN_RAND":30,
+          "LFUN_RDIVIDE":36,
+          "LFUN_RLSH":33,
+          "LFUN_RMOD":37,
+          "LFUN_RMULTIPLY":35,
+          "LFUN_ROR":31,
+          "LFUN_RRSH":34,
+          "LFUN_RSH":9,
+          "LFUN_RSUBTRACT":29,
+          "LFUN_RXOR":32,
+          "LFUN__SIZEOF":24,
+          "LFUN__SPRINTF":40,
+          "LFUN_SUBTRACT":4,
+          "LFUN__VALUES":26,
+          "LFUN_XOR":7,
+          "MAPPING_FLAG_WEAK":1,
+          "MAX_GLOBAL_VARIABLES":1000,
+          "MAX_INT32":2147483647,
+          "MAX_OPEN_FILEDESCRIPTORS":1024,
+          "MEMSEARCH_LINKS":512,
+          "_MIT_POSIX_THREADS":1,
+          "NEW_HASHTABLE_SIZE":4,
+          "NO_TAILRECURSION":2,
+          "NUMBER_DESTRUCTED":2,
+          "NUMBER_NUMBER":0,
+          "NUMBER_UNDEFINED":1,
+          "NUM_LFUNS":44,
+          "OPT_APPLY":4096,
+          "OPT_ASSIGNMENT":8,
+          "OPT_BREAK":256,
+          "OPT_CASE":64,
+          "OPT_CONTINUE":128,
+          "OPT_CUSTOM_LABELS":65536,
+          "OPT_EXTERNAL_DEPEND":32,
+          "OPT_NOT_CONST":2,
+          "OPT_OPTIMIZED":1,
+          "OPT_RETURN":512,
+          "OPT_SIDE_EFFECT":4,
+          "OPT_TRY_OPTIMIZE":16,
+          "OPT_TYPE_NOT_FIXED":1024,
+          "OWN_GETHRTIME":1,
+          "OWN_GETHRTIME_RDTSC":1,
+          "PIKE_ARRAY_OP_A":1,
+          "PIKE_ARRAY_OP_B":4,
+          "PIKE_ARRAY_OP_SKIP_A":2,
+          "PIKE_ARRAY_OP_SKIP_B":8,
+          "PIKE_ARRAY_OP_TAKE_A":3,
+          "PIKE_ARRAY_OP_TAKE_B":12,
+          "PIKE_BUILD_VERSION":5,
+          "PIKE_BYTEORDER":1234,
+          "PIKE_DEBUG":1,
+          "PIKE_INT32_ALIGNMENT":4,
+          "PIKE_MAJOR_VERSION":7,
+          "PIKE_MINOR_VERSION":3,
+          "PIKE_OOB_WORKS":2,
+          "PIKE_T_ARRAY":0,
+          "PIKE_T_FLOAT":9,
+          "PIKE_T_FUNCTION":4,
+          "PIKE_THREADS":1,
+          "PIKE_T_INT":8,
+          "PIKE_T_MAPPING":1,
+          "PIKE_T_MIXED":251,
+          "PIKE_T_MULTISET":2,
+          "PIKE_T_NAME":241,
+          "PIKE_T_OBJECT":3,
+          "PIKE_T_PROGRAM":5,
+          "PIKE_T_RING":240,
+          "PIKE_T_SCOPE":243,
+          "PIKE_T_STRING":6,
+          "PIKE_T_TUPLE":244,
+          "PIKE_T_TYPE":7,
+          "PIKE_T_UNKNOWN":247,
+          "PIKE_TYPE_STACK_SIZE":100000,
+          "PIKE_T_ZERO":14,
+          "PROG___BUILTIN_ID":9,
+          "PROG_GMP_MPZ_ID":21,
+          "PROG_IMAGE_CLASS_START":100,
+          "PROG_IMAGE_COLOR_COLOR_ID":200,
+          "PROG_IMAGE_COLORTABLE_ID":101,
+          "PROG_IMAGE_FONT_ID":103,
+          "PROG_IMAGE_IMAGE_ID":100,
+          "PROG_IMAGE_LAYER_ID":102,
+          "PROG_IMAGE_POLY_ID":104,
+          "PROG_IMAGE_SUBMAGIC_START":160,
+          "PROG_IMAGE_SUBMODULE_START":120,
+          "PROG_PARSER_HTML_ID":8,
+          "PROGRAM_AVOID_CHECK":1024,
+          "PROGRAM_CONSTANT":64,
+          "PROGRAM_DESTRUCT_IMMEDIATE":16,
+          "PROGRAM_FINISHED":4,
+          "PROGRAM_FIXED":2,
+          "PROGRAM_HAS_C_METHODS":32,
+          "PROGRAM_NO_EXPLICIT_DESTRUCT":512,
+          "PROGRAM_NO_WEAK_FREE":256,
+          "PROGRAM_OPTIMIZED":1,
+          "PROGRAM_PASS_1_DONE":8,
+          "PROGRAM_USES_PARENT":128,
+          "PROGRAM_VIRGIN":2048,
+          "PROG_STDIO_FD_ID":1,
+          "PROG_STDIO_STAT_ID":10,
+          "PROG_THREAD_CONDITION_ID":5,
+          "PROG_THREAD_DISABLE_THREADS_ID":7,
+          "PROG_THREAD_ID_ID":2,
+          "PROG_THREAD_LOCAL_ID":6,
+          "PROG_THREAD_MUTEX_ID":4,
+          "PROG_THREAD_MUTEX_KEY_ID":3,
+          "_REENTRANT":1,
+          "RTLD_GLOBAL":1,
+          "RTLD_LAZY":0,
+          "RTLD_NOW":0,
+          "RUNTIME_CHECK_TYPES":1,
+          "RUNTIME_STRICT_TYPES":2,
+          "SCOPE_LOCAL":1,
+          "SCOPE_SCOPED":2,
+          "SCOPE_SCOPE_USED":4,
+          "SECURITY_BIT_CALL":4,
+          "SECURITY_BIT_CONDITIONAL_IO":32,
+          "SECURITY_BIT_DESTRUCT":64,
+          "SECURITY_BIT_INDEX":1,
+          "SECURITY_BIT_NOT_SETUID":16,
+          "SECURITY_BIT_SECURITY":8,
+          "SECURITY_BIT_SET_INDEX":2,
+          "SEEK_CUR":1,
+          "SEEK_END":2,
+          "SEEK_SET":0,
+          "SEE_PRIVATE":2,
+          "SEE_STATIC":1,
+          "SHARED_NODES":1,
+          "S_IFIFO":4096,
+          "S_IFSOCK":49152,
+          "SIZEOF_CHAR_P":4,
+          "SIZEOF_DOUBLE":8,
+          "SIZEOF_FLOAT":4,
+          "SIZEOF_INT":4,
+          "SIZEOF___INT64":0,
+          "SIZEOF_LONG":4,
+          "SIZEOF_LONG_LONG":8,
+          "SIZEOF_SHORT":2,
+          "STDC_HEADERS":1,
+          "T_AND":254,
+          "T_ARRAY_LVALUE":250,
+          "T_ASSIGN":245,
+          "T_DELETED":246,
+          "THREAD_EXITED":1,
+          "THREAD_RUNNING":0,
+          "_THREAD_SAFE":1,
+          "THREAD_TRACE":1,
+          "THROW_ERROR":10,
+          "THROW_EXIT":40,
+          "THROW_MAX_SEVERITY":100,
+          "THROW_THREAD_EXIT":20,
+          "THROW_THREAD_KILLED":30,
+          "TIME_WITH_SYS_TIME":1,
+          "T_LVALUE":249,
+          "T_MANY":17,
+          "T_MAPPING_DATA":242,
+          "T_NOT":253,
+          "T_OR":255,
+          "T_SHORT_LVALUE":248,
+          "T_UNFINISHED":15,
+          "T_VOID":16,
+          "UALARM_TAKES_TWO_ARGS":1,
+          "USE_FCNTL_FNDELAY":1,
+          "USE_PIKE_TYPE":1,
+          "USE_SIGCHILD":1,
+          "USE_Wl":1,
+          "WITH_OOB":1,
+          "STEP_BREAK_LINE":52,
+  ]);
+
+
+
+class Gdb
+{
+  object pid;
+  object in;
+  object out;
+  string prompt="[[`$$Ziuqakdfa972093874$q$w$09280928341kjhsdf===$$']]";
+
+  string buffer="";
+  int spos=0;
+
+  string read_result()
+    {
+      int pos;
+      string ret;
+      do {
+	string tmp=out->read(10000,1);
+	if(!tmp)
+	{
+	werror("Failed to read from GDB:\n");
+	  sleep(8699999);
+//	  exit(0);
+	}
+#if DEBUG > 9
+	werror("GOT: "+tmp+".\n");
+#endif
+	buffer+=tmp;
+	if(spos<0) spos=0;
+	pos=search(buffer,prompt,spos);
+	spos=strlen(buffer)-strlen(prompt);
+      }while(pos == -1);
+      ret=buffer[..pos-1];
+      pos+=strlen(prompt);
+      buffer=buffer[pos..];
+      spos=0;
+      return ret;
+    }
+
+  string cmd(string s)
+    {
+#if DEBUG
+      if(search(s,"\n")!=-1)
+      {
+	error("NEWLINE IN COMMAND\n");
+
+	if(search(buffer,prompt)!=-1)
+	  error("PROMPT PRESENT IN BUFFER!!!!\n");
+      }
+#endif
+
+#if DEBUG > 9      
+      werror("SENT: "+s+".\n");
+#endif
+      in->write(s+"\n");
+      return read_result();
+    }
+
+  void create()
+  {
+    out=Stdio.File();
+    object tmp2=out->pipe(Stdio.PROP_IPC);
+    object tmp1=Stdio.File();
+    in=tmp1->pipe(Stdio.PROP_IPC);
+    pid=Process.create_process( ({"gdb"}),
+				(["setsid":1,
+				  "stdin":tmp1,
+				 "stdout":tmp2]));
+    cmd("set prompt "+prompt);
+    cmd("set width 0");
+    cmd("set print elements 0");
+    cmd("set print repeats 0");
+    cmd("set height 0");
+  }
+
+  void destroy()
+    {
+      in->write("quit\n");
+    }
+
+  string *tokens=({"(",")","*",",",";","!","%","^","&"});
+  string *token_dividers;
+
+  void init_tokenize()
+    {
+      if(!token_dividers)
+      {
+	token_dividers=Array.map(tokens,lambda(string x) { return " "+x+" "; });
+	tokens+=({"\n","\t","\r"});
+	token_dividers+=({" "," "," "});
+      }
+    }
+
+  string *tokenize(string x)
+    {
+      return replace(x,tokens,token_dividers)/" "-({""});
+    }
+
+  string find_function_name(string x)
+    {
+      if(sscanf(x,"%*s:")) return 0;
+      int parlevel=1;
+      int done=0;
+      foreach(reverse(tokenize(x))[2..], string token)
+	{
+	  switch(token)
+	  {
+	    case ")":
+	      parlevel++;
+	      break;
+
+	    case "(":
+	      if(!--parlevel) done=1;
+	      break;
+
+	    default:
+	      if(parlevel>done) break;
+	      return token;
+	  }
+	}
+      return 0;
+    }
+
+  int do_break(string where)
+    {
+#if DEBUG
+      werror("BREAK: %O\n",where);
+#endif
+      if(sscanf(cmd("break "+where),"Breakpoint %d at",int num)) return num;
+      return -1;
+    }
+
+  void flush()
+    {
+      handlecache=([]);
+    }
+
+
+  void stop_execution()
+    {
+      pid->kill(signum("SIGINT"));
+    }
+
+  mapping(int:array) breakpoint_callbacks=([]);
+
+  void register_breakpoint_callback(int bp, function f, mixed ... args)
+    {
+      breakpoint_callbacks[bp]=({f})+args;
+    }
+
+  class Run
+  {
+    string ret;
+    string why;
+    mixed data;
+    string desc;
+
+    void create(string command)
+      {
+	flush();
+	ret=cmd(command);
+	if(sscanf(ret,"%*sBreakpoint %d,",data))
+	{
+	  why="breakpoint";
+	  if(breakpoint_callbacks[data])
+	    `()(@breakpoint_callbacks[data]);
+	  return;
+	}
+	if(sscanf(ret,"%*sreceived signal %s, %s.", data, desc))
+	{
+	  why="signal";
+	  return;
+	}
+	if(sscanf(ret,"%*sProgram exited normally."))
+	{
+	  data=0;
+	  why="exit";
+	  return;
+	}
+	if(sscanf(ret,"%*sProgram exited with code %i.",data)==2)
+	{
+	  why="exit";
+	  return;
+	}
+	why="???";
+      }
+  };
+
+  class Handle
+  {
+    string __expr;
+    int __varno=-1;
+    mixed __value;
+    string __type;
+
+    string _sprintf(int op)
+      {
+	if(op == 'O')
+	  return sprintf("Handle(%O)",__expr);
+      }
+
+    static string decode_string(string s)
+      {
+	s=s[1..];
+//	werror("decode_string(%O)\n",s);
+	string ret="";
+	while(sscanf(s,"%[^\"\\]%c%s",string safe, int c, s)==3)
+	{
+	  ret+=safe;
+	  switch(c)
+	  {
+	    case '\\':
+	      switch(s[0])
+	      {
+		case '0' .. '9':
+		  sscanf(s[0..2],"%o",c);
+		  s=s[3..];
+		  break;
+
+		case 'a': c=7; s=s[1..]; break;
+		case 'b': c=8; s=s[1..]; break;
+		case 'f': c=12; s=s[1..]; break;
+		case 'n': c='\n'; s=s[1..]; break;
+		case 't': c='\t'; s=s[1..]; break;
+		case 'r': c='\r'; s=s[1..]; break;
+		case 'e': c='\e'; s=s[1..]; break;
+		case '"': c='"';  s=s[1..]; break;
+		case '\\': c='\\'; s=s[1..]; break;
+		default:
+		  werror("Unknown string coding: %d (%c)\n",s[0],s[0]);
+	      }
+	      ret+=sprintf("%c",c);
+	      break;
+		  
+	    case '"': /* end of string */
+	      return ret;
+	  }
+	}
+
+	werror("Failed to decode string!\n");
+//	return compile_string("string s="+s+";")()->s;
+      }
+
+    mixed parse_return_value(array data)
+      {
+	mixed v;
+#if DEBUG > 3
+	werror("parse_return_value(%O)\n",data);
+#endif
+	if(arrayp(data[0]) && "{" == (string) data[0][0])
+	{
+	  v=([]);
+	  data=data[0];
+	  data=data[1..sizeof(data)-2];
+	  foreach(data/({","}), array tmp)
+	    v[ (string) (tmp[0]) ] = parse_return_value(tmp[2..]);
+	  
+	  return v;
+	}
+	
+	switch( ((string) (data[-1]) )[0] )
+	{
+	  case '\'':
+	    return parse_return_value(data[..sizeof(data)-2]);
+
+	  case '"': /* string */
+	    return decode_string( (string) (data[-1]) );
+	    
+	  case '0': /* Hex */
+	  case '1' .. '9':
+	    sscanf( (string) (data[-1]) ,"%i",v);
+	    if(sizeof(data) > 1 && data[-2]=="-") v=-v;
+	    return v;
+	}
+      }
+
+    void _evaluate()
+      {
+	if(__varno==-1)
+	{
+#if DEBUG > 3
+	  werror("evaluate(%O)\n",__expr);
+#endif
+	  string ret=cmd("print "+__expr);
+
+#if DEBUG > 3
+	  werror("Got: %O\n",ret);
+#endif
+	  if(sscanf(ret,"$%d = %s\n",__varno,ret)!=2)
+	  {
+	    error(sprintf("Failed to evaluate: %s\n",__expr));
+	  }
+	    
+	  mixed data=Parser.C.split(ret);
+	  data=Parser.C.tokenize(data);
+	  data=Parser.C.hide_whitespaces(data);
+	  data=Parser.C.group(data);
+
+	  if(arrayp(data[0]) && "(" == (string) data[0][0])
+	  {
+	    __type=Parser.C.simple_reconstitute(data[0][1..sizeof(data[0])-2]);
+	    data=data[1..];
+	  }
+
+	  __value=parse_return_value(data);
+#if DEBUG > 3
+	  werror("  -> %O\n",__value);
+#endif
+	}
+      }
+
+    int _varno() { _evaluate(); return __varno; }
+    string _type() { _evaluate(); return __type; }
+    mixed _value() { _evaluate(); return __value; }
+
+    mixed `-(mixed ... args)
+      {
+	if(sizeof(args))
+	{
+	  return mkhandle(this_object(),"-",@args);
+	}else{
+	  return mkhandle("-",this_object());
+	}
+      }
+
+    mixed `+(mixed ... args)
+      {
+	return mkhandle(this_object(),"+", @(args/1*({"+"})));
+      }
+
+    mixed ``+(mixed ... args)
+      {
+	return mkhandle(@(args/1*({"+"})),"+",this_object());
+      }
+
+    mixed `*(mixed ... args)
+      {
+	return mkhandle(this_object(),"*",@(args/1*({"*"})));
+      }
+
+    mixed ``*(mixed ... args)
+      {
+	return mkhandle(@(args/1*({"*"})),"*",this_object());
+      }
+
+    mixed `[](int ind)
+      {
+	return mkhandle(this_object(),"[",ind,"]");
+      }
+
+    mixed `->(string val)
+      {
+	if(val[0]=='_' && ::`->(val)) return ::`->(val);
+	return mkhandle(this_object(),"->"+val);
+      }
+
+    void create(string e)
+      {
+	__expr=e;
+	if(strlen(__expr) > 200) _evaluate();
+      }
+  }
+
+  mapping(string:Handle) handlecache=([]);
+
+  Handle mkhandle(mixed ... parts)
+    {
+      string expr="";
+      foreach(parts, mixed part)
+	{
+	  switch(sprintf("%t",part))
+	  {
+	    case "string": expr+=part; break;
+	    case "int":    expr+=sprintf(" %d ",part); break;
+	    case "float":  expr+=sprintf(" %20f ",part); break;
+	    case "object":
+	      if(part->__varno<0)
+	      {
+		expr+=sprintf("(%s)",part->__expr);
+	      }else{
+		expr+=sprintf("$%d ",part->__varno);
+	      }
+	  }
+	}
+#if DEBUG>5
+      werror("mkhandle(%O)\n",expr);
+#endif
+      /* This prevents the expression to become any longer */
+
+      if(handlecache[expr]) return handlecache[expr];
+      return handlecache[expr]=Handle(expr);
+    }
+
+  array(string) get_all_function_names()
+    {
+      init_tokenize();
+      string tmp=cmd("info functions");
+      string *ret=({});
+      sscanf(tmp,"%sNon-debugging symbols:",tmp);
+      return Array.map(tmp/"\n",find_function_name)-({0});
+    }
+
+  array(string) get_all_source_files()
+    {
+      string tmp=cmd("info sources");
+      tmp=replace(tmp,({","," ","\t","\r"}),({"\n","\n","\n","\r"}));
+      return tmp/"\n"-({""});
+    }
+}
+
+int counter;
+
+class Debug
+{
+  inherit Gdb;
+  object terminal;
+
+  int got_unbug_error;
+  void unbug_error(string fmt, mixed ... args)
+    {
+      got_unbug_error++;
+      error(sprintf(fmt,@args));
+    }
+
+  /* Line number handling */
+
+  mapping(int:string) line_number_info_cache=([]);
+
+  string get_line_number_info(Handle prog)
+    {
+      string ret;
+
+      int progid=prog->id->_value();
+      if(ret=line_number_info_cache[progid]) return ret;
+
+#if DEBUG>1
+      werror("Get line numbers for %O\n",prog);
+#endif
+
+      ret=mkhandle(prog, "->linenumbers[0]@ ", prog, "->num_linenumbers")->_value();
+      if(strlen(ret) != prog->num_linenumbers->_value())
+      {
+	werror("Failed to get line number info!\n");
+	werror("strlen(%O) != %O (it is %d)\n",ret, prog->num_linenumbers->_value(),strlen(ret));
+      }
+      return line_number_info_cache[progid]=ret;
+    }
+
+  string find_line_number(Handle prog, Handle PC)
+    {
+      string lineinfo=get_line_number_info(prog);
+      int offset=(PC - prog->program)->_value();
+      if(!offset) return "";
+
+      int cnt=0;
+      int off=0;
+      int line=0;
+      string file="Line not found";
+
+      int get_small_number()
+	{
+	  switch(int ret=lineinfo[cnt++])
+	  {
+	    case 256-127:
+	      if(syms->PIKE_BYTEORDER==1234)
+	      {
+		sscanf(lineinfo[cnt..cnt+1],"%-2c",ret);
+	      }else{
+		sscanf(lineinfo[cnt..cnt+1],"%2c",ret);
+	      }
+	      cnt+=2;
+	      if(ret>0x7fff) ret-=0x10000;
+	      return ret;
+
+	    case 256-128:
+	      if(syms->PIKE_BYTEORDER==1234)
+	      {
+		sscanf(lineinfo[cnt..cnt+3],"%-4c",ret);
+	      }else{
+		sscanf(lineinfo[cnt..cnt+3],"%4c",ret);
+	      }
+	      cnt+=4;
+	      if(ret>0x7fffffff) ret-=0x100000000;
+	      return ret;
+	      
+	    case 256-126 .. 256-1:
+	      return ret-256;
+
+	    default:
+	      return ret;
+	  }
+	};
+      
+      while(cnt < strlen(lineinfo))
+      {
+	if(lineinfo[cnt] == 127)
+	{
+	  int end=search(lineinfo,"\0",cnt+1);
+	  file=lineinfo[cnt+1..end-1];
+	  cnt=end+1;
+	}
+	off+=get_small_number();
+
+	if(off > offset) break;
+	line+=get_small_number();
+      }
+      return file+":"+line;
+    }
+
+
+  class SvalueHandle
+  {
+    string _type()
+      {
+	unbug_error("Unbug cannot get the value of this value.\n");
+      }
+
+    mixed _value()
+      {
+	unbug_error("Unbug cannot get the value of this type.\n");
+      }
+
+    string _sprintf(int oper)
+      {
+	if(oper == 't') return _type();
+	unbug_error("Unbug cannot describe this type yet.\n");
+      }
+
+    int low_hash()
+      {
+	unbug_error("Unbug cannot hash this type yet.\n");
+      }
+    
+    int clamp(int i)
+      {
+	i&=0xffffffff;
+	if(i>0x7fffffff) i-=0x100000000;
+	return i;
+      }
+
+    int _hash()
+      {
+	int h=low_hash();
+	h=clamp(h+h % 997);
+	h=clamp(h+clamp(clamp(h + syms[ "PIKE_T_"+upper_case(_type()) ]) * 9248339));
+	return h;
+      }
+
+    mixed `+ (mixed ... args){return FakeHandle(predef::`+(_value(),@args)); }
+    mixed ``+(mixed ... args){return FakeHandle(predef::`+(@args,_value())); }
+    mixed `- (mixed ... args){return FakeHandle(predef::`-(_value(),@args)); }
+    mixed ``-(mixed ... args){return FakeHandle(predef::`-(@args,_value())); }
+    mixed `* (mixed ... args){return FakeHandle(predef::`*(_value(),@args)); }
+    mixed ``*(mixed ... args){return FakeHandle(predef::`*(@args,_value())); }
+    mixed `/ (mixed ... args){return FakeHandle(predef::`/(_value(),@args)); }
+    mixed ``/(mixed ... args){return FakeHandle(predef::`/(@args,_value())); }
+    mixed `% (mixed ... args){return FakeHandle(predef::`%(_value(),@args)); }
+    mixed ``%(mixed ... args){return FakeHandle(predef::`%(@args,_value())); }
+
+    mixed `& (mixed ... args){return FakeHandle(predef::`&(_value(),@args)); }
+    mixed ``&(mixed ... args){return FakeHandle(predef::`&(@args,_value())); }
+    mixed `| (mixed ... args){return FakeHandle(predef::`|(_value(),@args)); }
+    mixed ``|(mixed ... args){return FakeHandle(predef::`|(@args,_value())); }
+    mixed `^ (mixed ... args){return FakeHandle(predef::`^(_value(),@args)); }
+    mixed ``^(mixed ... args){return FakeHandle(predef::`^(@args,_value())); }
+
+    mixed `<< (mixed arg) { return FakeHandle(predef::`<<(_value(),arg)); }
+    mixed ``<<(mixed arg) { return FakeHandle(predef::`<<(arg,_value())); }
+    mixed `>> (mixed arg) { return FakeHandle(predef::`>>(_value(),arg)); }
+    mixed ``>>(mixed arg) { return FakeHandle(predef::`>>(arg,_value())); }
+
+    mixed `~ () { return FakeHandle(~(_value())); }
+
+    mixed `< (mixed arg) { return FakeHandle(predef::`<(_value(),arg)); }
+    mixed `> (mixed arg) { return FakeHandle(predef::`>(_value(),arg)); }
+
+    mixed `[](mixed ... args) {return FakeHandle(predef::`[](_value(),@args));}
+  }
+
+  class PtrSvalueHandle
+  {
+    inherit SvalueHandle;
+    Handle __ptr;
+
+    void create(Handle h)
+      {
+	__ptr=h;
+      }
+
+    int `==(mixed obj)
+      {
+	return
+	  object_program(this_object()) == object_program(obj) &&
+	  obj->__ptr->_value() == __ptr->_value();
+      }
+    int low_hash() { return __ptr->_value() >> 2; }
+  }
+
+  class StringHandle
+  {
+    inherit PtrSvalueHandle;
+    string value;
+    int len=-1;
+    int shift=-1;
+
+    string _type() { return "string"; }
+
+    int _sizeof() {
+      if(len == -1)
+	len=__ptr->len->_value();
+      return len;
+    }
+
+    int _width() {
+      if(shift == -1)
+	shift=__ptr->size_shift->_value();
+      return shift;
+    }
+
+    string _sprintf(int op)
+      {
+	if(op == 't') return _type();
+
+	int trunc;
+
+	if(!value)
+	{
+	  if(_width() == 0)
+	  {
+	    if(_sizeof()<1000)
+	    {
+	      value=mkhandle("(char *)",__ptr->str)->_value();
+	    }else{
+	      value=mkhandle("((char *)",__ptr->str,")[0]@1000")->_value();
+	    }
+	  }else{
+	    return sprintf("string { len = %d, width=%d }",_sizeof(),_width());
+	  }
+	}
+	
+
+	string ret;
+	switch(op)
+	{
+	  case 'O': ret=sprintf("%O",value); break;
+	  case 's': ret=value;
+	}
+	if(value && _sizeof() > sizeof(value))
+	  ret+="..."+(sizeof(value) - len);
+	return ret;
+      }
+
+    string _value(void|int all)
+      {
+	return _sprintf('s');
+      }
+
+    object `[](int x)
+      {
+	if( x<0 ) x+=_sizeof();
+	if(x < 0 || x >= _sizeof())
+	  unbug_error("Index %d is out of range (0..%d)\n",x,_sizeof()-1);
+
+	return FakeHandle( mkhandle("((p_wchar"+_width()+" *)(",__ptr,"->str))[",x,"]")->_value());
+      }
+  }
+
+  class ArrayHandle
+  {
+    inherit PtrSvalueHandle;
+    int __size=-1;
+    string odesc;
+
+    string _type() { return "array"; }
+    int _sizeof()
+      {
+	if(__size==-1)
+	  __size=__ptr->size->_value();
+	return __size;
+      }
+
+    string _sprintf(int op)
+      {
+	switch(op)
+	{
+	  case 't': return _type();
+	  case 'O':
+	    if(odesc) return odesc;
+
+	    // FIXME: Needs clipping
+	    odesc="({";
+	    for(int e=0;e<_sizeof();e++)
+	    {
+	      if(strlen(odesc)>300)
+	      {
+		odesc+="...."+(_sizeof()-e);
+		break;
+	      }
+	      if(e) odesc+=",";
+	      odesc+=sprintf("%O",`[](e));
+	    }
+	    odesc+="})"; 
+	    return odesc;
+	}
+      }
+
+    mixed `[](int x)
+      {
+	if(x<0 ) x+=_sizeof();
+	if(x < 0 || x >= _sizeof())
+	  unbug_error("Index %d is out of range (0..%d)\n",x,_sizeof()-1);
+
+	return Svalue( __ptr->item + x );
+      }
+  }
+
+  class MappingHandle
+  {
+    inherit PtrSvalueHandle;
+    array cache;
+    string odesc;
+
+    string _type() { return "mapping"; }
+
+    int _sizeof()
+      {
+	_walk();
+	return sizeof(cache);
+      }
+
+    class KeyPair
+    {
+      SvalueHandle ind, val;
+      int hval;
+      
+      void create(Handle pair)
+	{
+	  ind=Svalue(pair->ind);
+	  val=Svalue(pair->val);
+	  hval=pair->hval->value();
+	}
+    }
+
+    void _walk()
+      {
+	if(!cache)
+	{
+#if DEBUG >1
+	  werror("Walking mapping %O\n",__ptr);
+#endif
+	  cache=({});
+	  Handle data=__ptr->data;
+	  int hsize=data->hashsize->_value();
+	  for(int h=0;h<hsize;h++)
+	  {
+	    for(Handle pair=data->hash[h];pair->_value();pair=pair->next)
+	      cache+=({ KeyPair(pair) });
+	  }
+	}
+      }
+
+    string _sprintf(int op)
+      {
+	if(op == 't') return _type();
+	if(failsafe) return "MAPPING";
+	_walk();
+	/* FIXME: truncating ! */
+	if(!odesc)
+	{
+	  odesc="([";
+	  int done;
+	  foreach(cache, KeyPair k)
+	    {
+	      if(strlen(odesc)>300)
+	      {
+		odesc+="...."+(_sizeof()-done);
+		break;
+	      }
+	      if(strlen(odesc)>2) odesc+=",";
+	      done++;
+	      odesc+=sprintf("%O:%O",k->ind, k->val);
+	    }
+	  odesc+="])";
+	}
+	return odesc;
+      }
+
+    /* This uses linear lookups right now, and can be optimized
+     * a lot. However, optimizing this only helps if we can reduce
+     * the overhead to only walking one hash bucket.
+     */
+    mixed `[](mixed key)
+      {
+	_walk();
+	foreach(cache, KeyPair k)
+	  if(k->ind == key)
+	    return k->val;
+      }
+
+    mixed _search(mixed val)
+      {
+	_walk();
+	foreach(cache, KeyPair k)
+	  if(k->val == val)
+	    return k->ind;
+      }
+
+    mixed `->(string val)
+      {
+	if(val[0]=='_' && ::`->(val)) return ::`->(val);
+	return `[](val);
+      }
+  }
+
+  class MultisetHandle
+  {
+    inherit PtrSvalueHandle;
+    SvalueHandle arr;
+
+    string _type() { return "multiset"; }
+    int _sizeof() { return arr->_sizeof(); }
+    string _sprintf(int op)
+      {
+	if(op == 't') return _type();
+	if(failsafe) return "MULTISET";
+	string desc=sprintf("%O",arr);
+	desc[1]="<";
+	desc[-2]=">";
+	return desc;
+      }
+
+    /* SLOW */
+    mixed `[](mixed key)
+      {
+	for(int e=0;e<_sizeof();e++)
+	  if(arr[e] == key)
+	    return 1;
+	return 0;
+      }
+
+    void create(Handle h)
+      {
+	::create(h);
+	arr=MKSH(ArrayHandle,h->ind);
+      }
+
+    mixed `->(string val)
+      {
+	if(val[0]=='_' && ::`->(val)) return ::`->(val);
+	return `[](val);
+      }
+  }
+
+  class ProgramHandle 
+  {
+    inherit PtrSvalueHandle;
+    int __id=-1;
+    string odesc;
+
+    string _type() { return "program"; }
+
+    int _id()
+      {
+	if(__id == -1)
+	  __id = __ptr->id->_value();
+	return __id;
+      }
+
+    class Identifier
+    {
+      Handle identifier;
+      int _storage_offset;
+      int _num;
+      string _name;
+      string _flags;
+      string _run_time_type;
+      int _offset=-10;
+
+      void create(int e, int so, Handle id)
+	{
+	  _num=e;
+	  identifier=id;
+	  _storage_offset=so;
+	  _name=mkhandle("(char *)",identifier->name->str)->_value();
+//	  werror("Identifier { %d, name = %s }\n",_num, _name);
+	}
+
+      string run_time_type()
+	{
+	  if(!_run_time_type)
+	    _run_time_type = 
+	      revsyms->PIKE_T[identifier->run_time_type->_value()];
+	  return _run_time_type;
+	}
+
+      int offset()
+	{
+	  if(_offset == -10)
+	    _offset = identifier->func->offset->_value();
+	  return _offset;
+	}
+
+      int storage_offset()
+	{
+	  return _storage_offset;
+	}
+
+      string name()
+	{
+	  return _name;
+	}
+
+      int num()
+	{
+	  return _num;
+	}
+
+      string flags()
+	{
+	  if(!_flags)
+	  {
+	    int flags=identifier->identifier_flags->_value();
+	    _flags="";
+	    if(syms->IDENTIFIER_PIKE_FUNCTION & flags) _flags+="PF";
+	    if(syms->IDENTIFIER_C_FUNCTION & flags) _flags+="CF";
+	    if(syms->IDENTIFIER_CONSTANT & flags) _flags+="CONST";
+	  }
+#if DEBUG >3
+	  werror("FLAGS=%O\n",_flags);
+#endif
+	  return _flags;
+	}
+    };
+
+    mapping __name_to_id;
+    array __id_to_name;
+
+    void _walk()
+      {
+	if(!__name_to_id)
+	{
+#if DEBUG >1
+	  werror("Walking program %O\n",__ptr);
+#endif
+	  __name_to_id=([]);
+	  __id_to_name=({});
+
+	  int num_ids=__ptr->num_identifier_references->_value();
+	  Handle idrefs=__ptr->identifier_references;
+	  idrefs->_evaluate();
+	  Handle inherits=__ptr->inherits;
+	  
+//	  werror("num_ids: %O\n",num_ids);
+	  for(int e=0;e<num_ids;e++)
+	  {
+	    Handle idref = idrefs + e;
+	    Handle in=inherits + idref->inherit_offset;
+	    Handle id =in->prog->identifiers + idref->identifier_offset;
+	    object i=Identifier(e,in->storage_offset->_value(), id);
+	    __name_to_id[i->name()]=i;
+	    __id_to_name+=({i});
+	  }
+	}
+      }
+
+    array(string) _globals()
+      {
+	_walk();
+	array(string) ret=({});
+	foreach(__id_to_name, Identifier i)
+	  if(i->flags() == "")
+	    ret+=({ i->name() });
+	return ret;
+      }
+
+    object _constant(int c)
+      {
+	return Svalue( mkhandle( "&(", (__ptr -> constants + c) -> sval,")"));
+      }
+
+    ProgramHandle _parent()
+      {
+	Handle p=__ptr->parent;
+	if(p->_value()) return MKSH(ProgramHandle,p);
+	return 0;
+      }
+
+    Identifier _low_search(mixed value)
+      {
+	_walk();
+	foreach(__id_to_name, Identifier i)
+	  if(i->flags() == "CONST")
+	    if(_constant( i->offset()) == value)
+	      return i;
+      }
+
+    string _search(mixed value)
+      {
+//	failsafe=1;
+//	trace(9);
+	Identifier i=_low_search(value);
+//	trace(0);
+//	failsafe=0;
+	if(i) return i->name();
+      }
+
+    Identifier _id_to_name(int i)
+      {
+	_walk();
+	return __id_to_name[i];
+      }
+
+
+    Identifier _name_to_id(string i)
+      {
+	_walk();
+	return __name_to_id[i];
+      }
+
+    string _sprintf(int op)
+      {
+	if(op == 't') return _type();
+	if(failsafe) return odesc || "PROGRAM";
+	if(odesc) return odesc;
+	odesc="PROGRAM"; /* Recursion protection */
+#if 1
+	if(_parent())
+	{
+//	  werror("LOOKING UP PARENT!\n");
+	  return odesc=sprintf("%O->%s",
+			       _parent(),
+			       _parent()->_search(this_object()) || "???");
+	}
+#endif
+
+	if(odesc=revsyms->PROG_ID[_id()]) return odesc;
+
+	
+#if 1
+	if(mixed name=ObjectHandle(Handle("master_object"))->programs->_search(this_object()))
+	{
+	  return odesc=name->_value();
+	}
+#endif
+
+	return odesc="PROGRAM";
+      }
+
+    /* Change when `[]() is done */
+#if 0
+    mixed `->(string val)
+      {
+	if(val[0]=='_' && ::`->(val)) return ::`->(val);
+	return `[](val);
+      }
+#endif
+  }
+
+  class ObjectHandle
+  {
+    inherit PtrSvalueHandle;
+    string _type() { return "object"; }
+    ProgramHandle __prog;
+
+    ProgramHandle _prog()
+      {
+	if(!__prog)
+	{
+	  if(!__ptr->prog->_value()) return 0;
+	  __prog=MKSH(ProgramHandle,__ptr->prog);
+	}
+	return __prog;
+      }
+
+    mixed _object_program()
+      {
+	if(!_prog()) return 0;
+	if(_prog()->__ptr->flags->_value() & syms->PROGRAM_USES_PARENT)
+	{
+	  Handle pi=mkhandle("(struct parent_info *)(",__ptr->storage,")");
+	  if(pi->parent->_value())
+	    return MKFSH(FunctionHandle,
+			 pi->parent,
+			 pi->parent_identifier->_value());
+	}
+#if 0
+	catch {
+	  /* OLD (<=7.2) STYLE?? */
+	  if(__ptr->parent->_value())
+	    return MKFSH(FunctionHandle,
+			 __ptr->parent,
+			 __ptr->parent_identifier->_value());
+	};
+#endif
+	return _prog();
+      }
+
+    string _sprintf(int op)
+      {
+	if(op == 't') return _type();
+	if(failsafe) return "OBJECT";
+	if(__ptr->_value() == mkhandle("master_object")->_value())
+	  return "master()";
+
+	if(mixed prog=_object_program())
+	{
+	  string desc=sprintf("%O",prog);
+	  if(desc == "PROGRAM") return "object";
+	  return sprintf("%s()",desc);
+	}
+
+	return "OBJECT";
+      }
+
+
+    mixed `[](string key)
+      {
+	mixed ret;
+	ProgramHandle p=_prog();
+	if(!p) return ([])[0]; /* Cast error ?? */
+	object i=p->_name_to_id(key);
+	if(!i) return ([])[0];
+	switch(i->flags())
+	{
+	  case "CONST":
+	    ret=p->_constant(i->offset());
+	    /* FIXME: Check for 'PROGRAM_USES_PARENT' ? */
+	    if(ret->_type() != "program")
+	      return ret;
+	  case "CF":
+	  case "PF":
+	    return MKFSH(FunctionHandle, __ptr, i->num());
+
+	  case "": /* variable */
+	    if(i->run_time_type() == "PIKE_T_MIXED")
+	    {
+	      return Svalue(mkhandle("(struct svalue *)(",__ptr -> storage + i->storage_offset() + i->offset(),")"));
+	    }else{
+	      return ShortSvalue(mkhandle("(union anything *)(",__ptr -> storage + i->storage_offset() + i->offset(),")"), i->run_time_type());
+	    }
+
+	  default:
+	    unbug_error("Failed to index object (flags=%O)\n",i->flags());
+	}
+      }
+
+    array(string) _globals()
+      {
+	return _prog()->_globals();
+      }
+
+    mixed `->(string val)
+      {
+	if(val[0]=='_' && ::`->(val)) return ::`->(val);
+	return `[](val);
+      }
+  }
+
+  class FunctionHandle
+  {
+    inherit PtrSvalueHandle;
+    int __func;
+    string odesc;
+    ProgramHandle __prog;
+
+    ProgramHandle _prog()
+      {
+	if(!__prog)
+	{
+	  if(!__ptr->prog->_value()) return 0;
+	  __prog=MKSH(ProgramHandle,__ptr->prog);
+	}
+	return __prog;
+      }
+    
+    string _type() { return "function"; }
+
+    string _sprintf(int op)
+      {
+	if(op == 't') return _type();
+	if(failsafe)
+	  return sprintf("FUNCTION(%d)",__func);
+
+	if(!odesc)
+	{
+	  Handle prog=__ptr->prog;
+	  if(!prog->_value() ||
+	     __func < 0 ||
+	     __func >= prog->num_identifier_references->_value())
+	    return odesc="function";
+
+	  Handle idref=prog->identifier_references + __func;
+	  Handle identifier=(prog->inherits + idref->inherit_offset)->prog->identifiers + idref->identifier_offset;
+	    odesc=sprintf("%O->%s",
+			  MKSH(ObjectHandle,__ptr),
+			  mkhandle("(char *)",identifier->name->str)->_value());
+#if 0
+	  werror("FOOBAR1: %s\n",MKSH(ObjectHandle,__ptr)->_sprintf('O'));
+	  werror("FOOBAR2: %O\n",mkhandle("(char *)",identifier->name->str)->_value());
+#endif
+	}
+	return odesc;
+      }
+
+    void create(Handle h, int f)
+      {
+	::create(h);
+	__func=f;
+      }
+
+    int `==(mixed obj)
+      {
+	return object_program(this_object()) == object_program(obj) &&
+	  obj->__ptr == __ptr &&
+	  obj->__func == __func;
+      }
+
+    Breakpoint _break()
+      {
+	ProgramHandle p=_prog();
+	object ID=p->_id_to_name(__func);
+
+	switch(ID->flags())
+	{
+	  case "PF":
+	    Handle prog=__ptr->prog;
+	    Handle idref=prog->identifier_references + __func;
+	    Handle identifier=(prog->inherits + idref->inherit_offset)->prog->identifiers + idref->identifier_offset;
+	    return Breakpoint(mkhandle("(long)(",prog->program + identifier->func->offset + 2, ")")->_value(), _sprintf('O'));
+	    break;
+
+	  case "CF":
+	    return CFunctionBreakpoint(mkhandle("(long)(",ID->offset(),")")->_value(), _sprintf('O'));
+	}
+      }
+    
+  }
+
+  class CallableHandle
+  {
+    inherit PtrSvalueHandle;
+    string odesc;
+    
+    string _type() { return "function"; }
+
+    string _sprintf(int op)
+      {
+	if(op == 't') return _type();
+	if(odesc) return odesc;
+	if(failsafe)
+	  return sprintf("BUILTIN FUNCTION");
+
+	return odesc=mkhandle("(char *)(",__ptr->name->str,")")->_value();
+      }
+
+
+    Breakpoint _break()
+      {
+	return CFunctionBreakpoint(mkhandle("(long)(",__ptr->function,")")->_value(), _sprintf('O'));
+      }
+
+  }
+
+  class FakeHandle
+  {
+    inherit SvalueHandle;
+    mixed value;
+    int _sizeof() { return sizeof(value); }
+    string _type() { return sprintf("%t",value); }
+    mixed _value() { return value; }
+
+    int _hash() {
+      catch { return value->_hash(); } ;
+      return hash(value);
+    }
+    mixed `[](mixed ind) { return value[ind]; }
+    string _sprintf(int op)
+      {
+	if(op=='t') return _type();
+	return sprintf(sprintf("%%%c",op),value);
+      }
+
+    mixed `! () { return !value; }
+
+    void create(mixed v)
+      {
+	value=v;
+      }
+
+    mixed `->(string val)
+      {
+	if(val[0]=='_' && ::`->(val)) return ::`->(val);
+	return `[](val);
+      }
+  }
+
+
+  mapping(int|string:object) ptrhandlecache=([]);
+  mapping(int|string:object) proghandlecache=([]);
+
+  object MKSH(program p, Handle h)
+    {
+      int v=h->_value();
+      mixed ret;
+      if(!zero_type(ret=ptrhandlecache[v])) return ret;
+      if(p == ProgramHandle)
+      {
+//	werror("LOOKING UP PROGRAMHANDLE %d  (%O) => %O \n",v,h,zero_type(proghandlecache[v])); 
+	if(!zero_type(ret=proghandlecache[v]))
+	{
+//	  werror("Found it, checking ids (%O , %O)\n",
+//		 ret->_id(),
+//		 h->id->_value());
+	  if(ret->_id() == h->id->_value())
+	  {
+//	    werror("IDS MATCH\n");
+	    return ptrhandlecache[v]=ret;
+	  }
+	}
+	ret=p(h);
+	ret->_id();
+	return ptrhandlecache[v]=proghandlecache[v]=ret;
+      }
+      return ptrhandlecache[v]=p(h);
+    }
+
+  object MKFSH(program p, Handle h, int f)
+    {
+      if(f<0) unbug_error("Undefined function.\n");
+      string v=h->_value() +":"+f;
+      if(!zero_type(ptrhandlecache[v])) return ptrhandlecache[v];
+      return ptrhandlecache[v]=p(h,f);
+    }
+
+  object ShortSvalue(Handle u, string type)
+    {
+      if(!u->refs->_value()) return FakeHandle(0);
+      switch(type)
+      {
+	case "PIKE_T_ARRAY": return MKSH(ArrayHandle,u->array);
+	case "PIKE_T_MAPPING":return MKSH(MappingHandle,u->mapping);
+	case "PIKE_T_MULTISET":return MKSH(MultisetHandle,u->multiset);
+
+	case "PIKE_T_INT":   return FakeHandle(u->integer->_value());
+	case "PIKE_T_FLOAT": return FakeHandle(u->float_number->_value());
+	case "PIKE_T_STRING":return MKSH(StringHandle,u->string);
+
+	case "PIKE_T_OBJECT": return MKSH(ObjectHandle,u->object);
+	case "PIKE_T_PROGRAM": return MKSH(ProgramHandle,u->program);
+
+#if 0
+	case "PIKE_T_TYPE": return TypeSval(s);
+#endif
+
+	default:
+	  unbug_error("Unknown type (type=%O)!\n",type);
+      }
+    }
+
+  object Svalue(Handle s)
+    {
+      switch(string type=revsyms->PIKE_T[s->type->_value()])
+      {
+	case 0:
+	  unbug_error("Unknown type (type=%O)!\n",s->type->_value());
+	  
+	case "PIKE_T_FUNCTION":
+	  int subtype=s->subtype->_value();
+	  if(subtype != 0xffff)
+	    return MKFSH(FunctionHandle,s->u->object, subtype);
+
+	  return MKSH(CallableHandle,s->u->efun);
+
+	default:
+	  return ShortSvalue(s->u, type);
+      }
+    }
+
+  class FrameHandle
+  {
+    Handle fp;
+    FrameHandle previous;
+    int num=-1;
+
+    string location()
+      {
+	return find_line_number(fp->current_object->prog,
+				fp->pc);
+      }
+
+    void print_source_line()
+      {
+	sscanf(location(),"%s:%d",string file, int line);
+	showline(file, line);
+      }
+
+    int pc()
+      {
+	return mkhandle("(long)(", fp->pc, ")")->_value();
+      }
+
+    string funcdesc()
+      {
+	Handle obj=fp->current_object;
+	return sprintf("%O",MKFSH(FunctionHandle,obj,fp->fun->_value()));;
+      }
+
+    string _sprintf(int op)
+      {
+	string ret="";
+	if(fp->_value())
+	{
+	  int args=fp->args->_value();
+	  for(int e=0;e<args;e++)
+	  {
+	    if(e) ret+=",";
+	    ret+=sprintf("%O",Svalue(fp->locals + e));
+	  }
+	  
+	  Handle obj=fp->current_object;
+	  if(obj->_value())
+	  {
+	    Handle prog=obj->prog;
+	    ret=sprintf("%O(%s)",
+			MKFSH(FunctionHandle,obj,fp->fun->_value()),
+			ret);
+	    if(prog->_value())
+	      ret+=sprintf(" at %s",find_line_number(prog, fp->pc));
+	  }else{
+	    ret=sprintf("unknown function(%s)",ret);
+	  }
+	}else{
+	  ret="NULL";
+	}
+	if(op == 'O')
+	  ret=sprintf("#%d %s",num,ret);
+	return ret;
+      }
+    
+    void create(void|Handle f)
+      {
+	if(f)
+	{
+	  fp=f;
+	}else{
+	  fp=mkhandle("Pike_interpreter->frame_pointer");
+	  ptrhandlecache[fp->_value()]=this_object();
+	  num=0;
+	}
+      }
+
+    FrameHandle up()
+      {
+	Handle n=fp->next;
+	if(n->_value())
+	{
+	  FrameHandle ret=MKSH(FrameHandle,n);
+	  ret->previous=predef::this_object();
+	  if(num>=0) ret->num=num+1;
+	  return ret;
+	}
+      }
+
+    FrameHandle down()
+      {
+	return previous;
+      }
+
+    ObjectHandle this_object()
+      {
+	return MKSH(ObjectHandle, fp->current_object);
+      }
+
+
+    int num_locals()
+      {
+	return fp->num_locals->_value();
+      }
+
+    object get_local(int l)
+      {
+	l--;
+	if(l < 0 ||  l >= num_locals())
+	  unbug_error("Local variable out of range.\n");
+
+	return Svalue(fp->locals + l);
+      }
+  }
+
+
+
+  /* For the print command */
+
+  array history = ({});
+
+  string get_history(int num)
+    {
+      num--;
+      if(num < 0 || num>=sizeof(history))
+	unbug_error("History value out of range.\n");
+      return history[num];
+    }
+
+  class EvalHandler
+  {
+    mixed get_default_module()
+      { 
+	return all_constants() +
+	  ([
+	    "__THIS_OBJECT__":(current_frame && current_frame->this_object()) || ([]),
+	    "__GET_HISTORY__":get_history,
+	    "this_object":lambda()
+	  {
+	    if(!current_frame)
+	      unbug_error("No current frame\n");
+	    return current_frame->this_object();
+	  },
+	    "__GET_LOCAL__":lambda(int num)
+	    {
+	      if(!current_frame)
+		unbug_error("No current frame\n");
+	      return current_frame->get_local(num);
+	    },
+	    "master":lambda()
+	  {
+	    return MKSH(ObjectHandle, Handle("master_object"));
+	  }
+	    ]);
+      }
+
+    void compile_warning(string current_file, int current_line, string warning)
+      {
+      }
+    
+  }
+
+  mixed eval(string expression)
+    {
+      
+#if 1
+      expression=replace(expression,"$","________DOLLAR_________");
+      array(string) data=Parser.C.split(expression);
+//      werror("%O\n",data);
+      for(int e=0;e<sizeof(data);e++)
+      {
+	switch(data[e][0])
+	{
+	  case '_':
+	    string tmp=replace(data[e],"________DOLLAR_________","$");
+	    if(tmp[0]=='$')
+	    {
+	      if(tmp=="$$")
+		data[e]=sprintf("__GET_HISTORY__(%d)",sizeof(history));
+	      else
+		data[e]=sprintf("__GET_HISTORY__(%s)",tmp[1..]);
+	    }
+	    break;
+	  case '@':
+	    if(sscanf(data[e+1],"%*[0-9]%*c")==1)
+	    {
+	      data[e]=sprintf("__GET_LOCAL__(%s)",data[e+1]);
+	      data[e+1]=" ";
+	    }
+	    break;
+	}
+      }
+
+      expression=data*"";
+      expression=replace(expression,"________DOLLAR_________","$");
+#endif
+
+      string expr=sprintf(
+	"import __THIS_OBJECT__;\n"
+	"mixed func() { return (mixed) ( %s ); }\n",
+	expression);
+      return compile_string(expr, "-", EvalHandler())()->func();
+    }
+
+
+  /* */
+
+  void create(string *argv)
+    {
+      ::create();
+      string tmpfile=sprintf("pike-debugger-%d-%d",getpid(),counter++);
+      cmd("file "+argv[0]);
+      terminal=Process.create_process(
+	({"xterm","-e","/bin/sh","-c",
+	    "stty sane ;tty >"+tmpfile+".tmp ; mv "+tmpfile+".tmp "+tmpfile+" ; while kill -0 "+getpid()+"; do sleep 2; done" }),(["setsid":1]) );
+      while(!file_stat(tmpfile))
+	sleep(0.2);
+      string tmp=Stdio.FILE(tmpfile,"r")->gets();
+      sscanf(tmp,"%s\n",tmp);
+      cmd("tty "+tmp);
+      rm(tmpfile);
+      cmd("cd "+getcwd());
+
+      /* FIXME: Args will probably need quoting */
+      cmd("set args "+argv[1..]*" ");
+    }
+
+
+  FrameHandle current_frame;
+  string current_file;
+  int current_line;
+  string last_cmd;
+  Breakpoint current_breakpoint;
+
+  /*
+   * This flushes all caches when we run code
+   */
+  void flush()
+    {
+      ::flush();
+      current_frame=0;
+      current_file=0;
+      ptrhandlecache=([]);
+      current_breakpoint=0;
+    }
+
+  void fix_current_frame()
+    {
+      if(!current_frame)
+	current_frame=FrameHandle();
+    }
+
+  int started=0;
+  string low_go(string command)
+    {
+      if(Breakpoint bp=current_breakpoint)
+      {
+	current_breakpoint=0;
+	bp->go_around();
+      }
+
+      flush();
+      Run r=Run(command);
+      started=1;
+      fix_current_frame();
+      string ret="";
+      switch(r->why)
+      {
+	case "breakpoint":
+	  break; /* Desc done by callbacks */
+
+	case "signal":
+	  /* No extra desc at this time */
+
+	default:
+	  /* No extra desc at this time */
+	  werror("%s\n",r->ret);
+      }
+      return ret;
+    }
+
+  string go()
+    {
+      string tmp=low_go(started?"cont":"run");
+      write("%s%s\n",tmp, current_frame);
+      current_frame->print_source_line();
+      return "";
+    }
+
+  array(int) step_breakpoints;
+
+  void start_stepping()
+    {
+      if(!step_breakpoints)
+      {
+	int tmp;
+	step_breakpoints=({});
+	tmp=do_break("interpreter.h:"+syms->STEP_BREAK_LINE);
+	if(tmp != -1) step_breakpoints+=({ tmp });
+
+	tmp=do_break("interpreter_debug.h:"+syms->STEP_BREAK_LINE);
+	if(tmp != -1) step_breakpoints+=({ tmp });
+      }else{
+	cmd(sprintf("enable %{%d %}",step_breakpoints));
+      }
+      if(!sizeof(step_breakpoints))
+      {
+	unbug_error("This pike does not support stepping!\n");
+      }
+    }
+
+  void stop_stepping()
+    {
+      cmd(sprintf("disable %{%d %}",step_breakpoints));
+    }
+
+  string step()
+    {
+      start_stepping();
+      string ret;
+      ret=low_go(started?"cont":"run");
+      stop_stepping();
+      return ret;
+    }
+
+  /* breakpoint handling */
+
+  int breakpoint_breakpoint;
+  int F_BREAKPOINT;
+
+  class Breakpoint
+  {
+    /*
+     * FIXME
+     * We should remember what program this breakpoint is in and then
+     * check that the program is still there before disabling/enabling
+     * the breakpoint. -Hubbe
+     */
+
+    
+    int num;
+    int location; /* address */
+    int oldval=-10000;
+    int on;
+    string cond;
+    string desc;
+    int count;
+    int ignore;
+
+    int enable()
+      {
+	if(!on)
+	{
+	  if(oldval == -10000)
+	  {
+	    oldval=Handle(sprintf("*(unsigned char *)(%d)",location))->_value();
+	  }
+	  cmd(sprintf("print *(unsigned char *)(%d)=%d",location,F_BREAKPOINT));
+	  on=1;
+	}
+      }
+    int disable()
+      {
+	if(on)
+	{
+	  cmd(sprintf("print *(unsigned char *)(%d)=%d",location,oldval));
+	  on=0;
+	}
+      }
+
+    void go_around()
+      {
+	if(on)
+	{
+	  disable();
+	  step();
+	  enable();
+	}
+      }
+
+    void set_current_breakpoint()
+      {
+	fix_current_frame();
+	count++;
+	current_breakpoint=this_object();
+	write("Breakpoint %d, ",num);
+      }
+
+    void create(int l, void|string d)
+      {
+	desc=d;
+	number_to_breakpoint+=({this_object()});
+	num=sizeof(number_to_breakpoint);
+	location=l;
+	location_to_breakpoint[l]=this_object();
+      }
+
+    string _sprintf(int op)
+      {
+	switch(op)
+	{
+	  case 'O':
+	    return sprintf("%2d  %c  0x%08x  %s",
+			   num,
+			   on?'y':'n',
+			   location,
+			   desc);
+	  case 's':
+	    return sprintf("Breakpoint %d at %s",num,desc);
+	}
+      }
+  };
+
+
+  class CFunctionBreakpoint
+  {
+    int __breakpoint;
+    inherit Breakpoint;
+    void go_around() {};
+
+    void enable()
+      {
+	if(!on)
+	{
+	  cmd("enable "+__breakpoint);
+	  on=1;
+	}
+      }
+
+    void disable()
+      {
+	if(on)
+	{
+	  cmd("disable "+__breakpoint);
+	  on=0;
+	}
+      }
+
+
+    void create(int l, void|string desc)
+      {
+	::create(l,desc);
+	__breakpoint=do_break("*" + l);
+	on=1;
+	register_breakpoint_callback(__breakpoint, set_current_breakpoint);
+      }
+  }
+
+
+  mapping (int:Breakpoint) location_to_breakpoint=([]);
+  array(Breakpoint) number_to_breakpoint = ({});
+
+
+  void set_current_breakpoint()
+    {
+      fix_current_frame();
+
+      int pc=current_frame->pc();
+//      werror("PC=%x\n",pc);
+      location_to_breakpoint[pc]->set_current_breakpoint();
+    }
+
+  Breakpoint set_breakpoint(string at)
+    {
+      int location;
+      if(!breakpoint_breakpoint)
+      {
+	breakpoint_breakpoint=do_break("o_breakpoint");
+	if(breakpoint_breakpoint == -1)
+	{
+	  breakpoint_breakpoint=0;
+	  unbug_error("Breakpoints are not supported in this Pike.\n");
+	}
+	register_breakpoint_callback(breakpoint_breakpoint,
+				     set_current_breakpoint);
+      }
+
+      if(!F_BREAKPOINT)
+      {
+	F_BREAKPOINT=Handle("F_BREAKPOINT-F_OFFSET")->_value();
+      }
+
+      Breakpoint bp;
+      if(sscanf(at,"%d%*c",int line)==1)
+      {
+	/* lookup line in current file/program */
+	unbug_error("Cannot put breakpoints on line numbers yet, sorry.\n");
+      }else{
+	/* Let's hope it's a function */
+	mixed func=eval(at);
+	bp=func->_break();
+	if(!bp)
+	  unbug_error("Failed to set breakpoint.\n");
+      }
+      bp->enable();
+      return bp;
+    }
+
+
+  /* Source code handling */
+
+  mapping(string:array(string)) source_cache=([]);
+
+  void showline(string file, int line)
+    {
+//      werror("showline(%O:%O)\n",file,line);
+      if(line < 1) return;
+      line--;
+      array(string) source;
+      if(!(source=source_cache[file]))
+	source=source_cache[file]=Stdio.read_file(file)/"\n";
+
+      if(line >= sizeof(source)) return;
+      write("%7d %s\n",line+1,source[line]);
+    }
+
+
+  void destroy()
+    {
+      ::destroy();
+      terminal->kill(signum("SIGINT"));
+    }
+
+  string command(string s)
+  {
+    array foo=s/" ";
+    switch(foo[0])
+    {
+      case "gdb":
+      {
+	flush(); /* flush caches, needed? */
+	return cmd(foo[1..]*" ");
+      }
+      break;
+
+      case "backtrace":
+      case "bt":
+      {
+	for(FrameHandle fp=FrameHandle();fp;fp=fp->up())
+	  write("%O\n",fp);
+      }
+      return "";
+
+      case "quit":
+	destruct(this_object());
+	exit(0);
+
+      case "run":/* FIXME: This should restart program */
+      case "cont":
+      case "go":
+	return go();
+
+      case "up":
+      case "down":
+      {
+	FrameHandle n=current_frame[foo[0]]();
+	if(!n) return sprintf("You cannot go %s.\n",foo[0]);
+	current_frame=n;
+	current_file=0;
+	return sprintf("%O\n",current_frame);
+      }
+
+      case "list":
+      {
+	int numlines=7;
+	string loc;
+	if(sizeof(foo)==1)
+	  if(!current_file)
+	    foo+=({current_frame->location()});
+
+	if(sizeof(foo)>1)
+	{
+	  current_line=1;
+	  current_file=foo[1];
+	  sscanf(foo[1],"%s:%d",current_file,current_line);
+	  current_line-=numlines;
+	}
+
+	for(int e=-numlines;e<=numlines;e++)
+	  showline(current_file, current_line++);
+	return "";
+      }
+      break;
+	
+	
+      case "p":
+      case "print":
+      {
+	mixed bar;
+	got_unbug_error=0;
+	if(mixed err=catch {
+	  bar=eval(foo[1..]*" ");
+	}) {
+//	  werror("got_unbug_eror=%d\n%O\n",got_unbug_error,err);
+	  if(got_unbug_error)
+	  {
+	    return err[0];
+	  }else{
+	    return master()->describe_backtrace(err);
+	  }
+	}else{
+	  history+=({bar});
+	  return sprintf("$%d = %O\n",sizeof(history),bar);
+	}
+      }
+
+      case "locals":
+	for(int e=1;e<=current_frame->num_locals();e++)
+	  write("@%d = %O\n",e,current_frame->get_local(e));
+	return "";
+
+      case "globals":
+	object to=current_frame->this_object();
+
+	foreach(to->_globals(), string name)
+	  write("%s = %O\n",name, to[name]);
+	return "";
+
+
+      case "breakpoint":
+      case "break":
+      {
+	Breakpoint bp=set_breakpoint(foo[1..]*" ");
+	return sprintf("%s\n",bp);
+      }
+
+      case "info":
+      {
+	switch(foo[1])
+	{
+	  case "breakpoints":
+	    foreach(number_to_breakpoint, Breakpoint bp)
+	      write("%O\n",bp);
+	    break;
+	}
+	return "";
+      }
+      case "en":
+      case "enable":
+	foreach(foo[1..], string s)
+	  number_to_breakpoint[((int)s)-1]->enable();
+	return "";
+
+      case "disable":
+      case "d":
+      case "delete":
+	foreach(foo[1..], string s)
+	  number_to_breakpoint[((int)s)-1]->disable();
+	return "";
+
+      case "step":
+	start_stepping();
+	string desc;
+	if(current_frame)
+	{
+	  desc=current_frame->funcdesc();
+	  string loc=current_frame->location();
+	  do
+	  {
+	    low_go(started?"cont":"run");
+//	    write("step.. %s\n",current_frame->location());
+	  }while(loc == current_frame->location());
+	}else{
+	  low_go(started?"cont":"run");
+	}
+	stop_stepping();
+	
+	if(current_frame->funcdesc() != desc)
+	  werror("%O\n",current_frame);
+	current_frame->print_source_line();
+	return "";
+
+
+      case "help":
+      case "h":
+      case "?":
+	write("Commands currently understood by UNBUG:\n");
+	write("go/run/cont       : let the program run\n");
+	write("step              : step one line\n");
+	write("backtrace/bt      : Show backtrace\n");
+	write("up                : go up to higher stack frame\n");
+	write("down              : go down to lower stack frame\n");
+	write("list              : show source\n");
+	write("print/p           : evaluate an expression\n");
+	write("locals            : show local variables\n");
+	write("globals           : show global variables\n");
+	write("breakpoint/break  : set a breakpoint\n");
+	write("info breakpoints  : show breakpoints\n");
+	write("enable B          : enable breakpoint B\n");
+	write("disable B         : disable breakpoint B\n");
+	write("quit              : Exit unbug\n");
+	write("gdb <gdb command> : Run a GDB command\n");
+	write("help/h/?          : show this text\n");
+	return "";
+
+      default:
+	return sprintf("Unknown command: %s\n",s);
+    }
+  }
+
+  void interact()
+    {
+      object rl=Stdio.Readline();
+      rl->set_prompt("(unbug) ");
+      rl->enable_history(512);
+      while(string s=rl->read("(unbug) "))
+      {
+	if(s=="") s=last_cmd;
+
+	if(mixed err=catch 
+	{
+	  write(command(s));
+	}){
+	  werror("Describing error:\n");
+	  failsafe=1;
+	  write(master()->describe_backtrace(err));
+	  failsafe=0;
+	}
+	last_cmd=s;
+      }
+    }
+}
+
+int main(int argc, string *argv)
+{
+  write(#"UNBUG $Id: unbug,v 1.1 2001/04/25 21:28:38 hubbe Exp $
+Copyright 2001, Roxen Internet Services AB.
+UNBUG is free software, covered by the GNU General Public License, and you are
+welcome to change it and/or distribute copies of it under certain conditions.
+");
+
+  if(argc < 2)
+  {
+    write("\nUsage: unbug <pike> <pike script>\n");
+    exit(1);
+  }
+
+  string pike=argv[1];
+
+  /* GDB looks in $PATH for executable, and so must we */
+  if(search(pike,"/") == -1)
+  {
+    foreach(getenv("PATH")/":", string p)
+    {
+      p=combine_path(getcwd(),p,pike);
+      if(Stdio.file_size(p)>0)
+      {
+	pike=p;
+	break;
+      }
+    }
+  }
+   syms=(mapping)(array_sscanf(Stdio.read_file(pike+".syms"),"%{%*sdefine%*[ \t]%s%*[ \t]%i%*s\n%}")[0]);
+
+  revsyms->PROG_ID=([]);
+
+  foreach(indices(syms), string symname)
+    {
+      mapping rev;
+      int val=syms[symname];
+      array parts=symname/"_";
+      string key=parts[0];
+      for(int e=1;e<sizeof(parts);e++)
+      {
+	if(!(rev=revsyms[key])) revsyms[key]=rev=([]);
+	rev[val]=symname;
+	key+="_"+parts[e];
+      }
+
+      if(sscanf(symname, "PROG_%s_ID",string progname))
+	revsyms->PROG_ID[progname]=val;
+    }
+
+  Debug debug=Debug(argv[1..]);
+  signal(signum("SIGINT"),lambda() { debug->stop_execution(); });
+  debug->interact();
+  return 0;
+}
