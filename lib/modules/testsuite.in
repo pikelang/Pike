@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.32 2004/07/14 09:52:57 grubba Exp $
+dnl $Id: testsuite.in,v 1.33 2004/07/14 11:02:10 grubba Exp $
 
 START_MARKER
 
@@ -387,13 +387,20 @@ test_eq(Colors.color_name( ({105,105,105}) ), "dimgrey")
 
 dnl - Getopt
 dnl setup
-test_do( add_constant("getopt_env", master()->environment); )
-test_do( master()->environment=([ "foo": ({ "foo", "bar" }) ]); )
-test_equal(getenv("foo"), "bar")
-test_equal(master()->getenv("foo"), "bar")
-test_eq(function_object(getenv), master())
-test_false(getenv("POSIX_ME_HARDER"))
-test_false(master()->getenv("POSIX_ME_HARDER"))
+test_do(add_constant("original_POSIX_ME_HARDER", getenv("POSIX_ME_HARDER"));)
+test_do(putenv("POSIX_ME_HARDER", 0);)
+// The following code is broken if the testsuite isn't run with -F,
+// and messing around with internal structures in the master is not
+// a good idea.
+//	/grubba 2004-07-14
+//
+// test_do( add_constant("getopt_env", master()->environment); )
+// test_do( master()->environment=([ "foo": ({ "foo", "bar" }) ]); )
+// test_equal(getenv("foo"), "bar")
+// test_equal(master()->getenv("foo"), "bar")
+// test_eq(function_object(getenv), master())
+// test_false(getenv("POSIX_ME_HARDER"))
+// test_false(master()->getenv("POSIX_ME_HARDER"))
 
 test_eq( Getopt.find_option( ({}), "a" ), 0 )
 test_eq( Getopt.find_option( "-a,-b"/",", "a" ), 0 )
@@ -643,8 +650,8 @@ test_any_equal([[
 ]],[[ ({ "x", "a", "-b" }) ]])
 
 dnl cleanup
-test_do( master()->environment=getopt_env; )
-test_do( add_constant("getopt_env"); )
+test_do( putenv("POSIX_ME_HARDER", original_POSIX_ME_HARDER); )
+test_do( add_constant("original_POSIX_ME_HARDER"); )
 test_do( add_constant("opt"); )
 
 dnl - Int
