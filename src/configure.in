@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.854 2004/12/14 15:06:47 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.855 2004/12/16 14:09:06 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -254,6 +254,19 @@ AC_ARG_ENABLE(noopt-retry, MY_DESCR([--disable-noopty-retry],
 # The above has problems if the smartlink binary is removed. /grubba
 AC_PROG_CC
 AC_PROG_CPP
+
+AC_MSG_CHECKING([whether we are using Intel C])
+AC_CACHE_VAL(pike_cv_prog_icc, [
+  AC_EGREP_CPP([
+#if defined(__ECC) || defined(__ICC) || defined(__INTEL_COMPILER)
+  yes;
+#endif
+  ], [ yes ], pike_cv_prog_icc=yes, pike_cv_prog_icc=no)
+])
+AC_MSG_RESULT($pike_cv_prog_icc)
+if test "$pike_cv_prog_icc" = "yes"; then
+  ICC=yes
+fi
 
 #############################################################################
 
@@ -817,7 +830,7 @@ AC_CACHE_VAL(pike_cv_ld_so_run_path_method, [
       fi
     ;;
     Linux\ 2.*)
-      if $REALCC -V 2>&1 | head -1 | grep "Intel(R) C" >/dev/null; then
+      if test "$ICC" = "yes"; then
         # icc or ecc.
         pike_cv_run_path_method=qoption
       else
@@ -1856,7 +1869,7 @@ if test "$cflags_is_set" = "no"; then
     fi
   ])
 
- else if test "x${TCC-}" = xyes ; then
+  elif test "x${TCC-}" = xyes ; then
 
   # Yikes! We're using the TenDRA compiler!
 
@@ -1886,7 +1899,7 @@ if test "$cflags_is_set" = "no"; then
     AC_CHECK_LIB(tdf, __TDFUnot)
   fi
 
- else
+  else
 
   # Assume system compiler "cc".
 
@@ -1915,33 +1928,6 @@ if test "$cflags_is_set" = "no"; then
   fi
 
 ### Non-gcc thingies. This should probably be enhanced...
-
-  # Linux with Intel C++
-  DO_IF_OS(Linux,
-  [
-    if $REALCC -V 2>&1 | head -1 | grep "Intel(R) C" >/dev/null; then
-      # icc or ecc.
-
-      # Disable excessive warnings from Linux's header files:
-      #   warning #1292: attribute "__nothrow__" ignored
-      AC_SYS_COMPILER_FLAG(-wd1292,wd1292,WARN)
-      # And from Pike:
-      #   remark #177: function "MKPCHARP" was declared but never referenced
-      AC_SYS_COMPILER_FLAG(-wd177,wd177,WARN)
-      #   remark #279: controlling expression is constant
-      AC_SYS_COMPILER_FLAG(-wd279,wd279,WARN)
-
-      AC_SYS_COMPILER_FLAG(-Ob2,Ob2,OPTIMIZE)
-      AC_SYS_COMPILER_FLAG(-ipo,ipo,OPTIMIZE)
-      AC_SYS_COMPILER_FLAG(-ipo,ipo,EXTRALDFLAGS)
-      AC_SYS_COMPILER_FLAG(-ipo_obj,ipo_obj,OPTIMIZE)
-      AC_SYS_COMPILER_FLAG(-parallel, parallel,OPTIMIZE)
-      AC_SYS_COMPILER_FLAG(-parallel, parallel,LDFLAGS)
-      # arch dependent optimizations while maintaining
-      # i386 compatibility
-      AC_SYS_COMPILER_FLAG(-axKW,axKW,OPTIMIZE)
-    fi
-  ])
 
 
   # Solaris
@@ -2107,40 +2093,70 @@ if test "$cflags_is_set" = "no"; then
     fi
   ])
 
-dnl
-dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
-dnl  
-dnl AC_SYS_COMPILER_FLAG(-native,native,OPTIMIZE)
-dnl
+    dnl
+    dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
+    dnl  
+    dnl AC_SYS_COMPILER_FLAG(-native,native,OPTIMIZE)
+    dnl
 
-dnl ### Ok. This is for apcc...
-case "$CC" in
-  *apcc)
-    AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt,OPTIMIZE)
-    AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2,OPTIMIZE)
-  ;;
-esac
+    dnl ### Ok. This is for apcc...
+    case "$CC" in
+      *apcc)
+        AC_SYS_COMPILER_FLAG(-XO=5,apcc_opt,OPTIMIZE)
+        AC_SYS_COMPILER_FLAG(-Xcallmod=2,apcc_opt_2,OPTIMIZE)
+      ;;
+    esac
 
-# Old cc for solaris.
-#  AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc,OPTIMIZE)
-#  AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc,OPTIMIZE)
-#  AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc,OPTIMIZE)
+    # Old cc for solaris.
+    #  AC_SYS_CPU_COMPILER_FLAG(sun4m,-Xpipe=micro,microsparc,OPTIMIZE)
+    #  AC_SYS_CPU_COMPILER_FLAG(sun4d,-Xpipe=super,supersparc,OPTIMIZE)
+    #  AC_SYS_CPU_COMPILER_FLAG(sun4u,-Xpipe=super,ultrasparc,OPTIMIZE)
 
-  case "${CFLAGS-} $OPTIMIZE" in
-    *-O*) ;;
-    *+O*) ;;
-    *-fast*) ;;
-    *)
-      case "$pike_cv_sys_os:$GCC" in
-        UnixWare*:no|OpenUNIX*:no)
-	;;
-	*)
-	;;
-      esac
-    ;;
-  esac
- fi
- fi
+    case "${CFLAGS-} $OPTIMIZE" in
+      *-O*) ;;
+      *+O*) ;;
+      *-fast*) ;;
+      *)
+        case "$pike_cv_sys_os:$GCC" in
+          UnixWare*:no|OpenUNIX*:no)
+  	;;
+  	*)
+  	;;
+        esac
+      ;;
+    esac
+  fi
+
+  if test "$ICC" = "yes"; then
+    # icc or ecc.
+
+    # Modern versions of icc and ecc claim to be gcc, so we need to have
+    # this outside the main if-else segment.
+
+    DO_IF_OS(Linux,
+    [
+      # Linux with Intel C++
+
+      # Disable excessive warnings from Linux's header files:
+      #   warning #1292: attribute "__nothrow__" ignored
+      AC_SYS_COMPILER_FLAG(-wd1292,wd1292,WARN)
+      # And from Pike:
+      #   remark #177: function "MKPCHARP" was declared but never referenced
+      AC_SYS_COMPILER_FLAG(-wd177,wd177,WARN)
+      #   remark #279: controlling expression is constant
+      AC_SYS_COMPILER_FLAG(-wd279,wd279,WARN)
+
+      AC_SYS_COMPILER_FLAG(-Ob2,Ob2,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-ipo,ipo,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-ipo,ipo,EXTRALDFLAGS)
+      AC_SYS_COMPILER_FLAG(-ipo_obj,ipo_obj,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-parallel, parallel,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-parallel, parallel,LDFLAGS)
+      # arch dependent optimizations while maintaining
+      # i386 compatibility
+      AC_SYS_COMPILER_FLAG(-axKW,axKW,OPTIMIZE)
+    ])
+  fi
 else
   # CFLAGS has already been set by the user.
   # Avoid adding anything that isn't essential.
