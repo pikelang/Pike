@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.101 2001/01/25 09:14:38 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.102 2001/01/31 22:02:12 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -107,6 +107,29 @@ static int current_stack_depth = 0;
   do_pop(current_stack_depth - cleanup_frame__.stack_depth);		\
   cleanup_frame__.cleanup(cleanup_frame__.cleanup_arg);			\
   POP_AND_DONT_CLEANUP
+
+/* A block in the following sense is a region of code where:
+ * o  Execution always enters at the beginning.
+ * o  All stack nesting is left intact on exit (both normally and
+ *    through jumps, but not through exceptions). This includes the
+ *    svalue and mark stacks, and the catch block nesting.
+ */
+#ifdef PIKE_DEBUG
+#define BLOCK_BEGIN							\
+  PUSH_CLEANUP_FRAME(do_cleanup_synch_mark, 0);				\
+  if (d_flag > 2) emit0(F_SYNCH_MARK);
+#define BLOCK_END							\
+  if (current_stack_depth != cleanup_frame__.stack_depth) {		\
+    print_tree(n);							\
+    fatal("Stack not in synch after block: is %d, should be %d.\n",	\
+	  current_stack_depth, cleanup_frame__.stack_depth);		\
+  }									\
+  if (d_flag > 2) emit0(F_POP_SYNCH_MARK);				\
+  POP_AND_DONT_CLEANUP
+#else
+#define BLOCK_BEGIN
+#define BLOCK_END
+#endif
 
 #define PUSH_STATEMENT_LABEL do {					\
   struct statement_label new_label__;					\
@@ -229,15 +252,6 @@ void do_pop(int x)
   current_stack_depth -= x;
 }
 
-void do_cleanup_pop(int x)
-{
-#ifdef PIKE_DEBUG
-  if(d_flag)
-    emit0(F_POP_MARK);
-#endif
-  do_pop(x);
-}
-
 void do_pop_mark()
 {
   emit0(F_POP_MARK);
@@ -248,12 +262,18 @@ void do_pop_to_mark()
   emit0(F_POP_TO_MARK);
 }
 
+void do_cleanup_synch_mark()
+{
+  if (d_flag > 2)
+    emit0(F_CLEANUP_SYNCH_MARK);
+}
+
 void do_escape_catch()
 {
   emit0(F_ESCAPE_CATCH);
 }
 
-#define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP | DO_DEFER_POP))
+#define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP ))
 
 int do_docode(node *n, INT16 flags)
 {
@@ -830,6 +850,7 @@ static int do_docode2(node *n, INT16 flags)
   case F_FOR:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
+    BLOCK_BEGIN;
     PUSH_STATEMENT_LABEL;
 
     current_switch_jumptable=0;
@@ -851,6 +872,7 @@ static int do_docode2(node *n, INT16 flags)
 
     current_switch_jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
+    BLOCK_END;
     return 0;
   }
 
@@ -861,6 +883,7 @@ static int do_docode2(node *n, INT16 flags)
   {
     node *arr;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
+    BLOCK_BEGIN;
 
     arr=CAR(n);
     
@@ -873,25 +896,16 @@ static int do_docode2(node *n, INT16 flags)
 	 a2[0]->u.sval.type==0x7fffffff &&
 	a1[0]->type == int_type_string)
       {
-	tmp2=do_docode(CAR(arr),DO_NOT_COPY);
+	do_docode(CAR(arr),DO_NOT_COPY);
 	do_docode(*a1,DO_NOT_COPY);
 	goto foreach_arg_pushed;
       }
     }
-    tmp2=do_docode(CAR(n),DO_NOT_COPY);
+    do_docode(CAR(n),DO_NOT_COPY);
     emit0(F_CONST0);
     current_stack_depth++;
-
   foreach_arg_pushed:
-#ifdef PIKE_DEBUG
-    /* This is really ugly because there is always a chance that the bug
-     * will disappear when new instructions are added to the code, but
-     * think it is worth it.
-     */
-    if(d_flag)
-      emit0(F_MARK);
-#endif
-    PUSH_CLEANUP_FRAME(do_cleanup_pop, 4);
+    PUSH_CLEANUP_FRAME(do_pop, 4);
 
     PUSH_STATEMENT_LABEL;
     current_switch_jumptable=0;
@@ -909,6 +923,7 @@ static int do_docode2(node *n, INT16 flags)
     current_switch_jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
     POP_AND_DO_CLEANUP;
+    BLOCK_END;
     return 0;
   }
 
@@ -918,17 +933,10 @@ static int do_docode2(node *n, INT16 flags)
   case F_DEC_LOOP:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
+    BLOCK_BEGIN;
 
-    tmp2=do_docode(CAR(n),0);
-#ifdef PIKE_DEBUG
-    /* This is really ugly because there is always a chance that the bug
-     * will disappear when new instructions are added to the code, but
-     * think it is worth it.
-     */
-    if(d_flag)
-      emit0(F_MARK);
-#endif
-    PUSH_CLEANUP_FRAME(do_cleanup_pop, 3);
+    do_docode(CAR(n),0);
+    PUSH_CLEANUP_FRAME(do_pop, 3);
 
     PUSH_STATEMENT_LABEL;
     current_switch_jumptable=0;
@@ -946,6 +954,7 @@ static int do_docode2(node *n, INT16 flags)
     current_switch_jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
     POP_AND_DO_CLEANUP;
+    BLOCK_END;
     return 0;
   }
 
@@ -969,6 +978,7 @@ static int do_docode2(node *n, INT16 flags)
   case F_DO:
   {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
+    BLOCK_BEGIN;
     PUSH_STATEMENT_LABEL;
 
     current_switch_jumptable=0;
@@ -983,12 +993,15 @@ static int do_docode2(node *n, INT16 flags)
 
     current_switch_jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
+    BLOCK_END;
     return 0;
   }
 
   case F_POP_VALUE:
     {
+      BLOCK_BEGIN;
       DO_CODE_BLOCK(CAR(n));
+      BLOCK_END;
       return 0;
     }
 
@@ -1141,6 +1154,7 @@ static int do_docode2(node *n, INT16 flags)
 #ifdef PIKE_DEBUG
     struct svalue *save_sp=Pike_sp;
 #endif
+    BLOCK_BEGIN;
     PUSH_STATEMENT_LABEL;
 
     if(do_docode(CAR(n),0)!=1)
@@ -1174,7 +1188,7 @@ static int do_docode2(node *n, INT16 flags)
     current_switch_jumptable[current_switch_case++]=-1;
 
     DO_CODE_BLOCK(CDR(n));
-    
+
 #ifdef PIKE_DEBUG
     if(Pike_sp-save_sp != cases)
       fatal("Count cases is wrong!\n");
@@ -1236,6 +1250,7 @@ static int do_docode2(node *n, INT16 flags)
     low_insert_label( current_label->break_label);
 
     POP_STATEMENT_LABEL;
+    BLOCK_END;
 #ifdef PIKE_DEBUG
     if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
       fatal("Stack error after F_SWITCH (underflow)\n");
@@ -1402,6 +1417,7 @@ static int do_docode2(node *n, INT16 flags)
   case F_CUSTOM_STMT_LABEL: {
     struct statement_label *label;
     struct statement_label_name name;
+    BLOCK_BEGIN;
     PUSH_STATEMENT_LABEL;
     name.str = CAR(n)->u.sval.u.string;
     name.line_number = n->line_number;
@@ -1436,6 +1452,7 @@ static int do_docode2(node *n, INT16 flags)
     if (!name.next && current_label->emit_break_label)
       low_insert_label(current_label->break_label);
     POP_STATEMENT_LABEL;
+    BLOCK_END;
     return 0;
   }
 
@@ -1452,6 +1469,7 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_CATCH: {
     INT32 *prev_switch_jumptable = current_switch_jumptable;
+
     tmp1=do_jump(F_CATCH,-1);
     PUSH_CLEANUP_FRAME(do_escape_catch, 0);
 
@@ -1459,16 +1477,14 @@ static int do_docode2(node *n, INT16 flags)
     current_switch_jumptable=0;
     current_label->break_label=alloc_label();
     if (TEST_COMPAT(7,0))
-      current_label->continue_label=alloc_label();
+      current_label->continue_label = current_label->break_label;
 
     DO_CODE_BLOCK(CAR(n));
 
-    if (TEST_COMPAT(7,0))
-      ins_label(current_label->continue_label);
     ins_label(current_label->break_label);
     emit0(F_THROW_ZERO);
-    current_switch_jumptable = prev_switch_jumptable;
     POP_STATEMENT_LABEL;
+    current_switch_jumptable = prev_switch_jumptable;
 
     ins_label(DO_NOT_WARN((INT32)tmp1));
     current_stack_depth++;
