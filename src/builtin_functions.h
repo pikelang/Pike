@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: builtin_functions.h,v 1.15 2000/12/16 05:52:16 marcus Exp $
+ * $Id: builtin_functions.h,v 1.16 2001/04/30 00:53:11 mast Exp $
  */
 #ifndef BUILTIN_EFUNS_H
 #define BUILTIN_EFUNS_H
@@ -84,6 +84,7 @@ PMOD_EXPORT void f__compiler_trace(INT32 args);
 PMOD_EXPORT void f_gmtime(INT32 args);
 PMOD_EXPORT void f_localtime(INT32 args);
 PMOD_EXPORT void f_glob(INT32 args);
+PMOD_EXPORT void f_permute(INT32 args);
 struct diff_magic_link;
 struct diff_magic_link_pool;
 struct diff_magic_link_head;
