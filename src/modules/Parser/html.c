@@ -117,7 +117,7 @@ struct parser_html_storage
 
 /*--- user configurable -------------------------------------------*/
 
-   /* extra arguments */
+  /* extra arguments */
    struct array *extra_args;
 
    /* named stuff */
@@ -454,6 +454,20 @@ static void gc_check_html(struct object *o)
    
    if (THIS->extra_args)
       gc_check(THIS->extra_args);
+}
+
+static void gc_mark_html(struct object *o)
+{
+   gc_mark_mapping_as_referenced(THIS->maptag);
+   gc_mark_mapping_as_referenced(THIS->mapcont);
+   gc_mark_mapping_as_referenced(THIS->mapentity);
+
+   gc_mark_svalues(&(THIS->callback__tag),1);
+   gc_mark_svalues(&(THIS->callback__data),1);
+   gc_mark_svalues(&(THIS->callback__entity),1);
+   
+   if (THIS->extra_args)
+      gc_mark_array_as_referenced(THIS->extra_args);
 }
 
 /****** setup callbacks *****************************/
@@ -2906,6 +2920,7 @@ void init_parser_html(void)
    set_init_callback(init_html_struct);
    set_exit_callback(exit_html_struct);
    set_gc_check_callback(gc_check_html);
+   set_gc_mark_callback(gc_mark_html);
 
 #define CBRET "string|array(string)" /* 0|string|({string}) */
 
