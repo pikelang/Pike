@@ -1,14 +1,21 @@
 #
-# $Id: Makefile,v 1.108 2002/12/12 21:21:03 nilsson Exp $
+# $Id: Makefile,v 1.109 2002/12/15 19:17:36 grubba Exp $
 #
 # Meta Makefile
 #
 
 VPATH=.
-MAKE=make
 OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
 BUILDDIR=build/$(OS)
 METATARGET=
+
+# This evaluates to a proper make command.
+# Regardless of whether the make sets $(MAKE) or not.
+# Priority is $(MAKE) before ${MAKE} before make.
+MAKE_CMD=`if [ "x$(MAKE)" = "x" ]; then echo "$${MAKE-make}"; else echo "$(MAKE)"; fi`
+
+# Evaluates to $(MAKE_CMD) and sets ${MAKE} and $(MAKE)
+DO_MAKE=MAKE="$(MAKE_CMD)" export MAKE && "$${MAKE}" "MAKE=$${MAKE}"
 
 # Use this to pass arguments to configure. Leave empty to keep previous args.
 CONFIGUREARGS=
@@ -20,7 +27,7 @@ MAKE_PARALLEL=
 # Used to avoid make compatibility problems.
 BIN_TRUE=":"
 
-MAKE_FLAGS="MAKE=$(MAKE)" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
+MAKE_FLAGS="CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
 
 all: bin/pike compile
 	-@$(BIN_TRUE)
@@ -36,7 +43,7 @@ force_autoconfig:
 
 force_configure:
 	-rm -f "$(BUILDDIR)/Makefile"
-	@$(MAKE) $(MAKE_FLAGS) configure
+	@$(DO_MAKE) $(MAKE_FLAGS) configure
 
 configure_help: src/configure
 	cd src && ./configure --help
@@ -70,7 +77,8 @@ configure: src/configure builddir
 	  if test "x$(CONFIGUREARGS)" = x; then \
 	    configureargs="$$oldconfigureargs"; \
 	  else :; fi; \
-	  MAKE=$(MAKE) ; export MAKE ;\
+	  MAKE="$(MAKE_CMD)"; \
+	  export MAKE; \
 	  echo; \
 	  echo Configure arguments: $$configureargs; \
 	  echo 'Use `make CONFIGUREARGS="..."' "...'" 'to change them.'; \
@@ -87,12 +95,12 @@ configure: src/configure builddir
 	    if test "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	    else \
 	      echo Configure arguments have changed - doing make clean; \
-	      $(MAKE) "MAKE=$(MAKE)" clean || exit $$?; \
+	      $${MAKE} "MAKE=$${MAKE}" clean || exit $$?; \
 	      if test "x$(METATARGET)" = "xsource"; then :; \
 	      elif test "x$(METATARGET)" = "xexport"; then :; \
 	      else \
 		echo Configure arguments have changed - doing make depend; \
-		$(MAKE) "MAKE=$(MAKE)" depend || exit $$?; \
+		$${MAKE} "MAKE=$${MAKE}" depend || exit $$?; \
 	      fi; \
 	    fi; \
 	  fi; \
@@ -108,13 +116,15 @@ compile: configure
 	    else metatarget="all $$metatarget"; fi; \
 	    if test "x$$metatarget" = x; then metatarget=all; else :; fi; \
 	  else :; fi; \
+	  MAKE="$(MAKE_CMD)"; \
+	  export MAKE; \
 	  for target in $$metatarget; do \
 	    echo Making $$target in "$$builddir"; \
 	    rm -f remake; \
-	    $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || { \
+	    $${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || { \
 	      res=$$?; \
 	      if test -f remake; then \
-		$(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || \
+		$${MAKE} "MAKE=$${MAKE}" "MAKE_PARALLEL=$(MAKE_PARALLEL)" "EXPORT_NAME=$(EXPORT_NAME)" $$target || \
 		  exit $$?; \
 	      else \
 		exit $$res; \
@@ -142,7 +152,7 @@ lobotomize_crypto:
 # FIXME: The refdoc stuff ought to use $(BUILDDIR) too.
 
 documentation:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=documentation"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=documentation"
 
 doc: documentation
 
@@ -167,29 +177,29 @@ bin/pike: force
 
 # This skips the modules.
 pike: bin/pike
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=pike"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=pike"
 
 install: bin/pike
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=install"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install"
 
 install_interactive: bin/pike
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive"
 
 tinstall: bin/pike
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=tinstall"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=tinstall"
 
 testsuites:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=testsuites"
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=testsuite"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=testsuites"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=testsuite"
 
 just_verify:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=just_verify"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=just_verify"
 
 verify:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=verify"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=verify"
 
 verify_installed:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=verify_installed"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=verify_installed"
 
 check: verify
 	-@$(BIN_TRUE)
@@ -198,36 +208,36 @@ sure: verify
 	-@$(BIN_TRUE)
 
 verbose_verify:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=verbose_verify"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=verbose_verify"
 
 gdb_verify:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=gdb_verify"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=gdb_verify"
 
 dump_modules:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=dump_modules"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=dump_modules"
 
 force_dump_modules:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=force_dump_modules"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=force_dump_modules"
 
 delete_dumped_modules:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=delete_dumped_modules"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=delete_dumped_modules"
 
 undump_modules:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=undump_modules"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=undump_modules"
 
 run_hilfe:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
 
 source:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=source" compile
 
 export:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=export" compile
 
 snapshot_export:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
 	  "EXPORT_NAME=Pike-v%maj.%min-snapshot-%Y%M%D" compile
 
@@ -235,25 +245,25 @@ snapshot: snapshot_export
 
 xenofarm_export:
 	@echo Begin export
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
+	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
 	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" \
 	  "EXPORTARGS=$(EXPORTARGS)" compile > export_result.txt 2>&1
 	@echo Export done
 
 bin_export:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
 
 feature_list:
-	@$(MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
 
 solaris_pkg_configure:
-	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--prefix=/opt $(CONFIGUREARGS)" \
+	@$(DO_MAKE) "CONFIGUREARGS=--prefix=/opt $(CONFIGUREARGS)" \
 	  "METATARGET=configure"
 
 solaris_pkg: solaris_pkg_configure bin/pike
 	@test -d "${BUILDDIR}/solaris_pkg_build" || mkdir "${BUILDDIR}/solaris_pkg_build"
-	@cd "${BUILDDIR}" && $(MAKE) \
+	@cd "${BUILDDIR}" && $(DO_MAKE) \
 		"buildroot=solaris_pkg_build/" \
 		install
 	@bin/pike bin/make_solaris_pkg.pike --prefix="/opt" --installroot="`pwd`/${BUILDDIR}/solaris_pkg_build"  --pkgdest="`pwd`"
@@ -261,7 +271,7 @@ solaris_pkg: solaris_pkg_configure bin/pike
 	@ls -l *pkg
 
 xenofarm_feature:
-	$(MAKE) MAKE="$(MAKE)" BUILDDIR="$(BUILDDIR)" \
+	$(DO_MAKE) BUILDDIR="$(BUILDDIR)" \
 	  CONFIGUREARGS="$(CONFIGUREARGS) --with-cdebug --with-security --with-double-precision --with-profiling --with-keypair-loop --with-new-multisets" \
 	  xenofarm
 
@@ -270,36 +280,36 @@ xenofarm:
 	-rm -rf build/xenofarm
 	mkdir build/xenofarm
 	-CCACHE_LOGFILE="`pwd`/build/xenofarm/ccache.log.txt" \
-	  MAKE="$(MAKE)" CONFIGUREARGS="$(CONFIGUREARGS)" \
+	  MAKE="$(MAKE_CMD)" CONFIGUREARGS="$(CONFIGUREARGS)" \
 	  BUILDDIR="$(BUILDDIR)" /bin/sh bin/xenofarm.sh
 	cd build/xenofarm && tar cf - . > ../../xenofarm_result.tar
 	gzip -f9 xenofarm_result.tar
 
 clean:
-	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
+	-cd "$(BUILDDIR)" && test -f Makefile && $(DO_MAKE) clean || { \
 	  res=$$?; \
-	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean; \
+	  if test -f remake; then $(DO_MAKE) clean; \
 	  else exit $$res; fi; \
 	} || exit $$?
 	if test -f "refdoc/Makefile"; then \
-	  cd refdoc; $(MAKE) "MAKE=$(MAKE)" clean; \
+	  cd refdoc; $(DO_MAKE) clean; \
 	else :; fi
 
 spotless:
-	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" spotless || { \
+	-cd "$(BUILDDIR)" && test -f Makefile && $(DO_MAKE) spotless || { \
 	  res=$$?; \
-	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" spotless; \
+	  if test -f remake; then $(DO_MAKE) spotless; \
 	  else exit $$res; fi; \
 	} || exit $$?
 	if test -f "refdoc/Makefile"; then \
-	  cd refdoc; $(MAKE) "MAKE=$(MAKE)" spotless; \
+	  cd refdoc; $(DO_MAKE) spotless; \
 	else :; fi
 
 delete_builddir:
 	-rm -rf "$(BUILDDIR)"
 
 distclean: delete_builddir
-	$(MAKE) "OS=source" delete_builddir
+	$(DO_MAKE) "OS=source" delete_builddir
 	-rm -f bin/pike
 
 srcclean:
@@ -316,9 +326,9 @@ cvsclean: srcclean distclean
 
 depend: configure
 	-@cd "$(BUILDDIR)" && \
-	$(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
+	$(DO_MAKE) "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
 	  res=$$?; \
-	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend; \
+	  if test -f remake; then $(DO_MAKE) "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend; \
 	  else exit $$res; fi; \
 	} || exit $$?
 
