@@ -1,3 +1,17 @@
+Thu Feb  6 16:37:24 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* new module system impoemented (major update)
+	* new keyword: import
+	* inheriting objects implemented (for use with new module system)
+	
+Fri Jan 31 14:29:47 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* port.c: new and random()
+	* svalue.h: assign_svalue(), free_svalue() and assign_svalue_no_free()
+	  are now macros for increased speed.
+	* lex.c, program.c: added errno into error when open() fails.
+	* las.c (zapp_try_optimize): fixed a core-dumping bugg
+
 Thu Jan 30 16:30:13 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* configure.in: Now exports LDFLAGS CPPFLAGS and LIBS to levels above.
