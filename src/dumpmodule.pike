@@ -163,7 +163,7 @@ void dumpit(string file)
     }
     if(programp(p=compile_file(file, Handler())))
     {
-      if(!p->dont_dump_module || !p->dont_dump_program)
+      if(!p->dont_dump_module && !p->dont_dump_program)
       {
 	string s=encode_value(p, Codec());
 	p=decode_value(s,master()->Codec());
