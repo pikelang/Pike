@@ -101,8 +101,10 @@ void update_arg(int instr,INT32 arg)
 
 void ins_f_byte(unsigned int b)
 {
+#ifdef DEBUG
   if(store_linenumbers && b<F_MAX_OPCODE)
     ADD_COMPILED(b);
+#endif /* DEBUG */
 
   b-=F_OFFSET;
 #ifdef DEBUG
