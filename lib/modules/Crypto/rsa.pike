@@ -1,10 +1,12 @@
-/* $Id: rsa.pike,v 1.12 1997/11/28 10:04:31 nisse Exp $
+/* $Id: rsa.pike,v 1.13 1997/11/30 11:58:43 nisse Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
 
 #define bignum object(Gmp.mpz)
 #define BIGNUM (Gmp.mpz)
+
+import Standards.PKCS;
 
 bignum n;  /* modulo */
 bignum e;  /* public exponent */
@@ -96,13 +98,13 @@ string rsa_unpad(bignum block, int type)
 
 object sign(string message, program h, mixed|void r)
 {
-  return rsa_pad(pkcs.build_digestinfo(message, h()), 1, r)->powm(d, n);
+  return rsa_pad(Signature.build_digestinfo(message, h()), 1, r)->powm(d, n);
 }
 
 int verify(string msg, program h, object sign)
 {
   // werror(sprintf("msg: '%s'\n", Crypto.string_to_hex(msg)));
-  string s = pkcs.build_digestinfo(msg, h());
+  string s = Signature.build_digestinfo(msg, h());
   // werror(sprintf("rsa: s = '%s'\n", s));
   // werror(sprintf("decrypted: '%s'\n", sign->powm(e, n)->digits(256)));
   string s2 = rsa_unpad(sign->powm(e, n), 1);
