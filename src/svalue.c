@@ -19,8 +19,9 @@
 #include "gc.h"
 #include "pike_macros.h"
 #include <ctype.h>
+#include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.30 1998/04/28 22:34:18 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.31 1998/04/29 02:45:22 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1066,10 +1067,26 @@ void gc_mark_svalues(struct svalue *s, int num)
   {
     switch(s->type)
     {
-    case T_ARRAY:   gc_mark_array_as_referenced(s->u.array);     break;
-    case T_MULTISET:    gc_mark_multiset_as_referenced(s->u.multiset);       break;
-    case T_MAPPING: gc_mark_mapping_as_referenced(s->u.mapping); break;
-    case T_PROGRAM: gc_mark_program_as_referenced(s->u.program); break;
+    case T_ARRAY: 
+      enqueue(&gc_mark_queue,
+	      (queue_call)gc_mark_array_as_referenced,
+	      s->u.array);
+      break;
+    case T_MULTISET:
+      enqueue(&gc_mark_queue,
+	      (queue_call)gc_mark_multiset_as_referenced,
+	      s->u.multiset);
+      break;
+    case T_MAPPING:
+      enqueue(&gc_mark_queue,
+	      (queue_call)gc_mark_mapping_as_referenced,
+	      s->u.mapping);
+      break;
+    case T_PROGRAM:
+      enqueue(&gc_mark_queue,
+	      (queue_call)gc_mark_program_as_referenced,
+	      s->u.program);
+      break;
 
     case T_FUNCTION:
       if(s->subtype == FUNCTION_BUILTIN) break;
@@ -1077,7 +1094,9 @@ void gc_mark_svalues(struct svalue *s, int num)
     case T_OBJECT:
       if(s->u.object->prog)
       {
-	gc_mark_object_as_referenced(s->u.object);
+	enqueue(&gc_mark_queue,
+		(queue_call)gc_mark_object_as_referenced,
+		s->u.object);
       }else{
 	free_svalue(s);
 	s->type=T_INT;

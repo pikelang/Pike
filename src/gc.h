@@ -1,12 +1,14 @@
 /*
- * $Id: gc.h,v 1.17 1998/04/06 04:25:27 hubbe Exp $
+ * $Id: gc.h,v 1.18 1998/04/29 02:45:22 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
 
 #include "global.h"
 #include "callback.h"
+#include "queue.h"
 
+extern struct queue gc_mark_queue;
 extern INT32 num_objects;
 extern INT32 num_allocs;
 extern INT32 alloc_threshold;

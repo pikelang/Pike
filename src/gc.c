@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.36 1998/04/24 00:32:08 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.37 1998/04/29 02:45:21 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -42,6 +42,7 @@ INT32 num_objects =0;
 INT32 num_allocs =0;
 INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
 static int in_gc = 0;
+struct queue gc_mark_queue;
 
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
@@ -609,10 +610,15 @@ void do_gc(void)
 
   /* Next we mark anything with external references */
   gc_mark_all_arrays();
+  run_queue(&gc_mark_queue);
   gc_mark_all_multisets();
+  run_queue(&gc_mark_queue);
   gc_mark_all_mappings();
+  run_queue(&gc_mark_queue);
   gc_mark_all_programs();
+  run_queue(&gc_mark_queue);
   gc_mark_all_objects();
+  run_queue(&gc_mark_queue);
 
   if(d_flag)
     gc_mark_all_strings();

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.84 1998/04/27 15:18:09 grubba Exp $
+# $Id: Makefile.in,v 1.85 1998/04/29 02:45:21 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -121,6 +121,7 @@ OBJ= \
  stuff.o \
  threads.o \
  version.o \
+ queue.o \
  svalue.o @EXTRA_OBJS@
 
 #
