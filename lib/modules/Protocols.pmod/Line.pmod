@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.13 2000/12/23 17:03:05 grubba Exp $
+ * $Id: Line.pmod,v 1.14 2000/12/28 14:34:20 grubba Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -15,13 +15,14 @@ class simple
   static constant line_separator = "\r\n";
 
   //! If this variable has been set, multiple lines will be accumulated,
-  //! until a line with a single @tt{.@} (period) is received. @[handle_data()]
-  //! will then be called with the accumulated data as the argument.
+  //! until a line with a single @tt{'.'@} (period) is received.
+  //! @[handle_data()] will then be called with the accumulated data
+  //! as the argument.
   //!
   //! @note
   //! @[handle_data()] is one-shot, ie it will be cleared when it is called.
   //!
-  //! The line with the single @tt{.@} (period) will not be in the
+  //! The line with the single @tt{'.'@} (period) will not be in the
   //! accumulated data.
   //!
   //! @seealso
@@ -131,6 +132,18 @@ class simple
 
   static string read_buffer = "";
 
+  //! Read a line from the input.
+  //!
+  //! @returns
+  //! Returns @tt{0@} when more input is needed.
+  //! Returns the requested line otherwise.
+  //!
+  //! @note
+  //! The returned line will not contain the line separator.
+  //!
+  //! @seealso
+  //! @[handle_command()], @[line_separator]
+  //!
   static string read_line()
   {
     // FIXME: Should probably keep track of where the search ended last time.
@@ -143,7 +156,16 @@ class simple
 
     return data;
   }
-  
+
+  //! Called when data has been received.
+  //!
+  //! Overload as appropriate.
+  //!
+  //! Calls the handle callbacks repeatedly until no more lines are available.
+  //!
+  //! @seealso
+  //! @[handle_data()], @[handle_command()], @[read_line()]
+  //!
   static void read_callback(mixed ignored, string data)
   {
     touch_time();
@@ -278,13 +300,33 @@ class simple
   }
 };
 
+//! Nonblocking line-oriented I/O with support for sending SMTP-style codes.
 class smtp_style
 {
   inherit simple;
 
+  //! @decl mapping(int:string|array(string)) errorcodes
+  //!
+  //! Mapping from return-code to error-message.
+  //!
+  //! Overload this constant as apropriate.
+  //!
   constant errorcodes = ([]);
 
-  void send(int code, array(string)|string|void lines)
+  //! Send an SMTP-style return-code.
+  //!
+  //! @[code] is an SMTP-style return-code.
+  //!
+  //! If @[lines] is omitted, @[errorcodes] will be used to lookup
+  //! an appropriate error-message.
+  //!
+  //! If @[lines] is a string, it will be split on @tt{'\n'@} (newline),
+  //! and the error-code interspersed as appropriate.
+  //!
+  //! @seealso
+  //! @[errorcodes]
+  //!
+  void send(int(100,999) code, array(string)|string|void lines)
   {
     lines = lines || errorcodes[code] || "Error";
 
@@ -297,26 +339,44 @@ class smtp_style
 
     int i;
     for(i=0; i < sizeof(lines)-1; i++) {
-      res += init + "-" + lines[i] + "\r\n";
+      res += init + "-" + lines[i] + line_separator;
     }
-    res += init + " " + lines[-1] + "\r\n";
+    res += init + " " + lines[-1] + line_separator;
     send_q->put(res);
     con->set_write_callback(write_callback);
   }
 };
 
+//! Nonblocking line-oriented I/O with support for reading literals.
 class imap_style
 {
   inherit simple;
 
-  function handle_literal = 0;
-  function handle_line = 0;
-  
+  //! Length in bytes of the literal to read.
   int literal_length;
 
-#if 0
-  function timeout_handler = 0;
-#endif
+  //! If this variable has been set, @[literal_length] bytes will be
+  //! accumulated, and this function will be called with the resulting data.
+  //!
+  //! @note
+  //! @[handle_literal()] is one-shot, ie it will be cleared when it is called.
+  //!
+  function(string:void) handle_literal;
+
+  //! This function will be called once for every line that is received.
+  //!
+  //! @note
+  //! This API is provided for backward compatibility; overload
+  //! @[handle_command()] instead.
+  //!
+  //! @seealso
+  //! @[handle_command()]
+  function(string:void) handle_line;
+
+  void handle_command(string line)
+  {
+    handle_line(line);
+  }
 
   static void read_callback(mixed ignored, string data)
   {
@@ -339,36 +399,23 @@ class imap_style
       } else {
 	string line = read_line();
 	if (line)
-	  handle_line(line);
+	  handle_command(line);
 	else
 	  break;
       }
     }
   }
 
-  void expect_literal(int length, function callback)
+  //! Enter literal reading mode.
+  //!
+  //! Sets @[literal_length] and @[handle_literal()].
+  //!
+  //! @seealso
+  //! @[literal_length], @[handle_literal()]
+  //!
+  void expect_literal(int length, function(string:void) callback)
   {
     literal_length = length;
     handle_literal = callback;
   }
-
-#if 0
-  static void do_timeout()
-  {
-    if (timeout_handler)
-    {
-      con->set_read_callback(0);
-      con->set_close_callback(0);
-      
-      timeout_handler();
-    } else 
-      ::do_timeout();
-  }
-
-  void create(object con_, int|void timeout_, function|void callback)
-  {
-    timeout_handler = callback;
-    ::create(con_, timeout_);
-  }
-#endif
 }
