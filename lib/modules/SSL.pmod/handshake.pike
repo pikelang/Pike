@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.15 1999/05/22 23:09:01 mast Exp $
+/* $Id: handshake.pike,v 1.16 2000/04/06 11:01:55 nilsson Exp $
  *
  */
 
@@ -256,8 +256,10 @@ string server_derive_master_secret(string data)
       /* Implicit encoding; Should never happen unless we have
        * requested and received a client certificate of type
        * rsa_fixed_dh or dss_fixed_dh. Not supported. */
+#ifdef SSL3_DEBUG
       werror("SSL.handshake: Client uses implicit encoding if its DH-value.\n"
 	     "               Hanging up.\n");
+#endif
       send_packet(Alert(ALERT_fatal, ALERT_certificate_unknown));
       return 0;
     }
@@ -312,8 +314,10 @@ string server_derive_master_secret(string data)
        /* FIXME: When versions beyond 3.0 are supported,
 	* the version number here must be checked more carefully
 	* for a version rollback attack. */
+#ifdef SSL3_DEBUG
        if (premaster_secret[1] > 0)
 	 werror("SSL.handshake: Newer version detected in key exchange message.\n");
+#endif
      }
      break;
    }
@@ -387,6 +391,7 @@ int handle_handshake(int type, string data, string raw)
 	  return -1;
 	}
 
+#ifdef SSL3_DEBUG
 	if (!input->is_empty())
 	  werror("SSL.connection->handle_handshake: "
 		 "extra data in hello message ignored\n");
@@ -395,7 +400,6 @@ int handle_handshake(int type, string data, string raw)
 	  werror(sprintf("SSL.handshake->handle_handshake: "
 			 "Version %d.%d hello detected\n", @version));
 
-#ifdef SSL3_DEBUG
 	if (strlen(id))
 	  werror(sprintf("SSL.handshake: Looking up session %O\n", id));
 #endif
@@ -459,10 +463,11 @@ int handle_handshake(int type, string data, string raw)
 	  return -1;
 	}
 
+#ifdef SSL3_DEBUG
 	if (version[1] > 0)
 	  werror(sprintf("SSL.connection->handle_handshake: "
 			 "Version %d.%d hello detected\n", @version));
-	
+#endif
 
 	string challenge;
 	if (catch{
