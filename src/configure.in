@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.633 2002/10/05 17:16:02 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.634 2002/10/07 15:42:28 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2484,7 +2484,7 @@ int main(int argc, char **argv)
 
         AC_PATH_PROG(PTHREAD_CONFIG,pthread-config,no)
         if test "x$PTHREAD_CONFIG" = xno ; then
-          CFLAGS="${CFLAGS} -pthread"
+          AC_SYS_COMPILER_FLAG(-pthread, pthread, CFLAGS, LIBS="$LIBS -lc_r")
           LD_FALLBACK_FLAGS="${LD_FALLBACK_FLAGS-} -lc_r"
 
           AC_MSG_CHECKING(Initial stack limit)
