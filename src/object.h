@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.65 2001/11/08 23:34:29 nilsson Exp $
+ * $Id: object.h,v 1.66 2001/12/13 11:16:56 mast Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -74,6 +74,7 @@ PTR_HASH_ALLOC(destroy_called_mark,128)
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
 void destruct(struct object *o);
 void low_destruct_objects_to_destruct(void);
+void destruct_objects_to_destruct_cb(void);
 PMOD_EXPORT void schedule_really_free_object(struct object *o);
 PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 					  struct object *o,
