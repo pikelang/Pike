@@ -1,5 +1,5 @@
 //
-// $Id: PGP.pmod,v 1.11 2004/04/14 19:27:01 nilsson Exp $
+// $Id: PGP.pmod,v 1.12 2004/04/29 01:03:32 nilsson Exp $
 
 //! PGP stuff. See RFC 2440.
 
@@ -64,7 +64,7 @@ static mapping decode_public_key(string s) {
     sscanf(key[l..], "%2c%s", l, key);
     l = (l+7)>>3;
     y = Gmp.mpz(key[..l-1],256);
-    r->key = Crypto.dsa()->set_public_key(p, q, g, y);
+    r->key = Crypto.DSA()->set_public_key(p, q, g, y);
     r->key->random = Crypto.Random.random_string;
   }
     break;
