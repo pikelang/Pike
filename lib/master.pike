@@ -584,13 +584,15 @@ string describe_backtrace(mixed *trace)
 	if(sizeof(tmp)>=3 && functionp(tmp[2]))
 	{
 	  row=function_name(tmp[2])+"(";
-	}
-	for(int e=3;e<sizeof(tmp);e++)
-	{
-	  row+=stupid_describe(tmp[e])+",";
-	}
+	  for(int e=3;e<sizeof(tmp);e++)
+	  {
+	    row+=stupid_describe(tmp[e])+",";
+	  }
 
-	row=row[..sizeof(row)-2]+") in ";
+	  if(sizeof(tmp)>3)
+	    row=row[..sizeof(row)-2];
+	  row+=") in ";
+	}
 
 	if(sizeof(tmp)>=2 && stringp(tmp[0]) && intp(tmp[1]))
 	{
@@ -609,4 +611,3 @@ string describe_backtrace(mixed *trace)
 
   return ret;
 }
-
