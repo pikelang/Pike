@@ -255,6 +255,11 @@ Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 
 }
 
+//! @decl string popen(string command)
+//! Executes the @[command], waits until it has finished and returns
+//! the result as a string.
+
+//! @decl Stdio.FILE popen(string command, string mode)
 //! Open a "process" for reading or writing.  The @[command] is executed
 //! as a shell statement ("/bin/sh -c command" for Unix,
 //! "cmd /c command" for Windows).  The parameter @[mode] should
@@ -267,10 +272,16 @@ Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 //!   Open for writing.  Data written to the file is available
 //!   to the process on stdin.
 //! @endstring
-//! If no @[mode] is passed, read mode is assumed.
-Stdio.FILE fpopen(string s, string|void mode)
+
+Stdio.FILE|string popen(string s, string|void mode) {
+  if(mode)
+    return fpopen(s,mode);
+  else
+    return fpopen(s)->read();
+}
+
+static Stdio.FILE fpopen(string s, string|void mode)
 {
-  if (!mode) mode = "r";
   Stdio.FILE f = Stdio.FILE();
   if (!f) error("Popen failed. (couldn't create file)\n");
 
@@ -285,12 +296,6 @@ Stdio.FILE fpopen(string s, string|void mode)
   destruct(p);
 
   return f;
-}
-
-//! Works as @[fpopen], but blocks until the command completes and
-//! returns the resulting string.
-string popen(string s) {
-  return fpopen(s)->read();
 }
 
 //!
