@@ -113,7 +113,7 @@ array(string) split_quoted_string(string s)
 
       case '\'':
       ret[-1]+=x[e][1..];
-      while(x[++e][0]!='\'') ret[-1]+=x[e][1..];
+      while(x[++e][0]!='\'') ret[-1]+=x[e];
       ret[-1]+=x[e][1..];
       break;
       
