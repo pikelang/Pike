@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.442 2001/07/05 22:22:38 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.443 2001/07/12 15:07:35 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3134,6 +3134,21 @@ ifefun(gc,
     return !sizeof (a);
   }]], 1);
 
+  test_any_equal([[{
+    array a = set_weak_flag (({1, "foo", 3.14}), 1);
+    gc();
+    return a;
+  }]], ({1, "foo", 3.14}));
+  test_any_equal([[{
+    multiset a = set_weak_flag ((<1, "foo", 3.14>), 1);
+    gc();
+    return a;
+  }]], (<1, "foo", 3.14>));
+  test_any_equal([[{
+    mapping a = set_weak_flag (([1: 1, "foo": "foo", 3.14: 3.14]), 1);
+    gc();
+    return a;
+  }]], ([1: 1, "foo": "foo", 3.14: 3.14]));
 ]])
 
 ifefun(gc,
