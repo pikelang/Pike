@@ -10,8 +10,8 @@ class connection
 
   object db; /* Mail backend */
 
-  mixed uid;     /* Logged in user */
-  mixed mailbox; /* Selected mailbox */
+  mapping session = ([]); /* State information about this ession; primarily
+			   * uid and mailboxid. */
 
   object current_request;
   
@@ -52,21 +52,22 @@ class connection
 	fd->set_write_callback(imap_write_callback);
     }
   
+  void imap_send_line(string s)
+    {
+      if(debug_level)
+	werror("IMAP send line: '%s'\n", s);
+      
+      imap_write(s + "\r\n");
+    }
+
   void imap_send(string|object ...args)
     {
       /* FIXME: This code sends an \r\n-pair even if the last argument
        * is sent as a literal. */
-      imap_write(Array.map(args, lambda(mixed x)
-				   { return stringp(x) ? x : x->format(); } )
-		 * " " + "\r\n");
+      imap_send_line(.types.imap_format_array(args));
       
       if (strlen(write_buffer))
 	fd->set_write_callback(imap_write_callback);
-    }
-
-  void imap_send_line(string s)
-    {
-      imap_write(s + "\r\n");
     }
   
   void imap_close(int|void hard)
@@ -77,6 +78,11 @@ class connection
 	closing = 1;
     }
 
+  void show_backtrace(mixed e)
+    {
+      werror(describe_backtrace(e));
+    }
+  
   void imap_read_callback(mixed id, string s)
     {
       add_data(s);
@@ -88,8 +94,14 @@ class connection
     
 	if (!current_request)
 	  return;
-    
-	action = current_request->process(db, imap_send);
+
+	mixed e;
+	if (e = catch(action = current_request->process(session, db, imap_send)))
+	{
+	  show_backtrace(e);
+	  imap_send(current_request->tag, "BAD", "Internal error");
+	  action = "finished";
+	}
       }
       else
       {
@@ -99,13 +111,33 @@ class connection
 	  string literal = buffer->get_literal(current_request->expected_length);
 	  if (!literal)
 	    return;
-	  action = current_request->process_literal(db, literal, imap_send);
+
+	  
+	  mixed e;
+	  if (e = catch(action = current_request
+			->process_literal(session, db,
+					  literal, imap_send)))
+	  {
+	    show_backtrace(e);
+	    imap_send(current_request->tag, "BAD", "Internal error");
+	    action = "finished";
+	  }
+	    
 	  break;
 	case "line":
 	  string line = buffer->get_line();
 	  if (!line)
 	    return;
-	  action = current_request->process_line(db, line, imap_send);
+	    
+	  mixed e;
+	  if (e = catch(action = current_request
+			->process_line(session, db, line, imap_send)))
+	  {
+	    show_backtrace(e);
+	    imap_send(current_request->tag, "BAD", "Internal error");
+	    action = "finished";
+	  }
+
 	  break;
 	default:
 	  throw( ({ "IMAP.pmod: Internal error\n", backtrace() }) );
@@ -122,12 +154,12 @@ class connection
 	current_request = 0;
 	break;
       case "login":
-	uid = current_request->get_uid();
+	// uid = current_request->get_uid();
 	state = "authenticated";
 	current_request = 0;
 	break;
       case "select":
-	mailbox = current_request->get_mailbox();
+	// mailbox = current_request->get_mailbox();
 	state = "selected";
 	current_request = 0;
 	break;
@@ -137,33 +169,44 @@ class connection
       }
     }
   
-  void create(object f, object server, string|void state)
+  void create(object f, object server, string|void state, int|void debug)
     {
       fd = f;
       db = server;
       
-      ::create(state || "non_authenticated");
+      ::create(state || "non_authenticated", debug);
 
       fd->set_nonblocking(imap_read_callback, 0,
 			  die);
-      imap_send("*", "OK", "IMAP4rev1", "Service ready");
+      imap_send("*", "OK", "IMAP4", "IMAP4rev1", "Service ready");
     }
 }
 
-inherit Stdio.Port;
 object db;
+
+int debug_level;
+
+object port;
 
 void accept_callback(mixed id)
 {
-  object f = accept();
+  if (debug_level)
+    werror("IMAP accept\n");
+
+  object f = port->accept();
   if (f)
-    connection(f, db);
+    connection(f, db, 0, debug_level);
 }
 
-void create(int portnr, object server)
+void create(object p, int portnr, object server, int|void debug)
 {
+  port = p;
   db = server;
-  if (!bind(portnr, accept_callback))
+  debug_level = debug;
+
+  if (!port->bind(portnr, accept_callback))
     throw( ({ "IMAP.imap_server->create: bind failed (port already bound?)\n",
-	      backtrace() }) );
+              backtrace() }) );
+  if (debug_level)
+    werror("IMAP: Bound to port %d\n", portnr);
 }

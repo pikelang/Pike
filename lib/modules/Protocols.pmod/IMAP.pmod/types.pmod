@@ -2,6 +2,20 @@
  *
  */
 
+string imap_format(mixed x)
+{
+  if (!x)
+    return "nil";
+  else if (stringp(x))
+    return x;
+  else return x->format();
+}
+
+string imap_format_array(array a)
+{
+  return Array.map(a, imap_format) * " ";
+}
+
 /* Output types */
 class imap_atom
 {
@@ -20,7 +34,7 @@ class imap_string
 
   string format()
     {
-      if (sizeof(array_sscanf(data, "%*[^\0-\037\177-\377]%s")[0]))
+      if (!sizeof(array_sscanf(data, "%*[^\0-\037\177-\377]%s")[0]))
 	return "\"" + replace(data, ({ "\"", "\\" }), ({ "\\\"", "\\\\" }) ) + "\"";
       else
 	return sprintf("{%d}\r\n%s", strlen(data), data);
@@ -33,7 +47,7 @@ class imap_list
 
   void create(array a) { data = a; }
 
-  string format() { return "(" + data->format * " " + ")"; }
+  string format() { return "(" + imap_format_array(data) + ")"; }
 }
 
 class imap_prefix
@@ -42,7 +56,7 @@ class imap_prefix
 
   void create(array a) { data = a; }
 
-  string format() { return "[" + data->format * " " + "]"; }
+  string format() { return "[" + imap_format_array(data) + "]"; }
 }
 
 class imap_number

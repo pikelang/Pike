@@ -181,16 +181,16 @@ mapping unauth_commands =
 mapping auth_commands =
 ([ "noop" : .requests.noop,
    "logout" : .requests.logout,
-   "capability" : .requests.capability //,
-//   "select" : .requests.select,
+   "capability" : .requests.capability,
+   "select" : .requests.select,
 //   "examine" : .requests.examine,
 //   "create" : .requests.create,
 //   "delete" : .requests.delete,
 //   "rename" : .requests.rename,
 //   "subscribe" : .requests.subscribe,
 //   "unsubscribe" : .requests.unsubscribe,
-//   "list" : .requests.list,
-//   "lsub" : .requests.lsub,
+   "list" : .requests.list,
+   "lsub" : .requests.lsub //,
 //   "status" : .requests.status,
 //   "append" : .requests.append
 ]);
@@ -198,16 +198,16 @@ mapping auth_commands =
 mapping select_commands =
 ([ "noop" : .requests.noop,
    "logout" : .requests.logout,
-   "capability" : .requests.capability //,
-//    "select" : .requests.select,
+   "capability" : .requests.capability,
+   "select" : .requests.select,
 //    "examine" : .requests.examine,
 //    "create" : .requests.create,
 //    "delete" : .requests.delete,
 //    "rename" : .requests.rename,
 //    "subscribe" : .requests.subscribe,
 //    "unsubscribe" : .requests.unsubscribe,
-//    "list" : .requests.list,
-//    "lsub" : .requests.lsub,
+   "list" : .requests.list,
+   "lsub" : .requests.lsub //,
 //    "status" : .requests.status,
 //    "append" : .requests.append,
 //    "check" : .requests.check,
@@ -230,19 +230,45 @@ mapping all_commands =
 object buffer = read_buffer();
 string state;
 
-void create(string start_state)
+int debug_level;
+
+void create(string start_state, int|void debug)
 {
   state = start_state;
+  debug_level = debug;
 }
+
 void add_data(string s) { buffer->add_data(s); }
 
+#if 0
 /* FIXME: Send a BAD response to the client */
 void protocol_error(string message)
 {
+  if (debug_level)
+    werror("protocol error\n");
   throw( ({ sprintf("IMAP.pmod: protocol error %s\n", message),
 	    backtrace() }) );
 }
+#endif
+
+class bad_request
+{
+  string tag;
+  string msg;
   
+  void create(string t, string m)
+    {
+      tag = t || "*";
+      msg = m;
+    }
+  
+  string process(object|mapping session, object server, function send)
+    {
+      send(tag, "BAD", msg);
+      return "finished";
+    }
+}
+
 object get_request()
 {
   object line = buffer->get_line();
@@ -250,28 +276,31 @@ object get_request()
   if (!line)
     return 0;
 
+  if (debug_level)
+    werror("Read line: '%s'\n", line->buffer);
+  
   string tag = line->get_atom();
   
   if (!tag)
   {
-    protocol_error("No tag");
-    return 0;
+    return bad_request(0, "No tag");
   }
   
   string command = line->get_atom();
 
   if (!command)
   {
-    protocol_error("No command");
-    return 0;
+    return bad_request(tag, "No command");
   }
-  
+
+  if (debug_level)
+    werror("Read command: '%s'\n", command);
+    
   function req = all_commands[state][lower_case(command)];
 
   if (!req)
   {
-    protocol_error("Unknown command");
-    return 0;
+    return bad_request(tag, "Unknown command");
   }
 
   // FIXME: How should invalid requests be handled?
