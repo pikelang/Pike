@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.39 2004/01/30 11:46:49 nilsson Exp $
+// $Id: RDF.pike,v 1.40 2004/01/30 13:39:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -99,10 +99,12 @@ class LiteralResource {
     return get_n_triple_name();
   }
 
+  //! Returns the literal as an XML string.
   string get_xml() {
     return id; // FIXME: XML quote.
   }
 
+  //! Returns the literal string.
   string get_literal() {
     return id;
   }
@@ -179,6 +181,7 @@ class RDFResource {
     ::create(rdf_ns + rdf_id);
   }
 
+  //! Returns the qualifying name.
   string get_qname(void|string ns) {
     if(!ns) ns = common_ns;
     string rid;
@@ -188,17 +191,17 @@ class RDFResource {
   }
 }
 
-RDFResource rdf_Statement = RDFResource("Statement");
-RDFResource rdf_predicate = RDFResource("predicate");
-RDFResource rdf_subject   = RDFResource("subject");
-RDFResource rdf_object    = RDFResource("object");
-RDFResource rdf_type      = RDFResource("type");
+RDFResource rdf_Statement = RDFResource("Statement"); //! Statement resource.
+RDFResource rdf_predicate = RDFResource("predicate"); //! predicate resource.
+RDFResource rdf_subject   = RDFResource("subject"); //! subject resource.
+RDFResource rdf_object    = RDFResource("object"); //! object resource.
+RDFResource rdf_type      = RDFResource("type"); //! type resource.
 
-RDFResource rdf_Seq       = RDFResource("Seq");
+RDFResource rdf_Seq       = RDFResource("Seq"); //! Seq resource.
 
-RDFResource rdf_first     = RDFResource("first");
-RDFResource rdf_rest      = RDFResource("rest");
-RDFResource rdf_nil       = RDFResource("nil");
+RDFResource rdf_first     = RDFResource("first"); //! first resource.
+RDFResource rdf_rest      = RDFResource("rest"); //! rest resource.
+RDFResource rdf_nil       = RDFResource("nil"); //! nil resource.
 
 static int(0..1) is_resource(mixed res) {
   if(!objectp(res)) return 0;
@@ -918,7 +921,7 @@ static class XML {
       }
       add_ns(left); // We must add_ns after get_qname to fix_namespaces.
     }
-  ind--;
+    ind--;
   }
 
   string make_prop_attr(mapping(Resource:array(Resource)) rel,
