@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.94 1998/11/29 23:17:32 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.95 1999/01/07 23:32:31 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1796,13 +1796,13 @@ void f_fork(INT32 args)
     error("You cannot use fork in a multithreaded application.\n");
 #endif
 
-  THREADS_ALLOW_UID();
+/*   THREADS_ALLOW_UID(); */
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
   pid=fork1();
 #else
   pid=fork();
 #endif
-  THREADS_DISALLOW_UID();
+/*  THREADS_DISALLOW_UID(); */
 
   if(pid==-1) {
     error("Fork failed\n"
