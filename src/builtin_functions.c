@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.589 2005/02/10 00:19:31 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.590 2005/02/18 14:56:06 grubba Exp $
 */
 
 #include "global.h"
@@ -2136,7 +2136,7 @@ static int generate_this_object(node *n)
   return 1;
 }
 
-/*! @decl void throw(mixed value)
+/*! @decl mixed|void throw(mixed value)
  *!
  *!   Throw @[value] to a waiting @[catch].
  *!
@@ -8406,7 +8406,7 @@ void init_builtin_efuns(void)
 	    OPT_EXTERNAL_DEPEND, optimize_this_object, generate_this_object);
   
 /* function(mixed:void) */
-  ADD_EFUN("throw",f_throw,tFunc(tMix,tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("throw",f_throw,tFunc(tMix,tOr(tMix,tVoid)),OPT_SIDE_EFFECT);
   
 /* function(void|int(0..1):int(2..))|function(int(2..):float) */
   ADD_EFUN("time",f_time,
@@ -8624,7 +8624,13 @@ void init_builtin_efuns(void)
   
   ADD_EFUN2("filter", f_filter,
 	    tOr3(tFuncV(tSetvar(1,tOr4(tArray,tMapping,tMultiset,tString)),
-			tMixed,tVar(1)),
+#if 1
+			tMixed,
+#else
+			tOr5(tFuncV(tMix, tMix, tAnd(tInt01,tNot(tVoid))),
+			     tArray, tMapping, tMultiset, tString),
+#endif /* 1 */
+			tVar(1)),
 		 tFuncV(tOr(tPrg(tObj),tFunction),tMixed,tMap(tString,tMix)),
 		 tFuncV(tObj,tMix,tMix) ) ,
 	    OPT_TRY_OPTIMIZE, fix_map_node_info, 0);
