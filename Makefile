@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.144 2004/05/17 21:38:45 mast Exp $
+# $Id: Makefile,v 1.145 2004/06/13 18:15:31 grubba Exp $
 #
 # Meta Makefile
 #
@@ -61,7 +61,7 @@ configure_help: src/configure
 	cd src && ./configure --help
 
 compile:
-	@$(DO_MAKE) _make_in_builddir
+	@$(DO_MAKE) METATARGET=$(METATARGET) _make_in_builddir
 
 builddir:
 	@builddir="$(BUILDDIR)"; \
