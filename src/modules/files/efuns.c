@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.65 1999/02/15 20:36:58 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.66 1999/03/05 03:33:12 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -432,7 +432,7 @@ void f_mkdir(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to mkdir().\n");
 
-  mode = 0770;
+  mode = 0777;			/* umask is &'ed with this anyway. */
 
   if(args > 1)
   {
