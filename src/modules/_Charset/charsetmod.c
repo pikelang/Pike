@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.12 1999/04/27 01:45:03 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.13 1999/04/27 20:24:37 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -96,6 +96,8 @@ static void f_set_repcb(INT32 args)
 
   if(args>0)
     assign_svalue(&s->repcb, &sp[-args]);
+
+  pop_n_elems(args);
 }
 
 static void f_drain(INT32 args)
