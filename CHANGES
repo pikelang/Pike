@@ -1,3 +1,12 @@
+Changes since Pike 7.4.10:
+----------------------------------------------------------------------
+
+o Bugfix in Parser.C. "!=" is now considered one token instead of two.
+o depend_p() bugfix in las.
+o Bugfixed loop over-optimization.
+o Postgres 7.3+ correctly detected.
+
+
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
 
