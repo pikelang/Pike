@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.57 2002/03/09 16:14:35 nilsson Exp $
+# $Id: Makefile,v 1.58 2002/03/10 03:31:33 mast Exp $
 #
 # Meta Makefile
 #
@@ -136,8 +136,9 @@ lobotomize_crypto:
 # FIXME: The refdoc stuff ought to use $(BUILDDIR) too.
 
 documentation:
-	@test -f "$(BUILDDIR)/pike" || $(MAKE) $(MAKE_FLAGS) compile
-	@cd "$(BUILDDIR)" && $(MAKE) $(MAKE_FLAGS) documentation
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=documentation"
+
+doc: documentation
 
 bin/pike: force
 	@builddir='$(BUILDDIR)'; \
@@ -178,6 +179,12 @@ verbose_verify:
 
 gdb_verify:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=gdb_verify"
+
+dump_modules:
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=dump_modules"
+
+force_dump_modules:
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=force_dump_modules"
 
 run_hilfe:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
