@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.10 1998/11/14 04:22:06 grubba Exp $
+ * $Id: parser.pike,v 1.11 1998/11/14 15:47:58 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.10 1998/11/14 04:22:06 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.11 1998/11/14 15:47:58 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -767,29 +767,20 @@ static private void handle_follow_conflicts()
   }
 }
 
-static private int go_through(object(kernel) state, object(rule) r, int offset,
+static private int go_through(object(kernel) state, int item_id,
 			      object(item) current_item)
 {
   int index;
   object(item) i, master;
 
-  i = state->item_id_to_item[r->number + offset];
-#if 0
-  for (index = 0; index < sizeof(state->items); index++) {
-    if ((state->items[index]->r == r) &&
-	(state->items[index]->offset == offset)) {
-      /* Found the index for the current rule and offset */
-      i = state->items[index];
-      break;
-    }
-  }
-#endif /* 0 */
+  i = state->item_id_to_item[item_id];
 
   /* What to do if not found? */
   if (!i) {
-    werror(sprintf("go_through: item with offset %d in rule\n%s\n"
-		   "not found in state\n%s\n",
-		   offset, rule_to_string(r), state_to_string(state)));
+    werror(sprintf("go_through: item %d not found in state\n"
+		   "%s\n",
+		   item_id,
+		   state_to_string(state)));
     werror(sprintf("Backtrace:\n%s\n", describe_backtrace(backtrace())));
     return(0);
   }
@@ -801,7 +792,7 @@ static private int go_through(object(kernel) state, object(rule) r, int offset,
   }
 
   if (i->offset < sizeof(i->r->symbols)) {
-    if (go_through(i->next_state, i->r, i->offset + 1, current_item)) {
+    if (go_through(i->next_state, item_id + 1, current_item)) {
       /* Nullable */
       if ((master->offset < sizeof(master->r->symbols)) &&
 	  (intp(master->r->symbols[master->offset]))) {
@@ -1267,8 +1258,7 @@ int compile()
 	/* Find items which can reduce to the nonterminal from above */
 	foreach (lookup[symbol], object(item) i) {
 	  if (sizeof(i->r->symbols)) {
-	    if (go_through(i->next_state, i->r, i->offset+1,
-			   transition)) {
+	    if (go_through(i->next_state, i->item_id + 1, transition)) {
 	      /* Nullable */
 	      object(item) master = i;
 	      if (i->master_item) {
