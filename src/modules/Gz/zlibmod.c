@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.19 1998/03/24 22:16:09 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.20 1998/04/29 23:17:24 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -66,7 +66,7 @@ static void gz_deflate_create(INT32 args)
 
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
-  THIS->gz.opaque=THIS;
+  THIS->gz.opaque=(void *)THIS;
 
   pop_n_elems(args);
 /*   mt_lock(& THIS->lock); */
@@ -199,7 +199,7 @@ static void init_gz_deflate(struct object *o)
   MEMSET(& THIS->gz, 0, sizeof(THIS->gz));
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
-  THIS->gz.opaque=THIS;
+  THIS->gz.opaque=(void *)THIS;
   deflateInit(& THIS->gz, Z_DEFAULT_COMPRESSION);
 }
 
@@ -226,7 +226,7 @@ static void gz_inflate_create(INT32 args)
 
   THIS->gz.zalloc=Z_NULL;
   THIS->gz.zfree=Z_NULL;
-  THIS->gz.opaque=THIS;
+  THIS->gz.opaque=(void *)THIS;
 
   pop_n_elems(args);
 /*    mt_lock(& THIS->lock);  */
