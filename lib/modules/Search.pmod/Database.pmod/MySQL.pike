@@ -1,25 +1,17 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.44 2001/06/26 04:05:47 js Exp $
+// $Id: MySQL.pike,v 1.45 2001/06/27 06:08:59 js Exp $
 
 inherit .Base;
 
 // Creates the SQL tables we need.
 
 //#define DEBUG
-void recreate_tables()
+void init_tables()
 {
-  catch(db->query("drop table uri"));
-  catch(db->query("drop table deleted_document"));
-  catch(db->query("drop table document"));
-  catch(db->query("drop table occurance "));
-  catch(db->query("drop table field"));
-  catch(db->query("drop table word_hit"));
-  catch(db->query("drop table metadata"));
-  
   db->query(
-#"create table uri      (id          int unsigned primary key
+#"create table if not exists uri (id          int unsigned primary key
                                      auto_increment not null,
                          uri         blob not null,
                          uri_md5     varchar(32) binary not null,
@@ -27,7 +19,7 @@ void recreate_tables()
 			 );
 
   db->query(
-#"create table document (id            int unsigned primary key
+#"create table if not exists document (id            int unsigned primary key
 			               auto_increment not null,
                          uri_id        int unsigned not null,
                          language_code char(3) default null,
@@ -35,22 +27,22 @@ void recreate_tables()
                          INDEX index_uri_id (uri_id))"
 			 );
   
-  db->query("create table deleted_document (doc_id int unsigned not null)");
+  db->query("create table if not exists deleted_document (doc_id int unsigned not null)");
 
   db->query(
-#"create table word_hit (word_id        int not null,
+#"create table if not exists word_hit (word_id        int not null,
                          first_doc_id   int not null,
             	         hits           mediumblob not null,
                          unique(word_id,first_doc_id))");
 
   db->query(
-#"create table metadata (doc_id        int not null,
+#"create table if not exists metadata (doc_id        int not null,
                          name          varchar(32) not null,
             	         value         mediumblob not null,
                          unique(doc_id,name))");
 
   db->query(
-#"create table field (id    tinyint unsigned primary key not null,
+#"create table if not exists field (id    tinyint unsigned primary key not null,
                       name  varchar(127) not null,
                       UNIQUE(name))");
 
