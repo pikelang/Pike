@@ -14,25 +14,33 @@ fixabspath() {
 }
 
 getntenv() {
-  rsh $NTHOST set $1 | egrep "^$1=" | sed 's/^.*=//
+  if [ $USE_SPRSH = yes ]; then
+     sprsh getenv $1
+   else
+     rsh $NTHOST set $1 | egrep "^$1=" | sed 's/^.*=//
 s///g'
+   fi
 }
 
 silent_do_cmd() {
-  BATFILE=TMP$$.bat
-  PWD=`pwd`
-  RPWD=`fixabspath $PWD`
-  if [ x$NT_DEBUG != xyes ]; then
-    echo >$BATFILE "@echo off"
+  if [ $USE_SPRSH = yes ]; then
+    sprsh "$*"
   else
-    echo >$BATFILE 
-  fi
-  echo >>$BATFILE "$NTDRIVE"
-  echo >>$BATFILE "cd $RPWD"
-  echo >>$BATFILE "$*"
-  rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
-  if [ x$CLEANUP = xyes ]; then
-    rm $BATFILE || :
+    BATFILE=TMP$$.bat
+    PWD=`pwd`
+    RPWD=`fixabspath $PWD`
+    if [ x$NT_DEBUG != xyes ]; then
+      echo >$BATFILE "@echo off"
+    else
+      echo >$BATFILE 
+    fi
+    echo >>$BATFILE "$NTDRIVE"
+    echo >>$BATFILE "cd $RPWD"
+    echo >>$BATFILE "$*"
+    rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
+    if [ x$CLEANUP = xyes ]; then
+      rm $BATFILE || :
+    fi
   fi
 }
 

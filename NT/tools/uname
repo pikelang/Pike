@@ -57,7 +57,8 @@ fi
 OUTPUT=
 
 if [ $S = yes ]; then
-  OUTPUT="$OUTPUT `getntenv OS`"
+  OUTPUT="$OUTPUT Windows_NT"
+#  OUTPUT="$OUTPUT `getntenv OS`"
 fi
 
 if [ $N = yes ]; then

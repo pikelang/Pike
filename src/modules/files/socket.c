@@ -295,6 +295,7 @@ extern struct program *file_program;
 
 static void port_accept(INT32 args)
 {
+  struct sockaddr_in addr;
   struct port *this=THIS;
   int fd,tmp;
   int len=0;
@@ -305,7 +306,8 @@ static void port_accept(INT32 args)
 
 
   THREADS_ALLOW();
-  fd=fd_accept(this->fd, 0, &len);
+  len=sizeof(addr);
+  fd=fd_accept(this->fd, (struct sockaddr *)&addr, &len);
   THREADS_DISALLOW();
 
   if(fd < 0)

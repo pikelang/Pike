@@ -2,8 +2,6 @@
 
 . $NTTOOLS
 
-set -e
-
 OPTS=""
 CFLAGS=""
 SOURCES=""
@@ -212,5 +210,6 @@ if [ $OPERATION = linking ]; then
   echo >>$OUTPUT ". \$NTTOOLS"
   echo >>$OUTPUT "set -e"
   echo >>$OUTPUT "silent_do_cmd '`fixpath $NTDRIVE$PWD/$TARGET`' \"\$@\""
+  echo >>$OUTPUT "exit \$?"
   chmod +x $OUTPUT
 fi

@@ -1,0 +1,95 @@
+#!/usr/local/bin/pike
+
+inherit Stdio.Port;
+
+void handle_incoming_connection(object(Stdio.File) io)
+{
+  object p;
+  sscanf(io->read(4),"%4c",int args);
+  string *cmd=allocate(args);
+  for(int e=0;e<args;e++)
+  {
+    sscanf(io->read(4),"%4c",int len);
+    cmd[e]=io->read(len);
+  }
+
+  object pi=Stdio.File();
+  object p2=pi->pipe();
+  string dir=cmd[0];
+  cmd=cmd[1..];
+
+  switch(cmd[0])
+  {
+    case "getenv":
+    {
+      string s=getenv(cmd[1])+"\n";
+      io->write(sprintf("%4c%s",strlen(s),s));
+      io->write(sprintf("%4c",0));
+      io->write(sprintf("%4c",0));
+      break;
+    }
+
+    default:
+      mixed err=catch {
+	p=Process.create_process(cmd,
+				 ([
+				   "stdin":io,
+				   "stdout":p2,
+				   "stderr":p2,
+				   "cwd":dir,
+				   ])); };
+      
+      destruct(p2);
+      
+      if(!err)
+      {
+	while(1)
+	{
+	  string s=pi->read(1000,1);
+	  if(!s || !strlen(s)) break;
+	  io->write(sprintf("%4c%s",strlen(s),s));
+	}
+	
+	io->write(sprintf("%4c",0));
+	io->write(sprintf("%4c",p->wait()));
+      }else{
+	io->write(sprintf("%4c",0));
+	io->write(sprintf("%4c",69));
+      }
+  }
+  io->close("w");
+  destruct(io);
+}
+
+
+int main(int argc, string *argv)
+{
+  if(c<2)
+  {
+    werror("Usage: sprshd <port> <host to accept connections from>\n");
+    exit(1);
+  }
+  if(!bind((int)argv[1]))
+  {
+    werror("Failed to bind port.\n");
+    exit(1);
+  }
+
+  string *hosts=gethostbyname(argv[2])[1];
+
+  while(1)
+  {
+    if(object io=accept())
+    {
+      sscanf(io->query_address(),"%s ",string ip);
+      if(search(hosts, ip)==-1)
+      {
+	destruct(io);
+	continue;
+      }
+      thread_create(handle_incoming_connection,io);
+    }else{
+      werror("Accept failed "+errno()+"\n");
+    }
+  }
+}
