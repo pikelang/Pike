@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.180 2003/11/10 01:06:16 mast Exp $
+|| $Id: svalue.c,v 1.181 2003/11/10 12:49:51 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.180 2003/11/10 01:06:16 mast Exp $");
+RCSID("$Id: svalue.c,v 1.181 2003/11/10 12:49:51 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1295,9 +1295,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  END_CYCLIC();
 		  break;
 		}
-	      
-	      debug_malloc_touch(save_buffer.str);
-	      
+
 	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
 	      pop_stack();
@@ -1387,8 +1385,6 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 		  END_CYCLIC();
 		  break;
 		}
-
-	      debug_malloc_touch(save_buffer.str);
 
 	      restore_buffer (&save_buf);
 	      Pike_interpreter.trace_level=save_t_flag;
