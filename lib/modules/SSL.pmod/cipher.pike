@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.12 1999/05/22 23:08:58 mast Exp $
+/* $Id: cipher.pike,v 1.13 2000/03/02 03:21:14 nilsson Exp $
  *
  */
 
@@ -12,6 +12,7 @@ class CipherSpec {
   int hash_size;
   int key_material;
   int iv_size;
+  int key_bits;
   function sign;
 }
 
@@ -285,6 +286,7 @@ array lookup(int suite)
     res->is_exportable = 1;
     res->key_material = 16;
     res->iv_size = 0;
+    res->key_bits = 40;
     break;
   case CIPHER_des40:
     res->bulk_cipher_algorithm = des;
@@ -292,6 +294,7 @@ array lookup(int suite)
     res->is_exportable = 1;
     res->key_material = 8;
     res->iv_size = 8;
+    res->key_bits = 40;
     break;    
   case CIPHER_null:
     res->bulk_cipher_algorithm = 0;
@@ -299,6 +302,7 @@ array lookup(int suite)
     res->is_exportable = 1;
     res->key_material = 0;
     res->iv_size = 0;
+    res->key_bits = 0;
     break;
 #ifndef WEAK_CRYPTO_40BIT
   case CIPHER_rc4:
@@ -307,6 +311,7 @@ array lookup(int suite)
     res->is_exportable = 0;
     res->key_material = 16;
     res->iv_size = 0;
+    res->key_bits = 128;
     break;
   case CIPHER_des:
     res->bulk_cipher_algorithm = des;
@@ -314,6 +319,7 @@ array lookup(int suite)
     res->is_exportable = 0;
     res->key_material = 8;
     res->iv_size = 8;
+    res->key_bits = 56;
     break;
   case CIPHER_3des:
     res->bulk_cipher_algorithm = des3;
@@ -321,6 +327,7 @@ array lookup(int suite)
     res->is_exportable = 0;
     res->key_material = 24;
     res->iv_size = 8;
+    res->key_bits = 168;
     break;
   case CIPHER_idea:
     res->bulk_cipher_algorithm = Crypto.idea_cbc;
@@ -328,6 +335,7 @@ array lookup(int suite)
     res->is_exportable = 0;
     res->key_material = 16;
     res->iv_size = 8;
+    res->key_bits = 128;
     break;
 #endif /* !WEAK_CRYPTO_40BIT (magic comment) */
   default:
