@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.138 2004/04/22 16:22:55 grubba Exp $
+|| $Id: backend.cmod,v 1.139 2004/04/27 22:00:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.138 2004/04/22 16:22:55 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.139 2004/04/27 22:00:53 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2425,7 +2425,7 @@ PIKECLASS Backend
 	      check_box (box, i);
 	      /* We don't want to keep this fd anymore. */
 	      old_events = box->events;
-	      set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
+	      set_fd_callback_events (box, box->events & PIKE_BIT_FD_ERROR);
 	      if (WANT_EVENT (box, ERROR)) {
 		IF_PD(fprintf(stderr,
 			      "[%d]BACKEND[%d]: error event %d on fd %d sent to %p\n",
@@ -2612,7 +2612,7 @@ PIKECLASS Backend
 	      check_box (box, fd);
 	      /* We don't want to keep this fd anymore. */
 	      old_events = box->events;
-	      set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
+	      set_fd_callback_events (box, box->events & PIKE_BIT_FD_ERROR);
 	      if (WANT_EVENT (box, ERROR)) {
 		IF_PD(fprintf(stderr,
 			      "[%d]BACKEND[%d]: error event on fd %d sent to %p\n",
