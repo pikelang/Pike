@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.47 2003/04/30 15:10:09 grubba Exp $
+|| $Id: fdlib.h,v 1.48 2003/10/05 19:31:05 grubba Exp $
 */
 
 #ifndef FDLIB_H
@@ -37,11 +37,14 @@
 #include <socket.h>
 #endif /* HAVE_SOCKET_H */
 
+#include "pike_netlib.h"
+
 #define fd_INTERPROCESSABLE   1
 #define fd_CAN_NONBLOCK       2
 #define fd_CAN_SHUTDOWN       4
 #define fd_BUFFERED           8
 #define fd_BIDIRECTIONAL     16
+#define fd_REVERSE	     32
 
 
 #ifdef HAVE_WINSOCK_H
