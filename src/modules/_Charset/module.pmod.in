@@ -1,7 +1,7 @@
 
 static private inherit @module@;
 
-static class ascii {
+class ascii {
   static private string s = "";
   object(this_program) feed(string ss)
   {
@@ -49,7 +49,7 @@ object(ascii) decoder(string name)
   throw(({"Unknown character encoding "+name+"\n", backtrace()}));
 }
 
-static class _encoder
+class _encoder
 {
   static private string s = "";
   static private string|void replacement;
