@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.43 2004/04/05 23:18:43 nilsson Exp $
+// $Id: RDF.pike,v 1.44 2004/05/12 12:09:11 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -216,10 +216,41 @@ static int(0..1) is_resource(mixed res) {
 // predicate : Relation( subject, object )
 static mapping(Resource:ADT.Relation.Binary) statements = ([]);
 
-//! Adds a statement to the RDF set.
+//! Adds a statement to the RDF set. If any argument is a string, it
+//! will be converted into a @[LiteralResource]. If any argument is a
+//! multiset with one string in it, it will be converted into a
+//! @[URIResource].
 //! @throws
-//!   Throws an exception if any argument isn't a Resouce object.
-void add_statement(Resource subj, Resource pred, Resource obj) {
+//!   Throws an exception if any argument couldn't be converted into a
+//!   Resouce object.
+this_program add_statement(Resource|string|multiset(string) subj,
+			   Resource|string|multiset(string) pred,
+			   Resource|string|multiset(string) obj) {
+
+  if(stringp(subj))
+    subj = LiteralResource(subj);
+  else if(multisetp(subj)) {
+    if(sizeof(subj)!=1 || !stringp(subj=indices(subj)[0]))
+      error("Subject multiset attribute must only contain one string.\n");
+    subj = make_resource(subj);
+  }
+
+  if(stringp(pred))
+    pred = LiteralResource(pred);
+  else if(multisetp(pred)) {
+    if(sizeof(pred)!=1 || !stringp(pred=indices(pred)[0]))
+      error("Predicate multiset attribute must only contain one string.\n");
+    pred = make_resource(pred);
+  }
+
+  if(stringp(obj))
+    obj = LiteralResource(obj);
+  else if(multisetp(obj)) {
+    if(sizeof(obj)!=1 || !stringp(obj=indices(obj)[0]))
+      error("Object multiset attribute must only contain one string.\n");
+    obj = make_resource(obj);
+  }
+
   if(!is_resource(subj) || !is_resource(pred) || !is_resource(obj))
     error("Non-resource argument to add_statement");
   ADT.Relation.Binary rel = statements[pred];
@@ -229,6 +260,7 @@ void add_statement(Resource subj, Resource pred, Resource obj) {
   }
 
   rel->add(subj, obj);
+  return this;
 }
 
 //! Returns 1 if the RDF domain contains the relation {subj, pred, obj},
@@ -879,6 +911,11 @@ static class XML {
   mapping subjects = get_subject_map();
   mapping ns = ([]);
   int ind;
+  int(0..1) optimize;
+
+  void create(int(0..1) opt) {
+    optimize = opt;
+  }
 
   void add_ns(Resource r) {
     string s=r->get_namespace();
@@ -950,7 +987,7 @@ static class XML {
 
     // Can we make a <foo></foo> instead of
     // <Description><rdf:type rdf:resource="foo"/></Description>
-    if(rel[rdf_type]) {
+    if(optimize && rel[rdf_type]) {
       Resource c = rel[rdf_type][0];
       if(sizeof(rel[rdf_type])>1)
 	rel[rdf_type] = rel[rdf_type][1..];
@@ -976,11 +1013,11 @@ static class XML {
       if(ind) buf->add("  "*ind);
       if(n->is_uri_resource) {
 	buf->add("<rdf:Description rdf:about='", n->get_uri(), "'");
-	make_prop_attr(rel, 1, 17);
+	if(optimize) make_prop_attr(rel, 1, 17);
       }
       else {
 	buf->add("<rdf:Description ");
-	make_prop_attr(rel, 0, 17);
+	if(optimize) make_prop_attr(rel, 0, 17);
       }
 
       if(!sizeof(rel)) {
@@ -1039,8 +1076,14 @@ static class XML {
 }
 
 //! Serialize the RDF domain as an XML string.
-string get_xml() {
-  return XML()->render();
+//! @param no_optimize
+//!   If set, the XML serializer will refrain from doing most (size)
+//!   optimizations of the output.
+string get_xml(void|int no_optimize) {
+  if(no_optimize)
+    return XML(0)->render();
+  else
+    return XML(1)->render();
 }
 
 
