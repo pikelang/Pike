@@ -298,7 +298,7 @@ constant fork = predef::fork;
 constant exece = predef::exece;
 #endif
 
-#if constant(fork)
+#if constant(fork) && constant(exece)
 
 //!
 class Spawn
