@@ -56,15 +56,16 @@ test_any([[# 1 "-"
 
 #42 "testsuite.in.in"
 int x=1; while ((x<<1)>0) x=(x<<1)+1;
-if (!catch { Image.image(x,2); } ||
-!catch { Image.image(x/32768,32769); }) return ( "permitted" );
+if (!catch { Image.image(x,2); }) return ( x+"x2 permitted" );
+if (!catch { Image.image(x/32768,65537); }) return ( (x/32768)+"x65537 permitted" );
+if (!catch { Image.image(x/(32768*3),65537); }) return ( (x/(32768*3))+"x65537 permitted" );
 return "ok";
 
 ]], "ok")
 test_any([[# 1 "-"
 
 
-#48 "testsuite.in.in"
+#49 "testsuite.in.in"
 object img=Image.image(1000,1000,17,42,96);
 if (!img ||
 img->xsize()!=1000 ||
@@ -77,7 +78,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#59 "testsuite.in.in"
+#60 "testsuite.in.in"
 object img=Image.image(10,10);
 img=img->test();
 if (equal(img->max(),({0,0,0}))) return ( "failed" );
@@ -90,7 +91,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#70 "testsuite.in.in"
+#71 "testsuite.in.in"
 object img=Image.image(100,100)->test();
 if (img!=img->copy()) return ( "differ" );
 if (img->copy(25,25,75,75)!=img->copy(25,25,75,75)) return ( "subregion differ" );
@@ -103,7 +104,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#79 "testsuite.in.in"
+#80 "testsuite.in.in"
 object img=Image.image(100,100)->test();
 if (img->clear()==img) return ( "doesn't differ" );
 if (img->clear(0,0,0)!=0) return ( "wrong color (black)" );
@@ -114,7 +115,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#86 "testsuite.in.in"
+#87 "testsuite.in.in"
 object img=Image.image(100,100)->test();
 if (img!=img->clone()) return ( "differ" );
 img->setpixel(2,2,0,255,0);
@@ -126,7 +127,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#96 "testsuite.in.in"
+#97 "testsuite.in.in"
 array a=({0,0,0});
 array b=copy_value(a); b[0]=17; b[1]=42; b[2]=128;
 if (!equal( ({0,0,0}), a)) return ( "differ (1)" );
@@ -137,7 +138,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#103 "testsuite.in.in"
+#104 "testsuite.in.in"
 if (!equal( ({0,0,0}), 
 Image.image(10,10,0,0,0)->max() ))
 return ( "erranous (1)" );
@@ -162,7 +163,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#126 "testsuite.in.in"
+#127 "testsuite.in.in"
 object img=Image.image(10,10,255,0,0);
 if (!equal(img->getpixel(5,5),({255,0,0}))) return ( "getpixel erranous" );
 img->setpixel(5,5,1,2,3);
@@ -173,7 +174,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#133 "testsuite.in.in"
+#134 "testsuite.in.in"
 object img=Image.image(10,10,255,0,0);
 img->setpixel(5,5,0,255,0,127);
 if (!equal(img->getpixel(5,5),({127,128,0}))) return ( "failed" );
@@ -183,7 +184,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#139 "testsuite.in.in"
+#140 "testsuite.in.in"
 object img=Image.image(100,100,0,0,0);
 foreach (({40,50,60}),int z)
 { 
@@ -201,7 +202,7 @@ return "ok";
 test_any([[# 1 "-"
 
 
-#153 "testsuite.in.in"
+#154 "testsuite.in.in"
 object img=Image.image(100,100,0,0,0);
 img->line(40,0,0,40);
 if (!equal( ({0,0,0}), img->max() )) return ( "differ (reset)" );
