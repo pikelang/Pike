@@ -1,4 +1,0 @@
-dummy.o: $(SRCDIR)/dummy.c \
-  /home/per/src/Pike/7.1/src/global.h $(BUILD_BASE)/machine.h \
-  /home/per/src/Pike/7.1/src/port.h /home/per/src/Pike/7.1/src/dmalloc.h \
-  config.h /home/per/src/Pike/7.1/src/module_magic.h
