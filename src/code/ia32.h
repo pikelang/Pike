@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.h,v 1.7 2001/07/24 01:16:11 hubbe Exp $
+ * $Id: ia32.h,v 1.8 2001/07/24 09:22:14 hubbe Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT8
@@ -36,9 +36,17 @@
   ins_pointer(VALUE);					\
 }while(0)
 
+#define REG_IS_SP 1
+#define REG_IS_FP 2
+#define REG_IS_UNKNOWN -1
+
+extern int ia32_reg_eax;
+
 #define UPDATE_PC() do {				\
     INT32 tmp=PC;					\
-    MOV2EAX(Pike_interpreter.frame_pointer);		\
+    if(ia32_reg_eax != REG_IS_FP)                           \
+      MOV2EAX(Pike_interpreter.frame_pointer);		\
+    ia32_reg_eax=REG_IS_FP;                                 \
     SET_MEM_REL_EAX(OFFSETOF(pike_frame, pc), tmp);	\
 }while(0)
 
@@ -77,3 +85,5 @@ void update_f_jump(INT32 offset, INT32 to_offset);
 #define UPDATE_F_JUMP update_f_jump
 
 
+void ia32_flush_code_generator(void);
+#define FLUSH_CODE_GENERATOR_STATE ia32_flush_code_generator

@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.9 2001/07/24 01:16:11 hubbe Exp $
+ * $Id: ia32.c,v 1.10 2001/07/24 09:22:13 hubbe Exp $
  *
  * Machine code generator for IA32.
  *
@@ -33,6 +33,21 @@
     PUSH_INT( (INT32)&(ADDR) );				\
 }while(0)
 
+#define INC_MEM(ADDR, HOWMUCH) do {			\
+  int h_=(HOWMUCH);					\
+  if(h_ == 1)						\
+  {							\
+    add_to_program(0xff); /* incl  0xXXXXXXXX */	\
+    add_to_program(0x05);				\
+    PUSH_INT( (INT32) (ADDR) );				\
+  }else{						\
+    add_to_program(0x83); /* addl $0xXX, 0xXXXXXXXX */	\
+    add_to_program(0x05);				\
+    PUSH_INT( (INT32) (ADDR) );				\
+    add_to_program(HOWMUCH);				\
+  }							\
+}while(0)
+
 
 #define CALL_RELATIVE(X) do{						\
   struct program *p_=Pike_compiler->new_program;			\
@@ -63,14 +78,29 @@ static void update_arg2(INT32 value)
   PUSH_INT(value);
 }
 
+int ia32_reg_eax=REG_IS_UNKNOWN;
+
+void ia32_flush_code_generator(void)
+{
+  ia32_reg_eax=REG_IS_UNKNOWN;
+}
+
 void ia32_push_constant(struct svalue *tmp)
 {
   int e;
-  MOV2EAX(Pike_interpreter.stack_pointer);
+  if(tmp->type <= MAX_REF_TYPE)
+    INC_MEM(tmp->u.refs, 1);
+
+  if(ia32_reg_eax != REG_IS_SP)
+    MOV2EAX(Pike_interpreter.stack_pointer);
+
   for(e=0;e<(int)sizeof(*tmp)/4;e++)
     SET_MEM_REL_EAX(e*4, ((INT32 *)tmp)[e]);
   ADDB_EAX(sizeof(*tmp));
   MOVEAX2(Pike_interpreter.stack_pointer);
+
+  ia32_reg_eax = REG_IS_SP;
+//  ia32_reg_eax = -1;
 }
 
 INT32 ins_f_jump(unsigned int b)
@@ -113,7 +143,7 @@ void ins_f_byte(unsigned int b)
 
   do{
     static int last_prog_id=-1;
-    static int last_num_linenumbers=-1;
+    static size_t last_num_linenumbers=-1;
     if(last_prog_id != Pike_compiler->new_program->id ||
        last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
     {
@@ -157,6 +187,7 @@ void ins_f_byte(unsigned int b)
   }
 #endif
   CALL_RELATIVE(addr);
+  ia32_reg_eax=REG_IS_UNKNOWN;
 /*  CALL_ABSOLUTE(instrs[b].address); */
 
   return;
@@ -170,6 +201,17 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     case F_NUMBER:
       ia32_push_int(b);
       return;
+
+    case F_CONSTANT:
+      /* 
+       * This would work nicely for all pike types, but we would
+       * have to augment dumping
+       */
+      if(Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE)
+      {
+	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
+	return;
+      }
   }
 #endif
   update_arg1(b);
