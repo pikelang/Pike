@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.20 2000/08/30 11:23:49 grubba Exp $
+# $Id: configure.in,v 1.21 2000/08/30 16:19:31 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -212,8 +212,11 @@ EOF
       AC_CACHE_VAL(pike_cv_have_$1, [
         AC_TRY_COMPILE([
 #ifdef HAVE_ISQL_H
+
 #include <isql.h>
+
 #else /* !HAVE_ISQL_H */
+
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
 #else /* !HAVE_WINDOWS_H */
@@ -221,19 +224,22 @@ EOF
 #include <qeodbc.h>
 #endif /* HAVE_QEODBC_H */
 #endif /* HAVE_WINDOWS_H */
-#endif /* HAVE_ISQL_H */
-#endif /* HAVE_ODBC */
-#ifndef HAVE_ISQL_H
+
 #ifdef HAVE_SQL_H
 #include <sql.h>
 #endif /* HAVE_SQL_H */
-#endif /* !HAVE_ISQL_H */
+
+#endif /* HAVE_ISQL_H */
+
 #ifdef HAVE_ISQLEXT_H
 #include <isqlext.h>
+
 #else /* !HAVE_ISQLEXT_H */
+
 #ifdef HAVE_SQLEXT_H
 #include <sqlext.h>
 #endif /* HAVE_SQLEXT_H */
+
 #endif /* HAVE_ISQLEXT_H */
         ], [
           $1 len = 17;
