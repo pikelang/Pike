@@ -35,6 +35,13 @@ testfont binary
 /bin/rsif foreign_ident
 /bin/test_pike.pike foreign_ident
 /bin/unbug foreign_ident
+/lib/7.2/modules/LR.pmod/Grammar_parser.pmod foreign_ident
+/lib/7.2/modules/LR.pmod/item.pike foreign_ident
+/lib/7.2/modules/LR.pmod/lr.pike foreign_ident
+/lib/7.2/modules/LR.pmod/parser.pike foreign_ident
+/lib/7.2/modules/LR.pmod/priority.pike foreign_ident
+/lib/7.2/modules/LR.pmod/rule.pike foreign_ident
+/lib/7.2/modules/LR.pmod/scanner.pike foreign_ident
 /lib/master.pike.in foreign_ident
 /lib/modules/ADT.pmod/History.pike foreign_ident
 /lib/modules/ADT.pmod/Queue.pike foreign_ident
