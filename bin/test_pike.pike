@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.41 2000/03/29 04:52:50 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.42 2000/03/30 21:11:31 grubba Exp $ */
 
 import Stdio;
 
@@ -432,7 +432,7 @@ int main(int argc, string *argv)
 			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
 			    2:"\nint \x10001=0;\n" ])[shift%3];
 
-	  widener += "#pragma strict_types\n";
+	  // widener += "#pragma strict_types\n";
 
 	  if(test[-1]!='\n') test+="\n";
 
