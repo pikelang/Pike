@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.24 2003/04/28 00:32:43 mast Exp $
+|| $Id: memory.c,v 1.25 2003/06/02 11:14:12 nilsson Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.24 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: memory.c,v 1.25 2003/06/02 11:14:12 nilsson Exp $");
 
 #include "system_machine.h"
 
@@ -629,9 +629,7 @@ static void copy_reverse_string1_to_2(unsigned char *d,
       make_reverse_order_string##N(unsigned char *s,size_t len)		\
    {									\
       struct pike_string *ps;						\
-      unsigned char *d;							\
       ps=begin_wide_shared_string(len,N);				\
-      d = (unsigned char *)ps->str;					\
       copy_reverse_string##N(ps->str, (unsigned char *)s, len);		\
       return end_shared_string(ps);					\
    }
