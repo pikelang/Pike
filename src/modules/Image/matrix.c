@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.37 2001/09/26 12:39:03 grubba Exp $ */
+/* $Id: matrix.c,v 1.38 2001/09/27 16:45:45 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.37 2001/09/26 12:39:03 grubba Exp $
+**!	$Id: matrix.c,v 1.38 2001/09/27 16:45:45 marcus Exp $
 **! class Image
 */
 
@@ -656,16 +656,16 @@ static void img_skewx(struct image *src,
 		      double diff,
 		      int xpn) /* expand pixel for use with alpha instead */
 {
-   double x0,xmod,xm;
-   INT32 y,len;
+   double x0,xmod,xm,x0f;
+   INT32 y,len,x0i;
    rgb_group *s,*d;
    rgb_group rgb;
 
    if (dest->img) free(dest->img);
    if (diff<0)
-      dest->xsize = DOUBLE_TO_INT(ceil(-diff) + src->xsize), x0=-diff;
+      dest->xsize = DOUBLE_TO_INT(ceil(-diff)) + src->xsize, x0=-diff;
    else
-      dest->xsize = DOUBLE_TO_INT(ceil(diff) + src->xsize), x0=0;
+      dest->xsize = DOUBLE_TO_INT(ceil(diff)) + src->xsize, x0=0;
    dest->ysize=src->ysize;
    len=src->xsize;
 
@@ -688,12 +688,13 @@ static void img_skewx(struct image *src,
    while (y--)
    {
       int j;
+
       if (xpn) rgb=*s;
-      for (j = DOUBLE_TO_INT(x0); j--;) *(d++)=rgb;
-      if (!(xm=(x0-floor(x0))))
+      for (j = x0i = DOUBLE_TO_INT((x0f = floor(x0))); j--;) *(d++)=rgb;
+      if (!(xm=(x0-x0f)))
       {
 	 for (j=len; j--;) *(d++)=*(s++);
-	 j = DOUBLE_TO_INT(dest->xsize - x0 - len);
+	 j = dest->xsize - x0i - len;
       }
       else
       {
@@ -722,10 +723,13 @@ static void img_skewx(struct image *src,
 	 d++;
 	 s++;
 	 debug_malloc_touch(dest->img);
-	 j = DOUBLE_TO_INT(dest->xsize - x0 - len);
+	 j = dest->xsize - x0i - len - 1;
       }
       if (xpn) rgb=s[-1];
-      while (j--) *(d++)=rgb;
+      if(j>0)
+	while (j--) *(d++)=rgb;
+      else
+	d += j;
       debug_malloc_touch(dest->img);
       x0+=xmod;
    }
