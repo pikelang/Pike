@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.30 1999/05/27 18:23:33 grubba Exp $
+# $Id: configure.in,v 1.31 1999/06/01 16:57:57 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -21,7 +21,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	chroot fchroot uname gethostname gethostbyname \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
-        getspnam_r)
+        getspnam_r innetgr)
 
 
 AC_CHECK_LIB(nsl, gethostbyname)
