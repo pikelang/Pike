@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.15 2000/09/14 14:17:02 hop Exp $
+// $Id: client.pike,v 1.16 2000/10/11 11:55:36 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -736,7 +736,7 @@
   //	filter:		search filter
   //	attrsonly:	flag
   //	attrsy:		attribute(s) name
-  object|int search (string filter, int|void attrsonly, array(string)|void attrs) {
+  object|int search (string|void filter, int|void attrsonly, array(string)|void attrs) {
 
     int id;
     mixed raw;
