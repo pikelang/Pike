@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.101 1998/04/16 22:59:50 mirar Exp $ */
+/* $Id: image.c,v 1.102 1998/04/18 15:57:20 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.101 1998/04/16 22:59:50 mirar Exp $
+**!	$Id: image.c,v 1.102 1998/04/18 15:57:20 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.101 1998/04/16 22:59:50 mirar Exp $");
+RCSID("$Id: image.c,v 1.102 1998/04/18 15:57:20 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -123,7 +123,7 @@ extern struct program *image_colortable_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
-#define testrange(x) MAXIMUM(MINIMUM(((int)x),255),0)
+#define testrange(x) ((COLORTYPE)MAXIMUM(MINIMUM(((int)x),255),0))
 
 #define sq(x) ((x)*(x))
 
@@ -497,7 +497,7 @@ THREADS_DISALLOW();
 
 int image_too_big(INT_TYPE xsize,INT_TYPE ysize)
 {
-   register INT_TYPE a,b,c,d,z;
+   register INT_TYPE a,b,c,d;
 
    if (xsize<0 || ysize<0) return 1;
 
@@ -3096,6 +3096,132 @@ void image_modify_by_intensity(INT32 args)
    push_object(o);
 }
 
+/*
+**! method object gamma(float g)
+**! method object gamma(float gred,ggreen,gblue)
+**!     Calculate pixels in image by gamma curve.
+**!
+**!	Intensity of new pixels are calculated by:<br>
+**!     <i>i</i>' = <i>i</i>^<i>g</i>
+**!
+**!	For example, you are viewing your image on a screen
+**!	with gamma 2.2. To correct your image to the correct
+**!	gamma value, do something like:
+**!
+**!	<tt>my_display_image(my_image()->gamma(1/2.2);</tt>
+**!
+**! returns a new image object
+**!
+**! arg int g
+**! arg int gred
+**! arg int ggreen
+**! arg int gblue
+**!	gamma value
+**!
+**! see also: grey, `*, color
+*/
+
+static void img_make_gammatable(COLORTYPE *d,double gamma)
+{
+   static COLORTYPE last_gammatable[256];
+   static float last_gamma;
+   static int had_gamma=0;
+
+   if (had_gamma && last_gamma==gamma)
+      MEMCPY(d,last_gammatable,sizeof(COLORTYPE)*256);
+   else
+   {
+      int i;
+      COLORTYPE *dd=d;
+      double q=1/255.0;
+      for (i=0; i<256; i++)
+      {
+	 double d=pow(i*q,gamma)*255;
+	 *(dd++)=testrange(d);
+      }
+      MEMCPY(last_gammatable,d,sizeof(COLORTYPE)*256);
+      last_gamma=gamma;
+      had_gamma=1;
+   }
+}
+
+void image_gamma(INT32 args)
+{
+   INT32 x;
+   rgb_group *s,*d;
+   struct object *o;
+   struct image *img;
+   COLORTYPE _newg[256],_newb[256],*newg,*newb;
+   float gammar,gammab,gammag;
+   COLORTYPE newr[256];
+
+   if (!THIS->img) error("no image\n");
+   if (args==1) 
+      if (sp[-args].type==T_INT) 
+	 gammar=gammab=gammag=(float)sp[-args].u.integer;
+      else if (sp[-args].type==T_FLOAT) 
+	 gammar=gammab=gammag=sp[-args].u.float_number;
+      else error("Image.image->gamma(): illegal argument 1\n");
+   else if (args==3)
+   {
+      if (sp[-args].type==T_INT) gammar=(float)sp[-args].u.integer;
+      else if (sp[-args].type==T_FLOAT) gammar=sp[-args].u.float_number;
+      else error("Image.image->gamma(): illegal argument 1\n");
+      if (sp[1-args].type==T_INT) gammag=(float)sp[1-args].u.integer;
+      else if (sp[1-args].type==T_FLOAT) gammag=sp[1-args].u.float_number;
+      else error("Image.image->gamma(): illegal argument 2\n");
+      if (sp[2-args].type==T_INT) gammab=(float)sp[2-args].u.integer;
+      else if (sp[2-args].type==T_FLOAT) gammab=sp[2-args].u.float_number;
+      else error("Image.image->gamma(): illegal argument 3\n");
+   }
+   else
+      error("Image.image->gamma(): illegal number of arguments\n");
+
+   if (gammar==gammab && gammab==gammag)
+   {
+      if (gammar==1.0)  /* just copy */
+      {
+	 pop_n_elems(args);
+	 image_clone(0);
+	 return;
+      }
+      img_make_gammatable(newb=newg=newr,gammar);
+   }
+   else
+   {
+      img_make_gammatable(newr,gammar);
+      img_make_gammatable(newg=_newg,gammag);
+      img_make_gammatable(newb=_newb,gammab);
+   }
+   
+   o=clone_object(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+
+   d=img->img;
+   s=THIS->img;
+
+   x=THIS->xsize*THIS->ysize;
+   THREADS_ALLOW();
+   while (x--)
+   {
+      d->r=newr[s->r];
+      d->g=newg[s->g];
+      d->b=newb[s->b];
+      d++;
+      s++;
+   }
+   THREADS_DISALLOW();
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
 
 /*
 **! method object map_closest(array(array(int)) colors)
@@ -3550,6 +3676,9 @@ void pike_module_init(void)
                 "|function(array(array(int)),int,int,int:object)",0);
    add_function("modify_by_intensity",image_modify_by_intensity,
                 "function(int,int,int,int,int:object)",0);
+   add_function("gamma",image_gamma,
+                "function(float|int:object)|"
+                "function(float|int,float|int,float|int:object)",0);
 
    add_function("rotate_ccw",image_ccw,
 		"function(:object)",0);
