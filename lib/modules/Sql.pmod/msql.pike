@@ -13,8 +13,5 @@ mapping(string:mapping(string:mixed)) list_fields(string table, string|void wild
 			{return m[s];},result));
 }
 #else /* !constant(Msql.msql) */
-void create()
-{
-  destruct();
-}
+#error "mSQL support not available.\n"
 #endif /* constant(Msql.msql) */

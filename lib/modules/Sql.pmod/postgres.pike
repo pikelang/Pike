@@ -2,7 +2,7 @@
  * This is part of the Postgres module for Pike.
  * (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
  *
- * $Id: postgres.pike,v 1.5 1998/10/17 02:54:58 grubba Exp $
+ * $Id: postgres.pike,v 1.6 1999/06/14 23:08:40 grubba Exp $
  *
  */
 
@@ -125,8 +125,5 @@ mapping(string:array(mixed)) list_fields (string table, void|string wild) {
 	return ret;
 }
 #else /* !constant(Postgres.postgres) */
-void create()
-{
-  destruct();
-}
+#error "Prostgras support not available.\n"
 #endif /* constant(Postgres.postgres) */
