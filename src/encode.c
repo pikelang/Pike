@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.95 2001/03/29 02:54:10 per Exp $");
+RCSID("$Id: encode.c,v 1.96 2001/04/09 10:01:49 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -761,10 +761,35 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       {
 	INT32 e;
 	struct program *p=val->u.program;
-	if( p->event_handler )
-	  Pike_error("Cannot encode programs with event handlers.\n");
-	if( (p->flags & PROGRAM_HAS_C_METHODS) )
+	if( (p->flags & PROGRAM_HAS_C_METHODS) || p->event_handler )
+	{
+	  if(p->parent)
+	  {
+	    /* We have to remove ourself from the cache for now */
+	    struct svalue tmp=data->counter;
+	    tmp.u.integer--;
+	    map_delete(data->encoded, val);
+
+	    code_entry(type_to_tag(val->type), 2,data);
+	    ref_push_program(p->parent);
+	    encode_value2(Pike_sp-1,data);
+
+	    ref_push_program(p);
+	    f_function_name(1);
+	    if(Pike_sp[-1].type == PIKE_T_INT)
+	      Pike_error("Cannot encode C programs.\n");
+	    encode_value2(Pike_sp-1, data);
+
+	    pop_n_elems(3);
+
+	    /* Put value back in cache */
+	    mapping_insert(data->encoded, val, &tmp);
+	    return;
+	  }
+	  if( p->event_handler )
+	    Pike_error("Cannot encode programs with event handlers.\n");
 	  Pike_error("Cannot encode C programs.\n");
+	}
 	code_entry(type_to_tag(val->type), 1,data);
 	f_version(0);
 	encode_value2(Pike_sp-1,data);
@@ -1879,6 +1904,21 @@ static void decode_value2(struct decode_data *data)
 #endif
 	  return;
 	}
+
+	case 2:
+	  tmp=data->counter;
+	  data->counter.u.integer++;
+	  decode_value2(data);
+	  decode_value2(data);
+	  if(Pike_sp[-2].type==T_INT)
+	  {
+	    pop_stack();
+	  }else{
+	    f_arrow(2);
+	  }
+	  if(data->pickyness && Pike_sp[-1].type != T_PROGRAM)
+	    Pike_error("Failed to decode program.\n");
+	  break;
 
 	default:
 	  Pike_error("Cannot decode program encoding type %d\n",num);

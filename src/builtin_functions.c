@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.360 2001/04/09 08:53:19 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.361 2001/04/09 10:01:48 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7064,44 +7064,49 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 
     if(in->inherit_level==1)
     {
-      switch(in->parent_offset)
+      if(in->prog->flags & PROGRAM_USES_PARENT)
       {
-	default:
+	switch(in->parent_offset)
 	{
-	  struct external_variable_context tmp;
-	  if(!par)
+	  default:
 	  {
-	    ref_push_program(in->prog);
-	  }else{
-	    tmp.o=par;
-	    tmp.parent_identifier=parid;
-	    tmp.inherit=INHERIT_FROM_INT(par->prog,parid);
-
-	    find_external_context(&tmp, in->parent_offset-1);
-	    ref_push_object(tmp.o);
-	    Pike_sp[-1].subtype=in->parent_identifier + 
-	      tmp.inherit->identifier_level;
-	    Pike_sp[-1].type=T_FUNCTION;
+	    struct external_variable_context tmp;
+	    if(!par)
+	    {
+	      ref_push_program(in->prog);
+	    }else{
+	      tmp.o=par;
+	      tmp.parent_identifier=parid;
+	      tmp.inherit=INHERIT_FROM_INT(par->prog,parid);
+	      
+	      find_external_context(&tmp, in->parent_offset-1);
+	      ref_push_object(tmp.o);
+	      Pike_sp[-1].subtype=in->parent_identifier + 
+		tmp.inherit->identifier_level;
+	      Pike_sp[-1].type=T_FUNCTION;
+	    }
 	  }
-	}
-	break;
-
-	case -17:
-	  ref_push_object(in->parent);
-	  Pike_sp[-1].subtype=in->parent_identifier;
-	  Pike_sp[-1].type=T_FUNCTION;
 	  break;
 	  
-	case -18:
-	  if(par)
-	  {
-	    ref_push_object(par);
-	    Pike_sp[-1].subtype=parid;
+	  case -17:
+	    ref_push_object(in->parent);
+	    Pike_sp[-1].subtype=in->parent_identifier;
 	    Pike_sp[-1].type=T_FUNCTION;
-	  }else{
-	    ref_push_program(in->prog);
-	  }
-	  break;
+	    break;
+	    
+	  case -18:
+	    if(par)
+	    {
+	      ref_push_object(par);
+	      Pike_sp[-1].subtype=parid;
+	      Pike_sp[-1].type=T_FUNCTION;
+	    }else{
+	      ref_push_program(in->prog);
+	    }
+	    break;
+	}
+      }else{
+	ref_push_program(in->prog);
       }
       q++;
     }

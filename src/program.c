@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.310 2001/04/08 10:11:40 hubbe Exp $");
+RCSID("$Id: program.c,v 1.311 2001/04/09 10:01:49 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -611,7 +611,7 @@ struct object *compat_handler=0;
 struct program *gc_internal_program = 0;
 static struct program *gc_mark_program_pos = 0;
 
-int compilation_depth;
+int compilation_depth=-1;
 dynamic_buffer used_modules;
 static struct mapping *resolve_cache=0;
 
@@ -1175,9 +1175,16 @@ void low_start_new_program(struct program *p,
     {
       tmp.u.program=p;
       id=add_constant(name, &tmp, flags & ~ID_EXTERN);
-      add_ref(p->parent = Pike_compiler->new_program);
-
+#if 0
+      fprintf(stderr,"Compiling class %s, depth=%d\n",name->str,compilation_depth);
+    }else{
+      fprintf(stderr,"Compiling file %s, depth=%d\n",
+	      lex.current_file ? lex.current_file->str : "-",
+	      compilation_depth);
+#endif
     }
+    if(compilation_depth >= 1)
+      add_ref(p->parent = Pike_compiler->new_program);
     e=1;
   }else{
     tmp.u.program=p;
