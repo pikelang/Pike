@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.383 2001/10/28 18:02:02 nilsson Exp $");
+RCSID("$Id: program.c,v 1.384 2001/11/08 23:34:29 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3324,7 +3324,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     if(IDENTIFIERP(n)->id_flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
-    if(!TEST_COMPAT(7,0) &&
+    if(!TEST_COMPAT(7,2) &&
        IDENTIFIER_IS_VARIABLE(ID_FROM_INT(Pike_compiler->new_program,
 					  n)->identifier_flags))
     {
@@ -4326,7 +4326,10 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
   }
 
 #ifdef PIKE_USE_MACHINE_CODE
-  offset = (long) pc;
+  if( (long)pc > (long)prog->program)
+    offset = pc - prog->program;
+  else
+    offset = (long) pc;
 #else
   offset = pc - prog->program;
 #endif
@@ -4436,8 +4439,175 @@ extern void yyparse(void);
 #define do_yyparse() yyparse()
 #endif
 
+struct Supporter *current_supporter=0;
+
+
+#ifdef PIKE_DEBUG
+
+struct supporter_marker
+{
+  struct supporter_marker *next;
+  void *data;
+  int level;
+};
+
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(P)
+#undef COUNT_OTHER
+#define COUNT_OTHER()
+
+#undef INIT_BLOCK
+#define INIT_BLOCK(X) do { (X)->level=0; }while(0)
+PTR_HASH_ALLOC(supporter_marker, 128);
+
+static int supnum;
+
+#define SNUM(X) (get_supporter_marker((X))->level)
+
+static void low_verify_supporters(struct Supporter *s)
+{
+  struct Supporter *ss;
+  struct supporter_marker *m;
+
+  if(!s) return;
+  debug_malloc_touch(s);
+  m=get_supporter_marker(s);
+  if(m->level) return;
+  m->level=supnum++;
+  if(s->magic != 0x500b0127)
+  {
+#ifdef DEBUG_MALLOC
+    describe(s);
+#endif
+    fatal("This is not a supporter (addr=%p, magic=%x)!\n",s,s->magic);
+  }
+  low_verify_supporters(s->previous);
+  low_verify_supporters(s->depends_on);
+  low_verify_supporters(s->dependants);
+  low_verify_supporters(s->next_dependant);
+
+  if(s->previous && SNUM(s->previous) <= m->level)
+    fatal("Que, numbers out of whack1\n");
+
+  if(s->depends_on && SNUM(s->depends_on) <= m->level)
+    fatal("Que, numbers out of whack2\n");
+
+  for(ss=s->dependants;ss;s=s->next_dependant)
+    if(SNUM(ss) >= m->level)
+      fatal("Que, numbers out of whack3\n");
+}
+
+void verify_supporters()
+{
+  if(d_flag)
+  {
+    supnum=1;
+    init_supporter_marker_hash();
+    low_verify_supporters(current_supporter);
+#ifdef DO_PIKE_CLEANUP
+    {
+      size_t e=0;
+      struct supporter_marker *h;
+      for(e=0;e<supporter_marker_hash_table_size;e++)
+	while(supporter_marker_hash_table[e])
+	  remove_supporter_marker(supporter_marker_hash_table[e]->data);
+    }
+#endif
+    exit_supporter_marker_hash();
+  }
+}
+#else
+#define verify_supporters();
+#endif
+
+void init_supporter(struct Supporter *s,
+		    void (*fun)(void *),
+		    void *data)
+{
+  verify_supporters();
+#ifdef PIKE_DEBUG
+  s->magic = 0x500b0127;
+#endif
+  s->previous=current_supporter;
+  current_supporter=s;
+
+  s->depends_on=0;
+  s->dependants=0;
+  s->next_dependant=0;
+  s->fun=fun;
+  s->data=data;
+  s->prog=0;
+  verify_supporters();
+}
+
+int unlink_current_supporter(struct Supporter *c)
+{
+  int ret=0;
+#ifdef PIKE_DEBUG
+  if(c != current_supporter)
+    fatal("Previous unlink failed.\n");
+#endif
+  debug_malloc_touch(c);
+  verify_supporters();
+  if(c->depends_on)
+  {
+    ret++;
+    c->next_dependant = c->depends_on->dependants;
+    c->depends_on->dependants=c;
+    c->depends_on=0;
+  }
+  current_supporter=c->previous;
+  verify_supporters();
+  return ret;
+}
+
+void call_dependants(struct Supporter *s)
+{
+  struct Supporter *tmp;
+  verify_supporters();
+  while((tmp=s->dependants))
+  {
+    s->dependants=tmp->next_dependant;
+#ifdef PIKD_DEBUG
+    tmp->next_dependant=0;
+#endif
+    verify_supporters();
+    tmp->fun(tmp->data);
+    verify_supporters();
+  }
+}
+
+int report_compiler_dependency(struct program *p)
+{
+  int ret=0;
+  struct Supporter *c,*cc;
+  verify_supporters();
+  for(cc=current_supporter;cc;cc=cc->previous)
+  {
+    if(cc->prog && 
+       !(cc->prog->flags & PROGRAM_PASS_1_DONE))
+    {
+      c=cc->depends_on;
+      if(!c) c=cc->previous;
+      for(;c;c=c->previous)
+      {
+	if(c->prog == p)
+	{
+	  cc->depends_on=c;
+	  verify_supporters();
+	  ret++; /* dependency registred */
+	}
+      }
+    }
+  }
+  verify_supporters();
+  return ret;
+}
+
+
 struct compilation
 {
+  struct Supporter supporter;
   struct pike_string *prog;
   struct object *handler;
   int major, minor;
@@ -4455,9 +4625,6 @@ struct compilation
   struct mapping *resolve_cache_save;
 
   struct svalue default_module;
-
-  struct compilation *dependants;
-  struct compilation *next_dependant;
 };
 
 static void free_compilation(struct compilation *c)
@@ -4469,6 +4636,7 @@ static void free_compilation(struct compilation *c)
   if(c->placeholder) free_object(c->placeholder);
   free_svalue(& c->default_module);
   free((char *)c);
+  verify_supporters();
 }
 
 static void run_init(struct compilation *c)
@@ -4567,6 +4735,7 @@ static void run_exit(struct compilation *c)
 
   free_string(lex.current_file);
   lex=c->save_lex;
+  verify_supporters();
 }
 
 static void zap_placeholder(struct compilation *c)
@@ -4590,6 +4759,7 @@ static void zap_placeholder(struct compilation *c)
   }
   free_object(c->placeholder);
   c->placeholder=0;
+  verify_supporters();
 }
 
 static int run_pass1(struct compilation *c)
@@ -4649,17 +4819,7 @@ static int run_pass1(struct compilation *c)
   CDFPRINTF((stderr, "th(%ld)   compile(): First pass done\n",
 	     (long)th_self()));
 
-  if(Pike_compiler->depends_on)
-  {
-    ret++;
-    c->next_dependant=Pike_compiler->depends_on->compiler->dependants;
-    Pike_compiler->depends_on->compiler->dependants=c;
-#if 0
-    fprintf(stderr,"We (%p) should link ourself to %p\n",
-	    c,
-	    Pike_compiler->depends_on->compiler);
-#endif
-  }
+  ret=unlink_current_supporter(& c->supporter);
 
   c->p=end_first_pass(0);
 
@@ -4678,28 +4838,37 @@ static int run_pass1(struct compilation *c)
     }
   }
 
+  verify_supporters();
   return ret;
 }
 
 void run_pass2(struct compilation *c)
 {
   debug_malloc_touch(c);
+
   run_init(c);
   low_start_new_program(c->p,0,0,0);
   free_program(c->p);
   c->p=0;
+
   Pike_compiler->compiler_pass=2;
+
   run_init2(c);
   
   CDFPRINTF((stderr, "th(%ld)   compile(): Second pass\n",
 	     (long)th_self()));
   
+  verify_supporters();
+
   do_yyparse();  /* Parse da program */
   
   CDFPRINTF((stderr, "th(%ld)   compile(): Second pass done\n",
 	     (long)th_self()));
   
+  verify_supporters();
+
   c->p=end_program();
+
   run_exit(c);
 }
 
@@ -4752,6 +4921,25 @@ static void run_cleanup(struct compilation *c, int delayed)
       UNSETJMP(rec);
     }
   }
+  verify_supporters();
+}
+
+static void call_delayed_pass2(struct compilation *cc)
+{
+  debug_malloc_touch(cc);
+  
+  if(cc->p) run_pass2(cc);
+  run_cleanup(cc,1);
+  
+  debug_malloc_touch(cc);
+  
+#ifdef PIKE_DEBUG
+  if(cc->supporter.dependants)
+    fatal("Que???\n");
+#endif
+  if(cc->p) free_program(cc->p); /* later */
+  free_compilation(cc);
+  verify_supporters();
 }
 
 struct program *compile(struct pike_string *aprog,
@@ -4767,6 +4955,8 @@ struct program *compile(struct pike_string *aprog,
 #endif
   struct compilation *c=ALLOC_STRUCT(compilation);
 
+  verify_supporters();
+
   debug_malloc_touch(c);
   add_ref(c->prog=aprog);
   if((c->handler=ahandler)) add_ref(ahandler);
@@ -4775,8 +4965,6 @@ struct program *compile(struct pike_string *aprog,
   if((c->target=atarget)) add_ref(atarget);
   if((c->placeholder=aplaceholder)) add_ref(aplaceholder);
   c->default_module.type=T_INT;
-  c->dependants=0;
-  c->next_dependant=0;
 
   if(c->handler)
   {
@@ -4800,34 +4988,12 @@ struct program *compile(struct pike_string *aprog,
   low_init_threads_disable();
   c->saved_threads_disabled = threads_disabled;
 
-  
+  init_supporter(& c->supporter,
+		 ( void (*)(void*) )call_delayed_pass2,
+		 (void *)c);
+
   delay=run_pass1(c) && c->p;
-
-  while(c->dependants)
-  {
-    struct compilation *cc=c->dependants;
-
-#ifdef PIKE_DEBUG
-    if(c == cc)
-      fatal("Depending on myself???\n");
-#endif
-
-    c->dependants=cc->next_dependant;
-    cc->next_dependant=0;
-    debug_malloc_touch(cc);
-
-    if(cc->p) run_pass2(cc);
-    run_cleanup(cc,1);
-
-    debug_malloc_touch(cc);
-
-#ifdef PIKE_DEBUG
-    if(cc->dependants)
-      fatal("Que???\n");
-#endif
-    if(cc->p) free_program(cc->p); /* later */
-    free_compilation(cc);
-  }
+  call_dependants(& c->supporter );
 
 #ifdef PIKE_DEBUG
   /* FIXME */
@@ -4838,6 +5004,7 @@ struct program *compile(struct pike_string *aprog,
   {
     /* finish later */
     add_ref(c->p);
+    verify_supporters();
     return c->p; /* freed later */
   }else{
     /* finish now */
@@ -4853,28 +5020,9 @@ struct program *compile(struct pike_string *aprog,
       throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
     debug_malloc_touch(ret);
+    verify_supporters();
     return ret;
   }
-}
-
-int report_compiler_dependency(struct program *p)
-{
-  if(Pike_compiler && Pike_compiler->new_program && 
-     !(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
-  {
-    struct program_state *c;
-    c=Pike_compiler->depends_on;
-    if(!c) c=Pike_compiler->previous;
-    for(;c;c=c->previous)
-    {
-      if(c->new_program == p)
-      {
-	Pike_compiler->depends_on=c;
-	return 1; /* dependency registred */
-      }
-    }
-  }
-  return 0; /* dependency not registred */
 }
 
 PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
