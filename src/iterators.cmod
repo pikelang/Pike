@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.1 2001/02/24 02:38:31 hubbe Exp $");
+RCSID("$Id: iterators.cmod,v 1.2 2001/02/24 16:34:53 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -430,27 +430,6 @@ int foreach_iterate(struct object *o)
 	return 0;
       }
     }
-    if(o->prog == multiset_iterator_program)
-    {
-      struct multiset_iterator_struct *i=OBJ2_MULTISET_ITERATOR(o);
-      if(i->pos < i->a->size)
-      {
-	if(Pike_sp[-4].type != T_INT)
-	{
-	  push_int(1);
-	  assign_lvalue(Pike_sp-5, Pike_sp-1);
-	  pop_stack();
-	}
-
-	if(Pike_sp[-2].type != T_INT)
-	  assign_lvalue(Pike_sp-2, i->a->item + i->pos);
-
-	i->pos++;
-	return 1;
-      }else{
-	return 0;
-      }
-    }
     if(o->prog == array_iterator_program)
     {
       struct array_iterator_struct *i=OBJ2_ARRAY_ITERATOR(o);
@@ -465,6 +444,27 @@ int foreach_iterate(struct object *o)
 	  assign_lvalue(Pike_sp-3, Pike_sp-1);
 	  pop_stack();
 	}
+
+	i->pos++;
+	return 1;
+      }else{
+	return 0;
+      }
+    }
+    if(o->prog == multiset_iterator_program)
+    {
+      struct multiset_iterator_struct *i=OBJ2_MULTISET_ITERATOR(o);
+      if(i->pos < i->a->size)
+      {
+	if(Pike_sp[-4].type != T_INT)
+	{
+	  push_int(1);
+	  assign_lvalue(Pike_sp-5, Pike_sp-1);
+	  pop_stack();
+	}
+
+	if(Pike_sp[-2].type != T_INT)
+	  assign_lvalue(Pike_sp-2, i->a->item + i->pos);
 
 	i->pos++;
 	return 1;
@@ -512,7 +512,7 @@ int foreach_iterate(struct object *o)
 
     if(Pike_sp[-2].type != T_INT)
     {
-      apply(o,"index",0);
+      apply(o,"value",0);
       assign_lvalue(Pike_sp-3,Pike_sp-1);
       pop_stack();
     }
