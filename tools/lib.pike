@@ -176,7 +176,9 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	/* This is somewhat experimental - Hubbe */
 	if(!silent &&
 	   !!Stdio.stdin->tcgetattr() &&
-	   !!Stdio.stdout->tcgetattr())
+	   !!Stdio.stdout->tcgetattr() &&
+	   getenv("TERM") != "dumb" &&
+	   getenv("TERM") != "emacs")
 	{
 	  vars+=({ "TERM=sprsh" });
 	}else{
