@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.60 1999/08/08 12:53:05 grubba Exp $
+// $Id: module.pmod,v 1.61 1999/08/21 01:15:00 grubba Exp $
 
 import String;
 
@@ -868,12 +868,12 @@ static class nb_sendfile
 #endif /* SENDFILE_DEBUG */
 
     // Disable any reader.
-    if (from) {
+    if (from && from->set_nonblocking) {
       from->set_nonblocking(0,0,0);
     }
 
     // Disable any writer.
-    if (to) {
+    if (to && to->set_nonblocking) {
       to->set_nonblocking(0,0,0);
     }
 
