@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.20 2001/09/24 14:22:32 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.21 2001/09/24 17:35:19 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1443,7 +1443,7 @@ PIKECLASS Backend
 				    int num_arg,
 				    struct svalue *argp)
    {
-     call_out *new,;
+     call_out *new;
      struct array *args;
      size_t hval;
      
