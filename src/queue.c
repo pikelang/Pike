@@ -17,7 +17,7 @@ struct queue_block
   struct queue_entry entries[QUEUE_ENTRIES];
 };
 
-void run_queue(struct queue *q)
+void run_queue(struct pike_queue *q)
 {
   struct queue_block *b;
   while((b=q->first))
@@ -32,7 +32,7 @@ void run_queue(struct queue *q)
   q->last=0;
 }
 
-void enqueue(struct queue *q, queue_call call, void *data)
+void enqueue(struct pike_queue *q, queue_call call, void *data)
 {
   struct queue_block *b=q->last;
   if(!b || b->used >= QUEUE_ENTRIES)

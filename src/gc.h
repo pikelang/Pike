@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.18 1998/04/29 02:45:22 hubbe Exp $
+ * $Id: gc.h,v 1.19 1998/04/29 15:06:28 noring Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -8,7 +8,7 @@
 #include "callback.h"
 #include "queue.h"
 
-extern struct queue gc_mark_queue;
+extern struct pike_queue gc_mark_queue;
 extern INT32 num_objects;
 extern INT32 num_allocs;
 extern INT32 alloc_threshold;
