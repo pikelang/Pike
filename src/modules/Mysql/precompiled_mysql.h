@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.12 2001/09/06 12:20:57 grubba Exp $
+ * $Id: precompiled_mysql.h,v 1.13 2002/10/06 12:14:17 grubba Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -47,7 +47,9 @@
  */
 
 struct precompiled_mysql {
+#ifdef PIKE_THREADS
   DEFINE_MUTEX(lock);
+#endif /* PIKE_THREADS */
 
   MYSQL		*mysql, *socket;
   struct pike_string	*host, *database, *user, *password;	/* Reconnect */
