@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.7 2000/12/01 08:10:06 hubbe Exp $");
+RCSID("$Id: wbf.c,v 1.8 2001/04/17 08:59:49 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -32,8 +32,8 @@ extern struct program *image_program;
 
 /*
 **! module Image
-**! submodule WBF
-**!   WAP WBF format
+**! submodule WBMP
+**!   WAP WBMP format
 */
 
 struct buffer
