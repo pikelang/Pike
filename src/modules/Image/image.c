@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.29 1997/05/20 01:19:43 hubbe Exp $ */
+/* $Id: image.c,v 1.30 1997/05/28 16:04:14 mirar Exp $ */
 
 /*
 **! module Image
@@ -100,7 +100,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.29 1997/05/20 01:19:43 hubbe Exp $");
+RCSID("$Id: image.c,v 1.30 1997/05/28 16:04:14 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1871,7 +1871,8 @@ void image_select_from(INT32 args)
 	       sp[1-args].u.integer,
 	       THIS->img,img->img,img->xsize,img->ysize,
 	       pixel(THIS,sp[-args].u.integer,sp[1-args].u.integer),0);
-      MARK_DISTANCE(pixel(THIS,sp[-args].u.integer,sp[1-args].u.integer),0);
+
+      MARK_DISTANCE(pixel(img,sp[-args].u.integer,sp[1-args].u.integer),0);
    }
 
    pop_n_elems(args);
