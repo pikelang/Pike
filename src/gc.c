@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.126 2000/08/23 18:49:45 grubba Exp $");
+RCSID("$Id: gc.c,v 1.127 2000/08/27 15:21:50 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -621,7 +621,7 @@ void low_describe_something(void *a,
 
   if(depth<0) return;
 
-  if ((m = find_marker(a))) {
+  if (Pike_in_gc && (m = find_marker(a))) {
     fprintf(stderr,"%*s**Got gc ",indent,"");
     describe_marker(m);
   }
