@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.81 2001/03/04 19:27:17 mirar Exp $
+ * $Id: acconfig.h,v 1.82 2001/03/13 04:09:18 hubbe Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -23,6 +23,12 @@
 
 /* Define this if you want checkpoints */
 #undef DMALLOC_TRACE
+
+/* With this, dmalloc will trace malloc(3) calls */
+#undef ENCAPSULATE_MALLOC
+
+/* With this, dmalloc will report leaks made by malloc(3) calls */
+#undef REPORT_ENCAPSULATED_MALLOC
 
 /* Define this to enable the internal Pike security system */
 #undef PIKE_SECURITY

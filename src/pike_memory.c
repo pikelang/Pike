@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.100 2001/02/28 04:25:30 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.101 2001/03/13 04:09:18 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -671,7 +671,6 @@ static MUTEX_T debug_malloc_mutex;
 #include <dlfcn.h>
 #endif
 
-#define ENCAPSULATE_MALLOC
 
 #ifdef ENCAPSULATE_MALLOC
 #ifdef RTLD_NEXT
@@ -805,6 +804,9 @@ PMOD_EXPORT void *malloc(size_t x)
   }else{
     ret=fake_malloc(x);
   }
+#ifdef REPORT_ENCAPSULATED_MALLOC
+  dmalloc_accept_leak(ret);
+#endif
   LOWDEBUG3("malloc --> ",ret);
   return ret;
 }
@@ -864,6 +866,9 @@ PMOD_EXPORT void *realloc(void *x,size_t y)
   }else{
     ret=debug_realloc(x, y, DMALLOC_LOCATION());
   }
+#ifdef REPORT_ENCAPSULATED_MALLOC
+  dmalloc_accept_leak(ret);
+#endif
   LOWDEBUG3("realloc --> ",ret);
   return ret;
 }
@@ -888,6 +893,9 @@ void *fake_realloc(void *x,size_t y)
   }else{
     ret=real_realloc(x,y);
   }
+#ifdef REPORT_ENCAPSULATED_MALLOC
+  dmalloc_accept_leak(ret);
+#endif
   LOWDEBUG3("fake_realloc --> ",ret);
   return ret;
 }
@@ -899,6 +907,9 @@ void *calloc(size_t x, size_t y)
   LOWDEBUG3("calloc y",y);
   ret=malloc(x*y);
   if(ret) MEMSET(ret,0,x*y);
+#ifdef REPORT_ENCAPSULATED_MALLOC
+  dmalloc_accept_leak(ret);
+#endif
   LOWDEBUG3("calloc --> ",ret);
   return ret;
 }
@@ -908,6 +919,9 @@ void *fake_calloc(size_t x, size_t y)
   void *ret;
   ret=fake_malloc(x*y);
   if(ret) MEMSET(ret,0,x*y);
+#ifdef REPORT_ENCAPSULATED_MALLOC
+  dmalloc_accept_leak(ret);
+#endif
   LOWDEBUG3("fake_calloc --> ",ret);
   return ret;
 }
