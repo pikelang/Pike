@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.163 2003/03/14 15:50:44 grubba Exp $
+|| $Id: mapping.c,v 1.164 2003/03/30 16:15:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.163 2003/03/14 15:50:44 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.164 2003/03/30 16:15:09 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2466,45 +2466,6 @@ void debug_dump_mapping(struct mapping *m)
   }
 }
 #endif
-
-void zap_all_mappings(void)
-{
-  INT32 e;
-  struct keypair *k;
-  struct mapping *m,*next;
-  struct mapping_data *md;
-
-  for(m=first_mapping;m;m=next)
-  {
-    add_ref(m);
-
-#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
-    if(verbose_debug_exit)
-      debug_dump_mapping(m);
-#endif
-
-    md=m->data;
-    for(e=0;e<md->hashsize;e++)
-    {
-      while((k=md->hash[e]))
-      {
-	md->hash[e]=k->next;
-	free_svalue(&k->ind);
-	free_svalue(&k->val);
-	FREE_KEYPAIR(md, k);
-        md->free_list->ind.type = T_INT;
-        md->free_list->val.type = T_INT;
-      }
-    }
-    md->size=0;
-#ifdef MAPPING_SIZE_DEBUG
-    if(m->data ==md)
-      m->debug_size=0;
-#endif
-    
-    SET_NEXT_AND_FREE(m, free_mapping);
-  }
-}
 
 int mapping_is_constant(struct mapping *m,
 			struct processing *p)

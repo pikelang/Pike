@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.138 2003/03/14 15:50:43 grubba Exp $
+|| $Id: array.c,v 1.139 2003/03/30 16:15:09 mast Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.138 2003/03/14 15:50:43 grubba Exp $");
+RCSID("$Id: array.c,v 1.139 2003/03/30 16:15:09 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2308,28 +2308,6 @@ void debug_dump_array(struct array *a)
   simple_describe_array(a);
 }
 #endif
-
-
-void zap_all_arrays(void)
-{
-  struct array *a,*next;
-
-  for(a=empty_array.next;a!=&empty_array;a=next)
-  {
-
-#if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
-    if(verbose_debug_exit && a!=&empty_array &&
-       a!=&weak_empty_array && a!=&weak_shrink_empty_array)
-      describe(a);
-#endif
-    
-    add_ref(a);
-    free_svalues(ITEM(a), a->size, a->type_field);
-    a->size=0;
-
-    SET_NEXT_AND_FREE(a,free_array);
-  }
-}
 
 
 void count_memory_in_arrays(INT32 *num_, INT32 *size_)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.48 2003/01/11 00:01:20 mast Exp $
+|| $Id: mapping.h,v 1.49 2003/03/30 16:15:10 mast Exp $
 */
 
 #ifndef MAPPING_H
@@ -176,7 +176,6 @@ void gc_zap_ext_weak_refs_in_mappings(void);
 size_t gc_free_all_unreferenced_mappings(void);
 void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
-void zap_all_mappings(void);
 int mapping_is_constant(struct mapping *m,
 			struct processing *p);
 /* Prototypes end here */
