@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.11 2001/06/16 12:09:02 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.12 2001/06/16 13:51:15 per Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -430,6 +430,192 @@ PIKECLASS string_iterator
     }
 };
 
+/* Interal (for Stdio.File) class: Stdio.File->line_iterator.
+ * Splits on lines, does only handle 8-bit characters.
+ */
+PIKECLASS file_line_iterator
+{
+  CVAR struct pike_string *buffer;
+  CVAR struct pike_string *current;
+  CVAR int offset;
+  CVAR int index;
+  CVAR struct svalue feed;
+
+
+  static void fl_find_next(struct file_line_iterator_struct *ssi)
+  {
+    unsigned char *ptr, *eptr, *start;
+    int start_off = ssi->offset;
+
+    if (ssi->current)
+    {
+      free_string(ssi->current);
+      ssi->current = NULL;
+    }
+
+    if (!ssi->buffer)
+      return;
+
+  again:
+      start = ssi->buffer->str + start_off;
+      ptr   = ssi->buffer->str + ssi->offset;
+      eptr  = ssi->buffer->str + ssi->buffer->len;
+
+      /* Loop until we find a '\n'. */
+      while( ptr < eptr )
+	if( *ptr != '\n'  )
+	  ptr++;
+	else
+	{
+	  ssi->current = make_shared_binary_string( start, ptr-start );
+	  // skip the '\n'
+	  ssi->offset =  ptr - ((unsigned char *)ssi->buffer->str) + 1;
+	  ssi->index++;
+	  return;
+	}
+
+      apply_svalue( &ssi->feed, 0 );
+      if( Pike_sp[-1].type == PIKE_T_STRING &&
+	  Pike_sp[-1].u.string->len )
+      {
+	push_string(make_shared_binary_string( ssi->buffer->str+start_off,
+					       ssi->buffer->len-start_off));
+	free_string( ssi->buffer );
+	stack_swap();
+	f_add( 2 );
+	ssi->buffer = Pike_sp[-1].u.string;
+	Pike_sp--;
+
+	if( !ssi->buffer->size_shift )
+	{
+	  ssi->offset -= start_off;
+	  start_off = 0;
+	  goto again;
+	}
+      }
+      else
+	pop_stack();
+      free_string( ssi->buffer );
+      ssi->buffer = NULL;
+      return;
+   }
+  
+  PIKEFUN string value()
+    {
+      if (THIS->current) {
+	ref_push_string(THIS->current);
+      } else {
+	push_int(0);
+	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+      }
+    }
+
+  PIKEFUN int index()
+    {
+      if (!THIS->current) {
+	push_int(0);
+	Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+      }else{
+	RETURN THIS->index;
+      }
+    }
+
+  PIKEFUN object `+(int steps)
+    {
+      struct object *o=low_clone(file_line_iterator_program);
+      int i;
+      struct file_line_iterator_struct *ssi;
+      (ssi = OBJ2_FILE_LINE_ITERATOR(o))[0]=*THIS;
+      if (THIS->buffer) {
+	add_ref(THIS->buffer);
+      }
+      if (THIS->current) {
+	add_ref(THIS->current);
+      }
+      add_ref_svalue(&THIS->feed);
+      while( steps-- )
+	fl_find_next(ssi);
+      RETURN o;
+    }
+
+  PIKEFUN object `+=(int steps)
+    {
+      while( steps-- )
+	fl_find_next(THIS);
+      REF_RETURN Pike_fp->current_object;
+    }
+
+  PIKEFUN int first()
+    {
+      Pike_error("Not supported.\n");
+    }
+
+  PIKEFUN object _random()
+    {
+      Pike_error("Not supported.\n");
+    }
+
+  PIKEFUN int _sizeof()
+    {
+      Pike_error("Not supported.\n");
+    }
+
+  PIKEFUN int next()
+    {
+      fl_find_next(THIS);
+      RETURN !!THIS->current;
+    }
+
+  PIKEFUN int `!()
+    {
+      RETURN !THIS->current;
+    }
+
+  PIKEFUN void create(function(:string)|void feed)
+    {
+      if (THIS->buffer) {
+	Pike_error("iterators cannot be reused.\n");
+      }
+      assign_svalue( &THIS->feed, feed );
+      apply_svalue( &THIS->feed, 0 );
+      if( Pike_sp[-1].type != PIKE_T_STRING )
+	Pike_error("Feed function returned illegal value\n");
+      THIS->buffer = Pike_sp[-1].u.string;
+      Pike_sp--;
+      THIS->offset = 0;
+      THIS->current = NULL;
+      THIS->index = -1;
+      fl_find_next(THIS);
+    }
+  
+  INIT 
+    {
+      THIS->buffer = NULL;
+      THIS->current = NULL;
+      THIS->offset = 0;
+      THIS->index = 0;
+      THIS->feed.type = T_INT;
+      THIS->feed.u.integer = 0;
+    }
+
+  EXIT
+    {
+      if (THIS->buffer) {
+	free_string(THIS->buffer);
+	THIS->buffer = NULL;
+      }
+      if (THIS->current) {
+	free_string(THIS->current);
+	THIS->current = NULL;
+      }
+      free_svalue(&THIS->feed);
+      THIS->feed.type = T_INT;
+      THIS->feed.u.integer = 0;
+    }
+  
+  
+}
+
 /*! @module String
  */
 
@@ -501,7 +687,7 @@ PIKECLASS string_split_iterator
       }								\
       OFF++;							\
     }								\
-  PIKE_CONCAT(break_scan, SHIFT):				\
+  PIKE_CONCAT(break_scan, SHIFT): ;/* gcc complains without ;*/ \
   } while(0);							\
   break
 
@@ -1132,6 +1318,32 @@ int foreach_iterate(struct object *o)
 	}
 
 	find_next(i);
+	return 1;
+      }else{
+	return 0;
+      }
+    } else if(o->prog == file_line_iterator_program)
+    {
+      struct file_line_iterator_struct *i=OBJ2_FILE_LINE_ITERATOR(o);
+      if(i->current)
+      {
+	if(Pike_sp[-4].type != T_INT)
+	{
+	  /* Black Magic... */
+	  push_int(i->index);
+	  Pike_sp--;
+	  assign_lvalue(Pike_sp-4, Pike_sp);
+	}
+
+	if(Pike_sp[-2].type != T_INT)
+	{
+	  /* Black Magic... */
+	  push_string(i->current);
+	  Pike_sp--;
+	  assign_lvalue(Pike_sp-2, Pike_sp);
+	}
+
+	fl_find_next(i);
 	return 1;
       }else{
 	return 0;
