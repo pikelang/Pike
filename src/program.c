@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.321 2001/05/14 03:32:06 hubbe Exp $");
+RCSID("$Id: program.c,v 1.322 2001/05/23 12:19:16 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -224,7 +224,8 @@ static char *raw_lfun_types[] = {
  *!   This function is called right after @[lfun::__INIT()].
  *!   
  *!   @[args] will be the arguments passed when the program was called.
- *!   
+ *!
+ *! @note
  *!   In Pike 7.2 and later this function can be created implicitly
  *!   by the compiler using the new syntax:
  *!     @code{
@@ -4099,12 +4100,30 @@ struct program *compile(struct pike_string *prog,
   UNSET_ONERROR(tmp);
 #endif
   pop_stack(); /* pop the 'default' module */
-  if(placeholder)
-  {
-    call_pike_initializers(placeholder,0);
+
+  if (!p) {
+    /* fprintf(stderr, "Destructing placeholder.\n"); */
+    if(placeholder)
+    {
+      if (placeholder->storage) {
+	yyerror("Placeholder already has storage!\n");
+	/* fprintf(stderr, "Placeholder already has storage!\n"
+	   "placeholder: %p, storage: %p, prog: %p, p: %p\n",
+	   placeholder, placeholder->storage, placeholder->prog, p); */
+	destruct(placeholder);
+      } else {
+	placeholder->prog = NULL;
+      }
+      placeholder=0;
+    }
+
+    Pike_error("Compilation failed.\n");
   }
 
-  if(!p) Pike_error("Compilation failed.\n");
+  if (placeholder) {
+    /* Initialize the placeholder. */
+    call_pike_initializers(placeholder,0);
+  }
   return p;
 }
 
