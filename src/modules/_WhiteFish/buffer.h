@@ -10,7 +10,7 @@ struct buffer
 };
 
 
-void wf_buffer_make_space( struct buffer *b, int n );
+/* void wf_buffer_make_space( struct buffer *b, int n ); */
 void wf_buffer_wbyte( struct buffer *b,  unsigned char s );
 void wf_buffer_wshort( struct buffer *b, unsigned short s );
 void wf_buffer_wint( struct buffer *b,   unsigned int s );
@@ -31,6 +31,9 @@ void wf_buffer_set_pike_string( struct buffer *b, struct pike_string *data,
 				int read_only );
 
 void wf_buffer_append( struct buffer *b, char *data, int size );
+int wf_buffer_memcpy( struct buffer *d,  struct buffer *s, int nelems );
+void wf_buffer_rewind_r( struct buffer *b, int n );
+void wf_buffer_rewind_w( struct buffer *b, int n );
 
 
 

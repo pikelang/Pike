@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.2 2001/05/24 14:16:34 per Exp $");
+RCSID("$Id: buffer.c,v 1.3 2001/05/24 17:09:01 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -29,10 +29,11 @@ RCSID("$Id: buffer.c,v 1.2 2001/05/24 14:16:34 per Exp $");
 #include <inttypes.h>
 #endif
 
-void wf_buffer_make_space( struct buffer *b, int n )
+static INLINE void wf_buffer_make_space( struct buffer *b, int n )
 {
-  if( b->read_only )
-    fatal("Oops\n");
+#ifdef PIKE_DEBUG
+  if( b->read_only )  fatal("Oops\n");
+#endif
   while( b->allocated_size-n < b->size )
   {
     b->allocated_size++;
@@ -51,8 +52,9 @@ void wf_buffer_wbyte( struct buffer *b,
 void wf_buffer_wshort( struct buffer *b,
 		       unsigned short s )
 {
-  wf_buffer_wbyte( b, (s>>8)&255 );
-  wf_buffer_wbyte( b, (s)&255 );
+  wf_buffer_make_space( b, 2 );
+  b->data[b->size++] = (s>>8);
+  b->data[b->size++] = (s)&255;
 }
 
 void wf_buffer_wint( struct buffer *b,
@@ -64,34 +66,59 @@ void wf_buffer_wint( struct buffer *b,
   b->size += 4;
 }
 
+void wf_buffer_rewind_r( struct buffer *b, int n )
+{
+  if( n == -1 )
+    b->rpos = 0;
+  else if( b->rpos > n )
+    b->rpos -= n;
+  else
+    b->rpos = 0;
+}
+
+void wf_buffer_rewind_w( struct buffer *b, int n )
+{
+  if( n == -1 )
+     b->size = 0;
+  else if( b->size > n )
+    b->size -= n;
+  else
+    b->size = 0;
+}
 
 int wf_buffer_rbyte( struct buffer *b )
 {
   if( b->rpos < b->size )
-    return b->data[ b->rpos++ ];
+    return ((unsigned char *)b->data)[ b->rpos++ ];
   return 0;
 }
 
 int wf_buffer_rint( struct buffer *b )
 {
-  int res=0, i;
-  for( i=0; i<4; i++ )
-  {
-    res <<= 8;
-    res |= wf_buffer_rbyte( b );
-  }
-  return res;
+  return (((((wf_buffer_rbyte( b ) << 8) |
+	     wf_buffer_rbyte( b ))<<8)   |
+	   wf_buffer_rbyte( b )) << 8)   |
+         wf_buffer_rbyte( b );
+}
+
+int wf_buffer_memcpy( struct buffer *d,
+		      struct buffer *s,
+		      int nelems )
+{
+  if( (s->rpos+nelems) > s->size )
+    nelems = s->size-s->rpos;
+  if( nelems <= 0 )
+    return 0;
+  wf_buffer_make_space( d, nelems );
+  MEMCPY( d->data+d->size, s->data+s->rpos, nelems );
+  s->rpos += nelems;
+  d->size += nelems;
+  return nelems;
 }
 
 int wf_buffer_rshort( struct buffer *b )
 {
-  int res=0, i;
-  for( i=0; i<2; i++ )
-  {
-    res <<= 8;
-    res |= wf_buffer_rbyte( b );
-  }
-  return res;
+  return (wf_buffer_rbyte( b ) << 8) | wf_buffer_rbyte( b );
 }
 
 int wf_buffer_eof( struct buffer *b )

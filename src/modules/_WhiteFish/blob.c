@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.7 2001/05/24 14:23:47 per Exp $");
+RCSID("$Id: blob.c,v 1.8 2001/05/24 17:09:01 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -176,14 +176,19 @@ struct blob_data
 };
 
 static struct program *blob_program;
-
-static struct hash *new_hash( int doc_id )
+static struct hash *low_new_hash( int doc_id )
 {
   struct hash *res =  malloc( sizeof( struct hash ) );
   res->doc_id = doc_id;
   res->next = 0;
   res->data = wf_buffer_new();
   wf_buffer_set_empty( res->data );
+  return res;
+}
+
+static struct hash *new_hash( int doc_id )
+{
+  struct hash *res =  low_new_hash( doc_id );
   wf_buffer_wint( res->data, doc_id );
   wf_buffer_wbyte( res->data, 0 );
   return res;
@@ -199,7 +204,7 @@ static void insert_hash( struct blob_data *d, struct hash *h )
 static struct hash *find_hash( struct blob_data *d, int doc_id )
 {
   int r = doc_id % HSIZE;
-  struct hash *h = d->hash[r];
+  struct hash *h = d->hash[ r ];
   
   while( h )
   {
@@ -247,8 +252,13 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
     int docid = wf_buffer_rint( b );
     int nhits = wf_buffer_rbyte( b );
     int i;
-    for( i = 0; i<nhits; i++ )
-      _append_hit( d, docid, wf_buffer_rshort( b ) );
+    struct hash *h = find_hash( d, docid );
+    /* Make use of the fact that this blob is currently empty, and
+     * assume that the incoming data is valid
+     */
+    wf_buffer_rewind_r( b, 5 );
+    wf_buffer_rewind_w( h->data, -1 );
+    wf_buffer_memcpy( h->data, b, nhits*2+5 );    
   }
   wf_buffer_free( b );
 }
