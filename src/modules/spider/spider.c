@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.91 2000/05/20 02:23:11 per Exp $");
+RCSID("$Id: spider.c,v 1.92 2000/05/24 01:22:20 hubbe Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1265,7 +1265,7 @@ void pike_module_init(void)
 				       tOr(tStr,tArr(tStr))))),
 		  tMix,
 		  tStr),
-	   0);
+	   OPT_SIDE_EFFECT);
 
 
   ADD_EFUN("parse_html_lines",f_parse_html_lines,
