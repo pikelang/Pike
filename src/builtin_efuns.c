@@ -707,8 +707,7 @@ void f_exit(INT32 args)
   call_and_free_callback_list(& exit_callbacks);
 
   i=sp[-args].u.integer;
-#define DEALLOCATE_MEMORY
-#ifdef DEALLOCATE_MEMORY
+#ifdef DEBUG
   exit_modules();
 #endif
 
