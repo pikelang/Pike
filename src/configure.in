@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.404 2000/08/21 15:22:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.405 2000/08/21 21:30:13 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3354,6 +3354,49 @@ int main() {  exit(0); }
 AC_MSG_RESULT($pike_cv_gcc_attributes)
 if test "$pike_cv_gcc_attributes" = yes; then
  AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
+fi
+
+AC_MSG_CHECKING(for lc __declspec)
+AC_CACHE_VAL(pike_cv_lc___declspec,
+[
+  AC_TRY_RUN([
+#include <stdarg.h>
+__declspec(noreturn) void fatal(char *foo,...);
+
+__declspec(noreturn) void fatal(char *foo,...)
+{
+  va_list args;
+  va_start(foo,args);
+  printf(foo,args);
+  va_end(args);
+  exit(2);
+}
+
+int main() {  exit(0); }
+
+  ], pike_cv_lc___declspec=yes, pike_cv_lc___declspec=no, [
+    echo $ac_n "crosscompiling... $ac_c" 1>&6
+    AC_TRY_LINK([
+#include <stdarg.h>
+__declspec(noreturn) void fatal(char *foo,...);
+
+__declspec(noreturn) void fatal(char *foo,...)
+{
+  va_list args;
+  va_start(foo,args);
+  printf(foo,args);
+  va_end(args);
+  exit(2);
+}
+    ], [
+  exit(0);
+    ], pike_cv_lc___declspec=yes, pike_cv_lc___declspec=no)
+  ])
+])
+
+AC_MSG_RESULT($pike_cv_lc___declspec)
+if test "$pike_cv_lc___declspec" = yes; then
+ AC_DEFINE(HAVE_DECLSPEC)
 fi
 
 #############################################################################
