@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.64 1999/11/04 20:04:05 hubbe Exp $");
+RCSID("$Id: opcodes.c,v 1.65 1999/11/04 20:25:18 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1040,7 +1040,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  long tmp;							 \
 	  for(e=cnt+1,tmp=1;tmp;e++)					 \
 	  {								 \
-	    if(!match[e])						 \
+	    if(e>=match_len)						 \
 	    {								 \
 	      error("Missing %%} in format string.\n");			 \
 	      break;		/* UNREACHED */				 \
