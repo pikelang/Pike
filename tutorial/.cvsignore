@@ -8,10 +8,14 @@ Parser.wmml
 ProtocolsHTTP.wmml
 ProtocolsLysKOM.wmml
 ___tmp.*
+error.pdf
 extra_textflows.mif
+gfx
 illustration*.*
 illustration_cache
 man
+pike.pdf
+texput.log
 tut*.html
 tutorial-foo.wmml
 tutorial.aux
@@ -20,7 +24,10 @@ tutorial.html
 tutorial.log
 tutorial.mif
 tutorial.pdf
+tutorial.pdftex
+tutorial.ps
 tutorial.ps.bz2
+tutorial.ps.gz
 tutorial.tex
 tutorial.toc
 tutorial_*.html
