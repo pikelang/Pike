@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.198 2003/09/09 14:30:17 mast Exp $
+|| $Id: gc.c,v 1.199 2003/09/09 15:00:58 mast Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.198 2003/09/09 14:30:17 mast Exp $");
+RCSID("$Id: gc.c,v 1.199 2003/09/09 15:00:58 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -899,7 +899,7 @@ again:
 	    else
 	      assign_from_short_svalue_no_free (
 		Pike_sp++, (union anything *) ptr, id->run_time_type);
-	    print_svalue (stderr, Pike_sp - 1);
+	    print_svalue_compact (stderr, Pike_sp - 1);
 	    pop_stack();
 
 	    fputc ('\n', stderr);
@@ -1054,7 +1054,7 @@ again:
 	  fprintf (stderr, "  pc: %"PRINTPTRDIFFT"d", id->func.offset);
 	else if (IDENTIFIER_IS_CONSTANT (id->identifier_flags)) {
 	  fputs ("  value: ", stderr);
-	  print_svalue (stderr, &id_inh->prog->constants[id->func.offset].sval);
+	  print_svalue_compact (stderr, &id_inh->prog->constants[id->func.offset].sval);
 	}
 
 	fputc ('\n', stderr);
