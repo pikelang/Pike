@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.120 2001/06/19 23:59:33 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.121 2001/06/23 10:33:11 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -165,6 +165,7 @@ static INT32 current_switch_case;
 static INT32 current_switch_default;
 static INT32 current_switch_values_on_stack;
 static INT32 *current_switch_jumptable =0;
+static int in_catch=0;
 static struct pike_type *current_switch_type = NULL;
 
 void upd_int(int offset, INT32 tmp)
@@ -1599,7 +1600,7 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_RETURN:
     do_docode(CAR(n),0);
-    emit0(F_RETURN);
+    emit0(in_catch ? F_VOLATILE_RETURN : F_RETURN);
     return 0;
 
   case F_SSCANF:
@@ -1620,7 +1621,9 @@ static int do_docode2(node *n, INT16 flags)
     if (TEST_COMPAT(7,0))
       current_label->continue_label = current_label->break_label;
 
+    in_catch++;
     DO_CODE_BLOCK(CAR(n));
+    in_catch--;
 
     ins_label(current_label->break_label);
     emit0(F_THROW_ZERO);

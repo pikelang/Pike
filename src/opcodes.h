@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.16 2001/06/17 19:15:15 grubba Exp $
+ * $Id: opcodes.h,v 1.17 2001/06/23 10:33:11 hubbe Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -130,6 +130,10 @@ enum Pike_opcodes
   F_START_FUNCTION,
   F_BYTE,
   F_NOTREACHED,
+
+  /* Alias for F_RETURN, but cannot be optimized into a tail recursion call */
+  F_VOLATILE_RETURN,
+
   F_MAX_INSTR
 };
 

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.426 2001/06/20 16:05:52 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.427 2001/06/23 10:33:11 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -715,6 +715,27 @@ test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return b]],2)
 test_any([[ int a; catch { [a]=({1,2}); }; return 1]],1)
 test_any([[ int a,b; catch { [a,b]=({1}); }; return 1]],1)
 test_any([[ mapping m=([]); m[m]=m; return stringp(sprintf("%O",m)); ]],1)
+
+test_any([[
+  int q() { throw(1); };
+  catch {
+     return q();
+  };
+  return 17;
+]],17)
+
+test_any([[
+ return class
+ {
+   int q() { throw(1); };
+   int p() {
+     catch {
+        return q();
+     };
+     return 17;
+   }
+ }()->p();
+]],17)
 
 test_compile_error([[
   static function foo(string ...:object);

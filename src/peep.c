@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.46 2001/01/31 22:03:53 mast Exp $");
+RCSID("$Id: peep.c,v 1.47 2001/06/23 10:33:11 hubbe Exp $");
 
 static void asm_opt(void);
 
@@ -372,6 +372,10 @@ void assemble(void)
 	fatal("Duplicate label!\n");
 #endif
       labels[c->arg] = DO_NOT_WARN((INT32)PC);
+      break;
+
+    case F_VOLATILE_RETURN:
+      ins_f_byte(F_RETURN);
       break;
 
     default:
