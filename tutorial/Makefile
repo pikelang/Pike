@@ -58,13 +58,9 @@ tutorial.tex: .DUMMY $(SRCFILES)
 # latex has to be run twice to work with labels and stuff
 # but there are no labels yet...
 tutorial.dvi: tutorial.tex
-	-@rm tutorial.aux tutorial.toc
-	latex tutorial.tex >/dev/null
 	latex tutorial.tex
 
 tutorial.pdf: tutorial.pdftex
-	-@rm tutorial.aux tutorial.toc
-	pdflatex tutorial.pdftex >/dev/null
 	pdflatex tutorial.pdftex
 
 tutorial.ps: tutorial.dvi
