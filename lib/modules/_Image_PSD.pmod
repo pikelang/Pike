@@ -2,7 +2,7 @@ inherit Image._PSD;
 
 class Layer
 {
-  string mode;
+  string mode, name;
   int opacity;
   object image;
   object alpha;
@@ -14,24 +14,9 @@ class Layer
   int mask_flags;
   int mask_xoffset, mask_yoffset;
   int mask_width, mask_height;
-
-//   Layer copy()
-//   {
-//     Layer l = Layer();
-//     l->mode = mode;
-//     l->opacity = opacity;
-//     l->image = image;
-//     l->alpha = alpha;
-//     l->flags = flags;
-//     l->xoffset = xoffset;
-//     l->yoffset = yoffset;
-//     l->width = width;
-//     l->height = height;
-//     return l;
-//   }
 }
 
-int foo;
+static int foo;
 Layer decode_layer(mapping layer, mapping i)
 {
 //   int stt = gethrtime();
@@ -44,6 +29,7 @@ Layer decode_layer(mapping layer, mapping i)
   l->yoffset = layer->top;
   l->image = Image.image( l->width, l->height );
   l->mode = layer->mode;
+  l->name = layer->name;
   l->flags = layer->flags;
 
   l->mask_width = layer->mask_right-layer->mask_left;
@@ -290,18 +276,13 @@ array decode_layers( string|mapping what, mapping|void opts )
   foreach(reverse(what->layers), object l)
   {
     string m;
-    if( (m = translate_mode( l->mode ))
-	&& l->opacity
-	&& l->image->xsize()
-	&& l->image->ysize() )
+    if( (!(l->flags & LAYER_FLAG_INVISIBLE) && l->opacity)
+	|| opts->draw_all_layers )
     {
       Image.Layer lay = Image.Layer( l->image, l->alpha, m );
       l->image = 0; l->alpha = 0;
-#if 0
-      // Dumps core in Pike 7.0 at least...
-      if( l->opacity != 255 )
- 	lay->set_alpha_value( 1.0 - l->opacity / 255.0 );
-#else
+      lay->set_misc_value( "visible", !(l->flags & LAYER_FLAG_INVISIBLE) );
+      lay->set_misc_value( "name",      l->name );
       if( lay->alpha() )
 	lay->set_image( lay->image(), lay->alpha()->color(l->opacity,
 							  l->opacity,
@@ -311,7 +292,6 @@ array decode_layers( string|mapping what, mapping|void opts )
 			lay->image()->clear(l->opacity,
 					    l->opacity,
 					    l->opacity) );
-#endif
       lay->set_offset( l->xoffset, l->yoffset );
       layers += ({ lay });
     }
@@ -339,4 +319,18 @@ mapping _decode( string|mapping what, mapping|void opts )
   ]);
 // };
 //  werror(describe_backtrace(e));
+}
+
+Image.Image decode( string|mapping what, mapping|void opts )
+{
+  mapping data;
+  if(!opts) opts = ([]);
+  if(mappingp(what))
+    data = what;
+  else 
+    data = __decode( what );
+  what=0;
+  Image.Layer res = Image.lay(decode_layers( data, opts ),
+                              0,0,data->width,data->height );
+  return res->image();
 }

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.15 2000/03/27 07:42:35 hubbe Exp $");
+RCSID("$Id: psd.c,v 1.16 2000/11/16 19:16:19 per Exp $");
 
 #include "image_machine.h"
 
@@ -180,10 +180,23 @@ struct layer
   int compression;
   struct channel_info channel_info[24];
   struct buffer mode;
+  struct buffer name;
   struct buffer extra_data;
 };
 
-static void decode_layers_and_masks( struct psd_image *dst, 
+ 
+static struct buffer read_pstring( struct buffer *data )
+{
+  struct buffer res;
+  res.len = read_uchar( data );
+  res.str = (unsigned char *)read_data( data, res.len );
+  if(!res.str)
+    error("String read failed\n");
+  return res;
+}
+
+
+  static void decode_layers_and_masks( struct psd_image *dst, 
                                      struct buffer *src )
 {
   short count, first_alpha_is_magic;
@@ -243,8 +256,14 @@ static void decode_layers_and_masks( struct psd_image *dst,
         layer->mask_bottom = read_int( &tmp2 );
         layer->mask_right  = read_int( &tmp2 );
         layer->mask_default_color = read_uchar( &tmp2 );
-        layer->mask_flags = read_uchar( &tmp2 );
+/*         layer->mask_flags = read_uchar( &tmp2 ); */
       }
+      tmp2 = read_string( &tmp );
+      if( tmp2.len )
+      {
+	/* ranges (?) */
+      }
+      layer->name = read_pstring( &tmp );
     }
   }
   while(layer->next)
@@ -532,6 +551,8 @@ void push_layer( struct layer  *l)
   ref_push_string( s_compression );   push_int( l->compression );
   ref_push_string( s_mode );          push_buffer( &l->mode );
   ref_push_string( s_extra_data );    push_buffer( &l->extra_data );
+  ref_push_string( s_name );          push_buffer( &l->name );
+
   ref_push_string( s_channels );
   for( i = 0; i<l->num_channels; i++ )
   {
@@ -646,9 +667,8 @@ void init_image_psd()
   add_integer_constant("Lab" , Lab, 0 );
 
 
-
-  add_integer_constant("LAYER_FLAG_VISIBLE", 0x01, 0 );
-  add_integer_constant("LAYER_FLAG_OBSOLETE", 0x02, 0 );
+  add_integer_constant("LAYER_FLAG_PRESERVE_TRANSPARENCY", 0x01, 0 );
+  add_integer_constant("LAYER_FLAG_INVISIBLE", 0x02, 0 );
   add_integer_constant("LAYER_FLAG_BIT4", 0x04, 0 );
   add_integer_constant("LAYER_FLAG_NOPIX", 0x08, 0 );
 
