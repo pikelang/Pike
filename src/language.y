@@ -15,6 +15,9 @@
 %token F_POP_VALUE F_POP_N_ELEMS F_MARK F_CALL_LFUN
 
 %token F_BRANCH F_BRANCH_WHEN_ZERO F_BRANCH_WHEN_NON_ZERO
+%token F_BRANCH_WHEN_LT F_BRANCH_WHEN_GT
+%token F_BRANCH_WHEN_LE F_BRANCH_WHEN_GE
+%token F_BRANCH_WHEN_EQ F_BRANCH_WHEN_NE
 %token F_INC_LOOP F_DEC_LOOP
 %token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
 
@@ -28,14 +31,17 @@
  */
 %token F_LFUN F_GLOBAL F_LOCAL
 %token F_GLOBAL_LVALUE F_LOCAL_LVALUE
+%token F_CLEAR_LOCAL
 %token F_CONSTANT F_FLOAT F_STRING
-%token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 
+%token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 F_BIGNUM
 
 /*
  * These are the predefined functions that can be accessed from LPC.
  */
 
 %token F_INC F_DEC F_POST_INC F_POST_DEC F_INC_AND_POP F_DEC_AND_POP
+%token F_INC_LOCAL F_INC_LOCAL_AND_POP F_POST_INC_LOCAL
+%token F_DEC_LOCAL F_DEC_LOCAL_AND_POP F_POST_DEC_LOCAL
 %token F_RETURN F_DUMB_RETURN F_RETURN_0
 
 %token F_ASSIGN F_ASSIGN_AND_POP
@@ -119,6 +125,10 @@
 %token F_VOID_ID
 %token F_WHILE
 %token F_XOR_EQ
+
+%token F_ALIGN
+%token F_POINTER
+%token F_LABEL
 
 %token F_MAX_INSTR
 
@@ -1030,13 +1040,13 @@ comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
 
 gauge: F_GAUGE '(' unused ')'
   {
-    $$=mknode(F_NEGATE,
-	      mknode(F_SUBTRACT,
-		     mknode(F_INDEX,mkefuncallnode("rusage",0),
-			    mkintnode(GAUGE_RUSAGE_INDEX)),
-		     mknode(F_ARG_LIST,$3,
-			    mknode(F_INDEX,mkefuncallnode("rusage",0),
-				   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
+    $$=mkopernode("`-",
+		  mkopernode("`-",
+			     mknode(F_INDEX,mkefuncallnode("rusage",0),
+				    mkintnode(GAUGE_RUSAGE_INDEX)),
+			     mknode(F_ARG_LIST,$3,
+				    mknode(F_INDEX,mkefuncallnode("rusage",0),
+					   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
   } ;
 
 typeof: F_TYPEOF '(' expr0 ')'
