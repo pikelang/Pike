@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.524 2002/07/27 20:41:45 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.525 2002/07/29 14:34:34 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9112,6 +9112,28 @@ test_program(inherit test2; inherit test; mixed a() { w=20; b=22; return getw()=
 test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return w==20 && b==22; })
 
 test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i=0;return i;}})->foo())
+
+// master defined functions
+
+test_eq(dirname("/a/b/"),"/a/b")
+test_eq(dirname("/a/b"),"/a")
+test_eq(dirname("/a/"),"/a")
+test_eq(dirname("/a"),"/")
+test_eq(dirname("/"),"/")
+test_eq(dirname(""),"")
+test_eq(dirname("a/b/"),"a/b")
+test_eq(dirname("a/b"),"a")
+test_eq(dirname("a/"),"a")
+test_eq(dirname("a"),"")
+
+test_eq(basename("/a/b"),"b")
+test_eq(basename("/a/"),"")
+test_eq(basename("/a"),"a")
+test_eq(basename("/"),"")
+test_eq(basename("a/b"),"b")
+test_eq(basename("a/"),"")
+test_eq(basename("a"),"a")
+test_eq(basename(""),"")
 
 // Pike modules
 
