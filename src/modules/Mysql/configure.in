@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.29 2001/11/26 15:34:53 grubba Exp $
+# $Id: configure.in,v 1.30 2001/11/29 14:37:45 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -38,8 +38,8 @@ else
 
   AC_MSG_CHECKING(for Mysql lib-directory)
 
-  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
-  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/local/mysql/include no"
+  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
+  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/pkg/include/mysql $with_root/usr/local/mysql/include no"
 
   if test x$with_mysql = xyes; then :; else
     # Mysql installation directory specified.
