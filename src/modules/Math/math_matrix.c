@@ -281,8 +281,10 @@ done_made:
 
 /*
 **! method array(array(float)) cast(string to_what)
+**! method array(array(float)) cast(string to_what)
 **! 	This is to be able to get the matrix values.
-**!	This gives back a double array of floats.
+**!	<tt>(array)</tt> gives back a double array of floats.
+**!	<tt>m->vect()</tt> gives back an array of floats.
 */
 
 void matrix_cast(INT32 args)
@@ -313,6 +315,31 @@ void matrix_cast(INT32 args)
 	 }
 
    SIMPLE_BAD_ARG_ERROR("matrix->cast",1,"string");
+}
+
+void matrix_vect(INT32 args)
+{
+   pop_n_elems(args);
+
+   if (!THIS->m)
+   {
+      pop_n_elems(args);
+      f_aggregate(0);
+      return;
+   }
+   else
+   {
+      int i,j;
+      int xs=THIS->xsize,ys=THIS->ysize;
+      FTYPE *m=THIS->m;
+      check_stack(xs+ys);
+      pop_n_elems(args);
+      for (i=0; i<ys; i++)
+	 for (j=0; j<xs; j++)
+	    push_float((FLOAT_TYPE)*(m++));
+      f_aggregate(ys*xs);
+      return;
+   }
 }
 
 /*
@@ -414,7 +441,9 @@ static void matrix_transpose(INT32 args)
 **!
 **!	It is only usable with 1xn or nx1 matrices.
 **!
-**!	m->normv() is equal to m*(1.0/m->norm()).
+**!	m->normv() is equal to m*(1.0/m->norm()),
+**!	with the exception that the zero vector will still be
+**!	the zero vector (no error).
 */
 
 static void matrix_norm(INT32 args)
@@ -462,11 +491,15 @@ static void matrix_normv(INT32 args)
    pop_n_elems(args);
    matrix_norm(0);
    if (sp[-1].u.float_number==0.0 || sp[-1].u.float_number==-0.0)
-      math_error("Matrix->normv",sp-args,args,0,
-		 "vector is zero, cannot be normalized");
-      
-   sp[-1].u.float_number=1.0/sp[-1].u.float_number;
-   matrix_mult(1);
+   {
+      pop_stack();
+      ref_push_object(THISOBJ);
+   }
+   else
+   {
+      sp[-1].u.float_number=1.0/sp[-1].u.float_number;
+      matrix_mult(1);
+   }
 }
 
 /*
@@ -703,6 +736,8 @@ void init_math_matrix()
    
    add_function("cast",matrix_cast,
 		"function(string:array(array(float)))",0);
+   add_function("vect",matrix_vect,
+		"function(:array(float))",0);
    add_function("_sprintf",matrix__sprintf,
 		"function(int,mapping:string)",0);
 
