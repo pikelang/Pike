@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.708 2003/03/09 22:24:20 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.709 2003/03/27 14:43:32 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3813,7 +3813,7 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
 #include <sys/ptrace.h>
 #endif /* HAVE_SYS_PTRACE_H */
     ],[
-      ptrace(0,0,NULL,NULL);
+      ptrace(0,0,0,0);
     ],pike_cv_ptrace_takes_four_args=yes,pike_cv_ptrace_takes_four_args=no)
   ])
   if test "$pike_cv_ptrace_takes_four_args" = yes; then
@@ -3821,6 +3821,32 @@ if test "x$ac_cv_func_ptrace" = "xyes"; then
     AC_DEFINE(PTRACE_TAKES_FOUR_ARGS)
   else
     AC_MSG_RESULT(5)
+  fi
+  AC_MSG_CHECKING([type of argument 3 (addr) to ptrace])
+  AC_CACHE_VAL(pike_cv_ptrace_addr_type, [
+    AC_TRY_COMPILE([
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_SYS_PTRACE_H
+#include <sys/ptrace.h>
+#endif /* HAVE_SYS_PTRACE_H */
+    ],[
+#ifdef PTRACE_TAKES_FOUR_ARGS
+      ptrace(0,0,(void *)0,0);
+#else
+      ptrace(0,0,(void *)0,0,0);
+#endif
+    ],pike_cv_ptrace_addr_type=pointer,pike_cv_ptrace_addr_type=integer)
+  ])
+  if test "$pike_cv_ptrace_addr_type" = pointer; then
+    AC_MSG_RESULT(pointer)
+    AC_DEFINE(PTRACE_ADDR_TYPE_IS_POINTER)
+  else
+    AC_MSG_RESULT([integer (SVID)])
   fi
 fi
 

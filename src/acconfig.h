@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.120 2003/03/06 12:50:21 grubba Exp $
+|| $Id: acconfig.h,v 1.121 2003/03/27 14:43:32 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -249,6 +249,9 @@
 
 /* Define if your ptrace takes four args. */
 #undef PTRACE_TAKES_FOUR_ARGS
+
+/* Define if argument 3 to ptrace is a pointer type. */
+#undef PTRACE_ADDR_TYPE_IS_POINTER
 
 /* Define if gettimeofday takes to arguments */
 #undef GETTIMEOFDAY_TAKES_TWO_ARGS

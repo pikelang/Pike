@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.258 2003/03/25 20:26:53 nilsson Exp $
+|| $Id: signal_handler.c,v 1.259 2003/03/27 14:43:32 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.258 2003/03/25 20:26:53 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.259 2003/03/27 14:43:32 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -226,6 +226,12 @@ RCSID("$Id: signal_handler.c,v 1.258 2003/03/25 20:26:53 nilsson Exp $");
 /* HPUX and SunOS 4 have a fifth argument "addr2". */
 #define ptrace(R,P,A,D)	ptrace(R,P,A,D,NULL)
 #endif
+
+#ifdef PTRACE_ADDR_TYPE_IS_POINTER
+#define CAST_TO_PTRACE_ADDR(X)	((void *)(ptrdiff_t)(X))
+#else /* !PTRACE_ADDR_TYPE_IS_POINTER */
+#define CAST_TO_PTRACE_ADDR(X)	((ptrdiff_t)(X))
+#endif /* PTRACE_ADDR_TYPE_IS_POINTER */
 
 #endif /* HAVE_PTRACE */
 
@@ -1297,7 +1303,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 #ifdef PROC_DEBUG
 	fprintf(stderr, "wait thread: Got SIGPROF from pid %d\n",pid);
 #endif
-	ptrace(PTRACE_CONT, pid, (void *)(size_t)1, SIGPROF);
+	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), SIGPROF);
 	continue;
       }
 #endif /* HAVE_PTRACE && SIGPROF */
@@ -1719,7 +1725,7 @@ static void f_trace_process_cont(INT32 args)
   THIS->state = PROCESS_RUNNING;
 
   /* The addr argument must be 1 for this request. */
-  if (ptrace(PTRACE_CONT, THIS->pid, (void *)(ptrdiff_t)1, cont_signal) == -1) {
+  if (ptrace(PTRACE_CONT, THIS->pid, CAST_TO_PTRACE_ADDR(1), cont_signal) == -1) {
     int err = errno;
     THIS->state = PROCESS_STOPPED;
     /* FIXME: Better diagnostics. */
