@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.164 1999/11/08 23:21:55 mast Exp $
+# $Id: Makefile.in,v 1.165 1999/11/11 14:09:06 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -266,6 +266,12 @@ install: pike hilfe pike-module aclocal
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
 	man_prefix="$(man_prefix)" pike_name=$(pike_name)
+
+install_interactive: pike hilfe pike-module aclocal
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
+	exec_prefix="$(exec_prefix)"  \
+	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	SRCDIR="$(SRCDIR)" MANDIR_SRC="$(MANDIR_SRC)"
 
 # tidy up a bit
 tidy:
