@@ -16,6 +16,9 @@ if test x$ac_cv_func_readdir_r = xyes ; then
   AC_MSG_CHECKING(if readdir_r takes 2(Solaris & HPUX) or 3(Posix) arguments)
   AC_CACHE_VAL(pike_cv_func_posix_readdir_r, [
     AC_TRY_RUN([
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
 #else
@@ -55,6 +58,9 @@ else
   AC_MSG_CHECKING(if readdir_r returns an int(HPUX) or a pointer(Solaris))
   AC_CACHE_VAL(pike_cv_func_solaris_style_readdir_r, [
     AC_TRY_RUN([
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
 #include <sys/errno.h>
 #ifdef HAVE_DIRENT_H
 #include <dirent.h>
@@ -122,6 +128,9 @@ if test x$ac_cv_func_statfs = xyes ; then
   AC_MSG_CHECKING(if statfs takes 2(BSD) or 4(SysV) arguments)
   AC_CACHE_VAL(pike_cv_func_sysv_statfs, [
     AC_TRY_RUN([
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -164,6 +173,9 @@ int main()
   AC_MSG_CHECKING(if the struct statfs has the member f_bavail)
   AC_CACHE_VAL(pike_cv_struct_statfs_f_bavail, [
     AC_TRY_COMPILE([
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -223,6 +235,9 @@ AC_MSG_CHECKING(for select on AF_UNIX sockets)
 AC_CACHE_VAL(pike_cv_select_on_unix_sockets,
 [
 AC_TRY_RUN([
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -363,6 +378,9 @@ AC_MSG_CHECKING(size of socket buffers)
 AC_CACHE_VAL(pike_cv_socket_buffer_max,
 [
 AC_TRY_RUN([
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/param.h>
@@ -410,6 +428,9 @@ AC_MSG_CHECKING(for working getcwd)
 AC_CACHE_VAL(pike_cv_func_working_getcwd,
 [
 AC_TRY_RUN([
+#ifndef POSIX_SOURCE
+#define POSIX_SOURCE
+#endif
 #include <unistd.h>
 #include <signal.h>
 
