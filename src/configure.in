@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.117 1997/09/16 01:56:29 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.118 1997/09/17 04:03:28 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -250,11 +250,15 @@ else
     AC_TRY_COMPILE([int foo(int bar);],[],[],
     [
       OLD_CC="${CC-cc}"
+      OLD_CFLAGS="$CFLAGS"
       if test "$CC" = "$BINDIR/smartlink cc" -a -x /usr/bin/cc ; then
         CC="$BINDIR/smartlink /usr/bin/cc"
       fi
-      CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
-      AC_TRY_COMPILE([int foo(int bar);],[],[],[CC="$OLD_CC"])
+      CFLAGS="-Aa -D_HPUX_SOURCE +Olibcalls $CFLAGS"
+      AC_TRY_COMPILE([int foo(int bar);],[],[],[
+        CC="$OLD_CC"
+	CFLAGS="$OLD_CFLAGS"
+      ])
     ])
   fi
 fi
@@ -1656,7 +1660,7 @@ fi
 
 #############################################################################
 
-export LDFLAGS CPPFLAGS LIBS
+export LDFLAGS CFLAGS CPPFLAGS LIBS
 
 AC_CONFIG_SUBDIRS(modules)
 
