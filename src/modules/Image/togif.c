@@ -2,7 +2,7 @@
 
 togif 
 
-$Id: togif.c,v 1.24 1997/11/07 16:37:51 mirar Exp $ 
+$Id: togif.c,v 1.25 1997/11/08 02:52:53 grubba Exp $ 
 
 old GIF API compat stuff
 
@@ -11,7 +11,7 @@ old GIF API compat stuff
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.24 1997/11/07 16:37:51 mirar Exp $
+**!	$Id: togif.c,v 1.25 1997/11/08 02:52:53 grubba Exp $
 **! class image
 */
 
@@ -34,6 +34,7 @@ old GIF API compat stuff
 #include "operators.h"
 
 #include "image.h"
+#include "colortable.h"
 
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
