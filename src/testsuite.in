@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.635 2003/04/08 15:10:18 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.636 2003/04/10 19:48:13 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7167,6 +7167,10 @@ test_true(intp(__REAL_MINOR__))
 test_true(intp(__BUILD__))
 test_true(intp(__REAL_BUILD__))
 test_eq(__PIKE__,1)
+
+test_eq( compile_string("string a=#\"a\nb\";")()->a, "a\nb" )
+test_eq( compile_string("string a=#\"a\r\nb\";")()->a, "a\nb" )
+test_eq( compile_string("string a=#\"a\n\rb\";")()->a, "a\nb" )
 
 // #define
 test_any([[
