@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.37 2002/12/11 12:47:35 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.38 2002/12/11 12:50:07 grubba Exp $
  *
  */
 
@@ -383,7 +383,9 @@ class Node
       string my_name = Parser.encode_html_entities(node->name);
       if(node->type=="method")
 	my_name+="()";
-      else
+      else if (node->type == "namespace")
+	my_name+="::";
+      else 
 	my_name="<b>"+my_name+"</b>";
 
       if(node==this_object())
