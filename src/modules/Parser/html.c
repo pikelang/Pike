@@ -4018,12 +4018,12 @@ static INLINE void tag_push_default_arg(struct svalue *def)
    else stack_dup();
 }
 
-static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
+static void tag_args(struct parser_html_storage *this,struct piece *feed,ptrdiff_t c,
 		     struct svalue *def, int skip_name, int to_tag_end)
 {
    struct piece *s1=NULL,*s2=NULL,*s3;
    int flags = this->flags;
-   int c1=0,c2=0,c3;
+   ptrdiff_t c1=0,c2=0,c3;
    int n=0;
 
    /* NOTE: This somewhat duplicates the CTX_TAG clause in
