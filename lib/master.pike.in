@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.242 2002/12/29 22:30:24 nilsson Exp $
+// $Id: master.pike.in,v 1.243 2002/12/30 15:06:50 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -264,7 +264,7 @@ string master_read_file(string file)
 }
 
 #ifdef GETCWD_CACHE
-string current_path;
+static string current_path;
 int cd(string s)
 {
   current_path=0;
@@ -327,7 +327,29 @@ Stat master_file_stat(string x)
 #define master_file_stat file_stat
 #endif // FILE_STAT_CACHE
 
-mapping (string:array(string)) environment=([]);
+//! Mapping containing the environment variables.
+//!
+//! The mapping currently has the following structure:
+//! @mapping
+//!   @member array(string) index
+//!      Note that the index is @[lower_case()]'d on NT.
+//!      @array
+//!         @elem string varname
+//!            Variable name with case intact.
+//!         @elem string value
+//!            Variable value.
+//!      @endarray
+//! @endmapping
+//!
+//! @note
+//!   This mapping should not be accessed directly; use @[getenv()]
+//!   and @[putenv()] instead.
+//!
+//! @note
+//!   This mapping is not compatible with @[Process.create_process()];
+//!   use the mapping returned from calling @[getenv()] without arguments
+//!   instead.
+mapping(string:array(string)) environment=([]);
 
 
 //! @decl string getenv(string varname)
@@ -440,7 +462,17 @@ string normalize_path( string path )
 #endif
 }
 
-mapping (string:program) programs=(["/master":object_program(this_object())]);
+//! Mapping containing the cache of currently compiled files.
+//!
+//! This mapping currently has the following structure:
+//! @mapping
+//!    @member program filename
+//! @endmapping
+//!
+//! @note
+//!   As a special case the current master program is available
+//!   under the name @tt{"/master"@}.
+mapping(string:program) programs=(["/master":object_program(this_object())]);
 
 array(string) query_precompiled_names(string fname)
 {
