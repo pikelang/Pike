@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.28 1996/12/06 02:37:45 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.29 1996/12/06 03:02:25 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -132,9 +132,15 @@ else
 # Special hack for HP-UX stupid cc
 #
   if test "$pike_cv_sys_os" = "HP-UX"; then
-    OLD_CC="${CC-cc}"
-    CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
-    AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],[CC="$OLD_CC"])
+    AC_TRY_LINK([int foo(int bar);],[ exit(0); ],
+    [
+      OLD_CC="${CC-cc}"
+      if test "$CC" = "cc" -a -x /usr/bin/cc ; then
+        CC=/usr/bin/cc
+      fi
+      CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
+      AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],[CC="$OLD_CC"])
+    ])
   fi
 fi
 
