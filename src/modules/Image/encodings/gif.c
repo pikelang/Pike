@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.3 1997/10/27 22:41:36 mirar Exp $ */
+/* $Id: gif.c,v 1.4 1997/11/01 01:38:07 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.3 1997/10/27 22:41:36 mirar Exp $
+**!	$Id: gif.c,v 1.4 1997/11/01 01:38:07 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -21,7 +21,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.3 1997/10/27 22:41:36 mirar Exp $");
+RCSID("$Id: gif.c,v 1.4 1997/11/01 01:38:07 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -241,7 +241,7 @@ int image_gif_add_line(struct neo_colortable *nct,
    int n;
    unsigned char *bd;
    
-   image_colortable_get_index_line(nct,s,buf,len,dith);
+/*   image_colortable_get_index_line(nct,s,buf,len,dith);*/
 
    if (m)
    {
