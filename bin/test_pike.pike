@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.62 2002/05/02 00:29:29 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.63 2002/05/02 16:00:31 nilsson Exp $ */
 
 import Stdio;
 
@@ -468,27 +468,28 @@ int main(int argc, array(string) argv)
 	}
 	if(skip) continue;
 
+	int testno;
 	sscanf(test, "%s\n%s", type, test);
-	sscanf(type, "%*s expected result: %s", type);
+	sscanf(type, "test %d, expected result: %s", testno, type);
 
 	if (prompt) {
 	  if (Stdio.Readline()->
 	      read(sprintf("About to run test: %d. [<RETURN>/'quit']: ",
-			   e + 1)) == "quit") {
+			   testno)) == "quit") {
 	    break testloop;
 	  }
 	}
 
 	if(verbose)
 	{
-	  werror("Doing test %d (%d total)%s\n",e+1,successes+errors+1,extra_info);
+	  werror("Doing test %d (%d total)%s\n", testno, successes+errors+1, extra_info);
 	  if(verbose>1) bzot(test);
 	}
 
 	if(check > 1) _verify_internals();
 	
 	shift++;
-	string fname = testsuite + ": Test " + (e + 1) +
+	string fname = testsuite + ": Test " + testno +
 	  " (shift " + (shift%3) + ")";
 
 	string widener = ([ 0:"",
