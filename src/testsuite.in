@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.586 2003/01/15 19:07:15 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.587 2003/01/15 22:16:48 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -528,21 +528,22 @@ test_any( [[
 return mktime(32, 38, 9, 15, 9, 102, 0, 0);
 ]], 1034674712)
 
-test_any( [[
-// bug [2830] ------------------------------------------------------------
-// http://community/crunch/show_bug.cgi?id=2830
-class User{};
+cond( [[ master()->resolv("Pike")->Security ]],[[
+  test_any( [[
+  // bug [2830] ------------------------------------------------------------
+  // http://community/crunch/show_bug.cgi?id=2830
+  class User{};
 
-object luser = User();
+  object luser = User();
 
-#if constant(Pike.Security)
-object luser_creds = Pike.Security.Creds(luser, 0, 0);
-return !catch {
-  return !!call_with_creds(luser_creds, Stdio.File, "/dev/null");
-};
-#endif
-return 0;
-]], 0 )
+  object luser_creds = Pike.Security.Creds(luser, 0, 0);
+  return !catch {
+    return !!call_with_creds(luser_creds, Stdio.File, "/dev/null");
+  };
+
+  return 0;
+  ]], 0 )
+]])
 
 test_any( [[
 // bug [1996] ------------------------------------------------------------
@@ -3358,73 +3359,10 @@ test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
 test_true([[ ("foobar"/"o") & ({ "foo" }) ]])
 test_any([[ array a="foo bar"/" "; return sizeof(a & ({"foo"}))]],1)
 
-// glob
-test_false(glob("foo","bar"))
-test_true(glob("foo","foo"))
-test_true(glob("f?o","foo"))
-test_true(glob("f??","foo"))
-test_true(glob("?o?","foo"))
-test_true(glob("f*","foo"))
-test_true(glob("*o","foo"))
-test_true(glob("*<<<*","<<<"))
-test_true(glob("*<<<*","<<<foo"))
-test_false(glob("*f","foo"))
-test_false(glob("o*","foo"))
-test_false(glob("?f?","foo"))
-test_equal([[glob("?f?",({"ff","ffff","off","fff",""}))]],[[({"off","fff"})]])
-test_equal([[glob("foo*bar",({"foobar","foobargazonk","","foofoobar","fobar","fooar"}))]],[[({"foobar","foofoobar"})]])
-
-// localtime
-cond([[all_constants()->localtime]],
-[[
-test_true(mappingp(localtime(0)))
-]])
-
-cond([[all_constants()->mktime]],
-[[
-  test_true([[mktime( ([
-  "sec":58,
-  "isdst":1,
-  "year":98,
-  "mon":3,
-  "mday":26,
-  "hour":1,
-  "min":51
-]))]])
-
-  test_eq([[mktime(58,51,1,26,3,98,1,0)]],[[mktime( ([
-  "sec":58,
-  "isdst":1,
-  "year":98,
-  "mon":3,
-  "mday":26,
-  "hour":1,
-  "min":51,
-  "timezone":0,
-]) ) ]])
-
-]])
-
-cond([[all_constants()->localtime && all_constants()->mktime]],
-[[
-  test_any([[int x=time(); return mktime(localtime(x)) == x;]], 1)
-  test_any([[int x=time(); for(int y=0;y<100;y++) if(mktime(localtime(x+y)) != x+y) return x+y; return 0;]], 0)
-]])
-
-test_do([[int t = -1; catch(localtime(t));]])
-test_do([[int t = -1; catch(gmtime(t));]])
-test_do([[int t = -1; catch(ctime(t));]])
-
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
-
-// sort
-test_equal(sort(({1,3,2,4})),({1,2,3,4}))
-test_equal(sort(({4,3,2,1})),({1,2,3,4}))
-test_equal([[lambda() {array(int) a=({1,2,3,4}); sort(({4,3,2,1}),a); return a; }()]],[[({4,3,2,1})]] )
-test_equal([[lambda() {array(int) a=({1,2,3,4}), b=a+({}); sort(({4,3,2,1}),a,b); return b; }()]],[[({4,3,2,1})]] )
 
 cond([[all_constants()->thread_create]],
 [[
@@ -3633,6 +3571,7 @@ test_any_equal([[ mapping m=([1:1,0:3]); m_delete(m,0); return m; ]],[[ ([1:1]) 
 test_any([[mapping a=([1:1]); return m_delete(a,1)]],1)
 test_any([[mapping m=([]); m[1]++; return m[1];]],1)
 test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
+test_any([[mapping m=([1:1]); m[1]++; return m[1]++;]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
 
 // multiset tests
@@ -3998,17 +3937,6 @@ test_any([[{
   destruct (o);
   return sizeof (values (m)) || sizeof (m);
 }]], 0)
-
-// rows
-test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])
-test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({0,4,1}))]],[[({1,5,2})]])
-test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({8,3,5}))]],[[({9,4,6})]])
-
-// column
-test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),0)]],[[({1,5,8})]])
-test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),1)]],[[({2,6,9})]])
-test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),2)]],[[({3,7,0})]])
-
 
 // gc
 ifefun(gc,
@@ -7921,6 +7849,11 @@ test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
 // Tested in _math
 
 // - add_constant
+test_compile_error(int a=grunk(5);)
+test_do(add_constant("grunk",abs))
+test_do(int a=grunk(5);)
+test_do(add_constant("grunk"))
+test_compile_error(int a=grunk(5);)
 
 // - add_include_path
 // - add_module_path
@@ -7948,6 +7881,9 @@ test_true(mappingp(all_constants()))
 test_eq(all_constants()["all_constants"],all_constants)
 
 // - all_threads
+test_true(arrayp(all_threads()))
+test_true(sizeof(all_threads()))
+test_true(objectp(all_threads()[0]))
 
 // - allocate
 test_equal(allocate(0),({}))
@@ -7976,6 +7912,18 @@ test_eq(backtrace()[-1][2],a)
 // Tested in lib
 
 // - basetype
+test_eq(basetype(0),"int")
+test_eq(basetype(0.0),"float")
+test_eq(basetype(""),"string")
+test_eq(basetype(({})),"array")
+test_eq(basetype(({1})),"array")
+test_eq(basetype((<>)),"multiset")
+test_eq(basetype(([])),"mapping")
+test_eq(basetype(class {}),"program")
+test_eq(basetype(class {}()),"object")
+test_eq(basetype(abs),"function")
+test_eq(basetype(lambda(){}),"function")
+test_eq(basetype(typeof(0)),"type")
 
 // - call_function
 test_eq(1,call_function(a))
@@ -8010,7 +7958,11 @@ test_eq([[
 clone(compile_string("int foo() { return 17; }"))->foo() ]],17)
 
 // - closelog
+
 // - column
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),0)]],[[({1,5,8})]])
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),1)]],[[({2,6,9})]])
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),2)]],[[({3,7,0})]])
 
 // - combine_path
 test_eq([[combine_path("/foo/bar/gazonk/","..")]],"/foo/bar")
@@ -8155,6 +8107,7 @@ test_false(crypt("hej","buf8/Z7taE6q"))
 
 // - ctime
 test_eq(ctime(0)[-1],'\n')
+test_do([[int t = -1; catch(ctime(t));]])
 
 // - decode_value
 // - delay
@@ -8257,8 +8210,32 @@ test_eq(function_name(function_object),0)
 // - getpwuid
 // - getsid
 // - getuid
+
 // - glob
+test_false(glob("","a"))
+test_false(glob("a",""))
+test_false(glob("?",""))
+test_true(glob("*",""))
+test_false(glob("foo","bar"))
+test_true(glob("foo","foo"))
+test_true(glob("f?o","foo"))
+test_true(glob("f??","foo"))
+test_true(glob("?o?","foo"))
+test_true(glob("f*","foo"))
+test_true(glob("*o","foo"))
+test_true(glob("*<<<*","<<<"))
+test_true(glob("*<<<*","<<<foo"))
+test_false(glob("*f","foo"))
+test_false(glob("o*","foo"))
+test_false(glob("?f?","foo"))
+test_equal([[glob("?f?",({"ff","ffff","off","fff",""}))]],[[({"off","fff"})]])
+test_equal([[glob("foo*bar",({"foobar","foobargazonk","","foofoobar","fobar","fooar"}))]],[[({"foobar","foofoobar"})]])
+
 // - gmtime
+cond([[all_constants()->localtime && all_constants()->mktime]],[[
+  test_do([[int t = -1; catch(gmtime(t));]])
+]])
+
 // - hardlink
 
 // - has_index
@@ -8331,7 +8308,18 @@ test_equal(mkmultiset(indices(class{constant a="a"; constant b="b";}())),
 
 // - kill
 // - load_module
+
 // - localtime
+cond([[all_constants()->localtime]],[[
+  test_true(mappingp(localtime(0)))
+  test_do([[int t = -1; catch(localtime(t));]])
+]])
+cond([[all_constants()->localtime && all_constants()->mktime]],
+[[
+  test_any([[int x=time(); return mktime(localtime(x)) == x;]], 1)
+  test_any([[int x=time(); for(int y=0;y<100;y++) if(mktime(localtime(x+y)) != x+y) return x+y; return 0;]], 0)
+]])
+
 
 // - log
 // Tested in _math
@@ -8442,7 +8430,32 @@ test_equal(lower_case((string) ({
 // - mkdir
 // - mkmapping
 // - mkmultiset
+
 // - mktime
+cond([[all_constants()->mktime]],
+[[
+  test_true([[mktime( ([
+  "sec":58,
+  "isdst":1,
+  "year":98,
+  "mon":3,
+  "mday":26,
+  "hour":1,
+  "min":51
+]))]])
+
+  test_eq([[mktime(58,51,1,26,3,98,1,0)]],[[mktime( ([
+  "sec":58,
+  "isdst":1,
+  "year":98,
+  "mon":3,
+  "mday":26,
+  "hour":1,
+  "min":51,
+  "timezone":0,
+]) ) ]])
+
+]])
 
 // - multisetp
 // Tested in foop
@@ -8646,6 +8659,9 @@ test_equal(reverse(0x12345678),0x1e6a2c48)
 // Tested in _math
 
 // - rows
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({0,4,1}))]],[[({1,5,2})]])
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({8,3,5}))]],[[({9,4,6})]])
 
 // - search
 test_eval_error(return search("foolbar","o",-10))
@@ -8804,6 +8820,14 @@ test_any([[int x=time(); sleep(2); return x!=time()]],1)
 test_any([[int x=time(); sleep(2); return x!=time()]],1)
 
 // - sort
+test_equal(sort(({1,3,2,4})),({1,2,3,4}))
+test_equal(sort(({4,3,2,1})),({1,2,3,4}))
+test_equal([[lambda() {array(int) a=({1,2,3,4}); sort(({4,3,2,1}),a); return a; }()]],[[({4,3,2,1})]] )
+test_equal([[lambda() {array(int) a=({1,2,3,4}), b=a+({}); sort(({4,3,2,1}),a,b); return b; }()]],[[({4,3,2,1})]] )
+test_equal([[sort("a,A,å,Å,ä,*A,[A"/",")]],[["*A,A,[A,a,Å,ä,å"/","]])
+test_equal(sort(({})),({}))
+test_equal(sort(({1.0,2.0,4.0,3.0})),({1.0,2.0,3.0,4.0}))
+dnl missing tests for objects, arrays, multisets and mappings
 
 // - sprintf
 // Tested in sprintf
@@ -8812,6 +8836,9 @@ test_any([[int x=time(); sleep(2); return x!=time()]],1)
 // Tested in _math
 
 // - strerror
+test_true(stringp(strerror(0)))
+test_true(stringp(strerror(1)))
+test_true(stringp(strerror(-1)))
 
 // - string_to_unicode, unicode_to_string
 test_eq(string_to_unicode("foo"), "\0f\0o\0o")
