@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.53 2002/10/21 17:06:26 marcus Exp $
+|| $Id: math.c,v 1.54 2002/10/21 17:28:24 grubba Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: math.c,v 1.53 2002/10/21 17:06:26 marcus Exp $");
+RCSID("$Id: math.c,v 1.54 2002/10/21 17:28:24 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -395,7 +395,7 @@ void f_round(INT32 args)
 }
 
 /*! @decl int|float|object min(int|float|object ... args)
- *! @deck string min(string ... args)
+ *! @decl string min(string ... args)
  *!
  *! Returns the smallest value among @[args]. Compared objects
  *! must implement the @[lfun::`<] method.
@@ -406,10 +406,16 @@ void f_round(INT32 args)
 void f_min(INT32 args)
 {
   INT32 i;
+  INT32 minpos = 0;
   if(!args) Pike_error("Too few arguments to min()\n");
-  for(i=args-2;i>=0;i--)
-    if(is_gt(sp-args+i,sp-args+1+i))
-      assign_svalue(sp-args+i,sp-args+1+i);
+  for (i=args-1; i>0; i--) {
+    if (is_gt(sp+minpos-args, sp+i-args)) {
+      minpos = i;
+    }
+  }
+  if (minpos) {
+    assign_svalue(sp-args, sp+minpos-args);
+  }
   pop_n_elems(args-1);
 }
 
@@ -425,10 +431,16 @@ void f_min(INT32 args)
 void f_max(INT32 args)
 {
   INT32 i;
+  INT32 maxpos = 0;
   if(!args) Pike_error("Too few arguments to max()\n");
-  for(i=args-2;i>=0;i--)
-    if(is_lt(sp-args+i,sp-args+1+i))
-      assign_svalue(sp-args+i,sp-args+1+i);
+  for (i=args-1; i>0; i--) {
+    if (is_lt(sp+maxpos-args, sp+i-args)) {
+      maxpos = i;
+    }
+  }
+  if (maxpos) {
+    assign_svalue(sp-args, sp+maxpos-args);
+  }
   pop_n_elems(args-1);
 }
 
