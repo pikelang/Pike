@@ -10,6 +10,7 @@ This is what you need to do to install Pike:
   --without-gmp       compile without gmp support
   --without-readline  compile without readline support
   --without-debug     compile without runtime debugging
+  --without-threads   compile without threads support
 
    You might also want to set the following environment variables:
    CFLAGS     Put extra flags for your C compiler here.
@@ -60,7 +61,8 @@ What to do when it doesn't work:
 
 5) Your gmp/readline/gdbm libraries might not be working or incorrectly 
    installed, start over by running configure with the approperiate
-   --without-xxx arguments.
+   --without-xxx arguments. Also note that threads might give problems
+   with I/O and signals. If so you need to run configure --without-threads.
 
 6) Try a different compiler, malloc, compiler-compiler and/or make.
    (if you have any other)
