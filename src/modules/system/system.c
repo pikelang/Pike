@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.51 1998/05/15 19:25:32 grubba Exp $
+ * $Id: system.c,v 1.52 1998/05/17 19:28:09 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.51 1998/05/15 19:25:32 grubba Exp $");
+RCSID("$Id: system.c,v 1.52 1998/05/17 19:28:09 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -67,8 +67,20 @@ RCSID("$Id: system.c,v 1.51 1998/05/15 19:25:32 grubba Exp $");
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif /* HAVE_SYS_STAT_H */
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif /* HAVE_SYS_PARAM_H */
 
 #include "dmalloc.h"
+
+#ifndef NGROUPS_MAX
+#ifdef NGROUPS
+#define NGROUPS_MAX	NGROUPS
+#else /* !NGROUPS */
+#define NGROUPS_MAX	256	/* Should be sufficient for most OSs */
+#endif /* NGROUPS */
+#endif /* !NGROUPS_MAX */
+
 /*
  * Functions
  */
