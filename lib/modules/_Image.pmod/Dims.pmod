@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.2 2002/03/20 16:40:05 nilsson Exp $
+//   $Id: Dims.pmod,v 1.3 2002/09/29 20:51:11 manual Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Schön, <js@roxen.com>.
@@ -8,6 +8,8 @@
 //   This software is based in part on the work of the Independent JPEG Group.
 
 //! @appears Image.Dims
+//! Reads the dimensions of images of various image formats without
+//! decoding the actual image.
 
 #define M_SOF0  0xC0		/* Start Of Frame N */
 #define M_SOF1  0xC1		/* N indicates which compression process */
@@ -27,19 +29,19 @@
 #define M_SOS   0xDA		/* Start Of Scan (begins compressed data) */
 #define M_COM   0xFE		/* COMment */
 
-int(0..255) read_1_byte(Stdio.File f)
+static int(0..255) read_1_byte(Stdio.File f)
 {
   return f->read(1)[0];
 }
 
-int(0..65535) read_2_bytes(Stdio.File f)
+static int(0..65535) read_2_bytes(Stdio.File f)
 {
   int c;
   sscanf( f->read(2), "%2c", c );
   return c;
 }
 
-int(0..65535) read_2_bytes_intel(Stdio.File f)
+static int(0..65535) read_2_bytes_intel(Stdio.File f)
 {
   int c;
   sscanf( f->read(2), "%-2c", c);
@@ -55,7 +57,7 @@ int(0..65535) read_2_bytes_intel(Stdio.File f)
  * file and then return a misleading error message...
  */
 
-int first_marker(Stdio.File f)
+static int first_marker(Stdio.File f)
 {
   int c1, c2;
     
@@ -64,7 +66,6 @@ int first_marker(Stdio.File f)
   if (c1!=0xFF||c2!=M_SOI) return 0;
   return c2;
 }
-
 
 /*
  * Find the next JPEG marker and return its marker code.
@@ -76,7 +77,7 @@ int first_marker(Stdio.File f)
  * not deal correctly with FF/00 sequences in the compressed image data...
  */
 
-int next_marker(Stdio.File f)
+static int next_marker(Stdio.File f)
 {
   int c;
   int discarded_bytes = 0;
@@ -97,7 +98,7 @@ int next_marker(Stdio.File f)
 }
 
 /* Skip over an unknown or uninteresting variable-length marker */
-int skip_variable(Stdio.File f)
+static int skip_variable(Stdio.File f)
 {
   int length = read_2_bytes(f);
   if (length < 2) return 0;  /* Length includes itself, so must be at least 2 */
@@ -106,7 +107,8 @@ int skip_variable(Stdio.File f)
   return 1;
 }
 
-  
+//! Reads the dimensions from a JPEG file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
 array(int) get_JPEG(Stdio.File f)
 {
   int marker;
@@ -166,6 +168,8 @@ array(int) get_JPEG(Stdio.File f)
 //   BYTE AspectRatio;      /* Pixel Aspect Ratio */
 // } GIFHEAD;
 
+//! Reads the dimensions from a GIF file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
 array(int) get_GIF(Stdio.File f)
 {
   int marker;
@@ -177,6 +181,8 @@ array(int) get_GIF(Stdio.File f)
   return ({ image_width, image_height });
 }
 
+//! Reads the dimensions from a PNG file and returns an array with
+//! width and height, or if the file isn't a valid image, 0.
 array(int) get_PNG(Stdio.File f)
 {
   int marker;
@@ -193,7 +199,10 @@ array(int) get_PNG(Stdio.File f)
 }
 
 //! Read dimensions from a JPEG, GIF or PNG file and return an array with
-//! width and height, or if the file isn't a valid image, 0.
+//! width and height, or if the file isn't a valid image, 0. The argument
+//! @[file] should be either a path to a file or a file object. The offset
+//! pointer will be assumed to be at the start of the file and will be
+//! modified by the function.
 array(int) get(string|Stdio.File file)
 {
   if(stringp(file))
