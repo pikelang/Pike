@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.229 2000/10/25 21:50:36 hubbe Exp $");
+RCSID("$Id: program.c,v 1.230 2001/06/14 16:25:33 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3108,12 +3108,19 @@ struct program *compile(struct pike_string *prog,
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
 	     (long)th_self(),compilation_depth));
 
+  low_init_threads_disable();
+  saved_threads_disabled = threads_disabled;
+
+#ifdef PIKE_DEBUG
+  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
+#endif
+
   error_handler = handler;
   
   if(error_handler)
   {
     /* FIXME: support '#Pike 0.6' here */
-    apply(error_handler,"get_default_module",0);
+    safe_apply(error_handler,"get_default_module",0);
     if(IS_ZERO(sp-1))
     {
       pop_stack();
@@ -3122,13 +3129,6 @@ struct program *compile(struct pike_string *prog,
   }else{
     ref_push_mapping(get_builtin_constants());
   }
-
-  low_init_threads_disable();
-  saved_threads_disabled = threads_disabled;
-
-#ifdef PIKE_DEBUG
-  SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
-#endif
 
   num_used_modules=0;
 
@@ -3224,12 +3224,6 @@ struct program *compile(struct pike_string *prog,
 #endif /* PIKE_DEBUG */
 /*  threads_disabled = saved_threads_disabled + 1;   /Hubbe: UGGA! */
 
-  CDFPRINTF((stderr,
-	     "th(%ld) compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
-	     (long)th_self(),threads_disabled, compilation_depth));
-
-  exit_threads_disable(NULL);
-
   free_string(lex.current_file);
   lex=save_lex;
 
@@ -3248,6 +3242,12 @@ struct program *compile(struct pike_string *prog,
   if (resolve_cache) fatal("resolve_cache not freed at end of compilation.\n");
 #endif
   resolve_cache = resolve_cache_save;
+
+  CDFPRINTF((stderr,
+	     "th(%ld) compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(),threads_disabled, compilation_depth));
+
+  exit_threads_disable(NULL);
 
 #ifdef PIKE_DEBUG
   UNSET_ONERROR(tmp);
