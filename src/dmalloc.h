@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.34 2001/10/06 12:04:08 hubbe Exp $
+ * $Id: dmalloc.h,v 1.35 2001/11/10 19:39:25 mast Exp $
  */
 
 PMOD_EXPORT extern void *debug_xalloc(size_t);
@@ -71,7 +71,7 @@ char *dmalloc_find_name(void *p);
 #define debug_malloc_pass(X) debug_malloc_update_location((X),DMALLOC_LOCATION())
 #define dmalloc_touch_struct_ptr(TYPE,X,MEMBER) ((TYPE)debug_malloc_update_location_ptr((X), ((ptrdiff_t)& (((TYPE)0)->MEMBER)), DMALLOC_LOCATION()))
 
-#define xalloc(X) ((char *)debug_malloc_pass(debug_xalloc(X)))
+#define xalloc(X) ((void *)debug_malloc_pass(debug_xalloc(X)))
 #define xfree(X) debug_xfree(debug_malloc_pass((X)))
 void debug_malloc_dump_references(void *x, int indent, int depth, int flags);
 #define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_update_location((X),DMALLOC_LOCATION()))
