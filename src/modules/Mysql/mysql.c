@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.47 2001/09/23 19:00:34 grubba Exp $
+ * $Id: mysql.c,v 1.48 2001/09/24 11:51:51 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.47 2001/09/23 19:00:34 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.48 2001/09/24 11:51:51 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -403,7 +403,7 @@ static void f_create(INT32 args)
 static void f_affected_rows(INT32 args)
 {
   MYSQL *socket;
-  int count;
+  INT64 count;
 
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
@@ -415,7 +415,7 @@ static void f_affected_rows(INT32 args)
   count = mysql_affected_rows(socket);
   MYSQL_DISALLOW();
 
-  push_int(count);
+  push_int64(count);
 }
 
 /*! @decl int insert_id()
@@ -426,7 +426,7 @@ static void f_affected_rows(INT32 args)
 static void f_insert_id(INT32 args)
 {
   MYSQL *socket;
-  int id;
+  INT64 id;
 
   if (!PIKE_MYSQL->socket) {
     pike_mysql_reconnect();
@@ -439,7 +439,7 @@ static void f_insert_id(INT32 args)
   id = mysql_insert_id(socket);
   MYSQL_DISALLOW();
 
-  push_int(id);
+  push_int64(id);
 }
 
 /*! @decl string error()

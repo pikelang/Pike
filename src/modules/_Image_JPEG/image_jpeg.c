@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.44 2001/07/21 11:59:37 mirar Exp $
+ * $Id: image_jpeg.c,v 1.45 2001/09/24 12:11:42 grubba Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.44 2001/07/21 11:59:37 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.45 2001/09/24 12:11:42 grubba Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -921,9 +921,9 @@ static void img_jpeg_decode(INT32 args,int mode)
 	    push_float( mds.cinfo.Y_density );
 	    break;
 	 case 2:
-	    push_float( mds.cinfo.X_density/2.54 );
+	    push_float( DO_NOT_WARN((FLOAT_TYPE)(mds.cinfo.X_density/2.54)) );
 	    stack_swap();
-	    push_float( mds.cinfo.Y_density/2.54 );
+	    push_float( DO_NOT_WARN((FLOAT_TYPE)(mds.cinfo.Y_density/2.54)) );
 	    break;
       }
 

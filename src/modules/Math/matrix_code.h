@@ -804,7 +804,7 @@ static void matrixX(_convolve)(INT32 args)
 	 {								\
 	    FTYPE *a=as;						\
 	    FTYPE *b=bs;						\
-	    FTYPE sum=0.0;						\
+	    FTYPE sum = (FTYPE)0.0;					\
 	    INT32 yn=byz;						\
 	    INT32 y=ay;							\
             INT32 x=0;							\

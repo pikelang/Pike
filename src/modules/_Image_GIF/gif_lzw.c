@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.2 2001/04/27 13:45:29 grubba Exp $
+**!	$Id: gif_lzw.c,v 1.3 2001/09/24 12:10:47 grubba Exp $
 */
 
 #include "global.h"
@@ -150,7 +150,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    lzw_output(lzw,lzw->current);
 
    lno=lzw->code[lzw->current].firstchild;
-   lno2=lzw->codes;
+   lno2 = DO_NOT_WARN((lzwcode_t)lzw->codes);
    l=lzw->code+lno2;
    l->next=lno;
    l->firstchild=LZWCNULL;
@@ -206,9 +206,10 @@ void image_gif_lzw_finish(struct gif_lzw *lzw)
    if (lzw->outbit)
    {
       if (lzw->reversebits)
-	 lzw->out[lzw->outpos++]=lzw->lastout<<(8-lzw->outbit);
+	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)(lzw->lastout<<
+							   (8-lzw->outbit)));
       else
-	 lzw->out[lzw->outpos++]=lzw->lastout;
+	 lzw->out[lzw->outpos++] = DO_NOT_WARN((lzwcode_t)lzw->lastout);
    }
 }
 

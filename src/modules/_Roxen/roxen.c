@@ -54,7 +54,7 @@ static void f_hp_feed( INT32 args )
 {
   struct pike_string *str = Pike_sp[-1].u.string;
   struct header_buf *hp = THP;
-  int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc, cnt, num;
+  int tot_slash_n=hp->slash_n, slash_n = 0, spc = hp->spc;
   char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;

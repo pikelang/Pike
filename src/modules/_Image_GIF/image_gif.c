@@ -1,9 +1,9 @@
-/* $Id: image_gif.c,v 1.6 2001/07/18 18:50:15 nilsson Exp $ */
+/* $Id: image_gif.c,v 1.7 2001/09/24 12:08:42 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image_gif.c,v 1.6 2001/07/18 18:50:15 nilsson Exp $
+**!	$Id: image_gif.c,v 1.7 2001/09/24 12:08:42 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.6 2001/07/18 18:50:15 nilsson Exp $");
+RCSID("$Id: image_gif.c,v 1.7 2001/09/24 12:08:42 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -557,7 +557,7 @@ CHRONO("gif _render_block push of packed data begin");
       else
       {
 	 ps=begin_shared_string(lzw.outpos-i+2);
-	 ps->str[0]=lzw.outpos-i;
+	 ps->str[0] = DO_NOT_WARN((char)(lzw.outpos-i));
 	 MEMCPY(ps->str+1,lzw.out+i,lzw.outpos-i);
 	 ps->str[lzw.outpos-i+1]=0;
 	 push_string(end_shared_string(ps));
@@ -2130,8 +2130,7 @@ void image_gif_decode(INT32 args)
 void image_gif_decode_layers(INT32 args)
 {
    struct array *a,*b;
-   struct image *img,*src,*alpha;
-   struct object *o;
+   struct image *src,*alpha;
    int n;
    int numlayers=0;
 
@@ -2562,8 +2561,11 @@ static void image_gif_lzw_decode(INT32 args)
    }
    dest=dest0; dlen=dlen0;
 
-   for (n=0; n<clearcode; n++)
-      c[n].prev=0xffff,c[n].len=1,c[n].c=n;
+   for (n=0; n<clearcode; n++) {
+      c[n].prev=0xffff;
+      c[n].len=1;
+      c[n].c = DO_NOT_WARN((unsigned short)n);
+   }
    c[clearcode].len=0; 
    c[endcode].len=0;   
 
@@ -2604,7 +2606,7 @@ static void image_gif_lzw_decode(INT32 args)
 
       if (n==m) 
       {
-	 c[n].prev=last;
+	 c[n].prev = DO_NOT_WARN((unsigned short)last);
 	 c[n].c=c[last].c;
 	 c[n].len=c[last].len+1;
       }
@@ -2676,7 +2678,7 @@ static void image_gif_lzw_decode(INT32 args)
 
 	 if (last!=clearcode)
 	 {
-	    c[m].prev=last;
+	    c[m].prev = DO_NOT_WARN((unsigned short)last);
 	    c[m].len=c[last].len+1;
 	    c[m].c=lc;
 	 }

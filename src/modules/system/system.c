@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.114 2001/07/11 12:29:08 grubba Exp $
+ * $Id: system.c,v 1.115 2001/09/24 12:47:52 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.114 2001/07/11 12:29:08 grubba Exp $");
+RCSID("$Id: system.c,v 1.115 2001/09/24 12:47:52 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1581,28 +1581,30 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
 
 static void describe_hostent(struct hostent *hp)
 {
-  char **p;
-  INT32 nelem;
-
   push_text(hp->h_name);
   
 #ifdef HAVE_H_ADDR_LIST
-  nelem=0;
-  for (p = hp->h_addr_list; *p != 0; p++) {
-    struct in_addr in;
+  {
+    char **p;
+    INT32 nelem = 0;
+
+    for (p = hp->h_addr_list; *p != 0; p++) {
+      struct in_addr in;
  
-    MEMCPY(&in.s_addr, *p, sizeof (in.s_addr));
-    push_text(inet_ntoa(in));
-    nelem++;
-  }
-  f_aggregate(nelem);
+      MEMCPY(&in.s_addr, *p, sizeof (in.s_addr));
+      push_text(inet_ntoa(in));
+      nelem++;
+    }
+
+    f_aggregate(nelem);
  
-  nelem=0;
-  for (p = hp->h_aliases; *p != 0; p++) {
-    push_text(*p);
-    nelem++;
+    nelem=0;
+    for (p = hp->h_aliases; *p != 0; p++) {
+      push_text(*p);
+      nelem++;
+    }
+    f_aggregate(nelem);
   }
-  f_aggregate(nelem);
 #else
   {
     struct in_addr in;

@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.59 2001/09/12 23:24:07 hubbe Exp $
+ * $Id: oracle.c,v 1.60 2001/09/24 11:55:49 grubba Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.59 2001/09/12 23:24:07 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.60 2001/09/24 11:55:49 grubba Exp $");
 
 
 /* User-changable defines: */
@@ -1167,7 +1167,7 @@ static void push_inout_value(struct inout *inout,
 
       if(ret == OCI_SUCCESS)
       {
-	push_int(integer);
+	push_int64(integer);
       }else{
 #ifdef AUTO_BIGNUM
 	unsigned char buffer[80];
@@ -1202,7 +1202,8 @@ static void push_inout_value(struct inout *inout,
       break;
       
     case SQLT_FLT:
-      push_float(inout->u.f); /* We might need to push a Matrix here */
+      /* We might need to push a Matrix here */
+      push_float(DO_NOT_WARN((FLOAT_TYPE)inout->u.f));
       break;
       
     default:
@@ -1649,7 +1650,6 @@ static void f_big_typed_query_create(INT32 args)
     MAPPING_LOOP(bnds)
       {
 	struct svalue *value=&k->val;
-	OCIBind *bindp;
 	sword rc = 0;
 	void *addr;
 	sword len, fty;
@@ -1942,8 +1942,6 @@ static void dbdate_cast(INT32 args)
   get_all_args("Oracle.Date->cast",args,"%s",&s);
   if(!strcmp(s,"int"))
   {
-    struct tm *tm;
-    time_t t;
     ub1 hour, min, sec, month,day;
     sb2 year;
 

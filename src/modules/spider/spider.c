@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.110 2001/07/13 12:33:42 grubba Exp $");
+RCSID("$Id: spider.c,v 1.111 2001/09/24 12:43:06 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -985,7 +985,7 @@ void do_html_parse_lines(struct pike_string *ss,
  */
 void f_get_all_active_fd(INT32 args)
 {
-  int i,fds,q, ne;
+  int i,fds,ne;
   struct stat foo;
 
   ne = MAX_OPEN_FILEDESCRIPTORS;
@@ -1174,7 +1174,6 @@ void pike_module_init(void)
 
 void pike_module_exit(void)
 {
-  int i;
   free_string(empty_string.u.string);
   {
     extern void exit_xml(void);

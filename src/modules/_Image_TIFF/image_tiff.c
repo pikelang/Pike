@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.26 2001/01/19 22:09:41 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.27 2001/09/24 12:13:52 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -374,12 +374,12 @@ void low_image_tiff_decode( struct buffer *buf,
   for(i=0; i<h*w; i++)
   {
     uint32 p = *s;
-    di->r = p&255;
-    di->g = (p>>8) & 255;
-    (di++)->b = (p>>16) & 255;
+    di->r = DO_NOT_WARN((unsigned char)(p & 255));
+    di->g = DO_NOT_WARN((unsigned char)((p>>8) & 255));
+    (di++)->b = DO_NOT_WARN((unsigned char)((p>>16) & 255));
     if(!image_only) 
     {
-      da->r = da->g = da->b = (p>>24) & 255;
+      da->r = da->g = da->b = DO_NOT_WARN((unsigned char)((p>>24) & 255));
       da++;
     }
     s++;

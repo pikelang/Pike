@@ -2755,7 +2755,6 @@ static void define_entity_raw(INT32 args)
 static void define_entity(INT32 args)
 {
   int d;
-  struct svalue tmp;
   struct pike_string *s;
   struct xmldata data;
   ONERROR e;
@@ -2921,7 +2920,7 @@ static void autoconvert(INT32 args)
 
       case 0x3c3f786d: /* ASCII? UTF-8? ISO-8859? */
 	{
-	  int pos,e,encstart,encend;
+	  int pos,encstart;
 
 	  IF_XMLDEBUG(fprintf(stderr,"Extended ASCII detected (assuming UTF8).\n"));
 	  pos=5;

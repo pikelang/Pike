@@ -29,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.36 2001/01/30 15:46:15 grubba Exp $");
+RCSID("$Id: math.c,v 1.37 2001/09/24 12:21:08 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -80,7 +80,8 @@ void f_sin(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to sin()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to sin()\n");
-  sp[-args].u.float_number=sin(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)sin(sp[-args].u.float_number));
 }
 
 /*! @decl float asin(float f)
@@ -95,7 +96,8 @@ void f_asin(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to asin()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to asin()\n");
-  sp[-args].u.float_number=asin(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)asin(sp[-args].u.float_number));
 }
 
 /*! @decl float cos(float f)
@@ -110,7 +112,8 @@ void f_cos(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to cos()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to cos()\n");
-  sp[-args].u.float_number=cos(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)cos(sp[-args].u.float_number));
 }
 
 /*! @decl float acos(float f)
@@ -125,7 +128,8 @@ void f_acos(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to acos()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to acos()\n");
-  sp[-args].u.float_number=acos(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)acos(sp[-args].u.float_number));
 }
 
 /*! @decl float tan(float f)
@@ -148,7 +152,8 @@ void f_tan(INT32 args)
     Pike_error("Impossible tangent.\n");
     return;
   }
-  sp[-args].u.float_number=tan(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)tan(sp[-args].u.float_number));
 }
 
 /*! @decl float atan(float f)
@@ -163,7 +168,8 @@ void f_atan(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to atan()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to atan()\n");
-  sp[-args].u.float_number=atan(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)atan(sp[-args].u.float_number));
 }
 
 /*! @decl float atan2(float f1, float f2)
@@ -181,7 +187,8 @@ void f_atan2(INT32 args)
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to atan2()\n");
   if(sp[-args+1].type!=T_FLOAT) Pike_error("Bad argument 2 to atan2()\n");
   sp[-args].u.float_number=
-    atan2(sp[-args].u.float_number,sp[-args+1].u.float_number);
+    DO_NOT_WARN((FLOAT_TYPE)atan2(sp[-args].u.float_number,
+				  sp[-args+1].u.float_number));
   pop_stack();
 }
 
@@ -223,7 +230,8 @@ void f_sqrt(INT32 args)
       Pike_error("math: sqrt(x) with (x < 0.0)\n");
       return;
     }
-    sp[-args].u.float_number=sqrt(sp[-args].u.float_number);
+    sp[-args].u.float_number =
+      DO_NOT_WARN((FLOAT_TYPE)sqrt(sp[-args].u.float_number));
   }
 #ifdef AUTO_BIGNUM
   else if(sp[-args].type == T_OBJECT)
@@ -260,7 +268,8 @@ void f_log(INT32 args)
   if(sp[-args].u.float_number <=0.0)
     Pike_error("Log on number less or equal to zero.\n");
 
-  sp[-args].u.float_number=log(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)log(sp[-args].u.float_number));
 }
 
 /*! @decl float exp(float f)
@@ -274,7 +283,7 @@ void f_exp(INT32 args)
 {
   FLOAT_TYPE f;
   get_all_args("exp",args,"%F",&f);
-  f=exp(f);
+  f = DO_NOT_WARN((FLOAT_TYPE)exp(f));
   pop_n_elems(args);
   push_float(f);
 }
@@ -291,7 +300,7 @@ void f_pow(INT32 args)
   FLOAT_TYPE x,y;
   get_all_args("pow",args,"%F%F",&x,&y);
   pop_n_elems(args);
-  push_float(pow((double)x, (double)y));
+  push_float(DO_NOT_WARN((FLOAT_TYPE)pow((double)x, (double)y)));
 }
 
 /*! @decl float floor(float f)
@@ -309,7 +318,8 @@ void f_floor(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to floor()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to floor()\n");
-  sp[-args].u.float_number=floor(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)floor(sp[-args].u.float_number));
 }
 
 /*! @decl float ceil(float f)
@@ -327,7 +337,8 @@ void f_ceil(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to ceil()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to ceil()\n");
-  sp[-args].u.float_number=ceil(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)ceil(sp[-args].u.float_number));
 }
 
 /*! @decl float round(float f)
@@ -345,7 +356,8 @@ void f_round(INT32 args)
 {
   if(args<1) Pike_error("Too few arguments to round()\n");
   if(sp[-args].type!=T_FLOAT) Pike_error("Bad argument 1 to round()\n");
-  sp[-args].u.float_number=RINT(sp[-args].u.float_number);
+  sp[-args].u.float_number =
+    DO_NOT_WARN((FLOAT_TYPE)RINT(sp[-args].u.float_number));
 }
 
 /*! @decl mixed min(mixed ...args)

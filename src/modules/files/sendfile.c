@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.53 2000/12/05 21:08:36 per Exp $
+ * $Id: sendfile.c,v 1.54 2001/09/24 12:39:32 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -240,7 +240,6 @@ static void sf_call_callback(struct pike_sendfile *this)
 static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
 {
   struct pike_sendfile *this = this_;
-  int sz;
 
   SF_DFPRINTF((stderr, "sendfile: Calling callback...\n"));
 
@@ -335,9 +334,6 @@ void low_do_sendfile(struct pike_sendfile *this)
   SF_DFPRINTF((stderr, "sendfile: Worker started\n"));
 
   if ((this->from_file) && (this->len)) {
-    struct iovec *iov;
-    int iovcnt;
-
 #if defined(HAVE_FREEBSD_SENDFILE) || defined(HAVE_HPUX_SENDFILE)
     off_t sent = 0;
     int len = this->len;
@@ -925,7 +921,6 @@ static void sf_create(INT32 args)
 
   {
     /* Threaded blocking mode possible */
-    THREAD_T th_id;
 
     /* Make sure both file objects are in blocking mode.
      */

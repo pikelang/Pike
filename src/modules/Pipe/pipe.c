@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.45 2000/12/05 21:08:31 per Exp $");
+RCSID("$Id: pipe.c,v 1.46 2001/09/24 11:58:28 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -689,8 +689,6 @@ static void pipe_input(INT32 args)
 {
    struct input *i;
    int fd=-1;			/* Per, one less warning to worry about... */
-   char *m;
-   struct stat s;
    struct object *obj;
 
    if (args<1 || sp[-args].type != T_OBJECT)
@@ -711,6 +709,9 @@ static void pipe_input(INT32 args)
    /* We do not handle mmaps if we have a buffer */
    if(THIS->fd == -1)
    {
+     char *m;
+     struct stat s;
+
      apply(obj, "query_fd", 0);
      if(sp[-1].type == T_INT) fd=sp[-1].u.integer;
      pop_stack();

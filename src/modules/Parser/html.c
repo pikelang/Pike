@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.146 2001/07/19 21:09:07 nilsson Exp $ */
+/* $Id: html.c,v 1.147 2001/09/24 11:56:54 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -3467,7 +3467,6 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
       default: {
 	int quote;
-	p_wchar2 end_found;
 
 #ifdef PIKE_DEBUG
 	if (this->data_cb_feed)
@@ -4684,8 +4683,6 @@ static void html_clone(INT32 args)
 {
    struct object *o;
    struct parser_html_storage *p;
-   size_t i;
-   p_wchar2 *newstr;
 
    DEBUG((stderr,"parse_html_clone object %p\n",THISOBJ));
 

@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.40 2001/05/24 22:28:16 david%hedbor.org Exp $
+ * $Id: image_ttf.c,v 1.41 2001/09/24 12:14:42 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.40 2001/05/24 22:28:16 david%hedbor.org Exp $");
+RCSID("$Id: image_ttf.c,v 1.41 2001/09/24 12:14:42 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -912,7 +912,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
 
 static int find_kerning( TT_Kerning kerning, int c1, int c2 )
 {
-  int i,j;
+  int j;
 /*   fprintf(stderr, "kern: %d %d\n", c1, c2); */
   for(j=0; j<kerning.nTables; j++)
   {
@@ -1119,7 +1119,6 @@ static void image_ttf_faceinstance_write(INT32 args)
       TT_Raster_Map rastermap;
       struct object *o;
       struct image *img;
-      unsigned char *s;
       rgb_group *d;
 
 
