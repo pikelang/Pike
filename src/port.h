@@ -2,13 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.h,v 1.47 2003/02/24 13:36:45 grubba Exp $
+|| $Id: port.h,v 1.48 2003/03/24 15:10:11 marcus Exp $
 */
 
 #ifndef PORT_H
 #define PORT_H
 
 #include "global.h"
+#include <math.h>
 
 #ifndef STRUCT_TIMEVAL_DECLARED
 #define STRUCT_TIMEVAL_DECLARED
@@ -299,10 +300,14 @@ long long gethrtime(void);
 /* C99 provides a portable way of generating NaN */
 #define MAKE_NAN() (nan(""))
 #else
+#ifdef NAN
+#define MAKE_NAN() (NAN)
+#else
 #ifdef PORT_DO_WARN
 #warning Don´t know how to create NaN on this system!
 #endif
 #define MAKE_NAN() (0.0)
+#endif /* NAN */
 #endif /* HAVE_NAN */
 #endif /* HAVE_INFNAN */
 
