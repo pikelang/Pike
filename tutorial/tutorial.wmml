@@ -1902,7 +1902,7 @@ Functions and operators relevant to objects:
 <section title="function">
 
 When indexing an object on a string, and that string is the name of a function
-in the object a <tt>function</tt> is returned. Despite iss name, a
+in the object a <tt>function</tt> is returned. Despite its name, a
 <tt>function</tt> is really a <b>function pointer</b>.
 <center>
   <image xfig=function><br>
@@ -3184,6 +3184,7 @@ and they also constitute a neat way to use your own C/C++ code from
 within Pike. Pike comes with a number of modules that are ready to use.
 In this chapter I will explain the basics of modules and how to use them.
 
+<!-- Vad sägs om "Here is a list of XXX modules:" >
 <dl>
 <dt>Stdio
 <dd>This module contains file I/O routines.
@@ -3262,14 +3263,15 @@ For each of these directories, Pike will do the following:
 <li> If there is a file called Stdio.pmod.so, Pike will load this
      with load_module(), clone it and use that as a module.
 <li> If there is a directory called Stdio.pmod, Pike will create a module
-     containing all the modules in that dir as identifiers. If there is
+     containing all the modules in that dir <!-- "directory"?>
+     as identifiers. If there is
      a module called <tt>module</tt> in that directory, all identifiers
      from that module will overload any modules actually present in the
      directory.
 </ol>
 
 As you can see, quite a lot of work goes into finding the modules, this
-makes it possible to choose the most convenient way build your own Pike
+makes it possible to choose the most convenient way to build your own Pike
 modules.
 </section>
 
@@ -3319,10 +3321,12 @@ or like this:
      have written so far in it. Make a program that runs one of those
      programs. Make sure the program can be modified to run another of
      your examples by changing what module it loads.
-<li> Copy hello_world.pike.pmod to programs/module.pike.pmod, now write
+<li> Copy hello_world.pike.pmod to programs/module.pike.pmod, now <!-- dåligt!>
+	write
      a program that runs hello_world without actually using the identifier
      <tt>hello_world</tt>.
-<li> Try putting <tt>Programs.pmod</tt> in another directory, now try to
+<li> Try putting <tt>Programs.pmod</tt> in another directory, now <!-- dåligt!>
+     try to
      run the programs from the last two examples. 
 </ul>
 </box>
@@ -3360,13 +3364,13 @@ object(Stdio.File) Stdio.File(string <i>file</i>, string <i>mode</i>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-When cloning a File you can choose between three different ways. The
+When cloning a File you can choose between <!-- "among"?> three different ways. The
 first is to clone it without any arguments, in which case the you
 have to call open(), connect() or some other method which connects
 the File object with a stream.
 <p>
 However, instead of cloning and then calling open(), you can clone
-the File with a filename and open mode, this is the same thing as
+the File with a filename and open mode. This is the same thing as
 cloning and then calling open, except shorter and faster.
 <p>
 Alternatively, you can clone a File with "stdin", "stdout" or
@@ -3429,7 +3433,7 @@ respectively. Note that this funciton will not call the
 close_callback.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.File.open>Stdio.File-&gt;close</link>
+<link to=Stdio.File.open>Stdio.File-&gt;open</link>
 <p>
 </dl>
 
@@ -3449,7 +3453,7 @@ string read();<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Read tries to read nbytes bytes from the file, and return it as a
+Read tries to read <I>nbytes</i> bytes from the file, and return it as a
 string. If something goes wrong, zero is returned.
 <p>If a one is given as second argument to read(), read will not try
 its best to read as many bytes as you asked it to read, it will
@@ -3521,7 +3525,7 @@ the old position in the file when successful.
 Return the current position in the file.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Stdio.File.seek>Stdio.Fileile-&gt;seek</link>
+<link to=Stdio.File.seek>Stdio.File-&gt;seek</link>
 <p>
 </dl>
 
@@ -3915,7 +3919,7 @@ if your machine has many ip numbers.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This funcion connects a socket previously created with
 Stdio.File-&gt;open_socket to a remote socket. The argument is the ip name
-or number fot he remote machine.
+or number for the remote machine.
 <p>This function returns 1 for success, 0 otherwise. Note that if the
 socket is in nonblocking mode, you have to wait for a write or close
 callback before you know if the connection failed or not.
@@ -3963,7 +3967,7 @@ socket, not connected or some other error occurs, zero is returned.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function creates a pipe between the object it was called in
 and an object that is returned. The two ends of the pipe are
-indistinguishable. If the object is this function is called in
+indistinguishable. If the object is this function is called in <!-- Obegripligt!>
 was open to begin with, it is closed before the pipe is created.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -4149,7 +4153,7 @@ Example:
 This example will read lines from standard input for as long as there
 are more lines to read. Each line will then be written to stdout together
 with the line number. We could use <tt>Stdio.stdout.write</tt> instead
-of just <tt>write</tt> they are the same function.
+of just <tt>write</tt> <!-- Punkt eller because?> they are the same function.
 </section>
 </anchor>
 </anchor>
@@ -4302,11 +4306,11 @@ the process output has been redirected to a file or pipe.
 <tt>Stdio.write_file</tt> - append a string to a file
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>int write_file(string file, string str)<br>
+<tt>int write_file(string <i>file</i>, string <i>str</i>)<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Append the string str onto the file file. Returns number of bytes written.
+Append the string <i>str</i> onto the file <i>file</i>. Returns number of bytes written.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Stdio.read_bytes.html>Stdio.read_bytes</link>
@@ -4400,13 +4404,16 @@ object(Stdio.Port) Stdio.Port(int port,function accept_callback)<br>
 or<br>
 object(Stdio.Port) Stdio.Port(int port,function accept_callback, string ip)<br>
 </tt>
-<p>
+<p> <!-- Det saknas <i> överallt här. Lägger till det>
 <dt><encaps>DESCRIPTION</encaps><dd>
-When create is called with 'stdin' as argument, a socket is created
+When create is called with 'stdin' 
+<!-- är det inte bättre att skriva "... with the string "stdin" as ..." > 
+as argument, a socket is created
 out of the file descriptor 0. This is only useful if that actually
-IS a socket to begin with. When create is called with an int as first
+IS <!-- bold?> a socket to begin with. When create is called with an int as first
 argument, it does the same as bind() would do with the same arguments.
 <p>
+<!-- Här verkar det saknas info>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=clone>clone</link>
 <p>
@@ -4502,6 +4509,7 @@ Stdio.File. The new file is by default set to blocking.
 <section title="A more complex example - a simple www server">
 
 For you who are not familiar with WWW (World Wide Web), it works by using
+<!-- Så www funkar bara om man inte är bekant med det? Skriv om det bättre!>
 client program which will fetch files from remote servers when asked.
 Usually by clicking a pitcure or text. This example is a program for the
 server which will send files to any computer that requests them. The
@@ -4565,8 +4573,8 @@ they are then named 'socket' and 'file'.
 	  int offset=0;
 </example>
 Then there is a global variable called offset which is initialized to zero.
-(each instance of this class will have its own instance of this variable,
- so it is not truly global, but..) 
+(Each instance of this class will have its own instance of this variable,
+ so it is not truly global, but...) 
 Note that the initialization is done when the class is cloned (or
 instantiated if you prefer C++ terminology).
 <p>
@@ -4799,7 +4807,7 @@ If it failed we just return.
 <example language=pike>
 	  output_class(tmp_output);
 </example>
-Otherwise we clone an instanec of 'output_class' and let it take care of the
+Otherwise we clone an instance of 'output_class' and let it take care of the
 connection. Each clone of output_class will have its own set of global
 variables, which will enable many connections to be active at the same
 time without data being mixed up. Note that the programs will not actually
@@ -4928,7 +4936,7 @@ makes it very simple to write threaded programs. Let's look at an example:
 	    while(string line=o-&gt;gets())
 	    {
 	      if(search(line, lookfor) &gt;=0)
-		write(sprintf("%s:%d: %s\n",file, lineno, line));
+		write(sprintf("%s:%d: %s\n",file, lineno<!-- Den härhittar jag inte tidigare>, line));
 
 	      linenum++;
 	    }
@@ -6916,7 +6924,7 @@ on the disk.
 </section>
 </anchor>
 <hr noshade size=1>
-
+<!-- Alla funktioner i denna modul ska ha en "int|void throw_errors">
 <anchor name=Getopt>
 <section title="Getopt">
 Getopt is a group of function which can be used to find command line options.
