@@ -476,7 +476,7 @@ array(array(array(mixed))) diff3_old(array mid,array left,array right)
 // sort with care of numerical sort:
 //  "abc4def" before "abc30def"
 
-int dwim_sort_func(string a,string b)
+int dwim_sort_func(string a0,string b0)
 {
    string a2="",b2="";
    int a1,b1;
@@ -487,7 +487,7 @@ int dwim_sort_func(string a,string b)
    if (a1>b1) return 1;
    if (a1<b1) return 0;
    if (a2==b2) return 0;
-   return sort_func(a2,b2);
+   return dwim_sort_func(a2,b2);
 }
 
 // sort with no notice of contents in paranthesis,
