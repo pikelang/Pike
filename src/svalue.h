@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.102 2002/04/25 10:47:39 grubba Exp $
+ * $Id: svalue.h,v 1.103 2002/05/02 09:14:46 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -473,8 +473,13 @@ extern struct svalue dest_ob_zero;
 #define clear_svalues(X,Y) low_clear_svalues((X),(Y),NUMBER_NUMBER)
 #define clear_svalues_undefined(X,Y) low_clear_svalues((X),(Y),NUMBER_UNDEFINED)
 
+#define really_free_short_svalue(U, TYPE) do {				\
+    union anything *any_ = (U);						\
+    really_free_short_svalue_ptr (&any_->ptr, (TYPE));			\
+  } while (0)
+
 /* Prototypes begin here */
-PMOD_EXPORT void really_free_short_svalue(void **s, TYPE_T type);
+PMOD_EXPORT void really_free_short_svalue_ptr(void **s, TYPE_T type);
 PMOD_EXPORT void really_free_svalue(struct svalue *s);
 PMOD_EXPORT void do_free_svalue(struct svalue *s);
 PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
