@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.19 1999/11/10 00:31:40 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.20 1999/11/11 13:41:52 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -125,7 +125,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.19 1999/11/10 00:31:40 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.20 1999/11/11 13:41:52 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -695,13 +695,20 @@ void parse_data()
 	action = "goto use_cdr;";
 	break;
       default:
+	string fix_refs = "";
+	if (sizeof(t)) {
+	  fix_refs =
+	    "#ifndef SHARED_NODES\n" +
+	    "  " + (t + ({ "0;\n" })) * " = " +
+	    "#endif /* !SHARED_NODES */\n";
+	}
 	action = sprintf("{\n"
 			 "  tmp1 = %s;\n"
 			 "%s"
 			 "  goto use_tmp1;\n"
 			 "}",
 			 expr,
-			 sizeof(t)?("  " + (t * " = ") + " = 0;\n"):"");
+			 fix_refs);
 	break;
       }
     } else {
@@ -722,7 +729,7 @@ string do_indent(string code, string indent)
 {
   array a = code/"\n";
   for(int i = 0; i < sizeof(a); i++) {
-    if (sizeof(a[i])) {
+    if (sizeof(a[i]) && (a[i][0] != '#')) {
       a[i] = indent + a[i];
     }
   }
