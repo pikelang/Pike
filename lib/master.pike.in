@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.290 2003/07/22 10:45:50 nilsson Exp $
+// $Id: master.pike.in,v 1.291 2003/07/30 17:19:17 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -3665,6 +3665,20 @@ class Decoder (void|string fname, void|int mkobj)
   object objectof (string|array what)
   {
     DEC_MSG ("objectof (%O)\n", what);
+    if (!what) {
+      // This is necessary for compatibility with 7.2 encoded values:
+      // If an object was fed to encode_value there and there was no
+      // codec then a zero would be encoded silently since the failed
+      // call to nameof was ignored. decode_value would likewise
+      // silently ignore the failed call objectof(0) and a zero would
+      // be decoded. Now we supply a fairly capable codec which is
+      // used by default and we therefore get these objectof(0) calls
+      // here. So if we throw an error we can't decode values which
+      // 7.2 would encode and decode without a codec (albeit partly
+      // incorrectly). So just print a sulky warning and continue.. :P
+      werror ("Warning: Decoded broken object identifier to zero.\n");
+      DEC_RETURN (0);
+    }
     DEC_RETURN ([object] thingof (what));
   }
 
