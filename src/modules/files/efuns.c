@@ -131,7 +131,17 @@ void f_filesystem_stat(INT32 args)
   struct statvfs st;
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
+#ifdef HAVE_STRUCT_STATFS
   struct statfs st;
+#else /* !HAVE_STRUCT_STATFS */
+#ifdef HAVE_STRUCT_FS_DATA
+  /* Probably only ULTRIX has this name for the struct */
+  struct fs_data st;
+#else /* !HAVE_STRUCT_FS_DATA */
+    /* Should not be reached */
+#error No struct to hold statfs() data.
+#endif /* HAVE_STRUCT_FS_DATA */
+#endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
   struct stat statbuf;
@@ -200,6 +210,7 @@ void f_filesystem_stat(INT32 args)
     f_aggregate_mapping(9*2);
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
+#ifdef HAVE_STRUCT_STATFS
     push_text("blocksize");
     push_int(st.f_bsize);
     push_text("blocks");
@@ -221,6 +232,23 @@ void f_filesystem_stat(INT32 args)
 #else
     f_aggregate_mapping(6*2);
 #endif /* HAVE_STATFS_F_BAVAIL */
+#else /* !HAVE_STRUCT_STATFS */
+#ifdef HAVE_STRUCT_FS_DATA
+    /* ULTRIX */
+    push_text("blocksize");
+    push_int(st.fd_bsize);
+    push_text("blocks");
+    push_int(st.fd_btot);
+    push_text("bfree");
+    push_int(st.fd_bfree);
+    push_text("bavail");
+    push_int(st.fd_bfreen);
+    f_aggregate_mapping(4*2);
+#else /* !HAVE_STRUCT_FS_DATA */
+    /* Should not be reached */
+#error No struct to hold statfs() data.
+#endif /* HAVE_STRUCT_FS_DATA */
+#endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
     push_text("bfree");
