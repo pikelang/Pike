@@ -1,6 +1,6 @@
 /* Misc stuff for dealing with floats.
  *
- * $Id: pike_float.h,v 1.3 2004/01/12 12:26:42 marcus Exp $
+ * $Id: pike_float.h,v 1.4 2004/03/21 17:33:58 nilsson Exp $
  */
 
 #ifndef PIKE_FLOAT_H
@@ -16,6 +16,9 @@
 #endif
 #ifdef HAVE_FP_CLASS_H
 #include <fp_class.h>
+#endif
+#ifdef HAVE_FLOAT_H
+#include <float.h>
 #endif
 
 /* isnan()...

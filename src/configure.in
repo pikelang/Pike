@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.823 2004/03/21 06:19:03 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.824 2004/03/21 17:33:57 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2548,7 +2548,7 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 		 malloc.h netinet/in.h sys/wait.h winbase.h grp.h pwd.h \
 		 passwd.h group.h winsock2.h signal.h sys/file.h poll.h \
 		 sys/poll.h socket.h ieeefp.h fp_class.h floatingpoint.h \
-		 sys/priocntl.h sys/sched.h windows.h errno.h \
+		 float.h sys/priocntl.h sys/sched.h windows.h errno.h \
 		 stddef.h mmx.h asm/mmx.h sys/termio.h sys/termios.h \
 		 ws2tcpip.h valgrind/memcheck.h memcheck.h valgrind.h \
 		 sys/prctl.h sys/ioctl.h mach/task_info.h mach/task.h \
