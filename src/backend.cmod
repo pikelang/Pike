@@ -2025,6 +2025,11 @@ PIKECLASS Backend
 			     int old_events, int new_events)
   {
     int changed_events = old_events ^ new_events;
+
+    IF_PD(fprintf (stderr, "[%d]BACKEND[%d]: update_fd_set(.., %d, %d, %d):\n",
+		   getpid(), me->id, fd, old_events, new_events));
+    
+
     if (changed_events) {
 
 #ifdef USE_POLL_DEVICE
@@ -2534,9 +2539,56 @@ PIKECLASS Backend
 	  }
 #endif /* MY_POLLNVAL */
 
-	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR))
+	  if (!CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR) &&
+	      CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
+			  getpid(), me->id, fd));
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
+	    check_box (box, fd);
+	    if (WANT_EVENT (box, READ_OOB))
+	    {
+	      errno = 0;
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
+	      if (box->callback (box, PIKE_FD_READ_OOB) == -1)
+		goto backend_round_done;
+	    }
+#ifdef PIKE_DEBUG
+	    handled = 1;
+#endif /* PIKE_DEBUG */
+	  }
+
+	  if (!CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR) &&
+	      CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
 	  {
-	    /* Closed or error */
+	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
+	     *        the kqueue case.
+	     */
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+			  getpid(), me->id, fd));
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
+	    check_box (box, fd);
+	    if (WANT_EVENT (box, READ)) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
+	      errno = 0;
+	      if (box->callback (box, PIKE_FD_READ) == -1)
+		goto backend_round_done;
+	    }
+#ifdef PIKE_DEBUG
+	    handled = 1;
+#endif /* PIKE_DEBUG */
+	  }
+
+	  /* Note: Only signal POLLHUP on the write end. With kqueue
+	   * we get an EOF event for the last read (with data) which
+	   * we want to ignore. There'll be another read event with no
+	   * data later on, which is what the pike layer expects.
+	   */
+	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR) &&
+	      !CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
+	  {
+	    /* Closed (write end) or error */
 	    int old_events;
 	    errno = 0;
 	    if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR)) {
@@ -2591,42 +2643,6 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 
-	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
-			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (WANT_EVENT (box, READ_OOB))
-	    {
-	      errno = 0;
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      if (box->callback (box, PIKE_FD_READ_OOB) == -1)
-		goto backend_round_done;
-	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
-	  }
-
-	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
-	  {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
-			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (WANT_EVENT (box, READ)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_READ) == -1)
-		goto backend_round_done;
-	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
-	  }
-
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND)) {
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLWRBAND on %d\n",
 			  getpid(), me->id, fd));
@@ -2645,6 +2661,9 @@ PIKECLASS Backend
 	  }
 
 	  if(CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT)) {
+	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
+	     *        the kqueue case.
+	     */
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT on %d\n",
 			  getpid(), me->id, fd));
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
