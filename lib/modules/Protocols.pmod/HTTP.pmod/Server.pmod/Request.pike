@@ -52,10 +52,15 @@ mapping misc=([]);
 //! in seconds, default is 180
 int send_timeout_delay=180;
 
+//! connection timeout, delay until connection is closed while
+//! waiting for the correct headers:
+int connection_timeout_delay=180;
+
 function(this_program:void) request_callback;
 
 void attach_fd(Stdio.File _fd,Port server,
-	       function(this_program:void) _request_callback)
+	       function(this_program:void) _request_callback,
+	       void|string already_data)
 {
    my_fd=_fd;
    server_port=server;
@@ -63,12 +68,21 @@ void attach_fd(Stdio.File _fd,Port server,
    request_callback=_request_callback;
 
    my_fd->set_nonblocking(read_cb,0,close_cb);
+
+   call_out(connection_timeout,connection_timeout_delay);
+
+   if (already_data)
+      read_cb(0,already_data);
 }
 
 static void read_cb(mixed dummy,string s)
 {
+
    if(!raw) raw="";
    raw+=s;
+
+   remove_call_out(connection_timeout);
+
    array v=headerparser->feed(s);
    if (v)
    {
@@ -86,6 +100,13 @@ static void read_cb(mixed dummy,string s)
 	 request_callback(this);
       }
    }
+   else
+      call_out(connection_timeout,connection_timeout_delay);
+}
+
+static void connection_timeout()
+{
+   finish(0);
 }
 
 static void parse_request()
@@ -381,8 +402,6 @@ void response_and_finish(mapping m, function|void _log_cb)
    {
       sent = my_fd->write(send_buf);
       send_buf="";
-
-      finish(1);
       return;
    }
 
@@ -423,8 +442,7 @@ void finish(int clean)
    // create new request
 
    this_program r=this_program();
-   r->attach_fd(my_fd,server_port,request_callback);
-   r->raw=raw;
+   r->attach_fd(my_fd,server_port,request_callback,raw);
 
    my_fd=0; // and drop this object
 }
@@ -466,7 +484,7 @@ void send_write()
    }
    else if (send_pos==sizeof(send_buf) && !send_fd)
    {
-      finish(1);
+      finish(sent==send_stop);
       return;
    }
 
