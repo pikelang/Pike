@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.108 2000/07/18 06:30:57 mast Exp $");
+RCSID("$Id: gc.c,v 1.109 2000/07/18 06:53:58 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1108,42 +1108,6 @@ int gc_external_mark3(void *a, void *in, char *where)
   return 0;
 }
 
-int gc_do_weak_free(void *a)
-{
-  struct marker *m;
-
-  if (!a) fatal("Got null pointer.\n");
-  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
-      Pike_in_gc != GC_PASS_ZAP_WEAK)
-    fatal("gc_do_weak_free() called in invalid gc pass.\n");
-  if (gc_debug) {
-    if (!(m = find_marker(a)))
-      gc_fatal(a, 0, "gc_do_weak_free() got unknown object.\n");
-  }
-  else m = get_marker(a);
-  debug_malloc_touch(a);
-
-  if (m->weak_refs > m->refs)
-    gc_fatal(a, 0, "More weak references than internal references.\n");
-
-  if (Pike_in_gc != GC_PASS_ZAP_WEAK) {
-    if (m->weak_refs == -1) {
-      gc_ext_weak_refs--;
-      return 1;
-    }
-  }
-  else
-    if (!(m->flags & GC_MARKED)) {
-      if (m->weak_refs <= 0)
-	gc_fatal(a, 0, "Too many weak refs cleared to thing with external "
-		 "weak refs.\n");
-      m->weak_refs--;
-      gc_ext_weak_refs--;
-      return 1;
-    }
-  return 0;
-}
-
 void debug_really_free_gc_frame(struct gc_frame *l)
 {
   if (l->frameflags & GC_LINK_FREED)
@@ -1161,6 +1125,48 @@ void debug_really_free_gc_frame(struct gc_frame *l)
 #define debug_really_free_gc_frame(l) really_free_gc_frame(l)
 
 #endif /* PIKE_DEBUG */
+
+int gc_do_weak_free(void *a)
+{
+  struct marker *m;
+
+#ifdef PIKE_DEBUG
+  if (!a) fatal("Got null pointer.\n");
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
+      Pike_in_gc != GC_PASS_ZAP_WEAK)
+    fatal("gc_do_weak_free() called in invalid gc pass.\n");
+  if (gc_debug) {
+    if (!(m = find_marker(a)))
+      gc_fatal(a, 0, "gc_do_weak_free() got unknown object.\n");
+  }
+  else m = get_marker(a);
+  debug_malloc_touch(a);
+
+  if (m->weak_refs > m->refs)
+    gc_fatal(a, 0, "More weak references than internal references.\n");
+#else
+  m = get_marker(a);
+#endif
+
+  if (Pike_in_gc != GC_PASS_ZAP_WEAK) {
+    if (m->weak_refs == -1) {
+      gc_ext_weak_refs--;
+      return 1;
+    }
+  }
+  else
+    if (!(m->flags & GC_MARKED)) {
+#ifdef PIKE_DEBUG
+      if (m->weak_refs <= 0)
+	gc_fatal(a, 0, "Too many weak refs cleared to thing with external "
+		 "weak refs.\n");
+#endif
+      m->weak_refs--;
+      gc_ext_weak_refs--;
+      return 1;
+    }
+  return 0;
+}
 
 int gc_mark(void *a)
 {
@@ -2067,7 +2073,7 @@ int do_gc(void)
 #ifdef PIKE_DEBUG
     destroy_count++;
 #endif
-    really_free_gc_frame(kill_list);
+    debug_really_free_gc_frame(kill_list);
     kill_list = next;
   }
 
