@@ -358,7 +358,7 @@ string get_name( );
 //!
 //!
 
-GTK.Widget get_parent( );
+GTK.Widget parent( );
 //! Returns the parent of this widget, if any, if there is no parent
 //! 0 is returned.
 //!
