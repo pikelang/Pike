@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.53 1997/10/27 09:59:20 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.54 1997/11/01 21:57:49 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -131,6 +131,8 @@ void init_interpreter(void)
 	goto use_malloc;
       }
     }
+    /* Don't keep this fd on exec() */
+    set_close_on_exec(fd, 1);
   }
 #endif
 
