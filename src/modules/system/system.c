@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.65 1999/04/07 23:07:50 hubbe Exp $
+ * $Id: system.c,v 1.66 1999/04/15 00:42:03 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.65 1999/04/07 23:07:50 hubbe Exp $");
+RCSID("$Id: system.c,v 1.66 1999/04/15 00:42:03 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -536,7 +536,7 @@ void f_setuid(INT32 args)
 #ifdef HAVE_SETGID
 void f_setgid(INT32 args)
 {
-  int id;
+  INT_TYPE id;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
