@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.38 1999/02/04 23:45:12 mast Exp $
+/* $Id: master.pike.in,v 1.39 1999/02/26 01:08:52 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -473,6 +473,11 @@ class dirnode
   int _cache_full;
   void fill_cache()
   {
+#ifdef RESOLV_DEBUG
+    werror(describe_backtrace(({ sprintf("Filling cache in dirnode %O\n",
+					 dirname),
+				 backtrace() })));
+#endif /* RESOLV_DEBUG */
     if (_cache_full) {
       return;
     }
@@ -569,6 +574,10 @@ class joinnode
   int _cache_full;
   void fill_cache()
   {
+#ifdef RESOLV_DEBUG
+    werror(describe_backtrace(({ "Filling cache in joinnode\n",
+				 backtrace() })));
+#endif /* RESOLV_DEBUG */
     if (_cache_full) {
       return;
     }
@@ -954,6 +963,38 @@ void compile_warning(string file,int line,string err)
     if(want_warnings)
       werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
   }
+}
+
+
+static mixed _charset_mod;
+/* This function is called by cpp() when it wants to do
+ * character code conversion.
+ */
+string decode_charset(string data, string charset)
+{
+  werror(sprintf("decode_charset(%O, %O)\n", data, charset));
+
+  if (!_charset_mod) {
+    mixed mod = resolv("Locale");
+
+    _charset_mod = mod && mod["Charset"];
+    if (!_charset_mod) {
+      compile_warning("-", 0, "No Locale.Charset module!");
+      return 0;
+    }
+  }
+
+  object decoder;
+
+  catch {
+    decoder = _charset_mod->decoder(charset);
+  };
+
+  if (!decoder) {
+    compile_warning("-", 0, sprintf("Unknown charset %O!", charset));
+    return 0;
+  }
+  return decoder->feed(data)->drain();
 }
 
 
