@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.18 1997/03/25 06:13:41 mirar Exp $ */
+/* $Id: image.c,v 1.19 1997/03/27 17:32:21 grubba Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.18 1997/03/25 06:13:41 mirar Exp $");
+RCSID("$Id: image.c,v 1.19 1997/03/27 17:32:21 grubba Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1073,6 +1073,7 @@ void image_tuned_box(INT32 args)
    rgba_group topleft,topright,bottomleft,bottomright,sum,sumzero={0,0,0,0};
    rgb_group *img;
    struct image *this;
+   float dxw, dyw;
 
    if (args<5||
        sp[-args].type!=T_INT||
@@ -1107,6 +1108,9 @@ void image_tuned_box(INT32 args)
    xw=x2-x1;
    yw=y2-y1;
 
+   dxw = 1.0/(float)xw;
+   dyw = 1.0/(float)yw;
+
    this=THIS;
    THREADS_ALLOW();
 
@@ -1114,9 +1118,8 @@ void image_tuned_box(INT32 args)
    {
 #define tune_factor(a,aw) (1.0-((float)(a)*(aw)))
       INT32 ymax;
-      float dyw=1/yw;
-      float tfx1=tune_factor(x,1/xw);
-      float tfx2=tune_factor(xw-x,1/xw);
+      float tfx1=tune_factor(x,dxw);
+      float tfx2=tune_factor(xw-x,dxw);
 
       ymax=min(yw,this->ysize-y1);
       img=this->img+x+x1+this->xsize*max(0,y1);
