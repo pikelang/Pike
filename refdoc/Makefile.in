@@ -1,7 +1,7 @@
 #
 # Sub Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile.in,v 1.5 2001/04/18 15:53:05 grubba Exp $
+# $Id: Makefile.in,v 1.6 2001/04/22 17:13:13 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -85,3 +85,6 @@ Makefile: $(ROOT)/Makefile.in
 	@echo Please rerun make.
 	@exit 1
 
+clean:
+	@rm *.xml *.xml.new || /bin/true
+	@for f in *; do if [ -d "$$f/." ]; then rm -rf "$$f"; else :; fi; done
