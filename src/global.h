@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.85 2003/04/02 19:22:43 mast Exp $
+|| $Id: global.h,v 1.86 2003/04/04 11:45:05 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -176,33 +176,36 @@ void *alloca();
 
 /* we here define a few types with more defined values */
 
+/* First INT64
+ *
+ * Select variants in portability order:
+ *   long	C89/LP64
+ *   long long	C99 & gcc2
+ *   __int64	lc & icc
+ */
 #if SIZEOF_LONG >= 8
-#define INT64 long
-#define SIZEOF_INT64 SIZEOF_LONG
-#define MAX_INT64 LONG_MAX
-#define MIN_INT64 LONG_MIN
-#else
-#if SIZEOF___INT64 - 0 >= 8
-#define INT64 __int64
-#define SIZEOF_INT64 SIZEOF___INT64
-#define MAX_INT64 _I64_MAX
-#define MIN_INT64 _I64_MIN
-#else
-#if SIZEOF_LONG_LONG - 0 >= 8
-#define INT64 long long
-#define SIZEOF_INT64 SIZEOF_LONG_LONG
-#ifdef LLONG_MAX
-#define MAX_INT64 LLONG_MAX
-#define MIN_INT64 LLONG_MIN
-#elif defined(LONG_LONG_MAX)
-#define MAX_INT64 LONG_LONG_MAX
-#define MIN_INT64 LONG_LONG_MIN
-#else
-#define MAX_INT64 0x7fffffffffffffffLL
-#define MIN_INT64 (-0x7fffffffffffffffLL - 1LL)
-#endif
-#endif
-#endif
+# define INT64 long
+# define SIZEOF_INT64 SIZEOF_LONG
+# define MAX_INT64 LONG_MAX
+# define MIN_INT64 LONG_MIN
+#elif SIZEOF_LONG_LONG - 0 >= 8
+# define INT64 long long
+# define SIZEOF_INT64 SIZEOF_LONG_LONG
+# ifdef LLONG_MAX
+#  define MAX_INT64 LLONG_MAX
+#  define MIN_INT64 LLONG_MIN
+# elif defined(LONG_LONG_MAX)
+#  define MAX_INT64 LONG_LONG_MAX
+#  define MIN_INT64 LONG_LONG_MIN
+# else
+#  define MAX_INT64 0x7fffffffffffffffLL
+#  define MIN_INT64 (-0x7fffffffffffffffLL - 1LL)
+# endif
+#elif SIZEOF___INT64 - 0 >= 8
+# define INT64 __int64
+# define SIZEOF_INT64 SIZEOF___INT64
+# define MAX_INT64 _I64_MAX
+# define MIN_INT64 _I64_MIN
 #endif
 
 #if SIZEOF_SHORT >= 4
