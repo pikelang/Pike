@@ -2,6 +2,8 @@
 
 #include <simulate.h>
 
+multiset except_modules  =(<>);
+
 string *get_files(string path)
 {
   string *files,tmp,*ret;
@@ -14,14 +16,11 @@ string *get_files(string path)
     if(tmp[0]=='#' && tmp[-1]=='#') continue;
     if(tmp[0]=='.' && tmp[1]=='#') continue;
 
+    if(path=="pike/src/modules" && except_modules[tmp])
+      continue;
+
     tmp=path+"/"+tmp;
-    switch(tmp)
-    {
-      case "pike/src/modules/image":
-      case "pike/src/modules/spider":
-      case "pike/src/modules/pipe":
-	continue;
-    }
+
     if(file_size(tmp)==-2)
     {
       ret+=get_files(tmp);
@@ -55,17 +54,16 @@ int main(int argc, string *argv)
   string *files;
   string s=replace(version()," ","_");
 
-  tmp=explode(argv[0],"/");
-  tmp=reverse(tmp);
+  tmp=reverse(argv[0]/"/");
+  except_modules=mklist(argv[1..]);
   e=search(tmp,"pike");
   if(e==-1)
   {
     perror("Couldn't find Pike source dir.\n");
-    perror("Use export.pike <sourcedir>.\n");
+    perror("Use /full/path/export.pike <except modules>.\n");
     exit(1);
   }
-  tmp=tmp[e+1..sizeof(tmp)-1];
-  tmp=reverse(tmp);
+  tmp=reverse(tmp[e+1..]);
   cd(tmp*"/");
   perror("Sourcedir = "+tmp*"/"+"/pike\n");
 
