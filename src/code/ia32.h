@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.h,v 1.5 2001/07/20 22:45:17 grubba Exp $
+ * $Id: ia32.h,v 1.6 2001/07/21 09:31:23 hubbe Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT8
@@ -27,3 +27,28 @@
   }while(0)
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
+
+
+/* We know that x86 handles unaligned memory access, we might
+ * as well use it.
+ */
+#define RELOCATE_program(P, NEW)	do {				 \
+    PIKE_OPCODE_T *op_ = NEW;						 \
+    struct program *p_ = P;						 \
+    size_t rel_ = p_->num_relocations;					 \
+    INT32 delta_ = p_->program - op_;					 \
+    if(delta_) {							 \
+      while (rel_--) {							 \
+        *((INT32 *)(op_ + p_->relocations[rel_]))+=delta_;		 \
+      }									 \
+    }									 \
+  } while(0)
+
+
+struct dynamic_buffer_s;
+struct program;
+void ia32_encode_program(struct program *p, struct dynamic_buffer_s *buf);
+void ia32_decode_program(struct program *p);
+
+#define ENCODE_PROGRAM(P, BUF)	ia32_encode_program(P, BUF)
+#define DECODE_PROGRAM(P)	ia32_decode_program(p)
