@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.313 2002/05/31 12:32:56 mast Exp $
+# $Id: Makefile.in,v 1.314 2002/06/01 16:34:33 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -265,6 +265,11 @@ pike: $(OBJ) master-stamp pike.syms modules/linker_options stamp-tpike-predep po
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
 	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options` $(LIBS) -o pike
+# The dumped modules are removed whenever Pike is relinked since some
+# of the bytecode methods (e.g. ia32) stores absolute addresses to
+# global structs. That should probably be fixed in them so that dumped
+# modules aren't link order dependent.
+	if [ -f dumpversion ]; then $(MAKE) $(MAKE_FLAGS) delete_dumped_modules; else :; fi
 
 # purify
 pure: $(OBJ) $(POBJ) master-stamp module_objects
@@ -315,8 +320,10 @@ force_dump_modules:
 	-rm dumpversion 2>/dev/null
 	$(MAKE) $(MAKE_FLAGS) dump_modules
 
-undump_modules:
+delete_dumped_modules:
 	-find lib -type f -name \*.o | xargs rm -f
+
+undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
 .SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src
