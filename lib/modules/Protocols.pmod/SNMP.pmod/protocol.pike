@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.7 2002/12/01 18:09:33 mast Exp $
+// $Id: protocol.pike,v 1.8 2002/12/03 09:41:27 hop Exp $
 
 
 #include "snmp_globals.h"
@@ -183,6 +183,9 @@ int snmp_version = SNMP_DEFAULT_VERSION;
 //! SNMP community string
 //!
 //! should be set to the appropriate SNMP community before sending a request.
+//!
+//! @note
+//!  Set to "public" by default.
 string snmp_community = SNMP_DEFAULT_COMMUNITY;
 
 int snmp_errno = SNMP_SUCCESS;
@@ -206,7 +209,7 @@ array extra_args;
 //!   remote address and UDP port (optional)
 //! @param loc_port
 //! @param loc_addr
-//!   local address and UDB port (optional)
+//!   local address and UDP port (optional)
 //!
 void create(int|void rem_port, string|void rem_addr, int|void loc_port, string|void loc_addr) {
 
