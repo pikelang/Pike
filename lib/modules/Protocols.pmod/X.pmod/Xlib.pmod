@@ -901,4 +901,41 @@ class Display
     send_request(req);
     return Types.Font(this_object(), req->fid);
   }
+
+  object CreateGlyphCursor_req(object sourcefont, object maskfont,
+			       int sourcechar, int maskchar,
+			       array(int) foreground, array(int) background)
+  {
+    object req = Requests.CreateGlyphCursor();
+    req->cid = alloc_id();
+    req->sourcefont = sourcefont->id;
+    req->maskfont = maskfont->id;
+    req->sourcechar = sourcechar;
+    req->maskchar = maskchar;
+    req->forered = foreground[0];
+    req->foregreen = foreground[1];
+    req->foreblue = foreground[2];
+    req->backred = background[0];
+    req->backgreen = background[1];
+    req->backblue = background[2];
+    return req;
+  }
+
+  object CreateGlyphCursor(object sourcefont, int sourcechar,
+			   object|void maskfont, int|void maskchar,
+			   array(int)|void foreground,
+			   array(int)|void background)
+  {
+    if(!maskfont) {
+      maskfont = sourcefont;
+      if(!maskchar)
+	maskchar = sourcechar + 1;
+    }
+    object req = CreateGlyphCursor_req(sourcefont, maskfont,
+				       sourcechar, maskchar,
+				       foreground||({0,0,0}),
+				       background||({0xffff,0xffff,0xffff}));
+    send_request(req);
+    return Types.Cursor(this_object(), req->cid);
+  }
 }

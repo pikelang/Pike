@@ -751,6 +751,26 @@ class AllocColor
   }
 }
 
+class CreateGlyphCursor
+{
+  inherit request;
+  constant reqType = 94;
+
+  int cid;
+  int sourcefont, maskfont;
+  int sourcechar, maskchar;
+  int forered, foregreen, foreblue;
+  int backred, backgreen, backblue;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%4c%2c%2c%2c%2c%2c%2c%2c%2c",
+				 cid, sourcefont, maskfont, sourcechar,
+				 maskchar, forered, foregreen, foreblue,
+				 backred, backgreen, backblue));
+  }
+}
+
 class QueryExtension
 {
   inherit request;

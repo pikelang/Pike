@@ -54,6 +54,18 @@ class Font
     display->send_request(req);
   }
 
+  object CreateGlyphCursor(int sourcechar, array(int)|void foreground,
+			   array(int)|void background)
+  {
+    return display->CreateGlyphCursor(this_object(), sourcechar, 0, 0,
+				      foreground, background);
+  }
+
+}
+
+class Cursor
+{
+  inherit XResource;
 }
 
 class Visual
