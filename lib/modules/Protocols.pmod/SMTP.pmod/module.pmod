@@ -295,7 +295,7 @@ class Connection {
      if(messageid)
        errmsg += messageid + ": ";
      errmsg += fmt + "\n";
-     if(args)
+     if(args && sizeof(args) > 0)
        logfunction(sprintf(errmsg, @args));
      else
        logfunction(errmsg);
