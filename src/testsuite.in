@@ -1,4 +1,8 @@
-test_true([["$Id: testsuite.in,v 1.92 1998/04/16 01:24:10 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.93 1998/04/17 17:14:47 hubbe Exp $"]])
+cond([[_verify_internals]],
+[[
+  test_do(_verify_internals())
+]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -244,6 +248,11 @@ cond([[all_constants()->localtime]],
 test_true(mappingp(localtime(0)))
 ]])
 
+cond([[_verify_internals]],
+[[
+  test_do(_verify_internals())
+]])
+
 // sort
 test_equal(sort(({1,3,2,4})),({1,2,3,4}))
 test_equal(sort(({4,3,2,1})),({1,2,3,4}))
@@ -475,6 +484,10 @@ ifefun(gc,
   test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
 ]])
 
+cond([[_verify_internals]],
+[[
+  test_do(_verify_internals())
+]])
 
 test_eq("\377"[0],255)
 test_do(add_constant("foo",clone(class c {int i;})))
@@ -1127,6 +1140,11 @@ test_switch4(this_object(),"",0,4.0,1)
 test_any(int e;string t=""; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4..8: } return t,"01239")
 test_any([[float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q]],0.1+1.1+2.1+3.1+8.1+9.1)
 
+cond([[_verify_internals]],
+[[
+  test_do(_verify_internals())
+]])
+
 // testing preprocessor
 test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
 test_any([[
@@ -1751,6 +1769,11 @@ test_equal(({"",}),""/"hej")
 // - fork()
 // FIXME: add tests for fork
 
+cond([[_verify_internals]],
+[[
+  test_do(_verify_internals())
+]])
+
 // - function_name
 test_eq(function_name(a),"a")
 test_eq(function_name(function_name),0)
@@ -2024,4 +2047,9 @@ test_equal(Array.everynth("0123456789"/"",3),
   ({ "0", "3", "6", "9"}))
 test_equal(Array.everynth("0123456789"/"",3,4),
   ({ "4", "7"}))
+
+cond([[_verify_internals]],
+[[
+  test_do(_verify_internals())
+]])
 
