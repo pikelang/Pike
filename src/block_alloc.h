@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.69 2004/04/03 15:22:12 mast Exp $
+|| $Id: block_alloc.h,v 1.70 2004/04/03 15:45:41 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -15,6 +15,7 @@
 #undef PTR_HASH_ALLOC
 #undef COUNT_BLOCK
 #undef COUNT_OTHER
+#undef DMALLOC_DESCRIBE_BLOCK
 #undef BLOCK_ALLOC_HSIZE_SHIFT
 #undef MAX_EMPTY_BLOCKS
 #undef BLOCK_ALLOC_FILL_PAGES
@@ -27,6 +28,7 @@
 #define EXIT_BLOCK(X)
 #define COUNT_BLOCK(X)
 #define COUNT_OTHER()
+#define DMALLOC_DESCRIBE_BLOCK(X)
 #define BLOCK_ALLOC_HSIZE_SHIFT 2
 #define MAX_EMPTY_BLOCKS 4
 
@@ -193,6 +195,11 @@ static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
   Pike_fatal("really_free_%s called on non-block_alloc region (%p).\n",	\
 	     #DATA, d);							\
 }                                                                       \
+									\
+static void PIKE_CONCAT (dmalloc_describe_, DATA) (struct DATA *d)	\
+{									\
+  DMALLOC_DESCRIBE_BLOCK (d);						\
+}									\
 )									\
 									\
 void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
@@ -272,7 +279,9 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
     DO_IF_DMALLOC({							\
 	size_t i;							\
 	for (i = 0; i < (BSIZE); i++) {					\
-	  dmalloc_check_block_free(blk->x + i, DMALLOC_LOCATION());	\
+	  dmalloc_check_block_free(					\
+	    blk->x + i, DMALLOC_LOCATION(),				\
+	    (describe_block_fn *) PIKE_CONCAT (dmalloc_describe_, DATA)); \
 	  dmalloc_unregister(blk->x + i, 1);				\
 	}								\
       });								\
@@ -296,7 +305,9 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
      size_t tmp2;							\
      for(tmp2=0;tmp2<(BSIZE);tmp2++)					\
      {                                                                  \
-       dmalloc_check_block_free(tmp->x+tmp2, DMALLOC_LOCATION());       \
+       dmalloc_check_block_free(					\
+	 tmp->x+tmp2, DMALLOC_LOCATION(),				\
+	 (describe_block_fn *) PIKE_CONCAT (dmalloc_describe_, DATA));	\
        dmalloc_unregister(tmp->x+tmp2, 1);                              \
      }                                                                  \
    }                                                                    \
