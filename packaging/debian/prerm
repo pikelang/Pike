@@ -3,7 +3,7 @@
 #
 # see: dh_installdeb(1)
 # 
-# $Id: prerm,v 1.3 2002/08/08 12:33:15 grubba Exp $
+# $Id: prerm,v 1.4 2002/08/08 15:05:30 grendel Exp $
 #
 
 set -e
@@ -22,18 +22,9 @@ PIKEBIN=pike${PIKE}
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
-cleanmods()
-{
-    PIKEVER=`/usr/bin/$PIKEBIN -e 'write("%d.%d.%d", __REAL_MAJOR__, __REAL_MINOR__, __BUILD__);'` || ""
-    if [ -d /usr/lib/pike7.3/$PIKEVER/ ]; then
-        rm -rf `find /usr/lib/pike7.3/$PIKEVER/ -name "*.o" -type f -print` 2> /dev/null
-    fi
-}
-
 case "$1" in
     remove|upgrade|deconfigure)
         update-alternatives --remove pike /usr/bin/${PIKEBIN}
-        cleanmods 
         ;;
     failed-upgrade)
         ;;
