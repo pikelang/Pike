@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.504 2002/04/29 15:07:14 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.505 2002/05/01 20:06:21 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1126,6 +1126,65 @@ dnl
 dnl Undocumented but important behaviour...
 dnl
 test_eq([[Stdio._stdin]],[[Stdio.stdin->_fd]])
+
+test_program([[
+  class A {
+    string f() {return "A";}
+  }
+  class B {
+    string f() {return "B";}
+  }
+  class C {
+    inherit B;
+  }
+  class D {
+    inherit A;
+    inherit C;
+    string g() {return f();}
+  }
+  int a() {
+    return D()->g() == "B";
+  }
+]])
+test_program([[
+  class A {
+    string f() {return "A";}
+  }
+  class B {
+    string f() {return "B";}
+  }
+  class C {
+    inherit B;
+  }
+  class D {
+    inherit C;
+    inherit A;
+    string g() {return f();}
+  }
+  int a() {
+    return D()->g() == "A";
+  }
+]])
+test_program([[
+  class A {
+    string f() {return "A";}
+  }
+  class B {
+    string f() {return "B";}
+  }
+  class C {
+    inherit B;
+  }
+  class D {
+    string f() {return "D";}
+    inherit A;
+    inherit C;
+    string g() {return f();}
+  }
+  int a() {
+    return D()->g() == "D";
+  }
+]])
 
 test_compile_any([[
 class Bar
