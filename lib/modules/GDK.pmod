@@ -1,6 +1,6 @@
-#if constant(.GTK.parse_rc)
+#if constant(GTK.parse_rc)
 
-inherit .GTK;
+inherit GTK;
 #define INDEX(x) predef::`->(this_object(),(x))
 
 object Atom = class 
