@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 1998/08/08 12:17:32 grubba Exp $
+# $Id: configure.in,v 1.7 1998/08/08 20:28:50 grubba Exp $
 AC_INIT(yp.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -8,6 +8,16 @@ AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_HEADERS(sys/types.h rpc/types.h rpc/rpc.h rpc/clnt.h rpcsvc/ypclnt.h rpcsvc/yp_prot.h)
 
+#
+# yp_order() is
+#
+# yp_order(char *, char *, int *)		On most BSD's
+# yp_order(char *, char *, unsigned int *)	On OSF/1
+# yp_order(char *, char *, unsigned long *)	On SysV's
+#
+# int and unsigned int have the same size, so we only test if the last
+# arg's an unsigned long * or not.
+#
 AC_MSG_CHECKING(the type of the last argument to yp_order)
 AC_CACHE_VAL(pike_cv_yp_order_type, [
   AC_TRY_COMPILE([
@@ -24,8 +34,8 @@ AC_CACHE_VAL(pike_cv_yp_order_type, [
 #ifdef HAVE_RPC_CLNT_H
 #include <rpc/clnt.h>
 #endif /* HAVE_RPC_CLNT_H */
-#include <rpcsvc/ypclnt.h>
 #include <rpcsvc/yp_prot.h>
+#include <rpcsvc/ypclnt.h>
 
 int yp_order(char *, char *, unsigned long *);
   ],[
@@ -45,8 +55,8 @@ int yp_order(char *, char *, unsigned long *);
 #ifdef HAVE_RPC_CLNT_H
 #include <rpc/clnt.h>
 #endif /* HAVE_RPC_CLNT_H */
-#include <rpcsvc/ypclnt.h>
 #include <rpcsvc/yp_prot.h>
+#include <rpcsvc/ypclnt.h>
 
 int yp_order(const char *, const char *, unsigned long *);
     ],[
@@ -66,8 +76,8 @@ int yp_order(const char *, const char *, unsigned long *);
 #ifdef HAVE_RPC_CLNT_H
 #include <rpc/clnt.h>
 #endif /* HAVE_RPC_CLNT_H */
-#include <rpcsvc/ypclnt.h>
 #include <rpcsvc/yp_prot.h>
+#include <rpcsvc/ypclnt.h>
 
 int yp_order(char *, char *, long *);
       ],[
@@ -87,8 +97,8 @@ int yp_order(char *, char *, long *);
 #ifdef HAVE_RPC_CLNT_H
 #include <rpc/clnt.h>
 #endif /* HAVE_RPC_CLNT_H */
-#include <rpcsvc/ypclnt.h>
 #include <rpcsvc/yp_prot.h>
+#include <rpcsvc/ypclnt.h>
 
 int yp_order(const char *, const char *, long *);
       ],[
