@@ -532,14 +532,14 @@ string find_next_in_path(string argv0,string cmd)
 	  return fname;
 	}
       }
-  }
 
-  foreach((getenv("PATH")||"")/":",string x)
+    foreach((getenv("PATH")||"")/":",string x)
     {
       string fname=combine_path(getcwd(),x,cmd);
       if(mixed s=file_stat(fname))
 	return fname;
     }
+  }
 
   return "/bin/"+cmd;
 }
