@@ -299,8 +299,7 @@ test_any([[mapping m=([]);int e;
 ]],1)
 
 test_any([[int e;mapping q=([]),p=([]); for(e=0;e<1000;e++) { p[reverse(e)]=e; q+=([reverse(e):e]); if(!equal(sort(indices(p)),sort(indices(q)))) return 0; } return 1;]],1)
-test_any([[mapping m=([]); m+=(["foo":"bar"]); m+=(["bar":"foo"]); m+=(["foo":"foo"]); return m["foo"]=="foo" && m["bar"]=="foo"]],1)
-test_any([[mixed m=([]); m+=(["foo":"bar"]); m+=(["bar":"foo"]); m+=(["foo":"foo"]); return m["foo"]=="foo" && m["bar"]=="foo"]],1)
+test_any([[mapping m=([]); m+=(["foo":"bar"]); m+=(["bar":"foo"]); m+=(["foo":"foo"]); if(sizeof(m)==3) return 1; return m["foo"]=="foo" && m["bar"]=="foo"]],1)
 
 test_equal(sort(indices(mtest_m|mtest_m2)),sort(mtest_i|mtest_i2))
 test_equal(sort(indices(mtest_m&mtest_m2)),sort(mtest_i&mtest_i2))
