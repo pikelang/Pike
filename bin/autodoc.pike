@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.7 2001/04/24 21:05:37 grubba Exp $
+ * $Id: autodoc.pike,v 1.8 2001/04/24 21:06:38 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -39,6 +39,7 @@ int main(int argc, array(string) argv)
   	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
   	  } else if (has_suffix(path, ".pmod") ||
 		     has_suffix(path, ".pmod.in")) {
+	    // FIXME: Support for Foo.pmod/module.pmod
 	    if (has_suffix(segments[-1], ".pmod")) {
 	      name = segments[-1][..sizeof(segments[-1])-6];
 	    } else {
