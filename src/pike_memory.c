@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.109 2001/08/22 17:26:45 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.110 2001/08/30 23:11:24 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -967,6 +967,12 @@ void *fake_calloc(size_t x, size_t y)
 static void add_location(struct memhdr *mh, LOCATION location);
 static struct memhdr *my_find_memhdr(void *, int);
 
+#include "block_alloc_h.h"
+
+BLOCK_ALLOC(memloc, n/a)
+BLOCK_ALLOC(memory_map, n/a)
+BLOCK_ALLOC(memory_map_entry, n/a)
+
 #include "block_alloc.h"
 
 int verbose_debug_malloc = 0;
@@ -1787,11 +1793,11 @@ static void find_references_to(void *block, int indent, int depth, int flags)
   for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
   {
     /* Avoid infinite recursion */
-    int num_to_check=0;
+    ptrdiff_t num_to_check=0;
     void *to_check[1000];
     for(m=memhdr_hash_table[h];m;m=m->next)
     {
-      if(num_to_check >= NELEM(to_check))
+      if(num_to_check >= (ptrdiff_t) NELEM(to_check))
       {
 	warned=1;
 	fprintf(stderr,"  <We might miss some references!!>\n");
@@ -2315,10 +2321,8 @@ int debug_malloc_close_fd(int fd, LOCATION location)
 void debug_malloc_dump_fd(int fd)
 {
   fprintf(stderr,"DMALLOC dumping locations for fd %d\n",fd);
-  if(fd==-1) return fd;
+  if(fd==-1) return;
   debug_malloc_dump_references(FD2PTR(fd),2,0,0);
-
-  return fd;
 }
 
 void reset_debug_malloc(void)
