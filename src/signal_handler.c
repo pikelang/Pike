@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.286 2003/12/05 14:55:33 grubba Exp $
+|| $Id: signal_handler.c,v 1.287 2003/12/06 10:09:29 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.286 2003/12/05 14:55:33 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.287 2003/12/06 10:09:29 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1014,7 +1014,7 @@ static void f_signame(int args)
   n=signame(Pike_sp[-args].u.integer);
   pop_n_elems(args);
   if(n)
-    push_string(make_shared_string(n));
+    push_text(n);
   else
     push_int(0);
 }
@@ -3205,7 +3205,7 @@ void f_create_process(INT32 args)
 	    {
 	      check_stack(3);
 	      ref_push_string(ITEM(i)[e].u.string);
-	      push_string(make_shared_string("="));
+	      push_text("=");
 	      ref_push_string(ITEM(v)[e].u.string);
 	      f_add(3);
 	      storage.env[ptr++]=Pike_sp[-1].u.string->str;
