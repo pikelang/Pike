@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.29 1999/10/26 15:50:10 js Exp $
+// $Id: Readline.pike,v 1.30 2000/01/10 00:41:11 hubbe Exp $
 
 class OutputController
 {
@@ -1395,6 +1395,11 @@ void set_blocking()
 
 string edit(string data, string|void local_prompt)
 {
+  if(data && strlen(data) && input_controller->dumb)
+  {
+    string ret=edit("", (local_prompt || get_prompt()) +" ["+data+"] ");
+    return (!ret || !strlen(ret))?data:ret;
+  }
   string old_prompt;
   
   if(newline_func == read_newline)
