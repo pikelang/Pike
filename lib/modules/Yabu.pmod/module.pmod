@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.8 1999/02/23 18:05:36 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.9 1999/03/03 22:37:46 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define WARN(msg) werror(msg)
@@ -73,13 +73,17 @@ static private class ProcessLock {
 	rm(lock_file);
 	throw(err);
       }
+
+      if(!file_stat(combine_path(lock_file, "../")))
+	ERR(sprintf("The database does not exist (use the `c' flag)."));
       
       /* Failed to obtain lock, now trying some obscure techniques... */
       int pid = get_locked_pid();
       if(pid && kill(pid, 0))
 	ERR(sprintf("Out-locked by PID %d", pid));
       
-      rm(lock_file);
+      if(!rm(lock_file))
+	ERR("Lock removal failure (insufficient permissions?)");
       sleep(10);
     }
     ERR("Lock tryout error (insufficient permissions?)");
