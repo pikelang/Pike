@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.24 2000/12/01 08:09:49 hubbe Exp $
+ * $Id: lexer.h,v 1.25 2000/12/01 21:41:42 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -215,7 +215,9 @@ static struct pike_string *readstring(void)
 {
   int c;
   struct string_builder tmp;
+#if (SHIFT != 0)
   PCHARP bufptr = { NULL, SHIFT };
+#endif /* SHIFT != 0 */
 
   init_string_builder(&tmp,0);
   
@@ -224,10 +226,14 @@ static struct pike_string *readstring(void)
     char *buf;
     size_t len;
 
-    READBUF((C != '"') && (C != '\\') && (C != '\n'));
+    READBUF(((C > '\\') || ((C != '"') && (C != '\\') && (C != '\n'))));
     if (len) {
+#if (SHIFT == 0)
+      string_builder_binary_strcat(&tmp, buf, len);
+#else /* SHIFT != 0 */
       bufptr.ptr = buf;
       string_builder_append(&tmp, bufptr, len);
+#endif /* SHIFT == 0 */
     }
     switch(c=GETC())
     {
@@ -249,7 +255,10 @@ static struct pike_string *readstring(void)
       break;
       
     default:
+#ifdef PIKE_DEBUG
       fatal("Default case in readstring() reached. c:%d\n", c);
+#endif /* PIKE_DEBUG */
+      break;
     }
     break;
   }
@@ -295,7 +304,7 @@ static int low_yylex(YYSTYPE *yylval)
   {
     c = GETC();
 
-    if(lex_isidchar(c) && (c >'9'))
+    if((c>'9') && lex_isidchar(c))
     {
       struct pike_string *s;
       lex.pos -= (1<<SHIFT);
@@ -444,6 +453,8 @@ static int low_yylex(YYSTYPE *yylval)
 	return TOK_IDENTIFIER;
       }
     }
+
+    /* Note that 0 <= c <= 255 at this point. */
 
     switch(c)
     {
