@@ -48,7 +48,7 @@ object low_do_cmd(string *cmd)
   return f;
 }
 
-int silent_do_cmd(string *cmd, mixed|void filter)
+int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 {
   object(Stdio.File) f=low_do_cmd(cmd);
 
@@ -59,7 +59,8 @@ int silent_do_cmd(string *cmd, mixed|void filter)
     string s;
     sscanf(f->read(4),"%4c",int len);
     if(!len) break;
-    write(s=f->read(len));
+    s=f->read(len);
+    if(!silent) write(s);
     ret+=s;
   }
   if(filter) filter(ret);
@@ -68,6 +69,15 @@ int silent_do_cmd(string *cmd, mixed|void filter)
   f->close("w");
   destruct(f);
   return code;
+}
+
+string tmp;
+
+string popen_cmd(string *cmd)
+{
+  tmp="";
+  silent_do_cmd(cmd,lambda(string x) { tmp=x; }, 1);
+  return tmp;
 }
 
 string getntenv(string var)
