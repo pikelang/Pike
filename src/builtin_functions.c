@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.375 2001/06/08 00:36:00 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.376 2001/06/08 11:06:02 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1111,11 +1111,20 @@ PMOD_EXPORT void f_add_constant(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl string combine_path(string absolute, string relative)
+/*! @decl string combine_path(string absolute, string ... relative)
+ *! @decl string combine_path_unix(string absolute, string ... relative)
+ *! @decl string combine_path_nt(string absolute, string ... relative)
  *!
  *!   Concatenate a relative path to an absolute path and remove any
  *!   @tt{"//"@}, @tt{"/.."@} or @tt{"/."@} to produce a straightforward
  *!   absolute path as result.
+ *!
+ *!   @[combine_path_nt()] concatenates according to NT-filesystem conventions,
+ *!   while @[combine_path_unix()] concatenates according to UNIX-style.
+ *!
+ *!   @[combine_path()] is equvivalent to @[combine_path_unix()] on UNIX-like
+ *!   operating systems, and equvivalent to @[combine_path_nt()] on NT-like
+ *!   operating systems.
  *!
  *! @seealso
  *!   @[getcwd()], @[Stdio.append_path()]
