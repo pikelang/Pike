@@ -22,7 +22,7 @@
 
 #ifdef HAVE_MIRD
 
-#include "mird.h"
+#include <mird.h>
 
 struct program *mird_program;
 struct program *mird_transaction_program;
