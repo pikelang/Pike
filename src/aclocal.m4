@@ -53,6 +53,44 @@ pushdef([AC_CONFIG_HEADER],
   AC_CONFIG_HEADER($1)
 ])
 
+pushdef([AC_CHECK_SIZEOF],
+[
+  popdef([AC_CHECK_SIZEOF])
+  if test "x$cross_compiling" = "xyes"; then
+    changequote(<<, >>)dnl
+    define(<<AC_CV_NAME>>, translit(ac_cv_sizeof_$1, [ *], [_p]))dnl
+    changequote([, ])dnl
+    AC_MSG_CHECKING(size of $1 ... crosscompiling)
+    AC_CACHE_VAL(AC_CV_NAME,[
+      cat > conftest.$ac_ext <<EOF
+dnl This sometimes fails to find confdefs.h, for some reason.
+dnl [#]line __oline__ "[$]0"
+[#]line __oline__ "configure"
+#include "confdefs.h"
+#include <stdio.h>
+char size_info[] = {
+  0, 'S', 'i', 'Z', 'e', '_', 'I', 'n', 'F', 'o', '_',
+  '0' + sizeof([$1]), 0
+};
+EOF
+      if AC_TRY_EVAL(ac_compile); then
+        if test -f "conftest.$ac_objext"; then
+	  AC_CV_NAME=`(strings "conftest.$ac_objext" | sed -e '/^SiZe_InFo_[0-9]$/s/SiZe_InFo_//p' -ed; echo ifelse([$2], , 0, [$2])) | head -1`
+        else
+	  AC_MSG_WARN([Object file not found.])
+	  AC_CV_NAME=ifelse([$2], , 0, [$2])
+        fi
+      else
+        AC_CV_NAME=0
+      fi
+      rm -rf conftest*
+    ])    
+    AC_MSG_RESULT($AC_CV_NAME)
+    undefine([AC_CV_NAME])dnl
+  else :; fi
+  AC_CHECK_SIZEOF($1,$2)
+])
+
 AC_DEFUN(AC_MY_CHECK_TYPE,
 [
 AC_MSG_CHECKING([for $1])
@@ -104,7 +142,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.17 2000/07/28 17:16:54 hubbe Exp $
+# $Id: aclocal.m4,v 1.18 2000/08/13 19:53:36 grubba Exp $
 
 MY_AC_PROG_CC
 
