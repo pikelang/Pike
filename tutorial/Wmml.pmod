@@ -136,7 +136,7 @@ INDEX_DATA collect_index(SGML data, void|INDEX_DATA index,void|mapping taken)
 	  if(taken[new_name])
 	  {
 	    int n=2;
-	    werror("Warning, duplicate "+real_name+" near pos "+data->pos+".\n");
+//	    werror("Warning, duplicate "+real_name+" near pos "+data->pos+".\n");
 	    while(taken[new_name+"_"+n]) n++;
 	    new_name+="_"+n;
 	  }
@@ -201,7 +201,7 @@ INDEX group_index_by_character(INDEX i)
   foreach(indices(i),string key)
     {
       int c;
-      sscanf(lower_case(key),"%*[_ ]%c",c);
+      sscanf(lower_case(Html.unquote_param(key)),"%*[_ ]%c",c);
       string char=upper_case(sprintf("%c",c));
 //      werror(char +" : "+key+"\n");
       if(!m[char]) m[char]=([]);
@@ -230,21 +230,11 @@ multiset reserved_c =
 object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
 {
   int p,e;
-  SGML ret=({ "" });
+  int tabindented=-1;
+  SGML ret=({""});
 
-//  werror("'"+x+"'");
-  /* Strip leading newlines */
-  while(e<strlen(x) && x[e]=='\n') e++;
-
-//  werror("e="+e+"\n");
-  int tabindented;
-  if(x[e]=='\t')
-  {
-    tabindented=1;
-    e++;
-  }
-
-//  werror("tabindented="+tabindented+"\n");
+  while(e<strlen(x) && (x[e]=='\t' || x[e]=='\n' || x[e]==' ')) e++;
+  while(e && (e>=strlen(x) || x[e]!='\n')) e--;
 
   for(;e<strlen(x);e++)
   {
@@ -296,7 +286,8 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
       break;
 
     case '\n':
-      ret+=({ Sgml.Tag("ex_br", ([]), pos+e) });
+      if(tabindented!=-1)
+	ret+=({ Sgml.Tag("ex_br", ([]), pos+e) });
 
       if(tabindented)
       {
@@ -306,10 +297,12 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
 	  {
 	  case " ": continue;
 	  case "\t": e+=y;
+	    tabindented=1;
 	  default:
 	  }
 	  break;
 	}
+	if(tabindented==-1) tabindented=0;
       }
 
       while(x[e+1..e+1]=="\t")

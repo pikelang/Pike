@@ -5,6 +5,7 @@ SGML html_toc;
 SGML html_index;
 mapping(string:SGML) sections=([]);
 mapping(string:string) link_to_page=([]);
+mapping(string:TAG) link_to_data=([]);
 string basename;
 
 string mkfilename(string section)
@@ -156,11 +157,13 @@ SGML low_index_to_wmml(INDEX data, string prefix)
 	{
 	  ret+=({
 	    // FIXME: show all links
-	    Sgml.Tag("link",(["to":data[key][0][prefix+key][0] ]),0, ({key})),
+	    Sgml.Tag("link",(["to":data[key][0][prefix+key][0] ]),0, ({
+	      Html.unquote_param(key),
+		})),
 	      "\n"
 		});
 	}else{
-	  ret+=({key+"\n"});
+	  ret+=({Html.unquote_param(key)+"\n"});
 	}
 
 	foreach(srt(indices(data[key][0])), string key2)
@@ -169,13 +172,16 @@ SGML low_index_to_wmml(INDEX data, string prefix)
 	  ret+=({
 	    Sgml.Tag("dd"),
 	      // FIXME: show all links
-	    Sgml.Tag("link",([ "to":data[key][0][key2][0] ]),0,({key2})),
+	    Sgml.Tag("link",([ "to":data[key][0][key2][0] ]),0,
+		     ({
+		       Html.unquote_param(key2),
+			 })),
 	      "\n"
 	  });
 	}
 
       }else{
-	ret+=({key+"\n"});
+	ret+=({Html.unquote_param(key)+"\n"});
       }
 	
       if(sizeof(data[key]) > !!data[key][0])
@@ -249,15 +255,30 @@ SGML convert(SGML data)
 	m_delete(data->params,"to");
 	if(!link_to_page[to])
 	{
-//	  werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	  werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
 	}
 	data->params->href=mkfilename(link_to_page[to])+"#"+to;
 	break;
       }
 
-      case "anchor": data->tag="a"; break;
-// case "ref":
-	
+      case "ref":
+      {
+	string to=data->params->to;
+	TAG t2=link_to_data[to];
+	if(!t2)
+	{
+	  werror("Warning: Cannot find link "+to+" (near pos "+data->pos+")\n");
+	}
+	data->data=({t2->tag+" "+t2->params->number});
+	data->tag="a";
+	data->params->href=mkfilename(link_to_page[to])+"#"+to;
+	break;
+      }
+
+      case "anchor":
+	data->tag="a";
+	break;
+
       case "ex_identifier":
       case "ex_string":
       case "ex_commend":
@@ -594,7 +615,10 @@ void low_collect_links(SGML data, string file)
 	if(Wmml.islink(t->tag))
 	{
 	  if(t->params->name)
+	  {
 	    link_to_page[t->params->name]=file;
+	    link_to_data[t->params->name]=t;
+	  }
 	  if(t->params->number)
 	    link_to_page[t->params->number]=file;
 	}

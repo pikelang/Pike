@@ -51,16 +51,16 @@ if you have some prior programming experience, this should benefit most people.
 <p>
 Chapter one is devoted to background information about Pike and this book.
 It is not really nesesary to read this chapter to learn how to use and
-program pike, but it might help explain why some things work th way they do.
+program Pike, but it might help explain why some things work th way they do.
 It might be more interesting to re-read the chapter after you have
 learned the basics of Pike programming.
 Chapter two is where the action starts. It is a crash course in Pike with
 examples and explanations about some of the basics. It explains the
-fundamenals of the pike data types and control structures
-The systematic documentation of all pike capabilities starts in chapter three
-with a description of all control structures in pike. It then continues with
+fundamenals of the Pike data types and control structures
+The systematic documentation of all Pike capabilities starts in chapter three
+with a description of all control structures in Pike. It then continues with
 all the data types in chapter four and operators in chapter five. Chapter
-six deals with object orientation in pike, which is slightly different than
+six deals with object orientation in Pike, which is slightly different than
 what you might be used to.
 <!-- FIXME (finish this overview) -->
 </section>
@@ -162,7 +162,7 @@ things:
 <dt><tt>fixedsize</tt>
 <dd>Fixedsize is used to for examples and text directly from the computer.
 </dl>
-Also, please beware that the word <b>program</b> is also a builtin pike
+Also, please beware that the word <b>program</b> is also a builtin Pike
 data type.
 
 </section>
@@ -171,9 +171,9 @@ data type.
 
 <chapter title="Getting started">
 <p>
-First you need to have pike installed on your computer. See <ref to=install>
+First you need to have Pike installed on your computer. See <ref to=install>
 "how to install Pike" if this is not already done. It is also vital
-for the first of the following examples that the pike binary is in your UNIX search
+for the first of the following examples that the Pike binary is in your UNIX search
 path. If you have problems with this, consult the manual for your shell
 or go buy a beginners book about UNIX.
 <p>
@@ -245,10 +245,11 @@ somewhat. If we modify hello_world.pike to look like this:
 	int main()
 	{
 	  write("hello world\n");
+	  return 0;
 	}
 </example>
 And then we tell UNIX that hello_world.pike is executable so we can run
-hello_world.pike without having to bother with running pike:
+hello_world.pike without having to bother with running Pike:
 <p>
 <pre>
 	$ chmod +x hello_world.pike
@@ -1974,7 +1975,7 @@ As mention in the beginning of this chapter, the assignment operator
 (<tt>=</tt>) does not copy anything when you use it on a pointer type.
 Instead it just creates another reference to the memory object.
 In most situations this does not present a problem, and it speeds up
-Pikes performance. However, you must be aware of this when programming.
+Pike's performance. However, you must be aware of this when programming.
 This can be illustrated with an example:
 <example language=pike>
 	int main(int argc, array(string) argv)
@@ -3048,7 +3049,7 @@ expect, in which case you are better off not using operator overloading.
 
 <chapter title="Miscellaneous functions" name=misc>
 
-There are some 'functions' in pike that are not really functions at all but
+There are some 'functions' in Pike that are not really functions at all but
 just as builtin as operators. These special functions can do things that no
 other functions can do, but they can not be re-defined or overloaded.
 In this chapter I will describe these functions and why they are implemented
@@ -3154,7 +3155,7 @@ The syntax for gauge is the same as the syntax for catch:
 </pre>
 However, gauge simply returns how many milliseconds the code took to execute.
 This can be used to find out how fast your code actually is.. :)
-Only CPU time used by the pike process is measured. This means that if it takes
+Only CPU time used by the Pike process is measured. This means that if it takes
 two seconds to execute but only uses 50% cpu, this function will return 1000.
 </section>
 </anchor>
@@ -3211,7 +3212,7 @@ In this chapter I will explain the basics of modules and how to use them.
 <dt>Regexp
 <dd>Regexp matching routines.
 <dt>Simulate
-<dd>Routines to emulate old pike routines.
+<dd>Routines to emulate old Pike routines.
 <dt>String
 <dd>Routines that operate on strings.
 <dt>Sql *
@@ -4173,9 +4174,6 @@ Give the size of a file. Size -1 indicates that the file either
 does not exist, or that it is not readable by you. Size -2
 indicates that it is a directory.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index.html#file>file</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Stdio.write_file>Stdio.write_file</link> and <link to=Stdio.read_bytes>Stdio.read_bytes</link>
 <p>
@@ -4196,9 +4194,6 @@ indicates that it is a directory.
 This function prints a message to stderr along with a description
 of what went wrong if available. It uses the system errno to find
 out what went wrong, so it is only applicable to IO errors.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index.html#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Stdio.werror>Stdio.werror</link>
@@ -4229,9 +4224,6 @@ return it as a string. If <i>len</i> is omitted, the rest of the file
 will be returned. If <i>start</i> is also omitted, the entire file will
 be returned.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index.html#file>file</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Stdio.write_file>Stdio.write_file</link>
 <p>
@@ -4255,9 +4247,6 @@ string read_file(string <I>file</I>);<br>
 Read 'len' lines from the file 'file' after skipping 'start' lines
 and return those lines as a string. If start and len are omitted
 the whole file is read.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index.html#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Stdio.read_bytes>Stdio.read_bytes</link> and <link to=Stdio.write_file.html>Stdio.write_file</link>
@@ -4303,9 +4292,6 @@ line edithing at his/her disposal when entering the line.
 Writes a message to stderr. Stderr is normally the console, even if
 the process output has been redirected to a file or pipe.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<link to=Stdio.File>Stdio.File</link>
-<p>
 </dl>
 
 </anchor>
@@ -4321,9 +4307,6 @@ the process output has been redirected to a file or pipe.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Append the string str onto the file file. Returns number of bytes written.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index.html#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Stdio.read_bytes.html>Stdio.read_bytes</link>
@@ -5563,9 +5546,6 @@ Result: green, blue and white<br>
 Result: green, blue or white<br>
 </tt>
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string.html>string</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=multiplication>`*</link>
 </dl>
@@ -5585,9 +5565,6 @@ Result: green, blue or white<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Convert the first character in str to upper case, and return the
 new string.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string.html>string</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=lower_case>lower_case</link> and <link to=upper_case>upper_case</link>
@@ -5644,9 +5621,6 @@ ie. arr[x]=arr[x]-&gt;fun(@ args);
 Map array calls the functions in the array arr:
 arr[x]=arr[x]-&gt;fun(@ args);
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.filter>Array.filter</link>
 <p>
@@ -5678,9 +5652,6 @@ return all objects that returned true.
 Filter array calls all function pointers in the array arr, and
 return all that returned true.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.map>Array.map</link>
 </dl>
@@ -5705,9 +5676,6 @@ int search_array(function *<I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);<br>
 search_array works like map_array, only it returns the index of the
 first call that returned true instead or returning an array of the
 returned values. If no call returns true, -1 is returned.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Array.sum_arrays.html>Array.sum_arrays</link> and <link to=Array.filter_array>Array.filter_array</link>
@@ -5740,9 +5708,6 @@ return res;<br>
 
 <p>Simple ehh?
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Array.map_array>Array.map</link>, <link to=Array.filter>Array.filter</link> and <link to=Array.search_array>Array.search_array</link>
 </dl>
@@ -5765,9 +5730,6 @@ is larger then the second. The rest of the arguments 'args' will be
 sent as 3rd, 4th etc. argument to fun. If fun is omitted, `&lt; is used
 instead.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Array.map>Array.map</link> and <link to=sort>sort</link>
 </dl>
@@ -5786,9 +5748,6 @@ instead.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function returns an copy of the array a with all duplicate
 values removed. The order of the values in the result is undefined.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
 <p>
 </dl>
 </anchor>
@@ -5854,9 +5813,6 @@ the fchroot(2) system call.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Get the effective group ID.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link> and <link to=setegid>setegid</link>
 <p>
@@ -5876,9 +5832,6 @@ Usersecurity
 <dt><encaps>DESCRIPTION</encaps><dd>
 Get the effective user ID.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
 <p>
@@ -5897,9 +5850,6 @@ Usersecurity
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Get the real group ID.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
@@ -5997,9 +5947,6 @@ With no argguments or with 'pid' equal to zero, returns the process
 group ID of this process.
 <p>If 'pid' is specified, returns the process group ID of that process.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Processes
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getpid>getpid</link> and <link to=getppid>getppid</link>
 <p>
@@ -6018,9 +5965,6 @@ Processes
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns the process ID of this process.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Processes
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getppid>getppid</link> and <link to=getpgrp>getpgrp</link>
@@ -6041,9 +5985,6 @@ Processes
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns the process ID of the parent process.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Processes
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getpid>getpid</link> and <link to=getpgrp>getpgrp</link>
 <p>
@@ -6063,9 +6004,6 @@ Processes
 <dt><encaps>DESCRIPTION</encaps><dd>
 Get the real user ID.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
 <p>
@@ -6084,9 +6022,6 @@ Usersecurity
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Creates a hardlink named 'to' from the file 'from'.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=symlink>symlink</link>, <link to=mv>mv</link> and <link to=rm>rm</link>
@@ -6108,9 +6043,6 @@ Creates a hardlink named 'to' from the file 'from'.
 Initializes the group access list according to the system
 group database. 'base_gid' is also added to the group access
 list.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link>, <link to=getegid>getegid</link>, system/getgroups and system/setgroups
@@ -6185,9 +6117,6 @@ syslog, closelog and setlogmask
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns what the symbolic link 'linkname' points to.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=symlink>symlink</link>
 <p>
@@ -6206,9 +6135,6 @@ Returns what the symbolic link 'linkname' points to.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Sets the effective group ID to 'gid'.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link> and <link to=getegid>getegid</link>
@@ -6229,9 +6155,6 @@ Usersecurity
 <dt><encaps>DESCRIPTION</encaps><dd>
 Sets the effective user ID to 'uid'.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
 <p>
@@ -6250,9 +6173,6 @@ Usersecurity
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Sets the real group ID, effective group ID and saved group ID to 'gid'.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=setuid>setuid</link>, <link to=getuid>getuid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
@@ -6273,9 +6193,6 @@ Usersecurity
 <dt><encaps>DESCRIPTION</encaps><dd>
 Sets the real user ID, effective user ID and saved user ID to 'uid'.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-Usersecurity
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getuid>getuid</link>, <link to=setgid>setgid</link>, <link to=getgid>getgid</link>, <link to=seteuid>seteuid</link>, <link to=geteuid>geteuid</link>, <link to=setegid>setegid</link> and <link to=getegid>getegid</link>
 <p>
@@ -6294,9 +6211,6 @@ Usersecurity
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Creates a symbolic link named 'to' pointing to 'from'.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=hardlink>hardlink</link>, <link to=readlink>readlink</link>, <link to=mv>mv</link> and <link to=rm>rm</link>
@@ -8858,9 +8772,6 @@ if any.
 Returns a function pointer to the current function, useful for
 making recursive lambda-functions.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_function.html>function</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=backtrace>backtrace</link>
 <p>
@@ -8918,9 +8829,6 @@ Return those strings in arr that matches the regexp in reg.
 This is not a function, it is a constant roughly equal to the mathematical
 constant Pi.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float.html>float</a>
-<p>
 </dl>
 
 </anchor>
@@ -8964,9 +8872,6 @@ mixed *filter_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Filter array is the same function as Array.filter.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Array.filter>Array.filter</link>
 <p>
@@ -8989,9 +8894,6 @@ mixed *map_array(function *<I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function is the same as Array.map.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array.html>array</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Array.map>Array.map</link>
@@ -9023,9 +8925,6 @@ Result: a and b and c<br>
 &gt; <br>
 </tt>
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string.html>string</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=Simulate.simulated_explode.html>Simulate.explode</link>
 <p>
@@ -9047,9 +8946,6 @@ Result: a and b and c<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function is equal to indices
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping.html>mapping</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=indices>indices</link>
 <p>
@@ -9068,9 +8964,6 @@ This function is equal to indices
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function is equal to sizeof.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping.html>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sizeof>sizeof</link>
@@ -9092,9 +8985,6 @@ This function is equal to sizeof.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function is equal to values
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping.html>mapping</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=values>values</link>
 <p>
@@ -9115,9 +9005,6 @@ This function is equal to values
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the position of str2 in str1, if str2 can't be found in str1
 -1 is returned.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string.html>string</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sscanf>sscanf</link> and <link to=Simulate.explode>Simulate.explode</link>
@@ -9288,13 +9175,15 @@ prints.
 
 <hr newpage>
 
-
+<!--  FIXME priority_queue and heap should be placed inside Structs
 <h2>Structs</h2>
-<!-- FIXME priority_queue and heap should be placed here -->
+
 <h2>Msql</h2>
 <h2>Mysql</h2>
 <h2>Sql</h2>
 <h2>LR</h2>
+
+ -->
 
 </chapter>
 
@@ -11798,7 +11687,7 @@ This directive tells the compiler what line and file we are compiling.
 This is for instance used by the #include directive to tell the
 compiler that we are compiling another file. The directive takes
 the line number first, and optionally, the file afterwards.
-<p>This can also be used when generating pike from something else, to
+<p>This can also be used when generating Pike from something else, to
 tell the compiler where the code originally originated from.
 <p>
 <dt><encaps>EXAMPLES</encaps><dd>
@@ -11832,7 +11721,7 @@ modifier 'inline' to all functions that follows.
 
 <chapter title="All the builtin functions" name=functions>
 
-This chapter is a reference for all the builtin functions in pike.
+This chapter is a reference for all the builtin functions in Pike.
 They are listed in alphabetical order.
 
 <HR NEWPAGE>
@@ -11939,9 +11828,6 @@ This function goes through most of the internal Pike structures and
 generates a fatal error if one of them is found to be out of order.
 It is only used for debugging.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-debugging
-<p>
 </dl>
 </anchor>
 
@@ -11957,9 +11843,6 @@ debugging
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the arcus cosinus value for f.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=cos>cos</link> and <link to=asin>asin</link>
@@ -12093,9 +11976,6 @@ Arrays are dynamically allocated there is no need to declare them
 like int a[10]=allocate(10); (and it isn't possible either) like
 in C, just int *a=allocate(10); will do.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array>array</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sizeof>sizeof</link>, <link to=arrayp>arrayp</link> and <link to=allocate>allocate</link>
 <p>
@@ -12118,9 +11998,6 @@ or<br>
 Groups the arguments together two and two to key-index pairs and
 creates a mapping of those pairs. The second syntax is always
 preferable.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sizeof>sizeof</link>, <link to=mappingp>mappingp</link> and <link to=mkmapping>mkmapping</link>
@@ -12146,9 +12023,6 @@ could be written in Pike as:
 <p>multiset aggregate(mixed ... elems) { return mkmultiset(elems); }
 <p>The only problem is that mkmultiset is implemented using
 aggregage_multiset...
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_multiset>multiset</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sizeof>sizeof</link>, <link to=multisetp>multisetp</link> and <link to=Simulate.mkmultiset>Simulate.mkmultiset</link>
@@ -12225,9 +12099,6 @@ Arrays are dynamically allocated there is no need to declare them
 like int a[10]=allocate(10); (and it isn't possible either) like
 in C, just int *a=allocate(10); will do.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array>array</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sizeof>sizeof</link>, <link to=aggregate>aggregate</link> and <link to=arrayp>arrayp</link>
 <p>
@@ -12246,9 +12117,6 @@ in C, just int *a=allocate(10); will do.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is an array, zero otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array>array</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=allocate>allocate</link>, <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
@@ -12269,9 +12137,6 @@ Returns 1 if arg is an array, zero otherwise.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the arcus sinus value for f.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sin>sin</link> and <link to=acos>acos</link>
 <p>
@@ -12290,9 +12155,6 @@ Return the arcus sinus value for f.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the arcus tangent value for f.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=tan>tan</link>, <link to=asin>asin</link> and <link to=acos>acos</link>
@@ -12349,9 +12211,6 @@ This function takes a a function pointer as first argument and calls
 this function with the rest of the arguments as arguments. Normally,
 you will never have to write call_function(), because you will use the
 second syntax instead.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_function>function</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=backtrace>backtrace</link> and <link to=Simulate.get_function>Simulate.get_function</link>
@@ -12424,7 +12283,7 @@ contains an array that looks like this:
 
 <dt><encaps>DESCRIPTION</encaps><dd>
 <dd>        This function runs all pending call_outs that should have been
-        run if pike returned to the backend.  It should not be used in
+        run if Pike returned to the backend.  It should not be used in
         normal operation.
 <p>
 	As a side-effect, this function sets the value returned by
@@ -12453,9 +12312,6 @@ catch traps exceptions such as run time errors or calls to throw() and
 returns the argument given to throw. For a run time error, this value
 is ({ "error message", backtrace }) 
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#control>control</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=throw>throw</link>
 <p>
@@ -12476,9 +12332,6 @@ is ({ "error message", backtrace })
 Change the current directory for the whole Pike process, return
 1 for success, 0 otherwise.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getcwd>getcwd</link>
 <p>
@@ -12498,9 +12351,6 @@ Change the current directory for the whole Pike process, return
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the closest integral value higher or equal to x.
 Note that ceil() does _not_ return an int, merely an integral value.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=floor>floor</link>
@@ -12526,9 +12376,6 @@ It creates an instance of the class p. This clone will first have
 all global variables initialized, and then create() will be called
 with args as arguments.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_object>object</a> and <a href=types_program>program</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=destruct>destruct</link>, <link to=compile_string>compile_string</link> and <link to=compile_file>compile_file</link>
 <p>
@@ -12552,9 +12399,6 @@ This function is exactly equivialent to:
 <p>Except of course it is a lot shorter and faster.
 That is, it indexes every index in the array data on the value of
 the argument index and returns an array with the results.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array>array</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=rows>rows</link>
@@ -12586,9 +12430,6 @@ Result: /foo/apa.c<br>
 Result: /foo/bar/sune.c<br>
 </tt>
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=getcwd>getcwd</link>
 <p>
@@ -12608,9 +12449,6 @@ Result: /foo/bar/sune.c<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function will compile the filename to a Pike program that can
 later be used for cloning.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_program>program</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=clone>clone</link> and <link to=compile_string>compile_string</link>
@@ -12633,9 +12471,6 @@ Compile_string takes a complete Pike program as an argument in the
 string prog and compiles it to clonable program. The second argument
 will be used as the file name of the program and will be used for
 error messages and such.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_program>program</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=compile_string>compile_string</link> and <link to=clone>clone</link>
@@ -12679,9 +12514,6 @@ they may not the the same value. (tested with ==)
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the cosinus value for f.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=acos>acos</link> and <link to=sin>sin</link>
 <p>
@@ -12715,9 +12547,6 @@ matched, 0 otherwise.
 <dl><dt><dd>matched = crypt(typed_password, crypted_password);<br>
 </dl>
 </tt>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>
-<p>
 </dl>
 
 </anchor>
@@ -12802,9 +12631,6 @@ Destruct marks an object as destructed, all pointers and function
 pointers to this object will become zero. The destructed object will
 be freed from memory as soon as possible. This will also call
 o-&gt;destroy.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_object>object</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=clone>clone</link>
@@ -12937,7 +12763,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function exits the whole 'pike' program with the return code
+This function exits the whole Pike program with the return code
 given. Using exit() with any other value than 0 indicates that
 something went wrong during execution. See your system manuals for
 more information about return codes.
@@ -12959,9 +12785,6 @@ more information about return codes.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the natural exponent of f.
 log( exp( x ) ) == x as long as exp(x) doesn't overflow an int.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=pow>pow</link> and <link to=log>log</link>
@@ -13001,9 +12824,6 @@ If you give 1 as a second argument, file_stat does not follow links.<br>
 You can never get -3 as size if you don't give a second argument.<br>
 
 <p>If there is no such file or directory, zero is returned.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=get_dir>get_dir</link>
@@ -13051,9 +12871,6 @@ zero_type(find_call_out(f)) will return 1.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is a float, zero otherwise.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
 <p>
@@ -13073,9 +12890,6 @@ Returns 1 if arg is a float, zero otherwise.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the closest integral value lower or equal to x.
 Note that floor() does _not_ return an int, merely an integral value.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=ceil>ceil</link>
@@ -13120,9 +12934,6 @@ This function cause endless bugs if used without proper care.
 This function returns the name of the function f. If the function is
 a pre-defined function in the driver, zero will be returned.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_function>function</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=function_object>function_object</link> and <link to=Simulate.get_function>Simulate.get_function</link>
 <p>
@@ -13144,9 +12955,6 @@ Function_object will return the object the function f is in. If the
 function is a predefined function from the driver, zero will be
 returned.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_function>function</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=function_name>function_name</link> and <link to=Simulate.get_function>Simulate.get_function</link>
 <p>
@@ -13165,9 +12973,6 @@ returned.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is a function, zero otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_function>function</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=floatp>floatp</link>
@@ -13212,9 +13017,6 @@ and call this routine then.)
 Return an array of all filenames in the directory dir, or zero if
 no such directory exists.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=mkdir>mkdir</link> and <link to=cd>cd</link>
 <p>
@@ -13233,9 +13035,6 @@ no such directory exists.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 getcwd returns the current working directory.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=cd>cd</link>
@@ -13325,9 +13124,6 @@ This function will return an int derived from the string s. The same
 string will always hash to the same value. If a second argument
 is given, the result will be &gt;= 0 and lesser than that argument.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>
-<p>
 </dl>
 </anchor>
 
@@ -13347,9 +13143,6 @@ indexing foo. For strings and arrays this is simply an array of the
 ascending numbers. For mappings and multisets, the array may contain any
 kind of value. For objects, the result is an array of strings.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping>mapping</a> and <a href=types_multiset>multiset</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=values>values</link>
 <p>
@@ -13368,9 +13161,6 @@ kind of value. For objects, the result is an array of strings.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is an int, zero otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_int>int</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=arrayp>arrayp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
@@ -13511,9 +13301,6 @@ The 'timezone' might not be available on all platforms.
 Return the natural logarithm of f.
 exp( log(x) ) == x for x &gt; 0.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=pow>pow</link> and <link to=exp>exp</link>
 <p>
@@ -13532,9 +13319,6 @@ exp( log(x) ) == x for x &gt; 0.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return a string with all capital letters converted to lower case.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=upper_case>upper_case</link>
@@ -13559,9 +13343,6 @@ entry with index 'index', nothing is done.
 Note that m_delete changes map destructively and only returns
 the mapping for compatibility reasons.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping>mapping</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=mappingp>mappingp</link>
 <p>
@@ -13580,9 +13361,6 @@ the mapping for compatibility reasons.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is a mapping, zero otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=multisetp>multisetp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
@@ -13603,9 +13381,6 @@ Returns 1 if arg is a mapping, zero otherwise.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Master is added by the master object to make it easier to access it.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_object>object</a>
-<p>
 </dl>
 </anchor>
 
@@ -13621,9 +13396,6 @@ Master is added by the master object to make it easier to access it.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Create a directory, return zero if it fails and nonzero if it successful.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=rm>rm</link> and <link to=cd>cd</link>
@@ -13646,9 +13418,6 @@ Create a directory, return zero if it fails and nonzero if it successful.
 Makes a mapping ind[x]:val[x], 0&lt;=x&lt;sizeof(ind).
 Ind and val must have the same size.
 This is the inverse operation of indices and values.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=indices>indices</link> and <link to=values>values</link>
@@ -13677,9 +13446,6 @@ Result: (&lt; /* 3 elements */<br>
 3<br>
 </dl>&gt;)<br>
 </tt>
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_multiset>multiset</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=aggregage_multiset>aggregate_multiset</link>
@@ -13738,9 +13504,6 @@ Or you can just send them all on one line as the second syntax suggests.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is a multiset, zero otherwise.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_multiset>multiset</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
 <p>
@@ -13761,9 +13524,6 @@ Returns 1 if arg is a multiset, zero otherwise.
 Rename or move a file between directories. If the destination
 file already exists, it will be overwritten. Returns 1 on success,
 0 otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=rm>rm</link>
@@ -13795,9 +13555,6 @@ for(o=next_object();o;o=next_object(o))<br>
 <dl><dt><dd>o-&gt;shutting_down();<br>
 </dl></tt>
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_object>object</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=clone>clone</link> and <link to=destruct>destruct</link>
 <p>
@@ -13818,9 +13575,6 @@ for(o=next_object();o;o=next_object(o))<br>
 This function returns the program from which o was cloned.
 If o is not an object, or o was destructed zero is returned.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_object>object</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=clone>clone</link>
 <p>
@@ -13839,9 +13593,6 @@ If o is not an object, or o was destructed zero is returned.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is an object, zero otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_object>object</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=programp>programp</link>, <link to=floatp>floatp</link>, <link to=stringp>stringp</link>, <link to=arrayp>arrayp</link>, <link to=mappingp>mappingp</link>, <link to=multisetp>multisetp</link> and <link to=functionp>functionp</link>
@@ -13863,9 +13614,6 @@ Returns 1 if arg is an object, zero otherwise.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return n raised to the power of x.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=exp>exp</link> and <link to=log>log</link>
 <p>
@@ -13884,9 +13632,6 @@ Return n raised to the power of x.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is a program, zero otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_program>program</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=multisetp>multisetp</link>, <link to=arrayp>arrayp</link>, <link to=stringp>stringp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
@@ -13965,9 +13710,6 @@ function was called. This is only useful for varargs functions.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function returns a random number in the range 0 - max-1.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_int>int</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=random_seed>random_seed</link>
 <p>
@@ -14007,9 +13749,6 @@ Result: 178<br>
 Result: 94<br>
 &gt;<br>
 </tt>
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_int>int</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=random>random</link>
@@ -14142,9 +13881,6 @@ a are searched for values equal to from, which are replaced by<br>
 to destructively.<br>
 </dl>
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>, <a href=types_array>array</a> and <a href=types_mapping>mapping</a>
-<p>
 </dl>
 </anchor>
 
@@ -14160,7 +13896,7 @@ to destructively.<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function replaces the master object with the argument you specify.
-This will let you control many aspects of how pike works, but beware that
+This will let you control many aspects of how Pike works, but beware that
 master.pike may be required to fill certain functions, so it is probably
 a good idea to have your master inherit the original master and only
 re-define certain functions.
@@ -14188,9 +13924,6 @@ by value or an int, bit by bit and returns the result. Reversing
 strings can be particularly useful for parsing difficult syntaxes
 which require scanning backwards.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>, <a href=types_array>array</a> and <a href=types_int>int</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sscanf>sscanf</link>
 <p>
@@ -14210,9 +13943,6 @@ which require scanning backwards.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Remove a file or directory, return 0 if it fails. Nonzero otherwise.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=mkdir>mkdir</link>
@@ -14236,9 +13966,6 @@ This function is exactly equivialent to:
 <p>Except of course it is a lot shorter and faster.
 That is, it indexes data on every index in the array index and
 returns an array with the results.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array>array</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=column>column</link>
@@ -14327,9 +14054,6 @@ and zero_type() will return 1 for this zero.
 <p>
 <dt><encaps>NOTA BENE</encaps><dd>
 This function replaces strstr and member_array from Pike4.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>, <a href=types_array>array</a> and <a href=types_mapping>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=indices>indices</link>, <link to=values>values</link> and <link to=zero_type>zero_type</link>
@@ -14428,9 +14152,6 @@ Result: 9<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the sinus value for f.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=asin>asin</link> and <link to=cos>cos</link>
 <p>
@@ -14451,9 +14172,6 @@ Return the sinus value for f.
 This function returns the number of indexes available in the argument
 given to it. It replaces older functions like strlen, m_sizeof and
 size.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>, <a href=types_multiset>multiset</a>, <a href=types_mapping>mapping</a> and <a href=types_array>array</a>
 <p>
 </dl>
 </anchor>
@@ -14499,9 +14217,6 @@ will be moved to position 0 in all the other arrays as well.
 <p>Sort can sort strings, integers and floats in ascending order.
 Arrays will be sorted first on the first element of each array.
 <p>Sort returns its first argument.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_array>array</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=reverse>reverse</link>
@@ -14691,9 +14406,6 @@ Result: 0<br>
 Exiting.<br>
 </tt>
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sscanf>sscanf</link>
 <p>
@@ -14716,9 +14428,6 @@ int sqrt(int <I>i</I>);<br>
 Return the square root of f, or in the second case, the square root
 truncated to the closest lower integer.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a> and <a href=types_int>int</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=pow>pow</link>, <link to=log>log</link>, <link to=exp>exp</link> and <link to=floor>floor</link>
 <p>
@@ -14739,9 +14448,6 @@ truncated to the closest lower integer.
 This function returns a description of an error code. The error
 code is usually obtained from the file-&gt;errno() call.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#file>file</a>
-<p>
 <dt><encaps>NOTA BENE</encaps><dd>
 This function may not be available on all platforms.
 <p>
@@ -14761,9 +14467,6 @@ This function may not be available on all platforms.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Returns 1 if arg is a string, zero otherwise.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=intp>intp</link>, <link to=multisetp>multisetp</link>, <link to=arrayp>arrayp</link>, <link to=programp>programp</link>, <link to=objectp>objectp</link>, <link to=mappingp>mappingp</link>, <link to=floatp>floatp</link> and <link to=functionp>functionp</link>
 <p>
@@ -14782,9 +14485,6 @@ Returns 1 if arg is a string, zero otherwise.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function is equal to sizeof.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=sizeof>sizeof</link>
@@ -14806,9 +14506,6 @@ This function is equal to sizeof.
 <dt><encaps>DESCRIPTION</encaps><dd>
 Return the tangent value for f.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_float>float</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=atan>atan</link>, <link to=sin>sin</link> and <link to=cos>cos</link>
 <p>
@@ -14827,9 +14524,6 @@ Return the tangent value for f.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function returns the object we are curently evaluating in.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_object>object</a>
 <p>
 </dl>
 </anchor>
@@ -14874,7 +14568,7 @@ int time(1);<br>
 This function returns the number of seconds since 1 Jan 1970.
 The function ctime() converts this integer to a readable string.
 <p>The second syntax does not call the system call time() as often,
-but is only updated in the backed. (when pike code isn't running)
+but is only updated in the backed. (when Pike code isn't running)
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=time>time</link>
@@ -14895,7 +14589,7 @@ but is only updated in the backed. (when pike code isn't running)
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function affects the debug trace level. (also set by the -t
 command line option) The old level is returned. Trace level 1 or
-higher means that calls to pike functions are printed to stderr,
+higher means that calls to Pike functions are printed to stderr,
 level 2 or higer means calls to builtin functions are printed, 3
 means every opcode interpreted is printed, 4 means arguments to
 these opcodes are printed as well. See the command lines options
@@ -14927,9 +14621,6 @@ Result: function(object | mapping | array | multiset | string : int)<br>
 Result: int<br>
 &gt; <br>
 </tt>
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=index#pike>pike</a>
 <p>
 </dl>
 </anchor>
@@ -14976,9 +14667,6 @@ ualarm returns the number of microseconds seconds  remaining<br>
 Return a copy of the string s with all lower case character converted
 to upper case character.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_string>string</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=lower_case>lower_case</link>
 <p>
@@ -15001,9 +14689,6 @@ value foo. For strings, an array of int with the ascii values of the
 characters in the string is returned. For a multiset, an array filled with
 ones is return. For mappings, objects and arrays, the returned array
 may contain any kind of value.
-<p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_mapping>mapping</a>
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=indices>indices</link>
@@ -15075,9 +14760,6 @@ destructed object or a function in a destructed object, 2 will be
 returned. Otherwise zero_type will return zero.
 <p>If the argument is not an int, zero will be returned.
 <p>
-<dt><encaps>KEYWORDS</encaps><dd>
-<a href=types_int>int</a> and <a href=types_mapping>mapping</a>
-<p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <link to=find_call_out>find_call_out</link>
 <p>
@@ -15093,7 +14775,7 @@ returned. Otherwise zero_type will return zero.
   <li>int ... ars
   <li>data storage (local vs. global variables)
   <li>trace
-  <li>pike command line
+  <li>Pike command line
   <li>hilfe
   <li>socket->query_address()
   <li> scope for class {}
@@ -15124,7 +14806,7 @@ in the <b>master object</b>:
 <dd> This function is called whenever somoene performs a cast from a string
      to a program.
 <dt> <tt>program handle_inherit(string <i>program_name</i>, string <i>current_file</i>)</tt>
-<dd> This is called whenever a pike program which uses inherit with a string
+<dd> This is called whenever a Pike program which uses inherit with a string
      argument is called. It is expected to return the program to inherit.
 <dt> <tt>void handle_error(mixed *<i>trace</i>)</tt>
 <dd> This function is expected to write the error messages when a
@@ -15247,7 +14929,7 @@ instead of writing them to stderr.
 </dl>
 
 <ul>
-  <li>Overview of the pike source
+  <li>Overview of the Pike source
   <li>The master object
   <li>The file structure of a module
   <li>Data types from the inside
@@ -15564,7 +15246,7 @@ This is the BNF for Pike:
 </appendix>
 
 <appendix title="How to install Pike" name=install>
-To install pike, you need a C compiler, a couple of Mb of disk space,
+To install Pike, you need a C compiler, a couple of Mb of disk space,
 the source for Pike, and a bit of patience. The latest version of Pike is
 always available from <a href=http://pike.infovav.se>the Pike home page</a>.
 Lists of mirror sites and binary releases should also be available there.
@@ -15604,7 +15286,7 @@ Now, to compile Pike, the following three commands should be enough.
 They will (in order) change directory to the source directory. Configure will
 then find out what features are available on your system and construct
 makefiles. You will see a lot of output after you run configure. Do not
-worry, that is normal. It is usually not a good idea to install pike anywhere
+worry, that is normal. It is usually not a good idea to install Pike anywhere
 but in /usr/local (the default) since Pike scripts written by other people
 will usually assume that's where Pike is. However, if you do not have write
 acceess to /usr/local you will have to install Pike somewhere else on your
@@ -15615,7 +15297,7 @@ it is a good idea to do <tt>make verify</tt> to make sure that Pike is
 100% compatible with your system. Make verify will take a while to run
 and use a lot of cpu, but it is worth it to see that your compilation was
 successful. After doing that you should run <tt>make install</tt> to install
-the pike binaries, libraries and include files in the directory you selected
+the Pike binaries, libraries and include files in the directory you selected
 earlier.
 <p>
 You are now ready to use Pike.
