@@ -88,6 +88,7 @@ struct svalue
 #define T_VOID 16
 #define T_MANY 17
 
+#define T_ASSIGN 245
 #define T_DELETED 246
 #define T_NOT 247
 #define T_AND 248

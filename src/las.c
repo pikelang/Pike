@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.54 1998/03/01 03:39:37 hubbe Exp $");
+RCSID("$Id: las.c,v 1.55 1998/03/01 11:40:46 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -392,6 +392,11 @@ node *mknode(short token,node *a,node *b)
 
   if(a) a->parent = res;
   if(b) b->parent = res;
+
+#ifdef DEBUG
+  if(d_flag > 3)
+    verify_shared_strings_tables();
+#endif
 
   if(!num_parse_error && compiler_pass==2)
   {

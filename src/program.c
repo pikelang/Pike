@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.64 1998/02/27 08:39:21 hubbe Exp $");
+RCSID("$Id: program.c,v 1.65 1998/03/01 11:40:47 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1027,9 +1027,21 @@ void low_inherit(struct program *p,
     {
       if(parent)
       {
-	inherit.parent=parent;
-	inherit.parent_identifier=parent_identifier;
-	inherit.parent_offset=0;
+	if(parent->next == parent)
+	{
+	  struct object *o;
+	  for(o=fake_object->parent;o!=parent;o=o->parent)
+	  {
+#ifdef DEBUG
+	    if(!o) fatal("low_inherit with odd fake_object as parent!\n");
+#endif
+	    inherit.parent_offset++;
+	  }
+	}else{
+	  inherit.parent=parent;
+	  inherit.parent_identifier=parent_identifier;
+	  inherit.parent_offset=0;
+	}
       }else{
 	inherit.parent_offset+=parent_offset;
       }
@@ -1864,9 +1876,9 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
  */
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
 {
-  char *file;
-  INT32 off,line,offset;
-  char *cnt;
+  static char *file, *cnt;
+  static INT32 off,line,pid;
+  INT32 offset;
 
   if (prog == 0) return "Unkown program";
   offset = pc - prog->program;
@@ -1877,9 +1889,14 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
     return "Optimizer";
   }
 
-  cnt=prog->linenumbers;
-  off=line=0;
-  file="Line not found";
+  if(prog->id != pid || offset < off)
+  {
+    cnt=prog->linenumbers;
+    off=line=0;
+    file="Line not found";
+    pid=prog->id;
+  }
+
   if (offset > (INT32)prog->num_program || offset<0)
     return file;
 

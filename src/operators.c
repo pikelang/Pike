@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.27 1998/02/27 19:20:11 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.28 1998/03/01 11:40:46 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1748,7 +1748,15 @@ void init_operators(void)
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
-  add_efun2("`+",f_add,"!function(!object...:mixed)&function(mixed...:mixed)|function(int...:int)|!function(int...:mixed)&function(int|float...:float)|!function(int|float...:mixed)&function(string|int|float...:string)|function(array...:array)|function(mapping...:mapping)|function(multiset...:multiset)",OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
+  add_efun2("`+",f_add,
+	    "!function(!object...:mixed)&function(mixed...:mixed)|"
+	    "function(int...:int)|"
+	    "!function(int...:mixed)&function(int|float...:float)|"
+	    "!function(int|float...:mixed)&function(string|int|float...:string)|"
+	    "function(0=array...:0)|"
+	    "function(mapping(1=mixed:2=mixed)...:mapping(1:2))|"
+	    "function(3=multiset...:3)",
+	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
   add_efun2("`-",f_minus,"!function(!object...:mixed)&function(mixed...:mixed)|function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(multiset,multiset:multiset)|function(float|int,float:float)|function(float,int:float)|function(int,int:int)|function(string,string:string)",OPT_TRY_OPTIMIZE,0,generate_minus);
 
@@ -1768,11 +1776,11 @@ void init_operators(void)
 
   add_efun2("`*",f_multiply,
 	    "!function(!object...:mixed)&function(mixed...:mixed)|"
-	    "function(array(array),array:array)|"
+	    "function(array(1=array),1=array:1)|"
 	    "function(int...:int)|"
 	    "!function(int...:mixed)&function(float|int...:float)|"
 	    "function(string*,string:string)|"
-	    "function(array,int:array)|"
+	    "function(0=array,int:0)|"
 	    "function(string,int:string)",
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
@@ -1780,7 +1788,7 @@ void init_operators(void)
 	    "!function(!object...:mixed)&function(mixed...:mixed)|"
 	    "function(int,int...:int)|"
 	    "!function(int...:mixed)&function(float|int...:float)|"
-	    "function(array,array|int|float...:array(array))|"
+	    "function(0=array,array|int|float...:array(0))|"
 	    "function(string,string|int|float...:array(string))",
 	    OPT_TRY_OPTIMIZE,0,generate_divide);
 
@@ -1789,7 +1797,7 @@ void init_operators(void)
 	    "function(object,mixed:mixed)|"
 	    "function(int,int:int)|"
 	    "function(string,int:string)|"
-	    "function(array,int:array)|"
+	    "function(0=array,int:0)|"
 	    "!function(int,int:mixed)&function(int|float,int|float:float)"
 	    ,OPT_TRY_OPTIMIZE,0,generate_mod);
 

@@ -32,20 +32,40 @@ static unsigned int StrHash(const char *s,int len)
   return full_hash_value % htable_size;
 }
 
+#ifdef DEBUG
 #ifdef DEBUG_MALLOC
+#define DM(X) X
+#else
+#define DM(X)
+#endif
+
 static void locate_problem(int (*isproblem)(struct pike_string *))
 {
   unsigned INT32 e;
   struct pike_string *s;
-  struct memhdr *yes=alloc_memhdr();
-  struct memhdr *no=alloc_memhdr();
+  DM(struct memhdr *yes=alloc_memhdr());
+  DM(struct memhdr *no=alloc_memhdr());
 
   for(e=0;e<htable_size;e++)
+  {
     for(s=base_table[e];s;s=s->next)
-      add_marks_to_memhdr(isproblem(s)?yes:no,s);
+    {
+      if(isproblem(s))
+      {
+	fprintf(stderr,"***Guilty string:\n");
+	debug_dump_pike_string(s, 70);
+	DM(add_marks_to_memhdr(yes,s));
+      }else{
+	DM(add_marks_to_memhdr(no,s));
+      }
+    }
+  }
 
-  fprintf(stderr,"Plausible problem location(s):\n");
-  dump_memhdr_locations(yes,no);
+  DM(fprintf(stderr,"Plausible problem location(s):\n"));
+  DM(dump_memhdr_locations(yes,0));
+
+  DM(fprintf(stderr,"More Plausible problem location(s):\n"));
+  DM(dump_memhdr_locations(yes,no));
 }
 
 static int has_zero_refs(struct pike_string *s)
@@ -54,7 +74,7 @@ static int has_zero_refs(struct pike_string *s)
 }
 static int wrong_hash(struct pike_string *s)
 {
-  return s->hval != StrHash(s->str, s->len);
+  return (s->hval % htable_size) != StrHash(s->str, s->len);
 }
 static int improper_zero_termination(struct pike_string *s)
 {
@@ -196,6 +216,10 @@ struct pike_string *end_shared_string(struct pike_string *s)
   len=s->len;
   h=StrHash(s->str,len);
   s2=internal_findstring(s->str,len,h);
+#ifdef DEBUG
+  if(s2==s) 
+    fatal("end_shared_string called twice! (or something like that)\n");
+#endif
 
   if(s2)
   {
@@ -450,7 +474,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
 void debug_dump_pike_string(struct pike_string *s, INT32 max)
 {
   INT32 e;
-  fprintf(stderr,"0x%p: %ld refs, len=%ld, hval=%lux (%lux)\n",
+  fprintf(stderr,"0x%p: %ld refs, len=%ld, hval=%lux (%lx)\n",
 	  s,
 	  (long)s->refs,
 	  (long)s->len,

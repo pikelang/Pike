@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.75 1998/02/27 19:22:34 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.76 1998/03/01 11:40:46 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2383,18 +2383,18 @@ void init_builtin_efuns(void)
   add_efun("replace_master",f_replace_master,"function(object:void)",OPT_SIDE_EFFECT);
   add_efun("master",f_master,"function(:object)",OPT_EXTERNAL_DEPEND);
   add_efun("add_constant",f_add_constant,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
-  add_efun("aggregate",f_aggregate,"function(mixed ...:mixed *)",OPT_TRY_OPTIMIZE);
-  add_efun("aggregate_multiset",f_aggregate_multiset,"function(mixed ...:multiset)",OPT_TRY_OPTIMIZE);
-  add_efun("aggregate_mapping",f_aggregate_mapping,"function(mixed ...:mapping)",OPT_TRY_OPTIMIZE);
+  add_efun("aggregate",f_aggregate,"function(0=mixed ...:array(0))",OPT_TRY_OPTIMIZE);
+  add_efun("aggregate_multiset",f_aggregate_multiset,"function(0=mixed ...:multiset(0))",OPT_TRY_OPTIMIZE);
+  add_efun("aggregate_mapping",f_aggregate_mapping,"function(0=mixed ...:mapping(0:0))",OPT_TRY_OPTIMIZE);
   add_efun("all_constants",f_all_constants,"function(:mapping(string:mixed))",OPT_EXTERNAL_DEPEND);
-  add_efun("allocate", f_allocate, "function(int, mixed:mixed *)", 0);
+  add_efun("allocate", f_allocate, "function(int,void|mixed:array)", 0);
   add_efun("arrayp",  f_arrayp,  "function(mixed:int)",0);
   add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
 
   add_efun("column",f_column,"function(array,mixed:array)",0);
   add_efun("combine_path",f_combine_path,"function(string,string:string)",0);
   add_efun("compile",f_compile,"function(string:program)",OPT_EXTERNAL_DEPEND);
-  add_efun("copy_value",f_copy_value,"function(mixed:mixed)",0);
+  add_efun("copy_value",f_copy_value,"function(1=mixed:1)",0);
   add_efun("crypt",f_crypt,"function(string:string)|function(string,string:int)",OPT_EXTERNAL_DEPEND);
   add_efun("ctime",f_ctime,"function(int:string)",OPT_TRY_OPTIMIZE);
   add_efun("destruct",f_destruct,"function(object|void:void)",OPT_SIDE_EFFECT);
@@ -2406,13 +2406,13 @@ void init_builtin_efuns(void)
   add_efun("functionp",  f_functionp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("glob",f_glob,"function(string,string:int)|function(string,string*:array(string))",OPT_TRY_OPTIMIZE);
   add_efun("hash",f_hash,"function(string,int|void:int)",OPT_TRY_OPTIMIZE);
-  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping|multiset:mixed*)|function(object:string*)",0);
+  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object:string*)",0);
   add_efun("intp",   f_intp,    "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("multisetp",   f_multisetp,   "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("lower_case",f_lower_case,"function(string:string)",OPT_TRY_OPTIMIZE);
-  add_efun("m_delete",f_m_delete,"function(mapping,mixed:mapping)",0);
+  add_efun("m_delete",f_m_delete,"function(0=mapping,mixed:0)",0);
   add_efun("mappingp",f_mappingp,"function(mixed:int)",OPT_TRY_OPTIMIZE);
-  add_efun("mkmapping",f_mkmapping,"function(mixed *,mixed *:mapping)",OPT_TRY_OPTIMIZE);
+  add_efun("mkmapping",f_mkmapping,"function(array(1=mixed),array(2=mixed):mapping(1:2))",OPT_TRY_OPTIMIZE);
   add_efun("next_object",f_next_object,"function(void|object:object)",OPT_EXTERNAL_DEPEND);
   add_efun("_next",f__next,"function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
   add_efun("_prev",f__prev,"function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
@@ -2422,20 +2422,20 @@ void init_builtin_efuns(void)
   add_efun("query_num_arg",f_query_num_arg,"function(:int)",OPT_EXTERNAL_DEPEND);
   add_efun("random",f_random,"function(int:int)",OPT_EXTERNAL_DEPEND);
   add_efun("random_seed",f_random_seed,"function(int:void)",OPT_SIDE_EFFECT);
-  add_efun("replace",f_replace,"function(string,string,string:string)|function(string,string*,string*:string)|function(array,mixed,mixed:array)|function(mapping,mixed,mixed:array)",0);
+  add_efun("replace",f_replace,"function(string,string,string:string)|function(string,string*,string*:string)|function(0=array,mixed,mixed:0)|function(1=mapping,mixed,mixed:1)",0);
   add_efun("reverse",f_reverse,"function(int:int)|function(string:string)|function(array:array)",0);
   add_efun("rows",f_rows,"function(mixed,array:array)",0);
   add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
   add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
   add_efun("sleep", f_sleep, "function(float|int:void)",OPT_SIDE_EFFECT);
-  add_efun("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
+  add_efun("sort",f_sort,"function(array(0=mixed),array(mixed)...:array(0))",OPT_SIDE_EFFECT);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
   add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);
   add_efun("throw",f_throw,"function(mixed:void)",OPT_SIDE_EFFECT);
   add_efun("time",f_time,"function(void|int:int)",OPT_EXTERNAL_DEPEND);
   add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
-  add_efun("values",f_values,"function(string|multiset:int*)|function(array|mapping|object:mixed*)",0);
+  add_efun("values",f_values,"function(string|multiset:int*)|function(array(0=mixed)|mapping(mixed:0=mixed)|object:array(0))",0);
   add_efun("zero_type",f_zero_type,"function(mixed:int)",0);
 
 #ifdef HAVE_LOCALTIME

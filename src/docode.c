@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.32 1998/02/27 18:16:44 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.33 1998/03/01 11:40:46 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -671,7 +671,7 @@ static int do_docode2(node *n,int flags)
 	  if(n->type == void_type_string) return 0;
 	  return 1;
 	}else{
-	  if(CAR(n)->u.sval.u.object->next == fake_object)
+	  if(CAR(n)->u.sval.u.object == fake_object)
 	  {
 	    emit2(F_MARK);
 	    do_docode(CDR(n),0);
