@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.h,v 1.22 2004/04/20 12:18:14 grubba Exp $
+|| $Id: sparc.h,v 1.23 2004/04/20 12:19:40 grubba Exp $
 */
 
 #define PIKE_OPCODE_ALIGN	4
@@ -71,8 +71,9 @@ void sparc_update_pc(void);
   } while(0)
 
 extern const unsigned INT32 sparc_flush_instruction_cache[];
-#define FLUSH_INSTRUCTION_CACHE(ADDR, LEN)				\
-  (((void (*)(void *,size_t))sparc_flush_instruction_cache)(ADDR, (LEN)))
+#define FLUSH_INSTRUCTION_CACHE(ADDR, LEN)			\
+  (((void (*)(void *,size_t))sparc_flush_instruction_cache)	\
+   (ADDR, (LEN)+sizeof(PIKE_OPCODE_T)))
 
 struct dynamic_buffer_s;
 
