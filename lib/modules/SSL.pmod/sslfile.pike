@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.83 2005/01/26 20:08:11 mast Exp $
+/* $Id: sslfile.pike,v 1.84 2005/01/26 20:09:27 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -969,7 +969,6 @@ void set_backend (Pike.Backend backend)
     if (close_state > 0) error ("Not open.\n");
 
     if (stream) {
-      real_backend = backend;
       if (stream->query_backend() != local_backend)
 	stream->set_backend (backend);
 
@@ -978,7 +977,8 @@ void set_backend (Pike.Backend backend)
 	backend->call_out (call_read_callback, 0);
       }
     }
-    else real_backend = backend;
+
+    real_backend = backend;
   } LEAVE;
 }
 
