@@ -1,0 +1,23 @@
+#
+# $Id: configure.in,v 1.1 1998/10/31 19:07:54 mirar Exp $
+#
+AC_INIT(image_ttf.c)
+AC_CONFIG_HEADER(config.h)
+AC_ARG_WITH(jpeglib,     [  --with(out)-ttflib       Support TTF via ttf.lib (freetype) (Image.TTF)],[],[with_ttflib=yes])
+
+sinclude(../module_configure.in)
+
+if test x$with_ttflib = xyes ; then
+  AC_CHECK_HEADERS(freetype.h)
+  if test $ac_cv_header_freetype_h = yes ; then
+    AC_CHECK_LIB(ttf, Load_TrueType_Names, [
+      AC_DEFINE(HAVE_LIBTTF) 
+      LIBS="${LIBS-} -lttf"
+      ], 
+      AC_CHECK_LIB(ttf, Load_TrueType_Names))
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

@@ -310,6 +310,10 @@ testfont binary
 /src/modules/_Image_JPEG/acconfig.h foreign_ident
 /src/modules/_Image_JPEG/configure.in foreign_ident
 /src/modules/_Image_JPEG/image_jpeg.c foreign_ident
+/src/modules/_Image_TTF/Makefile.in foreign_ident
+/src/modules/_Image_TTF/acconfig.h foreign_ident
+/src/modules/_Image_TTF/configure.in foreign_ident
+/src/modules/_Image_TTF/image_ttf.c foreign_ident
 /src/modules/_Image_XFace/Makefile.in foreign_ident
 /src/modules/_Image_XFace/acconfig.h foreign_ident
 /src/modules/_Image_XFace/configure.in foreign_ident

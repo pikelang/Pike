@@ -1,0 +1,8 @@
+# $Id: Makefile.in,v 1.1 1998/10/31 19:07:53 mirar Exp $
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=image_ttf.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+@dynamic_module_makefile@
+@dependencies@
