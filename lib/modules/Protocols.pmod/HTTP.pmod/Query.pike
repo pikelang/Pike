@@ -342,8 +342,9 @@ void async_got_host(string server,int port)
       return; // got timeout already, we're destructed
    }
 
-   con->set_nonblocking(0,async_connected,async_failed);
-   //   werror(server+"\n");
+   // (empty) OOB-R and OOB-W callbacks needed on NT to get a close
+   // callback in case the connection failed.
+   con->set_nonblocking(0,async_connected,async_failed, lambda(){}, lamda(){});
 
    int success;
    if (catch { success = con->connect(server,port);
@@ -366,7 +367,7 @@ void async_got_host(string server,int port)
 		 con=ssl;
    }
 #endif
-   } || !success)
+   })
      {
        if (!(errno=con->errno())) errno=22; /* EINVAL */
        destruct(con);
