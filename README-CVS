@@ -1,4 +1,4 @@
-$Id: README-CVS,v 1.19 2002/12/05 17:31:21 nilsson fake $
+$Id: README-CVS,v 1.20 2003/03/21 00:25:21 mast Exp $
 
 
 HOW TO BUILD PIKE FROM CVS
@@ -61,35 +61,35 @@ depend              Build the files that tracks dependencies between
                     change, but not if you only intend to use the
                     build tree once.  It's not run by default.  See
                     also the note below about this target.
-source              Prepare the source tree for compiliation without
+source              Prepare the source tree for compilation without
                     the need for a preexisting installed pike.
-force_autoconfig    Forces a build of the configure scripts.  This is
+force_autoconfig    Force a build of the configure scripts.  This is
                     useful e.g. if a new module directory is added in
                     the CVS.
-force_configure     Forces configure to be run (recursively).  If
+force_configure     Force configure to be run (recursively).  If
                     you've installed a new library and want pike to
                     detect it, then the simplest way is to remove
                     config.cache in the build directory (or perhaps
                     just delete the relevant variables in it) and then
                     use this target.
-dump_modules        Dumps the Pike modules directly in the build tree.
+dump_modules        Dump the Pike modules directly in the build tree.
                     That makes pike load faster if it's run directly
                     from there, e.g. through the bin/pike script (see
                     below).  These dumped modules are not used for
                     anything else.  After this has been run once, any
                     changed Pike modules will be redumped
                     automatically by the main build targets.
-undump_modules      Removes any modules dumped by dump_modules, and
-                    removes the redump step described above.
-force_dump_modules  Forces all Pike modules to be redumped, not just
+undump_modules      Remove any modules dumped by dump_modules, and
+                    remove the redump step described above.
+force_dump_modules  Force all Pike modules to be redumped, not just
                     those whose source files have changed.
 snapshot            Create a snapshot export tarball.
 export              Create a source dist and bump up the build number
                     (if you have cvs write access).  Please do not
                     check in the generated files.
-clean               Removes all the built binary files.
-cvsclean            Removes all files that are generated automatically,
-                    i.e. brings the tree back to the state as if it
+clean               Remove all the built binary files.
+cvsclean            Remove all files that are generated automatically,
+                    i.e. bring the tree back to the state as if it
                     was checked out from the CVS.
 
 If you want to pass arguments to the configure script (see below), the
