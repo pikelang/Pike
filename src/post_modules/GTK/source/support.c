@@ -1,6 +1,8 @@
 #include <version.h>
 #include <bignum.h>
 
+void pgtk_encode_grey(struct image *i, unsigned char *dest, int bpp, int bpl );
+
 void pgtk_verify_setup()
 {
   if( !pigtk_is_setup )
