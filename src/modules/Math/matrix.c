@@ -15,6 +15,8 @@
 
 /* ---------------------------------------------------------------- */
 
+extern struct program *math_matrix_program;
+
 #define FTYPE double
 
 struct matrix_storage
@@ -31,7 +33,8 @@ struct matrix_storage
 #define THISOBJ (fp->current_object)
 
 static struct pike_string *s_array;
-static struct pike_string *s_base;
+static struct pike_string *s__clr;
+static struct pike_string *s_identity;
 
 /* ---------------------------------------------------------------- */
 
@@ -58,7 +61,8 @@ static void matrix_create(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("matrix",1);
 
    if (THIS->m)
-      SIMPLE_BAD_ARG_ERROR("matrix",1,"not to be called again");
+      bad_arg_error("Matrix", sp-args, args, 1, "", sp-args,\
+		    "Has already been called.\n");
    
    if (sp[-args].type==T_ARRAY)
    {
@@ -123,16 +127,22 @@ static void matrix_create(INT32 args)
 	 if (sp[2-args].type==T_INT)
 	    z=(FTYPE)sp[2-args].u.integer;
 	 else if (sp[2-args].type==T_FLOAT)
-	    z=(FTYPE)sp[2-args].u.integer;
-	 else if (sp[2-args].type!=T_STRING)
+	    z=(FTYPE)sp[2-args].u.float_number;
+	 else if (sp[2-args].type==T_STRING)
 	 {
-	    if (sp[2-args].u.string==s_base)
+	    if (sp[2-args].u.string==s__clr)
+	    {
+	       /* internal call: don't care */
+	       MEMSET(m,0,xs*ys*sizeof(FTYPE));
+	       goto done_made;
+	    }
+	    else if (sp[2-args].u.string==s_identity)
 	    {
 	       pop_n_elems(args-2); /* same as nothing */
 	       args=2;
 	    }
 	    else
-	       SIMPLE_BAD_ARG_ERROR("matrix",3,"\"base\"|int|float");
+	       SIMPLE_BAD_ARG_ERROR("matrix",3,"\"identity\"|int|float");
 	    /* insert other base matrices here */
 	 }
 	 else
@@ -185,7 +195,191 @@ void matrix_cast(INT32 args)
 	    f_aggregate(ys);
 	    return;
 	 }
+
    SIMPLE_BAD_ARG_ERROR("matrix->cast",1,"string");
+}
+
+/* --- helpers ---------------------------------------------------- */
+
+static INLINE struct matrix_storage * _push_new_matrix(int xsize,int ysize)
+{
+   push_int(xsize);
+   push_int(ysize);
+   ref_push_string(s__clr);
+   push_object(clone_object(math_matrix_program,3));
+   return (struct matrix_storage*)
+      get_storage(sp[-1].u.object,math_matrix_program);
+}
+
+/* --- real math stuff --------------------------------------------- */
+
+static void matrix_transpose(INT32 args)
+{
+   struct matrix_storage *mx;
+   int x,y,xs,ys;
+   FTYPE *s,*d;
+
+   pop_n_elems(args);
+   mx=_push_new_matrix(THIS->ysize,THIS->xsize);
+
+   ys=THIS->ysize;
+   xs=THIS->xsize;
+   s=THIS->m;
+   d=mx->m;
+
+   y=xs;
+   while (y--)
+   {
+      x=ys;
+      while (x--)
+	 *(d++)=*s,s+=xs;
+      s-=xs*ys-1;
+   }
+}
+
+static void matrix_add(INT32 args)
+{
+   struct matrix_storage *mx=NULL;
+   struct matrix_storage *dmx;
+   int n;
+   FTYPE *s1,*s2,*d;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`+",1);
+
+   if (sp[-1].type!=T_OBJECT ||
+       !((mx=(struct matrix_storage*)
+	  get_storage(sp[-1].u.object,math_matrix_program))))
+      SIMPLE_BAD_ARG_ERROR("matrix->`+",1,"object(Math.Matrix)");
+
+   if (mx->xsize != THIS->xsize ||
+       mx->ysize != THIS->ysize)
+      math_error("Matrix->`+",sp-args,args,0,
+		 "Can't add matrices of different size");
+
+   pop_n_elems(args-1); /* shouldn't be needed */
+   
+   dmx=_push_new_matrix(mx->xsize,mx->ysize);
+
+   s1=THIS->m;
+   s2=mx->m;
+   d=dmx->m;
+   n=mx->xsize*mx->ysize;
+   while (n--)
+      *(d++)=*(s1++)+*(s2++);
+
+   stack_swap();
+   pop_stack();
+}
+
+static void matrix_sub(INT32 args)
+{
+   struct matrix_storage *mx=NULL;
+   struct matrix_storage *dmx;
+   int n;
+   FTYPE *s1,*s2=NULL,*d;
+
+   if (args) 
+   {
+      if (sp[-1].type!=T_OBJECT ||
+	  !((mx=(struct matrix_storage*)
+	     get_storage(sp[-1].u.object,math_matrix_program))))
+	 SIMPLE_BAD_ARG_ERROR("matrix->`-",1,"object(Math.Matrix)");
+
+      if (mx->xsize != THIS->xsize ||
+	  mx->ysize != THIS->ysize)
+	 math_error("Matrix->`-",sp-args,args,0,
+		    "Can't add matrices of different size");
+
+      pop_n_elems(args-1); /* shouldn't be needed */
+
+      s2=mx->m;
+   }
+   
+   dmx=_push_new_matrix(THIS->xsize,THIS->ysize);
+
+   s1=THIS->m;
+   d=dmx->m;
+   n=THIS->xsize*THIS->ysize;
+
+   if (s2)
+   {
+      while (n--)
+	 *(d++)=*(s1++)-*(s2++);
+      stack_swap();
+      pop_stack();
+   }
+   else
+      while (n--)
+	 *(d++)=-*(s1++);
+}
+
+static void matrix_mult(INT32 args)
+{
+   struct matrix_storage *mx=NULL;
+   struct matrix_storage *dmx;
+   int n,i,j,k,m,p;
+   FTYPE *s1,*s2,*d,*st;
+   FTYPE z;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`*",1);
+
+   pop_n_elems(args-1); /* shouldn't be needed */
+
+   if (sp[-1].type==T_INT)
+   {
+      z=(FTYPE)sp[-1].u.integer;
+      goto scalar_mult;
+   }
+   else if (sp[-1].type==T_FLOAT)
+   {
+      z=(FTYPE)sp[-1].u.float_number;
+scalar_mult:
+
+      dmx=_push_new_matrix(THIS->xsize,THIS->ysize);
+      
+      s1=THIS->m;
+      d=dmx->m;
+      n=THIS->xsize*THIS->ysize;
+      while (n--)
+	 *(d++)=*(s1++)*z;
+
+      stack_swap();
+      pop_stack();
+      return;
+   }
+	 
+   if (sp[-1].type!=T_OBJECT ||
+       !((mx=(struct matrix_storage*)
+	  get_storage(sp[-1].u.object,math_matrix_program))))
+      SIMPLE_BAD_ARG_ERROR("matrix->`*",1,"object(Math.Matrix)");
+
+   if (mx->xsize != THIS->ysize)
+      math_error("Matrix->`*",sp-args,args,0,
+		 "Incompatible matrices");
+
+   m=THIS->xsize;
+   n=THIS->ysize; /* == mx->xsize */
+   p=mx->ysize;
+
+   dmx=_push_new_matrix(m,p);
+
+   s1=THIS->m;
+   s2=mx->m;
+   d=dmx->m;
+   for (k=0; k<p; k++)
+      for (i=0; i<m; i++)
+      {
+	 z=0.0;
+	 st=s2+k*n;
+	 for (j=0; j<n; j++)
+	    z+=s1[i+j*m]**(st++);
+	 *(d++)=z;
+      }
+
+   stack_swap();
+   pop_stack();
 }
 
 /* ---------------------------------------------------------------- */
@@ -193,7 +387,8 @@ void matrix_cast(INT32 args)
 void init_math_matrix()
 {
    MAKE_CONSTANT_SHARED_STRING(s_array,"array");
-   MAKE_CONSTANT_SHARED_STRING(s_base,"base");
+   MAKE_CONSTANT_SHARED_STRING(s__clr,"_clr");
+   MAKE_CONSTANT_SHARED_STRING(s_identity,"identity");
 
    ADD_STORAGE(struct matrix_storage);
    
@@ -207,4 +402,26 @@ void init_math_matrix()
    
    add_function("cast",matrix_cast,
 		"function(string:array(array(float)))",0);
+
+
+   add_function("transpose",matrix_transpose,
+		"function(:object)",0);
+
+   add_function("add",matrix_add,
+		"function(object:object)",0);
+   add_function("`+",matrix_add,
+		"function(object:object)",0);
+   add_function("`-",matrix_sub,
+		"function(object:object)",0);
+
+   add_function("mult",matrix_mult,
+		"function(object|float|int:object)",0);
+   add_function("`*",matrix_mult,
+		"function(object|float|int:object)",0);
+   add_function("``*",matrix_mult,
+		"function(object|float|int:object)",0);
+   add_function("`·",matrix_mult,
+		"function(object|float|int:object)",0);
+   add_function("``·",matrix_mult,
+		"function(object|float|int:object)",0);
 }
