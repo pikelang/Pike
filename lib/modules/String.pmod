@@ -261,6 +261,9 @@ static private class _Elite
       ({"cool","kewl"}),
       ({" elite "," 1337 "}),
       ({"qu","kw"}),
+      ({" too "," 2 "}),
+      ({" too."," 2."}),
+      ({" too!"," 2!"}),
 
       ({"japanese",".jp"}),
       ({"japan",".jp"}),
@@ -324,7 +327,7 @@ static private class _Elite
 // optional one-time character translation
    mapping(string:array(string)) elite_char=
    ([
-      "a":({"4"}),
+      "a":({"4","@"}),
       "b":({"8"}),
       "c":({"("}),
       "d":({"|)","|]"}),
@@ -367,7 +370,7 @@ static private class _Elite
 // 8 bit variants
    mapping(string:array(string)) elite_char8=
    ([
-      "!":"¡"/1,
+      "!":"¡!"/1,
       "?":"¿"/1,
       "0":"º"/1,
       "1":"¹"/1,
@@ -379,7 +382,7 @@ static private class _Elite
       "d":"ğ"/1,
       "e":"èéêë"/1,
       "f":"£"/1,
-      "i":"ìíîï "/1,
+      "i":"ìíîï"/1,
       "n":"ñ"/1,
       "o":"òóôõöøº"/1,
       "p":"ş"/1,
