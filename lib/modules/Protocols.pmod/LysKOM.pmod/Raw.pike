@@ -58,8 +58,6 @@ static inline int conwrite(string what)
    return i;
 }
 
-array komihåg=({});
-
 class Send
 {
    int ref;
@@ -82,7 +80,6 @@ class Send
 //       werror("LYSKOM inserting callback %O for call %d\n",callback,ref);
 //       werror("async: %O\n",async);
 #endif
-      komihåg+=({function_object(callback)});
    }
 }
 
@@ -494,7 +491,6 @@ void got_reply(int ref,object|array what)
    {
       werror("LysKOM.Raw: lost callback for call %d %s\n",ref,
 	     zero_type(call)?"(lost from mapping??!)":"(zero value in mapping)");
-      //      werror("komihåg: %O\n",komihåg);
       werror(master()->describe_backtrace(backtrace()));
       return;
    }
