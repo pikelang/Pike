@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.74 2000/03/27 00:12:36 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.75 2000/04/25 15:07:14 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -720,7 +720,7 @@ static void name(INT32 args)						\
        case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
 	for(e=0; e<args; e++)						\
-	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
+	  ret = ret OP double_from_sval(sp-args);		        \
 									\
 	pop_n_elems(args);						\
 	push_float( ret );						\
@@ -769,7 +769,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
        case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
 	for(e=0; e<args; e++)						\
-	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
+	  ret = ret OP double_from_sval(sp-args);		        \
 									\
 	pop_n_elems(args);						\
 	push_float( ret );						\
@@ -812,7 +812,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
        case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
 	for(e=0; e<args; e++)						\
-	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
+	  ret = ret OP double_from_sval(sp-args);	        	\
 									\
 	pop_n_elems(args);						\
 	push_float( ret );						\
@@ -1306,21 +1306,24 @@ static void mpzmod_not(INT32 args)
 static void mpzmod_popcount(INT32 args)
 {
   pop_n_elems(args);
+#ifdef HAVE_MPZ_POPCOUNT
+  push_int(mpz_popcount(THIS));  
+#else
   switch (mpz_sgn(THIS))
   {
   case 0:
     push_int(0);
     break;
   case -1:
-    /* How would one define popcount for negative numbers? */
-    error("Gmp.mpz->popcount: Undefined for negative numbers.\n");
-    /* Not reached */
+    push_int(-mpn_popcount(THIS->_mp_d, THIS->_mp_size));
+    break;
   case 1:
     push_int(mpn_popcount(THIS->_mp_d, THIS->_mp_size));
     break;
   default:
     fatal("Gmp.mpz->popcount: Unexpected sign!\n");
   }
+#endif
 }
 
 static void gmp_pow(INT32 args)
