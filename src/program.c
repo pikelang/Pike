@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.514 2003/08/04 16:36:17 mast Exp $
+|| $Id: program.c,v 1.515 2003/08/11 21:51:16 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.514 2003/08/04 16:36:17 mast Exp $");
+RCSID("$Id: program.c,v 1.515 2003/08/11 21:51:16 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2382,6 +2382,7 @@ void dump_program_tables (struct program *p, int indent)
       if (!file->size_shift)
 	fprintf (stderr, "%*s                                  %s:%d\n",
 		 indent, "", file->str, line);
+      sub_ref(file);
     }
   }
 
