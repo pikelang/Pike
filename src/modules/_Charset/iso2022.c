@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iso2022.c,v 1.31 2003/12/18 00:20:26 marcus Exp $
+|| $Id: iso2022.c,v 1.32 2004/04/14 12:07:50 grubba Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.31 2003/12/18 00:20:26 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.32 2004/04/14 12:07:50 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1224,7 +1224,7 @@ static void select_encoding_parameters(struct iso2022enc_stor *s,
   char *var;
   if(str == NULL || str->size_shift)
     Pike_error("Invalid ISO2022 encoding variant\n");
-  var = STR0(str);
+  var = (char *)STR0(str);
   if(!*var)
     s->variant = 0;
   else if(!strcmp(var, "jp"))
