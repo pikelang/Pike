@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.24 2000/11/01 13:44:29 grubba Exp $
+# $Id: configure.in,v 1.25 2000/11/01 14:15:42 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -73,33 +73,35 @@ if test x$with_oracle = xyes; then
     if test x"$pike_cv_oracle_oracle_home" = xno; then :; else
       echo "$pike_cv_oracle_oracle_home/oci/lib/msvc" > conftest
     fi
-  else if test x"$pike_cv_oracle_oracle_home" != xno && \
-      test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
-            -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a"; then
-
-    echo "$pike_cv_oracle_oracle_home/lib" > conftest
-
   else
-    if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
+    if test x"$pike_cv_oracle_oracle_home" != xno && \
+  	test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
+  	      -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a"; then
 
-      sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-        if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o -f "$dir/lib/libcommon8.a"; then
-	  if test x"$pike_cv_oracle_oracle_home" = xno; then
-            AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
-	  else
-	    :
-	  fi
-	  if test x"$pike_cv_oracle_oracle_sid" = xno; then
-            AC_DEFINE_UNQUOTED(ORACLE_SID, "${sid}")
-	  else
-	    :
-	  fi
- 	  echo "$dir/lib" > conftest
-	  break
-        else
-	  :
-        fi
-      done
+      echo "$pike_cv_oracle_oracle_home/lib" > conftest
+
+    else
+      if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
+
+        sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
+          if test -d "$dir/." && test -f "$dir/lib/libcommon.a" -o -f "$dir/lib/libcommon8.a"; then
+  	    if test x"$pike_cv_oracle_oracle_home" = xno; then
+  	      AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
+  	    else
+  	      :
+  	    fi
+  	    if test x"$pike_cv_oracle_oracle_sid" = xno; then
+  	      AC_DEFINE_UNQUOTED(ORACLE_SID, "${sid}")
+  	    else
+  	      :
+  	    fi
+  	    echo "$dir/lib" > conftest
+  	    break
+  	  else
+  	    :
+  	  fi
+  	done
+      fi
     fi
   fi
 
@@ -115,22 +117,24 @@ if test x$with_oracle = xyes; then
     if test x"$pike_cv_oracle_oracle_home" = xno; then :; else
       echo "$pike_cv_oracle_oracle_home" > conftest
     fi
-  else if test x"$pike_cv_oracle_oracle_home" != xno -a \
+  else
+    if test x"$pike_cv_oracle_oracle_home" != xno -a \
       -f "$pike_cv_oracle_oracle_home/rdbms/demo/ocidfn.h"; then
 
-    echo "$pike_cv_oracle_oracle_home" > conftest
+      echo "$pike_cv_oracle_oracle_home" > conftest
 
-  else
-    if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
-      
-      sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
-        if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
-	  echo "$dir" > conftest
-	  break
-        else
-	  :
-        fi
-      done
+    else
+      if test x"$pike_cv_oracle_oratab_file" = xno; then :; else
+  	
+  	sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
+  	  if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
+  	    echo "$dir" > conftest
+  	    break
+  	  else
+  	    :
+  	  fi
+  	done
+      fi
     fi
   fi
 
