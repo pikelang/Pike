@@ -413,7 +413,10 @@ void f_set_start_quote(INT32 args)
        strs++;\
        j=i;\
      } }while(0)
-#define SKIP_SPACE()  while (i<len && s[i]!='>' && ISSPACE(s[i])) i++
+
+#define SKIP_SPACE()  while (i<len && ISSPACE(s[i])) i++
+#define STARTQUOTE(C) do{PUSH();j=i+1;inquote = 1;endquote=(C);}while(0)
+#define ENDQUOTE() do{PUSH();inquote=0;endquote=0;}while(0)       
 
 int extract_word(char *s, int i, int len)
 {
@@ -425,95 +428,53 @@ int extract_word(char *s, int i, int len)
   SKIP_SPACE();
   j=i;
 
-  /* Should we allow "foo"bar'gazonk' ? We don't now.
-   To allow it, allow 'goto done' at strategic places.
-   */
+  /* Should we really allow "foo"bar'gazonk' ? */
   
   for(;i<len; i++)
   {
     switch(s[i])
     {
-    case '-':  
-     if(!endquote) 
-       break;
-
-    case ' ':
-    case '\t':
-    case '\n':
-    case '\r':
-    case '>':
-    case '=':
+    case ' ':  case '\t': case '\n':
+    case '\r': case '>':  case '=':
      if(!inquote)
        goto done;
      break;
 
      case '"':
+     case '\'':
       if(inquote)
       {
-	if(endquote=='"')
-	{
-	  PUSH();
-	  goto done;
-	}
-      }
+	if(endquote==s[i])
+	  ENDQUOTE();
+      } else if(start_quote_character != s[i])
+	STARTQUOTE(s[i]);
       else
-      {
-	PUSH();
-	j=i+1;
-	inquote = 1;
-	endquote = '"';
-      }
-      break;
-
-    case '\'':
-      if(inquote)
-      {
-	if(endquote == '\'')
-	{
-	  PUSH();
-	  goto done;
-	}
-      }
-      else
-      {
-	PUSH();
-	j=i+1;
-	inquote = 1;
-	endquote = '\'';
-      }
+	STARTQUOTE(end_quote_character);
       break;
 
     default:
       if(!inquote)
       {
 	if(s[i] == start_quote_character)
-	{
-	  PUSH();
-	  j=i+1;
-	  inquote = 1;
-	  endquote = end_quote_character;
-	}
-      } else if(endquote == end_quote_character) {
+	  STARTQUOTE(end_quote_character);
+      }
+      else if(endquote == end_quote_character) {
 	if(s[i] == endquote)
-	{
 	  if(!--inquote)
-	    PUSH();
-	} else if(s[i] == start_quote_character) {
-	  inquote++;
-	}
+	    ENDQUOTE();
+	  else if(s[i] == start_quote_character) 
+	    inquote++;
       }
       break;
     }
   }
 done:
-  if(!strs || i-j > 2)
-    PUSH();
+  if(!strs || i-j > 2) PUSH();
   if(strs > 1)
-  {
     f_add(strs);
-  } else if(strs == 0) {
+  else if(!strs)
     push_text("");
-  }
+
   SKIP_SPACE();
   return i;
 }
