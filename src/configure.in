@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.58 1997/02/27 07:53:27 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.59 1997/03/05 14:48:45 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -209,7 +209,7 @@ else
   fi
 fi
 
-if test $pike_cv_sys_os = "Solaris" ; then
+if test "$pike_cv_sys_os" = "Solaris" ; then
   AC_DEFINE(SOLARIS)
 fi
 
@@ -1232,7 +1232,7 @@ AC_MSG_CHECKING(how to set things nonblocking)
 AC_CACHE_VAL(pike_cv_sys_nonblock,
 [
   # Kludge needed for AmigaOS
-  if test x$pike_cv_sys_os = xAmigaOS ; then
+  if test "$pike_cv_sys_os" = "AmigaOS" ; then
     pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK
   else
     AC_TRY_RUN([
@@ -1282,7 +1282,7 @@ AC_SUBST(LINKFORSHARED)
 AC_MSG_CHECKING(SO)
 if test -z "$SO"
 then
-	case $pike_cv_sys_os in
+	case "$pike_cv_sys_os" in
 	hp*|HP*)   SO=sl;;
 	*)	   SO=so;;
 	esac
@@ -1293,7 +1293,7 @@ AC_MSG_RESULT($SO)
 AC_MSG_CHECKING(LDSHARED)
 if test -z "$LDSHARED"
 then
-	case $pike_cv_sys_os in
+	case "$pike_cv_sys_os" in
 	AIX*) LDSHARED="ld_so_aix \$(CC)";;
 	IRIX*) LDSHARED="ld -shared";;
 	SunOS*) LDSHARED="ld";;
