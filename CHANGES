@@ -1,3 +1,26 @@
+Changes since Pike 7.4.28:
+----------------------------------------------------------------------
+
+o Added Memory.shmat on Windows.
+o Fixed bug in Function.defined.
+o Mac OS X poll() fixes.
+o Better optimization on Mac OS X on PPC G3 and newer.
+o Bugfix to avoid reading zero bytes from a file to block on Windows.
+o Bugfix to prevent races if Image.Font.load() is called in several
+  threads.
+o Fixed previously broken UTF7.5 encoding.
+o Decoding of mask flag and mask default color in PSD images now
+  works.
+o Better checks for wide and binary strings in the Mysql module.
+o Fixed bug in Stdio.Port.accept that could case it to fail if a
+  signal arrived at the wrong time.
+o Fixed bug in System.get_netinfo_property that could cause it to
+  fail.
+o Robustness fixes in the backend.
+o The normal bunch of unspecified core fixes for rare problems
+  discovered since the last release.
+
+
 Changes since Pike 7.4.20:
 ----------------------------------------------------------------------
 
