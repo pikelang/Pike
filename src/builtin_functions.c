@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.452 2002/11/28 02:19:15 mast Exp $
+|| $Id: builtin_functions.c,v 1.453 2002/12/01 18:53:05 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.452 2002/11/28 02:19:15 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.453 2002/12/01 18:53:05 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7492,8 +7492,8 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
  *!   Returns a string with filename and linenumber where @[fun]
  *!   was defined.
  *!
- *!   Returns @tt{0@} (zero) for builtin functions and functions in
- *!   destructed objects.
+ *!   Returns @tt{0@} (zero) when no line can be found, e.g. for
+ *!   builtin functions and functions in destructed objects.
  */
 PMOD_EXPORT void f_function_defined(INT32 args)
 {
@@ -7520,7 +7520,7 @@ PMOD_EXPORT void f_function_defined(INT32 args)
       id->func.offset != -1)
     {
       INT32 line = 0;
-      struct pike_string *tmp = get_line(p->program + id->func.offset, p, &line);
+      struct pike_string *tmp = low_get_line(p->program + id->func.offset, p, &line);
       if (tmp)
       {
 	pop_n_elems(args);
