@@ -33,6 +33,7 @@ testfont binary
 /bin/make_ci.pike foreign_ident
 /bin/mkpeep.pike foreign_ident
 /bin/mktreeopt.pike foreign_ident
+/bin/rsif foreign_ident
 /bin/test_pike.pike foreign_ident
 /bin/unbug foreign_ident
 /lib/master.pike.in foreign_ident

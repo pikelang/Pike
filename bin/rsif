@@ -1,36 +1,85 @@
-#!/usr/bin/env pike
-import Stdio;
+#! /usr/local/bin/pike
+// -*- pike -*- $Id: rsif,v 1.4 2002/04/06 21:45:46 jhs Exp $
 
-int main(int argc, string *argv)
+string version = ("$Revision: 1.4 $"/" ")[1];
+int verbosity = 1; // interactive
+int overwrite = 1; // no backups
+
+void usage(function|void output_fun)
 {
-  int i;
-  string file;
-  
-  if(argc < 4)
+  if(!output_fun)
+    output_fun = write;
+  output_fun(#"rsif [options] <from> <to> <files>
+
+rsif (\"replace string in file\") replaces all occurrences of the string
+<from> with the string <to> in listed files. The name of the files that
+were changed are written to stdout. Available options:
+
+  -b, --backups   Saves the unaltered file in <filename>~
+  -v, --verbose   Writes more junk to stderr.
+  -q, --quiet     Writes no output at all.
+  -V, --version   Writes the version number of rsif.
+  -h, --help      Shows this help message.\n");
+}
+
+int main(int argc, array(string) argv)
+{
+  foreach(Getopt.find_all_options(argv, ({
+    ({ "backup",     Getopt.NO_ARG,       "-b,--backup"/"," }),
+    ({ "verbose",    Getopt.NO_ARG,       "-v,--verbose"/"," }),
+    ({ "version",    Getopt.NO_ARG,       "-V,--version"/"," }),
+    ({ "quiet",      Getopt.NO_ARG,       "-q,--quiet"/"," }),
+    ({ "help",       Getopt.NO_ARG,       "-h,--help"/"," }) })), array opt)
+    switch(opt[0])
+    {
+      case "backup": overwrite = 0; break;
+      case "verbose": verbosity++; break;
+      case "version": return 0, write(version + "\n");
+      case "quiet": verbosity = 0; break;
+      case "help": return 0, usage();
+    }
+  argv = Getopt.get_args(argv);
+
+  if(4 > (argc = sizeof(argv)))
+    return 1, usage(werror);
+
+  string from = argv[1], to = argv[2], file;
+  if(argc == 4 && argv[-1] == "-")
   {
-    werror("Usage: rsif <from> <to> <files>\n");
-    return 1;
+    if(file = Stdio.stdin.read())
+    {
+      if(has_value(file, argv[1]))
+      {
+	if(verbosity > 1)
+	  werror("Processing stdin.\n");
+	write(replace(file, argv[1], argv[2]));
+      } else
+	write(file);
+    }
+    return 0;
   }
 
-  for(i = 3; i < argc; i++)
+  int failures = 0;
+  if(verbosity > 1)
+    werror("Replaced strings in these files:\n");
+  foreach(argv[3..], string filename)
   {
-    string file_contents;
-    if(file_contents = read_bytes(argv[i]))
+    if(file = Stdio.read_file(filename))
     {
-      if(-1 != search(file_contents,argv[1]))
+      if(has_value(file, argv[1]))
       {
-	write("Processing %s.\n", argv[i]);
-	file_contents = replace(file_contents,argv[1],argv[2]);
-
-	if( mv(argv[i], argv[i]+"~") )
+	if(verbosity > 0)
+	  write("%s\n", filename);
+    	file = replace(file, argv[1], argv[2]);
+	if(overwrite || mv(filename, filename + "~"))
+	  failures += !Stdio.write_file(filename, file);
+	else
 	{
-	  write_file(argv[i], file_contents);
-	} else {
-	  write("Failed to create backup file.\n");
+	  werror("Failed to create backup file.\n");
+	  failures++;
 	}
       }
     }
   }
-  
-  return 0;
+  return failures;
 }
