@@ -28,9 +28,9 @@ override:  sources@WITH_GTK@
 
 sources1:
 	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR)/source
-	$(MAKE)  \
-         CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O"  \
-         SOURCES="`cat sources`" doit
+	@$(MAKE) \
+          CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g' -e 's/-W[^ ]*//g' -e 's/-O[^ ]*//g'` -O" \
+          SOURCES="`cat sources`" doit
 
 always_build_files_to_compile: $(SOURCES)
 	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR)

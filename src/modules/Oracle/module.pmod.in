@@ -8,8 +8,8 @@ class oracle
   inherit M::oracle : O;
 
   object big_query(object(compile_query)|string query,
-		      void|mapping(int|string:int|float|string|multiset(string)) binds,
-		      void|int autocommit)
+		   void|mapping(int|string:int|float|string|multiset(string)) binds,
+		   void|int autocommit)
     {
       if(stringp(query)) query=compile_query(query);
       object ret=query->big_query(binds, autocommit, this_object());
