@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.13 2003/10/08 08:22:07 grubba Exp $
+|| $Id: pcre_glue.cmod,v 1.14 2003/10/08 10:47:45 grubba Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.13 2003/10/08 08:22:07 grubba Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.14 2003/10/08 10:47:45 grubba Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -208,8 +208,11 @@ PIKECLASS _pcre
 			   PCRE_INFO_OPTIONS,&options) ||
 	     pcre_fullinfo(THIS->re,THIS->extra,
 			   PCRE_INFO_SIZE,&size) ||
+#ifdef PCRE_INFO_STUDYSIZE
 	     pcre_fullinfo(THIS->re,THIS->extra,
-			   PCRE_INFO_STUDYSIZE,&studysize))
+			   PCRE_INFO_STUDYSIZE,&studysize) ||
+#endif /* PCRE_INFO_STUDYSIZE */
+	     0)
 	    Pike_error("pcre_fullinfo gave errors (unexpected)\n");
 
 	 pop_n_elems(args);
@@ -231,9 +234,11 @@ PIKECLASS _pcre
 #ifdef PCRE_INFO_NAMETABLE
 	 push_text("nametable"); 	push_int(0); /* FIXME: table */
 #endif /* PCRE_INFO_NAMETABLE */
-	 push_text("options"); 	push_int(options);
+	 push_text("options");		push_int(options);
 	 push_text("size"); 		push_int(size);
+#ifdef PCRE_INFO_STUDYSIZE
 	 push_text("studysize"); 	push_int(studysize);
+#endif /* PCRE_INFO_STUDYSIZE */
 	 f_aggregate_mapping(Pike_sp - save_sp);
       }
 
