@@ -166,7 +166,21 @@ static void get_default_creds(INT32 args)
     push_int(0);
 }
 
-/* void creds->set_default_creds(object(Creds) creds) */
+/*: <pikedoc>
+ *: <method name=set_default_creds title="set the default credentials">
+ *: <man_syntax>
+ *: void set_default_creds(object(Creds) creds);
+ *: </man_syntax>
+ *: <man_description>
+ *: Set the default credentials.
+ *: </man_description>
+ *: <man_note>
+ *: The current creds must have the allow bit
+ *: <code language=pike>BIT_SECURITY</code>.
+ *: </man_note>
+ *: </method>
+ *: </pikedoc>
+ */
 static void set_default_creds(INT32 args)
 {
   struct object *o;
@@ -182,7 +196,21 @@ static void set_default_creds(INT32 args)
   pop_n_elems(args);
 }
 
-/* void creds->create(object user, int allow_bits, int data_bits) */
+/*: <pikedoc>
+ *: <method name=create title="initialize a new credentials object">
+ *: <man_syntax>
+ *: void create(object user, int allow_bits, int data_bits);
+ *: </man_syntax>
+ *: <man_description>
+ *: Initialize a new credentials object.
+ *: </man_description>
+ *: <man_note>
+ *: The current creds must have the allow bit
+ *: <code language=pike>BIT_SECURITY</code>.
+ *: </man_note>
+ *: </method>
+ *: </pikedoc>
+ */
 static void creds_create(INT32 args)
 {
   struct object *o;
@@ -201,7 +229,14 @@ static void creds_create(INT32 args)
   pop_n_elems(args);
 }
 
-/* object creds->get_user() */
+/*: <pikedoc type=txt>
+ *: METHOD get_user get the user part
+ *: SYNTAX
+ *: 	object get_user();
+ *: DESCRIPTION
+ *: 	Returns the user part.
+ *: </pikedoc>
+ */
 static void creds_get_user(INT32 args)
 {
   pop_n_elems(args);
@@ -211,29 +246,58 @@ static void creds_get_user(INT32 args)
     push_int(0);
 }
 
-/* int creds->get_allow_bits() */
+/*: <pikedoc type=txt>
+ *: METHOD get_allow_bits get the allow_bit part
+ *: SYNTAX
+ *: 	int get_allow_bits();
+ *: DESCRIPTION
+ *: 	Returns the allow_bit bitmask.
+ *: </pikedoc>
+ */
 static void creds_get_allow_bits(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->may_always);
 }
 
-/* int creds->get_data_bits() */
+/*: <pikedoc type=txt>
+ *: METHOD get_data_bits get the data_bits part
+ *: SYNTAX
+ *: 	int get_data_bits();
+ *: DESCRIPTION
+ *: 	Returns the data_bits bitmask.
+ *: </pikedoc>
+ */
 static void creds_get_data_bits(INT32 args)
 {
   pop_n_elems(args);
   push_int(THIS->data_bits);
 }
 
-/* void creds->apply(object|program|function|array|mapping|multiset o) */
+/*: <pikedoc type=txt>
+ *: METHOD apply set the credentials for an object, program etc.
+ *: SYNTAX
+ *: 	void creds->apply(object|program|function|array|mapping|multiset o);
+ *: DESCRIPTION
+ *: 	Sets the credentials for <arg>o</arg>.
+ *: <p>
+ *: 	
+ *: NOTE
+ *: 	To perform this operation the current credentials needs to have the bit
+ *:	<code language=pike>BIT_SECURITY</code> set, or have the same user
+ *: 	as the old credentials and not change the user by performing the
+ *: 	operation.
+ *: </pikedoc>
+ */
 static void creds_apply(INT32 args)
 {
   if(args < 0 || sp[-args].type > MAX_COMPLEX)
     error("Bad argument 1 to creds->apply()\n");
 
   if( CHECK_SECURITY(SECURITY_BIT_SECURITY) ||
-      (sp[-args].u.array->prot && 
-       OBJ2CREDS(sp[-args].u.array->prot)->user == THIS->user))
+      (sp[-args].u.array->prot &&
+       (OBJ2CREDS(current_creds)->user == THIS->user) &&
+       (OBJ2CREDS(sp[-args].u.array->prot)->user == THIS->user)))
   {
     if(sp[-args].u.array->prot)
       free_object(sp[-args].u.array->prot);
