@@ -1,7 +1,7 @@
 // SQL index database without fragments
 // Copyright © 2000, Roxen IS.
 //
-// $Id: MySQL.pike,v 1.9 2001/03/19 03:51:31 js Exp $
+// $Id: MySQL.pike,v 1.10 2001/03/19 04:11:32 js Exp $
 
 // inherit Search.Database.Base;
 
@@ -16,11 +16,11 @@ void create_tables()
   
   db->query(
 #"create table uri      (id          int unsigned primary key auto_increment not null,
-                         uri_first   varchar(235),
+                         uri_first   varchar(235) not null,
                          uri_rest    text not null,
-                         uri_md5     char(16) not null default '',
+                         uri_md5     char(16) not null,
                          UNIQUE(uri_md5),
-                         INDEX index_uri_first (uri_first(235))"
+                         INDEX index_uri_first (uri_first(235)))"
 			 );
 
   db->query(
@@ -32,18 +32,18 @@ void create_tables()
 			 );
   
   db->query(
-#"create table occurance (word_id      int unsigned not null,
+#"create table occurance (word         int unsigned not null,
                           document_id  int unsigned not null,
                           offset       mediumint unsigned not null,
-                          field_id     tinyint unsigned not null
+                          field_id     tinyint unsigned not null,
                           INDEX index_offset (offset),
                           INDEX index_field_id (field_id),
-                          INDEX index_word_id (word_id),
+                          INDEX index_word (word),
                           INDEX index_document_id (document_id))");
 
   db->query(
-#"create table field (id    tinyint unsigned primary_key auto_increment not null,
-                      name  varchar(127),
+#"create table field (id    tinyint unsigned primary key auto_increment not null,
+                      name  varchar(127) not null,
                       INDEX index_name (name))");
 }
 
@@ -113,7 +113,7 @@ int find_or_create_uri_id(string uri)
 
   s=sprintf("insert into uri (uri_first,uri_rest,uri_md5) "
 	    "values ('%s','%s','%s')",
-	    @map(uri, db->quote), to_md5(uri));
+	    @map(split_uri(uri), db->quote), to_md5(uri));
   db->query(s);
   return db->master_sql->insert_id();
 }
@@ -161,7 +161,7 @@ void insert_words(Standards.URI|string uri, void|string language,
 
   mapping word_ids=([]);
   int offset;
-  string s="insert into occurance (word_id, document_id, offset, "
+  string s="insert into occurance (word, document_id, offset, "
            "field_id) values ";
   
   foreach(words, string word)
@@ -206,7 +206,7 @@ class GroupNode
     
     string res="";
     res+=build_sql_part("SELECT",
-			({ "distinct document.id as doc_id",
+			({ "distinct document.id as document_id",
 			   "concat(uri.uri_first,uri.uri_rest) as doc_uri"})+tmp,
 			",\n       ");
 
@@ -219,8 +219,8 @@ class GroupNode
     {
       tmp=allocate(ref->ref-1);
       for(int i=1;i<ref->ref; i++)
-	tmp[i-1]=sprintf("t0.doc_id=t%d.doc_id",i);
-      tmp+=({"t0.doc_id=document.id"});
+	tmp[i-1]=sprintf("t0.document_id=t%d.document_id",i);
+      tmp+=({"t0.document_id=document.id"});
     }
     
     res+=build_sql_part("WHERE",
@@ -302,8 +302,10 @@ class Contains(string field, string word)
     return (["from": ({"field", sprintf("occurance t%d",ref->ref)}),
 	     "ranking": ({/*sprintf("sum((t%d.tf * t%d.idf * t%d.idf)/document.length)",
 			    ref->ref,ref->ref,ref->ref)*/}),
-	     "where":  sprintf("t%d.field_id=field.id and field.name='%s' and t%d.word='%s'",
-			       ref->ref,db->quote(field),ref->ref++,hash_word(word)) ]);
+	     "where":  sprintf("t%d.field_id=field.id and field.name="
+			       "'%s' and t%d.word='%d'",
+			       ref->ref, db->quote(field), ref->ref++,
+			       hash_word(word)) ]);
   }
 }
 
@@ -343,7 +345,7 @@ class Phrase
 //       ranking+=({sprintf("sum((document.tf * t%d.idf * t%d.idf)/document.length)",
 // 			 ref->ref,ref->ref)});
       from+=({ sprintf("occurance t%d",ref->ref) });
-      where+= ({ sprintf("t%d.word='%s'",ref->ref,hash_word(word)) });
+      where+= ({ sprintf("t%d.word='%d'",ref->ref,hash_word(word)) });
       if(i++<sizeof(words)-1)
 	where+=({ sprintf("t%d.offset-t%d.offset = "+real_window_size,
 			  ref->ref+1, ref->ref) });
@@ -414,6 +416,10 @@ class DateOP(string field, string op, string date)
   inherit LeafNode;
 }
 
+string foo()
+{
+  return And(Contains("body","tjo"), Phrase("body","bar","gazonk"))->build_sql();
+}
 
 // int main()
 // {
