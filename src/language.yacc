@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.326 2003/11/14 00:15:06 mast Exp $
+|| $Id: language.yacc,v 1.327 2004/03/12 21:17:18 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.326 2003/11/14 00:15:06 mast Exp $");
+RCSID("$Id: language.yacc,v 1.327 2004/03/12 21:17:18 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -457,7 +457,7 @@ inheritance: modifiers TOK_INHERIT force_resolve
     }
     if($5) free_node($5);
     pop_stack();
-    free_node($4);
+    if ($4) free_node($4);
   }
   | modifiers TOK_INHERIT force_resolve low_program_ref error ';'
   {
@@ -553,13 +553,16 @@ constant_name: TOK_IDENTIFIER '=' safe_expr0
 	if(tmp < 1)
 	{
 	  yyerror("Error in constant definition.");
+	  push_undefined();
 	}else{
 	  pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
-	  add_constant($1->u.sval.u.string, Pike_sp-1,
-		       Pike_compiler->current_modifiers & ~ID_EXTERN);
-	  pop_stack();
 	}
+      } else {
+	push_undefined();
       }
+      add_constant($1->u.sval.u.string, Pike_sp-1,
+		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+      pop_stack();
     }
     if($3) free_node($3);
     free_node($1);
@@ -2859,7 +2862,9 @@ return: TOK_RETURN expected_semicolon
        !match_types(Pike_compiler->compiler_frame->current_return_type,
 		    void_type_string))
     {
-      yyerror("Must return a value for a non-void function.");
+      yytype_error("Must return a value for a non-void function.",
+		   Pike_compiler->compiler_frame->current_return_type,
+		   void_type_string, 0);
     }
     $$=mknode(F_RETURN,mkintnode(0),0);
   }
@@ -3331,15 +3336,12 @@ idents2: idents
 	$$ = mkidentifiernode(i);
       }
     } else {
-      if (!Pike_compiler->num_parse_error) {
-	if (Pike_compiler->compiler_pass == 2) {
-	  my_yyerror("'%s' not defined in local scope.", Pike_compiler->last_identifier->str);
-	  $$ = 0;
-	} else {
-	  $$ = mknode(F_UNDEFINED, 0, 0);
-	}
+      if (Pike_compiler->compiler_pass == 2) {
+	my_yyerror("'%s' not defined in local scope.",
+		   Pike_compiler->last_identifier->str);
+	$$ = 0;
       } else {
-	$$ = mkintnode(0);
+	$$ = mknode(F_UNDEFINED, 0, 0);
       }
     }
 
@@ -3475,17 +3477,14 @@ low_idents: TOK_IDENTIFIER
     }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1)) &&
 	     !($$ = program_magic_identifier (Pike_compiler, 0, 0,
 					      Pike_compiler->last_identifier, 0))) {
-      if(!Pike_compiler->num_parse_error)
-      {
-	if(Pike_compiler->compiler_pass==2)
-	{
-	  my_yyerror("Undefined identifier \"%s\".", Pike_compiler->last_identifier->str);
-	  $$=0;
-	}else{
-	  $$=mknode(F_UNDEFINED,0,0);
-	}
+      if(force_resolve ||
+	 ((!Pike_compiler->num_parse_error) &&
+	  (Pike_compiler->compiler_pass==2))) {
+	my_yyerror("Undefined identifier \"%s\".",
+		   Pike_compiler->last_identifier->str);
+	$$=0;
       }else{
-	$$=mkintnode(0);
+	$$=mknode(F_UNDEFINED,0,0);
       }
     }
     free_node($1);
@@ -3538,13 +3537,14 @@ low_idents: TOK_IDENTIFIER
 	/* All done. */
       }
       else {
-	if (Pike_compiler->compiler_pass == 2) {
+	if (force_resolve || (Pike_compiler->compiler_pass == 2)) {
 	  if (inherit_state->new_program->inherits[$1].name) {
 	    my_yyerror("Undefined identifier \"%s::%s\".",
 		       inherit_state->new_program->inherits[$1].name->str,
 		       Pike_compiler->last_identifier->str);
 	  } else {
-	    my_yyerror("Undefined identifier \"%s\".", Pike_compiler->last_identifier->str);
+	    my_yyerror("Undefined identifier \"%s\".",
+		       Pike_compiler->last_identifier->str);
 	  }
 	  $$=0;
 	}
@@ -3908,6 +3908,8 @@ void yyerror(char *str)
   extern int num_parse_error;
   extern int cumulative_parse_error;
 
+  STACK_LEVEL_START(0);
+
 #ifdef PIKE_DEBUG
   if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
     Pike_fatal("Stack error (underflow)\n");
@@ -3944,6 +3946,8 @@ void yyerror(char *str)
     }
     fflush(stderr);
   }
+
+  STACK_LEVEL_DONE(0);
 }
 
 static int low_islocal(struct compiler_frame *f,
