@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.171 2004/09/23 11:45:22 grubba Exp $
+|| $Id: interpret_functions.h,v 1.172 2004/09/30 13:20:00 mast Exp $
 */
 
 /*
@@ -208,9 +208,8 @@
     LOCAL_VAR(struct svalue tmp);		\
     index_no_free(&tmp,Pike_sp-2,Pike_sp-1);	\
     pop_2_elems();				\
-    *Pike_sp=tmp;				\
+    move_svalue (Pike_sp, &tmp);		\
     Pike_sp++;					\
-    dmalloc_touch_svalue(Pike_sp-1);		\
     print_return_value();			\
   }while(0)
 
@@ -332,7 +331,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
     index_no_free(&tmp, Pike_sp-1, &tmp2);
   }
   free_svalue(Pike_sp-1);
-  Pike_sp[-1] = tmp;
+  move_svalue (Pike_sp - 1, &tmp);
   print_return_value();
 });
 
@@ -506,9 +505,8 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", I_UPDATE_SP, {
   Pike_sp[-1].u.array->flags |= ARRAY_LVALUE;
   Pike_sp[-1].u.array->type_field |= BIT_UNFINISHED | BIT_MIXED;
   /* FIXME: Shouldn't a ref be added here? */
-  Pike_sp[0] = Pike_sp[-1];
+  move_svalue (Pike_sp, Pike_sp - 1);
   Pike_sp[-1].type = T_ARRAY_LVALUE;
-  dmalloc_touch_svalue(Pike_sp);
   Pike_sp++;
 });
 
@@ -653,7 +651,7 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   dmalloc_touch_svalue(Pike_sp-3);
   dmalloc_touch_svalue(Pike_sp-2);
   dmalloc_touch_svalue(Pike_sp-1);
-  Pike_sp[0] = Pike_sp[-1];
+  move_svalue (Pike_sp, Pike_sp - 1);
   Pike_sp[-1].type = PIKE_T_INT;
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2, Pike_sp-4);
@@ -676,8 +674,8 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
 });
 
 OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
-  Pike_sp[0] = Pike_sp[-1];
-  Pike_sp[-1] = Pike_sp[-2];
+  move_svalue (Pike_sp, Pike_sp - 1);
+  move_svalue (Pike_sp - 1, Pike_sp - 2);
   Pike_sp[-2].type = PIKE_T_INT;
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-3, Pike_sp-5);
@@ -700,7 +698,7 @@ OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
 });
 
 OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
-  Pike_sp[0]=Pike_sp[-1];
+  move_svalue (Pike_sp, Pike_sp - 1);
   Pike_sp[-1].type=PIKE_T_INT;
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
@@ -758,7 +756,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
 });
 
 OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
-  Pike_sp[0]=Pike_sp[-1];
+  move_svalue (Pike_sp, Pike_sp - 1);
   Pike_sp[-1].type=PIKE_T_INT;
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
@@ -951,9 +949,7 @@ OPCODE0(F_ASSIGN, "assign", I_UPDATE_SP, {
   assign_lvalue(Pike_sp-3,Pike_sp-1);
   free_svalue(Pike_sp-3);
   free_svalue(Pike_sp-2);
-  Pike_sp[-3]=Pike_sp[-1];
-  dmalloc_touch_svalue(Pike_sp-1);
-  dmalloc_touch_svalue(Pike_sp-2);
+  move_svalue (Pike_sp - 3, Pike_sp - 1);
   Pike_sp-=2;
 });
 
@@ -961,8 +957,7 @@ OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP, "apply, assign local and pop", I_UPDATE_SP
   apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval),
 	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   free_svalue(Pike_fp->locals+arg2);
-  Pike_fp->locals[arg2]=Pike_sp[-1];
-  dmalloc_touch_svalue(Pike_sp-1);
+  move_svalue (Pike_fp->locals + arg2, Pike_sp - 1);
   Pike_sp--;
 });
 
@@ -979,8 +974,7 @@ OPCODE0(F_ASSIGN_AND_POP, "assign and pop", I_UPDATE_SP, {
 
 OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop", I_UPDATE_SP, {
   free_svalue(Pike_fp->locals + arg1);
-  Pike_fp->locals[arg1] = Pike_sp[-1];
-  dmalloc_touch_svalue(Pike_sp-1);
+  move_svalue (Pike_fp->locals + arg1, Pike_sp - 1);
   Pike_sp--;
 });
 
@@ -1289,7 +1283,7 @@ OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL, {
   LOCAL_VAR(struct svalue tmp2);
   JUMP_SET_TO_PC_AT_NEXT (addr);
   index_no_free(&tmp2, Pike_sp-2, Pike_sp-1);
-  Pike_sp++[0] = tmp2;
+  move_svalue (Pike_sp++, &tmp2);
 
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
@@ -1622,8 +1616,7 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
     if(Pike_sp[-1].type != PIKE_T_ARRAY)
       Pike_error("Bad return type from o->_values() in @\n");
     free_svalue(Pike_sp-2);
-    Pike_sp[-2]=Pike_sp[-1];
-    dmalloc_touch_svalue(Pike_sp-1);
+    move_svalue (Pike_sp - 2, Pike_sp - 1);
     Pike_sp--;
     break;
 
@@ -1649,7 +1642,7 @@ OPCODE1(F_LOCAL_INDEX, "local index", 0, {
   if(s->type == PIKE_T_STRING) s->subtype=0;
   index_no_free(&tmp,Pike_sp-1,s);
   free_svalue(Pike_sp-1);
-  Pike_sp[-1]=tmp;
+  move_svalue (Pike_sp - 1, &tmp);
 });
 
 OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
@@ -1663,7 +1656,7 @@ OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
   if(s->type == PIKE_T_STRING) s->subtype=0;
   index_no_free(&tmp,Pike_sp-1,s);
   free_svalue(Pike_sp-1);
-  Pike_sp[-1]=tmp;
+  move_svalue (Pike_sp - 1, &tmp);
 });
 
 OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
@@ -1685,7 +1678,7 @@ OPCODE1(F_ARROW, "->x", 0, {
   tmp.subtype=1;
   index_no_free(&tmp2, Pike_sp-1, &tmp);
   free_svalue(Pike_sp-1);
-  Pike_sp[-1]=tmp2;
+  move_svalue (Pike_sp - 1, &tmp2);
   print_return_value();
 });
 
@@ -1697,7 +1690,7 @@ OPCODE1(F_STRING_INDEX, "string index", 0, {
   tmp.subtype=0;
   index_no_free(&tmp2, Pike_sp-1, &tmp);
   free_svalue(Pike_sp-1);
-  Pike_sp[-1]=tmp2;
+  move_svalue (Pike_sp - 1, &tmp2);
   print_return_value();
 });
 
@@ -1806,7 +1799,7 @@ OPCODE0(F_COPY_VALUE, "copy_value", 0, {
   LOCAL_VAR(struct svalue tmp);
   copy_svalues_recursively_no_free(&tmp,Pike_sp-1,1,0);
   free_svalue(Pike_sp-1);
-  Pike_sp[-1]=tmp;
+  move_svalue (Pike_sp - 1, &tmp);
   print_return_value();
 });
 
@@ -1816,14 +1809,16 @@ OPCODE0(F_INDIRECT, "indirect", I_UPDATE_SP, {
   if(tmp.type != PIKE_T_STRING)
   {
     pop_2_elems();
-    *Pike_sp = tmp;
+    move_svalue (Pike_sp, &tmp);
     Pike_sp++;
   }else{
     LOCAL_VAR(struct object *o);
+    LOCAL_VAR(struct string_assignment_storage *s);
     o=low_clone(string_assignment_program);
-    ((struct string_assignment_storage *)o->storage)->lval[0]=Pike_sp[-2];
-    ((struct string_assignment_storage *)o->storage)->lval[1]=Pike_sp[-1];
-    ((struct string_assignment_storage *)o->storage)->s=tmp.u.string;
+    s = (struct string_assignment_storage *)o->storage;
+    move_svalue (s->lval, Pike_sp - 2);
+    move_svalue (s->lval + 1, Pike_sp - 1);
+    s->s=tmp.u.string;
     Pike_sp-=2;
     push_object(o);
   }
@@ -1987,7 +1982,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 
     index_no_free(&tmp2, s, &tmp);
     free_svalue(s);
-    *s=tmp2;
+    move_svalue (s, &tmp2);
     print_return_value();
 
     if(low_mega_apply(APPLY_STACK, args, 0, 0))
@@ -2045,7 +2040,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 
     index_no_free(&tmp2, s, &tmp);
     free_svalue(s);
-    *s=tmp2;
+    move_svalue (s, &tmp2);
     print_return_value();
 
     if(low_mega_apply(APPLY_STACK, args, 0, 0))
@@ -2103,7 +2098,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 
     index_no_free(&tmp2, s, &tmp);
     free_svalue(s);
-    *s=tmp2;
+    move_svalue (s, &tmp2);
     print_return_value();
 
     if(low_mega_apply(APPLY_STACK, args, 0, 0))
