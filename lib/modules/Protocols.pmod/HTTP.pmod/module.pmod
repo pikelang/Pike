@@ -2,10 +2,10 @@
 
 //! module Protocols
 //! submodule HTTP
-//! method object(Protocols.HTTP.Query) get_url(string url)
-//! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables)
-//! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables,mapping request_headers)
-//! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method object(Protocols.HTTP.Query) get_url(string|Standards.URI url)
+//! method object(Protocols.HTTP.Query) get_url(string|Standards.URI url,mapping query_variables)
+//! method object(Protocols.HTTP.Query) get_url(string|Standards.URI url,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) get_url(string|Standards.URI url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! 	Sends a HTTP GET request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
 //!	0 is returned upon failure. If a query object having
@@ -13,11 +13,11 @@
 //!	provided and the already established server connection can be used for
 //!	the next request, you may gain some performance.
 //!
-//! method object(Protocols.HTTP.Query) put_url(string url)
-//! method object(Protocols.HTTP.Query) put_url(string url,string file)
-//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables)
-//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables,mapping request_headers)
-//! method object(Protocols.HTTP.Query) put_url(string url,string file,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method object(Protocols.HTTP.Query) put_url(string|Standards.URI url)
+//! method object(Protocols.HTTP.Query) put_url(string|Standards.URI url,string file)
+//! method object(Protocols.HTTP.Query) put_url(string|Standards.URI url,string file,mapping query_variables)
+//! method object(Protocols.HTTP.Query) put_url(string|Standards.URI url,string file,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) put_url(string|Standards.URI url,string file,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! 	Sends a HTTP PUT request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
 //!	0 is returned upon failure. If a query object having
@@ -25,10 +25,10 @@
 //!	provided and the already established server connection can be used for
 //!	the next request, you may gain some performance.
 //!
-//! method object(Protocols.HTTP.Query) delete_url(string url)
-//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables)
-//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables,mapping request_headers)
-//! method object(Protocols.HTTP.Query) delete_url(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method object(Protocols.HTTP.Query) delete_url(string|Standards.URI	url)
+//! method object(Protocols.HTTP.Query) delete_url(string|Standards.URI	url,mapping query_variables)
+//! method object(Protocols.HTTP.Query) delete_url(string|Standards.URI	url,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) delete_url(string|Standards.URI	url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! 	Sends a HTTP DELETE request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
 //!	0 is returned upon failure. If a query object having
@@ -36,164 +36,99 @@
 //!	provided and the already established server connection can be used for
 //!	the next request, you may gain some performance.
 //!
-//! method array(string) get_url_nice(string url,mapping query_variables)
-//! method array(string) get_url_nice(string url,mapping query_variables,mapping request_headers)
-//! method array(string) get_url_nice(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
-//! method string get_url_data(string url,mapping query_variables)
-//! method string get_url_data(string url,mapping query_variables,mapping request_headers)
-//! method string get_url_data(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method array(string) get_url_nice(string|Standards.URI url,mapping query_variables)
+//! method array(string) get_url_nice(string|Standards.URI url,mapping query_variables,mapping request_headers)
+//! method array(string) get_url_nice(string|Standards.URI url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method string get_url_data(string|Standards.URI url,mapping query_variables)
+//! method string get_url_data(string|Standards.URI url,mapping query_variables,mapping request_headers)
+//! method string get_url_data(string|Standards.URI url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //!	Returns an array of ({content_type,data}) and just the data
 //!	string respective, 
 //!	after calling the requested server for the information.
 //!	0 is returned upon failure.
 //!
 //!
-//! method array(string) post_url_nice(string url,mapping query_variables)
-//! method array(string) post_url_nice(string url,mapping query_variables,mapping request_headers)
-//! method array(string) post_url_nice(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
-//! method string post_url_data(string url,mapping query_variables)
-//! method string post_url_data(string url,mapping query_variables,mapping request_headers)
-//! method string post_url_data(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
-//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables)
-//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables,mapping request_headers)
-//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method array(string) post_url_nice(string|Standards.URI url,mapping query_variables)
+//! method array(string) post_url_nice(string|Standards.URI url,mapping query_variables,mapping request_headers)
+//! method array(string) post_url_nice(string|Standards.URI url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method string post_url_data(string|Standards.URI url,mapping query_variables)
+//! method string post_url_data(string|Standards.URI url,mapping query_variables,mapping request_headers)
+//! method string post_url_data(string|Standards.URI url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
+//! method object(Protocols.HTTP.Query) post_url(string|Standards.URI url,mapping query_variables)
+//! method object(Protocols.HTTP.Query) post_url(string|Standards.URI url,mapping query_variables,mapping request_headers)
+//! method object(Protocols.HTTP.Query) post_url(string|Standards.URI url,mapping query_variables,mapping request_headers,object(Protocols.HTTP.Query) query)
 //! 	Similar to the <ref>get_url</ref> class of functions, except that the
 //!	query variables is sent as a post request instead of a get.
 //!
 
-object get_url(string url,
+object do_method(string method,
+		 string|Standards.URI url,
+		 void|mapping query_variables,
+		 void|mapping request_headers,
+		 void|Protocols.HTTP.Query con, void|string data)
+{
+  if(!con)
+    con = Protocols.HTTP.Query();
+  
+  if(!request_headers)
+    request_headers = ([]);
+  
+  if(stringp(url))
+    url=Standards.URI(url);
+
+  if(url->scheme!="http")
+    error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
+	  url->scheme);
+
+  string query=url->query;
+  if(query_variables && sizeof(query_variables))
+  {
+    if(query)
+      query+="&"+http_encode_query(query_variables);
+    else
+      query=http_encode_query(query_variables);
+  }
+
+  string path=url->path;
+  if(path=="") path="/";
+
+  con->sync_request(url->host,url->port,
+		    method+" "+path+(query?("?"+query):"")+" HTTP/1.0",
+		    ([
+		      "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
+		      "host":url->host
+		    ]) | request_headers, data);
+  
+  if (!con->ok) return 0;
+  return con;
+}
+
+object get_url(string|Standards.URI url,
 	       void|mapping query_variables,
 	       void|mapping request_headers,
 	       void|Protocols.HTTP.Query con)
 {
-   if(!con)
-      con = Protocols.HTTP.Query();
-
-   string prot="http",host;
-   int port=80;
-   string query;
-   if(!request_headers)
-     request_headers = ([]);
-
-   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
-      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
-      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
-      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
-      (host=url,query="");
-
-   if (prot!="http")
-      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
-	    prot);
-
-   if (query_variables && sizeof(query_variables))
-   {
-      if (search(query,"?")!=-1)
-	 query+="&"+http_encode_query(query_variables);
-      else
-	 query+="?"+http_encode_query(query_variables);
-   }
-
-   con->sync_request(host,port,
-		     "GET /"+query+" HTTP/1.0",
-		     ([
-		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
-		       "host":host
-		     ]) | request_headers);
-
-   if (!con->ok) return 0;
-   return con;
+  return do_method("GET", url, query_variables, request_headers, con);
 }
 
-object put_url(string url,
+object put_url(string|Standards.URI url,
 	       void|string file,
 	       void|mapping query_variables,
 	       void|mapping request_headers,
 	       void|Protocols.HTTP.Query con)
 {
-   if(!con)
-      con = Protocols.HTTP.Query();
-
-   string prot="http",host;
-   int port=80;
-   string query;
-   if(!request_headers)
-     request_headers = ([]);
-
-   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
-      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
-      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
-      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
-      (host=url,query="");
-
-   if (prot!="http")
-      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
-	    prot);
-
-   if (query_variables && sizeof(query_variables))
-   {
-      if (search(query,"?")!=-1)
-	 query+="&"+http_encode_query(query_variables);
-      else
-	 query+="?"+http_encode_query(query_variables);
-   }
-
-   con->sync_request(host, port,
-		     "PUT /"+query+" HTTP/1.0",
-		     ([
-		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
-		       "host":host
-		     ]) | request_headers,
-		     file);
-
-   if (!con->ok) return 0;
-   return con;
+  return do_method("PUT", url, query_variables, request_headers, con);
 }
 
-object delete_url(string url,
+object delete_url(string|Standards.URI url,
 		  void|mapping query_variables,
 		  void|mapping request_headers,
 		  void|Protocols.HTTP.Query con)
 {
-   if(!con)
-      con = Protocols.HTTP.Query();
-
-   string prot="http",host;
-   int port=80;
-   string query;
-   if(!request_headers)
-     request_headers = ([]);
-
-   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
-      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
-      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
-      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
-      (host=url,query="");
-
-   if (prot!="http")
-      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
-	    prot);
-
-   if (query_variables && sizeof(query_variables))
-   {
-      if (search(query,"?")!=-1)
-	 query+="&"+http_encode_query(query_variables);
-      else
-	 query+="?"+http_encode_query(query_variables);
-   }
-
-   con->sync_request(host,port,
-		     "DELETE /"+query+" HTTP/1.0",
-		     ([
-		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
-		       "host":host
-		     ]) |
-		     request_headers);
-
-   if (!con->ok) return 0;
-   return con;
+  return do_method("DELETE", url, query_variables, request_headers, con);
 }
 
-array(string) get_url_nice(string url,
+array(string) get_url_nice(string|Standards.URI url,
 			   void|mapping query_variables,
 			   void|mapping request_headers,
 			   void|Protocols.HTTP.Query con)
@@ -202,7 +137,7 @@ array(string) get_url_nice(string url,
   return c && ({ c->headers["content-type"], c->data() });
 }
 
-string get_url_data(string url,
+string get_url_data(string|Standards.URI url,
 		    void|mapping query_variables,
 		    void|mapping request_headers,
 		    void|Protocols.HTTP.Query con)
@@ -211,46 +146,20 @@ string get_url_data(string url,
   return z && z->data();
 }
 
-object post_url(string url,
+object post_url(string|Standards.URI url,
 		mapping query_variables,
 		void|mapping request_headers,
 		void|Protocols.HTTP.Query con)
 {
-   if(!con)
-      con = Protocols.HTTP.Query();
-
-   string prot="http",host;
-   int port=80;
-   string query;
-   if(!request_headers)
-     request_headers = ([]);
-
-   sscanf(url,"%[^:/]://%[^:/]:%d/%s",prot,host,port,query) == 4 ||
-      (port=80,sscanf(url,"%[^:/]://%[^:/]/%s",prot,host,query)) == 3 ||
-      (prot="http",sscanf(url,"%[^:/]:%d/%s",host,port,query)) == 3 ||
-      (port=80,sscanf(url,"%[^:/]/%s",host,query)) == 2 ||
-      (host=url,query="");
-
-   if (prot!="http")
-      error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
-	    prot);
-
-   con->sync_request(host,port,
-		     "POST /"+query+" HTTP/1.0",
-		     ([
-		       "user-agent":"Mozilla/4.0 compatible (Pike HTTP client)",
-		       "host":host
-		     ]) |
-		     request_headers |
-		     (["content-type":
-		       "application/x-www-form-urlencoded"]),
-		     http_encode_query(query_variables));
-
-   if (!con->ok) return 0;
-   return con;
+  return do_method("POST", url, 0,
+		   request_headers|
+		   (["content-type":
+		     "application/x-www-form-urlencoded"]),
+		   con,
+		   http_encode_query(query_variables));
 }
 
-array(string) post_url_nice(string url,
+array(string) post_url_nice(string|Standards.URI url,
 			    mapping query_variables,
 			    void|mapping request_headers,
 			    void|Protocols.HTTP.Query con)
@@ -259,7 +168,7 @@ array(string) post_url_nice(string url,
   return c && ({ c->headers["content-type"], c->data() });
 }
 
-string post_url_data(string url,
+string post_url_data(string|Standards.URI url,
 		     mapping query_variables,
 		     void|mapping request_headers,
 		     void|Protocols.HTTP.Query con)
