@@ -1,6 +1,6 @@
-Sat Feb 10 21:43:42 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+Sun Feb 11 01:04:38 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
-	* 
+	* export.lpc: now updates configure files if needed
 	* create_testsuite: added tests for sscanfs %d %o and %x
 	* opcodes.c: changed sscanf to use strtol
 	* machine.h.in: changed USE_FCNTL_NONBLOCK to what it should be:
