@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.119 2001/06/17 19:15:15 grubba Exp $");
+RCSID("$Id: docode.c,v 1.120 2001/06/19 23:59:33 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1149,7 +1149,7 @@ static int do_docode2(node *n, INT16 flags)
 	    tmp1=store_constant(& CAR(n)->u.sval,
 				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				CAR(n)->name);
-	    emit1(F_APPLY, DO_NOT_WARN((INT32)tmp1));
+	    emit1(F_CALL_BUILTIN, DO_NOT_WARN((INT32)tmp1));
 	    POP_AND_DONT_CLEANUP;
 	  }
 	  if(n->type == void_type_string)

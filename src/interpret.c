@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.206 2001/06/11 19:58:28 mast Exp $");
+RCSID("$Id: interpret.c,v 1.207 2001/06/19 23:59:33 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -85,6 +85,7 @@ static char trace_buffer[2000];
 PMOD_EXPORT struct Pike_interpreter Pike_interpreter;
 PMOD_EXPORT int Pike_stack_size = EVALUATOR_STACK_SIZE;
 
+void do_trace_call(INT32);
 
 void gdb_stop_here(void)
 {
@@ -999,6 +1000,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 	break;
       }else{
+	type=APPLY_SVALUE;
 	o=s->u.object;
 	if(o->prog == pike_trampoline_program)
 	{
@@ -1046,6 +1048,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	goto apply_low_with_scope;
       }
       fun=LFUN_CALL;
+      type=APPLY_SVALUE;
       goto call_lfun;
     }
     break;

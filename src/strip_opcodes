@@ -1,0 +1,5 @@
+#!/bin/sh
+
+sed 's/OPCODE/\
+OPCODE/g' | egrep '^OPCODE' | sed 's/"[ 	]*).*/")/g'
+

@@ -1,8 +1,10 @@
 /*
- * $Id: interpret_functions.h,v 1.61 2001/06/17 19:15:15 grubba Exp $
+ * $Id: interpret_functions.h,v 1.62 2001/06/19 23:59:33 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
+
+#include "global.h"
 
 OPCODE0(F_UNDEFINED,"push UNDEFINED")
   push_int(0);
@@ -1550,165 +1552,168 @@ OPCODE1(F_SSCANF, "sscanf")
   o_sscanf(arg1);
 BREAK;
 
-OPCODE1(F_CALL_LFUN,"call lfun")
-  if(low_mega_apply(APPLY_LOW,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    Pike_fp->current_object,
-		    (void *)(arg1+Pike_fp->context.identifier_level)))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-    pc=Pike_fp->pc;
-  }
-BREAK;
-
-OPCODE1(F_CALL_LFUN_AND_POP,"call lfun & pop")
-#if 0
-  apply_low(Pike_fp->current_object,
-	    arg1+Pike_fp->context.identifier_level,
-	    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
-  pop_stack();
-#else
-  if(low_mega_apply(APPLY_LOW,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    Pike_fp->current_object,
-		    (void *)(arg1+Pike_fp->context.identifier_level)))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
-    pc=Pike_fp->pc;
-  }else{
-    pop_stack();
-  }
-#endif
-BREAK;
-
-OPCODE1(F_MARK_APPLY,"mark apply")
-  if(low_mega_apply(APPLY_SVALUE_STRICT,
-		    0,
-		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-    pc=Pike_fp->pc;
-  }
-BREAK;
-
-OPCODE1(F_MARK_APPLY_POP,"mark, apply & pop")
-  if(low_mega_apply(APPLY_SVALUE,
-		    0,
-		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
-    pc=Pike_fp->pc;
-  }else{
-    pop_stack();
-  }
-BREAK;
-
-OPCODE1(F_APPLY,"apply")
-  if(low_mega_apply(APPLY_SVALUE_STRICT,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-    pc=Pike_fp->pc;
-  }
-BREAK;
-
-
-OPCODE1(F_APPLY_AND_POP,"apply")
-  if(low_mega_apply(APPLY_SVALUE_STRICT,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
-    pc=Pike_fp->pc;
-  }else{
-    pop_stack();
-  }
-BREAK;
-
-
-OPCODE0(F_CALL_FUNCTION,"call function")
-  if(low_mega_apply(APPLY_STACK,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    0,0))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
-    pc=Pike_fp->pc;
-  }
-BREAK;
-
-
-OPCODE0(F_CALL_FUNCTION_AND_POP,"call function & pop")
-  if(low_mega_apply(APPLY_STACK,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    0,0))
-  {
-    Pike_fp->next->pc=pc;
-    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
-    pc=Pike_fp->pc;
-  }else{
-    pop_stack();
-  }
-BREAK;
-
-OPCODE1(F_APPLY_AND_RETURN,"apply & return")
-{
-  if(low_mega_apply(APPLY_SVALUE,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
-  {
-#ifdef PIKE_DEBUG
-    Pike_fp->next->pc=0;
-#endif
-    pc=Pike_fp->pc;
-    unlink_previous_frame();
-  }else{
-    goto do_dumb_return;
-  }
-}
-BREAK;
-
-OPCODE1(F_CALL_LFUN_AND_RETURN,"call lfun & return")
-{
-  if(low_mega_apply(APPLY_LOW,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    Pike_fp->current_object,
-		    (void *)(arg1+Pike_fp->context.identifier_level)))
-  {
-#ifdef PIKE_DEBUG
-    Pike_fp->next->pc=0;
-#endif
-    pc=Pike_fp->pc;
-    unlink_previous_frame();
-  }else{
-    goto do_dumb_return;
-  }
-}
+#define MKAPPLY(OP,OPCODE,NAME,TYPE,  ARG2, ARG3)			   \
+OP(PIKE_CONCAT(F_,OPCODE),NAME)					   \
+if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),	   \
+		  ARG2, ARG3))						   \
+{									   \
+  Pike_fp->next->pc=pc;							   \
+  Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
+  pc=Pike_fp->pc;							   \
+}									   \
+BREAK;									   \
+									   \
+OP(PIKE_CONCAT3(F_,OPCODE,_AND_POP),NAME " & pop")			   \
+  if(low_mega_apply(TYPE, DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)), \
+		    ARG2, ARG3))					   \
+  {									   \
+    Pike_fp->next->pc=pc;						   \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
+    pc=Pike_fp->pc;							   \
+  }else{								   \
+    pop_stack();							   \
+  }									   \
+BREAK;									   \
+									   \
+OP(PIKE_CONCAT3(F_,OPCODE,_AND_RETURN),NAME " & return")		   \
+{									   \
+  if(low_mega_apply(TYPE,DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),  \
+		    ARG2,ARG3))						   \
+  {									   \
+    DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
+    pc=Pike_fp->pc;							   \
+    unlink_previous_frame();						   \
+  }else{								   \
+    goto do_dumb_return;						   \
+  }									   \
+}									   \
+BREAK									   \
+									   \
+OP(PIKE_CONCAT(F_MARK_,OPCODE),"mark, " NAME)			   \
+if(low_mega_apply(TYPE,0,						   \
+		  ARG2, ARG3))						   \
+{									   \
+  Pike_fp->next->pc=pc;							   \
+  Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;				   \
+  pc=Pike_fp->pc;							   \
+}									   \
+BREAK;									   \
+									   \
+OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_POP),"mark, " NAME " & pop")	   \
+  if(low_mega_apply(TYPE, 0,						   \
+		    ARG2, ARG3))					   \
+  {									   \
+    Pike_fp->next->pc=pc;						   \
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;  \
+    pc=Pike_fp->pc;							   \
+  }else{								   \
+    pop_stack();							   \
+  }									   \
+BREAK;									   \
+									   \
+OP(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),"mark, " NAME " & return") \
+{									   \
+  if(low_mega_apply(TYPE,0,						   \
+		    ARG2,ARG3))						   \
+  {									   \
+    DO_IF_DEBUG(Pike_fp->next->pc=0);					   \
+    pc=Pike_fp->pc;							   \
+    unlink_previous_frame();						   \
+  }else{								   \
+    goto do_dumb_return;						   \
+  }									   \
+}									   \
 BREAK
 
-OPCODE0(F_CALL_FUNCTION_AND_RETURN, "call function & return")
-{
-  if(low_mega_apply(APPLY_STACK,
-		    DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)),
-		    0,0))
-  {
+
+MKAPPLY(OPCODE1,CALL_LFUN,"call lfun",APPLY_LOW,
+	Pike_fp->current_object,
+	(void *)(arg1+Pike_fp->context.identifier_level));
+
+MKAPPLY(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
+	&((Pike_fp->context.prog->constants + arg1)->sval),0);
+
+MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
+
+
+#undef DO_CALL_BUILTIN
 #ifdef PIKE_DEBUG
-    Pike_fp->next->pc=0;
+#define DO_CALL_BUILTIN(ARGS) do {					 \
+  int args=(ARGS);							 \
+  struct svalue *expected_stack=Pike_sp-args;				 \
+    struct svalue *s=&Pike_fp->context.prog->constants[arg1].sval;	 \
+  if(t_flag>1)								 \
+  {									 \
+    init_buf();								 \
+    describe_svalue(s, 0,0);						 \
+    do_trace_call(args);						 \
+  }									 \
+  (*(s->u.efun->function))(args);					 \
+  if(Pike_sp != expected_stack + !s->u.efun->may_return_void)		 \
+  {									 \
+    if(Pike_sp < expected_stack)					 \
+      fatal("Function popped too many arguments: %s\n",			 \
+	    s->u.efun->name->str);					 \
+    if(Pike_sp>expected_stack+1)					 \
+      fatal("Function left droppings on stack: %s\n",			 \
+	    s->u.efun->name->str);					 \
+    if(Pike_sp == expected_stack && !s->u.efun->may_return_void)	 \
+      fatal("Non-void function returned without return value "		 \
+	    "on stack: %s %d\n",					 \
+	    s->u.efun->name->str,s->u.efun->may_return_void);		 \
+    if(Pike_sp==expected_stack+1 && s->u.efun->may_return_void)		 \
+      fatal("Void function returned with a value on the stack: %s %d\n", \
+	    s->u.efun->name->str, s->u.efun->may_return_void);		 \
+  }									 \
+  if(t_flag>1 && Pike_sp>expected_stack) trace_return_value();		 \
+}while(0)
+#else
+#define DO_CALL_BUILTIN(ARGS) \
+(*(Pike_fp->context.prog->constants[arg1].sval.u.efun->function))(ARGS)
 #endif
-    pc=Pike_fp->pc;
-    unlink_previous_frame();
-  }else{
-    goto do_dumb_return;
-  }
+
+OPCODE1(F_CALL_BUILTIN,"call builtin")
+{
+  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
 }
 BREAK;
+
+OPCODE1(F_CALL_BUILTIN_AND_POP,"call builtin & pop")
+{
+  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  pop_stack();
+}
+BREAK;
+
+OPCODE1(F_CALL_BUILTIN_AND_RETURN,"call builtin & return")
+{
+  DO_CALL_BUILTIN(DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
+  goto do_dumb_return;
+}
+BREAK;
+
+
+OPCODE1(F_MARK_CALL_BUILTIN,"mark, call builtin")
+{
+  DO_CALL_BUILTIN(0);
+}
+BREAK;
+
+OPCODE1(F_MARK_CALL_BUILTIN_AND_POP,"mark, call builtin & pop")
+{
+  DO_CALL_BUILTIN(0);
+  pop_stack();
+}
+BREAK;
+
+OPCODE1(F_MARK_CALL_BUILTIN_AND_RETURN,"mark, call builtin & return")
+{
+  DO_CALL_BUILTIN(0);
+  goto do_dumb_return;
+}
+BREAK;
+
+
 
 /* Assume that the number of arguments is correct */
 OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
