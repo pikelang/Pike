@@ -46,20 +46,5 @@ cond([[ Nettle->AES_State ]], [[
   	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
   	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
 ]])
-
-cond([[ Nettle->aes ]], [[
-  test_true([[objectp(Nettle.aes())]])
-  test_eq([[Nettle.aes()
-  	    ->set_encrypt_key(String.hex2string(
-  		  "00010203050607080A0B0C0D0F101112"))
-  	    ->crypt(String.hex2string("506812A45F08C889B97F5980038B8359"))]],
-  	  [[String.hex2string("D8F532538289EF7D06B506A4FD5BE9C9")]])
-  
-  test_eq([[Nettle.aes()
-  	    ->set_decrypt_key(String.hex2string(
-  		  "14151617191A1B1C1E1F202123242526"))
-  	    ->crypt(String.hex2string("59AB30F4D4EE6E4FF9907EF65B1FB68C"))]],
-  	  [[String.hex2string("5C6D71CA30DE8B8B00549984D2EC7D4B")]])
-]])
 	  
 dnl test_false(Process.system(RUNPIKE+" SRCDIR/rijndaeltest.pike --quick"))
