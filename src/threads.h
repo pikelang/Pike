@@ -109,7 +109,7 @@ extern struct object *thread_id;
 
 #define th_setconcurrency(X) thr_setconcurrency(X)
 
-#define th_create(ID,fun,arg) thr_create(NULL,0,fun,arg,THR_DAEMON,ID)
+#define th_create(ID,fun,arg) thr_create(NULL,0,fun,arg,THR_DAEMON|THR_DETACHED,ID)
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
 #define th_yield() thr_yield()
