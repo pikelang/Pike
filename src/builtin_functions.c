@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.485 2003/04/27 12:08:37 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.486 2003/04/27 14:13:52 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.485 2003/04/27 12:08:37 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.486 2003/04/27 14:13:52 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2605,10 +2605,8 @@ PMOD_EXPORT void f_next_object(INT32 args)
 /*! @decl program|function object_program(mixed o)
  *!
  *!   Return the program from which @[o] was instantiated. If the
- *!   object was instantiated from an unnamed program, the
- *!   generating function will be returned. E.g.
- *!   @expr{object_program(class { }())@} will return the @i{function@}
- *!   "class {}".
+ *!   object was instantiated from a class using parent references
+ *!   the generating function will be returned.
  *!
  *!   If @[o] is not an object or has been destructed @expr{0@} (zero)
  *!   will be returned.
@@ -4118,7 +4116,7 @@ PMOD_EXPORT void f_localtime(INT32 args)
 #ifdef HAVE_MKTIME
 /*! @decl int mktime(mapping(string:int) tm)
  *! @decl int mktime(int sec, int min, int hour, int mday, int mon, int year, @
- *!                  int isdst, int tz)
+ *!                  int|void isdst, int|void tz)
  *!
  *!   This function converts information about date and time into an integer
  *!   which contains the number of seconds since 00:00:00 UTC, Jan 1, 1970.
