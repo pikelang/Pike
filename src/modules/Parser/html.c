@@ -121,6 +121,16 @@ enum types {TYPE_TAG, TYPE_CONT, TYPE_ENTITY, TYPE_QTAG, TYPE_DATA};
 /* flag: debug output */
 #define FLAG_DEBUG_MODE			0x00000040
 
+/* flag: xml tag syntax */
+#define FLAG_XML_TAGS			0x00000080
+
+/* flag: strict html or xml syntax, corresponding to flags 0 or 3 to
+ * the xml_tag_syntax() function */
+#define FLAG_STRICT_TAGS		0x00000100
+
+/* flag: allow whitespace before the tag name */
+#define FLAG_WS_BEFORE_TAG_NAME		0x00000200
+
 struct parser_html_storage
 {
 /*--- current state -----------------------------------------------*/
@@ -167,7 +177,7 @@ struct parser_html_storage
    /* flag bitfield; see FLAG_* above */
    int flags;
 
-   p_wchar2 tag_start,tag_end;
+   p_wchar2 tag_start,tag_end,tag_fin; /* tag_fin is the '/'s in <t/><c></c> */
    p_wchar2 entity_start,entity_end;
    int nargq;
 #define MAX_ARGQ 8
@@ -181,20 +191,20 @@ struct parser_html_storage
    int n_ws;
 
    /* pre-calculated */
-   /* whitespace + end argument ('=' and '>') */
+   /* whitespace + end argument ('=', '>' and '/') */
    p_wchar2 *ws_or_endarg; 
    int n_ws_or_endarg;
 
-   /* whitespace + end argument ('=' and '>') + start quote*/
+   /* whitespace + end argument ('=', '>' and '/') + start quote */
    p_wchar2 *ws_or_endarg_or_quote; 
    int n_ws_or_endarg_or_quote;
 
-   /* end of tag, arg_eq or start of arg quote */
-   p_wchar2 look_for_start[MAX_ARGQ+4];
+   /* end argument ('=', '>' and '/') + start quote */
+   p_wchar2 look_for_start[MAX_ARGQ+5];
    int num_look_for_start;
 
    /* end(s) of _this_ arg quote */
-   p_wchar2 look_for_end[MAX_ARGQ][MAX_ARGQ+2];
+   p_wchar2 look_for_end[MAX_ARGQ][MAX_ARGQ+3];
    int num_look_for_end[MAX_ARGQ];
 };
 
@@ -202,12 +212,13 @@ struct parser_html_storage
 #define DEF_WS		' ', '\n', '\r', '\t', '\v'
 #define DEF_TAG_START	'<'
 #define DEF_TAG_END	'>'
+#define DEF_TAG_FIN	'/'
 #define DEF_ENT_START	'&'
 #define DEF_ENT_END	';'
 #define DEF_ARGQ_STARTS	'\"', '\''
 #define DEF_ARGQ_STOPS	'\"', '\''
 #define DEF_EQ		'='
-#define DEF_LAZY_EENDS	DEF_WS, DEF_TAG_START, DEF_TAG_END, \
+#define DEF_LAZY_EENDS	DEF_WS, DEF_TAG_START, DEF_TAG_END, DEF_TAG_FIN, \
 			DEF_ENT_START, DEF_ENT_END, DEF_ARGQ_STARTS, DEF_EQ
 
 /* P_WAIT was already used by MSVC++ :(  /Hubbe */
@@ -327,15 +338,17 @@ void reset_feed(struct parser_html_storage *this)
 static void recalculate_argq(struct parser_html_storage *this)
 {
    int n,i,j,k;
+   int check_fin = (this->flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) != FLAG_STRICT_TAGS;
 
    /* prepare look for start of argument quote or end of tag */
    this->look_for_start[0]=this->tag_end;
    this->look_for_start[1]=this->arg_eq;
-   if (this->flags & FLAG_MATCH_TAG) {
-     this->look_for_start[2]=this->tag_start;
-     n=3;
+   this->look_for_start[2]=this->tag_start;
+   if (check_fin) {
+     this->look_for_start[3]=this->tag_fin;
+     n=4;
    }
-   else n=2;
+   else n=3;
    for (i=0; i<this->nargq; i++)
    {
       for (j=0; j<n; j++)
@@ -360,25 +373,28 @@ found_start:
    found_end:
 	    ;
 	 }
-      if (this->flags & FLAG_LAZY_END_ARG_QUOTE)
+      if (this->flags & FLAG_LAZY_END_ARG_QUOTE) {
 	 this->look_for_end[k][n++]=this->tag_end;
+	 if (check_fin) this->look_for_end[k][n++]=this->tag_fin;
+      }
 
       this->num_look_for_end[k]=n;
    }
 
-   if (THIS->ws_or_endarg) 
+   if (THIS->ws_or_endarg)
    {
       free(THIS->ws_or_endarg);
       THIS->ws_or_endarg=NULL;
    }
-   THIS->n_ws_or_endarg=THIS->n_ws+(THIS->flags & FLAG_MATCH_TAG ? 3 : 2);
+   n = check_fin ? 4 : 3;
+   THIS->n_ws_or_endarg=THIS->n_ws+n;
    THIS->ws_or_endarg=(p_wchar2*)xalloc(sizeof(p_wchar2)*THIS->n_ws_or_endarg);
-   MEMCPY(THIS->ws_or_endarg+(THIS->flags & FLAG_MATCH_TAG ? 3 : 2),
+   MEMCPY(THIS->ws_or_endarg+n,
 	  THIS->ws,THIS->n_ws*sizeof(p_wchar2));
    THIS->ws_or_endarg[0]=THIS->arg_eq;
    THIS->ws_or_endarg[1]=THIS->tag_end;
-   if (THIS->flags & FLAG_MATCH_TAG)
-      THIS->ws_or_endarg[2]=THIS->tag_start;
+   THIS->ws_or_endarg[2]=THIS->tag_start;
+   if (check_fin) THIS->ws_or_endarg[3]=THIS->tag_fin;
 
    if (THIS->ws_or_endarg_or_quote) 
    {
@@ -417,12 +433,13 @@ static void init_html_struct(struct object *o)
    /* default set */
    THIS->tag_start=DEF_TAG_START;
    THIS->tag_end=DEF_TAG_END;
+   THIS->tag_fin=DEF_TAG_FIN;
    THIS->entity_start=DEF_ENT_START;
    THIS->entity_end=DEF_ENT_END;
    THIS->nargq=sizeof(argq_starts)/sizeof(argq_starts[0]);
    MEMCPY(THIS->argq_start,argq_starts,sizeof(argq_starts));
    MEMCPY(THIS->argq_stop,argq_stops,sizeof(argq_stops));
-   THIS->arg_eq='=';
+   THIS->arg_eq=DEF_EQ;
    
    /* allocated stuff */
    THIS->lazy_entity_ends=NULL;
@@ -1130,6 +1147,15 @@ static INLINE void push_feed_range(struct piece *head,
 /* -------------------------------------------------------- */
 /* go forward by adjusting for a positive displacement in c */
 
+#define FORWARD_CHAR(feed, c, dest, dp) do {				\
+  (dest) = (struct piece *) (feed);					\
+  (dp) = (int) (c) + 1;							\
+  while ((dp) == (dest)->s->len && (dest)->next) {			\
+    (dp) = 0;								\
+    (dest) = (dest)->next;						\
+  }									\
+} while (0)
+
 static INLINE int n_pos_forward (struct piece *feed, int c,
 				 struct piece **dest, int *dp)
 {
@@ -1298,6 +1324,17 @@ static int scan_forward(struct piece *feed,
 #define SCAN_DEBUG_MARK_SPOT(A,B,C) do {} while (0);
 #endif
 
+   while (c >= feed->s->len) {
+     c -= feed->s->len;
+     if (!feed->next) {
+       *destp = feed;
+       *d_p = feed->s->len;
+       SCAN_DEBUG_MARK_SPOT("scan_forward end (start offset beyond feed end)",
+			    *destp,*d_p);
+       return 0;
+     }
+     feed = feed->next;
+   }
 
    switch (num_look_for)
    {
@@ -1322,7 +1359,7 @@ static int scan_forward(struct piece *feed,
 		  case 0:
 		  {
 		     p_wchar0*s=((p_wchar0*)feed->s->str)+c;
-		     while (ce-- > 0)
+		     while (ce--)
 			if ((p_wchar2)*(s++)==f)
 			{
 			   c=feed->s->len-ce;
@@ -1333,7 +1370,7 @@ static int scan_forward(struct piece *feed,
 		  case 1:
 		  {
 		     p_wchar1*s=((p_wchar1*)feed->s->str)+c;
-		     while (ce-- > 0)
+		     while (ce--)
 			if ((p_wchar2)*(s++)==f)
 			{
 			   c=feed->s->len-ce;
@@ -1345,7 +1382,7 @@ static int scan_forward(struct piece *feed,
 		  {
 		     p_wchar2 f=(p_wchar2)*look_for;
 		     p_wchar2*s=((p_wchar2*)feed->s->str)+c;
-		     while (ce-- > 0)
+		     while (ce--)
 			if (*(s++)==f)
 			{
 			   c=feed->s->len-ce;
@@ -1373,7 +1410,7 @@ static int scan_forward(struct piece *feed,
 	       {
 		  int n;
 		  p_wchar0*s=((p_wchar0*)feed->s->str)+c;
-		  while (ce-- > 0)
+		  while (ce--)
 		  {
 		     for (n=0; n<num_look_for; n++)
 			if (((p_wchar2)*s)==look_for[n])
@@ -1390,7 +1427,7 @@ static int scan_forward(struct piece *feed,
 	       {
 		  int n;
 		  p_wchar1*s=((p_wchar1*)feed->s->str)+c;
-		  while (ce-- > 0)
+		  while (ce--)
 		  {
 		     for (n=0; n<num_look_for; n++)
 			if (((p_wchar2)*s)==look_for[n])
@@ -1407,7 +1444,7 @@ static int scan_forward(struct piece *feed,
 	       {
 		  int n;
 		  p_wchar2*s=((p_wchar2*)feed->s->str)+c;
-		  while (ce-- > 0)
+		  while (ce--)
 		  {
 		     for (n=2; n<num_look_for; n++)
 			if (((p_wchar2)*s)==look_for[n])
@@ -1436,9 +1473,14 @@ static int scan_forward(struct piece *feed,
    return 0; /* not found */
 
 found:
+   c-=!rev;
+   while (c == feed->s->len && feed->next) {
+     c = 0;
+     feed = feed->next;
+   }
    *destp=feed;
-   *d_p=c-!rev; 
-   SCAN_DEBUG_MARK_SPOT("scan_forward found",feed,c-!rev);
+   *d_p=c;
+   SCAN_DEBUG_MARK_SPOT("scan_forward found",feed,c);
    return 1;
 }
 
@@ -1624,9 +1666,11 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 			       struct piece **destp,
 			       int *d_p,
 			       int finished,
-			       int match_tag)
+			       int match_tag,
+			       int *got_fin)
 /* match_tag == 0: don't match inner tags, > 0: match inner tags, < 0:
- * consider it an unbalanced tag and break */
+ * consider it an unbalanced tag and break. got_fin is assigned
+ * nonzero if there's a '/' before the tag end, zero otherwise. */
 {
    p_wchar2 ch;
    int res,i;
@@ -1639,6 +1683,8 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
    /*       here now             scan here */
 
    DEBUG((stderr,"scan for end of tag: %p:%d\n",feed,c));
+
+   if (got_fin) *got_fin = 0;
 
    for (;;)
    {
@@ -1667,6 +1713,22 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 	 feed=*destp;
 	 c=d_p[0]+1;
 	 continue;
+      }
+
+      if (ch == this->tag_fin && !(match_tag && q)) {
+	DEBUG_MARK_SPOT("scan for end of tag: tag_fin",
+			 destp[0],*d_p);
+	FORWARD_CHAR (*destp, *d_p, feed, c);
+	ch = index_shared_string (feed->s, c);
+	if (ch == this->tag_end) {
+	  if (got_fin) *got_fin = 1;
+	  *destp = feed;
+	  *d_p = c;
+	  DEBUG_MARK_SPOT("scan for end of tag: end by tag_fin + tag_end",
+			  destp[0],*d_p);
+	  return 1;
+	}
+	else continue;
       }
 
       if (ch==this->tag_end)
@@ -2271,7 +2333,6 @@ static newstate quote_tag_callback(struct parser_html_storage *this,
 
 static newstate find_end_of_container(struct parser_html_storage *this,
 				      struct svalue *tagname,
-				      struct svalue *endtagname,
 				      struct piece *feed,int c,
 				      struct piece **e1,int *ce1,
 				      struct piece **e2,int *ce2,
@@ -2280,20 +2341,6 @@ static newstate find_end_of_container(struct parser_html_storage *this,
    struct piece *s1,*s2,*s3;
    int c1,c2,c3;
    newstate res;
-   struct svalue e;
-
-   if (!endtagname)
-   {
-      push_constant_text("/");
-      push_svalue(tagname);
-      f_add(2);
-      e=sp[-1];
-      endtagname=&e;
-      sp--;
-      dmalloc_touch_svalue(sp);
-   }
-   else
-      add_ref_svalue(endtagname);
 
    DEBUG_MARK_SPOT("find_end_of_container",feed,c);
 
@@ -2301,13 +2348,12 @@ static newstate find_end_of_container(struct parser_html_storage *this,
    {
       int found;
 
-      DEBUG_MARK_SPOT("find_end_of_cont loop",feed,c);
+      DEBUG_MARK_SPOT("find_end_of_cont : loop",feed,c);
       if (!scan_forward(feed,c,&s1,&c1,&(this->tag_start),1))
       {
 	 if (!finished) 
 	 {
 	    DEBUG_MARK_SPOT("find_end_of_cont : wait",s1,c1);
-	    free_svalue(endtagname);
 	    return STATE_WAIT; /* please wait */
 	 }
 	 else
@@ -2315,29 +2361,30 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	    DEBUG_MARK_SPOT("find_end_of_cont : forced end",s1,c1);
 	    *e1=*e2=s1;
 	    *ce1=*ce2=c1;
-	    free_svalue(endtagname);
 	    return STATE_DONE; /* end of tag, sure... */
 	 }
       }
-      DEBUG_MARK_SPOT("find_end_of_container found tag",s1,c1);
+      DEBUG_MARK_SPOT("find_end_of_cont : found tag",s1,c1);
 
-      /* scan start of tag name */
-      if (!scan_forward(s1,c1+1,&s2,&c2,this->ws,-this->n_ws)) {
-	free_svalue(endtagname);
-	return STATE_WAIT; /* come again */
+      /* scan ws to start of tag name */
+      if (this->flags & FLAG_WS_BEFORE_TAG_NAME) {
+	if (!scan_forward(s1,c1+1,&s2,&c2,this->ws,-this->n_ws)) {
+	  DEBUG_MARK_SPOT("find_end_of_cont : wait at pre tag ws",s2,c2);
+	  return STATE_WAIT; /* come again */
+	}
       }
+      else FORWARD_CHAR (s1, c1, s2, c2);
 
       if (m_sizeof(this->mapqtag)) {
 	/* must check nested quote tags, since they affect the syntax itself */
 	struct svalue *v;
 	if (!quote_tag_lookup(this,s2,c2,&s3,&c3,finished,&v)) {
-	  free_svalue(endtagname);
+	  DEBUG_MARK_SPOT("find_end_of_cont : wait at quote tag",s2,c2);
 	  return STATE_WAIT; /* come again */
 	}
 	if (v) {
 	  DEBUG_MARK_SPOT("find_end_of_cont : quote tag",s2,c2);
 	  if (!scan_for_string(this,s3,c3,&s3,&c3,v[2].u.string)) {
-	    free_svalue(endtagname);
 	    return finished ? STATE_DONE : STATE_WAIT;
 	  }
 	  n_pos_forward(s3,c3+v[2].u.string->len,&feed,&c);
@@ -2346,25 +2393,37 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	}
       }
 
+      /* tag or end tag? */
+      if (index_shared_string (s2->s, c2) == this->tag_fin) {
+	c2++;
+	found = 'e';
+      }
+      else found = 't';
+
       /* scan tag name as argument and push */
       if (!scan_forward_arg(this,s2,c2,&s3,&c3,1,finished))
       {
-	free_svalue(endtagname);
+	DEBUG_MARK_SPOT("find_end_of_cont : wait at tag name",s2,c2);
 	return STATE_WAIT; /* come again */
       }
-      DEBUG_MARK_SPOT("find_end_of_cont : got tag",s2,c2);
+#ifdef DEBUG
+      if (found == 'e')
+	DEBUG_MARK_SPOT("find_end_of_cont : got end tag",s2,c2);
+      else
+	DEBUG_MARK_SPOT("find_end_of_cont : got tag",s2,c2);
+#endif
 
       if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
 	f_lower_case(1);
-      if (is_eq(sp-1,tagname)) found = 't';
-      else if (is_eq(sp-1,endtagname)) found = 'e';
-      else found = 0;
+      if (!is_eq(sp-1,tagname)) found = 0;
 
       /* When we should treat unknown tags as text, we have to parse
        * and lookup just the tag name before continuing. */
       if (!found && (THIS->flags & FLAG_IGNORE_UNKNOWN) &&
 	  (!m_sizeof(this->maptag) || !low_mapping_lookup(this->maptag,sp-1)) &&
 	  (!m_sizeof(this->mapcont) || !low_mapping_lookup(this->mapcont,sp-1))) {
+	/* Known buglet: This doesn't correctly handle the case when a
+	 * tag is registered that begins with the '/' character. */
 	DEBUG((stderr,"find_end_of_cont : treating unknown tag as text\n"));
 	feed = s3;
 	c = c3;
@@ -2374,7 +2433,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
       if (c3 < s3->s->len && index_shared_string (s3->s,c3) == this->tag_start) {
 	struct pike_string *cmp =
-	  string_slice (endtagname->u.string, 0, sp[-1].u.string->len);
+	  string_slice (tagname->u.string, 0, sp[-1].u.string->len);
 	if (cmp == sp[-1].u.string) {
 	  DEBUG_MARK_SPOT("find_end_of_cont : skipping open endtag prefix",s2,c2);
 	  free_string (cmp);
@@ -2389,23 +2448,22 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       pop_stack();
 
       if (!scan_for_end_of_tag(this,s3,c3,&s2,&c2,finished,
-			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG))
+			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG, NULL))
       {
-	 free_svalue(endtagname);
+	DEBUG_MARK_SPOT("find_end_of_cont : wait at tag end",s2,c2);
 	 return STATE_WAIT;
       }
 
       switch (found) {
 	case 't': /* push a new level */
 	 DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2+1);
-	 res=find_end_of_container(this,tagname,endtagname,
+	 res=find_end_of_container(this,tagname,
 				   s2,++c2,e1,ce1,&feed,&c,finished);
 	 DEBUG_MARK_SPOT("find_end_of_cont : push end",feed,c);
 	 if (res)
 	 {
-	    DEBUG((stderr,"find_end_of_cont (pushed) return %d %p:%d\n",
+	    DEBUG((stderr,"find_end_of_cont : (pushed) return %d %p:%d\n",
 		   res,s1,c1));
-	    free_svalue(endtagname);
 	    return res;
 	 }
 	 break;
@@ -2418,10 +2476,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	   continue;
 	 }
 
-	 free_svalue(endtagname);
-	 
-	 DEBUG_MARK_SPOT("find_end_of_cont got cont end   --> ",s1,c1);
-	 DEBUG_MARK_SPOT("find_end_of_cont got endtag end --> ",s2,c2);
+	 DEBUG_MARK_SPOT("find_end_of_cont : got cont end   --> ",s1,c1);
+	 DEBUG_MARK_SPOT("find_end_of_cont : got endtag end --> ",s2,c2);
 
 	 *e1=s1;
 	 *ce1=c1;
@@ -2452,6 +2508,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
    struct piece *dst;
    int cdst;
    newstate res;
+   int flags = this->flags;
    int got_data=0;
 
    int scan_entity,scan_tag;
@@ -2570,32 +2627,34 @@ static newstate do_try_feed(struct parser_html_storage *this,
       ch=index_shared_string(feed[0]->s,st->c);
       if (scan_tag && ch==this->tag_start) /* tag */
       {
-	 struct svalue *v;
-
 	 DEBUG((stderr,"%*d do_try_feed scan tag %p:%d\n",
 		this->stack_count,this->stack_count,
 		*feed,st->c));
 
-	 /* scan start of tag name */
-	 if (!scan_forward(*feed,st->c+1,&dst,&cdst,
-			   this->ws,-this->n_ws))
-	 {
-	   st->ignore_data=1;
-	   return STATE_WAIT; /* come again */
+	 /* skip ws to start of tag name */
+	 if (flags & FLAG_WS_BEFORE_TAG_NAME) {
+	   if (!scan_forward(*feed,st->c+1,&dst,&cdst,
+			     this->ws,-this->n_ws))
+	   {
+	     st->ignore_data=1;
+	     return STATE_WAIT; /* come again */
+	   }
 	 }
+	 else FORWARD_CHAR (*feed, st->c, dst, cdst);
 
 	 if (m_sizeof(this->mapqtag)) {
 	   struct piece *e1,*e2; /* <![CDATA[ ... ]]>  */
 	   int ce1,ce2;          /*       e1 ^    ^ e2 */
+	   struct svalue *entry;
 
-	   if (!quote_tag_lookup(this,dst,cdst,&e1,&ce1,finished,&v)) {
+	   if (!quote_tag_lookup(this,dst,cdst,&e1,&ce1,finished,&entry)) {
 	     st->ignore_data=1;
 	     return STATE_WAIT; /* come again */
 	   }
 
-	   if (v) {		/* quote tag */
-	     if (scan_for_string(this,e1,ce1,&e2,&ce2,v[2].u.string))
-	       n_pos_forward(e2,ce2+v[2].u.string->len,&dst,&cdst);
+	   if (entry) {		/* quote tag */
+	     if (scan_for_string(this,e1,ce1,&e2,&ce2,entry[2].u.string))
+	       n_pos_forward(e2,ce2+entry[2].u.string->len,&dst,&cdst);
 	     else {
 	       if (!finished) {
 		 st->ignore_data=1;
@@ -2605,7 +2664,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       cdst = ce2;
 	     }
 
-	     if ((res=quote_tag_callback(this,thisobj,v+1,
+	     push_svalue(entry+1);
+	     if ((res=quote_tag_callback(this,thisobj,sp-1,
 					 e1,ce1,e2,ce2,
 					 st,feed,&(st->c),dst,cdst)))
 	     {
@@ -2613,6 +2673,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 		      this->stack_count,this->stack_count,
 		      res,*feed,st->c));
 	       st->ignore_data=(res==STATE_WAIT);
+	       pop_stack();
 	       return res;
 	     }
 
@@ -2620,6 +2681,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 		    this->stack_count,this->stack_count,
 		    *feed,st->c));
 
+	     pop_stack();
 	     goto done;
 	   }
 	 }
@@ -2634,23 +2696,74 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 if (m_sizeof(this->maptag) ||
 	     m_sizeof(this->mapcont))
 	 {
-	    if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
-	      f_lower_case(1);
-	    v=low_mapping_lookup(this->maptag,sp-1);
-	    if (v) /* tag */
+	    int empty_tag;
+	    struct svalue *tag, *cont;
+	    struct piece *e1,*e2; /* <tag> ... </tag>     */
+	    int ce1,ce2;          /*        e1 ^     ^ e2 */
+
+	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,finished,
+				     flags & FLAG_MATCH_TAG, &empty_tag))
 	    {
-	       pop_stack();
+	      st->ignore_data=1;
+	      pop_stack();
+	      return STATE_WAIT; /* come again */
+	    }
 
-	       if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-					finished,this->flags & FLAG_MATCH_TAG))
+	    if (flags & FLAG_CASE_INSENSITIVE_TAG)
+	      f_lower_case(1);
+
+	    tag = NULL, cont = NULL;
+	    if (flags & FLAG_XML_TAGS) { /* decide what to do from tag syntax */
+	      if (empty_tag) {	/* <foo/> */
+		tag=low_mapping_lookup(this->maptag,sp-1);
+		if (!tag) cont=low_mapping_lookup(this->mapcont,sp-1);
+	      }
+	      else {		/* <foo> */
+		cont=low_mapping_lookup(this->mapcont,sp-1);
+		if (!cont) {
+		  tag=low_mapping_lookup(this->maptag,sp-1);
+		  if (!(flags & FLAG_STRICT_TAGS)) empty_tag = 1;
+		}
+	      }
+	    }
+	    else {		/* decide what to do from registered callbacks */
+	      tag=low_mapping_lookup(this->maptag,sp-1);
+	      if (!tag) {
+		cont=low_mapping_lookup(this->mapcont,sp-1);
+		empty_tag = 0;
+	      }
+	      else empty_tag = 1;
+	    }
+
+	    if (empty_tag) {	/* no content */
+	      e1 = e2 = dst;
+	      ce1 = ce2 = cdst+1;
+	      pop_stack();
+	    }
+	    else {
+	       /* this is the hardest part : find the corresponding end tag */
+
+	       if ((res=find_end_of_container(this,
+					      sp-1,
+					      dst,cdst+1,
+					      &e1,&ce1,&e2,&ce2,
+					      finished)))
 	       {
-		 st->ignore_data=1;
-		 return STATE_WAIT; /* come again */
+		  DEBUG((stderr,"%*d find end of cont return %d %p:%d\n",
+			 this->stack_count,this->stack_count,
+			 res,*feed,st->c));
+		  st->ignore_data=(res==STATE_WAIT);
+		  pop_stack();
+		  return res;
 	       }
+	       pop_stack();
+	    }
 
+	    if (tag) /* tag callback */
+	    {
 	       /* low-level tag call */
-	       if ((res=tag_callback(this,thisobj,v,
-				     st,feed,&(st->c),dst,cdst+1)))
+	       if ((res=tag_callback(this,thisobj,tag,
+				     st,feed,&(st->c),e2,ce2)))
 	       {
 		  DEBUG((stderr,"%*d tag callback return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
@@ -2665,40 +2778,11 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	       goto done;
 	    }
-	    v=low_mapping_lookup(this->mapcont,sp-1);
-	    if (v) /* container */
+
+	    else if (cont) /* container callback */
 	    {
-	       struct piece *e1,*e2; /* <tag> ... </tag>     */
-	       int ce1,ce2;          /*        e1 ^     ^ e2 */
-
-	       if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-					finished,this->flags & FLAG_MATCH_TAG))
-	       {
-		 st->ignore_data=1;
-		 pop_stack();
-		 return STATE_WAIT; /* come again */
-	       }
-
-	       /* this is the hardest part : find the corresponding end tag */
-
-	       if ((res=find_end_of_container(this,
-					      sp-1,
-					      NULL,
-					      dst,cdst+1,
-					      &e1,&ce1,&e2,&ce2,
-					      finished)))
-	       {
-		  DEBUG((stderr,"%*d find end of cont return %d %p:%d\n",
-			 this->stack_count,this->stack_count,
-			 res,*feed,st->c));
-		  st->ignore_data=(res==STATE_WAIT);
-		  pop_stack();
-		  return res;
-	       }
-	       pop_stack();
-
 	       /* low-level container call */
-	       if ((res=container_callback(this,thisobj,v,
+	       if ((res=container_callback(this,thisobj,cont,
 					   dst,cdst+1,e1,ce1,
 					   st,feed,&(st->c),e2,ce2)))
 	       {
@@ -2712,14 +2796,14 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	       goto done;
 	    }
 	 }
-	 pop_stack();
+	 else pop_stack();
 
 	 dmalloc_touch_svalue(&(this->callback__tag));
 
 	 if (this->callback__tag.type!=T_INT && !ignore_tag_cb)
 	 {
-	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				     finished,this->flags & FLAG_MATCH_TAG))
+	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,finished,
+				     flags & FLAG_MATCH_TAG,NULL))
 	    {
 	       st->ignore_data=1;
 	       return STATE_WAIT; /* come again */
@@ -2746,7 +2830,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
 	 }
-	 else if (this->flags & FLAG_IGNORE_UNKNOWN) {
+	 else if (flags & FLAG_IGNORE_UNKNOWN) {
 	   /* Send it to callback__data. */
 	   dst=*feed;
 	   cdst=st->c+1;
@@ -2755,8 +2839,8 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 }
 	 else
 	 {
-	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				     finished,this->flags & FLAG_MATCH_TAG))
+	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,finished,
+				     flags & FLAG_MATCH_TAG,NULL))
 	      return STATE_WAIT; /* come again */
 
 	    put_out_feed_range(this,*feed,st->c,dst,cdst+1);
@@ -2771,7 +2855,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 		*feed,st->c));
 	 /* just search for end of entity */
 
-	 if (this->flags & FLAG_LAZY_ENTITY_END) {
+	 if (flags & FLAG_LAZY_ENTITY_END) {
 	   end_found=scan_forward(*feed,st->c+1,&dst,&cdst,
 				  this->lazy_entity_ends,this->n_lazy_entity_ends);
 	   if (end_found && index_shared_string(dst->s,cdst) != this->entity_end) {
@@ -2850,7 +2934,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
 	 }
-	 else if (this->flags & FLAG_IGNORE_UNKNOWN) {
+	 else if (flags & FLAG_IGNORE_UNKNOWN) {
 	   /* Send it to callback__data. */
 	   dst=*feed;
 	   cdst=st->c+1;
@@ -3300,9 +3384,12 @@ static void tag_name(struct parser_html_storage *this,struct piece *feed,int c)
    p_wchar2 ch=index_shared_string(feed->s,c);
    if (ch==this->tag_start) c++;
 
-   /* scan start of tag name */
-   scan_forward(feed,c,&s1,&c1,
-		this->ws,-this->n_ws);
+   /* scan ws to start of tag name */
+   if (this->flags & FLAG_WS_BEFORE_TAG_NAME)
+     scan_forward(feed,c,&s1,&c1,
+		  this->ws,-this->n_ws);
+   else
+     s1 = feed, c1 = c;
 
    /* scan as argument and push*/
    scan_forward_arg(this,s1,c1,&s2,&c2,1,1);
@@ -3318,6 +3405,7 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
 		     struct svalue *def)
 {
    struct piece *s1=NULL,*s2=NULL,*s3;
+   int flags = this->flags;
    int c1=0,c2=0,c3;
    int n=0;
 
@@ -3325,8 +3413,11 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
    if (ch==this->tag_start) c++;
 
    /* scan past tag name */
-   scan_forward(feed,c,&s1,&c1,
-		this->ws,-this->n_ws);
+   if (flags & FLAG_WS_BEFORE_TAG_NAME)
+     scan_forward(feed,c,&s1,&c1,
+		  this->ws,-this->n_ws);
+   else
+     s1 = feed, c1 = c;
    scan_forward_arg(this,s1,c1,&s2,&c2,0,1);
 
    for (;;)
@@ -3338,7 +3429,20 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
       if (c1==s1->s->len) /* end<tm> */
 	 break;
       ch=index_shared_string(s1->s,c1);
-      if (ch==this->tag_end) /* end */
+      if ((flags & (FLAG_STRICT_TAGS|FLAG_XML_TAGS)) != FLAG_STRICT_TAGS &&
+	  ch==this->tag_fin) {
+	FORWARD_CHAR(s1, c1, s3, c3);
+	if (c3==s3->s->len || index_shared_string(s3->s,c3)==this->tag_end)
+	  break;
+	else if (n && s1==s2 && c1==c2) { /* previous arg value didn't really end */
+	  DEBUG_MARK_SPOT("html_tag_args arg val continues",s3,c3);
+	  push_string (make_shared_binary_string2 (&this->tag_fin, 1));
+	  scan_forward_arg (this,s3,c3,&s2,&c2,1,1);
+	  f_add (3);
+	  continue;
+	}
+      }
+      else if (ch==this->tag_end) /* end */
 	 break;
 
 new_arg:
@@ -3347,24 +3451,43 @@ new_arg:
 
       /* scan this argument name and push*/
       scan_forward_arg(this,s1,c1,&s2,&c2,1,1);
-      if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
+      if (flags & FLAG_CASE_INSENSITIVE_TAG)
 	f_lower_case(1);
       n++;
 
-      /* scan for '=', '>' or next argument */
-      /* skip whitespace */
-      scan_forward(s2,c2,&s3,&c3,this->ws,-this->n_ws);
-      if (c3==s3->s->len) /* end<tm> */
-      {
-	 tag_push_default_arg(def);
-	 break;
-      }
-      ch=index_shared_string(s3->s,c3);
+      do {
+	/* scan for '=', '>' or next argument */
+	/* skip whitespace */
+	scan_forward(s2,c2,&s3,&c3,this->ws,-this->n_ws);
+	if (c3==s3->s->len) /* end<tm> */
+	{
+	  tag_push_default_arg(def);
+	  goto done;
+	}
+
+	ch=index_shared_string(s3->s,c3);
+
+	if (ch==this->tag_fin && s2==s3 && c2==c3) {
+	  /* a '/' that might have been part of the argument name */
+	  FORWARD_CHAR (s3, c3, s1, c1);
+	  ch = index_shared_string (s1->s,c1);
+	  if (ch == this->tag_end) break;
+	  DEBUG_MARK_SPOT("html_tag_args arg name continues",s1,c1);
+	  push_string (make_shared_binary_string2 (&this->tag_fin, 1));
+	  scan_forward_arg (this,s1,c1,&s2,&c2,1,1);
+	  if (flags & FLAG_CASE_INSENSITIVE_TAG)
+	    f_lower_case(1);
+	  f_add (3);
+	}
+	else break;
+      } while (1);
+
       if (ch==this->tag_end) /* end */
       {
 	 tag_push_default_arg(def);
 	 break;
       }
+
       if (ch!=this->arg_eq)
 	if (c1!=c3 || s1!=s3)	/* end of _this_ argument */
 	{
@@ -3395,6 +3518,7 @@ new_arg:
       c2 = c1;
    }
 
+done:
    f_aggregate_mapping(n*2);
 }
 
@@ -3430,7 +3554,10 @@ static void html_tag_name(INT32 args)
        struct svalue *v;
        struct piece *beg;
        int cbeg;
-       scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg, THIS->ws, -THIS->n_ws);
+       if (THIS->flags & FLAG_WS_BEFORE_TAG_NAME)
+	 scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg, THIS->ws, -THIS->n_ws);
+       else
+	 beg = THIS->start, cbeg = THIS->cstart + 1;
        quote_tag_lookup (THIS, beg, cbeg, &beg, &cbeg, 1, &v);
        if (!v) push_int (0);
        else push_svalue (v);
@@ -3467,14 +3594,15 @@ static void html_tag_args(INT32 args)
 
 static void html_tag_content(INT32 args)
 {
-  struct piece *beg;
-  int cbeg;
+  struct piece *beg = THIS->start;
+  int cbeg = THIS->cstart+1;
 
   pop_n_elems(args);
 
   if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
 
-  if (!scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg, THIS->ws, -THIS->n_ws)) {
+  if (THIS->flags & FLAG_WS_BEFORE_TAG_NAME &&
+      !scan_forward (beg, cbeg, &beg, &cbeg, THIS->ws, -THIS->n_ws)) {
     push_int(0);
     return;
   }
@@ -3485,8 +3613,8 @@ static void html_tag_content(INT32 args)
       int cend, cdummy;
       if (scan_forward_arg (THIS, beg, cbeg, &beg, &cbeg, 1, 1)) {
 	if (scan_for_end_of_tag (THIS, beg, cbeg, &beg, &cbeg, 1,
-				 THIS->flags & FLAG_MATCH_TAG) &&
-	    !find_end_of_container (THIS, sp-1, NULL, beg, cbeg+1,
+				 THIS->flags & FLAG_MATCH_TAG, NULL) &&
+	    !find_end_of_container (THIS, sp-1, beg, cbeg+1,
 				    &end, &cend, &dummy, &cdummy, 1)) {
 	  pop_stack();
 	  if (cmp_feed_pos (end, cend, THIS->end, THIS->cend) < 0)
@@ -3808,10 +3936,13 @@ static void html_get_extra(INT32 args)
 
 /*
 **! method int case_insensitive_tag(void|int value)
+**! method int lazy_argument_end(void|int value)
 **! method int lazy_entity_end(void|int value)
 **! method int match_tag(void|int value)
 **! method int mixed_mode(void|int value)
 **! method int ignore_unknown(void|int value)
+**! method int xml_tag_syntax(void|int value)
+**! method int ws_before_tag_name(void|int value)
 **!	Functions to query or set flags. These set the associated flag
 **!	to the value if any is given and returns the old value.
 **!
@@ -3825,11 +3956,14 @@ static void html_get_extra(INT32 args)
 **!	back won't preserve the case of registered tags and
 **!	containers.
 **!
+**!	<li><b>lazy_argument_end</b>: A '>' in a tag argument closes
+**!	both the argument and the tag, even if the argument is quoted.
+**!
 **!	<li><b>lazy_entity_end</b>: Normally, the parser search
 **!	indefinitely for the entity end character (i.e. ';'). When
 **!	this flag is set, the characters '&', '<', '>', '"', ''', and
 **!	any whitespace breaks the search for the entity end, and the
-**!	entity text is then treated as data.
+**!	entity text is then ignored, i.e. treated as data.
 **!
 **!	<li><b>match_tag</b>: Unquoted nested tag starters and enders
 **!	will be balanced when parsing tags. This is the default.
@@ -3840,6 +3974,31 @@ static void html_get_extra(INT32 args)
 **!	<li><b>ignore_unknown</b>: Treat unknown tags and entities as
 **!	text data, continuing parsing for tags and entities inside
 **!	them.
+**!
+**!	<li><b>xml_tag_syntax</b>: Whether or not to use XML syntax to
+**!	tell empty tags and container tags apart:
+**!	<ul>
+**!	  <li><b>0</b>: Use HTML syntax only. If there's a '/' last in
+**!	    a tag, it's just treated as any other argument.
+**!	  <li><b>1</b>: Use HTML syntax, but ignore a '/' if it comes
+**!	    last in a tag. This is the default.
+**!	  <li><b>2</b>: Use XML syntax, but when a tag that does not
+**!	    end with '/>' is found which only got a non-container tag
+**!	    callback, treat it as a non-container (i.e. don't start to
+**!	    seek for the container end).
+**!	  <li><b>3</b>: Use XML syntax only. If a tag got both
+**!	    container and non-container callbacks, the non-container
+**!	    callback is called when the empty element form (i.e. the
+**!	    one ending with '/>') is used, and the container callback
+**!	    otherwise. If only a container callback exists, it gets
+**!	    the empty string as content when there's none to be
+**!	    parsed. If only a non-container callback exists, it will
+**!	    be called (without the content argument) for both kinds of
+**!	    tags.
+**!	</ul>
+**!
+**!	<li><b>ws_before_tag_name</b>: Allow whitespace between the
+**!	tag start character and the tag name.
 **!
 **!	Note: When functions are specified with
 **!	<ref>_set_tag_callback</ref>() or
@@ -3887,6 +4046,19 @@ static void html_case_insensitive_tag(INT32 args)
    push_int(o);
 }
 
+static void html_lazy_argument_end(INT32 args)
+{
+   int o=THIS->flags & FLAG_LAZY_END_ARG_QUOTE;
+   check_all_args("lazy_argument_end",args,BIT_VOID|BIT_INT,0);
+   if (args) {
+     if (sp[-args].u.integer) THIS->flags |= FLAG_LAZY_END_ARG_QUOTE;
+     else THIS->flags &= ~FLAG_LAZY_END_ARG_QUOTE;
+     recalculate_argq(THIS);
+   }
+   pop_n_elems(args);
+   push_int(o);
+}
+
 static void html_lazy_entity_end(INT32 args)
 {
    int o=THIS->flags & FLAG_LAZY_ENTITY_END;
@@ -3927,6 +4099,41 @@ static void html_ignore_unknown(INT32 args)
    if (args)
      if (sp[-args].u.integer) THIS->flags |= FLAG_IGNORE_UNKNOWN;
      else THIS->flags &= ~FLAG_IGNORE_UNKNOWN;
+   pop_n_elems(args);
+   push_int(o);
+}
+
+static void html_xml_tag_syntax(INT32 args)
+{
+   int o=THIS->flags;
+   check_all_args("xml_tag_syntax",args,BIT_VOID|BIT_INT,0);
+   if (args) {
+     THIS->flags &= ~(FLAG_XML_TAGS|FLAG_STRICT_TAGS);
+     switch (sp[-args].u.integer) {
+       case 0: THIS->flags |= FLAG_STRICT_TAGS; break;
+       case 1: break;
+       case 2: THIS->flags |= FLAG_XML_TAGS; break;
+       case 3: THIS->flags |= FLAG_XML_TAGS|FLAG_STRICT_TAGS; break;
+       default:
+	 SIMPLE_BAD_ARG_ERROR ("xml_tag_syntax", 1, "integer 0..3");
+     }
+     recalculate_argq(THIS);
+   }
+   pop_n_elems(args);
+   if (o & FLAG_XML_TAGS)
+     o = o & FLAG_STRICT_TAGS ? 3 : 2;
+   else
+     o = o & FLAG_STRICT_TAGS ? 0 : 1;
+   push_int(o);
+}
+
+static void html_ws_before_tag_name(INT32 args)
+{
+   int o=THIS->flags & FLAG_WS_BEFORE_TAG_NAME;
+   check_all_args("ws_before_tag_name",args,BIT_VOID|BIT_INT,0);
+   if (args)
+     if (sp[-args].u.integer) THIS->flags |= FLAG_WS_BEFORE_TAG_NAME;
+     else THIS->flags &= ~FLAG_WS_BEFORE_TAG_NAME;
    pop_n_elems(args);
    push_int(o);
 }
@@ -4035,6 +4242,8 @@ void init_parser_html(void)
 
    ADD_FUNCTION("case_insensitive_tag",html_case_insensitive_tag,
 		tFunc(tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("lazy_argument_end",html_lazy_argument_end,
+		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("lazy_entity_end",html_lazy_entity_end,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("match_tag",html_match_tag,
@@ -4042,6 +4251,10 @@ void init_parser_html(void)
    ADD_FUNCTION("mixed_mode",html_mixed_mode,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("ignore_unknown",html_ignore_unknown,
+		tFunc(tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("xml_tag_syntax",html_xml_tag_syntax,
+		tFunc(tOr(tVoid,tInt),tInt03),0);
+   ADD_FUNCTION("ws_before_tag_name",html_ws_before_tag_name,
 		tFunc(tOr(tVoid,tInt),tInt),0);
 #ifdef DEBUG
    ADD_FUNCTION("debug_mode",html_debug_mode,
