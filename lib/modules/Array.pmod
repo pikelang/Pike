@@ -138,7 +138,8 @@ array sum_arrays(function(mixed ...:mixed) sum, array ... args)
 //! If @[cmp] is omitted, @[`>()] is used instead.
 //!
 //! @seealso
-//! @[map()], @[sort()], @[`>()], @[dwim_sort_func], @[lyskom_sort_func]
+//! @[map()], @[sort()], @[`>()], @[dwim_sort_func], @[lyskom_sort_func],
+//! @[oid_sort_func]
 //!
 array sort_array(array foo, function|void cmp, mixed ... args)
 {
@@ -550,7 +551,7 @@ array flatten(array a)
 mixed sum(array a)
 {
   if(a==({})) return 0;
-// 1000 is a safe stack limit
+  // 1000 is a safe stack limit
    if (sizeof(a)<1000)
       return `+(@a);
    else
@@ -605,6 +606,8 @@ array arrayify(void|array|mixed x)
 
 //! Sort with care of numerical sort for OID values:
 //! "1.2.1" before "1.11.1"
+//! @seealso
+//!   @[sort_array]
 int oid_sort_func(string a0,string b0)
 {
     string a2="",b2="";
