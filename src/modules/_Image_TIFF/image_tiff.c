@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.4 1999/04/10 03:16:03 per Exp $");
+RCSID("$Id: image_tiff.c,v 1.5 1999/04/14 19:13:19 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -396,12 +396,16 @@ void low_image_tiff_decode( struct buffer *buf,
       else 
       {
         switch (td->td_photometric) {
+#ifdef PHOTOMETRIC_LOGL
          case PHOTOMETRIC_LOGL:
            push_text("CIE Log2(L)");
            break;
+#endif /* PHOTOMETRIC_LOGL */
+#ifdef PHOTOMETRIC_LOGLUV
          case PHOTOMETRIC_LOGLUV:
            push_text("CIE Log2(L) (u',v')");
            break;
+#endif /* PHOTOMETRIC_LOGLUV */
          default:
            push_text("unkown");
            break;
