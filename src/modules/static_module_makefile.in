@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.30 1998/05/01 15:32:49 hubbe Exp $
+# $Id: static_module_makefile.in,v 1.31 1998/05/17 17:07:47 grubba Exp $
 #
 
 
@@ -15,7 +15,7 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 all: subdirs dummy
 
 subdirs:
-	@for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$? ; else :; fi ; done
+	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo Making $(MODNAME)/$$a ; ( rm $$a/remake >/dev/null 2>&1 ||: ; cd $$a && ( $(MAKE) $(MAKE_FLAGS) || ( test -f remake ; $(MAKE) $(MAKE_FLAGS) ) ) ) || exit $$? ; fi ; done
 
 dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 	@tmp="$(INSTALL_NAME)" ;\
@@ -24,7 +24,7 @@ dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 
 linker_options: Makefile $(MODULE_ARCHIVES)
 	echo >linker_options modules/$(MODNAME)/module.a $(MODULE_LDFLAGS)
-	for a in '' $(MODULE_ARCHIVES) ; do if test ! -z "$$a"; then echo modules/$(MODNAME)/$$a >>linker_options ; else :; fi ; done
+	for a in '' $(MODULE_ARCHIVES) ; do if test "x$$a" = "x"; then :; else echo modules/$(MODNAME)/$$a >>linker_options ; fi ; done
 
 modlist_headers: Makefile
 	echo >modlist_headers "void pike_module_$(MODNAME)_init(void), pike_module_$(MODNAME)_exit(void);"
@@ -53,11 +53,11 @@ module.a: $(OBJS)
 
 clean:
 	-rm -f *.o *.a *.so module.so module.pmod
-	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; else :; fi ; done
+	for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 depend:
 	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-	for a in '' $(MODULE_SUBDIRS) ; do if test ! -z "$$a"; then echo making depend in $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) depend ) ; else :; fi ; done
+	for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo making depend in $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) depend ) ; fi ; done
 
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE)
