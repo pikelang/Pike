@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.14 2002/11/26 12:20:08 grubba Exp $
+ * $Id: module.pmod,v 1.15 2002/11/26 12:44:24 grubba Exp $
  *
  */
 
@@ -579,7 +579,7 @@ string encode_html_entities(string raw)
   while (sizeof(raw)) {
     string tmp;
     int c;
-    if (sscanf(raw, "%[!#-%(-;=?-~]%c%s", tmp, c, raw) > 1) {
+    if (sscanf(raw, "%[!#-%(-;=?-~\241-\377]%c%s", tmp, c, raw) > 1) {
       string enc;
       if (!(enc = rev_html_entities[c])) {
 	enc = sprintf("&#%d;", c);
