@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.4 2003/03/18 15:41:57 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.5 2003/05/07 16:12:17 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -116,7 +116,8 @@ PIKECLASS HashState
    */
   PIKEFUN object update(string data)
     {
-      const struct nettle_hash *meta = GET_META(this_object());
+      const struct nettle_hash *meta =
+	GET_META(Pike_fp->current_object);
 
       if (!THIS->ctx || !meta)
 	Pike_error("hash_state not properly initialized.");
@@ -147,7 +148,7 @@ PIKECLASS HashState
       if (! THIS->ctx)
 	Pike_error("hash_state not properly initialized.");
 
-      meta = GET_META(this_object());
+      meta = GET_META(Pike_fp->current_object);
       assert(meta);
       
       if (!arg)
@@ -179,7 +180,8 @@ PIKECLASS HashState
       werror("HashState->EXIT\n");
       if (THIS->ctx)
       {
-	const struct nettle_hash *meta = GET_META(this_object());
+	const struct nettle_hash *meta =
+	  GET_META(Pike_fp->current_object);
 	assert(meta);
 	memset(THIS->ctx, 0, meta->context_size);
       }
@@ -198,8 +200,8 @@ PIKECLASS MD5_Info
   INIT
     {
       struct HashInfo_struct *HashInfo
-	= (struct HashInfo_struct *) get_storage(this_object(),
-						    HashInfo_program);
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
 
       werror("MD5_Info->INIT\n");
       
@@ -227,8 +229,8 @@ PIKECLASS MD5_State
   INIT
     {
       struct HashState_struct *instance
-	= (struct HashState_struct *) get_storage(this_object(),
-						      HashState_program);
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
       werror("MD5_State->INIT\n");
 
       assert(instance);
@@ -249,8 +251,8 @@ PIKECLASS SHA1_Info
   INIT
     {
       struct HashInfo_struct *HashInfo
-	= (struct HashInfo_struct *) get_storage(this_object(),
-						    HashInfo_program);
+	= (struct HashInfo_struct *) get_storage(Pike_fp->current_object,
+						 HashInfo_program);
 
       werror("SHA1_Info->INIT\n");
       
@@ -279,8 +281,8 @@ PIKECLASS SHA1_State
   INIT
     {
       struct HashState_struct *instance
-	= (struct HashState_struct *) get_storage(this_object(),
-						      HashState_program);
+	= (struct HashState_struct *) get_storage(Pike_fp->current_object,
+						  HashState_program);
       werror("SHA1_State->INIT\n");
 
       assert(instance);
