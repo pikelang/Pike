@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: MP3.pmod,v 1.1 2002/05/29 21:59:11 hop Exp $
+// $Id: MP3.pike,v 1.1 2002/09/13 13:37:53 hop Exp $
 
 // MP3 file parser/formatter
 //
@@ -8,43 +8,43 @@
 //
 // Based on Per Hedbor's MP3 parser in original Icecast module for Roxen
 
-//#define MM_FILE_MP3_DEBUG
-#ifdef MM_FILE_MP3_DEBUG
-#define DEBUG(X, Y ...) werror("Audio.MP3: " + X, Y)
+//#define AUDIO_FORMAT_DEBUG
+#ifdef AUDIO_FORMAT_DEBUG
+#define DEBUG(X, Y ...) werror("Audio.Format.MP3: " + X, Y)
 #else
 #define DEBUG(X, Y ...)
 #endif
 
 
 //! A MP3 file parser with ID3 tag support.
-class decode {
 
-  /*private*/ Audio.vbuffer buffer;
+  inherit .module.ANY;
   private int metainterval;
   private int new_meta;
   private string metadata;
-  private mapping peekdata;
   private int start = 1;
-  private int nochk;
+  private int name;
 
-  void create(Stdio.File|string fd, int|void nocheck) {
+  void create() { }
+
+  private void real_read(Stdio.File|Stdio.FakeFile file, int|void nocheck) {
     nochk = nocheck;
-    buffer = Audio.vbuffer(fd);
+    buffer = Audio.Format.vbuffer(file);
     if(!nocheck)
       if(!mappingp(peekdata = get_frame()))
         error("No MP3 file.\n");
   }
 
-  string _sprintf(int|void ctype) {
-    return buffer->fd ? 
-      sprintf("Audio.MP3(\"%O\",%O)", buffer->fd, nochk) :
-      sprintf("Audio.MP3(string(%d),%O)", sizeof(buffer->origbuf), nochk);
+  int check_format() {
+    return mappingp(peekdata) || mappingp(peekdata = get_frame());
   }
 
   mapping get_map() {
     return ([
     	"type": "audio/x-mpeg",
-	"description": "MPEG Layer III"
+	"description": "MPEG Layer III",
+	"codec_type": "MP3",
+	"seek": buffer->tell() //FIXME: doesn't work
     ]);
   }
 
@@ -65,6 +65,15 @@ class decode {
     ({0,32,40,48,56,64,80,96,112,128,160,192,224,256,320}),
   });
 
+  static array(string) channels_map =
+  ({ "stereo", "joint", "dual", "single" });
+
+  string|int get_data(int maxlen) {
+    mapping rv = get_frame();
+    if(mappingp(rv))
+      return rv->data;
+    return 0;
+  }
 
   //! Gets next frame from file
   //!
@@ -101,8 +110,11 @@ class decode {
       return rv;
     }
 
-    if(start && buffer->is_file() && !buffer->tell())
-      skip_id3v2();
+    if(start && !buffer->tell())
+      if(streamed)
+        find_frame();
+      else
+        skip_id3v2();
     start = 0;
 
     while( (by = buffer->getbytes( 1  )) > 0  ) {
@@ -148,7 +160,7 @@ class decode {
       
 	pad = getbits(1);
 	rv = ([ "private": getbits(1),
-		"channels": getbits(2),
+		"channels": channels_map[ getbits(2) ],
 		"extension": getbits(2),
 		"copyright": getbits(1),
 		"original": getbits(1),
@@ -201,6 +213,16 @@ class decode {
 	return nlen ? nlen+10 : 0;
   }
 
+  private int find_frame() {
+
+    do {
+      while(buffer->peek(1) != "\xff")
+        buffer->getbytes(1, 1);
+    } while((buffer->peek(1)[0] & 0xf8) != 0xf8);
+    return 0;
+  }
+
+
   // Decodes a synchsafe integer
   private int ss2int(array(int) bytes) {
     int res;
@@ -211,4 +233,3 @@ class decode {
     return res;
   }
 
-}

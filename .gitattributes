@@ -52,11 +52,9 @@ testfont binary
 /lib/modules/ADT.pmod/Stack.pike foreign_ident
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
 /lib/modules/ADT.pmod/testsuite.in foreign_ident
-/lib/modules/Audio.pmod/AU.pmod foreign_ident
 /lib/modules/Audio.pmod/Codec.pmod foreign_ident
-/lib/modules/Audio.pmod/MP3.pmod foreign_ident
-/lib/modules/Audio.pmod/RIFF.pmod foreign_ident
-/lib/modules/Audio.pmod/vbuffer.pike foreign_ident
+/lib/modules/Audio.pmod/Format.pmod/MP3.pike foreign_ident
+/lib/modules/Audio.pmod/Format.pmod/module.pmod foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Base.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Multiple.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Null.pike foreign_ident
