@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.259 2003/02/27 15:33:02 grubba Exp $
+// $Id: master.pike.in,v 1.260 2003/03/07 17:16:45 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -2481,12 +2481,16 @@ static string get_clean_program_path ( program p, string pref1,
 //!   currently either @tt{"."@} or @tt{"->"@}.
 string describe_module(object|program mod, array(object)|void ret_obj)
 {
-  if (!mod) return "";
+  if (!mod) return "";	// efun or function in gmp(0).
   program parent_fun;
   if (objectp(mod)) {
     parent_fun = object_program(mod);
     if (ret_obj) ret_obj[0] = mod;
-  } else {
+  } else if (intp(mod)) {
+    // Function in gmp
+    if (ret_obj) ret_obj[0] = mod;    
+    return sprintf("%O->", mod);
+  }else {
     parent_fun = mod;
     if (objectp (mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
   }
