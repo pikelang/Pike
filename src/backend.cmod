@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.34 2003/01/12 16:00:13 mast Exp $
+|| $Id: backend.cmod,v 1.35 2003/01/30 16:49:02 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.34 2003/01/12 16:00:13 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.35 2003/01/30 16:49:02 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -574,12 +574,15 @@ PIKECLASS Backend
 	  backend_wake_up_backend(me);
 	}
       }else{
-	if (was_set
-#ifdef WITH_OOB
-	    && !me->fds[fd].read_oob.callback
-#endif
-	  )
+	if (was_set) {
 	  MY_FD_CLR(&me->set, fd, MY_POLLIN);
+#if defined(WITH_OOB) && defined(HAVE_POLL)
+	  if (me->fds[fd].read_oob.callback)
+          {
+            MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
+          }
+#endif
+        }
       }
     }
   
