@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.585 2004/12/23 13:44:26 grubba Exp $
+|| $Id: builtin_functions.c,v 1.586 2004/12/23 13:44:44 grubba Exp $
 */
 
 #include "global.h"
@@ -3450,7 +3450,7 @@ PMOD_EXPORT void f_compile(INT32 args)
     case 2:
       if(Pike_sp[1-args].type == T_OBJECT) {
 	if (Pike_sp[1-args].subtype) {
-	  Pike_fatal("compile: "
+	  Pike_error("compile: "
 		     "Subtyped handler objects are not supported yet.\n");
 	}
 	o=Pike_sp[1-args].u.object;
