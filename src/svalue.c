@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.129 2001/12/16 02:44:23 mast Exp $");
+RCSID("$Id: svalue.c,v 1.130 2001/12/16 03:38:20 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -578,7 +578,7 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 
     if(FIND_LFUN(s->u.object->prog,LFUN_NOT)!=-1)
     {
-      apply_lfun(s->u.object, LFUN_NOT , 1);
+      apply_lfun(s->u.object, LFUN_NOT, 0);
       if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
       {
 	pop_stack();
