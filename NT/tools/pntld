@@ -3,10 +3,15 @@
 // Partial linker for COFF files, written by Fredrik Hubinette 2000
 // 
 // Things left to do:
-//   Merge sections
-//   Test if resulting files work with cl.exe
+//   Support long-format import libaries
+//   Merge sections (if given -O)
 //   Support line number information
+//   Test if resulting files work with cl.exe
 //   Support 64 bit architechtures
+//   Rename sections
+//   Support section symbols (used by pthread.lib)
+
+// #define DEBUG
 
 class Reloc
 {
@@ -23,6 +28,8 @@ class Section
 
   int virtual_size;
   int characteristics;
+
+  array(Symbol) symbols_in_this_section=({});
 };
 
 class Symbol
@@ -44,23 +51,17 @@ array(string) libraries=({});
 
 class Linker
 {
-  string ret="";
   string stringtable="";
-  string symboltable="";
-  string sectiondata="";
-  string sectiontable="";
-  int num_symbols;
 
+  mapping(string:int) num_secnames=([]);
   mapping(Symbol:int) symbol_to_number=([]);
-
-  int base;
-  int num_sections;
   mapping(Section:int) section_to_number=([]);
 
   mapping(string:int) stringtablecache=([]);
   int add_string(string s)
     {
       int pos;
+//      werror("Adding string: %O\n",s);
       s+="\0";
       if(pos=stringtablecache[s]) return pos-1;
       pos=search(stringtable, s);
@@ -82,22 +83,22 @@ class Linker
 
   int add_symbol(Symbol s)
     {
-#ifdef DEBUG
-      werror("Encoding symbol named: %s\n",s->name);
-#endif
       if(symbol_to_number[s])
+      {
+#ifdef DEBUG
+	werror("Adding symbol [%d]: %s again\n",symbol_to_number[s]-1,s->name);
+#endif
 	return symbol_to_number[s]-1;
+      }
 
-      num_symbols++;
-      symboltable+=sprintf("%s%-4c%-2c%-2c%c%c",
-			   add_sym_name(s->name),
-			   s->value,
-			   s->section ? add_section(s->section) +1 : 0,
-			   s->type,
-			   s->cls,
-			   0); /* aux symbols not supported */
-      symbol_to_number[s]=sizeof(symbol_to_number)+1;
-      return symbol_to_number[s]-1;
+      int num=sizeof(symbol_to_number);
+#ifdef DEBUG
+      werror("Adding symbol [%d]: %s\n",num,s->name);
+#endif
+
+      symbol_to_number[s]=num+1;
+      if(s->section) add_section(s->section);
+      return num;
     }
 
   int add_section(Section s)
@@ -105,8 +106,24 @@ class Linker
       if(section_to_number[s])
 	return section_to_number[s]-1;
 
-      section_to_number[s]=++num_sections;
-      return section_to_number[s]-1;
+      int num=sizeof(section_to_number);
+#ifdef DEBUG
+      werror("Adding section [%d]: %s\n",num,s->name);
+#endif
+
+      section_to_number[s]=num+1;
+
+      sscanf(s->name,"%s$",s->name);
+      s->name+="$"+ ++num_secnames[s->name];
+      
+      if(s->relocs)
+	foreach(s->relocs, Reloc r)
+	  add_symbol(r->sym);
+
+      foreach(s->symbols_in_this_section, Symbol sym)
+	add_symbol(sym);
+
+      return num;
     }
 
   int virtual_data_size(int|string s)
@@ -119,21 +136,25 @@ class Linker
       return intp(s) ? 0 : strlen(s);
     }
 
-  string out(array(Section) sections,
-	     array(Symbol) exports)
+  string out()
     {
-      int secnum;
-      foreach(sections, Section s) add_section(s);
-      foreach(exports, Symbol s) add_symbol(s);
+      string symboltable="";
+      string sectiondata="";
+      string sectiontable="";
 
+      int secnum_save=sizeof(section_to_number);
 
       /* Actually output data */
-      Section s;
-      base=20 /*coff*/ + sizeof(section_to_number) * 40;
-      for(int secnum=1;s=search(section_to_number, secnum);secnum++)
+      int base=20 /*coff*/ + sizeof(section_to_number) * 40;
+
+      array(Section) sections=indices(section_to_number);
+      array(int) secnums=values(section_to_number);
+      sort(secnums,sections);
+
+      foreach(sections, Section s)
 	{
 #ifdef DEBUG
-	  werror("Encoding section named: %s\n",s->name);
+	  werror("Encoding section [%d]: %s\n",add_section(s),s->name);
 #endif
 	  sectiontable+=
 	    sprintf("%s%-4c%-4c%-4c%-4c%-4c%-4c%-2c%-2c%-4c",
@@ -159,7 +180,39 @@ class Linker
 				   r->type);
 	}
 
-      return 
+      array(Symbol) symbols=indices(symbol_to_number);
+      array(int) symnums=values(symbol_to_number);
+      sort(symnums, symbols);
+
+      foreach(symbols, Symbol s)
+	{
+	  symboltable+=sprintf("%s%-4c%-2c%-2c%c%c",
+			       add_sym_name(s->name),
+			       s->value,
+			       s->section ? add_section(s->section) +1 : 0,
+			       s->type,
+			       s->cls,
+			       0); /* aux symbols not supported */
+	}
+
+
+
+      if( secnum_save != sizeof(section_to_number))
+      {
+	werror("Sections appeared too late!\n");
+	exit(1);
+      }
+
+      if( strlen(sectiontable) != sizeof(section_to_number) * 40)
+      {
+	werror("Complete failure %d != %d (%d)!\n",
+	       strlen(sectiontable),
+	       sizeof(section_to_number) * 40,
+	       sizeof(sections) * 40);
+	exit(1);
+      }
+
+      string ret=
 	sprintf("%-2c%-2c%-4c%-4c%-4c%-2c%-2c" /* coff */
 		"%s%s%s%s" /* the rest */ , 
 		
@@ -168,7 +221,7 @@ class Linker
 		sizeof(section_to_number),
 		time(),
 		base+strlen(sectiondata),
-		num_symbols,
+		sizeof(symbol_to_number),
 		0, /* opt header size */
 		0, /* no character */
 
@@ -176,6 +229,15 @@ class Linker
 		sectiondata,
 		symboltable,
 		stringtable);
+
+      if(ret [ base + strlen(sectiondata)..
+	     base+strlen(sectiondata)+strlen(symboltable) -1 ] != symboltable)
+      {
+	werror("Symbol table offset is wrong.\n");
+	exit(1);
+      }
+
+      return ret;
     }
   
 }
@@ -579,7 +641,8 @@ class dumpfile
 	Symbol s=Symbol();
 	s->name=name;
 	s->value=value;
-	s->section=sect>0 ? file_sections[sect-1] : 0;
+	if(sect > 0)
+	  s->section=file_sections[sect-1];
 	s->type=type;
 	s->cls=cls;
 	s->aux=0;
@@ -600,7 +663,7 @@ class dumpfile
 
 	  if(sect > 0)
 	  {
-	    s->section = file_sections[sect-1];
+	    s->section=file_sections[sect-1];
 	    s->value = value;
 	    s->type = type;
 	  }
@@ -659,7 +722,7 @@ class dumpfile
 #ifdef DEBUG
       write("Potential PE identifier at 0x%x ... ",pos);
 #endif
-      if(data[pos..pos+3]!="PE\0\0")
+      if(range(pos,4)!="PE\0\0")
       {
 #ifdef DEBUG
 	write("No.\n");
@@ -771,12 +834,12 @@ class dumpfile
 
 int main(int argc, array(string) argv)
 {
-  int err;
+  int err, export_all;
   int strip=0;
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.4 2000/12/28 01:17:04 hubbe Exp $\n"
+	 "$Id: pntld,v 1.5 2000/12/29 00:10:57 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -785,6 +848,7 @@ int main(int argc, array(string) argv)
     ({"L",Getopt.HAS_ARG,({"-L"})}),
     ({"l",Getopt.HAS_ARG,({"-l"})}),
     ({"S",Getopt.NO_ARG,({"-S"})}),
+    ({"a",Getopt.NO_ARG,({"-a"})}),
     ({"ignore","Getopt.HAS_ARG",({"-r","-i","-s","-g","-B","-W"})}),
     )),array opt)
     {
@@ -808,7 +872,11 @@ int main(int argc, array(string) argv)
 	      libraries|=({opt[1]});
 	  }
 	  break;
-	  
+
+	case "a":
+	  export_all++;
+	  break;
+
 	case "output":
 	  output=opt[1];
 	  break;
@@ -872,6 +940,12 @@ int main(int argc, array(string) argv)
       });
   }
 
+  foreach(values(global_symbols), Symbol s)
+    if(s->section)
+      s->section->symbols_in_this_section+=({s});
+
+  Linker l=Linker();
+
   if(sizeof(global_directives))
   {
     Section s=Section();
@@ -880,13 +954,29 @@ int main(int argc, array(string) argv)
     s->characteristics = CHR_LINK_INFO | CHR_LINK_REMOVE | CHR_LINK_ALIGN_1;
     s->relocs=({});
     
-    global_sections= ({s}) + global_sections;
+    l->add_section(s);
   }
 
   if(err) exit(err);
   rm(output);
-  Stdio.write_file(output,
-		   Linker()->out(global_sections,
-				 values(global_symbols)));
+
+
+  werror("Creating %s\n",output);
+  if(export_all)
+  {
+    foreach(global_sections, Section s) l->add_section(s);
+    foreach(values(global_symbols), Symbol s) l->add_symbol(s);
+  }else{
+    foreach(global_directives, string dir)
+      {
+	if(sscanf(dir,"-export:%s",string sym))
+	{
+//	  werror("Exporting symbol: %O\n",sym);
+	  l->add_symbol(global_symbols[sym]);
+	}
+      }
+  }
+
+  Stdio.write_file(output, l->out());
   exit(err);
 }
