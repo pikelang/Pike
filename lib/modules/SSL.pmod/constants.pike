@@ -1,4 +1,4 @@
-/* $Id: constants.pike,v 1.5 1999/03/03 14:13:59 nisse Exp $
+/* $Id: constants.pike,v 1.6 1999/03/09 14:41:44 nisse Exp $
  *
  */
 
@@ -49,7 +49,8 @@ constant KE_rsa	= 1;
 constant KE_dh	= 2;
 constant KE_dhe_dss = 3;
 constant KE_dhe_rsa = 4;
-constant KE_dms	= 5;
+constant KE_dh_anon = 5;
+constant KE_dms	= 6;
 
 /* Compression methods */
 constant COMPRESSION_null = 0;
@@ -120,7 +121,16 @@ constant SSL_dh_anon_with_3des_ede_cbc_sha	= 0x001b;
 constant SSL_fortezza_dms_with_null_sha		= 0x001c;
 constant SSL_fortezza_dms_with_fortezza_cbc_sha	= 0x001d;
 constant SSL_fortezza_dms_with_rc4_128_sha	= 0x001e;
- 
+
+#if 0
+/* Methods for signing any server_key_exchange message */
+constant SIGN_anon = 0;
+constant SIGN_rsa = 1;
+constant SIGN_dsa = 2;
+
+/* FIXME: Add SIGN-type element to table */
+#endif
+
 constant CIPHER_SUITES =
 ([ SSL_null_with_null_null :    	({ 0, 0, 0 }),
    SSL_rsa_with_null_md5 :      	({ KE_rsa, 0, HASH_md5 }), 
@@ -130,7 +140,12 @@ constant CIPHER_SUITES =
    SSL_rsa_with_rc4_128_md5 :   	({ KE_rsa, CIPHER_rc4, HASH_md5 }),
    SSL_rsa_with_idea_cbc_sha :  	({ KE_rsa, CIPHER_idea, HASH_sha }),
    SSL_rsa_with_des_cbc_sha :   	({ KE_rsa, CIPHER_des, HASH_sha }),
-   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }) ]);
+   SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }),
+   SSL_dhe_dss_export_with_des40_cbc_sha :
+      ({ KE_dhe_dss, CIPHER_des40, HASH_sha }),
+   SSL_dhe_dss_with_des_cbc_sha : ({ KE_dhe_dss, CIPHER_des, HASH_sha }),
+   SSL_dhe_dss_with_3des_ede_cbc_sha : ({ KE_dhe_dss, CIPHER_3des, HASH_sha })
+]);
 
 constant HANDSHAKE_hello_v2		= -1; /* Backwards compatibility */
 constant HANDSHAKE_hello_request	= 0;
@@ -148,6 +163,7 @@ constant AUTHLEVEL_none		= 1;
 constant AUTHLEVEL_ask		= 2;
 constant AUTHLEVEL_require	= 3;
 
+/* FIXME: CERT_* would be better names for these constants */
 constant AUTH_rsa_sign		= 1;
 constant AUTH_dss_sign		= 2;
 constant AUTH_rsa_fixed_dh	= 3;
