@@ -88,11 +88,10 @@ void end_last_program()
   if(do_docs) return;
 //   werror(internal_progname+"...\n");
   string data;
-//   if(Stdio.file_size("pgtk_"+internal_progname+".c") !=
-//      (strlen(buffer)+strlen(head)))
-//   {
-  if(Stdio.read_bytes( "pgtk_"+internal_progname+".c" ) !=
-     head+buffer )
+  if((Stdio.file_size("pgtk_"+internal_progname+".c") !=
+      (strlen(buffer)+strlen(head))) ||
+     (Stdio.read_bytes( "pgtk_"+internal_progname+".c" ) !=
+      head+buffer ))
   {
     werror("Creating pgtk_"+internal_progname+".c\n");
     object outf = Stdio.File("pgtk_"+internal_progname+".c", "rwct");
@@ -204,13 +203,17 @@ string emit_function_def( string fun, string cfun, string type, int opt )
 }
 
 int _num_functions;
+multiset do_default_sprintf = (<>);
 void emit_program_block(mapping block, string cl)
 {
   line_id = "";
-
-  if( !block->_sprintf )
-    emit_function_def( "_sprintf", "pgtk_default__sprintf",
+  if( cl != "global" && !block->_sprintf )
+  {
+    do_default_sprintf[cl] = 1;
+    emit( " static void _pgtk_"+cl+"_default_sprintf(INT32 args);\n" );
+    emit_function_def( "_sprintf", "_pgtk_"+cl+"_default_sprintf",
                        "function(int:string)", 1 );
+  }
 
   foreach(sort(indices(block)), string f)
   {
@@ -244,14 +247,11 @@ void emit_program_block(mapping block, string cl)
        break;
      case "_add":
        emit_function_def("`+",cfun,block[f],1);
-       break;
+       continue;
      case "_index":
        emit_function_def("`->",cfun,block[f],1);
        emit_function_def("`[]",cfun,block[f],1);
        continue;
-//      case "index":
-//        emit_function_def("`[]",cfun,block[f],1);
-       break;
     }
     emit_function_def(f,cfun,block[f],0);
   }
@@ -718,8 +718,9 @@ array constants_name = ({});
 string find_constants(string prefix)
 {
   array res = ({});
+  sscanf(prefix, "GTK_%s", prefix );
   foreach(constants_name, string c)
-    if(search(c,prefix) == 0)
+    if(search(c,prefix) != -1)
       res += ({ classname(String.capitalize(lower_case(c))) });
 
   if(!sizeof(res))
@@ -808,7 +809,13 @@ int main(int argc, array argv)
   int skip_mode, verbatim_mode;
   string type_switch="";
   string default_sprintf=
-"void pgtk_default__sprintf( INT32 args )\n{\n  pop_n_elems( args );\n";
+#"
+void do_default_sprintf( int args, int offset, int len )
+{
+  my_pop_n_elems( args );
+  push_string( make_shared_binary_string( _data+offset, len ) );
+}
+";
   string signal_doc;
 
   do_docs = argc > 2;
@@ -882,6 +889,7 @@ int main(int argc, array argv)
     }
     else if(sscanf(line, "class %s;", line))
     {
+      signal_doc = 0;
       line = String.trim_whites( line );
       end_last_program();
       begin_new_program( line );
@@ -1326,7 +1334,8 @@ int main(int argc, array argv)
                                    map((argument_list[2..]/","-({""})),
                                        lambda( string q ) {
                                          return q+(sizeof(tmp)>ti?" "+tmp[ti++]:"");
-                                       }) });
+                                       })*", " });
+      named[progname+fn] = 1;
 //       werror("arguments: %O\n",true_types[progname+fn]);
       struct[progname][fn] = "\"function("+
                            (strlen(fundef[1..])?fundef[1..]:"void")
@@ -1626,23 +1635,23 @@ int main(int argc, array argv)
       emit_nl("  ADD_STORAGE(struct object_wrapper);\n");
 
     emit_nl("   set_init_callback(clear_obj_struct);\n");
+    emit( "  {\n" );
     emit_program_block( q, w );
+    emit( "  }\n" );
     emit_nl("  add_program_constant((char*)_data+"+
             data_offset(String.capitalize(w)+"\0")+",\n"
 	    "                       (pgtk_"+w+"_program = end_program()), 0);"
 	    "\n");
     pre += "/*ext*/ struct program *pgtk_"+w+"_program;\n";
 
-    if( q->_sprintf )
+    if( do_default_sprintf[w] )
       default_sprintf +=
-                     "  if( fp->current_object->prog == pgtk_"+w+"_program )\n"
-                     "  {\n"
-                     "    push_string( make_shared_binary_string(_data+"+
-                     data_offset(classname(w)+"()")+", "+
-                     strlen(classname(w)+"()")+"));\n"
-                     "    return;\n"
-                     "  }\n\n";
-
+                     "\n"
+                     "static void _pgtk_"+w+"_default_sprintf(INT32 args)\n{\n"
+                     " do_default_sprintf(args, "+
+                      data_offset(classname(w)+"()")+", "+
+                      strlen(classname(w)+"()")+");\n"
+                     "}\n";
     string flop = replace(upper_case(w),
 			  ({ "GDK_", "GDK" }),
 			  ({ "GDK", "GDK_" }));
@@ -1651,6 +1660,7 @@ int main(int argc, array argv)
                 "return pgtk_"+w+"_program;\n#endif\n";
     emit_nl("}\n");
   }
+  emit_nl( default_sprintf );
   emit_nl( "void pike_module_init()\n{\n");
   foreach( _inits, string i )
     emit_nl( "  "+i+"();\n" );
@@ -1662,10 +1672,6 @@ int main(int argc, array argv)
     "#define PGTK_CHECK_CLASS_TYPE(type_class, otype)  ("
     "((GtkTypeClass*) (type_class)) != NULL && "
     "(((GtkTypeClass*) (type_class))->type == (otype)))\n";
-
-  emit_nl( default_sprintf );
-  emit_nl( "  push_string( make_shared_binary_string(_data+"+
-           data_offset("GTK.Object()" )+", "+strlen("GTK.Object()")+") );\n}\n\n" );
 
   emit_nl("\nstruct program *pgtk_type_to_program(GtkWidget *widget)\n{\n");
   emit_nl(type_switch);
