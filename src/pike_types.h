@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.29 1999/12/13 12:08:13 mast Exp $
+ * $Id: pike_types.h,v 1.30 1999/12/13 21:40:53 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -77,6 +77,7 @@ extern struct pike_string *mixed_type_string;
 extern struct pike_string *void_type_string;
 extern struct pike_string *zero_type_string;
 extern struct pike_string *any_type_string;
+extern struct pike_string *weak_type_string;
 
 #define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
 

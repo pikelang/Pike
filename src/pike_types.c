@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.92 1999/12/13 12:08:12 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.93 1999/12/13 21:42:29 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -76,6 +76,7 @@ struct pike_string *mixed_type_string;
 struct pike_string *void_type_string;
 struct pike_string *zero_type_string;
 struct pike_string *any_type_string;
+struct pike_string *weak_type_string;	/* array|mapping|multiset */
 
 static struct pike_string *a_markers[10],*b_markers[10];
 
@@ -126,6 +127,7 @@ void init_types(void)
   void_type_string=CONSTTYPE(tVoid);
   zero_type_string=CONSTTYPE(tZero);
   any_type_string=CONSTTYPE(tOr(tVoid,tMix));
+  weak_type_string=CONSTTYPE(tOr3(tArray,tMultiset,tMapping));
 }
 
 static int type_length(char *t)
@@ -2963,7 +2965,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
       p=s->u.object->prog;
       if(!p)
       {
-	ret=int_type_string;
+	ret=zero_type_string;
       }else{
 	ret=ID_FROM_INT(p,s->subtype)->type;
       }
@@ -2971,17 +2973,38 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     reference_shared_string(ret);
     return ret;
        
-  case T_ARRAY:
-    type_stack_mark();
-    push_type(T_MIXED);
-    push_type(T_ARRAY);
-    return pop_unfinished_type();
-
   case T_MULTISET:
-    type_stack_mark();
-    push_type(T_MIXED);
-    push_type(T_MULTISET);
-    return pop_unfinished_type();
+  case T_ARRAY:
+    {
+      struct pike_string *arg_type;
+#if 0
+      struct array *a;
+      int i;
+
+      if (s->type == T_MULTISET) {
+	a = s->u.multiset->ind;
+      } else {
+	a = s->u.array;
+      }
+      /* FIXME: Circular structures? */
+      copy_shared_string(arg_type, zero_type_string);
+      for (i = 0; i < a->size; i++) {
+	struct pike_string *tmp1 = get_type_of_svalue(a->item+i);
+	struct pike_string *tmp2 = or_pike_types(arg_type, tmp1, 1);
+	free_string(arg_type);
+	free_string(tmp1);
+	arg_type = tmp2;
+      }
+#else /* !0 */
+      copy_shared_string(arg_type, mixed_type_string);
+#endif /* 0 */
+      type_stack_mark();
+      push_unfinished_type(arg_type->str);
+      free_string(arg_type);
+      push_type(s->type);
+      return pop_unfinished_type();
+    }
+
 
   case T_MAPPING:
     type_stack_mark();
@@ -3009,9 +3032,8 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
 	push_type(T_OBJECT);
       }
     }else{
-      push_type_int(0);
-      push_type(0);
-      push_type(T_OBJECT);
+      /* Destructed object */
+      push_type(T_ZERO);
     }
     return pop_unfinished_type();
 
@@ -3095,6 +3117,7 @@ void cleanup_pike_types(void)
   free_string(void_type_string);
   free_string(zero_type_string);
   free_string(any_type_string);
+  free_string(weak_type_string);
 }
 
 
