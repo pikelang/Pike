@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.233 2001/10/05 22:56:52 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.234 2002/01/02 12:48:34 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2409,6 +2409,7 @@ enum_def: /* EMPTY */
       free_type(new);
       type_stack_mark();
       push_finished_type(res);
+      free_type(res);
     }
   }
   ;
