@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.20 2003/07/30 18:50:10 mast Exp $
+|| $Id: apply_low.h,v 1.21 2003/08/03 00:51:35 mast Exp $
 */
 
     {
@@ -191,7 +191,7 @@
 #endif
 #endif
 
-      switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
+      switch(function->identifier_flags & IDENTIFIER_TYPE_MASK)
       {
       case IDENTIFIER_C_FUNCTION:
 	debug_malloc_touch(Pike_fp);
@@ -221,8 +221,8 @@
 	}
 	/* Fall through */
       }
-      
-      case 0:	/* Variable */
+
+      case IDENTIFIER_VARIABLE:
       {
 	/* FIXME:
 	 * Use new-style tail-recursion instead
@@ -332,6 +332,11 @@
 	  ;
 	return 1;
       }
+
+      default:
+#ifdef PIKE_DEBUG
+	Pike_fatal("Unknown identifier type.\n");
+#endif
       }
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME

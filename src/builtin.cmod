@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.138 2003/07/28 14:47:38 mast Exp $
+|| $Id: builtin.cmod,v 1.139 2003/08/03 00:52:09 mast Exp $
 */
 
 #include "global.h"
@@ -56,7 +56,7 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
     push_int(ref->id_flags);
     ref_push_string(id->name);
     push_int(id->identifier_flags);
-    if (id->identifier_flags & IDENTIFIER_C_FUNCTION) {
+    if (IDENTIFIER_IS_C_FUNCTION(id->identifier_flags)) {
       push_int(-2);
     } else {
       push_int(id->func.offset);
