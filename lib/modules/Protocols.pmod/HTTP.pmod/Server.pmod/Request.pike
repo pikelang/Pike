@@ -10,10 +10,12 @@ HeaderParser headerparser;
 
 string buf="";    // content buffer
 
-//! full request, unparsed
-string raw; // raw contents of request (headers and body)
-//! body of the request (request minus request line and headers)
-string body_raw; // raw contents of request body (body only)
+//! raw unparsed full request (headers and body)
+string raw;
+
+//! raw unparsed body of the request (@[raw] minus request line and headers)
+string body_raw;
+
 string request_raw;
 string request_type;
 string full_query;
