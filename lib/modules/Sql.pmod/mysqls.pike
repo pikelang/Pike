@@ -1,5 +1,5 @@
 /*
- * $Id: mysqls.pike,v 1.3 2003/04/27 12:57:34 grubba Exp $
+ * $Id: mysqls.pike,v 1.4 2003/04/27 12:57:55 grubba Exp $
  *
  * Glue for the Mysql-module using SSL
  */
@@ -11,7 +11,7 @@
 //! file to @expr{"/etc/my.cnf"@}.
 //!
 //! @fixme
-//!   Ought to have load a suitable default configuration file for Win32 too.
+//!   Ought to load a suitable default configuration file for Win32 too.
 //!
 //! @note
 //!   This connection method only exists if the Mysql-module has been
