@@ -6,7 +6,7 @@ object get_widget_from( string what )
   mixed res;
   err = catch
   {
-    if( search(what, "return") == -1 )
+    if( search(what, "return") == -1 || (search(what,"lambda")!=-1) )
       res= compile_string( "object foo(){ return "+what+"; }")()->foo();
     else
       res= compile_string( "object foo(){ "+what+" }")()->foo();

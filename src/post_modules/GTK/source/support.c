@@ -540,7 +540,13 @@ int pgtkbuttonfuncwrapper(GtkObject *obj, struct signal_data *d, void *foo)
 
 void push_gdk_event(GdkEvent *e)
 {
-  push_gdkobject( e, Event );
+  if( e )
+  {
+    GdkEvent *f = malloc( sizeof(GdkEvent) ); 
+    *f = *e;
+    push_gdkobject( f, Event );
+  } else
+    push_int( 0 );
 }
 
 enum { PUSHED_NOTHING, PUSHED_VALUE, NEED_RETURN, };
@@ -685,7 +691,8 @@ static int push_param( GtkArg *param )
     if(!s)
     {
       a = "Unknown child of ";
-      s = gtk_type_name( GTK_FUNDAMENTAL_TYPE( t ) );
+      s = gtk_type_name( gtk_type_parent( t ) );
+      if(!s) s = "unknown type";
     }
     fprintf( stderr, "No push callback for type %d (%s%s), "
              "cannot handle that event type\n", t, a, s);

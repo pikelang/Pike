@@ -20,11 +20,18 @@ static void define_gdkeventstrings( )
 #undef STRING
 }
 
+FUNCTION(destroy, "function(void:void)");
+{
+  if( THIS->obj )
+    free( THIS->obj );
+  THIS->obj = 0;
+}
+
 FUNCTION(_index, "function(string:mixed)");
 {
   struct pike_string *index;
   GdkEvent *e = (GdkEvent *)THIS->obj;
-
+  if(!e) error("No event\n");
   get_all_args( "`[]", args, "%S", &index );
   if( !s_type ) define_gdkeventstrings();
   switch( e->type )
@@ -63,17 +70,12 @@ FUNCTION(_index, "function(string:mixed)");
 
    case GDK_BUTTON_PRESS:
      if( index == s_type ) RETURN_TEXT( button_press );
-     goto press_event;
    case GDK_BUTTON_RELEASE:
      if( index == s_type ) RETURN_TEXT( button_release );
-     goto press_event;
    case GDK_2BUTTON_PRESS:
      if( index == s_type ) RETURN_TEXT( 2button_press );
-     goto press_event;
    case GDK_3BUTTON_PRESS:
      if( index == s_type ) RETURN_TEXT( 3button_press );
-
-  press_event:
      if( index == s_x ) RETURN_FLOAT(e->button.x);
      if( index == s_y ) RETURN_FLOAT(e->button.y);
      if( index == s_pressure ) RETURN_FLOAT(e->button.pressure);
@@ -88,11 +90,8 @@ FUNCTION(_index, "function(string:mixed)");
 
    case GDK_KEY_PRESS:
      if( index == s_type ) RETURN_TEXT(key_press);
-     goto key_event;
-
    case GDK_KEY_RELEASE:
      if( index == s_type ) RETURN_TEXT(key_release);
-  key_event:
      if( index == s_state ) RETURN_INT(e->key.state);
      if( index == s_keyval ) RETURN_INT(e->key.keyval);
      if(e->key.string)
@@ -102,11 +101,8 @@ FUNCTION(_index, "function(string:mixed)");
 
    case GDK_ENTER_NOTIFY:
      if( index == s_type ) RETURN_TEXT(enter_notify);
-     goto enter_event;
-
    case GDK_LEAVE_NOTIFY:
      if( index == s_type ) RETURN_TEXT(leave_notify);
-  enter_event:
      if( index == s_detail ) RETURN_INT(e->crossing.detail);
      if( index == s_mode ) RETURN_INT(e->crossing.mode );
      if( index == s_focus ) RETURN_INT(e->crossing.focus );
@@ -124,15 +120,10 @@ FUNCTION(_index, "function(string:mixed)");
 
    case GDK_CONFIGURE:
      if( index == s_type ) RETURN_TEXT(configure);
-     goto configure_event;
-
    case GDK_MAP:
      if( index == s_type ) RETURN_TEXT(map);
-     goto configure_event;
-
    case GDK_UNMAP:
      if( index == s_type ) RETURN_TEXT(unmap);
-  configure_event:
      if( index == s_x ) RETURN_INT(e->configure.x);
      if( index == s_y ) RETURN_INT(e->configure.x);
      if( index == s_width ) RETURN_INT(e->configure.width);
@@ -147,15 +138,10 @@ FUNCTION(_index, "function(string:mixed)");
 
    case GDK_SELECTION_CLEAR:
      if( index == s_type ) RETURN_TEXT(selection_clear);
-     goto selection_event;
-
    case GDK_SELECTION_REQUEST:
      if( index == s_type ) RETURN_TEXT(selection_request);
-     goto selection_event;
-
    case GDK_SELECTION_NOTIFY:
      if( index == s_type ) RETURN_TEXT(selection_notify);
-  selection_event:
      if( index == s_selection ) RETURN_ATOM( e->selection.selection );
      if( index == s_target ) RETURN_ATOM( e->selection.target );
      if( index == s_property ) RETURN_ATOM( e->selection.property );
@@ -206,22 +192,16 @@ FUNCTION(_index, "function(string:mixed)");
 
    case GDK_DRAG_ENTER:
      if( index == s_type ) RETURN_TEXT(drag_enter);
-     goto dnd_event;
    case GDK_DRAG_LEAVE:
      if( index == s_type ) RETURN_TEXT(drag_leave);
-     goto dnd_event;
    case GDK_DRAG_MOTION:
      if( index == s_type ) RETURN_TEXT(drag_motion);
-     goto dnd_event;
    case GDK_DRAG_STATUS:
      if( index == s_type ) RETURN_TEXT(drag_status);
-     goto dnd_event;
    case GDK_DROP_START:
      if( index == s_type ) RETURN_TEXT(drop_start);
-     goto dnd_event;
    case GDK_DROP_FINISHED:
      if( index == s_type ) RETURN_TEXT(drop_finished);
-   dnd_event:
      if( index == s_send_event ) RETURN_INT( e->dnd.send_event );
      if( index == s_x_root ) RETURN_INT( e->dnd.x_root );
      if( index == s_y_root ) RETURN_INT( e->dnd.y_root );
@@ -248,9 +228,11 @@ FUNCTION(_sprintf, "function(int:string)" );
 
 FUNCTION(cast, "function(string:mixed)");
 {
-  struct svalue *osp = sp;
+  struct svalue *osp = sp-args;
   char *a;
   GdkEvent *e = (GdkEvent *)THIS->obj;
+
+  if(!e) error("No event\n");
 
   if( !s_type ) define_gdkeventstrings();
   if( !args  || sp[-args].u.string != s_mapping )
