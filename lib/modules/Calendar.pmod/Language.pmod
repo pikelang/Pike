@@ -2022,7 +2022,7 @@ Ruleset.Language `[](string lang)
    program cl=::`[]("c"+lang);
    
 // if unicode doesn't exist, try without
-   if (!cl && sscanf(lang,"%S_UNICODE",lang))
+   if (!cl && sscanf(lang,"%s_UNICODE",lang))
        cl=::`[]("c"+lang);
 
    if (!cl) { return ([])[0]; }
