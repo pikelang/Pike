@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.195 2001/04/29 17:20:08 lange Exp $");
+RCSID("$Id: signal_handler.c,v 1.196 2001/06/05 12:40:19 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2819,6 +2819,13 @@ void f_create_process(INT32 args)
 	case 0:
 	  /* read() probably failed. */
 	default:
+#ifdef ENODEV
+	  if ((e < 0) && (olderrno == ENODEV)) {
+	    /* This occurrs sometimes on FreeBSD... */
+	    Pike_error("Process.create_process(): read(2) failed with ENODEV!\n"
+		       "Probable operating system bug.\n");
+	  }
+#endif /* ENODEV */
 	  Pike_error("Process.create_process(): "
 		"Child failed: %d, %d, %d, %d, %d!\n",
 		buf[0], buf[1], buf[2], e, olderrno);
