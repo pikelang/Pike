@@ -100,25 +100,25 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 
 #define NEIG 1
 #define IMAGE_PHASE image_phaseh
-#include "phase.c"
+#include "phase.h"
 #undef NEIG
 #undef IMAGE_PHASE
 
 #define NEIG xz
 #define IMAGE_PHASE image_phasev
-#include "phase.c"
+#include "phase.h"
 #undef NEIG
 #undef IMAGE_PHASE
 
 #define NEIG xz+1
 #define IMAGE_PHASE image_phasehv
-#include "phase.c"
+#include "phase.h"
 #undef NEIG
 #undef IMAGE_PHASE
 
 #define NEIG xz-1
 #define IMAGE_PHASE image_phasevh
-#include "phase.c"
+#include "phase.h"
 #undef NEIG
 #undef IMAGE_PHASE
 
@@ -191,7 +191,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
        n=needlei[ny*nxs+nx].CO; \
        sum+=abs(h-n)  MY_MAX(CERTI1, CERTI2);} 
 #define NORMCODE 
-#include "match.c"
+#include "match.h"
 
 #define NAME "match_phase"
 #define INAME image_match_phase
@@ -201,7 +201,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 	 sum+=MINIMUM((h-n),(255-h+n)) MY_MAX(CERTI1, CERTI2); \
        else \
 	 sum+=MINIMUM((n-h),(255-n+h)) MY_MAX(CERTI1, CERTI2); 
-#include "match.c"
+#include "match.h"
 #undef NORMCODE
 #undef NEEDLEAVRCODE
 
@@ -223,7 +223,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 		   tempavr+=haystacki[j].r+haystacki[j].g+ \
 		       haystacki[j].b; \
 		 };
-#include "match.c"
+#include "match.h"
 
 #define NAME "match_norm_corr"
 #define INAME image_match_norm_corr
@@ -233,7 +233,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
        h=haystacki[j].CO-tempavr; \
        n=needlei[ny*nxs+nx].CO-needle_average; \
        sum+=h*n * MAXIMUM(CERTI1, CERTI2);} 
-#include "match.c"
+#include "match.h"
 #undef NORMCODE
 #undef NEEDLEAVRCODE
 
