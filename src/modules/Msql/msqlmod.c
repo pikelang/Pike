@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.5 1997/12/07 21:45:30 grubba Exp $
+ * $Id: msqlmod.c,v 1.6 1998/03/02 18:54:20 grubba Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.5 1997/12/07 21:45:30 grubba Exp $");
+RCSID("$Id: msqlmod.c,v 1.6 1998/03/02 18:54:20 grubba Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -521,7 +521,9 @@ static void do_error (INT32 args)
 	check_all_args("Msql->error",args,0);
 	pop_n_elems(args);
 	if (THIS->error_msg)
-		push_string(THIS->error_msg);
+		ref_push_string(THIS->error_msg);
+	else
+	        push_int(0);
 	return;
 }
 
