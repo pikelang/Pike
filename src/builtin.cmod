@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.21 2001/06/21 01:21:50 per Exp $
+ * $Id: builtin.cmod,v 1.22 2001/06/21 01:23:07 per Exp $
  */
 
 #include "global.h"
@@ -553,6 +553,7 @@ PIKECLASS Buffer
     }
     pop_n_elems(args);
     push_text("");
+    return;
   }
 
   INIT
