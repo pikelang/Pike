@@ -299,8 +299,8 @@ Event.Event find_region(string c)
    int j=search(all_data,"\nRegion \"",i+1);
    if (j==-1) j=0x7fffffff;
 
-   array(Event) events=({});
-   mapping(Event:multiset(string)) eflags=([]);
+   array(Event.Event) events=({});
+   mapping(Event.Event:multiset(string)) eflags=([]);
    mapping(string:multiset(string)) flagy=([]);
 
    foreach ( (all_data[i..j]/"\n")[2..], string line)
