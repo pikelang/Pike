@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.4 1997/12/16 15:55:21 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.5 1998/03/02 18:56:07 grubba Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -300,7 +300,7 @@ static void f_error (INT32 args)
 	check_all_args("Postgres->error",args,0);
 
 	if (THIS->last_error)
-		push_string(THIS->last_error);
+		ref_push_string(THIS->last_error);
 	else
 		push_int(0);
 	return;
