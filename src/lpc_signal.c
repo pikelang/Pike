@@ -10,6 +10,7 @@
 #include "add_efun.h"
 #include "macros.h"
 #include "backend.h"
+#include "error.h"
 #include <signal.h>
 #include <sys/wait.h>
 
@@ -228,9 +229,13 @@ static RETSIGTYPE receive_signal(int signum)
 #endif
 }
 
+static int signalling=0;
+
+static void unset_signalling(void *notused) { signalling=0; }
+
 void check_signals()
 {
-  static int signalling=0;
+  ONERROR ebuf;
 #ifdef DEBUG
   extern int d_flag;
   if(d_flag>5) do_debug(0);
@@ -241,6 +246,8 @@ void check_signals()
     int tmp=firstsig;
     signalling=1;
 
+    SET_ONERROR(ebuf,unset_signalling,0);
+
     while(lastsig != tmp)
     {
       if(++lastsig == SIGNAL_BUFFER) lastsig=0;
@@ -249,6 +256,8 @@ void check_signals()
       apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
       pop_stack();
     }
+
+    UNSET_ONERROR(ebuf);
 
     signalling=0;
   }
