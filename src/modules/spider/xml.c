@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.63 2003/06/02 20:59:42 nilsson Exp $
+|| $Id: xml.c,v 1.64 2003/10/02 11:07:38 nilsson Exp $
 */
 
 #include "global.h"
@@ -649,12 +649,19 @@ ISWRAP(isHexChar)
 
 #ifdef VERBOSE_XMLDEBUG
 #define IF_XMLDEBUG(X) X
+#define PIKE_DEBUG
 #else
 #define IF_XMLDEBUG(X)
 #endif
 
+#ifdef PIKE_DEBUG
+#define IF_PIKEDEBUG(X) X
+#else
+#define IF_PIKEDEBUG(X)
+#endif
+
 #define PEEK(X) \
-( IF_XMLDEBUG(((X) > data->input.len)? \
+( IF_PIKEDEBUG(((X) > data->input.len)? \
     (Pike_fatal("PEEK out of bounds (%ld/%ld)\n", \
            PTRDIFF_T_TO_LONG(X), \
            PTRDIFF_T_TO_LONG(data->input.len)), 0):) \
