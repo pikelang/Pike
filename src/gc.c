@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.62 2000/04/14 16:33:00 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.63 2000/04/14 17:56:20 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -767,7 +767,8 @@ int debug_gc_do_free(void *a)
 
   m=get_marker(debug_malloc_pass(a));
 
-  if( !(m->flags & GC_REFERENCED) && (m->flags & GC_XREFERENCED) )
+  if( (m->flags & (GC_REFERENCED|GC_CHECKED)) == GC_CHECKED &&
+      (m->flags & GC_XREFERENCED) )
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
@@ -798,7 +799,9 @@ void do_gc(void)
   double tmp;
   INT32 tmp2;
   double multiplier;
+#ifdef PIKE_DEBUG
   hrtime_t gcstarttime;
+#endif
 
   if(Pike_in_gc) return;
   Pike_in_gc=1;
