@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.167 2000/03/07 08:13:18 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.168 2000/03/07 21:22:34 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1628,7 +1628,7 @@ local_function: F_IDENTIFIER push_compiler_frame1
     else
     {
       id=define_function(name,
-			 check_node_hash($<n>0)->u.sval.u.string,
+			 function_type_string,
 			 0,
 			 IDENTIFIER_PIKE_FUNCTION,
 			 0);
@@ -1742,7 +1742,7 @@ local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
     else
     {
       id=define_function(name,
-			 check_node_hash($<n>0)->u.sval.u.string,
+			 function_type_string,
 			 0,
 			 IDENTIFIER_PIKE_FUNCTION,
 			 0);
