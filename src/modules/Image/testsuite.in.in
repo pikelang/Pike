@@ -1,5 +1,5 @@
 // -*- pike -*-
-// $Id: testsuite.in.in,v 1.23 1999/10/16 08:10:00 mirar Exp $
+// $Id: testsuite.in.in,v 1.24 1999/10/18 20:23:11 mirar Exp $
 #module Image.Image
 {
 //-----------------------------------------------------------------------
@@ -41,7 +41,7 @@
    ok();
 
 #test Image.Image() too big
-   foreach ( ({0x3fffffff,0x1fffffff,0x10000000,0x7fffffff,0x7ffffffff,
+   foreach ( ({0x7fffffff,0x7ffffffff,
 	       0x7ffffffff,0x7fffffffff,0x7ffffffffff}),
 	     int x)
       if (x>0)

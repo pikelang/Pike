@@ -82,7 +82,7 @@ mixed a(){
 
 
 #44 "testsuite.in.in"
-foreach ( ({0x3fffffff,0x1fffffff,0x10000000,0x7fffffff,0x7ffffffff,
+foreach ( ({0x7fffffff,0x7ffffffff,
 0x7ffffffff,0x7fffffffff,0x7ffffffffff}),
 int x)
 if (x>0)
