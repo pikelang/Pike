@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.124 2001/04/30 17:33:55 mast Exp $");
+RCSID("$Id: main.c,v 1.125 2001/05/14 03:28:07 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -810,6 +810,7 @@ void low_exit_main(void)
   free_all_mapping_blocks();
   first_object=0;
   free_all_object_blocks();
+  first_program=0;
   free_all_program_blocks();
   exit_rbtree();
 #endif
