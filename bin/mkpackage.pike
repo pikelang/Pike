@@ -32,7 +32,7 @@ void rmrf(string ... path)
 
 class Package
 {
-  static private string install_filename, pike_filename;
+  static private string install_filename, pike_filename, extra_help;
   static private mapping(array(string):string) options =
   ([ ({ "-h", "--help" }):
      "echo \"Usage: $TARFILE [options]\"\n"
@@ -43,8 +43,7 @@ class Package
      "echo '  -v, --version           Display version information and exit.'\n"
      "echo '  --features              Display feature information and exit.'\n"
      "echo '  -a, --add <component>   Add a component to the package and exit.'\n"
-     "echo\n"
-     "echo 'When no arguments are given, the installation script will be started.'\n"
+     "echo \"$EXTRA_HELP\"\n"
      "EXIT=yes",
      ({ "-v", "--version" }):
      "echo 'Package version unknown.'\n"
@@ -97,6 +96,8 @@ class Package
 		    "while [ $# != 0 ]\n"
 		    "do\n"
 		    "  EXIT=no\n"
+		    // FIXME: Apply proper quotes.
+		    "  EXTRA_HELP='"+extra_help+"'\n"
 		    "  case \"$1\" in\n"
 		    +Array.map(sort(indices(options)),
 			       lambda(array(string) flags)
@@ -173,10 +174,11 @@ class Package
     return this_object();
   }
   
-  void create(string _pike_filename, string _install_filename)
+  void create(string pike_filename, string install_filename, string extra_help)
   {
-    pike_filename = _pike_filename;
-    install_filename = _install_filename;
+    local::pike_filename = pike_filename;
+    local::install_filename = install_filename;
+    local::extra_help = extra_help || "";
   }
 }
 
@@ -184,11 +186,14 @@ int main(int argc, array(string) argv)
 {
   if(argc < 4)
   {
-    werror("Usage: make-package.pike <name> <pike binary> <install script> [packages ...]\n");
+    write("Usage: make-package.pike <name> <pike binary> <install script> [packages ...]\n\n"
+	  "Environment variables:\n"
+	  "  EXTRA_PACKAGE_HELP\n");
     return 1;
   }
   
-  Package(argv[2], argv[3])->add_packages(@argv[4..])->make(argv[1]);
+  Package(argv[2], argv[3], getenv("EXTRA_PACKAGE_HELP")||"")->
+    add_packages(@argv[4..])->make(argv[1]);
   
   return 0;
 }
