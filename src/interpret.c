@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.91 1998/07/16 19:25:43 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.92 1998/07/17 19:53:16 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1906,7 +1906,14 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	      "Cannot call functions in destructed objects.\n", sp, args);
 #ifdef DEBUG
       if(fun>=(int)p->num_identifier_references)
+      {
+	fprintf(stderr,"Function index out of range. %d >= %d\n",fun,(int)p->num_identifier_references);
+	fprintf(stderr,"########Program is:\n");
+	describe(p);
+	fprintf(stderr,"########Object is:\n");
+	describe(o);
 	fatal("Function index out of range.\n");
+      }
 #endif
 
       ref = p->identifier_references + fun;
