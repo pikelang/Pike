@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.5 2001/10/18 18:30:52 nilsson Exp $
+ * $Id: extract.pike,v 1.6 2001/10/26 19:18:58 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -34,6 +34,10 @@ int main(int n, array(string) args) {
     error("No source file argument given.\n");
   string filename = args[0];
 
+  if(sizeof(args)<2)
+    error("Not enough arguments to 'extract' (No imgdest).\n");
+  string imgdest = args[1];
+
   werror("Extracting file %O...\n", filename);
   string file = Stdio.read_file(filename);
 
@@ -47,9 +51,7 @@ int main(int n, array(string) args) {
     foreach(file/"\n", string line) {
       mirar_parser->process_line(line, filename, lineno++);
     }
-    if(sizeof(args)<2)
-      error("Not enough arguments to 'extract' (No imgdest).\n");
-    mirar_parser->make_doc_files( args[1] );
+    mirar_parser->make_doc_files( imgdest );
     return 0;
   }
 
@@ -60,9 +62,10 @@ int main(int n, array(string) args) {
   if( !(< "c", "pike", "pike.in", "pmod", "pmod.in" >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
 
+  string result;
   mixed err = catch {
     if( suffix == "c" )
-      write( Tools.AutoDoc.ProcessXML.extractXML(filename) );
+      result = Tools.AutoDoc.ProcessXML.extractXML(filename);
     else {
       array(string) parents;
       if(catch(parents = rootless?({}):find_root(dirname(filename))) )
@@ -86,9 +89,12 @@ int main(int n, array(string) args) {
 	parents = parents[..sizeof(parents)-2];
       }
 
-      write( Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, parents) );
+      result = Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, parents);
     }
   };
+  if(result) {
+    write( Tools.AutoDoc.ProcessXML.moveImages(result, ".", imgdest) );
+  }
 
   if (err) {
     if (arrayp(err) && _typeof(err[0]) <= Tools.AutoDoc.AutoDocError)
