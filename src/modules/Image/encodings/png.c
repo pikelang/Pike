@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.60 2004/04/18 18:42:12 nilsson Exp $
+|| $Id: png.c,v 1.61 2004/04/18 19:32:32 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.60 2004/04/18 18:42:12 nilsson Exp $");
+RCSID("$Id: png.c,v 1.61 2004/04/18 19:32:32 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -537,8 +537,8 @@ static int _png_write_rgb(rgb_group *w1,
    /* w1, wa1 will be freed upon error */
 
    static rgb_group white={255,255,255};
-   static rgb_group grey4[4]={{0,0,0},{154,154,154},
-			      {212,212,212},{255,255,255}};
+   static rgb_group grey4[4]={{0,0,0},{85,85,85},
+			      {170,170,170},{255,255,255}};
    static rgb_group black={0,0,0};
 
    rgb_group *d1=w1;
