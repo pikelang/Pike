@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.324 2001/05/23 13:45:49 grubba Exp $");
+RCSID("$Id: program.c,v 1.325 2001/05/24 17:40:19 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -855,18 +855,24 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 
       ref_push_string(ident);
       ref_push_string(lex.current_file);
-
-      if(error_handler && (i=find_identifier("resolv",error_handler->prog))!=-1)
-      {
-	safe_apply_low(error_handler, i, 2);
+      if (error_handler) {
+	ref_push_object(error_handler);
+      } else {
+	push_int(0);
       }
-      if(compat_handler && (i=find_identifier("resolv",compat_handler->prog))!=-1)
+
+      if(error_handler &&
+	 (i = find_identifier("resolv", error_handler->prog))!=-1)
       {
-	safe_apply_low(compat_handler, i, 2);
+	safe_apply_low(error_handler, i, 3);
+      } else if(compat_handler &&
+		(i = find_identifier("resolv", compat_handler->prog))!=-1)
+      {
+	safe_apply_low(compat_handler, i, 3);
       }
       else
       {
-	SAFE_APPLY_MASTER("resolv", 2);
+	SAFE_APPLY_MASTER("resolv", 3);
       }
 
       if(throw_value.type == T_STRING)
