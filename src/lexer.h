@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.28 2001/01/29 20:18:08 grubba Exp $
+ * $Id: lexer.h,v 1.29 2001/01/30 00:15:03 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -142,6 +142,22 @@ static double lex_strtod(char *buf, char **end)
 
 /*** Lexical analyzing ***/
 
+/* String escape sequences
+ *
+ * Sequence		Character
+ *   \\			backslash
+ *   \[0-7]*		octal escape
+ *   \a			alert (BEL)
+ *   \b			backspace (BS)
+ *   \d[0-9]		decimal escape
+ *   \e			escape (ESC)
+ *   \f			form-feed (FF)
+ *   \n			newline (LF)
+ *   \r			carriage-return (CR)
+ *   \t			tab (HT)
+ *   \v			vertical-tab (VT)
+ *   \x[0-9a-fA-F]*	hexadecimal escape
+ */
 static int char_const(void)
 {
   int c;
@@ -166,6 +182,7 @@ static int char_const(void)
     case 'v': return 11;	/* VT */
     case 'f': return 12;	/* FF */
     case 'r': return 13;	/* CR */
+    case 'e': return 27;	/* ESC */
       
     case '\n':
       lex.current_line++;
