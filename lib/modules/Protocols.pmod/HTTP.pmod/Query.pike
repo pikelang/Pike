@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.70 2004/04/09 16:16:13 grubba Exp $
+// $Id: Query.pike,v 1.71 2004/04/11 21:41:29 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -468,9 +468,9 @@ string dns_lookup(string hostname)
 //! @returns
 //!	Returns the called object
 
-object set_callbacks(function(object,mixed...:mixed) _ok,
-		     function(object,mixed...:mixed) _fail,
-		     mixed ...extra)
+this_program set_callbacks(function(object,mixed...:mixed) _ok,
+			   function(object,mixed...:mixed) _fail,
+			   mixed ...extra)
 {
    extra_args=extra;
    request_ok=_ok;
@@ -540,9 +540,9 @@ this_program thread_request(string server, int port, string query,
 
 #endif
 
-object sync_request(string server, int port, string query,
-		    void|mapping|string http_headers,
-		    void|string data)
+this_program sync_request(string server, int port, string query,
+			  void|mapping|string http_headers,
+			  void|string data)
 {
   int kept_alive;
   string ip = dns_lookup( server );
@@ -605,8 +605,8 @@ object sync_request(string server, int port, string query,
   return this;
 }
 
-object async_request(string server,int port,string query,
-		     void|mapping|string headers,void|string data)
+this_program async_request(string server,int port,string query,
+			   void|mapping|string headers,void|string data)
 {
    // start open the connection
 
