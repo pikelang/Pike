@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.1.1.1 1996/11/05 15:10:09 grubba Exp $
+ * $Id: crypto.c,v 1.2 1996/11/07 19:29:02 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -39,9 +39,63 @@
  * Globals
  */
 
+static const char *crypto_functions[] = {
+  "query_block_size",
+  "query_key_length",
+  "set_key",
+  "encrypt",
+  "decrypt",
+  NULL
+};
+
+static struct program *pike_crypto_program;
+
 /*
  * Functions
  */
+
+static void init_pike_crypto(struct object *o)
+{
+  memset(PIKE_CRYPTO, 0, sizeof(struct pike_crypto));
+}
+
+static void exit_pike_crypto(struct object *o)
+{
+  if (PIKE_CRYPTO->object) {
+    free_object(PIKE_CRYPTO->object);
+  }
+  if (PIKE_CRYPTO->iv) {
+    MEMSET(PIKE_CRYPTO->iv, 0, PIKE_CRYPTO->block_size);
+    free(PIKE_CRYPTO->iv);
+  }
+  if (PIKE_CRYPTO->overflow) {
+    MEMSET(PIKE_CRYPTO->overflow, 0, PIKE_CRYPTO->block_size);
+    free(PIKE_CRYPTO->overflow);
+  }
+  memset(PIKE_CRYPTO, 0, sizeof(struct pike_crypto));
+}
+
+static void check_functions(struct object *o, const char **requiered)
+{
+  struct program *p;
+
+  if (!o) {
+    error("/precompiled/crypto: internal error -- no object\n");
+  }
+  if (!requiered) {
+    return;
+  }
+
+  p = o->prog;
+
+  while (*requiered) {
+    if (!find_identifier(*requiered, p)) {
+      error("/precompiled/crypto: Object is missing identifier \"%s\"\n",
+	    *requiered);
+    }
+    requiered++;
+  }
+}
 
 /*
  * efuns and the like
@@ -128,6 +182,245 @@ static void f_hex_to_string(INT32 args)
 }
 
 /*
+ * /precompiled/crypto
+ */
+
+/* void create(program|object, ...) */
+static void f_create(INT32 args)
+{
+  if (args < 1) {
+    error("Too few arguments to crypto->create()\n");
+  }
+  if ((sp[-args].type != T_PROGRAM) &&
+      (sp[-args].type != T_OBJECT)) {
+    error("Bad argument 1 to crypto->create()\n");
+  }
+  if (sp[-args].type == T_PROGRAM) {
+    PIKE_CRYPTO->object = clone(sp[-args].u.program, args-1);
+  } else {
+    if (args != 1) {
+      error("Too many arguments to crypto->create()\n");
+    }
+    PIKE_CRYPTO->object = sp[-args].u.object;
+    PIKE_CRYPTO->object->refs++;
+  }
+  pop_stack(); /* Just one element left on the stack in both cases */
+
+  check_functions(PIKE_CRYPTO->object, crypto_functions);
+
+  safe_apply(PIKE_CRYPTO->object, "query_block_size", 0);
+
+  if (sp[-1].type != T_INT) {
+    error("crypto->create(): query_block_size() didn't return an int\n");
+  }
+  PIKE_CRYPTO->block_size = sp[-1].u.integer;
+
+  pop_stack();
+
+  if ((!PIKE_CRYPTO->block_size) ||
+      (PIKE_CRYPTO->block_size > 4096)) {
+    error("crypto->create(): Bad block size %d\n", PIKE_CRYPTO->block_size);
+  }
+
+  PIKE_CRYPTO->iv = (unsigned char *)xalloc(PIKE_CRYPTO->block_size);
+  PIKE_CRYPTO->overflow = (unsigned char *)xalloc(PIKE_CRYPTO->block_size);
+  PIKE_CRYPTO->overflow_len = 0;
+  MEMSET(PIKE_CRYPTO->iv, 0, PIKE_CRYPTO->block_size);
+  MEMSET(PIKE_CRYPTO->overflow, 0, PIKE_CRYPTO->block_size);
+}
+
+/* int query_block_size(void) */
+static void f_query_block_size(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(PIKE_CRYPTO->block_size);
+}
+
+/* int query_key_length(void) */
+static void f_query_key_length(INT32 args)
+{
+  safe_apply(PIKE_CRYPTO->object, "query_key_length", args);
+}
+
+/* void set_key(INT32 args) */
+static void f_set_key(INT32 args)
+{
+  if (PIKE_CRYPTO->block_size) {
+    MEMSET(PIKE_CRYPTO->iv, 0, PIKE_CRYPTO->block_size);
+    MEMSET(PIKE_CRYPTO->overflow, 0, PIKE_CRYPTO->block_size);
+  } else {
+    error("crypto->set_key(): Object has not been created yet\n");
+  }
+  safe_apply(PIKE_CRYPTO->object, "set_key", args);
+}
+
+/* string encrypt(string) */
+static void f_encrypt(INT32 args)
+{
+  safe_apply(PIKE_CRYPTO->object, "encrypt", args);
+}
+
+/* string decrypt(string) */
+static void f_decrypt(INT32 args)
+{
+  safe_apply(PIKE_CRYPTO->object, "decrypt", args);
+}
+
+/* string ecb_encrypt(string) */
+static void f_ecb_encrypt(INT32 args)
+{
+  unsigned char *result;
+  INT32 roffset = 0;
+  INT32 soffset = 0;
+
+  if (args != 1) {
+    error("Wrong number of arguments to crypto->ecb_encrypt()\n");
+  }
+  if (sp[-1].type != T_STRING) {
+    error("Bad argument 1 to crypto->ecb_encrypt()\n");
+  }
+  if (!(result = alloca(sp[-1].u.string->len + PIKE_CRYPTO->block_size))) {
+    error("crypto->ecb_encrypt(): Out of memory\n");
+  }
+  if (PIKE_CRYPTO->overflow_len) {
+    if (sp[-1].u.string->len >=
+	(PIKE_CRYPTO->block_size - PIKE_CRYPTO->overflow_len)) {
+      MEMCPY(PIKE_CRYPTO->overflow + PIKE_CRYPTO->overflow_len,
+	     sp[-1].u.string->str,
+	     (PIKE_CRYPTO->block_size - PIKE_CRYPTO->overflow_len));
+      soffset += (PIKE_CRYPTO->block_size - PIKE_CRYPTO->overflow_len);
+      PIKE_CRYPTO->overflow_len = 0;
+      push_string(make_shared_binary_string((char *)PIKE_CRYPTO->overflow,
+					    PIKE_CRYPTO->block_size));
+      safe_apply(PIKE_CRYPTO->object, "encrypt", 1);
+      if (sp[-1].type != T_STRING) {
+	error("crypto->ecb_encrypt(): encrypt() did not return string\n");
+      }
+      if (sp[-1].u.string->len != PIKE_CRYPTO->block_size) {
+	error("crypto->ecb_encrypt(): Unexpected string length %d\n",
+	      sp[-1].u.string->len);
+      }
+	
+      MEMCPY(result + roffset, sp[-1].u.string->str, PIKE_CRYPTO->block_size);
+      roffset += PIKE_CRYPTO->block_size;
+      pop_stack();
+      MEMSET(PIKE_CRYPTO->overflow, 0, PIKE_CRYPTO->block_size);
+    } else {
+      MEMCPY(PIKE_CRYPTO->overflow + PIKE_CRYPTO->overflow_len,
+	     sp[-1].u.string->str, sp[-1].u.string->len);
+      PIKE_CRYPTO->overflow_len += sp[-1].u.string->len;
+      pop_n_elems(args);
+      push_string(make_shared_binary_string("", 0));
+      return;
+    }
+  }
+  
+  while (soffset + PIKE_CRYPTO->block_size <= sp[-1].u.string->len) {
+    push_string(make_shared_binary_string(sp[-1].u.string->str + soffset,
+					  PIKE_CRYPTO->block_size));
+    soffset += PIKE_CRYPTO->block_size;
+    safe_apply(PIKE_CRYPTO->object, "encrypt", 1);
+    if (sp[-1].type != T_STRING) {
+      error("crypto->ecb_encrypt(): encrypt() did not return string\n");
+    }
+    if (sp[-1].u.string->len != PIKE_CRYPTO->block_size) {
+      error("crypto->ecb_encrypt(): Unexpected string length %d\n",
+	    sp[-1].u.string->len);
+    }
+	
+    MEMCPY(result + roffset, sp[-1].u.string->str, PIKE_CRYPTO->block_size);
+    roffset += PIKE_CRYPTO->block_size;
+    pop_stack();
+  }
+
+  if (soffset < sp[-1].u.string->len) {
+    MEMCPY(PIKE_CRYPTO->overflow, sp[-1].u.string->str + soffset,
+	   sp[-1].u.string->len - soffset);
+    PIKE_CRYPTO->overflow_len = sp[-1].u.string->len - soffset;
+  }
+
+  push_string(make_shared_binary_string((char *)result, roffset));
+  MEMSET(result, 0, roffset);
+}
+
+/* string ecb_decrypt(string) */
+static void f_ecb_decrypt(INT32 args)
+{
+  unsigned char *result;
+  INT32 roffset = 0;
+  INT32 soffset = 0;
+
+  if (args != 1) {
+    error("Wrong number of arguments to crypto->ecb_decrypt()\n");
+  }
+  if (sp[-1].type != T_STRING) {
+    error("Bad argument 1 to crypto->ecb_decrypt()\n");
+  }
+  if (!(result = alloca(sp[-1].u.string->len + PIKE_CRYPTO->block_size))) {
+    error("crypto->ecb_decrypt(): Out of memory\n");
+  }
+  if (PIKE_CRYPTO->overflow_len) {
+    if (sp[-1].u.string->len >=
+	(PIKE_CRYPTO->block_size - PIKE_CRYPTO->overflow_len)) {
+      MEMCPY(PIKE_CRYPTO->overflow + PIKE_CRYPTO->overflow_len,
+	     sp[-1].u.string->str,
+	     (PIKE_CRYPTO->block_size - PIKE_CRYPTO->overflow_len));
+      soffset += (PIKE_CRYPTO->block_size - PIKE_CRYPTO->overflow_len);
+      PIKE_CRYPTO->overflow_len = 0;
+      push_string(make_shared_binary_string((char *)PIKE_CRYPTO->overflow,
+					    PIKE_CRYPTO->block_size));
+      safe_apply(PIKE_CRYPTO->object, "decrypt", 1);
+      if (sp[-1].type != T_STRING) {
+	error("crypto->ecb_decrypt(): decrypt() did not return string\n");
+      }
+      if (sp[-1].u.string->len != PIKE_CRYPTO->block_size) {
+	error("crypto->ecb_decrypt(): Unexpected string length %d\n",
+	      sp[-1].u.string->len);
+      }
+	
+      MEMCPY(result + roffset, sp[-1].u.string->str, PIKE_CRYPTO->block_size);
+      roffset += PIKE_CRYPTO->block_size;
+      pop_stack();
+      MEMSET(PIKE_CRYPTO->overflow, 0, PIKE_CRYPTO->block_size);
+    } else {
+      MEMCPY(PIKE_CRYPTO->overflow + PIKE_CRYPTO->overflow_len,
+	     sp[-1].u.string->str, sp[-1].u.string->len);
+      PIKE_CRYPTO->overflow_len += sp[-1].u.string->len;
+      pop_n_elems(args);
+      push_string(make_shared_binary_string("", 0));
+      return;
+    }
+  }
+  
+  while (soffset + PIKE_CRYPTO->block_size <= sp[-1].u.string->len) {
+    push_string(make_shared_binary_string(sp[-1].u.string->str + soffset,
+					  PIKE_CRYPTO->block_size));
+    soffset += PIKE_CRYPTO->block_size;
+    safe_apply(PIKE_CRYPTO->object, "decrypt", 1);
+    if (sp[-1].type != T_STRING) {
+      error("crypto->ecb_decrypt(): decrypt() did not return string\n");
+    }
+    if (sp[-1].u.string->len != PIKE_CRYPTO->block_size) {
+      error("crypto->ecb_decrypt(): Unexpected string length %d\n",
+	    sp[-1].u.string->len);
+    }
+	
+    MEMCPY(result + roffset, sp[-1].u.string->str, PIKE_CRYPTO->block_size);
+    roffset += PIKE_CRYPTO->block_size;
+    pop_stack();
+  }
+
+  if (soffset < sp[-1].u.string->len) {
+    MEMCPY(PIKE_CRYPTO->overflow, sp[-1].u.string->str + soffset,
+	   sp[-1].u.string->len - soffset);
+    PIKE_CRYPTO->overflow_len = sp[-1].u.string->len - soffset;
+  }
+
+  push_string(make_shared_binary_string((char *)result, roffset));
+  MEMSET(result, 0, roffset);
+}
+
+/*
  * Module linkage
  */
 
@@ -162,6 +455,28 @@ void init_module_programs(void)
    * program->refs++;
    *
    */
+
+  start_new_program();
+  add_storage(sizeof(struct pike_crypto));
+
+  add_function("create", f_create, "function(program|object:void)", OPT_EXTERNAL_DEPEND);
+
+  add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
+
+  add_function("set_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("encrypt", f_encrypt, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("decrypt", f_decrypt, "function(string:string)", OPT_EXTERNAL_DEPEND);
+
+  add_function("ecb_encrypt", f_ecb_encrypt, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("ecb_decrypt", f_ecb_decrypt, "function(string:string)", OPT_EXTERNAL_DEPEND);
+
+  set_init_callback(init_pike_crypto);
+  set_exit_callback(exit_pike_crypto);
+
+  pike_crypto_program = end_c_program("/precompiled/crypto");
+  pike_crypto_program->refs++;
+
   init_md2_programs();
   init_md5_programs();
   init_idea_programs();

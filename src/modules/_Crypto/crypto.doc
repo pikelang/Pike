@@ -1,0 +1,18 @@
+In essence the /precompiled/crypto program will do a restricted inherit
+of the sub-module given to create().
+
+string create(program|object);	/* Encrypt using this sub-module */
+int query_block_size(void);	/* Returns the size of the crypt block */
+int query_key_length(void);	/* Returns the minimum key length */
+void set_key(string);		/* Sets the encryption/decryption key, and
+				   resets the state */
+string encrypt(string);		/* Encrypt the block with the current key */
+string decrypt(string);		/* Decrypt the block with the current key */
+string ecb_encrypt(string);	/* Encrypt the string, using the
+				   Electronic CookBook method */
+string ecb_decrypt(string);	/* Decrypt the string, using the
+				   Electronic CookBook method */
+string cbc_encrypt(string);	/* Encrypt the string, using the
+				   Cipher Block Chaining method */
+string cbc_decrypt(string);	/* Decrypt the string, using the
+				   Cipher Block Chaining method */
