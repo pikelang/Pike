@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.233 2000/04/25 09:32:46 hubbe Exp $");
+RCSID("$Id: program.c,v 1.234 2000/04/27 02:13:28 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -971,7 +971,7 @@ void really_free_program(struct program *p)
   FREE_PROT(p);
   dmfree((char *)p);
 
-  GC_FREE();
+  GC_FREE(p);
 }
 
 #ifdef PIKE_DEBUG

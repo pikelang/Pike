@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.38 2000/04/23 03:01:25 mast Exp $
+ * $Id: gc.h,v 1.39 2000/04/27 02:13:28 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -93,29 +93,30 @@ void f__gc_status(INT32 args);
 #define gc_xmark_svalues(S,N) real_gc_xmark_svalues(debug_malloc_pass(S),N)
 #define gc_check(VP) real_gc_check(debug_malloc_pass(VP))
 
-#ifdef PIKE_DEBUG
-
-#define LOW_GC_FREE() do {						\
-  extern int d_flag;							\
-  if(d_flag) CHECK_INTERPRETER_LOCK();					\
-  num_objects-- ;							\
-  if(num_objects < 0)							\
-    fatal("Panic!! less than zero objects!\n");				\
+#define LOW_GC_FREE(X) do {				\
+  DO_IF_DEBUG(						\
+    extern int d_flag;					\
+    if(d_flag) CHECK_INTERPRETER_LOCK();		\
+    if(num_objects < 1)					\
+      fatal("Panic!! less than zero objects!\n");	\
+  )							\
+  num_objects-- ;					\
+  if(Pike_in_gc) remove_marker(X);			\
 }while(0)
 
-#define GC_FREE() do {							\
-  if(Pike_in_gc == GC_PASS_MARK)					\
-    fatal("Freeing objects within gc is not allowed!\n");		\
-  LOW_GC_FREE();							\
+#define GC_FREE(X) do {						\
+  DO_IF_DEBUG(							\
+    if(Pike_in_gc == GC_PASS_MARK)				\
+      fatal("Freeing objects within gc is not allowed!\n");	\
+  )								\
+  LOW_GC_FREE((X));						\
 }while(0)
 
-#else
+#ifndef PIKE_DEBUG
 #define debug_gc_check_svalues(S,N,T,V) gc_check_svalues((S),N)
 #define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
-#define LOW_GC_FREE() do {num_objects-- ; }while(0)
-#define GC_FREE() LOW_GC_FREE()
 #endif
 
 

@@ -16,7 +16,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.20 2000/04/23 03:01:25 mast Exp $");
+RCSID("$Id: multiset.c,v 1.21 2000/04/27 02:13:28 hubbe Exp $");
 
 struct multiset *first_multiset;
 
@@ -66,7 +66,7 @@ void really_free_multiset(struct multiset *l)
   if(l->next)  l->next->prev = l->prev;
     
   free((char *)l);
-  GC_FREE();
+  GC_FREE(l);
 }
 
 
