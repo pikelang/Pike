@@ -1128,7 +1128,7 @@ void dump_modules()
 	  "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
 	  });
 
-    cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
+    cmd+=({ "-x", "dump",
 	    "--log-file",	// --distquiet below might override this.
 #ifdef USE_GTK
 	      label1?"--distquiet":
@@ -1264,7 +1264,6 @@ void do_install()
 				"modules/dynamic_module_makefile"),
 		   combine_path(vars->SRCDIR,"install-welcome"),
 		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
-		   combine_path(vars->SRCDIR,"dumpmodule.pike"),
       });
 
       void basefile(string x) {
