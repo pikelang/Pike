@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.3 1997/03/22 20:56:36 grubba Exp $ */
+/* $Id: x.c,v 1.4 1997/03/22 21:01:00 grubba Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.3 1997/03/22 20:56:36 grubba Exp $");
+RCSID("$Id: x.c,v 1.4 1997/03/22 21:01:00 grubba Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -54,7 +54,7 @@ void image_to8bit_closest(INT32 args)
 
   i=THIS->xsize*THIS->ysize;
   s=THIS->img;
-  d=res->str;
+  d=(unsigned char *)res->str;
 
   THREADS_ALLOW();
   while (i--)
@@ -89,7 +89,7 @@ void image_to8bit(INT32 args)
 
   i=THIS->xsize*THIS->ysize;
   s=THIS->img;
-  d=res->str;
+  d=(unsigned char *)res->str;
 
   THREADS_ALLOW();
   while (i--)
@@ -135,7 +135,7 @@ void image_to8bit_fs(INT32 args)
 
    i=THIS->ysize;
    s=THIS->img;
-   d=sres->str;
+   d=(unsigned char *)sres->str;
    w=0;
    xs=THIS->xsize;
    THREADS_ALLOW();
@@ -167,7 +167,7 @@ void image_tozbgr(INT32 args)
 
    i=THIS->ysize*THIS->xsize;
    s=THIS->img;
-   d=sres->str;
+   d=(unsigned char *)sres->str;
 
    THREADS_ALLOW();
    while (i--)
@@ -227,11 +227,11 @@ void image_to8bit_rgbcube(INT32 args)
      else if (sp[3-args].u.string->len<red*green*blue)
 	error("map string is not long enough to image->to8bit_rgbcube()\n");
      else
-	map=sp[3-args].u.string->str;
+	map=(unsigned char *)sp[3-args].u.string->str;
 
   i=THIS->xsize*THIS->ysize;
   s=THIS->img;
-  d=res->str;
+  d=(unsigned char *)res->str;
 
   THREADS_ALLOW();
   if (!map)
@@ -301,11 +301,11 @@ void image_to8bit_rgbcube_rdither(INT32 args)
      else if (sp[3-args].u.string->len<red*green*blue)
 	error("map string is not long enough to image->to8bit_rgbcube()\n");
      else
-	map=sp[3-args].u.string->str;
+	map=(unsigned char *)sp[3-args].u.string->str;
 
   i=THIS->xsize*THIS->ysize;
   s=THIS->img;
-  d=res->str;
+  d=(unsigned char *)res->str;
 
   THREADS_ALLOW();
   if (!map)
