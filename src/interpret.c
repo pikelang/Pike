@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.183 2001/01/24 08:17:27 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.184 2001/01/31 21:51:58 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -603,11 +603,6 @@ void print_return_value(void)
 struct callback_list evaluator_callbacks;
 #define CASE(X) case (X)-F_OFFSET:
 
-#define DOJUMP() \
- do { int tmp; tmp=EXTRACT_INT(pc); pc+=tmp; if(tmp < 0) fast_check_threads_etc(6); }while(0)
-
-#define SKIPJUMP() pc+=sizeof(INT32)
-
 #define COMPARISMENT(ID,EXPR) \
 CASE(ID); \
 instr=EXPR; \
@@ -628,24 +623,22 @@ CASE(ID)							\
   if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC))		\
   {								\
     i->integer += INC;						\
-    if(i->integer OP2 Pike_sp[-3].u.integer)				\
+    if(i->integer OP2 Pike_sp[-3].u.integer)			\
     {								\
-      pc+=EXTRACT_INT(pc);					\
-      fast_check_threads_etc(8);				\
+      DOJUMP();							\
     }else{							\
-      pc+=sizeof(INT32);					\
-    }                                                           \
+      SKIPJUMP();						\
+    }								\
   }else{							\
-    lvalue_to_svalue_no_free(Pike_sp,Pike_sp-2); Pike_sp++;			\
+    lvalue_to_svalue_no_free(Pike_sp,Pike_sp-2); Pike_sp++;	\
     push_int(INC);						\
     f_add(2);							\
-    assign_lvalue(Pike_sp-3,Pike_sp-1);					\
-    if(OP4 ( Pike_sp-1, Pike_sp-4 ))					\
+    assign_lvalue(Pike_sp-3,Pike_sp-1);				\
+    if(OP4 ( Pike_sp-1, Pike_sp-4 ))				\
     {								\
-      pc+=EXTRACT_INT(pc);					\
-      fast_check_threads_etc(8);				\
+      DOJUMP();							\
     }else{							\
-      pc+=sizeof(INT32);					\
+      SKIPJUMP();						\
     }								\
     pop_stack();						\
   }								\
@@ -739,6 +732,10 @@ void dump_backlog(void)
 	fprintf(stderr,"(%ld,%ld)",
 		(long)backlog[e].arg,
 		(long)backlog[e].arg2);
+      }
+      else if(instrs[backlog[e].instruction].flags & I_JUMP)
+      {
+	fprintf(stderr,"(%+ld)", (long)backlog[e].arg);
       }
       else if(instrs[backlog[e].instruction].flags & I_HASARG)
       {
