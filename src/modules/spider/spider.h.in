@@ -1,35 +1,19 @@
-#undef HAVE_GETPGRP
-
-#undef HAVE_GETPPID
-
-#undef HAVE_GETGID
-
-#undef HAVE_GETEGID
-
-#undef HAVE_GETEUID
-
-#undef HAVE_GETGID
-
-#undef HAVE_GETUID
-
-#undef HAVE_SYSLOG_H
-
-#undef HAVE_SYSLOG
-
-#undef HAVE_INT_TIMEZONE
-
-#undef HAVE_PERROR
-
-#undef HAVE_STRERROR
 
 #undef HAVE_ARPA_INET_H
-
-#undef HAVE_SYS_SOCKETVAR_H
-
-#undef HAVE_NETINET_IN_H
-
 #undef HAVE_FCHROOT
-
-#undef HAVE_SYS_MMAN_H
-
+#undef HAVE_GETEGID
+#undef HAVE_GETEUID
+#undef HAVE_GETGID
+#undef HAVE_GETGID
+#undef HAVE_GETPGRP
+#undef HAVE_GETPPID
+#undef HAVE_GETUID
+#undef HAVE_INT_TIMEZONE
+#undef HAVE_NETINET_IN_H
+#undef HAVE_PERROR
 #undef HAVE_STRDUP
+#undef HAVE_STRERROR
+#undef HAVE_SYSLOG
+#undef HAVE_SYSLOG_H
+#undef HAVE_SYS_MMAN_H
+#undef HAVE_SYS_SOCKETVAR_H
