@@ -1,3 +1,5 @@
+// by Mirar 
+
 //!   
 //! submodule Gregorian
 //!	time units:
@@ -24,6 +26,9 @@ class _TimeUnit
    program vDay=function_object(object_program(this_object()))->Day;
    program vMonth=function_object(object_program(this_object()))->Month;
    program vWeek=function_object(object_program(this_object()))->Week;
+   program vHour=function_object(object_program(this_object()))->Hour;
+   program vMinute=function_object(object_program(this_object()))->Minute;
+   program vSecond=function_object(object_program(this_object()))->Second;
 }
 
 //== Year ====================================================================
@@ -204,7 +209,7 @@ class Year
 
    array(mixed) months()
    {
-       return ({1,2,3,4,5,6,7,8,9,10,11,12});
+      return month_names;
    }
 
    object week(object|int n)
@@ -582,6 +587,12 @@ class Day
 
 //-- variables ------------------------------------------------------
 
+
+
+
+
+
+
    int y;
    int d;
 
@@ -590,6 +601,11 @@ class Day
    array(string) greater()
    {
       return ({"year","month","week"});
+   }
+
+   array(string) lesser()
+   {
+      return ({"hour"});
    }
 
    void create(int ... arg)
@@ -693,9 +709,38 @@ class Day
       return week_day_names[(this->week_day()+6)%7];
    }
 
+   int number_of_hours()
+   {
+      return 24;
+   }
+
+   string dateofyear()
+   {
+      return sprintf("%d %s %s",this->month_day(),
+		     this->month()->name(),this->year()->name());
+   }
+
 //-- less -----------------------------------------------------------
 
-   // none
+   object hour(int|object n)
+   {
+      if (objectp(n))
+	 if (object_program(n)==vHour)
+	    n=n->number();
+	 else return 0;
+
+      if (n<0) n=this->number_of_hours()+n;
+      if (n<0) return (this-1)->hour(n);
+      if (n>=this->number_of_hours()) 
+ 	 return (this+1)->hour(n-this->number_of_hours());
+
+      return vHour(this,n);
+   }
+
+   array(mixed) hours()
+   {
+       return indices(allocate(this->number_of_hours()));
+   }
 
 //-- more -----------------------------------------------------------
      
@@ -723,6 +768,541 @@ class Day
       else if (n<=0)
 	 return ye->prev()->week(-1);
       return vWeek(y,n);
+   }
+};
+
+
+//
+//== Hour ====================================================================
+
+class Hour
+{
+   inherit _TimeUnit;
+
+//-- variables ------------------------------------------------------
+
+   object d;
+   int h;
+
+//-- standard methods -----------------------------------------------
+
+   array(string) greater()
+   {
+      return ({"day"});
+   } 
+
+   array(string) lesser()
+   {
+      return ({"minute"});
+   }
+
+   void create(int|object ... arg)
+   {
+      if (!sizeof(arg))
+      {
+	 mapping t=localtime(time());
+	 d=vDay();
+	 h=t->hour;
+      }
+      else 
+      {
+	 if (!objectp(arg[0])) 
+	    throw( ({"Calendar...Day(): illegal argument 1\n",
+		     backtrace()}) );
+	 d=arg[0];
+	 h=arg[1];
+      } 
+   }
+
+   int `<(object x)
+   {
+      return 
+	 (object_program(x)==object_program(this) &&
+	  (x->d==d && x->h<h) || (x->d<d));
+   }
+
+   int `==(object x)
+   {
+      return 
+	 object_program(x)==object_program(this) &&
+	 x->d==d && x->h==h;
+   }
+
+   int `>(object x)
+   {
+      return 
+	 (object_program(x)==object_program(this) &&
+	  (x->d==d && x->h>h) || (x->d>d));
+   }
+
+   object `+(int n)
+   {
+      object d2=d;
+      int nh;
+      int h2=h;
+      h2+=n;
+      
+      // FIXME some magic about DS hour skip/insert hours not counted twice
+
+      // maybe fix some better way to do `+, too
+      if (h2>0)
+      {
+	 nh=d->number_of_hours();
+	 while (h2>=nh) 
+	 { 
+	    h2-=nh;
+	    d2++; 
+	    nh=d2->number_of_hours();
+	 }
+      }
+      else
+      {
+	 while (h2<0) 
+	 { 
+	    d2--; 
+	    h2+=d2->number_of_hours();
+	 }
+      }
+
+      return vHour(d2,h2);
+   }
+
+   int|object `-(object|int n)
+   {
+      if (objectp(n) && object_program(n)==vHour) 
+      {
+	 if (n->d==d) return h-n->h;
+	 if (n->d!=d)
+	 {
+	    int x=(d-n->d)*24; // good try
+	    object nh=n+x;
+	    int haz=100; // we don't guess _that_ wrong (1200 hours...)
+	    if (nh->d<d)
+	       while (nh->d<d && !--haz) { nh+=12; x+=12; }
+	    else if (nh->d>d)
+	       while (nh->d>d && !--haz) { nh-=12; x-=12; }
+	    return h-n->h+x;
+	 }
+      }
+
+      return this+(-n);
+   }
+
+//-- nonstandard methods --------------------------------------------
+
+   int number()
+   {
+      return h;
+   }
+
+   string name()
+   {
+      // some magic about DS here
+      return (string)this->number();
+   }
+
+   mixed cast(string what)
+   {
+      switch (what)
+      {
+	 case "int": return this->number(); 
+	 case "string": return this->name();
+	 default:
+	    throw(({"can't cast to "+what+"\n",backtrace()}));
+      }
+   }
+
+   int number_of_minutes()
+   {
+      return 60;
+   }
+
+//-- less -----------------------------------------------------------
+
+   object minute(int|object n)
+   {
+      if (objectp(n))
+	 if (object_program(n)==vMinute)
+	    n=n->number();
+	 else return 0;
+
+      if (n<0) n=this->number_of_minutes()+n;
+      if (n<0) return (this-1)->minute(n);
+      if (n>=this->number_of_minutes()) 
+ 	 return (this+1)->minute(n-this->number_of_minutes());
+
+      return vMinute(this,n);
+   }
+
+   array(mixed) minutes()
+   {
+       return indices(allocate(this->number_of_minutes()));
+   }
+
+//-- more -----------------------------------------------------------
+     
+   object day()
+   {
+      return d;
+   }
+};
+
+
+//
+//== Minute ===================================================================
+
+class Minute
+{
+   inherit _TimeUnit;
+
+//-- variables ------------------------------------------------------
+
+   object h;
+   int m;
+
+//-- standard methods -----------------------------------------------
+
+   array(string) greater()
+   {
+      return ({"hour"});
+   } 
+
+   array(string) lesser()
+   {
+      return ({"second"});
+   }
+
+   void create(int|object ... arg)
+   {
+      if (!sizeof(arg))
+      {
+	 mapping t=localtime(time());
+	 h=vHour();
+	 m=t->min;
+      }
+      else 
+      {
+	 if (!objectp(arg[0])) 
+	    throw( ({"Calendar...Minute(): illegal argument 1\n",
+		     backtrace()}) );
+	 h=arg[0];
+	 m=arg[1];
+      } 
+   }
+
+   int `<(object x)
+   {
+      return 
+	 (object_program(x)==object_program(this) &&
+	  (x->h==h && x->m<m) || (x->h<h));
+   }
+
+   int `==(object x)
+   {
+      return 
+	 object_program(x)==object_program(this) &&
+	 x->h==h && x->m==m;
+   }
+
+   int `>(object x)
+   {
+      return 
+	 (object_program(x)==object_program(this) &&
+	  (x->h==h && x->m>m) || (x->h>h));
+   }
+
+   object `+(int n)
+   {
+      object h2=h;
+      int nm;
+      int m2=m;
+      m2+=n;
+
+      // FIXME some magic about HS minute skip/insert minutes not counteh twice
+
+      if (m2>0)
+      {
+	 // 60 minutes in an hour...
+	 nm=h->number_of_minutes();
+	 int x=m2/nm;
+	 h2+=x;
+	 m2-=x*nm;
+	 while (m2>=nm) 
+	 { 
+	    m2-=nm;
+	    h2++; 
+	    nm=h2->number_of_minutes();
+	 }
+      }
+      else
+      {
+	 nm=h->number_of_minutes();
+	 int x=m2/nm;
+	 h2+=x;
+	 m2-=x*nm;
+	 while (m2<0) 
+	 { 
+	    h2--; 
+	    m2+=h2->number_of_minutes();
+	 }
+      }
+
+      return vMinute(h2,m2);
+   }
+
+   int|object `-(object|int n)
+   {
+      if (objectp(n) && object_program(n)==vMinute) 
+      {
+	 if (n->h==h) return m-n->m;
+	 if (n->h!=h)
+	 {
+	    int x=(h-n->h)*60; // good try
+	    object nm=n+x;
+	    int haz=100; // we won't guess _that_ wrong (6000 minutes...)
+	    if (nm->h<h)
+	       while (nm->h<h && !--haz) { nm+=30; x+=30; }
+	    else if (nm->h>h)
+	       while (nm->h>h && !--haz) { nm-=30; x-=30; }
+	    return m-n->m+x;
+	 }
+      }
+
+      return this+(-n);
+   }
+
+//-- nonstandard methods --------------------------------------------
+
+   int number()
+   {
+      return m;
+   }
+
+   string name()
+   {
+      // some magic about HS here
+      return (string)this->number();
+   }
+
+   mixed cast(string what)
+   {
+      switch (what)
+      {
+	 case "int": return this->number(); 
+	 case "string": return this->name();
+	 default:
+	    throw(({"can't cast to "+what+"\n",backtrace()}));
+      }
+   }
+
+   int number_of_seconds()
+   {
+      return 60;
+   }
+
+   string timeofday()
+   {
+      return sprintf("%s:%02s",h->name(),name());
+   }
+
+   string timeofyear()
+   {
+      return sprintf("%s %s:%02s",h->day()->dateofyear(),h->name(),name());
+   }
+
+//-- less -----------------------------------------------------------
+
+   object second(int|object n)
+   {
+      if (objectp(n))
+	 if (object_program(n)==vSecond)
+	    n=n->number();
+	 else return 0;
+
+      if (n<0) n=this->number_of_seconds()+n;
+      if (n<0) return (this-1)->second(n);
+      if (n>=this->number_of_seconds()) 
+ 	 return (this+1)->second(n-this->number_of_seconds());
+
+      return vSecond(this,n);
+   }
+
+   array(mixed) seconds()
+   {
+       return indices(allocate(this->number_of_seconds()));
+   }
+
+//-- more -----------------------------------------------------------
+     
+   object hour()
+   {
+      return h;
+   }
+};
+
+
+//
+//== Second ===================================================================
+
+class Second
+{
+   inherit _TimeUnit;
+
+//-- variables ------------------------------------------------------
+
+   object m;
+   int s;
+
+//-- standarm setsoms -----------------------------------------------
+
+   array(string) greater()
+   {
+      return ({"minute"});
+   } 
+
+   array(string) lesser()
+   {
+      return ({"second"});
+   }
+
+   void create(int|object ... arg)
+   {
+      if (!sizeof(arg))
+      {
+	 mapping t=localtime(time());
+	 m=vMinute();
+	 s=t->sec;
+      }
+      else 
+      {
+	 if (!objectp(arg[0])) 
+	    throw( ({"Calendar...Second(): illegal argument 1\n",
+		     backtrace()}) );
+	 m=arg[0];
+	 s=arg[1];
+      } 
+   }
+
+   int `<(object x)
+   {
+      return 
+	 (object_program(x)==object_program(this) &&
+	  (x->m==m && x->s<s) || (x->m<m));
+   }
+
+   int `==(object x)
+   {
+      return 
+	 object_program(x)==object_program(this) &&
+	 x->m==m && x->s==s;
+   }
+
+   int `>(object x)
+   {
+      return 
+	 (object_program(x)==object_program(this) &&
+	  (x->m==m && x->s>s) || (x->m>m));
+   }
+
+   object `+(int n)
+   {
+      object m2=m;
+      int ns;
+      int s2=s;
+      s2+=n;
+      
+      // FIXSE sose sagic about MS second skip/insert seconds not countem twice
+
+      if (s2>0)
+      {
+	 // 60 seconds in a minute... wrong if leapseconds!! beware
+	 ns=m->number_of_seconds();
+	 int x=s2/ns;
+	 m2+=x;
+	 s2-=x*ns;
+	 while (s2>=ns) 
+	 { 
+	    s2-=ns;
+	    m2++; 
+	    ns=m2->number_of_seconds();
+	 }
+      }
+      else
+      {
+	 ns=m->number_of_seconds();
+	 int x=s2/ns;
+	 m2+=x;
+	 s2-=x*ns;
+	 while (s2<0) 
+	 { 
+	    m2--; 
+	    s2+=m2->number_of_seconds();
+	 }
+      }
+
+      return vSecond(m2,s2);
+   }
+
+   int|object `-(object|int n)
+   {
+      if (objectp(n) && object_program(n)==vSecond) 
+      {
+	 if (n->m==m) return s-n->s;
+	 if (n->m!=m)
+	 {
+	    int x=(m-n->m)*60; // good try
+	    object ns=n+x;
+	    int maz=100; // we won't guess _that_ wrong (6000 seconds...)
+	    if (ns->m<m)
+	       while (ns->m<m && !--maz) { ns+=30; x+=30; }
+	    else if (ns->m>m)
+	       while (ns->m>m && !--maz) { ns-=30; x-=30; }
+	    return s-n->s+x;
+	 }
+      }
+
+      return this+(-n);
+   }
+
+//-- nonstandard methods --------------------------------------------
+
+   int number()
+   {
+      return s;
+   }
+
+   string name()
+   {
+      // some magic about MS here
+      return (string)this->number();
+   }
+
+   mixed cast(string what)
+   {
+      switch (what)
+      {
+	 case "int": return this->number(); 
+	 case "string": return this->nase();
+	 default:
+	    throw(({"can't cast to "+what+"\n",backtrace()}));
+      }
+   }
+
+   string timeofday()
+   {
+      return sprintf("%s:%02s",m->timeofday(),name());
+   }
+
+   string timeofyear()
+   {
+      return sprintf("%s:%02s",m->timeofyear(),name());
+   }
+
+//-- more -----------------------------------------------------------
+     
+   object minute()
+   {
+      return m;
    }
 };
 

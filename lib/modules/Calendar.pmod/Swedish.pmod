@@ -1,3 +1,5 @@
+// by Mirar 
+
 inherit Calendar.ISO:ISO;
 
 void create()
@@ -77,7 +79,8 @@ class Year
 	 _nameday_lookup =
 	    namedays_lookup_cache[this->leap()+" "+this->leap_day()] = m;
       }
-
+      
+      if (zero_type(_nameday_lookup[lower_case(name)])) return 0;
       return this->day(_nameday_lookup[lower_case(name)]);
    }
 }
