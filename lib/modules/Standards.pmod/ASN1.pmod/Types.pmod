@@ -1,5 +1,5 @@
 /*
- * $Id: Types.pmod,v 1.19 2002/10/15 15:33:19 grubba Exp $
+ * $Id: Types.pmod,v 1.20 2004/02/22 17:15:54 nilsson Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
@@ -398,7 +398,7 @@ class asn1_identifier
   
   string der_encode()
     {
-      return build_der(sprintf("%c%@s", 40 * id[0] + id[1],
+      return build_der(sprintf("%s%@s", to_base_128(40 * id[0] + id[1]),
 			       Array.map(id[2..], to_base_128)));
     }
 
