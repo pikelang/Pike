@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.7 1999/04/09 17:57:04 marcus Exp $ */
+/* $Id: ilbm.c,v 1.8 1999/04/09 18:21:36 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.7 1999/04/09 17:57:04 marcus Exp $
+**!	$Id: ilbm.c,v 1.8 1999/04/09 18:21:36 marcus Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.7 1999/04/09 17:57:04 marcus Exp $");
+RCSID("$Id: ilbm.c,v 1.8 1999/04/09 18:21:36 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -562,6 +562,30 @@ static struct pike_string *make_bmhd(struct BMHD *bmhd)
   return make_shared_binary_string(bdat, 20);
 }
 
+static void packByteRun1(unsigned char *src, int srclen, int depth,
+			 struct string_builder *dest)
+{
+  while(depth>0) {
+    int c, left = srclen;
+    while(left>0) {
+      if(left<2 || src[0] != src[1]) {
+	for(c=1; c<128 && c<left; c++)
+	  if(c+2<left && src[c] == src[c+1] && src[c] == src[c+2])
+	    break;
+	string_builder_putchar(dest, c-1);
+	string_builder_binary_strcat(dest, src, c);
+      } else {
+	for(c=2; c<128 && c<left && src[c]==src[0]; c++);
+	string_builder_putchar(dest, (1-c)&0xff);
+	string_builder_putchar(dest, src[0]);
+      }
+      src += c;
+      left -= c;
+    }
+    --depth;
+  }
+}
+
 static void chunky2planar(INT32 *src, int w,
 			  unsigned char *dest, int destmod, int depth)
 {
@@ -638,8 +662,10 @@ static struct pike_string *make_body(struct BMHD *bmhd,
       }
     }
     chunky2planar(cline, bmhd->w, line, rbyt, bmhd->nPlanes);
-    /* compress */
-    string_builder_binary_strcat(&bldr, line, rbyt*eplanes);
+    if(bmhd->compression == cmpByteRun1)
+      packByteRun1(line, rbyt, eplanes, &bldr);
+    else
+      string_builder_binary_strcat(&bldr, line, rbyt*eplanes);
   }
   if(ctable != NULL)
     image_colortable_free_dither(&dith);
@@ -696,7 +722,7 @@ static void image_ilbm_encode(INT32 args)
   bmhd.x = bmhd.y = 0;
   bmhd.nPlanes = bpp;
   bmhd.masking = mskNone;
-  bmhd.compression = cmpNone;
+  bmhd.compression = (img->xsize>32? cmpByteRun1:cmpNone);
   bmhd.pad1 = 0;
   bmhd.transparentColor = 0;
   bmhd.xAspect = bmhd.yAspect = 1;
