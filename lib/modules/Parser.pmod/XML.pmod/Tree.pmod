@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.8 2001/02/02 08:17:55 norlin Exp $
+ * $Id: Tree.pmod,v 1.9 2001/05/06 18:27:19 grubba Exp $
  *
  */
 
@@ -590,8 +590,8 @@ Node parse_input(string data, void|int no_fallback, void|int force_lowercase)
     {
       if (sscanf(err, "%s [Offset: %d]", err, int ofs) == 2)
 	err += report_error_context(data, ofs);
-      throw(err);
     }
+    throw(err);
   }
   else
     return mRoot;
