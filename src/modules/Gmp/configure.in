@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 1999/10/04 02:27:25 hubbe Exp $
+# $Id: configure.in,v 1.6 1999/10/05 05:32:26 hubbe Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
   exit( mpz_sizeinbase(tmp,10) !=  9*4+1 );
 }
 
-],pike_cv_working_gmp=yes,pike_cv_working_gmp=no)])
+],pike_cv_working_$1=yes,pike_cv_working_$1=no)])
 
 if test "x$pike_cv_working_$1" = xyes; then
   AC_MSG_RESULT(yes)

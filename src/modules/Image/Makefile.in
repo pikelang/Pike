@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.29 1999/10/04 06:16:37 hubbe Exp $
+# $Id: Makefile.in,v 1.30 1999/10/05 05:32:40 hubbe Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image_module.o \
@@ -19,13 +19,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 
 @dynamic_module_makefile@
-
-.SUFFIXES: .c .o
-
-# GCC dumps core on some files @ OSF1
-# This kluge should work around that...
-.c.o:
-	$(CC) $(CFLAGS) -c $< -o $@ || NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@
 
 pike: all
 	cd ../..; $(MAKE) "AR=$(AR)"
