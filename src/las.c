@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.336 2003/06/30 17:06:09 mast Exp $
+|| $Id: las.c,v 1.337 2003/07/30 18:44:38 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.336 2003/06/30 17:06:09 mast Exp $");
+RCSID("$Id: las.c,v 1.337 2003/07/30 18:44:38 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1471,7 +1471,13 @@ node *debug_mkcastnode(struct pike_type *type, node *n)
 
   if (type == void_type_string) return mknode(F_POP_VALUE, n, 0);
 
+#if 0
+  /* It's not always safe to ignore the cast in this case. E.g. if n
+   * has type program, the value can contain a function style program
+   * pointer which the cast will turn into a real program
+   * reference. */
   if(type==n->type) return n;
+#endif
 
   res = mkemptynode();
   res->token = F_CAST;
