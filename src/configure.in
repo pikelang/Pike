@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.358 2000/03/28 08:10:53 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.359 2000/03/28 19:34:47 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2191,6 +2191,28 @@ int main()
 }
 ]);
 ########################################################################
+MY_CHECK_FUNCTION(fpsetround,
+[
+#include <math.h>
+#ifdef HAVE_FLOATINGPOINT_H
+#include <floatingpoint.h>
+#endif
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
+
+#ifndef FP_RN
+#define FP_RN 0
+#endif /* FP_RN */
+
+int main()
+{
+  fpsetround(FP_RN);
+  exit(0);
+}
+]);
+########################################################################
 
 MY_CHECK_FUNCTION(dlopen,
 [
@@ -2222,8 +2244,22 @@ int main()
 MY_CHECK_FUNCTION(rint,
 [
 #include <math.h>
+#ifdef HAVE_FLOATINGPOINT_H
+#include <floatingpoint.h>
+#endif
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif /* HAVE_IEEEFP_H */
 int main()
 {
+#ifdef HAVE_FPSETROUND
+  /* Round to nearest */
+#ifndef FP_RN
+#define FP_RN 0
+#endif /* FP_RN */
+  fpsetround(FP_RN);
+#endif /* HAVE_FPSETROUND */
   if(rint(0.1) != 0.0 ||
      rint(0.6) != 1.0) exit(1);
   exit(0);
