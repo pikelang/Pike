@@ -1,7 +1,7 @@
-// $Id: testsuite.in,v 1.5 2002/12/11 07:16:40 mirar Exp $
+// $Id: testsuite.in,v 1.6 2003/01/09 22:47:34 nilsson Exp $
 
 // Tools.Hilfe
-test_tests([[
+define(test_hilfe_setup_low,[[test_do([[
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
 
@@ -25,146 +25,135 @@ class TestHilfe {
 
   function put = add_input_line;
 
-  int(0..1) test(string|array(string) in, string result) {
+  string test_eval(string|array(string) in) {
     if(arrayp(in))
       foreach(in, string line)
-	put(line);
+        put(line);
     else
       put(in);
+    return get();
+  }
 
-    string res = get();
-    if(res!=result) {
-      werror("Error: %O\n", ({ in, res, result }) );
-      return 0;
-    }
+  int(0..1) test_done() {
     if(!state->finishedp()) {
-      werror("Error: %O didn't finish.\n", in);
       state->flush();
       return 0;
     }
     return 1;
   }
-}
+};
 
-TestHilfe testhilfe=TestHilfe();
-int tests;
-int fails;
+add_constant("testhilfe", TestHilfe());
 
-void test(string|array(string) in, string result) {
-  tests++;
-  if(arrayp(in) && sizeof(in)==1) in=in[0];
-  if(_verbose>1)
-    if(arrayp(in))
-      write("%03d%{ %O%}\n", tests, in);
-    else
-      write("%03d %O\n", tests, in);
+]]) ]])
 
-  if(!testhilfe->test(in, result))
-    fails++;
-}
-
-array(int) a() {
-
-  test(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
-  test("set format sprintf \"%s\"", "");
-  test("1;", "1");
-
-  // Testing parser
-  test( ({ "(", "." }), "");
-  test( ({ "int", "." }), "");
-  test("string a=\"hej", "Hilfe Error: Unterminated string.\n");
-  test("({)", "Hilfe Error: \")\" end parenthesis does not match "
-       "closest start parenthesis \"{\".\n");
-  test( ({ "int c // =3;", "=4;" }), "");
-  test("c;", "4");
-  test( ({ "string a=#\"hej", "san\";" }), "");
-  test("a;", "\"hej\\nsan\"");
-  test("class A{}", "");
-  test("A();", "HilfeInput()->A()");
-  test("A a=A();", "");
-  test("class { int i=4; }()->i;", "4");
-  //  test("class A{}();", "object");
-  test("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})");
-  test("void nop(mixed m){};", "");
-  test("nop(({}));", "0");
-  test("int a;", "");
-  test("a++;", "0");
-  test("a;", "1");
-
-  test("void foo(function f) { write(\"a\"); f(); write(\"b\"); }", "");
-  //  test("foo() { write(\"-\"); }", "a-b");
-
-  // Test variable delarations.
-  test("int|float a=2;", "");
-  test("a=2.0;", "2.000000");
-  test("int b=2;", "");
-  test("b=2.0;", "Compiler Error: 1:Bad type in assignment.\n"
-       "Compiler Error: 1:Expected: int\n"
-       "Compiler Error: 1:Got     : float\n");
-  test("Image.Image i=Image.Image();", "");
-  test("i;", "Image.Image( 0 x 0 /""* 0.0Kb *""/)");
-  test("constant z=`+(1,2),y=2;", "");
-  test("z;", "3");
-  test("y;", "2");
-  test("int z;", "Hilfe Error: \"z\" already defined as constant.\n");
-  test("int y;", "Hilfe Error: \"y\" already defined as constant.\n");
-  test("array|Stdio.File ä;", "");
-  test("Stdio.File|array ä;", "");
-
-  // Test variable bindings.
-  test("new", "");
-  test("int i;", "");
-  test("i;", "0");
-  test("void foo() { i++; }", "");
-  test("foo();", "0");
-  test("i;", "1");
-  test("i*2;", "2");
-  test("2*i;", "2");
-
-  test("int n=0;", "");
-  test("foreach(({1,2,3}), int m){n+=m;}", "Ok.\n");
-  test("n;","6");
-  test("foreach( ({ 1, 2, 3, }); int i; int m) { n+=m; }", "Ok.\n");
-  test("n;", "12");
-
-  test("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n");
-  test("j;", "Compiler Error: 1:Undefined identifier j.\n");
-  test("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n");
-  test("i;", "1");
-  test("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340");
-  test("i;", "1");
-  test("class A (int i) { int foo() { return i; } }", "");
-  test("A(2)->foo();", "2");
-  test("i;", "1");
-
-  test("mixed x=\"bar\";", "");
-  test("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","");
-  test("foo(1);", "0");
-
-  test("array a = ({1});", "");
-  test("({2})+a;", "({ /* 2 elements */\n    2,\n    1\n})");
-  test( ({ "int i,j;", "mapping a=([1:2]);", "foreach(a;i;j) write(\"%O,%O\\n\",i,j);" }), "1,2\nOk.\n" );
-
-  // Clear history...
-  testhilfe=TestHilfe();
-  test(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
-  test("set format sprintf \"%s\"", "");
-
-  // Testing history.
-  test("2;", "2");
-  test("_*_;", "4");
-  test("_*_;", "16");
-  test("_==__[-1];", "1");
-  test("__[1]+__[2]+__[-1];", "7");
-
-  // Test odd hang bug.
-  test("filter(indices(Calendar.Language),"
-	      "lambda(string s){ return sizeof(s) < 0; });",
-       "({ })");
-
-  return ({ tests-fails, fails });
-}
+define(test_hilfe,[[
+  test_eq([[testhilfe->test_eval($1)]],[[$2]])
+  test_true(testhilfe->test_done())
 ]])
+define(test_hilfe_setup,[[
+  test_hilfe_setup_low()
+  test_hilfe(".", version() + " running Hilfe v3.5 (Incremental Pike Frontend)\n");
+  test_hilfe([["set format sprintf \"%s\""]], "");
+]])  
+
+test_hilfe_setup()
+test_hilfe("1;", "1")
+
+// Testing parser
+test_hilfe([[ ({ "(", "." }) ]], "")
+test_hilfe( ({ "int", "." }), "")
+test_hilfe("string a=\"hej", "Hilfe Error: Unterminated string.\n")
+test_hilfe("({)",[[ "Hilfe Error: \")\" end parenthesis does not match "
+       "closest start parenthesis \"{\".\n" ]])
+test_hilfe( ({ "int c // =3;", "=4;" }), "")
+test_hilfe("c;", "4")
+test_hilfe( ({ "string a=#\"hej", "san\";" }), "")
+test_hilfe("a;", "\"hej\\nsan\"")
+test_hilfe("class A{}", "")
+test_hilfe("A();", "HilfeInput()->A()")
+test_hilfe("A a=A();", "")
+test_hilfe("class { int i=4; }()->i;", "4")
+//  test("class A{}();", "object")
+test_hilfe("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})")
+test_hilfe("void nop(mixed m){};", "")
+test_hilfe("nop(({}));", "0")
+test_hilfe("int a;", "")
+test_hilfe("a++;", "0")
+test_hilfe("a;", "1")
+
+test_hilfe("void foo(function f) { write(\"a\"); f(); write(\"b\"); }", "")
+//  test("foo() { write(\"-\"); }", "a-b")
+
+// Test variable delarations.
+test_hilfe("int|float a=2;", "")
+test_hilfe("a=2.0;", "2.000000")
+test_hilfe("int b=2;", "")
+test_hilfe("b=2.0;", "Compiler Error: 1:Bad type in assignment.\n"
+       "Compiler Error: 1:Expected: int\n"
+       "Compiler Error: 1:Got     : float\n")
+test_hilfe("Image.Image i=Image.Image();", "")
+test_hilfe("i;", "Image.Image( 0 x 0 /""* 0.0Kb *""/)")
+test_hilfe([["constant z=`+(1,2),y=2;"]], "")
+test_hilfe("z;", "3")
+test_hilfe("y;", "2")
+test_hilfe("int z;", "Hilfe Error: \"z\" already defined as constant.\n")
+test_hilfe("int y;", "Hilfe Error: \"y\" already defined as constant.\n")
+test_hilfe("array|Stdio.File ä;", "")
+test_hilfe("Stdio.File|array ä;", "")
+
+// Test variable bindings.
+test_hilfe("new", "")
+test_hilfe("int i;", "")
+test_hilfe("i;", "0")
+test_hilfe("void foo() { i++; }", "")
+test_hilfe("foo();", "0")
+test_hilfe("i;", "1")
+test_hilfe("i*2;", "2")
+test_hilfe("2*i;", "2")
+
+test_hilfe("int n=0;", "")
+test_hilfe("foreach(({1,2,3}), int m){n+=m;}", "Ok.\n")
+test_hilfe("n;","6")
+test_hilfe("foreach( ({ 1, 2, 3, }); int i; int m) { n+=m; }", "Ok.\n")
+test_hilfe("n;", "12")
+
+test_hilfe("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n")
+test_hilfe("j;", "Compiler Error: 1:Undefined identifier j.\n")
+test_hilfe("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n")
+test_hilfe("i;", "1")
+test_hilfe("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340")
+test_hilfe("i;", "1")
+test_hilfe("class A (int i) { int foo() { return i; } }", "")
+test_hilfe("A(2)->foo();", "2")
+test_hilfe("i;", "1")
+
+test_hilfe("mixed x=\"bar\";", "")
+test_hilfe("void foo(mixed x){ x?werror(\"\"):werror(\"\");};","")
+test_hilfe("foo(1);", "0")
+
+test_hilfe("array a = ({1});", "")
+test_hilfe("({2})+a;", "({ /* 2 elements */\n    2,\n    1\n})")
+test_hilfe([[ ({ "int i,j;", "mapping a=([1:2]);",
+           "foreach(a;i;j) write(\"%O,%O\\n\",i,j);" }) ]],[[ "1,2\nOk.\n" ]])
+
+// Clear history...
+test_do( add_constant("testhilfe") )
+test_hilfe_setup()
+
+// Testing history.
+test_hilfe("2;", "2")
+test_hilfe("_*_;", "4")
+test_hilfe("_*_;", "16")
+test_hilfe("_==__[-1];", "1")
+test_hilfe("__[1]+__[2]+__[-1];", "7")
+
+// Test odd hang bug.
+test_hilfe([[ "filter(indices(Calendar.Language),"
+	   "lambda(string s){ return sizeof(s) < 0; });" ]],
+           "({ })")
+test_do( add_constant("testhilfe") )
+
 test_true([[ Tools.Hilfe.StdinHilfe ]])
 test_true([[ Tools.Hilfe.GenericHilfe ]])
 test_true([[ Tools.Hilfe.GenericAsyncHilfe ]])
