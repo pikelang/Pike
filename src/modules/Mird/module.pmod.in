@@ -1,3 +1,5 @@
+// $Id: module.pmod.in,v 1.9 2001/08/11 09:10:19 mirar Exp $
+
 #pike __REAL_VERSION__
 
 #if constant(@module@.Mird)

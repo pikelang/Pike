@@ -371,6 +371,7 @@ testfont binary
 /src/modules/Mird/libmird/transaction.c foreign_ident
 /src/modules/Mird/libmird/usage.c foreign_ident
 /src/modules/Mird/libmird/win32-config.h foreign_ident
+/src/modules/Mird/module.pmod.in foreign_ident
 /src/modules/Msql/Makefile.in foreign_ident
 /src/modules/Msql/configure.in foreign_ident
 /src/modules/Msql/msql_config.h.in foreign_ident
