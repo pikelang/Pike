@@ -377,16 +377,19 @@ string|array cast(string to)
    error("can't cast to %O\n",to);
 }
 
+//!
 int __hash()
 {
    return (int)(lat*3600000+long*3600000);
 }
 
+//!
 int `==(object pos)
 {
    return (pos->lat==lat && pos->long==long);
 }
 
+//!
 int `<(object pos)
 {
    if (pos->lat>lat) return 1;
@@ -394,6 +397,7 @@ int `<(object pos)
    return 0;
 }
 
+//!
 int `>(object pos)
 {
    if (pos->lat<lat) return 1;
@@ -401,9 +405,13 @@ int `>(object pos)
    return 0;
 }
 
-string _sprintf(int t)
+//!
+string _sprintf(int|void t)
 {
-   if (t=='O')
-      return "Position("+latitude()+", "+longitude()+")";
-   return 0;
+  switch(t)
+  {
+    case 't': return "Geography.Position";
+    case 'O': return "Position("+latitude()+", "+longitude()+")";
+  }
+  return 0;
 }
