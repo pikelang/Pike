@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.639 2002/11/18 15:07:23 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.640 2002/11/18 15:10:06 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1206,7 +1206,7 @@ AC_ARG_WITH(gif-rle, MY_DESCR([--with-gif-rle],
 			      [use kind-of-rle packing instead of lzw]))
 AC_ARG_WITH(rsaref, MY_DESCR([--with-rsaref=path],[Support for RSAREF]))
 AC_ARG_WITH(valgrind, MY_DESCR([--with-valgrind=path],
-	    [Support for running with valgrind], [
+	    [Support for running with valgrind]), [
   if test "x$with_valgrind" = "xyes"; then
     AC_PATH_PROG(with_valgrind, valgrind, no)
     if test "x$with_valgrind" = "xno"; then
