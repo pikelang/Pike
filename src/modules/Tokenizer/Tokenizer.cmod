@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.14 2003/12/13 17:25:06 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.15 2003/12/18 17:46:18 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -20,6 +20,8 @@
 #include "stralloc.h"
 #include "sscanf.h"
 #include "module.h"
+
+DECLARATIONS
 
 /*
  * Convenience macro to apply functions in current object.
@@ -172,7 +174,7 @@ PIKECLASS compiler
     {
       push_int(2);
       push_int(THIS->line_no);
-      push_constant_text("scanner");
+      ref_push_string(MK_STRING("scanner"));
       push_text(msg);
       apply_current(f_compiler_basic_tokenizer_report_fun_num, 4);
       pop_stack();
@@ -618,11 +620,11 @@ PIKECLASS Position
     flags ID_STATIC;
   {
     pop_n_elems(args);
-    push_constant_text("%s:%d");
+    ref_push_string(MK_STRING("%s:%d"));
     if (THIS->filename) {
       ref_push_string(THIS->filename);
     } else {
-      push_constant_text("-");
+      ref_push_string(MK_STRING("-"));
     }
     push_int(THIS->line);
     f_sprintf(3);
@@ -679,8 +681,8 @@ PIKECLASS Token
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    MAKE_CONST_STRING(tmp.u.string, "token");
-    add_constant(tmp.u.string, &tmp, 0);
+    tmp.u.string = MK_STRING("token");
+    add_constant(MK_STRING("token"), &tmp, 0);
   }
 
   PIKEFUN void create(string symbol, mixed pos)
@@ -701,7 +703,7 @@ PIKECLASS Token
       if (THIS->symbol) {
 	ref_push_string(THIS->symbol);
       } else {
-	push_text("NONE");
+	ref_push_string(MK_STRING("NONE"));
       }
     } else {
       push_text("%O:%s");
@@ -709,7 +711,7 @@ PIKECLASS Token
       if (THIS->symbol) {
 	ref_push_string(THIS->symbol);
       } else {
-	push_text("NONE");
+	ref_push_string(MK_STRING("NONE"));
       }
       f_sprintf(3);
     }
@@ -732,7 +734,7 @@ PIKECLASS IdentifierToken
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    MAKE_CONST_STRING(tmp.u.string, "identifer");
+    tmp.u.string = MK_STRING("identifer");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_identifier", 1, 0);
   }
@@ -751,7 +753,7 @@ PIKECLASS OperatorToken
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    MAKE_CONST_STRING(tmp.u.string, "operator");
+    tmp.u.string = MK_STRING("operator");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_operator", 1, 0);
   }
@@ -789,7 +791,7 @@ PIKECLASS LiteralToken
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    MAKE_CONST_STRING(tmp.u.string, "literal");
+    tmp.u.string = MK_STRING("literal");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_literal", 1, 0);
     /* We want to access the inherited create(). */
@@ -820,7 +822,7 @@ PIKECLASS StringToken
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    MAKE_CONST_STRING(tmp.u.string, "string_constant");
+    tmp.u.string = MK_STRING("string_constant");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_string", 1, 0);
 
@@ -843,7 +845,7 @@ PIKECLASS IntegerToken
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    MAKE_CONST_STRING(tmp.u.string, "int_constant");
+    tmp.u.string = MK_STRING("int_constant");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_int", 1, 0);
 
@@ -866,7 +868,7 @@ PIKECLASS FloatToken
     struct svalue tmp = {
       PIKE_T_STRING, 0, { 0 },
     };
-    MAKE_CONST_STRING(tmp.u.string, "float_constant");
+    tmp.u.string = MK_STRING("float_constant");
     simple_add_constant("token", &tmp, 0);
     add_integer_constant("is_float", 1, 0);
 
@@ -929,16 +931,14 @@ PIKECLASS TokenizingCompiler
 						  f_compiler_basic_tokenizer_scan_fun_num);
       {
 	/* FIXME: Ought to save the identifier numbers for variables too. */
-	struct pike_string *var_name_str = make_shared_string("line_no");
 	tokenizing_compiler_pike_tokenizer_inherited_line_no =
-	  low_reference_inherited_identifier(NULL, 1, var_name_str,
+	  low_reference_inherited_identifier(NULL, 1,
+					     MK_STRING("line_no"),
 					     SEE_STATIC);
-	free_string(var_name_str);
-	var_name_str = make_shared_string("current_symbol");
 	tokenizing_compiler_pike_tokenizer_inherited_current_symbol =
-	  low_reference_inherited_identifier(NULL, 1, var_name_str,
+	  low_reference_inherited_identifier(NULL, 1,
+					     MK_STRING("current_symbol"),
 					     SEE_STATIC);
-	free_string(var_name_str);
       }
     }
 
@@ -960,7 +960,7 @@ PIKECLASS TokenizingCompiler
 	f_sprintf(args);
       }
       push_int(0);
-      push_constant_text("scanner");
+      ref_push_string(MK_STRING("scanner"));
       Pike_sp[0] = Pike_sp[-3];
       Pike_sp[-3].type = PIKE_T_INT;
       Pike_sp[-3].subtype = 0;
@@ -1002,7 +1002,7 @@ PIKECLASS TokenizingCompiler
       ONERROR err;
 
       if (raw->len == 0) {
-	push_constant_text("Empty string passed to parse_string().");
+	ref_push_string(MK_STRING("Empty string passed to parse_string()."));
 	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 1);
 	pop_stack();
 	return;	/* Return the empty string */
@@ -1011,7 +1011,7 @@ PIKECLASS TokenizingCompiler
 	  (index_shared_string(raw, 0) !=
 	   index_shared_string(raw, raw->len-1))) {
 	ref_push_string(raw);
-	push_constant_text("Unterminated string or character constant %s.");
+	ref_push_string(MK_STRING("Unterminated string or character constant %s."));
 	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
 	pop_stack();
       }
@@ -1162,7 +1162,7 @@ PIKECLASS TokenizingCompiler
       default:
 	push_int(raw->size_shift);
 	ref_push_string(raw);
-	push_constant_text("Unsupported string shift %d on string %O.");
+	ref_push_string(MK_STRING("Unsupported string shift %d on string %O."));
 	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 3);
 	pop_stack();
 	break;
@@ -1178,6 +1178,7 @@ PIKECLASS TokenizingCompiler
     }
 
     PIKEFUN void preprocess(string cmd, string extras)
+      flags ID_STATIC;
     {
       struct pike_string *pragma_str;
       struct pike_string *error_str;
@@ -1203,8 +1204,8 @@ PIKECLASS TokenizingCompiler
       } else if (cmd == error_str) {
 	push_int(SL_ERROR);
 	push_int(0);
-	push_constant_text("preprocessor");
-	push_constant_text("#error: %s");
+	ref_push_string(MK_STRING("preprocessor"));
+	ref_push_string(MK_STRING("#error: %s"));
 	ref_push_string(extras);
 	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
 	pop_n_elems(args);
@@ -1213,19 +1214,17 @@ PIKECLASS TokenizingCompiler
       } else if (cmd == warning_str) {
 	push_int(SL_WARNING);
 	push_int(0);
-	push_constant_text("preprocessor");
-	push_constant_text("#warning: %s");
+	ref_push_string(MK_STRING("preprocessor"));
+	ref_push_string(MK_STRING("#warning: %s"));
 	ref_push_string(extras);
 	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
 	return;
       } else if (cmd == pike_str) {
-	struct pike_string *format_str;
 	/* FIXME: Use more paranoid parsing of version? */
-	MAKE_CONST_STRING(format_str, "%d.%d");
 	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_pike_compat_fun_num,
-		   low_sscanf(extras, format_str));
+		   low_sscanf(extras, MK_STRING("%d.%d")));
 	pop_n_elems(args);
 	/* NOTE: We keep one argument on the stack. */
 	return;
@@ -1237,8 +1236,8 @@ PIKECLASS TokenizingCompiler
 	if (!res) {
 	  push_int(SL_ERROR);
 	  push_int(0);
-	  push_constant_text("preprocessor");
-	  push_constant_text("Bad directive: #line %s");
+	  ref_push_string(MK_STRING("preprocessor"));
+	  ref_push_string(MK_STRING("Bad directive: #line %s"));
 	  ref_push_string(extras);
 	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
 	  pop_n_elems(args);
@@ -1254,15 +1253,13 @@ PIKECLASS TokenizingCompiler
       }
       /* Old-style line directive. */
       {
-	struct pike_string *format_string;
 	int res;
-	MAKE_CONST_STRING(format_string, "%d");
-	if (!(res = low_sscanf(cmd, format_string)) ||
+	if (!(res = low_sscanf(cmd, MK_STRING("%d"))) ||
 	    (Pike_sp[-1].type != PIKE_T_INT)) {
 	  push_int(SL_ERROR);
 	  push_int(0);
-	  push_constant_text("preprocessor");
-	  push_constant_text("Bad directive: #line %s %s");
+	  ref_push_string(MK_STRING("preprocessor"));
+	  ref_push_string(MK_STRING("Bad directive: #line %s %s"));
 	  ref_push_string(cmd);
 	  ref_push_string(extras);
 	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 5);
@@ -1297,6 +1294,7 @@ PIKECLASS TokenizingCompiler
      *!   @[token_lookup]
      */
     PIKEFUN Token handle(string symbol)
+      flags ID_STATIC;
     {
       /* Make place for the token program. */
       Pike_sp[0] = Pike_sp[-1];
@@ -1345,7 +1343,7 @@ PIKECLASS TokenizingCompiler
 	    APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num, 1);
 	    if (index_shared_string(symbol, 0) == '\'') {
 	      if (!Pike_sp[-1].u.string->len) {
-		push_constant_text("Zero-length character constant: %s");
+		ref_push_string(MK_STRING("Zero-length character constant: %s"));
 		ref_push_string(Pike_sp[-2].u.string);
 		APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
 		pop_stack();
@@ -1353,7 +1351,7 @@ PIKECLASS TokenizingCompiler
 	      } else {
 		INT32 val;
 		if (Pike_sp[-1].u.string->len > 1) {
-		  push_constant_text("Long character constant: %s");
+		  ref_push_string(MK_STRING("Long character constant: %s"));
 		  ref_push_string(Pike_sp[-2].u.string);
 		  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
 		  pop_stack();
@@ -1376,34 +1374,26 @@ PIKECLASS TokenizingCompiler
 	    /* Binary, hexadecimal, octal or floating point number. */
 	    if (symbol->len == 1) {
 	      push_int(0);
-	    } else {
-	      MAKE_CONST_STRING(format_str, "0%*[xX]%x");
-	      if (!low_sscanf(symbol, format_str)) {
-		MAKE_CONST_STRING(format_str, "0%*[bB]%b");
-		if (!low_sscanf(symbol, format_str)) {
-		  MAKE_CONST_STRING(format_str, "%o%s");
-		  /* NOTE: This sscanf will always succeed. */
-		  low_sscanf(symbol, format_str);
-		  goto sscanned_int;
-		}
-	      }
+	    } else if (!low_sscanf(symbol, MK_STRING("0%*[xX]%x")) &&
+		       !low_sscanf(symbol, MK_STRING("0%*[bB]%b"))) {
+	      /* NOTE: This sscanf will always succeed. */
+	      low_sscanf(symbol, MK_STRING("%o%s"));
+	      goto sscanned_int;
 	    }
 	    goto got_int;
 	  case '1': case '2': case '3':
 	  case '4': case '5': case '6':
 	  case '7': case '8': case '9':
 	    /* Decimal or floating point number. */
-	    MAKE_CONST_STRING(format_str, "%d%s");
 	    /* NOTE: This sscanf will always succeed. */
-	    low_sscanf(symbol, format_str);
+	    low_sscanf(symbol, MK_STRING("%d%s"));
 	  sscanned_int:
 	    if (Pike_sp[-1].u.string->len) {
 	      /* Possibly a float. */
-	      MAKE_CONST_STRING(format_str, "%f%s");
 	      /* NOTE: This sscanf will always succeed. */
-	      low_sscanf(symbol, format_str);
+	      low_sscanf(symbol, MK_STRING("%f%s"));
 	      if (Pike_sp[-1].u.string->len) {
-		push_constant_text("Strange numeric constant: %s");
+		ref_push_string(MK_STRING("Strange numeric constant: %s"));
 		ref_push_string(symbol);
 		APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num,
 			   2);
@@ -1458,6 +1448,7 @@ PIKECLASS TokenizingCompiler
     }
 
     PIKEFUN void scan()
+      flags ID_STATIC;
     {
       if (THIS->current_token) {
 	free_object(THIS->current_token);
@@ -1482,6 +1473,15 @@ PIKECLASS TokenizingCompiler
 	  return;
 	}
 	pop_stack();
+      }
+    }
+
+    PIKEFUN Token value()
+    {
+      if (THIS->current_token) {
+	ref_push_object(THIS->current_token);
+      } else {
+	push_undefined();
       }
     }
   }
@@ -1543,26 +1543,24 @@ PIKEFUN object Compile(object tokenizer, object|void handler)
 
 PIKE_MODULE_INIT
 {
+  INIT
+
   {
     struct pike_string *type_name;
     struct svalue type_value;
 
     /* enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL } */
-    MAKE_CONSTANT_SHARED_STRING(type_name, "SeverityLevel");
     type_value.type = PIKE_T_TYPE;
     type_value.subtype = 0;
     type_value.u.type = CONSTTYPE(tName("SeverityLevel", tInt03));
-    add_constant(type_name, &type_value, 0);
+    add_constant(MK_STRING("SeverityLevel"), &type_value, 0);
     free_svalue(&type_value);
-    free_string(type_name);
 
     add_integer_constant("NOTICE",  SL_NOTICE, 0);
     add_integer_constant("WARNING", SL_WARNING, 0);
     add_integer_constant("ERROR",   SL_ERROR, 0);
     add_integer_constant("FATAL",   SL_FATAL, 0);
   }
-
-  INIT
 
 #if 0
   init_tokenizer_yyparse();
