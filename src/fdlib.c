@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.18 1998/05/06 00:33:20 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.19 1998/05/08 03:35:55 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -350,16 +350,32 @@ SOCKFUN1(listen, int)
 
 int fd_close(FD fd)
 {
-  HANDLE h;
+  long h;
+  int type;
   mt_lock(&fd_mutex);
   h=(HANDLE)da_handle[fd];
   FDDEBUG(fprintf(stderr,"Closing %d (%d)\n",fd,da_handle[fd]));
+  type=fd_type[fd];
   mt_unlock(&fd_mutex);
-  if(!CloseHandle(h))
+  switch(type)
   {
-    errno=GetLastError();
-    return -1;
+    case FD_SOCKET:
+      if(closesocket((SOCKET)h))
+      {
+	errno=GetLastError();
+	FDDEBUG(fprintf(stderr,"Closing %d (%d) failed with errno=%d\n",fd,da_handle[fd],errno));
+	return -1;
+      }
+      break;
+
+    default:
+      if(!CloseHandle((HANDLE)h))
+      {
+	errno=GetLastError();
+	return -1;
+      }
   }
+  FDDEBUG(fprintf(stderr,"%d (%d) closed\n",fd,da_handle[fd]));
   mt_lock(&fd_mutex);
   if(fd_type[fd]<FD_NO_MORE_FREE)
   {
