@@ -86,9 +86,9 @@ o SSL
     over SSL/TLS.
 
 o Better predefine handling
-    It is now possible to change the Pike predefines without forking a
-    new Pike process. Use the master function add_predefine() and
-    remove_predefine() to add and remove defines.
+    It is now possible to change the predefined cpp() macros without
+    forking a new Pike process. Use the master functions add_predefine()
+    and remove_predefine() to add and remove defines.
 
 
 Language additions:
@@ -139,7 +139,7 @@ o Iterators
 
         mixed any_index = Mapping.Iterator(m)->index();
 
-    Other available iterators includes the file line iterator,
+    Other available iterators include the file line iterator,
     available from Stdio.File through the method line_iterator(), and
     the split iterator that iterates over the fragments of a splitted
     string, available as String.SplitIterator.
@@ -274,9 +274,9 @@ o Constant objects
 o Increased weakness granularity
     Instead of just declaring a mapping as weak, to avoid its
     references to be counted during garbage collection, it is now
-    possible to declare only the indices or values as weak. To this
-    end set_weak_flag() now takes a second argument to define the kind
-    of weakness its first argument should have; Pike.WEAK,
+    possible to declare only the indices or only the values as weak.
+    To this end set_weak_flag() now takes a second argument to define
+    the kind of weakness its first argument should have; Pike.WEAK,
     Pike.WEAK_VALUES or Pike.WEAK_INDICES. No second argument implies
     Pike.WEAK, which is both Pike.WEAK_VALUES and Pike.WEAK_INDICES.
 
@@ -319,14 +319,14 @@ o ADT.Relation.Binary
 
 o Array
     The array module has quite a few new and handy methods.
-    common_prefix() finds the longest common prefix in an array of
-    arrays. count() counts the number of occurences of an element in
-    an array. greedy_diff() is a greedy version of the diff()
+    common_prefix() finds the longest common prefix of the arrays in
+    an array of arrays. count() counts the number of occurences of an
+    element in an array. greedy_diff() is a greedy version of the diff()
     algorithm. oid_sort_func() is an ordering function for
     sort_array() that sorts SNMP OID values correctly. arrayify() is a
-    simple helper function that makes arrays out of non arrays.
+    simple helper function that makes arrays out of non-arrays.
     uniq2(), unlike uniq(), works as the UNIX uniq command. Finally
-    sum() sums the elements in an array using +.
+    sum() sums the elements of an array using +.
 
 o Audio.Codec and Audio.Format
     Contain decoders/encoders and format parsers for audio using
@@ -894,9 +894,9 @@ o Some global symbols have been renamed to avoid name clashes.
 
 o C-module symbols not available from other modules.
     To avoid clashes between modules the symbols of dynamically loaded
-    modules are now no longer available to each other. This relied on
-    a predefined load order of dynamic modules to work, so any module
-    that used this could have crashed unpredictably during start up.
+    modules are now no longer available to each other. Modules that
+    used this relied on a predefined load order of dynamic modules to
+    work, so any such module could have failed to load unpredictedly.
 
 o Pike valgrinded
     Pike has been the subject to some Valgrind scrutiny. Some specific
