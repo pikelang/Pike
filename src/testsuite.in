@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.532 2002/09/02 00:15:04 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.533 2002/09/02 10:15:38 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9333,6 +9333,7 @@ void test_dir(string dir, int|void base_size)
   {
     switch(s)
     {
+      case "db":        // Protocols.pmod/X.pmod/db
       case "msql.pike":
       case "mysql.pike":
       case "mysql_result.pike":
