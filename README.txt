@@ -2,7 +2,7 @@ Pike by Fredrik Hübinette 1994-2001
 
 Permission to copy, modify, and distribute this source for any legal
 purpose granted as long as my name is still attached to it.  More
-specifically the GPL, LGPL and MPL license applies to this software.
+specifically, the GPL, LGPL and MPL licenses apply to this software.
 
 New releases can be found on ftp://pike.ida.liu.se/pub/pike/
 Report bugs at http://community.roxen.com/crunch/
@@ -89,7 +89,11 @@ yourself, try the Old instructions:
    quite large.  If everything works out fine no extra messages are
    written.
 
-8) If you want to install Pike, write 'make install'.
+8) If you want to install Pike, write 'make install'.  This will put
+   your pike in <prefix>/pike/<version>/. This way, you can install
+   many pike versions in parallell on the system if you want to.  To
+   put it below <prefix> directly, as other packages usually do, run
+   'make INSTALLARGS="--traditional" install' instead.
 
 After doing this, DO NOT, commit the generated files.  They are placed
 in .cvsignore files so you shouldn't have to bother with them.  Doing
