@@ -1,2 +1,8 @@
 /configure
 /dependencies
+/Makefile
+/config.log
+/config.status
+/lib_dirs
+/linker_options
+/master_lib_dirs
