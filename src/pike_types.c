@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.110 1999/12/22 00:13:03 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.111 1999/12/22 00:21:04 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -34,6 +34,7 @@ static void internal_parse_type(char **s);
 static int type_length(char *t);
 static int low_pike_types_le(char *a, char *b,
 			     int array_cnt, unsigned int flags);
+static int low_check_indexing(char *type, char *index_type, node *n);
 
 #define TWOT(X,Y) (((X) << 8)+(Y))
 #define EXTRACT_TWOT(X,Y) TWOT(EXTRACT_UCHAR(X), EXTRACT_UCHAR(Y))
