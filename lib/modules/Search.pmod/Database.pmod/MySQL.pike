@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.31 2001/06/11 13:38:56 js Exp $
+// $Id: MySQL.pike,v 1.32 2001/06/11 13:56:43 js Exp $
 
 inherit .Base;
 
@@ -275,8 +275,10 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
     string d = b->data();
     int w;
     sscanf( d, "%4c", w );
-    db->query("insert into word_hit (word_id,first_doc_id,hits) "
-	      "values (%d,%d,%s)", i, w, d );
+    mixed err=catch(db->query("insert into word_hit (word_id,first_doc_id,hits) "
+			      "values (%d,%d,%s)", i, w, d ));
+    if(err)
+      werror(describe_backtrace(err));
   } while( 1 );
 
   if( sync_callback )
