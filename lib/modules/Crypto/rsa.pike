@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.23 2000/06/20 10:36:13 grubba Exp $
+/* $Id: rsa.pike,v 1.24 2000/06/20 13:03:05 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -285,7 +285,7 @@ string cooked_get_q()
 object set_private_key(bignum priv, array(bignum)|void extra)
 {
   if (extra) {
-    [p, q] = extra;
+    [p, q] = extra[..1];
   }
   return ::set_private_key(priv);
 }
