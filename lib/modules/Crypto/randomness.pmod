@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.12 1999/09/13 22:19:15 hubbe Exp $
+/* $Id: randomness.pmod,v 1.13 1999/11/25 23:10:52 grubba Exp $
  */
 
 //! module Crypto
@@ -98,6 +98,7 @@ class pike_random {
   }
 }
 
+#if constant(Crypto.rc4)
 //! class rc4_random
 //!	A pseudo random generator based on the rc4 crypto.
 class rc4_random {
@@ -123,6 +124,7 @@ class rc4_random {
   }
 }
 
+#endif /* constant(Crypto.rc4) */
 
 object reasonably_random()
 {
@@ -135,11 +137,15 @@ object reasonably_random()
 
   if (global_rc4)
     return global_rc4;
-  
+
+#if constant(Crypto.rc4)  
   string seed = some_entropy();
   if (strlen(seed) > 2000)
     return (global_rc4 = rc4_random(sprintf("%4c%O%s", time(), _memory_usage(), seed)));
-  
+#else /* !constant(Crypto.rc4) */
+  /* Not very random, but at least a fallback... */
+  return global_rc4 = pike_random();
+#endif /* constant(Crypto.rc4) */
   throw( ({ "Crypto.randomness.reasonably_random: No source found\n", backtrace() }) );
 }
 
