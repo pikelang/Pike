@@ -28,8 +28,6 @@
 
 #define ENABLE_PAGED_SEARCH
 
-#define QUOTED_COMMA		"%2c"
-
 #ifdef DEBUG_PIKE_PROTOCOL_LDAP
 #define DWRITE(X)		werror("Protocols.LDAP: "+X)
 #define DWRITE_HI(X)		werror("Protocols.LDAP: "+X)
