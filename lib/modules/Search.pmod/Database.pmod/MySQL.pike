@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.22 2001/05/31 06:08:28 js Exp $
+// $Id: MySQL.pike,v 1.23 2001/06/04 13:43:24 js Exp $
 
 inherit Search.Database.Base;
 
@@ -204,7 +204,9 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 				    void|array(string) wanted_fields)
 {
   int doc_id;
-  if(!intp(uri))
+  if(intp(uri))
+    doc_id=uri;
+  else
     doc_id = get_document_id((string)uri, language);
   string s="";
   if(wanted_fields && sizeof(wanted_fields))
@@ -212,7 +214,6 @@ mapping(string:string) get_metadata(int|Standards.URI|string uri,
 			      
   array a=db->query("select name,value from metadata where doc_id=%d"+s,
 		    doc_id);
-
   mapping md=mkmapping(a->name,a->value);
   if(md->body)
     md->body=Gz.inflate()->inflate(md->body);
