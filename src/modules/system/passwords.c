@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.19 1998/07/18 02:37:49 hubbe Exp $
+ * $Id: passwords.c,v 1.20 1998/07/20 12:57:12 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -10,8 +10,8 @@
  *         without locking the password_protection_mutex, we are
  *         pretty much screwed.
  *
- * NOTE: To avoid deadlocks, any locking of password_protection_mutex
- *       MUST be done within THREADS_ALLOW_UID()/THREADS_DISALLOW_UID().
+ * NOTE: To avoid deadlocks, any locking/unlocking of password_protection_mutex
+ *       MUST be done with LOCK_IMUTEX()/UNLOCK_IMUTEX().
  */
 
 /*
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.19 1998/07/18 02:37:49 hubbe Exp $");
+RCSID("$Id: passwords.c,v 1.20 1998/07/20 12:57:12 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
