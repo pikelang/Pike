@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.148 1999/12/22 19:05:17 grubba Exp $");
+RCSID("$Id: las.c,v 1.149 1999/12/22 23:04:50 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2135,6 +2135,30 @@ static void low_build_function_type(node *n)
   }
 }
 
+#define YYTE_IS_WARNING	1
+
+static void yytype_error(char *msg, struct pike_string *expected_t,
+			 struct pike_string *got_t, unsigned int flags)
+{
+  struct pike_string *expected = describe_type(expected_t);
+  struct pike_string *got = describe_type(got_t);
+
+  if (flags & YYTE_IS_WARNING) {
+    if (msg) {
+      yywarning("%s", msg);
+    }
+    yywarning("Expected: %s", expected->str);
+    yywarning("Got     : %s", got->str);
+  } else {
+    if (msg) {
+      my_yyerror("%s", msg);
+    }
+    my_yyerror("Expected: %s", expected->str);
+    my_yyerror("Got     : %s", got->str);
+  }
+  free_string(got);
+  free_string(expected);
+}
 
 void fix_type_field(node *n)
 {
@@ -2204,16 +2228,8 @@ void fix_type_field(node *n)
 	/* a["b"]=c and a->b=c can be valid when a is an array */
 	if (CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
 	    !match_types(CDR(n)->type,CAR(n)->type)) {
-
-	  struct pike_string *s1,*s2;
-	  s1=describe_type(CDR(n)->type);
-	  s2=describe_type(CAR(n)->type);
-	  my_yyerror("Bad type in assignment.");
-	  my_yyerror("Expected: %s",s1->str);
-	  my_yyerror("Got     : %s",s2->str);
-	  free_string(s1);
-	  free_string(s2);
-
+	  yytype_error("Bad type in assignment.",
+		       CDR(n)->type, CAR(n)->type, 0);
 	} else if (lex.pragmas & ID_STRICT_TYPES) {
 	  struct pike_string *t1 = describe_type(CAR(n)->type);
 	  struct pike_string *t2 = describe_type(CDR(n)->type);
@@ -2345,15 +2361,8 @@ void fix_type_field(node *n)
 		   max_correct_args+1, name);
       }
       
-      {
-	struct pike_string *s1,*s2;
-	s1=describe_type(f);
-	s2=describe_type(s);
-	my_yyerror("Expected: %s",s1->str);
-	my_yyerror("Got     : %s",s2->str);
-	free_string(s1);
-	free_string(s2);
-      }
+      yytype_error(NULL, f, s, 0);
+
       free_string(s);
     }
     copy_shared_string(n->type, mixed_type_string);
@@ -2441,14 +2450,10 @@ void fix_type_field(node *n)
 	}
 	else if (lex.pragmas & ID_STRICT_TYPES)
 	{
-	  struct pike_string *t1 =
-	    describe_type(compiler_frame->current_return_type);
-	  struct pike_string *t2 = describe_type(CAR(n)->type);
-	  yywarning("Return type mismatch.");
-	  yywarning("Expected: %s", t1->str);
-	  yywarning("Got     : %s", t2->str);
-	  free_string(t2);
-	  free_string(t1);
+	  yytype_error("Return type mismatch.",
+		       compiler_frame->current_return_type,
+		       CAR(n)->type,
+		       YYTE_IS_WARNING);
 	}
       }
     }
@@ -2523,21 +2528,11 @@ void fix_type_field(node *n)
 
 	    if (!pike_types_le(value_type, CDAR(n)->type)) {
 	      if (!match_types(value_type, CDAR(n)->type)) {
-		struct pike_string *t1 = describe_type(value_type);
-		struct pike_string *t2 = describe_type(CDAR(n)->type);
-		my_yyerror("Variable type mismatch in foreach().");
-		my_yyerror("Expected: %s", t1->str);
-		my_yyerror("Got     : %s", t2->str);
-		free_string(t2);
-		free_string(t1);
+		yytype_error("Variable type mismatch in foreach().",
+			     value_type, CDAR(n)->type, 0);
 	      } else if (lex.pragmas & ID_STRICT_TYPES) {
-		struct pike_string *t1 = describe_type(value_type);
-		struct pike_string *t2 = describe_type(CDAR(n)->type);
-		yywarning("Variable type mismatch in foreach().");
-		yywarning("Expected: %s", t1->str);
-		yywarning("Got     : %s", t2->str);
-		free_string(t2);
-		free_string(t1);
+		yytype_error("Variable type mismatch in foreach().",
+			     value_type, CDAR(n)->type, 0);
 	      }
 	    }
 	    free_string(value_type);
@@ -2556,22 +2551,20 @@ void fix_type_field(node *n)
     } else {
       if (!pike_types_le(CAAR(n)->type, string_type_string)) {
 	if (!match_types(CAAR(n)->type, string_type_string)) {
-	  yyerror("Bad argument 1 to sscanf().");
+	  yytype_error("Bad argument 1 to sscanf().",
+		       string_type_string, CAAR(n)->type, 0);
 	} else if (lex.pragmas & ID_STRICT_TYPES) {
-	  struct pike_string *t = describe_type(CAAR(n)->type);
-	  yywarning("Argument 1 to sscanf() has bad type "
-		    "(%s expected string).", t->str);
-	  free_string(t);
+	  yytype_error("Argument 1 to sscanf() has bad type.",
+		       string_type_string, CAAR(n)->type, YYTE_IS_WARNING);
 	}
       }
       if (!pike_types_le(CDAR(n)->type, string_type_string)) {
 	if (!match_types(CDAR(n)->type, string_type_string)) {
-	  yyerror("Bad argument 2 to sscanf().");
+	  yytype_error("Bad argument 2 to sscanf().",
+		       string_type_string, CDAR(n)->type, 0);
 	} else if (lex.pragmas & ID_STRICT_TYPES) {
-	  struct pike_string *t = describe_type(CAAR(n)->type);
-	  yywarning("Argument 2 to sscanf() has bad type "
-		    "(%s expected string).", t->str);
-	  free_string(t);
+	  yytype_error("Argument 2 to sscanf() has bad type.",
+		       string_type_string, CDAR(n)->type, YYTE_IS_WARNING);
 	}
       }
     }
