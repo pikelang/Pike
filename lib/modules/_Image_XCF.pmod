@@ -33,23 +33,12 @@ class Guide
   }
 }
 
-class Parasite
-{
-  string name;
-  int flags;
-  string data;
+class Parasite( string name, int flags, string data ) { }
 
-  void create( string _n, int _f, string _d )
-  {
-    name = _n;
-    data = _d;
-    flags = _f;
-  }
-}
-
-array(Parasite) decode_parasites( string data )
+array(Parasite) decode_parasites( mixed data )
 {
   array res = ({});
+  data = (string)data;
   while(strlen(data))
   {
     int slen, flags;
@@ -64,66 +53,25 @@ array(Parasite) decode_parasites( string data )
   return res;
 }
 
-#define FLAG(X,Y) case PROP_##X: sscanf(p->data, "%4c", flags->Y); break;
-#define INT(X,Y) case PROP_##X: sscanf(p->data, "%4c", Y); break;
-#define SINT(X,Y) case PROP_##X: sscanf(p->data, "%4c", Y); SIGNED(Y); break;
+#define FLAG(X,Y) case PROP_##X: flags->Y=p->data->get_int(0); break;
+#define INT(X,Y) case PROP_##X:  Y = p->data->get_uint( 0 ); break;
+#define SINT(X,Y) case PROP_##X: Y = p->data->get_int( 0 ); break;
 
-class Hierarchy
+int id;
+
+class Hierarchy( int width, int height, int bpp, array tiles,
+                 int compression, Image.Colortable ct )
 {
-  Image.image img;
-  Image.image alpha;
-  int width;
-  int height;
-  int bpp;
-
-  Hierarchy set_image( int x, int y, int bp, array tiles, int compression,
-                       Image.colortable cmap)
+  Image.Layer get_layer( int|void shrink )
   {
-    width = x;
-    height = y;
-    bpp = bp;
-    img = Image.image( x, y, 0,0,0 );
-    if(!(bp & 1 ))
-      alpha = Image.image( x, y, 255,255,255 );
-    switch(compression)
-    {
-     case COMPRESS_NONE:
-     case COMPRESS_RLE:
-       _decode_tiles( img,alpha,tiles,compression,bpp,cmap );
-       break;
-     default:
-       error("Image tile compression type not supported\n");
-    }
-    return this_object();
-  }
-
-  Hierarchy qsi(object _i, object _a, int _w, int _h,int _b)
-  {
-    img = _i;
-    alpha = _a;
-    width = _w;
-    height = _h;
-    bpp = _b;
-    return this_object();
-  }
-
-  Hierarchy copy()
-  {
-    return Hierarchy()->qsi( img,alpha,width,height,bpp );
-  }
-
-  Hierarchy get_opaqued( int opaque_value )
-  {
-    Hierarchy res = copy();
-    if(opaque_value != 255)
-    {
-      if(res->alpha)
-        res->alpha *= opaque_value/255.0;
-      else
-        res->alpha = Image.image(width,height,
-                                 opaque_value,opaque_value,opaque_value);
-    }
-    return res;
+    Image.Image img, alpha;
+    if(!shrink)
+      shrink = 1;
+    img = Image.Image( width/shrink, height/shrink );
+    if( !(bpp & 1 ) )
+      alpha = Image.Image( width/shrink, height/shrink );
+    _decode_tiles( img,alpha,tiles,compression,bpp,ct, shrink,width,height );
+    return Image.Layer( img, alpha );
   }
 }
 
@@ -131,8 +79,8 @@ int iid;
 Hierarchy decode_image_data( mapping what, object i )
 {
   Hierarchy h =
-    Hierarchy( )->set_image(what->width, what->height, what->bpp,
-                            what->tiles, i->compression, i->colormap );
+    Hierarchy( what->width, what->height, what->bpp,
+               what->tiles, i->compression, i->colormap );
   return h;
 }
 
@@ -169,11 +117,11 @@ class Channel
          FLAG(SHOW_MASKED,show_masked);
          INT(TATTOO,tattoo);
        case PROP_COLOR:
-         sscanf( p->data, "%c%c%c", r, g, b);
+         sscanf( (string)p->data, "%c%c%c", r, g, b);
          break;
 
        case PROP_PARASITES:
-         parasites = decode_parasites( p->data );
+         parasites = decode_parasites( (string)p->data );
          break;
       }
     }
@@ -184,7 +132,7 @@ class Channel
   {
 
     parent = p;
-    name = d->name;
+    name = (string)d->name;
     width = d->width;
     height = d->height;
     image_data = decode_image_data( d->image_data, parent );
@@ -227,9 +175,8 @@ class Layer
          parent->selection = this_object();
          break;
        case PROP_OFFSETS:
-         sscanf(p->data, "%4c%4c", xoffset, yoffset);
-         SIGNED(xoffset);
-         SIGNED(yoffset);
+         xoffset = p->data->get_int( 0 );
+         yoffset = p->data->get_int( 1 );
          break;
        INT(OPACITY,opacity);
        FLAG(VISIBLE,visible);
@@ -241,7 +188,7 @@ class Layer
        INT(MODE,mode);
        INT(TATTOO,tattoo);
        case PROP_PARASITES:
-         parasites = decode_parasites( p->data );
+         parasites = decode_parasites( (string)p->data );
          break;
       }
     }
@@ -250,7 +197,7 @@ class Layer
   void create( mapping data, object pa )
   {
     parent = pa;
-    name = data->name;
+    name = (string)data->name;
     type = data->type;
     width = data->width;
     height = data->height;
@@ -271,8 +218,8 @@ class GimpImage
   float xres = 72.0;
   float yres = 72.0;
   int res_unit;
-  Image.colortable colormap;
-  Image.colortable meta_colormap;
+  Image.Colortable colormap;
+  Image.Colortable meta_colormap;
   array(Layer) layers = ({});            // bottom-to-top
   array(Channel) channels = ({});       // unspecified order, really
   array(Guide) guides = ({});
@@ -358,29 +305,29 @@ class GimpImage
       {
        case PROP_COLORMAP:
          if(type == INDEXED)
-           meta_colormap = colormap = Image.colortable( p->data );
+           meta_colormap = colormap = Image.Colortable( (string)p->data );
          else
-           meta_colormap = Image.colortable( p->data );
+           meta_colormap = Image.Colortable( (string)p->data );
          break;
        case PROP_COMPRESSION:
-         compression = p->data[0];
+         compression = ((string)p->data)[0];
          break;
        case PROP_GUIDES:
-         guides = Array.map(p->data/5,Guide);
+         guides = Array.map(((string)p->data)/5,Guide);
          break;
        case PROP_RESOLUTION:
-         sscanf( p->data, "%4f%4f", xres,yres);
+         sscanf( (string)p->data, "%4F%4F", xres,yres);
          if (xres < 1e-5 || xres> 1e+5 || yres<1e-5 || yres>1e+5)
            xres = yres = 72.0;
          break;
        case PROP_TATTOO:
-         sscanf(p->data, "%4c", tattoo_state );
+         tattoo_state = p->data->get_int( 0 );
          break;
        case PROP_PARASITES:
-         parasites = decode_parasites( p->data );
+         parasites = decode_parasites( (string)p->data );
          break;
        case PROP_UNIT:
-         sscanf(p->data, "%4c", res_unit );
+         res_unit = p->data->get_int( 0 );
          break;
        case PROP_PATHS:
          paths = decode_paths( p->data );
@@ -413,6 +360,20 @@ GimpImage __decode( string|mapping what )
   return GimpImage(what);
 }
 
+mapping decode_header( string|mapping|object(GimpImage) data )
+{
+  if( !objectp(data) )
+  {
+    if( stringp( data ) ) data = ___decode( data );
+    data = GimpImage( data );
+  }
+  return ([
+    "type":"image/x-gimp-image",
+    "xsize":data->width,
+    "ysize":data->height,
+  ]);
+}
+
 
 string translate_mode( int mode )
 {
@@ -440,17 +401,19 @@ string translate_mode( int mode )
   }
 }
 
-array decode_layers( string|object|mapping what, mapping|void opts )
+array decode_layers( string|object|mapping what, mapping|void opts, 
+                     int|void concat )
 {
+  int shrink = (opts->shrink_fact||1);
   if(!opts) opts = ([]);
 
   if(!objectp( what ) )
     what = __decode( what );
 
-  mapping lopts = ([ "tiled":1, ]);
   array layers = ({});
   if( opts->background )
   {
+    mapping lopts = ([ "tiled":1, ]);
     lopts->image = Image.Image( 32, 32, opts->background );
     lopts->alpha = Image.Image( 32, 32, Image.Color.white );
     lopts->alpha_value = 1.0;
@@ -458,64 +421,68 @@ array decode_layers( string|object|mapping what, mapping|void opts )
   }
 
   foreach(what->layers, object l)
-  {
-    if(l->flags->visible || opts->draw_all_layers)
+    if((l->flags->visible || opts->draw_all_layers) && l->opacity > 0)
     {
-      Hierarchy   h   = l->image;
-      Image.Layer lay = Image.Layer( h->img,
-                                     h->alpha,
-                                     translate_mode( l->mode ) );
-
-
-      /* Not really layer related */
-      lay->set_misc_value( "image_xres", l->parent->xres );
-      lay->set_misc_value( "image_yres", l->parent->yres );
-      lay->set_misc_value( "image_colormap", l->parent->colormap );
-      lay->set_misc_value( "image_guides", l->parent->guides );
-      lay->set_misc_value( "image_parasites", l->parent->parasites );
-
-      /* But these are. :) */
-      lay->set_misc_value( "name", l->name );
-      lay->set_misc_value( "tattoo", l->tattoo );
-      lay->set_misc_value( "parasites", l->parasites );
-      lay->set_misc_value( "visible", l->flags->visible );
-      if( l == l->parent->active_layer )
-        lay->set_misc_value( "active", 1 );
-
-      h->img = 0; h->alpha = 0;
-
-      lay->set_alpha_value( l->opacity / 255.0 );
-      lay->set_offset( l->xoffset, l->yoffset );
+      Image.Layer lay = l->image->get_layer( shrink );
+      lay->set_mode( translate_mode( l->mode ) );
+      if( l->opacity != 255 )
+        lay->set_alpha_value( l->opacity / 255.0 );
+      lay->set_offset( l->xoffset/shrink, l->yoffset/shrink );
 
       if(l->mask && l->flags->apply_mask)
       {
-        l->mask = 0;
-        object a = l->alpha();
+        object a = lay->alpha();
+        object a2 =l->mask->image_data->get_layer(shrink)->image();
+        int x = lay->image()->xsize( );
+        int y = lay->image()->ysize( );
+        if( a2->xsize() != x || a2->ysize() != y )
+          a2 = a2->copy( 0,0, x, y, 255,255,255 );
+
         if(a)
-          a *= l->mask->image;
+          a *= l->mask->image_data->get_layer(shrink)->image();
         else
-          a = l->mask->image;
-        if( a->xsize() != l->image->img->xsize() ||
-            a->ysize() != l->image->img->ysize() )
-          a = a->copy( 0,0, l->image->image->xsize(),
-                       l->image->image->ysize(), 255,255,255 );
+          a = a2;
         lay->set_alpha( a );
       }
       layers += ({ lay });
+
+
+      if(!concat) /* No reason to set these flags if they are just
+                     going to be ignored. */
+      {
+        /* Not really layer related */
+        lay->set_misc_value( "image_xres", l->parent->xres/shrink );
+        lay->set_misc_value( "image_yres", l->parent->yres/shrink );
+        lay->set_misc_value( "image_colormap", l->parent->colormap );
+        lay->set_misc_value( "image_guides", l->parent->guides );
+        lay->set_misc_value( "image_parasites", l->parent->parasites );
+
+        /* But these are. :) */
+        lay->set_misc_value( "name", l->name );
+        lay->set_misc_value( "tattoo", l->tattoo );
+        lay->set_misc_value( "parasites", l->parasites );
+        lay->set_misc_value( "visible", l->flags->visible );
+        if( l == l->parent->active_layer )
+          lay->set_misc_value( "active", 1 );
+      }
     }
-  }
+
   return layers;
 }
 
-mapping _decode( string|mapping what, mapping|void opts )
+mapping _decode( string|mapping|object(GimpImage) what, mapping|void opts )
 {
   if(!opts) opts = ([]);
-
-  GimpImage data = __decode( what );
+  GimpImage data;
+  if( objectp( what ) )
+    data = what;
+  else
+    data = __decode( what );
   what = 0;
 
-  Image.Layer res = Image.lay(decode_layers( data, opts ),
-                              0,0,data->width,data->height );
+  int shrink = (opts->shrink_fact||1);
+  Image.Layer res = Image.lay(decode_layers( data, opts, 1 ),
+                              0,0,data->width/shrink,data->height/shrink );
   Image.Image img = res->image();
   Image.Image alpha = res->alpha();
   res = 0;
@@ -524,22 +491,22 @@ mapping _decode( string|mapping what, mapping|void opts )
     foreach( data->guides, Guide g )
       if(g->vertical)
       {
-        img->line( g->pos, 0, g->pos, img->ysize(), 0,155,0 );
+        img->line( g->pos/shrink, 0, g->pos/shrink, img->ysize(), 0,155,0 );
         if( alpha )
-          alpha->line(  g->pos, 0, g->pos, img->ysize(), 255,255,255 );
+          alpha->line( g->pos/shrink,0,g->pos/shrink,img->ysize(), 255,255,255 );
       }
       else
       {
-        img->line( 0,g->pos,  img->xsize(), g->pos, 0,155,0 );
+        img->line( 0,g->pos/shrink,  img->xsize(), g->pos/shrink, 0,155,0 );
         if( alpha )
-          alpha->line(  0,g->pos, img->xsize(),g->pos, 255,255,255 );
+          alpha->line(  0,g->pos/shrink, img->xsize(),g->pos/shrink, 255,255,255 );
       }
 
-  if(opts->draw_selection)
-    if(data->selection)
-      img->paste_alpha_color( data->selection->image_data->img*0.25,
-                              data->selection->r, data->selection->g,
-                              data->selection->b );
+//   if(opts->draw_selection)
+//     if(data->selection)
+//       img->paste_alpha_color( data->selection->image_data->img*0.25,
+//                               data->selection->r, data->selection->g,
+//                               data->selection->b );
 
   if(opts->mark_layers)
   {
@@ -547,10 +514,10 @@ mapping _decode( string|mapping what, mapping|void opts )
     {
       if(l->flags->visible || opts->draw_all_layers)
       {
-        int x1 = l->xoffset;
-        int x2 = l->xoffset+l->width;
-        int y1 = l->yoffset;
-        int y2 = l->yoffset+l->height;
+        int x1 = l->xoffset/shrink;
+        int x2 = (l->xoffset+l->width)/shrink;
+        int y1 = (l->yoffset)/shrink;
+        int y2 = (l->yoffset+l->height)/shrink;
         img->setcolor(0,0,255);
         img->line( x1,y1,x2,y1 );
         img->line( x2,y1,x2,y2 );
@@ -575,8 +542,8 @@ mapping _decode( string|mapping what, mapping|void opts )
       if(l->flags->visible || opts->draw_all_layers)
       {
         int x, y;
-        int x1 = l->xoffset;
-        int y1 = l->yoffset+3;
+        int x1 = l->xoffset/shrink;
+        int y1 = (l->yoffset+3)/shrink;
         object a = opts->mark_layer_names->write( l->name );
         for( x=-1; x<2; x++ )
           for( y=-1; y<2; y++ )
@@ -594,10 +561,10 @@ mapping _decode( string|mapping what, mapping|void opts )
   {
     if(data->active_layer)
     {
-      int x1 = data->active_layer->xoffset;
-      int x2 = data->active_layer->xoffset+data->active_layer->width;
-      int y1 = data->active_layer->yoffset;
-      int y2 = data->active_layer->yoffset+data->active_layer->height;
+      int x1 = data->active_layer->xoffset/shrink;
+      int x2 = (data->active_layer->xoffset+data->active_layer->width)/shrink;
+      int y1 = data->active_layer->yoffset/shrink;
+      int y2 = (data->active_layer->yoffset+data->active_layer->height)/shrink;
       img->setcolor(255,0,0);
       img->line( x1,y1,x2,y1 );
       img->line( x2,y1,x2,y2 );
@@ -613,9 +580,8 @@ mapping _decode( string|mapping what, mapping|void opts )
       }
     }
   }
-
-  Array.map( data->layers, lambda(object o) { destruct(o); } );
-  destruct( data );
+//   Array.map( data->layers, lambda(object o) { destruct(o); } );
+//   destruct( data );
   return
   ([
     "image":img,

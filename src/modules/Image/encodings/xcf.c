@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.21 2000/08/16 19:54:51 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.22 2000/10/08 21:12:45 per Exp $");
 
 #include "image_machine.h"
 
@@ -21,6 +21,7 @@ RCSID("$Id: xcf.c,v 1.21 2000/08/16 19:54:51 grubba Exp $");
 #include "operators.h"
 #include "dynamic_buffer.h"
 #include "signal_handler.h"
+#include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"
@@ -48,9 +49,156 @@ extern struct program *image_program;
 
 struct buffer
 {
+  struct pike_string *s;
+  int base_offset;
+  int base_len;
+
   size_t len;
   unsigned char *str;
 };
+
+struct substring
+{
+  struct pike_string *s;
+  int offset;
+  int len;
+};
+
+static struct program *substring_program;
+#define SS(X) ((struct substring*)X->storage)
+
+static void f_substring_cast( INT32 args )
+{
+  /* FIXME: assumes string */
+  struct substring *s = SS(fp->current_object);
+  pop_n_elems( args );
+  push_string( make_shared_binary_string( (((char *)s->s->str)+s->offset),
+                                          s->len ) );
+}
+
+static void f_substring_index( INT32 args )
+{
+  int i = sp[-1].u.integer;
+  struct substring *s = SS(fp->current_object);
+  pop_n_elems( args );
+
+  if( i < 0 ) i = s->len + i;
+  if( i >= s->len ) error("Index out of bounds, %d > %d\n", i, s->len-1 );
+  push_int( ((unsigned char *)s->s->str)[s->offset+i] );
+}
+
+static void f_substring__sprintf( INT32 args )
+{
+  int x;
+  struct substring *s = SS(fp->current_object);
+  extern void f_sprintf( INT32 args );
+
+  if (args != 2 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+  if (sp[-2].type!=T_INT)
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+  if (sp[-1].type!=T_MAPPING)
+    SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
+  x = sp[-2].u.integer;
+  pop_n_elems( args );
+
+  switch( x )
+  {
+   case 't':
+     push_constant_text("SubString");
+     return;
+   case 'O':
+     push_constant_text("SubString( %O /* [+%d .. %d] */ )" );
+     push_text("string"); f_substring_cast( 1 );
+
+     push_int( s->len );
+     push_int( s->offset );
+     f_sprintf( 4 );
+     return;
+   default: 
+     push_int(0);
+     return;
+  }
+}
+
+static void f_substring_get_int( INT32 args )
+{
+  struct substring *s = SS(fp->current_object);
+  int res;
+  unsigned char *p;
+  int x = sp[-1].u.integer;
+  if( x > s->len>>2 )
+    error("Index %d out of range", x );
+
+  p = s->s->str + s->offset + x*4;
+  res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
+  push_int( res );
+}
+
+
+static void f_substring_get_uint( INT32 args )
+{
+  struct substring *s = SS(fp->current_object);
+  unsigned int res;
+  unsigned char *p;
+  int x = sp[-1].u.integer;
+  if( x > s->len>>2 )
+    error("Index %d out of range", x );
+
+  p = s->s->str + s->offset + x*4;
+  res = (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | p[3];
+  push_int64( res );
+}
+
+static void f_substring_get_ushort( INT32 args )
+{
+  struct substring *s = SS(fp->current_object);
+  unsigned short res;
+  unsigned char *p;
+  int x = sp[-1].u.integer;
+  if( x > s->len>>1 )
+    error("Index %d out of range", x );
+
+  p = s->s->str + s->offset + x*2;
+  res = (p[2]<<8) | p[3];
+  push_int( res );
+}
+
+static void f_substring_get_short( INT32 args )
+{
+  struct substring *s = SS(fp->current_object);
+  short res;
+  unsigned char *p;
+  int x = sp[-1].u.integer;
+  if( x > s->len>>1 )
+    error("Index %d out of range", x );
+
+  p = s->s->str + s->offset + x*2;
+  res = (p[2]<<8) | p[3];
+  push_int( res );
+}
+
+static void push_substring( struct pike_string *s, 
+                            int offset,
+                            int len )
+{
+  struct object *o = clone_object( substring_program, 0 );
+  struct substring *ss = SS(o);
+  ss->s = s;
+  s->refs++;
+  ss->offset = offset;
+  ss->len = len;
+  push_object( o );
+}
+
+static void free_substring( )
+{
+  if( SS(fp->current_object)->s )
+  {
+    free_string( SS(fp->current_object)->s );
+    SS(fp->current_object)->s = 0;
+  }
+}
 
 
 typedef enum
@@ -153,7 +301,7 @@ static unsigned int read_uint( struct buffer *from )
   unsigned int res;
   if(from->len < 4)
     error("Not enough space for 4 bytes (uint32)\n");
-  res = from->str[0]<<24|from->str[1]<<16|from->str[2]<<8|from->str[3];
+  res = (from->str[0]<<24)|(from->str[1]<<16)|(from->str[2]<<8)|from->str[3];
   from->str += 4;
   from->len -= 4;
   return res;
@@ -164,7 +312,7 @@ static int xcf_read_int( struct buffer *from )
   return (int)read_uint( from );
 }
 
-static char *read_data( struct buffer * from, size_t len )
+static char *read_data( struct buffer *from, size_t len )
 {
   char *res;
   if( from->len < len )
@@ -178,8 +326,10 @@ static char *read_data( struct buffer * from, size_t len )
 
 static struct buffer read_string( struct buffer *data )
 {
-  struct buffer res;
+  struct buffer res = *data;
   res.len = xcf_read_int( data );
+  res.base_len = res.len;
+  res.base_offset = data->base_offset+(data->base_len-data->len);
   res.str = (unsigned char *)read_data( data, res.len );
   if(res.len > 0) res.len--; /* len includes ending \0 */
   if(!res.str)
@@ -198,10 +348,16 @@ static struct property read_property( struct buffer * data )
     read_uint(data); /* bogus 'len'... */
     foo = read_uint( data );
     res.data.len = foo*3;
+    res.data.base_offset = data->base_offset+(data->base_len-data->len);
+    res.data.base_len = res.data.len;
     res.data.str = (unsigned char *)read_data( data,foo*3 );
+    res.data.s   = data->s;
   } else {
     res.data.len = read_uint( data );
+    res.data.base_offset = data->base_offset+(data->base_len-data->len);
+    res.data.base_len = res.data.len;
     res.data.str = (unsigned char *)read_data( data,res.data.len );
+    res.data.s   = data->s;
   }
   res.next = NULL;
   return res;
@@ -358,7 +514,7 @@ static struct level read_level( struct buffer *buff,
   ONERROR err;
   int offset;
   struct tile *last_tile = NULL;
-  int all_tiles_eq = 0;
+/*   int all_tiles_eq = 0; */
   MEMSET(&res, 0, sizeof(res));
   res.width = read_uint( buff );
   res.height = read_uint( buff );
@@ -375,22 +531,9 @@ static struct level read_level( struct buffer *buff,
       last_tile->next = tile;
     last_tile = tile;
     if(!res.first_tile)
-    {
       res.first_tile = tile;
-      if(offset2)
-        all_tiles_eq = offset2-offset;
-    }
-    if(all_tiles_eq && offset2 && offset2-offset != all_tiles_eq)
-      all_tiles_eq = 0;
-    if(all_tiles_eq)
-      ob.len = all_tiles_eq;
-    else if(offset2)
-      ob.len = offset2-offset;
-    else
-      ob.len = MINIMUM((TILE_WIDTH*TILE_HEIGHT*5),ob.len);
     tile->data = ob;
     tile->next = NULL;
-/* fprintf(stderr, "tile, o=%d; o2=%d; l=%d\n", offset, offset2,ob.len); */
     offset = offset2;
   }
   UNSET_ONERROR( err );
@@ -622,7 +765,8 @@ static struct gimp_image read_image( struct buffer * data )
 
 static void push_buffer( struct buffer *b )
 {
-  push_string( make_shared_binary_string( (char *)b->str, b->len ) );
+  push_substring( b->s, b->base_offset+(b->base_len-b->len), b->len );
+/* push_string( make_shared_binary_string( (char *)b->str, b->len ) );*/
 }
 
 static void push_properties( struct property *p )
@@ -757,7 +901,12 @@ static void image_xcf____decode( INT32 args )
   if(args > 1)
     error("Too many arguments to Image.XCF.___decode()\n");
 
-  b.str = (unsigned char *)s->str; b.len = s->len;
+  b.s = s;
+  b.base_offset = 0;
+  b.base_len = s->len;
+  b.len = s->len;
+  b.str = (unsigned char *)s->str;
+
   res = read_image( &b );
   SET_ONERROR( err, free_image, &res );
   push_image( &res );
@@ -768,7 +917,7 @@ static void image_xcf____decode( INT32 args )
 }
 
 
-unsigned char read_char( struct buffer *from )
+static unsigned char read_char( struct buffer *from )
 {
   unsigned char res = 0;
   if(from->len)
@@ -778,72 +927,6 @@ unsigned char read_char( struct buffer *from )
     from->len--;
   }
   return res;
-}
-
-
-void image_xcf_f__rle_decode( INT32 args )
-{
-  struct pike_string *t;
-  struct buffer s;
-  struct buffer od, d;
-  INT_TYPE bpp, xsize, ysize, i;
-  get_all_args( "_rle_decode", args, "%S%d%d%d", &t, &bpp, &xsize, &ysize);
-
-  s.len = t->len;
-  s.str = (unsigned char *)t->str;
-  od.len = xsize*ysize*bpp;  /* Max and only size, really */
-  od.str = (unsigned char *)xalloc( xsize*ysize*bpp );
-  d = od;
-  for(i=0; i<bpp; i++)
-  {
-    int nelems = xsize*ysize;
-    int length;
-    while(nelems)
-    {
-      unsigned char val = read_char( &s );
-      if(!s.len)
-      {
-        break; /* Hm. This is actually rather fatal */
-      }
-      length = val;
-      if( length >= 128 )
-      {
-        length = 255-(length-1);
-        if (length == 128)
-          length = (read_char( &s )<<8) + read_char( &s );
-        nelems -= length;
-        while(length--)
-        {
-          if(d.len < 1)
-            break;
-          d.str[0] = read_char( &s );
-          d.str++;
-          d.len--;
-        }
-      } else {
-        length++;
-        if(length == 128)
-          length = (read_char( &s )<<8) + read_char( &s );
-        nelems -= length;
-        val = read_char( &s );
-        while(length--)
-        {
-          if(d.len < 1)
-            break;
-          d.str[0] = val;
-          d.str++;
-          d.len--;
-        }
-      }
-    }
-  }
-
-  pop_n_elems(args);
-    /* fprintf(stderr, "%d bytes of source data used out of %d bytes\n" */
-    /*         "%d bytes decoded data generated\n",  */
-    /*         t->len-s.len,t->len,od.len); */
-  push_string(make_shared_binary_string((char *)od.str,od.len));
-  free(od.str);
 }
 
 /*
@@ -1096,25 +1179,32 @@ void image_xcf_f__decode_tiles( INT32 args )
 {
   struct object *io,*ao, *cmapo;
   struct array *tiles;
-  struct image *i, *a=NULL;
+  struct image *i=NULL, *a=NULL;
   struct neo_colortable *cmap = NULL;
+  int rxs, rys;
   rgb_group *colortable=NULL;
-  INT_TYPE rle, bpp, span;
+  INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
-  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O",
-                &io, &ao, &tiles, &rle, &bpp, &cmapo);
+  get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%d%d%d",
+                &io, &ao, &tiles, &rle, &bpp, &cmapo, &shrink, &rxs, &rys);
+
+
   if( !(i = (struct image *)get_storage( io, image_program )))
     error("Wrong type object argument 1 (image)\n");
+
   if(ao && !(a = (struct image *)get_storage( ao, image_program )))
     error("Wrong type object argument 2 (image)\n");
+
   if( cmapo &&
       !(cmap=(struct neo_colortable *)get_storage(cmapo,
                                                   image_colortable_program)))
     error("Wrong type object argument 4 (colortable)\n");
+
   for(l=0; l<(unsigned int)tiles->size; l++)
-    if(tiles->item[l].type != T_STRING)
+    if(tiles->item[l].type != T_OBJECT)
       error("Wrong type array argument 3 (tiles)\n");
-  if(a && (i->xsize != a->xsize ||i->ysize != a->ysize))
+
+  if(a && ((i->xsize != a->xsize) || (i->ysize != a->ysize)))
     error("Image and alpha objects are not identically sized.\n");
 
   if(cmap)
@@ -1123,117 +1213,185 @@ void image_xcf_f__decode_tiles( INT32 args )
     image_colortable_write_rgb( cmap, (unsigned char *)colortable );
   }
 
-
-/*   switch(bpp) */
-/*   { */
-/*    case 1: */
-/*    case 3: */
-/*      if(ao) */
-/*      { */
-/*        destruct( ao ); */
-/*        a=0; */
-/*        ao=0; */
-/*      } */
-/*      break; */
-/*   } */
-
   x=y=0;
+
+  THREADS_ALLOW();
   for(l=0; l<(unsigned)tiles->size; l++)
   {
-    struct pike_string *tile = tiles->item[l].u.string;
+    struct object *to = tiles->item[l].u.object;
+    struct substring *tile_ss = SS(to);
+    struct buffer tile;
+    char *df = 0;
     unsigned int eheight, ewidth;
     unsigned char *s;
-    ewidth = MINIMUM(TILE_WIDTH, i->xsize-x);
-    eheight = MINIMUM(TILE_HEIGHT, i->ysize-y);
-    add_ref(tile);
 
-/*     fprintf(stderr, "       tile %d/%d [%dx%d]  %dbpp      \n", */
-/*             l+1, tiles->size, ewidth, eheight,bpp); */
+    if(!tile_ss)
+      continue;
+
+    tile.str = (tile_ss->s->str + tile_ss->offset);
+    tile.len = tile_ss->len;
+
+    ewidth = MINIMUM(TILE_WIDTH, (rxs-x));
+    eheight = MINIMUM(TILE_HEIGHT, (rys-y));
 
     if(rle)
     {
-      push_string( tile );
-      push_int( bpp );
-      push_int( ewidth );
-      push_int( eheight );
-      image_xcf_f__rle_decode( 4 );
-      tile = (struct pike_string *)debug_malloc_pass(sp[-1].u.string);
-      if(sp[-1].type != T_STRING)
-        fatal("Internal disaster in XCF module\n");
-      sp--;
+      struct buffer s = tile, od, d;
+      int i;
+      od.len = eheight*ewidth*bpp;  /* Max and only size, really */
+      df = od.str = (unsigned char *)xalloc( eheight*ewidth*bpp+1 );
+      d = od;
+
+      for(i=0; i<bpp; i++)
+      {
+        int nelems = ewidth*eheight;
+        int length;
+        while(nelems)
+        {
+          unsigned char val = read_char( &s );
+          if(!s.len)
+          {
+            break; /* Hm. This is actually rather fatal */
+          }
+          length = val;
+          if( length >= 128 )
+          {
+            length = 255-(length-1);
+            if (length == 128)
+              length = (read_char( &s )<<8) + read_char( &s );
+            nelems -= length;
+            while(length--)
+            {
+              if(d.len < 1)
+                break;
+              d.str[0] = read_char( &s );
+              d.str++;
+              d.len--;
+            }
+          } else {
+            length++;
+            if(length == 128)
+              length = (read_char( &s )<<8) + read_char( &s );
+            nelems -= length;
+            val = read_char( &s );
+            while(length--)
+            {
+              if(d.len < 1)
+                break;
+              d.str[0] = val;
+              d.str++;
+              d.len--;
+            }
+          }
+        }
+      }
+      tile = od;
     }
 
-    if( (size_t)(tile->len) < (size_t)(eheight * ewidth * bpp ))
-      error("Too small tile, was %ld bytes, I really need %d\n",
-            DO_NOT_WARN((long)tile->len),
-	    eheight*ewidth * bpp);
+/* fprintf(stderr, "%d,%d + %d,%d <%d,%d * %d>\n", x, y,  */
+/*         ewidth, eheight, i->xsize, i->ysize, shrink ); */
 
-    s = (unsigned char *)tile->str;
-
-    check_signals(0,0,0); /* Allow ^C */
-
-    for(cy=0; cy<eheight; cy++)
+    if( (size_t)(tile.len) < (size_t)(eheight * ewidth * bpp ))
     {
-      for(cx=0; cx<ewidth; cx++)
-      {
-        rgb_group pix;
-        rgb_group apix;
-        int ind = (cx+cy*ewidth);
+      if( df ) free( df ); df=0;
+      continue;
+    }
+    s = (unsigned char *)tile.str;
 
-        if(rle)
-          span = ewidth*eheight;
-        else
-          span = 1;
-        if(cx+x > (unsigned)i->xsize)  continue;
-        if(cy+y > (unsigned)i->ysize)  continue;
 
-        switch( bpp )
-        {
-         case 1: /* indexed or grey */
-           if(colortable)
-             pix = colortable[s[ind]];
-           else
-             pix.r = pix.g = pix.b = s[ind];
-           break;
-         case 2: /* indexed or grey with alpha */
-           if(colortable)
-             pix = colortable[s[ind]];
-           else
-             pix.r = pix.g = pix.b = s[ind];
-           apix.r = apix.g = apix.b = s[ind+span];
-           break;
-         case 3: /* rgb */
-           pix.r = s[ind];
-           pix.g = s[ind+span];
-           pix.b = s[ind+span*2];
-           break;
-         case 4: /* rgb with alpha */
-           pix.r = s[ind];
-           pix.g = s[ind+span*1];
-           pix.b = s[ind+span*2];
-           apix.r = apix.g = apix.b = s[ind+span*3];
-           break;
-        }
-        ind = i->xsize*(cy+y)+(cx+x);
-        i->img[ind] = pix;
-        if(a) a->img[ind] = apix;
-      }
+#define LOOP_INIT() {\
+    int ix, iy=y/shrink;                                        \
+    for(cy=0; cy<eheight; cy+=shrink,iy=((cy+y)/shrink))        \
+    {                                                           \
+      int ind=cy*ewidth, bi=(i->xsize*iy);                      \
+      int ds = 0;                                               \
+      if(iy >= i->ysize)  continue;                             \
+      ix= x/shrink;                                             \
+      for(cx=0; cx<ewidth; cx+=shrink,ind+=shrink,ix++)         \
+      {                                                         \
+        rgb_group pix;                                          \
+        rgb_group apix;                                         \
+        if(ix >= i->xsize)  continue
+
+#define LOOP_EXIT()                                             \
+        i->img[ix+bi] = pix; \
+        if(a) a->img[ix+bi] = apix;                             \
+      }                                                         \
+    }}
+
+    if(rle)
+      span = ewidth*eheight;
+    else
+      span = 1;
+
+    switch( bpp )
+    {
+     case 1: /* indexed or grey */
+       if(colortable)
+       {
+         LOOP_INIT();
+         pix = colortable[s[ind]];
+         LOOP_EXIT();
+       } 
+       else
+       {
+         LOOP_INIT();
+         pix.r = pix.g = pix.b = s[ind];
+         LOOP_EXIT();
+       }
+       break;
+     case 2: /* indexed or grey with alpha */
+       if(colortable)
+       {
+         LOOP_INIT();
+         pix = colortable[s[ind]];
+         apix.r = apix.g = apix.b = s[ind+span];
+         LOOP_EXIT();
+       }
+       else
+       {
+         LOOP_INIT();
+         pix.r = pix.g = pix.b = s[ind];
+         apix.r = apix.g = apix.b = s[ind+span];
+         LOOP_EXIT();
+       }
+       break;
+     case 3: /* rgb */
+       LOOP_INIT();
+       pix.r = s[ind];
+       pix.g = s[ind+span];
+       pix.b = s[ind+span*2];
+       LOOP_EXIT();
+       break;
+     case 4: /* rgb */
+       LOOP_INIT();
+       pix.r = s[ind];
+       pix.g = s[ind+span];
+       pix.b = s[ind+span*2];
+       apix.r = apix.b = apix.g = s[ind+span*3];
+       LOOP_EXIT();
+       break;
+    }
+
+    if( df )
+    { 
+      free(df); 
+      df=0; 
     }
     x += TILE_WIDTH;
-    if( x >= (unsigned)i->xsize )
+
+    if( x >= rxs )
     {
       x = 0;
       y += TILE_HEIGHT;
     }
-    if(y>=(unsigned)i->ysize)
-    {
-      free_string(tile);
-      if(colortable) free( colortable );
-      return;
-    }
-    free_string(tile);
+    /* Not exactly likely to happen, and the test consumes some CPU */
+    /*     if(y>=(unsigned)(i->ysize*shrink)) */
+    /*       break; */
   }
-  if(colortable) free( colortable );
+  THREADS_DISALLOW();
+  if(colortable) 
+    free( colortable );
 
   pop_n_elems(args);
   push_int(0);
@@ -1322,6 +1480,20 @@ void init_image_xcf()
 #define STRING(X) s_##X = make_shared_binary_string(#X,sizeof( #X )-sizeof(""))
 #include "xcf_constant_strings.h"
 #undef STRING
+
+  start_new_program();
+  ADD_STORAGE( struct substring );
+  add_function("cast", f_substring_cast, "function(string:mixed)",0);
+  add_function("`[]", f_substring_index, "function(int:int)",0);
+  add_function("get_short", f_substring_get_short, "function(int:int)", 0 );
+  add_function("get_ushort", f_substring_get_ushort, "function(int:int)", 0 );
+  add_function("get_int", f_substring_get_int, "function(int:int)", 0 );
+  add_function("get_uint", f_substring_get_uint, "function(int:int)", 0 );
+  add_function("_sprintf",f_substring__sprintf,
+               "function(int,mapping:mixed)", 0);
+/*   set_init_callback(init_substring); */
+  set_exit_callback(free_substring);
+  substring_program = end_program();  
 }
 
 
@@ -1330,4 +1502,5 @@ void exit_image_xcf()
 #define STRING(X) free_string(s_##X)
 #include "xcf_constant_strings.h"
 #undef STRING
+  free_program( substring_program );
 }
