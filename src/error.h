@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.25 1998/11/22 11:02:45 hubbe Exp $
+ * $Id: error.h,v 1.26 2001/01/04 23:55:18 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -167,6 +167,9 @@ void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)
 
 #define fatal \
  fprintf(stderr,"Fatal error at %s:%d\n",__FILE__,__LINE__),debug_fatal
+
+/* Forward compatibility */
+#define Pike_error error
 
 #endif
 
