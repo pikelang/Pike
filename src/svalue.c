@@ -231,7 +231,7 @@ void assign_to_short_svalue(union anything *u,
     }
   }else if(IS_ZERO(s)){
     free_short_svalue(u,type);
-    u->integer=0;
+    MEMSET((char *)u,0,sizeof(union anything));
   }else{
     error("Wrong type in assignment.\n");
   }
@@ -250,7 +250,7 @@ void assign_to_short_svalue_no_free(union anything *u,
     *u = tmp = s->u;
     if(type <= MAX_REF_TYPE) tmp.refs[0]++;
   }else if(IS_ZERO(s)){
-    u->integer=0;
+    MEMSET((char *)u,0,sizeof(union anything));
   }else{
     error("Wrong type in assignment.\n");
   }

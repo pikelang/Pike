@@ -1,6 +1,6 @@
 #ifndef DEBUG_H
 #define DEBUG_H
-#include "debug.h"
+#include "types.h"
 /* Prototypes begin here */
 struct marker;
 struct marker_chunk;
