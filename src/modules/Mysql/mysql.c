@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.43 2001/04/28 19:19:57 grubba Exp $
+ * $Id: mysql.c,v 1.44 2001/04/28 19:21:03 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.43 2001/04/28 19:19:57 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.44 2001/04/28 19:21:03 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -447,7 +447,7 @@ static void f_insert_id(INT32 args)
   push_int(id);
 }
 
-/*! @decl string Pike_error()
+/*! @decl string error()
  *!
  *! Returns a string describing the last error from the Mysql-server.
  *!
