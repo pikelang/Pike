@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.323 2001/05/23 12:22:22 grubba Exp $");
+RCSID("$Id: program.c,v 1.324 2001/05/23 13:45:49 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4015,6 +4015,8 @@ struct program *compile(struct pike_string *prog,
 	   placeholder, placeholder->storage, placeholder->prog, p); */
 	destruct(placeholder);
       } else {
+	/* FIXME: Is this correct? */
+	free_program(placeholder->prog);
 	placeholder->prog = NULL;
       }
       placeholder=0;
@@ -4111,6 +4113,8 @@ struct program *compile(struct pike_string *prog,
 	   placeholder, placeholder->storage, placeholder->prog, p); */
 	destruct(placeholder);
       } else {
+	/* FIXME: Is this correct? */
+	free_program(placeholder->prog);
 	placeholder->prog = NULL;
       }
       placeholder=0;
