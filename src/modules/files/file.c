@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.113 1998/07/16 19:12:33 hubbe Exp $");
+RCSID("$Id: file.c,v 1.114 1998/07/20 14:15:53 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1460,7 +1460,8 @@ int socketpair_ultra(int family, int type, int protocol, int sv[2])
 
 static void file_pipe(INT32 args)
 {
-  int inout[2],i;
+  int inout[2] = { -1, -1 };
+  int i = 0;
 
   int type=fd_CAN_NONBLOCK | fd_BIDIRECTIONAL;
 
@@ -1477,8 +1478,10 @@ static void file_pipe(INT32 args)
     if(!(type & ~(PIPE_CAPABILITIES)))
     {
       i=fd_pipe(&inout[0]);
-      type=PIPE_CAPABILITIES;
-      break;
+      if (i >= 0) {
+	type=PIPE_CAPABILITIES;
+	break;
+      }
     }
 #endif
 
@@ -1491,30 +1494,34 @@ static void file_pipe(INT32 args)
     if(!(type & ~(UNIX_SOCKET_CAPABILITIES)))
     {
       i=fd_socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
-      type=UNIX_SOCKET_CAPABILITIES;
-      break;
+      if (i >= 0) {
+	type=UNIX_SOCKET_CAPABILITIES;
+	break;
+      }
     }
 #endif
     
     if(!(type & ~(SOCKET_CAPABILITIES)))
     {
       i=socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
-      type=SOCKET_CAPABILITIES;
-      break;
+      if (i >= 0) {
+	type=SOCKET_CAPABILITIES;
+	break;
+      }
     }
-    
-    error("Cannot create a pipe matching those parameters.\n");
+
+    if (!i) {
+      error("Cannot create a pipe matching those parameters.\n");
+    }
   }while(0);
     
   if ((i<0) || (inout[0] < 0) || (inout[1] < 0))
   {
-    if (i >= 0) {
-      if (inout[0] >= 0) {
-	close(inout[0]);
-      }
-      if (inout[1] >= 0) {
-	close(inout[1]);
-      }
+    if (inout[0] >= 0) {
+      close(inout[0]);
+    }
+    if (inout[1] >= 0) {
+      close(inout[1]);
     }
     ERRNO=errno;
     push_int(0);
