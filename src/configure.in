@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.152 1998/07/01 20:18:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.153 1998/07/01 20:21:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -250,6 +250,7 @@ if test $cflags_is_set = no; then
   # AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc,WARN)
 
   # HP-UX
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,-D__STDC_EXT__,stdc_ext,CFLAGS)
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_Ofailsafe,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_O3,OPTIMIZE)
