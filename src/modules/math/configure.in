@@ -1,5 +1,6 @@
-# $Id: configure.in,v 1.4 1998/03/28 13:57:09 grubba Exp $
+# $Id: configure.in,v 1.5 1998/07/22 21:06:42 hubbe Exp $
 AC_INIT(math.c)
+
 
 sinclude(../module_configure.in)
 
@@ -9,6 +10,8 @@ if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then
   LIBS="${LIBS} -lc -lm"
 fi
 
+AC_CHECK_HEADERS(ieeefp.h fp_class.h floatingpoint.h)
+AC_CHECK_FUNCS(fpsetmask)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
