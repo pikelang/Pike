@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.27 1998/01/30 16:40:03 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.28 1998/02/11 03:32:44 nisse Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -190,12 +190,14 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
 
     /* lets optimize this /Mirar & Per */
 
-    len = mpz->_mp_size*sizeof(mp_limb_t);
+    /* len = mpz->_mp_size*sizeof(mp_limb_t); */
+    /* This function should not return any leading zeros. /Nisse */
+    len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
     s = begin_shared_string(len);
 
     src=mpz->_mp_d;
     dst=s->str+s->len;
-    while (len)
+    while (len > 0)
     {
        mp_limb_t x=*(src++);
        for (i=0; i<sizeof(mp_limb_t); i++)
