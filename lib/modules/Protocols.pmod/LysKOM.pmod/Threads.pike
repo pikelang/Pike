@@ -79,6 +79,7 @@ class Thread
       conf_no=_conf_no;
       
       textno_to_node[text->no]=this_object();
+      _text->clear_stat;
 
       unread=unread_numbers[text->no];
       if(!unread)

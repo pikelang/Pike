@@ -27,8 +27,20 @@ object con;
 string buf="";
 
 /* outstanding calls */
+// static private
 mapping(int:function(string:void)) async=([]);
 int ref=1;
+
+int raw_serial=lambda()
+{
+#if constant(LYSKOM_RAW)
+  add_constant("LysKOM_RAW",LysKOM_RAW+1);
+  return LysKOM_RAW+1;
+#else
+  add_constant("LysKOM_RAW",1);
+  return 0;
+#endif
+}();
 
 /* asynchronous messages callback list */
 mapping(int:array(function(string:void))) async_callbacks=([]);
@@ -55,6 +67,8 @@ static inline int conwrite(string what)
    return i;
 }
 
+array komihåg=({});
+
 class Send
 {
    int ref;
@@ -71,8 +85,13 @@ class Send
    void write()
    {
       out_req++;
-      conwrite(ref+" "+request+"\r\n");
       async[ref]=callback;
+      conwrite(ref+" "+request+"\r\n");
+#ifdef LYSKOM_DEBUG
+//       werror("LYSKOM "+raw_serial+" inserting callback %O for call %d\n",callback,ref);
+//       werror("async: %O\n",async);
+#endif
+      komihåg+=({function_object(callback)});
    }
 }
 
@@ -124,6 +143,10 @@ mixed sync_do(int ref,string|void request)
       {
 	 if (!async[ref])
 	    error("request ref %d not in queue, but no callback\n",ref);
+#ifdef LYSKOM_DEBUG
+// 	 werror("LYSKOM "+raw_serial+" removing callback %O for call %d (handling ref %d in sync mode)\n",
+// 		async[ref],ref);
+#endif
 	 m_delete(async,ref);
       }
       else
@@ -471,14 +494,20 @@ array(array(mixed)|int) try_parse(string what)
 
 void got_reply(int ref,object|array what)
 {
+//   werror("got_reply(): async: %O\n",async);
    function call=async[ref];
+#ifdef LYSKOM_DEBUG
+//    werror("LYSKOM "+raw_serial+" removing callback %O for call %d\n",call,ref);
+#endif
+   m_delete(async,ref);
    if (!call)
    {
-      werror("LysKOM.Raw: lost callback for call %d\n",ref);
+      werror("LysKOM.Raw: lost callback for call %d %s\n",ref,
+	     zero_type(call)?"(lost from mapping??!)":"(zero value in mapping)");
+      //      werror("komihåg: %O\n",komihåg);
       werror(master()->describe_backtrace(backtrace()));
       return;
    }
-   m_delete(async,ref);
 #if constant(thread_create) && !LYSKOM_UNTHREADED
    call_fifo->write( ({call,what}) );
 #else

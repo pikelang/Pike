@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.11 1999/10/17 00:57:54 js Exp $
+//  $Id: Session.pike,v 1.12 1999/10/18 21:53:09 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -482,7 +482,10 @@ class Text
          case "creation_time":
 	   waitfor_stat();
 	   return _stat->creation_time;
-	
+
+         case "clear_stat":
+           _stat=0;
+	   return 0;
 
          case "mark_as_read":
             return mark_as_read;
@@ -686,6 +689,9 @@ class Person
 	 case "unread":
 	    waitfor_unread();
 	    return _unread;
+	 case "clear_membership":
+            _membership=0;
+	    return 0;
 	 case "membership":
 	    waitfor_membership();
 	    return _membership;
