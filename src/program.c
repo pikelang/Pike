@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.96 1998/07/10 15:52:04 grubba Exp $");
+RCSID("$Id: program.c,v 1.97 1998/07/17 13:31:22 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -507,7 +507,10 @@ void low_start_new_program(struct program *p,
 {
   int e,id=0;
 
-  init_threads_disable(NULL);
+  /* We don't want to change thread, but we don't want to
+   * wait for the other threads to complete.
+   */
+  low_init_threads_disable();
 
   compilation_depth++;
 
