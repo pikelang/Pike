@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.34 1998/03/31 21:52:16 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.35 1998/04/06 03:51:54 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -994,41 +994,6 @@ static int do_docode2(node *n,int flags)
       emit(F_ARROW_STRING, store_prog_string(CDR(n)->u.sval.u.string));
       return 2;
     }else{
-      struct program *p;
-      if(CAR(n) &&
-	 CDR(n) &&
-	 EXTRACT_UCHAR(CAR(n)->type->str)==T_OBJECT &&
-	 (tmp2=EXTRACT_INT(CAR(n)->type->str+1)) &&
-	 (p=id_to_program(tmp2)) &&
-	 (FIND_LFUN(p,LFUN_ARROW)==-1) &&
-	 CDR(n)->token == F_CONSTANT &&
-	 CDR(n)->u.sval.type==T_STRING)
-      {
-	tmp3=find_shared_string_identifier(CDR(n)->u.sval.u.string,p);
-	if(tmp3==-1)
-	{
-	  yywarning("Accessing a non-existant identifier");
-	  DO_CODE_BLOCK(CAR(n));
-	  emit(F_NUMBER,0);
-	  return 1;
-	}else{
-	  struct identifier *i=ID_FROM_INT(p,tmp3);
-	  if(IDENTIFIER_IS_FUNCTION(i->identifier_flags))
-	  {
-	    tmp1=do_docode(CAR(n), DO_NOT_COPY);
-	    emit(F_STRICT_ARROW, tmp3);
-	    emit(F_DATA, tmp2);
-	    return tmp1;
-	  }
-	  if(IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-	  {
-	    tmp1=do_docode(CAR(n), DO_NOT_COPY);
-	    emit(F_STRICT_ARROW_VARIABLE, tmp3);
-	    emit(F_DATA, tmp2);
-	    return tmp1;
-	  }
-	}
-      }
       tmp1=do_docode(CAR(n), DO_NOT_COPY);
       emit(F_ARROW, store_prog_string(CDR(n)->u.sval.u.string));
       if(!(flags & DO_NOT_COPY))

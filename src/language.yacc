@@ -27,8 +27,7 @@
 
 %token F_INDEX F_ARROW F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
 %token F_LOCAL_LOCAL_INDEX
-%token F_POS_INT_INDEX F_NEG_INT_INDEX F_STRICT_ARROW
-%token F_STRICT_ARROW_VARIABLE
+%token F_POS_INT_INDEX F_NEG_INT_INDEX
 %token F_LTOSVAL F_LTOSVAL2
 %token F_PUSH_ARRAY 
 %token F_RANGE F_COPY_VALUE
@@ -170,7 +169,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.68 1998/04/01 00:47:47 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.69 1998/04/06 04:06:41 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif

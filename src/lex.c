@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.47 1998/04/01 00:47:48 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.48 1998/04/06 04:09:05 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -130,8 +130,6 @@ struct keyword instr_names[]=
 { "global",		F_GLOBAL, I_HASARG },
 { "index",              F_INDEX },
 { "->x",                F_ARROW, I_HASARG },
-{ "object(const)->func",      F_STRICT_ARROW, I_HASARG },
-{ "object(const)->var",      F_STRICT_ARROW_VARIABLE, I_HASARG },
 { "clear string subtype", F_CLEAR_STRING_SUBTYPE },
 { "arrow string",       F_ARROW_STRING, I_HASARG },
 { "indirect",		F_INDIRECT },
