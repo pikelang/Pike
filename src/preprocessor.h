@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.39 2001/05/17 23:49:07 hubbe Exp $
+ * $Id: preprocessor.h,v 1.40 2001/05/29 16:48:21 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1033,9 +1033,11 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		  INT32 line=this->current_line;
 		  save=this->buf;
 		  this->buf=tmp;
+		  d->inside = 1;
 		  lower_cpp(this, a, l,
 			    flags & ~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
 			    auto_convert, charset);
+		  d->inside = 0;
 		  tmp=this->buf;
 		  this->buf=save;
 		  this->current_line=line;
@@ -1879,9 +1881,16 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	       (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
 	      fatal("Internal error in define\n");
 #endif	  
-	    
-	    this->defines=hash_insert(this->defines, & def->link);
-	    
+	    {
+	      struct define *d;
+	      if ((d = find_define(def->link.s)) && (d->inside)) {
+		cpp_error(this,
+			  "Illegal to redefine a macro during its expansion.");
+		free_one_define(&(def->link));
+	      } else {
+		this->defines=hash_insert(this->defines, & def->link);
+	      }
+	    }
 	  }
 	  pop_n_elems(Pike_sp-argbase);
 	  break;

@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.416 2001/05/24 22:39:01 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.417 2001/05/29 16:48:21 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5842,6 +5842,26 @@ do_test_cpp_string([["\\"]])
 do_test_cpp_string([["\\\\"]])
 do_test_cpp_string([["\\\\\\"]])
 do_test_cpp_string([["\""]])
+
+// #undef inside an evaluation of the macro.
+test_compile_error([[
+#define LOCALE(X,Y) (Y)
+#define DEFVAR(X, Y) ret[(X)]=my_defvar((X),(Y),vars)
+
+  DEFVAR("cm_wa",
+         Sitebuilder.SBConnect()->
+         ChooseWorkareaVariable(LOCALE(0, "Work area") + LOCALE(0, "Work area"),
+                                LOCALE(0, "the"));
+
+  DEFVAR("cr_startpage",
+         Variable.URLList(LOCALE(0, "Crawling behaviour") + LOCALE(0, "Start pages"), ""));
+
+#undef DEFVAR
+
+constant cif_defines = #"
+   <input align='&_.img-align;' type='image' name='&_.name;' value='&_.contents;' src='&var.url;' border='0' />
+</define>";
+]])
 
 // foop
 define(do_test_foop,[[
