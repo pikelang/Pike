@@ -1302,7 +1302,7 @@ static int eval_instruction(unsigned char *pc)
 #endif /* PIKE_DEBUG */
       if (runtime_options & RUNTIME_CHECK_TYPES) {
 	struct pike_string *sval_type = get_type_of_svalue(sp-1);
-	if (!pike_types_le(sval_type, sp[-2].u.string) {
+	if (!pike_types_le(sval_type, sp[-2].u.string)) {
 	  /* get_type_from_svalue() doesn't return a fully specified type
 	   * for array, mapping and multiset, so we perform a more lenient
 	   * check for them.
