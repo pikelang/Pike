@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.57 2003/05/04 21:29:15 nilsson Exp $
+// $Id: Query.pike,v 1.58 2003/05/06 00:04:27 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -26,7 +26,6 @@
 //!    o->async_request("pike.ida.liu.se", 80, "HEAD / HTTP/1.0");
 //!    return -1;
 //! }
-//! @endexample
 
 /****** variables **************************************************/
 
