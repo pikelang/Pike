@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.30 2003/12/02 13:49:59 grubba Exp $
+|| $Id: ppc32.c,v 1.31 2003/12/09 13:31:43 grubba Exp $
 */
 
 /*
@@ -14,6 +14,7 @@
 #include "operators.h"
 #include "constants.h"
 #include "object.h"
+#include "builtin_functions.h"
 
 #if PIKE_BYTEORDER == 1234
 #define MAKE_TYPE_WORD(t,st) ((t)|((st)<<16))
@@ -449,6 +450,15 @@ void ins_f_byte(unsigned int b)
 
   FLUSH_CODE_GENERATOR_STATE();
   ADD_CALL(addr);
+#ifdef OPCODE_RETURN_JUMPADDR
+  if (instrs[b].flags & I_JUMP) {
+    /* This is the code that JUMP_EPILOGUE_SIZE compensates for. */
+    /* mtlr r3 */
+    MTSPR(PPC_REG_RET, PPC_SPREG_LR);
+    /* blr */
+    BCLR(20, 0);
+  }
+#endif
 }
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
@@ -545,9 +555,9 @@ void ins_f_byte_with_2_args(unsigned int a,
   return;
 }
 
-INT32 ppc32_ins_f_jump(unsigned int a)
+INT32 ppc32_ins_f_jump(unsigned int a, int backward_jump)
 {
-  INT32 ret;
+  INT32 ret, pos_=0;
   int (*test_func)(void);
   if(a == F_BRANCH)
     test_func = NULL;
@@ -565,6 +575,12 @@ INT32 ppc32_ins_f_jump(unsigned int a)
     CMPLI(0, PPC_REG_RET, 0);
     /* beq .+8 */
     BC(12, 2, 2);
+    pos_ = PIKE_PC;
+  }
+  if(backward_jump) {
+    ADD_CALL(branch_check_threads_etc);
+    if(pos_)
+      Pike_compiler->new_program->program[pos_-1] += 4*(PIKE_PC-pos_);
   }
   ret=DO_NOT_WARN( (INT32) PIKE_PC );
   /* b . */
@@ -572,19 +588,19 @@ INT32 ppc32_ins_f_jump(unsigned int a)
   return ret;
 }
 
-INT32 ppc32_ins_f_jump_with_arg(unsigned int a, unsigned INT32 b)
+INT32 ppc32_ins_f_jump_with_arg(unsigned int a, unsigned INT32 b, int backward_jump)
 {
   if(a == F_COND_RECUR) return -1;
   SET_REG(PPC_REG_ARG1, b);
-  return ppc32_ins_f_jump(a);
+  return ppc32_ins_f_jump(a, backward_jump);
 }
 
 INT32 ppc32_ins_f_jump_with_2_args(unsigned int a, unsigned INT32 b,
-				   unsigned INT32 c)
+				   unsigned INT32 c, int backward_jump)
 {
   SET_REG(PPC_REG_ARG1, b);
   SET_REG(PPC_REG_ARG2, c);
-  return ppc32_ins_f_jump(a);
+  return ppc32_ins_f_jump(a, backward_jump);
 }
 
 void ppc32_update_f_jump(INT32 offset, INT32 to_offset)

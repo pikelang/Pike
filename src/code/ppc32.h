@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.h,v 1.20 2002/11/08 18:09:29 marcus Exp $
+|| $Id: ppc32.h,v 1.21 2003/12/09 13:31:43 grubba Exp $
 */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -37,20 +37,14 @@
 #define MFSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),339)
 #define MTSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),467)
 
+#define BCLR(BO,BI) PPC_INSTR_XL_FORM(19,BO,BI,0,16,0)
 #define BCLRL(BO,BI) PPC_INSTR_XL_FORM(19,BO,BI,0,16,1)
 #define B(LI) PPC_INSTR_I_FORM(18,LI,0,0)
 #define BL(LI) PPC_INSTR_I_FORM(18,LI,0,1)
 #define BLA(LI) PPC_INSTR_I_FORM(18,LI,1,1)
 
-#define LOW_GET_JUMP()	(PROG_COUNTER[0])
-#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
-#ifdef __linux
-/* SVR4 ABI */
-#define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[1])
-#else
-/* PowerOpen ABI */
-#define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[2])
-#endif
+#define LOW_GET_JUMP()	(PROG_COUNTER[JUMP_EPILOGUE_SIZE])
+#define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + JUMP_EPILOGUE_SIZE + 1))
 
 #define SET_REG(REG, X) do {						  \
     INT32 val_ = X;							  \
@@ -179,9 +173,9 @@ void ppc32_flush_code_generator_state(void);
 #define ins_byte(VAL)	  add_to_program((INT32)(VAL))
 #define ins_data(VAL)	  add_to_program((INT32)(VAL))
 
-INT32 ppc32_ins_f_jump(unsigned int a);
-INT32 ppc32_ins_f_jump_with_arg(unsigned int a, unsigned INT32 b);
-INT32 ppc32_ins_f_jump_with_2_args(unsigned int a, unsigned INT32 b, unsigned INT32 c);
+INT32 ppc32_ins_f_jump(unsigned int a, int backward_jump);
+INT32 ppc32_ins_f_jump_with_arg(unsigned int a, unsigned INT32 b, int backward_jump);
+INT32 ppc32_ins_f_jump_with_2_args(unsigned int a, unsigned INT32 b, unsigned INT32 c, int backward_jump);
 void ppc32_update_f_jump(INT32 offset, INT32 to_offset);
 INT32 ppc32_read_f_jump(INT32 offset);
 #define INS_F_JUMP ppc32_ins_f_jump
@@ -249,6 +243,31 @@ void ppc32_decode_program(struct program *p);
 			  "r10", "r11", "r12")
 
 #define OPCODE_INLINE_BRANCH
+#define OPCODE_RETURN_JUMPADDR
+
+#ifdef OPCODE_RETURN_JUMPADDR
+
+/* Don't need an lvalue in this case. */
+#define PROG_COUNTER ((INT32 *)__builtin_return_address(0))
+
+#define JUMP_EPILOGUE_SIZE 2
+#define JUMP_SET_TO_PC_AT_NEXT(PC) \
+  ((PC) = PROG_COUNTER + JUMP_EPILOGUE_SIZE)
+
+#else /* !OPCODE_RETURN_JUMPADDR */
+
+#ifdef __linux
+/* SVR4 ABI */
+#define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[1])
+#else
+/* PowerOpen ABI */
+#define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[2])
+#endif
+
+#define JUMP_EPILOGUE_SIZE 0
+
+#endif /* !OPCODE_RETURN_JUMPADDR */
+
 
 #ifdef PIKE_DEBUG
 void ppc32_disassemble_code(void *addr, size_t bytes);
