@@ -504,16 +504,22 @@ static int splitError(string s, mixed ... args) {
   throw(AutoDocError(0, "ProcessXML/splitting", s));
 }
 
-// // docXMLFile = the name of the file that contains the module tree.
-// structureXMLFile = the name of the file that contains the structure
-//   description for the file tree to be created.
-// rootDir = the name of the directory that maps to the <dir> element on
-//   the top level of the structure XML file.
+//! Takes an autodoc-XML string, an autodoc structure file and a
+//! directory name and splits the first according to the second into
+//! the third.
+//! @param docXMLFile
+//!   The contents of the autodoc XML blob to be split up
+//! @param structureXMLFile
+//!   The structure description for the file tree to be created in
+//!   @[rootDir]
+//! @param rootDir
+//!   The name of the directory that maps to the <dir> element on the
+//!   top level of @[structureXMLFile]
 void splitIntoDirHier(string docXMLFile, string structureXMLFile,
                       string rootDir)
 {
-  Node doc = parse_file(docXMLFile)[0];
-  Node struc = parse_file(structureXMLFile)[0];
+  Node doc = parse_input(docXMLFile)[0];
+  Node struc = parse_input(structureXMLFile)[0];
 
   // First we find and all targets
 
