@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.34 2003/08/04 14:56:38 mast Exp $
+|| $Id: backend.cmod,v 1.35 2003/10/15 15:17:30 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.34 2003/08/04 14:56:38 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.35 2003/10/15 15:17:30 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -198,7 +198,13 @@ void set_backend_for_fd(int fd, struct Backend_struct *b)
     int old=fd_map_size;
     if(!fd_map_size) fd_map_size=64;
     while(fd >= fd_map_size) fd_map_size*=2;
-    fd_map=(struct Backend_struct **)realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
+    if (fd_map) {
+      fd_map = (struct Backend_struct **)
+	realloc(fd_map, sizeof(struct Backend_struct *) * fd_map_size);
+    } else {
+      fd_map = (struct Backend_struct **)
+	malloc(sizeof(struct Backend_struct *) * fd_map_size);
+    }
     if(!fd_map)
       Pike_fatal("Out of memory in backend:set_backend_for_fd.\n"
 	"Tried to allocate %d bytes.\n",sizeof(struct Backend_struct *) * fd_map_size);
@@ -272,7 +278,13 @@ static void MY_FD_SET(struct selectors *me,
   if (me->num_in_poll > me->poll_fd_size)
   {
     me->poll_fd_size += me->num_in_poll;	/* Usually a doubling */
-    if (!(me->poll_fds = realloc(me->poll_fds, sizeof(struct pollfd)*me->poll_fd_size)))
+    if (me->poll_fds) {
+      me->poll_fds =
+	realloc(me->poll_fds, sizeof(struct pollfd)*me->poll_fd_size);
+    } else {
+      me->poll_fds = malloc(sizeof(struct pollfd)*me->poll_fd_size);
+    }
+    if (!me->poll_fds)
     {
       Pike_fatal("Out of memory in backend::MY_FD_SET()\n"
 	    "Tried to allocate %d pollfds\n", me->poll_fd_size);
@@ -325,7 +337,14 @@ static void copy_selectors(struct active_selectors *to,
 		  to->poll_fd_size,
 		  from->poll_fd_size));
     to->poll_fd_size=from->poll_fd_size;
-    if (!(to->poll_fds = realloc(to->poll_fds, sizeof(struct pollfd)*to->poll_fd_size))) {
+    if (to->poll_fds) {
+      to->poll_fds =
+	realloc(to->poll_fds, sizeof(struct pollfd)*to->poll_fd_size);
+    } else {
+      to->poll_fds =
+	malloc(sizeof(struct pollfd)*to->poll_fd_size);
+    }
+    if (!to->poll_fds) {
       Pike_fatal("Out of memory in backend::copy_poll_set()\n"
 	    "Tried to allocate %d pollfds\n", to->poll_fd_size);
     }
@@ -416,6 +435,11 @@ static void copy_selectors(struct active_selectors *to,
 #endif
 
 
+/*! @module Pike
+ */
+
+/*! @class Backend
+ */
 PIKECLASS Backend
 {
   /*
@@ -506,7 +530,11 @@ PIKECLASS Backend
       debug_malloc_touch(me->fds);
       if(!me->fds_size) me->fds_size = 16;
       while(wanted_size >= me->fds_size) me->fds_size*=2;
-      me->fds = realloc( me->fds, sizeof(struct fd_datum) * me->fds_size );
+      if (me->fds) {
+	me->fds = realloc(me->fds, sizeof(struct fd_datum) * me->fds_size);
+      } else {
+	me->fds = malloc(sizeof(struct fd_datum) * me->fds_size);
+      }
       if( !me->fds )
 	Pike_fatal("Out of memory in backend::grow_fds()\n"
 	      "Tried to allocate %d fd_datum structs\n", me->fds_size);
@@ -538,7 +566,7 @@ PIKECLASS Backend
     {
       char foo=0;
 
-      if(me->may_need_wakeup)
+      if(me && me->may_need_wakeup)
 	fd_write(me->wakeup_pipe[1], &foo ,1);
     }
 
@@ -552,7 +580,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_read_callback(%d, %p, %p)\n",
 		    fd, cb, data));
 
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       debug_malloc_touch(me->fds);
       ASSURE_FDS_SIZE(me, fd);
@@ -595,7 +623,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_write_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -637,7 +665,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_read_oob_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -677,7 +705,7 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_write_oob_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
-      if(!cb && me->fds_size <= fd) return;
+      if(!me || (!cb && me->fds_size <= fd)) return;
 
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
@@ -716,7 +744,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].read.callback;
@@ -729,7 +757,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write.callback;
@@ -743,7 +771,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].read_oob.callback;
@@ -756,7 +784,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.callback;
@@ -770,7 +798,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].read.data;
@@ -784,7 +812,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write.data;
@@ -799,7 +827,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd );
       debug_malloc_touch(me->fds);
       return me->fds[fd].read_oob.data;
@@ -813,7 +841,7 @@ PIKECLASS Backend
 	Pike_fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback_data(%d)\n", fd));
-      if(me->fds_size <= fd) return 0;
+      if(!me || (me->fds_size <= fd)) return 0;
       ASSURE_FDS_SIZE(me, fd);
       debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.data;
@@ -924,7 +952,7 @@ PIKECLASS Backend
 	if(my_timercmp(& CALL(0)->tv, < , &next_timeout))
 	  next_timeout = CALL(0)->tv;
 
-      call_callback(& me->backend_callbacks, (void *)0);
+      call_callback(& me->backend_callbacks, NULL);
 
       copy_selectors(& me->active_set, &me->set);
       
@@ -1271,13 +1299,22 @@ PIKECLASS Backend
       backend_do_call_outs(me);
       call_callback(& me->backend_callbacks, (void *)(ptrdiff_t)1);
     }
-  
+
+  /*! @decl void `()(float sleep_time)
+   *!   Perform one pass through the backend.
+   *!
+   *! @param sleep_time
+   *!   Wait at most @[sleep_time] seconds.
+   */
   PIKEFUN void `()(float sleep_time)
     {
       /* FIXME: Add a mutex !!!! */
       low_backend_once(THIS, sleep_time);
     }
 
+  /*! @decl void add_file(Stdio.File|Stdio.FILE f)
+   *!   Add @[f] to this backend.
+   */
   PIKEFUN void add_file(object f)
     {
       int fd=fd_from_object(f);
@@ -1331,7 +1368,7 @@ PIKECLASS Backend
        }
 
        if(!(v=CALL(e)->args))
-	 Pike_fatal("No arguments to call\n");
+	 Pike_fatal("No arguments to call.\n");
 
        if(v->refs < 1)
 	 Pike_fatal("Array should have at least one reference.\n");
@@ -1474,7 +1511,14 @@ PIKECLASS Backend
 	 struct hash_ent *new_hash;
 	 int e;
 	 
-	 new_buffer=(call_out **)realloc((char *)me->call_buffer, sizeof(call_out *)*me->call_buffer_size*2);
+	 if (me->call_buffer) {
+	   new_buffer = (call_out **)
+	     realloc((char *)me->call_buffer,
+		     sizeof(call_out *)*me->call_buffer_size*2);
+	 } else {
+	   new_buffer = (call_out **)
+	     malloc(sizeof(call_out *)*me->call_buffer_size*2);
+	 }
 	 if(!new_buffer)
 	   Pike_error("Not enough memory for another call_out\n");
 	 me->call_buffer_size*=2;
@@ -1562,6 +1606,7 @@ PIKECLASS Backend
      
      new->args=args;
      Pike_sp--;
+     dmalloc_touch_svalue(Pike_sp);
      
      
      me->num_pending_calls++;
@@ -1626,10 +1671,10 @@ PIKECLASS Backend
        struct svalue tmp;
        struct array *v;
        if(args<2)
-	 Pike_error("Too few arguments to call_out.\n");
-       
+	 SIMPLE_TOO_FEW_ARGS_ERROR("call_out", 2);
+
        if(t->type != T_INT && t->type != T_FLOAT)
-	 Pike_error("Bad argument 2 to call_out.\n");
+	 SIMPLE_BAD_ARG_ERROR("call_out", 2, "int|float");
 
        /* Swap, for compatibility */
        tmp = Pike_sp[-args];
@@ -1854,27 +1899,27 @@ PIKECLASS Backend
        {
 	 struct array *v;
 	 v=allocate_array_no_init(CALL(e)->args->size+2, 0);
-	 ITEM(v)[0].type=T_INT;
-	 ITEM(v)[0].subtype=NUMBER_NUMBER;
 	 ITEM(v)[0].u.integer=CALL(e)->tv.tv_sec - current_time.tv_sec;
 	 
 	 if(CALL(e)->caller)
 	 {
 	   ITEM(v)[1].type=T_OBJECT;
 	   add_ref(ITEM(v)[1].u.object=CALL(e)->caller);
+	   v->type_field = BIT_INT|BIT_OBJECT;
 	 }else{
-	   ITEM(v)[1].type=T_INT;
-	   ITEM(v)[1].subtype=NUMBER_NUMBER;
-	   ITEM(v)[1].u.integer=0;
+	   v->type_field = BIT_INT;
 	 }
-	 
+
 	 assign_svalues_no_free(ITEM(v)+2,
 				ITEM(CALL(e)->args),
 				CALL(e)->args->size,BIT_MIXED);
+
+	 array_fix_type_field(v);
 	 
 	 ITEM(ret)[e].type=T_ARRAY;
 	 ITEM(ret)[e].u.array=v;
        }
+       ret->type_field = BIT_ARRAY;
        UNPROTECT_CALL_OUTS();
        return ret;
      }
@@ -1970,7 +2015,7 @@ PIKECLASS Backend
 #endif /* !HAVE_POLL */
 
       if(pike_make_pipe(THIS->wakeup_pipe) < 0)
-	Pike_error("Couldn't create backend wakup pipe! errno=%d.\n",errno);
+	Pike_error("Couldn't create backend wakeup pipe! errno=%d.\n",errno);
 
       set_nonblocking(THIS->wakeup_pipe[0],1);
       set_nonblocking(THIS->wakeup_pipe[1],1);
@@ -2028,6 +2073,42 @@ PIKECLASS Backend
 
     }
 }
+
+/*! @endclass
+ */
+
+/*! @module DefaultBackend
+ *!   This is the @[Backend] object that files and call_outs are
+ *!   handled by by default.
+ *!
+ *!   This is also the @[Backend] object that will be used if @[main()]
+ *!   returns @expr{-1@}.
+ *!
+ *! @seealso
+ *!   @[Backend], @[Stdio.File()->set_nonblocking()], @[call_out()]
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
+
+/*! @decl mixed call_out(function f, float|int delay, mixed ... args)
+ *! @decl void _do_call_outs()
+ *! @decl int find_call_out(function f)
+ *! @decl int find_call_out(mixed id)
+ *! @decl int remove_call_out(function f)
+ *! @decl int remove_call_out(function id)
+ *! @decl array(array) call_out_info()
+ *!   These are aliases for the corresponding functions in
+ *!   @[Pike.DefaultBackend].
+ *!
+ *! @seealso
+ *!   @[Pike.Backend()->call_out()], @[Pike.Backend()->_do_call_outs()],
+ *!   @[Pike.Backend()->find_call_out()], @[Pike.Backend()->remove_call_out()],
+ *!   @[Pike.Backend()->call_out_info()]
+ */
 
 /* This doesn't need to be here */
 PMOD_EXPORT int write_to_stderr(char *a, size_t len)
