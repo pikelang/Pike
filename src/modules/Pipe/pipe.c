@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.30 1999/02/10 21:50:35 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.31 1999/03/05 01:49:27 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -328,8 +328,9 @@ static void low_start(void)
   add_ref(THISOBJ);		/* dont kill yourself now */
   for(obj=THIS->firstoutput;obj;obj=next)
   {
-    add_ref(obj);		/* Hang on PLEASE!! /hubbe */
+    /* add_ref(obj);           /* Hang on PLEASE!! /hubbe */
     o=(struct output *)(obj->storage);
+    next=o->next;
     if (o->obj && o->mode==O_SLEEP)
     {
       if (!o->obj->prog)
@@ -338,18 +339,16 @@ static void low_start(void)
       }
       else
       {
-#if 0
 	push_int(0);
 	push_callback(offset_output_write_callback);
 	push_callback(offset_output_close_callback);
 	apply_low(o->obj,o->set_nonblocking_offset,3);
-#endif
-	output_try_write_some(obj);
-	o->mode=O_RUN;		/* Hubbe */
+	/* output_try_write_some(obj); */
+	/* o->mode=O_RUN;		/* Hubbe */
       }
     }
-    next=o->next;
-    free_object(obj);
+    /* next=o->next; */
+    /* free_object(obj); */
   }
 
   free_object(THISOBJ);
@@ -564,12 +563,24 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
  */
 static INLINE void output_finish(struct object *obj)
 {
-  struct output *o;
+  struct output *o, *oi;
+  struct object *obji;
 
   o=(struct output *)(obj->storage);
 
   if (o->obj)
   {
+    if(obj==THIS->firstoutput){
+      THIS->firstoutput=o->next;
+    } else
+    for(obji=THIS->firstoutput;obji;obji=oi->next)
+    {
+      oi=(struct output *)(obji->storage);
+      if(oi->next==obj)
+      {
+       oi->next=o->next;
+      }
+    }
     if(o->obj->prog)
     {
 #ifdef BLOCKING_CLOSE
@@ -594,7 +605,7 @@ static INLINE void output_finish(struct object *obj)
 
     finished_p(); /* Moved by per, one line down.. :) */
 
-    free_object(THISOBJ);		/* What? /Hubbe */
+    /* free_object(THISOBJ);		/* What? /Hubbe */
   }
 }
 
@@ -625,10 +636,8 @@ static INLINE void output_try_write_some(struct object *obj)
       }
       else
       {
-#if 0
 	apply_low(out->obj, out->set_blocking_offset, 0);
 	pop_stack();		/* from apply */
-#endif
 	out->mode=O_SLEEP;
       }
       return;
@@ -836,6 +845,10 @@ static void pipe_output(INT32 args)
       !sp[-args].u.object->prog)
     error("Bad/missing argument 1 to pipe->output().\n");
 
+  if (args==2 &&
+      sp[1-args].type != T_INT)
+    error("Bad argument 2 to pipe->output().\n");
+       
   if (THIS->fd==-1)		/* no buffer */
   {
     /* test if usable as buffer */ 
@@ -884,7 +897,7 @@ static void pipe_output(INT32 args)
   } 
 
   THIS->living_outputs++;
-  add_ref(THISOBJ);		/* Weird */
+  /* add_ref(THISOBJ);		/* Weird */
 
   /* Allocate a new struct output */
   obj=clone_object(output_program,0);
@@ -913,7 +926,13 @@ static void pipe_output(INT32 args)
   o->mode=O_RUN;
   /* keep the file pointer of the duped fd
      o->pos=0; */
-  o->pos=THIS->pos;
+  /* allow start position as 2nd argument for additional outputs
+  o->pos=THIS->pos; */
+
+  if(args>=2)
+    o->pos=sp[1-args].u.integer;
+  else
+    o->pos=THIS->pos;
 
   ref_push_object(obj);
   apply(o->obj,"set_id",1);
@@ -954,7 +973,7 @@ static void pipe_set_output_closed_callback(INT32 args)
 {
   if (args==0)
   {
-    free_svalue(&THIS->done_callback);
+    free_svalue(&THIS->output_closed_callback);
     THIS->output_closed_callback.type=T_INT;
     return;
   }
@@ -1105,6 +1124,9 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    struct output *o;
    struct object *obj;
    
+   if(p->done){
+     return;
+   }
    p->done=1;
 
    if (thisobj) 
@@ -1158,7 +1180,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    p->output_closed_callback.type=T_INT;
    p->id.type=T_INT;
 
-   p->done=0;
+   /* p->done=0; */
 }
 
 static void init_pipe_struct(struct object *o)
@@ -1210,6 +1232,7 @@ static void exit_output_struct(struct object *obj)
     free_object(o->obj);
     noutputs--;
     o->obj=0;
+    o->fd=-1;
   }
 }
 
@@ -1247,8 +1270,8 @@ void pike_module_init(void)
   ADD_EFUN("_pipe_debug", f__pipe_debug,tFunc(,tArray), 0);
    /* function(object:void) */
   ADD_FUNCTION("input",pipe_input,tFunc(tObj,tVoid),0);
-   /* function(object:void) */
-  ADD_FUNCTION("output",pipe_output,tFunc(tObj,tVoid),0);
+   /* function(object,void|int:void) */
+  ADD_FUNCTION("output",pipe_output,tFunc(tObj tOr(tVoid|tInt),tVoid),0);
    /* function(string:void) */
   ADD_FUNCTION("write",pipe_write,tFunc(tStr,tVoid),0);
 
