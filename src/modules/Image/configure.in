@@ -1,8 +1,10 @@
-# $Id: configure.in,v 1.13 2000/09/11 17:48:17 grubba Exp $
+# $Id: configure.in,v 1.14 2001/03/02 13:52:14 grubba Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
 AC_SET_MAKE
+
+AC_CONFIG_SUBDIRS(encodings)
 
 AC_MODULE_INIT()
 
@@ -38,10 +40,13 @@ else
   AC_MSG_RESULT(no)
 fi
 
+if test x"$pike_cv_sys_os" = xWindows_NT ; then
+  # FIXME: These look suspiciouly much like 32bit versions.
+  #        We probably want to use 64bit versions on IA64.
+  LDFLAGS="-lws2_32  $LDFLAGS"
+fi
+
+
 AC_SUBST(RANLIB)
 
-AC_CONFIG_SUBDIRS(encodings)
-
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-
