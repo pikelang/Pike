@@ -1,6 +1,6 @@
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.13 2002/08/13 16:06:41 grubba Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.14 2002/08/13 16:57:19 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -455,7 +455,7 @@ PIKECLASS Shuffle
       }
       pop_stack();
     }
-    SHUFFLE_DEBUG2("__send_more_callback(): sending(%d): sent %d\n", t,
+    SHUFFLE_DEBUG3("__send_more_callback(): sending(%d): sent %d\n", t,
 		  MINIMUM(t->leftovers.len,amount),sent );
 
     if( sent < 0 )
