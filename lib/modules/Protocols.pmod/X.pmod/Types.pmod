@@ -537,6 +537,8 @@ class Window
     req->ownerEvents = 1;
     req->grabWindow = id;
     req->eventMask = event_mask_to_int(types);
+    // req->pointerMode = 1;
+    // req->keyboardMode = 1;
     req->button = button;
     req->modifiers = modifiers || 0x8000;
     
