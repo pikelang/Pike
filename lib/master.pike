@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.60 1998/01/15 17:52:52 hubbe Exp $
+/* $Id: master.pike,v 1.61 1998/01/17 01:05:20 hubbe Exp $
  *
  * Master-file for Pike.
  */
@@ -7,7 +7,7 @@ int is_absolute_path(string p)
 {
 #ifdef __NT__
   p=replace(p,"\\","/");
-  if(sscanf(p,"%[a-zA-Z]:",string s) && strlen(s)==1)
+  if(sscanf(p,"%[a-zA-Z]:",string s) && sizeof(s)==1)
     return 1;
 #endif
   return p[0]=='/';
