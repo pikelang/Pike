@@ -61,7 +61,9 @@ array func_misc = ({
   ({"glFrustum", "VDDDDDD"}),
   ({"glGenLists", "II"}),
   ({"glGetError", "E"}),
+  ({"glGetString", "SE"}),
   ({"glHint", "VEE"}),
+  ({"glIndex", "VZ"}),
   ({"glIndexMask", "VI"}),
   ({"glIsEnabled", "OE"}),
   ({"glIsList", "OI"}),
@@ -128,13 +130,11 @@ mapping func_cat = ([
   glGetPixelMap
   glGetPointer
   glGetPolygonStipple
-  glGetString
   glGetTexEnv
   glGetTexGen
   glGetTexImage
   glGetTexLevelParameter
   glGetTexParameter
-  glIndex
   glIndexPointer
   glInterleavedArrays
   glMap1
