@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.166 1999/04/08 22:19:47 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.167 1999/04/09 04:47:16 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -3150,7 +3150,7 @@ test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_p
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_BIDIRECTIONAL); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o2])); o->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
@@ -3158,12 +3158,12 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") ]],
   test_any([[ int e; for(e=0;e<1000;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;]],-1)
 ]])
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
   test_any([[return allocate(10,thread_create)(lambda() { int e; for(e=0;e<500;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;})->wait() - ({-1})]],({}))
 ]])
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create &&  (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
   for(int q=0;q<100;q++)
   {
