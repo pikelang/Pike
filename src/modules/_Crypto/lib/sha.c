@@ -296,7 +296,7 @@ void sha_update(struct sha_ctx *ctx, unsigned INT8 *buffer, INT32 len)
       buffer += SHA_DATASIZE;
       len -= SHA_DATASIZE;
     }
-  if (ctx->index = len)     /* This assignment is intended */
+  if ((ctx->index = len))     /* This assignment is intended */
     /* Buffer leftovers */
     memcpy(ctx->block, buffer, len);
 }
