@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.54 2003/09/03 11:38:08 mast Exp $
+ * $Id: sendfile.c,v 1.55 2003/09/08 10:27:32 mast Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -643,10 +643,6 @@ static void worker(void *this_)
    * * Call the callback.
    * * Get rid of extra ref to the object, and free ourselves.
    */
-#ifdef PIKE_DEBUG
-  if (this->backend_callback)
-    Pike_fatal ("Didn't expect a backend callback to be installed already.\n");
-#endif
   this->backend_callback =
     add_backend_callback(call_callback_and_free, this, 0);
 
