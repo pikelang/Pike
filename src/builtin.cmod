@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.39 2001/06/19 21:41:01 grubba Exp $
+ * $Id: builtin.cmod,v 1.40 2001/06/19 21:46:13 grubba Exp $
  */
 
 #include "global.h"
@@ -645,7 +645,7 @@ PIKECLASS backtrace_frame
 {
   PIKEVAR mixed fun;
   PIKEVAR array args;
-  CVAR struct program *prog;
+  CVAR struct program *prog;	/* FIXME: Ought to be a private pikevar... */
   CVAR unsigned char *pc;
   CVAR struct pike_string *filename;
   CVAR INT_TYPE lineno;
@@ -679,6 +679,7 @@ PIKECLASS backtrace_frame
     THIS->lineno = 0;
     free_svalue(&THIS->fun);
     THIS->fun.type = T_INT;
+    THIS->fun.u.integer = 0;
   }
 
   PIKEFUN int(0..1) _is_type(string t)
