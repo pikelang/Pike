@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.24 2002/03/07 10:53:42 js Exp $
+// $Id: HTML.pmod,v 1.25 2002/03/20 14:48:04 js Exp $
 
 // Filter for text/html
 
@@ -9,7 +9,8 @@ inherit Search.Filter.Base;
 
 constant contenttypes = ({ "text/html" });
 constant fields = ({ "body", "title", "keywords", "description", "robots", "headline",
-		     "intrawise.folderid", "modified", "author", "intrawise.type" });
+		     "intrawise.folderid", "modified", "author", "intrawise.type",
+		     "summary"});
 
 string _sprintf()
 {
