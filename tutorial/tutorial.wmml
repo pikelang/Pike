@@ -5747,11 +5747,12 @@ Array.diff, Array.diff_compare_table, Array.diff_longest_sequence
 
 <function name=String.implode_nicely title="make an English comma separated list">
 <man_syntax>
-string implode_nicely(array(string) words, string|void separator);
+string implode_nicely(array(string|float|int) words, string|void separator);
 </man_syntax>
 <man_description>
 This function implodes a list of words to a readable string.
 If the separator is omitted, the default is <tt>"and"</tt>.
+If the words are numbers they are converet to strings first.
 </man_description>
 <man_example>
 &gt; implode_nicely(({"green"}));<br>
@@ -5762,6 +5763,8 @@ Result: green and blue<br>
 Result: green, blue and white<br>
 &gt; implode_nicely(({"green","blue","white"}),"or");<br>
 Result: green, blue or white<br>
+&gt; implode_nicely(({1,2,3}),"or even");<br>
+Result: 1, 2 or even 3<br>
 </man_example>
 <man_see>
 `*
