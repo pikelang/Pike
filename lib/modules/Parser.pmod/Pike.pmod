@@ -204,7 +204,10 @@ array(string) split(string data)
 	case '\'':
 	  pos++;
 	  if(data[pos]=='\\') pos++;
-	  pos=search(data, "'", pos)+1;
+          int end=search(data, "'", pos)+1;
+          if (!end)
+            UNKNOWN_TOKEN;
+          pos=end;
 	  break;
 
 	case '"':
