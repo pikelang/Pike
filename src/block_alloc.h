@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.47 2002/10/28 13:01:07 nilsson Exp $
+|| $Id: block_alloc.h,v 1.48 2002/11/19 13:53:48 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -74,12 +74,12 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
 									\
   n->x[0].BLOCK_ALLOC_NEXT=NULL;					\
   PRE_INIT_BLOCK( n->x );						\
-  for(e=1;e<BSIZE;e++)							\
+  for(e=1;e<(BSIZE);e++)						\
   {									\
     n->x[e].BLOCK_ALLOC_NEXT=(void *)&n->x[e-1];			\
     PRE_INIT_BLOCK( (n->x+e) );						\
   }									\
-  n->PIKE_CONCAT3(free_,DATA,s)=&n->x[BSIZE-1];				\
+  n->PIKE_CONCAT3(free_,DATA,s)=&n->x[(BSIZE)-1];			\
 }									\
 									\
 BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
@@ -127,7 +127,7 @@ static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
   for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                  \
   {                                                                     \
     if( (char *)d < (char *)tmp) continue;                              \
-    if( (char *)d >= (char *)(tmp->x+BSIZE)) continue;                  \
+    if( (char *)d >= (char *)(tmp->x+(BSIZE))) continue;		\
     return;                                                             \
   }                                                                     \
   Pike_fatal("really_free_%s called on non-block_alloc region (%p).\n",      \
@@ -140,14 +140,14 @@ void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
 {									\
   struct PIKE_CONCAT(DATA,_block) *blk = PIKE_CONCAT(DATA,_free_blocks);     \
   if(blk == NULL || (char *)d < (char *)blk ||				\
-     (char *)d >= (char *)(blk->x+BSIZE)) {				\
+     (char *)d >= (char *)(blk->x+(BSIZE))) {				\
     blk = PIKE_CONCAT(DATA,_blocks);					\
     if((char *)d < (char *)blk ||					\
-       (char *)d >= (char *)(blk->x+BSIZE)) {				\
+       (char *)d >= (char *)(blk->x+(BSIZE))) {				\
       do								\
         blk = blk->next;						\
       while((char *)d < (char *)blk ||					\
-            (char *)d >= (char *)(blk->x+BSIZE));			\
+	    (char *)d >= (char *)(blk->x+(BSIZE)));			\
       if(blk == PIKE_CONCAT(DATA,_free_blocks))				\
         PIKE_CONCAT(DATA,_free_blocks) = blk->prev;			\
       blk->prev->next = blk->next;					\
@@ -189,14 +189,14 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
   blk = PIKE_CONCAT(DATA,_free_blocks);					\
   if(blk == NULL || (char *)d < (char *)blk ||				\
-     (char *)d >= (char *)(blk->x+BSIZE)) {				\
+     (char *)d >= (char *)(blk->x+(BSIZE))) {				\
     blk = PIKE_CONCAT(DATA,_blocks);					\
     if((char *)d < (char *)blk ||					\
-       (char *)d >= (char *)(blk->x+BSIZE)) {				\
+       (char *)d >= (char *)(blk->x+(BSIZE))) {				\
       do								\
         blk = blk->next;						\
       while((char *)d < (char *)blk ||					\
-            (char *)d >= (char *)(blk->x+BSIZE));			\
+	    (char *)d >= (char *)(blk->x+(BSIZE)));			\
       if(blk == PIKE_CONCAT(DATA,_free_blocks))				\
         PIKE_CONCAT(DATA,_free_blocks) = blk->prev;			\
       blk->prev->next = blk->next;					\
@@ -239,7 +239,7 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
    {                                                                    \
      int tmp2;                                                          \
      extern void dmalloc_check_block_free(void *p, char *loc);          \
-     for(tmp2=0;tmp2<BSIZE;tmp2++)                                      \
+     for(tmp2=0;tmp2<(BSIZE);tmp2++)					\
      {                                                                  \
        dmalloc_check_block_free(tmp->x+tmp2, DMALLOC_LOCATION());       \
        dmalloc_unregister(tmp->x+tmp2, 1);                              \
