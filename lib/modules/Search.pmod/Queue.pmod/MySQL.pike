@@ -163,19 +163,25 @@ int|Standards.URI get()
     return -1;
   }
 
-  // delay for (quite) a while.
-//    if( empty_count++ > 40 )
-//    {
-//      if( num_with_stage( 2 ) || num_with_stage( 3 ) )
-//      {
-//        empty_count=0;
-//        werror("Queue: delay for (quite) a while.\n");
-//        werror("possible: %O\np_c: %O\n", possible, p_c);
-//        return -1;
-//      }
-//      return 0;
-//    }
-  return 0;
+  // This is needed for the following race condition scenario:
+  //   1.  The queue contains one page
+  //   2.  The crawler indexes the page
+  //   3a. In thread/process A, document filtering and fetching is done, and
+  //       links are found
+  //   3b. In thread/process B, queue->get() returns 0 since the queue doesn't contain
+  //       any more pages to crawl.
+  //
+  // The workaround is to wait 40 cycles (i.e. 4 seconds) after fetching the last page.
+  if( empty_count++ > 40 )
+  {
+    if( num_with_stage( 2 ) || num_with_stage( 3 ) )
+    {
+      empty_count=0;
+      return -1;
+    }
+    return 0;
+  }
+  return -1;
 }
 
 void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
