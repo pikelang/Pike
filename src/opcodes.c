@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.141 2003/02/19 01:59:39 marcus Exp $
+|| $Id: opcodes.c,v 1.142 2003/03/06 15:29:56 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.141 2003/02/19 01:59:39 marcus Exp $");
+RCSID("$Id: opcodes.c,v 1.142 2003/03/06 15:29:56 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1427,6 +1427,28 @@ static inline INT32 TO_INT32(ptrdiff_t x)
 #define TO_INT32(x)	((INT32)(x))
 #endif /* __ECL */
 
+/* INT32 very_low_sscanf_{0,1,2}_{0,1,2}(p_wchar *input, ptrdiff_t input_len,
+ *					 p_wchar *match, ptrdiff_t match_len,
+ *					 ptrdiff_t *chars_matched,
+ *					 int *success)
+ *
+ * Perform the actual parsing.
+ *
+ * Arguments:
+ *   input, input_len		Input data to parse.
+ *   match, match_len		Format string.
+ *   chars_matched		Gets set to the number of characters
+ *				in the input that were advanced.
+ *   success			Gets set to 1 on success.
+ *
+ * Returns:
+ *   Returns the number of %-directives that were successfully matched.
+ *   Pushes non-ignored matches on the Pike stack in the order they
+ *   were matched.
+ *
+ * FIXME: chars_matched and success are only used internally, and
+ *        should probably be gotten rid of.
+ */
 #define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
 static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
                          PIKE_CONCAT(p_wchar, INPUT_SHIFT) *input,	 \
@@ -2072,6 +2094,76 @@ MK_VERY_LOW_SSCANF(2,1)
 MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,2)
 
+/* Simplified interface to very_low_sscanf_{0,1,2}_{0,1,2}(). */
+static INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
+{
+  ptrdiff_t matched_chars;
+  int x;
+  INT32 i;
+  switch(data->size_shift*3 + format->size_shift) {
+    /* input_shift : match_shift */
+  case 0:
+    /*      0      :      0 */
+    i = very_low_sscanf_0_0(STR0(data), data->len,
+			    STR0(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 1:
+    /*      0      :      1 */
+    i = very_low_sscanf_0_1(STR0(data), data->len,
+			    STR1(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 2:
+    /*      0      :      2 */
+    i = very_low_sscanf_0_2(STR0(data), data->len,
+			    STR2(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 3:
+    /*      1      :      0 */
+    i = very_low_sscanf_1_0(STR1(data), data->len,
+			    STR0(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 4:
+    /*      1      :      1 */
+    i = very_low_sscanf_1_1(STR1(data), data->len,
+			    STR1(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 5:
+    /*      1      :      2 */
+    i = very_low_sscanf_1_2(STR1(data), data->len,
+			    STR2(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 6:
+    /*      2      :      0 */
+    i = very_low_sscanf_2_0(STR2(data), data->len,
+			    STR0(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 7:
+    /*      2      :      1 */
+    i = very_low_sscanf_2_1(STR2(data), data->len,
+			    STR1(format), format->len,
+			    &matched_chars, &x);
+    break;
+  case 8:
+    /*      2      :      2 */
+    i = very_low_sscanf_2_2(STR2(data), data->len,
+			    STR2(format), format->len,
+			    &matched_chars, &x);
+    break;
+  default:
+    Pike_fatal("Unsupported shift-combination to low_sscanf(): %d:%d\n",
+	       data->size_shift, format->size_shift);
+    break;
+  }
+  return i;
+}
+
 /*! @decl int sscanf(string data, string format, mixed ... lvalues)
  *!
  *! The purpose of sscanf is to match one string against a format string and
@@ -2095,7 +2187,6 @@ void o_sscanf(INT32 args)
 {
   INT32 i=0;
   int x;
-  ptrdiff_t matched_chars;
   struct svalue *save_sp=sp;
 
   if(sp[-args].type != T_STRING)
@@ -2104,94 +2195,7 @@ void o_sscanf(INT32 args)
   if(sp[1-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("sscanf", 2, "string");
 
-  switch(sp[-args].u.string->size_shift*3 + sp[1-args].u.string->size_shift) {
-    /* input_shift : match_shift */
-  case 0:
-    /*      0      :      0 */
-    i=very_low_sscanf_0_0(STR0(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR0(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 1:
-    /*      0      :      1 */
-    i=very_low_sscanf_0_1(STR0(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR1(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 2:
-    /*      0      :      2 */
-    i=very_low_sscanf_0_2(STR0(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR2(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 3:
-    /*      1      :      0 */
-    i=very_low_sscanf_1_0(STR1(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR0(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 4:
-    /*      1      :      1 */
-    i=very_low_sscanf_1_1(STR1(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR1(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 5:
-    /*      1      :      2 */
-    i=very_low_sscanf_1_2(STR1(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR2(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 6:
-    /*      2      :      0 */
-    i=very_low_sscanf_2_0(STR2(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR0(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 7:
-    /*      2      :      1 */
-    i=very_low_sscanf_2_1(STR2(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR1(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 8:
-    /*      2      :      2 */
-    i=very_low_sscanf_2_2(STR2(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR2(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  default:
-    Pike_error("Unsupported shift-combination to sscanf(): %d:%d\n",
-	  sp[-args].u.string->size_shift, sp[1-args].u.string->size_shift);
-    break;
-  }
+  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 
   if(sp-save_sp > args/2-1)
     Pike_error("Too few arguments for sscanf format.\n");
@@ -2227,101 +2231,12 @@ void o_sscanf(INT32 args)
 PMOD_EXPORT void f_sscanf(INT32 args)
 {
   INT32 i;
-  int x;
-  ptrdiff_t matched_chars;
   struct svalue *save_sp=sp;
   struct array *a;
 
   check_all_args("array_sscanf",args,BIT_STRING, BIT_STRING,0);
 
-  switch(sp[-args].u.string->size_shift*3 + sp[1-args].u.string->size_shift) {
-    /* input_shift : match_shift */
-  case 0:
-    /*      0      :      0 */
-    i=very_low_sscanf_0_0(STR0(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR0(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 1:
-    /*      0      :      1 */
-    i=very_low_sscanf_0_1(STR0(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR1(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 2:
-    /*      0      :      2 */
-    i=very_low_sscanf_0_2(STR0(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR2(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 3:
-    /*      1      :      0 */
-    i=very_low_sscanf_1_0(STR1(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR0(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 4:
-    /*      1      :      1 */
-    i=very_low_sscanf_1_1(STR1(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR1(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 5:
-    /*      1      :      2 */
-    i=very_low_sscanf_1_2(STR1(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR2(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 6:
-    /*      2      :      0 */
-    i=very_low_sscanf_2_0(STR2(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR0(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 7:
-    /*      2      :      1 */
-    i=very_low_sscanf_2_1(STR2(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR1(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  case 8:
-    /*      2      :      2 */
-    i=very_low_sscanf_2_2(STR2(sp[-args].u.string),
-			  sp[-args].u.string->len,
-			  STR2(sp[1-args].u.string),
-			  sp[1-args].u.string->len,
-			  &matched_chars,
-			  &x);
-    break;
-  default:
-    Pike_error("Unsupported shift-combination to sscanf(): %d:%d\n",
-	  sp[-args].u.string->size_shift, sp[1-args].u.string->size_shift);
-    break;
-  }
+  i = low_sscanf(sp[-args].u.string, sp[1-args].u.string);
 
   a = aggregate_array(DO_NOT_WARN(sp - save_sp));
   pop_n_elems(args);
