@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.66 2001/03/28 00:30:33 per Exp $
+**!	$Id: layers.c,v 1.67 2001/03/30 01:42:53 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -216,7 +216,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.66 2001/03/28 00:30:33 per Exp $");
+RCSID("$Id: layers.c,v 1.67 2001/03/30 01:42:53 per Exp $");
 
 #include "image_machine.h"
 
@@ -3034,6 +3034,7 @@ static INLINE struct layer *clone_this_layer()
    l->row_func=THIS->row_func;
    l->optimize_alpha=THIS->optimize_alpha;
    l->really_optimize_alpha=THIS->really_optimize_alpha;
+   l->misc = copy_mapping( THIS->misc );
    return l;
 }
 
