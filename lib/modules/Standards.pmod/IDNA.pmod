@@ -432,7 +432,13 @@ string to_unicode(string s)
 string zone_to_ascii(string s, int(0..1)|void allow_unassigned,
 		     int(0..1)|void use_std3_ascii_rules)
 {
-  return to_ascii((s/".")[*], allow_unassigned, use_std3_ascii_rules)*".";
+  if(has_suffix(s, ".") && !has_suffix(s, ".."))
+    return sizeof(s)>1?
+      zone_to_ascii(s[..sizeof(s)-2], allow_unassigned,
+		    use_std3_ascii_rules)+"."
+      : s;
+  else
+    return to_ascii((s/".")[*], allow_unassigned, use_std3_ascii_rules)*".";
 }
 
 
