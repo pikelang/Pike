@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.176 2004/11/06 15:13:50 grubba Exp $
+|| $Id: stralloc.c,v 1.177 2004/11/06 15:28:49 grubba Exp $
 */
 
 #include "global.h"
@@ -2340,10 +2340,10 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	case '4': case '5': case '6':
 	case '7': case '8': case '9':
 	  if (state = STATE_PRECISION) {
-	    precision *= 10 + fmt[-1] - '0';
+	    precision = precision * 10 + fmt[-1] - '0';
 	  } else {
 	    state = STATE_MIN_WIDTH;
-	    min_width *= 10 + fmt[-1] - '0';
+	    min_width = min_width * 10 + fmt[-1] - '0';
 	  }
 	  break;
 	case '.':
