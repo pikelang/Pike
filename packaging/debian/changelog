@@ -1,3 +1,9 @@
+pike7.4 (7.4.13-2) unstable; urgency=low
+
+  * Pike is installed using the --new-style layout now.
+
+ -- Marek Habersack <grendel@debian.org>  Mon, 27 Jan 2003 04:31:51 +0100
+
 pike7.4 (7.4.13-1) unstable; urgency=low
 
   * Latest upstream version.

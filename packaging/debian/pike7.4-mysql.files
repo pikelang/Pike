@@ -1,3 +1,4 @@
-usr/lib/pike7.4/*/include/mysql.h
-usr/lib/pike7.4/*/modules/Mysql.so
-usr/lib/pike7.4/*/modules/Sql.pmod/mysql*
+usr/lib/pike/*/lib/include/mysql.h
+usr/lib/pike/*/lib/modules/Mysql.so
+usr/lib/pike/*/lib/modules/Sql.pmod/mysql*
+usr/share/pike/*/lib/modules/Sql.pmod/mysql*

@@ -3,7 +3,7 @@
 #
 # see: dh_installdeb(1)
 # 
-# $Id: postinst,v 1.6 2002/12/06 04:07:23 grendel Exp $
+# $Id: postinst,v 1.7 2003/01/27 03:37:10 grendel Exp $
 #
 
 set -e
@@ -57,5 +57,3 @@ esac
 #DEBHELPER#
 
 exit 0
-
-

@@ -1,5 +1,8 @@
-usr/lib/pike7.4/*/modules/GDK*
-usr/lib/pike7.4/*/modules/Gnome*
-usr/lib/pike7.4/*/modules/GTKSupport.pmod/*
-usr/lib/pike7.4/*/modules/*GTK*
-
+usr/lib/pike/*/lib/modules/GDK*
+usr/lib/pike/*/lib/modules/Gnome*
+usr/lib/pike/*/lib/modules/GTKSupport.pmod/*
+usr/lib/pike/*/lib/modules/*GTK*
+usr/share/pike/*/lib/modules/GDK*
+usr/share/pike/*/lib/modules/Gnome*
+usr/share/pike/*/lib/modules/GTKSupport.pmod/*
+usr/share/pike/*/lib/modules/*GTK*

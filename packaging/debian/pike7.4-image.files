@@ -1,4 +1,3 @@
-usr/lib/pike7.4/*/modules/*Image*.so
-usr/lib/pike7.4/*/modules/*Image*.pmod*
-
-
+usr/lib/pike/*/lib/modules/*Image*.so
+usr/lib/pike/*/lib/modules/*Image*.pmod*
+usr/share/pike/*/lib/modules/*Image*.pmod*
