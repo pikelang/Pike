@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.8 2002/07/22 16:15:40 bill Exp $
+// $Id: protocol.pike,v 1.9 2004/06/18 15:37:00 anders Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -90,12 +90,12 @@
     }
     if (readbuf[0] != '0') {
       seterr (LDAP_PROTOCOL_ERROR);
-      DWRITE_HI("protocol.read_anwer: ERROR: retv=<"+sprintf("%O",readbuf)+">\n");
-      THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
+      DWRITE_HI("protocol.read_answer: ERROR: retv=<"+sprintf("%O",readbuf)+">\n");
+      THROW(({"LDAP: connection closed.\n",backtrace()}));
       //return(-ldap_errno);
       return;
     }
-    DWRITE(sprintf("protocol.read_anwer: sizeof = %d\n", sizeof(readbuf)));
+    DWRITE(sprintf("protocol.read_answer: sizeof = %d\n", sizeof(readbuf)));
 
     msglen = readbuf[1];
     ofs = 2;
@@ -133,8 +133,8 @@
       return;
     }
     readbuf += s;
-    //DWRITE(sprintf("protocol.read_anwer: %s\n", .ldap_privates.ldap_der_decode(readbuf)->debug_string()));
-    DWRITE("protocol.read_anwer: ok=1.\n");
+    //DWRITE(sprintf("protocol.read_answer: %s\n", .ldap_privates.ldap_der_decode(readbuf)->debug_string()));
+    DWRITE("protocol.read_answer: ok=1.\n");
     ok = 1;
 
     if(con_ok)
@@ -181,7 +181,7 @@
   }
 
 
-  string|int do_op(object msgop) {
+  string|int do_op(object msgop, object|void controls) {
   // ---------------------------
   // Make LDAP PDU envelope for 'msgop', send it and read answer ...
 
@@ -194,7 +194,11 @@
     msgnum = next_id++;
     //THREAD_UNLOCK
     msgid = Standards.ASN1.Types.asn1_integer(msgnum);
-    msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+    if (controls) {
+      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop, controls}));
+    } else {
+      msgval = Standards.ASN1.Types.asn1_sequence(({msgid, msgop}));
+    }
 
     if (objectp(msgval)) {
       DWRITE(sprintf("protocol.do_op: msg = [%d]\n",sizeof(msgval->get_der())));
@@ -234,7 +238,7 @@
     string s, shlp;
 
     retv = ldapfd->read(2); 	// 1. byte = 0x0C, 2. byte = msglen
-    if (intp(retv) && (retv == -1)) {
+    if (retv == -1) {
       seterr (LDAP_TIMEOUT);
       DWRITE_HI("protocol.readmsg: ERROR: connection timeout.\n");
       THROW(({"LDAP: connection timeout.\n",backtrace()}));
@@ -250,7 +254,7 @@
 
     msglen = retv[1];
     if (msglen & 0x80) { // > 0x7f
-      if (msglen == 0x80) { // RFC not allows unexplicitly defined length
+      if (msglen == 0x80) { // RFC does not allow implicitly defined length
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
 	return(-ldap_errno);
@@ -268,6 +272,7 @@
         msglen += shlp[ix]*(1<<(ix*8));
       }
     }
+    DWRITE(sprintf("protocol.readmsg: reading %d bytes.\n", msglen));
     s = ldapfd->read(msglen);
     if (!s | (sizeof(s) < msglen)) {
       seterr (LDAP_SERVER_DOWN);

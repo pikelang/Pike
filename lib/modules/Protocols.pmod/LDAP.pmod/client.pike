@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.48 2004/06/14 09:14:59 grubba Exp $
+// $Id: client.pike,v 1.49 2004/06/18 15:37:00 anders Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -62,7 +62,8 @@
 //	RFC 1823			  (v2 API)
 //	RFC 2251,2252,2253,2254,2255,2256 (version3 spec)
 //	draft-ietf-asid-ldap-c-api-00.txt (v3 API)
-//	RFC2279	   			  (UTF-8)
+//	RFC 2279   			  (UTF-8)
+//	RFC 2696			  (paged requests)
 //
 //	Interesting, applicable
 //	RFC 2307   (LDAP as network information services; draft?)
@@ -76,10 +77,6 @@
 
 #if constant(SSL.sslfile)
 import SSL.constants;
-#endif
-
-#ifdef LDAP_PROTOCOL_PROFILE
-int _prof_gtim;
 #endif
 
 // ------------------------
@@ -109,7 +106,6 @@ int _prof_gtim;
     private int ldap_timelimit = 0;
     private mapping lauth = ([]);
     private object last_rv = 0; // last returned value
-
 
   //! Contains the result of a LDAP search.
   //!
@@ -300,7 +296,19 @@ int _prof_gtim;
 
   } // end of class 'result' ---------------
 
-  // helper functions
+  // helper functions and macros
+
+#ifdef ENABLE_PAGED_SEARCH
+#define IF_ELSE_PAGED_SEARCH(X,Y)	X
+#else /* !ENABLE_PAGED_SEARCH */
+#define IF_ELSE_PAGED_SEARCH(X,Y)	Y
+#endif
+
+#ifdef LDAP_PROTOCOL_PROFILE
+#define PROFILE(STR, CODE) DWRITE_PROF(STR + ": %O\n", gauge {CODE;})
+#else
+#define PROFILE(STR, CODE) do { CODE; } while(0)
+#endif
 
   private int chk_ver() {
 
@@ -360,7 +368,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.48 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.49 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -889,10 +897,12 @@ int _prof_gtim;
     }
 }
 
-  private int|string send_search_op(string basedn, int scope, int deref,
-		     int sizelimit, int timelimit, int attrsonly,
-		     string filter, void|array(string) attrs){
-  // SEARCH
+  private object|int make_search_op(string basedn, int scope, int deref,
+				    int sizelimit, int timelimit,
+				    int attrsonly, string filter,
+				    void|array(string) attrs)
+  {
+    // SEARCH
   // limitations: !!! sizelimit and timelimit should be unsigned int !!!
 
     object msgval, ofilt;
@@ -910,7 +920,7 @@ int _prof_gtim;
     } else
       ohlp += ({Standards.ASN1.Types.asn1_sequence(({}))});
 
-    msgval = ASN1_APPLICATION_SEQUENCE(3,
+    return ASN1_APPLICATION_SEQUENCE(3,
 		({ Standards.ASN1.Types.asn1_octet_string(basedn),
 		   ASN1_ENUMERATED(scope),
 		   ASN1_ENUMERATED(deref),
@@ -919,10 +929,9 @@ int _prof_gtim;
 		   ASN1_BOOLEAN(attrsonly ? -1 : 0),
 		   @ohlp
 		})) ;
-
-    return (do_op(msgval));
   }
 
+IF_ELSE_PAGED_SEARCH(static multiset(string) supported_controls;,)
 
   //! Search LDAP directory.
   //!
@@ -968,47 +977,166 @@ int _prof_gtim;
     if(ldap_version == 3) {
       filter = string_to_utf8(filter);
     }
-#ifdef LDAP_PROTOCOL_PROFILE
-    _prof_gtim = gauge{ 
-#endif
-    if(intp(raw = send_search_op(ldap_basedn, ldap_scope, ldap_deref,
-			ldap_sizelimit, ldap_timelimit, attrsonly, filter,
-			attrs||lauth->attributes))) {
+ 
+    object|int search_request;
+
+    IF_ELSE_PAGED_SEARCH({
+	if (!supported_controls) {
+	  // We need to find out if controls are supported.
+	  PROFILE("supported_controls", {
+	      supported_controls = (<>);
+	      search_request =
+		make_search_op("", 0, 0, 0, 0, 0,
+			       "(objectClass=*)", ({"supportedControl"}));
+	      //werror("search_request: %O\n", search_request);
+	      if(intp(raw = do_op(search_request))) {
+		THROW(({error_string()+"\n",backtrace()}));
+		return 0;
+	      }
+	      do {
+		object res = .ldap_privates.ldap_der_decode(raw);
+		if (res->elements[1]->get_tag() == 5) break;
+		//werror("res: %O\n", res);
+		foreach(res->elements[1]->elements[1]->elements, object attr) {
+		  if (attr->elements[0]->value == "supportedControl") {
+		    supported_controls |= (<
+		      @(attr->elements[1]->elements->value)
+		      >);
+		    //werror("supported_controls: %O\n", supported_controls);
+		  }
+		}
+		if (intp(raw = readmsg(id))) {
+		  THROW(({error_string()+"\n",backtrace()}));
+		  return 0;
+		}
+	      } while (0);
+	    });
+	}
+      },);
+
+    search_request =
+      make_search_op(ldap_basedn, ldap_scope, ldap_deref,
+		     ldap_sizelimit, ldap_timelimit, attrsonly, filter,
+		     attrs||lauth->attributes);
+ 
+    if(intp(search_request)) {
       THROW(({error_string()+"\n",backtrace()}));
       return(0);
     }
-#ifdef LDAP_PROTOCOL_PROFILE
-    };
-    DWRITE_PROF("send_search_op: %O\n", _prof_gtim);
-#endif
+    object cookie = Standards.ASN1.Types.asn1_octet_string("");
+    rawarr = ({});
+    do {
+      PROFILE("send_search_op", {
+	  IF_ELSE_PAGED_SEARCH(
+            array ctrls = ({});
+	    if (supported_controls["1.2.840.113556.1.4.1339"]) {
+	      // LDAP_SERVER_DOMAIN_SCOPE_OID
+	      // "Tells server not to generate referrals" (NtLdap.h)
+	      ctrls += ({
+		Standards.ASN1.Types.asn1_sequence(({
+						// controlType
+		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.1339"),
+		  ASN1_BOOLEAN(0),		// criticality (FALSE)
+						// controlValue
+		  Standards.ASN1.Types.asn1_octet_string(""),
+		  })),
+	      });
+	    }
+	    if (supported_controls["1.2.840.113556.1.4.319"]) {
+	      // LDAP Control Extension for Simple Paged Results Manipulation
+	      // RFC 2696.
+	      ctrls += ({
+		Standards.ASN1.Types.asn1_sequence(({
+						// controlType
+		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.319"),
+		  ASN1_BOOLEAN(sizeof(cookie->value)?0:0xff),	// criticality
+						// controlValue
+		  Standards.ASN1.Types.asn1_octet_string(
+		    Standards.ASN1.Types.asn1_sequence(({
+						// size
+		      Standards.ASN1.Types.asn1_integer(0x7fffffff),
+		      cookie,			// cookie
+		    }))->get_der()),
+		  })),
+	      });
+	    }
+	    object controls;
+	    if (sizeof(ctrls)) {
+	      controls = .ldap_privates.asn1_sequence(0, ctrls);
+	    }
+	    ,);
 
-    rawarr = ({raw});
-#ifdef LDAP_PROTOCOL_PROFILE
-    _prof_gtim = gauge{ 
-#endif
+     if(intp(raw = do_op(search_request,
+               IF_ELSE_PAGED_SEARCH(controls, 0)))) {
+       THROW(({error_string()+"\n",backtrace()}));
+       return 0;
+     }
+   });
+
+      PROFILE("rawarr++", {
+    rawarr += ({raw});
     while (ASN1_DECODE_RESULTAPP(raw) != 5) {
-#ifdef LDAP_PROTOCOL_PROFILEx
-    DWRITE_PROF("readmsg: %O\n", gauge { raw = readmsg(id); });
-#else
-      raw = readmsg(id);
-#endif
+      PROFILE("readmsg", raw = readmsg(id));
       if (intp(raw)) {
         THROW(({error_string()+"\n",backtrace()}));
-        return(0);
+        return 0;
       }
       rawarr += ({raw});
     } // while
-#ifdef LDAP_PROTOCOL_PROFILE
-    };
-    DWRITE_PROF("rawarr++: %O\n", _prof_gtim);
-#endif
+  });
+ 
 
-#ifdef LDAP_PROTOCOL_PROFILE
-    _prof_gtim = gauge{ last_rv = result(rawarr); };
-    DWRITE_PROF("result: %O\n", _prof_gtim);
-#else
-    last_rv = result(rawarr);
-#endif
+      // At this point @[raw] contains a SearchResultDone.
+      cookie = 0;
+      IF_ELSE_PAGED_SEARCH({
+     if ((ASN1_DECODE_RESULTCODE(raw) != 10) &&
+         (sizeof(.ldap_privates.ldap_der_decode(raw)->elements) > 2)) {
+       object controls = .ldap_privates.ldap_der_decode(raw)->elements[2];
+       foreach(controls->elements, object control) {
+         if (!control->constructed ||
+        !sizeof(control) ||
+        control->elements[0]->type_name != "OCTET STRING") {
+      //werror("Protocol error in control %O\n", control);
+      // FIXME: Fail?
+      continue;
+         }
+         if (control->elements[0]->value != "1.2.840.113556.1.4.319") {
+      //werror("Unknown control %O\n", control->elements[0]->value);
+      // FIXME: Should look at criticallity flag.
+      continue;
+         }
+         if (sizeof(control) == 1) continue;
+         int pos = 1;
+         if (control->elements[1]->type_name == "BOOLEAN") {
+      if (sizeof(control) == 2) continue;
+      pos = 2;
+         }
+         if (control->elements[pos]->type_name != "OCTET STRING") {
+      // FIXME: Error?
+      continue;
+         }
+         object control_info =
+      .ldap_privates.ldap_der_decode(control->elements[pos]->value);
+         if (!control_info->constructed ||
+        sizeof(control_info) < 2 ||
+        control_info->elements[1]->type_name != "OCTET STRING") {
+      // Unexpected control information.
+      continue;
+         }
+         if (sizeof(control_info->elements[1]->value)) {
+      cookie = control_info->elements[1];
+         }
+       }
+       if (cookie) {
+         // Remove the extra end marker.
+         rawarr = rawarr[..sizeof(rawarr)-2];
+       }
+     }
+       
+   },);
+    } while (cookie);
+
+    PROFILE("result", last_rv = result(rawarr));
     if(objectp(last_rv))
       seterr (last_rv->error_number());
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0

@@ -25,6 +25,8 @@
 #define LDAP_DEFAULT_VERSION    3
 #define V3_REFERRALS		1
 
+#define ENABLE_PAGED_SEARCH
+
 #define QUOTED_COMMA		"%2c"
 
 #ifdef DEBUG_PIKE_PROTOCOL_LDAP
