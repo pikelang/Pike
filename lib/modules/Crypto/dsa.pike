@@ -34,10 +34,15 @@ bignum dsa_hash(string msg)
   return hash2number(Crypto.sha()->update(msg)->digest());
 }
   
-/* Generate a random number k, 0<k<q */
-bignum random_exponent(function random)
+/* Generate a random number k, 0<=k<n */
+bignum random_number(bignum n, function r)
 {
-  return Gmp.mpz(random( (q->size() + 10 / 8)), 256) % (q - 1) + 1;
+  return Gmp.mpz(r( (q->size() + 10 / 8)), 256) % n;
+}
+
+bignum random_exponent(function r)
+{
+  return random_number(q - 1, r) + 1;
 }
 
 array(bignum) raw_sign(bignum h, function random)
@@ -120,3 +125,119 @@ object set_private_test_key()
   return set_private_key(Gmp.mpz("403a09fa0820287c84f2e8459a1fccf4c48c32e1",
 				 16));
 }
+
+#define SHA_LENGTH 20
+#define SEED_LENGTH 20
+
+/* The (slow) NIST method of generating DSA primes. Algorithm 4.56 of
+ * Handbook of Applied Cryptography. */
+
+string nist_hash(bignum x)
+{
+  string s = x->digits(256);
+		       
+  return Crypto.sha()->update(s[strlen(s) - SEED_LENGTH..])->digest();
+}
+
+/* Returns ({ p, q }) */
+array(bignum) nist_primes(int l, function r)
+{
+  if ( (l < 0) || (l > 8) )
+    throw( ({ "Crypto.dsa->nist_primes: Unsupported key size.\n",
+		backtrace() }) );
+
+  int L = 512 + 64 * l;
+  
+  int n = (L-1) / 160;
+  int b = (L-1) % 160;
+
+  for (;;)
+  {
+    /* Generate q */
+    string seed = r(SEED_LENGTH);
+    bignum s = Gmp.mpz(seed, 256);
+
+    string h = nist_hash(s) ^ nist_hash(s + 1);
+
+    h = sprintf("%c%s%c", h[0] | 0x80, h[1..strlen(h) - 2], h[-1] | 1);
+
+    bignum q = Gmp.mpz(h, 256);
+
+    if (q->small_factor() || !q->probably_prime_p())
+      continue;
+
+    /* q is a prime, with overwelming probability. */
+
+    int i, j;
+
+    for (i = 0, j = 2; i < 4096; i++, j += n+1)
+    {
+      string buffer = "";
+      int k;
+
+      for (k = 0; k<= n; k++)
+	buffer = nist_hash(s + j + k) + buffer;
+
+      buffer = buffer[sizeof(buffer) - L/8 ..];
+      buffer = sprintf("%c%s", buffer[0] | 0x80, buffer[1..]);
+      
+      bignum p = Gmp.mpz(buffer, 256);
+      
+      p -= p % (2 * q) - 1;
+
+      if (!p->small_factor() && p->probably_prime_p())
+      {
+	/* Done */
+	return ({ p, q });
+      }
+    }
+  }
+}
+      
+bignum find_generator(bignum p, bignum q, function r)
+{
+  bignum e = (p - 1) / q;
+  bignum g;
+  
+  do
+  {
+    /* A random number in { 2, 3, ... p - 2 } */
+    g = (random_number(p-3, r) + 2)
+      /* Exponentiate to get an element of order 1 or q */
+      ->powm(e, p);
+  }
+  while (g == 1);
+
+  return g;
+}
+
+object generate_key(int bits, function r)
+{
+  if (!r)
+    r = Crypto.randomness.really_random()->read;
+
+  if (bits % 64)
+    throw( ({ "Crypto.dsa->generate_key: Unsupported key size.\n",
+		backtrace() }) );
+
+  [p, q] = nist_primes(bits / 64 - 8, r);
+
+  if (p % q != 1)
+    throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
+
+  if (q->size() != 160)
+    throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
+  
+  g = find_generator(p, q, r);
+
+  if ( (g == 1) || (g->powm(q, p) != 1))
+    throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
+    
+  /* x in { 2, 3, ... q - 1 } */
+  x = random_number(q - 2, r) + 2;
+  y = g->powm(x, p);
+
+  return this_object();
+}
+
+
