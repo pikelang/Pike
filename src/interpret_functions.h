@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.90 2001/08/31 07:19:18 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.91 2001/09/05 01:40:10 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1303,7 +1303,6 @@ OPCODE1_RETURN(F_RETURN_LOCAL,"return local",{
   }else{
     push_svalue(Pike_fp->locals + arg1);
   }
-  print_return_value();
   DO_DUMB_RETURN;
 });
 
