@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.163 1998/11/06 11:15:02 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.164 1998/12/01 03:10:57 peter Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -743,6 +743,10 @@ int main()
  
       xBSD/OS*)
         LIBS="${OLDLIBS}"
+      ;;
+
+      xFreeBSD*)
+        LIBS="${OLDLIBS} -lc_r"
       ;;
 
       xAIX*)
