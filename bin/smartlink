@@ -108,18 +108,18 @@ if test x$# != x0 ; then
   esac
 fi
 
-case "x$UNAME" in
-  AIX*)
-    # AIX cc doesn't work with ulimit set
-    :
-  ;;
-  *)
-    if test "x$NO_ULIMIT" = "x"; then
-      # Limit data segment size to 48MB.
-      ulimit -d 49152 >/dev/null 2>&1
-    fi
-  ;;
-esac
+#case "x$UNAME" in
+#  AIX*)
+#    # AIX cc doesn't work with ulimit set
+#    :
+#  ;;
+#  *)
+#    if test "x$NO_ULIMIT" = "x"; then
+#      # Limit data segment size to 48MB.
+#      ulimit -d 49152 >/dev/null 2>&1
+#    fi
+#  ;;
+#esac
 
 # Used to be exec, but Digital-Unix's stupid sh has buggy variable-expansion.
 # /grubba
