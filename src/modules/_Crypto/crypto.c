@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.15 1997/03/03 23:47:21 nisse Exp $
+ * $Id: crypto.c,v 1.16 1997/03/11 03:13:51 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -113,8 +113,8 @@ void assert_is_crypto_module(struct object *o)
 /* string string_to_hex(string) */
 static void f_string_to_hex(INT32 args)
 {
-  char *buffer;
-  int i;
+  struct pike_string *s;
+  INT32 i;
 
   if (args != 1) {
     error("Wrong number of arguments to string_to_hex()\n");
@@ -123,25 +123,21 @@ static void f_string_to_hex(INT32 args)
     error("Bad argument 1 to string_to_hex()\n");
   }
 
-  if (!(buffer=alloca(sp[-1].u.string->len*2))) {
-    error("string_to_hex(): Out of memory\n");
-  }
+  s = begin_shared_string(2 * sp[-1].u.string->len);
   
   for (i=0; i<sp[-1].u.string->len; i++) {
-    sprintf(buffer + i*2, "%02x", sp[-1].u.string->str[i] & 0xff);
+    sprintf(s->str + i*2, "%02x", sp[-1].u.string->str[i] & 0xff);
   }
   
   pop_n_elems(args);
-  
-  push_string(make_shared_binary_string(buffer, i*2));
-  sp[-1].u.string->refs++;
+  push_string(end_shared_string(s));
 }
 
 /* string hex_to_string(string) */
 static void f_hex_to_string(INT32 args)
 {
-  char *buffer;
-  int i;
+  struct pike_string *s;
+  INT32 i;
 
   if (args != 1) {
     error("Wrong number of arguments to hex_to_string()\n");
@@ -152,42 +148,43 @@ static void f_hex_to_string(INT32 args)
   if (sp[-1].u.string->len & 1) {
     error("Bad string length to hex_to_string()\n");
   }
-  if (!(buffer = alloca(sp[-1].u.string->len/2))) {
-    error("hex_to_string(): Out of memory\n");
-  }
-  for (i=0; i*2<sp[-1].u.string->len; i++) {
-    switch (sp[-1].u.string->str[i*2]) {
+
+  s = begin_shared_string(sp[-1].u.string->len/2);
+  for (i=0; i*2<sp[-1].u.string->len; i++)
+  {
+    switch (sp[-1].u.string->str[i*2])
+    {
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-      buffer[i] = (sp[-1].u.string->str[i*2] - '0')<<4;
+      s->str[i] = (sp[-1].u.string->str[i*2] - '0')<<4;
       break;
     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-      buffer[i] = (sp[-1].u.string->str[i*2] + 10 - 'A')<<4;
+      s->str[i] = (sp[-1].u.string->str[i*2] + 10 - 'A')<<4;
       break;
     default:
+      free_string(end_shared_string(s));
       error("hex_to_string(): Illegal character (0x%02x) in string\n",
 	    sp[-1].u.string->str[i*2] & 0xff);
     }
-    switch (sp[-1].u.string->str[i*2+1]) {
+    switch (sp[-1].u.string->str[i*2+1])
+    {
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-      buffer[i] |= sp[-1].u.string->str[i*2+1] - '0';
+      s->str[i] |= sp[-1].u.string->str[i*2+1] - '0';
       break;
     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-      buffer[i] |= (sp[-1].u.string->str[i*2+1] + 10 - 'A') & 0x0f;
+      s->str[i] |= (sp[-1].u.string->str[i*2+1] + 10 - 'A') & 0x0f;
       break;
     default:
+      free_string(end_shared_string(s));
       error("hex_to_string(): Illegal character (0x%02x) in string\n",
 	    sp[-1].u.string->str[i*2+1] & 0xff);
     }
   }
-
   pop_n_elems(args);
-
-  push_string(make_shared_binary_string(buffer, i));
-  sp[-1].u.string->refs++;
+  push_string(end_shared_string(s));
 }
 
 static INLINE unsigned INT8 parity(unsigned INT8 c)
@@ -289,7 +286,6 @@ static void f_set_encrypt_key(INT32 args)
   }
   safe_apply(THIS->object, "set_encrypt_key", args);
   pop_stack();
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -304,7 +300,6 @@ static void f_set_decrypt_key(INT32 args)
   }
   safe_apply(THIS->object, "set_decrypt_key", args);
   pop_stack();
-  this_object()->refs++;
   push_object(this_object());
 }
 
@@ -462,6 +457,7 @@ void MOD_INIT2(crypto)(void)
 #if 1
   MOD_INIT2(idea)();
   MOD_INIT2(des)();
+  MOD_INIT2(rc4)();
   MOD_INIT2(invert)();
 
   MOD_INIT2(sha)();
@@ -493,17 +489,17 @@ void MOD_INIT(crypto)(void)
   start_new_program();
   add_storage(sizeof(struct pike_crypto));
 
-  add_function("create", f_create, "function(program|object:void)", OPT_EXTERNAL_DEPEND);
+  add_function("create", f_create, "function(program|object:void)", 0);
 
-  add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
+  add_function("query_block_size", f_query_block_size, "function(void:int)", 0);
+  add_function("query_key_length", f_query_key_length, "function(void:int)", 0);
 
-  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
-  add_function("crypt", f_crypt, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", 0);
+  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", 0);
+  add_function("crypt", f_crypt, "function(string:string)", 0);
 
-  add_function("pad", f_pad, "function(void:string)", OPT_EXTERNAL_DEPEND);
-  add_function("unpad", f_unpad, "function(string:string)", OPT_EXTERNAL_DEPEND);
+  add_function("pad", f_pad, "function(void:string)", 0);
+  add_function("unpad", f_unpad, "function(string:string)", 0);
 
   set_init_callback(init_pike_crypto);
   set_exit_callback(exit_pike_crypto);
@@ -515,9 +511,9 @@ void MOD_EXIT(crypto)(void) {}
 
 void pike_module_init(void)
 {
-  add_function("string_to_hex", f_string_to_hex, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_function("hex_to_string", f_hex_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
-  add_function("des_parity", f_des_parity, "function(string:string)", OPT_TRY_OPTIMIZE);
+  add_function("string_to_hex", f_string_to_hex, "function(string:string)", 0);
+  add_function("hex_to_string", f_hex_to_string, "function(string:string)", 0);
+  add_function("des_parity", f_des_parity, "function(string:string)", 0);
 #if 0
   MOD_INIT(md2)();
 #endif
@@ -526,6 +522,7 @@ void pike_module_init(void)
   MOD_INIT(crypto)();
   MOD_INIT(idea)();
   MOD_INIT(des)();
+  MOD_INIT(rc4)();
   MOD_INIT(invert)();
 
   MOD_INIT(sha)();
@@ -545,6 +542,7 @@ void pike_module_exit(void)
   MOD_EXIT(crypto)();
   MOD_EXIT(idea)();
   MOD_EXIT(des)();
+  MOD_EXIT(rc4)();
   MOD_EXIT(invert)();
   MOD_EXIT(sha)();
   MOD_EXIT(cbc)();
