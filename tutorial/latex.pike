@@ -32,7 +32,7 @@ string low_latex_quote(string text)
 
 string latex_quote(string text)
 {
-  return low_latex_quote( pre ? text : ((text/"\n") - ({""})) *"" );
+  return low_latex_quote( pre ? text : ((text/"\n") - ({""})) *"\n" );
 }
 
 
@@ -347,13 +347,19 @@ string convert_to_latex(SGML data, void|int flags)
 	    ret+="\\verb+  +";
 	    break;
 	  case "ex_br":
+
 	  case "br":
-	    int e=strlen(ret)-1;
-	    while(e>=0 && ret[e]==' ') e--;
-	    if(e<0 || ret[e]=='\n')
-	      ret=ret[..e]+"\n";
-	    else
-	      ret+="\\\\";
+	    if(pre)
+	    {
+	      ret+="\n";
+	    }else{
+	      int e=strlen(ret)-1;
+	      while(e>=0 && ret[e]==' ') e--;
+	      if(e<0 || ret[e]=='\n')
+		ret=ret[..e]+"\n";
+	      else
+		ret+="\\\\";
+	    }
 	    break;
 
 	  case "p":
@@ -386,9 +392,9 @@ string convert_to_latex(SGML data, void|int flags)
 		  replace(latex_quote(href),
 			  ({".","/",":"}),
 			  ({
-			    ".\\discretionary{}{}{}",
-			    "/\\discretionary{}{}{}",
-			    ":\\discretionary{}{}{}",
+			    "\\discretionary{}{}{}.",
+			    "\\discretionary{}{}{}/",
+			    "\\discretionary{}{}{}:",
 			  }))+
 		  "}";
 	      }
@@ -523,4 +529,6 @@ void output(string base, WMML data)
     "\\end{document}\n";
   rm(base+".tex");
   Stdio.write_file(base+".tex",x);
+
+  werror("Longest line is %d characters.\n",sort(Array.map(x/"\n",strlen))[-1]);
 }
