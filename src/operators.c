@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.53 1999/05/25 13:32:12 mirar Exp $");
+RCSID("$Id: operators.c,v 1.54 1999/05/25 21:21:31 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2034,24 +2034,20 @@ void init_operators(void)
   add_efun2("`>", f_gt,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`>=",f_ge,CMP_TYPE,OPT_TRY_OPTIMIZE,0,generate_comparison);
 
-  /* !function(!object...:mixed)&function(mixed...:mixed)|"
-	    "function(int...:int)|"
-	    "!function(int...:mixed)&function(int|float...:float)|"
-	    "!function(int|float...:mixed)&function(string|int|float...:string)|"
-	    "function(0=array...:0)|"
-	    "function(mapping(1=mixed:2=mixed)...:mapping(1:2))|"
-	    "function(3=multiset...:3) */
   ADD_EFUN2("`+",f_add,
 	    tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),
-		 tFuncV(,tInt,tInt),
-		 tIfnot(tFuncV(,tInt,tMix),
-			tFuncV(,tOr(tInt,tFlt),tFlt)),
-		 tIfnot(tFuncV(,tOr(tInt,tFlt),tMix),
-			tFuncV(,tOr3(tStr,tInt,tFlt),tStr)),
-		 tFuncV(,tSetvar(0,tArray),tVar(0)),
-		 tFuncV(,tMap(tSetvar(1,tMix),
-			      tSetvar(2,tMix)),tMap(tVar(1),tVar(2))),
-		 tFuncV(,tSetvar(3,tMultiset),tVar(3))),
+		 tFuncV(tInt,tInt,tInt),
+		 tIfnot(tFuncV(tInt,tInt,tMix),
+			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
+		 tIfnot(tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tMix),
+			tFuncV(tOr3(tStr,tInt,tFlt),
+			       tOr3(tStr,tInt,tFlt),tStr)),
+		 tFuncV(tSetvar(0,tArray),tSetvar(1,tArray),
+			tOr(tVar(0),tVar(1))),
+		 tFuncV(tSetvar(0,tMapping),tSetvar(1,tMapping),
+			tOr(tVar(0),tVar(1))),
+		 tFuncV(tSetvar(0,tMultiset),tSetvar(1,tMultiset),
+			tOr(tVar(0),tVar(1)))),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
   
   ADD_EFUN2("`-",f_minus,
@@ -2074,7 +2070,6 @@ void init_operators(void)
 
   add_efun2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
-
 #define SHIFT_TYPE "function(object,mixed:mixed)|function(mixed,object:mixed)|function(int,int:int)"
 
   add_efun2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
@@ -2087,7 +2082,16 @@ void init_operators(void)
 	    "function(string*,string:string)|"
 	    "function(array(0=mixed),int:array(0))|"
 	    "function(string,int:string) */
-  ADD_EFUN2("`*",f_multiply,tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),tFunc(tArr(tArr(tSetvar(1,tMix))) tArr(tSetvar(1,tMix)),tArr(tVar(1))),tFuncV(,tInt,tInt),tIfnot(tFuncV(,tInt,tMix),tFuncV(,tOr(tFlt,tInt),tFlt)),tFunc(tArr(tStr) tStr,tStr),tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),tFunc(tStr tInt,tStr)),
+  ADD_EFUN2("`*",f_multiply,
+	    tOr7(tIfnot(tFuncV(,tNot(tObj),tMix),tFunction),
+		 tFunc(tArr(tArr(tSetvar(1,tMix))) 
+		       tArr(tSetvar(1,tMix)),tArr(tVar(1))),
+		 tFuncV(tInt,tInt,tInt),
+		 tIfnot(tFuncV(tInt,tInt,tMix),
+			tFuncV(tOr(tFlt,tInt),tOr(tFlt,tInt),tFlt)),
+		 tFunc(tArr(tStr) tStr,tStr),
+		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
+		 tFunc(tStr tInt,tStr)),
 	    OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
   /* !function(!object...:mixed)&function(mixed...:mixed)|"
