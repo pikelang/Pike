@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.38 2001/01/08 10:26:04 mirar Exp $
+ * $Id: image_jpeg.c,v 1.39 2001/01/08 13:23:49 mirar Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.38 2001/01/08 10:26:04 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.39 2001/01/08 13:23:49 mirar Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -93,6 +93,15 @@ static struct pike_string *param_scale_num;
 static struct pike_string *param_fancy_upsampling;
 static struct pike_string *param_quant_tables;
 static struct pike_string *param_grayscale;
+
+static int reverse_quality[101]=
+{
+   4950,4950,2475,1649,1238,990,825,707,619,549,495,449,412,380,353,330,309,
+   291,274,260,248,236,225,215,206,198,190,183,176,170,164,159,154,149,146,
+   141,137,134,130,127,124,120,118,115,112,110,107,105,103,101,99,97,95,93,
+   91,89,87,85,83,81,79,77,75,73,71,69,67,65,63,61,59,57,55,53,51,50,48,46,
+   44,42,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,8,6,4,2,1
+};
 
 #ifdef HAVE_JPEGLIB_H
 
@@ -482,7 +491,7 @@ static void image_jpeg_encode(INT32 args)
 	 jpeg_set_quality(&cinfo, q, (boolean)(!!p));
       }
 
-      if (parameter_int(sp+1-args,param_grayscale,&p))
+      if (parameter_int(sp+1-args,param_grayscale,&p) && p)
       {
 	 jpeg_set_colorspace(&cinfo,JCS_GRAYSCALE);
 	 cinfo.input_components=3;     /* 1 */
@@ -630,6 +639,10 @@ static void image_jpeg_encode(INT32 args)
 **!		density of image; unit is 1:dpi 2:dpcm 0:no units
 **!	    "adobe_marker":0|1
 **!		if the file has an adobe marker
+**!         "quant_tables":mapping(int:array(array(int)))
+**!             JPEG quant tables
+**!         "quality":int
+**!             JPEG quality guess (0-100)
 **!	</pre>
 **!
 **! note
@@ -848,6 +861,7 @@ static void img_jpeg_decode(INT32 args,int mode)
       if (mode!=IMG_DECODE_IMAGE)
       {
 	 int i,m,j;
+
 	 push_text("quant_tables");
 	 for (i=m=0; i<NUM_QUANT_TBLS; i++)
 	 {
@@ -866,6 +880,23 @@ static void img_jpeg_decode(INT32 args,int mode)
 	 }
 	 f_aggregate_mapping(m*2);
 	 n++;
+
+	 if (cinfo.quant_tbl_ptrs[0])
+	 {
+	    int q=cinfo.quant_tbl_ptrs[0]->quantval[DCTSIZE2-1];
+	    int a=0,b=100,c,w;
+	    while (b>a)
+	    {
+	       c=(b+a)/2;
+	       w=reverse_quality[c];
+	       if (w==q) break;
+	       else if (w>q) a=++c;
+	       else b=c;
+	    }
+	    push_text("quality");
+	    push_int(c);
+	    n++;
+	 }
       }
 
       jpeg_finish_decompress(&cinfo);
