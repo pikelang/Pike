@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.28 1998/02/11 03:32:44 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.29 1998/02/11 05:23:44 nisse Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -169,10 +169,7 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
 #if 0
     mpz_t tmp;
 #endif
-    mp_limb_t *src;
-    unsigned char *dst;
 
-    
     if (mpz_sgn(mpz) < 0)
       error("only non-negative numbers can be converted to base 256.\n");
 #if 0
@@ -195,16 +192,25 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
     len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
     s = begin_shared_string(len);
 
-    src=mpz->_mp_d;
-    dst=s->str+s->len;
-    while (len > 0)
+    if (!mpz->_mp_size)
     {
-       mp_limb_t x=*(src++);
-       for (i=0; i<sizeof(mp_limb_t); i++)
-	  *(--dst)=x&0xff,x>>=8;
-       len-=sizeof(mp_limb_t);
-    }
+      /* Zero is a special case. There are no limbs at all, but
+       * the size is still 1 bit, and one digit should be produced. */
+      if (len != 1)
+	fatal("mpz->low_get_digits: strange mpz state!\n");
+      s->str[0] = 0;
+    } else {
+      mp_limb_t *src = mpz->_mp_d;
+      unsigned char *dst = s->str+s->len;
 
+      while (len > 0)
+      {
+	mp_limb_t x=*(src++);
+	for (i=0; i<sizeof(mp_limb_t); i++)
+	  *(--dst)=x&0xff,x>>=8;
+	len-=sizeof(mp_limb_t);
+      }
+    }
     s = end_shared_string(s);
   }
   else

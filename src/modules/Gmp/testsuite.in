@@ -67,6 +67,7 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
 
   test_true(catch(Gmp.mpz("abcd", 47)))
   test_true(catch(Gmp.mpz(-17)->digits(256)))
+  test_eq(Gmp.mpz(0)->digits(256), "\0");
   test_eq(Gmp.mpz(17)->digits(256), "\021");
   test_eq(Gmp.mpz(4711)->size(2), 13)
   test_true(catch(Gmp.mpz(17) + 18 + "19"))
