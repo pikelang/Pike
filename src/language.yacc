@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.296 2002/09/24 15:12:20 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.297 2002/09/28 19:54:41 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1552,26 +1552,34 @@ new_name: optional_stars TOK_IDENTIFIER
 
 
 new_local_name: optional_stars TOK_IDENTIFIER
-  {    
+  {
+    int id;
     push_finished_type($<n>0->u.sval.u.type);
     if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
-    add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
-    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string),0));
+    id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
+    if (id >= 0)
+      $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
+    else
+      $$ = 0;
     free_node($2);
   }
   | optional_stars bad_identifier { $$=0; }
   | optional_stars TOK_IDENTIFIER '=' expr0 
   {
+    int id;
     push_finished_type($<n>0->u.sval.u.type);
     if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
     while($1--) push_type(T_ARRAY);
-    add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
-    $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string),0));
+    id = add_local_name($2->u.sval.u.string, compiler_pop_type(),0);
+    if (id >= 0)
+      $$=mknode(F_ASSIGN,$4,mklocalnode(id,0));
+    else
+      $$ = 0;
     free_node($2);
   }
   | optional_stars bad_identifier '=' expr0
@@ -1596,17 +1604,25 @@ new_local_name: optional_stars TOK_IDENTIFIER
 
 new_local_name2: TOK_IDENTIFIER
   {
+    int id;
     add_ref($<n>0->u.sval.u.type);
-    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
-    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
+    id = add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
+    if (id >= 0)
+      $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(id,0));
+    else
+      $$ = 0;
     free_node($1);
   }
   | bad_identifier { $$=0; }
   | TOK_IDENTIFIER '=' safe_expr0
   {
+    int id;
     add_ref($<n>0->u.sval.u.type);
-    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
-    $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string),0));
+    id = add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
+    if (id >= 0)
+      $$=mknode(F_ASSIGN,$3, mklocalnode(id,0));
+    else
+      $$ = 0;
     free_node($1);
   }
   | bad_identifier '=' safe_expr0 { $$=$3; }
@@ -3608,8 +3624,11 @@ lvalue: expr4
   | '[' low_lvalue_list ']' { $$=mknode(F_ARRAY_LVALUE, $2,0); }
   | type6 TOK_IDENTIFIER
   {
-    add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
-    $$=mklocalnode(islocal($2->u.sval.u.string),0);
+    int id = add_local_name($2->u.sval.u.string,compiler_pop_type(),0);
+    if (id >= 0)
+      $$=mklocalnode(id,0);
+    else
+      $$ = 0;
     free_node($2);
   }
   | bad_expr_ident
@@ -3830,7 +3849,7 @@ int low_add_local_name(struct compiler_frame *frame,
   if (frame->current_number_of_locals == MAX_LOCAL)
   {
     yyerror("Too many local variables.");
-    return 0;
+    return -1;
   }else {
 #ifdef PIKE_DEBUG
     check_type_string(type);
