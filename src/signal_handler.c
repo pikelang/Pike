@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.164 2000/01/27 16:29:09 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.165 2000/02/07 23:49:52 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2409,6 +2409,7 @@ void f_create_process(INT32 args)
     UNSET_ONERROR(err);
 
     if(pid == -1) {
+      int e = errno;
       /*
        * fork() failed
        */
@@ -2418,7 +2419,18 @@ void f_create_process(INT32 args)
 
       free_perishables(&storage);
 
-      error("Failed to start process.\n" "errno:%d\n", errno);
+      if (e == EAGAIN) {
+	error("Process.create_process(): fork() failed with EAGAIN.\n"
+	      "Process table full?\n");
+      }
+#ifdef ENOMEM
+      if (e == ENOMEM) {
+	error("Process.create_process(): fork() failed with ENOMEM.\n"
+	      "Out of memory?\n");
+      }
+#endif /* ENOMEM */
+      error("Process.create_process(): fork() failed. errno:%d\n",
+	    e);
     } else if(pid) {
       int olderrno;
 
