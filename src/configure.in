@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.27 1996/12/04 02:23:54 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.28 1996/12/06 02:37:45 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -471,6 +471,7 @@ AC_TRY_LINK([
 ],[
   int _tz;
   _tz=timezone;
+  timezone=tz_;
 ],pike_cv_has_external_timezone=yes,pike_cv_has_external_timezone=no)
 ])
 
