@@ -1,4 +1,5 @@
-/* $Id: quant.c,v 1.28 1997/01/21 00:07:37 law Exp $ */
+#include <config.h>
+/* $Id: quant.c,v 1.29 1997/01/27 07:56:21 per Exp $ */
 
 /*
 

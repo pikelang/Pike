@@ -1,4 +1,6 @@
-/* $Id: font.c,v 1.10 1996/12/09 04:27:49 per Exp $ */
+#include <config.h>
+
+/* $Id: font.c,v 1.11 1997/01/27 07:56:11 per Exp $ */
 
 #include "global.h"
 
