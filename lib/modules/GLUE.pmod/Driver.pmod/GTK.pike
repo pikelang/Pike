@@ -1,9 +1,9 @@
 //
-// $Id: GTK.pike,v 1.4 2004/01/26 12:05:32 grubba Exp $
+// $Id: GTK.pike,v 1.5 2004/01/29 21:44:54 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-#if constant(GTK.Widget)
+#if constant(GTK.GLArea)
 
 inherit .Interface;
 import GLUE.Events;
@@ -203,4 +203,4 @@ void show_cursor() {
   // FIXME: What do we do.
 }
 
-#endif /* constant(GTK.Widget) */
+#endif /* constant(GTK.GLArea) */
