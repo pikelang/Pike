@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.462 2001/10/06 09:24:48 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.463 2001/10/15 09:22:17 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3564,6 +3564,51 @@ ifefun(gc,
     gc();
     return a;
   }]], ([1: 1, "foo": "foo", 3.14: 3.14]));
+
+  test_do([[{
+    object f = class
+    {
+      object o = class {}();
+      array a = set_weak_flag (({o}), 1);
+      object this = this_object();
+      void create() {destruct (o);}
+    }();
+    f = 0;
+    gc();
+  }]]);
+  test_do([[{
+    object f = class
+    {
+      object o = class {}();
+      mapping m = set_weak_flag (([1:o]), 1);
+      object this = this_object();
+      void create() {destruct (o);}
+    }();
+    f = 0;
+    gc();
+  }]]);
+  test_do([[{
+    object f = class
+    {
+      object o = class {}();
+      mapping m = set_weak_flag (([o:1]), 1);
+      object this = this_object();
+      void create() {destruct (o);}
+    }();
+    f = 0;
+    gc();
+  }]]);
+  test_do([[{
+    object f = class
+    {
+      object o = class {}();
+      multiset m = set_weak_flag ((<o>), 1);
+      object this = this_object();
+      void create() {destruct (o);}
+    }();
+    f = 0;
+    gc();
+  }]]);
 ]])
 
 ifefun(gc,
