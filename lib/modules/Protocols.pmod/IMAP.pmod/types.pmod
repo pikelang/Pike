@@ -13,6 +13,7 @@ string imap_format(mixed x)
 
 string imap_format_array(array a)
 {
+#if 0
   if (!sizeof(a)) {
     return("");
   }
@@ -27,6 +28,9 @@ string imap_format_array(array a)
     }
   }
   return res;
+#else /* !0 */
+  return Array.map(a, imap_format) * " ";
+#endif /* 0 */
 }
 
 /* Output types */
